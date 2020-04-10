@@ -15,12 +15,8 @@
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    
-#if (__WIN32__ || __XBOX360__)
+#if (__WIN32__)
 #include "threading/win360/win360barrier.h"
-#elif __WII__
-#include "threading/wii/wiibarrier.h"
-#elif __PS3__
-#include "threading/ps3/ps3barrier.h"
 #elif ( __OSX__ || __APPLE__ || __linux__ )
 #include "threading/posix/posixbarrier.h"
 #else

@@ -8,12 +8,8 @@
 
 namespace Net
 {
-#if (__WIN32__ || __XBOX360__)
-__ImplementClass(Net::Socket, 'SOCK', Win360::Win360Socket);
-#elif __WII__
-// there is no class on Wii
-#elif __PS3__
-__ImplementClass(Net::Socket, 'SOCK', PS3::PS3Socket);
+#if (__WIN32__)
+__ImplementClass(Net::Socket, 'SOCK', Win32::Win32Socket);
 #elif __linux__
 __ImplementClass(Net::Socket, 'SOCK', Posix::PosixSocket);
 #else

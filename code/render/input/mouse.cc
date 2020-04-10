@@ -5,15 +5,15 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "input/mouse.h"
-#if (__DX9__ || __DX11__)
-namespace Input
-{
-__ImplementClass(Input::Mouse, 'MOUS', Win32::Win32Mouse);
-}
-#elif (__OGL4__ || __VULKAN__)
+#if __VULKAN__
 namespace Input
 {
 __ImplementClass(Input::Mouse, 'MOUS', Base::MouseBase);
+}
+#elif __WIN32__
+namespace Input
+{
+__ImplementClass(Input::Mouse, 'MOUS', Win32::Win32Mouse);
 }
 #else
 #error "Mouse class not implemented on this platform!"

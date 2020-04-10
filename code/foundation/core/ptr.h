@@ -23,11 +23,8 @@
 // warning unused param
 #pragma warning(disable: 4189)
 #endif
-#if __PS3__
-#define NEBULA_UNUSED_ATTR __attribute__ ((unused))
-#else
+
 #define NEBULA_UNUSED_ATTR
-#endif
 #endif // NEBULA_DEBUG
 
 //------------------------------------------------------------------------------

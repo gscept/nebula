@@ -49,7 +49,13 @@ FramePlugin::Discard()
 const std::function<void(IndexT)>&
 FramePlugin::GetCallback(const Util::StringAtom& str)
 {
-	return nameToFunction[str];
+	if (nameToFunction.Contains(str))
+		return nameToFunction[str];
+	else
+	{
+		n_printf("No function '%s' found\n", str.Value());
+		return nameToFunction["null"];
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -88,6 +94,15 @@ FramePlugin::Resize()
 	IndexT i;
 	for (i = 0; i < this->textures.Size(); i++)
 		TextureWindowResized(this->textures.ValueAtIndex(i));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FramePlugin::InitPluginTable()
+{
+	FramePlugin::nameToFunction.Add("null", nullptr);
 }
 
 } // namespace Frame

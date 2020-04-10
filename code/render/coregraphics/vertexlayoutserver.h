@@ -14,16 +14,7 @@
     (C) 2007 Radon Labs GmbH
     (C) 2013-2018 Individual contributors, see AUTHORS file
 */    
-#if __OGL4__
-#include "coregraphics/ogl4/ogl4vertexlayoutserver.h"
-namespace CoreGraphics
-{
-class VertexLayoutServer : public OpenGL4::OGL4VertexLayoutServer
-{
-	__DeclareClass(VertexLayoutServer);
-};
-}
-#elif __VULKAN__
+#if __VULKAN__
 #include "coregraphics/vk/vkvertexlayoutserver.h"
 namespace CoreGraphics
 {

@@ -9,21 +9,11 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
-#if (__WIN32__ || __XBOX360__ || __PS3__ || __OSX__ || __APPLE__ || __linux__)
+#if (__WIN32__ || __OSX__ || __APPLE__ || __linux__)
 #include "net/tcp/stdtcpclient.h"
 namespace Net
 {
 class TcpClient : public StdTcpClient
-{
-    __DeclareClass(TcpClient);
-};
-}
-#elif __WII__
-// only an empty stub on the Wii
-#include "core/refcounted.h"
-namespace Net
-{
-class TcpClient : public Core::RefCounted
 {
     __DeclareClass(TcpClient);
 };

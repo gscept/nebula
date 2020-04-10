@@ -11,11 +11,11 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/singleton.h"
-#if (__DX11__ || __DX9__ )
-#include "input/win32/win32inputserver.h"
+#if __VULKAN__
+#include "input/glfw/glfwinputserver.h"
 namespace Input
 {
-class InputServer : public Win32::Win32InputServer
+class InputServer : public GLFW::GLFWInputServer
 {
     __DeclareClass(InputServer);
     __DeclareInterfaceSingleton(InputServer);
@@ -26,11 +26,11 @@ public:
     virtual ~InputServer();
 };
 }
-#elif (__OGL4__ || __VULKAN__)
-#include "input/glfw/glfwinputserver.h"
+#elif __WIN32__
+#include "input/win32/win32inputserver.h"
 namespace Input
 {
-class InputServer : public GLFW::GLFWInputServer
+class InputServer : public Win32::Win32InputServer
 {
     __DeclareClass(InputServer);
     __DeclareInterfaceSingleton(InputServer);

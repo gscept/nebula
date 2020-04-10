@@ -9,30 +9,12 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
-#if (__WIN32__ || __XBOX360__)
-#include "threading/win360/win360thread.h"
+#if __WIN32__
+#include "threading/win32/win32thread.h"
 namespace Threading
 {
-class Thread : public Win360::Win360Thread
+class Thread : public Win32::Win32Thread
 { 
-    __DeclareClass(Thread);
-};
-}
-#elif __WII__
-#include "threading/wii/wiithread.h"
-namespace Threading
-{
-class Thread : public Wii::WiiThread
-{
-    __DeclareClass(Thread);
-};
-}
-#elif __PS3__
-#include "threading/ps3/ps3thread.h"
-namespace Threading
-{
-class Thread : public PS3::PS3Thread
-{
     __DeclareClass(Thread);
 };
 }

@@ -4,7 +4,6 @@
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#if !__WII__
 #include "net/messageclient.h"
 
 namespace Net
@@ -137,5 +136,3 @@ MessageClient::GetRecvStream()
 }
 
 } // namespace Net
-
-#endif // #if not __WII__

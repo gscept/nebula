@@ -11,25 +11,11 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
-#if (__WIN32__ || __XBOX360__)
-#include "timing/win360/win360calendartime.h"
+#if __WIN32__
+#include "timing/win32/win32calendartime.h"
 namespace Timing
 {
-class CalendarTime : public Win360::Win360CalendarTime
-{ };
-}
-#elif __WII__
-#include "timing/wii/wiicalendartime.h"
-namespace Timing
-{
-class CalendarTime : public Wii::WiiCalendarTime
-{ };
-}
-#elif __PS3__
-#include "timing/ps3/ps3calendartime.h"
-namespace Timing
-{
-class CalendarTime : public PS3::PS3CalendarTime
+class CalendarTime : public Win32::Win32CalendarTime
 { };
 }
 #elif __linux__

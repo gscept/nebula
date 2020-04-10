@@ -9,6 +9,7 @@
 #define PCF 0
 #define BLURSAMPLES 1
 #define NO_COMPARISON 1
+#define CSM_DEBUG 0
 
 #include "shadowbase.fxh"
 #include "std.fxh"
@@ -95,9 +96,13 @@ CalculateBlendAmountForMap(in vec4 texCoord,
 	CSM shadow sampling entry point
 */
 float
-CSMPS(in vec4 TexShadow,
-	  in uint Texture,
-	  out vec4 Debug)
+CSMPS(
+	  in vec4 TexShadow
+	, in uint Texture
+#if CSM_DEBUG
+	, out vec4 Debug
+#endif
+)
 {
 	vec4 texCoordShadow = vec4(0.0f);
 	bool cascadeFound = false;
@@ -131,7 +136,9 @@ CSMPS(in vec4 TexShadow,
 	float blendBandLocation = 0;
 	CalculateBlendAmountForMap ( texCoordShadow, blendBandLocation, blendAmount );
 
+#if CSM_DEBUG
 	Debug = DebugColors[cascadeIndex];
+#endif
 
 	// if we have no matching cascade, return with a fully lit pixel
 	if (!cascadeFound)
@@ -145,7 +152,6 @@ CSMPS(in vec4 TexShadow,
 
 	vec2 mapDepth = sample2DArrayGrad(Texture, CSMTextureSampler, vec3(texCoord, cascadeIndex), shadowPosDDX.xy, shadowPosDDY.xy).rg;
 	float occlusion = ChebyshevUpperBound(mapDepth, depth, 0.0000001f);
-	//float occlusion = ExponentialShadowSample(mapDepth, depth, 0.0f);
 
 	int nextCascade = cascadeIndex + 1;
 	float occlusionBlend = 1.0f;
@@ -166,13 +172,6 @@ CSMPS(in vec4 TexShadow,
 		// blend next cascade onto previous
 		occlusion = lerp(occlusionBlend, occlusion, blendAmount);
 	}
-	//occlusion += smoothstep(0.98f, 1.0f, increment);
-	//occlusion += increment;
-
-
-	// finally clamp all shadow values 0.5, this avoids any weird color differences when blending between cascades
-
-	//return smoothstep(0.5f, 1.0f, occlusion);
 	return occlusion;
 }
 

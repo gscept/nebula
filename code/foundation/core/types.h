@@ -79,7 +79,7 @@ operator"" _MB(const uint64 val)
 #define BITS_TO_BYTES(x) (((x)+7)>>3)
 #define BYTES_TO_BITS(x) ((x)<<3)
 
-#if (__PS3__ || __WII__ || __OSX__ || __linux__)
+#if (__OSX__ || __linux__)
 inline ushort                _byteswap_ushort(ushort x)              { return ((x>>8) | (x<<8)); }
 inline ulong                 _byteswap_ulong(ulong x)                { return ((x&0xff000000)>>24) | ((x&0x00ff0000)>>8) | ((x&0x00000ff00)<<8) | ((x&0x000000ff)<<24); }
 inline unsigned long long    _byteswap_uint64(unsigned long long x)  { return ((((unsigned long long)_byteswap_ulong((ulong)(x & 0xffffffff))) << 32) | ((unsigned long long)_byteswap_ulong((ulong)(x >> 32)))); }

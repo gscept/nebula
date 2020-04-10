@@ -237,9 +237,9 @@ FrameScriptLoader::ParseReadWriteBufferList(const Ptr<Frame::FrameScript>& scrip
 	{
 		JzonValue* cur = node->array_values[i];
 		JzonValue* name = jzon_get(cur, "name");
-		n_assert(name != NULL);
+		n_assert(name != nullptr);
 		JzonValue* size = jzon_get(cur, "size");
-		n_assert(size != NULL);
+		n_assert(size != nullptr);
 
 		// create shader buffer 
 		ShaderRWBufferCreateInfo info =
@@ -322,7 +322,7 @@ FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* n
 
 	// set name of op
 	JzonValue* name = jzon_get(node, "name");
-	n_assert(name != NULL);
+	n_assert(name != nullptr);
 	op->SetName(name->string_value);
 
 	JzonValue* queue = jzon_get(node, "queue");
@@ -332,11 +332,11 @@ FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* n
 		op->queue = CoreGraphics::QueueTypeFromString(queue->string_value);
 
 	JzonValue* from = jzon_get(node, "from");
-	n_assert(from != NULL);
+	n_assert(from != nullptr);
 	const CoreGraphics::TextureId& fromTex = script->GetTexture(from->string_value);
 
 	JzonValue* to = jzon_get(node, "to");
-	n_assert(to != NULL);
+	n_assert(to != nullptr);
 	const CoreGraphics::TextureId& toTex = script->GetTexture(to->string_value);
 
 	bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(fromTex));
@@ -367,7 +367,7 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
 
 	// get function and name
 	JzonValue* name = jzon_get(node, "name");
-	n_assert(name != NULL);
+	n_assert(name != nullptr);
 	op->SetName(name->string_value);
 
 	JzonValue* queue = jzon_get(node, "queue");
@@ -377,11 +377,11 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
 		op->queue = CoreGraphics::QueueTypeFromString(queue->string_value);
 
 	JzonValue* from = jzon_get(node, "from");
-	n_assert(from != NULL);
+	n_assert(from != nullptr);
 	const CoreGraphics::TextureId& fromTex = script->GetTexture(from->string_value);
 
 	JzonValue* to = jzon_get(node, "to");
-	n_assert(to != NULL);
+	n_assert(to != nullptr);
 	const CoreGraphics::TextureId& toTex = script->GetTexture(to->string_value);
 
 	bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(fromTex));
@@ -412,7 +412,7 @@ FrameScriptLoader::ParseMipmap(const Ptr<Frame::FrameScript>& script, JzonValue*
 
 	// get function and name
 	JzonValue* name = jzon_get(node, "name");
-	n_assert(name != NULL);
+	n_assert(name != nullptr);
 	op->SetName(name->string_value);
 
 	JzonValue* queue = jzon_get(node, "queue");
@@ -422,7 +422,7 @@ FrameScriptLoader::ParseMipmap(const Ptr<Frame::FrameScript>& script, JzonValue*
 		op->queue = CoreGraphics::QueueTypeFromString(queue->string_value);
 
 	JzonValue* tex = jzon_get(node, "texture");
-	n_assert(tex != NULL);
+	n_assert(tex != nullptr);
 	const CoreGraphics::TextureId& ttex = script->GetTexture(tex->string_value);
 	bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(ttex));
 
@@ -450,7 +450,7 @@ FrameScriptLoader::ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue
 
 	// get name of compute sequence
 	JzonValue* name = jzon_get(node, "name");
-	n_assert(name != NULL);
+	n_assert(name != nullptr);
 	op->SetName(name->string_value);
 
 	JzonValue* queue = jzon_get(node, "queue");
@@ -473,20 +473,29 @@ FrameScriptLoader::ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue
 
 	// create shader state
 	JzonValue* shader = jzon_get(node, "shader_state");
-	n_assert(shader != NULL);
+	n_assert(shader != nullptr);
 	ParseShaderState(script, shader, op->shader, op->resourceTable, op->constantBuffers, op->textures);
 
 	JzonValue* variation = jzon_get(node, "variation");
-	n_assert(variation != NULL);
+	n_assert(variation != nullptr);
 	op->program = ShaderGetProgram(op->shader, ShaderServer::Instance()->FeatureStringToMask(variation->string_value));
 
 	// dimensions, must be 3
-	JzonValue* dims = jzon_get(node, "dimensions");
-	n_assert(dims != NULL);
-	n_assert(dims->size == 3);
-	op->x = dims->array_values[0]->int_value;
-	op->y = dims->array_values[1]->int_value;
-	op->z = dims->array_values[2]->int_value;
+	if (JzonValue* dims = jzon_get(node, "dimensions"))
+	{
+		n_assert(dims->size == 3);
+		op->x = dims->array_values[0]->int_value;
+		op->y = dims->array_values[1]->int_value;
+		op->z = dims->array_values[2]->int_value;
+	}
+	else if (JzonValue* dims = jzon_get(node, "texture_dimensions"))
+	{
+		CoreGraphics::TextureId tex = script->GetTexture(dims->string_value);
+		CoreGraphics::TextureDimensions tDims = CoreGraphics::TextureGetDimensions(tex);
+		op->x = tDims.width;
+		op->y = tDims.height;
+		op->z = tDims.depth;
+	}
 
 	// add op to script
 	script->AddOp(op);
@@ -498,36 +507,39 @@ FrameScriptLoader::ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue
 void
 FrameScriptLoader::ParsePlugin(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
-	FramePluginOp* op = script->GetAllocator().Alloc<FramePluginOp>();
-
 	// get function and name
 	JzonValue* name = jzon_get(node, "name");
-	n_assert(name != NULL);
-	op->SetName(name->string_value);
-
-	JzonValue* queue = jzon_get(node, "queue");
-	if (queue == nullptr)
-		op->queue = CoreGraphics::QueueType::GraphicsQueueType;
-	else
-		op->queue = CoreGraphics::QueueTypeFromString(queue->string_value);
-
-	JzonValue* inputs = jzon_get(node, "inputs");
-	if (inputs != nullptr)
+	n_assert(name != nullptr);
+	auto callback = Frame::FramePlugin::GetCallback(name->string_value);
+	if (callback != nullptr)
 	{
-		ParseResourceDependencies(script, op, inputs);
+		FramePluginOp* op = script->GetAllocator().Alloc<FramePluginOp>();
+		op->SetName(name->string_value);
+
+		JzonValue* queue = jzon_get(node, "queue");
+		if (queue == nullptr)
+			op->queue = CoreGraphics::QueueType::GraphicsQueueType;
+		else
+			op->queue = CoreGraphics::QueueTypeFromString(queue->string_value);
+
+		JzonValue* inputs = jzon_get(node, "inputs");
+		if (inputs != nullptr)
+		{
+			ParseResourceDependencies(script, op, inputs);
+		}
+
+		JzonValue* outputs = jzon_get(node, "outputs");
+		if (outputs != nullptr)
+		{
+			ParseResourceDependencies(script, op, outputs);
+		}
+
+		// get algorithm
+		op->func = callback;
+
+		// add to script
+		script->AddOp(op);
 	}
-
-	JzonValue* outputs = jzon_get(node, "outputs");
-	if (outputs != nullptr)
-	{
-		ParseResourceDependencies(script, op, outputs);
-	}
-
-	// get algorithm
-	op->func = Frame::FramePlugin::GetCallback(name->string_value);
-
-	// add to script
-	script->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
@@ -540,7 +552,7 @@ FrameScriptLoader::ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue
 
 	// get function and name
 	JzonValue* name = jzon_get(node, "name");
-	n_assert(name != NULL);
+	n_assert(name != nullptr);
 	op->SetName(name->string_value);
 
 	JzonValue* inputs = jzon_get(node, "inputs");
@@ -572,7 +584,7 @@ FrameScriptLoader::ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, c
 	if (startOrEnd == 0)
 	{
 		JzonValue* name = jzon_get(node, "name");
-		n_assert(name != NULL);
+		n_assert(name != nullptr);
 		op->SetName(name->string_value);
 	}
 	else
@@ -616,7 +628,7 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
 
 	// get name of pass
 	JzonValue* name = jzon_get(node, "name");
-	n_assert(name != NULL);
+	n_assert(name != nullptr);
 	info.name = name->string_value;
 
 	Util::Array<Resources::ResourceName> attachmentNames;
@@ -634,42 +646,42 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
 			uint clearStencil = 0;
 			uint depthStencilClearFlags = 0;
 			JzonValue* cd = jzon_get(cur, "clear");
-			if (cd != NULL)
+			if (cd != nullptr)
 			{
 				depthStencilClearFlags |= Clear;
 				info.clearDepth = (float)cd->float_value;
 			}
 
 			JzonValue* cs = jzon_get(cur, "clear_stencil");
-			if (cs != NULL)
+			if (cs != nullptr)
 			{
 				depthStencilClearFlags |= ClearStencil;
 				info.clearStencil = cs->int_value;
 			}
 
 			JzonValue* ld = jzon_get(cur, "load");
-			if (ld != NULL && ld->bool_value)
+			if (ld != nullptr && ld->bool_value)
 			{
-				n_assert2(cd == NULL, "Can't load depth from previous pass AND clear.");				
+				n_assert2(cd == nullptr, "Can't load depth from previous pass AND clear.");				
 				depthStencilClearFlags |= Load;
 			}
 
 			JzonValue* ls = jzon_get(cur, "load_stencil");
-			if (ls != NULL && ls->bool_value)
+			if (ls != nullptr && ls->bool_value)
 			{
 				// can't really load and store
-				n_assert2(cs == NULL, "Can't load stenil from previous pass AND clear.");
+				n_assert2(cs == nullptr, "Can't load stenil from previous pass AND clear.");
 				depthStencilClearFlags |= LoadStencil;
 			}
 
 			JzonValue* sd = jzon_get(cur, "store");
-			if (sd != NULL && sd->bool_value)
+			if (sd != nullptr && sd->bool_value)
 			{
 				depthStencilClearFlags |= Store;
 			}
 
 			JzonValue* ss = jzon_get(cur, "store_stencil");
-			if (ss != NULL && ss->bool_value)
+			if (ss != nullptr && ss->bool_value)
 			{
 				depthStencilClearFlags |= StoreStencil;
 			}
@@ -707,14 +719,14 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
 	{
 		JzonValue* cur = node->array_values[i];
 		JzonValue* name = jzon_get(cur, "name");
-		n_assert(name != NULL);
+		n_assert(name != nullptr);
 		pass.colorAttachments.Append(script->GetTexture(name->string_value));
 		attachmentNames.Append(name->string_value);
 
 		// set clear flag if present
 		JzonValue* clear = jzon_get(cur, "clear");
 		uint flags = 0;
-		if (clear != NULL)
+		if (clear != nullptr)
 		{
 			Math::float4 clearValue;
 			n_assert(clear->size <= 4);
@@ -740,7 +752,7 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
 		if (load && load->bool_value)
 		{
 			// we can't really load and clear
-			n_assert2(clear == NULL, "Can't load color if it's being cleared.");
+			n_assert2(clear == nullptr, "Can't load color if it's being cleared.");
 			flags |= Load;
 		}
 		pass.colorAttachmentFlags.Append((AttachmentFlagBits)flags);
@@ -899,7 +911,7 @@ FrameScriptLoader::ParseSubpassPlugin(const Ptr<Frame::FrameScript>& script, Fra
 
 	// get function and name
 	JzonValue* name = jzon_get(node, "name");
-	n_assert(name != NULL);
+	n_assert(name != nullptr);
 	op->SetName(name->string_value);
 
 	op->domain = BarrierDomain::Pass;
@@ -986,7 +998,7 @@ FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& s
 
 	// get function and name
 	JzonValue* name = jzon_get(node, "name");
-	n_assert(name != NULL);
+	n_assert(name != nullptr);
 	op->SetName(name->string_value);
 
 	op->domain = BarrierDomain::Pass;
@@ -1006,12 +1018,12 @@ FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& s
 
 	// create shader state
 	JzonValue* shaderState = jzon_get(node, "shader_state");
-	n_assert(shaderState != NULL);
+	n_assert(shaderState != nullptr);
 	ParseShaderState(script, shaderState, op->shader, op->resourceTable, op->constantBuffers, op->textures);
 
 	// get texture
 	JzonValue* texture = jzon_get(node, "size_from_texture");
-	n_assert(texture != NULL);
+	n_assert(texture != nullptr);
 	op->tex = script->GetTexture(texture->string_value);
 	
 	// add op to subpass
@@ -1032,18 +1044,14 @@ FrameScriptLoader::ParseShaderState(
 	Util::Array<std::tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>>& textures
 )
 {
-	bool createResources = false;
-	JzonValue* create = jzon_get(node, "create_resource_set");
-	if (create != NULL) createResources = create->bool_value;
-
 	JzonValue* shader = jzon_get(node, "shader");
-	n_assert(shader != NULL);
+	n_assert(shader != nullptr);
     Util::String shaderRes = "shd:" + Util::String(shader->string_value) + ".fxb";
 	shd = ShaderGet(shaderRes);
 	table = ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP);
 
 	JzonValue* vars = jzon_get(node, "variables");
-	if (vars != NULL)
+	if (vars != nullptr)
 		ParseShaderVariables(script, shd, table, constantBuffers, textures, vars);
 	CoreGraphics::ResourceTableCommitChanges(table);
 }
@@ -1066,9 +1074,9 @@ FrameScriptLoader::ParseShaderVariables(
 
 		// variables need to define both semantic and value
 		JzonValue* sem = jzon_get(var, "semantic");
-		n_assert(sem != NULL);
+		n_assert(sem != nullptr);
 		JzonValue* val = jzon_get(var, "value");
-		n_assert(val != NULL);
+		n_assert(val != nullptr);
 		Util::String valStr(val->string_value);
 
 		// get variable

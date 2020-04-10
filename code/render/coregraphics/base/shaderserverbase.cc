@@ -167,14 +167,9 @@ ShaderServerBase::Open()
     // create standard shader for access to shared variables
     if (this->shaders.Contains(ResourceName("shd:shared.fxb")))
     {
+        // get shared object id shader variable
 		this->sharedVariableShader = this->GetShader("shd:shared.fxb");
 		n_assert(this->sharedVariableShader != ShaderId::Invalid());
-
-        // get shared object id shader variable
-#if !__WII__ && !__PS3__
-       // this->objectIdShaderVar = this->sharedVariableShaderInst->GetVariableBySemantic(NEBULA_SEMANTIC_OBJECTID);
-        //n_assert(this->objectIdShaderVar.isvalid());
-#endif
     }
 
     this->isOpen = true;
@@ -213,12 +208,7 @@ ShaderServerBase::ApplyObjectId(IndexT i)
 {   
     n_assert(i >= 0);
     n_assert(i < 256);
-#if __PS3__
-    if (this->GetActiveShader()->HasVariableBySemantic(NEBULA_SEMANTIC_OBJECTID))
-    {
-        this->objectIdShaderVar = this->GetActiveShader()->GetVariableBySemantic(NEBULA_SEMANTIC_OBJECTID);
-    }       
-#endif
+
     if (this->objectIdShaderVar != Ids::InvalidId32)
     {
 		//CoreGraphics::shaderPool->ShaderConstantSet(this->objectIdShaderVar, this->sharedVariableShaderState, ((float)i) / 255.0f);

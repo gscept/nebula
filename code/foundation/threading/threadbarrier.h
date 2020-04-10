@@ -9,25 +9,11 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
-#if (__WIN32__ || __XBOX360__)
-#include "threading/win360/win360threadbarrier.h"
+#if (__WIN32__)
+#include "threading/win32/win32threadbarrier.h"
 namespace Threading
 {
-class ThreadBarrier : public Win360::Win360ThreadBarrier
-{ };
-}
-#elif __PS3__
-#include "threading/ps3/ps3threadbarrier.h"
-namespace Threading
-{
-class ThreadBarrier : public PS3::PS3ThreadBarrier
-{ };
-}
-#elif __WII__
-#include "threading/wii/wiithreadbarrier.h"
-namespace Threading
-{
-class ThreadBarrier : public Wii::WiiThreadBarrier
+class ThreadBarrier : public Win32::Win32ThreadBarrier
 { };
 }
 #elif (linux || __OSX__ || __APPLE__)

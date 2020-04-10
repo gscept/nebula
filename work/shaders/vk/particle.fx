@@ -6,6 +6,7 @@
 #include "lib/std.fxh"
 #include "lib/particles.fxh"
 #include "lib/shared.fxh"
+#include "lib/objects_shared.fxh"
 #include "lib/util.fxh"
 #include "lib/techniques.fxh"
 #include "lib/defaultsamplers.fxh"

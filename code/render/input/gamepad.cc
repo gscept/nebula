@@ -5,12 +5,12 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "input/gamepad.h"
-#if (__OGL4__ || __VULKAN__)
+#if __VULKAN__
 namespace Input
 {
 __ImplementClass(Input::GamePad, 'GMPD', Base::GamePadBase);
 }
-#elif (__DX9__ ||__DX11__ || __XBOX360__||WIN32)
+#elif __WIN32__
 namespace Input
 {
 __ImplementClass(Input::GamePad, 'GMPD', XInput::XInputGamePad);

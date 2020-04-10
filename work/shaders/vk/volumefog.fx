@@ -1,145 +1,351 @@
 //------------------------------------------------------------------------------
 //  volumefog.fx
-//  (C) 2013 Gustav Sterbrant
+//  (C) 2020 Gustav Sterbrant
 //------------------------------------------------------------------------------
-
 #include "lib/std.fxh"
-#include "lib/shared.fxh"
 #include "lib/util.fxh"
-#include "lib/techniques.fxh"
+#include "lib/shared.fxh"
+#include "lib/clustering.fxh"
+#include "lib/lights_clustered.fxh"
+#include "lib/preetham.fxh"
 
-float DepthDensity = 1.0f;
-float AlphaDensity = 0.0f;
-float LayerDistance = 0.0f;
-vec2 Velocity = vec2(0,0);
-vec2 VolumeFogDistances = vec2(0.0f, 50.0f);
-vec4 VolumeFogColor = vec4(0.5f, 0.5f, 0.63f, 0.0f);
+const uint VOLUME_FOG_STEPS = 32;
 
-sampler2D AlbedoMap;
-sampler2D DepthMap;
-
-sampler_state VolumeFogSampler
+struct FogSphere
 {
-	Samplers = { AlbedoMap, DepthMap };
+	vec3 position;
+	float radius;
+	vec3 absorption;
+	float turbidity;
+	float falloff;
 };
 
-render_state VolumeFogState
+struct FogBox
 {
-	CullMode = None;
-	DepthWrite = false;
+	vec3 bboxMin;
+	float falloff;
+	vec3 bboxMax;
+	float turbidity;
+	vec3 absorption;
+	mat4 invTransform;
 };
 
-const vec2 layerVelocities[4] = { 
-									vec2(1.0, 1.0),
-                                    vec2(-0.9, -0.8),
-                                    vec2( 0.8, -0.9),
-                                    vec2(-0.4,  0.5)
-									};
+// increase if we need more decals in close proximity, for now, 128 is more than enough
+#define MAX_FOGS_PER_CLUSTER 128
 
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-SampleTexture(in vec2 uv, in vec4 vertexColor, inout vec4 dstColor)
+group(BATCH_GROUP) rw_buffer FogLists [ string Visibility = "CS"; ]
 {
-    vec4 srcColor = texture(AlbedoMap, uv) * vertexColor;
-    dstColor.rgb = lerp(dstColor.rgb, srcColor.rgb, srcColor.a);
-    dstColor.a += srcColor.a * 0.25;
-}
+	FogSphere FogSpheres[128];
+	FogBox FogBoxes[128];
+};
 
-//------------------------------------------------------------------------------
-/**
-    Compute fogging given a sampled fog intensity value from the depth
-    pass and a fog color.
-*/
-vec4 
-psFog(float fogDepth, vec4 color)
+// contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
+group(BATCH_GROUP) rw_buffer FogIndexLists [ string Visibility = "CS"; ]
 {
-    float fogIntensity = clamp((VolumeFogDistances.y - fogDepth) / (VolumeFogDistances.y - VolumeFogDistances.x), VolumeFogColor.a, 1.0);
-    return vec4(lerp(VolumeFogColor.rgb, color.rgb, fogIntensity), color.a);
-}
+	uint FogSphereCountList[NUM_CLUSTER_ENTRIES];
+	uint FogSphereIndexList[NUM_CLUSTER_ENTRIES * MAX_FOGS_PER_CLUSTER];
+	uint FogBoxCountList[NUM_CLUSTER_ENTRIES];
+	uint FogBoxIndexList[NUM_CLUSTER_ENTRIES * MAX_FOGS_PER_CLUSTER];
+};
 
+// this is used to keep track of how many lights we have active
+group(BATCH_GROUP) constant VolumeFogUniforms [ string Visibility = "CS"; ]
+{
+	int Downscale;
+	uint NumFogSpheres;
+	uint NumFogBoxes;
+	uint NumClusters;
+	vec3 GlobalAbsorption;
+	float GlobalTurbidity;
+};
+
+
+readwrite rgba16f image2D Lighting;
 //------------------------------------------------------------------------------
 /**
 */
+[local_size_x] = 64
 shader
-void
-vsMain(
-	[slot=0] in vec3 position,
-	[slot=1] in vec3 normal,
-	[slot=2] in vec2 uv,
-	[slot=3] in vec3 tangent,
-	[slot=4] in vec3 binormal,
-	[slot=5] in vec4 color,
-	out vec3 ViewSpacePos,
-	out vec4 UVSet1,
-	out vec4 UVSet2,
-	out vec4 Color) 
+void csCull()
 {
-	gl_Position = Projection * View * Model * vec4(position, 1);
-	ViewSpacePos = mat3(View * Model) * position;
-	
-	vec4 worldPos = Model * vec4(position, 1);
-	vec3 worldEyeVec = normalize(EyePos.xyz - worldPos.xyz);
-	vec3 worldNormal = normalize(mat3(Model) * normal);
-	
-	// compute animated uvs
-	vec2 uvs[4];
-	vec2 uvDiff = worldEyeVec.xy * LayerDistance;
-	vec2 uvOffset = -4 * uvDiff;
-	
-	for (int i = 0; i < 4; i++)
+	uint index1D = gl_GlobalInvocationID.x;
+
+	if (index1D > NumClusters)
+		return;
+
+	ClusterAABB aabb = AABBs[index1D];
+
+	uint flags = 0;
+
+	// update fog spheres
+	uint numFogs = 0;
+	for (uint i = 0; i < NumFogSpheres; i++)
 	{
-		uvOffset += uvDiff;
-		uvs[i] = uv + uvOffset + Velocity.xy * TimeAndRandom.x * layerVelocities[i];
+		const FogSphere fog = FogSpheres[i];
+		if (TestAABBSphere(aabb, fog.position, fog.radius))
+		{
+			FogSphereIndexList[index1D * MAX_FOGS_PER_CLUSTER + numFogs] = i;
+			numFogs++;
+		}
 	}
-	
-	UVSet1.xy = uvs[0];
-	UVSet1.zw = uvs[1];
-	UVSet2.xy = uvs[2];
-	UVSet2.zw = uvs[3];
-	
-	Color = color;
-	float dotP = dot(worldNormal, worldEyeVec);
-	Color.a = dotP * dotP;
+	FogSphereCountList[index1D] = numFogs;
+
+	// update feature flags if we have any lights
+	if (numFogs > 0)
+		flags |= CLUSTER_FOG_SPHERE_BIT;
+
+	// update fog boxes
+	numFogs = 0;
+	for (uint i = 0; i < NumFogBoxes; i++)
+	{
+		const FogBox fog = FogBoxes[i];
+		if (TestAABBAABB(aabb, fog.bboxMin, fog.bboxMax))
+		{
+			FogBoxIndexList[index1D * MAX_FOGS_PER_CLUSTER + numFogs] = i;
+			numFogs++;
+		}
+	}
+	FogBoxCountList[index1D] = numFogs;
+
+	// update feature flags if we have any lights
+	if (numFogs > 0)
+		flags |= CLUSTER_FOG_BOX_BIT;
+
+	atomicOr(AABBs[index1D].featureFlags, flags);
 }
-
-
 //------------------------------------------------------------------------------
 /**
 */
-shader
 void
-psMain(in vec3 ViewSpacePos,
-	in vec4 UVSet1,
-	in vec4 UVSet2,
-	in vec4 Color,
-	[color0] out vec4 Result,
-	[color1] out vec4 Unshaded)
+LocalFogVolumes(
+	uint idx
+	, vec3 viewPos
+	, inout float turbidity
+	, inout vec3 absorption)
 {
-	vec2 normalMapPixelSize = GetPixelSize(AlbedoMap);
-	vec2 screenUv = PixelToNormalized(gl_FragCoord.xy, normalMapPixelSize.xy);
-	
-	vec4 dstColor = vec4(0,0,0,0);
-	SampleTexture(UVSet1.xy, Color, dstColor);
-	SampleTexture(UVSet1.zw, Color, dstColor);
-	SampleTexture(UVSet2.xy, Color, dstColor);
-	SampleTexture(UVSet2.zw, Color, dstColor);
-	
-	vec3 viewVec = normalize(ViewSpacePos);
-	float depth = texture(DepthMap, screenUv).r;
-	vec3 surfacePos = viewVec * depth;
-	
-	float depthDiff = ViewSpacePos.z - surfacePos.z;
-	
-	// modulate alpha by depth
-	float modAlpha = saturate(depthDiff * 5.0f) * DepthDensity * AlphaDensity * 2;
-	Result.rgb = dstColor.rgb;
-	Result.a = dstColor.a * modAlpha;
-	Result = psFog(gl_FragCoord.z, Result);
+	uint flag = AABBs[idx].featureFlags;
+	if (CHECK_FLAG(flag, CLUSTER_FOG_SPHERE_BIT))
+	{
+		// add turbidity for local fogs
+		uint count = FogSphereCountList[idx];
+		for (int i = 0; i < count; i++)
+		{
+			uint lidx = FogSphereIndexList[idx * MAX_FOGS_PER_CLUSTER + i];
+			FogSphere fog = FogSpheres[lidx];
+
+			vec3 pos = fog.position - viewPos;
+			float sd = (length(pos) - fog.radius);
+			float falloff = pow(1.0f - sd, fog.falloff);
+
+			if (falloff > fog.falloff)
+			{
+				turbidity += fog.turbidity;
+				absorption *= fog.absorption;
+			}
+		}
+	}
+
+	if (CHECK_FLAG(flag, CLUSTER_FOG_BOX_BIT))
+	{
+		// add turbidity for local fogs
+		uint count = FogBoxCountList[idx];
+		for (int i = 0; i < count; i++)
+		{
+			uint lidx = FogBoxIndexList[idx * MAX_FOGS_PER_CLUSTER + i];
+			FogBox fog = FogBoxes[lidx];
+
+			vec3 localPos = (fog.invTransform * vec4(viewPos, 1.0f)).xyz;
+			vec3 dist = vec3(0.5f) - abs(localPos.xyz);
+			if (all(greaterThan(dist, vec3(0))))
+			{
+				vec3 q = abs(localPos) - vec3(1.0f);
+				float sd = length(max(q, 0.0f)) + min(max(q.x, max(q.y, q.z)), 0.0f);
+				float falloff = pow(1.0f - sd, fog.falloff);
+
+				// todo, calculate distance field
+				if (falloff > fog.falloff)
+				{
+					turbidity += fog.turbidity;
+					absorption *= fog.absorption;
+				}
+			}
+		}
+	}
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3
+LocalLightsFog(
+	uint idx,
+	float globalTurbidity,
+	vec3 globalFogColor,
+	vec3 viewPos,
+	vec3 viewVec)
+{
+	vec3 light = vec3(0, 0, 0);
+	uint flag = AABBs[idx].featureFlags;
+	if (CHECK_FLAG(flag, CLUSTER_POINTLIGHT_BIT))
+	{
+		// shade point lights
+		uint count = PointLightCountList[idx];
+		for (int i = 0; i < count; i++)
+		{
+			uint lidx = PointLightIndexList[idx * MAX_LIGHTS_PER_CLUSTER + i];
+			PointLight li = PointLights[lidx];
+			
+			vec3 lightDir = (li.position.xyz - viewPos);
+
+			float lightDirLen = length(lightDir);
+			float d2 = lightDirLen * lightDirLen;
+			float factor = d2 / (li.position.w * li.position.w);
+			float sf = saturate(1.0 - factor * factor);
+			float att = (sf * sf) / max(d2, 0.0001);
+			light += li.color * att * globalTurbidity * globalFogColor;
+		}
+	}
+	if (CHECK_FLAG(flag, CLUSTER_SPOTLIGHT_BIT))
+	{
+		uint count = SpotLightCountList[idx];
+		for (int i = 0; i < count; i++)
+		{
+			uint lidx = SpotLightIndexList[idx * MAX_LIGHTS_PER_CLUSTER + i];
+			SpotLightShadowExtension shadowExt;
+			SpotLight li = SpotLights[lidx];
+
+			if (li.shadowExtension != -1)
+				shadowExt = SpotLightShadow[li.shadowExtension];
+
+			// calculate attentuation and angle falloff, and just multiply by color
+			vec3 lightDir = (li.position.xyz - viewPos);
+
+			float lightDirLen = length(lightDir);
+			float d2 = lightDirLen * lightDirLen;
+			float factor = d2 / (li.position.w * li.position.w);
+			float sf = saturate(1.0 - factor * factor);
+
+			float att = (sf * sf) / max(d2, 0.0001);
+
+			lightDir = lightDir * (1 / lightDirLen);
+
+			float theta = dot(li.forward.xyz, lightDir);
+			float intensity = saturate((theta - li.angleSinCos.y) * li.forward.w);
+
+			float shadowFactor = 1.0f;
+			if (FlagSet(li.flags, USE_SHADOW_BITFLAG))
+			{
+				// shadows
+				vec4 shadowProjLightPos = shadowExt.projection * vec4(viewPos, 1.0f);
+				shadowProjLightPos.xyz /= shadowProjLightPos.www;
+				vec2 shadowLookup = shadowProjLightPos.xy * vec2(0.5f, -0.5f) + 0.5f;
+				shadowLookup.y = 1 - shadowLookup.y;
+				float receiverDepth = shadowProjLightPos.z;
+				shadowFactor = GetInvertedOcclusionSpotLight(receiverDepth, shadowLookup, li.shadowExtension, shadowExt.shadowMap);
+				shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), shadowExt.shadowIntensity));
+			}
+
+			light += intensity * att * li.color * shadowFactor * globalTurbidity * globalFogColor;
+		}
+	}
+	return light;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-SimpleTechnique(Default, "Static", vsMain(), psMain(), VolumeFogState);
+vec3
+GlobalLightFog(vec3 viewPos, float turbidity, vec3 absorption)
+{
+	float shadowFactor = 1.0f;
+	if (FlagSet(GlobalLightFlags, USE_SHADOW_BITFLAG))
+	{
+		vec4 shadowPos = CSMShadowMatrix * vec4(viewPos, 1); // csm contains inversed view + csm transform
+		shadowFactor = CSMPS(shadowPos, GlobalLightShadowBuffer);
+		shadowFactor = lerp(1.0f, shadowFactor, 1);
+	}
+
+	// calculate 'global' fog
+	vec3 atmo = Preetham(normalize(viewPos), -GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * GlobalLightColor.rgb;
+	return atmo * shadowFactor * absorption * turbidity;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+[local_size_x] = 64
+shader
+void csRender()
+{
+	vec2 coord = vec2(gl_GlobalInvocationID.xy);
+	ivec2 upscaleCoord = ivec2(gl_GlobalInvocationID.xy * Downscale);
+	float depth = fetch2D(DepthBuffer, PosteffectUpscaleSampler, upscaleCoord, 0).r;
+	vec2 seed = coord * InvFramebufferDimensions;
+
+	// find last point to march
+	vec4 viewPos = PixelToView(seed, depth);
+	vec3 eye = vec3(0, 0, 0);
+
+	// construct a ray, beginning at eye and going from eye through worldPoint
+	vec3 rayStart = eye;
+	vec3 rayDirection = normalize(viewPos.xyz - eye);
+
+	const float oneDivFogSteps = 1 / float(VOLUME_FOG_STEPS);
+
+	// ray march!
+	vec3 light = vec3(0, 0, 0);
+	uint numSteps = 0;
+	vec3 rnd = vec3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
+	float stepSize = (viewPos.z - (rnd.z + rnd.x + rnd.y))  / VOLUME_FOG_STEPS;
+	vec3 rayOffset = vec3(0, 0, 0);
+	
+	for (int i = 0; i < VOLUME_FOG_STEPS; i++)
+	{
+		// construct sample position
+		vec3 samplePos = rayStart - rayOffset;
+
+		// offset ray offset with some noise
+		rayOffset += stepSize * (rayDirection);
+		if (viewPos.z > samplePos.z)
+		{
+			break;
+		}
+
+		// calculate cluster index
+		uint3 index3D = CalculateClusterIndex(upscaleCoord / BlockSize, samplePos.z, InvZScale, InvZBias);
+		uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
+
+		// sample local fog volumes
+		float localTurbidity = 0.0f;
+		vec3 localAbsorption = vec3(1,1,1);
+		LocalFogVolumes(idx, samplePos, localTurbidity, localAbsorption);
+
+		float turbidity = GlobalTurbidity + localTurbidity;
+		vec3 absorption = GlobalAbsorption * localAbsorption;
+
+		float weight = length(rayOffset) / -viewPos.z;
+		light += GlobalLightFog(samplePos, turbidity, absorption) * weight;
+		light += LocalLightsFog(idx, turbidity, absorption, samplePos, rayDirection) * weight;
+		numSteps++;
+	}
+	light /= numSteps;
+	//light = min(light, vec3(100));
+	imageStore(Lighting, ivec2(coord), light.xyzx);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+program Cull [ string Mask = "Cull"; ]
+{
+	ComputeShader = csCull();
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+program Render [ string Mask = "Render"; ]
+{
+	ComputeShader = csRender();
+};

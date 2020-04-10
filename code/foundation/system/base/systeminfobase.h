@@ -20,10 +20,7 @@ public:
     enum Platform
     {
         Win32,
-        Xbox360,
-        Wii,
-        PS3,
-	Linux,
+        Linux,
         
         UnknownPlatform,        
     };
@@ -33,10 +30,7 @@ public:
     {
         X86_32,             // any 32-bit x86
         X86_64,             // any 64-bit x86
-        PowerPC_Xbox360,    // Xbox 360 CPU
-        PowerPC_PS3,        // PS3 Cell CPU
-        PowerPC_Wii,        // Wii CPU
-
+        
         UnknownCpuType,
     };
 

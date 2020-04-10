@@ -6,7 +6,6 @@
 #include "foundation/stdneb.h"
 #include "messaging/delegatetable.h"
 
-#if !(__WII__ || __PS3__)
 namespace Messaging
 {
 using namespace Util;
@@ -58,4 +57,3 @@ DelegateTable::Invoke(const Ptr<Message>& msg)
 }
 
 } // namespace Messaging
-#endif

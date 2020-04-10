@@ -91,7 +91,6 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 		n_assert(res == VK_SUCCESS);
 	}
 	
-
 #if NEBULA_GRAPHICS_DEBUG
 	ObjectSetName(ret, info.name.Value());
 #endif

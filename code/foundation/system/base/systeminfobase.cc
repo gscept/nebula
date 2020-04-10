@@ -46,9 +46,6 @@ SystemInfoBase::CpuTypeAsString(CpuType c)
     {
         case X86_32:            return "x86_32";
         case X86_64:            return "x86_64";
-        case PowerPC_Xbox360:   return "powerpc_xbox360";
-        case PowerPC_PS3:       return "powerpc_ps3";
-        case PowerPC_Wii:       return "powerpc_wii";
         default:                return "unknowncputype";
     }
 }

@@ -16,7 +16,7 @@ using namespace Util;
     Convert a RootKey value into a Win32 key handle.
 */
 HKEY
-Win32Registry::RootKeyToWin32KeyHandle(RootKey rootKey)
+Win32Registry::RootKeyToWinKeyHandle(RootKey rootKey)
 {
     switch (rootKey)
     {
@@ -40,7 +40,7 @@ bool
 Win32Registry::Exists(RootKey rootKey, const String& key, const String& name)
 {
     n_assert(key.IsValid());
-    HKEY win32RootKey = RootKeyToWin32KeyHandle(rootKey);
+    HKEY win32RootKey = RootKeyToWinKeyHandle(rootKey);
     HKEY hKey = 0;
     LONG res = RegOpenKeyEx(win32RootKey,       // hKey
                             key.AsCharPtr(),    // lpSubKey
@@ -96,7 +96,7 @@ Win32Registry::WriteString(RootKey rootKey, const String& key, const String& nam
     n_assert(key.IsValid());
     n_assert(name.IsValid());
 
-    HKEY win32RootKey = RootKeyToWin32KeyHandle(rootKey);
+    HKEY win32RootKey = RootKeyToWinKeyHandle(rootKey);
     HKEY hKey = 0;
     LONG res = RegCreateKeyEx(win32RootKey,     // hKey
                               key.AsCharPtr(),  // lpSubKey
@@ -149,7 +149,7 @@ String
 Win32Registry::ReadString(RootKey rootKey, const String& key, const String& name)
 {
     n_assert(key.IsValid());
-    HKEY win32RootKey = RootKeyToWin32KeyHandle(rootKey);
+    HKEY win32RootKey = RootKeyToWinKeyHandle(rootKey);
     HKEY hKey = 0;
     LONG res = RegOpenKeyEx(win32RootKey,       // hKey
                             key.AsCharPtr(),    // lpSubKey
@@ -211,7 +211,7 @@ int
 Win32Registry::ReadInt(RootKey rootKey, const String& key, const String& name)
 {
     n_assert(key.IsValid());
-    HKEY win32RootKey = RootKeyToWin32KeyHandle(rootKey);
+    HKEY win32RootKey = RootKeyToWinKeyHandle(rootKey);
     HKEY hKey = 0;
     LONG res = RegOpenKeyEx(win32RootKey,       // hKey
                             key.AsCharPtr(),    // lpSubKey
@@ -244,7 +244,7 @@ bool
 Win32Registry::Delete(RootKey rootKey, const String& key)
 {
     n_assert(key.IsValid());
-    HKEY win32RootKey = RootKeyToWin32KeyHandle(rootKey);
+    HKEY win32RootKey = RootKeyToWinKeyHandle(rootKey);
     LONG res = RegDeleteKey(win32RootKey,       // hKey
                             key.AsCharPtr());   // lpSubKey
     return (ERROR_SUCCESS == res);

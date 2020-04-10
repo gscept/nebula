@@ -116,7 +116,7 @@
 			},
 			{
 				name: "BloomBuffer",
-				format: "R11G11B10F",
+				format: "R16G16B16A16F",
 				relative: true,
 				usage: "Render|Copy",
 				width: 0.5,
@@ -125,12 +125,11 @@
 			},
 			{
 				name: "BloomBufferBlurred",
-				format: "R11G11B10F",
+				format: "R16G16B16A16F",
 				relative: true,
 				usage: "ReadWrite|Copy",
 				width: 0.25,
 				height: 0.25,
-				mips: "auto",
 				type: "Texture2D"
 			},
 			{
@@ -158,6 +157,24 @@
 				usage: "ReadWrite",
 				width: 0.5,
 				height: 0.5,
+				type: "Texture2D"
+			},
+			{
+				name: "VolumetricFogBuffer0",
+				format: "R16G16B16A16F",
+				relative: true,
+				usage: "ReadWrite",
+				width: 0.25,
+				height: 0.25,
+				type: "Texture2D"
+			},
+			{
+				name: "VolumetricFogBuffer1",
+				format: "R16G16B16A16F",
+				relative: true,
+				usage: "ReadWrite",
+				width: 0.25,
+				height: 0.25,
 				type: "Texture2D"
 			},
 			{
@@ -260,12 +277,17 @@
 			name: "ClusterContext - Update Clusters"
 		}
 
+		_comment: "Run unified clustering subsystems"
 		plugin: {
 			name: "LightContext - Cull and Classify"
 		}
 
 		plugin: {
 			name: "DecalContext - Cull and Classify"
+		}
+
+		plugin: {
+			name: "VolumetricFogContext - Cull and Classify"
 		}
 
 		end_submission: {
@@ -499,6 +521,26 @@
 					stage: "ComputeShader"
 				}
 			]
+		},
+
+		plugin: {
+			name: "VolumetricFogContext - Render",
+			inputs: [
+				{
+					name: "ZBuffer",
+					access: "ShaderRead",
+					layout: "DepthStencilRead",
+					stage: "ComputeShader"
+				},
+			]
+			outputs: [
+				{
+					name: "VolumetricFogBuffer0",
+					access: "ShaderWrite",
+					layout: "General",
+					stage: "ComputeShader"
+				},
+			]
 		}
 
 		_comment: "------------ Screen-Space Raytracing Color Resolve ------------",
@@ -539,6 +581,32 @@
 				}
 			]
 		},
+
+		plugin: {
+			name: "LightContext - Combine",
+			inputs: [
+				{
+					name: "ReflectionBuffer",
+					access: "ShaderRead",
+					layout: "ShaderRead",
+					stage: "ComputeShader"
+				},
+				{
+					name: "VolumetricFogBuffer0",
+					access: "ShaderRead",
+					layout: "ShaderRead",
+					stage: "ComputeShader"
+				}
+			],
+			outputs: [
+				{
+					name: "LightBuffer",
+					access: "ShaderWrite",
+					layout: "General",
+					stage: "ComputeShader"
+				}
+			]
+		}
 
 		_comment: "------------ BLOOM ------------",
 		pass: {

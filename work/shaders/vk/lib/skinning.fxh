@@ -6,6 +6,7 @@
 #ifndef SKINNING_FXH
 #define SKINNING_FXH
 #include "lib/shared.fxh"
+#include "lib/objects_shared.fxh"
 
 sampler2D JointInstanceTexture;
 

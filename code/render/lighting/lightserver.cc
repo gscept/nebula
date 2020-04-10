@@ -8,18 +8,8 @@
 
 namespace Lighting
 {
-#if __XBOX360__
-__ImplementClass(Lighting::LightServer, 'LISV', Lighting::LightPrePassServer);
-#elif __WII__
-__ImplementClass(Lighting::LightServer, 'LISV', Wii::WiiLightServer);
-#elif __VULKAN__
+#if __VULKAN__
 __ImplementClass(Lighting::LightServer, 'LISV', Lighting::VkLightServer);
-#elif __OGL4__
-__ImplementClass(Lighting::LightServer, 'LISV', Lighting::OGL4LightServer);
-#elif __DX11__
-__ImplementClass(Lighting::LightServer, 'LISV', Lighting::D3D11LightServer);
-#elif __DX9__
-__ImplementClass(Lighting::LightServer, 'LISV', Lighting::LightPrePassServer);
 #else
 #error "LightServer class not implemented on this platform!"
 #endif

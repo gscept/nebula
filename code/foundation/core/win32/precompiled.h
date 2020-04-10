@@ -3,7 +3,7 @@
 /**
     @file core/win32/precompiled.h
     
-    Contains precompiled headers on the Win32 platform.
+    Contains precompiled headers on the Win platform.
     
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file

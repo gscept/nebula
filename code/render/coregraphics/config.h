@@ -214,34 +214,7 @@ QueueNameFromQueueType(const QueueType type)
 #endif
 
 //------------------------------------------------------------------------------
-#if __DX11__ || __DX9__
-    #if __DX11__
-        #define SHADER_MODEL_5 (1)
-    #endif
-	#define COREGRAPHICS_PIXEL_CENTER_HALF_PIXEL (1)
-	#define COREGRAPHICS_TRIANGLE_FRONT_FACE_CCW (1)
-
-	#define NEBULA_USEDIRECT3D9 (1)
-	#define NEBULA_USEDIRECT3D10 (0)
-
-	#define NEBULA_DIRECT3D_USENVPERFHUD (0)
-	#define NEBULA_DIRECT3D_DEBUG (0)
-
-	#if NEBULA_DIRECT3D_USENVPERFHUD
-	#define NEBULA_DIRECT3D_DEVICETYPE D3DDEVTYPE_REF
-	#else
-	#define NEBULA_DIRECT3D_DEVICETYPE D3DDEVTYPE_HAL
-	#endif
-	
-#elif __OGL4__
-    #define SHADER_MODEL_5 (1)
-    #ifdef _DEBUG
-	    #define NEBULA_OPENGL4_DEBUG (1)
-    #else
-        #define	NEBULA_OPENGL4_DEBUG (0)
-    #endif
-	#define PROJECTION_HANDEDNESS_LH (1)
-#elif __VULKAN__
+#if __VULKAN__
 	#define COREGRAPHICS_TRIANGLE_FRONT_FACE_CCW (1)
 	// define the same descriptor set slots as we do in the shaders
 	#define NEBULA_TICK_GROUP 0				// set per tick (once for all views) by the system

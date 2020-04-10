@@ -7,11 +7,7 @@
 #include "instancing/instanceserver.h"
 namespace Instancing
 {
-#if __DX11__
-__ImplementClass(Instancing::InstanceServer, 'INSR', Instancing::D3D11InstanceServer);
-#elif __OGL4__
-__ImplementClass(Instancing::InstanceServer, 'INSR', Instancing::OGL4InstanceServer);
-#elif __VULKAN__
+#if __VULKAN__
 __ImplementClass(Instancing::InstanceServer, 'INSR', Vulkan::VkInstanceServer);
 #else
 #error "InstanceServer class not implemented on this platform!"

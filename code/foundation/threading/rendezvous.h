@@ -9,22 +9,11 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
-#if (__WIN32__ || __XBOX360__)
-#include "threading/win360/win360rendezvous.h"
+#if (__WIN32__)
+#include "threading/win32/win32rendezvous.h"
 namespace Threading
 {
-class Rendezvous : public Win360::Win360Rendezvous
-{ };
-}
-#elif __PS3__
-#error "Threading::Rendezvous not yet implemented on PS3!"
-#elif __WII__
-#error "Threading::Rendezvous not yet implemented on Wii!"
-#eluf __ALCHEMY__
-#include "threading/alchemy/alchemyrendezvous.h"
-namespace Threading
-{
-class Rendezvous : public Alchemy::AlchemyRendezvous
+class Rendezvous : public Win32::Win32Rendezvous
 { };
 }
 #elif __OSX__

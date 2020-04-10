@@ -8,12 +8,8 @@
 
 namespace Threading
 {
-#if (__WIN32__ || __XBOX360__)
-__ImplementClass(Threading::Thread, 'TRED', Win360::Win360Thread);
-#elif __WII__
-__ImplementClass(Threading::Thread, 'TRED', Wii::WiiThread);
-#elif __PS3__
-__ImplementClass(Threading::Thread, 'TRED', PS3::PS3Thread);
+#if __WIN32__
+__ImplementClass(Threading::Thread, 'TRED', Win32::Win32Thread);
 #elif __OSX__
 __ImplementClass(Threading::Thread, 'TRED', OSX::OSXThread);
 #elif __linux__

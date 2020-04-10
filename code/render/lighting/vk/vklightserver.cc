@@ -414,12 +414,10 @@ VkLightServer::RenderGlobalLight()
 		{
 			Ptr<CoreGraphics::Texture> CSMTexture = ShadowServer::Instance()->GetGlobalLightShadowBufferTexture();
 			float CSMBufferWidth = (CSMTexture->GetWidth() / (float)ShadowServerBase::SplitsPerRow);
-#if __DX11__
+#if __DX12__
 			matrix44 textureScale = matrix44::scaling(0.5f, -0.5f, 1.0f);
 #elif __VULKAN__
 			matrix44 textureScale = matrix44::scaling(0.5f, -1.0f, 1.0f);
-#elif __OGL4__
-			matrix44 textureScale = matrix44::scaling(0.5f, 0.5f, 1.0f);
 #endif
 			matrix44 textureTranslation = matrix44::translation(0.5f, 0.5f, 0);
 			const float* CSMDistances = ShadowServer::Instance()->GetSplitDistances();

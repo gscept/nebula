@@ -33,10 +33,10 @@ struct
 	CoreGraphics::ConstantBufferId clusterPointDecals;
 	CoreGraphics::ConstantBufferId clusterSpotDecals;
 
+	IndexT clusterUniformsSlot;
 	IndexT uniformsSlot;
-	IndexT cullUniformsSlot;
 
-	Util::FixedArray<CoreGraphics::ResourceTableId> clusterResourceTables;
+	Util::FixedArray<CoreGraphics::ResourceTableId> resourceTables;
 
 	// these are used to update the light clustering
 	DecalsCluster::PBRDecal pbrDecals[256];
@@ -88,11 +88,13 @@ DecalContext::Create()
 
 	using namespace CoreGraphics;
 	decalState.classificationShader = ShaderServer::Instance()->GetShader("shd:decals_cluster.fxb");
+
 	IndexT decalIndexListsSlot = ShaderGetResourceSlot(decalState.classificationShader, "DecalIndexLists");
 	IndexT decalListSlot = ShaderGetResourceSlot(decalState.classificationShader, "DecalLists");
+
 	IndexT clusterAABBSlot = ShaderGetResourceSlot(decalState.classificationShader, "ClusterAABBs");
-	decalState.uniformsSlot = ShaderGetResourceSlot(decalState.classificationShader, "ClusterUniforms");
-	decalState.cullUniformsSlot = ShaderGetResourceSlot(decalState.classificationShader, "DecalCullUniforms");
+	decalState.clusterUniformsSlot = ShaderGetResourceSlot(decalState.classificationShader, "ClusterUniforms");
+	decalState.uniformsSlot = ShaderGetResourceSlot(decalState.classificationShader, "DecalUniforms");
 
 	decalState.cullProgram = ShaderGetProgram(decalState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Cull"));
 	decalState.renderPBRProgram = ShaderGetProgram(decalState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("RenderPBR"));
@@ -100,7 +102,6 @@ DecalContext::Create()
 #ifdef CLUSTERED_DECAL_DEBUG
 	decalState.debugProgram = ShaderGetProgram(decalState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Debug"));
 #endif
-	decalState.stagingClusterDecalsList.Resize(CoreGraphics::GetNumBufferedFrames());
 
 	DisplayMode mode = WindowGetDisplayMode(DisplayDevice::Instance()->GetCurrentWindow());
 	decalState.fsq.Setup(mode.GetWidth(), mode.GetHeight());
@@ -119,21 +120,21 @@ DecalContext::Create()
 	decalState.clusterDecalsList = CreateShaderRWBuffer(rwbInfo);
 
 	rwbInfo.mode = BufferUpdateMode::HostWriteable;
-	decalState.clusterResourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
+	decalState.resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
 	decalState.stagingClusterDecalsList.Resize(CoreGraphics::GetNumBufferedFrames());
 
-	for (IndexT i = 0; i < decalState.clusterResourceTables.Size(); i++)
+	for (IndexT i = 0; i < decalState.resourceTables.Size(); i++)
 	{
-		decalState.clusterResourceTables[i] = ShaderCreateResourceTable(decalState.classificationShader, NEBULA_BATCH_GROUP);
+		decalState.resourceTables[i] = ShaderCreateResourceTable(decalState.classificationShader, NEBULA_BATCH_GROUP);
 		decalState.stagingClusterDecalsList[i] = CreateShaderRWBuffer(rwbInfo);
 
 		// update resource table
-		ResourceTableSetRWBuffer(decalState.clusterResourceTables[i], { decalState.clusterDecalIndexLists, decalIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-		ResourceTableSetRWBuffer(decalState.clusterResourceTables[i], { Clustering::ClusterContext::GetClusterBuffer(), clusterAABBSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-		ResourceTableSetRWBuffer(decalState.clusterResourceTables[i], { decalState.clusterDecalsList, decalListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-		ResourceTableSetConstantBuffer(decalState.clusterResourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), decalState.uniformsSlot, 0, false, false, sizeof(DecalsCluster::ClusterUniforms), 0 });
-		ResourceTableSetConstantBuffer(decalState.clusterResourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), decalState.cullUniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalCullUniforms), 0 });
-		ResourceTableCommitChanges(decalState.clusterResourceTables[i]);
+		ResourceTableSetRWBuffer(decalState.resourceTables[i], { decalState.clusterDecalIndexLists, decalIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+		ResourceTableSetRWBuffer(decalState.resourceTables[i], { decalState.clusterDecalsList, decalListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+		ResourceTableSetRWBuffer(decalState.resourceTables[i], { Clustering::ClusterContext::GetClusterBuffer(), clusterAABBSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+		ResourceTableSetConstantBuffer(decalState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), decalState.clusterUniformsSlot, 0, false, false, sizeof(DecalsCluster::ClusterUniforms), 0 });
+		ResourceTableSetConstantBuffer(decalState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), decalState.uniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalUniforms), 0 });
+		ResourceTableCommitChanges(decalState.resourceTables[i]);
 	}
 
 	_CreateContext();
@@ -314,7 +315,7 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 	const CoreGraphics::TextureId depthTex = view->GetFrameScript()->GetTexture("ZBuffer");
 
 	// setup uniforms
-	DecalsCluster::DecalCullUniforms decalUniforms;
+	DecalsCluster::DecalUniforms decalUniforms;
 	decalUniforms.NumClusters = Clustering::ClusterContext::GetNumClusters();
 	decalUniforms.NumPBRDecals = numPbrDecals;
 	decalUniforms.NumEmissiveDecals = numEmissiveDecals;
@@ -324,11 +325,11 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 	IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
 	uint offset = SetComputeConstants(MainThreadConstantBuffer, decalUniforms);
-	ResourceTableSetConstantBuffer(decalState.clusterResourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), decalState.cullUniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalCullUniforms), (SizeT)offset });
+	ResourceTableSetConstantBuffer(decalState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), decalState.uniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalUniforms), (SizeT)offset });
 
 	ClusterGenerate::ClusterUniforms clusterUniforms = Clustering::ClusterContext::GetUniforms();
 	offset = SetComputeConstants(MainThreadConstantBuffer, clusterUniforms);
-	ResourceTableSetConstantBuffer(decalState.clusterResourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), decalState.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), (SizeT)offset });
+	ResourceTableSetConstantBuffer(decalState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), decalState.clusterUniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), (SizeT)offset });
 
 	// update list of point lights
 	if (numPbrDecals > 0 || numEmissiveDecals > 0)
@@ -339,8 +340,7 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 		CoreGraphics::ShaderRWBufferUpdate(decalState.stagingClusterDecalsList[bufferIndex], &decalList, sizeof(DecalsCluster::DecalLists));
 	}
 
-
-	ResourceTableCommitChanges(decalState.clusterResourceTables[bufferIndex]);
+	ResourceTableCommitChanges(decalState.resourceTables[bufferIndex]);
 }
 
 //------------------------------------------------------------------------------
@@ -404,7 +404,7 @@ DecalContext::CullAndClassify()
 			BufferBarrier
 			{
 				decalState.clusterDecalsList,
-				BarrierAccess::ShaderWrite,
+				BarrierAccess::ShaderRead,
 				BarrierAccess::TransferWrite,
 				0, NEBULA_WHOLE_BUFFER_SIZE
 			},
@@ -420,13 +420,13 @@ DecalContext::CullAndClassify()
 			{
 				decalState.clusterDecalsList,
 				BarrierAccess::TransferWrite,
-				BarrierAccess::ShaderWrite,
+				BarrierAccess::ShaderRead,
 				0, NEBULA_WHOLE_BUFFER_SIZE
 			},
 		}, "Decals data upload");
 
 	// begin command buffer work
-	CommandBufferBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "DecalsY cluster culling");
+	CommandBufferBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Decals cluster culling");
 
 	// make sure to sync so we don't read from data that is being written...
 	BarrierInsert(ComputeQueueType,
@@ -445,7 +445,7 @@ DecalContext::CullAndClassify()
 		}, "Decals cluster culling begin");
 
 	SetShaderProgram(decalState.cullProgram, ComputeQueueType);
-	SetResourceTable(decalState.clusterResourceTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr, ComputeQueueType);
+	SetResourceTable(decalState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr, ComputeQueueType);
 
 	// run chunks of 1024 threads at a time
 	std::array<SizeT, 3> dimensions = Clustering::ClusterContext::GetClusterDimensions();
@@ -485,7 +485,7 @@ DecalContext::RenderPBR()
 	BeginBatch(Frame::FrameBatchType::System);
 
 	// set resources and draw
-	SetResourceTable(decalState.clusterResourceTables[bufferIndex], NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
+	SetResourceTable(decalState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 	SetShaderProgram(decalState.renderPBRProgram);
 	decalState.fsq.ApplyMesh();
 	Draw();
@@ -509,7 +509,7 @@ DecalContext::RenderEmissive()
 	BeginBatch(Frame::FrameBatchType::System);
 
 	// set resources and draw
-	SetResourceTable(decalState.clusterResourceTables[bufferIndex], NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
+	SetResourceTable(decalState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 	SetShaderProgram(decalState.renderEmissiveProgram);
 	decalState.fsq.ApplyMesh();
 	SetGraphicsPipeline();

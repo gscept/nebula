@@ -75,4 +75,4 @@ HttpClient::GetUserAgent() const
 
 } // namespace Http
 //------------------------------------------------------------------------------
-#endif // __WII__
+#endif
