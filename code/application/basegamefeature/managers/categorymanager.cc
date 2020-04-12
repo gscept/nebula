@@ -123,7 +123,7 @@ CategoryManager::OnEndFrame()
 		// Now, defragment the table. Any instances that has been deleted will be swap'n'popped,
 		// which means we need to update the entity mapping.
 		// The move callback is signaled BEFORE the swap has happened.
-		SizeT numErased = db->Defragment(cat.instanceTable, [this, &ownerColumnId, &table](InstanceId from, InstanceId to)
+		SizeT numErased = db->Defragment(cat.instanceTable, [this, cat, &ownerColumnId, &table](InstanceId from, InstanceId to)
 		{
 			Game::Entity fromEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[from.id].id;
 			Game::Entity toEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[to.id].id;
@@ -138,6 +138,15 @@ CategoryManager::OnEndFrame()
 			{
 				this->entityMap[Ids::Index(fromEntity.id)].instance = to;
 				this->entityMap[Ids::Index(to.id)].instance = from;
+
+				// Let the properties react to any moved instances.
+				// TODO: this might be really expensive... We should consider letting each property register
+				//       a callback for this instead, just to not waste time on empty function calls
+				for (auto const& prop : cat.properties)
+				{
+					for (IndexT id : table.freeIds)
+						prop->OnInstanceMoved(from, to);
+				}
 			}
 		});
 	}
