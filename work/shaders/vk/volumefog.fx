@@ -369,7 +369,7 @@ void csRender()
 		LocalFogVolumes(idx, samplePos, localTurbidity, localAbsorption);
 
 		// local turbidity is the result of our volumes + global turbidity increment
-		localTurbidity += globalTurbidity;
+		localTurbidity = localTurbidity * oneDivFogSteps + globalTurbidity * oneDivFogSteps;
 
 		// calculate the total turbidity, required for Tr(x, xt)
 		totalTurbidity += localTurbidity;
