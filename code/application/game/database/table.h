@@ -45,13 +45,13 @@ struct Table
 
     Util::StringAtom name;
 
-    Util::ArrayAllocator<Column, ColumnBuffer> columns;
     uint32_t numRows = 0;
     uint32_t capacity = 128;
     uint32_t grow = 128;
     // Holds freed indices to be reused in the attribute table.
     Util::Array<IndexT> freeIds;
 
+    Util::ArrayAllocator<Column, ColumnBuffer> columns;
     Util::ArrayAllocator<StateDescription, ColumnBuffer> states;
 
     static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::ObjectArrayHeap;

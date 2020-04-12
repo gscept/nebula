@@ -35,7 +35,7 @@ public:
     virtual void OnRenderDebug() {};
     virtual void OnLoad() {};
     virtual void OnSave() {};
-    virtual void OnInstanceMoved() {};
+    virtual void OnInstanceMoved(InstanceId from, InstanceId to) {};
 
 protected:
     friend class CategoryManager;
