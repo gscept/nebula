@@ -24,8 +24,6 @@ __DeclareAttribute(Owner, AccessMode::ReadOnly, Game::Entity, 'OWNR', Game::Enti
 namespace Game
 {
 
-void DeleteEntity(const Entity& e);
-
 struct FilterSet
 {
 	/// categories must include all attributes in this array
@@ -46,7 +44,15 @@ public:
 		// empty
 	}
 
-	Util::Array<CategoryId> const& GetCategoryIds() const
+	/// A view into a category table.
+	struct CategoryView
+	{
+		CategoryId cid;
+		SizeT numInstances = 0;
+		void const* buffers[64];
+	};
+
+	Util::Array<CategoryView> const& GetCategories() const
 	{
 		return this->categories;
 	}
@@ -58,8 +64,9 @@ public:
 
 private:
 	friend class EntityManager;
-	Util::Array<CategoryId> categories;
 	FilterSet filter;
+	/// Category attributes will be in the same order as in the filterset
+	Util::Array<CategoryView> categories;
 };
 
 class EntityManager : public Game::Manager

@@ -145,16 +145,6 @@ EntityManager::DeregisterDeletionCallback(const Entity & e, Util::Delegate<void(
 //------------------------------------------------------------------------------
 /**
 */
-void
-DeleteEntity(const Entity& e)
-{
-	Game::EntityManager::Instance()->DeleteEntity(e);
-}
-
-
-//------------------------------------------------------------------------------
-/**
-*/
 Dataset
 EntityManager::Query(FilterSet const& filterset)
 {
@@ -191,7 +181,28 @@ EntityManager::Query(FilterSet const& filterset)
 
 		if (valid)
 		{
-			set.categories.Append(cid);
+			//Util::FixedArray<void*> buffers;
+			//buffers.Resize(filterset.inclusive.Size());
+			void* buffers[64];
+
+			Ptr<Game::Db::Database> db = Game::EntityManager::Instance()->GetWorldDatabase();
+			Db::TableId tid = CategoryManager::Instance()->GetCategory(cid).instanceTable;
+			auto const& tbl = db->GetTable(tid);
+
+			IndexT i = 0;
+			for (auto attrid : filterset.inclusive)
+			{
+				Db::ColumnId colId = db->GetColumnId(tid, attrid);
+				buffers[i++] = tbl.columns.Get<1>(colId.id);//attrid.GetCategoryTable()->ValueAtIndex(cid)[cid];
+			}
+
+			Dataset::CategoryView const view = {
+				cid,
+				GetNumInstances(cid),
+				std::move(buffers)
+			};
+
+			set.categories.Append(std::move(view));
 		}
 	}
 
