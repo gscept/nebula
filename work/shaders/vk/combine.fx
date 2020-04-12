@@ -28,7 +28,9 @@ void csCombine()
 	vec4 reflections = texture(sampler2D(Reflections, PosteffectUpscaleSampler), coord);
 	vec4 light = imageLoad(Lighting, fullscaleCoord);
 
-	imageStore(Lighting, fullscaleCoord, fog + light);
+	//vec4 res = vec4(mix(light.rgb, fog.rgb, fog.a), 1);
+	vec3 res = light.rgb * fog.a + fog.rgb;
+	imageStore(Lighting, fullscaleCoord, vec4(res, 1) + reflections);
 }
 
 //------------------------------------------------------------------------------

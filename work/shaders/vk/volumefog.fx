@@ -139,7 +139,7 @@ LocalFogVolumes(
 
 			if (falloff > fog.falloff)
 			{
-				turbidity = max(turbidity, fog.turbidity);
+				turbidity += fog.turbidity;
 				absorption *= fog.absorption;
 			}
 		}
@@ -165,7 +165,7 @@ LocalFogVolumes(
 				// todo, calculate distance field
 				if (falloff > fog.falloff)
 				{
-					turbidity = max(turbidity, fog.turbidity);
+					turbidity += fog.turbidity;
 					absorption *= fog.absorption;
 				}
 			}
@@ -180,8 +180,6 @@ LocalFogVolumes(
 vec3
 LocalLightsFog(
 	uint idx,
-	float turbidity,
-	vec3 absorption,
 	vec3 viewPos,
 	vec3 viewVec)
 {
@@ -203,7 +201,7 @@ LocalLightsFog(
 			float factor = d2 / (li.position.w * li.position.w);
 			float sf = saturate(1.0 - factor * factor);
 			float att = (sf * sf) / max(d2, 0.0001);
-			light += li.color * att * absorption * turbidity;
+			light += li.color * att;
 		}
 	}
 	if (CHECK_FLAG(flag, CLUSTER_SPOTLIGHT_BIT))
@@ -224,7 +222,7 @@ LocalLightsFog(
 			float lightDirLen = length(lightDir);
 			float d2 = lightDirLen * lightDirLen;
 			float factor = d2 / (li.position.w * li.position.w);
-			float sf = saturate(1.0 - factor * factor) * turbidity;
+			float sf = saturate(1.0 - factor * factor);
 
 			float att = (sf * sf) / max(d2, 0.0001);
 
@@ -246,7 +244,7 @@ LocalLightsFog(
 				shadowFactor = saturate(lerp(1.0f, saturate(shadowFactor), shadowExt.shadowIntensity));
 			}
 
-			light += intensity * att * li.color * shadowFactor * turbidity * absorption;
+			light += intensity * att * li.color * shadowFactor;
 		}
 	}
 	return light;
@@ -256,7 +254,7 @@ LocalLightsFog(
 /**
 */
 vec3
-GlobalLightFog(vec3 viewPos, float turbidity, vec3 absorption)
+GlobalLightFog(vec3 viewPos)
 {
 	float shadowFactor = 1.0f;
 	if (FlagSet(GlobalLightFlags, USE_SHADOW_BITFLAG))
@@ -267,9 +265,22 @@ GlobalLightFog(vec3 viewPos, float turbidity, vec3 absorption)
 	}
 
 	// calculate 'global' fog
-	vec3 atmo = Preetham(normalize(viewPos), -GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * GlobalLightColor.rgb;
-	return atmo * shadowFactor * absorption * turbidity;
+	vec3 atmo = Preetham(normalize(viewPos), -GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z);
+	return atmo * GlobalLightColor.rgb * shadowFactor;
 }
+
+
+//------------------------------------------------------------------------------
+/**
+	Compute fogging given a sampled fog intensity value from the depth
+	pass and a fog color.
+*/
+float
+Fog(float fogDepth)
+{
+	return (FogDistances.y - fogDepth) / (FogDistances.y - FogDistances.x);
+}
+
 
 //------------------------------------------------------------------------------
 /**
@@ -283,13 +294,17 @@ void csRender()
 	float depth = fetch2D(DepthBuffer, PosteffectUpscaleSampler, upscaleCoord, 0).r;
 	vec2 seed = coord * InvFramebufferDimensions;
 
+	if (depth == 1)
+		depth = 0.9999f;
+
 	// find last point to march
 	vec4 viewPos = PixelToView(seed, depth);
 	vec3 eye = vec3(0, 0, 0);
 
 	// construct a ray, beginning at eye and going from eye through worldPoint
 	vec3 rayStart = eye;
-	vec3 rayDirection = normalize(viewPos.xyz - eye);
+	vec3 viewVec = eye - viewPos.xyz;
+	vec3 rayDirection = normalize(viewVec);
 
 	const float oneDivFogSteps = 1 / float(VOLUME_FOG_STEPS);
 
@@ -297,20 +312,49 @@ void csRender()
 	vec3 light = vec3(0, 0, 0);
 	uint numSteps = 0;
 	vec3 rnd = vec3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
-	float stepSize = (viewPos.z - (rnd.z + rnd.x + rnd.y))  / VOLUME_FOG_STEPS;
+	float stepSize = (viewPos.z - (rnd.z + rnd.x + rnd.y)) * oneDivFogSteps;
+	float stepLen = stepSize;
 	vec3 rayOffset = rayDirection;
+	vec3 totalAbsorption = GlobalAbsorption;
 
-	float localTurbidity = 0.0f;
-	vec3 localAbsorption = vec3(1);
-	
+	// calculate global fog, which should be a factor of the distance and the global turbidity
+	float fogModulate = ((FocalLengthNearFar.w + 0.001f) - length(viewVec)) / FocalLengthNearFar.w;
+	float globalTurbidity = GlobalTurbidity * (1.0f - fogModulate);
+	float totalTurbidity = 0.0f;
+
+	/*
+		Single scattering equation as presented here:
+
+		- Li is the light, 
+		- Tr is the transmission
+		- Ls is the light at the surface
+		- Lscat is the scattered light
+		- S is the sample count
+		- x is the camera point
+		- xs is the sample point on the surface (at viewPos)
+		- xt is the sample point when ray marching (at samplePos)
+		- w0 is the incident angle at the surface point
+		- wi is the incident angle for the sample point
+		- ot(x) is the turbidity function at point x
+
+		Li(x, wi) = Tr(x, xs) * Ls(xs, w0) + integral[0..S]{ Tr(x, xt) * ot(x) * Lscat(xt, wi) dt
+
+		Tr(x, xs) = exp(- integral[0..S]{ ot(x)dt })
+		Lscat is just a normal light function but for albedo surfaces in our case, also samples shadows
+
+		The loop approximates the integral in the first expression, the integration with the surface Li happens in combine.fx
+	*/
+
 	for (int i = 0; i < VOLUME_FOG_STEPS; i++)
 	{
 		// construct sample position
-		vec3 samplePos = rayStart - rayOffset;
+		vec3 samplePos = rayStart + stepLen * rayDirection;
 
 		// offset ray offset with some noise
-		rayOffset += stepSize * rayDirection;
-		if (viewPos.z > samplePos.z)
+		stepLen += stepSize;
+		
+		// break if we went too far
+		if (samplePos.z < viewPos.z)
 		{
 			break;
 		}
@@ -320,17 +364,31 @@ void csRender()
 		uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
 		// sample local fog volumes
+		float localTurbidity = 0.0f;
+		vec3 localAbsorption = vec3(1);
 		LocalFogVolumes(idx, samplePos, localTurbidity, localAbsorption);
 
-		float turbidity = GlobalTurbidity + localTurbidity;
-		vec3 absorption = GlobalAbsorption * localAbsorption;
+		// local turbidity is the result of our volumes + global turbidity increment
+		localTurbidity += globalTurbidity;
 
-		// hard to tell, but there should be an extinction factor based on max distance, just use 10 here
-		float weight = length(rayOffset) / (-viewPos.z * 10);
-		light += GlobalLightFog(samplePos, turbidity, absorption) * weight;
-		light += LocalLightsFog(idx, turbidity, absorption, samplePos, rayDirection) * weight;
+		// calculate the total turbidity, required for Tr(x, xt)
+		totalTurbidity += localTurbidity;
+
+		// equation tells us Tr(x, xt) * ot(x) is the weight used for each scattered light sample
+		float weight = exp(-totalTurbidity) * localTurbidity;
+
+		// this is the Lscat calculation
+		light += GlobalLightFog(samplePos) * weight;
+		light += LocalLightsFog(idx, samplePos, rayDirection) * weight;
+
+		// this is our phase
+		totalAbsorption *= localAbsorption;
 	}
-	imageStore(Lighting, ivec2(coord), light.xyzx);
+	float weight = (exp(-totalTurbidity));
+
+	// pass weight to combine pass so we can handle the Tr(x, xs) * Ls(xs, w0) 
+	// part of the equation (how much of the surface is visible)
+	imageStore(Lighting, ivec2(coord), vec4(light.xyz, weight));
 }
 
 //------------------------------------------------------------------------------
