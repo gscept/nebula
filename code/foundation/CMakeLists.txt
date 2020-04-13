@@ -256,6 +256,7 @@ nebula_begin_module(foundation)
 			scalar.h
 			sphere.cc
 			sphere.h
+			sse.h
 			transform44.h
 			vector.h
 			transform.h

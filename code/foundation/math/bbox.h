@@ -16,6 +16,7 @@
 #include "math/line.h"
 #include "math/plane.h"
 #include "math/clipstatus.h"
+#include "math/sse.h"
 #include "util/array.h"
 
 //------------------------------------------------------------------------------
@@ -403,30 +404,29 @@ bbox::clipstatus(const matrix44& viewProjection) const
 __forceinline ClipStatus::Type
 bbox::clipstatus_simd(const matrix44& viewProjection) const
 {
+    using namespace Math;
 	int andFlags = 0xffff;
 	int orFlags = 0;
 
+    __m128 xs[2];
+    __m128 ys[2];
+    __m128 zs[2];
+    __m128 ws[2];
+
 	// create vectors for each dimension of each point, xxxx, yyyy, zzzz
-	float4 xs[2];
-	float4 ys[2];
-	float4 zs[2];
-	float4 ws[2];
+    xs[0] = _mm_set_ps1(this->pmin.x());
+    ys[0] = _mm_set_ps1(this->pmin.y());
+    zs[0] = _mm_set_ps1(this->pmin.z());
+    ws[0] = _mm_set_ps1(1.0f);
 
-	// just set the x, y and z for min and max
-	xs[0] = float4(this->pmin.x());
-	ys[0] = float4(this->pmin.y());
-	zs[0] = float4(this->pmin.z());
-	ws[0] = float4(1.0f);
+    xs[1] = _mm_set_ps1(this->pmax.x());
+    ys[1] = _mm_set_ps1(this->pmax.y());
+    zs[1] = _mm_set_ps1(this->pmax.z());
+    ws[1] = _mm_set_ps1(1.0f);
 
-	xs[1] = float4(this->pmax.x());
-	ys[1] = float4(this->pmax.y());
-	zs[1] = float4(this->pmax.z());
-	ws[1] = float4(1.0f);
-
-	// create vectors for each unique point, 0 is the first set of points, 1 is the second (total 8 points)
-	float4 px[2];
-	float4 py[2];
-	float4 pz[2];
+    __m128 px[2];
+    __m128 py[2];
+    __m128 pz[2];
 
 	// this corresponds to the permute phase in the original function
 	/*
@@ -444,48 +444,58 @@ bbox::clipstatus_simd(const matrix44& viewProjection) const
 
 		Meaning P1, P4, P6 and P7 are near plane, P2, P3, P5, P8 are far plane
 	*/
-	px[0] = float4::select(xs[0], xs[1], 1, 1, 0, 0);
+    px[0] = _mm_add_ps(
+        _mm_mul_ps(xs[1], _mm_setr_ps(1, 1, 0, 0)),
+        _mm_mul_ps(xs[0], _mm_setr_ps(0, 0, 1, 1)));
+    px[1] = _mm_add_ps(
+        _mm_mul_ps(xs[1], _mm_setr_ps(0, 0, 1, 1)),
+        _mm_mul_ps(xs[0], _mm_setr_ps(1, 1, 0, 0)));
+
 	py[0] = ys[0];
-	pz[0] = float4::select(zs[0], zs[1], 1, 0, 0, 1);
+    py[1] = ys[1];
 
-	px[1] = float4::select(xs[0], xs[1], 0, 0, 1, 1);
-	py[1] = ys[1];
-	pz[1] = float4::select(zs[0], zs[1], 0, 1, 1, 0);
+    pz[0] = _mm_add_ps(
+        _mm_mul_ps(zs[1], _mm_setr_ps(1, 0, 0, 1)),
+        _mm_mul_ps(zs[0], _mm_setr_ps(0, 1, 1, 0)));
+    pz[1] = _mm_add_ps(
+        _mm_mul_ps(zs[1], _mm_setr_ps(0, 1, 1, 0)),
+        _mm_mul_ps(zs[0], _mm_setr_ps(1, 0, 0, 1)));
 
-	float4 m_col_x[4];
-	float4 m_col_y[4];
-	float4 m_col_z[4];
-	float4 m_col_w[4];
+    __m128 m_col_x[4];
+    __m128 m_col_y[4];
+    __m128 m_col_z[4];
+    __m128 m_col_w[4];
 
 	// splat the matrix such that all _x, _y, ... will contain the column values of x, y, ...
-	m_col_x[0] = float4::splat_x(viewProjection.getrow0());
-	m_col_x[1] = float4::splat_x(viewProjection.getrow1());
-	m_col_x[2] = float4::splat_x(viewProjection.getrow2());
-	m_col_x[3] = float4::splat_x(viewProjection.getrow3());
+	m_col_x[0] = _mm_set1_ps(viewProjection.getrow0().x());//float4::splat_x(viewProjection.getrow0());
+	m_col_x[1] = _mm_set1_ps(viewProjection.getrow1().x());//float4::splat_x(viewProjection.getrow1());
+	m_col_x[2] = _mm_set1_ps(viewProjection.getrow2().x());//float4::splat_x(viewProjection.getrow2());
+	m_col_x[3] = _mm_set1_ps(viewProjection.getrow3().x());//float4::splat_x(viewProjection.getrow3());
 
-	m_col_y[0] = float4::splat_y(viewProjection.getrow0());
-	m_col_y[1] = float4::splat_y(viewProjection.getrow1());
-	m_col_y[2] = float4::splat_y(viewProjection.getrow2());
-	m_col_y[3] = float4::splat_y(viewProjection.getrow3());
+	m_col_y[0] = _mm_set1_ps(viewProjection.getrow0().y());//float4::splat_y(viewProjection.getrow0());
+    m_col_y[1] = _mm_set1_ps(viewProjection.getrow1().y());//float4::splat_y(viewProjection.getrow1());
+    m_col_y[2] = _mm_set1_ps(viewProjection.getrow2().y());//float4::splat_y(viewProjection.getrow2());
+    m_col_y[3] = _mm_set1_ps(viewProjection.getrow3().y());//float4::splat_y(viewProjection.getrow3());
 
-	m_col_z[0] = float4::splat_z(viewProjection.getrow0());
-	m_col_z[1] = float4::splat_z(viewProjection.getrow1());
-	m_col_z[2] = float4::splat_z(viewProjection.getrow2());
-	m_col_z[3] = float4::splat_z(viewProjection.getrow3());
+	m_col_z[0] = _mm_set1_ps(viewProjection.getrow0().z());//float4::splat_z(viewProjection.getrow0());
+    m_col_z[1] = _mm_set1_ps(viewProjection.getrow1().z());//float4::splat_z(viewProjection.getrow1());
+    m_col_z[2] = _mm_set1_ps(viewProjection.getrow2().z());//float4::splat_z(viewProjection.getrow2());
+    m_col_z[3] = _mm_set1_ps(viewProjection.getrow3().z());//float4::splat_z(viewProjection.getrow3());
 
-	m_col_w[0] = float4::splat_w(viewProjection.getrow0());
-	m_col_w[1] = float4::splat_w(viewProjection.getrow1());
-	m_col_w[2] = float4::splat_w(viewProjection.getrow2());
-	m_col_w[3] = float4::splat_w(viewProjection.getrow3());
+	m_col_w[0] = _mm_set1_ps(viewProjection.getrow0().w());//float4::splat_w(viewProjection.getrow0());
+    m_col_w[1] = _mm_set1_ps(viewProjection.getrow1().w());//float4::splat_w(viewProjection.getrow1());
+    m_col_w[2] = _mm_set1_ps(viewProjection.getrow2().w());//float4::splat_w(viewProjection.getrow2());
+    m_col_w[3] = _mm_set1_ps(viewProjection.getrow3().w());//float4::splat_w(viewProjection.getrow3());
 
-	float4 p1;
-	float4 res1;
-	const float4 xLeftFlags(ClipLeft);
-	const float4 xRightFlags(ClipRight);
-	const float4 yBottomFlags(ClipBottom);
-	const float4 yTopFlags(ClipTop);
-	const float4 zFarFlags(ClipFar);
-	const float4 zNearFlags(ClipNear);
+    __m128 p1;
+    __m128 res1;
+    const __m128 xLeftFlags = _mm_set1_ps(ClipLeft);
+    const __m128 xRightFlags = _mm_set1_ps(ClipRight);
+    const __m128 yBottomFlags = _mm_set1_ps(ClipBottom);
+    const __m128 yTopFlags = _mm_set1_ps(ClipTop);
+    const __m128 zFarFlags = _mm_set1_ps(ClipFar);
+    const __m128 zNearFlags = _mm_set1_ps(ClipNear);
+
 
 	// check two loops of points arranged as xxxx yyyy zzzz
 	IndexT i;
@@ -494,41 +504,42 @@ bbox::clipstatus_simd(const matrix44& viewProjection) const
 		int clip = 0;
 
 		// transform the x component of 4 points simultaneously 
-		xs[i] = float4::multiplyadd(m_col_x[2], pz[i],
-			float4::multiplyadd(m_col_x[1], py[i],
-				float4::multiplyadd(m_col_x[0], px[i], m_col_x[3])));
+		xs[i] = fmadd(m_col_x[2], pz[i],
+            fmadd(m_col_x[1], py[i],
+                fmadd(m_col_x[0], px[i], m_col_x[3])));
 
 		// transform the y component of 4 points simultaneously 
-		ys[i] = float4::multiplyadd(m_col_y[2], pz[i],
-			float4::multiplyadd(m_col_y[1], py[i],
-				float4::multiplyadd(m_col_y[0], px[i], m_col_y[3])));
+		ys[i] = fmadd(m_col_y[2], pz[i],
+            fmadd(m_col_y[1], py[i],
+                fmadd(m_col_y[0], px[i], m_col_y[3])));
 
 		// transform the z component of 4 points simultaneously 
-		zs[i] = float4::multiplyadd(m_col_z[2], pz[i],
-			float4::multiplyadd(m_col_z[1], py[i],
-				float4::multiplyadd(m_col_z[0], px[i], m_col_z[3])));
+		zs[i] = fmadd(m_col_z[2], pz[i],
+            fmadd(m_col_z[1], py[i],
+                fmadd(m_col_z[0], px[i], m_col_z[3])));
 
 		// transform the w component of 4 points simultaneously 
-		ws[i] = float4::multiplyadd(m_col_w[2], pz[i],
-			float4::multiplyadd(m_col_w[1], py[i],
-				float4::multiplyadd(m_col_w[0], px[i], m_col_w[3])));
+		ws[i] = fmadd(m_col_w[2], pz[i],
+            fmadd(m_col_w[1], py[i],
+                fmadd(m_col_w[0], px[i], m_col_w[3])));
 
 		{
-			const float4 nws = float4::multiply(ws[i], float4(-1.0f));
-			const float4 pws = ws[i];
+			const __m128 nws = _mm_mul_ps(ws[i], _mm_set1_ps(-1.0f));
+			const __m128 pws = ws[i];
 
 			// add all flags together into one big vector of flags for all 4 points
-			res1 = float4::multiplyadd(float4::less(xs[i], nws), xLeftFlags,
-				float4::multiplyadd(float4::greater(xs[i], pws), xRightFlags,
-					float4::multiplyadd(float4::less(ys[i], nws), yBottomFlags,
-						float4::multiplyadd(float4::greater(ys[i], pws), yTopFlags,
-							float4::multiplyadd(float4::less(zs[i], nws), zFarFlags,
-								float4::multiply(float4::greater(zs[i], pws), zNearFlags))))));
+			res1 = fmadd(less(xs[i], nws), xLeftFlags,
+                fmadd(greater(xs[i], pws), xRightFlags,
+                    fmadd(less(ys[i], nws), yBottomFlags,
+                        fmadd(greater(ys[i], pws), yTopFlags,
+                            fmadd(less(zs[i], nws), zFarFlags,
+                                _mm_mul_ps(greater(zs[i], pws), zNearFlags))))));
 		}
 
 		// read to stack and convert to uint in one swoop
 		alignas(16) uint res1_u[4];
-		res1.storeui((uint*)res1_u);
+        __m128i result = _mm_cvttps_epi32(res1);
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(res1_u), result);
 
 		// update flags by or-ing and and-ing all 4 points individually
 		andFlags &= res1_u[0];
