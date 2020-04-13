@@ -35,17 +35,32 @@ public:
         const Graphics::GraphicsEntityId id,
         const Math::matrix44& transform,
         const float density,
-        const Math::float4 absorption);
+        const Math::float4& absorption);
+    /// set box transform
+    static void SetBoxTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform);
+
+
     /// setup a new volume as a sphere
     static void SetupSphereVolume(
         const Graphics::GraphicsEntityId id,
-        Math::float4 position,
+        const Math::float4& position,
         float radius,
         const float density,
-        const Math::float4 absorption);
+        const Math::float4& absorption);
+    /// set sphere position
+    static void SetSpherePosition(const Graphics::GraphicsEntityId id, const Math::float4& position);
+    /// set sphere radius
+    static void SetSphereRadius(const Graphics::GraphicsEntityId id, const float radius);
+
+    /// set volume turbidity
+    static void SetTurbidity(const Graphics::GraphicsEntityId id, const float turbidity);
+    /// set volume absorption
+    static void SetAbsorption(const Graphics::GraphicsEntityId id, const Math::float4& absorption);
 
     /// prepare light lists
     static void UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    /// render IMGUI
+    static void RenderUI(const Graphics::FrameContext& ctx);
 
     /// set global turbidity (fog density)
     void SetGlobalTurbidity(float f);
@@ -68,7 +83,7 @@ private:
     {
         FogVolume_Type,
         FogVolume_TypedId,
-        FogVolume_Density,
+        FogVolume_Turbidity,
         FogVolume_Absorption,
     };
     typedef Ids::IdAllocator<

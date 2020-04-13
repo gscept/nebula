@@ -80,6 +80,7 @@ void
 VolumetricFogContext::Create()
 {
 	__bundle.OnUpdateViewResources = VolumetricFogContext::UpdateViewDependentResources;
+	__bundle.OnBegin = VolumetricFogContext::RenderUI;
 
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
@@ -158,7 +159,7 @@ VolumetricFogContext::Create()
 	blurState.blurOutputXSlot = ShaderGetResourceSlot(blurState.blurShader, "BlurImageX");
 	blurState.blurOutputYSlot = ShaderGetResourceSlot(blurState.blurShader, "BlurImageY");
 
-	fogState.turbidity = 0.05f;
+	fogState.turbidity = 0.1f;
 	fogState.color = Math::float4(1);
 
 	_CreateContext();
@@ -180,7 +181,7 @@ VolumetricFogContext::SetupBoxVolume(
 	const Graphics::GraphicsEntityId id, 
 	const Math::matrix44& transform, 
 	const float density, 
-	const Math::float4 absorption)
+	const Math::float4& absorption)
 {
 	const Graphics::ContextEntityId cid = GetContextId(id);
 	Ids::Id32 fog = fogBoxVolumeAllocator.Alloc();
@@ -188,8 +189,21 @@ VolumetricFogContext::SetupBoxVolume(
 
 	fogGenericVolumeAllocator.Set<FogVolume_Type>(cid.id, BoxVolume);
 	fogGenericVolumeAllocator.Set<FogVolume_TypedId>(cid.id, fog);
-	fogGenericVolumeAllocator.Set<FogVolume_Density>(cid.id, density);
+	fogGenericVolumeAllocator.Set<FogVolume_Turbidity>(cid.id, density);
 	fogGenericVolumeAllocator.Set<FogVolume_Absorption>(cid.id, absorption);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VolumetricFogContext::SetBoxTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform)
+{
+	const Graphics::ContextEntityId cid = GetContextId(id);
+	Ids::Id32 lid = fogGenericVolumeAllocator.Get<FogVolume_TypedId>(cid.id);
+	FogVolumeType type = fogGenericVolumeAllocator.Get<FogVolume_Type>(cid.id);
+	n_assert(type == FogVolumeType::BoxVolume);
+	fogBoxVolumeAllocator.Set<FogBoxVolume_Transform>(lid, transform);
 }
 
 //------------------------------------------------------------------------------
@@ -198,10 +212,10 @@ VolumetricFogContext::SetupBoxVolume(
 void 
 VolumetricFogContext::SetupSphereVolume(
 	const Graphics::GraphicsEntityId id, 
-	Math::float4 position, 
+	const Math::float4& position,
 	float radius, 
 	const float density, 
-	const Math::float4 absorption)
+	const Math::float4& absorption)
 {
 	const Graphics::ContextEntityId cid = GetContextId(id);
 	Ids::Id32 fog = fogSphereVolumeAllocator.Alloc();
@@ -210,7 +224,53 @@ VolumetricFogContext::SetupSphereVolume(
 
 	fogGenericVolumeAllocator.Set<FogVolume_Type>(cid.id, SphereVolume);
 	fogGenericVolumeAllocator.Set<FogVolume_TypedId>(cid.id, fog);
-	fogGenericVolumeAllocator.Set<FogVolume_Density>(cid.id, density);
+	fogGenericVolumeAllocator.Set<FogVolume_Turbidity>(cid.id, density);
+	fogGenericVolumeAllocator.Set<FogVolume_Absorption>(cid.id, absorption);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VolumetricFogContext::SetSpherePosition(const Graphics::GraphicsEntityId id, const Math::float4& position)
+{
+	const Graphics::ContextEntityId cid = GetContextId(id);
+	Ids::Id32 lid = fogGenericVolumeAllocator.Get<FogVolume_TypedId>(cid.id);
+	FogVolumeType type = fogGenericVolumeAllocator.Get<FogVolume_Type>(cid.id);
+	n_assert(type == FogVolumeType::SphereVolume);
+	fogSphereVolumeAllocator.Set<FogSphereVolume_Position>(lid, position);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VolumetricFogContext::SetSphereRadius(const Graphics::GraphicsEntityId id, const float radius)
+{
+	const Graphics::ContextEntityId cid = GetContextId(id);
+	Ids::Id32 lid = fogGenericVolumeAllocator.Get<FogVolume_TypedId>(cid.id);
+	FogVolumeType type = fogGenericVolumeAllocator.Get<FogVolume_Type>(cid.id);
+	n_assert(type == FogVolumeType::SphereVolume);
+	fogSphereVolumeAllocator.Set<FogSphereVolume_Radius>(lid, radius);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VolumetricFogContext::SetTurbidity(const Graphics::GraphicsEntityId id, const float turbidity)
+{
+	const Graphics::ContextEntityId cid = GetContextId(id);
+	fogGenericVolumeAllocator.Set<FogVolume_Turbidity>(cid.id, turbidity);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VolumetricFogContext::SetAbsorption(const Graphics::GraphicsEntityId id, const Math::float4& absorption)
+{
+	const Graphics::ContextEntityId cid = GetContextId(id);
 	fogGenericVolumeAllocator.Set<FogVolume_Absorption>(cid.id, absorption);
 }
 
@@ -238,7 +298,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 		{
 			auto& fog = fogState.fogBoxes[numFogBoxVolumes];
 			Math::float4::storeu3(fogGenericVolumeAllocator.Get<FogVolume_Absorption>(i), fog.absorption);
-			fog.turbidity = fogGenericVolumeAllocator.Get<FogVolume_Density>(i);
+			fog.turbidity = fogGenericVolumeAllocator.Get<FogVolume_Turbidity>(i);
 			fog.falloff = 64.0f;
 			Math::matrix44 transform = Math::matrix44::multiply(fogBoxVolumeAllocator.Get<FogBoxVolume_Transform>(typeIds[i]), viewTransform);
 			Math::bbox box(transform);
@@ -252,7 +312,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 		{
 			auto& fog = fogState.fogSpheres[numFogSphereVolumes];
 			Math::float4::storeu3(fogGenericVolumeAllocator.Get<FogVolume_Absorption>(i), fog.absorption);
-			fog.turbidity = fogGenericVolumeAllocator.Get<FogVolume_Density>(i);
+			fog.turbidity = fogGenericVolumeAllocator.Get<FogVolume_Turbidity>(i);
 			Math::float4 pos = fogSphereVolumeAllocator.Get<FogSphereVolume_Position>(typeIds[i]);
 			pos = Math::matrix44::transform(pos, viewTransform);
 			Math::float4::storeu3(pos, fog.position);
@@ -308,6 +368,22 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 	ResourceTableSetRWTexture(blurState.blurYTable[bufferIndex], { fog0, blurState.blurOutputYSlot, 0, CoreGraphics::SamplerId::Invalid() }); // pong
 	ResourceTableCommitChanges(blurState.blurXTable[bufferIndex]);
 	ResourceTableCommitChanges(blurState.blurYTable[bufferIndex]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VolumetricFogContext::RenderUI(const Graphics::FrameContext& ctx)
+{
+	Shared::PerTickParams& tickParams = CoreGraphics::ShaderServer::Instance()->GetTickParams();
+	if (ImGui::Begin("Volumetric Fog Params"))
+	{
+		ImGui::SetWindowSize(ImVec2(240, 400));
+		ImGui::SliderFloat("Turbidity", &fogState.turbidity, 0, 1000.0f);
+	}
+
+	ImGui::End();
 }
 
 //------------------------------------------------------------------------------

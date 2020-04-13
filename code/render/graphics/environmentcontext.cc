@@ -24,6 +24,8 @@ struct
 	Math::float4 fogColor;
 	float fogDistances[2];
 	int numGlobalEnvironmentMips;
+	float saturation;
+	float fadeValue;
 
 	CoreGraphics::TextureId defaultEnvironmentMap;
 	CoreGraphics::TextureId defaultIrradianceMap;
@@ -38,6 +40,7 @@ void
 EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
 {
 	__bundle.OnBeforeFrame = EnvironmentContext::OnBeforeFrame;
+	__bundle.OnBegin = EnvironmentContext::RenderUI;
 	__bundle.StageBits = &EnvironmentContext::__state.currentStage;
 
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
@@ -57,6 +60,8 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
 	envState.fogDistances[0] = 10.0f; // near
 	envState.fogDistances[1] = 1000.0f; // far
 	envState.numGlobalEnvironmentMips = 10;
+	envState.saturation = 1.0f;
+	envState.fadeValue = 1.0f;
 
 	envState.defaultEnvironmentMap = Resources::CreateResource("tex:system/sky_refl.dds"_atm, "system"_atm,
 		[](const Resources::ResourceId id)
@@ -154,8 +159,29 @@ EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 
 	Math::float4 balance(1.0f);
 	Math::float4::storeu(balance, tickParams.Balance);
-	tickParams.Saturation = 1.0f;
-	tickParams.FadeValue = 1.0f;
+	tickParams.Saturation = envState.saturation;
+	tickParams.FadeValue = envState.fadeValue;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+EnvironmentContext::RenderUI(const Graphics::FrameContext& ctx)
+{
+	Shared::PerTickParams& tickParams = CoreGraphics::ShaderServer::Instance()->GetTickParams();
+	if (ImGui::Begin("Enviroment Params"))
+	{
+		ImGui::SetWindowSize(ImVec2(240, 400));
+		ImGui::SliderFloat("Bloom Threshold", &envState.bloomThreshold, 0, 100.0f);
+		//ImGui::SliderFloat("Fog Start", &envState.fogDistances[0], 0, 10000.0f);
+		//ImGui::SliderFloat("Fog End", &envState.fogDistances[1], 0, 10000.0f);
+		ImGui::SliderFloat("Max Luminance", &envState.maxEyeLuminance, 0, 100.0f);
+		ImGui::SliderFloat("Color Saturation", &envState.saturation, 0, 1.0f);
+		ImGui::SliderFloat("Fade Value", &envState.fadeValue, 0, 1.0f);
+	}
+
+	ImGui::End();
 }
 
 //------------------------------------------------------------------------------

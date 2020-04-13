@@ -29,7 +29,10 @@ void csCombine()
 	vec4 light = imageLoad(Lighting, fullscaleCoord);
 
 	//vec4 res = vec4(mix(light.rgb, fog.rgb, fog.a), 1);
-	vec3 res = light.rgb * fog.a + reflections.rgb * fog.a + fog.rgb;
+	vec3 res = 
+		light.rgb * fog.a 
+		//+ reflections.rgb * fog.a 
+		+ fog.rgb;
 	imageStore(Lighting, fullscaleCoord, vec4(res, 1));
 }
 

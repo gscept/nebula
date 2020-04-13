@@ -19,6 +19,8 @@ public:
 	static void Create(const Graphics::GraphicsEntityId sun);
 	/// update shader server tick params per frame
 	static void OnBeforeFrame(const Graphics::FrameContext& ctx);
+	/// render IMGUI
+	static void RenderUI(const Graphics::FrameContext& ctx);
 
 	/// set the fog color
 	static void SetFogColor(const Math::float4& fogColor);

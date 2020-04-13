@@ -315,7 +315,6 @@ void csRender()
 	float stepSize = (viewPos.z - (rnd.z + rnd.x + rnd.y)) * oneDivFogSteps;
 	float stepLen = stepSize;
 	vec3 rayOffset = rayDirection;
-	vec3 totalAbsorption = GlobalAbsorption;
 
 	// calculate global fog, which should be a factor of the distance and the global turbidity
 	float fogModulate = ((FocalLengthNearFar.w + 0.001f) - length(viewVec)) / FocalLengthNearFar.w;
@@ -365,11 +364,11 @@ void csRender()
 
 		// sample local fog volumes
 		float localTurbidity = 0.0f;
-		vec3 localAbsorption = vec3(1);
+		vec3 localAbsorption = GlobalAbsorption;
 		LocalFogVolumes(idx, samplePos, localTurbidity, localAbsorption);
 
 		// local turbidity is the result of our volumes + global turbidity increment
-		localTurbidity = localTurbidity * oneDivFogSteps + globalTurbidity * oneDivFogSteps;
+		localTurbidity = (localTurbidity + globalTurbidity) * oneDivFogSteps;
 
 		// calculate the total turbidity, required for Tr(x, xt)
 		totalTurbidity += localTurbidity;
@@ -378,11 +377,8 @@ void csRender()
 		float weight = exp(-totalTurbidity) * localTurbidity;
 
 		// this is the Lscat calculation
-		light += GlobalLightFog(samplePos) * weight;
-		light += LocalLightsFog(idx, samplePos, rayDirection) * weight;
-
-		// this is our phase
-		totalAbsorption *= localAbsorption;
+		light += GlobalLightFog(samplePos) * weight * localAbsorption;
+		light += LocalLightsFog(idx, samplePos, rayDirection) * weight * localAbsorption;
 	}
 	float weight = (exp(-totalTurbidity));
 
