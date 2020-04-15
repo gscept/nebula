@@ -30,19 +30,14 @@ jobs:
         python-version: '3.x' # Semantic version range syntax or exact version of a Python version
         architecture: 'x64' # Optional - x64 or x86, defaults to x64
   
-    # Runs a single command using the runners shell
-    - name: Run a one-line script
-      run: |
-        python -c "import sys; print(sys.version)"
-        python fips help
 
     # Runs a set of commands using the runners shell
     - name: Run fips
       run: |
-        fips fetch
-        fips update
-        fips nebula set work ../fips-deploy
-        fips nebula set toolkit .
-        fips set config vulkan-win64-vscode-debug
-        fips gen
-        fips build
+        python fips fetch
+        python fips update
+        python fips nebula set work ../fips-deploy
+        python fips nebula set toolkit .
+        python fips set config vulkan-win64-vscode-debug
+        python fips gen
+        python fips build
