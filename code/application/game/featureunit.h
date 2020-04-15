@@ -21,6 +21,8 @@
 #include "core/singleton.h"
 #include "util/commandlineargs.h"
 #include "io/jsonwriter.h"
+#include "ids/idgenerationpool.h"
+#include "util/arrayallocator.h"
 
 //------------------------------------------------------------------------------
 namespace Game
@@ -55,7 +57,7 @@ public:
 	virtual void OnBeforeCleanup();
 
     /// called on begin of frame
-    virtual void OnBeginFrame();    
+    virtual void OnBeginFrame();
     /// called in the middle of the feature trigger cycle
     virtual void OnFrame();
     /// called at the end of the feature trigger cycle
@@ -65,22 +67,18 @@ public:
     virtual void OnRenderDebug();
 
     /// attach a manager to the feature unit
-    virtual void AttachManager(const Ptr<Manager>& manager);
+    virtual ManagerHandle AttachManager(ManagerAPI api);
     /// remove a manager from the feature unit
-    virtual void RemoveManager(const Ptr<Manager>& manager);
+    virtual void RemoveManager(ManagerHandle handle);
 
     /// set command line args
     void SetCmdLineArgs(const Util::CommandLineArgs& a);
     /// get command line args
     const Util::CommandLineArgs& GetCmdLineArgs() const;
-	/// write metadata about the feature unit.
-	void WriteMetadata(Ptr<IO::JsonWriter> const& writer) const;
-	/// override this method in subclass to write additional information to project metadata file
-	/// this is called automatically from the WriteMetadata() method.
-	virtual void WriteAdditionalMetadata(Ptr<IO::JsonWriter> const& writer) const;
-
+	
 protected:
-    Util::Array<Ptr<Manager> > managers;
+    Util::ArrayAllocator<ManagerHandle, ManagerAPI> managers;
+    Ids::IdGenerationPool managerPool;
 	bool active;
 
     /// cmdline args for configuration from cmdline

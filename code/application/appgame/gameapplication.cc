@@ -14,10 +14,6 @@
 #include "messaging/messagecallbackhandler.h"
 #include "system/nebulasettings.h"
 #include "io/fswrapper.h"
-//#include "basegamefeature/debug/gamepagehandler.h"
-#include "io/jsonwriter.h"
-//#include "basegamefeature/basegamefeatureunit.h"
-//#include "basegamefeature/managers/componentmanager.h"
 
 namespace App
 {
@@ -143,16 +139,6 @@ GameApplication::Open()
 
         // create and add new game features
         this->SetupGameFeatures();
-
-#ifndef NEBULA_PUBLIC_BUILD
-		// export metadata by setting -export-metadata flag in exec arguments
-		if (this->args.GetBoolFlag("-export-metadata"))
-		{
-			this->ExportMetadata();
-			this->Exit();
-			return false;
-		}
-#endif
 
         // setup profiling stuff
 	    _setup_grouped_timer(GameApplicationFrameTimeAll, "Game Subsystem");
@@ -290,37 +276,6 @@ GameApplication::SetupAppFromCmdLineArgs()
     {
         this->SetAppTitle(args.GetString("-appname"));
     }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-GameApplication::ExportMetadata()
-{
-	Util::String filename("bin:metadata.json");
-	
-	Ptr<IO::JsonWriter> writer = IO::JsonWriter::Create();
-	writer->SetStream(IO::IoServer::Instance()->CreateStream(filename));
-
-	if (writer->Open())
-	{
-		writer->BeginObject("NebulaMetadata");
-		writer->Add(this->appName.AsCharPtr(), "appName");
-		writer->Add(this->appVersion.AsCharPtr(), "appVersion");
-		writer->Add(this->appID.AsCharPtr(), "appId");
-		writer->Add(this->companyName.AsCharPtr(), "company");
-		
-		writer->BeginArray("features");
-		for (auto const& feature : this->gameServer->GetGameFeatures())
-		{
-			feature->WriteMetadata(writer);
-		}
-		writer->End();
-
-		writer->End();
-		writer->Close();
-	}
 }
 
 } // namespace App

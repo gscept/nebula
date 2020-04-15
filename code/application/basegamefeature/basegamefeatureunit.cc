@@ -11,8 +11,7 @@
 #include "io/ioserver.h"
 #include "io/console.h"
 #include "managers/entitymanager.h"
-#include "managers/categorymanager.h"
-#include "managers/factorymanager.h"
+#include "managers/blueprintmanager.h"
 
 namespace BaseGameFeature
 {
@@ -46,12 +45,8 @@ BaseGameFeatureUnit::OnActivate()
 {
 	FeatureUnit::OnActivate();
     
-	this->entityManager = EntityManager::Create();
-	this->categoryManager = CategoryManager::Create();
-	this->factoryManager = FactoryManager::Create();
-	this->AttachManager(this->entityManager.upcast<Game::Manager>());
-	this->AttachManager(this->categoryManager.upcast<Game::Manager>());
-	this->AttachManager(this->factoryManager.upcast<Game::Manager>());
+	this->entityManager = this->AttachManager(EntityManager::Create());
+	this->blueprintManager = this->AttachManager(BlueprintManager::Create());
 }
 
 //------------------------------------------------------------------------------
@@ -60,12 +55,8 @@ BaseGameFeatureUnit::OnActivate()
 void
 BaseGameFeatureUnit::OnDeactivate()
 {
-	this->RemoveManager(this->entityManager.upcast<Game::Manager>());
-	this->RemoveManager(this->categoryManager.upcast<Game::Manager>());
-	this->RemoveManager(this->factoryManager.upcast<Game::Manager>());
-	this->entityManager = nullptr;
-	this->categoryManager = nullptr;
-	this->factoryManager = nullptr;
+	this->RemoveManager(this->entityManager);
+	this->RemoveManager(this->blueprintManager);
 	
     FeatureUnit::OnDeactivate();
 }

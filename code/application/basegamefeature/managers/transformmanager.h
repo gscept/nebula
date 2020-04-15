@@ -14,16 +14,4 @@
 namespace Game
 {
 
-class TransformManager : public Game::Manager
-{
-	__DeclareClass(TransformManager)
-	__DeclareSingleton(TransformManager)
-public:
-	/// constructor
-	TransformManager();
-	/// destructor
-	~TransformManager();
-
-};
-
 } // namespace Game

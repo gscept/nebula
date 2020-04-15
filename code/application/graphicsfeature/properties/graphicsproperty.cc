@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
 #include "graphicsproperty.h"
-#include "basegamefeature/managers/categorymanager.h"
+#include "basegamefeature/managers/entitymanager.h"
 #include "basegamefeature/properties/transformableproperty.h"
 #include "models/modelcontext.h"
 #include "graphics/graphicsserver.h"

@@ -38,10 +38,10 @@ public:
     virtual void OnInstanceMoved(InstanceId from, InstanceId to) {};
 
 protected:
-    friend class CategoryManager;
+    friend class EntityManager;
 
     /// which category does this property belong to
-    /// @note   This is const_cast and changed by the category manager upon being attached to the category
+    /// @note   This is const_cast and changed by the entity manager upon being attached to the category
     const Game::CategoryId category;
 };
 
