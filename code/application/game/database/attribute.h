@@ -258,6 +258,7 @@ public:\
 	ATTRIBUTENAME() = delete;\
 	~ATTRIBUTENAME() = delete;\
 	using TYPE = VALUETYPE;\
+	static const Game::Attribute Create(VALUETYPE v) { return { ATTRIBUTENAME::Id(), v }; }  \
 	static constexpr uint FourCC()\
 	{\
 		return FOURCC;\

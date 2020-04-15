@@ -22,51 +22,75 @@
 //------------------------------------------------------------------------------
 namespace Game
 {
-class Manager : public Core::RefCounted
+
+ID_32_TYPE(ManagerHandle)
+
+struct ManagerAPI
 {
-    __DeclareClass(Manager)
-public:
-    /// constructor
-    Manager();
-    /// destructor
-    virtual ~Manager();
-
     /// called when attached to game server
-    virtual void OnActivate();
+    void(*OnActivate)() = nullptr;
     /// called when removed from game server
-    virtual void OnDeactivate();
-    /// return true if currently active
-    bool IsActive() const;
+    void(*OnDeactivate)() = nullptr;
     /// called before frame by the game server
-    virtual void OnBeginFrame();
+    void(*OnBeginFrame)() = nullptr;
     /// called per-frame by the game server
-    virtual void OnFrame();
+    void(*OnFrame)() = nullptr;
     /// called after frame by the game server
-    virtual void OnEndFrame();
+    void(*OnEndFrame)() = nullptr;
     /// called after loading game state
-    virtual void OnLoad();
+    void(*OnLoad)() = nullptr;
     /// called before saving game state
-    virtual void OnSave();
+    void(*OnSave)() = nullptr;
     /// called by Game::Server::Start()
-    virtual void OnStart();
+    void(*OnStart)() = nullptr;
     /// render a debug visualization 
-    virtual void OnRenderDebug();
-
-private:
-    bool isActive;
+    void(*OnRenderDebug)() = nullptr;
 };
+
+//class Manager : public Core::RefCounted
+//{
+//    __DeclareClass(Manager)
+//public:
+//    /// constructor
+//    Manager();
+//    /// destructor
+//    virtual ~Manager();
+//
+//    /// called when attached to game server
+//    virtual void OnActivate();
+//    /// called when removed from game server
+//    virtual void OnDeactivate();
+//    /// return true if currently active
+//    bool IsActive() const;
+//    /// called before frame by the game server
+//    virtual void OnBeginFrame();
+//    /// called per-frame by the game server
+//    virtual void OnFrame();
+//    /// called after frame by the game server
+//    virtual void OnEndFrame();
+//    /// called after loading game state
+//    virtual void OnLoad();
+//    /// called before saving game state
+//    virtual void OnSave();
+//    /// called by Game::Server::Start()
+//    virtual void OnStart();
+//    /// render a debug visualization 
+//    virtual void OnRenderDebug();
+//
+//private:
+//    bool isActive;
+//};
 
 //------------------------------------------------------------------------------
 /**
 */
-inline bool
-Manager::IsActive() const
-{
-    return this->isActive;
-}
+//inline bool
+//Manager::IsActive() const
+//{
+//    return this->isActive;
+//}
 
 }; // namespace Game
 //------------------------------------------------------------------------------
  
-    
     

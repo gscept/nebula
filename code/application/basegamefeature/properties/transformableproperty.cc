@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
 #include "transformableproperty.h"
-#include "basegamefeature/managers/categorymanager.h"
+#include "basegamefeature/managers/entitymanager.h"
 
 namespace Attr
 {

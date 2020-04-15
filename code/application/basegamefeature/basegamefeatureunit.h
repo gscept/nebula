@@ -13,13 +13,6 @@
 #include "game/featureunit.h"
 #include "math/bbox.h"
 
-namespace Game
-{
-class EntityManager;
-class CategoryManager;
-class FactoryManager;
-}
-
 //------------------------------------------------------------------------------
 namespace BaseGameFeature
 {
@@ -58,11 +51,8 @@ public:
     virtual void CleanupWorld();
 	
 protected:
-    
-    Ptr<Game::EntityManager> entityManager;
-    Ptr<Game::CategoryManager> categoryManager;
-    Ptr<Game::FactoryManager> factoryManager;
-	
+    Game::ManagerHandle entityManager;
+    Game::ManagerHandle blueprintManager;
     Math::bbox worldBox;
 };
 

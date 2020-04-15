@@ -16,6 +16,8 @@ nebula_begin_module(application)
 		)
 	fips_dir(game)
 		fips_files(
+			category.h
+			category.cc
 			entity.h
 			entity.cc
 			featureunit.h
@@ -53,10 +55,8 @@ nebula_begin_module(application)
 			fips_files(
 				entitymanager.h
 				entitymanager.cc
-				categorymanager.h
-				categorymanager.cc
-				factorymanager.h
-				factorymanager.cc
+				blueprintmanager.h
+				blueprintmanager.cc
 				transformmanager.h
 				transformmanager.cc
 			)

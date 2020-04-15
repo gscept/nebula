@@ -1,13 +1,11 @@
 //------------------------------------------------------------------------------
-//  transformmanager.cc
+//  category.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
-#include "transformmanager.h"
-#include "entitymanager.h"
+#include "category.h"
 
 namespace Game
 {
-
 
 } // namespace Game

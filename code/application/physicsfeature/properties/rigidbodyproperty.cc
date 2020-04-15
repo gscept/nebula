@@ -8,7 +8,7 @@
 #include "physics/streamactorpool.h"
 #include "physics/actorcontext.h"
 #include "resources/resourceserver.h"
-#include "basegamefeature/managers/categorymanager.h"
+#include "basegamefeature/managers/entitymanager.h"
 #include <type_traits>
 
 namespace Attr

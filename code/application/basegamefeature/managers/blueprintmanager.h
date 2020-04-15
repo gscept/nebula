@@ -1,15 +1,12 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	@class	Game::FactoryManager
+	@class	Game::BlueprintManager
 
 	Loads the 'data:tables/blueprint.json' file and subsequently sets up 
-	categories based on the blueprints in the category manager.
+	categories based on the blueprints in the entity manager.
 
-	You can instantiate entities from blueprints via the factory manager.
-
-	Entities that has been instantiated from the factory manager should be destroyed
-	by the EntityManager.
+	You can instantiate entities from blueprints via the entity interface.
 
 	(C) 2020 Individual contributors, see AUTHORS file
 */
@@ -25,32 +22,15 @@ namespace Game
 
 class Property;
 
-struct EntityCreateInfo
+class BlueprintManager
 {
-	/// which entity category to instantiate from
-	Util::StringAtom categoryName;
-	/// attributes specified here will be set before activating the entity.
-	Util::Array<Game::Attribute> attributes;
-};
-
-class FactoryManager : public Game::Manager
-{
-	__DeclareClass(FactoryManager)
-	__DeclareSingleton(FactoryManager)
+	__DeclareSingleton(BlueprintManager);
 public:
-	/// constructor
-	FactoryManager();
-	/// destructor
-	~FactoryManager();
+	/// Create the singleton
+	static ManagerAPI Create();
 
-	/// called when attached to game server. Needs to be attached after categorymanager
-	void OnActivate() override;
-
-	/// create a new entity from its category name
-	Game::Entity CreateEntityByCategory(Util::StringAtom const categoryName) const;
-	
-	/// create a new entity from a createinfo description
-	Game::Entity CreateEntity(EntityCreateInfo const& info) const;
+	/// Destroy the singleton
+	static void Destroy();
 
 	/// set a optional blueprints.xml, which is used instead of standard blueprint.xml
 	static void SetBlueprintsFilename(const Util::String& name, const Util::String& folder);
@@ -63,6 +43,14 @@ public:
 	Ptr<Game::Property> CreateProperty(const Util::String& type) const;
 
 private:
+	/// constructor
+	BlueprintManager();
+	/// destructor
+	~BlueprintManager();
+
+	/// called when attached to game server. Needs to be attached after categorymanager
+	static void OnActivate();
+
 	/// parse entity blueprints file
 	virtual bool ParseBluePrints();
 
