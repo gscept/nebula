@@ -38,6 +38,6 @@ jobs:
         python fips update
         python fips nebula set work ../fips-deploy
         python fips nebula set toolkit .
-        python fips set config vulkan-win64-vscode-debug
+        python fips set config vulkan-win64-vstudio-debug
         python fips gen
         python fips build
