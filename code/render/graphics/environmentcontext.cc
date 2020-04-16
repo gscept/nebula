@@ -11,6 +11,7 @@
 #include "models/modelcontext.h"
 #include "visibility/visibilitycontext.h"
 #include "resources/resourceserver.h"
+#include "imgui.h"
 namespace Graphics
 {
 
