@@ -22,7 +22,6 @@ public:
 
 	struct Instance : public ModelNode::Instance
 	{
-		Math::transform44 transform;
 		Math::matrix44 modelTransform;
 		Math::matrix44 invModelTransform;
 		bool isInViewSpace;

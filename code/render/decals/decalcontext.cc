@@ -281,8 +281,8 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 			auto& pbrDecal = decalState.pbrDecals[numPbrDecals];
 			Math::matrix44 viewSpace = Math::matrix44::multiply(transforms[i], viewTransform);
 			Math::bbox bbox(viewSpace);
-			Math::float4::storeu(bbox.pmin, pbrDecal.bboxMin);
-			Math::float4::storeu(bbox.pmax, pbrDecal.bboxMax);
+			bbox.pmin.storeu(pbrDecal.bboxMin);
+			bbox.pmax.storeu(pbrDecal.bboxMax);
 			pbrDecal.albedo = TextureGetBindlessHandle(pbrDecalAllocator.Get<DecalPBR_Albedo>(typeIds[i]));
 			pbrDecal.normal = TextureGetBindlessHandle(pbrDecalAllocator.Get<DecalPBR_Normal>(typeIds[i]));
 			pbrDecal.material = TextureGetBindlessHandle(pbrDecalAllocator.Get<DecalPBR_Material>(typeIds[i]));
@@ -300,8 +300,8 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 			auto& emissiveDecal = decalState.emissiveDecals[numEmissiveDecals];
 			Math::matrix44 viewSpace = Math::matrix44::multiply(transforms[i], viewTransform);
 			Math::bbox bbox(viewSpace);
-			Math::float4::storeu(bbox.pmin, emissiveDecal.bboxMin);
-			Math::float4::storeu(bbox.pmax, emissiveDecal.bboxMax);
+			bbox.pmin.storeu(emissiveDecal.bboxMin);
+			bbox.pmax.storeu(emissiveDecal.bboxMax);
 			Math::matrix44::inverse(transforms[i]).storeu(emissiveDecal.invModel);
 			Math::float4::storeu3(transforms[i].get_zaxis(), emissiveDecal.direction);
 			emissiveDecal.emissive = TextureGetBindlessHandle(emissiveDecalAllocator.Get<DecalEmissive_Emissive>(typeIds[i]));

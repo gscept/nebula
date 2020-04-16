@@ -139,8 +139,8 @@ void
 ShapeRendererBase::AddWireFrameBox(const Math::bbox& boundingBox, const Math::float4& color)
 {
     // render lines around bbox
-    const Math::point& center = boundingBox.center();
-    const Math::vector& extends = boundingBox.extents();    
+    const Math::point& center = boundingBox.center().vec;
+    const Math::vector& extends = boundingBox.extents().vec;
     const Math::vector corners[] = {  vector(1,1,1),
         vector(1,1,-1),
         vector(1,1,-1),

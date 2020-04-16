@@ -119,7 +119,7 @@ void ParticleStep(const ParticleJobUniformData* perSystemUniforms, const Particl
     ASSERT_VECTOR(in.velocity);
     out.position = in.position + in.velocity * samples[EmitterAttrs::VelocityFactor] * perJobUniforms->stepTime;
     ASSERT_POINT(out.position);
-	sliceOutput->bbox.extend(Math::bbox(out.position, Math::vector(samples[EmitterAttrs::Size])));
+	sliceOutput->bbox.extend(Math::bbox(out.position.vec, Math::vector(samples[EmitterAttrs::Size]).vec));
     out.velocity = in.velocity + acceleration * perJobUniforms->stepTime;
     ASSERT_VECTOR(out.velocity);
     if (perSystemUniforms->stretchToStart)

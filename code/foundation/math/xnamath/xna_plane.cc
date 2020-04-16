@@ -10,13 +10,4 @@
 namespace Math
 {
 
-//------------------------------------------------------------------------------
-/**
-*/
-plane
-plane::transform(__PlaneArg p, const matrix44& m)
-{
-    return XMPlaneTransform(p.vec, m.mx);
-}
-
 } // namespace Math

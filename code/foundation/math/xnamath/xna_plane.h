@@ -29,12 +29,10 @@ typedef const plane __PlaneArg;
 typedef const plane& __PlaneArg;
 #endif
 
-
-NEBULA_ALIGN16
 #if __XBOX360__
 __declspec(passinreg)
 #endif
-class plane
+class NEBULA_ALIGN16 plane
 {
 public:
     /// default constructor, NOTE: does NOT setup componenets!

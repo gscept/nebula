@@ -599,7 +599,7 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
 	{
 		lightServerState.csmUtil.SetCameraEntity(view->GetCamera());
 		lightServerState.csmUtil.SetGlobalLight(lightServerState.globalLightEntity);
-		lightServerState.csmUtil.SetShadowBox(Math::bbox(Math::point(0), Math::vector(500)));
+		lightServerState.csmUtil.SetShadowBox(Math::bbox(Math::point(0).vec, Math::vector(500).vec));
 		lightServerState.csmUtil.Compute(view->GetCamera(), lightServerState.globalLightEntity);
 
 		auto lid = genericLightAllocator.Get<TypedLightId>(cid.id);

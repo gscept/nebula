@@ -602,7 +602,7 @@ matrix44::scale(float4 const &s)
 {
     // need to make sure that last column isn't erased
     float4 scl = s;
-    scl.w = 1.0f;
+    scl.w() = 1.0f;
 
     this->mat.r[0] = float4::multiply(this->mat.r[0], scl).vec;
     this->mat.r[1] = float4::multiply(this->mat.r[1], scl).vec;

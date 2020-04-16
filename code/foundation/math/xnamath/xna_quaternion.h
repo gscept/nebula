@@ -26,12 +26,10 @@ typedef const quaternion  __QuaternionArg;
 typedef const quaternion& __QuaternionArg;
 #endif
 
-
-NEBULA_ALIGN16
 #if __XBOX360__
 __declspec(passinreg)
 #endif
-class quaternion
+class NEBULA_ALIGN16 quaternion
 {
 public:
     /// default constructor, NOTE: does NOT setup components!

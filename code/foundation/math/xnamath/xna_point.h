@@ -27,11 +27,10 @@ typedef const point& __PointArg;
 #endif
 
 
-NEBULA_ALIGN16
 #if __XBOX360__
 __declspec(passinreg)
 #endif
-class point : public float4
+class NEBULA_ALIGN16 point : public float4
 {
 public:
     /// default constructor

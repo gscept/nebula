@@ -29,11 +29,10 @@ typedef const float4& __Float4Arg;
 #endif
 
 
-NEBULA_ALIGN16
 #if __XBOX360__
 __declspec(passinreg)
 #endif
-class float4
+class NEBULA_ALIGN16 float4
 {
 public:
     /// default constructor, NOTE: does NOT setup components!

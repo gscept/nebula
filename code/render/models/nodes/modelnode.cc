@@ -40,7 +40,7 @@ ModelNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const P
 		// bounding box
 		point center = reader->ReadFloat4();
 		vector extents = reader->ReadFloat4();
-		this->boundingBox.set(center, extents);
+		this->boundingBox.set(center.vec, extents.vec);
 	}
 	else if (FourCC('MNTP') == fourcc)
 	{

@@ -5,16 +5,12 @@
 
     Nebula's bounding box class.
 
-    @todo: UNTESTED!
-
     (C) 2004 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
-#include "math/point.h"
-#include "math/vector.h"
-#include "math/matrix44.h"
-#include "math/line.h"
-#include "math/plane.h"
+#include "math2/vec3.h"
+#include "math2/vec4.h"
+#include "math2/mat4.h"
 #include "math/clipstatus.h"
 #include "math/sse.h"
 #include "util/array.h"
@@ -39,56 +35,54 @@ public:
     /// constructor 1
     bbox();
     /// constructor 3
-    bbox(const point& center, const vector& extents);
+    bbox(const vec3& center, const vec3& extents);
     /// construct bounding box from matrix44
-    bbox(const matrix44& m);
+    bbox(const mat4& m);
     /// get center of box
-    point center() const;
+    vec3 center() const;
     /// get extents of box
-    vector extents() const;
+    vec3 extents() const;
     /// get size of box
-    vector size() const;
+    vec3 size() const;
     /// get diagonal size of box
     scalar diagonal_size() const;
     /// set from matrix44
-    void set(const matrix44& m);
+    void set(const mat4& m);
     /// set from center point and extents
-    void set(const point& center, const vector& extents);
+    void set(const vec3& center, const vec3& extents);
     /// begin extending the box
     void begin_extend();
     /// extend the box
-    void extend(const point& p);
+    void extend(const vec3& p);
     /// extend the box
     void extend(const bbox& box);
     /// this resets the bounding box size to zero if no extend() method was called after begin_extend()
     void end_extend();
     /// transform bounding box
-    void transform(const matrix44& m);
+    void transform(const mat4& m);
     /// affine transform bounding box, does not allow for projections
-    void affine_transform(const matrix44& m);
+    void affine_transform(const mat4& m);
     /// check for intersection with axis aligned bounding box
     bool intersects(const bbox& box) const;
     /// check if this box completely contains the parameter box
     bool contains(const bbox& box) const;
     /// return true if this box contains the position
-    bool contains(const point& p) const;
+    bool contains(const vec3& p) const;
     /// check for intersection with other bounding box
     ClipStatus::Type clipstatus(const bbox& other) const;
     /// check for intersection with projection volume
-    ClipStatus::Type clipstatus(const matrix44& viewProjection) const;
-	/// check for intersection with projection volume in a SoA manner
-	ClipStatus::Type clipstatus_simd(const matrix44& viewProjection) const;
+    ClipStatus::Type clipstatus(const mat4& viewProjection) const;
     /// create a matrix which transforms a unit cube to this bounding box
-    matrix44 to_matrix44() const;
+    mat4 to_matrix44() const;
     /// return one of the 8 corner points
-    point corner_point(int index) const;
+    vec4 corner_point(int index) const;
     /// return side planes in clip space
-    void get_clipplanes(const matrix44& viewProjection, Util::Array<plane>& outPlanes) const;
+    void get_clipplanes(const mat4& viewProjection, Util::Array<vec4>& outPlanes) const;
     /// convert to any type
     template<typename T> T as() const;
 
-    point pmin;
-    point pmax;
+    vec3 pmin;
+    vec3 pmax;
 };
 
 //------------------------------------------------------------------------------
@@ -106,7 +100,7 @@ bbox::bbox() :
 /**
 */
 inline
-bbox::bbox(const point& center, const vector& extents)
+bbox::bbox(const vec3& center, const vec3& extents)
 {
     this->pmin = center - extents;
     this->pmax = center + extents;
@@ -119,11 +113,11 @@ bbox::bbox(const point& center, const vector& extents)
     define the extents.
 */
 inline void
-bbox::set(const matrix44& m)
+bbox::set(const mat4& m)
 {
     // get extents
-    vector extents = ( m.getrow0().abs() + m.getrow1().abs() + m.getrow2().abs() ) * 0.5f;
-    point center = m.getrow3();
+    vec3 extents = xyz( abs(m.r[0]) + abs(m.r[1]) + abs(m.r[2]) ) * 0.5f;
+    vec3 center = xyz(m.r[3]);
     this->pmin = center - extents;
     this->pmax = center + extents;
 }
@@ -132,7 +126,7 @@ bbox::set(const matrix44& m)
 /**
 */
 inline
-bbox::bbox(const matrix44& m)
+bbox::bbox(const mat4& m)
 {
     this->set(m);
 }
@@ -140,7 +134,7 @@ bbox::bbox(const matrix44& m)
 //------------------------------------------------------------------------------
 /**
 */
-inline point
+inline vec3
 bbox::center() const
 {
     return this->pmin + ((this->pmax - this->pmin) * 0.5f);
@@ -149,7 +143,7 @@ bbox::center() const
 //------------------------------------------------------------------------------
 /**
 */
-inline vector
+inline vec3
 bbox::extents() const
 {
     return (this->pmax - this->pmin) * 0.5f;
@@ -158,7 +152,7 @@ bbox::extents() const
 //------------------------------------------------------------------------------
 /**
 */
-inline vector
+inline vec3
 bbox::size() const
 {
     return this->pmax - this->pmin;
@@ -168,7 +162,7 @@ bbox::size() const
 /**
 */
 inline void
-bbox::set(const point& center, const vector& extents)
+bbox::set(const vec3& center, const vec3& extents)
 {
     this->pmin = center - extents;
     this->pmax = center + extents;
@@ -193,8 +187,8 @@ inline
 void
 bbox::end_extend()
 {
-    if ((this->pmin == point(+1000000.0f, +1000000.0f, +1000000.0f)) &&
-        (this->pmax == point(-1000000.0f, -1000000.0f, -1000000.0f)))
+    if ((this->pmin == vec3(+1000000.0f, +1000000.0f, +1000000.0f)) &&
+        (this->pmax == vec3(-1000000.0f, -1000000.0f, -1000000.0f)))
     {
         this->pmin.set(0.0f, 0.0f, 0.0f);
         this->pmax.set(0.0f, 0.0f, 0.0f);
@@ -205,10 +199,10 @@ bbox::end_extend()
 /**
 */
 inline void
-bbox::extend(const point& p)
+bbox::extend(const vec3& p)
 {
-    this->pmin = float4::minimize(this->pmin, p);
-    this->pmax = float4::maximize(this->pmax, p);
+    this->pmin = minimize(this->pmin, p);
+    this->pmax = maximize(this->pmax, p);
 }
 
 //------------------------------------------------------------------------------
@@ -218,8 +212,8 @@ inline
 void
 bbox::extend(const bbox& box)
 {
-    this->pmin = float4::minimize(this->pmin, box.pmin);
-    this->pmax = float4::maximize(this->pmax, box.pmax);
+    this->pmin = minimize(this->pmin, box.pmin);
+    this->pmax = maximize(this->pmax, box.pmax);
 }
 
 //------------------------------------------------------------------------------
@@ -236,24 +230,24 @@ bbox::extend(const bbox& box)
     would transform the bounding box into view space.
 */
 inline void
-bbox::transform(const matrix44& m)
+bbox::transform(const mat4& m)
 {
-    Math::point temp;
-    Math::point minP(1000000, 1000000,1000000);
-    Math::point maxP(-1000000, -1000000, -1000000);        
+    vec4 temp;
+    vec4 minP(1000000, 1000000,1000000, 1);
+    vec4 maxP(-1000000, -1000000, -1000000, 1);        
     IndexT i; 
         
     for(i = 0; i < 8; ++i)
     {
         // Transform and check extents
-        float4 temp_f = Math::matrix44::transform(corner_point(i), m);
-        temp = float4::perspective_div(temp_f);
-        maxP = float4::maximize(temp, maxP);
-        minP = float4::minimize(temp, minP);        
+        vec4 temp_f = m * corner_point(i);
+        temp = perspective_div(temp_f);
+        maxP = maximize(temp, maxP);
+        minP = minimize(temp, minP);        
     }    
 
-    this->pmin = minP;
-    this->pmax = maxP;
+    this->pmin = xyz(minP);
+    this->pmax = xyz(maxP);
 }
 
 //------------------------------------------------------------------------------
@@ -261,21 +255,21 @@ bbox::transform(const matrix44& m)
     
 */
 inline void
-bbox::affine_transform(const matrix44& m)
+bbox::affine_transform(const mat4& m)
 {
-    n_assert2(m.getrow0().w() == 0 && m.getrow1().w() == 0 && m.getrow2().w() == 0 && m.getrow3().w() == 1, "Matrix is not affine");
+    n_assert2(m.r[0].w == 0 && m.r[1].w == 0 && m.r[2].w== 0 && m.r[3].w == 1, "Matrix is not affine");
 
-    float4 xa = m.get_xaxis() * this->pmin.x();
-    float4 xb = m.get_xaxis() * this->pmax.x();
+    vec4 xa = m.r[X_AXIS] * this->pmin.x;
+    vec4 xb = m.r[X_AXIS] * this->pmax.x;
 
-    float4 ya = m.get_yaxis() * this->pmin.y();
-    float4 yb = m.get_yaxis() * this->pmax.y();
+    vec4 ya = m.r[Y_AXIS] * this->pmin.y;
+    vec4 yb = m.r[Y_AXIS] * this->pmax.y;
 
-    float4 za = m.get_zaxis() * this->pmin.z();
-    float4 zb = m.get_zaxis() * this->pmax.z();
+    vec4 za = m.r[Z_AXIS] * this->pmin.z;
+    vec4 zb = m.r[Z_AXIS] * this->pmax.z;
     
-    this->pmin = float4::minimize(xa, xb) + float4::minimize(ya, yb) + float4::minimize(za, zb) + m.get_position();
-    this->pmax = float4::maximize(xa, xb) + float4::maximize(ya, yb) + float4::maximize(za, zb) + m.get_position();
+    this->pmin = xyz(minimize(xa, xb) + minimize(ya, yb) + minimize(za, zb) + m.r[POSITION]);
+    this->pmax = xyz(maximize(xa, xb) + maximize(ya, yb) + maximize(za, zb) + m.r[POSITION]);
 }
 
 //------------------------------------------------------------------------------
@@ -286,8 +280,8 @@ bbox::affine_transform(const matrix44& m)
 inline bool
 bbox::intersects(const bbox& box) const
 {
-    bool lt = float4::less3_any(this->pmax, box.pmin);
-    bool gt = float4::greater3_any(this->pmin, box.pmax);
+    bool lt = less_any(this->pmax, box.pmin);
+    bool gt = greater_any(this->pmin, box.pmax);
     return !(lt || gt);
 }
 
@@ -299,8 +293,8 @@ bbox::intersects(const bbox& box) const
 inline bool
 bbox::contains(const bbox& box) const
 {
-    bool lt = float4::less3_all(this->pmin, box.pmin);
-    bool ge = float4::greaterequal3_all(this->pmax, box.pmax);
+    bool lt = less_all(this->pmin, box.pmin);
+    bool ge = greaterequal_all(this->pmax, box.pmax);
     return lt && ge;
 }
 
@@ -309,10 +303,10 @@ bbox::contains(const bbox& box) const
     Check if position is inside bounding box.
 */
 inline bool
-bbox::contains(const point& p) const
+bbox::contains(const vec3& p) const
 {
-    bool lt = float4::less3_all(this->pmin, p);
-    bool ge = float4::greaterequal3_all(this->pmax, p);
+    bool lt = less_all(this->pmin, p);
+    bool ge = greaterequal_all(this->pmax, p);
     return lt && ge;
 }
 
@@ -321,12 +315,12 @@ bbox::contains(const point& p) const
     Create a transform matrix which would transform a unit cube to this
     bounding box.
 */
-inline matrix44
+inline mat4
 bbox::to_matrix44() const
 {
-    matrix44 m = matrix44::scaling(this->size());
-    float4 pos = this->center();
-    m.set_position(pos);
+    mat4 m = scaling(this->size());
+    vec3 pos = this->center();
+    m.r[POSITION] = vec4(pos, 1);
     return m;
 }
 
@@ -336,97 +330,38 @@ bbox::to_matrix44() const
 inline scalar
 bbox::diagonal_size() const
 {
-    return (this->pmax - this->pmin).length();
-}
-
-//------------------------------------------------------------------------------
-/**
-    Check for intersection with a view volume defined by a view-projection
-    matrix.
-*/
-__forceinline ClipStatus::Type
-bbox::clipstatus(const matrix44& viewProjection) const
-{
-    // @todo: needs optimization!
-    int andFlags = 0xffff;
-    int orFlags  = 0;
-
-    // corner points
-    // get points by using permute with min and max, that is some pretty math right there!
-    point p[8];
-    p[0] = this->pmin;
-    p[1] = float4::permute(this->pmin, this->pmax, 0, 1, 6, 3);
-    p[2] = float4::permute(this->pmin, this->pmax, 4, 1, 6, 3);
-    p[3] = float4::permute(this->pmin, this->pmax, 4, 1, 2, 3);
-    p[4] = float4::permute(this->pmin, this->pmax, 0, 5, 2, 3);
-    p[5] = float4::permute(this->pmin, this->pmax, 0, 5, 6, 3);
-    p[6] = float4::permute(this->pmin, this->pmax, 4, 5, 2, 3);
-    p[7] = this->pmax;
-    
-    // check each corner point
-    float4 p1;
-    float4 res1, res2;
-    const float4 lowerFlags(ClipLeft, ClipBottom, ClipFar, 0);
-    const float4 upperFlags(ClipRight, ClipTop, ClipNear, 0);
-    IndexT i;
-    for (i = 0; i < 8; ++i)
-    {
-        int clip = 0;
-        p1 = matrix44::transform(p[i], viewProjection);
-        res1 = float4::less(p1, float4(-p1.w()));
-        res2 = float4::greater(p1, float4(p1.w()));
-        res1 = float4::multiply(res1, lowerFlags);
-        res2 = float4::multiply(res2, upperFlags);
-
-		alignas(16) uint res1_u[4];
-		res1.storeui((uint*)res1_u);
-		alignas(16) uint res2_u[4];
-		res2.storeui((uint*)res2_u);
-
-        clip |= res1_u[0];
-        clip |= res2_u[0];
-        clip |= res1_u[1];
-        clip |= res2_u[1];
-        clip |= res1_u[2];
-        clip |= res2_u[2];
-
-        andFlags &= clip;
-        orFlags  |= clip;
-    }
-    if (0 == orFlags)       return ClipStatus::Inside;
-    else if (0 != andFlags) return ClipStatus::Outside;
-    else                    return ClipStatus::Clipped;
+    return length(this->pmax - this->pmin);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 __forceinline ClipStatus::Type
-bbox::clipstatus_simd(const matrix44& viewProjection) const
+bbox::clipstatus(const mat4& viewProjection) const
 {
     using namespace Math;
 	int andFlags = 0xffff;
 	int orFlags = 0;
 
-    __m128 xs[2];
-    __m128 ys[2];
-    __m128 zs[2];
-    __m128 ws[2];
+    vec4 xs[2];
+    vec4 ys[2];
+    vec4 zs[2];
+    vec4 ws[2];
 
 	// create vectors for each dimension of each point, xxxx, yyyy, zzzz
-    xs[0] = _mm_set_ps1(this->pmin.x());
-    ys[0] = _mm_set_ps1(this->pmin.y());
-    zs[0] = _mm_set_ps1(this->pmin.z());
-    ws[0] = _mm_set_ps1(1.0f);
+    xs[0] = vec4(this->pmin.x);
+    ys[0] = vec4(this->pmin.y);
+    zs[0] = vec4(this->pmin.z);
+    ws[0] = vec4(1.0f);
 
-    xs[1] = _mm_set_ps1(this->pmax.x());
-    ys[1] = _mm_set_ps1(this->pmax.y());
-    zs[1] = _mm_set_ps1(this->pmax.z());
-    ws[1] = _mm_set_ps1(1.0f);
+    xs[1] = vec4(this->pmax.x);
+    ys[1] = vec4(this->pmax.y);
+    zs[1] = vec4(this->pmax.z);
+    ws[1] = vec4(1.0f);
 
-    __m128 px[2];
-    __m128 py[2];
-    __m128 pz[2];
+    vec4 px[2];
+    vec4 py[2];
+    vec4 pz[2];
 
 	// this corresponds to the permute phase in the original function
 	/*
@@ -444,57 +379,49 @@ bbox::clipstatus_simd(const matrix44& viewProjection) const
 
 		Meaning P1, P4, P6 and P7 are near plane, P2, P3, P5, P8 are far plane
 	*/
-    px[0] = _mm_add_ps(
-        _mm_mul_ps(xs[1], _mm_setr_ps(1, 1, 0, 0)),
-        _mm_mul_ps(xs[0], _mm_setr_ps(0, 0, 1, 1)));
-    px[1] = _mm_add_ps(
-        _mm_mul_ps(xs[1], _mm_setr_ps(0, 0, 1, 1)),
-        _mm_mul_ps(xs[0], _mm_setr_ps(1, 1, 0, 0)));
+    px[0] = xs[1] * vec4(1, 1, 0, 0) + xs[0] * vec4(0, 0, 1, 1);
+    px[1] = xs[1] * vec4(0, 0, 1, 1) + xs[0] * vec4(1, 1, 0, 0);
 
 	py[0] = ys[0];
     py[1] = ys[1];
 
-    pz[0] = _mm_add_ps(
-        _mm_mul_ps(zs[1], _mm_setr_ps(1, 0, 0, 1)),
-        _mm_mul_ps(zs[0], _mm_setr_ps(0, 1, 1, 0)));
-    pz[1] = _mm_add_ps(
-        _mm_mul_ps(zs[1], _mm_setr_ps(0, 1, 1, 0)),
-        _mm_mul_ps(zs[0], _mm_setr_ps(1, 0, 0, 1)));
+    pz[0] = zs[1] * vec4(1, 0, 0, 1) + zs[0] * vec4(0, 1, 1, 0);
+    pz[1] = zs[1] * vec4(0, 1, 1, 0) + zs[0] * vec4(1, 0, 0, 1);
 
-    __m128 m_col_x[4];
-    __m128 m_col_y[4];
-    __m128 m_col_z[4];
-    __m128 m_col_w[4];
+    vec4 m_col_x[4];
+    vec4 m_col_y[4];
+    vec4 m_col_z[4];
+    vec4 m_col_w[4];
 
 	// splat the matrix such that all _x, _y, ... will contain the column values of x, y, ...
-	m_col_x[0] = _mm_set1_ps(viewProjection.getrow0().x());//float4::splat_x(viewProjection.getrow0());
-	m_col_x[1] = _mm_set1_ps(viewProjection.getrow1().x());//float4::splat_x(viewProjection.getrow1());
-	m_col_x[2] = _mm_set1_ps(viewProjection.getrow2().x());//float4::splat_x(viewProjection.getrow2());
-	m_col_x[3] = _mm_set1_ps(viewProjection.getrow3().x());//float4::splat_x(viewProjection.getrow3());
+	m_col_x[0] = splat_x(viewProjection.r[0]);
+	m_col_x[1] = splat_x(viewProjection.r[1]);
+	m_col_x[2] = splat_x(viewProjection.r[2]);
+	m_col_x[3] = splat_x(viewProjection.r[3]);
 
-	m_col_y[0] = _mm_set1_ps(viewProjection.getrow0().y());//float4::splat_y(viewProjection.getrow0());
-    m_col_y[1] = _mm_set1_ps(viewProjection.getrow1().y());//float4::splat_y(viewProjection.getrow1());
-    m_col_y[2] = _mm_set1_ps(viewProjection.getrow2().y());//float4::splat_y(viewProjection.getrow2());
-    m_col_y[3] = _mm_set1_ps(viewProjection.getrow3().y());//float4::splat_y(viewProjection.getrow3());
+	m_col_y[0] = splat_y(viewProjection.r[0]);
+    m_col_y[1] = splat_y(viewProjection.r[1]);
+    m_col_y[2] = splat_y(viewProjection.r[2]);
+    m_col_y[3] = splat_y(viewProjection.r[3]);
 
-	m_col_z[0] = _mm_set1_ps(viewProjection.getrow0().z());//float4::splat_z(viewProjection.getrow0());
-    m_col_z[1] = _mm_set1_ps(viewProjection.getrow1().z());//float4::splat_z(viewProjection.getrow1());
-    m_col_z[2] = _mm_set1_ps(viewProjection.getrow2().z());//float4::splat_z(viewProjection.getrow2());
-    m_col_z[3] = _mm_set1_ps(viewProjection.getrow3().z());//float4::splat_z(viewProjection.getrow3());
+	m_col_z[0] = splat_z(viewProjection.r[0]);
+    m_col_z[1] = splat_z(viewProjection.r[1]);
+    m_col_z[2] = splat_z(viewProjection.r[2]);
+    m_col_z[3] = splat_z(viewProjection.r[3]);
 
-	m_col_w[0] = _mm_set1_ps(viewProjection.getrow0().w());//float4::splat_w(viewProjection.getrow0());
-    m_col_w[1] = _mm_set1_ps(viewProjection.getrow1().w());//float4::splat_w(viewProjection.getrow1());
-    m_col_w[2] = _mm_set1_ps(viewProjection.getrow2().w());//float4::splat_w(viewProjection.getrow2());
-    m_col_w[3] = _mm_set1_ps(viewProjection.getrow3().w());//float4::splat_w(viewProjection.getrow3());
+	m_col_w[0] = splat_w(viewProjection.r[0]);
+    m_col_w[1] = splat_w(viewProjection.r[1]);
+    m_col_w[2] = splat_w(viewProjection.r[2]);
+    m_col_w[3] = splat_w(viewProjection.r[3]);
 
-    __m128 p1;
-    __m128 res1;
-    const __m128 xLeftFlags = _mm_set1_ps(ClipLeft);
-    const __m128 xRightFlags = _mm_set1_ps(ClipRight);
-    const __m128 yBottomFlags = _mm_set1_ps(ClipBottom);
-    const __m128 yTopFlags = _mm_set1_ps(ClipTop);
-    const __m128 zFarFlags = _mm_set1_ps(ClipFar);
-    const __m128 zNearFlags = _mm_set1_ps(ClipNear);
+    vec4 p1;
+    vec4 res1;
+    const vec4 xLeftFlags = vec4(ClipLeft);
+    const vec4 xRightFlags = vec4(ClipRight);
+    const vec4 yBottomFlags = vec4(ClipBottom);
+    const vec4 yTopFlags = vec4(ClipTop);
+    const vec4 zFarFlags = vec4(ClipFar);
+    const vec4 zNearFlags = vec4(ClipNear);
 
 
 	// check two loops of points arranged as xxxx yyyy zzzz
@@ -504,41 +431,41 @@ bbox::clipstatus_simd(const matrix44& viewProjection) const
 		int clip = 0;
 
 		// transform the x component of 4 points simultaneously 
-		xs[i] = fmadd(m_col_x[2], pz[i],
-            fmadd(m_col_x[1], py[i],
-                fmadd(m_col_x[0], px[i], m_col_x[3])));
+		xs[i] = multiplyadd(m_col_x[2], pz[i],
+            multiplyadd(m_col_x[1], py[i],
+                multiplyadd(m_col_x[0], px[i], m_col_x[3])));
 
 		// transform the y component of 4 points simultaneously 
-		ys[i] = fmadd(m_col_y[2], pz[i],
-            fmadd(m_col_y[1], py[i],
-                fmadd(m_col_y[0], px[i], m_col_y[3])));
+		ys[i] = multiplyadd(m_col_y[2], pz[i],
+            multiplyadd(m_col_y[1], py[i],
+                multiplyadd(m_col_y[0], px[i], m_col_y[3])));
 
 		// transform the z component of 4 points simultaneously 
-		zs[i] = fmadd(m_col_z[2], pz[i],
-            fmadd(m_col_z[1], py[i],
-                fmadd(m_col_z[0], px[i], m_col_z[3])));
+		zs[i] = multiplyadd(m_col_z[2], pz[i],
+            multiplyadd(m_col_z[1], py[i],
+                multiplyadd(m_col_z[0], px[i], m_col_z[3])));
 
 		// transform the w component of 4 points simultaneously 
-		ws[i] = fmadd(m_col_w[2], pz[i],
-            fmadd(m_col_w[1], py[i],
-                fmadd(m_col_w[0], px[i], m_col_w[3])));
+		ws[i] = multiplyadd(m_col_w[2], pz[i],
+            multiplyadd(m_col_w[1], py[i],
+                multiplyadd(m_col_w[0], px[i], m_col_w[3])));
 
 		{
-			const __m128 nws = _mm_mul_ps(ws[i], _mm_set1_ps(-1.0f));
-			const __m128 pws = ws[i];
+			const vec4 nws = -ws[i];
+			const vec4 pws = ws[i];
 
 			// add all flags together into one big vector of flags for all 4 points
-			res1 = fmadd(less(xs[i], nws), xLeftFlags,
-                fmadd(greater(xs[i], pws), xRightFlags,
-                    fmadd(less(ys[i], nws), yBottomFlags,
-                        fmadd(greater(ys[i], pws), yTopFlags,
-                            fmadd(less(zs[i], nws), zFarFlags,
-                                _mm_mul_ps(greater(zs[i], pws), zNearFlags))))));
+			res1 = multiplyadd(less(xs[i], nws), xLeftFlags,
+                multiplyadd(greater(xs[i], pws), xRightFlags,
+                    multiplyadd(less(ys[i], nws), yBottomFlags,
+                        multiplyadd(greater(ys[i], pws), yTopFlags,
+                            multiplyadd(less(zs[i], nws), zFarFlags,
+                                (greater(zs[i], pws) * zNearFlags))))));
 		}
 
 		// read to stack and convert to uint in one swoop
 		alignas(16) uint res1_u[4];
-        __m128i result = _mm_cvttps_epi32(res1);
+        __m128i result = _mm_cvttps_epi32(res1.vec);
         _mm_storeu_si128(reinterpret_cast<__m128i*>(res1_u), result);
 
 		// update flags by or-ing and and-ing all 4 points individually

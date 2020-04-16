@@ -344,8 +344,8 @@ CSMUtil::Compute(const Graphics::GraphicsEntityId camera, const Graphics::Graphi
 	matrix44 lightView = matrix44::inverse(Lighting::LightContext::GetTransform(light));
 	
 	// calculate light AABB based on the AABB of the scene
-	float4 sceneCenter = this->shadowBox.center();
-	float4 sceneExtents = this->shadowBox.extents();
+	float4 sceneCenter = this->shadowBox.center().vec;
+	float4 sceneExtents = this->shadowBox.extents().vec;
 	float4 sceneAABBLightPoints[8];
 	this->ComputeAABB(sceneAABBLightPoints, sceneCenter, sceneExtents);
 	for (int index = 0; index < 8; ++index)

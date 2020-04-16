@@ -17,25 +17,25 @@ namespace Math
     @todo: Untested! Replace with simpler code.
 */
 bool
-line::intersect(const line& l, point& pa, point& pb) const
+line::intersect(const line& l, vec3& pa, vec3& pb) const
 {
     const scalar EPS = 2.22e-16f;
-    point p1 = this->b;
-    point p2 = this->pointat(10.0f);
-    point p3 = l.b;
-    point p4 = l.pointat(10.0f);
+    vec3 p1 = this->b;
+    vec3 p2 = this->pointat(10.0f);
+    vec3 p3 = l.b;
+    vec3 p4 = l.pointat(10.0f);
 
-    vector p13 = p1 - p3;
-    vector p43 = p4 - p3;
-    vector p21 = p2 - p1;
-    if (p43.lengthsq() < EPS) return false;
-    if (p21.lengthsq() < EPS) return false;
+    vec3 p13 = p1 - p3;
+    vec3 p43 = p4 - p3;
+    vec3 p21 = p2 - p1;
+    if (Math::lengthsq(p43) < EPS) return false;
+    if (Math::lengthsq(p21) < EPS) return false;
 
-    scalar d1343 = float4::dot3(p13, p43);
-    scalar d4321 = float4::dot3(p43, p21);
-    scalar d1321 = float4::dot3(p13, p21);
-    scalar d4343 = float4::dot3(p43, p43);
-    scalar d2121 = float4::dot3(p21, p21);
+    scalar d1343 = dot(p13, p43);
+    scalar d4321 = dot(p43, p21);
+    scalar d1321 = dot(p13, p21);
+    scalar d4343 = dot(p43, p43);
+    scalar d2121 = dot(p21, p21);
 
     scalar denom = d2121 * d4343 - d4321 * d4321;
     if (n_abs(denom) < EPS) return false;
@@ -54,18 +54,18 @@ line::intersect(const line& l, point& pa, point& pb) const
 /**
 */
 Math::scalar 
-line::distance( const line& l, point& pa, point& pb ) const
+line::distance( const line& l, vec3& pa, vec3& pb ) const
 {
     const scalar EPS = 2.22e-16f;
-    vector u = this->pointat(10) - this->b;
-    vector v = l.pointat(10) - l.b;
-    vector w = this->b - l.b;
+    vec3 u = this->pointat(10) - this->b;
+    vec3 v = l.pointat(10) - l.b;
+    vec3 w = this->b - l.b;
 
-    float a = float4::dot3(u, u);
-    float b = float4::dot3(u, v);
-    float c = float4::dot3(v, v);
-    float d = float4::dot3(u, w);
-    float e = float4::dot3(v, w);
+    float a = dot(u, u);
+    float b = dot(u, v);
+    float c = dot(v, v);
+    float d = dot(u, w);
+    float e = dot(v, w);
     float D = a*c - b * b;
     float sc, tc;
 
@@ -84,8 +84,8 @@ line::distance( const line& l, point& pa, point& pb ) const
     pa = this->pointat(sc);
     pb = l.pointat(tc);
 
-    vector dp = w + (u * sc) - (v * tc);
-    return dp.length3();
+    vec3 dp = w + (u * sc) - (v * tc);
+    return Math::length(dp);
 }
 
 } // namespace Math

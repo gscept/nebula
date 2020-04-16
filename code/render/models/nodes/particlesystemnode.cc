@@ -76,11 +76,11 @@ ParticleSystemNode::OnFinishedLoading()
 	this->surface = Materials::surfacePool->GetId(this->surRes);
 
 	float activityDist = this->emitterAttrs.GetFloat(EmitterAttrs::ActivityDistance) * 0.5f;
-	this->boundingBox.set(Math::point(0), Math::vector(0));
+	this->boundingBox.set(Math::point(0).vec, Math::vector(0).vec);
 
     // calculate bounding box using activity distance
 	Math::bbox& box = modelPool->GetModelBoundingBox(this->model);
-    this->boundingBox.set(box.center(), Math::point(activityDist, activityDist, activityDist));
+    this->boundingBox.set(box.center().vec, Math::point(activityDist, activityDist, activityDist).vec);
 	box.extend(this->boundingBox);
 
 	// setup sample buffer and emitter mesh
@@ -335,8 +335,8 @@ ParticleSystemNode::Instance::Update()
 	}
 
 	// update parameters
-	Math::float4::storeu(this->boundingBox.center(), block.BBoxCenter);
-	Math::float4::storeu(this->boundingBox.extents(), block.BBoxSize);
+    this->boundingBox.center().storeu(block.BBoxCenter);
+    this->boundingBox.extents().storeu(block.BBoxSize);
 	block.NumAnimPhases = pnode->emitterAttrs.GetInt(EmitterAttrs::AnimPhases);
 	block.AnimFramesPerSecond = pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond);
 

@@ -9,6 +9,8 @@
 #include "math/float2.h"
 #include "math/vector.h"
 #include "math/matrix44.h"
+#include "math2/vec3.h"
+#include "math2/vec4.h"
 
 // User-defined assertion handler (default is cassert assert()).
 #define IM3D_ASSERT(e) n_assert(e)
@@ -40,10 +42,14 @@
 	Vec3(const Math::vector& _v)      { x = _v.x(); y = _v.y(); z = _v.z(); } \
 	operator Math::vector() const     { return Math::vector(x, y, z);    } \
     Vec3(const Math::float4& _v)      { x = _v.x(); y = _v.y(); z = _v.z(); } \
-	operator Math::float4() const     { return Math::float4(x, y, z, 1.0f);    }
+	operator Math::float4() const     { return Math::float4(x, y, z, 1.0f);    }\
+	Vec3(const Math::vec3& _v)		  { x = _v.x; y = _v.y; z = _v.z; } \
+	operator Math::vec3() const		  { return Math::vec3(x, y, z); }
 #define IM3D_VEC4_APP \
 	Vec4(const Math::float4& _v)      { x = _v.x(); y = _v.y(); z = _v.z(); w = _v.w(); } \
-	operator Math::float4() const     { return Math::float4(x, y, z, w);           }
+	operator Math::float4() const     { return Math::float4(x, y, z, w);           }\
+	Vec4(const Math::vec4& _v)		  { x = _v.x; y = _v.y; z = _v.z; w = _v.w; } \
+	operator Math::vec4() const       { return Math::vec4(x, y, z, w); }
 #define IM3D_MAT3_APP \
 	Mat3(const Math::matrix44& _m)    { float b[16]; _m.storeu(b); for(int j = 0 ; j < 3;++j) for (int i = 0; i < 3; ++i) m[i+j*3] = b[i + j*4]; } \
 	operator Math::matrix44() const   { Math::matrix44 ret; float b[16]; ret.storeu(b); int k = 0; for(int j = 0 ; j < 3;++j) for (int i = 0; i < 3; ++i) b[i+4*j] = m[i+j*3]; ret.loadu(b); return ret; }

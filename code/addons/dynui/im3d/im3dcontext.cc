@@ -223,7 +223,7 @@ Im3dContext::DrawOrientedBox(const Math::matrix44& transform, const Math::bbox &
     Im3d::Vec3 p[8];
     for (int i = 0; i < 8; i++)
     {
-        p[i] = Math::matrix44::transform(box.corner_point(i), transform);
+        p[i] = Math::matrix44::transform(box.corner_point(i).vec, transform);
     }    
     if (depthFlag & CheckDepth) Im3d::PushLayerId(imState.depthLayerId);
     Im3d::SetSize(2.0f);
@@ -505,4 +505,4 @@ Im3dContext::SetGizmoSize(int size, int width)
     ctx.m_gizmoSizePixels = width;
 }
 
-}
+} // namespace Im3d

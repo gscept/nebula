@@ -247,7 +247,7 @@ Nvx2StreamReader::UpdateGroupBoundingBoxes()
         PrimitiveGroup& group = this->primGroups[groupIndex];        
         bbox box;
         box.begin_extend();
-        point p;
+        vec3 p;
         IndexT ii;
         for (ii = 0; ii < group.GetNumIndices(); ii++)
         {

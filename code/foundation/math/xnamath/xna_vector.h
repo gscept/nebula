@@ -25,12 +25,10 @@ typedef const vector  __VectorArg;
 typedef const vector& __VectorArg;
 #endif
 
-
-NEBULA_ALIGN16
 #if __XBOX360__
 __declspec(passinreg)
 #endif
-class vector : public float4
+class NEBULA_ALIGN16 vector : public float4
 {
 public:
     /// default constructor

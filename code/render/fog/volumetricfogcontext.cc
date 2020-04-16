@@ -302,8 +302,8 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 			fog.falloff = 64.0f;
 			Math::matrix44 transform = Math::matrix44::multiply(fogBoxVolumeAllocator.Get<FogBoxVolume_Transform>(typeIds[i]), viewTransform);
 			Math::bbox box(transform);
-			Math::float4::storeu3(box.pmin, fog.bboxMin);
-			Math::float4::storeu3(box.pmax, fog.bboxMax);
+			box.pmin.storeu(fog.bboxMin);
+			box.pmax.storeu(fog.bboxMax);
 			Math::matrix44::storeu(Math::matrix44::inverse(transform), fog.invTransform);
 			numFogBoxVolumes++;
 			break;

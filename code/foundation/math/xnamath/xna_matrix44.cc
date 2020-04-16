@@ -17,7 +17,7 @@ namespace Math
 /**
 */
 matrix44
-matrix44::reflect(const plane& p)
+matrix44::reflect(const float4& p)
 {
     return XMMatrixReflect(p.vec);
 }

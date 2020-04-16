@@ -10,8 +10,8 @@
     (C) 2004 RadonLabs GmbH
 	(C) 2013-2020 Individual contributors, see AUTHORS file
 */
-#include "math/point.h"
-#include "math/vector.h"
+
+#include "math2/vec3.h"
 #include "math/scalar.h"
 
 //------------------------------------------------------------------------------
@@ -23,36 +23,36 @@ public:
     /// default constructor
     line();
     /// component constructor
-    line(const point& startPoint, const point& endPoint);
+    line(const vec3& startPoint, const vec3& endPoint);
     /// copy constructor
     line(const line& rhs);
     /// set start and end point
-    void set(const point& startPoint, const point& endPoint);
+    void set(const vec3& startPoint, const vec3& endPoint);
     /// set start point and direction
-    void set_point_dir(const point& startPoint, const vector& direction);
+    void set_point_dir(const vec3& startPoint, const vec3& direction);
     /// get start point
-    const point& start() const;
+    const vec3& start() const;
     /// get end point
-    point end() const;
+    vec3 end() const;
     /// get vector
-    const vector& vec() const;
+    const vec3& vec() const;
     /// get length
     scalar length() const;
     /// get squared length
     scalar lengthsq() const;
     /// minimal distance of point to line
-    scalar distance(const point& p) const;
+    scalar distance(const vec3& p) const;
     /// intersect with line
-    bool intersect(const line& l, point& pa, point& pb) const;
+    bool intersect(const line& l, vec3& pa, vec3& pb) const;
     /// calculates shortest distance between lines
-    scalar distance(const line& l, point& pa, point& pb) const;
+    scalar distance(const line& l, vec3& pa, vec3& pb) const;
     /// return t of the closest point on the line
-    scalar closestpoint(const point& p) const;
+    scalar closestpoint(const vec3& p) const;
     /// return p = b + m*t
-    point pointat(scalar t) const;
+    vec3 pointat(scalar t) const;
 
-    point b;
-    vector m;
+    vec3 b;
+    vec3 m;
 };
 
 //------------------------------------------------------------------------------
@@ -68,7 +68,7 @@ line::line()
 /**
 */
 inline
-line::line(const point& startPoint, const point& endPoint) :
+line::line(const vec3& startPoint, const vec3& endPoint) :
     b(startPoint),
     m(endPoint - startPoint)
 {
@@ -90,7 +90,7 @@ line::line(const line& rhs) :
 /**
 */
 inline void
-line::set(const point& startPoint, const point& endPoint)
+line::set(const vec3& startPoint, const vec3& endPoint)
 {
     this->b = startPoint;
     this->m = endPoint - startPoint;
@@ -100,7 +100,7 @@ line::set(const point& startPoint, const point& endPoint)
 /**
 */
 inline void
-line::set_point_dir(const point& startPoint, const vector& dir)
+line::set_point_dir(const vec3& startPoint, const vec3& dir)
 {
     this->b = startPoint;
     this->m = dir;
@@ -109,7 +109,7 @@ line::set_point_dir(const point& startPoint, const vector& dir)
 //------------------------------------------------------------------------------
 /**
 */
-inline const point&
+inline const vec3&
 line::start() const
 {
     return this->b;
@@ -118,7 +118,7 @@ line::start() const
 //------------------------------------------------------------------------------
 /**
 */
-inline point
+inline vec3
 line::end() const
 {
     return this->b + this->m;
@@ -127,7 +127,7 @@ line::end() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const vector&
+inline const vec3&
 line::vec() const
 {
     return this->m;
@@ -139,7 +139,7 @@ line::vec() const
 inline scalar
 line::length() const
 {
-    return this->m.length();
+    return Math::length(this->m);
 }
 
 //------------------------------------------------------------------------------
@@ -148,7 +148,7 @@ line::length() const
 inline scalar
 line::lengthsq() const
 {
-    return this->m.lengthsq();
+    return Math::lengthsq(this->m);
 }
 
 //------------------------------------------------------------------------------
@@ -161,13 +161,13 @@ line::lengthsq() const
     p = m + b*t
 */
 inline scalar
-line::closestpoint(const point& p) const
+line::closestpoint(const vec3& p) const
 {
-    vector diff(p - this->b);
-    scalar l = float4::dot3(this->m, this->m);
+    vec3 diff(p - this->b);
+    scalar l = dot(this->m, this->m);
     if (l > 0.0f)
     {
-        scalar t = float4::dot3(this->m, diff) / l;
+        scalar t = dot(this->m, diff) / l;
         return t;
     }
     else
@@ -180,21 +180,21 @@ line::closestpoint(const point& p) const
 /**
 */
 inline scalar
-line::distance(const point& p) const
+line::distance(const vec3& p) const
 {
-    vector diff(p - this->b);
-    scalar l = float4::dot3(this->m, this->m);
+    vec3 diff(p - this->b);
+    scalar l = dot(this->m, this->m);
     if (l > 0.0f) 
     {
-        scalar t = float4::dot3(this->m, diff) / l;
+        scalar t = dot(this->m, diff) / l;
         diff = diff - this->m * t;
-        return diff.length();
+        return Math::length(diff);
     } 
     else 
     {
         // line is really a point...
-        vector v(p - this->b);
-        return v.length();
+        vec3 v(p - this->b);
+        return Math::length(v);
     }
 }
 
@@ -203,7 +203,7 @@ line::distance(const point& p) const
     Returns p = b + m * t, given t. Note that the point is not on the line
     if 0.0 > t > 1.0
 */
-inline point
+inline vec3
 line::pointat(scalar t) const
 {
     return this->b + this->m * t;

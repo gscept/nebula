@@ -69,10 +69,10 @@ sphere::intersects(const bbox& box) const
 bool
 sphere::intersects_ray(const line& ray) const
 {
-    point oc = ray.start() - p;
-    scalar a = Math::float4::dot3(ray.vec(), ray.vec());
-    scalar b = 2.0f * Math::float4::dot3(oc, ray.vec());
-    scalar c = Math::float4::dot3(oc, oc) - r * r;
+    vec3 oc = ray.start() - p;
+    scalar a = dot(ray.vec(), ray.vec());
+    scalar b = 2.0f * dot(oc, ray.vec());
+    scalar c = dot(oc, oc) - r * r;
     scalar discriminant = b * b - 4.0f * a*c;
     return (discriminant > 0);
 }
@@ -80,14 +80,14 @@ sphere::intersects_ray(const line& ray) const
 //------------------------------------------------------------------------------
 /**
 */
-point
+vec3
 sphere::random_point_on_unit_sphere()
 {
     float x = Util::RandomFloatNTP();
     float y = Util::RandomFloatNTP();
     float z = Util::RandomFloatNTP();
-    vector v = { x, y, z };
-    return Math::vector::normalize(v);
+    vec3 v( x, y, z );
+    return normalize(v);
 }
 
 //------------------------------------------------------------------------------
@@ -103,7 +103,7 @@ sphere::random_point_on_unit_sphere()
     @param  u1  [out] normalized outro contact
 */
 bool
-sphere::intersect_sweep(const vector& va, const sphere&  sb, const vector& vb, float& u0, float& u1) const
+sphere::intersect_sweep(const vec3& va, const sphere& sb, const vec3& vb, float& u0, float& u1) const
 {
     n_error("sphere::intersect_sweep(): NOT IMPLEMENTED!");
     return false;
@@ -169,7 +169,7 @@ sphere::intersect_sweep(const vector& va, const sphere&  sb, const vector& vb, f
     the sphere is at least partially visible.
 */
 rectangle<scalar>
-sphere::project_screen_rh(const matrix44& view, const matrix44& projection, float nearZ) const
+sphere::project_screen_rh(const mat4& view, const mat4& projection, float nearZ) const
 {
     n_error("sphere::project_screen_rh(): NOT IMPLEMENTED!");
     return rectangle<scalar>(0, 0, 0, 0);

@@ -590,6 +590,17 @@ nebula_begin_module(foundation)
 			vec_vector.h
 		)
 	endif()
+
+	fips_dir(math2 foundation)
+	fips_files(
+		mat4.cc
+		mat4.h
+		vec4.cc
+		vec4.h
+		vec3.h
+		quat.cc
+		quat.h
+	)
 	fips_dir(.)
 
 	if(FIPS_WINDOWS)

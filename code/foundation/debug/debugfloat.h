@@ -338,18 +338,5 @@ DebugFloat::print(const Math::quaternion &q, const char *msg)
 	if(msg) n_printf("\n");
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline
-void				
-DebugFloat::print(const Math::plane &p, const char *msg)
-{
-	if(msg) n_printf("%s: ", msg);
-    print(Math::float4(p.a(), p.b(), p.c(), p.d()), NULL);
-	if(msg) n_printf("\n");
-}
-
-
 } // namespace Debug
 //------------------------------------------------------------------------------

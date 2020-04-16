@@ -223,7 +223,6 @@ PYBIND11_EMBEDDED_MODULE(nmath, m)
 		.def_static("transform3", py::overload_cast<const Math::point&, const Math::matrix44&>(&Math::matrix44::transform3))
 		.def_static("transform3", py::overload_cast<const Math::vector&, const Math::matrix44&>(&Math::matrix44::transform3))
 		.def_static("rotation_matrix", &Math::matrix44::rotationmatrix)
-		.def_static("transform", py::overload_cast<const Math::plane&, const Math::matrix44&>(&Math::matrix44::transform))
 		.def_static("is_point_inside", &Math::matrix44::ispointinside)
 		.def_buffer([](Math::matrix44 &m) -> py::buffer_info {
 			return py::buffer_info(

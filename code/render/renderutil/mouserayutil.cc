@@ -29,7 +29,7 @@ MouseRayUtil::ComputeWorldMouseRay(const float2& mousePos, float length, const m
     worldMouseDir = vector::normalize(worldMouseDir);
     worldMouseDir *= length;
 
-    return line(worldMousePos, worldMousePos + worldMouseDir);
+    return line(worldMousePos.vec, (worldMousePos + worldMouseDir).vec);
 }
 
 } // namespace RenderUtil

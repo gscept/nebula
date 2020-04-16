@@ -26,8 +26,8 @@ class plane;
 // this is a reference so far
 typedef const matrix44& __Matrix44Arg;
 
-NEBULA_ALIGN16
-class matrix44
+
+class NEBULA_ALIGN16 matrix44
 {
 public:
     /// default constructor, NOTE: does NOT setup components!
@@ -166,7 +166,7 @@ public:
     /// build right-handed off-center perspective projection matrix
     static matrix44 perspoffcenterrh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf);
     /// build matrix that reflects coordinates about a plance
-    static matrix44 reflect(const plane& p);
+    static matrix44 reflect(const float4& p);
     /// build rotation matrix around arbitrary axis
     static matrix44 rotationaxis(float4 const &axis, scalar angle);
     /// build rotation matrix from quaternion
@@ -201,8 +201,6 @@ public:
 	static float4 transform3(const vector& v, const matrix44& m);
     /// return a quaternion from rotational part of the 4x4 matrix
     static quaternion rotationmatrix(const matrix44& m);
-    /// transform a plane with a matrix
-    static plane transform(const plane& p, const matrix44& m);
 	
     /// check if point lies inside matrix frustum
     static bool ispointinside(const float4& p, const matrix44& m);
@@ -1071,16 +1069,6 @@ quaternion
 matrix44::rotationmatrix(const matrix44& m)
 {
     return DirectX::XMQuaternionRotationMatrix(m.mx);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline
-plane
-matrix44::transform(const plane& p, const matrix44& m)
-{
-    return DirectX::XMPlaneTransform(p.vec, m.mx);
 }
 
 } // namespace Math
