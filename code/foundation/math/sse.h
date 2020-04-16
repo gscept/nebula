@@ -45,7 +45,7 @@ less(__m128 a, __m128 b)
 __forceinline __m128
 greater(__m128 a, __m128 b)
 {
-    return _mm_min_ps(_mm_cmpeq_ps(a, b), _mm_set1_ps(1));
+    return _mm_min_ps(_mm_cmpgt_ps(a, b), _mm_set1_ps(1));
 }
 
 } // namespace Math

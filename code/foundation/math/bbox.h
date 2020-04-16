@@ -487,7 +487,6 @@ bbox::clipstatus_simd(const matrix44& viewProjection) const
     m_col_w[2] = _mm_set1_ps(viewProjection.getrow2().w());//float4::splat_w(viewProjection.getrow2());
     m_col_w[3] = _mm_set1_ps(viewProjection.getrow3().w());//float4::splat_w(viewProjection.getrow3());
 
-    __m128 p1;
     __m128 res1;
     const __m128 xLeftFlags = _mm_set1_ps(ClipLeft);
     const __m128 xRightFlags = _mm_set1_ps(ClipRight);
