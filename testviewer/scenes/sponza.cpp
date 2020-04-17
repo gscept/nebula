@@ -27,19 +27,19 @@ void OpenScene()
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(entity);
     Models::ModelContext::Setup(entity, "mdl:sponza/sponza.n3", "SponzaScene");
     
-    Math::matrix44 t = Math::matrix44::translation(Math::float4(0, 0, 0, 1));
-    Math::matrix44 r = Math::matrix44::rotationx(Math::n_deg2rad(0.0f));
-    Math::matrix44 s = Math::matrix44::scaling(Math::float4(1, 1, 1, 1));
+    Math::mat4 t = Math::translation(Math::vec3(0, 0, 0));
+    Math::mat4 r = Math::rotationx(Math::n_deg2rad(0.0f));
+    Math::mat4 s = Math::scaling(Math::vec3(1, 1, 1));
     
-    Math::matrix44 trs = Math::matrix44::multiply(s, r);
-    trs = Math::matrix44::multiply(trs, t);
+    Math::mat4 trs = s * r;
+    trs = trs * t;
     
     Models::ModelContext::SetTransform(entity, trs);
     Visibility::ObservableContext::Setup(entity, Visibility::VisibilityEntityType::Model);
     
     light = Graphics::CreateEntity();
     Graphics::RegisterEntity<Lighting::LightContext>(light);
-    Lighting::LightContext::SetupPointLight(light, Math::float4(1, 1, 1, 1), 10.0f, Math::matrix44::translation(0, 1, 0), 10.0f, false);
+    Lighting::LightContext::SetupPointLight(light, Math::vec3(1, 1, 1), 10.0f, Math::translation(0, 1, 0), 10.0f, false);
 };
 
 //------------------------------------------------------------------------------
@@ -68,7 +68,7 @@ void StepFrame()
     
     if (moveLight)
     {
-        Lighting::LightContext::SetTransform(light, Math::matrix44::translation(Math::n_sin(x) * scale, 0.5f, Math::n_cos(y) * scale));
+        Lighting::LightContext::SetTransform(light, Math::translation(Math::n_sin(x) * scale, 0.5f, Math::n_cos(y) * scale));
         x += speed;
         y += speed;
     }

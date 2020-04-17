@@ -27,11 +27,11 @@ VectorTest::Run()
 
 	// construction
     vector t;
-    VERIFY(float4equal(t, float4(0.0, 0.0, 0.0, 0.0)));
+    VERIFY(vec4equal(t, vec4(0.0, 0.0, 0.0, 0.0)));
     vector z(t);
-    VERIFY(float4equal(z, float4(0.0, 0.0, 0.0, 0.0)));
+    VERIFY(vec4equal(z, vec4(0.0, 0.0, 0.0, 0.0)));
 	vector v(1.0, 2.0, 3.0);
-	VERIFY(float4equal(v, float4(1.0, 2.0, 3.0, 0.0)));
+	VERIFY(vec4equal(v, vec4(1.0, 2.0, 3.0, 0.0)));
     vector v0(1.0f, 2.0f, 3.0f);
     vector v1(4.0f, 3.0f, 2.0f);
     vector v2(v0);
@@ -40,7 +40,7 @@ VectorTest::Run()
     VERIFY(v1 == v3);
     VERIFY(v0 != v1);
     VERIFY(v2 != v3);
-    VERIFY(v0 == float4(1.0f, 2.0f, 3.0f, 0.0));
+    VERIFY(v0 == vec3(1.0f, 2.0f, 3.0f));
     // assignemt
     v2 = v1;
     VERIFY(v2 == v1);

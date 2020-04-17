@@ -80,11 +80,11 @@ protected:
     int cameraMode = 0;
     float zoomIn = 0.0f;
     float zoomOut = 0.0f;
-    Math::float2 panning{ 0.0f,0.0f };
-    Math::float2 orbiting{ 0.0f,0.0f };    
+    Math::vec2 panning{ 0.0f,0.0f };
+    Math::vec2 orbiting{ 0.0f,0.0f };
     RenderUtil::MayaCameraUtil mayaCameraUtil;
     RenderUtil::FreeCameraUtil freeCamUtil;        
-	Math::point defaultViewPoint{ 8.0f, 8.0f, 0.0f };
+	Math::vec3 defaultViewPoint{ 8.0f, 8.0f, 0.0f };
     Util::Array<float> frametimeHistory;
     
 #if __NEBULA_HTTP__

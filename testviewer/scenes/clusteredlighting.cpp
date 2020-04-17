@@ -52,7 +52,7 @@ void OpenScene()
             const float green = Math::n_rand();
             const float blue = Math::n_rand();
             Lighting::LightContext::RegisterEntity(id);
-            Lighting::LightContext::SetupPointLight(id, Math::float4(red, green, blue, 1), 250.0f, Math::matrix44::translation(i * 16, 5, j * 16), 50.0f, false);
+            Lighting::LightContext::SetupPointLight(id, Math::vec3(red, green, blue), 25.0f, Math::translation(i * 16, 5, j * 16), 10.0f, false);
             pointLights.Append(id);
         }
     }
@@ -70,19 +70,19 @@ void OpenScene()
             const float green = Math::n_rand();
             const float blue = Math::n_rand();
 
-            Math::matrix44 spotLightMatrix = Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(25), 0);
-            spotLightMatrix.set_position(Math::point(i * 15, 2.5, j * 15));
+            Math::mat4 spotLightMatrix = Math::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(25), 0);
+            spotLightMatrix.r[Math::POSITION] = Math::vec4(i * 15, 2.5, j * 15, 1);
 
             Lighting::LightContext::RegisterEntity(id);
-            Lighting::LightContext::SetupSpotLight(id, Math::float4(red, green, blue, 1), 250.0f, Math::n_deg2rad(45.0f), Math::n_deg2rad(60.0f), spotLightMatrix, 50.0f, true);
+            Lighting::LightContext::SetupSpotLight(id, Math::vec3(red, green, blue), 250.0f, Math::n_deg2rad(45.0f), Math::n_deg2rad(60.0f), spotLightMatrix, 50.0f, true);
             spotLights.Append(id);
         }
     }
 
     // load textures
-    CoreGraphics::TextureId albedo = Resources::CreateResource("tex:sponza/Background_Albedo.dds", "decal"_atm, nullptr, nullptr, true);
-    CoreGraphics::TextureId normal = Resources::CreateResource("tex:sponza/Background_normal.dds", "decal"_atm, nullptr, nullptr, true);
-    CoreGraphics::TextureId material = Resources::CreateResource("tex:sponza/Background_material.dds", "decal"_atm, nullptr, nullptr, true);
+    CoreGraphics::TextureId albedo = Resources::CreateResource("tex:system/white.dds", "decal"_atm, nullptr, nullptr, true);
+    CoreGraphics::TextureId normal = Resources::CreateResource("tex:test/normalbox_normal.dds", "decal"_atm, nullptr, nullptr, true);
+    CoreGraphics::TextureId material = Resources::CreateResource("tex:system/default_material.dds", "decal"_atm, nullptr, nullptr, true);
 
     static const int NumDecals = 4;
     for (int i = -NumDecals; i < NumDecals; i++)
@@ -91,9 +91,9 @@ void OpenScene()
         {
             auto id = Graphics::CreateEntity();
 
-            Math::matrix44 transform = Math::matrix44::scaling(Math::float4(10, 10, 50, 1));
-            transform = Math::matrix44::multiply(transform, Math::matrix44::rotationyawpitchroll(0, Math::n_deg2rad(90), 0));
-            transform.set_position(Math::point(i * 16, 0, j * 16));
+            Math::mat4 transform = Math::scaling(Math::vec3(10, 10, 50));
+            transform = transform * Math::rotationyawpitchroll(0, Math::n_deg2rad(90), Math::n_deg2rad(Math::n_rand() * 90.0f));
+            transform.r[Math::POSITION] = Math::vec4(i * 16, 0, j * 16, 1);
 
             // setup decal
             Decals::DecalContext::RegisterEntity(id);
@@ -112,13 +112,18 @@ void OpenScene()
         for (int j = -NumFogVolumes; j < NumFogVolumes; j++)
         {
             auto id = Graphics::CreateEntity();
-            Math::matrix44 transform = Math::matrix44::scaling(Math::float4(10, 10, 10, 1));
-            transform.set_position(Math::point(16 - i * 16, 0, 16 - j * 16));
+            Math::mat4 transform = Math::scaling(10);
+            transform = transform * Math::rotationyawpitchroll(Math::n_deg2rad(Math::n_rand() * 90.0f), 0, 0);
+            transform.r[Math::POSITION] = Math::vec4(16 - i * 16, 0, 16 - j * 16, 1);
+
+            const float red = 0;
+            const float green = 1;
+            const float blue = 0;
 
             // setup box volume
             Fog::VolumetricFogContext::RegisterEntity(id);
-            //Fog::VolumetricFogContext::SetupSphereVolume(id, Math::point(16 - i * 16, 0, 16 - j * 16), 10.0f, 1.0f, Math::float4(1));
-            Fog::VolumetricFogContext::SetupBoxVolume(id, transform, 0.2f, Math::float4(1));
+            Fog::VolumetricFogContext::SetupSphereVolume(id, Math::vec3(16 - i * 16, 0, 16 - j * 16), 10.0f, 1.0f, Math::vec3(red, green, blue));
+            //Fog::VolumetricFogContext::SetupBoxVolume(id, transform, Math::n_rand() * 100.0f, Math::vec4(red, green, blue, 1));
 
             fogVolumes.Append(id);
         }
@@ -127,14 +132,14 @@ void OpenScene()
     tower = Graphics::CreateEntity();
     Graphics::RegisterEntity<ModelContext, ObservableContext>(tower);
     ModelContext::Setup(tower, "mdl:Buildings/castle_tower.n3", "Viewer");
-    ModelContext::SetTransform(tower, Math::matrix44::translation(Math::float4(4, 0, -7, 1)));
+    ModelContext::SetTransform(tower, Math::translation(4, 0, -7));
     entities.Append(tower);
     entityNames.Append("Tower");
 
     ground = Graphics::CreateEntity();
     Graphics::RegisterEntity<ModelContext, ObservableContext>(ground);
     ModelContext::Setup(ground, "mdl:environment/Groundplane.n3", "Viewer");
-    ModelContext::SetTransform(ground, Math::matrix44::multiply(Math::matrix44::scaling(1, 1, 1), Math::matrix44::translation(Math::float4(0, 0, 0, 1))));
+    ModelContext::SetTransform(ground, Math::scaling(1) * Math::translation(0,0,0));
     entities.Append(ground);
     entityNames.Append("Ground");
 
@@ -177,7 +182,7 @@ void OpenScene()
 
             // create model and move it to the front
             ModelContext::Setup(ent, modelRes[modelIndex], "NotA");
-            ModelContext::SetTransform(ent, Math::matrix44::translation(Math::float4(i * 16, 0, j * 16, 1)));
+            ModelContext::SetTransform(ent, Math::translation(i * 16, 0, j * 16));
             ObservableContext::Setup(ent, VisibilityEntityType::Model);
 
             Characters::CharacterContext::Setup(ent, skeletonRes[modelIndex], animationRes[modelIndex], "Viewer");
@@ -210,24 +215,28 @@ void StepFrame()
     IndexT i;
     for (i = 0; i < spotLights.Size(); i++)
     {
-        Math::matrix44 spotLightTransform;
-        spotLightTransform = Math::matrix44::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, Math::n_deg2rad(-55), 0);
-        spotLightTransform.set_position(Lighting::LightContext::GetTransform(spotLights[i]).get_position());
+        Math::mat4 spotLightTransform;
+        spotLightTransform = Math::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, Math::n_deg2rad(-55), 0);
+        spotLightTransform.r[Math::POSITION] = Lighting::LightContext::GetTransform(spotLights[i]).r[Math::POSITION];
         //Lighting::LightContext::SetTransform(spotLights[i], spotLightTransform);
     }
 
     for (i = 0; i < decals.Size(); i++)
     {
-        Math::matrix44 decalTransform = Math::matrix44::scaling(Math::float4(10, 10, 50, 1));
-        decalTransform = Math::matrix44::multiply(decalTransform, Math::matrix44::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 0.1f + i, Math::n_deg2rad(90), 0));
-        decalTransform.set_position(Decals::DecalContext::GetTransform(decals[i]).get_position());
-        Decals::DecalContext::SetTransform(decals[i], decalTransform);
+        Math::mat4 decalTransform = Math::scaling(Math::vec3(10, 10, 50));
+        decalTransform = decalTransform * Math::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 0.1f + i, Math::n_deg2rad(90), 0);
+        decalTransform.r[Math::POSITION] = Decals::DecalContext::GetTransform(decals[i]).r[Math::POSITION];
+        //Decals::DecalContext::SetTransform(decals[i], decalTransform);
     }
 
+    for (i = 0; i < fogVolumes.Size(); i++)
+    {
+        Fog::VolumetricFogContext::SetTurbidity(fogVolumes[i], (1.0f + Math::n_sin(Graphics::GraphicsServer::Instance()->GetTime() * 0.1f + i) * 0.5f) * 100);
+    }
     /*
-        Math::matrix44 globalLightTransform = Lighting::LightContext::GetTransform(globalLight);
-        Math::matrix44 rotY = Math::matrix44::rotationy(Math::n_deg2rad(0.1f));
-        Math::matrix44 rotX = Math::matrix44::rotationz(Math::n_deg2rad(0.05f));
+        Math::mat4 globalLightTransform = Lighting::LightContext::GetTransform(globalLight);
+        Math::mat4 rotY = Math::rotationy(Math::n_deg2rad(0.1f));
+        Math::mat4 rotX = Math::rotationz(Math::n_deg2rad(0.05f));
         globalLightTransform = globalLightTransform * rotX * rotY;
         Lighting::LightContext::SetTransform(globalLight, globalLightTransform);
     */

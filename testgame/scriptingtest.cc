@@ -121,7 +121,7 @@ PYBIND11_EMBEDDED_MODULE(test, m)
         {
             n_printf("f4Array: ");
             for (auto val : arr)
-                n_printf("%s ", Util::String::FromFloat4(val).AsCharPtr());
+                n_printf("%s ", Util::String::FromVec4(val).AsCharPtr());
             n_printf("\n");
         }
     );

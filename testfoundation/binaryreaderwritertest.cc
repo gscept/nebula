@@ -85,8 +85,8 @@ BinaryReaderWriterTest::Run()
     VERIFY(reader->ReadBool() == true);
     VERIFY(reader->ReadBool() == false);
     VERIFY(reader->ReadString() == "Ein String");
-    VERIFY(reader->ReadFloat4() == v4);
-    VERIFY(reader->ReadMatrix44() == m44);
+    VERIFY(reader->ReadVec4() == v4);
+    VERIFY(reader->ReadMat4() == m44);
     VERIFY(reader->ReadBlob() == Blob(&writeBlob, sizeof(writeBlob)));
     reader->Close();
     stream->Close();
@@ -131,8 +131,8 @@ BinaryReaderWriterTest::Run()
     VERIFY(reader->ReadBool() == true);
     VERIFY(reader->ReadBool() == false);
     VERIFY(reader->ReadString() == "Ein String");
-    VERIFY(reader->ReadFloat4() == v4);
-    VERIFY(reader->ReadMatrix44() == m44);
+    VERIFY(reader->ReadVec4() == v4);
+    VERIFY(reader->ReadMat4() == m44);
     VERIFY(reader->ReadBlob() == Blob(&writeBlob, sizeof(writeBlob)));
     reader->Close();
     stream->Close();

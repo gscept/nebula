@@ -16,8 +16,6 @@
 #include "models/modelcontext.h"
 #include "input/keyboard.h"
 #include "input/mouse.h"
-#include "math/vector.h"
-#include "math/point.h"
 #include "dynui/imguicontext.h"
 #include "lighting/lightcontext.h"
 #include "characters/charactercontext.h"
@@ -26,9 +24,10 @@
 #include "dynui/im3d/im3d.h"
 #include "graphics/environmentcontext.h"
 #include "clustering/clustercontext.h"
-#include "math/matrix44.h"
+#include "math/mat4.h"
 #include "particles/particlecontext.h"
 #include "fog/volumetricfogcontext.h"
+#include "decals/decalcontext.h"
 
 struct Scene
 {
@@ -70,4 +69,4 @@ enum
 
 // Which is the currently active scene?
 // This is used to determine which scenes callbacks to call and is normally changed via imgui
-static int currentScene = ClusteredSceneId;
+static int currentScene = BenchmarkSceneId;

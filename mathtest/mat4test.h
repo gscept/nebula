@@ -1,20 +1,20 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Test::Matrix44Test
+    @class Test::Mat4Test
 
-    Test matrix44 functionality.
+    Test mat4 functionality.
 
-    (C) 2007 Radon Labs GmbH
+    (C) 2020 Radon Labs GmbH
 */
 #include "testbase/testcase.h"
 
 //------------------------------------------------------------------------------
 namespace Test
 {
-class Matrix44Test : public TestCase
+class Mat4Test : public TestCase
 {
-    __DeclareClass(Matrix44Test);
+    __DeclareClass(Mat4Test);
 public:
     /// run the test
     virtual void Run();

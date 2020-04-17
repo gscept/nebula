@@ -51,7 +51,7 @@ VariantTest::Run()
     VERIFY(intVar.GetType() == Variant::Int);
     VERIFY(floatVar.GetType() == Variant::Float);
     VERIFY(boolVar.GetType() == Variant::Bool);
-    VERIFY(float4Var.GetType() == Variant::Float4);
+    VERIFY(float4Var.GetType() == Variant::Vec4);
     VERIFY(matrixVar.GetType() == Variant::Matrix44);
     VERIFY(charPtrVar.GetType() == Variant::String);
     VERIFY(strVar.GetType() == Variant::String);

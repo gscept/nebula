@@ -99,8 +99,8 @@ MemoryStreamTest::Run()
     VERIFY("This is a string." == reader->ReadString());
     VERIFY(12.3f == reader->ReadFloat());
     VERIFY(23.4 == reader->ReadDouble());
-    VERIFY(float4(1.0f, 2.0f, 3.0f, 4.0f) == reader->ReadFloat4());
-    VERIFY(matrix44::identity() == reader->ReadMatrix44());
+    VERIFY(float4(1.0f, 2.0f, 3.0f, 4.0f) == reader->ReadVec4());
+    VERIFY(matrix44::identity() == reader->ReadMat4());
 
     // check if seeking and reading works...
     stream->Seek(26, Stream::Begin);

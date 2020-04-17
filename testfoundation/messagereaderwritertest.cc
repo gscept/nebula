@@ -42,7 +42,7 @@ TestMessage::Decode(const Ptr<BinaryReader>& reader)
 {
     Message::Decode(reader);
     this->command = reader->ReadString();
-    this->position = reader->ReadFloat4();
+    this->position = reader->ReadVec4();
     this->velocity = reader->ReadFloat();
 }
 

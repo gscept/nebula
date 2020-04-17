@@ -31,13 +31,13 @@ void OpenScene()
     entity = Graphics::CreateEntity();
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(entity);
     Models::ModelContext::Setup(entity, "mdl:system/placeholder.n3", "ExampleScene");
-    Models::ModelContext::SetTransform(entity, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
+    Models::ModelContext::SetTransform(entity, Math::translation(Math::vec3(0, 0, 0)));
     Visibility::ObservableContext::Setup(entity, Visibility::VisibilityEntityType::Model);
     
     otherEntity = Graphics::CreateEntity();
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(otherEntity);
     Models::ModelContext::Setup(otherEntity, "mdl:system/placeholder.n3", "ExampleScene");
-    Models::ModelContext::SetTransform(otherEntity, Math::matrix44::translation(Math::float4(2, 0, 0, 1)));
+    Models::ModelContext::SetTransform(otherEntity, Math::translation(Math::vec3(2, 0, 0)));
     Visibility::ObservableContext::Setup(otherEntity, Visibility::VisibilityEntityType::Model);
 
     v = 0.0f;
@@ -59,7 +59,7 @@ void CloseScene()
 */
 void StepFrame()
 {
-    Models::ModelContext::SetTransform(entity, Math::matrix44::translation(Math::float4(0, 0, Math::n_sin(v), 1)));
+    Models::ModelContext::SetTransform(entity, Math::translation(Math::vec3(0, 0, Math::n_sin(v))));
     v += 0.01f;
 };
 
