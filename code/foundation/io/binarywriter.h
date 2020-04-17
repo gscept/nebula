@@ -16,9 +16,7 @@
 #include "util/guid.h"
 #include "system/byteorder.h"
 #if !__OSX__
-#include "math/float2.h"
-#include "math/point.h"
-#include "math/vector.h"
+#include "math/vec2.h"
 #endif
 
 //------------------------------------------------------------------------------
@@ -74,15 +72,13 @@ public:
     void WriteString(const Util::String& s);
     #if !__OSX__
     /// write a float value to the stream    
-    void WriteFloat2(Math::float2 f);
-    /// write a float4 to the stream
-    void WriteFloat4(const Math::float4& v);
-    /// write a float4 to the stream
-    void WritePoint(const Math::point& v);
-    /// write a float4 to the stream
-    void WriteVector(const Math::vector& v);
-    /// write a matrix44 to the stream
-    void WriteMatrix44(const Math::matrix44& m);
+    void WriteFloat2(Math::vec2 f);
+    /// write a vec4 to the stream
+    void WriteVec3(const Math::vec3& v);
+    /// write a vec4 to the stream
+    void WriteVec4(const Math::vec4& v);
+    /// write a mat4 to the stream
+    void WriteMatrix44(const Math::mat4& m);
     #endif
     /// write a float array to the stream
     void WriteFloatArray(const Util::Array<float>& arr);

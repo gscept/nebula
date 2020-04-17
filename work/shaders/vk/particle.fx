@@ -20,10 +20,10 @@ group(BATCH_GROUP) shared constant Particle[string Visibility = "PS"; ]
 	textureHandle Layer3;
 	textureHandle Layer4;
 
-	float2 UVAnim1;
-	float2 UVAnim2;
-	float2 UVAnim3;
-	float2 UVAnim4;
+	vec2 UVAnim1;
+	vec2 UVAnim2;
+	vec2 UVAnim3;
+	vec2 UVAnim4;
 	float LightMapIntensity;
 };
 

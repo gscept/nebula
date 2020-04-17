@@ -150,20 +150,20 @@ SSRPlugin::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const I
     float sx = (float)dims.width;
     float sy = (float)dims.height;
 
-    const Math::matrix44 scrScale = Math::matrix44(
-        { sx, 0.0f, 0.0f, 0.0f },
-        { 0.0f, sy, 0.0f, 0.0f },
-        { 0.0f, 0.0f, 1.0f, 0.0f },
-        { sx, sy, 0.0f, 1.0f }
+    const Math::mat4 scrScale = Math::mat4(
+        Math::vec4(sx, 0.0f, 0.0f, 0.0f),
+        Math::vec4(0.0f, sy, 0.0f, 0.0f),
+        Math::vec4(0.0f, 0.0f, 1.0f, 0.0f),
+        Math::vec4(sx, sy, 0.0f, 1.0f)
     );
 
-    Math::matrix44 conv = cameraSettings.GetProjTransform();
-    conv.setrow1(Math::float4::multiply(conv.getrow1(), Math::float4(-1)));
+    Math::mat4 conv = cameraSettings.GetProjTransform();
+    conv.r[1] = -conv.r[1];
 
-    Math::matrix44 viewToTextureSpaceMatrix = Math::matrix44::multiply(conv, scrScale);
+    Math::mat4 viewToTextureSpaceMatrix = conv * scrScale;
 
     SsrCs::SSRBlock ssrBlock;
-    Math::matrix44::storeu(viewToTextureSpaceMatrix, ssrBlock.ViewToTextureSpace);
+    viewToTextureSpaceMatrix.storeu(ssrBlock.ViewToTextureSpace);
     uint ssrOffset = CoreGraphics::SetComputeConstants(MainThreadConstantBuffer, ssrBlock);
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();

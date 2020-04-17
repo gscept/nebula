@@ -10,9 +10,9 @@
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 #include "io/streamreader.h"
-#include "math/float4.h"
-#include "math/float2.h"
-#include "math/matrix44.h"
+#include "math/vec4.h"
+#include "math/vec2.h"
+#include "math/mat4.h"
 #include "util/stack.h"
 #include "util/array.h"
 #include "util/stringatom.h"
@@ -83,12 +83,14 @@ public:
 	uint GetUInt(const char* attr = 0) const;
     /// get float attribute value from current node
     float GetFloat(const char* attr = 0) const;
-    /// get float2 attribute value from current node
-    Math::float2 GetFloat2(const char* attr = 0) const;
-    /// get float4 attribute value from current node
-    Math::float4 GetFloat4(const char* attr = 0) const;
-    /// get matrix44 attribute value from current node
-    Math::matrix44 GetMatrix44(const char* attr = 0) const;
+    /// get vec2 attribute value from current node
+    Math::vec2 GetVec2(const char* attr = 0) const;
+    /// get vec4 attribute value from current node
+    Math::vec3 GetVec3(const char* attr = 0) const;
+    /// get vec4 attribute value from current node
+    Math::vec4 GetVec4(const char* attr = 0) const;
+    /// get mat4 attribute value from current node
+    Math::mat4 GetMat4(const char* attr = 0) const;
 	/// get transform44 attribute value from current node
 	Math::transform44 GetTransform44(const char* attr = 0) const;
     /// generic getter for extension types
@@ -102,12 +104,12 @@ public:
     int GetOptInt(const char* attr, int defaultValue) const;
     /// get optional float attribute value from current node
     float GetOptFloat(const char* attr, float defaultValue) const;    
-    /// get float2 attribute value from current node
-    Math::float2 GetOptFloat2(const char* attr, const Math::float2& defaultValue) const;
-    /// get optional float4 attribute value from current node
-    Math::float4 GetOptFloat4(const char* attr, const Math::float4& defaultValue) const;
-    /// get optional matrix44 attribute value from current node
-    Math::matrix44 GetOptMatrix44(const char* attr, const Math::matrix44& defaultValue) const;
+    /// get vec2 attribute value from current node
+    Math::vec2 GetOptVec2(const char* attr, const Math::vec2& defaultValue) const;
+    /// get optional vec4 attribute value from current node
+    Math::vec4 GetOptVec4(const char* attr, const Math::vec4& defaultValue) const;
+    /// get optional mat4 attribute value from current node
+    Math::mat4 GetOptMat4(const char* attr, const Math::mat4& defaultValue) const;
 	/// get transform44 attribute value from current node
 	Math::transform44 GetOptTransform44(const char* attr, const Math::transform44& defaultValue) const;
 

@@ -7,9 +7,9 @@
 */
 //------------------------------------------------------------------------------
 #include "modelnode.h"
-#include "math/matrix44.h"
+#include "math/mat4.h"
 #include "math/transform44.h"
-#include "math/quaternion.h"
+#include "math/quat.h"
 namespace Models
 {
 class TransformNode : public ModelNode
@@ -22,8 +22,9 @@ public:
 
 	struct Instance : public ModelNode::Instance
 	{
-		Math::matrix44 modelTransform;
-		Math::matrix44 invModelTransform;
+		Math::transform44 transform;
+		Math::mat4 modelTransform;
+		Math::mat4 invModelTransform;
 		bool isInViewSpace;
 		bool lockedToViewer;
 		
@@ -50,11 +51,11 @@ protected:
 	/// load transform
 	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
 
-	Math::point position;
-	Math::quaternion rotate;
-	Math::vector scale;
-	Math::point rotatePivot;
-	Math::point scalePivot;
+	Math::vec3 position;
+	Math::quat rotate;
+	Math::vec3 scale;
+	Math::vec3 rotatePivot;
+	Math::vec3 scalePivot;
 	bool isInViewSpace;
 	float minDistance;
 	float maxDistance;

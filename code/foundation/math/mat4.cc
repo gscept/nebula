@@ -1,11 +1,12 @@
 //------------------------------------------------------------------------------
-//  matrix44.cc
+//  mat4.cc
 //  (C) 2007 Radon Labs GmbH
 //  (C) 2013-2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "math2/mat4.h"
-#include "math2/quat.h"
+#include "math/sse.h"
+#include "math/mat4.h"
+#include "math/quat.h"
 
 namespace Math
 {

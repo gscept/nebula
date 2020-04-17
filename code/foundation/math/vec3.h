@@ -20,8 +20,6 @@ namespace Math
 struct mat4;
 struct vec3;
 
-bool equal_all(const vec3& v0, const vec3& v1);
-
 static const __m128 _id_x = _mm_setr_ps(1.0f, 0.0f, 0.0f, 0.0f);
 static const __m128 _id_y = _mm_setr_ps(0.0f, 1.0f, 0.0f, 0.0f);
 static const __m128 _id_z = _mm_setr_ps(0.0f, 0.0f, 1.0f, 0.0f);
@@ -89,7 +87,8 @@ public:
 		float v[4];
         struct
         {
-            float x, y, z;
+			// we can access __w to check it, won't take any more space
+            float x, y, z, __w;
         };
     };
 };
@@ -198,7 +197,9 @@ vec3::loadu(const scalar* ptr)
 __forceinline void
 vec3::store(scalar* ptr) const
 {
-    _mm_store_ps(ptr, this->vec);
+	__m128 v = _mm_permute_ps(this->vec, _MM_SHUFFLE(2, 2, 2, 2));
+	_mm_storel_epi64(reinterpret_cast<__m128i*>(ptr), _mm_castps_si128(this->vec));
+	_mm_store_ss(&ptr[2], v);
 }
 
 //------------------------------------------------------------------------------
@@ -208,7 +209,11 @@ vec3::store(scalar* ptr) const
 __forceinline void
 vec3::storeu(scalar* ptr) const
 {
-    _mm_storeu_ps(ptr, this->vec);
+	__m128 t1 = _mm_permute_ps(this->vec, _MM_SHUFFLE(1, 1, 1, 1));
+	__m128 t2 = _mm_permute_ps(this->vec, _MM_SHUFFLE(2, 2, 2, 2));
+	_mm_store_ss(&ptr[0], this->vec);
+	_mm_store_ss(&ptr[1], t1);
+	_mm_store_ss(&ptr[2], t2);
 }
 
 //------------------------------------------------------------------------------
@@ -441,7 +446,7 @@ cross(const vec3& v0, const vec3& v1)
 __forceinline scalar
 dot(const vec3& v0, const vec3& v1)
 {
-    return _mm_cvtss_f32(_mm_dp_ps(v0.vec, v1.vec, 0x71));
+	return _mm_cvtss_f32(_mm_dp_ps(v0.vec, v1.vec, 0x71));
 }
 
 //------------------------------------------------------------------------------
@@ -589,7 +594,7 @@ clamp(const vec3& clamp, const vec3& min, const vec3& max)
 __forceinline vec3
 normalize(const vec3& v)
 {
-    if (equal_all(v, vec3(0))) return v;
+	if (v == vec3(0)) return v;
 	__m128 t = _mm_sqrt_ps(_mm_dp_ps(v.vec, v.vec, 0xF7));
 	t = _mm_or_ps(t, _id_w);
 	return _mm_div_ps(v.vec, t);
@@ -601,7 +606,7 @@ normalize(const vec3& v)
 __forceinline vec3
 normalizeapprox(const vec3& v)
 {
-	if (equal_all(v, vec3(0))) return v;
+	if (v == vec3(0)) return v;
 	__m128 t = _mm_rsqrt_ps(_mm_dp_ps(v.vec, v.vec, 0xF7));
 	t = _mm_or_ps(t, _id_w);
 	return _mm_mul_ps(v.vec, t);
@@ -719,17 +724,6 @@ equal_any(const vec3& v0, const vec3& v1)
 	__m128 vTemp = _mm_cmpeq_ps(v0.vec, v1.vec);
 	int res = _mm_movemask_ps(vTemp) & 7;
 	return res != 0;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline bool
-equal_all(const vec3& v0, const vec3& v1)
-{
-	__m128 vTemp = _mm_cmpeq_ps(v0.vec, v1.vec);
-	int res = _mm_movemask_ps(vTemp) & 7;
-	return res == 0x7;
 }
 
 //------------------------------------------------------------------------------

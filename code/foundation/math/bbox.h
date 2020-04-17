@@ -8,9 +8,9 @@
     (C) 2004 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
-#include "math2/vec3.h"
-#include "math2/vec4.h"
-#include "math2/mat4.h"
+#include "math/vec3.h"
+#include "math/vec4.h"
+#include "math/mat4.h"
 #include "math/clipstatus.h"
 #include "math/sse.h"
 #include "util/array.h"
@@ -35,21 +35,21 @@ public:
     /// constructor 1
     bbox();
     /// constructor 3
-    bbox(const vec3& center, const vec3& extents);
-    /// construct bounding box from matrix44
+    bbox(const point& center, const vector& extents);
+    /// construct bounding box from mat4
     bbox(const mat4& m);
     /// get center of box
-    vec3 center() const;
+    point center() const;
     /// get extents of box
-    vec3 extents() const;
+    vector extents() const;
     /// get size of box
     vec3 size() const;
     /// get diagonal size of box
     scalar diagonal_size() const;
-    /// set from matrix44
+    /// set from mat4
     void set(const mat4& m);
     /// set from center point and extents
-    void set(const vec3& center, const vec3& extents);
+    void set(const point& center, const vector& extents);
     /// begin extending the box
     void begin_extend();
     /// extend the box
@@ -73,16 +73,16 @@ public:
     /// check for intersection with projection volume
     ClipStatus::Type clipstatus(const mat4& viewProjection) const;
     /// create a matrix which transforms a unit cube to this bounding box
-    mat4 to_matrix44() const;
+    mat4 to_mat4() const;
     /// return one of the 8 corner points
-    vec4 corner_point(int index) const;
+    point corner_point(int index) const;
     /// return side planes in clip space
     void get_clipplanes(const mat4& viewProjection, Util::Array<vec4>& outPlanes) const;
     /// convert to any type
     template<typename T> T as() const;
 
-    vec3 pmin;
-    vec3 pmax;
+    point pmin;
+    point pmax;
 };
 
 //------------------------------------------------------------------------------
@@ -100,7 +100,7 @@ bbox::bbox() :
 /**
 */
 inline
-bbox::bbox(const vec3& center, const vec3& extents)
+bbox::bbox(const point& center, const vector& extents)
 {
     this->pmin = center - extents;
     this->pmax = center + extents;
@@ -134,7 +134,7 @@ bbox::bbox(const mat4& m)
 //------------------------------------------------------------------------------
 /**
 */
-inline vec3
+inline point
 bbox::center() const
 {
     return this->pmin + ((this->pmax - this->pmin) * 0.5f);
@@ -143,7 +143,7 @@ bbox::center() const
 //------------------------------------------------------------------------------
 /**
 */
-inline vec3
+inline vector
 bbox::extents() const
 {
     return (this->pmax - this->pmin) * 0.5f;
@@ -162,7 +162,7 @@ bbox::size() const
 /**
 */
 inline void
-bbox::set(const vec3& center, const vec3& extents)
+bbox::set(const point& center, const vector& extents)
 {
     this->pmin = center - extents;
     this->pmax = center + extents;
@@ -187,8 +187,8 @@ inline
 void
 bbox::end_extend()
 {
-    if ((this->pmin == vec3(+1000000.0f, +1000000.0f, +1000000.0f)) &&
-        (this->pmax == vec3(-1000000.0f, -1000000.0f, -1000000.0f)))
+    if ((this->pmin == point(+1000000.0f, +1000000.0f, +1000000.0f)) &&
+        (this->pmax == point(-1000000.0f, -1000000.0f, -1000000.0f)))
     {
         this->pmin.set(0.0f, 0.0f, 0.0f);
         this->pmax.set(0.0f, 0.0f, 0.0f);
@@ -257,7 +257,7 @@ bbox::transform(const mat4& m)
 inline void
 bbox::affine_transform(const mat4& m)
 {
-    n_assert2(m.r[0].w == 0 && m.r[1].w == 0 && m.r[2].w== 0 && m.r[3].w == 1, "Matrix is not affine");
+    n_assert2(m.r[0].w == 0 && m.r[1].w == 0 && m.r[2].w == 0 && m.r[3].w == 1, "Matrix is not affine");
 
     vec4 xa = m.r[X_AXIS] * this->pmin.x;
     vec4 xb = m.r[X_AXIS] * this->pmax.x;
@@ -316,11 +316,11 @@ bbox::contains(const vec3& p) const
     bounding box.
 */
 inline mat4
-bbox::to_matrix44() const
+bbox::to_mat4() const
 {
     mat4 m = scaling(this->size());
-    vec3 pos = this->center();
-    m.r[POSITION] = vec4(pos, 1);
+    point pos = this->center();
+    m.r[POSITION] = pos;
     return m;
 }
 
@@ -414,7 +414,6 @@ bbox::clipstatus(const mat4& viewProjection) const
     m_col_w[2] = splat_w(viewProjection.r[2]);
     m_col_w[3] = splat_w(viewProjection.r[3]);
 
-    vec4 p1;
     vec4 res1;
     const vec4 xLeftFlags = vec4(ClipLeft);
     const vec4 xRightFlags = vec4(ClipRight);

@@ -6,6 +6,7 @@
 #include "render/stdneb.h"
 #include "coregraphics/base/shaperendererbase.h"
 #include "threading/threadid.h"
+#include "math/point.h"
 
 namespace Base
 {
@@ -136,12 +137,13 @@ ShapeRendererBase::DrawShapes()
 /**
 */
 void 
-ShapeRendererBase::AddWireFrameBox(const Math::bbox& boundingBox, const Math::float4& color)
+ShapeRendererBase::AddWireFrameBox(const Math::bbox& boundingBox, const Math::vec4& color)
 {
     // render lines around bbox
-    const Math::point& center = boundingBox.center().vec;
-    const Math::vector& extends = boundingBox.extents().vec;
-    const Math::vector corners[] = {  vector(1,1,1),
+    const Math::point& center = boundingBox.center();
+    const Math::vector& extends = boundingBox.extents();
+    const Math::vector corners[] = {
+        vector(1,1,1),
         vector(1,1,-1),
         vector(1,1,-1),
         vector(-1,1,-1),
@@ -173,11 +175,11 @@ ShapeRendererBase::AddWireFrameBox(const Math::bbox& boundingBox, const Math::fl
     for (i = 0; i < 24; ++i)
     {
         CoreGraphics::RenderShape::RenderShapeVertex vert;
-        vert.pos = center + float4::multiply(extends, corners[i]);
+        vert.pos = center + extends * corners[i];
         lineList.Append(vert);    	
     }       
     RenderShape shape;
-    shape.SetupPrimitives(matrix44::identity(),
+    shape.SetupPrimitives(mat4(),
         PrimitiveTopology::LineList,
         lineList.Size() / 2,
         &(lineList.Front()),

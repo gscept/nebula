@@ -121,12 +121,12 @@ private:
 		ObjectId
 	};
 	Ids::IdAllocator<
-		Util::Array<Models::ModelNode::Instance*>,					// list of node instances
-		Util::Array<Models::NodeType>,								// node instance types
-		byte*,														// allocated memory
-		Math::matrix44,												// transform
-		Math::bbox,													// transformed bounding box
-		uint														// objectid
+		Util::Array<Models::ModelNode::Instance*>,		// list of node instances
+		Util::Array<Models::NodeType>,					// node instance types
+		byte*,											// allocated memory
+		Math::mat4,										// transform
+		Math::bbox,										// transformed bounding box
+		uint											// objectid
 	> modelInstanceAllocator;
 
 	static Ids::Id8 NodeMappingCounter;

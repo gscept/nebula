@@ -270,18 +270,18 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 							constant.min.SetBool(false);
 							constant.max.SetBool(true);
 							break;
-						case Util::Variant::Float4:
-							constant.defaultValue.SetFloat4(reader->GetOptFloat4("defaultValue", Math::float4(0, 0, 0, 0)));
-							constant.min.SetFloat4(reader->GetOptFloat4("min", Math::float4(0, 0, 0, 0)));
-							constant.max.SetFloat4(reader->GetOptFloat4("max", Math::float4(1, 1, 1, 1)));
+						case Util::Variant::Vec4:
+							constant.defaultValue.SetVec4(reader->GetOptVec4("defaultValue", Math::vec4(0, 0, 0, 0)));
+							constant.min.SetVec4(reader->GetOptVec4("min", Math::vec4(0, 0, 0, 0)));
+							constant.max.SetVec4(reader->GetOptVec4("max", Math::vec4(1, 1, 1, 1)));
 							break;
-						case Util::Variant::Float2:
-							constant.defaultValue.SetFloat2(reader->GetOptFloat2("defaultValue", Math::float2(0, 0)));
-							constant.min.SetFloat2(reader->GetOptFloat2("min", Math::float2(0, 0)));
-							constant.max.SetFloat2(reader->GetOptFloat2("max", Math::float2(1, 1)));
+						case Util::Variant::Vec2:
+							constant.defaultValue.SetVec2(reader->GetOptVec2("defaultValue", Math::vec2(0, 0)));
+							constant.min.SetVec2(reader->GetOptVec2("min", Math::vec2(0, 0)));
+							constant.max.SetVec2(reader->GetOptVec2("max", Math::vec2(1, 1)));
 							break;
-						case Util::Variant::Matrix44:
-							constant.defaultValue.SetMatrix44(reader->GetOptMatrix44("defaultValue", Math::matrix44::identity()));
+						case Util::Variant::Mat4:
+							constant.defaultValue.SetMat4(reader->GetOptMat4("defaultValue", Math::mat4()));
 							break;
 						default:
 							n_error("Unknown material parameter type %s\n", ptype.AsCharPtr());

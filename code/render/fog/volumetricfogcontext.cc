@@ -9,6 +9,7 @@
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
 #include "lighting/lightcontext.h"
+#include "imgui.h"
 
 #include "volumefog.h"
 namespace Fog
@@ -41,7 +42,7 @@ struct
 
 	Util::FixedArray<CoreGraphics::ResourceTableId> resourceTables;
 	float turbidity;
-	Math::float4 color;
+	Math::vec3 color;
 
 	// these are used to update the light clustering
 	Volumefog::FogBox fogBoxes[128];
@@ -83,7 +84,6 @@ VolumetricFogContext::Create()
 	__bundle.OnBegin = VolumetricFogContext::RenderUI;
 
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
-
 
 	Frame::FramePlugin::AddCallback("VolumetricFogContext - Cull and Classify", [](IndexT frame)
 		{
@@ -160,7 +160,7 @@ VolumetricFogContext::Create()
 	blurState.blurOutputYSlot = ShaderGetResourceSlot(blurState.blurShader, "BlurImageY");
 
 	fogState.turbidity = 0.1f;
-	fogState.color = Math::float4(1);
+	fogState.color = Math::vec3(1);
 
 	_CreateContext();
 }
@@ -179,9 +179,9 @@ VolumetricFogContext::Discard()
 void 
 VolumetricFogContext::SetupBoxVolume(
 	const Graphics::GraphicsEntityId id, 
-	const Math::matrix44& transform, 
+	const Math::mat4& transform,
 	const float density, 
-	const Math::float4& absorption)
+	const Math::vec3& absorption)
 {
 	const Graphics::ContextEntityId cid = GetContextId(id);
 	Ids::Id32 fog = fogBoxVolumeAllocator.Alloc();
@@ -197,7 +197,7 @@ VolumetricFogContext::SetupBoxVolume(
 /**
 */
 void 
-VolumetricFogContext::SetBoxTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform)
+VolumetricFogContext::SetBoxTransform(const Graphics::GraphicsEntityId id, const Math::mat4& transform)
 {
 	const Graphics::ContextEntityId cid = GetContextId(id);
 	Ids::Id32 lid = fogGenericVolumeAllocator.Get<FogVolume_TypedId>(cid.id);
@@ -212,10 +212,10 @@ VolumetricFogContext::SetBoxTransform(const Graphics::GraphicsEntityId id, const
 void 
 VolumetricFogContext::SetupSphereVolume(
 	const Graphics::GraphicsEntityId id, 
-	const Math::float4& position,
+	const Math::vec3& position,
 	float radius, 
 	const float density, 
-	const Math::float4& absorption)
+	const Math::vec3& absorption)
 {
 	const Graphics::ContextEntityId cid = GetContextId(id);
 	Ids::Id32 fog = fogSphereVolumeAllocator.Alloc();
@@ -232,7 +232,7 @@ VolumetricFogContext::SetupSphereVolume(
 /**
 */
 void 
-VolumetricFogContext::SetSpherePosition(const Graphics::GraphicsEntityId id, const Math::float4& position)
+VolumetricFogContext::SetSpherePosition(const Graphics::GraphicsEntityId id, const Math::vec3& position)
 {
 	const Graphics::ContextEntityId cid = GetContextId(id);
 	Ids::Id32 lid = fogGenericVolumeAllocator.Get<FogVolume_TypedId>(cid.id);
@@ -268,7 +268,7 @@ VolumetricFogContext::SetTurbidity(const Graphics::GraphicsEntityId id, const fl
 /**
 */
 void 
-VolumetricFogContext::SetAbsorption(const Graphics::GraphicsEntityId id, const Math::float4& absorption)
+VolumetricFogContext::SetAbsorption(const Graphics::GraphicsEntityId id, const Math::vec3& absorption)
 {
 	const Graphics::ContextEntityId cid = GetContextId(id);
 	fogGenericVolumeAllocator.Set<FogVolume_Absorption>(cid.id, absorption);
@@ -282,7 +282,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 {
 	using namespace CoreGraphics;
 	IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
-	Math::matrix44 viewTransform = Graphics::CameraContext::GetTransform(view->GetCamera());
+	Math::mat4 viewTransform = Graphics::CameraContext::GetTransform(view->GetCamera());
 
 	SizeT numFogBoxVolumes = 0;
 	SizeT numFogSphereVolumes = 0;
@@ -297,25 +297,25 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 		case BoxVolume:
 		{
 			auto& fog = fogState.fogBoxes[numFogBoxVolumes];
-			Math::float4::storeu3(fogGenericVolumeAllocator.Get<FogVolume_Absorption>(i), fog.absorption);
+			fogGenericVolumeAllocator.Get<FogVolume_Absorption>(i).storeu(fog.absorption);
 			fog.turbidity = fogGenericVolumeAllocator.Get<FogVolume_Turbidity>(i);
 			fog.falloff = 64.0f;
-			Math::matrix44 transform = Math::matrix44::multiply(fogBoxVolumeAllocator.Get<FogBoxVolume_Transform>(typeIds[i]), viewTransform);
+			Math::mat4 transform = fogBoxVolumeAllocator.Get<FogBoxVolume_Transform>(typeIds[i]) * viewTransform;
 			Math::bbox box(transform);
 			box.pmin.storeu(fog.bboxMin);
 			box.pmax.storeu(fog.bboxMax);
-			Math::matrix44::storeu(Math::matrix44::inverse(transform), fog.invTransform);
+			inverse(transform).storeu(fog.invTransform);
 			numFogBoxVolumes++;
 			break;
 		}
 		case SphereVolume:
 		{
 			auto& fog = fogState.fogSpheres[numFogSphereVolumes];
-			Math::float4::storeu3(fogGenericVolumeAllocator.Get<FogVolume_Absorption>(i), fog.absorption);
+			fogGenericVolumeAllocator.Get<FogVolume_Absorption>(i).storeu(fog.absorption);
 			fog.turbidity = fogGenericVolumeAllocator.Get<FogVolume_Turbidity>(i);
-			Math::float4 pos = fogSphereVolumeAllocator.Get<FogSphereVolume_Position>(typeIds[i]);
-			pos = Math::matrix44::transform(pos, viewTransform);
-			Math::float4::storeu3(pos, fog.position);
+			Math::vec4 pos = Math::vec4(fogSphereVolumeAllocator.Get<FogSphereVolume_Position>(typeIds[i]), 1);
+			pos = viewTransform * pos;
+			pos.storeu3(fog.position);
 			fog.radius = fogSphereVolumeAllocator.Get<FogSphereVolume_Radius>(typeIds[i]);
 			fog.falloff = 64.0f;
 			numFogSphereVolumes++;
@@ -337,7 +337,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 	fogUniforms.NumFogBoxes = numFogBoxVolumes;
 	fogUniforms.NumFogSpheres = numFogSphereVolumes;
 	fogUniforms.GlobalTurbidity = fogState.turbidity;
-	Math::float4::storeu3(fogState.color, fogUniforms.GlobalAbsorption);
+	fogState.color.storeu(fogUniforms.GlobalAbsorption);
 	fogUniforms.Downscale = 4;
 
 	CoreGraphics::TextureId fog0 = view->GetFrameScript()->GetTexture("VolumetricFogBuffer0");
@@ -399,7 +399,7 @@ VolumetricFogContext::SetGlobalTurbidity(float f)
 /**
 */
 void 
-VolumetricFogContext::SetGlobalAbsorption(const Math::float4& color)
+VolumetricFogContext::SetGlobalAbsorption(const Math::vec3& color)
 {
 	fogState.color = color;
 }

@@ -108,7 +108,7 @@ float GetConservativeRefractionDepth(vec2 position)
 // constructing the displacement amount and normal for water surface geometry
 vec4 CombineWaterNormal(vec3 worldPos)
 {
-	vec4 water_normal = float4(0.0f, 4.0f, 0.0f, 0.0f);
+	vec4 water_normal = vec4(0.0f, 4.0f, 0.0f, 0.0f);
 	float water_miplevel;
 	float distance_to_camera;
 	float disp;
@@ -310,7 +310,7 @@ psDefault(
 		(20.0/(20 + distanceToPoint));
 		
 	// calculating correction that shifts reflection up/down according to water wave Y position
-	float4 projected_waveheight = MVP * vec4(WorldPos, 1);
+	vec4 projected_waveheight = MVP * vec4(WorldPos, 1);
 	float waveheight_correction = -0.5f * projected_waveheight.y / projected_waveheight.w;
 	projected_waveheight = MVP * vec4(WorldPos.x, -0.8f, WorldPos.z, 1);
 	waveheight_correction += 0.5f * projected_waveheight.y / projected_waveheight.w;

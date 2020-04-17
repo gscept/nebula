@@ -145,7 +145,7 @@ public:
     /// set matrix44 value
     void SetMatrix44(const Math::matrix44& val);
     /// get matrix44 value
-    const Math::matrix44& GetMatrix44() const;
+    const Math::matrix44& GetMat4() const;
     /// set float4 value
     void SetFloat4(const Math::float4& val);
     /// get float4 value
@@ -711,7 +711,7 @@ Attribute::SetMatrix44(const Math::matrix44& val)
 /**
 */
 inline const Math::matrix44&
-Attribute::GetMatrix44() const
+Attribute::GetMat4() const
 {
     n_assert(this->GetValueType() == Matrix44Type);
     return this->valueData.GetMatrix44();
@@ -802,7 +802,7 @@ Attribute::SetValueFromString(const Util::String& str)
             break;
 
         case Float4Type:
-            this->valueData = str.AsFloat4();
+            this->valueData = str.AsVec4();
             break;
 
         case StringType:
@@ -810,7 +810,7 @@ Attribute::SetValueFromString(const Util::String& str)
             break;
 
         case Matrix44Type:
-            this->valueData = str.AsMatrix44();
+            this->valueData = str.AsMat4();
             break;
 
         case GuidType:
@@ -846,7 +846,7 @@ Attribute::ValueAsString() const
             break;
 
         case Float4Type:
-            str.SetFloat4(this->GetFloat4());
+            str.SetVec4(this->GetFloat4());
             break;
 
         case StringType:
@@ -854,7 +854,7 @@ Attribute::ValueAsString() const
             break;
 
         case Matrix44Type:
-            str.SetMatrix44(this->GetMatrix44());
+            str.SetMat4(this->GetMatrix44());
             break;
 
         case GuidType:

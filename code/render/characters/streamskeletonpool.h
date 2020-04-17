@@ -24,7 +24,7 @@ public:
 	void Unload(const Resources::ResourceId id);
 
 	/// get bind pose
-	const Util::FixedArray<Math::matrix44>& GetBindPose(const SkeletonId id) const;
+	const Util::FixedArray<Math::mat4>& GetBindPose(const SkeletonId id) const;
 	/// get joint index by name
 	const IndexT GetJointIndex(const SkeletonId id, const Util::StringAtom& name) const;
 
@@ -43,9 +43,9 @@ private:
 
 	Ids::IdAllocator<
 		Util::FixedArray<CharacterJoint>,
-		Util::FixedArray<Math::matrix44>,
+		Util::FixedArray<Math::mat4>,
 		Util::HashTable<Util::StringAtom, IndexT>,
-		Util::FixedArray<Math::float4>
+		Util::FixedArray<Math::vec4>
 	> skeletonAllocator;
 	__ImplementResourceAllocator(skeletonAllocator);
 };

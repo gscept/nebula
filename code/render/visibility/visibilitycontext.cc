@@ -108,9 +108,9 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 	const Util::Array<Graphics::GraphicsEntityId>& observerIds = observerAllocator.GetArray<Observer_EntityId>();
 	const Util::Array<Graphics::GraphicsEntityId>& observableIds = ObservableContext::observableAllocator.GetArray<Observable_EntityId>();
 
-	Util::Array<Math::matrix44>& observerTransforms = observerAllocator.GetArray<Observer_Matrix>();
+	Util::Array<Math::mat4>& observerTransforms = observerAllocator.GetArray<Observer_Matrix>();
 
-	Util::Array<Math::matrix44>& observableAtomTransforms = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_Transform>();
+	Util::Array<Math::mat4>& observableAtomTransforms = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_Transform>();
 	Util::Array<Graphics::ContextEntityId>& observableAtomContexts = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_ContextEntity>();
 
 	const Util::Array<VisibilityResultAllocator>& results = observerAllocator.GetArray<Observer_ResultAllocator>();
@@ -128,11 +128,11 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 		case Model:
 		{
 			Models::ShaderStateNode::Instance* sinst = reinterpret_cast<Models::ShaderStateNode::Instance*>(ObservableContext::observableAtomAllocator.Get<ObservableAtom_Node>(i));
-			observableAtomTransforms[i] = sinst->boundingBox.to_matrix44();
+			observableAtomTransforms[i] = sinst->boundingBox.to_mat4();
 			break;
 		}
 		case Particle:
-			observableAtomTransforms[i] = Particles::ParticleContext::GetBoundingBox(id).to_matrix44();
+			observableAtomTransforms[i] = Particles::ParticleContext::GetBoundingBox(id).to_mat4();
 			break;
 		case Light:
 			observableAtomTransforms[i] = Lighting::LightContext::GetTransform(id);

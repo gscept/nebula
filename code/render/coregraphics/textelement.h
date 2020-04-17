@@ -9,8 +9,8 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "util/string.h"
-#include "math/float4.h"
-#include "math/float2.h"
+#include "math/vec4.h"
+#include "math/vec2.h"
 #include "threading/threadid.h"
 
 //------------------------------------------------------------------------------
@@ -22,24 +22,24 @@ public:
     /// default constructor
     TextElement();
     /// constructor
-    TextElement(Threading::ThreadId threadId, const Util::String& text, const Math::float4& color, const Math::float2& pos, const float size);
+    TextElement(Threading::ThreadId threadId, const Util::String& text, const Math::vec4& color, const Math::vec2& pos, const float size);
     
     /// get thread id
     Threading::ThreadId GetThreadId() const;
     /// get text
     const Util::String& GetText() const;
     /// get color
-    const Math::float4& GetColor() const;
+    const Math::vec4& GetColor() const;
     /// get position
-    const Math::float2& GetPosition() const;
+    const Math::vec2& GetPosition() const;
 	/// get size
 	const float GetSize() const;
     
 private:
     Threading::ThreadId threadId;
     Util::String text;
-    Math::float4 color;
-    Math::float2 pos;
+    Math::vec4 color;
+    Math::vec2 pos;
 	float size;
 };
 
@@ -64,7 +64,7 @@ TextElement::GetText() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::float4&
+inline const Math::vec4&
 TextElement::GetColor() const
 {
     return this->color;
@@ -73,7 +73,7 @@ TextElement::GetColor() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::float2&
+inline const Math::vec2&
 TextElement::GetPosition() const
 {
     return this->pos;

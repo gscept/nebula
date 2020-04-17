@@ -51,7 +51,7 @@ AnimGetClip(const AnimResourceId& id, const IndexT index)
 /**
 */
 void 
-AnimComputeSlice(const AnimResourceId& id, IndexT clipIndex, IndexT keyIndex, SizeT& outSliceByteSize, const Math::float4*& ptr)
+AnimComputeSlice(const AnimResourceId& id, IndexT clipIndex, IndexT keyIndex, SizeT& outSliceByteSize, const Math::vec4*& ptr)
 {
 	const AnimClip& clip = animPool->GetClip(id, clipIndex);
 	n_assert(clip.AreKeySliceValuesValid());

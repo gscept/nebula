@@ -6,6 +6,7 @@
 #include "streamskeletonpool.h"
 #include "nskfileformatstructs.h"
 #include "util/fourcc.h"
+#include "math/vector.h"
 using namespace IO;
 namespace Characters
 {
@@ -19,9 +20,9 @@ Resources::ResourcePool::LoadStatus
 StreamSkeletonPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom & tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
 	Util::FixedArray<CharacterJoint>& joints = this->Get<Joints>(id.resourceId);
-	Util::FixedArray<Math::matrix44>& bindPoses = this->Get<BindPose>(id.resourceId);
+	Util::FixedArray<Math::mat4>& bindPoses = this->Get<BindPose>(id.resourceId);
 	Util::HashTable<Util::StringAtom, IndexT>& jointIndexMap = this->Get<JointNameMap>(id.resourceId);
-	Util::FixedArray<Math::float4>& idleSamples = this->Get<IdleSamples>(id.resourceId);
+	Util::FixedArray<Math::vec4>& idleSamples = this->Get<IdleSamples>(id.resourceId);
 
 	// map buffer
 	byte* ptr = (byte*)stream->Map();
@@ -50,9 +51,9 @@ StreamSkeletonPool::LoadFromStream(const Resources::ResourceId id, const Util::S
 			ptr += sizeof(Nsk3Joint);
 
 			// setup base components
-			joints[jointIndex].poseTranslation = joint->translation;
+			joints[jointIndex].poseTranslation = xyz(joint->translation);
 			joints[jointIndex].poseRotation = joint->rotation;
-			joints[jointIndex].poseScale = joint->scale;
+			joints[jointIndex].poseScale = xyz(joint->scale);
 			joints[jointIndex].parentJointIndex = joint->parent;
 			if (joint->parent != InvalidIndex)
 				joints[jointIndex].parentJoint = &joints[joint->parent];
@@ -64,21 +65,21 @@ StreamSkeletonPool::LoadFromStream(const Resources::ResourceId id, const Util::S
 #endif
 
 			// construct pose matrix
-			joints[jointIndex].poseMatrix = Math::matrix44::identity();
+			joints[jointIndex].poseMatrix = Math::mat4();
 			joints[jointIndex].poseMatrix.scale(joints[jointIndex].poseScale);
-			joints[jointIndex].poseMatrix = Math::matrix44::multiply(joints[jointIndex].poseMatrix, Math::matrix44::rotationquaternion(joints[jointIndex].poseRotation));
+			joints[jointIndex].poseMatrix = joints[jointIndex].poseMatrix * Math::rotationquat(joints[jointIndex].poseRotation);
 			joints[jointIndex].poseMatrix.translate(joints[jointIndex].poseTranslation);
 			if (joints[jointIndex].parentJoint != nullptr)
-				joints[jointIndex].poseMatrix = Math::matrix44::multiply(joints[jointIndex].poseMatrix, joints[jointIndex].parentJoint->poseMatrix);
+				joints[jointIndex].poseMatrix = joints[jointIndex].poseMatrix * joints[jointIndex].parentJoint->poseMatrix;
 
 			// setup bind pose and mapping
-			bindPoses[jointIndex] = Math::matrix44::inverse(joints[jointIndex].poseMatrix);
+			bindPoses[jointIndex] = Math::inverse(joints[jointIndex].poseMatrix);
 			jointIndexMap.Add(joint->name, jointIndex);
 
 			// setup idle samples, which are used when no animation is playing
-			idleSamples[jointIndex * 4 + 0] = joints[jointIndex].poseTranslation;
+			idleSamples[jointIndex * 4 + 0] = Math::vec4(joints[jointIndex].poseTranslation, 1);
 			idleSamples[jointIndex * 4 + 1].load((const float*)&joints[jointIndex].poseRotation);
-			idleSamples[jointIndex * 4 + 2] = joints[jointIndex].poseScale;
+			idleSamples[jointIndex * 4 + 2] = Math::vec4(joints[jointIndex].poseScale, 1);
 			idleSamples[jointIndex * 4 + 3] = Math::vector::nullvec();
 		}
 	}
@@ -98,7 +99,7 @@ StreamSkeletonPool::Unload(const Resources::ResourceId id)
 //------------------------------------------------------------------------------
 /**
 */
-const Util::FixedArray<Math::matrix44>&
+const Util::FixedArray<Math::mat4>&
 StreamSkeletonPool::GetBindPose(const SkeletonId id) const
 {
 	return this->skeletonAllocator.Get<BindPose>(id.resourceId);

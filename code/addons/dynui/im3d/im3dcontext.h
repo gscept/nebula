@@ -39,17 +39,17 @@ public:
     static void Create();
     static void Discard();
 
-    static void DrawBox(const Math::bbox& box, const Math::float4& color, uint32_t depthFlag = CheckDepth|Wireframe);
+    static void DrawBox(const Math::bbox& box, const Math::vec4& color, uint32_t depthFlag = CheckDepth|Wireframe);
 
-    static void DrawOrientedBox(const Math::matrix44& transform, const Math::bbox& box, const Math::float4& color, uint32_t depthFlag = CheckDepth | Wireframe);
+    static void DrawOrientedBox(const Math::mat4& transform, const Math::bbox& box, const Math::vec4& color, uint32_t depthFlag = CheckDepth | Wireframe);
 
-    static void DrawBox(const Math::matrix44& modelTransform, const Math::float4& color, uint32_t depthFlag = CheckDepth | Wireframe);
+    static void DrawBox(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t depthFlag = CheckDepth | Wireframe);
     /// draw a sphere
-    static void DrawSphere(const Math::matrix44& modelTransform, const Math::float4& color, uint32_t depthFlag = CheckDepth | Wireframe);
+    static void DrawSphere(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t depthFlag = CheckDepth | Wireframe);
     /// draw a cylinder
-    static void DrawCylinder(const Math::matrix44& modelTransform, const Math::float4& color, uint32_t depthFlag = CheckDepth | Wireframe);
+    static void DrawCylinder(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t depthFlag = CheckDepth | Wireframe);
     /// draw a cone
-    static void DrawCone(const Math::matrix44& modelTransform, const Math::float4& color, uint32_t depthFlag = CheckDepth | Wireframe);
+    static void DrawCone(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t depthFlag = CheckDepth | Wireframe);
 
     /// Start a new Im3d frame
     static void OnBeforeFrame(const Graphics::FrameContext& ctx);
@@ -67,7 +67,7 @@ public:
     ///
     static void SetGridSize(float cellSize, int cellCount);
     ///
-    static void SetGridColor(Math::float4 const& color);
+    static void SetGridColor(Math::vec4 const& color);
     /// configure size and thickness of gizmos
     static void SetGizmoSize(int size, int width);
 };

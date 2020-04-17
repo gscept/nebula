@@ -255,23 +255,23 @@ SSAOPlugin::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const 
 	vars.r2 = vars.r * vars.r;
 	vars.negInvR2 = -1.0f / vars.r2;
 
-	vars.aoResolution.x() = this->vars.width;
-	vars.aoResolution.y() = this->vars.height;
-	vars.invAOResolution.x() = 1.0f / this->vars.width;
-	vars.invAOResolution.y() = 1.0f / this->vars.height;
+	vars.aoResolution.x = this->vars.width;
+	vars.aoResolution.y = this->vars.height;
+	vars.invAOResolution.x = 1.0f / this->vars.width;
+	vars.invAOResolution.y = 1.0f / this->vars.height;
 
 	float fov = cameraSettings.GetFov();
-	vars.focalLength.x() = 1.0f / tanf(fov * 0.5f) * (this->vars.fullHeight / this->vars.fullWidth);
-	vars.focalLength.y() = 1.0f / tanf(fov * 0.5f);
+	vars.focalLength.x = 1.0f / tanf(fov * 0.5f) * (this->vars.fullHeight / this->vars.fullWidth);
+	vars.focalLength.y = 1.0f / tanf(fov * 0.5f);
 
-	Math::float2 invFocalLength;
-	invFocalLength.x() = 1 / vars.focalLength.x();
-	invFocalLength.y() = 1 / vars.focalLength.y();
+	Math::vec2 invFocalLength;
+	invFocalLength.x = 1 / vars.focalLength.x;
+	invFocalLength.y = 1 / vars.focalLength.y;
 
-	vars.uvToViewA.x() = 2.0f * invFocalLength.x();
-	vars.uvToViewA.y() = -2.0f * invFocalLength.y();
-	vars.uvToViewB.x() = -1.0f * invFocalLength.x();
-	vars.uvToViewB.y() = 1.0f * invFocalLength.y();
+	vars.uvToViewA.x = 2.0f * invFocalLength.x;
+	vars.uvToViewA.y = -2.0f * invFocalLength.y;
+	vars.uvToViewB.x = -1.0f * invFocalLength.x;
+	vars.uvToViewB.y = 1.0f * invFocalLength.y;
 
 #ifndef INV_LN2
 #define INV_LN2 1.44269504f
@@ -289,17 +289,17 @@ SSAOPlugin::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const 
 	vars.blurThreshold = 2.0f * SQRT_LN2 * (this->vars.sceneScale / BLUR_SHARPNESS);
 
 	HbaoCs::HBAOBlock hbaoBlock;
-	hbaoBlock.AOResolution[0] = this->vars.aoResolution.x();
-	hbaoBlock.AOResolution[1] = this->vars.aoResolution.y();
-	hbaoBlock.InvAOResolution[0] = this->vars.invAOResolution.x();
-	hbaoBlock.InvAOResolution[1] = this->vars.invAOResolution.y();
+	hbaoBlock.AOResolution[0] = this->vars.aoResolution.x;
+	hbaoBlock.AOResolution[1] = this->vars.aoResolution.y;
+	hbaoBlock.InvAOResolution[0] = this->vars.invAOResolution.x;
+	hbaoBlock.InvAOResolution[1] = this->vars.invAOResolution.y;
 	hbaoBlock.R2 = this->vars.r2;
 	hbaoBlock.Strength = this->vars.strength;
 	hbaoBlock.TanAngleBias = this->vars.tanAngleBias;
-	hbaoBlock.UVToViewA[0] = this->vars.uvToViewA.x();
-	hbaoBlock.UVToViewA[1] = this->vars.uvToViewA.y();
-	hbaoBlock.UVToViewB[0] = this->vars.uvToViewB.x();
-	hbaoBlock.UVToViewB[1] = this->vars.uvToViewB.y();
+	hbaoBlock.UVToViewA[0] = this->vars.uvToViewA.x;
+	hbaoBlock.UVToViewA[1] = this->vars.uvToViewA.y;
+	hbaoBlock.UVToViewB[0] = this->vars.uvToViewB.x;
+	hbaoBlock.UVToViewB[1] = this->vars.uvToViewB.y;
 	uint hbaoOffset = CoreGraphics::SetComputeConstants(MainThreadConstantBuffer, hbaoBlock);
 
 	IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();

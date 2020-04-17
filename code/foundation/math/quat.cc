@@ -1,11 +1,10 @@
 //------------------------------------------------------------------------------
-//  xna_quaternion.cc
-//  (C) 2007 Radon Labs GmbH
-//  (C) 2013-2018 Individual contributors, see AUTHORS file
+//  quat.cc
+//  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "math2/vec4.h"
-#include "math2/mat4.h"
+#include "math/vec4.h"
+#include "math/mat4.h"
 #include "system/byteorder.h"
 
 namespace Math
@@ -61,7 +60,7 @@ rotationmatrix(const mat4& m)
 /**
 */
 void
-to_euler(const quat& q, float4& outangles)
+to_euler(const quat& q, vec4& outangles)
 {
 	float q0 = q.x;
 	float q1 = q.y;

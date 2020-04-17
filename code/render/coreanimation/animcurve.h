@@ -18,7 +18,7 @@
 #include "core/types.h"
 #include "coreanimation/curvetype.h"
 #include "coreanimation/infinitytype.h"
-#include "math/float4.h"
+#include "math/vec4.h"
 
 //------------------------------------------------------------------------------
 namespace CoreAnimation
@@ -37,9 +37,9 @@ public:
     /// return true if the curve is static
     bool IsStatic() const;
     /// set the static key of the curve
-    void SetStaticKey(const Math::float4& staticKey);
+    void SetStaticKey(const Math::vec4& staticKey);
     /// get the static key of the curve
-    const Math::float4& GetStaticKey() const;
+    const Math::vec4& GetStaticKey() const;
     /// set index of the first key in the AnimKeyBuffer
     void SetFirstKeyIndex(IndexT index);
     /// get index of the first key in the AnimKeyBuffer
@@ -50,7 +50,7 @@ public:
     CurveType::Code GetCurveType() const;
 
 private:
-    Math::float4 staticKey;
+    Math::vec4 staticKey;
     IndexT firstKeyIndex;
     CurveType::Code curveType;
     bool isActive;
@@ -111,7 +111,7 @@ AnimCurve::IsStatic() const
 /**
 */
 inline void
-AnimCurve::SetStaticKey(const Math::float4& key)
+AnimCurve::SetStaticKey(const Math::vec4& key)
 {
     this->staticKey = key;
 }
@@ -119,7 +119,7 @@ AnimCurve::SetStaticKey(const Math::float4& key)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::float4&
+inline const Math::vec4&
 AnimCurve::GetStaticKey() const
 {
     return this->staticKey;

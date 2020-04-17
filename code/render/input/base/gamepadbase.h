@@ -112,7 +112,7 @@ public:
 	/// check if device has 3d location sensor
 	bool HasTransform() const;
 	/// get current position (if supported by device, identity otherwise)
-	const Math::matrix44 & GetTransform() const;
+	const Math::mat4 & GetTransform() const;
 
     /// set low-frequency vibration effect (0.0f .. 1.0f)
     void SetLowFrequencyVibrator(float f);
@@ -153,7 +153,7 @@ protected:
     float highFreqVibrator;
     Threading::CriticalSection critSect;
     Threading::ThreadId creatorThreadId;
-	Math::matrix44 transform;
+	Math::mat4 transform;
 };
 
 //------------------------------------------------------------------------------
@@ -179,7 +179,7 @@ GamePadBase::HasTransform() const
 /**
 */
 inline 
-const Math::matrix44 &
+const Math::mat4 &
 GamePadBase::GetTransform() const
 {	
 	return this->transform;

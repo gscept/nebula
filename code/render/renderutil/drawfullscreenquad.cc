@@ -49,17 +49,17 @@ DrawFullScreenQuad::Setup(SizeT rtWidth, SizeT rtHeight)
     
 #if COREGRAPHICS_PIXEL_CENTER_HALF_PIXEL
 	// compute screen rectangle coordinates
-	Math::float4 pixelSize(1.0f / float(rtWidth), 1.0f / float(rtHeight), 0.0f, 0.0f);
-    Math::float4 halfPixelSize = pixelSize * 0.5f;
+	Math::vec4 pixelSize(1.0f / float(rtWidth), 1.0f / float(rtHeight), 0.0f, 0.0f);
+    Math::vec4 halfPixelSize = pixelSize * 0.5f;
 #else
-	Math::float4 halfPixelSize = 0.0f;
+	Math::vec4 halfPixelSize = 0.0f;
 #endif
 
 	// create corners and uvs
-    float left   = -1.0f - halfPixelSize.x();
-    float right  = +3.0f - halfPixelSize.x();
-    float top    = +3.0f + halfPixelSize.y();
-    float bottom = -1.0f + halfPixelSize.y();
+    float left   = -1.0f - halfPixelSize.x;
+    float right  = +3.0f - halfPixelSize.x;
+    float top    = +3.0f + halfPixelSize.y;
+    float bottom = -1.0f + halfPixelSize.y;
 
     float u0 = 0.0f;
     float u1 = 2.0f;

@@ -54,7 +54,7 @@ View::UpdateResources(const IndexT frameIndex)
 		transDev->SetViewTransform(CameraContext::GetTransform(this->camera));
 		transDev->SetProjTransform(CameraContext::GetProjection(this->camera));
 		transDev->SetFocalLength(settings.GetFocalLength());
-		transDev->SetNearFarPlane(Math::float2(settings.GetZNear(), settings.GetZFar()));
+		transDev->SetNearFarPlane(Math::vec2(settings.GetZNear(), settings.GetZFar()));
 
 		// fixme! view should hold its own resource tables and send them to ApplyViewSettings!
 		transDev->ApplyViewSettings();

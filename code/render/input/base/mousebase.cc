@@ -238,7 +238,7 @@ MouseBase::OnReleaseCapture()
 /**
 */
 void
-MouseBase::UpdateMousePositions(const Math::float2& pixelPos, const Math::float2& screenPos)
+MouseBase::UpdateMousePositions(const Math::vec2& pixelPos, const Math::vec2& screenPos)
 {    
     // prevent a mouse-jump at the beginning
     if (this->initialMouseMovement)

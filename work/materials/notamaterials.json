@@ -47,7 +47,7 @@
                   },
                   {
                      "name": "TeamColor",
-                     "type": "float4",
+                     "type": "vec4",
                      "defaultValue": [0.0, 0.0, 0.0, 0.0],
                      "max": [10.0, 10.0, 10.0, 10.0],
                      "desc": "Color of the unit"
@@ -104,7 +104,7 @@
                   },
                   {
                      "name": "TeamColor",
-                     "type": "float4",
+                     "type": "vec4",
                      "defaultValue": [0.0, 0.0, 0.0, 0.0],
                      "max": [10.0, 10.0, 10.0, 10.0],
                      "desc": "Color of the unit"

@@ -11,10 +11,10 @@
     (C) 2006 RadonLabs GmbH.
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
-#include "math/float2.h"
-#include "math/float4.h"
-#include "math/matrix44.h"
-#include "math/quaternion.h"
+#include "math/vec2.h"
+#include "math/vec4.h"
+#include "math/mat4.h"
+#include "math/quat.h"
 #include "math/transform44.h"
 #include "util/string.h"
 #include "util/guid.h"
@@ -42,11 +42,12 @@ public:
         Float,
 		Double,
         Bool,
-        Float2,
-        Float4,
+        Vec2,
+        Vec3,
+        Vec4,
 		Quaternion,
         String,
-        Matrix44,
+        Mat4,
 		Transform44,
         Blob,
         Guid,
@@ -55,10 +56,11 @@ public:
         IntArray,
         FloatArray,
         BoolArray,
-		Float2Array,
-        Float4Array,
+		Vec2Array,
+        Vec3Array,
+        Vec4Array,
         StringArray,
-        Matrix44Array,
+        Mat4Array,
         BlobArray,
         GuidArray,
 		NumTypes,
@@ -86,14 +88,16 @@ public:
 	Variant(double rhs);
     /// bool constructor
     Variant(bool rhs);
-	/// float2 constructor
-	Variant(const Math::float2& v);
-    /// float4 constructor
-    Variant(const Math::float4& v);
+	/// vec2 constructor
+	Variant(const Math::vec2& v);
+    /// vec4 constructor
+    Variant(const Math::vec3& v);
+    /// vec4 constructor
+    Variant(const Math::vec4& v);
 	/// quaternion constructor
-	Variant(const Math::quaternion& q);
-    /// matrix44 constructor
-    Variant(const Math::matrix44& m);
+	Variant(const Math::quat& q);
+    /// mat4 constructor
+    Variant(const Math::mat4& m);
 	/// transform44 constructor
 	Variant(const Math::transform44& m);
     /// string constructor
@@ -116,12 +120,14 @@ public:
     Variant(const Util::Array<float>& rhs);
     /// bool array constructor
     Variant(const Util::Array<bool>& rhs);
-	/// float2 array constructor
-	Variant(const Util::Array<Math::float2>& rhs);
-    /// float4 array constructor
-    Variant(const Util::Array<Math::float4>& rhs);
-    /// matrix44 array constructor
-    Variant(const Util::Array<Math::matrix44>& rhs);
+	/// vec2 array constructor
+	Variant(const Util::Array<Math::vec2>& rhs);
+    /// vec3 array constructor
+    Variant(const Util::Array<Math::vec3>& rhs);
+    /// vec4 array constructor
+    Variant(const Util::Array<Math::vec4>& rhs);
+    /// mat4 array constructor
+    Variant(const Util::Array<Math::mat4>& rhs);
     /// string array constructor
     Variant(const Util::Array<Util::String>& rhs);
     /// blob array constructor
@@ -162,14 +168,16 @@ public:
 	void operator=(double val);
     /// bool assigment operator
     void operator=(bool val);
-	/// float2 assignment operator
-	void operator=(const Math::float2& val);
-    /// float4 assignment operator
-    void operator=(const Math::float4& val);
-	/// quaternion assignment operator
-	void operator=(const Math::quaternion& val);
-    /// matrix44 assignment operator
-    void operator=(const Math::matrix44& val);
+	/// vec2 assignment operator
+	void operator=(const Math::vec2& val);
+    /// vec3 assignment operator
+    void operator=(const Math::vec3& val);
+    /// vec4 assignment operator
+    void operator=(const Math::vec4& val);
+	/// quat assignment operator
+	void operator=(const Math::quat& val);
+    /// mat4 assignment operator
+    void operator=(const Math::mat4& val);
 	/// transform44 assignment operator
 	void operator=(const Math::transform44& val);
     /// string assignment operator
@@ -190,12 +198,14 @@ public:
     void operator=(const Util::Array<float>& rhs);
     /// bool array assignment
     void operator=(const Util::Array<bool>& rhs);
-	/// float2 array assignment
-	void operator=(const Util::Array<Math::float2>& rhs);
-    /// float4 array assignment
-    void operator=(const Util::Array<Math::float4>& rhs);
-    /// matrix44 array assignment
-    void operator=(const Util::Array<Math::matrix44>& rhs);
+	/// vec2 array assignment
+	void operator=(const Util::Array<Math::vec2>& rhs);
+    /// vec3 array assignment
+    void operator=(const Util::Array<Math::vec3>& rhs);
+    /// vec4 array assignment
+    void operator=(const Util::Array<Math::vec4>& rhs);
+    /// mat4 array assignment
+    void operator=(const Util::Array<Math::mat4>& rhs);
     /// string array assignment
     void operator=(const Util::Array<Util::String>& rhs);
     /// blob array assignment
@@ -225,12 +235,12 @@ public:
 	bool operator==(double rhs) const;
     /// bool equality operator
     bool operator==(bool rhs) const;
-	/// float2 equality operator
-	bool operator==(const Math::float2& rhs) const;
-    /// float4 equality operator
-    bool operator==(const Math::float4& rhs) const;
-	/// float4 equality operator
-	bool operator==(const Math::quaternion& rhs) const;
+	/// vec2 equality operator
+	bool operator==(const Math::vec2& rhs) const;
+    /// vec4 equality operator
+    bool operator==(const Math::vec4& rhs) const;
+	/// vec4 equality operator
+	bool operator==(const Math::quat& rhs) const;
     /// string equality operator
     bool operator==(const Util::String& rhs) const;
     /// guid equality operator
@@ -264,12 +274,12 @@ public:
 	bool operator!=(double rhs) const;
     /// bool inequality operator
     bool operator!=(bool rhs) const;
-	/// float2 inequality operator
-	bool operator!=(const Math::float2& rhs) const;
-    /// float4 inequality operator
-    bool operator!=(const Math::float4& rhs) const;
+	/// vec2 inequality operator
+	bool operator!=(const Math::vec2& rhs) const;
+    /// vec4 inequality operator
+    bool operator!=(const Math::vec4& rhs) const;
 	/// quaternion inequality operator
-	bool operator!=(const Math::quaternion& rhs) const;
+	bool operator!=(const Math::quat& rhs) const;
     /// string inequality operator
     bool operator!=(const Util::String& rhs) const;
     /// guid inequality operator
@@ -334,22 +344,26 @@ public:
     void SetString(const Util::String& val);
     /// get string content
     const Util::String& GetString() const;
-	/// set float2 content
-	void SetFloat2(const Math::float2& val);
-	/// get float2 content
-	Math::float2 GetFloat2() const;
-    /// set float4 content
-    void SetFloat4(const Math::float4& val);
-    /// get float4 content
-    Math::float4 GetFloat4() const;
+	/// set vec2 content
+	void SetVec2(const Math::vec2& val);
+	/// get vec2 content
+	Math::vec2 GetVec2() const;
+    /// set vec4 content
+    void SetVec3(const Math::vec3& val);
+    /// get vec4 content
+    Math::vec3 GetVec3() const;
+    /// set vec4 content
+    void SetVec4(const Math::vec4& val);
+    /// get vec4 content
+    Math::vec4 GetVec4() const;
 	/// set quaternion content
-	void SetQuaternion(const Math::quaternion& val);
+	void SetQuat(const Math::quat& val);
 	/// get quaternion content
-	Math::quaternion GetQuaternion() const;
-    /// set matrix44 content
-    void SetMatrix44(const Math::matrix44& val);
-    /// get matrix44 content
-    const Math::matrix44& GetMatrix44() const;
+	Math::quat GetQuat() const;
+    /// set mat4 content
+    void SetMat4(const Math::mat4& val);
+    /// get mat4 content
+    const Math::mat4& GetMat4() const;
 	/// set transform44 content
 	void SetTransform44(const Math::transform44& val);
 	/// get transform44 content
@@ -382,18 +396,22 @@ public:
     void SetBoolArray(const Util::Array<bool>& val);
     /// get bool array content
     const Util::Array<bool>& GetBoolArray() const;
-	/// set float2 array content
-	void SetFloat2Array(const Util::Array<Math::float2>& val);
-	/// get float2 array content
-	const Util::Array<Math::float2>& GetFloat2Array() const;
-    /// set float4 array content
-    void SetFloat4Array(const Util::Array<Math::float4>& val);
-    /// get float4 array content
-    const Util::Array<Math::float4>& GetFloat4Array() const;
-    /// set matrix44 array content
-    void SetMatrix44Array(const Util::Array<Math::matrix44>& val);
-    /// get matrix44 array content
-    const Util::Array<Math::matrix44>& GetMatrix44Array() const;
+	/// set vec2 array content
+	void SetVec2Array(const Util::Array<Math::vec2>& val);
+	/// get vec2 array content
+	const Util::Array<Math::vec2>& GetVec2Array() const;
+    /// set vec4 array content
+    void SetVec3Array(const Util::Array<Math::vec3>& val);
+    /// get vec4 array content
+    const Util::Array<Math::vec3>& GetVec3Array() const;
+    /// set vec4 array content
+    void SetVec4Array(const Util::Array<Math::vec4>& val);
+    /// get vec4 array content
+    const Util::Array<Math::vec4>& GetVec4Array() const;
+    /// set mat4 array content
+    void SetMat4Array(const Util::Array<Math::mat4>& val);
+    /// get mat4 array content
+    const Util::Array<Math::mat4>& GetMat4Array() const;
     /// set string array content
     void SetStringArray(const Util::Array<Util::String>& val);
     /// get string array content
@@ -446,7 +464,7 @@ private:
         bool b;
 		double d;
         float f[4];
-        Math::matrix44* m;
+        Math::mat4* m;
 		Math::transform44* t;
         Util::String* string;
         Util::Guid* guid;
@@ -456,9 +474,10 @@ private:
         Util::Array<int>* intArray;
         Util::Array<float>* floatArray;
         Util::Array<bool>* boolArray;
-		Util::Array<Math::float2>* float2Array;
-        Util::Array<Math::float4>* float4Array;
-        Util::Array<Math::matrix44>* matrix44Array; 
+		Util::Array<Math::vec2>* vec2Array;
+        Util::Array<Math::vec3>* float3Array;
+        Util::Array<Math::vec4>* vec4Array;
+        Util::Array<Math::mat4>* mat4Array; 
         Util::Array<Util::String>* stringArray;
         Util::Array<Util::Guid>* guidArray;
         Util::Array<Util::Blob>* blobArray;
@@ -488,7 +507,7 @@ Variant::Delete()
         n_delete(this->string);
         this->string = 0;
     }
-    else if (Matrix44 == this->type)
+    else if (Mat4 == this->type)
     {
         n_assert(this->m);
         n_delete(this->m);
@@ -536,23 +555,29 @@ Variant::Delete()
         n_delete(this->boolArray);
         this->boolArray = 0;
     }
-	else if (Float2Array == this->type)
+	else if (Vec2Array == this->type)
 	{
-		n_assert(this->float2Array);
-		n_delete(this->float2Array);
-		this->float2Array = 0;
+		n_assert(this->vec2Array);
+		n_delete(this->vec2Array);
+		this->vec2Array = 0;
 	}
-    else if (Float4Array == this->type)
+    else if (Vec3Array == this->type)
     {
-        n_assert(this->float4Array);
-        n_delete(this->float4Array);
-        this->float4Array = 0;
+        n_assert(this->float3Array);
+        n_delete(this->float3Array);
+        this->float3Array = 0;
     }
-    else if (Matrix44Array == this->type)
+    else if (Vec4Array == this->type)
     {
-        n_assert(this->matrix44Array);
-        n_delete(this->matrix44Array);
-        this->matrix44Array = 0;
+        n_assert(this->vec4Array);
+        n_delete(this->vec4Array);
+        this->vec4Array = 0;
+    }
+    else if (Mat4Array == this->type)
+    {
+        n_assert(this->mat4Array);
+        n_delete(this->mat4Array);
+        this->mat4Array = 0;
     }
     else if (StringArray == this->type)
     {
@@ -626,10 +651,15 @@ Variant::Copy(const Variant& rhs)
         case Bool:
             this->b = rhs.b;
             break;
-		case Float2:
+		case Vec2:
 			this->f[0] = rhs.f[0];
 			this->f[1] = rhs.f[1];
-        case Float4:
+        case Vec3:
+            this->f[0] = rhs.f[0];
+            this->f[1] = rhs.f[1];
+            this->f[2] = rhs.f[2];
+            break;
+        case Vec4:
             this->f[0] = rhs.f[0];
             this->f[1] = rhs.f[1];
             this->f[2] = rhs.f[2];
@@ -644,8 +674,8 @@ Variant::Copy(const Variant& rhs)
         case String:
             this->string = n_new(Util::String(*rhs.string));
             break;
-        case Matrix44:
-            this->m = n_new(Math::matrix44(*rhs.m));
+        case Mat4:
+            this->m = n_new(Math::mat4(*rhs.m));
             break;
 		case Transform44:
 			this->t = n_new(Math::transform44(*rhs.t));
@@ -675,14 +705,17 @@ Variant::Copy(const Variant& rhs)
         case BoolArray:
             this->boolArray = n_new(Util::Array<bool>(*rhs.boolArray));
             break;
-		case Float2Array:
-			this->float2Array = n_new(Util::Array<Math::float2>(*rhs.float2Array));
+		case Vec2Array:
+			this->vec2Array = n_new(Util::Array<Math::vec2>(*rhs.vec2Array));
 			break;
-        case Float4Array:
-            this->float4Array = n_new(Util::Array<Math::float4>(*rhs.float4Array));
+        case Vec3Array:
+            this->float3Array = n_new(Util::Array<Math::vec3>(*rhs.float3Array));
             break;
-        case Matrix44Array:
-            this->matrix44Array = n_new(Util::Array<Math::matrix44>(*rhs.matrix44Array));
+        case Vec4Array:
+            this->vec4Array = n_new(Util::Array<Math::vec4>(*rhs.vec4Array));
+            break;
+        case Mat4Array:
+            this->mat4Array = n_new(Util::Array<Math::mat4>(*rhs.mat4Array));
             break;
         case StringArray:
             this->stringArray = n_new(Util::Array<Util::String>(*rhs.stringArray));
@@ -822,19 +855,19 @@ Variant::Variant(bool rhs) :
 /**
 */
 inline
-Variant::Variant( const Math::float2& rhs ) :
-	type(Float2)
+Variant::Variant( const Math::vec2& rhs ) :
+	type(Vec2)
 {
-	this->f[0] = rhs.x();
-	this->f[1] = rhs.y();
+	this->f[0] = rhs.x;
+	this->f[1] = rhs.y;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline
-Variant::Variant(const Math::float4& rhs) :
-    type(Float4)
+inline 
+Variant::Variant(const Math::vec3& rhs) :
+    type(Vec3)
 {
     rhs.storeu(this->f);
 }
@@ -843,7 +876,17 @@ Variant::Variant(const Math::float4& rhs) :
 /**
 */
 inline
-Variant::Variant(const Math::quaternion& rhs) :
+Variant::Variant(const Math::vec4& rhs) :
+    type(Vec4)
+{
+    rhs.storeu(this->f);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+Variant::Variant(const Math::quat& rhs) :
 	type(Quaternion)
 {
 	rhs.storeu(this->f);
@@ -907,10 +950,10 @@ Variant::Variant(nullptr_t)	:
 /**
 */
 inline
-Variant::Variant(const Math::matrix44& rhs) :
-    type(Matrix44)
+Variant::Variant(const Math::mat4& rhs) :
+    type(Mat4)
 {
-    this->m = n_new(Math::matrix44(rhs));
+    this->m = n_new(Math::mat4(rhs));
 }
 
 //------------------------------------------------------------------------------
@@ -977,30 +1020,40 @@ Variant::Variant(const Util::Array<bool>& rhs) :
 /**
 */
 inline
-Variant::Variant(const Util::Array<Math::float2>& rhs) : 
-	type(Float2Array)	
+Variant::Variant(const Util::Array<Math::vec2>& rhs) : 
+	type(Vec2Array)	
 {
-	this->float2Array = n_new(Util::Array<Math::float2>(rhs));
+	this->vec2Array = n_new(Util::Array<Math::vec2>(rhs));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline
-Variant::Variant(const Util::Array<Math::float4>& rhs) :
-    type(Float4Array)
+Variant::Variant(const Util::Array<Math::vec3>& rhs) :
+    type(Vec3Array)
 {
-    this->float4Array = n_new(Util::Array<Math::float4>(rhs));
+    this->float3Array = n_new(Util::Array<Math::vec3>(rhs));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline
-Variant::Variant(const Util::Array<Math::matrix44>& rhs) :
-    type(Matrix44Array)
+Variant::Variant(const Util::Array<Math::vec4>& rhs) :
+    type(Vec4Array)
 {
-    this->matrix44Array = n_new(Util::Array<Math::matrix44>(rhs));
+    this->vec4Array = n_new(Util::Array<Math::vec4>(rhs));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+Variant::Variant(const Util::Array<Math::mat4>& rhs) :
+    type(Mat4Array)
+{
+    this->mat4Array = n_new(Util::Array<Math::mat4>(rhs));
 }
 
 //------------------------------------------------------------------------------
@@ -1055,8 +1108,8 @@ Variant::SetType(Type t)
         case String:
             this->string = n_new(Util::String);
             break;
-        case Matrix44:
-            this->m = n_new(Math::matrix44);
+        case Mat4:
+            this->m = n_new(Math::mat4);
             break;
 		case Transform44:
 			this->t = n_new(Math::transform44);
@@ -1082,14 +1135,17 @@ Variant::SetType(Type t)
         case BoolArray:
             this->boolArray = n_new(Util::Array<bool>);
             break;
-		case Float2Array:
-			this->float2Array = n_new(Util::Array<Math::float2>);
+		case Vec2Array:
+			this->vec2Array = n_new(Util::Array<Math::vec2>);
 			break;
-        case Float4Array:
-            this->float4Array = n_new(Util::Array<Math::float4>);
+        case Vec3Array:
+            this->float3Array = n_new(Util::Array<Math::vec3>);
             break;
-        case Matrix44Array:
-            this->matrix44Array = n_new(Util::Array<Math::matrix44>);
+        case Vec4Array:
+            this->vec4Array = n_new(Util::Array<Math::vec4>);
+            break;
+        case Mat4Array:
+            this->mat4Array = n_new(Util::Array<Math::mat4>);
             break;
         case StringArray:
             this->stringArray = n_new(Util::Array<Util::String>);
@@ -1238,22 +1294,22 @@ Variant::operator=(bool val)
 /**
 */
 inline void 
-Variant::operator=(const Math::float2& val)
+Variant::operator=(const Math::vec2& val)
 {
 	this->Delete();
-	this->type = Float2;
-	this->f[0] = val.x();
-	this->f[1] = val.y();
+	this->type = Vec2;
+	this->f[0] = val.x;
+	this->f[1] = val.y;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-Variant::operator=(const Math::float4& val)
+Variant::operator=(const Math::vec3& val)
 {
     this->Delete();
-    this->type = Float4;
+    this->type = Vec3;
     val.storeu(this->f);
 }
 
@@ -1261,7 +1317,18 @@ Variant::operator=(const Math::float4& val)
 /**
 */
 inline void
-Variant::operator=(const Math::quaternion& val)
+Variant::operator=(const Math::vec4& val)
+{
+    this->Delete();
+    this->type = Vec4;
+    val.storeu(this->f);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+Variant::operator=(const Math::quat& val)
 {
 	this->Delete();
 	this->type = Quaternion;
@@ -1299,18 +1366,18 @@ Variant::operator=(const char* chrPtr)
 /**
 */
 inline void
-Variant::operator=(const Math::matrix44& val)
+Variant::operator=(const Math::mat4& val)
 {
-    if (Matrix44 == this->type)
+    if (Mat4 == this->type)
     {
         *this->m = val;
     }
     else
     {
         this->Delete();
-        this->m = n_new(Math::matrix44(val));
+        this->m = n_new(Math::mat4(val));
     }
-    this->type = Matrix44;
+    this->type = Mat4;
 }
 
 //------------------------------------------------------------------------------
@@ -1451,54 +1518,72 @@ Variant::operator=(const Util::Array<bool>& val)
 /**
 */
 inline void 
-Variant::operator=( const Util::Array<Math::float2>& rhs )
+Variant::operator=( const Util::Array<Math::vec2>& rhs )
 {
-	if (Float2Array == this->type)
+	if (Vec2Array == this->type)
 	{
-		*this->float2Array = rhs;
+		*this->vec2Array = rhs;
 	}
 	else
 	{
 		this->Delete();
-		this->float2Array = n_new(Util::Array<Math::float2>(rhs));
+		this->vec2Array = n_new(Util::Array<Math::vec2>(rhs));
 	}
-	this->type = Float2Array;
+	this->type = Vec2Array;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-Variant::operator=(const Util::Array<Math::float4>& val)
+Variant::operator=(const Util::Array<Math::vec3>& val)
 {
-    if (Float4Array == this->type)
+    if (Vec3Array == this->type)
     {
-        *this->float4Array = val;
+        *this->float3Array = val;
     }
     else
     {
         this->Delete();
-        this->float4Array = n_new(Util::Array<Math::float4>(val));
+        this->float3Array = n_new(Util::Array<Math::vec3>(val));
     }
-    this->type = Float4Array;
+    this->type = Vec3Array;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-Variant::operator=(const Util::Array<Math::matrix44>& val)
+Variant::operator=(const Util::Array<Math::vec4>& val)
 {
-    if (Matrix44Array == this->type)
+    if (Vec4Array == this->type)
     {
-        *this->matrix44Array = val;
+        *this->vec4Array = val;
     }
     else
     {
         this->Delete();
-        this->matrix44Array = n_new(Util::Array<Math::matrix44>(val));
+        this->vec4Array = n_new(Util::Array<Math::vec4>(val));
     }
-    this->type = Matrix44Array;
+    this->type = Vec4Array;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+Variant::operator=(const Util::Array<Math::mat4>& val)
+{
+    if (Mat4Array == this->type)
+    {
+        *this->mat4Array = val;
+    }
+    else
+    {
+        this->Delete();
+        this->mat4Array = n_new(Util::Array<Math::mat4>(val));
+    }
+    this->type = Mat4Array;
 }
 
 //------------------------------------------------------------------------------
@@ -1589,9 +1674,9 @@ Variant::operator==(const Variant& rhs) const
 				return (this->d == rhs.d);
             case String:
                 return ((*this->string) == (*rhs.string));
-			case Float2:
+			case Vec2:
 				return ((this->f[0] == rhs.f[0]) && (this->f[1] == rhs.f[1]));
-            case Float4:
+            case Vec4:
                 return ((this->f[0] == rhs.f[0]) &&
                         (this->f[1] == rhs.f[1]) &&
                         (this->f[2] == rhs.f[2]) &&
@@ -1609,7 +1694,7 @@ Variant::operator==(const Variant& rhs) const
                 return (this->object == rhs.object);
             case VoidPtr:
                 return (this->voidPtr == rhs.voidPtr);
-            case Matrix44:
+            case Mat4:
                 return ((*this->m) == (*rhs.m));
 			case Transform44:
 				return ((*this->t) == (*rhs.t));
@@ -1655,9 +1740,9 @@ Variant::operator>(const Variant& rhs) const
 			return (this->d > rhs.d);
         case String:
             return ((*this->string) > (*rhs.string));
-		case Float2:
+		case Vec2:
 			return ((this->f[0] > rhs.f[0]) && (this->f[1] > rhs.f[1]));
-        case Float4:
+        case Vec4:
             return ((this->f[0] > rhs.f[0]) &&
 					(this->f[1] > rhs.f[1]) &&
 					(this->f[2] > rhs.f[2]) &&
@@ -1717,9 +1802,9 @@ Variant::operator<(const Variant& rhs) const
 			return (this->d > rhs.d);
         case String:
             return ((*this->string) < (*rhs.string));
-		case Float2:
+		case Vec2:
 			return ((this->f[0] < rhs.f[0]) && (this->f[1] < rhs.f[1]));
-        case Float4:
+        case Vec4:
             return ((this->f[0] < rhs.f[0]) &&
 					(this->f[1] < rhs.f[1]) &&
 					(this->f[2] < rhs.f[2]) &&
@@ -1780,9 +1865,9 @@ Variant::operator>=(const Variant& rhs) const
 			return (this->d >= rhs.d);
         case String:
             return ((*this->string) >= (*rhs.string));
-		case Float2:
+		case Vec2:
 			return ((this->f[0] >= rhs.f[0]) && (this->f[1] >= rhs.f[1]));
-        case Float4:
+        case Vec4:
             return ((this->f[0] >= rhs.f[0]) &&
 					(this->f[1] >= rhs.f[1]) &&
 					(this->f[2] >= rhs.f[2]) &&
@@ -1842,9 +1927,9 @@ Variant::operator<=(const Variant& rhs) const
 			return (this->d >= rhs.d);
         case String:
             return ((*this->string) <= (*rhs.string));
-		case Float2:
+		case Vec2:
 			return ((this->f[0] <= rhs.f[0]) && (this->f[1] <= rhs.f[1]));
-        case Float4:
+        case Vec4:
             return ((this->f[0] <= rhs.f[0]) &&
 					(this->f[1] <= rhs.f[1]) &&
 					(this->f[2] <= rhs.f[2]) &&
@@ -2003,36 +2088,36 @@ Variant::operator==(const char* chrPtr) const
 /**
 */
 inline bool 
-Variant::operator==(const Math::float2& rhs) const
+Variant::operator==(const Math::vec2& rhs) const
 {
-	n_assert(Float2 == this->type);
-	return (this->f[0] == rhs.x() && this->f[1] == rhs.y());
+	n_assert(Vec2 == this->type);
+	return (this->f[0] == rhs.x && this->f[1] == rhs.y);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline bool
-Variant::operator==(const Math::float4& rhs) const
+Variant::operator==(const Math::vec4& rhs) const
 {
-    n_assert(Float4 == this->type);
-    return ((this->f[0] == rhs.x()) &&
-            (this->f[1] == rhs.y()) &&
-            (this->f[2] == rhs.z()) &&
-            (this->f[3] == rhs.w()));
+    n_assert(Vec4 == this->type);
+    return ((this->f[0] == rhs.x) &&
+            (this->f[1] == rhs.y) &&
+            (this->f[2] == rhs.z) &&
+            (this->f[3] == rhs.w));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline bool
-Variant::operator==(const Math::quaternion& rhs) const
+Variant::operator==(const Math::quat& rhs) const
 {
 	n_assert(Quaternion == this->type);
-	return ((this->f[0] == rhs.x()) &&
-			(this->f[1] == rhs.y()) &&
-			(this->f[2] == rhs.z()) &&
-			(this->f[3] == rhs.w()));
+	return ((this->f[0] == rhs.x) &&
+			(this->f[1] == rhs.y) &&
+			(this->f[2] == rhs.z) &&
+			(this->f[3] == rhs.w));
 }
 
 //------------------------------------------------------------------------------
@@ -2189,36 +2274,36 @@ Variant::operator!=(const char* chrPtr) const
 /**
 */
 inline bool 
-Variant::operator!=( const Math::float2& rhs ) const
+Variant::operator!=( const Math::vec2& rhs ) const
 {
-	n_assert(Float2 == this->type);
-	return (this->f[0] != rhs.x() || this->f[1] != rhs.y());
+	n_assert(Vec2 == this->type);
+	return (this->f[0] != rhs.x || this->f[1] != rhs.y);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline bool
-Variant::operator!=(const Math::float4& rhs) const
+Variant::operator!=(const Math::vec4& rhs) const
 {
-    n_assert(Float4 == this->type);
-    return ((this->f[0] != rhs.x()) ||
-            (this->f[1] != rhs.y()) ||
-            (this->f[2] != rhs.z()) ||
-            (this->f[3] != rhs.w()));
+    n_assert(Vec4 == this->type);
+    return ((this->f[0] != rhs.x) ||
+            (this->f[1] != rhs.y) ||
+            (this->f[2] != rhs.z) ||
+            (this->f[3] != rhs.w));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline bool
-Variant::operator!=(const Math::quaternion& rhs) const
+Variant::operator!=(const Math::quat& rhs) const
 {
 	n_assert(Quaternion == this->type);
-	return ((this->f[0] != rhs.x()) ||
-			(this->f[1] != rhs.y()) ||
-			(this->f[2] != rhs.z()) ||
-			(this->f[3] != rhs.w()));
+	return ((this->f[0] != rhs.x) ||
+			(this->f[1] != rhs.y) ||
+			(this->f[2] != rhs.z) ||
+			(this->f[3] != rhs.w));
 }
 
 //------------------------------------------------------------------------------
@@ -2466,7 +2551,7 @@ Variant::GetString() const
 /**
 */
 inline void
-Variant::SetFloat2(const Math::float2& val)
+Variant::SetVec2(const Math::vec2& val)
 {
 	*this = val;
 }
@@ -2474,18 +2559,18 @@ Variant::SetFloat2(const Math::float2& val)
 //------------------------------------------------------------------------------
 /**
 */
-inline Math::float2 
-Variant::GetFloat2() const
+inline Math::vec2 
+Variant::GetVec2() const
 {
-	n_assert(Float2 == this->type);
-	return Math::float2(this->f[0], this->f[1]);
+	n_assert(Vec2 == this->type);
+	return Math::vec2(this->f[0], this->f[1]);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline void
-Variant::SetFloat4(const Math::float4& val)
+inline void 
+Variant::SetVec3(const Math::vec3& val)
 {
     *this = val;
 }
@@ -2493,18 +2578,36 @@ Variant::SetFloat4(const Math::float4& val)
 //------------------------------------------------------------------------------
 /**
 */
-inline Math::float4
-Variant::GetFloat4() const
+inline Math::vec3 
+Variant::GetVec3() const
 {
-    n_assert(Float4 == this->type);
-    return Math::float4(this->f[0], this->f[1], this->f[2], this->f[3]);
+    return Math::vec3();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-Variant::SetQuaternion(const Math::quaternion& val)
+Variant::SetVec4(const Math::vec4& val)
+{
+    *this = val;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Math::vec4
+Variant::GetVec4() const
+{
+    n_assert(Vec4 == this->type);
+    return Math::vec4(this->f[0], this->f[1], this->f[2], this->f[3]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+Variant::SetQuat(const Math::quat& val)
 {
 	*this = val;
 }
@@ -2512,18 +2615,18 @@ Variant::SetQuaternion(const Math::quaternion& val)
 //------------------------------------------------------------------------------
 /**
 */
-inline Math::quaternion
-Variant::GetQuaternion() const
+inline Math::quat
+Variant::GetQuat() const
 {
 	n_assert(Quaternion == this->type);
-	return Math::quaternion(this->f[0], this->f[1], this->f[2], this->f[3]);
+	return Math::quat(this->f[0], this->f[1], this->f[2], this->f[3]);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-Variant::SetMatrix44(const Math::matrix44& val)
+Variant::SetMat4(const Math::mat4& val)
 {
     *this = val;
 }
@@ -2531,10 +2634,10 @@ Variant::SetMatrix44(const Math::matrix44& val)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44&
-Variant::GetMatrix44() const
+inline const Math::mat4&
+Variant::GetMat4() const
 {
-    n_assert(Matrix44 == this->type);
+    n_assert(Mat4 == this->type);
     return *(this->m);
 }
 
@@ -2694,7 +2797,7 @@ Variant::GetBoolArray() const
 /**
 */
 inline void 
-Variant::SetFloat2Array( const Util::Array<Math::float2>& val )
+Variant::SetVec2Array( const Util::Array<Math::vec2>& val )
 {
 	*this = val;
 }
@@ -2702,18 +2805,18 @@ Variant::SetFloat2Array( const Util::Array<Math::float2>& val )
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::Array<Math::float2>& 
-Variant::GetFloat2Array() const
+inline const Util::Array<Math::vec2>& 
+Variant::GetVec2Array() const
 {
-	n_assert(Float2Array == this->type);
-	return *(this->float2Array);
+	n_assert(Vec2Array == this->type);
+	return *(this->vec2Array);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-Variant::SetFloat4Array(const Util::Array<Math::float4>& val)
+Variant::SetVec3Array(const Util::Array<Math::vec3>& val)
 {
     *this = val;
 }
@@ -2721,18 +2824,18 @@ Variant::SetFloat4Array(const Util::Array<Math::float4>& val)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::Array<Math::float4>&
-Variant::GetFloat4Array() const
+inline const Util::Array<Math::vec3>&
+Variant::GetVec3Array() const
 {
-    n_assert(Float4Array == this->type);
-    return *(this->float4Array);
+    n_assert(Vec3Array == this->type);
+    return *(this->float3Array);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-Variant::SetMatrix44Array(const Util::Array<Math::matrix44>& val)
+Variant::SetVec4Array(const Util::Array<Math::vec4>& val)
 {
     *this = val;
 }
@@ -2740,11 +2843,30 @@ Variant::SetMatrix44Array(const Util::Array<Math::matrix44>& val)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::Array<Math::matrix44>&
-Variant::GetMatrix44Array() const
+inline const Util::Array<Math::vec4>&
+Variant::GetVec4Array() const
 {
-    n_assert(Matrix44Array == this->type);
-    return *(this->matrix44Array);
+    n_assert(Vec4Array == this->type);
+    return *(this->vec4Array);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+Variant::SetMat4Array(const Util::Array<Math::mat4>& val)
+{
+    *this = val;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Util::Array<Math::mat4>&
+Variant::GetMat4Array() const
+{
+    n_assert(Mat4Array == this->type);
+    return *(this->mat4Array);
 }
 
 //------------------------------------------------------------------------------
@@ -2910,40 +3032,50 @@ Variant::Get() const
 /**
 */
 template <>
-inline Math::float2
+inline Math::vec2
 Variant::Get() const
 {
-	return this->GetFloat2();
+	return this->GetVec2();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template <>
-inline Math::float4
+inline Math::vec3
 Variant::Get() const
 {
-	return this->GetFloat4();
+    return this->GetVec3();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template <>
-inline Math::quaternion
+inline Math::vec4
 Variant::Get() const
 {
-	return this->GetQuaternion();
+	return this->GetVec4();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template <>
-inline Math::matrix44
+inline Math::quat
 Variant::Get() const
 {
-	return this->GetMatrix44();
+	return this->GetQuat();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Math::mat4
+Variant::Get() const
+{
+	return this->GetMat4();
 }
 
 //------------------------------------------------------------------------------
@@ -3020,30 +3152,40 @@ Variant::Get() const
 /**
 */
 template <>
-inline Util::Array<Math::float2>
+inline Util::Array<Math::vec2>
 Variant::Get() const
 {
-	return this->GetFloat2Array();
+	return this->GetVec2Array();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template <>
-inline Util::Array<Math::float4>
+inline Util::Array<Math::vec3>
 Variant::Get() const
 {
-	return this->GetFloat4Array();
+    return this->GetVec3Array();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template <>
-inline Util::Array<Math::matrix44>
+inline Util::Array<Math::vec4>
 Variant::Get() const
 {
-	return this->GetMatrix44Array();
+	return this->GetVec4Array();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <>
+inline Util::Array<Math::mat4>
+Variant::Get() const
+{
+	return this->GetMat4Array();
 }
 
 //------------------------------------------------------------------------------
@@ -3094,11 +3236,12 @@ Variant::ToString() const
 		case Float:			{ retval = Util::String::FromFloat(this->GetFloat()); break; }
 		case Double:        { retval = Util::String::FromDouble(this->GetDouble()); break; }
         case Bool:          { retval = Util::String::FromBool(this->GetBool()); break; }
-        case Float2:        { retval = Util::String::FromFloat2(this->GetFloat2()); break; }
-        case Float4:        { retval = Util::String::FromFloat4(this->GetFloat4()); break; }
-		case Quaternion:    { retval = Util::String::FromQuaternion(this->GetQuaternion()); break; }
+        case Vec2:          { retval = Util::String::FromVec2(this->GetVec2()); break; }
+        case Vec3:          { retval = Util::String::FromVec3(this->GetVec3()); break; }
+        case Vec4:          { retval = Util::String::FromVec4(this->GetVec4()); break; }
+		case Quaternion:    { retval = Util::String::FromQuat(this->GetQuat()); break; }
         case String:        { retval = this->GetString(); break; }
-        case Matrix44:      { retval = Util::String::FromMatrix44(this->GetMatrix44()); break; }
+        case Mat4:          { retval = Util::String::FromMat4(this->GetMat4()); break; }
 		case Transform44:   { retval = Util::String::FromTransform44(this->GetTransform44()); break; }
         case Blob:          { retval = Util::String::FromBlob(this->GetBlob()); break; }
         case Guid:          { retval = this->GetGuid().AsString(); break; }
@@ -3116,7 +3259,7 @@ Variant::ToString() const
 //------------------------------------------------------------------------------
 /**
     Note:
-        Will treat float2, float4 and matrix44 as float arrays
+        Will treat vec2, vec4 and mat4 as float arrays
 */
 inline bool 
 Util::Variant::SetParseString(const Util::String& string)
@@ -3128,10 +3271,10 @@ Util::Variant::SetParseString(const Util::String& string)
         case UInt:              { if(string.IsValidInt())          { this->SetUInt(string.AsInt()); retval = true; break; } }
         case Float:             { if(string.IsValidFloat())        { this->SetFloat(string.AsFloat()); retval = true; break; } }
         case Bool:              { if(string.IsValidBool())         { this->SetBool(string.AsBool()); retval = true; break; } }
-        case Float2:            { if(string.IsValidFloat2())       { this->SetFloat2(string.AsFloat2()); retval = true; break; } }
-        case Float4:            { if(string.IsValidFloat4())       { this->SetFloat4(string.AsFloat4()); retval = true; break; } }
+        case Vec2:              { if(string.IsValidVec2())       { this->SetVec2(string.AsVec2()); retval = true; break; } }
+        case Vec4:              { if(string.IsValidVec4())         { this->SetVec4(string.AsVec4()); retval = true; break; } }
         case String:            {                                    this->SetString(string); retval = true; break; }
-        case Matrix44:          { if(string.IsValidMatrix44())     { this->SetMatrix44(string.AsMatrix44()); retval = true; break; } }
+        case Mat4:              { if(string.IsValidMat4())         { this->SetMat4(string.AsMat4()); retval = true; break; } }
 		case Transform44:       { if (string.IsValidTransform44()) { this->SetTransform44(string.AsTransform44()); retval = true; break; } }
 
         case IntArray:          
@@ -3213,11 +3356,11 @@ Variant::Size() const
 	case Float:         return sizeof(float);
 	case Double:        return sizeof(double);
 	case Bool:          return sizeof(bool);
-	case Float2:		return sizeof(float) * 2;
-	case Float4:        return sizeof(float) * 4;
+	case Vec2:		return sizeof(float) * 2;
+	case Vec4:          return sizeof(float) * 4;
 	case Quaternion:    return sizeof(float) * 4;
 	case String:        return sizeof(void*);
-	case Matrix44:      return sizeof(void*);
+	case Mat4:          return sizeof(void*);
 	case Transform44:   return sizeof(void*);
 	case Blob:          return sizeof(void*);
 	case Guid:          return sizeof(void*);
@@ -3226,9 +3369,9 @@ Variant::Size() const
 	case IntArray:      return sizeof(void*);
 	case FloatArray:    return sizeof(void*);
 	case BoolArray:     return sizeof(void*);
-	case Float2Array:	return sizeof(void*);
-	case Float4Array:   return sizeof(void*);
-	case Matrix44Array: return sizeof(void*);
+	case Vec2Array:	return sizeof(void*);
+	case Vec4Array:     return sizeof(void*);
+	case Mat4Array:     return sizeof(void*);
 	case StringArray:   return sizeof(void*);
 	case GuidArray:     return sizeof(void*);
 	case BlobArray:     return sizeof(void*);
@@ -3258,10 +3401,10 @@ Variant::FromString(const Util::String& string)
     Variant val;
     if      (string.IsValidInt())       val.SetInt(string.AsInt());
     else if (string.IsValidFloat())     val.SetFloat(string.AsFloat());
-    else if (string.IsValidFloat2())    val.SetFloat2(string.AsFloat2());
-    else if (string.IsValidFloat4())    val.SetFloat4(string.AsFloat4());
+    else if (string.IsValidVec2())    val.SetVec2(string.AsVec2());
+    else if (string.IsValidVec4())    val.SetVec4(string.AsVec4());
     else if (string.IsValidBool())      val.SetBool(string.AsBool());
-    else if (string.IsValidMatrix44())  val.SetMatrix44(string.AsMatrix44());
+    else if (string.IsValidMat4())  val.SetMat4(string.AsMat4());
     else                                val.SetString(string);                  // raw string
     return val;
 }
@@ -3285,11 +3428,11 @@ Variant::TypeToString(Type t)
         case Float:         return "float";
 		case Double:        return "double";
         case Bool:          return "bool";
-		case Float2:		return "float2";
-		case Float4:        return "float4";
+		case Vec2:		return "vec2";
+		case Vec4:          return "vec4";
 		case Quaternion:    return "quaternion";
         case String:        return "string";
-        case Matrix44:      return "matrix44";
+        case Mat4:          return "mat4";
 		case Transform44:   return "transform44";
         case Blob:          return "blob";
         case Guid:          return "guid";
@@ -3298,9 +3441,9 @@ Variant::TypeToString(Type t)
         case IntArray:      return "intarray";
         case FloatArray:    return "floatarray";
         case BoolArray:     return "boolarray";
-		case Float2Array:	return "float2array";
-        case Float4Array:   return "float4array";
-        case Matrix44Array: return "matrix44array";
+		case Vec2Array:	return "vec2array";
+        case Vec4Array:     return "vec4array";
+        case Mat4Array:     return "mat4array";
         case StringArray:   return "stringarray";
         case GuidArray:     return "guidarray";
         case BlobArray:     return "blobarray";
@@ -3327,12 +3470,12 @@ Variant::StringToType(const Util::String& str)
 	else if ("float" == str)            return Float;
 	else if ("double" == str)           return Double;
     else if ("bool" == str)             return Bool;
-	else if ("float2" == str)			return Float2;
-    else if ("float4" == str)           return Float4;
-	else if ("color" == str)            return Float4; // NOT A BUG!
+	else if ("vec2" == str)			    return Vec2;
+    else if ("vec4" == str)             return Vec4;
+	else if ("color" == str)            return Vec4; // NOT A BUG!
 	else if ("quaternion" == str)       return Quaternion;
     else if ("string" == str)           return String;
-    else if ("matrix44" == str)         return Matrix44;
+    else if ("mat4" == str)             return Mat4;
 	else if ("transform44" == str)      return Transform44;
     else if ("blob" == str)             return Blob;
     else if ("guid" == str)             return Guid;
@@ -3341,9 +3484,9 @@ Variant::StringToType(const Util::String& str)
     else if ("intarray" == str)         return IntArray;
     else if ("floatarray" == str)       return FloatArray;
     else if ("boolarray" == str)        return BoolArray;
-	else if ("float2array" == str)		return Float2Array;
-    else if ("float4array" == str)      return Float4Array;
-    else if ("matrix44array" == str)    return Matrix44Array;
+	else if ("vec2array" == str)		return Vec2Array;
+    else if ("vec4array" == str)        return Vec4Array;
+    else if ("mat4array" == str)        return Mat4Array;
     else if ("stringarray" == str)      return StringArray;
     else if ("guidarray" == str)        return GuidArray;
     else if ("blobarray" == str)        return BlobArray;

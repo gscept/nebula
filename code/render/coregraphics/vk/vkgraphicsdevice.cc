@@ -802,7 +802,7 @@ SetVkScissorRects(VkRect2D* scissors, SizeT num)
 /**
 */
 void 
-CommandBufferBeginMarker(VkCommandBuffer buf, const Math::float4& color, const char* name)
+CommandBufferBeginMarker(VkCommandBuffer buf, const Math::vec4& color, const char* name)
 {
 	alignas(16) float col[4];
 	color.store(col);
@@ -3979,7 +3979,7 @@ ObjectSetName(const SemaphoreId id, const char* name)
 /**
 */
 void 
-QueueBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name)
+QueueBeginMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, const char* name)
 {
 	VkQueue vkqueue = state.subcontextHandler.GetQueue(queue);
 	alignas(16) float col[4];
@@ -4008,7 +4008,7 @@ QueueEndMarker(const CoreGraphics::QueueType queue)
 /**
 */
 void 
-QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name)
+QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, const char* name)
 {
 	VkQueue vkqueue = state.subcontextHandler.GetQueue(queue);
 	alignas(16) float col[4];
@@ -4027,7 +4027,7 @@ QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color
 /**
 */
 void 
-CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name)
+CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, const char* name)
 {
 	// if batching, draws goes to thread
 	if (state.drawThread)
@@ -4105,7 +4105,7 @@ CommandBufferEndMarker(const CoreGraphics::QueueType queue)
 /**
 */
 void 
-CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name)
+CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, const char* name)
 {
 	// if batching, draws goes to thread
 	if (state.drawThread)

@@ -48,7 +48,7 @@ IndexT GetBufferedFrameIndex();
 struct FrameProfilingMarker
 {
     CoreGraphics::QueueType queue;
-    Math::float4 color;
+    Math::vec4 color;
     const char* name;
 	IndexT gpuBegin;
 	IndexT gpuEnd;
@@ -371,17 +371,17 @@ const CoreGraphics::TextureId GetTexture(const Util::StringAtom& name);
 /// set debug name for object
 template<typename OBJECT_ID_TYPE> void ObjectSetName(const OBJECT_ID_TYPE id, const char* name);
 /// begin debug marker region
-void QueueBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name);
+void QueueBeginMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, const char* name);
 /// end debug marker region
 void QueueEndMarker(const CoreGraphics::QueueType queue);
 /// insert marker
-void QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name);
+void QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, const char* name);
 /// begin debug marker region
-void CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name);
+void CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, const char* name);
 /// end debug marker region
 void CommandBufferEndMarker(const CoreGraphics::QueueType queue);
 /// insert marker
-void CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name);
+void CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, const char* name);
 #endif
 
 //------------------------------------------------------------------------------

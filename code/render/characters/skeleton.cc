@@ -49,7 +49,7 @@ SkeletonGetJoints(const SkeletonId id)
 //------------------------------------------------------------------------------
 /**
 */
-const Util::FixedArray<Math::matrix44>&
+const Util::FixedArray<Math::mat4>&
 SkeletonGetBindPose(const SkeletonId id)
 {
 	return skeletonPool->GetBindPose(id);

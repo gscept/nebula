@@ -21,8 +21,6 @@ namespace Math
 class mat4;
 class vec4;
 
-bool equal_all(const vec4& v0, const vec4& v1);
-
 struct NEBULA_ALIGN16 vec4
 {
 public:
@@ -66,6 +64,10 @@ public:
     void store(scalar* ptr) const;
     /// write content to unaligned memory through the write cache
     void storeu(scalar* ptr) const;
+	/// write content to 16-byte-aligned memory through the write cache
+	void store3(scalar* ptr) const;
+	/// write content to unaligned memory through the write cache
+	void storeu3(scalar* ptr) const;
     /// stream content to 16-byte-aligned memory circumventing the write-cache
     void stream(scalar* ptr) const;
 
@@ -216,6 +218,30 @@ __forceinline void
 vec4::storeu(scalar* ptr) const
 {
 	_mm_storeu_ps(ptr, this->vec);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void 
+vec4::store3(scalar* ptr) const
+{
+	__m128 v = _mm_permute_ps(this->vec, _MM_SHUFFLE(2, 2, 2, 2));
+	_mm_storel_epi64(reinterpret_cast<__m128i*>(ptr), _mm_castps_si128(this->vec));
+	_mm_store_ss(&ptr[2], v);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void 
+vec4::storeu3(scalar* ptr) const
+{
+	__m128 t1 = _mm_permute_ps(this->vec, _MM_SHUFFLE(1, 1, 1, 1));
+	__m128 t2 = _mm_permute_ps(this->vec, _MM_SHUFFLE(2, 2, 2, 2));
+	_mm_store_ss(&ptr[0], this->vec);
+	_mm_store_ss(&ptr[1], t1);
+	_mm_store_ss(&ptr[2], t2);
 }
 
 //------------------------------------------------------------------------------
@@ -634,7 +660,7 @@ clamp(const vec4& clamp, const vec4& min, const vec4& max)
 __forceinline vec4
 normalize(const vec4& v)
 {
-	if (equal_all(v, vec4(0))) return v;
+	if (v == vec4(0)) return v;
 	return _mm_div_ps(v.vec, _mm_sqrt_ps(_mm_dp_ps(v.vec, v.vec, 0xFF)));
 }
 
@@ -644,7 +670,7 @@ normalize(const vec4& v)
 __forceinline vec4
 normalizeapprox(const vec4& v)
 {
-	if (equal_all(v, vec4(0))) return v;
+	if (v == vec4(0)) return v;
 	return _mm_mul_ps(v.vec, _mm_rsqrt_ps(_mm_dp_ps(v.vec, v.vec, 0xFF)));
 }
 
@@ -654,7 +680,7 @@ normalizeapprox(const vec4& v)
 __forceinline vec4
 normalize3(const vec4& v)
 {
-	if (equal_all(v, vec4(0, 0, 0, 0))) return v;
+	if (v == vec4(0)) return v;
 	return _mm_div_ps(v.vec, _mm_sqrt_ps(_mm_dp_ps(v.vec, v.vec, 0x71)));
 }
 
@@ -664,7 +690,7 @@ normalize3(const vec4& v)
 __forceinline vec4
 normalize3approx(const vec4& v)
 {
-	if (equal_all(v, vec4(0, 0, 0, 0))) return v;
+	if (v == vec4(0)) return v;
 	return _mm_mul_ps(v.vec, _mm_rsqrt_ps(_mm_dp_ps(v.vec, v.vec, 0x71)));
 }
 //------------------------------------------------------------------------------
@@ -789,17 +815,6 @@ equal_any(const vec4& v0, const vec4& v1)
 	__m128 vTemp = _mm_cmpeq_ps(v0.vec, v1.vec);
 	int res = _mm_movemask_ps(vTemp);
 	return res != 0;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline bool
-equal_all(const vec4& v0, const vec4& v1)
-{
-	__m128 vTemp = _mm_cmpeq_ps(v0.vec, v1.vec);
-	int res = _mm_movemask_ps(vTemp);
-	return res == 0xf;
 }
 
 //------------------------------------------------------------------------------

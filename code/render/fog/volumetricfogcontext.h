@@ -33,29 +33,29 @@ public:
     /// setup a new volume as a box
     static void SetupBoxVolume(
         const Graphics::GraphicsEntityId id,
-        const Math::matrix44& transform,
+        const Math::mat4& transform,
         const float density,
-        const Math::float4& absorption);
+        const Math::vec3& absorption);
     /// set box transform
-    static void SetBoxTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform);
+    static void SetBoxTransform(const Graphics::GraphicsEntityId id, const Math::mat4& transform);
 
 
     /// setup a new volume as a sphere
     static void SetupSphereVolume(
         const Graphics::GraphicsEntityId id,
-        const Math::float4& position,
+        const Math::vec3& position,
         float radius,
         const float density,
-        const Math::float4& absorption);
+        const Math::vec3& absorption);
     /// set sphere position
-    static void SetSpherePosition(const Graphics::GraphicsEntityId id, const Math::float4& position);
+    static void SetSpherePosition(const Graphics::GraphicsEntityId id, const Math::vec3& position);
     /// set sphere radius
     static void SetSphereRadius(const Graphics::GraphicsEntityId id, const float radius);
 
     /// set volume turbidity
     static void SetTurbidity(const Graphics::GraphicsEntityId id, const float turbidity);
     /// set volume absorption
-    static void SetAbsorption(const Graphics::GraphicsEntityId id, const Math::float4& absorption);
+    static void SetAbsorption(const Graphics::GraphicsEntityId id, const Math::vec3& absorption);
 
     /// prepare light lists
     static void UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
@@ -65,7 +65,7 @@ public:
     /// set global turbidity (fog density)
     void SetGlobalTurbidity(float f);
     /// set the global fog absorption color
-    void SetGlobalAbsorption(const Math::float4& color);
+    void SetGlobalAbsorption(const Math::vec3& color);
 
 private:
 
@@ -90,7 +90,7 @@ private:
         FogVolumeType,
         Ids::Id32,
         float,
-        Math::float4 
+        Math::vec3 
     > FogGenericVolumeAllocator;
     static FogGenericVolumeAllocator fogGenericVolumeAllocator;
 
@@ -99,7 +99,7 @@ private:
         FogBoxVolume_Transform,
     };
     typedef Ids::IdAllocator<
-        Math::matrix44
+        Math::mat4
     > FogBoxVolumeAllocator;
     static FogBoxVolumeAllocator fogBoxVolumeAllocator;
 
@@ -109,7 +109,7 @@ private:
         FogSphereVolume_Radius,
     };
     typedef Ids::IdAllocator<
-        Math::float4,
+        Math::vec3,
         float
     > FogSphereVolumeAllocator;
     static FogSphereVolumeAllocator fogSphereVolumeAllocator;

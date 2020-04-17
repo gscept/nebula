@@ -9,8 +9,10 @@
 */
 #include "core/types.h"
 #include "math/scalar.h"
-#include "math2/vec4.h"
-#include "math2/quat.h"
+#include "math/vec4.h"
+#include "math/quat.h"
+#include "math/point.h"
+#include "math/vector.h"
 
 #define N_USE_AVX (1)
 
@@ -51,10 +53,6 @@ mat4 affinetransformation(scalar scale, const vec3& rotationCenter, const quat& 
 mat4 rotationquat(const quat& q);
 mat4 transformation(const vec3& scalingCenter, const quat& scalingRotation, const vec3& scale, const vec3& rotationCenter, const quat& rotation, const vec3& trans);
 bool ispointinside(const vec4& p, const mat4& m);
-
-// could not get the compiler to really pass it in registers for xbox, so
-// this is a reference so far
-typedef const mat4& __mat4Arg;
 
 struct NEBULA_ALIGN16 mat4
 {
@@ -463,7 +461,7 @@ inverse(const mat4& m)
 /**
 */
 __forceinline mat4
-lookatlh(const vec3& eye, const vec3& at, const vec3& up)
+lookatlh(const point& eye, const point& at, const vector& up)
 {
 #if NEBULA_DEBUG
     n_assert(length(up) > 0);
@@ -471,8 +469,8 @@ lookatlh(const vec3& eye, const vec3& at, const vec3& up)
     // hmm the XM lookat functions are kinda pointless, because they
     // return a VIEW matrix, which is already inverse (so one would
     // need to reverse again!)
-    const vec3 zaxis = normalize(at - eye);
-    vec3 normUp = normalize(up);
+    const vector zaxis = normalize(at - eye);
+    vector normUp = normalize(up);
     if (n_abs(dot(zaxis, normUp)) > 0.9999999f)
     {
         // need to choose a different up vector because up and lookat point
@@ -480,16 +478,16 @@ lookatlh(const vec3& eye, const vec3& at, const vec3& up)
         // just rotate y->x, x->z and z->y
         normUp = permute(normUp, normUp, 1, 2, 0);
     }
-	const vec3 xaxis = normalize(cross(normUp, zaxis));
-	const vec3 yaxis = normalize(cross(zaxis, xaxis));
-    return mat4(vec4(xaxis, 0), vec4(yaxis, 0), vec4(zaxis, 0), vec4(eye, 1));
+	const vector xaxis = normalize(cross(normUp, zaxis));
+	const vector yaxis = normalize(cross(zaxis, xaxis));
+    return mat4(xaxis, yaxis, zaxis, eye);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 __forceinline mat4
-lookatrh(const vec3& eye, const vec3& at, const vec3& up)
+lookatrh(const point& eye, const point& at, const vector& up)
 {
 #if NEBULA_DEBUG
     n_assert(length(up) > 0);
@@ -497,8 +495,8 @@ lookatrh(const vec3& eye, const vec3& at, const vec3& up)
     // hmm the XM lookat functions are kinda pointless, because they
     // return a VIEW matrix, which is already inverse (so one would
     // need to reverse again!)
-    const vec3 zaxis = normalize(eye - at);
-    vec3 normUp = normalize(up);
+    const vector zaxis = normalize(eye - at);
+    vector normUp = normalize(up);
     if (n_abs(dot(zaxis, normUp)) > 0.9999999f)
     {
         // need to choose a different up vector because up and lookat point
@@ -506,9 +504,9 @@ lookatrh(const vec3& eye, const vec3& at, const vec3& up)
         // just rotate y->x, x->z and z->y
         normUp = permute(normUp, normUp, 1, 2, 0);
     }
-	const vec3 xaxis = normalize(cross(normUp, zaxis));
-	const vec3 yaxis = normalize(cross(zaxis, xaxis));
-    return mat4(vec4(xaxis, 0), vec4(yaxis, 0), vec4(zaxis, 0), vec4(eye, 1));
+	const vector xaxis = normalize(cross(normUp, zaxis));
+	const vector yaxis = normalize(cross(zaxis, xaxis));
+    return mat4(xaxis, yaxis, zaxis, eye);
 }
 
 #ifdef N_USE_AVX
@@ -658,6 +656,22 @@ operator*(const mat4& m, const vec3& v)
     z = _mm_and_ps(z, _mask_xyz);
 
     return _mm_add_ps(_mm_add_ps(_mm_mul_ps(x, m.r[0].vec), _mm_mul_ps(y, m.r[1].vec)) ,_mm_mul_ps(z, m.r[2].vec));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4
+operator*(const mat4& m, const point& p)
+{
+    __m128 x = _mm_shuffle_ps(p.vec, p.vec, _MM_SHUFFLE(0, 0, 0, 0));
+    x = _mm_and_ps(x, _mask_xyz);
+    __m128 y = _mm_shuffle_ps(p.vec, p.vec, _MM_SHUFFLE(1, 1, 1, 1));
+    y = _mm_and_ps(y, _mask_xyz);
+    __m128 z = _mm_shuffle_ps(p.vec, p.vec, _MM_SHUFFLE(2, 2, 2, 2));
+    z = _mm_and_ps(z, _mask_xyz);
+
+    return _mm_add_ps(_mm_add_ps(_mm_mul_ps(x, m.r[0].vec), _mm_mul_ps(y, m.r[1].vec)), _mm_mul_ps(z, m.r[2].vec));
 }
 
 //------------------------------------------------------------------------------
@@ -973,8 +987,8 @@ scaling(scalar scale)
     mat4 m;
     m.r[0] = _mm_setr_ps(scale, 0.0f, 0.0f, 0.0f);
     m.r[1] = _mm_setr_ps(0.0f, scale, 0.0f, 0.0f);
-    m.r[2] = _mm_setr_ps(0.0f, 0.0f, scale, 0.f);
-    m.r[3] = _mm_setr_ps(1.0f, 0.0f, 0.0f, 0.0f);
+    m.r[2] = _mm_setr_ps(0.0f, 0.0f, scale, 0.0f);
+    m.r[3] = _mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f);
 
     return m;
 }
@@ -1026,8 +1040,7 @@ __forceinline mat4
 translation(const vec3& t)
 {
 	mat4 m;
-	m.r[3] = t.vec;
-	m._44 = 1.0f;
+	m.r[3] = vec4(t.vec, 1.0f);
     return m;
 }
 

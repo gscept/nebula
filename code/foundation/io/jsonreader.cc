@@ -480,7 +480,7 @@ JsonReader::GetInt(const char* name) const
 
 //------------------------------------------------------------------------------
 /**
-	Return the provided attribute as float2. If the attribute does not exist
+	Return the provided attribute as vec2. If the attribute does not exist
 	the method will fail hard (use HasAttr() to check for its existance).
 */
 uint
@@ -511,26 +511,46 @@ JsonReader::GetFloat(const char* name) const
 
 //------------------------------------------------------------------------------
 /**
-    Return the provided attribute as float2. If the attribute does not exist
+    Return the provided attribute as vec2. If the attribute does not exist
     the method will fail hard (use HasAttr() to check for its existance).
 */
-float2
-JsonReader::GetFloat2(const char* name) const
+vec2
+JsonReader::GetVec2(const char* name) const
 {
     const value_variant * node = this->GetChild(name);
 
     n_assert(node->is_array());
     n_assert(node->size() == 2);
-    return float2(node->get_value_at_index(0).as_float(), node->get_value_at_index(1).as_float());
+    return vec2(node->get_value_at_index(0).as_float(), node->get_value_at_index(1).as_float());
 }
 
 //------------------------------------------------------------------------------
 /**
-    Return the provided attribute as float4. If the attribute does not exist
+*/
+Math::vec3 
+JsonReader::GetVec3(const char* name) const
+{
+    const value_variant* node = this->GetChild(name);
+
+    n_assert(node->is_array());
+    n_assert(node->size() == 3);
+    NEBULA_ALIGN16 float v[3];
+    for (int i = 0; i < 3; i++)
+    {
+        v[i] = node->get_value_at_index(i).as_float();
+    }
+    vec3 f;
+    f.load(v);
+    return f;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Return the provided attribute as vec4. If the attribute does not exist
     the method will fail hard (use HasAttr() to check for its existance).
 */
-float4
-JsonReader::GetFloat4(const char* name) const
+vec4
+JsonReader::GetVec4(const char* name) const
 {
     const value_variant * node = this->GetChild(name);
 
@@ -541,18 +561,18 @@ JsonReader::GetFloat4(const char* name) const
     {
         v[i] = node->get_value_at_index(i).as_float();
     }
-    float4 f;
+    vec4 f;
     f.load(v);
     return f;
 }
 
 //------------------------------------------------------------------------------
 /**
-    Return the provided attribute as matrix44. If the attribute does not exist
+    Return the provided attribute as mat4. If the attribute does not exist
     the method will fail hard (use HasAttr() to check for its existance).
 */
-matrix44
-JsonReader::GetMatrix44(const char* name) const
+mat4
+JsonReader::GetMat4(const char* name) const
 {
     const value_variant * node = this->GetChild(name);
 
@@ -563,7 +583,7 @@ JsonReader::GetMatrix44(const char* name) const
     {
         v[i] = node->get_value_at_index(i).as_float();
     }
-    matrix44 m;
+    mat4 m;
     m.load(v);
     return m;
 }
@@ -665,15 +685,15 @@ JsonReader::GetOptFloat(const char* name, float defaultValue) const
  
 //------------------------------------------------------------------------------
 /**
-    Return the provided optional attribute as float2. If the attribute doesn't
+    Return the provided optional attribute as vec2. If the attribute doesn't
     exist, the default value will be returned.
 */
-float2
-JsonReader::GetOptFloat2(const char* name, const float2& defaultValue) const
+vec2
+JsonReader::GetOptVec2(const char* name, const vec2& defaultValue) const
 {
     if (this->HasAttr(name))
     {
-        return this->GetFloat2(name);
+        return this->GetVec2(name);
     }
     else
     {
@@ -683,15 +703,15 @@ JsonReader::GetOptFloat2(const char* name, const float2& defaultValue) const
 
 //------------------------------------------------------------------------------
 /**
-    Return the provided optional attribute as float4. If the attribute doesn't
+    Return the provided optional attribute as vec4. If the attribute doesn't
     exist, the default value will be returned.
 */
-float4
-JsonReader::GetOptFloat4(const char* name, const float4& defaultValue) const
+vec4
+JsonReader::GetOptVec4(const char* name, const vec4& defaultValue) const
 {
     if (this->HasAttr(name))
     {
-        return this->GetFloat4(name);
+        return this->GetVec4(name);
     }
     else
     {
@@ -701,15 +721,15 @@ JsonReader::GetOptFloat4(const char* name, const float4& defaultValue) const
 
 //------------------------------------------------------------------------------
 /**
-    Return the provided optional attribute as matrix44. If the attribute doesn't
+    Return the provided optional attribute as mat4. If the attribute doesn't
     exist, the default value will be returned.
 */
-matrix44
-JsonReader::GetOptMatrix44(const char* name, const matrix44& defaultValue) const
+mat4
+JsonReader::GetOptMat4(const char* name, const mat4& defaultValue) const
 {
     if (this->HasAttr(name))
     {
-        return this->GetMatrix44(name);
+        return this->GetMat4(name);
     }
     else
     {
@@ -792,25 +812,9 @@ template<> void JsonReader::Get<int>(int & ret, const char* attr)
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonReader::Get<Math::matrix44>(Math::matrix44 & ret, const char* attr)
+template<> void JsonReader::Get<Math::mat4>(Math::mat4 & ret, const char* attr)
 {        
-    ret = this->GetMatrix44(attr);
-}
-
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<> void JsonReader::Get<Math::vector>(Math::vector & ret, const char* attr)
-{
-    //FIXME this searches twice
-    const value_variant * node = this->GetChild(attr);
-    NEBULA_ALIGN16 float v[4];
-    for (int i = 0; i < 3; i++)
-    {
-        v[i] = node->get_value_at_index(i).as_float();
-    }
-    ret.load(v);    
+    ret = this->GetMat4(attr);
 }
 
 //------------------------------------------------------------------------------
@@ -896,11 +900,14 @@ template<> void JsonReader::Get<Util::Variant>(Util::Variant & ret, const char* 
 	case Util::Variant::Type::Float:
 		ret.SetFloat(this->GetFloat(attr));
 		break;
-	case Util::Variant::Type::Float4:
-		ret.SetFloat4(this->GetFloat4(attr));
+    case Util::Variant::Type::Vec3:
+        ret.SetVec3(this->GetVec3(attr));
+        break;
+	case Util::Variant::Type::Vec4:
+		ret.SetVec4(this->GetVec4(attr));
 		break;
-	case Util::Variant::Type::Matrix44:
-		ret.SetMatrix44(this->GetMatrix44(attr));
+	case Util::Variant::Type::Mat4:
+		ret.SetMat4(this->GetMat4(attr));
 		break;
 	case Util::Variant::Type::UInt:
 		ret.SetUInt(this->GetUInt(attr));
@@ -1020,26 +1027,6 @@ template<> bool JsonReader::GetOpt<uint16_t>(uint16_t & ret, const char* attr)
     return false;
 }
 
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<> bool JsonReader::GetOpt<Math::point>(Math::point & ret, const char* attr)
-{
-    //FIXME this searches twice
-    const value_variant * node = this->GetChild(attr);
-    if (node)
-    {
-        NEBULA_ALIGN16 float v[4];
-        for (int i = 0; i < 3; i++)
-        {
-            v[i] = node->get_value_at_index(i).as_float();
-        }
-        ret.load(v);
-        return true;
-    }
-    return false;
-}
 //------------------------------------------------------------------------------
 /**
 */
@@ -1073,13 +1060,13 @@ template<> bool JsonReader::GetOpt<float>(float & ret, const char* attr)
 //------------------------------------------------------------------------------
 /**
 */
-template<> bool JsonReader::GetOpt<Math::float4>(Math::float4 & ret, const char* attr)
+template<> bool JsonReader::GetOpt<Math::vec4>(Math::vec4 & ret, const char* attr)
 {    
     //FIXME this searches twice
     const value_variant * node = this->GetChild(attr);
     if (node)
     {
-        ret = this->GetFloat4(attr);        
+        ret = this->GetVec4(attr);        
         return true;
     }
     return false;
@@ -1088,33 +1075,13 @@ template<> bool JsonReader::GetOpt<Math::float4>(Math::float4 & ret, const char*
 //------------------------------------------------------------------------------
 /**
 */
-template<> bool JsonReader::GetOpt<Math::vector>(Math::vector & ret, const char* attr)
+template<> bool JsonReader::GetOpt<Math::quat>(Math::quat & ret, const char* attr)
 {
     //FIXME this searches twice
     const value_variant * node = this->GetChild(attr);
     if (node)
     {
-        NEBULA_ALIGN16 float v[4];
-        for (int i = 0; i < 3; i++)
-        {
-            v[i] = node->get_value_at_index(i).as_float();
-        }
-        ret.load(v);
-        return true;
-    }
-    return false;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<> bool JsonReader::GetOpt<Math::quaternion>(Math::quaternion & ret, const char* attr)
-{
-    //FIXME this searches twice
-    const value_variant * node = this->GetChild(attr);
-    if (node)
-    {
-        ret = this->GetFloat4(attr);
+        ret = this->GetVec4(attr);
         return true;
     }
     return false;
@@ -1124,13 +1091,13 @@ template<> bool JsonReader::GetOpt<Math::quaternion>(Math::quaternion & ret, con
 //------------------------------------------------------------------------------
 /**
 */
-template<> bool JsonReader::GetOpt<Math::matrix44>(Math::matrix44 & ret, const char* attr)
+template<> bool JsonReader::GetOpt<Math::mat4>(Math::mat4 & ret, const char* attr)
 {
     //FIXME this searches twice
     const value_variant * node = this->GetChild(attr);
     if (node)
     {
-        ret = this->GetMatrix44(attr);
+        ret = this->GetMat4(attr);
         return true;
     }
     return false;

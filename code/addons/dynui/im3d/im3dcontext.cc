@@ -89,7 +89,7 @@ struct Im3dState
     bool renderGrid = false;
     int gridSize = 20;
     float cellSize = 1.0f;
-    Math::float4 gridColor{ 1.0f,1.0f,1.0f,0.3f };
+    Math::vec4 gridColor{ 1.0f,1.0f,1.0f,0.3f };
     Ptr<Im3dInputHandler> inputHandler;
     Im3d::Id depthLayerId;
     byte* vertexPtr;    
@@ -181,7 +181,7 @@ Im3dContext::Discard()
 /**
 */
 void 
-Im3dContext::DrawBox(const Math::bbox & box, const Math::float4 & color, uint32_t depthFlag)
+Im3dContext::DrawBox(const Math::bbox & box, const Math::vec4 & color, uint32_t depthFlag)
 {
     Im3d::PushDrawState();
     if (depthFlag & CheckDepth) Im3d::PushLayerId(imState.depthLayerId);
@@ -203,7 +203,7 @@ Im3dContext::DrawBox(const Math::bbox & box, const Math::float4 & color, uint32_
 /**
 */
 void
-Im3dContext::DrawBox(const Math::matrix44& transform, const Math::float4 & color, uint32_t depthFlag)
+Im3dContext::DrawBox(const Math::mat4& transform, const Math::vec4 & color, uint32_t depthFlag)
 {
     Math::bbox box;
     box.pmin.set(-0.5f, -0.5f, -0.5f);
@@ -216,14 +216,14 @@ Im3dContext::DrawBox(const Math::matrix44& transform, const Math::float4 & color
 /**
 */
 void
-Im3dContext::DrawOrientedBox(const Math::matrix44& transform, const Math::bbox & box, const Math::float4 & color, uint32_t depthFlag)
+Im3dContext::DrawOrientedBox(const Math::mat4& transform, const Math::bbox & box, const Math::vec4 & color, uint32_t depthFlag)
 {
     Im3d::PushDrawState();
 
     Im3d::Vec3 p[8];
     for (int i = 0; i < 8; i++)
     {
-        p[i] = Math::matrix44::transform(box.corner_point(i).vec, transform);
+        p[i] = xyz(transform * Math::vec4(box.corner_point(i)));
     }    
     if (depthFlag & CheckDepth) Im3d::PushLayerId(imState.depthLayerId);
     Im3d::SetSize(2.0f);
@@ -255,7 +255,7 @@ Im3dContext::DrawOrientedBox(const Math::matrix44& transform, const Math::bbox &
 /**
 */
 void
-Im3dContext::DrawSphere(const Math::matrix44& modelTransform, const Math::float4& color, uint32_t depthFlag)
+Im3dContext::DrawSphere(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t depthFlag)
 {
     Im3d::PushDrawState();
     if (depthFlag & CheckDepth) Im3d::PushLayerId(imState.depthLayerId);
@@ -300,9 +300,9 @@ Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fram
     ad.m_viewportSize = Vec2((float)mode.GetWidth(), (float)mode.GetHeight());
     
     Graphics::GraphicsEntityId cam = view->GetCamera();
-    Math::matrix44 transform = Math::matrix44::inverse(CameraContext::GetTransform(cam));
-    ad.m_viewOrigin = transform.get_position();
-    ad.m_viewDirection = -transform.get_zaxis();
+    Math::mat4 transform = inverse(CameraContext::GetTransform(cam));
+    ad.m_viewOrigin = xyz(transform.r[Math::POSITION]);
+    ad.m_viewDirection = -xyz(transform.r[Math::Z_AXIS]);
     ad.m_worldUp = Vec3(0.0f, 1.0f, 0.0f);
     ad.m_projOrtho = false;
 
@@ -313,19 +313,19 @@ Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fram
     auto const& mouse = Input::InputServer::Instance()->GetDefaultMouse();
     
     // window origin is top-left, ndc is bottom-left
-    Math::float2 mousePos = mouse->GetScreenPosition();
+    Math::vec2 mousePos = mouse->GetScreenPosition();
     mousePos *= 2.0f;
-    mousePos -= Math::float2(1.0f, 1.0f);
-    mousePos.y() = -mousePos.y();
+    mousePos -= Math::vec2(1.0f, 1.0f);
+    mousePos.y = -mousePos.y;
         
     Vec3 rayOrigin, rayDirection;
     
     auto const& proj = CameraContext::GetProjection(cam);
     auto const& viewProj = CameraContext::GetViewProjection(cam);
     rayOrigin = ad.m_viewOrigin;
-    Math::float4 rayDir(mousePos.x() / proj.getrow0().x(), mousePos.y() / proj.getrow1().y(), -1.0f, 0.0f);
-    rayDir = Math::float4::normalize(rayDir);    
-    rayDirection = matrix44::transform(rayDir, transform);
+    Math::vec4 rayDir(mousePos.x / proj.r[Math::ROW_0].x, mousePos.y / proj.r[Math::ROW_1].y, -1.0f, 0.0f);
+    rayDir = normalize(rayDir);    
+    rayDirection = xyz(transform * rayDir);
     
     ad.m_cursorRayOrigin = rayOrigin;
     ad.m_cursorRayDirection = rayDirection;
@@ -488,7 +488,7 @@ Im3dContext::SetGridSize(float cellSize, int cellCount)
 /**
 */
 void
-Im3dContext::SetGridColor(Math::float4 const & color)
+Im3dContext::SetGridColor(Math::vec4 const & color)
 {
     imState.gridColor = color;
 }

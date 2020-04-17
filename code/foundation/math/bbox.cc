@@ -34,20 +34,20 @@ bbox::clipstatus(const bbox& other) const
 /**
     Returns one of the 8 corners of the bounding box.
 */
-vec4
+point
 bbox::corner_point(int index) const
 {
     n_assert((index >= 0) && (index < 8));
     switch (index)
     {
-        case 0:     return vec4(this->pmin, 1);
-        case 1:     return vec4(this->pmin.x, this->pmax.y, this->pmin.z, 1);
-        case 2:     return vec4(this->pmax.x, this->pmax.y, this->pmin.z, 1);
-        case 3:     return vec4(this->pmax.x, this->pmin.y, this->pmin.z, 1);
-        case 4:     return vec4(this->pmax, 1);
-        case 5:     return vec4(this->pmin.x, this->pmax.y, this->pmax.z, 1);
-        case 6:     return vec4(this->pmin.x, this->pmin.y, this->pmax.z, 1);
-        default:    return vec4(this->pmax.x, this->pmin.y, this->pmax.z, 1);
+        case 0:     return this->pmin;
+        case 1:     return point(this->pmin.x, this->pmax.y, this->pmin.z);
+        case 2:     return point(this->pmax.x, this->pmax.y, this->pmin.z);
+        case 3:     return point(this->pmax.x, this->pmin.y, this->pmin.z);
+        case 4:     return this->pmax;
+        case 5:     return point(this->pmin.x, this->pmax.y, this->pmax.z);
+        case 6:     return point(this->pmin.x, this->pmin.y, this->pmax.z);
+        default:    return point(this->pmax.x, this->pmin.y, this->pmax.z);
     }    
 }
 

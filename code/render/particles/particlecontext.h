@@ -100,7 +100,7 @@ private:
 	{
 		Models::ParticleSystemNode::Instance* node;
 		Util::RingBuffer<Particle> particles;
-		Math::matrix44 transform;
+		Math::mat4 transform;
 		Math::bbox boundingBox;
 		SizeT emissionCounter;
 

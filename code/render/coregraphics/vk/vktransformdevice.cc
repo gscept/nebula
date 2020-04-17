@@ -102,10 +102,10 @@ VkTransformDevice::Close()
 /**
 */
 void 
-VkTransformDevice::SetProjTransform(const Math::matrix44& m)
+VkTransformDevice::SetProjTransform(const Math::mat4& m)
 {
-	Math::matrix44 conv = m;
-	conv.setrow1(float4::multiply(conv.getrow1(), float4(-1)));
+	Math::mat4 conv = m;
+	conv.r[Math::ROW_1] = -conv.r[Math::ROW_1];
 	TransformDeviceBase::SetProjTransform(conv);
 }
 
@@ -119,15 +119,15 @@ VkTransformDevice::ApplyViewSettings()
 
 	// update block structure
 	alignas(16) Shared::FrameBlock block;
-	Math::matrix44::storeu(this->GetViewTransform(), block.View);
-	Math::matrix44::storeu(this->GetViewProjTransform(), block.ViewProjection);
-	Math::matrix44::storeu(this->GetProjTransform(), block.Projection);
-	Math::matrix44::storeu(this->GetInvViewTransform(), block.InvView);
-	Math::matrix44::storeu(this->GetInvProjTransform(), block.InvProjection);
-	Math::matrix44::storeu(Math::matrix44::inverse(this->GetViewProjTransform()), block.InvViewProjection);
-	Math::float4::storeu(this->GetInvViewTransform().get_position(), block.EyePos);
-	Math::float4::storeu(float4(this->GetFocalLength().x(), this->GetFocalLength().y(), this->GetNearFarPlane().x(), this->GetNearFarPlane().y()), block.FocalLengthNearFar);
-	Math::float4::storeu(float4((float)FrameSync::FrameSyncTimer::Instance()->GetTime(), Math::n_rand(0, 1), (float)FrameSync::FrameSyncTimer::Instance()->GetFrameTime(), 0), block.TimeAndRandom);
+	this->GetViewTransform().storeu(block.View);
+	this->GetViewProjTransform().storeu(block.ViewProjection);
+	this->GetProjTransform().storeu(block.Projection);
+	this->GetInvViewTransform().storeu(block.InvView);
+	this->GetInvProjTransform().storeu(block.InvProjection);
+	Math::inverse(this->GetViewProjTransform()).storeu(block.InvViewProjection);
+	this->GetInvViewTransform().r[Math::POSITION].storeu(block.EyePos);
+	vec4(this->GetFocalLength().x, this->GetFocalLength().y, this->GetNearFarPlane().x, this->GetNearFarPlane().y).storeu(block.FocalLengthNearFar);
+	vec4((float)FrameSync::FrameSyncTimer::Instance()->GetTime(), Math::n_rand(0, 1), (float)FrameSync::FrameSyncTimer::Instance()->GetFrameTime(), 0).storeu(block.TimeAndRandom);
 	uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, block);
 
 	// update actual constant buffer

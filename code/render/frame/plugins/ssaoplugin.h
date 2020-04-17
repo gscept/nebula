@@ -58,13 +58,13 @@ private:
 		float downsample;
 		float nearZ, farZ;
 		float sceneScale;
-		Math::float2 uvToViewA;
-		Math::float2 uvToViewB;
+		Math::vec2 uvToViewA;
+		Math::vec2 uvToViewB;
 		float radius, r, r2;
 		float negInvR2;
-		Math::float2 focalLength;
-		Math::float2 aoResolution;
-		Math::float2 invAOResolution;
+		Math::vec2 focalLength;
+		Math::vec2 aoResolution;
+		Math::vec2 invAOResolution;
 		float maxRadiusPixels;
 		float strength;
 		float tanAngleBias;

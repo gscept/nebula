@@ -7,9 +7,8 @@
     
     (C) 2012-2020 Individual contributors, see AUTHORS file
 */
-#include "math/matrix44.h"
-#include "math/float2.h"
-#include "math/point.h"
+#include "math/mat4.h"
+#include "math/vec2.h"
 #include "math/polar.h"
 #include "math/scalar.h"
 
@@ -23,20 +22,20 @@ public:
 	FreeCameraUtil();
 
 	/// sets up free camera
-	void Setup(const Math::point& defaultEyePos, const Math::vector& defaultEyeVec);
+	void Setup(const Math::vec3& defaultEyePos, const Math::vec3& defaultEyeVec);
 	/// resets free camera to default values
 	void Reset();
 	/// updates camera matrix
 	void Update();
 	/// gets camera transform
-	const Math::matrix44& GetTransform() const;
+	const Math::mat4& GetTransform() const;
 
 	/// sets the state of the rotate button
 	void SetRotateButton(bool state);
 	/// sets the state of the accelerate button
 	void SetAccelerateButton(bool state);
 	/// sets the mouse movement
-	void SetMouseMovement(Math::float2 movement);
+	void SetMouseMovement(Math::vec2 movement);
 	/// sets the rotation speed
 	void SetRotationSpeed(float speed);
 	/// sets the movement speed
@@ -56,13 +55,13 @@ public:
 	void SetDownKey(bool state);
 	
 private:
-	Math::point defaultEyePos;
-	Math::vector defaultEyeVec;
-	Math::float2 mouseMovement;
+	Math::vec3 defaultEyePos;
+	Math::vec3 defaultEyeVec;
+	Math::vec2 mouseMovement;
 
 	Math::polar viewAngles;
-	Math::float4 position;
-	Math::matrix44 cameraTransform;
+	Math::vec3 position;
+	Math::mat4 cameraTransform;
 
 	float rotationSpeed;
 	float moveSpeed;
@@ -82,7 +81,7 @@ private:
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44& 
+inline const Math::mat4& 
 FreeCameraUtil::GetTransform() const
 {
 	return this->cameraTransform;
@@ -111,7 +110,7 @@ FreeCameraUtil::SetAccelerateButton( bool state )
 /**
 */
 inline void 
-FreeCameraUtil::SetMouseMovement( Math::float2 movement )
+FreeCameraUtil::SetMouseMovement( Math::vec2 movement )
 {
 	this->mouseMovement = movement;
 }

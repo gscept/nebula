@@ -123,7 +123,7 @@ private:
 	> VisibilityResultAllocator;
 
 	typedef Ids::IdAllocator<
-		Math::matrix44,						// transform of observer camera
+		Math::mat4,						// transform of observer camera
 		Graphics::GraphicsEntityId, 		// entity id
 		VisibilityEntityType,				// type of object so we know how to get the transform
 		VisibilityResultAllocator,			// visibility lookup table
@@ -161,7 +161,7 @@ private:
 
 	// atom corresponds to a single visibility entry
 	typedef Ids::IdAllocator<
-		Math::matrix44,
+		Math::mat4,
 		Models::ModelNode::Instance*,
 		Graphics::ContextEntityId
 	> ObservableAtomAllocator;

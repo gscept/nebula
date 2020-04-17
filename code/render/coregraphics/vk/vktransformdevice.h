@@ -32,7 +32,7 @@ public:
 	void Close();
 
 	/// set projection transform
-	void SetProjTransform(const Math::matrix44& m);
+	void SetProjTransform(const Math::mat4& m);
 
 	/// updates shared shader variables dependent on view matrix
 	void ApplyViewSettings();
@@ -45,7 +45,7 @@ public:
 	void BindCameraDescriptorSetsCompute(const CoreGraphics::QueueType queue = CoreGraphics::GraphicsQueueType);
 private:
 
-	Math::matrix44 viewMatrixArray[6];
+	Math::mat4 viewMatrixArray[6];
 
 	CoreGraphics::ConstantBinding viewVar;
 	CoreGraphics::ConstantBinding invViewVar;

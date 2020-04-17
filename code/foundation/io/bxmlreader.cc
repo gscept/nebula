@@ -250,36 +250,36 @@ BXmlReader::GetFloat(const char* attr) const
 //------------------------------------------------------------------------------
 /**
 */
-Math::float2
-BXmlReader::GetFloat2(const char* attr) const
+Math::vec2
+BXmlReader::GetVec2(const char* attr) const
 {
-    return this->GetString(attr).AsFloat2();
+    return this->GetString(attr).AsVec2();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Math::float4
-BXmlReader::GetFloat4(const char* attr) const
+Math::vec4
+BXmlReader::GetVec4(const char* attr) const
 {
 #if NEBULA_XMLREADER_LEGACY_VECTORS
-    const String& float4String = this->GetString(attr);
-    Array<String> tokens = float4String.Tokenize(", \t");
+    const String& vec4String = this->GetString(attr);
+    Array<String> tokens = vec4String.Tokenize(", \t");
     if (tokens.Size() == 3)
     {
-        return float4(tokens[0].AsFloat(), tokens[1].AsFloat(), tokens[2].AsFloat(), 0);
+        return vec4(tokens[0].AsFloat(), tokens[1].AsFloat(), tokens[2].AsFloat(), 0);
     }    
 #endif
-    return this->GetString(attr).AsFloat4();
+    return this->GetString(attr).AsVec4();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Math::matrix44
-BXmlReader::GetMatrix44(const char* attr) const
+Math::mat4
+BXmlReader::GetMat4(const char* attr) const
 {
-    return this->GetString(attr).AsMatrix44();
+    return this->GetString(attr).AsMat4();
 }
 #endif
     
@@ -357,13 +357,13 @@ BXmlReader::GetOptFloat(const char* attr, float defaultValue) const
 //------------------------------------------------------------------------------
 /**
 */
-Math::float2
-BXmlReader::GetOptFloat2(const char* attr, const Math::float2& defaultValue) const
+Math::vec2
+BXmlReader::GetOptVec2(const char* attr, const Math::vec2& defaultValue) const
 {
     if (this->HasAttr(attr))
     {
 		String str = this->GetString(attr);
-		if (str.IsValidFloat2()) return str.AsFloat2();
+		if (str.IsValidVec2()) return str.AsVec2();
 		else					 return defaultValue;
     }
     else
@@ -375,13 +375,13 @@ BXmlReader::GetOptFloat2(const char* attr, const Math::float2& defaultValue) con
 //------------------------------------------------------------------------------
 /**
 */
-Math::float4
-BXmlReader::GetOptFloat4(const char* attr, const Math::float4& defaultValue) const
+Math::vec4
+BXmlReader::GetOptVec4(const char* attr, const Math::vec4& defaultValue) const
 {
     if (this->HasAttr(attr))
     {
 		String str = this->GetString(attr);
-		if (str.IsValidFloat4()) return str.AsFloat4();
+		if (str.IsValidVec4()) return str.AsVec4();
 		else					 return defaultValue;
     }
     else
@@ -393,13 +393,13 @@ BXmlReader::GetOptFloat4(const char* attr, const Math::float4& defaultValue) con
 //------------------------------------------------------------------------------
 /**
 */
-Math::matrix44
-BXmlReader::GetOptMatrix44(const char* attr, const Math::matrix44& defaultValue) const
+Math::mat4
+BXmlReader::GetOptMat4(const char* attr, const Math::mat4& defaultValue) const
 {
     if (this->HasAttr(attr))
     {
 		String str = this->GetString(attr);
-		if (str.IsValidMatrix44())  return str.AsMatrix44();
+		if (str.IsValidMat4())  return str.AsMat4();
 		else						return defaultValue;
     }
     else

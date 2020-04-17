@@ -69,7 +69,7 @@ sphere::intersects(const bbox& box) const
 bool
 sphere::intersects_ray(const line& ray) const
 {
-    vec3 oc = ray.start() - p;
+    vector oc = ray.start() - p;
     scalar a = dot(ray.vec(), ray.vec());
     scalar b = 2.0f * dot(oc, ray.vec());
     scalar c = dot(oc, oc) - r * r;
@@ -103,7 +103,7 @@ sphere::random_point_on_unit_sphere()
     @param  u1  [out] normalized outro contact
 */
 bool
-sphere::intersect_sweep(const vec3& va, const sphere& sb, const vec3& vb, float& u0, float& u1) const
+sphere::intersect_sweep(const vector& va, const sphere& sb, const vector& vb, float& u0, float& u1) const
 {
     n_error("sphere::intersect_sweep(): NOT IMPLEMENTED!");
     return false;

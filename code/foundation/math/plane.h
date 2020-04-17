@@ -9,86 +9,122 @@
 
 */
 //------------------------------------------------------------------------------
-#include "math2/vec4.h"
+#include "math/point.h"
+#include "math/vector.h"
 #include "math/line.h"
+#include "scalar.h"
 #include "clipstatus.h"
 
 namespace Math
 {
 struct plane
 {
-    /// setup from points
-    static vec4 setup_from_points(const vec3& p0, const vec3& p1, const vec3& p2);
+
+    /// default constructor, NOTE: does NOT setup components!
+    plane() = default;
+    /// construct from values
+    plane(scalar a, scalar b, scalar c, scalar d);
     /// setup from point and normal
-    static vec4 setup_from_point_and_normal(const vec3& p, const vec3& n);
+    plane(const point& p, const vector& n);
+    /// setup from points
+    plane(const point& p0, const point& p1, const point& p2);
+    /// construct from SSE 128 byte float array
+    plane(const __m128 & rhs);
 
-    /// get the plane normal
-    static vec3 get_normal(const vec4& plane);
-    /// get the plane point
-    static vec3 get_point(const vec4& plane);
+    /// set content
+    void set(scalar a, scalar b, scalar c, scalar d);
 
-    /// find intersection with line
-    static bool intersectline(const vec4& plane, const vec3& startPoint, const vec3& endPoint, vec3& outIntersectPoint);
-    /// find intersection with plane
-    static bool intersectplane(const vec4& plane, const vec4& p2, line& outLine);
-    /// clip line against this plane
-    static ClipStatus::Type clip(const vec4& plane, const line& l, line& outClippedLine);
+    union
+    {
+        __m128 vec;
+        struct
+        {
+            float a, b, c, d;
+        };
+    };
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-inline vec4 
-plane::setup_from_points(const vec3& p0, const vec3& p1, const vec3& p2)
+__forceinline
+plane::plane(scalar a, scalar b, scalar c, scalar d)
 {
-    vec3 v21 = p0 - p1;
-    vec3 v31 = p0 - p2;
+    this->vec = _mm_setr_ps(a, b, c, d);
+}
 
-    vec3 cr = cross(v21, v31);
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline
+plane::plane(const point& p, const vector& n)
+{
+    float d = dot(p, n);
+    this->vec = _mm_setr_ps(n.x, n.y, n.z, -d);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline
+plane::plane(const point& p0, const point& p1, const point& p2)
+{
+    vector v21 = p0 - p1;
+    vector v31 = p0 - p2;
+
+    vector cr = cross(v21, v31);
     cr = normalize(cr);
     float d = dot(cr, p0);
 
-    vec4 ret(cr, -d);
-    return ret;
+    this->vec = _mm_setr_ps(cr.x, cr.y, cr.z, -d);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline vec4 
-plane::setup_from_point_and_normal(const vec3& p, const vec3& n)
+__forceinline
+plane::plane(const __m128& rhs)
 {
-    float d = dot(p, n);
-    vec4 ret(n, -d);
-    return ret;
+    this->vec = rhs;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline vec3 
-plane::get_normal(const vec4& plane)
+__forceinline
+void plane::set(scalar a, scalar b, scalar c, scalar d)
 {
-    return xyz(plane);
+    this->vec = _mm_setr_ps(a, b, c, d);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline vec3
-plane::get_point(const vec4& plane)
+inline vector 
+get_normal(const plane& plane)
 {
-    return xyz(plane * -plane.w);
+    vector res;
+    res.vec = _mm_and_ps(plane.vec, _mask_xyz);
+    return res;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline point
+get_point(const plane& plane)
+{
+    return _mm_mul_ps(get_normal(plane).vec, _mm_set1_ps(-plane.d));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline bool 
-plane::intersectline(const vec4& plane, const vec3& startPoint, const vec3& endPoint, vec3& outIntersectPoint)
+intersectline(const plane& plane, const point& startPoint, const point& endPoint, point& outIntersectPoint)
 {
-    scalar v1 = dot(xyz(plane), startPoint);
-    scalar v2 = dot(xyz(plane), endPoint);
+    scalar v1 = dot(get_normal(plane), startPoint);
+    scalar v2 = dot(get_normal(plane), endPoint);
     scalar d = (v1 - v2);
     if (n_abs(d) < N_TINY)
     {
@@ -97,10 +133,10 @@ plane::intersectline(const vec4& plane, const vec3& startPoint, const vec3& endP
 
     d = 1.0f / d;
 
-    scalar pd = dot(xyz(plane), startPoint);
+    scalar pd = dot(get_normal(plane), startPoint);
     pd *= d;
 
-    vec3 p = (endPoint - startPoint) * pd;
+    vec4 p = (endPoint - startPoint) * pd;
 
     p += startPoint;
     outIntersectPoint = p;
@@ -112,10 +148,10 @@ plane::intersectline(const vec4& plane, const vec3& startPoint, const vec3& endP
 /**
 */
 inline bool 
-plane::intersectplane(const vec4& plane, const vec4& p2, line& outLine)
+intersectplane(const plane& p1, const plane& p2, line& outLine)
 {
-    vec3 n0 = get_normal(plane);
-    vec3 n1 = get_normal(p2);
+    vector n0 = get_normal(p1);
+    vector n1 = get_normal(p2);
     float n00 = dot(n0, n0);
     float n01 = dot(n0, n1);
     float n11 = dot(n1, n1);
@@ -128,10 +164,10 @@ plane::intersectplane(const vec4& plane, const vec4& p2, line& outLine)
     else
     {
         float inv_det = 1.0f / det;
-        float c0 = (n11 * plane.w - n01 * p2.w) * inv_det;
-        float c1 = (n00 * p2.w - n01 * plane.w) * inv_det;
+        float c0 = (n11 * p1.d - n01 * p2.d) * inv_det;
+        float c1 = (n00 * p2.d - n01 * p1.d) * inv_det;
         outLine.m = cross(n0, n1);
-        outLine.b = n0 * c0 + n1 * c1;
+        outLine.b = vec4(n0 * c0 + n1 * c1, 1);
         return true;
     }
 }
@@ -140,11 +176,11 @@ plane::intersectplane(const vec4& plane, const vec4& p2, line& outLine)
 /**
 */
 inline ClipStatus::Type 
-plane::clip(const vec4& plane, const line& l, line& outClippedLine)
+clip(const plane& plane, const line& l, line& outClippedLine)
 {
     n_assert(&l != &outClippedLine);
-    float d0 = dot(xyz(plane), l.start());
-    float d1 = dot(xyz(plane), l.end());
+    float d0 = dot(get_normal(plane), l.start());
+    float d1 = dot(get_normal(plane), l.end());
     if ((d0 >= N_TINY) && (d1 >= N_TINY))
     {
         // start and end point above plane
@@ -159,7 +195,7 @@ plane::clip(const vec4& plane, const line& l, line& outClippedLine)
     else
     {
         // line is clipped
-        vec3 clipPoint;
+        point clipPoint;
         intersectline(plane, l.start(), l.end(), clipPoint);
         if (d0 >= N_TINY)
         {
@@ -171,6 +207,52 @@ plane::clip(const vec4& plane, const line& l, line& outClippedLine)
         }
         return ClipStatus::Clipped;
     }
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+dot(const plane& p, const vec4& v1)
+{
+    return _mm_cvtss_f32(_mm_dp_ps(p.vec, v1.vec, 0xF1));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline plane
+normalize(const plane& p)
+{
+    vec4 f(p.vec);
+    scalar len = length3(f);
+    if (len < N_TINY)
+    {
+        return p;
+    }
+    f *= 1.0f / len;
+    plane ret;
+    ret.vec = f.vec;
+    return ret;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline plane
+operator*(const mat4& m, const plane& p)
+{
+    __m128 x = _mm_shuffle_ps(p.vec, p.vec, _MM_SHUFFLE(0, 0, 0, 0));
+    __m128 y = _mm_shuffle_ps(p.vec, p.vec, _MM_SHUFFLE(1, 1, 1, 1));
+    __m128 z = _mm_shuffle_ps(p.vec, p.vec, _MM_SHUFFLE(2, 2, 2, 2));
+    __m128 w = _mm_shuffle_ps(p.vec, p.vec, _MM_SHUFFLE(3, 3, 3, 3));
+
+    return _mm_add_ps(
+        _mm_add_ps(_mm_mul_ps(x, m.r[0].vec), _mm_mul_ps(y, m.r[1].vec)),
+        _mm_add_ps(_mm_mul_ps(z, m.r[2].vec), _mm_mul_ps(w, m.r[3].vec))
+    );
 }
 
 } // namespace Math

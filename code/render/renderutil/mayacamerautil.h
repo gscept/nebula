@@ -12,9 +12,8 @@
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
-#include "math/matrix44.h"
-#include "math/float2.h"
-#include "math/point.h"
+#include "math/mat4.h"
+#include "math/vec2.h"
 #include "math/polar.h"
 #include "math/scalar.h"
 
@@ -28,17 +27,17 @@ public:
     MayaCameraUtil();
 
     /// setup the object
-    void Setup(const Math::point& defaultCenterOfInterest, const Math::point& defaultEyePos, const Math::vector& defaultUpVec);
+    void Setup(const Math::vec3& defaultCenterOfInterest, const Math::vec3& defaultEyePos, const Math::vec3& defaultUpVec);
     /// reset the object to its default settings
     void Reset();
     /// update the view matrix
     void Update();
     /// get the current camera transform
-    const Math::matrix44& GetCameraTransform() const;
+    const Math::mat4& GetCameraTransform() const;
 	/// get view distance
 	const Math::scalar& GetViewDistance() const;
 	/// get center of interest
-	const Math::float4& GetCenterOfInterest() const;
+	const Math::vec3& GetCenterOfInterest() const;
 
     /// set state of orbit button
     void SetOrbitButton(bool b);
@@ -51,41 +50,41 @@ public:
     /// set state of zoom-out button
     void SetZoomOutButton(bool b);
     /// set mouse movement
-    void SetMouseMovement(const Math::float2& v);
+    void SetMouseMovement(const Math::vec2& v);
     /// set zoom-in value
     void SetZoomIn(float v);
     /// set zoom-out value
     void SetZoomOut(float v);
     /// set panning vector
-    void SetPanning(const Math::float2& v);
+    void SetPanning(const Math::vec2& v);
     /// set orbiting vector
-    void SetOrbiting(const Math::float2& v);
+    void SetOrbiting(const Math::vec2& v);
 	/// set center of interest
-	void SetCenterOfInterest(const Math::point& point);
+	void SetCenterOfInterest(const Math::vec3& point);
 	/// set view distance
 	void SetViewDistance(const Math::scalar& distance);
 
 private:
-    Math::point defaultCenterOfInterest;
-    Math::point defaultEyePos;
-    Math::vector defaultUpVec;
+    Math::vec3 defaultCenterOfInterest;
+    Math::vec3 defaultEyePos;
+    Math::vec3 defaultUpVec;
 
     Math::polar viewAngles;
     Math::scalar viewDistance;
-    Math::point centerOfInterest;
+    Math::vec3 centerOfInterest;
 
-    Math::matrix44 cameraTransform;
+    Math::mat4 cameraTransform;
 
     bool orbitButton;
     bool panButton;
     bool zoomButton;
     bool zoomInButton;
     bool zoomOutButton;
-    Math::float2 mouseMovement;
+    Math::vec2 mouseMovement;
     float zoomIn;
     float zoomOut;
-    Math::float2 panning;
-    Math::float2 orbiting;
+    Math::vec2 panning;
+    Math::vec2 orbiting;
 };
 
 //------------------------------------------------------------------------------
@@ -137,7 +136,7 @@ MayaCameraUtil::SetZoomOutButton(bool b)
 /**
 */
 inline void
-MayaCameraUtil::SetMouseMovement(const Math::float2& v)
+MayaCameraUtil::SetMouseMovement(const Math::vec2& v)
 {
     this->mouseMovement = v;
 }
@@ -145,7 +144,7 @@ MayaCameraUtil::SetMouseMovement(const Math::float2& v)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44&
+inline const Math::mat4&
 MayaCameraUtil::GetCameraTransform() const
 {
     return this->cameraTransform;
@@ -163,7 +162,7 @@ MayaCameraUtil::GetViewDistance() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::float4&
+inline const Math::vec3&
 MayaCameraUtil::GetCenterOfInterest() const
 {
     return this->centerOfInterest;
@@ -191,7 +190,7 @@ MayaCameraUtil::SetZoomOut(float v)
 /**
 */
 inline void
-MayaCameraUtil::SetPanning(const Math::float2& v)
+MayaCameraUtil::SetPanning(const Math::vec2& v)
 {
     this->panning = v;
 }
@@ -200,7 +199,7 @@ MayaCameraUtil::SetPanning(const Math::float2& v)
 /**
 */
 inline void
-MayaCameraUtil::SetOrbiting(const Math::float2& v)
+MayaCameraUtil::SetOrbiting(const Math::vec2& v)
 {
     this->orbiting = v;
 }
@@ -209,7 +208,7 @@ MayaCameraUtil::SetOrbiting(const Math::float2& v)
 /**
 */
 inline void
-MayaCameraUtil::SetCenterOfInterest(const Math::point& point)
+MayaCameraUtil::SetCenterOfInterest(const Math::vec3& point)
 {
     this->centerOfInterest = point;
 }

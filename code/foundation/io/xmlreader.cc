@@ -448,43 +448,43 @@ XmlReader::GetFloat(const char* name) const
 #if !__OSX__    
 //------------------------------------------------------------------------------
 /**
-    Return the provided attribute as float2. If the attribute does not exist
+    Return the provided attribute as vec2. If the attribute does not exist
     the method will fail hard (use HasAttr() to check for its existance).
 */
-float2
-XmlReader::GetFloat2(const char* name) const
+vec2
+XmlReader::GetVec2(const char* name) const
 {
-    return this->GetString(name).AsFloat2();
+    return this->GetString(name).AsVec2();
 }
 
 //------------------------------------------------------------------------------
 /**
-    Return the provided attribute as float4. If the attribute does not exist
+    Return the provided attribute as vec4. If the attribute does not exist
     the method will fail hard (use HasAttr() to check for its existance).
 */
-float4
-XmlReader::GetFloat4(const char* name) const
+vec4
+XmlReader::GetVec4(const char* name) const
 {
 #if NEBULA_XMLREADER_LEGACY_VECTORS
-    const String& float4String = this->GetString(name);
-    Array<String> tokens = float4String.Tokenize(", \t");
+    const String& vec4String = this->GetString(name);
+    Array<String> tokens = vec4String.Tokenize(", \t");
     if (tokens.Size() == 3)
     {
-        return float4(tokens[0].AsFloat(), tokens[1].AsFloat(), tokens[2].AsFloat(), 0);
+        return vec4(tokens[0].AsFloat(), tokens[1].AsFloat(), tokens[2].AsFloat(), 0);
     }    
 #endif
-    return this->GetString(name).AsFloat4();
+    return this->GetString(name).AsVec4();
 }
 
 //------------------------------------------------------------------------------
 /**
-    Return the provided attribute as matrix44. If the attribute does not exist
+    Return the provided attribute as mat4. If the attribute does not exist
     the method will fail hard (use HasAttr() to check for its existance).
 */
-matrix44
-XmlReader::GetMatrix44(const char* name) const
+mat4
+XmlReader::GetMat4(const char* name) const
 {
-    return this->GetString(name).AsMatrix44();
+    return this->GetString(name).AsMat4();
 }
 
 //------------------------------------------------------------------------------
@@ -574,15 +574,15 @@ XmlReader::GetOptFloat(const char* name, float defaultValue) const
 #if !__OSX__    
 //------------------------------------------------------------------------------
 /**
-    Return the provided optional attribute as float2. If the attribute doesn't
+    Return the provided optional attribute as vec2. If the attribute doesn't
     exist, the default value will be returned.
 */
-float2
-XmlReader::GetOptFloat2(const char* name, const float2& defaultValue) const
+vec2
+XmlReader::GetOptVec2(const char* name, const vec2& defaultValue) const
 {
     if (this->HasAttr(name))
     {
-        return this->GetFloat2(name);
+        return this->GetVec2(name);
     }
     else
     {
@@ -592,15 +592,15 @@ XmlReader::GetOptFloat2(const char* name, const float2& defaultValue) const
 
 //------------------------------------------------------------------------------
 /**
-    Return the provided optional attribute as float4. If the attribute doesn't
+    Return the provided optional attribute as vec4. If the attribute doesn't
     exist, the default value will be returned.
 */
-float4
-XmlReader::GetOptFloat4(const char* name, const float4& defaultValue) const
+vec4
+XmlReader::GetOptVec4(const char* name, const vec4& defaultValue) const
 {
     if (this->HasAttr(name))
     {
-        return this->GetFloat4(name);
+        return this->GetVec4(name);
     }
     else
     {
@@ -610,15 +610,15 @@ XmlReader::GetOptFloat4(const char* name, const float4& defaultValue) const
 
 //------------------------------------------------------------------------------
 /**
-    Return the provided optional attribute as matrix44. If the attribute doesn't
+    Return the provided optional attribute as mat4. If the attribute doesn't
     exist, the default value will be returned.
 */
-matrix44
-XmlReader::GetOptMatrix44(const char* name, const matrix44& defaultValue) const
+mat4
+XmlReader::GetOptMat4(const char* name, const mat4& defaultValue) const
 {
     if (this->HasAttr(name))
     {
-        return this->GetMatrix44(name);
+        return this->GetMat4(name);
     }
     else
     {

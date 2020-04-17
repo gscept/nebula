@@ -387,7 +387,7 @@ const Math::matrix44&
 AttrId::GetMatrix44DefValue() const
 {
     n_assert(0 != this->defPtr);
-    return this->defPtr->GetDefaultValue().GetMatrix44();
+    return this->defPtr->GetDefaultValue().GetMat4();
 }
 
 //------------------------------------------------------------------------------

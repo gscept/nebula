@@ -1309,9 +1309,9 @@ AttributeTable::PrintDebug()
                 case IntType:       str = Util::String::FromInt(this->GetInt(colIndex, rowIndex)); break;
                 case FloatType:     str = Util::String::FromFloat(this->GetFloat(colIndex, rowIndex)); break;
                 case BoolType:      str = Util::String::FromBool(this->GetBool(colIndex, rowIndex)); break;
-                case Float4Type:    str = Util::String::FromFloat4(this->GetFloat4(colIndex, rowIndex)); break;
+                case Float4Type:    str = Util::String::FromVec4(this->GetFloat4(colIndex, rowIndex)); break;
                 case StringType:    str = this->GetString(colIndex, rowIndex); break;
-                case Matrix44Type:  str = Util::String::FromMatrix44(this->GetMatrix44(colIndex, rowIndex)); break;
+                case Matrix44Type:  str = Util::String::FromMat4(this->GetMatrix44(colIndex, rowIndex)); break;
                 case BlobType:      str = "(blob)"; break;
                 case GuidType:      str = this->GetGuid(colIndex, rowIndex).AsString(); break;
                 default:
@@ -1352,7 +1352,7 @@ AttributeTable::SetVariant(IndexT colIndex, IndexT rowIndex, const Util::Variant
         case Util::Variant::Bool:
             *((bool*)valuePtr) = val.GetBool();
             break;
-        case Util::Variant::Float4:        
+        case Util::Variant::Vec4:        
             val.GetFloat4().storeu((scalar*)valuePtr);
             break;
         case Util::Variant::Matrix44:        

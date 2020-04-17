@@ -19,12 +19,12 @@ namespace CoreAnimation
 void
 AnimSampleStep(const AnimCurve* curves,
 	int numCurves,
-	const float4& velocityScale,
-	const float4* src0SamplePtr,
-	float4* outSamplePtr,
+	const vec4& velocityScale,
+	const vec4* src0SamplePtr,
+	vec4* outSamplePtr,
 	uchar* outSampleCounts)
 {
-	float4 f0;
+	vec4 f0;
 	int i;
 	for (i = 0; i < numCurves; i++)
 	{
@@ -53,7 +53,7 @@ AnimSampleStep(const AnimCurve* curves,
 			// (this is necessary if time factor is != 1)
 			if (curve.GetCurveType() == CurveType::Velocity)
 			{
-				f0 = float4::multiply(f0, velocityScale);
+				f0 = f0 * velocityScale;
 			}
 			f0.store((scalar*)outSamplePtr);
 		}
@@ -68,14 +68,14 @@ void
 AnimSampleLinear(const AnimCurve* curves,
 	int numCurves,
 	float sampleWeight,
-	const float4& velocityScale,
-	const float4* src0SamplePtr,
-	const float4* src1SamplePtr,
-	float4* outSamplePtr,
+	const vec4& velocityScale,
+	const vec4* src0SamplePtr,
+	const vec4* src1SamplePtr,
+	vec4* outSamplePtr,
 	uchar* outSampleCounts)
 {
-	float4 f0, f1, fDst;
-	quaternion q0, q1, qDst;
+	vec4 f0, f1, fDst;
+	quat q0, q1, qDst;
 	int i;
 	for (i = 0; i < numCurves; i++)
 	{
@@ -98,7 +98,7 @@ AnimSampleLinear(const AnimCurve* curves,
 				f0 = curve.GetStaticKey();
 				if (CurveType::Velocity == curveType)
 				{
-					f0 = float4::multiply(f0, velocityScale);
+					f0 = f0 * velocityScale;
 				}
 				f0.store((scalar*)outSamplePtr);
 			}
@@ -108,17 +108,17 @@ AnimSampleLinear(const AnimCurve* curves,
 				{
 					q0.load((scalar*)src0SamplePtr);
 					q1.load((scalar*)src1SamplePtr);
-					qDst = quaternion::slerp(q0, q1, sampleWeight);
+					qDst = slerp(q0, q1, sampleWeight);
 					qDst.store((scalar*)outSamplePtr);
 				}
 				else
 				{
 					f0.load((scalar*)src0SamplePtr);
 					f1.load((scalar*)src1SamplePtr);
-					fDst = float4::lerp(f0, f1, sampleWeight);
+					fDst = lerp(f0, f1, sampleWeight);
 					if (CurveType::Velocity == curveType)
 					{
-						fDst = float4::multiply(fDst, velocityScale);
+						fDst = fDst * velocityScale;
 					}
 					fDst.store((scalar*)outSamplePtr);
 				}
@@ -138,15 +138,15 @@ AnimMix(const AnimCurve* curves,
 	int numCurves,
 	const AnimSampleMask* mask,
 	float mixWeight,
-	const float4* src0SamplePtr,
-	const float4* src1SamplePtr,
+	const vec4* src0SamplePtr,
+	const vec4* src1SamplePtr,
 	const uchar* src0SampleCounts,
 	const uchar* src1SampleCounts,
-	float4* outSamplePtr,
+	vec4* outSamplePtr,
 	uchar* outSampleCounts)
 {
-	float4 f0, f1, fDst;
-	quaternion q0, q1, qDst;
+	vec4 f0, f1, fDst;
+	quat q0, q1, qDst;
 	int i;
 	for (i = 0; i < numCurves; i++)
 	{
@@ -169,14 +169,14 @@ AnimMix(const AnimCurve* curves,
 			{
 				q0.load((scalar*)src0SamplePtr);
 				q1.load((scalar*)src1SamplePtr);
-				qDst = quaternion::slerp(q0, q1, mixWeight * maskWeight);
+				qDst = slerp(q0, q1, mixWeight * maskWeight);
 				qDst.store((scalar*)outSamplePtr);
 			}
 			else
 			{
 				f0.load((scalar*)src0SamplePtr);
 				f1.load((scalar*)src1SamplePtr);
-				fDst = float4::lerp(f0, f1, mixWeight * maskWeight);
+				fDst = lerp(f0, f1, mixWeight * maskWeight);
 				fDst.store((scalar*)outSamplePtr);
 			}
 		}
@@ -217,9 +217,9 @@ AnimSampleJob(const Jobs::JobFuncContext& ctx)
 	const AnimSampleMixInfo* info = (const AnimSampleMixInfo*)ctx.uniforms[1];
 	for (ptrdiff sliceIdx = 0; sliceIdx < ctx.numSlices; sliceIdx++)
 	{
-		const float4* src0SamplePtr = (const float4*)N_JOB_INPUT(ctx, sliceIdx, 0);
-		const float4* src1SamplePtr = (const float4*)N_JOB_INPUT(ctx, sliceIdx, 1);
-		float4* outSamplePtr = (float4*)N_JOB_OUTPUT(ctx, sliceIdx, 0);
+		const vec4* src0SamplePtr = (const vec4*)N_JOB_INPUT(ctx, sliceIdx, 0);
+		const vec4* src1SamplePtr = (const vec4*)N_JOB_INPUT(ctx, sliceIdx, 1);
+		vec4* outSamplePtr = (vec4*)N_JOB_OUTPUT(ctx, sliceIdx, 0);
 		uchar* outSampleCounts = N_JOB_OUTPUT(ctx, sliceIdx, 1);
 
 		if (info->sampleType == SampleType::Step)
@@ -240,15 +240,15 @@ AnimSampleJobWithMix(const Jobs::JobFuncContext& ctx)
 	int numCurves = ctx.uniformSizes[0] / sizeof(AnimCurve);
 	const AnimSampleMixInfo* info = (const AnimSampleMixInfo*)ctx.uniforms[1];
 	const AnimSampleMask* mask = (const AnimSampleMask*)ctx.uniforms[2];
-	float4* tmpSamplePtr = (float4*)ctx.scratch;
+	vec4* tmpSamplePtr = (vec4*)ctx.scratch;
 	for (ptrdiff sliceIdx = 0; sliceIdx < ctx.numSlices; sliceIdx++)
 	{
-		const float4* src0SamplePtr = (const float4*)N_JOB_INPUT(ctx, sliceIdx, 0);
-		const float4* src1SamplePtr = (const float4*)N_JOB_INPUT(ctx, sliceIdx, 1);
-		const float4* mixSamplePtr = (const float4*)N_JOB_INPUT(ctx, sliceIdx, 2);
+		const vec4* src0SamplePtr = (const vec4*)N_JOB_INPUT(ctx, sliceIdx, 0);
+		const vec4* src1SamplePtr = (const vec4*)N_JOB_INPUT(ctx, sliceIdx, 1);
+		const vec4* mixSamplePtr = (const vec4*)N_JOB_INPUT(ctx, sliceIdx, 2);
 		uchar* mixSampleCounts = ctx.inputs[3] + sliceIdx * ctx.inputSizes[3];
 		uchar* tmpSampleCounts = (uchar*)(tmpSamplePtr + numCurves);
-		float4* outSamplePtr = (float4*)N_JOB_OUTPUT(ctx, sliceIdx, 0);
+		vec4* outSamplePtr = (vec4*)N_JOB_OUTPUT(ctx, sliceIdx, 0);
 		uchar* outSampleCounts = N_JOB_OUTPUT(ctx, sliceIdx, 1);
 
 		if (info->sampleType == SampleType::Step)

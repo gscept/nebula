@@ -84,16 +84,16 @@ SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAt
 					defaultVal.SetBool(reader->GetOptBool("value", defaultVal.GetBool()));
 					type->SetSurfaceConstant(sid, binding, defaultVal);
 					break;
-				case Util::Variant::Float4:
-					defaultVal.SetFloat4(reader->GetOptFloat4("value", defaultVal.GetFloat4()));
+				case Util::Variant::Vec4:
+					defaultVal.SetVec4(reader->GetOptVec4("value", defaultVal.GetVec4()));
 					type->SetSurfaceConstant(sid, binding, defaultVal);
 					break;
-				case Util::Variant::Float2:
-					defaultVal.SetFloat2(reader->GetOptFloat2("value", defaultVal.GetFloat2()));
+				case Util::Variant::Vec2:
+					defaultVal.SetVec2(reader->GetOptVec2("value", defaultVal.GetVec2()));
 					type->SetSurfaceConstant(sid, binding, defaultVal);
 					break;
-				case Util::Variant::Matrix44:
-					defaultVal.SetMatrix44(reader->GetOptMatrix44("value", defaultVal.GetMatrix44()));
+				case Util::Variant::Mat4:
+					defaultVal.SetMat4(reader->GetOptMat4("value", defaultVal.GetMat4()));
 					type->SetSurfaceConstant(sid, binding, defaultVal);
 					break;
 				case Util::Variant::UInt64: // texture handle

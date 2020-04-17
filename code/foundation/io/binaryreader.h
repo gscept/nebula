@@ -14,11 +14,10 @@
 */
 #include "io/streamreader.h"
 #if !__OSX__
-#include "math/float2.h"
-#include "math/float4.h"
-#include "math/point.h"
-#include "math/vector.h"
-#include "math/matrix44.h"
+#include "math/vec2.h"
+#include "math/vec4.h"
+#include "math/vec3.h"
+#include "math/mat4.h"
 #endif
 #include "util/guid.h"
 #include "util/blob.h"
@@ -76,16 +75,14 @@ public:
     /// read a string from the stream
     Util::String ReadString();
     #if !__OSX__
-    /// read a float2 from the stream
-    Math::float2 ReadFloat2();
-    /// read a float4 from the stream
-    Math::float4 ReadFloat4();
-    /// read a point from the stream, (x,y,z,1.0)
-    Math::point ReadPoint();
+    /// read a vec2 from the stream
+    Math::vec2 ReadFloat2();
     /// read a vector from the stream, (x,y,z,0.0)
-    Math::vector ReadVector();
-    /// read a matrix44 from the stream
-    Math::matrix44 ReadMatrix44();
+    Math::vec3 ReadVec3();
+    /// read a vec4 from the stream
+    Math::vec4 ReadVec4();
+    /// read a mat4 from the stream
+    Math::mat4 ReadMat4();
     #endif
     /// read a float array from the stream
     Util::Array<float> ReadFloatArray();

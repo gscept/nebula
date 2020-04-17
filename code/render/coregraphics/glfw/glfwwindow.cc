@@ -228,9 +228,9 @@ MouseButtonFunc(const CoreGraphics::WindowId& id, int button, int action, int mo
 	double x, y;
 	glfwGetCursorPos(wnd, &x, &y);
 
-	float2 pos;
+	vec2 pos;
 	pos.set((float)x / float(mode.GetWidth()), (float)y / float(mode.GetHeight()));
-	GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(act, but, float2((float)x, (float)y), pos));
+	GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(act, but, vec2((float)x, (float)y), pos));
 }
 
 //------------------------------------------------------------------------------
@@ -240,8 +240,8 @@ void
 MouseFunc(const CoreGraphics::WindowId& id, double xpos, double ypos)
 {
 	const CoreGraphics::DisplayMode& mode = glfwWindowAllocator.Get<GLFW_DisplayMode>(id.id24);
-	float2 absMousePos((float)xpos, (float)ypos);
-	float2 pos;
+	vec2 absMousePos((float)xpos, (float)ypos);
+	vec2 pos;
 	pos.set((float)xpos / float(mode.GetWidth()), (float)ypos / float(mode.GetHeight()));
 	GLFWDisplayDevice::Instance()->NotifyEventHandlers(DisplayEvent(DisplayEvent::MouseMove, absMousePos, pos));
 }

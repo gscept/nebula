@@ -199,18 +199,18 @@ QueueNameFromQueueType(const QueueType type)
 
 #if !PUBLIC_BUILD
 #define NEBULA_GRAPHICS_DEBUG 1
-#define NEBULA_MARKER_BLUE Math::float4(0.8f, 0.8f, 1.0f, 1.0f)
-#define NEBULA_MARKER_RED Math::float4(1.0f, 0.8f, 0.8f, 1.0f)
-#define NEBULA_MARKER_GREEN Math::float4(0.8f, 1.0f, 0.8f, 1.0f)
-#define NEBULA_MARKER_DARK_GREEN Math::float4(0.6f, 0.8f, 0.6f, 1.0f)
-#define NEBULA_MARKER_DARK_DARK_GREEN Math::float4(0.5f, 0.7f, 0.5f, 1.0f)
-#define NEBULA_MARKER_PINK Math::float4(1.0f, 0.8f, 0.9f, 1.0f)
-#define NEBULA_MARKER_PURPLE Math::float4(0.9f, 0.7f, 0.9f, 1.0f)
-#define NEBULA_MARKER_ORANGE Math::float4(1.0f, 0.9f, 0.8f, 1.0f)
-#define NEBULA_MARKER_TURQOISE Math::float4(0.8f, 0.9f, 1.0f, 1.0f)
-#define NEBULA_MARKER_GRAY Math::float4(0.9f, 0.9f, 0.9f, 1.0f)
-#define NEBULA_MARKER_BLACK Math::float4(0.001f)
-#define NEBULA_MARKER_WHITE Math::float4(1)
+#define NEBULA_MARKER_BLUE Math::vec4(0.8f, 0.8f, 1.0f, 1.0f)
+#define NEBULA_MARKER_RED Math::vec4(1.0f, 0.8f, 0.8f, 1.0f)
+#define NEBULA_MARKER_GREEN Math::vec4(0.8f, 1.0f, 0.8f, 1.0f)
+#define NEBULA_MARKER_DARK_GREEN Math::vec4(0.6f, 0.8f, 0.6f, 1.0f)
+#define NEBULA_MARKER_DARK_DARK_GREEN Math::vec4(0.5f, 0.7f, 0.5f, 1.0f)
+#define NEBULA_MARKER_PINK Math::vec4(1.0f, 0.8f, 0.9f, 1.0f)
+#define NEBULA_MARKER_PURPLE Math::vec4(0.9f, 0.7f, 0.9f, 1.0f)
+#define NEBULA_MARKER_ORANGE Math::vec4(1.0f, 0.9f, 0.8f, 1.0f)
+#define NEBULA_MARKER_TURQOISE Math::vec4(0.8f, 0.9f, 1.0f, 1.0f)
+#define NEBULA_MARKER_GRAY Math::vec4(0.9f, 0.9f, 0.9f, 1.0f)
+#define NEBULA_MARKER_BLACK Math::vec4(0.001f)
+#define NEBULA_MARKER_WHITE Math::vec4(1)
 #endif
 
 //------------------------------------------------------------------------------

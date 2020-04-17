@@ -124,7 +124,7 @@ StreamAnimationPool::LoadFromStream(const Resources::ResourceId id, const Util::
 				animCurve.SetActive(naxCurve->isActive != 0);
 				animCurve.SetStatic(naxCurve->isStatic != 0);
 				animCurve.SetCurveType((CurveType::Code)naxCurve->curveType);
-				animCurve.SetStaticKey(float4(naxCurve->staticKeyX, naxCurve->staticKeyY, naxCurve->staticKeyZ, naxCurve->staticKeyW));
+				animCurve.SetStaticKey(vec4(naxCurve->staticKeyX, naxCurve->staticKeyY, naxCurve->staticKeyZ, naxCurve->staticKeyW));
 			}
 		}
 

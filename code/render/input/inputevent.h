@@ -14,7 +14,7 @@
 #include "input/key.h"
 #include "input/char.h"
 #include "input/mousebutton.h"
-#include "math/float2.h"
+#include "math/vec2.h"
 
 //------------------------------------------------------------------------------
 namespace Input
@@ -73,13 +73,13 @@ public:
     /// get device index
     IndexT GetDeviceIndex() const;
     /// set absolute pixel mouse position
-    void SetAbsMousePos(const Math::float2& p);
+    void SetAbsMousePos(const Math::vec2& p);
     /// get absolute pixel mouse position
-    const Math::float2& GetAbsMousePos() const;
+    const Math::vec2& GetAbsMousePos() const;
     /// set normalized mouse position
-    void SetNormMousePos(const Math::float2& p);
+    void SetNormMousePos(const Math::vec2& p);
     /// get normalized mouse position
-    const Math::float2& GetNormMousePos() const;
+    const Math::vec2& GetNormMousePos() const;
     /// convert type to string
     static const char* TypeToString(Type t);
 
@@ -89,8 +89,8 @@ private:
     Char character;
     IndexT deviceIndex;
     MouseButton::Code mouseButton;
-    Math::float2 absMousePos;
-    Math::float2 normMousePos;
+    Math::vec2 absMousePos;
+    Math::vec2 normMousePos;
 };
 
 //------------------------------------------------------------------------------
@@ -183,7 +183,7 @@ InputEvent::GetMouseButton() const
 /**
 */
 inline void
-InputEvent::SetAbsMousePos(const Math::float2& p)
+InputEvent::SetAbsMousePos(const Math::vec2& p)
 {
     this->absMousePos = p;
 }
@@ -191,7 +191,7 @@ InputEvent::SetAbsMousePos(const Math::float2& p)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::float2&
+inline const Math::vec2&
 InputEvent::GetAbsMousePos() const
 {
     return this->absMousePos;
@@ -201,7 +201,7 @@ InputEvent::GetAbsMousePos() const
 /**
 */
 inline void
-InputEvent::SetNormMousePos(const Math::float2& p)
+InputEvent::SetNormMousePos(const Math::vec2& p)
 {
     this->normMousePos = p;
 }
@@ -209,7 +209,7 @@ InputEvent::SetNormMousePos(const Math::float2& p)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::float2&
+inline const Math::vec2&
 InputEvent::GetNormMousePos() const
 {
     return this->normMousePos;

@@ -1,6 +1,4 @@
 #pragma once
-#ifndef MATH_TRANSFORM44_H
-#define MATH_TRANSFORM44_H
 //------------------------------------------------------------------------------
 /**
     @class Math::transform44
@@ -10,10 +8,9 @@
     (C) 2004 RadonLabs GmbH
 	(C) 2013-2020 Individual contributors, see AUTHORS file
 */
-#include "math/matrix44.h"
-#include "math/vector.h"
-#include "math/point.h"
-#include "math/quaternion.h"
+#include "math/mat4.h"
+#include "math/vec3.h"
+#include "math/quat.h"
 
 //------------------------------------------------------------------------------
 namespace Math
@@ -30,42 +27,42 @@ public:
 	/// write content to unaligned memory through the write cache
 	void storeu(scalar* ptr) const;
     /// set position
-    void setposition(const point& p);
+    void setposition(const vec3& p);
     /// get position
-    const point& getposition() const;
+    const vec3& getposition() const;
     /// set rotate
-    void setrotate(const quaternion& r);
+    void setrotate(const quat& r);
     /// get rotate
-    const quaternion& getrotate() const;
+    const quat& getrotate() const;
     /// set scale
-    void setscale(const vector& s);
+    void setscale(const vec3& s);
     /// get scale
-    const vector& getscale() const;
+    const vec3& getscale() const;
     /// set optional rotate pivot
-    void setrotatepivot(const point& p);
+    void setrotatepivot(const vec3& p);
     /// get optional rotate pivot
-    const point& getrotatepivot() const;
+    const vec3& getrotatepivot() const;
     /// set optional scale pivot
-    void setscalepivot(const point& p);
+    void setscalepivot(const vec3& p);
     /// get optional scale pivot
-    const point& getscalepivot() const;
+    const vec3& getscalepivot() const;
     /// set optional offset matrix
-    void setoffset(const matrix44& m);
+    void setoffset(const mat4& m);
     /// get optional offset matrix
-    const matrix44& getoffset() const;
+    const mat4& getoffset() const;
     /// get resulting 4x4 matrix
-    const matrix44& getmatrix();
+    const mat4& getmatrix();
     /// return true if the transformation matrix is dirty
     bool isdirty() const;
 
 private:
-    point position;
-    quaternion rotate;
-    vector scale;
-    point rotatePivot;
-    point scalePivot;
-    matrix44 offset;
-    matrix44 matrix;
+    vec3 position;
+    quat rotate;
+    vec3 scale;
+    vec3 rotatePivot;
+    vec3 scalePivot;
+    mat4 offset;
+    mat4 matrix;
     bool isDirty;
     bool offsetValid;
 };
@@ -80,7 +77,7 @@ transform44::transform44() :
     scale(1.0f, 1.0f, 1.0f),
     rotatePivot(0.0f, 0.0f, 0.0f),
     scalePivot(0.0f, 0.0f, 0.0f),
-    offset(matrix44::identity()),
+    offset(mat4()),
     isDirty(false),
     offsetValid(false)
 {
@@ -128,7 +125,7 @@ transform44::storeu(scalar* ptr) const
 /**
 */
 inline void
-transform44::setposition(const point& p)
+transform44::setposition(const vec3& p)
 {
 	this->position = p;
 	this->isDirty = true;
@@ -137,7 +134,7 @@ transform44::setposition(const point& p)
 //------------------------------------------------------------------------------
 /**
 */
-inline const point&
+inline const vec3&
 transform44::getposition() const
 {
     return this->position;
@@ -147,7 +144,7 @@ transform44::getposition() const
 /**
 */
 inline void
-transform44::setrotate(const quaternion& r)
+transform44::setrotate(const quat& r)
 {
     this->rotate = r;
     this->isDirty = true;
@@ -156,7 +153,7 @@ transform44::setrotate(const quaternion& r)
 //------------------------------------------------------------------------------
 /**
 */
-inline const quaternion&
+inline const quat&
 transform44::getrotate() const
 {
     return this->rotate;
@@ -166,7 +163,7 @@ transform44::getrotate() const
 /**
 */
 inline void
-transform44::setscale(const vector& s)
+transform44::setscale(const vec3& s)
 {
     this->scale = s;
     this->isDirty = true;
@@ -175,7 +172,7 @@ transform44::setscale(const vector& s)
 //------------------------------------------------------------------------------
 /**
 */
-inline const vector&
+inline const vec3&
 transform44::getscale() const
 {
     return this->scale;
@@ -185,7 +182,7 @@ transform44::getscale() const
 /**
 */
 inline void
-transform44::setrotatepivot(const point& p)
+transform44::setrotatepivot(const vec3& p)
 {
 	this->rotatePivot = p;
     this->isDirty = true;
@@ -194,7 +191,7 @@ transform44::setrotatepivot(const point& p)
 //------------------------------------------------------------------------------
 /**
 */
-inline const point& 
+inline const vec3&
 transform44::getrotatepivot() const
 {
     return this->rotatePivot;
@@ -204,7 +201,7 @@ transform44::getrotatepivot() const
 /**
 */
 inline void
-transform44::setscalepivot(const point& p)
+transform44::setscalepivot(const vec3& p)
 {
     this->scalePivot = p;
     this->isDirty = true;
@@ -213,7 +210,7 @@ transform44::setscalepivot(const point& p)
 //------------------------------------------------------------------------------
 /**
 */
-inline const point&
+inline const vec3&
 transform44::getscalepivot() const
 {
     return this->scalePivot;
@@ -223,7 +220,7 @@ transform44::getscalepivot() const
 /**
 */
 inline void
-transform44::setoffset(const matrix44& m)
+transform44::setoffset(const mat4& m)
 {
     this->offset = m;
     this->offsetValid = true;
@@ -233,7 +230,7 @@ transform44::setoffset(const matrix44& m)
 //------------------------------------------------------------------------------
 /**
 */
-inline const matrix44&
+inline const mat4&
 transform44::getoffset() const
 {
     return this->offset;
@@ -242,16 +239,16 @@ transform44::getoffset() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const matrix44&
+inline const mat4&
 transform44::getmatrix()
 {
     if (this->isDirty)
     {
-        quaternion ident = quaternion::identity();
-        this->matrix = matrix44::transformation(this->scalePivot, ident, this->scale, this->rotatePivot, this->rotate, this->position);
+        quat ident;
+        this->matrix = transformation(this->scalePivot, ident, this->scale, this->rotatePivot, this->rotate, this->position);
         if (this->offsetValid)
         {
-            this->matrix = matrix44::multiply(this->matrix, this->offset);
+            this->matrix = this->matrix * this->offset;
         }
         this->isDirty = false;
     }
@@ -269,7 +266,6 @@ transform44::isdirty() const
 
 } // namespace Math
 //------------------------------------------------------------------------------
-#endif
 
     
     

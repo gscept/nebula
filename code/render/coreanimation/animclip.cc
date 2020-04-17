@@ -149,7 +149,7 @@ AnimClip::PrecomputeKeySliceValues()
             {
                 this->keySliceFirstKeyIndex = curve.GetFirstKeyIndex();
             }
-            this->keySliceByteSize += sizeof(float4);
+            this->keySliceByteSize += sizeof(vec4);
         }
     }
 }

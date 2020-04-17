@@ -49,7 +49,7 @@ public:
 		IndexT updateFrame;
 		bool updateThisFrame;
 		Util::HashTable<Util::StringAtom, Models::ModelNode::Instance*, 8> activeSkinInstances;
-		const Util::FixedArray<Math::matrix44>* joints;
+		const Util::FixedArray<Math::mat4>* joints;
 
 		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 		void ApplySkin(const Util::StringAtom& skinName);

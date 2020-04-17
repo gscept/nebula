@@ -35,7 +35,7 @@ RenderShape::RenderShape() :
 //------------------------------------------------------------------------------
 /**
 */
-RenderShape::RenderShape(Type shapeType_, RenderFlag depthFlag_, const matrix44& modelTransform_, const float4& color_) :
+RenderShape::RenderShape(Type shapeType_, RenderFlag depthFlag_, const mat4& modelTransform_, const vec4& color_) :
     shapeType(shapeType_),
 	depthFlag(depthFlag_),
     modelTransform(modelTransform_),
@@ -56,7 +56,7 @@ RenderShape::RenderShape(Type shapeType_, RenderFlag depthFlag_, const matrix44&
 /**
 */
 void
-RenderShape::SetupSimpleShape(Type shapeType_, RenderFlag depthFlag_, const matrix44& modelTransform_, const float4& color_)
+RenderShape::SetupSimpleShape(Type shapeType_, RenderFlag depthFlag_, const mat4& modelTransform_, const vec4& color_)
 {
     n_assert(!this->IsValid());
     n_assert(!((Primitives == shapeType) || (IndexedPrimitives == shapeType)));
@@ -70,7 +70,7 @@ RenderShape::SetupSimpleShape(Type shapeType_, RenderFlag depthFlag_, const matr
 /**
 */
 void
-RenderShape::SetupPrimitives(const Math::matrix44& modelTransform_, PrimitiveTopology::Code topology_, SizeT numPrimitives_, const RenderShape::RenderShapeVertex* vertices_, const Math::float4& color_, RenderFlag depthFlag_)
+RenderShape::SetupPrimitives(const Math::mat4& modelTransform_, PrimitiveTopology::Code topology_, SizeT numPrimitives_, const RenderShape::RenderShapeVertex* vertices_, const Math::vec4& color_, RenderFlag depthFlag_)
 {
     n_assert(!this->IsValid());
     
@@ -98,7 +98,7 @@ RenderShape::SetupPrimitives(const Math::matrix44& modelTransform_, PrimitiveTop
 /**
 */
 void
-RenderShape::SetupIndexedPrimitives(const Math::matrix44& modelTransform_, PrimitiveTopology::Code topology_, SizeT numPrimitives_, const RenderShape::RenderShapeVertex* vertices_, SizeT numVertices_, const void* indices_, IndexType::Code indexType_, const Math::float4& color_, RenderFlag depthFlag_)
+RenderShape::SetupIndexedPrimitives(const Math::mat4& modelTransform_, PrimitiveTopology::Code topology_, SizeT numPrimitives_, const RenderShape::RenderShapeVertex* vertices_, SizeT numVertices_, const void* indices_, IndexType::Code indexType_, const Math::vec4& color_, RenderFlag depthFlag_)
 {
     n_assert(!this->IsValid());
 
@@ -133,7 +133,7 @@ RenderShape::SetupIndexedPrimitives(const Math::matrix44& modelTransform_, Primi
 /**
 */
 void 
-RenderShape::SetupMesh(const Math::matrix44& modelTransform, const MeshId mesh, const IndexT groupIndex, const Math::float4& color, RenderFlag depthFlag)
+RenderShape::SetupMesh(const Math::mat4& modelTransform, const MeshId mesh, const IndexT groupIndex, const Math::vec4& color, RenderFlag depthFlag)
 {
 	n_assert(!this->IsValid());
 	n_assert(mesh != MeshId::Invalid());

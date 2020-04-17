@@ -76,11 +76,11 @@ ParticleSystemNode::OnFinishedLoading()
 	this->surface = Materials::surfacePool->GetId(this->surRes);
 
 	float activityDist = this->emitterAttrs.GetFloat(EmitterAttrs::ActivityDistance) * 0.5f;
-	this->boundingBox.set(Math::point(0).vec, Math::vector(0).vec);
+	this->boundingBox.set(Math::point(0), Math::vector(0));
 
     // calculate bounding box using activity distance
 	Math::bbox& box = modelPool->GetModelBoundingBox(this->model);
-    this->boundingBox.set(box.center().vec, Math::point(activityDist, activityDist, activityDist).vec);
+    this->boundingBox.set(box.center(), Math::vector(activityDist, activityDist, activityDist));
 	box.extend(this->boundingBox);
 
 	// setup sample buffer and emitter mesh
@@ -275,7 +275,7 @@ ParticleSystemNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag
 	}
 	else if (FourCC('WIDR') == fourcc)
 	{
-		this->emitterAttrs.SetFloat4(EmitterAttrs::WindDirection, reader->ReadFloat4());	
+		this->emitterAttrs.SetVec4(EmitterAttrs::WindDirection, reader->ReadVec4());	
 	}
     else if (FourCC('MESH') == fourcc)
     {
@@ -326,12 +326,12 @@ ParticleSystemNode::Instance::Update()
 	// apply transforms
 	if (block.Billboard)
 	{
-		const Math::matrix44 billboardTransform = Math::matrix44::multiply(this->modelTransform, CoreGraphics::TransformDevice::Instance()->GetInvViewTransform());
-		Math::matrix44::storeu(billboardTransform, block.EmitterTransform);
+		const Math::mat4 billboardTransform = this->modelTransform * CoreGraphics::TransformDevice::Instance()->GetInvViewTransform();
+        billboardTransform.storeu(block.EmitterTransform);
 	}
 	else
 	{
-		Math::matrix44::storeu(this->modelTransform, block.EmitterTransform);
+        this->modelTransform.storeu(block.EmitterTransform);
 	}
 
 	// update parameters

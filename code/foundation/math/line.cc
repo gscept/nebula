@@ -17,17 +17,17 @@ namespace Math
     @todo: Untested! Replace with simpler code.
 */
 bool
-line::intersect(const line& l, vec3& pa, vec3& pb) const
+line::intersect(const line& l, point& pa, point& pb) const
 {
     const scalar EPS = 2.22e-16f;
-    vec3 p1 = this->b;
-    vec3 p2 = this->pointat(10.0f);
-    vec3 p3 = l.b;
-    vec3 p4 = l.pointat(10.0f);
+    point p1 = this->b;
+    point p2 = this->pointat(10.0f);
+    point p3 = l.b;
+    point p4 = l.pointat(10.0f);
 
-    vec3 p13 = p1 - p3;
-    vec3 p43 = p4 - p3;
-    vec3 p21 = p2 - p1;
+    vector p13 = p1 - p3;
+    vector p43 = p4 - p3;
+    vector p21 = p2 - p1;
     if (Math::lengthsq(p43) < EPS) return false;
     if (Math::lengthsq(p21) < EPS) return false;
 
@@ -54,12 +54,12 @@ line::intersect(const line& l, vec3& pa, vec3& pb) const
 /**
 */
 Math::scalar 
-line::distance( const line& l, vec3& pa, vec3& pb ) const
+line::distance( const line& l, point& pa, point& pb ) const
 {
     const scalar EPS = 2.22e-16f;
-    vec3 u = this->pointat(10) - this->b;
-    vec3 v = l.pointat(10) - l.b;
-    vec3 w = this->b - l.b;
+    vector u = this->pointat(10) - this->b;
+    vector v = l.pointat(10) - l.b;
+    vector w = this->b - l.b;
 
     float a = dot(u, u);
     float b = dot(u, v);
@@ -84,7 +84,7 @@ line::distance( const line& l, vec3& pa, vec3& pb ) const
     pa = this->pointat(sc);
     pb = l.pointat(tc);
 
-    vec3 dp = w + (u * sc) - (v * tc);
+    vector dp = w + (u * sc) - (v * tc);
     return Math::length(dp);
 }
 

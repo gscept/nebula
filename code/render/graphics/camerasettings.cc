@@ -38,14 +38,14 @@ CameraSettings::SetupPerspectiveFov(float fov_, float aspect_, float zNear_, flo
     this->aspect  = aspect_;
 
 #if PROJECTION_HANDEDNESS_LH
-	this->projMatrix = matrix44::perspfovlh(this->fov, this->aspect, this->zNear, this->zFar);
+	this->projMatrix = perspfovlh(this->fov, this->aspect, this->zNear, this->zFar);
 #else
-	this->projMatrix = matrix44::perspfovrh(this->fov, this->aspect, this->zNear, this->zFar);
+	this->projMatrix = perspfovrh(this->fov, this->aspect, this->zNear, this->zFar);
 #endif
-    this->invProjMatrix = matrix44::inverse(this->projMatrix);
+    this->invProjMatrix = inverse(this->projMatrix);
 
-    this->nearWidth  = 2.0f * this->zNear / this->projMatrix.getrow0().x();
-    this->nearHeight = 2.0f * this->zNear / this->projMatrix.getrow1().y();
+    this->nearWidth  = 2.0f * this->zNear / this->projMatrix.r[0].x;
+    this->nearHeight = 2.0f * this->zNear / this->projMatrix.r[1].y;
     this->farWidth   = (this->nearWidth / this->zNear) * this->zFar;
     this->farHeight  = (this->nearHeight / this->zNear) * this->zFar;
     float yLen = Math::n_tan(0.5f * this->fov);
@@ -74,11 +74,11 @@ CameraSettings::SetupOrthogonal(float w, float h, float zNear_, float zFar_)
     this->focalLength.set(1.0f, 1.0f);
 
 #if PROJECTION_HANDEDNESS_LH
-	this->projMatrix = matrix44::ortholh(w, h, this->zNear, this->zFar);
+	this->projMatrix = ortholh(w, h, this->zNear, this->zFar);
 #else
-	this->projMatrix = matrix44::orthorh(w, h, this->zNear, this->zFar);
+	this->projMatrix = orthorh(w, h, this->zNear, this->zFar);
 #endif
-    this->invProjMatrix = matrix44::inverse(this->projMatrix);
+    this->invProjMatrix = inverse(this->projMatrix);
 }
 
 } // namespace Shared

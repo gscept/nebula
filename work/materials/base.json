@@ -23,7 +23,7 @@
 					},
 					{
 						"name": "MatAlbedoIntensity",
-						"type": "float4",
+						"type": "vec4",
 						"defaultValue": [
 							1.0,
 							1.0,
@@ -47,7 +47,7 @@
 					},
 					{
 						"name": "MatSpecularIntensity",
-						"type": "float4",
+						"type": "vec4",
 						"defaultValue": [
 							0.0,
 							0.0,
@@ -147,7 +147,7 @@
 					},
 					{
 						"name": "AnimationDirection",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							0.0,
 							0.0
@@ -1010,7 +1010,7 @@
 					},
 					{
 						"name": "WindDirection",
-						"type": "float4",
+						"type": "vec4",
 						"defaultValue": [
 							0.01,
 							0.0,
@@ -1077,7 +1077,7 @@
 					},
 					{
 						"name": "WindDirection",
-						"type": "float4",
+						"type": "vec4",
 						"defaultValue": [
 							0.01,
 							0.0,
@@ -1447,7 +1447,7 @@
 				"Param": [
 					{
 						"name": "EmitterTransform",
-						"type": "matrix44",
+						"type": "mat4",
 						"system": true,
 						"defaultValue": [
 							1.0,
@@ -1470,7 +1470,7 @@
 					},
 					{
 						"name": "BBoxCenter",
-						"type": "float4",
+						"type": "vec4",
 						"system": true,
 						"defaultValue": [
 							1.0,
@@ -1481,7 +1481,7 @@
 					},
 					{
 						"name": "BBoxSize",
-						"type": "float4",
+						"type": "vec4",
 						"system": true,
 						"defaultValue": [
 							1.0,
@@ -1625,7 +1625,7 @@
 					},
 					{
 						"name": "UVAnim1",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							0.0,
 							0.0
@@ -1637,7 +1637,7 @@
 					},
 					{
 						"name": "UVAnim2",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							0.0,
 							0.0
@@ -1685,7 +1685,7 @@
 					},
 					{
 						"name": "UVAnim1",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							0.0,
 							0.0
@@ -1697,7 +1697,7 @@
 					},
 					{
 						"name": "UVAnim2",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							0.0,
 							0.0
@@ -1709,7 +1709,7 @@
 					},
 					{
 						"name": "UVAnim3",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							0.0,
 							0.0
@@ -1757,7 +1757,7 @@
 					},
 					{
 						"name": "UVAnim1",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							0.0,
 							0.0
@@ -1769,7 +1769,7 @@
 					},
 					{
 						"name": "UVAnim2",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							0.0,
 							0.0
@@ -1781,7 +1781,7 @@
 					},
 					{
 						"name": "UVAnim3",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							0.0,
 							0.0
@@ -1793,7 +1793,7 @@
 					},
 					{
 						"name": "UVAnim4",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							0.0,
 							0.0
@@ -1877,7 +1877,7 @@
 				"Param": [
 					{
 						"name": "WindDirection",
-						"type": "float4",
+						"type": "vec4",
 						"defaultValue": [
 							0.01,
 							0.0,
@@ -1950,7 +1950,7 @@
 					},
 					{
 						"name": "TileSize",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							1.0,
 							1.0
@@ -1967,7 +1967,7 @@
 					},
 					{
 						"name": "FogDarkColor",
-						"type": "float4",
+						"type": "vec4",
 						"defaultValue": [
 							0.6,
 							0.6,
@@ -1979,7 +1979,7 @@
 					},
 					{
 						"name": "FogBrightColor",
-						"type": "float4",
+						"type": "vec4",
 						"defaultValue": [
 							0.6,
 							0.6,
@@ -2007,7 +2007,7 @@
 					},
 					{
 						"name": "WaveScale",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							1.0,
 							1.0
@@ -2024,7 +2024,7 @@
 					},
 					{
 						"name": "WaveMicroScale",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							225.0,
 							225.0
@@ -2041,7 +2041,7 @@
 					},
 					{
 						"name": "WaterColor",
-						"type": "float4",
+						"type": "vec4",
 						"defaultValue": [
 							0.0,
 							0.1,
@@ -2053,7 +2053,7 @@
 					},
 					{
 						"name": "WaterScatterColor",
-						"type": "float4",
+						"type": "vec4",
 						"defaultValue": [
 							0.3,
 							0.7,
@@ -2065,7 +2065,7 @@
 					},
 					{
 						"name": "WaterSpecular",
-						"type": "float4",
+						"type": "vec4",
 						"defaultValue": [
 							1.0,
 							1.0,
@@ -2077,7 +2077,7 @@
 					},
 					{
 						"name": "WaterColorIntensity",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							0.1,
 							0.2
@@ -2086,12 +2086,12 @@
 					},
 					{
 						"name": "GlobalLightColor",
-						"type": "float4",
+						"type": "vec4",
 						"system": true
 					},
 					{
 						"name": "GlobalLightDir",
-						"type": "float4",
+						"type": "vec4",
 						"system": true
 					},
 					{
@@ -2139,7 +2139,7 @@
 					},
 					{
 						"name": "TileSize",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							1.0,
 							1.0
@@ -2164,7 +2164,7 @@
 					},
 					{
 						"name": "FogDarkColor",
-						"type": "float4",
+						"type": "vec4",
 						"defaultValue": [
 							0.6,
 							0.6,
@@ -2176,7 +2176,7 @@
 					},
 					{
 						"name": "FogBrightColor",
-						"type": "float4",
+						"type": "vec4",
 						"defaultValue": [
 							0.6,
 							0.6,
@@ -2212,7 +2212,7 @@
 					},
 					{
 						"name": "WaveScale",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							1.0,
 							1.0
@@ -2229,7 +2229,7 @@
 					},
 					{
 						"name": "WaveMicroScale",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							225.0,
 							225.0
@@ -2246,7 +2246,7 @@
 					},
 					{
 						"name": "WaterColor",
-						"type": "float4",
+						"type": "vec4",
 						"defaultValue": [
 							0.0,
 							0.1,
@@ -2258,7 +2258,7 @@
 					},
 					{
 						"name": "WaterScatterColor",
-						"type": "float4",
+						"type": "vec4",
 						"defaultValue": [
 							0.3,
 							0.7,
@@ -2270,7 +2270,7 @@
 					},
 					{
 						"name": "WaterSpecular",
-						"type": "float4",
+						"type": "vec4",
 						"defaultValue": [
 							1.0,
 							1.0,
@@ -2282,7 +2282,7 @@
 					},
 					{
 						"name": "WaterColorIntensity",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							0.1,
 							0.2
@@ -2291,12 +2291,12 @@
 					},
 					{
 						"name": "GlobalLightColor",
-						"type": "float4",
+						"type": "vec4",
 						"system": true
 					},
 					{
 						"name": "GlobalLightDir",
-						"type": "float4",
+						"type": "vec4",
 						"system": true
 					},
 					{
@@ -2341,7 +2341,7 @@
 					},
 					{
 						"name": "Velocity",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							0.0,
 							0.0
@@ -2349,7 +2349,7 @@
 					},
 					{
 						"name": "FogDistances",
-						"type": "float2",
+						"type": "vec2",
 						"defaultValue": [
 							0.0,
 							50.0
@@ -2357,7 +2357,7 @@
 					},
 					{
 						"name": "FogColor",
-						"type": "float4",
+						"type": "vec4",
 						"defaultValue": [
 							0.5,
 							0.5,
@@ -2492,7 +2492,7 @@
 					},
 					{
 						"name": "Color",
-						"type": "float4",
+						"type": "vec4",
 						"defaultValue": [
 							1,
 							1,

@@ -5,32 +5,21 @@
 
     A quat class using SSE
 
-    (C) 2007 Radon Labs GmbH
-    (C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "math/scalar.h"
-#include "math2/vec4.h"
+#include "math/vec4.h"
 
 //------------------------------------------------------------------------------
 namespace Math
 {
 struct quat;
 
-__forceinline quat slerp(const quat& q1, const quat& q2, scalar t);
-
-#if (defined(_XM_VMX128_INTRINSICS_) && !defined(_XM_NO_INTRINSICS_))
-typedef const quat  __quatArg;
-#else
-// win32 VC++ does not support passing aligned objects as value so far
-// here is a bug-report at microsoft saying so:
-// http://connect.microsoft.com/VisualStudio/feedback/ViewFeedback.aspx?FeedbackID=334581
-typedef const quat& __quatArg;
-#endif
-
+quat slerp(const quat& q1, const quat& q2, scalar t);
 
 quat rotationmatrix(const mat4& m);
-void to_euler(const quat& q, float4& outangles);
+void to_euler(const quat& q, vec4& outangles);
 
 struct NEBULA_ALIGN16 quat
 {
@@ -39,7 +28,7 @@ public:
     quat();
     /// construct from components
     quat(scalar x, scalar y, scalar z, scalar w);
-    /// construct from float4
+    /// construct from vec4
     quat(vec4 const &rhs);
     /// copy constructor
     /// !!!! copy constructor forbidden, otherwise passing point's to a function
@@ -70,10 +59,10 @@ public:
 
     /// set content
     void set(scalar x, scalar y, scalar z, scalar w);
-    /// set from float4
+    /// set from vec4
     void set(vec4 const &f4);
 
-    friend class matrix44;
+    friend class mat4;
 	union
 	{
 		__m128 vec;
@@ -88,9 +77,9 @@ public:
 /**
 */
 __forceinline
-quat::quat()
+quat::quat()	
 {
-    // empty
+	this->vec = _mm_setr_ps(0, 0, 0, 1);
 }
 
 //------------------------------------------------------------------------------
@@ -412,9 +401,9 @@ normalize(const quat& q)
 	quat from rotation axis + angle. Axis has to be normalized
 */
 __forceinline quat
-rotationaxis(const vec4& axis, scalar angle)
+rotatioquataxis(const vec3& axis, scalar angle)
 {
-	n_assert2(n_nearequal(length3(axis), 1.0f, 0.001f), "axis needs to be normalized");
+	n_assert2(n_nearequal(length(axis), 1.0f, 0.001f), "axis needs to be normalized");
 
 	float sinangle = n_sin(0.5f * angle);
 	float cosangle = n_cos(0.5f * angle);

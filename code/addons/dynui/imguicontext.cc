@@ -50,9 +50,9 @@ ImguiContext::ImguiDrawFunction()
 
 	// create orthogonal matrix
 #if __VULKAN__
-	matrix44 proj = matrix44::orthooffcenterrh(0.0f, io.DisplaySize.x, 0.0f, io.DisplaySize.y, -1.0f, +1.0f);
+	mat4 proj = orthooffcenterrh(0.0f, io.DisplaySize.x, 0.0f, io.DisplaySize.y, -1.0f, +1.0f);
 #else
-	matrix44 proj = matrix44::orthooffcenterrh(0.0f, io.DisplaySize.x, io.DisplaySize.y, 0.0f, -1.0f, +1.0f);
+	mat4 proj = orthooffcenterrh(0.0f, io.DisplaySize.x, io.DisplaySize.y, 0.0f, -1.0f, +1.0f);
 #endif
 
 	// setup device
@@ -477,7 +477,7 @@ ImguiContext::HandleInput(const Input::InputEvent& event)
 		return io.WantTextInput;
 	}
 	case InputEvent::MouseMove:
-		io.MousePos = ImVec2(event.GetAbsMousePos().x(), event.GetAbsMousePos().y());
+		io.MousePos = ImVec2(event.GetAbsMousePos().x, event.GetAbsMousePos().y);
 		return io.WantCaptureMouse;
 	case InputEvent::MouseButtonDown:
 		io.MouseDown[event.GetMouseButton()] = true;

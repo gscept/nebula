@@ -25,7 +25,7 @@ struct VkPassLoadInfo
 
 	// we need these stored for resizing
 	Util::Array<CoreGraphics::TextureId> colorAttachments;
-	Util::Array<Math::float4> colorAttachmentClears;
+	Util::Array<Math::vec4> colorAttachmentClears;
 	CoreGraphics::TextureId depthStencilAttachment;
     Util::Array<CoreGraphics::AttachmentFlagBits> colorAttachmentFlags;
     Util::Array<CoreGraphics::Subpass> subpasses;

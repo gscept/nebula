@@ -728,7 +728,7 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
 		uint flags = 0;
 		if (clear != nullptr)
 		{
-			Math::float4 clearValue;
+			Math::vec4 clearValue;
 			n_assert(clear->size <= 4);
 			uint j;
 			for (j = 0; j < clear->size; j++)
@@ -739,7 +739,7 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
 			flags |= Clear;
 		}
 		else
-			pass.colorAttachmentClears.Append(Math::float4(1)); // we set the clear to 1, but the flag is not to clear...
+			pass.colorAttachmentClears.Append(Math::vec4(1)); // we set the clear to 1, but the flag is not to clear...
 
 		// set if attachment should store at the end of the pass
 		JzonValue* store = jzon_get(cur, "store");
@@ -1109,13 +1109,13 @@ FrameScriptLoader::ParseShaderVariables(
 			ConstantBufferUpdate(cbo, valStr.AsFloat(), bind);
 			break;
 		case VectorVariableType:
-			ConstantBufferUpdate(cbo, valStr.AsFloat4(), bind);
+			ConstantBufferUpdate(cbo, valStr.AsVec4(), bind);
 			break;
 		case Vector2VariableType:
-			ConstantBufferUpdate(cbo, valStr.AsFloat2(), bind);
+			ConstantBufferUpdate(cbo, valStr.AsVec2(), bind);
 			break;
 		case MatrixVariableType:
-			ConstantBufferUpdate(cbo, valStr.AsMatrix44(), bind);
+			ConstantBufferUpdate(cbo, valStr.AsMat4(), bind);
 			break;
 		case BoolVariableType:
 			ConstantBufferUpdate(cbo, valStr.AsBool(), bind);

@@ -10,7 +10,7 @@
 */
 #include "core/types.h"
 #include "util/string.h"
-#include "math/quaternion.h"
+#include "math/quat.h"
 
 namespace Characters
 {
@@ -34,9 +34,9 @@ struct Nsk3Header
 struct Nsk3Joint
 {
 	Util::String name;
-	Math::float4 translation;
-	Math::quaternion rotation;
-	Math::float4 scale;
+	Math::vec4 translation;
+	Math::quat rotation;
+	Math::vec4 scale;
 	int parent;
 	int index;
 };

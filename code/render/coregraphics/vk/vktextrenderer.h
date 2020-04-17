@@ -23,9 +23,9 @@ public:
 
 	struct TextElementVertex
 	{
-		Math::float2 vertex;
-		Math::float2 uv;
-		Math::float4 color;
+		Math::vec2 vertex;
+		Math::vec2 uv;
+		Math::vec4 color;
 	};
 
 	/// constructor
@@ -48,7 +48,7 @@ private:
 	void Draw(TextElementVertex* buffer, SizeT numChars);
 
 	/// helper function which moves vertex into proper position
-	Math::float2 TransformTextVertex(const Math::float2& pos, const Math::float2& offset, const Math::float2& scale);
+	Math::vec2 TransformTextVertex(const Math::vec2& pos, const Math::vec2& offset, const Math::vec2& scale);
 
 	// define tff buffer
 	unsigned char* ttf_buffer;

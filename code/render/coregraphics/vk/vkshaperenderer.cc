@@ -224,7 +224,7 @@ VkShapeRenderer::DrawShapes()
 /**
 */
 void
-VkShapeRenderer::DrawSimpleShape(const Math::matrix44& modelTransform, CoreGraphics::RenderShape::Type shapeType, const Math::float4& color)
+VkShapeRenderer::DrawSimpleShape(const Math::mat4& modelTransform, CoreGraphics::RenderShape::Type shapeType, const Math::vec4& color)
 {
 	n_assert(this->shapeMeshResources[shapeType] != ResourceId::Invalid());
 	n_assert(shapeType < RenderShape::NumShapeTypes);
@@ -251,7 +251,7 @@ VkShapeRenderer::DrawSimpleShape(const Math::matrix44& modelTransform, CoreGraph
 /**
 */
 void
-VkShapeRenderer::DrawMesh(const Math::matrix44& modelTransform, const CoreGraphics::MeshId mesh, const Math::float4& color)
+VkShapeRenderer::DrawMesh(const Math::mat4& modelTransform, const CoreGraphics::MeshId mesh, const Math::vec4& color)
 {
 	n_assert(mesh != MeshId::Invalid());
 	n_assert(CoreGraphics::IsInBeginFrame());
@@ -281,7 +281,7 @@ VkShapeRenderer::DrawMesh(const Math::matrix44& modelTransform, const CoreGraphi
 /**
 */
 void
-VkShapeRenderer::DrawPrimitives(const Math::matrix44& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numPrimitives, const void* vertices, SizeT vertexWidth, const Math::float4& color)
+VkShapeRenderer::DrawPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numPrimitives, const void* vertices, SizeT vertexWidth, const Math::vec4& color)
 {
 	n_assert(0 != vertices);
 	n_assert(vertexWidth <= MaxVertexWidth);
@@ -308,7 +308,7 @@ VkShapeRenderer::DrawPrimitives(const Math::matrix44& modelTransform, CoreGraphi
 /**
 */
 void
-VkShapeRenderer::DrawIndexedPrimitives(const Math::matrix44& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numPrimitives, const void* vertices, SizeT numVertices, SizeT vertexWidth, const void* indices, CoreGraphics::IndexType::Code indexType, const Math::float4& color)
+VkShapeRenderer::DrawIndexedPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numPrimitives, const void* vertices, SizeT numVertices, SizeT vertexWidth, const void* indices, CoreGraphics::IndexType::Code indexType, const Math::vec4& color)
 {
 	n_assert(0 != vertices);
 	n_assert(0 != indices);
@@ -356,8 +356,8 @@ VkShapeRenderer::DrawBufferedPrimitives()
 		for (i = 0; i < this->unindexed[j].primitives.Size(); i++)
 		{
 			const CoreGraphics::PrimitiveGroup& group = this->unindexed[j].primitives[i];
-			const Math::matrix44& modelTransform = this->unindexed[j].transforms[i];
-			const Math::float4& color = this->unindexed[j].colors[i];
+			const Math::mat4& modelTransform = this->unindexed[j].transforms[i];
+			const Math::vec4& color = this->unindexed[j].colors[i];
 
 			CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
 			CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
@@ -389,8 +389,8 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives()
 		for (i = 0; i < this->indexed[j].primitives.Size(); i++)
 		{
 			const CoreGraphics::PrimitiveGroup& group = this->indexed[j].primitives[i];
-			const Math::matrix44& modelTransform = this->indexed[j].transforms[i];
-			const Math::float4& color = this->indexed[j].colors[i];
+			const Math::mat4& modelTransform = this->indexed[j].transforms[i];
+			const Math::vec4& color = this->indexed[j].colors[i];
 
 			CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
 			CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);

@@ -21,8 +21,8 @@
 */
 #include "core/types.h"
 #if !__OSX__
-#include "math/float4.h"
-#include "math/matrix44.h"
+#include "math/vec4.h"
+#include "math/mat4.h"
 #endif
 
 //------------------------------------------------------------------------------
@@ -574,14 +574,14 @@ ByteOrder::Convert<double>(double val) const
 /**
 */
 template<> __forceinline void
-ByteOrder::ConvertInPlace<Math::float4>(Type fromByteOrder, Type toByteOrder, Math::float4& val)
+ByteOrder::ConvertInPlace<Math::vec4>(Type fromByteOrder, Type toByteOrder, Math::vec4& val)
 {
     if (fromByteOrder != toByteOrder)
     {
-        ConvertInPlace<float>(fromByteOrder, toByteOrder, val.x());
-        ConvertInPlace<float>(fromByteOrder, toByteOrder, val.y());
-        ConvertInPlace<float>(fromByteOrder, toByteOrder, val.z());
-        ConvertInPlace<float>(fromByteOrder, toByteOrder, val.w());
+        ConvertInPlace<float>(fromByteOrder, toByteOrder, val.x);
+        ConvertInPlace<float>(fromByteOrder, toByteOrder, val.y);
+        ConvertInPlace<float>(fromByteOrder, toByteOrder, val.z);
+        ConvertInPlace<float>(fromByteOrder, toByteOrder, val.w);
     }
 }
 
@@ -589,14 +589,14 @@ ByteOrder::ConvertInPlace<Math::float4>(Type fromByteOrder, Type toByteOrder, Ma
 /**
 */
 template<> __forceinline void
-ByteOrder::ConvertInPlace<Math::float4>(Math::float4& val) const
+ByteOrder::ConvertInPlace<Math::vec4>(Math::vec4& val) const
 {
     if (this->from != this->to)
     {
-        ConvertInPlace<float>(val.x());
-        ConvertInPlace<float>(val.y());
-        ConvertInPlace<float>(val.z());
-        ConvertInPlace<float>(val.w());
+        ConvertInPlace<float>(val.x);
+        ConvertInPlace<float>(val.y);
+        ConvertInPlace<float>(val.z);
+        ConvertInPlace<float>(val.w);
     }
 }
 
@@ -604,22 +604,22 @@ ByteOrder::ConvertInPlace<Math::float4>(Math::float4& val) const
 /**
 */
 template<> __forceinline void
-ByteOrder::ConvertInPlace<Math::matrix44>(Type fromByteOrder, Type toByteOrder, Math::matrix44& val)
+ByteOrder::ConvertInPlace<Math::mat4>(Type fromByteOrder, Type toByteOrder, Math::mat4& val)
 {
     if (fromByteOrder != toByteOrder)
     {
-        Math::float4 row0 = val.getrow0();
-        Math::float4 row1 = val.getrow1();
-        Math::float4 row2 = val.getrow2();
-        Math::float4 row3 = val.getrow3();
-        ConvertInPlace<Math::float4>(fromByteOrder, toByteOrder, row0);
-        ConvertInPlace<Math::float4>(fromByteOrder, toByteOrder, row1);
-        ConvertInPlace<Math::float4>(fromByteOrder, toByteOrder, row2);
-        ConvertInPlace<Math::float4>(fromByteOrder, toByteOrder, row3);
-        val.setrow0(row0);
-        val.setrow1(row1);
-        val.setrow2(row2);
-        val.setrow3(row3);
+        Math::vec4 row0 = val.r[Math::ROW_0];
+        Math::vec4 row1 = val.r[Math::ROW_1];
+        Math::vec4 row2 = val.r[Math::ROW_2];
+        Math::vec4 row3 = val.r[Math::ROW_3];
+        ConvertInPlace<Math::vec4>(fromByteOrder, toByteOrder, row0);
+        ConvertInPlace<Math::vec4>(fromByteOrder, toByteOrder, row1);
+        ConvertInPlace<Math::vec4>(fromByteOrder, toByteOrder, row2);
+        ConvertInPlace<Math::vec4>(fromByteOrder, toByteOrder, row3);
+        val.r[Math::ROW_0] = row0;
+        val.r[Math::ROW_1] = row1;
+        val.r[Math::ROW_2] = row2;
+        val.r[Math::ROW_3] = row3;
     }
 }
 
@@ -627,22 +627,22 @@ ByteOrder::ConvertInPlace<Math::matrix44>(Type fromByteOrder, Type toByteOrder, 
 /**
 */
 template<> __forceinline void
-ByteOrder::ConvertInPlace<Math::matrix44>(Math::matrix44& val) const
+ByteOrder::ConvertInPlace<Math::mat4>(Math::mat4& val) const
 {
     if (this->from != this->to)
     {
-        Math::float4 row0 = val.getrow0();
-        Math::float4 row1 = val.getrow1();
-        Math::float4 row2 = val.getrow2();
-        Math::float4 row3 = val.getrow3();
-        ConvertInPlace<Math::float4>(row0);
-        ConvertInPlace<Math::float4>(row1);
-        ConvertInPlace<Math::float4>(row2);
-        ConvertInPlace<Math::float4>(row3);
-        val.setrow0(row0);
-        val.setrow1(row1);
-        val.setrow2(row2);
-        val.setrow3(row3);
+        Math::vec4 row0 = val.r[Math::ROW_0];
+        Math::vec4 row1 = val.r[Math::ROW_1];
+        Math::vec4 row2 = val.r[Math::ROW_2];
+        Math::vec4 row3 = val.r[Math::ROW_3];
+        ConvertInPlace<Math::vec4>(row0);
+        ConvertInPlace<Math::vec4>(row1);
+        ConvertInPlace<Math::vec4>(row2);
+        ConvertInPlace<Math::vec4>(row3);
+        val.r[Math::ROW_0] = row0;
+        val.r[Math::ROW_1] = row1;
+        val.r[Math::ROW_2] = row2;
+        val.r[Math::ROW_3] = row3;
     }
 }
 #endif // __OSX__

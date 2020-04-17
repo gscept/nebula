@@ -54,8 +54,8 @@ enum ShaderConstantType
 	UnknownVariableType,
 	IntVariableType,
 	FloatVariableType,
-	VectorVariableType,		// float4
-	Vector2VariableType,	// float2
+	VectorVariableType,		// vec4
+	Vector2VariableType,	// vec2
 	MatrixVariableType,
 	BoolVariableType,
 	TextureVariableType,

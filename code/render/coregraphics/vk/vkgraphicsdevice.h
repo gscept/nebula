@@ -90,7 +90,7 @@ void SetVkViewports(VkViewport* viewports, SizeT num);
 void SetVkScissorRects(VkRect2D* scissors, SizeT num);
 
 /// begin command buffer marker (directly on vkcommandbuffer)
-void CommandBufferBeginMarker(VkCommandBuffer buf, const Math::float4& color, const char* name);
+void CommandBufferBeginMarker(VkCommandBuffer buf, const Math::vec4& color, const char* name);
 /// end command buffer marker (directly on vkcommandbuffer)
 void CommandBufferEndMarker(VkCommandBuffer buf);
 

@@ -8,8 +8,8 @@
     (C) 2004 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
-#include "math2/vec3.h"
-#include "math2/mat4.h"
+#include "math/vec3.h"
+#include "math/mat4.h"
 #include "math/bbox.h"
 #include "math/rectangle.h"
 #include "math/clipstatus.h"
@@ -24,13 +24,13 @@ public:
     /// default constructor
     sphere();
     /// pos/radius constructor
-    sphere(const vec3& _p, scalar _r);
+    sphere(const point& _p, scalar _r);
     /// x,y,z,r constructor
     sphere(scalar _x, scalar _y, scalar _z, scalar _r);
     /// copy constructor
     sphere(const sphere& rhs);
     /// set position and radius
-    void set(const vec3& _p, scalar _r);
+    void set(const point& _p, scalar _r);
     /// set x,y,z, radius
     void set(scalar _x, scalar _y, scalar _z, scalar _r);
     /// return true if box is completely inside sphere
@@ -42,7 +42,7 @@ public:
     /// check if sphere intersects ray
     bool intersects_ray(const line& l) const;
     /// check if 2 moving sphere have contact
-    bool intersect_sweep(const vec3& va, const sphere& sb, const vec3& vb, scalar& u0, scalar& u1) const;
+    bool intersect_sweep(const vector& va, const sphere& sb, const vector& vb, scalar& u0, scalar& u1) const;
     /// project sphere to screen rectangle (right handed coordinate system)
     rectangle<scalar> project_screen_rh(const mat4& modelView, const mat4& projection, scalar nearZ) const;
     /// get clip status of box against sphere
@@ -50,7 +50,7 @@ public:
     /// generate a random point on a unit sphere
     static vec3 random_point_on_unit_sphere();
         
-    vec3 p;
+    point p;
     scalar r;
 };
 
@@ -68,7 +68,7 @@ sphere::sphere() :
 /**
 */
 inline
-sphere::sphere(const vec3& _p, scalar _r) :
+sphere::sphere(const point& _p, scalar _r) :
     p(_p),
     r(_r)
 {
@@ -101,7 +101,7 @@ sphere::sphere(const sphere& rhs) :
 /**
 */
 inline void
-sphere::set(const vec3& _p, scalar _r)
+sphere::set(const point& _p, scalar _r)
 {
     this->p = _p;
     this->r = _r;
@@ -135,9 +135,9 @@ sphere::intersects(const sphere& s) const
 inline bool
 sphere::inside(const bbox& box) const
 {
-    vec3 v(this->r, this->r, this->r);
-    vec3 pmin(this->p - v);
-    vec3 pmax(this->p + v);
+    vector v(this->r, this->r, this->r);
+    point pmin(this->p - v);
+    point pmax(this->p + v);
     bool lt = less_all(box.pmin, pmin);
     bool ge = greaterequal_all(box.pmax, pmax);
     return lt && ge;

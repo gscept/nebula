@@ -9,9 +9,8 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "math/plane.h"
-#include "math/matrix44.h"
+#include "math/mat4.h"
 #include "math/bbox.h"
-#include "math/point.h"
 #include "math/clipstatus.h"
 
 //------------------------------------------------------------------------------
@@ -42,9 +41,9 @@ public:
     /// setup from transformed bounding box
     void set(const bbox& box, const mat4& boxTransform);
     /// test if point is inside frustum
-    bool inside(const vec3& p) const;
+    bool inside(const point& p) const;
     /// get clip bitmask of point (0 if inside, (1<<PlaneIndex) if outside)
-    uint clipmask(const vec3& p) const;
+    uint clipmask(const point& p) const;
     /// clip line against view frustum
     ClipStatus::Type clip(const line& l, line& clippedLine) const;
     /// get clip status of a local bounding box
@@ -63,7 +62,7 @@ public:
     static const int BottomLeftNear = 6;
     static const int BottomRightNear = 7;
 
-    vec4 planes[NumPlanes];    
+    plane planes[NumPlanes];    
 };        
 
 //------------------------------------------------------------------------------
@@ -114,12 +113,12 @@ frustum::set(const mat4& invViewProj)
     }
 
     // setup planes
-    this->planes[Near] = plane::setup_from_points(worldPoints[TopRightNear], worldPoints[TopLeftNear], worldPoints[BottomLeftNear]);
-    this->planes[Far] = plane::setup_from_points(worldPoints[TopLeftFar], worldPoints[TopRightFar], worldPoints[BottomRightFar]);
-    this->planes[Left] = plane::setup_from_points(worldPoints[BottomLeftFar], worldPoints[BottomLeftNear], worldPoints[TopLeftNear]);
-    this->planes[Right] = plane::setup_from_points(worldPoints[TopRightFar], worldPoints[TopRightNear], worldPoints[BottomRightNear]);
-    this->planes[Top] = plane::setup_from_points(worldPoints[TopLeftNear], worldPoints[TopRightNear], worldPoints[TopRightFar]);
-    this->planes[Bottom] = plane::setup_from_points(worldPoints[BottomLeftFar], worldPoints[BottomRightFar], worldPoints[BottomRightNear]);
+    this->planes[Near] = plane(worldPoints[TopRightNear], worldPoints[TopLeftNear], worldPoints[BottomLeftNear]);
+    this->planes[Far] = plane(worldPoints[TopLeftFar], worldPoints[TopRightFar], worldPoints[BottomRightFar]);
+    this->planes[Left] = plane(worldPoints[BottomLeftFar], worldPoints[BottomLeftNear], worldPoints[TopLeftNear]);
+    this->planes[Right] = plane(worldPoints[TopRightFar], worldPoints[TopRightNear], worldPoints[BottomRightNear]);
+    this->planes[Top] = plane(worldPoints[TopLeftNear], worldPoints[TopRightNear], worldPoints[TopRightFar]);
+    this->planes[Bottom] = plane(worldPoints[BottomLeftFar], worldPoints[BottomRightFar], worldPoints[BottomRightNear]);
 }
 
 //------------------------------------------------------------------------------
@@ -152,12 +151,12 @@ frustum::set(const bbox& box, const mat4& boxTransform)
     }
 
     // setup planes from transformed world space coordinates 
-    this->planes[Near] = plane::setup_from_points(worldPoints[TopLeftNear], worldPoints[TopRightNear], worldPoints[BottomLeftNear]);
-    this->planes[Far] = plane::setup_from_points(worldPoints[TopRightFar], worldPoints[TopLeftFar], worldPoints[BottomRightFar]);
-    this->planes[Left] = plane::setup_from_points(worldPoints[BottomLeftNear], worldPoints[BottomLeftFar], worldPoints[TopLeftNear]);
-    this->planes[Right] = plane::setup_from_points(worldPoints[BottomRightNear], worldPoints[TopRightNear], worldPoints[TopRightFar]);
-    this->planes[Top] = plane::setup_from_points(worldPoints[TopRightNear], worldPoints[TopLeftNear], worldPoints[TopRightFar]);
-    this->planes[Bottom] = plane::setup_from_points(worldPoints[BottomRightFar], worldPoints[BottomLeftFar], worldPoints[BottomRightNear]);
+    this->planes[Near] = plane(worldPoints[TopLeftNear], worldPoints[TopRightNear], worldPoints[BottomLeftNear]);
+    this->planes[Far] = plane(worldPoints[TopRightFar], worldPoints[TopLeftFar], worldPoints[BottomRightFar]);
+    this->planes[Left] = plane(worldPoints[BottomLeftNear], worldPoints[BottomLeftFar], worldPoints[TopLeftNear]);
+    this->planes[Right] = plane(worldPoints[BottomRightNear], worldPoints[TopRightNear], worldPoints[TopRightFar]);
+    this->planes[Top] = plane(worldPoints[TopRightNear], worldPoints[TopLeftNear], worldPoints[TopRightFar]);
+    this->planes[Bottom] = plane(worldPoints[BottomRightFar], worldPoints[BottomLeftFar], worldPoints[BottomRightNear]);
 }
 
 //------------------------------------------------------------------------------
@@ -165,12 +164,12 @@ frustum::set(const bbox& box, const mat4& boxTransform)
     Test if point is inside frustum.
 */
 inline bool
-frustum::inside(const vec3& p) const
+frustum::inside(const point& p) const
 {
     IndexT i;
     for (i = 0; i < NumPlanes; i++)
     {
-        if (dot(xyz(this->planes[i]), p) > 0.0f)
+        if (dot(this->planes[i], p) > 0.0f)
         {
             return false;
         }
@@ -183,13 +182,13 @@ frustum::inside(const vec3& p) const
     Get clipmask of point.
 */
 inline uint
-frustum::clipmask(const vec3& p) const
+frustum::clipmask(const point& p) const
 {
     uint clipMask = 0;
     IndexT i;
     for (i = 0; i < NumPlanes; i++)
     {
-        if (dot(xyz(this->planes[i]), p) > 0.0f)
+        if (dot(this->planes[i], p) > 0.0f)
         {
             clipMask |= 1<<i;
         }
@@ -209,7 +208,7 @@ frustum::clip(const line& l, line& clippedLine) const
     IndexT i;
     for (i = 0; i < NumPlanes; i++)
     {
-        ClipStatus::Type planeClipStatus = plane::clip(this->planes[i], l0, l1);
+        ClipStatus::Type planeClipStatus = Math::clip(this->planes[i], l0, l1);
         if (ClipStatus::Outside == planeClipStatus)
         {
             return ClipStatus::Outside;
@@ -232,7 +231,7 @@ frustum::clipstatus(const bbox& box) const
 {
     uint andFlags = 0xffff;
     uint orFlags = 0;
-    vec3 p;
+    point p;
     IndexT i;
     for (i = 0; i < 8; i++)
     {
@@ -277,11 +276,11 @@ frustum::clipstatus(const bbox& box, const mat4& boxTransform) const
         switch (i)
         {
             // FIXME: REPLACE WITH PERMUTE!
-            case 0:     localPoint = vec4(box.pmin, 1); break;
+            case 0:     localPoint = box.pmin; break;
             case 1:     localPoint.set(box.pmin.x, box.pmax.y, box.pmin.z, 1); break;
             case 2:     localPoint.set(box.pmax.x, box.pmax.y, box.pmin.z, 1); break;
             case 3:     localPoint.set(box.pmax.x, box.pmin.y, box.pmin.z, 1); break;
-            case 4:     localPoint = vec4(box.pmax, 1); break;
+            case 4:     localPoint = box.pmax; break;
             case 5:     localPoint.set(box.pmin.x, box.pmax.y, box.pmax.z, 1); break;
             case 6:     localPoint.set(box.pmin.x, box.pmin.y, box.pmax.z, 1); break;
             case 7:     localPoint.set(box.pmax.x, box.pmin.y, box.pmax.z, 1); break;

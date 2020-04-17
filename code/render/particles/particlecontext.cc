@@ -207,7 +207,7 @@ ParticleContext::Create()
 	layoutComponents.AppendArray(state.particleComponents);
 	CoreGraphics::VertexLayoutCreateInfo vloInfo{ layoutComponents };
 	state.layout = CoreGraphics::CreateVertexLayout(vloInfo);
-	state.vertexSize = sizeof(Math::float4) * 5; // 5 vertex attributes using float4
+	state.vertexSize = sizeof(Math::vec4) * 5; // 5 vertex attributes using vec4
 
 	_CreateContext();
 }
@@ -249,10 +249,10 @@ ParticleContext::Setup(const Graphics::GraphicsEntityId id)
 			system.outputCapacity = 0;
 			system.outputData = nullptr;
 			system.uniformData.sampleBuffer = pNode->GetSampleBuffer().GetSampleBuffer();
-			system.uniformData.gravity = Math::float4(0.0f, attrs.GetFloat(EmitterAttrs::Gravity), 0.0f, 0.0f);
+			system.uniformData.gravity = Math::vec3(0.0f, attrs.GetFloat(EmitterAttrs::Gravity), 0.0f);
 			system.uniformData.stretchToStart = attrs.GetBool(EmitterAttrs::StretchToStart);
 			system.uniformData.stretchTime = attrs.GetBool(EmitterAttrs::StretchToStart);
-			system.uniformData.windVector = attrs.GetFloat4(EmitterAttrs::WindDirection);
+			system.uniformData.windVector = xyz(attrs.GetVec4(EmitterAttrs::WindDirection));
 
 			// update primitive group
 			CoreGraphics::PrimitiveGroup group;
@@ -480,7 +480,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
 
 	// walk through systems again and update index and vertex buffers
 	float* buf = (float*)state.mappedVertices[frame];
-	Math::float4 tmp;
+	Math::vec4 tmp;
 	for (i = 0; i < allSystems.Size(); i++)
 	{
 		const Util::Array<ParticleSystemRuntime>& systems = allSystems[i];
@@ -685,7 +685,7 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, c
 	const EmitterMesh::EmitterPoint& emPoint = mesh.GetEmitterPoint(srt.emissionCounter++);
 
 	// setup particle position and start position
-	particle.position = matrix44::transform(emPoint.position, srt.transform);
+	particle.position = srt.transform * emPoint.position;
 	particle.startPosition = particle.position;
 	particle.stretchPosition = particle.position;
 
@@ -694,13 +694,13 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, c
 	float maxSpread = emissionEnvSamples[EmitterAttrs::SpreadMax];
 	float theta = n_deg2rad(n_lerp(minSpread, maxSpread, n_rand()));
 	float rho = N_PI_DOUBLE * n_rand();
-	matrix44 rot = matrix44::multiply(matrix44::rotationaxis(emPoint.tangent, theta), matrix44::rotationaxis(emPoint.normal, rho));
-	float4 emNormal = matrix44::transform(emPoint.normal, rot);
+	mat4 rot = rotationaxis(xyz(emPoint.tangent), theta) * rotationaxis(xyz(emPoint.normal), rho);
+	vec4 emNormal = rot * emPoint.normal;
 
-	float4 dummy, dummy2;
-	quaternion qrot;
-	srt.transform.decompose(dummy, qrot, dummy2);
-	emNormal = matrix44::transform(emNormal, matrix44::rotationquaternion(qrot));
+	vec3 dummy, dummy2;
+	quat qrot;
+	decompose(srt.transform, dummy, qrot, dummy2);
+	emNormal = rotationquat(qrot) * emNormal;
 	// compute start velocity
 	float velocityVariation = 1.0f - (n_rand() * attrs.GetFloat(EmitterAttrs::VelocityRandomize));
 	float startVelocity = emissionEnvSamples[EmitterAttrs::StartVelocity] * velocityVariation;

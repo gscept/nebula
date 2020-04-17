@@ -13,7 +13,7 @@
 #include "input/key.h"
 #include "input/char.h"
 #include "input/mousebutton.h"
-#include "math/float2.h"
+#include "math/vec2.h"
 #include "coregraphics/window.h"
 
 //------------------------------------------------------------------------------
@@ -56,22 +56,22 @@ public:
 	/// constructor with event code and window id
 	DisplayEvent(Code c, CoreGraphics::WindowId wnd);
     /// constructor with event code and mouse pos
-    DisplayEvent(Code c, const Math::float2& absPos, const Math::float2& normPos);
+    DisplayEvent(Code c, const Math::vec2& absPos, const Math::vec2& normPos);
     /// constructor with key code
     DisplayEvent(Code c, Input::Key::Code k);
     /// constructor with character
     DisplayEvent(Code c, Input::Char chr);
     /// constructor with mouse button and mouse pos
-    DisplayEvent(Code c, Input::MouseButton::Code b, const Math::float2& absPos, const Math::float2& normPos);
+    DisplayEvent(Code c, Input::MouseButton::Code b, const Math::vec2& absPos, const Math::vec2& normPos);
 
     /// get event code
     Code GetEventCode() const;
 	/// get window id
 	CoreGraphics::WindowId GetWindowId() const;
     /// get absolute mouse pos (in pixels)
-    const Math::float2& GetAbsMousePos() const;
+    const Math::vec2& GetAbsMousePos() const;
     /// get normalized mouse pos (from 0.0 to 1.0)
-    const Math::float2& GetNormMousePos() const;
+    const Math::vec2& GetNormMousePos() const;
     /// get key code
     Input::Key::Code GetKey() const;
     /// get character code
@@ -82,8 +82,8 @@ public:
 private:
 	CoreGraphics::WindowId windowId;
     Code code;
-    Math::float2 absMousePos;
-    Math::float2 normMousePos;
+    Math::vec2 absMousePos;
+    Math::vec2 normMousePos;
     Input::Key::Code keyCode;
     Input::Char charCode;
     Input::MouseButton::Code mouseButtonCode;
@@ -142,7 +142,7 @@ DisplayEvent::DisplayEvent(Code c, CoreGraphics::WindowId wnd) :
 /**
 */
 inline
-DisplayEvent::DisplayEvent(Code c, const Math::float2& absPos, const Math::float2& normPos) :
+DisplayEvent::DisplayEvent(Code c, const Math::vec2& absPos, const Math::vec2& normPos) :
     code(c),
 	windowId(Ids::InvalidId32),
     absMousePos(absPos),
@@ -190,7 +190,7 @@ DisplayEvent::DisplayEvent(Code c, Input::Char chr) :
 /**
 */
 inline
-DisplayEvent::DisplayEvent(Code c, Input::MouseButton::Code b, const Math::float2& absPos, const Math::float2& normPos) :
+DisplayEvent::DisplayEvent(Code c, Input::MouseButton::Code b, const Math::vec2& absPos, const Math::vec2& normPos) :
     code(c),
 	windowId(Ids::InvalidId32),
     absMousePos(absPos),
@@ -223,7 +223,7 @@ DisplayEvent::GetWindowId() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::float2&
+inline const Math::vec2&
 DisplayEvent::GetAbsMousePos() const
 {
     return this->absMousePos;
@@ -232,7 +232,7 @@ DisplayEvent::GetAbsMousePos() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::float2&
+inline const Math::vec2&
 DisplayEvent::GetNormMousePos() const
 {
     return this->normMousePos;
