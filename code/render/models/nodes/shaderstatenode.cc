@@ -210,8 +210,8 @@ ShaderStateNode::Instance::Update()
 		return;
 
 	ObjectsShared::ObjectBlock block;
-	this->modelTransform.storeu(block.Model);
-	this->invModelTransform.storeu(block.InvModel);
+	this->modelTransform.store(block.Model);
+	this->invModelTransform.store(block.InvModel);
 	uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
 	this->offsets[this->objectTransformsIndex] = offset;
 	this->dirty = false;

@@ -51,7 +51,7 @@ public:
     void Update(Timing::Time delta);
 
     /// create new empty actor
-    physx::PxRigidActor* CreateActor(bool dynamic, Math::matrix44 const & transform);
+    physx::PxRigidActor* CreateActor(bool dynamic, Math::mat4 const & transform);
     /// deregister an actor
     void DiscardActor(ActorId id);
 

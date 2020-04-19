@@ -712,7 +712,7 @@ String::AsTransform44() const
 	Math::transform44 t;
 	t.setposition(tokens[0].AsVec3());
 	t.setrotate(tokens[1].AsVec4());
-	t.setscale(tokens[2].AsFloat());
+	t.setscale(Math::vec3(tokens[2].AsFloat()));
 	t.setrotatepivot(tokens[3].AsVec3());
 	t.setscalepivot(tokens[4].AsVec3());
 	t.setoffset(tokens[5].AsMat4());

@@ -25,7 +25,7 @@ MouseRayUtil::ComputeWorldMouseRay(const vec2& mousePos, float length, const mat
     vec4 localMousePos = viewCoord * nearPlane * 1.1f;
     localMousePos.y = -1 * localMousePos.y;
     vec4 worldMousePos = invViewMatrix * localMousePos;
-    vec4 worldMouseDir = worldMousePos - invViewMatrix.r[Math::POSITION];
+    vec4 worldMouseDir = worldMousePos - invViewMatrix.position;
     worldMouseDir = normalize(worldMouseDir);
     worldMouseDir *= length;
 

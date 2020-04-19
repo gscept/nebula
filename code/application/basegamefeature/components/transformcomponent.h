@@ -34,22 +34,22 @@ public:
 	static void SetupAcceptedMessages();
 
 	/// Set the local transform of instance. Will update hierarchy.
-	static void SetLocalTransform(InstanceId instance, const Math::matrix44& val);
-	static void SetLocalTransform(Game::Entity entity, const Math::matrix44& val);
+	static void SetLocalTransform(InstanceId instance, const Math::mat4& val);
+	static void SetLocalTransform(Game::Entity entity, const Math::mat4& val);
 	
 	/// Set the world transform of an instance. This will update the hierarchy and also set the local transform.
 	/// Note: this is MUCH slower than updating the local transform since we need to calculate the local transform
 	///		  from the inverse of the entity's parent.
-	static void SetWorldTransform(InstanceId instance, const Math::matrix44& val);
-	static void SetWorldTransform(Game::Entity entity, const Math::matrix44& val);
+	static void SetWorldTransform(InstanceId instance, const Math::mat4& val);
+	static void SetWorldTransform(Game::Entity entity, const Math::mat4& val);
 
 	/// Return the local transform of an instance.
-	static Math::matrix44 GetLocalTransform(InstanceId instance);
-	static Math::matrix44 GetLocalTransform(Game::Entity entity);
+	static Math::mat4 GetLocalTransform(InstanceId instance);
+	static Math::mat4 GetLocalTransform(Game::Entity entity);
 
 	/// Return the world transform of an instance.
-	static Math::matrix44 GetWorldTransform(InstanceId instance);
-	static Math::matrix44 GetWorldTransform(Game::Entity entity);
+	static Math::mat4 GetWorldTransform(InstanceId instance);
+	static Math::mat4 GetWorldTransform(Game::Entity entity);
 
 	/// Update relationships
 	static void SetParents(InstanceId start, InstanceId end, const Util::Array<Entity>& entities, const Util::Array<uint32_t>& parentIndices);

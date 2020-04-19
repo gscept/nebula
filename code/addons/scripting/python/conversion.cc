@@ -137,13 +137,13 @@ PYBIND11_EMBEDDED_MODULE(nmath, m)
     	    switch (i)
 			{
 			case 0:
-				return m.r[Math::ROW_0];
+				return m.row0;
 			case 1:
-				return m.r[Math::ROW_1];
+				return m.row1;
 			case 2:
-				return m.r[Math::ROW_2];
+				return m.row2;
 			case 3:
-				return m.r[Math::ROW_3];
+				return m.row3;
 			default:
 				throw pybind11::index_error("Index out of range!");
 			}
@@ -153,16 +153,16 @@ PYBIND11_EMBEDDED_MODULE(nmath, m)
     	    switch (i)
 			{
 			case 0:
-				m.r[Math::ROW_0] = v;
+				m.row0 = v;
 				return;
 			case 1:
-				m.r[Math::ROW_1] = v;
+				m.row1 = v;
 				return;
 			case 2:
-				m.r[Math::ROW_2] = v;
+				m.row2 = v;
 				return;
 			case 3:
-				m.r[Math::ROW_3] = v;
+				m.row3 = v;
 				return;
 			default:
 				throw pybind11::index_error("Index out of range!");
@@ -210,7 +210,7 @@ PYBIND11_EMBEDDED_MODULE(nmath, m)
 		.def_static("is_point_inside", &Math::ispointinside)
 		.def_buffer([](Math::mat4 &m) -> py::buffer_info {
 			return py::buffer_info(
-				(float*)&m.r[Math::ROW_0],			/* Pointer to buffer */
+				(float*)&m.row0,			/* Pointer to buffer */
 				{ 4, 4 },           /* Buffer dimensions */
 				{ 4 * sizeof(float),/* Strides (in bytes) for each index */
 				sizeof(float) }

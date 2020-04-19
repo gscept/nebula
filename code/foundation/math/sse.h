@@ -81,7 +81,7 @@ template<int x, int y, int z, int w>
 __forceinline __m128
 swizzle(__m128 v)
 {
-    return _mm_shuffle_ps(v, v, _MM_SHUFFLE(w, z, y, x));
+    return _mm_shuffle_ps(v, v, _MM_SHUFFLE(x, y, z, w));
 }
 
 } // namespace Math

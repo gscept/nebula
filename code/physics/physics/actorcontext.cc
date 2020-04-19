@@ -71,7 +71,7 @@ ActorContext::DiscardActor(ActorId id)
 /**
 */
 ActorId
-ActorContext::CreateBox(Math::vector const& extends, IndexT materialId, bool dynamic, Math::matrix44 const & transform, IndexT sceneId)
+ActorContext::CreateBox(Math::vector const& extends, IndexT materialId, bool dynamic, Math::mat4 const & transform, IndexT sceneId)
 {
     Scene & scene = Physics::GetScene(sceneId);
 
@@ -92,7 +92,7 @@ ActorContext::CreateBox(Math::vector const& extends, IndexT materialId, bool dyn
 /**
 */
 ActorId
-ActorContext::CreateSphere(float radius, IndexT materialId, bool dynamic, Math::matrix44 const & transform, IndexT sceneId)
+ActorContext::CreateSphere(float radius, IndexT materialId, bool dynamic, Math::mat4 const & transform, IndexT sceneId)
 {
     Scene & scene = Physics::GetScene(sceneId);
 
@@ -113,7 +113,7 @@ ActorContext::CreateSphere(float radius, IndexT materialId, bool dynamic, Math::
 /**
 */
 ActorId
-ActorContext::CreateCapsule(float radius, float halfHeight, IndexT materialId, bool dynamic, Math::matrix44 const & transform, IndexT sceneId)
+ActorContext::CreateCapsule(float radius, float halfHeight, IndexT materialId, bool dynamic, Math::mat4 const & transform, IndexT sceneId)
 {
     Scene & scene = Physics::GetScene(sceneId);
 
@@ -137,7 +137,7 @@ ActorContext::CreatePlane(Math::plane const& plane, IndexT materialId, IndexT sc
 {
     Scene & scene = Physics::GetScene(sceneId);
 
-    PxPlane pxPlane(Neb2PxVec(plane.get_point()), Neb2PxVec(plane.get_normal()));
+    PxPlane pxPlane(Neb2PxPnt(get_point(plane)), Neb2PxVec(get_normal(plane)));
     PxTransform transform = PxTransformFromPlaneEquation(pxPlane);
 
     PxRigidActor* newActor = scene.physics->createRigidStatic(transform);
@@ -164,7 +164,7 @@ ActorContext::GetActor(ActorId id)
 //------------------------------------------------------------------------------
 /**
 */
-void ActorContext::SetTransform(ActorId id, Math::matrix44 const & transform)
+void ActorContext::SetTransform(ActorId id, Math::mat4 const & transform)
 {
     n_assert(ActorContext::actorPool.IsValid(id.id));
     GET_DYNAMIC(id)->setGlobalPose(Neb2PxTrans(transform));
@@ -173,7 +173,7 @@ void ActorContext::SetTransform(ActorId id, Math::matrix44 const & transform)
 //------------------------------------------------------------------------------
 /**
 */
-Math::matrix44 
+Math::mat4
 ActorContext::GetTransform(ActorId id)
 {
     n_assert(ActorContext::actorPool.IsValid(id.id));
@@ -228,7 +228,7 @@ ActorContext::ApplyImpulseAtPos(ActorId id, const Math::vector& impulse, const M
 {
     n_assert(ActorContext::actorPool.IsValid(id.id));
     PxRigidDynamic* actor = GET_DYNAMIC(id);    
-    PxRigidBodyExt::addForceAtPos(*actor, Neb2PxVec(impulse), Neb2PxVec(pos));
+    PxRigidBodyExt::addForceAtPos(*actor, Neb2PxVec(impulse), Neb2PxPnt(pos));
 }
 
 //------------------------------------------------------------------------------

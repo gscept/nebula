@@ -72,6 +72,8 @@ public:
     ClipStatus::Type clipstatus(const bbox& other) const;
     /// check for intersection with projection volume
     ClipStatus::Type clipstatus(const mat4& viewProjection) const;
+    /// check for intersection with pre-calculated columns 
+    ClipStatus::Type clipstatus(const vec4* x_columns, const vec4* y_columns, const vec4* z_columns, const vec4* w_columns) const;
     /// create a matrix which transforms a unit cube to this bounding box
     mat4 to_mat4() const;
     /// return one of the 8 corner points
@@ -259,17 +261,17 @@ bbox::affine_transform(const mat4& m)
 {
     n_assert2(m.r[0].w == 0 && m.r[1].w == 0 && m.r[2].w == 0 && m.r[3].w == 1, "Matrix is not affine");
 
-    vec4 xa = m.r[X_AXIS] * this->pmin.x;
-    vec4 xb = m.r[X_AXIS] * this->pmax.x;
+    vec4 xa = m.x_axis * this->pmin.x;
+    vec4 xb = m.x_axis * this->pmax.x;
 
-    vec4 ya = m.r[Y_AXIS] * this->pmin.y;
-    vec4 yb = m.r[Y_AXIS] * this->pmax.y;
+    vec4 ya = m.y_axis * this->pmin.y;
+    vec4 yb = m.y_axis * this->pmax.y;
 
-    vec4 za = m.r[Z_AXIS] * this->pmin.z;
-    vec4 zb = m.r[Z_AXIS] * this->pmax.z;
+    vec4 za = m.z_axis * this->pmin.z;
+    vec4 zb = m.z_axis * this->pmax.z;
     
-    this->pmin = xyz(minimize(xa, xb) + minimize(ya, yb) + minimize(za, zb) + m.r[POSITION]);
-    this->pmax = xyz(maximize(xa, xb) + maximize(ya, yb) + maximize(za, zb) + m.r[POSITION]);
+    this->pmin = xyz(minimize(xa, xb) + minimize(ya, yb) + minimize(za, zb) + m.position);
+    this->pmax = xyz(maximize(xa, xb) + maximize(ya, yb) + maximize(za, zb) + m.position);
 }
 
 //------------------------------------------------------------------------------
@@ -320,7 +322,7 @@ bbox::to_mat4() const
 {
     mat4 m = scaling(this->size());
     point pos = this->center();
-    m.r[POSITION] = pos;
+    m.position = pos;
     return m;
 }
 
@@ -349,14 +351,14 @@ bbox::clipstatus(const mat4& viewProjection) const
     vec4 ws[2];
 
 	// create vectors for each dimension of each point, xxxx, yyyy, zzzz
-    xs[0] = vec4(this->pmin.x);
-    ys[0] = vec4(this->pmin.y);
-    zs[0] = vec4(this->pmin.z);
+    xs[0] = splat_x(this->pmin);
+    ys[0] = splat_y(this->pmin);
+    zs[0] = splat_z(this->pmin);
     ws[0] = vec4(1.0f);
 
-    xs[1] = vec4(this->pmax.x);
-    ys[1] = vec4(this->pmax.y);
-    zs[1] = vec4(this->pmax.z);
+    xs[1] = splat_x(this->pmax);
+    ys[1] = splat_y(this->pmax);
+    zs[1] = splat_z(this->pmax);
     ws[1] = vec4(1.0f);
 
     vec4 px[2];
@@ -481,6 +483,134 @@ bbox::clipstatus(const mat4& viewProjection) const
 	if (0 == orFlags)       return ClipStatus::Inside;
 	else if (0 != andFlags) return ClipStatus::Outside;
 	else                    return ClipStatus::Clipped;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline ClipStatus::Type
+bbox::clipstatus(const vec4* x_columns, const vec4* y_columns, const vec4* z_columns, const vec4* w_columns) const
+{
+    using namespace Math;
+    int andFlags = 0xffff;
+    int orFlags = 0;
+
+    vec4 xs[2];
+    vec4 ys[2];
+    vec4 zs[2];
+    vec4 ws[2];
+
+    // create vectors for each dimension of each point, xxxx, yyyy, zzzz
+    xs[0] = splat_x(this->pmin);
+    ys[0] = splat_y(this->pmin);
+    zs[0] = splat_z(this->pmin);
+    ws[0] = vec4(1.0f);
+
+    xs[1] = splat_x(this->pmax);
+    ys[1] = splat_y(this->pmax);
+    zs[1] = splat_z(this->pmax);
+    ws[1] = vec4(1.0f);
+
+    vec4 px[2];
+    vec4 py[2];
+    vec4 pz[2];
+
+    // this corresponds to the permute phase in the original function
+    /*
+        the points would be:
+
+            P1	P2	P3	P4
+        X0: x1, x1, x0, x0
+        Y0: y0, y0, y0, y0
+        Z0: z0, z1, z1, z0
+
+            P5	P6	P7	P8
+        X1: x0, x0, x1, x1
+        Y1: y1, y1, y1, y1
+        Z1: z1, z0, z0, z1
+
+        Meaning P1, P4, P6 and P7 are near plane, P2, P3, P5, P8 are far plane
+    */
+    px[0] = xs[1] * vec4(1, 1, 0, 0) + xs[0] * vec4(0, 0, 1, 1);
+    px[1] = xs[1] * vec4(0, 0, 1, 1) + xs[0] * vec4(1, 1, 0, 0);
+
+    py[0] = ys[0];
+    py[1] = ys[1];
+
+    pz[0] = zs[1] * vec4(1, 0, 0, 1) + zs[0] * vec4(0, 1, 1, 0);
+    pz[1] = zs[1] * vec4(0, 1, 1, 0) + zs[0] * vec4(1, 0, 0, 1);
+
+    vec4 res1;
+    const vec4 xLeftFlags = vec4(ClipLeft);
+    const vec4 xRightFlags = vec4(ClipRight);
+    const vec4 yBottomFlags = vec4(ClipBottom);
+    const vec4 yTopFlags = vec4(ClipTop);
+    const vec4 zFarFlags = vec4(ClipFar);
+    const vec4 zNearFlags = vec4(ClipNear);
+
+    // check two loops of points arranged as xxxx yyyy zzzz
+    IndexT i;
+    for (i = 0; i < 2; ++i)
+    {
+        int clip = 0;
+
+        // transform the x component of 4 points simultaneously 
+        xs[i] = multiplyadd(x_columns[2], pz[i],
+            multiplyadd(x_columns[1], py[i],
+                multiplyadd(x_columns[0], px[i], x_columns[3])));
+
+        // transform the y component of 4 points simultaneously 
+        ys[i] = multiplyadd(y_columns[2], pz[i],
+            multiplyadd(y_columns[1], py[i],
+                multiplyadd(y_columns[0], px[i], y_columns[3])));
+
+        // transform the z component of 4 points simultaneously 
+        zs[i] = multiplyadd(z_columns[2], pz[i],
+            multiplyadd(z_columns[1], py[i],
+                multiplyadd(z_columns[0], px[i], z_columns[3])));
+
+        // transform the w component of 4 points simultaneously 
+        ws[i] = multiplyadd(w_columns[2], pz[i],
+            multiplyadd(w_columns[1], py[i],
+                multiplyadd(w_columns[0], px[i], w_columns[3])));
+
+        {
+            const vec4 nws = -ws[i];
+            const vec4 pws = ws[i];
+
+            // add all flags together into one big vector of flags for all 4 points
+            res1 = multiplyadd(less(xs[i], nws), xLeftFlags,
+                multiplyadd(greater(xs[i], pws), xRightFlags,
+                    multiplyadd(less(ys[i], nws), yBottomFlags,
+                        multiplyadd(greater(ys[i], pws), yTopFlags,
+                            multiplyadd(less(zs[i], nws), zFarFlags,
+                                (greater(zs[i], pws) * zNearFlags)
+                            )
+                        )
+                    )
+                )
+            );
+        }
+
+        // read to stack and convert to uint in one swoop
+        alignas(16) uint res1_u[4];
+        __m128i result = _mm_cvttps_epi32(res1.vec);
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(res1_u), result);
+
+        // update flags by or-ing and and-ing all 4 points individually
+        andFlags &= res1_u[0];
+        orFlags |= res1_u[0];
+        andFlags &= res1_u[1];
+        orFlags |= res1_u[1];
+        andFlags &= res1_u[2];
+        orFlags |= res1_u[2];
+        andFlags &= res1_u[3];
+        orFlags |= res1_u[3];
+
+    }
+    if (0 == orFlags)       return ClipStatus::Inside;
+    else if (0 != andFlags) return ClipStatus::Outside;
+    else                    return ClipStatus::Clipped;
 }
 
 } // namespace Math

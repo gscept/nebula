@@ -39,7 +39,7 @@ MayaCameraUtil::MayaCameraUtil() :
 /**
 */
 void
-MayaCameraUtil::Setup(const vec3& defCoi, const vec3& defEyePos, const vec3& defUpVec)
+MayaCameraUtil::Setup(const point& defCoi, const point& defEyePos, const vector& defUpVec)
 {
     this->defaultCenterOfInterest = defCoi;
     this->defaultEyePos = defEyePos;
@@ -101,8 +101,8 @@ MayaCameraUtil::Update()
     }
 
     // handle panning
-    vec3 horiMove = xyz(this->cameraTransform.r[Math::ROW_0] * panHori * panVelocity);
-    vec3 vertMove = xyz(this->cameraTransform.r[Math::ROW_1] * panVert * panVelocity);
+    vec3 horiMove = xyz(this->cameraTransform.row0 * panHori * panVelocity);
+    vec3 vertMove = xyz(this->cameraTransform.row1 * panVert * panVelocity);
     this->centerOfInterest += horiMove + vertMove;
 
     // handle zooming
@@ -123,7 +123,7 @@ MayaCameraUtil::Update()
     // avoid that the camera slips past the center of interest
     if (this->viewDistance < 1.0f)
     {
-		this->centerOfInterest -= xyz(this->cameraTransform.r[Math::ROW_2] * (1.0f-this->viewDistance));
+		this->centerOfInterest -= xyz(this->cameraTransform.row2 * (1.0f-this->viewDistance));
         this->viewDistance = 1.0f;
     }
 
@@ -131,7 +131,7 @@ MayaCameraUtil::Update()
     mat4 m = translation(0.0f, 0.0f, this->viewDistance);
     m = m * rotationx(this->viewAngles.theta - (N_PI * 0.5f));
     m = m * rotationy(this->viewAngles.rho);
-    m = m * translation(this->centerOfInterest);
+    m = m * translation(xyz(this->centerOfInterest));
     this->cameraTransform = m;
 
     // reset input

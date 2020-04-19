@@ -608,18 +608,18 @@ ByteOrder::ConvertInPlace<Math::mat4>(Type fromByteOrder, Type toByteOrder, Math
 {
     if (fromByteOrder != toByteOrder)
     {
-        Math::vec4 row0 = val.r[Math::ROW_0];
-        Math::vec4 row1 = val.r[Math::ROW_1];
-        Math::vec4 row2 = val.r[Math::ROW_2];
-        Math::vec4 row3 = val.r[Math::ROW_3];
+        Math::vec4 row0 = val.row0;
+        Math::vec4 row1 = val.row1;
+        Math::vec4 row2 = val.row2;
+        Math::vec4 row3 = val.row3;
         ConvertInPlace<Math::vec4>(fromByteOrder, toByteOrder, row0);
         ConvertInPlace<Math::vec4>(fromByteOrder, toByteOrder, row1);
         ConvertInPlace<Math::vec4>(fromByteOrder, toByteOrder, row2);
         ConvertInPlace<Math::vec4>(fromByteOrder, toByteOrder, row3);
-        val.r[Math::ROW_0] = row0;
-        val.r[Math::ROW_1] = row1;
-        val.r[Math::ROW_2] = row2;
-        val.r[Math::ROW_3] = row3;
+        val.row0 = row0;
+        val.row1 = row1;
+        val.row2 = row2;
+        val.row3 = row3;
     }
 }
 
@@ -631,18 +631,18 @@ ByteOrder::ConvertInPlace<Math::mat4>(Math::mat4& val) const
 {
     if (this->from != this->to)
     {
-        Math::vec4 row0 = val.r[Math::ROW_0];
-        Math::vec4 row1 = val.r[Math::ROW_1];
-        Math::vec4 row2 = val.r[Math::ROW_2];
-        Math::vec4 row3 = val.r[Math::ROW_3];
+        Math::vec4 row0 = val.row0;
+        Math::vec4 row1 = val.row1;
+        Math::vec4 row2 = val.row2;
+        Math::vec4 row3 = val.row3;
         ConvertInPlace<Math::vec4>(row0);
         ConvertInPlace<Math::vec4>(row1);
         ConvertInPlace<Math::vec4>(row2);
         ConvertInPlace<Math::vec4>(row3);
-        val.r[Math::ROW_0] = row0;
-        val.r[Math::ROW_1] = row1;
-        val.r[Math::ROW_2] = row2;
-        val.r[Math::ROW_3] = row3;
+        val.row0 = row0;
+        val.row1 = row1;
+        val.row2 = row2;
+        val.row3 = row3;
     }
 }
 #endif // __OSX__

@@ -93,13 +93,13 @@ AudioEmitterComponent::OnDeactivate(Game::InstanceId instance)
 /**
 */
 void
-AudioEmitterComponent::UpdateTransform(Game::Entity entity, const Math::matrix44 & transform)
+AudioEmitterComponent::UpdateTransform(Game::Entity entity, const Math::mat4 & transform)
 {
 	auto instance = component->GetInstance(entity);
 	if (instance != InvalidIndex)
 	{
 		AudioEmitterId emitter = { component->Get<Attr::AudioEmitter>(instance) };
-		AudioDevice::Instance()->SetPosition(emitter, transform.get_position());
+		AudioDevice::Instance()->SetPosition(emitter, transform.position);
 	}
 }
 
@@ -137,7 +137,7 @@ AudioEmitterComponent::SetAudioResource(Game::InstanceId instance, Resources::Re
 	if (audioEmitter != AudioEmitterId::Invalid())
 	{
 		auto transform = Game::TransformComponent::GetWorldTransform(component->GetOwner(instance));
-		AudioDevice::Instance()->SetPosition(audioEmitter, transform.get_position());
+		AudioDevice::Instance()->SetPosition(audioEmitter, transform.position);
 	}
 }
 

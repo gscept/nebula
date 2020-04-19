@@ -281,16 +281,16 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 			auto& pbrDecal = decalState.pbrDecals[numPbrDecals];
 			Math::mat4 viewSpace = transforms[i] * viewTransform;
 			Math::bbox bbox(viewSpace);
-			bbox.pmin.storeu(pbrDecal.bboxMin);
-			bbox.pmax.storeu(pbrDecal.bboxMax);
+			bbox.pmin.store(pbrDecal.bboxMin);
+			bbox.pmax.store(pbrDecal.bboxMax);
 			pbrDecal.albedo = TextureGetBindlessHandle(pbrDecalAllocator.Get<DecalPBR_Albedo>(typeIds[i]));
 			pbrDecal.normal = TextureGetBindlessHandle(pbrDecalAllocator.Get<DecalPBR_Normal>(typeIds[i]));
 			pbrDecal.material = TextureGetBindlessHandle(pbrDecalAllocator.Get<DecalPBR_Material>(typeIds[i]));
 			Math::mat4 inverse = Math::inverse(transforms[i]);
-			inverse.storeu(pbrDecal.invModel);
-			transforms[i].r[Math::Z_AXIS].storeu3(pbrDecal.direction);
-			Math::vec4 tangent = normalize(-transforms[i].r[Math::X_AXIS]);
-			tangent.storeu3(pbrDecal.tangent);
+			inverse.store(pbrDecal.invModel);
+			transforms[i].z_axis.store3(pbrDecal.direction);
+			Math::vec4 tangent = normalize(-transforms[i].x_axis);
+			tangent.store3(pbrDecal.tangent);
 			numPbrDecals++;
 			break;
 		}
@@ -300,9 +300,9 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 			auto& emissiveDecal = decalState.emissiveDecals[numEmissiveDecals];
 			Math::mat4 viewSpace = transforms[i] * viewTransform;
 			Math::bbox bbox(viewSpace);
-			bbox.pmin.storeu(emissiveDecal.bboxMin);
-			bbox.pmax.storeu(emissiveDecal.bboxMax);
-			transforms[i].r[Math::Z_AXIS].storeu3(emissiveDecal.direction);
+			bbox.pmin.store(emissiveDecal.bboxMin);
+			bbox.pmax.store(emissiveDecal.bboxMax);
+			transforms[i].z_axis.store3(emissiveDecal.direction);
 			emissiveDecal.emissive = TextureGetBindlessHandle(emissiveDecalAllocator.Get<DecalEmissive_Emissive>(typeIds[i]));
 			numEmissiveDecals++;
 			break;

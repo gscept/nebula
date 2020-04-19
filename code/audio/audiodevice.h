@@ -78,7 +78,7 @@ public:
 	void UpdateVelocity(ClipInstanceId id, Math::vector const& vel);
 
 	/// Set the listener transform in world space
-	void SetListenerTransform(Math::matrix44 const& transform);
+	void SetListenerTransform(Math::mat4 const& transform);
 	/// Set the listeners velocity
 	void SetListenerVelocity(Math::vector const& velocity);
 

@@ -249,7 +249,7 @@ ParticleContext::Setup(const Graphics::GraphicsEntityId id)
 			system.outputCapacity = 0;
 			system.outputData = nullptr;
 			system.uniformData.sampleBuffer = pNode->GetSampleBuffer().GetSampleBuffer();
-			system.uniformData.gravity = Math::vec3(0.0f, attrs.GetFloat(EmitterAttrs::Gravity), 0.0f);
+			system.uniformData.gravity = Math::vector(0.0f, attrs.GetFloat(EmitterAttrs::Gravity), 0.0f);
 			system.uniformData.stretchToStart = attrs.GetBool(EmitterAttrs::StretchToStart);
 			system.uniformData.stretchTime = attrs.GetBool(EmitterAttrs::StretchToStart);
 			system.uniformData.windVector = xyz(attrs.GetVec4(EmitterAttrs::WindDirection));

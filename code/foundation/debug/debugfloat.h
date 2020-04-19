@@ -126,7 +126,7 @@ DebugFloat::restoreHex(Math::mat4 &m,
 							{m4, m5, m6, m7}, 
 							{m8, m9, m10, m11}, 
 							{m12, m13, m14, m15}};
-	float *p = (float*)&m.r[Math::ROW_0];
+	float *p = (float*)&m.row0;
 	for(int index = 0; index < 16; ++index)
 	{
         *p++ = Util::TypePunning<float, int>(mRaw[index/4][index%4]);
@@ -171,13 +171,13 @@ void
 DebugFloat::printHex(const Math::mat4 &m, const char *msg)
 {
 	if(msg) n_printf("%s: ", msg);
-	printHex(m.r[Math::ROW_0]);
+	printHex(m.row0);
 	n_printf(", ");
-	printHex(m.r[Math::ROW_1]);
+	printHex(m.row1);
 	n_printf(", ");
-	printHex(m.r[Math::ROW_2]);
+	printHex(m.row2);
 	n_printf(", ");
-	printHex(m.r[Math::ROW_3]);
+	printHex(m.row3);
 	if(msg) n_printf("\n");
 }
 
@@ -302,13 +302,13 @@ DebugFloat::print(const Math::mat4 &m, const char *msg)
 {
 	if(msg) n_printf("%s:\n", msg);
 	// yes, looks weird, rows and cols seem to be mixed, but its not
-    print(Math::vec4(m.r[Math::ROW_0].x, m.r[Math::ROW_1].x, m.r[Math::ROW_2].x, m.r[Math::ROW_3].x), NULL);
+    print(Math::vec4(m.row0.x, m.row1.x, m.row2.x, m.row3.x), NULL);
     n_printf("\n");
-    print(Math::vec4(m.r[Math::ROW_0].y, m.r[Math::ROW_1].y, m.r[Math::ROW_2].y, m.r[Math::ROW_3].y), NULL);
+    print(Math::vec4(m.row0.y, m.row1.y, m.row2.y, m.row3.y), NULL);
     n_printf("\n");
-    print(Math::vec4(m.r[Math::ROW_0].z, m.r[Math::ROW_1].z, m.r[Math::ROW_2].z, m.r[Math::ROW_3].z), NULL);
+    print(Math::vec4(m.row0.z, m.row1.z, m.row2.z, m.row3.z), NULL);
     n_printf("\n");
-    print(Math::vec4(m.r[Math::ROW_0].w, m.r[Math::ROW_1].w, m.r[Math::ROW_2].w, m.r[Math::ROW_3].w), NULL);
+    print(Math::vec4(m.row0.w, m.row1.w, m.row2.w, m.row3.w), NULL);
     n_printf("\n");
 }
 

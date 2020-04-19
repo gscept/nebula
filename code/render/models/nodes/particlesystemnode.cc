@@ -327,16 +327,16 @@ ParticleSystemNode::Instance::Update()
 	if (block.Billboard)
 	{
 		const Math::mat4 billboardTransform = this->modelTransform * CoreGraphics::TransformDevice::Instance()->GetInvViewTransform();
-        billboardTransform.storeu(block.EmitterTransform);
+        billboardTransform.store(block.EmitterTransform);
 	}
 	else
 	{
-        this->modelTransform.storeu(block.EmitterTransform);
+        this->modelTransform.store(block.EmitterTransform);
 	}
 
 	// update parameters
-    this->boundingBox.center().storeu(block.BBoxCenter);
-    this->boundingBox.extents().storeu(block.BBoxSize);
+    this->boundingBox.center().store(block.BBoxCenter);
+    this->boundingBox.extents().store(block.BBoxSize);
 	block.NumAnimPhases = pnode->emitterAttrs.GetInt(EmitterAttrs::AnimPhases);
 	block.AnimFramesPerSecond = pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond);
 

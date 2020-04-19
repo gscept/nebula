@@ -11,9 +11,9 @@
 #include "util/array.h"
 #include "util/trivialarray.h"
 #include "util/dictionary.h"
-#include "math/matrix44.h"
-#include "math/float4.h"
-#include "math/quaternion.h"
+#include "math/mat4.h"
+#include "math/vec4.h"
+#include "math/quat.h"
 #include "math/vector.h"
 #include "util/string.h"
 #include "util/blob.h"
@@ -255,7 +255,7 @@ struct Material : GltfBase
 
     struct PBRMetallicRoughness : GltfBase
     {
-        Math::float4 baseColorFactor = { Math::float4(1.0f) };
+        Math::vec4 baseColorFactor = { Math::vec4(1.0f) };
         Texture baseColorTexture;
 
         float roughnessFactor{ 1.0f };
@@ -264,7 +264,7 @@ struct Material : GltfBase
 
         bool IsEmpty() const
         {
-            return baseColorTexture.empty() && metallicRoughnessTexture.empty() && metallicFactor == 1.0f && roughnessFactor == 1.0f && baseColorFactor == Math::float4(1.0f);
+            return baseColorTexture.empty() && metallicRoughnessTexture.empty() && metallicFactor == 1.0f && roughnessFactor == 1.0f && baseColorFactor == Math::vec4(1.0f);
         }
     };
 
@@ -345,8 +345,8 @@ struct Node : GltfBase
     int32_t skin{ -1 };
 
     bool hasTRS{ false };
-    Math::matrix44 matrix;
-    Math::quaternion rotation;
+    Math::vec4 matrix;
+    Math::quat rotation;
     Math::vector scale{ Math::vector(1.0f) };
     Math::point translation;
 

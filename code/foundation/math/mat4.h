@@ -24,20 +24,6 @@
 namespace Math
 {
 
-enum MAT_AXIS
-{
-    X_AXIS,
-    Y_AXIS,
-    Z_AXIS,
-    W_AXIS,
-    POSITION = W_AXIS,
-    ROW_0 = X_AXIS,
-    ROW_1 = Y_AXIS,
-    ROW_2 = Z_AXIS,
-    ROW_3 = W_AXIS,
-
-};
-
 struct mat4;
 struct quat;
 
@@ -88,8 +74,14 @@ public:
     /// stream content to 16-byte-aligned memory circumventing the write-cache
     void stream(scalar* ptr) const;
 
-	/// read-write access to row
-	vec4& row(MAT_AXIS i);
+    /// set content from row vectors
+    void set(const vec4& r0, const vec4& r1, const vec4& r2, const vec4& r3);
+    /// set content from individual values
+    void set(
+        float m00, float m01, float m02, float m03,
+        float m10, float m11, float m12, float m13,
+        float m20, float m21, float m22, float m23,
+        float m30, float m31, float m32, float m33);
 
 	/// extracts scale components to target vector
 	void get_scale(vec4& scale) const;
@@ -102,17 +94,35 @@ public:
     /// scale matrix
     void scale(const float x, const float y, const float z);
 
+    /// we use aliasing to represent the matrix in may different ways
     union
     {
-        vec4 r[4];
-        struct
+        /// float accessors
+        struct /// individual values
         {
             float _11, _12, _13, _14;
             float _21, _22, _23, _24;
             float _31, _32, _33, _34;
             float _41, _42, _43, _44;
         };
-        float m[4][4];
+        float m[4][4]; /// as a two-dimensional array
+
+        /// SIMD accessors
+        vec4 r[4]; /// array accessible rows 
+        struct /// as a cube
+        {
+            vec4 x_axis;
+            vec4 y_axis;
+            vec4 z_axis;
+            vec4 position;
+        };
+        struct /// as numbered rows
+        {
+            vec4 row0;
+            vec4 row1;
+            vec4 row2;
+            vec4 row3;
+        };
     };
 };
 
@@ -157,12 +167,11 @@ mat4::mat4(const mat4& rhs)
 */
 __forceinline 
 mat4::mat4(float m00, float m01, float m02, float m03, float m10, float m11, float m12, float m13, float m20, float m21, float m22, float m23, float m30, float m31, float m32, float m33)
-    : _11(m00), _12(m01), _13(m02), _14(m03)
-    , _21(m10), _22(m11), _23(m12), _24(m13)
-    , _31(m20), _32(m11), _33(m22), _34(m23)
-    , _41(m30), _42(m21), _43(m32), _44(m33)
 {
-    
+    this->r[0] = vec4(m00, m01, m02, m03);
+    this->r[1] = vec4(m10, m11, m12, m13);
+    this->r[2] = vec4(m20, m21, m22, m23);
+    this->r[3] = vec4(m30, m31, m32, m33);
 }
 
 //------------------------------------------------------------------------------
@@ -255,13 +264,29 @@ mat4::stream(scalar* ptr) const
 	this->storeu(ptr);
 }
 
+
 //------------------------------------------------------------------------------
 /**
 */
-__forceinline vec4&
-mat4::row(MAT_AXIS row)
+__forceinline void 
+mat4::set(const vec4& r0, const vec4& r1, const vec4& r2, const vec4& r3)
 {
-	return *(vec4*)&(r[row]);
+    this->r[0] = r0;
+    this->r[1] = r1;
+    this->r[2] = r2;
+    this->r[3] = r3;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void 
+mat4::set(float m00, float m01, float m02, float m03, float m10, float m11, float m12, float m13, float m20, float m21, float m22, float m23, float m30, float m31, float m32, float m33)
+{
+    this->r[0] = vec4(m00, m01, m02, m03);
+    this->r[1] = vec4(m10, m11, m12, m13);
+    this->r[2] = vec4(m20, m21, m22, m23);
+    this->r[3] = vec4(m30, m31, m32, m33);
 }
 
 //------------------------------------------------------------------------------
@@ -573,7 +598,7 @@ operator*(const mat4& m0, const mat4& m1)
     ret.r[0] = mx + mz;
 
     // rinse and repeat
-    mw = m0.r[ROW_1];
+    mw = m0.row1;
 
     mx = splat_x(mw);
     my = splat_y(mw);
@@ -589,7 +614,7 @@ operator*(const mat4& m0, const mat4& m1)
     mz = mz + mw;
     ret.r[1] = mx + mz;
 
-    mw = m0.r[ROW_2];
+    mw = m0.row2;
 
     mx = splat_x(mw);
     my = splat_y(mw);
@@ -605,7 +630,7 @@ operator*(const mat4& m0, const mat4& m1)
     mz = mz + mw;
     ret.r[2] = mx + mz;
 
-    mw = m0.r[ROW_3];
+    mw = m0.row3;
 
     mx = splat_x(mw);
     my = splat_y(mw);
@@ -896,16 +921,16 @@ rotationaxis(const vec3& axis, scalar angle)
     nn5 = _mm_shuffle_ps(nn5,nn5,_MM_SHUFFLE(1,3,2,0));
 
 	mat4 m;	
-    m.r[ROW_0] = nn5;
+    m.row0 = nn5;
 	
     nn5 = _mm_shuffle_ps(v,v1,_MM_SHUFFLE(3,2,3,1));
     nn5 = _mm_shuffle_ps(nn5,nn5,_MM_SHUFFLE(1,3,0,2));
-    m.r[ROW_1] = nn5;
+    m.row1 = nn5;
 
     v2 = _mm_shuffle_ps(v2,v,_MM_SHUFFLE(3,2,1,0));
-    m.r[ROW_2] = v2;
+    m.row2 = v2;
 
-    m.r[ROW_3] = _id_w;
+    m.row3 = _id_w;
     return m;
 
     

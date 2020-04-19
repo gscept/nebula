@@ -205,7 +205,7 @@ private:
 		GlobalLight_CascadeObservers
 	};
 	typedef Ids::IdAllocator<
-		Math::vec3,									// direction
+		Math::vector,								// direction
 		Math::vec3,									// backlight color
 		float,										// backlight offset
 		Math::vec3,									// ambient

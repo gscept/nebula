@@ -27,7 +27,7 @@ public:
     MayaCameraUtil();
 
     /// setup the object
-    void Setup(const Math::vec3& defaultCenterOfInterest, const Math::vec3& defaultEyePos, const Math::vec3& defaultUpVec);
+    void Setup(const Math::point& defaultCenterOfInterest, const Math::point& defaultEyePos, const Math::vector& defaultUpVec);
     /// reset the object to its default settings
     void Reset();
     /// update the view matrix
@@ -37,7 +37,7 @@ public:
 	/// get view distance
 	const Math::scalar& GetViewDistance() const;
 	/// get center of interest
-	const Math::vec3& GetCenterOfInterest() const;
+	const Math::point& GetCenterOfInterest() const;
 
     /// set state of orbit button
     void SetOrbitButton(bool b);
@@ -60,18 +60,18 @@ public:
     /// set orbiting vector
     void SetOrbiting(const Math::vec2& v);
 	/// set center of interest
-	void SetCenterOfInterest(const Math::vec3& point);
+	void SetCenterOfInterest(const Math::point& point);
 	/// set view distance
 	void SetViewDistance(const Math::scalar& distance);
 
 private:
-    Math::vec3 defaultCenterOfInterest;
-    Math::vec3 defaultEyePos;
-    Math::vec3 defaultUpVec;
+    Math::point defaultCenterOfInterest;
+    Math::point defaultEyePos;
+    Math::vector defaultUpVec;
 
     Math::polar viewAngles;
     Math::scalar viewDistance;
-    Math::vec3 centerOfInterest;
+    Math::point centerOfInterest;
 
     Math::mat4 cameraTransform;
 
@@ -162,7 +162,7 @@ MayaCameraUtil::GetViewDistance() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::vec3&
+inline const Math::point&
 MayaCameraUtil::GetCenterOfInterest() const
 {
     return this->centerOfInterest;
@@ -208,7 +208,7 @@ MayaCameraUtil::SetOrbiting(const Math::vec2& v)
 /**
 */
 inline void
-MayaCameraUtil::SetCenterOfInterest(const Math::vec3& point)
+MayaCameraUtil::SetCenterOfInterest(const Math::point& point)
 {
     this->centerOfInterest = point;
 }

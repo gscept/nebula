@@ -159,13 +159,13 @@ public:
     /// get string value
     const Util::String& GetString(const StringAttrId& colAttrId, IndexT rowIndex) const;
     /// set float4 value
-    void SetFloat4(const Float4AttrId& colAttrId, IndexT rowIndex, const Math::float4& val);
+    void SetVec4(const Vec4AttrId& colAttrId, IndexT rowIndex, const Math::vec4& val);
     /// get float4 value
-    Math::float4 GetFloat4(const Float4AttrId& colAttrId, IndexT rowIndex) const;
+    Math::vec4 GetVec4(const Vec4AttrId& colAttrId, IndexT rowIndex) const;
     /// set matrix44 value
-    void SetMatrix44(const Matrix44AttrId& colAttrId, IndexT rowIndex, const Math::matrix44& val);
+    void SetMatrix44(const Mat4AttrId& colAttrId, IndexT rowIndex, const Math::mat4& val);
     /// get matrix44 value
-    Math::matrix44 GetMatrix44(const Matrix44AttrId& colAttrId, IndexT rowIndex) const;
+    Math::mat4 GetMatrix44(const Mat4AttrId& colAttrId, IndexT rowIndex) const;
     /// set guid value
     void SetGuid(const GuidAttrId& colAttrId, IndexT rowIndex, const Util::Guid& guid);
     /// get guid value
@@ -198,13 +198,13 @@ public:
     /// get string value by column index
     const Util::String& GetString(IndexT colIndex, IndexT rowIndex) const;
     /// set float4 value by column index
-    void SetFloat4(IndexT colIndex, IndexT rowIndex, const Math::float4& val);
+    void SetVec4(IndexT colIndex, IndexT rowIndex, const Math::vec4& val);
     /// get float4 value by column index
-    Math::float4 GetFloat4(IndexT colIndex, IndexT rowIndex) const;
+    Math::vec4 GetVec4(IndexT colIndex, IndexT rowIndex) const;
     /// set matrix44 value by column index
-    void SetMatrix44(IndexT colIndex, IndexT rowIndex, const Math::matrix44& val);
+    void SetMatrix44(IndexT colIndex, IndexT rowIndex, const Math::mat4& val);
     /// get matrix44 value by column index
-    Math::matrix44 GetMatrix44(IndexT colIndex, IndexT rowIndex) const;
+    Math::mat4 GetMatrix44(IndexT colIndex, IndexT rowIndex) const;
     /// set guid value by column index
     void SetGuid(IndexT colIndex, IndexT rowIndex, const Util::Guid& guid);
     /// get guid value by column index
@@ -263,9 +263,9 @@ private:
     /// set entire column to string value
     void SetColumnString(const StringAttrId& attrId, const Util::String& val);
     /// set entire column vector4 value
-    void SetColumnFloat4(const Float4AttrId& attrId, const Math::float4& val);
+    void SetColumnFloat4(const Vec4AttrId& attrId, const Math::vec4& val);
     /// set entire column to matrix44 value
-    void SetColumnMatrix44(const Matrix44AttrId& attrId, const Math::matrix44& val);
+    void SetColumnMatrix44(const Mat4AttrId& attrId, const Math::mat4& val);
     /// set entire column to guid value
     void SetColumnGuid(const GuidAttrId& attrId, const Util::Guid& guid);
     /// set entire column to blob value
@@ -615,7 +615,7 @@ AttributeTable::GetUInt(IndexT colIndex, IndexT rowIndex) const
 /**
 */
 inline void
-AttributeTable::SetFloat4(IndexT colIndex, IndexT rowIndex, const Math::float4& val)
+AttributeTable::SetVec4(IndexT colIndex, IndexT rowIndex, const Math::vec4& val)
 {
     n_assert(this->GetColumnValueType(colIndex) == Float4Type);
     n_assert(!this->IsRowDeleted(rowIndex));
@@ -632,12 +632,12 @@ AttributeTable::SetFloat4(IndexT colIndex, IndexT rowIndex, const Math::float4& 
 //------------------------------------------------------------------------------
 /**
 */
-inline Math::float4
-AttributeTable::GetFloat4(IndexT colIndex, IndexT rowIndex) const
+inline Math::vec4
+AttributeTable::GetVec4(IndexT colIndex, IndexT rowIndex) const
 {
     n_assert(this->GetColumnValueType(colIndex) == Float4Type);
     Math::scalar* valuePtr = (Math::scalar*) this->GetValuePtr(colIndex, rowIndex);
-    Math::float4 vec;
+    Math::vec4 vec;
     vec.loadu(valuePtr);
     return vec;
 }
@@ -646,9 +646,9 @@ AttributeTable::GetFloat4(IndexT colIndex, IndexT rowIndex) const
 /**
 */
 inline void
-AttributeTable::SetMatrix44(IndexT colIndex, IndexT rowIndex, const Math::matrix44& val)
+AttributeTable::SetMatrix44(IndexT colIndex, IndexT rowIndex, const Math::mat4& val)
 {
-    n_assert(this->GetColumnValueType(colIndex) == Matrix44Type);
+    n_assert(this->GetColumnValueType(colIndex) == Mat4Type);
     n_assert(!this->IsRowDeleted(rowIndex));
     Math::scalar* valuePtr = (Math::scalar*) this->GetValuePtr(colIndex, rowIndex);
     val.storeu(valuePtr);
@@ -663,12 +663,12 @@ AttributeTable::SetMatrix44(IndexT colIndex, IndexT rowIndex, const Math::matrix
 //------------------------------------------------------------------------------
 /**
 */
-inline Math::matrix44
+inline Math::mat4
 AttributeTable::GetMatrix44(IndexT colIndex, IndexT rowIndex) const
 {
-    n_assert(this->GetColumnValueType(colIndex) == Matrix44Type);
+    n_assert(this->GetColumnValueType(colIndex) == Mat4Type);
     Math::scalar* valuePtr = (Math::scalar*) this->GetValuePtr(colIndex, rowIndex);
-    Math::matrix44 mx;
+    Math::mat4 mx;
     mx.loadu(valuePtr);
     return mx;
 }
@@ -815,25 +815,25 @@ AttributeTable::GetInt(const IntAttrId& colAttrId, IndexT rowIndex) const
 /**
 */
 inline void
-AttributeTable::SetFloat4(const Float4AttrId& colAttrId, IndexT rowIndex, const Math::float4& val)
+AttributeTable::SetVec4(const Vec4AttrId& colAttrId, IndexT rowIndex, const Math::vec4& val)
 {
-    this->SetFloat4(this->indexMap[colAttrId], rowIndex, val);
+    this->SetVec4(this->indexMap[colAttrId], rowIndex, val);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline Math::float4
-AttributeTable::GetFloat4(const Float4AttrId& colAttrId, IndexT rowIndex) const
+inline Math::vec4
+AttributeTable::GetVec4(const Vec4AttrId& colAttrId, IndexT rowIndex) const
 {
-    return this->GetFloat4(this->indexMap[colAttrId], rowIndex);
+    return this->GetVec4(this->indexMap[colAttrId], rowIndex);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-AttributeTable::SetMatrix44(const Matrix44AttrId& colAttrId, IndexT rowIndex, const Math::matrix44& val)
+AttributeTable::SetMatrix44(const Mat4AttrId& colAttrId, IndexT rowIndex, const Math::mat4& val)
 {
     this->SetMatrix44(this->indexMap[colAttrId], rowIndex, val);
 }
@@ -841,8 +841,8 @@ AttributeTable::SetMatrix44(const Matrix44AttrId& colAttrId, IndexT rowIndex, co
 //------------------------------------------------------------------------------
 /**
 */
-inline Math::matrix44
-AttributeTable::GetMatrix44(const Matrix44AttrId& colAttrId, IndexT rowIndex) const
+inline Math::mat4
+AttributeTable::GetMatrix44(const Mat4AttrId& colAttrId, IndexT rowIndex) const
 {
     return this->GetMatrix44(this->indexMap[colAttrId], rowIndex);
 }

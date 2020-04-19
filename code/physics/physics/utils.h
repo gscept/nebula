@@ -17,7 +17,16 @@
 inline physx::PxVec3
 Neb2PxVec(const Math::vector& vec)
 {
-	return physx::PxVec3(vec.x(), vec.y(), vec.z());
+	return physx::PxVec3(vec.x, vec.y, vec.z);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline physx::PxVec3
+Neb2PxPnt(const Math::point& vec)
+{
+	return physx::PxVec3(vec.x, vec.y, vec.z);
 }
 
 //------------------------------------------------------------------------------
@@ -32,10 +41,10 @@ Px2NebVec(const physx::PxVec3& vec)
 //------------------------------------------------------------------------------
 /**
 */
-inline  Math::float4
+inline  Math::vec4
 Px2Nebfloat4(const physx::PxVec4& vec)
 {
-	return Math::float4(vec.x, vec.y, vec.z, vec.w);
+	return Math::vec4(vec.x, vec.y, vec.z, vec.w);
 }
 
 //------------------------------------------------------------------------------
@@ -51,43 +60,43 @@ Px2NebPoint(const physx::PxVec3& vec)
 /**
 */
 inline physx::PxVec4
-Neb2PxVec4(const Math::float4& vec)
+Neb2PxVec4(const Math::vec4& vec)
 {
-	return physx::PxVec4(vec.x(), vec.y(), vec.z(), vec.w());
+	return physx::PxVec4(vec.x, vec.y, vec.z, vec.w);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline physx::PxQuat
-Neb2PxQuat(const Math::quaternion& vec)
+Neb2PxQuat(const Math::quat& vec)
 {
-	return physx::PxQuat(vec.x(), vec.y(), vec.z(), vec.w());
+	return physx::PxQuat(vec.x, vec.y, vec.z, vec.w);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline Math::quaternion
+inline Math::quat
 Px2NebQuat(const physx::PxQuat& vec)
 {
-	return Math::quaternion(vec.x, vec.y, vec.z, vec.w);
+	return Math::quat(vec.x, vec.y, vec.z, vec.w);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline physx::PxMat44
-Neb2PxMat(const Math::matrix44& mat)
+Neb2PxMat(const Math::mat4& mat)
 {
-	return physx::PxMat44(Neb2PxVec4(mat.row0()), Neb2PxVec4(mat.row1()), Neb2PxVec4(mat.row2()), Neb2PxVec4(mat.row3()));
+	return physx::PxMat44(Neb2PxVec4(mat.row0), Neb2PxVec4(mat.row1), Neb2PxVec4(mat.row2), Neb2PxVec4(mat.row3));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline physx::PxTransform
-Neb2PxTrans(const Math::matrix44& mat)
+Neb2PxTrans(const Math::mat4& mat)
 {
 	return physx::PxTransform(Neb2PxMat(mat));
 }
@@ -95,12 +104,12 @@ Neb2PxTrans(const Math::matrix44& mat)
 //------------------------------------------------------------------------------
 /**
 */
-inline Math::matrix44
+inline Math::mat4
 Px2NebMat(const physx::PxTransform& mat)
 {
-	Math::quaternion q = Px2NebQuat(mat.q);
-	Math::float4 p = Px2NebPoint(mat.p);
-	Math::matrix44 m = Math::matrix44::rotationquaternion(q);
-	m.set_position(p);
+	Math::quat q = Px2NebQuat(mat.q);
+	Math::vec4 p = Px2NebPoint(mat.p);
+	Math::mat4 m = Math::rotationquat(q);
+	m.position = p;
 	return m;
 }

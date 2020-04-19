@@ -193,7 +193,7 @@ AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const
 //------------------------------------------------------------------------------
 /**
 */
-AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Math::float2& defVal, bool isDynamic) :
+AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Math::vec2& defVal, bool isDynamic) :
     name(name),
     typeName(typeName),
     fourCC(fourCC),
@@ -208,7 +208,7 @@ AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const
 //------------------------------------------------------------------------------
 /**
 */
-AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Math::float4& defVal, bool isDynamic) :
+AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Math::vec4& defVal, bool isDynamic) :
     name(name),
     typeName(typeName),
     fourCC(fourCC),
@@ -223,7 +223,7 @@ AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const
 //------------------------------------------------------------------------------
 /**
 */
-AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Math::quaternion& defVal, bool isDynamic) :
+AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Math::quat& defVal, bool isDynamic) :
     name(name),
     typeName(typeName),
     fourCC(fourCC),
@@ -253,13 +253,13 @@ AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const
 //------------------------------------------------------------------------------
 /**
 */
-AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Math::matrix44& defVal, bool isDynamic) :
+AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Math::mat4& defVal, bool isDynamic) :
     name(name),
     typeName(typeName),
     fourCC(fourCC),
     accessMode(accessMode),
     defaultValue(defVal),
-    valueType(ValueType::Matrix44Type),
+    valueType(ValueType::Mat4Type),
     isDynamic(isDynamic)
 {
     this->Register();
@@ -373,13 +373,13 @@ AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const
 //------------------------------------------------------------------------------
 /**
 */
-AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Math::float2>& defVal, bool isDynamic) :
+AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Math::vec2>& defVal, bool isDynamic) :
     name(name),
     typeName(typeName),
     fourCC(fourCC),
     accessMode(accessMode),
     defaultValue(defVal),
-    valueType(ValueType::Float2ArrayType),
+    valueType(ValueType::Vec2ArrayType),
     isDynamic(isDynamic)
 {
     this->Register();
@@ -388,13 +388,13 @@ AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const
 //------------------------------------------------------------------------------
 /**
 */
-AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Math::float4>& defVal, bool isDynamic) :
+AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Math::vec4>& defVal, bool isDynamic) :
     name(name),
     typeName(typeName),
     fourCC(fourCC),
     accessMode(accessMode),
     defaultValue(defVal),
-    valueType(ValueType::Float4ArrayType),
+    valueType(ValueType::Vec4ArrayType),
     isDynamic(isDynamic)
 {
     this->Register();
@@ -418,7 +418,7 @@ AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const
 //------------------------------------------------------------------------------
 /**
 */
-AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Math::matrix44>& defVal, bool isDynamic) :
+AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Math::mat4>& defVal, bool isDynamic) :
     name(name),
     typeName(typeName),
     fourCC(fourCC),
@@ -651,15 +651,15 @@ AttributeDefinitionBase::RegisterDynamicAttribute(const Util::String &name, cons
 
     case Float4Type:
     {
-        const static Math::float4 nullVec;
+        const static Math::vec4 nullVec;
         dynAttr = n_new(AttributeDefinitionBase(name, typeName, fourCC, accessMode, nullVec, true));
         break;
     }
     break;
 
-    case Matrix44Type:
+    case Mat4Type:
     {
-        const static Math::matrix44 identity;
+        const static Math::mat4 identity;
         dynAttr = n_new(AttributeDefinitionBase(name, typeName, fourCC, accessMode, identity, true));
         break;
     }

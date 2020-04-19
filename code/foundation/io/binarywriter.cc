@@ -396,18 +396,21 @@ BinaryWriter::WriteFloat2(Math::vec2 f)
 void
 BinaryWriter::WriteVec3(const vec3& v)
 {
-    vec3 val = v;
-    this->byteOrder.ConvertInPlace<vec3>(val);
+    float val[3];
+    val[0] = this->byteOrder.Convert<float>(v.x);
+    val[1] = this->byteOrder.Convert<float>(v.y);
+    val[2] = this->byteOrder.Convert<float>(v.z);
+    const SizeT writeSize = sizeof(float) * 3;
     if (this->isMapped)
     {
         // note: the memory copy is necessary to circumvent alignment problem on some CPUs
-        n_assert((this->mapCursor + sizeof(v)) <= this->mapEnd);
-        Memory::Copy(&val, this->mapCursor, sizeof(val));
-        this->mapCursor += sizeof(val);
+        n_assert((this->mapCursor + writeSize) <= this->mapEnd);
+        Memory::Copy(&val, this->mapCursor, writeSize);
+        this->mapCursor += writeSize;
     }
     else
     {
-        this->stream->Write(&val, sizeof(val));
+        this->stream->Write(&val, writeSize);
     }
 }
 
@@ -436,7 +439,7 @@ BinaryWriter::WriteVec4(const vec4& v)
 /**
 */
 void
-BinaryWriter::WriteMatrix44(const mat4& m)
+BinaryWriter::WriteMat4(const mat4& m)
 {
     mat4 val = m;
     this->byteOrder.ConvertInPlace<mat4>(val);

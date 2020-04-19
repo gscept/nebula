@@ -29,18 +29,14 @@ public:
     /// construct from components
     quat(scalar x, scalar y, scalar z, scalar w);
     /// construct from vec4
-    quat(vec4 const &rhs);
-    /// copy constructor
-    /// !!!! copy constructor forbidden, otherwise passing point's to a function
-    /// !!!! via Registers doesnt work
-    //quat(const quat& rhs);
+    quat(const vec4& rhs);
     /// construct from __m128
-    quat(const __m128 & rhs);
+    quat(const __m128& rhs);
 	
     /// assignment operator
     void operator=(const quat& rhs);
     /// assign __m128
-    void operator=(const __m128 & rhs);
+    void operator=(const __m128& rhs);
     /// equality operator
     bool operator==(const quat& rhs) const;
     /// inequality operator

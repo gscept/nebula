@@ -37,20 +37,20 @@ public:
     /// construct from values
     vec3(scalar x, scalar y, scalar z);
 	/// construct from single value
-    vec3(scalar v);
+    explicit vec3(scalar v);
 	/// copy constructor
     vec3(const vec3& rhs);
 	/// construct from SSE 128 byte float array
     vec3(const __m128& rhs);
 
     /// assignment operator
-    void operator=(const vec3 &rhs);
+    void operator=(const vec3& rhs);
     /// assign an vmVector4
-    void operator=(const __m128 &rhs);
+    void operator=(const __m128& rhs);
     /// inplace add
-    void operator+=(const vec3 &rhs);
+    void operator+=(const vec3& rhs);
     /// inplace sub
-    void operator-=(const vec3 &rhs);
+    void operator-=(const vec3& rhs);
     /// inplace scalar multiply
     void operator*=(scalar s);
     /// muliply by a vector component-wise
@@ -58,9 +58,9 @@ public:
     /// divide by a vector component-wise
     void operator/=(const vec3& rhs);
     /// equality operator
-    bool operator==(const vec3 &rhs) const;
-    /// inequality operator
-    bool operator!=(const vec3 &rhs) const;
+    bool operator==(const vec3& rhs) const;
+    /// inequality operator	    
+    bool operator!=(const vec3& rhs) const;
 
     /// load content from 16-byte-aligned memory
     void load(const scalar* ptr);
@@ -84,10 +84,10 @@ public:
     union
     {
         __m128 vec;
-		float v[4];
+		float v[3];
         struct
         {
-			// we can access __w to check it, won't take any more space
+			// we can access __w to check it, but we don't actually use it
             float x, y, z, __w;
         };
     };

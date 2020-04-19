@@ -28,6 +28,8 @@ struct
 	float saturation;
 	float fadeValue;
 
+	float skyTurbidity;
+
 	CoreGraphics::TextureId defaultEnvironmentMap;
 	CoreGraphics::TextureId defaultIrradianceMap;
 } envState;
@@ -63,6 +65,7 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
 	envState.numGlobalEnvironmentMips = 10;
 	envState.saturation = 1.0f;
 	envState.fadeValue = 1.0f;
+	envState.skyTurbidity = 2.0f;
 
 	envState.defaultEnvironmentMap = Resources::CreateResource("tex:system/sky_refl.dds"_atm, "system"_atm,
 		[](const Resources::ResourceId id)
@@ -125,29 +128,28 @@ EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
 	Shared::PerTickParams& tickParams = CoreGraphics::ShaderServer::Instance()->GetTickParams();
 	Math::mat4 transform = Lighting::LightContext::GetTransform(envState.sunEntity);
-	Math::vec4 sunDir = -transform.r[Math::Z_AXIS];
+	Math::vec4 sunDir = -transform.z_axis;
 	
 	// update perez distribution coefficients to the shared constants
-	const float turbidity = 2.0f;
 	Math::vec4 A, B, C, D, E, Z;
-	CalculatePerezDistribution(turbidity, A, B, C, D, E);
-	A.storeu(tickParams.A);
-	B.storeu(tickParams.B);
-	C.storeu(tickParams.C);
-	D.storeu(tickParams.D);
-	E.storeu(tickParams.E);
+	CalculatePerezDistribution(envState.skyTurbidity, A, B, C, D, E);
+	A.store(tickParams.A);
+	B.store(tickParams.B);
+	C.store(tickParams.C);
+	D.store(tickParams.D);
+	E.store(tickParams.E);
 
 	float thetaS = acos(Math::dot3(sunDir, Math::vec4(0, 1, 0, 0)));
-	Z = CalculateZenithLuminanceYxy(turbidity, thetaS);
-	Z.storeu(tickParams.Z);
+	Z = CalculateZenithLuminanceYxy(envState.skyTurbidity, thetaS);
+	Z.store(tickParams.Z);
 
 	// write parameters related to atmosphere
-	envState.fogColor.storeu(tickParams.FogColor);
+	envState.fogColor.store(tickParams.FogColor);
 	tickParams.FogDistances[0] = envState.fogDistances[0];
 	tickParams.FogDistances[1] = envState.fogDistances[1];
 
 	// bloom parameters
-	envState.bloomColor.storeu(tickParams.HDRBloomColor);
+	envState.bloomColor.store(tickParams.HDRBloomColor);
 	tickParams.HDRBrightPassThreshold = envState.bloomThreshold;
 
 	// eye adaptation parameters
@@ -159,7 +161,7 @@ EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 	tickParams.NumEnvMips = envState.numGlobalEnvironmentMips;
 
 	Math::vec4 balance(1.0f);
-	balance.storeu(tickParams.Balance);
+	balance.store(tickParams.Balance);
 	tickParams.Saturation = envState.saturation;
 	tickParams.FadeValue = envState.fadeValue;
 }
@@ -170,17 +172,22 @@ EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 void 
 EnvironmentContext::RenderUI(const Graphics::FrameContext& ctx)
 {
+	float col[4];
+	envState.fogColor.storeu(col);
 	Shared::PerTickParams& tickParams = CoreGraphics::ShaderServer::Instance()->GetTickParams();
 	if (ImGui::Begin("Enviroment Params"))
 	{
-		ImGui::SetWindowSize(ImVec2(240, 400));
+		ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
 		ImGui::SliderFloat("Bloom Threshold", &envState.bloomThreshold, 0, 100.0f);
-		//ImGui::SliderFloat("Fog Start", &envState.fogDistances[0], 0, 10000.0f);
-		//ImGui::SliderFloat("Fog End", &envState.fogDistances[1], 0, 10000.0f);
+		ImGui::SliderFloat("Sky Turbidity", &envState.skyTurbidity, 2.0f, 15.0f);
+		ImGui::InputFloat("Fog Start", &envState.fogDistances[0], 0, 10000.0f);
+		ImGui::InputFloat("Fog End", &envState.fogDistances[1], 0, 10000.0f);
+		ImGui::ColorEdit4("Fog Color", col);
 		ImGui::SliderFloat("Max Luminance", &envState.maxEyeLuminance, 0, 100.0f);
 		ImGui::SliderFloat("Color Saturation", &envState.saturation, 0, 1.0f);
 		ImGui::SliderFloat("Fade Value", &envState.fadeValue, 0, 1.0f);
 	}
+	envState.fogColor.loadu(col);
 
 	ImGui::End();
 }

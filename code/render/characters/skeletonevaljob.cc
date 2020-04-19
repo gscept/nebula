@@ -85,14 +85,14 @@ SkeletonEvalJob(const Jobs::JobFuncContext& ctx)
 
 			// update scaled matrix
 			// scale after rotation
-			scaledMatrix.r[Math::X_AXIS] = unscaledMatrix.r[Math::X_AXIS] * splat_x(finalScale);
-			scaledMatrix.r[Math::Y_AXIS] = unscaledMatrix.r[Math::Y_AXIS] * splat_y(finalScale);
-			scaledMatrix.r[Math::Z_AXIS] = unscaledMatrix.r[Math::Z_AXIS] * splat_z(finalScale);
+			scaledMatrix.x_axis = unscaledMatrix.x_axis * splat_x(finalScale);
+			scaledMatrix.y_axis = unscaledMatrix.y_axis * splat_y(finalScale);
+			scaledMatrix.z_axis = unscaledMatrix.z_axis * splat_z(finalScale);
 
 			if (InvalidIndex == comps.parentJointIndex)
 			{
 				// no parent directly set translation
-				scaledMatrix.r[Math::POSITION] = unscaledMatrix.r[Math::POSITION];
+				scaledMatrix.position = unscaledMatrix.position;
 			}
 			else
 			{
@@ -106,8 +106,8 @@ SkeletonEvalJob(const Jobs::JobFuncContext& ctx)
 				parentFinalScale = permute(parentFinalScale, vec1111, 0, 1, 2, 7);
 
 				// transform our unscaled position with parent scaling
-				unscaledMatrix.r[Math::POSITION] = unscaledMatrix.r[Math::POSITION] * parentFinalScale;
-				scaledMatrix.r[Math::POSITION] = unscaledMatrix.r[Math::POSITION];
+				unscaledMatrix.position = unscaledMatrix.position * parentFinalScale;
+				scaledMatrix.position = unscaledMatrix.position;
 
 				// apply rotation and relative animation translation of parent 
 				const mat4& parentUnscaledMatrix = unscaledMatrixBase[comps.parentJointIndex];
@@ -191,14 +191,14 @@ SkeletonEvalJobWithVariation(const Jobs::JobFuncContext& ctx)
 
 			// update scaled matrix
 			// scale after rotation
-			scaledMatrix.r[Math::X_AXIS] = unscaledMatrix.r[Math::X_AXIS] * splat_x(finalScale);
-			scaledMatrix.r[Math::Y_AXIS] = unscaledMatrix.r[Math::Y_AXIS] * splat_y(finalScale);
-			scaledMatrix.r[Math::Z_AXIS] = unscaledMatrix.r[Math::Z_AXIS] * splat_z(finalScale);
+			scaledMatrix.x_axis = unscaledMatrix.x_axis * splat_x(finalScale);
+			scaledMatrix.y_axis = unscaledMatrix.y_axis * splat_y(finalScale);
+			scaledMatrix.z_axis = unscaledMatrix.z_axis * splat_z(finalScale);
 
 			if (InvalidIndex == comps.parentJointIndex)
 			{
 				// no parent directly set translation
-				scaledMatrix.r[Math::POSITION] = unscaledMatrix.r[Math::POSITION];
+				scaledMatrix.position = unscaledMatrix.position;
 			}
 			else
 			{
@@ -214,8 +214,8 @@ SkeletonEvalJobWithVariation(const Jobs::JobFuncContext& ctx)
 				parentFinalScale = permute(parentFinalScale, vec1111, 0, 1, 2, 7);
 
 				// transform our unscaled position with parent scaling
-				unscaledMatrix.r[Math::POSITION] = unscaledMatrix.r[Math::POSITION] * parentFinalScale;
-				scaledMatrix.r[Math::POSITION] = unscaledMatrix.r[Math::POSITION];
+				unscaledMatrix.position = unscaledMatrix.position * parentFinalScale;
+				scaledMatrix.position = unscaledMatrix.position;
 
 				// apply rotation and relative animation translation of parent 
 				const mat4& parentUnscaledMatrix = unscaledMatrixBase[comps.parentJointIndex];

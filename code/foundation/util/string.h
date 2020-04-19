@@ -714,10 +714,10 @@ String::SetMat4(const Math::mat4& m)
                  "%.6f, %.6f, %.6f, %.6f, "
                  "%.6f, %.6f, %.6f, %.6f, "
                  "%.6f, %.6f, %.6f, %.6f",
-                 m.r[Math::ROW_0].x, m.r[Math::ROW_0].y, m.r[Math::ROW_0].z, m.r[Math::ROW_0].w,
-                 m.r[Math::ROW_1].x, m.r[Math::ROW_1].y, m.r[Math::ROW_1].z, m.r[Math::ROW_1].w,
-                 m.r[Math::ROW_2].x, m.r[Math::ROW_2].y, m.r[Math::ROW_2].z, m.r[Math::ROW_2].w,
-                 m.r[Math::ROW_3].x, m.r[Math::ROW_3].y, m.r[Math::ROW_3].z, m.r[Math::ROW_3].w);
+                 m.row0.x, m.row0.y, m.row0.z, m.row0.w,
+                 m.row1.x, m.row1.y, m.row1.z, m.row1.w,
+                 m.row2.x, m.row2.y, m.row2.z, m.row2.w,
+                 m.row3.x, m.row3.y, m.row3.z, m.row3.w);
 }
 
 //------------------------------------------------------------------------------

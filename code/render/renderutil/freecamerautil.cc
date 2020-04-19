@@ -35,7 +35,7 @@ FreeCameraUtil::FreeCameraUtil() :
 /**
 */
 void 
-FreeCameraUtil::Setup( const Math::vec3& defaultEyePos, const Math::vec3& defaultEyeVec )
+FreeCameraUtil::Setup( const Math::point& defaultEyePos, const Math::vector& defaultEyeVec )
 {
 	this->defaultEyePos = defaultEyePos;
 	this->defaultEyeVec = defaultEyeVec;
@@ -105,7 +105,7 @@ FreeCameraUtil::Update()
 	translation = this->cameraTransform * translation;
 	this->position += xyz(translation);
 
-	this->cameraTransform.r[Math::POSITION] = vec4(this->position, 1);
+	this->cameraTransform.position = point(this->position);
 }
 
 

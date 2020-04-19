@@ -105,7 +105,7 @@ void
 VkTransformDevice::SetProjTransform(const Math::mat4& m)
 {
 	Math::mat4 conv = m;
-	conv.r[Math::ROW_1] = -conv.r[Math::ROW_1];
+	conv.row1 = -conv.row1;
 	TransformDeviceBase::SetProjTransform(conv);
 }
 
@@ -119,15 +119,15 @@ VkTransformDevice::ApplyViewSettings()
 
 	// update block structure
 	alignas(16) Shared::FrameBlock block;
-	this->GetViewTransform().storeu(block.View);
-	this->GetViewProjTransform().storeu(block.ViewProjection);
-	this->GetProjTransform().storeu(block.Projection);
-	this->GetInvViewTransform().storeu(block.InvView);
-	this->GetInvProjTransform().storeu(block.InvProjection);
-	Math::inverse(this->GetViewProjTransform()).storeu(block.InvViewProjection);
-	this->GetInvViewTransform().r[Math::POSITION].storeu(block.EyePos);
-	vec4(this->GetFocalLength().x, this->GetFocalLength().y, this->GetNearFarPlane().x, this->GetNearFarPlane().y).storeu(block.FocalLengthNearFar);
-	vec4((float)FrameSync::FrameSyncTimer::Instance()->GetTime(), Math::n_rand(0, 1), (float)FrameSync::FrameSyncTimer::Instance()->GetFrameTime(), 0).storeu(block.TimeAndRandom);
+	this->GetViewTransform().store(block.View);
+	this->GetViewProjTransform().store(block.ViewProjection);
+	this->GetProjTransform().store(block.Projection);
+	this->GetInvViewTransform().store(block.InvView);
+	this->GetInvProjTransform().store(block.InvProjection);
+	Math::inverse(this->GetViewProjTransform()).store(block.InvViewProjection);
+	this->GetInvViewTransform().position.store(block.EyePos);
+	vec4(this->GetFocalLength().x, this->GetFocalLength().y, this->GetNearFarPlane().x, this->GetNearFarPlane().y).store(block.FocalLengthNearFar);
+	vec4((float)FrameSync::FrameSyncTimer::Instance()->GetTime(), Math::n_rand(0, 1), (float)FrameSync::FrameSyncTimer::Instance()->GetFrameTime(), 0).store(block.TimeAndRandom);
 	uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, block);
 
 	// update actual constant buffer

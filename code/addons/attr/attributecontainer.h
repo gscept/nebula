@@ -60,17 +60,17 @@ public:
     /// get string value with default if not exists
     const Util::String& GetString(const StringAttrId& attrId, const Util::String& defaultValue) const;
     /// set float4 value
-    void SetFloat4(const Float4AttrId& attrId, const Math::float4& val);
+    void SetFloat4(const Vec4AttrId& attrId, const Math::vec4& val);
     /// get float4 value
-    Math::float4 GetFloat4(const Float4AttrId& attrId) const;
+    Math::vec4 GetVec4(const Vec4AttrId& attrId) const;
     /// get float4 value with default if not exists
-    Math::float4 GetFloat4(const Float4AttrId& attrId, const Math::float4& defaultValue) const;
+    Math::vec4 GetVec4(const Vec4AttrId& attrId, const Math::vec4& defaultValue) const;
     /// set matrix44 value
-    void SetMatrix44(const Matrix44AttrId& attrId, const Math::matrix44& val);
+    void SetMatrix44(const Mat4AttrId& attrId, const Math::mat4& val);
     /// get matrix44 value
-    const Math::matrix44& GetMatrix44(const Matrix44AttrId& attrId) const;
+    const Math::mat4& GetMat4(const Mat4AttrId& attrId) const;
     /// get matrix44 value with default if not exists
-    const Math::matrix44& GetMatrix44(const Matrix44AttrId& attrId, const Math::matrix44& defaultValue) const;
+    const Math::mat4& GetMat4(const Mat4AttrId& attrId, const Math::mat4& defaultValue) const;
     /// set guid value
     void SetGuid(const GuidAttrId& attrId, const Util::Guid& guid);
     /// get guid value
@@ -235,7 +235,7 @@ AttributeContainer::GetString(const StringAttrId& attrId, const Util::String& de
 /**
 */
 inline void
-AttributeContainer::SetFloat4(const Float4AttrId& attrId, const Math::float4& val)
+AttributeContainer::SetFloat4(const Vec4AttrId& attrId, const Math::vec4& val)
 {
     this->SetAttr(Attribute(attrId, val));
 }
@@ -243,22 +243,22 @@ AttributeContainer::SetFloat4(const Float4AttrId& attrId, const Math::float4& va
 //------------------------------------------------------------------------------
 /**
 */
-inline Math::float4
-AttributeContainer::GetFloat4(const Float4AttrId& attrId) const
+inline Math::vec4
+AttributeContainer::GetVec4(const Vec4AttrId& attrId) const
 {
     n_assert(this->attrs.Contains(attrId));
-    return this->attrs[attrId].GetFloat4();
+    return this->attrs[attrId].GetVec4();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline Math::float4
-AttributeContainer::GetFloat4(const Float4AttrId& attrId, const Math::float4& defaultValue) const
+inline Math::vec4
+AttributeContainer::GetVec4(const Vec4AttrId& attrId, const Math::vec4& defaultValue) const
 {
     if (this->HasAttr(attrId))
     {
-        return this->GetFloat4(attrId);
+        return this->GetVec4(attrId);
     }
     else
     {
@@ -270,7 +270,7 @@ AttributeContainer::GetFloat4(const Float4AttrId& attrId, const Math::float4& de
 /**
 */
 inline void
-AttributeContainer::SetMatrix44(const Matrix44AttrId& attrId, const Math::matrix44& val)
+AttributeContainer::SetMatrix44(const Mat4AttrId& attrId, const Math::mat4& val)
 {
     this->SetAttr(Attribute(attrId, val));
 }
@@ -278,22 +278,22 @@ AttributeContainer::SetMatrix44(const Matrix44AttrId& attrId, const Math::matrix
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44&
-AttributeContainer::GetMatrix44(const Matrix44AttrId& attrId) const
+inline const Math::mat4&
+AttributeContainer::GetMat4(const Mat4AttrId& attrId) const
 {
     n_assert(this->attrs.Contains(attrId));
-    return this->attrs[attrId].GetMatrix44();
+    return this->attrs[attrId].GetMat4();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44&
-AttributeContainer::GetMatrix44(const Matrix44AttrId& attrId, const Math::matrix44& defaultValue) const
+inline const Math::mat4&
+AttributeContainer::GetMat4(const Mat4AttrId& attrId, const Math::mat4& defaultValue) const
 {
     if (this->HasAttr(attrId))
     {
-        return this->GetMatrix44(attrId);
+        return this->GetMat4(attrId);
     }
     else
     {

@@ -4,8 +4,8 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "util/string.h"
-#include "math/matrix44.h"
-#include "math/float4.h"
+#include "math/mat4.h"
+#include "math/vec4.h"
 #include "math/vector.h"
 #include "math/point.h"
 #include "util/array.h"
@@ -71,21 +71,21 @@ PYBIND11_EMBEDDED_MODULE(game, m)
             return false;
         })               
         .def_property("world_transform",
-            [](const Game::Entity &id) -> Math::matrix44
+            [](const Game::Entity &id) -> Math::mat4
             {
                 return Game::TransformComponent::GetWorldTransform(id);
             },
-            [](const Game::Entity &id, const Math::matrix44& mat)
+            [](const Game::Entity &id, const Math::mat4& mat)
             {   
                 Game::TransformComponent::SetWorldTransform(id, mat);
             }
         )
         .def_property("local_transform",
-            [](const Game::Entity &id) -> Math::matrix44
+            [](const Game::Entity &id) -> Math::mat4
             {
                 return Game::TransformComponent::GetLocalTransform(id);
             },
-            [](const Game::Entity &id, const Math::matrix44& mat)
+            [](const Game::Entity &id, const Math::mat4& mat)
             {
                 Game::TransformComponent::SetLocalTransform(id, mat);
             }            
@@ -150,7 +150,7 @@ PYBIND11_EMBEDDED_MODULE(attr, m)
         .value("FLOAT4", Attr::ValueType::Float4Type)
         .value("QUATERNION", Attr::ValueType::QuaternionType)
         .value("STRING", Attr::ValueType::StringType)
-        .value("MATRIX44", Attr::ValueType::Matrix44Type)
+        .value("MATRIX44", Attr::ValueType::Mat4Type)
         .value("TRANSFORM44", Attr::ValueType::Transform44Type)
         .value("BLOB", Attr::ValueType::BlobType)
         .value("GUID", Attr::ValueType::GuidType)
@@ -158,8 +158,8 @@ PYBIND11_EMBEDDED_MODULE(attr, m)
         .value("INT_ARRAY", Attr::ValueType::IntArrayType)
         .value("FLOAT_ARRAY", Attr::ValueType::FloatArrayType)
         .value("BOOL_ARRAY", Attr::ValueType::BoolArrayType)
-        .value("FLOAT2_ARRAY", Attr::ValueType::Float2ArrayType)
-        .value("FLOAT4_ARRAY", Attr::ValueType::Float4ArrayType)
+        .value("FLOAT2_ARRAY", Attr::ValueType::Vec2ArrayType)
+        .value("FLOAT4_ARRAY", Attr::ValueType::Vec4ArrayType)
         .value("STRING_ARRAY", Attr::ValueType::StringArrayType)
         .value("MATRIX44_ARRAY", Attr::ValueType::Matrix44ArrayType)
         .value("BLOB_ARRAY", Attr::ValueType::BlobArrayType)

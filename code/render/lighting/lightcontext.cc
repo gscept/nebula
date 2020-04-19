@@ -646,7 +646,7 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
 				shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId.id) = viewProjection;
 
 				lightServerState.shadowcastingLocalLights.Add(observer);
-				viewProjection.storeu(lightServerState.shadowMatrixUniforms.LightViewMatrix[shadowCasterCount++]);
+				viewProjection.store(lightServerState.shadowMatrixUniforms.LightViewMatrix[shadowCasterCount++]);
 			}
 
 			case PointLightType:
@@ -716,7 +716,7 @@ void
 LightContext::SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform)
 {
 	auto lid = genericLightAllocator.Get<TypedLightId>(id.id);
-	globalLightAllocator.Get<GlobalLight_Direction>(lid) = -normalize(xyz(transform.r[Math::Z_AXIS]));
+	globalLightAllocator.Get<GlobalLight_Direction>(lid) = -normalize(xyz(transform.z_axis));
 	globalLightAllocator.Get<GlobalLight_Transform>(lid) = transform;
 }
 
@@ -749,12 +749,12 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 	// update constant buffer
 	Ids::Id32 globalLightId = genericLightAllocator.Get<TypedLightId>(cid.id);
 	Shared::PerTickParams& params = ShaderServer::Instance()->GetTickParams();
-	(genericLightAllocator.Get<Color>(cid.id)* genericLightAllocator.Get<Intensity>(cid.id)).storeu(params.GlobalLightColor);
-	globalLightAllocator.Get<GlobalLight_Direction>(globalLightId).storeu(params.GlobalLightDirWorldspace);
-	globalLightAllocator.Get<GlobalLight_Backlight>(globalLightId).storeu(params.GlobalBackLightColor);
-	globalLightAllocator.Get<GlobalLight_Ambient>(globalLightId).storeu(params.GlobalAmbientLightColor);
+	(genericLightAllocator.Get<Color>(cid.id)* genericLightAllocator.Get<Intensity>(cid.id)).store(params.GlobalLightColor);
+	globalLightAllocator.Get<GlobalLight_Direction>(globalLightId).store(params.GlobalLightDirWorldspace);
+	globalLightAllocator.Get<GlobalLight_Backlight>(globalLightId).store(params.GlobalBackLightColor);
+	globalLightAllocator.Get<GlobalLight_Ambient>(globalLightId).store(params.GlobalAmbientLightColor);
 	Math::vec4 viewSpaceLightDir = invViewTransform * Math::vec4(globalLightAllocator.Get<GlobalLight_Direction>(globalLightId), 0.0f);
-	normalize(viewSpaceLightDir).storeu3(params.GlobalLightDir);
+	normalize(viewSpaceLightDir).store3(params.GlobalLightDir);
 	params.GlobalBackLightOffset = globalLightAllocator.Get<GlobalLight_BacklightOffset>(globalLightId);
 
 	// apply shadow uniforms
@@ -779,11 +779,11 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 		{
 			Math::mat4 shadowTexture = transforms[splitIndex] * (textureScale * textureTranslation);
 			Math::vec4 scale = Math::vec4(
-				shadowTexture.r[Math::ROW_0].x,
-				shadowTexture.r[Math::ROW_1].y,
-				shadowTexture.r[Math::ROW_2].z,
+				shadowTexture.row0.x,
+				shadowTexture.row1.y,
+				shadowTexture.row2.z,
 				1);
-			Math::vec4 offset = shadowTexture.r[Math::ROW_3];
+			Math::vec4 offset = shadowTexture.row3;
 			offset.w = 0;
 			cascadeOffsets[splitIndex] = offset;
 			cascadeScales[splitIndex] = scale;
@@ -796,7 +796,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 		params.MaxBorderPadding = (1024.0f - 1.0f) / 1024.0f;
 		params.ShadowPartitionSize = 1.0f;
 		params.GlobalLightShadowBuffer = CoreGraphics::TextureGetBindlessHandle(lightServerState.globalLightShadowMapBlurred1);
-		(invViewTransform * lightServerState.csmUtil.GetShadowView()).storeu(params.CSMShadowMatrix);
+		(invViewTransform * lightServerState.csmUtil.GetShadowView()).store(params.CSMShadowMatrix);
 
 		flags |= USE_SHADOW_BITFLAG;
 	}
@@ -843,10 +843,10 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 					flags |= USE_PROJECTION_TEX_BITFLAG;
 				}
 
-				Math::vec4 posAndRange = viewTransform * trans.r[Math::POSITION];
+				Math::vec4 posAndRange = viewTransform * trans.position;
 				posAndRange.w = range[i];
-				posAndRange.storeu(pointLight.position);
-				(color[i] * intensity[i]).storeu(pointLight.color);
+				posAndRange.store(pointLight.position);
+				(color[i] * intensity[i]).store(pointLight.color);
 				pointLight.flags = flags;
 				numPointLights++;
 			}
@@ -877,7 +877,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 					spotLight.shadowExtension = numSpotLightShadows;
 					auto& shadow = clusterState.spotLightShadow[numSpotLightShadows];
 					
-					shadowProj.storeu(shadow.projection);
+					shadowProj.store(shadow.projection);
 					shadow.shadowMap = CoreGraphics::TextureGetBindlessHandle(lightServerState.localLightShadows);
 					shadow.shadowIntensity = 1.0f;
 					shadow.shadowSlice = numShadowLights;
@@ -891,24 +891,24 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 					flags |= USE_PROJECTION_TEX_BITFLAG;
 					spotLight.projectionExtension = numSpotLightsProjection;
 					auto& projection = clusterState.spotLightProjection[numSpotLightsProjection];
-					shadowProj.storeu(projection.projection);
+					shadowProj.store(projection.projection);
 					projection.projectionTexture = CoreGraphics::TextureGetBindlessHandle(tex);
 					numSpotLightsProjection++;
 				}
 
 				Math::mat4 viewSpace = trans * viewTransform;
-				Math::vec4 posAndRange = viewSpace.r[Math::POSITION];
+				Math::vec4 posAndRange = viewSpace.position;
 				posAndRange.w = range[i];
 
-				Math::vec4 forward = normalize(viewSpace.r[Math::Z_AXIS]);
+				Math::vec4 forward = normalize(viewSpace.z_axis);
 				if (angles[0] == angles[1])
 					forward.w = 1.0f;
 				else
 					forward.w = 1.0f / (angles[1] - angles[0]);
 
-				posAndRange.storeu(spotLight.position);
-				forward.storeu(spotLight.forward);
-				(color[i] * intensity[i]).storeu(spotLight.color);
+				posAndRange.store(spotLight.position);
+				forward.store(spotLight.forward);
+				(color[i] * intensity[i]).store(spotLight.color);
 				
 				// calculate sine and cosine
 				spotLight.angleSinCos[0] = Math::n_sin(angles[1]);
@@ -1302,16 +1302,16 @@ LightContext::OnRenderDebug(uint32_t flags)
 
             // take transform, scale Z with range and move back half the range
             Math::mat4 unscaledTransform = spotTrans[ids[i]];
-			Math::vec4 pos = unscaledTransform.r[Math::POSITION] - unscaledTransform.r[Math::Z_AXIS] * ranges[i] * 0.5f;
-			unscaledTransform.r[Math::POSITION] = Math::vec4(0,0,0,1);
-			unscaledTransform.r[Math::X_AXIS] = unscaledTransform.r[Math::X_AXIS] * ranges[i];
-			unscaledTransform.r[Math::Y_AXIS] = unscaledTransform.r[Math::Y_AXIS] * ranges[i];
-			unscaledTransform.r[Math::Z_AXIS] = unscaledTransform.r[Math::Z_AXIS] * ranges[i];
-			unscaledTransform.scale(Math::vec3(2.0f)); // rescale because box should be in [-1, 1] and not [-0.5, 0.5]
-			unscaledTransform.r[Math::POSITION] = pos;
+			Math::vec4 pos = unscaledTransform.position - unscaledTransform.z_axis * ranges[i] * 0.5f;
+			unscaledTransform.position = Math::vec4(0,0,0,1);
+			unscaledTransform.x_axis = unscaledTransform.x_axis * ranges[i];
+			unscaledTransform.y_axis = unscaledTransform.y_axis * ranges[i];
+			unscaledTransform.z_axis = unscaledTransform.z_axis * ranges[i];
+			unscaledTransform.scale(Math::vector(2.0f)); // rescale because box should be in [-1, 1] and not [-0.5, 0.5]
+			unscaledTransform.position = pos;
 
 			// removed skewedness because we are actually just interested in transforming points
-			proj.r[Math::ROW_3] = Math::vec4(0, 0, 0, 1);
+			proj.row3 = Math::vec4(0, 0, 0, 1);
 
 			// we want the points to first get projected, then transformed v * Projection * Transform;
 			Math::mat4 frustum = proj * unscaledTransform;

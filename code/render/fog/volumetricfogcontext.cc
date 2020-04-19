@@ -297,25 +297,25 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 		case BoxVolume:
 		{
 			auto& fog = fogState.fogBoxes[numFogBoxVolumes];
-			fogGenericVolumeAllocator.Get<FogVolume_Absorption>(i).storeu(fog.absorption);
+			fogGenericVolumeAllocator.Get<FogVolume_Absorption>(i).store(fog.absorption);
 			fog.turbidity = fogGenericVolumeAllocator.Get<FogVolume_Turbidity>(i);
 			fog.falloff = 64.0f;
 			Math::mat4 transform = fogBoxVolumeAllocator.Get<FogBoxVolume_Transform>(typeIds[i]) * viewTransform;
 			Math::bbox box(transform);
-			box.pmin.storeu(fog.bboxMin);
-			box.pmax.storeu(fog.bboxMax);
-			inverse(transform).storeu(fog.invTransform);
+			box.pmin.store3(fog.bboxMin);
+			box.pmax.store3(fog.bboxMax);
+			inverse(transform).store(fog.invTransform);
 			numFogBoxVolumes++;
 			break;
 		}
 		case SphereVolume:
 		{
 			auto& fog = fogState.fogSpheres[numFogSphereVolumes];
-			fogGenericVolumeAllocator.Get<FogVolume_Absorption>(i).storeu(fog.absorption);
+			fogGenericVolumeAllocator.Get<FogVolume_Absorption>(i).store(fog.absorption);
 			fog.turbidity = fogGenericVolumeAllocator.Get<FogVolume_Turbidity>(i);
 			Math::vec4 pos = Math::vec4(fogSphereVolumeAllocator.Get<FogSphereVolume_Position>(typeIds[i]), 1);
 			pos = viewTransform * pos;
-			pos.storeu3(fog.position);
+			pos.store3(fog.position);
 			fog.radius = fogSphereVolumeAllocator.Get<FogSphereVolume_Radius>(typeIds[i]);
 			fog.falloff = 64.0f;
 			numFogSphereVolumes++;
@@ -336,8 +336,9 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 	Volumefog::VolumeFogUniforms fogUniforms;
 	fogUniforms.NumFogBoxes = numFogBoxVolumes;
 	fogUniforms.NumFogSpheres = numFogSphereVolumes;
+	fogUniforms.NumClusters = Clustering::ClusterContext::GetNumClusters();
 	fogUniforms.GlobalTurbidity = fogState.turbidity;
-	fogState.color.storeu(fogUniforms.GlobalAbsorption);
+	fogState.color.store(fogUniforms.GlobalAbsorption);
 	fogUniforms.Downscale = 4;
 
 	CoreGraphics::TextureId fog0 = view->GetFrameScript()->GetTexture("VolumetricFogBuffer0");
@@ -376,12 +377,16 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 void 
 VolumetricFogContext::RenderUI(const Graphics::FrameContext& ctx)
 {
+	float col[4];
+	fogState.color.storeu(col);
 	Shared::PerTickParams& tickParams = CoreGraphics::ShaderServer::Instance()->GetTickParams();
 	if (ImGui::Begin("Volumetric Fog Params"))
 	{
-		ImGui::SetWindowSize(ImVec2(240, 400));
-		ImGui::SliderFloat("Turbidity", &fogState.turbidity, 0, 1000.0f);
+		ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
+		ImGui::SliderFloat("Turbidity", &fogState.turbidity, 0, 200.0f);
+		ImGui::ColorEdit4("Fog Color", col);
 	}
+	fogState.color.loadu(col);
 
 	ImGui::End();
 }

@@ -29,7 +29,7 @@ public:
     /// construct from values
     vec4(scalar x, scalar y, scalar z, scalar w);
 	/// construct from single value
-    vec4(scalar v);
+    explicit vec4(scalar v);
 	/// copy constructor
     vec4(const vec4& rhs);
 	/// copy constructor from vec3

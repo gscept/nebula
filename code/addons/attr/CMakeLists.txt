@@ -16,12 +16,12 @@ fips_files(
     attrid.h
     blobattrid.h
     boolattrid.h
-    float4attrid.h
+    vec4attrid.h
     floatattrid.h
     guidattrid.h
     intattrid.h
     uintattrid.h
-    matrix44attrid.h
+    mat4attrid.h
     stringattrid.h
     commonattributes.h
     commonattributes.cc

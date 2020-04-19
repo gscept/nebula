@@ -78,7 +78,7 @@ public:
     /// write a vec4 to the stream
     void WriteVec4(const Math::vec4& v);
     /// write a mat4 to the stream
-    void WriteMatrix44(const Math::mat4& m);
+    void WriteMat4(const Math::mat4& m);
     #endif
     /// write a float array to the stream
     void WriteFloatArray(const Util::Array<float>& arr);

@@ -50,8 +50,8 @@ decompose(const mat4& mat, vec3& outScale, quat& outRotation, vec3& outTranslati
 	mat4 mCopy(mat);
 
 	// Start by extracting the translation (and/or any projection) from the given matrix
-	outTranslation = xyz(mCopy.r[POSITION]);
-	mCopy.r[POSITION] = _id_w;
+	outTranslation = xyz(mCopy.position);
+	mCopy.position = _id_w;
 	
 	// Extract the rotation component - this is done using polar decompostion, where
 	// we successively average the matrix with its inverse transpose until there is

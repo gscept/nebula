@@ -27,6 +27,10 @@ struct vector
     /// construct from SSE 128 byte float array
     vector(const __m128& rhs);
 
+    /// load content from 16-byte-aligned memory
+    void load(const scalar* ptr);
+    /// load content from unaligned memory
+    void loadu(const scalar* ptr);
     /// write content to 16-byte-aligned memory through the write cache
     void store(scalar* ptr) const;
     /// write content to unaligned memory through the write cache
@@ -121,6 +125,28 @@ __forceinline
 vector::vector(const __m128& rhs)
 {
     this->vec = rhs;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Load 4 floats from 16-byte-aligned memory.
+*/
+__forceinline void
+vector::load(const scalar* ptr)
+{
+    this->vec = _mm_load_ps(ptr);
+    this->vec = _mm_and_ps(this->vec, _mask_xyz);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Load 4 floats from unaligned memory.
+*/
+__forceinline void
+vector::loadu(const scalar* ptr)
+{
+    this->vec = _mm_loadu_ps(ptr);
+    this->vec = _mm_and_ps(this->vec, _mask_xyz);
 }
 
 //------------------------------------------------------------------------------

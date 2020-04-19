@@ -26,7 +26,7 @@
         "default": 1.0
         }
     "cameraProjection": {
-        "type": "float4"
+        "type": "vec4"
         "fourcc": "camP"
         "access": "RW"
         "default": [ 1.3333  45.0 0.01 1000.0]

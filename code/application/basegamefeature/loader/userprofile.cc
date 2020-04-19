@@ -168,13 +168,13 @@ UserProfile::Load(const Util::String& path)
 						variant = reader->GetFloat("value");
 						break;
 					case Util::Variant::Vec4:
-						variant = reader->GetFloat4("value");
+						variant = reader->GetVec4("value");
 						break;
 					case Util::Variant::String:
 						variant = reader->GetString("value");
 						break;
-					case Util::Variant::Matrix44:
-						variant = reader->GetMatrix44("value");
+					case Util::Variant::Mat4:
+						variant = reader->GetMat4("value");
 						break;
 					case Util::Variant::Blob:
 					case Util::Variant::Guid:
@@ -258,12 +258,12 @@ UserProfile::Save()
 				writer->Add(variant.GetFloat(), "value");
                 break;
             case Util::Variant::Vec4:
-				writer->Add(variant.GetFloat4(), "value");
+				writer->Add(variant.GetVec4(), "value");
                 break;
             case Util::Variant::String:
 				writer->Add(variant.GetString(), "value");
                 break;
-            case Util::Variant::Matrix44:
+            case Util::Variant::Mat4:
 				writer->Add(variant.GetMat4(), "value");
                 break;
             case Util::Variant::Blob:
@@ -328,7 +328,7 @@ UserProfile::SetVariant(const Util::String& name, const Util::Variant & val)
 		this->SetBool(name, val.GetBool());
 		break;
 	case Variant::Vec4:
-		this->SetFloat4(name, val.GetFloat4());
+		this->SetFloat4(name, val.GetVec4());
 		break;
 	default:
 		n_error("unhandled variant type");

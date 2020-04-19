@@ -52,7 +52,7 @@ DrawFullScreenQuad::Setup(SizeT rtWidth, SizeT rtHeight)
 	Math::vec4 pixelSize(1.0f / float(rtWidth), 1.0f / float(rtHeight), 0.0f, 0.0f);
     Math::vec4 halfPixelSize = pixelSize * 0.5f;
 #else
-	Math::vec4 halfPixelSize = 0.0f;
+	Math::vec4 halfPixelSize(0.0f);
 #endif
 
 	// create corners and uvs

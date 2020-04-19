@@ -184,16 +184,16 @@ void GamePageHandler::InspectComponent(const Util::FourCC& fourcc, const Ptr<Htt
 						Util::Variant value = component->GetAttributeValue(instance, i);
 						switch (attributes[i].GetValueType())
 						{
-						case Attr::ValueType::Matrix44Type:
+						case Attr::ValueType::Mat4Type:
 						{
-							Math::matrix44 mat4 = value.GetMat4();
-							htmlWriter->Text(String::FromVec4(mat4.getrow0()));
+							Math::mat4 mat4 = value.GetMat4();
+							htmlWriter->Text(String::FromVec4(mat4.row0));
 							htmlWriter->LineBreak();
-							htmlWriter->Text(String::FromVec4(mat4.getrow1()));
+							htmlWriter->Text(String::FromVec4(mat4.row1));
 							htmlWriter->LineBreak();
-							htmlWriter->Text(String::FromVec4(mat4.getrow2()));
+							htmlWriter->Text(String::FromVec4(mat4.row2));
 							htmlWriter->LineBreak();
-							htmlWriter->Text(String::FromVec4(mat4.getrow3()));
+							htmlWriter->Text(String::FromVec4(mat4.row3));
 							break;
 						}
 						case Attr::ValueType::IntType:
@@ -232,13 +232,13 @@ void GamePageHandler::InspectComponent(const Util::FourCC& fourcc, const Ptr<Htt
 							str = String::FromBool(value.GetBool());
 							break;
 						case Attr::ValueType::QuaternionType:
-							str = String::FromQuat(value.GetQuaternion());
+							str = String::FromQuat(value.GetQuat());
 							break;
 						case Attr::ValueType::Float4Type:
 							str = String::FromVec4(value.GetVec4());
 							break;
 						case Attr::ValueType::Float2Type:
-							str = String::FromVec2(value.GetFloat2());
+							str = String::FromVec2(value.GetVec2());
 							break;
 						case Attr::ValueType::FloatType:
 							str = String::FromFloat(value.GetFloat());

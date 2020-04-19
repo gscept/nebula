@@ -22,7 +22,7 @@ public:
 	FreeCameraUtil();
 
 	/// sets up free camera
-	void Setup(const Math::vec3& defaultEyePos, const Math::vec3& defaultEyeVec);
+	void Setup(const Math::point& defaultEyePos, const Math::vector& defaultEyeVec);
 	/// resets free camera to default values
 	void Reset();
 	/// updates camera matrix
@@ -55,12 +55,12 @@ public:
 	void SetDownKey(bool state);
 	
 private:
-	Math::vec3 defaultEyePos;
-	Math::vec3 defaultEyeVec;
+	Math::point defaultEyePos;
+	Math::vector defaultEyeVec;
 	Math::vec2 mouseMovement;
 
 	Math::polar viewAngles;
-	Math::vec3 position;
+	Math::point position;
 	Math::mat4 cameraTransform;
 
 	float rotationSpeed;
@@ -86,7 +86,6 @@ FreeCameraUtil::GetTransform() const
 {
 	return this->cameraTransform;
 }
-
 
 //------------------------------------------------------------------------------
 /**

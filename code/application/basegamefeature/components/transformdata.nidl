@@ -1,12 +1,12 @@
 "namespace": "Game"
 "attributes": {
     "LocalTransform": {
-        "type": "matrix44"
+        "type": "mat4"
         "fourcc": "TFLT"
         "access": "RW"
     }
     "WorldTransform": {
-        "type": "matrix44"
+        "type": "mat4" 
         "fourcc": "TFWT"
         "access": "R"
     }

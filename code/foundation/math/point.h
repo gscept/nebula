@@ -14,7 +14,6 @@ namespace Math
 
 struct point
 {
-
     /// default constructor
     point();
     /// construct from values
@@ -30,10 +29,18 @@ struct point
     /// construct from SSE 128 byte float array
     point(const __m128& rhs);
 
+    /// load content from 16-byte-aligned memory
+    void load(const scalar* ptr);
+    /// load content from unaligned memory
+    void loadu(const scalar* ptr);
     /// write content to 16-byte-aligned memory through the write cache
     void store(scalar* ptr) const;
     /// write content to unaligned memory through the write cache
     void storeu(scalar* ptr) const;
+    /// write content to 16-byte-aligned memory through the write cache
+    void store3(scalar* ptr) const;
+    /// write content to unaligned memory through the write cache
+    void storeu3(scalar* ptr) const;
 
     /// assignment operator
     void operator=(const point& rhs);
@@ -169,6 +176,26 @@ point::operator-=(const vector& rhs)
 
 //------------------------------------------------------------------------------
 /**
+    Load 4 floats from 16-byte-aligned memory.
+*/
+__forceinline void
+point::load(const scalar* ptr)
+{
+    this->vec = _mm_load_ps(ptr);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Load 4 floats from unaligned memory.
+*/
+__forceinline void
+point::loadu(const scalar* ptr)
+{
+    this->vec = _mm_loadu_ps(ptr);
+}
+
+//------------------------------------------------------------------------------
+/**
     Store to 16-byte-aligned float pointer.
 */
 __forceinline void
@@ -187,6 +214,31 @@ point::storeu(scalar* ptr) const
     _mm_storeu_ps(ptr, this->vec);
 }
 
+//------------------------------------------------------------------------------
+/**
+    Store to 16-byte-aligned float pointer.
+*/
+__forceinline void
+point::store3(scalar* ptr) const
+{
+    __m128 v = _mm_permute_ps(this->vec, _MM_SHUFFLE(2, 2, 2, 2));
+    _mm_storel_epi64(reinterpret_cast<__m128i*>(ptr), _mm_castps_si128(this->vec));
+    _mm_store_ss(&ptr[2], v);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Store to non-aligned float pointer.
+*/
+__forceinline void
+point::storeu3(scalar* ptr) const
+{
+    __m128 t1 = _mm_permute_ps(this->vec, _MM_SHUFFLE(1, 1, 1, 1));
+    __m128 t2 = _mm_permute_ps(this->vec, _MM_SHUFFLE(2, 2, 2, 2));
+    _mm_store_ss(&ptr[0], this->vec);
+    _mm_store_ss(&ptr[1], t1);
+    _mm_store_ss(&ptr[2], t2);
+}
 //------------------------------------------------------------------------------
 /**
 */
