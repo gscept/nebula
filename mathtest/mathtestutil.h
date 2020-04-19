@@ -62,10 +62,10 @@ quaternionequal(const quat &a, const quat&b)
 __forceinline bool
 mat4equal(const mat4 &a, const mat4 &b)
 {
-	return vec4equal(a.r[Math::ROW_0], b.r[Math::ROW_0]) &&
-		   vec4equal(a.r[Math::ROW_1], b.r[Math::ROW_1]) &&
-		   vec4equal(a.r[Math::ROW_2], b.r[Math::ROW_2]) &&
-		   vec4equal(a.r[Math::ROW_3], b.r[Math::ROW_3]);
+	return vec4equal(a.row0, b.row0) &&
+		   vec4equal(a.row1, b.row1) &&
+		   vec4equal(a.row2, b.row2) &&
+		   vec4equal(a.row3, b.row3);
 }
 
 //------------------------------------------------------------------------------
@@ -104,10 +104,10 @@ __forceinline void
 print( const mat4& mat )
 {
 #if (__WIN32__ || __XBOX360__ || __WII__ || __linux__)
-	print(mat.r[Math::ROW_0]);
-	print(mat.r[Math::ROW_1]);
-	print(mat.r[Math::ROW_2]);
-	print(mat.r[Math::ROW_3]);
+	print(mat.row0);
+	print(mat.row1);
+	print(mat.row2);
+	print(mat.row3);
 #elif __PS3__
 /*
 	inline const Vector4 Matrix4::getRow( int row ) const
@@ -130,10 +130,10 @@ print( const mat4& mat )
 	vectormath_aos.h declaration of Matrix4
 */
 	// yes, looks weird, rows and cols seem to be mixed, look at the above matrix-funcs from mat_aos.h
-    print(vec4(mat.r[Math::ROW_0].x, mat.r[Math::ROW_1].x, mat.r[Math::ROW_2].x, mat.r[Math::ROW_3].x));
-    print(vec4(mat.r[Math::ROW_0].y, mat.r[Math::ROW_1].y, mat.r[Math::ROW_2].y, mat.r[Math::ROW_3].y));
-    print(vec4(mat.r[Math::ROW_0].z, mat.r[Math::ROW_1].z, mat.r[Math::ROW_2].z, mat.r[Math::ROW_3].z));
-    print(vec4(mat.r[Math::ROW_0].w, mat.r[Math::ROW_1].w, mat.r[Math::ROW_2].w, mat.r[Math::ROW_3].w));
+    print(vec4(mat.row0.x, mat.row1.x, mat.row2.x, mat.row3.x));
+    print(vec4(mat.row0.y, mat.row1.y, mat.row2.y, mat.row3.y));
+    print(vec4(mat.row0.z, mat.row1.z, mat.row2.z, mat.row3.z));
+    print(vec4(mat.row0.w, mat.row1.w, mat.row2.w, mat.row3.w));
 #else
 #  error unimplemented platform
 #endif
@@ -157,7 +157,7 @@ __forceinline void
 print_flattened(const mat4& mat, const char *msg)
 {
 	n_printf("%s:\n", msg);
-	const float *flattened = (const float *)&(mat.r[Math::ROW_0]);
+	const float *flattened = (const float *)&(mat.row0);
 	for(int i = 0; i < 16; ++i)
 	{
 		n_printf( "[%02d] " SCALAR_FORMATOR "\n", i, flattened[i] );

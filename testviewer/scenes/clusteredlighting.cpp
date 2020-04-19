@@ -71,7 +71,7 @@ void OpenScene()
             const float blue = Math::n_rand();
 
             Math::mat4 spotLightMatrix = Math::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(25), 0);
-            spotLightMatrix.r[Math::POSITION] = Math::vec4(i * 15, 2.5, j * 15, 1);
+            spotLightMatrix.position = Math::vec4(i * 15, 2.5, j * 15, 1);
 
             Lighting::LightContext::RegisterEntity(id);
             Lighting::LightContext::SetupSpotLight(id, Math::vec3(red, green, blue), 250.0f, Math::n_deg2rad(45.0f), Math::n_deg2rad(60.0f), spotLightMatrix, 50.0f, true);
@@ -93,7 +93,7 @@ void OpenScene()
 
             Math::mat4 transform = Math::scaling(Math::vec3(10, 10, 50));
             transform = transform * Math::rotationyawpitchroll(0, Math::n_deg2rad(90), Math::n_deg2rad(Math::n_rand() * 90.0f));
-            transform.r[Math::POSITION] = Math::vec4(i * 16, 0, j * 16, 1);
+            transform.position = Math::vec4(i * 16, 0, j * 16, 1);
 
             // setup decal
             Decals::DecalContext::RegisterEntity(id);
@@ -114,16 +114,16 @@ void OpenScene()
             auto id = Graphics::CreateEntity();
             Math::mat4 transform = Math::scaling(10);
             transform = transform * Math::rotationyawpitchroll(Math::n_deg2rad(Math::n_rand() * 90.0f), 0, 0);
-            transform.r[Math::POSITION] = Math::vec4(16 - i * 16, 0, 16 - j * 16, 1);
+            transform.position = Math::vec4(16 - i * 16, 0, 16 - j * 16, 1);
 
-            const float red = 0;
-            const float green = 1;
-            const float blue = 0;
+            const float red = Math::n_rand();
+            const float green = Math::n_rand();
+            const float blue = Math::n_rand();
 
             // setup box volume
             Fog::VolumetricFogContext::RegisterEntity(id);
             Fog::VolumetricFogContext::SetupSphereVolume(id, Math::vec3(16 - i * 16, 0, 16 - j * 16), 10.0f, 1.0f, Math::vec3(red, green, blue));
-            //Fog::VolumetricFogContext::SetupBoxVolume(id, transform, Math::n_rand() * 100.0f, Math::vec4(red, green, blue, 1));
+            //Fog::VolumetricFogContext::SetupBoxVolume(id, transform, Math::n_rand() * 100.0f, Math::vec3(red, green, blue));
 
             fogVolumes.Append(id);
         }
@@ -217,7 +217,7 @@ void StepFrame()
     {
         Math::mat4 spotLightTransform;
         spotLightTransform = Math::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, Math::n_deg2rad(-55), 0);
-        spotLightTransform.r[Math::POSITION] = Lighting::LightContext::GetTransform(spotLights[i]).r[Math::POSITION];
+        spotLightTransform.position = Lighting::LightContext::GetTransform(spotLights[i]).position;
         //Lighting::LightContext::SetTransform(spotLights[i], spotLightTransform);
     }
 
@@ -225,7 +225,7 @@ void StepFrame()
     {
         Math::mat4 decalTransform = Math::scaling(Math::vec3(10, 10, 50));
         decalTransform = decalTransform * Math::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 0.1f + i, Math::n_deg2rad(90), 0);
-        decalTransform.r[Math::POSITION] = Decals::DecalContext::GetTransform(decals[i]).r[Math::POSITION];
+        decalTransform.position = Decals::DecalContext::GetTransform(decals[i]).position;
         //Decals::DecalContext::SetTransform(decals[i], decalTransform);
     }
 
@@ -294,7 +294,7 @@ void RenderUI()
     //}
 
     ImGui::Begin("Entities", nullptr, 0);
-    ImGui::SetWindowSize(ImVec2(240, 400));
+    ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
     ImGui::BeginChild("##entities", ImVec2(0, 300), true);
 
     static int selected = 0;

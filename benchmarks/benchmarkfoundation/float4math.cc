@@ -21,13 +21,13 @@ Float4Math::Run(Timer& timer)
 {
     // setup some float4 arrays
     const int num = 100000;
-    float4* f0 = n_new_array(float4, num);
-    float4* f1 = n_new_array(float4, num);
-    float4* res = n_new_array(float4, num);    
-    float4 v0(1.0f, 2.0f, 3.0f, 0.0f);
-    float4 v1(1.5f, 1.7f, 1.8f, 0.0f);
-    float4 v2(0.1f, 0.2f, 0.3f, 0.0f);
-    float4 v3(0.3f, 0.4f, 0.5f, 0.0f);
+    vec4* f0 = n_new_array(vec4, num);
+    vec4* f1 = n_new_array(vec4, num);
+    vec4* res = n_new_array(vec4, num);
+    vec4 v0(1.0f, 2.0f, 3.0f, 0.0f);
+    vec4 v1(1.5f, 1.7f, 1.8f, 0.0f);
+    vec4 v2(0.1f, 0.2f, 0.3f, 0.0f);
+    vec4 v3(0.3f, 0.4f, 0.5f, 0.0f);
     IndexT i;
     for (i = 0; i < num; i++)
     {
@@ -40,9 +40,9 @@ Float4Math::Run(Timer& timer)
         v1 += v3;
     }
 
-    float4 tmp0;
-    float4 tmp1;
-    float4 tmp2;
+    vec4 tmp0;
+    vec4 tmp1;
+    vec4 tmp2;
     timer.Start();
     for (i = 0; i < 100; i++)
     {
@@ -51,12 +51,12 @@ Float4Math::Run(Timer& timer)
         {
             // do a mix of math operations
             tmp0 = f0[j] + f1[j];
-            tmp1 = tmp0 * float4::dot3(f0[j], f1[j]);
-            tmp2 = float4::cross3(tmp0, tmp1);
-            tmp1 = float4::lerp(tmp0, tmp2, 0.5f);
-            tmp0 = float4::normalize(tmp1);
-            tmp1 = float4::maximize(tmp0, tmp1);
-            tmp2 = float4::minimize(tmp0, tmp1);
+            tmp1 = tmp0 * dot3(f0[j], f1[j]);
+            tmp2 = cross3(tmp0, tmp1);
+            tmp1 = lerp(tmp0, tmp2, 0.5f);
+            tmp0 = normalize(tmp1);
+            tmp1 = maximize(tmp0, tmp1);
+            tmp2 = minimize(tmp0, tmp1);
             res[j] = tmp1 - tmp2;
         }
     }

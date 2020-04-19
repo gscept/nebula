@@ -29,7 +29,7 @@ TestMessage::Encode(const Ptr<BinaryWriter>& writer)
 {
     Message::Encode(writer);
     writer->WriteString(this->command);
-    writer->WriteFloat4(this->position);
+    writer->WriteVec4(this->position);
     writer->WriteFloat(this->velocity);
 }
 

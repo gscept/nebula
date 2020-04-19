@@ -58,14 +58,14 @@ CmdLineArgsTest::Run()
     VERIFY(posixArgs.GetString("-file") == "filename.txt");
     VERIFY(posixArgs.GetInt("-retries") == 10);
     VERIFY(posixArgs.GetFloat("-weight") == 1.34f);
-    VERIFY(posixArgs.GetVec4("-color") == float4(1.0f, 2.0f, 3.0f, 1.0f));
+    VERIFY(posixArgs.GetVec4("-color") == vec4(1.0f, 2.0f, 3.0f, 1.0f));
 
     VERIFY(winArgs.GetBoolFlag("-help") == true);
     VERIFY(winArgs.GetString("-file") == "filename.txt");
     VERIFY(winArgs.GetInt("-retries") == 10);
     VERIFY(winArgs.GetFloat("-weight") == 1.34f);
-    VERIFY(winArgs.GetVec4("-pos") == float4(1.03f, 4.53f, 10.2f, 1.0));
-    VERIFY(winArgs.GetVec4("-color") == float4(1.0f, 2.0f, 3.0f, 1.0f));
+    VERIFY(winArgs.GetVec4("-pos") == vec4(1.03f, 4.53f, 10.2f, 1.0));
+    VERIFY(winArgs.GetVec4("-color") == vec4(1.0f, 2.0f, 3.0f, 1.0f));
 }
 
 } // namespace Test

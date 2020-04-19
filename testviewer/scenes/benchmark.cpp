@@ -99,7 +99,7 @@ void StepFrame()
     {
         Math::mat4 spotLightTransform;
         spotLightTransform = Math::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, Math::n_deg2rad(-55), 0);
-        spotLightTransform.r[Math::POSITION] = Lighting::LightContext::GetTransform(spotLights[i]).r[Math::POSITION];
+        spotLightTransform.position = Lighting::LightContext::GetTransform(spotLights[i]).position;
         Lighting::LightContext::SetTransform(spotLights[i], spotLightTransform);
     }
 
@@ -164,7 +164,7 @@ void RenderUI()
     //}
 
     ImGui::Begin("Entities", nullptr, 0);
-    ImGui::SetWindowSize(ImVec2(240, 400));
+    ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
     ImGui::BeginChild("##entities", ImVec2(0, 300), true);
 
     static int selected = 0;

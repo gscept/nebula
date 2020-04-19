@@ -34,11 +34,11 @@ BinaryReaderWriterTest::Run()
     writeBlob.b = false;
     writeBlob.i = 345;
     writeBlob.d = 143.23;
-    const matrix44 m44(float4(1.0f, 2.0f, 3.0f, 4.0f), 
-                       float4(5.0f, 6.0f, 7.0f, 8.0f),
-                       float4(9.0f, 10.0f, 11.0f, 12.0f),
-                       float4(13.0f, 14.0f, 15.0f, 16.0f));
-    const float4 v4(6.0f, 7.0f, 8.0f, 9.0f);
+    const mat4 m44(vec4(1.0f, 2.0f, 3.0f, 4.0f),
+        vec4(5.0f, 6.0f, 7.0f, 8.0f),
+        vec4(9.0f, 10.0f, 11.0f, 12.0f),
+        vec4(13.0f, 14.0f, 15.0f, 16.0f));
+    const vec4 v4(6.0f, 7.0f, 8.0f, 9.0f);
 
     // create and setup objects
     Ptr<MemoryStream> stream = MemoryStream::Create();
@@ -62,8 +62,8 @@ BinaryReaderWriterTest::Run()
     writer->WriteBool(true);
     writer->WriteBool(false);
     writer->WriteString("Ein String");
-    writer->WriteFloat4(v4);
-    writer->WriteMatrix44(m44);
+    writer->WriteVec4(v4);
+    writer->WriteMat4(m44);
     writer->WriteBlob(Blob(&writeBlob, sizeof(writeBlob)));
     writer->Close();
     stream->Close();
@@ -108,8 +108,8 @@ BinaryReaderWriterTest::Run()
     writer->WriteBool(true);
     writer->WriteBool(false);
     writer->WriteString("Ein String");
-    writer->WriteFloat4(v4);
-    writer->WriteMatrix44(m44);
+    writer->WriteVec4(v4);
+    writer->WriteMat4(m44);
     writer->WriteBlob(Blob(&writeBlob, sizeof(TestStruct)));
     writer->Close();
     stream->Close();

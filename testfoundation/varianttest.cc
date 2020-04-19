@@ -38,10 +38,10 @@ VariantTest::Run()
     Variant intVar(123);
     Variant floatVar(123.4f);
     Variant boolVar(true);
-    Variant float4Var(float4(1.0f, 2.0f, 3.0f, 4.0f));
-    matrix44 m;
-    float4 value(1.0f, 2.0f, 3.0f, 1.0f);
-    m.setrow3(value);
+    Variant float4Var(vec4(1.0f, 2.0f, 3.0f, 4.0f));
+    mat4 m;
+    vec4 value(1.0f, 2.0f, 3.0f, 1.0f);
+    m.row3 = value;
     Variant matrixVar(m);
     Variant charPtrVar("Bla Bla");
     Variant strVar(bla);
@@ -52,7 +52,7 @@ VariantTest::Run()
     VERIFY(floatVar.GetType() == Variant::Float);
     VERIFY(boolVar.GetType() == Variant::Bool);
     VERIFY(float4Var.GetType() == Variant::Vec4);
-    VERIFY(matrixVar.GetType() == Variant::Matrix44);
+    VERIFY(matrixVar.GetType() == Variant::Mat4);
     VERIFY(charPtrVar.GetType() == Variant::String);
     VERIFY(strVar.GetType() == Variant::String);
     VERIFY(blobVar.GetType() == Variant::Blob);
@@ -62,7 +62,7 @@ VariantTest::Run()
     VERIFY(intVar == 123);
     VERIFY(floatVar == 123.4f);
     VERIFY(boolVar == true);
-    VERIFY(float4Var == float4(1.0f, 2.0f, 3.0f, 4.0f));
+    VERIFY(float4Var == vec4(1.0f, 2.0f, 3.0f, 4.0f));
     VERIFY(charPtrVar == "Bla Bla");
     VERIFY(strVar == bla);
 
@@ -70,7 +70,7 @@ VariantTest::Run()
     VERIFY(intVar != 124);
     VERIFY(floatVar != 122.3f);
     VERIFY(boolVar != false);
-    VERIFY(float4Var != float4(1.0f, 1.0f, 2.0f, 3.0f));
+    VERIFY(float4Var != vec4(1.0f, 1.0f, 2.0f, 3.0f));
     VERIFY(charPtrVar != "Blob Blob");
 
     #if __WIN32__

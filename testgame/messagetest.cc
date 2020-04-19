@@ -28,7 +28,7 @@ MessageTest::Run()
 {
 	Ptr<ComponentManager> cMgr = ComponentManager::Instance();
 	
-	auto a = Math::matrix44::identity();
+	auto a = Math::mat4();
 	auto entity = Game::EntityManager::Instance()->NewEntity();
 	TransformComponent::RegisterEntity(entity);
 

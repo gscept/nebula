@@ -143,7 +143,7 @@ SimpleViewerApplication::Open()
 
 		this->globalLight = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->globalLight);
-		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1, 1, 1), 1.0f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vec3(0.5, 1, 0.1), true);
+		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1, 1, 1), 0.1f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(0.5, 1, 0.1), true);
 
         this->ResetCamera();
         CameraContext::SetTransform(this->cam, this->mayaCameraUtil.GetCameraTransform());
@@ -455,7 +455,7 @@ SimpleViewerApplication::RenderUI()
     {
         if (ImGui::Begin("Viewer", &showCameraWindow, 0))
         {
-            ImGui::SetWindowSize(ImVec2(240, 400));
+            ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
             if (ImGui::CollapsingHeader("Camera mode", ImGuiTreeNodeFlags_DefaultOpen))
             {
                 if (ImGui::RadioButton("Maya", &this->cameraMode, 0))this->ToMaya();
@@ -671,7 +671,7 @@ SimpleViewerApplication::ResetCamera()
 void 
 SimpleViewerApplication::ToMaya()
 {
-    this->mayaCameraUtil.Setup(this->mayaCameraUtil.GetCenterOfInterest(), xyz(this->freeCamUtil.GetTransform().r[Math::POSITION]), Math::vec3(0, 1, 0));
+    this->mayaCameraUtil.Setup(this->mayaCameraUtil.GetCenterOfInterest(), xyz(this->freeCamUtil.GetTransform().position), Math::vec3(0, 1, 0));
 }
 
 //------------------------------------------------------------------------------
@@ -680,7 +680,7 @@ SimpleViewerApplication::ToMaya()
 void 
 SimpleViewerApplication::ToFree()
 {
-    Math::vec3 pos = xyz(this->mayaCameraUtil.GetCameraTransform().r[Math::POSITION]);
+    Math::vec3 pos = xyz(this->mayaCameraUtil.GetCameraTransform().position);
     this->freeCamUtil.Setup(pos, Math::normalize(pos - this->mayaCameraUtil.GetCenterOfInterest()));
 }
 

@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "stdneb.h"
 #include "scripttestapplication.h"
-#include "math/matrix44.h"
+#include "math/mat4.h"
 #include "io/ioserver.h"
 #include "util/stringatom.h"
 #include "io/fswrapper.h"

@@ -51,14 +51,14 @@ XmlReaderWriterTest::Run()
         writer->EndNode();
 
         writer->BeginNode("Node2");
-        writer->SetFloat4("attr1", float4(4.0f, 5.0f, 6.0f, 7.0f));
+        writer->SetVec4("attr1", vec4(4.0f, 5.0f, 6.0f, 7.0f));
         writer->EndNode();
 
         writer->BeginNode("Node3");
-        matrix44 m = matrix44::identity();
-        float4 value(10.0,20.0, 30.0, 1.0f);
-        m.setrow3(value);
-        writer->SetMatrix44("attr", m);
+        mat4 m;
+        vec4 value(10.0,20.0, 30.0, 1.0f);
+        m.row3 = value;
+        writer->SetMat4("attr", m);
         writer->EndNode();
     }
     writer->EndNode();
@@ -91,7 +91,7 @@ XmlReaderWriterTest::Run()
     reader->SetToNode("/RootNode/Node2");
     VERIFY(reader->GetCurrentNodeName() == "Node2");
     VERIFY(reader->HasAttr("attr1"));
-    VERIFY(reader->GetFloat4("attr1") == float4(4.0f, 5.0f, 6.0f, 7.0f));
+    VERIFY(reader->GetVec4("attr1") == vec4(4.0f, 5.0f, 6.0f, 7.0f));
 
     VERIFY(reader->SetToNextChild());
     VERIFY(reader->HasAttr("attr"));
