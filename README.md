@@ -46,8 +46,8 @@ Nebula is being developed continuously, which means that features keep getting a
 
 * Completely data-driven design from bottom to top.
 * Data structure suite, from containers to OS wrappers, everything is designed for performance and minimal call stacks.
-* Multithreaded.
-* Non-compromising SSE-accellerated and easy-to-use and understand maths library.
+* Multithreading.
+* SSE-accelerated and intuitive maths library.
 * Full python supported scripting layer.
 * Advanced rendering framework and shaders.
 * Test-benches and benchmarking.
