@@ -412,6 +412,43 @@ VolumetricFogContext::SetGlobalAbsorption(const Math::vec3& color)
 //------------------------------------------------------------------------------
 /**
 */
+Math::mat4 
+VolumetricFogContext::GetTransform(const Graphics::GraphicsEntityId id)
+{
+	const Graphics::ContextEntityId cid = GetContextId(id);
+	FogVolumeType type = fogGenericVolumeAllocator.Get<FogVolume_Type>(cid.id);
+	Ids::Id32 tid = fogGenericVolumeAllocator.Get<FogVolume_TypedId>(cid.id);
+	switch (type)
+	{
+	case BoxVolume:
+		return fogBoxVolumeAllocator.Get<FogBoxVolume_Transform>(tid);
+	case SphereVolume:
+		return Math::translation(fogSphereVolumeAllocator.Get<FogSphereVolume_Position>(tid));
+	};
+	return Math::mat4();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VolumetricFogContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4& mat)
+{
+	const Graphics::ContextEntityId cid = GetContextId(id);
+	FogVolumeType type = fogGenericVolumeAllocator.Get<FogVolume_Type>(cid.id);
+	Ids::Id32 tid = fogGenericVolumeAllocator.Get<FogVolume_TypedId>(cid.id);
+	switch (type)
+	{
+	case BoxVolume:
+		return fogBoxVolumeAllocator.Set<FogBoxVolume_Transform>(tid, mat);
+	case SphereVolume:
+		return fogSphereVolumeAllocator.Set<FogSphereVolume_Position>(tid, xyz(mat.position));
+	};
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 VolumetricFogContext::CullAndClassify()
 {

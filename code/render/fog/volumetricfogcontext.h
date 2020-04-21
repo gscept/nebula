@@ -67,6 +67,11 @@ public:
     /// set the global fog absorption color
     void SetGlobalAbsorption(const Math::vec3& color);
 
+    /// get transform
+    static Math::mat4 GetTransform(const Graphics::GraphicsEntityId id);
+    /// set transform
+    static void SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4& mat);
+
 private:
 
     /// cull local volumes
