@@ -265,10 +265,9 @@ GlobalLightFog(vec3 viewPos)
 	}
 
 	// calculate 'global' fog
-	vec3 atmo = Preetham(normalize(viewPos), -GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z);
+	vec3 atmo = Preetham(normalize(viewPos), GlobalLightDir.xyz, A, B, C, D, E, Z);
 	return atmo * GlobalLightColor.rgb * shadowFactor;
 }
-
 
 //------------------------------------------------------------------------------
 /**

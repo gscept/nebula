@@ -7,6 +7,7 @@
 #include "lib/shared.fxh"
 #include "lib/clustering.fxh"
 #include "lib/lights_clustered.fxh"
+#include "lib/preetham.fxh"
 
 group(BATCH_GROUP) constant LightUniforms [ string Visibility = "CS"; ]
 {
@@ -236,7 +237,8 @@ void csRender()
    	}	
 	else // sky pixels
 	{
-		light += sampleCubeLod(EnvironmentMap, CubeSampler, normalize(worldPos.xyz), 0).rgb;
+		//light += sampleCubeLod(EnvironmentMap, CubeSampler, normalize(worldPos.xyz), 0).rgb;
+		light += Preetham(-worldViewVec, GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * GlobalLightColor.rgb;
 	}
     
 	// write final output

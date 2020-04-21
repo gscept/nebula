@@ -749,11 +749,11 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 	// update constant buffer
 	Ids::Id32 globalLightId = genericLightAllocator.Get<TypedLightId>(cid.id);
 	Shared::PerTickParams& params = ShaderServer::Instance()->GetTickParams();
-	(genericLightAllocator.Get<Color>(cid.id)* genericLightAllocator.Get<Intensity>(cid.id)).store(params.GlobalLightColor);
+	(genericLightAllocator.Get<Color>(cid.id) * genericLightAllocator.Get<Intensity>(cid.id)).store(params.GlobalLightColor);
 	globalLightAllocator.Get<GlobalLight_Direction>(globalLightId).store(params.GlobalLightDirWorldspace);
 	globalLightAllocator.Get<GlobalLight_Backlight>(globalLightId).store(params.GlobalBackLightColor);
 	globalLightAllocator.Get<GlobalLight_Ambient>(globalLightId).store(params.GlobalAmbientLightColor);
-	Math::vec4 viewSpaceLightDir = invViewTransform * Math::vec4(globalLightAllocator.Get<GlobalLight_Direction>(globalLightId), 0.0f);
+	Math::vec4 viewSpaceLightDir = viewTransform * Math::vec4(globalLightAllocator.Get<GlobalLight_Direction>(globalLightId), 0.0f);
 	normalize(viewSpaceLightDir).store3(params.GlobalLightDir);
 	params.GlobalBackLightOffset = globalLightAllocator.Get<GlobalLight_BacklightOffset>(globalLightId);
 
