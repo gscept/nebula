@@ -117,7 +117,7 @@ CharacterSkinNode::AddFragment(IndexT primGroupIndex, const Util::Array<IndexT>&
 void
 CharacterSkinNode::Instance::Update()
 {
-	const CharacterNode::Instance* cparent = static_cast<const CharacterNode::Instance*>(this->parent);
+	const CharacterNode::Instance* cparent = reinterpret_cast<const CharacterNode::Instance*>(this->parent);
 	if (!this->dirty)
 		return;
 
@@ -125,7 +125,7 @@ CharacterSkinNode::Instance::Update()
 	PrimitiveNode::Instance::Update();
 
 	// if parent doesn't have joints, don't continue
-	CharacterSkinNode* sparent = static_cast<CharacterSkinNode*>(this->node);
+	CharacterSkinNode* sparent = reinterpret_cast<CharacterSkinNode*>(this->node);
 	const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;
 	Util::FixedArray<Math::mat4> usedMatrices(usedIndices.Size());
 	if (cparent->joints != nullptr)

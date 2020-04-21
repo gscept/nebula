@@ -25,8 +25,6 @@ public:
 		Math::transform44 transform;
 		Math::mat4 modelTransform;
 		Math::mat4 invModelTransform;
-		bool isInViewSpace;
-		bool lockedToViewer;
 		
 		/// Identifiable object id. Usually the graphics entity id.
 		/// @todo	Should be moved to a per-model-instance resource since it's the same for every model instance
@@ -78,8 +76,6 @@ TransformNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode:
 	this->transform.setscale(tnode->scale);
 	this->transform.setrotatepivot(tnode->rotatePivot);
 	this->transform.setscalepivot(tnode->scalePivot);
-	this->lockedToViewer = tnode->lockedToViewer;
-	this->isInViewSpace = tnode->isInViewSpace;
 }
 
 } // namespace Models

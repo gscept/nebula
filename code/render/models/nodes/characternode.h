@@ -51,7 +51,6 @@ public:
 		Util::HashTable<Util::StringAtom, Models::ModelNode::Instance*, 8> activeSkinInstances;
 		const Util::FixedArray<Math::mat4>* joints;
 
-		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 		void ApplySkin(const Util::StringAtom& skinName);
 		void RemoveSkin(const Util::StringAtom& skinName);
 	};
@@ -122,15 +121,6 @@ CharacterNode::GetImplicitHierarchyActivation() const
 }
 
 ModelNodeInstanceCreator(CharacterNode)
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-CharacterNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
-{
-	TransformNode::Instance::Setup(node, parent);
-}
 
 } // namespace Characters
 //------------------------------------------------------------------------------

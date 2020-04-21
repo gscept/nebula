@@ -113,7 +113,7 @@ ShaderStateNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNod
 {
 	TransformNode::Instance::Setup(node, parent);
 	this->dirty = true;
-	ShaderStateNode* sparent = static_cast<ShaderStateNode*>(node);
+	ShaderStateNode* sparent = reinterpret_cast<ShaderStateNode*>(node);
 	this->resourceTable = sparent->resourceTable;
 
 	this->objectTransformsIndex = sparent->objectTransformsIndex;
