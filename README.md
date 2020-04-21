@@ -59,6 +59,7 @@ A lot of effort has been made to the Nebula rendering subsystem, where we curren
 * Unified clustering system - fog volumes, decals and lights all go into the same structure.
 * Screen-space reflections - working condition, but still work in progress.
 * SSAO - Horizon-based ambient occlusion done in compute.
+* Physically based materials and rendering.
 * Deferred lighting.
 * Multi-threaded subpass recording.
 * Shadow mapping for local lights and CSM for global/directional/sun light.
