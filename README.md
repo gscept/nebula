@@ -1,10 +1,5 @@
 # Nebula engine
 
-![Deferred Lighting using 3D clustering and GPU culling](images/nebula_lights.png)
-![Geometric decals, culled and calculated entirely on GPU](images/nebula_decals.png)
-![Volumetric fog lighting](images/nebula_volumetric.png)
-![Local fog volumes](images/nebula_local_fog.png)
-
 ## Requirements
 1. OS: Windows or Linux
 2. Compiler with support for C++17.
@@ -74,3 +69,9 @@ A lot of effort has been made to the Nebula rendering subsystem, where we curren
 * Vulkan.
 * Tonemapping.
 * Asynchronous compute.
+
+## Screenshots
+![Deferred Lighting using 3D clustering and GPU culling](images/nebula_lights.png)
+![Geometric decals, culled and calculated entirely on GPU](images/nebula_decals.png)
+![Volumetric fog lighting](images/nebula_volumetric.png)
+![Local fog volumes](images/nebula_local_fog.png)
