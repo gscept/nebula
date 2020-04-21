@@ -13,6 +13,7 @@
 #include "math/quat.h"
 #include "math/point.h"
 #include "math/vector.h"
+#include "math/sse.h"
 
 #define N_USE_AVX (1)
 
@@ -661,10 +662,11 @@ operator*(const mat4& m, const vec4& v)
     __m128 z = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(2, 2, 2, 2));
     __m128 w = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(3, 3, 3, 3));
 
-    return _mm_add_ps(
-        _mm_add_ps(_mm_mul_ps(x, m.r[0].vec), _mm_mul_ps(y, m.r[1].vec)),
-        _mm_add_ps(_mm_mul_ps(z, m.r[2].vec), _mm_mul_ps(w, m.r[3].vec))
-    );
+    return 
+        fmadd(x, m.r[0].vec, 
+        fmadd(y, m.r[1].vec,
+        fmadd(z, m.r[2].vec, 
+        _mm_mul_ps(w, m.r[3].vec))));
 }
 
 //------------------------------------------------------------------------------
@@ -680,7 +682,10 @@ operator*(const mat4& m, const vec3& v)
     __m128 z = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(2, 2, 2, 2));
     z = _mm_and_ps(z, _mask_xyz);
 
-    return _mm_add_ps(_mm_add_ps(_mm_mul_ps(x, m.r[0].vec), _mm_mul_ps(y, m.r[1].vec)) ,_mm_mul_ps(z, m.r[2].vec));
+    return 
+        fmadd(x, m.r[0].vec, 
+        fmadd(y, m.r[1].vec,
+        _mm_mul_ps(z, m.r[2].vec)));
 }
 
 //------------------------------------------------------------------------------
@@ -696,7 +701,10 @@ operator*(const mat4& m, const point& p)
     __m128 z = _mm_shuffle_ps(p.vec, p.vec, _MM_SHUFFLE(2, 2, 2, 2));
     z = _mm_and_ps(z, _mask_xyz);
 
-    return _mm_add_ps(_mm_add_ps(_mm_mul_ps(x, m.r[0].vec), _mm_mul_ps(y, m.r[1].vec)), _mm_mul_ps(z, m.r[2].vec));
+    return 
+        fmadd(x, m.r[0].vec, 
+        fmadd(y, m.r[1].vec,
+        _mm_mul_ps(z, m.r[2].vec)));
 }
 
 //------------------------------------------------------------------------------

@@ -79,6 +79,10 @@ public:
     void load_byte4n(const void* ptr, float w);
     /// set content
     void set(scalar x, scalar y, scalar z, scalar w);
+
+	/// swizzle vector
+	template<int X, int Y, int Z, int W>
+	vec4 swizzle(const vec4& v);
     
     /// read-only access to indexed component
     scalar& operator[](const int index);
@@ -317,6 +321,16 @@ __forceinline void
 vec4::set(scalar x, scalar y, scalar z, scalar w)
 {
 	this->vec = _mm_setr_ps(x, y, z, w);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<int X, int Y, int Z, int W>
+inline vec4 
+vec4::swizzle(const vec4& v)
+{
+	return _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(W, Z, Y, X));
 }
 
 //------------------------------------------------------------------------------
