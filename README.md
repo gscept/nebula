@@ -51,6 +51,7 @@ Nebula is being developed continuously, which means that features keep getting a
 * Full python supported scripting layer.
 * Advanced rendering framework and shaders.
 * Test-benches and benchmarking.
+* Profiling tools.
 
 #### Rendering
 A lot of effort has been made to the Nebula rendering subsystem, where we currently support:
