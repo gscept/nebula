@@ -49,6 +49,7 @@ public:
 			Particle
 		};
 
+		Math::mat4 particleTransform;
 		uint particleVboOffset;
 		CoreGraphics::VertexBufferId particleVbo;
 		CoreGraphics::PrimitiveGroup group;
@@ -149,16 +150,25 @@ ModelNodeInstanceCreator(ParticleSystemNode)
 inline void
 ParticleSystemNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
-	ShaderStateNode::Instance::Setup(node, parent);
+	TransformNode::Instance::Setup(node, parent);
+	this->dirty = true;
 	ParticleSystemNode* pparent = static_cast<ParticleSystemNode*>(node);
+	this->resourceTable = pparent->resourceTable;
 
 	this->particleConstantsIndex = pparent->particleConstantsIndex;
+	this->objectTransformsIndex = pparent->objectTransformsIndex;
+	this->instancingTransformsIndex = pparent->instancingTransformsIndex;
+	this->skinningTransformsIndex = pparent->skinningTransformsIndex;
+
 	this->offsets.Resize(4);
 	this->offsets[this->particleConstantsIndex] = 0;
 	this->offsets[this->objectTransformsIndex] = 0;
 	this->offsets[this->skinningTransformsIndex] = 0;
 	this->offsets[this->instancingTransformsIndex] = 0;
-	this->resourceTable = pparent->resourceTable;	
+
+	// create surface instance
+	this->surfaceInstance = pparent->materialType->CreateSurfaceInstance(pparent->surface);
+
 	this->particleVboOffset = 0;
 	this->particleVbo = CoreGraphics::VertexBufferId::Invalid();
 }

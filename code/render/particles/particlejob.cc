@@ -13,8 +13,8 @@
 #define ASSERT_POINT(p)
 #define ASSERT_VECTOR(v)
 #else
-#define ASSERT_POINT(p)     n_assert((p).w > 0.995f);  n_assert((p).w < 1.005f)
-#define ASSERT_VECTOR(v)    n_assert((v).w > -0.005f); n_assert((v).w < 0.005f)
+#define ASSERT_POINT(p)     { n_assert(p.w > 0.995f);  n_assert(p.w < 1.005f) }
+#define ASSERT_VECTOR(v)    { n_assert(v.w > -0.005f); n_assert(v.w < 0.005f) }
 #endif
 
 namespace Particles

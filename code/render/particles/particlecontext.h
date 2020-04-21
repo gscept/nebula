@@ -54,6 +54,8 @@ public:
 
 	/// start particle updating when frame starts
 	static void UpdateParticles(const Graphics::FrameContext& ctx);
+	/// prepare particles for current view
+	static void OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
 	/// stop particle updating when frame ends
 	static void WaitForParticleUpdates(const Graphics::FrameContext& ctx);
 

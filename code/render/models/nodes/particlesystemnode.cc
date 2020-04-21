@@ -76,12 +76,10 @@ ParticleSystemNode::OnFinishedLoading()
 	this->surface = Materials::surfacePool->GetId(this->surRes);
 
 	float activityDist = this->emitterAttrs.GetFloat(EmitterAttrs::ActivityDistance) * 0.5f;
-	this->boundingBox.set(Math::point(0), Math::vector(0));
 
     // calculate bounding box using activity distance
 	Math::bbox& box = modelPool->GetModelBoundingBox(this->model);
     this->boundingBox.set(box.center(), Math::vector(activityDist, activityDist, activityDist));
-	box.extend(this->boundingBox);
 
 	// setup sample buffer and emitter mesh
 	this->sampleBuffer.Setup(this->emitterAttrs, ParticleSystemNumEnvelopeSamples);
@@ -318,21 +316,12 @@ ParticleSystemNode::Instance::Update()
 
     ShaderStateNode::Instance::Update();
 
-	ParticleSystemNode* pnode = static_cast<ParticleSystemNode*>(this->node);
+	ParticleSystemNode* pnode = reinterpret_cast<ParticleSystemNode*>(this->node);
 
 	::Particle::ParticleObjectBlock block;
 	block.Billboard = pnode->emitterAttrs.GetBool(EmitterAttrs::Billboard);
 
-	// apply transforms
-	if (block.Billboard)
-	{
-		const Math::mat4 billboardTransform = this->modelTransform * CoreGraphics::TransformDevice::Instance()->GetInvViewTransform();
-        billboardTransform.store(block.EmitterTransform);
-	}
-	else
-	{
-        this->modelTransform.store(block.EmitterTransform);
-	}
+    this->particleTransform.store(block.EmitterTransform);
 
 	// update parameters
     this->boundingBox.center().store(block.BBoxCenter);

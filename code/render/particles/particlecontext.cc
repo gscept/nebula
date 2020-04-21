@@ -10,6 +10,8 @@
 #include "particles/emitterattrs.h"
 #include "particles/emittermesh.h"
 #include "particles/envelopesamplebuffer.h"
+#include "graphics/cameracontext.h"
+#include "graphics/view.h"
 
 using namespace Graphics;
 using namespace Models;
@@ -68,6 +70,7 @@ void
 ParticleContext::Create()
 {
 	__bundle.OnBegin = ParticleContext::UpdateParticles;
+	__bundle.OnPrepareView = ParticleContext::OnPrepareView;
 	__bundle.OnBeforeFrame = ParticleContext::WaitForParticleUpdates; // wait for jobs before we issue visibility
 	__bundle.StageBits = &ParticleContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
@@ -397,6 +400,32 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
 	// issue sync
 	if (runtimes.Size() > 0)
 		Jobs::JobSyncSignal(jobSync, ParticleContext::jobPort);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+{
+	const Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
+
+	Math::mat4 invViewMatrix = inverse(Graphics::CameraContext::GetTransform(view->GetCamera()));
+	IndexT i, j;
+
+	// update billboard particles
+	for (i = 0; i < allSystems.Size(); i++)
+	{
+		Util::Array<ParticleSystemRuntime>& systems = allSystems[i];
+		for (j = 0; j < systems.Size(); j++)
+		{
+			ParticleSystemRuntime& system = systems[j];
+			Math::mat4 particleTransform = system.transform;
+			if (reinterpret_cast<ParticleSystemNode*>(system.node->node)->GetEmitterAttrs().GetBool(Particles::EmitterAttrs::Billboard))
+				particleTransform = particleTransform * invViewMatrix;
+			system.node->particleTransform = particleTransform;
+		}
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -788,7 +817,7 @@ ParticleContext::RunParticleStep(ParticleRuntime& rt, ParticleSystemRuntime& srt
 
 	n_assert(srt.particles.GetBuffer());
 	const SizeT inputBufferSize = srt.particles.Size() * ParticleJobInputElementSize;
-	const SizeT inputSliceSize = ParticleJobInputSliceSize;
+	const SizeT inputSliceSize = inputBufferSize;
 
 	ctx.input.data[0] = srt.particles.GetBuffer();
 	ctx.input.dataSize[0] = inputBufferSize;
