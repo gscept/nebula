@@ -1,5 +1,10 @@
 # Nebula engine
 
+![Deferred Lighting using 3D clustering and GPU culling](url)
+![Geometric decals, culled and calculated entirely on GPU](url)
+![Volumetric fog lighting](url)
+![Local fog volumes](url)
+
 ## Requirements
 1. OS: Windows or Linux
 2. Compiler with support for C++17.
@@ -40,3 +45,32 @@ Remember to run `fips nebula` verb to set work and toolkit directory registry va
 
   * `fips nebula set work {PATH}`
   * `fips nebula set toolkit {PATH}`
+
+## Features
+Nebula is being developed continuously, which means that features keep getting added all the time. Currently, we support this:
+
+* Completely data-driven design from bottom to top.
+* Data structure suite, from containers to OS wrappers, everything is designed for performance and minimal call stacks.
+* Multithreaded.
+* Non-compromising SSE-accellerated and easy-to-use and understand maths library.
+* Full python supported scripting layer.
+* Advanced rendering framework and shaders.
+* Test-benches and benchmarking.
+
+#### Rendering
+A lot of effort has been made to the Nebula rendering subsystem, where we currently support:
+
+* Unified clustering system - fog volumes, decals and lights all go into the same structure.
+* Screen-space reflections - working condition, but still work in progress.
+* SSAO - Horizon-based ambient occlusion done in compute.
+* Deferred lighting.
+* Multi-threaded subpass recording.
+* Shadow mapping for local lights and CSM for global/directional/sun light.
+* Volumetric fog and lighting.
+* Geometric decals. 
+* CPU-GPU hybrid particle system.
+* Skinning and animation.
+* Scripted rendering path.
+* Vulkan.
+* Tonemapping.
+* Asynchronous compute.
