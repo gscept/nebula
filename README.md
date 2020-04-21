@@ -76,3 +76,4 @@ A lot of effort has been made to the Nebula rendering subsystem, where we curren
 ![Geometric decals, culled and calculated entirely on GPU](images/nebula_decals.png)
 ![Volumetric fog lighting](images/nebula_volumetric.png)
 ![Local fog volumes](images/nebula_local_fog.png)
+![Profiling](images/nebula_profiling.png)
