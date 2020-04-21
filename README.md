@@ -73,8 +73,13 @@ A lot of effort has been made to the Nebula rendering subsystem, where we curren
 * Asynchronous compute.
 
 ## Screenshots
+Deferred Lighting using 3D clustering and GPU culling.
 ![Deferred Lighting using 3D clustering and GPU culling](images/nebula_lights.png)
+Geometric decals, culled on GPU and rendered in screen-space.
 ![Geometric decals, culled and calculated entirely on GPU](images/nebula_decals.png)
+Volumetric fog lighting.
 ![Volumetric fog lighting](images/nebula_volumetric.png)
+Local fog volumes.
 ![Local fog volumes](images/nebula_local_fog.png)
+Profiling tools.
 ![Profiling](images/nebula_profiling.png)
