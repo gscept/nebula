@@ -37,8 +37,6 @@ public:
 
     struct State
     {
-        // Declare the state and give it an identifier.
-        __DeclareState('ggpS');
         Graphics::GraphicsEntityId gfxEntity;
     };
 

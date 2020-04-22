@@ -54,14 +54,11 @@ public:
 
     /// Adds a custom state data column to table.
     template<typename TYPE>
-    ColumnData<typename TYPE> AddStateColumn(TableId tid);
+    ColumnData<typename TYPE> AddStateColumn(TableId tid, Util::StringAtom name);
 
     /// gets a custom state data column from table.
     template<typename TYPE>
-    const ColumnData<typename TYPE> GetStateColumn(TableId tid);
-
-    /// check if state column exists by id
-    bool HasStateColumn(TableId tid, Util::FourCC id);
+    const ColumnData<typename TYPE> GetStateColumn(TableId tid, StateDescriptor descriptor);
 
     /// returns a persistant array accessor
     template<typename ATTR>
@@ -75,13 +72,22 @@ public:
 
     SizeT Defragment(TableId tid, std::function<void(InstanceId, InstanceId)> const& moveCallback);
 
+    /// Adds a custom state data column to table.
+    template<typename TYPE>
+    StateDescriptor CreateStateDescriptor(Util::StringAtom name);
+
+    /// Returns a state descriptor or Invalid if not registered
+    StateDescriptor GetStateDescriptor(Util::StringAtom name);
+
+    ColumnId AddState(TableId table, StateDescriptor state);
+
 private:
     void EraseSwapIndex(Table& table, InstanceId instance);
 
     void GrowTable(TableId tid);
 
     void* AllocateColumn(TableId tid, Column column);
-    void* AllocateState(TableId tid, StateDescription const& desc);
+    void* AllocateState(TableId tid, StateDescription* desc);
 
     Ids::IdGenerationPool tableIdPool;
 
@@ -89,6 +95,9 @@ private:
     static constexpr uint32_t MAX_NUM_TABLES = 512;
     Table tables[MAX_NUM_TABLES];
     SizeT numTables = 0;
+
+    Util::Array<StateDescription*> stateDescriptions;
+    Util::Dictionary<Util::StringAtom, StateDescriptor> stateRegistry;
 };
 
 //------------------------------------------------------------------------------
@@ -121,12 +130,8 @@ Database::GetColumnData(TableId table)
 */
 template<typename TYPE>
 inline ColumnData<TYPE>
-Database::AddStateColumn(TableId tid)
+Database::AddStateColumn(TableId tid, Util::StringAtom name)
 {
-    static_assert(std::is_standard_layout<TYPE>(), "Type is not standard layout!");
-    static_assert(std::is_trivially_copyable<TYPE>(), "Type is not trivially copyable!");
-    static_assert(std::is_trivially_destructible<TYPE>(), "Type is not trivially destructible!");
-    
     n_assert(this->IsValid(tid));
     Table& table = this->tables[Ids::Index(tid.id)];
 
@@ -134,11 +139,22 @@ Database::AddStateColumn(TableId tid)
 
     Table::ColumnBuffer& buffer = table.states.Get<1>(col);
 
-    // setup a state description with the default values from the type
-    StateDescription desc = StateDescription(TYPE());
-    buffer = this->AllocateState(tid, desc);
+    StateDescription* desc;
+    StateDescriptor descriptor;
+    if (this->stateRegistry.Contains(name))
+    {
+        descriptor = this->stateRegistry[name];
+        desc = this->stateDescriptions[descriptor.id];
+    }
+    else
+    {
+        // Create state descriptor
+        descriptor = this->CreateStateDescriptor<TYPE>(name);
+        desc = this->stateDescriptions[descriptor.id];
+    }
 
-    table.states.Get<0>(col) = std::move(desc);
+    buffer = this->AllocateState(tid, desc);
+    table.states.Get<0>(col) = descriptor;
 
     return ColumnData<TYPE>(col, &table.states.Get<1>(col), &table.numRows, true);
 }
@@ -148,21 +164,17 @@ Database::AddStateColumn(TableId tid)
 */
 template<typename TYPE>
 inline const ColumnData<TYPE>
-Database::GetStateColumn(TableId tid)
+Database::GetStateColumn(TableId tid, StateDescriptor descriptor)
 {
-    static_assert(std::is_standard_layout<TYPE>(), "Type is not standard layout!");
-    static_assert(std::is_trivially_copyable<TYPE>(), "Type is not trivially copyable!");
-    static_assert(std::is_trivially_destructible<TYPE>(), "Type is not trivially destructible!");
-
     n_assert(this->IsValid(tid));
     Table& table = this->tables[Ids::Index(tid.id)];
 
-    auto const& descriptions = table.states.GetArray<0>();
-    for (int i = 0; i < descriptions.Size(); i++)
+    auto const& descriptors = table.states.GetArray<0>();
+    for (int i = 0; i < descriptors.Size(); i++)
     {
-        auto const& desc = descriptions[i];
+        auto const& desc = descriptors[i];
 
-        if (desc.fourcc == TYPE::ID)
+        if (desc == descriptor)
         {
             return ColumnData<TYPE>(i, &table.states.Get<1>(i), &table.numRows, true);
         }
@@ -176,24 +188,32 @@ Database::GetStateColumn(TableId tid)
 //------------------------------------------------------------------------------
 /**
 */
-inline bool
-Database::HasStateColumn(TableId tid, Util::FourCC id)
+template<typename TYPE>
+inline StateDescriptor
+Database::CreateStateDescriptor(Util::StringAtom name)
 {
-    n_assert(this->IsValid(tid));
-    Table& table = this->tables[Ids::Index(tid.id)];
+    // setup a state description with the default values from the type
+    StateDescription* desc = n_new(StateDescription(name, TYPE()));
 
-    auto const& descriptions = table.states.GetArray<0>();
-    for (int i = 0; i < descriptions.Size(); i++)
+    StateDescriptor descriptor = this->stateDescriptions.Size();
+    this->stateDescriptions.Append(desc);
+    this->stateRegistry.Add(name, descriptor);
+    return descriptor;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline StateDescriptor
+Database::GetStateDescriptor(Util::StringAtom name)
+{
+    IndexT index = this->stateRegistry.FindIndex(name);
+    if (index != InvalidIndex)
     {
-        auto const& desc = descriptions[i];
-
-        if (desc.fourcc == id)
-        {
-            return true;
-        }
+        return this->stateRegistry.ValueAtIndex(index);
     }
-
-    return false;
+    
+    return StateDescriptor::Invalid();
 }
 
 } // namespace Db
