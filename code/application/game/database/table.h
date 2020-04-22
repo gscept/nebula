@@ -33,6 +33,8 @@ struct TableCreateInfo
     Util::FixedArray<Column> columns;
 };
 
+ID_16_TYPE(StateDescriptor);
+
 //------------------------------------------------------------------------------
 /**
     A table describes and holds columns, and buffers for those columns.
@@ -52,7 +54,7 @@ struct Table
     Util::Array<IndexT> freeIds;
 
     Util::ArrayAllocator<Column, ColumnBuffer> columns;
-    Util::ArrayAllocator<StateDescription, ColumnBuffer> states;
+    Util::ArrayAllocator<StateDescriptor, ColumnBuffer> states;
 
     static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::ObjectArrayHeap;
 };

@@ -129,7 +129,7 @@ CreateEntity(EntityCreateInfo const& info)
 		state->entityMap.Resize(state->entityMap.Capacity());
 	}
 
-	EntityManager::AllocateInstanceCommand cmd;
+	EntityManager::State::AllocateInstanceCommand cmd;
 	cmd.entity = entity;
 	cmd.info = info;
 
@@ -153,7 +153,7 @@ DeleteEntity(Game::Entity entity)
 
 	state->pool.Deallocate(entity.id);
 
-	EntityManager::DeallocInstanceCommand cmd;
+	EntityManager::State::DeallocInstanceCommand cmd;
 	cmd.entity = entity;
 
 	state->deallocQueue.Enqueue(std::move(cmd));

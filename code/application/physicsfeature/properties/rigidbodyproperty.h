@@ -36,7 +36,6 @@ public:
 
     struct RigidBodyState
     {
-        __DeclareState('RBST');
         Physics::ActorId actorid;
         Resources::ResourceId actorResource;
     };

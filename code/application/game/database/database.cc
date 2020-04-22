@@ -218,10 +218,18 @@ Database::SetToDefault(TableId tid, IndexT row)
 
 	for (int i = 0; i < table.states.Size(); ++i)
 	{
-		auto const& desc = table.states.Get<0>(i);
+		StateDescriptor descriptor = table.states.Get<0>(i);
+		StateDescription* desc = this->stateDescriptions[descriptor.id];
 		void*& buf = table.states.Get<1>(i);
-		void* val = (char*)buf + (row * desc.typeSize);
-		Memory::Copy(desc.defVal, val, desc.typeSize);
+		void* val = (char*)buf + (row * desc->typeSize);
+		if (desc->trivialType)
+		{
+			Memory::Copy(desc->defVal, val, desc->typeSize);
+		}
+		else
+		{
+			desc->fTable.Assign(val, desc->defVal, 1);
+		}
 	}
 }
 
@@ -421,10 +429,18 @@ Database::EraseSwapIndex(Table& table, InstanceId instance)
 	// erase swap index in state buffers
 	for (int i = 0; i < table.states.Size(); ++i)
 	{
-		auto const& desc = table.states.Get<0>(i);
+		StateDescriptor descriptor = table.states.Get<0>(i);
+		StateDescription* desc = this->stateDescriptions[descriptor.id];
 		void*& buf = table.states.Get<1>(i);
-		const SizeT byteSize = desc.typeSize;
-		Memory::Copy((char*)buf + (byteSize * end), (char*)buf + (byteSize * instance.id), byteSize);
+		const SizeT byteSize = desc->typeSize;
+		if (desc->trivialType)
+		{
+			Memory::Copy((char*)buf + (byteSize * end), (char*)buf + (byteSize * instance.id), byteSize);
+		}
+		else
+		{
+			desc->fTable.Assign((char*)buf + (byteSize * instance.id), (char*)buf + (byteSize * end), 1);
+		}
 	}
 
 	table.numRows--;
@@ -475,17 +491,25 @@ Database::GrowTable(TableId tid)
 	// Grow state buffers
 	for (int i = 0; i < table.states.Size(); ++i)
 	{
-		auto const& desc = table.states.Get<0>(i);
+		StateDescriptor descriptor = table.states.Get<0>(i);
+		StateDescription* desc = this->stateDescriptions[descriptor.id];
 		void*& buf = table.states.Get<1>(i);
 
-		const SizeT byteSize = desc.typeSize;
+		const SizeT byteSize = desc->typeSize;
 
 		int oldNumBytes = byteSize * oldCapacity;
 		int newNumBytes = byteSize * table.capacity;
 		void* newData = Memory::Alloc(ALLOCATIONHEAP, newNumBytes);
 
-		Memory::Move(buf, newData, table.numRows * byteSize);
-		Memory::Free(ALLOCATIONHEAP, buf);
+		if (desc->trivialType)
+		{
+			Memory::Move(buf, newData, table.numRows * byteSize);
+			Memory::Free(ALLOCATIONHEAP, buf);
+		}
+		else
+		{
+			desc->fTable.Copy(buf, newData, table.numRows);
+		}
 		buf = newData;
 	}
 }
@@ -564,23 +588,53 @@ Database::AllocateColumn(TableId tid, Column column)
 /**
 */
 void*
-Database::AllocateState(TableId tid, StateDescription const& desc)
+Database::AllocateState(TableId tid, StateDescription* desc)
 {
 	n_assert(this->IsValid(tid));
-	n_assert(desc.defVal != nullptr);
-	n_assert(desc.typeSize != 0);
+	n_assert(desc->defVal != nullptr);
+	n_assert(desc->typeSize != 0);
 
 	Table& table = this->tables[Ids::Index(tid.id)];
 
-	void* buffer = Memory::Alloc(ALLOCATIONHEAP, desc.typeSize * table.capacity);
+	void* buffer = Memory::Alloc(ALLOCATIONHEAP, desc->typeSize * table.capacity);
 
-	for (IndexT i = 0; i < table.numRows; ++i)
+	if (!desc->trivialType)
 	{
-		void* val = (char*)buffer + (i * desc.typeSize);
-		Memory::Copy(desc.defVal, val, desc.typeSize);
+		desc->fTable.Assign(buffer, desc->defVal, table.numRows);
 	}
-
+	else
+	{
+		for (IndexT i = 0; i < table.numRows; ++i)
+		{
+			void* val = (char*)buffer + (i * desc->typeSize);
+			Memory::Copy(desc->defVal, val, desc->typeSize);
+		}
+	}
+	
 	return buffer;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ColumnId
+Database::AddState(TableId tid, StateDescriptor descriptor)
+{
+	n_assert(this->IsValid(tid));
+	Table& table = this->tables[Ids::Index(tid.id)];
+
+	IndexT found = table.states.GetArray<0>().FindIndex(descriptor);
+	if (found != InvalidIndex)
+		return found;
+
+	uint32_t col = table.states.Alloc();
+
+	Table::ColumnBuffer& buffer = table.states.Get<1>(col);
+	table.states.Get<0>(col) = descriptor;
+
+	buffer = this->AllocateState(tid, this->stateDescriptions[descriptor.id]);
+
+	return col;
 }
 
 } // namespace Db

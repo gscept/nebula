@@ -51,7 +51,7 @@ void
 RigidBodyProperty::Init()
 {
 	this->data = {
-		Game::CreatePropertyState<RigidBodyState>(this->category),
+		Game::CreatePropertyState<RigidBodyState>(this->category, "RigidBodyState"_atm),
 		Game::GetPropertyData<Attr::WorldTransform>(this->category),
 		Game::GetPropertyData<Attr::IsDynamic>(this->category),
 		Game::GetPropertyData<Attr::PhysicsResource>(this->category),

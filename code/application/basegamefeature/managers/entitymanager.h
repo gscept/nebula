@@ -31,6 +31,7 @@ namespace Game
 /// Create a new entity
 Game::Entity CreateEntity(EntityCreateInfo const& info);
 
+/// delete entity
 void DeleteEntity(Game::Entity entity);
 
 /// Get instanceid of entity
@@ -73,7 +74,7 @@ void SetAttribute(Game::Entity entity, typename ATTR::TYPE const& value);
 
 /// create a property state and retrieve the buffer
 template<typename TYPE> Game::PropertyData<TYPE>
-CreatePropertyState(CategoryId category);
+CreatePropertyState(CategoryId category, Util::StringAtom name);
 
 ///	Retrieve a state buffer from a category
 template<typename TYPE> Game::PropertyData<TYPE>
@@ -115,48 +116,47 @@ public:
 
 	static void Destroy();
 
-	/// adds a category
+	/// Adds a category
 	CategoryId AddCategory(CategoryCreateInfo const& info);
 
-	/// returns a category by name. asserts if category does not exist
+	/// Returns a category by name. asserts if category does not exist
 	Category const& GetCategory(Util::StringAtom name) const;
 
-	/// returns a category by id. asserts if category does not exist
+	/// Returns a category by id. asserts if category does not exist
 	Category const& GetCategory(CategoryId cid) const;
 
-	/// begin adding category attributes
+	/// Begin adding category attributes
 	void BeginAddCategoryAttrs(Util::StringAtom categoryName);
-	/// add a category attribute
+	/// Add a category attribute
 	void AddCategoryAttr(const Game::AttributeId& attrId);
-	/// add a category property. This automatically adds all attributes for said property
+	/// Add a category property. This automatically adds all attributes for said property
 	void AddProperty(const Ptr<Game::Property>& prop);
-	/// end adding category attributes
+	/// End adding category attributes
 	void EndAddCategoryAttrs();
 
-	/// returns the number of existing categories
+	/// Returns the number of existing categories
 	SizeT const GetNumCategories() const;
 
-	/// allocate instance for entity in category instance table
+	/// Allocate instance for entity in category instance table
 	InstanceId AllocateInstance(Entity entity, CategoryId category);
 
-	/// deallocated and recycle instance in category instance table
+	/// Deallocated and recycle instance in category instance table
 	void DeallocateInstance(Entity entity);
-
-	struct AllocateInstanceCommand
-	{
-		Game::Entity entity;
-		EntityCreateInfo info;
-	};
-
-	struct DeallocInstanceCommand
-	{
-		/// index in the entity map
-		Game::Entity entity;
-	};
 
 	// Don't modify state without knowing what you're doing!
 	struct State
 	{
+		struct AllocateInstanceCommand
+		{
+			Game::Entity entity;
+			EntityCreateInfo info;
+		};
+
+		struct DeallocInstanceCommand
+		{
+			Game::Entity entity;
+		};
+
 		/// Generation pool
 		Ids::IdGenerationPool pool;
 
@@ -222,15 +222,16 @@ template<typename ATTR>
 typename ATTR::TYPE const&
 GetAttribute(Game::Entity entity)
 {
-	Game::EntityManager const* mgr = EntityManager::Instance();
 	auto mapping = GetEntityMapping(entity);
-	auto const& cat = mgr->GetCategory(mapping.category);
 	void** ptrptr = (*(ATTR::Id().GetCategoryTable()))[mapping.category.id];
 	n_assert(ptrptr != nullptr);
 	n_assert(*ptrptr != nullptr);
 
 	ATTR::TYPE* data = (ATTR::TYPE*) * ptrptr;
+
 #ifdef NEBULA_BOUNDSCHECKS
+	Game::EntityManager const* mgr = EntityManager::Instance();
+	auto const& cat = mgr->GetCategory(mapping.category);
 	Ptr<Game::Db::Database> db = mgr->state.worldDatabase;
 	SizeT const size = db->GetTable(cat.instanceTable).numRows;
 	n_assert(mapping.instance.id >= 0 && mapping.instance.id < size);
@@ -247,10 +248,8 @@ SetAttribute(Game::Entity entity, typename ATTR::TYPE const& value)
 {
 	n_assert2(ATTR::AccessMode() == Attr::AccessMode::ReadWrite, "Attribute is not directly writable!\n");
 
-	Game::EntityManager const* mgr = EntityManager::Instance();
 	auto mapping = GetEntityMapping(entity);
-	auto const& cat = mgr->GetCategory(mapping.category);
-
+	
 	if (!ATTR::Id().GetCategoryTable()->Contains(mapping.category.id))
 		return;
 
@@ -261,6 +260,8 @@ SetAttribute(Game::Entity entity, typename ATTR::TYPE const& value)
 
 	ATTR::TYPE* data = (ATTR::TYPE*) * ptrptr;
 #ifdef NEBULA_BOUNDSCHECKS
+	Game::EntityManager const* mgr = EntityManager::Instance();
+	auto const& cat = mgr->GetCategory(mapping.category);
 	Ptr<Game::Db::Database> db = mgr->state.worldDatabase;
 	SizeT const size = db->GetTable(cat.instanceTable).numRows;
 	n_assert(mapping.instance.id >= 0 && mapping.instance.id < size);
@@ -274,12 +275,12 @@ SetAttribute(Game::Entity entity, typename ATTR::TYPE const& value)
 */
 template<typename TYPE>
 Game::PropertyData<typename TYPE>
-CreatePropertyState(CategoryId category)
+CreatePropertyState(CategoryId category, Util::StringAtom name)
 {
 	Game::EntityManager const* mgr = Game::EntityManager::Instance();
 	Ptr<Game::Db::Database> db = mgr->state.worldDatabase;
 	Db::TableId const tid = mgr->GetCategory(category).instanceTable;
-	return db->AddStateColumn<TYPE>(tid);
+	return db->AddStateColumn<TYPE>(tid, name);
 }
 
 //------------------------------------------------------------------------------

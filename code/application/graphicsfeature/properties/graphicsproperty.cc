@@ -45,7 +45,7 @@ GraphicsProperty::Init()
 {
 	this->data = {
 		// Create a entity state buffer. Other properties should only get the state.
-		Game::CreatePropertyState<State>(this->category),
+		Game::CreatePropertyState<State>(this->category, "GraphicsPropertyState"_atm),
 		Game::GetPropertyData<Attr::WorldTransform>(this->category),
 		Game::GetPropertyData<Attr::ModelResource>(this->category)
 	};

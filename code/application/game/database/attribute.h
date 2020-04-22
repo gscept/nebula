@@ -242,7 +242,8 @@ using Attribute = Util::KeyValuePair<AttributeId, AttributeValue>;
 	@note	The ATTRIBUTENAME class is kinda wonky, but for good reason. We want to be able to use the attribute types
 			during compile time, which requires a class type if we want to be able to deduce the actual inner type of the
 			attribute. We DON'T want to instantiate that class however, hence the deleted constructors. So essentially, the
-			class only acts as compile time attribute information. The runtime namespace can be used during runtime.
+			class only acts as compile time attribute information. The runtime namespace, or ATTRIBUTENAME::Id() can be used
+			during runtime.
 	
 	@note	Make sure to send an explicit type as default value (ex. uint32_t(10), Math::matrix44::identity(), etc.)
 */
