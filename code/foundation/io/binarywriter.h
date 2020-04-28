@@ -72,7 +72,7 @@ public:
     void WriteString(const Util::String& s);
     #if !__OSX__
     /// write a float value to the stream    
-    void WriteFloat2(Math::vec2 f);
+    void WriteVec2(Math::vec2 f);
     /// write a vec4 to the stream
     void WriteVec3(const Math::vec3& v);
     /// write a vec4 to the stream

@@ -373,7 +373,7 @@ BinaryWriter::WriteGuid(const Util::Guid& guid)
 /**
 */
 void 
-BinaryWriter::WriteFloat2(Math::vec2 f)
+BinaryWriter::WriteVec2(Math::vec2 f)
 {
     vec2 val(this->byteOrder.Convert<float>(f.x),
                this->byteOrder.Convert<float>(f.y));
