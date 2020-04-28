@@ -15,8 +15,6 @@
 #include "math/vector.h"
 #include "math/sse.h"
 
-#define N_USE_AVX (1)
-
 //------------------------------------------------------------------------------
 
 #define mm_ror_ps(vec,i)	\

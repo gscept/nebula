@@ -55,10 +55,6 @@
 #endif
 #include <intrin.h>
 
-#if __USE_MATH_DIRECTX
-#include <DirectXMath.h>
-#endif
-
 // crt headers
 #include <math.h>
 #include <stdlib.h>

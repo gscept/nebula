@@ -7,7 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"
-#include <code\render\debug\framescriptinspector.h>
+#include "debug/framescriptinspector.h"
 namespace PostEffects
 {
 

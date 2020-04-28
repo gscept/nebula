@@ -8,8 +8,6 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 
-#define NEBULA_USE_SSE_FMA 0
-
 namespace Math
 {
 
@@ -20,7 +18,7 @@ namespace Math
 __forceinline __m128 
 fmadd(__m128 a, __m128 b, __m128 c)
 {
-#if NEBULA_USE_SSE_FMA    
+#if N_USE_FMA    
     return _mm_fmadd_ps(a, b, c);
 #else
     return _mm_add_ps(_mm_mul_ps(a, b), c);

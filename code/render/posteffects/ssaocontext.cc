@@ -4,8 +4,12 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "frame/frameplugin.h"
+#include "coregraphics/graphicsdevice.h"
+#include "coregraphics/resourcetable.h"
+#include "coregraphics/sampler.h"
 #include "coregraphics/shadersemantics.h"
 #include "graphics/cameracontext.h"
+#include "graphics/graphicsserver.h"
 #include "graphics/view.h"
 #include "ssaocontext.h"
 

@@ -4,6 +4,9 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "frame/frameplugin.h"
+#include "coregraphics/graphicsdevice.h"
+#include "coregraphics/resourcetable.h"
+#include "graphics/graphicsserver.h"
 #include "renderutil/drawfullscreenquad.h"
 #include "bloomcontext.h"
 namespace PostEffects
