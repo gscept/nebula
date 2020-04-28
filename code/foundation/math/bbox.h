@@ -423,8 +423,7 @@ bbox::clipstatus(const mat4& viewProjection) const
     const vec4 yTopFlags = vec4(ClipTop);
     const vec4 zFarFlags = vec4(ClipFar);
     const vec4 zNearFlags = vec4(ClipNear);
-
-
+  
 	// check two loops of points arranged as xxxx yyyy zzzz
 	IndexT i;
 	for (i = 0; i < 2; ++i)
