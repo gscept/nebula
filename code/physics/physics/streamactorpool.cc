@@ -44,7 +44,7 @@ StreamActorPool::Setup()
 /**
 */
 ActorId 
-StreamActorPool::CreateActorInstance(ActorResourceId id, Math::matrix44 const & trans, bool dynamic, IndexT scene)
+StreamActorPool::CreateActorInstance(ActorResourceId id, Math::mat4 const & trans, bool dynamic, IndexT scene)
 {
     this->allocator.EnterGet();
     ActorInfo& info = this->allocator.Get<0>(id.resourceId);
@@ -117,7 +117,7 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
                 
                 uint16_t group;
                 reader->Get(group, "group");
-                Math::matrix44 trans;
+                Math::mat4 trans;
                 reader->Get(trans, "transform");
                 ColliderId colliderid;
                 if (collider.IsValid())

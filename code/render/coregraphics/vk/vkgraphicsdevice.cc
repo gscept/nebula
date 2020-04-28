@@ -802,7 +802,7 @@ SetVkScissorRects(VkRect2D* scissors, SizeT num)
 /**
 */
 void 
-CommandBufferBeginMarker(VkCommandBuffer buf, const Math::float4& color, const char* name)
+CommandBufferBeginMarker(VkCommandBuffer buf, const Math::vec4& color, const char* name)
 {
 	alignas(16) float col[4];
 	color.store(col);
@@ -997,8 +997,6 @@ _ProcessQueriesEndFrame()
 	state.frameProfilingMarkers.Clear();
 #endif
 
-
-
 	for (IndexT i = 0; i < state.profilingMarkersPerFrame[state.currentBufferedFrameIndex].Size(); i++)
 	{
 		CoreGraphics::FrameProfilingMarker marker = state.profilingMarkersPerFrame[state.currentBufferedFrameIndex][i];
@@ -1144,6 +1142,9 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	}
 #endif
 
+	// load layers
+	Vulkan::InitVulkan();
+
 	// setup instance
 	VkInstanceCreateInfo instanceInfo =
 	{
@@ -1172,6 +1173,9 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		n_error("Vulkan layer failed to load.\n");
 	}
 	n_assert(res == VK_SUCCESS);
+
+	// load instance functions
+	Vulkan::InitInstance(state.instance);
 
 	// setup adapter
 	SetupAdapter();
@@ -3979,7 +3983,7 @@ ObjectSetName(const SemaphoreId id, const char* name)
 /**
 */
 void 
-QueueBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name)
+QueueBeginMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, const char* name)
 {
 	VkQueue vkqueue = state.subcontextHandler.GetQueue(queue);
 	alignas(16) float col[4];
@@ -4008,7 +4012,7 @@ QueueEndMarker(const CoreGraphics::QueueType queue)
 /**
 */
 void 
-QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name)
+QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, const char* name)
 {
 	VkQueue vkqueue = state.subcontextHandler.GetQueue(queue);
 	alignas(16) float col[4];
@@ -4027,7 +4031,7 @@ QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color
 /**
 */
 void 
-CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name)
+CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, const char* name)
 {
 	// if batching, draws goes to thread
 	if (state.drawThread)
@@ -4105,7 +4109,7 @@ CommandBufferEndMarker(const CoreGraphics::QueueType queue)
 /**
 */
 void 
-CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name)
+CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, const char* name)
 {
 	// if batching, draws goes to thread
 	if (state.drawThread)

@@ -76,7 +76,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 		modelContextAllocator.Get<0>(cid.id) = id;
 		ModelInstanceId& mdl = modelContextAllocator.Get<1>(cid.id);
 		mdl = Models::CreateModelInstance(id);
-		const Math::matrix44& pending = modelContextAllocator.Get<2>(cid.id);
+		const Math::mat4& pending = modelContextAllocator.Get<2>(cid.id);
 		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::InstanceTransform>(mdl.instance) = pending;
 		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(mdl.instance) = gfxId.id;
 	};
@@ -110,7 +110,7 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId gfxId, const Resource
 	info.successCallback = [&mdl, rid, cid, gfxId](Resources::ResourceId id)
 	{
 		mdl = Models::CreateModelInstance(id);
-		const Math::matrix44& pending = modelContextAllocator.Get<2>(cid.id);
+		const Math::mat4& pending = modelContextAllocator.Get<2>(cid.id);
 		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::InstanceTransform>(mdl.instance) = pending;
 		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(mdl.instance) = gfxId.id;
 	};
@@ -160,11 +160,11 @@ ModelContext::GetModelInstance(const Graphics::ContextEntityId id)
 /**
 */
 void
-ModelContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform)
+ModelContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4& transform)
 {
 	const ContextEntityId cid = GetContextId(id);
 	ModelInstanceId& inst = modelContextAllocator.Get<1>(cid.id);
-	Math::matrix44& pending = modelContextAllocator.Get<2>(cid.id);
+	Math::mat4& pending = modelContextAllocator.Get<2>(cid.id);
 	bool& hasPending = modelContextAllocator.Get<3>(cid.id);
 	pending = transform;
 	hasPending = true;
@@ -173,7 +173,7 @@ ModelContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matr
 //------------------------------------------------------------------------------
 /**
 */
-Math::matrix44
+Math::mat4
 ModelContext::GetTransform(const Graphics::GraphicsEntityId id)
 {
 	const ContextEntityId cid = GetContextId(id);
@@ -184,7 +184,7 @@ ModelContext::GetTransform(const Graphics::GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
-Math::matrix44
+Math::mat4
 ModelContext::GetTransform(const Graphics::ContextEntityId id)
 {
 	ModelInstanceId& inst = modelContextAllocator.Get<Model_InstanceId>(id.id);
@@ -253,10 +253,10 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 {
 	N_SCOPE(UpdateTransforms, Models);
 	const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<Model_InstanceId>();
-	const Util::Array<Math::matrix44>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
+	const Util::Array<Math::mat4>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
 	const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<Models::StreamModelPool::ModelBoundingBox>();
 	Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceBoundingBox>();
-	Util::Array<Math::matrix44>& pending = modelContextAllocator.GetArray<Model_Transform>();
+	Util::Array<Math::mat4>& pending = modelContextAllocator.GetArray<Model_Transform>();
 	Util::Array<bool>& hasPending = modelContextAllocator.GetArray<Model_Dirty>();
 	
 	SizeT i;
@@ -273,7 +273,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 			uint objectId = Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(instance.instance);
 
 			// copy matrix pending matrix
-			Math::matrix44 transform = pending[i];
+			Math::mat4 transform = pending[i];
 			hasPending[i] = false;
 
 			// transform the box
@@ -292,15 +292,15 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 				//if (!node->active)
 				//	continue;
 
-				Math::matrix44 parentTransform = transform;
+				Math::mat4 parentTransform = transform;
 				if (node->parent != nullptr && node->parent->node->type >= NodeHasTransform)
 					parentTransform = reinterpret_cast<const TransformNode::Instance*>(node->parent)->modelTransform;
 
 				if (types[j] >= NodeHasTransform)
 				{
 					TransformNode::Instance* tnode = reinterpret_cast<TransformNode::Instance*>(node);
-					tnode->modelTransform = Math::matrix44::multiply(tnode->transform.getmatrix(), parentTransform);
-					tnode->invModelTransform = Math::matrix44::inverse(tnode->modelTransform);
+					tnode->modelTransform = tnode->transform.getmatrix() * parentTransform;
+					tnode->invModelTransform = inverse(tnode->modelTransform);
 					parentTransform = tnode->modelTransform;
 					tnode->objectId = objectId;
 
@@ -340,11 +340,10 @@ ModelContext::OnRenderDebug(uint32_t flags)
 {
     const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<1>();    
     Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceBoundingBox>();
-    const Util::Array<Math::matrix44>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
+    const Util::Array<Math::mat4>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
     const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<0>();
     
-    Math::float4 white(1.0f, 1.0f, 1.0f, 1.0f);
-    Math::float4 gray(1.0f, 0.0f, 0.0f, 1.0f);
+    Math::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
     int i, n;
     for (i = 0,n = instances.Size(); i<n ; i++)
     {
@@ -353,8 +352,6 @@ ModelContext::OnRenderDebug(uint32_t flags)
 		CoreGraphics::RenderShape shape;
 		shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), transforms[instance.instance], white);
 		CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
-        //Im3d::Im3dContext::DrawBox(instanceBoxes[instance.instance], white, Im3d::CheckDepth|Im3d::Wireframe);
-        //Im3d::Im3dContext::DrawOrientedBox(transforms[instance.instance], modelBoxes[instance.model], gray, Im3d::CheckDepth);
     }
 }
 

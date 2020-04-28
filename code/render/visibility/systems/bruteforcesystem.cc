@@ -5,6 +5,7 @@
 #include "render/stdneb.h"
 #include "bruteforcesystem.h"
 #include "visibility/visibilitycontext.h"
+#include "math/mat4.h"
 namespace Visibility
 {
 
@@ -30,14 +31,14 @@ BruteforceSystem::Run()
 		// uniform data is the observer transform
 		ctx.uniform.numBuffers = 1;
 		ctx.uniform.data[0] = (unsigned char*)&this->obs.transforms[i];
-		ctx.uniform.dataSize[0] = sizeof(Math::matrix44);
+		ctx.uniform.dataSize[0] = sizeof(Math::mat4);
 		ctx.uniform.scratchSize = 0;
 
 		// just one input buffer of all the transforms
 		ctx.input.numBuffers = 1;
 		ctx.input.data[0] = (unsigned char*)this->ent.transforms;
-		ctx.input.dataSize[0] = sizeof(Math::matrix44) * this->ent.count;
-		ctx.input.sliceSize[0] = sizeof(Math::matrix44);
+		ctx.input.dataSize[0] = sizeof(Math::mat4) * this->ent.count;
+		ctx.input.sliceSize[0] = sizeof(Math::mat4);
 
 		// the output is the visibility result
 		ctx.output.numBuffers = 1;

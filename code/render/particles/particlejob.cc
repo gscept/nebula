@@ -5,16 +5,16 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "jobs/jobs.h"
-#include "math/float4.h"
-#include "math/matrix44.h"
+#include "math/vec4.h"
+#include "math/mat4.h"
 #include "particles/particle.h"
 
 #if __NEBULA_NO_ASSERT__
 #define ASSERT_POINT(p)
 #define ASSERT_VECTOR(v)
 #else
-#define ASSERT_POINT(p)     n_assert((p).w() > 0.995f);  n_assert((p).w() < 1.005f)
-#define ASSERT_VECTOR(v)    n_assert((v).w() > -0.005f); n_assert((v).w() < 0.005f)
+#define ASSERT_POINT(p)     { n_assert(p.w > 0.995f);  n_assert(p.w < 1.005f) }
+#define ASSERT_VECTOR(v)    { n_assert(v.w > -0.005f); n_assert(v.w < 0.005f) }
 #endif
 
 namespace Particles
@@ -38,7 +38,7 @@ void ParticleStepJob(const Jobs::JobFuncContext& ctx);
 /// lookup samples at index "sampleIndex" in sample-table
 const float* LookupEnvelopeSamples(const float sampleBuffer[ParticleSystemNumEnvelopeSamples*EmitterAttrs::NumEnvelopeAttrs], IndexT sampleIndex);
 /// update bounding box (min, max) with vector v
-void UpdateBbox(__Float4Arg v, float4& min, float4& max);
+void UpdateBbox(const vec4& v, vec4& min, vec4& max);
 /// update the age of one particle
 void ParticleUpdateAge(const ParticleJobUniformPerJobData* perJobUniforms, const Particle& in, Particle& out);
 /// integrate the particle state with a given time-step
@@ -63,10 +63,10 @@ LookupEnvelopeSamples(const float sampleBuffer[ParticleSystemNumEnvelopeSamples*
 */
 __forceinline 
 void
-UpdateBbox(__Float4Arg v, float4& min, float4& max)
+UpdateBbox(const vec4& v, vec4& min, vec4& max)
 {
-    min = float4::minimize(min, v);
-    max = float4::maximize(max, v);
+    min = minimize(min, v);
+    max = maximize(max, v);
 }
 
 //------------------------------------------------------------------------------
@@ -102,7 +102,7 @@ void ParticleStep(const ParticleJobUniformData* perSystemUniforms, const Particl
     const float* samples = LookupEnvelopeSamples(perSystemUniforms->sampleBuffer, sampleIndex);
     
     // compute current particle acceleration
-    Math::float4 acceleration = perSystemUniforms->windVector * samples[EmitterAttrs::AirResistance];
+    Math::vec4 acceleration = perSystemUniforms->windVector * samples[EmitterAttrs::AirResistance];
     acceleration += perSystemUniforms->gravity;
     acceleration *= samples[EmitterAttrs::Mass];
 
@@ -143,7 +143,7 @@ void ParticleStep(const ParticleJobUniformData* perSystemUniforms, const Particl
         out.rotation = in.rotation + in.rotationVariation * samples[EmitterAttrs::RotationVelocity] * perJobUniforms->stepTime;
     }
     out.color.loadu(&(samples[EmitterAttrs::Red]));
-	out.color.w() = n_clamp(out.color.w(), 0, 1);
+	out.color.w = n_clamp(out.color.w, 0, 1);
     out.size = samples[EmitterAttrs::Size] * in.sizeVariation;
 }
 

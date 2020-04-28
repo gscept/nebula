@@ -13,7 +13,7 @@
 #include "coregraphics/shaderfeature.h"
 #include "lowlevel/vk/vkprogram.h"
 #include "coregraphics/shader.h"
-#include "vulkan/vulkan.h"
+#include "vkloader.h"
 #include "coregraphics/constantbuffer.h"
 #include "coregraphics/shaderrwbuffer.h"
 #include "coregraphics/shaderidentifier.h"

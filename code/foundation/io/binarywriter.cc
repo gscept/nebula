@@ -373,10 +373,10 @@ BinaryWriter::WriteGuid(const Util::Guid& guid)
 /**
 */
 void 
-BinaryWriter::WriteFloat2(Math::float2 f)
+BinaryWriter::WriteVec2(Math::vec2 f)
 {
-    float2 val(this->byteOrder.Convert<float>(f.x()),
-               this->byteOrder.Convert<float>(f.y()));
+    vec2 val(this->byteOrder.Convert<float>(f.x),
+               this->byteOrder.Convert<float>(f.y));
     if (this->isMapped)
     {
         // note: the memory copy is necessary to circumvent alignment problem on some CPUs
@@ -394,10 +394,34 @@ BinaryWriter::WriteFloat2(Math::float2 f)
 /**
 */
 void
-BinaryWriter::WriteFloat4(const float4& v)
+BinaryWriter::WriteVec3(const vec3& v)
 {
-    float4 val = v;
-    this->byteOrder.ConvertInPlace<float4>(val);
+    float val[3];
+    val[0] = this->byteOrder.Convert<float>(v.x);
+    val[1] = this->byteOrder.Convert<float>(v.y);
+    val[2] = this->byteOrder.Convert<float>(v.z);
+    const SizeT writeSize = sizeof(float) * 3;
+    if (this->isMapped)
+    {
+        // note: the memory copy is necessary to circumvent alignment problem on some CPUs
+        n_assert((this->mapCursor + writeSize) <= this->mapEnd);
+        Memory::Copy(&val, this->mapCursor, writeSize);
+        this->mapCursor += writeSize;
+    }
+    else
+    {
+        this->stream->Write(&val, writeSize);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BinaryWriter::WriteVec4(const vec4& v)
+{
+    vec4 val = v;
+    this->byteOrder.ConvertInPlace<vec4>(val);
     if (this->isMapped)
     {
         // note: the memory copy is necessary to circumvent alignment problem on some CPUs
@@ -414,59 +438,11 @@ BinaryWriter::WriteFloat4(const float4& v)
 //------------------------------------------------------------------------------
 /**
 */
-void 
-BinaryWriter::WritePoint(const Math::point& v)
-{
-    float val[3];
-    val[0] = this->byteOrder.Convert<float>(v.x());
-    val[1] = this->byteOrder.Convert<float>(v.y());
-    val[2] = this->byteOrder.Convert<float>(v.z());
-    const SizeT writeSize = sizeof(float) * 3; 
-    if (this->isMapped)
-    {
-        // note: the memory copy is necessary to circumvent alignment problem on some CPUs
-        n_assert((this->mapCursor + writeSize) <= this->mapEnd);
-        Memory::Copy(val, this->mapCursor, writeSize);
-        this->mapCursor += writeSize;
-    }
-    else
-    {
-        this->stream->Write(val, writeSize);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-BinaryWriter::WriteVector(const Math::vector& v)
-{
-    float val[3];
-    val[0] = this->byteOrder.Convert<float>(v.x());
-    val[1] = this->byteOrder.Convert<float>(v.y());
-    val[2] = this->byteOrder.Convert<float>(v.z());
-    const SizeT writeSize = sizeof(float) * 3; 
-    if (this->isMapped)
-    {
-        // note: the memory copy is necessary to circumvent alignment problem on some CPUs
-        n_assert((this->mapCursor + writeSize) <= this->mapEnd);
-        Memory::Copy(val, this->mapCursor, writeSize);
-        this->mapCursor += writeSize;
-    }
-    else
-    {
-        this->stream->Write(val, writeSize);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
-BinaryWriter::WriteMatrix44(const matrix44& m)
+BinaryWriter::WriteMat4(const mat4& m)
 {
-    matrix44 val = m;
-    this->byteOrder.ConvertInPlace<matrix44>(val);
+    mat4 val = m;
+    this->byteOrder.ConvertInPlace<mat4>(val);
     if (this->isMapped)
     {
         // note: the memory copy is necessary to circumvent alignment problem on some CPUs

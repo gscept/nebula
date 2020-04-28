@@ -160,11 +160,11 @@ AudioDevice::Play(AudioEmitterId id, bool loop)
 		
 		if (clock > 0)
 		{
-			instance = soloud->play3dClocked(clock, wav, pos.x(), pos.y(), pos.z(), vel.x(), vel.y(), vel.z(), vol);
+			instance = soloud->play3dClocked(clock, wav, pos.x, pos.y, pos.z, vel.x, vel.y, vel.z, vol);
 		}
 		else
 		{
-			instance = soloud->play3d(wav, pos.x(), pos.y(), pos.z(), vel.x(), vel.y(), vel.z(), vol);
+			instance = soloud->play3d(wav, pos.x, pos.y, pos.z, vel.x, vel.y, vel.z, vol);
 		}
 		soloud->set3dSourceMinMaxDistance(instance.id, min, max);
 	}
@@ -227,7 +227,7 @@ AudioDevice::SetPosition(AudioEmitterId id, Math::point const & pos)
 void
 AudioDevice::SetVelocity(AudioEmitterId id, Math::vector const & vel)
 {
-	this->emitterAllocator.Get<EmitterSlot::POSITION>(id.id) = vel;
+	this->emitterAllocator.Get<EmitterSlot::VELOCITY>(id.id) = vel;
 }
 
 //------------------------------------------------------------------------------
@@ -272,7 +272,7 @@ AudioDevice::SetPan(AudioEmitterId id, float value)
 void
 AudioDevice::UpdatePosition(ClipInstanceId id, Math::point const & pos)
 {
-	soloud->set3dSourcePosition(id.id, pos.x(), pos.y(), pos.z());
+	soloud->set3dSourcePosition(id.id, pos.x, pos.y, pos.z);
 }
 
 //------------------------------------------------------------------------------
@@ -281,27 +281,27 @@ AudioDevice::UpdatePosition(ClipInstanceId id, Math::point const & pos)
 void
 AudioDevice::UpdateVelocity(ClipInstanceId id, Math::vector const & vel)
 {
-	soloud->set3dSourceVelocity(id.id, vel.x(), vel.y(), vel.z());
+	soloud->set3dSourceVelocity(id.id, vel.x, vel.y, vel.z);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-AudioDevice::SetListenerTransform(Math::matrix44 const & transform)
+AudioDevice::SetListenerTransform(Math::mat4 const & transform)
 {
-	auto& pos = transform.get_position();
-	auto& fw = transform.get_zaxis();
-	auto& up = transform.get_yaxis();
-	this->listener.position[0] = pos.x();
-	this->listener.position[1] = pos.y();
-	this->listener.position[2] = pos.z();
-	this->listener.forward[0] = -fw.x();
-	this->listener.forward[1] = -fw.y();
-	this->listener.forward[2] = -fw.z();
-	this->listener.up[0] = up.x();
-	this->listener.up[1] = up.y();
-	this->listener.up[2] = up.z();
+	auto& pos = transform.position;
+	auto& fw = transform.z_axis;
+	auto& up = transform.y_axis;
+	this->listener.position[0] = pos.x;
+	this->listener.position[1] = pos.y;
+	this->listener.position[2] = pos.z;
+	this->listener.forward[0] = -fw.x;
+	this->listener.forward[1] = -fw.y;
+	this->listener.forward[2] = -fw.z;
+	this->listener.up[0] = up.x;
+	this->listener.up[1] = up.y;
+	this->listener.up[2] = up.z;
 
 	soloud->set3dListenerParameters(
 		this->listener.position[0],
@@ -325,10 +325,10 @@ AudioDevice::SetListenerTransform(Math::matrix44 const & transform)
 void
 AudioDevice::SetListenerVelocity(Math::vector const & vel)
 {
-	this->listener.velocity[0] = vel.x();
-	this->listener.velocity[0] = vel.y();
-	this->listener.velocity[0] = vel.z();
-	soloud->set3dListenerVelocity(vel.x(), vel.y(), vel.z());
+	this->listener.velocity[0] = vel.x;
+	this->listener.velocity[0] = vel.y;
+	this->listener.velocity[0] = vel.z;
+	soloud->set3dListenerVelocity(vel.x, vel.y, vel.z);
 }
 
 //------------------------------------------------------------------------------

@@ -75,7 +75,7 @@ TransformComponent::SetupAcceptedMessages()
 /**
 */
 void
-TransformComponent::SetLocalTransform(InstanceId i, const Math::matrix44& val)
+TransformComponent::SetLocalTransform(InstanceId i, const Math::mat4& val)
 {
 	data->Get<Attr::LocalTransform>(i) = val;
 	
@@ -100,7 +100,7 @@ TransformComponent::SetLocalTransform(InstanceId i, const Math::matrix44& val)
 	else
 	{
 		// First of, transform this with parent transform if any
-		data->Get<Attr::WorldTransform>(i) = Math::matrix44::multiply(val, data->Get<Attr::WorldTransform>(parent));
+		data->Get<Attr::WorldTransform>(i) = val * data->Get<Attr::WorldTransform>(parent);
 
 		if (child == InvalidIndex)
 		{
@@ -118,7 +118,7 @@ TransformComponent::SetLocalTransform(InstanceId i, const Math::matrix44& val)
 	{
 		while (child != InvalidIndex)
 		{
-			data->Get<Attr::WorldTransform>(child) = Math::matrix44::multiply(data->Get<Attr::LocalTransform>(child), data->Get<Attr::WorldTransform>(parent));
+			data->Get<Attr::WorldTransform>(child) = data->Get<Attr::LocalTransform>(child) * data->Get<Attr::WorldTransform>(parent);
 			Msg::UpdateTransform::Defer(messageQueue, data->GetOwner(child), data->Get<Attr::WorldTransform>(child));
 			parent = child;
 			child = data->Get<Attr::FirstChild>(child);
@@ -142,7 +142,7 @@ TransformComponent::SetLocalTransform(InstanceId i, const Math::matrix44& val)
 /**
 */
 void
-TransformComponent::SetLocalTransform(Game::Entity entity, const Math::matrix44& val)
+TransformComponent::SetLocalTransform(Game::Entity entity, const Math::mat4& val)
 {
 	InstanceId instance = data->GetInstance(entity);
 	if (instance != InvalidIndex)
@@ -155,7 +155,7 @@ TransformComponent::SetLocalTransform(Game::Entity entity, const Math::matrix44&
 /**
 */
 void
-TransformComponent::SetWorldTransform(InstanceId instance, const Math::matrix44& val)
+TransformComponent::SetWorldTransform(InstanceId instance, const Math::mat4& val)
 {
 	n_assert(data->data.Size() > instance);
 	if (data->data.Size() <= instance)
@@ -166,9 +166,9 @@ TransformComponent::SetWorldTransform(InstanceId instance, const Math::matrix44&
 	InstanceId parentInstance = data->Get<Attr::Parent>(instance);
 	if (parentInstance != InvalidIndex)
 	{
-		Math::matrix44& parentWorld = data->Get<Attr::WorldTransform>(parentInstance);
-		Math::matrix44 parentInverse = Math::matrix44::inverse(parentWorld);
-		Math::matrix44 local = Math::matrix44::multiply(val, parentInverse);
+		Math::mat4& parentWorld = data->Get<Attr::WorldTransform>(parentInstance);
+		Math::mat4 parentInverse = Math::inverse(parentWorld);
+		Math::mat4 local = val * parentInverse;
 		SetLocalTransform(instance, local);
 	}
 	else
@@ -182,7 +182,7 @@ TransformComponent::SetWorldTransform(InstanceId instance, const Math::matrix44&
 /**
 */
 void
-TransformComponent::SetWorldTransform(Game::Entity entity, const Math::matrix44& val)
+TransformComponent::SetWorldTransform(Game::Entity entity, const Math::mat4& val)
 {
 	InstanceId instance = data->GetInstance(entity);
 	if (instance != InvalidIndex)
@@ -194,19 +194,19 @@ TransformComponent::SetWorldTransform(Game::Entity entity, const Math::matrix44&
 //------------------------------------------------------------------------------
 /**
 */
-Math::matrix44
+Math::mat4
 TransformComponent::GetLocalTransform(InstanceId instance)
 {
 	if (instance < data->data.Size())
 		return data->Get<Attr::LocalTransform>(instance);
 
-	return Math::matrix44::identity();
+	return Math::mat4();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Math::matrix44
+Math::mat4
 TransformComponent::GetLocalTransform(Game::Entity entity)
 {
 	return GetLocalTransform(data->GetInstance(entity));
@@ -215,7 +215,7 @@ TransformComponent::GetLocalTransform(Game::Entity entity)
 //------------------------------------------------------------------------------
 /**
 */
-Math::matrix44
+Math::mat4
 TransformComponent::GetWorldTransform(InstanceId instance)
 {
 	if (instance < data->data.Size())
@@ -229,13 +229,13 @@ TransformComponent::GetWorldTransform(InstanceId instance)
 		return data->Get<Attr::WorldTransform>(instance);
 	}
 
-	return Math::matrix44::identity();
+	return Math::mat4();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Math::matrix44
+Math::mat4
 TransformComponent::GetWorldTransform(Game::Entity entity)
 {
 	return GetWorldTransform(data->GetInstance(entity));

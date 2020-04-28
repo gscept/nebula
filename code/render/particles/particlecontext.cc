@@ -10,6 +10,8 @@
 #include "particles/emitterattrs.h"
 #include "particles/emittermesh.h"
 #include "particles/envelopesamplebuffer.h"
+#include "graphics/cameracontext.h"
+#include "graphics/view.h"
 
 using namespace Graphics;
 using namespace Models;
@@ -68,6 +70,7 @@ void
 ParticleContext::Create()
 {
 	__bundle.OnBegin = ParticleContext::UpdateParticles;
+	__bundle.OnPrepareView = ParticleContext::OnPrepareView;
 	__bundle.OnBeforeFrame = ParticleContext::WaitForParticleUpdates; // wait for jobs before we issue visibility
 	__bundle.StageBits = &ParticleContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
@@ -207,7 +210,7 @@ ParticleContext::Create()
 	layoutComponents.AppendArray(state.particleComponents);
 	CoreGraphics::VertexLayoutCreateInfo vloInfo{ layoutComponents };
 	state.layout = CoreGraphics::CreateVertexLayout(vloInfo);
-	state.vertexSize = sizeof(Math::float4) * 5; // 5 vertex attributes using float4
+	state.vertexSize = sizeof(Math::vec4) * 5; // 5 vertex attributes using vec4
 
 	_CreateContext();
 }
@@ -249,10 +252,10 @@ ParticleContext::Setup(const Graphics::GraphicsEntityId id)
 			system.outputCapacity = 0;
 			system.outputData = nullptr;
 			system.uniformData.sampleBuffer = pNode->GetSampleBuffer().GetSampleBuffer();
-			system.uniformData.gravity = Math::float4(0.0f, attrs.GetFloat(EmitterAttrs::Gravity), 0.0f, 0.0f);
+			system.uniformData.gravity = Math::vector(0.0f, attrs.GetFloat(EmitterAttrs::Gravity), 0.0f);
 			system.uniformData.stretchToStart = attrs.GetBool(EmitterAttrs::StretchToStart);
 			system.uniformData.stretchTime = attrs.GetBool(EmitterAttrs::StretchToStart);
-			system.uniformData.windVector = attrs.GetFloat4(EmitterAttrs::WindDirection);
+			system.uniformData.windVector = xyz(attrs.GetVec4(EmitterAttrs::WindDirection));
 
 			// update primitive group
 			CoreGraphics::PrimitiveGroup group;
@@ -348,6 +351,7 @@ ParticleContext::Stop(const Graphics::GraphicsEntityId id)
 void 
 ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
 {
+	N_SCOPE(UpdateParticles, Particles);
 	const Util::Array<ParticleRuntime>& runtimes = particleContextAllocator.GetArray<Runtime>();
 	const Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
 
@@ -371,6 +375,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
 			for (j = 0; j < systems.Size(); j++)
 			{
 				ParticleSystemRuntime& system = systems[j];
+				system.transform = system.node->modelTransform;
 
 #if NEBULA_USED_FIXED_PARTICLE_UPDATE_TIME
 				IndexT curStep = 0;
@@ -403,8 +408,38 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
 /**
 */
 void 
+ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+{
+	N_SCOPE(PrepareView, Particles);
+	const Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
+
+	Math::mat4 invViewMatrix = inverse(Graphics::CameraContext::GetTransform(view->GetCamera()));
+	IndexT i, j;
+
+	// update billboard particles
+	for (i = 0; i < allSystems.Size(); i++)
+	{
+		Util::Array<ParticleSystemRuntime>& systems = allSystems[i];
+		for (j = 0; j < systems.Size(); j++)
+		{
+			ParticleSystemRuntime& system = systems[j];
+			ParticleSystemNode* pnode = reinterpret_cast<ParticleSystemNode*>(system.node->node);
+			Math::mat4 particleTransform = system.transform;
+			if (pnode->GetEmitterAttrs().GetBool(Particles::EmitterAttrs::Billboard))
+				system.node->particleTransform = particleTransform * invViewMatrix;
+			else
+				system.node->particleTransform = particleTransform;
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
 ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
 {
+	N_SCOPE(WaitForParticleJobs, Particles);
 	if (ParticleContext::runningJobs.Size() > 0)
 	{
 		// wait for all jobs to finish
@@ -434,7 +469,8 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
 		IndexT j;
 		for (j = 0; j < systems.Size(); j++)
 		{
-			const ParticleSystemRuntime& system = systems[j];
+			ParticleSystemRuntime& system = systems[j];
+			system.boundingBox = system.outputData->bbox;
 			n_assert(system.outputData != nullptr);
 			if (system.outputData->numLivingParticles > 0)
 			{
@@ -480,7 +516,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
 
 	// walk through systems again and update index and vertex buffers
 	float* buf = (float*)state.mappedVertices[frame];
-	Math::float4 tmp;
+	Math::vec4 tmp;
 	for (i = 0; i < allSystems.Size(); i++)
 	{
 		const Util::Array<ParticleSystemRuntime>& systems = allSystems[i];
@@ -489,26 +525,30 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
 		{
 			const ParticleSystemRuntime& system = systems[j];
 			system.node->particleVboOffset = baseVertex;
+			SizeT numParticles = 0;
 
 			// stream update vertex buffer region
 			IndexT k;
 			for (k = 0; k < system.particles.Size(); k++)
 			{
 				const Particle& particle = system.particles[k];
-				if (particle.relAge < 1.0f)
+				if (particle.relAge < 1.0f && particle.color.w > 0.001f)
 				{
 					particle.position.stream(buf); buf += 4;
 					particle.stretchPosition.stream(buf); buf += 4;
 					particle.color.stream(buf); buf += 4;
 					particle.uvMinMax.stream(buf); buf += 4;
-					tmp.set(particle.rotation, particle.size, particle.particleId, 0.0f);
+					float sinRot = Math::n_sin(particle.rotation);
+					float cosRot = Math::n_cos(particle.rotation);
+					tmp.set(sinRot, cosRot, particle.size, particle.particleId);
 					tmp.stream(buf); buf += 4;
 					baseVertex++;
+					numParticles++;
 				}
 			}
 
 			// update node
-			system.node->numParticles = system.outputData->numLivingParticles;
+			system.node->numParticles = numParticles;
 			system.node->particleVbo = state.vbos[frame];
 		}
 	}
@@ -558,6 +598,21 @@ ParticleContext::GetBoundingBox(const Graphics::GraphicsEntityId id)
 void 
 ParticleContext::OnRenderDebug(uint32_t flags)
 {
+	CoreGraphics::ShapeRenderer* shapeRenderer = CoreGraphics::ShapeRenderer::Instance();
+	Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
+	Util::Array<Math::bbox>& boxes = particleContextAllocator.GetArray<BoundingBox>();
+	for (IndexT i = 0; i < allSystems.Size(); i++)
+	{
+		Util::Array<ParticleSystemRuntime> runtimes = allSystems[i];
+		for (IndexT j = 0; j < runtimes.Size(); j++)
+		{
+			// for each system, make a white box
+			shapeRenderer->AddWireFrameBox(runtimes[j].boundingBox, Math::vec4(1));
+		}
+
+		// for the whole particle effect, draw a red box
+		shapeRenderer->AddWireFrameBox(boxes[i], Math::vec4(1, 0, 0, 1));
+	}
 }
 #endif
 
@@ -567,6 +622,7 @@ ParticleContext::OnRenderDebug(uint32_t flags)
 void 
 ParticleContext::EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, float stepTime)
 {
+	N_SCOPE(EmitParticles, Particles);
 	// get the (wrapped around if looping) time since emission has started
 	Models::ParticleSystemNode* node = reinterpret_cast<Models::ParticleSystemNode*>(srt.node->node);
 	const Particles::EmitterAttrs& attrs = node->GetEmitterAttrs();
@@ -673,6 +729,7 @@ ParticleContext::EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, 
 void 
 ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, const Particles::EmitterAttrs& attrs, const Particles::EmitterMesh& mesh, const Particles::EnvelopeSampleBuffer& buffer, IndexT sampleIndex, float initialAge)
 {
+	N_SCOPE(EmitParticle, Particles);
 	n_assert(initialAge >= 0.0f);
 
 	using namespace Math;
@@ -685,7 +742,7 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, c
 	const EmitterMesh::EmitterPoint& emPoint = mesh.GetEmitterPoint(srt.emissionCounter++);
 
 	// setup particle position and start position
-	particle.position = matrix44::transform(emPoint.position, srt.transform);
+	particle.position = srt.transform * emPoint.position;
 	particle.startPosition = particle.position;
 	particle.stretchPosition = particle.position;
 
@@ -694,13 +751,13 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, c
 	float maxSpread = emissionEnvSamples[EmitterAttrs::SpreadMax];
 	float theta = n_deg2rad(n_lerp(minSpread, maxSpread, n_rand()));
 	float rho = N_PI_DOUBLE * n_rand();
-	matrix44 rot = matrix44::multiply(matrix44::rotationaxis(emPoint.tangent, theta), matrix44::rotationaxis(emPoint.normal, rho));
-	float4 emNormal = matrix44::transform(emPoint.normal, rot);
+	mat4 rot = rotationaxis(xyz(emPoint.tangent), theta) * rotationaxis(xyz(emPoint.normal), rho);
+	vec4 emNormal = rot * emPoint.normal;
 
-	float4 dummy, dummy2;
-	quaternion qrot;
-	srt.transform.decompose(dummy, qrot, dummy2);
-	emNormal = matrix44::transform(emNormal, matrix44::rotationquaternion(qrot));
+	vec3 dummy, dummy2;
+	quat qrot;
+	decompose(srt.transform, dummy, qrot, dummy2);
+	emNormal = rotationquat(qrot) * emNormal;
 	// compute start velocity
 	float velocityVariation = 1.0f - (n_rand() * attrs.GetFloat(EmitterAttrs::VelocityRandomize));
 	float startVelocity = emissionEnvSamples[EmitterAttrs::StartVelocity] * velocityVariation;
@@ -780,6 +837,7 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, c
 void 
 ParticleContext::RunParticleStep(ParticleRuntime& rt, ParticleSystemRuntime& srt, float stepTime, bool generateVtxList)
 {
+	N_SCOPE(RunParticleStep, Particles);
 	// if no particles, no need to run the step update
 	if (srt.particles.Size() == 0)
 		return;
@@ -788,7 +846,7 @@ ParticleContext::RunParticleStep(ParticleRuntime& rt, ParticleSystemRuntime& srt
 
 	n_assert(srt.particles.GetBuffer());
 	const SizeT inputBufferSize = srt.particles.Size() * ParticleJobInputElementSize;
-	const SizeT inputSliceSize = ParticleJobInputSliceSize;
+	const SizeT inputSliceSize = inputBufferSize;
 
 	ctx.input.data[0] = srt.particles.GetBuffer();
 	ctx.input.dataSize[0] = inputBufferSize;

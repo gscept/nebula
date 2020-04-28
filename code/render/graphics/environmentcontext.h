@@ -23,11 +23,11 @@ public:
 	static void RenderUI(const Graphics::FrameContext& ctx);
 
 	/// set the fog color
-	static void SetFogColor(const Math::float4& fogColor);
+	static void SetFogColor(const Math::vec4& fogColor);
 	/// set the fog distances
 	static void SetFogDistances(const float nearFog, const float farFog);
 	/// set the bloom color filter
-	static void SetBloomColor(const Math::float4& bloomColor);
+	static void SetBloomColor(const Math::vec4& bloomColor);
 	/// set the level at which pixels are considered 'bright' and should be bloomed
 	static void SetBloomThreshold(const float threshold);
 	///	set the maximum allowed luminance by the eye adaptation

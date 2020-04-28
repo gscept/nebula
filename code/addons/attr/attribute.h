@@ -14,12 +14,12 @@
 #include "floatattrid.h"
 #include "intattrid.h"
 #include "uintattrid.h"
-#include "matrix44attrid.h"
-#include "float4attrid.h"
+#include "mat4attrid.h"
+#include "vec4attrid.h"
 #include "stringattrid.h"
 #include "util/variant.h"
-#include "math/float4.h"
-#include "math/matrix44.h"
+#include "math/vec4.h"
+#include "math/mat4.h"
 #include "util/keyvaluepair.h"
 #include "util/guid.h"
 #include "util/blob.h"
@@ -47,11 +47,11 @@ public:
     /// construct from uint attribute id
     Attribute(const UIntAttrId& id, uint val);
     /// construct from matrix44
-    Attribute(const Matrix44AttrId& id, const Math::matrix44& val);
+    Attribute(const Mat4AttrId& id, const Math::mat4& val);
     /// construct from string
     Attribute(const StringAttrId& id, const Util::String& val);
     /// construct from float4
-    Attribute(const Float4AttrId& id, const Math::float4& val);
+    Attribute(const Vec4AttrId& id, const Math::vec4& val);
     /// construct from guid
     Attribute(const GuidAttrId& id, const Util::Guid& val);
     /// construct from blob
@@ -82,11 +82,11 @@ public:
     /// int assignment operator
     void operator=(int rhs);
     /// matrix44 assignment operator
-    void operator=(const Math::matrix44& rhs);
+    void operator=(const Math::mat4& rhs);
     /// string assignment operator
     void operator=(const Util::String& rhs);
     /// float4 assignment operator
-    void operator=(const Math::float4& rhs);
+    void operator=(const Math::vec4& rhs);
     /// guid assignment operator
     void operator=(const Util::Guid& rhs);
     /// blob assignment operator
@@ -103,7 +103,7 @@ public:
     /// bool equality operator
     bool operator==(bool rhs) const;
     /// float4 equality operator
-    bool operator==(const Math::float4& rhs) const;
+    bool operator==(const Math::vec4& rhs) const;
     /// guid equality operator
     bool operator==(const Util::Guid& rhs) const;
 
@@ -118,7 +118,7 @@ public:
     /// bool equality operator
     bool operator!=(bool rhs) const;
     /// float4 equality operator
-    bool operator!=(const Math::float4& rhs) const;
+    bool operator!=(const Math::vec4& rhs) const;
     /// guid equality operator
     bool operator!=(const Util::Guid& rhs) const;
 
@@ -143,13 +143,13 @@ public:
     /// get string content
     const Util::String& GetString() const;
     /// set matrix44 value
-    void SetMatrix44(const Math::matrix44& val);
+    void SetMat4(const Math::mat4& val);
     /// get matrix44 value
-    const Math::matrix44& GetMatrix44() const;
+    const Math::mat4& GetMat4() const;
     /// set float4 value
-    void SetFloat4(const Math::float4& val);
+    void SetVec4(const Math::vec4& val);
     /// get float4 value
-    Math::float4 GetFloat4() const;
+    Math::vec4 GetVec4() const;
     /// set guid value
     void SetGuid(const Util::Guid& val);
     /// get guid value
@@ -246,7 +246,7 @@ Attribute::Attribute(const IntAttrId& id, int val) :
 /**
 */
 inline
-Attribute::Attribute(const Matrix44AttrId& id, const Math::matrix44& val) :
+Attribute::Attribute(const Mat4AttrId& id, const Math::mat4& val) :
     Util::KeyValuePair<AttrId,Util::Variant>(id, Util::Variant(val))
 {
     // empty
@@ -266,7 +266,7 @@ Attribute::Attribute(const StringAttrId& id, const Util::String& val) :
 /**
 */
 inline
-Attribute::Attribute(const Float4AttrId& id, const Math::float4& val) :
+Attribute::Attribute(const Vec4AttrId& id, const Math::vec4& val) :
     Util::KeyValuePair<AttrId,Util::Variant>(id, Util::Variant(val))
 {
     // empty
@@ -412,9 +412,9 @@ Attribute::operator=(int rhs)
 /**
 */
 inline void
-Attribute::operator=(const Math::matrix44& rhs)
+Attribute::operator=(const Math::mat4& rhs)
 {
-    n_assert(this->GetValueType() == Matrix44Type);
+    n_assert(this->GetValueType() == Mat4Type);
     n_assert(this->GetAccessMode() == ReadWrite);
     this->valueData = rhs;
 }
@@ -434,7 +434,7 @@ Attribute::operator=(const Util::String& rhs)
 /**
 */
 inline void
-Attribute::operator=(const Math::float4& rhs)
+Attribute::operator=(const Math::vec4& rhs)
 {
     n_assert(this->GetValueType() == Float4Type);
     n_assert(this->GetAccessMode() == ReadWrite);
@@ -516,7 +516,7 @@ Attribute::operator==(bool rhs) const
 /**
 */
 inline bool
-Attribute::operator==(const Math::float4& rhs) const
+Attribute::operator==(const Math::vec4& rhs) const
 {
     n_assert(this->GetValueType() == Float4Type);
     return this->valueData == rhs;
@@ -575,7 +575,7 @@ Attribute::operator!=(float rhs) const
 /**
 */
 inline bool
-Attribute::operator!=(const Math::float4& rhs) const
+Attribute::operator!=(const Math::vec4& rhs) const
 {
     n_assert(this->GetValueType() == Float4Type);
     return this->valueData != rhs;
@@ -700,9 +700,9 @@ Attribute::GetString() const
 /**
 */
 inline void
-Attribute::SetMatrix44(const Math::matrix44& val)
+Attribute::SetMat4(const Math::mat4& val)
 {
-    n_assert(this->GetValueType() == Matrix44Type);
+    n_assert(this->GetValueType() == Mat4Type);
     n_assert(this->GetAccessMode() == ReadWrite);
     this->valueData = val;
 }
@@ -710,18 +710,18 @@ Attribute::SetMatrix44(const Math::matrix44& val)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44&
-Attribute::GetMatrix44() const
+inline const Math::mat4&
+Attribute::GetMat4() const
 {
-    n_assert(this->GetValueType() == Matrix44Type);
-    return this->valueData.GetMatrix44();
+    n_assert(this->GetValueType() == Mat4Type);
+    return this->valueData.GetMat4();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-Attribute::SetFloat4(const Math::float4& val)
+Attribute::SetVec4(const Math::vec4& val)
 {
     n_assert(this->GetValueType() == Float4Type);
     n_assert(this->GetAccessMode() == ReadWrite);
@@ -731,11 +731,11 @@ Attribute::SetFloat4(const Math::float4& val)
 //------------------------------------------------------------------------------
 /**
 */
-inline Math::float4
-Attribute::GetFloat4() const
+inline Math::vec4
+Attribute::GetVec4() const
 {
     n_assert(this->GetValueType() == Float4Type);
-    return this->valueData.GetFloat4();
+    return this->valueData.GetVec4();
 }
 
 //------------------------------------------------------------------------------
@@ -802,15 +802,15 @@ Attribute::SetValueFromString(const Util::String& str)
             break;
 
         case Float4Type:
-            this->valueData = str.AsFloat4();
+            this->valueData = str.AsVec4();
             break;
 
         case StringType:
             this->valueData = str;
             break;
 
-        case Matrix44Type:
-            this->valueData = str.AsMatrix44();
+        case Mat4Type:
+            this->valueData = str.AsMat4();
             break;
 
         case GuidType:
@@ -846,15 +846,15 @@ Attribute::ValueAsString() const
             break;
 
         case Float4Type:
-            str.SetFloat4(this->GetFloat4());
+            str.SetVec4(this->GetVec4());
             break;
 
         case StringType:
             str = this->GetString();
             break;
 
-        case Matrix44Type:
-            str.SetMatrix44(this->GetMatrix44());
+        case Mat4Type:
+            str.SetMat4(this->GetMat4());
             break;
 
         case GuidType:

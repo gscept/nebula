@@ -7,9 +7,9 @@
 */
 //------------------------------------------------------------------------------
 #include "modelnode.h"
-#include "math/matrix44.h"
+#include "math/mat4.h"
 #include "math/transform44.h"
-#include "math/quaternion.h"
+#include "math/quat.h"
 namespace Models
 {
 class TransformNode : public ModelNode
@@ -23,10 +23,8 @@ public:
 	struct Instance : public ModelNode::Instance
 	{
 		Math::transform44 transform;
-		Math::matrix44 modelTransform;
-		Math::matrix44 invModelTransform;
-		bool isInViewSpace;
-		bool lockedToViewer;
+		Math::mat4 modelTransform;
+		Math::mat4 invModelTransform;
 		
 		/// Identifiable object id. Usually the graphics entity id.
 		/// @todo	Should be moved to a per-model-instance resource since it's the same for every model instance
@@ -51,11 +49,11 @@ protected:
 	/// load transform
 	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
 
-	Math::point position;
-	Math::quaternion rotate;
-	Math::vector scale;
-	Math::point rotatePivot;
-	Math::point scalePivot;
+	Math::vec3 position;
+	Math::quat rotate;
+	Math::vec3 scale;
+	Math::vec3 rotatePivot;
+	Math::vec3 scalePivot;
 	bool isInViewSpace;
 	float minDistance;
 	float maxDistance;
@@ -78,8 +76,6 @@ TransformNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode:
 	this->transform.setscale(tnode->scale);
 	this->transform.setrotatepivot(tnode->rotatePivot);
 	this->transform.setscalepivot(tnode->scalePivot);
-	this->lockedToViewer = tnode->lockedToViewer;
-	this->isInViewSpace = tnode->isInViewSpace;
 }
 
 } // namespace Models

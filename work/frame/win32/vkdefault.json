@@ -207,65 +207,6 @@
 			}
 		]
 
-		plugins: [
-			{
-				name: "Tonemapping",
-				class: "Frame::TonemapPlugin",
-				textures: [
-					{
-						name: "Luminance",
-						texture: "AverageLumBuffer"
-					},
-					{
-						name: "Color",
-						texture: "LightBuffer"
-					}
-				]
-			},
-			{
-				name: "SSAO",
-				class: "Frame::SSAOPlugin",
-				textures: [
-					{
-						name: "SSAO",
-						texture: "SSAOBuffer"
-					}
-				]
-			},
-			{
-				name: "Bloom",
-				class: "Frame::BloomPlugin",
-				textures: [
-					{
-						name: "Luminance",
-						texture: "AverageLumBuffer"
-					},
-					{
-						name: "BlurredBloom",
-						texture: "BloomBufferBlurred"
-					},
-					{
-						name: "Color",
-						texture: "LightBuffer"
-					}
-				]
-			},
-			{
-				name: "SSR",
-				class: "Frame::SSRPlugin",
-				textures: [
-					{
-						name: "SSRTraceBuffer",
-						texture: "SSRTraceBuffer"
-					},
-					{
-						name: "ReflectionBuffer",
-						texture: "ReflectionBuffer"
-					},
-				],
-			}
-		],
-
 		begin_submission: {
 			name: "Clustering",
 			wait_for_queue: "Graphics",
@@ -362,14 +303,14 @@
 
 		end_submission: {
 			queue: "Graphics",
-		}
+		},
 
 		begin_submission: {
 			name: "Lighting and post effects",
 			wait_for_queue: "Compute",
 			queue: "Graphics",
 			_comment: "Mandatory start of graphics submission, must be met with a matching end_submission"
-		}
+		},
 
 		_comment: "------------ GBUFFER DECALS ------------",
 		pass: {
@@ -390,7 +331,7 @@
 					load: true,
 					store: true
 				},
-			]
+			],
 
 			subpass: {
 				resources: [
@@ -405,7 +346,7 @@
 						access: "ShaderRead",
 						layout: "ShaderRead",
 						stage: "PixelShader",
-					}
+					},
 				],
 
 				name: "PBRDecals",
@@ -414,9 +355,9 @@
 				depth: false,
 				plugin: {
 					name: "DecalContext - Render PBR Decals"
-				}
-			}
-		}
+				},
+			},
+		},
 
 		_comment: "------------ SSAO ------------",
 		plugin: {
@@ -435,8 +376,8 @@
 					access: "ShaderWrite",
 					layout: "General",
 					stage: "ComputeShader"
-				}
-			]
+				},
+			],
 		},
 
 		_comment: "------------ Screen-Space Raytracing ------------",
@@ -468,8 +409,8 @@
 					access: "ShaderWrite",
 					layout: "ShaderRead",
 					stage: "ComputeShader"
-				}
-			]
+				},
+			],
 		},
 
 		_comment: "------------ CLUSTERING DEFERRED ------------",
@@ -512,15 +453,15 @@
 					layout: "ShaderRead",
 					stage: "PixelShader"
 				},
-			]
+			],
 			outputs: [
 				{
 					name: "LightBuffer",
 					access: "ShaderWrite",
 					layout: "General",
 					stage: "ComputeShader"
-				}
-			]
+				},
+			],
 		},
 
 		plugin: {
@@ -532,7 +473,7 @@
 					layout: "DepthStencilRead",
 					stage: "ComputeShader"
 				},
-			]
+			],
 			outputs: [
 				{
 					name: "VolumetricFogBuffer0",
@@ -540,8 +481,8 @@
 					layout: "General",
 					stage: "ComputeShader"
 				},
-			]
-		}
+			],
+		},
 
 		_comment: "------------ Screen-Space Raytracing Color Resolve ------------",
 		plugin: {
@@ -570,7 +511,7 @@
 					access: "ShaderRead",
 					layout: "ShaderRead",
 					stage: "ComputeShader"
-				}
+				},
 			],
 			outputs: [
 				{
@@ -578,8 +519,8 @@
 					access: "ShaderWrite",
 					layout: "ShaderRead",
 					stage: "ComputeShader"
-				}
-			]
+				},
+			],
 		},
 
 		plugin: {
@@ -596,7 +537,7 @@
 					access: "ShaderRead",
 					layout: "ShaderRead",
 					stage: "ComputeShader"
-				}
+				},
 			],
 			outputs: [
 				{
@@ -604,9 +545,9 @@
 					access: "ShaderWrite",
 					layout: "General",
 					stage: "ComputeShader"
-				}
-			]
-		}
+				},
+			],
+		},
 
 		_comment: "------------ BLOOM ------------",
 		pass: {
@@ -615,7 +556,7 @@
 				{
 					name: "BloomBuffer",
 					store: true
-				}
+				},
 			],
 
 			subpass: {
@@ -635,11 +576,11 @@
 						layout: "ShaderRead",
 						stage: "PixelShader"
 					},
-				]
+				],
 				plugin: {
 					name: "Bloom-BrightnessLowpass",
-				}
-			}
+				},
+			},
 		},
 
 		_comment: "------------ BLOOM BLUR ------------",
@@ -657,8 +598,8 @@
 					access: "ShaderRead",
 					layout: "ShaderRead",
 					stage: "ComputeShader"
-				}
-			]
+				},
+			],
 		},
 
 		plugin: {
@@ -669,8 +610,8 @@
 					access: "TransferRead",
 					layout: "TransferSource",
 					stage: "Transfer"
-				}
-			]
+				},
+			],
 		},
 
 		_comment: "------------ EYE ADAPTATION ------------",
@@ -692,9 +633,9 @@
 
 				plugin: {
 					name: "Tonemap-AverageLum"
-				}
-			}
-		}
+				},
+			},
+		},
 
 		_comment: "------------ POST EFFECTS ------------",
 		pass: {
@@ -755,11 +696,10 @@
 								semantic: "BloomTexture",
 								value: "BloomBufferBlurred"
 							},
-						]
+						],
 					},
 					size_from_texture: "ColorBuffer"
 				},
-
 			},
 
 			subpass: {
@@ -775,7 +715,7 @@
 						layout: "DepthStencilRead",
 						stage: "PixelShader",
 					}
-				]
+				],
 
 				batch: "DirectToColor",
 				batch: "ParticleUnlit",

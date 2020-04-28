@@ -231,7 +231,7 @@ StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::Stri
 	SizeT& instanceSize = this->Get<InstanceAllocSize>(id);
 	instanceSize = 0;
 	SizeT hierarchicalInstanceSize = 0;
-	boundingBox.set(Math::point(0), Math::vector(0));
+	boundingBox.set(Math::vec3(0), Math::vec3(0));
 	Memory::ArenaAllocator<MODEL_MEMORY_CHUNK_SIZE>& allocator = this->Get<ModelNodeAllocator>(id);
 	Util::Dictionary<Util::StringAtom, Models::ModelNode*>& nodes = this->Get<ModelNodes>(id);
 	Models::ModelNode*& root = this->Get<RootNode>(id);

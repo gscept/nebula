@@ -12,7 +12,7 @@
 #include "framecopy.h"
 #include "framemipmap.h"
 #include "framecompute.h"
-#include "framepluginop.h"
+#include "frameplugin.h"
 #include "framesubpass.h"
 #include "frameevent.h"
 #include "framesubpassplugin.h"
@@ -27,7 +27,6 @@
 #include "framesubpassplugin.h"
 #include "framebarrier.h"
 #include "coregraphics/barrier.h"
-#include "frame/plugins/frameplugins.h"
 #include "coregraphics/displaydevice.h"
 #include "memory/arenaallocator.h"
 #include <mutex>
@@ -38,7 +37,6 @@ namespace Frame
 {
 
 Frame::FrameSubmission* FrameScriptLoader::LastSubmission[CoreGraphics::NumQueryTypes] = {nullptr, nullptr};
-Util::HashTable<uint, FrameScriptLoader::Fn> FrameScriptLoader::constructors;
 //------------------------------------------------------------------------------
 /**
 */
@@ -76,20 +74,6 @@ FrameScriptLoader::LoadFrameScript(const IO::URI& path)
 		node = jzon_get(json, "sub_script");
 		if (node) script->subScript = node->bool_value;
 
-
-#define CONSTRUCTOR_MACRO(type) \
-		constructors.Add(("Frame::" #type ##_str).HashCode(), [](Memory::ArenaAllocator<BIG_CHUNK>& alloc) -> Frame::FramePlugin* { \
-			void* mem = alloc.Alloc(sizeof(Frame::type));\
-			n_new_inplace(Frame::type, mem);\
-			return (Frame::FramePlugin*)mem;\
-		});
-
-		constructors.Clear();
-		CONSTRUCTOR_MACRO(SSAOPlugin);
-		CONSTRUCTOR_MACRO(BloomPlugin);
-		CONSTRUCTOR_MACRO(TonemapPlugin);
-        CONSTRUCTOR_MACRO(SSRPlugin);
-
 		// run parser entry point
 		json = jzon_get(json, "framescript");
 		ParseFrameScript(script, json);
@@ -120,7 +104,6 @@ FrameScriptLoader::ParseFrameScript(const Ptr<Frame::FrameScript>& script, JzonV
 		Util::String name(cur->key);
 		if (name == "textures")					ParseTextureList(script, cur);
 		else if (name == "read_write_buffers")	ParseReadWriteBufferList(script, cur);
-		else if (name == "plugins")				ParsePluginList(script, cur);
 		else if (name == "blit")				ParseBlit(script, cur);
 		else if (name == "copy")				ParseCopy(script, cur);
 		else if (name == "mipmap")				ParseMipmap(script, cur);
@@ -253,62 +236,6 @@ FrameScriptLoader::ParseReadWriteBufferList(const Ptr<Frame::FrameScript>& scrip
 		// add to script
 		ShaderRWBufferId buf = CreateShaderRWBuffer(info);
 		script->AddReadWriteBuffer(name->string_value, buf);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameScriptLoader::ParsePluginList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
-{
-	uint i;
-	for (i = 0; i < node->size; i++)
-	{
-		JzonValue* cur = node->array_values[i];
-
-		// algorithm needs name and class
-		JzonValue* name = jzon_get(cur, "name");
-		n_assert(name != nullptr);
-		JzonValue* clazz = jzon_get(cur, "class");
-		n_assert(clazz != nullptr);
-
-		// create algorithm
-		Frame::FramePlugin* alg = (constructors[Util::String(clazz->string_value).HashCode()](script->GetAllocator()));
-
-		JzonValue* textures = jzon_get(cur, "textures");
-		if (textures != nullptr)
-		{
-			uint j;
-			for (j = 0; j < textures->size; j++)
-			{
-				JzonValue* nd = textures->array_values[j];
-				JzonValue* name = jzon_get(nd, "name");
-				n_assert(name != nullptr);
-				JzonValue* tex = jzon_get(nd, "texture");
-				n_assert(tex != nullptr);
-				alg->AddTexture(name->string_value, script->GetTexture(tex->string_value));
-			}
-		}
-
-		JzonValue* buffers = jzon_get(cur, "read_write_buffers");
-		if (buffers != nullptr)
-		{
-			uint j;
-			for (j = 0; j < buffers->size; j++)
-			{
-				JzonValue* nd = buffers->array_values[j];
-				JzonValue* name = jzon_get(nd, "name");
-				n_assert(name != nullptr);
-				JzonValue* buf = jzon_get(nd, "buffer");
-				n_assert(buf != nullptr);
-				alg->AddReadWriteBuffer(name->string_value, script->GetReadWriteBuffer(buf->string_value));
-			}
-		}
-
-		// add algorithm to script
-		alg->Setup();
-		script->AddPlugin(name->string_value, alg);
 	}
 }
 
@@ -510,10 +437,10 @@ FrameScriptLoader::ParsePlugin(const Ptr<Frame::FrameScript>& script, JzonValue*
 	// get function and name
 	JzonValue* name = jzon_get(node, "name");
 	n_assert(name != nullptr);
-	auto callback = Frame::FramePlugin::GetCallback(name->string_value);
+	auto callback = Frame::GetCallback(name->string_value);
 	if (callback != nullptr)
 	{
-		FramePluginOp* op = script->GetAllocator().Alloc<FramePluginOp>();
+		FramePlugin* op = script->GetAllocator().Alloc<FramePlugin>();
 		op->SetName(name->string_value);
 
 		JzonValue* queue = jzon_get(node, "queue");
@@ -728,7 +655,7 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
 		uint flags = 0;
 		if (clear != nullptr)
 		{
-			Math::float4 clearValue;
+			Math::vec4 clearValue;
 			n_assert(clear->size <= 4);
 			uint j;
 			for (j = 0; j < clear->size; j++)
@@ -739,7 +666,7 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
 			flags |= Clear;
 		}
 		else
-			pass.colorAttachmentClears.Append(Math::float4(1)); // we set the clear to 1, but the flag is not to clear...
+			pass.colorAttachmentClears.Append(Math::vec4(1)); // we set the clear to 1, but the flag is not to clear...
 
 		// set if attachment should store at the end of the pass
 		JzonValue* store = jzon_get(cur, "store");
@@ -912,28 +839,32 @@ FrameScriptLoader::ParseSubpassPlugin(const Ptr<Frame::FrameScript>& script, Fra
 	// get function and name
 	JzonValue* name = jzon_get(node, "name");
 	n_assert(name != nullptr);
-	op->SetName(name->string_value);
-
-	op->domain = BarrierDomain::Pass;
-	op->queue = CoreGraphics::QueueType::GraphicsQueueType;
-
-	JzonValue* inputs = jzon_get(node, "inputs");
-	if (inputs != nullptr)
+	auto callback = Frame::GetCallback(name->string_value);
+	if (callback != nullptr)
 	{
-		ParseResourceDependencies(script, op, inputs);
+		op->SetName(name->string_value);
+
+		op->domain = BarrierDomain::Pass;
+		op->queue = CoreGraphics::QueueType::GraphicsQueueType;
+
+		JzonValue* inputs = jzon_get(node, "inputs");
+		if (inputs != nullptr)
+		{
+			ParseResourceDependencies(script, op, inputs);
+		}
+
+		JzonValue* outputs = jzon_get(node, "outputs");
+		if (outputs != nullptr)
+		{
+			ParseResourceDependencies(script, op, outputs);
+		}
+
+		// get algorithm
+		op->func = callback;
+
+		// add to script
+		subpass->AddOp(op);
 	}
-
-	JzonValue* outputs = jzon_get(node, "outputs");
-	if (outputs != nullptr)
-	{
-		ParseResourceDependencies(script, op, outputs);
-	}
-
-	// get algorithm
-	op->func = Frame::FramePlugin::GetCallback(name->string_value);
-
-	// add to script
-	subpass->AddOp(op);
 }
 
 //------------------------------------------------------------------------------
@@ -1109,13 +1040,13 @@ FrameScriptLoader::ParseShaderVariables(
 			ConstantBufferUpdate(cbo, valStr.AsFloat(), bind);
 			break;
 		case VectorVariableType:
-			ConstantBufferUpdate(cbo, valStr.AsFloat4(), bind);
+			ConstantBufferUpdate(cbo, valStr.AsVec4(), bind);
 			break;
 		case Vector2VariableType:
-			ConstantBufferUpdate(cbo, valStr.AsFloat2(), bind);
+			ConstantBufferUpdate(cbo, valStr.AsVec2(), bind);
 			break;
 		case MatrixVariableType:
-			ConstantBufferUpdate(cbo, valStr.AsMatrix44(), bind);
+			ConstantBufferUpdate(cbo, valStr.AsMat4(), bind);
 			break;
 		case BoolVariableType:
 			ConstantBufferUpdate(cbo, valStr.AsBool(), bind);

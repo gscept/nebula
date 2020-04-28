@@ -402,7 +402,7 @@ void SetupPass(const PassId pid)
     ResourceTableSetConstantBuffer(runtimeInfo.passDescriptorSet, write);
 
     // setup input attachments
-    Util::FixedArray<Math::float4> dimensions(loadInfo.colorAttachments.Size());
+    Util::FixedArray<Math::vec4> dimensions(loadInfo.colorAttachments.Size());
     for (i = 0; i < loadInfo.colorAttachments.Size(); i++)
     {
         // update descriptor set based on images attachments
@@ -418,13 +418,10 @@ void SetupPass(const PassId pid)
         write.index = 0;
         ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
 
-        // create dimensions float4
+        // create dimensions vec4
         const CoreGraphics::TextureDimensions rtdims = TextureGetDimensions(loadInfo.colorAttachments[i]);
-        Math::float4& dims = dimensions[i];
-        dims.x() = (Math::scalar)rtdims.width;
-        dims.y() = (Math::scalar)rtdims.height;
-        dims.z() = 1 / dims.x();
-        dims.w() = 1 / dims.y();
+        Math::vec4& dims = dimensions[i];
+        dims = Math::vec4((Math::scalar)rtdims.width, (Math::scalar)rtdims.height, 1 / (Math::scalar)rtdims.width, 1 / (Math::scalar)rtdims.height);
     }
     if (loadInfo.depthStencilAttachment != CoreGraphics::TextureId::Invalid())
     {
@@ -508,12 +505,12 @@ CreatePass(const PassCreateInfo& info)
     IndexT i;
     for (i = 0; i < info.colorAttachments.Size(); i++)
     {
-        const Math::float4& value = loadInfo.colorAttachmentClears[i];
+        const Math::vec4& value = loadInfo.colorAttachmentClears[i];
         VkClearValue& clear = loadInfo.clearValues[i];
-        clear.color.float32[0] = value.x();
-        clear.color.float32[1] = value.y();
-        clear.color.float32[2] = value.z();
-        clear.color.float32[3] = value.w();
+        clear.color.float32[0] = value.x;
+        clear.color.float32[1] = value.y;
+        clear.color.float32[2] = value.z;
+        clear.color.float32[3] = value.w;
     }
     
     if (loadInfo.depthStencilAttachment != CoreGraphics::TextureId::Invalid())

@@ -12,7 +12,7 @@
 */
 #include "util/fixedarray.h"
 #include "math/bbox.h"
-#include "math/float4.h"
+#include "math/vec4.h"
 
 namespace Util
 {
@@ -131,9 +131,9 @@ QuadTree<TYPE>::Setup(const Math::bbox& box, uchar depth)
     this->boundingBox = box;
 
     int baseDimension = 1 << (this->treeDepth - 1);
-    this->baseNodeSize.set(this->boundingBox.size().x() / baseDimension,
-                           this->boundingBox.size().y(),                                                                          
-                           this->boundingBox.size().z() / baseDimension);
+    this->baseNodeSize.set(this->boundingBox.size().x / baseDimension,
+                           this->boundingBox.size().y,                                                                          
+                           this->boundingBox.size().z / baseDimension);
 
     SizeT numNodes = this->GetNumNodes(this->treeDepth);
     this->nodeArray.SetSize(numNodes);
@@ -270,13 +270,13 @@ QuadTree<TYPE>::Node::Setup(QuadTree* tree, uchar _level, ushort _col, ushort _r
     Math::vector treeSize = treeBox.size();
     Math::vector treeCenter = treeBox.center();
 
-    center.set(treeCenter.x() + (((this->col + 0.5f) * levelFactor * baseSize.x()) - (treeSize.x() * 0.5f)),
-               treeCenter.y(),
-               treeCenter.z() + (((this->row + 0.5f) * levelFactor * baseSize.z()) - (treeSize.z() * 0.5f)));
+    center.set(treeCenter.x + (((this->col + 0.5f) * levelFactor * baseSize.x) - (treeSize.x * 0.5f)),
+               treeCenter.y,
+               treeCenter.z + (((this->row + 0.5f) * levelFactor * baseSize.z) - (treeSize.z * 0.5f)));
 
-    extent.set(levelFactor * baseSize.x() * 0.5f,
-               treeBox.extents().y(),
-               levelFactor * baseSize.z() * 0.5f );
+    extent.set(levelFactor * baseSize.x * 0.5f,
+               treeBox.extents().y,
+               levelFactor * baseSize.z * 0.5f );
 
     this->box.set(center, extent);
 

@@ -22,7 +22,7 @@ public:
     static void OnActivate(Game::InstanceId instance);
     static void OnDeactivate(Game::InstanceId instance);
 
-    static void SetWorldTransform(Game::Entity entity, const Math::matrix44& val);
+    static void SetWorldTransform(Game::Entity entity, const Math::mat4& val);
     /// Return this components fourcc
     static Util::FourCC GetFourCC();
 private:

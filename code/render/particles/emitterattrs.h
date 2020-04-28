@@ -10,7 +10,7 @@
 */
 #include "core/types.h"
 #include "particles/envelopecurve.h"
-#include "math/float4.h"
+#include "math/vec4.h"
 
 //------------------------------------------------------------------------------
 namespace Particles
@@ -60,7 +60,7 @@ public:
         NumIntAttrs,
     };
 
-	/// float4 attributes
+	/// vec4 attributes
 	enum Float4Attr
 	{
 		WindDirection = 0,
@@ -106,17 +106,17 @@ public:
     void SetInt(IntAttr key, int value);
     /// get int attribute
     int GetInt(IntAttr key) const;
-	/// set float4 attribute
-	void SetFloat4(Float4Attr key, const Math::float4& value);
-	/// get float4 attribute
-	const Math::float4& GetFloat4(Float4Attr key) const;
+	/// set vec4 attribute
+	void SetVec4(Float4Attr key, const Math::vec4& value);
+	/// get vec4 attribute
+	const Math::vec4& GetVec4(Float4Attr key) const;
     /// set envelope attribute
     void SetEnvelope(EnvelopeAttr key, const EnvelopeCurve& value);
     /// get envelope attribute
     const EnvelopeCurve& GetEnvelope(EnvelopeAttr key) const;
 
 private:
-	Math::float4 float4Values[NumFloat4Attrs];
+	Math::vec4 vec4Values[NumFloat4Attrs];
     float floatValues[NumFloatAttrs];
     EnvelopeCurve envelopeValues[NumEnvelopeAttrs];
 
@@ -245,18 +245,18 @@ EmitterAttrs::GetInt(IntAttr key) const
 /**
 */
 inline void 
-EmitterAttrs::SetFloat4( Float4Attr key, const Math::float4& value )
+EmitterAttrs::SetVec4( Float4Attr key, const Math::vec4& value )
 {
-	this->float4Values[key] = value;
+	this->vec4Values[key] = value;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::float4& 
-EmitterAttrs::GetFloat4( Float4Attr key ) const
+inline const Math::vec4& 
+EmitterAttrs::GetVec4( Float4Attr key ) const
 {
-	return this->float4Values[key];
+	return this->vec4Values[key];
 }
 
 //------------------------------------------------------------------------------

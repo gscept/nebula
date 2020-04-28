@@ -53,7 +53,7 @@ JsonEntityLoader::Load(const Util::String& file)
 		do
 		{
 			Game::Entity entity = Game::EntityManager::Instance()->NewEntity();
-			Math::matrix44 transform = reader->GetOptMatrix44("transform", Math::matrix44::identity());
+			Math::mat4 transform = reader->GetOptMat4("transform", Math::mat4());
 
 			// We need to save each component and enitity start index so that we can call activate after
 			// all components has been loaded

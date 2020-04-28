@@ -113,11 +113,5 @@ typedef unsigned char byte;
 #error "Unsupported platform!"
 #endif
 
-#if __VC__
-#define NEBULA_ALIGN16 __declspec(align(16))
-#elif __GNUC__
-#define NEBULA_ALIGN16 __attribute__((aligned(16)))
-#else
-#define NEBULA_ALIGN16
-#endif
+#define NEBULA_ALIGN16 alignas(16)
 //------------------------------------------------------------------------------

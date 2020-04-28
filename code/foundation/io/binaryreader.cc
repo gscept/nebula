@@ -394,14 +394,14 @@ BinaryReader::ReadGuid()
 //------------------------------------------------------------------------------
 /**
 */
-Math::float2 
+Math::vec2 
 BinaryReader::ReadFloat2()
 {
-    Math::float2 val;
+    Math::vec2 val;
     if (this->isMapped)
     {
         // note: the memory copy is necessary to circumvent alignment problem on some CPUs
-        n_assert((this->mapCursor + sizeof(Math::float2)) <= this->mapEnd);
+        n_assert((this->mapCursor + sizeof(Math::vec2)) <= this->mapEnd);
         Memory::Copy(this->mapCursor, &val, sizeof(val));
         this->mapCursor += sizeof(val);
     }
@@ -410,22 +410,22 @@ BinaryReader::ReadFloat2()
         this->stream->Read(&val, sizeof(val));
     }
 
-    val.set(this->byteOrder.Convert<float>(val.x()),
-            this->byteOrder.Convert<float>(val.y()));
+    val.set(this->byteOrder.Convert<float>(val.x),
+            this->byteOrder.Convert<float>(val.y));
     return val;    
 }
 
 //------------------------------------------------------------------------------
 /**
 */ 
-Math::float4
-BinaryReader::ReadFloat4()
+Math::vec4
+BinaryReader::ReadVec4()
 {
-    Math::float4 val;
+    Math::vec4 val;
     if (this->isMapped)
     {
         // note: the memory copy is necessary to circumvent alignment problem on some CPUs
-        n_assert((this->mapCursor + sizeof(Math::float4)) <= this->mapEnd);
+        n_assert((this->mapCursor + sizeof(Math::vec4)) <= this->mapEnd);
         Memory::Copy(this->mapCursor, &val, sizeof(val));     
         this->mapCursor += sizeof(val);
     }
@@ -433,42 +433,15 @@ BinaryReader::ReadFloat4()
     {
         this->stream->Read(&val, sizeof(val));
     }
-    this->byteOrder.ConvertInPlace<Math::float4>(val);
+    this->byteOrder.ConvertInPlace<Math::vec4>(val);
     return val;
 }    
 
 //------------------------------------------------------------------------------
 /**
 */
-Math::point 
-BinaryReader::ReadPoint()
-{
-    float val[3];
-    const SizeT readSize = sizeof(float) * 3;
-    if (this->isMapped)
-    {
-        // note: the memory copy is necessary to circumvent alignment problem on some CPUs
-        n_assert((this->mapCursor + readSize) <= this->mapEnd);
-        Memory::Copy(this->mapCursor, val, readSize);
-        this->mapCursor += readSize;
-    }
-    else
-    {
-        this->stream->Read(val, readSize);
-    }
-
-    this->byteOrder.ConvertInPlace<float>(val[0]);
-    this->byteOrder.ConvertInPlace<float>(val[1]);
-    this->byteOrder.ConvertInPlace<float>(val[2]);
-
-    return Math::point(val[0], val[1], val[2]);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Math::vector 
-BinaryReader::ReadVector()
+Math::vec3 
+BinaryReader::ReadVec3()
 {
     float val[3];    
     const SizeT readSize = sizeof(float) * 3;
@@ -488,20 +461,20 @@ BinaryReader::ReadVector()
     this->byteOrder.ConvertInPlace<float>(val[1]);
     this->byteOrder.ConvertInPlace<float>(val[2]);
 
-    return Math::vector(val[0], val[1], val[2]);
+    return Math::vec3(val[0], val[1], val[2]);
 }
 
 //------------------------------------------------------------------------------
 /**
 */ 
-Math::matrix44
-BinaryReader::ReadMatrix44()
+Math::mat4
+BinaryReader::ReadMat4()
 {
-    Math::matrix44 val;
+    Math::mat4 val;
     if (this->isMapped)
     {
         // note: the memory copy is necessary to circumvent alignment problem on some CPUs
-        n_assert((this->mapCursor + sizeof(Math::matrix44)) <= this->mapEnd);
+        n_assert((this->mapCursor + sizeof(Math::mat4)) <= this->mapEnd);
         Memory::Copy(this->mapCursor, &val, sizeof(val));        
         this->mapCursor += sizeof(val);
     }
@@ -509,7 +482,7 @@ BinaryReader::ReadMatrix44()
     {
         this->stream->Read(&val, sizeof(val));
     }
-    this->byteOrder.ConvertInPlace<Math::matrix44>(val);
+    this->byteOrder.ConvertInPlace<Math::mat4>(val);
     return val;
 }
 #endif
@@ -525,7 +498,7 @@ BinaryReader::ReadFloatArray()
     if (this->isMapped)
     {
         // note: the memory copy is necessary to circumvent alignment problem on some CPUs
-        n_assert((this->mapCursor + sizeof(Math::matrix44)) <= this->mapEnd);
+        n_assert((this->mapCursor + sizeof(Math::mat4)) <= this->mapEnd);
         Memory::Copy(this->mapCursor, buf, sizeof(float) * size);        
         this->mapCursor += sizeof(float) * size;
     }
@@ -551,7 +524,7 @@ BinaryReader::ReadIntArray()
     if (this->isMapped)
     {
         // note: the memory copy is necessary to circumvent alignment problem on some CPUs
-        n_assert((this->mapCursor + sizeof(Math::matrix44)) <= this->mapEnd);
+        n_assert((this->mapCursor + sizeof(Math::mat4)) <= this->mapEnd);
         Memory::Copy(this->mapCursor, buf, sizeof(int) * size);        
         this->mapCursor += sizeof(int) * size;
     }
@@ -584,7 +557,7 @@ BinaryReader::ReadUIntArray()
 	if (this->isMapped)
 	{
 		// note: the memory copy is necessary to circumvent alignment problem on some CPUs
-		n_assert((this->mapCursor + sizeof(Math::matrix44)) <= this->mapEnd);
+		n_assert((this->mapCursor + sizeof(Math::mat4)) <= this->mapEnd);
 		Memory::Copy(this->mapCursor, buf, sizeof(uint) * size);
 		this->mapCursor += sizeof(uint) * size;
 	}
@@ -609,7 +582,7 @@ BinaryReader::ReadBoolArray()
     if (this->isMapped)
     {
         // note: the memory copy is necessary to circumvent alignment problem on some CPUs
-        n_assert((this->mapCursor + sizeof(Math::matrix44)) <= this->mapEnd);
+        n_assert((this->mapCursor + sizeof(Math::mat4)) <= this->mapEnd);
         Memory::Copy(this->mapCursor, buf, sizeof(bool) * size);        
         this->mapCursor += sizeof(bool) * size;
     }

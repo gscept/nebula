@@ -68,7 +68,7 @@ ActorComponent::SetupAcceptedMessages()
 /**
 */
 void
-MoveCallback(Physics::ActorId id, Math::matrix44 const& trans)
+MoveCallback(Physics::ActorId id, Math::mat4 const& trans)
 {
     Physics::Actor& actor = Physics::ActorContext::GetActor(id);
     Game::InstanceId gameId = (Game::InstanceId)actor.userData;
@@ -89,7 +89,7 @@ ActorComponent::OnActivate(Game::InstanceId instance)
             component->Get<Attr::Actor>(instance) = (uint32_t)actorid.id;
             Physics::Actor& actor = Physics::ActorContext::GetActor(actorid);
             actor.userData = instance;            
-            actor.moveCallback = Util::Delegate<void(Physics::ActorId, Math::matrix44 const&)>::FromFunction<&MoveCallback>();
+            actor.moveCallback = Util::Delegate<void(Physics::ActorId, Math::mat4 const&)>::FromFunction<&MoveCallback>();
         },[instance](Resources::ResourceId id) 
         {
             n_warning("failed to load physics actor from %s\n", component->Get<Attr::PhysicsResource>(instance).AsCharPtr());
@@ -110,7 +110,7 @@ ActorComponent::OnDeactivate(Game::InstanceId instance)
 /**
 */
 void
-ActorComponent::SetWorldTransform(Game::Entity entity, const Math::matrix44& val)
+ActorComponent::SetWorldTransform(Game::Entity entity, const Math::mat4& val)
 {
     Physics::ActorId actorId = component->Get<Attr::Actor>(component->GetInstance(entity));
     Physics::ActorContext::SetTransform(actorId, val);

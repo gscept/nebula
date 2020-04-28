@@ -59,7 +59,6 @@ group(BATCH_GROUP) constant VolumeFogUniforms [ string Visibility = "CS"; ]
 	float GlobalTurbidity;
 };
 
-
 readwrite rgba16f image2D Lighting;
 //------------------------------------------------------------------------------
 /**
@@ -225,7 +224,6 @@ LocalLightsFog(
 			float sf = saturate(1.0 - factor * factor);
 
 			float att = (sf * sf) / max(d2, 0.0001);
-
 			lightDir = lightDir * (1 / lightDirLen);
 
 			float theta = dot(li.forward.xyz, lightDir);
@@ -265,10 +263,9 @@ GlobalLightFog(vec3 viewPos)
 	}
 
 	// calculate 'global' fog
-	vec3 atmo = Preetham(normalize(viewPos), -GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z);
+	vec3 atmo = Preetham(normalize(viewPos), GlobalLightDir.xyz, A, B, C, D, E, Z);
 	return atmo * GlobalLightColor.rgb * shadowFactor;
 }
-
 
 //------------------------------------------------------------------------------
 /**

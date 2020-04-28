@@ -62,7 +62,7 @@ VisualDebugger::Initialize(Scene* s)
 /**
 */
 void 
-VisualDebugger::DrawTimedArrow(const Math::point& p, const Math::vector& dir, uint numSteps, const Math::float4& color /*= Math::float4(1, 1, 1, 1)*/)
+VisualDebugger::DrawTimedArrow(const Math::point& p, const Math::vector& dir, uint numSteps, const Math::vec4& color /*= Math::float4(1, 1, 1, 1)*/)
 {
 	this->timedDrawData.Append(TimedDrawData(numSteps, TimedDrawData::Arrow, color, p, dir, "", 0));
 }
@@ -71,7 +71,7 @@ VisualDebugger::DrawTimedArrow(const Math::point& p, const Math::vector& dir, ui
 /**
 */
 void 
-VisualDebugger::DrawTimedText(const Math::point& p, const Util::String& text, uint numSteps, const Math::float4& color /*= Math::float4(1, 1, 1, 1)*/)
+VisualDebugger::DrawTimedText(const Math::point& p, const Util::String& text, uint numSteps, const Math::vec4& color /*= Math::float4(1, 1, 1, 1)*/)
 {
 	this->timedDrawData.Append(TimedDrawData(numSteps, TimedDrawData::Text3D, color, p, Math::vector(), text, 0));
 }
@@ -80,7 +80,7 @@ VisualDebugger::DrawTimedText(const Math::point& p, const Util::String& text, ui
 /**
 */
 void 
-VisualDebugger::DrawTimedAABB(const Math::bbox& bbox, uint numSteps, const Math::float4& color /*= Math::float4(1, 1, 1, 1)*/)
+VisualDebugger::DrawTimedAABB(const Math::bbox& bbox, uint numSteps, const Math::vec4& color /*= Math::float4(1, 1, 1, 1)*/)
 {
 	this->timedDrawData.Append(TimedDrawData(numSteps, TimedDrawData::AABB, color, bbox.center(), bbox.extents(), "", 0));
 }
@@ -89,7 +89,7 @@ VisualDebugger::DrawTimedAABB(const Math::bbox& bbox, uint numSteps, const Math:
 /**
 */
 void 
-VisualDebugger::DrawTimedLine(const Math::point& p, const Math::vector& dir, uint numSteps, const Math::float4& color /*= Math::float4(1, 1, 1, 1)*/)
+VisualDebugger::DrawTimedLine(const Math::point& p, const Math::vector& dir, uint numSteps, const Math::vec4& color /*= Math::float4(1, 1, 1, 1)*/)
 {
 	this->timedDrawData.Append(TimedDrawData(numSteps, TimedDrawData::Line, color, p, dir, "", 0));
 }
@@ -98,7 +98,7 @@ VisualDebugger::DrawTimedLine(const Math::point& p, const Math::vector& dir, uin
 /**
 */
 void 
-VisualDebugger::DrawTimedPlane(const Math::point& p, const Math::vector& dir, float scale, uint numSteps, const Math::float4& color /*= Math::float4(1, 1, 1, 1)*/)
+VisualDebugger::DrawTimedPlane(const Math::point& p, const Math::vector& dir, float scale, uint numSteps, const Math::vec4& color /*= Math::float4(1, 1, 1, 1)*/)
 {
 	this->timedDrawData.Append(TimedDrawData(numSteps, TimedDrawData::Plane, color, p, dir, "", scale));
 }
@@ -108,7 +108,7 @@ VisualDebugger::DrawTimedPlane(const Math::point& p, const Math::vector& dir, fl
 /**
 */
 void 
-VisualDebugger::DrawArrow(const Math::point& p, const Math::vector& dir, const Math::float4& color /*= Math::float4(1, 1, 1, 1)*/)
+VisualDebugger::DrawArrow(const Math::point& p, const Math::vector& dir, const Math::vec4& color /*= Math::float4(1, 1, 1, 1)*/)
 {
 	n_error("VisualDebugger::DrawArrow: Implement in subclass");
 }
@@ -117,7 +117,7 @@ VisualDebugger::DrawArrow(const Math::point& p, const Math::vector& dir, const M
 /**
 */
 void 
-VisualDebugger::DrawText(const Math::point& p, const Util::String& text, const Math::float4& color /*= Math::float4(1, 1, 1, 1)*/)
+VisualDebugger::DrawText(const Math::point& p, const Util::String& text, const Math::vec4& color /*= Math::float4(1, 1, 1, 1)*/)
 {
 	n_error("VisualDebugger::DrawText: Implement in subclass");
 }
@@ -126,7 +126,7 @@ VisualDebugger::DrawText(const Math::point& p, const Util::String& text, const M
 /**
 */
 void 
-VisualDebugger::DrawAABB(const Math::bbox& bbox, const Math::float4& color /*= Math::float4(1, 1, 1, 1)*/)
+VisualDebugger::DrawAABB(const Math::bbox& bbox, const Math::vec4& color /*= Math::float4(1, 1, 1, 1)*/)
 {
 	n_error("VisualDebugger::DrawAABB: Implement in subclass");
 }
@@ -163,7 +163,7 @@ VisualDebugger::Draw(const TimedDrawData& data)
 /**
 */
 void 
-VisualDebugger::SetCameraView(const Math::matrix44& viewMatrix)
+VisualDebugger::SetCameraView(const Math::mat4& viewMatrix)
 {
 	n_error("VisualDebugger::SetCameraView: Not implemented");
 }
@@ -172,7 +172,7 @@ VisualDebugger::SetCameraView(const Math::matrix44& viewMatrix)
 /**
 */
 void 
-VisualDebugger::DrawLine(const Math::point& p, const Math::vector& dir, const Math::float4& color /*= Math::float4(1, 1, 1, 1)*/)
+VisualDebugger::DrawLine(const Math::point& p, const Math::vector& dir, const Math::vec4& color /*= Math::float4(1, 1, 1, 1)*/)
 {
 	n_error("VisualDebugger::DrawLine: Not implemented");
 }
@@ -181,7 +181,7 @@ VisualDebugger::DrawLine(const Math::point& p, const Math::vector& dir, const Ma
 /**
 */
 void 
-VisualDebugger::DrawPlane(const Math::point& p, const Math::vector& dir, float scale, const Math::float4& color /*= Math::float4(1, 1, 1, 1)*/)
+VisualDebugger::DrawPlane(const Math::point& p, const Math::vector& dir, float scale, const Math::vec4& color /*= Math::float4(1, 1, 1, 1)*/)
 {
 	n_error("VisualDebugger::DrawPlane: Not implemented");
 }

@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vktexture.h"
-#include "vulkan/vulkan.h"
+#include "vkloader.h"
 
 namespace Vulkan
 {

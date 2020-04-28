@@ -3,7 +3,7 @@
 /**
     @class CoreAnimation::AnimKeyBuffer
     
-    A simple buffer of float4 animation keys.
+    A simple buffer of vec4 animation keys.
     
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
@@ -38,7 +38,7 @@ public:
     /// return true if the key buffer is currently mapped
     bool IsMapped() const;
     /// get direct pointer to key buffer
-    Math::float4* GetKeyBufferPointer() const;
+    Math::vec4* GetKeyBufferPointer() const;
 
 private:
     SizeT numKeys;
@@ -79,16 +79,16 @@ AnimKeyBuffer::GetNumKeys() const
 inline SizeT
 AnimKeyBuffer::GetByteSize() const
 {
-    return this->numKeys * sizeof(Math::float4);
+    return this->numKeys * sizeof(Math::vec4);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline Math::float4*
+inline Math::vec4*
 AnimKeyBuffer::GetKeyBufferPointer() const
 {
-    return (Math::float4*) this->keyBuffer;
+    return (Math::vec4*) this->keyBuffer;
 }
 
 } // namespace CoreAnimation

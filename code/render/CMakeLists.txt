@@ -19,7 +19,7 @@ nebula_begin_module(render)
 	if(N_USE_VULKAN)
 		FIND_PACKAGE(Vulkan)
 		fips_include_directories(${Vulkan_INCLUDE_DIR})
-		fips_libs(${Vulkan_LIBRARY} glfw3)
+		fips_libs(glfw3)
 	endif()
 		fips_files(render/precompiled.h render/stdneb.h render/stdneb.cc)
 
@@ -304,6 +304,8 @@ ENDIF()
 				vkgraphicsdevice.h
 				vkindexbuffer.cc
                 vkindexbuffer.h
+                vkloader.cc
+                vkloader.h
 				vkmemorytexturepool.cc
 				vkmemorytexturepool.h
 				vkpass.cc
@@ -378,8 +380,8 @@ ENDIF()
 				frameblit.h
 				framecompute.cc
 				framecompute.h
-				framepluginop.cc
-				framepluginop.h
+                frameplugin.cc
+                frameplugin.h
 				framecopy.cc
 				framecopy.h
 				#frameevent.cc
@@ -413,20 +415,7 @@ ENDIF()
 				framesubpassplugin.cc
 				framesubpassplugin.h
 			)
-        fips_dir(frame/plugins)
-			fips_files(
-				frameplugin.cc
-				frameplugin.h
-				frameplugins.h
-				bloomplugin.cc
-				bloomplugin.h
-				ssaoplugin.cc
-				ssaoplugin.h
-				tonemapplugin.cc
-				tonemapplugin.h
-				ssrplugin.cc
-				ssrplugin.h
-			)
+
 		fips_dir(graphics)
 			fips_files(
 				cameracontext.cc
@@ -625,9 +614,20 @@ ENDIF()
 			)
 
 
-		fips_dir(skinning)
 
 ENDIF()
+        fips_dir(posteffects)
+            fips_files(
+                bloomcontext.cc
+                bloomcontext.h
+                ssaocontext.cc
+                ssaocontext.h
+                ssrcontext.cc
+                ssrcontext.h
+                tonemapcontext.cc
+                tonemapcontext.h
+            )
+
 		fips_dir(visibility)
 			fips_files(
 				visibility.h

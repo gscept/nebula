@@ -9,6 +9,7 @@
 //------------------------------------------------------------------------------
 #include "resources/resourceid.h"
 #include "util/fixedarray.h"
+#include "math/vector.h"
 namespace Characters
 {
 
@@ -20,9 +21,9 @@ extern StreamSkeletonPool* skeletonPool;
 struct CharacterJoint
 {
 	Math::vector poseTranslation;
-	Math::quaternion poseRotation;
+	Math::quat poseRotation;
 	Math::vector poseScale;
-	Math::matrix44 poseMatrix;
+	Math::mat4 poseMatrix;
 	IndexT parentJointIndex;
 	const CharacterJoint* parentJoint;
 #if NEBULA_DEBUG
@@ -41,7 +42,7 @@ const SizeT SkeletonGetNumJoints(const SkeletonId id);
 const Util::FixedArray<CharacterJoint>& SkeletonGetJoints(const SkeletonId id);
 
 /// get bind pose
-const Util::FixedArray<Math::matrix44>& SkeletonGetBindPose(const SkeletonId id);
+const Util::FixedArray<Math::mat4>& SkeletonGetBindPose(const SkeletonId id);
 /// get joint index
 const IndexT SkeletonGetJointIndex(const SkeletonId id, const Util::StringAtom& name);
 

@@ -47,12 +47,12 @@ public:
     /// set float attribute on current node
     void SetFloat(const Util::String& name, float value);  
     #if !__OSX__
-    /// set float2 attribute on current node
-    void SetFloat2(const Util::String& name, const Math::float2& value);
-    /// set float4 attribute on current node
-    void SetFloat4(const Util::String& name, const Math::float4& value);
-    /// set matrix44 attribute on current node
-    void SetMatrix44(const Util::String& name, const Math::matrix44& value);
+    /// set vec2 attribute on current node
+    void SetVec2(const Util::String& name, const Math::vec2& value);
+    /// set vec4 attribute on current node
+    void SetVec4(const Util::String& name, const Math::vec4& value);
+    /// set mat4 attribute on current node
+    void SetMat4(const Util::String& name, const Math::mat4& value);
 	/// set transform44 attribute on current node
 	void SetTransform44(const Util::String& name, const Math::transform44& value);
     #endif

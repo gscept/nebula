@@ -45,14 +45,14 @@ public:
     SizeT GetNumSamples() const;
     
     /// get direct pointer to samples
-    Math::float4* GetSamplesPointer() const;
+    Math::vec4* GetSamplesPointer() const;
     /// get direct pointer to sample counts
     uchar* GetSampleCountsPointer() const;
 
 private:
     AnimResourceId animResource;
     SizeT numSamples;
-    Math::float4* samples;
+    Math::vec4* samples;
     uchar* sampleCounts;
 };
 
@@ -77,7 +77,7 @@ AnimSampleBuffer::GetNumSamples() const
 //------------------------------------------------------------------------------
 /**
 */
-inline Math::float4*
+inline Math::vec4*
 AnimSampleBuffer::GetSamplesPointer() const
 {
     return this->samples;

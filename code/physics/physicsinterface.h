@@ -12,7 +12,7 @@
 #include "util/set.h"
 #include "util/arraystack.h"
 #include "util/stringatom.h"
-#include "math/matrix44.h"
+#include "math/mat4.h"
 #include "resources/resourceid.h"
 
 #include <functional>
@@ -57,8 +57,8 @@ struct Actor
     ActorResourceId res;
     uint64_t userData;
     // FIXME delegate doesnt seem to work here (see testviewer for example)
-    //std::function<void(ActorId id, Math::matrix44 const&)> moveCallback;
-    Util::Delegate<void(ActorId id, Math::matrix44 const&)> moveCallback;
+    //std::function<void(ActorId id, Math::mat4 const&)> moveCallback;
+    Util::Delegate<void(ActorId id, Math::mat4 const&)> moveCallback;
 };
 
 /// physx scene classes, foundation and physics are duplicated here for convenience
@@ -101,7 +101,7 @@ IndexT LookupMaterial(Util::StringAtom name);
 SizeT GetNrMaterials();
 
 ///
-ActorId CreateActorInstance(Physics::ActorResourceId id, Math::matrix44 const & trans, bool dynamic, IndexT scene = 0);
+ActorId CreateActorInstance(Physics::ActorResourceId id, Math::mat4 const & trans, bool dynamic, IndexT scene = 0);
 ///
 void DestroyActorInstance(Physics::ActorId id);
 }

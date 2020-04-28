@@ -16,7 +16,7 @@
 */
 #include "core/refcounted.h"
 #include "core/singleton.h"
-#include "math/matrix44.h"
+#include "math/mat4.h"
 
 namespace CoreGraphics
 {
@@ -48,44 +48,44 @@ public:
     void ApplyModelTransforms(const Ptr<CoreGraphics::Shader>& shdInst);
     
     /// set projection transform
-    void SetProjTransform(const Math::matrix44& m);
+    void SetProjTransform(const Math::mat4& m);
     /// get current projection matrix
-    const Math::matrix44& GetProjTransform();
+    const Math::mat4& GetProjTransform();
     /// get inverted projection transform
-    const Math::matrix44& GetInvProjTransform();
+    const Math::mat4& GetInvProjTransform();
     /// set view transform
-    void SetViewTransform(const Math::matrix44& m);
+    void SetViewTransform(const Math::mat4& m);
     /// get view transform
-    const Math::matrix44& GetViewTransform();
+    const Math::mat4& GetViewTransform();
     /// get current inverted view transform
-    const Math::matrix44& GetInvViewTransform();    
+    const Math::mat4& GetInvViewTransform();
     /// get current view-projection transform
-    const Math::matrix44& GetViewProjTransform();
+    const Math::mat4& GetViewProjTransform();
     /// set model transform
-    void SetModelTransform(const Math::matrix44& m);
+    void SetModelTransform(const Math::mat4& m);
     /// get current model transform
-    const Math::matrix44& GetModelTransform();
+    const Math::mat4& GetModelTransform();
     /// get current inverted model transform
-    const Math::matrix44& GetInvModelTransform();
+    const Math::mat4& GetInvModelTransform();
     /// get current model-view matrix
-    const Math::matrix44& GetModelViewTransform();
+    const Math::mat4& GetModelViewTransform();
     /// get current inverted model-view-transform
-    const Math::matrix44& GetInvModelViewTransform();
+    const Math::mat4& GetInvModelViewTransform();
     /// get current model-view-projection transform
-    const Math::matrix44& GetModelViewProjTransform();
+    const Math::mat4& GetModelViewProjTransform();
 
 	/// set object id
 	void SetObjectId(const uint id);
 	/// get object id
 	uint GetObjectId() const;
     /// set focal length
-    void SetFocalLength(const Math::float2& len);
+    void SetFocalLength(const Math::vec2& len);
     /// get focal length
-    const Math::float2& GetFocalLength() const;
+    const Math::vec2& GetFocalLength() const;
 	/// set depth planes
-	void SetNearFarPlane(const Math::float2& planes);
+	void SetNearFarPlane(const Math::vec2& planes);
 	/// get depth planes
-	const Math::float2& GetNearFarPlane() const;
+	const Math::vec2& GetNearFarPlane() const;
 
 
 private:
@@ -128,10 +128,10 @@ private:
 
     bool isOpen;
     uint dirtyFlags;                                // or'ed (1<<TransformType) dirty flags
-    Util::FixedArray<Math::matrix44> transforms;    // index is transform type
+    Util::FixedArray<Math::mat4> transforms;    // index is transform type
 	uint id;										// id of current object
-    Math::float2 focalLength;
-	Math::float2 nearFarPlane;
+    Math::vec2 focalLength;
+	Math::vec2 nearFarPlane;
 };
 
 //------------------------------------------------------------------------------
@@ -173,7 +173,7 @@ TransformDeviceBase::IsDirty(TransformType type) const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44&
+inline const Math::mat4&
 TransformDeviceBase::GetProjTransform()
 {
     return this->transforms[Proj];
@@ -182,7 +182,7 @@ TransformDeviceBase::GetProjTransform()
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44&
+inline const Math::mat4&
 TransformDeviceBase::GetInvProjTransform()
 {
     if (this->IsDirty(InvProj))
@@ -195,7 +195,7 @@ TransformDeviceBase::GetInvProjTransform()
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44&
+inline const Math::mat4&
 TransformDeviceBase::GetViewTransform()
 {
     return this->transforms[View];
@@ -204,7 +204,7 @@ TransformDeviceBase::GetViewTransform()
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44&
+inline const Math::mat4&
 TransformDeviceBase::GetInvViewTransform()
 {
     if (this->IsDirty(InvView))
@@ -217,7 +217,7 @@ TransformDeviceBase::GetInvViewTransform()
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44&
+inline const Math::mat4&
 TransformDeviceBase::GetViewProjTransform()
 {
     if (this->IsDirty(ViewProj))
@@ -230,7 +230,7 @@ TransformDeviceBase::GetViewProjTransform()
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44&
+inline const Math::mat4&
 TransformDeviceBase::GetModelTransform()
 {
     return this->transforms[Model];
@@ -239,7 +239,7 @@ TransformDeviceBase::GetModelTransform()
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44&
+inline const Math::mat4&
 TransformDeviceBase::GetInvModelTransform()
 {
     if (this->IsDirty(InvModel))
@@ -252,7 +252,7 @@ TransformDeviceBase::GetInvModelTransform()
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44&
+inline const Math::mat4&
 TransformDeviceBase::GetModelViewTransform()
 {
     if (this->IsDirty(ModelView))
@@ -265,7 +265,7 @@ TransformDeviceBase::GetModelViewTransform()
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44&
+inline const Math::mat4&
 TransformDeviceBase::GetInvModelViewTransform()
 {
     if (this->IsDirty(InvModelView))
@@ -278,7 +278,7 @@ TransformDeviceBase::GetInvModelViewTransform()
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44&
+inline const Math::mat4&
 TransformDeviceBase::GetModelViewProjTransform()
 {
     if (this->IsDirty(ModelViewProj))
@@ -310,7 +310,7 @@ TransformDeviceBase::GetObjectId() const
 /**
 */
 inline void 
-TransformDeviceBase::SetFocalLength(const Math::float2& len)
+TransformDeviceBase::SetFocalLength(const Math::vec2& len)
 {
     this->focalLength = len;
 }
@@ -318,7 +318,7 @@ TransformDeviceBase::SetFocalLength(const Math::float2& len)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::float2& 
+inline const Math::vec2& 
 TransformDeviceBase::GetFocalLength() const
 {
     return this->focalLength;
@@ -328,7 +328,7 @@ TransformDeviceBase::GetFocalLength() const
 /**
 */
 inline void 
-TransformDeviceBase::SetNearFarPlane(const Math::float2& planes)
+TransformDeviceBase::SetNearFarPlane(const Math::vec2& planes)
 {
 	this->nearFarPlane = planes;
 }
@@ -336,7 +336,7 @@ TransformDeviceBase::SetNearFarPlane(const Math::float2& planes)
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::float2&
+inline const Math::vec2&
 TransformDeviceBase::GetNearFarPlane() const
 {
 	return this->nearFarPlane;

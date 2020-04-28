@@ -75,9 +75,9 @@ public:
     /// get string default value
     const Util::String& GetStringDefValue() const;
     /// get float4 default value
-    Math::float4 GetFloat4DefValue() const;
-    /// get matrix44 default value
-    const Math::matrix44& GetMatrix44DefValue() const;
+    Math::vec4 GetVec4DefValue() const;
+    /// get mat4 default value
+    const Math::mat4& GetMat4DefValue() const;
     /// get blob default value
     const Util::Blob& GetBlobDefValue() const;
     /// get guid default value
@@ -372,22 +372,22 @@ AttrId::GetStringDefValue() const
 /**
 */
 inline
-Math::float4
-AttrId::GetFloat4DefValue() const
+Math::vec4
+AttrId::GetVec4DefValue() const
 {
     n_assert(0 != this->defPtr);
-    return this->defPtr->GetDefaultValue().GetFloat4();
+    return this->defPtr->GetDefaultValue().GetVec4();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline
-const Math::matrix44&
-AttrId::GetMatrix44DefValue() const
+const Math::mat4&
+AttrId::GetMat4DefValue() const
 {
     n_assert(0 != this->defPtr);
-    return this->defPtr->GetDefaultValue().GetMatrix44();
+    return this->defPtr->GetDefaultValue().GetMat4();
 }
 
 //------------------------------------------------------------------------------

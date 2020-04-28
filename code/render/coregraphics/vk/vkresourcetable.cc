@@ -778,14 +778,9 @@ CreateResourcePipeline(const ResourcePipelineCreateInfo& info)
 	IndexT i;
 	for (i = 0; i < info.indices.Size(); i++)
 	{
-		if (info.indices[i] != i)
+		while (info.indices[i] != layouts.Size())
 		{
-			IndexT tmp = i;
-			while (tmp != info.indices[i])
-			{
-				layouts.Append(emptySetLayout);
-				tmp++;
-			}
+			layouts.Append(emptySetLayout);
 		}
 		layouts.Append(resourceTableLayoutAllocator.Get<ResourceTableLayoutSetLayout>(info.tables[i].id24));
 	}

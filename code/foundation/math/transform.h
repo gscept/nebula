@@ -12,8 +12,8 @@
 #if __USE_MATH_DIRECTX
 #include "math/xnamath/xna_transform.h"
 #elif __USE_VECMATH
-#error "matrix44 class not implemented!"
+#error "mat4 class not implemented!"
 #else
-#error "matrix44 class not implemented!"
+#error "mat4 class not implemented!"
 #endif
 //-------------------------------------------------------------------

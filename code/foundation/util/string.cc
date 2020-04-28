@@ -682,20 +682,20 @@ String::ReplaceChars(const String& charSet, char replacement)
 #if !__OSX__    
 //------------------------------------------------------------------------------
 /**
-    Returns content as matrix44. Note: this method doesn't check whether the
-    contents is actually a valid matrix44. Use the IsValidMatrix44() method
+    Returns content as mat4. Note: this method doesn't check whether the
+    contents is actually a valid mat4. Use the IsValidMat4() method
     for this!
 */
-Math::matrix44
-String::AsMatrix44() const
+Math::mat4
+String::AsMat4() const
 {
     Array<String> tokens(16, 0); 
     this->Tokenize(", \t\n", tokens);
     n_assert(tokens.Size() == 16);
-    Math::matrix44 m(Math::float4(tokens[0].AsFloat(),  tokens[1].AsFloat(),  tokens[2].AsFloat(),  tokens[3].AsFloat()),
-                     Math::float4(tokens[4].AsFloat(),  tokens[5].AsFloat(),  tokens[6].AsFloat(),  tokens[7].AsFloat()),
-                     Math::float4(tokens[8].AsFloat(),  tokens[9].AsFloat(),  tokens[10].AsFloat(), tokens[11].AsFloat()),
-                     Math::float4(tokens[12].AsFloat(), tokens[13].AsFloat(), tokens[14].AsFloat(), tokens[15].AsFloat()));
+    Math::mat4 m(Math::vec4(tokens[0].AsFloat(),  tokens[1].AsFloat(),  tokens[2].AsFloat(),  tokens[3].AsFloat()),
+                 Math::vec4(tokens[4].AsFloat(),  tokens[5].AsFloat(),  tokens[6].AsFloat(),  tokens[7].AsFloat()),
+                 Math::vec4(tokens[8].AsFloat(),  tokens[9].AsFloat(),  tokens[10].AsFloat(), tokens[11].AsFloat()),
+                 Math::vec4(tokens[12].AsFloat(), tokens[13].AsFloat(), tokens[14].AsFloat(), tokens[15].AsFloat()));
     return m;
 }
 
@@ -710,12 +710,12 @@ String::AsTransform44() const
 	this->Tokenize("|", tokens);
 	n_assert(tokens.Size() == 6);
 	Math::transform44 t;
-	t.setposition(tokens[0].AsFloat4());
-	t.setrotate(tokens[1].AsFloat4());
-	t.setscale(tokens[2].AsFloat());
-	t.setrotatepivot(tokens[3].AsFloat4());
-	t.setscalepivot(tokens[4].AsFloat4());
-	t.setoffset(tokens[5].AsMatrix44());
+	t.setposition(tokens[0].AsVec3());
+	t.setrotate(tokens[1].AsVec4());
+	t.setscale(Math::vec3(tokens[2].AsFloat()));
+	t.setrotatepivot(tokens[3].AsVec3());
+	t.setscalepivot(tokens[4].AsVec3());
+	t.setoffset(tokens[5].AsMat4());
 	return t;
 }
 #endif

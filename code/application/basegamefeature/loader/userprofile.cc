@@ -167,22 +167,22 @@ UserProfile::Load(const Util::String& path)
 					case Util::Variant::Float:
 						variant = reader->GetFloat("value");
 						break;
-					case Util::Variant::Float4:
-						variant = reader->GetFloat4("value");
+					case Util::Variant::Vec4:
+						variant = reader->GetVec4("value");
 						break;
 					case Util::Variant::String:
 						variant = reader->GetString("value");
 						break;
-					case Util::Variant::Matrix44:
-						variant = reader->GetMatrix44("value");
+					case Util::Variant::Mat4:
+						variant = reader->GetMat4("value");
 						break;
 					case Util::Variant::Blob:
 					case Util::Variant::Guid:
 					case Util::Variant::IntArray:
 					case Util::Variant::FloatArray:
-					case Util::Variant::Float4Array:
+					case Util::Variant::Vec4Array:
 					case Util::Variant::BoolArray:
-					case Util::Variant::Matrix44Array:
+					case Util::Variant::Mat4Array:
 					case Util::Variant::BlobArray:
 					case Util::Variant::StringArray:
 					case Util::Variant::GuidArray: 
@@ -257,22 +257,22 @@ UserProfile::Save()
             case Util::Variant::Float:
 				writer->Add(variant.GetFloat(), "value");
                 break;
-            case Util::Variant::Float4:
-				writer->Add(variant.GetFloat4(), "value");
+            case Util::Variant::Vec4:
+				writer->Add(variant.GetVec4(), "value");
                 break;
             case Util::Variant::String:
 				writer->Add(variant.GetString(), "value");
                 break;
-            case Util::Variant::Matrix44:
-				writer->Add(variant.GetMatrix44(), "value");
+            case Util::Variant::Mat4:
+				writer->Add(variant.GetMat4(), "value");
                 break;
             case Util::Variant::Blob:
             case Util::Variant::Guid:
             case Util::Variant::IntArray:
             case Util::Variant::FloatArray:
-            case Util::Variant::Float4Array:
+            case Util::Variant::Vec4Array:
             case Util::Variant::BoolArray:
-            case Util::Variant::Matrix44Array:
+            case Util::Variant::Mat4Array:
             case Util::Variant::BlobArray:
             case Util::Variant::StringArray:
             case Util::Variant::GuidArray: 
@@ -327,8 +327,8 @@ UserProfile::SetVariant(const Util::String& name, const Util::Variant & val)
 	case Variant::Bool:
 		this->SetBool(name, val.GetBool());
 		break;
-	case Variant::Float4:
-		this->SetFloat4(name, val.GetFloat4());
+	case Variant::Vec4:
+		this->SetFloat4(name, val.GetVec4());
 		break;
 	default:
 		n_error("unhandled variant type");

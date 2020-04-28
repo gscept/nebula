@@ -59,17 +59,6 @@ FrameScript::AddReadWriteBuffer(const Util::StringAtom& name, const CoreGraphics
 /**
 */
 void
-FrameScript::AddPlugin(const Util::StringAtom& name, Frame::FramePlugin* alg)
-{
-	n_assert(!this->algorithmsByName.Contains(name));
-	this->algorithmsByName.Add(name, alg);
-	this->plugins.Append(alg);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 FrameScript::AddOp(Frame::FrameOp* op)
 {
 	op->index = this->frameOpCounter;
@@ -117,32 +106,6 @@ FrameScript::Discard()
 
 	this->buildAllocator.Release();
 	this->allocator.Release();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-FrameScript::UpdateResources(const IndexT frameIndex)
-{
-	IndexT i;
-	for (i = 0; i < this->plugins.Size(); i++)
-	{
-		this->plugins[i]->UpdateResources(frameIndex);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-FrameScript::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const IndexT frameIndex)
-{
-	IndexT i;
-	for (i = 0; i < this->plugins.Size(); i++)
-	{
-		this->plugins[i]->UpdateViewDependentResources(view, frameIndex);
-	}
 }
 
 //------------------------------------------------------------------------------
@@ -328,10 +291,6 @@ FrameScript::Cleanup()
 	for (i = 0; i < this->events.Size(); i++) DestroyEvent(this->events[i]);
 	this->events.Clear();
 
-	for (i = 0; i < this->plugins.Size(); i++) this->plugins[i]->Discard();
-	this->plugins.Clear();
-	this->algorithmsByName.Clear();
-
 	for (i = 0; i < this->ops.Size(); i++) this->ops[i]->Discard();
 	this->ops.Clear();
 }
@@ -352,7 +311,6 @@ FrameScript::OnWindowResized()
 
 		IndexT i;
 		for (i = 0; i < this->textures.Size(); i++)			TextureWindowResized(this->textures[i]);
-		for (i = 0; i < this->plugins.Size(); i++)			this->plugins[i]->Resize();
 		for (i = 0; i < this->ops.Size(); i++)				this->ops[i]->OnWindowResized();
 
         Build();

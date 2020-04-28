@@ -9,7 +9,7 @@
 */
 #include "core/refcounted.h"
 #include "math/frustum.h"
-#include "math/matrix44.h"
+#include "math/mat4.h"
 #include "graphics/graphicsentity.h"
 
 #ifndef FLT_MAX
@@ -71,16 +71,16 @@ public:
 	void SetFitTexels(bool state);
 
 	/// gets computed view projection transform (valid after Compute)
-	const Math::matrix44& GetCascadeViewProjection(IndexT cascadeIndex) const;
+	const Math::mat4& GetCascadeViewProjection(IndexT cascadeIndex) const;
 	/// gets the shadow view transform (valid after Compute)
-	const Math::matrix44& GetShadowView() const;
+	const Math::mat4& GetShadowView() const;
 	/// returns raw pointer to array of cascade transforms
-	const Math::matrix44* GetCascadeProjectionTransforms() const;
+	const Math::mat4* GetCascadeProjectionTransforms() const;
 	/// returns raw pointer to array of cascade distances
 	const float* GetCascadeDistances() const;
 
 	/// gets cascade debug camera (only valid after Compute, and if the debug flag is set)
-	const Math::matrix44& GetCascadeCamera(IndexT index)  const;
+	const Math::mat4& GetCascadeCamera(IndexT index)  const;
 
 	/// computes the splits
 	void Compute(const Graphics::GraphicsEntityId camera, const Graphics::GraphicsEntityId light);
@@ -100,26 +100,26 @@ private:
 
 	struct Triangle
 	{
-		Math::float4 pt[3];
+		Math::vec4 pt[3];
 		bool culled;
 	};
 
 	/// computes frustum corners from cascade
-	void ComputeFrustumPoints(float cascadeBegin, float cascadeEnd, const Math::matrix44& projection, Math::float4* frustumCorners);
+	void ComputeFrustumPoints(float cascadeBegin, float cascadeEnd, const Math::mat4& projection, Math::vec4* frustumCorners);
 	/// computes frustum from projection
-	void ComputeFrustum(CSMUtil::CascadeFrustum& frustum, const Math::matrix44& projection);
+	void ComputeFrustum(CSMUtil::CascadeFrustum& frustum, const Math::mat4& projection);
 	/// computes near and far values
-	void ComputeNearAndFar(float& nearPlane, float& farPlane, const Math::float4& lightCameraOrtoMin, const Math::float4& lightCameraOrtoMax, const Math::float4* lightAABBPoints);
+	void ComputeNearAndFar(float& nearPlane, float& farPlane, const Math::vec4& lightCameraOrtoMin, const Math::vec4& lightCameraOrtoMax, const Math::vec4* lightAABBPoints);
 	/// computes light-space AABB points
-	void ComputeAABB(Math::float4* lightAABBPoints, const Math::float4& sceneCenter, const Math::float4& sceneExtents);
+	void ComputeAABB(Math::vec4* lightAABBPoints, const Math::vec4& sceneCenter, const Math::vec4& sceneExtents);
 
 	Math::bbox shadowBox;
-	Math::float4 frustumCenter;
+	Math::vec4 frustumCenter;
 	Graphics::GraphicsEntityId globalLight;
 	Graphics::GraphicsEntityId cameraEntity;
-	Math::matrix44 cascadeProjectionTransform[NumCascades];
-	Math::matrix44 cascadeViewProjectionTransform[NumCascades];
-	Math::matrix44 shadowView;
+	Math::mat4 cascadeProjectionTransform[NumCascades];
+	Math::mat4 cascadeViewProjectionTransform[NumCascades];
+	Math::mat4 shadowView;
 	float cascadeDistances[NumCascades];
 	float intervalDistances[NumCascades];
 	float cascadeMaxDistance;
@@ -179,7 +179,7 @@ CSMUtil::GetGlobalLight() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44& 
+inline const Math::mat4&
 CSMUtil::GetCascadeViewProjection( IndexT cascadeIndex ) const
 {
 	return this->cascadeViewProjectionTransform[cascadeIndex];
@@ -188,7 +188,7 @@ CSMUtil::GetCascadeViewProjection( IndexT cascadeIndex ) const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44& 
+inline const Math::mat4&
 CSMUtil::GetShadowView() const
 {
 	return this->shadowView;
@@ -197,7 +197,7 @@ CSMUtil::GetShadowView() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44* 
+inline const Math::mat4*
 CSMUtil::GetCascadeProjectionTransforms() const
 {
 	return this->cascadeProjectionTransform;

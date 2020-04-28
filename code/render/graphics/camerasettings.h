@@ -8,8 +8,8 @@
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
-#include "math/matrix44.h"
-#include "math/float2.h"
+#include "math/mat4.h"
+#include "math/vec2.h"
 #include "math/frustum.h"
 
 //------------------------------------------------------------------------------
@@ -27,11 +27,11 @@ public:
     void SetupOrthogonal(float w, float h, float zNear, float zFar);
 
     /// get projection matrix
-    const Math::matrix44& GetProjTransform() const;
+    const Math::mat4& GetProjTransform() const;
     /// get the inverse projection matrix
-    const Math::matrix44& GetInvProjTransform() const;
+    const Math::mat4& GetInvProjTransform() const;
     /// get focal length (computed from fov and aspect ratio)
-    const Math::float2& GetFocalLength() const;
+    const Math::vec2& GetFocalLength() const;
 
     /// return true if this is a perspective projection
     bool IsPerspective() const;
@@ -56,8 +56,8 @@ public:
     
 private:
 
-    Math::matrix44 projMatrix;
-    Math::matrix44 invProjMatrix;
+    Math::mat4 projMatrix;
+    Math::mat4 invProjMatrix;
 
     bool isPersp;
     float zNear;
@@ -68,13 +68,13 @@ private:
     float nearHeight;
     float farWidth;
     float farHeight;
-    Math::float2 focalLength;
+    Math::vec2 focalLength;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44&
+inline const Math::mat4&
 CameraSettings::GetProjTransform() const
 {
     return this->projMatrix;
@@ -83,7 +83,7 @@ CameraSettings::GetProjTransform() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44&
+inline const Math::mat4&
 CameraSettings::GetInvProjTransform() const
 {
     return this->invProjMatrix;
@@ -182,7 +182,7 @@ CameraSettings::GetFarHeight() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::float2&
+inline const Math::vec2&
 CameraSettings::GetFocalLength() const
 {
     return this->focalLength;

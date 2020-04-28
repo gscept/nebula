@@ -64,7 +64,7 @@ public:
     /// set a bool attribute in the profile
     void SetBool(const Util::String& name, bool val);
     /// set a float4 attribute in the profile
-    void SetFloat4(const Util::String& name, const Math::float4& val);
+    void SetFloat4(const Util::String& name, const Math::vec4& val);
 	/// set a variant value
 	void SetVariant(const Util::String& name, const Util::Variant & val);
     /// get string attribute from the profile
@@ -84,7 +84,7 @@ public:
 	/// get bool attribute from the profile
 	bool GetBoolWithDefault(const Util::String& name, bool def) const;
     /// get float4 attribute from the profile
-    Math::float4 GetFloat4(const Util::String& name) const;
+    Math::vec4 GetVec4(const Util::String& name) const;
 
 protected:
     bool isLoaded;
@@ -187,7 +187,7 @@ UserProfile::SetBool(const Util::String& name, bool val)
 /**
 */
 inline void
-UserProfile::SetFloat4(const Util::String& name, const Math::float4& val)
+UserProfile::SetFloat4(const Util::String& name, const Math::vec4& val)
 {
     if (this->profileData.Contains(name))
     {
@@ -308,11 +308,11 @@ UserProfile::GetBoolWithDefault(const Util::String& name, bool def) const
 //------------------------------------------------------------------------------
 /**
 */
-inline Math::float4
-UserProfile::GetFloat4(const Util::String& name) const
+inline Math::vec4
+UserProfile::GetVec4(const Util::String& name) const
 {
     n_assert(this->profileData.Contains(name));
-    return this->profileData[name].GetFloat4();
+    return this->profileData[name].GetVec4();
 }
 
 } // namespace BaseGameFeature

@@ -1,121 +1,121 @@
 {
-   "Nebula": {
-      "Materials": [         
-            {
-               "Pass": [
-                  {
-                     "batch": "Picking",
-                     "shader": "picking",
-                     "variation": "Static"
-                  },
-                  {
-                     "batch": "SpotLightShadow",
-                     "shader": "shadow",
-                     "variation": "Static|Spot"
-                  },
-                  {
-                     "batch": "PointLightShadow",
-                     "shader": "shadow",
-                     "variation": "Static|Point"
-                  },
-                  {
-                     "batch": "GlobalShadow",
-                     "shader": "shadow",
-                     "variation": "Static|Global"
-                  },
-                  {
-                     "batch": "FlatGeometryLit",
-                     "shader": "unit",
-                     "variation": "Static"
-                  }
-               ],
-               "Param": [
-                  {
-                     "name": "TeamColorMask",
-                     "type": "textureHandle",
-                     "defaultValue": "tex:system/black"
-                  },
-                  {
-                     "name": "SpecularMap",
-                     "type": "textureHandle",
-                     "defaultValue": "tex:system/black"
-                  },
-                  {
-                     "name": "RoughnessMap",
-                     "type": "textureHandle",
-                     "defaultValue": "tex:system/white"
-                  },
-                  {
-                     "name": "TeamColor",
-                     "type": "float4",
-                     "defaultValue": [0.0, 0.0, 0.0, 0.0],
-                     "max": [10.0, 10.0, 10.0, 10.0],
-                     "desc": "Color of the unit"
-                  }
-               ],
-               "name": "NotACastleStatic",
-               "inherits": "PBR + IBL",
-               "vertexType": "3f|3f|2f|3f|3f",
-               "desc": "Standard material for static meshes. Affected by lights."
-            },
-            {
-               "Pass": [
-                  {
-                     "batch": "Picking",
-                     "shader": "picking",
-                     "variation": "Skinned"
-                  },
-                  {
-                     "batch": "SpotLightShadow",
-                     "shader": "shadow",
-                     "variation": "Skinned|Spot"
-                  },
-                  {
-                     "batch": "PointLightShadow",
-                     "shader": "shadow",
-                     "variation": "Skinned|Point"
-                  },
-                  {
-                     "batch": "GlobalShadow",
-                     "shader": "shadow",
-                     "variation": "Skinned|Global"
-                  },
-                  {
-                     "batch": "FlatGeometryLit",
-                     "shader": "unit",
-                     "variation": "Skinned"
-                  }
-               ],
-               "Param": [
-                  {
-                     "name": "TeamColorMask",
-                     "type": "textureHandle",
-                     "defaultValue": "tex:system/black"
-                  },
-                  {
-                     "name": "SpecularMap",
-                     "type": "textureHandle",
-                     "defaultValue": "tex:system/black"
-                  },
-                  {
-                     "name": "RoughnessMap",
-                     "type": "textureHandle",
-                     "defaultValue": "tex:system/white"
-                  },
-                  {
-                     "name": "TeamColor",
-                     "type": "float4",
-                     "defaultValue": [0.0, 0.0, 0.0, 0.0],
-                     "max": [10.0, 10.0, 10.0, 10.0],
-                     "desc": "Color of the unit"
-                  }
-               ],
-               "name": "NotACastleChar",
-               "inherits": "PBR + IBL",
-               "vertexType": "3f|3f|2f|3f|3f|4f|4ui",
-               "desc": "Skinned material which uses a mesh with joint indices and joint weights. Useful for characters. Affected by lights."
-            }
-         ]
-      
-   }
+  "Nebula": {
+    "Materials": [
+      {
+        "name": "NotACastleStatic",
+        "inherits": "PBR + IBL",
+        "vertexType": "3f|3f|2f|3f|3f",
+        "desc": "Standard material for static meshes. Affected by lights.",
+        "passes": [
+          {
+            "batch": "Picking",
+            "shader": "picking",
+            "variation": "Static"
+          },
+          {
+            "batch": "SpotLightShadow",
+            "shader": "shadow",
+            "variation": "Static|Spot"
+          },
+          {
+            "batch": "PointLightShadow",
+            "shader": "shadow",
+            "variation": "Static|Point"
+          },
+          {
+            "batch": "GlobalShadow",
+            "shader": "shadow",
+            "variation": "Static|Global"
+          },
+          {
+            "batch": "FlatGeometryLit",
+            "shader": "unit",
+            "variation": "Static"
+          }
+        ],
+        "variables": [
+          {
+            "name": "TeamColorMask",
+            "type": "textureHandle",
+            "defaultValue": "tex:system/black"
+          },
+          {
+            "name": "SpecularMap",
+            "type": "textureHandle",
+            "defaultValue": "tex:system/black"
+          },
+          {
+            "name": "RoughnessMap",
+            "type": "textureHandle",
+            "defaultValue": "tex:system/white"
+          },
+          {
+            "name": "TeamColor",
+            "type": "vec4",
+            "defaultValue": [ 0.0, 0.0, 0.0, 0.0 ],
+            "max": [ 10.0, 10.0, 10.0, 10.0 ],
+            "desc": "Color of the unit"
+          }
+        ],
+      },
+      {
+        "name": "NotACastleChar",
+        "inherits": "PBR + IBL",
+        "vertexType": "3f|3f|2f|3f|3f|4f|4ui",
+        "desc": "Skinned material which uses a mesh with joint indices and joint weights. Useful for characters. Affected by lights.",
+        "passes": [
+          {
+            "batch": "Picking",
+            "shader": "picking",
+            "variation": "Skinned"
+          },
+          {
+            "batch": "SpotLightShadow",
+            "shader": "shadow",
+            "variation": "Skinned|Spot"
+          },
+          {
+            "batch": "PointLightShadow",
+            "shader": "shadow",
+            "variation": "Skinned|Point"
+          },
+          {
+            "batch": "GlobalShadow",
+            "shader": "shadow",
+            "variation": "Skinned|Global"
+          },
+          {
+            "batch": "FlatGeometryLit",
+            "shader": "unit",
+            "variation": "Skinned"
+          }
+        ],
+        "variables": [
+          {
+            "name": "TeamColorMask",
+            "type": "textureHandle",
+            "defaultValue": "tex:system/black"
+          },
+          {
+            "name": "SpecularMap",
+            "type": "textureHandle",
+            "defaultValue": "tex:system/black"
+          },
+          {
+            "name": "RoughnessMap",
+            "type": "textureHandle",
+            "defaultValue": "tex:system/white"
+          },
+          {
+            "name": "TeamColor",
+            "type": "vec4",
+            "defaultValue": [ 0.0, 0.0, 0.0, 0.0 ],
+            "max": [ 10.0, 10.0, 10.0, 10.0 ],
+            "desc": "Color of the unit"
+          }
+        ],
+      }
+    ]
+
+  }
 }

@@ -28,7 +28,7 @@ public:
 	static void OnDeactivate(Game::InstanceId instance);
 
 	/// transform updated callback
-	static void UpdateTransform(Game::Entity entity, const Math::matrix44 & transform);
+	static void UpdateTransform(Game::Entity entity, const Math::mat4 & transform);
 	/// set the current audio resource of an entity
 	static void SetAudioResource(Game::Entity entity, Util::String const& resource);
 	/// set the current audio resource of an instance

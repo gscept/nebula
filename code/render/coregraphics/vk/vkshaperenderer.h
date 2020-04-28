@@ -53,13 +53,13 @@ private:
 	void GrowVertexBuffer();
 
 	/// draw a shape
-	void DrawSimpleShape(const Math::matrix44& modelTransform, CoreGraphics::RenderShape::Type shapeType, const Math::float4& color);
+	void DrawSimpleShape(const Math::mat4& modelTransform, CoreGraphics::RenderShape::Type shapeType, const Math::vec4& color);
 	/// draw debug mesh
-	void DrawMesh(const Math::matrix44& modelTransform, const CoreGraphics::MeshId mesh, const Math::float4& color);
+	void DrawMesh(const Math::mat4& modelTransform, const CoreGraphics::MeshId mesh, const Math::vec4& color);
 	/// draw primitives
-	void DrawPrimitives(const Math::matrix44& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numPrimitives, const void* vertices, SizeT vertexWidth, const Math::float4& color);
+	void DrawPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numPrimitives, const void* vertices, SizeT vertexWidth, const Math::vec4& color);
 	/// draw indexed primitives
-	void DrawIndexedPrimitives(const Math::matrix44& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numPrimitives, const void* vertices, SizeT numVertices, SizeT vertexWidth, const void* indices, CoreGraphics::IndexType::Code indexType, const Math::float4& color);
+	void DrawIndexedPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numPrimitives, const void* vertices, SizeT numVertices, SizeT vertexWidth, const void* indices, CoreGraphics::IndexType::Code indexType, const Math::vec4& color);
 
 	/// create a box shape
 	void CreateBoxShape();
@@ -98,15 +98,15 @@ private:
 	struct IndexedDraws
 	{
 		Util::Array<CoreGraphics::PrimitiveGroup> primitives;
-		Util::Array<Math::float4> colors;
-		Util::Array<Math::matrix44> transforms;
+		Util::Array<Math::vec4> colors;
+		Util::Array<Math::mat4> transforms;
 	} indexed[CoreGraphics::PrimitiveTopology::NumTopologies];
 
 	struct UnindexedDraws
 	{
 		Util::Array<CoreGraphics::PrimitiveGroup> primitives;
-		Util::Array<Math::float4> colors;
-		Util::Array<Math::matrix44> transforms;
+		Util::Array<Math::vec4> colors;
+		Util::Array<Math::mat4> transforms;
 	} unindexed[CoreGraphics::PrimitiveTopology::NumTopologies];
 };
 } // namespace Vulkan

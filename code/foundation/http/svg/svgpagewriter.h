@@ -12,7 +12,7 @@
 */
 #include "io/streamwriter.h"
 #include "io/xmlwriter.h"
-#include "math/float2.h"
+#include "math/vec2.h"
 
 //------------------------------------------------------------------------------
 namespace Http
@@ -44,7 +44,7 @@ public:
     void SetString(const Util::String& name, const Util::String& value);
 
     /// begin a transformation group
-    void BeginTransformGroup(const Math::float2& translate, float rotate, const Math::float2& scale);
+    void BeginTransformGroup(const Math::vec2& translate, float rotate, const Math::vec2& scale);
     /// begin a paint group
     void BeginPaintGroup(const Util::String& fillColor, const Util::String& strokeColor, int strokeWidth);
     /// begin a text group
@@ -61,9 +61,9 @@ public:
     /// draw a line, all units are in pixels
     void Line(float x1, float y1, float x2, float y2);
     /// draw a poly-line, all units are in pixels
-    void PolyLine(const Util::Array<Math::float2>& points);
+    void PolyLine(const Util::Array<Math::vec2>& points);
     /// draw a polygon, all units are in pixels
-    void Polygon(const Util::Array<Math::float2>& points);
+    void Polygon(const Util::Array<Math::vec2>& points);
     /// draw text, all units are in pixels
     void Text(float x, float y, const Util::String& text);
 

@@ -47,14 +47,14 @@ CameraContext::Create()
 void
 CameraContext::UpdateCameras(const Graphics::FrameContext& ctx)
 {
-	const Util::Array<Math::matrix44>& proj = cameraAllocator.GetArray<Camera_Projection>();
-	const Util::Array<Math::matrix44>& views = cameraAllocator.GetArray<Camera_View>();
-	const Util::Array<Math::matrix44>& viewproj = cameraAllocator.GetArray<Camera_ViewProjection>();
+	const Util::Array<Math::mat4>& proj = cameraAllocator.GetArray<Camera_Projection>();
+	const Util::Array<Math::mat4>& views = cameraAllocator.GetArray<Camera_View>();
+	const Util::Array<Math::mat4>& viewproj = cameraAllocator.GetArray<Camera_ViewProjection>();
 
 	IndexT i;
 	for (i = 0; i < viewproj.Size(); i++)
 	{
-		viewproj[i] = Math::matrix44::multiply(views[i], proj[i]);
+		viewproj[i] = views[i] * proj[i];
 	}
 }
 
@@ -86,7 +86,7 @@ CameraContext::SetupOrthographic(const Graphics::GraphicsEntityId id, float widt
 /**
 */
 void
-CameraContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& mat)
+CameraContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4& mat)
 {
 	const ContextEntityId cid = GetContextId(id);
 	cameraAllocator.Set<Camera_View>(cid.id, mat);
@@ -95,7 +95,7 @@ CameraContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::mat
 //------------------------------------------------------------------------------
 /**
 */
-const Math::matrix44&
+const Math::mat4&
 CameraContext::GetTransform(const Graphics::GraphicsEntityId id)
 {
 	const ContextEntityId cid = GetContextId(id);
@@ -105,7 +105,7 @@ CameraContext::GetTransform(const Graphics::GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
-const Math::matrix44&
+const Math::mat4&
 CameraContext::GetProjection(const Graphics::GraphicsEntityId id)
 {
 	const ContextEntityId cid = GetContextId(id);
@@ -115,7 +115,7 @@ CameraContext::GetProjection(const Graphics::GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
-const Math::matrix44&
+const Math::mat4&
 CameraContext::GetViewProjection(const Graphics::GraphicsEntityId id)
 {
 	const ContextEntityId cid = GetContextId(id);

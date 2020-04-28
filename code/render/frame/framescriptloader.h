@@ -28,8 +28,6 @@ private:
 	static void ParseTextureList(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse image read-write buffer list
 	static void ParseReadWriteBufferList(const Ptr<Frame::FrameScript>& script, JzonValue* node);
-	/// parse algorithm list
-	static void ParsePluginList(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse blit
 	static void ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 	/// parse subpass copy
@@ -74,7 +72,5 @@ private:
 	static void ParseResourceDependencies(const Ptr<Frame::FrameScript>& script, Frame::FrameOp* op, JzonValue* node);
 	
 	static Frame::FrameSubmission* LastSubmission[CoreGraphics::NumQueryTypes];
-	typedef Frame::FramePlugin* (*Fn)(Memory::ArenaAllocator<BIG_CHUNK>&);
-	static Util::HashTable<uint, Fn> constructors;
 };
 } // namespace Frame2

@@ -4,6 +4,16 @@
 //------------------------------------------------------------------------------
 
 
+#ifndef CLUSTERING_GROUP
+#define CLUSTERING_GROUP BATCH_GROUP
+#endif
+
+
+#ifndef CLUSTERING_VISIBILITY
+#define CLUSTERING_VISIBILITY "CS|PS"
+#endif
+
+
 struct ClusterAABB
 {
 	vec4 maxPoint;
@@ -11,13 +21,13 @@ struct ClusterAABB
 	uint featureFlags;
 };
 
-group(BATCH_GROUP) rw_buffer ClusterAABBs  [ string Visibility = "CS|PS"; ]
+group(CLUSTERING_GROUP) rw_buffer ClusterAABBs [ string Visibility = CLUSTERING_VISIBILITY; ]
 {
 	ClusterAABB AABBs[];
 };
 
 // this is used to keep track of how many lights we have active
-group(BATCH_GROUP) constant ClusterUniforms [ string Visibility = "CS|PS"; ]
+group(CLUSTERING_GROUP) constant ClusterUniforms [ string Visibility = CLUSTERING_VISIBILITY; ]
 {
 	vec2 FramebufferDimensions;
 	vec2 InvFramebufferDimensions;

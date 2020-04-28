@@ -165,12 +165,12 @@ CommandLineArgs::GetBoolFlag(const String& name) const
 //------------------------------------------------------------------------------
 /**
 */
-float4
-CommandLineArgs::GetFloat4(const String& name, const float4& defaultValue) const
+vec4
+CommandLineArgs::GetVec4(const String& name, const vec4& defaultValue) const
 {
     if (this->HasArg(name))
     {
-        return this->args[this->FindArgIndex(name) + 1].AsFloat4();
+        return this->args[this->FindArgIndex(name) + 1].AsVec4();
     }
     else
     {
@@ -181,12 +181,12 @@ CommandLineArgs::GetFloat4(const String& name, const float4& defaultValue) const
 //------------------------------------------------------------------------------
 /**
 */
-matrix44
-CommandLineArgs::GetMatrix44(const String& name, const matrix44& defaultValue) const
+mat4
+CommandLineArgs::GetMat4(const String& name, const mat4& defaultValue) const
 {
     if (this->HasArg(name))
     {
-        return this->args[this->FindArgIndex(name) + 1].AsMatrix44();
+        return this->args[this->FindArgIndex(name) + 1].AsMat4();
     }
     else
     {
@@ -245,19 +245,19 @@ CommandLineArgs::GetBoolAtIndex(IndexT index) const
 //------------------------------------------------------------------------------
 /**
 */
-float4
-CommandLineArgs::GetFloat4AtIndex(IndexT index) const
+vec4
+CommandLineArgs::GetVec4AtIndex(IndexT index) const
 {
-    return this->args[index + 1].AsFloat4();
+    return this->args[index + 1].AsVec4();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-matrix44
-CommandLineArgs::GetMatrix44AtIndex(IndexT index) const
+mat4
+CommandLineArgs::GetMat4AtIndex(IndexT index) const
 {
-    return this->args[index + 1].AsMatrix44();
+    return this->args[index + 1].AsMat4();
 }
 #endif
     

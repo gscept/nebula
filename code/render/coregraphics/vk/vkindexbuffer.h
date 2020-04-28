@@ -11,7 +11,7 @@
 #include "coregraphics/config.h"
 #include "coregraphics/gpubuffertypes.h"
 #include "coregraphics/indexbuffer.h"
-#include "vulkan/vulkan.h"
+#include "vkloader.h"
 namespace Vulkan
 {
 

@@ -68,7 +68,7 @@ psFow(in vec2 UV,
 	float sample3 = textureLod(FowMap, samplePos + vec2(-0.5f, 0.5f) * fowPixelSize, 0).r;
 	float sample4 = textureLod(FowMap, samplePos + vec2(-0.5f, -0.5f) * fowPixelSize, 0).r;
 	
-	// the FowMap is R8, so duplicate every value into a float4, apply it and blend.
+	// the FowMap is R8, so duplicate every value into a vec4, apply it and blend.
 	vec4 fowColor = vec4((sample1 + sample2 + sample3 + sample4) * 0.25f);
 	Albedo = EncodeHDR(fowColor);
 }

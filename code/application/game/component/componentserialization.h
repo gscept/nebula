@@ -85,7 +85,7 @@ Deserialize<Game::Entity>(const Ptr<IO::BinaryReader>& reader, Util::Array<Game:
 */
 template<>
 __forceinline void
-Serialize<Math::matrix44>(const Ptr<IO::BinaryWriter>& writer, const Util::Array<Math::matrix44>& data)
+Serialize<Math::mat4>(const Ptr<IO::BinaryWriter>& writer, const Util::Array<Math::mat4>& data)
 {
 	writer->WriteRawData((void*)&data[0], data.ByteSize());
 }
@@ -95,7 +95,7 @@ Serialize<Math::matrix44>(const Ptr<IO::BinaryWriter>& writer, const Util::Array
 */
 template<>
 __forceinline void
-Deserialize<Math::matrix44>(const Ptr<IO::BinaryReader>& reader, Util::Array<Math::matrix44>& data, uint32_t offset, uint32_t numInstances)
+Deserialize<Math::mat4>(const Ptr<IO::BinaryReader>& reader, Util::Array<Math::mat4>& data, uint32_t offset, uint32_t numInstances)
 {
 	reader->ReadRawData((void*)&data[offset], numInstances * data.TypeSize());
 }
@@ -105,7 +105,7 @@ Deserialize<Math::matrix44>(const Ptr<IO::BinaryReader>& reader, Util::Array<Mat
 */
 template<>
 __forceinline void
-Serialize<Math::float4>(const Ptr<IO::BinaryWriter>& writer, const Util::Array<Math::float4>& data)
+Serialize<Math::vec4>(const Ptr<IO::BinaryWriter>& writer, const Util::Array<Math::vec4>& data)
 {
 	writer->WriteRawData((void*)&data[0], data.ByteSize());
 }
@@ -115,7 +115,7 @@ Serialize<Math::float4>(const Ptr<IO::BinaryWriter>& writer, const Util::Array<M
 */
 template<>
 __forceinline void
-Deserialize<Math::float4>(const Ptr<IO::BinaryReader>& reader, Util::Array<Math::float4>& data, uint32_t offset, uint32_t numInstances)
+Deserialize<Math::vec4>(const Ptr<IO::BinaryReader>& reader, Util::Array<Math::vec4>& data, uint32_t offset, uint32_t numInstances)
 {
 	reader->ReadRawData((void*)&data[offset], numInstances * data.TypeSize());
 }

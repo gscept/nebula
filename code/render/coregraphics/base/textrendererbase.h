@@ -12,8 +12,8 @@
 #include "core/refcounted.h"
 #include "core/singleton.h"
 #include "util/string.h"
-#include "math/float4.h"
-#include "math/float2.h"
+#include "math/vec4.h"
+#include "math/vec2.h"
 #include "threading/threadid.h"
 #include "coregraphics/textelement.h"
 

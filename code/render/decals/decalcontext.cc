@@ -10,6 +10,7 @@
 #include "clustering/clustercontext.h"
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
+#include "frame/frameplugin.h"
 
 #include "decals_cluster.h"
 namespace Decals
@@ -71,17 +72,17 @@ DecalContext::Create()
 
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-	Frame::FramePlugin::AddCallback("DecalContext - Cull and Classify", [](IndexT frame)
+	Frame::AddCallback("DecalContext - Cull and Classify", [](IndexT frame)
 		{
 			DecalContext::CullAndClassify();
 		});
 
-	Frame::FramePlugin::AddCallback("DecalContext - Render PBR Decals", [](IndexT frame)
+	Frame::AddCallback("DecalContext - Render PBR Decals", [](IndexT frame)
 		{
 			DecalContext::RenderPBR();
 		});
 
-	Frame::FramePlugin::AddCallback("DecalContext - Render Emissive Decals", [](IndexT frame)
+	Frame::AddCallback("DecalContext - Render Emissive Decals", [](IndexT frame)
 		{
 			DecalContext::RenderEmissive();
 		});
@@ -134,6 +135,7 @@ DecalContext::Create()
 		ResourceTableSetRWBuffer(decalState.resourceTables[i], { Clustering::ClusterContext::GetClusterBuffer(), clusterAABBSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 		ResourceTableSetConstantBuffer(decalState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), decalState.clusterUniformsSlot, 0, false, false, sizeof(DecalsCluster::ClusterUniforms), 0 });
 		ResourceTableSetConstantBuffer(decalState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), decalState.uniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalUniforms), 0 });
+		ResourceTableSetConstantBuffer(decalState.resourceTables[i], { Clustering::ClusterContext::GetConstantBuffer(), decalState.clusterUniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
 		ResourceTableCommitChanges(decalState.resourceTables[i]);
 	}
 
@@ -155,7 +157,7 @@ DecalContext::Discard()
 void 
 DecalContext::SetupDecalPBR(
 	const Graphics::GraphicsEntityId id, 
-	const Math::matrix44 transform, 
+	const Math::mat4 transform, 
 	const CoreGraphics::TextureId albedo, 
 	const CoreGraphics::TextureId normal, 
 	const CoreGraphics::TextureId material)
@@ -177,7 +179,7 @@ DecalContext::SetupDecalPBR(
 void 
 DecalContext::SetupDecalEmissive(
 	const Graphics::GraphicsEntityId id, 
-	const Math::matrix44 transform, 
+	const Math::mat4 transform,
 	const CoreGraphics::TextureId emissive)
 {
 	const Graphics::ContextEntityId cid = GetContextId(id);
@@ -241,7 +243,7 @@ DecalContext::SetEmissiveTexture(const Graphics::GraphicsEntityId id, const Core
 /**
 */
 void 
-DecalContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44 transform)
+DecalContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4 transform)
 {
 	Graphics::ContextEntityId ctxId = GetContextId(id);
 	genericDecalAllocator.Set<Decal_Transform>(ctxId.id, transform);
@@ -250,7 +252,7 @@ DecalContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matr
 //------------------------------------------------------------------------------
 /**
 */
-Math::matrix44 
+Math::mat4
 DecalContext::GetTransform(const Graphics::GraphicsEntityId id)
 {
 	Graphics::ContextEntityId ctxId = GetContextId(id);
@@ -264,10 +266,10 @@ void
 DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
 	using namespace CoreGraphics;
-	Math::matrix44 viewTransform = Graphics::CameraContext::GetTransform(view->GetCamera());
+	Math::mat4 viewTransform = Graphics::CameraContext::GetTransform(view->GetCamera());
 	const Util::Array<DecalType>& types = genericDecalAllocator.GetArray<Decal_Type>();
 	const Util::Array<Ids::Id32>& typeIds = genericDecalAllocator.GetArray<Decal_TypedId>();
-	const Util::Array<Math::matrix44>& transforms = genericDecalAllocator.GetArray<Decal_Transform>();
+	const Util::Array<Math::mat4>& transforms = genericDecalAllocator.GetArray<Decal_Transform>();
 	SizeT numPbrDecals = 0;
 	SizeT numEmissiveDecals = 0;
 
@@ -279,18 +281,18 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 		case PBRDecal:
 		{
 			auto& pbrDecal = decalState.pbrDecals[numPbrDecals];
-			Math::matrix44 viewSpace = Math::matrix44::multiply(transforms[i], viewTransform);
+			Math::mat4 viewSpace = transforms[i] * viewTransform;
 			Math::bbox bbox(viewSpace);
-			Math::float4::storeu(bbox.pmin, pbrDecal.bboxMin);
-			Math::float4::storeu(bbox.pmax, pbrDecal.bboxMax);
+			bbox.pmin.store(pbrDecal.bboxMin);
+			bbox.pmax.store(pbrDecal.bboxMax);
 			pbrDecal.albedo = TextureGetBindlessHandle(pbrDecalAllocator.Get<DecalPBR_Albedo>(typeIds[i]));
 			pbrDecal.normal = TextureGetBindlessHandle(pbrDecalAllocator.Get<DecalPBR_Normal>(typeIds[i]));
 			pbrDecal.material = TextureGetBindlessHandle(pbrDecalAllocator.Get<DecalPBR_Material>(typeIds[i]));
-			Math::matrix44 inverse = Math::matrix44::inverse(transforms[i]);
-			inverse.storeu(pbrDecal.invModel);
-			transforms[i].get_zaxis().storeu3(pbrDecal.direction);
-			Math::float4 tangent = Math::float4::normalize(-transforms[i].get_xaxis());
-			tangent.storeu3(pbrDecal.tangent);
+			Math::mat4 inverse = Math::inverse(transforms[i]);
+			inverse.store(pbrDecal.invModel);
+			transforms[i].z_axis.store3(pbrDecal.direction);
+			Math::vec4 tangent = normalize(-transforms[i].x_axis);
+			tangent.store3(pbrDecal.tangent);
 			numPbrDecals++;
 			break;
 		}
@@ -298,12 +300,11 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 		case EmissiveDecal:
 		{
 			auto& emissiveDecal = decalState.emissiveDecals[numEmissiveDecals];
-			Math::matrix44 viewSpace = Math::matrix44::multiply(transforms[i], viewTransform);
+			Math::mat4 viewSpace = transforms[i] * viewTransform;
 			Math::bbox bbox(viewSpace);
-			Math::float4::storeu(bbox.pmin, emissiveDecal.bboxMin);
-			Math::float4::storeu(bbox.pmax, emissiveDecal.bboxMax);
-			Math::matrix44::inverse(transforms[i]).storeu(emissiveDecal.invModel);
-			Math::float4::storeu3(transforms[i].get_zaxis(), emissiveDecal.direction);
+			bbox.pmin.store(emissiveDecal.bboxMin);
+			bbox.pmax.store(emissiveDecal.bboxMax);
+			transforms[i].z_axis.store3(emissiveDecal.direction);
 			emissiveDecal.emissive = TextureGetBindlessHandle(emissiveDecalAllocator.Get<DecalEmissive_Emissive>(typeIds[i]));
 			numEmissiveDecals++;
 			break;
@@ -326,10 +327,6 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 
 	uint offset = SetComputeConstants(MainThreadConstantBuffer, decalUniforms);
 	ResourceTableSetConstantBuffer(decalState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), decalState.uniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalUniforms), (SizeT)offset });
-
-	ClusterGenerate::ClusterUniforms clusterUniforms = Clustering::ClusterContext::GetUniforms();
-	offset = SetComputeConstants(MainThreadConstantBuffer, clusterUniforms);
-	ResourceTableSetConstantBuffer(decalState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), decalState.clusterUniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), (SizeT)offset });
 
 	// update list of point lights
 	if (numPbrDecals > 0 || numEmissiveDecals > 0)
@@ -354,7 +351,7 @@ DecalContext::OnRenderDebug(uint32_t flags)
 {
 	using namespace CoreGraphics;
 	const Util::Array<DecalType>& types = genericDecalAllocator.GetArray<Decal_Type>();
-	const Util::Array<Math::matrix44>& transforms = genericDecalAllocator.GetArray<Decal_Transform>();
+	const Util::Array<Math::mat4>& transforms = genericDecalAllocator.GetArray<Decal_Transform>();
 	ShapeRenderer* shapeRenderer = ShapeRenderer::Instance();
 	IndexT i;
 	for (i = 0; i < types.Size(); i++)
@@ -365,7 +362,7 @@ DecalContext::OnRenderDebug(uint32_t flags)
 		{
 			RenderShape shape;
 			shape.SetupSimpleShape(
-				RenderShape::Box, RenderShape::RenderFlag(RenderShape::CheckDepth), transforms[i], Math::float4(0.8, 0.1, 0.1, 0.2));
+				RenderShape::Box, RenderShape::RenderFlag(RenderShape::CheckDepth), transforms[i], Math::vec4(0.8, 0.1, 0.1, 0.2));
 				
 			shapeRenderer->AddShape(shape);
 			break;
@@ -374,7 +371,7 @@ DecalContext::OnRenderDebug(uint32_t flags)
 		{
 			RenderShape shape;
 			shape.SetupSimpleShape(
-				RenderShape::Box, RenderShape::RenderFlag(RenderShape::CheckDepth), transforms[i], Math::float4(0.1, 0.8, 0.1, 0.2));
+				RenderShape::Box, RenderShape::RenderFlag(RenderShape::CheckDepth), transforms[i], Math::vec4(0.1, 0.8, 0.1, 0.2));
 
 			shapeRenderer->AddShape(shape);
 			break;

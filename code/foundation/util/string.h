@@ -30,9 +30,9 @@
 #include "memory/heap.h"
 
 #if !__OSX__
-#include "math/float4.h"
-#include "math/float2.h"
-#include "math/matrix44.h"
+#include "math/vec4.h"
+#include "math/vec2.h"
+#include "math/mat4.h"
 #include "math/transform44.h"
 #endif
 
@@ -205,14 +205,16 @@ public:
 	void Fill(SizeT length, unsigned char character);
 
     #if !__OSX__
-    /// set as float2 value
-    void SetFloat2(const Math::float2& v);
-    /// set as float4 value
-    void SetFloat4(const Math::float4& v);
+    /// set as vec2 value
+    void SetVec2(const Math::vec2& v);
+    /// set as vec4 value
+    void SetVec4(const Math::vec4& v);
+    /// set as vec3 value
+    void SetVec3(const Math::vec3& vec);
 	/// set as quaternion
-	void SetQuaternion(const Math::quaternion & v);
-    /// set as matrix44 value
-    void SetMatrix44(const Math::matrix44& v);
+	void SetQuaternion(const Math::quat& v);
+    /// set as mat4 value
+    void SetMat4(const Math::mat4& v);
 	/// set as transform44 value
 	void SetTransform44(const Math::transform44& v);
     #endif
@@ -231,14 +233,14 @@ public:
     void AppendFloat(float val);
     /// append bool value
     void AppendBool(bool val);
-    #if !__OSX__
-    /// append float2 value
-    void AppendFloat2(const Math::float2& v);
-    /// append float4 value
-    void AppendFloat4(const Math::float4& v);
-    /// append matrix44 value
-    void AppendMatrix44(const Math::matrix44& v);
-    #endif
+    /// append vec2 value
+    void AppendVec2(const Math::vec2& v);
+    /// append vec3 value
+    void AppendVec3(const Math::vec3& v);
+    /// append vec4 value
+    void AppendVec4(const Math::vec4& v);
+    /// append mat4 value
+    void AppendMat4(const Math::mat4& v);
     /// generic append
     template<typename T> void Append(const T& t);
 
@@ -254,16 +256,16 @@ public:
     float AsFloat() const;
     /// return contents as bool
     bool AsBool() const;
-    #if !__OSX__
-    /// return contents as float2
-    Math::float2 AsFloat2() const;
-    /// return contents as float4
-    Math::float4 AsFloat4() const;
-    /// return contents as matrix44
-    Math::matrix44 AsMatrix44() const;
+    /// return contents as vec2
+    Math::vec2 AsVec2() const;
+    /// return contents as vec3
+    Math::vec3 AsVec3() const;
+    /// return contents as vec4
+    Math::vec4 AsVec4() const;
+    /// return contents as mat4
+    Math::mat4 AsMat4() const;
 	/// return contents as transform44
 	Math::transform44 AsTransform44() const;
-    #endif
     /// return contents as blob
     Util::Blob AsBlob() const;
 	/// return contents as base64 string
@@ -277,16 +279,14 @@ public:
     bool IsValidFloat() const;
     /// return true if the content is a valid bool
     bool IsValidBool() const;
-    #if !__OSX__
-    /// return true if the content is a valid float2
-    bool IsValidFloat2() const;
-    /// return true if the content is a valid float4
-    bool IsValidFloat4() const;
-    /// return true if content is a valid matrix44
-    bool IsValidMatrix44() const;
+    /// return true if the content is a valid vec2
+    bool IsValidVec2() const;
+    /// return true if the content is a valid vec4
+    bool IsValidVec4() const;
+    /// return true if content is a valid mat4
+    bool IsValidMat4() const;
 	/// return true if content is a valid transform44
 	bool IsValidTransform44() const;
-    #endif
     /// generic valid checker
     template<typename T> bool IsValid() const;
 
@@ -314,18 +314,18 @@ public:
 	static String FromDouble(double f);
     /// construct a string from a bool
     static String FromBool(bool b);
-    #if !__OSX__
-    /// construct a string from float2
-    static String FromFloat2(const Math::float2& v);
-    /// construct a string from float4
-    static String FromFloat4(const Math::float4& v);
-	/// construct a string from quaternion
-	static String FromQuaternion(const Math::quaternion& q);
-    /// construct a string from matrix44
-    static String FromMatrix44(const Math::matrix44& m);
+    /// construct a string from vec2
+    static String FromVec2(const Math::vec2& v);
+    /// construct a string from vec3
+    static String FromVec3(const Math::vec3& v);
+    /// construct a string from vec4
+    static String FromVec4(const Math::vec4& v);
+	/// construct a string from quat
+	static String FromQuat(const Math::quat& q);
+    /// construct a string from mat4
+    static String FromMat4(const Math::mat4& m);
 	/// construct a string from transform44
 	static String FromTransform44(const Math::transform44& m);
-    #endif
     /// create from blob
     static String FromBlob(const Util::Blob & b);
 	/// create from base64
@@ -672,43 +672,52 @@ String::Fill(SizeT length, unsigned char character)
 /**
 */
 inline void
-String::SetFloat2(const Math::float2& v)
+String::SetVec2(const Math::vec2& v)
 {
-    this->Format("%.6f,%.6f", v.x(), v.y());
+    this->Format("%.6f,%.6f", v.x, v.y);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-String::SetFloat4(const Math::float4& v)
+String::SetVec4(const Math::vec4& v)
 {
-    this->Format("%.6f,%.6f,%.6f,%.6f", v.x(), v.y(), v.z(), v.w());
+    this->Format("%.6f,%.6f,%.6f,%.6f", v.x, v.y, v.z, v.w);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+String::SetVec3(const Math::vec3& v)
+{
+    this->Format("%.6f,%.6f,%.6f", v.x, v.y, v.z);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-String::SetQuaternion(const Math::quaternion& v)
+String::SetQuaternion(const Math::quat& v)
 {
-	this->Format("%.6f,%.6f,%.6f,%.6f", v.x(), v.y(), v.z(), v.w());
+	this->Format("%.6f,%.6f,%.6f,%.6f", v.x, v.y, v.z, v.w);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-String::SetMatrix44(const Math::matrix44& m)
+String::SetMat4(const Math::mat4& m)
 {
     this->Format("%.6f, %.6f, %.6f, %.6f, "
                  "%.6f, %.6f, %.6f, %.6f, "
                  "%.6f, %.6f, %.6f, %.6f, "
                  "%.6f, %.6f, %.6f, %.6f",
-                 m.getrow0().x(), m.getrow0().y(), m.getrow0().z(), m.getrow0().w(),
-                 m.getrow1().x(), m.getrow1().y(), m.getrow1().z(), m.getrow1().w(),
-                 m.getrow2().x(), m.getrow2().y(), m.getrow2().z(), m.getrow2().w(),
-                 m.getrow3().x(), m.getrow3().y(), m.getrow3().z(), m.getrow3().w());
+                 m.row0.x, m.row0.y, m.row0.z, m.row0.w,
+                 m.row1.x, m.row1.y, m.row1.z, m.row1.w,
+                 m.row2.x, m.row2.y, m.row2.z, m.row2.w,
+                 m.row3.x, m.row3.y, m.row3.z, m.row3.w);
 }
 
 //------------------------------------------------------------------------------
@@ -718,12 +727,12 @@ inline void
 String::SetTransform44(const Math::transform44& t)
 {
 	this->Format("%s|%s|%s|%s|%s|%s",
-		this->FromFloat4(t.getposition()).AsCharPtr(),
-		this->FromQuaternion(t.getrotate()).AsCharPtr(),
-		this->FromFloat4(t.getscale()).AsCharPtr(),
-		this->FromFloat4(t.getrotatepivot()).AsCharPtr(),
-		this->FromFloat4(t.getscalepivot()).AsCharPtr(),
-		this->FromMatrix44(t.getoffset()).AsCharPtr());
+		this->FromVec3(t.getposition()).AsCharPtr(),
+		this->FromQuat(t.getrotate()).AsCharPtr(),
+		this->FromVec3(t.getscale()).AsCharPtr(),
+		this->FromVec3(t.getrotatepivot()).AsCharPtr(),
+		this->FromVec3(t.getscalepivot()).AsCharPtr(),
+		this->FromMat4(t.getoffset()).AsCharPtr());
 }
 #endif // __OSX__
     
@@ -1087,7 +1096,7 @@ String::IsValidFloat() const
     Note: this method is not 100% correct, it just checks for invalid characters.
 */
 inline bool
-String::IsValidFloat2() const
+String::IsValidVec2() const
 {
 	Array<String> tokens(2, 0);
 	this->Tokenize(", \t", tokens);
@@ -1099,7 +1108,7 @@ String::IsValidFloat2() const
     Note: this method is not 100% correct, it just checks for invalid characters.
 */
 inline bool
-String::IsValidFloat4() const
+String::IsValidVec4() const
 {
 	Array<String> tokens(4, 0);
 	this->Tokenize(", \t", tokens);
@@ -1111,7 +1120,7 @@ String::IsValidFloat4() const
     Note: this method is not 100% correct, it just checks for invalid characters.
 */
 inline bool
-String::IsValidMatrix44() const
+String::IsValidMat4() const
 {
 	Array<String> tokens(16, 0);
 	this->Tokenize(", \t", tokens);
@@ -1132,33 +1141,46 @@ String::IsValidTransform44() const
 
 //------------------------------------------------------------------------------
 /**
-    Returns content as float2. Note: this method doesn't check whether the
-    contents is actually a valid float4. Use the IsValidFloat2() method
+    Returns content as vec2. Note: this method doesn't check whether the
+    contents is actually a valid vec4. Use the IsValidFloat2() method
     for this!
 */
-inline Math::float2
-String::AsFloat2() const
+inline Math::vec2
+String::AsVec2() const
 {
     Array<String> tokens(2, 0);
     this->Tokenize(", \t", tokens);
     n_assert(tokens.Size() == 2);
-    Math::float2 v(tokens[0].AsFloat(), tokens[1].AsFloat());
+    Math::vec2 v(tokens[0].AsFloat(), tokens[1].AsFloat());
     return v;
 }
 
 //------------------------------------------------------------------------------
 /**
-    Returns content as float4. Note: this method doesn't check whether the
-    contents is actually a valid float4. Use the IsValidFloat4() method
+*/
+inline Math::vec3 
+String::AsVec3() const
+{
+    Array<String> tokens(4, 0);
+    this->Tokenize(", \t", tokens);
+    n_assert(tokens.Size() == 3);
+    Math::vec3 v(tokens[0].AsFloat(), tokens[1].AsFloat(), tokens[2].AsFloat());
+    return v;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Returns content as vec4. Note: this method doesn't check whether the
+    contents is actually a valid vec4. Use the IsValidVec4() method
     for this!
 */
-inline Math::float4
-String::AsFloat4() const
+inline Math::vec4
+String::AsVec4() const
 {
     Array<String> tokens(4, 0);
     this->Tokenize(", \t", tokens);
     n_assert(tokens.Size() == 4);
-    Math::float4 v(tokens[0].AsFloat(), tokens[1].AsFloat(), tokens[2].AsFloat(), tokens[3].AsFloat());
+    Math::vec4 v(tokens[0].AsFloat(), tokens[1].AsFloat(), tokens[2].AsFloat(), tokens[3].AsFloat());
     return v;
 }
 #endif
@@ -1309,10 +1331,10 @@ String::FromBool(bool b)
 /**
 */
 inline String
-String::FromFloat2(const Math::float2& v)
+String::FromVec2(const Math::vec2& v)
 {
     String str;
-    str.SetFloat2(v);
+    str.SetVec2(v);
     return str;
 }
 
@@ -1320,10 +1342,21 @@ String::FromFloat2(const Math::float2& v)
 /**
 */
 inline String
-String::FromFloat4(const Math::float4& v)
+String::FromVec4(const Math::vec4& v)
 {
     String str;
-    str.SetFloat4(v);
+    str.SetVec4(v);
+    return str;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline String 
+String::FromVec3(const Math::vec3& v)
+{
+    String str;
+    str.SetVec3(v);
     return str;
 }
 
@@ -1331,7 +1364,7 @@ String::FromFloat4(const Math::float4& v)
 /**
 */
 inline String
-String::FromQuaternion(const Math::quaternion& q)
+String::FromQuat(const Math::quat& q)
 {
 	String str;
 	str.SetQuaternion(q);
@@ -1342,10 +1375,10 @@ String::FromQuaternion(const Math::quaternion& q)
 /**
 */
 inline String
-String::FromMatrix44(const Math::matrix44& m)
+String::FromMat4(const Math::mat4& m)
 {
     String str;
-    str.SetMatrix44(m);
+    str.SetMat4(m);
     return str;
 }
 
@@ -1441,27 +1474,36 @@ String::AppendBool(bool val)
 /**
 */
 inline void
-String::AppendFloat2(const Math::float2& val)
+String::AppendVec2(const Math::vec2& val)
 {
-    this->Append(FromFloat2(val));
+    this->Append(FromVec2(val));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+String::AppendVec3(const Math::vec3& val)
+{
+    this->Append(FromVec3(val));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-String::AppendFloat4(const Math::float4& val)
+String::AppendVec4(const Math::vec4& val)
 {
-    this->Append(FromFloat4(val));
+    this->Append(FromVec4(val));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-String::AppendMatrix44(const Math::matrix44& val)
+String::AppendMat4(const Math::mat4& val)
 {
-    this->Append(FromMatrix44(val));
+    this->Append(FromMat4(val));
 }
 #endif
     

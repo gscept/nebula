@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vktypes.h"
-#include <vulkan/vulkan.h>
+#include "vkloader.h"
 #include "coregraphics/pixelformat.h"
 #include "il_dds.h"
 

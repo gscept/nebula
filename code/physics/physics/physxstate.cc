@@ -87,7 +87,7 @@ PhysxState::onSleep(physx::PxActor** actors, physx::PxU32 count)
 /**
 */
 physx::PxRigidActor*
-PhysxState::CreateActor(bool dynamic, Math::matrix44 const & transform)
+PhysxState::CreateActor(bool dynamic, Math::mat4 const & transform)
 {
     if (dynamic)
     {
@@ -140,7 +140,7 @@ PhysxState::Update(Timing::Time delta)
         Actor& actor = ActorContext::actors[Ids::Index(this->awakeActors.KeyAtIndex(i))];
         if (actor.moveCallback.IsValid())
         {
-            Math::matrix44 trans = Px2NebMat(static_cast<PxRigidActor*>(actor.actor)->getGlobalPose());
+            Math::mat4 trans = Px2NebMat(static_cast<PxRigidActor*>(actor.actor)->getGlobalPose());
             actor.moveCallback(actor.id, trans);
         }
     }

@@ -11,7 +11,12 @@
 #include "lib/techniques.fxh"
 #include "lib/defaultsamplers.fxh"
 
-#include "lib/materialparams.fxh"
+#define LIGHTS_CLUSTERED_GROUP SYSTEM_GROUP
+#define LIGHTS_CLUSTERED_VISIBILITY "VS|PS"
+#define CLUSTERING_GROUP SYSTEM_GROUP
+#define CLUSTERING_VISIBILITY "VS|PS"
+#include "lib/clustering.fxh"
+#include "lib/lights_clustered.fxh"
 
 group(BATCH_GROUP) shared constant Particle[string Visibility = "PS"; ]
 {
@@ -20,17 +25,17 @@ group(BATCH_GROUP) shared constant Particle[string Visibility = "PS"; ]
 	textureHandle Layer3;
 	textureHandle Layer4;
 
-	float2 UVAnim1;
-	float2 UVAnim2;
-	float2 UVAnim3;
-	float2 UVAnim4;
+	vec2 UVAnim1;
+	vec2 UVAnim2;
+	vec2 UVAnim3;
+	vec2 UVAnim4;
 	float LightMapIntensity;
+	float Transmission;
 };
 
 // samplers
 sampler_state ParticleSampler
 {
-//	Samplers = { ParameterMap, EmissiveMap, NormalMap, AlbedoMap, DisplacementMap, RoughnessMap, Layer1, Layer2, Layer3, Layer4 };
 	Filter = MinMagMipLinear;
 	AddressU = Wrap;
 	AddressV = Wrap;
@@ -38,7 +43,6 @@ sampler_state ParticleSampler
 
 sampler_state LayerSampler
 {
-	//Samplers = {Layer1, Layer2, Layer3, Layer4 };
 	AddressU = Mirror;
 	AddressV = Mirror;
 };
@@ -118,13 +122,13 @@ vsUnlit(
 	out vec4 Color,
 	out vec2 UV)
 {
-	CornerVertex cornerVert = ComputeCornerVertex(true,
+	CornerVertex cornerVert = ComputeCornerVertex(
 										corner,
 										position,
 										stretchPos,
 										uvMinMax,
-										rotSize.x,
-										rotSize.y);
+										vec2(rotSize.x, rotSize.y),
+										rotSize.z);
 										
 	UV = cornerVert.UV;
 	gl_Position = ViewProjection * cornerVert.worldPos;
@@ -144,9 +148,7 @@ vsLit(
 	[slot=3] in vec4 color,
 	[slot=4] in vec4 uvMinMax,
 	[slot=5] in vec4 rotSize,
-	out vec4 ViewSpacePos,
-	out vec4 ProjPos,
-	out vec4 WorldPos,
+	out vec4 ViewSpacePos, 
 	out vec3 Normal,
 	out vec3 Tangent,
 	out vec3 Binormal,
@@ -154,24 +156,21 @@ vsLit(
 	out vec4 Color,
 	out vec2 UV) 
 {
-	CornerVertex cornerVert = ComputeCornerVertex(false,
+	CornerVertex cornerVert = ComputeCornerVertex(
 										corner,
 										position,
 										stretchPos,
 										uvMinMax,
-										rotSize.x,
-										rotSize.y);
+										vec2(rotSize.x, rotSize.y),
+										rotSize.z);
 										
-	mat4 modelView = mul(Model, View);
-	Normal = mat3(modelView) * cornerVert.worldNormal;
-	Tangent = mat3(modelView) * cornerVert.worldTangent;
-	Binormal = mat3(modelView) * cornerVert.worldBinormal;
+	Normal = cornerVert.worldNormal;
+	Tangent = cornerVert.worldTangent;
+	Binormal = cornerVert.worldBinormal;
 	UV = cornerVert.UV;
 	WorldEyeVec = normalize(EyePos - cornerVert.worldPos).xyz;
-	WorldPos = cornerVert.worldPos;
-	gl_Position = ViewProjection * cornerVert.worldPos;
 	ViewSpacePos = View * cornerVert.worldPos;
-	ProjPos = gl_Position;
+	gl_Position = ViewProjection * cornerVert.worldPos;
 	Color = color;
 }
 
@@ -185,8 +184,6 @@ psUnlit(in vec4 ViewSpacePosition,
 	in vec2 UV,
 	[color0] out vec4 FinalColor) 
 {
-	//sampler2D db = sampler2D(Textures2D[DepthBuffer], ParticleSampler);
-	//vec2 pixelSize = GetPixelSize(sampler2D(Textures2D[DepthBuffer], ParticleSampler));
 	vec2 pixelSize = RenderTargetDimensions[0].zw;
 	vec2 screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
 	vec4 diffColor = sample2D(AlbedoMap, ParticleSampler, UV);
@@ -208,8 +205,6 @@ psUnlit2Layers(in vec4 ViewSpacePosition,
 	in vec2 UV,
 	[color0] out vec4 FinalColor) 
 {
-	//sampler2D db = ;
-	//vec2 pixelSize = GetPixelSize(sampler2D(Textures2D[DepthBuffer], ParticleSampler));
 	vec2 pixelSize = RenderTargetDimensions[0].zw;
 	vec2 screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
 	vec4 layer1 = sample2D(Layer1, LayerSampler, UV + UVAnim1 * TimeAndRandom.x);
@@ -234,8 +229,6 @@ psUnlit3Layers(in vec4 ViewSpacePosition,
 	in vec2 UV,
 	[color0] out vec4 FinalColor) 
 {
-	//sampler2D db = sampler2D(Textures2D[DepthBuffer], ParticleSampler);
-	//vec2 pixelSize = GetPixelSize(sampler2D(Textures2D[DepthBuffer], ParticleSampler));
 	vec2 pixelSize = RenderTargetDimensions[0].zw;
 	vec2 screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
 	vec4 layer1 = sample2D(Layer1, LayerSampler, UV + UVAnim1 * TimeAndRandom.x);
@@ -261,10 +254,6 @@ psUnlit4Layers(in vec4 ViewSpacePosition,
 	in vec2 UV,
 	[color0] out vec4 FinalColor) 
 {
-	//const sampler2D samp = sampler2D(Textures2D[DepthBuffer], ParticleSampler);
-	//vec2 pixelSize = vec2(textureSize(Textures2D[DepthBuffer], 0));
-	//int levels = textureQueryLevels(Textures2D[DepthBuffer]);
-	//vec2 test = textureSize(Textures2D[
 	vec2 pixelSize = RenderTargetDimensions[0].zw;
 	vec2 screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
 	vec4 layer1 = sample2D(Layer1, LayerSampler, UV + UVAnim1 * TimeAndRandom.x);
@@ -287,44 +276,53 @@ psUnlit4Layers(in vec4 ViewSpacePosition,
 shader
 void
 psLit(in vec4 ViewSpacePosition,
-	in vec4 ProjPos,
-	in vec4 WorldPos,
 	in vec3 Normal,
 	in vec3 Tangent,
 	in vec3 Binormal,
 	in vec3 WorldEyeVec,
 	in vec4 Color,
 	in vec2 UV,
-	[color0] out vec4 Albedo,
-	[color1] out vec4 Normals,
-	[color2] out float Depth,
-	[color3] out vec4 Material) 
+	[color0] out vec4 Light) 
 {	
 	vec4 albedo = 		sample2D(AlbedoMap, ParticleSampler, UV);
 	vec4 material = 	sample2D(ParameterMap, ParticleSampler, UV);
 	
-	const float depth = length(ViewSpacePosition.xyz);
+	const float depth = fetch2D(DepthBufferCopy, ParticleSampler, ivec2(gl_FragCoord.xy), 0).r;
+	const float particleDepth = gl_FragCoord.z;
+	float AlphaMod = saturate(abs(depth - particleDepth) * (FocalLengthNearFar.w - FocalLengthNearFar.z));
+	const float finalAlpha = albedo.a * Color.a * AlphaMod;
+	if (finalAlpha < 0.001f)
+		discard;
 
-	mat3 tangentViewMatrix = mat3(normalize(Tangent.xyz), normalize(Binormal.xyz), normalize(Normal.xyz));        
 	vec3 tNormal = vec3(0,0,0);
+
 	tNormal.xy = (sample2D(NormalMap, ParticleSampler, UV).ag * 2.0) - 1.0;
 	tNormal.z = saturate(sqrt(1.0 - dot(tNormal.xy, tNormal.xy)));
 	
 	if (!gl_FrontFacing)
 	{
-		tNormal = -tNormal;
+		// flip tangent space if backface, and transform normal
+		tNormal = mat3(Tangent.xyz, Binormal.xyz, -Normal.xyz) * tNormal;
 	}
-	
-	Normals = PackViewSpaceNormal((tangentViewMatrix * tNormal).xyz);
+	else
+	{
+		// transform normal to tangent space
+		tNormal = mat3(Tangent.xyz, Binormal.xyz, Normal.xyz) * tNormal; 
+	}
 
-	Material = material;
-	Depth = depth;
+	// calculate cluster index
+	uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, ViewSpacePosition.z, InvZScale, InvZBias);
+	uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
-	Albedo = albedo + vec4(Color.rgb, 0);
+	vec3 light = vec3(0, 0, 0);
+
+	// add light
+	light += CalculateGlobalLightAmbientTransmission(ViewSpacePosition, WorldEyeVec, tNormal.xyz, particleDepth, material, albedo, Transmission);
+	vec3 viewVec = -normalize(ViewSpacePosition.xyz);
+	vec3 viewNormal = (View * vec4(tNormal.xyz, 0)).xyz;
+	light += LocalLightsAmbientTransmission(idx, ViewSpacePosition, viewVec, viewNormal, particleDepth, material, albedo, Transmission);
 	
-	float particleDepth = length(ViewSpacePosition);
-	float alphaMod = saturate(abs(depth - particleDepth));
-	Albedo.a = albedo.a * Color.a;
+	Light = vec4(light, finalAlpha);
 }
 
 //------------------------------------------------------------------------------

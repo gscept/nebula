@@ -107,7 +107,7 @@ void
 SvgLineChartWriter::Draw()
 {
     // establish a transform for the main diagram
-    this->BeginTransformGroup(float2(10.0f, 10.0f), 0.0f, float2(1.0f, 1.0f));
+    this->BeginTransformGroup(vec2(10.0f, 10.0f), 0.0f, vec2(1.0f, 1.0f));
     
     // draw light-weight helper lines
     this->BeginPaintGroup("grey", "grey", 1);
@@ -137,7 +137,7 @@ SvgLineChartWriter::Draw()
 		float curVal = 0.0f;
         IndexT valIndex = 0;
         SizeT batchSize = 100;
-        Array<float2> points(batchSize + 1, 0);
+        Array<vec2> points(batchSize + 1, 0);
         Array<Util::String> timeText(batchSize + 1, 0);
         this->BeginPaintGroup("none", curTrack.color, 2);
         while (valIndex < curTrack.values.Size())
@@ -151,7 +151,7 @@ SvgLineChartWriter::Draw()
             {
                 curValue = curTrack.values[valIndex++];
                 curY = 1.0f - (curValue - this->yAxisMinVal) / (this->yAxisMaxVal - this->yAxisMinVal);
-                points.Append(float2(1000.0f * x, 200.0f * curY));
+                points.Append(vec2(1000.0f * x, 200.0f * curY));
                 x += dx;
                 minVal = n_min(minVal, curValue);
                 maxVal = n_max(maxVal, curValue);
@@ -170,7 +170,7 @@ SvgLineChartWriter::Draw()
                 IndexT txtIdx;
                 for (txtIdx = 0; txtIdx < timeText.Size(); ++txtIdx)
                 {
-                    this->Text(points[txtIdx].x(), 210, timeText[txtIdx]);      	
+                    this->Text(points[txtIdx].x, 210, timeText[txtIdx]);      	
                 }
                 this->EndGroup();
                 this->BeginPaintGroup("none", curTrack.color, 2);
@@ -179,7 +179,7 @@ SvgLineChartWriter::Draw()
 
             // prepare next batch
             points.Clear();
-            points.Append(float2(1000.f * (x - dx), 200.0f * curY));
+            points.Append(vec2(1000.f * (x - dx), 200.0f * curY));
         }
         this->EndGroup();
         // compute average value

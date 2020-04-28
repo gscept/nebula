@@ -7,7 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "ids/idallocator.h"
-#include "vulkan/vulkan.h"
+#include "vkloader.h"
 #include "coregraphics/commandbuffer.h"
 
 namespace Vulkan

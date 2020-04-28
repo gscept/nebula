@@ -20,12 +20,12 @@ public:
 
 
 	/// get transform
-	static const Math::matrix44& GetTransform(const Graphics::GraphicsEntityId id);
+	static const Math::mat4& GetTransform(const Graphics::GraphicsEntityId id);
 private:
 
 	typedef Ids::IdAllocator<
-		Math::matrix44,				// projection
-		Math::matrix44				// view-transform
+		Math::mat4,				// projection
+		Math::mat4				// view-transform
 	> LightProbeAllocator;
 	static LightProbeAllocator lightProbeAllocator;
 

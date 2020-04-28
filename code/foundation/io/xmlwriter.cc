@@ -216,26 +216,26 @@ XmlWriter::SetFloat(const String& name, float value)
 #if !__OSX__    
 //------------------------------------------------------------------------------
 /**
-    Set the provided attribute to a float4 value.
+    Set the provided attribute to a vec4 value.
 */
 void
-XmlWriter::SetFloat4(const String& name, const float4& value)
+XmlWriter::SetVec4(const String& name, const vec4& value)
 {
     String s;
-    s.SetFloat4(value);
+    s.SetVec4(value);
     this->SetString(name, s);
 }
 
 //------------------------------------------------------------------------------
 /**
-    Set the provided attribute to a matrix44 value.  The stream must be
+    Set the provided attribute to a mat4 value.  The stream must be
     in Write or ReadWrite mode for this.
 */
 void
-XmlWriter::SetMatrix44(const String& name, const matrix44& value)
+XmlWriter::SetMat4(const String& name, const mat4& value)
 {
     String s;
-    s.SetMatrix44(value);
+    s.SetMat4(value);
     this->SetString(name, s);
 }
 
@@ -256,10 +256,10 @@ XmlWriter::SetTransform44(const String& name, const transform44& value)
 /**
 */
 void 
-XmlWriter::SetFloat2(const Util::String& name, const Math::float2& value)
+XmlWriter::SetVec2(const Util::String& name, const Math::vec2& value)
 {       
     String s;
-    s.SetFloat2(value);
+    s.SetVec2(value);
     this->SetString(name, s);
 }
 #endif

@@ -135,7 +135,7 @@ bool TraceScreenSpaceRay(in vec3 rayOrigin,
 	Q0 += dQ * jitter;
 	k0 += dk * jitter;
 
-	// Track ray step and derivatives in a float4 to parallelize
+	// Track ray step and derivatives in a vec4 to parallelize
 	vec4 PQk = vec4( P0.xy, Q0.z, k0);
 	vec4 dPQk = vec4( dP.xy, dQ.z, dk);
 	

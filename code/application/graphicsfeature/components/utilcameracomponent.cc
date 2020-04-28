@@ -90,8 +90,8 @@ UtilCameraComponent::OnActivate(Game::InstanceId instance)
     auto gfxEntity = Graphics::CreateEntity();
     component->Get<Attr::GraphicsEntity>(instance) = gfxEntity.id;
     CameraContext::RegisterEntity(gfxEntity);
-    Math::float4 camProj = component->Get<Attr::CameraProjection>(instance);
-    CameraContext::SetupProjectionFov(gfxEntity, camProj.x(), camProj.y(), camProj.z(), camProj.w());
+    Math::vec4 camProj = component->Get<Attr::CameraProjection>(instance);
+    CameraContext::SetupProjectionFov(gfxEntity, camProj.x, camProj.y, camProj.z, camProj.w);
     Visibility::ObserverContext::RegisterEntity(gfxEntity);
     Visibility::ObserverContext::Setup(gfxEntity, Visibility::VisibilityEntityType::Camera);
     GraphicsFeature::GraphicsFeatureUnit::Instance()->defaultView->SetCamera(gfxEntity);
@@ -124,12 +124,12 @@ UtilCameraComponent::SetMode(Game::Entity entity, CameraMode mode)
     switch (mode)
     {
     case MayaCamera:
-        mayaCameraUtil.Setup(mayaCameraUtil.GetCenterOfInterest(), freeCamUtil.GetTransform().get_position(), Math::vector(0.0f, 1.0f, 0.0f));
+        mayaCameraUtil.Setup(mayaCameraUtil.GetCenterOfInterest(), freeCamUtil.GetTransform().position, Math::vector(0.0f, 1.0f, 0.0f));
         break;
     case FreeCamera:
     {
-        Math::float4 pos = mayaCameraUtil.GetCameraTransform().get_position();
-        freeCamUtil.Setup(pos, Math::float4::normalize(pos - mayaCameraUtil.GetCenterOfInterest()));
+        Math::point pos = mayaCameraUtil.GetCameraTransform().position;
+        freeCamUtil.Setup(pos, Math::normalize(pos - mayaCameraUtil.GetCenterOfInterest()));
     }
     break;
     }
@@ -179,7 +179,7 @@ UtilCameraComponent::UpdateCamera(Game::InstanceId instance)
         mayaCameraUtil.SetZoomOutButton(mouse->WheelBackward());
         mayaCameraUtil.SetMouseMovement(mouse->GetMovement());
         mayaCameraUtil.Update();
-        CameraContext::SetTransform(cam, Math::matrix44::inverse(mayaCameraUtil.GetCameraTransform()));
+        CameraContext::SetTransform(cam, Math::inverse(mayaCameraUtil.GetCameraTransform()));
     }
     break;
     case FreeCamera:
@@ -198,7 +198,7 @@ UtilCameraComponent::UpdateCamera(Game::InstanceId instance)
 
         freeCamUtil.SetRotateButton(mouse->ButtonPressed(Input::MouseButton::LeftButton));
         freeCamUtil.Update();
-        CameraContext::SetTransform(cam, Math::matrix44::inverse(freeCamUtil.GetTransform()));
+        CameraContext::SetTransform(cam, Math::inverse(freeCamUtil.GetTransform()));
     }
     break;
     }
@@ -214,8 +214,8 @@ UtilCameraComponent::SetView(Game::Entity entity, Ptr<Graphics::View> const& vie
     if (instance != InvalidIndex)
     {
         component->Get<Attr::GraphicsEntity>(instance) = view->GetCamera().id;
-        Math::float4 camProj = component->Get<Attr::CameraProjection>(instance);
-        CameraContext::SetupProjectionFov(view->GetCamera(), camProj.x(), camProj.y(), camProj.z(), camProj.w());
+        Math::vec4 camProj = component->Get<Attr::CameraProjection>(instance);
+        CameraContext::SetupProjectionFov(view->GetCamera(), camProj.x, camProj.y, camProj.z, camProj.w);
     }
 }
 

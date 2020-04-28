@@ -117,9 +117,9 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
         EmitterPoint &dst = this->points[i];
         dst.position.load_float3(src + posByteOffset, 1.0f);
         dst.normal.load_byte4n(src + normByteOffset, 0.0f);
-        dst.normal = Math::float4::normalize(dst.normal);
+        dst.normal = Math::normalize(dst.normal);
 		dst.tangent.load_byte4n(src + tanByteOffset, 0.0f);
-        dst.tangent = Math::float4::normalize(dst.tangent);
+        dst.tangent = Math::normalize(dst.tangent);
     }
 	VertexBufferUnmap(vertexBuffer);
 }

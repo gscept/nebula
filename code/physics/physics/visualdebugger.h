@@ -41,31 +41,31 @@ public:
 
 
 	/// draw an arrow during a number of steps
-	void DrawTimedArrow(const Math::point& p, const Math::vector& dir, uint numSteps, const Math::float4& color = Math::float4(1, 1, 1, 1));
+	void DrawTimedArrow(const Math::point& p, const Math::vector& dir, uint numSteps, const Math::vec4& color = Math::vec4(1, 1, 1, 1));
 	/// draw a line during a number of steps
-	void DrawTimedLine(const Math::point& p, const Math::vector& dir, uint numSteps, const Math::float4& color = Math::float4(1, 1, 1, 1));
+	void DrawTimedLine(const Math::point& p, const Math::vector& dir, uint numSteps, const Math::vec4& color = Math::vec4(1, 1, 1, 1));
 	/// draw a plane during a number of steps
-	void DrawTimedPlane(const Math::point& p, const Math::vector& dir, float scale, uint numSteps, const Math::float4& color = Math::float4(1, 1, 1, 1));
+	void DrawTimedPlane(const Math::point& p, const Math::vector& dir, float scale, uint numSteps, const Math::vec4& color = Math::vec4(1, 1, 1, 1));
 	/// draw text during a number of steps
-	void DrawTimedText(const Math::point& p, const Util::String& text, uint numSteps, const Math::float4& color = Math::float4(1, 1, 1, 1));
+	void DrawTimedText(const Math::point& p, const Util::String& text, uint numSteps, const Math::vec4& color = Math::vec4(1, 1, 1, 1));
 	/// draw an AABB during a number of steps
-	void DrawTimedAABB(const Math::bbox& bbox, uint numSteps, const Math::float4& color = Math::float4(1, 1, 1, 1));
+	void DrawTimedAABB(const Math::bbox& bbox, uint numSteps, const Math::vec4& color = Math::vec4(1, 1, 1, 1));
 
 	/// set the camera view
-	virtual void SetCameraView(const Math::matrix44& viewMatrix);
+	virtual void SetCameraView(const Math::mat4& viewMatrix);
 
 	/*		=== abstract draw-methods ===		*/
 
 	/// draw an arrow
-	virtual void DrawArrow(const Math::point& p, const Math::vector& dir, const Math::float4& color = Math::float4(1, 1, 1, 1));
+	virtual void DrawArrow(const Math::point& p, const Math::vector& dir, const Math::vec4& color = Math::vec4(1, 1, 1, 1));
 	/// draw a line
-	virtual void DrawLine(const Math::point& p, const Math::vector& dir, const Math::float4& color = Math::float4(1, 1, 1, 1));
+	virtual void DrawLine(const Math::point& p, const Math::vector& dir, const Math::vec4& color = Math::vec4(1, 1, 1, 1));
 	/// draw a plane
-	virtual void DrawPlane(const Math::point& p, const Math::vector& dir, float scale, const Math::float4& color = Math::float4(1, 1, 1, 1));
+	virtual void DrawPlane(const Math::point& p, const Math::vector& dir, float scale, const Math::vec4& color = Math::vec4(1, 1, 1, 1));
 	/// draw text
-	virtual void DrawText(const Math::point& p, const Util::String& text, const Math::float4& color = Math::float4(1, 1, 1, 1));
+	virtual void DrawText(const Math::point& p, const Util::String& text, const Math::vec4& color = Math::vec4(1, 1, 1, 1));
 	/// draw an AABB
-	virtual void DrawAABB(const Math::bbox& bbox, const Math::float4& color = Math::float4(1, 1, 1, 1));
+	virtual void DrawAABB(const Math::bbox& bbox, const Math::vec4& color = Math::vec4(1, 1, 1, 1));
 
 protected:
 
@@ -94,7 +94,7 @@ protected:
 		{ }
 		
 		/// constructor
-		TimedDrawData(uint numSteps, DrawType t, const Math::float4& c, const Math::vector& vec1, const Math::vector& vec2, const Util::String& txt, float _f):
+		TimedDrawData(uint numSteps, DrawType t, const Math::vec4& c, const Math::point& vec1, const Math::vector& vec2, const Util::String& txt, float _f):
 		  stepsLeft(numSteps),
 		  type(t),
 		  color(c),
@@ -106,9 +106,10 @@ protected:
 
 		uint stepsLeft;
 		DrawType type;
-		Math::float4 color;
+		Math::vec4 color;
 		/// these below are not always used
-		Math::vector v1, v2;
+		Math::point v1;
+		Math::vector v2;
 		float f;
 		Util::String text;
 	};

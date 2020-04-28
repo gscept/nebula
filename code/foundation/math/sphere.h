@@ -8,10 +8,9 @@
     (C) 2004 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
-#include "math/vector.h"
-#include "math/point.h"
+#include "math/vec3.h"
+#include "math/mat4.h"
 #include "math/bbox.h"
-#include "math/matrix44.h"
 #include "math/rectangle.h"
 #include "math/clipstatus.h"
 #include "math/line.h"
@@ -45,11 +44,11 @@ public:
     /// check if 2 moving sphere have contact
     bool intersect_sweep(const vector& va, const sphere& sb, const vector& vb, scalar& u0, scalar& u1) const;
     /// project sphere to screen rectangle (right handed coordinate system)
-    rectangle<scalar> project_screen_rh(const matrix44& modelView, const matrix44& projection, scalar nearZ) const;
+    rectangle<scalar> project_screen_rh(const mat4& modelView, const mat4& projection, scalar nearZ) const;
     /// get clip status of box against sphere
     ClipStatus::Type clipstatus(const bbox& box) const;
     /// generate a random point on a unit sphere
-    static point random_point_on_unit_sphere();
+    static vec3 random_point_on_unit_sphere();
         
     point p;
     scalar r;
@@ -124,9 +123,9 @@ sphere::set(scalar _x, scalar _y, scalar _z, scalar _r)
 inline bool 
 sphere::intersects(const sphere& s) const 
 {
-    vector d(s.p - p);
+    vec3 d(s.p - p);
     scalar rsum = s.r + r;
-    return (d.lengthsq() <= (rsum * rsum));
+    return (lengthsq(d) <= (rsum * rsum));
 }
 
 //------------------------------------------------------------------------------
@@ -139,8 +138,8 @@ sphere::inside(const bbox& box) const
     vector v(this->r, this->r, this->r);
     point pmin(this->p - v);
     point pmax(this->p + v);
-    bool lt = float4::less3_all(box.pmin, pmin);
-    bool ge = float4::greaterequal3_all(box.pmax, pmax);
+    bool lt = less_all(box.pmin, pmin);
+    bool ge = greaterequal_all(box.pmax, pmax);
     return lt && ge;
 }
 

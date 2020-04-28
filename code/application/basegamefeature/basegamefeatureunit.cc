@@ -215,9 +215,9 @@ BaseGameFeatureUnit::WriteAdditionalMetadata(Ptr<IO::JsonWriter> const& writer) 
 			//case Attr::ValueType::ByteType:			writer->Add(attr.GetDefaultValue().GetByte(), key);			break;
 			//case Attr::ValueType::GuidType:			writer->Add(attr.GetDefaultValue().GetGuid(), key);			break;
 			//case Attr::ValueType::Float2Type:		writer->Add(attr.GetDefaultValue().GetFloat2(), key);		break;
-			//case Attr::ValueType::Float4Type:		writer->Add(attr.GetDefaultValue().GetFloat4(), key);		break;
+			//case Attr::ValueType::Float4Type:		writer->Add(attr.GetDefaultValue().GetVec4(), key);		break;
 			//case Attr::ValueType::QuaternionType:	writer->Add(attr.GetDefaultValue().GetQuaternion(), key);	break;
-			//case Attr::ValueType::Matrix44Type:		writer->Add(attr.GetDefaultValue().GetMatrix44(), key);		break;
+			//case Attr::ValueType::Mat4Type:		writer->Add(attr.GetDefaultValue().GetMatrix44(), key);		break;
 			//case Attr::ValueType::EntityType:		writer->Add(attr.GetDefaultValue().GetUInt(), key);			break;
 			default:
 				n_warning("Attribute type %i not fully supported. Check basegamefeatureunit and add it to the list!", attr.GetValueType());

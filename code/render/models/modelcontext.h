@@ -48,11 +48,11 @@ public:
 	static const Models::ModelInstanceId GetModelInstance(const Graphics::GraphicsEntityId id);
 
 	/// set the transform for a model
-	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform);
+	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4& transform);
 	/// get the transform for a model
-	static Math::matrix44 GetTransform(const Graphics::GraphicsEntityId id);
+	static Math::mat4 GetTransform(const Graphics::GraphicsEntityId id);
 	/// get the transform for a model
-	static Math::matrix44 GetTransform(const Graphics::ContextEntityId id);
+	static Math::mat4 GetTransform(const Graphics::ContextEntityId id);
 	/// get the bounding box
 	static Math::bbox GetBoundingBox(const Graphics::GraphicsEntityId id);
 
@@ -89,8 +89,8 @@ private:
 	typedef Ids::IdAllocator<
 		ModelId,
 		ModelInstanceId,
-		Math::matrix44,			// pending transforms
-		bool					// transform is dirty
+		Math::mat4,			// pending transforms
+		bool				// transform is dirty
 	> ModelContextAllocator;
 	static ModelContextAllocator modelContextAllocator;
 
