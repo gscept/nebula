@@ -5,7 +5,7 @@ SET(CODE_ROOT ${CMAKE_CURRENT_LIST_DIR}/code)
 set (CMAKE_MODULE_PATH "${NROOT}/extlibs/scripts")
 include(cotire)
 
-option(N_USE_PRECOMPILED_HEADERS "Use precompiled headers" ON)
+option(N_USE_PRECOMPILED_HEADERS "Use precompiled headers" OFF)
 option(N_ENABLE_SHADER_COMMAND_GENERATION "Generate shader compile file for live shader reload" ON)
 
 if(FIPS_WINDOWS)
