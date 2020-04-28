@@ -21,13 +21,13 @@ Matrix44Multiply::Run(Timer& timer)
 {
     // setup some matrix44 arrays
     const int num = 100000;
-    matrix44* m0 = n_new_array(matrix44, num);
-    matrix44* m1 = n_new_array(matrix44, num);
-    matrix44* res = n_new_array(matrix44, num);
-    matrix44 m(float4(1.0f, 2.0f, 3.0f, 0.0f),
-               float4(4.0f, 5.0f, 6.0f, 0.0f),
-               float4(7.0f, 8.0f, 9.0f, 0.0f),
-               float4(1.0f, 2.0f, 3.0f, 1.0f));
+    mat4* m0 = n_new_array(mat4, num);
+    mat4* m1 = n_new_array(mat4, num);
+    mat4* res = n_new_array(mat4, num);
+    mat4 m(vec4(1.0f, 2.0f, 3.0f, 0.0f),
+        vec4(4.0f, 5.0f, 6.0f, 0.0f),
+        vec4(7.0f, 8.0f, 9.0f, 0.0f),
+        vec4(1.0f, 2.0f, 3.0f, 1.0f));
     IndexT i;
     for (i = 0; i < num; i++)
     {
@@ -38,21 +38,21 @@ Matrix44Multiply::Run(Timer& timer)
         m1[i] = m;
     }
     
-    matrix44 tmp0;
-    matrix44 tmp1;
-    matrix44 tmp2;
+    mat4 tmp0;
+    mat4 tmp1;
+    mat4 tmp2;
     timer.Start();
     for (i = 0; i < 10; i++)
     {
         IndexT j;
         for (j = 0; j < num; j++)
         {
-            tmp0 = matrix44::multiply(m0[j], m1[j]);
-            tmp1 = matrix44::multiply(m1[j], m0[j]);
-            tmp2 = matrix44::multiply(tmp0, tmp1);
-            tmp0 = matrix44::multiply(tmp1, tmp2);
-            tmp1 = matrix44::multiply(tmp0, tmp2);
-            res[j] = matrix44::multiply(tmp0, tmp1);
+            tmp0 = m0[j] * m1[j];
+            tmp1 = m1[j] * m0[j];
+            tmp2 = tmp0 * tmp1;
+            tmp0 = tmp1 * tmp2;
+            tmp1 = tmp0 * tmp2;
+            res[j] = tmp0 * tmp1;
         }
     }
     timer.Stop();

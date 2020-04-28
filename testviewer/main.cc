@@ -7,6 +7,8 @@
 #include "core/coreserver.h"
 #include "viewerapp.h"
 
+
+
 using namespace Core;
 using namespace Tests;
 

@@ -1,20 +1,20 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Test::Float4Test
+    @class Test::Vec4Test
     
-    Tests float4 functionality.
+    Tests vec4 functionality.
     
-    (C) 2007 Radon Labs GmbH
+    (C) 2020 Radon Labs GmbH
 */
 #include "testbase/testcase.h"
 
 //------------------------------------------------------------------------------
 namespace Test
 {
-class Float4Test : public TestCase
+class Vec4Test : public TestCase
 {
-    __DeclareClass(Float4Test);
+    __DeclareClass(Vec4Test);
 public:
     /// run the test
     virtual void Run();

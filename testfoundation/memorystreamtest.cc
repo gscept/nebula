@@ -53,10 +53,10 @@ MemoryStreamTest::Run()
     writer->WriteDouble(23.4);
     VERIFY(stream->GetSize() == 38);
     VERIFY(stream->GetPosition() == 38);
-    writer->WriteFloat4(float4(1.0f, 2.0f, 3.0f, 4.0f));
+    writer->WriteVec4(vec4(1.0f, 2.0f, 3.0f, 4.0f));
     VERIFY(stream->GetSize() == 54);
     VERIFY(stream->GetPosition() == 54);
-    writer->WriteMatrix44(matrix44::identity());
+    writer->WriteMat4(mat4());
     VERIFY(stream->GetSize() == 118);
     VERIFY(stream->GetPosition() == 118);
     VERIFY(stream->Eof());
@@ -99,8 +99,8 @@ MemoryStreamTest::Run()
     VERIFY("This is a string." == reader->ReadString());
     VERIFY(12.3f == reader->ReadFloat());
     VERIFY(23.4 == reader->ReadDouble());
-    VERIFY(float4(1.0f, 2.0f, 3.0f, 4.0f) == reader->ReadFloat4());
-    VERIFY(matrix44::identity() == reader->ReadMatrix44());
+    VERIFY(vec4(1.0f, 2.0f, 3.0f, 4.0f) == reader->ReadVec4());
+    VERIFY(mat4() == reader->ReadMat4());
 
     // check if seeking and reading works...
     stream->Seek(26, Stream::Begin);

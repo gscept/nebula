@@ -121,7 +121,7 @@ SimpleViewerApplication::Open()
 
         Im3d::Im3dContext::SetGridStatus(true);
         Im3d::Im3dContext::SetGridSize(1.0f, 25);
-        Im3d::Im3dContext::SetGridColor(Math::float4(0.2f, 0.2f, 0.2f, 0.8f));
+        Im3d::Im3dContext::SetGridColor(Math::vec4(0.2f, 0.2f, 0.2f, 0.8f));
 
         this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
         this->stage = gfxServer->CreateStage("stage1", true);
@@ -129,19 +129,19 @@ SimpleViewerApplication::Open()
 
 		this->globalLight = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->globalLight);
-		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(1, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, -Math::vector(1, 1, 1), true);
+		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1, 1, 1), 1.0f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(1, 1, 1), true);
 
 		this->pointLights[0] = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->pointLights[0]);
-		Lighting::LightContext::SetupPointLight(this->pointLights[0], Math::float4(1, 0, 0, 1), 10.0f, Math::matrix44::translation(0, 0, -10), 10.0f, false);
+		Lighting::LightContext::SetupPointLight(this->pointLights[0], Math::vec3(1, 0, 0), 10.0f, Math::translation(0, 0, -10), 10.0f, false);
         
 		this->pointLights[1] = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->pointLights[1]);
-		Lighting::LightContext::SetupPointLight(this->pointLights[1], Math::float4(0, 1, 0, 1), 10.0f, Math::matrix44::translation(-10, 0, -10), 10.0f, false);
+		Lighting::LightContext::SetupPointLight(this->pointLights[1], Math::vec3(0, 1, 0), 10.0f, Math::translation(-10, 0, -10), 10.0f, false);
 
 		this->pointLights[2] = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->pointLights[2]);
-		Lighting::LightContext::SetupPointLight(this->pointLights[2], Math::float4(0, 0, 1, 1), 10.0f, Math::matrix44::translation(-10, 0, 0), 10.0f, false);
+		Lighting::LightContext::SetupPointLight(this->pointLights[2], Math::vec3(0, 0, 1), 10.0f, Math::translation(-10, 0, 0), 10.0f, false);
 
         for (int i = 0; i < 3; i++)
         {
@@ -152,11 +152,11 @@ SimpleViewerApplication::Open()
 		{
 			this->spotLights[0] = Graphics::CreateEntity();
 			Lighting::LightContext::RegisterEntity(this->spotLights[0]);
-			Math::matrix44 spotLightMatrix;
+			Math::mat4 spotLightMatrix;
 			spotLightMatrix.scale(Math::vector(30, 30, 40));
-			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(0, Math::n_deg2rad(-55), 0));
-			spotLightMatrix.set_position(Math::point(0, 5, 2));
-			Lighting::LightContext::SetupSpotLight(this->spotLights[0], Math::float4(1, 1, 0, 1), 1.0f, 0.1f, 0.8f, spotLightMatrix, false);
+			spotLightMatrix = spotLightMatrix * Math::rotationyawpitchroll(0, Math::n_deg2rad(-55), 0);
+			spotLightMatrix.position = Math::point(0, 5, 2);
+			Lighting::LightContext::SetupSpotLight(this->spotLights[0], Math::vec3(1, 1, 0), 1.0f, 0.1f, 0.8f, spotLightMatrix, false);
             this->entities.Append(this->spotLights[0]);
             this->entityNames.Append("SpotLight0");
 		}
@@ -164,11 +164,11 @@ SimpleViewerApplication::Open()
 		{
 			this->spotLights[1] = Graphics::CreateEntity();
 			Lighting::LightContext::RegisterEntity(this->spotLights[1]);
-			Math::matrix44 spotLightMatrix;
+			Math::mat4 spotLightMatrix;
 			spotLightMatrix.scale(Math::vector(30, 30, 40));
-			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(60), Math::n_deg2rad(-55), 0));
-			spotLightMatrix.set_position(Math::point(2, 5, 0));
-			Lighting::LightContext::SetupSpotLight(this->spotLights[1], Math::float4(0, 1, 1, 1), 1.0f, 0.4f, 0.8f, spotLightMatrix, false);
+			spotLightMatrix = spotLightMatrix * Math::rotationyawpitchroll(Math::n_deg2rad(60), Math::n_deg2rad(-55), 0);
+			spotLightMatrix.position = Math::point(2, 5, 0);
+			Lighting::LightContext::SetupSpotLight(this->spotLights[1], Math::vec3(0, 1, 1), 1.0f, 0.4f, 0.8f, spotLightMatrix, false);
             this->entities.Append(this->spotLights[1]);
             this->entityNames.Append("SpotLight1");
 		}
@@ -176,11 +176,11 @@ SimpleViewerApplication::Open()
 		{
 			this->spotLights[2] = Graphics::CreateEntity();
 			Lighting::LightContext::RegisterEntity(this->spotLights[2]);
-			Math::matrix44 spotLightMatrix;
+			Math::mat4 spotLightMatrix;
 			spotLightMatrix.scale(Math::vector(30, 30, 40));
-			spotLightMatrix = Math::matrix44::multiply(spotLightMatrix, Math::matrix44::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(-55), 0));
-			spotLightMatrix.set_position(Math::point(2, 5, 2));
-			Lighting::LightContext::SetupSpotLight(this->spotLights[2], Math::float4(1, 0, 1, 1), 1.0f, 0.1f, 0.4f, spotLightMatrix, false);
+			spotLightMatrix = spotLightMatrix * Math::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(-55), 0);
+			spotLightMatrix.position = Math::point(2, 5, 2);
+			Lighting::LightContext::SetupSpotLight(this->spotLights[2], Math::vec3(1, 0, 1), 1.0f, 0.1f, 0.4f, spotLightMatrix, false);
             this->entities.Append(this->spotLights[2]);
             this->entityNames.Append("SpotLight2");
 		}
@@ -196,19 +196,19 @@ SimpleViewerApplication::Open()
         //this->entity = Graphics::CreateEntity();
         //Graphics::RegisterEntity<ModelContext, ObservableContext, Characters::CharacterContext>(this->entity);
         //ModelContext::Setup(this->entity, "mdl:Units/Unit_Archer.n3", "Viewer");
-        //ModelContext::SetTransform(this->entity, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
+        //ModelContext::SetTransform(this->entity, Math::mat4::translation(Math::vec4(0, 0, 0, 1)));
         //this->entities.Append(this->entity);
         //this->entityNames.Append("Archer");
 
 		this->ground = Graphics::CreateEntity();
         Graphics::RegisterEntity<ModelContext, ObservableContext>(this->ground);
 		ModelContext::Setup(this->ground, "mdl:environment/Groundplane.n3", "Viewer");
-		ModelContext::SetTransform(this->ground, Math::matrix44::translation(Math::float4(0, 0, 0, 1)));
+		ModelContext::SetTransform(this->ground, Math::translation(Math::vector(0, 0, 0)));
         this->entities.Append(this->ground);
         this->entityNames.Append("Groundplane");
 
         this->groundResource = Resources::CreateResource("phys:test/groundplane.np", "Viewer", nullptr, nullptr, true);        
-        this->groundActor = Physics::CreateActorInstance(groundResource, Math::matrix44::identity(),false);
+        this->groundActor = Physics::CreateActorInstance(groundResource, Math::mat4(),false);
 
         this->objects.Append(TestObject{ this->ground,this->groundActor });
 
@@ -274,11 +274,11 @@ SimpleViewerApplication::Run()
 		IndexT i;
 		for (i = 0; i < 3; i++)
 		{
-			Math::matrix44 spotLightTransform;
+			Math::mat4 spotLightTransform;
 			Math::scalar scaleFactor = i * 1.5f + 30;
-			spotLightTransform.scale(Math::point(scaleFactor, scaleFactor, scaleFactor + 10));
-			spotLightTransform = Math::matrix44::multiply(spotLightTransform, Math::matrix44::rotationyawpitchroll(this->gfxServer->GetTime() * 2 * (i + 1) / 3, Math::n_deg2rad(-55), 0));
-			spotLightTransform.set_position(Lighting::LightContext::GetTransform(this->spotLights[i]).get_position());
+			spotLightTransform.scale(Math::vector(scaleFactor, scaleFactor, scaleFactor + 10));
+			spotLightTransform = spotLightTransform * Math::rotationyawpitchroll(this->gfxServer->GetTime() * 2 * (i + 1) / 3, Math::n_deg2rad(-55), 0);
+            spotLightTransform.position = Lighting::LightContext::GetTransform(this->spotLights[i]).position;
 			Lighting::LightContext::SetTransform(this->spotLights[i], spotLightTransform);
 		}
 
@@ -519,43 +519,43 @@ SimpleViewerApplication::UpdateCamera()
     this->mayaCameraUtil.SetMouseMovement(mouse->GetMovement());
 
     // process keyboard input
-    Math::float4 pos(0.0f);
+    Math::vec4 pos(0.0f);
     if (keyboard->KeyDown(Input::Key::Space))
     {
         this->mayaCameraUtil.Reset();
     }
     if (keyboard->KeyPressed(Input::Key::Left))
     {
-        panning.x() -= 0.1f;
-        pos.x() -= 0.1f;
+        panning.x -= 0.1f;
+        pos.x -= 0.1f;
     }
     if (keyboard->KeyPressed(Input::Key::Right))
     {
-        panning.x() += 0.1f;
-        pos.x() += 0.1f;
+        panning.x += 0.1f;
+        pos.x += 0.1f;
     }
     if (keyboard->KeyPressed(Input::Key::Up))
     {
-        panning.y() -= 0.1f;
+        panning.y -= 0.1f;
         if (keyboard->KeyPressed(Input::Key::LeftShift))
         {
-            pos.y() -= 0.1f;
+            pos.y -= 0.1f;
         }
         else
         {
-            pos.z() -= 0.1f;
+            pos.z -= 0.1f;
         }
     }
     if (keyboard->KeyPressed(Input::Key::Down))
     {
-        panning.y() += 0.1f;
+        panning.y += 0.1f;
         if (keyboard->KeyPressed(Input::Key::LeftShift))
         {
-            pos.y() += 0.1f;
+            pos.y += 0.1f;
         }
         else
         {
-            pos.z() += 0.1f;
+            pos.z += 0.1f;
         }
     }
 
@@ -583,10 +583,10 @@ SimpleViewerApplication::UpdateCamera()
     switch (this->cameraMode)
     {
     case 0:
-        CameraContext::SetTransform(this->cam, Math::matrix44::inverse(this->mayaCameraUtil.GetCameraTransform()));
+        CameraContext::SetTransform(this->cam, Math::inverse(this->mayaCameraUtil.GetCameraTransform()));
         break;
     case 1:
-        CameraContext::SetTransform(this->cam, Math::matrix44::inverse(this->freeCamUtil.GetTransform()));
+        CameraContext::SetTransform(this->cam, Math::inverse(this->freeCamUtil.GetTransform()));
         break;
     default:
         break;
@@ -599,7 +599,7 @@ SimpleViewerApplication::UpdateCamera()
 void 
 SimpleViewerApplication::ResetCamera()
 {
-    this->freeCamUtil.Setup(this->defaultViewPoint, Math::float4::normalize(this->defaultViewPoint));
+    this->freeCamUtil.Setup(this->defaultViewPoint, Math::normalize(xyz(this->defaultViewPoint)));
     this->freeCamUtil.Update();
     this->mayaCameraUtil.Setup(Math::point(0.0f, 0.0f, 0.0f), this->defaultViewPoint, Math::vector(0.0f, 1.0f, 0.0f));
 }
@@ -610,7 +610,7 @@ SimpleViewerApplication::ResetCamera()
 void 
 SimpleViewerApplication::ToMaya()
 {
-    this->mayaCameraUtil.Setup(this->mayaCameraUtil.GetCenterOfInterest(), this->freeCamUtil.GetTransform().get_position(), Math::vector(0, 1, 0));
+    this->mayaCameraUtil.Setup(this->mayaCameraUtil.GetCenterOfInterest(), this->freeCamUtil.GetTransform().position, Math::vector(0, 1, 0));
 }
 
 //------------------------------------------------------------------------------
@@ -619,8 +619,8 @@ SimpleViewerApplication::ToMaya()
 void 
 SimpleViewerApplication::ToFree()
 {
-    Math::float4 pos = this->mayaCameraUtil.GetCameraTransform().get_position();
-    this->freeCamUtil.Setup(pos, Math::float4::normalize(pos - this->mayaCameraUtil.GetCenterOfInterest()));
+    Math::point pos = this->mayaCameraUtil.GetCameraTransform().position;
+    this->freeCamUtil.Setup(pos, Math::normalize(pos - this->mayaCameraUtil.GetCenterOfInterest()));
 }
 
 //------------------------------------------------------------------------------
@@ -645,18 +645,18 @@ SimpleViewerApplication::Shoot(int count)
     {
         last = now;
 
-        Math::matrix44 trans = Math::matrix44::inverse(CameraContext::GetTransform(this->cam));
-        Math::float4 cameraPos = trans.get_position();
+        Math::mat4 trans = Math::inverse(CameraContext::GetTransform(this->cam));
+        Math::point cameraPos = trans.position;
         while (count--)
         {
-            Math::vector offset;// = Math::RandomFloat4(5.0f);
-            trans.set_position(cameraPos + offset);
-            this->Spawn(trans, trans.get_zaxis() * -50.0f, Math::vector(Math::n_rand(-10.0f, 10.0f)));
+            Math::vector offset;// = Math::Randomvec4(5.0f);
+            trans.position = cameraPos + offset;
+            this->Spawn(trans, xyz(trans.z_axis) * -50.0f, Math::vector(Math::n_rand(-10.0f, 10.0f)));
         }
     }
 }
 
-void SimpleViewerApplication::Spawn(const Math::matrix44 & trans, Math::vector linvel, Math::vector angvel)
+void SimpleViewerApplication::Spawn(const Math::mat4 & trans, Math::vector linvel, Math::vector angvel)
 {
 
     Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
@@ -673,7 +673,7 @@ void SimpleViewerApplication::Spawn(const Math::matrix44 & trans, Math::vector l
 
 
     auto & pactor = Physics::ActorContext::GetActor(actor);
-    pactor.moveCallback = Util::Delegate<void(Physics::ActorId, Math::matrix44 const&)>::FromMethod<SimpleViewerApplication, &SimpleViewerApplication::UpdateTransform>(this);
+    pactor.moveCallback = Util::Delegate<void(Physics::ActorId, Math::mat4 const&)>::FromMethod<SimpleViewerApplication, &SimpleViewerApplication::UpdateTransform>(this);
     pactor.userData = (uint64_t)ent.id;
 
     Physics::ActorContext::SetLinearVelocity(actor, linvel);
@@ -685,7 +685,7 @@ void SimpleViewerApplication::Spawn(const Math::matrix44 & trans, Math::vector l
 /**
 */
 void
-SimpleViewerApplication::UpdateTransform(Physics::ActorId id, Math::matrix44 const & trans)
+SimpleViewerApplication::UpdateTransform(Physics::ActorId id, Math::mat4 const & trans)
 {
     ModelContext::SetTransform(Graphics::GraphicsEntityId{ (Ids::Id32)Physics::ActorContext::GetActor(id).userData}, trans);
 }
@@ -698,7 +698,7 @@ SimpleViewerApplication::SpawnRandom(int amount)
 {
     for(int i = 0 ; i<amount;i++)
     {
-        Math::matrix44 trans = Math::matrix44::translation(Math::point(Math::n_rand(-200.0f, 200.0f), 150.0f, Math::n_rand(-200.00f, 200.0f)));
+        Math::mat4 trans = Math::translation(Math::vector(Math::n_rand(-200.0f, 200.0f), 150.0f, Math::n_rand(-200.00f, 200.0f)));
         this->Spawn(trans, Math::vector(0.0), Math::vector(Math::n_rand(-3.0f, 3.0f)));
     }
 }

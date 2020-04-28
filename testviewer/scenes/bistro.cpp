@@ -21,12 +21,12 @@ void OpenScene()
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(entity);
     Models::ModelContext::Setup(entity, "mdl:bistro/Bistro_Exterior.n3", "BistroScene");
     
-    Math::matrix44 t = Math::matrix44::translation(Math::float4(0, 0, 0, 1));
-    Math::matrix44 r = Math::matrix44::rotationx(Math::n_deg2rad(0.0f));
-    Math::matrix44 s = Math::matrix44::scaling(Math::float4(100, 100, 100, 1));
+    Math::mat4 t = Math::translation(Math::vec3(0, 0, 0));
+    Math::mat4 r = Math::rotationx(Math::n_deg2rad(0.0f));
+    Math::mat4 s = Math::scaling(100);
     
-    Math::matrix44 trs = Math::matrix44::multiply(s, r);
-    trs = Math::matrix44::multiply(trs, t);
+    Math::mat4 trs = s * r;
+    trs = trs * t;
     
     Models::ModelContext::SetTransform(entity, trs);
     Visibility::ObservableContext::Setup(entity, Visibility::VisibilityEntityType::Model);

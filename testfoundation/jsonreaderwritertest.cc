@@ -39,7 +39,7 @@ JSonReaderWriterTest::Run()
     writer->BeginObject();
     writer->Add(5,"zahl");
     writer->Add("hallo","string");
-    writer->Add(Math::float4(1.5f),"float4");
+    writer->Add(Math::vec4(1.5f),"float4");
     writer->End();
     writer->Add(6);
     writer->End();
@@ -66,8 +66,8 @@ JSonReaderWriterTest::Run()
     VERIFY(!reader->HasAttr("bla"));
     VERIFY(reader->GetString("color") == "black");
     VERIFY(reader->SetToFirstChild("code"));
-    float4 col = reader->GetFloat4("rgba");
-    VERIFY(col == float4(255, 255, 255, 1));
+    vec4 col = reader->GetVec4("rgba");
+    VERIFY(col == vec4(255, 255, 255, 1));
     Util::Array<float> rgba;
     reader->Get<Util::Array<float>>(rgba, "rgba");
     bool same = true;
@@ -81,7 +81,7 @@ JSonReaderWriterTest::Run()
     reader->SetToNode("/colors/[3]");
     VERIFY(reader->GetString("color") == "blue");
     reader->SetToNode("[3]/rgba");
-    VERIFY(reader->GetFloat4() == float4(0, 0, 255, 1));
+    VERIFY(reader->GetVec4() == vec4(0, 0, 255, 1));
     
     reader->Close();
     stream->Close();

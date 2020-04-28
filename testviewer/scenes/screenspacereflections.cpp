@@ -19,7 +19,7 @@ void OpenScene()
     // entity = Graphics::CreateEntity();
     // Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(entity);
     // Models::ModelContext::Setup(entity, "mdl:test/sibenik.n3", "SSRScene");
-    // Models::ModelContext::SetTransform(entity, Math::matrix44::translation(Math::float4(0, 10, 0, 1)));
+    // Models::ModelContext::SetTransform(entity, Math::translation(Math::vec4(0, 10, 0, 1)));
     // Visibility::ObservableContext::Setup(entity, Visibility::VisibilityEntityType::Model);
 };
 

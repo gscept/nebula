@@ -88,7 +88,7 @@ PYBIND11_EMBEDDED_MODULE(test, m)
     m.def("get_variant", &GetVariant);
 
     m.def("print_mat4_from_py",
-        [](Math::matrix44 const& mat)->void
+        [](Math::mat4 const& mat)->void
         {
             Util::Variant v(mat);
             n_printf(v.ToString().AsCharPtr());
@@ -116,12 +116,12 @@ PYBIND11_EMBEDDED_MODULE(test, m)
         }
     );
 
-    m.def("print_float4_arr_from_py",
-        [](Util::Array<Math::float4> const& arr)->void
+    m.def("print_vec4_arr_from_py",
+        [](Util::Array<Math::vec4> const& arr)->void
         {
-            n_printf("f4Array: ");
+            n_printf("v4Array: ");
             for (auto val : arr)
-                n_printf("%s ", Util::String::FromFloat4(val).AsCharPtr());
+                n_printf("%s ", Util::String::FromVec4(val).AsCharPtr());
             n_printf("\n");
         }
     );
@@ -162,10 +162,10 @@ PYBIND11_EMBEDDED_MODULE(test, m)
         }
     );
 
-    m.def("get_variant_float4",
+    m.def("get_variant_vec4",
         []()
         {
-            Util::Variant v(Math::float4(1,2,3,4));
+            Util::Variant v(Math::vec4(1,2,3,4));
             return v;
         }
     );
@@ -188,26 +188,26 @@ PYBIND11_EMBEDDED_MODULE(test, m)
         }
     );
 
-    m.def("get_variant_matrix44_arr",
+    m.def("get_variant_mat4_arr",
         []()
         {
-            Util::Variant v(Util::Array<Math::matrix44>({Math::matrix44::identity(),Math::matrix44::identity(),Math::matrix44({1,20,2,3},{2,3,4,5},{5,4,3,2},{7,4,5,3})}));
+            Util::Variant v(Util::Array<Math::mat4>({Math::mat4(),Math::mat4(),Math::mat4({1,20,2,3},{2,3,4,5},{5,4,3,2},{7,4,5,3})}));
             return v;
         }
     );
 
-    m.def("get_variant_matrix44",
+    m.def("get_variant_mat4",
         []()
         {
-            Util::Variant v(Math::matrix44({1,20,2,3},{2,3,4,5},{5,4,3,2},{7,4,5,3}));
+            Util::Variant v(Math::mat4({1,20,2,3},{2,3,4,5},{5,4,3,2},{7,4,5,3}));
             return v;
         }
     );
 
-    m.def("get_float4",
-        []() -> Math::float4
+    m.def("get_vec4",
+        []() -> Math::vec4
         {
-            Math::float4 f = {1.0f,2.0f,3.0f,4.0f};
+            Math::vec4 f = {1.0f,2.0f,3.0f,4.0f};
             return f;
         }
     );

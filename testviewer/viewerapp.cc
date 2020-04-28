@@ -12,8 +12,6 @@
 #include "input/keyboard.h"
 #include "input/mouse.h"
 #include "viewerapp.h"
-#include "math/vector.h"
-#include "math/point.h"
 #include "dynui/imguicontext.h"
 #include "lighting/lightcontext.h"
 #include "characters/charactercontext.h"
@@ -103,8 +101,8 @@ SimpleViewerApplication::Open()
         this->inputServer->Open();
         this->gfxServer->Open();
 
-        SizeT width = this->GetCmdLineArgs().GetInt("-w", 1680);
-        SizeT height = this->GetCmdLineArgs().GetInt("-h", 1050);
+        SizeT width = this->GetCmdLineArgs().GetInt("-w", 1280);
+        SizeT height = this->GetCmdLineArgs().GetInt("-h", 1024);
 
         CoreGraphics::WindowCreateInfo wndInfo =
         {
@@ -126,7 +124,7 @@ SimpleViewerApplication::Open()
         ObservableContext::Create();
 
 		Graphics::RegisterEntity<CameraContext, ObserverContext>(this->cam);
-		CameraContext::SetupProjectionFov(this->cam, width / (float)height, Math::n_deg2rad(60.f), 0.1f, 1000.0f);
+		CameraContext::SetupProjectionFov(this->cam, width / (float)height, Math::n_deg2rad(60.f), 0.1f, 10000.0f);
 
 		Clustering::ClusterContext::Create(0.1f, 1000.0f, this->wnd);
 		Lighting::LightContext::Create();
@@ -141,11 +139,11 @@ SimpleViewerApplication::Open()
 
         Im3d::Im3dContext::SetGridStatus(true);
         Im3d::Im3dContext::SetGridSize(1.0f, 25);
-        Im3d::Im3dContext::SetGridColor(Math::float4(0.2f, 0.2f, 0.2f, 0.8f));
+        Im3d::Im3dContext::SetGridColor(Math::vec4(0.2f, 0.2f, 0.2f, 0.8f));
 
 		this->globalLight = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->globalLight);
-		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::float4(1, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, -Math::vector(1, 1, 1), true);
+		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1, 1, 1), 0.1f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(0.5, 1, 0.1), true);
 
         this->ResetCamera();
         CameraContext::SetTransform(this->cam, this->mayaCameraUtil.GetCameraTransform());
@@ -207,9 +205,9 @@ SimpleViewerApplication::Run()
     {
 
         /*
-        Math::matrix44 globalLightTransform = Lighting::LightContext::GetTransform(globalLight);
-        Math::matrix44 rotY = Math::matrix44::rotationy(Math::n_deg2rad(0.1f));
-        Math::matrix44 rotX = Math::matrix44::rotationz(Math::n_deg2rad(0.05f));
+        Math::mat4 globalLightTransform = Lighting::LightContext::GetTransform(globalLight);
+        Math::mat4 rotY = Math::rotationy(Math::n_deg2rad(0.1f));
+        Math::mat4 rotX = Math::rotationz(Math::n_deg2rad(0.05f));
         globalLightTransform = globalLightTransform * rotX * rotY;
         Lighting::LightContext::SetTransform(globalLight, globalLightTransform);
         */
@@ -457,7 +455,7 @@ SimpleViewerApplication::RenderUI()
     {
         if (ImGui::Begin("Viewer", &showCameraWindow, 0))
         {
-            ImGui::SetWindowSize(ImVec2(240, 400));
+            ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
             if (ImGui::CollapsingHeader("Camera mode", ImGuiTreeNodeFlags_DefaultOpen))
             {
                 if (ImGui::RadioButton("Maya", &this->cameraMode, 0))this->ToMaya();
@@ -582,43 +580,43 @@ SimpleViewerApplication::UpdateCamera()
     this->mayaCameraUtil.SetMouseMovement(mouse->GetMovement());
 
     // process keyboard input
-    Math::float4 pos(0.0f);
+    Math::vec3 pos(0.0f);
     if (keyboard->KeyDown(Input::Key::Space))
     {
         this->mayaCameraUtil.Reset();
     }
     if (keyboard->KeyPressed(Input::Key::Left))
     {
-        panning.x() -= 0.1f;
-        pos.x() -= 0.1f;
+        panning.x -= 0.1f;
+        pos.x -= 0.1f;
     }
     if (keyboard->KeyPressed(Input::Key::Right))
     {
-        panning.x() += 0.1f;
-        pos.x() += 0.1f;
+        panning.x += 0.1f;
+        pos.x += 0.1f;
     }
     if (keyboard->KeyPressed(Input::Key::Up))
     {
-        panning.y() -= 0.1f;
+        panning.y -= 0.1f;
         if (keyboard->KeyPressed(Input::Key::LeftShift))
         {
-            pos.y() -= 0.1f;
+            pos.y -= 0.1f;
         }
         else
         {
-            pos.z() -= 0.1f;
+            pos.z -= 0.1f;
         }
     }
     if (keyboard->KeyPressed(Input::Key::Down))
     {
-        panning.y() += 0.1f;
+        panning.y += 0.1f;
         if (keyboard->KeyPressed(Input::Key::LeftShift))
         {
-            pos.y() += 0.1f;
+            pos.y += 0.1f;
         }
         else
         {
-            pos.z() += 0.1f;
+            pos.z += 0.1f;
         }
     }
 
@@ -646,10 +644,10 @@ SimpleViewerApplication::UpdateCamera()
     switch (this->cameraMode)
     {
     case 0:
-        CameraContext::SetTransform(this->cam, Math::matrix44::inverse(this->mayaCameraUtil.GetCameraTransform()));
+        CameraContext::SetTransform(this->cam, Math::inverse(this->mayaCameraUtil.GetCameraTransform()));
         break;
     case 1:
-        CameraContext::SetTransform(this->cam, Math::matrix44::inverse(this->freeCamUtil.GetTransform()));
+        CameraContext::SetTransform(this->cam, Math::inverse(this->freeCamUtil.GetTransform()));
         break;
     default:
         break;
@@ -662,9 +660,9 @@ SimpleViewerApplication::UpdateCamera()
 void 
 SimpleViewerApplication::ResetCamera()
 {
-    this->freeCamUtil.Setup(this->defaultViewPoint, Math::float4::normalize(this->defaultViewPoint));
+    this->freeCamUtil.Setup(this->defaultViewPoint, Math::normalize(this->defaultViewPoint));
     this->freeCamUtil.Update();
-    this->mayaCameraUtil.Setup(Math::point(0.0f, 0.0f, 0.0f), this->defaultViewPoint, Math::vector(0.0f, 1.0f, 0.0f));
+    this->mayaCameraUtil.Setup(Math::vec3(0.0f, 0.0f, 0.0f), this->defaultViewPoint, Math::vec3(0.0f, 1.0f, 0.0f));
 }
 
 //------------------------------------------------------------------------------
@@ -673,7 +671,7 @@ SimpleViewerApplication::ResetCamera()
 void 
 SimpleViewerApplication::ToMaya()
 {
-    this->mayaCameraUtil.Setup(this->mayaCameraUtil.GetCenterOfInterest(), this->freeCamUtil.GetTransform().get_position(), Math::vector(0, 1, 0));
+    this->mayaCameraUtil.Setup(this->mayaCameraUtil.GetCenterOfInterest(), xyz(this->freeCamUtil.GetTransform().position), Math::vec3(0, 1, 0));
 }
 
 //------------------------------------------------------------------------------
@@ -682,8 +680,8 @@ SimpleViewerApplication::ToMaya()
 void 
 SimpleViewerApplication::ToFree()
 {
-    Math::float4 pos = this->mayaCameraUtil.GetCameraTransform().get_position();
-    this->freeCamUtil.Setup(pos, Math::float4::normalize(pos - this->mayaCameraUtil.GetCenterOfInterest()));
+    Math::vec3 pos = xyz(this->mayaCameraUtil.GetCameraTransform().position);
+    this->freeCamUtil.Setup(pos, Math::normalize(pos - this->mayaCameraUtil.GetCenterOfInterest()));
 }
 
 //------------------------------------------------------------------------------
@@ -695,4 +693,5 @@ SimpleViewerApplication::Browse()
     this->folders = IO::IoServer::Instance()->ListDirectories("mdl:", "*");    
     this->files = IO::IoServer::Instance()->ListFiles("mdl:" + this->folders[this->selectedFolder], "*");
 }
-}
+
+} // namespace Tests

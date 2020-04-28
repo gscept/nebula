@@ -50,8 +50,8 @@ protected:
     void ToFree();
     void Browse();
     void Shoot(int count);
-    void Spawn(const Math::matrix44& trans, Math::vector linvel, Math::vector angvel);
-    void UpdateTransform(Physics::ActorId id, Math::matrix44 const& trans);
+    void Spawn(const Math::mat4& trans, Math::vector linvel, Math::vector angvel);
+    void UpdateTransform(Physics::ActorId id, Math::mat4 const& trans);
     
 
     void SpawnRandom(int amount);
@@ -93,8 +93,8 @@ protected:
     int cameraMode = 0;
     float zoomIn = 0.0f;
     float zoomOut = 0.0f;
-    Math::float2 panning{ 0.0f,0.0f };
-    Math::float2 orbiting{ 0.0f,0.0f };    
+    Math::vec2 panning{ 0.0f,0.0f };
+    Math::vec2 orbiting{ 0.0f,0.0f };    
     RenderUtil::MayaCameraUtil mayaCameraUtil;
     RenderUtil::FreeCameraUtil freeCamUtil;        
     Math::point defaultViewPoint;

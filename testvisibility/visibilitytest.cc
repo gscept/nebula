@@ -100,7 +100,7 @@ VisibilityTest::Run()
 	// create model and move it to the front
 	ModelContext::RegisterEntity(ent);
 	ModelContext::Setup(ent, "mdl:Buildings/castle_tower.n3", "NotA");
-	ModelContext::SetTransform(ent, Math::matrix44::translation(Math::float4(0, 0, 10, 1)));
+	ModelContext::SetTransform(ent, Math::translation(Math::vector(0, 0, 10)));
 
 	// setup scene
 	GraphicsEntityId ent2 = Graphics::CreateEntity();
@@ -108,11 +108,11 @@ VisibilityTest::Run()
 	// create model and move it to the front
 	ModelContext::RegisterEntity(ent2);
 	ModelContext::Setup(ent2, "mdl:Buildings/castle_tower.n3", "NotA");
-	ModelContext::SetTransform(ent2, Math::matrix44::translation(Math::float4(0, 0, -5, 1)));
+	ModelContext::SetTransform(ent2, Math::translation(Math::vector(0, 0, -5)));
 
 	GraphicsEntityId globalLight = Graphics::CreateEntity();
 	Lighting::LightContext::RegisterEntity(globalLight);
-	Lighting::LightContext::SetupGlobalLight(globalLight, Math::float4(1, 1, 1, 0), 1.0f, Math::float4(0, 0, 0, 0), Math::float4(0, 0, 0, 0), 0.0f, -Math::vector(1, 1, 1), true);
+	Lighting::LightContext::SetupGlobalLight(globalLight, Math::vec3(1, 1, 1), 1.0f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(1, 1, 1), true);
 
 	// register visibility system
 	ObserverContext::CreateBruteforceSystem({});
@@ -138,7 +138,7 @@ VisibilityTest::Run()
 			// create model and move it to the front
 			ModelContext::RegisterEntity(ent);
 			ModelContext::Setup(ent, "mdl:Buildings/castle_tower.n3", "NotA");
-			ModelContext::SetTransform(ent, Math::matrix44::translation(Math::float4(i*10, 0, -j*10, 1)));
+			ModelContext::SetTransform(ent, translation(Math::vector(i*10, 0, -j*10)));
 
 			ObservableContext::RegisterEntity(ent);
 			ObservableContext::Setup(ent, VisibilityEntityType::Model);
@@ -153,7 +153,7 @@ VisibilityTest::Run()
 	const Ptr<Input::Keyboard>& kdb = inputServer->GetDefaultKeyboard();
 	const Ptr<Input::Mouse>& mouse = inputServer->GetDefaultMouse();
 
-	Math::float2 panning(0.0f, 0.0f);
+	Math::vec2 panning(0.0f, 0.0f);
 	float zoomIn = 0.0f;
 	float zoomOut = 0.0f;
 
@@ -169,7 +169,7 @@ VisibilityTest::Run()
 		timer.Start();
 
 		resMgr->Update(frameIndex);
-		CameraContext::SetTransform(cam, Math::matrix44::inverse(mayaCamera.GetCameraTransform()));
+		CameraContext::SetTransform(cam, Math::inverse(mayaCamera.GetCameraTransform()));
 
 		inputServer->BeginFrame();
 		inputServer->OnFrame();
@@ -218,24 +218,24 @@ VisibilityTest::Run()
 		}
 		if (kdb->KeyPressed(Key::Right))
 		{
-			panning.x() -= 0.1f;
+			panning.x -= 0.1f;
 		}
 		if (kdb->KeyPressed(Key::Left))
 		{
-			panning.x() += 0.1f;
+			panning.x += 0.1f;
 		}
 		if (kdb->KeyPressed(Key::Up))
 		{
-			panning.y() += 0.1f;
+			panning.y += 0.1f;
 		}
 		if (kdb->KeyPressed(Key::Down))
 		{
-			panning.y() -= 0.1f;
+			panning.y -= 0.1f;
 		}
 
 		// update panning, orbiting, zooming speeds
 		mayaCamera.SetPanning(panning);
-		mayaCamera.SetOrbiting(Math::float2(0.0f));
+		mayaCamera.SetOrbiting(Math::vec2(0.0f));
 
 		mayaCamera.SetZoomIn(0.0f);
 		mayaCamera.SetZoomOut(0.0f);

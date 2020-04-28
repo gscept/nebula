@@ -36,7 +36,7 @@ void OpenScene()
     ground = Graphics::CreateEntity();
     Graphics::RegisterEntity<ModelContext, ObservableContext>(ground);
     ModelContext::Setup(ground, "mdl:environment/plcholder_world.n3", "Viewer");
-    ModelContext::SetTransform(ground, Math::matrix44::multiply(Math::matrix44::scaling(1000, 1, 1000), Math::matrix44::translation(Math::float4(0, 0, 0, 1))));
+    ModelContext::SetTransform(ground, Math::scaling(1000, 1, 1000) * Math::translation(0,0,0));
     entities.Append(ground);
     entityNames.Append("Ground");
 
@@ -67,7 +67,7 @@ void OpenScene()
 
             // create model and move it to the front
             ModelContext::Setup(ent, modelRes[resourceIndex], "NotA");
-            ModelContext::SetTransform(ent, Math::matrix44::translation(Math::float4(i * 16, 0, j * 16, 1)));
+            ModelContext::SetTransform(ent, Math::translation(i * 16, 0, j * 16));
             ObservableContext::Setup(ent, VisibilityEntityType::Model);
 
             //Characters::CharacterContext::Setup(ent, skeletonRes[resourceIndex], animationRes[resourceIndex], "Viewer");
@@ -97,16 +97,16 @@ void StepFrame()
     IndexT i;
     for (i = 0; i < spotLights.Size(); i++)
     {
-        Math::matrix44 spotLightTransform;
-        spotLightTransform = Math::matrix44::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, Math::n_deg2rad(-55), 0);
-        spotLightTransform.set_position(Lighting::LightContext::GetTransform(spotLights[i]).get_position());
+        Math::mat4 spotLightTransform;
+        spotLightTransform = Math::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, Math::n_deg2rad(-55), 0);
+        spotLightTransform.position = Lighting::LightContext::GetTransform(spotLights[i]).position;
         Lighting::LightContext::SetTransform(spotLights[i], spotLightTransform);
     }
 
     /*
-        Math::matrix44 globalLightTransform = Lighting::LightContext::GetTransform(globalLight);
-        Math::matrix44 rotY = Math::matrix44::rotationy(Math::n_deg2rad(0.1f));
-        Math::matrix44 rotX = Math::matrix44::rotationz(Math::n_deg2rad(0.05f));
+        Math::mat4 globalLightTransform = Lighting::LightContext::GetTransform(globalLight);
+        Math::mat4 rotY = Math::rotationy(Math::n_deg2rad(0.1f));
+        Math::mat4 rotX = Math::rotationz(Math::n_deg2rad(0.05f));
         globalLightTransform = globalLightTransform * rotX * rotY;
         Lighting::LightContext::SetTransform(globalLight, globalLightTransform);
     */
@@ -164,7 +164,7 @@ void RenderUI()
     //}
 
     ImGui::Begin("Entities", nullptr, 0);
-    ImGui::SetWindowSize(ImVec2(240, 400));
+    ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
     ImGui::BeginChild("##entities", ImVec2(0, 300), true);
 
     static int selected = 0;
