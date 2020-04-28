@@ -58,7 +58,7 @@ public:
     /// set from vec4
     void set(vec4 const &f4);
 
-    friend class mat4;
+    friend struct mat4;
 	union
 	{
 		__m128 vec;

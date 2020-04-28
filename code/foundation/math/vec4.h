@@ -18,8 +18,8 @@
 //------------------------------------------------------------------------------
 namespace Math
 {
-class mat4;
-class vec4;
+struct mat4;
+struct vec4;
 
 struct NEBULA_ALIGN16 vec4
 {
