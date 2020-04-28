@@ -511,11 +511,11 @@ __forceinline bool
 n_isdenormal(scalar s)
 {
 #if __GNUC__
-    union { scalar s; uint u; } pun;
+    union { scalar s; unsigned int u; } pun;
     pun.s = s;
     return ((pun.u&0x7f800000)==0);
 #else
-    return (((*(uint*)&s)&0x7f800000)==0);
+    return (((*(unsigned int*)&s)&0x7f800000)==0);
 #endif
 }
 
@@ -584,7 +584,7 @@ n_irand(int min, int max)
 	Returns the position of the most significant bit of the number
 */
 __forceinline int
-n_mostsignificant(uint val)
+n_mostsignificant(unsigned int val)
 {
 #ifdef WIN32
 	unsigned long ret;
@@ -598,8 +598,8 @@ n_mostsignificant(uint val)
 //------------------------------------------------------------------------------
 /**
 */
-__forceinline uint
-n_align(uint alignant, uint alignment)
+__forceinline unsigned int
+n_align(unsigned int alignant, unsigned int alignment)
 {
 	return (alignant + alignment - 1) & ~(alignment - 1);
 }
@@ -608,8 +608,8 @@ n_align(uint alignant, uint alignment)
 /**
 	Integer division with rounding
 */
-__forceinline uint
-n_divandroundup(uint dividend, uint divider)
+__forceinline unsigned int
+n_divandroundup(unsigned int dividend, unsigned int divider)
 {
 	return (dividend % divider != 0) ? (dividend / divider + 1) : (dividend / divider);
 }

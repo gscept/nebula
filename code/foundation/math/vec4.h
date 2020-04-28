@@ -19,7 +19,6 @@
 namespace Math
 {
 struct mat4;
-struct vec4;
 
 struct NEBULA_ALIGN16 vec4
 {
