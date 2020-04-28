@@ -11,7 +11,7 @@
 #include "system/win32/win32environment.h"
 namespace System
 {
-typedef Win32::WinEnvironment Environment;
+typedef Win32::Win32Environment Environment;
 }
 #elif __LINUX__
 #include "system/posix/posixenvironment.h"
