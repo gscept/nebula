@@ -588,10 +588,13 @@ n_mostsignificant(unsigned int val)
 {
 #ifdef WIN32
 	unsigned long ret;
-	n_assert2(_BitScanReverse(&ret, val),"failed to calculate most significant bit\n");
+    bool res = _BitScanReverse(&ret, val);
+    ret = res ? ret : 0;
 	return ret + 1;
 #else
-	n_error("not implemented\n");
+    unsigned long ret;
+    ret = __builtin_clz(val);
+    return ret + 1;
 #endif
 }
 
