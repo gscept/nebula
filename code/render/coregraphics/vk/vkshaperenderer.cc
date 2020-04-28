@@ -17,6 +17,7 @@
 #include "resources/resourceid.h"
 #include "resources/resourceserver.h"
 #include "coregraphics/shadersemantics.h"
+#include "frame/frameplugin.h"
 
 using namespace Base;
 using namespace Threading;
@@ -89,7 +90,7 @@ VkShapeRenderer::Open()
 	// also create an extra vertex layout, in case we get a mesh which doesn't fit with our special layout
 	this->vertexLayout = CreateVertexLayout(VertexLayoutCreateInfo{ comps });
 
-	Frame::FramePlugin::AddCallback("Debug Shapes", [this](IndexT)
+	Frame::AddCallback("Debug Shapes", [this](IndexT)
 		{
 			CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
 			this->DrawShapes();

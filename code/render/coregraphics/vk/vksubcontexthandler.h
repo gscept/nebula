@@ -24,7 +24,7 @@
 	(C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "vulkan/vulkan.h"
+#include "vkloader.h"
 #include "util/fixedarray.h"
 #include "coregraphics/config.h"
 namespace Vulkan

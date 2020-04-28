@@ -997,8 +997,6 @@ _ProcessQueriesEndFrame()
 	state.frameProfilingMarkers.Clear();
 #endif
 
-
-
 	for (IndexT i = 0; i < state.profilingMarkersPerFrame[state.currentBufferedFrameIndex].Size(); i++)
 	{
 		CoreGraphics::FrameProfilingMarker marker = state.profilingMarkersPerFrame[state.currentBufferedFrameIndex][i];
@@ -1144,6 +1142,9 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	}
 #endif
 
+	// load layers
+	Vulkan::InitVulkan();
+
 	// setup instance
 	VkInstanceCreateInfo instanceInfo =
 	{
@@ -1172,6 +1173,9 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		n_error("Vulkan layer failed to load.\n");
 	}
 	n_assert(res == VK_SUCCESS);
+
+	// load instance functions
+	Vulkan::InitInstance(state.instance);
 
 	// setup adapter
 	SetupAdapter();

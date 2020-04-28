@@ -14,7 +14,8 @@
 #endif
 
 #ifdef __VULKAN__
-#include <vulkan/vulkan.h>
+#define VK_NO_PROTOTYPES
+#include "coregraphics/vk/vkloader.h"
 #include <GLFW/glfw3.h>
 #endif
 

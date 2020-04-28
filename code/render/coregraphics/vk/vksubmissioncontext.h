@@ -6,7 +6,7 @@
 	(C) 2019-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include <vulkan/vulkan.h>
+#include "vkloader.h"
 #include "coregraphics/submissioncontext.h"
 #include "ids/id.h"
 #include "coregraphics/config.h"

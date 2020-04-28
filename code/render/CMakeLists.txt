@@ -19,7 +19,7 @@ nebula_begin_module(render)
 	if(N_USE_VULKAN)
 		FIND_PACKAGE(Vulkan)
 		fips_include_directories(${Vulkan_INCLUDE_DIR})
-		fips_libs(${Vulkan_LIBRARY} glfw3)
+		fips_libs(glfw3)
 	endif()
 		fips_files(render/precompiled.h render/stdneb.h render/stdneb.cc)
 
@@ -304,6 +304,8 @@ ENDIF()
 				vkgraphicsdevice.h
 				vkindexbuffer.cc
                 vkindexbuffer.h
+                vkloader.cc
+                vkloader.h
 				vkmemorytexturepool.cc
 				vkmemorytexturepool.h
 				vkpass.cc

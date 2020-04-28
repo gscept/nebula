@@ -9,7 +9,7 @@
 #include "coregraphics/vk/vktypes.h"
 #include "IL/il.h"
 
-#include <vulkan/vulkan.h>
+#include "vkloader.h"
 #include "vkgraphicsdevice.h"
 #include "vkutilities.h"
 #include "math/scalar.h"
