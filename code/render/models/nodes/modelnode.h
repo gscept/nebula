@@ -118,6 +118,8 @@ public:
 
 	/// apply node-level state
 	virtual void ApplyNodeState();
+	/// apply node-level resources
+	virtual void ApplyNodeResources();
 
 protected:
 	friend class StreamModelPool;

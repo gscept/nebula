@@ -114,6 +114,15 @@ ModelNode::ApplyNodeState()
 //------------------------------------------------------------------------------
 /**
 */
+void 
+ModelNode::ApplyNodeResources()
+{
+	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 SizeT
 ModelNode::Instance::GetDrawPacketSize() const
 {

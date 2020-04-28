@@ -79,7 +79,7 @@ NormalDistributionGGX(in float NdotH, in float roughness)
 float
 GeometrySchlickGGX(in float NdotV, in float k)
 {
-	float denom = NdotV * (1.0f - k) + k;
+	float denom = mad(NdotV, 1.0f - k,  k);
 	return NdotV / denom;
 }
 

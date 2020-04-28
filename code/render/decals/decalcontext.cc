@@ -10,6 +10,7 @@
 #include "clustering/clustercontext.h"
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
+#include "frame/frameplugin.h"
 
 #include "decals_cluster.h"
 namespace Decals
@@ -134,6 +135,7 @@ DecalContext::Create()
 		ResourceTableSetRWBuffer(decalState.resourceTables[i], { Clustering::ClusterContext::GetClusterBuffer(), clusterAABBSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 		ResourceTableSetConstantBuffer(decalState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), decalState.clusterUniformsSlot, 0, false, false, sizeof(DecalsCluster::ClusterUniforms), 0 });
 		ResourceTableSetConstantBuffer(decalState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), decalState.uniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalUniforms), 0 });
+		ResourceTableSetConstantBuffer(decalState.resourceTables[i], { Clustering::ClusterContext::GetConstantBuffer(), decalState.clusterUniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
 		ResourceTableCommitChanges(decalState.resourceTables[i]);
 	}
 
@@ -325,10 +327,6 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 
 	uint offset = SetComputeConstants(MainThreadConstantBuffer, decalUniforms);
 	ResourceTableSetConstantBuffer(decalState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), decalState.uniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalUniforms), (SizeT)offset });
-
-	ClusterGenerate::ClusterUniforms clusterUniforms = Clustering::ClusterContext::GetUniforms();
-	offset = SetComputeConstants(MainThreadConstantBuffer, clusterUniforms);
-	ResourceTableSetConstantBuffer(decalState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), decalState.clusterUniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), (SizeT)offset });
 
 	// update list of point lights
 	if (numPbrDecals > 0 || numEmissiveDecals > 0)

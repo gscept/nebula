@@ -218,11 +218,12 @@ QueueNameFromQueueType(const QueueType type)
 	#define COREGRAPHICS_TRIANGLE_FRONT_FACE_CCW (1)
 	// define the same descriptor set slots as we do in the shaders
 	#define NEBULA_TICK_GROUP 0				// set per tick (once for all views) by the system
-	#define NEBULA_FRAME_GROUP 1				// set per frame (once per view) by the system
+	#define NEBULA_FRAME_GROUP 1			// set per frame (once per view) by the system
 	#define NEBULA_PASS_GROUP 2				// set per pass by the system
-	#define NEBULA_BATCH_GROUP 3				// set per batch (material settings or system stuff)
+	#define NEBULA_BATCH_GROUP 3			// set per batch (material settings or system stuff)
 	#define NEBULA_INSTANCE_GROUP 4			// set a batch-internal copy of some specific settings
-	#define NEBULA_DYNAMIC_OFFSET_GROUP 5		// set once per shader and is offset for each instance
+	#define NEBULA_SYSTEM_GROUP 5			// set a batch-internal copy of some specific settings
+	#define NEBULA_DYNAMIC_OFFSET_GROUP 6	// set once per shader and is offset for each instance
 	#define NEBULA_NUM_GROUPS (NEBULA_DYNAMIC_OFFSET_GROUP + 1)
 
 	#define MAX_INPUT_ATTACHMENTS 32

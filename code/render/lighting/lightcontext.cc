@@ -272,11 +272,12 @@ LightContext::Create()
 		clusterState.stagingClusterLightsList[i] = CreateShaderRWBuffer(rwbInfo);
 
 		// update resource table
-		ResourceTableSetRWBuffer(clusterState.resourceTables[i], { clusterState.clusterLightIndexLists, lightIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 		ResourceTableSetRWBuffer(clusterState.resourceTables[i], { Clustering::ClusterContext::GetClusterBuffer(), clusterAABBSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+		ResourceTableSetRWBuffer(clusterState.resourceTables[i], { clusterState.clusterLightIndexLists, lightIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 		ResourceTableSetRWBuffer(clusterState.resourceTables[i], { clusterState.clusterLightsList, lightsListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 		ResourceTableSetConstantBuffer(clusterState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.clusterUniformsSlot, 0, false, false, sizeof(LightsCluster::ClusterUniforms), 0 });
 		ResourceTableSetConstantBuffer(clusterState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsCluster::LightUniforms), 0 });
+		ResourceTableSetConstantBuffer(clusterState.resourceTables[i], { Clustering::ClusterContext::GetConstantBuffer(), clusterState.clusterUniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
 		ResourceTableCommitChanges(clusterState.resourceTables[i]);
 	}
 
@@ -739,9 +740,6 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 	const Graphics::ContextEntityId cid = GetContextId(lightServerState.globalLightEntity);
 	using namespace CoreGraphics;
 
-	// update view dependent resources in framescript too
-	lightServerState.shadowMappingFrameScript->UpdateViewDependentResources(view, ctx.frameIndex);
-
 	// get camera view
 	Math::mat4 viewTransform = Graphics::CameraContext::GetTransform(view->GetCamera());
 	Math::mat4 invViewTransform = inverse(viewTransform);
@@ -922,11 +920,6 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 
 	IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-	// use the same uniforms used to divide the clusters
-	ClusterGenerate::ClusterUniforms clusterUniforms = Clustering::ClusterContext::GetUniforms();
-	IndexT offset = SetComputeConstants(MainThreadConstantBuffer, clusterUniforms);
-	ResourceTableSetConstantBuffer(clusterState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.clusterUniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), (SizeT)offset });
-
 	// update list of point lights
 	if (numPointLights > 0 || numSpotLights > 0)
 	{
@@ -955,7 +948,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 	consts.NumPointLights = numPointLights;
 	consts.NumClusters = Clustering::ClusterContext::GetNumClusters();
 	consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(ssaoTex);
-	offset = SetComputeConstants(MainThreadConstantBuffer, consts);
+	IndexT offset = SetComputeConstants(MainThreadConstantBuffer, consts);
 	ResourceTableSetConstantBuffer(clusterState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsCluster::LightUniforms), (SizeT)offset });
 	ResourceTableCommitChanges(clusterState.resourceTables[bufferIndex]);
 

@@ -61,7 +61,7 @@ ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType
 	const Util::Array<Graphics::GraphicsEntityId>& ids = ObservableContext::observableAllocator.GetArray<Observable_EntityId>();
 	for (IndexT i = 0; i < ids.Size(); i++)
 	{
-		if (entityType == Model)
+		if (entityType == Model || entityType == Particle)
 		{
 			const Util::Array<Models::ModelNode::Instance*>& nodes = Models::ModelContext::GetModelNodeInstances(id);
 
@@ -631,7 +631,7 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
 		break;
 	}
 
-	if (entityType == Model)
+	if (entityType == Model || entityType == Particle)
 	{
 		// get nodes
 		const Util::Array<Models::ModelNode::Instance*>& nodes = Models::ModelContext::GetModelNodeInstances(id);

@@ -95,7 +95,7 @@ ShapeRendererBase::AddShape(const RenderShape& shape)
     if (shape.GetShapeType() == RenderShape::Primitives || shape.GetShapeType() == RenderShape::IndexedPrimitives)
     {
         this->primitives[shape.GetDepthFlag()].Append(shape);
-        this->numVerticesThisFrame += shape.GetNumVertices();
+        this->numVerticesThisFrame += PrimitiveTopology::NumberOfVertices(shape.GetTopology(), shape.GetNumPrimitives());
         this->numIndicesThisFrame += PrimitiveTopology::NumberOfVertices(shape.GetTopology(), shape.GetNumPrimitives());
     }
 	else
@@ -184,7 +184,7 @@ ShapeRendererBase::AddWireFrameBox(const Math::bbox& boundingBox, const Math::ve
         lineList.Size() / 2,
         &(lineList.Front()),
         color,
-        CoreGraphics::RenderShape::CheckDepth);
+        CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe));
     this->AddShape(shape);    
 }
 

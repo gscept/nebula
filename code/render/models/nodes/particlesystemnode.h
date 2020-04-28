@@ -84,6 +84,8 @@ protected:
 
 	/// apply state
 	void ApplyNodeState() override;
+	/// apply node-level resources
+	void ApplyNodeResources() override;
 	
 	Particles::EnvelopeSampleBuffer sampleBuffer;
 	Particles::EmitterAttrs emitterAttrs;
@@ -91,6 +93,8 @@ protected:
     Resources::ResourceName meshResId;
 
 	IndexT particleConstantsIndex;
+	IndexT clusteringOffset;
+	CoreGraphics::ResourceTableId clusterResources;
 
 	Util::StringAtom tag;
     IndexT primGroupIndex;

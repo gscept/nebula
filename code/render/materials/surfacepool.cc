@@ -61,7 +61,6 @@ SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAt
 
 		if (reader->SetToFirstChild("Param")) do
 		{
-			
 			Util::StringAtom paramName = reader->GetString("name");
 
 			// set variant value which we will use in the surface constants

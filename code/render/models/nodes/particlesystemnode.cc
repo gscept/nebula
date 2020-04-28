@@ -12,6 +12,8 @@
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/transformdevice.h"
 #include "particles/particlecontext.h"
+#include "clustering/clustercontext.h"
+#include "lighting/lightcontext.h"
 
 #include "particle.h"
 
@@ -85,15 +87,27 @@ ParticleSystemNode::OnFinishedLoading()
 	this->sampleBuffer.Setup(this->emitterAttrs, ParticleSystemNumEnvelopeSamples);
 	this->emitterMesh.Setup(this->mesh, this->primGroupIndex);
 
-	CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:particle.fxb"_atm);
-	CoreGraphics::ConstantBufferId cbo = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer);
-	this->objectTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "ObjectBlock");
-	this->instancingTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "InstancingBlock");
-	this->skinningTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "JointBlock");
-	this->particleConstantsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "ParticleObjectBlock");
-	this->resourceTable = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP);
-	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->particleConstantsIndex, 0, true, false, sizeof(::Particle::ParticleObjectBlock), 0 });
-	CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
+	ShaderId shader = ShaderServer::Instance()->GetShader("shd:particle.fxb"_atm);
+	ConstantBufferId cbo = GetGraphicsConstantBuffer(GlobalConstantBufferType::VisibilityThreadConstantBuffer);
+	this->objectTransformsIndex = ShaderGetResourceSlot(shader, "ObjectBlock");
+	this->instancingTransformsIndex = ShaderGetResourceSlot(shader, "InstancingBlock");
+	this->skinningTransformsIndex = ShaderGetResourceSlot(shader, "JointBlock");
+	this->particleConstantsIndex = ShaderGetResourceSlot(shader, "ParticleObjectBlock");
+	this->resourceTable = ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP);
+	ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->particleConstantsIndex, 0, true, false, sizeof(::Particle::ParticleObjectBlock), 0 });
+    ResourceTableCommitChanges(this->resourceTable);
+
+    IndexT clusterAABBsSlot = ShaderGetResourceSlot(shader, "ClusterAABBs");
+    IndexT lightIndexLists = ShaderGetResourceSlot(shader, "LightIndexLists");
+    IndexT lightLists = ShaderGetResourceSlot(shader, "LightLists");
+    IndexT clusterUniforms = ShaderGetResourceSlot(shader, "ClusterUniforms");
+
+    this->clusterResources = ShaderCreateResourceTable(shader, NEBULA_SYSTEM_GROUP);
+    ResourceTableSetRWBuffer(this->clusterResources, { Clustering::ClusterContext::GetClusterBuffer(), clusterAABBsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableSetRWBuffer(this->clusterResources, { Lighting::LightContext::GetLightIndexBuffer(), lightIndexLists, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableSetRWBuffer(this->clusterResources, { Lighting::LightContext::GetLightsBuffer(), lightLists, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableSetConstantBuffer(this->clusterResources, { Clustering::ClusterContext::GetConstantBuffer(), clusterUniforms, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableCommitChanges(this->clusterResources);
 }
 
 //------------------------------------------------------------------------------
@@ -300,9 +314,19 @@ void
 ParticleSystemNode::ApplyNodeState()
 {
 	TransformNode::ApplyNodeState();
-	CoreGraphics::SetStreamVertexBuffer(0, ParticleContext::GetParticleVertexBuffer(), 0);
-	CoreGraphics::SetVertexLayout(ParticleContext::GetParticleVertexLayout());
-	CoreGraphics::SetIndexBuffer(ParticleContext::GetParticleIndexBuffer(), 0);
+
+	SetStreamVertexBuffer(0, ParticleContext::GetParticleVertexBuffer(), 0);
+	SetVertexLayout(ParticleContext::GetParticleVertexLayout());
+	SetIndexBuffer(ParticleContext::GetParticleIndexBuffer(), 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ParticleSystemNode::ApplyNodeResources()
+{
+    SetResourceTable(this->clusterResources, NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
 }
 
 //------------------------------------------------------------------------------
@@ -315,7 +339,6 @@ ParticleSystemNode::Instance::Update()
         return;
 
     ShaderStateNode::Instance::Update();
-
 	ParticleSystemNode* pnode = reinterpret_cast<ParticleSystemNode*>(this->node);
 
 	::Particle::ParticleObjectBlock block;

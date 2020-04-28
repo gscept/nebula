@@ -13,6 +13,7 @@
 	PASS_GROUP is updated once per frame by a pass
 	BATCH_GROUP is updated once per batch, which is either a material batch or the system
 	INSTANCE_GROUP is updated for every instance of a material
+	SYSTEM_GROUP is a set of system-managed resources
 	DYNAMIC_OFFSET_GROUP is for buffers which support dynamic offsets
 */
 const int TICK_GROUP = 0;
@@ -20,7 +21,8 @@ const int FRAME_GROUP = 1;
 const int PASS_GROUP = 2;
 const int BATCH_GROUP = 3;
 const int INSTANCE_GROUP = 4;
-const int DYNAMIC_OFFSET_GROUP = 5;
+const int SYSTEM_GROUP = 5;
+const int DYNAMIC_OFFSET_GROUP = 6;
 
 /// define global macros
 #if GLSL

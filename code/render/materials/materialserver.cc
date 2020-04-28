@@ -162,7 +162,7 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 
 			// parse passes
 			uint passIndex = 0;
-			if (reader->SetToFirstChild("Pass"))
+			if (reader->SetToFirstChild("passes"))
 			{
 				if (reader->SetToFirstChild()) do
 				{
@@ -201,7 +201,7 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 			}
 			
 			// parse parameters
-			if (reader->SetToFirstChild("Param"))
+			if (reader->SetToFirstChild("variables"))
 			{
 				if (reader->SetToFirstChild()) do
 				{
@@ -300,9 +300,6 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 			            
 			// setup type (this maps valid constants to their respective programs)
 			type->Setup();
-
-			
-			
 		} 
 		while (reader->SetToNextChild());
 

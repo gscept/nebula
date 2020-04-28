@@ -7,7 +7,7 @@
 #include "coregraphics/shader.h"
 #include "coregraphics/shaderrwbuffer.h"
 #include "coregraphics/graphicsdevice.h"
-#include "frame/plugins/frameplugin.h"
+#include "frame/frameplugin.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/cameracontext.h"
 
@@ -21,6 +21,7 @@ struct
 	CoreGraphics::ShaderRWBufferId clusterBuffer;
 
 	ClusterGenerate::ClusterUniforms uniforms;
+	CoreGraphics::ConstantBufferId constantBuffer;
 	IndexT uniformsSlot;
 
 	SizeT clusterDimensions[3];
@@ -31,7 +32,7 @@ struct
 
 	SizeT numThreads;
 
-	Util::FixedArray<CoreGraphics::ResourceTableId> resourceTable;
+	CoreGraphics::ResourceTableId resourceTable;
 
 	static const SizeT ClusterSubdivsX = 64;
 	static const SizeT ClusterSubdivsY = 64;
@@ -98,14 +99,12 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
 		false
 	};
 	state.clusterBuffer = CreateShaderRWBuffer(rwb3Info);
+	state.constantBuffer = ShaderCreateConstantBuffer(state.clusterShader, "ClusterUniforms");
 
-	// create and update resource tables
-	state.resourceTable.Resize(numBuffers);
-	for (uint i = 0; i < numBuffers; i++)
-	{ 
-		state.resourceTable[i] = ShaderCreateResourceTable(state.clusterShader, NEBULA_BATCH_GROUP);
-		ResourceTableSetRWBuffer(state.resourceTable[i], { state.clusterBuffer, clusterAABBSlot, 0, false, false, -1, 0 });
-	}
+	state.resourceTable = ShaderCreateResourceTable(state.clusterShader, NEBULA_BATCH_GROUP);
+	ResourceTableSetRWBuffer(state.resourceTable, { state.clusterBuffer, clusterAABBSlot, 0, false, false, -1, 0 });
+	ResourceTableSetConstantBuffer(state.resourceTable, { state.constantBuffer, state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
+	ResourceTableCommitChanges(state.resourceTable);
 
 	// called from main script
 	Frame::AddCallback("ClusterContext - Update Clusters", [](IndexT frame) // trigger update
@@ -153,6 +152,15 @@ ClusterContext::GetUniforms()
 //------------------------------------------------------------------------------
 /**
 */
+const CoreGraphics::ConstantBufferId 
+ClusterContext::GetConstantBuffer()
+{
+	return state.constantBuffer;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 ClusterContext::UpdateResources(const Graphics::FrameContext& ctx)
 {
@@ -171,10 +179,8 @@ ClusterContext::UpdateResources(const Graphics::FrameContext& ctx)
 	state.uniforms.BlockSize[0] = state.ClusterSubdivsX;
 	state.uniforms.BlockSize[1] = state.ClusterSubdivsY;
 
-	uint offset = SetComputeConstants(MainThreadConstantBuffer, state.uniforms);
-	uint bufferIndex = CoreGraphics::GetBufferedFrameIndex();
-	ResourceTableSetConstantBuffer(state.resourceTable[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), (SizeT)offset });
-	ResourceTableCommitChanges(state.resourceTable[bufferIndex]);
+	// update constant buffer, probably super unnecessary since these values never change
+	ConstantBufferUpdate(state.constantBuffer, state.uniforms, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -216,7 +222,7 @@ ClusterContext::UpdateClusters()
 	SetShaderProgram(state.clusterGenerateProgram, ComputeQueueType);
 
 	uint bufferIndex = CoreGraphics::GetBufferedFrameIndex();
-	SetResourceTable(state.resourceTable[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr, ComputeQueueType);
+	SetResourceTable(state.resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr, ComputeQueueType);
 
 	// run the job as series of 1024 clusters at a time
 	Compute(Math::n_ceil((state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2]) / 64.0f), 1, 1, ComputeQueueType);
