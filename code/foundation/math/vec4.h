@@ -10,10 +10,6 @@
 #include "core/types.h"
 #include "math/scalar.h"
 #include "vec3.h"
-#include <xmmintrin.h>
-#include <emmintrin.h>
-#include <smmintrin.h>
-#include <immintrin.h>
 
 //------------------------------------------------------------------------------
 namespace Math
