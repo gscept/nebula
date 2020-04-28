@@ -3,9 +3,6 @@ imports:
     fips-zlib:
         git: https://github.com/gscept/fips-zlib
         group: misc
-    fips-directxmath:
-        git: https://github.com/gscept/fips-directxmath.git
-        group: misc
     fips-glfw:
         git: https://github.com/gscept/fips-glfw.git
         group: gfx

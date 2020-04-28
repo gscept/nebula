@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkloader.h"
+#include "core/debug.h"
 namespace Vulkan
 {
 
