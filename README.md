@@ -1,4 +1,5 @@
-# Nebula engine
+# Nebula engine   
+![CI](https://github.com/gscept/nebula/workflows/CI/badge.svg)
 
 ## Requirements
 1. OS: Windows or Linux
