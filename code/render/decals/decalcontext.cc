@@ -71,17 +71,17 @@ DecalContext::Create()
 
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-	Frame::FramePlugin::AddCallback("DecalContext - Cull and Classify", [](IndexT frame)
+	Frame::AddCallback("DecalContext - Cull and Classify", [](IndexT frame)
 		{
 			DecalContext::CullAndClassify();
 		});
 
-	Frame::FramePlugin::AddCallback("DecalContext - Render PBR Decals", [](IndexT frame)
+	Frame::AddCallback("DecalContext - Render PBR Decals", [](IndexT frame)
 		{
 			DecalContext::RenderPBR();
 		});
 
-	Frame::FramePlugin::AddCallback("DecalContext - Render Emissive Decals", [](IndexT frame)
+	Frame::AddCallback("DecalContext - Render Emissive Decals", [](IndexT frame)
 		{
 			DecalContext::RenderEmissive();
 		});

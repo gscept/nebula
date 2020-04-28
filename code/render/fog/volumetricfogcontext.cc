@@ -9,6 +9,7 @@
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
 #include "lighting/lightcontext.h"
+#include "frame/frameplugin.h"
 #include "imgui.h"
 
 #include "volumefog.h"
@@ -85,12 +86,12 @@ VolumetricFogContext::Create()
 
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-	Frame::FramePlugin::AddCallback("VolumetricFogContext - Cull and Classify", [](IndexT frame)
+	Frame::AddCallback("VolumetricFogContext - Cull and Classify", [](IndexT frame)
 		{
 			VolumetricFogContext::CullAndClassify();
 		});
 
-	Frame::FramePlugin::AddCallback("VolumetricFogContext - Render", [](IndexT frame)
+	Frame::AddCallback("VolumetricFogContext - Render", [](IndexT frame)
 		{
 			VolumetricFogContext::Render();
 		});

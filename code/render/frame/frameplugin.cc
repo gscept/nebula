@@ -1,9 +1,9 @@
 //------------------------------------------------------------------------------
-// framepluginop.cc
+// frameplugin.cc
 // (C) 2016-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "framepluginop.h"
+#include "frameplugin.h"
 
 namespace Frame
 {
@@ -11,7 +11,7 @@ namespace Frame
 //------------------------------------------------------------------------------
 /**
 */
-FramePluginOp::FramePluginOp()
+FramePlugin::FramePlugin()
 {
 	// empty
 }
@@ -19,7 +19,7 @@ FramePluginOp::FramePluginOp()
 //------------------------------------------------------------------------------
 /**
 */
-FramePluginOp::~FramePluginOp()
+FramePlugin::~FramePlugin()
 {
 	// empty
 }
@@ -28,7 +28,7 @@ FramePluginOp::~FramePluginOp()
 /**
 */
 void
-FramePluginOp::CompiledImpl::Run(const IndexT frameIndex)
+FramePlugin::CompiledImpl::Run(const IndexT frameIndex)
 {
 	this->func(frameIndex);
 }
@@ -37,7 +37,7 @@ FramePluginOp::CompiledImpl::Run(const IndexT frameIndex)
 /**
 */
 void
-FramePluginOp::CompiledImpl::Discard()
+FramePlugin::CompiledImpl::Discard()
 {
 	this->func = nullptr;
 }
@@ -46,7 +46,7 @@ FramePluginOp::CompiledImpl::Discard()
 /**
 */
 FrameOp::Compiled* 
-FramePluginOp::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
+FramePlugin::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 
@@ -62,7 +62,7 @@ FramePluginOp::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void
-FramePluginOp::Build(
+FramePlugin::Build(
 	Memory::ArenaAllocator<BIG_CHUNK>& allocator,
 	Util::Array<FrameOp::Compiled*>& compiledOps,
 	Util::Array<CoreGraphics::EventId>& events,
@@ -76,5 +76,41 @@ FramePluginOp::Build(
 	this->SetupSynchronization(allocator, events, barriers, rwBuffers, textures);
 	compiledOps.Append(myCompiled);
 }
+
+Util::Dictionary<Util::StringAtom, std::function<void(IndexT)>> nameToFunction;
+
+//------------------------------------------------------------------------------
+/**
+*/
+const std::function<void(IndexT)>&
+GetCallback(const Util::StringAtom& str)
+{
+	if (nameToFunction.Contains(str))
+		return nameToFunction[str];
+	else
+	{
+		n_printf("No function '%s' found\n", str.Value());
+		return nameToFunction["null"];
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AddCallback(const Util::StringAtom name, std::function<void(IndexT)> func)
+{
+	nameToFunction.Add(name, func);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+InitPluginTable()
+{
+	nameToFunction.Add("null", nullptr);
+}
+
 
 } // namespace Frame2

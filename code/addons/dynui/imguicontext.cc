@@ -12,6 +12,7 @@
 #include "coregraphics/displaydevice.h"
 #include "input/inputserver.h"
 #include "io/ioserver.h"
+#include "frame/frameplugin.h"
 
 using namespace Math;
 using namespace CoreGraphics;
@@ -213,7 +214,7 @@ ImguiContext::Create()
 	components.Append(VertexComponent((VertexComponent::SemanticName)1, 0, VertexComponentBase::Float2, 0));
     components.Append(VertexComponent((VertexComponent::SemanticName)2, 0, VertexComponentBase::UByte4N, 0));
 
-	Frame::FramePlugin::AddCallback("ImGUI", [](const IndexT frameIndex)
+	Frame::AddCallback("ImGUI", [](const IndexT frameIndex)
 		{
 			CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
 			ImGui::Render();

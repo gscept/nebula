@@ -108,7 +108,7 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
 	}
 
 	// called from main script
-	Frame::FramePlugin::AddCallback("ClusterContext - Update Clusters", [](IndexT frame) // trigger update
+	Frame::AddCallback("ClusterContext - Update Clusters", [](IndexT frame) // trigger update
 		{
 			UpdateClusters();
 		});

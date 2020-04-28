@@ -3,7 +3,7 @@
 // (C) 2017-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "frame/plugins/frameplugin.h"
+#include "frame/frameplugin.h"
 #include "lightcontext.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
@@ -146,7 +146,7 @@ LightContext::Create()
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
 	// called from main script
-	Frame::FramePlugin::AddCallback("LightContext - Update Shadowmaps", [](IndexT frame) // trigger update
+	Frame::AddCallback("LightContext - Update Shadowmaps", [](IndexT frame) // trigger update
 		{
 			// run the script
 			N_SCOPE(ShadowMapExecute, Render);
@@ -157,7 +157,7 @@ LightContext::Create()
 		});
 
 	// register shadow mapping algorithms
-	Frame::FramePlugin::AddCallback("LightContext - Spotlight Shadows", [](IndexT frame) // graphics
+	Frame::AddCallback("LightContext - Spotlight Shadows", [](IndexT frame) // graphics
 		{
 			IndexT i;
 			for (i = 0; i < lightServerState.shadowcastingLocalLights.Size(); i++)
@@ -166,11 +166,11 @@ LightContext::Create()
 				Frame::FrameSubpassBatch::DrawBatch(lightServerState.spotlightsBatchCode, lightServerState.shadowcastingLocalLights[i], 1, i);
 			}
 		});
-	Frame::FramePlugin::AddCallback("LightContext - Spotlight Blur", [](IndexT frame) // compute
+	Frame::AddCallback("LightContext - Spotlight Blur", [](IndexT frame) // compute
 		{
 		});
 
-	Frame::FramePlugin::AddCallback("LightContext - Sun Shadows", [](IndexT frame) // graphics
+	Frame::AddCallback("LightContext - Sun Shadows", [](IndexT frame) // graphics
 		{
 			if (lightServerState.globalLightEntity != Graphics::GraphicsEntityId::Invalid())
 			{
@@ -185,22 +185,22 @@ LightContext::Create()
 				}				
 			}
 		});
-	Frame::FramePlugin::AddCallback("LightContext - Sun Blur", [](IndexT frame) // compute
+	Frame::AddCallback("LightContext - Sun Blur", [](IndexT frame) // compute
 		{
 			LightContext::BlurGlobalShadowMap();
 		});
 
-	Frame::FramePlugin::AddCallback("LightContext - Cull and Classify", [](IndexT frame)
+	Frame::AddCallback("LightContext - Cull and Classify", [](IndexT frame)
 		{
 			LightContext::CullAndClassify();
 		});
 
-	Frame::FramePlugin::AddCallback("LightContext - Deferred Cluster", [](IndexT frame)
+	Frame::AddCallback("LightContext - Deferred Cluster", [](IndexT frame)
 		{
 			LightContext::ComputeLighting();
 		});
 
-	Frame::FramePlugin::AddCallback("LightContext - Combine", [](IndexT frame)
+	Frame::AddCallback("LightContext - Combine", [](IndexT frame)
 		{
 			LightContext::CombineLighting();
 		});

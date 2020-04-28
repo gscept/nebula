@@ -1,22 +1,23 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Performs an algorithm used for computations.
+	Runs a plugin, which is a code-callback
 	
 	(C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
-#include "frame/plugins/frameplugin.h"
+#include "util/stringatom.h"
+#include <functional>
 namespace Frame
 {
-class FramePluginOp : public FrameOp
+class FramePlugin : public FrameOp
 {
 public:
 	/// constructor
-	FramePluginOp();
+	FramePlugin();
 	/// destructor
-	virtual ~FramePluginOp();
+	virtual ~FramePlugin();
 
 	struct CompiledImpl : public FrameOp::Compiled
 	{
@@ -44,5 +45,16 @@ private:
 		Util::Dictionary<CoreGraphics::ShaderRWBufferId, Util::Array<BufferDependency>>& rwBuffers,
 		Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures) override;
 };
+
+
+/// add function callback to global dictionary
+extern void AddCallback(const Util::StringAtom name, std::function<void(IndexT)> func);
+/// get algorithm function call
+extern const std::function<void(IndexT)>& GetCallback(const Util::StringAtom& str);
+/// initialize the plugin table
+extern void InitPluginTable();
+
+extern Util::Dictionary<Util::StringAtom, std::function<void(IndexT)>> nameToFunction;
+
 
 } // namespace Frame2

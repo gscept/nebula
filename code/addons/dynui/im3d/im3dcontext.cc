@@ -16,6 +16,7 @@
 #include "input/inputserver.h"
 #include "input/mouse.h"
 #include "input/keyboard.h"
+#include "frame/frameplugin.h"
 #include "imgui.h"
 
 using namespace Math;
@@ -157,7 +158,7 @@ Im3dContext::Create()
     // map buffer
     imState.vertexPtr = (byte*)CoreGraphics::VertexBufferMap(imState.vbo, CoreGraphics::GpuBufferTypes::MapWrite);
 
-	Frame::FramePlugin::AddCallback("Im3D", [](IndexT frameIndex)
+	Frame::AddCallback("Im3D", [](IndexT frameIndex)
 	{
 		Render(frameIndex);
 	});
