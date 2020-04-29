@@ -26,7 +26,7 @@ void InitVulkan()
 	else
 		n_error("Could not find 'libvulkan', make sure you have installed vulkan");
 
-	vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)dlsym(vulkanLib, "GetInstanceProcAddr");
+	vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)dlsym(vulkanLib, "vkGetInstanceProcAddr");
 #elif ( __OSX__ || __APPLE__ )
 	void* vulkanLib = dlopen("libvulkan.dylib", RTLD_NOW | RTLD_LOCAL);
 	if (!vulkanLib)
@@ -36,7 +36,7 @@ void InitVulkan()
 	else
 		n_error("Could not find 'libvulkan', make sure you have installed vulkan");
 
-	vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)dlsym(vulkanLib, "GetInstanceProcAddr");
+	vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)dlsym(vulkanLib, "vkGetInstanceProcAddr");
 #else
 #error "Vulkan not supported on your platform!"
 #endif
