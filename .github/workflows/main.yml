@@ -29,15 +29,29 @@ jobs:
       with:
         python-version: '3.x' # Semantic version range syntax or exact version of a Python version
         architecture: 'x64' # Optional - x64 or x86, defaults to x64
-  
+    - name: Clone dependencies
+      run: |
+        python fips fetch
+        python fips set config vulkan-win64-vstudio-debug
+        
+    - name: Cache PhysX
+      id: cache-physx
+      uses: actions/cache@v1.1.2
+      with:
+        path: ../fips-deploy/physx
+        key: ${{ runner.os }}-physx
+        
+    - name: Build PhysX
+      if: steps.cache-physx.outputs.cache-hit != 'true'
+      run: |
+        python fips physx build win-vs16
+        python fips physx deploy
 
     # Runs a set of commands using the runners shell
     - name: Run fips
-      run: |
-        python fips fetch
-        python fips update
+      run: |        
         python fips nebula set work ../fips-deploy
-        python fips nebula set toolkit .
-        python fips set config vulkan-win64-vstudio-debug
+        python fips nebula set toolkit .        
+        python fips anyfx setup
         python fips gen
         python fips build
