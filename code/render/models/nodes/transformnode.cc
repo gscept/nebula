@@ -26,6 +26,7 @@ TransformNode::TransformNode() :
 	lockedToViewer(false)
 {
 	this->type = TransformNodeType;
+	this->bits = HasTransformBit;
 }
 
 //------------------------------------------------------------------------------
@@ -77,10 +78,14 @@ TransformNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 	else if (FourCC('SMID') == fourcc)
 	{
 		this->minDistance = reader->ReadFloat();
+		this->maxDistance = Math::n_max(this->minDistance, this->maxDistance);
+		this->useLodDistances = true;
 	}
 	else if (FourCC('SMAD') == fourcc)
 	{
 		this->maxDistance = reader->ReadFloat();
+		this->minDistance = Math::n_min(this->minDistance, this->maxDistance);
+		this->useLodDistances = true;
 	}
 	else
 	{

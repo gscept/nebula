@@ -42,7 +42,8 @@ enum
 {
 	ObservableAtom_Transform,
 	ObservableAtom_Node,
-	ObservableAtom_ContextEntity
+	ObservableAtom_ContextEntity,
+	ObservableAtom_Active
 };
 
 enum
@@ -163,7 +164,8 @@ private:
 	typedef Ids::IdAllocator<
 		Math::mat4,
 		Models::ModelNode::Instance*,
-		Graphics::ContextEntityId
+		Graphics::ContextEntityId,
+		bool
 	> ObservableAtomAllocator;
 	static ObservableAtomAllocator observableAtomAllocator;
 

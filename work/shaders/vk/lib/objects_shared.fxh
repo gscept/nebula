@@ -13,6 +13,7 @@ group(DYNAMIC_OFFSET_GROUP) shared constant ObjectBlock [ string Visibility = "V
 	mat4 Model;
 	mat4 InvModel;
 	int ObjectId;
+	float DitherFactor;
 };
 
 // define how many objects we can render with instancing

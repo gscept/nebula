@@ -76,7 +76,14 @@ private:
 	friend class Visibility::VisibilityContext;
 
 	/// create an instance of a model recursively
-	void CreateModelInstanceRecursive(Models::ModelNode* node, const IndexT childIndex, Models::ModelNode::Instance* parentInstance, byte** memory, Util::Array<Models::ModelNode::Instance*>& instances, Util::Array<Models::NodeType>& types);
+	void CreateModelInstanceRecursive(
+		Models::ModelNode* node, 
+		const IndexT childIndex, 
+		Models::ModelNode::Instance* parentInstance, 
+		byte** memory, 
+		Util::Array<Models::ModelNode::Instance*>& instances, 
+		Util::Array<Models::NodeType>& types,
+		Util::Array<Models::NodeBits>& bits);
 
 	/// perform actual load, override in subclass
 	LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
@@ -115,6 +122,7 @@ private:
 	{
 		ModelNodeInstances,
 		ModelNodeTypes,
+		ModelNodeBits,
 		InstanceMemory,
 		InstanceTransform,
 		InstanceBoundingBox,
@@ -123,6 +131,7 @@ private:
 	Ids::IdAllocator<
 		Util::Array<Models::ModelNode::Instance*>,		// list of node instances
 		Util::Array<Models::NodeType>,					// node instance types
+		Util::Array<Models::NodeBits>,					// node instance bits
 		byte*,											// allocated memory
 		Math::mat4,										// transform
 		Math::bbox,										// transformed bounding box

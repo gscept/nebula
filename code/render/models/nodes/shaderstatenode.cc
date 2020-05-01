@@ -21,6 +21,7 @@ namespace Models
 ShaderStateNode::ShaderStateNode()
 {
 	this->type = ShaderStateNodeType;
+	this->bits = HasTransformBit | HasStateBit;
 }
 
 //------------------------------------------------------------------------------
@@ -212,6 +213,8 @@ ShaderStateNode::Instance::Update()
 	ObjectsShared::ObjectBlock block;
 	this->modelTransform.store(block.Model);
 	this->invModelTransform.store(block.InvModel);
+	block.DitherFactor = this->lodFactor;
+
 	uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
 	this->offsets[this->objectTransformsIndex] = offset;
 	this->dirty = false;

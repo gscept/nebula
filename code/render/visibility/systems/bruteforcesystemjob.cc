@@ -47,6 +47,10 @@ BruteforceSystemJobFunc(const Jobs::JobFuncContext& ctx)
 	for (ptrdiff sliceIdx = 0; sliceIdx < ctx.numSlices; sliceIdx++)
 	{
 		const Math::mat4* transforms = (const Math::mat4*)N_JOB_INPUT(ctx, sliceIdx, 0);
+		const bool* activeFlags = (const bool*)N_JOB_INPUT(ctx, sliceIdx, 1);
+		if (!*activeFlags)
+			continue;
+
 		Math::ClipStatus::Type* flag = (Math::ClipStatus::Type*)N_JOB_OUTPUT(ctx, sliceIdx, 0);
 
 		const Math::bbox& box = *transforms;

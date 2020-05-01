@@ -48,6 +48,11 @@ public:
 	/// called if the window size has changed
 	static void OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
 
+	/// get the LOD camera
+	static Graphics::GraphicsEntityId GetLODCamera();
+	/// set the LOD camera
+	static void SetLODCamera(const Graphics::GraphicsEntityId id);
+
 private:
 
 	enum
@@ -63,8 +68,9 @@ private:
 		Math::mat4,				// view-transform
 		Math::mat4				// view-projection
 	> CameraAllocator;
-
 	static CameraAllocator cameraAllocator;
+
+	static Graphics::GraphicsEntityId lodCamera;
 
 	/// allocate a new slice for this context
 	static Graphics::ContextEntityId Alloc();

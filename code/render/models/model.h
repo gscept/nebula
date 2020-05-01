@@ -26,15 +26,21 @@ enum NodeType
 {
 	CharacterNodeType,
 	TransformNodeType,
-	NodeHasTransform = TransformNodeType, // all nodes below and equals has a transform
 	ShaderStateNodeType,
-	NodeHasShaderState = ShaderStateNodeType, // all nodes below and equals has a shader state
 	PrimitiveNodeType,
 	ParticleSystemNodeType,
 	CharacterSkinNodeType,
 
 	NumNodeTypes
 };
+
+enum NodeBits
+{
+	NoBits = N_BIT(0),
+	HasTransformBit = N_BIT(1),
+	HasStateBit = N_BIT(2)
+};
+__ImplementEnumBitOperators(NodeBits);
 
 /// create model (resource)
 const ModelId CreateModel(const ResourceCreateInfo& info);

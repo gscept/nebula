@@ -19,6 +19,7 @@ PrimitiveNode::PrimitiveNode() :
 	primitiveGroupIndex(InvalidIndex)
 {
 	this->type = PrimitiveNodeType;
+	this->bits = HasTransformBit | HasStateBit;
 }
 
 //------------------------------------------------------------------------------
