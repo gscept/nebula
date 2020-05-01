@@ -10,6 +10,7 @@
 #include "ids/id.h"
 #include "ids/idallocator.h"
 #include "resources/resourceid.h"
+#include "core/rttimacros.h"
 #include <functional>
 namespace Models
 {

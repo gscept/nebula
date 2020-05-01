@@ -10,6 +10,7 @@
 #include "graphics/graphicsserver.h"
 #include "visibility/visibilitycontext.h"
 #include "profiling/profiling.h"
+#include "graphics/cameracontext.h"
 
 #ifndef PUBLIC_BUILD
 #include "dynui/im3d/im3dcontext.h"
