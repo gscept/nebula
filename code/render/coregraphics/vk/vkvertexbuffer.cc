@@ -17,7 +17,7 @@ VkVertexBufferAllocator vboAllocator(0x00FFFFFF);
 VkBuffer 
 VertexBufferGetVk(const CoreGraphics::VertexBufferId id)
 {
-	return vboAllocator.Get<1>(id.id24).buf;
+	return vboAllocator.Get<VertexBuffer_RuntimeInfo>(id.id24).buf;
 }
 
 //------------------------------------------------------------------------------
@@ -26,7 +26,7 @@ VertexBufferGetVk(const CoreGraphics::VertexBufferId id)
 VkDeviceMemory 
 VertexBufferGetVkMemory(const CoreGraphics::VertexBufferId id)
 {
-	return vboAllocator.Get<0>(id.id24).mem;
+	return vboAllocator.Get<VertexBuffer_LoadInfo>(id.id24).mem;
 }
 
 } // namespace Vulkan
@@ -51,9 +51,9 @@ CreateVertexBuffer(const VertexBufferCreateInfo& info)
 	}
 
 	Ids::Id32 id = vboAllocator.Alloc();
-	VkVertexBufferLoadInfo& loadInfo = vboAllocator.Get<0>(id);
-	VkVertexBufferRuntimeInfo& runtimeInfo = vboAllocator.Get<1>(id);
-	uint32_t& mapCount = vboAllocator.Get<2>(id);
+	VkVertexBufferLoadInfo& loadInfo = vboAllocator.Get<VertexBuffer_LoadInfo>(id);
+	VkVertexBufferRuntimeInfo& runtimeInfo = vboAllocator.Get<VertexBuffer_RuntimeInfo>(id);
+	uint32_t& mapCount = vboAllocator.Get<VertexBuffer_MapCount>(id);
 
 	loadInfo.dev = Vulkan::GetCurrentDevice();
 
@@ -135,9 +135,9 @@ CreateVertexBuffer(const VertexBufferCreateDirectInfo& info)
 	n_assert(CoreGraphics::GpuBufferTypes::UsageImmutable != info.usage)
 
 	Ids::Id32 id = vboAllocator.Alloc();
-	VkVertexBufferLoadInfo& loadInfo = vboAllocator.Get<0>(id);
-	VkVertexBufferRuntimeInfo& runtimeInfo = vboAllocator.Get<1>(id);
-	uint32_t& mapCount = vboAllocator.Get<2>(id);
+	VkVertexBufferLoadInfo& loadInfo = vboAllocator.Get<VertexBuffer_LoadInfo>(id);
+	VkVertexBufferRuntimeInfo& runtimeInfo = vboAllocator.Get<VertexBuffer_RuntimeInfo>(id);
+	uint32_t& mapCount = vboAllocator.Get<VertexBuffer_MapCount>(id);
 
 	loadInfo.dev = Vulkan::GetCurrentDevice();
 
@@ -194,9 +194,9 @@ CreateVertexBuffer(const VertexBufferCreateDirectInfo& info)
 void
 DestroyVertexBuffer(const VertexBufferId id)
 {
-	VkVertexBufferLoadInfo& loadInfo = vboAllocator.Get<0>(id.id24);
-	VkVertexBufferRuntimeInfo& runtimeInfo = vboAllocator.Get<1>(id.id24);
-	uint32_t& mapCount = vboAllocator.Get<2>(id.id24);
+	VkVertexBufferLoadInfo& loadInfo = vboAllocator.Get<VertexBuffer_LoadInfo>(id.id24);
+	VkVertexBufferRuntimeInfo& runtimeInfo = vboAllocator.Get<VertexBuffer_RuntimeInfo>(id.id24);
+	uint32_t& mapCount = vboAllocator.Get<VertexBuffer_MapCount>(id.id24);
 
 	n_assert(mapCount == 0);
 	Vulkan::DelayedDeleteMemory(loadInfo.mem);
@@ -212,8 +212,8 @@ void*
 VertexBufferMap(const VertexBufferId id, const CoreGraphics::GpuBufferTypes::MapType type)
 {
 	void* buf;
-	VkVertexBufferLoadInfo& loadInfo = vboAllocator.Get<0>(id.id24);
-	uint32_t& mapCount = vboAllocator.Get<2>(id.id24);
+	VkVertexBufferLoadInfo& loadInfo = vboAllocator.Get<VertexBuffer_LoadInfo>(id.id24);
+	uint32_t& mapCount = vboAllocator.Get<VertexBuffer_MapCount>(id.id24);
 	VkResult res = vkMapMemory(loadInfo.dev, loadInfo.mem, 0, VK_WHOLE_SIZE, 0, &buf);
 	n_assert(res == VK_SUCCESS);
 	mapCount++;
@@ -226,8 +226,8 @@ VertexBufferMap(const VertexBufferId id, const CoreGraphics::GpuBufferTypes::Map
 void
 VertexBufferUnmap(const VertexBufferId id)
 {
-	VkVertexBufferLoadInfo& loadInfo = vboAllocator.Get<0>(id.id24);
-	uint32_t& mapCount = vboAllocator.Get<2>(id.id24);
+	VkVertexBufferLoadInfo& loadInfo = vboAllocator.Get<VertexBuffer_LoadInfo>(id.id24);
+	uint32_t& mapCount = vboAllocator.Get<VertexBuffer_MapCount>(id.id24);
 	n_assert(mapCount > 0);
 	vkUnmapMemory(loadInfo.dev, loadInfo.mem);
 	mapCount--;
@@ -240,7 +240,7 @@ VertexBufferUnmap(const VertexBufferId id)
 const SizeT
 VertexBufferGetNumVertices(const VertexBufferId id)
 {
-	VkVertexBufferLoadInfo& loadInfo = vboAllocator.Get<0>(id.id24);
+	VkVertexBufferLoadInfo& loadInfo = vboAllocator.Get<VertexBuffer_LoadInfo>(id.id24);
 	return loadInfo.vertexCount;
 }
 
@@ -250,7 +250,7 @@ VertexBufferGetNumVertices(const VertexBufferId id)
 const VertexLayoutId
 VertexBufferGetLayout(const VertexBufferId id)
 {
-	return vboAllocator.Get<1>(id.id24).layout;
+	return vboAllocator.Get<VertexBuffer_RuntimeInfo>(id.id24).layout;
 }
 
 //------------------------------------------------------------------------------

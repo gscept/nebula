@@ -18,19 +18,19 @@ namespace Vulkan
 
 enum
 {
-	SubmissionContextNumCycles,
-	SubmissionContextCmdBuffer,
-	SubmissionContextRetiredCmdBuffer,
-	SubmissionContextFence,
-	SubmissionContextFreeBuffers,
-	SubmissionContextFreeDeviceMemories,
-	SubmissionContextFreeImages,
-	SubmissionContextFreeCommandBuffers,
-	SubmissionContextClearCommandBuffers,
-	SubmissionContextFreeHostMemories,
-	SubmissionContextCurrentIndex,
-	SubmissionContextCmdCreateInfo,
-	SubmissionContextName
+	SubmissionContext_NumCycles,
+	SubmissionContext_CmdBuffer,
+	SubmissionContext_RetiredCmdBuffer,
+	SubmissionContext_Fence,
+	SubmissionContext_FreeBuffers,
+	SubmissionContext_FreeDeviceMemories,
+	SubmissionContext_FreeImages,
+	SubmissionContext_FreeCommandBuffers,
+	SubmissionContext_ClearCommandBuffers,
+	SubmissionContext_FreeHostMemories,
+	SubmissionContext_CurrentIndex,
+	SubmissionContext_CmdCreateInfo,
+	SubmissionContext_Name
 };
 
 typedef Ids::IdAllocator<
