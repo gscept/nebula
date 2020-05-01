@@ -56,32 +56,16 @@ ResourceStreamPool::Discard()
 void 
 ResourceStreamPool::LoadFallbackResources()
 {
-	// load placeholder
+	// load placeholder, don't load it async
 	if (this->placeholderResourceName.IsValid())
 	{
-		this->CreateResource(this->placeholderResourceName, "system"_atm,
-			[this](Resources::ResourceId id)
-			{
-				this->placeholderResourceId = id;
-			},
-			[this](Resources::ResourceId id)
-			{
-				n_error("Could not load placeholder resource %s!", this->placeholderResourceName.Value());
-			}, true);
+		this->placeholderResourceId = this->CreateResource(this->placeholderResourceName, "system"_atm, nullptr, nullptr, true);
 	}
 
-	// load error
+	// load error, don't load it async
 	if (this->failResourceName.IsValid())
 	{
-		this->CreateResource(this->failResourceName, "system"_atm,
-			[this](Resources::ResourceId id)
-			{
-				this->failResourceId = id;
-			},
-			[this](Resources::ResourceId id)
-			{
-				n_error("Could not load error resource %s!", this->failResourceName.Value());
-			}, true);
+		this->failResourceId = this->CreateResource(this->failResourceName, "system"_atm, nullptr, nullptr, true);
 	}
 }
 
@@ -369,51 +353,42 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 		// bump usage
 		this->usage[ret.poolId]++;
 
-		// only do this part if we have callbacks
-		if (success != nullptr || failed != nullptr)
-		{
-			// start the async section, the loader might change the resource state
-			this->asyncSection.Enter();
+		// start the async section, the loader might change the resource state
+		this->asyncSection.Enter();
 		
-			// if the resource has been loaded (through a previous Update), just call the success callback
-			const Resource::State state = this->states[ret.poolId];
-			if (state == Resource::Loaded)
-			{
-				if (success != nullptr) 
-					success(ret);
-			}
-			else if (state == Resource::Failed)
-			{
-				if (failed != nullptr) 
-					failed(ret);
-
-				// set to error immediately
-				ret.resourceId = failResourceId.resourceId;
-			}
-			else if (state == Resource::Pending)
-			{
-				// this resource should now be in the pending list
-				IndexT i = this->pendingLoadMap.FindIndex(res);
-				n_assert(i != InvalidIndex);
-
-				// pending resource may not be in-flight in thread
-				_PendingResourceLoad& pend = this->pendingLoads[this->pendingLoadMap.ValueAtIndex(i)];
-				if (!pend.inflight)
-				{
-					// flip the immediate flag, this is in case we decide to perform a later load using immediate override
-					pend.immediate = pend.immediate || immediate;
-				}
-
-				// since we are pending and inside the async section, it means the resource is not loaded yet, which means its safe to add the callback
-				this->callbacks[ret.poolId].Append({ ret, success, failed });
-
-				// set to placeholder while waiting
-				ret.resourceId = placeholderResourceId.resourceId;
-			}
-
-			// leave async section
-			this->asyncSection.Leave();
+		// if the resource has been loaded (through a previous Update), just call the success callback
+		const Resource::State state = this->states[ret.poolId];
+		if (state == Resource::Loaded)
+		{
+			// if loaded, do nothing, the return value will be the resource
 		}
+		else if (state == Resource::Failed)
+		{
+			// if failed, return the failed id immediately
+		}
+		else if (state == Resource::Pending)
+		{
+			// this resource should now be in the pending list
+			IndexT i = this->pendingLoadMap.FindIndex(res);
+			n_assert(i != InvalidIndex);
+
+			// pending resource may not be in-flight in thread
+			_PendingResourceLoad& pend = this->pendingLoads[this->pendingLoadMap.ValueAtIndex(i)];
+			if (!pend.inflight)
+			{
+				// flip the immediate flag, this is in case we decide to perform a later load using immediate override
+				pend.immediate = pend.immediate || immediate;
+			}
+
+			// since we are pending and inside the async section, it means the resource is not loaded yet, which means its safe to add the callback
+			this->callbacks[ret.poolId].Append({ ret, success, failed });
+
+			// set to placeholder while waiting
+			ret.resourceId = placeholderResourceId.resourceId;
+		}
+
+		// leave async section
+		this->asyncSection.Leave();
 	}
 
 	return ret;

@@ -55,7 +55,7 @@ VkVertexSignaturePool::GetVertexComponents(const CoreGraphics::VertexLayoutId id
 Resources::ResourcePool::LoadStatus
 VkVertexSignaturePool::LoadFromMemory(const Resources::ResourceId id, const void* info)
 {
-	const CoreGraphics::VertexLayoutInfo* vertexLayoutInfo = static_cast<const CoreGraphics::VertexLayoutInfo*>(info);
+	const CoreGraphics::VertexLayoutInfo* vertexLayoutInfo = reinterpret_cast<const CoreGraphics::VertexLayoutInfo*>(info);
 	Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<0>(id.resourceId);
 	VkPipelineVertexInputStateCreateInfo& vertexInfo = this->Get<1>(id.resourceId);
 	BindInfo& bindInfo = this->Get<2>(id.resourceId);

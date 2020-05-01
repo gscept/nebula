@@ -22,6 +22,7 @@ CharacterSkinNode::CharacterSkinNode()
 {
     this->skinnedShaderFeatureBits = ShaderServer::Instance()->FeatureStringToMask("Skinned");
 	this->type = CharacterSkinNodeType;
+	this->bits = HasTransformBit | HasStateBit;
 }
 
 //------------------------------------------------------------------------------

@@ -101,7 +101,15 @@ SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAt
 					CoreGraphics::TextureId tex;
 					if (!path.IsEmpty())
 					{
-						tex = Resources::CreateResource(path + NEBULA_TEXTURE_EXTENSION, tag, nullptr, nullptr, true);
+						tex = Resources::CreateResource(path + NEBULA_TEXTURE_EXTENSION, tag, 
+							[type, sid, binding](Resources::ResourceId rid)
+							{
+								type->SetSurfaceConstant(sid, binding, CoreGraphics::TextureGetBindlessHandle(rid));
+							}, 
+							[type, sid, binding](Resources::ResourceId rid)
+							{
+								type->SetSurfaceConstant(sid, binding, CoreGraphics::TextureGetBindlessHandle(rid));
+							});
 						defaultVal = tex.HashCode64();
 					}
 					else
@@ -115,7 +123,15 @@ SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAt
 			}
 			else if (slot != InvalidIndex)
 			{
-				CoreGraphics::TextureId tex = Resources::CreateResource(reader->GetString("value") + NEBULA_TEXTURE_EXTENSION, tag, nullptr, nullptr, true);
+				CoreGraphics::TextureId tex = Resources::CreateResource(reader->GetString("value") + NEBULA_TEXTURE_EXTENSION, tag, 
+					[type, sid, slot](Resources::ResourceId rid)
+					{
+						type->SetSurfaceTexture(sid, slot, rid);
+					}, 
+					[type, sid, slot](Resources::ResourceId rid)
+					{
+						type->SetSurfaceTexture(sid, slot, rid);
+					});
 				type->SetSurfaceTexture(sid, slot, tex);
 			}
 			

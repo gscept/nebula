@@ -36,16 +36,20 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 		for (i = 0; i < numNodes; i++)
 		{
 			Models::ModelNode::Instance* const inst = nodes[i];
-			Models::NodeType type = inst->node->GetType();
+			Models::NodeBits bits = inst->node->GetBits();
 
 			// only treat renderable nodes
-			if (type >= Models::NodeHasShaderState)
+			if ((bits & Models::HasStateBit) == Models::HasStateBit)
 			{
 				if (results[i] == Math::ClipStatus::Outside)
 					continue;
+
 				Models::ShaderStateNode::Instance* const shdNodeInst = reinterpret_cast<Models::ShaderStateNode::Instance*>(inst);
+				if (!shdNodeInst->active)
+					continue;
+
 				Models::ShaderStateNode* const shdNode = reinterpret_cast<Models::ShaderStateNode*>(inst->node);
-				n_assert(type == shdNode->GetType());
+				n_assert(bits == shdNode->GetBits());
 
 				auto& bucket = buckets->AddUnique(shdNode->materialType);
 				if (!bucket.IsBulkAdd())
@@ -57,9 +61,6 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 
 				// allocate memory for draw packet
 				void* mem = packetAllocator->Alloc(shdNodeInst->GetDrawPacketSize());
-
-				// update constants
-				//shdNodeInst->Update();
 
 				// update packet and add to list
 				Models::ModelNode::DrawPacket* packet = shdNodeInst->UpdateDrawPacket(mem);

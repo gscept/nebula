@@ -10,6 +10,7 @@
 #include "ids/id.h"
 #include "ids/idallocator.h"
 #include "resources/resourceid.h"
+#include "core/rttimacros.h"
 #include <functional>
 namespace Models
 {
@@ -26,15 +27,21 @@ enum NodeType
 {
 	CharacterNodeType,
 	TransformNodeType,
-	NodeHasTransform = TransformNodeType, // all nodes below and equals has a transform
 	ShaderStateNodeType,
-	NodeHasShaderState = ShaderStateNodeType, // all nodes below and equals has a shader state
 	PrimitiveNodeType,
 	ParticleSystemNodeType,
 	CharacterSkinNodeType,
 
 	NumNodeTypes
 };
+
+enum NodeBits
+{
+	NoBits = N_BIT(0),
+	HasTransformBit = N_BIT(1),
+	HasStateBit = N_BIT(2)
+};
+__ImplementEnumBitOperators(NodeBits);
 
 /// create model (resource)
 const ModelId CreateModel(const ResourceCreateInfo& info);

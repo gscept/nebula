@@ -34,6 +34,7 @@ ParticleSystemNode::ParticleSystemNode() :
 	mesh(Ids::InvalidId64)
 {
 	this->type = ParticleSystemNodeType;
+    this->bits = HasTransformBit | HasStateBit;
 }
 
 //------------------------------------------------------------------------------

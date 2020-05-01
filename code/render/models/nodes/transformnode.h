@@ -29,6 +29,7 @@ public:
 		/// Identifiable object id. Usually the graphics entity id.
 		/// @todo	Should be moved to a per-model-instance resource since it's the same for every model instance
 		uint objectId;
+		float lodFactor;
 
 		/// setup new instace
 		virtual void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;

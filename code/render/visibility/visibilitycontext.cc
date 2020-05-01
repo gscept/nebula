@@ -68,7 +68,7 @@ ObserverContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityType
 			for (IndexT j = 0; j < nodes.Size(); j++)
 			{
 				Models::ModelNode::Instance* node = nodes[j];
-				if (node->node->GetType() >= Models::NodeHasShaderState)
+				if ((node->node->GetBits() & Models::HasStateBit) == Models::HasStateBit)
 				{
 					Ids::Id32 res = observerAllocator.Get<Observer_ResultAllocator>(cid.id).Alloc();
 					observerAllocator.Get<Observer_ResultAllocator>(cid.id).Get<VisibilityResult_Flag>(res) = Math::ClipStatus::Inside;
@@ -112,6 +112,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 
 	Util::Array<Math::mat4>& observableAtomTransforms = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_Transform>();
 	Util::Array<Graphics::ContextEntityId>& observableAtomContexts = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_ContextEntity>();
+	Util::Array<bool>& observableAtomActiveFlags = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_Active>();
 
 	const Util::Array<VisibilityResultAllocator>& results = observerAllocator.GetArray<Observer_ResultAllocator>();
 	Util::Array<Math::ClipStatus::Type*> observerResults = observerAllocator.GetArray<Observer_Results>();
@@ -128,11 +129,13 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 		case Model:
 		{
 			Models::ShaderStateNode::Instance* sinst = reinterpret_cast<Models::ShaderStateNode::Instance*>(ObservableContext::observableAtomAllocator.Get<ObservableAtom_Node>(i));
+			observableAtomActiveFlags[i] = sinst->active;
 			observableAtomTransforms[i] = sinst->boundingBox.to_mat4();
 			break;
 		}
 		case Particle:
 			observableAtomTransforms[i] = Particles::ParticleContext::GetBoundingBox(id).to_mat4();
+			observableAtomActiveFlags[i] = true;
 			break;
 		case Light:
 			observableAtomTransforms[i] = Lighting::LightContext::GetTransform(id);
@@ -229,7 +232,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 	if (observableAtomTransforms.Size() > 0) for (i = 0; i < ObserverContext::systems.Size(); i++)
 	{
 		VisibilitySystem* sys = ObserverContext::systems[i];
-		sys->PrepareEntities(observableAtomTransforms.Begin(), ids.Begin(), observableAtomTransforms.Size());
+		sys->PrepareEntities(observableAtomTransforms.Begin(), ids.Begin(), observableAtomActiveFlags.Begin(), observableAtomTransforms.Size());
 	}
 
 	// run all visibility systems
@@ -645,7 +648,7 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
 			for (IndexT j = 0; j < nodes.Size(); j++)
 			{
 				Models::ModelNode::Instance* node = nodes[j];
-				if (node->node->GetType() >= Models::NodeHasShaderState)
+				if ((node->node->GetBits() & Models::HasStateBit) == Models::HasStateBit)
 				{
 					// allocate visibility result instance
 					Ids::Id32 obj = alloc.Alloc();
@@ -658,7 +661,7 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
 		for (IndexT j = 0; j < nodes.Size(); j++)
 		{
 			Models::ModelNode::Instance* node = nodes[j];
-			if (node->node->GetType() >= Models::NodeHasShaderState)
+			if ((node->node->GetBits() & Models::HasStateBit) == Models::HasStateBit)
 			{
 				Ids::Id32 obj = ObservableContext::observableAtomAllocator.Alloc();
 				ObservableContext::observableAtomAllocator.Get<ObservableAtom_ContextEntity>(obj) = cid;

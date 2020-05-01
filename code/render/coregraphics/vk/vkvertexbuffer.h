@@ -30,6 +30,13 @@ struct VkVertexBufferRuntimeInfo
 	CoreGraphics::VertexLayoutId layout;
 };
 
+enum
+{
+	VertexBuffer_LoadInfo,
+	VertexBuffer_RuntimeInfo,
+	VertexBuffer_MapCount,
+};
+
 typedef Ids::IdAllocator<
 	VkVertexBufferLoadInfo,			//0 loading stage info
 	VkVertexBufferRuntimeInfo,		//1 runtime stage info

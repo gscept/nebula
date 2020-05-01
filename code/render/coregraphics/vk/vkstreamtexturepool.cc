@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-// vkstreamtextureloader.cc
+// vkstreamtexturepool.cc
 // (C) 2016-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
@@ -47,7 +47,7 @@ void
 VkStreamTexturePool::Setup()
 {
 	ResourceStreamPool::Setup();
-	this->placeholderResourceName = "tex:system/placeholder.dds";
+	this->placeholderResourceName = "tex:system/white.dds";
 	this->failResourceName = "tex:system/error.dds";
 }
 
@@ -82,7 +82,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	void* srcData = stream->Map();
 	uint srcDataSize = stream->GetSize();
 
-	/// during the load-phase, we can safetly get the structs
+	// during the load-phase, we can safetly get the structs
 	texturePool->EnterGet();
 	VkTextureRuntimeInfo& runtimeInfo = texturePool->Get<0>(res.resourceId);
 	VkTextureLoadInfo& loadInfo = texturePool->Get<1>(res.resourceId);
@@ -125,7 +125,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	VkExtent3D extents;
 	extents.width = width;
 	extents.height = height;
-	extents.depth = 1;
+	extents.depth = depth;
 	//auto queues = Vulkan::GetQueueFamilies();
 	VkImageCreateInfo info =
 	{
@@ -200,7 +200,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 
 				info.extent.width = mipWidth;
 				info.extent.height = mipHeight;
-				info.extent.depth = 1;
+				info.extent.depth = mipDepth;
 
 				VkBuffer outBuf;
 				VkDeviceMemory outMem;
@@ -231,7 +231,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 
 			info.extent.width = mipWidth;
 			info.extent.height = mipHeight;
-			info.extent.depth = 1;
+			info.extent.depth = mipDepth;
 
 			VkBuffer outBuf;
 			VkDeviceMemory outMem;
@@ -260,18 +260,23 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 
 	// create view
 	VkImageViewType viewType;
-	if (cube) viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+	if (cube)
+	{
+		if (loadInfo.layers > 1) viewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+		else					 viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+	}
 	else
 	{
 		if (height > 1)
 		{
-			if (depth > 1) viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-			else		   viewType = VK_IMAGE_VIEW_TYPE_2D;
+			if (loadInfo.layers > 1) viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+			else if (depth > 1)		 viewType = VK_IMAGE_VIEW_TYPE_3D;
+			else					 viewType = VK_IMAGE_VIEW_TYPE_2D;
 		}
 		else
 		{
-			if (depth > 1) viewType = VK_IMAGE_VIEW_TYPE_1D_ARRAY;
-			else		   viewType = VK_IMAGE_VIEW_TYPE_1D;
+			if (loadInfo.layers > 1) viewType = VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+			else					 viewType = VK_IMAGE_VIEW_TYPE_1D;
 		}
 	}
 
@@ -283,7 +288,6 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 		loadInfo.img,
 		viewType,
 		vkformat,
-		//VK_FORMAT_R8G8B8A8_UNORM,
 		VkTypes::AsVkMapping(format),
 		subres
 	};

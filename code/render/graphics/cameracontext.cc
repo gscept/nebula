@@ -10,6 +10,7 @@ namespace Graphics
 {
 
 CameraContext::CameraAllocator CameraContext::cameraAllocator;
+Graphics::GraphicsEntityId CameraContext::lodCamera;
 _ImplementContext(CameraContext, CameraContext::cameraAllocator);
 
 //------------------------------------------------------------------------------
@@ -148,6 +149,24 @@ CameraContext::OnWindowResized(const CoreGraphics::WindowId windowId, SizeT widt
 		cameraAllocator.GetArray<Camera_Projection>()[i] = setting.GetProjTransform();
 	}
 
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Graphics::GraphicsEntityId 
+CameraContext::GetLODCamera()
+{
+	return lodCamera;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+CameraContext::SetLODCamera(const Graphics::GraphicsEntityId id)
+{
+	lodCamera = id;
 }
 
 } // namespace Graphics
