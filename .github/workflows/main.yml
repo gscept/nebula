@@ -65,9 +65,12 @@ jobs:
         python fips anyfx setup
 
     # Runs a set of commands using the runners shell
-    - name: Run fips
+    - name: Run prebuild steps
       run: |        
         python fips nebula set work ../fips-deploy
         python fips nebula set toolkit .        
         python fips gen
+    
+    - name: Compile 
+      run: |
         python fips build
