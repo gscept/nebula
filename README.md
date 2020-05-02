@@ -6,8 +6,7 @@
 2. Compiler with support for C++17.
 3. GPU and drivers supporting Vulkan 1.2+
 4. [CMake 3.13+](https://cmake.org/download/)
-5. [Vulkan SDK 1.2+](https://vulkan.lunarg.com/sdk/home)
-6. [Python 3.5+](https://www.python.org/downloads)
+5. [Python 3.5+](https://www.python.org/downloads)
     * Python modules required:
         1. numpy
         2. jedi
