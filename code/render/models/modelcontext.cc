@@ -340,10 +340,9 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 						tnode->active = true;
 					else
 						tnode->active = false;
-					tnode->lodFactor = (viewDistance - (pnode->minDistance + 1.5f)) / (pnode->maxDistance - (pnode->minDistance + 1.5f));
+					float distBlend = Math::n_max(pnode->maxDistance - viewDistance, 0.0f) / (pnode->maxDistance - pnode->minDistance);
+					tnode->lodFactor = Math::n_cos(distBlend * N_PI * 2.0f);
 				}
-				else
-					tnode->lodFactor = 0.0f;
 			}
 
 			if ((bits[j] & HasStateBit) == HasStateBit)
