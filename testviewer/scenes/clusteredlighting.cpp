@@ -52,7 +52,7 @@ void OpenScene()
             const float green = Math::n_rand();
             const float blue = Math::n_rand();
             Lighting::LightContext::RegisterEntity(id);
-            Lighting::LightContext::SetupPointLight(id, Math::vec3(red, green, blue), 25.0f, Math::translation(i * 16, 5, j * 16), 10.0f, false);
+            Lighting::LightContext::SetupPointLight(id, Math::vec3(red, green, blue), 25.0f, Math::translation(i * 4, 5, j * 4), 10.0f, false);
             pointLights.Append(id);
         }
     }
@@ -71,7 +71,7 @@ void OpenScene()
             const float blue = Math::n_rand();
 
             Math::mat4 spotLightMatrix = Math::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(25), 0);
-            spotLightMatrix.position = Math::vec4(i * 15, 2.5, j * 15, 1);
+            spotLightMatrix.position = Math::vec4(i * 4, 2.5, j * 4, 1);
 
             Lighting::LightContext::RegisterEntity(id);
             Lighting::LightContext::SetupSpotLight(id, Math::vec3(red, green, blue), 250.0f, Math::n_deg2rad(45.0f), Math::n_deg2rad(60.0f), spotLightMatrix, 50.0f, true);
@@ -79,21 +79,26 @@ void OpenScene()
         }
     }
 
-    // load textures
-    CoreGraphics::TextureId albedo = Resources::CreateResource("tex:system/white.dds", "decal"_atm, nullptr, nullptr, true);
-    CoreGraphics::TextureId normal = Resources::CreateResource("tex:test/normalbox_normal.dds", "decal"_atm, nullptr, nullptr, true);
-    CoreGraphics::TextureId material = Resources::CreateResource("tex:system/default_material.dds", "decal"_atm, nullptr, nullptr, true);
-
-    static const int NumDecals = 4;
+    static const int NumDecals = 5;
     for (int i = -NumDecals; i < NumDecals; i++)
     {
         for (int j = -NumDecals; j < NumDecals; j++)
         {
             auto id = Graphics::CreateEntity();
-
+            entities.Append(id);
+            int index = (j + NumDecals) + (i + NumDecals) * NumDecals * 2;
+            entityNames.Append(Util::String::Sprintf("Decal%d", index));
             Math::mat4 transform = Math::scaling(Math::vec3(10, 10, 50));
             transform = transform * Math::rotationyawpitchroll(0, Math::n_deg2rad(90), Math::n_deg2rad(Math::n_rand() * 90.0f));
             transform.position = Math::vec4(i * 16, 0, j * 16, 1);
+
+            // load textures
+            CoreGraphics::TextureId albedo = Resources::CreateResource("tex:system/white.dds", "decal"_atm, nullptr, nullptr, true);
+            CoreGraphics::TextureId normal = Resources::CreateResource("tex:test/normalbox_normal.dds", "decal"_atm, [id](Resources::ResourceId rid)
+                {
+                    Decals::DecalContext::SetNormalTexture(id, rid);
+                });
+            CoreGraphics::TextureId material = Resources::CreateResource("tex:system/default_material.dds", "decal"_atm, nullptr, nullptr, true);
 
             // setup decal
             Decals::DecalContext::RegisterEntity(id);
@@ -106,15 +111,18 @@ void OpenScene()
         }
     }
 
-    static const int NumFogVolumes = 1;
+    static const int NumFogVolumes = 0;
     for (int i = -NumFogVolumes; i < NumFogVolumes; i++)
     {
         for (int j = -NumFogVolumes; j < NumFogVolumes; j++)
         {
             auto id = Graphics::CreateEntity();
+            entities.Append(id);
+            int index = (j + NumFogVolumes) + (i + NumFogVolumes) * NumFogVolumes * 2;
+            entityNames.Append(Util::String::Sprintf("Fog%d", index));
             Math::mat4 transform = Math::scaling(10);
             transform = transform * Math::rotationyawpitchroll(Math::n_deg2rad(Math::n_rand() * 90.0f), 0, 0);
-            transform.position = Math::vec4(16 - i * 16, 0, 16 - j * 16, 1);
+            transform.position = Math::vec4(4 - i * 4, 0, 4 - j * 4, 1);
 
             const float red = Math::n_rand();
             const float green = Math::n_rand();
@@ -122,7 +130,7 @@ void OpenScene()
 
             // setup box volume
             Fog::VolumetricFogContext::RegisterEntity(id);
-            Fog::VolumetricFogContext::SetupSphereVolume(id, Math::vec3(16 - i * 16, 0, 16 - j * 16), 10.0f, 1.0f, Math::vec3(red, green, blue));
+            Fog::VolumetricFogContext::SetupSphereVolume(id, Math::vec3(4 - i * 4, 0, 4 - j * 4), 4.0f, 1.0f, Math::vec3(red, green, blue));
             //Fog::VolumetricFogContext::SetupBoxVolume(id, transform, Math::n_rand() * 100.0f, Math::vec3(red, green, blue));
 
             fogVolumes.Append(id);
@@ -131,19 +139,18 @@ void OpenScene()
 
     tower = Graphics::CreateEntity();
     Graphics::RegisterEntity<ModelContext, ObservableContext>(tower);
-    ModelContext::Setup(tower, "mdl:Buildings/castle_tower.n3", "Viewer");
+    ModelContext::Setup(tower, "mdl:test/test.n3", "Viewer");
     ModelContext::SetTransform(tower, Math::translation(4, 0, -7));
     entities.Append(tower);
     entityNames.Append("Tower");
 
     ground = Graphics::CreateEntity();
     Graphics::RegisterEntity<ModelContext, ObservableContext>(ground);
-    ModelContext::Setup(ground, "mdl:environment/Groundplane.n3", "Viewer");
-    ModelContext::SetTransform(ground, Math::scaling(1) * Math::translation(0,0,0));
+    ModelContext::Setup(ground, "mdl:environment/plcholder_world.n3", "Viewer");
+    ModelContext::SetTransform(ground, Math::scaling(4) * Math::translation(0,0,0));
     entities.Append(ground);
     entityNames.Append("Ground");
 
-    /*
 	particle = Graphics::CreateEntity();
 	Graphics::RegisterEntity<ModelContext, ObservableContext, Particles::ParticleContext>(particle);
 	ModelContext::Setup(particle, "mdl:Particles/Build_dust.n3", "Viewer");
@@ -151,17 +158,16 @@ void OpenScene()
 	Particles::ParticleContext::Play(particle, Particles::ParticleContext::RestartIfPlaying);
 	entities.Append(particle);
 	entityNames.Append("Particle");
-    */
 
     // setup visibility
     ObservableContext::Setup(tower, VisibilityEntityType::Model);
     ObservableContext::Setup(ground, VisibilityEntityType::Model);
-	//ObservableContext::Setup(particle, VisibilityEntityType::Model);
+	ObservableContext::Setup(particle, VisibilityEntityType::Particle);
 
-    const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3", "mdl:Units/Unit_Knight.n3" };
+    const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3", "mdl:Units/Unit_Rifleman.n3" };
     //const Util::StringAtom modelRes[] = { "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3" };
-    const Util::StringAtom skeletonRes[] = { "ske:Units/Unit_Archer.nsk3",  "ske:Units/Unit_Footman.nsk3",  "ske:Units/Unit_Spearman.nsk3", "ske:Units/Unit_Knight.nsk3" };
-    const Util::StringAtom animationRes[] = { "ani:Units/Unit_Archer.nax3",  "ani:Units/Unit_Footman.nax3",  "ani:Units/Unit_Spearman.nax3", "ani:Units/Unit_Knight.nax3" };
+    const Util::StringAtom skeletonRes[] = { "ske:Units/Unit_Archer.nsk3",  "ske:Units/Unit_Footman.nsk3",  "ske:Units/Unit_Spearman.nsk3", "ske:Units/Unit_Rifleman.nsk3" };
+    const Util::StringAtom animationRes[] = { "ani:Units/Unit_Archer.nax3",  "ani:Units/Unit_Footman.nax3",  "ani:Units/Unit_Spearman.nax3", "ani:Units/Unit_Rifleman.nax3" };
 
     ModelContext::BeginBulkRegister();
     ObservableContext::BeginBulkRegister();
@@ -332,6 +338,22 @@ void RenderUI()
         if (Im3d::Gizmo("GizmoEntity", trans))
         {
             Lighting::LightContext::SetTransform(id, trans);
+        }
+    }
+    else if (Fog::VolumetricFogContext::IsEntityRegistered(id))
+    {
+        Im3d::Mat4 trans = Fog::VolumetricFogContext::GetTransform(id);
+        if (Im3d::Gizmo("GizmoEntity", trans))
+        {
+            Fog::VolumetricFogContext::SetTransform(id, trans);
+        }
+    }
+    else if (Decals::DecalContext::IsEntityRegistered(id))
+    {
+        Im3d::Mat4 trans = Decals::DecalContext::GetTransform(id);
+        if (Im3d::Gizmo("GizmoEntity", trans))
+        {
+            Decals::DecalContext::SetTransform(id, trans);
         }
     }
 };

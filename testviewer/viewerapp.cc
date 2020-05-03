@@ -3,28 +3,38 @@
 // (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "stdneb.h"
+#include "viewerapp.h"
+
 #include "core/refcounted.h"
 #include "timing/timer.h"
 #include "io/console.h"
+#include "io/logfileconsolehandler.h"
+
+#include "dynui/imguicontext.h"
+#include "dynui/im3d/im3dcontext.h"
+#include "dynui/im3d/im3d.h"
+
 #include "visibility/visibilitycontext.h"
 #include "models/streammodelpool.h"
 #include "models/modelcontext.h"
 #include "input/keyboard.h"
 #include "input/mouse.h"
-#include "viewerapp.h"
-#include "dynui/imguicontext.h"
 #include "lighting/lightcontext.h"
 #include "characters/charactercontext.h"
 #include "decals/decalcontext.h"
-#include "imgui.h"
-#include "dynui/im3d/im3dcontext.h"
-#include "dynui/im3d/im3d.h"
+
 #include "graphics/environmentcontext.h"
 #include "fog/volumetricfogcontext.h"
 #include "clustering/clustercontext.h"
 #include "scenes/scenes.h"
 #include "debug/framescriptinspector.h"
-#include "io/logfileconsolehandler.h"
+
+#include "posteffects/bloomcontext.h"
+#include "posteffects/ssaocontext.h"
+#include "posteffects/ssrcontext.h"
+#include "posteffects/tonemapcontext.h"
+
+#include "imgui.h"
 
 using namespace Timing;
 using namespace Graphics;
@@ -125,6 +135,7 @@ SimpleViewerApplication::Open()
 
 		Graphics::RegisterEntity<CameraContext, ObserverContext>(this->cam);
 		CameraContext::SetupProjectionFov(this->cam, width / (float)height, Math::n_deg2rad(60.f), 0.1f, 10000.0f);
+        CameraContext::SetLODCamera(this->cam);
 
 		Clustering::ClusterContext::Create(0.1f, 1000.0f, this->wnd);
 		Lighting::LightContext::Create();
@@ -132,18 +143,28 @@ SimpleViewerApplication::Open()
 		Im3d::Im3dContext::Create();
 		Dynui::ImguiContext::Create();
         Fog::VolumetricFogContext::Create();
-
+        PostEffects::BloomContext::Create();
+        PostEffects::SSAOContext::Create();
+        PostEffects::SSRContext::Create();
+        PostEffects::TonemapContext::Create();
 
 		this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
 		this->stage = gfxServer->CreateStage("stage1", true);
 
-        Im3d::Im3dContext::SetGridStatus(true);
+        // setup post effects
+        Ptr<Frame::FrameScript> frameScript = this->view->GetFrameScript();
+        PostEffects::BloomContext::Setup(frameScript);
+        PostEffects::SSAOContext::Setup(frameScript);
+        PostEffects::SSRContext::Setup(frameScript);
+        PostEffects::TonemapContext::Setup(frameScript);
+
+        Im3d::Im3dContext::SetGridStatus(this->showGrid);
         Im3d::Im3dContext::SetGridSize(1.0f, 25);
         Im3d::Im3dContext::SetGridColor(Math::vec4(0.2f, 0.2f, 0.2f, 0.8f));
 
 		this->globalLight = Graphics::CreateEntity();
 		Lighting::LightContext::RegisterEntity(this->globalLight);
-		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1, 1, 1), 0.1f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(0.5, 1, 0.1), true);
+		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1, 1, 1), 1.0f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(0.1, 0.1, 0.1), true);
 
         this->ResetCamera();
         CameraContext::SetTransform(this->cam, this->mayaCameraUtil.GetCameraTransform());
@@ -430,6 +451,13 @@ SimpleViewerApplication::RenderUI()
             ImGui::MenuItem("Frame Profiler", nullptr, &this->showFrameProfiler);
             ImGui::MenuItem("Scene UI", nullptr, &this->showSceneUI);
 
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Settings"))
+        {
+            ImGui::MenuItem("Show Grid", nullptr, &this->showGrid);
+            Im3d::Im3dContext::SetGridStatus(this->showGrid);
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
