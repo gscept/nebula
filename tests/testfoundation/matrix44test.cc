@@ -70,7 +70,7 @@ Matrix44Test::Run()
     value = vec4(0.0f, 0.0f, 2.0f, 0.0f);
     m1.row2 = value;
     value = vec4(0.0f, 0.0f, 0.0f, 1.0f);
-    m1.row0 = value;
+    m1.row3 = value;
     VERIFY(m0 == m1);
     VERIFY(m0.row0 == vec4(2.0f, 0.0f, 0.0f, 0.0f));
     VERIFY(m0.row1 == vec4(0.0f, 2.0f, 0.0f, 0.0f));
