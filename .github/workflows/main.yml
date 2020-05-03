@@ -57,7 +57,7 @@ jobs:
       uses: actions/cache@v1.1.2
       with:
         path: ../fips-deploy/fips-anyfx
-        key: ${{ runner.os }}-xxhash-${{ env.anyfx-rev }}
+        key: ${{ runner.os }}-anyfx-${{ env.anyfx-rev }}
     
     - name: Build AnyfxCompiler
       if: steps.cache-anyfx.outputs.cache-hit != 'true'

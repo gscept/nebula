@@ -52,14 +52,9 @@ set_property(CACHE N_QT PROPERTY STRINGS "N_QT4" "N_QT5")
 set(${N_QT} ON)
 
 find_package(Python 3.5 COMPONENTS Development REQUIRED)
-MESSAGE(WARNING "PythonDebug: ${Python_LIBRARY_DEBUG} Release: ${Python_LIBRARY_RELEASE}")
-get_filename_component(PY_DBG_PATH2 ${Python_LIBRARY_DEBUG} DIRECTORY)
-get_filename_component(PY_OPT_PATH2 ${Python_LIBRARY_RELEASE} DIRECTORY)
-FILE(GLOB_RECURSE PYFILES ${PY_DBG_PATH2}/*)
-MESSAGE(WARNING "Pythonfiles: ${PYFILES}")
+MESSAGE(WARNING "Python Debug: ${Python_LIBRARY_DEBUG} Release: ${Python_LIBRARY_RELEASE}")
 
 #physx
-
 if(NOT PX_TARGET)
     MESSAGE(WARNING "PX_TARGET undefined, select a physx build folder (eg. win.x86_64.vs141)")
 endif()
@@ -79,7 +74,7 @@ foreach(CUR_LIB ${PX_LIBRARY_NAMES})
     LIST(APPEND PX_RELEASE_LIBRARIES ${PX_REL_${CUR_LIB}})
 endforeach()
 MESSAGE(WARNING "Found PhysX: ${PX_DEBUG_LIBRARIES} ${PX_RELEASE_LIBRARIES}")
-FILE(GLOB_RECURSE PXFILES ${FIPS_DEPLOY_DIR}/physx/bin/*)
+FILE(GLOB_RECURSE PXFILES ${FIPS_DEPLOY_DIR}/physx/*)
 MESSAGE(WARNING "All PX Files ${PXFILES}")
 
 add_library(PxLibs INTERFACE)
