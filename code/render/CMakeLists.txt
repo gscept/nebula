@@ -136,6 +136,8 @@ ENDIF()
 				event.h
                 fence.h
 				graphicsdevice.h
+                image.cc
+                image.h
 				imagefileformat.cc
 				imagefileformat.h
 				indexbuffer.h
@@ -627,6 +629,12 @@ ENDIF()
                 tonemapcontext.h
             )
 
+        fips_dir(terrain)
+            fips_files(
+                terraincontext.h
+                terraincontext.cc
+            )
+
 		fips_dir(visibility)
 			fips_files(
 				visibility.h
@@ -656,6 +664,15 @@ ENDIF()
 				visibilitysystem.h
 				visibilitysystem.cc
 			)
+        fips_dir(weather)
+            fips_files(
+                cloudcontext.h
+                cloudcontext.cc
+                raincontext.h
+                raincontext.cc
+                snowcontext.h
+                snowcontext.cc
+            )
 nebula_end_module()
 target_include_directories(render PUBLIC ${CODE_ROOT}/render)
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")

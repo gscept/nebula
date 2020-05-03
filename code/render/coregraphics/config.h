@@ -44,7 +44,8 @@ enum IdType
 	ResourcePipelineIdType,
 	SamplerIdType,
 	MaterialIdType,
-	SubmissionContextIdType
+	SubmissionContextIdType,
+	ImageIdType
 };
 
 enum QueueType
