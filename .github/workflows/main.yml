@@ -73,3 +73,8 @@ jobs:
     - name: Compile 
       run: |
         python fips build
+
+    - name: Run Tests
+      run: |
+         python fips run testmath
+         python fips run testfoundation
