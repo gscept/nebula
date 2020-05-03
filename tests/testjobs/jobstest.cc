@@ -8,8 +8,6 @@
 #include "io/console.h"
 #include "jobstest.h"
 #include "app/application.h"
-#include "input/inputserver.h"
-#include "input/keyboard.h"
 #include "io/ioserver.h"
 
 #include "jobs/jobs.h"

@@ -8,8 +8,6 @@
 #include "io/console.h"
 #include "misctest.h"
 #include "app/application.h"
-#include "input/inputserver.h"
-#include "input/keyboard.h"
 #include "io/ioserver.h"
 
 #include "memory/ringallocator.h"

@@ -18,7 +18,7 @@ fips_include_directories(extlibs/scripts)
 
 fips_ide_group(Core)
 fips_add_subdirectory(code)
-
+fips_add_subdirectory(tests)
 if(NOT FIPS_IMPORT)
     fips_finish()
 endif()
