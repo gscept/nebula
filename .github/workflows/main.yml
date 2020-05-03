@@ -32,7 +32,7 @@ jobs:
     - name: Clone dependencies
       run: |
         python fips fetch
-        python fips set config vulkan-win64-vstudio-release
+        python fips set config vulkan-win64-vs2019-debug
         
     - name: Cache PhysX
       id: cache-physx
