@@ -75,6 +75,7 @@ protected:
     bool showCameraWindow = true;
     bool showFrameProfiler = true;
     bool showSceneUI = true;
+    bool showGrid = false;
 
     bool renderDebug = false;
     int cameraMode = 0;
