@@ -27,7 +27,7 @@ extern void InitInstance(VkInstance instance);
 
 } // namespace Vulkan
 
-#define _IMP_VK(name) name = (PFN_##name)vkGetInstanceProcAddr(instance, #name);
+#define _IMP_VK(name) name = (PFN_##name)vkGetInstanceProcAddr(instance, #name);n_assert_fmt(name != nullptr, "Unable to get function proc: %s\n",#name);
 #define _DEC_VK(name) extern PFN_##name name;
 #define _DEF_VK(name) PFN_##name name;
 

@@ -17,9 +17,10 @@ nebula_begin_module(render)
 	fips_deps(foundation resource anyfx libpng libjpeg DevIL)
 
 	if(N_USE_VULKAN)
-		fips_libs(glfw3)
+		fips_deps(glfw3)
 	endif()
-		fips_files(render/precompiled.h render/stdneb.h render/stdneb.cc)
+	
+	fips_files(render/precompiled.h render/stdneb.h render/stdneb.cc)
 
 IF(FALSE) # incrementally enable modules as they get written
 		fips_dir(animation)
