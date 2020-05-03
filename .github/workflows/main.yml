@@ -39,12 +39,12 @@ jobs:
       uses: actions/cache@v1.1.2
       with:
         path: ../fips-deploy/physx
-        key: ${{ runner.os }}-physx-deploy-vs15
+        key: ${{ runner.os }}-physx-deploy-vs16
         
     - name: Build PhysX
       if: steps.cache-physx.outputs.cache-hit != 'true'
       run: |
-        python fips physx build win-vs15
+        python fips physx build win-vs16
                 
     - name: Check Anyfx version
       run: |
