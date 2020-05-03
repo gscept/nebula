@@ -39,12 +39,12 @@ jobs:
       uses: actions/cache@v1.1.2
       with:
         path: ../fips-deploy/physx
-        key: ${{ runner.os }}-physx-deploy
+        key: ${{ runner.os }}-physx-deploy-vs15
         
     - name: Build PhysX
       if: steps.cache-physx.outputs.cache-hit != 'true'
       run: |
-        python fips physx build win-vs16
+        python fips physx build win-vs15
                 
     - name: Check Anyfx version
       run: |
@@ -65,7 +65,7 @@ jobs:
 
     # Runs a set of commands using the runners shell
     - name: Run prebuild steps
-      run: |        
+      run: |
         python fips nebula set work ../fips-deploy
         python fips nebula set toolkit .        
         python fips gen
