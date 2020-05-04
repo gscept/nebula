@@ -10,6 +10,8 @@
 #include "resources/resourceid.h"
 #include "math/bbox.h"
 #include "coregraphics/primitivegroup.h"
+#include "coregraphics/vertexbuffer.h"
+#include "coregraphics/indexbuffer.h"
 namespace Terrain
 {
 

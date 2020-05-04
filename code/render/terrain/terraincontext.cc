@@ -7,6 +7,8 @@
 #include "coregraphics/image.h"
 #include "graphics/graphicsserver.h"
 #include "frame/frameplugin.h"
+#include "graphics/cameracontext.h"
+#include "graphics/view.h"
 
 #include "terrain.h"
 
