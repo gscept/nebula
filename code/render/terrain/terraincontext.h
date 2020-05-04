@@ -26,10 +26,13 @@ public:
     /// create terrain context
     static void Create();
     /// destroy terrain context
-    static void Destroy();
+    static void Discard();
 
     /// setup new terrain surface from texture and settings
     static void SetupTerrain(const Graphics::GraphicsEntityId entity, const Resources::ResourceName& texture, float minHeight, float maxHeight);
+
+    /// cull terrain patches
+    static void CullPatches(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
 
 #ifndef PUBLIC_DEBUG    
     /// debug rendering
@@ -52,7 +55,6 @@ private:
 
         CoreGraphics::VertexBufferId vbo;
         CoreGraphics::IndexBufferId ibo;
-        CoreGraphics::VertexLayout vlo;
     };
 
     enum

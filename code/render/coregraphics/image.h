@@ -55,6 +55,15 @@ const byte* ImageGetBluePtr(const ImageId id);
 const byte* ImageGetAlphaPtr(const ImageId id);
 /// get pixel stride, using the above pointers makes it possible to get all reds, blues, greens, etc.
 const SizeT ImageGetPixelStride(const ImageId id);
+
+enum ImageChannelPrimitive
+{
+    Bit8Uint,
+    Bit16Uint,
+    Bit16Float,
+    Bit32Uint,
+    Bit32Float
+};
 /// get channel primitive
 ImageChannelPrimitive ImageGetChannelPrimitive(const ImageId id);
 
@@ -65,14 +74,6 @@ enum ImageContainer
     DDS
 };
 
-enum ImageChannelPrimitive
-{
-    Bit8Unorm,
-    Bit16Unorm,
-    Bit16Float,
-    Bit32Unorm,
-    Bit32Float
-};
 
 struct ImageLoadInfo
 {

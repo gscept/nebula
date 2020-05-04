@@ -284,6 +284,9 @@
 				dependencies: [],
 				attachments: [ "AlbedoBuffer", "NormalBuffer", "SpecularBuffer" ],
 				depth: true,
+				plugin: {
+					name: "TerrainContext - Render Terrain",
+				},
 				batch: "FlatGeometryLit",
 				batch: "TesselatedGeometryLit",
 			},
