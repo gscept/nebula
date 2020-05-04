@@ -67,7 +67,7 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 		PixelFormat::Code fmt = PixelFormat::InvalidPixelFormat;
 		switch (format)
 		{
-		case PF_ARGB:				
+		case PF_RGBA:				
 		{ 
 			fmt = PixelFormat::R8G8B8A8; 
 			loadInfo.redOffset = 0;
@@ -86,6 +86,26 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 			loadInfo.alphaOffset = -1;
 			loadInfo.primitive = Bit8Uint;
 			break; 
+		}
+		case PF_BGR:
+		{
+			fmt = PixelFormat::R8G8B8;
+			loadInfo.blueOffset = 0;
+			loadInfo.greenOffset = 1;
+			loadInfo.redOffset = 2;
+			loadInfo.alphaOffset = -1;
+			loadInfo.primitive = Bit8Uint;
+			break;
+		}
+		case PF_BGRA:
+		{
+			fmt = PixelFormat::R8G8B8A8;
+			loadInfo.blueOffset = 0;
+			loadInfo.greenOffset = 1;
+			loadInfo.redOffset = 2;
+			loadInfo.alphaOffset = 3;
+			loadInfo.primitive = Bit8Uint;
+			break;
 		}
 		case PF_DXT1:				
 		{ 
@@ -150,69 +170,30 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 		}
 		// case PF_BC7_sRGB:			{ fmt = PixelFormat::BC7sRGB; break; } not supported
 		// case PF_3DC:			    { fmt = PixelFormat::BC; break; } // not supported
-		case PF_A16R16G16B16:		
-		{ 
-			fmt = PixelFormat::R16G16B16A16; 
-			loadInfo.alphaOffset = 0; 
-			loadInfo.redOffset = 2; 
-			loadInfo.greenOffset = 4;
-			loadInfo.blueOffset = 6;
+
+		case PF_R8:
+		{
+			fmt = PixelFormat::R8;
+			loadInfo.redOffset = 0;
+			loadInfo.greenOffset = -1;
+			loadInfo.blueOffset = -1;
+			loadInfo.alphaOffset = -1;
+			loadInfo.primitive = Bit8Uint;
+			break;
+		}
+		case PF_R16:
+		{
+			fmt = PixelFormat::R16;
+			loadInfo.redOffset = 0;
+			loadInfo.greenOffset = -1;
+			loadInfo.blueOffset = -1;
+			loadInfo.alphaOffset = -1;
 			loadInfo.primitive = Bit16Uint;
-			break; 
+			break;
 		}
-		case PF_A16B16G16R16:		
-		{ 
-			fmt = PixelFormat::R16G16B16A16; 
-			loadInfo.alphaOffset = 0;
-			loadInfo.blueOffset = 2;
-			loadInfo.greenOffset = 4;
-			loadInfo.redOffset = 6;
-			loadInfo.primitive = Bit16Uint;
-			break; 
-		}
-		case PF_A16R16B16G16F:		
-		{ 
-			fmt = PixelFormat::R16G16B16A16F; 
-			loadInfo.alphaOffset = 0;
-			loadInfo.redOffset = 2;
-			loadInfo.greenOffset = 4;
-			loadInfo.blueOffset = 6;
-			loadInfo.primitive = Bit16Float;
-			break; 
-		}
-		case PF_A16B16G16R16F:		
-		{ 
-			fmt = PixelFormat::R16G16B16A16F; 
-			loadInfo.alphaOffset = 0;
-			loadInfo.blueOffset = 2;
-			loadInfo.greenOffset = 4;
-			loadInfo.redOffset = 6;
-			loadInfo.primitive = Bit16Float;
-			break; 
-		}
-		case PF_A32B32G32R32F:		
-		{ 
-			fmt = PixelFormat::R32G32B32A32F; 
-			loadInfo.alphaOffset = 0;
-			loadInfo.blueOffset = 4;
-			loadInfo.greenOffset = 8;
-			loadInfo.redOffset = 12;
-			loadInfo.primitive = Bit32Float;
-			break; 
-		}
-		case PF_A32R32G32B32F:		
-		{ 
-			fmt = PixelFormat::R32G32B32A32F; 
-			loadInfo.alphaOffset = 0;
-			loadInfo.redOffset = 4;
-			loadInfo.greenOffset = 8;
-			loadInfo.blueOffset = 12;
-			loadInfo.primitive = Bit32Float;
-			break; 
-		}
-		case PF_R16F:				
-		{ 
-			fmt = PixelFormat::R16F; 
+		case PF_R16F:
+		{
+			fmt = PixelFormat::R16F;
 			loadInfo.redOffset = 0;
 			loadInfo.greenOffset = -1;
 			loadInfo.blueOffset = -1;
@@ -220,36 +201,127 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 			loadInfo.primitive = Bit16Float;
 			break;
 		}
-		case PF_R32F:				
-		{ 
-			fmt = PixelFormat::R32F; 
+		case PF_R32:
+		{
+			fmt = PixelFormat::R32;
+			loadInfo.redOffset = 0;
+			loadInfo.greenOffset = -1;
+			loadInfo.blueOffset = -1;
+			loadInfo.alphaOffset = -1;
+			loadInfo.primitive = Bit32Uint;
+			break;
+		}
+		case PF_R32F:
+		{
+			fmt = PixelFormat::R32F;
 			loadInfo.redOffset = 0;
 			loadInfo.greenOffset = -1;
 			loadInfo.blueOffset = -1;
 			loadInfo.alphaOffset = -1;
 			loadInfo.primitive = Bit32Float;
-			break; 
+			break;
 		}
-		case PF_G16R16F:			
-		{ 
-			fmt = PixelFormat::R16G16F; 
+		case PF_R16G16:
+		{
+			fmt = PixelFormat::R16G16;
+			loadInfo.redOffset = 0;
+			loadInfo.greenOffset = 2;
+			loadInfo.blueOffset = -1;
+			loadInfo.alphaOffset = -1;
+			loadInfo.primitive = Bit16Uint;
+			break;
+		}
+		case PF_R16G16F:
+		{
+			fmt = PixelFormat::R16G16F;
 			loadInfo.redOffset = 0;
 			loadInfo.greenOffset = 2;
 			loadInfo.blueOffset = -1;
 			loadInfo.alphaOffset = -1;
 			loadInfo.primitive = Bit16Float;
-			break; 
+			break;
 		}
-		case PF_G32R32F:			
-		{ 
-			fmt = PixelFormat::R32G32F; 
+		case PF_R32G32:
+		{
+			fmt = PixelFormat::R32G32;
 			loadInfo.redOffset = 0;
 			loadInfo.greenOffset = 4;
 			loadInfo.blueOffset = -1;
 			loadInfo.alphaOffset = -1;
 			loadInfo.primitive = Bit32Float;
+			break;
+		}
+		case PF_R32G32F:
+		{
+			fmt = PixelFormat::R32G32F;
+			loadInfo.redOffset = 0;
+			loadInfo.greenOffset = 4;
+			loadInfo.blueOffset = -1;
+			loadInfo.alphaOffset = -1;
+			loadInfo.primitive = Bit32Float;
+			break;
+		}
+		case PF_R16G16B16A16:		
+		{ 
+			fmt = PixelFormat::R16G16B16A16; 
+			loadInfo.redOffset = 0; 
+			loadInfo.greenOffset = 2;
+			loadInfo.blueOffset = 4;
+			loadInfo.alphaOffset = 6;
+			loadInfo.primitive = Bit16Uint;
 			break; 
 		}
+		case PF_R16G16B16A16F:		
+		{ 
+			fmt = PixelFormat::R16G16B16A16F; 
+			loadInfo.redOffset = 0;
+			loadInfo.greenOffset = 2;
+			loadInfo.blueOffset = 4;
+			loadInfo.alphaOffset = 6;
+			loadInfo.primitive = Bit16Float;
+			break; 
+		}
+		case PF_R32G32B32:
+		{
+			fmt = PixelFormat::R32G32B32F;
+			loadInfo.redOffset = 0;
+			loadInfo.greenOffset = 4;
+			loadInfo.blueOffset = 8;
+			loadInfo.alphaOffset = -1;
+			loadInfo.primitive = Bit32Float;
+			break;
+		}
+		case PF_R32G32B32F:
+		{
+			fmt = PixelFormat::R32G32B32F;
+			loadInfo.redOffset = 0;
+			loadInfo.greenOffset = 4;
+			loadInfo.blueOffset = 8;
+			loadInfo.alphaOffset = -1;
+			loadInfo.primitive = Bit32Float;
+			break;
+		}
+		case PF_R32G32B32A32:
+		{
+			fmt = PixelFormat::R32G32B32A32F;
+			loadInfo.redOffset = 0;
+			loadInfo.greenOffset = 4;
+			loadInfo.blueOffset = 8;
+			loadInfo.alphaOffset = 12;
+			loadInfo.primitive = Bit32Float;
+			break;
+		}
+		case PF_R32G32B32A32F:		
+		{ 
+			fmt = PixelFormat::R32G32B32A32F; 
+			loadInfo.redOffset = 0;
+			loadInfo.greenOffset = 4;
+			loadInfo.blueOffset = 8;
+			loadInfo.alphaOffset = 12;
+			loadInfo.primitive = Bit32Float;
+			break; 
+		}
+
 		case PF_UNKNOWN:			{ fmt = PixelFormat::InvalidPixelFormat; break; }
 		}
 
@@ -343,6 +415,11 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 		ILubyte* buf = ilGetData();
 		loadInfo.buffer = (byte*)Memory::Alloc(Memory::ResourceHeap, size);
 		memcpy(loadInfo.buffer, buf, size);
+
+		ilDeleteImage(image);
+
+		stream->Unmap();
+		stream->Close();
 
 		ImageId ret;
 		ret.id24 = id;

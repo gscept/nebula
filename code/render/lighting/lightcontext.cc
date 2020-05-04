@@ -737,6 +737,7 @@ LightContext::SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id
 void 
 LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
+	N_SCOPE(UpdateLightResources, Lighting);
 	const Graphics::ContextEntityId cid = GetContextId(lightServerState.globalLightEntity);
 	using namespace CoreGraphics;
 
