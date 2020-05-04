@@ -12,6 +12,7 @@ namespace ClusteredSceneData
 Graphics::GraphicsEntityId entity;
 Graphics::GraphicsEntityId tower;
 Graphics::GraphicsEntityId ground;
+Graphics::GraphicsEntityId terrain;
 Graphics::GraphicsEntityId particle;
 Util::Array<Graphics::GraphicsEntityId> entities;
 Util::Array<Util::String> entityNames;
@@ -144,12 +145,19 @@ void OpenScene()
     entities.Append(tower);
     entityNames.Append("Tower");
 
+    /*
     ground = Graphics::CreateEntity();
     Graphics::RegisterEntity<ModelContext, ObservableContext>(ground);
     ModelContext::Setup(ground, "mdl:environment/plcholder_world.n3", "Viewer");
     ModelContext::SetTransform(ground, Math::scaling(4) * Math::translation(0,0,0));
     entities.Append(ground);
     entityNames.Append("Ground");
+    */
+
+    terrain = Graphics::CreateEntity();
+    Terrain::TerrainContext::RegisterEntity(terrain);
+    //Terrain::TerrainContext::SetupTerrain(terrain, "tex:test/saint-petersburg heightmap.dds", 0, 5.0f);
+    Terrain::TerrainContext::SetupTerrain(terrain, "tex:system/light.dds", 0, 5.0f);
 
 	particle = Graphics::CreateEntity();
 	Graphics::RegisterEntity<ModelContext, ObservableContext, Particles::ParticleContext>(particle);
@@ -161,7 +169,7 @@ void OpenScene()
 
     // setup visibility
     ObservableContext::Setup(tower, VisibilityEntityType::Model);
-    ObservableContext::Setup(ground, VisibilityEntityType::Model);
+    //ObservableContext::Setup(ground, VisibilityEntityType::Model);
 	ObservableContext::Setup(particle, VisibilityEntityType::Particle);
 
     const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3", "mdl:Units/Unit_Rifleman.n3" };
