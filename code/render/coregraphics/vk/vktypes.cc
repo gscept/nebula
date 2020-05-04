@@ -90,8 +90,11 @@ VkTypes::AsVkFormat(ILenum p)
 {
 	switch (p)
 	{
-	case PF_ARGB:				return VK_FORMAT_R8G8B8A8_UNORM;
+	case PF_RGBA:				return VK_FORMAT_R8G8B8A8_UNORM;
 	case PF_RGB:				return VK_FORMAT_R8G8B8_UNORM;
+	case PF_SRGB:				return VK_FORMAT_R8G8B8A8_SRGB;
+	case PF_BGRA:				return VK_FORMAT_B8G8R8A8_UNORM;
+	case PF_BGR:				return VK_FORMAT_B8G8R8_UNORM;
 	case PF_DXT1:				return VK_FORMAT_BC1_RGBA_UNORM_BLOCK;
 	case PF_DXT3:				return VK_FORMAT_BC2_UNORM_BLOCK;
 	case PF_DXT5:				return VK_FORMAT_BC3_UNORM_BLOCK;
@@ -101,16 +104,21 @@ VkTypes::AsVkFormat(ILenum p)
 	case PF_DXT5_sRGB:			return VK_FORMAT_BC3_SRGB_BLOCK;
 	case PF_BC7_sRGB:			return VK_FORMAT_BC7_SRGB_BLOCK;
 	case PF_3DC:			    return VK_FORMAT_BC5_UNORM_BLOCK;
-	case PF_A16R16G16B16:		return VK_FORMAT_R16G16B16A16_UNORM;
-	case PF_A16B16G16R16:		return VK_FORMAT_R16G16B16A16_UNORM;
-	case PF_A16R16B16G16F:		return VK_FORMAT_R16G16B16A16_SFLOAT;
-	case PF_A16B16G16R16F:		return VK_FORMAT_R16G16B16A16_SFLOAT;
-	case PF_A32B32G32R32F:		return VK_FORMAT_R32G32B32A32_SFLOAT;
-	case PF_A32R32G32B32F:		return VK_FORMAT_R32G32B32A32_SFLOAT;
+	case PF_R8:					return VK_FORMAT_R8_UNORM;
 	case PF_R16F:				return VK_FORMAT_R16_SFLOAT;
+	case PF_R16:				return VK_FORMAT_R16_UINT;
 	case PF_R32F:				return VK_FORMAT_R32_SFLOAT;
-	case PF_G16R16F:			return VK_FORMAT_R16G16_SFLOAT;
-	case PF_G32R32F:			return VK_FORMAT_R32G32_SFLOAT;
+	case PF_R32:				return VK_FORMAT_R32_UINT;
+	case PF_R16G16F:			return VK_FORMAT_R16G16_SFLOAT;
+	case PF_R16G16:				return VK_FORMAT_R16G16_UINT;
+	case PF_R32G32F:			return VK_FORMAT_R32G32_SFLOAT;
+	case PF_R32G32:				return VK_FORMAT_R32G32_UINT;
+	case PF_R16G16B16A16:		return VK_FORMAT_R16G16B16A16_UINT;
+	case PF_R16G16B16A16F:		return VK_FORMAT_R16G16B16A16_SFLOAT;
+	case PF_R32G32B32:			return VK_FORMAT_R32G32B32_UINT;
+	case PF_R32G32B32F:			return VK_FORMAT_R32G32B32_SFLOAT;
+	case PF_R32G32B32A32:		return VK_FORMAT_R32G32B32A32_UINT;
+	case PF_R32G32B32A32F:		return VK_FORMAT_R32G32B32A32_SFLOAT;
 	default:
 		{
 			n_error("VkTypes::AsVkFormat(): invalid compression '%d'", p);
@@ -545,7 +553,7 @@ VkTypes::AsVkMapping(ILenum p)
 
 	switch (p)
 	{
-	case PF_ARGB:
+	case PF_RGBA:
 	case PF_RGB:
 	case PF_DXT1:				
 	case PF_DXT3:				
@@ -556,22 +564,28 @@ VkTypes::AsVkMapping(ILenum p)
 	case PF_DXT5_sRGB:			
 	case PF_BC7_sRGB:			
 	case PF_3DC:			
-	case PF_A16R16G16B16:		
-	case PF_A16R16B16G16F:		
-	case PF_A32R32G32B32F:		
-	case PF_R16F:				
-	case PF_R32F:				
+	case PF_R8:
+	case PF_R16F:
+	case PF_R16:
+	case PF_R32F:
+	case PF_R32:
+	case PF_R16G16F:
+	case PF_R16G16:
+	case PF_R32G32F:
+	case PF_R32G32:
+	case PF_R16G16B16A16:
+	case PF_R16G16B16A16F:
+	case PF_R32G32B32:
+	case PF_R32G32B32F:
+	case PF_R32G32B32A32:
+	case PF_R32G32B32A32F:
 		break;
-	case PF_A16B16G16R16:		
-	case PF_A16B16G16R16F:		
-	case PF_A32B32G32R32F:
-		mapping.r = VK_COMPONENT_SWIZZLE_R;
-		mapping.b = VK_COMPONENT_SWIZZLE_B;
+
+	case PF_BGRA:
+	case PF_BGR:
+		mapping.r = VK_COMPONENT_SWIZZLE_B;
+		mapping.b = VK_COMPONENT_SWIZZLE_R;
 		break;
-	case PF_G16R16F:
-	case PF_G32R32F:
-		mapping.g = VK_COMPONENT_SWIZZLE_R;
-		mapping.r = VK_COMPONENT_SWIZZLE_G;
 	default:
 		{
 			n_error("VkTypes::AsVkMapping(): invalid pixel swizzle '%d'", p);

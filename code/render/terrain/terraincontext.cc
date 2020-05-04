@@ -62,7 +62,7 @@ TerrainContext::Create()
 	_CreateContext();
 	using namespace CoreGraphics;
 
-	__bundle.OnBeforeView = TerrainContext::CullPatches;
+	__bundle.OnPrepareView = TerrainContext::CullPatches;
 
 #ifndef PUBLIC_BUILD
 	__bundle.OnRenderDebug = TerrainContext::OnRenderDebug;
@@ -298,8 +298,8 @@ TerrainContext::SetupTerrain(const Graphics::GraphicsEntityId entity, const Reso
 	const byte* buf = ImageGetBuffer(img);
 	SizeT stride = ImageGetPixelStride(img);
 
-	const int TileXSize = 32;
-	const int TileYSize = 32;
+	const int TileXSize = 128;
+	const int TileYSize = 128;
 
 	// divide image dimensions into tiles, let's say every tile is 32x32 meters
 	SizeT numXTiles = dims.width / TileXSize;
@@ -412,6 +412,7 @@ TerrainContext::SetupTerrain(const Graphics::GraphicsEntityId entity, const Reso
 void 
 TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
+	N_SCOPE(CullPatches, Terrain);
 	const Math::mat4& viewProj = Graphics::CameraContext::GetViewProjection(view->GetCamera());
 	Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
 	for (IndexT i = 0; i < runtimes.Size(); i++)
