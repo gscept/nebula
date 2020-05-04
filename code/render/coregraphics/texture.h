@@ -88,7 +88,7 @@ struct TextureCreateInfo
 		, tag(""_atm)
 		, buffer(nullptr)
 		, type(Texture2D)
-		, format(CoreGraphics::PixelFormat::RGBA8)
+		, format(CoreGraphics::PixelFormat::R8G8B8A8)
 		, width(1)
 		, height(1)
 		, depth(1)

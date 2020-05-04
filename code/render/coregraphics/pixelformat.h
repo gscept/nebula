@@ -36,6 +36,7 @@ public:
 		DXT1AsRGB,
 		DXT3sRGB,
 		DXT5sRGB,
+		BC5,
 		BC7,
 		BC7sRGB,
 		R8,
@@ -57,7 +58,6 @@ public:
 		SRGBA8,
 		R10G10B10X2,
 		R10G10B10A2,
-		R16G16,
 		D24X8,
 		D24S8,
 

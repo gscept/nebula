@@ -74,7 +74,7 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 			loadInfo.greenOffset = 1;
 			loadInfo.blueOffset = 2;
 			loadInfo.alphaOffset = 3;
-			loadInfo.primitive = Bit8Unorm;
+			loadInfo.primitive = Bit8Uint;
 			break;
 		}
 		case PF_RGB:				
@@ -84,7 +84,7 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 			loadInfo.greenOffset = 1;
 			loadInfo.blueOffset = 2;
 			loadInfo.alphaOffset = -1;
-			loadInfo.primitive = Bit8Unorm;
+			loadInfo.primitive = Bit8Uint;
 			break; 
 		}
 		case PF_DXT1:				
@@ -94,7 +94,7 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 			loadInfo.greenOffset = 1;
 			loadInfo.blueOffset = 2;
 			loadInfo.alphaOffset = -1;
-			loadInfo.primitive = Bit8Unorm;
+			loadInfo.primitive = Bit8Uint;
 			break; 
 		}
 		case PF_DXT3:				
@@ -104,7 +104,7 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 			loadInfo.greenOffset = 1;
 			loadInfo.blueOffset = 2;
 			loadInfo.alphaOffset = 3;
-			loadInfo.primitive = Bit8Unorm;
+			loadInfo.primitive = Bit8Uint;
 			break; 
 		}
 		case PF_DXT5:				
@@ -114,7 +114,7 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 			loadInfo.greenOffset = 1;
 			loadInfo.blueOffset = 2;
 			loadInfo.alphaOffset = 3;
-			loadInfo.primitive = Bit8Unorm;
+			loadInfo.primitive = Bit8Uint;
 			break; 
 		}
 		// case PF_BC7:				{ fmt = PixelFormat::BC7; break; } not supported
@@ -125,7 +125,7 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 			loadInfo.greenOffset = 1;
 			loadInfo.blueOffset = 2;
 			loadInfo.alphaOffset = -1;
-			loadInfo.primitive = Bit8Unorm;
+			loadInfo.primitive = Bit8Uint;
 			break; 
 		}
 		case PF_DXT3_sRGB:			
@@ -135,7 +135,7 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 			loadInfo.greenOffset = 1;
 			loadInfo.blueOffset = 2;
 			loadInfo.alphaOffset = 3;
-			loadInfo.primitive = Bit8Unorm;
+			loadInfo.primitive = Bit8Uint;
 			break; 
 		}
 		case PF_DXT5_sRGB:			
@@ -145,7 +145,7 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 			loadInfo.greenOffset = 1;
 			loadInfo.blueOffset = 2;
 			loadInfo.alphaOffset = 3;
-			loadInfo.primitive = Bit8Unorm;
+			loadInfo.primitive = Bit8Uint;
 			break; 
 		}
 		// case PF_BC7_sRGB:			{ fmt = PixelFormat::BC7sRGB; break; } not supported
@@ -157,7 +157,7 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 			loadInfo.redOffset = 2; 
 			loadInfo.greenOffset = 4;
 			loadInfo.blueOffset = 6;
-			loadInfo.primitive = Bit16Unorm;
+			loadInfo.primitive = Bit16Uint;
 			break; 
 		}
 		case PF_A16B16G16R16:		
@@ -167,7 +167,7 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 			loadInfo.blueOffset = 2;
 			loadInfo.greenOffset = 4;
 			loadInfo.redOffset = 6;
-			loadInfo.primitive = Bit16Unorm;
+			loadInfo.primitive = Bit16Uint;
 			break; 
 		}
 		case PF_A16R16B16G16F:		
@@ -268,15 +268,15 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 				{
 				case 1:
 					fmt = PixelFormat::R8;
-					loadInfo.primitive = Bit8Unorm;
+					loadInfo.primitive = Bit8Uint;
 					break;
 				case 2:
 					fmt = PixelFormat::R16;
-					loadInfo.primitive = Bit16Unorm;
+					loadInfo.primitive = Bit16Uint;
 					break;
 				case 4:
 					fmt = PixelFormat::R32;
-					loadInfo.primitive = Bit32Unorm;
+					loadInfo.primitive = Bit32Uint;
 					break;
 				}
 				break;
@@ -288,11 +288,11 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 					break;
 				case 2:
 					fmt = PixelFormat::R16G16;
-					loadInfo.primitive = Bit16Unorm;
+					loadInfo.primitive = Bit16Uint;
 					break;
 				case 4:
 					fmt = PixelFormat::R32G32;
-					loadInfo.primitive = Bit32Unorm;
+					loadInfo.primitive = Bit32Uint;
 					break;
 				}
 				break;
@@ -301,7 +301,7 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 				{
 				case 1:
 					fmt = PixelFormat::R8G8B8;
-					loadInfo.primitive = Bit8Unorm;
+					loadInfo.primitive = Bit8Uint;
 					break;
 				case 2:
 					fmt = PixelFormat::InvalidPixelFormat;
@@ -316,15 +316,15 @@ ImageId CreateImage(const ImageCreateInfoFile& info)
 				{
 				case 1:
 					fmt = PixelFormat::R8G8B8A8;
-					loadInfo.primitive = Bit8Unorm;
+					loadInfo.primitive = Bit8Uint;
 					break;
 				case 2:
 					fmt = PixelFormat::R16G16B16A16;
-					loadInfo.primitive = Bit16Unorm;
+					loadInfo.primitive = Bit16Uint;
 					break;
 				case 4:
 					fmt = PixelFormat::R32G32B32A32;
-					loadInfo.primitive = Bit32Unorm;
+					loadInfo.primitive = Bit32Uint;
 					break;
 				}
 				break;
