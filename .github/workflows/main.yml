@@ -32,21 +32,20 @@ jobs:
     - name: Clone dependencies
       run: |
         python fips fetch
-        python fips set config vulkan-win64-vstudio-debug
+        python fips set config vulkan-win64-vs2019-debug
         
     - name: Cache PhysX
       id: cache-physx
       uses: actions/cache@v1.1.2
       with:
         path: ../fips-deploy/physx
-        key: ${{ runner.os }}-physx
+        key: ${{ runner.os }}-physx-deploy-vs16
         
     - name: Build PhysX
       if: steps.cache-physx.outputs.cache-hit != 'true'
       run: |
         python fips physx build win-vs16
-        python fips physx deploy
-        
+                
     - name: Check Anyfx version
       run: |
         pushd ../fips-anyfx
@@ -57,7 +56,7 @@ jobs:
       uses: actions/cache@v1.1.2
       with:
         path: ../fips-deploy/fips-anyfx
-        key: ${{ runner.os }}-xxhash-${{ env.anyfx-rev }}
+        key: ${{ runner.os }}-anyfx-${{ env.anyfx-rev }}
     
     - name: Build AnyfxCompiler
       if: steps.cache-anyfx.outputs.cache-hit != 'true'
@@ -65,9 +64,17 @@ jobs:
         python fips anyfx setup
 
     # Runs a set of commands using the runners shell
-    - name: Run fips
-      run: |        
+    - name: Run prebuild steps
+      run: |
         python fips nebula set work ../fips-deploy
         python fips nebula set toolkit .        
         python fips gen
+    
+    - name: Compile 
+      run: |
         python fips build
+
+    - name: Run Tests
+      run: |
+         python fips run testmath
+         python fips run testfoundation
