@@ -663,14 +663,6 @@ ENDIF()
 				visibilitysystem.h
 				visibilitysystem.cc
 			)
-        fips_dir(weather)
-            fips_files(
-                cloudcontext.h
-                cloudcontext.cc
-                raincontext.h
-                raincontext.cc
-                snowcontext.h
-                snowcontext.cc
-            )
+
 nebula_end_module()
 target_include_directories(render PUBLIC ${CODE_ROOT}/render)

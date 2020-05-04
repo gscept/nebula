@@ -102,6 +102,10 @@ TerrainContext::Create()
 			CommandBufferEndMarker(GraphicsQueueType);
 		});
 
+	Frame::AddCallback("TerrainContext - Terrain Shadows", [](IndexT time)
+		{
+		});
+
 
 	// create vertex buffer
 	terrainState.components =
