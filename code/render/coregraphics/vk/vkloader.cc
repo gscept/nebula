@@ -93,6 +93,8 @@ InitInstance(VkInstance instance)
 	_IMP_VK(vkGetPhysicalDeviceQueueFamilyProperties);
 	_IMP_VK(vkGetPhysicalDeviceMemoryProperties);
 	_IMP_VK(vkGetPhysicalDeviceFormatProperties);
+	_IMP_VK(vkGetPhysicalDeviceSparseImageFormatProperties);
+	_IMP_VK(vkGetImageSparseMemoryRequirements);
 
 	// command buffer
 	_IMP_VK(vkCmdDraw);
@@ -245,6 +247,8 @@ _DEF_VK(vkGetPhysicalDeviceFeatures);
 _DEF_VK(vkGetPhysicalDeviceQueueFamilyProperties);
 _DEF_VK(vkGetPhysicalDeviceMemoryProperties);
 _DEF_VK(vkGetPhysicalDeviceFormatProperties);
+_DEF_VK(vkGetPhysicalDeviceSparseImageFormatProperties);
+_DEF_VK(vkGetImageSparseMemoryRequirements);
 
 // command buffer
 _DEF_VK(vkCmdDraw);

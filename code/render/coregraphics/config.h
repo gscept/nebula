@@ -45,7 +45,9 @@ enum IdType
 	SamplerIdType,
 	MaterialIdType,
 	SubmissionContextIdType,
-	ImageIdType
+	ImageIdType,
+	SparseBufferIdType,
+	SparseTextureIdType
 };
 
 enum QueueType

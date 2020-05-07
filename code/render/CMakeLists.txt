@@ -19,7 +19,7 @@ nebula_begin_module(render)
 	if(N_USE_VULKAN)
 		fips_deps(glfw3)
 	endif()
-	
+
 	fips_files(render/precompiled.h render/stdneb.h render/stdneb.cc)
 
 IF(FALSE) # incrementally enable modules as they get written
@@ -174,6 +174,8 @@ ENDIF()
 				shaderserver.h
 				shaperenderer.cc
 				shaperenderer.h
+                sparsebuffer.h
+                sparsetexture.h
 				streammeshpool.cc
 				streammeshpool.h
 				shaderpool.cc
@@ -329,6 +331,10 @@ ENDIF()
 				vkshaderserver.h
 				vkshaperenderer.cc
 				vkshaperenderer.h
+                vksparsebuffer.cc
+                vksparsebuffer.h
+                vksparsetexture.cc
+                vksparsetexture.h
 				vkshaderpool.cc
 				vkshaderpool.h
                 vksubmissioncontext.cc

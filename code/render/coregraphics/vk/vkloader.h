@@ -80,6 +80,8 @@ _DEC_VK(vkGetPhysicalDeviceFeatures);
 _DEC_VK(vkGetPhysicalDeviceQueueFamilyProperties);
 _DEC_VK(vkGetPhysicalDeviceMemoryProperties);
 _DEC_VK(vkGetPhysicalDeviceFormatProperties);
+_DEC_VK(vkGetPhysicalDeviceSparseImageFormatProperties);
+_DEC_VK(vkGetImageSparseMemoryRequirements);
 
 // command buffer
 _DEC_VK(vkCmdDraw);
