@@ -19,7 +19,7 @@ namespace Materials
 class MaterialServer : public Core::RefCounted
 {
 	__DeclareClass(MaterialServer);
-	__DeclareSingleton(MaterialServer);
+	__DeclareInterfaceSingleton(MaterialServer);
 public:
 
 	/// constructor

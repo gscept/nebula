@@ -673,68 +673,9 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
 
     if (!loadInfo.windowTexture)
     {
-        VkSampleCountFlagBits samples;
-        switch (loadInfo.samples)
-        {
-        case 1:
-            samples = VK_SAMPLE_COUNT_1_BIT;
-            break;
-        case 2:
-            samples = VK_SAMPLE_COUNT_2_BIT;
-            break;
-        case 4:
-            samples = VK_SAMPLE_COUNT_4_BIT;
-            break;
-        case 8:
-            samples = VK_SAMPLE_COUNT_8_BIT;
-            break;
-        case 16:
-            samples = VK_SAMPLE_COUNT_16_BIT;
-            break;
-        case 32:
-            samples = VK_SAMPLE_COUNT_32_BIT;
-            break;
-        case 64:
-            samples = VK_SAMPLE_COUNT_64_BIT;
-            break;
-        default:
-            n_error("Invalid number of samples '%d'", loadInfo.samples);
-            break;
-        }
-
-        VkImageViewType viewType;
-        VkImageType type;
-        switch (runtimeInfo.type)
-        {
-        case Texture1D:
-            type = VK_IMAGE_TYPE_1D;
-            viewType = VK_IMAGE_VIEW_TYPE_1D;
-            break;
-        case Texture1DArray:
-            type = VK_IMAGE_TYPE_1D;
-            viewType = VK_IMAGE_VIEW_TYPE_1D_ARRAY;
-            break;
-        case Texture2D:
-            type = VK_IMAGE_TYPE_2D;
-            viewType = VK_IMAGE_VIEW_TYPE_2D;
-            break;
-        case Texture2DArray:
-            type = VK_IMAGE_TYPE_2D;
-            viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-            break;
-        case TextureCube:
-            type = VK_IMAGE_TYPE_2D;
-            viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-            break;
-        case TextureCubeArray:
-            type = VK_IMAGE_TYPE_2D;
-            viewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
-            break;
-        case Texture3D:
-            type = VK_IMAGE_TYPE_3D;
-            viewType = VK_IMAGE_VIEW_TYPE_3D;
-            break;
-        }
+        VkSampleCountFlagBits samples = VkTypes::AsVkSampleFlags(loadInfo.samples);
+        VkImageViewType viewType = VkTypes::AsVkImageViewType(runtimeInfo.type);
+        VkImageType type = VkTypes::AsVkImageType(runtimeInfo.type);
 
         // if read-write, we will almost definitely use this texture on multiple queues
         VkSharingMode sharingMode = (loadInfo.texUsage & TextureUsage::ReadWriteUsage) ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
@@ -799,7 +740,6 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
             subres.layerCount = loadInfo.layers;
             subres.levelCount = loadInfo.mips;
 
-
             // insert barrier
             VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
                 CoreGraphics::BarrierStage::Host,
@@ -810,7 +750,7 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
             VkBuffer outBuf;
             VkDeviceMemory outMem;
             uint32_t size = PixelFormat::ToSize(loadInfo.format);
-            VkUtilities::ImageUpdate(loadInfo.dev, CoreGraphics::SubmissionContextGetCmdBuffer(sub), TransferQueueType, loadInfo.img, imgInfo, 0, 0, VkDeviceSize(loadInfo.dims.width * loadInfo.dims.height * loadInfo.dims.depth * size), (uint32_t*)loadInfo.texBuffer, outBuf, outMem);
+            VkUtilities::ImageUpdate(loadInfo.dev, CoreGraphics::SubmissionContextGetCmdBuffer(sub), TransferQueueType, loadInfo.img, extents, 0, 0, VkDeviceSize(loadInfo.dims.width * loadInfo.dims.height * loadInfo.dims.depth * size), (uint32_t*)loadInfo.texBuffer, outBuf, outMem);
 
             // add host memory buffer, intermediate device memory, and intermediate device buffer to delete queue
             SubmissionContextFreeDeviceMemory(sub, loadInfo.dev, outMem);

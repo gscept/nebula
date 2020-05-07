@@ -296,6 +296,24 @@ VkSubContextHandler::GetTimelineIndex(CoreGraphics::QueueType type)
 /**
 */
 void 
+VkSubContextHandler::Wait(CoreGraphics::QueueType type, uint64 index)
+{
+	VkSemaphoreWaitInfo waitInfo =
+	{
+		VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
+		nullptr,
+		0,
+		1,
+		&this->semaphores[type],
+		&index
+	};
+	vkWaitSemaphores(this->device, &waitInfo, UINT64_MAX);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
 VkSubContextHandler::AppendSubmission(CoreGraphics::QueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag, VkSemaphore signalSemaphore)
 {
 	Util::Array<Submission>& submissions = this->submissions[type];

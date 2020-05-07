@@ -105,6 +105,9 @@ SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAt
 							[type, sid, binding](Resources::ResourceId rid)
 							{
 								type->SetSurfaceConstant(sid, binding, CoreGraphics::TextureGetBindlessHandle(rid));
+
+								// lol test
+								Resources::StreamLOD(rid, -1, false);
 							}, 
 							[type, sid, binding](Resources::ResourceId rid)
 							{
@@ -117,6 +120,9 @@ SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAt
 					
 					defaultVal.SetUInt64(tex.HashCode64());
 					type->SetSurfaceConstant(sid, binding, CoreGraphics::TextureGetBindlessHandle(tex));
+
+
+
 					break;
 				}
 				}
@@ -155,6 +161,14 @@ SurfacePool::Unload(const Resources::ResourceId id)
 	type->DestroySurface(mid);
 
 	this->states[id.poolId] = Resources::Resource::State::Unloaded;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+SurfacePool::UpdateLOD(const SurfaceResourceId id, const IndexT lod)
+{
 }
 
 } // namespace Materials

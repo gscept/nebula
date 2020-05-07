@@ -228,4 +228,27 @@ FileStream::Unmap()
     this->mappedContent = 0;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void* 
+FileStream::MemoryMap()
+{
+    n_assert(0 == this->mappedContent);
+    this->mappedContent = FSWrapper::Map(this->handle, this->accessMode, this->mapHandle);
+    Stream::Map();
+    return this->mappedContent;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+FileStream::MemoryUnmap()
+{
+    n_assert(0 != this->mappedContent);
+    FSWrapper::Unmap(this->mapHandle, (char*)this->mappedContent);
+    Stream::Unmap();
+}
+
 } // namespace IO

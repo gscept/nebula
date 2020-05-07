@@ -69,7 +69,7 @@ Nvx2StreamReader::Open(const Resources::ResourceName& name)
     if (StreamReader::Open())
     {
         // map the stream to memory
-        this->mapPtr = this->stream->Map();
+        this->mapPtr = this->stream->MemoryMap();
         n_assert(0 != this->mapPtr);
 
         // read data
@@ -82,6 +82,7 @@ Nvx2StreamReader::Open(const Resources::ResourceName& name)
             this->SetupIndexBuffer(name);
             this->UpdateGroupBoundingBoxes();
         }
+        stream->MemoryUnmap();
         return true;
     }
     return false;
@@ -101,7 +102,6 @@ Nvx2StreamReader::Close()
 	this->vbo = VertexBufferId::Invalid();
     this->primGroups.Clear();
     this->vertexComponents.Clear();
-    stream->Unmap();
     StreamReader::Close();
 }
 
@@ -121,7 +121,6 @@ Nvx2StreamReader::ReadHeaderData()
     
     // endian-convert header
     struct Nvx2Header* header = (struct Nvx2Header*) this->mapPtr;
-    header->numIndices *= 3; // header holds number of tris, not indices
 
     // check magic number
     if (FourCC(header->magic) != FourCC('NVX2'))
@@ -132,7 +131,7 @@ Nvx2StreamReader::ReadHeaderData()
     this->numGroups = header->numGroups;
     this->numVertices = header->numVertices;
     this->vertexWidth = header->vertexWidth;
-    this->numIndices = header->numIndices;
+    this->numIndices = header->numIndices * 3;
     this->numEdges = header->numEdges;
     this->vertexComponentMask = header->vertexComponentMask;
     this->groupDataSize = 6 * sizeof(uint) * this->numGroups;

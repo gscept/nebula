@@ -11,6 +11,7 @@
 #include "core/refcounted.h"
 #include "resources/resourcestreampool.h"
 #include "vktexture.h"
+
 namespace Vulkan
 {
 class VkStreamTexturePool : public Resources::ResourceStreamPool
@@ -30,6 +31,9 @@ private:
 	LoadStatus LoadFromStream(const Resources::ResourceId res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
 	/// unload shader
 	void Unload(const Resources::ResourceId id);
+
+	/// stream mips
+	void UpdateLOD(const Resources::ResourceId& id, const IndexT lod, bool immediate) override;
 
 	/// allocate object
 	Resources::ResourceUnknownId AllocObject() override;

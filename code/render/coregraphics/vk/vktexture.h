@@ -8,11 +8,16 @@
 	(C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "core/refcounted.h"
 #include "coregraphics/texture.h"
 #include "coregraphics/pixelformat.h"
 #include "resources/resourcepool.h"
 #include "ids/idallocator.h"
+
+namespace IO
+{
+class Stream;
+};
+
 namespace Vulkan
 {
 struct VkTextureLoadInfo
@@ -52,6 +57,15 @@ struct VkTextureMappingInfo
 	uint32_t mapCount;
 };
 
+struct VkTextureStreamInfo
+{
+	uint32_t highestLod;
+	void* mappedBuffer;
+	uint bufferSize;
+	uint32_t maxMips;
+	Ptr<IO::Stream> stream;
+};
+
 struct VkTextureWindowInfo
 {
 	CoreGraphics::WindowId window;
@@ -69,6 +83,7 @@ enum
 	Texture_LoadInfo,
 	Texture_MappingInfo,
 	Texture_WindowInfo,
+	Texture_StreamInfo
 };
 
 /// we need a thread-safe allocator since it will be used by both the memory and stream pool
@@ -76,7 +91,8 @@ typedef Ids::IdAllocatorSafe<
 	VkTextureRuntimeInfo,					// runtime info (for binding)
 	VkTextureLoadInfo,						// loading info (mostly used during the load/unload phase)
 	VkTextureMappingInfo,					// used when image is mapped to memory
-	VkTextureWindowInfo
+	VkTextureWindowInfo,
+	VkTextureStreamInfo
 > VkTextureAllocator;
 extern VkTextureAllocator textureAllocator;
 

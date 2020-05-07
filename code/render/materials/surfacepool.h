@@ -42,6 +42,8 @@ public:
 	const SurfaceId GetId(const SurfaceResourceId id);
 	/// get material type
 	MaterialType* const GetType(const SurfaceResourceId id);
+	/// update lod for textures in surface 
+	void UpdateLOD(const SurfaceResourceId id, const IndexT lod);
 private:
 
 	/// unload resource (overload to implement resource deallocation)
@@ -74,5 +76,6 @@ SurfacePool::GetType(const SurfaceResourceId id)
 	allocator.LeaveGet();
 	return ret;
 }
+
 
 } // namespace Materials

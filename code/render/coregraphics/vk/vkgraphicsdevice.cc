@@ -1495,6 +1495,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		true,
 	};
 	state.submissionGraphicsCmdPool = CreateCommandBufferPool(cmdPoolCreateInfo);
+	state.submissionTransferGraphicsHandoverCmdPool = CreateCommandBufferPool(cmdPoolCreateInfo);
 
 	cmdPoolCreateInfo.queue = CoreGraphics::QueueType::ComputeQueueType;
 	state.submissionComputeCmdPool = CreateCommandBufferPool(cmdPoolCreateInfo);
@@ -1522,6 +1523,10 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	cmdCreateInfo.pool = state.submissionTransferCmdPool;
 	state.resourceSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
 	state.resourceSubmissionActive = false;
+
+	cmdCreateInfo.pool = state.submissionTransferGraphicsHandoverCmdPool;
+	state.handoverSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
+	state.handoverSubmissionActive = false;
 
 	// create main-queue setup submission context (forced to be beginning of frame when relevant)
 	cmdCreateInfo.pool = state.submissionGraphicsCmdPool;
@@ -2786,11 +2791,19 @@ GetIndexBuffer(CoreGraphics::VertexBufferMemoryType type)
 //------------------------------------------------------------------------------
 /**
 */
+void 
+LockResourceSubmission()
+{
+	state.resourceSubmissionCriticalSection.Enter();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 CoreGraphics::SubmissionContextId 
 GetResourceSubmissionContext()
 {
 	// if not active, issue a new resource submission (only done once per frame)
-	state.resourceSubmissionCriticalSection.Enter();
 	if (!state.resourceSubmissionActive)
 	{
 		state.resourceSubmissionFence = SubmissionContextNextCycle(state.resourceSubmissionContext);
@@ -2802,8 +2815,40 @@ GetResourceSubmissionContext()
 
 		state.resourceSubmissionActive = true;
 	}
-	state.resourceSubmissionCriticalSection.Leave();
 	return state.resourceSubmissionContext;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::SubmissionContextId 
+GetHandoverSubmissionContext()
+{
+	// if not active, issue a new resource submission (only done once per frame)
+	if (!state.handoverSubmissionActive)
+	{
+		// wait for the submission to finish
+		state.subcontextHandler.Wait(GraphicsQueueType, SubmissionContextGetTimelineIndex(state.handoverSubmissionContext));
+
+		SubmissionContextNextCycle(state.handoverSubmissionContext);
+		SubmissionContextNewBuffer(state.handoverSubmissionContext, state.handoverSubmissionCmdBuffer);
+
+		// begin recording
+		CommandBufferBeginInfo beginInfo{ true, false, false };
+		CommandBufferBeginRecord(state.handoverSubmissionCmdBuffer, beginInfo);
+
+		state.handoverSubmissionActive = true;
+	}
+	return state.handoverSubmissionContext;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+UnlockResourceSubmission()
+{
+	state.resourceSubmissionCriticalSection.Leave();
 }
 
 //------------------------------------------------------------------------------
@@ -3192,6 +3237,8 @@ EndSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue, 
 
 	CoreGraphics::CommandBufferId commandBuffer = queue == GraphicsQueueType ? state.gfxCmdBuffer : state.computeCmdBuffer;
 	VkPipelineStageFlags stageFlags = queue == GraphicsQueueType ? VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+	LockResourceSubmission();
 	if (queue == GraphicsQueueType && state.setupSubmissionActive)
 	{
 		// end recording and add this command buffer for submission
@@ -3204,6 +3251,7 @@ EndSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue, 
 		);
 		state.setupSubmissionActive = false;
 	}
+	UnlockResourceSubmission();
 
 	// append a submission, and wait for the previous submission on the same queue
 	state.subcontextHandler.AppendSubmissionTimeline(
@@ -3257,12 +3305,9 @@ EndFrame(IndexT frameIndex)
 	_ProcessQueriesEndFrame();
 
 	// if we have an active resource submission, submit it!
-	state.resourceSubmissionCriticalSection.Enter();
+	LockResourceSubmission();
 	if (state.resourceSubmissionActive)
 	{
-		// wait for resource manager first, since it will write to the transfer cmd buffer
-		Resources::WaitForLoaderThread();
-
 		// finish up the resource submission and setup submissions
 		CommandBufferEndRecord(state.resourceSubmissionCmdBuffer);
 
@@ -3291,7 +3336,35 @@ EndFrame(IndexT frameIndex)
 		);
 		state.resourceSubmissionActive = false;
 	}
-	state.resourceSubmissionCriticalSection.Leave();
+	if (state.handoverSubmissionActive)
+	{
+		// finish up the resource submission and setup submissions
+		CommandBufferEndRecord(state.handoverSubmissionCmdBuffer);
+
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_ORANGE, "Transfer-Graphics Handover");
+#endif
+
+		// finish by creating a singular submission for all transfers
+		state.subcontextHandler.AppendSubmissionTimeline(
+			GraphicsQueueType,
+			CommandBufferGetVk(state.handoverSubmissionCmdBuffer)
+		);
+		SubmissionContextSetTimelineIndex(state.handoverSubmissionContext, state.subcontextHandler.GetTimelineIndex(GraphicsQueueType));
+
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::QueueEndMarker(TransferQueueType);
+#endif
+
+		// make the graphics queue wait for the transfer queue
+		state.subcontextHandler.AppendWaitTimeline(
+			GraphicsQueueType,
+			VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+			TransferQueueType
+		);
+		state.handoverSubmissionActive = false;
+	}
+	UnlockResourceSubmission();
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_ORANGE, "Compute");

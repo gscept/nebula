@@ -10,6 +10,7 @@
 #include "util/fixedpool.h"
 #include "coregraphics/base/shaderserverbase.h"
 #include "coregraphics/config.h"
+#include "coregraphics/texture.h"
 #include "effectfactory.h"
 #include "vkshaderpool.h"
 #include "coregraphics/graphicsdevice.h"
@@ -20,7 +21,7 @@ namespace Vulkan
 class VkShaderServer : public Base::ShaderServerBase
 {
 	__DeclareClass(VkShaderServer);
-	__DeclareSingleton(VkShaderServer);
+	__DeclareInterfaceSingleton(VkShaderServer);
 public:
 	/// constructor
 	VkShaderServer();
@@ -51,6 +52,9 @@ public:
 	void BindTextureDescriptorSetsGraphics();
 	/// commit texture library to compute pipeline
 	void BindTextureDescriptorSetsCompute(const CoreGraphics::QueueType queue = CoreGraphics::GraphicsQueueType);
+
+	/// add a pending image view update to the update queue, thread safe
+	void AddPendingImageView(VkImageViewCreateInfo info, CoreGraphics::TextureId tex);
 
 	/// setup gbuffer bindings
 	void SetupGBufferConstants();
@@ -95,6 +99,15 @@ private:
 	CoreGraphics::ConstantBinding environmentMapVar;
 	CoreGraphics::ConstantBinding irradianceMapVar;
 	CoreGraphics::ConstantBinding numEnvMipsVar;
+
+	Threading::CriticalSection viewCreationCriticalSection;
+	struct _PendingView
+	{
+		VkImageViewCreateInfo info;
+		CoreGraphics::TextureId tex;
+	};
+	Util::Array<_PendingView> pendingViewCreations;
+	Util::FixedArray<Util::Array<VkImageView>> pendingViewDeletes;
 
 	IndexT csmBufferTextureVar;
 	IndexT spotlightAtlasShadowBufferTextureVar;

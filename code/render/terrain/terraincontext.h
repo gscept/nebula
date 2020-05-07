@@ -12,8 +12,16 @@
 #include "coregraphics/primitivegroup.h"
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/indexbuffer.h"
+#include "coregraphics/texture.h"
 namespace Terrain
 {
+
+struct TerrainSetupSettings
+{
+    float minHeight, maxHeight;
+    float worldSizeX, worldSizeZ;
+    SizeT tileWidth, tileHeight;
+};
 
 class TerrainContext : public Graphics::GraphicsContext
 {
@@ -31,7 +39,12 @@ public:
     static void Discard();
 
     /// setup new terrain surface from texture and settings
-    static void SetupTerrain(const Graphics::GraphicsEntityId entity, const Resources::ResourceName& texture, float minHeight, float maxHeight);
+    static void SetupTerrain(
+        const Graphics::GraphicsEntityId entity, 
+        const Resources::ResourceName& heightMap, 
+        const Resources::ResourceName& normalMap, 
+        const Resources::ResourceName& decisionMap,
+        const TerrainSetupSettings& settings);
 
     /// cull terrain patches
     static void CullPatches(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
@@ -54,6 +67,12 @@ private:
         Util::Array<Math::bbox> sectionBoxes;
         Util::Array<CoreGraphics::PrimitiveGroup> sectorPrimGroups;
         Util::Array<bool> sectorVisible;
+
+        float heightMapWidth, heightMapHeight;
+        float maxHeight, minHeight;
+        CoreGraphics::TextureId heightMap;
+        CoreGraphics::TextureId normalMap;
+        CoreGraphics::TextureId decisionMap;
 
         CoreGraphics::VertexBufferId vbo;
         CoreGraphics::IndexBufferId ibo;

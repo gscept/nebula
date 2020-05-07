@@ -13,7 +13,7 @@ namespace Resources
 {
 
 __ImplementClass(Resources::ResourceServer, 'RMGR', Core::RefCounted);
-__ImplementSingleton(Resources::ResourceServer);
+__ImplementInterfaceSingleton(Resources::ResourceServer);
 
 int32_t ResourceServer::UniquePoolCounter = 0;
 //------------------------------------------------------------------------------
