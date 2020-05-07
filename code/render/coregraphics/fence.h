@@ -30,5 +30,7 @@ bool FencePeek(const FenceId id);
 bool FenceReset(const FenceId id);
 /// wait for fence
 bool FenceWait(const FenceId id, const uint64 time);
+/// wait for fence and reset
+bool FenceWaitAndReset(const FenceId id, const uint64 time);
 
 } // namespace CoreGraphics

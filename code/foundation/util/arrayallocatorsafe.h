@@ -325,7 +325,6 @@ ArrayAllocatorSafe<TYPES...>::UpdateSize()
 template<class ... TYPES> void
 ArrayAllocatorSafe<TYPES...>::EnterGet()
 {
-	n_assert(!this->inBeginGet);
 	this->sect.Enter();
 	this->inBeginGet = true;
 }
@@ -333,7 +332,6 @@ ArrayAllocatorSafe<TYPES...>::EnterGet()
 template<class ... TYPES> void
 ArrayAllocatorSafe<TYPES...>::LeaveGet()
 {
-	n_assert(this->inBeginGet);
 	this->sect.Leave();
 	this->inBeginGet = false;
 }

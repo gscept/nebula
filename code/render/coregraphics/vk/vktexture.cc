@@ -5,6 +5,7 @@
 #include "render/stdneb.h"
 #include "vktexture.h"
 #include "vkloader.h"
+#include "io/stream.h"
 
 namespace Vulkan
 {

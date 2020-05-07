@@ -122,6 +122,7 @@ _DEC_VK(vkDestroyFence);
 _DEC_VK(vkResetFences);
 _DEC_VK(vkGetFenceStatus);
 _DEC_VK(vkWaitForFences);
+_DEC_VK(vkWaitSemaphores);
 
 _DEC_VK(vkCreateRenderPass);
 _DEC_VK(vkDestroyRenderPass);

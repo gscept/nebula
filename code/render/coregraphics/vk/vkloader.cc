@@ -135,6 +135,7 @@ InitInstance(VkInstance instance)
 	_IMP_VK(vkResetFences);
 	_IMP_VK(vkGetFenceStatus);
 	_IMP_VK(vkWaitForFences);
+	_IMP_VK(vkWaitSemaphores);
 
 	_IMP_VK(vkCreateRenderPass);
 	_IMP_VK(vkDestroyRenderPass);
@@ -287,6 +288,7 @@ _DEF_VK(vkDestroyFence);
 _DEF_VK(vkResetFences);
 _DEF_VK(vkGetFenceStatus);
 _DEF_VK(vkWaitForFences);
+_DEF_VK(vkWaitSemaphores);
 
 _DEF_VK(vkCreateRenderPass);
 _DEF_VK(vkDestroyRenderPass);

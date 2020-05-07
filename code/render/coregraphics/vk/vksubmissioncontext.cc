@@ -77,6 +77,26 @@ SubmissionContextClearCommandBuffer(const CoreGraphics::SubmissionContextId id, 
 	buffers.Append(cmd);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SubmissionContextSetTimelineIndex(const CoreGraphics::SubmissionContextId id, uint64 index)
+{
+	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
+	submissionContextAllocator.Get<SubmissionContext_TimelineIndex>(id.id24)[currentIndex] = index;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint64 
+SubmissionContextGetTimelineIndex(const CoreGraphics::SubmissionContextId id)
+{
+	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
+	return submissionContextAllocator.Get<SubmissionContext_TimelineIndex>(id.id24)[currentIndex];
+}
+
 } // namespace Vulkan
 
 namespace CoreGraphics
@@ -94,6 +114,7 @@ CreateSubmissionContext(const SubmissionContextCreateInfo& info)
 
 	submissionContextAllocator.Get<SubmissionContext_NumCycles>(id) = info.numBuffers;
 	submissionContextAllocator.Get<SubmissionContext_CmdBuffer>(id).Resize(info.numBuffers);
+	submissionContextAllocator.Get<SubmissionContext_TimelineIndex>(id).Resize(info.numBuffers);
 	submissionContextAllocator.Get<SubmissionContext_RetiredCmdBuffer>(id).Resize(info.numBuffers);
 	submissionContextAllocator.Get<SubmissionContext_CmdCreateInfo>(id) = info.cmdInfo;
 #if NEBULA_GRAPHICS_DEBUG
@@ -258,7 +279,7 @@ SubmissionContextNextCycle(const SubmissionContextId id)
 	if (fences.Size() > 0)
 	{
 		nextFence = submissionContextAllocator.Get<SubmissionContext_Fence>(id.id24)[currentIndex];
-		bool res = FenceWait(nextFence, UINT64_MAX);
+		bool res = FenceWaitAndReset(nextFence, UINT64_MAX);
 		n_assert(res);
 	}	
 

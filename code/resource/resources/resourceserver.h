@@ -21,7 +21,7 @@ namespace Resources
 class ResourceServer : public Core::RefCounted
 {
 	__DeclareClass(ResourceServer);
-	__DeclareSingleton(ResourceServer);
+	__DeclareInterfaceSingleton(ResourceServer);
 public:
 	/// constructor
 	ResourceServer();
@@ -48,6 +48,8 @@ public:
 	bool HasPendingResources();
 	/// reload resource
 	void ReloadResource(const ResourceName& res, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr);
+	/// stream in a new LOD
+	void StreamLOD(const ResourceId& id, IndexT lod, bool immediate);
 
 	/// reserve resource (for self-managed resources)
 	Resources::ResourceId ReserveResource(const ResourceName& res, const Util::StringAtom& tag, const Core::Rtti& type);
@@ -144,10 +146,27 @@ ResourceServer::ReloadResource(const ResourceName& res, std::function<void(const
 
 //------------------------------------------------------------------------------
 /**
+*/
+inline void 
+ResourceServer::StreamLOD(const ResourceId& id, IndexT lod, bool immediate)
+{
+	// get id of loader
+	const Ids::Id8 loaderid = id.poolIndex;
+
+	// get resource loader by extension
+	n_assert(this->pools.Size() > loaderid);
+	const Ptr<ResourceStreamPool>& loader = this->pools[loaderid].downcast<ResourceStreamPool>();
+
+	// update LOD
+	loader->UpdateResourceLOD(id, lod, immediate);
+}
+
+//------------------------------------------------------------------------------
+/**
 	Discards a single resource, and removes the callbacks to it from
 */
 inline void
-Resources::ResourceServer::DiscardResource(const Resources::ResourceId id)
+ResourceServer::DiscardResource(const Resources::ResourceId id)
 {
 	// get id of loader
 	const Ids::Id8 loaderid = id.poolIndex;
@@ -267,7 +286,7 @@ ResourceServer::GetId(const Resources::ResourceName& name) const
 */
 template <class POOL_TYPE>
 inline POOL_TYPE*
-Resources::ResourceServer::GetStreamPool() const
+ResourceServer::GetStreamPool() const
 {
 	static_assert(std::is_base_of<ResourceStreamPool, POOL_TYPE>::value, "Type requested is not a stream pool");
 	IndexT i;
@@ -285,7 +304,7 @@ Resources::ResourceServer::GetStreamPool() const
 */
 template <class POOL_TYPE>
 inline POOL_TYPE*
-Resources::ResourceServer::GetMemoryPool() const
+ResourceServer::GetMemoryPool() const
 {
 	static_assert(std::is_base_of<ResourceMemoryPool, POOL_TYPE>::value, "Type requested is not a memory pool");
 	IndexT i;
@@ -305,6 +324,15 @@ inline Resources::ResourceId
 CreateResource(const ResourceName& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false)
 {
 	return ResourceServer::Instance()->CreateResource(res, tag, success, failed, immediate);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+StreamLOD(const ResourceId& id, IndexT lod, bool immediate)
+{
+	return ResourceServer::Instance()->StreamLOD(id, lod, immediate);
 }
 
 //------------------------------------------------------------------------------

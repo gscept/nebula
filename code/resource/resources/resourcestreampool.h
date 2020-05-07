@@ -73,6 +73,9 @@ public:
 	/// reload resource using resource id
 	void ReloadResource(const Resources::ResourceId& id, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed);
 
+	/// begin updating a resources lod
+	void UpdateResourceLOD(const Resources::ResourceId& id, const IndexT lod, bool immediate);
+
 protected:
 	friend class ResourceServer;
 
@@ -83,9 +86,18 @@ protected:
 		Util::StringAtom tag;
 		bool inflight;
 		bool immediate;
-		std::function<void()> loadFunc;
 
 		_PendingResourceLoad() : id(ResourceId::Invalid()) {};
+	};
+
+	/// struct for pending stream
+	struct _PendingStreamLod
+	{
+		Resources::ResourceId id;
+		IndexT lod;
+		bool immediate;
+
+		_PendingStreamLod() : id(ResourceId::Invalid()) {};
 	};
 
 	struct _PendingResourceUnload
@@ -105,6 +117,8 @@ protected:
 	virtual LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) = 0;
 	/// perform a reload
 	virtual LoadStatus ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream);
+	/// perform a lod update
+	virtual void UpdateLOD(const Resources::ResourceId& id, const IndexT lod, bool immediate);
 
 	/// update the resource loader, this is done every frame
 	void Update(IndexT frameIndex);
@@ -113,6 +127,8 @@ protected:
 	LoadStatus PrepareLoad(_PendingResourceLoad& res);
 	/// run callbacks
 	void RunCallbacks(LoadStatus status, const Resources::ResourceId id);
+	/// add a new job to the loader thread
+	void AddThreadJob(std::function<void()> func);
 
 	/// these types need to be properly initiated in a subclass Setup function
 	Util::StringAtom placeholderResourceName;
@@ -123,13 +139,12 @@ protected:
 
 	bool async;
 
-	//Util::Dictionary<Util::StringAtom, _PendingResource> pending;
-	//Util::FixedArray<Util::Array<_PendingResource>> 
-
 	Util::Dictionary<Resources::ResourceName, Ids::Id32> pendingLoadMap;
 	Util::FixedArray<_PendingResourceLoad> pendingLoads;
 	Ids::IdPool pendingLoadPool;
 	Util::Array<_PendingResourceUnload> pendingUnloads;
+	Util::FixedArray<_PendingStreamLod> pendingStreamLods;
+	Ids::IdPool pendingStreamPool;
 	Util::FixedArray<Util::Array<_Callbacks>> callbacks;
 
 	/// async section to sync callbacks and pending list with thread

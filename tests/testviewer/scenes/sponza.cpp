@@ -25,7 +25,10 @@ void OpenScene()
 {
     entity = Graphics::CreateEntity();
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(entity);
-    Models::ModelContext::Setup(entity, "mdl:sponza/sponza.n3", "SponzaScene");
+    Models::ModelContext::Setup(entity, "mdl:sponza/sponza.n3", "SponzaScene", []()
+        {
+            Visibility::ObservableContext::Setup(entity, Visibility::VisibilityEntityType::Model);
+        });
     
     Math::mat4 t = Math::translation(Math::vec3(0, 0, 0));
     Math::mat4 r = Math::rotationx(Math::n_deg2rad(0.0f));
@@ -35,7 +38,6 @@ void OpenScene()
     trs = trs * t;
     
     Models::ModelContext::SetTransform(entity, trs);
-    Visibility::ObservableContext::Setup(entity, Visibility::VisibilityEntityType::Model);
     
     light = Graphics::CreateEntity();
     Graphics::RegisterEntity<Lighting::LightContext>(light);

@@ -79,6 +79,8 @@ public:
 	uint64 FlushSubmissionsTimeline(CoreGraphics::QueueType type, VkFence fence);
 	/// get timeline index
 	uint64 GetTimelineIndex(CoreGraphics::QueueType type);
+	/// wait for timeline index
+	void Wait(CoreGraphics::QueueType type, uint64 index);
 
 	/// add submission to context, but don't really execute
 	void AppendSubmission(CoreGraphics::QueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag, VkSemaphore signalSemaphore);

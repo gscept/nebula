@@ -130,6 +130,8 @@ void
 ShaderStateNode::OnFinishedLoading()
 {
 	TransformNode::OnFinishedLoading();
+
+	// load surface immediately, however it will load textures async
 	this->surRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
 	this->materialType = Materials::surfacePool->GetType(this->surRes);
 	this->surface = Materials::surfacePool->GetId(this->surRes);

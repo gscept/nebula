@@ -28,7 +28,7 @@ public:
 	/// update buffer memory from CPU
 	static void BufferUpdate(CoreGraphics::CommandBufferId cmd, VkBuffer buf, VkDeviceSize offset, VkDeviceSize size, const void* data);
 	/// update image memory from CPU
-	static void ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGraphics::QueueType queue, VkImage img, const VkImageCreateInfo& info, uint32_t mip, uint32_t face, VkDeviceSize size, uint32_t* data, VkBuffer& outIntermediateBuffer, VkDeviceMemory& outIntermediateMemory);
+	static void ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGraphics::QueueType queue, VkImage img, const VkExtent3D& extent, uint32_t mip, uint32_t layer, VkDeviceSize size, uint32_t* data, VkBuffer& outIntermediateBuffer, VkDeviceMemory& outIntermediateMemory);
 	/// perform image color clear
 	static void ImageColorClear(CoreGraphics::CommandBufferId cmd, const VkImage& image, VkImageLayout layout, VkClearColorValue clearValue, VkImageSubresourceRange subres);
 	/// perform image depth stencil clear

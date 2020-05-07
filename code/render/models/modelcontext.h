@@ -38,10 +38,10 @@ public:
 	static void Create();
 
 	/// setup
-	static void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag);
+	static void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback);
 
 	/// change model for existing entity
-	static void ChangeModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag);
+	static void ChangeModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback);
 	/// get model
 	static const Models::ModelId GetModel(const Graphics::GraphicsEntityId id);
 	/// get model instance

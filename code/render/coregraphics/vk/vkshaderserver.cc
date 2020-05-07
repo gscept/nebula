@@ -18,7 +18,7 @@ namespace Vulkan
 {
 
 __ImplementClass(Vulkan::VkShaderServer, 'VKSS', Base::ShaderServerBase);
-__ImplementSingleton(Vulkan::VkShaderServer);
+__ImplementInterfaceSingleton(Vulkan::VkShaderServer);
 //------------------------------------------------------------------------------
 /**
 */
@@ -77,6 +77,7 @@ VkShaderServer::Open()
 	this->cboSlot = ShaderGetResourceSlot(shader, "PerTickParams");
 
 	this->resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
+	this->pendingViewDeletes.Resize(CoreGraphics::GetNumBufferedFrames());
 	IndexT i;
 	for (i = 0; i < this->resourceTables.Size(); i++)
 	{
@@ -284,6 +285,26 @@ VkShaderServer::UpdateResources()
 	this->cboOffset = CoreGraphics::AllocateGraphicsConstantBufferMemory(MainThreadConstantBuffer, sizeof(Shared::PerTickParams));
 	IndexT bufferedFrameIndex = GetBufferedFrameIndex();
 
+	// delete views which have been discarded due to LOD streaming
+	this->viewCreationCriticalSection.Enter();
+	for (int i = 0; i < this->pendingViewDeletes[bufferedFrameIndex].Size(); i++)
+		vkDestroyImageView(GetCurrentDevice(), this->pendingViewDeletes[bufferedFrameIndex][i], nullptr);
+	this->pendingViewDeletes[bufferedFrameIndex].Clear();
+
+	// setup new views for newly streamed LODs
+	for (int i = 0; i < this->pendingViewCreations.Size(); i++)
+	{
+		const _PendingView& pend = this->pendingViewCreations[i];
+		VkImageView view;
+		vkCreateImageView(GetCurrentDevice(), &pend.info, nullptr, &view);
+		VkTextureRuntimeInfo& info = textureAllocator.GetSafe<Texture_RuntimeInfo>(pend.tex.resourceId);
+		pendingViewDeletes[bufferedFrameIndex].Append(info.view);
+		info.view = view;
+		this->ReregisterTexture(pend.tex, info.type, info.bind);
+	}
+	this->pendingViewCreations.Clear();
+	this->viewCreationCriticalSection.Leave();
+
 	// update resource table
 	ResourceTableSetConstantBuffer(this->resourceTables[bufferedFrameIndex], { this->ticksCbo, this->cboSlot, 0, false, false, sizeof(Shared::PerTickParams), (SizeT)this->cboOffset });
 	ResourceTableCommitChanges(this->resourceTables[bufferedFrameIndex]);
@@ -298,5 +319,20 @@ VkShaderServer::AfterView()
 	// update the constant buffer with the data accumulated in this frame
 	CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, this->cboOffset, this->tickParams);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkShaderServer::AddPendingImageView(VkImageViewCreateInfo info, CoreGraphics::TextureId tex)
+{
+	this->viewCreationCriticalSection.Enter();
+	_PendingView pend;
+	pend.tex = tex;
+	pend.info = info;
+	this->pendingViewCreations.Append(pend);
+	this->viewCreationCriticalSection.Leave();
+}
+
 
 } // namespace Vulkan

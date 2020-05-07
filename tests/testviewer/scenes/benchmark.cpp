@@ -35,13 +35,14 @@ void OpenScene()
 {
     ground = Graphics::CreateEntity();
     Graphics::RegisterEntity<ModelContext, ObservableContext>(ground);
-    ModelContext::Setup(ground, "mdl:environment/plcholder_world.n3", "Viewer");
+    ModelContext::Setup(ground, "mdl:environment/plcholder_world.n3", "Viewer", []()
+        {
+            // setup visibility
+            ObservableContext::Setup(ground, VisibilityEntityType::Model);
+        });
     ModelContext::SetTransform(ground, Math::scaling(1000, 1, 1000) * Math::translation(0,0,0));
     entities.Append(ground);
     entityNames.Append("Ground");
-
-    // setup visibility
-    ObservableContext::Setup(ground, VisibilityEntityType::Model);
 
     const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3" };
     //const Util::StringAtom modelRes[] = { "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3" };
@@ -66,9 +67,11 @@ void OpenScene()
             const float timeOffset = Math::n_rand();// (((i + NumModels)* NumModels + (j + NumModels)) % 4) / 3.0f;
 
             // create model and move it to the front
-            ModelContext::Setup(ent, modelRes[resourceIndex], "NotA");
+            ModelContext::Setup(ent, modelRes[resourceIndex], "NotA", [ent]()
+                {
+                    ObservableContext::Setup(ent, VisibilityEntityType::Model);
+                });
             ModelContext::SetTransform(ent, Math::translation(i * 16, 0, j * 16));
-            ObservableContext::Setup(ent, VisibilityEntityType::Model);
 
             //Characters::CharacterContext::Setup(ent, skeletonRes[resourceIndex], animationRes[resourceIndex], "Viewer");
             //Characters::CharacterContext::PlayClip(ent, nullptr, 0, 0, Characters::Append, 1.0f, 1, Math::n_rand() * 100.0f, 0.0f, 0.0f, Math::n_rand() * 100.0f);

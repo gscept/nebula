@@ -65,7 +65,7 @@ VkUtilities::BufferUpdate(CoreGraphics::CommandBufferId cmd, VkBuffer buf, VkDev
 /**
 */
 void 
-VkUtilities::ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGraphics::QueueType queue, VkImage img, const VkImageCreateInfo& info, uint32_t mip, uint32_t face, VkDeviceSize size, uint32_t* data, VkBuffer& outIntermediateBuffer, VkDeviceMemory& outIntermediateMemory)
+VkUtilities::ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGraphics::QueueType queue, VkImage img, const VkExtent3D& extent, uint32_t mip, uint32_t layer, VkDeviceSize size, uint32_t* data, VkBuffer& outIntermediateBuffer, VkDeviceMemory& outIntermediateMemory)
 {
 	// create transfer buffer
 	const uint32_t qfamily = Vulkan::GetQueueFamily(queue);
@@ -101,9 +101,9 @@ VkUtilities::ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGr
 	copy.bufferOffset = 0;
 	copy.bufferImageHeight = 0;
 	copy.bufferRowLength = 0;
-	copy.imageExtent = info.extent;
+	copy.imageExtent = extent;
 	copy.imageOffset = { 0, 0, 0 };
-	copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, mip, face, 1 };
+	copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, mip, layer, 1 };
 	vkCmdCopyBufferToImage(CommandBufferGetVk(cmd), buf, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 
 	outIntermediateBuffer = buf;

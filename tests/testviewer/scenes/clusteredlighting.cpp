@@ -94,10 +94,7 @@ void OpenScene()
 
             // load textures
             CoreGraphics::TextureId albedo = Resources::CreateResource("tex:system/white.dds", "decal"_atm, nullptr, nullptr, true);
-            CoreGraphics::TextureId normal = Resources::CreateResource("tex:test/normalbox_normal.dds", "decal"_atm, [id](Resources::ResourceId rid)
-                {
-                    Decals::DecalContext::SetNormalTexture(id, rid);
-                });
+            CoreGraphics::TextureId normal = Resources::CreateResource("tex:test/normalbox_normal.dds", "decal"_atm, nullptr, nullptr, true);
             CoreGraphics::TextureId material = Resources::CreateResource("tex:system/default_material.dds", "decal"_atm, nullptr, nullptr, true);
 
             // setup decal
@@ -139,7 +136,10 @@ void OpenScene()
 
     tower = Graphics::CreateEntity();
     Graphics::RegisterEntity<ModelContext, ObservableContext>(tower);
-    ModelContext::Setup(tower, "mdl:test/test.n3", "Viewer");
+    ModelContext::Setup(tower, "mdl:test/test.n3", "Viewer", []()
+        {
+            ObservableContext::Setup(tower, VisibilityEntityType::Model);
+        });
     ModelContext::SetTransform(tower, Math::translation(4, 0, -7));
     entities.Append(tower);
     entityNames.Append("Tower");
@@ -150,19 +150,22 @@ void OpenScene()
     ModelContext::SetTransform(ground, Math::scaling(4) * Math::translation(0,0,0));
     entities.Append(ground);
     entityNames.Append("Ground");
+    */
+
 
 	particle = Graphics::CreateEntity();
 	Graphics::RegisterEntity<ModelContext, ObservableContext, Particles::ParticleContext>(particle);
-	ModelContext::Setup(particle, "mdl:Particles/Build_dust.n3", "Viewer");
-	Particles::ParticleContext::Setup(particle);
-	Particles::ParticleContext::Play(particle, Particles::ParticleContext::RestartIfPlaying);
+    ModelContext::Setup(particle, "mdl:Particles/Build_dust.n3", "Viewer", []()
+        {
+            ObservableContext::Setup(particle, VisibilityEntityType::Particle);
+            Particles::ParticleContext::Setup(particle);
+            Particles::ParticleContext::Play(particle, Particles::ParticleContext::RestartIfPlaying);
+        });	
 	entities.Append(particle);
 	entityNames.Append("Particle");
 
     // setup visibility
-    ObservableContext::Setup(tower, VisibilityEntityType::Model);
-    ObservableContext::Setup(ground, VisibilityEntityType::Model);
-	ObservableContext::Setup(particle, VisibilityEntityType::Particle);
+    //ObservableContext::Setup(ground, VisibilityEntityType::Model);
 
     const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3", "mdl:Units/Unit_Rifleman.n3" };
     //const Util::StringAtom modelRes[] = { "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3" };
@@ -187,16 +190,17 @@ void OpenScene()
             const float timeOffset = Math::n_rand();// (((i + NumModels)* NumModels + (j + NumModels)) % 4) / 3.0f;
 
             // create model and move it to the front
-            ModelContext::Setup(ent, modelRes[modelIndex], "NotA");
-            ModelContext::SetTransform(ent, Math::translation(i * 16, 0, j * 16));
-            ObservableContext::Setup(ent, VisibilityEntityType::Model);
-
-            Characters::CharacterContext::Setup(ent, skeletonRes[modelIndex], animationRes[modelIndex], "Viewer");
-            Characters::CharacterContext::PlayClip(ent, nullptr, 1, 0, Characters::Append, 1.0f, 1, Math::n_rand() * 100.0f, 0.0f, 0.0f, Math::n_rand() * 100.0f);
+            ModelContext::Setup(ent, modelRes[modelIndex], "NotA", [ent, modelIndex, i, j, skeletonRes, animationRes]()
+                {
+                    ModelContext::SetTransform(ent, Math::translation(i * 16, 0, j * 16));
+                    ObservableContext::Setup(ent, VisibilityEntityType::Model);
+                    Characters::CharacterContext::Setup(ent, skeletonRes[modelIndex], animationRes[modelIndex], "Viewer");
+                    Characters::CharacterContext::PlayClip(ent, nullptr, 1, 0, Characters::Append, 1.0f, 1, Math::n_rand() * 100.0f, 0.0f, 0.0f, Math::n_rand() * 100.0f);
+                });
+            
             modelIndex = (modelIndex + 1) % 4;
         }
     }
-
 
     ModelContext::EndBulkRegister();
     ObservableContext::EndBulkRegister();

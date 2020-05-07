@@ -19,7 +19,10 @@ void OpenScene()
 {
     entity = Graphics::CreateEntity();
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(entity);
-    Models::ModelContext::Setup(entity, "mdl:bistro/Bistro_Exterior.n3", "BistroScene");
+    Models::ModelContext::Setup(entity, "mdl:bistro/Bistro_Exterior.n3", "BistroScene", []()
+        {
+            Visibility::ObservableContext::Setup(entity, Visibility::VisibilityEntityType::Model);
+        });
     
     Math::mat4 t = Math::translation(Math::vec3(0, 0, 0));
     Math::mat4 r = Math::rotationx(Math::n_deg2rad(0.0f));
@@ -29,7 +32,6 @@ void OpenScene()
     trs = trs * t;
     
     Models::ModelContext::SetTransform(entity, trs);
-    Visibility::ObservableContext::Setup(entity, Visibility::VisibilityEntityType::Model);
 };
 
 //------------------------------------------------------------------------------

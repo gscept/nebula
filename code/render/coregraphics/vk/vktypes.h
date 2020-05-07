@@ -55,6 +55,10 @@ public:
 	static VkFormat AsVkDataFormat(CoreGraphics::PixelFormat::Code p);
 	/// convert uint to vulkan sample count
 	static VkSampleCountFlagBits AsVkSampleFlags(const SizeT samples);
+	/// convert texture type to vk image type
+	static VkImageType AsVkImageType(CoreGraphics::TextureType type);
+	/// convert texture type to vk view type
+	static VkImageViewType AsVkImageViewType(CoreGraphics::TextureType type);
 	/// convert DevIL pixel format to Vulkan component mapping
 	static VkComponentMapping AsVkMapping(ILenum p);
 	/// convert vulkan format back to nebula format

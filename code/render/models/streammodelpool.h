@@ -39,7 +39,7 @@ public:
 	virtual ~StreamModelPool();
 
 	/// setup resource loader, initiates the placeholder and error resources if valid
-	void Setup();
+	void Setup() override;
 
 	/// create an instance of a model
 	ModelInstanceId CreateModelInstance(const ModelId id);

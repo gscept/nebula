@@ -50,6 +50,7 @@ protected:
 
 	CoreGraphics::MeshId res;
 	uint32_t primitiveGroupIndex;
+	uint32_t primitiveGroupIndexLoaded;
 };
 
 ModelNodeInstanceCreator(PrimitiveNode)

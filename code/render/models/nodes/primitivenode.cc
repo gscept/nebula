@@ -43,12 +43,17 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 		Resources::ResourceName meshName = reader->ReadString();
 
 		// add as pending resource in loader
-		this->res = Resources::CreateResource(meshName, tag, nullptr, nullptr, immediate);
+		this->primitiveGroupIndex = 0;
+		this->res = Resources::CreateResource(meshName, tag, [this](Resources::ResourceId id)
+			{
+				this->res = id;
+				this->primitiveGroupIndex = this->primitiveGroupIndexLoaded;
+			}, nullptr, immediate);
 	}
 	else if (FourCC('PGRI') == fourcc)
 	{
 		// primitive group index
-		this->primitiveGroupIndex = reader->ReadUInt();
+		this->primitiveGroupIndexLoaded = reader->ReadUInt();
 	}
 	else
 	{

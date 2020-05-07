@@ -443,6 +443,60 @@ VkTypes::AsVkSampleFlags(const SizeT samples)
 //------------------------------------------------------------------------------
 /**
 */
+VkImageType 
+VkTypes::AsVkImageType(CoreGraphics::TextureType type)
+{
+	switch (type)
+	{
+		case Texture1D:
+			return VK_IMAGE_TYPE_1D;
+		case Texture2D:
+			return VK_IMAGE_TYPE_2D;
+		case Texture3D:
+			return VK_IMAGE_TYPE_3D;
+		case TextureCube:
+			return VK_IMAGE_TYPE_2D;
+		case Texture1DArray:
+			return VK_IMAGE_TYPE_1D;
+		case Texture2DArray:
+			return VK_IMAGE_TYPE_2D;
+		case TextureCubeArray:
+			return VK_IMAGE_TYPE_2D;
+	}
+	n_error("Should not happen");
+	return VK_IMAGE_TYPE_MAX_ENUM;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkImageViewType 
+VkTypes::AsVkImageViewType(CoreGraphics::TextureType type)
+{
+	switch (type)
+	{
+	case Texture1D:
+		return VK_IMAGE_VIEW_TYPE_1D;
+	case Texture2D:
+		return VK_IMAGE_VIEW_TYPE_2D;
+	case Texture3D:
+		return VK_IMAGE_VIEW_TYPE_3D;
+	case TextureCube:
+		return VK_IMAGE_VIEW_TYPE_CUBE;
+	case Texture1DArray:
+		return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+	case Texture2DArray:
+		return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+	case TextureCubeArray:
+		return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+	}
+	n_error("Should not happen");
+	return VK_IMAGE_VIEW_TYPE_MAX_ENUM;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 CoreGraphics::PixelFormat::Code
 VkTypes::AsNebulaPixelFormat(VkFormat f)
 {
@@ -454,6 +508,8 @@ VkTypes::AsNebulaPixelFormat(VkFormat f)
 	case VK_FORMAT_R8G8B8A8_UNORM:					return PixelFormat::R8G8B8A8;
 	case VK_FORMAT_B8G8R8A8_UNORM:					return PixelFormat::A8B8G8R8;
 	case VK_FORMAT_R8G8B8_UNORM:					return PixelFormat::R8G8B8;
+	case VK_FORMAT_B8G8R8_UNORM:					return PixelFormat::R8G8B8;
+	case VK_FORMAT_B8G8R8A8_UNORM:					return PixelFormat::R8G8B8A8;
 	case VK_FORMAT_R5G6B5_UNORM_PACK16:				return PixelFormat::R5G6B5;
 	case VK_FORMAT_R8G8B8A8_SRGB:					return PixelFormat::SRGBA8;
 	case VK_FORMAT_B8G8R8A8_SRGB:					return PixelFormat::SRGBA8;

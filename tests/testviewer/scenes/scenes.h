@@ -69,4 +69,4 @@ enum
 
 // Which is the currently active scene?
 // This is used to determine which scenes callbacks to call and is normally changed via imgui
-static int currentScene = BenchmarkSceneId;
+static int currentScene = SponzaSceneId;

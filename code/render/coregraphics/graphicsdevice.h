@@ -79,12 +79,17 @@ struct GraphicsDeviceState
 	CoreGraphics::CommandBufferPoolId submissionGraphicsCmdPool;
 	CoreGraphics::CommandBufferPoolId submissionComputeCmdPool;
 	CoreGraphics::CommandBufferPoolId submissionTransferCmdPool;
+	CoreGraphics::CommandBufferPoolId submissionTransferGraphicsHandoverCmdPool;
 
 	CoreGraphics::SubmissionContextId resourceSubmissionContext;
 	CoreGraphics::CommandBufferId resourceSubmissionCmdBuffer;
 	CoreGraphics::FenceId resourceSubmissionFence;
 	Threading::CriticalSection resourceSubmissionCriticalSection;
 	bool resourceSubmissionActive;
+
+	CoreGraphics::SubmissionContextId handoverSubmissionContext;
+	CoreGraphics::CommandBufferId handoverSubmissionCmdBuffer;
+	bool handoverSubmissionActive;
 
 	CoreGraphics::SubmissionContextId setupSubmissionContext;
 	CoreGraphics::CommandBufferId setupSubmissionCmdBuffer;
@@ -262,8 +267,14 @@ uint GetIndexBufferOffset(CoreGraphics::VertexBufferMemoryType type);
 /// get global index buffer
 CoreGraphics::IndexBufferId GetIndexBuffer(CoreGraphics::VertexBufferMemoryType type);
 
+/// lock resource updates, blocks if other thread is using it
+void LockResourceSubmission();
 /// return resource submission context
 CoreGraphics::SubmissionContextId GetResourceSubmissionContext();
+/// return the handover submission context
+CoreGraphics::SubmissionContextId GetHandoverSubmissionContext();
+/// unlocks resource updates
+void UnlockResourceSubmission();
 /// return setup submission context
 CoreGraphics::SubmissionContextId GetSetupSubmissionContext();
 /// return command buffer for current frame graphics submission
