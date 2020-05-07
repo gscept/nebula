@@ -99,7 +99,11 @@ VisibilityTest::Run()
 	
 	// create model and move it to the front
 	ModelContext::RegisterEntity(ent);
-	ModelContext::Setup(ent, "mdl:Buildings/castle_tower.n3", "NotA");
+	ObservableContext::RegisterEntity(ent);
+	ModelContext::Setup(ent, "mdl:Buildings/castle_tower.n3", "NotA", [ent]()
+		{
+			ObservableContext::Setup(ent, VisibilityEntityType::Model);
+		});
 	ModelContext::SetTransform(ent, Math::translation(Math::vector(0, 0, 10)));
 
 	// setup scene
@@ -107,7 +111,11 @@ VisibilityTest::Run()
 
 	// create model and move it to the front
 	ModelContext::RegisterEntity(ent2);
-	ModelContext::Setup(ent2, "mdl:Buildings/castle_tower.n3", "NotA");
+	ObservableContext::RegisterEntity(ent2);
+	ModelContext::Setup(ent2, "mdl:Buildings/castle_tower.n3", "NotA", [ent2]()
+		{
+			ObservableContext::Setup(ent2, VisibilityEntityType::Model);
+		});
 	ModelContext::SetTransform(ent2, Math::translation(Math::vector(0, 0, -5)));
 
 	GraphicsEntityId globalLight = Graphics::CreateEntity();
@@ -118,10 +126,6 @@ VisibilityTest::Run()
 	ObserverContext::CreateBruteforceSystem({});
 
 	// now add both to visibility
-	ObservableContext::RegisterEntity(ent);
-	ObservableContext::Setup(ent, VisibilityEntityType::Model);
-	ObservableContext::RegisterEntity(ent2);
-	ObservableContext::Setup(ent2, VisibilityEntityType::Model);
 	ObserverContext::RegisterEntity(cam);
 	ObserverContext::Setup(cam, VisibilityEntityType::Camera);
 
@@ -137,11 +141,13 @@ VisibilityTest::Run()
 
 			// create model and move it to the front
 			ModelContext::RegisterEntity(ent);
-			ModelContext::Setup(ent, "mdl:Buildings/castle_tower.n3", "NotA");
+			ObservableContext::RegisterEntity(ent);
+			ModelContext::Setup(ent, "mdl:Buildings/castle_tower.n3", "NotA", [ent]()
+				{
+					ObservableContext::Setup(ent, VisibilityEntityType::Model);
+				});
 			ModelContext::SetTransform(ent, translation(Math::vector(i*10, 0, -j*10)));
 
-			ObservableContext::RegisterEntity(ent);
-			ObservableContext::Setup(ent, VisibilityEntityType::Model);
 			models.Append(ent);
 		}
 	}

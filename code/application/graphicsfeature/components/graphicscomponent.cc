@@ -79,11 +79,13 @@ GraphicsComponent::OnActivate(Game::InstanceId instance)
 	auto gfxEntity = Graphics::CreateEntity();
 	component->Get<Attr::GraphicsEntity>(instance) = gfxEntity.id;
 	Models::ModelContext::RegisterEntity(gfxEntity);
-	Models::ModelContext::Setup(gfxEntity, component->Get<Attr::ModelResource>(instance), "NONE");
+	Visibility::ObservableContext::RegisterEntity(gfxEntity);
+	Models::ModelContext::Setup(gfxEntity, component->Get<Attr::ModelResource>(instance), "NONE", [gfxEntity]()
+		{
+			Visibility::ObservableContext::Setup(gfxEntity, Visibility::VisibilityEntityType::Model);
+		});
 	auto transform = Game::TransformComponent::GetWorldTransform(component->GetOwner(instance));
 	Models::ModelContext::SetTransform(gfxEntity, transform);
-	Visibility::ObservableContext::RegisterEntity(gfxEntity);
-	Visibility::ObservableContext::Setup(gfxEntity, Visibility::VisibilityEntityType::Model);
 }
 
 //------------------------------------------------------------------------------
@@ -109,7 +111,7 @@ GraphicsComponent::SetModel(Game::Entity entity, const Util::String & path)
 	if (instance != InvalidIndex)
 	{
 		Graphics::GraphicsEntityId gfxEntity = { component->Get<Attr::GraphicsEntity>(instance) };
-		Models::ModelContext::ChangeModel(gfxEntity, path, "NONE");
+		Models::ModelContext::ChangeModel(gfxEntity, path, "NONE", nullptr);
 		component->Get<Attr::ModelResource>(instance) = path;
 		auto transform = Game::TransformComponent::GetWorldTransform(component->GetOwner(instance));
 		Models::ModelContext::SetTransform(gfxEntity, transform);

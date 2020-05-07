@@ -79,7 +79,8 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 		const Math::mat4& pending = modelContextAllocator.Get<Model_Transform>(cid.id);
 		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::InstanceTransform>(mdl.instance) = pending;
 		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(mdl.instance) = gfxId.id;
-		finishedCallback();
+		if (finishedCallback != nullptr)
+			finishedCallback();
 	};
 	info.failCallback = info.successCallback;
 
