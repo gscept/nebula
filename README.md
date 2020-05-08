@@ -1,6 +1,7 @@
 # Nebula engine   
 ![CI](https://github.com/gscept/nebula/workflows/CI/badge.svg)
 
+Get in contact on Discord! https://discord.gg/gwbaVg
 ## Requirements
 1. OS: Windows or Linux
 2. Compiler with support for C++17.
