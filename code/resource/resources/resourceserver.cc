@@ -182,7 +182,7 @@ ResourceServer::HasPendingResources()
 		if (loader->IsA(ResourceStreamPool::RTTI))
 		{
 			const Ptr<ResourceStreamPool>& pool = loader.cast<ResourceStreamPool>();
-			if (!pool->pendingLoadMap.IsEmpty())
+			if (!pool->pendingLoads.IsEmpty())
 				return true;
 		}
 	}

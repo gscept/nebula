@@ -35,6 +35,15 @@ ShaderStateNode::~ShaderStateNode()
 //------------------------------------------------------------------------------
 /**
 */
+void 
+ShaderStateNode::SetMaxLOD(const float lod)
+{
+	Materials::surfacePool->SetMaxLOD(this->surRes, lod);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 bool
 ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate)
 {

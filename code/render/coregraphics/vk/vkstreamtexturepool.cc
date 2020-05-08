@@ -77,7 +77,7 @@ VkStreamTexturePool::DeallocObject(const Resources::ResourceUnknownId id)
 ResourcePool::LoadStatus
 VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
-	N_SCOPE(CreateAndLoad, TextureStream);
+	N_SCOPE_ACCUM(CreateAndLoad, TextureStream);
 	n_assert(stream.isvalid());
 	n_assert(stream->CanBeMapped());
 	n_assert(this->GetState(res) == Resources::Resource::Pending);
@@ -95,7 +95,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 
 	streamInfo.mappedBuffer = srcData;
 	streamInfo.bufferSize = srcDataSize;
-	streamInfo.highestLod = NumBasicLods;
+	streamInfo.lowestLod = NumBasicLods;
 	streamInfo.stream = stream;
 	loadInfo.dev = Vulkan::GetCurrentDevice();
 	texturePool->LeaveGet();
@@ -353,9 +353,9 @@ VkStreamTexturePool::Unload(const Resources::ResourceId id)
 /**
 */
 void 
-VkStreamTexturePool::UpdateLOD(const Resources::ResourceId& id, const IndexT lod, bool immediate)
+VkStreamTexturePool::StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate)
 {
-	N_SCOPE(UpdateLOD, TextureStream);
+	N_SCOPE_ACCUM(StreamMaxLOD, TextureStream);
 	texturePool->EnterGet();
 	VkTextureStreamInfo& streamInfo = texturePool->Get<Texture_StreamInfo>(id.resourceId);
 	VkTextureLoadInfo& loadInfo = texturePool->Get<Texture_LoadInfo>(id.resourceId);
@@ -363,20 +363,15 @@ VkStreamTexturePool::UpdateLOD(const Resources::ResourceId& id, const IndexT lod
 	texturePool->LeaveGet();
 
 	// if the lod is undefined, just add 1 mip
-	IndexT adjustedLod = lod;
-	if (adjustedLod == -1)
-		adjustedLod = streamInfo.highestLod + 1;
+	IndexT adjustedLod = Math::n_max(0.0f, Math::n_ceil(loadInfo.mips * lod));
 
 	// abort if the lod is already higher
-	if (streamInfo.highestLod > (uint32_t)adjustedLod)
+	if (streamInfo.lowestLod <= (uint32_t)adjustedLod)
 		return;
 
 	// bump lod
-	streamInfo.highestLod = adjustedLod;
-
-	// if we are already at the highest lod, return
-	if (streamInfo.highestLod > loadInfo.mips)
-		return;
+	adjustedLod = Math::n_min(adjustedLod, (IndexT)loadInfo.mips);
+	IndexT maxLod = loadInfo.mips - streamInfo.lowestLod;
 
 	VkDevice dev = Vulkan::GetCurrentDevice();
 
@@ -384,9 +379,10 @@ VkStreamTexturePool::UpdateLOD(const Resources::ResourceId& id, const IndexT lod
 	ILuint image = ilGenImage();
 	ilBindImage(image);
 	ilSetInteger(IL_DXTC_NO_DECOMPRESS, IL_TRUE);
-	ilSetInteger(IL_DDS_FIRST_MIP, -adjustedLod); // count lods backwards
-	ilSetInteger(IL_DDS_LAST_MIP, -adjustedLod);
+	ilSetInteger(IL_DDS_FIRST_MIP, adjustedLod); // count lods backwards
+	ilSetInteger(IL_DDS_LAST_MIP, maxLod);
 	ilLoadL(IL_DDS, streamInfo.mappedBuffer, streamInfo.bufferSize);
+	streamInfo.lowestLod = adjustedLod;
 
 	ILuint startWidth = ilGetInteger(IL_IMAGE_WIDTH);
 	ILuint startHeight = ilGetInteger(IL_IMAGE_HEIGHT);
@@ -399,14 +395,13 @@ VkStreamTexturePool::UpdateLOD(const Resources::ResourceId& id, const IndexT lod
 	ILuint numFaces = ilGetInteger(IL_NUM_FACES);
 	ILuint numLayers = ilGetInteger(IL_NUM_LAYERS);
 	ILuint mips = ilGetInteger(IL_NUM_MIPMAPS);
-	ILuint imageMips = ilGetInteger(IL_DDS_MIP_HEADER_COUNT); // get the mip count from the header, not from the data
 	ILenum cube = ilGetInteger(IL_IMAGE_CUBEFLAGS);
 	ILenum format = ilGetInteger(IL_PIXEL_FORMAT);	// only available when loading DDS, so this might need some work...
 
 	VkImageSubresourceRange subres;
 	subres.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	subres.baseArrayLayer = 0;
-	subres.baseMipLevel = Math::n_max((ILint)imageMips - adjustedLod, 0);
+	subres.baseMipLevel = adjustedLod;
 	subres.layerCount = loadInfo.layers;
 	subres.levelCount = 1;
 
@@ -420,9 +415,9 @@ VkStreamTexturePool::UpdateLOD(const Resources::ResourceId& id, const IndexT lod
 	VkImageSubresourceRange viewSubres;
 	viewSubres.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	viewSubres.baseArrayLayer = 0;
-	viewSubres.baseMipLevel = Math::n_max((ILint)imageMips - adjustedLod, 0);
+	viewSubres.baseMipLevel = adjustedLod;
 	viewSubres.layerCount = loadInfo.layers;
-	viewSubres.levelCount = imageMips - viewSubres.baseMipLevel;
+	viewSubres.levelCount = loadInfo.mips - viewSubres.baseMipLevel;
 	VkImageViewCreateInfo viewCreate =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,

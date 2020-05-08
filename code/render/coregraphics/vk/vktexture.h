@@ -59,7 +59,7 @@ struct VkTextureMappingInfo
 
 struct VkTextureStreamInfo
 {
-	uint32_t highestLod;
+	uint32_t lowestLod;
 	void* mappedBuffer;
 	uint bufferSize;
 	uint32_t maxMips;

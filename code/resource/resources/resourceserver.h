@@ -49,7 +49,7 @@ public:
 	/// reload resource
 	void ReloadResource(const ResourceName& res, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr);
 	/// stream in a new LOD
-	void StreamLOD(const ResourceId& id, IndexT lod, bool immediate);
+	void SetMaxLOD(const ResourceId& id, float lod, bool immediate);
 
 	/// reserve resource (for self-managed resources)
 	Resources::ResourceId ReserveResource(const ResourceName& res, const Util::StringAtom& tag, const Core::Rtti& type);
@@ -148,7 +148,7 @@ ResourceServer::ReloadResource(const ResourceName& res, std::function<void(const
 /**
 */
 inline void 
-ResourceServer::StreamLOD(const ResourceId& id, IndexT lod, bool immediate)
+ResourceServer::SetMaxLOD(const ResourceId& id, float lod, bool immediate)
 {
 	// get id of loader
 	const Ids::Id8 loaderid = id.poolIndex;
@@ -158,7 +158,7 @@ ResourceServer::StreamLOD(const ResourceId& id, IndexT lod, bool immediate)
 	const Ptr<ResourceStreamPool>& loader = this->pools[loaderid].downcast<ResourceStreamPool>();
 
 	// update LOD
-	loader->UpdateResourceLOD(id, lod, immediate);
+	loader->SetMaxLOD(id, lod, immediate);
 }
 
 //------------------------------------------------------------------------------
@@ -330,9 +330,9 @@ CreateResource(const ResourceName& res, const Util::StringAtom& tag, std::functi
 /**
 */
 inline void
-StreamLOD(const ResourceId& id, IndexT lod, bool immediate)
+SetMaxLOD(const ResourceId& id, float lod, bool immediate)
 {
-	return ResourceServer::Instance()->StreamLOD(id, lod, immediate);
+	return ResourceServer::Instance()->SetMaxLOD(id, lod, immediate);
 }
 
 //------------------------------------------------------------------------------

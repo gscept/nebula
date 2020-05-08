@@ -78,6 +78,8 @@ public:
 
 	/// get surface
 	const Materials::SurfaceId GetSurface() const { return this->surface; };
+	/// trigger an LOD update
+	void SetMaxLOD(const float lod);
 
 protected:
 	friend class StreamModelPool;

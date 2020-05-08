@@ -74,7 +74,7 @@ public:
 	void ReloadResource(const Resources::ResourceId& id, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed);
 
 	/// begin updating a resources lod
-	void UpdateResourceLOD(const Resources::ResourceId& id, const IndexT lod, bool immediate);
+	void SetMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate);
 
 protected:
 	friend class ResourceServer;
@@ -94,7 +94,7 @@ protected:
 	struct _PendingStreamLod
 	{
 		Resources::ResourceId id;
-		IndexT lod;
+		float lod;
 		bool immediate;
 
 		_PendingStreamLod() : id(ResourceId::Invalid()) {};
@@ -118,7 +118,7 @@ protected:
 	/// perform a reload
 	virtual LoadStatus ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream);
 	/// perform a lod update
-	virtual void UpdateLOD(const Resources::ResourceId& id, const IndexT lod, bool immediate);
+	virtual void StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate);
 
 	/// update the resource loader, this is done every frame
 	void Update(IndexT frameIndex);
@@ -139,13 +139,11 @@ protected:
 
 	bool async;
 
-	Util::Dictionary<Resources::ResourceName, Ids::Id32> pendingLoadMap;
-	Util::FixedArray<_PendingResourceLoad> pendingLoads;
-	Ids::IdPool pendingLoadPool;
+	Util::Array<IndexT> pendingLoads;
 	Util::Array<_PendingResourceUnload> pendingUnloads;
-	Util::FixedArray<_PendingStreamLod> pendingStreamLods;
-	Ids::IdPool pendingStreamPool;
+	Util::Array<_PendingStreamLod> pendingStreamLods;
 	Util::FixedArray<Util::Array<_Callbacks>> callbacks;
+	Util::FixedArray<_PendingResourceLoad> loads;
 
 	/// async section to sync callbacks and pending list with thread
 	Threading::CriticalSection asyncSection;

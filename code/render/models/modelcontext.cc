@@ -327,6 +327,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 		// calculate view vector to calculate LOD
 		Math::vec4 viewVector = cameraTransform.position - transforms[instance.instance].position;
 		float viewDistance = length(viewVector);
+		float textureLod = viewDistance - 38.5f;
 
 		// nodes are allocated breadth first, so just going through the list will guarantee the hierarchy is traversed in proper order
 		SizeT j;
@@ -354,7 +355,12 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 			if ((bits[j] & HasStateBit) == HasStateBit)
 			{
 				ShaderStateNode::Instance* snode = reinterpret_cast<ShaderStateNode::Instance*>(node);
+				ShaderStateNode* pnode = reinterpret_cast<ShaderStateNode*>(node->node);
+				if (!snode->active)
+					continue;
+
 				snode->SetDirty(true);
+				pnode->SetMaxLOD(textureLod);
 			}
 		}
 	}

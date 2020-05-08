@@ -33,7 +33,7 @@ private:
 	void Unload(const Resources::ResourceId id);
 
 	/// stream mips
-	void UpdateLOD(const Resources::ResourceId& id, const IndexT lod, bool immediate) override;
+	void StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate) override;
 
 	/// allocate object
 	Resources::ResourceUnknownId AllocObject() override;

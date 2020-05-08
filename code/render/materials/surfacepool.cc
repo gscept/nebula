@@ -46,18 +46,17 @@ SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAt
 		// send to first node
 		reader->SetToNode("/Nebula/Surface");
 
-		this->EnterGet();
-		SurfaceRuntime& info = this->Get<0>(id.resourceId);
+		SurfaceId& sid = this->Get<Surface_SurfaceId>(id.resourceId);
+		MaterialType*& type = this->Get<Surface_MaterialType>(id.resourceId);
+		Util::Array<CoreGraphics::TextureId>& textures = this->Get<Surface_Textures>(id.resourceId);
 
 		// load surface
 		Resources::ResourceName materialType = reader->GetString("template");
 		Materials::MaterialServer* server = Materials::MaterialServer::Instance();
-		MaterialType* type = server->materialTypesByName[materialType];
+		type = server->materialTypesByName[materialType];
 
 		// add to internal table
-		SurfaceId sid = type->CreateSurface();
-		info.id = sid;
-		info.type = type;
+		sid = type->CreateSurface();
 
 		if (reader->SetToFirstChild("Param")) do
 		{
@@ -102,12 +101,11 @@ SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAt
 					if (!path.IsEmpty())
 					{
 						tex = Resources::CreateResource(path + NEBULA_TEXTURE_EXTENSION, tag, 
-							[type, sid, binding](Resources::ResourceId rid)
+							[type, sid, binding, id, this](Resources::ResourceId rid)
 							{
 								type->SetSurfaceConstant(sid, binding, CoreGraphics::TextureGetBindlessHandle(rid));
 
-								// lol test
-								Resources::StreamLOD(rid, -1, false);
+								this->Get<Surface_Textures>(id.resourceId).Append(rid);
 							}, 
 							[type, sid, binding](Resources::ResourceId rid)
 							{
@@ -121,8 +119,6 @@ SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAt
 					defaultVal.SetUInt64(tex.HashCode64());
 					type->SetSurfaceConstant(sid, binding, CoreGraphics::TextureGetBindlessHandle(tex));
 
-
-
 					break;
 				}
 				}
@@ -130,9 +126,11 @@ SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAt
 			else if (slot != InvalidIndex)
 			{
 				CoreGraphics::TextureId tex = Resources::CreateResource(reader->GetString("value") + NEBULA_TEXTURE_EXTENSION, tag, 
-					[type, sid, slot](Resources::ResourceId rid)
+					[type, sid, slot, id, this](Resources::ResourceId rid)
 					{
 						type->SetSurfaceTexture(sid, slot, rid);
+
+						this->Get<Surface_Textures>(id.resourceId).Append(rid);
 					}, 
 					[type, sid, slot](Resources::ResourceId rid)
 					{
@@ -143,7 +141,6 @@ SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAt
 			
 		} while (reader->SetToNextChild("Param"));
 
-		this->LeaveGet();
 		return Success;
 	}
 	return Failed;
@@ -155,9 +152,8 @@ SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAt
 void
 SurfacePool::Unload(const Resources::ResourceId id)
 {
-	const SurfaceRuntime& runtime = this->Get<0>(id.resourceId);
-	const SurfaceId mid = runtime.id;
-	MaterialType* type = runtime.type;
+	const SurfaceId mid = this->Get<Surface_SurfaceId>(id.resourceId);
+	MaterialType* type = this->Get<Surface_MaterialType>(id.resourceId);
 	type->DestroySurface(mid);
 
 	this->states[id.poolId] = Resources::Resource::State::Unloaded;
@@ -166,9 +162,20 @@ SurfacePool::Unload(const Resources::ResourceId id)
 //------------------------------------------------------------------------------
 /**
 */
-inline void
-SurfacePool::UpdateLOD(const SurfaceResourceId id, const IndexT lod)
+void
+SurfacePool::SetMaxLOD(const SurfaceResourceId id, const float lod)
 {
+	const Util::Array<CoreGraphics::TextureId>& textures = this->Get<Surface_Textures>(id.resourceId);
+	float& minLod = this->Get<Surface_MinLOD>(id.resourceId);
+	if (minLod <= lod)
+		return;
+
+	minLod = lod;
+
+	for (IndexT i = 0; i < textures.Size(); i++)
+	{
+		Resources::SetMaxLOD(textures[i], lod, false);
+	}
 }
 
 } // namespace Materials
