@@ -21,9 +21,6 @@ public:
 	/// destructor
 	virtual ~StreamMeshPool();
 
-	/// setup resource loader, initiates the placeholder and error resources if valid
-	void Setup() override;
-
 	/// bind mesh
 	void MeshBind(const Resources::ResourceId id);
 	/// bind primitive group for currently bound mesh

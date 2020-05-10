@@ -37,12 +37,15 @@
 #include "io/stream.h"
 #include "util/set.h"
 #include "resource.h"
+#include "threading/safequeue.h"
+#include "threading/threadid.h"
 #include <tuple>
 #include <functional>
 
 namespace Resources
 {
 class Resource;
+class ResourceLoaderThread;
 class ResourceStreamPool : public ResourcePool
 {
 	__DeclareAbstractClass(ResourceStreamPool);
@@ -127,8 +130,6 @@ protected:
 	LoadStatus PrepareLoad(_PendingResourceLoad& res);
 	/// run callbacks
 	void RunCallbacks(LoadStatus status, const Resources::ResourceId id);
-	/// add a new job to the loader thread
-	void AddThreadJob(std::function<void()> func);
 
 	/// these types need to be properly initiated in a subclass Setup function
 	Util::StringAtom placeholderResourceName;
@@ -139,14 +140,19 @@ protected:
 
 	bool async;
 
+	Ptr<ResourceLoaderThread> streamerThread;
+	Util::StringAtom streamerThreadName;
+
 	Util::Array<IndexT> pendingLoads;
 	Util::Array<_PendingResourceUnload> pendingUnloads;
 	Util::Array<_PendingStreamLod> pendingStreamLods;
+	Threading::SafeQueue<_PendingStreamLod> pendingStreamQueue;
 	Util::FixedArray<Util::Array<_Callbacks>> callbacks;
 	Util::FixedArray<_PendingResourceLoad> loads;
 
 	/// async section to sync callbacks and pending list with thread
 	Threading::CriticalSection asyncSection;
+	Threading::ThreadId creatorThread;
 };
 
 

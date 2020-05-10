@@ -89,14 +89,16 @@ VkTextRenderer::Open()
 	const char* fontPath = "/usr/share/fonts/truetype/freefont/FreeSans.ttf";
 #endif
 
+	unsigned char* ttf_buffer;
+
 	// load font
 	Ptr<IO::Stream> fontStream = IO::IoServer::Instance()->CreateStream(fontPath);
 	fontStream->SetAccessMode(IO::Stream::ReadAccess);
 	if (fontStream->Open())
 	{
-		this->ttf_buffer = n_new_array(unsigned char, fontStream->GetSize());
+		ttf_buffer = n_new_array(unsigned char, fontStream->GetSize());
 		void* buf = fontStream->Map();
-		memcpy(this->ttf_buffer, buf, fontStream->GetSize());
+		memcpy(ttf_buffer, buf, fontStream->GetSize());
 		fontStream->Unmap();
 		fontStream->Close();
 	}
@@ -105,29 +107,29 @@ VkTextRenderer::Open()
 		n_error("Failed to load font %s!", fontPath);
 	}
 
-	this->bitmap = n_new_array(unsigned char, GLYPH_TEXTURE_SIZE*GLYPH_TEXTURE_SIZE);
+	unsigned char* bitmap = n_new_array(unsigned char, GLYPH_TEXTURE_SIZE*GLYPH_TEXTURE_SIZE);
 	int charCount = 96;
 	this->cdata = n_new_array(stbtt_packedchar, charCount);
 
 	stbtt_pack_context context;
-	if (!stbtt_PackBegin(&context, this->bitmap, GLYPH_TEXTURE_SIZE, GLYPH_TEXTURE_SIZE, 0, 1, NULL))
+	if (!stbtt_PackBegin(&context, bitmap, GLYPH_TEXTURE_SIZE, GLYPH_TEXTURE_SIZE, 0, 1, NULL))
 	{
 		n_error("VkTextRenderer::Open(): Could not load font!");
 	}
 	stbtt_PackSetOversampling(&context, 4, 4);
-	if (!stbtt_PackFontRange(&context, this->ttf_buffer, 0, 40.0f, 32, charCount, this->cdata))
+	if (!stbtt_PackFontRange(&context, ttf_buffer, 0, 40.0f, 32, charCount, this->cdata))
 	{
 		n_error("VkTextRenderer::Open(): Could not load font!");
 	}
 	stbtt_PackEnd(&context);
-	stbtt_InitFont(&this->font, this->ttf_buffer, 0);
+	stbtt_InitFont(&this->font, ttf_buffer, 0);
 
 	// setup random texture
 	TextureCreateInfo texInfo;
 	texInfo.name = "GlyphTexture"_atm;
 	texInfo.usage = TextureUsage::ImmutableUsage;
 	texInfo.tag = "render_system"_atm;
-	texInfo.buffer = this->bitmap;
+	texInfo.buffer = bitmap;
 	texInfo.type = TextureType::Texture2D;
 	texInfo.format = PixelFormat::R8;
 	texInfo.width = GLYPH_TEXTURE_SIZE;
@@ -146,6 +148,7 @@ VkTextRenderer::Open()
 	this->modelVar = ShaderGetConstantBinding(shd, "TextProjectionModel");
 
 	n_delete_array(bitmap);
+	n_delete_array(ttf_buffer);
 }
 
 //------------------------------------------------------------------------------
@@ -165,8 +168,6 @@ VkTextRenderer::Close()
 
 	DestroyVertexBuffer(this->vbo);
 	DestroyTexture(this->glyphTexture);
-
-	n_delete_array(ttf_buffer);
 }
 
 //------------------------------------------------------------------------------
@@ -197,6 +198,8 @@ VkTextRenderer::DrawTextElements()
 	unsigned vert = 0;
 	unsigned totalChars = 0;
 
+	TextElementVertex vertices[MaxNumChars * 6];
+
 	// draw text elements
 	IndexT i;
 	for (i = 0; i < this->textElements.Size(); i++)
@@ -221,6 +224,7 @@ VkTextRenderer::DrawTextElements()
 		float top, left;
 		left = 0;
 		top = 0;
+
 
 		// iterate through tokens
 		while (*text)
@@ -247,46 +251,46 @@ VkTextRenderer::DrawTextElements()
 				pos3 = multiplyadd(pos3, sizeScale, elementPos);
 
 				// vertex 1
-				this->vertices[vert].color = color;
-				this->vertices[vert].uv.x = quad.s0;
-				this->vertices[vert].uv.y = quad.t0;
-				this->vertices[vert].vertex.x = pos1.x;
-				this->vertices[vert].vertex.y = pos1.y;
+				color.storeu(vertices[vert].color.v);
+				vertices[vert].uv.x = quad.s0;
+				vertices[vert].uv.y = quad.t0;
+				vertices[vert].vertex.x = pos1.x;
+				vertices[vert].vertex.y = pos1.y;
 
 				// vertex 2
-				this->vertices[vert + 1].color = color;
-				this->vertices[vert + 1].uv.x = quad.s1;
-				this->vertices[vert + 1].uv.y = quad.t0;
-				this->vertices[vert + 1].vertex.x = pos1.z;
-				this->vertices[vert + 1].vertex.y = pos1.w;
+				color.storeu(vertices[vert + 1].color.v);
+				vertices[vert + 1].uv.x = quad.s1;
+				vertices[vert + 1].uv.y = quad.t0;
+				vertices[vert + 1].vertex.x = pos1.z;
+				vertices[vert + 1].vertex.y = pos1.w;
 
 				// vertex 3
-				this->vertices[vert + 2].color = color;
-				this->vertices[vert + 2].uv.x = quad.s1;
-				this->vertices[vert + 2].uv.y = quad.t1;
-				this->vertices[vert + 2].vertex.x = pos2.x;
-				this->vertices[vert + 2].vertex.y = pos2.y;
+				color.storeu(vertices[vert + 2].color.v);
+				vertices[vert + 2].uv.x = quad.s1;
+				vertices[vert + 2].uv.y = quad.t1;
+				vertices[vert + 2].vertex.x = pos2.x;
+				vertices[vert + 2].vertex.y = pos2.y;
 
 				// vertex 4
-				this->vertices[vert + 3].color = color;
-				this->vertices[vert + 3].uv.x = quad.s0;
-				this->vertices[vert + 3].uv.y = quad.t0;
-				this->vertices[vert + 3].vertex.x = pos2.z;
-				this->vertices[vert + 3].vertex.y = pos2.w;
+				color.storeu(vertices[vert + 3].color.v);
+				vertices[vert + 3].uv.x = quad.s0;
+				vertices[vert + 3].uv.y = quad.t0;
+				vertices[vert + 3].vertex.x = pos2.z;
+				vertices[vert + 3].vertex.y = pos2.w;
 
 				// vertex 5
-				this->vertices[vert + 4].color = color;
-				this->vertices[vert + 4].uv.x = quad.s1;
-				this->vertices[vert + 4].uv.y = quad.t1;
-				this->vertices[vert + 4].vertex.x = pos3.x;
-				this->vertices[vert + 4].vertex.y = pos3.y;
+				color.storeu(vertices[vert + 4].color.v);
+				vertices[vert + 4].uv.x = quad.s1;
+				vertices[vert + 4].uv.y = quad.t1;
+				vertices[vert + 4].vertex.x = pos3.x;
+				vertices[vert + 4].vertex.y = pos3.y;
 
 				// vertex 6
-				this->vertices[vert + 5].color = color;
-				this->vertices[vert + 5].uv.x = quad.s0;
-				this->vertices[vert + 5].uv.y = quad.t1;
-				this->vertices[vert + 5].vertex.x = pos3.z;
-				this->vertices[vert + 5].vertex.y = pos3.w;
+				color.storeu(vertices[vert + 5].color.v);
+				vertices[vert + 5].uv.x = quad.s0;
+				vertices[vert + 5].uv.y = quad.t1;
+				vertices[vert + 5].vertex.x = pos3.z;
+				vertices[vert + 5].vertex.y = pos3.w;
 
 				vert += 6;
 			}
@@ -299,7 +303,7 @@ VkTextRenderer::DrawTextElements()
 	// if we have vertices left, draw them
 	if (vert > 0)
 	{
-		this->Draw(this->vertices, vert / 6);
+		this->Draw(vertices, vert / 6);
 	}
 
 	// delete the text elements of my own thread id, all other text elements

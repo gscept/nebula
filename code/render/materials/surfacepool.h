@@ -9,6 +9,7 @@
 #include "resources/resourcestreampool.h"
 #include "materialtype.h"
 #include "coregraphics/config.h"
+#include "threading/criticalsection.h"
 
 namespace Materials
 {
@@ -64,6 +65,8 @@ private:
 		Util::Array<CoreGraphics::TextureId>,
 		float
 	> allocator;
+
+	Threading::CriticalSection textureLoadSection;
 	__ImplementResourceAllocatorTyped(allocator, CoreGraphics::MaterialIdType);
 };
 

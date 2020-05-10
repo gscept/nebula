@@ -30,7 +30,11 @@ using namespace IO;
 */
 VkStreamTexturePool::VkStreamTexturePool()
 {
-	// empty
+	this->async = true;
+	this->placeholderResourceName = "tex:system/white.dds";
+	this->failResourceName = "tex:system/error.dds";
+
+	this->streamerThreadName = "Texture Pool Streamer Thread";
 }
 
 //------------------------------------------------------------------------------
@@ -39,18 +43,6 @@ VkStreamTexturePool::VkStreamTexturePool()
 VkStreamTexturePool::~VkStreamTexturePool()
 {
 	// empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkStreamTexturePool::Setup()
-{
-	ResourceStreamPool::Setup();
-	this->async = true;
-	this->placeholderResourceName = "tex:system/white.dds";
-	this->failResourceName = "tex:system/error.dds";
 }
 
 //------------------------------------------------------------------------------
@@ -169,7 +161,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 
 	// allocate memory backing
 	uint32_t alignedSize;
-	VkUtilities::AllocateImageMemory(loadInfo.dev, loadInfo.img, loadInfo.mem, VkMemoryPropertyFlagBits(0), alignedSize);
+	VkUtilities::AllocateImageMemory(loadInfo.dev, loadInfo.img, loadInfo.mem, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, alignedSize);
 	vkBindImageMemory(dev, loadInfo.img, loadInfo.mem, 0);
 
 	// create image view
@@ -558,7 +550,7 @@ VkStreamTexturePool::StreamMaxLOD(const Resources::ResourceId& id, const float l
 	CoreGraphics::UnlockResourceSubmission();
 
 
-	VkShaderServer::Instance()->AddPendingImageView(viewCreate, TextureId(id));
+	VkShaderServer::Instance()->AddPendingImageView(viewCreate, runtimeInfo.view, TextureId(id));
 	// update binding
 	//if (loadInfo.bindless)
 	//VkShaderServer::Instance()->ReregisterTexture(TextureId(id), runtimeInfo.type, runtimeInfo.bind);

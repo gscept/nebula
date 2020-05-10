@@ -730,6 +730,7 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
         if (loadInfo.texBuffer != nullptr)
         {
             // use resource submission
+            CoreGraphics::LockResourceSubmission();
             CoreGraphics::SubmissionContextId sub = CoreGraphics::GetResourceSubmissionContext();
 
             // transition into transfer mode
@@ -764,6 +765,7 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
 
             // this should always be set to nullptr after it has been transfered. TextureLoadInfo should never own the pointer!
             loadInfo.texBuffer = nullptr;
+            CoreGraphics::UnlockResourceSubmission();
         }
 
         // if used for render, find appropriate renderable format

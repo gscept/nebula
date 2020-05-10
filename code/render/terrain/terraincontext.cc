@@ -187,6 +187,10 @@ TerrainContext::SetupTerrain(
 	runtimeInfo.heightMap = Resources::CreateResource(heightMap, "terrain"_atm, nullptr, nullptr, true);
 	runtimeInfo.normalMap = Resources::CreateResource(normalMap, "terrain"_atm, nullptr, nullptr, true);
 	runtimeInfo.decisionMap = Resources::CreateResource(decisionMap, "terrain"_atm, nullptr, nullptr, true);
+	Resources::SetMaxLOD(runtimeInfo.heightMap, 0.0f, false);
+	Resources::SetMaxLOD(runtimeInfo.normalMap, 0.0f, false);
+	Resources::SetMaxLOD(runtimeInfo.decisionMap, 0.0f, false);
+
 	TextureDimensions tdims = TextureGetDimensions(runtimeInfo.heightMap);
 	runtimeInfo.heightMapWidth = tdims.width;
 	runtimeInfo.heightMapHeight = tdims.height;

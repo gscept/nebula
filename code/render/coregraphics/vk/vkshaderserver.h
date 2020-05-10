@@ -54,7 +54,7 @@ public:
 	void BindTextureDescriptorSetsCompute(const CoreGraphics::QueueType queue = CoreGraphics::GraphicsQueueType);
 
 	/// add a pending image view update to the update queue, thread safe
-	void AddPendingImageView(VkImageViewCreateInfo info, CoreGraphics::TextureId tex);
+	void AddPendingImageView(VkImageViewCreateInfo info, VkImageView oldView, CoreGraphics::TextureId tex);
 
 	/// setup gbuffer bindings
 	void SetupGBufferConstants();
@@ -104,9 +104,11 @@ private:
 	struct _PendingView
 	{
 		VkImageViewCreateInfo info;
+		VkImageView oldView;
 		CoreGraphics::TextureId tex;
 	};
-	Util::Array<_PendingView> pendingViewCreations;
+
+	Threading::SafeQueue<_PendingView> pendingViews;
 	Util::FixedArray<Util::Array<VkImageView>> pendingViewDeletes;
 
 	IndexT csmBufferTextureVar;

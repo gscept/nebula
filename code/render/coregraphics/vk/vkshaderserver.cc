@@ -52,6 +52,8 @@ VkShaderServer::Open()
 		val = i;
 	};
 
+	this->pendingViews.SetSignalOnEnqueueEnabled(false);
+
 	this->texture2DPool.SetSetupFunc(func);
 	this->texture2DPool.Resize(Shared::MAX_2D_TEXTURES);
 	this->texture2DMSPool.SetSetupFunc(func);
@@ -286,24 +288,26 @@ VkShaderServer::UpdateResources()
 	IndexT bufferedFrameIndex = GetBufferedFrameIndex();
 
 	// delete views which have been discarded due to LOD streaming
-	this->viewCreationCriticalSection.Enter();
 	for (int i = 0; i < this->pendingViewDeletes[bufferedFrameIndex].Size(); i++)
 		vkDestroyImageView(GetCurrentDevice(), this->pendingViewDeletes[bufferedFrameIndex][i], nullptr);
 	this->pendingViewDeletes[bufferedFrameIndex].Clear();
 
 	// setup new views for newly streamed LODs
-	for (int i = 0; i < this->pendingViewCreations.Size(); i++)
+	Util::Array<_PendingView> pendingViewsThisFrame(32, 32);
+	pendingViews.DequeueAll(pendingViewsThisFrame);
+	for (int i = 0; i < pendingViewsThisFrame.Size(); i++)
 	{
-		const _PendingView& pend = this->pendingViewCreations[i];
+		const _PendingView& pend = pendingViewsThisFrame[i];
+
+		// create new view and add old view to be deleted
 		VkImageView view;
 		vkCreateImageView(GetCurrentDevice(), &pend.info, nullptr, &view);
+		pendingViewDeletes[bufferedFrameIndex].Append(pend.oldView);
+
 		VkTextureRuntimeInfo& info = textureAllocator.GetSafe<Texture_RuntimeInfo>(pend.tex.resourceId);
-		pendingViewDeletes[bufferedFrameIndex].Append(info.view);
 		info.view = view;
 		this->ReregisterTexture(pend.tex, info.type, info.bind);
 	}
-	this->pendingViewCreations.Clear();
-	this->viewCreationCriticalSection.Leave();
 
 	// update resource table
 	ResourceTableSetConstantBuffer(this->resourceTables[bufferedFrameIndex], { this->ticksCbo, this->cboSlot, 0, false, false, sizeof(Shared::PerTickParams), (SizeT)this->cboOffset });
@@ -324,15 +328,13 @@ VkShaderServer::AfterView()
 /**
 */
 void 
-VkShaderServer::AddPendingImageView(VkImageViewCreateInfo info, CoreGraphics::TextureId tex)
+VkShaderServer::AddPendingImageView(VkImageViewCreateInfo info, VkImageView oldView, CoreGraphics::TextureId tex)
 {
-	this->viewCreationCriticalSection.Enter();
 	_PendingView pend;
 	pend.tex = tex;
 	pend.info = info;
-	this->pendingViewCreations.Append(pend);
-	this->viewCreationCriticalSection.Leave();
+	pend.oldView = oldView;
+	this->pendingViews.Enqueue(pend);
 }
-
 
 } // namespace Vulkan

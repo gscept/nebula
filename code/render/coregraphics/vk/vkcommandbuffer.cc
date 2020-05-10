@@ -12,6 +12,7 @@ namespace Vulkan
 
 VkCommandBufferAllocator commandBuffers(0x00FFFFFF);
 VkCommandBufferPoolAllocator commandBufferPools(0x00FFFFFF);
+Threading::CriticalSection commandBufferCritSect;
 
 //------------------------------------------------------------------------------
 /**
@@ -109,7 +110,9 @@ CreateCommandBuffer(const CommandBufferCreateInfo& info)
 		1
 	};
 	VkDevice dev = CommandBufferPoolGetVkDevice(info.pool);
+	commandBufferCritSect.Enter();
 	Ids::Id32 id = commandBuffers.Alloc();
+	commandBufferCritSect.Leave();
 	VkResult res = vkAllocateCommandBuffers(dev, &vkInfo, &commandBuffers.Get<CommandBuffer_VkCommandBuffer>(id));
 	n_assert(res == VK_SUCCESS);
 	commandBuffers.Get<CommandBuffer_VkCommandPool>(id) = pool;
@@ -130,6 +133,9 @@ DestroyCommandBuffer(const CommandBufferId id)
 	n_assert(id.id8 == CommandBufferIdType);
 #endif
 	vkFreeCommandBuffers(commandBuffers.Get<CommandBuffer_VkDevice>(id.id24), commandBuffers.Get<CommandBuffer_VkCommandPool>(id.id24), 1, &commandBuffers.Get<CommandBuffer_VkCommandBuffer>(id.id24));
+	commandBufferCritSect.Enter();
+	commandBuffers.Dealloc(id.id24);
+	commandBufferCritSect.Leave();
 }
 
 //------------------------------------------------------------------------------

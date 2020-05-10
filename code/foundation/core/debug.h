@@ -23,6 +23,9 @@ void n_sleep(double);
 void n_barf(const char *, const char *, int);
 void n_barf2(const char*, const char*, const char*, int);
 void n_barf_fmt(const char *, const char *, const char *, int, ...);
+void n_cough(const char*, const char*, int);
+void n_cough2(const char*, const char*, const char*, int);
+void n_cough_fmt(const char*, const char*, const char*, int, ...);
 void n_break();
 
 // backward compatibility
@@ -39,10 +42,12 @@ void n_break();
 #endif
 #define n_static_assert(exp)
 #else
-#define n_assert(exp) { if (!(exp)) n_barf(#exp,__FILE__,__LINE__); }
-#define n_assert2(exp, msg) { if (!(exp)) n_barf2(#exp,msg,__FILE__,__LINE__); }
-#define n_assert_fmt(exp, msg, ...) { if (!(exp)) n_barf_fmt(#exp,msg,__FILE__,__LINE__, __VA_ARGS__); }
-#define n_warn(exp,  msg, ...) { if (!(exp)) n_warning(msg, __VA_ARGS__); }
+#define n_assert(exp) { if (!(exp)) n_barf(#exp, __FILE__, __LINE__); }
+#define n_assert2(exp, msg) { if (!(exp)) n_barf2(#exp, msg, __FILE__, __LINE__); }
+#define n_assert_fmt(exp, msg, ...) { if (!(exp)) n_barf_fmt(#exp, msg, __FILE__, __LINE__, __VA_ARGS__); }
+#define n_warn(exp) { if (!(exp)) n_cough(#exp, __FILE__, __LINE__); }
+#define n_warn2(exp, msg) { if (!(exp)) n_cough2(#exp, msg, __FILE__, __LINE__); }
+#define n_warn_fmt(exp,  msg, ...) { if (!(exp)) n_cough_fmt(#exp, msg, __FILE__, __LINE__, __VA_ARGS__); }
 #define n_static_assert(exp) { int _x[ 2*((exp) != 0)-1 ]; (void)(_x[0]=0);}
 #if __WIN32__
 // dx9 specific: check HRESULT and display DX9 specific message box

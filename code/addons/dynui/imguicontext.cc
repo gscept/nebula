@@ -410,6 +410,7 @@ ImguiContext::Create()
 	state.fontTexture.mip = 0;
 	state.fontTexture.layer = 0;
 	io.Fonts->TexID = &state.fontTexture;
+	io.Fonts->ClearTexData();
 
 	// load settings from disk. If we don't do this here we	need to
 	// run an entire frame before being able to create or load settings

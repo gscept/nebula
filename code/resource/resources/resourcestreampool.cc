@@ -20,6 +20,8 @@ ResourceStreamPool::ResourceStreamPool()
 	// maybe this is arrogant, just 1024 pending resources (actual resources that is) per loader?
 	this->pendingLoads.Reserve(1024);
 	this->pendingStreamLods.Reserve(1024);
+	this->pendingStreamQueue.SetSignalOnEnqueueEnabled(false);
+	this->creatorThread = Threading::Thread::GetMyThreadId();
 }
 
 //------------------------------------------------------------------------------
@@ -39,6 +41,14 @@ ResourceStreamPool::Setup()
 {
 	// implement loader-specific setups, such as placeholder and error resource ids, as well as the acceptable resource class
 	this->uniqueResourceId = 0;
+
+	// set the async flag in the constructor of your subclass implementation of the resource pool
+	if (this->async)
+	{
+		this->streamerThread = ResourceLoaderThread::Create();
+		this->streamerThread->SetName(this->streamerThreadName.Value());
+		this->streamerThread->Start();
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -108,13 +118,19 @@ ResourceStreamPool::Update(IndexT frameIndex)
 	}
 
 	// go through pending lod streams
+	this->pendingStreamQueue.DequeueAll(this->pendingStreamLods);
 	for (i = this->pendingStreamLods.Size() - 1; i >= 0; i--)
 	{
 		const _PendingStreamLod& streamLod = this->pendingStreamLods[i];
 
 		// skip this resource if not loaded, but keep it in the list
-		if (this->GetState(streamLod.id) != Resource::Loaded)
+		this->asyncSection.Enter();
+		if (this->states[streamLod.id.poolId] != Resource::Loaded)
+		{
 			continue;
+		}
+
+		this->asyncSection.Leave();
 
 		// if async is supported, put the stream job on a thread!
 		if (this->async && !streamLod.immediate)
@@ -123,7 +139,7 @@ ResourceStreamPool::Update(IndexT frameIndex)
 			{
 				this->StreamMaxLOD(streamLod.id, streamLod.lod, streamLod.immediate);
 			};
-			this->AddThreadJob(streamFunc);
+			this->streamerThread->jobs.Enqueue(streamFunc);
 
 			this->pendingStreamLods.EraseIndex(i);
 		}
@@ -186,15 +202,6 @@ ResourceStreamPool::RunCallbacks(LoadStatus status, const Resources::ResourceId 
 //------------------------------------------------------------------------------
 /**
 */
-void 
-ResourceStreamPool::AddThreadJob(std::function<void()> func)
-{
-	ResourceServer::Instance()->loaderThread->jobs.Enqueue(func);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 ResourceStreamPool::LoadStatus
 ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 {
@@ -240,7 +247,7 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 		res.inflight = true;
 
 		// add job to resource manager
-		this->AddThreadJob(loadFunc);
+		ResourceServer::Instance()->loaderThread->jobs.Enqueue(loadFunc);
 
 		ret = Threaded;
 	}
@@ -268,6 +275,9 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 Resources::ResourceId
 Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate)
 {
+	// this assert should maybe be removed in favor of putting things on a queue if called from another thread
+	n_assert(Threading::Thread::GetMyThreadId() == this->creatorThread);
+
 	Resources::ResourceId ret;
 	ResourceUnknownId resourceId; // this is the id of the resource	
 	IndexT i = this->ids.FindIndex(res);
@@ -403,6 +413,7 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 void
 Resources::ResourceStreamPool::DiscardResource(const Resources::ResourceId id)
 {
+	n_assert(Threading::Thread::GetMyThreadId() == this->creatorThread);
 	if (id != this->placeholderResourceId && id != this->failResourceId)
 	{
 		ResourcePool::DiscardResource(id);
@@ -438,6 +449,7 @@ Resources::ResourceStreamPool::DiscardResource(const Resources::ResourceId id)
 void
 ResourceStreamPool::DiscardByTag(const Util::StringAtom& tag)
 {
+	n_assert(Threading::Thread::GetMyThreadId() == this->creatorThread);
 	IndexT i;
 	for (i = 0; i < this->tags.Size(); i++)
 	{
@@ -456,6 +468,7 @@ ResourceStreamPool::DiscardByTag(const Util::StringAtom& tag)
 void 
 ResourceStreamPool::ReloadResource(const Resources::ResourceName& res, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed)
 {
+	n_assert(Threading::Thread::GetMyThreadId() == this->creatorThread);
 	IndexT i = this->ids.FindIndex(res);
 	if (i != InvalidIndex)
 	{
@@ -505,6 +518,7 @@ ResourceStreamPool::ReloadResource(const Resources::ResourceName& res, std::func
 void 
 ResourceStreamPool::ReloadResource(const Resources::ResourceId& id, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed)
 {
+	n_assert(Threading::Thread::GetMyThreadId() == this->creatorThread);
 	n_assert_fmt(id != Resources::ResourceId::Invalid(), "Resource %d is not loaded, it has to be before it can be reloaded", id.HashCode());
 
 	// copy the reference
@@ -549,7 +563,7 @@ ResourceStreamPool::SetMaxLOD(const Resources::ResourceId& id, const float lod, 
 	pending.id = id;
 	pending.lod = lod;
 	pending.immediate = immediate;
-	this->pendingStreamLods.Append(pending);
+	this->pendingStreamQueue.Enqueue(pending);
 }
 
 } // namespace Resources

@@ -48,7 +48,10 @@ SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAt
 
 		SurfaceId& sid = this->Get<Surface_SurfaceId>(id.resourceId);
 		MaterialType*& type = this->Get<Surface_MaterialType>(id.resourceId);
-		Util::Array<CoreGraphics::TextureId>& textures = this->Get<Surface_Textures>(id.resourceId);
+
+		// get min lod reference
+		float& minLod = this->Get<Surface_MinLOD>(id.resourceId);
+		minLod = 1.0f;
 
 		// load surface
 		Resources::ResourceName materialType = reader->GetString("template");
@@ -101,11 +104,13 @@ SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAt
 					if (!path.IsEmpty())
 					{
 						tex = Resources::CreateResource(path + NEBULA_TEXTURE_EXTENSION, tag, 
-							[type, sid, binding, id, this](Resources::ResourceId rid)
+							[type, sid, binding, id, &minLod, this](Resources::ResourceId rid)
 							{
 								type->SetSurfaceConstant(sid, binding, CoreGraphics::TextureGetBindlessHandle(rid));
-
+								this->textureLoadSection.Enter();
 								this->Get<Surface_Textures>(id.resourceId).Append(rid);
+								this->Get<Surface_MinLOD>(id.resourceId) = 1.0f;
+								this->textureLoadSection.Leave();
 							}, 
 							[type, sid, binding](Resources::ResourceId rid)
 							{
@@ -126,11 +131,11 @@ SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAt
 			else if (slot != InvalidIndex)
 			{
 				CoreGraphics::TextureId tex = Resources::CreateResource(reader->GetString("value") + NEBULA_TEXTURE_EXTENSION, tag, 
-					[type, sid, slot, id, this](Resources::ResourceId rid)
+					[type, sid, slot, id, &minLod, this](Resources::ResourceId rid)
 					{
 						type->SetSurfaceTexture(sid, slot, rid);
-
 						this->Get<Surface_Textures>(id.resourceId).Append(rid);
+						this->Get<Surface_MinLOD>(id.resourceId) = 1.0f;
 					}, 
 					[type, sid, slot](Resources::ResourceId rid)
 					{
@@ -165,11 +170,12 @@ SurfacePool::Unload(const Resources::ResourceId id)
 void
 SurfacePool::SetMaxLOD(const SurfaceResourceId id, const float lod)
 {
-	const Util::Array<CoreGraphics::TextureId>& textures = this->Get<Surface_Textures>(id.resourceId);
+	this->textureLoadSection.Enter();
+	Util::Array<CoreGraphics::TextureId> textures = this->Get<Surface_Textures>(id.resourceId);
 	float& minLod = this->Get<Surface_MinLOD>(id.resourceId);
+	this->textureLoadSection.Leave();
 	if (minLod <= lod)
 		return;
-
 	minLod = lod;
 
 	for (IndexT i = 0; i < textures.Size(); i++)
