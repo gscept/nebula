@@ -111,7 +111,7 @@ DecalContext::Create()
 	{
 		"DecalIndexListsBuffer",
 		sizeof(DecalsCluster::DecalIndexLists),
-		BufferUpdateMode::DeviceWriteable,
+		BufferUpdateMode::DeviceLocal,
 		false
 	};
 	decalState.clusterDecalIndexLists = CreateShaderRWBuffer(rwbInfo);

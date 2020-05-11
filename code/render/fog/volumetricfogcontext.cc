@@ -113,7 +113,7 @@ VolumetricFogContext::Create()
 	{
 		"FogIndexListsBuffer",
 		sizeof(Volumefog::FogIndexLists),
-		BufferUpdateMode::DeviceWriteable,
+		BufferUpdateMode::DeviceLocal,
 		false
 	};
 	fogState.clusterFogIndexLists = CreateShaderRWBuffer(rwbInfo);

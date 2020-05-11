@@ -50,7 +50,7 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 	VkBufferUsageFlags usageFlags = 0;
 	if (info.mode == HostWriteable || info.mode == HostMapped)
 		usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	else if (info.mode == DeviceWriteable)
+	else if (info.mode == DeviceLocal)
 		usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 	setupInfo.info =
 	{
@@ -71,7 +71,7 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 		pool = CoreGraphics::BufferMemory_Dynamic;
 	else if (info.mode == HostMapped)
 		pool = CoreGraphics::BufferMemory_Mapped;
-	else if (info.mode == DeviceWriteable)
+	else if (info.mode == DeviceLocal)
 		pool = CoreGraphics::BufferMemory_Local;
 
 	// allocate and bind memory

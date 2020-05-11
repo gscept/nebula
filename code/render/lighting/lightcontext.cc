@@ -253,7 +253,7 @@ LightContext::Create()
 	{
 		"LightIndexListsBuffer",
 		sizeof(LightsCluster::LightIndexLists),
-		BufferUpdateMode::DeviceWriteable,
+		BufferUpdateMode::DeviceLocal,
 		false
 	};
 	clusterState.clusterLightIndexLists = CreateShaderRWBuffer(rwbInfo);

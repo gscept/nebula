@@ -125,12 +125,11 @@ enum QueryType
 	NumQueryTypes
 };
 
-// todo, replace these with memory modes from memory, which should be generalized out from vkmemory.h
 enum BufferUpdateMode
 {
-	HostWriteable,              // host can write to the buffer
-	HostMapped,					// gpu memory is mapped to cpu memory
-	DeviceWriteable             // only device can write to the buffer
+	HostWriteable,      // host can write to the buffer, but needs to flush to make the updates visible on the GPU
+	HostMapped,			// GPU memory is mapped to CPU memory which makes the memory immediately visible
+	DeviceLocal			// memory lives on the GPU, and the GPU has full access
 };
 
 //------------------------------------------------------------------------------

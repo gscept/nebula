@@ -87,7 +87,7 @@ CreateIndexBuffer(const IndexBufferCreateInfo& info)
 		pool = CoreGraphics::BufferMemory_Dynamic;
 	else if (info.mode == HostMapped)
 		pool = CoreGraphics::BufferMemory_Mapped;
-	else if (info.mode == DeviceWriteable)
+	else if (info.mode == DeviceLocal)
 		pool = CoreGraphics::BufferMemory_Local;
 
 	// allocate and bind memory
@@ -180,7 +180,7 @@ CreateIndexBuffer(const IndexBufferCreateDirectInfo& info)
 		pool = CoreGraphics::BufferMemory_Dynamic;
 	else if (info.mode == HostMapped)
 		pool = CoreGraphics::BufferMemory_Mapped;
-	else if (info.mode == DeviceWriteable)
+	else if (info.mode == DeviceLocal)
 		pool = CoreGraphics::BufferMemory_Local;
 
 	// allocate and bind memory

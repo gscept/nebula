@@ -1467,7 +1467,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 			state.globalGraphicsConstantStagingBuffer[i] = CreateConstantBuffer(cboInfo);
 
 			cboInfo.name = systemName[1] + threadName[i] + queueName[0];
-			cboInfo.mode = CoreGraphics::BufferUpdateMode::DeviceWriteable;
+			cboInfo.mode = CoreGraphics::BufferUpdateMode::DeviceLocal;
 			state.globalGraphicsConstantBuffer[i] = CreateConstantBuffer(cboInfo);
 		}
 
@@ -1480,7 +1480,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 			state.globalComputeConstantStagingBuffer[i] = CreateConstantBuffer(cboInfo);
 
 			cboInfo.name = systemName[1] + threadName[i] + queueName[1];
-			cboInfo.mode = CoreGraphics::BufferUpdateMode::DeviceWriteable;
+			cboInfo.mode = CoreGraphics::BufferUpdateMode::DeviceLocal;
 			state.globalComputeConstantBuffer[i] = CreateConstantBuffer(cboInfo);
 		}
 	}
