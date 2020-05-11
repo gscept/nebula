@@ -3,16 +3,11 @@
 
 Get in contact on Discord! https://discord.gg/gwbaVg
 ## Requirements
-1. OS: Windows or Linux
+1. OS: Windows and Linux(WIP)
 2. Compiler with support for C++17.
 3. GPU and drivers supporting Vulkan 1.2+
 4. [CMake 3.13+](https://cmake.org/download/)
 5. [Python 3.5+](https://www.python.org/downloads)
-    * Python modules required:
-        1. numpy
-        2. jedi
-        
-        As root/admin: `python -m pip install numpy jedi`
     * Python requirements (Windows):
         1. Correct architecture (64-bit if you're building for 64-bit systems)
         2. Installed for all users
@@ -21,10 +16,9 @@ Get in contact on Discord! https://discord.gg/gwbaVg
 
 ## Setup
 
-#### Setup config and toolkit
+#### Setup config
 
-1. `./fips set config vulkan-win64-vstudio-debug` in your project directory and `nebula-toolkit` directory
-2. Build `nebula-toolkit` (external library) with the same config as your project (`$ fips build`).
+1. `./fips set config vulkan-win64-vstudio-debug` in your project directory
 
 #### Build project
 
