@@ -332,6 +332,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 		Memory::CopyElements(fogState.fogBoxes, fogList.FogBoxes, numFogBoxVolumes);
 		Memory::CopyElements(fogState.fogSpheres, fogList.FogSpheres, numFogSphereVolumes);
 		CoreGraphics::ShaderRWBufferUpdate(fogState.stagingClusterFogLists[bufferIndex], &fogList, sizeof(Volumefog::FogLists));
+		CoreGraphics::ShaderRWBufferFlush(fogState.stagingClusterFogLists[bufferIndex]);
 	}
 
 	Volumefog::VolumeFogUniforms fogUniforms;

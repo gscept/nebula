@@ -58,8 +58,14 @@ GraphicsServer::Open()
 	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{ 
 		{ 1_MB, 30_MB },		// Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 50
 		{ 1_MB, 0_MB },			// Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
-		{ 10_MB, 1_MB },        // Vertex memory - main thread gets 10 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
-		{ 5_MB, 1_MB },         // Index memory - main thread gets 5 MB for UI, Text etc, visibility thread (objects doing soft cloths and such) get 1 MB
+		{
+			512_MB,			// textures loaded from file, render targets
+			32_MB,			// temporary images
+			192_MB,			// vertex/index buffers, storage buffers, indirect buffers
+			128_MB,			// image update and copy buffers
+			128_MB,			// dynamically updated buffers, constants, cloth, etc
+			64_MB			// buffers which should be partially committed, particles, shapes, text, imgui
+		},
 		3,						// Number of simultaneous frames (N buffering)
 		false }; // validation
 	this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);

@@ -97,17 +97,13 @@ public:
 	void LeaveGet();
 
 	/// get single item safely 
-	template<int MEMBER>
-	Util::tuple_array_t<MEMBER, TYPES...>& GetSafe(const Ids::Id32 index);
+	template<int MEMBER> Util::tuple_array_t<MEMBER, TYPES...>& GetSafe(const Ids::Id32 index);
 	/// get single item safely 
-	template<int MEMBER>
-	Util::tuple_array_t<MEMBER, TYPES...>& GetSafe(const Ids::Id64 index);
+	template<int MEMBER> Util::tuple_array_t<MEMBER, TYPES...>& GetSafe(const Ids::Id64 index);
 	/// get single item unsafe (use with extreme caution)
-	template<int MEMBER>
-	Util::tuple_array_t<MEMBER, TYPES...>& GetUnsafe(const Ids::Id32 index);
+	template<int MEMBER> Util::tuple_array_t<MEMBER, TYPES...>& GetUnsafe(const Ids::Id32 index);
 	/// get single item unsafe (use with extreme caution)
-	template<int MEMBER>
-	Util::tuple_array_t<MEMBER, TYPES...>& GetUnsafe(const Ids::Id64 index);
+	template<int MEMBER> Util::tuple_array_t<MEMBER, TYPES...>& GetUnsafe(const Ids::Id64 index);
 
 protected:
 	bool inBeginGet;
@@ -251,8 +247,8 @@ ArrayAllocatorSafe<TYPES...>::Clear()
 {
 	this->sect.Enter();
 	clear_for_each_in_tuple(this->objects);
-	this->sect.Leave();
 	this->size = 0;
+	this->sect.Leave();
 }
 
 //------------------------------------------------------------------------------
@@ -322,6 +318,9 @@ ArrayAllocatorSafe<TYPES...>::UpdateSize()
 	this->size = this->GetArray<0>().Size();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 template<class ... TYPES> void
 ArrayAllocatorSafe<TYPES...>::EnterGet()
 {
@@ -329,6 +328,9 @@ ArrayAllocatorSafe<TYPES...>::EnterGet()
 	this->inBeginGet = true;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 template<class ... TYPES> void
 ArrayAllocatorSafe<TYPES...>::LeaveGet()
 {
@@ -336,7 +338,10 @@ ArrayAllocatorSafe<TYPES...>::LeaveGet()
 	this->inBeginGet = false;
 }
 
-/// get single item safely 
+//------------------------------------------------------------------------------
+/**
+	Get single item safely
+*/
 template<class ... TYPES>
 template<int MEMBER>
 Util::tuple_array_t<MEMBER, TYPES...>&
@@ -348,7 +353,10 @@ ArrayAllocatorSafe<TYPES...>::GetSafe(const Ids::Id32 index)
 	return res;
 }
 
-/// get single item safely 
+//------------------------------------------------------------------------------
+/**
+	Get single item safely
+*/
 template<class ... TYPES>
 template<int MEMBER>
 Util::tuple_array_t<MEMBER, TYPES...>&
@@ -361,7 +369,10 @@ ArrayAllocatorSafe<TYPES...>::GetSafe(const Ids::Id64 index)
 	return res;
 }
 
-/// get single item unsafe (use with extreme caution)
+//------------------------------------------------------------------------------
+/**
+	Get single item unsafetly, use with caution
+*/
 template<class ... TYPES>
 template<int MEMBER>
 Util::tuple_array_t<MEMBER, TYPES...>&
@@ -370,7 +381,10 @@ ArrayAllocatorSafe<TYPES...>::GetUnsafe(const Ids::Id32 index)
 	return std::get<MEMBER>(this->objects)[index];
 }
 
-/// get single item unsafe (use with extreme caution)
+//------------------------------------------------------------------------------
+/**
+	Get single item unsafetly, use with caution
+*/
 template<class ... TYPES>
 template<int MEMBER>
 Util::tuple_array_t<MEMBER, TYPES...>&

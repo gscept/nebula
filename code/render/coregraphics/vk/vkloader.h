@@ -60,6 +60,7 @@ _DEC_VK(vkDestroySwapchainKHR);
 _DEC_VK(vkQueuePresentKHR);
 
 _DEC_VK(vkQueueSubmit);
+_DEC_VK(vkQueueBindSparse);
 _DEC_VK(vkQueueWaitIdle);
 
 _DEC_VK(vkEnumerateDeviceExtensionProperties);

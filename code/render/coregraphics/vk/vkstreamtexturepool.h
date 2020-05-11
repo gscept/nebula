@@ -11,6 +11,7 @@
 #include "core/refcounted.h"
 #include "resources/resourcestreampool.h"
 #include "vktexture.h"
+#include "vkmemory.h"
 
 namespace Vulkan
 {

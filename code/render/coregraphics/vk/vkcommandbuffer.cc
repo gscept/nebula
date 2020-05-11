@@ -42,7 +42,7 @@ CommandBufferGetVk(const CoreGraphics::CommandBufferId id)
 	n_assert(id.id8 == CoreGraphics::IdType::CommandBufferIdType);
 #endif
 	if (id == CoreGraphics::CommandBufferId::Invalid()) return VK_NULL_HANDLE;
-	else												return commandBuffers.Get<CommandBuffer_VkCommandBuffer>(id.id24);
+	else												return commandBuffers.GetUnsafe<CommandBuffer_VkCommandBuffer>(id.id24);
 }
 
 } // Vulkan
@@ -110,13 +110,11 @@ CreateCommandBuffer(const CommandBufferCreateInfo& info)
 		1
 	};
 	VkDevice dev = CommandBufferPoolGetVkDevice(info.pool);
-	commandBufferCritSect.Enter();
 	Ids::Id32 id = commandBuffers.Alloc();
-	commandBufferCritSect.Leave();
-	VkResult res = vkAllocateCommandBuffers(dev, &vkInfo, &commandBuffers.Get<CommandBuffer_VkCommandBuffer>(id));
+	VkResult res = vkAllocateCommandBuffers(dev, &vkInfo, &commandBuffers.GetUnsafe<CommandBuffer_VkCommandBuffer>(id));
 	n_assert(res == VK_SUCCESS);
-	commandBuffers.Get<CommandBuffer_VkCommandPool>(id) = pool;
-	commandBuffers.Get<CommandBuffer_VkDevice>(id) = dev;
+	commandBuffers.GetUnsafe<CommandBuffer_VkCommandPool>(id) = pool;
+	commandBuffers.GetUnsafe<CommandBuffer_VkDevice>(id) = dev;
 	CommandBufferId ret;
 	ret.id24 = id;
 	ret.id8 = CommandBufferIdType;
@@ -132,10 +130,8 @@ DestroyCommandBuffer(const CommandBufferId id)
 #if _DEBUG
 	n_assert(id.id8 == CommandBufferIdType);
 #endif
-	vkFreeCommandBuffers(commandBuffers.Get<CommandBuffer_VkDevice>(id.id24), commandBuffers.Get<CommandBuffer_VkCommandPool>(id.id24), 1, &commandBuffers.Get<CommandBuffer_VkCommandBuffer>(id.id24));
-	commandBufferCritSect.Enter();
+	vkFreeCommandBuffers(commandBuffers.GetUnsafe<CommandBuffer_VkDevice>(id.id24), commandBuffers.GetUnsafe<CommandBuffer_VkCommandPool>(id.id24), 1, &commandBuffers.GetUnsafe<CommandBuffer_VkCommandBuffer>(id.id24));
 	commandBuffers.Dealloc(id.id24);
-	commandBufferCritSect.Leave();
 }
 
 //------------------------------------------------------------------------------
@@ -158,7 +154,7 @@ CommandBufferBeginRecord(const CommandBufferId id, const CommandBufferBeginInfo&
 		flags,
 		nullptr		// fixme, this part can optimize if used properly!
 	};
-	VkResult res = vkBeginCommandBuffer(commandBuffers.Get<CommandBuffer_VkCommandBuffer>(id.id24), &begin);
+	VkResult res = vkBeginCommandBuffer(commandBuffers.GetUnsafe<CommandBuffer_VkCommandBuffer>(id.id24), &begin);
 	n_assert(res == VK_SUCCESS);
 }
 
@@ -171,7 +167,7 @@ CommandBufferEndRecord(const CommandBufferId id)
 #if _DEBUG
 	n_assert(id.id8 == CommandBufferIdType);
 #endif
-	VkResult res = vkEndCommandBuffer(commandBuffers.Get<CommandBuffer_VkCommandBuffer>(id.id24));
+	VkResult res = vkEndCommandBuffer(commandBuffers.GetUnsafe<CommandBuffer_VkCommandBuffer>(id.id24));
 	n_assert(res == VK_SUCCESS);
 }
 
@@ -186,7 +182,7 @@ CommandBufferClear(const CommandBufferId id, const CommandBufferClearInfo& info)
 #endif
 	VkCommandBufferResetFlags flags = 0;
 	flags |= info.allowRelease ? VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT : 0;
-	VkResult res = vkResetCommandBuffer(commandBuffers.Get<CommandBuffer_VkCommandBuffer>(id.id24), flags);
+	VkResult res = vkResetCommandBuffer(commandBuffers.GetUnsafe<CommandBuffer_VkCommandBuffer>(id.id24), flags);
 	n_assert(res == VK_SUCCESS);
 }
 

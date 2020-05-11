@@ -275,8 +275,9 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 	VertexBufferCreateInfo vboInfo;
 	vboInfo.name = name;
 	vboInfo.access = this->access;
-	vboInfo.numVerts = this->numVertices;
-	vboInfo.usage = this->usage;
+    vboInfo.usage = this->usage;
+    vboInfo.mode = CoreGraphics::HostWriteable;
+    vboInfo.numVerts = this->numVertices;
 	vboInfo.comps = this->vertexComponents;
 	vboInfo.data = this->vertexDataPtr;
 	vboInfo.dataSize = this->vertexDataSize;
@@ -299,8 +300,9 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
 	IndexBufferCreateInfo iboInfo;
 	iboInfo.name = name;
 	iboInfo.access = this->access;
+    iboInfo.usage = this->usage;
+    iboInfo.mode = CoreGraphics::HostWriteable;
 	iboInfo.numIndices = this->numIndices;
-	iboInfo.usage = this->usage;
 	iboInfo.type = IndexType::Index32;
 	iboInfo.data = this->indexDataPtr;
 	iboInfo.dataSize = this->indexDataSize;

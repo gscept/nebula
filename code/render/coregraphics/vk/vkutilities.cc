@@ -65,7 +65,7 @@ VkUtilities::BufferUpdate(CoreGraphics::CommandBufferId cmd, VkBuffer buf, VkDev
 /**
 */
 void 
-VkUtilities::ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGraphics::QueueType queue, VkImage img, const VkExtent3D& extent, uint32_t mip, uint32_t layer, VkDeviceSize size, uint32_t* data, VkBuffer& outIntermediateBuffer, VkDeviceMemory& outIntermediateMemory)
+VkUtilities::ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGraphics::QueueType queue, VkImage img, const VkExtent3D& extent, uint32_t mip, uint32_t layer, VkDeviceSize size, uint32_t* data, VkBuffer& outIntermediateBuffer, CoreGraphics::Alloc& outAlloc)
 {
 	// create transfer buffer
 	const uint32_t qfamily = Vulkan::GetQueueFamily(queue);
@@ -83,18 +83,11 @@ VkUtilities::ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGr
 	VkBuffer buf;
 	vkCreateBuffer(dev, &bufInfo, NULL, &buf);
 
-	// allocate memory
-	VkDeviceMemory bufMem;
-	uint32_t bufsize;
-	VkUtilities::AllocateBufferMemory(dev, buf, bufMem, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, bufsize);
-	vkBindBufferMemory(dev, buf, bufMem, 0);
-
-	// map memory
-	void* mapped;
-	VkResult res = vkMapMemory(dev, bufMem, 0, size, 0, &mapped);
-	n_assert(res == VK_SUCCESS);
-	memcpy(mapped, data, VK_DEVICE_SIZE_CONV(size));
-	vkUnmapMemory(dev, bufMem);
+	// allocate temporary buffer
+	CoreGraphics::Alloc alloc = AllocateMemory(dev, buf, CoreGraphics::BufferMemory_Temporary);
+	vkBindBufferMemory(dev, buf, alloc.mem, alloc.offset);
+	char* mapped = (char*)GetMappedMemory(alloc.poolType) + alloc.offset;
+	memcpy(mapped, data, alloc.size);
 
 	// perform update of buffer, and stage a copy of buffer data to image
 	VkBufferImageCopy copy;
@@ -107,7 +100,7 @@ VkUtilities::ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGr
 	vkCmdCopyBufferToImage(CommandBufferGetVk(cmd), buf, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 
 	outIntermediateBuffer = buf;
-	outIntermediateMemory = bufMem;
+	outAlloc = alloc;
 }
 
 //------------------------------------------------------------------------------
@@ -247,100 +240,7 @@ VkUtilities::BufferMemoryBarrier(const VkBuffer& buf, VkDeviceSize offset, VkDev
 /**
 */
 void
-VkUtilities::AllocateBufferMemory(const VkDevice dev, const VkBuffer& buf, VkDeviceMemory& bufmem, VkMemoryPropertyFlagBits flags, uint32_t& bufsize)
-{
-	// now attain memory requirements so we get a properly aligned memory storage
-	VkMemoryRequirements req;
-	vkGetBufferMemoryRequirements(dev, buf, &req);
-
-	uint32_t memtype;
-	VkResult err = VkUtilities::GetMemoryType(req.memoryTypeBits, flags, memtype);
-	n_assert(err == VK_SUCCESS);
-	VkMemoryAllocateInfo meminfo =
-	{
-		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-		NULL,
-		req.size,
-		memtype
-	};
-
-	// now allocate memory
-	err = vkAllocateMemory(dev, &meminfo, NULL, &bufmem);
-	if (err == VK_ERROR_OUT_OF_DEVICE_MEMORY || err == VK_ERROR_OUT_OF_HOST_MEMORY)
-	{
-		#if __X64__
-		n_error("VkRenderDevice::AllocateBufferMemory(): Could not allocate '%lld' bytes, out of memory\n.", req.size);
-		#else
-		n_error("VkRenderDevice::AllocateBufferMemory(): Could not allocate '%d' bytes, out of memory\n.", req.size);
-		#endif
-	}
-	n_assert(err == VK_SUCCESS);
-	bufsize = (uint32_t)req.size;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkUtilities::AllocateImageMemory(const VkDevice dev, const VkImage& img, VkDeviceMemory& imgmem, VkMemoryPropertyFlagBits flags, uint32_t& imgsize)
-{
-	// now attain memory requirements so we get a properly aligned memory storage
-	VkMemoryRequirements req;
-	vkGetImageMemoryRequirements(dev, img, &req);
-
-	uint32_t memtype;
-	VkResult err = VkUtilities::GetMemoryType(req.memoryTypeBits, flags, memtype);
-	n_assert(err == VK_SUCCESS);
-	VkMemoryAllocateInfo meminfo =
-	{
-		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-		NULL,
-		req.size,
-		memtype
-	};
-
-	// now allocate memory
-	err = vkAllocateMemory(dev, &meminfo, NULL, &imgmem);
-	if (err == VK_ERROR_OUT_OF_DEVICE_MEMORY || err == VK_ERROR_OUT_OF_HOST_MEMORY)
-	{
-		#if __X64__
-		n_error("VkRenderDevice::AllocateImageMemory(): Could not allocate '%lld' bytes, out of memory\n.", req.size);
-		#else
-		n_error("VkRenderDevice::AllocateImageMemory(): Could not allocate '%d' bytes, out of memory\n.", req.size);
-		#endif
-	}
-	n_assert(err == VK_SUCCESS);
-	imgsize = (uint32_t)req.size;
-}
-
-
-//------------------------------------------------------------------------------
-/**
-*/
-VkResult
-VkUtilities::GetMemoryType(uint32_t bits, VkMemoryPropertyFlags flags, uint32_t& index)
-{
-	VkPhysicalDeviceMemoryProperties props = Vulkan::GetMemoryProperties();
-	for (uint32_t i = 0; i < VK_MAX_MEMORY_TYPES; i++)
-	{
-		if ((bits & 1) == 1)
-		{
-			if ((props.memoryTypes[i].propertyFlags & flags) == flags)
-			{
-				index = i;
-				return VK_SUCCESS;
-			}
-		}
-		bits >>= 1;
-	}
-	return VK_ERROR_FEATURE_NOT_PRESENT;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkUtilities::ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format, CoreGraphics::TextureDimensions dims, CoreGraphics::TextureType type, VkImageCopy copy, uint32_t& outMemSize, VkDeviceMemory& outMem, VkBuffer& outBuffer)
+VkUtilities::ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format, CoreGraphics::TextureDimensions dims, CoreGraphics::TextureType type, VkImageCopy copy, CoreGraphics::Alloc& outMem, VkBuffer& outBuffer)
 {
 	VkDevice dev = Vulkan::GetCurrentDevice();
 	CoreGraphics::CommandBufferId cmdBuf = VkUtilities::BeginImmediateTransfer();
@@ -375,11 +275,8 @@ VkUtilities::ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format
 	VkResult res = vkCreateImage(dev, &info, NULL, &img);
 	n_assert(res == VK_SUCCESS);
 
-	// allocate memory
-	VkDeviceMemory imgMem;
-	uint32_t memSize;
-	VkUtilities::AllocateImageMemory(dev, img, imgMem, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memSize);
-	vkBindImageMemory(dev, img, imgMem, 0);
+	CoreGraphics::Alloc alloc1 = AllocateMemory(dev, img, CoreGraphics::ImageMemory_Temporary);
+	vkBindImageMemory(dev, img, alloc1.mem, alloc1.offset);
 
 	VkImageSubresourceRange srcSubres;
 	srcSubres.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -416,7 +313,7 @@ VkUtilities::ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		NULL,
 		0,
-		memSize,
+		alloc1.size,
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_SHARING_MODE_EXCLUSIVE,
 		0,
@@ -426,10 +323,8 @@ VkUtilities::ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format
 	res = vkCreateBuffer(dev, &bufInfo, NULL, &buf);
 	n_assert(res == VK_SUCCESS);
 
-	VkDeviceMemory bufMem;
-	uint32_t bufMemSize;
-	VkUtilities::AllocateBufferMemory(dev, buf, bufMem, VkMemoryPropertyFlagBits(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT), bufMemSize);
-	vkBindBufferMemory(dev, buf, bufMem, 0);
+	CoreGraphics::Alloc alloc2 = AllocateMemory(dev, buf, CoreGraphics::BufferMemory_Temporary);
+	vkBindBufferMemory(dev, buf, alloc2.mem, alloc2.offset);
 
 	VkBufferImageCopy cp;
 	cp.bufferOffset = 0;
@@ -444,12 +339,11 @@ VkUtilities::ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format
 	VkUtilities::EndImmediateTransfer(cmdBuf);
 
 	// delete image
-	vkFreeMemory(dev, imgMem, nullptr);
+	FreeMemory(alloc1);
 	vkDestroyImage(dev, img, nullptr);
 
 	outBuffer = buf;
-	outMem = bufMem;
-	outMemSize = VK_DEVICE_SIZE_CONV(bufMemSize);
+	outMem = alloc2;
 }
 
 //------------------------------------------------------------------------------

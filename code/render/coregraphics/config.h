@@ -56,9 +56,10 @@ enum QueueType
 	ComputeQueueType,
 	TransferQueueType,
 	SparseQueueType,
-	InvalidQueueType,
 
-	NumQueueTypes
+	NumQueueTypes,
+
+	InvalidQueueType
 };
 
 enum ShaderVisibility
@@ -110,14 +111,6 @@ enum GlobalConstantBufferType
 	NumConstantBufferTypes
 };
 
-enum VertexBufferMemoryType
-{
-	MainThreadVertexMemory,
-	VisibilityThreadVertexMemory,
-
-	NumVertexBufferMemoryTypes
-};
-
 enum QueryType
 {
 	OcclusionQuery,
@@ -132,9 +125,11 @@ enum QueryType
 	NumQueryTypes
 };
 
+// todo, replace these with memory modes from memory, which should be generalized out from vkmemory.h
 enum BufferUpdateMode
 {
 	HostWriteable,              // host can write to the buffer
+	HostMapped,					// gpu memory is mapped to cpu memory
 	DeviceWriteable             // only device can write to the buffer
 };
 

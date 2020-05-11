@@ -41,23 +41,12 @@ namespace GpuBufferTypes
 		MapWriteNoOverwrite		= 8,						// gain write access, must be UsageDynamic and AccessWrite, see D3D10 docs for details
 	};
 
-	// streaming methods
-	enum Syncing
-	{
-		SyncingManual,				// CPU has to flush resource to GPU in order to sync it
-		SyncingAutomatic				// resource is coherent on GPU and CPU when mapped
-	};
-	
-
 	struct SetupFlags
 	{
 		CoreGraphics::GpuBufferTypes::Usage usage;
 		CoreGraphics::GpuBufferTypes::Access access;
-		CoreGraphics::GpuBufferTypes::Syncing syncing;
 	};
 };
-
-__ImplementEnumBitOperators(GpuBufferTypes::Syncing)
 
 } // namespace CoreGraphics
 //------------------------------------------------------------------------------

@@ -142,6 +142,8 @@ ENDIF()
 				imagefileformat.h
 				indexbuffer.h
 				indextype.h
+                memory.cc
+                memory.h
 				memorymeshpool.cc
 				memorymeshpool.h
 				memorytexturepool.cc
@@ -309,6 +311,8 @@ ENDIF()
                 vkindexbuffer.h
                 vkloader.cc
                 vkloader.h
+                vkmemory.cc
+                vkmemory.h
 				vkmemorytexturepool.cc
 				vkmemorytexturepool.h
 				vkpass.cc

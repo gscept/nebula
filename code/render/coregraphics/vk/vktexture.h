@@ -12,6 +12,7 @@
 #include "coregraphics/pixelformat.h"
 #include "resources/resourcepool.h"
 #include "ids/idallocator.h"
+#include "vkmemory.h"
 
 namespace IO
 {
@@ -24,7 +25,7 @@ struct VkTextureLoadInfo
 {
 	VkDevice dev;
 	VkImage img;
-	VkDeviceMemory mem;
+	CoreGraphics::Alloc mem;
 	CoreGraphics::TextureDimensions dims;
 	CoreGraphics::TextureRelativeDimensions relativeDims;
 	uint32_t mips;

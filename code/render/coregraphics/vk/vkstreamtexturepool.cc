@@ -159,10 +159,10 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	VkResult stat = vkCreateImage(dev, &info, NULL, &loadInfo.img);
 	n_assert(stat == VK_SUCCESS);
 
-	// allocate memory backing
-	uint32_t alignedSize;
-	VkUtilities::AllocateImageMemory(loadInfo.dev, loadInfo.img, loadInfo.mem, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, alignedSize);
-	vkBindImageMemory(dev, loadInfo.img, loadInfo.mem, 0);
+	CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, loadInfo.img, ImageMemory_Local);
+	stat = vkBindImageMemory(loadInfo.dev, loadInfo.img, alloc.mem, alloc.offset);
+	n_assert(stat == VK_SUCCESS);
+	loadInfo.mem = alloc;
 
 	// create image view
 	VkImageSubresourceRange subres;
@@ -230,7 +230,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 				res.baseArrayLayer = subres.baseArrayLayer + i;
 
 				VkBuffer outBuf;
-				VkDeviceMemory outMem;
+				CoreGraphics::Alloc outMem;
 				VkUtilities::ImageUpdate(
 					dev, 
 					CoreGraphics::SubmissionContextGetCmdBuffer(sub), 
@@ -245,7 +245,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 					outMem);
 
 				// add host memory buffer, intermediate device memory, and intermediate device buffer to delete queue
-				SubmissionContextFreeDeviceMemory(sub, dev, outMem);
+				SubmissionContextFreeMemory(sub, outMem);
 				SubmissionContextFreeBuffer(sub, dev, outBuf);
 			}
 		}
@@ -276,7 +276,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 			res.baseArrayLayer = 0;
 
 			VkBuffer outBuf;
-			VkDeviceMemory outMem;
+			CoreGraphics::Alloc outMem;
 			VkUtilities::ImageUpdate(
 				dev, 
 				CoreGraphics::SubmissionContextGetCmdBuffer(sub), 
@@ -291,7 +291,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 				outMem);
 
 			// add host memory buffer, intermediate device memory, and intermediate device buffer to delete queue
-			SubmissionContextFreeDeviceMemory(sub, dev, outMem);
+			SubmissionContextFreeMemory(sub, outMem);
 			SubmissionContextFreeBuffer(sub, dev, outBuf);
 		}
 	}
@@ -337,6 +337,8 @@ inline void
 VkStreamTexturePool::Unload(const Resources::ResourceId id)
 {
 	VkTextureStreamInfo& streamInfo = texturePool->Get<Texture_StreamInfo>(id.resourceId);
+	VkTextureLoadInfo& loadInfo = texturePool->Get<Texture_LoadInfo>(id.resourceId);
+	VkTextureRuntimeInfo& runtimeInfo = texturePool->Get<Texture_RuntimeInfo>(id.resourceId);
 	streamInfo.stream->MemoryUnmap();
 	texturePool->Unload(id);
 }
@@ -468,7 +470,7 @@ VkStreamTexturePool::StreamMaxLOD(const Resources::ResourceId& id, const float l
 				res.baseArrayLayer = subres.baseArrayLayer + i;
 
 				VkBuffer outBuf;
-				VkDeviceMemory outMem;
+				CoreGraphics::Alloc outMem;
 				VkUtilities::ImageUpdate(
 					dev, 
 					CoreGraphics::SubmissionContextGetCmdBuffer(sub), 
@@ -483,7 +485,7 @@ VkStreamTexturePool::StreamMaxLOD(const Resources::ResourceId& id, const float l
 					outMem);
 
 				// add host memory buffer, intermediate device memory, and intermediate device buffer to delete queue
-				SubmissionContextFreeDeviceMemory(sub, dev, outMem);
+				SubmissionContextFreeMemory(sub, outMem);
 				SubmissionContextFreeBuffer(sub, dev, outBuf);
 			}
 		}
@@ -514,7 +516,7 @@ VkStreamTexturePool::StreamMaxLOD(const Resources::ResourceId& id, const float l
 			res.baseArrayLayer = 0;
 
 			VkBuffer outBuf;
-			VkDeviceMemory outMem;
+			CoreGraphics::Alloc outMem;
 			VkUtilities::ImageUpdate(
 				dev, 
 				CoreGraphics::SubmissionContextGetCmdBuffer(sub), 
@@ -529,7 +531,7 @@ VkStreamTexturePool::StreamMaxLOD(const Resources::ResourceId& id, const float l
 				outMem);
 
 			// add host memory buffer, intermediate device memory, and intermediate device buffer to delete queue
-			SubmissionContextFreeDeviceMemory(sub, dev, outMem);
+			SubmissionContextFreeMemory(sub, outMem);
 			SubmissionContextFreeBuffer(sub, dev, outBuf);
 		}
 	}

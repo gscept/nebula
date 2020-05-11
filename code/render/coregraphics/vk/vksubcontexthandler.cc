@@ -153,7 +153,7 @@ VkSubContextHandler::SetToNextContext(const CoreGraphics::QueueType type)
 //------------------------------------------------------------------------------
 /**
 */
-void 
+uint64 
 VkSubContextHandler::AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCommandBuffer cmds, bool semaphore)
 {
 	n_assert(cmds != VK_NULL_HANDLE);
@@ -174,6 +174,7 @@ VkSubContextHandler::AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCo
 	}
 	
 	this->queueEmpty[type] = false;
+	return this->semaphoreSubmissionIds[type];
 }
 
 //------------------------------------------------------------------------------
@@ -226,7 +227,7 @@ uint64
 VkSubContextHandler::FlushSubmissionsTimeline(CoreGraphics::QueueType type, VkFence fence)
 {
 	Util::Array<TimelineSubmission>& submissions = this->timelineSubmissions[type];
-	uint64 ret = UINT64_MAX;
+	uint64 ret = 0;
 
 	// skip flush if submission list is empty
 	if (submissions.IsEmpty())
@@ -243,8 +244,8 @@ VkSubContextHandler::FlushSubmissionsTimeline(CoreGraphics::QueueType type, VkFe
 			continue;
 
 		// save last signal index for return
-		if (sub.signalIndices.Size())
-			ret = sub.signalIndices.Back();
+		for (IndexT j = 0; j < sub.signalIndices.Size(); j++)
+			ret = ret > sub.signalIndices[j] ? ret : sub.signalIndices[j];
 
 		VkTimelineSemaphoreSubmitInfo ext =
 		{
@@ -298,6 +299,7 @@ VkSubContextHandler::GetTimelineIndex(CoreGraphics::QueueType type)
 void 
 VkSubContextHandler::Wait(CoreGraphics::QueueType type, uint64 index)
 {
+	// skip the undefined submission
 	VkSemaphoreWaitInfo waitInfo =
 	{
 		VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
@@ -307,74 +309,8 @@ VkSubContextHandler::Wait(CoreGraphics::QueueType type, uint64 index)
 		&this->semaphores[type],
 		&index
 	};
-	vkWaitSemaphores(this->device, &waitInfo, UINT64_MAX);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-VkSubContextHandler::AppendSubmission(CoreGraphics::QueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag, VkSemaphore signalSemaphore)
-{
-	Util::Array<Submission>& submissions = this->submissions[type];
-
-	// append new submission
-	submissions.Append(Submission{});
-	Submission& sub = submissions.Back();
-	this->lastSubmissions[type] = &sub;
-	sub.queue = type;
-
-	// if command buffer is present, add to 
-	if (cmds != VK_NULL_HANDLE)
-	{
-		sub.buffers.Append(cmds);
-	}
-		
-	// if we have wait semaphores, add both flags and the semaphore it self
-	if (waitSemaphore != VK_NULL_HANDLE)
-	{
-		sub.waitSemaphores.Append(waitSemaphore);
-		sub.waitFlags.Append(waitFlag);
-	}
-
-	// finally add signal semaphore if present
-	if (signalSemaphore != VK_NULL_HANDLE)
-	{
-		sub.signalSemaphores.Append(signalSemaphore);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-VkSubContextHandler::AddWaitSemaphore(CoreGraphics::QueueType type, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag)
-{
-	Util::Array<Submission>& submissions = this->submissions[type];
-	Submission& sub = submissions.Back();
-
-	// if we have wait semaphores, add both flags and the semaphore itself
-	if (waitSemaphore != VK_NULL_HANDLE)
-	{
-		sub.waitSemaphores.Append(waitSemaphore);
-		sub.waitFlags.Append(waitFlag);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-VkSubContextHandler::AddSignalSemaphore(CoreGraphics::QueueType type, VkSemaphore signalSemaphore)
-{
-	Util::Array<Submission>& submissions = this->submissions[type];
-	Submission& sub = submissions.Back();
-
-	// if we have wait semaphores, add both flags and the semaphore itself
-	if (signalSemaphore != VK_NULL_HANDLE)
-	{
-		sub.signalSemaphores.Append(signalSemaphore);
-	}
+	VkResult res = vkWaitSemaphores(this->device, &waitInfo, UINT64_MAX);
+	n_assert(res == VK_SUCCESS || res == VK_TIMEOUT);
 }
 
 //------------------------------------------------------------------------------
@@ -417,61 +353,26 @@ VkSubContextHandler::FlushSubmissions(CoreGraphics::QueueType type, VkFence fenc
 //------------------------------------------------------------------------------
 /**
 */
-void 
-VkSubContextHandler::SubmitFence(CoreGraphics::QueueType type, VkFence fence)
+void
+VkSubContextHandler::SubmitSparseTimeline(CoreGraphics::QueueType type, const VkBindSparseInfo& info)
 {
 	VkQueue queue = this->GetQueue(type);
-	VkResult res = vkQueueSubmit(queue, 0, nullptr, fence);
-	n_assert(res == VK_SUCCESS);
-}
 
-//------------------------------------------------------------------------------
-/**
-*/
-void VkSubContextHandler::SubmitImmediate(CoreGraphics::QueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlags, VkSemaphore signalSemaphore, VkFence fence, bool waitImmediately)
-{
-	VkQueue queue = this->GetQueue(type);
-	VkSubmitInfo info =
+	// setup 
+	this->semaphoreSubmissionIds[type]++;
+	VkTimelineSemaphoreSubmitInfo timelineSubmitInfo =
 	{
-		VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
 		nullptr,
-		0, nullptr, nullptr,	// wait
-		0, nullptr,				// cmd buf
-		0, nullptr				// signal
+		1,
+		&this->semaphoreSubmissionIds[CoreGraphics::GraphicsQueueType],
+		1,
+		&this->semaphoreSubmissionIds[type]
 	};
 
-
-	// if command buffer is present, add to 
-	if (cmds != VK_NULL_HANDLE)
-	{
-		info.commandBufferCount = 1;
-		info.pCommandBuffers = &cmds;
-	}
-
-	// if we have wait semaphores, add both flags and the semaphore it self
-	if (waitSemaphore != VK_NULL_HANDLE)
-	{
-		info.waitSemaphoreCount = 1;
-		info.pWaitSemaphores = &waitSemaphore;
-		info.pWaitDstStageMask = &waitFlags;
-	}
-
-	// finally add signal semaphore if present
-	if (signalSemaphore != VK_NULL_HANDLE)
-	{
-		info.signalSemaphoreCount = 1;
-		info.pSignalSemaphores = &signalSemaphore;
-	}
-
-	// submit
-	VkResult res = vkQueueSubmit(queue, 1, &info, fence);
-	n_assert(res == VK_SUCCESS);
-
-	if (waitImmediately && fence != VK_NULL_HANDLE)
-	{
-		res = vkWaitForFences(this->device, 1, &fence, true, UINT64_MAX);
-		n_assert(res == VK_SUCCESS);
-	}
+	VkBindSparseInfo modInfo = info;
+	modInfo.pNext = &timelineSubmitInfo;
+	vkQueueBindSparse(queue, 1, &modInfo, nullptr);
 }
 
 //------------------------------------------------------------------------------

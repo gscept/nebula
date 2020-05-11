@@ -56,6 +56,6 @@ void SubmissionContextFreeHostMemory(const SubmissionContextId id, void* buf);
 const FenceId SubmissionContextGetFence(const SubmissionContextId id);
 
 /// cycle submission context, returns fence to previous cycle
-const FenceId SubmissionContextNextCycle(const SubmissionContextId id);
+const FenceId SubmissionContextNextCycle(const SubmissionContextId id, const std::function<void()>& sync);
 }
 

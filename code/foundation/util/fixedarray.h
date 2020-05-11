@@ -142,7 +142,7 @@ FixedArray<TYPE>::Alloc(SizeT s)
 template<class TYPE> void
 FixedArray<TYPE>::Copy(const FixedArray<TYPE>& rhs)
 {
-    if (this != &rhs)
+    if (this != &rhs && rhs.count > 0)
     {
         this->Alloc(rhs.count);
 		if constexpr (!std::is_trivially_copyable<TYPE>::value)
@@ -346,17 +346,23 @@ FixedArray<TYPE>::Resize(SizeT newSize)
     {
         newElements = n_new_array(TYPE, newSize);
         SizeT numCopy = this->count;
-        if (numCopy > newSize) numCopy = newSize;
-		if constexpr (!std::is_trivially_copyable<TYPE>::value)
-		{
-			IndexT i;
-			for (i = 0; i < numCopy; i++)
-			{
-				newElements[i] = this->elements[i];
-			}
-		}
-		else
-			memcpy(newElements, this->elements, numCopy * sizeof(TYPE));
+        if (numCopy > 0)
+        {
+            if (numCopy > newSize)
+                numCopy = newSize;
+            if constexpr (!std::is_trivially_copyable<TYPE>::value)
+            {
+                IndexT i;
+                for (i = 0; i < numCopy; i++)
+                {
+                    newElements[i] = this->elements[i];
+                }
+            }
+            else
+            {
+                memcpy(newElements, this->elements, numCopy * sizeof(TYPE));
+            }
+        }
     }
 
     // delete old elements

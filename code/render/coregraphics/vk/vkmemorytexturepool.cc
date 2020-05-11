@@ -121,11 +121,10 @@ VkMemoryTexturePool::Unload(const Resources::ResourceId id)
     }
 
 	// only free memory if texture is not aliased!
-	if (loadInfo.alias == CoreGraphics::TextureId::Invalid() && loadInfo.mem != VK_NULL_HANDLE)
-		Vulkan::DelayedDeleteMemory(loadInfo.mem);
-	//vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
+	if (loadInfo.alias == CoreGraphics::TextureId::Invalid() && loadInfo.mem.mem != VK_NULL_HANDLE)
+		Vulkan::DelayedFreeMemory(loadInfo.mem);
 
-// only unload a texture which isn't a window texture, since their textures come from the swap chain
+    // only unload a texture which isn't a window texture, since their textures come from the swap chain
 	if (!loadInfo.windowTexture)
 	{
         Vulkan::DelayedDeleteImageView(runtimeInfo.view);
@@ -223,17 +222,16 @@ VkMemoryTexturePool::Map(const CoreGraphics::TextureId id, IndexT mipLevel, Core
 		map.region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)mipLevel, 0, 1 };
 		map.region.srcOffset = { 0, 0, 0 };
 		map.region.extent = { mipWidth, mipHeight, 1 };
-		uint32_t memSize;
-		VkUtilities::ReadImage(load.img, load.format, load.dims, runtime.type, map.region, memSize, map.mem, map.buf);
+        CoreGraphics::Alloc alloc;
+		VkUtilities::ReadImage(load.img, load.format, load.dims, runtime.type, map.region, alloc, map.buf);
+        map.mem = alloc.mem;
 
 		// the row pitch must be the size of one pixel times the number of pixels in width
 		outMapInfo.mipWidth = mipWidth;
 		outMapInfo.mipHeight = mipHeight;
-		outMapInfo.rowPitch = (int32_t)memSize / mipHeight;
-		outMapInfo.depthPitch = (int32_t)memSize;
-		VkResult res = vkMapMemory(load.dev, map.mem, 0, (int32_t)memSize, 0, &outMapInfo.data);
-		n_assert(res == VK_SUCCESS);
-		retval = res == VK_SUCCESS;
+		outMapInfo.rowPitch = (int32_t)alloc.size / mipHeight;
+		outMapInfo.depthPitch = (int32_t)alloc.size;
+        outMapInfo.data = (char*)GetMappedMemory(alloc.poolType) + alloc.offset;
 		map.mapCount++;
 	}
 	else if (Texture3D == runtime.type)
@@ -251,17 +249,15 @@ VkMemoryTexturePool::Map(const CoreGraphics::TextureId id, IndexT mipLevel, Core
 		map.region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)mipLevel, 1, 1 };
 		map.region.srcOffset = { 0, 0, 0 };
 		map.region.extent = { mipWidth, mipHeight, mipDepth };
-		uint32_t memSize;
-		VkUtilities::ReadImage(load.img, load.format, load.dims, runtime.type, map.region, memSize, map.mem, map.buf);
+        CoreGraphics::Alloc alloc;
+		VkUtilities::ReadImage(load.img, load.format, load.dims, runtime.type, map.region, alloc, map.buf);
 
 		// the row pitch must be the size of one pixel times the number of pixels in width
 		outMapInfo.mipWidth = mipWidth;
 		outMapInfo.mipHeight = mipHeight;
-		outMapInfo.rowPitch = (int32_t)memSize / mipWidth;
-		outMapInfo.depthPitch = (int32_t)memSize;
-		VkResult res = vkMapMemory(load.dev, map.mem, 0, (int32_t)memSize, 0, &outMapInfo.data);
-		n_assert(res == VK_SUCCESS);
-		retval = res == VK_SUCCESS;
+		outMapInfo.rowPitch = (int32_t)alloc.size / mipWidth;
+		outMapInfo.depthPitch = (int32_t)alloc.size;
+        outMapInfo.data = (char*)GetMappedMemory(alloc.poolType) + alloc.offset;
 		map.mapCount++;
 	}
 	textureAllocator.LeaveGet();
@@ -280,7 +276,7 @@ VkMemoryTexturePool::Unmap(const CoreGraphics::TextureId id, IndexT mipLevel)
 	VkTextureMappingInfo& map = textureAllocator.Get<2>(id.resourceId);
 
 	// unmap and dealloc
-	vkUnmapMemory(load.dev, load.mem);
+	vkUnmapMemory(load.dev, load.mem.mem);
 	VkUtilities::WriteImage(map.buf, load.img, map.region);
 	map.mapCount--;
 	if (map.mapCount == 0)
@@ -317,17 +313,15 @@ VkMemoryTexturePool::MapCubeFace(const CoreGraphics::TextureId id, CoreGraphics:
 	map.region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)mipLevel, (uint32_t)face, 1 };
 	map.region.srcOffset = { 0, 0, 0 };
 	map.region.extent = { mipWidth, mipHeight, 1 };
-	uint32_t memSize;
-	VkUtilities::ReadImage(load.img, load.format, load.dims, runtime.type, map.region, memSize, map.mem, map.buf);
+    CoreGraphics::Alloc alloc;
+	VkUtilities::ReadImage(load.img, load.format, load.dims, runtime.type, map.region, alloc, map.buf);
 
 	// the row pitch must be the size of one pixel times the number of pixels in width
 	outMapInfo.mipWidth = mipWidth;
 	outMapInfo.mipHeight = mipHeight;
-	outMapInfo.rowPitch = (int32_t)memSize / mipWidth;
-	outMapInfo.depthPitch = (int32_t)memSize;
-	VkResult res = vkMapMemory(load.dev, map.mem, 0, (int32_t)memSize, 0, &outMapInfo.data);
-	n_assert(res == VK_SUCCESS);
-	retval = res == VK_SUCCESS;
+	outMapInfo.rowPitch = (int32_t)alloc.size / mipWidth;
+	outMapInfo.depthPitch = (int32_t)alloc.size;
+    outMapInfo.data = (char*)GetMappedMemory(alloc.poolType) + alloc.offset;
 	map.mapCount++;
 
 	textureAllocator.LeaveGet();
@@ -347,7 +341,7 @@ VkMemoryTexturePool::UnmapCubeFace(const CoreGraphics::TextureId id, CoreGraphic
 	VkTextureMappingInfo& map = textureAllocator.Get<2>(id.resourceId);
 
 	// unmap and dealloc
-	vkUnmapMemory(load.dev, load.mem);
+	vkUnmapMemory(load.dev, load.mem.mem);
 	VkUtilities::WriteImage(map.buf, load.img, map.region);
 	map.mapCount--;
 	if (map.mapCount == 0)
@@ -714,16 +708,18 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
         if (loadInfo.alias == CoreGraphics::TextureId::Invalid())
         {
             // allocate memory backing
-            uint32_t alignedSize;
-            VkUtilities::AllocateImageMemory(loadInfo.dev, loadInfo.img, loadInfo.mem, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, alignedSize);
-            vkBindImageMemory(loadInfo.dev, loadInfo.img, loadInfo.mem, 0);
+            CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, loadInfo.img, ImageMemory_Local);
+            VkResult res = vkBindImageMemory(loadInfo.dev, loadInfo.img, alloc.mem, alloc.offset);
+            n_assert(res == VK_SUCCESS);
+            loadInfo.mem = alloc;
         }
         else
         {
             // otherwise use other image memory to create alias
-            VkDeviceMemory mem = this->Get<Texture_LoadInfo>(loadInfo.alias.resourceId).mem;
+            CoreGraphics::Alloc mem = this->Get<Texture_LoadInfo>(loadInfo.alias.resourceId).mem;
             loadInfo.mem = mem;
-            vkBindImageMemory(loadInfo.dev, loadInfo.img, loadInfo.mem, 0);
+            VkResult res = vkBindImageMemory(loadInfo.dev, loadInfo.img, loadInfo.mem.mem, loadInfo.mem.offset);
+            n_assert(res == VK_SUCCESS);
         }
 
         // if we have initial data to setup, perform a data transfer
@@ -749,12 +745,12 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
 
             // add image update, take the output buffer and memory and add to delayed delete
             VkBuffer outBuf;
-            VkDeviceMemory outMem;
+            CoreGraphics::Alloc outAlloc;
             uint32_t size = PixelFormat::ToSize(loadInfo.format);
-            VkUtilities::ImageUpdate(loadInfo.dev, CoreGraphics::SubmissionContextGetCmdBuffer(sub), TransferQueueType, loadInfo.img, extents, 0, 0, VkDeviceSize(loadInfo.dims.width * loadInfo.dims.height * loadInfo.dims.depth * size), (uint32_t*)loadInfo.texBuffer, outBuf, outMem);
+            VkUtilities::ImageUpdate(loadInfo.dev, CoreGraphics::SubmissionContextGetCmdBuffer(sub), TransferQueueType, loadInfo.img, extents, 0, 0, VkDeviceSize(loadInfo.dims.width * loadInfo.dims.height * loadInfo.dims.depth * size), (uint32_t*)loadInfo.texBuffer, outBuf, outAlloc);
 
             // add host memory buffer, intermediate device memory, and intermediate device buffer to delete queue
-            SubmissionContextFreeDeviceMemory(sub, loadInfo.dev, outMem);
+            SubmissionContextFreeMemory(sub, outAlloc);
             SubmissionContextFreeBuffer(sub, loadInfo.dev, outBuf);
 
             // transition image to be used for rendering
@@ -900,7 +896,7 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
         n_assert(loadInfo.samples == 1);
 
         loadInfo.img = swapInfo.swapimages[0];
-        loadInfo.mem = VK_NULL_HANDLE;
+        loadInfo.mem.mem = VK_NULL_HANDLE;
 
         runtimeInfo.view = backbufferInfo.backbufferViews[0];
     }

@@ -69,7 +69,7 @@ VkTextRenderer::Open()
 	VertexBufferCreateInfo vboInfo = 
 	{
 		"TextRenderer VBO"_atm,
-		GpuBufferTypes::AccessWrite, GpuBufferTypes::UsageDynamic, GpuBufferTypes::SyncingAutomatic,
+		GpuBufferTypes::AccessWrite, GpuBufferTypes::UsageDynamic, CoreGraphics::HostMapped,
 		MaxNumChars * 6, comps,
 		nullptr, 0
 	};

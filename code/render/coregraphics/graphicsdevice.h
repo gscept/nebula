@@ -20,6 +20,7 @@
 #include "coregraphics/submissioncontext.h"
 #include "timing/timer.h"
 #include "util/stack.h"
+#include "memory.h"
 
 namespace CoreGraphics
 {
@@ -28,8 +29,7 @@ struct GraphicsDeviceCreateInfo
 {
 	uint globalGraphicsConstantBufferMemorySize[NumConstantBufferTypes];
 	uint globalComputeConstantBufferMemorySize[NumConstantBufferTypes];
-	uint globalVertexBufferMemorySize[NumVertexBufferMemoryTypes];
-	uint globalIndexBufferMemorySize[NumVertexBufferMemoryTypes];
+	uint memoryHeaps[NumMemoryPoolTypes];
 	byte numBufferedFrames : 3;
 	bool enableValidation : 1;		// enables validation layer and writes output to console
 };
@@ -83,7 +83,6 @@ struct GraphicsDeviceState
 
 	CoreGraphics::SubmissionContextId resourceSubmissionContext;
 	CoreGraphics::CommandBufferId resourceSubmissionCmdBuffer;
-	CoreGraphics::FenceId resourceSubmissionFence;
 	Threading::CriticalSection resourceSubmissionCriticalSection;
 	bool resourceSubmissionActive;
 
@@ -95,6 +94,8 @@ struct GraphicsDeviceState
 	CoreGraphics::CommandBufferId setupSubmissionCmdBuffer;
 	bool setupSubmissionActive;
 
+	bool sparseSubmitActive;
+
 	CoreGraphics::SubmissionContextId queryGraphicsSubmissionContext;
 	CoreGraphics::CommandBufferId queryGraphicsSubmissionCmdBuffer;
 
@@ -103,14 +104,12 @@ struct GraphicsDeviceState
 
 	CoreGraphics::SubmissionContextId gfxSubmission;
 	CoreGraphics::CommandBufferId gfxCmdBuffer;
-	CoreGraphics::FenceId gfxFence;
-
-	Util::FixedArray<CoreGraphics::FenceId> presentFences;
-	Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
 
 	CoreGraphics::SubmissionContextId computeSubmission;
 	CoreGraphics::CommandBufferId computeCmdBuffer;
-	CoreGraphics::FenceId computeFence;
+
+	Util::FixedArray<CoreGraphics::FenceId> presentFences;
+	Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
 
 	uint globalGraphicsConstantBufferMaxValue[NumConstantBufferTypes];
 	CoreGraphics::ConstantBufferId globalGraphicsConstantStagingBuffer[NumConstantBufferTypes];
@@ -119,13 +118,6 @@ struct GraphicsDeviceState
 	uint globalComputeConstantBufferMaxValue[NumConstantBufferTypes];
 	CoreGraphics::ConstantBufferId globalComputeConstantStagingBuffer[NumConstantBufferTypes];
 	CoreGraphics::ConstantBufferId globalComputeConstantBuffer[NumConstantBufferTypes];
-
-	uint globalVertexBufferMaxValue[NumVertexBufferMemoryTypes];
-	CoreGraphics::VertexBufferId globalVertexBuffer[NumVertexBufferMemoryTypes];
-	byte* mappedVertexBuffer[NumVertexBufferMemoryTypes];
-	uint globalIndexBufferMaxValue[NumVertexBufferMemoryTypes];
-	CoreGraphics::IndexBufferId globalIndexBuffer[NumVertexBufferMemoryTypes];
-	byte* mappedIndexBuffer[NumVertexBufferMemoryTypes];
 
 	CoreGraphics::DrawThread* drawThread;
 	Util::Stack<CoreGraphics::DrawThread*> drawThreads;
@@ -254,18 +246,6 @@ CoreGraphics::ConstantBufferId GetGraphicsConstantBuffer(CoreGraphics::GlobalCon
 uint AllocateComputeConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type, uint size);
 /// return id to global compute constant buffer
 CoreGraphics::ConstantBufferId GetComputeConstantBuffer(CoreGraphics::GlobalConstantBufferType type);
-/// reserve range of vertex buffer memory
-byte* AllocateVertexBufferMemory(CoreGraphics::VertexBufferMemoryType type, uint size);
-/// get current offset into vertex buffer
-uint GetVertexBufferOffset(CoreGraphics::VertexBufferMemoryType type);
-/// get global vertex buffer
-CoreGraphics::VertexBufferId GetVertexBuffer(CoreGraphics::VertexBufferMemoryType type);
-/// reserve range of index buffer memory
-byte* AllocateIndexBufferMemory(CoreGraphics::VertexBufferMemoryType type, uint size);
-/// get current offset into index buffer
-uint GetIndexBufferOffset(CoreGraphics::VertexBufferMemoryType type);
-/// get global index buffer
-CoreGraphics::IndexBufferId GetIndexBuffer(CoreGraphics::VertexBufferMemoryType type);
 
 /// lock resource updates, blocks if other thread is using it
 void LockResourceSubmission();

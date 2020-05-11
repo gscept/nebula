@@ -73,6 +73,7 @@ InitInstance(VkInstance instance)
 	_IMP_VK(vkQueuePresentKHR);
 
 	_IMP_VK(vkQueueSubmit);
+	_IMP_VK(vkQueueBindSparse);
 	_IMP_VK(vkQueueWaitIdle);
 
 	_IMP_VK(vkEnumerateDeviceExtensionProperties);
@@ -228,6 +229,7 @@ _DEF_VK(vkDestroySwapchainKHR);
 _DEF_VK(vkQueuePresentKHR);
 
 _DEF_VK(vkQueueSubmit);
+_DEF_VK(vkQueueBindSparse);
 _DEF_VK(vkQueueWaitIdle);
 
 _DEF_VK(vkEnumerateDeviceExtensionProperties);

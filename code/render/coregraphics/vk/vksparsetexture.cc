@@ -99,10 +99,8 @@ CreateSparseTexture(const SparseTexureCreateInfo& info)
 	sparseMemoryRequirements = n_new_array(VkSparseImageMemoryRequirements, sparseMemoryRequirementsCount);
 	vkGetImageSparseMemoryRequirements(dev, image, &sparseMemoryRequirementsCount, sparseMemoryRequirements);
 
-
-
 	uint32_t memtype;
-	res = VkUtilities::GetMemoryType(memoryReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memtype);
+	res = GetMemoryType(memoryReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memtype);
 	n_assert(res == VK_SUCCESS);
 
 	uint32_t sparseBindsCount = memoryReqs.size / memoryReqs.alignment;
