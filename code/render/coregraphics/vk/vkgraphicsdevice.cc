@@ -15,6 +15,7 @@
 #include "vkshaderserver.h"
 #include "vkpass.h"
 #include "vkshaderrwbuffer.h"
+#include "vksparsetexture.h"
 #include "vkbarrier.h"
 #include "vkvertexbuffer.h"
 #include "vkindexbuffer.h"
@@ -791,7 +792,7 @@ SetVkScissorRects(VkRect2D* scissors, SizeT num)
 void 
 SparseTextureBind(const VkBindSparseInfo& bindInfo)
 {
-	state.subcontextHandler.SubmitSparseTimeline(CoreGraphics::SparseQueueType, bindInfo);
+	state.subcontextHandler.SubmitBindSparseTimeline(CoreGraphics::SparseQueueType, bindInfo);
 	state.sparseSubmitActive = true;
 }
 
@@ -1454,7 +1455,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		{
 			"",
 			-1,
-			0,
 			CoreGraphics::BufferUpdateMode(0)
 		};
 
@@ -3517,7 +3517,7 @@ EndQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type)
 /**
 */
 void 
-Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion)
+Copy(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, const CoreGraphics::TextureId to, const Math::rectangle<SizeT>& toRegion)
 {
 	n_assert(from != CoreGraphics::TextureId::Invalid() && to != CoreGraphics::TextureId::Invalid());
 	n_assert(!state.inBeginPass);
@@ -3552,7 +3552,7 @@ Copy(CoreGraphics::QueueType queue, const CoreGraphics::ShaderRWBufferId from, I
 /**
 */
 void 
-Blit(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip)
+Blit(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, const Math::rectangle<SizeT>& toRegion, IndexT toMip)
 {
 	n_assert(from != CoreGraphics::TextureId::Invalid() && to != CoreGraphics::TextureId::Invalid());
 	n_assert(!state.inBeginPass);
@@ -3568,6 +3568,27 @@ Blit(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, Inde
 	blit.dstOffsets[1] = { toRegion.right, toRegion.bottom, 1 };
 	blit.dstSubresource = { aspect, (uint32_t)toMip, 0, 1 };
 	vkCmdBlitImage(GetMainBuffer(CoreGraphics::GraphicsQueueType), TextureGetVkImage(from), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, TextureGetVkImage(to), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+Blit(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, IndexT fromMip, const CoreGraphics::SparseTextureId to, const Math::rectangle<SizeT>& toRegion, IndexT toMip)
+{
+	n_assert(from != CoreGraphics::TextureId::Invalid() && to != CoreGraphics::SparseTextureId::Invalid());
+	n_assert(!state.inBeginPass);
+	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+
+	VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+	VkImageBlit blit;
+	blit.srcOffsets[0] = { fromRegion.left, fromRegion.top, 0 };
+	blit.srcOffsets[1] = { fromRegion.right, fromRegion.bottom, 1 };
+	blit.srcSubresource = { aspect, (uint32_t)fromMip, 0, 1 };
+	blit.dstOffsets[0] = { toRegion.left, toRegion.top, 0 };
+	blit.dstOffsets[1] = { toRegion.right, toRegion.bottom, 1 };
+	blit.dstSubresource = { aspect, (uint32_t)toMip, 0, 1 };
+	vkCmdBlitImage(GetMainBuffer(CoreGraphics::GraphicsQueueType), TextureGetVkImage(from), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, SparseTextureGetVkImage(to), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
 }
 
 //------------------------------------------------------------------------------

@@ -31,7 +31,6 @@ static uint InvalidConstantBinding = UINT_MAX;
 struct ConstantBufferCreateInfo
 {
 	Util::StringAtom name;				// name of the constant buffer block
-	IndexT binding;						// binding slot of the constant buffer
 	SizeT size;							// allocation size of the buffer
 	BufferUpdateMode mode;
 };
@@ -40,9 +39,6 @@ struct ConstantBufferCreateInfo
 const ConstantBufferId CreateConstantBuffer(const ConstantBufferCreateInfo& info);
 /// destroy constant buffer
 void DestroyConstantBuffer(const ConstantBufferId id);
-
-/// get constant buffer slot from reflection
-IndexT ConstantBufferGetSlot(const ConstantBufferId id);
 
 /// update constant buffer data
 void ConstantBufferUpdate(const ConstantBufferId id, const void* data, const uint size, ConstantBinding bind);

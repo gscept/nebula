@@ -436,6 +436,8 @@ VkShapeRenderer::GrowIndexBuffer()
 	if (this->ibos[this->indexBufferActiveIndex] != IndexBufferId::Invalid())
 		DestroyIndexBuffer(this->ibos[this->indexBufferActiveIndex]);
 
+	this->indexBufferCapacity = this->numIndicesThisFrame;
+
 	// finally allocate new buffer
 	this->ibos[this->indexBufferActiveIndex] = CreateIndexBuffer(iboInfo);
 	this->indexBufferPtr = (byte*)IndexBufferMap(this->ibos[this->indexBufferActiveIndex], CoreGraphics::GpuBufferTypes::MapWrite);
@@ -468,6 +470,8 @@ VkShapeRenderer::GrowVertexBuffer()
 	this->vertexBufferActiveIndex = (this->vertexBufferActiveIndex + 1) % MaxVertexIndexBuffers;
 	if (this->vbos[this->vertexBufferActiveIndex] != VertexBufferId::Invalid())
 		DestroyVertexBuffer(this->vbos[this->vertexBufferActiveIndex]);
+
+	this->vertexBufferCapacity = this->numVerticesThisFrame;
 
 	// finally allocate new buffer
 	this->vbos[this->vertexBufferActiveIndex] = CreateVertexBuffer(vboInfo);

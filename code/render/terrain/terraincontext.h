@@ -13,6 +13,7 @@
 #include "coregraphics/vertexbuffer.h"
 #include "coregraphics/indexbuffer.h"
 #include "coregraphics/texture.h"
+#include "coregraphics/resourcetable.h"
 namespace Terrain
 {
 
@@ -21,6 +22,7 @@ struct TerrainSetupSettings
     float minHeight, maxHeight;
     float worldSizeX, worldSizeZ;
     SizeT tileWidth, tileHeight;
+    float vertexDensityX, vertexDensityY; // vertex density is vertices per meter
 };
 
 class TerrainContext : public Graphics::GraphicsContext
@@ -48,6 +50,8 @@ public:
 
     /// cull terrain patches
     static void CullPatches(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    /// update virtual texture
+    static void UpdateVirtualTexture(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
 
 #ifndef PUBLIC_DEBUG    
     /// debug rendering
@@ -67,8 +71,12 @@ private:
         Util::Array<Math::bbox> sectionBoxes;
         Util::Array<CoreGraphics::PrimitiveGroup> sectorPrimGroups;
         Util::Array<bool> sectorVisible;
+        Util::Array<Util::FixedArray<bool>> sectorLodResidency;
+        Util::Array<uint> sectorUniformOffsets;
+        Util::Array<float> sectorLod;
 
         float heightMapWidth, heightMapHeight;
+        float worldWidth, worldHeight;
         float maxHeight, minHeight;
         CoreGraphics::TextureId heightMap;
         CoreGraphics::TextureId normalMap;
@@ -76,6 +84,9 @@ private:
 
         CoreGraphics::VertexBufferId vbo;
         CoreGraphics::IndexBufferId ibo;
+
+        CoreGraphics::ConstantBufferId patchConstants;
+        CoreGraphics::ResourceTableId patchTable;
     };
 
     enum

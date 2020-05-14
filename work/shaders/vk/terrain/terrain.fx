@@ -8,7 +8,7 @@
 #include "lib/techniques.fxh"
 
 // this is used to keep track of how many lights we have active
-group(BATCH_GROUP) constant TerrainUniforms [ string Visibility = "VS|HS|DS"; ]
+group(BATCH_GROUP) constant TerrainUniforms [ string Visibility = "VS|HS|DS|PS"; ]
 {
 	mat4 Transform;
 	vec2 TerrainDimensions;
@@ -18,9 +18,17 @@ group(BATCH_GROUP) constant TerrainUniforms [ string Visibility = "VS|HS|DS"; ]
 	float MaxTessellation;
 	float MinHeight;
 	float MaxHeight;
+	uint VirtualTextureMips;
 	textureHandle HeightMap;
 	textureHandle NormalMap;
 	textureHandle DecisionMap;
+	textureHandle AlbedoMap;
+};
+
+group(DYNAMIC_OFFSET_GROUP) constant PatchUniforms[string Visibility = "VS"; ]
+{
+	vec2 offsetPatchPos;
+	vec2 offsetPatchUV;
 };
 
 sampler_state TextureSampler
@@ -45,19 +53,22 @@ vsTerrain(
 	[slot=2] in vec2 uv,
 	out vec4 Position,
 	out vec2 UV,
+	out vec3 ViewPos,
 	out float Tessellation) 
 {
-	vec4 modelSpace = Transform * vec4(position, 1);
+	vec3 offsetPos = position + vec3(offsetPatchPos.x, 0, offsetPatchPos.y);
+	vec4 modelSpace = Transform * vec4(offsetPos, 1);
 	Position = modelSpace;
+	UV = uv + offsetPatchUV;
 
 	float vertexDistance = distance( Position.xyz, EyePos.xyz );
 	float factor = 1.0f - saturate((MinLODDistance - vertexDistance) / (MinLODDistance - MaxLODDistance));
-	float decision = 1.0f - sample2DLod(DecisionMap, DecisionSampler, uv, 0).r;
+	float decision = 1.0f - sample2DLod(DecisionMap, DecisionSampler, UV, 0).r;
 
 	Tessellation = MinTessellation + factor * (MaxTessellation - MinTessellation) * decision;
+	ViewPos = EyePos.xyz - Position.xyz;
 
 	gl_Position = modelSpace;
-	UV = uv;
 }
 
 //------------------------------------------------------------------------------
@@ -71,12 +82,15 @@ void
 hsTerrain(
 	in vec4 position[],
 	in vec2 uv[],
+	in vec3 viewPos[],
 	in float tessellation[],
 	out vec2 UV[],
-	out vec4 Position[]) 
+	out vec4 Position[],
+	out vec3 ViewPos[]) 
 {
 	Position[gl_InvocationID]	= position[gl_InvocationID];
 	UV[gl_InvocationID]			= uv[gl_InvocationID];
+	ViewPos[gl_InvocationID]	= viewPos[gl_InvocationID];
 
 	// provoking vertex gets to decide tessellation factors
 	if (gl_InvocationID == 0)
@@ -106,8 +120,10 @@ void
 dsTerrain(
 	in vec2 uv[],
 	in vec4 position[],
+	in vec3 viewPos[],
 	out vec3 Normal,
-	out vec2 UV) 
+	out vec2 UV,
+	out vec3 ViewPos) 
 {
 	vec3 Position = 
 		gl_TessCoord.x * position[0].xyz + 
@@ -118,6 +134,11 @@ dsTerrain(
 		gl_TessCoord.x * uv[0] + 
 		gl_TessCoord.y * uv[1] + 
 		gl_TessCoord.z * uv[2];
+
+	ViewPos =
+		gl_TessCoord.x * viewPos[0] +
+		gl_TessCoord.y * viewPos[1] +
+		gl_TessCoord.z * viewPos[2];
 
 	// sample height map
 	float heightValue = sample2D(HeightMap, TextureSampler, UV).r;
@@ -224,12 +245,15 @@ void
 psTerrain(
 	in vec3 Normal,
 	in vec2 UV,
+	in vec3 ViewPos,
 	[color0] out vec4 Albedo,
 	[color1] out vec3 Normals,
 	[color2] out vec4 Material) 
 {	
 	Material = vec4(0.0f, 1.0f, 0.5f, 0.0f);
-	Albedo = vec4(1, 1, 1, 1);
+	float LOD = saturate(length(ViewPos) / 500.0f) * (VirtualTextureMips - 1);
+	//Albedo = sample2DLod(AlbedoMap, TextureSampler, UV, 1) + sample2DLod(AlbedoMap, TextureSampler, UV, 0) + sample2DLod(AlbedoMap, TextureSampler, UV, 2);
+	Albedo = sample2DLod(AlbedoMap, TextureSampler, UV, LOD);
 	Normals = Normal;
 }
 

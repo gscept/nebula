@@ -58,7 +58,6 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	VkDevice dev = Vulkan::GetCurrentDevice();
 	VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
 
-	setup.binding = info.binding;
 	setup.dev = dev;
 	setup.mode = info.mode;
 	SizeT size = info.size;
@@ -134,16 +133,6 @@ DestroyConstantBuffer(const ConstantBufferId id)
 
 	Vulkan::DelayedFreeMemory(setup.mem);
 	Vulkan::DelayedDeleteBuffer(runtime.buf);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-IndexT
-ConstantBufferGetSlot(const ConstantBufferId id)
-{
-	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<SetupInfo>(id.id24);
-	return setup.binding;
 }
 
 //------------------------------------------------------------------------------

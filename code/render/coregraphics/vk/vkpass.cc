@@ -398,7 +398,7 @@ void SetupPass(const PassId pid)
     write.index = 0;
     write.dynamicOffset = false;
     write.texelBuffer = false;
-    write.slot = ConstantBufferGetSlot(loadInfo.passBlockBuffer);
+    write.slot = ShaderGetResourceSlot(sid, "PassBlock");
     ResourceTableSetConstantBuffer(runtimeInfo.passDescriptorSet, write);
 
     // setup input attachments

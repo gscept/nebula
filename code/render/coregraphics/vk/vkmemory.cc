@@ -281,8 +281,6 @@ AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type)
 	AllocationMethod* method = nullptr;
 	VkDeviceSize size = 0;
 
-	VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
-
 	switch (type)
 	{
 	case BufferMemory_Local:
@@ -327,6 +325,26 @@ AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type)
 	return ret;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::Alloc 
+AllocateMemory(const VkDevice dev, VkDeviceSize alignment, VkDeviceSize allocSize)
+{
+	Util::Array<AllocRange>* ranges = &ImageLocalPool.ranges;
+	VkDeviceMemory mem = ImageLocalPool.mem;
+	AllocationMethod* method = &ImageLocalPool.method;
+	VkDeviceSize size = ImageLocalPool.size;
+
+	// find a new range
+	AllocationLoc.Enter();
+	AllocRange range = method->Alloc(ranges, alignment, allocSize);
+	AllocationLoc.Leave();
+	n_assert(range.offset + range.size < size);
+
+	Alloc ret{ mem, range.offset, range.size, ImageMemory_Local };
+	return ret;
+}
 
 //------------------------------------------------------------------------------
 /**

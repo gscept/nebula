@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 #include "coregraphics/sparsetexture.h"
 #include "ids/idallocator.h"
+#include "coregraphics/memory.h"
 namespace Vulkan
 {
 
@@ -22,6 +23,8 @@ struct VkSparseTextureLoadInfo
 	uint8_t samples;
 	CoreGraphics::PixelFormat::Code format;
 	CoreGraphics::TextureUsage texUsage;
+	Util::FixedArray<Util::FixedArray<Util::FixedArray<uint32_t>>> bindCounts;
+	VkSparseImageMemoryRequirements sparseMemoryRequirements;
 	bool bindless : 1;
 };
 
@@ -33,20 +36,44 @@ VkImageView SparseTextureGetVkImageView(const CoreGraphics::SparseTextureId id);
 struct TexturePage
 {
 	VkSparseImageMemoryBind binding;
-	uint32_t alignment;
+	VkOffset3D offset;
+	VkExtent3D extent;
+	uint32_t mip;
+	uint32_t layer;
+	uint32_t size;
+	uint32_t refCount;
+	CoreGraphics::Alloc alloc;
+};
+
+struct TexturePageTable
+{
+	Util::FixedArray<Util::FixedArray<Util::Array<TexturePage>>> pages;
+};
+
+struct VkSparseTextureRuntimeInfo
+{
+	VkImageView view;
+	uint bind;
 };
 
 enum
 {
-	SparseTexture_BindInfos,
 	SparseTexture_OpaqueBinds,
-	SparseTexture_PageBinds
+	SparseTexture_PageTable,
+	SparseTexture_PendingBinds,
+	SparseTexture_Allocs,
+	SparseTexture_Load,
+	SparseTexture_Runtime
+
 };
 
 typedef Ids::IdAllocator<
-	VkBindSparseInfo,
 	Util::Array<VkSparseMemoryBind>,
-	Util::Array<TexturePage>
+	TexturePageTable,
+	Util::Array<VkSparseImageMemoryBind>,
+	Util::Array<CoreGraphics::Alloc>,
+	VkSparseTextureLoadInfo,
+	VkSparseTextureRuntimeInfo
 > VkSparseTextureAllocator;
 extern VkSparseTextureAllocator vkSparseTextureAllocator;
 

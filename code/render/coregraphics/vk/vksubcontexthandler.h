@@ -87,7 +87,7 @@ public:
 
 
 	/// append sparse bind operation
-	void SubmitSparseTimeline(CoreGraphics::QueueType type, const VkBindSparseInfo& info);
+	void SubmitBindSparseTimeline(CoreGraphics::QueueType type, const VkBindSparseInfo& info);
 
 	/// wait for a queue to finish working
 	void WaitIdle(const CoreGraphics::QueueType type);

@@ -10,6 +10,7 @@
 #include "ids/id.h"
 #include "ids/idpool.h"
 #include "texture.h"
+#include "sparsetexture.h"
 #include "shaderrwbuffer.h"
 #include "constantbuffer.h"
 #include "sampler.h"
@@ -91,6 +92,14 @@ struct ResourceTableTexture
 	bool isStencil : 1;
 };
 
+struct ResourceTableSparseTexture
+{
+	CoreGraphics::SparseTextureId tex;
+	IndexT slot;
+	IndexT index;
+	CoreGraphics::SamplerId sampler;
+};
+
 struct ResourceTableConstantBuffer
 {
 	CoreGraphics::ConstantBufferId buf;
@@ -142,6 +151,8 @@ void DestroyResourceTable(const ResourceTableId& id);
 
 /// set resource table texture
 void ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTexture& tex);
+/// set resource table sparse texture
+void ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableSparseTexture& tex);
 /// set resource table input attachment
 void ResourceTableSetInputAttachment(const ResourceTableId& id, const ResourceTableInputAttachment& tex);
 /// set resource table texture as read-write

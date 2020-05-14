@@ -17,6 +17,7 @@
 #include "coregraphics/memorytexturepool.h"
 #include "vksubmissioncontext.h"
 #include "profiling/profiling.h"
+#include "threading/interlocked.h"
 namespace Vulkan
 {
 
@@ -87,7 +88,6 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 
 	streamInfo.mappedBuffer = srcData;
 	streamInfo.bufferSize = srcDataSize;
-	streamInfo.lowestLod = NumBasicLods;
 	streamInfo.stream = stream;
 	loadInfo.dev = Vulkan::GetCurrentDevice();
 	texturePool->LeaveGet();
@@ -117,6 +117,9 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	ILuint imageMips = ilGetInteger(IL_DDS_MIP_HEADER_COUNT); // get the mip count from the header, not from the data
 	ILenum cube = ilGetInteger(IL_IMAGE_CUBEFLAGS);
 	ILenum format = ilGetInteger(IL_PIXEL_FORMAT);	// only available when loading DDS, so this might need some work...
+
+	streamInfo.lowestLod = Math::n_max(0, (ILint)imageMips - NumBasicLods);
+
 
 	VkFormat vkformat = VkTypes::AsVkFormat(format);
 	VkTypes::VkBlockDimensions block = VkTypes::AsVkBlockSize(vkformat);
@@ -310,7 +313,6 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 		CoreGraphics::BarrierStage::AllGraphicsShaders,
 		VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 	CoreGraphics::UnlockResourceSubmission();
-
 
 	loadInfo.dims.width = width;
 	loadInfo.dims.height = height;
@@ -551,8 +553,13 @@ VkStreamTexturePool::StreamMaxLOD(const Resources::ResourceId& id, const float l
 
 	CoreGraphics::UnlockResourceSubmission();
 
+	// create new view
+	//VkImageView oldView = runtimeInfo.view;
+	//VkResult res = vkCreateImageView(dev, &viewCreate, nullptr, &runtimeInfo.view);
+	//n_assert(res == VK_SUCCESS);
 
-	VkShaderServer::Instance()->AddPendingImageView(viewCreate, runtimeInfo.view, TextureId(id));
+	//if (loadInfo.bindless)
+	VkShaderServer::Instance()->AddPendingImageView(TextureId(id), viewCreate, runtimeInfo.bind);
 	// update binding
 	//if (loadInfo.bindless)
 	//VkShaderServer::Instance()->ReregisterTexture(TextureId(id), runtimeInfo.type, runtimeInfo.bind);

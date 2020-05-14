@@ -495,7 +495,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
 		vboInfo.data = nullptr;
 		vboInfo.comps = state.particleComponents;
 		vboInfo.dataSize = 0;
-		vboInfo.numVerts = Math::n_max(numParticlesThisFrame, state.vboSizes[frame] << 1);
+		vboInfo.numVerts = numParticlesThisFrame;
 		vboInfo.access = CoreGraphics::GpuBufferTypes::AccessWrite;
 		vboInfo.usage = CoreGraphics::GpuBufferTypes::UsageDynamic;
 		vboInfo.mode = CoreGraphics::HostMapped;

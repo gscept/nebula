@@ -79,7 +79,6 @@ VkShaderServer::Open()
 	this->cboSlot = ShaderGetResourceSlot(shader, "PerTickParams");
 
 	this->resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
-	this->pendingViewDeletes.Resize(CoreGraphics::GetNumBufferedFrames());
 	IndexT i;
 	for (i = 0; i < this->resourceTables.Size(); i++)
 	{
@@ -180,11 +179,67 @@ VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics
 	info.slot = var;
 
 	// update textures for all tables
+	this->bindResourceCriticalSection.Enter();
 	IndexT i;
 	for (i = 0; i < this->resourceTables.Size(); i++)
 	{
 		ResourceTableSetTexture(this->resourceTables[i], info);
 	}
+	this->bindResourceCriticalSection.Leave();
+
+	return idx;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint32_t 
+VkShaderServer::RegisterTexture(const CoreGraphics::SparseTextureId& tex, CoreGraphics::TextureType type)
+{
+	uint32_t idx;
+	IndexT var;
+	switch (type)
+	{
+	case Texture2D:
+		n_assert(!this->texture2DPool.IsFull());
+		idx = this->texture2DPool.Alloc();
+		var = this->texture2DTextureVar;
+		break;
+	case Texture2DArray:
+		n_assert(!this->texture2DArrayPool.IsFull());
+		idx = this->texture2DArrayPool.Alloc();
+		var = this->texture2DArrayTextureVar;
+		break;
+	case Texture3D:
+		n_assert(!this->texture3DPool.IsFull());
+		idx = this->texture3DPool.Alloc();
+		var = this->texture3DTextureVar;
+		break;
+	case TextureCube:
+		n_assert(!this->textureCubePool.IsFull());
+		idx = this->textureCubePool.Alloc();
+		var = this->textureCubeTextureVar;
+		break;
+	default:
+		n_error("Should not happen");
+		idx = UINT_MAX;
+		var = InvalidIndex;
+	}
+
+	ResourceTableSparseTexture info;
+	info.tex = tex;
+	info.index = idx;
+	info.sampler = SamplerId::Invalid();
+	info.slot = var;
+
+	// update textures for all tables
+	this->bindResourceCriticalSection.Enter();
+	IndexT i;
+	for (i = 0; i < this->resourceTables.Size(); i++)
+	{
+		ResourceTableSetTexture(this->resourceTables[i], info);
+	}
+	this->bindResourceCriticalSection.Leave();
 
 	return idx;
 }
@@ -221,11 +276,52 @@ VkShaderServer::ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphi
 	info.slot = var;
 
 	// update textures for all tables
+	this->bindResourceCriticalSection.Enter();
 	IndexT i;
 	for (i = 0; i < this->resourceTables.Size(); i++)
 	{
 		ResourceTableSetTexture(this->resourceTables[i], info);
 	}
+	this->bindResourceCriticalSection.Leave();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkShaderServer::ReregisterTexture(const CoreGraphics::SparseTextureId& tex, CoreGraphics::TextureType type, uint32_t slot)
+{
+	IndexT var;
+	switch (type)
+	{
+	case Texture2D:
+		var = this->texture2DTextureVar;
+		break;
+	case Texture2DArray:
+		var = this->texture2DArrayTextureVar;
+		break;
+	case Texture3D:
+		var = this->texture3DTextureVar;
+		break;
+	case TextureCube:
+		var = this->textureCubeTextureVar;
+		break;
+	}
+
+	ResourceTableSparseTexture info;
+	info.tex = tex;
+	info.index = slot;
+	info.sampler = SamplerId::Invalid();
+	info.slot = var;
+
+	// update textures for all tables
+	this->bindResourceCriticalSection.Enter();
+	IndexT i;
+	for (i = 0; i < this->resourceTables.Size(); i++)
+	{
+		ResourceTableSetTexture(this->resourceTables[i], info);
+	}
+	this->bindResourceCriticalSection.Leave();
 }
 
 //------------------------------------------------------------------------------
@@ -287,29 +383,46 @@ VkShaderServer::UpdateResources()
 	this->cboOffset = CoreGraphics::AllocateGraphicsConstantBufferMemory(MainThreadConstantBuffer, sizeof(Shared::PerTickParams));
 	IndexT bufferedFrameIndex = GetBufferedFrameIndex();
 
-	// delete views which have been discarded due to LOD streaming
-	for (int i = 0; i < this->pendingViewDeletes[bufferedFrameIndex].Size(); i++)
-		vkDestroyImageView(GetCurrentDevice(), this->pendingViewDeletes[bufferedFrameIndex][i], nullptr);
-	this->pendingViewDeletes[bufferedFrameIndex].Clear();
+	VkDevice dev = GetCurrentDevice();
 
 	// setup new views for newly streamed LODs
 	Util::Array<_PendingView> pendingViewsThisFrame(32, 32);
 	pendingViews.DequeueAll(pendingViewsThisFrame);
+
 	for (int i = 0; i < pendingViewsThisFrame.Size(); i++)
 	{
 		const _PendingView& pend = pendingViewsThisFrame[i];
 
-		// create new view and add old view to be deleted
-		VkImageView view;
-		vkCreateImageView(GetCurrentDevice(), &pend.info, nullptr, &view);
-		pendingViewDeletes[bufferedFrameIndex].Append(pend.oldView);
+		textureAllocator.EnterGet();
+		VkTextureRuntimeInfo& info = textureAllocator.Get<Texture_RuntimeInfo>(pend.tex.resourceId);
+		VkImageView oldView = info.view;
+		VkResult res = vkCreateImageView(GetCurrentDevice(), &pend.createInfo, nullptr, &info.view);
+		n_assert(res == VK_SUCCESS);
+		textureAllocator.LeaveGet();
 
-		VkTextureRuntimeInfo& info = textureAllocator.GetSafe<Texture_RuntimeInfo>(pend.tex.resourceId);
-		info.view = view;
+		_PendingViewDelete pendingDelete;
+		pendingDelete.view = oldView;
+		pendingDelete.replaceCounter = 0;
+		pendingViewDeletes.Append(pendingDelete);
+
+		// update texture entries for all tables
 		this->ReregisterTexture(pend.tex, info.type, info.bind);
 	}
 
-	// update resource table
+	// delete views which have been discarded due to LOD streaming
+	for (int i = this->pendingViewDeletes.Size() - 1; i >= 0; i--)
+	{
+		// if we have cycled through all our frames, safetly delete the view
+		if (this->pendingViewDeletes[i].replaceCounter == CoreGraphics::GetNumBufferedFrames())
+		{
+			//vkDestroyImageView(dev, this->pendingViewDeletes[i].view, nullptr);
+			this->pendingViewDeletes.EraseIndex(i);
+			continue;
+		}
+		this->pendingViewDeletes[i].replaceCounter++;
+	}
+
+	// update resource table for this frame
 	ResourceTableSetConstantBuffer(this->resourceTables[bufferedFrameIndex], { this->ticksCbo, this->cboSlot, 0, false, false, sizeof(Shared::PerTickParams), (SizeT)this->cboOffset });
 	ResourceTableCommitChanges(this->resourceTables[bufferedFrameIndex]);
 }
@@ -328,12 +441,12 @@ VkShaderServer::AfterView()
 /**
 */
 void 
-VkShaderServer::AddPendingImageView(VkImageViewCreateInfo info, VkImageView oldView, CoreGraphics::TextureId tex)
+VkShaderServer::AddPendingImageView(CoreGraphics::TextureId tex, VkImageViewCreateInfo viewCreate, uint32_t bind)
 {
 	_PendingView pend;
 	pend.tex = tex;
-	pend.info = info;
-	pend.oldView = oldView;
+	pend.createInfo = viewCreate;
+	pend.bind = bind;
 	this->pendingViews.Enqueue(pend);
 }
 

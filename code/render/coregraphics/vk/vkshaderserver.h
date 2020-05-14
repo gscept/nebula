@@ -11,6 +11,7 @@
 #include "coregraphics/base/shaderserverbase.h"
 #include "coregraphics/config.h"
 #include "coregraphics/texture.h"
+#include "coregraphics/sparsetexture.h"
 #include "effectfactory.h"
 #include "vkshaderpool.h"
 #include "coregraphics/graphicsdevice.h"
@@ -35,8 +36,12 @@ public:
 	
 	/// register new texture
 	uint32_t RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, bool depth = false, bool stencil = false);
+	/// register new sparse texture
+	uint32_t RegisterTexture(const CoreGraphics::SparseTextureId& tex, CoreGraphics::TextureType type);
 	/// reregister texture
 	void ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, uint32_t slot, bool depth = false, bool stencil = false);
+	/// reregister sparse texture
+	void ReregisterTexture(const CoreGraphics::SparseTextureId& tex, CoreGraphics::TextureType type, uint32_t slot);
 	/// unregister texture
 	void UnregisterTexture(const uint32_t id, const CoreGraphics::TextureType type);
 
@@ -54,7 +59,7 @@ public:
 	void BindTextureDescriptorSetsCompute(const CoreGraphics::QueueType queue = CoreGraphics::GraphicsQueueType);
 
 	/// add a pending image view update to the update queue, thread safe
-	void AddPendingImageView(VkImageViewCreateInfo info, VkImageView oldView, CoreGraphics::TextureId tex);
+	void AddPendingImageView(CoreGraphics::TextureId tex, VkImageViewCreateInfo viewCreate, uint32_t bind);
 
 	/// setup gbuffer bindings
 	void SetupGBufferConstants();
@@ -100,16 +105,22 @@ private:
 	CoreGraphics::ConstantBinding irradianceMapVar;
 	CoreGraphics::ConstantBinding numEnvMipsVar;
 
-	Threading::CriticalSection viewCreationCriticalSection;
+	Threading::CriticalSection bindResourceCriticalSection;
 	struct _PendingView
 	{
-		VkImageViewCreateInfo info;
-		VkImageView oldView;
 		CoreGraphics::TextureId tex;
+		VkImageViewCreateInfo createInfo;
+		uint32_t bind;
+	};
+
+	struct _PendingViewDelete
+	{
+		VkImageView view;
+		uint32_t replaceCounter;
 	};
 
 	Threading::SafeQueue<_PendingView> pendingViews;
-	Util::FixedArray<Util::Array<VkImageView>> pendingViewDeletes;
+	Util::Array<_PendingViewDelete> pendingViewDeletes;
 
 	IndexT csmBufferTextureVar;
 	IndexT spotlightAtlasShadowBufferTextureVar;

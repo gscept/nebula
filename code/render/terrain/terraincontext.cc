@@ -15,6 +15,8 @@
 
 #include "terrain.h"
 
+//#define USE_SPARSE
+
 namespace Terrain
 {
 TerrainContext::TerrainAllocator TerrainContext::terrainAllocator;
@@ -29,7 +31,8 @@ struct
 	Util::Array<CoreGraphics::VertexComponent> components;
 	CoreGraphics::VertexLayoutId vlo;
 
-	CoreGraphics::SparseTextureId virtualHeightMap;
+	CoreGraphics::SparseTextureId virtualAlbedoMap;
+	SizeT mips;
 
 } terrainState;
 
@@ -43,7 +46,6 @@ struct TerrainTri
 {
 	IndexT a, b, c;
 };
-
 
 //------------------------------------------------------------------------------
 /**
@@ -69,6 +71,7 @@ TerrainContext::Create()
 	using namespace CoreGraphics;
 
 	__bundle.OnPrepareView = TerrainContext::CullPatches;
+	__bundle.OnBeforeView = TerrainContext::UpdateVirtualTexture;
 
 #ifndef PUBLIC_BUILD
 	__bundle.OnRenderDebug = TerrainContext::OnRenderDebug;
@@ -101,10 +104,16 @@ TerrainContext::Create()
 				uniforms.HeightMap = TextureGetBindlessHandle(rt.heightMap);
 				uniforms.NormalMap = TextureGetBindlessHandle(rt.normalMap);
 				uniforms.DecisionMap = TextureGetBindlessHandle(rt.decisionMap);
+#ifdef USE_SPARSE
+				uniforms.AlbedoMap = SparseTextureGetBindlessHandle(terrainState.virtualAlbedoMap);
+#else
+				uniforms.AlbedoMap = 0;
+#endif
 				uniforms.MinLODDistance = 1.0f;
 				uniforms.MaxLODDistance = 100.0f;
 				uniforms.MinTessellation = 1.0f;
 				uniforms.MaxTessellation = 8.0f;
+				uniforms.VirtualTextureMips = terrainState.mips;
 				uniforms.MaxHeight = rt.maxHeight;
 				uniforms.MinHeight = rt.minHeight;
 				ConstantBufferUpdate(terrainState.constants, uniforms, 0);
@@ -116,6 +125,7 @@ TerrainContext::Create()
 						SetStreamVertexBuffer(0, rt.vbo, 0);
 						SetIndexBuffer(rt.ibo, 0);
 						SetPrimitiveGroup(rt.sectorPrimGroups[j]);
+						SetResourceTable(rt.patchTable, NEBULA_DYNAMIC_OFFSET_GROUP, GraphicsPipeline, 1, &rt.sectorUniformOffsets[j]);
 						Draw();
 					}
 				}
@@ -147,15 +157,19 @@ TerrainContext::Create()
 
 	// create vlo
 	terrainState.vlo = CreateVertexLayout({ terrainState.components });
+	terrainState.mips = 3;
 
+	// create virtual texture for albedo
 	SparseTexureCreateInfo info =
 	{
-		32768, 32768, 1,
+		1024, 1024, 1,
 		Texture2D, PixelFormat::R8G8B8A8,
-		8, 1, 1,
+		terrainState.mips, 1, 1,
 		true
 	};
-	terrainState.virtualHeightMap = CreateSparseTexture(info);
+#ifdef USE_SPARSE
+	terrainState.virtualAlbedoMap = CreateSparseTexture(info);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -194,165 +208,160 @@ TerrainContext::SetupTerrain(
 	TextureDimensions tdims = TextureGetDimensions(runtimeInfo.heightMap);
 	runtimeInfo.heightMapWidth = tdims.width;
 	runtimeInfo.heightMapHeight = tdims.height;
+	runtimeInfo.worldWidth = settings.worldSizeX;
+	runtimeInfo.worldHeight = settings.worldSizeZ;
 	runtimeInfo.maxHeight = settings.maxHeight;
 	runtimeInfo.minHeight = settings.minHeight;
 
-	const int TileXSize = 32;
-	const int TileYSize = 32;
-	const float scaleX = settings.worldSizeX / tdims.width;
-	const float scaleY = settings.worldSizeZ / tdims.height;
-	const int TileXScaled = TileXSize * scaleX;
-	const int TileYScaled = TileYSize * scaleY;
-
 	// divide world dimensions into 
-	SizeT numXTiles = tdims.width / TileXSize;
-	SizeT numYTiles = tdims.height / TileYSize;
+	SizeT numXTiles = settings.worldSizeX / settings.tileWidth;
+	SizeT numYTiles = settings.worldSizeZ / settings.tileHeight;
 	SizeT height = settings.maxHeight - settings.minHeight;
+	SizeT numVertsX = settings.tileWidth / settings.vertexDensityX + 1;
+	SizeT numVertsY = settings.tileHeight / settings.vertexDensityY + 1;
+	SizeT vertDistanceX = settings.vertexDensityX;
+	SizeT vertDistanceY = settings.vertexDensityY;
 
-	// allocate terrain vertex buffer
-	TerrainVert* verts = (TerrainVert*)Memory::Alloc(Memory::ResourceHeap, tdims.width * tdims.height * sizeof(TerrainVert));
+	CoreGraphics::ConstantBufferCreateInfo cboInfo =
+	{
+		"TerrainPatchConstants",
+		numXTiles * numYTiles * sizeof(PatchUniforms),
+		CoreGraphics::HostWriteable
+	};
+	runtimeInfo.patchConstants = CreateConstantBuffer(cboInfo);
+	runtimeInfo.patchTable = ShaderCreateResourceTable(terrainState.terrainShader, NEBULA_DYNAMIC_OFFSET_GROUP);
+	IndexT slot = ShaderGetResourceSlot(terrainState.terrainShader, "PatchUniforms");
+	ResourceTableSetConstantBuffer(runtimeInfo.patchTable, { runtimeInfo.patchConstants, slot, 0, true, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+	ResourceTableCommitChanges(runtimeInfo.patchTable);
+
+	// allocate a tile vertex buffer
+	TerrainVert* verts = (TerrainVert*)Memory::Alloc(Memory::ResourceHeap, numVertsX * numVertsY * sizeof(TerrainVert));
 
 	// allocate terrain index buffer, every fourth pixel will generate two triangles 
-	SizeT numTris = tdims.width * tdims.height * 2;
+	SizeT numTris = numVertsX * numVertsY * 2;
 	TerrainTri* tris = (TerrainTri*)Memory::Alloc(Memory::ResourceHeap, numTris * sizeof(TerrainTri));
 
-	// walk through and set up sections, oriented around origo, so half of the sections are in the negative
+	// setup sections
 	for (IndexT y = 0; y < numYTiles; y++)
 	{
 		for (IndexT x = 0; x < numXTiles; x++)
 		{
 			Math::bbox box;
 			box.set(
-				Math::point((x - numXTiles / 2) * TileXScaled + TileXScaled / 2, settings.minHeight, (y - numYTiles / 2) * TileYScaled + TileYScaled / 2),
-				Math::vector(TileXScaled / 2, height, TileYScaled / 2));
+				Math::point(
+					x * settings.tileWidth - settings.worldSizeX / 2 + settings.tileWidth / 2,
+					settings.minHeight, 
+					y * settings.tileHeight - settings.worldSizeZ / 2 + settings.tileHeight / 2
+				),
+				Math::vector(settings.tileWidth / 2, height, settings.tileHeight / 2));
 			runtimeInfo.sectionBoxes.Append(box);
 			runtimeInfo.sectorVisible.Append(true);
+			runtimeInfo.sectorLod.Append((float)terrainState.mips);
+			runtimeInfo.sectorLodResidency.Append(Util::FixedArray<bool>(terrainState.mips, false));
+			
+			uint uniformOffset = (x + y * numXTiles) * sizeof(PatchUniforms);
+			PatchUniforms uniforms;
+			uniforms.offsetPatchPos[0] = box.pmin.x;
+			uniforms.offsetPatchPos[1] = box.pmin.z;
+			uniforms.offsetPatchUV[0] = x * settings.tileWidth / settings.worldSizeX;
+			uniforms.offsetPatchUV[1] = y * settings.tileHeight / settings.worldSizeZ;
+			ConstantBufferUpdate(runtimeInfo.patchConstants, uniforms, uniformOffset);
+			runtimeInfo.sectorUniformOffsets.Append(uniformOffset);
 
-			IndexT groupIndex = x + y * numYTiles;
 			CoreGraphics::PrimitiveGroup group;
-			group.SetBaseIndex(groupIndex * TileXSize * TileYSize * 2 * 3); // every tile contains 32 * 32 * 2 triangles, and each has 3 indices
+			group.SetBaseIndex(0);
 			group.SetBaseVertex(0);
 			group.SetBoundingBox(box);
-			group.SetNumIndices(TileXSize * TileYSize * 2 * 3);
+			group.SetNumIndices(numTris * 3);
 			group.SetNumVertices(0);
 			runtimeInfo.sectorPrimGroups.Append(group);
+		}
+	}
+	ConstantBufferFlush(runtimeInfo.patchConstants);
 
-			// triangulate tile
-			for (IndexT i = 0; i < TileYSize; i++)
+	// walk through and set up sections, oriented around origo, so half of the sections are in the negative
+	for (IndexT y = 0; y < numVertsY; y++)
+	{
+		for (IndexT x = 0; x < numVertsX; x++)
+		{
+			if (x == numVertsX - 1)
+				continue;
+			if (y == numVertsY - 1)
+				continue;
+
+			struct Vertex
 			{
-				for (IndexT j = 0; j < TileXSize; j++)
-				{
-					IndexT xPos = x * TileXSize + j;
-					IndexT yPos = y * TileYSize + i;
-					IndexT myIdx = xPos + yPos * tdims.height;
+				Math::vec4 position;
+				Math::vec2 uv;
+			};
+			Vertex v1, v2, v3, v4;
 
-					// if we are on the edge, generate no data
-					if (xPos == tdims.width - 1)
-						continue;
-					if (yPos == tdims.height - 1)
-						continue;
-					
-					struct Vertex
-					{
-						Math::vec4 position;
-						Math::vec2 uv;
-					};
-					Vertex v1, v2, v3, v4;
+			// set terrain vertices, uv should be a fraction of world size
+			v1.position.set(x * vertDistanceX, 0, y * vertDistanceY, 1);
+			v1.uv = Math::vec2(x * vertDistanceX / float(settings.worldSizeX), y * vertDistanceY / float(settings.worldSizeZ));
 
-					// set terrain vertices
-					v1.position.set(xPos - tdims.width / 2.0f, 0, yPos - tdims.height / 2.0f, 1);
-					v1.position *= Math::vector(scaleX, 1, scaleY);
-					v1.uv = Math::vec2(xPos / float(tdims.width), yPos / float(tdims.height));
+			v2.position.set((x + 1) * vertDistanceX, 0, y * vertDistanceY, 1);
+			v2.uv = Math::vec2((x + 1) * vertDistanceX / float(settings.worldSizeX), y * vertDistanceY / float(settings.worldSizeZ));
 
-					v2.position.set(xPos + 1 - tdims.width / 2.0f, 0, yPos - tdims.height / 2.0f, 1);
-					v2.position *= Math::vector(scaleX, 1, scaleY);
-					v2.uv = Math::vec2((xPos + 1) / float(tdims.width), yPos / float(tdims.height));
+			v3.position.set(x * vertDistanceX, 0, (y + 1) * vertDistanceY, 1);
+			v3.uv = Math::vec2(x * vertDistanceX / float(settings.worldSizeX), (y + 1) * vertDistanceY / float(settings.worldSizeZ));
 
-					v3.position.set(xPos - tdims.width / 2.0f, 0, yPos + 1 - tdims.height / 2.0f, 1);
-					v3.position *= Math::vector(scaleX, 1, scaleY);
-					v3.uv = Math::vec2(xPos / float(tdims.width), (yPos + 1) / float(tdims.height));
+			v4.position.set((x + 1) * vertDistanceX, 0, (y + 1) * vertDistanceY, 1);
+			v4.uv = Math::vec2((x + 1) * vertDistanceX / float(settings.worldSizeX), (y + 1) * vertDistanceY / float(settings.worldSizeX));
 
-					v4.position.set(xPos + 1 - tdims.width / 2.0f, 0, yPos + 1 - tdims.height / 2.0f, 1);
-					v4.position *= Math::vector(scaleX, 1, scaleY);
-					v4.uv = Math::vec2((xPos + 1) / float(tdims.width), (yPos + 1) / float(tdims.height));
+			// calculate tile local index, and offsets
+			IndexT locX = x;
+			IndexT locY = y;
+			IndexT nextX = x + 1;
+			IndexT nextY = y + 1;
 
-					// calculate tile local index, and offsets
-					IndexT locX = j;
-					IndexT locY = i;
-					IndexT nextX = j + 1;
-					IndexT nextY = i + 1;
-					SizeT tileSize = TileXSize * TileYSize;
-					SizeT tileRowSize = numXTiles * tileSize;
-					IndexT myOffsetXTile = x * tileSize;
-					IndexT myOffsetYTile = y * tileRowSize;
-					IndexT myOffsetTile = myOffsetXTile + myOffsetYTile;
-					IndexT rightOffsetTile = myOffsetTile;
-					IndexT bottomOffsetTile = myOffsetTile;
-					IndexT bottomRightOffsetTile = myOffsetTile;
+			// get buffer data so we can update it
+			IndexT vidx1, vidx2, vidx3, vidx4;
+			vidx1 = locX + locY * numVertsX;
+			vidx2 = nextX + locY * numVertsX;
+			vidx3 = locX + nextY * numVertsX;
+			vidx4 = nextX + nextY * numVertsX;
 
-					// if we are crossing over to another tile, just add some offset and reset the local index
-					if (nextX == TileXSize)
-					{
-						rightOffsetTile += tileSize;
-						bottomRightOffsetTile += tileSize;
-						nextX = 0;
-					}
-					if (nextY == TileYSize)
-					{
-						bottomOffsetTile += tileRowSize;
-						bottomRightOffsetTile += tileRowSize;
-						nextY = 0;
-					}
+			TerrainVert& vt1 = verts[vidx1];
+			v1.position.storeu3(vt1.position.v);
+			vt1.uv.x = v1.uv.x;
+			vt1.uv.y = v1.uv.y;
 
-					// get buffer data so we can update it
-					IndexT vidx1, vidx2, vidx3, vidx4;
-					vidx1 = locX + locY * TileYSize + myOffsetTile;
-					vidx2 = nextX + locY * TileYSize + rightOffsetTile;
-					vidx3 = locX + nextY * TileYSize + bottomOffsetTile;
-					vidx4 = nextX + nextY * TileYSize + bottomRightOffsetTile;
+			TerrainVert& vt2 = verts[vidx2];
+			v2.position.storeu3(vt2.position.v);
+			vt2.uv.x = v2.uv.x;
+			vt2.uv.y = v2.uv.y;
 
-					TerrainVert& vt1 = verts[vidx1];
-					v1.position.storeu3(vt1.position.v);
-					vt1.uv.x = v1.uv.x;
-					vt1.uv.y = v1.uv.y;
+			TerrainVert& vt3 = verts[vidx3];
+			v3.position.storeu3(vt3.position.v);
+			vt3.uv.x = v3.uv.x;
+			vt3.uv.y = v3.uv.y;
 
-					TerrainVert& vt2 = verts[vidx2];
-					v2.position.storeu3(vt2.position.v);
-					vt2.uv.x = v2.uv.x;
-					vt2.uv.y = v2.uv.y;
+			TerrainVert& vt4 = verts[vidx4];
+			v4.position.storeu3(vt4.position.v);
+			vt4.uv.x = v4.uv.x;
+			vt4.uv.y = v4.uv.y;
 
-					TerrainVert& vt3 = verts[vidx3];
-					v3.position.storeu3(vt3.position.v);
-					vt3.uv.x = v3.uv.x;
-					vt3.uv.y = v3.uv.y;
+			// setup triangle tris
+			TerrainTri& t1 = tris[vidx1 * 2];
+			t1.a = vidx1;
+			t1.b = vidx3;
+			t1.c = vidx2;
 
-					TerrainVert& vt4 = verts[vidx4];
-					v4.position.storeu3(vt4.position.v);
-					vt4.uv.x = v4.uv.x;
-					vt4.uv.y = v4.uv.y;
+			TerrainTri& t2 = tris[vidx1 * 2 + 1];
+			t2.a = vidx2;
+			t2.b = vidx3;
+			t2.c = vidx4;
 
-					// setup triangle tris
-					TerrainTri& t1 = tris[vidx1 * 2];
-					t1.a = vidx1;
-					t1.b = vidx3;
-					t1.c = vidx2;
+			if (x % 2 ^ y % 2)
+			{
+				t1.a = vidx1;
+				t1.b = vidx3;
+				t1.c = vidx4;
 
-					TerrainTri& t2 = tris[vidx1 * 2 + 1];
-					t2.a = vidx2;
-					t2.b = vidx3;
-					t2.c = vidx4;
-
-					if (j % 2 ^ i % 2)
-					{
-						t1.a = vidx1;
-						t1.b = vidx3;
-						t1.c = vidx4;
-
-						t2.a = vidx1;
-						t2.b = vidx4;
-						t2.c = vidx2;
-					}
-				}
+				t2.a = vidx1;
+				t2.b = vidx4;
+				t2.c = vidx2;
 			}
 		}
 	}
@@ -364,10 +373,10 @@ TerrainContext::SetupTerrain(
 		GpuBufferTypes::AccessRead, 
 		GpuBufferTypes::UsageImmutable, 
 		HostWriteable, 
-		tdims.width * tdims.height,
+		numVertsX * numVertsY,
 		terrainState.components,
 		verts, 
-		tdims.width * tdims.height * sizeof(TerrainVert)
+		numVertsX * numVertsY * sizeof(TerrainVert)
 	};
 	runtimeInfo.vbo = CreateVertexBuffer(vboInfo);
 
@@ -385,6 +394,9 @@ TerrainContext::SetupTerrain(
 		numTris * sizeof(TerrainTri)
 	};
 	runtimeInfo.ibo = CreateIndexBuffer(iboInfo);
+
+	Memory::Free(Memory::ResourceHeap, verts);
+	Memory::Free(Memory::ResourceHeap, tris);
 }
 
 //------------------------------------------------------------------------------
@@ -394,6 +406,7 @@ void
 TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
 	N_SCOPE(CullPatches, Terrain);
+	Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetTransform(view->GetCamera()));
 	const Math::mat4& viewProj = Graphics::CameraContext::GetViewProjection(view->GetCamera());
 	Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
 	for (IndexT i = 0; i < runtimes.Size(); i++)
@@ -403,8 +416,96 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
 		{
 			Math::ClipStatus::Type flag = rt.sectionBoxes[j].clipstatus(viewProj);
 			rt.sectorVisible[j] = !(flag == Math::ClipStatus::Outside);
+#ifdef USE_SPARSE
+			float& currentLod = rt.sectorLod[j];
+
+			Math::rectangle<int> region;
+			region.left = rt.sectionBoxes[j].pmin.x + rt.worldWidth / 2;
+			region.top = rt.sectionBoxes[j].pmin.z + rt.worldHeight / 2;
+			region.right = rt.sectionBoxes[j].pmax.x + rt.worldWidth / 2;
+			region.bottom = rt.sectionBoxes[j].pmax.z + rt.worldHeight / 2;
+
+			// if we can figure out a way to evict memory for sections that are not in the LOS
+			// and also somehow make them load the right lods when we eventually turn back to look at them
+			// that would be great, but for now, it causes major issues, so lets not do it.
+			/*
+			if (!rt.sectorVisible[j])
+			{
+				if (currentLod != terrainState.mips)
+				{
+					for (int i = 0; i < terrainState.mips; i++)
+					{
+						if (rt.sectorLodResidency[j][i])
+						{
+							CoreGraphics::SparseTextureEvict(terrainState.virtualAlbedoMap, currentLod, region);
+							rt.sectorLodResidency[j][i] = false;
+						}
+					}
+				}
+
+				// reset lod
+				currentLod = (float)terrainState.mips;
+			}
+			else*/
+			{
+				// calculate nearest point in box for camera
+				Math::vec4 nearestPoint = Math::clamp(cameraTransform.position, rt.sectionBoxes[j].pmin, rt.sectionBoxes[j].pmax);
+				Math::vec4 eyeToBox = cameraTransform.position - nearestPoint;
+
+				// calculate, assume that at distance 250 we use the lowest lod
+				float dist = Math::n_saturate(length(eyeToBox) / 500.0f);
+				float newLod = dist * (terrainState.mips - 1);
+
+				uint32_t currentLodFloored = Math::n_floor(currentLod);
+				uint32_t newLodFloored = Math::n_floor(newLod);
+
+				// if lods don't match, evict previous lod
+				if (currentLodFloored != newLodFloored)
+				{
+					// if the mip we are loading is bigger than the one we are using, evict the previous mip
+					if (currentLod != terrainState.mips && newLodFloored > currentLodFloored)
+					{
+						CoreGraphics::SparseTextureEvict(terrainState.virtualAlbedoMap, currentLodFloored, region);
+					}
+
+					CoreGraphics::TextureId tex;
+					switch (newLodFloored % 3)
+					{
+					case 0:
+						tex = CoreGraphics::Green2D;
+						break;
+					case 1:
+						tex = CoreGraphics::Blue2D;
+						break;
+					case 2:
+						tex = CoreGraphics::Red2D;
+						break;
+					}
+
+					// if we are requesting a higher mip, or we have no mips, make mip resident and update
+					if (newLodFloored < currentLodFloored || currentLod == terrainState.mips)
+					{
+						CoreGraphics::SparseTextureMakeResident(terrainState.virtualAlbedoMap, region, newLodFloored, tex, 0);
+						rt.sectorLodResidency[j][i] = true;
+					}
+				}
+				currentLod = newLod;
+			}
+#endif
 		}
 	}
+
+#ifdef USE_SPARSE
+	CoreGraphics::SparseTextureCommitChanges(terrainState.virtualAlbedoMap);
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+TerrainContext::UpdateVirtualTexture(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+{
 }
 
 //------------------------------------------------------------------------------

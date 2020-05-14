@@ -12,6 +12,7 @@
 #include "primitivegroup.h"
 #include "vertexbuffer.h"
 #include "indexbuffer.h"
+#include "sparsetexture.h"
 #include "imagefileformat.h"
 #include "io/stream.h"
 #include "fence.h"
@@ -331,11 +332,13 @@ IndexT BeginQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type);
 void EndQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type);
 
 /// copy data between textures
-void Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion);
+void Copy(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, const CoreGraphics::TextureId to, const Math::rectangle<SizeT>& toRegion);
 /// copy data between rw buffers
 void Copy(const CoreGraphics::QueueType queue, const CoreGraphics::ShaderRWBufferId from, IndexT fromOffset, const CoreGraphics::ShaderRWBufferId to, IndexT toOffset, SizeT size);
 /// blit between textures
-void Blit(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip);
+void Blit(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, const Math::rectangle<SizeT>& toRegion, IndexT toMip);
+/// blit from a 2D texture to a sparse texture
+void Blit(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, IndexT fromMip, const CoreGraphics::SparseTextureId to, const Math::rectangle<SizeT>& toRegion, IndexT toMip);
 
 /// sets whether or not the render device should tessellate
 void SetUsePatches(bool state);

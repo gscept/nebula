@@ -12,6 +12,7 @@
 
 #if __VULKAN__
 #include "vk/vkloader.h"
+
 typedef VkDeviceSize DeviceSize;
 typedef VkDeviceMemory DeviceMemory;
 #else

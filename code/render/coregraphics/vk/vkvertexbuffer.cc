@@ -190,7 +190,6 @@ CreateVertexBuffer(const VertexBufferCreateDirectInfo& info)
 	else if (info.mode == DeviceLocal)
 		pool = CoreGraphics::BufferMemory_Local;
 
-
 	// now bind memory to buffer
 	CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, runtimeInfo.buf, pool);
 	err = vkBindBufferMemory(loadInfo.dev, runtimeInfo.buf, alloc.mem, alloc.offset);

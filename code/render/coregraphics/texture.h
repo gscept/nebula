@@ -238,5 +238,8 @@ extern TextureId White3D;
 extern TextureId White1DArray;
 extern TextureId White2DArray;
 extern TextureId WhiteCubeArray;
+extern TextureId Red2D;
+extern TextureId Green2D;
+extern TextureId Blue2D;
 
 } // CoreGraphics

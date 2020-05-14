@@ -157,7 +157,12 @@ void OpenScene()
     terrain = Graphics::CreateEntity();
     Terrain::TerrainContext::RegisterEntity(terrain);
 
-    Terrain::TerrainSetupSettings settings{ -25.0f, 25.0f, 1024, 1024 };
+    Terrain::TerrainSetupSettings settings{ 
+        -25.0f, 25.0f,  // min/max height
+        1024, 1024,     // world size in meters
+        128, 128,       // tile size in meters
+        8, 8            // 1 vertex every 8 meters
+    };      
     Terrain::TerrainContext::SetupTerrain(terrain, "tex:test/crater_dmap.dds", "tex:test/crater_nmap.dds", "tex:test/crater_cm.dds", settings);
     //Terrain::TerrainContext::SetupTerrain(terrain, "tex:system/light.dds", settings);
 

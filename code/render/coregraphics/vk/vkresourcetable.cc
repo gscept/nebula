@@ -9,6 +9,7 @@
 #include "vktypes.h"
 #include "vksampler.h"
 #include "vktexture.h"
+#include "vksparsetexture.h"
 #include "vkconstantbuffer.h"
 #include "vkshaderrwbuffer.h"
 namespace Vulkan
@@ -228,6 +229,61 @@ ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTexture& t
 		img.imageView = TextureGetVkStencilImageView(tex.tex);
 	else
 		img.imageView = TextureGetVkImageView(tex.tex);
+
+	WriteInfo inf;
+	inf.img = img;
+	infoList.Append(inf);
+
+	write.pImageInfo = &img;			// this is just provisionary, it will go out of scope immediately, but it wont be null!
+	write.pTexelBufferView = nullptr;
+	write.pBufferInfo = nullptr;
+
+	writeList.Append(write);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableSparseTexture& tex)
+{
+	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
+	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
+	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
+	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+
+	n_assert(tex.slot != InvalidIndex);
+
+	VkWriteDescriptorSet write;
+	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write.pNext = nullptr;
+
+	const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<3>(id.id24);
+	const Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayoutImmutableSamplerFlags>(layout.id24);
+
+	VkDescriptorImageInfo img;
+	if (immutable[tex.slot])
+	{
+		n_assert(tex.sampler == SamplerId::Invalid());
+		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		img.sampler = VK_NULL_HANDLE;
+	}
+	else
+	{
+		write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+		img.sampler = tex.sampler == SamplerId::Invalid() ? VK_NULL_HANDLE : SamplerGetVk(tex.sampler);
+	}
+
+	write.descriptorCount = 1;
+	write.dstArrayElement = tex.index;
+	write.dstBinding = tex.slot;
+	write.dstSet = set;
+	img.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+	if (tex.tex == SparseTextureId::Invalid())
+		img.imageView = VK_NULL_HANDLE;
+	else
+		img.imageView = SparseTextureGetVkImageView(tex.tex);
 
 	WriteInfo inf;
 	inf.img = img;

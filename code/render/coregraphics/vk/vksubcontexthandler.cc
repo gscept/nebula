@@ -183,14 +183,14 @@ VkSubContextHandler::AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCo
 void 
 VkSubContextHandler::AppendWaitTimeline(CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, CoreGraphics::QueueType waitQueue)
 {
-	TimelineSubmission& sub = this->timelineSubmissions[type].Back();
+	TimelineSubmission& sub = this->timelineSubmissions[this->queueFamilies[type]].Back();
 
 	n_assert(waitQueue != CoreGraphics::InvalidQueueType);
-	uint payload = this->semaphoreSubmissionIds[waitQueue];
+	uint payload = this->semaphoreSubmissionIds[this->queueFamilies[waitQueue]];
 	if (payload > 0)
 	{
 		sub.waitIndices.Append(payload);
-		sub.waitSemaphores.Append(this->semaphores[waitQueue]);
+		sub.waitSemaphores.Append(this->semaphores[this->queueFamilies[waitQueue]]);
 		sub.waitFlags.Append(waitFlags);
 	}	
 }
@@ -354,12 +354,12 @@ VkSubContextHandler::FlushSubmissions(CoreGraphics::QueueType type, VkFence fenc
 /**
 */
 void
-VkSubContextHandler::SubmitSparseTimeline(CoreGraphics::QueueType type, const VkBindSparseInfo& info)
+VkSubContextHandler::SubmitBindSparseTimeline(CoreGraphics::QueueType type, const VkBindSparseInfo& info)
 {
 	VkQueue queue = this->GetQueue(type);
 
-	// setup 
-	this->semaphoreSubmissionIds[type]++;
+	// wait for graphics to finish before we perform our sparse bindings
+	this->semaphoreSubmissionIds[this->queueFamilies[type]]++;
 	VkTimelineSemaphoreSubmitInfo timelineSubmitInfo =
 	{
 		VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
@@ -367,12 +367,20 @@ VkSubContextHandler::SubmitSparseTimeline(CoreGraphics::QueueType type, const Vk
 		1,
 		&this->semaphoreSubmissionIds[CoreGraphics::GraphicsQueueType],
 		1,
-		&this->semaphoreSubmissionIds[type]
+		&this->semaphoreSubmissionIds[this->queueFamilies[type]]
 	};
 
+	// patch up bind info
 	VkBindSparseInfo modInfo = info;
 	modInfo.pNext = &timelineSubmitInfo;
-	vkQueueBindSparse(queue, 1, &modInfo, nullptr);
+	modInfo.waitSemaphoreCount = 1;
+	modInfo.pWaitSemaphores = &this->semaphores[CoreGraphics::GraphicsQueueType];
+	modInfo.signalSemaphoreCount = 1;
+	modInfo.pSignalSemaphores = &this->semaphores[this->queueFamilies[type]];
+
+	// submit
+	VkResult res = vkQueueBindSparse(queue, 1, &modInfo, nullptr);
+	n_assert(res == VK_SUCCESS);
 }
 
 //------------------------------------------------------------------------------

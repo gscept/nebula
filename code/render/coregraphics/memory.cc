@@ -68,7 +68,7 @@ DeallocRangeConservative(Util::Array<AllocRange>* ranges, DeviceSize offset)
 {
 	for (IndexT i = 0; i < ranges->Size(); i++)
 	{
-		if ((*ranges)[i].offset = offset)
+		if ((*ranges)[i].offset == offset)
 		{
 			ranges->EraseIndex(i);
 			return true;

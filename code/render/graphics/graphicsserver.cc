@@ -56,8 +56,8 @@ GraphicsServer::Open()
 	this->displayDevice->Open();
 
 	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{ 
-		{ 1_MB, 30_MB },		// Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 50
-		{ 1_MB, 0_MB },			// Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
+		{ 1_MB, 30_MB },	// Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 50
+		{ 1_MB, 0_MB },		// Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
 		{
 			512_MB,			// textures loaded from file, render targets
 			32_MB,			// temporary images
@@ -66,8 +66,9 @@ GraphicsServer::Open()
 			128_MB,			// dynamically updated buffers, constants, cloth, etc
 			64_MB			// buffers which should be partially committed, particles, shapes, text, imgui
 		},
-		3,						// Number of simultaneous frames (N buffering)
-		false }; // validation
+		3,					// number of simultaneous frames (3 = triple buffering, 2 = ... you get the idea)
+		false 				// validation
+	};
 	this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 
 	Jobs::CreateJobPortInfo info =
@@ -153,6 +154,24 @@ GraphicsServer::Open()
 		texInfo.name = "WhiteCubeArray";
 		texInfo.buffer = &white;
 		CoreGraphics::WhiteCubeArray = CoreGraphics::CreateTexture(texInfo);
+
+		const unsigned int red = 0x000000FF;
+		const unsigned int green = 0x0000FF00;
+		const unsigned int blue = 0x00FF0000;
+		texInfo.type = CoreGraphics::TextureType::Texture2D;
+		texInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
+
+		texInfo.name = "Red2D";
+		texInfo.buffer = &red;
+		CoreGraphics::Red2D = CoreGraphics::CreateTexture(texInfo);
+
+		texInfo.name = "Green2D";
+		texInfo.buffer = &green;
+		CoreGraphics::Green2D = CoreGraphics::CreateTexture(texInfo);
+
+		texInfo.name = "Blue2D";
+		texInfo.buffer = &blue;
+		CoreGraphics::Blue2D = CoreGraphics::CreateTexture(texInfo);
 
 		this->shaderServer = CoreGraphics::ShaderServer::Create();
 		this->shaderServer->Open();

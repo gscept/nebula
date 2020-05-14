@@ -20,6 +20,9 @@ TextureId White3D;
 TextureId White1DArray;
 TextureId White2DArray;
 TextureId WhiteCubeArray;
+TextureId Red2D;
+TextureId Green2D;
+TextureId Blue2D;
 
 MemoryTexturePool* texturePool = nullptr;
 
