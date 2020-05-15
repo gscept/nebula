@@ -13,6 +13,7 @@ namespace Vulkan
 VkTextureAllocator textureAllocator(0x00FFFFFF);
 VkTextureStencilExtensionAllocator textureStencilExtensionAllocator(0x00FFFFFF);
 VkTextureSwapExtensionAllocator textureSwapExtensionAllocator(0x00FFFFFF);
+VkTextureSparseExtensionAllocator textureSparseExtensionAllocator(0x00FFFFFF);
 
 //------------------------------------------------------------------------------
 /**

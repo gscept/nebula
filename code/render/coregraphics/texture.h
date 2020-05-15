@@ -10,6 +10,9 @@
 #include "coregraphics/pixelformat.h"
 #include "coregraphics/config.h"
 #include "coregraphics/window.h"
+#include "coregraphics/memory.h"
+#include "coregraphics/submissioncontext.h"
+#include "math/rectangle.h"
 
 namespace CoreGraphics
 {
@@ -98,6 +101,7 @@ struct TextureCreateInfo
 		, windowRelative(false)
 		, windowTexture(false)
 		, bindless(true)
+		, sparse(false)
 		, alias(CoreGraphics::TextureId::Invalid())
 		, defaultLayout(CoreGraphics::ImageLayout::ShaderRead)
 	{};
@@ -114,6 +118,7 @@ struct TextureCreateInfo
 	bool windowRelative : 1;					// size is a window relative percentage if true, other wise size is an absolute size
 	bool windowTexture : 1;						// texture is supposed to be a backbuffer target
 	bool bindless : 1;
+	bool sparse : 1;							// use sparse memory
 	CoreGraphics::TextureId alias;
 	CoreGraphics::ImageLayout defaultLayout;
 };
@@ -133,10 +138,32 @@ struct TextureCreateInfoAdjusted
 	bool windowTexture : 1;						// texture is meant to be a window back buffer
 	bool windowRelative : 1;					// size is a window relative percentage if true, other wise size is an absolute size
 	bool bindless : 1;
+	bool sparse : 1;							// use sparse memory
 	CoreGraphics::WindowId window;
 	CoreGraphics::TextureId alias;
 	CoreGraphics::ImageLayout defaultLayout;
 };
+
+struct TextureSparsePageSize
+{
+	uint width, height, depth;
+};
+
+struct TextureSparsePageOffset
+{
+	uint x, y, z;
+};
+
+struct TextureSparsePage
+{
+	TextureSparsePageOffset offset;
+	TextureSparsePageSize extent;
+	uint mip;
+	uint layer;
+	uint size;
+	CoreGraphics::Alloc alloc;
+};
+
 
 class MemoryTexturePool;
 extern MemoryTexturePool* texturePool;
@@ -185,6 +212,25 @@ TextureMapInfo TextureMapFace(const TextureId id, IndexT mip, TextureCubeFace fa
 void TextureUnmapFace(const TextureId id, IndexT mip, TextureCubeFace face);
 /// generate mipmaps for texture
 void TextureGenerateMipmaps(const TextureId id);
+
+/// get the texture page size, which is constant for the whole texture
+TextureSparsePageSize TextureSparseGetPageSize(const CoreGraphics::TextureId id);
+/// get the page index at a given coordinate
+IndexT TextureSparseGetPageIndex(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT x, IndexT y, IndexT z);
+/// get texture page
+const TextureSparsePage& TextureSparseGetPage(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex);
+/// get the number of pages for a given layer and mip
+SizeT TextureSparseGetNumPages(const CoreGraphics::TextureId id, IndexT layer, IndexT mip);
+
+/// evict a page
+void TextureSparseEvict(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex);
+/// make a page resident
+void TextureSparseMakeResident(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex);
+/// commit texture sparse page updates
+void TextureSparseCommitChanges(const CoreGraphics::TextureId id);
+
+/// update a region of the sparse texture, make sure to insert barriers before doing this though
+void TextureSparseUpdate(const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, const CoreGraphics::TextureId source, const CoreGraphics::SubmissionContextId sub);
 
 /// helper function to setup RenderTextureInfo, already implemented
 TextureCreateInfoAdjusted TextureGetAdjustedInfo(const TextureCreateInfo& info);

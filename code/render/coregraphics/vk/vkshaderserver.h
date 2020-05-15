@@ -11,7 +11,6 @@
 #include "coregraphics/base/shaderserverbase.h"
 #include "coregraphics/config.h"
 #include "coregraphics/texture.h"
-#include "coregraphics/sparsetexture.h"
 #include "effectfactory.h"
 #include "vkshaderpool.h"
 #include "coregraphics/graphicsdevice.h"
@@ -36,12 +35,8 @@ public:
 	
 	/// register new texture
 	uint32_t RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, bool depth = false, bool stencil = false);
-	/// register new sparse texture
-	uint32_t RegisterTexture(const CoreGraphics::SparseTextureId& tex, CoreGraphics::TextureType type);
 	/// reregister texture
 	void ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, uint32_t slot, bool depth = false, bool stencil = false);
-	/// reregister sparse texture
-	void ReregisterTexture(const CoreGraphics::SparseTextureId& tex, CoreGraphics::TextureType type, uint32_t slot);
 	/// unregister texture
 	void UnregisterTexture(const uint32_t id, const CoreGraphics::TextureType type);
 

@@ -177,7 +177,6 @@ ENDIF()
 				shaperenderer.cc
 				shaperenderer.h
                 sparsebuffer.h
-                sparsetexture.h
 				streammeshpool.cc
 				streammeshpool.h
 				shaderpool.cc
@@ -337,8 +336,6 @@ ENDIF()
 				vkshaperenderer.h
                 vksparsebuffer.cc
                 vksparsebuffer.h
-                vksparsetexture.cc
-                vksparsetexture.h
 				vkshaderpool.cc
 				vkshaderpool.h
                 vksubmissioncontext.cc

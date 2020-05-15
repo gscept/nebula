@@ -9,13 +9,12 @@
 #include "frame/frameplugin.h"
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
-#include "coregraphics/sparsetexture.h"
 
 #include "resources/resourceserver.h"
 
 #include "terrain.h"
 
-//#define USE_SPARSE
+#define USE_SPARSE
 
 namespace Terrain
 {
@@ -30,9 +29,11 @@ struct
 	CoreGraphics::ConstantBufferId constants;
 	Util::Array<CoreGraphics::VertexComponent> components;
 	CoreGraphics::VertexLayoutId vlo;
+	Util::FixedArray<Util::FixedArray<Util::FixedArray<uint>>> pageReferenceCount;
 
-	CoreGraphics::SparseTextureId virtualAlbedoMap;
+	CoreGraphics::TextureId virtualAlbedoMap;
 	SizeT mips;
+	SizeT layers;
 
 } terrainState;
 
@@ -105,7 +106,7 @@ TerrainContext::Create()
 				uniforms.NormalMap = TextureGetBindlessHandle(rt.normalMap);
 				uniforms.DecisionMap = TextureGetBindlessHandle(rt.decisionMap);
 #ifdef USE_SPARSE
-				uniforms.AlbedoMap = SparseTextureGetBindlessHandle(terrainState.virtualAlbedoMap);
+				uniforms.AlbedoMap = TextureGetBindlessHandle(terrainState.virtualAlbedoMap);
 #else
 				uniforms.AlbedoMap = 0;
 #endif
@@ -158,17 +159,35 @@ TerrainContext::Create()
 	// create vlo
 	terrainState.vlo = CreateVertexLayout({ terrainState.components });
 	terrainState.mips = 3;
+	terrainState.layers = 1;
 
 	// create virtual texture for albedo
-	SparseTexureCreateInfo info =
-	{
-		1024, 1024, 1,
-		Texture2D, PixelFormat::R8G8B8A8,
-		terrainState.mips, 1, 1,
-		true
-	};
+	TextureCreateInfo info;
+	info.name = "TerrainAlbedo"_atm;
+	info.tag = "render"_atm;
+	info.width = 1024;
+	info.height = 1024;
+	info.sparse = true;
+	info.mips = terrainState.mips;
+	info.layers = terrainState.layers;
+		
 #ifdef USE_SPARSE
-	terrainState.virtualAlbedoMap = CreateSparseTexture(info);
+	terrainState.virtualAlbedoMap = CreateTexture(info);
+
+	// layers
+	terrainState.pageReferenceCount.Resize(terrainState.layers);
+	for (int i = 0; i < terrainState.layers; i++)
+	{
+		terrainState.pageReferenceCount[i].Resize(terrainState.mips);
+
+		for (int j = 0; j < terrainState.mips; j++)
+		{
+			SizeT numPages = CoreGraphics::TextureSparseGetNumPages(terrainState.virtualAlbedoMap, i, j);
+			terrainState.pageReferenceCount[i][j].Resize(numPages);
+			terrainState.pageReferenceCount[i][j].Fill(0);
+		}
+	}
+	
 #endif
 }
 
@@ -402,6 +421,172 @@ TerrainContext::SetupTerrain(
 //------------------------------------------------------------------------------
 /**
 */
+void
+UpdateSparseTexture(const CoreGraphics::TextureId tex, Math::rectangle<uint> section, float oldMip, float newMip, CoreGraphics::TextureSparsePageSize pageSize)
+{
+	uint oldMipFloored = Math::n_floor(oldMip);
+	uint newMipFloored = Math::n_floor(newMip);
+
+	// if lods don't match, evaluate if we should update the sparse texture
+	if (oldMipFloored != newMipFloored)
+	{
+		// if the mip we are loading is bigger than the one we are using, evict the previous mip
+		if (oldMipFloored != terrainState.mips && newMipFloored > oldMipFloored)
+		{
+			// calculate page ranges offset by mip
+			uint offsetX = section.left >> oldMipFloored;
+			uint rangeX = Math::n_min(section.width() >> oldMipFloored, pageSize.width);
+			uint endX = offsetX + (section.width() >> oldMipFloored);
+
+			uint offsetY = section.top >> oldMipFloored;
+			uint rangeY = Math::n_min(section.height() >> oldMipFloored, pageSize.height);
+			uint endY = offsetY + (section.height() >> oldMipFloored);
+
+			// go through pages and evict
+			for (uint y = offsetY; y < endY; y += rangeY)
+			{
+				for (uint x = offsetX; x < endX; x += rangeX)
+				{
+					uint pageIndex = CoreGraphics::TextureSparseGetPageIndex(tex, 0, oldMipFloored, x, y, 0);
+
+					// decrease the reference count
+					if (terrainState.pageReferenceCount[0][oldMipFloored][pageIndex] > 0)
+					{
+						terrainState.pageReferenceCount[0][oldMipFloored][pageIndex]--;
+
+						// if reference count for this page is 0
+						if (terrainState.pageReferenceCount[0][oldMipFloored][pageIndex] == 0)
+							CoreGraphics::TextureSparseEvict(tex, 0, oldMipFloored, pageIndex);
+					}
+				}
+			}
+		}
+
+		// if we are requesting a higher mip, or we have no mips, make mip resident and update
+		if (newMipFloored < oldMipFloored || oldMipFloored == terrainState.mips)
+		{
+			CoreGraphics::TextureId fillTex;
+			switch (newMipFloored % 3)
+			{
+			case 0:
+				fillTex = CoreGraphics::Green2D;
+				break;
+			case 1:
+				fillTex = CoreGraphics::Blue2D;
+				break;
+			case 2:
+				fillTex = CoreGraphics::Red2D;
+				break;
+			}
+
+			// calculate page ranges offset by mip
+			uint offsetX = section.left >> newMipFloored;
+			uint rangeX = Math::n_min(section.width() >> newMipFloored, pageSize.width);
+			uint endX = offsetX + (section.width() >> newMipFloored);
+
+			uint offsetY = section.top >> newMipFloored;
+			uint rangeY = Math::n_min(section.height() >> newMipFloored, pageSize.height);
+			uint endY = offsetY + (section.height() >> newMipFloored);
+
+			// lock the handover submission because it's on the graphics queue
+			CoreGraphics::LockResourceSubmission();
+			CoreGraphics::SubmissionContextId sub = CoreGraphics::GetHandoverSubmissionContext();
+
+			// insert barrier before starting our blits
+			CoreGraphics::BarrierInsert(
+				CoreGraphics::SubmissionContextGetCmdBuffer(sub),
+				CoreGraphics::BarrierStage::AllGraphicsShaders,
+				CoreGraphics::BarrierStage::Transfer,
+				CoreGraphics::BarrierDomain::Global,
+				{
+					CoreGraphics::TextureBarrier
+					{
+						fillTex,
+						CoreGraphics::ImageSubresourceInfo { CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, 1 },
+						CoreGraphics::ImageLayout::ShaderRead,
+						CoreGraphics::ImageLayout::TransferSource,
+						CoreGraphics::BarrierAccess::ShaderRead,
+						CoreGraphics::BarrierAccess::TransferRead,
+					},
+					CoreGraphics::TextureBarrier
+					{
+						tex,
+						CoreGraphics::ImageSubresourceInfo { CoreGraphics::ImageAspect::ColorBits, newMipFloored, 1, 0, 1 },
+						CoreGraphics::ImageLayout::ShaderRead,
+						CoreGraphics::ImageLayout::TransferDestination,
+						CoreGraphics::BarrierAccess::ShaderRead,
+						CoreGraphics::BarrierAccess::TransferWrite,
+					}
+				},
+				nullptr,
+				nullptr);
+
+			// go through pages and make resident
+			for (uint y = offsetY; y < endY; y += rangeY)
+			{
+				for (uint x = offsetX; x < endX; x += rangeX)
+				{
+					uint pageIndex = CoreGraphics::TextureSparseGetPageIndex(tex, 0, newMipFloored, x, y, 0);
+
+					// if this will be our first reference, make the page resident
+					if (terrainState.pageReferenceCount[0][newMipFloored][pageIndex] == 0)
+					{
+						CoreGraphics::TextureSparseMakeResident(tex, 0, newMipFloored, pageIndex);
+						const CoreGraphics::TextureSparsePage& page = CoreGraphics::TextureSparseGetPage(tex, 0, newMipFloored, pageIndex);
+
+						// if we are allocating the page, fill it immediately because it may contain old data
+						section.left = page.offset.x;
+						section.right = page.offset.x + page.extent.width;
+						section.top = page.offset.y;
+						section.bottom = page.offset.y + page.extent.height;
+					}
+
+					// add a reference count
+					terrainState.pageReferenceCount[0][newMipFloored][pageIndex]++;
+
+					// update the texture
+					CoreGraphics::TextureSparseUpdate(tex, section, newMipFloored, fillTex, sub);
+				}
+			}
+
+			// transfer textures back to being read by shaders
+			CoreGraphics::BarrierInsert(
+				CoreGraphics::SubmissionContextGetCmdBuffer(sub),
+				CoreGraphics::BarrierStage::Transfer,
+				CoreGraphics::BarrierStage::AllGraphicsShaders,
+				CoreGraphics::BarrierDomain::Global,
+				{
+					CoreGraphics::TextureBarrier
+					{
+						fillTex,
+						CoreGraphics::ImageSubresourceInfo { CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, 1 },
+						CoreGraphics::ImageLayout::TransferSource,
+						CoreGraphics::ImageLayout::ShaderRead,
+						CoreGraphics::BarrierAccess::TransferRead,
+						CoreGraphics::BarrierAccess::ShaderRead,
+					},
+					CoreGraphics::TextureBarrier
+					{
+						tex,
+						CoreGraphics::ImageSubresourceInfo { CoreGraphics::ImageAspect::ColorBits, newMipFloored, 1, 0, 1 },
+						CoreGraphics::ImageLayout::TransferDestination,
+						CoreGraphics::ImageLayout::ShaderRead,
+						CoreGraphics::BarrierAccess::TransferWrite,
+						CoreGraphics::BarrierAccess::ShaderRead,
+					}
+				},
+				nullptr,
+				nullptr);
+
+			// unlock handover submission
+			CoreGraphics::UnlockResourceSubmission();
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
@@ -409,6 +594,7 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
 	Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetTransform(view->GetCamera()));
 	const Math::mat4& viewProj = Graphics::CameraContext::GetViewProjection(view->GetCamera());
 	Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
+	CoreGraphics::TextureSparsePageSize pageSize = CoreGraphics::TextureSparseGetPageSize(terrainState.virtualAlbedoMap);
 	for (IndexT i = 0; i < runtimes.Size(); i++)
 	{
 		TerrainRuntimeInfo& rt = runtimes[i];
@@ -419,11 +605,24 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
 #ifdef USE_SPARSE
 			float& currentLod = rt.sectorLod[j];
 
-			Math::rectangle<int> region;
+			Math::rectangle<uint> region;
 			region.left = rt.sectionBoxes[j].pmin.x + rt.worldWidth / 2;
 			region.top = rt.sectionBoxes[j].pmin.z + rt.worldHeight / 2;
 			region.right = rt.sectionBoxes[j].pmax.x + rt.worldWidth / 2;
 			region.bottom = rt.sectionBoxes[j].pmax.z + rt.worldHeight / 2;
+
+			Math::vec4 nearestPoint = Math::clamp(cameraTransform.position, rt.sectionBoxes[j].pmin, rt.sectionBoxes[j].pmax);
+			Math::vec4 eyeToBox = cameraTransform.position - nearestPoint;
+
+			// calculate, assume that at distance 250 we use the lowest lod
+			float dist = Math::n_saturate(length(eyeToBox) / 500.0f);
+			float newLod = dist * (terrainState.mips - 1);
+
+			// get page size and update sparse texture
+			CoreGraphics::TextureSparsePageSize pageSize = CoreGraphics::TextureSparseGetPageSize(terrainState.virtualAlbedoMap);
+			UpdateSparseTexture(terrainState.virtualAlbedoMap, region, currentLod, newLod, pageSize);
+
+			currentLod = newLod;
 
 			// if we can figure out a way to evict memory for sections that are not in the LOS
 			// and also somehow make them load the right lods when we eventually turn back to look at them
@@ -446,7 +645,7 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
 				// reset lod
 				currentLod = (float)terrainState.mips;
 			}
-			else*/
+			else
 			{
 				// calculate nearest point in box for camera
 				Math::vec4 nearestPoint = Math::clamp(cameraTransform.position, rt.sectionBoxes[j].pmin, rt.sectionBoxes[j].pmax);
@@ -491,12 +690,13 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
 				}
 				currentLod = newLod;
 			}
+			*/
 #endif
 		}
 	}
 
 #ifdef USE_SPARSE
-	CoreGraphics::SparseTextureCommitChanges(terrainState.virtualAlbedoMap);
+	CoreGraphics::TextureSparseCommitChanges(terrainState.virtualAlbedoMap);
 #endif
 }
 

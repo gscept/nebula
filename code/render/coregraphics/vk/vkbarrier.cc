@@ -224,4 +224,72 @@ BarrierInsert(
 #endif
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+BarrierInsert(const CoreGraphics::CommandBufferId buf, CoreGraphics::BarrierStage fromStage, CoreGraphics::BarrierStage toStage, CoreGraphics::BarrierDomain domain, const Util::FixedArray<TextureBarrier>& textures, const Util::FixedArray<BufferBarrier>& rwBuffers, const char* name)
+{
+	VkBarrierInfo barrier;
+	barrier.name = name;
+	barrier.srcFlags = VkTypes::AsVkPipelineFlags(fromStage);
+	barrier.dstFlags = VkTypes::AsVkPipelineFlags(toStage);
+	barrier.dep = domain == CoreGraphics::BarrierDomain::Pass ? VK_DEPENDENCY_BY_REGION_BIT : 0;
+	barrier.numBufferBarriers = rwBuffers.Size();
+	for (uint32_t i = 0; i < barrier.numBufferBarriers; i++)
+	{
+		VkBufferMemoryBarrier& vkBar = barrier.bufferBarriers[i];
+		BufferBarrier& nebBar = rwBuffers[i];
+		vkBar.buffer = ShaderRWBufferGetVkBuffer(nebBar.buf);
+		vkBar.srcAccessMask = VkTypes::AsVkResourceAccessFlags(nebBar.fromAccess);
+		vkBar.dstAccessMask = VkTypes::AsVkResourceAccessFlags(nebBar.toAccess);
+		vkBar.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+		vkBar.pNext = nullptr;
+
+		vkBar.offset = nebBar.offset;
+		vkBar.size = (nebBar.size == -1) ? VK_WHOLE_SIZE : nebBar.size;
+
+		vkBar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		vkBar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+		vkBar.pNext = nullptr;
+		vkBar.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+	}
+	barrier.numImageBarriers = textures.Size();
+	IndexT i, j = 0;
+	for (i = 0; i < textures.Size(); i++, j++)
+	{
+		VkImageMemoryBarrier& vkBar = barrier.imageBarriers[j];
+		TextureBarrier& nebBar = textures[i];
+
+		vkBar.srcAccessMask = VkTypes::AsVkResourceAccessFlags(nebBar.fromAccess);
+		vkBar.dstAccessMask = VkTypes::AsVkResourceAccessFlags(nebBar.toAccess);
+
+		const ImageSubresourceInfo& subres = nebBar.subres;
+		vkBar.subresourceRange.aspectMask = VkTypes::AsVkImageAspectFlags(subres.aspect);
+		vkBar.subresourceRange.baseMipLevel = subres.mip;
+		vkBar.subresourceRange.levelCount = subres.mipCount;
+		vkBar.subresourceRange.baseArrayLayer = subres.layer;
+		vkBar.subresourceRange.layerCount = subres.layerCount;
+		vkBar.image = CoreGraphics::TextureGetVkImage(nebBar.tex);
+		vkBar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		vkBar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		vkBar.oldLayout = VkTypes::AsVkImageLayout(nebBar.fromLayout);
+		vkBar.newLayout = VkTypes::AsVkImageLayout(nebBar.toLayout);
+
+		vkBar.pNext = nullptr;
+		vkBar.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	}
+	barrier.numMemoryBarriers = 0; // maybe support this?
+
+	// insert barrier
+	vkCmdPipelineBarrier(CommandBufferGetVk(buf),
+		barrier.srcFlags,
+		barrier.dstFlags,
+		barrier.dep,
+		barrier.numMemoryBarriers, barrier.memoryBarriers,
+		barrier.numBufferBarriers, barrier.bufferBarriers,
+		barrier.numImageBarriers, barrier.imageBarriers);
+}
+
 } // namespace CoreGraphics

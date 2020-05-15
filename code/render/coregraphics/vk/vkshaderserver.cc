@@ -193,60 +193,6 @@ VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics
 //------------------------------------------------------------------------------
 /**
 */
-uint32_t 
-VkShaderServer::RegisterTexture(const CoreGraphics::SparseTextureId& tex, CoreGraphics::TextureType type)
-{
-	uint32_t idx;
-	IndexT var;
-	switch (type)
-	{
-	case Texture2D:
-		n_assert(!this->texture2DPool.IsFull());
-		idx = this->texture2DPool.Alloc();
-		var = this->texture2DTextureVar;
-		break;
-	case Texture2DArray:
-		n_assert(!this->texture2DArrayPool.IsFull());
-		idx = this->texture2DArrayPool.Alloc();
-		var = this->texture2DArrayTextureVar;
-		break;
-	case Texture3D:
-		n_assert(!this->texture3DPool.IsFull());
-		idx = this->texture3DPool.Alloc();
-		var = this->texture3DTextureVar;
-		break;
-	case TextureCube:
-		n_assert(!this->textureCubePool.IsFull());
-		idx = this->textureCubePool.Alloc();
-		var = this->textureCubeTextureVar;
-		break;
-	default:
-		n_error("Should not happen");
-		idx = UINT_MAX;
-		var = InvalidIndex;
-	}
-
-	ResourceTableSparseTexture info;
-	info.tex = tex;
-	info.index = idx;
-	info.sampler = SamplerId::Invalid();
-	info.slot = var;
-
-	// update textures for all tables
-	this->bindResourceCriticalSection.Enter();
-	IndexT i;
-	for (i = 0; i < this->resourceTables.Size(); i++)
-	{
-		ResourceTableSetTexture(this->resourceTables[i], info);
-	}
-	this->bindResourceCriticalSection.Leave();
-
-	return idx;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void 
 VkShaderServer::ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, uint32_t slot, bool depth, bool stencil)
 {
@@ -273,45 +219,6 @@ VkShaderServer::ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphi
 	info.sampler = SamplerId::Invalid();
 	info.isDepth = depth;
 	info.isStencil = stencil;
-	info.slot = var;
-
-	// update textures for all tables
-	this->bindResourceCriticalSection.Enter();
-	IndexT i;
-	for (i = 0; i < this->resourceTables.Size(); i++)
-	{
-		ResourceTableSetTexture(this->resourceTables[i], info);
-	}
-	this->bindResourceCriticalSection.Leave();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-VkShaderServer::ReregisterTexture(const CoreGraphics::SparseTextureId& tex, CoreGraphics::TextureType type, uint32_t slot)
-{
-	IndexT var;
-	switch (type)
-	{
-	case Texture2D:
-		var = this->texture2DTextureVar;
-		break;
-	case Texture2DArray:
-		var = this->texture2DArrayTextureVar;
-		break;
-	case Texture3D:
-		var = this->texture3DTextureVar;
-		break;
-	case TextureCube:
-		var = this->textureCubeTextureVar;
-		break;
-	}
-
-	ResourceTableSparseTexture info;
-	info.tex = tex;
-	info.index = slot;
-	info.sampler = SamplerId::Invalid();
 	info.slot = var;
 
 	// update textures for all tables

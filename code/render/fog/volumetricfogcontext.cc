@@ -583,7 +583,8 @@ VolumetricFogContext::Render()
 				BarrierAccess::ShaderWrite,
 			},
 		},
-		nullptr, "Fog volume update finish barrier");
+		nullptr, 
+		"Fog volume update finish barrier");
 
 
 
@@ -618,7 +619,8 @@ VolumetricFogContext::Render()
 				BarrierAccess::ShaderRead,
 			},
 		},
-		nullptr, "Fog volume update finish barrier");
+		nullptr, 
+		"Fog volume update finish barrier");
 
 	SetShaderProgram(blurState.blurYProgram, GraphicsQueueType);
 	SetResourceTable(blurState.blurYTable[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr, GraphicsQueueType);

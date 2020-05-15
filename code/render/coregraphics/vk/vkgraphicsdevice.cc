@@ -15,7 +15,6 @@
 #include "vkshaderserver.h"
 #include "vkpass.h"
 #include "vkshaderrwbuffer.h"
-#include "vksparsetexture.h"
 #include "vkbarrier.h"
 #include "vkvertexbuffer.h"
 #include "vkindexbuffer.h"
@@ -418,7 +417,8 @@ GetCurrentQueue(const CoreGraphics::QueueType type)
 /**
 */
 void
-InsertBarrier(
+InsertBarrier
+(
 	VkPipelineStageFlags srcFlags,
 	VkPipelineStageFlags dstFlags,
 	VkDependencyFlags dep,
@@ -3568,27 +3568,6 @@ Blit(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegio
 	blit.dstOffsets[1] = { toRegion.right, toRegion.bottom, 1 };
 	blit.dstSubresource = { aspect, (uint32_t)toMip, 0, 1 };
 	vkCmdBlitImage(GetMainBuffer(CoreGraphics::GraphicsQueueType), TextureGetVkImage(from), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, TextureGetVkImage(to), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-Blit(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, IndexT fromMip, const CoreGraphics::SparseTextureId to, const Math::rectangle<SizeT>& toRegion, IndexT toMip)
-{
-	n_assert(from != CoreGraphics::TextureId::Invalid() && to != CoreGraphics::SparseTextureId::Invalid());
-	n_assert(!state.inBeginPass);
-	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
-
-	VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-	VkImageBlit blit;
-	blit.srcOffsets[0] = { fromRegion.left, fromRegion.top, 0 };
-	blit.srcOffsets[1] = { fromRegion.right, fromRegion.bottom, 1 };
-	blit.srcSubresource = { aspect, (uint32_t)fromMip, 0, 1 };
-	blit.dstOffsets[0] = { toRegion.left, toRegion.top, 0 };
-	blit.dstOffsets[1] = { toRegion.right, toRegion.bottom, 1 };
-	blit.dstSubresource = { aspect, (uint32_t)toMip, 0, 1 };
-	vkCmdBlitImage(GetMainBuffer(CoreGraphics::GraphicsQueueType), TextureGetVkImage(from), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, SparseTextureGetVkImage(to), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
 }
 
 //------------------------------------------------------------------------------

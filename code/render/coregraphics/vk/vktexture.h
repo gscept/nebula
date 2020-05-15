@@ -38,9 +38,11 @@ struct VkTextureLoadInfo
     bool windowTexture : 1;						// texture is meant to be a window back buffer
 	bool windowRelative : 1;					// size is a window relative percentage if true, other wise size is an absolute size
 	bool bindless : 1;
-    const void* texBuffer; // used when intially loading a texture from memory. Do not assume ownership of this pointer, this is just an intermediate.
+	bool sparse : 1;							// use sparse memory
+    const void* texBuffer;						// used when intially loading a texture from memory. Do not assume ownership of this pointer, this is just an intermediate.
 	Ids::Id32 swapExtension;
 	Ids::Id32 stencilExtension;
+	Ids::Id32 sparseExtension;
 };
 
 struct VkTextureRuntimeInfo
@@ -108,12 +110,36 @@ extern VkTextureStencilExtensionAllocator textureStencilExtensionAllocator;
 
 enum
 {
-	TextureExtension_SwapInfo,
+	TextureExtension_SwapInfo
 };
 typedef Ids::IdAllocatorSafe<
 	VkTextureSwapInfo
 > VkTextureSwapExtensionAllocator;
 extern VkTextureSwapExtensionAllocator textureSwapExtensionAllocator;
+
+struct TextureSparsePageTable
+{
+	Util::FixedArray<Util::FixedArray<Util::Array<CoreGraphics::TextureSparsePage>>> pages;
+	Util::FixedArray<Util::FixedArray<Util::Array<VkSparseImageMemoryBind>>> pageBindings;
+	Util::FixedArray<Util::FixedArray<Util::FixedArray<uint32_t>>> bindCounts;
+};
+
+enum
+{
+	TextureExtension_SparsePageTable,
+	TextureExtension_SparseMemoryRequirements,
+	TextureExtension_SparseOpaqueBinds,
+	TextureExtension_SparsePendingBinds,
+	TextureExtension_SparseOpaqueAllocs
+};
+typedef Ids::IdAllocatorSafe<
+	TextureSparsePageTable,
+	VkSparseImageMemoryRequirements,
+	Util::Array<VkSparseMemoryBind>,
+	Util::Array<VkSparseImageMemoryBind>,
+	Util::Array<CoreGraphics::Alloc>
+> VkTextureSparseExtensionAllocator;
+extern VkTextureSparseExtensionAllocator textureSparseExtensionAllocator;
 
 /// get Vk image
 const VkImage TextureGetVkImage(const CoreGraphics::TextureId id);
