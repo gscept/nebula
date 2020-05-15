@@ -159,8 +159,8 @@ void OpenScene()
 
     Terrain::TerrainSetupSettings settings{ 
         -25.0f, 25.0f,  // min/max height
-        1024, 1024,     // world size in meters
-        128, 128,       // tile size in meters
+        8192, 8192,     // world size in meters
+        256, 256,       // tile size in meters
         8, 8            // 1 vertex every 8 meters
     };      
     Terrain::TerrainContext::SetupTerrain(terrain, "tex:test/crater_dmap.dds", "tex:test/crater_nmap.dds", "tex:test/crater_cm.dds", settings);

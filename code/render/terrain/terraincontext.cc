@@ -158,15 +158,15 @@ TerrainContext::Create()
 
 	// create vlo
 	terrainState.vlo = CreateVertexLayout({ terrainState.components });
-	terrainState.mips = 3;
+	terrainState.mips = 6;
 	terrainState.layers = 1;
 
 	// create virtual texture for albedo
 	TextureCreateInfo info;
 	info.name = "TerrainAlbedo"_atm;
 	info.tag = "render"_atm;
-	info.width = 1024;
-	info.height = 1024;
+	info.width = 8192;
+	info.height = 8192;
 	info.sparse = true;
 	info.mips = terrainState.mips;
 	info.layers = terrainState.layers;
@@ -422,7 +422,13 @@ TerrainContext::SetupTerrain(
 /**
 */
 void
-UpdateSparseTexture(const CoreGraphics::TextureId tex, Math::rectangle<uint> section, float oldMip, float newMip, CoreGraphics::TextureSparsePageSize pageSize)
+UpdateSparseTexture(
+	const CoreGraphics::TextureId tex, 
+	Math::rectangle<uint> section, 
+	float oldMip, 
+	float newMip, 
+	CoreGraphics::TextureSparsePageSize pageSize, 
+	const CoreGraphics::TextureId source)
 {
 	uint oldMipFloored = Math::n_floor(oldMip);
 	uint newMipFloored = Math::n_floor(newMip);
@@ -465,20 +471,6 @@ UpdateSparseTexture(const CoreGraphics::TextureId tex, Math::rectangle<uint> sec
 		// if we are requesting a higher mip, or we have no mips, make mip resident and update
 		if (newMipFloored < oldMipFloored || oldMipFloored == terrainState.mips)
 		{
-			CoreGraphics::TextureId fillTex;
-			switch (newMipFloored % 3)
-			{
-			case 0:
-				fillTex = CoreGraphics::Green2D;
-				break;
-			case 1:
-				fillTex = CoreGraphics::Blue2D;
-				break;
-			case 2:
-				fillTex = CoreGraphics::Red2D;
-				break;
-			}
-
 			// calculate page ranges offset by mip
 			uint offsetX = section.left >> newMipFloored;
 			uint rangeX = Math::n_min(section.width() >> newMipFloored, pageSize.width);
@@ -501,7 +493,7 @@ UpdateSparseTexture(const CoreGraphics::TextureId tex, Math::rectangle<uint> sec
 				{
 					CoreGraphics::TextureBarrier
 					{
-						fillTex,
+						source,
 						CoreGraphics::ImageSubresourceInfo { CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, 1 },
 						CoreGraphics::ImageLayout::ShaderRead,
 						CoreGraphics::ImageLayout::TransferSource,
@@ -528,6 +520,11 @@ UpdateSparseTexture(const CoreGraphics::TextureId tex, Math::rectangle<uint> sec
 				{
 					uint pageIndex = CoreGraphics::TextureSparseGetPageIndex(tex, 0, newMipFloored, x, y, 0);
 
+					section.left = section.left >> newMipFloored;
+					section.right = section.right >> newMipFloored;
+					section.top = section.top >> newMipFloored;
+					section.bottom = section.bottom >> newMipFloored;
+
 					// if this will be our first reference, make the page resident
 					if (terrainState.pageReferenceCount[0][newMipFloored][pageIndex] == 0)
 					{
@@ -545,7 +542,7 @@ UpdateSparseTexture(const CoreGraphics::TextureId tex, Math::rectangle<uint> sec
 					terrainState.pageReferenceCount[0][newMipFloored][pageIndex]++;
 
 					// update the texture
-					CoreGraphics::TextureSparseUpdate(tex, section, newMipFloored, fillTex, sub);
+					CoreGraphics::TextureSparseUpdate(tex, section, newMipFloored, source, sub);
 				}
 			}
 
@@ -558,7 +555,7 @@ UpdateSparseTexture(const CoreGraphics::TextureId tex, Math::rectangle<uint> sec
 				{
 					CoreGraphics::TextureBarrier
 					{
-						fillTex,
+						source,
 						CoreGraphics::ImageSubresourceInfo { CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, 1 },
 						CoreGraphics::ImageLayout::TransferSource,
 						CoreGraphics::ImageLayout::ShaderRead,
@@ -595,6 +592,7 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
 	const Math::mat4& viewProj = Graphics::CameraContext::GetViewProjection(view->GetCamera());
 	Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
 	CoreGraphics::TextureSparsePageSize pageSize = CoreGraphics::TextureSparseGetPageSize(terrainState.virtualAlbedoMap);
+
 	for (IndexT i = 0; i < runtimes.Size(); i++)
 	{
 		TerrainRuntimeInfo& rt = runtimes[i];
@@ -618,79 +616,25 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
 			float dist = Math::n_saturate(length(eyeToBox) / 500.0f);
 			float newLod = dist * (terrainState.mips - 1);
 
+			CoreGraphics::TextureId fillTex = rt.decisionMap;
+			switch ((uint32_t)newLod % 3)
+			{
+			case 0:
+				fillTex = CoreGraphics::Green2D;
+				break;
+			case 1:
+				fillTex = CoreGraphics::Blue2D;
+				break;
+			case 2:
+				fillTex = CoreGraphics::Red2D;
+				break;
+			}
+
 			// get page size and update sparse texture
 			CoreGraphics::TextureSparsePageSize pageSize = CoreGraphics::TextureSparseGetPageSize(terrainState.virtualAlbedoMap);
-			UpdateSparseTexture(terrainState.virtualAlbedoMap, region, currentLod, newLod, pageSize);
+			UpdateSparseTexture(terrainState.virtualAlbedoMap, region, currentLod, newLod, pageSize, fillTex);
 
 			currentLod = newLod;
-
-			// if we can figure out a way to evict memory for sections that are not in the LOS
-			// and also somehow make them load the right lods when we eventually turn back to look at them
-			// that would be great, but for now, it causes major issues, so lets not do it.
-			/*
-			if (!rt.sectorVisible[j])
-			{
-				if (currentLod != terrainState.mips)
-				{
-					for (int i = 0; i < terrainState.mips; i++)
-					{
-						if (rt.sectorLodResidency[j][i])
-						{
-							CoreGraphics::SparseTextureEvict(terrainState.virtualAlbedoMap, currentLod, region);
-							rt.sectorLodResidency[j][i] = false;
-						}
-					}
-				}
-
-				// reset lod
-				currentLod = (float)terrainState.mips;
-			}
-			else
-			{
-				// calculate nearest point in box for camera
-				Math::vec4 nearestPoint = Math::clamp(cameraTransform.position, rt.sectionBoxes[j].pmin, rt.sectionBoxes[j].pmax);
-				Math::vec4 eyeToBox = cameraTransform.position - nearestPoint;
-
-				// calculate, assume that at distance 250 we use the lowest lod
-				float dist = Math::n_saturate(length(eyeToBox) / 500.0f);
-				float newLod = dist * (terrainState.mips - 1);
-
-				uint32_t currentLodFloored = Math::n_floor(currentLod);
-				uint32_t newLodFloored = Math::n_floor(newLod);
-
-				// if lods don't match, evict previous lod
-				if (currentLodFloored != newLodFloored)
-				{
-					// if the mip we are loading is bigger than the one we are using, evict the previous mip
-					if (currentLod != terrainState.mips && newLodFloored > currentLodFloored)
-					{
-						CoreGraphics::SparseTextureEvict(terrainState.virtualAlbedoMap, currentLodFloored, region);
-					}
-
-					CoreGraphics::TextureId tex;
-					switch (newLodFloored % 3)
-					{
-					case 0:
-						tex = CoreGraphics::Green2D;
-						break;
-					case 1:
-						tex = CoreGraphics::Blue2D;
-						break;
-					case 2:
-						tex = CoreGraphics::Red2D;
-						break;
-					}
-
-					// if we are requesting a higher mip, or we have no mips, make mip resident and update
-					if (newLodFloored < currentLodFloored || currentLod == terrainState.mips)
-					{
-						CoreGraphics::SparseTextureMakeResident(terrainState.virtualAlbedoMap, region, newLodFloored, tex, 0);
-						rt.sectorLodResidency[j][i] = true;
-					}
-				}
-				currentLod = newLod;
-			}
-			*/
 #endif
 		}
 	}

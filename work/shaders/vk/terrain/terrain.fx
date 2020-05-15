@@ -252,7 +252,11 @@ psTerrain(
 {	
 	Material = vec4(0.0f, 1.0f, 0.5f, 0.0f);
 	float LOD = saturate(length(ViewPos) / 500.0f) * (VirtualTextureMips - 1);
-	//Albedo = sample2DLod(AlbedoMap, TextureSampler, UV, 1) + sample2DLod(AlbedoMap, TextureSampler, UV, 0) + sample2DLod(AlbedoMap, TextureSampler, UV, 2);
+	/*
+	Albedo = vec4(0, 0, 0, 0);
+	for (int i = 0; i < VirtualTextureMips; i++)
+		Albedo += sample2DLod(AlbedoMap, TextureSampler, UV, i);
+	*/
 	Albedo = sample2DLod(AlbedoMap, TextureSampler, UV, LOD);
 	Normals = Normal;
 }

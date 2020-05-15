@@ -152,6 +152,8 @@ VkMemoryTexturePool::Unload(const Resources::ResourceId id)
         table.pages.Clear();
         table.bindCounts.Clear();
         table.pageBindings.Clear();
+
+        textureSparseExtensionAllocator.Dealloc(loadInfo.sparseExtension);
     }
     else if (loadInfo.alias == CoreGraphics::TextureId::Invalid() && loadInfo.mem.mem != VK_NULL_HANDLE)
 		Vulkan::DelayedFreeMemory(loadInfo.mem);
@@ -1179,9 +1181,6 @@ SetupSparse(VkDevice dev, VkImage img, Ids::Id32 sparseExtension, const VkTextur
     VkResult res = GetMemoryType(memoryReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memtype);
     n_assert(res == VK_SUCCESS);
 
-    uint32_t sparseBindsCount = memoryReqs.size / memoryReqs.alignment;
-    Util::FixedArray<VkSparseMemoryBind> sparseMemoryBinds(sparseBindsCount);
-
     VkSparseImageMemoryRequirements sparseMemoryRequirement = sparseMemoryRequirements[usedMemoryRequirements];
     bool singleMipTail = sparseMemoryRequirement.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT;
 
@@ -1308,6 +1307,8 @@ SetupSparse(VkDevice dev, VkImage img, Ids::Id32 sparseExtension, const VkTextur
         // add memory bind to update queue
         opaqueBinds.Append(sparseBind);
     }
+
+    n_delete_array(sparseMemoryRequirements);
 }
 
 } // namespace Vulkan
