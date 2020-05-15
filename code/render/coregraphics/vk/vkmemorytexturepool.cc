@@ -123,8 +123,37 @@ VkMemoryTexturePool::Unload(const Resources::ResourceId id)
         textureSwapExtensionAllocator.Dealloc(loadInfo.swapExtension);
     }
 
-	// only free memory if texture is not aliased!
-	if (loadInfo.alias == CoreGraphics::TextureId::Invalid() && loadInfo.mem.mem != VK_NULL_HANDLE)
+    // if sparse, run through and dealloc pages
+    if (loadInfo.sparse)
+    {
+        // dealloc all opaque bindings
+        Util::Array<CoreGraphics::Alloc>& allocs = textureSparseExtensionAllocator.Get<TextureExtension_SparseOpaqueAllocs>(loadInfo.sparseExtension);
+        for (IndexT i = 0; i < allocs.Size(); i++)
+            Vulkan::DelayedFreeMemory(allocs[i]);
+
+        // clear all pages
+        TextureSparsePageTable& table = textureSparseExtensionAllocator.Get<TextureExtension_SparsePageTable>(loadInfo.sparseExtension);
+        for (IndexT layer = 0; layer < table.pages.Size(); layer++)
+        {
+            for (IndexT mip = 0; mip < table.pages[layer].Size(); mip++)
+            {
+                Util::Array<TextureSparsePage>& pages = table.pages[layer][mip];
+                for (IndexT pageIdx = 0; pageIdx < pages.Size(); pageIdx++)
+                {
+                    if (pages[pageIdx].alloc.mem != VK_NULL_HANDLE)
+                    {
+                        Vulkan::DelayedFreeMemory(pages[pageIdx].alloc);
+                        pages[pageIdx].alloc.mem = VK_NULL_HANDLE;
+                        pages[pageIdx].alloc.offset = 0;
+                    }
+                }
+            }
+        }
+        table.pages.Clear();
+        table.bindCounts.Clear();
+        table.pageBindings.Clear();
+    }
+    else if (loadInfo.alias == CoreGraphics::TextureId::Invalid() && loadInfo.mem.mem != VK_NULL_HANDLE)
 		Vulkan::DelayedFreeMemory(loadInfo.mem);
 
     // only unload a texture which isn't a window texture, since their textures come from the swap chain
