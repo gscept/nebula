@@ -152,12 +152,12 @@ VkSubContextHandler::AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCo
 	if (semaphore)
 	{
 		// add signal
-		sub.signalSemaphores.Append(this->semaphores[this->queueFamilies[type]]);
-		this->semaphoreSubmissionIds[this->queueFamilies[type]]++;
-		sub.signalIndices.Append(this->semaphoreSubmissionIds[this->queueFamilies[type]]);
+		sub.signalSemaphores.Append(this->semaphores[type]);
+		this->semaphoreSubmissionIds[type]++;
+		sub.signalIndices.Append(this->semaphoreSubmissionIds[type]);
 	}
 	
-	return this->semaphoreSubmissionIds[this->queueFamilies[type]];
+	return this->semaphoreSubmissionIds[type];
 }
 
 //------------------------------------------------------------------------------
@@ -166,7 +166,7 @@ VkSubContextHandler::AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCo
 void 
 VkSubContextHandler::AppendWaitTimeline(CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, CoreGraphics::QueueType waitQueue)
 {
-	TimelineSubmission& sub = this->timelineSubmissions[this->queueFamilies[type]].Back();
+	TimelineSubmission& sub = this->timelineSubmissions[type].Back();
 
 	n_assert(waitQueue != CoreGraphics::InvalidQueueType);
 	uint payload = this->semaphoreSubmissionIds[this->queueFamilies[waitQueue]];
@@ -215,15 +215,15 @@ VkSubContextHandler::AppendSparseBind(CoreGraphics::QueueType type, const VkImag
 	}
 
 	// add signal
-	submission.signalSemaphores.Append(this->semaphores[this->queueFamilies[type]]);
-	this->semaphoreSubmissionIds[this->queueFamilies[type]]++;
-	submission.signalIndices.Append(this->semaphoreSubmissionIds[this->queueFamilies[type]]);
+	submission.signalSemaphores.Append(this->semaphores[type]);
+	this->semaphoreSubmissionIds[type]++;
+	submission.signalIndices.Append(this->semaphoreSubmissionIds[type]);
 
 	// add wait
 	submission.waitSemaphores.Append(this->semaphores[CoreGraphics::GraphicsQueueType]);
 	submission.waitIndices.Append(this->semaphoreSubmissionIds[CoreGraphics::GraphicsQueueType]);
 
-	return this->semaphoreSubmissionIds[this->queueFamilies[type]];
+	return this->semaphoreSubmissionIds[type];
 }
 
 //------------------------------------------------------------------------------
@@ -232,7 +232,7 @@ VkSubContextHandler::AppendSparseBind(CoreGraphics::QueueType type, const VkImag
 void 
 VkSubContextHandler::AppendWaitTimeline(CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, VkSemaphore waitSemaphore)
 {
-	TimelineSubmission& sub = this->timelineSubmissions[this->queueFamilies[type]].Back();
+	TimelineSubmission& sub = this->timelineSubmissions[type].Back();
 
 	sub.waitIndices.Append(0);
 	sub.waitSemaphores.Append(waitSemaphore);
@@ -245,7 +245,7 @@ VkSubContextHandler::AppendWaitTimeline(CoreGraphics::QueueType type, VkPipeline
 void 
 VkSubContextHandler::AppendSignalTimeline(CoreGraphics::QueueType type, VkSemaphore signalSemaphore)
 {
-	TimelineSubmission& sub = this->timelineSubmissions[this->queueFamilies[type]].Back();
+	TimelineSubmission& sub = this->timelineSubmissions[type].Back();
 
 	sub.signalIndices.Append(0);
 	sub.signalSemaphores.Append(signalSemaphore);
@@ -257,7 +257,7 @@ VkSubContextHandler::AppendSignalTimeline(CoreGraphics::QueueType type, VkSemaph
 uint64 
 VkSubContextHandler::FlushSubmissionsTimeline(CoreGraphics::QueueType type, VkFence fence)
 {
-	Util::Array<TimelineSubmission>& submissions = this->timelineSubmissions[this->queueFamilies[type]];
+	Util::Array<TimelineSubmission>& submissions = this->timelineSubmissions[type];
 	uint64 ret = 0;
 
 	// skip flush if submission list is empty
@@ -321,7 +321,7 @@ VkSubContextHandler::FlushSubmissionsTimeline(CoreGraphics::QueueType type, VkFe
 uint64 
 VkSubContextHandler::GetTimelineIndex(CoreGraphics::QueueType type)
 {
-	return this->semaphoreSubmissionIds[this->queueFamilies[type]];
+	return this->semaphoreSubmissionIds[type];
 }
 
 //------------------------------------------------------------------------------
@@ -337,7 +337,7 @@ VkSubContextHandler::Wait(CoreGraphics::QueueType type, uint64 index)
 		nullptr,
 		0,
 		1,
-		&this->semaphores[this->queueFamilies[type]],
+		&this->semaphores[type],
 		&index
 	};
 	VkResult res = vkWaitSemaphores(this->device, &waitInfo, UINT64_MAX);
