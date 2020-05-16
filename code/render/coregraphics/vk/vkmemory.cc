@@ -222,6 +222,41 @@ namespace Vulkan
 {
 
 using namespace CoreGraphics;
+
+// undefine when we know all memory allocations are acceptable
+#define VK_MEMORY_TEST_TYPE 1
+#if VK_MEMORY_TEST_TYPE
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+TestMemoryType(VkMemoryRequirements req, VkMemoryPropertyFlags flags)
+{
+	VkPhysicalDeviceMemoryProperties props = Vulkan::GetMemoryProperties();
+	uint32_t bits = req.memoryTypeBits;
+	for (uint32_t i = 0; i < VK_MAX_MEMORY_TYPES; i++)
+	{
+		if ((bits & 1) == 1)
+		{
+			if ((props.memoryTypes[i].propertyFlags & flags) == flags)
+			{
+				return true;
+			}
+		}
+		bits >>= 1;
+	}
+	return false;
+}
+#else
+//------------------------------------------------------------------------------
+/**
+*/
+bool TestMemoryType(VkMemoryRequirements req, VkMemoryPropertyFlags flags)
+{
+	return true;
+}
+#endif
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -244,14 +279,14 @@ AllocateMemory(const VkDevice dev, const VkImage& img, MemoryPoolType type)
 		mem = ImageLocalPool.mem;
 		method = &ImageLocalPool.method;
 		size = ImageLocalPool.size;
-		n_assert(req.memoryTypeBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		n_assert(TestMemoryType(req, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 		break;
 	case ImageMemory_Temporary:
 		ranges = &ImageTemporaryPool.ranges;
 		mem = ImageTemporaryPool.mem;
 		method = &ImageTemporaryPool.method;
 		size = ImageTemporaryPool.size;
-		n_assert(req.memoryTypeBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		n_assert(TestMemoryType(req, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 		break;
 	default:
 		n_crash("AllocateMemory(): Only image pool types are allowed for image memory");
@@ -288,28 +323,28 @@ AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type)
 		mem = BufferLocalPool.mem;
 		method = &BufferLocalPool.method;
 		size = BufferLocalPool.size;
-		n_assert(req.memoryTypeBits & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		n_assert(TestMemoryType(req, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 		break;
 	case BufferMemory_Temporary:
 		ranges = &BufferTemporaryPool.ranges;
 		mem = BufferTemporaryPool.mem;
 		method = &BufferTemporaryPool.method;
 		size = BufferTemporaryPool.size;
-		n_assert(req.memoryTypeBits & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		n_assert(TestMemoryType(req, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 		break;
 	case BufferMemory_Dynamic:
 		ranges = &BufferDynamicPool.ranges;
 		mem = BufferDynamicPool.mem;
 		method = &BufferDynamicPool.method;
 		size = BufferDynamicPool.size;
-		n_assert(req.memoryTypeBits & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT));
+		n_assert(TestMemoryType(req, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT));
 		break;
 	case BufferMemory_Mapped:
 		ranges = &BufferMappedPool.ranges;
 		mem = BufferMappedPool.mem;
 		method = &BufferMappedPool.method;
 		size = BufferMappedPool.size;
-		n_assert(req.memoryTypeBits & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+		n_assert(TestMemoryType(req, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 		break;
 	default:
 		n_crash("AllocateMemory(): Only buffer pool types are allowed for buffer memory");

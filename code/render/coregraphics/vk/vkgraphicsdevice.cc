@@ -790,10 +790,11 @@ SetVkScissorRects(VkRect2D* scissors, SizeT num)
 /**
 */
 void 
-SparseTextureBind(const VkBindSparseInfo& bindInfo)
+SparseTextureBind(const VkImage img, const Util::Array<VkSparseMemoryBind>& opaqueBinds, const Util::Array<VkSparseImageMemoryBind>& pageBinds)
 {
-	state.subcontextHandler.SubmitBindSparseTimeline(CoreGraphics::SparseQueueType, bindInfo);
+	state.subcontextHandler.AppendSparseBind(CoreGraphics::SparseQueueType, img, opaqueBinds, pageBinds);
 	state.sparseSubmitActive = true;
+	state.sparseWaitHandled = false;
 }
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -1054,17 +1055,18 @@ NebulaVulkanErrorDebugCallback(
 	const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
 	void* userData)
 {
-	const char* ignore[] =
+	const int ignore[] =
 	{
-		"VUID-VkDescriptorImageInfo-imageLayout-00344",
-		"UNASSIGNED-CoreValidation-DrawState-DescriptorSetNotUpdated",
-		"UNASSIGNED-CoreValidation-DrawState-InvalidImageLayout",
-		"UNASSIGNED-vkCmdExecuteCommands-commandBuffer-00001"
+		307231540,
+		-90772850,
+		-564812795,
+		1345731725,
+		1303270965
 	};
 
-	for (IndexT i = 0; i < sizeof(ignore) / sizeof(const char*); i++)
+	for (IndexT i = 0; i < sizeof(ignore) / sizeof(int); i++)
 	{
-		if (strcmp(callbackData->pMessageIdName, ignore[i]) == 0) 
+		if (callbackData->messageIdNumber == ignore[i])
 			return VK_FALSE;
 	}
 
@@ -1526,6 +1528,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.handoverSubmissionActive = false;
 
 	state.sparseSubmitActive = false;
+	state.sparseWaitHandled = true;
 
 	// create main-queue setup submission context (forced to be beginning of frame when relevant)
 	cmdCreateInfo.pool = state.submissionGraphicsCmdPool;
@@ -2118,6 +2121,18 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
 		"Transfer",
 		"Sparse"
 	};
+
+	// if we have a pending sparse submit, let the graphics wait for the sparse to finish
+	if (queue == CoreGraphics::GraphicsQueueType && state.sparseWaitHandled)
+	{
+		state.subcontextHandler.AppendWaitTimeline(
+			CoreGraphics::GraphicsQueueType,
+			VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+			CoreGraphics::SparseQueueType
+		);
+
+		state.sparseWaitHandled = true;
+	}
 
 	// insert some markers explaining the queue synchronization, the +1 is because it will be the submission index on EndSubmission
 	if (waitQueue != InvalidQueueType)
@@ -3192,6 +3207,12 @@ EndFrame(IndexT frameIndex)
 
 	_ProcessQueriesEndFrame();
 
+	if (state.sparseSubmitActive)
+	{
+		state.subcontextHandler.FlushSparseBinds(nullptr);
+		state.sparseSubmitActive = false;
+	}
+
 	// if we have an active resource submission, submit it!
 	LockResourceSubmission();
 	if (state.resourceSubmissionActive)
@@ -3248,16 +3269,6 @@ EndFrame(IndexT frameIndex)
 		state.handoverSubmissionActive = false;
 	}
 	UnlockResourceSubmission();
-
-	if (state.sparseSubmitActive)
-	{
-		state.subcontextHandler.AppendWaitTimeline(
-			GraphicsQueueType,
-			VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-			SparseQueueType
-		);
-		state.sparseSubmitActive = false;
-	}
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_ORANGE, "Compute");

@@ -91,7 +91,7 @@ void SetVkViewports(VkViewport* viewports, SizeT num);
 void SetVkScissorRects(VkRect2D* scissors, SizeT num);
 
 /// perform a set of sparse bind operations
-void SparseTextureBind(const VkBindSparseInfo& bindInfo);
+void SparseTextureBind(const VkImage img, const Util::Array<VkSparseMemoryBind>& opaqueBinds, const Util::Array<VkSparseImageMemoryBind>& pageBinds);
 
 /// begin command buffer marker (directly on vkcommandbuffer)
 void CommandBufferBeginMarker(VkCommandBuffer buf, const Math::vec4& color, const char* name);
