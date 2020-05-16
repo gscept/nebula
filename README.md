@@ -66,6 +66,8 @@ A lot of effort has been made to the Nebula rendering subsystem, where we curren
 * Vulkan.
 * Tonemapping.
 * Asynchronous compute.
+* Virtual texturing using sparse binding.
+* Fast and conservative GPU memory allocation.
 
 ## Screenshots
 Deferred Lighting using 3D clustering and GPU culling.
