@@ -13,6 +13,7 @@
 #include "util/fixedarray.h"
 #include "ids/idallocator.h"
 #include "coregraphics/commandbuffer.h"
+#include "vkmemory.h"
 namespace Vulkan
 {
 
@@ -20,14 +21,14 @@ enum
 {
 	SubmissionContext_NumCycles,
 	SubmissionContext_CmdBuffer,
+	SubmissionContext_TimelineIndex,
 	SubmissionContext_RetiredCmdBuffer,
-	SubmissionContext_Fence,
 	SubmissionContext_FreeBuffers,
-	SubmissionContext_FreeDeviceMemories,
 	SubmissionContext_FreeImages,
 	SubmissionContext_FreeCommandBuffers,
 	SubmissionContext_ClearCommandBuffers,
 	SubmissionContext_FreeHostMemories,
+	SubmissionContext_FreeMemories,
 	SubmissionContext_CurrentIndex,
 	SubmissionContext_CmdCreateInfo,
 	SubmissionContext_Name
@@ -36,32 +37,35 @@ enum
 typedef Ids::IdAllocator<
 	SizeT,
 	Util::FixedArray<CoreGraphics::CommandBufferId>,
+	Util::FixedArray<uint64>,
 	Util::FixedArray<Util::Array<CoreGraphics::CommandBufferId>>,
-	Util::FixedArray<CoreGraphics::FenceId>,
 	Util::FixedArray<Util::Array<std::tuple<VkDevice, VkBuffer>>>,
-	Util::FixedArray<Util::Array<std::tuple<VkDevice, VkDeviceMemory>>>,
 	Util::FixedArray<Util::Array<std::tuple<VkDevice, VkImage>>>,
 	Util::FixedArray<Util::Array<CoreGraphics::CommandBufferId>>,
 	Util::FixedArray<Util::Array<CoreGraphics::CommandBufferId>>,
 	Util::FixedArray<Util::Array<void*>>,
+	Util::FixedArray<Util::Array<CoreGraphics::Alloc>>,
 	IndexT,
 	CoreGraphics::CommandBufferCreateInfo,
 	Util::String
 > SubmissionContextAllocator;
 extern SubmissionContextAllocator submissionContextAllocator;
 
-
-/// FIXME, change these to be non-vulkan specific types and move them to generic submissioncontext
-
+/// TODO: make these generic
 /// add buffer for deletion
 void SubmissionContextFreeBuffer(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkBuffer buf);
-/// add memory for deletion
-void SubmissionContextFreeDeviceMemory(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkDeviceMemory mem);
 /// add image for deletion
 void SubmissionContextFreeImage(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkImage img);
 /// add command buffer for deletion
 void SubmissionContextFreeCommandBuffer(const CoreGraphics::SubmissionContextId id, const CoreGraphics::CommandBufferId cmd);
 /// add command buffer for reset
 void SubmissionContextClearCommandBuffer(const CoreGraphics::SubmissionContextId id, const CoreGraphics::CommandBufferId cmd);
+/// add a memory alloc for freeing
+void SubmissionContextFreeMemory(const CoreGraphics::SubmissionContextId id, const CoreGraphics::Alloc& alloc);
+
+/// set the submission timeline index for this cycle
+void SubmissionContextSetTimelineIndex(const CoreGraphics::SubmissionContextId id, uint64 index);
+/// get the submission timline index for the previous cycle
+uint64 SubmissionContextGetTimelineIndex(const CoreGraphics::SubmissionContextId id);
 
 } // namespace Vulkan

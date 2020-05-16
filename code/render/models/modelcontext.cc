@@ -62,7 +62,7 @@ ModelContext::Create()
 /**
 */
 void
-ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::ResourceName& name, const Util::StringAtom& tag)
+ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback)
 {
 	const ContextEntityId cid = GetContextId(gfxId);
     modelContextAllocator.Get<Model_InstanceId>(cid.id) = ModelInstanceId::Invalid();
@@ -70,23 +70,28 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 	ResourceCreateInfo info;
 	info.resource = name;
 	info.tag = tag;
-	info.async = false;
-	info.failCallback = nullptr;
+	info.async = true;
+	info.successCallback = [cid, gfxId, finishedCallback](Resources::ResourceId mid)
+	{
+		modelContextAllocator.Get<Model_Id>(cid.id) = mid;
+		ModelInstanceId& mdl = modelContextAllocator.Get<Model_InstanceId>(cid.id);
+		mdl = Models::CreateModelInstance(mid);
+		const Math::mat4& pending = modelContextAllocator.Get<Model_Transform>(cid.id);
+		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::InstanceTransform>(mdl.instance) = pending;
+		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(mdl.instance) = gfxId.id;
+		if (finishedCallback != nullptr)
+			finishedCallback();
+	};
+	info.failCallback = info.successCallback;
 
 	ModelId mid = Models::CreateModel(info);
-	modelContextAllocator.Get<Model_Id>(cid.id) = mid;
-	ModelInstanceId& mdl = modelContextAllocator.Get<Model_InstanceId>(cid.id);
-	mdl = Models::CreateModelInstance(mid);
-	const Math::mat4& pending = modelContextAllocator.Get<Model_Transform>(cid.id);
-	Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::InstanceTransform>(mdl.instance) = pending;
-	Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(mdl.instance) = gfxId.id;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-ModelContext::ChangeModel(const Graphics::GraphicsEntityId gfxId, const Resources::ResourceName& name, const Util::StringAtom& tag)
+ModelContext::ChangeModel(const Graphics::GraphicsEntityId gfxId, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback)
 {
 	const ContextEntityId cid = GetContextId(gfxId);
 
@@ -104,14 +109,16 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId gfxId, const Resource
 	info.resource = name;
 	info.tag = tag;
 	info.async = false;
-	info.failCallback = nullptr;
-	info.successCallback = [&mdl, rid, cid, gfxId](Resources::ResourceId id)
+	info.successCallback = [&mdl, cid, gfxId, finishedCallback](Resources::ResourceId mid)
 	{
-		mdl = Models::CreateModelInstance(id);
+		modelContextAllocator.Get<Model_Id>(cid.id) = mid;
+		ModelInstanceId& mdl = modelContextAllocator.Get<Model_InstanceId>(cid.id);
 		const Math::mat4& pending = modelContextAllocator.Get<Model_Transform>(cid.id);
 		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::InstanceTransform>(mdl.instance) = pending;
 		Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(mdl.instance) = gfxId.id;
+		finishedCallback();
 	};
+	info.failCallback = info.successCallback;
 
 	rid = Models::CreateModel(info);
 }
@@ -161,7 +168,6 @@ void
 ModelContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4& transform)
 {
 	const ContextEntityId cid = GetContextId(id);
-	ModelInstanceId& inst = modelContextAllocator.Get<Model_InstanceId>(cid.id);
 	Math::mat4& pending = modelContextAllocator.Get<Model_Transform>(cid.id);
 	bool& hasPending = modelContextAllocator.Get<Model_Dirty>(cid.id);
 	pending = transform;
@@ -175,7 +181,6 @@ Math::mat4
 ModelContext::GetTransform(const Graphics::GraphicsEntityId id)
 {
 	const ContextEntityId cid = GetContextId(id);
-	ModelInstanceId& inst = modelContextAllocator.Get<Model_InstanceId>(cid.id);
 	return modelContextAllocator.Get<Model_Transform>(cid.id);
 }
 
@@ -322,6 +327,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 		// calculate view vector to calculate LOD
 		Math::vec4 viewVector = cameraTransform.position - transforms[instance.instance].position;
 		float viewDistance = length(viewVector);
+		float textureLod = viewDistance - 38.5f;
 
 		// nodes are allocated breadth first, so just going through the list will guarantee the hierarchy is traversed in proper order
 		SizeT j;
@@ -349,7 +355,12 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 			if ((bits[j] & HasStateBit) == HasStateBit)
 			{
 				ShaderStateNode::Instance* snode = reinterpret_cast<ShaderStateNode::Instance*>(node);
+				ShaderStateNode* pnode = reinterpret_cast<ShaderStateNode*>(node->node);
+				if (!snode->active)
+					continue;
+
 				snode->SetDirty(true);
+				pnode->SetMaxLOD(textureLod);
 			}
 		}
 	}

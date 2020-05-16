@@ -196,6 +196,15 @@ void BarrierInsert(
 	const Util::FixedArray<TextureBarrier>& textures, 
 	const Util::FixedArray<BufferBarrier>& rwBuffers, 
 	const char* name = nullptr);
+/// create and insert a barrier into a command buffer
+void BarrierInsert(
+	const CoreGraphics::CommandBufferId buf,
+	CoreGraphics::BarrierStage fromStage,
+	CoreGraphics::BarrierStage toStage,
+	CoreGraphics::BarrierDomain domain,
+	const Util::FixedArray<TextureBarrier>& textures,
+	const Util::FixedArray<BufferBarrier>& rwBuffers,
+	const char* name = nullptr);
 
 //------------------------------------------------------------------------------
 /**

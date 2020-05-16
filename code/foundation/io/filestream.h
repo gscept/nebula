@@ -54,9 +54,14 @@ public:
     virtual void* Map();
     /// unmap stream
     virtual void Unmap();
+    /// memory map stream to memory
+    virtual void* MemoryMap() override;
+    /// unmap memory stream 
+    virtual void MemoryUnmap()override;
 
 protected:
     FSWrapper::Handle handle;
+    FSWrapper::Handle mapHandle;
     void* mappedContent;
 };
 

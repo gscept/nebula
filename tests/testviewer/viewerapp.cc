@@ -34,6 +34,8 @@
 #include "posteffects/ssrcontext.h"
 #include "posteffects/tonemapcontext.h"
 
+#include "terrain/terraincontext.h"
+
 #include "imgui.h"
 
 using namespace Timing;
@@ -147,6 +149,8 @@ SimpleViewerApplication::Open()
         PostEffects::SSAOContext::Create();
         PostEffects::SSRContext::Create();
         PostEffects::TonemapContext::Create();
+
+        Terrain::TerrainContext::Create();
 
 		this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
 		this->stage = gfxServer->CreateStage("stage1", true);

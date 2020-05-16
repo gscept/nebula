@@ -44,7 +44,10 @@ enum IdType
 	ResourcePipelineIdType,
 	SamplerIdType,
 	MaterialIdType,
-	SubmissionContextIdType
+	SubmissionContextIdType,
+	ImageIdType,
+	SparseBufferIdType,
+	SparseTextureIdType
 };
 
 enum QueueType
@@ -53,9 +56,10 @@ enum QueueType
 	ComputeQueueType,
 	TransferQueueType,
 	SparseQueueType,
-	InvalidQueueType,
 
-	NumQueueTypes
+	NumQueueTypes,
+
+	InvalidQueueType
 };
 
 enum ShaderVisibility
@@ -107,14 +111,6 @@ enum GlobalConstantBufferType
 	NumConstantBufferTypes
 };
 
-enum VertexBufferMemoryType
-{
-	MainThreadVertexMemory,
-	VisibilityThreadVertexMemory,
-
-	NumVertexBufferMemoryTypes
-};
-
 enum QueryType
 {
 	OcclusionQuery,
@@ -131,8 +127,9 @@ enum QueryType
 
 enum BufferUpdateMode
 {
-	HostWriteable,              // host can write to the buffer
-	DeviceWriteable             // only device can write to the buffer
+	HostWriteable,      // host can write to the buffer, but needs to flush to make the updates visible on the GPU
+	HostMapped,			// GPU memory is mapped to CPU memory which makes the memory immediately visible
+	DeviceLocal			// memory lives on the GPU, and the GPU has full access
 };
 
 //------------------------------------------------------------------------------

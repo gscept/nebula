@@ -60,6 +60,7 @@ _DEC_VK(vkDestroySwapchainKHR);
 _DEC_VK(vkQueuePresentKHR);
 
 _DEC_VK(vkQueueSubmit);
+_DEC_VK(vkQueueBindSparse);
 _DEC_VK(vkQueueWaitIdle);
 
 _DEC_VK(vkEnumerateDeviceExtensionProperties);
@@ -80,6 +81,8 @@ _DEC_VK(vkGetPhysicalDeviceFeatures);
 _DEC_VK(vkGetPhysicalDeviceQueueFamilyProperties);
 _DEC_VK(vkGetPhysicalDeviceMemoryProperties);
 _DEC_VK(vkGetPhysicalDeviceFormatProperties);
+_DEC_VK(vkGetPhysicalDeviceSparseImageFormatProperties);
+_DEC_VK(vkGetImageSparseMemoryRequirements);
 
 // command buffer
 _DEC_VK(vkCmdDraw);
@@ -122,6 +125,7 @@ _DEC_VK(vkDestroyFence);
 _DEC_VK(vkResetFences);
 _DEC_VK(vkGetFenceStatus);
 _DEC_VK(vkWaitForFences);
+_DEC_VK(vkWaitSemaphores);
 
 _DEC_VK(vkCreateRenderPass);
 _DEC_VK(vkDestroyRenderPass);

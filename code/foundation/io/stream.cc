@@ -329,6 +329,31 @@ Stream::Unmap()
 
 //------------------------------------------------------------------------------
 /**
+*/
+void* 
+Stream::MemoryMap()
+{
+    n_assert(this->IsOpen());
+    n_assert(this->CanBeMapped());
+    n_assert(!this->isMapped);
+    this->isMapped = true;
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+Stream::MemoryUnmap()
+{
+    n_assert(this->IsOpen());
+    n_assert(this->CanBeMapped());
+    n_assert(this->isMapped);
+    this->isMapped = false;
+}
+
+//------------------------------------------------------------------------------
+/**
     Returns true if the stream is currently mapped.
 */
 bool

@@ -3,7 +3,9 @@
 // (C)2017-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
+#include "io/ioserver.h"
 #include "resourceloaderthread.h"
+#include "profiling/profiling.h"
 
 namespace Resources
 {
@@ -32,8 +34,10 @@ ResourceLoaderThread::~ResourceLoaderThread()
 void
 ResourceLoaderThread::DoWork()
 {
+	Profiling::ProfilingRegisterThread();
 	Util::Array<std::function<void()>> arr;
 	arr.Reserve(1000);
+	this->ioServer = IO::IoServer::Create();
 	while (!this->ThreadStopRequested())
 	{
 		this->completeEvent.Reset();

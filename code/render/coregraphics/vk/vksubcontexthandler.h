@@ -68,7 +68,7 @@ public:
 	void SetToNextContext(const CoreGraphics::QueueType type);
 
 	/// append submission to context to execute later, supports waiting for a queue
-	void AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCommandBuffer cmds, bool semaphore = true);
+	uint64 AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCommandBuffer cmds, bool semaphore = true);
 	/// append a wait on the current submission of a specific queue
 	void AppendWaitTimeline(CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, CoreGraphics::QueueType waitQueue);
 	/// append a wait on a binary semaphore
@@ -79,21 +79,15 @@ public:
 	uint64 FlushSubmissionsTimeline(CoreGraphics::QueueType type, VkFence fence);
 	/// get timeline index
 	uint64 GetTimelineIndex(CoreGraphics::QueueType type);
+	/// wait for timeline index
+	void Wait(CoreGraphics::QueueType type, uint64 index);
 
-	/// add submission to context, but don't really execute
-	void AppendSubmission(CoreGraphics::QueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag, VkSemaphore signalSemaphore);
-	/// add another wait to the previous submission
-	void AddWaitSemaphore(CoreGraphics::QueueType type, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlag);
-	/// add semaphore to signal
-	void AddSignalSemaphore(CoreGraphics::QueueType type, VkSemaphore signalSemaphore);
 	/// flush submissions and send to GPU as one submit call
 	void FlushSubmissions(CoreGraphics::QueueType type, VkFence fence);
 
-	/// submit only a fence
-	void SubmitFence(CoreGraphics::QueueType type, VkFence fence);
 
-	/// submit immediately
-	void SubmitImmediate(CoreGraphics::QueueType type, VkCommandBuffer cmds, VkSemaphore waitSemaphore, VkPipelineStageFlags waitFlags, VkSemaphore signalSemaphore, VkFence fence, bool waitImmediately);
+	/// append sparse bind operation
+	void SubmitBindSparseTimeline(CoreGraphics::QueueType type, const VkBindSparseInfo& info);
 
 	/// wait for a queue to finish working
 	void WaitIdle(const CoreGraphics::QueueType type);
@@ -121,7 +115,7 @@ private:
 
 	bool queueEmpty[CoreGraphics::NumQueueTypes];
 	VkSemaphore semaphores[CoreGraphics::NumQueueTypes];
-	uint semaphoreSubmissionIds[CoreGraphics::NumQueueTypes];
+	uint64 semaphoreSubmissionIds[CoreGraphics::NumQueueTypes];
 
 	Util::FixedArray<Util::Array<Submission>> submissions;
 	Submission* lastSubmissions[CoreGraphics::NumQueueTypes];

@@ -253,7 +253,7 @@ LightContext::Create()
 	{
 		"LightIndexListsBuffer",
 		sizeof(LightsCluster::LightIndexLists),
-		BufferUpdateMode::DeviceWriteable,
+		BufferUpdateMode::DeviceLocal,
 		false
 	};
 	clusterState.clusterLightIndexLists = CreateShaderRWBuffer(rwbInfo);
@@ -737,6 +737,7 @@ LightContext::SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id
 void 
 LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
+	N_SCOPE(UpdateLightResources, Lighting);
 	const Graphics::ContextEntityId cid = GetContextId(lightServerState.globalLightEntity);
 	using namespace CoreGraphics;
 
@@ -929,6 +930,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 		Memory::CopyElements(clusterState.spotLightProjection, lightList.SpotLightProjection, numSpotLightsProjection);
 		Memory::CopyElements(clusterState.spotLightShadow, lightList.SpotLightShadow, numSpotLightShadows);
 		CoreGraphics::ShaderRWBufferUpdate(clusterState.stagingClusterLightsList[bufferIndex], &lightList, sizeof(LightsCluster::LightLists));
+		CoreGraphics::ShaderRWBufferFlush(clusterState.stagingClusterLightsList[bufferIndex]);
 	}
 
 	// a little ugly, but since the view can change the script, this has to adopt

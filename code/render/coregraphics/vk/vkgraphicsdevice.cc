@@ -5,6 +5,7 @@
 #include "render/stdneb.h"
 #include "coregraphics/config.h"
 #include "vkgraphicsdevice.h"
+#include "vkmemory.h"
 #include "coregraphics/commandbuffer.h"
 #include "vkshaderprogram.h"
 #include "vkpipelinedatabase.h"
@@ -95,20 +96,9 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	};
 	Util::FixedArray<ConstantsRingBuffer> constantBufferRings;
 
-	struct VertexRingBuffer
-	{
-		uint32_t vboStartAddress[CoreGraphics::VertexBufferMemoryType::NumVertexBufferMemoryTypes];
-		uint32_t vboEndAddress[CoreGraphics::VertexBufferMemoryType::NumVertexBufferMemoryTypes];
-
-		uint32_t iboStartAddress[CoreGraphics::VertexBufferMemoryType::NumVertexBufferMemoryTypes];
-		uint32_t iboEndAddress[CoreGraphics::VertexBufferMemoryType::NumVertexBufferMemoryTypes];
-	};
-	Util::FixedArray<VertexRingBuffer> vertexBufferRings;
-
 	VkSemaphore waitForPresentSemaphore;
 
 	CoreGraphics::QueueType mainSubmitQueue;
-	uint64 mainSubmitLastFrameIndex;
 
 	uint maxNumBufferedFrames;
 	uint32_t currentBufferedFrameIndex;
@@ -121,8 +111,6 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	uint32_t usedExtensions;
 	const char* extensions[64];
 
-	uint32_t numQueues;
-	VkQueueFamilyProperties queuesProps[64];
 
 	uint32_t drawQueueFamily;
 	uint32_t computeQueueFamily;
@@ -161,7 +149,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	Util::FixedArray<Util::Array<VkBuffer>> delayedDeleteBuffers;
 	Util::FixedArray<Util::Array<VkImage>> delayedDeleteImages;
 	Util::FixedArray<Util::Array<VkImageView>> delayedDeleteImageViews;
-	Util::FixedArray<Util::Array<VkDeviceMemory>> delayedDeleteMemories;
+	Util::FixedArray<Util::Array<CoreGraphics::Alloc>> delayedFreeMemories;
 
 	static const SizeT MaxQueriesPerFrame = 1024;
 	VkQueryPool queryPoolsByType[CoreGraphics::NumQueryTypes];
@@ -429,7 +417,8 @@ GetCurrentQueue(const CoreGraphics::QueueType type)
 /**
 */
 void
-InsertBarrier(
+InsertBarrier
+(
 	VkPipelineStageFlags srcFlags,
 	VkPipelineStageFlags dstFlags,
 	VkDependencyFlags dep,
@@ -797,6 +786,16 @@ SetVkScissorRects(VkRect2D* scissors, SizeT num)
 	}
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SparseTextureBind(const VkBindSparseInfo& bindInfo)
+{
+	state.subcontextHandler.SubmitBindSparseTimeline(CoreGraphics::SparseQueueType, bindInfo);
+	state.sparseSubmitActive = true;
+}
+
 #if NEBULA_GRAPHICS_DEBUG
 //------------------------------------------------------------------------------
 /**
@@ -843,7 +842,6 @@ DelayedDeleteImage(const VkImage img)
 	state.delayedDeleteImages[state.currentBufferedFrameIndex].Append(img);
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -857,9 +855,9 @@ DelayedDeleteImageView(const VkImageView view)
 /**
 */
 void 
-DelayedDeleteMemory(const VkDeviceMemory mem)
+DelayedFreeMemory(const CoreGraphics::Alloc alloc)
 {
-	state.delayedDeleteMemories[state.currentBufferedFrameIndex].Append(mem);
+	state.delayedFreeMemories[state.currentBufferedFrameIndex].Append(alloc);
 }
 
 //------------------------------------------------------------------------------
@@ -871,8 +869,8 @@ _ProcessQueriesBeginFrame()
 	N_SCOPE(ProcessQueries, Render);
 	using namespace CoreGraphics;
 
-	SubmissionContextNextCycle(state.queryGraphicsSubmissionContext);
-	SubmissionContextNextCycle(state.queryComputeSubmissionContext);
+	SubmissionContextNextCycle(state.queryGraphicsSubmissionContext, nullptr);
+	SubmissionContextNextCycle(state.queryComputeSubmissionContext, nullptr);
 
 	// start query queue for graphics
 	CommandBufferBeginInfo beginInfo{ true, false, false };
@@ -1211,11 +1209,13 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	VkCmdDebugMarkerInsert = (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkCmdInsertDebugUtilsLabelEXT");
 #endif
 
-	vkGetPhysicalDeviceQueueFamilyProperties(state.physicalDevices[state.currentDevice], &state.numQueues, NULL);
-	n_assert(state.numQueues > 0);
+	uint32_t numQueues;
+	vkGetPhysicalDeviceQueueFamilyProperties(state.physicalDevices[state.currentDevice], &numQueues, NULL);
+	n_assert(numQueues > 0);
 
 	// now get queues from device
-	vkGetPhysicalDeviceQueueFamilyProperties(state.physicalDevices[state.currentDevice], &state.numQueues, state.queuesProps);
+	VkQueueFamilyProperties* queuesProps = n_new_array(VkQueueFamilyProperties, numQueues);
+	vkGetPhysicalDeviceQueueFamilyProperties(state.physicalDevices[state.currentDevice], &numQueues, queuesProps);
 	vkGetPhysicalDeviceMemoryProperties(state.physicalDevices[state.currentDevice], &state.memoryProps);
 
 	state.drawQueueIdx = UINT32_MAX;
@@ -1225,73 +1225,108 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
 	// create three queues for each family
 	Util::FixedArray<uint> indexMap;
-	indexMap.Resize(state.numQueues);
+	indexMap.Resize(numQueues);
 	indexMap.Fill(0);
-	for (i = 0; i < state.numQueues; i++)
+	for (i = 0; i < numQueues; i++)
 	{
-
-		if (state.queuesProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT && state.drawQueueIdx == UINT32_MAX)
+		for (uint32_t j = 0; j < queuesProps[i].queueCount; j++)
 		{
-			if (state.queuesProps[i].queueCount == indexMap[i]) continue;
-			state.drawQueueFamily = i;
-			state.drawQueueIdx = indexMap[i]++;
-		}
+			// just pick whichever queue supports graphics, it will most likely only be 1
+			if (queuesProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT && state.drawQueueIdx == UINT32_MAX)
+			{
+				state.drawQueueFamily = i;
+				state.drawQueueIdx = j;
+				indexMap[i]++;
+				continue;
+			}
 
-		// compute queues may not support graphics
-		if (state.queuesProps[i].queueFlags & VK_QUEUE_COMPUTE_BIT && state.computeQueueIdx == UINT32_MAX)
-		{
-			if (state.queuesProps[i].queueCount == indexMap[i]) continue;
-			state.computeQueueFamily = i;
-			state.computeQueueIdx = indexMap[i]++;
-		}
+			// find a compute queue which is not for graphics
+			if (queuesProps[i].queueFlags & VK_QUEUE_COMPUTE_BIT
+				&& (queuesProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0
+				&& state.computeQueueIdx == UINT32_MAX)
+			{
+				state.computeQueueFamily = i;
+				state.computeQueueIdx = j;
+				indexMap[i]++;
+				continue;
+			}
 
-		// transfer queues may not support compute or graphics
-		if (state.queuesProps[i].queueFlags & VK_QUEUE_TRANSFER_BIT &&
-			!(state.queuesProps[i].queueFlags & VK_QUEUE_COMPUTE_BIT) &&
-			!(state.queuesProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) &&
-			state.transferQueueIdx == UINT32_MAX)
-		{
-			if (state.queuesProps[i].queueCount == indexMap[i]) continue;
-			state.transferQueueFamily = i;
-			state.transferQueueIdx = indexMap[i]++;
-		}
+			// find a transfer queue that is purely for transfers
+			if (queuesProps[i].queueFlags & VK_QUEUE_TRANSFER_BIT
+				&& (queuesProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0
+				&& (queuesProps[i].queueFlags & VK_QUEUE_COMPUTE_BIT) == 0
+				&& state.transferQueueIdx == UINT32_MAX)
+			{
+				state.transferQueueFamily = i;
+				state.transferQueueIdx = j;
+				indexMap[i]++;
+				continue;
+			}
 
-		// sparse queues may not support compute or graphics
-		if (state.queuesProps[i].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT &&
-			!(state.queuesProps[i].queueFlags & VK_QUEUE_COMPUTE_BIT) &&
-			!(state.queuesProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) &&
-			state.sparseQueueIdx == UINT32_MAX)
-		{
-			if (state.queuesProps[i].queueCount == indexMap[i]) continue;
-			state.sparseQueueFamily = i;
-			state.sparseQueueIdx = indexMap[i]++;
+			// find a sparse or transfer queue that supports sparse binding
+			if (queuesProps[i].queueFlags & ~VK_QUEUE_SPARSE_BINDING_BIT
+				&& (queuesProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0
+				&& (queuesProps[i].queueFlags & VK_QUEUE_COMPUTE_BIT) == 0
+				&& state.sparseQueueIdx == UINT32_MAX)
+			{
+				state.sparseQueueFamily = i;
+				state.sparseQueueIdx = j;
+				indexMap[i]++;
+				continue;
+			}
 		}
 	}
 
+	// could not find pure compute queue
+	if (state.computeQueueIdx == UINT32_MAX)
+	{
+		// assert that the graphics queue can handle computes
+		n_assert(queuesProps[state.drawQueueFamily].queueFlags& VK_QUEUE_COMPUTE_BIT);
+		state.computeQueueFamily = state.drawQueueFamily;
+		state.computeQueueIdx = state.drawQueueIdx;
+	}
+
+	// could not find pure transfer queue
 	if (state.transferQueueIdx == UINT32_MAX)
 	{
-		// assert the draw queue can do both transfers and computes
-		n_assert(state.queuesProps[state.drawQueueFamily].queueFlags & VK_QUEUE_TRANSFER_BIT);
-		n_assert(state.queuesProps[state.drawQueueFamily].queueFlags & VK_QUEUE_COMPUTE_BIT);
-
-		// this is actually sub-optimal, but on my AMD card, using the compute queue transfer or the sparse queue doesn't work
+		// assert the draw queue can handle transfers
+		n_assert(queuesProps[state.drawQueueFamily].queueFlags & VK_QUEUE_TRANSFER_BIT);
 		state.transferQueueFamily = state.drawQueueFamily;
 		state.transferQueueIdx = state.drawQueueIdx;
-		//state.transferQueueFamily = 2;
-		//state.transferQueueIdx = indexMap[2]++;
 	}
 
-	if (state.drawQueueFamily == UINT32_MAX)		n_error("VkDisplayDevice: Could not find a queue for graphics and present.\n");
-	if (state.computeQueueFamily == UINT32_MAX)		n_error("VkDisplayDevice: Could not find a queue for compute.\n");
-	if (state.transferQueueFamily == UINT32_MAX)	n_error("VkDisplayDevice: Could not find a queue for transfers.\n");
-	if (state.sparseQueueFamily == UINT32_MAX)		n_warning("VkDisplayDevice: Could not find a queue for sparse binding.\n");
+	// could not find pure transfer queue
+	if (state.sparseQueueIdx == UINT32_MAX)
+	{
+		if (queuesProps[state.transferQueueFamily].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT)
+		{
+			state.sparseQueueFamily = state.transferQueueFamily;
+
+			// if we have an extra transfer queue, use it for sparse bindings
+			if (queuesProps[state.sparseQueueFamily].queueCount > indexMap[state.sparseQueueFamily])
+				state.sparseQueueIdx = indexMap[state.sparseQueueFamily]++;
+			else
+				state.sparseQueueIdx = state.transferQueueIdx;
+		}
+		else
+		{
+			n_warn2(queuesProps[state.drawQueueFamily].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT, "VkGraphicsDevice: No sparse binding queue could be found!\n");
+			state.sparseQueueFamily = state.drawQueueFamily;
+			state.sparseQueueIdx = state.drawQueueIdx;
+		}
+	}
+
+	if (state.drawQueueFamily == UINT32_MAX)		n_error("VkGraphicsDevice: Could not find a queue for graphics and present.\n");
+	if (state.computeQueueFamily == UINT32_MAX)		n_error("VkGraphicsDevice: Could not find a queue for compute.\n");
+	if (state.transferQueueFamily == UINT32_MAX)	n_error("VkGraphicsDevice: Could not find a queue for transfers.\n");
+	if (state.sparseQueueFamily == UINT32_MAX)		n_warning("VkGraphicsDevice: Could not find a queue for sparse binding.\n");
 
 	// create device
 	Util::FixedArray<Util::FixedArray<float>> prios;
 	Util::Array<VkDeviceQueueCreateInfo> queueInfos;
-	prios.Resize(state.numQueues);
+	prios.Resize(numQueues);
 
-	for (i = 0; i < state.numQueues; i++)
+	for (i = 0; i < numQueues; i++)
 	{
 		if (indexMap[i] == 0) continue;
 		prios[i].Resize(indexMap[i]);
@@ -1306,6 +1341,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 				&prios[i][0]
 			});
 	}
+
+	n_delete_array(queuesProps);
 
 	// get physical device features
 	VkPhysicalDeviceFeatures features;
@@ -1380,8 +1417,17 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	// setup the empty descriptor set
 	SetupEmptyDescriptorSetLayout();
 
+	// setup memory pools
+	SetupMemoryPools(
+		info.memoryHeaps[ImageMemory_Local],
+		info.memoryHeaps[ImageMemory_Temporary],
+		info.memoryHeaps[BufferMemory_Local],
+		info.memoryHeaps[BufferMemory_Temporary],
+		info.memoryHeaps[BufferMemory_Dynamic],
+		info.memoryHeaps[BufferMemory_Mapped]
+		);
+
 	state.constantBufferRings.Resize(info.numBufferedFrames);
-	state.vertexBufferRings.Resize(info.numBufferedFrames);
 
 #ifdef CreateSemaphore
 #pragma push_macro("CreateSemaphore")
@@ -1398,13 +1444,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 			cboRing.cboComputeStartAddress[j] = cboRing.cboComputeEndAddress[j] = 0;
 			cboRing.cboGfxStartAddress[j] = cboRing.cboGfxEndAddress[j] = 0;
 		}
-
-		Vulkan::GraphicsDeviceState::VertexRingBuffer& vboRing = state.vertexBufferRings[i];
-		for (j = 0; j < NumVertexBufferMemoryTypes; j++)
-		{
-			vboRing.vboStartAddress[j] = vboRing.vboEndAddress[j] = 0;
-			vboRing.iboStartAddress[j] = vboRing.iboEndAddress[j] = 0;
-		}
 	}
 
 	for (i = 0; i < NumConstantBufferTypes; i++)
@@ -1416,7 +1455,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		{
 			"",
 			-1,
-			0,
 			CoreGraphics::BufferUpdateMode(0)
 		};
 
@@ -1429,7 +1467,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 			state.globalGraphicsConstantStagingBuffer[i] = CreateConstantBuffer(cboInfo);
 
 			cboInfo.name = systemName[1] + threadName[i] + queueName[0];
-			cboInfo.mode = CoreGraphics::BufferUpdateMode::DeviceWriteable;
+			cboInfo.mode = CoreGraphics::BufferUpdateMode::DeviceLocal;
 			state.globalGraphicsConstantBuffer[i] = CreateConstantBuffer(cboInfo);
 		}
 
@@ -1442,49 +1480,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 			state.globalComputeConstantStagingBuffer[i] = CreateConstantBuffer(cboInfo);
 
 			cboInfo.name = systemName[1] + threadName[i] + queueName[1];
-			cboInfo.mode = CoreGraphics::BufferUpdateMode::DeviceWriteable;
+			cboInfo.mode = CoreGraphics::BufferUpdateMode::DeviceLocal;
 			state.globalComputeConstantBuffer[i] = CreateConstantBuffer(cboInfo);
-		}
-	}
-
-	for (i = 0; i < NumVertexBufferMemoryTypes; i++)
-	{
-		Util::Array<CoreGraphics::VertexComponent> components = { VertexComponent((VertexComponent::SemanticName)0, 0, VertexComponent::Float, 0) };
-
-		static const Util::String threadName[] = { "Main Thread ", "Visibility Thread " };
-
-		// create VBO
-		CoreGraphics::VertexBufferCreateDirectInfo vboInfo =
-		{
-			Util::String::Sprintf("%s Global Vertex Buffer %d", threadName[i], i),
-			CoreGraphics::GpuBufferTypes::AccessWrite,
-			CoreGraphics::GpuBufferTypes::UsageDynamic,
-			CoreGraphics::GpuBufferTypes::SyncingAutomatic,
-			info.globalVertexBufferMemorySize[i] * info.numBufferedFrames, // memory size should be divided by 4
-		};
-		state.globalVertexBufferMaxValue[i] = info.globalVertexBufferMemorySize[i];
-		if (state.globalVertexBufferMaxValue[i] > 0)
-		{
-			state.globalVertexBuffer[i] = CreateVertexBuffer(vboInfo);
-			state.mappedVertexBuffer[i] = (byte*)VertexBufferMap(state.globalVertexBuffer[i], GpuBufferTypes::MapWrite);
-		}
-
-		// create IBO
-		CoreGraphics::IndexBufferCreateDirectInfo iboInfo =
-		{
-			Util::String::Sprintf("%s Global Index Buffer %d", threadName[i], i),
-			"system",
-			CoreGraphics::GpuBufferTypes::AccessWrite,
-			CoreGraphics::GpuBufferTypes::UsageDynamic,
-			CoreGraphics::GpuBufferTypes::SyncingAutomatic,
-			IndexType::Index32,
-			info.globalIndexBufferMemorySize[i] * info.numBufferedFrames / 4,
-		};
-		state.globalIndexBufferMaxValue[i] = info.globalIndexBufferMemorySize[i];
-		if (state.globalIndexBufferMaxValue[i])
-		{
-			state.globalIndexBuffer[i] = CreateIndexBuffer(iboInfo);
-			state.mappedIndexBuffer[i] = (byte*)IndexBufferMap(state.globalIndexBuffer[i], GpuBufferTypes::MapWrite);
 		}
 	}
 
@@ -1495,6 +1492,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		true,
 	};
 	state.submissionGraphicsCmdPool = CreateCommandBufferPool(cmdPoolCreateInfo);
+	state.submissionTransferGraphicsHandoverCmdPool = CreateCommandBufferPool(cmdPoolCreateInfo);
 
 	cmdPoolCreateInfo.queue = CoreGraphics::QueueType::ComputeQueueType;
 	state.submissionComputeCmdPool = CreateCommandBufferPool(cmdPoolCreateInfo);
@@ -1508,20 +1506,26 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	};
 
 	// setup main submission context (Graphics)
-	state.gfxSubmission = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
+	state.gfxSubmission = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, false });
 	state.gfxCmdBuffer = CommandBufferId::Invalid();
 
 	// setup compute submission context
 	cmdCreateInfo.pool = state.submissionComputeCmdPool;
-	state.computeSubmission = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
+	state.computeSubmission = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, false });
 	state.computeCmdBuffer = CommandBufferId::Invalid();
 
 	CommandBufferBeginInfo beginInfo{ true, false, false };
 
 	// create transfer submission context
 	cmdCreateInfo.pool = state.submissionTransferCmdPool;
-	state.resourceSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
+	state.resourceSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, false });
 	state.resourceSubmissionActive = false;
+
+	cmdCreateInfo.pool = state.submissionTransferGraphicsHandoverCmdPool;
+	state.handoverSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, false });
+	state.handoverSubmissionActive = false;
+
+	state.sparseSubmitActive = false;
 
 	// create main-queue setup submission context (forced to be beginning of frame when relevant)
 	cmdCreateInfo.pool = state.submissionGraphicsCmdPool;
@@ -1550,7 +1554,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	state.delayedDeleteBuffers.Resize(state.maxNumBufferedFrames);
 	state.delayedDeleteImages.Resize(state.maxNumBufferedFrames);
 	state.delayedDeleteImageViews.Resize(state.maxNumBufferedFrames);
-	state.delayedDeleteMemories.Resize(state.maxNumBufferedFrames);
+	state.delayedFreeMemories.Resize(state.maxNumBufferedFrames);
 
 #ifdef CreateSemaphore
 #pragma push_macro("CreateSemaphore")
@@ -1569,7 +1573,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
 	state.waitForPresentSemaphore = VK_NULL_HANDLE;
 	state.mainSubmitQueue = CoreGraphics::QueueType::GraphicsQueueType; // main queue to submit is on graphics
-	state.mainSubmitLastFrameIndex = -1;
 
 	state.passInfo =
 	{
@@ -1663,18 +1666,14 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		res = VkDebugObjectName(dev, &info);
 		n_assert(res == VK_SUCCESS);
 
-		// allocate memory backing
-		uint32_t size;
-		uint32_t flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-		VkUtilities::AllocateBufferMemory(state.devices[state.currentDevice], state.queryResultsByType[i], state.queryResultMemByType[i], VkMemoryPropertyFlagBits(flags), size);
-
-		// bind memory
+		// allocate memory and bind
+		CoreGraphics::Alloc alloc = AllocateMemory(state.devices[state.currentDevice], state.queryResultsByType[i], MemoryPoolType::BufferMemory_Mapped);
+		state.queryResultMemByType[i] = alloc.mem;
 		res = vkBindBufferMemory(state.devices[state.currentDevice], state.queryResultsByType[i], state.queryResultMemByType[i], 0);
 		n_assert(res == VK_SUCCESS);
 
 		// map memory for reading later
-		res = vkMapMemory(state.devices[state.currentDevice], state.queryResultMemByType[i], 0, size, 0, reinterpret_cast<void**>(&state.queryResultPtrByType[i]));
-		n_assert(res == VK_SUCCESS);
+		state.queryResultPtrByType[i] = (uint64_t*)((char*)GetMappedMemory(MemoryPoolType::BufferMemory_Mapped) + alloc.offset);
 	}
 
 #if NEBULA_ENABLE_PROFILING
@@ -1773,9 +1772,6 @@ DestroyGraphicsDevice()
 	for (j = 0; j < state.maxNumBufferedFrames; j++)
 	{
 		IndexT i;
-		for (i = 0; i < state.delayedDeleteMemories[j].Size(); i++)
-			vkFreeMemory(state.devices[state.currentDevice], state.delayedDeleteMemories[j][i], nullptr);
-		state.delayedDeleteMemories[j].Clear();
 		for (i = 0; i < state.delayedDeleteBuffers[j].Size(); i++)
 			vkDestroyBuffer(state.devices[state.currentDevice], state.delayedDeleteBuffers[j][i], nullptr);
 		state.delayedDeleteBuffers[j].Clear();
@@ -1785,6 +1781,9 @@ DestroyGraphicsDevice()
 		for (i = 0; i < state.delayedDeleteImageViews[j].Size(); i++)
 			vkDestroyImageView(state.devices[state.currentDevice], state.delayedDeleteImageViews[j][i], nullptr);
 		state.delayedDeleteImageViews[j].Clear();
+		for (i = 0; i < state.delayedFreeMemories[j].Size(); i++)
+			FreeMemory(state.delayedFreeMemories[j][i]);
+		state.delayedFreeMemories[j].Clear();
 	}
 
 	DestroySubmissionContext(state.gfxSubmission);
@@ -1797,6 +1796,8 @@ DestroyGraphicsDevice()
 	DestroyCommandBufferPool(state.submissionGraphicsCmdPool);
 	DestroyCommandBufferPool(state.submissionComputeCmdPool);
 	DestroyCommandBufferPool(state.submissionTransferCmdPool);
+
+	DiscardMemoryPools(state.devices[state.currentDevice]);
 
 	// clean up global constant buffers
 	IndexT i;
@@ -1818,27 +1819,6 @@ DestroyGraphicsDevice()
 		state.globalComputeConstantBuffer[i] = ConstantBufferId::Invalid();
 		state.globalComputeConstantStagingBuffer[i] = ConstantBufferId::Invalid();
 	}
-
-	// clean up global vertex and index buffers
-	for (i = 0; i < NumVertexBufferMemoryTypes; i++)
-	{
-		if (state.globalVertexBufferMaxValue[i] > 0)
-		{
-			VertexBufferUnmap(state.globalVertexBuffer[i]);
-			DestroyVertexBuffer(state.globalVertexBuffer[i]);
-		}
-		state.globalVertexBuffer[i] = VertexBufferId::Invalid();
-		state.mappedVertexBuffer[i] = nullptr;
-
-		if (state.globalIndexBufferMaxValue[i] > 0)
-		{
-			IndexBufferUnmap(state.globalIndexBuffer[i]);
-			DestroyIndexBuffer(state.globalIndexBuffer[i]);
-		}
-		state.globalIndexBuffer[i] = IndexBufferId::Invalid();
-		state.mappedIndexBuffer[i] = nullptr;
-	}
-
 	state.database.Discard();
 
 	// destroy query stuff
@@ -1989,9 +1969,6 @@ BeginFrame(IndexT frameIndex)
 
 	// clean up delayed delete objects
 	IndexT i;
-	for (i = 0; i < state.delayedDeleteMemories[state.currentBufferedFrameIndex].Size(); i++)
-		vkFreeMemory(state.devices[state.currentDevice], state.delayedDeleteMemories[state.currentBufferedFrameIndex][i], nullptr);
-	state.delayedDeleteMemories[state.currentBufferedFrameIndex].Clear();
 	for (i = 0; i < state.delayedDeleteBuffers[state.currentBufferedFrameIndex].Size(); i++)
 		vkDestroyBuffer(state.devices[state.currentDevice], state.delayedDeleteBuffers[state.currentBufferedFrameIndex][i], nullptr);
 	state.delayedDeleteBuffers[state.currentBufferedFrameIndex].Clear();
@@ -2015,8 +1992,15 @@ BeginFrame(IndexT frameIndex)
 	N_MARKER_BEGIN(WaitForLastFrame, Render);
 
 	// cycle submissions, will wait for the fence to finish
-	state.gfxFence = CoreGraphics::SubmissionContextNextCycle(state.gfxSubmission);
-	state.computeFence = CoreGraphics::SubmissionContextNextCycle(state.computeSubmission);
+	CoreGraphics::SubmissionContextNextCycle(state.gfxSubmission, []()
+		{
+			state.subcontextHandler.Wait(GraphicsQueueType, SubmissionContextGetTimelineIndex(state.gfxSubmission));
+		});	
+
+	CoreGraphics::SubmissionContextNextCycle(state.computeSubmission, []()
+		{
+			state.subcontextHandler.Wait(ComputeQueueType, SubmissionContextGetTimelineIndex(state.computeSubmission));
+		});
 
 	N_MARKER_END();
 
@@ -2030,16 +2014,6 @@ BeginFrame(IndexT frameIndex)
 		nextCboRing.cboGfxEndAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
 		nextCboRing.cboComputeStartAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
 		nextCboRing.cboComputeEndAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
-	}
-
-	// update vertex buffer offsets
-	Vulkan::GraphicsDeviceState::VertexRingBuffer& nextVboRing = state.vertexBufferRings[state.currentBufferedFrameIndex];
-	for (IndexT i = 0; i < CoreGraphics::VertexBufferMemoryType::NumVertexBufferMemoryTypes; i++)
-	{
-		nextVboRing.vboStartAddress[i] = state.globalVertexBufferMaxValue[i] * state.currentBufferedFrameIndex;
-		nextVboRing.vboEndAddress[i] = state.globalVertexBufferMaxValue[i] * state.currentBufferedFrameIndex;
-		nextVboRing.iboStartAddress[i] = state.globalIndexBufferMaxValue[i] * state.currentBufferedFrameIndex;
-		nextVboRing.iboEndAddress[i] = state.globalIndexBufferMaxValue[i] * state.currentBufferedFrameIndex;
 	}
 
 	// reset current thread
@@ -2694,93 +2668,10 @@ GetComputeConstantBuffer(CoreGraphics::GlobalConstantBufferType type)
 //------------------------------------------------------------------------------
 /**
 */
-byte*
-AllocateVertexBufferMemory(CoreGraphics::VertexBufferMemoryType type, uint size)
+void 
+LockResourceSubmission()
 {
-	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
-
-	// no matter how we spin it
-	uint ret = sub.vboEndAddress[type];
-	uint newEnd = ret + size;
-
-	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
-	if (newEnd >= state.globalVertexBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
-	{
-		n_error("Over allocation of vertex buffer memory! Memory will be overwritten!\n");
-
-		// return the beginning of the buffer, will definitely stomp the memory!
-		ret = state.globalVertexBufferMaxValue[type] * state.currentBufferedFrameIndex;
-		newEnd = ret + size;
-	}
-
-	// just bump the current frame submission pointer
-	sub.vboEndAddress[type] = newEnd;
-	return state.mappedVertexBuffer[type] + ret;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-uint 
-GetVertexBufferOffset(CoreGraphics::VertexBufferMemoryType type)
-{
-	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
-	return sub.vboEndAddress[type];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-CoreGraphics::VertexBufferId 
-GetVertexBuffer(CoreGraphics::VertexBufferMemoryType type)
-{
-	return state.globalVertexBuffer[type];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-byte*
-AllocateIndexBufferMemory(CoreGraphics::VertexBufferMemoryType type, uint size)
-{
-	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
-
-	// no matter how we spin it
-	uint ret = sub.iboEndAddress[type];
-	uint newEnd = ret + size;
-
-	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
-	if (newEnd >= state.globalIndexBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
-	{
-		n_error("Over allocation of index buffer memory! Memory will be overwritten!\n");
-
-		// return the beginning of the buffer, will definitely stomp the memory!
-		ret = state.globalIndexBufferMaxValue[type] * state.currentBufferedFrameIndex;
-		newEnd = ret + size;
-	}
-
-	// just bump the current frame submission pointer
-	sub.iboEndAddress[type] = newEnd;
-	return state.mappedIndexBuffer[type] + ret;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-uint 
-GetIndexBufferOffset(CoreGraphics::VertexBufferMemoryType type)
-{
-	Vulkan::GraphicsDeviceState::VertexRingBuffer& sub = state.vertexBufferRings[state.currentBufferedFrameIndex];
-	return sub.iboEndAddress[type];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-CoreGraphics::IndexBufferId 
-GetIndexBuffer(CoreGraphics::VertexBufferMemoryType type)
-{
-	return state.globalIndexBuffer[type];
+	state.resourceSubmissionCriticalSection.Enter();
 }
 
 //------------------------------------------------------------------------------
@@ -2790,10 +2681,12 @@ CoreGraphics::SubmissionContextId
 GetResourceSubmissionContext()
 {
 	// if not active, issue a new resource submission (only done once per frame)
-	state.resourceSubmissionCriticalSection.Enter();
 	if (!state.resourceSubmissionActive)
 	{
-		state.resourceSubmissionFence = SubmissionContextNextCycle(state.resourceSubmissionContext);
+		SubmissionContextNextCycle(state.resourceSubmissionContext, []()
+			{
+				state.subcontextHandler.Wait(TransferQueueType, SubmissionContextGetTimelineIndex(state.resourceSubmissionContext));
+			});
 		SubmissionContextNewBuffer(state.resourceSubmissionContext, state.resourceSubmissionCmdBuffer);
 
 		// begin recording
@@ -2802,8 +2695,41 @@ GetResourceSubmissionContext()
 
 		state.resourceSubmissionActive = true;
 	}
-	state.resourceSubmissionCriticalSection.Leave();
 	return state.resourceSubmissionContext;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::SubmissionContextId 
+GetHandoverSubmissionContext()
+{
+	// if not active, issue a new resource submission (only done once per frame)
+	if (!state.handoverSubmissionActive)
+	{
+		SubmissionContextNextCycle(state.handoverSubmissionContext, []()
+			{
+				// wait for the submission to finish
+				state.subcontextHandler.Wait(GraphicsQueueType, SubmissionContextGetTimelineIndex(state.handoverSubmissionContext));
+			});
+		SubmissionContextNewBuffer(state.handoverSubmissionContext, state.handoverSubmissionCmdBuffer);
+
+		// begin recording
+		CommandBufferBeginInfo beginInfo{ true, false, false };
+		CommandBufferBeginRecord(state.handoverSubmissionCmdBuffer, beginInfo);
+
+		state.handoverSubmissionActive = true;
+	}
+	return state.handoverSubmissionContext;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+UnlockResourceSubmission()
+{
+	state.resourceSubmissionCriticalSection.Leave();
 }
 
 //------------------------------------------------------------------------------
@@ -2815,12 +2741,18 @@ GetSetupSubmissionContext()
 	// if not active, issue a new resource submission (only done once per frame)
 	if (!state.setupSubmissionActive)
 	{
+		SubmissionContextNextCycle(state.setupSubmissionContext, []()
+			{
+				// wait for the submission to finish
+				state.subcontextHandler.Wait(GraphicsQueueType, SubmissionContextGetTimelineIndex(state.setupSubmissionContext));
+			});
 		SubmissionContextNewBuffer(state.setupSubmissionContext, state.setupSubmissionCmdBuffer);
-		state.setupSubmissionActive = true;
 
 		// begin recording
 		CommandBufferBeginInfo beginInfo{ true, false, false };
 		CommandBufferBeginRecord(state.setupSubmissionCmdBuffer, beginInfo);
+
+		state.setupSubmissionActive = true;
 	}
 	return state.setupSubmissionContext;
 }
@@ -3192,18 +3124,22 @@ EndSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue, 
 
 	CoreGraphics::CommandBufferId commandBuffer = queue == GraphicsQueueType ? state.gfxCmdBuffer : state.computeCmdBuffer;
 	VkPipelineStageFlags stageFlags = queue == GraphicsQueueType ? VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+	LockResourceSubmission();
 	if (queue == GraphicsQueueType && state.setupSubmissionActive)
 	{
 		// end recording and add this command buffer for submission
 		CommandBufferEndRecord(state.setupSubmissionCmdBuffer);
 
 		// submit to graphics without waiting for any previous commands
-		state.subcontextHandler.AppendSubmissionTimeline(
+		uint64 index = state.subcontextHandler.AppendSubmissionTimeline(
 			GraphicsQueueType,
 			CommandBufferGetVk(state.setupSubmissionCmdBuffer)
 		);
+		SubmissionContextSetTimelineIndex(state.setupSubmissionContext, index);
 		state.setupSubmissionActive = false;
 	}
+	UnlockResourceSubmission();
 
 	// append a submission, and wait for the previous submission on the same queue
 	state.subcontextHandler.AppendSubmissionTimeline(
@@ -3257,12 +3193,9 @@ EndFrame(IndexT frameIndex)
 	_ProcessQueriesEndFrame();
 
 	// if we have an active resource submission, submit it!
-	state.resourceSubmissionCriticalSection.Enter();
+	LockResourceSubmission();
 	if (state.resourceSubmissionActive)
 	{
-		// wait for resource manager first, since it will write to the transfer cmd buffer
-		Resources::WaitForLoaderThread();
-
 		// finish up the resource submission and setup submissions
 		CommandBufferEndRecord(state.resourceSubmissionCmdBuffer);
 
@@ -3271,13 +3204,14 @@ EndFrame(IndexT frameIndex)
 #endif
 
 		// finish by creating a singular submission for all transfers
-		state.subcontextHandler.AppendSubmissionTimeline(
+		uint64 index = state.subcontextHandler.AppendSubmissionTimeline(
 			TransferQueueType,
 			CommandBufferGetVk(state.resourceSubmissionCmdBuffer)
 		);
+		SubmissionContextSetTimelineIndex(state.resourceSubmissionContext, index);
 
 		// submit transfers
-		state.subcontextHandler.FlushSubmissionsTimeline(TransferQueueType,	FenceGetVk(state.resourceSubmissionFence));
+		state.subcontextHandler.FlushSubmissionsTimeline(TransferQueueType, nullptr);
 
 #if NEBULA_GRAPHICS_DEBUG
 		CoreGraphics::QueueEndMarker(TransferQueueType);
@@ -3291,7 +3225,39 @@ EndFrame(IndexT frameIndex)
 		);
 		state.resourceSubmissionActive = false;
 	}
-	state.resourceSubmissionCriticalSection.Leave();
+	if (state.handoverSubmissionActive)
+	{
+		// finish up the resource submission and setup submissions
+		CommandBufferEndRecord(state.handoverSubmissionCmdBuffer);
+
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_ORANGE, "Transfer-Graphics Handover");
+#endif
+
+		// finish by creating a singular submission for all transfers
+		uint64 index = state.subcontextHandler.AppendSubmissionTimeline(
+			GraphicsQueueType,
+			CommandBufferGetVk(state.handoverSubmissionCmdBuffer)
+		);
+		SubmissionContextSetTimelineIndex(state.handoverSubmissionContext, index);
+
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::QueueEndMarker(TransferQueueType);
+#endif
+
+		state.handoverSubmissionActive = false;
+	}
+	UnlockResourceSubmission();
+
+	if (state.sparseSubmitActive)
+	{
+		state.subcontextHandler.AppendWaitTimeline(
+			GraphicsQueueType,
+			VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+			SparseQueueType
+		);
+		state.sparseSubmitActive = false;
+	}
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_ORANGE, "Compute");
@@ -3300,7 +3266,8 @@ EndFrame(IndexT frameIndex)
 	N_MARKER_BEGIN(ComputeSubmit, Render);
 
 	// submit compute, wait for this frames resource submissions
-	state.subcontextHandler.FlushSubmissionsTimeline(ComputeQueueType, FenceGetVk(state.computeFence));
+	uint64 cindex = state.subcontextHandler.FlushSubmissionsTimeline(ComputeQueueType, nullptr);
+	SubmissionContextSetTimelineIndex(state.computeSubmission, cindex);
 
 	N_MARKER_END();
 
@@ -3318,7 +3285,8 @@ EndFrame(IndexT frameIndex)
 	N_MARKER_BEGIN(GraphicsSubmit, Render);
 
 	// submit graphics, since this is our main queue, we use this submission to get the semaphore wait index
-	state.mainSubmitLastFrameIndex = state.subcontextHandler.FlushSubmissionsTimeline(GraphicsQueueType, FenceGetVk(state.gfxFence));
+	uint64 gindex = state.subcontextHandler.FlushSubmissionsTimeline(GraphicsQueueType, nullptr);
+	SubmissionContextSetTimelineIndex(state.gfxSubmission, gindex);
 
 	N_MARKER_END();
 
@@ -3549,7 +3517,7 @@ EndQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type)
 /**
 */
 void 
-Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion)
+Copy(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, const CoreGraphics::TextureId to, const Math::rectangle<SizeT>& toRegion)
 {
 	n_assert(from != CoreGraphics::TextureId::Invalid() && to != CoreGraphics::TextureId::Invalid());
 	n_assert(!state.inBeginPass);
@@ -3584,7 +3552,7 @@ Copy(CoreGraphics::QueueType queue, const CoreGraphics::ShaderRWBufferId from, I
 /**
 */
 void 
-Blit(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip)
+Blit(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, const Math::rectangle<SizeT>& toRegion, IndexT toMip)
 {
 	n_assert(from != CoreGraphics::TextureId::Invalid() && to != CoreGraphics::TextureId::Invalid());
 	n_assert(!state.inBeginPass);

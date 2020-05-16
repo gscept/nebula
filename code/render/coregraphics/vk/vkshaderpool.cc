@@ -225,7 +225,7 @@ VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::
 {
 	AnyFX::VarblockBase* var = this->shaderAlloc.Get<0>(id.resourceId)->GetVarblock(name.Value());
 	if (var->alignedSize > 0)
-		return CoreGraphics::CreateConstantBuffer({ name, (IndexT)var->binding, (SizeT)var->alignedSize, mode });
+		return CoreGraphics::CreateConstantBuffer({ name, (SizeT)var->alignedSize, mode });
 	else
 		return CoreGraphics::ConstantBufferId::Invalid();
 }
@@ -238,7 +238,7 @@ VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT
 {
 	AnyFX::VarblockBase* var = this->shaderAlloc.Get<0>(id.resourceId)->GetVarblock(cbIndex);
 	if (var->alignedSize > 0)
-		return CoreGraphics::CreateConstantBuffer({ var->name.c_str(), (IndexT)var->binding, (SizeT)var->alignedSize, mode });
+		return CoreGraphics::CreateConstantBuffer({ var->name.c_str(), (SizeT)var->alignedSize, mode });
 	else
 		return CoreGraphics::ConstantBufferId::Invalid();
 }

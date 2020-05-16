@@ -22,7 +22,11 @@ __ImplementClass(CoreGraphics::StreamMeshPool, 'VKML', Resources::ResourceStream
 StreamMeshPool::StreamMeshPool() :
 	activeMesh(Ids::InvalidId24)
 {
-	// empty
+	this->placeholderResourceName = "msh:system/placeholder.nvx2";
+	this->failResourceName = "msh:system/error.nvx2";
+	this->async = true;
+
+	this->streamerThreadName = "Mesh Pool Streamer Thread";
 }
 
 //------------------------------------------------------------------------------

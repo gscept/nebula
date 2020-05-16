@@ -212,7 +212,7 @@ GLFWDisplayDevice::GetCurrentAdapterDisplayMode(Adapter::Code adapter)
 	//FIXME
 	if ((mode->greenBits == 8) && (mode->blueBits == 8) && (mode->redBits == 8))
 	{
-		format = PixelFormat::A8B8G8R8;
+		format = PixelFormat::R8G8B8A8;
 	}
 	else
 	{

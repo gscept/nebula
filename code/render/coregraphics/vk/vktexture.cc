@@ -5,6 +5,7 @@
 #include "render/stdneb.h"
 #include "vktexture.h"
 #include "vkloader.h"
+#include "io/stream.h"
 
 namespace Vulkan
 {
@@ -12,6 +13,7 @@ namespace Vulkan
 VkTextureAllocator textureAllocator(0x00FFFFFF);
 VkTextureStencilExtensionAllocator textureStencilExtensionAllocator(0x00FFFFFF);
 VkTextureSwapExtensionAllocator textureSwapExtensionAllocator(0x00FFFFFF);
+VkTextureSparseExtensionAllocator textureSparseExtensionAllocator(0x00FFFFFF);
 
 //------------------------------------------------------------------------------
 /**

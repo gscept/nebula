@@ -7,6 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/shaderrwbuffer.h"
+#include "vkmemory.h"
 #include "ids/idallocator.h"
 namespace Vulkan
 {
@@ -14,7 +15,7 @@ namespace Vulkan
 struct VkShaderRWBufferLoadInfo
 {
 	VkDevice dev;
-	VkDeviceMemory mem;
+	CoreGraphics::Alloc mem;
 	VkBufferCreateInfo info;
 
 	SizeT size;

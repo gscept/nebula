@@ -198,7 +198,7 @@ SafeQueue<TYPE>::DequeueAll(Util::Array<TYPE>& outArray)
 {
     this->criticalSection.Enter();
 #if NEBULA_BOUNDSCHECKS
-	n_warn(outArray.Capacity() >= this->queue.Size(), "SafeQueue::DequeueAll(): (PERFORMANCE) Output array is too small (%d), requires (%d), array will have to grow.\n", outArray.Capacity(), this->queue.Size());
+	n_warn_fmt(outArray.Capacity() >= this->queue.Size(), "SafeQueue::DequeueAll(): (PERFORMANCE) Output array is too small (%d), requires (%d), array will have to grow.\n", outArray.Capacity(), this->queue.Size());
 #endif
     outArray.Clear();
     for (IndexT i = 0; i < this->queue.Size(); i++)

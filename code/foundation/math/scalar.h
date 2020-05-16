@@ -54,6 +54,33 @@ const scalar LN_2 = 0.693147180559945f;
 #define N_PI (Math::scalar(3.1415926535897932384626433832795028841971693993751))
 #endif
 
+struct float2
+{
+    union
+    {
+        struct { scalar x, y; };
+        scalar v[2];
+    };
+};
+
+struct float3
+{
+    union
+    {
+        struct { scalar x, y, z; };
+        scalar v[3];
+    };
+};
+
+struct float4
+{
+    union
+    {
+        struct { scalar x, y, z, w; };
+        scalar v[4];
+    };
+};
+
 //------------------------------------------------------------------------------
 /**
     Return a pseudo random number between 0 and 1.
@@ -605,6 +632,15 @@ __forceinline unsigned int
 n_align(unsigned int alignant, unsigned int alignment)
 {
 	return (alignant + alignment - 1) & ~(alignment - 1);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline unsigned int
+n_align_down(unsigned int alignant, unsigned int alignment)
+{
+    return (alignant - alignment) & ~(alignment - 1);
 }
 
 //------------------------------------------------------------------------------

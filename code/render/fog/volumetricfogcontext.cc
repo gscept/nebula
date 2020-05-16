@@ -113,7 +113,7 @@ VolumetricFogContext::Create()
 	{
 		"FogIndexListsBuffer",
 		sizeof(Volumefog::FogIndexLists),
-		BufferUpdateMode::DeviceWriteable,
+		BufferUpdateMode::DeviceLocal,
 		false
 	};
 	fogState.clusterFogIndexLists = CreateShaderRWBuffer(rwbInfo);
@@ -332,6 +332,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 		Memory::CopyElements(fogState.fogBoxes, fogList.FogBoxes, numFogBoxVolumes);
 		Memory::CopyElements(fogState.fogSpheres, fogList.FogSpheres, numFogSphereVolumes);
 		CoreGraphics::ShaderRWBufferUpdate(fogState.stagingClusterFogLists[bufferIndex], &fogList, sizeof(Volumefog::FogLists));
+		CoreGraphics::ShaderRWBufferFlush(fogState.stagingClusterFogLists[bufferIndex]);
 	}
 
 	Volumefog::VolumeFogUniforms fogUniforms;
@@ -582,7 +583,8 @@ VolumetricFogContext::Render()
 				BarrierAccess::ShaderWrite,
 			},
 		},
-		nullptr, "Fog volume update finish barrier");
+		nullptr, 
+		"Fog volume update finish barrier");
 
 
 
@@ -617,7 +619,8 @@ VolumetricFogContext::Render()
 				BarrierAccess::ShaderRead,
 			},
 		},
-		nullptr, "Fog volume update finish barrier");
+		nullptr, 
+		"Fog volume update finish barrier");
 
 	SetShaderProgram(blurState.blurYProgram, GraphicsQueueType);
 	SetResourceTable(blurState.blurYTable[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr, GraphicsQueueType);

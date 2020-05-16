@@ -9,6 +9,7 @@
 #include "resources/resourcestreampool.h"
 #include "materialtype.h"
 #include "coregraphics/config.h"
+#include "threading/criticalsection.h"
 
 namespace Materials
 {
@@ -23,6 +24,7 @@ struct SurfaceRuntime // consider splitting into runtime and setup
 	SurfaceId id;
 	MaterialType* type;
 };
+
 
 struct SurfaceResourceId;
 RESOURCE_ID_TYPE(SurfaceResourceId);
@@ -42,13 +44,30 @@ public:
 	const SurfaceId GetId(const SurfaceResourceId id);
 	/// get material type
 	MaterialType* const GetType(const SurfaceResourceId id);
+	/// update lod for textures in surface 
+	void SetMaxLOD(const SurfaceResourceId id, const float lod);
 private:
 
 	/// unload resource (overload to implement resource deallocation)
 	void Unload(const Resources::ResourceId id);
 
-	Ids::IdAllocatorSafe<SurfaceRuntime> allocator;
-	__ImplementResourceAllocatorTypedSafe(allocator, CoreGraphics::MaterialIdType);
+	enum
+	{
+		Surface_SurfaceId,
+		Surface_MaterialType,
+		Surface_Textures,
+		Surface_MinLOD
+	};
+
+	Ids::IdAllocator<
+		SurfaceId,
+		MaterialType*,
+		Util::Array<CoreGraphics::TextureId>,
+		float
+	> allocator;
+
+	Threading::CriticalSection textureLoadSection;
+	__ImplementResourceAllocatorTyped(allocator, CoreGraphics::MaterialIdType);
 };
 
 //------------------------------------------------------------------------------
@@ -57,9 +76,7 @@ private:
 inline const SurfaceId
 SurfacePool::GetId(const SurfaceResourceId id)
 {
-	allocator.EnterGet();
-	const SurfaceId ret = allocator.Get<0>(id.resourceId).id;
-	allocator.LeaveGet();
+	const SurfaceId ret = allocator.Get<Surface_SurfaceId>(id.resourceId);
 	return ret;
 }
 
@@ -69,10 +86,9 @@ SurfacePool::GetId(const SurfaceResourceId id)
 inline MaterialType* const
 SurfacePool::GetType(const SurfaceResourceId id)
 {
-	allocator.EnterGet();
-	MaterialType* const ret = allocator.Get<0>(id.resourceId).type;
-	allocator.LeaveGet();
+	MaterialType* const ret = allocator.Get<Surface_MaterialType>(id.resourceId);
 	return ret;
 }
+
 
 } // namespace Materials

@@ -35,18 +35,6 @@ SubmissionContextFreeBuffer(const CoreGraphics::SubmissionContextId id, VkDevice
 /**
 */
 void 
-SubmissionContextFreeDeviceMemory(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkDeviceMemory mem)
-{
-	// get fence so we can wait for it
-	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
-	Util::Array<std::tuple<VkDevice, VkDeviceMemory>>& memories = submissionContextAllocator.Get<SubmissionContext_FreeDeviceMemories>(id.id24)[currentIndex];
-	memories.Append(std::make_tuple(dev, mem));
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
 SubmissionContextFreeImage(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkImage img)
 {
 	// get fence so we can wait for it
@@ -77,6 +65,37 @@ SubmissionContextClearCommandBuffer(const CoreGraphics::SubmissionContextId id, 
 	buffers.Append(cmd);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SubmissionContextFreeMemory(const CoreGraphics::SubmissionContextId id, const CoreGraphics::Alloc& alloc)
+{
+	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
+	Util::Array<CoreGraphics::Alloc>& mem = submissionContextAllocator.Get<SubmissionContext_FreeMemories>(id.id24)[currentIndex];
+	mem.Append(alloc);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SubmissionContextSetTimelineIndex(const CoreGraphics::SubmissionContextId id, uint64 index)
+{
+	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
+	submissionContextAllocator.Get<SubmissionContext_TimelineIndex>(id.id24)[currentIndex] = index;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+uint64 
+SubmissionContextGetTimelineIndex(const CoreGraphics::SubmissionContextId id)
+{
+	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
+	return submissionContextAllocator.Get<SubmissionContext_TimelineIndex>(id.id24)[currentIndex];
+}
+
 } // namespace Vulkan
 
 namespace CoreGraphics
@@ -94,31 +113,20 @@ CreateSubmissionContext(const SubmissionContextCreateInfo& info)
 
 	submissionContextAllocator.Get<SubmissionContext_NumCycles>(id) = info.numBuffers;
 	submissionContextAllocator.Get<SubmissionContext_CmdBuffer>(id).Resize(info.numBuffers);
+	submissionContextAllocator.Get<SubmissionContext_TimelineIndex>(id).Resize(info.numBuffers);
+	submissionContextAllocator.Get<SubmissionContext_TimelineIndex>(id).Fill(0);
 	submissionContextAllocator.Get<SubmissionContext_RetiredCmdBuffer>(id).Resize(info.numBuffers);
 	submissionContextAllocator.Get<SubmissionContext_CmdCreateInfo>(id) = info.cmdInfo;
 #if NEBULA_GRAPHICS_DEBUG
 	submissionContextAllocator.Get<SubmissionContext_Name>(id) = info.name;
 #endif
 
-	// create fences
-	if (info.useFence)
-	{
-		submissionContextAllocator.Get<SubmissionContext_Fence>(id).Resize(info.numBuffers);
-		for (uint i = 0; i < info.numBuffers; i++)
-		{
-			FenceId& fence = submissionContextAllocator.Get<SubmissionContext_Fence>(id)[i];
-
-			FenceCreateInfo fenceInfo{ true };
-			fence = CreateFence(fenceInfo);
-		}
-	}	
-
 	submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id) = 0;
 	submissionContextAllocator.Get<SubmissionContext_FreeBuffers>(id).Resize(info.numBuffers);
-	submissionContextAllocator.Get<SubmissionContext_FreeDeviceMemories>(id).Resize(info.numBuffers);
 	submissionContextAllocator.Get<SubmissionContext_FreeImages>(id).Resize(info.numBuffers);
 	submissionContextAllocator.Get<SubmissionContext_FreeCommandBuffers>(id).Resize(info.numBuffers);
 	submissionContextAllocator.Get<SubmissionContext_ClearCommandBuffers>(id).Resize(info.numBuffers);
+	submissionContextAllocator.Get<SubmissionContext_FreeMemories>(id).Resize(info.numBuffers);
 
 	submissionContextAllocator.Get<SubmissionContext_FreeHostMemories>(id).Resize(info.numBuffers);
 
@@ -134,15 +142,10 @@ void
 DestroySubmissionContext(const SubmissionContextId id)
 {
 	const SizeT numCycles = submissionContextAllocator.Get<SubmissionContext_NumCycles>(id.id24);
-	Util::FixedArray<FenceId>& fences = submissionContextAllocator.Get<SubmissionContext_Fence>(id.id24);
 	Util::FixedArray<CommandBufferId>& cmdBufs = submissionContextAllocator.Get<SubmissionContext_CmdBuffer>(id.id24);
 
 	for (IndexT i = 0; i < numCycles; i++)
 	{
-		// clear up fences
-		if (fences.Size() > 0)
-			DestroyFence(fences[i]);
-
 		// clear up all current command buffers (should only be one)
 		if (cmdBufs[i] != CommandBufferId::Invalid())
 			DestroyCommandBuffer(cmdBufs[i]);
@@ -158,11 +161,6 @@ DestroySubmissionContext(const SubmissionContextId id)
 		for (IndexT j = 0; j < buffers.Size(); j++)
 			vkDestroyBuffer(std::get<0>(buffers[j]), std::get<1>(buffers[j]), nullptr);
 		buffers.Clear();
-
-		Util::Array<std::tuple<VkDevice, VkDeviceMemory>>& memories = submissionContextAllocator.Get<SubmissionContext_FreeDeviceMemories>(id.id24)[i];
-		for (IndexT j = 0; j < memories.Size(); j++)
-			vkFreeMemory(std::get<0>(memories[j]), std::get<1>(memories[j]), nullptr);
-		memories.Clear();
 
 		Util::Array<std::tuple<VkDevice, VkImage>>& images = submissionContextAllocator.Get<SubmissionContext_FreeImages>(id.id24)[i];
 		for (IndexT j = 0; j < images.Size(); j++)
@@ -180,6 +178,11 @@ DestroySubmissionContext(const SubmissionContextId id)
 		for (IndexT j = 0; j < hostMemories.Size(); j++)
 			Memory::Free(Memory::ScratchHeap, hostMemories[j]);
 		hostMemories.Clear();
+
+		Util::Array<CoreGraphics::Alloc>& mem = submissionContextAllocator.Get<SubmissionContext_FreeMemories>(id.id24)[i];
+		for (IndexT j = 0; j < mem.Size(); j++)
+			FreeMemory(mem[j]);
+		mem.Clear();
 	}
 	
 	submissionContextAllocator.Dealloc(id.id24);
@@ -236,31 +239,26 @@ SubmissionContextFreeHostMemory(const SubmissionContextId id, void* buf)
 const FenceId 
 SubmissionContextGetFence(const SubmissionContextId id)
 {
-	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
-	return submissionContextAllocator.Get<SubmissionContext_Fence>(id.id24)[currentIndex];
+	// for vulkan, we use timeline
+	return FenceId::Invalid();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 const FenceId
-SubmissionContextNextCycle(const SubmissionContextId id)
+SubmissionContextNextCycle(const SubmissionContextId id, const std::function<void()>& sync)
 {
 	// get fence so we can wait for it
 	IndexT& currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
 
 	// cycle index and update
 	currentIndex = (currentIndex + 1) % submissionContextAllocator.Get<SubmissionContext_NumCycles>(id.id24);
+	uint64 test = submissionContextAllocator.Get<SubmissionContext_TimelineIndex>(id.id24)[currentIndex];
 
-	// get next fence and wait for it to finish
-	auto& fences = submissionContextAllocator.Get<SubmissionContext_Fence>(id.id24);
-	FenceId nextFence = FenceId::Invalid();
-	if (fences.Size() > 0)
-	{
-		nextFence = submissionContextAllocator.Get<SubmissionContext_Fence>(id.id24)[currentIndex];
-		bool res = FenceWait(nextFence, UINT64_MAX);
-		n_assert(res);
-	}	
+	// run sync function
+	if (sync)
+		sync();
 
 	// clean up retired buffers and semaphores
 	Util::Array<CommandBufferId>& bufs = submissionContextAllocator.Get<SubmissionContext_RetiredCmdBuffer>(id.id24)[currentIndex];
@@ -285,11 +283,6 @@ SubmissionContextNextCycle(const SubmissionContextId id)
 		vkDestroyBuffer(std::get<0>(buffers[i]), std::get<1>(buffers[i]), nullptr);
 	buffers.Clear();
 
-	Util::Array<std::tuple<VkDevice, VkDeviceMemory>>& memories = submissionContextAllocator.Get<SubmissionContext_FreeDeviceMemories>(id.id24)[currentIndex];
-	for (IndexT i = 0; i < memories.Size(); i++)
-		vkFreeMemory(std::get<0>(memories[i]), std::get<1>(memories[i]), nullptr);
-	memories.Clear();
-
 	Util::Array<std::tuple<VkDevice, VkImage>>& images = submissionContextAllocator.Get<SubmissionContext_FreeImages>(id.id24)[currentIndex];
 	for (IndexT i = 0; i < images.Size(); i++)
 		vkDestroyImage(std::get<0>(images[i]), std::get<1>(images[i]), nullptr);
@@ -310,7 +303,7 @@ SubmissionContextNextCycle(const SubmissionContextId id)
 		Memory::Free(Memory::ScratchHeap, hostMemories[i]);
 	hostMemories.Clear();
 
-	return nextFence;
+	return FenceId::Invalid();
 }
 
 } // namespace CoreGraphics

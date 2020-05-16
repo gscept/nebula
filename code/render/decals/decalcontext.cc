@@ -111,7 +111,7 @@ DecalContext::Create()
 	{
 		"DecalIndexListsBuffer",
 		sizeof(DecalsCluster::DecalIndexLists),
-		BufferUpdateMode::DeviceWriteable,
+		BufferUpdateMode::DeviceLocal,
 		false
 	};
 	decalState.clusterDecalIndexLists = CreateShaderRWBuffer(rwbInfo);
@@ -167,6 +167,10 @@ DecalContext::SetupDecalPBR(
 	pbrDecalAllocator.Set<DecalPBR_Albedo>(decal, albedo);
 	pbrDecalAllocator.Set<DecalPBR_Normal>(decal, normal);
 	pbrDecalAllocator.Set<DecalPBR_Material>(decal, material);	
+
+	Resources::SetMaxLOD(albedo, 0.0f, false);
+	Resources::SetMaxLOD(normal, 0.0f, false);
+	Resources::SetMaxLOD(material, 0.0f, false);
 
 	genericDecalAllocator.Set<Decal_Transform>(cid.id, transform);
 	genericDecalAllocator.Set<Decal_Type>(cid.id, PBRDecal);
@@ -335,6 +339,7 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 		Memory::CopyElements(decalState.pbrDecals, decalList.PBRDecals, numPbrDecals);
 		Memory::CopyElements(decalState.emissiveDecals, decalList.EmissiveDecals, numEmissiveDecals);
 		CoreGraphics::ShaderRWBufferUpdate(decalState.stagingClusterDecalsList[bufferIndex], &decalList, sizeof(DecalsCluster::DecalLists));
+		CoreGraphics::ShaderRWBufferFlush(decalState.stagingClusterDecalsList[bufferIndex]);
 	}
 
 	ResourceTableCommitChanges(decalState.resourceTables[bufferIndex]);

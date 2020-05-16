@@ -35,6 +35,15 @@ ShaderStateNode::~ShaderStateNode()
 //------------------------------------------------------------------------------
 /**
 */
+void 
+ShaderStateNode::SetMaxLOD(const float lod)
+{
+	Materials::surfacePool->SetMaxLOD(this->surRes, lod);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 bool
 ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate)
 {
@@ -130,6 +139,8 @@ void
 ShaderStateNode::OnFinishedLoading()
 {
 	TransformNode::OnFinishedLoading();
+
+	// load surface immediately, however it will load textures async
 	this->surRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
 	this->materialType = Materials::surfacePool->GetType(this->surRes);
 	this->surface = Materials::surfacePool->GetId(this->surRes);

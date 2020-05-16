@@ -72,23 +72,14 @@ Win32FSWrapper::OpenFile(const String& path, Stream::AccessMode accessMode, Stre
     }
 
     // open/create the file
-    #if __XBOX360__
-        Handle handle = CreateFile(xbox360Path.AsCharPtr(), // lpFileName
-                                   access,                  // dwDesiredAccess
-                                   shareMode,               // dwShareMode
-                                   0,                       // lpSecurityAttributes
-                                   disposition,             // dwCreationDisposition,
-                                   flagsAndAttributes,      // dwFlagsAndAttributes
-                                   NULL);                   // hTemplateFile
-    #else
-        Handle handle = CreateFileW((LPCWSTR)widePath,       // lpFileName
-                                    access,                  // dwDesiredAccess
-                                    shareMode,               // dwShareMode
-                                    0,                       // lpSecurityAttributes
-                                    disposition,             // dwCreationDisposition,
-                                    flagsAndAttributes,      // dwFlagsAndAttributes
-                                    NULL);                   // hTemplateFile
-    #endif
+    Handle handle = CreateFileW((LPCWSTR)widePath,       // lpFileName
+                                access,                  // dwDesiredAccess
+                                shareMode,               // dwShareMode
+                                0,                       // lpSecurityAttributes
+                                disposition,             // dwCreationDisposition,
+                                flagsAndAttributes,      // dwFlagsAndAttributes
+                                NULL);                   // hTemplateFile
+
     if (handle != INVALID_HANDLE_VALUE)
     {
         // in append mode, we need to seek to the end of the file
@@ -150,6 +141,52 @@ Win32FSWrapper::Read(Handle handle, void* buf, Stream::Size numBytes)
         n_error("Win32FSWrapper: ReadFile() failed!");
     }
     return bytesRead;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+char*
+Win32FSWrapper::Map(Handle h, IO::Stream::AccessMode accessMode, Handle& mappedHandle)
+{
+    DWORD access = PAGE_READONLY;
+    DWORD mapAccess = FILE_MAP_READ;
+    switch (accessMode)
+    {
+    case Stream::ReadAccess:
+        access = PAGE_READONLY;
+        mapAccess = FILE_MAP_READ;
+        break;
+
+    case Stream::WriteAccess:
+        n_error("Can't map file with only write access");
+        access = PAGE_WRITECOPY;
+        mapAccess = FILE_MAP_WRITE;
+        break;
+
+    case Stream::ReadWriteAccess:
+    case Stream::AppendAccess:
+        access = PAGE_READWRITE;
+        mapAccess = FILE_MAP_ALL_ACCESS;
+        break;
+    }
+    mappedHandle = CreateFileMappingW(h, nullptr, access, 0, 0, nullptr);
+    n_assert(mappedHandle != nullptr);
+
+    // map the file
+    char* ret = (char*)MapViewOfFile(mappedHandle, mapAccess, 0, 0, 0);
+    n_assert(ret != nullptr);
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+Win32FSWrapper::Unmap(Handle mapHandle, char* buf)
+{
+    UnmapViewOfFile(buf);
+    CloseHandle(mapHandle);
 }
 
 //------------------------------------------------------------------------------

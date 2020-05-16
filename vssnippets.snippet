@@ -27,7 +27,7 @@
                     <ID>year</ID>
                     <Type>Current year</Type>
                     <ToolTip>Please insert this year, and not some other year...</ToolTip>
-                    <Default>2019</Default>
+                    <Default>2020</Default>
                 </Object>
             </Declarations>
             <Code Language="cpp">
@@ -101,7 +101,7 @@ $Classname$::$end$()
                     <ID>year</ID>
                     <Type>Current year</Type>
                     <ToolTip>Please insert this year, and not some other year...</ToolTip>
-                    <Default>2019</Default>
+                    <Default>2020</Default>
                 </Object>
             </Declarations>
             <Code Language="cpp">
@@ -109,7 +109,49 @@ $Classname$::$end$()
 //  $filename$.cc
 //  (C) $year$ Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "stdneb.h"
+#include "foundation/stdneb.h"
+#include "$filename$.h"
+namespace $namespace$
+{
+$end$
+} // namespace $namespace$
+                ]]>
+            </Code>
+        </Snippet>
+    </CodeSnippet>
+	
+	    <CodeSnippet Format="1.0.0">
+        <Header>
+            <Title>Nebula Render Namespace Source</Title>
+            <Shortcut>nrsource</Shortcut>
+        </Header>
+        <Snippet>
+            <Declarations>
+                <Object>
+                    <ID>filename</ID>
+                    <Type>String of text</Type>
+                    <ToolTip>Write a description of this header file.</ToolTip>
+                    <Default>WRITE ME OR ELSE!</Default>
+                </Object>
+                <Object>
+                    <ID>namespace</ID>
+                    <Type>Namespace</Type>
+                    <ToolTip>Select a namespace.</ToolTip>
+                    <Default>Base</Default>
+                </Object>
+                <Object>
+                    <ID>year</ID>
+                    <Type>Current year</Type>
+                    <ToolTip>Please insert this year, and not some other year...</ToolTip>
+                    <Default>2020</Default>
+                </Object>
+            </Declarations>
+            <Code Language="cpp">
+                <![CDATA[//------------------------------------------------------------------------------
+//  $filename$.cc
+//  (C) $year$ Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
+#include "render/stdneb.h"
 #include "$filename$.h"
 namespace $namespace$
 {

@@ -13,7 +13,7 @@ namespace Resources
 {
 
 __ImplementClass(Resources::ResourceServer, 'RMGR', Core::RefCounted);
-__ImplementSingleton(Resources::ResourceServer);
+__ImplementInterfaceSingleton(Resources::ResourceServer);
 
 int32_t ResourceServer::UniquePoolCounter = 0;
 //------------------------------------------------------------------------------
@@ -182,7 +182,7 @@ ResourceServer::HasPendingResources()
 		if (loader->IsA(ResourceStreamPool::RTTI))
 		{
 			const Ptr<ResourceStreamPool>& pool = loader.cast<ResourceStreamPool>();
-			if (!pool->pendingLoadMap.IsEmpty())
+			if (!pool->pendingLoads.IsEmpty())
 				return true;
 		}
 	}

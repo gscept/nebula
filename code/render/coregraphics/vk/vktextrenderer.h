@@ -23,9 +23,9 @@ public:
 
 	struct TextElementVertex
 	{
-		Math::vec2 vertex;
-		Math::vec2 uv;
-		Math::vec4 color;
+		Math::float2 vertex;
+		Math::float2 uv;
+		Math::float4 color;
 	};
 
 	/// constructor
@@ -51,12 +51,9 @@ private:
 	Math::vec2 TransformTextVertex(const Math::vec2& pos, const Math::vec2& offset, const Math::vec2& scale);
 
 	// define tff buffer
-	unsigned char* ttf_buffer;
 	stbtt_packedchar* cdata;
 	stbtt_fontinfo font;
-	unsigned char* bitmap;
 
-	TextElementVertex vertices[MaxNumChars * 6];
 	CoreGraphics::ResourceTableId textTable;
 	CoreGraphics::ShaderProgramId program;
 	IndexT texVar;

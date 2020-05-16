@@ -53,8 +53,10 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
 	Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(envState.skyBoxEntity);
 
 	// setup both model and visibility
-	Models::ModelContext::Setup(envState.skyBoxEntity, "mdl:system/skybox.n3", "system");
-	Visibility::ObservableContext::Setup(envState.skyBoxEntity, Visibility::VisibilityEntityType::Model);
+	Models::ModelContext::Setup(envState.skyBoxEntity, "mdl:system/skybox.n3", "system", []()
+		{
+			Visibility::ObservableContext::Setup(envState.skyBoxEntity, Visibility::VisibilityEntityType::Model);
+		});
 
 	envState.bloomColor = Math::vec4(1.0f);
 	envState.bloomThreshold = 25.0f;

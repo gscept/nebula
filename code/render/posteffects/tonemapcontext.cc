@@ -61,34 +61,34 @@ TonemapContext::Create()
 	Frame::AddCallback("Tonemap-Downsample", [](IndexT)
 		{
 #if NEBULA_GRAPHICS_DEBUG
-			CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, "Tonemapping Downsample");
+			CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, "Tonemapping Downsample");
 #endif
-			CoreGraphics::BarrierInsert(
+			BarrierInsert(
 				GraphicsQueueType,
-				CoreGraphics::BarrierStage::PixelShader,
-				CoreGraphics::BarrierStage::Transfer,
-				CoreGraphics::BarrierDomain::Global,
+				BarrierStage::PixelShader,
+				BarrierStage::Transfer,
+				BarrierDomain::Global,
 				{
-					  TextureBarrier{ tonemapState.downsample2x2, ImageSubresourceInfo{CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, 1}, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::TransferDestination, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite }
+					  TextureBarrier{ tonemapState.downsample2x2, ImageSubresourceInfo{ImageAspect::ColorBits, 0, 1, 0, 1}, ImageLayout::ShaderRead, ImageLayout::TransferDestination, BarrierAccess::ShaderRead, BarrierAccess::TransferWrite }
 				},
 				nullptr,
 				"Tonemapping Downscale Begin");
 
-			CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(tonemapState.colorBuffer);
-			CoreGraphics::Blit(tonemapState.colorBuffer, Math::rectangle<int>(0, 0, dims.width, dims.height), 0, tonemapState.downsample2x2, Math::rectangle<int>(0, 0, 2, 2), 0);
+			TextureDimensions dims = TextureGetDimensions(tonemapState.colorBuffer);
+			Blit(tonemapState.colorBuffer, Math::rectangle<int>(0, 0, dims.width, dims.height), 0, tonemapState.downsample2x2, Math::rectangle<int>(0, 0, 2, 2), 0);
 
-			CoreGraphics::BarrierInsert(
+			BarrierInsert(
 				GraphicsQueueType,
-				CoreGraphics::BarrierStage::Transfer,
-				CoreGraphics::BarrierStage::PixelShader,
-				CoreGraphics::BarrierDomain::Global,
+				BarrierStage::Transfer,
+				BarrierStage::PixelShader,
+				BarrierDomain::Global,
 				{
-					  TextureBarrier{ tonemapState.downsample2x2, ImageSubresourceInfo{CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, 1}, CoreGraphics::ImageLayout::TransferDestination, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierAccess::ShaderRead }
+					  TextureBarrier{ tonemapState.downsample2x2, ImageSubresourceInfo{ImageAspect::ColorBits, 0, 1, 0, 1}, ImageLayout::TransferDestination, ImageLayout::ShaderRead, BarrierAccess::TransferWrite, BarrierAccess::ShaderRead }
 				},
 				nullptr,
 				"Tonemapping Downscale End");
 #if NEBULA_GRAPHICS_DEBUG
-			CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
+			CommandBufferEndMarker(GraphicsQueueType);
 #endif
 		});
 
@@ -96,20 +96,20 @@ TonemapContext::Create()
 	Frame::AddCallback("Tonemap-AverageLum", [](IndexT)
 		{
 #if NEBULA_GRAPHICS_DEBUG
-			CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Tonemapping Average Luminance");
+			CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Tonemapping Average Luminance");
 #endif
 
 			Timing::Time time = FrameSync::FrameSyncTimer::Instance()->GetFrameTime();
-			CoreGraphics::SetShaderProgram(tonemapState.program);
-			CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
+			SetShaderProgram(tonemapState.program);
+			BeginBatch(Frame::FrameBatchType::System);
 			tonemapState.fsq.ApplyMesh();
 			ConstantBufferUpdate(tonemapState.constants, (float)time, tonemapState.timevar);
-			CoreGraphics::SetResourceTable(tonemapState.tonemapTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+			SetResourceTable(tonemapState.tonemapTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 			tonemapState.fsq.Draw();
-			CoreGraphics::EndBatch();
+			EndBatch();
 
 #if NEBULA_GRAPHICS_DEBUG
-			CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
+			CommandBufferEndMarker(GraphicsQueueType);
 #endif
 		});
 
@@ -117,34 +117,34 @@ TonemapContext::Create()
 	Frame::AddCallback("Tonemap-Copy", [](IndexT)
 		{
 #if NEBULA_GRAPHICS_DEBUG
-			CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, "Tonemapping Copy Previous Frame");
+			CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, "Tonemapping Copy Previous Frame");
 #endif
-			CoreGraphics::BarrierInsert(
+			BarrierInsert(
 				GraphicsQueueType,
-				CoreGraphics::BarrierStage::PixelShader,
-				CoreGraphics::BarrierStage::Transfer,
-				CoreGraphics::BarrierDomain::Global,
+				BarrierStage::PixelShader,
+				BarrierStage::Transfer,
+				BarrierDomain::Global,
 				{
-					  TextureBarrier{ tonemapState.copy, ImageSubresourceInfo::ColorNoMipNoLayer(),	CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::TransferDestination, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite }
+					  TextureBarrier{ tonemapState.copy, ImageSubresourceInfo::ColorNoMipNoLayer(),	ImageLayout::ShaderRead, ImageLayout::TransferDestination, BarrierAccess::ShaderRead, BarrierAccess::TransferWrite }
 				},
 				nullptr,
 				"Tonemapping Copy Last Frame Begin");
 
-			CoreGraphics::Copy(tonemapState.averageLumBuffer, Math::rectangle<int>(0, 0, 1, 1), tonemapState.copy, Math::rectangle<int>(0, 0, 1, 1));
+			Copy(tonemapState.averageLumBuffer, Math::rectangle<int>(0, 0, 1, 1), tonemapState.copy, Math::rectangle<int>(0, 0, 1, 1));
 
-			CoreGraphics::BarrierInsert(
+			BarrierInsert(
 				GraphicsQueueType,
-				CoreGraphics::BarrierStage::Transfer,
-				CoreGraphics::BarrierStage::PixelShader,
-				CoreGraphics::BarrierDomain::Global,
+				BarrierStage::Transfer,
+				BarrierStage::PixelShader,
+				BarrierDomain::Global,
 				{
-					  TextureBarrier{ tonemapState.copy, ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphics::ImageLayout::TransferDestination, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierAccess::ShaderRead }
+					  TextureBarrier{ tonemapState.copy, ImageSubresourceInfo::ColorNoMipNoLayer(), ImageLayout::TransferDestination, ImageLayout::ShaderRead, BarrierAccess::TransferWrite, BarrierAccess::ShaderRead }
 				},
 				nullptr,
 				"Tonemapping Copy Last Frame End");
 
 #if NEBULA_GRAPHICS_DEBUG
-			CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
+			CommandBufferEndMarker(GraphicsQueueType);
 #endif
 		});
 }

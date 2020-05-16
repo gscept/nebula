@@ -19,12 +19,12 @@ n_barf(const char* exp, const char* file, int line)
 {
     if (IO::Console::HasInstance())
     {
-        n_error("*** NEBULA ASSERTION ***\nexpression: %s\nfile: %s\nline: %d\n", exp, file, line);
+        n_error("*** NEBULA ASSERTION ***\n%s(%d)\nexpression: %s\n", file, line, exp);
     }
     else
     {
     	Util::String msg;
-    	msg.Format("*** NEBULA ASSERTION ***\n%s(%d): expression: %s\n", file, line, exp);
+    	msg.Format("*** NEBULA ASSERTION ***\n%s(%d)\nexpression: %s\n", file, line, exp);
         Core::SysFunc::Error(msg.AsCharPtr());
     }
 }
@@ -38,16 +38,15 @@ n_barf2(const char* exp, const char* msg, const char* file, int line)
 {
     if (IO::Console::HasInstance())
     {
-        n_error("*** NEBULA ASSERTION ***\nprogrammer says: %s\nexpression: %s\nfile: %s\nline: %d\n", msg, exp, file, line);
+        n_error("*** NEBULA ASSERTION ***\n%s(%d)\nprogrammer says : %s\nexpression : %s\n", file, line, msg, exp);
     }
     else
     {
     	Util::String fmt;
-		fmt.Format("*** NEBULA ASSERTION ***\nprogrammer says: %s\nexpression: %s\nfile: %s\nline: %d\n", msg, exp, file, line);
+		fmt.Format("*** NEBULA ASSERTION ***\n%s(%d)\nprogrammer says : %s\nexpression : %s\n", file, line, msg, exp);
         Core::SysFunc::Error(fmt.AsCharPtr());
     }
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -60,7 +59,7 @@ n_barf_fmt(const char *	exp, const char *fmt, const char *file, int line, ...)
 	va_start(argList, line);
 	msg.FormatArgList(fmt, argList);
 	va_end(argList);
-	Util::String format = Util::String::Sprintf("*** NEBULA ASSERTION ***\nprogrammer says : %s\nfile : %s\nline : %d\nexpression : %s\n", msg.AsCharPtr(), file, line, exp);
+	Util::String format = Util::String::Sprintf("*** NEBULA ASSERTION ***\n%s(%d)\nprogrammer says : %s\nexpression : %s\n", file, line, msg.AsCharPtr(), exp);
 	if (IO::Console::HasInstance())
 	{
 		n_error(format.AsCharPtr());
@@ -69,6 +68,66 @@ n_barf_fmt(const char *	exp, const char *fmt, const char *file, int line, ...)
 	{
 		Core::SysFunc::Error(format.AsCharPtr());
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+    This function is called by n_assert() when the assertion fails.
+*/
+void
+n_cough(const char* exp, const char* file, int line)
+{
+    if (IO::Console::HasInstance())
+    {
+        n_warning("*** NEBULA WARNING ***\n%s(%d)\nexpression: %s\n", file, line, exp);
+    }
+    else
+    {
+        Util::String msg;
+        msg.Format("*** NEBULA WARNING ***\n%s(%d)\nexpression: %s\n", file, line, exp);
+        Core::SysFunc::DebugOut(msg.AsCharPtr());
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+    This function is called by n_assert2() when the assertion fails.
+*/
+void
+n_cough2(const char* exp, const char* msg, const char* file, int line)
+{
+    if (IO::Console::HasInstance())
+    {
+        n_warning("*** NEBULA WARNING ***\n%s(%d)\nprogrammer says : %s\nexpression : %s\n", file, line, msg, exp);
+    }
+    else
+    {
+        Util::String fmt;
+        fmt.Format("*** NEBULA WARNING ***\n%s(%d)\nprogrammer says : %s\nexpression : %s\n", file, line, msg, exp);
+        Core::SysFunc::DebugOut(fmt.AsCharPtr());
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+n_cough_fmt(const char* exp, const char* fmt, const char* file, int line, ...)
+{
+    Util::String msg;
+    va_list argList;
+    va_start(argList, line);
+    msg.FormatArgList(fmt, argList);
+    va_end(argList);
+    Util::String format = Util::String::Sprintf("*** NEBULA WARNING ***\n%s(%d)\nprogrammer says : %s\nexpression : %s\n", file, line, msg.AsCharPtr(), exp);
+    if (IO::Console::HasInstance())
+    {
+        n_warning(format.AsCharPtr());
+    }
+    else
+    {
+        Core::SysFunc::DebugOut(format.AsCharPtr());
+    }
 }
 
 //------------------------------------------------------------------------------

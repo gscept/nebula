@@ -19,7 +19,7 @@ nebula_begin_module(render)
 	if(N_USE_VULKAN)
 		fips_deps(glfw3)
 	endif()
-	
+
 	fips_files(render/precompiled.h render/stdneb.h render/stdneb.cc)
 
 IF(FALSE) # incrementally enable modules as they get written
@@ -136,10 +136,14 @@ ENDIF()
 				event.h
                 fence.h
 				graphicsdevice.h
+                image.cc
+                image.h
 				imagefileformat.cc
 				imagefileformat.h
 				indexbuffer.h
 				indextype.h
+                memory.cc
+                memory.h
 				memorymeshpool.cc
 				memorymeshpool.h
 				memorytexturepool.cc
@@ -172,6 +176,7 @@ ENDIF()
 				shaderserver.h
 				shaperenderer.cc
 				shaperenderer.h
+                sparsebuffer.h
 				streammeshpool.cc
 				streammeshpool.h
 				shaderpool.cc
@@ -305,6 +310,8 @@ ENDIF()
                 vkindexbuffer.h
                 vkloader.cc
                 vkloader.h
+                vkmemory.cc
+                vkmemory.h
 				vkmemorytexturepool.cc
 				vkmemorytexturepool.h
 				vkpass.cc
@@ -327,6 +334,8 @@ ENDIF()
 				vkshaderserver.h
 				vkshaperenderer.cc
 				vkshaperenderer.h
+                vksparsebuffer.cc
+                vksparsebuffer.h
 				vkshaderpool.cc
 				vkshaderpool.h
                 vksubmissioncontext.cc
@@ -627,6 +636,12 @@ ENDIF()
                 tonemapcontext.h
             )
 
+        fips_dir(terrain)
+            fips_files(
+                terraincontext.h
+                terraincontext.cc
+            )
+
 		fips_dir(visibility)
 			fips_files(
 				visibility.h
@@ -656,6 +671,7 @@ ENDIF()
 				visibilitysystem.h
 				visibilitysystem.cc
 			)
+
 nebula_end_module()
 target_include_directories(render PUBLIC ${CODE_ROOT}/render)
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")

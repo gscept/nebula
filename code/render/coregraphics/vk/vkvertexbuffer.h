@@ -18,8 +18,9 @@ namespace Vulkan
 struct VkVertexBufferLoadInfo
 {
 	VkDevice dev;
-	VkDeviceMemory mem;
+	CoreGraphics::Alloc mem;
 	CoreGraphics::GpuBufferTypes::SetupFlags gpuResInfo;
+	CoreGraphics::BufferUpdateMode mode;
 	uint32_t vertexCount;
 	uint32_t vertexByteSize;
 };
@@ -30,6 +31,12 @@ struct VkVertexBufferRuntimeInfo
 	CoreGraphics::VertexLayoutId layout;
 };
 
+struct VkVertexBufferMapInfo
+{
+	void* mappedMemory;
+	uint32_t mapCount;
+};
+
 enum
 {
 	VertexBuffer_LoadInfo,
@@ -37,10 +44,10 @@ enum
 	VertexBuffer_MapCount,
 };
 
-typedef Ids::IdAllocator<
+typedef Ids::IdAllocatorSafe<
 	VkVertexBufferLoadInfo,			//0 loading stage info
 	VkVertexBufferRuntimeInfo,		//1 runtime stage info
-	uint32_t						//2 mapping stage info
+	VkVertexBufferMapInfo			//2 mapping stage info
 > VkVertexBufferAllocator;
 extern VkVertexBufferAllocator vboAllocator;
 

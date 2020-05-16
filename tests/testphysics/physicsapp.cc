@@ -202,7 +202,10 @@ SimpleViewerApplication::Open()
 
 		this->ground = Graphics::CreateEntity();
         Graphics::RegisterEntity<ModelContext, ObservableContext>(this->ground);
-		ModelContext::Setup(this->ground, "mdl:environment/Groundplane.n3", "Viewer");
+        ModelContext::Setup(this->ground, "mdl:environment/Groundplane.n3", "Viewer", [this]()
+            {
+                ObservableContext::Setup(this->ground, VisibilityEntityType::Model);
+            });
 		ModelContext::SetTransform(this->ground, Math::translation(Math::vector(0, 0, 0)));
         this->entities.Append(this->ground);
         this->entityNames.Append("Groundplane");
@@ -218,7 +221,6 @@ SimpleViewerApplication::Open()
         ObserverContext::CreateBruteforceSystem({});
 
         //ObservableContext::Setup(this->entity, VisibilityEntityType::Model);
-		ObservableContext::Setup(this->ground, VisibilityEntityType::Model);
         ObserverContext::Setup(this->cam, VisibilityEntityType::Camera);
 
         // create environment context for the atmosphere effects
@@ -491,7 +493,7 @@ SimpleViewerApplication::RenderUI()
         {
             ImGui::CloseCurrentPopup(); 
             Util::String file = "mdl:" + this->folders[this->selectedFolder] + "/" + this->files[this->selectedFile];                                   
-            ModelContext::ChangeModel(this->entity, file, "Viewer");
+            ModelContext::ChangeModel(this->entity, file, "Viewer", nullptr);
         }
         ImGui::SameLine();
         if (ImGui::Button("Cancel",ImVec2(120, 40))) { ImGui::CloseCurrentPopup(); }
@@ -662,12 +664,14 @@ void SimpleViewerApplication::Spawn(const Math::mat4 & trans, Math::vector linve
     Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
 
     ModelContext::RegisterEntity(ent);
-    ModelContext::Setup(ent, "mdl:Buildings/castle_tower.n3", "NotA");
+    ObservableContext::RegisterEntity(ent);
+    ModelContext::Setup(ent, "mdl:Buildings/castle_tower.n3", "NotA", [ent]()
+        {
+            ObservableContext::Setup(ent, VisibilityEntityType::Model);
+        });
     //ModelContext::Setup(ent, "mdl:system/sphere.n3", "NotA");
     ModelContext::SetTransform(ent, trans);
 
-    ObservableContext::RegisterEntity(ent);
-    ObservableContext::Setup(ent, VisibilityEntityType::Model);
 
     Physics::ActorId actor = Physics::CreateActorInstance(this->ballResource, trans, true);
 

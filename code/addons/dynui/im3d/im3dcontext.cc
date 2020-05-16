@@ -147,7 +147,7 @@ Im3dContext::Create()
 		"Im3D VBO"_atm,
         CoreGraphics::GpuBufferTypes::AccessWrite,
         CoreGraphics::GpuBufferTypes::UsageDynamic,
-        CoreGraphics::GpuBufferTypes::SyncingAutomatic,
+        CoreGraphics::HostMapped,
         100000 * 3,
         components,
         nullptr,
@@ -422,7 +422,6 @@ Im3dContext::Render(const IndexT frameIndex)
         Im3d::PopLayerId();
     }
     Im3d::EndFrame();
-    VertexBufferId vbo = imState.vbo;                
 
     // setup device
     IndexT vertexCount = 0;

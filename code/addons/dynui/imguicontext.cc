@@ -229,7 +229,7 @@ ImguiContext::Create()
 		"ImGUI VBO"_atm,
 		CoreGraphics::GpuBufferTypes::AccessWrite,
 		CoreGraphics::GpuBufferTypes::UsageDynamic,
-		CoreGraphics::GpuBufferTypes::SyncingAutomatic,
+		CoreGraphics::BufferUpdateMode::HostMapped,
 		100000 * 3,
 		components,
 		nullptr,
@@ -248,8 +248,8 @@ ImguiContext::Create()
 		"system",
 		CoreGraphics::GpuBufferTypes::AccessWrite,
 		CoreGraphics::GpuBufferTypes::UsageDynamic,
-		CoreGraphics::GpuBufferTypes::SyncingAutomatic,
-		IndexType::Index16,
+		CoreGraphics::BufferUpdateMode::HostMapped,
+		IndexType::Index32,
 		100000 * 3,
 		nullptr,
 		0
@@ -410,6 +410,7 @@ ImguiContext::Create()
 	state.fontTexture.mip = 0;
 	state.fontTexture.layer = 0;
 	io.Fonts->TexID = &state.fontTexture;
+	io.Fonts->ClearTexData();
 
 	// load settings from disk. If we don't do this here we	need to
 	// run an entire frame before being able to create or load settings

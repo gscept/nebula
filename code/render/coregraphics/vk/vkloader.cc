@@ -73,6 +73,7 @@ InitInstance(VkInstance instance)
 	_IMP_VK(vkQueuePresentKHR);
 
 	_IMP_VK(vkQueueSubmit);
+	_IMP_VK(vkQueueBindSparse);
 	_IMP_VK(vkQueueWaitIdle);
 
 	_IMP_VK(vkEnumerateDeviceExtensionProperties);
@@ -93,6 +94,8 @@ InitInstance(VkInstance instance)
 	_IMP_VK(vkGetPhysicalDeviceQueueFamilyProperties);
 	_IMP_VK(vkGetPhysicalDeviceMemoryProperties);
 	_IMP_VK(vkGetPhysicalDeviceFormatProperties);
+	_IMP_VK(vkGetPhysicalDeviceSparseImageFormatProperties);
+	_IMP_VK(vkGetImageSparseMemoryRequirements);
 
 	// command buffer
 	_IMP_VK(vkCmdDraw);
@@ -135,6 +138,7 @@ InitInstance(VkInstance instance)
 	_IMP_VK(vkResetFences);
 	_IMP_VK(vkGetFenceStatus);
 	_IMP_VK(vkWaitForFences);
+	_IMP_VK(vkWaitSemaphores);
 
 	_IMP_VK(vkCreateRenderPass);
 	_IMP_VK(vkDestroyRenderPass);
@@ -225,6 +229,7 @@ _DEF_VK(vkDestroySwapchainKHR);
 _DEF_VK(vkQueuePresentKHR);
 
 _DEF_VK(vkQueueSubmit);
+_DEF_VK(vkQueueBindSparse);
 _DEF_VK(vkQueueWaitIdle);
 
 _DEF_VK(vkEnumerateDeviceExtensionProperties);
@@ -245,6 +250,8 @@ _DEF_VK(vkGetPhysicalDeviceFeatures);
 _DEF_VK(vkGetPhysicalDeviceQueueFamilyProperties);
 _DEF_VK(vkGetPhysicalDeviceMemoryProperties);
 _DEF_VK(vkGetPhysicalDeviceFormatProperties);
+_DEF_VK(vkGetPhysicalDeviceSparseImageFormatProperties);
+_DEF_VK(vkGetImageSparseMemoryRequirements);
 
 // command buffer
 _DEF_VK(vkCmdDraw);
@@ -287,6 +294,7 @@ _DEF_VK(vkDestroyFence);
 _DEF_VK(vkResetFences);
 _DEF_VK(vkGetFenceStatus);
 _DEF_VK(vkWaitForFences);
+_DEF_VK(vkWaitSemaphores);
 
 _DEF_VK(vkCreateRenderPass);
 _DEF_VK(vkDestroyRenderPass);

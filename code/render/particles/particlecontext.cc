@@ -123,7 +123,7 @@ ParticleContext::Create()
 	vboInfo.numVerts = 1;
 	vboInfo.access = CoreGraphics::GpuBufferTypes::AccessRead;
 	vboInfo.usage = CoreGraphics::GpuBufferTypes::UsageCpu;
-	vboInfo.sync = CoreGraphics::GpuBufferTypes::SyncingManual;
+	vboInfo.mode = CoreGraphics::HostWriteable;
 	vboInfo.name = "Single Point Particle Emitter VBO";
 	CoreGraphics::VertexBufferId vbo = CoreGraphics::CreateVertexBuffer(vboInfo);
 
@@ -135,7 +135,7 @@ ParticleContext::Create()
 	iboInfo.numIndices = 1;
 	iboInfo.access = CoreGraphics::GpuBufferTypes::AccessRead;
 	iboInfo.usage = CoreGraphics::GpuBufferTypes::UsageCpu;
-	iboInfo.sync = CoreGraphics::GpuBufferTypes::SyncingManual;
+	iboInfo.mode = CoreGraphics::HostWriteable;
 	iboInfo.name = "Single Point Particle Emitter IBO";
 	CoreGraphics::IndexBufferId ibo = CoreGraphics::CreateIndexBuffer(iboInfo);
 
@@ -171,7 +171,7 @@ ParticleContext::Create()
 	vboInfo.numVerts = 4;
 	vboInfo.access = CoreGraphics::GpuBufferTypes::AccessRead;
 	vboInfo.usage = CoreGraphics::GpuBufferTypes::UsageImmutable;
-	vboInfo.sync = CoreGraphics::GpuBufferTypes::SyncingManual;
+	vboInfo.mode = CoreGraphics::HostWriteable;
 	vboInfo.name = "Particle Geometry Vertex Buffer";
 	state.geometryVbo = CoreGraphics::CreateVertexBuffer(vboInfo);
 
@@ -183,7 +183,7 @@ ParticleContext::Create()
 	iboInfo.numIndices = 6;
 	iboInfo.access = CoreGraphics::GpuBufferTypes::AccessRead;
 	iboInfo.usage = CoreGraphics::GpuBufferTypes::UsageImmutable;
-	iboInfo.sync = CoreGraphics::GpuBufferTypes::SyncingManual;
+	iboInfo.mode = CoreGraphics::HostWriteable;
 	iboInfo.name = "Particle Geometry Index Buffer";
 	state.geometryIbo = CoreGraphics::CreateIndexBuffer(iboInfo);
 
@@ -495,10 +495,10 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
 		vboInfo.data = nullptr;
 		vboInfo.comps = state.particleComponents;
 		vboInfo.dataSize = 0;
-		vboInfo.numVerts = Math::n_max(numParticlesThisFrame, state.vboSizes[frame] << 1);
+		vboInfo.numVerts = numParticlesThisFrame;
 		vboInfo.access = CoreGraphics::GpuBufferTypes::AccessWrite;
 		vboInfo.usage = CoreGraphics::GpuBufferTypes::UsageDynamic;
-		vboInfo.sync = CoreGraphics::GpuBufferTypes::SyncingAutomatic;
+		vboInfo.mode = CoreGraphics::HostMapped;
 		vboInfo.name = "Particle Vertex Buffer";
 
 		// delete old if needed
