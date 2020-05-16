@@ -765,7 +765,7 @@ VkMemoryTexturePool::SparseCommitChanges(const CoreGraphics::TextureId id)
     };
 
     // execute sparse bind, the bind call
-    Vulkan::SparseTextureBind(bindInfo);
+    Vulkan::SparseTextureBind(img, opaqueBinds, pageBinds);
 
     // clear all pending binds
     pageBinds.Clear();

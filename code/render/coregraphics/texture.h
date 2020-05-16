@@ -231,6 +231,8 @@ void TextureSparseCommitChanges(const CoreGraphics::TextureId id);
 
 /// update a region of the sparse texture, make sure to insert barriers before doing this though
 void TextureSparseUpdate(const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, const CoreGraphics::TextureId source, const CoreGraphics::SubmissionContextId sub);
+/// update a region of the sparse texture from a buffer
+void TextureSparseUpdate(const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, char* buf, const CoreGraphics::SubmissionContextId sub);
 
 /// helper function to setup RenderTextureInfo, already implemented
 TextureCreateInfoAdjusted TextureGetAdjustedInfo(const TextureCreateInfo& info);

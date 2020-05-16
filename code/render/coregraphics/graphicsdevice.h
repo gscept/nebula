@@ -95,6 +95,7 @@ struct GraphicsDeviceState
 	bool setupSubmissionActive;
 
 	bool sparseSubmitActive;
+	bool sparseWaitHandled;
 
 	CoreGraphics::SubmissionContextId queryGraphicsSubmissionContext;
 	CoreGraphics::CommandBufferId queryGraphicsSubmissionCmdBuffer;

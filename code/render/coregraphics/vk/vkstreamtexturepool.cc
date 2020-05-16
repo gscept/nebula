@@ -421,7 +421,7 @@ VkStreamTexturePool::StreamMaxLOD(const Resources::ResourceId& id, const float l
 		0,
 		loadInfo.img,
 		VkTypes::AsVkImageViewType(runtimeInfo.type),
-		VkTypes::AsVkFormat(loadInfo.format),
+		VkTypes::AsVkFormat(format),
 		VkTypes::AsVkMapping(format),
 		viewSubres
 	};
