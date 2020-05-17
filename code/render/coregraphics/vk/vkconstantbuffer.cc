@@ -105,7 +105,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	if (info.mode == HostWriteable || info.mode == HostMapped)
 	{
 		// map memory so we can use it later, if we are using coherently mapping
-		map.data = (char*)GetMappedMemory(pool) + alloc.offset;
+		map.data = (char*)GetMappedMemory(alloc);
 		//res = vkMapMemory(dev, mem, 0, size, 0, &map.data);
 		n_assert(res == VK_SUCCESS);
 	}

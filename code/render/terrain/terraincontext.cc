@@ -591,7 +591,9 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
 	Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetTransform(view->GetCamera()));
 	const Math::mat4& viewProj = Graphics::CameraContext::GetViewProjection(view->GetCamera());
 	Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
+#ifdef USE_SPARSE
 	CoreGraphics::TextureSparsePageSize pageSize = CoreGraphics::TextureSparseGetPageSize(terrainState.virtualAlbedoMap);
+#endif
 
 	for (IndexT i = 0; i < runtimes.Size(); i++)
 	{

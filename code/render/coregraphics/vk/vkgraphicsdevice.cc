@@ -1672,11 +1672,11 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		// allocate memory and bind
 		CoreGraphics::Alloc alloc = AllocateMemory(state.devices[state.currentDevice], state.queryResultsByType[i], MemoryPoolType::BufferMemory_Mapped);
 		state.queryResultMemByType[i] = alloc.mem;
-		res = vkBindBufferMemory(state.devices[state.currentDevice], state.queryResultsByType[i], state.queryResultMemByType[i], 0);
+		res = vkBindBufferMemory(state.devices[state.currentDevice], state.queryResultsByType[i], state.queryResultMemByType[i], alloc.offset);
 		n_assert(res == VK_SUCCESS);
 
 		// map memory for reading later
-		state.queryResultPtrByType[i] = (uint64_t*)((char*)GetMappedMemory(MemoryPoolType::BufferMemory_Mapped) + alloc.offset);
+		state.queryResultPtrByType[i] = (uint64_t*)GetMappedMemory(alloc);
 	}
 
 #if NEBULA_ENABLE_PROFILING

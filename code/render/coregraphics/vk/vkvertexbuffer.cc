@@ -100,7 +100,7 @@ CreateVertexBuffer(const VertexBufferCreateInfo& info)
 	if (info.mode == HostWriteable || info.mode == HostMapped)
 	{
 		// copy contents and flush memory
-		char* data = (char*)GetMappedMemory(pool) + alloc.offset;
+		char* data = (char*)GetMappedMemory(alloc);
 		mapInfo.mappedMemory = data;
 
 		// if we have data, copy the memory to the region
@@ -200,7 +200,7 @@ CreateVertexBuffer(const VertexBufferCreateDirectInfo& info)
 	if (info.mode == HostWriteable || info.mode == HostMapped)
 	{
 		// copy contents and flush memory
-		char* data = (char*)GetMappedMemory(pool) + alloc.offset;
+		char* data = (char*)GetMappedMemory(alloc);
 		mapInfo.mappedMemory = data;
 	}
 

@@ -39,7 +39,8 @@ struct Alloc
 	DeviceMemory mem;
 	DeviceSize offset;
 	DeviceSize size;
-	CoreGraphics::MemoryPoolType poolType;
+	uint poolIndex;
+	uint blockIndex;
 };
 
 struct AllocRange
@@ -48,36 +49,55 @@ struct AllocRange
 	DeviceSize size;
 };
 
-struct AllocationMethod
-{
-	AllocRange(*Alloc)(Util::Array<AllocRange>*, DeviceSize, DeviceSize);
-	bool (*Dealloc)(Util::Array<AllocRange>*, DeviceSize);
-};
-
 struct MemoryPool
 {
-	DeviceMemory mem;
-	Util::Array<AllocRange> ranges;
+	// make a new allocation
+	Alloc AllocateMemory(uint alignment, uint size);
+	// deallocate memory
+	bool DeallocateMemory(const Alloc& alloc);
+
+	// clear memory pool
+	void Clear();
+
+	// get mapped memory
+	void* GetMappedMemory(const Alloc& alloc);
+
+	DeviceSize blockSize;
+	uint memoryType;
+	Util::Array<DeviceMemory> blocks;
+	Util::Array<Util::Array<AllocRange>> blockRanges;
+	Util::Array<void*> blockMappedPointers;
 	DeviceSize size;
-	AllocationMethod method;
-	void* mappedMemory;
+
+	enum AllocationMethod
+	{
+		MemoryPool_AllocConservative,
+		MemoryPool_AllocLinear,
+	};
+
+	AllocationMethod allocMethod;
+
+	DeviceSize maxSize;
+	bool mapMemory;
+
+private:
+
+	// allocate conservatively
+	Alloc AllocateConservative(DeviceSize alignment, DeviceSize size);
+	// deallocate conservatively
+	bool DeallocConservative(const Alloc& alloc);
+	// allocate linearly
+	Alloc AllocateLinear(DeviceSize alignment, DeviceSize size);
+	// deallocate linearly
+	bool DeallocLinear(const Alloc& alloc);
+	// create new memory block
+	DeviceMemory CreateBlock(bool map, void** outMappedPtr);
+	// destroy block
+	void DestroyBlock(DeviceMemory mem, bool unmap);
 };
 
-extern AllocationMethod ConservativeAllocationMethod;
-extern AllocationMethod LinearAllocationMethod;
-extern MemoryPool ImageLocalPool;
-extern MemoryPool ImageTemporaryPool;
-extern MemoryPool BufferLocalPool;
-extern MemoryPool BufferTemporaryPool;
-extern MemoryPool BufferDynamicPool;
-extern MemoryPool BufferMappedPool;
+extern Util::Array<MemoryPool> Pools;
 extern Threading::CriticalSection AllocationLoc;
-
-AllocRange AllocRangeConservative(Util::Array<AllocRange>* ranges, DeviceSize alignment, DeviceSize size);
-bool DeallocRangeConservative(Util::Array<AllocRange>* ranges, DeviceSize offset);
-
-AllocRange AllocRangeLinear(Util::Array<AllocRange>* ranges, DeviceSize alignment, DeviceSize size);
-bool DeallocRangeLinear(Util::Array<AllocRange>* ranges, VkDeviceSize offset);
 
 /// setup memory pools
 void SetupMemoryPools(
@@ -93,6 +113,6 @@ void DiscardMemoryPools(VkDevice dev);
 /// free memory
 void FreeMemory(const CoreGraphics::Alloc& alloc);
 /// get mapped memory pointer
-void* GetMappedMemory(CoreGraphics::MemoryPoolType type);
+void* GetMappedMemory(const CoreGraphics::Alloc& alloc);
 
 } // namespace CoreGraphics
