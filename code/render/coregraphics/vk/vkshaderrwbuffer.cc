@@ -90,7 +90,7 @@ CreateShaderRWBuffer(const ShaderRWBufferCreateInfo& info)
 	if (info.mode == HostWriteable || info.mode == HostMapped)
 	{
 		// map memory so we can use it later
-		mapInfo.data = (char*)GetMappedMemory(pool) + alloc.offset;
+		mapInfo.data = (char*)GetMappedMemory(alloc);
 	}
 	
 #if NEBULA_GRAPHICS_DEBUG

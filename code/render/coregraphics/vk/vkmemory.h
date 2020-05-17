@@ -17,7 +17,7 @@ CoreGraphics::Alloc AllocateMemory(const VkDevice dev, const VkImage& img, CoreG
 /// allocate memory for a buffer
 CoreGraphics::Alloc AllocateMemory(const VkDevice dev, const VkBuffer& buf, CoreGraphics::MemoryPoolType type);
 /// allocate memory for sparse memory
-CoreGraphics::Alloc AllocateMemory(const VkDevice dev, VkDeviceSize alignment, VkDeviceSize allocSize);
+CoreGraphics::Alloc AllocateMemory(const VkDevice dev, VkMemoryRequirements reqs, VkDeviceSize allocSize);
 
 /// flush a mapped memory region
 void Flush(const VkDevice dev, const CoreGraphics::Alloc& alloc);

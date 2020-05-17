@@ -122,6 +122,7 @@ struct TextureSparsePageTable
 	Util::FixedArray<Util::FixedArray<Util::Array<CoreGraphics::TextureSparsePage>>> pages;
 	Util::FixedArray<Util::FixedArray<Util::Array<VkSparseImageMemoryBind>>> pageBindings;
 	Util::FixedArray<Util::FixedArray<Util::FixedArray<uint32_t>>> bindCounts;
+	VkMemoryRequirements memoryReqs;
 };
 
 enum

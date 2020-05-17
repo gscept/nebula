@@ -86,7 +86,7 @@ VkUtilities::ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGr
 	// allocate temporary buffer
 	CoreGraphics::Alloc alloc = AllocateMemory(dev, buf, CoreGraphics::BufferMemory_Temporary);
 	vkBindBufferMemory(dev, buf, alloc.mem, alloc.offset);
-	char* mapped = (char*)GetMappedMemory(alloc.poolType) + alloc.offset;
+	char* mapped = (char*)GetMappedMemory(alloc);
 	memcpy(mapped, data, alloc.size);
 
 	// perform update of buffer, and stage a copy of buffer data to image

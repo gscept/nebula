@@ -265,7 +265,7 @@ VkMemoryTexturePool::Map(const CoreGraphics::TextureId id, IndexT mipLevel, Core
 		outMapInfo.mipHeight = mipHeight;
 		outMapInfo.rowPitch = (int32_t)alloc.size / mipHeight;
 		outMapInfo.depthPitch = (int32_t)alloc.size;
-        outMapInfo.data = (char*)GetMappedMemory(alloc.poolType) + alloc.offset;
+        outMapInfo.data = (char*)GetMappedMemory(alloc);
 		map.mapCount++;
 	}
 	else if (Texture3D == runtime.type)
@@ -291,7 +291,7 @@ VkMemoryTexturePool::Map(const CoreGraphics::TextureId id, IndexT mipLevel, Core
 		outMapInfo.mipHeight = mipHeight;
 		outMapInfo.rowPitch = (int32_t)alloc.size / mipWidth;
 		outMapInfo.depthPitch = (int32_t)alloc.size;
-        outMapInfo.data = (char*)GetMappedMemory(alloc.poolType) + alloc.offset;
+        outMapInfo.data = (char*)GetMappedMemory(alloc);
 		map.mapCount++;
 	}
 	textureAllocator.LeaveGet();
@@ -355,7 +355,7 @@ VkMemoryTexturePool::MapCubeFace(const CoreGraphics::TextureId id, CoreGraphics:
 	outMapInfo.mipHeight = mipHeight;
 	outMapInfo.rowPitch = (int32_t)alloc.size / mipWidth;
 	outMapInfo.depthPitch = (int32_t)alloc.size;
-    outMapInfo.data = (char*)GetMappedMemory(alloc.poolType) + alloc.offset;
+    outMapInfo.data = (char*)GetMappedMemory(alloc);
 	map.mapCount++;
 
 	textureAllocator.LeaveGet();
@@ -715,7 +715,7 @@ VkMemoryTexturePool::SparseMakeResident(const CoreGraphics::TextureId id, IndexT
     VkSparseImageMemoryBind& binding = table.pageBindings[layer][mip][pageIndex];
 
     // allocate memory and append page update
-    page.alloc = Vulkan::AllocateMemory(dev, page.size, page.size);
+    page.alloc = Vulkan::AllocateMemory(dev, table.memoryReqs, page.size);
     binding.memory = page.alloc.mem;
     binding.memoryOffset = page.alloc.offset;
 
@@ -1189,6 +1189,7 @@ SetupSparse(VkDevice dev, VkImage img, Ids::Id32 sparseExtension, const VkTextur
     Util::Array<VkSparseImageMemoryBind>& pendingBinds = textureSparseExtensionAllocator.GetSafe<TextureExtension_SparsePendingBinds>(sparseExtension);
     Util::Array<CoreGraphics::Alloc>& allocs = textureSparseExtensionAllocator.GetSafe<TextureExtension_SparseOpaqueAllocs>(sparseExtension);
     VkSparseImageMemoryRequirements& reqs = textureSparseExtensionAllocator.GetSafe<TextureExtension_SparseMemoryRequirements>(sparseExtension);
+    table.memoryReqs = memoryReqs;
     reqs = sparseMemoryRequirement;
 
     // setup pages and bind counts
@@ -1275,7 +1276,7 @@ SetupSparse(VkDevice dev, VkImage img, Ids::Id32 sparseExtension, const VkTextur
         // so we can just update all mips with a single copy/blit
         if ((!singleMipTail) && sparseMemoryRequirement.imageMipTailFirstLod < (uint32_t)info.mips)
         {
-            CoreGraphics::Alloc alloc = Vulkan::AllocateMemory(dev, memoryReqs.alignment, sparseMemoryRequirement.imageMipTailSize);
+            CoreGraphics::Alloc alloc = Vulkan::AllocateMemory(dev, memoryReqs, sparseMemoryRequirement.imageMipTailSize);
             allocs.Append(alloc);
 
             VkSparseMemoryBind sparseBind;
@@ -1294,7 +1295,7 @@ SetupSparse(VkDevice dev, VkImage img, Ids::Id32 sparseExtension, const VkTextur
     // so we can just update all mips with a single copy/blit
     if ((singleMipTail) && sparseMemoryRequirement.imageMipTailFirstLod < (uint32_t)info.mips)
     {
-        CoreGraphics::Alloc alloc = Vulkan::AllocateMemory(dev, memoryReqs.alignment, sparseMemoryRequirement.imageMipTailSize);
+        CoreGraphics::Alloc alloc = Vulkan::AllocateMemory(dev, memoryReqs, sparseMemoryRequirement.imageMipTailSize);
         allocs.Append(alloc);
 
         VkSparseMemoryBind sparseBind;
