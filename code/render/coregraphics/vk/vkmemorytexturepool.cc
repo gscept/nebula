@@ -947,7 +947,7 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
             if (loadInfo.alias == CoreGraphics::TextureId::Invalid())
             {
                 // allocate memory backing
-                CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, loadInfo.img, ImageMemory_Local);
+                CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, loadInfo.img, CoreGraphics::MemoryPool_DeviceLocal);
                 VkResult res = vkBindImageMemory(loadInfo.dev, loadInfo.img, alloc.mem, alloc.offset);
                 n_assert(res == VK_SUCCESS);
                 loadInfo.mem = alloc;
@@ -1261,7 +1261,7 @@ SetupSparse(VkDevice dev, VkImage img, Ids::Id32 sparseExtension, const VkTextur
                         page.extent = TextureSparsePageSize{ extent.width, extent.height, extent.depth };
                         page.mip = mip;
                         page.layer = layer;
-                        page.alloc = CoreGraphics::Alloc{ VK_NULL_HANDLE, 0, 0, CoreGraphics::ImageMemory_Local };
+                        page.alloc = CoreGraphics::Alloc{ VK_NULL_HANDLE, 0, 0, CoreGraphics::MemoryPool_DeviceLocal };
 
                         pendingBinds.Append(sparseBind);
                         table.pageBindings[layer][mip].Append(sparseBind);

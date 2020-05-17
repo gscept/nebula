@@ -82,13 +82,13 @@ CreateVertexBuffer(const VertexBufferCreateInfo& info)
 	VkResult err = vkCreateBuffer(loadInfo.dev, &bufinfo, NULL, &runtimeInfo.buf);
 	n_assert(err == VK_SUCCESS);
 
-	CoreGraphics::MemoryPoolType pool = CoreGraphics::BufferMemory_Local;
+	CoreGraphics::MemoryPoolType pool = CoreGraphics::MemoryPool_DeviceLocal;
 	if (info.mode == HostWriteable)
-		pool = CoreGraphics::BufferMemory_Dynamic;
+		pool = CoreGraphics::MemoryPool_ManualFlush;
 	else if (info.mode == HostMapped)
-		pool = CoreGraphics::BufferMemory_Mapped;
+		pool = CoreGraphics::MemoryPool_HostCoherent;
 	else if (info.mode == DeviceLocal)
-		pool = CoreGraphics::BufferMemory_Local;
+		pool = CoreGraphics::MemoryPool_DeviceLocal;
 
 	// allocate and bind memory
 	CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, runtimeInfo.buf, pool);
@@ -109,7 +109,7 @@ CreateVertexBuffer(const VertexBufferCreateInfo& info)
 			memcpy(data, info.data, info.dataSize);
 
 			// if dynamic memory type, flush the range of data we want to push
-			if (pool == BufferMemory_Dynamic)
+			if (pool == CoreGraphics::MemoryPool_ManualFlush)
 			{
 				VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
 
@@ -182,13 +182,13 @@ CreateVertexBuffer(const VertexBufferCreateDirectInfo& info)
 	VkResult err = vkCreateBuffer(loadInfo.dev, &bufinfo, NULL, &runtimeInfo.buf);
 	n_assert(err == VK_SUCCESS);
 
-	CoreGraphics::MemoryPoolType pool = CoreGraphics::BufferMemory_Local;
+	CoreGraphics::MemoryPoolType pool = CoreGraphics::MemoryPool_DeviceLocal;
 	if (info.mode == HostWriteable)
-		pool = CoreGraphics::BufferMemory_Dynamic;
+		pool = CoreGraphics::MemoryPool_ManualFlush;
 	else if (info.mode == HostMapped)
-		pool = CoreGraphics::BufferMemory_Mapped;
+		pool = CoreGraphics::MemoryPool_HostCoherent;
 	else if (info.mode == DeviceLocal)
-		pool = CoreGraphics::BufferMemory_Local;
+		pool = CoreGraphics::MemoryPool_DeviceLocal;
 
 	// now bind memory to buffer
 	CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, runtimeInfo.buf, pool);

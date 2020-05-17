@@ -330,18 +330,22 @@ VkSubContextHandler::GetTimelineIndex(CoreGraphics::QueueType type)
 void 
 VkSubContextHandler::Wait(CoreGraphics::QueueType type, uint64 index)
 {
-	// skip the undefined submission
-	VkSemaphoreWaitInfo waitInfo =
+	// we can't really signal index 0, so skip it
+	if (index > 0)
 	{
-		VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
-		nullptr,
-		0,
-		1,
-		&this->semaphores[type],
-		&index
-	};
-	VkResult res = vkWaitSemaphores(this->device, &waitInfo, UINT64_MAX);
-	n_assert(res == VK_SUCCESS || res == VK_TIMEOUT);
+		// skip the undefined submission
+		VkSemaphoreWaitInfo waitInfo =
+		{
+			VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
+			nullptr,
+			0,
+			1,
+			&this->semaphores[type],
+			&index
+		};
+		VkResult res = vkWaitSemaphores(this->device, &waitInfo, UINT64_MAX);
+		n_assert(res == VK_SUCCESS || res == VK_TIMEOUT);
+	}
 }
 
 //------------------------------------------------------------------------------

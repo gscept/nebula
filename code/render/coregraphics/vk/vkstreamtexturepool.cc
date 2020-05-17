@@ -162,7 +162,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	VkResult stat = vkCreateImage(dev, &info, NULL, &loadInfo.img);
 	n_assert(stat == VK_SUCCESS);
 
-	CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, loadInfo.img, ImageMemory_Local);
+	CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, loadInfo.img, CoreGraphics::MemoryPool_DeviceLocal);
 	stat = vkBindImageMemory(loadInfo.dev, loadInfo.img, alloc.mem, alloc.offset);
 	n_assert(stat == VK_SUCCESS);
 	loadInfo.mem = alloc;
