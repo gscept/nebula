@@ -85,13 +85,13 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 
 	map.data = nullptr;
 
-	CoreGraphics::MemoryPoolType pool = CoreGraphics::BufferMemory_Local;
+	CoreGraphics::MemoryPoolType pool = CoreGraphics::MemoryPool_DeviceLocal;
 	if (info.mode == HostWriteable)
-		pool = CoreGraphics::BufferMemory_Dynamic;
+		pool = CoreGraphics::MemoryPool_ManualFlush;
 	else if (info.mode == HostMapped)
-		pool = CoreGraphics::BufferMemory_Mapped;
+		pool = CoreGraphics::MemoryPool_HostCoherent;
 	else if (info.mode == DeviceLocal)
-		pool = CoreGraphics::BufferMemory_Local;
+		pool = CoreGraphics::MemoryPool_DeviceLocal;
 
 	// allocate and bind memory
 	CoreGraphics::Alloc alloc = AllocateMemory(dev, runtime.buf, pool);

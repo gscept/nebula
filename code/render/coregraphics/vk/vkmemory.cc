@@ -15,12 +15,9 @@ using namespace Vulkan;
 */
 void 
 SetupMemoryPools(
-	DeviceSize imageMemoryLocal,
-	DeviceSize imageMemoryTemporary,
-	DeviceSize bufferMemoryLocal,
-	DeviceSize bufferMemoryTemporary,
-	DeviceSize bufferMemoryDynamic,
-	DeviceSize bufferMemoryMapped)
+	DeviceSize deviceLocalMemory,
+	DeviceSize manuallyFlushedMemory,
+	DeviceSize hostCoherentMemory)
 {
 	VkPhysicalDeviceMemoryProperties props = Vulkan::GetMemoryProperties();
 
@@ -36,21 +33,21 @@ SetupMemoryPools(
 		{
 			// setup pool info
 			pool.mapMemory = false;
-			pool.blockSize = imageMemoryLocal;
+			pool.blockSize = deviceLocalMemory;
 			pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
 		}
 		else if (props.memoryTypes[i].propertyFlags & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT))
 		{
 			// setup pool info
 			pool.mapMemory = true;
-			pool.blockSize = bufferMemoryDynamic;
+			pool.blockSize = manuallyFlushedMemory;
 			pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
 		}
 		else if (props.memoryTypes[i].propertyFlags & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
 		{
 			// setup pool info
 			pool.mapMemory = true;
-			pool.blockSize = bufferMemoryMapped;
+			pool.blockSize = hostCoherentMemory;
 			pool.allocMethod = MemoryPool::MemoryPool_AllocLinear;
 		}
 	}
@@ -155,10 +152,7 @@ AllocateMemory(const VkDevice dev, const VkImage& img, MemoryPoolType type)
 
 	switch (type)
 	{
-	case ImageMemory_Local:
-		flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-		break;
-	case ImageMemory_Temporary:
+	case MemoryPool_DeviceLocal:
 		flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 		break;
 	default:
@@ -192,17 +186,14 @@ AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type)
 
 	switch (type)
 	{
-	case BufferMemory_Local:
+	case MemoryPool_DeviceLocal:
 		flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 		break;
-	case BufferMemory_Temporary:
+	case MemoryPool_HostCoherent:
 		flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 		break;
-	case BufferMemory_Dynamic:
+	case MemoryPool_ManualFlush:
 		flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
-		break;
-	case BufferMemory_Mapped:
-		flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 		break;
 	default:
 		n_crash("AllocateMemory(): Only buffer pool types are allowed for buffer memory");

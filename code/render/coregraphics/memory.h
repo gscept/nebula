@@ -24,12 +24,9 @@ namespace CoreGraphics
 
 enum MemoryPoolType
 {
-	ImageMemory_Local,			/// image memory which should reside only on the GPU
-	ImageMemory_Temporary,		/// temporary image memory which resides only on the GPU but will be discarded and allocated
-	BufferMemory_Local,			/// buffer memory which should reside only on the GPU
-	BufferMemory_Temporary,		/// temporary buffer memory which resides only on the GPU but will be discarded and allocated
-	BufferMemory_Dynamic,		/// buffer memory which will frequently be updated by the CPU side but requires an explicit flush
-	BufferMemory_Mapped,		/// buffer memory which is slightly slower than Dynamic, but which requires no flushing
+	MemoryPool_DeviceLocal,		/// image memory which should reside only on the GPU
+	MemoryPool_ManualFlush,		/// temporary image memory which resides only on the GPU but will be discarded and allocated
+	MemoryPool_HostCoherent,	/// buffer memory which should reside only on the GPU
 
 	NumMemoryPoolTypes
 };
@@ -101,12 +98,9 @@ extern Threading::CriticalSection AllocationLoc;
 
 /// setup memory pools
 void SetupMemoryPools(
-	DeviceSize imageMemoryLocal,
-	DeviceSize imageMemoryTemporary,
-	DeviceSize bufferMemoryLocal,
-	DeviceSize bufferMemoryTemporary,
-	DeviceSize bufferMemoryDynamic,
-	DeviceSize bufferMemoryMapped);
+	DeviceSize deviceLocalMemory,
+	DeviceSize manuallyFlushedMemory,
+	DeviceSize hostCoherentMemory);
 /// discard memory pools
 void DiscardMemoryPools(VkDevice dev);
 

@@ -1421,12 +1421,9 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
 	// setup memory pools
 	SetupMemoryPools(
-		info.memoryHeaps[ImageMemory_Local],
-		info.memoryHeaps[ImageMemory_Temporary],
-		info.memoryHeaps[BufferMemory_Local],
-		info.memoryHeaps[BufferMemory_Temporary],
-		info.memoryHeaps[BufferMemory_Dynamic],
-		info.memoryHeaps[BufferMemory_Mapped]
+		info.memoryHeaps[MemoryPool_DeviceLocal],
+		info.memoryHeaps[MemoryPool_ManualFlush],
+		info.memoryHeaps[MemoryPool_HostCoherent]
 		);
 
 	state.constantBufferRings.Resize(info.numBufferedFrames);
@@ -1670,7 +1667,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		n_assert(res == VK_SUCCESS);
 
 		// allocate memory and bind
-		CoreGraphics::Alloc alloc = AllocateMemory(state.devices[state.currentDevice], state.queryResultsByType[i], MemoryPoolType::BufferMemory_Mapped);
+		CoreGraphics::Alloc alloc = AllocateMemory(state.devices[state.currentDevice], state.queryResultsByType[i], CoreGraphics::MemoryPool_HostCoherent);
 		state.queryResultMemByType[i] = alloc.mem;
 		res = vkBindBufferMemory(state.devices[state.currentDevice], state.queryResultsByType[i], state.queryResultMemByType[i], alloc.offset);
 		n_assert(res == VK_SUCCESS);
