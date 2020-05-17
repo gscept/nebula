@@ -13,6 +13,15 @@ using namespace Vulkan;
 //------------------------------------------------------------------------------
 /**
 */
+constexpr bool 
+CheckBits(const VkMemoryPropertyFlags flags, const uint32_t bits)
+{
+	return (flags & bits) == bits;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 SetupMemoryPools(
 	DeviceSize deviceLocalMemory,
@@ -29,21 +38,21 @@ SetupMemoryPools(
 		pool.maxSize = props.memoryHeaps[props.memoryTypes[i].heapIndex].size;
 		pool.memoryType = i;
 
-		if (props.memoryTypes[i].propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		if (CheckBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
 		{
 			// setup pool info
 			pool.mapMemory = false;
 			pool.blockSize = deviceLocalMemory;
 			pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
 		}
-		else if (props.memoryTypes[i].propertyFlags & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT))
+		else if (CheckBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT))
 		{
 			// setup pool info
 			pool.mapMemory = true;
 			pool.blockSize = manuallyFlushedMemory;
 			pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
 		}
-		else if (props.memoryTypes[i].propertyFlags & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+		else if (CheckBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
 		{
 			// setup pool info
 			pool.mapMemory = true;
@@ -262,7 +271,7 @@ GetMemoryType(uint32_t bits, VkMemoryPropertyFlags flags, uint32_t& index)
 	{
 		if ((bits & 1) == 1)
 		{
-			if ((props.memoryTypes[i].propertyFlags & flags) == flags)
+			if (CheckBits(props.memoryTypes[i].propertyFlags, flags))
 			{
 				index = i;
 				return VK_SUCCESS;

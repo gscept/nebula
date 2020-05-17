@@ -59,12 +59,12 @@ GraphicsServer::Open()
 		{ 1_MB, 30_MB },	// Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 50
 		{ 1_MB, 0_MB },		// Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
 		{
-			512_MB,			// device local memory block size, textures and vertex/index buffers
+			128_MB,			// device local memory block size, textures and vertex/index buffers
 			128_MB,			// manually flushed memory block size, constant buffers, storage buffers
-			128_MB,			// host coherent memory block size, particles, cloth, dynamic meshes
+			32_MB,			// host coherent memory block size, particles, cloth, dynamic meshes
 		},
 		3,					// number of simultaneous frames (3 = triple buffering, 2 = ... you get the idea)
-		false 				// validation
+		true 				// validation
 	};
 	this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 

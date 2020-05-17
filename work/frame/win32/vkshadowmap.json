@@ -7,8 +7,8 @@
 			{
 				name: "LocalLightShadow",
 				format: "R32G32F",
-				width: 1024,
-				height: 1024,
+				width: 512,
+				height: 512,
 				layers: 16,
 				usage: "Render",
 				type: "Texture2DArray"

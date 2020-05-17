@@ -184,7 +184,7 @@ MemoryPool::AllocateConservative(DeviceSize alignment, DeviceSize size)
 		Util::Array<AllocRange>& ranges = this->blockRanges[blockIndex];
 
 		// walk through and find a hole
-		DeviceSize offset = 0;
+		DeviceSize prevOffset = 0;
 		IndexT i;
 		for (i = 0; i < ranges.Size(); i++)
 		{
@@ -195,9 +195,9 @@ MemoryPool::AllocateConservative(DeviceSize alignment, DeviceSize size)
 			DeviceSize curOffset = ranges[i].offset;
 			DeviceSize curSize = ranges[i].size;
 
-			if (offset > curOffset)
+			if (prevOffset > curOffset)
 				goto next;
-			else if (curOffset - offset >= size)
+			else if (curOffset - prevOffset >= size)
 			{
 				// break, this will insert a new range after the previous but before this one
 				break;
@@ -205,23 +205,23 @@ MemoryPool::AllocateConservative(DeviceSize alignment, DeviceSize size)
 
 		next:
 			// set the new offset to be the end of the current range
-			offset = Math::n_align(curOffset + curSize, alignment);
+			prevOffset = Math::n_align(curOffset + curSize, alignment);
 		}
 
 		// if we are going to allocate outside of the block, go to the next block
-		if (offset + size >= blockSize)
+		if (prevOffset + size >= blockSize)
 			continue;
 
 		// create a new range and insert it into the list
 		AllocRange range;
-		range.offset = offset;
+		range.offset = prevOffset;
 		range.size = size;
 		ranges.Insert(i, range);
 		Alloc ret{ this->blocks[blockIndex], range.offset, range.size, this->memoryType, blockIndex };
 		return ret;
 	}
 
-	// no range could be found, so allocate new block
+	// no gap big enough could be found, create new block
 	n_assert(this->size + this->blockSize < this->maxSize);
 	this->size += this->blockSize;
 

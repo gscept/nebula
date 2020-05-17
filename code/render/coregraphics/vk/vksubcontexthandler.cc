@@ -220,8 +220,11 @@ VkSubContextHandler::AppendSparseBind(CoreGraphics::QueueType type, const VkImag
 	submission.signalIndices.Append(this->semaphoreSubmissionIds[type]);
 
 	// add wait
-	submission.waitSemaphores.Append(this->semaphores[CoreGraphics::GraphicsQueueType]);
-	submission.waitIndices.Append(this->semaphoreSubmissionIds[CoreGraphics::GraphicsQueueType]);
+	if (this->semaphoreSubmissionIds[CoreGraphics::GraphicsQueueType] > 0)
+	{
+		submission.waitSemaphores.Append(this->semaphores[CoreGraphics::GraphicsQueueType]);
+		submission.waitIndices.Append(this->semaphoreSubmissionIds[CoreGraphics::GraphicsQueueType]);
+	}
 
 	return this->semaphoreSubmissionIds[type];
 }
