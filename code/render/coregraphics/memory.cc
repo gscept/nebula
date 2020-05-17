@@ -13,111 +13,6 @@ Threading::CriticalSection AllocationLoc;
 
 //------------------------------------------------------------------------------
 /**
-	Slowest but most conservative memory allocation method:
-		Go through the list of all available ranges to find a suitable gap.
-		Return that gap.
-		Supports releasing and reusing memory
-*/
-AllocRange
-AllocRangeConservative(Util::Array<AllocRange>* ranges, DeviceSize alignment, DeviceSize size)
-{
-	// walk through and find a hole
-	DeviceSize offset = 0;
-	IndexT i;
-	for (i = 0; i < ranges->Size(); i++)
-	{
-		// get the current offset
-		// if the gap between the previous offset and the current
-		// one fits our memory, break the loop and return the offset
-		// and index, so we can insert a new range for later
-		DeviceSize curOffset = (*ranges)[i].offset;
-		DeviceSize curSize = (*ranges)[i].size;
-		if (offset > curOffset)
-			goto next;
-		else if (curOffset - offset >= size)
-		{
-			// break, this will insert a new range after the previous but before this one
-			break;
-		}
-
-	next:
-		// set the new offset to be the end of the current range
-		offset = Math::n_align(curOffset + curSize, alignment);
-	}
-
-	// create a new range and insert it into the list
-	AllocRange range;
-	range.offset = offset;
-	range.size = size;
-	ranges->Insert(i, range);
-	return range;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-bool
-DeallocRangeConservative(Util::Array<AllocRange>* ranges, DeviceSize offset)
-{
-	for (IndexT i = 0; i < ranges->Size(); i++)
-	{
-		if ((*ranges)[i].offset == offset)
-		{
-			ranges->EraseIndex(i);
-			return true;
-		}
-	}
-	return false;
-}
-
-//------------------------------------------------------------------------------
-/**
-	Fast but wasteful allocation method, which always inserts a new block
-	after the last range
-*/
-AllocRange
-AllocRangeLinear(Util::Array<AllocRange>* ranges, DeviceSize alignment, DeviceSize size)
-{
-	AllocRange range;
-
-	if (ranges->Size() > 0)
-	{
-		const AllocRange& lastRange = ranges->Back();
-		range.offset = Math::n_align(lastRange.offset + lastRange.size, alignment);
-		range.size = size;
-		ranges->Append(range);
-		return range;
-	}
-	else
-	{
-		range.offset = 0;
-		range.size = size;
-		ranges->Append(range);
-		return range;
-	};
-}
-
-//------------------------------------------------------------------------------
-/**
-	Performs a dealloc, but because of the nature of alloc, the memory
-	wont get reused until the last range is deallocated
-*/
-bool
-DeallocRangeLinear(Util::Array<AllocRange>* ranges, VkDeviceSize offset)
-{
-	for (IndexT i = 0; i < ranges->Size(); i++)
-	{
-		if ((*ranges)[i].offset = offset)
-		{
-			ranges->EraseIndex(i);
-			return true;
-		}
-	}
-	return false;
-}
-
-//------------------------------------------------------------------------------
-/**
 */
 Alloc
 MemoryPool::AllocateMemory(uint alignment, uint size)
@@ -240,9 +135,9 @@ MemoryPool::AllocateConservative(DeviceSize alignment, DeviceSize size)
 bool 
 MemoryPool::DeallocConservative(const Alloc& alloc)
 {
-	for (IndexT i = 0; i < this->blockRanges[alloc.blockIndex].Size(); i++)
+	Util::Array<AllocRange>& ranges = this->blockRanges[alloc.blockIndex];
+	for (IndexT i = 0; i < ranges.Size(); i++)
 	{
-		Util::Array<AllocRange>& ranges = this->blockRanges[alloc.blockIndex];
 		if (ranges[i].offset == alloc.offset)
 		{
 			ranges.EraseIndex(i);
@@ -254,6 +149,7 @@ MemoryPool::DeallocConservative(const Alloc& alloc)
 				this->DestroyBlock(this->blocks[alloc.blockIndex], this->mapMemory);
 				this->blocks.EraseIndex(alloc.blockIndex);
 				this->blockRanges.EraseIndex(alloc.blockIndex);
+				this->blockMappedPointers.EraseIndex(alloc.blockIndex);
 			}
 			return true;
 		}
@@ -273,7 +169,6 @@ MemoryPool::AllocateLinear(DeviceSize alignment, DeviceSize size)
 	for (IndexT blockIndex = 0; blockIndex < this->blocks.Size(); blockIndex++)
 	{
 		Util::Array<AllocRange>& ranges = this->blockRanges[blockIndex];
-
 		if (ranges.Size() > 0)
 		{
 			const AllocRange& lastRange = ranges.Back();
@@ -322,9 +217,9 @@ MemoryPool::AllocateLinear(DeviceSize alignment, DeviceSize size)
 bool 
 MemoryPool::DeallocLinear(const Alloc& alloc)
 {
-	for (IndexT i = 0; i < this->blockRanges[alloc.blockIndex].Size(); i++)
+	Util::Array<AllocRange>& ranges = this->blockRanges[alloc.blockIndex];
+	for (IndexT i = 0; i < ranges.Size(); i++)
 	{
-		Util::Array<AllocRange>& ranges = this->blockRanges[alloc.blockIndex];
 		if (ranges[i].offset == alloc.offset)
 		{
 			ranges.EraseIndex(i);
@@ -336,6 +231,7 @@ MemoryPool::DeallocLinear(const Alloc& alloc)
 				this->DestroyBlock(this->blocks[alloc.blockIndex], this->mapMemory);
 				this->blocks.EraseIndex(alloc.blockIndex);
 				this->blockRanges.EraseIndex(alloc.blockIndex);
+				this->blockMappedPointers.EraseIndex(alloc.blockIndex);
 			}
 			return true;
 		}

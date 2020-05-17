@@ -75,6 +75,12 @@ operator"" _MB(const uint64 val)
 #define N_XRGB(r,g,b)   N_ARGB(0xff,r,g,b)
 #define N_COLORVALUE(r,g,b,a) N_RGBA((uint)((r)*255.f),(uint)((g)*255.f),(uint)((b)*255.f),(uint)((a)*255.f))
 
+constexpr bool
+CheckBits(const uint32_t flags, const uint32_t bits)
+{
+    return (flags & bits) == bits;
+}
+
 // byte bit calc
 #define BITS_TO_BYTES(x) (((x)+7)>>3)
 #define BYTES_TO_BITS(x) ((x)<<3)

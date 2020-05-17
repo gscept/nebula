@@ -1234,7 +1234,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		for (uint32_t j = 0; j < queuesProps[i].queueCount; j++)
 		{
 			// just pick whichever queue supports graphics, it will most likely only be 1
-			if (queuesProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT && state.drawQueueIdx == UINT32_MAX)
+			if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_GRAPHICS_BIT)
+				&& state.drawQueueIdx == UINT32_MAX)
 			{
 				state.drawQueueFamily = i;
 				state.drawQueueIdx = j;
@@ -1243,8 +1244,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 			}
 
 			// find a compute queue which is not for graphics
-			if (queuesProps[i].queueFlags & VK_QUEUE_COMPUTE_BIT
-				&& (queuesProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0
+			if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_COMPUTE_BIT)
+				&& !CheckBits(queuesProps[i].queueFlags, VK_QUEUE_GRAPHICS_BIT)
 				&& state.computeQueueIdx == UINT32_MAX)
 			{
 				state.computeQueueFamily = i;
@@ -1254,9 +1255,9 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 			}
 
 			// find a transfer queue that is purely for transfers
-			if (queuesProps[i].queueFlags & VK_QUEUE_TRANSFER_BIT
-				&& (queuesProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0
-				&& (queuesProps[i].queueFlags & VK_QUEUE_COMPUTE_BIT) == 0
+			if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_TRANSFER_BIT)
+				&& !CheckBits(queuesProps[i].queueFlags, VK_QUEUE_GRAPHICS_BIT)
+				&& !CheckBits(queuesProps[i].queueFlags, VK_QUEUE_COMPUTE_BIT)
 				&& state.transferQueueIdx == UINT32_MAX)
 			{
 				state.transferQueueFamily = i;
@@ -1266,9 +1267,9 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 			}
 
 			// find a sparse or transfer queue that supports sparse binding
-			if (queuesProps[i].queueFlags & ~VK_QUEUE_SPARSE_BINDING_BIT
-				&& (queuesProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0
-				&& (queuesProps[i].queueFlags & VK_QUEUE_COMPUTE_BIT) == 0
+			if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_SPARSE_BINDING_BIT)
+				&& !CheckBits(queuesProps[i].queueFlags, VK_QUEUE_GRAPHICS_BIT)
+				&& !CheckBits(queuesProps[i].queueFlags, VK_QUEUE_COMPUTE_BIT)
 				&& state.sparseQueueIdx == UINT32_MAX)
 			{
 				state.sparseQueueFamily = i;
@@ -1336,7 +1337,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		queueInfos.Append(
 			{
 				VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-				NULL,
+				nullptr,
 				0,
 				i,
 				indexMap[i],
@@ -3154,10 +3155,11 @@ EndSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue, 
 	UnlockResourceSubmission();
 
 	// append a submission, and wait for the previous submission on the same queue
-	state.subcontextHandler.AppendSubmissionTimeline(
+	uint64 index = state.subcontextHandler.AppendSubmissionTimeline(
 		queue,
 		CommandBufferGetVk(commandBuffer)
 	);
+	SubmissionContextSetTimelineIndex(queue == GraphicsQueueType ? state.gfxSubmission : state.computeSubmission, index);
 
 	// stop recording
 	CommandBufferEndRecord(commandBuffer);
@@ -3212,14 +3214,25 @@ EndFrame(IndexT frameIndex)
 
 	// if we have an active resource submission, submit it!
 	LockResourceSubmission();
+	if (state.handoverSubmissionActive)
+	{
+		// finish up the resource submission and setup submissions
+		CommandBufferEndRecord(state.handoverSubmissionCmdBuffer);
+
+		// append submission for doing handover from transfer
+		uint64 index = state.subcontextHandler.AppendSubmissionTimeline(
+			GraphicsQueueType,
+			CommandBufferGetVk(state.handoverSubmissionCmdBuffer)
+		);
+		SubmissionContextSetTimelineIndex(state.handoverSubmissionContext, index);
+
+		state.handoverSubmissionActive = false;
+	}
+
 	if (state.resourceSubmissionActive)
 	{
 		// finish up the resource submission and setup submissions
 		CommandBufferEndRecord(state.resourceSubmissionCmdBuffer);
-
-#if NEBULA_GRAPHICS_DEBUG
-		CoreGraphics::QueueBeginMarker(TransferQueueType, NEBULA_MARKER_ORANGE, "Transfer");
-#endif
 
 		// finish by creating a singular submission for all transfers
 		uint64 index = state.subcontextHandler.AppendSubmissionTimeline(
@@ -3227,6 +3240,10 @@ EndFrame(IndexT frameIndex)
 			CommandBufferGetVk(state.resourceSubmissionCmdBuffer)
 		);
 		SubmissionContextSetTimelineIndex(state.resourceSubmissionContext, index);
+
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::QueueBeginMarker(TransferQueueType, NEBULA_MARKER_ORANGE, "Transfer");
+#endif
 
 		// submit transfers
 		state.subcontextHandler.FlushSubmissionsTimeline(TransferQueueType, nullptr);
@@ -3243,28 +3260,7 @@ EndFrame(IndexT frameIndex)
 		);
 		state.resourceSubmissionActive = false;
 	}
-	if (state.handoverSubmissionActive)
-	{
-		// finish up the resource submission and setup submissions
-		CommandBufferEndRecord(state.handoverSubmissionCmdBuffer);
 
-#if NEBULA_GRAPHICS_DEBUG
-		CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_ORANGE, "Transfer-Graphics Handover");
-#endif
-
-		// finish by creating a singular submission for all transfers
-		uint64 index = state.subcontextHandler.AppendSubmissionTimeline(
-			GraphicsQueueType,
-			CommandBufferGetVk(state.handoverSubmissionCmdBuffer)
-		);
-		SubmissionContextSetTimelineIndex(state.handoverSubmissionContext, index);
-
-#if NEBULA_GRAPHICS_DEBUG
-		CoreGraphics::QueueEndMarker(TransferQueueType);
-#endif
-
-		state.handoverSubmissionActive = false;
-	}
 	UnlockResourceSubmission();
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -3274,8 +3270,7 @@ EndFrame(IndexT frameIndex)
 	N_MARKER_BEGIN(ComputeSubmit, Render);
 
 	// submit compute, wait for this frames resource submissions
-	uint64 cindex = state.subcontextHandler.FlushSubmissionsTimeline(ComputeQueueType, nullptr);
-	SubmissionContextSetTimelineIndex(state.computeSubmission, cindex);
+	state.subcontextHandler.FlushSubmissionsTimeline(ComputeQueueType, nullptr);
 
 	N_MARKER_END();
 
@@ -3293,8 +3288,7 @@ EndFrame(IndexT frameIndex)
 	N_MARKER_BEGIN(GraphicsSubmit, Render);
 
 	// submit graphics, since this is our main queue, we use this submission to get the semaphore wait index
-	uint64 gindex = state.subcontextHandler.FlushSubmissionsTimeline(GraphicsQueueType, nullptr);
-	SubmissionContextSetTimelineIndex(state.gfxSubmission, gindex);
+	state.subcontextHandler.FlushSubmissionsTimeline(GraphicsQueueType, nullptr);
 
 	N_MARKER_END();
 

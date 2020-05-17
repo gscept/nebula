@@ -13,15 +13,6 @@ using namespace Vulkan;
 //------------------------------------------------------------------------------
 /**
 */
-constexpr bool 
-CheckBits(const VkMemoryPropertyFlags flags, const uint32_t bits)
-{
-	return (flags & bits) == bits;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void 
 SetupMemoryPools(
 	DeviceSize deviceLocalMemory,
@@ -37,6 +28,8 @@ SetupMemoryPools(
 		CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[i];
 		pool.maxSize = props.memoryHeaps[props.memoryTypes[i].heapIndex].size;
 		pool.memoryType = i;
+		pool.mapMemory = false;
+		pool.blockSize = 0;
 
 		if (CheckBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
 		{
@@ -169,7 +162,8 @@ AllocateMemory(const VkDevice dev, const VkImage& img, MemoryPoolType type)
 	}
 
 	uint32_t poolIndex;
-	GetMemoryType(req.memoryTypeBits, flags, poolIndex);
+	VkResult res = GetMemoryType(req.memoryTypeBits, flags, poolIndex);
+	n_assert(res == VK_SUCCESS);
 	CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[poolIndex];
 
 	// allocate
@@ -178,7 +172,7 @@ AllocateMemory(const VkDevice dev, const VkImage& img, MemoryPoolType type)
 	AllocationLoc.Leave();
 
 	// make sure we are not over-allocating, and return
-	n_assert(ret.offset + ret.size <= pool.maxSize);
+	n_assert(ret.offset + ret.size < pool.maxSize);
 	return ret;
 }
 
@@ -209,7 +203,8 @@ AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type)
 	}
 
 	uint32_t poolIndex;
-	GetMemoryType(req.memoryTypeBits, flags, poolIndex);
+	VkResult res = GetMemoryType(req.memoryTypeBits, flags, poolIndex);
+	n_assert(res == VK_SUCCESS);
 	CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[poolIndex];
 
 	// allocate
@@ -218,7 +213,7 @@ AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type)
 	AllocationLoc.Leave();
 
 	// make sure we are not over-allocating, and return
-	n_assert(ret.offset + ret.size <= pool.maxSize);
+	n_assert(ret.offset + ret.size < pool.maxSize);
 	return ret;
 }
 
@@ -229,7 +224,8 @@ CoreGraphics::Alloc
 AllocateMemory(const VkDevice dev, VkMemoryRequirements reqs, VkDeviceSize allocSize)
 {
 	uint32_t poolIndex;
-	GetMemoryType(reqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, poolIndex);
+	VkResult res = GetMemoryType(reqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, poolIndex);
+	n_assert(res == VK_SUCCESS);
 	CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[poolIndex];
 
 	// allocate
@@ -258,7 +254,6 @@ Flush(const VkDevice dev, const Alloc& alloc)
 	VkResult res = vkFlushMappedMemoryRanges(dev, 1, &range);
 	n_assert(res == VK_SUCCESS);
 }
-
 
 //------------------------------------------------------------------------------
 /**
