@@ -71,8 +71,7 @@ TerrainContext::Create()
 	_CreateContext();
 	using namespace CoreGraphics;
 
-	__bundle.OnPrepareView = TerrainContext::CullPatches;
-	__bundle.OnBeforeView = TerrainContext::UpdateVirtualTexture;
+	__bundle.OnUpdateViewResources = TerrainContext::CullPatches;
 
 #ifndef PUBLIC_BUILD
 	__bundle.OnRenderDebug = TerrainContext::OnRenderDebug;
@@ -241,16 +240,9 @@ TerrainContext::SetupTerrain(
 	SizeT vertDistanceX = settings.vertexDensityX;
 	SizeT vertDistanceY = settings.vertexDensityY;
 
-	CoreGraphics::ConstantBufferCreateInfo cboInfo =
-	{
-		"TerrainPatchConstants",
-		numXTiles * numYTiles * sizeof(PatchUniforms),
-		CoreGraphics::HostWriteable
-	};
-	runtimeInfo.patchConstants = CreateConstantBuffer(cboInfo);
 	runtimeInfo.patchTable = ShaderCreateResourceTable(terrainState.terrainShader, NEBULA_DYNAMIC_OFFSET_GROUP);
 	IndexT slot = ShaderGetResourceSlot(terrainState.terrainShader, "PatchUniforms");
-	ResourceTableSetConstantBuffer(runtimeInfo.patchTable, { runtimeInfo.patchConstants, slot, 0, true, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+	ResourceTableSetConstantBuffer(runtimeInfo.patchTable, { CoreGraphics::GetGraphicsConstantBuffer(CoreGraphics::MainThreadConstantBuffer), slot, 0, true, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 	ResourceTableCommitChanges(runtimeInfo.patchTable);
 
 	// allocate a tile vertex buffer
@@ -277,15 +269,8 @@ TerrainContext::SetupTerrain(
 			runtimeInfo.sectorVisible.Append(true);
 			runtimeInfo.sectorLod.Append((float)terrainState.mips);
 			runtimeInfo.sectorLodResidency.Append(Util::FixedArray<bool>(terrainState.mips, false));
-			
-			uint uniformOffset = (x + y * numXTiles) * sizeof(PatchUniforms);
-			PatchUniforms uniforms;
-			uniforms.offsetPatchPos[0] = box.pmin.x;
-			uniforms.offsetPatchPos[1] = box.pmin.z;
-			uniforms.offsetPatchUV[0] = x * settings.tileWidth / settings.worldSizeX;
-			uniforms.offsetPatchUV[1] = y * settings.tileHeight / settings.worldSizeZ;
-			ConstantBufferUpdate(runtimeInfo.patchConstants, uniforms, uniformOffset);
-			runtimeInfo.sectorUniformOffsets.Append(uniformOffset);
+			runtimeInfo.sectorUniformOffsets.Append(0);
+			runtimeInfo.sectorUv.Append({ x * settings.tileWidth / settings.worldSizeX, y * settings.tileHeight / settings.worldSizeZ });
 
 			CoreGraphics::PrimitiveGroup group;
 			group.SetBaseIndex(0);
@@ -296,7 +281,6 @@ TerrainContext::SetupTerrain(
 			runtimeInfo.sectorPrimGroups.Append(group);
 		}
 	}
-	ConstantBufferFlush(runtimeInfo.patchConstants);
 
 	// walk through and set up sections, oriented around origo, so half of the sections are in the negative
 	for (IndexT y = 0; y < numVertsY; y++)
@@ -600,8 +584,22 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
 		TerrainRuntimeInfo& rt = runtimes[i];
 		for (IndexT j = 0; j < rt.sectionBoxes.Size(); j++)
 		{
-			Math::ClipStatus::Type flag = rt.sectionBoxes[j].clipstatus(viewProj);
+			const Math::bbox& box = rt.sectionBoxes[j];
+
+			Math::ClipStatus::Type flag = box.clipstatus(viewProj);
 			rt.sectorVisible[j] = !(flag == Math::ClipStatus::Outside);
+
+			if (rt.sectorVisible[j])
+			{
+				PatchUniforms uniforms;
+				uniforms.offsetPatchPos[0] = box.pmin.x;
+				uniforms.offsetPatchPos[1] = box.pmin.z;
+				uniforms.offsetPatchUV[0] = rt.sectorUv[j].x;
+				uniforms.offsetPatchUV[1] = rt.sectorUv[j].y;
+				uint uniformOffset = CoreGraphics::SetGraphicsConstants(CoreGraphics::MainThreadConstantBuffer, uniforms);
+				rt.sectorUniformOffsets[j] = uniformOffset;
+			}
+
 #ifdef USE_SPARSE
 			float& currentLod = rt.sectorLod[j];
 

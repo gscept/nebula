@@ -73,6 +73,7 @@ private:
         Util::Array<bool> sectorVisible;
         Util::Array<Util::FixedArray<bool>> sectorLodResidency;
         Util::Array<uint> sectorUniformOffsets;
+        Util::Array<Math::float2> sectorUv;
         Util::Array<float> sectorLod;
 
         float heightMapWidth, heightMapHeight;
@@ -85,7 +86,6 @@ private:
         CoreGraphics::VertexBufferId vbo;
         CoreGraphics::IndexBufferId ibo;
 
-        CoreGraphics::ConstantBufferId patchConstants;
         CoreGraphics::ResourceTableId patchTable;
     };
 
