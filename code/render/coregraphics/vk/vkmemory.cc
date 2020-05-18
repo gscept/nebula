@@ -245,11 +245,14 @@ void
 Flush(const VkDevice dev, const Alloc& alloc)
 {
 	VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
+	CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[alloc.poolIndex];
 	VkMappedMemoryRange range;
 	range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 	range.pNext = nullptr;
 	range.offset = Math::n_align_down(alloc.offset, props.limits.nonCoherentAtomSize);
-	range.size = Math::n_align(alloc.size, props.limits.nonCoherentAtomSize);
+	range.size = Math::n_min(
+		Math::n_align(alloc.size + (alloc.offset - range.offset), props.limits.nonCoherentAtomSize),
+		pool.blockSize);
 	range.memory = alloc.mem;
 	VkResult res = vkFlushMappedMemoryRanges(dev, 1, &range);
 	n_assert(res == VK_SUCCESS);

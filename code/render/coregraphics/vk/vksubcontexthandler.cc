@@ -169,11 +169,11 @@ VkSubContextHandler::AppendWaitTimeline(CoreGraphics::QueueType type, VkPipeline
 	TimelineSubmission& sub = this->timelineSubmissions[type].Back();
 
 	n_assert(waitQueue != CoreGraphics::InvalidQueueType);
-	uint payload = this->semaphoreSubmissionIds[this->queueFamilies[waitQueue]];
+	uint payload = this->semaphoreSubmissionIds[waitQueue];
 	if (payload > 0)
 	{
 		sub.waitIndices.Append(payload);
-		sub.waitSemaphores.Append(this->semaphores[this->queueFamilies[waitQueue]]);
+		sub.waitSemaphores.Append(this->semaphores[waitQueue]);
 		sub.waitFlags.Append(waitFlags);
 	}	
 }

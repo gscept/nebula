@@ -64,7 +64,7 @@ GraphicsServer::Open()
 			32_MB,			// host coherent memory block size, particles, cloth, dynamic meshes
 		},
 		3,					// number of simultaneous frames (3 = triple buffering, 2 = ... you get the idea)
-		true 				// validation
+		false 				// validation
 	};
 	this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 

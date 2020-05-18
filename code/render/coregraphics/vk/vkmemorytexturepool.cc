@@ -814,11 +814,13 @@ VkMemoryTexturePool::SwapBuffers(const CoreGraphics::TextureId id)
     // get present fence and be sure it is finished before getting the next image
     VkDevice dev = Vulkan::GetCurrentDevice();
 	VkFence fence = Vulkan::GetPresentFence();
-    vkWaitForFences(dev, 1, &fence, true, UINT64_MAX);
-    vkResetFences(dev, 1, &fence);
+    VkResult res = vkWaitForFences(dev, 1, &fence, true, UINT64_MAX);
+    n_assert(res == VK_SUCCESS);
+    res = vkResetFences(dev, 1, &fence);
+    n_assert(res == VK_SUCCESS);
 
     // get the next image
-	VkResult res = vkAcquireNextImageKHR(dev, swapInfo.swapchain, UINT64_MAX, VK_NULL_HANDLE, fence, &swapInfo.currentBackbuffer);
+	res = vkAcquireNextImageKHR(dev, swapInfo.swapchain, UINT64_MAX, VK_NULL_HANDLE, fence, &swapInfo.currentBackbuffer);
 
 	//Vulkan::WaitForPresent(sem);
 	if (res == VK_ERROR_OUT_OF_DATE_KHR)

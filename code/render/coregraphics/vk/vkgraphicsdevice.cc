@@ -1245,7 +1245,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
 			// find a compute queue which is not for graphics
 			if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_COMPUTE_BIT)
-				&& !CheckBits(queuesProps[i].queueFlags, VK_QUEUE_GRAPHICS_BIT)
 				&& state.computeQueueIdx == UINT32_MAX)
 			{
 				state.computeQueueFamily = i;
@@ -1256,8 +1255,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
 			// find a transfer queue that is purely for transfers
 			if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_TRANSFER_BIT)
-				&& !CheckBits(queuesProps[i].queueFlags, VK_QUEUE_GRAPHICS_BIT)
-				&& !CheckBits(queuesProps[i].queueFlags, VK_QUEUE_COMPUTE_BIT)
 				&& state.transferQueueIdx == UINT32_MAX)
 			{
 				state.transferQueueFamily = i;
@@ -1268,8 +1265,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
 			// find a sparse or transfer queue that supports sparse binding
 			if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_SPARSE_BINDING_BIT)
-				&& !CheckBits(queuesProps[i].queueFlags, VK_QUEUE_GRAPHICS_BIT)
-				&& !CheckBits(queuesProps[i].queueFlags, VK_QUEUE_COMPUTE_BIT)
 				&& state.sparseQueueIdx == UINT32_MAX)
 			{
 				state.sparseQueueFamily = i;

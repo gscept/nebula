@@ -640,7 +640,7 @@ n_align(unsigned int alignant, unsigned int alignment)
 __forceinline unsigned int
 n_align_down(unsigned int alignant, unsigned int alignment)
 {
-    return (alignant - alignment) & ~(alignment - 1);
+    return (alignant / alignment * alignment);
 }
 
 //------------------------------------------------------------------------------
