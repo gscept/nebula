@@ -9,6 +9,7 @@
 #include "frame/frameplugin.h"
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
+#include "imgui.h"
 
 #include "resources/resourceserver.h"
 
@@ -34,6 +35,8 @@ struct
 	CoreGraphics::TextureId virtualAlbedoMap;
 	SizeT mips;
 	SizeT layers;
+
+	bool debugRender;
 
 } terrainState;
 
@@ -72,6 +75,7 @@ TerrainContext::Create()
 	using namespace CoreGraphics;
 
 	__bundle.OnUpdateViewResources = TerrainContext::CullPatches;
+	__bundle.OnBegin = TerrainContext::RenderUI;
 
 #ifndef PUBLIC_BUILD
 	__bundle.OnRenderDebug = TerrainContext::OnRenderDebug;
@@ -114,6 +118,7 @@ TerrainContext::Create()
 				uniforms.MinTessellation = 1.0f;
 				uniforms.MaxTessellation = 8.0f;
 				uniforms.VirtualTextureMips = terrainState.mips;
+				uniforms.Debug = terrainState.debugRender;
 				uniforms.MaxHeight = rt.maxHeight;
 				uniforms.MinHeight = rt.minHeight;
 				ConstantBufferUpdate(terrainState.constants, uniforms, 0);
@@ -157,8 +162,9 @@ TerrainContext::Create()
 
 	// create vlo
 	terrainState.vlo = CreateVertexLayout({ terrainState.components });
-	terrainState.mips = 6;
+	terrainState.mips = 13;
 	terrainState.layers = 1;
+	terrainState.debugRender = false;
 
 	// create virtual texture for albedo
 	TextureCreateInfo info;
@@ -425,12 +431,12 @@ UpdateSparseTexture(
 		{
 			// calculate page ranges offset by mip
 			uint offsetX = section.left >> oldMipFloored;
-			uint rangeX = Math::n_min(section.width() >> oldMipFloored, pageSize.width);
-			uint endX = offsetX + (section.width() >> oldMipFloored);
+			uint rangeX = Math::n_min(Math::n_max(section.width() >> oldMipFloored, 1u), pageSize.width);
+			uint endX = offsetX + Math::n_max(section.width() >> oldMipFloored, 1u);
 
 			uint offsetY = section.top >> oldMipFloored;
-			uint rangeY = Math::n_min(section.height() >> oldMipFloored, pageSize.height);
-			uint endY = offsetY + (section.height() >> oldMipFloored);
+			uint rangeY = Math::n_min(Math::n_max(section.height() >> oldMipFloored, 1u), pageSize.height);
+			uint endY = offsetY + Math::n_max(section.height() >> oldMipFloored, 1u);
 
 			// go through pages and evict
 			for (uint y = offsetY; y < endY; y += rangeY)
@@ -440,7 +446,7 @@ UpdateSparseTexture(
 					uint pageIndex = CoreGraphics::TextureSparseGetPageIndex(tex, 0, oldMipFloored, x, y, 0);
 
 					// decrease the reference count
-					if (terrainState.pageReferenceCount[0][oldMipFloored][pageIndex] > 0)
+					if (pageIndex != InvalidIndex && terrainState.pageReferenceCount[0][oldMipFloored][pageIndex] > 0)
 					{
 						terrainState.pageReferenceCount[0][oldMipFloored][pageIndex]--;
 
@@ -457,12 +463,12 @@ UpdateSparseTexture(
 		{
 			// calculate page ranges offset by mip
 			uint offsetX = section.left >> newMipFloored;
-			uint rangeX = Math::n_min(section.width() >> newMipFloored, pageSize.width);
-			uint endX = offsetX + (section.width() >> newMipFloored);
+			uint rangeX = Math::n_min(Math::n_max(section.width() >> newMipFloored, 1u), pageSize.width);
+			uint endX = offsetX + Math::n_max(section.width() >> newMipFloored, 1u);
 
 			uint offsetY = section.top >> newMipFloored;
-			uint rangeY = Math::n_min(section.height() >> newMipFloored, pageSize.height);
-			uint endY = offsetY + (section.height() >> newMipFloored);
+			uint rangeY = Math::n_min(Math::n_max(section.height() >> newMipFloored, 1u), pageSize.height);
+			uint endY = offsetY + Math::n_max(section.height() >> newMipFloored, 1u);
 
 			// lock the handover submission because it's on the graphics queue
 			CoreGraphics::LockResourceSubmission();
@@ -510,20 +516,23 @@ UpdateSparseTexture(
 					section.bottom = section.bottom >> newMipFloored;
 
 					// if this will be our first reference, make the page resident
-					if (terrainState.pageReferenceCount[0][newMipFloored][pageIndex] == 0)
+					if (pageIndex != InvalidIndex)
 					{
-						CoreGraphics::TextureSparseMakeResident(tex, 0, newMipFloored, pageIndex);
-						const CoreGraphics::TextureSparsePage& page = CoreGraphics::TextureSparseGetPage(tex, 0, newMipFloored, pageIndex);
+						if (terrainState.pageReferenceCount[0][newMipFloored][pageIndex] == 0)
+						{
+							CoreGraphics::TextureSparseMakeResident(tex, 0, newMipFloored, pageIndex);
+							const CoreGraphics::TextureSparsePage& page = CoreGraphics::TextureSparseGetPage(tex, 0, newMipFloored, pageIndex);
 
-						// if we are allocating the page, fill it immediately because it may contain old data
-						section.left = page.offset.x;
-						section.right = page.offset.x + page.extent.width;
-						section.top = page.offset.y;
-						section.bottom = page.offset.y + page.extent.height;
+							// if we are allocating the page, fill it immediately because it may contain old data
+							section.left = page.offset.x;
+							section.right = page.offset.x + page.extent.width;
+							section.top = page.offset.y;
+							section.bottom = page.offset.y + page.extent.height;
+						}
+
+						// add a reference count
+						terrainState.pageReferenceCount[0][newMipFloored][pageIndex]++;
 					}
-
-					// add a reference count
-					terrainState.pageReferenceCount[0][newMipFloored][pageIndex]++;
 
 					// update the texture
 					CoreGraphics::TextureSparseUpdate(tex, section, newMipFloored, source, sub);
@@ -648,8 +657,15 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
 /**
 */
 void 
-TerrainContext::UpdateVirtualTexture(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
 {
+	if (ImGui::Begin("Terrain Params"))
+	{
+		ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
+		ImGui::Checkbox("Debug Render", &terrainState.debugRender);
+	}
+
+	ImGui::End();
 }
 
 //------------------------------------------------------------------------------

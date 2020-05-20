@@ -14,11 +14,14 @@ group(BATCH_GROUP) constant TerrainUniforms [ string Visibility = "VS|HS|DS|PS";
 	vec2 TerrainDimensions;
 	float MinLODDistance;
 	float MaxLODDistance;
+
 	float MinTessellation;
 	float MaxTessellation;
 	float MinHeight;
 	float MaxHeight;
+
 	uint VirtualTextureMips;
+	uint Debug;
 	textureHandle HeightMap;
 	textureHandle NormalMap;
 	textureHandle DecisionMap;
@@ -252,12 +255,14 @@ psTerrain(
 {	
 	Material = vec4(0.0f, 1.0f, 0.5f, 0.0f);
 	float LOD = saturate(length(ViewPos) / 500.0f) * (VirtualTextureMips - 1);
-	/*
-	Albedo = vec4(0, 0, 0, 0);
-	for (int i = 0; i < VirtualTextureMips; i++)
-		Albedo += sample2DLod(AlbedoMap, TextureSampler, UV, i);
-	*/
-	Albedo = sample2DLod(AlbedoMap, TextureSampler, UV, LOD);
+	if (Debug == 0)
+	{
+		Albedo = vec4(0, 0, 0, 0);
+		for (int i = 0; i < VirtualTextureMips; i++)
+			Albedo += sample2DLod(AlbedoMap, TextureSampler, UV, i);
+	}
+	else
+		Albedo = sample2DLod(AlbedoMap, TextureSampler, UV, LOD);
 	Normals = Normal;
 }
 

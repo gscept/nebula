@@ -158,9 +158,6 @@ struct TextureSparsePage
 {
 	TextureSparsePageOffset offset;
 	TextureSparsePageSize extent;
-	uint mip;
-	uint layer;
-	uint size;
 	CoreGraphics::Alloc alloc;
 };
 

@@ -2115,18 +2115,6 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
 		"Sparse"
 	};
 
-	// if we have a pending sparse submit, let the graphics wait for the sparse to finish
-	if (queue == CoreGraphics::GraphicsQueueType && state.sparseWaitHandled)
-	{
-		state.subcontextHandler.AppendWaitTimeline(
-			CoreGraphics::GraphicsQueueType,
-			VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-			CoreGraphics::SparseQueueType
-		);
-
-		state.sparseWaitHandled = true;
-	}
-
 	// insert some markers explaining the queue synchronization, the +1 is because it will be the submission index on EndSubmission
 	if (waitQueue != InvalidQueueType)
 	{
@@ -3223,6 +3211,19 @@ EndFrame(IndexT frameIndex)
 
 		state.handoverSubmissionActive = false;
 	}
+
+	// if we have a pending sparse submit, let the graphics wait for the sparse to finish
+	if (state.sparseWaitHandled)
+	{
+		state.subcontextHandler.AppendWaitTimeline(
+			CoreGraphics::GraphicsQueueType,
+			VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+			CoreGraphics::SparseQueueType
+		);
+
+		state.sparseWaitHandled = true;
+	}
+
 
 	if (state.resourceSubmissionActive)
 	{

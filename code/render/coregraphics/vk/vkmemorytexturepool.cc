@@ -634,11 +634,16 @@ VkMemoryTexturePool::SparseGetPageIndex(const CoreGraphics::TextureId id, IndexT
     n_assert(sparseExtension != Ids::InvalidId32);
 
     const VkSparseImageMemoryRequirements& reqs = textureSparseExtensionAllocator.GetSafe<TextureExtension_SparseMemoryRequirements>(sparseExtension);
-    const TextureSparsePageTable& table = textureSparseExtensionAllocator.GetSafe<TextureExtension_SparsePageTable>(sparseExtension);
-    uint32_t strideX = reqs.formatProperties.imageGranularity.width;
-    uint32_t strideY = reqs.formatProperties.imageGranularity.height;
-    uint32_t strideZ = reqs.formatProperties.imageGranularity.depth;
-    return x / strideX + (table.bindCounts[layer][mip][0] * (y / strideY + table.bindCounts[layer][mip][1] * z / strideZ));
+    if (reqs.imageMipTailFirstLod > (uint32_t)mip)
+    {
+        const TextureSparsePageTable& table = textureSparseExtensionAllocator.GetSafe<TextureExtension_SparsePageTable>(sparseExtension);
+        uint32_t strideX = reqs.formatProperties.imageGranularity.width;
+        uint32_t strideY = reqs.formatProperties.imageGranularity.height;
+        uint32_t strideZ = reqs.formatProperties.imageGranularity.depth;
+        return x / strideX + (table.bindCounts[layer][mip][0] * (y / strideY + table.bindCounts[layer][mip][1] * z / strideZ));
+    }
+    else
+        return InvalidIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -664,7 +669,11 @@ VkMemoryTexturePool::SparseGetNumPages(const CoreGraphics::TextureId id, IndexT 
     n_assert(sparseExtension != Ids::InvalidId32);
 
     const TextureSparsePageTable& table = textureSparseExtensionAllocator.GetSafe<TextureExtension_SparsePageTable>(sparseExtension);
-    return table.pages[layer][mip].Size();
+    const VkSparseImageMemoryRequirements& reqs = textureSparseExtensionAllocator.GetSafe<TextureExtension_SparseMemoryRequirements>(sparseExtension);
+    if (reqs.imageMipTailFirstLod > (uint32_t)mip)
+        return table.pages[layer][mip].Size();
+    else
+        return 0;
 }
 
 //------------------------------------------------------------------------------
@@ -715,7 +724,7 @@ VkMemoryTexturePool::SparseMakeResident(const CoreGraphics::TextureId id, IndexT
     VkSparseImageMemoryBind& binding = table.pageBindings[layer][mip][pageIndex];
 
     // allocate memory and append page update
-    page.alloc = Vulkan::AllocateMemory(dev, table.memoryReqs, page.size);
+    page.alloc = Vulkan::AllocateMemory(dev, table.memoryReqs, table.memoryReqs.alignment);
     binding.memory = page.alloc.mem;
     binding.memoryOffset = page.alloc.offset;
 
@@ -779,7 +788,6 @@ void
 VkMemoryTexturePool::SparseUpdate(const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, const CoreGraphics::TextureId source, const CoreGraphics::SubmissionContextId sub)
 {
     TextureDimensions dims = textureAllocator.GetSafe<Texture_LoadInfo>(source.resourceId).dims;
-    VkImage img = textureAllocator.GetSafe<Texture_LoadInfo>(id.resourceId).img;
 
     VkImageBlit blit;
     blit.srcOffsets[0] = { 0, 0, 0 };
@@ -793,7 +801,7 @@ VkMemoryTexturePool::SparseUpdate(const CoreGraphics::TextureId id, const Math::
     vkCmdBlitImage(CommandBufferGetVk(CoreGraphics::SubmissionContextGetCmdBuffer(sub)),
         TextureGetVkImage(source),
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        img,
+        TextureGetVkImage(id),
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         1, &blit, VK_FILTER_LINEAR);
 }
@@ -1162,11 +1170,11 @@ SetupSparse(VkDevice dev, VkImage img, Ids::Id32 sparseExtension, const VkTextur
 
     // get sparse memory requirements
     uint32_t sparseMemoryRequirementsCount;
-    VkSparseImageMemoryRequirements* sparseMemoryRequirements = nullptr;
     vkGetImageSparseMemoryRequirements(dev, img, &sparseMemoryRequirementsCount, nullptr);
     n_assert(sparseMemoryRequirementsCount > 0);
-    sparseMemoryRequirements = n_new_array(VkSparseImageMemoryRequirements, sparseMemoryRequirementsCount);
-    vkGetImageSparseMemoryRequirements(dev, img, &sparseMemoryRequirementsCount, sparseMemoryRequirements);
+
+    Util::FixedArray<VkSparseImageMemoryRequirements> sparseMemoryRequirements(sparseMemoryRequirementsCount);
+    vkGetImageSparseMemoryRequirements(dev, img, &sparseMemoryRequirementsCount, sparseMemoryRequirements.Begin());
 
     uint32_t usedMemoryRequirements = UINT32_MAX;
     for (uint32_t i = 0; i < sparseMemoryRequirementsCount; i++)
@@ -1258,11 +1266,8 @@ SetupSparse(VkDevice dev, VkImage img, Ids::Id32 sparseExtension, const VkTextur
 
                         // create new virtual page
                         TextureSparsePage page;
-                        page.size = memoryReqs.alignment;
                         page.offset = TextureSparsePageOffset{ (uint32_t)offset.x, (uint32_t)offset.y, (uint32_t)offset.z };
                         page.extent = TextureSparsePageSize{ extent.width, extent.height, extent.depth };
-                        page.mip = mip;
-                        page.layer = layer;
                         page.alloc = CoreGraphics::Alloc{ VK_NULL_HANDLE, 0, 0, CoreGraphics::MemoryPool_DeviceLocal };
 
                         pendingBinds.Append(sparseBind);
@@ -1310,8 +1315,6 @@ SetupSparse(VkDevice dev, VkImage img, Ids::Id32 sparseExtension, const VkTextur
         // add memory bind to update queue
         opaqueBinds.Append(sparseBind);
     }
-
-    n_delete_array(sparseMemoryRequirements);
 }
 
 } // namespace Vulkan

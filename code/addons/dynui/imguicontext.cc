@@ -249,7 +249,7 @@ ImguiContext::Create()
 		CoreGraphics::GpuBufferTypes::AccessWrite,
 		CoreGraphics::GpuBufferTypes::UsageDynamic,
 		CoreGraphics::BufferUpdateMode::HostMapped,
-		IndexType::Index32,
+		IndexType::Index16,
 		100000 * 3,
 		nullptr,
 		0
