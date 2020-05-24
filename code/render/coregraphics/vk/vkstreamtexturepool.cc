@@ -394,8 +394,9 @@ VkStreamTexturePool::StreamMaxLOD(const Resources::ResourceId& id, const float l
 		VkUtilities::ImageMemoryBarrier(loadInfo.img, viewSubres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
 	CoreGraphics::UnlockResourceSubmission();
-	streamInfo.lowestLod = adjustedLod;
 
+	// update lod info and add image view for recreation
+	streamInfo.lowestLod = adjustedLod;
 	VkShaderServer::Instance()->AddPendingImageView(TextureId(id), viewCreate, runtimeInfo.bind);
 }
 

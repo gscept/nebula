@@ -73,12 +73,14 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
 		[](const Resources::ResourceId id)
 		{
 			envState.defaultEnvironmentMap = id;
+			Resources::SetMaxLOD(id, 0.0f, false);
 		});
 
 	envState.defaultIrradianceMap = Resources::CreateResource("tex:system/sky_irr.dds"_atm, "system"_atm,
 		[](const Resources::ResourceId id)
 		{
 			envState.defaultIrradianceMap = id;
+			Resources::SetMaxLOD(id, 0.0f, false);
 		});
 }
 
