@@ -700,10 +700,10 @@ VkMemoryTexturePool::SparseEvict(const CoreGraphics::TextureId id, IndexT layer,
     binding.subresource =
     {
         VK_IMAGE_ASPECT_COLOR_BIT,
-        mip,
-        layer
+        (uint32_t)mip,
+        (uint32_t)layer
     };
-    binding.offset = { page.offset.x, page.offset.y, page.offset.z };
+    binding.offset = { (int32_t)page.offset.x, (int32_t)page.offset.y, (int32_t)page.offset.z };
     binding.extent = { page.extent.width, page.extent.height, page.extent.depth };
     binding.memory = VK_NULL_HANDLE;
     binding.memoryOffset = 0;
@@ -736,9 +736,10 @@ VkMemoryTexturePool::SparseMakeResident(const CoreGraphics::TextureId id, IndexT
     binding.subresource =
     {
         VK_IMAGE_ASPECT_COLOR_BIT,
-        mip, layer
+        (uint32_t)mip, 
+        (uint32_t)layer
     };
-    binding.offset = { page.offset.x, page.offset.y, page.offset.z };
+    binding.offset = { (int32_t)page.offset.x, (int32_t)page.offset.y, (int32_t)page.offset.z };
     binding.extent = { page.extent.width, page.extent.height, page.extent.depth };
     binding.memory = page.alloc.mem;
     binding.memoryOffset = page.alloc.offset;
