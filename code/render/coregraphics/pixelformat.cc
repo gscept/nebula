@@ -5,7 +5,9 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coregraphics/pixelformat.h"
+#ifdef WITH_DEVIL
 #include <IL/il.h>
+#endif
 
 namespace CoreGraphics
 {
@@ -222,6 +224,7 @@ PixelFormat::ToChannels(Code code)
 	}
 }
 
+#ifdef WITH_DEVIL
 //------------------------------------------------------------------------------
 /**
 */
@@ -327,6 +330,7 @@ PixelFormat::ToILType(Code code)
 		}
 	}
 }
+#endif
 
 //------------------------------------------------------------------------------
 /**
