@@ -7,7 +7,6 @@
 #include "coregraphics/texture.h"
 #include "io/ioserver.h"
 #include "coregraphics/vk/vktypes.h"
-#include "IL/il.h"
 #include "coregraphics/load/glimltypes.h"
 
 #include "vkloader.h"

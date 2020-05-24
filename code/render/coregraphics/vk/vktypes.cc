@@ -6,7 +6,9 @@
 #include "vktypes.h"
 #include "vkloader.h"
 #include "coregraphics/pixelformat.h"
+#ifdef WITH_DEVIL
 #include "il_dds.h"
+#endif
 
 namespace Vulkan
 {
@@ -82,6 +84,7 @@ VkTypes::IsDepthFormat(CoreGraphics::PixelFormat::Code p)
 	return false;
 }
 
+#ifdef WITH_DEVIL
 //------------------------------------------------------------------------------
 /**
 */
@@ -151,6 +154,63 @@ VkTypes::AsILDXTFormat(VkFormat p)
 		}
 	}
 }
+//------------------------------------------------------------------------------
+/**
+*/
+VkComponentMapping
+VkTypes::AsVkMapping(ILenum p)
+{
+	VkComponentMapping mapping;
+	mapping.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+	mapping.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+	mapping.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+	mapping.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+	switch (p)
+	{
+		case PF_RGBA:
+		case PF_RGB:
+		case PF_DXT1:
+		case PF_DXT3:
+		case PF_DXT5:
+		case PF_BC7:
+		case PF_DXT1_sRGB:
+		case PF_DXT3_sRGB:
+		case PF_DXT5_sRGB:
+		case PF_BC7_sRGB:
+		case PF_3DC:
+		case PF_R8:
+		case PF_R16F:
+		case PF_R16:
+		case PF_R32F:
+		case PF_R32:
+		case PF_R16G16F:
+		case PF_R16G16:
+		case PF_R32G32F:
+		case PF_R32G32:
+		case PF_R16G16B16A16:
+		case PF_R16G16B16A16F:
+		case PF_R32G32B32:
+		case PF_R32G32B32F:
+		case PF_R32G32B32A32:
+		case PF_R32G32B32A32F:
+			break;
+
+		case PF_BGRA:
+		case PF_BGR:
+			mapping.r = VK_COMPONENT_SWIZZLE_B;
+			mapping.b = VK_COMPONENT_SWIZZLE_R;
+			break;
+		default:
+		{
+			n_error("VkTypes::AsVkMapping(): invalid pixel swizzle '%d'", p);
+		}
+	}
+
+	return mapping;
+}
+
+#endif
 
 //------------------------------------------------------------------------------
 /**
@@ -590,62 +650,6 @@ VkTypes::AsVkMapping(CoreGraphics::PixelFormat::Code p)
 		mapping.b = VK_COMPONENT_SWIZZLE_R;
 		break;
 	
-	}
-
-	return mapping;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-VkComponentMapping
-VkTypes::AsVkMapping(ILenum p)
-{
-	VkComponentMapping mapping;
-	mapping.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-	mapping.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-	mapping.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-	mapping.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-	switch (p)
-	{
-	case PF_RGBA:
-	case PF_RGB:
-	case PF_DXT1:				
-	case PF_DXT3:				
-	case PF_DXT5:				
-	case PF_BC7:				
-	case PF_DXT1_sRGB:			
-	case PF_DXT3_sRGB:			
-	case PF_DXT5_sRGB:			
-	case PF_BC7_sRGB:			
-	case PF_3DC:			
-	case PF_R8:
-	case PF_R16F:
-	case PF_R16:
-	case PF_R32F:
-	case PF_R32:
-	case PF_R16G16F:
-	case PF_R16G16:
-	case PF_R32G32F:
-	case PF_R32G32:
-	case PF_R16G16B16A16:
-	case PF_R16G16B16A16F:
-	case PF_R32G32B32:
-	case PF_R32G32B32F:
-	case PF_R32G32B32A32:
-	case PF_R32G32B32A32F:
-		break;
-
-	case PF_BGRA:
-	case PF_BGR:
-		mapping.r = VK_COMPONENT_SWIZZLE_B;
-		mapping.b = VK_COMPONENT_SWIZZLE_R;
-		break;
-	default:
-		{
-			n_error("VkTypes::AsVkMapping(): invalid pixel swizzle '%d'", p);
-		}
 	}
 
 	return mapping;

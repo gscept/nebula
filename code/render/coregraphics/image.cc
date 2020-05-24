@@ -7,6 +7,9 @@
 #include "io/ioserver.h"
 #include "io/stream.h"
 #include "image.h"
+
+#ifdef WITH_DEVIL
+
 #include "IL/il.h"
 #include "il_dds.h"
 namespace CoreGraphics
@@ -527,3 +530,4 @@ ImageGetChannelPrimitive(const ImageId id)
 
 
 } // namespace CoreGraphics
+#endif

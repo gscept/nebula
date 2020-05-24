@@ -10,7 +10,6 @@
 #include "coregraphics/streamtexturesaver.h"
 #include "io/stream.h"
 #include "coregraphics/texture.h"
-#include <IL/il.h>
 
 namespace Vulkan
 {
@@ -21,11 +20,11 @@ private:
 	friend bool CoreGraphics::SaveTexture(const Resources::ResourceId& id, const Ptr<IO::Stream>& stream, IndexT mip, CoreGraphics::ImageFileFormat::Code code);
 
 	/// saves a standard 2D texture
-	static bool SaveTexture2D(CoreGraphics::TextureId tex, const Ptr<IO::Stream>& stream, IndexT mip, ILenum imageFileType, CoreGraphics::ImageFileFormat::Code code);
+	static bool SaveTexture2D(CoreGraphics::TextureId tex, const Ptr<IO::Stream>& stream, IndexT mip, /* ILenum */ unsigned int imageFileType, CoreGraphics::ImageFileFormat::Code code);
 	/// saves a cube map
-	static bool SaveCubemap(CoreGraphics::TextureId tex, const Ptr<IO::Stream>& stream, IndexT mip, ILenum imageFileType, CoreGraphics::ImageFileFormat::Code code);
+	static bool SaveCubemap(CoreGraphics::TextureId tex, const Ptr<IO::Stream>& stream, IndexT mip, /* ILenum */ unsigned int imageFileType, CoreGraphics::ImageFileFormat::Code code);
 	/// saves a 3D texture
-	static bool SaveTexture3D(CoreGraphics::TextureId tex, const Ptr<IO::Stream>& stream, IndexT mip, ILenum imageFileType, CoreGraphics::ImageFileFormat::Code code);
+	static bool SaveTexture3D(CoreGraphics::TextureId tex, const Ptr<IO::Stream>& stream, IndexT mip, /* ILenum */unsigned int imageFileType, CoreGraphics::ImageFileFormat::Code code);
 
 	/// helper function to flip image data horizontally
 	template<typename T> void* FlipImageDataHorizontal(SizeT width, SizeT height, void* buf);
