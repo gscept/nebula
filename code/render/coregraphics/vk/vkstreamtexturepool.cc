@@ -111,7 +111,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 		int height = ctx.image_height(0, 0);
 		bool isCube = ctx.num_faces() > 1;
 
-		streamInfo.lowestLod = Math::n_max(0, numMips - NumBasicLods);
+		streamInfo.lowestLod = Math::n_max(0, mips);
 
 		CoreGraphics::PixelFormat::Code nebulaFormat = CoreGraphics::Gliml::ToPixelFormat(ctx);
 		VkFormat vkformat = VkTypes::AsVkFormat(nebulaFormat);
@@ -164,7 +164,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 		VkImageSubresourceRange subres;
 		subres.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		subres.baseArrayLayer = 0;
-		subres.baseMipLevel = Math::n_max(numMips - NumBasicLods, 0);
+		subres.baseMipLevel = Math::n_max(mips, 0);
 		subres.layerCount = info.arrayLayers;
 		subres.levelCount = Math::n_min(numMips, NumBasicLods);
 		VkImageViewCreateInfo viewCreate =
@@ -289,7 +289,6 @@ VkStreamTexturePool::StreamMaxLOD(const Resources::ResourceId& id, const float l
 
 	// if the lod is undefined, just add 1 mip
 	IndexT adjustedLod = Math::n_max(0.0f, Math::n_ceil(loadInfo.mips * lod));
-	
 
 	// abort if the lod is already higher
 	if (streamInfo.lowestLod <= (uint32_t)adjustedLod)
@@ -300,7 +299,6 @@ VkStreamTexturePool::StreamMaxLOD(const Resources::ResourceId& id, const float l
 	IndexT maxLod = loadInfo.mips - streamInfo.lowestLod;
 
 	VkDevice dev = Vulkan::GetCurrentDevice();
-	streamInfo.lowestLod = adjustedLod;
 
 	const gliml::context& ctx = streamInfo.ctx;
 
@@ -350,7 +348,7 @@ VkStreamTexturePool::StreamMaxLOD(const Resources::ResourceId& id, const float l
 	// now load texture by walking through all images and mips
 	for (int i = 0; i < ctx.num_faces(); i++)
 	{
-		for (int j = adjustedLod; j < maxLod; j++)
+		for (int j = adjustedLod; j < (IndexT)streamInfo.lowestLod; j++)
 		{
 			extents.width = ctx.image_width(i, j);
 			extents.height = ctx.image_height(i, j);
@@ -396,17 +394,9 @@ VkStreamTexturePool::StreamMaxLOD(const Resources::ResourceId& id, const float l
 		VkUtilities::ImageMemoryBarrier(loadInfo.img, viewSubres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
 	CoreGraphics::UnlockResourceSubmission();
+	streamInfo.lowestLod = adjustedLod;
 
-	// create new view
-	//VkImageView oldView = runtimeInfo.view;
-	//VkResult res = vkCreateImageView(dev, &viewCreate, nullptr, &runtimeInfo.view);
-	//n_assert(res == VK_SUCCESS);
-
-	//if (loadInfo.bindless)
 	VkShaderServer::Instance()->AddPendingImageView(TextureId(id), viewCreate, runtimeInfo.bind);
-	// update binding
-	//if (loadInfo.bindless)
-	//VkShaderServer::Instance()->ReregisterTexture(TextureId(id), runtimeInfo.type, runtimeInfo.bind);
 }
 
 } // namespace Vulkan

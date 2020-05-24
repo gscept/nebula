@@ -13,7 +13,8 @@ namespace CoreGraphics
 /**
     Convert a gliml format/dds format into a pixel format code.
 */
-CoreGraphics::PixelFormat::Code Gliml::ToPixelFormat(gliml::context const& ctx)
+CoreGraphics::PixelFormat::Code
+Gliml::ToPixelFormat(gliml::context const& ctx)
 {
     if (ctx.image_format() == GLIML_FOURCC_DXT10)
     {
