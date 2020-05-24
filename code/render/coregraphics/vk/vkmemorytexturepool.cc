@@ -151,7 +151,6 @@ VkMemoryTexturePool::Unload(const Resources::ResourceId id)
         }
         table.pages.Clear();
         table.bindCounts.Clear();
-        table.pageBindings.Clear();
 
         textureSparseExtensionAllocator.Dealloc(loadInfo.sparseExtension);
     }
@@ -692,14 +691,23 @@ VkMemoryTexturePool::SparseEvict(const CoreGraphics::TextureId id, IndexT layer,
     // get page and allocate memory
     CoreGraphics::TextureSparsePage& page = table.pages[layer][mip][pageIndex];
     n_assert(page.alloc.mem != VK_NULL_HANDLE);
-    VkSparseImageMemoryBind& binding = table.pageBindings[layer][mip][pageIndex];
+    VkSparseImageMemoryBind binding;
 
     // deallocate memory
     CoreGraphics::FreeMemory(page.alloc);
     page.alloc.mem = VK_NULL_HANDLE;
     page.alloc.offset = 0;
+    binding.subresource =
+    {
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        mip,
+        layer
+    };
+    binding.offset = { page.offset.x, page.offset.y, page.offset.z };
+    binding.extent = { page.extent.width, page.extent.height, page.extent.depth };
     binding.memory = VK_NULL_HANDLE;
     binding.memoryOffset = 0;
+    binding.flags = 0;
 
     // append pending page update
     pageBinds.Append(binding);
@@ -721,12 +729,20 @@ VkMemoryTexturePool::SparseMakeResident(const CoreGraphics::TextureId id, IndexT
     // get page and allocate memory
     CoreGraphics::TextureSparsePage& page = table.pages[layer][mip][pageIndex];
     n_assert(page.alloc.mem == VK_NULL_HANDLE);
-    VkSparseImageMemoryBind& binding = table.pageBindings[layer][mip][pageIndex];
 
     // allocate memory and append page update
     page.alloc = Vulkan::AllocateMemory(dev, table.memoryReqs, table.memoryReqs.alignment);
+    VkSparseImageMemoryBind binding;
+    binding.subresource =
+    {
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        mip, layer
+    };
+    binding.offset = { page.offset.x, page.offset.y, page.offset.z };
+    binding.extent = { page.extent.width, page.extent.height, page.extent.depth };
     binding.memory = page.alloc.mem;
     binding.memoryOffset = page.alloc.offset;
+    binding.flags = 0;
 
     // add a pending bind
     pageBinds.Append(binding);
@@ -1204,12 +1220,10 @@ SetupSparse(VkDevice dev, VkImage img, Ids::Id32 sparseExtension, const VkTextur
 
     // setup pages and bind counts
     table.pages.Resize(info.layers);
-    table.pageBindings.Resize(info.layers);
     table.bindCounts.Resize(info.layers);
     for (uint32_t i = 0; i < info.layers; i++)
     {
         table.pages[i].Resize(sparseMemoryRequirement.imageMipTailFirstLod);
-        table.pageBindings[i].Resize(sparseMemoryRequirement.imageMipTailFirstLod);
         table.bindCounts[i].Resize(sparseMemoryRequirement.imageMipTailFirstLod);
     }
 
@@ -1271,7 +1285,6 @@ SetupSparse(VkDevice dev, VkImage img, Ids::Id32 sparseExtension, const VkTextur
                         page.alloc = CoreGraphics::Alloc{ VK_NULL_HANDLE, 0, 0, CoreGraphics::MemoryPool_DeviceLocal };
 
                         pendingBinds.Append(sparseBind);
-                        table.pageBindings[layer][mip].Append(sparseBind);
                         table.pages[layer][mip].Append(page);
 
                     }

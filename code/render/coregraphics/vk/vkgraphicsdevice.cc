@@ -3191,8 +3191,16 @@ EndFrame(IndexT frameIndex)
 
 	if (state.sparseSubmitActive)
 	{
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::QueueBeginMarker(SparseQueueType, NEBULA_MARKER_ORANGE, "Sparse Bindings");
+#endif
+
 		state.subcontextHandler.FlushSparseBinds(nullptr);
 		state.sparseSubmitActive = false;
+
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::QueueEndMarker(SparseQueueType);
+#endif
 	}
 
 	// if we have an active resource submission, submit it!
