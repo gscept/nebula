@@ -39,6 +39,8 @@ imports:
         branch: 4.1
     fips-flatbuffers:
         git: https://github.com/gscept/fips-flatbuffers.git
+    gliml:
+        git: https://github.com/gscept/gliml.git
 
 exports:
     header-dirs :

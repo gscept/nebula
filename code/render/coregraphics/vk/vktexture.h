@@ -13,6 +13,7 @@
 #include "resources/resourcepool.h"
 #include "ids/idallocator.h"
 #include "vkmemory.h"
+#include "coregraphics/load/glimltypes.h"
 
 namespace IO
 {
@@ -67,6 +68,7 @@ struct VkTextureStreamInfo
 	uint bufferSize;
 	uint32_t maxMips;
 	Ptr<IO::Stream> stream;
+	gliml::context ctx;
 };
 
 struct VkTextureWindowInfo

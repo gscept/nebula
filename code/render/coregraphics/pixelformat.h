@@ -64,6 +64,13 @@ public:
 		D32S8,
 		D16S8,
 
+		B8G8R8,
+		B8G8R8A8,
+		B5G6R5,
+		B5G6R5A1,
+		B4G4R4A4,
+
+
 		NumPixelFormats,
 		InvalidPixelFormat,
 	};
