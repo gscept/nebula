@@ -2115,18 +2115,6 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
 		"Sparse"
 	};
 
-	// if we have a pending sparse submit, let the graphics wait for the sparse to finish
-	if (queue == CoreGraphics::GraphicsQueueType && state.sparseWaitHandled)
-	{
-		state.subcontextHandler.AppendWaitTimeline(
-			CoreGraphics::GraphicsQueueType,
-			VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-			CoreGraphics::SparseQueueType
-		);
-
-		state.sparseWaitHandled = true;
-	}
-
 	// insert some markers explaining the queue synchronization, the +1 is because it will be the submission index on EndSubmission
 	if (waitQueue != InvalidQueueType)
 	{
@@ -3203,8 +3191,16 @@ EndFrame(IndexT frameIndex)
 
 	if (state.sparseSubmitActive)
 	{
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::QueueBeginMarker(SparseQueueType, NEBULA_MARKER_ORANGE, "Sparse Bindings");
+#endif
+
 		state.subcontextHandler.FlushSparseBinds(nullptr);
 		state.sparseSubmitActive = false;
+
+#if NEBULA_GRAPHICS_DEBUG
+		CoreGraphics::QueueEndMarker(SparseQueueType);
+#endif
 	}
 
 	// if we have an active resource submission, submit it!
@@ -3223,6 +3219,19 @@ EndFrame(IndexT frameIndex)
 
 		state.handoverSubmissionActive = false;
 	}
+
+	// if we have a pending sparse submit, let the graphics wait for the sparse to finish
+	if (state.sparseWaitHandled)
+	{
+		state.subcontextHandler.AppendWaitTimeline(
+			CoreGraphics::GraphicsQueueType,
+			VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+			CoreGraphics::SparseQueueType
+		);
+
+		state.sparseWaitHandled = true;
+	}
+
 
 	if (state.resourceSubmissionActive)
 	{

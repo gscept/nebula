@@ -50,8 +50,8 @@ public:
 
     /// cull terrain patches
     static void CullPatches(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
-    /// update virtual texture
-    static void UpdateVirtualTexture(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+    /// render IMGUI
+    static void RenderUI(const Graphics::FrameContext& ctx);
 
 #ifndef PUBLIC_DEBUG    
     /// debug rendering
