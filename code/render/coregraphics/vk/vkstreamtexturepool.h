@@ -25,9 +25,9 @@ public:
 	virtual ~VkStreamTexturePool();
 
 private:
-	/// load shader
+	/// load texture
 	LoadStatus LoadFromStream(const Resources::ResourceId res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
-	/// unload shader
+	/// unload texture
 	void Unload(const Resources::ResourceId id);
 
 	/// stream mips

@@ -226,6 +226,10 @@ ENDIF()
 				nvx2streamreader.cc
 				nvx2streamreader.h
 			)
+		fips_dir(coregraphics/load GROUP "coregraphics/load")
+			fips_files(glimltypes.h
+				   glimltypes.cc
+				   )
 	if (N_USE_D3D11)
 		fips_dir(coregraphics/base GROUP "coregraphics/d3d11")
 			fips_files(

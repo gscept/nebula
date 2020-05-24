@@ -574,20 +574,20 @@ VkComponentMapping
 VkTypes::AsVkMapping(CoreGraphics::PixelFormat::Code p)
 {
 	VkComponentMapping mapping;
-	mapping.r = VK_COMPONENT_SWIZZLE_R;
-	mapping.g = VK_COMPONENT_SWIZZLE_G;
-	mapping.b = VK_COMPONENT_SWIZZLE_B;
-	mapping.a = VK_COMPONENT_SWIZZLE_A;
+	mapping.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+	mapping.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+	mapping.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+	mapping.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 
 	switch (p)
 	{
-	case CoreGraphics::PixelFormat::R16G16B16A16:
-	case CoreGraphics::PixelFormat::R16G16B16A16F:
-	case CoreGraphics::PixelFormat::R32G32B32A32F:
-	case CoreGraphics::PixelFormat::R11G11B10F:
-	case CoreGraphics::PixelFormat::R8G8B8A8:
-		mapping.r = VK_COMPONENT_SWIZZLE_R;
-		mapping.b = VK_COMPONENT_SWIZZLE_B;
+	case CoreGraphics::PixelFormat::B8G8R8:
+	case CoreGraphics::PixelFormat::B8G8R8A8:
+	case CoreGraphics::PixelFormat::B4G4R4A4:
+	case CoreGraphics::PixelFormat::B5G6R5:
+	case CoreGraphics::PixelFormat::B5G6R5A1:
+		mapping.r = VK_COMPONENT_SWIZZLE_B;
+		mapping.b = VK_COMPONENT_SWIZZLE_R;
 		break;
 	
 	}

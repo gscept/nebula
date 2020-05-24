@@ -248,6 +248,7 @@ FileStream::MemoryUnmap()
 {
     n_assert(0 != this->mappedContent);
     FSWrapper::Unmap(this->mapHandle, (char*)this->mappedContent);
+    this->mappedContent = nullptr;
     Stream::Unmap();
 }
 
