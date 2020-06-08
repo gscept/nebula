@@ -23,8 +23,9 @@ Get in contact on Discord! https://discord.gg/wuYPxUF
 #### Build project
 
 In your project directory:
-
-  1. `fips physx build win-vs15`
+  
+  1. `fips fetch`
+  2. `fips physx build win-vs15`
   2. `fips anyfx setup`
   3. `fips build`
   4. `fips physx deploy`
