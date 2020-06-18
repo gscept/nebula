@@ -1,5 +1,7 @@
 /**
-@namespace Net
+@page Net
+
+@section NebulaNetSystem The Net Subsystem
 
 The Nebula Net subsystem offers simple client/server-style communication
 using the TCP protocol over LAN or internet connections. It is not intended
@@ -7,7 +9,7 @@ for highlevel game-oriented communication with lobbies, session management
 and synchronisation of player data. This will be provided in higher level 
 Nebula networking subsystems.
 
-@section NetIPAddress Working with IP addresses
+@subsection NetIPAddress Working with IP addresses
 
 An IpAddress object identifies a communication endpoint by host name or tcp/ip 
 address and a port number. IpAddress objects can be created in a number of ways:
@@ -48,7 +50,7 @@ String numericalAddr = ipAddr.GetHostAddr();
 @endcode
 
 
-@section NetTcpServerClient Setting Up A Client/Server System
+@subsection NetTcpServerClient Setting Up A Client/Server System
 
 The Net subsystem provides an easy-to-use TCP-based client/server system
 implemented in the classes TcpServer and TcpClient using the TCP protocol.
@@ -101,7 +103,6 @@ or an error occured (TcpClient::Error).
 An interactive application should never block during network communication
 and instead should provide continouos feedback to the user what's going
 on. 
-@endnote
 
 Once a connection has been established, a TcpClientConnection object will
 be created on the server side for each connected client. The TcpClientConnection
@@ -115,7 +116,6 @@ streams it is very easy to encode and decode data from the stream.
 @note
 Send-data is not sent immediately, instead the data will accumulate in the send 
 stream until the Send() method is called.
-@endnote
 
 To send some text data from a client to its server, obtain a pointer
 to the send stream, write data to it and call the Send() method:
@@ -206,7 +206,6 @@ If the connection has been dropped for some reason, this method will return fals
 TcpServer and TcpClient do not implement an underlying communication protocol which enables 
 them to work with "foreign" clients and servers (for instance, a TcpServer could work with standard 
 web browsers as client, and a TcpClient class could communicate with a standard HTTP server).
-@endnote
 
 For real world scenarios, an application should implement its own robust communication 
 protocol which at least encodes the length of the payload data. If the payload is bigger 
@@ -215,7 +214,7 @@ in several packets at the client. The client should decode the length of the pay
 from the message header to decide whether the received data represents a complete message,
 or whether more data needs to be received until message is complete.
 
-@section NetByteOrder Byte Order Issues
+@subsection NetByteOrder Byte Order Issues
 
 Servers and clients may run on CPUs with different byte order. If binary data is sent
 over a network connection, the data must be converted into a "network byte order" which 
@@ -229,7 +228,7 @@ binaryReader->SetStreamByteOrder(System::ByteOrder::Network);
 binaryWriter->SetStreamByteOrder(System::ByteOrder::Network);
 @endcode
 
-@section NetSocketClass The Socket Class
+@subsection NetSocketClass The Socket Class
 
 The Net subsystem provides a Socket class which wraps the traditional socket 
 functions into a C++ interface. Usually an application doesn't use Socket

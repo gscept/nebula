@@ -3,9 +3,23 @@
 
 The foundation libraries contain support functionality such as containers, strings, threading, app bootstrap, file management, and much more.
 
+@subpage App \n
+@subpage Core \n
+@subpage Debug \n
+@subpage Http \n
+@subpage Ids \n
+@subpage Interface \n
 @subpage IO \n
-@subpage Threading \n
-@subpage Util \n
+@subpage Jobs \n
+@subpage Math \n
 @subpage Memory \n
+@subpage Messaging \n
+@subpage Net \n
+@subpage Profiling \n
+@subpage System \n
+@subpage Threading \n
+@subpage Timing \n
+@subpage Util \n
+
 
 */

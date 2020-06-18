@@ -1,7 +1,7 @@
 /**
-@namespace Core
+@page Core
 
-@section NebulaCoreSystem The Nebula Core Subsystem
+@section NebulaCoreSystem The Core Subsystem
 
 The Nebula Core subsystem (as the name implies) implements the core concepts
 of Nebula which are:
@@ -12,7 +12,7 @@ of Nebula which are:
 - a factory mechanism which allows to construct C++ objects from their string class name
 - a central Server object which setsup a basic Nebula runtime environment
 
-@subsection NebulaObjectModel The Nebula Object Model
+@subsection NebulaObjectModel The Object Model
 
 Nebula implements a basic object model which implements the following
 new features on top of the C++ object model:

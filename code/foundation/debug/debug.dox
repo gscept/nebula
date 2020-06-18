@@ -1,7 +1,7 @@
 /**
-@namespace Debug
+@page Debug
 
-@section NebulaDebugSystem The Nebula Debug Subsystem
+@section NebulaDebugSystem The Debug Subsystem
 
 The Nebula Debug subsystem contains lowlevel classes which aid in runtime- and postmortem-debugging.
 */

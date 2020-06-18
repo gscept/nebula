@@ -1,7 +1,9 @@
 /**
-@namespace Memory
+@page Memory
+
+@section NebulaMemorySystem The Memory Library
 
 The Nebula Memory subsystem implements custom memory allocation mechanisms which 
-provide higher performance and better debugging aids.
+provide higher performance and better debugging aids. This library is quite thin, but it does implement certain vital platform-specific stuff like Win32 Heap management. It also includes two specialized allocators, for example an arena allocator which allocates fixed-sized blocks of memory and returns a pointer to them, useful for low-fragmentation allocations of random types, like when allocating subclasses dynamically, based on FourCC or some other runtime behavior.
 
 */
