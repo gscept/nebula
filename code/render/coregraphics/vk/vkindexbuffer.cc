@@ -16,7 +16,7 @@ VkIndexBufferAllocator iboAllocator(0x00FFFFFF);
 VkBuffer 
 IndexBufferGetVk(const CoreGraphics::IndexBufferId id)
 {
-	return iboAllocator.Get<1>(id.id24).buf;
+	return iboAllocator.GetUnsafe<1>(id.id24).buf;
 }
 
 //------------------------------------------------------------------------------
@@ -25,7 +25,7 @@ IndexBufferGetVk(const CoreGraphics::IndexBufferId id)
 VkDeviceMemory 
 IndexBufferGetVkMemory(const CoreGraphics::IndexBufferId id)
 {
-	return iboAllocator.Get<0>(id.id24).mem;
+	return iboAllocator.GetUnsafe<0>(id.id24).mem.mem;
 }
 
 //------------------------------------------------------------------------------
@@ -34,7 +34,7 @@ IndexBufferGetVkMemory(const CoreGraphics::IndexBufferId id)
 VkIndexType
 IndexBufferGetVkType(const CoreGraphics::IndexBufferId id)
 {
-	return iboAllocator.Get<1>(id.id24).type == CoreGraphics::IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+	return iboAllocator.GetUnsafe<1>(id.id24).type == CoreGraphics::IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
 }
 } // namespace Vulkan
 
@@ -59,9 +59,9 @@ CreateIndexBuffer(const IndexBufferCreateInfo& info)
 	}
 
 	Ids::Id32 id = iboAllocator.Alloc();
-	VkIndexBufferLoadInfo& loadInfo = iboAllocator.Get<0>(id);
-	VkIndexBufferRuntimeInfo& runtimeInfo = iboAllocator.Get<1>(id);
-	uint32_t& mapCount = iboAllocator.Get<2>(id);
+	VkIndexBufferLoadInfo& loadInfo = iboAllocator.GetUnsafe<0>(id);
+	VkIndexBufferRuntimeInfo& runtimeInfo = iboAllocator.GetUnsafe<1>(id);
+	VkIndexBufferMapInfo& mapInfo = iboAllocator.GetUnsafe<2>(id);
 
 	loadInfo.dev = Vulkan::GetCurrentDevice();
 	uint32_t qfamily = Vulkan::GetQueueFamily(GraphicsQueueType);
@@ -82,32 +82,54 @@ CreateIndexBuffer(const IndexBufferCreateInfo& info)
 	VkResult err = vkCreateBuffer(loadInfo.dev, &bufinfo, NULL, &runtimeInfo.buf);
 	n_assert(err == VK_SUCCESS);
 
-	// allocate a device memory backing for this
-	uint32_t alignedSize;
-	uint32_t flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-	flags |= info.sync == CoreGraphics::GpuBufferTypes::SyncingAutomatic ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : 0;
-	VkUtilities::AllocateBufferMemory(loadInfo.dev, runtimeInfo.buf, loadInfo.mem, VkMemoryPropertyFlagBits(flags), alignedSize);
+	CoreGraphics::MemoryPoolType pool = CoreGraphics::MemoryPool_DeviceLocal;
+	if (info.mode == HostWriteable)
+		pool = CoreGraphics::MemoryPool_ManualFlush;
+	else if (info.mode == HostMapped)
+		pool = CoreGraphics::MemoryPool_HostCoherent;
+	else if (info.mode == DeviceLocal)
+		pool = CoreGraphics::MemoryPool_DeviceLocal;
 
-	// now bind memory to buffer
-	err = vkBindBufferMemory(loadInfo.dev, runtimeInfo.buf, loadInfo.mem, 0);
+	// allocate and bind memory
+	CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, runtimeInfo.buf, pool);
+	err = vkBindBufferMemory(loadInfo.dev, runtimeInfo.buf, alloc.mem, alloc.offset);
 	n_assert(err == VK_SUCCESS);
+	loadInfo.mem = alloc;
 
-	if (info.data != 0)
+	if (info.mode == HostWriteable || info.mode == HostMapped)
 	{
-		// map memory so we can initialize it
-		void* data;
-		err = vkMapMemory(loadInfo.dev, loadInfo.mem, 0, alignedSize, 0, &data);
-		n_assert(err == VK_SUCCESS);
-		n_assert(info.dataSize <= (int32_t)alignedSize);
-		memcpy(data, info.data, info.dataSize);
-		vkUnmapMemory(loadInfo.dev, loadInfo.mem);
+		// copy contents and flush memory
+		char* data = (char*)GetMappedMemory(alloc);
+		mapInfo.mappedMemory = data;
+
+		// if we have data, copy the memory to the region
+		if (info.data)
+		{
+			memcpy(data, info.data, info.dataSize);
+
+			// if dynamic memory type, flush the range of data we want to push
+			if (pool == CoreGraphics::MemoryPool_ManualFlush)
+			{
+				VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
+
+				VkMappedMemoryRange range;
+				range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+				range.pNext = nullptr;
+				range.offset = Math::n_align_down(alloc.offset, props.limits.nonCoherentAtomSize);
+				range.size = Math::n_align(alloc.size, props.limits.nonCoherentAtomSize);
+				range.memory = alloc.mem;
+				VkResult res = vkFlushMappedMemoryRanges(loadInfo.dev, 1, &range);
+				n_assert(res == VK_SUCCESS);
+			}
+		}
 	}
 
 	// setup resource
-	loadInfo.gpuResInfo = { info.usage, info.access, info.sync };
+	loadInfo.gpuResInfo = { info.usage, info.access };
 	loadInfo.indexCount = info.numIndices;
+	loadInfo.mode = info.mode;
 	runtimeInfo.type = info.type;
-	mapCount = 0;
+	mapInfo.mapCount = 0;
 
 	IndexBufferId ret;
 	ret.id24 = id;
@@ -130,9 +152,9 @@ CreateIndexBuffer(const IndexBufferCreateDirectInfo& info)
 	n_assert(CoreGraphics::GpuBufferTypes::UsageImmutable != info.usage)
 
 	Ids::Id32 id = iboAllocator.Alloc();
-	VkIndexBufferLoadInfo& loadInfo = iboAllocator.Get<0>(id);
-	VkIndexBufferRuntimeInfo& runtimeInfo = iboAllocator.Get<1>(id);
-	uint32_t& mapCount = iboAllocator.Get<2>(id);
+	VkIndexBufferLoadInfo& loadInfo = iboAllocator.GetUnsafe<0>(id);
+	VkIndexBufferRuntimeInfo& runtimeInfo = iboAllocator.GetUnsafe<1>(id);
+	VkIndexBufferMapInfo& mapInfo = iboAllocator.GetUnsafe<2>(id);
 
 	loadInfo.dev = Vulkan::GetCurrentDevice();
 	uint32_t qfamily = Vulkan::GetQueueFamily(GraphicsQueueType);
@@ -153,21 +175,33 @@ CreateIndexBuffer(const IndexBufferCreateDirectInfo& info)
 	VkResult err = vkCreateBuffer(loadInfo.dev, &bufinfo, NULL, &runtimeInfo.buf);
 	n_assert(err == VK_SUCCESS);
 
-	// allocate a device memory backing for this
-	uint32_t alignedSize;
-	uint32_t flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-	flags |= info.sync == CoreGraphics::GpuBufferTypes::SyncingAutomatic ? VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : 0;
-	VkUtilities::AllocateBufferMemory(loadInfo.dev, runtimeInfo.buf, loadInfo.mem, VkMemoryPropertyFlagBits(flags), alignedSize);
+	CoreGraphics::MemoryPoolType pool = CoreGraphics::MemoryPool_DeviceLocal;
+	if (info.mode == HostWriteable)
+		pool = CoreGraphics::MemoryPool_ManualFlush;
+	else if (info.mode == HostMapped)
+		pool = CoreGraphics::MemoryPool_HostCoherent;
+	else if (info.mode == DeviceLocal)
+		pool = CoreGraphics::MemoryPool_DeviceLocal;
 
-	// now bind memory to buffer
-	err = vkBindBufferMemory(loadInfo.dev, runtimeInfo.buf, loadInfo.mem, 0);
+	// allocate and bind memory
+	CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, runtimeInfo.buf, pool);
+	err = vkBindBufferMemory(loadInfo.dev, runtimeInfo.buf, alloc.mem, alloc.offset);
 	n_assert(err == VK_SUCCESS);
+	loadInfo.mem = alloc;
+
+	if (info.mode == HostWriteable || info.mode == HostMapped)
+	{
+		// copy contents and flush memory
+		char* data = (char*)GetMappedMemory(alloc);
+		mapInfo.mappedMemory = data;
+	}
 
 	// setup resource
-	loadInfo.gpuResInfo = { info.usage, info.access, info.sync };
+	loadInfo.gpuResInfo = { info.usage, info.access };
 	loadInfo.indexCount = info.size;
 	runtimeInfo.type = info.type;
-	mapCount = 0;
+	mapInfo.mapCount = 0;
+	mapInfo.mappedMemory = 0;
 
 	IndexBufferId ret;
 	ret.id24 = id;
@@ -186,15 +220,13 @@ CreateIndexBuffer(const IndexBufferCreateDirectInfo& info)
 void
 DestroyIndexBuffer(const IndexBufferId id)
 {
-	VkIndexBufferLoadInfo& loadInfo = iboAllocator.Get<0>(id.id24);
-	VkIndexBufferRuntimeInfo& runtimeInfo = iboAllocator.Get<1>(id.id24);
-	uint32_t& mapCount = iboAllocator.Get<2>(id.id24);
+	VkIndexBufferLoadInfo& loadInfo = iboAllocator.GetUnsafe<0>(id.id24);
+	VkIndexBufferRuntimeInfo& runtimeInfo = iboAllocator.GetUnsafe<1>(id.id24);
+	VkIndexBufferMapInfo& mapInfo = iboAllocator.GetUnsafe<2>(id.id24);
 
-	n_assert(mapCount == 0);
-	Vulkan::DelayedDeleteMemory(loadInfo.mem);
+	n_assert(mapInfo.mapCount == 0);
+	Vulkan::DelayedFreeMemory(loadInfo.mem);
 	Vulkan::DelayedDeleteBuffer(runtimeInfo.buf);
-	//vkFreeMemory(loadInfo.dev, loadInfo.mem, nullptr);
-	//vkDestroyBuffer(loadInfo.dev, runtimeInfo.buf, nullptr);
 }
 
 //------------------------------------------------------------------------------
@@ -230,13 +262,10 @@ IndexBufferUnlock(const IndexBufferId id, const PtrDiff offset, const PtrDiff ra
 void*
 IndexBufferMap(const IndexBufferId id, const CoreGraphics::GpuBufferTypes::MapType type)
 {
-	void* buf;
-	VkIndexBufferLoadInfo& loadInfo = iboAllocator.Get<0>(id.id24);
-	uint32_t& mapCount = iboAllocator.Get<2>(id.id24);
-	VkResult res = vkMapMemory(loadInfo.dev, loadInfo.mem, 0, VK_WHOLE_SIZE, 0, &buf);
-	n_assert(res == VK_SUCCESS);
-	mapCount++;
-	return buf;
+	VkIndexBufferMapInfo& mapInfo = iboAllocator.GetUnsafe<2>(id.id24);
+	n_assert_fmt(mapInfo.mappedMemory != nullptr, "Index Buffer must be created as dynamic or mapped to support mapping");
+	mapInfo.mapCount++;
+	return mapInfo.mappedMemory;
 }
 
 //------------------------------------------------------------------------------
@@ -245,10 +274,18 @@ IndexBufferMap(const IndexBufferId id, const CoreGraphics::GpuBufferTypes::MapTy
 void
 IndexBufferUnmap(const IndexBufferId id)
 {
-	VkIndexBufferLoadInfo& loadInfo = iboAllocator.Get<0>(id.id24);
-	uint32_t& mapCount = iboAllocator.Get<2>(id.id24);
-	vkUnmapMemory(loadInfo.dev, loadInfo.mem);
-	mapCount--;
+	VkIndexBufferMapInfo& mapInfo = iboAllocator.GetUnsafe<2>(id.id24);
+	mapInfo.mapCount--;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+IndexBufferFlush(const IndexBufferId id)
+{
+	VkIndexBufferLoadInfo& loadInfo = iboAllocator.GetUnsafe<IndexBuffer_LoadInfo>(id.id24);
+	Flush(loadInfo.dev, loadInfo.mem);
 }
 
 //------------------------------------------------------------------------------
@@ -257,7 +294,7 @@ IndexBufferUnmap(const IndexBufferId id)
 const CoreGraphics::IndexType::Code
 IndexBufferGetType(const IndexBufferId id)
 {
-	VkIndexBufferRuntimeInfo& runtimeInfo = iboAllocator.Get<1>(id.id24);
+	VkIndexBufferRuntimeInfo& runtimeInfo = iboAllocator.GetUnsafe<1>(id.id24);
 	return runtimeInfo.type;
 }
 
@@ -267,7 +304,7 @@ IndexBufferGetType(const IndexBufferId id)
 const SizeT
 IndexBufferGetNumIndices(const IndexBufferId id)
 {
-	VkIndexBufferLoadInfo& loadInfo = iboAllocator.Get<0>(id.id24);
+	VkIndexBufferLoadInfo& loadInfo = iboAllocator.GetUnsafe<0>(id.id24);
 	return loadInfo.indexCount;
 }
 

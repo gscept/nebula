@@ -18,7 +18,6 @@
 #include "coregraphics/shaderrwbuffer.h"
 #include "coregraphics/event.h"
 #include "coregraphics/shader.h"
-#include "frame/plugins/frameplugin.h"
 #include "frame/frameop.h"
 #include "frame/framepass.h"
 #include "memory/arenaallocator.h"
@@ -63,19 +62,11 @@ public:
 	void AddReadWriteBuffer(const Util::StringAtom& name, const CoreGraphics::ShaderRWBufferId buf);
 	/// get read-write buffer
 	const CoreGraphics::ShaderRWBufferId GetReadWriteBuffer(const Util::StringAtom& name);
-	/// add algorithm
-	void AddPlugin(const Util::StringAtom& name, Frame::FramePlugin* alg);
-	/// get algorithm
-	Frame::FramePlugin* GetPlugin(const Util::StringAtom& name);
 
 	/// setup script
 	void Setup();
 	/// discard script
 	void Discard();
-	/// run through script and call resource updates
-	void UpdateResources(const IndexT frameIndex);
-	/// run through script and call view dependent resource updates
-	void UpdateViewDependentResources(const Ptr<Graphics::View>& view, const IndexT frameIndex);
 	/// run through script and generate thread jobs where applicable
 	void RunJobs(const IndexT frameIndex);
 	/// run script
@@ -112,8 +103,6 @@ private:
 	Util::Array<Frame::FrameOp::Compiled*> compiled;
 	Util::Array<CoreGraphics::BarrierId> resourceResetBarriers;
 	IndexT frameOpCounter;
-	Util::Array<Frame::FramePlugin*> plugins;
-	Util::Dictionary<Util::StringAtom, Frame::FramePlugin*> algorithmsByName;
 
 	Ptr<CoreGraphics::DrawThread> drawThread;
 	Threading::Event drawThreadEvent;
@@ -147,15 +136,6 @@ inline Memory::ArenaAllocator<BIG_CHUNK>&
 FrameScript::GetAllocator()
 {
 	return this->allocator;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline Frame::FramePlugin*
-FrameScript::GetPlugin(const Util::StringAtom& name)
-{
-	return this->algorithmsByName[name];
 }
 
 //------------------------------------------------------------------------------

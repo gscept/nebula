@@ -16,8 +16,8 @@
 	(C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "math/scalar.h"
-#include "math/vector.h"
-#include "math/float2.h"
+#include "math/vec3.h"
+#include "math/vec2.h"
 
 //------------------------------------------------------------------------------
 namespace Math
@@ -30,19 +30,19 @@ public:
     /// constructor, theta and rho args
     polar(scalar t, scalar r);
     /// constructor, normalized cartesian vector as arg
-    polar(const vector& v);
+    polar(const vec3& v);
     /// the copy constructor
     polar(const polar& src);
     /// the assignment operator
     void operator=(const polar& rhs);
     /// convert to normalized cartesian coords 
-    vector get_cartesian() const;
+    vec3 get_cartesian() const;
     /// set to polar object
     void set(const polar& p);
     /// set to theta and rho
     void set(scalar t, scalar r);
     /// set to cartesian 
-    void set(const vector& v);
+    void set(const vec3& v);
 
     scalar theta;
     scalar rho;
@@ -74,7 +74,7 @@ polar::polar(scalar t, scalar r) :
 /**
 */
 inline
-polar::polar(const vector& v)
+polar::polar(const vec3& v)
 {
     this->set(v);
 }
@@ -125,16 +125,16 @@ polar::set(scalar t, scalar r)
     Convert cartesian to polar.
 */
 inline void
-polar::set(const vector& vec)
+polar::set(const vec3& vec)
 {
-    vector normVec3d = vector::normalize(vec);
-    this->theta = n_acos(normVec3d.y());
+    vec3 normVec3d = normalize(vec);
+    this->theta = n_acos(normVec3d.y);
 
     // build a normalized 2d vector of the xz component
-    float2 normVec2d(normVec3d.x(), normVec3d.z());
+    vec2 normVec2d(normVec3d.x, normVec3d.z);
     if (normVec2d.length() > TINY)
     {
-        normVec2d = float2::normalize(normVec2d);
+        normVec2d = vec2::normalize(normVec2d);
     }
     else
     {
@@ -142,25 +142,25 @@ polar::set(const vector& vec)
     }
 
     // adjust dRho based on the quadrant we are in
-    if ((normVec2d.x() >= 0.0f) && (normVec2d.y() >= 0.0f))
+    if ((normVec2d.x >= 0.0f) && (normVec2d.y >= 0.0f))
     {
         // quadrant 1
-        this->rho = n_asin(normVec2d.x());
+        this->rho = n_asin(normVec2d.x);
     }
-    else if ((normVec2d.x() < 0.0f) && (normVec2d.y() >= 0.0f))
+    else if ((normVec2d.x < 0.0f) && (normVec2d.y >= 0.0f))
     {
         // quadrant 2 
-        this->rho = n_asin(normVec2d.y()) + n_deg2rad(270.0f);
+        this->rho = n_asin(normVec2d.y) + n_deg2rad(270.0f);
     }
-    else if ((normVec2d.x() < 0.0f) && (normVec2d.y() < 0.0f))
+    else if ((normVec2d.x < 0.0f) && (normVec2d.y < 0.0f))
     {
         // quadrant 3
-        this->rho = n_asin(-normVec2d.x()) + n_deg2rad(180.0f);
+        this->rho = n_asin(-normVec2d.x) + n_deg2rad(180.0f);
     }
     else
     {
         // quadrant 4
-        this->rho = n_asin(-normVec2d.y()) + n_deg2rad(90.0f);
+        this->rho = n_asin(-normVec2d.y) + n_deg2rad(90.0f);
     }
 }
     
@@ -168,14 +168,14 @@ polar::set(const vector& vec)
 /**
     Convert polar to cartesian.
 */
-inline vector
+inline vec3
 polar::get_cartesian() const
 {
     scalar sinTheta = n_sin(this->theta);
     scalar cosTheta = n_cos(this->theta);
     scalar sinRho   = n_sin(this->rho);
     scalar cosRho   = n_cos(this->rho);
-    vector v(sinTheta * sinRho, cosTheta, sinTheta * cosRho);
+    vec3 v(sinTheta * sinRho, cosTheta, sinTheta * cosRho);
     return v;
 }
 

@@ -24,7 +24,7 @@ struct VertexBufferCreateInfo
 	Util::StringAtom name;
 	CoreGraphics::GpuBufferTypes::Access access;
 	CoreGraphics::GpuBufferTypes::Usage usage;
-	CoreGraphics::GpuBufferTypes::Syncing sync;
+	BufferUpdateMode mode;
 	SizeT numVerts;
 	Util::Array<VertexComponent> comps;
 	void* data;
@@ -36,7 +36,7 @@ struct VertexBufferCreateDirectInfo
 	Util::StringAtom name;
 	CoreGraphics::GpuBufferTypes::Access access;
 	CoreGraphics::GpuBufferTypes::Usage usage;
-	CoreGraphics::GpuBufferTypes::Syncing sync;
+	BufferUpdateMode mode;
 	SizeT size;
 };
 
@@ -57,6 +57,8 @@ void VertexBufferUnlock(const VertexBufferId id, const PtrDiff offset, const Ptr
 void* VertexBufferMap(const VertexBufferId id, const CoreGraphics::GpuBufferTypes::MapType type);
 /// unmap GPU memory
 void VertexBufferUnmap(const VertexBufferId id);
+/// flush mapped memory
+void VertexBufferFlush(const VertexBufferId id);
 
 /// get number of vertices
 const SizeT VertexBufferGetNumVertices(const VertexBufferId id);

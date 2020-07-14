@@ -49,7 +49,7 @@ struct PassCreateInfo
 
 	Util::Array<CoreGraphics::TextureId> colorAttachments;
 	Util::Array<AttachmentFlagBits> colorAttachmentFlags; 
-	Util::Array<Math::float4> colorAttachmentClears;
+	Util::Array<Math::vec4> colorAttachmentClears;
 	CoreGraphics::TextureId depthStencilAttachment;
 	
 	Util::Array<Subpass> subpasses;

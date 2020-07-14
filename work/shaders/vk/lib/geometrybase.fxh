@@ -566,7 +566,6 @@ dsDefault(
 /**
 	Ubershader for standard geometry
 */
-[earlydepth]
 shader
 void
 psUber(
@@ -579,10 +578,15 @@ psUber(
 	[color1] out vec3 Normals,
 	[color2] out vec4 Material)
 {
+	vec2 seed = gl_FragCoord.xy * RenderTargetDimensions[0].zw;
+	float dither = hash12(seed);
+	if (dither < DitherFactor)
+		discard;
+
 	vec4 albedo = 		calcColor(sample2D(AlbedoMap, MaterialSampler, UV)) * MatAlbedoIntensity;
 	vec4 material = 	calcMaterial(sample2D(ParameterMap, MaterialSampler, UV));
 	vec4 normals = 		sample2D(NormalMap, NormalSampler, UV);
-	
+
 	vec3 bumpNormal = normalize(calcBump(Tangent, Binormal, Normal, normals));
 
 	Albedo = albedo;
@@ -607,6 +611,12 @@ psUberAlphaTest(
 	[color1] out vec3 Normals,
 	[color2] out vec4 Material)
 {
+	vec2 seed = gl_FragCoord.xy * RenderTargetDimensions[0].zw;
+	vec3 rnd = vec3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
+	float dither = (rnd.z + rnd.x + rnd.y) * DitherFactor;
+	if (dither > 1.0f)
+		discard;
+
 	vec4 albedo = 		calcColor(sample2D(AlbedoMap, MaterialSampler, UV)) * MatAlbedoIntensity;
 	if (albedo.a < AlphaSensitivity) { discard; return; }
 	vec4 material = 	calcMaterial(sample2D(ParameterMap, MaterialSampler, UV));
@@ -636,6 +646,12 @@ psUberVertexColor(
 	[color1] out vec3 Normals,
 	[color2] out vec4 Material)
 {
+	vec2 seed = gl_FragCoord.xy * RenderTargetDimensions[0].zw;
+	vec3 rnd = vec3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
+	float dither = (rnd.z + rnd.x + rnd.y) * DitherFactor;
+	if (dither > 1.0f)
+		discard;
+
 	vec4 albedo = 		calcColor(sample2D(AlbedoMap, MaterialSampler, UV)) * MatAlbedoIntensity * Color;
 	vec4 material = 	calcMaterial(sample2D(ParameterMap, MaterialSampler, UV));
 	vec4 normals = 		sample2D(NormalMap, NormalSampler, UV);
@@ -661,6 +677,12 @@ psUberAlpha(in vec3 ViewSpacePos,
 	[color1] out vec3 Normals,
 	[color2] out vec4 Material)
 {
+	vec2 seed = gl_FragCoord.xy * RenderTargetDimensions[0].zw;
+	vec3 rnd = vec3(hash12(seed) + hash12(seed + 0.59374) - 0.5);
+	float dither = (rnd.z + rnd.x + rnd.y) * DitherFactor;
+	if (dither > 1.0f)
+		discard;
+
 	vec4 albedo = 		calcColor(sample2D(AlbedoMap, MaterialSampler, UV)) * MatAlbedoIntensity;
 	if (albedo.a < AlphaSensitivity) { discard; return; }
 	vec4 material = 	calcMaterial(sample2D(ParameterMap, MaterialSampler, UV));

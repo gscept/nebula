@@ -41,14 +41,14 @@ public:
     /// return true if mouse wheel rotated backward
     bool WheelBackward() const;
     /// get current absolute mouse position (in pixels)
-    const Math::float2& GetPixelPosition() const;
+    const Math::vec2& GetPixelPosition() const;
     /// get current screen space mouse position (0.0 .. 1.0)
-    const Math::float2& GetScreenPosition() const;
+    const Math::vec2& GetScreenPosition() const;
     /// get mouse movement
-    const Math::float2& GetMovement() const;
+    const Math::vec2& GetMovement() const;
 
 	/// locks the mouse to a screen position (0.0 .. 1.0)
-	virtual void LockToPosition(bool locked, Math::float2& position);
+	virtual void LockToPosition(bool locked, Math::vec2& position);
 	/// return true if the mouse is locked
 	bool IsLocked() const;    
 
@@ -68,7 +68,7 @@ protected:
 
 private:
     /// update mouse position members
-    void UpdateMousePositions(const Math::float2& pixelPos, const Math::float2& screenPos);
+    void UpdateMousePositions(const Math::vec2& pixelPos, const Math::vec2& screenPos);
 
     struct ButtonState
     {
@@ -83,12 +83,12 @@ private:
     };
 
     Util::FixedArray<ButtonState> buttonStates;
-    Math::float2 beginFramePixelPosition;
-    Math::float2 beginFrameScreenPosition;
-    Math::float2 pixelPosition;
-    Math::float2 screenPosition;
-    Math::float2 movement;
-	Math::float2 mouseLockedPosition;
+    Math::vec2 beginFramePixelPosition;
+    Math::vec2 beginFrameScreenPosition;
+    Math::vec2 pixelPosition;
+    Math::vec2 screenPosition;
+    Math::vec2 movement;
+	Math::vec2 mouseLockedPosition;
     bool wheelForward;
     bool wheelBackward;
     bool initialMouseMovement;
@@ -135,7 +135,7 @@ MouseBase::ButtonDoubleClicked(Input::MouseButton::Code btn) const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::float2&
+inline const Math::vec2&
 MouseBase::GetPixelPosition() const
 {
     return this->pixelPosition;
@@ -144,7 +144,7 @@ MouseBase::GetPixelPosition() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::float2&
+inline const Math::vec2&
 MouseBase::GetScreenPosition() const
 {
     return this->screenPosition;
@@ -153,7 +153,7 @@ MouseBase::GetScreenPosition() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::float2&
+inline const Math::vec2&
 MouseBase::GetMovement() const
 {
     return this->movement;
@@ -181,7 +181,7 @@ MouseBase::WheelBackward() const
 /**
 */
 inline void
-MouseBase::LockToPosition(bool locked, Math::float2& position)
+MouseBase::LockToPosition(bool locked, Math::vec2& position)
 {
 	mouseLockedPosition = position;
 	mouseLocked = locked;

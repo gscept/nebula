@@ -55,7 +55,8 @@ CreateSemaphore(const SemaphoreCreateInfo& info)
 	semaphoreAllocator.Get<Semaphore_Device>(id) = dev;
 	semaphoreAllocator.Get<Semaphore_Type>(id) = info.type;
 
-	vkCreateSemaphore(dev, &cinfo, nullptr, &semaphoreAllocator.Get<Semaphore_VkHandle>(id));
+	VkResult res = vkCreateSemaphore(dev, &cinfo, nullptr, &semaphoreAllocator.Get<Semaphore_VkHandle>(id));
+	n_assert(res == VK_SUCCESS);
 
 	SemaphoreId ret;
 	ret.id24 = id;

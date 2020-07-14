@@ -239,26 +239,31 @@ nebula_begin_module(foundation)
 			bbox.h
 			clipstatus.h
 			extrapolator.h
-			float2.h
-			float4.h
 			frustum.h
 			line.cc
 			line.h
-			matrix44.h
+			mat4.cc
+			mat4.h
 			noise.h
 			pfeedbackloop.h
 			pidfeedbackloop.h
 			plane.h
 			point.h
 			polar.h
-			quaternion.h
+			quat.cc
+			quat.h
 			rectangle.h
 			scalar.h
 			sphere.cc
 			sphere.h
+			sse.h
 			transform44.h
-			vector.h
 			transform.h
+			vec2.h
+			vec3.h
+			vec4.cc
+			vec4.h
+			vector.h
 		)
 		fips_dir(messaging)
 		fips_files(
@@ -555,40 +560,6 @@ nebula_begin_module(foundation)
 			system/posix/posixsettings.h
 		)
 	endif()
-
-
-	if(N_MATH_DIRECTX)
-		fips_dir(math/xnamath math)
-		fips_files(
-			xna_float4.cc
-			xna_float4.h
-			xna_matrix44.cc
-			xna_matrix44.h
-			xna_plane.cc
-			xna_plane.h
-			xna_point.h
-			xna_quaternion.cc
-			xna_quaternion.h
-			xna_scalar.h
-			xna_vector.h
-			xna_transform.h
-		)
-	else()
-		fips_dir(math/vecmath math)
-		fips_files(
-			vec_float4.cc
-			vec_float4.h
-			vec_matrix44.cc
-			vec_matrix44.h
-			vec_quaternion.cc
-			vec_quaternion.h
-			vec_plane.cc
-			vec_plane.h
-			vec_point.h
-			vec_scalar.h
-			vec_vector.h
-		)
-	endif()
 	fips_dir(.)
 
 	if(FIPS_WINDOWS)
@@ -628,3 +599,6 @@ nebula_end_module()
 target_include_directories(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 #FIXME cant add python include dir globally as it clashes with antlr4
 target_include_directories(foundation PUBLIC ${PYTHON_INCLUDE_DIRS})
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
+	target_precompile_headers(foundation PRIVATE "foundation/stdneb.h")
+endif()

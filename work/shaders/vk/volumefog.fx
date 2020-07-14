@@ -59,7 +59,6 @@ group(BATCH_GROUP) constant VolumeFogUniforms [ string Visibility = "CS"; ]
 	float GlobalTurbidity;
 };
 
-
 readwrite rgba16f image2D Lighting;
 //------------------------------------------------------------------------------
 /**
@@ -225,7 +224,6 @@ LocalLightsFog(
 			float sf = saturate(1.0 - factor * factor);
 
 			float att = (sf * sf) / max(d2, 0.0001);
-
 			lightDir = lightDir * (1 / lightDirLen);
 
 			float theta = dot(li.forward.xyz, lightDir);
@@ -265,10 +263,9 @@ GlobalLightFog(vec3 viewPos)
 	}
 
 	// calculate 'global' fog
-	vec3 atmo = Preetham(normalize(viewPos), -GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z);
+	vec3 atmo = Preetham(normalize(viewPos), GlobalLightDir.xyz, A, B, C, D, E, Z);
 	return atmo * GlobalLightColor.rgb * shadowFactor;
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -315,7 +312,6 @@ void csRender()
 	float stepSize = (viewPos.z - (rnd.z + rnd.x + rnd.y)) * oneDivFogSteps;
 	float stepLen = stepSize;
 	vec3 rayOffset = rayDirection;
-	vec3 totalAbsorption = GlobalAbsorption;
 
 	// calculate global fog, which should be a factor of the distance and the global turbidity
 	float fogModulate = ((FocalLengthNearFar.w + 0.001f) - length(viewVec)) / FocalLengthNearFar.w;
@@ -365,11 +361,11 @@ void csRender()
 
 		// sample local fog volumes
 		float localTurbidity = 0.0f;
-		vec3 localAbsorption = vec3(1);
+		vec3 localAbsorption = GlobalAbsorption;
 		LocalFogVolumes(idx, samplePos, localTurbidity, localAbsorption);
 
 		// local turbidity is the result of our volumes + global turbidity increment
-		localTurbidity += globalTurbidity;
+		localTurbidity = (localTurbidity + globalTurbidity) * oneDivFogSteps;
 
 		// calculate the total turbidity, required for Tr(x, xt)
 		totalTurbidity += localTurbidity;
@@ -378,11 +374,8 @@ void csRender()
 		float weight = exp(-totalTurbidity) * localTurbidity;
 
 		// this is the Lscat calculation
-		light += GlobalLightFog(samplePos) * weight;
-		light += LocalLightsFog(idx, samplePos, rayDirection) * weight;
-
-		// this is our phase
-		totalAbsorption *= localAbsorption;
+		light += GlobalLightFog(samplePos) * weight * localAbsorption;
+		light += LocalLightsFog(idx, samplePos, rayDirection) * weight * localAbsorption;
 	}
 	float weight = (exp(-totalTurbidity));
 

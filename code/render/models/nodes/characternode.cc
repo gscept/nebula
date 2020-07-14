@@ -26,6 +26,7 @@ using namespace Math;
 CharacterNode::CharacterNode()
 {
 	this->type = CharacterNodeType;
+	this->bits = HasTransformBit;
 }
 
 //------------------------------------------------------------------------------

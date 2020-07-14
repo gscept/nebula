@@ -20,6 +20,9 @@ TextureId White3D;
 TextureId White1DArray;
 TextureId White2DArray;
 TextureId WhiteCubeArray;
+TextureId Red2D;
+TextureId Green2D;
+TextureId Blue2D;
 
 MemoryTexturePool* texturePool = nullptr;
 
@@ -213,6 +216,78 @@ TextureGenerateMipmaps(const TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
+TextureSparsePageSize 
+TextureSparseGetPageSize(const CoreGraphics::TextureId id)
+{
+	return texturePool->SparseGetPageSize(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+IndexT 
+TextureSparseGetPageIndex(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT x, IndexT y, IndexT z)
+{
+	return texturePool->SparseGetPageIndex(id, layer, mip, x, y, z);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const TextureSparsePage& 
+TextureSparseGetPage(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex)
+{
+	return texturePool->SparseGetPage(id, layer, mip, pageIndex);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+SizeT 
+TextureSparseGetNumPages(const CoreGraphics::TextureId id, IndexT layer, IndexT mip)
+{
+	return texturePool->SparseGetNumPages(id, layer, mip);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+TextureSparseEvict(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex)
+{
+	texturePool->SparseEvict(id, layer, mip, pageIndex);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+TextureSparseMakeResident(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex)
+{
+	texturePool->SparseMakeResident(id, layer, mip, pageIndex);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+TextureSparseCommitChanges(const CoreGraphics::TextureId id)
+{
+	texturePool->SparseCommitChanges(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+TextureSparseUpdate(const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, const CoreGraphics::TextureId source, const CoreGraphics::SubmissionContextId sub)
+{
+	texturePool->SparseUpdate(id, region, mip, source, sub);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 TextureCreateInfoAdjusted 
 TextureGetAdjustedInfo(const TextureCreateInfo& info)
 {
@@ -267,6 +342,7 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
 		rt.windowTexture = false;
 		rt.windowRelative = info.windowRelative;
 		rt.bindless = info.bindless;
+		rt.sparse = info.sparse;
 		rt.window = CoreGraphics::WindowId::Invalid();
 		rt.alias = info.alias;
 		rt.defaultLayout = info.defaultLayout;

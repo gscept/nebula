@@ -26,6 +26,7 @@ TransformNode::TransformNode() :
 	lockedToViewer(false)
 {
 	this->type = TransformNodeType;
+	this->bits = HasTransformBit;
 }
 
 //------------------------------------------------------------------------------
@@ -46,25 +47,25 @@ TransformNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 	if (FourCC('POSI') == fourcc)
 	{
 		// position
-		this->position = reader->ReadFloat4();
+		this->position = xyz(reader->ReadVec4());
 	}
 	else if (FourCC('ROTN') == fourcc)
 	{
 		// rotation
-		this->rotate = reader->ReadFloat4();
+		this->rotate = reader->ReadVec4();
 	}
 	else if (FourCC('SCAL') == fourcc)
 	{
 		// scale
-		this->scale = reader->ReadFloat4();
+		this->scale = xyz(reader->ReadVec4());
 	}
 	else if (FourCC('RPIV') == fourcc)
 	{
-		this->rotatePivot = reader->ReadFloat4();
+		this->rotatePivot = xyz(reader->ReadVec4());
 	}
 	else if (FourCC('SPIV') == fourcc)
 	{
-		this->scalePivot = reader->ReadFloat4();
+		this->scalePivot = xyz(reader->ReadVec4());
 	}
 	else if (FourCC('SVSP') == fourcc)
 	{
@@ -77,10 +78,14 @@ TransformNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 	else if (FourCC('SMID') == fourcc)
 	{
 		this->minDistance = reader->ReadFloat();
+		this->maxDistance = Math::n_max(this->minDistance, this->maxDistance);
+		this->useLodDistances = true;
 	}
 	else if (FourCC('SMAD') == fourcc)
 	{
 		this->maxDistance = reader->ReadFloat();
+		this->minDistance = Math::n_min(this->minDistance, this->maxDistance);
+		this->useLodDistances = true;
 	}
 	else
 	{

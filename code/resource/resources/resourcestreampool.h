@@ -37,12 +37,15 @@
 #include "io/stream.h"
 #include "util/set.h"
 #include "resource.h"
+#include "threading/safequeue.h"
+#include "threading/threadid.h"
 #include <tuple>
 #include <functional>
 
 namespace Resources
 {
 class Resource;
+class ResourceLoaderThread;
 class ResourceStreamPool : public ResourcePool
 {
 	__DeclareAbstractClass(ResourceStreamPool);
@@ -73,6 +76,9 @@ public:
 	/// reload resource using resource id
 	void ReloadResource(const Resources::ResourceId& id, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed);
 
+	/// begin updating a resources lod
+	void SetMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate);
+
 protected:
 	friend class ResourceServer;
 
@@ -83,9 +89,18 @@ protected:
 		Util::StringAtom tag;
 		bool inflight;
 		bool immediate;
-		std::function<void()> loadFunc;
 
 		_PendingResourceLoad() : id(ResourceId::Invalid()) {};
+	};
+
+	/// struct for pending stream
+	struct _PendingStreamLod
+	{
+		Resources::ResourceId id;
+		float lod;
+		bool immediate;
+
+		_PendingStreamLod() : id(ResourceId::Invalid()) {};
 	};
 
 	struct _PendingResourceUnload
@@ -105,6 +120,8 @@ protected:
 	virtual LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) = 0;
 	/// perform a reload
 	virtual LoadStatus ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream);
+	/// perform a lod update
+	virtual void StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate);
 
 	/// update the resource loader, this is done every frame
 	void Update(IndexT frameIndex);
@@ -123,17 +140,19 @@ protected:
 
 	bool async;
 
-	//Util::Dictionary<Util::StringAtom, _PendingResource> pending;
-	//Util::FixedArray<Util::Array<_PendingResource>> 
+	Ptr<ResourceLoaderThread> streamerThread;
+	Util::StringAtom streamerThreadName;
 
-	Util::Dictionary<Resources::ResourceName, Ids::Id32> pendingLoadMap;
-	Util::FixedArray<_PendingResourceLoad> pendingLoads;
-	Ids::IdPool pendingLoadPool;
+	Util::Array<IndexT> pendingLoads;
 	Util::Array<_PendingResourceUnload> pendingUnloads;
+	Util::Array<_PendingStreamLod> pendingStreamLods;
+	Threading::SafeQueue<_PendingStreamLod> pendingStreamQueue;
 	Util::FixedArray<Util::Array<_Callbacks>> callbacks;
+	Util::FixedArray<_PendingResourceLoad> loads;
 
 	/// async section to sync callbacks and pending list with thread
 	Threading::CriticalSection asyncSection;
+	Threading::ThreadId creatorThread;
 };
 
 

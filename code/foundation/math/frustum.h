@@ -9,9 +9,8 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "math/plane.h"
-#include "math/matrix44.h"
+#include "math/mat4.h"
 #include "math/bbox.h"
-#include "math/point.h"
 #include "math/clipstatus.h"
 
 //------------------------------------------------------------------------------
@@ -36,11 +35,11 @@ public:
     /// default constructor
     frustum();
     /// construct from view and projection matrix
-    frustum(const matrix44& invViewProj);
+    frustum(const mat4& invViewProj);
     /// setup from view and proj matrix
-    void set(const matrix44& invViewProj);
+    void set(const mat4& invViewProj);
     /// setup from transformed bounding box
-    void set(const bbox& box, const matrix44& boxTransform);
+    void set(const bbox& box, const mat4& boxTransform);
     /// test if point is inside frustum
     bool inside(const point& p) const;
     /// get clip bitmask of point (0 if inside, (1<<PlaneIndex) if outside)
@@ -50,7 +49,7 @@ public:
     /// get clip status of a local bounding box
     ClipStatus::Type clipstatus(const bbox& box) const;
     /// get clip status of a transformed bounding box
-    ClipStatus::Type clipstatus(const bbox& box, const matrix44& boxTransform) const;
+    ClipStatus::Type clipstatus(const bbox& box, const mat4& boxTransform) const;
     /// convert to any type
     template<typename T> T as() const;
 
@@ -79,7 +78,7 @@ frustum::frustum()
 /**
 */
 inline 
-frustum::frustum(const matrix44& invViewProj)
+frustum::frustum(const mat4& invViewProj)
 {
     this->set(invViewProj);
 }
@@ -90,35 +89,36 @@ frustum::frustum(const matrix44& invViewProj)
     into world space).
 */
 inline void
-frustum::set(const matrix44& invViewProj)
+frustum::set(const mat4& invViewProj)
 {
     // frustum corners in projection space
-    point projPoints[8];
-    projPoints[TopLeftFar].set(-1.0f, 1.0f, 1.0f);
-    projPoints[TopRightFar].set(1.0f, 1.0f, 1.0f);
-    projPoints[BottomLeftFar].set(-1.0f, -1.0f, 1.0f);
-    projPoints[BottomRightFar].set(1.0f, -1.0f, 1.0f);
-    projPoints[TopLeftNear].set(-1.0f, 1.0f, 0.0f);
-    projPoints[TopRightNear].set(1.0f, 1.0f, 0.0f);
-    projPoints[BottomLeftNear].set(-1.0f, -1.0f, 0.0f);
-    projPoints[BottomRightNear].set(1.0f, -1.0f, 0.0);
+    vec4 projPoints[8];
+    projPoints[TopLeftFar].set(-1.0f, 1.0f, 1.0f, 1);
+    projPoints[TopRightFar].set(1.0f, 1.0f, 1.0f, 1);
+    projPoints[BottomLeftFar].set(-1.0f, -1.0f, 1.0f, 1);
+    projPoints[BottomRightFar].set(1.0f, -1.0f, 1.0f, 1);
+    projPoints[TopLeftNear].set(-1.0f, 1.0f, 0.0f, 1);
+    projPoints[TopRightNear].set(1.0f, 1.0f, 0.0f, 1);
+    projPoints[BottomLeftNear].set(-1.0f, -1.0f, 0.0f, 1);
+    projPoints[BottomRightNear].set(1.0f, -1.0f, 0.0f, 1);
 
     // compute frustum corners in world space
-    point worldPoints[8];
+    vec3 worldPoints[8];
     IndexT i;
     for (i = 0; i < 8; i++)
     {
-        point p = matrix44::transform(projPoints[i], invViewProj);
-        p *= 1.0f / p.w();
+        vec4 p = invViewProj * projPoints[i];
+        p *= 1.0f / p.w;
+        worldPoints[i] = xyz(p);
     }
 
     // setup planes
-    this->planes[Near].setup_from_points(worldPoints[TopRightNear], worldPoints[TopLeftNear], worldPoints[BottomLeftNear]);
-    this->planes[Far].setup_from_points(worldPoints[TopLeftFar], worldPoints[TopRightFar], worldPoints[BottomRightFar]);
-    this->planes[Left].setup_from_points(worldPoints[BottomLeftFar], worldPoints[BottomLeftNear], worldPoints[TopLeftNear]);
-    this->planes[Right].setup_from_points(worldPoints[TopRightFar], worldPoints[TopRightNear], worldPoints[BottomRightNear]);
-    this->planes[Top].setup_from_points(worldPoints[TopLeftNear], worldPoints[TopRightNear], worldPoints[TopRightFar]);
-    this->planes[Bottom].setup_from_points(worldPoints[BottomLeftFar], worldPoints[BottomRightFar], worldPoints[BottomRightNear]);
+    this->planes[Near] = plane(worldPoints[TopRightNear], worldPoints[TopLeftNear], worldPoints[BottomLeftNear]);
+    this->planes[Far] = plane(worldPoints[TopLeftFar], worldPoints[TopRightFar], worldPoints[BottomRightFar]);
+    this->planes[Left] = plane(worldPoints[BottomLeftFar], worldPoints[BottomLeftNear], worldPoints[TopLeftNear]);
+    this->planes[Right] = plane(worldPoints[TopRightFar], worldPoints[TopRightNear], worldPoints[BottomRightNear]);
+    this->planes[Top] = plane(worldPoints[TopLeftNear], worldPoints[TopRightNear], worldPoints[TopRightFar]);
+    this->planes[Bottom] = plane(worldPoints[BottomLeftFar], worldPoints[BottomRightFar], worldPoints[BottomRightNear]);
 }
 
 //------------------------------------------------------------------------------
@@ -126,11 +126,11 @@ frustum::set(const matrix44& invViewProj)
     Setup from a transformed bounding box.
 */
 inline void
-frustum::set(const bbox& box, const matrix44& boxTransform)
+frustum::set(const bbox& box, const mat4& boxTransform)
 {
     // compute frustum corners in world space
-    point localPoint;
-    point worldPoints[8];
+    vec4 localPoint;
+    vec3 worldPoints[8];
     IndexT i;
     for (i = 0; i < 8; i++)
     {
@@ -138,25 +138,25 @@ frustum::set(const bbox& box, const matrix44& boxTransform)
         switch (i)
         {
             // FIXME: replace with permute!
-            case TopLeftFar:        localPoint.set(box.pmin.x(), box.pmax.y(), box.pmax.z()); break;
-            case TopRightFar:       localPoint.set(box.pmax.x(), box.pmax.y(), box.pmax.z()); break;
-            case BottomLeftFar:     localPoint.set(box.pmin.x(), box.pmin.y(), box.pmax.z()); break;
-            case BottomRightFar:    localPoint.set(box.pmax.x(), box.pmin.y(), box.pmax.z()); break;
-            case TopLeftNear:       localPoint.set(box.pmin.x(), box.pmax.y(), box.pmin.z()); break;
-            case TopRightNear:      localPoint.set(box.pmax.x(), box.pmax.y(), box.pmin.z()); break;
-            case BottomLeftNear:    localPoint.set(box.pmin.x(), box.pmin.y(), box.pmin.z()); break;
-            case BottomRightNear:   localPoint.set(box.pmax.x(), box.pmin.y(), box.pmin.z()); break;
+            case TopLeftFar:        localPoint.set(box.pmin.x, box.pmax.y, box.pmax.z, 1); break;
+            case TopRightFar:       localPoint.set(box.pmax.x, box.pmax.y, box.pmax.z, 1); break;
+            case BottomLeftFar:     localPoint.set(box.pmin.x, box.pmin.y, box.pmax.z, 1); break;
+            case BottomRightFar:    localPoint.set(box.pmax.x, box.pmin.y, box.pmax.z, 1); break;
+            case TopLeftNear:       localPoint.set(box.pmin.x, box.pmax.y, box.pmin.z, 1); break;
+            case TopRightNear:      localPoint.set(box.pmax.x, box.pmax.y, box.pmin.z, 1); break;
+            case BottomLeftNear:    localPoint.set(box.pmin.x, box.pmin.y, box.pmin.z, 1); break;
+            case BottomRightNear:   localPoint.set(box.pmax.x, box.pmin.y, box.pmin.z, 1); break;
         }
-        worldPoints[i] = matrix44::transform(localPoint, boxTransform);
+        worldPoints[i] = xyz(boxTransform * localPoint);
     }
 
     // setup planes from transformed world space coordinates 
-    this->planes[Near].setup_from_points(worldPoints[TopLeftNear], worldPoints[TopRightNear], worldPoints[BottomLeftNear]);
-    this->planes[Far].setup_from_points(worldPoints[TopRightFar], worldPoints[TopLeftFar], worldPoints[BottomRightFar]);
-    this->planes[Left].setup_from_points(worldPoints[BottomLeftNear], worldPoints[BottomLeftFar], worldPoints[TopLeftNear]);
-    this->planes[Right].setup_from_points(worldPoints[BottomRightNear], worldPoints[TopRightNear], worldPoints[TopRightFar]);
-    this->planes[Top].setup_from_points(worldPoints[TopRightNear], worldPoints[TopLeftNear], worldPoints[TopRightFar]);
-    this->planes[Bottom].setup_from_points(worldPoints[BottomRightFar], worldPoints[BottomLeftFar], worldPoints[BottomRightNear]);
+    this->planes[Near] = plane(worldPoints[TopLeftNear], worldPoints[TopRightNear], worldPoints[BottomLeftNear]);
+    this->planes[Far] = plane(worldPoints[TopRightFar], worldPoints[TopLeftFar], worldPoints[BottomRightFar]);
+    this->planes[Left] = plane(worldPoints[BottomLeftNear], worldPoints[BottomLeftFar], worldPoints[TopLeftNear]);
+    this->planes[Right] = plane(worldPoints[BottomRightNear], worldPoints[TopRightNear], worldPoints[TopRightFar]);
+    this->planes[Top] = plane(worldPoints[TopRightNear], worldPoints[TopLeftNear], worldPoints[TopRightFar]);
+    this->planes[Bottom] = plane(worldPoints[BottomRightFar], worldPoints[BottomLeftFar], worldPoints[BottomRightNear]);
 }
 
 //------------------------------------------------------------------------------
@@ -169,7 +169,7 @@ frustum::inside(const point& p) const
     IndexT i;
     for (i = 0; i < NumPlanes; i++)
     {
-        if (this->planes[i].dot(p) > 0.0f)
+        if (dot(this->planes[i], p) > 0.0f)
         {
             return false;
         }
@@ -188,7 +188,7 @@ frustum::clipmask(const point& p) const
     IndexT i;
     for (i = 0; i < NumPlanes; i++)
     {
-        if (this->planes[i].dot(p) > 0.0f)
+        if (dot(this->planes[i], p) > 0.0f)
         {
             clipMask |= 1<<i;
         }
@@ -208,7 +208,7 @@ frustum::clip(const line& l, line& clippedLine) const
     IndexT i;
     for (i = 0; i < NumPlanes; i++)
     {
-        ClipStatus::Type planeClipStatus = this->planes[i].clip(l0, l1);
+        ClipStatus::Type planeClipStatus = Math::clip(this->planes[i], l0, l1);
         if (ClipStatus::Outside == planeClipStatus)
         {
             return ClipStatus::Outside;
@@ -240,13 +240,13 @@ frustum::clipstatus(const bbox& box) const
         {
             // FIXME: REPLACE WITH PERMUTE!
             case 0:     p = box.pmin; break;
-            case 1:     p.set(box.pmin.x(), box.pmax.y(), box.pmin.z()); break;
-            case 2:     p.set(box.pmax.x(), box.pmax.y(), box.pmin.z()); break;
-            case 3:     p.set(box.pmax.x(), box.pmin.y(), box.pmin.z()); break;
+            case 1:     p.set(box.pmin.x, box.pmax.y, box.pmin.z); break;
+            case 2:     p.set(box.pmax.x, box.pmax.y, box.pmin.z); break;
+            case 3:     p.set(box.pmax.x, box.pmin.y, box.pmin.z); break;
             case 4:     p = box.pmax; break;
-            case 5:     p.set(box.pmin.x(), box.pmax.y(), box.pmax.z()); break;
-            case 6:     p.set(box.pmin.x(), box.pmin.y(), box.pmax.z()); break;
-            case 7:     p.set(box.pmax.x(), box.pmin.y(), box.pmax.z()); break;
+            case 5:     p.set(box.pmin.x, box.pmax.y, box.pmax.z); break;
+            case 6:     p.set(box.pmin.x, box.pmin.y, box.pmax.z); break;
+            case 7:     p.set(box.pmax.x, box.pmin.y, box.pmax.z); break;
         }
 
         // get clip mask of current box corner against frustum
@@ -264,11 +264,11 @@ frustum::clipstatus(const bbox& box) const
     Returns the clip status of a transformed bounding box.
 */
 inline ClipStatus::Type
-frustum::clipstatus(const bbox& box, const matrix44& boxTransform) const
+frustum::clipstatus(const bbox& box, const mat4& boxTransform) const
 {
     uint andFlags = 0xffff;
     uint orFlags = 0;
-    point localPoint, transformedPoint;
+    vec4 localPoint, transformedPoint;
     IndexT i;
     for (i = 0; i < 8; i++)
     {
@@ -277,20 +277,20 @@ frustum::clipstatus(const bbox& box, const matrix44& boxTransform) const
         {
             // FIXME: REPLACE WITH PERMUTE!
             case 0:     localPoint = box.pmin; break;
-            case 1:     localPoint.set(box.pmin.x(), box.pmax.y(), box.pmin.z()); break;
-            case 2:     localPoint.set(box.pmax.x(), box.pmax.y(), box.pmin.z()); break;
-            case 3:     localPoint.set(box.pmax.x(), box.pmin.y(), box.pmin.z()); break;
+            case 1:     localPoint.set(box.pmin.x, box.pmax.y, box.pmin.z, 1); break;
+            case 2:     localPoint.set(box.pmax.x, box.pmax.y, box.pmin.z, 1); break;
+            case 3:     localPoint.set(box.pmax.x, box.pmin.y, box.pmin.z, 1); break;
             case 4:     localPoint = box.pmax; break;
-            case 5:     localPoint.set(box.pmin.x(), box.pmax.y(), box.pmax.z()); break;
-            case 6:     localPoint.set(box.pmin.x(), box.pmin.y(), box.pmax.z()); break;
-            case 7:     localPoint.set(box.pmax.x(), box.pmin.y(), box.pmax.z()); break;
+            case 5:     localPoint.set(box.pmin.x, box.pmax.y, box.pmax.z, 1); break;
+            case 6:     localPoint.set(box.pmin.x, box.pmin.y, box.pmax.z, 1); break;
+            case 7:     localPoint.set(box.pmax.x, box.pmin.y, box.pmax.z, 1); break;
         }
 
         // transform bounding box point
-        transformedPoint = matrix44::transform(localPoint, boxTransform);
+        transformedPoint = boxTransform * localPoint;
 
         // get clip mask of current box corner against frustum
-        uint clipMask = this->clipmask(transformedPoint);
+        uint clipMask = this->clipmask(xyz(transformedPoint));
         andFlags &= clipMask;
         orFlags  |= clipMask;
     }

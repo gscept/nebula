@@ -102,6 +102,25 @@ public:
 	/// get default layout
 	CoreGraphics::ImageLayout GetDefaultLayout(const CoreGraphics::TextureId id);
 
+	/// get the texture page size, which is constant for the whole texture
+	CoreGraphics::TextureSparsePageSize SparseGetPageSize(const CoreGraphics::TextureId id);
+	/// get the page index at a given coordinate
+	IndexT SparseGetPageIndex(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT x, IndexT y, IndexT z);
+	/// get texture page
+	const CoreGraphics::TextureSparsePage& SparseGetPage(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex);
+	/// get the number of pages for a given layer and mip
+	SizeT SparseGetNumPages(const CoreGraphics::TextureId id, IndexT layer, IndexT mip);
+
+	/// evict a page
+	void SparseEvict(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex);
+	/// make a page resident
+	void SparseMakeResident(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex);
+	/// commit texture sparse page updates
+	void SparseCommitChanges(const CoreGraphics::TextureId id);
+
+	/// update a region of the sparse texture, make sure to insert barriers before doing this though
+	void SparseUpdate(const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, const CoreGraphics::TextureId source, const CoreGraphics::SubmissionContextId sub);
+
 	/// swap buffers for texture
 	IndexT SwapBuffers(const CoreGraphics::TextureId id);
 private:

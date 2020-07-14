@@ -467,9 +467,9 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
 	const Util::Array<CoreAnimation::AnimSampleBuffer>& sampleBuffers = characterContextAllocator.GetArray<SampleBuffer>();
 	const Util::Array<Util::FixedArray<SkeletonJobJoint>>& jobJoints = characterContextAllocator.GetArray<JobJoints>();
 	const Util::Array<Characters::SkeletonId>& skeletons = characterContextAllocator.GetArray<SkeletonId>();
-	const Util::Array<Util::FixedArray<Math::matrix44>>& jointPalettes = characterContextAllocator.GetArray<JointPalette>();
-	const Util::Array<Util::FixedArray<Math::matrix44>>& scaledJointPalettes = characterContextAllocator.GetArray<JointPaletteScaled>();
-	const Util::Array<Util::FixedArray<Math::matrix44>>& userJoints = characterContextAllocator.GetArray<UserControlledJoint>();
+	const Util::Array<Util::FixedArray<Math::mat4>>& jointPalettes = characterContextAllocator.GetArray<JointPalette>();
+	const Util::Array<Util::FixedArray<Math::mat4>>& scaledJointPalettes = characterContextAllocator.GetArray<JointPaletteScaled>();
+	const Util::Array<Util::FixedArray<Math::mat4>>& userJoints = characterContextAllocator.GetArray<UserControlledJoint>();
 	const Util::Array<Graphics::GraphicsEntityId>& models = characterContextAllocator.GetArray<ModelContextId>();
 
 	// update times and animations
@@ -482,10 +482,10 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
 		AnimationTracks& trackController = tracks[i];
 		const AnimResourceId& anim = anims[i];
 		const Util::FixedArray<SkeletonJobJoint>& jobJoint = jobJoints[i];
-		const Util::FixedArray<Math::matrix44>& bindPose = Characters::SkeletonGetBindPose(skeletons[i]);
-		const Util::FixedArray<Math::matrix44>& userJoint = userJoints[i];
-		const Util::FixedArray<Math::matrix44>& jointPalette = jointPalettes[i];
-		const Util::FixedArray<Math::matrix44>& scaledJointPalette = scaledJointPalettes[i];
+		const Util::FixedArray<Math::mat4>& bindPose = Characters::SkeletonGetBindPose(skeletons[i]);
+		const Util::FixedArray<Math::mat4>& userJoint = userJoints[i];
+		const Util::FixedArray<Math::mat4>& jointPalette = jointPalettes[i];
+		const Util::FixedArray<Math::mat4>& scaledJointPalette = scaledJointPalettes[i];
 		const CoreAnimation::AnimSampleBuffer& sampleBuffer = sampleBuffers[i];
 		const Graphics::GraphicsEntityId& model = models[i];
 
@@ -617,14 +617,14 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
 
 					// get pointers to memory and size
 					SizeT src0Size, src1Size;
-					const Math::float4 *src0Ptr = nullptr, *src1Ptr = nullptr;
+					const Math::vec4 *src0Ptr = nullptr, *src1Ptr = nullptr;
 					AnimComputeSlice(anim, playing.clip, keyIndex0, src0Size, src0Ptr);
 					AnimComputeSlice(anim, playing.clip, keyIndex1, src1Size, src1Ptr);
 
 					// setup output
-					Math::float4* outSamplesPtr = sampleBuffer.GetSamplesPointer();
+					Math::vec4* outSamplesPtr = sampleBuffer.GetSamplesPointer();
 					SizeT numOutSamples = sampleBuffer.GetNumSamples();
-					SizeT outSamplesByteSize = numOutSamples * sizeof(Math::float4);
+					SizeT outSamplesByteSize = numOutSamples * sizeof(Math::vec4);
 					uchar* outSampleCounts = sampleBuffer.GetSampleCountsPointer();
 
 					ctx[0].input.numBuffers = 2;
@@ -661,7 +661,7 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
 					// create skeleton eval job
 					jobs[1] = Jobs::CreateJob({ SkeletonEvalJobWithVariation });
 
-					const SizeT elmSize = sizeof(Math::matrix44);
+					const SizeT elmSize = sizeof(Math::mat4);
 					const SizeT numElements = jobJoint.Size();
 					SizeT outBufSize = numElements * elmSize;
 
@@ -675,8 +675,8 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
 					ctx[1].input.dataSize[0] = numElements * sizeof(SkeletonJobJoint);
 					ctx[1].input.sliceSize[0] = numElements * sizeof(SkeletonJobJoint);
 					ctx[1].input.data[1] = sampleBuffer.GetSamplesPointer();
-					ctx[1].input.dataSize[1] = sampleBuffer.GetNumSamples() * sizeof(Math::float4);
-					ctx[1].input.sliceSize[1] = sampleBuffer.GetNumSamples() * sizeof(Math::float4);
+					ctx[1].input.dataSize[1] = sampleBuffer.GetNumSamples() * sizeof(Math::vec4);
+					ctx[1].input.sliceSize[1] = sampleBuffer.GetNumSamples() * sizeof(Math::vec4);
 
 					// setup outputs
 					ctx[1].output.data[0] = scaledJointPalette.Begin();
@@ -688,9 +688,9 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
 
 					// setup uniforms
 					ctx[1].uniform.data[0] = bindPose.Begin();
-					ctx[1].uniform.dataSize[0] = bindPose.Size() * sizeof(Math::matrix44);
+					ctx[1].uniform.dataSize[0] = bindPose.Size() * sizeof(Math::mat4);
 					ctx[1].uniform.data[1] = userJoint.Begin();
-					ctx[1].uniform.dataSize[1] = userJoint.Size() * sizeof(Math::matrix44);
+					ctx[1].uniform.dataSize[1] = userJoint.Size() * sizeof(Math::mat4);
 				}
 
 				// schedule jobs
@@ -778,22 +778,22 @@ CharacterContext::OnRenderDebug(uint32 flags)
 	// wait for jobs to finish
 	Jobs::JobSyncHostWait(CharacterContext::jobSync);
 
-	const Util::Array<Util::FixedArray<Math::matrix44>>& jointPalettes = characterContextAllocator.GetArray<JointPaletteScaled>();
+	const Util::Array<Util::FixedArray<Math::mat4>>& jointPalettes = characterContextAllocator.GetArray<JointPaletteScaled>();
 	const Util::Array<Graphics::GraphicsEntityId>& modelContexts = characterContextAllocator.GetArray<ModelContextId>();
-	const Math::matrix44 scale = Math::matrix44::scaling(0.1f, 0.1f, 0.1f);
+	const Math::mat4 scale = Math::scaling(0.1f, 0.1f, 0.1f);
 	IndexT i;
 	for (i = 0; i < jointPalettes.Size(); i++)
 	{
-		const Util::FixedArray<Math::matrix44>& jointsPalette = jointPalettes[i];
-		const Math::matrix44& transform = Models::ModelContext::GetTransform(modelContexts[i]);
+		const Util::FixedArray<Math::mat4>& jointsPalette = jointPalettes[i];
+		const Math::mat4& transform = Models::ModelContext::GetTransform(modelContexts[i]);
 		IndexT j;
 		for (j = 0; j < jointsPalette.Size(); j++)
 		{
-			Math::matrix44 joint = Math::matrix44::multiply(scale, Math::matrix44::multiply(jointsPalette[j], transform));
+			Math::mat4 joint = scale * jointsPalette[j] * transform;
 			CoreGraphics::RenderShape shape;
-			shape.SetupSimpleShape(CoreGraphics::RenderShape::Sphere, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), joint, Math::float4(1, 0, 0, 0.5f));
+			shape.SetupSimpleShape(CoreGraphics::RenderShape::Sphere, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), joint, Math::vec4(1, 0, 0, 0.5f));
 			CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
-			//Im3d::Im3dContext::DrawSphere(joint, Math::float4(1,0,0,0.5f));
+			//Im3d::Im3dContext::DrawSphere(joint, Math::vec4(1,0,0,0.5f));
 		}
 	}
 }

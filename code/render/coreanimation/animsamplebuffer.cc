@@ -68,8 +68,8 @@ AnimSampleBuffer::AnimSampleBuffer(const AnimSampleBuffer& rhs) :
 
 	if (this->numSamples > 0)
 	{
-		this->samples = (float4*)Memory::Alloc(Memory::ResourceHeap, this->numSamples * sizeof(float4));
-		memcpy(this->samples, rhs.samples, this->numSamples * sizeof(float4));
+		this->samples = (vec4*)Memory::Alloc(Memory::ResourceHeap, this->numSamples * sizeof(vec4));
+		memcpy(this->samples, rhs.samples, this->numSamples * sizeof(vec4));
 
 		this->sampleCounts = (uchar*)Memory::Alloc(Memory::ResourceHeap, (this->numSamples * sizeof(uchar)) + 16);
 		memcpy(this->sampleCounts, rhs.sampleCounts, (this->numSamples * sizeof(uchar)) + 16);
@@ -115,8 +115,8 @@ AnimSampleBuffer::operator=(const AnimSampleBuffer& rhs)
 
 	if (this->numSamples > 0)
 	{
-		this->samples = (float4*)Memory::Alloc(Memory::ResourceHeap, this->numSamples * sizeof(float4));
-		memcpy(this->samples, rhs.samples, this->numSamples * sizeof(float4));
+		this->samples = (vec4*)Memory::Alloc(Memory::ResourceHeap, this->numSamples * sizeof(vec4));
+		memcpy(this->samples, rhs.samples, this->numSamples * sizeof(vec4));
 
 		this->sampleCounts = (uchar*)Memory::Alloc(Memory::ResourceHeap, (this->numSamples * sizeof(uchar)) + 16);
 		memcpy(this->sampleCounts, rhs.sampleCounts, (this->numSamples * sizeof(uchar)) + 16);
@@ -137,7 +137,7 @@ AnimSampleBuffer::Setup(const AnimResourceId& animRes)
 	const Util::FixedArray<AnimClip>& clips = AnimGetClips(this->animResource);
 	if (clips.Size() > 0) 
 		this->numSamples = clips[0].GetNumCurves();
-	this->samples      = (float4*) Memory::Alloc(Memory::ResourceHeap, this->numSamples * sizeof(float4));
+	this->samples      = (vec4*) Memory::Alloc(Memory::ResourceHeap, this->numSamples * sizeof(vec4));
 
 	// NOTE: sample count size must be aligned to 16 bytes, this allocate some more bytes in the buffer
 	this->sampleCounts = (uchar*)  Memory::Alloc(Memory::ResourceHeap, (this->numSamples * sizeof(uchar)) + 16);

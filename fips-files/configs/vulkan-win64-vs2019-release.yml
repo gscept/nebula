@@ -1,6 +1,6 @@
 ---
-platform: win64 
-generator: Visual Studio 16 Win64
+platform: win64
+generator: Visual Studio 16
 build_tool: cmake
 build_type: Release
 defines:

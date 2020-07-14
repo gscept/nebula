@@ -37,39 +37,39 @@ public:
 	static void Discard();
 
 	/// setup entity as global light
-	static void SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::float4& color, const float intensity, const Math::float4& ambient, const Math::float4& backlight, const float backlightFactor, const Math::vector& direction, bool castShadows = false);
+	static void SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::vec3& color, const float intensity, const Math::vec3& ambient, const Math::vec3& backlight, const float backlightFactor, const Math::vector& direction, bool castShadows = false);
 	/// setup entity as point light source
 	static void SetupPointLight(const Graphics::GraphicsEntityId id, 
-		const Math::float4& color, 
+		const Math::vec3& color,
 		const float intensity, 
-		const Math::matrix44& transform, 
+		const Math::mat4& transform,
 		const float range, 
 		bool castShadows = false, 
 		const CoreGraphics::TextureId projection = CoreGraphics::TextureId::Invalid());
 
 	/// setup entity as spot light
 	static void SetupSpotLight(const Graphics::GraphicsEntityId id, 
-		const Math::float4& color, 
+		const Math::vec3& color,
 		const float intensity, 
 		const float innerConeAngle,
 		const float outerConeAngle,
-		const Math::matrix44& transform,
+		const Math::mat4& transform,
 		const float range,
 		bool castShadows = false, 
 		const CoreGraphics::TextureId projection = CoreGraphics::TextureId::Invalid());
 
 	/// set color of light
-	static void SetColor(const Graphics::GraphicsEntityId id, const Math::float4& color);
+	static void SetColor(const Graphics::GraphicsEntityId id, const Math::vec3& color);
     /// set range of light
     static void SetRange(const Graphics::GraphicsEntityId id, const float range);
 	/// set intensity of light
 	static void SetIntensity(const Graphics::GraphicsEntityId id, const float intensity);
 	/// get transform
-	static const Math::matrix44 GetTransform(const Graphics::GraphicsEntityId id);
+	static const Math::mat4 GetTransform(const Graphics::GraphicsEntityId id);
 	/// set transform depending on type
-	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& transform);
+	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4& transform);
 	/// get the view transform including projections
-	static const Math::matrix44 GetObserverTransform(const Graphics::GraphicsEntityId id);
+	static const Math::mat4 GetObserverTransform(const Graphics::GraphicsEntityId id);
 
 	/// get the light type
 	static LightType GetType(const Graphics::GraphicsEntityId id);
@@ -101,13 +101,13 @@ public:
 private:
 
 	/// set transform, type must match the type the entity was created with
-	static void SetSpotLightTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform);
+	static void SetSpotLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
 	/// set transform, type must match the type the entity was created with
-	static void SetPointLightTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform);
+	static void SetPointLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
 	/// set global light transform
-	static void SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform);
+	static void SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
 	/// set global light shadow transform
-	static void SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform);
+	static void SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
 
 	/// run light classification compute
 	static void CullAndClassify();
@@ -137,7 +137,7 @@ private:
 
 	typedef Ids::IdAllocator<
 		LightType,				// type
-		Math::float4,			// color
+		Math::vec3,				// color
 		float,					// intensity
 		bool,					// shadow caster
 		float,
@@ -161,7 +161,7 @@ private:
 	};
 
 	typedef Ids::IdAllocator<
-		Math::matrix44,				// transform
+		Math::mat4,					// transform
 		ConstantBufferSet,			// constant buffer binding for light
 		ConstantBufferSet,			// constant buffer binding for shadows
 		Util::FixedArray<uint>,		// dynamic offsets
@@ -183,13 +183,13 @@ private:
 	};
 
 	typedef Ids::IdAllocator<
-		Math::matrix44,				// transform
+		Math::mat4,					// transform
 		ConstantBufferSet,			// constant buffer binding for light
 		ConstantBufferSet,			// constant buffer binding for shadows
 		Util::FixedArray<uint>,		// dynamic offsets
 		std::array<float, 2>,		// cone angle
 		CoreGraphics::TextureId,	// projection (if invalid, don't use)
-		Math::matrix44,				// projection matrix
+		Math::mat4,					// projection matrix
 		Graphics::GraphicsEntityId	// graphics entity used for observer stuff
 	> SpotLightAllocator;
 	static SpotLightAllocator spotLightAllocator;
@@ -205,12 +205,12 @@ private:
 		GlobalLight_CascadeObservers
 	};
 	typedef Ids::IdAllocator<
-		Math::float4,								// direction
-		Math::float4,								// backlight color
+		Math::vector,								// direction
+		Math::vec3,									// backlight color
 		float,										// backlight offset
-		Math::float4,								// ambient
-		Math::matrix44,								// transform (basically just a rotation in the direction)
-		Math::matrix44,								// transform for visibility and such
+		Math::vec3,									// ambient
+		Math::mat4,									// transform (basically just a rotation in the direction)
+		Math::mat4,									// transform for visibility and such
 		Util::Array<Graphics::GraphicsEntityId>		// view ids for cascades
 	> GlobalLightAllocator;
 	static GlobalLightAllocator globalLightAllocator;
@@ -221,7 +221,7 @@ private:
 		ShadowCaster_Transform
 	};
 	typedef Ids::IdAllocator<
-		Math::matrix44 
+		Math::mat4
 	> ShadowCasterAllocator;
 	static ShadowCasterAllocator shadowCasterAllocator;
 	static Util::HashTable<Graphics::GraphicsEntityId, Graphics::ContextEntityId, 6, 1> shadowCasterSliceMap;

@@ -10,7 +10,7 @@ licensing terms:
 ====================================================================================================
 
 Copyright (c) 1999 - 2010, Radon Labs GmbH, Berlin/Germany
-Copyright (c) 2011 - 2019, Johannes Hirche, Gustav Sterbrant, Fredrik Lindahl
+Copyright (c) 2011 - 2020, Johannes Hirche, Gustav Sterbrant, Fredrik Lindahl
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted 

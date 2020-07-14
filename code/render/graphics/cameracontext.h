@@ -34,19 +34,24 @@ public:
 	static void SetupOrthographic(const Graphics::GraphicsEntityId id, float width, float height, float znear, float zfar);
 
 	/// set transform
-	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& mat);
+	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4& mat);
 	/// get transform
-	static const Math::matrix44& GetTransform(const Graphics::GraphicsEntityId id);
+	static const Math::mat4& GetTransform(const Graphics::GraphicsEntityId id);
 
 	/// get projection
-	static const Math::matrix44& GetProjection(const Graphics::GraphicsEntityId id);
+	static const Math::mat4& GetProjection(const Graphics::GraphicsEntityId id);
 	/// get view-projection
-	static const Math::matrix44& GetViewProjection(const Graphics::GraphicsEntityId id);
+	static const Math::mat4& GetViewProjection(const Graphics::GraphicsEntityId id);
 	/// get settings
 	static const CameraSettings& GetSettings(const Graphics::GraphicsEntityId id);
 
 	/// called if the window size has changed
 	static void OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
+
+	/// get the LOD camera
+	static Graphics::GraphicsEntityId GetLODCamera();
+	/// set the LOD camera
+	static void SetLODCamera(const Graphics::GraphicsEntityId id);
 
 private:
 
@@ -59,12 +64,13 @@ private:
 	};
 	typedef Ids::IdAllocator<
 		Graphics::CameraSettings,
-		Math::matrix44,				// projection
-		Math::matrix44,				// view-transform
-		Math::matrix44				// view-projection
+		Math::mat4,				// projection
+		Math::mat4,				// view-transform
+		Math::mat4				// view-projection
 	> CameraAllocator;
-
 	static CameraAllocator cameraAllocator;
+
+	static Graphics::GraphicsEntityId lodCamera;
 
 	/// allocate a new slice for this context
 	static Graphics::ContextEntityId Alloc();

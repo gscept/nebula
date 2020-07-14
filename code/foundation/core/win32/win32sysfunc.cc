@@ -60,13 +60,23 @@ SysFunc::Setup()
             localStringAtomTable = n_new(Util::LocalStringAtomTable);
         #endif    
 
-#if __USE_MATH_DIRECTX
-        // check CPU for SSE/SSE2 support for XNA-Math
-        if (!DirectX::XMVerifyCPUSupport())
-        {
-            n_error("no SSE/SSE2 support on this CPU. XNA-Math was compiled with SSE/SSE2 support\n");
-        }
+        // query simd support
+        int CPUInfo[4] = { -1 };
+        __cpuid(CPUInfo, 0x00000001);
+#if N_USE_AVX
+        if ((CPUInfo[2] & (1 << 28)) != (1 << 28))
+            n_error("Error: No AVX support");
 #endif
+        if ((CPUInfo[2] & (1 << 20)) != (1 << 20))
+            n_error("Error: No SSE4 support");
+        if ((CPUInfo[3] & (1 << 26)) != (1 << 26))
+            n_error("Error: No SSE2 support... wtf?");
+
+#if N_USE_FMA
+        if ((CPUInfo[2] & (1 << 12)) != (1 << 12))
+            n_error("No FMA support");
+#endif
+
     }
 }
 

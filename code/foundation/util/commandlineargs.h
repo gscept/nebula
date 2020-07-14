@@ -41,10 +41,10 @@ public:
     /// get bool flag (args only needs to exist to trigger as true)
     bool GetBoolFlag(const String& name) const;
     #if !__OSX__
-    /// get float4 value 
-    Math::float4 GetFloat4(const String& name, const Math::float4& defaultValue = Math::float4()) const;
-    /// get matrix44 value
-    Math::matrix44 GetMatrix44(const String& name, const Math::matrix44& defaultValue = Math::matrix44()) const;
+    /// get vec4 value 
+    Math::vec4 GetVec4(const String& name, const Math::vec4& defaultValue = Math::vec4()) const;
+    /// get mat4 value
+    Math::mat4 GetMat4(const String& name, const Math::mat4& defaultValue = Math::mat4()) const;
     #endif
     
 	/// returns true if the argument list is empty
@@ -60,10 +60,10 @@ public:
     /// get bool value at index
     bool GetBoolAtIndex(IndexT index) const;
     #if !__OSX__
-    /// get float4 value at index
-    Math::float4 GetFloat4AtIndex(IndexT index) const;
-    /// get matrix44 value at index
-    Math::matrix44 GetMatrix44AtIndex(IndexT index) const;
+    /// get vec4 value at index
+    Math::vec4 GetVec4AtIndex(IndexT index) const;
+    /// get mat4 value at index
+    Math::mat4 GetMat4AtIndex(IndexT index) const;
     #endif
     /// append other command string
     void AppendCommandString(const CommandLineArgs& otherArgs);

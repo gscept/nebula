@@ -12,6 +12,7 @@
 #include "coregraphics/displaydevice.h"
 #include "input/inputserver.h"
 #include "io/ioserver.h"
+#include "frame/frameplugin.h"
 
 using namespace Math;
 using namespace CoreGraphics;
@@ -50,9 +51,9 @@ ImguiContext::ImguiDrawFunction()
 
 	// create orthogonal matrix
 #if __VULKAN__
-	matrix44 proj = matrix44::orthooffcenterrh(0.0f, io.DisplaySize.x, 0.0f, io.DisplaySize.y, -1.0f, +1.0f);
+	mat4 proj = orthooffcenterrh(0.0f, io.DisplaySize.x, 0.0f, io.DisplaySize.y, -1.0f, +1.0f);
 #else
-	matrix44 proj = matrix44::orthooffcenterrh(0.0f, io.DisplaySize.x, io.DisplaySize.y, 0.0f, -1.0f, +1.0f);
+	mat4 proj = orthooffcenterrh(0.0f, io.DisplaySize.x, io.DisplaySize.y, 0.0f, -1.0f, +1.0f);
 #endif
 
 	// setup device
@@ -213,7 +214,7 @@ ImguiContext::Create()
 	components.Append(VertexComponent((VertexComponent::SemanticName)1, 0, VertexComponentBase::Float2, 0));
     components.Append(VertexComponent((VertexComponent::SemanticName)2, 0, VertexComponentBase::UByte4N, 0));
 
-	Frame::FramePlugin::AddCallback("ImGUI", [](const IndexT frameIndex)
+	Frame::AddCallback("ImGUI", [](const IndexT frameIndex)
 		{
 			CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
 			ImGui::Render();
@@ -228,7 +229,7 @@ ImguiContext::Create()
 		"ImGUI VBO"_atm,
 		CoreGraphics::GpuBufferTypes::AccessWrite,
 		CoreGraphics::GpuBufferTypes::UsageDynamic,
-		CoreGraphics::GpuBufferTypes::SyncingAutomatic,
+		CoreGraphics::BufferUpdateMode::HostMapped,
 		100000 * 3,
 		components,
 		nullptr,
@@ -247,7 +248,7 @@ ImguiContext::Create()
 		"system",
 		CoreGraphics::GpuBufferTypes::AccessWrite,
 		CoreGraphics::GpuBufferTypes::UsageDynamic,
-		CoreGraphics::GpuBufferTypes::SyncingAutomatic,
+		CoreGraphics::BufferUpdateMode::HostMapped,
 		IndexType::Index16,
 		100000 * 3,
 		nullptr,
@@ -409,6 +410,7 @@ ImguiContext::Create()
 	state.fontTexture.mip = 0;
 	state.fontTexture.layer = 0;
 	io.Fonts->TexID = &state.fontTexture;
+	io.Fonts->ClearTexData();
 
 	// load settings from disk. If we don't do this here we	need to
 	// run an entire frame before being able to create or load settings
@@ -477,7 +479,7 @@ ImguiContext::HandleInput(const Input::InputEvent& event)
 		return io.WantTextInput;
 	}
 	case InputEvent::MouseMove:
-		io.MousePos = ImVec2(event.GetAbsMousePos().x(), event.GetAbsMousePos().y());
+		io.MousePos = ImVec2(event.GetAbsMousePos().x, event.GetAbsMousePos().y);
 		return io.WantCaptureMouse;
 	case InputEvent::MouseButtonDown:
 		io.MouseDown[event.GetMouseButton()] = true;

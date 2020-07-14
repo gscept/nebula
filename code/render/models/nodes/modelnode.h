@@ -103,6 +103,8 @@ public:
 	const Util::Array<ModelNode*>& GetChildren() const;
 	/// get type of node
 	const NodeType GetType() const;
+	/// get feature bits of node
+	const NodeBits GetBits() const;
 	/// create an instance of a node, override in the leaf classes
 	virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent);
 
@@ -118,6 +120,8 @@ public:
 
 	/// apply node-level state
 	virtual void ApplyNodeState();
+	/// apply node-level resources
+	virtual void ApplyNodeResources();
 
 protected:
 	friend class StreamModelPool;
@@ -140,6 +144,7 @@ protected:
 
 	Util::StringAtom name;
 	NodeType type;
+	NodeBits bits;
 
 	Memory::ArenaAllocator<MODEL_MEMORY_CHUNK_SIZE>* nodeAllocator;
 	Models::ModelNode* parent;
@@ -178,6 +183,15 @@ inline const NodeType
 ModelNode::GetType() const
 {
 	return this->type;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const NodeBits 
+ModelNode::GetBits() const
+{
+	return this->bits;
 }
 
 //------------------------------------------------------------------------------

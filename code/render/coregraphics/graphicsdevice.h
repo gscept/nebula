@@ -20,6 +20,7 @@
 #include "coregraphics/submissioncontext.h"
 #include "timing/timer.h"
 #include "util/stack.h"
+#include "memory.h"
 
 namespace CoreGraphics
 {
@@ -28,8 +29,7 @@ struct GraphicsDeviceCreateInfo
 {
 	uint globalGraphicsConstantBufferMemorySize[NumConstantBufferTypes];
 	uint globalComputeConstantBufferMemorySize[NumConstantBufferTypes];
-	uint globalVertexBufferMemorySize[NumVertexBufferMemoryTypes];
-	uint globalIndexBufferMemorySize[NumVertexBufferMemoryTypes];
+	uint memoryHeaps[NumMemoryPoolTypes];
 	byte numBufferedFrames : 3;
 	bool enableValidation : 1;		// enables validation layer and writes output to console
 };
@@ -48,7 +48,7 @@ IndexT GetBufferedFrameIndex();
 struct FrameProfilingMarker
 {
     CoreGraphics::QueueType queue;
-    Math::float4 color;
+    Math::vec4 color;
     const char* name;
 	IndexT gpuBegin;
 	IndexT gpuEnd;
@@ -79,16 +79,23 @@ struct GraphicsDeviceState
 	CoreGraphics::CommandBufferPoolId submissionGraphicsCmdPool;
 	CoreGraphics::CommandBufferPoolId submissionComputeCmdPool;
 	CoreGraphics::CommandBufferPoolId submissionTransferCmdPool;
+	CoreGraphics::CommandBufferPoolId submissionTransferGraphicsHandoverCmdPool;
 
 	CoreGraphics::SubmissionContextId resourceSubmissionContext;
 	CoreGraphics::CommandBufferId resourceSubmissionCmdBuffer;
-	CoreGraphics::FenceId resourceSubmissionFence;
 	Threading::CriticalSection resourceSubmissionCriticalSection;
 	bool resourceSubmissionActive;
+
+	CoreGraphics::SubmissionContextId handoverSubmissionContext;
+	CoreGraphics::CommandBufferId handoverSubmissionCmdBuffer;
+	bool handoverSubmissionActive;
 
 	CoreGraphics::SubmissionContextId setupSubmissionContext;
 	CoreGraphics::CommandBufferId setupSubmissionCmdBuffer;
 	bool setupSubmissionActive;
+
+	bool sparseSubmitActive;
+	bool sparseWaitHandled;
 
 	CoreGraphics::SubmissionContextId queryGraphicsSubmissionContext;
 	CoreGraphics::CommandBufferId queryGraphicsSubmissionCmdBuffer;
@@ -98,14 +105,12 @@ struct GraphicsDeviceState
 
 	CoreGraphics::SubmissionContextId gfxSubmission;
 	CoreGraphics::CommandBufferId gfxCmdBuffer;
-	CoreGraphics::FenceId gfxFence;
-
-	Util::FixedArray<CoreGraphics::FenceId> presentFences;
-	Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
 
 	CoreGraphics::SubmissionContextId computeSubmission;
 	CoreGraphics::CommandBufferId computeCmdBuffer;
-	CoreGraphics::FenceId computeFence;
+
+	Util::FixedArray<CoreGraphics::FenceId> presentFences;
+	Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
 
 	uint globalGraphicsConstantBufferMaxValue[NumConstantBufferTypes];
 	CoreGraphics::ConstantBufferId globalGraphicsConstantStagingBuffer[NumConstantBufferTypes];
@@ -114,13 +119,6 @@ struct GraphicsDeviceState
 	uint globalComputeConstantBufferMaxValue[NumConstantBufferTypes];
 	CoreGraphics::ConstantBufferId globalComputeConstantStagingBuffer[NumConstantBufferTypes];
 	CoreGraphics::ConstantBufferId globalComputeConstantBuffer[NumConstantBufferTypes];
-
-	uint globalVertexBufferMaxValue[NumVertexBufferMemoryTypes];
-	CoreGraphics::VertexBufferId globalVertexBuffer[NumVertexBufferMemoryTypes];
-	byte* mappedVertexBuffer[NumVertexBufferMemoryTypes];
-	uint globalIndexBufferMaxValue[NumVertexBufferMemoryTypes];
-	CoreGraphics::IndexBufferId globalIndexBuffer[NumVertexBufferMemoryTypes];
-	byte* mappedIndexBuffer[NumVertexBufferMemoryTypes];
 
 	CoreGraphics::DrawThread* drawThread;
 	Util::Stack<CoreGraphics::DrawThread*> drawThreads;
@@ -249,21 +247,15 @@ CoreGraphics::ConstantBufferId GetGraphicsConstantBuffer(CoreGraphics::GlobalCon
 uint AllocateComputeConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type, uint size);
 /// return id to global compute constant buffer
 CoreGraphics::ConstantBufferId GetComputeConstantBuffer(CoreGraphics::GlobalConstantBufferType type);
-/// reserve range of vertex buffer memory
-byte* AllocateVertexBufferMemory(CoreGraphics::VertexBufferMemoryType type, uint size);
-/// get current offset into vertex buffer
-uint GetVertexBufferOffset(CoreGraphics::VertexBufferMemoryType type);
-/// get global vertex buffer
-CoreGraphics::VertexBufferId GetVertexBuffer(CoreGraphics::VertexBufferMemoryType type);
-/// reserve range of index buffer memory
-byte* AllocateIndexBufferMemory(CoreGraphics::VertexBufferMemoryType type, uint size);
-/// get current offset into index buffer
-uint GetIndexBufferOffset(CoreGraphics::VertexBufferMemoryType type);
-/// get global index buffer
-CoreGraphics::IndexBufferId GetIndexBuffer(CoreGraphics::VertexBufferMemoryType type);
 
+/// lock resource updates, blocks if other thread is using it
+void LockResourceSubmission();
 /// return resource submission context
 CoreGraphics::SubmissionContextId GetResourceSubmissionContext();
+/// return the handover submission context
+CoreGraphics::SubmissionContextId GetHandoverSubmissionContext();
+/// unlocks resource updates
+void UnlockResourceSubmission();
 /// return setup submission context
 CoreGraphics::SubmissionContextId GetSetupSubmissionContext();
 /// return command buffer for current frame graphics submission
@@ -340,11 +332,11 @@ IndexT BeginQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type);
 void EndQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type);
 
 /// copy data between textures
-void Copy(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion);
+void Copy(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, const CoreGraphics::TextureId to, const Math::rectangle<SizeT>& toRegion);
 /// copy data between rw buffers
 void Copy(const CoreGraphics::QueueType queue, const CoreGraphics::ShaderRWBufferId from, IndexT fromOffset, const CoreGraphics::ShaderRWBufferId to, IndexT toOffset, SizeT size);
 /// blit between textures
-void Blit(const CoreGraphics::TextureId from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, Math::rectangle<SizeT> toRegion, IndexT toMip);
+void Blit(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, const Math::rectangle<SizeT>& toRegion, IndexT toMip);
 
 /// sets whether or not the render device should tessellate
 void SetUsePatches(bool state);
@@ -371,17 +363,17 @@ const CoreGraphics::TextureId GetTexture(const Util::StringAtom& name);
 /// set debug name for object
 template<typename OBJECT_ID_TYPE> void ObjectSetName(const OBJECT_ID_TYPE id, const char* name);
 /// begin debug marker region
-void QueueBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name);
+void QueueBeginMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, const char* name);
 /// end debug marker region
 void QueueEndMarker(const CoreGraphics::QueueType queue);
 /// insert marker
-void QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name);
+void QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, const char* name);
 /// begin debug marker region
-void CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name);
+void CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, const char* name);
 /// end debug marker region
 void CommandBufferEndMarker(const CoreGraphics::QueueType queue);
 /// insert marker
-void CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::float4& color, const char* name);
+void CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::vec4& color, const char* name);
 #endif
 
 //------------------------------------------------------------------------------

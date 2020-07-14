@@ -3,7 +3,7 @@
 // (C) 2017-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "frame/plugins/frameplugin.h"
+#include "frame/frameplugin.h"
 #include "lightcontext.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
@@ -146,7 +146,7 @@ LightContext::Create()
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
 	// called from main script
-	Frame::FramePlugin::AddCallback("LightContext - Update Shadowmaps", [](IndexT frame) // trigger update
+	Frame::AddCallback("LightContext - Update Shadowmaps", [](IndexT frame) // trigger update
 		{
 			// run the script
 			N_SCOPE(ShadowMapExecute, Render);
@@ -157,7 +157,7 @@ LightContext::Create()
 		});
 
 	// register shadow mapping algorithms
-	Frame::FramePlugin::AddCallback("LightContext - Spotlight Shadows", [](IndexT frame) // graphics
+	Frame::AddCallback("LightContext - Spotlight Shadows", [](IndexT frame) // graphics
 		{
 			IndexT i;
 			for (i = 0; i < lightServerState.shadowcastingLocalLights.Size(); i++)
@@ -166,11 +166,11 @@ LightContext::Create()
 				Frame::FrameSubpassBatch::DrawBatch(lightServerState.spotlightsBatchCode, lightServerState.shadowcastingLocalLights[i], 1, i);
 			}
 		});
-	Frame::FramePlugin::AddCallback("LightContext - Spotlight Blur", [](IndexT frame) // compute
+	Frame::AddCallback("LightContext - Spotlight Blur", [](IndexT frame) // compute
 		{
 		});
 
-	Frame::FramePlugin::AddCallback("LightContext - Sun Shadows", [](IndexT frame) // graphics
+	Frame::AddCallback("LightContext - Sun Shadows", [](IndexT frame) // graphics
 		{
 			if (lightServerState.globalLightEntity != Graphics::GraphicsEntityId::Invalid())
 			{
@@ -185,22 +185,22 @@ LightContext::Create()
 				}				
 			}
 		});
-	Frame::FramePlugin::AddCallback("LightContext - Sun Blur", [](IndexT frame) // compute
+	Frame::AddCallback("LightContext - Sun Blur", [](IndexT frame) // compute
 		{
 			LightContext::BlurGlobalShadowMap();
 		});
 
-	Frame::FramePlugin::AddCallback("LightContext - Cull and Classify", [](IndexT frame)
+	Frame::AddCallback("LightContext - Cull and Classify", [](IndexT frame)
 		{
 			LightContext::CullAndClassify();
 		});
 
-	Frame::FramePlugin::AddCallback("LightContext - Deferred Cluster", [](IndexT frame)
+	Frame::AddCallback("LightContext - Deferred Cluster", [](IndexT frame)
 		{
 			LightContext::ComputeLighting();
 		});
 
-	Frame::FramePlugin::AddCallback("LightContext - Combine", [](IndexT frame)
+	Frame::AddCallback("LightContext - Combine", [](IndexT frame)
 		{
 			LightContext::CombineLighting();
 		});
@@ -253,7 +253,7 @@ LightContext::Create()
 	{
 		"LightIndexListsBuffer",
 		sizeof(LightsCluster::LightIndexLists),
-		BufferUpdateMode::DeviceWriteable,
+		BufferUpdateMode::DeviceLocal,
 		false
 	};
 	clusterState.clusterLightIndexLists = CreateShaderRWBuffer(rwbInfo);
@@ -272,11 +272,12 @@ LightContext::Create()
 		clusterState.stagingClusterLightsList[i] = CreateShaderRWBuffer(rwbInfo);
 
 		// update resource table
-		ResourceTableSetRWBuffer(clusterState.resourceTables[i], { clusterState.clusterLightIndexLists, lightIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 		ResourceTableSetRWBuffer(clusterState.resourceTables[i], { Clustering::ClusterContext::GetClusterBuffer(), clusterAABBSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+		ResourceTableSetRWBuffer(clusterState.resourceTables[i], { clusterState.clusterLightIndexLists, lightIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 		ResourceTableSetRWBuffer(clusterState.resourceTables[i], { clusterState.clusterLightsList, lightsListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 		ResourceTableSetConstantBuffer(clusterState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.clusterUniformsSlot, 0, false, false, sizeof(LightsCluster::ClusterUniforms), 0 });
 		ResourceTableSetConstantBuffer(clusterState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsCluster::LightUniforms), 0 });
+		ResourceTableSetConstantBuffer(clusterState.resourceTables[i], { Clustering::ClusterContext::GetConstantBuffer(), clusterState.clusterUniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
 		ResourceTableCommitChanges(clusterState.resourceTables[i]);
 	}
 
@@ -315,7 +316,7 @@ LightContext::Discard()
 /**
 */
 void 
-LightContext::SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::float4& color, const float intensity, const Math::float4& ambient, const Math::float4& backlight, const float backlightFactor, const Math::vector& direction, bool castShadows)
+LightContext::SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::vec3& color, const float intensity, const Math::vec3& ambient, const Math::vec3& backlight, const float backlightFactor, const Math::vector& direction, bool castShadows)
 {
 	n_assert(id != Graphics::GraphicsEntityId::Invalid());
 	n_assert(lightServerState.globalLightEntity == Graphics::GraphicsEntityId::Invalid());
@@ -329,7 +330,7 @@ LightContext::SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::
 	genericLightAllocator.Get<ShadowCaster>(cid.id) = castShadows;
 	genericLightAllocator.Get<TypedLightId>(cid.id) = lid;
 
-	Math::matrix44 mat = Math::matrix44::lookatrh(Math::point(0.0f), -direction, Math::vector::upvec());
+	Math::mat4 mat = lookatrh(Math::point(0.0f), Math::point(0.0f) - direction, Math::vector::upvec());
 	
 	SetGlobalLightTransform(cid, mat);
 	globalLightAllocator.Get<GlobalLight_Backlight>(lid) = backlight;
@@ -366,9 +367,9 @@ LightContext::SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::
 */
 void 
 LightContext::SetupPointLight(const Graphics::GraphicsEntityId id, 
-	const Math::float4& color, 
+	const Math::vec3& color, 
 	const float intensity, 
-	const Math::matrix44& transform, 
+	const Math::mat4& transform,
 	const float range, 
 	bool castShadows, 
 	const CoreGraphics::TextureId projection)
@@ -399,11 +400,11 @@ LightContext::SetupPointLight(const Graphics::GraphicsEntityId id,
 */
 void 
 LightContext::SetupSpotLight(const Graphics::GraphicsEntityId id, 
-	const Math::float4& color, 
+	const Math::vec3& color,
 	const float intensity, 
 	const float innerConeAngle,
 	const float outerConeAngle,
-	const Math::matrix44& transform,
+	const Math::mat4& transform,
 	const float range,
 	bool castShadows, 
 	const CoreGraphics::TextureId projection)
@@ -432,8 +433,8 @@ LightContext::SetupSpotLight(const Graphics::GraphicsEntityId id,
 	const float zFar = range;
 
 	// use a fixed aspect of 1
-	Math::matrix44 proj = Math::matrix44::perspfov(angles[1] * 2.0f, 1.0f, zNear, zFar);
-	proj.setrow1(Math::float4::multiply(proj.getrow1(), Math::float4(-1)));
+	Math::mat4 proj = Math::perspfovrh(angles[1] * 2.0f, 1.0f, zNear, zFar);
+	proj.r[1] = -proj.r[1];
 
 	// set initial state
 	spotLightAllocator.Get<SpotLight_DynamicOffsets>(sli)[0] = 0;
@@ -458,7 +459,7 @@ LightContext::SetupSpotLight(const Graphics::GraphicsEntityId id,
 /**
 */
 void 
-LightContext::SetColor(const Graphics::GraphicsEntityId id, const Math::float4& color)
+LightContext::SetColor(const Graphics::GraphicsEntityId id, const Math::vec3& color)
 {
 	const Graphics::ContextEntityId cid = GetContextId(id);
 	genericLightAllocator.Get<Color>(cid.id) = color;
@@ -487,7 +488,7 @@ LightContext::SetIntensity(const Graphics::GraphicsEntityId id, const float inte
 //------------------------------------------------------------------------------
 /**
 */
-const Math::matrix44
+const Math::mat4
 LightContext::GetTransform(const Graphics::GraphicsEntityId id)
 {
 	const Graphics::ContextEntityId cid = GetContextId(id);
@@ -506,7 +507,7 @@ LightContext::GetTransform(const Graphics::GraphicsEntityId id)
 		return pointLightAllocator.Get<PointLight_Transform>(lightId);
 		break;
 	default:
-		return Math::matrix44::identity();
+		return Math::mat4();
 		break;
 	}
 }
@@ -515,7 +516,7 @@ LightContext::GetTransform(const Graphics::GraphicsEntityId id)
 /**
 */
 void
-LightContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44& trans)
+LightContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4& trans)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
     LightType type = genericLightAllocator.Get<Type>(cid.id);    
@@ -539,7 +540,7 @@ LightContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::matr
 //------------------------------------------------------------------------------
 /**
 */
-const Math::matrix44 
+const Math::mat4
 LightContext::GetObserverTransform(const Graphics::GraphicsEntityId id)
 {
 	const Graphics::ContextEntityId cid = shadowCasterSliceMap[id.id];
@@ -614,7 +615,7 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
 		IndexT i;
 		for (i = 0; i < CSMUtil::NumCascades; i++)
 		{
-			Math::matrix44::store(lightServerState.csmUtil.GetCascadeViewProjection(i), lightServerState.shadowMatrixUniforms.CSMViewMatrix[i]);
+			lightServerState.csmUtil.GetCascadeViewProjection(i).store(lightServerState.shadowMatrixUniforms.CSMViewMatrix[i]);
 		}
 	}
 
@@ -638,15 +639,15 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
 				std::array<float, 2> angles = spotLightAllocator.Get<SpotLight_ConeAngles>(typeIds[i]);
 
 				// setup a perpsective transform with a fixed z near and far and aspect
-				Math::matrix44 projection = spotLightAllocator.Get<SpotLight_ProjectionTransform>(typeIds[i]);
-				Math::matrix44 view = spotLightAllocator.Get<SpotLight_Transform>(typeIds[i]);
-				Math::matrix44 viewProjection = Math::matrix44::multiply(Math::matrix44::inverse(view), projection);
+				Math::mat4 projection = spotLightAllocator.Get<SpotLight_ProjectionTransform>(typeIds[i]);
+				Math::mat4 view = spotLightAllocator.Get<SpotLight_Transform>(typeIds[i]);
+				Math::mat4 viewProjection = inverse(view) * projection;
 				Graphics::GraphicsEntityId observer = spotLightAllocator.Get<SpotLight_Observer>(typeIds[i]);
 				Graphics::ContextEntityId ctxId = shadowCasterSliceMap[observer];
 				shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId.id) = viewProjection;
 
 				lightServerState.shadowcastingLocalLights.Add(observer);
-				Math::matrix44::storeu(viewProjection, lightServerState.shadowMatrixUniforms.LightViewMatrix[shadowCasterCount++]);
+				viewProjection.store(lightServerState.shadowMatrixUniforms.LightViewMatrix[shadowCasterCount++]);
 			}
 
 			case PointLightType:
@@ -692,7 +693,7 @@ LightContext::GetLightsBuffer()
 /**
 */
 void
-LightContext::SetSpotLightTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform)
+LightContext::SetSpotLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform)
 {
 	// todo, update projection and invviewprojection!!!!
 	auto lid = genericLightAllocator.Get<TypedLightId>(id.id);
@@ -703,7 +704,7 @@ LightContext::SetSpotLightTransform(const Graphics::ContextEntityId id, const Ma
 /**
 */
 void 
-LightContext::SetPointLightTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform)
+LightContext::SetPointLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform)
 {
 	auto lid = genericLightAllocator.Get<TypedLightId>(id.id);
 	pointLightAllocator.Get<PointLight_Transform>(lid) = transform;
@@ -713,10 +714,10 @@ LightContext::SetPointLightTransform(const Graphics::ContextEntityId id, const M
 /**
 */
 void 
-LightContext::SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform)
+LightContext::SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform)
 {
 	auto lid = genericLightAllocator.Get<TypedLightId>(id.id);
-	globalLightAllocator.Get<GlobalLight_Direction>(lid) = -Math::float4::normalize(Math::vector(transform.get_zaxis()));
+	globalLightAllocator.Get<GlobalLight_Direction>(lid) = -normalize(xyz(transform.z_axis));
 	globalLightAllocator.Get<GlobalLight_Transform>(lid) = transform;
 }
 
@@ -724,7 +725,7 @@ LightContext::SetGlobalLightTransform(const Graphics::ContextEntityId id, const 
 /**
 */
 void 
-LightContext::SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id, const Math::matrix44& transform)
+LightContext::SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id, const Math::mat4& transform)
 {
 	auto lid = genericLightAllocator.Get<TypedLightId>(id.id);
 	globalLightAllocator.Get<GlobalLight_ViewProjTransform>(lid) = transform;
@@ -736,25 +737,23 @@ LightContext::SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id
 void 
 LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
+	N_SCOPE(UpdateLightResources, Lighting);
 	const Graphics::ContextEntityId cid = GetContextId(lightServerState.globalLightEntity);
 	using namespace CoreGraphics;
 
-	// update view dependent resources in framescript too
-	lightServerState.shadowMappingFrameScript->UpdateViewDependentResources(view, ctx.frameIndex);
-
 	// get camera view
-	Math::matrix44 viewTransform = Graphics::CameraContext::GetTransform(view->GetCamera());
-	Math::matrix44 invViewTransform = Math::matrix44::inverse(viewTransform);
+	Math::mat4 viewTransform = Graphics::CameraContext::GetTransform(view->GetCamera());
+	Math::mat4 invViewTransform = inverse(viewTransform);
 
 	// update constant buffer
 	Ids::Id32 globalLightId = genericLightAllocator.Get<TypedLightId>(cid.id);
 	Shared::PerTickParams& params = ShaderServer::Instance()->GetTickParams();
-	Math::float4::storeu(genericLightAllocator.Get<Color>(cid.id) * genericLightAllocator.Get<Intensity>(cid.id), params.GlobalLightColor);
-	Math::float4::storeu3(globalLightAllocator.Get<GlobalLight_Direction>(globalLightId), params.GlobalLightDirWorldspace);
-	Math::float4::storeu(globalLightAllocator.Get<GlobalLight_Backlight>(globalLightId), params.GlobalBackLightColor);
-	Math::float4::storeu(globalLightAllocator.Get<GlobalLight_Ambient>(globalLightId), params.GlobalAmbientLightColor);
-	Math::float4 viewSpaceLightDir = Math::matrix44::transform3(Math::vector(globalLightAllocator.Get<GlobalLight_Direction>(globalLightId)), invViewTransform);
-	Math::float4::storeu3(Math::float4::normalize(viewSpaceLightDir), params.GlobalLightDir);
+	(genericLightAllocator.Get<Color>(cid.id) * genericLightAllocator.Get<Intensity>(cid.id)).store(params.GlobalLightColor);
+	globalLightAllocator.Get<GlobalLight_Direction>(globalLightId).store(params.GlobalLightDirWorldspace);
+	globalLightAllocator.Get<GlobalLight_Backlight>(globalLightId).store(params.GlobalBackLightColor);
+	globalLightAllocator.Get<GlobalLight_Ambient>(globalLightId).store(params.GlobalAmbientLightColor);
+	Math::vec4 viewSpaceLightDir = viewTransform * Math::vec4(globalLightAllocator.Get<GlobalLight_Direction>(globalLightId), 0.0f);
+	normalize(viewSpaceLightDir).store3(params.GlobalLightDir);
 	params.GlobalBackLightOffset = globalLightAllocator.Get<GlobalLight_BacklightOffset>(globalLightId);
 
 	// apply shadow uniforms
@@ -766,39 +765,37 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 	{
 
 #if __DX12__
-		Math::matrix44 textureScale = Math::matrix44::scaling(0.5f, -0.5f, 1.0f);
+		Math::mat4 textureScale = Math::scaling(0.5f, -0.5f, 1.0f);
 #elif __VULKAN__
-		Math::matrix44 textureScale = Math::matrix44::scaling(0.5f, 0.5f, 1.0f);
+		Math::mat4 textureScale = Math::scaling(0.5f, 0.5f, 1.0f);
 #endif
-		Math::matrix44 textureTranslation = Math::matrix44::translation(0.5f, 0.5f, 0);
-		const Math::matrix44* transforms = lightServerState.csmUtil.GetCascadeProjectionTransforms();
-		Math::float4 cascadeScales[CSMUtil::NumCascades];
-		Math::float4 cascadeOffsets[CSMUtil::NumCascades];
+		Math::mat4 textureTranslation = Math::translation(0.5f, 0.5f, 0);
+		const Math::mat4* transforms = lightServerState.csmUtil.GetCascadeProjectionTransforms();
+		Math::vec4 cascadeScales[CSMUtil::NumCascades];
+		Math::vec4 cascadeOffsets[CSMUtil::NumCascades];
 
 		for (IndexT splitIndex = 0; splitIndex < CSMUtil::NumCascades; ++splitIndex)
 		{
-			Math::matrix44 shadowTexture = Math::matrix44::multiply(
-				transforms[splitIndex],
-				Math::matrix44::multiply(textureScale, textureTranslation));
-			Math::float4 scale;
-			scale.x() = shadowTexture.getrow0().x();
-			scale.y() = shadowTexture.getrow1().y();
-			scale.z() = shadowTexture.getrow2().z();
-			scale.w() = 1;
-			Math::float4 offset = shadowTexture.getrow3();
-			offset.w() = 0;
+			Math::mat4 shadowTexture = transforms[splitIndex] * (textureScale * textureTranslation);
+			Math::vec4 scale = Math::vec4(
+				shadowTexture.row0.x,
+				shadowTexture.row1.y,
+				shadowTexture.row2.z,
+				1);
+			Math::vec4 offset = shadowTexture.row3;
+			offset.w = 0;
 			cascadeOffsets[splitIndex] = offset;
 			cascadeScales[splitIndex] = scale;
 		}
 
-		memcpy(params.CascadeOffset, cascadeOffsets, sizeof(Math::float4) * CSMUtil::NumCascades);
-		memcpy(params.CascadeScale, cascadeScales, sizeof(Math::float4) * CSMUtil::NumCascades);
+		memcpy(params.CascadeOffset, cascadeOffsets, sizeof(Math::vec4) * CSMUtil::NumCascades);
+		memcpy(params.CascadeScale, cascadeScales, sizeof(Math::vec4) * CSMUtil::NumCascades);
 		memcpy(params.CascadeDistances, lightServerState.csmUtil.GetCascadeDistances(), sizeof(float) * CSMUtil::NumCascades);
 		params.MinBorderPadding = 1.0f / 1024.0f;
 		params.MaxBorderPadding = (1024.0f - 1.0f) / 1024.0f;
 		params.ShadowPartitionSize = 1.0f;
 		params.GlobalLightShadowBuffer = CoreGraphics::TextureGetBindlessHandle(lightServerState.globalLightShadowMapBlurred1);
-		Math::matrix44::store(Math::matrix44::multiply(invViewTransform, lightServerState.csmUtil.GetShadowView()), params.CSMShadowMatrix);
+		(invViewTransform * lightServerState.csmUtil.GetShadowView()).store(params.CSMShadowMatrix);
 
 		flags |= USE_SHADOW_BITFLAG;
 	}
@@ -808,7 +805,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 
 	// go through and update local lights
 	const Util::Array<LightType>& types		= genericLightAllocator.GetArray<Type>();
-	const Util::Array<Math::float4>& color	= genericLightAllocator.GetArray<Color>();
+	const Util::Array<Math::vec3>& color	= genericLightAllocator.GetArray<Color>();
 	const Util::Array<float>& intensity		= genericLightAllocator.GetArray<Intensity>();
 	const Util::Array<float>& range			= genericLightAllocator.GetArray<Range>();
 	const Util::Array<bool>& castShadow		= genericLightAllocator.GetArray<ShadowCaster>();
@@ -827,7 +824,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 		{
 			case PointLightType:
 			{
-				Math::matrix44 trans = pointLightAllocator.Get<PointLight_Transform>(typeIds[i]);
+				Math::mat4 trans = pointLightAllocator.Get<PointLight_Transform>(typeIds[i]);
 				CoreGraphics::TextureId tex = pointLightAllocator.Get<PointLight_ProjectionTexture>(typeIds[i]);
 				auto& pointLight = clusterState.pointLights[numPointLights];
 
@@ -845,10 +842,10 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 					flags |= USE_PROJECTION_TEX_BITFLAG;
 				}
 
-				Math::float4 posAndRange = Math::float4::transform(trans.get_position(), viewTransform);
-				posAndRange.w() = range[i];
-				Math::float4::storeu(posAndRange, pointLight.position);
-				Math::float4::storeu3(color[i] * intensity[i], pointLight.color);
+				Math::vec4 posAndRange = viewTransform * trans.position;
+				posAndRange.w = range[i];
+				posAndRange.store(pointLight.position);
+				(color[i] * intensity[i]).store(pointLight.color);
 				pointLight.flags = flags;
 				numPointLights++;
 			}
@@ -856,16 +853,16 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 
 			case SpotLightType:
 			{
-				Math::matrix44 trans = spotLightAllocator.Get<SpotLight_Transform>(typeIds[i]);
+				Math::mat4 trans = spotLightAllocator.Get<SpotLight_Transform>(typeIds[i]);
 				CoreGraphics::TextureId tex = spotLightAllocator.Get<SpotLight_ProjectionTexture>(typeIds[i]);
 				auto angles = spotLightAllocator.Get<SpotLight_ConeAngles>(typeIds[i]);
 				auto& spotLight = clusterState.spotLights[numSpotLights];
-				Math::matrix44 shadowProj;
+				Math::mat4 shadowProj;
 				if (tex != TextureId::Invalid() || castShadow[i])
 				{
 					Graphics::GraphicsEntityId observer = spotLightAllocator.Get<SpotLight_Observer>(typeIds[i]);
 					Graphics::ContextEntityId ctxId = shadowCasterSliceMap[observer];
-					shadowProj = Math::matrix44::multiply(invViewTransform, shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId.id));
+					shadowProj = invViewTransform * shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId.id);
 				}
 				spotLight.shadowExtension = -1;
 				spotLight.projectionExtension = -1;
@@ -879,7 +876,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 					spotLight.shadowExtension = numSpotLightShadows;
 					auto& shadow = clusterState.spotLightShadow[numSpotLightShadows];
 					
-					Math::matrix44::storeu(shadowProj, shadow.projection);
+					shadowProj.store(shadow.projection);
 					shadow.shadowMap = CoreGraphics::TextureGetBindlessHandle(lightServerState.localLightShadows);
 					shadow.shadowIntensity = 1.0f;
 					shadow.shadowSlice = numShadowLights;
@@ -893,24 +890,24 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 					flags |= USE_PROJECTION_TEX_BITFLAG;
 					spotLight.projectionExtension = numSpotLightsProjection;
 					auto& projection = clusterState.spotLightProjection[numSpotLightsProjection];
-					Math::matrix44::storeu(shadowProj, projection.projection);
+					shadowProj.store(projection.projection);
 					projection.projectionTexture = CoreGraphics::TextureGetBindlessHandle(tex);
 					numSpotLightsProjection++;
 				}
 
-				Math::matrix44 viewSpace = Math::matrix44::multiply(trans, viewTransform);
-				Math::float4 posAndRange = viewSpace.get_position();
-				posAndRange.w() = range[i];
+				Math::mat4 viewSpace = trans * viewTransform;
+				Math::vec4 posAndRange = viewSpace.position;
+				posAndRange.w = range[i];
 
-				Math::float4 forward = Math::float4::normalize(viewSpace.get_zaxis());
+				Math::vec4 forward = normalize(viewSpace.z_axis);
 				if (angles[0] == angles[1])
-					forward.w() = 1.0f;
+					forward.w = 1.0f;
 				else
-					forward.w() = 1.0f / (angles[1] - angles[0]);
+					forward.w = 1.0f / (angles[1] - angles[0]);
 
-				Math::float4::storeu(posAndRange, spotLight.position);
-				Math::float4::storeu(forward, spotLight.forward);
-				Math::float4::storeu3(color[i] * intensity[i], spotLight.color);
+				posAndRange.store(spotLight.position);
+				forward.store(spotLight.forward);
+				(color[i] * intensity[i]).store(spotLight.color);
 				
 				// calculate sine and cosine
 				spotLight.angleSinCos[0] = Math::n_sin(angles[1]);
@@ -924,11 +921,6 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 
 	IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-	// use the same uniforms used to divide the clusters
-	ClusterGenerate::ClusterUniforms clusterUniforms = Clustering::ClusterContext::GetUniforms();
-	IndexT offset = SetComputeConstants(MainThreadConstantBuffer, clusterUniforms);
-	ResourceTableSetConstantBuffer(clusterState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.clusterUniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), (SizeT)offset });
-
 	// update list of point lights
 	if (numPointLights > 0 || numSpotLights > 0)
 	{
@@ -938,6 +930,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 		Memory::CopyElements(clusterState.spotLightProjection, lightList.SpotLightProjection, numSpotLightsProjection);
 		Memory::CopyElements(clusterState.spotLightShadow, lightList.SpotLightShadow, numSpotLightShadows);
 		CoreGraphics::ShaderRWBufferUpdate(clusterState.stagingClusterLightsList[bufferIndex], &lightList, sizeof(LightsCluster::LightLists));
+		CoreGraphics::ShaderRWBufferFlush(clusterState.stagingClusterLightsList[bufferIndex]);
 	}
 
 	// a little ugly, but since the view can change the script, this has to adopt
@@ -957,7 +950,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 	consts.NumPointLights = numPointLights;
 	consts.NumClusters = Clustering::ClusterContext::GetNumClusters();
 	consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(ssaoTex);
-	offset = SetComputeConstants(MainThreadConstantBuffer, consts);
+	IndexT offset = SetComputeConstants(MainThreadConstantBuffer, consts);
 	ResourceTableSetConstantBuffer(clusterState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsCluster::LightUniforms), (SizeT)offset });
 	ResourceTableCommitChanges(clusterState.resourceTables[bufferIndex]);
 
@@ -1279,14 +1272,14 @@ LightContext::OnRenderDebug(uint32_t flags)
         {
         case PointLightType:
         {
-            Math::matrix44 const& trans = pointTrans[ids[i]];
-            Math::float4 col = colors[i];
+            Math::mat4 const& trans = pointTrans[ids[i]];
+            Math::vec4 col = Math::vec4(colors[i], 1.0f);
 			CoreGraphics::RenderShape shape;
 			shape.SetupSimpleShape(RenderShape::Sphere, RenderShape::RenderFlag(RenderShape::CheckDepth|RenderShape::Wireframe), trans, col);
 			shapeRenderer->AddShape(shape);
             if (flags & Im3d::Solid)
             {
-                col.w() = 0.5f;
+                col.w = 0.5f;
 				shape.SetupSimpleShape(RenderShape::Sphere, RenderShape::RenderFlag(RenderShape::CheckDepth), trans, col);
 				shapeRenderer->AddShape(shape);
             }            
@@ -1300,25 +1293,25 @@ LightContext::OnRenderDebug(uint32_t flags)
 			std::array<float, 2> angles = spotLightAllocator.Get<SpotLight_ConeAngles>(ids[i]);
 
 			// get projection
-			Math::matrix44 proj = spotLightAllocator.Get<SpotLight_ProjectionTransform>(ids[i]);
+			Math::mat4 proj = spotLightAllocator.Get<SpotLight_ProjectionTransform>(ids[i]);
 
             // take transform, scale Z with range and move back half the range
-            Math::matrix44 unscaledTransform = spotTrans[ids[i]];
-			Math::float4 pos = unscaledTransform.get_position() - unscaledTransform.get_zaxis() * ranges[i] * 0.5f;
-			unscaledTransform.set_position(Math::float4(0));
-			unscaledTransform.set_xaxis(unscaledTransform.get_xaxis() * ranges[i]);
-			unscaledTransform.set_yaxis(unscaledTransform.get_yaxis() * ranges[i]);
-			unscaledTransform.set_zaxis(unscaledTransform.get_zaxis() * ranges[i]);
-			unscaledTransform.scale(Math::float4(2.0f)); // rescale because box should be in [-1, 1] and not [-0.5, 0.5]
-			unscaledTransform.set_position(pos);
+            Math::mat4 unscaledTransform = spotTrans[ids[i]];
+			Math::vec4 pos = unscaledTransform.position - unscaledTransform.z_axis * ranges[i] * 0.5f;
+			unscaledTransform.position = Math::vec4(0,0,0,1);
+			unscaledTransform.x_axis = unscaledTransform.x_axis * ranges[i];
+			unscaledTransform.y_axis = unscaledTransform.y_axis * ranges[i];
+			unscaledTransform.z_axis = unscaledTransform.z_axis * ranges[i];
+			unscaledTransform.scale(Math::vector(2.0f)); // rescale because box should be in [-1, 1] and not [-0.5, 0.5]
+			unscaledTransform.position = pos;
 
 			// removed skewedness because we are actually just interested in transforming points
-			proj.setrow3(Math::float4(0, 0, 0, 1));
+			proj.row3 = Math::vec4(0, 0, 0, 1);
 
 			// we want the points to first get projected, then transformed v * Projection * Transform;
-			Math::matrix44 frustum = Math::matrix44::multiply(proj, unscaledTransform);
+			Math::mat4 frustum = proj * unscaledTransform;
 			
-            Math::float4 col = colors[i];
+            Math::vec4 col = Math::vec4(colors[i], 1.0f);
 
 			RenderShape shape;
 			shape.SetupSimpleShape(

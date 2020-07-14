@@ -66,11 +66,11 @@ SvgTestPageHandler::TestShapeRendering(const Ptr<HttpRequest>& request)
 
         // render a polyline
         svgWriter->BeginPaintGroup("none", "green", 1);
-            Array<float2> points;
+            Array<vec2> points;
             int x;
             for (x = 100; x < 400; x += 2)
             {
-                points.Append(float2(float(x), 750.0f + n_rand(-250, 250)));
+                points.Append(vec2(float(x), 750.0f + n_rand(-250, 250)));
             }
             svgWriter->PolyLine(points);
         svgWriter->EndGroup();

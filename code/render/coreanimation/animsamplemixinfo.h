@@ -10,7 +10,7 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
-#include "math/float4.h"
+#include "math/vec4.h"
 #include "coreanimation/sampletype.h"
 
 //------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ struct NEBULA_ALIGN16 AnimSampleMixInfo
     SampleType::Code sampleType;
     float sampleWeight;
     float mixWeight;
-    Math::float4 velocityScale;
+    Math::vec4 velocityScale;
 };
 
 } // namespace CoreAnimation   

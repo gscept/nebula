@@ -1,0 +1,80 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: windows-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v2
+    - name: setup-msbuild
+      uses: microsoft/setup-msbuild@v1
+      
+    - name: Set up Python 3.x
+      uses: actions/setup-python@v1
+      with:
+        python-version: '3.x' # Semantic version range syntax or exact version of a Python version
+        architecture: 'x64' # Optional - x64 or x86, defaults to x64
+    - name: Clone dependencies
+      run: |
+        python fips fetch
+        python fips set config vulkan-win64-vs2019-debug
+        
+    - name: Cache PhysX
+      id: cache-physx
+      uses: actions/cache@v1.1.2
+      with:
+        path: ../fips-deploy/physx
+        key: ${{ runner.os }}-physx-deploy-vs16
+        
+    - name: Build PhysX
+      if: steps.cache-physx.outputs.cache-hit != 'true'
+      run: |
+        python fips physx build win-vs16
+                
+    - name: Check Anyfx version
+      run: |
+        pushd ../fips-anyfx
+        echo "::set-env name=anyfx-rev::$(git rev-parse HEAD)"
+    
+    - name: Check for Anyfx cached build
+      id: cache-anyfx
+      uses: actions/cache@v1.1.2
+      with:
+        path: ../fips-deploy/fips-anyfx
+        key: ${{ runner.os }}-anyfx-${{ env.anyfx-rev }}
+    
+    - name: Build AnyfxCompiler
+      if: steps.cache-anyfx.outputs.cache-hit != 'true'
+      run: |
+        python fips anyfx setup
+
+    # Runs a set of commands using the runners shell
+    - name: Run prebuild steps
+      run: |
+        python fips nebula set work ../fips-deploy
+        python fips nebula set toolkit .        
+        python fips gen
+    
+    - name: Compile 
+      run: |
+        python fips build
+
+    - name: Run Tests
+      run: |
+         python fips run testmath
+         python fips run testfoundation

@@ -19,7 +19,7 @@
 #include "attrexithandler.h"
 #include "util/string.h"
 #include "util/blob.h"
-#include "math/quaternion.h"
+#include "math/quat.h"
 #include "math/transform44.h"
 
 //------------------------------------------------------------------------------
@@ -50,15 +50,15 @@ public:
     /// Constructor with default bool value
     explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const bool& defVal, bool isDynamic);
     /// Constructor with default float2 value
-    explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Math::float2& defVal, bool isDynamic);
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Math::vec2& defVal, bool isDynamic);
     /// Constructor with default float4 value
-    explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Math::float4& defVal, bool isDynamic);
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Math::vec4& defVal, bool isDynamic);
     /// Constructor with default quaternion value
-    explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Math::quaternion& defVal, bool isDynamic);
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Math::quat& defVal, bool isDynamic);
     /// Constructor with default string value
     explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::String& defVal, bool isDynamic);
-    /// Constructor with default matrix44 value
-    explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Math::matrix44& defVal, bool isDynamic);
+    /// Constructor with default mat4 value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Math::mat4& defVal, bool isDynamic);
     /// Constructor with default transform44 value
     explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Math::transform44& defVal, bool isDynamic);
     /// Constructor with default blob value
@@ -74,13 +74,13 @@ public:
     /// Constructor with default bool array value
     explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<bool>& defVal, bool isDynamic);
     /// Constructor with default float2 array value
-    explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Math::float2>& defVal, bool isDynamic);
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Math::vec2>& defVal, bool isDynamic);
     /// Constructor with default float4 array value
-    explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Math::float4>& defVal, bool isDynamic);
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Math::vec4>& defVal, bool isDynamic);
     /// Constructor with default string array value
     explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Util::String>& defVal, bool isDynamic);
-    /// Constructor with default matrix44 array value
-    explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Math::matrix44>& defVal, bool isDynamic);
+    /// Constructor with default mat4 array value
+    explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Math::mat4>& defVal, bool isDynamic);
     /// Constructor with default blob array value
     explicit AttributeDefinitionBase(const Util::String& name, const Util::String& typeName, const Util::FourCC& fourCC, AccessMode accessMode, const Util::Array<Util::Blob>& defVal, bool isDynamic);
     /// Constructor with default guid array value

@@ -48,15 +48,12 @@ private:
 	void Draw(TextElementVertex* buffer, SizeT numChars);
 
 	/// helper function which moves vertex into proper position
-	Math::float2 TransformTextVertex(const Math::float2& pos, const Math::float2& offset, const Math::float2& scale);
+	Math::vec2 TransformTextVertex(const Math::vec2& pos, const Math::vec2& offset, const Math::vec2& scale);
 
 	// define tff buffer
-	unsigned char* ttf_buffer;
 	stbtt_packedchar* cdata;
 	stbtt_fontinfo font;
-	unsigned char* bitmap;
 
-	TextElementVertex vertices[MaxNumChars * 6];
 	CoreGraphics::ResourceTableId textTable;
 	CoreGraphics::ShaderProgramId program;
 	IndexT texVar;

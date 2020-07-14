@@ -31,7 +31,7 @@ LightProbeContext::~LightProbeContext()
 //------------------------------------------------------------------------------
 /**
 */
-const Math::matrix44&
+const Math::mat4&
 LightProbeContext::GetTransform(const Graphics::GraphicsEntityId id)
 {
 	const ContextEntityId cid = GetContextId(id);

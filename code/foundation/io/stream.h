@@ -109,6 +109,10 @@ public:
     virtual void* Map();
     /// unmap stream
     virtual void Unmap();
+    /// memory map stream to memory
+    virtual void* MemoryMap();
+    /// unmap memory stream 
+    virtual void MemoryUnmap();
     /// return true if stream is currently mapped to memory
     bool IsMapped() const;
         

@@ -3,9 +3,6 @@ imports:
     fips-zlib:
         git: https://github.com/gscept/fips-zlib
         group: misc
-    fips-directxmath:
-        git: https://github.com/gscept/fips-directxmath.git
-        group: misc
     fips-glfw:
         git: https://github.com/gscept/fips-glfw.git
         group: gfx
@@ -15,6 +12,7 @@ imports:
     fips-devil:
         git: https://github.com/gscept/fips-devil.git
         group: gfx
+        ref: c5343fa
     fips-stackwalker:
         git: https://github.com/gscept/fips-stackwalker.git
         cond: "FIPS_WINDOWS"
@@ -37,10 +35,12 @@ imports:
         git: https://github.com/gscept/nebula-libs
         group: misc
     physx:
-        git: https://github.com/NVIDIAGameWorks/PhysX.git
+        git: https://github.com/EmbarkStudios/PhysX.git
         branch: 4.1
     fips-flatbuffers:
         git: https://github.com/gscept/fips-flatbuffers.git
+    gliml:
+        git: https://github.com/gscept/gliml.git
 
 exports:
     header-dirs :

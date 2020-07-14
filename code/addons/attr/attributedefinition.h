@@ -82,9 +82,9 @@ AttributeDefinition<VALUETYPE, TYPE>::AttributeDefinition(const Util::String& n,
 #define DefineFloat2(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::Float2TypeClass, Math::float2> NAME(#NAME, "Math::float2", FOURCC,ACCESSMODE, Math::float2(0.0f, 0.0f));
 #define DefineFloat2WithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::Float2TypeClass, Math::float2> NAME(#NAME, "Math::float2", FOURCC,ACCESSMODE,DEFVAL);
 
-#define DeclareFloat4(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::Float4TypeClass, Math::float4> NAME;
-#define DefineFloat4(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::Float4TypeClass, Math::float4> NAME(#NAME, "Math::float4", FOURCC,ACCESSMODE, Math::float4(0.0f, 0.0f, 0.0f, 0.0f));
-#define DefineFloat4WithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::Float4TypeClass, Math::float4> NAME(#NAME, "Math::float4", FOURCC,ACCESSMODE,DEFVAL);
+#define DeclareFloat4(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::Float4TypeClass, Math::vec4> NAME;
+#define DefineFloat4(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::Float4TypeClass, Math::vec4> NAME(#NAME, "Math::vec4", FOURCC,ACCESSMODE, Math::vec4(0.0f, 0.0f, 0.0f, 0.0f));
+#define DefineFloat4WithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::Float4TypeClass, Math::vec4> NAME(#NAME, "Math::vec4", FOURCC,ACCESSMODE,DEFVAL);
 
 #define DeclareQuaternion(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::QuaternionTypeClass, Math::quaternion> NAME;
 #define DefineQuaternion(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::QuaternionTypeClass, Math::quaternion> NAME(#NAME, "Math::quaternion", FOURCC,ACCESSMODE, Math::quaternion(0.0f, 0.0f, 0.0f, 1.0f));
@@ -94,9 +94,9 @@ AttributeDefinition<VALUETYPE, TYPE>::AttributeDefinition(const Util::String& n,
 #define DefineString(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::StringTypeClass, Util::String> NAME(#NAME, "Util::String", FOURCC,ACCESSMODE, Util::String());
 #define DefineStringWithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::StringTypeClass, Util::String> NAME(#NAME, "Util::String", FOURCC,ACCESSMODE,DEFVAL);
 
-#define DeclareMatrix44(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::Matrix44TypeClass, Math::matrix44> NAME;
-#define DefineMatrix44(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::Matrix44TypeClass, Math::matrix44> NAME(#NAME, "Math::matrix44", FOURCC,ACCESSMODE, Math::matrix44::identity());
-#define DefineMatrix44WithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::Matrix44TypeClass, Math::matrix44> NAME(#NAME, "Math::matrix44", FOURCC,ACCESSMODE,DEFVAL);
+#define DeclareMatrix44(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::Matrix44TypeClass, Math::mat4> NAME;
+#define DefineMatrix44(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::Matrix44TypeClass, Math::mat4> NAME(#NAME, "Math::mat4", FOURCC,ACCESSMODE, Math::mat4::identity());
+#define DefineMatrix44WithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::Matrix44TypeClass, Math::mat4> NAME(#NAME, "Math::mat4", FOURCC,ACCESSMODE,DEFVAL);
 
 #define DeclareTransform44(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::Transform44TypeClass, Math::transform44> NAME;
 #define DefineTransform44(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::Transform44TypeClass, Math::transform44> NAME(#NAME, "Math::transform44", FOURCC,ACCESSMODE, Math::transform44());
@@ -130,17 +130,17 @@ AttributeDefinition<VALUETYPE, TYPE>::AttributeDefinition(const Util::String& n,
 #define DefineFloat2Array(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::Float2ArrayTypeClass, Util::Array<Math::float2>> NAME(#NAME, "Util::Array<Math::float2>", FOURCC,ACCESSMODE, Util::Array<Math::float2>());
 #define DefineFloat2ArrayWithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::Float2ArrayTypeClass, Util::Array<Math::float2>> NAME(#NAME, "Util::Array<Math::float2>", FOURCC,ACCESSMODE,DEFVAL);
 
-#define DeclareFloat4Array(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::Float4ArrayTypeClass, Util::Array<Math::float4>> NAME;
-#define DefineFloat4Array(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::Float4ArrayTypeClass, Util::Array<Math::float4>> NAME(#NAME, "Util::Array<Math::float4>", FOURCC,ACCESSMODE, Util::Array<Math::float4>());
-#define DefineFloat4ArrayWithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::Float4ArrayTypeClass, Util::Array<Math::float4>> NAME(#NAME, "Util::Array<Math::float4>", FOURCC,ACCESSMODE,DEFVAL);
+#define DeclareFloat4Array(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::Float4ArrayTypeClass, Util::Array<Math::vec4>> NAME;
+#define DefineFloat4Array(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::Float4ArrayTypeClass, Util::Array<Math::vec4>> NAME(#NAME, "Util::Array<Math::vec4>", FOURCC,ACCESSMODE, Util::Array<Math::vec4>());
+#define DefineFloat4ArrayWithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::Float4ArrayTypeClass, Util::Array<Math::vec4>> NAME(#NAME, "Util::Array<Math::vec4>", FOURCC,ACCESSMODE,DEFVAL);
 
 #define DeclareStringArray(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::StringArrayTypeClass, Util::Array<Util::String>> NAME;
 #define DefineStringArray(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::StringArrayTypeClass, Util::Array<Util::String>> NAME(#NAME, "Util::Array<Util::String>", FOURCC,ACCESSMODE, Util::Array<Util::String>());
 #define DefineStringArrayWithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::StringArrayTypeClass, Util::Array<Util::String>> NAME(#NAME, "Util::Array<Util::String>", FOURCC,ACCESSMODE,DEFVAL);
 
-#define DeclareMatrix44Array(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::Matrix44ArrayTypeClass, Util::Array<Math::matrix44>> NAME;
-#define DefineMatrix44Array(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::Matrix44ArrayTypeClass, Util::Array<Math::matrix44>> NAME(#NAME, "Util::Array<Math::matrix44>", FOURCC,ACCESSMODE, Util::Array<Math::matrix44>());
-#define DefineMatrix44ArrayWithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::Matrix44ArrayTypeClass, Util::Array<Math::matrix44>> NAME(#NAME, "Util::Array<Math::matrix44>", FOURCC,ACCESSMODE,DEFVAL);
+#define DeclareMatrix44Array(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::Matrix44ArrayTypeClass, Util::Array<Math::mat4>> NAME;
+#define DefineMatrix44Array(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::Matrix44ArrayTypeClass, Util::Array<Math::mat4>> NAME(#NAME, "Util::Array<Math::mat4>", FOURCC,ACCESSMODE, Util::Array<Math::mat4>());
+#define DefineMatrix44ArrayWithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::Matrix44ArrayTypeClass, Util::Array<Math::mat4>> NAME(#NAME, "Util::Array<Math::mat4>", FOURCC,ACCESSMODE,DEFVAL);
 
 #define DeclareBlobArray(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::BlobArrayTypeClass, Util::Array<Util::Blob>> NAME;
 #define DefineBlobArray(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::BlobArrayTypeClass, Util::Array<Util::Blob>> NAME(#NAME, "Util::Array<Util::Blob>", FOURCC,ACCESSMODE, Util::Array<Util::Blob>());

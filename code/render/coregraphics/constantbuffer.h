@@ -31,7 +31,6 @@ static uint InvalidConstantBinding = UINT_MAX;
 struct ConstantBufferCreateInfo
 {
 	Util::StringAtom name;				// name of the constant buffer block
-	IndexT binding;						// binding slot of the constant buffer
 	SizeT size;							// allocation size of the buffer
 	BufferUpdateMode mode;
 };
@@ -41,19 +40,6 @@ const ConstantBufferId CreateConstantBuffer(const ConstantBufferCreateInfo& info
 /// destroy constant buffer
 void DestroyConstantBuffer(const ConstantBufferId id);
 
-/// allocate memory for the constant buffer, use needsRebind to determine if you need to rebind this to a resource table
-ConstantBufferAllocId ConstantBufferAllocate(const ConstantBufferId id, const SizeT size, bool& needsRebind);
-/// free allocation
-void ConstantBufferFree(const ConstantBufferId id, const ConstantBufferAllocId alloc);
-
-/// short-hand for allocating, which uses the size provided in the create info to allocate a new instance
-bool ConstantBufferAllocateInstance(const ConstantBufferId id, uint& offset, uint& slice);
-/// free an instance
-void ConstantBufferFreeInstance(const ConstantBufferId id, uint slice);
-
-/// get constant buffer slot from reflection
-IndexT ConstantBufferGetSlot(const ConstantBufferId id);
-
 /// update constant buffer data
 void ConstantBufferUpdate(const ConstantBufferId id, const void* data, const uint size, ConstantBinding bind);
 /// update constant buffer data as array
@@ -62,17 +48,12 @@ void ConstantBufferUpdateArray(const ConstantBufferId id, const void* data, cons
 template<class TYPE> void ConstantBufferUpdate(const ConstantBufferId id, const TYPE& data, ConstantBinding bind);
 /// update constant buffer data as array
 template<class TYPE> void ConstantBufferUpdateArray(const ConstantBufferId id, const TYPE* data, const uint count, ConstantBinding bind);
-/// update constant buffer data instanced
-void ConstantBufferUpdateInstance(const ConstantBufferId id, const void* data, const uint size, const uint instance, ConstantBinding bind);
-/// update constant buffer data as array instanced
-void ConstantBufferUpdateArrayInstance(const ConstantBufferId id, const void* data, const uint size, const uint count, const uint instance, ConstantBinding bind);
-/// update constant buffer data instanced
-template<class TYPE> void ConstantBufferUpdateInstance(const ConstantBufferId id, const TYPE& data, const uint instance, ConstantBinding bind);
-/// update constant buffer data as array instanced
-template<class TYPE> void ConstantBufferUpdateArrayInstance(const ConstantBufferId id, const TYPE* data, const uint count, const uint instance, ConstantBinding bind);
 
 /// update constant buffer using range of memory
 void ConstantBufferUpdate(const ConstantBufferId id, const ConstantBufferAllocId alloc, const void* data, const uint size, ConstantBinding bind);
+
+/// flush changes made to constant buffer
+void ConstantBufferFlush(const ConstantBufferId id);
 
 //------------------------------------------------------------------------------
 /**
@@ -81,15 +62,6 @@ template<>
 inline void ConstantBufferUpdate(const ConstantBufferId id, const Util::Variant& data, ConstantBinding bind)
 {
 	ConstantBufferUpdate(id, data.AsVoidPtr(), data.Size(), bind);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<>
-inline void ConstantBufferUpdateInstance(const ConstantBufferId id, const Util::Variant& data, const uint instance, ConstantBinding bind)
-{
-	ConstantBufferUpdateInstance(id, data.AsVoidPtr(), data.Size(), instance, bind);
 }
 
 //------------------------------------------------------------------------------
@@ -110,22 +82,5 @@ void ConstantBufferUpdateArray(const ConstantBufferId id, const TYPE* data, cons
 	ConstantBufferUpdateArray(id, data, sizeof(TYPE), count, bind);
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-template<class TYPE>
-void ConstantBufferUpdateInstance(const ConstantBufferId id, const TYPE& data, const uint instance, ConstantBinding bind)
-{
-	ConstantBufferUpdateInstance(id, &data, sizeof(TYPE), instance, bind);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class TYPE>
-void ConstantBufferUpdateArrayInstance(const ConstantBufferId id, const TYPE* data, const uint count, const uint instance, ConstantBinding bind)
-{
-	ConstantBufferUpdateArrayInstance(id, data, sizeof(TYPE), count, instance, bind);
-}
 
 } // CoreGraphics

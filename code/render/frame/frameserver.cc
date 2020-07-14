@@ -5,6 +5,7 @@
 #include "render/stdneb.h"
 #include "frameserver.h"
 #include "framescriptloader.h"
+#include "frameplugin.h"
 
 namespace Frame
 {
@@ -37,7 +38,7 @@ FrameServer::Open()
 	n_assert(!this->isOpen);
 	this->isOpen = true;
 
-	FramePlugin::InitPluginTable();
+	Frame::InitPluginTable();
 }
 
 //------------------------------------------------------------------------------

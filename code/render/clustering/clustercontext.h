@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"
 #include "coregraphics/shaderrwbuffer.h"
+#include "coregraphics/constantbuffer.h"
 #include "coregraphics/window.h"
 #include <array>
 #include "cluster_generate.h"
@@ -35,6 +36,8 @@ public:
 	static const std::array<SizeT, 3> GetClusterDimensions();
 	/// get cluster uniforms
 	static const ClusterGenerate::ClusterUniforms& GetUniforms();
+	/// get cluster constant buffer
+	static const CoreGraphics::ConstantBufferId GetConstantBuffer();
 
 	/// update constants
 	static void UpdateResources(const Graphics::FrameContext& ctx);

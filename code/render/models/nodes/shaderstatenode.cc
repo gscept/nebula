@@ -21,6 +21,7 @@ namespace Models
 ShaderStateNode::ShaderStateNode()
 {
 	this->type = ShaderStateNodeType;
+	this->bits = HasTransformBit | HasStateBit;
 }
 
 //------------------------------------------------------------------------------
@@ -29,6 +30,15 @@ ShaderStateNode::ShaderStateNode()
 ShaderStateNode::~ShaderStateNode()
 {
 	// empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ShaderStateNode::SetMaxLOD(const float lod)
+{
+	Materials::surfacePool->SetMaxLOD(this->surRes, lod);
 }
 
 //------------------------------------------------------------------------------
@@ -76,20 +86,20 @@ ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, c
 	{
 		// ShaderVector
 		StringAtom paramName = reader->ReadString();
-		float2 paramValue = reader->ReadFloat2();
+		vec2 paramValue = reader->ReadFloat2();
 	}
 	else if (FourCC('SFV4') == fourcc)
 	{
 		// ShaderVector
 		StringAtom paramName = reader->ReadString();
-		float4 paramValue = reader->ReadFloat4();
+		vec4 paramValue = reader->ReadVec4();
 	}
 	else if (FourCC('STUS') == fourcc)
 	{
 		// @todo: implement universal indexed shader parameters!
 		// shaderparameter used by multilayered nodes
 		int index = reader->ReadInt();
-		float4 paramValue = reader->ReadFloat4();
+		vec4 paramValue = reader->ReadVec4();
 		String paramName("MLPUVStretch");
 		paramName.AppendInt(index);
 	}
@@ -98,7 +108,7 @@ ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, c
 		// @todo: implement universal indexed shader parameters!
 		// shaderparameter used by multilayered nodes
 		int index = reader->ReadInt();
-		float4 paramValue = reader->ReadFloat4();
+		vec4 paramValue = reader->ReadVec4();
 		String paramName("MLPSpecIntensity");
 		paramName.AppendInt(index);
 	}
@@ -129,6 +139,8 @@ void
 ShaderStateNode::OnFinishedLoading()
 {
 	TransformNode::OnFinishedLoading();
+
+	// load surface immediately, however it will load textures async
 	this->surRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
 	this->materialType = Materials::surfacePool->GetType(this->surRes);
 	this->surface = Materials::surfacePool->GetId(this->surRes);
@@ -210,8 +222,10 @@ ShaderStateNode::Instance::Update()
 		return;
 
 	ObjectsShared::ObjectBlock block;
-	Math::matrix44::storeu(this->modelTransform, block.Model);
-	Math::matrix44::storeu(this->invModelTransform, block.InvModel);
+	this->modelTransform.store(block.Model);
+	this->invModelTransform.store(block.InvModel);
+	block.DitherFactor = this->lodFactor;
+
 	uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
 	this->offsets[this->objectTransformsIndex] = offset;
 	this->dirty = false;

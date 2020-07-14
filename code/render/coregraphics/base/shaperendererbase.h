@@ -13,8 +13,8 @@
 */
 #include "core/refcounted.h"
 #include "core/singleton.h"
-#include "math/matrix44.h"
-#include "math/float4.h"
+#include "math/mat4.h"
+#include "math/vec4.h"
 #include "math/bbox.h"
 #include "coregraphics/primitivetopology.h"
 #include "coregraphics/indextype.h"
@@ -49,7 +49,7 @@ public:
     /// add multiple shapes
     void AddShapes(const Util::Array<CoreGraphics::RenderShape>& shapeArray);
     /// add wireframe box
-    void AddWireFrameBox(const Math::bbox& boundingBox, const Math::float4& color);
+    void AddWireFrameBox(const Math::bbox& boundingBox, const Math::vec4& color);
     /// draw deferred shapes and clear deferred stack, must be called inside render loop
     void DrawShapes();
 

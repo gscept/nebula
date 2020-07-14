@@ -69,7 +69,7 @@ Nvx2StreamReader::Open(const Resources::ResourceName& name)
     if (StreamReader::Open())
     {
         // map the stream to memory
-        this->mapPtr = this->stream->Map();
+        this->mapPtr = this->stream->MemoryMap();
         n_assert(0 != this->mapPtr);
 
         // read data
@@ -82,6 +82,7 @@ Nvx2StreamReader::Open(const Resources::ResourceName& name)
             this->SetupIndexBuffer(name);
             this->UpdateGroupBoundingBoxes();
         }
+        stream->MemoryUnmap();
         return true;
     }
     return false;
@@ -101,7 +102,6 @@ Nvx2StreamReader::Close()
 	this->vbo = VertexBufferId::Invalid();
     this->primGroups.Clear();
     this->vertexComponents.Clear();
-    stream->Unmap();
     StreamReader::Close();
 }
 
@@ -121,7 +121,6 @@ Nvx2StreamReader::ReadHeaderData()
     
     // endian-convert header
     struct Nvx2Header* header = (struct Nvx2Header*) this->mapPtr;
-    header->numIndices *= 3; // header holds number of tris, not indices
 
     // check magic number
     if (FourCC(header->magic) != FourCC('NVX2'))
@@ -132,7 +131,7 @@ Nvx2StreamReader::ReadHeaderData()
     this->numGroups = header->numGroups;
     this->numVertices = header->numVertices;
     this->vertexWidth = header->vertexWidth;
-    this->numIndices = header->numIndices;
+    this->numIndices = header->numIndices * 3;
     this->numEdges = header->numEdges;
     this->vertexComponentMask = header->vertexComponentMask;
     this->groupDataSize = 6 * sizeof(uint) * this->numGroups;
@@ -247,7 +246,7 @@ Nvx2StreamReader::UpdateGroupBoundingBoxes()
         PrimitiveGroup& group = this->primGroups[groupIndex];        
         bbox box;
         box.begin_extend();
-        point p;
+        vec3 p;
         IndexT ii;
         for (ii = 0; ii < group.GetNumIndices(); ii++)
         {
@@ -276,8 +275,9 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 	VertexBufferCreateInfo vboInfo;
 	vboInfo.name = name;
 	vboInfo.access = this->access;
-	vboInfo.numVerts = this->numVertices;
-	vboInfo.usage = this->usage;
+    vboInfo.usage = this->usage;
+    vboInfo.mode = CoreGraphics::HostWriteable;
+    vboInfo.numVerts = this->numVertices;
 	vboInfo.comps = this->vertexComponents;
 	vboInfo.data = this->vertexDataPtr;
 	vboInfo.dataSize = this->vertexDataSize;
@@ -300,8 +300,9 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
 	IndexBufferCreateInfo iboInfo;
 	iboInfo.name = name;
 	iboInfo.access = this->access;
+    iboInfo.usage = this->usage;
+    iboInfo.mode = CoreGraphics::HostWriteable;
 	iboInfo.numIndices = this->numIndices;
-	iboInfo.usage = this->usage;
 	iboInfo.type = IndexType::Index32;
 	iboInfo.data = this->indexDataPtr;
 	iboInfo.dataSize = this->indexDataSize;

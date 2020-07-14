@@ -1,0 +1,60 @@
+#pragma once
+//------------------------------------------------------------------------------
+/**
+	Runs a plugin, which is a code-callback
+	
+	(C) 2016-2020 Individual contributors, see AUTHORS file
+*/
+//------------------------------------------------------------------------------
+#include "frameop.h"
+#include "util/stringatom.h"
+#include <functional>
+namespace Frame
+{
+class FramePlugin : public FrameOp
+{
+public:
+	/// constructor
+	FramePlugin();
+	/// destructor
+	virtual ~FramePlugin();
+
+	struct CompiledImpl : public FrameOp::Compiled
+	{
+		void Run(const IndexT frameIndex);
+		void Discard();
+
+#if NEBULA_GRAPHICS_DEBUG
+		Util::StringAtom name;
+#endif
+
+		std::function<void(IndexT)> func;
+	};
+
+	FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
+
+	std::function<void(IndexT)> func;
+private:
+
+
+	void Build(
+		Memory::ArenaAllocator<BIG_CHUNK>& allocator,
+		Util::Array<FrameOp::Compiled*>& compiledOps,
+		Util::Array<CoreGraphics::EventId>& events,
+		Util::Array<CoreGraphics::BarrierId>& barriers,
+		Util::Dictionary<CoreGraphics::ShaderRWBufferId, Util::Array<BufferDependency>>& rwBuffers,
+		Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures) override;
+};
+
+
+/// add function callback to global dictionary
+extern void AddCallback(const Util::StringAtom name, std::function<void(IndexT)> func);
+/// get algorithm function call
+extern const std::function<void(IndexT)>& GetCallback(const Util::StringAtom& str);
+/// initialize the plugin table
+extern void InitPluginTable();
+
+extern Util::Dictionary<Util::StringAtom, std::function<void(IndexT)>> nameToFunction;
+
+
+} // namespace Frame2

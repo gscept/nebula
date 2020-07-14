@@ -44,7 +44,10 @@ enum IdType
 	ResourcePipelineIdType,
 	SamplerIdType,
 	MaterialIdType,
-	SubmissionContextIdType
+	SubmissionContextIdType,
+	ImageIdType,
+	SparseBufferIdType,
+	SparseTextureIdType
 };
 
 enum QueueType
@@ -53,9 +56,10 @@ enum QueueType
 	ComputeQueueType,
 	TransferQueueType,
 	SparseQueueType,
-	InvalidQueueType,
 
-	NumQueueTypes
+	NumQueueTypes,
+
+	InvalidQueueType
 };
 
 enum ShaderVisibility
@@ -107,14 +111,6 @@ enum GlobalConstantBufferType
 	NumConstantBufferTypes
 };
 
-enum VertexBufferMemoryType
-{
-	MainThreadVertexMemory,
-	VisibilityThreadVertexMemory,
-
-	NumVertexBufferMemoryTypes
-};
-
 enum QueryType
 {
 	OcclusionQuery,
@@ -131,8 +127,9 @@ enum QueryType
 
 enum BufferUpdateMode
 {
-	HostWriteable,              // host can write to the buffer
-	DeviceWriteable             // only device can write to the buffer
+	HostWriteable,      // host can write to the buffer, but needs to flush to make the updates visible on the GPU
+	HostMapped,			// GPU memory is mapped to CPU memory which makes the memory immediately visible
+	DeviceLocal			// memory lives on the GPU, and the GPU has full access
 };
 
 //------------------------------------------------------------------------------
@@ -199,18 +196,18 @@ QueueNameFromQueueType(const QueueType type)
 
 #if !PUBLIC_BUILD
 #define NEBULA_GRAPHICS_DEBUG 1
-#define NEBULA_MARKER_BLUE Math::float4(0.8f, 0.8f, 1.0f, 1.0f)
-#define NEBULA_MARKER_RED Math::float4(1.0f, 0.8f, 0.8f, 1.0f)
-#define NEBULA_MARKER_GREEN Math::float4(0.8f, 1.0f, 0.8f, 1.0f)
-#define NEBULA_MARKER_DARK_GREEN Math::float4(0.6f, 0.8f, 0.6f, 1.0f)
-#define NEBULA_MARKER_DARK_DARK_GREEN Math::float4(0.5f, 0.7f, 0.5f, 1.0f)
-#define NEBULA_MARKER_PINK Math::float4(1.0f, 0.8f, 0.9f, 1.0f)
-#define NEBULA_MARKER_PURPLE Math::float4(0.9f, 0.7f, 0.9f, 1.0f)
-#define NEBULA_MARKER_ORANGE Math::float4(1.0f, 0.9f, 0.8f, 1.0f)
-#define NEBULA_MARKER_TURQOISE Math::float4(0.8f, 0.9f, 1.0f, 1.0f)
-#define NEBULA_MARKER_GRAY Math::float4(0.9f, 0.9f, 0.9f, 1.0f)
-#define NEBULA_MARKER_BLACK Math::float4(0.001f)
-#define NEBULA_MARKER_WHITE Math::float4(1)
+#define NEBULA_MARKER_BLUE Math::vec4(0.8f, 0.8f, 1.0f, 1.0f)
+#define NEBULA_MARKER_RED Math::vec4(1.0f, 0.8f, 0.8f, 1.0f)
+#define NEBULA_MARKER_GREEN Math::vec4(0.8f, 1.0f, 0.8f, 1.0f)
+#define NEBULA_MARKER_DARK_GREEN Math::vec4(0.6f, 0.8f, 0.6f, 1.0f)
+#define NEBULA_MARKER_DARK_DARK_GREEN Math::vec4(0.5f, 0.7f, 0.5f, 1.0f)
+#define NEBULA_MARKER_PINK Math::vec4(1.0f, 0.8f, 0.9f, 1.0f)
+#define NEBULA_MARKER_PURPLE Math::vec4(0.9f, 0.7f, 0.9f, 1.0f)
+#define NEBULA_MARKER_ORANGE Math::vec4(1.0f, 0.9f, 0.8f, 1.0f)
+#define NEBULA_MARKER_TURQOISE Math::vec4(0.8f, 0.9f, 1.0f, 1.0f)
+#define NEBULA_MARKER_GRAY Math::vec4(0.9f, 0.9f, 0.9f, 1.0f)
+#define NEBULA_MARKER_BLACK Math::vec4(0.001f)
+#define NEBULA_MARKER_WHITE Math::vec4(1)
 #endif
 
 //------------------------------------------------------------------------------
@@ -218,11 +215,12 @@ QueueNameFromQueueType(const QueueType type)
 	#define COREGRAPHICS_TRIANGLE_FRONT_FACE_CCW (1)
 	// define the same descriptor set slots as we do in the shaders
 	#define NEBULA_TICK_GROUP 0				// set per tick (once for all views) by the system
-	#define NEBULA_FRAME_GROUP 1				// set per frame (once per view) by the system
+	#define NEBULA_FRAME_GROUP 1			// set per frame (once per view) by the system
 	#define NEBULA_PASS_GROUP 2				// set per pass by the system
-	#define NEBULA_BATCH_GROUP 3				// set per batch (material settings or system stuff)
+	#define NEBULA_BATCH_GROUP 3			// set per batch (material settings or system stuff)
 	#define NEBULA_INSTANCE_GROUP 4			// set a batch-internal copy of some specific settings
-	#define NEBULA_DYNAMIC_OFFSET_GROUP 5		// set once per shader and is offset for each instance
+	#define NEBULA_SYSTEM_GROUP 5			// set a batch-internal copy of some specific settings
+	#define NEBULA_DYNAMIC_OFFSET_GROUP 6	// set once per shader and is offset for each instance
 	#define NEBULA_NUM_GROUPS (NEBULA_DYNAMIC_OFFSET_GROUP + 1)
 
 	#define MAX_INPUT_ATTACHMENTS 32

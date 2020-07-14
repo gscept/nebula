@@ -17,11 +17,10 @@ nebula_begin_module(render)
 	fips_deps(foundation resource anyfx libpng libjpeg DevIL)
 
 	if(N_USE_VULKAN)
-		FIND_PACKAGE(Vulkan)
-		fips_include_directories(${Vulkan_INCLUDE_DIR})
-		fips_libs(${Vulkan_LIBRARY} glfw3)
+		fips_deps(glfw3)
 	endif()
-		fips_files(render/precompiled.h render/stdneb.h render/stdneb.cc)
+
+	fips_files(render/precompiled.h render/stdneb.h render/stdneb.cc)
 
 IF(FALSE) # incrementally enable modules as they get written
 		fips_dir(animation)
@@ -137,10 +136,14 @@ ENDIF()
 				event.h
                 fence.h
 				graphicsdevice.h
+                image.cc
+                image.h
 				imagefileformat.cc
 				imagefileformat.h
 				indexbuffer.h
 				indextype.h
+                memory.cc
+                memory.h
 				memorymeshpool.cc
 				memorymeshpool.h
 				memorytexturepool.cc
@@ -173,6 +176,7 @@ ENDIF()
 				shaderserver.h
 				shaperenderer.cc
 				shaperenderer.h
+                sparsebuffer.h
 				streammeshpool.cc
 				streammeshpool.h
 				shaderpool.cc
@@ -222,6 +226,10 @@ ENDIF()
 				nvx2streamreader.cc
 				nvx2streamreader.h
 			)
+		fips_dir(coregraphics/load GROUP "coregraphics/load")
+			fips_files(glimltypes.h
+				   glimltypes.cc
+				   )
 	if (N_USE_D3D11)
 		fips_dir(coregraphics/base GROUP "coregraphics/d3d11")
 			fips_files(
@@ -304,6 +312,10 @@ ENDIF()
 				vkgraphicsdevice.h
 				vkindexbuffer.cc
                 vkindexbuffer.h
+                vkloader.cc
+                vkloader.h
+                vkmemory.cc
+                vkmemory.h
 				vkmemorytexturepool.cc
 				vkmemorytexturepool.h
 				vkpass.cc
@@ -326,6 +338,8 @@ ENDIF()
 				vkshaderserver.h
 				vkshaperenderer.cc
 				vkshaperenderer.h
+                vksparsebuffer.cc
+                vksparsebuffer.h
 				vkshaderpool.cc
 				vkshaderpool.h
                 vksubmissioncontext.cc
@@ -378,8 +392,8 @@ ENDIF()
 				frameblit.h
 				framecompute.cc
 				framecompute.h
-				framepluginop.cc
-				framepluginop.h
+                frameplugin.cc
+                frameplugin.h
 				framecopy.cc
 				framecopy.h
 				#frameevent.cc
@@ -413,20 +427,7 @@ ENDIF()
 				framesubpassplugin.cc
 				framesubpassplugin.h
 			)
-        fips_dir(frame/plugins)
-			fips_files(
-				frameplugin.cc
-				frameplugin.h
-				frameplugins.h
-				bloomplugin.cc
-				bloomplugin.h
-				ssaoplugin.cc
-				ssaoplugin.h
-				tonemapplugin.cc
-				tonemapplugin.h
-				ssrplugin.cc
-				ssrplugin.h
-			)
+
 		fips_dir(graphics)
 			fips_files(
 				cameracontext.cc
@@ -625,9 +626,26 @@ ENDIF()
 			)
 
 
-		fips_dir(skinning)
 
 ENDIF()
+        fips_dir(posteffects)
+            fips_files(
+                bloomcontext.cc
+                bloomcontext.h
+                ssaocontext.cc
+                ssaocontext.h
+                ssrcontext.cc
+                ssrcontext.h
+                tonemapcontext.cc
+                tonemapcontext.h
+            )
+
+        fips_dir(terrain)
+            fips_files(
+                terraincontext.h
+                terraincontext.cc
+            )
+
 		fips_dir(visibility)
 			fips_files(
 				visibility.h
@@ -657,8 +675,9 @@ ENDIF()
 				visibilitysystem.h
 				visibilitysystem.cc
 			)
+
 nebula_end_module()
-if(N_USE_VULKAN)
-		target_include_directories(render PUBLIC ${Vulkan_INCLUDE_DIR})
-endif()
 target_include_directories(render PUBLIC ${CODE_ROOT}/render)
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
+	target_precompile_headers(render PRIVATE "render/stdneb.h")
+endif()

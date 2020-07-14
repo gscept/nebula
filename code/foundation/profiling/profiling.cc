@@ -45,7 +45,7 @@ ProfilingPopScope()
 	ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
 
 	// we can safely assume the scope and timers won't be modified from different threads here
-	ProfilingScope& scope = ctx.scopes.Pop();
+	ProfilingScope scope = ctx.scopes.Pop();
 
 	// add to category lookup
 	scope.duration = ctx.timer.GetTime() - scope.start;

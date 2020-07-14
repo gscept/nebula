@@ -27,14 +27,14 @@ public:
 	/// setup as albedo-normal-material decal
 	static void SetupDecalPBR(
 		const Graphics::GraphicsEntityId id, 
-		const Math::matrix44 transform,
+		const Math::mat4 transform,
 		const CoreGraphics::TextureId albedo, 
 		const CoreGraphics::TextureId normal, 
 		const CoreGraphics::TextureId material);
 	/// setup as emissive decal
 	static void SetupDecalEmissive(
 		const Graphics::GraphicsEntityId id,
-		const Math::matrix44 transform, 
+		const Math::mat4 transform,
 		const CoreGraphics::TextureId emissive);
 
 	/// set albedo texture for a PBR decal
@@ -47,9 +47,9 @@ public:
 	static void SetEmissiveTexture(const Graphics::GraphicsEntityId id, const CoreGraphics::TextureId emissive);
 
 	/// set transform of decal
-	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::matrix44 transform);
+	static void SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4 transform);
 	/// get transform of decal
-	static Math::matrix44 GetTransform(const Graphics::GraphicsEntityId id);
+	static Math::mat4 GetTransform(const Graphics::GraphicsEntityId id);
 
 	/// update view dependent resources
 	static void UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
@@ -80,7 +80,7 @@ private:
 		Decal_TypedId
 	};
 	typedef Ids::IdAllocator<
-		Math::matrix44,
+		Math::mat4,
 		DecalType,
 		Ids::Id32
 	> GenericDecalAllocator;

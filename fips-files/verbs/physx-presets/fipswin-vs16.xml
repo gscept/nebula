@@ -8,6 +8,7 @@
     <cmakeSwitch name="NV_USE_STATIC_WINCRT" value="True" comment="Use the statically linked windows CRT" />
     <cmakeSwitch name="NV_USE_DEBUG_WINCRT" value="True" comment="Use the debug version of the CRT" />
     <cmakeSwitch name="PX_FLOAT_POINT_PRECISE_MATH" value="False" comment="Float point precise math" />
+    <cmakeSwitch name="NV_APPEND_CONFIG_NAME" value="True" comment="append config name to binaries"/>
   </CMakeSwitches>
   <CMakeParams>
     <cmakeParam name="CMAKE_INSTALL_PREFIX" value="../../fips-deploy/physx/" comment="Install path relative to PhysX SDK root" />    

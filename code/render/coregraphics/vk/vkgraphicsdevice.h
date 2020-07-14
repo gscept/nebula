@@ -13,6 +13,7 @@
 #include "util/set.h"
 #include "vksubcontexthandler.h"
 #include "vkcommandbufferthread.h"
+#include "vkmemory.h"
 
 namespace Vulkan
 {
@@ -89,8 +90,11 @@ void SetVkViewports(VkViewport* viewports, SizeT num);
 /// set array of scissors directly
 void SetVkScissorRects(VkRect2D* scissors, SizeT num);
 
+/// perform a set of sparse bind operations
+void SparseTextureBind(const VkImage img, const Util::Array<VkSparseMemoryBind>& opaqueBinds, const Util::Array<VkSparseImageMemoryBind>& pageBinds);
+
 /// begin command buffer marker (directly on vkcommandbuffer)
-void CommandBufferBeginMarker(VkCommandBuffer buf, const Math::float4& color, const char* name);
+void CommandBufferBeginMarker(VkCommandBuffer buf, const Math::vec4& color, const char* name);
 /// end command buffer marker (directly on vkcommandbuffer)
 void CommandBufferEndMarker(VkCommandBuffer buf);
 
@@ -101,7 +105,7 @@ void DelayedDeleteImage(const VkImage img);
 /// add image view for delayed delete
 void DelayedDeleteImageView(const VkImageView view);
 /// add memory for delayed delete
-void DelayedDeleteMemory(const VkDeviceMemory mem);
+void DelayedFreeMemory(const CoreGraphics::Alloc alloc);
 
 /// handle queries at beginning of frame
 void _ProcessQueriesBeginFrame();

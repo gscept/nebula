@@ -17,6 +17,7 @@
 #include "core/refcounted.h"
 #include "coregraphics/constantbuffer.h"
 #include "ids/idallocator.h"
+#include "vkmemory.h"
 #include <lowlevel/afxapi.h>
 namespace Vulkan
 {
@@ -31,11 +32,8 @@ struct VkConstantBufferSetupInfo
 {
 	VkDevice dev;
 	VkBufferCreateInfo info;
-	VkDeviceMemory mem;
+	CoreGraphics::Alloc mem;
 	SizeT size;
-	IndexT binding;
-	SizeT stride;
-	SizeT grow;
 	CoreGraphics::BufferUpdateMode mode;
 };
 
@@ -45,26 +43,17 @@ struct VkConstantBufferMapInfo
 	SizeT baseOffset;
 };
 
-struct VkConstantBufferPool
-{
-	Util::Array<CoreGraphics::ConstantBufferAllocId> freeAllocs;
-	SizeT size;
-	SizeT capacity;
-};
-
 enum
 {
 	RuntimeInfo,
 	SetupInfo,
-	MapInfo,
-	AllocPool
+	MapInfo
 };
 
 typedef Ids::IdAllocator<
 	VkConstantBufferRuntimeInfo,
 	VkConstantBufferSetupInfo,
-	VkConstantBufferMapInfo,
-	VkConstantBufferPool
+	VkConstantBufferMapInfo
 > VkConstantBufferAllocator;
 extern VkConstantBufferAllocator constantBufferAllocator;
 

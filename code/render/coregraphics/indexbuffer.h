@@ -23,7 +23,7 @@ struct IndexBufferCreateInfo
 	Util::StringAtom tag;
 	CoreGraphics::GpuBufferTypes::Access access;
 	CoreGraphics::GpuBufferTypes::Usage usage;
-	CoreGraphics::GpuBufferTypes::Syncing sync;
+	BufferUpdateMode mode;
 	CoreGraphics::IndexType::Code type;
 	SizeT numIndices;
 	void* data;
@@ -36,7 +36,7 @@ struct IndexBufferCreateDirectInfo
 	Util::StringAtom tag;
 	CoreGraphics::GpuBufferTypes::Access access;
 	CoreGraphics::GpuBufferTypes::Usage usage;
-	CoreGraphics::GpuBufferTypes::Syncing sync;
+	BufferUpdateMode mode;
 	CoreGraphics::IndexType::Code type;
 	SizeT size;
 };
@@ -58,6 +58,8 @@ void IndexBufferUnlock(const IndexBufferId id, const PtrDiff offset, const PtrDi
 void* IndexBufferMap(const IndexBufferId id, const CoreGraphics::GpuBufferTypes::MapType type);
 /// unmap GPU memory
 void IndexBufferUnmap(const IndexBufferId id);
+/// flush mapped memory
+void IndexBufferFlush(const IndexBufferId id);
 
 /// get index type of index buffer
 const CoreGraphics::IndexType::Code IndexBufferGetType(const IndexBufferId id);

@@ -8,7 +8,7 @@
 //------------------------------------------------------------------------------
 #include "ids/idallocator.h"
 #include "coregraphics/resourcetable.h"
-#include <vulkan/vulkan.h>
+#include "vkloader.h"
 #include <array>
 namespace Vulkan
 {

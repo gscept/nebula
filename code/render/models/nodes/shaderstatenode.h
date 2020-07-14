@@ -78,6 +78,8 @@ public:
 
 	/// get surface
 	const Materials::SurfaceId GetSurface() const { return this->surface; };
+	/// trigger an LOD update
+	void SetMaxLOD(const float lod);
 
 protected:
 	friend class StreamModelPool;
@@ -113,7 +115,7 @@ ShaderStateNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNod
 {
 	TransformNode::Instance::Setup(node, parent);
 	this->dirty = true;
-	ShaderStateNode* sparent = static_cast<ShaderStateNode*>(node);
+	ShaderStateNode* sparent = reinterpret_cast<ShaderStateNode*>(node);
 	this->resourceTable = sparent->resourceTable;
 
 	this->objectTransformsIndex = sparent->objectTransformsIndex;

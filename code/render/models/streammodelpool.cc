@@ -74,6 +74,7 @@ StreamModelPool::CreateModelInstance(const ModelId id)
 	// get all template nodes
 	Util::Array<Models::ModelNode::Instance*>& nodeInstances = this->modelInstanceAllocator.Get<ModelNodeInstances>(mnid);
 	Util::Array<Models::NodeType>& nodeTypes = this->modelInstanceAllocator.Get<ModelNodeTypes>(mnid);
+	Util::Array<Models::NodeBits>& nodeBits = this->modelInstanceAllocator.Get<ModelNodeBits>(mnid);
 	Memory::ArenaAllocator<MODEL_INSTANCE_MEMORY_CHUNK_SIZE>& alloc = this->modelAllocator.Get<InstanceNodeAllocator>(id.resourceId);
 
 	// allocate memory
@@ -99,7 +100,7 @@ StreamModelPool::CreateModelInstance(const ModelId id)
 
 		// root node(s)
 		if (node->parent == nullptr)
-			this->CreateModelInstanceRecursive(node, 0, nullptr, &mem, nodeInstances, nodeTypes);
+			this->CreateModelInstanceRecursive(node, 0, nullptr, &mem, nodeInstances, nodeTypes, nodeBits);
 	}
 
 	return miid;
@@ -195,11 +196,19 @@ uint
 	Create model instance breadth first
 */
 void
-StreamModelPool::CreateModelInstanceRecursive(Models::ModelNode* node, const IndexT childIndex, Models::ModelNode::Instance* parentInstance, byte** memory, Util::Array<Models::ModelNode::Instance*>& instances, Util::Array<Models::NodeType>& types)
+StreamModelPool::CreateModelInstanceRecursive(
+	Models::ModelNode* node, 
+	const IndexT childIndex, 
+	Models::ModelNode::Instance* parentInstance, 
+	byte** memory, 
+	Util::Array<Models::ModelNode::Instance*>& instances, 
+	Util::Array<Models::NodeType>& types,
+	Util::Array<Models::NodeBits>& bits)
 {
 	Models::ModelNode::Instance* inst = node->CreateInstance(memory, parentInstance);
 	instances.Append(inst);
 	types.Append(node->type);
+	bits.Append(node->bits);
 
 	// setup child
 	if (parentInstance)
@@ -217,7 +226,7 @@ StreamModelPool::CreateModelInstanceRecursive(Models::ModelNode* node, const Ind
 	// continue recursion
 	IndexT i;
 	for (i = 0; i < node->children.Size(); i++)
-		CreateModelInstanceRecursive(node->children[i], i, inst, memory, instances, types);
+		CreateModelInstanceRecursive(node->children[i], i, inst, memory, instances, types, bits);
 }
 
 //------------------------------------------------------------------------------
@@ -231,7 +240,7 @@ StreamModelPool::LoadFromStream(const Resources::ResourceId id, const Util::Stri
 	SizeT& instanceSize = this->Get<InstanceAllocSize>(id);
 	instanceSize = 0;
 	SizeT hierarchicalInstanceSize = 0;
-	boundingBox.set(Math::point(0), Math::vector(0));
+	boundingBox.set(Math::vec3(0), Math::vec3(0));
 	Memory::ArenaAllocator<MODEL_MEMORY_CHUNK_SIZE>& allocator = this->Get<ModelNodeAllocator>(id);
 	Util::Dictionary<Util::StringAtom, Models::ModelNode*>& nodes = this->Get<ModelNodes>(id);
 	Models::ModelNode*& root = this->Get<RootNode>(id);

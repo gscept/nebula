@@ -113,6 +113,9 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
 						// bind graphics pipeline
 						CoreGraphics::SetGraphicsPipeline();
 
+						// apply node-wide resources
+						node->ApplyNodeResources();
+
 						// apply surface
 						Materials::MaterialApplySurface(materialType, stateNode->GetSurface());
 						Models::NodeType type = node->GetType();

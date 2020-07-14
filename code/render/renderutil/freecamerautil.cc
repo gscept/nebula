@@ -17,7 +17,7 @@ FreeCameraUtil::FreeCameraUtil() :
 	defaultEyeVec(0,0,1),
 	rotationSpeed(0.01f),
 	moveSpeed(0.01f),
-	cameraTransform(matrix44::identity()),
+	cameraTransform(mat4()),
 	rotateButton(false),
 	accelerateButton(false),
 	forwardsKey(false),
@@ -63,49 +63,49 @@ FreeCameraUtil::Update()
 {
 	if (this->rotateButton)
 	{
-		this->viewAngles.rho += this->mouseMovement.x() * rotationSpeed;
-		this->viewAngles.theta += this->mouseMovement.y() * rotationSpeed;
+		this->viewAngles.rho += this->mouseMovement.x * rotationSpeed;
+		this->viewAngles.theta += this->mouseMovement.y * rotationSpeed;
 	}
 
-	matrix44 xMat = matrix44::rotationx(this->viewAngles.theta - (N_PI * 0.5f));
-	matrix44 yMat = matrix44::rotationy(this->viewAngles.rho);
-	this->cameraTransform = matrix44::multiply(xMat, yMat);
+	mat4 xMat = rotationx(this->viewAngles.theta - (N_PI * 0.5f));
+	mat4 yMat = rotationy(this->viewAngles.rho);
+	this->cameraTransform = xMat * yMat;
 
 	float currentMoveSpeed = moveSpeed;
 	if(this->accelerateButton)
 	{
 		currentMoveSpeed *= 20;
 	}
-	float4 translation = float4(0,0,0,0);
+	vec4 translation = vec4(0,0,0,0);
 	if (forwardsKey)
 	{
-		translation.z() -= currentMoveSpeed;
+		translation.z -= currentMoveSpeed;
 	}
 	if (backwardsKey)
 	{
-		translation.z() += currentMoveSpeed;
+		translation.z += currentMoveSpeed;
 	}
 	if (rightStrafeKey)
 	{
-		translation.x() += currentMoveSpeed;
+		translation.x += currentMoveSpeed;
 	}
 	if (leftStrafeKey)
 	{
-		translation.x() -= currentMoveSpeed;
+		translation.x -= currentMoveSpeed;
 	}
 	if (upKey)
 	{
-		translation.y() += currentMoveSpeed;
+		translation.y += currentMoveSpeed;
 	}
 	if (downKey)
 	{
-		translation.y() -= currentMoveSpeed;
+		translation.y -= currentMoveSpeed;
 	}
 
-	translation = matrix44::transform(translation, this->cameraTransform);
-	this->position += translation;
+	translation = this->cameraTransform * translation;
+	this->position += xyz(translation);
 
-	this->cameraTransform.set_position(this->position);
+	this->cameraTransform.position = point(this->position);
 }
 
 

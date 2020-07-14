@@ -5,7 +5,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "renderutil/mayacamerautil.h"
-#include "math/quaternion.h"
+#include "math/quat.h"
 
 namespace RenderUtil
 {
@@ -20,7 +20,7 @@ MayaCameraUtil::MayaCameraUtil() :
     defaultUpVec(0.0f, 1.0f, 0.0f),
     viewDistance(0.0f),
     centerOfInterest(0.0f, 0.0f, 0.0f),
-    cameraTransform(matrix44::identity()),
+    cameraTransform(mat4()),
     orbitButton(false),
     panButton(false),
     zoomButton(false),
@@ -32,7 +32,7 @@ MayaCameraUtil::MayaCameraUtil() :
     panning(0.0f, 0.0f),
     orbiting(0.0f, 0.0f)
 {
-    this->Setup(point(0.0f, 0.0f, 0.0f), point(5.0f, 5.0f, 5.0f), vector(0.0f, 1.0f, 0.0f));
+    this->Setup(vec3(0.0f, 0.0f, 0.0f), vec3(5.0f, 5.0f, 5.0f), vec3(0.0f, 1.0f, 0.0f));
 }
     
 //------------------------------------------------------------------------------
@@ -53,11 +53,11 @@ MayaCameraUtil::Setup(const point& defCoi, const point& defEyePos, const vector&
 void
 MayaCameraUtil::Reset()
 {
-    vector viewVec = this->defaultEyePos - this->defaultCenterOfInterest;
-    this->viewDistance = viewVec.length();
-    this->viewAngles.set(float4::normalize(viewVec));
+    vec3 viewVec = this->defaultEyePos - this->defaultCenterOfInterest;
+    this->viewDistance = length(viewVec);
+    this->viewAngles.set(normalize(viewVec));
     this->centerOfInterest = this->defaultCenterOfInterest;
-    this->cameraTransform = matrix44::identity();
+    this->cameraTransform = mat4();
     this->Update();
 }
 
@@ -80,29 +80,29 @@ MayaCameraUtil::Update()
     zoomVelocity = defZoomVelocity * 10;
 
     // handle input
-    scalar panHori  = -this->panning.x();
-    scalar panVert  =  this->panning.y();
-    scalar lookHori = -this->orbiting.x();
-    scalar lookVert = -this->orbiting.y();
+    scalar panHori  = -this->panning.x;
+    scalar panVert  =  this->panning.y;
+    scalar lookHori = -this->orbiting.x;
+    scalar lookVert = -this->orbiting.y;
     scalar zoom = this->zoomOut - zoomIn;
     if (this->orbitButton)
     {
-        lookHori += this->mouseMovement.x();
-        lookVert += this->mouseMovement.y();
+        lookHori += this->mouseMovement.x;
+        lookVert += this->mouseMovement.y;
     }
     if (this->panButton)
     {
-        panHori += this->mouseMovement.x();
-        panVert -= this->mouseMovement.y();
+        panHori += this->mouseMovement.x;
+        panVert -= this->mouseMovement.y;
     }
     if (this->zoomButton)
     {
-        zoom += this->mouseMovement.y();
+        zoom += this->mouseMovement.y;
     }
 
     // handle panning
-    vector horiMove = this->cameraTransform.getrow0() * panHori * panVelocity;
-    vector vertMove = this->cameraTransform.getrow1() * panVert * panVelocity;
+    vec3 horiMove = xyz(this->cameraTransform.row0 * panHori * panVelocity);
+    vec3 vertMove = xyz(this->cameraTransform.row1 * panVert * panVelocity);
     this->centerOfInterest += horiMove + vertMove;
 
     // handle zooming
@@ -123,15 +123,15 @@ MayaCameraUtil::Update()
     // avoid that the camera slips past the center of interest
     if (this->viewDistance < 1.0f)
     {
-		this->centerOfInterest -= this->cameraTransform.getrow2() * (1.0f-this->viewDistance);
+		this->centerOfInterest -= xyz(this->cameraTransform.row2 * (1.0f-this->viewDistance));
         this->viewDistance = 1.0f;
     }
 
     // get polar vector in cartesian space
-    matrix44 m = matrix44::translation(0.0f, 0.0f, this->viewDistance);
-    m = matrix44::multiply(m, matrix44::rotationx(this->viewAngles.theta - (N_PI * 0.5f)));
-    m = matrix44::multiply(m, matrix44::rotationy(this->viewAngles.rho));
-    m = matrix44::multiply(m, matrix44::translation(this->centerOfInterest));
+    mat4 m = translation(0.0f, 0.0f, this->viewDistance);
+    m = m * rotationx(this->viewAngles.theta - (N_PI * 0.5f));
+    m = m * rotationy(this->viewAngles.rho);
+    m = m * translation(xyz(this->centerOfInterest));
     this->cameraTransform = m;
 
     // reset input

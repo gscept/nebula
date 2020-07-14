@@ -35,34 +35,26 @@ group(DYNAMIC_OFFSET_GROUP) shared constant ParticleObjectBlock [ string Visibil
     rotation into account.
 */
 CornerVertex
-ComputeCornerVertex(in bool hemisphereNormal,
+ComputeCornerVertex(
                     in vec2 corner,
                     in vec4 position,
                     in vec4 stretchPos,
                     in vec4 uvMinMax,
-                    in float rotate,
+                    in vec2 rotate,
                     in float size)
 {
 
 	CornerVertex outputVert;
-
-    // build a 3x3 rotation matrix from the rotation
-    float rotSin, rotCos;
-	rotSin = sin(rotate);
-	rotCos = cos(rotate);
 
     // compute 2d extruded corner position
     vec2 extrude = ((corner * 2.0) - 1.0) * size;
 
     // rotate particle sprite
     mat2 rotMatrix = mat2(
-        rotCos, -rotSin,
-        rotSin, rotCos
+        rotate.y, -rotate.x,
+        rotate.x, rotate.y
     );
     extrude = mul(extrude, rotMatrix);
-
-    // check if billboard
-    const mat4 transform = EmitterTransform;
 
     // transform to world space
     vec4 worldExtrude = EmitterTransform * vec4(extrude, 0.0, 0.0);
@@ -91,26 +83,12 @@ ComputeCornerVertex(in bool hemisphereNormal,
     }
 
     // setup normal, tangent, binormal in world space
-    if (hemisphereNormal)
-    {
-		outputVert.worldNormal = normalize(outputVert.worldPos - BBoxCenter).xyz;
-		outputVert.worldTangent = cross(outputVert.worldNormal, vec3(0,1,0));
-		outputVert.worldBinormal = cross(outputVert.worldNormal, outputVert.worldTangent);
-		outputVert.worldTangent = cross(outputVert.worldNormal, outputVert.worldBinormal);
+	vec2 viewTangent  = mul(rotMatrix, vec2(-1.0, 0.0));
+	vec2 viewBinormal = mul(rotMatrix, vec2(0.0, 1.0));
 
-		outputVert.worldNormal = outputVert.worldNormal.xyz;
-		outputVert.worldTangent = outputVert.worldTangent.xyz;
-		outputVert.worldBinormal = outputVert.worldBinormal.xyz;
-    }
-    else
-    {
-		vec2 viewTangent  = mul(rotMatrix, vec2(-1.0, 0.0));
-		vec2 viewBinormal = mul(rotMatrix, vec2(0.0, 1.0));
-
-		outputVert.worldNormal   = EmitterTransform[2].xyz;
-		outputVert.worldTangent  = mat3(EmitterTransform) * vec3(viewTangent, 0);
-		outputVert.worldBinormal = mat3(EmitterTransform) * vec3(viewBinormal, 0);
-    }
+	outputVert.worldNormal   = EmitterTransform[2].xyz;
+	outputVert.worldTangent  = mat3(EmitterTransform) * vec3(viewTangent, 0);
+	outputVert.worldBinormal = mat3(EmitterTransform) * vec3(viewBinormal, 0);
 	return outputVert;
 }
 

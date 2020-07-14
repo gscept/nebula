@@ -248,7 +248,7 @@ template<> void JsonWriter::Add(const float & value, const Util::String & name)
 /**
 
 */
-template<> void JsonWriter::Add(const Math::float4 & value , const Util::String & name)
+template<> void JsonWriter::Add(const Math::vec4 & value , const Util::String & name)
 {
     auto & alloc = this->document->get_allocator();
     pjson::value_variant val(pjson::cJSONValueTypeArray);
@@ -275,14 +275,14 @@ template<> void JsonWriter::Add(const Math::float4 & value , const Util::String 
 /**
 
 */
-template<> void JsonWriter::Add(const Math::float2& value, const Util::String & name)
+template<> void JsonWriter::Add(const Math::vec2& value, const Util::String & name)
 {
 	auto & alloc = this->document->get_allocator();
 	pjson::value_variant val(pjson::cJSONValueTypeArray);
 	{
-		pjson::value_variant valf(value.x());
+		pjson::value_variant valf(value.x);
 		val.add_value(valf, alloc);
-		valf = value.y();
+		valf = value.y;
 		val.add_value(valf, alloc);
 	}
 	if (name.IsEmpty())
@@ -299,7 +299,7 @@ template<> void JsonWriter::Add(const Math::float2& value, const Util::String & 
 /**
 
 */
-template<> void JsonWriter::Add(const Math::matrix44 & value, const Util::String & name)
+template<> void JsonWriter::Add(const Math::mat4 & value, const Util::String & name)
 {
     auto & alloc = this->document->get_allocator();
     pjson::value_variant val(pjson::cJSONValueTypeArray);
@@ -365,11 +365,11 @@ template<> void JsonWriter::Add(const Util::Variant& value, const Util::String &
 	case Util::Variant::Type::Float:
 		this->Add(value.GetFloat(), name);
 		break;
-	case Util::Variant::Type::Matrix44:
-		this->Add(value.GetMatrix44(), name);
+	case Util::Variant::Type::Mat4:
+		this->Add(value.GetMat4(), name);
 		break;
-	case Util::Variant::Type::Float4:
-		this->Add(value.GetFloat4(), name);
+	case Util::Variant::Type::Vec4:
+		this->Add(value.GetVec4(), name);
 		break;
 	case Util::Variant::Type::UInt:
 		this->Add(value.GetUInt(), name);

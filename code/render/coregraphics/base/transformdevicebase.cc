@@ -28,7 +28,7 @@ TransformDeviceBase::TransformDeviceBase() :
     IndexT i;
     for (i = 0; i < NumTransformTypes; i++)
     {
-        this->transforms[i] = matrix44::identity();
+        this->transforms[i] = mat4();
     }
 }
 
@@ -83,7 +83,7 @@ TransformDeviceBase::ApplyModelTransforms(const Ptr<Shader>& shdInst)
 /**
 */
 void
-TransformDeviceBase::SetProjTransform(const matrix44& m)
+TransformDeviceBase::SetProjTransform(const mat4& m)
 {
     this->transforms[Proj] = m;
     this->SetDirtyFlag(InvProj);
@@ -95,7 +95,7 @@ TransformDeviceBase::SetProjTransform(const matrix44& m)
 /**
 */
 void
-TransformDeviceBase::SetViewTransform(const matrix44& m)
+TransformDeviceBase::SetViewTransform(const mat4& m)
 {
     this->transforms[View] = m;
     this->SetDirtyFlag(InvView);
@@ -109,7 +109,7 @@ TransformDeviceBase::SetViewTransform(const matrix44& m)
 /**
 */
 void
-TransformDeviceBase::SetModelTransform(const matrix44& m)
+TransformDeviceBase::SetModelTransform(const mat4& m)
 {
     this->transforms[Model] = m;
     this->SetDirtyFlag(InvModel);
@@ -125,7 +125,7 @@ void
 TransformDeviceBase::UpdateInvProjTransform()
 {
     n_assert(this->IsDirty(InvProj));
-    this->transforms[InvProj] = matrix44::inverse(this->transforms[Proj]);
+    this->transforms[InvProj] = inverse(this->transforms[Proj]);
     this->ClearDirtyFlag(InvProj);
 }
 
@@ -136,7 +136,7 @@ void
 TransformDeviceBase::UpdateInvViewTransform()
 {
     n_assert(this->IsDirty(InvView));
-    this->transforms[InvView] = matrix44::inverse(this->transforms[View]);
+    this->transforms[InvView] = inverse(this->transforms[View]);
     this->ClearDirtyFlag(InvView);
 }
 
@@ -147,7 +147,7 @@ void
 TransformDeviceBase::UpdateViewProjTransform()
 {
     n_assert(this->IsDirty(ViewProj));
-    this->transforms[ViewProj] = matrix44::multiply(this->transforms[View], this->transforms[Proj]);
+    this->transforms[ViewProj] = this->transforms[View] * this->transforms[Proj];
     this->ClearDirtyFlag(ViewProj);
 }
 
@@ -158,7 +158,7 @@ void
 TransformDeviceBase::UpdateInvModelTransform()
 {
     n_assert(this->IsDirty(InvModel));
-    this->transforms[InvModel] = matrix44::inverse(this->transforms[Model]);
+    this->transforms[InvModel] = inverse(this->transforms[Model]);
     this->ClearDirtyFlag(InvModel);
 }
 
@@ -169,7 +169,7 @@ void
 TransformDeviceBase::UpdateModelViewTransform()
 {
     n_assert(this->IsDirty(ModelView));
-    this->transforms[ModelView] = matrix44::multiply(this->transforms[Model], this->transforms[View]);
+    this->transforms[ModelView] = this->transforms[Model] * this->transforms[View];
     this->ClearDirtyFlag(ModelView);
 }
 
@@ -191,7 +191,7 @@ TransformDeviceBase::UpdateInvModelViewTransform()
     {
         this->UpdateInvViewTransform();
     }
-    this->transforms[InvModelView] = matrix44::multiply(this->transforms[InvView], this->transforms[InvModel]);
+    this->transforms[InvModelView] = this->transforms[InvView] * this->transforms[InvModel];
     this->ClearDirtyFlag(InvModelView);
 }
 
@@ -206,7 +206,7 @@ TransformDeviceBase::UpdateModelViewProjTransform()
     {
         this->UpdateModelViewTransform();
     }
-    this->transforms[ModelViewProj] = matrix44::multiply(this->transforms[ModelView], this->transforms[Proj]);
+    this->transforms[ModelViewProj] = this->transforms[ModelView] * this->transforms[Proj];
     this->ClearDirtyFlag(ModelViewProj);
 }
 

@@ -11,6 +11,8 @@
 #include "core/refcounted.h"
 #include "resources/resourcestreampool.h"
 #include "vktexture.h"
+#include "vkmemory.h"
+
 namespace Vulkan
 {
 class VkStreamTexturePool : public Resources::ResourceStreamPool
@@ -22,14 +24,14 @@ public:
 	/// destructor
 	virtual ~VkStreamTexturePool();
 
-	/// setup loader
-	void Setup();
-
 private:
-	/// load shader
+	/// load texture
 	LoadStatus LoadFromStream(const Resources::ResourceId res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
-	/// unload shader
+	/// unload texture
 	void Unload(const Resources::ResourceId id);
+
+	/// stream mips
+	void StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate) override;
 
 	/// allocate object
 	Resources::ResourceUnknownId AllocObject() override;

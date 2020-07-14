@@ -36,7 +36,7 @@
 	(C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "math/matrix44.h"
+#include "math/mat4.h"
 #include "jobs/jobs.h"
 #include "math/bbox.h"
 #include "resources/resourceid.h"
@@ -59,7 +59,7 @@ struct OctreeSystemLoadInfo
 	bool worldExpanding;			// if true, will cover the entire game world, and the next fields are unused
 	uint cellsX, cellsY, cellsZ;	// how many cells per unit dimension
 	uint width, height, depth;		// total size of the tree
-	Math::float4 pos;				// center position of tree
+	Math::vec4 pos;					// center position of tree
 };
 
 struct QuadtreeSystemLoadInfo
@@ -67,7 +67,7 @@ struct QuadtreeSystemLoadInfo
 	bool worldExpanding;			// if true, will cover the entire game world, and the next fields are unused
 	uint cellsX, cellsY;			// how many cells per unit dimension
 	uint width, height;				// total size of the tree
-	Math::float4 pos;				// center position of tree
+	Math::vec4 pos;					// center position of tree
 };
 
 struct BruteforceSystemLoadInfo
@@ -80,28 +80,29 @@ class VisibilitySystem
 public:
 
 	/// setup observers
-	virtual void PrepareObservers(const Math::matrix44* transforms, Math::ClipStatus::Type* const* vis, const SizeT count);
+	virtual void PrepareObservers(const Math::mat4* transforms, Math::ClipStatus::Type* const* vis, const SizeT count);
 	/// prepare system with entities to insert into the structure
-	virtual void PrepareEntities(const Math::matrix44* transforms, Graphics::GraphicsEntityId* entities, const SizeT count);
+	virtual void PrepareEntities(const Math::mat4* transforms, const Graphics::GraphicsEntityId* entities, const bool* activeFlags, const SizeT count);
 	/// run system
 	virtual void Run();
 
 protected:
 
-	Math::float4 center;
+	Math::vec3 center;
 	Math::bbox boundingbox;
 
 	struct Observer
 	{
-		const Math::matrix44* transforms;
+		const Math::mat4* transforms;
 		Math::ClipStatus::Type* const* vis;
 		SizeT count;
 	} obs;
 
 	struct Entity
 	{
-		const Math::matrix44* transforms;
-		Graphics::GraphicsEntityId* entities;
+		const Math::mat4* transforms;
+		const Graphics::GraphicsEntityId* entities;
+		const bool* activeFlags;
 		SizeT count;
 	} ent;
 };

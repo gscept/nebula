@@ -95,3 +95,6 @@ nebula_end_module()
 
 target_link_options(application PUBLIC "/WHOLEARCHIVE:application")
 target_include_directories(application PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
+	target_precompile_headers(application PRIVATE "application/stdneb.h")
+endif()

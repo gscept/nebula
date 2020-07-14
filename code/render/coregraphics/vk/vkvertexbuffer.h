@@ -11,15 +11,16 @@
 #include "coregraphics/config.h"
 #include "coregraphics/gpubuffertypes.h"
 #include "coregraphics/vertexbuffer.h"
-#include "vulkan/vulkan.h"
+#include "vkloader.h"
 namespace Vulkan
 {
 
 struct VkVertexBufferLoadInfo
 {
 	VkDevice dev;
-	VkDeviceMemory mem;
+	CoreGraphics::Alloc mem;
 	CoreGraphics::GpuBufferTypes::SetupFlags gpuResInfo;
+	CoreGraphics::BufferUpdateMode mode;
 	uint32_t vertexCount;
 	uint32_t vertexByteSize;
 };
@@ -30,10 +31,23 @@ struct VkVertexBufferRuntimeInfo
 	CoreGraphics::VertexLayoutId layout;
 };
 
-typedef Ids::IdAllocator<
+struct VkVertexBufferMapInfo
+{
+	void* mappedMemory;
+	uint32_t mapCount;
+};
+
+enum
+{
+	VertexBuffer_LoadInfo,
+	VertexBuffer_RuntimeInfo,
+	VertexBuffer_MapCount,
+};
+
+typedef Ids::IdAllocatorSafe<
 	VkVertexBufferLoadInfo,			//0 loading stage info
 	VkVertexBufferRuntimeInfo,		//1 runtime stage info
-	uint32_t						//2 mapping stage info
+	VkVertexBufferMapInfo			//2 mapping stage info
 > VkVertexBufferAllocator;
 extern VkVertexBufferAllocator vboAllocator;
 

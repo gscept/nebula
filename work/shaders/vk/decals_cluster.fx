@@ -267,14 +267,14 @@ void psRenderPBR(
 				float weight = saturate(dot(decal.direction, -normal.xyz));
 				vec4 d_albedo = sample2DGrad(decal.albedo, DecalSampler, uv, ddx, ddy);
 				vec4 d_normal = sample2DGrad(decal.normal, DecalSampler, uv, ddx, ddy);
-				vec4 d_material = ConvertOSM(sample2DGrad(decal.material, DecalSampler, uv, ddx, ddy));
+				vec4 d_material = sample2DGrad(decal.material, DecalSampler, uv, ddx, ddy);
 				weight *= d_albedo.a;
 
 				if (weight > 0.0f)
 				{
 					// calculate tbn
 					vec3 d_tangent = decal.tangent;
-					vec3 binormal = cross(normal, d_tangent);
+					vec3 binormal = cross(d_tangent, normal);
 					vec3 tangent = cross(binormal, normal);
 					mat3 tbn = mat3(tangent, binormal, normal);
 

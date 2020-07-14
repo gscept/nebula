@@ -5,7 +5,7 @@ SET(CODE_ROOT ${CMAKE_CURRENT_LIST_DIR}/code)
 set (CMAKE_MODULE_PATH "${NROOT}/extlibs/scripts")
 include(cotire)
 
-option(N_USE_PRECOMPILED_HEADERS "Use precompiled headers" ON)
+option(N_USE_PRECOMPILED_HEADERS "Use precompiled headers" OFF)
 option(N_ENABLE_SHADER_COMMAND_GENERATION "Generate shader compile file for live shader reload" ON)
 
 if(FIPS_WINDOWS)
@@ -34,16 +34,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(FIPS_WINDOWS_LTCG OFF)
 
-if(FIPS_WINDOWS)
-	option(N_MATH_DIRECTX "Use DirectXMath" ON)
+OPTION(N_USE_AVX "Use AVX instructionset" ON)
+OPTION(N_USE_FMA "Use FMA instructionset" OFF)
+if (N_USE_AVX)
+	add_definitions(-DN_USE_AVX)
 endif()
-if(N_MATH_DIRECTX)
-    add_definitions(-D__USE_MATH_DIRECTX)
-else()
-    add_definitions(-D__USE_VECMATH)
-    OPTION(N_USE_AVX "Use AVX instructionset" OFF)
+if (N_USE_FMA)
+	add_definitions(-DN_USE_FMA)
 endif()
-
 add_definitions(-DIL_STATIC_LIB=1)
 
 set(N_QT4 OFF)
@@ -54,9 +52,9 @@ set_property(CACHE N_QT PROPERTY STRINGS "N_QT4" "N_QT5")
 set(${N_QT} ON)
 
 find_package(Python 3.5 COMPONENTS Development REQUIRED)
+MESSAGE(WARNING "Python Debug: ${Python_LIBRARY_DEBUG} Release: ${Python_LIBRARY_RELEASE}")
 
 #physx
-
 if(NOT PX_TARGET)
     MESSAGE(WARNING "PX_TARGET undefined, select a physx build folder (eg. win.x86_64.vs141)")
 endif()
@@ -75,6 +73,7 @@ foreach(CUR_LIB ${PX_LIBRARY_NAMES})
     find_library(PX_REL_${CUR_LIB} ${CUR_LIB}_64 PATHS ${PX_DIR_RELEASE})
     LIST(APPEND PX_RELEASE_LIBRARIES ${PX_REL_${CUR_LIB}})
 endforeach()
+MESSAGE(WARNING "Found PhysX: ${PX_DEBUG_LIBRARIES} ${PX_RELEASE_LIBRARIES}")
 
 add_library(PxLibs INTERFACE)
 target_link_libraries(PxLibs INTERFACE $<$<CONFIG:Debug>:${PX_DEBUG_LIBRARIES}> $<$<CONFIG:Release>:${PX_RELEASE_LIBRARIES}>)
@@ -147,9 +146,9 @@ macro(add_shaders_intern)
             fips_files(${shd})
             SOURCE_GROUP("res\\shaders" FILES ${shd})
             if(N_ENABLE_SHADER_COMMAND_GENERATION)
-                # create compile flags file for live shader compile            
+                # create compile flags file for live shader compile
                 file(WRITE ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}")
-            endif()                
+            endif()
         endforeach()
     endif()
 endmacro()
@@ -181,9 +180,9 @@ macro(add_frameshader)
     foreach(frm ${ARGN})
             get_filename_component(basename ${frm} NAME)
             set(output ${EXPORT_DIR}/frame/${basename})
-            add_custom_command(OUTPUT ${output}                
+            add_custom_command(OUTPUT ${output}
                 COMMAND ${CMAKE_COMMAND} -E copy ${frm} ${EXPORT_DIR}/frame/
-                MAIN_DEPENDENCY ${frm}                
+                MAIN_DEPENDENCY ${frm}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
                 COMMENT "Copying Frameshader ${frm} to ${EXPORT_DIR}/frame"
                 VERBATIM

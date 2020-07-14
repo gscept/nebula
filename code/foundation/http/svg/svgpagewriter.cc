@@ -115,14 +115,14 @@ SvgPageWriter::SetString(const Util::String& name, const Util::String& value)
 /**
 */
 void
-SvgPageWriter::BeginTransformGroup(const float2& translate, float rotate, const float2& scale)
+SvgPageWriter::BeginTransformGroup(const vec2& translate, float rotate, const vec2& scale)
 {
     // format the attribute string
     String str;
     str.Format("translate(%.3f,%.3f) rotate(%.3f) scale(%.3f,%.3f)", 
-        translate.x(), translate.y(),
+        translate.x, translate.y,
         rotate,
-        scale.x(), scale.y());
+        scale.x, scale.y);
 
     // write XML element
     this->xmlWriter->BeginNode("g");
@@ -225,7 +225,7 @@ SvgPageWriter::Line(float x1, float y1, float x2, float y2)
     the array size for a single poly primitive should be about 200 max.
 */
 void
-SvgPageWriter::PolyLine(const Array<float2>& points)
+SvgPageWriter::PolyLine(const Array<vec2>& points)
 {
     // build coordinates string
     String str;
@@ -233,9 +233,9 @@ SvgPageWriter::PolyLine(const Array<float2>& points)
     IndexT i;
     for (i = 0; i < points.Size(); i++)
     {
-        str.AppendFloat(points[i].x());
+        str.AppendFloat(points[i].x);
         str.Append(",");
-        str.AppendFloat(points[i].y());
+        str.AppendFloat(points[i].y);
         str.Append(" ");
     }
 
@@ -251,7 +251,7 @@ SvgPageWriter::PolyLine(const Array<float2>& points)
     the array size for a single poly primitive should be about 200 max.
 */
 void
-SvgPageWriter::Polygon(const Array<float2>& points)
+SvgPageWriter::Polygon(const Array<vec2>& points)
 {
     // build coordinates string
     String str;
@@ -259,9 +259,9 @@ SvgPageWriter::Polygon(const Array<float2>& points)
     IndexT i;
     for (i = 0; i < points.Size(); i++)
     {
-        str.AppendFloat(points[i].x());
+        str.AppendFloat(points[i].x);
         str.Append(",");
-        str.AppendFloat(points[i].y());
+        str.AppendFloat(points[i].y);
         str.Append(" ");
     }
 

@@ -18,7 +18,7 @@ namespace Vulkan
 {
 
 __ImplementClass(Vulkan::VkShaderServer, 'VKSS', Base::ShaderServerBase);
-__ImplementSingleton(Vulkan::VkShaderServer);
+__ImplementInterfaceSingleton(Vulkan::VkShaderServer);
 //------------------------------------------------------------------------------
 /**
 */
@@ -51,6 +51,8 @@ VkShaderServer::Open()
 	{
 		val = i;
 	};
+
+	this->pendingViews.SetSignalOnEnqueueEnabled(false);
 
 	this->texture2DPool.SetSetupFunc(func);
 	this->texture2DPool.Resize(Shared::MAX_2D_TEXTURES);
@@ -177,11 +179,13 @@ VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics
 	info.slot = var;
 
 	// update textures for all tables
+	this->bindResourceCriticalSection.Enter();
 	IndexT i;
 	for (i = 0; i < this->resourceTables.Size(); i++)
 	{
 		ResourceTableSetTexture(this->resourceTables[i], info);
 	}
+	this->bindResourceCriticalSection.Leave();
 
 	return idx;
 }
@@ -218,11 +222,13 @@ VkShaderServer::ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphi
 	info.slot = var;
 
 	// update textures for all tables
+	this->bindResourceCriticalSection.Enter();
 	IndexT i;
 	for (i = 0; i < this->resourceTables.Size(); i++)
 	{
 		ResourceTableSetTexture(this->resourceTables[i], info);
 	}
+	this->bindResourceCriticalSection.Leave();
 }
 
 //------------------------------------------------------------------------------
@@ -284,7 +290,46 @@ VkShaderServer::UpdateResources()
 	this->cboOffset = CoreGraphics::AllocateGraphicsConstantBufferMemory(MainThreadConstantBuffer, sizeof(Shared::PerTickParams));
 	IndexT bufferedFrameIndex = GetBufferedFrameIndex();
 
-	// update resource table
+	VkDevice dev = GetCurrentDevice();
+
+	// setup new views for newly streamed LODs
+	Util::Array<_PendingView> pendingViewsThisFrame(32, 32);
+	pendingViews.DequeueAll(pendingViewsThisFrame);
+
+	for (int i = 0; i < pendingViewsThisFrame.Size(); i++)
+	{
+		const _PendingView& pend = pendingViewsThisFrame[i];
+
+		textureAllocator.EnterGet();
+		VkTextureRuntimeInfo& info = textureAllocator.Get<Texture_RuntimeInfo>(pend.tex.resourceId);
+		VkImageView oldView = info.view;
+		VkResult res = vkCreateImageView(GetCurrentDevice(), &pend.createInfo, nullptr, &info.view);
+		n_assert(res == VK_SUCCESS);
+		textureAllocator.LeaveGet();
+
+		_PendingViewDelete pendingDelete;
+		pendingDelete.view = oldView;
+		pendingDelete.replaceCounter = 0;
+		pendingViewDeletes.Append(pendingDelete);
+
+		// update texture entries for all tables
+		this->ReregisterTexture(pend.tex, info.type, info.bind);
+	}
+
+	// delete views which have been discarded due to LOD streaming
+	for (int i = this->pendingViewDeletes.Size() - 1; i >= 0; i--)
+	{
+		// if we have cycled through all our frames, safetly delete the view
+		if (this->pendingViewDeletes[i].replaceCounter == CoreGraphics::GetNumBufferedFrames())
+		{
+			//vkDestroyImageView(dev, this->pendingViewDeletes[i].view, nullptr);
+			this->pendingViewDeletes.EraseIndex(i);
+			continue;
+		}
+		this->pendingViewDeletes[i].replaceCounter++;
+	}
+
+	// update resource table for this frame
 	ResourceTableSetConstantBuffer(this->resourceTables[bufferedFrameIndex], { this->ticksCbo, this->cboSlot, 0, false, false, sizeof(Shared::PerTickParams), (SizeT)this->cboOffset });
 	ResourceTableCommitChanges(this->resourceTables[bufferedFrameIndex]);
 }
@@ -297,6 +342,19 @@ VkShaderServer::AfterView()
 {
 	// update the constant buffer with the data accumulated in this frame
 	CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, this->cboOffset, this->tickParams);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+VkShaderServer::AddPendingImageView(CoreGraphics::TextureId tex, VkImageViewCreateInfo viewCreate, uint32_t bind)
+{
+	_PendingView pend;
+	pend.tex = tex;
+	pend.createInfo = viewCreate;
+	pend.bind = bind;
+	this->pendingViews.Enqueue(pend);
 }
 
 } // namespace Vulkan

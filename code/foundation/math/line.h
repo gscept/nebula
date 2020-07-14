@@ -10,8 +10,8 @@
     (C) 2004 RadonLabs GmbH
 	(C) 2013-2020 Individual contributors, see AUTHORS file
 */
+
 #include "math/point.h"
-#include "math/vector.h"
 #include "math/scalar.h"
 
 //------------------------------------------------------------------------------
@@ -139,7 +139,7 @@ line::vec() const
 inline scalar
 line::length() const
 {
-    return this->m.length();
+    return Math::length(this->m);
 }
 
 //------------------------------------------------------------------------------
@@ -148,7 +148,7 @@ line::length() const
 inline scalar
 line::lengthsq() const
 {
-    return this->m.lengthsq();
+    return Math::lengthsq(this->m);
 }
 
 //------------------------------------------------------------------------------
@@ -164,10 +164,10 @@ inline scalar
 line::closestpoint(const point& p) const
 {
     vector diff(p - this->b);
-    scalar l = float4::dot3(this->m, this->m);
+    scalar l = dot(this->m, this->m);
     if (l > 0.0f)
     {
-        scalar t = float4::dot3(this->m, diff) / l;
+        scalar t = dot(this->m, diff) / l;
         return t;
     }
     else
@@ -183,18 +183,18 @@ inline scalar
 line::distance(const point& p) const
 {
     vector diff(p - this->b);
-    scalar l = float4::dot3(this->m, this->m);
+    scalar l = dot(this->m, this->m);
     if (l > 0.0f) 
     {
-        scalar t = float4::dot3(this->m, diff) / l;
+        scalar t = dot(this->m, diff) / l;
         diff = diff - this->m * t;
-        return diff.length();
+        return Math::length(diff);
     } 
     else 
     {
         // line is really a point...
         vector v(p - this->b);
-        return v.length();
+        return Math::length(v);
     }
 }
 

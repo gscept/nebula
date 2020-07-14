@@ -184,7 +184,7 @@ Update(Timing::Time delta)
 /**
 */
 ActorId
-CreateActorInstance(Physics::ActorResourceId id, Math::matrix44 const & trans, bool dynamic, IndexT scene)
+CreateActorInstance(Physics::ActorResourceId id, Math::mat4 const & trans, bool dynamic, IndexT scene)
 {
     return Physics::actorPool->CreateActorInstance(id, trans, dynamic, scene);
 }

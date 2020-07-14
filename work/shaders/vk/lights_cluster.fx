@@ -7,6 +7,7 @@
 #include "lib/shared.fxh"
 #include "lib/clustering.fxh"
 #include "lib/lights_clustered.fxh"
+#include "lib/preetham.fxh"
 
 group(BATCH_GROUP) constant LightUniforms [ string Visibility = "CS"; ]
 {
@@ -111,74 +112,6 @@ void csDebug()
 
 //------------------------------------------------------------------------------
 /**
-*/
-vec3 
-LocalLights(
-	uint idx, 
-	vec4 viewPos, 
-	vec3 viewVec, 
-	vec3 normal, 
-	float depth, 
-	vec4 material, 
-	vec4 albedo)
-{
-	vec3 light = vec3(0, 0, 0);
-	uint flag = AABBs[idx].featureFlags;
-	if (CHECK_FLAG(flag, CLUSTER_POINTLIGHT_BIT))
-	{
-		// shade point lights
-		uint count = PointLightCountList[idx];
-		PointLightShadowExtension ext;
-		for (int i = 0; i < count; i++)
-		{
-			uint lidx = PointLightIndexList[idx * MAX_LIGHTS_PER_CLUSTER + i];
-			PointLight li = PointLights[lidx];
-			light += CalculatePointLight(
-				li,
-				ext,
-				viewPos.xyz,
-				viewVec,
-				normal,
-				depth,
-				material,
-				albedo
-			);
-		}
-	}
-	if (CHECK_FLAG(flag, CLUSTER_SPOTLIGHT_BIT))
-	{
-		uint count = SpotLightCountList[idx];
-		SpotLightShadowExtension shadowExt;
-		SpotLightProjectionExtension projExt;
-		for (int i = 0; i < count; i++)
-		{
-			uint lidx = SpotLightIndexList[idx * MAX_LIGHTS_PER_CLUSTER + i];
-			SpotLight li = SpotLights[lidx];
-
-			// if we have extensions, load them from their respective buffers
-			if (li.shadowExtension != -1)
-				shadowExt = SpotLightShadow[li.shadowExtension];
-			if (li.projectionExtension != -1)
-				projExt = SpotLightProjection[li.projectionExtension];
-
-			light += CalculateSpotLight(
-				li,
-				projExt,
-				shadowExt,
-				viewPos.xyz,
-				viewVec,
-				normal,
-				depth,
-				material,
-				albedo
-			);
-		}
-	}
-	return light;
-}
-
-//------------------------------------------------------------------------------
-/**
 	Calculate pixel light contribution
 */
 [localsizex] = 64
@@ -236,7 +169,8 @@ void csRender()
    	}	
 	else // sky pixels
 	{
-		light += sampleCubeLod(EnvironmentMap, CubeSampler, normalize(worldPos.xyz), 0).rgb;
+		//light += sampleCubeLod(EnvironmentMap, CubeSampler, normalize(worldPos.xyz), 0).rgb;
+		light += Preetham(-worldViewVec, GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * GlobalLightColor.rgb;
 	}
     
 	// write final output

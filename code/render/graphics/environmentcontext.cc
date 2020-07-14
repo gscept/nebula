@@ -11,6 +11,7 @@
 #include "models/modelcontext.h"
 #include "visibility/visibilitycontext.h"
 #include "resources/resourceserver.h"
+#include "imgui.h"
 namespace Graphics
 {
 
@@ -18,12 +19,16 @@ struct
 {
 	Graphics::GraphicsEntityId skyBoxEntity;
 	Graphics::GraphicsEntityId sunEntity;
-	Math::float4 bloomColor;
+	Math::vec4 bloomColor;
 	float bloomThreshold;
 	float maxEyeLuminance;
-	Math::float4 fogColor;
+	Math::vec4 fogColor;
 	float fogDistances[2];
 	int numGlobalEnvironmentMips;
+	float saturation;
+	float fadeValue;
+
+	float skyTurbidity;
 
 	CoreGraphics::TextureId defaultEnvironmentMap;
 	CoreGraphics::TextureId defaultIrradianceMap;
@@ -38,6 +43,7 @@ void
 EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
 {
 	__bundle.OnBeforeFrame = EnvironmentContext::OnBeforeFrame;
+	__bundle.OnBegin = EnvironmentContext::RenderUI;
 	__bundle.StageBits = &EnvironmentContext::__state.currentStage;
 
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
@@ -47,34 +53,41 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
 	Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(envState.skyBoxEntity);
 
 	// setup both model and visibility
-	Models::ModelContext::Setup(envState.skyBoxEntity, "mdl:system/skybox.n3", "system");
-	Visibility::ObservableContext::Setup(envState.skyBoxEntity, Visibility::VisibilityEntityType::Model);
+	Models::ModelContext::Setup(envState.skyBoxEntity, "mdl:system/skybox.n3", "system", []()
+		{
+			Visibility::ObservableContext::Setup(envState.skyBoxEntity, Visibility::VisibilityEntityType::Model);
+		});
 
-	envState.bloomColor = Math::float4(1.0f);
+	envState.bloomColor = Math::vec4(1.0f);
 	envState.bloomThreshold = 25.0f;
 	envState.maxEyeLuminance = 0.9f;
-	envState.fogColor = Math::vector(0.5f);
+	envState.fogColor = Math::vec4(0.5f);
 	envState.fogDistances[0] = 10.0f; // near
 	envState.fogDistances[1] = 1000.0f; // far
 	envState.numGlobalEnvironmentMips = 10;
+	envState.saturation = 1.0f;
+	envState.fadeValue = 1.0f;
+	envState.skyTurbidity = 2.0f;
 
 	envState.defaultEnvironmentMap = Resources::CreateResource("tex:system/sky_refl.dds"_atm, "system"_atm,
 		[](const Resources::ResourceId id)
 		{
 			envState.defaultEnvironmentMap = id;
+			Resources::SetMaxLOD(id, 0.0f, false);
 		});
 
 	envState.defaultIrradianceMap = Resources::CreateResource("tex:system/sky_irr.dds"_atm, "system"_atm,
 		[](const Resources::ResourceId id)
 		{
 			envState.defaultIrradianceMap = id;
+			Resources::SetMaxLOD(id, 0.0f, false);
 		});
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Math::float4
+Math::vec4
 CalculateZenithLuminanceYxy(float t, float thetaS)
 {
 	float chi = (4.0 / 9.0 - t / 120.0) * (PI - 2.0 * thetaS);
@@ -95,20 +108,20 @@ CalculateZenithLuminanceYxy(float t, float thetaS)
 		(-0.04214 * theta3 + 0.08970 * theta2 - 0.04153 * thetaS + 0.00516) * T +
 		(0.15346 * theta3 - 0.26756 * theta2 + 0.06670 * thetaS + 0.26688);
 
-	return Math::float4(Yz, xz, yz, 0);
+	return Math::vec4(Yz, xz, yz, 0);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-CalculatePerezDistribution(float t, Math::float4& A, Math::float4& B, Math::float4& C, Math::float4& D, Math::float4& E)
+CalculatePerezDistribution(float t, Math::vec4& A, Math::vec4& B, Math::vec4& C, Math::vec4& D, Math::vec4& E)
 {
-	A = Math::float4(0.1787f * t - 1.4630f, -0.0193f * t - 0.2592f, -0.0167f * t - 0.2608f, 0);
-	B = Math::float4(-0.3554f * t + 0.4275f, -0.0665f * t + 0.0008f, -0.0950f * t + 0.0092f, 0);
-	C = Math::float4(-0.0227f * t + 5.3251f, -0.0004f * t + 0.2125f, -0.0079f * t + 0.2102f, 0);
-	D = Math::float4(0.1206f * t - 2.5771f, -0.0641f * t - 0.8989f, -0.0441f * t - 1.6537f, 0);
-	E = Math::float4(-0.0670f * t + 0.3703f, -0.0033f * t + 0.0452f, -0.0109f * t + 0.0529f, 0);
+	A = Math::vec4(0.1787f * t - 1.4630f, -0.0193f * t - 0.2592f, -0.0167f * t - 0.2608f, 0);
+	B = Math::vec4(-0.3554f * t + 0.4275f, -0.0665f * t + 0.0008f, -0.0950f * t + 0.0092f, 0);
+	C = Math::vec4(-0.0227f * t + 5.3251f, -0.0004f * t + 0.2125f, -0.0079f * t + 0.2102f, 0);
+	D = Math::vec4(0.1206f * t - 2.5771f, -0.0641f * t - 0.8989f, -0.0441f * t - 1.6537f, 0);
+	E = Math::vec4(-0.0670f * t + 0.3703f, -0.0033f * t + 0.0452f, -0.0109f * t + 0.0529f, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -118,30 +131,29 @@ void
 EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
 	Shared::PerTickParams& tickParams = CoreGraphics::ShaderServer::Instance()->GetTickParams();
-	Math::matrix44 transform = Lighting::LightContext::GetTransform(envState.sunEntity);
-	Math::float4 sunDir = -transform.get_zaxis();
+	Math::mat4 transform = Lighting::LightContext::GetTransform(envState.sunEntity);
+	Math::vec4 sunDir = -transform.z_axis;
 	
 	// update perez distribution coefficients to the shared constants
-	const float turbidity = 2.0f;
-	Math::float4 A, B, C, D, E, Z;
-	CalculatePerezDistribution(turbidity, A, B, C, D, E);
-	Math::float4::storeu(A, tickParams.A);
-	Math::float4::storeu(B, tickParams.B);
-	Math::float4::storeu(C, tickParams.C);
-	Math::float4::storeu(D, tickParams.D);
-	Math::float4::storeu(E, tickParams.E);
+	Math::vec4 A, B, C, D, E, Z;
+	CalculatePerezDistribution(envState.skyTurbidity, A, B, C, D, E);
+	A.store(tickParams.A);
+	B.store(tickParams.B);
+	C.store(tickParams.C);
+	D.store(tickParams.D);
+	E.store(tickParams.E);
 
-	float thetaS = acos(Math::float4::dot3(sunDir, Math::vector(0, 1, 0)));
-	Z = CalculateZenithLuminanceYxy(turbidity, thetaS);
-	Math::float4::storeu(Z, tickParams.Z);
+	float thetaS = acos(Math::dot3(sunDir, Math::vec4(0, 1, 0, 0)));
+	Z = CalculateZenithLuminanceYxy(envState.skyTurbidity, thetaS);
+	Z.store(tickParams.Z);
 
 	// write parameters related to atmosphere
-	Math::float4::storeu(envState.fogColor, tickParams.FogColor);
+	envState.fogColor.store(tickParams.FogColor);
 	tickParams.FogDistances[0] = envState.fogDistances[0];
 	tickParams.FogDistances[1] = envState.fogDistances[1];
 
 	// bloom parameters
-	Math::float4::storeu(envState.bloomColor, tickParams.HDRBloomColor);
+	envState.bloomColor.store(tickParams.HDRBloomColor);
 	tickParams.HDRBrightPassThreshold = envState.bloomThreshold;
 
 	// eye adaptation parameters
@@ -152,17 +164,43 @@ EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 	tickParams.IrradianceMap = CoreGraphics::TextureGetBindlessHandle(envState.defaultIrradianceMap);
 	tickParams.NumEnvMips = envState.numGlobalEnvironmentMips;
 
-	Math::float4 balance(1.0f);
-	Math::float4::storeu(balance, tickParams.Balance);
-	tickParams.Saturation = 1.0f;
-	tickParams.FadeValue = 1.0f;
+	Math::vec4 balance(1.0f);
+	balance.store(tickParams.Balance);
+	tickParams.Saturation = envState.saturation;
+	tickParams.FadeValue = envState.fadeValue;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-EnvironmentContext::SetFogColor(const Math::float4& fogColor)
+EnvironmentContext::RenderUI(const Graphics::FrameContext& ctx)
+{
+	float col[4];
+	envState.fogColor.storeu(col);
+	Shared::PerTickParams& tickParams = CoreGraphics::ShaderServer::Instance()->GetTickParams();
+	if (ImGui::Begin("Enviroment Params"))
+	{
+		ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
+		ImGui::SliderFloat("Bloom Threshold", &envState.bloomThreshold, 0, 100.0f);
+		ImGui::SliderFloat("Sky Turbidity", &envState.skyTurbidity, 2.0f, 15.0f);
+		ImGui::InputFloat("Fog Start", &envState.fogDistances[0], 0, 10000.0f);
+		ImGui::InputFloat("Fog End", &envState.fogDistances[1], 0, 10000.0f);
+		ImGui::ColorEdit4("Fog Color", col);
+		ImGui::SliderFloat("Max Luminance", &envState.maxEyeLuminance, 0, 100.0f);
+		ImGui::SliderFloat("Color Saturation", &envState.saturation, 0, 1.0f);
+		ImGui::SliderFloat("Fade Value", &envState.fadeValue, 0, 1.0f);
+	}
+	envState.fogColor.loadu(col);
+
+	ImGui::End();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+EnvironmentContext::SetFogColor(const Math::vec4& fogColor)
 {
 	envState.fogColor = fogColor;
 }
@@ -181,7 +219,7 @@ EnvironmentContext::SetFogDistances(const float nearFog, const float farFog)
 /**
 */
 void 
-EnvironmentContext::SetBloomColor(const Math::float4& bloomColor)
+EnvironmentContext::SetBloomColor(const Math::vec4& bloomColor)
 {
 	envState.bloomColor = bloomColor;
 }

@@ -16,8 +16,8 @@
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
-#include "math/matrix44.h"
-#include "math/float4.h"
+#include "math/mat4.h"
+#include "math/vec4.h"
 #include "coregraphics/primitivetopology.h"
 #include "coregraphics/indextype.h"
 #include "io/memorystream.h"
@@ -57,50 +57,50 @@ public:
 
     struct RenderShapeVertex
     {
-        Math::float4 pos;
-        Math::float4 color;
+        Math::vec4 pos;
+        Math::vec4 color;
 
-        RenderShapeVertex() : color(Math::float4(1)) {}
+        RenderShapeVertex() : color(Math::vec4(1)) {}
     };
 
     /// default constructor
     RenderShape();
     /// shortcut constructor for simple shapes
-    RenderShape(Type shapeType, RenderFlag depthFlag, const Math::matrix44& modelTransform, const Math::float4& color);
+    RenderShape(Type shapeType, RenderFlag depthFlag, const Math::mat4& modelTransform, const Math::vec4& color);
     /// return true if object has been setup
     bool IsValid() const;
     /// setup simple shape
-    void SetupSimpleShape(Type shapeType, RenderFlag depthFlag, const Math::matrix44& modelTransform, const Math::float4& color);
+    void SetupSimpleShape(Type shapeType, RenderFlag depthFlag, const Math::mat4& modelTransform, const Math::vec4& color);
 
     /// setup primitive batch (SLOW!)
     void SetupPrimitives(
-        const Math::matrix44& modelTransform
+        const Math::mat4& modelTransform
         , PrimitiveTopology::Code topology
         , SizeT numPrimitives
         , const RenderShape::RenderShapeVertex* vertices
-        , const Math::float4& color
+        , const Math::vec4& color
         , RenderFlag depthFlag
     );
 
     /// setup indexed primitive batch (SLOW!)
     void SetupIndexedPrimitives(
-        const Math::matrix44& modelTransform
+        const Math::mat4& modelTransform
         , PrimitiveTopology::Code topology
         , SizeT numPrimitives
         , const RenderShape::RenderShapeVertex* vertices
         , SizeT numVertices
         , const void* indices
         , IndexType::Code indexType
-        , const Math::float4& color, 
+        , const Math::vec4& color,
         RenderFlag depthFlag
     );
 
 	/// setup mesh
 	void SetupMesh(
-        const Math::matrix44& modelTransform
+        const Math::mat4& modelTransform
         , const MeshId mesh
         , const IndexT groupIndex
-        , const Math::float4& color
+        , const Math::vec4& color
         , RenderFlag depthFlag
     );
 
@@ -109,7 +109,7 @@ public:
     /// get depth flag
 	RenderFlag GetDepthFlag() const;
 	/// get model transform
-    const Math::matrix44& GetModelTransform() const;
+    const Math::mat4& GetModelTransform() const;
     /// get primitive topology
     PrimitiveTopology::Code GetTopology() const;
     /// get number of primitives
@@ -125,7 +125,7 @@ public:
     /// get the index type (16 or 32 bit)
     IndexType::Code GetIndexType() const;
     /// get shape color
-    const Math::float4& GetColor() const;
+    const Math::vec4& GetColor() const;
     /// get vertex layout, returns NULL if none exist
     const VertexLayoutId GetVertexLayout() const;
 	/// get mesh
@@ -136,13 +136,13 @@ public:
 private:
     Type shapeType;
 	RenderFlag depthFlag;
-    Math::matrix44 modelTransform;
+    Math::mat4 modelTransform;
     PrimitiveTopology::Code topology;
     SizeT numPrimitives;
     SizeT vertexWidth;
     SizeT numVertices;
     IndexType::Code indexType;
-    Math::float4 color;
+    Math::vec4 color;
     IndexT vertexDataOffset;
 
 	IndexT groupIndex;
@@ -181,7 +181,7 @@ RenderShape::GetDepthFlag() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::matrix44&
+inline const Math::mat4&
 RenderShape::GetModelTransform() const
 {
     return this->modelTransform;
@@ -262,7 +262,7 @@ RenderShape::GetIndexType() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::float4&
+inline const Math::vec4&
 RenderShape::GetColor() const
 {
     return this->color;

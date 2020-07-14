@@ -22,6 +22,7 @@ CharacterSkinNode::CharacterSkinNode()
 {
     this->skinnedShaderFeatureBits = ShaderServer::Instance()->FeatureStringToMask("Skinned");
 	this->type = CharacterSkinNodeType;
+	this->bits = HasTransformBit | HasStateBit;
 }
 
 //------------------------------------------------------------------------------
@@ -75,7 +76,7 @@ CharacterSkinNode::OnFinishedLoading()
 	CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
 	CoreGraphics::ConstantBufferId cbo = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer);
 	IndexT index = CoreGraphics::ShaderGetResourceSlot(shader, "JointBlock");
-	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { cbo, index, 0, true, false, (SizeT)(sizeof(Math::matrix44) * this->skinFragments[0].jointPalette.Size()), 0 });
+	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { cbo, index, 0, true, false, (SizeT)(sizeof(Math::mat4) * this->skinFragments[0].jointPalette.Size()), 0 });
 	CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
 }
 
@@ -117,7 +118,7 @@ CharacterSkinNode::AddFragment(IndexT primGroupIndex, const Util::Array<IndexT>&
 void
 CharacterSkinNode::Instance::Update()
 {
-	const CharacterNode::Instance* cparent = static_cast<const CharacterNode::Instance*>(this->parent);
+	const CharacterNode::Instance* cparent = reinterpret_cast<const CharacterNode::Instance*>(this->parent);
 	if (!this->dirty)
 		return;
 
@@ -125,9 +126,9 @@ CharacterSkinNode::Instance::Update()
 	PrimitiveNode::Instance::Update();
 
 	// if parent doesn't have joints, don't continue
-	CharacterSkinNode* sparent = static_cast<CharacterSkinNode*>(this->node);
+	CharacterSkinNode* sparent = reinterpret_cast<CharacterSkinNode*>(this->node);
 	const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;
-	Util::FixedArray<Math::matrix44> usedMatrices(usedIndices.Size());
+	Util::FixedArray<Math::mat4> usedMatrices(usedIndices.Size());
 	if (cparent->joints != nullptr)
 	{
 		// copy active matrix palette, or set identity
@@ -143,7 +144,7 @@ CharacterSkinNode::Instance::Update()
 		IndexT i;
 		for (i = 0; i < usedIndices.Size(); i++)
 		{
-			usedMatrices[i] = Math::matrix44::identity();
+			usedMatrices[i] = Math::mat4();
 		}
 	}
 

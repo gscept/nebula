@@ -11,15 +11,16 @@
 #include "coregraphics/config.h"
 #include "coregraphics/gpubuffertypes.h"
 #include "coregraphics/indexbuffer.h"
-#include "vulkan/vulkan.h"
+#include "vkloader.h"
 namespace Vulkan
 {
 
 struct VkIndexBufferLoadInfo
 {
 	VkDevice dev;
-	VkDeviceMemory mem;
+	CoreGraphics::Alloc mem;
 	CoreGraphics::GpuBufferTypes::SetupFlags gpuResInfo;
+	CoreGraphics::BufferUpdateMode mode;
 	uint32_t indexCount;
 };
 struct VkIndexBufferRuntimeInfo
@@ -28,10 +29,23 @@ struct VkIndexBufferRuntimeInfo
 	CoreGraphics::IndexType::Code type;
 };
 
-typedef Ids::IdAllocator<
+struct VkIndexBufferMapInfo
+{
+	void* mappedMemory;
+	uint32_t mapCount;
+};
+
+enum
+{
+	IndexBuffer_LoadInfo,
+	IndexBuffer_RuntimeInfo,
+	IndexBuffer_MapCount,
+};
+
+typedef Ids::IdAllocatorSafe<
 	VkIndexBufferLoadInfo,			//0 loading stage info
 	VkIndexBufferRuntimeInfo,		//1 runtime stage info
-	uint32_t				//2 mapping stage info
+	VkIndexBufferMapInfo			//2 mapping stage info
 > VkIndexBufferAllocator;
 extern VkIndexBufferAllocator iboAllocator;
 

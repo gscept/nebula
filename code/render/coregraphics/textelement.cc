@@ -26,7 +26,7 @@ TextElement::TextElement() :
 //------------------------------------------------------------------------------
 /**
 */
-TextElement::TextElement(ThreadId threadId_, const String& text_, const float4& color_, const float2& pos_, const float size_) :
+TextElement::TextElement(ThreadId threadId_, const String& text_, const vec4& color_, const vec2& pos_, const float size_) :
     threadId(threadId_),
     text(text_),
     color(color_),

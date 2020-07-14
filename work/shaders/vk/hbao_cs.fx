@@ -54,7 +54,7 @@ sampler_state ClampSampler
 groupshared vec2 SharedMemory[SHARED_MEM_SIZE]; 
 
 //----------------------------------------------------------------------------------
-float Tangent(float2 V)
+float Tangent(vec2 V)
 {
     // Add an epsilon to avoid any division by zero.
     return V.y / (abs(V.x) + 1.e-6f);
@@ -181,7 +181,7 @@ csMainX()
     const uint x = apronStart + uint(gl_LocalInvocationID.x);
     const uint y = uint(gl_WorkGroupID.y);
 
-    // Load float2 samples into shared memory
+    // Load vec2 samples into shared memory
     SharedMemory[gl_LocalInvocationID.x] = LoadXZFromTexture(x,y);
     SharedMemory[min(2 * KERNEL_RADIUS + int(gl_LocalInvocationID.x), SHARED_MEM_SIZE - 1)] = LoadXZFromTexture(2 * KERNEL_RADIUS + x, y);
     groupMemoryBarrier();
@@ -225,7 +225,7 @@ csMainY()
     const uint x = uint(gl_WorkGroupID.y);
     const uint y = apronStart + uint(gl_LocalInvocationID.x);
 
-    // Load float2 samples into shared memory
+    // Load vec2 samples into shared memory
     SharedMemory[gl_LocalInvocationID.x] = LoadYZFromTexture(x,y);
     SharedMemory[min(2 * KERNEL_RADIUS + int(gl_LocalInvocationID.x), SHARED_MEM_SIZE - 1)] = LoadYZFromTexture(x, 2 * KERNEL_RADIUS + y);
     groupMemoryBarrier();

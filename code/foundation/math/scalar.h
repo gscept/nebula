@@ -14,14 +14,6 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 
-#if __USE_MATH_DIRECTX
-#include "math/xnamath/xna_scalar.h"
-#elif __USE_VECMATH
-#include "math/vecmath/vec_scalar.h"
-#else
-#error "scalar class not implemented!"
-#endif
-
 // common platform-agnostic definitions
 namespace Math
 {
@@ -47,6 +39,226 @@ namespace Math
 #define TINY (0.0000001f)
 #endif
 #define N_TINY TINY
+
+typedef float scalar;
+typedef float float32;
+typedef double float64;
+
+const scalar LN_2 = 0.693147180559945f;
+
+#ifndef PI
+#define PI (3.1415926535897932384626433832795028841971693993751)
+#endif
+// the half circle
+#ifndef N_PI
+#define N_PI (Math::scalar(3.1415926535897932384626433832795028841971693993751))
+#endif
+
+struct float2
+{
+    union
+    {
+        struct { scalar x, y; };
+        scalar v[2];
+    };
+};
+
+struct float3
+{
+    union
+    {
+        struct { scalar x, y, z; };
+        scalar v[3];
+    };
+};
+
+struct float4
+{
+    union
+    {
+        struct { scalar x, y, z, w; };
+        scalar v[4];
+    };
+};
+
+//------------------------------------------------------------------------------
+/**
+    Return a pseudo random number between 0 and 1.
+*/
+__forceinline scalar 
+n_rand()
+{
+    return scalar(rand()) / scalar(RAND_MAX);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Return a pseudo random number between min and max.
+*/
+__forceinline scalar 
+n_rand(scalar min, scalar max)
+{
+	scalar unit = scalar(rand()) / RAND_MAX;
+	scalar diff = max - min;
+	return min + unit * diff;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+n_sin(scalar x)
+{
+    return sinf(x);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+n_cos(scalar x)
+{
+    return cosf(x);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+n_tan(scalar x)
+{
+    return tanf(x);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+n_asin(scalar x)
+{
+    return asinf(x);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+n_acos(scalar x)
+{
+    return acosf(x);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+n_atan(scalar x)
+{
+    return atanf(x);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar 
+n_sqrt(scalar x)
+{
+    return sqrtf(x);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Chop float to int.
+*/
+__forceinline int 
+n_fchop(scalar f)
+{
+    /// @todo type cast to int is slow!
+    return int(f);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+n_fmod(scalar x, scalar y)
+{
+	return fmodf(x, y);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Normalize an angular value into the range rad(0) to rad(360).
+	FIXME : seems that the xna version limits from -pi to pi, not 0 .. 2pi. 
+			will copy behaviour despite what description says
+*/
+__forceinline scalar 
+n_modangle(scalar a) 
+{
+#if 0
+	static const scalar rev = scalar(6.283185307179586476925286766559);
+	return n_fmod(a,rev);
+#else
+	static const scalar REVOLUTION = scalar(6.283185307179586476925286766559);
+	a += N_PI;
+	scalar temp = fabs(a);
+	temp = temp - floorf(temp/REVOLUTION) *  REVOLUTION;
+	temp -= N_PI;
+	temp = a<0 ? -temp:temp;	
+	if(temp < scalar(-N_PI)) temp += REVOLUTION;
+	if(temp >= scalar(N_PI)) temp -= REVOLUTION;
+	return temp;
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+    log2() function.
+*/
+__forceinline scalar 
+n_log2(scalar f) 
+{ 
+    return logf(f) / LN_2; 
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+n_exp(scalar x)
+{
+    return expf(x);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Round float to integer.
+*/
+__forceinline int 
+n_frnd(scalar f)
+{
+    return n_fchop(floorf(f + 0.5f));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+n_pow(scalar x, scalar y)
+{
+    return powf(x, y);
+}
+
+//------------------------------------------------------------------------------
+/**
+	get logarithm of x
+*/
+__forceinline scalar
+n_log(scalar x)
+{
+    return logf(x);
+}
+
 
 //------------------------------------------------------------------------------
 /**
@@ -326,11 +538,11 @@ __forceinline bool
 n_isdenormal(scalar s)
 {
 #if __GNUC__
-    union { scalar s; uint u; } pun;
+    union { scalar s; unsigned int u; } pun;
     pun.s = s;
     return ((pun.u&0x7f800000)==0);
 #else
-    return (((*(uint*)&s)&0x7f800000)==0);
+    return (((*(unsigned int*)&s)&0x7f800000)==0);
 #endif
 }
 
@@ -399,32 +611,44 @@ n_irand(int min, int max)
 	Returns the position of the most significant bit of the number
 */
 __forceinline int
-n_mostsignificant(uint val)
+n_mostsignificant(unsigned int val)
 {
 #ifdef WIN32
 	unsigned long ret;
-	n_assert2(_BitScanReverse(&ret, val),"failed to calculate most significant bit\n");
+    bool res = _BitScanReverse(&ret, val);
+    ret = res ? ret : 0;
 	return ret + 1;
 #else
-	n_error("not implemented\n");
+    unsigned long ret;
+    ret = __builtin_clz(val);
+    return ret + 1;
 #endif
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-__forceinline uint
-n_align(uint alignant, uint alignment)
+__forceinline unsigned int
+n_align(unsigned int alignant, unsigned int alignment)
 {
 	return (alignant + alignment - 1) & ~(alignment - 1);
 }
 
 //------------------------------------------------------------------------------
 /**
+*/
+__forceinline unsigned int
+n_align_down(unsigned int alignant, unsigned int alignment)
+{
+    return (alignant / alignment * alignment);
+}
+
+//------------------------------------------------------------------------------
+/**
 	Integer division with rounding
 */
-__forceinline uint
-n_divandroundup(uint dividend, uint divider)
+__forceinline unsigned int
+n_divandroundup(unsigned int dividend, unsigned int divider)
 {
 	return (dividend % divider != 0) ? (dividend / divider + 1) : (dividend / divider);
 }

@@ -12,9 +12,8 @@
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
-#include "math/float4.h"
-#include "math/vector.h"
-#include "math/matrix44.h"
+#include "math/vec4.h"
+#include "math/mat4.h"
 #include "math/bbox.h"
 #include "particles/emitterattrs.h"
 
@@ -27,12 +26,12 @@ namespace Particles
 
     struct Particle
     {
-        Math::float4 position;
-        Math::float4 startPosition;
-        Math::float4 stretchPosition;
-        Math::float4 velocity;
-        Math::float4 uvMinMax;
-        Math::float4 color;
+        Math::vec4 position;
+        Math::vec4 startPosition;
+        Math::vec4 stretchPosition;
+        Math::vec4 velocity;
+        Math::vec4 uvMinMax;
+        Math::vec4 color;
         float rotation;      
         float rotationVariation;
         float size;

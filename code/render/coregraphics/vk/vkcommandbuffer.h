@@ -7,7 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "ids/idallocator.h"
-#include "vulkan/vulkan.h"
+#include "vkloader.h"
 #include "coregraphics/commandbuffer.h"
 
 namespace Vulkan
@@ -45,6 +45,6 @@ enum
 	CommandBuffer_VkCommandBuffer,
 	CommandBuffer_VkCommandPool
 };
-typedef Ids::IdAllocator<VkDevice, VkCommandBuffer, VkCommandPool> VkCommandBufferAllocator;
+typedef Ids::IdAllocatorSafe<VkDevice, VkCommandBuffer, VkCommandPool> VkCommandBufferAllocator;
 
 } // Vulkan

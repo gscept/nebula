@@ -56,17 +56,17 @@ def ConvertToCamelNotation(attrType):
         return "Double"
     elif (T == "bool"):
         return "Bool"
-    elif (T == "float2"):
+    elif (T == "vec2"):
         return "Float2"
-    elif (T == "float4"):
+    elif (T == "vec4"):
         return "Float4"
     elif (T == "vector"):
         return "Vector"
     elif (T == "point"):
         return "Point"
-    elif (T == "quaternion"):
+    elif (T == "quat"):
         return "Quaternion"
-    elif (T == "matrix44"):
+    elif (T == "mat4"):
         return "Matrix44"
     elif (T == "string"):
         return "String"
@@ -110,18 +110,18 @@ def GetTypeString(attrType):
         return "double"
     elif (T == "bool"):
         return "bool"
-    elif (T == "float2"):
-        return "Math::float2"
-    elif (T == "float4"):
-        return "Math::float4"
+    elif (T == "vec2"):
+        return "Math::vec2"
+    elif (T == "vec4"):
+        return "Math::vec4"
     elif (T == "vector"):
         return "Math::vector"
     elif (T == "point"):
         return "Math::point"
-    elif (T == "quaternion"):
-        return "Math::quaternion"
-    elif (T == "matrix44"):
-        return "Math::matrix44"
+    elif (T == "quat"):
+        return "Math::quat"
+    elif (T == "mat4"):
+        return "Math::mat4"
     elif (T == "string"):
         return "Util::String"
     elif (T == "resource"):
@@ -167,18 +167,18 @@ def GetArgumentType(attrType):
         return "double"
     elif (T == "bool"):
         return "bool"
-    elif (T == "float2"):
-        return "Math::float2 const&"
-    elif (T == "float4"):
-        return "Math::float4 const&"
+    elif (T == "vec2"):
+        return "Math::vec2 const&"
+    elif (T == "vec4"):
+        return "Math::vec4 const&"
     elif (T == "vector"):
         return "Math::vector const&"
     elif (T == "point"):
         return "Math::point const&"
-    elif (T == "quaternion"):
-        return "Math::quaternion const&"
-    elif (T == "matrix44"):
-        return "Math::matrix44 const&"
+    elif (T == "quat"):
+        return "Math::quat const&"
+    elif (T == "mat4"):
+        return "Math::mat4 const&"
     elif (T == "string"):
         return "Util::String const&"
     elif (T == "resource"):
@@ -221,18 +221,18 @@ def DefaultValue(attrType):
         return "double(0.0)"
     elif (T == "bool"):
         return "bool(false)"
-    elif (T == "float2"):
-        return "Math::float2(0, 0)"
-    elif (T == "float4"):
-        return "Math::float4(0, 0, 0, 0)"
+    elif (T == "vec2"):
+        return "Math::vec2(0, 0)"
+    elif (T == "vec4"):
+        return "Math::vec4(0, 0, 0, 0)"
     elif (T == "vector"):
         return "Math::vector(0, 0, 0)"
     elif (T == "point"):
         return "Math::point(0, 0, 0)"
-    elif (T == "quaternion"):
-        return "Math::quaternion::identity()"
-    elif (T == "matrix44"):
-        return "Math::matrix44::identity()"
+    elif (T == "quat"):
+        return "Math::quat()"
+    elif (T == "mat4"):
+        return "Math::mat4()"
     elif (T == "string"):
         return "Util::String()"
     elif (T == "resource"):
