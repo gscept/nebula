@@ -272,7 +272,7 @@ barycentric(const quat& q0, const quat& q1, const quat& q2, scalar f, scalar g)
 __forceinline quat
 conjugate(const quat& q)
 {
-	const NEBULA_ALIGN16 __m128 con = { -1.0f, -1.0f, -1.0f, 1.0f };
+	const  __m128 con = { -1.0f, -1.0f, -1.0f, 1.0f };
 	quat qq(_mm_mul_ps(q.vec, con));
 	return qq;
 }

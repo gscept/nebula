@@ -95,6 +95,7 @@ ShaderServerBase::Open()
     }
 #endif
 
+#ifndef __linux__
     auto reloadFileFunc = [this](IO::WatchEvent const& event)
     {
         if (event.type == WatchEventType::Modified || event.type == WatchEventType::NameChange &&
@@ -164,6 +165,7 @@ ShaderServerBase::Open()
         }
     }
 #endif
+#endif
     // create standard shader for access to shared variables
     if (this->shaders.Contains(ResourceName("shd:shared.fxb")))
     {
@@ -183,11 +185,13 @@ void
 ShaderServerBase::Close()
 {
     n_assert(this->isOpen);
+    #ifndef __linux__
     // unwatch 
     if (IO::IoServer::Instance()->DirectoryExists("home:work/shaders/vk"))
     {
         IO::FileWatcher::Instance()->Unwatch("home:work/shaders/vk");
     }
+    #endif
 
     // unload all currently loaded shaders
     IndexT i;

@@ -176,7 +176,7 @@ nebula_begin_module(foundation)
 			jsonwriter.h
 			filedialog.cc
 			filedialog.h
-			filewatcher.cc
+			#filewatcher.cc
 			filewatcher.h
 			mediatype.h
 			memorystream.cc

@@ -3,8 +3,8 @@
 #-------------------------------------------------------------------------------
 
 nebula_begin_module(dynui)
-fips_deps(render imgui scripting)
-fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/resource ${CODE_ROOT}/render ${CODE_ROOT}/foundation)	
+fips_deps(render imgui )#scripting)
+fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/resource ${CODE_ROOT}/render ${CODE_ROOT}/foundation ${Python_INCLUDE_DIR})
 add_shaders(im3d/im3d.fx imgui.fx)
 fips_files(
 	imguiinputhandler.cc

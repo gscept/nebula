@@ -1981,7 +1981,7 @@ PYBIND11_MODULE(deargui, deargui)
     IO.def_readwrite("backend_language_user_data", &ImGuiIO::BackendLanguageUserData);
     IO.def_readwrite("clipboard_user_data", &ImGuiIO::ClipboardUserData);
     IO.def_readwrite("ime_window_handle", &ImGuiIO::ImeWindowHandle);
-    IO.def_readwrite("render_draw_lists_fn_unused", &ImGuiIO::RenderDrawListsFnUnused);
+    //IO.def_readwrite("render_draw_lists_fn_unused", &ImGuiIO::RenderDrawListsFnUnused);
     IO.def_readwrite("mouse_pos", &ImGuiIO::MousePos);
     IO.def_readwrite("mouse_wheel", &ImGuiIO::MouseWheel);
     IO.def_readwrite("mouse_wheel_h", &ImGuiIO::MouseWheelH);

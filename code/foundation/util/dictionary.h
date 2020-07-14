@@ -324,7 +324,7 @@ Dictionary<KEYTYPE, VALUETYPE>::Erase(const KEYTYPE& key)
     #if NEBULA_BOUNDSCHECKS
     n_assert(!this->inBulkInsert);
     #endif
-    IndexT eraseIndex = this->keyValuePairs.BinarySearchIndex<KEYTYPE>(key);
+    IndexT eraseIndex = this->keyValuePairs.template BinarySearchIndex<KEYTYPE>(key);
     #if NEBULA_BOUNDSCHECKS
     n_assert(InvalidIndex != eraseIndex);
     #endif
@@ -354,7 +354,7 @@ Dictionary<KEYTYPE, VALUETYPE>::FindIndex(const KEYTYPE& key) const
     #if NEBULA_BOUNDSCHECKS
     n_assert(!this->inBulkInsert);
     #endif
-    return this->keyValuePairs.BinarySearchIndex<KEYTYPE>(key);
+    return this->keyValuePairs.template BinarySearchIndex<KEYTYPE>(key);
 }
 
 //------------------------------------------------------------------------------
@@ -367,7 +367,7 @@ Dictionary<KEYTYPE, VALUETYPE>::Contains(const KEYTYPE& key) const
 	#if NEBULA_BOUNDSCHECKS
 	n_assert(!this->inBulkInsert);
 	#endif
-    return (InvalidIndex != this->keyValuePairs.BinarySearchIndex<KEYTYPE>(key));
+    return (InvalidIndex != this->keyValuePairs.template BinarySearchIndex<KEYTYPE>(key));
 }
 
 //------------------------------------------------------------------------------
@@ -380,7 +380,7 @@ Dictionary<KEYTYPE, VALUETYPE>::Contains(const KEYTYPE& key, IndexT& index) cons
 #if NEBULA_BOUNDSCHECKS
 	n_assert(!this->inBulkInsert);
 #endif
-	index = this->keyValuePairs.BinarySearchIndex<KEYTYPE>(key);
+	index = this->keyValuePairs.template BinarySearchIndex<KEYTYPE>(key);
 	return (InvalidIndex != index);
 }
 

@@ -59,7 +59,7 @@ protected:
 	friend class OGL4RenderDevice;
 	friend class GLFWInputServer;
 
-	friend void CoreGraphics::DestroyWindow(const WindowId id);
+	friend void CoreGraphics::DestroyWindow(const CoreGraphics::WindowId id);
 	friend void KeyFunc(const CoreGraphics::WindowId& id, int key, int scancode, int action, int mods);
 	friend void CharFunc(const CoreGraphics::WindowId& id, unsigned int key);
 	friend void MouseButtonFunc(const CoreGraphics::WindowId& id, int button, int action, int mods);

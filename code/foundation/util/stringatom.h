@@ -35,7 +35,7 @@ public:
     /// construct from string object
     StringAtom(const String& str);
 	/// constructor from nullptr
-	StringAtom(nullptr_t);
+	StringAtom(std::nullptr_t);
 
     /// assignment
     void operator=(const StringAtom& rhs);
@@ -47,7 +47,7 @@ public:
     /// equality operator
     bool operator==(const StringAtom& rhs) const;
 	/// equality operator for nullptr
-	bool operator==(nullptr_t) const;
+	bool operator==(std::nullptr_t) const;
     /// inequality operator
     bool operator!=(const StringAtom& rhs) const;
     /// greater-then operator
@@ -185,7 +185,7 @@ StringAtom::StringAtom(const String& str)
 /**
 */
 inline 
-StringAtom::StringAtom(nullptr_t)
+StringAtom::StringAtom(std::nullptr_t)
 {
 	this->content = nullptr;
 }

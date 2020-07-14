@@ -40,7 +40,7 @@ CreateFence(const FenceCreateInfo& info)
 	{
 		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
 		nullptr,
-		info.createSignaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0
+		info.createSignaled ? VK_FENCE_CREATE_SIGNALED_BIT : (VkFenceCreateFlags)0
 	};
 
 	// create fence

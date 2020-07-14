@@ -8,7 +8,7 @@
 #include "lib/shared.fxh"
 #include "lib/techniques.fxh"
 #include "lib/shared.fxh"
-#include "lib/Preetham.fxh"
+#include "lib/preetham.fxh"
 
 group(BATCH_GROUP) shared constant FinalizeBlock
 {

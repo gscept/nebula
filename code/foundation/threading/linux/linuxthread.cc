@@ -277,7 +277,7 @@ LinuxThread::GetRunningThreadDebugInfos()
             ThreadDebugInfo info;
             info.threadName = cur->GetName();
             info.threadPriority = cur->GetPriority();
-            info.threadCoreId = cur->GetCoreId();
+            info.threadCoreId = (System::Cpu::CoreId)cur->GetThreadAffinity();
             info.threadStackSize = cur->GetStackSize();
             infos.Append(info);
         }
@@ -348,6 +348,25 @@ LinuxThread::SetThreadAffinity(uint mask)
     {
 	    pthread_setaffinity_np(this->thread, sizeof(cpu_set_t), &this->affinity);
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+ */
+uint
+LinuxThread::GetThreadAffinity()
+{    
+	cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    if(this->thread != 0)
+    {
+	    pthread_getaffinity_np(this->thread, sizeof(cpu_set_t), &cpuset);
+    }
+    if(CPU_COUNT(&cpuset) == 1)
+    {
+        return (uint)cpuset.__bits[0];
+    }
+    return 0;
 }
 
 } // namespace Linux

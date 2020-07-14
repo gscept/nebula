@@ -345,7 +345,7 @@ Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fram
     // The following key states control which gizmo to use for the generic Gizmo() function. Here using the left ctrl
     // key as an additional predicate.
     bool ctrlDown = keyboard->KeyPressed(Input::Key::LeftControl) || keyboard->KeyPressed(Input::Key::RightControl);
-    ad.m_keyDown[Im3d::Key_L/*Action_GizmoLocal*/] = ctrlDown && (GetAsyncKeyState(0x4c) & 0x8000) != 0;
+    //ad.m_keyDown[Im3d::Key_L/*Action_GizmoLocal*/] = ctrlDown && (GetAsyncKeyState(0x4c) & 0x8000) != 0;
     ad.m_keyDown[Im3d::Key_T/*Action_GizmoTranslation*/] = keyboard->KeyPressed(Input::Key::W);
     ad.m_keyDown[Im3d::Key_R/*Action_GizmoRotation*/] = keyboard->KeyPressed(Input::Key::E);
     ad.m_keyDown[Im3d::Key_S/*Action_GizmoScale*/] = keyboard->KeyPressed(Input::Key::R);
@@ -409,7 +409,7 @@ Im3dContext::Render(const IndexT frameIndex)
         Im3d::SetSize(1.0f);
         Im3d::PushLayerId(imState.depthLayerId);            
         Im3d::BeginLines();
-        Im3d::Color col = imState.gridColor;
+        Im3d::Color col(imState.gridColor.x, imState.gridColor.y,imState.gridColor.z,imState.gridColor.w);
         for (int x = -gridSize; x <= gridSize; ++x) {
             Im3d::Vertex(-gridSize * cellSize + imState.gridOffset.x, 0.0f, (float)x * cellSize + imState.gridOffset.y, col);
             Im3d::Vertex(gridSize * cellSize + imState.gridOffset.x, 0.0f, (float)x * cellSize + imState.gridOffset.y, col);

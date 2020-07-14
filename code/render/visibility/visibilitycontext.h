@@ -16,6 +16,12 @@
 #include "materials/materialtype.h"
 #include "memory/arenaallocator.h"
 #include "math/clipstatus.h"
+
+namespace Models
+{
+	class ModelContext;
+}
+
 namespace Visibility
 {
 
