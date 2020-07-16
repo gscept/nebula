@@ -37,7 +37,7 @@ RigidBodyProperty::SetupExternalAttributes()
 /**
 */
 void
-RigidBodyProperty::MoveCallback(Physics::ActorId id, Math::matrix44 const& trans)
+RigidBodyProperty::MoveCallback(Physics::ActorId id, Math::mat4 const& trans)
 {
     Physics::Actor& actor = Physics::ActorContext::GetActor(id);
     Game::InstanceId instance = (Game::InstanceId)actor.userData;
@@ -74,7 +74,7 @@ RigidBodyProperty::OnActivate(Game::InstanceId instance)
             actorid = Physics::CreateActorInstance(id, trans, dynamic);
             Physics::Actor& actor = Physics::ActorContext::GetActor(actorid);
             actor.userData = instance.id;
-            actor.moveCallback = Util::Delegate<void(Physics::ActorId, Math::matrix44 const&)>::FromMethod<RigidBodyProperty, &RigidBodyProperty::MoveCallback>(this);
+            actor.moveCallback = Util::Delegate<void(Physics::ActorId, Math::mat4 const&)>::FromMethod<RigidBodyProperty, &RigidBodyProperty::MoveCallback>(this);
         },[&resource, instance](Resources::ResourceId id) 
         {
             n_warning("failed to load physics actor from %s\n", resource);
@@ -95,7 +95,7 @@ RigidBodyProperty::OnDeactivate(Game::InstanceId instance)
 /**
 */
 void
-RigidBodyProperty::SetWorldTransform(Game::Entity entity, const Math::matrix44& val)
+RigidBodyProperty::SetWorldTransform(Game::Entity entity, const Math::mat4& val)
 {
 	//n_assert(Game::GetEntityCategory(entity) == this->category);
 	Physics::ActorId actorId = this->data.state[Game::GetInstanceId(entity).id].actorid;

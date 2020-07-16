@@ -6,7 +6,6 @@
 #include "scriptingtest.h"
 
 #include "scripting/python/pythonserver.h"
-#include "scripting/bindings.h"
 #include "scripting/python/conversion.h"
 
 #include "pybind11/embed.h"
@@ -292,22 +291,22 @@ ScriptingTest::Run()
     EVAL("print(util.FourCC.lookup('Scripting::PythonServer'))");
 
     // Math::float4
-    EVAL("tf4 = test.get_float4()");
+    EVAL("tf4 = test.get_vec4()");
     EVAL("print(type(tf4))");
     EVAL("print(tf4)");
-    EVAL("f4 = nmath.Float4(1.0, 1.0, 1.0, 1.0)");
+    EVAL("f4 = nmath.Vec4(1.0, 1.0, 1.0, 1.0)");
     EVAL("print(f4)");
-    EVAL("f4 = nmath.Float4(10.0, 0.5, 0.75, 2.0)");
+    EVAL("f4 = nmath.Vec4(10.0, 0.5, 0.75, 2.0)");
     EVAL("print(f4)");
-    EVAL("f4 = f4 + nmath.Float4(10.0, 0.5, 0.75, 2.0)");
+    EVAL("f4 = f4 + nmath.Vec4(10.0, 0.5, 0.75, 2.0)");
     EVAL("print(f4)");
-    EVAL("dot = nmath.Float4.dot3(f4, f4)");
+    EVAL("dot = nmath.Vec4.dot3(f4, f4)");
     EVAL("print(dot)");
     EVAL("npf4 = numpy.array([1.0, 2.0, 3.0, 4.0])");
     EVAL("print(npf4)");
     EVAL("f4res = npf4 + f4");
     EVAL("print(f4res)");
-    EVAL("f4res = nmath.Float4(f4 + npf4)");
+    EVAL("f4res = nmath.Vec4(f4 + npf4)");
     EVAL("print(f4res)");
     EVAL("print(f4res[0])");
     EVAL("print(f4res[1])");
@@ -315,7 +314,7 @@ ScriptingTest::Run()
     EVAL("print(f4res[3])");
 
     // Math::point
-    EVAL("p = nmath.Point(test.get_float4());");
+    EVAL("p = nmath.Point(test.get_vec4());");
     EVAL("print(type(p))");
     EVAL("print(p)");
     EVAL("p = nmath.Point(30,20,10)");
@@ -338,13 +337,13 @@ ScriptingTest::Run()
     EVAL("print(p)");
 
     // Math::matrix44
-    EVAL("mat = nmath.Matrix44.identity()");
+    EVAL("mat = nmath.Mat4.identity()");
     EVAL("print(mat)");
-    EVAL("mat = nmath.Matrix44(1,2,3,4, 5,1,7,8, 9,10,1,12, 13,14,15,1)");
+    EVAL("mat = nmath.Mat4(1,2,3,4, 5,1,7,8, 9,10,1,12, 13,14,15,1)");
     EVAL("print(mat)");
-    EVAL("mat = nmath.Matrix44.inverse(mat)");
+    EVAL("mat = nmath.Mat4.inverse(mat)");
     EVAL("print(mat)");
-    EVAL("mat = nmath.Matrix44.transpose(mat)");
+    EVAL("mat = nmath.Mat4.transpose(mat)");
     EVAL("print(mat)");
     
     // Util::Array
@@ -352,10 +351,10 @@ ScriptingTest::Run()
     EVAL("test.print_int_arr_from_py(arr)");
     EVAL("arr = [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0]");
     EVAL("test.print_float_arr_from_py(arr)");
-    EVAL("f4arr = [nmath.Float4(0,1,2,3),nmath.Float4(1,2,3,4),nmath.Float4(4,3,2,1)]");
+    EVAL("f4arr = [nmath.Vec4(0,1,2,3),nmath.Vec4(1,2,3,4),nmath.Vec4(4,3,2,1)]");
     EVAL("print(type(f4arr[0]))");
     EVAL("print(f4arr)");
-    EVAL("test.print_float4_arr_from_py(f4arr)");
+    EVAL("test.print_vec4_arr_from_py(f4arr)");
     EVAL("arr = ['test1', 'test2', 'hellofrom3']");
     EVAL("test.print_str_arr_from_py(arr)");
     EVAL("arr = test.get_native_array()");
@@ -369,12 +368,12 @@ ScriptingTest::Run()
     EVAL("test.print_variant_from_py(val)");
     EVAL("val = 5.2");
     EVAL("test.print_variant_from_py(val)");
-    EVAL("val = nmath.Float4(1.0,2.0,3.0,4.0)");
+    EVAL("val = nmath.Vec4(1.0,2.0,3.0,4.0)");
     EVAL("test.print_variant_from_py(val)");
     EVAL("pyvar = test.get_variant_int()");
     EVAL("print(type(pyvar))");
     EVAL("print(pyvar)");
-    EVAL("pyvar = test.get_variant_float4()");
+    EVAL("pyvar = test.get_variant_vec4()");
     EVAL("print(type(pyvar))");
     EVAL("print(pyvar)");
     EVAL("pyvar = test.get_variant_guid()");
@@ -383,31 +382,12 @@ ScriptingTest::Run()
     EVAL("pyvar = test.get_variant_int_arr()");
     EVAL("print(type(pyvar))");
     EVAL("print(pyvar)");
-    EVAL("pyvar = test.get_variant_matrix44_arr()");
+    EVAL("pyvar = test.get_variant_mat4_arr()");
     EVAL("print(type(pyvar))");
     EVAL("print(pyvar)");
-    EVAL("pyvar = test.get_variant_matrix44()");
+    EVAL("pyvar = test.get_variant_mat4()");
     EVAL("print(type(pyvar))");
     EVAL("print(pyvar)");
-
-    n_printf("// Game system test ---------------------------------------------------------------\n");
-
-    EVAL("entity = game.create_entity()");
-    EVAL("print(entity)");
-    EVAL("print(entity.is_valid())");
-    EVAL("print(entity.has_component(\"TransformComponent\"))");
-    EVAL("entity.register_component(\"TransformComponent\");");
-    EVAL("print(entity.has_component(\"TransformComponent\"))");
-    EVAL("print(entity.world_transform.position)");
-    EVAL("print(entity.local_transform.position)");
-    EVAL("print(entity.local_transform.forward)");
-    EVAL("m = nmath.Matrix44.translation(10,3,4);");
-    EVAL("entity.local_transform = m;");
-    EVAL("print(entity.local_transform.position)");
-    EVAL("print(entity.local_transform.forward)");
-    EVAL("entity.deregister_component(\"TransformComponent\")");
-    EVAL("print(entity.has_component(\"TransformComponent\"))");
-    EVAL("game.destroy_entity(entity)");
 }
 
 }

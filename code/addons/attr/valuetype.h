@@ -29,11 +29,11 @@ enum ValueType
 	FloatType           = Util::Variant::Float,
 	DoubleType          = Util::Variant::Double,
 	BoolType            = Util::Variant::Bool,
-	Vec2Type          = Util::Variant::Vec2,
-	Vec4Type          = Util::Variant::Vec4,
+	Vec2Type			= Util::Variant::Vec2,
+	Vec4Type			= Util::Variant::Vec4,
 	QuaternionType      = Util::Variant::Quaternion,
 	StringType          = Util::Variant::String,
-	Matrix44Type        = Util::Variant::Matrix44,
+	Mat4Type		    = Util::Variant::Mat4,
 	Transform44Type     = Util::Variant::Transform44,
 	BlobType            = Util::Variant::Blob,
 	GuidType            = Util::Variant::Guid,
@@ -44,7 +44,7 @@ enum ValueType
 	Vec2ArrayType       = Util::Variant::Vec2Array,
 	Vec4ArrayType       = Util::Variant::Vec4Array,
 	StringArrayType     = Util::Variant::StringArray,
-	Matrix44ArrayType   = Util::Variant::Matrix44Array,
+	Mat4ArrayType       = Util::Variant::Mat4Array,
 	BlobArrayType       = Util::Variant::BlobArray,
 	GuidArrayType       = Util::Variant::GuidArray
 };

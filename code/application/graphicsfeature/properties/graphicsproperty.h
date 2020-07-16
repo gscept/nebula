@@ -45,7 +45,7 @@ private:
     struct Data
     {
         Game::PropertyData<State> state;
-        Game::PropertyData<Math::matrix44> worldTransform;
+        Game::PropertyData<Math::mat4> worldTransform;
         Game::PropertyData<Util::String> modelResource;
     } data;
 };

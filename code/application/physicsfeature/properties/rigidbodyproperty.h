@@ -31,8 +31,8 @@ public:
     void OnActivate(Game::InstanceId instance) override;
     void OnDeactivate(Game::InstanceId instance) override;
 
-    void SetWorldTransform(Game::Entity entity, const Math::matrix44& val);
-    void MoveCallback(Physics::ActorId id, Math::matrix44 const& trans);
+    void SetWorldTransform(Game::Entity entity, const Math::mat4& val);
+    void MoveCallback(Physics::ActorId id, Math::mat4 const& trans);
 
     struct RigidBodyState
     {
@@ -43,7 +43,7 @@ private:
     struct Data
     {
         Game::PropertyData<RigidBodyState> state;
-        Game::PropertyData<Math::matrix44> worldTransform;
+        Game::PropertyData<Math::mat4> worldTransform;
         Game::PropertyData<bool> isDynamic;
         Game::PropertyData<Util::String> resource;
     } data;

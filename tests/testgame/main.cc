@@ -10,10 +10,8 @@
 
 // tests
 #include "idtest.h"
-#include "componentdatatest.h"
-#include "componentsystemtest.h"
-#include "loadertest.h"
-#include "messagetest.h"
+#include "databasetest.h"
+#include "entitysystemtest.h"
 #include "scriptingtest.h"
 
 ImplementNebulaApplication();
@@ -54,7 +52,7 @@ NebulaMain(const Util::CommandLineArgs& args)
 
 	if (!gameApp.Open())
 	{
-		n_printf("Aborting component system test due to unrecoverable error...\n");
+		n_printf("Aborting game system test due to unrecoverable error...\n");
 		return;
 	}
     
@@ -64,15 +62,8 @@ NebulaMain(const Util::CommandLineArgs& args)
 	// setup and run test runner
     Ptr<TestRunner> testRunner = TestRunner::Create();
     testRunner->AttachTestCase(IdTest::Create());
-    
-	Ptr<ComponentSystemTest> compSysTest = ComponentSystemTest::Create();
-	compSysTest->gameApp = &gameApp;
-	testRunner->AttachTestCase(compSysTest); 
-	
-	testRunner->AttachTestCase(LoaderTest::Create());
-
-	testRunner->AttachTestCase(CompDataTest::Create());
-	testRunner->AttachTestCase(MessageTest::Create());
+	testRunner->AttachTestCase(DatabaseTest::Create());
+	testRunner->AttachTestCase(EntitySystemTest::Create());
 	testRunner->AttachTestCase(ScriptingTest::Create());
 	
     bool result = testRunner->Run(); 

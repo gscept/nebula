@@ -60,7 +60,7 @@ GraphicsProperty::OnActivate(Game::InstanceId instance)
 	auto gfxEntity = Graphics::CreateEntity();
 	this->data.state[instance.id].gfxEntity = gfxEntity;
 	Models::ModelContext::RegisterEntity(gfxEntity);
-	Models::ModelContext::Setup(gfxEntity, this->data.modelResource[instance.id], "NONE");
+	Models::ModelContext::Setup(gfxEntity, this->data.modelResource[instance.id], "NONE", nullptr);
 	auto transform = this->data.worldTransform[instance.id];
 	Models::ModelContext::SetTransform(gfxEntity, transform);
 	Visibility::ObservableContext::RegisterEntity(gfxEntity);

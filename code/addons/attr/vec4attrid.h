@@ -57,7 +57,7 @@ inline
 Vec4AttrId::Vec4AttrId(const Util::String& rhs)
 {
     this->defPtr = AttributeDefinitionBase::FindByName(rhs);
-    n_assert(this->GetValueType() == Float4Type);
+    n_assert(this->GetValueType() == Vec4Type);
 }
 
 //------------------------------------------------------------------------------
@@ -67,7 +67,7 @@ inline
 Vec4AttrId::Vec4AttrId(const Util::FourCC& rhs)
 {
     this->defPtr = AttributeDefinitionBase::FindByFourCC(rhs);
-    n_assert(this->GetValueType() == Float4Type);
+    n_assert(this->GetValueType() == Vec4Type);
 }
 
 //------------------------------------------------------------------------------

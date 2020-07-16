@@ -10,6 +10,7 @@
 //------------------------------------------------------------------------------
 #include "ids/id.h"
 #include "util/fourcc.h"
+#include "util/stringatom.h"
 
 namespace Game
 {

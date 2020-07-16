@@ -14,8 +14,8 @@
 
 namespace Attr
 {
-__DeclareAttribute(LocalTransform, AccessMode::ReadOnly, Math::matrix44, 'Lm44', Math::matrix44::identity());
-__DeclareAttribute(WorldTransform, AccessMode::ReadWrite, Math::matrix44, 'Wm44', Math::matrix44::identity());
+__DeclareAttribute(LocalTransform, AccessMode::ReadWrite, Math::mat4, 'Lm44', Math::mat4());
+__DeclareAttribute(WorldTransform, AccessMode::ReadWrite, Math::mat4, 'Wm44', Math::mat4());
 __DeclareAttribute(Parent, AccessMode::ReadOnly, Game::Entity , 'TFPT', Game::Entity::Invalid());
 }
 
@@ -39,8 +39,8 @@ private:
     struct Data 
     {
         Game::PropertyData<Game::Entity> owner;
-        Game::PropertyData<Math::matrix44> localTransform;
-        Game::PropertyData<Math::matrix44> worldTransform;
+        Game::PropertyData<Math::mat4> localTransform;
+        Game::PropertyData<Math::mat4> worldTransform;
         Game::PropertyData<Game::Entity> parent;
     } data;
 };

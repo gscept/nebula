@@ -7,9 +7,9 @@
 #include "util/stringatom.h"
 #include "util/string.h"
 #include "game/entity.h"
-#include "math/matrix44.h"
-#include "math/float2.h"
-#include "math/float4.h"
+#include "math/mat4.h"
+#include "math/vec2.h"
+#include "math/vec4.h"
 #include "util/fourcc.h"
 #include "util/hashtable.h"
 #include "attr/accessmode.h"
@@ -31,10 +31,10 @@ enum class AttributeType
 	FloatType,
 	DoubleType,
 	BoolType,
-	Float2Type,
-	Float4Type,
-	QuaternionType,
-	Matrix44Type,
+	Vec2Type,
+	Vec4Type,
+	QuatType,
+	Mat4Type,
 	GuidType,
 	EntityType,
 
@@ -60,10 +60,10 @@ using AttributeValue = std::variant<
 	float,
 	double,
 	bool,
-	Math::float2,
-	Math::float4,
-	Math::quaternion,
-	Math::matrix44,
+	Math::vec2,
+	Math::vec4,
+	Math::quat,
+	Math::mat4,
 	Util::Guid,
 	Game::Entity,
 	Util::String
@@ -94,9 +94,9 @@ template<> constexpr Game::AttributeType TypeToAttributeType<int32_t>()				{ ret
 template<> constexpr Game::AttributeType TypeToAttributeType<uint32_t>()			{ return Game::AttributeType::UInt32Type; }
 template<> constexpr Game::AttributeType TypeToAttributeType<float>()				{ return Game::AttributeType::FloatType; }
 template<> constexpr Game::AttributeType TypeToAttributeType<double>()				{ return Game::AttributeType::DoubleType; }
-template<> constexpr Game::AttributeType TypeToAttributeType<Math::matrix44>()		{ return Game::AttributeType::Matrix44Type; }
-template<> constexpr Game::AttributeType TypeToAttributeType<Math::float4>()		{ return Game::AttributeType::Float4Type; }
-template<> constexpr Game::AttributeType TypeToAttributeType<Math::quaternion>()	{ return Game::AttributeType::QuaternionType; }
+template<> constexpr Game::AttributeType TypeToAttributeType<Math::mat4>()			{ return Game::AttributeType::Mat4Type; }
+template<> constexpr Game::AttributeType TypeToAttributeType<Math::vec4>()			{ return Game::AttributeType::Vec4Type; }
+template<> constexpr Game::AttributeType TypeToAttributeType<Math::quat>()			{ return Game::AttributeType::QuatType; }
 template<> constexpr Game::AttributeType TypeToAttributeType<Util::String>()		{ return Game::AttributeType::StringType; }
 template<> constexpr Game::AttributeType TypeToAttributeType<Util::Guid>()			{ return Game::AttributeType::GuidType; }
 template<> constexpr Game::AttributeType TypeToAttributeType<Game::Entity>()		{ return Game::AttributeType::EntityType; }
@@ -122,10 +122,10 @@ GetAttributeSize(Game::AttributeType type)
 	case Game::AttributeType::FloatType:		return sizeof(float);
 	case Game::AttributeType::DoubleType:		return sizeof(double);
 	case Game::AttributeType::BoolType:			return sizeof(bool);
-	case Game::AttributeType::Float2Type:		return sizeof(Math::float2);
-	case Game::AttributeType::Float4Type:		return sizeof(Math::float4);
-	case Game::AttributeType::QuaternionType:	return sizeof(Math::quaternion);
-	case Game::AttributeType::Matrix44Type:		return sizeof(Math::matrix44);
+	case Game::AttributeType::Vec2Type:			return sizeof(Math::vec2);
+	case Game::AttributeType::Vec4Type:			return sizeof(Math::vec4);
+	case Game::AttributeType::QuatType:			return sizeof(Math::quat);
+	case Game::AttributeType::Mat4Type:			return sizeof(Math::mat4);
 	case Game::AttributeType::GuidType:			return sizeof(Util::Guid);
 	case Game::AttributeType::EntityType:		return sizeof(Game::Entity);
 	case Game::AttributeType::StringType:		return sizeof(Util::String);
@@ -245,7 +245,7 @@ using Attribute = Util::KeyValuePair<AttributeId, AttributeValue>;
 			class only acts as compile time attribute information. The runtime namespace, or ATTRIBUTENAME::Id() can be used
 			during runtime.
 	
-	@note	Make sure to send an explicit type as default value (ex. uint32_t(10), Math::matrix44::identity(), etc.)
+	@note	Make sure to send an explicit type as default value (ex. uint32_t(10), Math::mat4::identity(), etc.)
 */
 #define __DeclareAttribute(ATTRIBUTENAME, ACCESSMODE, VALUETYPE, FOURCC, DEFAULTVALUE) \
 namespace Runtime\

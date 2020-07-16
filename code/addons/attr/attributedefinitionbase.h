@@ -253,11 +253,11 @@ AttributeDefinitionBase::GetSizeOfType() const
     case FloatType:         return sizeof(float);
     case DoubleType:        return sizeof(double);
     case BoolType:          return sizeof(bool);
-    case Float2Type:		return sizeof(float) * 2;
-    case Float4Type:        return sizeof(float) * 4;
+    case Vec2Type:		    return sizeof(float) * 2;
+    case Vec4Type:          return sizeof(float) * 4;
     case QuaternionType:    return sizeof(float) * 4;
     case StringType:        return sizeof(Util::String);
-    case Matrix44Type:      return sizeof(Math::matrix44);
+    case Mat4Type:          return sizeof(Math::mat4);
     case Transform44Type:   return sizeof(Math::transform44);
     case BlobType:          return sizeof(Util::Blob);
     case GuidType:          return sizeof(Util::Guid);
@@ -265,9 +265,9 @@ AttributeDefinitionBase::GetSizeOfType() const
     case IntArrayType:      return sizeof(Util::Array<int>);
     case FloatArrayType:    return sizeof(Util::Array<float>);
     case BoolArrayType:     return sizeof(Util::Array<bool>);
-    case Float2ArrayType:	return sizeof(Util::Array<Math::float2>);
-    case Float4ArrayType:   return sizeof(Util::Array<Math::float4>);
-    case Matrix44ArrayType: return sizeof(Util::Array<Math::matrix44>);
+    case Vec2ArrayType:	    return sizeof(Util::Array<Math::vec2>);
+    case Vec4ArrayType:     return sizeof(Util::Array<Math::vec4>);
+    case Mat4ArrayType: return sizeof(Util::Array<Math::mat4>);
     case StringArrayType:   return sizeof(Util::Array<Util::String>);
     case GuidArrayType:     return sizeof(Util::Array<Util::Guid>);
     case BlobArrayType:     return sizeof(Util::Array<Util::Blob>);
