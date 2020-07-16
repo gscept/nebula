@@ -32,7 +32,7 @@ void /*TransformManager::*/Create()
 void OnActivateInstance(Game::Entity entity, Game::CategoryId category, Game::InstanceId instance, Game::Dataset const* dataset)
 {
 
-	((Math::matrix44*)(dataset->categories[category.id].buffers[0]))[instance.id] = Math::matrix44::identity();
+	((Math::mat4*)(dataset->categories[category.id].buffers[0]))[instance.id] = Math::mat4();
 }
 
 } // namespace Game

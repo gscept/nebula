@@ -199,7 +199,7 @@ AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const
     fourCC(fourCC),
     accessMode(accessMode),
     defaultValue(defVal),
-    valueType(ValueType::Float2Type),
+    valueType(ValueType::Vec2Type),
     isDynamic(isDynamic)
 {
     this->Register();
@@ -214,7 +214,7 @@ AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const
     fourCC(fourCC),
     accessMode(accessMode),
     defaultValue(defVal),
-    valueType(ValueType::Float4Type),
+    valueType(ValueType::Vec4Type),
     isDynamic(isDynamic)
 {
     this->Register();
@@ -424,7 +424,7 @@ AttributeDefinitionBase::AttributeDefinitionBase(const Util::String& name, const
     fourCC(fourCC),
     accessMode(accessMode),
     defaultValue(defVal),
-    valueType(ValueType::Matrix44ArrayType),
+    valueType(ValueType::Mat4ArrayType),
     isDynamic(isDynamic)
 {
     this->Register();
@@ -634,7 +634,7 @@ AttributeDefinitionBase::RegisterDynamicAttribute(const Util::String &name, cons
         dynAttr = n_new(AttributeDefinitionBase(name, typeName, fourCC, accessMode, false, true));
         break;
 
-    case Float4Type:
+    case Vec4Type:
     {
         const static Math::vec4 nullVec;
         dynAttr = n_new(AttributeDefinitionBase(name, typeName, fourCC, accessMode, nullVec, true));

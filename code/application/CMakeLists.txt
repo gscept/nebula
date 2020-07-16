@@ -57,8 +57,6 @@ nebula_begin_module(application)
 				entitymanager.cc
 				blueprintmanager.h
 				blueprintmanager.cc
-				transformmanager.h
-				transformmanager.cc
 			)
 		fips_dir(basegamefeature/properties)
 			fips_files(

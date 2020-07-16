@@ -368,7 +368,7 @@ AttributeTable::GetValueTypeSize(ValueType type) const
         case UInt64Type:    return sizeof(int64_t);
         case BoolType:      return sizeof(int);     // not a bug!
         case FloatType:     return sizeof(float);
-        case Float4Type:    return sizeof(vec4);
+        case Vec4Type:    return sizeof(vec4);
         case Mat4Type:  return sizeof(mat4);
         case StringType:    return sizeof(Util::String*);
         case GuidType:      return sizeof(Util::Guid*);
@@ -599,7 +599,7 @@ AttributeTable::CopyRow(IndexT srcRowIndex, IndexT dstRowIndex)
             this->SetBool(colIndex, dstRowIndex, this->GetBool(colIndex, srcRowIndex));
             break;
 
-        case Float4Type:
+        case Vec4Type:
             this->SetVec4(colIndex, dstRowIndex, this->GetVec4(colIndex, srcRowIndex));
             break;
 
@@ -665,7 +665,7 @@ AttributeTable::CopyExtRow(AttributeTable* other, IndexT otherRowIndex, bool cre
                     this->SetBool(attrId, myRowIndex, other->GetBool(otherColIndex, otherRowIndex));
                     break;
 
-                case Float4Type:
+                case Vec4Type:
                     this->SetVec4(attrId, myRowIndex, other->GetVec4(otherColIndex, otherRowIndex));
                     break;
 
@@ -842,7 +842,7 @@ AttributeTable::InternalFindRowIndicesByAttrs(const Util::Array<Attribute>& attr
                         }
                         break;
 
-                    case Float4Type:
+                    case Vec4Type:
                         if (attr.GetVec4() != this->GetVec4(colIndex, rowIndex))
                         {
                             isEqual = false;
@@ -942,7 +942,7 @@ AttributeTable::InternalFindRowIndicesByAttr(const Attribute& attr, bool firstMa
             }
             break;
 
-        case Float4Type:
+        case Vec4Type:
             for (rowIndex = 0; rowIndex < this->GetNumRows(); rowIndex++)
             {
                 if ((!this->IsRowDeleted(rowIndex)) && (attr.GetVec4() == this->GetVec4(colIndex, rowIndex)))
@@ -1087,7 +1087,7 @@ AttributeTable::SetRowToDefaultValues(IndexT rowIndex)
             case UIntType:      this->SetUInt(colIndex, rowIndex, colAttrId.GetUIntDefValue()); break;
             case FloatType:     this->SetFloat(colIndex, rowIndex, colAttrId.GetFloatDefValue()); break;
             case BoolType:      this->SetBool(colIndex, rowIndex, colAttrId.GetBoolDefValue()); break;
-            case Float4Type:    this->SetVec4(colIndex, rowIndex, colAttrId.GetVec4DefValue()); break;
+            case Vec4Type:    this->SetVec4(colIndex, rowIndex, colAttrId.GetVec4DefValue()); break;
             case StringType:    this->SetString(colIndex, rowIndex, colAttrId.GetStringDefValue()); break;
             case Mat4Type:  this->SetMatrix44(colIndex, rowIndex, colAttrId.GetMat4DefValue()); break;
             case BlobType:      this->SetBlob(colIndex, rowIndex, colAttrId.GetBlobDefValue()); break;
@@ -1150,7 +1150,7 @@ AttributeTable::SetColumnToDefaultValues(IndexT colIndex)
             }
             break;
 
-        case Float4Type:
+        case Vec4Type:
             {
                 const vec4& def = colAttrId.GetVec4DefValue();
                 for (rowIndex = 0; rowIndex < this->GetNumRows(); rowIndex++)
@@ -1220,7 +1220,7 @@ AttributeTable::SetAttr(const Attr::Attribute& attr, IndexT rowIndex)
         case UIntType:      this->SetUInt(colIndex, rowIndex, attr.GetUInt()); break;
         case FloatType:     this->SetFloat(colIndex, rowIndex, attr.GetFloat()); break;
         case BoolType:      this->SetBool(colIndex, rowIndex, attr.GetBool()); break;
-        case Float4Type:	this->SetVec4(colIndex, rowIndex, attr.GetVec4()); break;
+        case Vec4Type:	this->SetVec4(colIndex, rowIndex, attr.GetVec4()); break;
         case StringType:    this->SetString(colIndex, rowIndex, attr.GetString()); break;
         case Mat4Type:  this->SetMatrix44(colIndex, rowIndex, attr.GetMat4()); break;
         case BlobType:      this->SetBlob(colIndex, rowIndex, attr.GetBlob()); break;
@@ -1245,7 +1245,7 @@ AttributeTable::GetAttr(IndexT rowIndex, IndexT colIndex) const
 	case UIntType:      return Attr::Attribute(attrId, this->GetUInt(colIndex, rowIndex)); break;
 	case FloatType:     return Attr::Attribute(attrId, this->GetFloat(colIndex, rowIndex)); break;
 	case BoolType:      return Attr::Attribute(attrId, this->GetBool(colIndex, rowIndex)); break;
-	case Float4Type:	return Attr::Attribute(attrId, this->GetVec4(colIndex, rowIndex)); break;
+	case Vec4Type:	return Attr::Attribute(attrId, this->GetVec4(colIndex, rowIndex)); break;
 	case StringType:    return Attr::Attribute(attrId, this->GetString(colIndex, rowIndex)); break;
 	case Mat4Type:  return Attr::Attribute(attrId, this->GetMatrix44(colIndex, rowIndex)); break;
 	case BlobType:      return Attr::Attribute(attrId, this->GetBlob(colIndex, rowIndex)); break;
@@ -1308,7 +1308,7 @@ AttributeTable::PrintDebug()
                 case IntType:       str = Util::String::FromInt(this->GetInt(colIndex, rowIndex)); break;
                 case FloatType:     str = Util::String::FromFloat(this->GetFloat(colIndex, rowIndex)); break;
                 case BoolType:      str = Util::String::FromBool(this->GetBool(colIndex, rowIndex)); break;
-                case Float4Type:    str = Util::String::FromVec4(this->GetVec4(colIndex, rowIndex)); break;
+                case Vec4Type:    str = Util::String::FromVec4(this->GetVec4(colIndex, rowIndex)); break;
                 case StringType:    str = this->GetString(colIndex, rowIndex); break;
                 case Mat4Type:  str = Util::String::FromMat4(this->GetMatrix44(colIndex, rowIndex)); break;
                 case BlobType:      str = "(blob)"; break;
@@ -1394,7 +1394,7 @@ AttributeTable::DeleteRowData(IndexT rowIndex)
         case IntType:
         case FloatType:
         case BoolType:
-        case Float4Type:   
+        case Vec4Type:   
         case Mat4Type:  
             // cell holds data directly, do nothing
             break;

@@ -617,7 +617,7 @@ AttributeTable::GetUInt(IndexT colIndex, IndexT rowIndex) const
 inline void
 AttributeTable::SetVec4(IndexT colIndex, IndexT rowIndex, const Math::vec4& val)
 {
-    n_assert(this->GetColumnValueType(colIndex) == Float4Type);
+    n_assert(this->GetColumnValueType(colIndex) == Vec4Type);
     n_assert(!this->IsRowDeleted(rowIndex));
     Math::scalar* valuePtr = (Math::scalar*) this->GetValuePtr(colIndex, rowIndex);
     val.storeu(valuePtr);
@@ -635,7 +635,7 @@ AttributeTable::SetVec4(IndexT colIndex, IndexT rowIndex, const Math::vec4& val)
 inline Math::vec4
 AttributeTable::GetVec4(IndexT colIndex, IndexT rowIndex) const
 {
-    n_assert(this->GetColumnValueType(colIndex) == Float4Type);
+    n_assert(this->GetColumnValueType(colIndex) == Vec4Type);
     Math::scalar* valuePtr = (Math::scalar*) this->GetValuePtr(colIndex, rowIndex);
     Math::vec4 vec;
     vec.loadu(valuePtr);
