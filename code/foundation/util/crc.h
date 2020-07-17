@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Util::Crc
+    @class  Util::Crc
     
-    Compute CRC checksums over a range of memory.
+    @brief  Compute CRC checksums over a range of memory.
     
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file

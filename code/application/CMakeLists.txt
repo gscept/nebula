@@ -3,34 +3,42 @@
 #-------------------------------------------------------------------------------
 
 nebula_begin_module(application)
+	add_nebula_blueprints()
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/audio)
 	fips_deps(foundation render audio resource physics attr scripting dynui)
 	fips_dir(.)
+	if (FIPS_WINDOWS)
+		fips_files(application.natvis)
+	endif ()
 		fips_files(
 			application/stdneb.h
 			application/stdneb.cc
 		)
 	fips_dir(game)
 		fips_files(
+			category.h
+			category.cc
 			entity.h
 			entity.cc
-			entityattr.h
-			entityattr.cc
 			featureunit.h
 			featureunit.cc
 			gameserver.h
 			gameserver.cc
 			manager.h
 			manager.cc
+			property.h
+			property.cc
 		)
-	fips_dir(game/component)
+	fips_dir(game/database)
 		fips_files(
-			componentinterface.h
-			componentinterface.cc
-			componentplugin.h
-			componentplugin.cc
-			component.h
-			componentserialization.h
+			database.h
+			database.cc
+			table.h
+			table.cc
+			statedescription.h
+			statedescription.cc
+			columndata.h
+			columndata.cc
 			attribute.h
 		)
 	fips_dir(game/messaging)
@@ -43,90 +51,42 @@ nebula_begin_module(application)
 			basegamefeatureunit.h
 			basegamefeatureunit.cc
 		)
-	fips_dir(basegamefeature/managers)
-		fips_files(
-			entitymanager.h
-			entitymanager.cc
-			componentmanager.h
-			componentmanager.cc
-		)
-	fips_dir(basegamefeature/components)
-		nebula_add_nidl(transformdata.nidl tagdata.nidl)
-		fips_files(
-			transformcomponent.h
-			transformcomponent.cc
-			tagcomponent.h
-			tagcomponent.cc
-		)
-	fips_dir(basegamefeature/messages)
-		nebula_add_nidl(basegameprotocol.nidl)
-	fips_dir(basegamefeature/loader)
-		fips_files(
-			entityloaderbase.h
-			entityloaderbase.cc
-			levelloader.h
-			levelloader.cc
-			loaderserver.h
-			loaderserver.cc
-			userprofile.h
-			userprofile.cc
-			jsonentityloader.h
-			jsonentityloader.cc
-		)
-		flatc(level.fbs)
+		fips_dir(basegamefeature/managers)
+			fips_files(
+				entitymanager.h
+				entitymanager.cc
+				blueprintmanager.h
+				blueprintmanager.cc
+			)
+		fips_dir(basegamefeature/properties)
+			fips_files(
+				transformableproperty.h
+				transformableproperty.cc
+			)
 	fips_dir(graphicsfeature)
 		fips_files(
 			graphicsfeatureunit.h
 			graphicsfeatureunit.cc
 		)
-	fips_dir(graphicsfeature/components)
-		nebula_add_nidl(lightdata.nidl graphicsdata.nidl)
+		fips_dir(graphicsfeature/properties)
+			fips_files(
+				graphicsproperty.h
+				graphicsproperty.cc
+			)
+	fips_dir(physicsfeature)
 		fips_files(
-			graphicscomponent.h
-			graphicscomponent.cc
-            utilcameracomponent.h
-            utilcameracomponent.cc
+			physicsfeatureunit.h
+			physicsfeatureunit.cc
 		)
-	fips_dir(graphicsfeature/messages)
-		nebula_add_nidl(graphicsprotocol.nidl)
-	fips_dir(audiofeature)
-		fips_files(
-			audiofeatureunit.h
-			audiofeatureunit.cc
-		)        
-    fips_dir(physicsfeature)
-        fips_files(
-            physicsfeatureunit.cc
-            physicsfeatureunit.h
-        )
-    fips_dir(physicsfeature/components)
-        nebula_add_nidl(physicsdata.nidl)
-        fips_files(
-           physicscomponents.cc
-            physicscomponents.h
-        )
-	fips_dir(audiofeature/components)
-		nebula_add_nidl(audioemitterallocator.nidl)
-		fips_files(
-			audioemittercomponent.h
-			audioemittercomponent.cc
-		)
-	fips_dir(audiofeature/messages)
-		nebula_add_nidl(audioprotocol.nidl)
+		fips_dir(physicsfeature/properties)
+			fips_files(
+				rigidbodyproperty.h
+				rigidbodyproperty.cc
+			)
 	fips_dir(appgame)
 		fips_files(
 			gameapplication.h
 			gameapplication.cc
-		)
-	fips_dir(basegamefeature/debug)
-		fips_files(
-			gamepagehandler.h
-			gamepagehandler.cc
-		)
-	fips_dir(scripting)
-		fips_files(
-			bindings.h
-			bindings.cc
 		)
 	fips_dir(.)
 nebula_end_module()

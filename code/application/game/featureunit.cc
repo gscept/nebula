@@ -53,7 +53,8 @@ FeatureUnit::OnDeactivate()
     // remove all managers
     while (this->managers.Size() > 0)
     {
-        this->managers[0]->OnDeactivate();
+		if (this->managers.Get<1>(0).OnDeactivate != nullptr)
+			this->managers.Get<1>(0).OnDeactivate();
         this->managers.EraseIndex(0);
     }
 
@@ -73,7 +74,8 @@ FeatureUnit::OnLoad()
     for (managerIndex = 0; managerIndex < numManagers; managerIndex++)
     {
         // invoke OnLoad() on manager
-        this->managers[managerIndex]->OnLoad();
+		if (this->managers.Get<1>(managerIndex).OnLoad != nullptr)
+			this->managers.Get<1>(managerIndex).OnLoad();
     }
 }
 
@@ -90,7 +92,8 @@ FeatureUnit::OnStart()
     int num = this->managers.Size();
     for (i = 0; i < num; i++)
     {
-        this->managers[i]->OnStart();
+		if (this->managers.Get<1>(i).OnStart != nullptr)
+			this->managers.Get<1>(i).OnStart();
     }
 }
 
@@ -105,7 +108,8 @@ FeatureUnit::OnSave()
     int numManagers = this->managers.Size();
     for (managerIndex = 0; managerIndex < numManagers; managerIndex++)
     {
-        this->managers[managerIndex]->OnSave();
+		if (this->managers.Get<1>(managerIndex).OnSave != nullptr)
+			this->managers.Get<1>(managerIndex).OnSave();
     }  
 }
 
@@ -123,7 +127,8 @@ FeatureUnit::OnBeginFrame()
     SizeT num = this->managers.Size();
     for (i = 0; i < num; i++)
     {
-        this->managers[i]->OnBeginFrame();
+		if (this->managers.Get<1>(i).OnBeginFrame != nullptr)
+			this->managers.Get<1>(i).OnBeginFrame();
     }    
 }
 
@@ -142,7 +147,8 @@ FeatureUnit::OnFrame()
     SizeT num = this->managers.Size();
     for (i = 0; i < num; i++)
     {
-        this->managers[i]->OnFrame();
+		if (this->managers.Get<1>(i).OnFrame != nullptr)
+			this->managers.Get<1>(i).OnFrame();
     }
 }
 
@@ -160,7 +166,8 @@ FeatureUnit::OnEndFrame()
     SizeT num = this->managers.Size();
     for (i = 0; i < num; i++)
     {
-        this->managers[i]->OnEndFrame();
+		if (this->managers.Get<1>(i).OnEndFrame != nullptr)
+			this->managers.Get<1>(i).OnEndFrame();
     }
 }
 
@@ -178,67 +185,54 @@ FeatureUnit::OnRenderDebug()
     SizeT num = this->managers.Size();
     for (i = 0; i < num; i++)
     {
-        this->managers[i]->OnRenderDebug();
+		if (this->managers.Get<1>(i).OnRenderDebug != nullptr)
+			this->managers.Get<1>(i).OnRenderDebug();
     }
 }
 
 //------------------------------------------------------------------------------
 /**
-    Attach a manager object to the game world. The manager's OnActivate()
+    Attach a manager to the game world. The manager's OnActivate()
     method will be called once right away, and then its OnFrame() method
     once per frame.
 */
-void
-FeatureUnit::AttachManager(const Ptr<Manager>& manager)
+ManagerHandle
+FeatureUnit::AttachManager(ManagerAPI api)
 {
-    n_assert(manager);
-    IndexT index = this->managers.FindIndex(manager);
-    n_assert(InvalidIndex == index);
+	if (api.OnActivate != nullptr)
+		api.OnActivate();
 
-    manager->OnActivate();
-    this->managers.Append(manager);
+	Ids::Id32 handle;
+	this->managerPool.Allocate(handle);
+
+	uint32_t index = this->managers.Alloc();
+	this->managers.Get<0>(index) = handle;
+	this->managers.Get<1>(index) = std::move(api);
+
+	return handle;
 }
 
 //------------------------------------------------------------------------------
 /**
-    Remove a manager object from the game world. The manager's OnDeactivate()
+    Remove a manager from the game world. The manager's OnDeactivate()
     method will be called.
 */
 void
-FeatureUnit::RemoveManager(const Ptr<Manager>& manager)
+FeatureUnit::RemoveManager(ManagerHandle handle)
 {
-    n_assert(manager);
-    IndexT index = this->managers.FindIndex(manager);
-    if (InvalidIndex != index)
-    {
-        this->managers[index]->OnDeactivate();
-        this->managers.EraseIndex(index);
+    n_assert(this->managerPool.IsValid(handle.id));
+    for (IndexT i = 0 ; i < this->managers.Size(); ++i)
+	{
+		if (this->managers.Get<0>(i) == handle)
+		{
+			if (this->managers.Get<1>(i).OnDeactivate != nullptr)
+				this->managers.Get<1>(i).OnDeactivate();
+
+			this->managers.EraseIndex(i);
+			break;
+		}
     }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FeatureUnit::WriteMetadata(Ptr<IO::JsonWriter> const& writer) const
-{
-	writer->BeginObject();
-	writer->Add(this->GetClassNameA(), "name");
-
-	this->WriteAdditionalMetadata(writer);
-
-	writer->End();
-}
-
-//------------------------------------------------------------------------------
-/**
-	Override in subclass if needed.
-	This method is called inside an active JSON object and should be treated as such.
-*/
-void 
-FeatureUnit::WriteAdditionalMetadata(Ptr<IO::JsonWriter> const& writer) const
-{
-	// override in subclass if needed
+	this->managerPool.Deallocate(handle.id);
 }
 
 //------------------------------------------------------------------------------

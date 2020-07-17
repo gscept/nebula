@@ -5,21 +5,13 @@
     
     The BaseGameFeatureUnit creates everything to allow load and run a game level.
     Therefore it creates managers to allow creation and handling of
-    entities and components. 
-
-    If you wanna use your own managers (other specilized entitymanager), derive from this class 
-    and overwrite OnActivate() OnDeactivate().
+    entities, properties and attributes. 
 
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "game/featureunit.h"
 #include "math/bbox.h"
-#include "managers/entitymanager.h"
-#include "managers/componentmanager.h"
-#include "basegamefeature/components/transformcomponent.h"
-#include "basegamefeature/components/tagcomponent.h"
-#include "basegamefeature/loader/loaderserver.h"
 
 //------------------------------------------------------------------------------
 namespace BaseGameFeature
@@ -38,16 +30,16 @@ public:
     virtual ~BaseGameFeatureUnit();
 
 	/// Called upon activation of feature unit
-    virtual void OnActivate();
+    void OnActivate() override;
 	/// Called upon deactivation of feature unit
-    virtual void OnDeactivate();
+    void OnDeactivate() override;
          
     /// called at the end of the feature trigger cycle
-    virtual void OnEndFrame();
+    void OnEndFrame() override;
     /// called when game debug visualization is on
-    virtual void OnRenderDebug();
-    /// 
-    virtual void OnFrame();
+    void OnRenderDebug() override;
+    /// called at the beginning of a frame
+    void OnFrame() override;
 
     /// set optional world dimensions
     void SetWorldDimensions(const Math::bbox& box);
@@ -57,16 +49,10 @@ public:
     virtual void SetupEmptyWorld();
     /// cleanup the game world
     virtual void CleanupWorld();
-	/// write components info into metadata file.
-	void WriteAdditionalMetadata(Ptr<IO::JsonWriter> const& writer) const override;
-
-protected:
-    
-    Ptr<Game::EntityManager> entityManager;
-	Ptr<Game::ComponentManager> componentManager;
 	
-	Ptr<BaseGameFeature::LoaderServer> loaderServer;
-
+protected:
+    Game::ManagerHandle entityManager;
+    Game::ManagerHandle blueprintManager;
     Math::bbox worldBox;
 };
 

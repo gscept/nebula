@@ -92,8 +92,6 @@ GraphicsFeatureUnit::OnActivate()
 
     // create environment context for the atmosphere effects
     EnvironmentContext::Create(this->globalLight);
-
-	GraphicsComponent::Create();
 }
 
 //------------------------------------------------------------------------------
@@ -111,7 +109,6 @@ GraphicsFeatureUnit::OnDeactivate()
 
     this->gfxServer->Close();
     this->inputServer->Close();
-	GraphicsComponent::Discard();
 }
 
 //------------------------------------------------------------------------------

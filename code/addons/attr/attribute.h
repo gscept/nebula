@@ -436,7 +436,7 @@ Attribute::operator=(const Util::String& rhs)
 inline void
 Attribute::operator=(const Math::vec4& rhs)
 {
-    n_assert(this->GetValueType() == Float4Type);
+    n_assert(this->GetValueType() == Vec4Type);
     n_assert(this->GetAccessMode() == ReadWrite);
     this->valueData = rhs;
 }
@@ -518,7 +518,7 @@ Attribute::operator==(bool rhs) const
 inline bool
 Attribute::operator==(const Math::vec4& rhs) const
 {
-    n_assert(this->GetValueType() == Float4Type);
+    n_assert(this->GetValueType() == Vec4Type);
     return this->valueData == rhs;
 }
 
@@ -577,7 +577,7 @@ Attribute::operator!=(float rhs) const
 inline bool
 Attribute::operator!=(const Math::vec4& rhs) const
 {
-    n_assert(this->GetValueType() == Float4Type);
+    n_assert(this->GetValueType() == Vec4Type);
     return this->valueData != rhs;
 }
 
@@ -723,7 +723,7 @@ Attribute::GetMat4() const
 inline void
 Attribute::SetVec4(const Math::vec4& val)
 {
-    n_assert(this->GetValueType() == Float4Type);
+    n_assert(this->GetValueType() == Vec4Type);
     n_assert(this->GetAccessMode() == ReadWrite);
     this->valueData = val;
 }
@@ -734,7 +734,7 @@ Attribute::SetVec4(const Math::vec4& val)
 inline Math::vec4
 Attribute::GetVec4() const
 {
-    n_assert(this->GetValueType() == Float4Type);
+    n_assert(this->GetValueType() == Vec4Type);
     return this->valueData.GetVec4();
 }
 
@@ -801,7 +801,7 @@ Attribute::SetValueFromString(const Util::String& str)
             this->valueData = str.AsBool();
             break;
 
-        case Float4Type:
+        case Vec4Type:
             this->valueData = str.AsVec4();
             break;
 
@@ -845,7 +845,7 @@ Attribute::ValueAsString() const
             str.SetBool(this->GetBool());
             break;
 
-        case Float4Type:
+        case Vec4Type:
             str.SetVec4(this->GetVec4());
             break;
 

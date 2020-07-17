@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="Game::Db::ColumnData&lt;*&gt;">    
+    <DisplayString>Count={*numRows}</DisplayString>
+    <Expand>
+      <Item Name="[Count]">*numRows</Item>
+      <Item Name="[Column Id]">cid</Item>
+      <ArrayItems>
+        <Size>*numRows</Size>
+        <ValuePointer>($T1*)*data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>  
+</AutoVisualizer>
