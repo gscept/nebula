@@ -32,7 +32,7 @@ public:
     /// copy constructor
 	ArrayStack(const ArrayStack<TYPE, STACK_SIZE>& rhs);
 	/// move constructor
-	ArrayStack(ArrayStack<TYPE, STACK_SIZE>&& rhs);
+	ArrayStack(ArrayStack<TYPE, STACK_SIZE>&& rhs) noexcept;
 	/// constructor from initializer list
 	ArrayStack(std::initializer_list<TYPE> list);
     /// destructor
@@ -41,7 +41,7 @@ public:
     /// assignment operator
     void operator=(const ArrayStack<TYPE, STACK_SIZE>& rhs);
 	/// move operator
-	void operator=(ArrayStack<TYPE, STACK_SIZE>&& rhs);
+	void operator=(ArrayStack<TYPE, STACK_SIZE>&& rhs) noexcept;
     /// [] operator
     TYPE& operator[](IndexT index) const;
     /// equality operator
@@ -277,7 +277,7 @@ ArrayStack<TYPE, STACK_SIZE>::ArrayStack(const ArrayStack<TYPE, STACK_SIZE>& rhs
 /**
 */
 template<class TYPE, int STACK_SIZE>
-inline ArrayStack<TYPE, STACK_SIZE>::ArrayStack(ArrayStack<TYPE, STACK_SIZE>&& rhs)
+inline ArrayStack<TYPE, STACK_SIZE>::ArrayStack(ArrayStack<TYPE, STACK_SIZE>&& rhs) noexcept
 {
 	this->capacity = rhs.capacity;
 	this->count = rhs.count;
@@ -427,7 +427,7 @@ ArrayStack<TYPE, STACK_SIZE>::operator=(const ArrayStack<TYPE, STACK_SIZE>& rhs)
 /**
 */
 template<class TYPE, int STACK_SIZE>
-inline void ArrayStack<TYPE, STACK_SIZE>::operator=(ArrayStack<TYPE, STACK_SIZE>&& rhs)
+inline void ArrayStack<TYPE, STACK_SIZE>::operator=(ArrayStack<TYPE, STACK_SIZE>&& rhs) noexcept
 {
     if (this->elements && this->capacity > STACK_SIZE)
         n_delete_array(this->elements);

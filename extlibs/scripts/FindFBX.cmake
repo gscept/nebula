@@ -1,89 +1,123 @@
-# Locate FBX
-# This module defines:
-# FBX_INCLUDE_DIR, where to find the headers
+# Locate the FBX SDK
 #
-# FBX_LIBRARY
-# FBX_FOUND
+# Defines the following variables:
 #
-# $FBX_DIR is an environment variable that would
-# correspond to the ./configure --prefix=$FBX_DIR
+#    FBX_FOUND - Found the FBX SDK
+#    FBX_VERSION - Version number
+#    FBX_INCLUDE_DIRS - Include directories
+#    FBX_LIBRARIES - The libraries to link to
+#    FBX_DLL - Shared fbxsdk library
+#
+# Accepts the following variables as input:
+#
+#    FBX_VERSION - as a CMake variable, e.g. 2017.0.1
+#    FBX_ROOT - (as a CMake or environment variable)
+#               The root directory of the FBX SDK install
 
-SET(FBX_VERSION_STRING "2015.1")
+# adapted from https://github.com/ufz-vislab/VtkFbxConverter/blob/master/FindFBX.cmake
+# which uses the MIT license (https://github.com/ufz-vislab/VtkFbxConverter/blob/master/LICENSE.txt)
 
-IF(APPLE)
-    SET(FBX_LIBDIR "gcc4/ub")
-ELSEIF(CMAKE_COMPILER_IS_GNUCXX)
-    SET(FBX_LIBDIR "gcc4")
-ELSEIF(MSVC80)
-    SET(FBX_LIBDIR "vs2005")
-ELSEIF(MSVC90)
-    SET(FBX_LIBDIR "vs2008")
-ELSEIF(MSVC10)
-    SET(FBX_LIBDIR "vs2010")
-ELSEIF(MSVC11)
-    SET(FBX_LIBDIR "vs2012")
-ELSEIF(MSVC12)
-    SET(FBX_LIBDIR "vs2013")
-ELSEIF(MSVC14)
-	SET(FBX_LIBDIR "vs2015")
-	SET(FBX_VERSION_STRING "2016.1.2")
-ENDIF()
+if (NOT FBX_VERSION)
+  set(FBX_VERSION 2019.2)
+endif()
 
-IF(APPLE)
-    # do nothing
-ELSEIF(CMAKE_CL_64)
-    SET(FBX_LIBDIR ${FBX_LIBDIR}/x64)
-ELSEIF(CMAKE_COMPILER_IS_GNUCXX AND CMAKE_SIZEOF_VOID_P EQUAL 8)
-    SET(FBX_LIBDIR ${FBX_LIBDIR}/x64)
-ELSE()
-    SET(FBX_LIBDIR ${FBX_LIBDIR}/x86)
-ENDIF()
+string(REGEX REPLACE "^([0-9]+).*$" "\\1" FBX_VERSION_MAJOR "${FBX_VERSION}")
+string(REGEX REPLACE "^[0-9]+\\.([0-9]+).*$" "\\1" FBX_VERSION_MINOR  "${FBX_VERSION}")
+string(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+).*$" "\\1" FBX_VERSION_PATCH "${FBX_VERSION}")
 
-IF(APPLE)
-    SET(FBX_LIBNAME "libfbxsdk")
-ELSEIF(CMAKE_COMPILER_IS_GNUCXX)
-    SET(FBX_LIBNAME "fbxsdk")
-ELSE()
-	IF(N_STATIC_BUILD)
-		SET(FBX_LIBNAME "libfbxsdk-mt")
-	ELSE()
-		SET(FBX_LIBNAME "libfbxsdk-md")
-	ENDIF()
-ENDIF()
+set(FBX_MAC_LOCATIONS "/Applications/Autodesk/FBX\ SDK/${FBX_VERSION}")
+set(FBX_LINUX_LOCATIONS "/usr/local/lib/gcc4/x64/debug/")
 
-SET(FBX_LIBNAME_DEBUG ${FBX_LIBNAME}d)
+if (WIN32)
+  string(REGEX REPLACE "\\\\" "/" WIN_PROGRAM_FILES_X64_DIRECTORY $ENV{ProgramW6432})
+endif()
 
-SET( FBX_SEARCH_PATHS
-    $ENV{FBX_DIR}
-    "$ENV{ProgramW6432}/Autodesk/FBX/FBX SDK/${FBX_VERSION_STRING}"
-    "$ENV{PROGRAMFILES}/Autodesk/FBX/FBX SDK/${FBX_VERSION_STRING}"
-    /Applications/Autodesk/FBXSDK20151
-    /opt/fbx/
+set(FBX_WIN_LOCATIONS "${WIN_PROGRAM_FILES_X64_DIRECTORY}/Autodesk/FBX/FBX SDK/${FBX_VERSION}")
+
+set(FBX_SEARCH_LOCATIONS $ENV{FBX_ROOT} ${FBX_ROOT} ${FBX_MAC_LOCATIONS} ${FBX_WIN_LOCATIONS} ${FBX_LINUX_LOCATIONS})
+
+function(_fbx_append_debugs _endvar _library)
+  if (${_library} AND ${_library}_DEBUG)
+    set(_output optimized ${${_library}} debug ${${_library}_DEBUG})
+  else()
+    set(_output ${${_library}})
+  endif()
+
+  set(${_endvar} ${_output} PARENT_SCOPE)
+endfunction()
+
+if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
+  set(fbx_compiler clang)
+elseif (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
+  set(fbx_compiler gcc4)
+endif()
+
+function(_fbx_find_library _name _lib _suffix)
+  if (MSVC14 OR MSVC15)
+	set(VS_PREFIX vs2017)
+  endif()
+  if (MSVC13)
+	set(VS_PREFIX vs2015)
+  endif()
+
+
+  find_library(${_name}
+    NAMES ${_lib}
+    HINTS ${FBX_SEARCH_LOCATIONS}
+    PATH_SUFFIXES lib/${fbx_compiler}/${_suffix} lib/${fbx_compiler}/ub/${_suffix} lib/${VS_PREFIX}/x64/${_suffix}
+  )
+
+  mark_as_advanced(${_name})
+endfunction()
+
+function(_fbx_find_dll _name _lib _suffix)
+	if (MSVC14 OR MSVC15)
+		set(VS_PREFIX vs2017)
+	endif()
+	if (MSVC13)
+		set(VS_PREFIX vs2015)
+	endif()
+
+
+	find_file(${_name}
+		NAMES ${_lib}.dll
+		HINTS ${FBX_SEARCH_LOCATIONS}
+		PATH_SUFFIXES lib/${fbx_compiler}/${_suffix} lib/${fbx_compiler}/ub/${_suffix} lib/${VS_PREFIX}/x64/${_suffix}
+	)
+	mark_as_advanced(${_name})
+endfunction()
+
+
+
+find_path(FBX_INCLUDE_DIR fbxsdk.h
+  PATHS ${FBX_SEARCH_LOCATIONS}
+  PATH_SUFFIXES include
 )
+mark_as_advanced(FBX_INCLUDE_DIR)
 
-# search for headers & debug/release libraries
-FIND_PATH(FBX_INCLUDE_DIR "fbxsdk.h"
-    PATHS ${FBX_SEARCH_PATHS}
-    PATH_SUFFIXES "include")
-FIND_LIBRARY( FBX_LIBRARY_REL ${FBX_LIBNAME}
-    PATHS ${FBX_SEARCH_PATHS}
-    PATH_SUFFIXES "lib/${FBX_LIBDIR}/release" "lib/${FBX_LIBDIR}")
+if (WIN32)
+  _fbx_find_library(FBX_LIBRARY libfbxsdk release)
+  _fbx_find_library(FBX_LIBRARY_DEBUG libfbxsdk debug)
+  _fbx_find_dll(FBX_DLL libfbxsdk release)
+  _fbx_find_dll(FBX_DLL_DEBUG libfbxsdk debug)
+elseif (APPLE)
+  find_library(CARBON NAMES Carbon)
+  find_library(SYSTEM_CONFIGURATION NAMES SystemConfiguration)
+  _fbx_find_library(FBX_LIBRARY libfbxsdk.a release)
+  _fbx_find_library(FBX_LIBRARY_DEBUG libfbxsdk.a debug)
+else ()
+  _fbx_find_library(FBX_LIBRARY libfbxsdk.a release)
+endif()
 
-#Once one of the calls succeeds the result variable will be set and stored in the cache so that no call will search again.
+include(FindPackageHandleStandardArgs)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(FBX DEFAULT_MSG FBX_LIBRARY FBX_INCLUDE_DIR)
 
-#no debug d suffix, search in debug folder only
-FIND_LIBRARY( FBX_LIBRARY_DEBUG ${FBX_LIBNAME}
-    PATHS ${FBX_SEARCH_PATHS}
-    PATH_SUFFIXES "lib/${FBX_LIBDIR}/debug")
-FIND_LIBRARY( FBX_LIBRARY_DEBUG ${FBX_LIBNAME_DEBUG}
-    PATHS ${FBX_SEARCH_PATHS}
-    PATH_SUFFIXES "lib/${FBX_LIBDIR}")
+if (FBX_FOUND)
+  set(FBX_INCLUDE_DIRS ${FBX_INCLUDE_DIR})
+  _fbx_append_debugs(FBX_LIBRARIES FBX_LIBRARY)
+  add_definitions(-DFBXSDK_NEW_API)
 
-IF(FBX_LIBRARY_DEBUG AND FBX_LIBRARY_REL)
-	SET(FBX_LIBRARY optimized ${FBX_LIBRARY_REL} debug ${FBX_LIBRARY_DEBUG})
-ENDIF()
-FIND_PACKAGE(PackageHandleStandardArgs REQUIRED)
-
-find_package_handle_standard_args(FBX REQUIRED_VARS FBX_INCLUDE_DIR FBX_LIBRARY)
-
-MARK_AS_ADVANCED(FBX_LIBRARY_DEBUG  FBX_LIBRARY FBX_INCLUDE_DIR)
+  if (APPLE)
+    set(FBX_LIBRARIES ${FBX_LIBRARIES} ${CARBON} ${SYSTEM_CONFIGURATION})
+  endif()
+endif()

@@ -25,13 +25,13 @@ public:
     /// copy constructor
     FixedTable(const FixedTable<TYPE>& rhs);
     /// move constructor
-    FixedTable(FixedTable<TYPE>&& rhs);
+    FixedTable(FixedTable<TYPE>&& rhs) noexcept;
     /// destructor
     ~FixedTable();
     /// assignment operator
     void operator=(const FixedTable<TYPE>& rhs);
     /// move assignment operator
-    void operator=(FixedTable<TYPE>&& rhs);
+    void operator=(FixedTable<TYPE>&& rhs) noexcept;
     /// equality operator
     bool operator==(const FixedTable<TYPE>& rhs) const;
     /// inequality operator
@@ -194,7 +194,7 @@ FixedTable<TYPE>::FixedTable(const FixedTable<TYPE>& rhs) :
 /**
 */
 template<class TYPE>
-FixedTable<TYPE>::FixedTable(FixedTable<TYPE>&& rhs) :
+FixedTable<TYPE>::FixedTable(FixedTable<TYPE>&& rhs) noexcept:
     width(rhs.width),
     height(rhs.height),
     elements(rhs.height)
@@ -229,7 +229,7 @@ FixedTable<TYPE>::operator=(const FixedTable<TYPE>& rhs)
 */
 template<class TYPE>
 void
-FixedTable<TYPE>::operator=(FixedTable<TYPE>&& rhs)
+FixedTable<TYPE>::operator=(FixedTable<TYPE>&& rhs) noexcept
 {
     if (*this != rhs)
     {

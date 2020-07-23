@@ -37,11 +37,11 @@ public:
     /// copy constructor
     Dictionary(const Dictionary<KEYTYPE, VALUETYPE>& rhs);
     /// move constructor
-    Dictionary(Dictionary<KEYTYPE, VALUETYPE>&& rhs);
+    Dictionary(Dictionary<KEYTYPE, VALUETYPE>&& rhs) noexcept;
     /// assignment operator
     void operator=(const Dictionary<KEYTYPE, VALUETYPE>& rhs);
     /// move operator
-    void operator=(Dictionary<KEYTYPE, VALUETYPE>&& rhs);
+    void operator=(Dictionary<KEYTYPE, VALUETYPE>&& rhs) noexcept;
     /// read/write [] operator
     VALUETYPE& operator[](const KEYTYPE& key);
     /// read-only [] operator
@@ -134,7 +134,7 @@ Dictionary<KEYTYPE, VALUETYPE>::Dictionary(const Dictionary<KEYTYPE, VALUETYPE>&
 /**
 */
 template<class KEYTYPE, class VALUETYPE>
-Dictionary<KEYTYPE, VALUETYPE>::Dictionary(Dictionary<KEYTYPE, VALUETYPE>&& rhs) :
+Dictionary<KEYTYPE, VALUETYPE>::Dictionary(Dictionary<KEYTYPE, VALUETYPE>&& rhs) noexcept :
     keyValuePairs(std::move(rhs.keyValuePairs)),
     inBulkInsert(false)
 {
@@ -162,7 +162,7 @@ Dictionary<KEYTYPE, VALUETYPE>::operator=(const Dictionary<KEYTYPE, VALUETYPE>& 
 */
 template<class KEYTYPE, class VALUETYPE>
 inline void
-Dictionary<KEYTYPE, VALUETYPE>::operator=(Dictionary<KEYTYPE, VALUETYPE>&& rhs)
+Dictionary<KEYTYPE, VALUETYPE>::operator=(Dictionary<KEYTYPE, VALUETYPE>&& rhs) noexcept
 {
 #if NEBULA_BOUNDSCHECKS
     n_assert(!this->inBulkInsert);
