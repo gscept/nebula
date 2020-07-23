@@ -56,7 +56,7 @@ public:
     /// copy constructor
     String(const String& rhs);
     /// move constructor
-    String(String&& rhs);
+    String(String&& rhs) noexcept;
     /// construct from C string
     String(const char* cStr);
     /// destructor
@@ -65,7 +65,7 @@ public:
     /// assignment operator
     void operator=(const String& rhs);
     /// move operator
-    void operator=(String&& rhs);
+    void operator=(String&& rhs) noexcept;
     /// assign from const char*
     void operator=(const char* cStr);
     /// += operator
@@ -766,7 +766,7 @@ String::String(const String& rhs) :
 /**
 */
 inline
-String::String(String&& rhs) :
+String::String(String&& rhs) noexcept:
     heapBuffer(rhs.heapBuffer),
     strLen(rhs.strLen),
     heapBufferSize(rhs.heapBufferSize)
@@ -827,7 +827,7 @@ String::operator=(const String& rhs)
 /**
 */
 inline void
-String::operator=(String&& rhs)
+String::operator=(String&& rhs) noexcept
 {
     if (&rhs != this)
     {

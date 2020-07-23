@@ -50,7 +50,7 @@ public:
     /// copy constructor
     Array(const Array<TYPE>& rhs);
     /// move constructor
-    Array(Array<TYPE>&& rhs);
+    Array(Array<TYPE>&& rhs) noexcept;
 	/// constructor from initializer list
 	Array(std::initializer_list<TYPE> list);
 	/// construct an empty fixed array
@@ -63,7 +63,7 @@ public:
     /// assignment operator
     void operator=(const Array<TYPE>& rhs);
     /// move operator
-    void operator=(Array<TYPE>&& rhs);
+    void operator=(Array<TYPE>&& rhs) noexcept;
     /// [] operator
     TYPE& operator[](IndexT index) const;
     /// [] operator
@@ -326,7 +326,7 @@ Array<TYPE>::Array(const Array<TYPE>& rhs) :
 /**
 */
 template<class TYPE>
-Array<TYPE>::Array(Array<TYPE>&& rhs) :
+Array<TYPE>::Array(Array<TYPE>&& rhs) noexcept :
     grow(rhs.grow),
     capacity(rhs.capacity),
     count(rhs.count),
@@ -449,7 +449,7 @@ Array<TYPE>::operator=(const Array<TYPE>& rhs)
 /**
 */
 template<class TYPE> void
-Array<TYPE>::operator=(Array<TYPE>&& rhs)
+Array<TYPE>::operator=(Array<TYPE>&& rhs) noexcept
 {
     if (this != &rhs)
     {
