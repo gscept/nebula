@@ -137,15 +137,7 @@ AssignRegistry::SetupProjectAssigns()
 
     String rootDir = Core::CoreServer::Instance()->GetRootDirectory().AsString();
     this->SetAssign(Assign("root", rootDir));
-    #if __WIN32__
-        this->SetAssign(Assign("export", "root:export_win32"));
-    #elif __OSX__
-        this->SetAssign(Assign("export", "root:export_osx"));
-    #elif __linux__
-        this->SetAssign(Assign("export", "root:export_linux"));
-    #else
-    #error "PLATFORM FIXME: setup platform specific assigns!"
-    #endif
+    this->SetAssign(Assign("export", "root:export"));
 
     // setup content assigns
     this->SetAssign(Assign("msh", "export:meshes"));
