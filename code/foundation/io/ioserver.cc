@@ -13,6 +13,7 @@
 #include "io/filestream.h"
 #include "io/archfs/archive.h"
 #include "io/archfs/archivefilesystem.h"
+#include <filesystem>
 
 namespace IO
 {
@@ -619,6 +620,16 @@ IoServer::CreateTemporaryFilename(const URI& uri) const
 	const String path = uri.GetHostAndLocalPath();
 	n_assert(path.IsValid());	
 	return URI(FSWrapper::CreateTemporaryFilename(path));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::String
+IoServer::NativePath(const Util::String& path)
+{
+	std::filesystem::path u8path = std::filesystem::absolute(std::filesystem::u8path(path.AsCharPtr()));
+	return u8path.string().c_str();
 }
 
 } // namespace IO

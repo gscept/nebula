@@ -71,7 +71,7 @@ CalculateColor calcColor;
 //---------------------------------------------------------------------------------------------------------------------------
 prototype vec3 CalculateBump(in vec3 tangent, in vec3 binormal, in vec3 normal, in vec4 bump);
 
-subroutine (CalculateBump) vec3 NormalMapFunctor(
+subroutine (CalculateBump) vec3 NormalMapFunctorDXT5NM(
 	in vec3 tangent,
 	in vec3 binormal,
 	in vec3 normal,
@@ -84,7 +84,7 @@ subroutine (CalculateBump) vec3 NormalMapFunctor(
 	return tangentViewMatrix * tNormal;
 }
 
-subroutine (CalculateBump) vec3 NormalMapFunctorBC5(
+subroutine (CalculateBump) vec3 NormalMapFunctor(
 	in vec3 tangent,
 	in vec3 binormal,
 	in vec3 normal,

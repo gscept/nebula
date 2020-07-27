@@ -232,10 +232,10 @@ macro(set_nebula_export_dir)
             MESSAGE(WARNING "Registry keys for project not found, did you set your workdir?")
             return()
         endif()
-        set(EXPORT_DIR "${workdir}/export_win32")
+        set(EXPORT_DIR "${workdir}/export")
     else()
         # use environment
-        set(EXPORT_DIR $ENV{NEBULA_WORK}/export_win32)
+        set(EXPORT_DIR $ENV{NEBULA_WORK}/export)
     endif()
 endmacro()
 
