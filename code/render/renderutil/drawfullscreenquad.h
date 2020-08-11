@@ -11,7 +11,7 @@
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/shader.h"
-#include "coregraphics/vertexbuffer.h"
+#include "coregraphics/buffer.h"
 #include "coregraphics/vertexlayout.h"
 #include "coregraphics/primitivegroup.h"
 
@@ -38,7 +38,7 @@ public:
     void Draw();
 
 private:
-    CoreGraphics::VertexBufferId vertexBuffer;
+    CoreGraphics::BufferId vertexBuffer;
 	CoreGraphics::VertexLayoutId vertexLayout;
     CoreGraphics::PrimitiveGroup primGroup;
     bool isValid;

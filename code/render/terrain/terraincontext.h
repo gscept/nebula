@@ -10,8 +10,6 @@
 #include "resources/resourceid.h"
 #include "math/bbox.h"
 #include "coregraphics/primitivegroup.h"
-#include "coregraphics/vertexbuffer.h"
-#include "coregraphics/indexbuffer.h"
 #include "coregraphics/texture.h"
 #include "coregraphics/resourcetable.h"
 namespace Terrain
@@ -83,10 +81,13 @@ private:
         CoreGraphics::TextureId normalMap;
         CoreGraphics::TextureId decisionMap;
 
-        CoreGraphics::VertexBufferId vbo;
-        CoreGraphics::IndexBufferId ibo;
-
+        CoreGraphics::ConstantBufferId terrainConstants;
+        CoreGraphics::ResourceTableId terrainResourceTable;
+        
         CoreGraphics::ResourceTableId patchTable;
+
+        CoreGraphics::BufferId vbo;
+        CoreGraphics::BufferId ibo;
     };
 
     enum

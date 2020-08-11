@@ -27,8 +27,8 @@ Nvx2StreamReader::Nvx2StreamReader() :
     access(CoreGraphics::GpuBufferTypes::AccessNone),
     rawMode(false),
     mapPtr(0),
-	ibo(IndexBufferId::Invalid()),
-	vbo(VertexBufferId::Invalid()),
+	ibo(BufferId::Invalid()),
+	vbo(BufferId::Invalid()),
     groupDataPtr(nullptr),
     vertexDataPtr(nullptr),
     indexDataPtr(nullptr),
@@ -98,8 +98,8 @@ Nvx2StreamReader::Close()
     this->groupDataPtr = nullptr;
     this->vertexDataPtr = nullptr;
     this->indexDataPtr = nullptr;
-	this->ibo = IndexBufferId::Invalid();
-	this->vbo = VertexBufferId::Invalid();
+	this->ibo = BufferId::Invalid();
+	this->vbo = BufferId::Invalid();
     this->primGroups.Clear();
     this->vertexComponents.Clear();
     StreamReader::Close();
@@ -222,6 +222,8 @@ Nvx2StreamReader::SetupVertexComponents()
             this->vertexComponents.Append(VertexComponent(sem, index, fmt));
         }
     }
+
+    this->layout = CoreGraphics::CreateVertexLayout({ this->vertexComponents });
 }
 
 //------------------------------------------------------------------------------
@@ -264,7 +266,7 @@ Nvx2StreamReader::UpdateGroupBoundingBoxes()
 void
 Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 {
-	n_assert(this->vbo == VertexBufferId::Invalid());
+	n_assert(this->vbo == BufferId::Invalid());
     n_assert(!this->rawMode);
     n_assert(0 != this->vertexDataPtr);
     n_assert(this->vertexDataSize > 0);
@@ -272,16 +274,15 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
     n_assert(this->vertexComponents.Size() > 0);
 
 	// create vertex buffer
-	VertexBufferCreateInfo vboInfo;
+    BufferCreateInfo vboInfo;
 	vboInfo.name = name;
-	vboInfo.access = this->access;
-    vboInfo.usage = this->usage;
-    vboInfo.mode = CoreGraphics::HostWriteable;
-    vboInfo.numVerts = this->numVertices;
-	vboInfo.comps = this->vertexComponents;
+    vboInfo.size = this->numVertices;
+    vboInfo.elementSize = VertexLayoutGetSize(this->layout); 
+    vboInfo.mode = CoreGraphics::DeviceLocal;
+    vboInfo.usageFlags = CoreGraphics::VertexBuffer;
 	vboInfo.data = this->vertexDataPtr;
 	vboInfo.dataSize = this->vertexDataSize;
-	this->vbo = CreateVertexBuffer(vboInfo);
+	this->vbo = CreateBuffer(vboInfo);
 }
 
 //------------------------------------------------------------------------------
@@ -290,23 +291,22 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 void
 Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
 {
-	n_assert(this->ibo == IndexBufferId::Invalid());
+	n_assert(this->ibo == BufferId::Invalid());
     n_assert(!this->rawMode);
     n_assert(0 != this->indexDataPtr);
     n_assert(this->indexDataSize > 0);
     n_assert(this->numIndices > 0);
     
 	// create index buffer
-	IndexBufferCreateInfo iboInfo;
+	BufferCreateInfo iboInfo;
 	iboInfo.name = name;
-	iboInfo.access = this->access;
-    iboInfo.usage = this->usage;
-    iboInfo.mode = CoreGraphics::HostWriteable;
-	iboInfo.numIndices = this->numIndices;
-	iboInfo.type = IndexType::Index32;
+    iboInfo.size = this->numIndices;
+    iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index32);
+    iboInfo.mode = CoreGraphics::DeviceLocal;
+    iboInfo.usageFlags = CoreGraphics::IndexBuffer;
 	iboInfo.data = this->indexDataPtr;
 	iboInfo.dataSize = this->indexDataSize;
-	this->ibo = CreateIndexBuffer(iboInfo);
+	this->ibo = CreateBuffer(iboInfo);
 }
 
 } // namespace Legacy

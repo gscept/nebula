@@ -134,7 +134,7 @@ protected:
 
 	static void	AnalyzeAndSetupBufferBarriers(
 		struct FrameOp::Compiled* op,
-		CoreGraphics::ShaderRWBufferId buf,
+		CoreGraphics::BufferId buf,
 		const Util::StringAtom& bufferName,
 		DependencyIntent readOrWrite,
 		CoreGraphics::BarrierAccess access,
@@ -157,7 +157,7 @@ protected:
 		Util::Array<FrameOp::Compiled*>& compiledOps,
 		Util::Array<CoreGraphics::EventId>& events,
 		Util::Array<CoreGraphics::BarrierId>& barriers,
-		Util::Dictionary<CoreGraphics::ShaderRWBufferId, Util::Array<BufferDependency>>& rwBuffers,
+		Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
 		Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures);
 
 	/// setup synchronization
@@ -165,13 +165,13 @@ protected:
 		Memory::ArenaAllocator<BIG_CHUNK>& allocator,
 		Util::Array<CoreGraphics::EventId>& events,
 		Util::Array<CoreGraphics::BarrierId>& barriers,
-		Util::Dictionary<CoreGraphics::ShaderRWBufferId, Util::Array<BufferDependency>>& rwBuffers,
+		Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
 		Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures);
 
 	CoreGraphics::BarrierDomain domain;
 	CoreGraphics::QueueType queue;
 	Util::Dictionary<CoreGraphics::TextureId, std::tuple<Util::StringAtom, CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::ImageSubresourceInfo, CoreGraphics::ImageLayout>> textureDeps;
-	Util::Dictionary<CoreGraphics::ShaderRWBufferId, std::tuple<Util::StringAtom, CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::BufferSubresourceInfo>> rwBufferDeps;
+	Util::Dictionary<CoreGraphics::BufferId, std::tuple<Util::StringAtom, CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::BufferSubresourceInfo>> rwBufferDeps;
 
 	Compiled* compiled;
 	Util::StringAtom name;

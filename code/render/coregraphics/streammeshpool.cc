@@ -78,12 +78,12 @@ StreamMeshPool::Unload(const Resources::ResourceId id)
 	n_assert(id.resourceId != Ids::InvalidId24);
 	const MeshCreateInfo& msh = meshPool->GetSafe<0>(id.resourceId);
 
-	if (msh.indexBuffer != IndexBufferId::Invalid())
-		DestroyIndexBuffer(msh.indexBuffer);
+	if (msh.indexBuffer != BufferId::Invalid())
+		DestroyBuffer(msh.indexBuffer);
 
 	IndexT i;
 	for (i = 0; i < msh.streams.Size(); i++)
-		DestroyVertexBuffer(msh.streams[i].vertexBuffer);
+		DestroyBuffer(msh.streams[i].vertexBuffer);
 
 	this->states[id.poolId] = Resources::Resource::State::Unloaded;
 }
@@ -188,7 +188,7 @@ StreamMeshPool::MeshBind(const Resources::ResourceId id)
 	for (i = 0; i < msh.streams.Size(); i++)
 		CoreGraphics::SetStreamVertexBuffer(msh.streams[i].index, msh.streams[i].vertexBuffer, 0);
 
-	if (msh.indexBuffer != IndexBufferId::Invalid())
+	if (msh.indexBuffer != BufferId::Invalid())
 		CoreGraphics::SetIndexBuffer(msh.indexBuffer, 0);
 
 	meshPool->LeaveGet();

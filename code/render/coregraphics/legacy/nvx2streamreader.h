@@ -14,8 +14,7 @@
 #include "core/config.h"
 #if NEBULA_LEGACY_SUPPORT
 #include "io/streamreader.h"
-#include "coregraphics/vertexbuffer.h"
-#include "coregraphics/indexbuffer.h"
+#include "coregraphics/buffer.h"
 #include "coregraphics/primitivegroup.h"
 
 //------------------------------------------------------------------------------
@@ -47,9 +46,9 @@ public:
     /// end reading from the stream, destroys loaded objects
     virtual void Close();
 	/// get vertex buffer
-	const CoreGraphics::VertexBufferId GetVertexBuffer() const;
+	const CoreGraphics::BufferId GetVertexBuffer() const;
 	/// get index buffer
-	const CoreGraphics::IndexBufferId GetIndexBuffer() const;
+	const CoreGraphics::BufferId GetIndexBuffer() const;
     /// get primitive groups
     const Util::Array<CoreGraphics::PrimitiveGroup>& GetPrimitiveGroups() const;
     /// get pointer to raw vertex data
@@ -119,8 +118,9 @@ private:
     bool rawMode;
 	Util::StringAtom tag;
 	Resources::ResourceName name;
-	CoreGraphics::VertexBufferId vbo;
-	CoreGraphics::IndexBufferId ibo;
+	CoreGraphics::BufferId vbo;
+	CoreGraphics::BufferId ibo;
+    CoreGraphics::VertexLayoutId layout;
 
     Util::Array<CoreGraphics::PrimitiveGroup> primGroups;
     void* mapPtr;
@@ -162,7 +162,7 @@ Nvx2StreamReader::IsRawMode() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const CoreGraphics::VertexBufferId
+inline const CoreGraphics::BufferId
 Nvx2StreamReader::GetVertexBuffer() const
 {
 	return this->vbo;
@@ -171,7 +171,7 @@ Nvx2StreamReader::GetVertexBuffer() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const CoreGraphics::IndexBufferId
+inline const CoreGraphics::BufferId
 Nvx2StreamReader::GetIndexBuffer() const
 {
 	return this->ibo;

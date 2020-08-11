@@ -81,15 +81,18 @@ DrawFullScreenQuad::Setup(SizeT rtWidth, SizeT rtHeight)
 	v[2][0] = right;	v[2][1] = top;		v[2][2] = 0.0f; v[2][3] = u1; v[2][4] = v0;
 #endif
 
+    this->vertexLayout = CoreGraphics::CreateVertexLayout({ vertexComponents });
+
     // load vertex buffer
-	VertexBufferCreateInfo info =
-	{
-		"FullScreen Quad VBO"_atm,
-		GpuBufferTypes::AccessNone, GpuBufferTypes::UsageImmutable, CoreGraphics::HostWriteable,
-		3, vertexComponents, v, sizeof(v)
-	};
-	this->vertexBuffer = CreateVertexBuffer(info);
-	this->vertexLayout = VertexBufferGetLayout(this->vertexBuffer);
+    BufferCreateInfo info;
+    info.name = "FullScreen Quad VBO"_atm;
+    info.size = 3;
+    info.elementSize = CoreGraphics::VertexLayoutGetSize(this->vertexLayout);
+    info.mode = CoreGraphics::DeviceLocal;
+    info.usageFlags = CoreGraphics::VertexBuffer;
+    info.data = v;
+    info.dataSize = sizeof(v);
+	this->vertexBuffer = CreateBuffer(info);
 
     // setup a primitive group object
     this->primGroup.SetBaseVertex(0);
@@ -106,7 +109,7 @@ DrawFullScreenQuad::Discard()
 {
     n_assert(this->IsValid());
     this->isValid = false;
-	DestroyVertexBuffer(this->vertexBuffer);
+	DestroyBuffer(this->vertexBuffer);
 	DestroyVertexLayout(this->vertexLayout);
 }
 

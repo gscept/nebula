@@ -42,8 +42,8 @@ ImguiContext::ImguiDrawFunction()
 	//const Ptr<BufferLock>& vboLock = renderer->GetVertexBufferLock();
 	//const Ptr<BufferLock>& iboLock = renderer->GetIndexBufferLock();
 	IndexT currentBuffer = CoreGraphics::GetBufferedFrameIndex();
-	VertexBufferId vbo = state.vbos[currentBuffer];
-	IndexBufferId ibo = state.ibos[currentBuffer];
+	BufferId vbo = state.vbos[currentBuffer];
+	BufferId ibo = state.ibos[currentBuffer];
 	const ImguiRendererParams& params = state.params;
 
 	// apply shader
@@ -57,7 +57,7 @@ ImguiContext::ImguiDrawFunction()
 #endif
 
 	// setup device
-	CoreGraphics::SetVertexLayout(CoreGraphics::VertexBufferGetLayout(state.vbos[currentBuffer]));
+	CoreGraphics::SetVertexLayout(state.vlo);
 	CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
 	CoreGraphics::SetGraphicsPipeline();
 
@@ -93,8 +93,8 @@ ImguiContext::ImguiDrawFunction()
 		const SizeT indexBufferSize = commandList->IdxBuffer.size() * sizeof(ImDrawIdx);					// using 16 bit indices
 
 		// if we render too many vertices, we will simply assert
-		n_assert(vertexBufferOffset + (IndexT)commandList->VtxBuffer.size() < CoreGraphics::VertexBufferGetNumVertices(state.vbos[currentBuffer]));
-		n_assert(indexBufferOffset + (IndexT)commandList->IdxBuffer.size() < CoreGraphics::IndexBufferGetNumIndices(state.ibos[currentBuffer]));
+		n_assert(vertexBufferOffset + (IndexT)commandList->VtxBuffer.size() < CoreGraphics::BufferGetByteSize(state.vbos[currentBuffer]));
+		n_assert(indexBufferOffset + (IndexT)commandList->IdxBuffer.size() < CoreGraphics::BufferGetByteSize(state.ibos[currentBuffer]));
 
 		// wait for previous draws to finish...
 		memcpy(state.vertexPtrs[currentBuffer] + vertexBufferOffset, vertexBuffer, vertexBufferSize);
@@ -162,6 +162,9 @@ ImguiContext::ImguiDrawFunction()
 		indexBufferOffset += indexBufferSize;
 	}
 
+	CoreGraphics::BufferFlush(state.vbos[currentBuffer]);
+	CoreGraphics::BufferFlush(state.ibos[currentBuffer]);
+
 	// reset clip settings
 	CoreGraphics::ResetClipSettings();
 }
@@ -213,6 +216,7 @@ ImguiContext::Create()
     components.Append(VertexComponent((VertexComponent::SemanticName)0, 0, VertexComponentBase::Float2, 0));
 	components.Append(VertexComponent((VertexComponent::SemanticName)1, 0, VertexComponentBase::Float2, 0));
     components.Append(VertexComponent((VertexComponent::SemanticName)2, 0, VertexComponentBase::UByte4N, 0));
+	state.vlo = CoreGraphics::CreateVertexLayout({ components });
 
 	Frame::AddCallback("ImGUI", [](const IndexT frameIndex)
 		{
@@ -224,41 +228,34 @@ ImguiContext::Create()
 
 	SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
 
-	CoreGraphics::VertexBufferCreateInfo vboInfo =
-	{
-		"ImGUI VBO"_atm,
-		CoreGraphics::GpuBufferTypes::AccessWrite,
-		CoreGraphics::GpuBufferTypes::UsageDynamic,
-		CoreGraphics::BufferUpdateMode::HostMapped,
-		100000 * 3,
-		components,
-		nullptr,
-		0
-	};
+	CoreGraphics::BufferCreateInfo vboInfo;
+	vboInfo.name = "ImGUI VBO"_atm;
+	vboInfo.size = 100000 * 3;
+	vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.vlo);
+	vboInfo.mode = CoreGraphics::HostToDevice;
+	vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+	vboInfo.data = nullptr;
+	vboInfo.dataSize = 0;
 	state.vbos.Resize(numBuffers);
 	IndexT i;
 	for (i = 0; i < numBuffers; i++)
 	{
-		state.vbos[i] = CoreGraphics::CreateVertexBuffer(vboInfo);
+		state.vbos[i] = CoreGraphics::CreateBuffer(vboInfo);
 	}
 
-	CoreGraphics::IndexBufferCreateInfo iboInfo = 
-	{
-		""_atm,
-		"system",
-		CoreGraphics::GpuBufferTypes::AccessWrite,
-		CoreGraphics::GpuBufferTypes::UsageDynamic,
-		CoreGraphics::BufferUpdateMode::HostMapped,
-		IndexType::Index16,
-		100000 * 3,
-		nullptr,
-		0
-	};
+	CoreGraphics::BufferCreateInfo iboInfo;
+	iboInfo.name = "ImGUI IBO"_atm;
+	iboInfo.size = 100000 * 3;
+	iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(IndexType::Index16);
+	iboInfo.mode = CoreGraphics::HostToDevice;
+	iboInfo.usageFlags = CoreGraphics::IndexBuffer;
+	iboInfo.data = nullptr;
+	iboInfo.dataSize = 0;
 	state.ibos.Resize(numBuffers);
 	for (i = 0; i < numBuffers; i++)
 	{
 		iboInfo.name = Util::String::Sprintf("imgui_ibo_%d", i);
-		state.ibos[i] = CoreGraphics::CreateIndexBuffer(iboInfo);
+		state.ibos[i] = CoreGraphics::CreateBuffer(iboInfo);
 	}
 
 	// map buffer
@@ -266,8 +263,8 @@ ImguiContext::Create()
 	state.indexPtrs.Resize(numBuffers);
 	for (i = 0; i < numBuffers; i++)
 	{
-		state.vertexPtrs[i] = (byte*)CoreGraphics::VertexBufferMap(state.vbos[i], CoreGraphics::GpuBufferTypes::MapWrite);
-		state.indexPtrs[i] = (byte*)CoreGraphics::IndexBufferMap(state.ibos[i], CoreGraphics::GpuBufferTypes::MapWrite);
+		state.vertexPtrs[i] = (byte*)CoreGraphics::BufferMap(state.vbos[i]);
+		state.indexPtrs[i] = (byte*)CoreGraphics::BufferMap(state.ibos[i]);
 	}    
 
 	// get display mode, this will be our default size
@@ -430,11 +427,11 @@ ImguiContext::Discard()
 	IndexT i;
 	for (i = 0; i < state.vbos.Size(); i++)
 	{
-		CoreGraphics::VertexBufferUnmap(state.vbos[i]);
-		CoreGraphics::IndexBufferUnmap(state.ibos[i]);
+		CoreGraphics::BufferUnmap(state.vbos[i]);
+		CoreGraphics::BufferUnmap(state.ibos[i]);
 
-		CoreGraphics::DestroyVertexBuffer(state.vbos[i]);
-		CoreGraphics::DestroyIndexBuffer(state.ibos[i]);
+		CoreGraphics::DestroyBuffer(state.vbos[i]);
+		CoreGraphics::DestroyBuffer(state.ibos[i]);
 
 		state.vertexPtrs[i] = nullptr;
 		state.indexPtrs[i] = nullptr;

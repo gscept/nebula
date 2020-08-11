@@ -66,15 +66,18 @@ VkTextRenderer::Open()
 	comps.Append(VertexComponent((VertexComponent::SemanticName)1, 0, VertexComponent::Float2, 0));
 	comps.Append(VertexComponent((VertexComponent::SemanticName)2, 0, VertexComponent::Float4, 0));
 
-	VertexBufferCreateInfo vboInfo = 
-	{
-		"TextRenderer VBO"_atm,
-		GpuBufferTypes::AccessWrite, GpuBufferTypes::UsageDynamic, CoreGraphics::HostMapped,
-		MaxNumChars * 6, comps,
-		nullptr, 0
-	};
-	this->vbo = CreateVertexBuffer(vboInfo);
-	this->vertexPtr = (byte*)VertexBufferMap(this->vbo, GpuBufferTypes::MapWrite);
+	this->layout = CreateVertexLayout({ comps });
+
+	BufferCreateInfo vboInfo;
+	vboInfo.name = "TextRenderer VBO"_atm;
+	vboInfo.size = MaxNumChars * 6;
+	vboInfo.elementSize = VertexLayoutGetSize(this->layout);
+	vboInfo.mode = CoreGraphics::HostToDevice;
+	vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+	vboInfo.data = nullptr;
+	vboInfo.dataSize = 0;
+	this->vbo = CreateBuffer(vboInfo);
+	this->vertexPtr = (byte*)BufferMap(this->vbo);
 
 	// setup primitive group
 	this->group.SetNumIndices(0);
@@ -163,10 +166,10 @@ VkTextRenderer::Close()
 	Base::TextRendererBase::Close();
 
 	// discard shader
-	VertexBufferUnmap(this->vbo);
+	BufferUnmap(this->vbo);
 	this->vertexPtr = nullptr;
 
-	DestroyVertexBuffer(this->vbo);
+	DestroyBuffer(this->vbo);
 	DestroyTexture(this->glyphTexture);
 }
 
@@ -189,6 +192,10 @@ VkTextRenderer::DrawTextElements()
 	CoreGraphics::SetShaderProgram(this->program);
 	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->modelVar, sizeof(proj), (byte*)&proj);
 	CoreGraphics::SetResourceTable(this->textTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+
+	CoreGraphics::SetVertexLayout(this->layout);
+	CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
+	CoreGraphics::SetGraphicsPipeline();
 
 	uint screenWidth, screenHeight;
 	screenWidth = displayMode.GetWidth();
@@ -324,7 +331,6 @@ VkTextRenderer::Draw(TextElementVertex* buffer, SizeT numChars)
 	this->group.SetNumVertices(numChars * 6);
 
 	// get render device and set it up
-	CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
 	CoreGraphics::SetStreamVertexBuffer(0, this->vbo, 0);
 	CoreGraphics::SetPrimitiveGroup(this->group);
 
@@ -334,6 +340,8 @@ VkTextRenderer::Draw(TextElementVertex* buffer, SizeT numChars)
 	uint screenWidth, screenHeight;
 	screenWidth = displayMode.GetWidth();
 	screenHeight = displayMode.GetHeight();
+
+	CoreGraphics::BufferFlush(this->vbo);
 	//dev->SetViewport(Math::rectangle<int>(0, 0, screenWidth, screenHeight), 0);
 	//dev->SetScissorRect(Math::rectangle<int>(0, 0, screenWidth, screenHeight), 0);
 

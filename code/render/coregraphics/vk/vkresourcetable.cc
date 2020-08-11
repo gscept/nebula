@@ -9,8 +9,9 @@
 #include "vktypes.h"
 #include "vksampler.h"
 #include "vktexture.h"
+#include "vktextureview.h"
+#include "vkbuffer.h"
 #include "vkconstantbuffer.h"
-#include "vkshaderrwbuffer.h"
 namespace Vulkan
 {
 
@@ -243,6 +244,61 @@ ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTexture& t
 //------------------------------------------------------------------------------
 /**
 */
+void 
+ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTextureView& tex)
+{
+	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
+	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
+	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
+	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+
+	n_assert(tex.slot != InvalidIndex);
+
+	VkWriteDescriptorSet write;
+	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write.pNext = nullptr;
+
+	const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<3>(id.id24);
+	const Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayoutImmutableSamplerFlags>(layout.id24);
+
+	VkDescriptorImageInfo img;
+	if (immutable[tex.slot])
+	{
+		n_assert(tex.sampler == SamplerId::Invalid());
+		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		img.sampler = VK_NULL_HANDLE;
+	}
+	else
+	{
+		write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+		img.sampler = tex.sampler == SamplerId::Invalid() ? VK_NULL_HANDLE : SamplerGetVk(tex.sampler);
+	}
+
+	write.descriptorCount = 1;
+	write.dstArrayElement = tex.index;
+	write.dstBinding = tex.slot;
+	write.dstSet = set;
+	img.imageLayout = tex.isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+	if (tex.tex == TextureViewId::Invalid())
+		img.imageView = VK_NULL_HANDLE;
+	else
+		img.imageView = TextureViewGetVk(tex.tex);
+
+	WriteInfo inf;
+	inf.img = img;
+	infoList.Append(inf);
+
+	write.pImageInfo = &img;			// this is just provisionary, it will go out of scope immediately, but it wont be null!
+	write.pTexelBufferView = nullptr;
+	write.pBufferInfo = nullptr;
+
+	writeList.Append(write);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 ResourceTableSetInputAttachment(const ResourceTableId& id, const ResourceTableInputAttachment& tex)
 {
@@ -325,6 +381,143 @@ ResourceTableSetRWTexture(const ResourceTableId& id, const ResourceTableTexture&
 //------------------------------------------------------------------------------
 /**
 */
+void 
+ResourceTableSetRWTexture(const ResourceTableId& id, const ResourceTableTextureView& tex)
+{
+	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
+	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
+	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
+	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+
+	n_assert(tex.slot != InvalidIndex);
+
+	VkWriteDescriptorSet write;
+	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write.pNext = nullptr;
+	write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+	write.descriptorCount = 1;
+	write.dstArrayElement = tex.index;
+	write.dstBinding = tex.slot;
+	write.dstSet = set;
+
+	VkDescriptorImageInfo img;
+	img.sampler = VK_NULL_HANDLE;
+	img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+	if (tex.tex == TextureViewId::Invalid())
+		img.imageView = VK_NULL_HANDLE;
+	else
+		img.imageView = TextureViewGetVk(tex.tex);
+
+	WriteInfo inf;
+	inf.img = img;
+	infoList.Append(inf);
+
+	write.pImageInfo = &img;			// this is just provisionary, it will go out of scope immediately, but it wont be null!
+	write.pTexelBufferView = nullptr;
+	write.pBufferInfo = nullptr;
+
+	writeList.Append(write);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ResourceTableSetConstantBuffer(const ResourceTableId& id, const ResourceTableBuffer& buf)
+{
+	n_assert(!buf.texelBuffer);
+	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
+	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
+	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
+	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+
+	n_assert(buf.slot != InvalidIndex);
+
+	VkWriteDescriptorSet write;
+	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write.pNext = nullptr;
+	if (buf.dynamicOffset)
+		write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+	else if (buf.texelBuffer)
+		write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+	else
+		write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	write.descriptorCount = 1;
+	write.dstArrayElement = buf.index;
+	write.dstBinding = buf.slot;
+	write.dstSet = set;
+
+	n_assert2(write.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, "Texel buffers are not implemented");
+
+	VkDescriptorBufferInfo buff;
+	if (buf.buf == BufferId::Invalid())
+		buff.buffer = VK_NULL_HANDLE;
+	else
+		buff.buffer = BufferGetVk(buf.buf);
+	buff.offset = buf.offset;
+	buff.range = buf.size == NEBULA_WHOLE_BUFFER_SIZE ? VK_WHOLE_SIZE : buf.size;
+
+	WriteInfo inf;
+	inf.buf = buff;
+	infoList.Append(inf);
+
+	write.pImageInfo = nullptr;
+	write.pTexelBufferView = nullptr;
+	write.pBufferInfo = &buff;			// this is just provisionary, it will go out of scope immediately, but it wont be null!
+
+	writeList.Append(write);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ResourceTableSetRWBuffer(const ResourceTableId& id, const ResourceTableBuffer& buf)
+{
+	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
+	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
+	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
+	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+
+	n_assert(buf.slot != InvalidIndex);
+
+	VkWriteDescriptorSet write;
+	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	write.pNext = nullptr;
+	if (buf.dynamicOffset)
+		write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+	else if (buf.texelBuffer)
+		write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+	else
+		write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	write.descriptorCount = 1;
+	write.dstArrayElement = buf.index;
+	write.dstBinding = buf.slot;
+	write.dstSet = set;
+
+	n_assert2(write.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, "Texel buffers are not implemented");
+
+	VkDescriptorBufferInfo buff;
+	if (buf.buf == BufferId::Invalid())
+		buff.buffer = VK_NULL_HANDLE;
+	else
+		buff.buffer = BufferGetVk(buf.buf);
+	buff.offset = buf.offset;
+	buff.range = buf.size == NEBULA_WHOLE_BUFFER_SIZE ? VK_WHOLE_SIZE : buf.size;
+	WriteInfo inf;
+	inf.buf = buff;
+	infoList.Append(inf);
+
+	write.pImageInfo = nullptr;
+	write.pTexelBufferView = nullptr;
+	write.pBufferInfo = &buff;			// this is just provisionary, it will go out of scope immediately, but it wont be null!
+
+	writeList.Append(write);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 ResourceTableSetConstantBuffer(const ResourceTableId& id, const ResourceTableConstantBuffer& buf)
 {
@@ -358,56 +551,8 @@ ResourceTableSetConstantBuffer(const ResourceTableId& id, const ResourceTableCon
 	else
 		buff.buffer = ConstantBufferGetVk(buf.buf);
 	buff.offset = buf.offset;
-	buff.range = buf.size == -1 ? VK_WHOLE_SIZE : buf.size;
+	buff.range = buf.size == NEBULA_WHOLE_BUFFER_SIZE ? VK_WHOLE_SIZE : buf.size;
 
-	WriteInfo inf;
-	inf.buf = buff;
-	infoList.Append(inf);
-
-	write.pImageInfo = nullptr;
-	write.pTexelBufferView = nullptr;
-	write.pBufferInfo = &buff;			// this is just provisionary, it will go out of scope immediately, but it wont be null!
-
-	writeList.Append(write);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ResourceTableSetRWBuffer(const ResourceTableId& id, const ResourceTableShaderRWBuffer& buf)
-{
-	n_assert(!(buf.texelBuffer | buf.texelBuffer));
-	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
-
-	n_assert(buf.slot != InvalidIndex);
-
-	VkWriteDescriptorSet write;
-	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.pNext = nullptr;
-	if (buf.dynamicOffset)
-		write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
-	else if (buf.texelBuffer)
-		write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
-	else
-		write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	write.descriptorCount = 1;
-	write.dstArrayElement = buf.index;
-	write.dstBinding = buf.slot;
-	write.dstSet = set;
-
-	n_assert2(write.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, "Texel buffers are not implemented");
-
-	VkDescriptorBufferInfo buff;
-	if (buf.buf == ShaderRWBufferId::Invalid())
-		buff.buffer = VK_NULL_HANDLE;
-	else
-		buff.buffer = ShaderRWBufferGetVkBuffer(buf.buf);
-	buff.offset = buf.offset;
-	buff.range = buf.size == -1 ? VK_WHOLE_SIZE : buf.size;
 	WriteInfo inf;
 	inf.buf = buff;
 	infoList.Append(inf);

@@ -10,8 +10,7 @@
 #include "profiling/profiling.h"
 #include "frame/framescript.h"
 #include "primitivegroup.h"
-#include "vertexbuffer.h"
-#include "indexbuffer.h"
+#include "buffer.h"
 #include "imagefileformat.h"
 #include "io/stream.h"
 #include "fence.h"
@@ -191,12 +190,12 @@ void BeginBatch(Frame::FrameBatchType::Code batchType);
 /// reset clip settings to pass
 void ResetClipSettings();
 
-/// set the current vertex stream source
-void SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::VertexBufferId& vb, IndexT offsetVertexIndex);
+/// set a stream vertex buffer
+void SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::BufferId& buffer, IndexT offsetVertexIndex);
 /// set current vertex layout
 void SetVertexLayout(const CoreGraphics::VertexLayoutId& vl);
-/// set current index buffer
-void SetIndexBuffer(const CoreGraphics::IndexBufferId& ib, IndexT offsetIndex);
+/// set index buffer
+void SetIndexBuffer(const CoreGraphics::BufferId& buffer, IndexT offsetIndex);
 /// set the type of topology used
 void SetPrimitiveTopology(const CoreGraphics::PrimitiveTopology::Code topo);
 /// get the type of topology used
