@@ -31,9 +31,9 @@ const SizeT ParticleContextNumEnvelopeSamples = 192;
 
 struct
 {
-	CoreGraphics::VertexBufferId geometryVbo;
-	CoreGraphics::IndexBufferId geometryIbo;
-	Util::FixedArray<CoreGraphics::VertexBufferId> vbos;
+	CoreGraphics::BufferId geometryVbo;
+	CoreGraphics::BufferId geometryIbo;
+	Util::FixedArray<CoreGraphics::BufferId> vbos;
 	Util::FixedArray<SizeT> vboSizes;
 	Util::FixedArray<byte*> mappedVertices;
 	byte* vertexPtr;
@@ -115,36 +115,35 @@ ParticleContext::Create()
 	emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Position, 0, CoreGraphics::VertexComponent::Float3, 0));
 	emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Normal, 0, CoreGraphics::VertexComponent::Byte4N, 0));
 	emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Tangent, 0, CoreGraphics::VertexComponent::Byte4N, 0));
+	CoreGraphics::VertexLayoutId emitterLayout = CoreGraphics::CreateVertexLayout({ emitterComponents });
 
-	CoreGraphics::VertexBufferCreateInfo vboInfo;
-	vboInfo.data = vertex;
-	vboInfo.comps = emitterComponents;
-	vboInfo.dataSize = sizeof(vertex);
-	vboInfo.numVerts = 1;
-	vboInfo.access = CoreGraphics::GpuBufferTypes::AccessRead;
-	vboInfo.usage = CoreGraphics::GpuBufferTypes::UsageCpu;
-	vboInfo.mode = CoreGraphics::HostWriteable;
+	CoreGraphics::BufferCreateInfo vboInfo;
 	vboInfo.name = "Single Point Particle Emitter VBO";
-	CoreGraphics::VertexBufferId vbo = CoreGraphics::CreateVertexBuffer(vboInfo);
+	vboInfo.size = 1;
+	vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(emitterLayout);
+	vboInfo.mode = CoreGraphics::DeviceLocal;
+	vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+	vboInfo.data = vertex;
+	vboInfo.dataSize = sizeof(vertex);
+	CoreGraphics::BufferId vbo = CoreGraphics::CreateBuffer(vboInfo);
 
 	uint indices[] = { 0 };
-	CoreGraphics::IndexBufferCreateInfo iboInfo;
-	iboInfo.data = indices;
-	iboInfo.type = CoreGraphics::IndexType::Index32;
-	iboInfo.dataSize = sizeof(indices);
-	iboInfo.numIndices = 1;
-	iboInfo.access = CoreGraphics::GpuBufferTypes::AccessRead;
-	iboInfo.usage = CoreGraphics::GpuBufferTypes::UsageCpu;
-	iboInfo.mode = CoreGraphics::HostWriteable;
+	CoreGraphics::BufferCreateInfo iboInfo;
 	iboInfo.name = "Single Point Particle Emitter IBO";
-	CoreGraphics::IndexBufferId ibo = CoreGraphics::CreateIndexBuffer(iboInfo);
+	iboInfo.size = 1;
+	iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index32);
+	iboInfo.mode = CoreGraphics::DeviceLocal;
+	iboInfo.usageFlags = CoreGraphics::IndexBuffer;
+	iboInfo.data = indices;
+	iboInfo.dataSize = sizeof(indices);
+	CoreGraphics::BufferId ibo = CoreGraphics::CreateBuffer(iboInfo);
 
 	CoreGraphics::PrimitiveGroup group;
 	group.SetBaseIndex(0);
 	group.SetBaseVertex(0);
 	group.SetNumIndices(1);
 	group.SetNumVertices(1);
-	group.SetVertexLayout(CoreGraphics::VertexBufferGetLayout(vbo));
+	group.SetVertexLayout(emitterLayout);
 
 	// setup single point emitter mesh
 	CoreGraphics::MeshCreateInfo meshInfo;
@@ -157,35 +156,34 @@ ParticleContext::Create()
 	meshInfo.primitiveGroups.Append(group);
 	meshInfo.topology = CoreGraphics::PrimitiveTopology::PointList;
 	meshInfo.tag = "system";
-	meshInfo.vertexLayout = CoreGraphics::VertexBufferGetLayout(vbo);
+	meshInfo.vertexLayout = emitterLayout;
 	ParticleContext::DefaultEmitterMesh = CoreGraphics::CreateMesh(meshInfo);
 
 	// setup particle geometry buffer
 	Util::Array<CoreGraphics::VertexComponent> cornerComponents;
 	cornerComponents.Append(CoreGraphics::VertexComponent((CoreGraphics::VertexComponent::SemanticName)0, 0, CoreGraphics::VertexComponent::Float2, 0));
 	float cornerVertexData[] = { 0, 0,  1, 0,  1, 1,  0, 1 };
+	CoreGraphics::VertexLayoutId cornerLayout = CoreGraphics::CreateVertexLayout({ cornerComponents });
 
-	vboInfo.data = cornerVertexData;
-	vboInfo.comps = cornerComponents;
-	vboInfo.dataSize = sizeof(cornerVertexData);
-	vboInfo.numVerts = 4;
-	vboInfo.access = CoreGraphics::GpuBufferTypes::AccessRead;
-	vboInfo.usage = CoreGraphics::GpuBufferTypes::UsageImmutable;
-	vboInfo.mode = CoreGraphics::HostWriteable;
 	vboInfo.name = "Particle Geometry Vertex Buffer";
-	state.geometryVbo = CoreGraphics::CreateVertexBuffer(vboInfo);
+	vboInfo.size = 4;
+	vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(cornerLayout);
+	vboInfo.mode = CoreGraphics::DeviceLocal;
+	vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+	vboInfo.dataSize = sizeof(cornerVertexData);
+	vboInfo.data = cornerVertexData;
+	state.geometryVbo = CoreGraphics::CreateBuffer(vboInfo);
 
 	// setup the corner index buffer
 	ushort cornerIndexData[] = { 0, 1, 2, 2, 3, 0 };
-	iboInfo.data = cornerIndexData;
-	iboInfo.type = CoreGraphics::IndexType::Index16;
-	iboInfo.dataSize = sizeof(cornerIndexData);
-	iboInfo.numIndices = 6;
-	iboInfo.access = CoreGraphics::GpuBufferTypes::AccessRead;
-	iboInfo.usage = CoreGraphics::GpuBufferTypes::UsageImmutable;
-	iboInfo.mode = CoreGraphics::HostWriteable;
 	iboInfo.name = "Particle Geometry Index Buffer";
-	state.geometryIbo = CoreGraphics::CreateIndexBuffer(iboInfo);
+	iboInfo.size = 6;
+	iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index16);
+	iboInfo.mode = CoreGraphics::DeviceLocal;
+	iboInfo.usageFlags = CoreGraphics::IndexBuffer;
+	iboInfo.data = cornerIndexData;
+	iboInfo.dataSize = sizeof(cornerIndexData);
+	state.geometryIbo = CoreGraphics::CreateBuffer(iboInfo);
 
 	// save vertex components so we can allocate a buffer later
 	state.particleComponents.Append(CoreGraphics::VertexComponent((CoreGraphics::VertexComponent::SemanticName)1, 0, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::position
@@ -200,7 +198,7 @@ ParticleContext::Create()
 	state.mappedVertices.Resize(numFrames);
 	for (IndexT i = 0; i < numFrames; i++)
 	{
-		state.vbos[i] = CoreGraphics::VertexBufferId::Invalid();
+		state.vbos[i] = CoreGraphics::BufferId::Invalid();
 		state.vboSizes[i] = 0;
 		state.mappedVertices[i] = nullptr;
 	}
@@ -491,24 +489,23 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
 	// check if we need to realloc buffers
 	if (numParticlesThisFrame * state.vertexSize > state.vboSizes[frame])
 	{
-		CoreGraphics::VertexBufferCreateInfo vboInfo;
-		vboInfo.data = nullptr;
-		vboInfo.comps = state.particleComponents;
-		vboInfo.dataSize = 0;
-		vboInfo.numVerts = numParticlesThisFrame;
-		vboInfo.access = CoreGraphics::GpuBufferTypes::AccessWrite;
-		vboInfo.usage = CoreGraphics::GpuBufferTypes::UsageDynamic;
-		vboInfo.mode = CoreGraphics::HostMapped;
+		CoreGraphics::BufferCreateInfo vboInfo;
 		vboInfo.name = "Particle Vertex Buffer";
+		vboInfo.size = numParticlesThisFrame;
+		vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.layout);
+		vboInfo.mode = CoreGraphics::HostToDevice;
+		vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+		vboInfo.data = nullptr;
+		vboInfo.dataSize = 0;
 
 		// delete old if needed
-		if (state.vbos[frame] != CoreGraphics::VertexBufferId::Invalid())
+		if (state.vbos[frame] != CoreGraphics::BufferId::Invalid())
 		{
-			CoreGraphics::VertexBufferUnmap(state.vbos[frame]);
-			CoreGraphics::DestroyVertexBuffer(state.vbos[frame]);
+			CoreGraphics::BufferUnmap(state.vbos[frame]);
+			CoreGraphics::DestroyBuffer(state.vbos[frame]);
 		}
-		state.vbos[frame] = CoreGraphics::CreateVertexBuffer(vboInfo);
-		state.mappedVertices[frame] = (byte*)CoreGraphics::VertexBufferMap(state.vbos[frame], CoreGraphics::GpuBufferTypes::MapType::MapWrite);
+		state.vbos[frame] = CoreGraphics::CreateBuffer(vboInfo);
+		state.mappedVertices[frame] = (byte*)CoreGraphics::BufferMap(state.vbos[frame]);
 		state.vboSizes[frame] = numParticlesThisFrame * state.vertexSize;
 	}
 
@@ -517,6 +514,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
 	// walk through systems again and update index and vertex buffers
 	float* buf = (float*)state.mappedVertices[frame];
 	Math::vec4 tmp;
+	bool flushBuffer = false;
 	for (i = 0; i < allSystems.Size(); i++)
 	{
 		const Util::Array<ParticleSystemRuntime>& systems = allSystems[i];
@@ -550,14 +548,21 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
 			// update node
 			system.node->numParticles = numParticles;
 			system.node->particleVbo = state.vbos[frame];
+
+			if (numParticles > 0)
+				flushBuffer = true;
 		}
 	}
+
+	// flush changes
+	if (flushBuffer)
+		CoreGraphics::BufferFlush(state.vbos[frame]);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-CoreGraphics::IndexBufferId 
+CoreGraphics::BufferId 
 ParticleContext::GetParticleIndexBuffer()
 {
 	return state.geometryIbo;
@@ -566,7 +571,7 @@ ParticleContext::GetParticleIndexBuffer()
 //------------------------------------------------------------------------------
 /**
 */
-CoreGraphics::VertexBufferId 
+CoreGraphics::BufferId 
 ParticleContext::GetParticleVertexBuffer()
 {
 	return state.geometryVbo;

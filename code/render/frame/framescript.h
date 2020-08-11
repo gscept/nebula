@@ -15,7 +15,7 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "coregraphics/texture.h"
-#include "coregraphics/shaderrwbuffer.h"
+#include "coregraphics/buffer.h"
 #include "coregraphics/event.h"
 #include "coregraphics/shader.h"
 #include "frame/frameop.h"
@@ -58,10 +58,10 @@ public:
 	const CoreGraphics::TextureId GetTexture(const Util::StringAtom& name);
 	/// get all textures
 	const Util::Dictionary<Util::StringAtom, CoreGraphics::TextureId>& GetTextures() const;
-	/// add read-write buffer
-	void AddReadWriteBuffer(const Util::StringAtom& name, const CoreGraphics::ShaderRWBufferId buf);
-	/// get read-write buffer
-	const CoreGraphics::ShaderRWBufferId GetReadWriteBuffer(const Util::StringAtom& name);
+	/// add buffer
+	void AddBuffer(const Util::StringAtom& name, const CoreGraphics::BufferId buf);
+	/// get buffer
+	const CoreGraphics::BufferId GetBuffer(const Util::StringAtom& name);
 
 	/// setup script
 	void Setup();
@@ -94,8 +94,8 @@ private:
 
 	Resources::ResourceName resId;
 
-	Util::Array<CoreGraphics::ShaderRWBufferId> readWriteBuffers;
-	Util::Dictionary<Util::StringAtom, CoreGraphics::ShaderRWBufferId> readWriteBuffersByName;
+	Util::Array<CoreGraphics::BufferId> buffers;
+	Util::Dictionary<Util::StringAtom, CoreGraphics::BufferId> buffersByName;
 	Util::Array<CoreGraphics::TextureId> textures;
 	Util::Dictionary<Util::StringAtom, CoreGraphics::TextureId> texturesByName;
 
@@ -159,11 +159,10 @@ FrameScript::GetTextures() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const CoreGraphics::ShaderRWBufferId
-FrameScript::GetReadWriteBuffer(const Util::StringAtom& name)
+inline const CoreGraphics::BufferId 
+FrameScript::GetBuffer(const Util::StringAtom& name)
 {
-	IndexT i = this->readWriteBuffersByName.FindIndex(name);
-	return i == InvalidIndex ? CoreGraphics::ShaderRWBufferId::Invalid() : this->readWriteBuffersByName.ValueAtIndex(i);
+	return this->buffersByName[name];
 }
 
-} // namespace Frame2
+} // namespace Frame

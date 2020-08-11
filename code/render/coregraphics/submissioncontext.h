@@ -19,12 +19,14 @@
 #include "util/fixedarray.h"
 #include "ids/idallocator.h"
 #include "coregraphics/commandbuffer.h"
+#include "coregraphics/memory.h"
 
 //------------------------------------------------------------------------------
 namespace CoreGraphics
 {
 
 struct TextureId;
+struct BufferId;
 struct SemaphoreId;
 struct FenceId;
 ID_24_8_TYPE(SubmissionContextId);
@@ -49,6 +51,16 @@ void SubmissionContextNewBuffer(const SubmissionContextId id, CommandBufferId& o
 /// get current buffer
 CommandBufferId SubmissionContextGetCmdBuffer(const SubmissionContextId id);
 
+/// add image for deletion
+void SubmissionContextFreeImage(const CoreGraphics::SubmissionContextId id, CoreGraphics::TextureId tex);
+/// add a buffer deletion
+void SubmissionContextFreeBuffer(const CoreGraphics::SubmissionContextId id, CoreGraphics::BufferId buf);
+/// add command buffer for deletion
+void SubmissionContextFreeCommandBuffer(const CoreGraphics::SubmissionContextId id, const CoreGraphics::CommandBufferId cmd);
+/// add command buffer for reset
+void SubmissionContextClearCommandBuffer(const CoreGraphics::SubmissionContextId id, const CoreGraphics::CommandBufferId cmd);
+/// add a memory alloc for freeing
+void SubmissionContextFreeMemory(const CoreGraphics::SubmissionContextId id, const CoreGraphics::Alloc& alloc);
 /// add void* to memory free upon completion
 void SubmissionContextFreeHostMemory(const SubmissionContextId id, void* buf);
 

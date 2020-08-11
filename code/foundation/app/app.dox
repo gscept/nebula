@@ -1,7 +1,7 @@
 /**
-@namespace App
+@page App
 
-@section NebulaAppSystem The Nebula App Subsystem
+@section NebulaAppSystem The App Subsystem
 
 The App namespace offers a set of Application classes which simplify setting up
 a proper Nebula application. The general idea is that an application derives

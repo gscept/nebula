@@ -10,7 +10,7 @@
 #include "ids/id.h"
 #include "util/array.h"
 #include "coregraphics/texture.h"
-#include "coregraphics/shaderrwbuffer.h"
+#include "coregraphics/buffer.h"
 #include "coregraphics/commandbuffer.h"
 #include "coregraphics/config.h"
 #include <tuple>
@@ -85,7 +85,6 @@ __ImplementEnumComparisonOperators(BarrierAccess);
 
 ID_24_8_TYPE(BarrierId);
 
-#define NEBULA_WHOLE_BUFFER_SIZE (-1)
 
 struct ImageSubresourceInfo
 {
@@ -161,11 +160,17 @@ struct TextureBarrier
 
 struct BufferBarrier
 {
-	ShaderRWBufferId buf;
+	BufferId buf;
 	BarrierAccess fromAccess;
 	BarrierAccess toAccess;
 	IndexT offset;
 	SizeT size; // set to -1 to use whole buffer
+};
+
+struct ExecutionBarrier
+{
+	BarrierAccess fromAccess;
+	BarrierAccess toAccess;
 };
 
 struct BarrierCreateInfo
@@ -176,6 +181,7 @@ struct BarrierCreateInfo
 	BarrierStage rightDependency;
 	Util::Array<TextureBarrier> textures;
 	Util::Array<BufferBarrier> rwBuffers;
+	Util::Array<ExecutionBarrier> barriers;
 };
 
 /// create barrier object
@@ -204,6 +210,22 @@ void BarrierInsert(
 	CoreGraphics::BarrierDomain domain,
 	const Util::FixedArray<TextureBarrier>& textures,
 	const Util::FixedArray<BufferBarrier>& rwBuffers,
+	const char* name = nullptr);
+/// insert an execution barrier onto the queue
+void BarrierInsert(
+	const CoreGraphics::QueueType queue,
+	CoreGraphics::BarrierStage fromStage,
+	CoreGraphics::BarrierStage toStage,
+	CoreGraphics::BarrierDomain domain,
+	const Util::FixedArray<ExecutionBarrier>& barriers,
+	const char* name = nullptr);
+/// insert an execution barrier into a command buffer
+void BarrierInsert(
+	const CoreGraphics::CommandBufferId buf,
+	CoreGraphics::BarrierStage fromStage,
+	CoreGraphics::BarrierStage toStage,
+	CoreGraphics::BarrierDomain domain,
+	const Util::FixedArray<ExecutionBarrier>& barriers,
 	const char* name = nullptr);
 
 //------------------------------------------------------------------------------

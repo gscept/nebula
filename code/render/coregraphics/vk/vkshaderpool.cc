@@ -221,7 +221,7 @@ VkShaderPool::CreateResourceTable(const CoreGraphics::ShaderId id, const IndexT 
 /**
 */
 CoreGraphics::ConstantBufferId 
-VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAtom& name, CoreGraphics::BufferUpdateMode mode)
+VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAtom& name, CoreGraphics::BufferAccessMode mode)
 {
 	AnyFX::VarblockBase* var = this->shaderAlloc.Get<0>(id.resourceId)->GetVarblock(name.Value());
 	if (var->alignedSize > 0)
@@ -234,7 +234,7 @@ VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::
 /**
 */
 CoreGraphics::ConstantBufferId 
-VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT cbIndex, CoreGraphics::BufferUpdateMode mode)
+VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT cbIndex, CoreGraphics::BufferAccessMode mode)
 {
 	AnyFX::VarblockBase* var = this->shaderAlloc.Get<0>(id.resourceId)->GetVarblock(cbIndex);
 	if (var->alignedSize > 0)

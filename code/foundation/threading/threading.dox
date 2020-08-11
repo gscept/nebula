@@ -1,5 +1,12 @@
 /**
-@namespace Threading
+@page Threading
 
-FIXME!
+@section NebulaThreading The Threading Library
+
+Threading contains classes wrapping OS-specifics when it comes to threads and synchronization. 
+To create a thread with a specific function, one must overload Threading::Thread and implement the DoWork method. Threads also have a built-in event, which can be signaled when a thread receives work, and will otherwise wait for this event to be signaled while there is nothing to do. 
+
+The threading library also contains some synchronization, specifically, interlocked which is used to operate on integers atomically (that is, only one operation can happen on the integer at any one time), critical sections which is akin to a region of code which should be mutex'ed, rendezvous which is a meeting point for two threads to avoid thread dependency, and two specialized container classes, Threading::SafePriorityQueue and Threading::SafeQueue, which can be used to thread safetly pass work to a thread.
+
+The way work is defined is completely up to the programmer, there is no built-in system for defining work. If one wants to have a look at how threads are used, one can have a peak at jobs/job.cc to see how the job system works. 
 */

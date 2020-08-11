@@ -32,6 +32,7 @@ PixelFormat::FromString(const Util::String& str)
 	else if (str == "DXT3 sRGB") return DXT3sRGB;
 	else if (str == "DXT5") return DXT5;
 	else if (str == "DXT5 sRGB") return DXT5sRGB;
+	else if (str == "BC4") return BC4;
 	else if (str == "BC7") return BC7;
 	else if (str == "BC7 sRGB") return BC7sRGB;
 	else if (str == "R8") return R8;
@@ -89,6 +90,7 @@ PixelFormat::ToString(PixelFormat::Code code)
 		case DXT3sRGB:		return "DXT3 sRGB";
 		case DXT5:          return "DXT5";
 		case DXT5sRGB:		return "DXT5 sRGB";
+		case BC4:			return "BC4";
 		case BC7:			return "BC7";
 		case BC7sRGB:		return "BC7 sRGB";
 		case R8:            return "R8";
@@ -125,43 +127,54 @@ PixelFormat::ToSize(Code code)
 {
 	switch (code)
 	{
-	case R8G8B8X8:      return 4;
-	case R8G8B8:        return 3;
-	case R8G8B8A8:      return 4;
-	case SRGBA8:		return 4;
-	case R5G6B5:        return 2;
-	case R5G5B5A1:      return 2;
-	case R4G4B4A4:      return 2;
-	case DXT1:          return 3;
-	case DXT1sRGB:      return 3;
-	case DXT1A:         return 4;
-	case DXT1AsRGB:     return 4;
-	case DXT3:          return 4;
-	case DXT5:          return 4;
-	case DXT3sRGB:      return 4;
-	case DXT5sRGB:      return 4;
-	case BC7:			return 4;
-	case BC7sRGB:		return 4;
-	case R8:			return 1;
-	case R16F:          return 2;
-	case R16:           return 2;
-	case R16G16F:       return 4;
-	case R16G16:        return 4;
-	case R16G16B16A16F: return 8;
-	case R16G16B16A16:	return 8;
-	case R32F:          return 4;
-	case R32:           return 4;
-	case R32G32F:       return 8;
-	case R32G32:        return 8;
-	case R32G32B32A32F: return 16;
-	case R32G32B32A32:  return 16;
-	case R32G32B32F:    return 12;
-	case R32G32B32:     return 12;
-	case R10G10B10X2:   return 4;
-	case R10G10B10A2:   return 4;
-	case D24X8:         return 4;
-	case D24S8:         return 4;
-	case D32S8:			return 5;
+	case R8:
+		return 1;
+	case R16F:
+	case R16:
+	case R5G6B5:
+	case R5G5B5A1:
+	case R4G4B4A4:
+		return 2;
+	case R8G8B8:
+		return 3;
+	case R8G8B8X8:
+	case R8G8B8A8:
+	case B8G8R8A8:
+	case SRGBA8:
+	case R16G16F:
+	case R16G16:
+	case R32F:
+	case R32:
+	case R10G10B10X2:
+	case R10G10B10A2:
+	case D24X8:
+	case D24S8:
+		return 4;
+	case D32S8:
+		return 5;
+	case DXT1:
+	case DXT1sRGB:
+	case DXT1A:
+	case DXT1AsRGB:     
+	case BC4:
+	case R32G32F:
+	case R32G32:
+	case R16G16B16A16F:
+	case R16G16B16A16:
+		return 8;
+	case DXT3:
+	case DXT5:
+	case DXT3sRGB:
+	case DXT5sRGB:
+	case BC5:
+	case BC7:
+	case BC7sRGB:
+	case R32G32B32A32F:
+	case R32G32B32A32:
+		return 16;
+	case R32G32B32F:
+	case R32G32B32:
+		return 12;
 
 	default:
 		n_error("Invalid pixel format code");
@@ -193,6 +206,7 @@ PixelFormat::ToChannels(Code code)
 	case DXT3sRGB:		return 4;
 	case DXT5:          return 4;
 	case DXT5sRGB:		return 4;
+	case BC4:			return 1;
 	case BC7:			return 4;
 	case BC7sRGB:		return 4;
 	case R8:			return 1;
@@ -225,6 +239,32 @@ PixelFormat::ToChannels(Code code)
 //------------------------------------------------------------------------------
 /**
 */
+bool 
+PixelFormat::ToCompressed(Code code)
+{
+	switch (code)
+	{
+	case DXT1:
+	case DXT1sRGB:
+	case DXT1A:
+	case DXT1AsRGB:
+	case DXT3:
+	case DXT3sRGB:
+	case DXT5:
+	case DXT5sRGB:
+	case BC4:
+	case BC5:
+	case BC7:
+	case BC7sRGB:		
+		return true;
+	default:			
+		return false;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 uint
 PixelFormat::ToILComponents(Code code)
 {
@@ -244,6 +284,7 @@ PixelFormat::ToILComponents(Code code)
 	case PixelFormat::DXT3sRGB:         return IL_RGBA;
 	case PixelFormat::DXT5:             return IL_RGBA;
 	case PixelFormat::DXT5sRGB:         return IL_RGBA;
+	case PixelFormat::BC4:				return IL_RED;
 	case PixelFormat::BC7:		        return IL_RGBA;
 	case PixelFormat::BC7sRGB:          return IL_RGBA;
 	case PixelFormat::R8:				return IL_RED;
@@ -297,6 +338,7 @@ PixelFormat::ToILType(Code code)
 	case PixelFormat::DXT3sRGB:         return IL_UNSIGNED_BYTE;
 	case PixelFormat::DXT5:             return IL_UNSIGNED_BYTE;
 	case PixelFormat::DXT5sRGB:         return IL_UNSIGNED_BYTE;
+	case PixelFormat::BC4:				return IL_FLOAT;
 	case PixelFormat::BC7:              return IL_UNSIGNED_BYTE;
 	case PixelFormat::BC7sRGB:          return IL_UNSIGNED_BYTE;
 	case PixelFormat::R8:				return IL_UNSIGNED_BYTE;

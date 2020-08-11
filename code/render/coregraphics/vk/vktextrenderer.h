@@ -8,7 +8,6 @@
 //------------------------------------------------------------------------------
 #include "coregraphics/base/textrendererbase.h"
 #include "coregraphics/shader.h"
-#include "coregraphics/vertexbuffer.h"
 #include "coregraphics/texture.h"
 #include "coregraphics/primitivegroup.h"
 #include "coregraphics/resourcetable.h"
@@ -60,7 +59,8 @@ private:
 	CoreGraphics::ConstantBinding modelVar;
 	CoreGraphics::TextureId glyphTexture;
 	CoreGraphics::PrimitiveGroup group;
-	CoreGraphics::VertexBufferId vbo;
+	CoreGraphics::BufferId vbo;
+	CoreGraphics::VertexLayoutId layout;
 	byte* vertexPtr;
 };
 } // namespace Vulkan

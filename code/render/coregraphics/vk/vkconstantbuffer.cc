@@ -63,7 +63,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	SizeT size = info.size;
 
 	VkBufferUsageFlags usageFlags = 0;
-	if (info.mode == HostWriteable || info.mode == HostMapped)
+	if (info.mode == HostToDevice || info.mode == HostLocal)
 		usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	else if (info.mode == DeviceLocal)
 		usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
@@ -86,12 +86,10 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	map.data = nullptr;
 
 	CoreGraphics::MemoryPoolType pool = CoreGraphics::MemoryPool_DeviceLocal;
-	if (info.mode == HostWriteable)
-		pool = CoreGraphics::MemoryPool_ManualFlush;
-	else if (info.mode == HostMapped)
-		pool = CoreGraphics::MemoryPool_HostCoherent;
-	else if (info.mode == DeviceLocal)
-		pool = CoreGraphics::MemoryPool_DeviceLocal;
+	if (info.mode == HostToDevice)
+		pool = CoreGraphics::MemoryPool_HostToDevice;
+	else if (info.mode == HostLocal)
+		pool = CoreGraphics::MemoryPool_HostLocal;
 
 	// allocate and bind memory
 	CoreGraphics::Alloc alloc = AllocateMemory(dev, runtime.buf, pool);
@@ -102,7 +100,7 @@ CreateConstantBuffer(const ConstantBufferCreateInfo& info)
 	res = vkBindBufferMemory(setup.dev, runtime.buf, alloc.mem, alloc.offset);
 	n_assert(res == VK_SUCCESS);
 
-	if (info.mode == HostWriteable || info.mode == HostMapped)
+	if (info.mode == HostToDevice || info.mode == HostLocal)
 	{
 		// map memory so we can use it later, if we are using coherently mapping
 		map.data = (char*)GetMappedMemory(alloc);
@@ -174,9 +172,9 @@ void
 ConstantBufferUpdate(const ConstantBufferId id, const ConstantBufferAllocId alloc, const void* data, const uint size, ConstantBinding bind)
 {
 	VkConstantBufferMapInfo& map = constantBufferAllocator.Get<MapInfo>(id.id24);
-	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<SetupInfo>(id.id24);
 
 #if NEBULA_DEBUG
+	VkConstantBufferSetupInfo& setup = constantBufferAllocator.Get<SetupInfo>(id.id24);
 	n_assert(size >= alloc.size);
 	n_assert(size + bind + alloc.offset <= (uint)setup.size);
 #endif
@@ -191,7 +189,7 @@ void
 ConstantBufferFlush(const ConstantBufferId id)
 {
 	VkConstantBufferSetupInfo& loadInfo = constantBufferAllocator.Get<SetupInfo>(id.id24);
-	Flush(loadInfo.dev, loadInfo.mem);
+	Flush(loadInfo.dev, loadInfo.mem, 0, NEBULA_WHOLE_BUFFER_SIZE);
 }
 
 //------------------------------------------------------------------------------

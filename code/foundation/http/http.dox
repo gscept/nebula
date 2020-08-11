@@ -1,7 +1,7 @@
 /**
-@namespace Http
+@page Http
 
-@section NebulaHttpSystem The Nebula Http Subsystem
+@section NebulaHttpSystem The Http Subsystem
 
 The Http subsystem offers a complete set of HTTP client- and server-classes. The HttpServer class 
 implements simple but complete builtin HTTP server which can communicate with web browsers.

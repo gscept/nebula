@@ -86,7 +86,8 @@ struct Im3dState
     CoreGraphics::ShaderProgramId points;
     CoreGraphics::ShaderProgramId triangles;
     CoreGraphics::ShaderProgramId depthTriangles;
-    CoreGraphics::VertexBufferId vbo;       
+    CoreGraphics::BufferId vbo;     
+    CoreGraphics::VertexLayoutId vlo;
     bool renderGrid = false;
     int gridSize = 20;
     float cellSize = 1.0f;
@@ -141,22 +142,20 @@ Im3dContext::Create()
     Util::Array<CoreGraphics::VertexComponent> components;
     components.Append(VertexComponent((VertexComponent::SemanticName)0, 0, VertexComponentBase::Float4, 0));
     components.Append(VertexComponent((VertexComponent::SemanticName)1, 0, VertexComponentBase::UByte4N, 0));
+    imState.vlo = CreateVertexLayout({ components });
 
-    CoreGraphics::VertexBufferCreateInfo vboInfo =
-    {
-		"Im3D VBO"_atm,
-        CoreGraphics::GpuBufferTypes::AccessWrite,
-        CoreGraphics::GpuBufferTypes::UsageDynamic,
-        CoreGraphics::HostMapped,
-        100000 * 3,
-        components,
-        nullptr,
-        0
-    };
-    imState.vbo = CoreGraphics::CreateVertexBuffer(vboInfo);
+    CoreGraphics::BufferCreateInfo vboInfo;
+    vboInfo.name = "Im3D VBO"_atm;
+    vboInfo.size = 100000 * 3;
+    vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(imState.vlo);
+    vboInfo.mode = CoreGraphics::HostToDevice;
+    vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+    vboInfo.data = nullptr;
+    vboInfo.dataSize = 0;
+    imState.vbo = CoreGraphics::CreateBuffer(vboInfo);
 
     // map buffer
-    imState.vertexPtr = (byte*)CoreGraphics::VertexBufferMap(imState.vbo, CoreGraphics::GpuBufferTypes::MapWrite);
+    imState.vertexPtr = (byte*)CoreGraphics::BufferMap(imState.vbo);
 
 	Frame::AddCallback("Im3D", [](IndexT frameIndex)
 	{
@@ -172,9 +171,9 @@ Im3dContext::Discard()
 {
     Input::InputServer::Instance()->RemoveInputHandler(imState.inputHandler.upcast<InputHandler>());
     imState.inputHandler = nullptr;
-    CoreGraphics::VertexBufferUnmap(imState.vbo);
+    CoreGraphics::BufferUnmap(imState.vbo);
 
-    CoreGraphics::DestroyVertexBuffer(imState.vbo);
+    CoreGraphics::DestroyBuffer(imState.vbo);
     imState.vertexPtr = nullptr;
 }
 
@@ -366,7 +365,7 @@ CollectByFilter(ShaderProgramId const & shader, PrimitiveTopology::Code topology
 {
     CoreGraphics::SetShaderProgram(shader);
     CoreGraphics::SetPrimitiveTopology(topology);
-	CoreGraphics::SetVertexLayout(CoreGraphics::VertexBufferGetLayout(imState.vbo));
+	CoreGraphics::SetVertexLayout(imState.vlo);
 
     CoreGraphics::SetGraphicsPipeline();
     // setup input buffers
@@ -444,6 +443,7 @@ Im3dContext::Render(const IndexT frameIndex)
     CollectByFilter(imState.depthTriangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
         [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Triangles && l.m_layerId == imState.depthLayerId; });
 
+    CoreGraphics::BufferFlush(imState.vbo);
 	CoreGraphics::EndBatch();
 }
 

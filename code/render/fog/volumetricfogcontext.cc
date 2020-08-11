@@ -27,10 +27,10 @@ struct
 	CoreGraphics::ShaderProgramId cullProgram;
 	CoreGraphics::ShaderProgramId renderProgram;
 
-	CoreGraphics::ShaderRWBufferId clusterFogIndexLists;
+	CoreGraphics::BufferId clusterFogIndexLists;
 
-	Util::FixedArray<CoreGraphics::ShaderRWBufferId> stagingClusterFogLists;
-	CoreGraphics::ShaderRWBufferId clusterFogLists;
+	Util::FixedArray<CoreGraphics::BufferId> stagingClusterFogLists;
+	CoreGraphics::BufferId clusterFogLists;
 
 
 	CoreGraphics::TextureId fogVolumeTexture0;
@@ -109,20 +109,21 @@ VolumetricFogContext::Create()
 	IndexT lightListsSlot = ShaderGetResourceSlot(fogState.classificationShader, "LightLists");
 	IndexT clusterAABBSlot = ShaderGetResourceSlot(fogState.classificationShader, "ClusterAABBs");
 
-	ShaderRWBufferCreateInfo rwbInfo =
-	{
-		"FogIndexListsBuffer",
-		sizeof(Volumefog::FogIndexLists),
-		BufferUpdateMode::DeviceLocal,
-		false
-	};
-	fogState.clusterFogIndexLists = CreateShaderRWBuffer(rwbInfo);
+	BufferCreateInfo rwbInfo;
+	rwbInfo.name = "FogIndexListsBuffer";
+	rwbInfo.size = 1;
+	rwbInfo.elementSize = sizeof(Volumefog::FogIndexLists);
+	rwbInfo.mode = BufferAccessMode::DeviceLocal;
+	rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
+	fogState.clusterFogIndexLists = CreateBuffer(rwbInfo);
 
 	rwbInfo.name = "FogLists";
-	rwbInfo.size = sizeof(Volumefog::FogLists);
-	fogState.clusterFogLists = CreateShaderRWBuffer(rwbInfo);
+	rwbInfo.elementSize = sizeof(Volumefog::FogLists);
+	fogState.clusterFogLists = CreateBuffer(rwbInfo);
 
-	rwbInfo.mode = BufferUpdateMode::HostWriteable;
+	rwbInfo.name = "FogListsStagingBuffer";
+	rwbInfo.mode = BufferAccessMode::HostToDevice;
+	rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferSource;
 	fogState.stagingClusterFogLists.Resize(CoreGraphics::GetNumBufferedFrames());
 
 	fogState.cullProgram = ShaderGetProgram(fogState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Cull"));
@@ -132,7 +133,7 @@ VolumetricFogContext::Create()
 	for (IndexT i = 0; i < fogState.resourceTables.Size(); i++)
 	{
 		fogState.resourceTables[i] = ShaderCreateResourceTable(fogState.classificationShader, NEBULA_BATCH_GROUP);
-		fogState.stagingClusterFogLists[i] = CreateShaderRWBuffer(rwbInfo);
+		fogState.stagingClusterFogLists[i] = CreateBuffer(rwbInfo);
 
 		ResourceTableSetRWBuffer(fogState.resourceTables[i], { Clustering::ClusterContext::GetClusterBuffer(), clusterAABBSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 		ResourceTableSetRWBuffer(fogState.resourceTables[i], { Lighting::LightContext::GetLightIndexBuffer(), lightIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
@@ -331,8 +332,8 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 		Volumefog::FogLists fogList;
 		Memory::CopyElements(fogState.fogBoxes, fogList.FogBoxes, numFogBoxVolumes);
 		Memory::CopyElements(fogState.fogSpheres, fogList.FogSpheres, numFogSphereVolumes);
-		CoreGraphics::ShaderRWBufferUpdate(fogState.stagingClusterFogLists[bufferIndex], &fogList, sizeof(Volumefog::FogLists));
-		CoreGraphics::ShaderRWBufferFlush(fogState.stagingClusterFogLists[bufferIndex]);
+		CoreGraphics::BufferUpdate(fogState.stagingClusterFogLists[bufferIndex], fogList);
+		CoreGraphics::BufferFlush(fogState.stagingClusterFogLists[bufferIndex]);
 	}
 
 	Volumefog::VolumeFogUniforms fogUniforms;

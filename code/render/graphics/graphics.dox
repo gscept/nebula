@@ -1,5 +1,7 @@
 /**
-@page graphics Graphics High-level Interface
+@page Graphics Graphics
+
+@section NebulaGraphicsSystem The Graphics High-level Interface
 
 The Graphics Interface is supposed to provide a high-level interaction with the rendering systems.
 

@@ -7,8 +7,6 @@
 #include "coregraphics/vk/vktypes.h"
 #include "coregraphics/graphicsdevice.h"
 #include "coregraphics/transformdevice.h"
-#include "coregraphics/vertexbuffer.h"
-#include "coregraphics/indexbuffer.h"
 #include "coregraphics/mesh.h"
 #include "coregraphics/vertexsignaturepool.h"
 #include "coregraphics/vertexcomponent.h"
@@ -35,12 +33,15 @@ __ImplementClass(Vulkan::VkShapeRenderer, 'VKSR', Base::ShapeRendererBase);
 VkShapeRenderer::VkShapeRenderer() 
 	: indexBufferPtr(nullptr)
 	, vertexBufferPtr(nullptr)
-	, ibos{ IndexBufferId::Invalid() }
-	, vbos{ VertexBufferId::Invalid() }
+	, ibos{ BufferId::Invalid() }
+	, vbos{ BufferId::Invalid() }
 	, indexBufferActiveIndex()
 	, vertexBufferActiveIndex()
 	, indexBufferCapacity(0)
 	, vertexBufferCapacity(0)
+	, numPrimitives(0)
+	, numIndices(0)
+
 {
 	// empty
 }
@@ -116,23 +117,23 @@ VkShapeRenderer::Close()
 
 	// unload dynamic buffers
 	// we don't assert here as the buffer is lazy allocated
-	CoreGraphics::VertexBufferId activeVBId = this->vbos[this->vertexBufferActiveIndex];
-	CoreGraphics::IndexBufferId activeIBId = this->ibos[this->indexBufferActiveIndex];
-	if (activeVBId != CoreGraphics::VertexBufferId::Invalid())
+	CoreGraphics::BufferId activeVBId = this->vbos[this->vertexBufferActiveIndex];
+	CoreGraphics::BufferId activeIBId = this->ibos[this->indexBufferActiveIndex];
+	if (activeVBId != CoreGraphics::BufferId::Invalid())
 	{
-		VertexBufferUnmap(activeVBId);
+		BufferUnmap(activeVBId);
 	}
-	if (activeIBId != CoreGraphics::IndexBufferId::Invalid())
+	if (activeIBId != CoreGraphics::BufferId::Invalid())
 	{
-		IndexBufferUnmap(activeIBId);
+		BufferUnmap(activeIBId);
 	}
 
 	for (IndexT i = 0; i < MaxVertexIndexBuffers; i++)
 	{
-		if (this->vbos[i] != VertexBufferId::Invalid())
-			DestroyVertexBuffer(this->vbos[i]);
-		if (this->ibos[i] != IndexBufferId::Invalid())
-		DestroyIndexBuffer(this->ibos[i]);
+		if (this->vbos[i] != BufferId::Invalid())
+			DestroyBuffer(this->vbos[i]);
+		if (this->ibos[i] != BufferId::Invalid())
+		DestroyBuffer(this->ibos[i]);
 	}
 	
 	this->vertexBufferPtr = this->indexBufferPtr = nullptr;
@@ -153,8 +154,6 @@ VkShapeRenderer::DrawShapes()
 		this->GrowIndexBuffer();
 	if (this->numVerticesThisFrame > this->vertexBufferCapacity)
 		this->GrowVertexBuffer();
-
-
 
 	CoreGraphics::SetVertexLayout(this->vertexLayout);
 	for (int depthType = 0; depthType < RenderShape::NumDepthFlags; depthType++)
@@ -194,6 +193,12 @@ VkShapeRenderer::DrawShapes()
 		}
 	}
 
+
+	if (this->numPrimitives > 0)
+		CoreGraphics::BufferFlush(this->vbos[this->vertexBufferActiveIndex]);
+	if (this->numIndices > 0)
+		CoreGraphics::BufferFlush(this->ibos[this->indexBufferActiveIndex]);
+
 	// reset index and primitive counters
 	this->numIndices = 0;
 	this->numPrimitives = 0;
@@ -216,6 +221,7 @@ VkShapeRenderer::DrawShapes()
 			}
 		}		
 	}
+
 
 	// clear shapes
 	this->ClearShapes();
@@ -414,33 +420,29 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives()
 void 
 VkShapeRenderer::GrowIndexBuffer()
 {
-	IndexBufferCreateInfo iboInfo =
-	{
-		"shape_renderer_ibo",
-		"render_system"_atm,
-		CoreGraphics::GpuBufferTypes::AccessWrite,
-		CoreGraphics::GpuBufferTypes::UsageDynamic,
-		CoreGraphics::BufferUpdateMode::HostMapped,
-		IndexType::Index32,
-		this->numIndicesThisFrame,
-		nullptr,
-		0
-	};
+	BufferCreateInfo iboInfo;
+	iboInfo.name = "ShapeRenderer IBO"_atm;
+	iboInfo.size = this->numIndicesThisFrame;
+	iboInfo.elementSize = IndexType::SizeOf(IndexType::Index32);
+	iboInfo.mode = CoreGraphics::HostToDevice;
+	iboInfo.usageFlags = CoreGraphics::IndexBuffer;
+	iboInfo.data = nullptr;
+	iboInfo.dataSize = 0;
 
 	// unmap current pointer
 	if (this->indexBufferPtr)
-		IndexBufferUnmap(this->ibos[this->indexBufferActiveIndex]);
+		BufferUnmap(this->ibos[this->indexBufferActiveIndex]);
 
 	// delete the next buffer if one exists
 	this->indexBufferActiveIndex = (this->indexBufferActiveIndex + 1) % MaxVertexIndexBuffers;
-	if (this->ibos[this->indexBufferActiveIndex] != IndexBufferId::Invalid())
-		DestroyIndexBuffer(this->ibos[this->indexBufferActiveIndex]);
+	if (this->ibos[this->indexBufferActiveIndex] != BufferId::Invalid())
+		DestroyBuffer(this->ibos[this->indexBufferActiveIndex]);
 
 	this->indexBufferCapacity = this->numIndicesThisFrame;
 
 	// finally allocate new buffer
-	this->ibos[this->indexBufferActiveIndex] = CreateIndexBuffer(iboInfo);
-	this->indexBufferPtr = (byte*)IndexBufferMap(this->ibos[this->indexBufferActiveIndex], CoreGraphics::GpuBufferTypes::MapWrite);
+	this->ibos[this->indexBufferActiveIndex] = CreateBuffer(iboInfo);
+	this->indexBufferPtr = (byte*)BufferMap(this->ibos[this->indexBufferActiveIndex]);
 	n_assert(0 != this->indexBufferPtr);
 }
 
@@ -450,32 +452,29 @@ VkShapeRenderer::GrowIndexBuffer()
 void 
 VkShapeRenderer::GrowVertexBuffer()
 {
-	VertexBufferCreateInfo vboInfo =
-	{
-		"ShapeRenderer VBO"_atm,
-		CoreGraphics::GpuBufferTypes::AccessWrite,
-		CoreGraphics::GpuBufferTypes::UsageDynamic,
-		CoreGraphics::HostMapped,
-		this->numVerticesThisFrame,
-		this->comps,
-		nullptr,
-		0
-	};
+	BufferCreateInfo vboInfo;
+	vboInfo.name = "ShapeRenderer VBO"_atm;
+	vboInfo.size = this->numVerticesThisFrame;
+	vboInfo.elementSize = VertexLayoutGetSize(this->vertexLayout);
+	vboInfo.mode = CoreGraphics::HostToDevice;
+	vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+	vboInfo.data = nullptr;
+	vboInfo.dataSize = 0;
 
 	// unmap current pointer
 	if (this->vertexBufferPtr)
-		VertexBufferUnmap(this->vbos[this->vertexBufferActiveIndex]);
+		BufferUnmap(this->vbos[this->vertexBufferActiveIndex]);
 
 	// delete the next buffer if one exists
 	this->vertexBufferActiveIndex = (this->vertexBufferActiveIndex + 1) % MaxVertexIndexBuffers;
-	if (this->vbos[this->vertexBufferActiveIndex] != VertexBufferId::Invalid())
-		DestroyVertexBuffer(this->vbos[this->vertexBufferActiveIndex]);
+	if (this->vbos[this->vertexBufferActiveIndex] != BufferId::Invalid())
+		DestroyBuffer(this->vbos[this->vertexBufferActiveIndex]);
 
 	this->vertexBufferCapacity = this->numVerticesThisFrame;
 
 	// finally allocate new buffer
-	this->vbos[this->vertexBufferActiveIndex] = CreateVertexBuffer(vboInfo);
-	this->vertexBufferPtr = (byte*)VertexBufferMap(this->vbos[this->vertexBufferActiveIndex], CoreGraphics::GpuBufferTypes::MapWrite);
+	this->vbos[this->vertexBufferActiveIndex] = CreateBuffer(vboInfo);
+	this->vertexBufferPtr = (byte*)BufferMap(this->vbos[this->vertexBufferActiveIndex]);
 	n_assert(0 != this->vertexBufferPtr);
 }
 

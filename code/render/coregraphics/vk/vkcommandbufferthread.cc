@@ -261,6 +261,13 @@ VkCommandBufferThread::DoWork()
 				VkBarrierCommand* vkcmd = reinterpret_cast<VkBarrierCommand*>(commandBuf);
 				n_assert(this->vkCommandBuffer != VK_NULL_HANDLE);
 				vkCmdPipelineBarrier(this->vkCommandBuffer, vkcmd->srcMask, vkcmd->dstMask, vkcmd->dep, vkcmd->memoryBarrierCount, vkcmd->memoryBarriers, vkcmd->bufferBarrierCount, vkcmd->bufferBarriers, vkcmd->imageBarrierCount, vkcmd->imageBarriers);
+
+				if (vkcmd->memoryBarrierCount) 
+					n_delete_array(vkcmd->memoryBarriers);
+				if (vkcmd->bufferBarrierCount) 
+					n_delete_array(vkcmd->bufferBarriers);
+				if (vkcmd->imageBarrierCount) 
+					n_delete_array(vkcmd->imageBarriers);
 				break;
 			}			
 			case Timestamp:

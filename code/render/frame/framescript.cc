@@ -48,11 +48,11 @@ FrameScript::AddTexture(const Util::StringAtom& name, const CoreGraphics::Textur
 /**
 */
 void
-FrameScript::AddReadWriteBuffer(const Util::StringAtom& name, const CoreGraphics::ShaderRWBufferId buf)
+FrameScript::AddBuffer(const Util::StringAtom& name, const CoreGraphics::BufferId buf)
 {
-	n_assert(!this->readWriteBuffersByName.Contains(name));
-	this->readWriteBuffersByName.Add(name, buf);
-	this->readWriteBuffers.Append(buf);
+	n_assert(!this->buffersByName.Contains(name));
+	this->buffersByName.Add(name, buf);
+	this->buffers.Append(buf);
 }
 
 //------------------------------------------------------------------------------
@@ -187,7 +187,7 @@ FrameScript::Build()
 	// clear old compiled result
 	this->buildAllocator.Release();
 	 
-	Util::Dictionary<CoreGraphics::ShaderRWBufferId, Util::Array<FrameOp::BufferDependency>> rwBuffers;
+	Util::Dictionary<CoreGraphics::BufferId, Util::Array<FrameOp::BufferDependency>> rwBuffers;
 	Util::Dictionary<CoreGraphics::TextureId, Util::Array<FrameOp::TextureDependency>> textures;
 
 	// give every resource an initial dependency
@@ -284,9 +284,9 @@ FrameScript::Cleanup()
 	this->textures.Clear();
 	this->texturesByName.Clear();
 
-	for (i = 0; i < this->readWriteBuffers.Size(); i++) DestroyShaderRWBuffer(this->readWriteBuffers[i]);
-	this->readWriteBuffers.Clear();
-	this->readWriteBuffersByName.Clear();
+	for (i = 0; i < this->buffers.Size(); i++) DestroyBuffer(this->buffers[i]);
+	this->buffers.Clear();
+	this->buffersByName.Clear();
 
 	for (i = 0; i < this->events.Size(); i++) DestroyEvent(this->events[i]);
 	this->events.Clear();

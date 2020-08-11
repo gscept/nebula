@@ -225,17 +225,16 @@ FrameScriptLoader::ParseReadWriteBufferList(const Ptr<Frame::FrameScript>& scrip
 		n_assert(size != nullptr);
 
 		// create shader buffer 
-		ShaderRWBufferCreateInfo info =
-		{
-			name->string_value, size->int_value, BufferUpdateMode::DeviceLocal, false
-		};
-
-		bool relativeSize = false;
-		if (jzon_get(cur, "relative")) info.screenRelative = jzon_get(cur, "relative")->bool_value;
-
+		BufferCreateInfo info;
+		info.name = name->string_value;
+		info.size = 1;
+		info.elementSize = size->int_value;
+		info.mode = CoreGraphics::DeviceLocal;
+		info.usageFlags = CoreGraphics::ReadWriteBuffer;
+		
 		// add to script
-		ShaderRWBufferId buf = CreateShaderRWBuffer(info);
-		script->AddReadWriteBuffer(name->string_value, buf);
+		BufferId buf = CreateBuffer(info);
+		script->AddBuffer(name->string_value, buf);
 	}
 }
 

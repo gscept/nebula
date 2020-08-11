@@ -10,8 +10,7 @@
 //------------------------------------------------------------------------------
 
 #include "coregraphics/constantbuffer.h"
-#include "coregraphics/vertexbuffer.h"
-#include "coregraphics/indexbuffer.h"
+#include "coregraphics/buffer.h"
 #include "graphics/graphicscontext.h"
 #include "input/inputevent.h"
 #include "math/bbox.h"

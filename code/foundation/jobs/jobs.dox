@@ -1,0 +1,69 @@
+/**
+@page Jobs Jobs
+
+@section NebulaJobSystem The Job System
+
+The job system implements a fire-and-forget type of thread job. The basic idea is that a programmer will want to run many different tasks with different contexts, but doesn't want to bother writing a new thread class for each of these tasks. As such, the Job system is divided into three types: Jobs::JobPortId, Jobs::JobId, Jobs::JobSyncId. A job port is a gateway for a job, and must as such be constructed first. 
+
+@code
+Jobs::CreateJobPortInfo info =
+{
+    "ExampleJobPort",
+    4,
+    System::Cpu::Core1 | System::Cpu::Core2 | System::Cpu::Core3 | System::Cpu::Core4,
+    UINT_MAX
+};
+someJobPort = CreateJobPort(info);
+@endcode
+
+In this example, we specify a name, the amount of threads we want to use, a bit mask containing the processor cores we think this port should use, and a priority value. The port is then created and will have 4 Threading::Thread firing and waiting for jobs. In order to queue up a job, we do the following: 
+
+@code
+Jobs::JobId job = Jobs::CreateJob({ SomeLambdaFunction });
+Jobs::JobSchedule(job, someJobPort, ctx, false);
+@endcode
+
+This will trigger the job to run on any of the threads. In fact, how it works deeper down, is that based on the data provided to the job, the job port may chose to split the work on multiple threads in order to maximize thread occupancy. 
+
+If we then want to be able to wait for this job, we have to issue a synchronization event. This is done with Jobs::JobSyncId. 
+
+@code
+Jobs::CreateJobSyncInfo sinfo =
+{
+    nullptr
+};
+someJobSync = Jobs::CreateJobSync(sinfo);
+@endcode
+
+The only argument here is an optional callback function to run when this synchronization point is hit. For this example, we leave it as nullptr. To then issue and wait for a signal, we have two options:
+
+@code
+Jobs::JobSyncSignal(someJobSync, someJobPort);
+Jobs::JobSyncThreadWait(someJobSync, someJobPort);
+Jobs::JobSyncHostWait(someJobSync);
+@endcode
+
+First we must issue this sync primitive to be sent to the job port, otherwise we can't wait for it to arrive. Then, we can chose to either let the threads in the port syncrhonize with each other, which is done with Jobs::JobSyncThreadWait, or we can chose to synchronize with the issuing thread, which is done with Jobs::JobSyncHostWait. A good example to use Jobs::JobSyncThreadWait is when you want to run two jobs after one another, but the second job requires the previous job to finish, and since the job system splits work on multiple threads, we can't guarantee that the second job will start after all previous threads have finished. Think of the space as being the time it takes to do work, now imagine it like this:
+
+@code
+Thread 1 -- Job 1 ---- Job 2
+Thread 2 -- Job 1 -- Job 2
+Thread 3 -- Job 1 --- Job 2
+Thread 4 -- Job 1 ----------
+@endcode 
+
+For Job 2 on Threads 1, 2 & 3, we have to wait for Job 1 on Thread 4 to finish, because in our scenario Job 2 will need all data processed by Job 1. Therefore we need this: 
+
+@code
+Thread 1 -- Job 1 ---- Sync -- Job 2
+Thread 2 -- Job 1 -- Sync ---- Job 2
+Thread 3 -- Job 1 --- Sync --- Job 2
+Thread 4 -- Job 1 --- Sync --- -----
+@endcode
+
+See how it aligns? That's what Jobs::JobSyncThreadWait will do.
+
+Now, Jobs::JobSyncHostWait will just wait for all synchronization points to be reached, and it's a blocking call, meaning the invoking thread will effectively halt until all work is done. 
+
+
+*/

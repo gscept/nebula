@@ -1,9 +1,11 @@
 /**
-@namespace Math
+@page Math
 
-Nebula's Math subsystem offers a standalone library of C++ math classes.
-Nothing unusual about them ;)
+@section NebulaMath The Math Library
 
-FIXME: make math code less object oriented and more like HLSL for better 
-performance and portability to Xbox360.
+The math libary in Nebula implements a GLSL-like programming interface for math. Almost all types, with the exception of vec2, runs entirely in SSE for maximum performance. There are also layers of types, for example, you have the base types Math::vec3 and Math::vec4, but you have more specific types like point and vector, which are meant as more practical representations of such vectors.
+
+There are also other mathematical objects, like Math::sphere and Math::line which implements some common functions for doing intersections and such. All types in Math are kept in lower case because of consistency with POD, that is, with the exception of the Math namespace, it should look as if the Math classes are native to the system.
+
+The Math classes avoids using big function names and member functions as much as possible, in favor of global operators or global functions. For example, adding two vectors isn't v1.Add(v2), but instead just v1 + v2. Dot product isn't v1.Dot(v2), but instead dot(v1, v2).
 */

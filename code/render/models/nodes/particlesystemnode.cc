@@ -364,7 +364,7 @@ ParticleSystemNode::Instance::Update()
 void
 ParticleSystemNode::Instance::Draw(const SizeT numInstances, const IndexT baseInstance, Models::ModelNode::DrawPacket* packet)
 {
-	if (this->particleVbo == CoreGraphics::VertexBufferId::Invalid())
+	if (this->particleVbo == CoreGraphics::BufferId::Invalid())
 		return;
 
 	CoreGraphics::SetStreamVertexBuffer(1, this->particleVbo, this->particleVboOffset);

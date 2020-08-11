@@ -71,11 +71,33 @@ MemoryPool::GetMappedMemory(const Alloc& alloc)
 Alloc
 MemoryPool::AllocateConservative(DeviceSize alignment, DeviceSize size)
 {
+	// if size is too big, allocate a unique block for it
 	if (size > this->blockSize)
-		n_error("Allocation of size %d would not fit into block size %d", size, this->blockSize);
+	{
+		// store old block size and reset it after block allocation
+		uint32_t oldSize = this->blockSize;
+		this->blockSize = size;
+
+		uint32_t id = this->blockPool.Alloc();
+		this->blockMappedPointers.Append(nullptr);
+		DeviceMemory mem = this->CreateBlock(this->mapMemory, &this->blockMappedPointers[id]);
+
+		this->blockSize = oldSize;
+
+		this->blocks.Append(mem);
+		this->blockRanges.Append({ AllocRange{0, size} });
+		n_warning("Allocation of size %d would not fit into block size %d\n", size, this->blockSize);
+
+		Alloc ret{ this->blocks[id], DeviceSize(0), size, this->memoryType, id };
+		return ret;
+	}
 
 	for (IndexT blockIndex = 0; blockIndex < this->blocks.Size(); blockIndex++)
 	{
+		// if the block has been dealloced, use it
+		if (this->blocks[blockIndex] == DeviceMemory(0))
+			break;
+
 		Util::Array<AllocRange>& ranges = this->blockRanges[blockIndex];
 
 		// walk through and find a hole
@@ -117,15 +139,27 @@ MemoryPool::AllocateConservative(DeviceSize alignment, DeviceSize size)
 	}
 
 	// no gap big enough could be found, create new block
-	n_assert(this->size + this->blockSize < this->maxSize);
+	n_assert(this->size + this->blockSize <= this->maxSize);
 	this->size += this->blockSize;
 
-	SizeT newBlockIndex = this->blocks.Size();
-	this->blockMappedPointers.Append(nullptr);
-	DeviceMemory mem = this->CreateBlock(this->mapMemory, &this->blockMappedPointers[newBlockIndex]);
-	this->blocks.Append(mem);
-	this->blockRanges.Append({ AllocRange{0, size} });
-	Alloc ret{ this->blocks.Back(), DeviceSize(0), size, this->memoryType, newBlockIndex };
+	uint32_t id = this->blockPool.Alloc();
+	if (id >= (uint)this->blockMappedPointers.Size())
+	{
+		this->blockMappedPointers.Append(nullptr);
+		DeviceMemory mem = this->CreateBlock(this->mapMemory, &this->blockMappedPointers[id]);
+
+		this->blocks.Append(mem);
+		this->blockRanges.Append({ AllocRange{0, size} });
+	}
+	else
+	{
+		this->blockMappedPointers[id] = nullptr;
+		DeviceMemory mem = this->CreateBlock(this->mapMemory, &this->blockMappedPointers[id]);
+
+		this->blocks[id] = mem;
+		this->blockRanges[id] = { AllocRange{ 0, size } };
+	}
+	Alloc ret{ this->blocks[id], DeviceSize(0), size, this->memoryType, id };
 	return ret;
 }
 
@@ -147,9 +181,10 @@ MemoryPool::DeallocConservative(const Alloc& alloc)
 			{
 				// deallocate the memory and remove this index
 				this->DestroyBlock(this->blocks[alloc.blockIndex], this->mapMemory);
-				this->blocks.EraseIndex(alloc.blockIndex);
-				this->blockRanges.EraseIndex(alloc.blockIndex);
-				this->blockMappedPointers.EraseIndex(alloc.blockIndex);
+
+				this->blockPool.Dealloc(alloc.blockIndex);
+				this->blocks[alloc.blockIndex] = DeviceMemory(0);
+				this->blockMappedPointers[alloc.blockIndex] = nullptr;
 			}
 			return true;
 		}
@@ -164,10 +199,31 @@ Alloc
 MemoryPool::AllocateLinear(DeviceSize alignment, DeviceSize size)
 {
 	if (size > this->blockSize)
-		n_error("Allocation of size %d would not fit into block size %d", size, this->blockSize);
+	{
+		// store old block size and reset it after block allocation
+		uint32_t oldSize = this->blockSize;
+		this->blockSize = size;
+
+		uint32_t id = this->blockPool.Alloc();
+		this->blockMappedPointers.Append(nullptr);
+		DeviceMemory mem = this->CreateBlock(this->mapMemory, &this->blockMappedPointers[id]);
+
+		this->blockSize = oldSize;
+
+		this->blocks.Append(mem);
+		this->blockRanges.Append({ AllocRange{0, size} });
+		n_warning("Allocation of size %d would not fit into block size %d\n", size, this->blockSize);
+
+		Alloc ret{ this->blocks[id], DeviceSize(0), size, this->memoryType, id };
+		return ret;
+	}
 
 	for (IndexT blockIndex = 0; blockIndex < this->blocks.Size(); blockIndex++)
 	{
+		// if the block has been dealloced, use it
+		if (this->blocks[blockIndex] == DeviceMemory(0))
+			break;
+
 		Util::Array<AllocRange>& ranges = this->blockRanges[blockIndex];
 		if (ranges.Size() > 0)
 		{
@@ -199,15 +255,27 @@ MemoryPool::AllocateLinear(DeviceSize alignment, DeviceSize size)
 	}
 
 	// no range could be found, so allocate new block
-	n_assert(this->size + this->blockSize < this->maxSize);
+	n_assert(this->size + this->blockSize <= this->maxSize);
 	this->size += this->blockSize;
 
-	SizeT newBlockIndex = this->blocks.Size();
-	this->blockMappedPointers.Append(nullptr);
-	DeviceMemory mem = this->CreateBlock(this->mapMemory, &this->blockMappedPointers[newBlockIndex]);
-	this->blocks.Append(mem);
-	this->blockRanges.Append({ AllocRange{0, size} });
-	Alloc ret{ this->blocks.Back(), DeviceSize(0), size, this->memoryType, newBlockIndex };
+	uint32_t id = this->blockPool.Alloc();
+	if (id >= (uint)this->blockMappedPointers.Size())
+	{
+		this->blockMappedPointers.Append(nullptr);
+		DeviceMemory mem = this->CreateBlock(this->mapMemory, &this->blockMappedPointers[id]);
+
+		this->blocks.Append(mem);
+		this->blockRanges.Append({ AllocRange{0, size} });
+	}
+	else
+	{
+		this->blockMappedPointers[id] = nullptr;
+		DeviceMemory mem = this->CreateBlock(this->mapMemory, &this->blockMappedPointers[id]);
+
+		this->blocks[id] = mem;
+		this->blockRanges[id] = { AllocRange{ 0, size } };
+	}
+	Alloc ret{ this->blocks[id], DeviceSize(0), size, this->memoryType, id };
 	return ret;
 }
 
@@ -229,9 +297,10 @@ MemoryPool::DeallocLinear(const Alloc& alloc)
 			{
 				// deallocate the memory and remove this index
 				this->DestroyBlock(this->blocks[alloc.blockIndex], this->mapMemory);
-				this->blocks.EraseIndex(alloc.blockIndex);
-				this->blockRanges.EraseIndex(alloc.blockIndex);
-				this->blockMappedPointers.EraseIndex(alloc.blockIndex);
+
+				this->blockPool.Dealloc(alloc.blockIndex);
+				this->blocks[alloc.blockIndex] = DeviceMemory(0);
+				this->blockMappedPointers[alloc.blockIndex] = nullptr;
 			}
 			return true;
 		}

@@ -1,7 +1,7 @@
 /**
-@namespace IO
+@page IO
 
-@section NebulaIOSystem The Nebula IO Subsystem
+@section NebulaIOSystem The IO Subsystem
 
 The Nebula IO subsystem is a huge step forward from the Nebula1 and Nebula2
 IO systems. The main design goals of the new IO subsystem are:
@@ -54,7 +54,7 @@ temp directory. With only a few lines more you could create a stream object poin
 to a HTML file on a HTTP server, attach an XML reader to the stream, and parse the
 content of the HTML file without any intermediate storage file.
 
-@subsection NebulaAssigns Nebula Standard Assigns
+@subsection NebulaAssigns Standard Assigns
 
 Nebula initializes the following standard assigns:
 
@@ -84,7 +84,7 @@ that a path with assigns is often much shorter then an "absolute" path resulting
 in a smaller memory footprint.
 
 
-@subsection NebulaURI Nebula URIs
+@subsection NebulaURI URIs
 
 Resource locations are generally defined through standard URIs in Nebula. URIs
 may consist of the following parts, some of them optional:
@@ -120,7 +120,7 @@ By using Nebula assigns you can simplify those complex pathnames a lot. To refer
 a file in the application directory you can write for instance <b>home:bla.txt</b> which
 would resolve to something like <b>file:///c:/programme/[myapp]/bla.txt</b>.
 
-@subsection NebulaStreamsReadersWriters Nebula Streams, Readers and Writers
+@subsection NebulaStreamsReadersWriters Streams, Readers and Writers
 
 Streams provide a common interface for storing or transporting raw data. They
 replace the nFile class of Nebula2 with a much more general approach for storing,
@@ -168,7 +168,7 @@ Here's a simple example how to access a file on a HTTP server with a XmlReader:
 @endcode
 
 
-@subsection NebulaFileServer The Nebula File Server
+@subsection NebulaFileServer File Server
 
 The Nebula IO::FileServer class provides a singleton which offers access to the
 hosts filesystem for global operations like defining assigns, copying, deleting and

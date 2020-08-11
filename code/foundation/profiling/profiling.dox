@@ -1,0 +1,23 @@
+/**
+@page Profiling
+
+@section NebulaProfiling The Profiling Subsystem
+
+The Profiling system provides very much needed functions which allows for measuring the time some code is taking, or to provide a thread-safe counting mechanism, such as counting the amount of bytes allocated, triangles drawn, or what have you. The Profiling API is very simple to use.
+
+@subsection NebulaProfilingThreads Profiling Thread Contexts
+If starting a new thread, on which you would like to, or have to support profiling, run Profiling::ProfilingRegisterThread() when within the context of that thread. Don't worry about the JobPort, it takes care of this for us.
+
+@subsection NebulaProfilingScopes Scopes
+Time-keeping is implemented through scopes. We can think of the start of the scope as starting a timer, and the end as closing it. To open a scope, we initialize a Profiling::ProfilingScope which we provide with a name, category, file, line in that file, and a flag if this scope is unique, or there will be many smaller scopes following, which we want to accumulate the value for, rather than create unique ones. Then we push the scope to the Profiling System by using Profiling::ProfilingPushScope(). When we are at the end of the area of code we want to profile, we run Profiling::ProfilingPopScope().
+
+Thankfully for us, there are macros implemented in profiling/profiling.h which provides a shorthand for this. `N_SCOPE` will automatically push a scope to the stack and pop it when the curly brackets go out of scope. To use `N_SCOPE` with a dynamic, i.e. string variable name, use `N_SCOPE_DYN`. To use accumulative scopes, use `N_SCOPE_ACCUM` and `N_SCOPE_DYN_ACCUM`. If you don't want the restrictions of using an actual C scope to handle your timing, there is also `N_MARKER_BEGIN/N_MARKER_DYN_BEGIN`, which has to be followed by an `N_MARKER_END`.
+
+@subsection NebulaProfilingCounters Counters
+We can also use counters which are useful mechanism for keeping track of certain things we do, such that we may know if we're following certain budget constraints. To declare a counter, use the `N_DECLARE_COUNTER` macro. This will only actually instantiate a static const char*, which we can use the unique pointer for to lookup or change the value in a hash table. To modify this value later, use either Profiling::ProfilingIncreaseCounter and Profiling::ProfilingDecreaseCounter or, for consistency, the macros `N_COUNTER_INCR` and `N_COUNTER_DECR`.
+
+@subsection NebulaProfilingReadback Reading Profiling Results
+Now, we would like to somehow extract all the counters, and all the timings for our frame. We can extract counter values with Profiling::ProfilingGetCounters(), and profiling scopes with Profiling::ProfilingGetScopes() for a single thread, or all per-thread contexts, which then contains the scopes, using Profiling::ProfilingGetContexts(). 
+
+
+*/

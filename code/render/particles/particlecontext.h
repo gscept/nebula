@@ -60,9 +60,9 @@ public:
 	static void WaitForParticleUpdates(const Graphics::FrameContext& ctx);
 
 	/// get the shared particle index buffer
-	static CoreGraphics::IndexBufferId GetParticleIndexBuffer();
+	static CoreGraphics::BufferId GetParticleIndexBuffer();
 	/// get the shared vertex buffer
-	static CoreGraphics::VertexBufferId GetParticleVertexBuffer();
+	static CoreGraphics::BufferId GetParticleVertexBuffer();
 	/// get the shared vertex layout
 	static CoreGraphics::VertexLayoutId GetParticleVertexLayout();
 

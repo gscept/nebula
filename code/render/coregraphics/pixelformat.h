@@ -36,6 +36,7 @@ public:
 		DXT1AsRGB,
 		DXT3sRGB,
 		DXT5sRGB,
+		BC4,
 		BC5,
 		BC7,
 		BC7sRGB,
@@ -83,6 +84,8 @@ public:
 	static uint ToSize(Code code);
 	/// convert to number of channesl
 	static uint ToChannels(Code code);
+	/// figure out if block compressed
+	static bool ToCompressed(Code code);
 	/// convert to IL image components
 	static uint ToILComponents(Code code);
 	/// convert to IL image type

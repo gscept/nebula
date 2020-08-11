@@ -27,7 +27,7 @@ struct
 	CoreGraphics::ShaderId terrainShader;
 	CoreGraphics::ShaderProgramId terrainProgram;
 	CoreGraphics::ResourceTableId resourceTable;
-	CoreGraphics::ConstantBufferId constants;
+	CoreGraphics::BufferId systemConstants;
 	Util::Array<CoreGraphics::VertexComponent> components;
 	CoreGraphics::VertexLayoutId vlo;
 	Util::FixedArray<Util::FixedArray<Util::FixedArray<uint>>> pageReferenceCount;

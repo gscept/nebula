@@ -1,0 +1,59 @@
+/**
+@page Ids
+
+@section NebulaIDSystem The Ids Library
+
+The Ids library define a set of utility functions and classes used to manage object handles, which are known as Ids. In ids/id.h you will find a bunch of utility functions to define an ID with a certain set of bits, be it a 16 + 16 bit id, a 24 + 8 bit id, or what have you. ids/idallocator.h implements what we call an 'id-based allocator', which is implemented like a memory pool of objects, however the objects are not stored as structs, but rather as deconstructed arrays of each member.
+
+@code
+struct Foo
+{
+    int a, b, c;
+}
+
+IdAllocator<
+    int,           // this is a
+    int,           // this is b
+    int            // this is c
+    >           
+    FooAllcoator;
+@endcode
+
+Internally, FooAllocator has just been defined as being a tuple of three Util::Array<int>, one for each type. Each will be numbered, but for the sake of it, let's say that 'member' a is stored in Util::Array<int> A, and b is stored in Util::Array<int> B, etc... The type can of course be different for each member. Whenever FooAllocator.Alloc() is called, the allocator either allocates more memory for A, B and C, or, if there are free slots, returns that free slot. A slot is freed if FooAllocator first does Alloc() which returns an Id, then at some later point, that same Id is passed to Dealloc(), which doesn't destroy the memory, but simply marks that slot as free. This allows us to quickly deallocate and reallocate objects without actually having to allocate any memory, and it can keep each individual member separate, which results in a low-fragmentation container which is extremely benificial for the cache. For a better understanding of this, go to util/arrayallocator.h. You can think of it this way:
+
+@code
+FooAllocator's initial state:
+0 - Used
+1 - Used
+2 - Used
+3 - Used
+4 - Used
+5 - Used
+6 - Used
+7 - Used
+
+FooAllocator::Dealloc(3) is run:
+
+0 - Used
+1 - Used
+2 - Used
+3 - Used -> Free
+4 - Used
+5 - Used
+6 - Used
+7 - Used
+
+FooAllocator::Alloc() is run:
+
+0 - Used
+1 - Used
+2 - Used
+3 - Free -> Used, 3 is returned
+4 - Used
+5 - Used
+6 - Used
+7 - Used
+
+@endcode
+
+*/

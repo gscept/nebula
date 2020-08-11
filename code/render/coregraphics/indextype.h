@@ -26,6 +26,8 @@ public:
 
     /// get byte size of index
     static SizeT SizeOf(IndexType::Code type);
+    /// get size type from size
+    static IndexType::Code ToIndexType(const SizeT size);
     /// convert index type to string
     static Util::String ToString(IndexType::Code type);
     /// convert string to index type
@@ -44,6 +46,21 @@ IndexType::SizeOf(IndexType::Code type)
         case Index16:   return 2;
         case Index32:   return 4;
         default:        return 0;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline IndexType::Code 
+IndexType::ToIndexType(const SizeT size)
+{
+    n_assert(size != 0);
+    switch (size)
+    {
+    case 2:         return Index16;
+    case 4:         return Index32;
+    default:        return None;
     }
 }
 

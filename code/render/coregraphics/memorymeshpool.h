@@ -9,8 +9,6 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "resources/resourcememorypool.h"
-#include "coregraphics/vertexbuffer.h"
-#include "coregraphics/indexbuffer.h"
 #include "coregraphics/primitivegroup.h"
 #include "coregraphics/mesh.h"
 
@@ -36,9 +34,9 @@ public:
 	/// get primitive groups from mesh
 	const Util::Array<CoreGraphics::PrimitiveGroup>& GetPrimitiveGroups(const MeshId id);
 	/// get vertex buffer
-	const VertexBufferId GetVertexBuffer(const MeshId id, const IndexT stream);	
+	const BufferId GetVertexBuffer(const MeshId id, const IndexT stream);
 	/// get index buffer
-	const IndexBufferId GetIndexBuffer(const MeshId id);
+	const BufferId GetIndexBuffer(const MeshId id);
 	/// get topology
 	const CoreGraphics::PrimitiveTopology::Code GetPrimitiveTopology(const MeshId id);
 private:
