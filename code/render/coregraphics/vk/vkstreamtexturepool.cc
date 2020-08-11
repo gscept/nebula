@@ -79,7 +79,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	void* srcData = stream->MemoryMap();
 	uint srcDataSize = stream->GetSize();
 
-	static const int NumBasicLods = 5;
+	static const int NumBasicLods = immediate ? 1000 : 5;
 
 	// load using gliml
 	gliml::context ctx;
@@ -102,10 +102,8 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 		VkPhysicalDevice physicalDev = Vulkan::GetCurrentPhysicalDevice();
 		VkDevice dev = Vulkan::GetCurrentDevice();
 
-	
-		// FIXME uses the values from the first face in the image for everything. cubemaps with differing resolutions will break
 		int numMips = ctx.num_mipmaps(0);
-		int mips = numMips - NumBasicLods;
+		int mips = Math::n_max(0, numMips - NumBasicLods);
 		int depth = ctx.image_depth(0, 0);
 		int width = ctx.image_width(0, 0);
 		int height = ctx.image_height(0, 0);
@@ -223,7 +221,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 
 				// add host memory buffer, intermediate device memory, and intermediate device buffer to delete queue
 				SubmissionContextFreeMemory(sub, outMem);
-				SubmissionContextFreeBuffer(sub, dev, outBuf);
+				SubmissionContextFreeVkBuffer(sub, dev, outBuf);
 			}
 		}
 
@@ -267,11 +265,14 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 inline void
 VkStreamTexturePool::Unload(const Resources::ResourceId id)
 {
+	texturePool->EnterGet();
 	VkTextureStreamInfo& streamInfo = texturePool->Get<Texture_StreamInfo>(id.resourceId);
 	VkTextureLoadInfo& loadInfo = texturePool->Get<Texture_LoadInfo>(id.resourceId);
 	VkTextureRuntimeInfo& runtimeInfo = texturePool->Get<Texture_RuntimeInfo>(id.resourceId);
+
 	streamInfo.stream->MemoryUnmap();
 	texturePool->Unload(id);
+	texturePool->LeaveGet();
 }
 
 //------------------------------------------------------------------------------
@@ -377,7 +378,7 @@ VkStreamTexturePool::StreamMaxLOD(const Resources::ResourceId& id, const float l
 
 			// add host memory buffer, intermediate device memory, and intermediate device buffer to delete queue
 			SubmissionContextFreeMemory(sub, outMem);
-			SubmissionContextFreeBuffer(sub, dev, outBuf);
+			SubmissionContextFreeVkBuffer(sub, dev, outBuf);
 		}
 	}
 
@@ -397,7 +398,15 @@ VkStreamTexturePool::StreamMaxLOD(const Resources::ResourceId& id, const float l
 
 	// update lod info and add image view for recreation
 	streamInfo.lowestLod = adjustedLod;
-	VkShaderServer::Instance()->AddPendingImageView(TextureId(id), viewCreate, runtimeInfo.bind);
+	if (immediate)
+	{
+		VkResult res = vkCreateImageView(GetCurrentDevice(), &viewCreate, nullptr, &runtimeInfo.view);
+		n_assert(res == VK_SUCCESS);
+	}
+	else
+	{
+		VkShaderServer::Instance()->AddPendingImageView(TextureId(id), viewCreate, runtimeInfo.bind);
+	}
 }
 
 } // namespace Vulkan
