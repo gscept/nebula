@@ -125,12 +125,10 @@ ResourceStreamPool::Update(IndexT frameIndex)
 
 		// skip this resource if not loaded, but keep it in the list
 		this->asyncSection.Enter();
-		if (this->states[streamLod.id.poolId] != Resource::Loaded)
-		{
-			continue;
-		}
-
+		bool resourceNotLoaded = this->states[streamLod.id.poolId] != Resource::Loaded;
 		this->asyncSection.Leave();
+		if (resourceNotLoaded)
+			continue;
 
 		// if async is supported, put the stream job on a thread!
 		if (this->async && !streamLod.immediate)
@@ -161,7 +159,7 @@ ResourceStreamPool::Update(IndexT frameIndex)
 			if (this->states[unload.resourceId.poolId] == Resource::Loaded)
 			{
 				// unload if loaded
-				this->Unload(unload.resourceId.resourceId);
+				this->Unload(unload.resourceId);
 				this->states[unload.resourceId.poolId] = Resource::Unloaded;
 			}
 
@@ -559,11 +557,18 @@ ResourceStreamPool::ReloadResource(const Resources::ResourceId& id, std::functio
 void 
 ResourceStreamPool::SetMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate)
 {
-	_PendingStreamLod pending;
-	pending.id = id;
-	pending.lod = lod;
-	pending.immediate = immediate;
-	this->pendingStreamQueue.Enqueue(pending);
+	if (immediate)
+	{
+		this->StreamMaxLOD(id, lod, immediate);
+	}
+	else
+	{
+		_PendingStreamLod pending;
+		pending.id = id;
+		pending.lod = lod;
+		pending.immediate = immediate;
+		this->pendingStreamQueue.Enqueue(pending);
+	}
 }
 
 } // namespace Resources

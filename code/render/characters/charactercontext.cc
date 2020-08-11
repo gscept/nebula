@@ -17,6 +17,7 @@
 #include "dynui/im3d/im3dcontext.h"
 #include "models/nodes/characternode.h"
 #include "profiling/profiling.h"
+#include "resources/resourceserver.h"
 
 using namespace Graphics;
 using namespace Resources;
@@ -95,47 +96,37 @@ CharacterContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Re
 	n_assert_fmt(mdlId != ContextEntityId::Invalid(), "Entity %d needs to be setup as a model before character!", id.HashCode());
 	characterContextAllocator.Get<ModelContextId>(cid.id) = id;
 
-	// create skeleton
-	ResourceCreateInfo info;
-	info.resource = skeleton;
-	info.tag = tag;
-	info.async = false;
-	info.failCallback = nullptr;
-	info.successCallback = [cid, id](Resources::ResourceId rid)
-	{
-		characterContextAllocator.Get<SkeletonId>(cid.id) = rid.As<Characters::SkeletonId>();
-		characterContextAllocator.Get<Loaded>(cid.id) |= SkeletonLoaded;
-
-		const Util::FixedArray<CharacterJoint>& joints = Characters::SkeletonGetJoints(rid.As<Characters::SkeletonId>());
-		characterContextAllocator.Get<JobJoints>(cid.id).Resize(joints.Size());
-
-		// setup joints, scaled joints and user controlled joints
-		characterContextAllocator.Get<JointPalette>(cid.id).Resize(joints.Size());
-		characterContextAllocator.Get<JointPaletteScaled>(cid.id).Resize(joints.Size());
-		characterContextAllocator.Get<UserControlledJoint>(cid.id).Resize(joints.Size());
-
-		// setup job joints
-		IndexT i;
-		for (i = 0; i < joints.Size(); i++)
+	characterContextAllocator.Get<SkeletonId>(cid.id) = Resources::CreateResource(skeleton, tag, [cid, id](Resources::ResourceId rid)
 		{
-			const CharacterJoint& joint = joints[i];
-			SkeletonJobJoint& jobJoint = characterContextAllocator.Get<JobJoints>(cid.id)[i];
-			jobJoint.parentJointIndex = joint.parentJointIndex;
-		}
-	};
-	characterContextAllocator.Get<SkeletonId>(cid.id) = Characters::CreateSkeleton(info);
+			characterContextAllocator.Get<SkeletonId>(cid.id) = rid.As<Characters::SkeletonId>();
+			characterContextAllocator.Get<Loaded>(cid.id) |= SkeletonLoaded;
 
-	// create animation
-	info.resource = animation;
-	info.successCallback = [cid, id](Resources::ResourceId rid)
-	{
-		characterContextAllocator.Get<AnimationId>(cid.id) = rid.As<CoreAnimation::AnimResourceId>();
-		characterContextAllocator.Get<Loaded>(cid.id) |= AnimationLoaded;
+			const Util::FixedArray<CharacterJoint>& joints = Characters::SkeletonGetJoints(rid.As<Characters::SkeletonId>());
+			characterContextAllocator.Get<JobJoints>(cid.id).Resize(joints.Size());
 
-		// setup sample buffer when animation is done loading
-		characterContextAllocator.Get<SampleBuffer>(cid.id).Setup(rid.As<CoreAnimation::AnimResourceId>());
-	};
-	characterContextAllocator.Get<AnimationId>(cid.id) = CoreAnimation::CreateAnimation(info);
+			// setup joints, scaled joints and user controlled joints
+			characterContextAllocator.Get<JointPalette>(cid.id).Resize(joints.Size());
+			characterContextAllocator.Get<JointPaletteScaled>(cid.id).Resize(joints.Size());
+			characterContextAllocator.Get<UserControlledJoint>(cid.id).Resize(joints.Size());
+
+			// setup job joints
+			IndexT i;
+			for (i = 0; i < joints.Size(); i++)
+			{
+				const CharacterJoint& joint = joints[i];
+				SkeletonJobJoint& jobJoint = characterContextAllocator.Get<JobJoints>(cid.id)[i];
+				jobJoint.parentJointIndex = joint.parentJointIndex;
+			}
+		}, nullptr, false);
+
+	characterContextAllocator.Get<AnimationId>(cid.id) = Resources::CreateResource(animation, tag, [cid, id](Resources::ResourceId rid)
+		{
+			characterContextAllocator.Get<AnimationId>(cid.id) = rid.As<CoreAnimation::AnimResourceId>();
+			characterContextAllocator.Get<Loaded>(cid.id) |= AnimationLoaded;
+
+			// setup sample buffer when animation is done loading
+			characterContextAllocator.Get<SampleBuffer>(cid.id).Setup(rid.As<CoreAnimation::AnimResourceId>());
+		}, nullptr, false);
 
 	// clear playing animation state
 	IndexT i;
