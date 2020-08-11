@@ -81,6 +81,61 @@ struct float4
     };
 };
 
+struct int2
+{
+    union
+    {
+        struct { int x, y; };
+        int v[2];
+    };
+};
+
+struct int3
+{
+    union
+    {
+        struct { int x, y, z; };
+        int v[3];
+    };
+};
+
+struct int4
+{
+    union
+    {
+        struct { int x, y, z, w; };
+        int v[4];
+    };
+};
+
+struct uint2
+{
+    union
+    {
+        struct { unsigned int x, y; };
+        unsigned int v[2];
+    };
+};
+
+struct uint3
+{
+    union
+    {
+        struct { unsigned int x, y, z; };
+        unsigned int v[3];
+    };
+};
+
+struct uint4
+{
+    union
+    {
+        struct { unsigned int x, y, z, w; };
+        unsigned int v[4];
+    };
+};
+
+
 //------------------------------------------------------------------------------
 /**
     Return a pseudo random number between 0 and 1.
