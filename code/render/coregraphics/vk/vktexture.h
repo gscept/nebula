@@ -150,5 +150,7 @@ const VkImage TextureGetVkImage(const CoreGraphics::TextureId id);
 const VkImageView TextureGetVkImageView(const CoreGraphics::TextureId id);
 /// get vk image view for stencil
 const VkImageView TextureGetVkStencilImageView(const CoreGraphics::TextureId id);
+/// get the device created the image
+const VkDevice TextureGetVkDevice(const CoreGraphics::TextureId id);
 
 } // namespace Vulkan

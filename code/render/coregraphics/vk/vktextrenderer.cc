@@ -130,7 +130,7 @@ VkTextRenderer::Open()
 	// setup random texture
 	TextureCreateInfo texInfo;
 	texInfo.name = "GlyphTexture"_atm;
-	texInfo.usage = TextureUsage::ImmutableUsage;
+	texInfo.usage = TextureUsage::SampleTexture;
 	texInfo.tag = "render_system"_atm;
 	texInfo.buffer = bitmap;
 	texInfo.type = TextureType::Texture2D;

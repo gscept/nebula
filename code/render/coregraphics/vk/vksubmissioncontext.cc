@@ -8,6 +8,8 @@
 #include "coregraphics/semaphore.h"
 #include "coregraphics/fence.h"
 #include "coregraphics/graphicsdevice.h"
+#include "vktexture.h"
+#include "vkbuffer.h"
 
 #ifdef CreateSemaphore
 #pragma push_macro("CreateSemaphore")
@@ -23,7 +25,7 @@ SubmissionContextAllocator submissionContextAllocator;
 /**
 */
 void 
-SubmissionContextFreeBuffer(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkBuffer buf)
+SubmissionContextFreeVkBuffer(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkBuffer buf)
 {
 	// get fence so we can wait for it
 	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
@@ -35,45 +37,12 @@ SubmissionContextFreeBuffer(const CoreGraphics::SubmissionContextId id, VkDevice
 /**
 */
 void 
-SubmissionContextFreeImage(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkImage img)
+SubmissionContextFreeVkImage(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkImage img)
 {
 	// get fence so we can wait for it
 	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
 	Util::Array<std::tuple<VkDevice, VkImage>>& images = submissionContextAllocator.Get<SubmissionContext_FreeImages>(id.id24)[currentIndex];
 	images.Append(std::make_tuple(dev, img));
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-SubmissionContextFreeCommandBuffer(const CoreGraphics::SubmissionContextId id, const CoreGraphics::CommandBufferId cmd)
-{
-	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
-	Util::Array<CoreGraphics::CommandBufferId>& buffers = submissionContextAllocator.Get<SubmissionContext_FreeCommandBuffers>(id.id24)[currentIndex];
-	buffers.Append(cmd);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-SubmissionContextClearCommandBuffer(const CoreGraphics::SubmissionContextId id, const CoreGraphics::CommandBufferId cmd)
-{
-	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
-	Util::Array<CoreGraphics::CommandBufferId>& buffers = submissionContextAllocator.Get<SubmissionContext_ClearCommandBuffers>(id.id24)[currentIndex];
-	buffers.Append(cmd);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-SubmissionContextFreeMemory(const CoreGraphics::SubmissionContextId id, const CoreGraphics::Alloc& alloc)
-{
-	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
-	Util::Array<CoreGraphics::Alloc>& mem = submissionContextAllocator.Get<SubmissionContext_FreeMemories>(id.id24)[currentIndex];
-	mem.Append(alloc);
 }
 
 //------------------------------------------------------------------------------
@@ -226,6 +195,65 @@ SubmissionContextGetCmdBuffer(const SubmissionContextId id)
 /**
 */
 void 
+SubmissionContextFreeImage(const CoreGraphics::SubmissionContextId id, CoreGraphics::TextureId tex)
+{
+	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
+	Util::Array<std::tuple<VkDevice, VkImage>>& images = submissionContextAllocator.Get<SubmissionContext_FreeImages>(id.id24)[currentIndex];
+	VkImage img = Vulkan::TextureGetVkImage(tex);
+	VkDevice dev = Vulkan::TextureGetVkDevice(tex);
+	images.Append(std::make_tuple(dev, img));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+SubmissionContextFreeBuffer(const CoreGraphics::SubmissionContextId id, CoreGraphics::BufferId buf)
+{
+	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
+	Util::Array<std::tuple<VkDevice, VkBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContext_FreeBuffers>(id.id24)[currentIndex];
+	VkBuffer vkBuf = Vulkan::BufferGetVk(buf);
+	VkDevice dev = Vulkan::BufferGetVkDevice(buf);
+	buffers.Append(std::make_tuple(dev, vkBuf));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SubmissionContextFreeCommandBuffer(const CoreGraphics::SubmissionContextId id, const CoreGraphics::CommandBufferId cmd)
+{
+	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
+	Util::Array<CoreGraphics::CommandBufferId>& buffers = submissionContextAllocator.Get<SubmissionContext_FreeCommandBuffers>(id.id24)[currentIndex];
+	buffers.Append(cmd);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SubmissionContextClearCommandBuffer(const CoreGraphics::SubmissionContextId id, const CoreGraphics::CommandBufferId cmd)
+{
+	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
+	Util::Array<CoreGraphics::CommandBufferId>& buffers = submissionContextAllocator.Get<SubmissionContext_ClearCommandBuffers>(id.id24)[currentIndex];
+	buffers.Append(cmd);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SubmissionContextFreeMemory(const CoreGraphics::SubmissionContextId id, const CoreGraphics::Alloc& alloc)
+{
+	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
+	Util::Array<CoreGraphics::Alloc>& mem = submissionContextAllocator.Get<SubmissionContext_FreeMemories>(id.id24)[currentIndex];
+	mem.Append(alloc);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
 SubmissionContextFreeHostMemory(const SubmissionContextId id, void* buf)
 {
 	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
@@ -302,6 +330,11 @@ SubmissionContextNextCycle(const SubmissionContextId id, const std::function<voi
 	for (IndexT i = 0; i < hostMemories.Size(); i++)
 		Memory::Free(Memory::ScratchHeap, hostMemories[i]);
 	hostMemories.Clear();
+
+	Util::Array<CoreGraphics::Alloc>& mem = submissionContextAllocator.Get<SubmissionContext_FreeMemories>(id.id24)[currentIndex];
+	for (IndexT i = 0; i < mem.Size(); i++)
+		FreeMemory(mem[i]);
+	mem.Clear();
 
 	return FenceId::Invalid();
 }

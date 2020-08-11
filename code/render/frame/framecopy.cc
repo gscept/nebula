@@ -69,7 +69,7 @@ FrameCopy::CompiledImpl::Run(const IndexT frameIndex)
 	CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, this->name.Value());
 #endif
 
-	CoreGraphics::Copy(this->from, fromRegion, this->to, toRegion);
+	CoreGraphics::Copy(GraphicsQueueType, this->from, fromRegion, 0, 0, this->to, toRegion, 0, 0);
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);

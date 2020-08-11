@@ -118,6 +118,9 @@ _DEC_VK(vkDestroyEvent);
 _DEC_VK(vkCmdSetEvent);
 _DEC_VK(vkCmdWaitEvents);
 _DEC_VK(vkCmdResetEvent);
+_DEC_VK(vkGetEventStatus);
+_DEC_VK(vkResetEvent);
+_DEC_VK(vkSetEvent);
 
 _DEC_VK(vkCmdPipelineBarrier);
 _DEC_VK(vkCreateFence);
@@ -173,6 +176,7 @@ _DEC_VK(vkFreeMemory);
 _DEC_VK(vkMapMemory);
 _DEC_VK(vkUnmapMemory);
 _DEC_VK(vkFlushMappedMemoryRanges);
+_DEC_VK(vkInvalidateMappedMemoryRanges);
 
 _DEC_VK(vkGetBufferMemoryRequirements);
 _DEC_VK(vkGetImageMemoryRequirements);

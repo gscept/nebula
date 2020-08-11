@@ -143,8 +143,6 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
 						CoreGraphics::EventCreateInfo& info = waitEvents.AddUnique(tuple);
 						info.name = info.name.IsValid() ? info.name.AsString() + " + " + textureName.AsString() : textureName.AsString();
 						info.createSignaled = false;
-						info.leftDependency = dep.stage;
-						info.rightDependency = stage;
 						info.textures.Append(barrier);
 						signalEvents.AddUnique(tuple) = dep.op;
 					}
@@ -227,7 +225,7 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
 void 
 FrameOp::AnalyzeAndSetupBufferBarriers(
 	struct FrameOp::Compiled* op,
-	CoreGraphics::ShaderRWBufferId buf,
+	CoreGraphics::BufferId buf,
 	const Util::StringAtom& bufferName,
 	DependencyIntent readOrWrite,
 	CoreGraphics::BarrierAccess access,
@@ -283,8 +281,6 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
 						CoreGraphics::EventCreateInfo& info = waitEvents.AddUnique(tuple);
 						info.name = info.name.IsValid() ? info.name.AsString() + " + " + bufferName.AsString() : bufferName.AsString();
 						info.createSignaled = false;
-						info.leftDependency = dep.stage;
-						info.rightDependency = stage;
 						info.rwBuffers.Append(barrier);
 						signalEvents.AddUnique(tuple) = dep.op;
 					}
@@ -344,7 +340,7 @@ FrameOp::SetupSynchronization(
 	Memory::ArenaAllocator<BIG_CHUNK>& allocator,
 	Util::Array<CoreGraphics::EventId>& events, 
 	Util::Array<CoreGraphics::BarrierId>& barriers, 
-	Util::Dictionary<CoreGraphics::ShaderRWBufferId, Util::Array<BufferDependency>>& rwBuffers,
+	Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
 	Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
 {
 	n_assert(this->compiled != nullptr);
@@ -406,7 +402,7 @@ FrameOp::SetupSynchronization(
 		// go through buffer dependencies
 		for (i = 0; i < this->rwBufferDeps.Size(); i++)
 		{
-			const CoreGraphics::ShaderRWBufferId& buf = this->rwBufferDeps.KeyAtIndex(i);
+			const CoreGraphics::BufferId& buf = this->rwBufferDeps.KeyAtIndex(i);
 			IndexT idx = rwBuffers.FindIndex(this->rwBufferDeps.KeyAtIndex(i));
 
 			// right dependency set
@@ -511,7 +507,7 @@ FrameOp::Compiled::QueuePreSync()
 	IndexT i;
 	for (i = 0; i < this->numWaitEvents; i++)
 	{
-		CoreGraphics::EventWaitAndReset(this->waitEvents[i].event, this->waitEvents[i].queue);
+		CoreGraphics::EventWaitAndReset(this->waitEvents[i].event, this->waitEvents[i].waitStage, this->waitEvents[i].signalStage, this->waitEvents[i].queue);
 	}
 	for (i = 0; i < this->numBarriers; i++)
 	{
@@ -529,7 +525,7 @@ FrameOp::Compiled::QueuePostSync()
 	IndexT i;
 	for (i = 0; i < this->numSignalEvents; i++)
 	{
-		CoreGraphics::EventSignal(this->signalEvents[i].event, this->signalEvents[i].queue);
+		CoreGraphics::EventSignal(this->signalEvents[i].event, this->signalEvents[i].stage, this->signalEvents[i].queue);
 	}
 }
 

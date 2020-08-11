@@ -11,6 +11,7 @@
 //------------------------------------------------------------------------------
 #include "coregraphics/graphicsdevice.h"
 #include "util/set.h"
+#include "vkbarrier.h"
 #include "vksubcontexthandler.h"
 #include "vkcommandbufferthread.h"
 #include "vkmemory.h"
@@ -52,17 +53,7 @@ const VkQueue GetQueue(const CoreGraphics::QueueType type, const IndexT index);
 const VkQueue GetCurrentQueue(const CoreGraphics::QueueType type);
 
 /// insert barrier not created from a barrier object
-void InsertBarrier(
-	VkPipelineStageFlags srcFlags,
-	VkPipelineStageFlags dstFlags,
-	VkDependencyFlags dep,
-	uint32_t numMemoryBarriers,
-	VkMemoryBarrier* memoryBarriers,
-	uint32_t numBufferBarriers,
-	VkBufferMemoryBarrier* bufferBarriers,
-	uint32_t numImageBarriers,
-	VkImageMemoryBarrier* imageBarriers,
-	const CoreGraphics::QueueType queue);
+void InsertBarrier(const VkBarrierInfo& barrier, const CoreGraphics::QueueType queue);
 
 /// update descriptors
 void BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, bool shared = false);

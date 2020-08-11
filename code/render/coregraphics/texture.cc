@@ -59,6 +59,15 @@ TextureGetDimensions(const TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
+TextureRelativeDimensions 
+TextureGetRelativeDimensions(const TextureId id)
+{
+	return texturePool->GetRelativeDimensions(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 CoreGraphics::PixelFormat::Code
 TextureGetPixelFormat(const TextureId id)
 {
@@ -252,6 +261,15 @@ TextureSparseGetNumPages(const CoreGraphics::TextureId id, IndexT layer, IndexT 
 //------------------------------------------------------------------------------
 /**
 */
+IndexT 
+TextureSparseGetMaxMip(const CoreGraphics::TextureId id)
+{
+	return texturePool->SparseGetMaxMip(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 TextureSparseEvict(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex)
 {
@@ -271,6 +289,24 @@ TextureSparseMakeResident(const CoreGraphics::TextureId id, IndexT layer, IndexT
 /**
 */
 void 
+TextureSparseEvictMip(const CoreGraphics::TextureId id, IndexT layer, IndexT mip)
+{
+	texturePool->SparseEvictMip(id, layer, mip);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+TextureSparseMakeMipResident(const CoreGraphics::TextureId id, IndexT layer, IndexT mip)
+{
+	texturePool->SparseMakeMipResident(id, layer, mip);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
 TextureSparseCommitChanges(const CoreGraphics::TextureId id)
 {
 	texturePool->SparseCommitChanges(id);
@@ -280,9 +316,70 @@ TextureSparseCommitChanges(const CoreGraphics::TextureId id)
 /**
 */
 void 
-TextureSparseUpdate(const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, const CoreGraphics::TextureId source, const CoreGraphics::SubmissionContextId sub)
+TextureCopy(
+	const CoreGraphics::TextureId toId, const Math::rectangle<int> toRegion, IndexT toMip, IndexT toLayer, 
+	const CoreGraphics::TextureId fromId, const Math::rectangle<int> fromRegion, IndexT fromMip, IndexT fromLayer, 
+	const CoreGraphics::SubmissionContextId sub)
 {
-	texturePool->SparseUpdate(id, region, mip, source, sub);
+	texturePool->Copy(toId, toRegion, toMip, toLayer, fromId, fromRegion, fromMip, fromLayer, sub);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+TextureCopy(
+	const CoreGraphics::TextureId toId, 
+	const Math::rectangle<int> toRegion, 
+	IndexT toMip, 
+	IndexT toLayer, 
+	const CoreGraphics::BufferId fromId, 
+	IndexT offset, 
+	const CoreGraphics::SubmissionContextId sub)
+{
+	texturePool->Copy(toId, toRegion, toMip, toLayer, fromId, offset, sub);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+TextureUpdate(const CoreGraphics::TextureId id, const Math::rectangle<int>& region, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub)
+{
+	texturePool->Update(id, region, mip, layer, buf, sub);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+TextureUpdate(const CoreGraphics::TextureId id, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub)
+{
+	TextureDimensions dims = TextureGetDimensions(id);
+	Math::rectangle<int> region;
+	region.left = 0;
+	region.top = 0;
+	region.right = dims.width;
+	region.bottom = dims.height;
+	texturePool->Update(id, region, mip, layer, buf, sub);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+TextureClearColor(const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres)
+{
+	texturePool->ClearColor(id, color, layout, subres);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+TextureClearDepthStencil(const CoreGraphics::TextureId id, float depth, uint stencil, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres)
+{
+	texturePool->ClearDepthStencil(id, depth, stencil, layout, subres);
 }
 
 //------------------------------------------------------------------------------
@@ -301,7 +398,7 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
 		rt.window = CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow();
 		const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(rt.window);
 		rt.name = info.name;
-		rt.usage = CoreGraphics::TextureUsage::RenderUsage | CoreGraphics::TextureUsage::CopyUsage;
+		rt.usage = CoreGraphics::TextureUsage::RenderTexture | CoreGraphics::TextureUsage::TransferTextureDestination;
 		rt.tag = info.tag;
 		rt.buffer = nullptr;
 		rt.type = CoreGraphics::Texture2D;

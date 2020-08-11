@@ -26,10 +26,9 @@ struct EventCreateInfo
 {
 	Util::StringAtom name;
 	bool createSignaled : 1;
-	BarrierStage leftDependency;
-	BarrierStage rightDependency;
 	Util::Array<TextureBarrier> textures;
 	Util::Array<BufferBarrier> rwBuffers;
+	Util::Array<ExecutionBarrier> barriers;
 };
 
 /// create new event
@@ -38,13 +37,24 @@ EventId CreateEvent(const EventCreateInfo& info);
 void DestroyEvent(const EventId id);
 
 /// insert event in command buffer to be signaled
-void EventSignal(const EventId id, const CoreGraphics::QueueType queue);
+void EventSignal(const EventId id, const CoreGraphics::BarrierStage stage, const CoreGraphics::QueueType queue);
 /// insert wait event in command buffer to wait for
-void EventWait(const EventId id, const CoreGraphics::QueueType queue);
+void EventWait(
+	const EventId id, 
+	const CoreGraphics::BarrierStage waitStage,
+	const CoreGraphics::BarrierStage signalStage,
+	const CoreGraphics::QueueType queue);
 /// insert reset event
-void EventReset(const EventId id, const CoreGraphics::QueueType queue);
+void EventReset(const EventId id, const CoreGraphics::BarrierStage stage, const CoreGraphics::QueueType queue);
 /// insert both a wait and reset
-void EventWaitAndReset(const EventId id, const CoreGraphics::QueueType queue);
+void EventWaitAndReset(const EventId id, const CoreGraphics::BarrierStage waitStage, const CoreGraphics::BarrierStage signalStage, const CoreGraphics::QueueType queue);
+
+/// get event status on host
+bool EventPoll(const EventId id);
+/// unset event on host
+void EventHostReset(const EventId id);
+/// signal event on host
+void EventHostSignal(const EventId id);
 
 } // CoreGraphics
 

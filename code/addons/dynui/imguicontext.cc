@@ -121,8 +121,9 @@ ImguiContext::ImguiDrawFunction()
 
 				// set texture in shader, we shouldn't have to put it into ImGui
 				CoreGraphics::TextureId texture = tex.nebulaHandle;
+				CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(texture);
 				auto usage = CoreGraphics::TextureGetUsage(texture);
-				if (usage & CoreGraphics::TextureUsage::RenderUsage || usage & CoreGraphics::TextureUsage::ReadWriteUsage)
+				if (usage & CoreGraphics::TextureUsage::RenderTexture || usage & CoreGraphics::TextureUsage::ReadWriteTexture)
 				{
 					texInfo.useAlpha = false;
 				}
@@ -130,6 +131,10 @@ ImguiContext::ImguiDrawFunction()
 				if (layers > 1)
 				{
 					texInfo.type = 1;
+				}
+				if (dims.depth > 1)
+				{
+					texInfo.type = 2;
 				}
 				texInfo.layer = tex.layer;
 				texInfo.mip = tex.mip;
@@ -395,7 +400,7 @@ ImguiContext::Create()
 
 	CoreGraphics::TextureCreateInfo texInfo;
 	texInfo.name = "imgui_font_tex"_atm;
-	texInfo.usage = TextureUsage::ImmutableUsage;
+	texInfo.usage = TextureUsage::SampleTexture;
 	texInfo.tag = "system"_atm;
 	texInfo.buffer = buffer;
 	texInfo.type = TextureType::Texture2D;

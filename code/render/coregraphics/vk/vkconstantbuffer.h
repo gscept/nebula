@@ -34,7 +34,7 @@ struct VkConstantBufferSetupInfo
 	VkBufferCreateInfo info;
 	CoreGraphics::Alloc mem;
 	SizeT size;
-	CoreGraphics::BufferUpdateMode mode;
+	CoreGraphics::BufferAccessMode mode;
 };
 
 struct VkConstantBufferMapInfo

@@ -75,7 +75,7 @@ TonemapContext::Create()
 				"Tonemapping Downscale Begin");
 
 			TextureDimensions dims = TextureGetDimensions(tonemapState.colorBuffer);
-			Blit(tonemapState.colorBuffer, Math::rectangle<int>(0, 0, dims.width, dims.height), 0, tonemapState.downsample2x2, Math::rectangle<int>(0, 0, 2, 2), 0);
+			Blit(tonemapState.colorBuffer, Math::rectangle<int>(0, 0, dims.width, dims.height), 0, 0, tonemapState.downsample2x2, Math::rectangle<int>(0, 0, 2, 2), 0, 0);
 
 			BarrierInsert(
 				GraphicsQueueType,
@@ -130,7 +130,16 @@ TonemapContext::Create()
 				nullptr,
 				"Tonemapping Copy Last Frame Begin");
 
-			Copy(tonemapState.averageLumBuffer, Math::rectangle<int>(0, 0, 1, 1), tonemapState.copy, Math::rectangle<int>(0, 0, 1, 1));
+			Copy(
+				GraphicsQueueType, 
+				tonemapState.averageLumBuffer, 
+				Math::rectangle<int>(0, 0, 1, 1), 
+				0, 
+				0, 
+				tonemapState.copy, 
+				Math::rectangle<int>(0, 0, 1, 1),
+				0,
+				0);
 
 			BarrierInsert(
 				GraphicsQueueType,
@@ -179,14 +188,14 @@ TonemapContext::Setup(const Ptr<Frame::FrameScript>& script)
 	rtinfo.format = TextureGetPixelFormat(tonemapState.colorBuffer);
 	rtinfo.width = 2;
 	rtinfo.height = 2;
-	rtinfo.usage = TextureUsage::CopyUsage;
+	rtinfo.usage = TextureUsage::TransferTextureDestination;
 	tonemapState.downsample2x2 = CreateTexture(rtinfo);
 
 	rtinfo.name = "Tonemapping-Copy";
 	rtinfo.width = 1;
 	rtinfo.height = 1;
 	rtinfo.format = TextureGetPixelFormat(tonemapState.averageLumBuffer);
-	rtinfo.usage = TextureUsage::CopyUsage;
+	rtinfo.usage = TextureUsage::TransferTextureDestination;
 	tonemapState.copy = CreateTexture(rtinfo);
 
 	// create shader

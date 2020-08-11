@@ -71,6 +71,8 @@ protected:
 		struct
 		{
 			CoreGraphics::EventId event;
+			CoreGraphics::BarrierStage waitStage;
+			CoreGraphics::BarrierStage signalStage;
 			CoreGraphics::QueueType queue;
 		} *waitEvents;
 
@@ -78,6 +80,7 @@ protected:
 		struct
 		{
 			CoreGraphics::EventId event;
+			CoreGraphics::BarrierStage stage;
 			CoreGraphics::QueueType queue;
 		} *signalEvents;
 

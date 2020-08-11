@@ -131,6 +131,9 @@ InitInstance(VkInstance instance)
 	_IMP_VK(vkCmdSetEvent);
 	_IMP_VK(vkCmdWaitEvents);
 	_IMP_VK(vkCmdResetEvent);
+	_IMP_VK(vkGetEventStatus);
+	_IMP_VK(vkResetEvent);
+	_IMP_VK(vkSetEvent);
 
 	_IMP_VK(vkCmdPipelineBarrier);
 	_IMP_VK(vkCreateFence);
@@ -185,6 +188,7 @@ InitInstance(VkInstance instance)
 	_IMP_VK(vkMapMemory);
 	_IMP_VK(vkUnmapMemory);
 	_IMP_VK(vkFlushMappedMemoryRanges);
+	_IMP_VK(vkInvalidateMappedMemoryRanges);
 
 	_IMP_VK(vkGetBufferMemoryRequirements);
 	_IMP_VK(vkGetImageMemoryRequirements);
@@ -287,6 +291,9 @@ _DEF_VK(vkDestroyEvent);
 _DEF_VK(vkCmdSetEvent);
 _DEF_VK(vkCmdWaitEvents);
 _DEF_VK(vkCmdResetEvent);
+_DEF_VK(vkGetEventStatus);
+_DEF_VK(vkResetEvent);
+_DEF_VK(vkSetEvent);
 
 _DEF_VK(vkCmdPipelineBarrier);
 _DEF_VK(vkCreateFence);
@@ -341,6 +348,7 @@ _DEF_VK(vkFreeMemory);
 _DEF_VK(vkMapMemory);
 _DEF_VK(vkUnmapMemory);
 _DEF_VK(vkFlushMappedMemoryRanges);
+_DEF_VK(vkInvalidateMappedMemoryRanges);
 
 _DEF_VK(vkGetBufferMemoryRequirements);
 _DEF_VK(vkGetImageMemoryRequirements);

@@ -413,28 +413,53 @@ GetCurrentQueue(const CoreGraphics::QueueType type)
 /**
 */
 void
-InsertBarrier
-(
-	VkPipelineStageFlags srcFlags,
-	VkPipelineStageFlags dstFlags,
-	VkDependencyFlags dep,
-	uint32_t numMemoryBarriers,
-	VkMemoryBarrier* memoryBarriers,
-	uint32_t numBufferBarriers,
-	VkBufferMemoryBarrier* bufferBarriers,
-	uint32_t numImageBarriers,
-	VkImageMemoryBarrier* imageBarriers,
-	const CoreGraphics::QueueType queue)
+InsertBarrier(const VkBarrierInfo& barrier, const CoreGraphics::QueueType queue)
 {
-	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
-	VkCommandBuffer buf = GetMainBuffer(queue);
-	vkCmdPipelineBarrier(buf,
-		srcFlags,
-		dstFlags,
-		dep,
-		numMemoryBarriers, memoryBarriers,
-		numBufferBarriers, bufferBarriers,
-		numImageBarriers, imageBarriers);
+	if (state.drawThread)
+	{
+		VkMemoryBarrier* memBarriers = nullptr;
+		if (barrier.numMemoryBarriers)
+		{
+			memBarriers = n_new_array(VkMemoryBarrier, barrier.numMemoryBarriers);
+			Memory::Copy(barrier.memoryBarriers, memBarriers, sizeof(VkMemoryBarrier) * barrier.numMemoryBarriers);
+		}
+		VkBufferMemoryBarrier* bufBarriers = nullptr;
+		if (barrier.numBufferBarriers)
+		{
+			bufBarriers = n_new_array(VkBufferMemoryBarrier, barrier.numBufferBarriers);
+			Memory::Copy(barrier.bufferBarriers, bufBarriers, sizeof(VkBufferMemoryBarrier) * barrier.numBufferBarriers);
+		}
+		VkImageMemoryBarrier* imgBarriers = nullptr;
+		if (barrier.numImageBarriers)
+		{
+			imgBarriers = n_new_array(VkImageMemoryBarrier, barrier.numImageBarriers);
+			Memory::Copy(barrier.imageBarriers, imgBarriers, sizeof(VkImageMemoryBarrier) * barrier.numImageBarriers);
+		}
+
+		VkCommandBufferThread::VkBarrierCommand cmd;
+		cmd.srcMask = barrier.srcFlags;
+		cmd.dstMask = barrier.dstFlags;
+		cmd.dep = barrier.dep;
+		cmd.memoryBarrierCount = barrier.numMemoryBarriers;
+		cmd.memoryBarriers = memBarriers;
+		cmd.bufferBarrierCount = barrier.numBufferBarriers;
+		cmd.bufferBarriers = bufBarriers;
+		cmd.imageBarrierCount = barrier.numImageBarriers;
+		cmd.imageBarriers = imgBarriers;
+		state.drawThread->Push(cmd);
+	}
+	else
+	{
+		n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+		VkCommandBuffer buf = GetMainBuffer(queue);
+		vkCmdPipelineBarrier(buf,
+			barrier.srcFlags,
+			barrier.dstFlags,
+			barrier.dep,
+			barrier.numMemoryBarriers, barrier.memoryBarriers,
+			barrier.numBufferBarriers, barrier.bufferBarriers,
+			barrier.numImageBarriers, barrier.imageBarriers);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -1433,8 +1458,9 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	// setup memory pools
 	SetupMemoryPools(
 		info.memoryHeaps[MemoryPool_DeviceLocal],
-		info.memoryHeaps[MemoryPool_ManualFlush],
-		info.memoryHeaps[MemoryPool_HostCoherent]
+		info.memoryHeaps[MemoryPool_HostLocal],
+		info.memoryHeaps[MemoryPool_HostToDevice],
+		info.memoryHeaps[MemoryPool_DeviceToHost]
 		);
 
 	state.constantBufferRings.Resize(info.numBufferedFrames);
@@ -2832,7 +2858,7 @@ InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphics::QueueTy
 /**
 */
 void 
-SignalEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue)
+SignalEvent(const CoreGraphics::EventId ev, const CoreGraphics::BarrierStage stage, const CoreGraphics::QueueType queue)
 {
 	VkEventInfo& info = eventAllocator.Get<1>(ev.id24);
 	if (queue == GraphicsQueueType && state.inBeginPass)
@@ -2842,18 +2868,18 @@ SignalEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue)
 			n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid());
 			VkCommandBufferThread::VkSetEventCommand cmd;
 			cmd.event = info.event;
-			cmd.stages = info.leftDependency;
+			cmd.stages = VkTypes::AsVkPipelineFlags(stage);
 			state.drawThread->Push(cmd);
 		}
 		else
 		{
-			vkCmdSetEvent(GetMainBuffer(GraphicsQueueType), info.event, info.leftDependency);
+			vkCmdSetEvent(GetMainBuffer(queue), info.event, VkTypes::AsVkPipelineFlags(stage));
 		}
 	}
 	else
 	{
 		VkCommandBuffer buf = GetMainBuffer(queue);
-		vkCmdSetEvent(buf, info.event, info.leftDependency);
+		vkCmdSetEvent(buf, info.event, VkTypes::AsVkPipelineFlags(stage));
 	}
 }
 
@@ -2861,9 +2887,14 @@ SignalEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue)
 /**
 */
 void 
-WaitEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue)
+WaitEvent(
+	const EventId id,
+	const CoreGraphics::BarrierStage waitStage,
+	const CoreGraphics::BarrierStage signalStage,
+	const CoreGraphics::QueueType queue
+	)
 {
-	VkEventInfo& info = eventAllocator.Get<1>(ev.id24);
+	VkEventInfo& info = eventAllocator.Get<1>(id.id24);
 	if (queue == GraphicsQueueType && state.inBeginPass)
 	{
 		if (state.drawThread)
@@ -2878,15 +2909,15 @@ WaitEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue)
 			cmd.bufferBarriers = info.bufferBarriers;
 			cmd.imageBarrierCount = info.numImageBarriers;
 			cmd.imageBarriers = info.imageBarriers;
-			cmd.waitingStage = info.leftDependency;
-			cmd.signalingStage = info.rightDependency;
+			cmd.waitingStage = VkTypes::AsVkPipelineFlags(waitStage);
+			cmd.signalingStage = VkTypes::AsVkPipelineFlags(signalStage);
 			state.drawThread->Push(cmd);
 		}
 		else
 		{
-			vkCmdWaitEvents(GetMainBuffer(GraphicsQueueType), 1, &info.event,
-				info.leftDependency,
-				info.rightDependency,
+			vkCmdWaitEvents(GetMainBuffer(queue), 1, &info.event,
+				VkTypes::AsVkPipelineFlags(waitStage),
+				VkTypes::AsVkPipelineFlags(signalStage),
 				info.numMemoryBarriers,
 				info.memoryBarriers,
 				info.numBufferBarriers,
@@ -2899,8 +2930,8 @@ WaitEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue)
 	{
 		VkCommandBuffer buf = GetMainBuffer(queue);
 		vkCmdWaitEvents(buf, 1, &info.event,
-			info.leftDependency,
-			info.rightDependency,
+			VkTypes::AsVkPipelineFlags(waitStage),
+			VkTypes::AsVkPipelineFlags(signalStage),
 			info.numMemoryBarriers,
 			info.memoryBarriers,
 			info.numBufferBarriers,
@@ -2914,7 +2945,7 @@ WaitEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue)
 /**
 */
 void 
-ResetEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue)
+ResetEvent(const CoreGraphics::EventId ev, const CoreGraphics::BarrierStage stage, const CoreGraphics::QueueType queue)
 {
 	VkEventInfo& info = eventAllocator.Get<1>(ev.id24);
 	if (queue == GraphicsQueueType && state.inBeginPass)	
@@ -2924,18 +2955,18 @@ ResetEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue)
 			n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid());
 			VkCommandBufferThread::VkResetEventCommand cmd;
 			cmd.event = info.event;
-			cmd.stages = info.rightDependency;
+			cmd.stages = VkTypes::AsVkPipelineFlags(stage);
 			state.drawThread->Push(cmd);
 		}
 		else
 		{
-			vkCmdResetEvent(GetMainBuffer(GraphicsQueueType), info.event, info.rightDependency);
+			vkCmdResetEvent(GetMainBuffer(queue), info.event, VkTypes::AsVkPipelineFlags(stage));
 		}
 	}
 	else
 	{
 		VkCommandBuffer buf = GetMainBuffer(queue);
-		vkCmdResetEvent(buf, info.event, info.rightDependency);
+		vkCmdResetEvent(buf, info.event, VkTypes::AsVkPipelineFlags(stage));
 	}
 }
 
@@ -3011,6 +3042,10 @@ void
 Compute(int dimX, int dimY, int dimZ, const CoreGraphics::QueueType queue)
 {
 	n_assert(!state.inBeginPass);
+	n_assert(dimX <= (int)state.deviceProps[state.currentDevice].limits.maxComputeWorkGroupCount[0]);
+	n_assert(dimY <= (int)state.deviceProps[state.currentDevice].limits.maxComputeWorkGroupCount[1]);
+	n_assert(dimZ <= (int)state.deviceProps[state.currentDevice].limits.maxComputeWorkGroupCount[2]);
+
 	vkCmdDispatch(GetMainBuffer(queue), dimX, dimY, dimZ);
 }
 
@@ -3028,7 +3063,7 @@ EndSubpassCommands()
 	state.drawThread->Push(cmd);
 
 	// queue up the command buffer for clear next frame
-	Vulkan::SubmissionContextClearCommandBuffer(state.gfxSubmission, state.drawThreadCommands);
+	CoreGraphics::SubmissionContextClearCommandBuffer(state.gfxSubmission, state.drawThreadCommands);
 	state.drawThreadCommands = CoreGraphics::CommandBufferId::Invalid();
 }
 
@@ -3507,7 +3542,16 @@ EndQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type)
 /**
 */
 void 
-Copy(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, const CoreGraphics::TextureId to, const Math::rectangle<SizeT>& toRegion)
+Copy(
+	const CoreGraphics::QueueType queue,
+	const CoreGraphics::TextureId from,
+	const Math::rectangle<SizeT>& fromRegion,
+	IndexT fromMip,
+	IndexT fromLayer,
+	const CoreGraphics::TextureId to,
+	const Math::rectangle<SizeT>& toRegion,
+	IndexT toMip,
+	IndexT toLayer)
 {
 	n_assert(from != CoreGraphics::TextureId::Invalid() && to != CoreGraphics::TextureId::Invalid());
 	n_assert(!state.inBeginPass);
@@ -3517,32 +3561,90 @@ Copy(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegio
 	VkImageAspectFlags aspect = isDepth ? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
 	VkImageCopy region;
 	region.dstOffset = { fromRegion.left, fromRegion.top, 0 };
-	region.dstSubresource = { aspect, 0, 0, 1 };
+	region.dstSubresource = { aspect, (uint32_t)toMip, (uint32_t)toLayer, 1 };
 	region.extent = { (uint32_t)toRegion.width(), (uint32_t)toRegion.height(), 1 };
 	region.srcOffset = { toRegion.left, toRegion.top, 0 };
-	region.srcSubresource = { aspect, 0, 0, 1 };
-	vkCmdCopyImage(GetMainBuffer(CoreGraphics::GraphicsQueueType), TextureGetVkImage(from), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, TextureGetVkImage(to), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+	region.srcSubresource = { aspect, (uint32_t)fromMip, (uint32_t)fromLayer, 1 };
+	vkCmdCopyImage(GetMainBuffer(queue), TextureGetVkImage(from), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, TextureGetVkImage(to), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-Copy(CoreGraphics::QueueType queue, const CoreGraphics::ShaderRWBufferId from, IndexT fromOffset, const CoreGraphics::ShaderRWBufferId to, IndexT toOffset, SizeT size)
+Copy(const CoreGraphics::QueueType queue, const CoreGraphics::BufferId from, IndexT fromOffset, const CoreGraphics::BufferId to, IndexT toOffset, SizeT size)
 {
 	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
 	VkBufferCopy copy;
 	copy.srcOffset = fromOffset;
 	copy.dstOffset = toOffset;
 	copy.size = size;
-	vkCmdCopyBuffer(GetMainBuffer(queue), ShaderRWBufferGetVkBuffer(from), ShaderRWBufferGetVkBuffer(to), 1, &copy);
+	vkCmdCopyBuffer(GetMainBuffer(queue), BufferGetVk(from), BufferGetVk(to), 1, &copy);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-Blit(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, const Math::rectangle<SizeT>& toRegion, IndexT toMip)
+Copy(
+	const CoreGraphics::QueueType queue, 
+	const CoreGraphics::TextureId toId, 
+	const Math::rectangle<int> toRegion, 
+	IndexT toMip, 
+	IndexT toLayer, 
+	const CoreGraphics::BufferId fromId, 
+	IndexT offset)
+{
+	VkBufferImageCopy copy;
+	copy.bufferOffset = offset;
+	copy.bufferImageHeight = 0;
+	copy.bufferRowLength = 0;
+	copy.imageExtent = { (uint32_t)toRegion.width(), (uint32_t)toRegion.height(), 1 };
+	copy.imageOffset = { (int32_t)toRegion.left, (int32_t)toRegion.top, 0 };
+	copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)toMip, (uint32_t)toLayer, 1 };
+
+	vkCmdCopyImageToBuffer(GetMainBuffer(queue),
+		TextureGetVkImage(toId),
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		BufferGetVk(fromId),
+		1,
+		&copy);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+Copy(
+	const CoreGraphics::QueueType queue, 
+	const CoreGraphics::BufferId fromId, 
+	IndexT offset, 
+	const CoreGraphics::TextureId toId, 
+	const Math::rectangle<int> toRegion, 
+	IndexT toMip, 
+	IndexT toLayer)
+{
+	VkBufferImageCopy copy;
+	copy.bufferOffset = offset;
+	copy.bufferImageHeight = 0;
+	copy.bufferRowLength = 0;
+	copy.imageExtent = { (uint32_t)toRegion.width(), (uint32_t)toRegion.height(), 1 };
+	copy.imageOffset = { (int32_t)toRegion.left, (int32_t)toRegion.top, 0 };
+	copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)toMip, (uint32_t)toLayer, 1 };
+
+	vkCmdCopyBufferToImage(GetMainBuffer(queue),
+		BufferGetVk(fromId),
+		TextureGetVkImage(toId),
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		1,
+		&copy);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+Blit(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, IndexT fromMip, IndexT fromLayer, const CoreGraphics::TextureId to, const Math::rectangle<SizeT>& toRegion, IndexT toMip, IndexT toLayer)
 {
 	n_assert(from != CoreGraphics::TextureId::Invalid() && to != CoreGraphics::TextureId::Invalid());
 	n_assert(!state.inBeginPass);
@@ -3553,10 +3655,10 @@ Blit(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegio
 	VkImageBlit blit;
 	blit.srcOffsets[0] = { fromRegion.left, fromRegion.top, 0 };
 	blit.srcOffsets[1] = { fromRegion.right, fromRegion.bottom, 1 };
-	blit.srcSubresource = { aspect, (uint32_t)fromMip, 0, 1 };
+	blit.srcSubresource = { aspect, (uint32_t)fromMip, (uint32_t)fromLayer, 1 };
 	blit.dstOffsets[0] = { toRegion.left, toRegion.top, 0 };
 	blit.dstOffsets[1] = { toRegion.right, toRegion.bottom, 1 };
-	blit.dstSubresource = { aspect, (uint32_t)toMip, 0, 1 };
+	blit.dstSubresource = { aspect, (uint32_t)toMip, (uint32_t)toLayer, 1 };
 	vkCmdBlitImage(GetMainBuffer(CoreGraphics::GraphicsQueueType), TextureGetVkImage(from), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, TextureGetVkImage(to), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
 }
 

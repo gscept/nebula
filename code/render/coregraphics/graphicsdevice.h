@@ -271,11 +271,16 @@ void ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro);
 /// insert execution barrier
 void InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphics::QueueType queue);
 /// signals an event
-void SignalEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue);
+void SignalEvent(const CoreGraphics::EventId ev, const CoreGraphics::BarrierStage stage, const CoreGraphics::QueueType queue);
 /// signals an event
-void WaitEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue);
+void WaitEvent(
+	const EventId id,
+	const CoreGraphics::BarrierStage waitStage,
+	const CoreGraphics::BarrierStage signalStage,
+	const CoreGraphics::QueueType queue
+	);
 /// signals an event
-void ResetEvent(const CoreGraphics::EventId ev, const CoreGraphics::QueueType queue);
+void ResetEvent(const CoreGraphics::EventId ev, const CoreGraphics::BarrierStage stage, const CoreGraphics::QueueType queue);
 
 /// draw current primitives
 void Draw();
@@ -331,11 +336,38 @@ IndexT BeginQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type);
 void EndQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type);
 
 /// copy data between textures
-void Copy(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, const CoreGraphics::TextureId to, const Math::rectangle<SizeT>& toRegion);
-/// copy data between rw buffers
-void Copy(const CoreGraphics::QueueType queue, const CoreGraphics::ShaderRWBufferId from, IndexT fromOffset, const CoreGraphics::ShaderRWBufferId to, IndexT toOffset, SizeT size);
+void Copy(
+	const CoreGraphics::QueueType queue, 
+	const CoreGraphics::TextureId from, 
+	const Math::rectangle<SizeT>& fromRegion, 
+	IndexT fromMip, 
+	IndexT fromLayer,
+	const CoreGraphics::TextureId to, 
+	const Math::rectangle<SizeT>& toRegion, 
+	IndexT toMip, 
+	IndexT toLayer);
+/// copy data between buffers
+void Copy(const CoreGraphics::QueueType queue, const CoreGraphics::BufferId from, IndexT fromOffset, const CoreGraphics::BufferId to, IndexT toOffset, SizeT size);
+/// copy data from buffer to texture
+void Copy(
+	const CoreGraphics::QueueType queue, 
+	const CoreGraphics::TextureId toId, 
+	const Math::rectangle<int> toRegion, 
+	IndexT toMip, 
+	IndexT toLayer,
+	const CoreGraphics::BufferId fromId, 
+	IndexT offset);
+/// copy data from texture to buffer
+void Copy(
+	const CoreGraphics::QueueType queue,
+	const CoreGraphics::BufferId fromId,
+	IndexT offset,
+	const CoreGraphics::TextureId toId,
+	const Math::rectangle<int> toRegion,
+	IndexT toMip,
+	IndexT toLayer);
 /// blit between textures
-void Blit(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, IndexT fromMip, const CoreGraphics::TextureId to, const Math::rectangle<SizeT>& toRegion, IndexT toMip);
+void Blit(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, IndexT fromMip, IndexT fromLayer, const CoreGraphics::TextureId to, const Math::rectangle<SizeT>& toRegion, IndexT toMip, IndexT toLayer);
 
 /// sets whether or not the render device should tessellate
 void SetUsePatches(bool state);
