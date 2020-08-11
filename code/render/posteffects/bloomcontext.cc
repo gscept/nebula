@@ -51,7 +51,7 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
 	using namespace CoreGraphics;
 	// setup shaders
 	bloomState.brightPassShader = ShaderGet("shd:brightpass.fxb");
-	bloomState.blurShader = ShaderGet("shd:blur_2d_rgb16f_cs.fxb");
+	bloomState.blurShader = ShaderGet("shd:blur_bloom.fxb");
 	bloomState.brightPassTable = ShaderCreateResourceTable(bloomState.brightPassShader, NEBULA_BATCH_GROUP);
 	bloomState.blurTable = ShaderCreateResourceTable(bloomState.blurShader, NEBULA_BATCH_GROUP);
 
@@ -62,17 +62,18 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
 	bloomState.blurImageXSlot = ShaderGetResourceSlot(bloomState.blurShader, "BlurImageX");
 	bloomState.blurImageYSlot = ShaderGetResourceSlot(bloomState.blurShader, "BlurImageY");
 
+	bloomState.blurredBloom = script->GetTexture("BloomBufferBlurred");
+	CoreGraphics::TextureRelativeDimensions relDims = CoreGraphics::TextureGetRelativeDimensions(bloomState.blurredBloom);
+
 	TextureCreateInfo tinfo;
 	tinfo.name = "Bloom-Internal0";
 	tinfo.type = Texture2D;
 	tinfo.format = CoreGraphics::PixelFormat::R16G16B16A16F;
-	tinfo.width = 0.25f;
-	tinfo.height = 0.25f;
-	tinfo.usage = TextureUsage::ReadWriteUsage;
+	tinfo.width = relDims.width;
+	tinfo.height = relDims.height;
+	tinfo.usage = TextureUsage::ReadWriteTexture;
 	tinfo.windowRelative = true;
 	bloomState.internalTargets[0] = CreateTexture(tinfo);
-
-	bloomState.blurredBloom = script->GetTexture("BloomBufferBlurred");
 
 	ResourceTableSetTexture(bloomState.brightPassTable, { script->GetTexture("LightBuffer"), bloomState.colorSourceSlot, 0, CoreGraphics::SamplerId::Invalid() });
 	ResourceTableSetTexture(bloomState.brightPassTable, { script->GetTexture("AverageLumBuffer"), bloomState.luminanceTextureSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
@@ -136,48 +137,51 @@ BloomContext::Create()
 			uint numGroupsY1 = Math::n_divandroundup(dims.height, TILE_WIDTH);
 			uint numGroupsY2 = dims.height;
 
-			CoreGraphics::BarrierInsert(
-				GraphicsQueueType,
-				CoreGraphics::BarrierStage::ComputeShader,
-				CoreGraphics::BarrierStage::ComputeShader,
-				CoreGraphics::BarrierDomain::Global,
-				{
-					  TextureBarrier{ bloomState.internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite }
-				},
-				nullptr,
-				"Bloom Blur Pass #1 Begin");
+			// do 5 bloom steps
+			for (int i = 0; i < 5; i++)
+			{
+				CoreGraphics::BarrierInsert(
+					GraphicsQueueType,
+					CoreGraphics::BarrierStage::ComputeShader,
+					CoreGraphics::BarrierStage::ComputeShader,
+					CoreGraphics::BarrierDomain::Global,
+					{
+						  TextureBarrier{ bloomState.internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite }
+					},
+					nullptr,
+					"Bloom Blur Pass #1 Begin");
 
-			CoreGraphics::SetShaderProgram(bloomState.blurX);
-			CoreGraphics::SetResourceTable(bloomState.blurTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-			CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
+				CoreGraphics::SetShaderProgram(bloomState.blurX);
+				CoreGraphics::SetResourceTable(bloomState.blurTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+				CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
 
-			CoreGraphics::BarrierInsert(
-				GraphicsQueueType,
-				CoreGraphics::BarrierStage::ComputeShader,
-				CoreGraphics::BarrierStage::ComputeShader,
-				CoreGraphics::BarrierDomain::Global,
-				{
-					  TextureBarrier{ bloomState.internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite, CoreGraphics::BarrierAccess::ShaderRead },
-					  TextureBarrier{ bloomState.blurredBloom, ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite }
-				},
-				nullptr,
-				"Bloom Blur Pass #2 Mid");
+				CoreGraphics::BarrierInsert(
+					GraphicsQueueType,
+					CoreGraphics::BarrierStage::ComputeShader,
+					CoreGraphics::BarrierStage::ComputeShader,
+					CoreGraphics::BarrierDomain::Global,
+					{
+						  TextureBarrier{ bloomState.internalTargets[0], ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite, CoreGraphics::BarrierAccess::ShaderRead },
+						  TextureBarrier{ bloomState.blurredBloom, ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, CoreGraphics::BarrierAccess::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite }
+					},
+					nullptr,
+					"Bloom Blur Pass #2 Mid");
 
-			CoreGraphics::SetShaderProgram(bloomState.blurY);
-			CoreGraphics::SetResourceTable(bloomState.blurTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-			CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
+				CoreGraphics::SetShaderProgram(bloomState.blurY);
+				CoreGraphics::SetResourceTable(bloomState.blurTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+				CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
 
-			CoreGraphics::BarrierInsert(
-				GraphicsQueueType,
-				CoreGraphics::BarrierStage::ComputeShader,
-				CoreGraphics::BarrierStage::PixelShader,
-				CoreGraphics::BarrierDomain::Global,
-				{
-					  TextureBarrier{ bloomState.blurredBloom, ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite, CoreGraphics::BarrierAccess::ShaderRead }
-				},
-				nullptr,
-				"Bloom Blur Pass #2 End");
-
+				CoreGraphics::BarrierInsert(
+					GraphicsQueueType,
+					CoreGraphics::BarrierStage::ComputeShader,
+					CoreGraphics::BarrierStage::PixelShader,
+					CoreGraphics::BarrierDomain::Global,
+					{
+						  TextureBarrier{ bloomState.blurredBloom, ImageSubresourceInfo::ColorNoMipNoLayer(), CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::BarrierAccess::ShaderWrite, CoreGraphics::BarrierAccess::ShaderRead }
+					},
+					nullptr,
+					"Bloom Blur Pass #2 End");
+			}
 
 #if NEBULA_GRAPHICS_DEBUG
 			CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
