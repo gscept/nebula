@@ -5,7 +5,6 @@
 #include "foundation/stdneb.h"
 #include "profiling/profiling.h"
 
-#if NEBULA_ENABLE_PROFILING
 namespace Profiling
 {
 
@@ -161,5 +160,46 @@ ProfilingClear()
 	}
 }
 
+Threading::CriticalSection counterLock;
+Util::Dictionary<const char*, uint64> counters;
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ProfilingIncreaseCounter(const char* id, uint64 value)
+{
+	counterLock.Enter();
+	IndexT idx = counters.FindIndex(id);
+	if (idx == InvalidIndex)
+		counters.Add(id, value);
+	else
+	{
+		counters.ValueAtIndex(idx) += value;
+	}
+	counterLock.Leave();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+ProfilingDecreaseCounter(const char* id, uint64 value)
+{
+	counterLock.Enter();
+	IndexT idx = counters.FindIndex(id);
+	n_assert(idx != InvalidIndex);
+	counters.ValueAtIndex(idx) -= value;
+	counterLock.Leave();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Dictionary<const char*, uint64>&
+ProfilingGetCounters()
+{
+	return counters;
+}
+
 } // namespace Profiling
-#endif
