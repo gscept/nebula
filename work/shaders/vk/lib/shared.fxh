@@ -50,11 +50,15 @@ group(TICK_GROUP) sampler_state		PosteffectUpscaleSampler { Filter = Linear; };
 #define fetch3D(handle, sampler, uvw, lod)					texelFetch(sampler3D(Textures3D[handle], sampler), uvw, lod)
 #define fetchStencil(handle, sampler, uv, lod)				(floatBitsToUint(texelFetch(sampler2D(Textures2D[handle], sampler), uv, lod).r))
 
+#define basic2D(handle)										Textures2D[handle]
+#define basic2DMS(handle)									Textures2DMS[handle]
+#define basicCube(handle)									TexturesCube[handle]
+#define basic3D(handle)										Textures3D[handle]
 
-#define basic2D(handle)									Textures2D[handle]
-#define basic2DMS(handle)								Textures2DMS[handle]
-#define basicCube(handle)								TexturesCube[handle]
-#define basic3D(handle)									Textures3D[handle]
+#define make_sampler2D(handle, sampler)						sampler2D(Textures2D[handle], sampler)
+#define make_sampler2DMS(handle, sampler)					sampler2DMS(Textures2DMS[handle], sampler)
+#define make_sampler2DArray(handle, sampler)				sampler2DArray(Textures2DArray[handle], sampler)
+#define make_sampler3D(handle, sampler)						sampler3D(Textures3D[handle], sampler)
 
 // The number of CSM cascades
 #ifndef CASCADE_COUNT_FLAG
@@ -107,6 +111,24 @@ group(TICK_GROUP) shared constant PerTickParams
 	vec4 D;
 	vec4 E;
 	vec4 Z;
+
+	float RayleighFactor;
+	float RayleighZenithLength;
+	float RefractiveIndex;
+	float DepolarizationFactor;
+	float Molecules;
+	float MieV;
+	float MieCoefficient;
+	float MieDirectionalG;
+	float MieZenithLength;
+	float Turbidity;
+	float SunIntensityFactor;
+	float SunIntensityFalloff;
+	float SunDiscSize;
+	vec3 MieKCoefficient;
+	vec3 PrimaryColors;
+	float TonemapWeight;
+	float Lum;
 
 	// CSM params
 	vec4 CascadeOffset[CASCADE_COUNT_FLAG];

@@ -103,7 +103,7 @@ subroutine (CalculateBump) vec3 FlatNormalFunctor(
 	in vec3 normal,
 	in vec4 bumpData)
 {
-	return normal;
+	return normal;	
 }
 
 CalculateBump calcBump;
