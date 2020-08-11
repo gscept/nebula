@@ -58,16 +58,16 @@ vec3 XYZToRGB( in vec3 XYZ )
 vec3
 Preetham(vec3 sphereDir, vec3 lightDir, vec4 A, vec4 B, vec4 C, vec4 D, vec4 E, vec4 Z)
 {
-	float cosThetaSun = dot(lightDir, vec3(0, 1, 0));
+	
+	float cosThetaSun = saturate(dot(lightDir, vec3(0, 1, 0)));
+	float cosTheta = saturate(dot(sphereDir, vec3(0, 1, 0)));
+	float cosGamma = saturate(dot(sphereDir, lightDir.xyz));
 	float thetaSun = acos(cosThetaSun);
-	vec3 zeroThetaS = perez(0.0, thetaSun, cosThetaSun, A.xyz, B.xyz, C.xyz, D.xyz, E.xyz);
-
-	float cosTheta = clamp(sphereDir.y, 0.0f, 1.0f);
-	float cosGamma = dot(sphereDir, lightDir.xyz);
 	float gamma = acos(cosGamma);
 	vec3 r_xyY = Z.xyz * (perez(cosTheta, gamma, cosGamma, A.xyz, B.xyz, C.xyz, D.xyz, E.xyz));
+	vec3 zeroThetaS = perez(0.0, thetaSun, cosThetaSun, A.xyz, B.xyz, C.xyz, D.xyz, E.xyz);
 
-	vec3 r_XYZ = YxyToXYZ(r_xyY);
+	vec3 r_XYZ = YxyToXYZ(r_xyY / zeroThetaS);
 	vec3 ret = XYZToRGB(r_XYZ);
 	return ret * ONE_OVER_PI;
 }

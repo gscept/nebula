@@ -5,7 +5,6 @@
 #include "render/stdneb.h"
 #include "clustercontext.h"
 #include "coregraphics/shader.h"
-#include "coregraphics/shaderrwbuffer.h"
 #include "coregraphics/graphicsdevice.h"
 #include "frame/frameplugin.h"
 #include "graphics/graphicsserver.h"
@@ -18,7 +17,7 @@ struct
 {
 	CoreGraphics::ShaderId clusterShader;
 	CoreGraphics::ShaderProgramId clusterGenerateProgram;
-	CoreGraphics::ShaderRWBufferId clusterBuffer;
+	CoreGraphics::BufferId clusterBuffer;
 
 	ClusterGenerate::ClusterUniforms uniforms;
 	CoreGraphics::ConstantBufferId constantBuffer;
@@ -91,14 +90,13 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
 	state.invXResolution = 1.0f / displayMode.GetWidth();
 	state.invYResolution = 1.0f / displayMode.GetHeight();
 
-	ShaderRWBufferCreateInfo rwb3Info =
-	{
-		"ClusterAABBBuffer",
-		state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2] * sizeof(ClusterGenerate::ClusterAABB),
-		BufferUpdateMode::DeviceLocal,
-		false
-	};
-	state.clusterBuffer = CreateShaderRWBuffer(rwb3Info);
+	BufferCreateInfo rwb3Info;
+	rwb3Info.name = "ClusterAABBBuffer";
+	rwb3Info.size = state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2];
+	rwb3Info.elementSize = sizeof(ClusterGenerate::ClusterAABB);
+	rwb3Info.mode = BufferAccessMode::DeviceLocal;
+	rwb3Info.usageFlags = CoreGraphics::ReadWriteBuffer;
+	state.clusterBuffer = CreateBuffer(rwb3Info);
 	state.constantBuffer = ShaderCreateConstantBuffer(state.clusterShader, "ClusterUniforms");
 
 	state.resourceTable = ShaderCreateResourceTable(state.clusterShader, NEBULA_BATCH_GROUP);
@@ -116,7 +114,7 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphics::ShaderRWBufferId 
+const CoreGraphics::BufferId 
 ClusterContext::GetClusterBuffer()
 {
 	return state.clusterBuffer;

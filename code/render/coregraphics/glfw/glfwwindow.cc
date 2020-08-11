@@ -339,6 +339,11 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
 	id.id8 = WindowIdType;
 	glfwWindowAllocator.Get<GLFW_SetupInfo>(windowId) = info;
 
+	GLFWmonitor* monitor = GLFWDisplayDevice::Instance()->GetMonitor(Adapter::Code::Primary);
+	n_assert(monitor);
+	int count;
+	const GLFWvidmode* modes = glfwGetVideoModes(monitor, &count);
+
 	// get original window, if this is the first window, then the parent window will simply be nullptr
 	GLFWwindow* wnd = nullptr;
 	const CoreGraphics::WindowId origWindow = CoreGraphics::DisplayDevice::Instance()->GetMainWindow();
@@ -863,7 +868,7 @@ SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Displ
 
 	TextureCreateInfo rtinfo;
 	rtinfo.name = Util::String::Sprintf("__WINDOW__%s", title.Value());
-	rtinfo.usage = TextureUsage::CopyUsage;
+	rtinfo.usage = TextureUsage::TransferTextureDestination;
 	rtinfo.tag = "system"_atm;
 	rtinfo.type = Texture2D;
 	rtinfo.format = VkTypes::AsNebulaPixelFormat(swapInfo.format);

@@ -32,7 +32,7 @@ struct ConstantBufferCreateInfo
 {
 	Util::StringAtom name;				// name of the constant buffer block
 	SizeT size;							// allocation size of the buffer
-	BufferUpdateMode mode;
+	BufferAccessMode mode;
 };
 
 /// create new constant buffer

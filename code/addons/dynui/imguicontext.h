@@ -10,8 +10,6 @@
 //------------------------------------------------------------------------------
 #include "coregraphics/texture.h"
 #include "coregraphics/constantbuffer.h"
-#include "coregraphics/vertexbuffer.h"
-#include "coregraphics/indexbuffer.h"
 #include "coregraphics/resourcetable.h"
 #include "input/inputevent.h"
 #include "graphics/graphicscontext.h"
@@ -68,8 +66,9 @@ private:
 		ImguiTextureId fontTexture;
 		//CoreGraphics::TextureId fontTexture;
 
-		Util::FixedArray<CoreGraphics::VertexBufferId> vbos;
-		Util::FixedArray<CoreGraphics::IndexBufferId> ibos;
+		Util::FixedArray<CoreGraphics::BufferId> vbos;
+		Util::FixedArray<CoreGraphics::BufferId> ibos;
+		CoreGraphics::VertexLayoutId vlo;
 
 		CoreGraphics::ConstantBinding textureConstant;
 		CoreGraphics::ConstantBinding textProjectionConstant;

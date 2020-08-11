@@ -1,0 +1,61 @@
+Adaptive Virtual Terrain Texturing:
+
+Based on:
+https://www.youtube.com/watch?v=SVPMhGteeuE
+https://www.youtube.com/watch?v=kzthHcbG9IM
+
+World is divded into sections of 64x64 meters. Every 64x64 meters allocate a region of the indirection texture based on distance to the camera. The indirection texture uses a 256x256 pixel block size, meaning that a region that would use a 4x4 block of indirection pixels would effectively map 1024x1024 pixels to a 64x64 area, an 8x8 block 2048x2048 pixels to the same area, etc. In classical software virtual texturing, the indirection texture maps 1:1 between world position and the physical texture, however in our example we might need more physical texture blocks to achieve our pixel density, therefore we need some way of allocating a bunch of indirection pixels such that we can represent a fixed size area in the game world with a dynamic sized area in the indirection texture. This is the principle of the algorithm.
+
+We render the terrain in a prepass. This pass serves to do two things, early depth testing for other terrain pixels, as well as preparing the page buffer. The page buffer is a 3D structure represented as a 1D buffer, and is the size of the indirection texture in the XZ dimension, and the number of mips of the indirection texture in the Y dimension. When rendering, to find which page we should use, we first have to divide the world coordinate with 64x64 to find which section we are in. When we know, we then divide the coordinate again to get the section-relative page which this pixel resides within. We then modify the page buffer by setting the bit for the mip that the GPU would sample to mark this page as requiring this mip. When all terrain is done rasterizing, we start a compute job which compares this frames page buffer to the previous frame, and extracts all elements that have changed. This is read back on the GPU and launched as compute jobs, which will 
+
+The page buffer is a 3D structure (represented as a 1D buffer), with the XZ-coordinates representing the 64x64 sections, and the Y-coordinate representing the mip level. This lets us know which mips will be needed to be updated in which section. 
+
+When a region changes its size, from 8x8 to 4x4 for example, a region is first allocated in the indirection texture, followed by a GPU draw job per each indirection pixel. Each job is responsible for performing the texture splatting, as well as updating the indirection texture. 
+
+
+We should be able to configure the following:
+The size of the regions, in the example above, 64x64 meters. The highest amount of pixels per region, in the above example it's 8x8. The size of a texture block, in the above example it's 256x256. To get a whooping 10 texels/cm quality, we would need for example a 256x256 indirection block if every pixel maps to a 256x256 texture tile, such that our block covers a maximum of 65536x65536 pixels in the texture cache. We could support this if we are using texture arrays, however we would never reach such a state where the whole 256x256 pixel block would require all tiles to be in mip 0. 
+
+-- Preparation --
+Divide world into sectors of 64x64 meters. Allocate for each sector in a 300 meter distance a set of indirection texture pixels. For example, it can look like this:
+
+Distance    0-10m       11-50m      51-150      151-300
+Pixels      256x256     128x128     64x64       32x32
+
+We can also implement a function which does this dynamically, one example of this is taken from the GPU Pro 7 book on adaptive virtual texturing:
+
+const uint maxResolution = 64 * 1024; // this gives us the 10 texels per cm for a 64x64 meter size region size
+float distance = length(sectorPosition.xz - cameraPosition.xz);
+uint t = (distance / maxDistance); // maxDistance being 300 meters in our above example;
+uint lod = 0;
+if (t >= 1)
+    lod = log2(t) + 1;
+return maxResolution >> lod;
+
+Store this information in a buffer which maps it to the 64x64 world grid. This way, we can use the world position to lookup the sector region. We call this region a virtual sub-texture.
+
+-- Prepass --
+
+Render terrain world position to a specific buffer, and output page information to the page buffer. The page buffer can be seen as a 3D buffer, with the XZ dimensions corresponding to the indirection buffer UV coordinates, and the Y dimension corresponding to the mip. For each pixel in world space, divide by 64x64 to get the virtual sub-texture. Now, divide by the virtual sub-texture size to get the page id. This value can be fetched from the virtual sub-texture buffer provided in the Preparation step. The sub-texture size is simply the amount of pixels covered by the virtual sub-texture, as listed under Preparation. We now know our page, so it's time to update the page buffer. Write to the page buffer a simple integer value of 1 for the page and mip that we want to insert.
+
+This means we don't directly map from world -> indirection -> physical texture. Instead, we map from world -> virtual sub-texture -> indirection -> physical texture. The reason for this is because we need our 64x64 meter squares to occupy a dynamic region of indirection pixels, thus we can't simply map from world to indirection directly. If we would have a resolution of 256x256 pixels for every 64x64 meters, yielding 4 texels/m, our result would be very blurry. 
+
+-- Extraction --
+
+We parse the page buffer and compare it with the previous frame to figure out which pages need updating and which ones we can skip. The output is readable by the CPU such that we can prepare jobs later. Another idea is to output indirect dispatch calls, together with a parameter buffer to reduce latency by simply running the buffer every frame. Worth investigating.
+
+-- Texture Splatting --
+
+Now we know which indirection pixels require updating, meaning we can now start a bunch of render jobs to update the tiles they are pointing to. This is where the majority of shader complexity comes in, but this process can be altered without any effect on the rest of the pipeline. At the moment of writing this, it uses height and slope to determine which materials to pick, however I want to also include curvature, basically the derivative of the surrounding height values. This process also samples from the virtual sub-texture buffer to understand how large the area a texture tile should occupy in world space - bigger virtual sub-textures means a smaller area and more tiles. Because we are updating the texture tiles very rarely, we can afford to do quite complicated and costly operations there.
+
+Remember that because the indirection texture is mipped, the texture splatting needs to happen for every mip that is being updated. However, if we are upsacling, we can simply copy the block in the indirection texture from 1 mip lower to the new block, effectively fitting it without any modification, and then only update the new mip 0. If we are downscaling, we can simply copy from mip 0 all the way down to the last.
+
+-- Sampling --
+
+The last step is sampling the textures and render the final output for the terrain. This is done by using the buffer generated in the prepass. Because it has the world position saved, we can simply traverse pixels with a valid world position, go into the virtual sub-texture buffer, and find the indirection value such that we can sample our final texture value. Done. 
+
+In order to support better sampling, for example anisotropic sampling and trilinear sampling, we need to do some more work. For anisotropic, we need to add a texture border to the physical pages. Basically, we need to overdraw such that we can sample a little bit outside where the indirection points us. For trilinear, we simply need to sample from the indirection texture at both mip-levels, and get the texture result and blend them, basically do manual trilinear blending.
+
+-- Addendum --
+
+Further improvements include using hardware sparse resources to save memory, and realtime GPU BC5/BC7 compression in the splatting shader to output to the texture caches in BC5/BC7 quality. 

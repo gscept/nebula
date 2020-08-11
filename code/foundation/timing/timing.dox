@@ -1,7 +1,7 @@
 /**
-@namespace Timing
+@page Timing
 
-@section NebulaTimingSystem The Nebula Timing Subsystem
+@section NebulaTimingSystem The Timing Library
 
 The Nebula Timing subsystem offers classes and servies for measuring 
 elapsed time, and working with the calendar time (days, weeks, month, years).

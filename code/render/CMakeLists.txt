@@ -121,6 +121,7 @@ ENDIF()
 				barrier.h
 				batchgroup.cc
 				batchgroup.h
+                buffer.h
 				gpubuffertypes.h
 				commandbuffer.h
 				config.h
@@ -140,7 +141,6 @@ ENDIF()
                 image.h
 				imagefileformat.cc
 				imagefileformat.h
-				indexbuffer.h
 				indextype.h
                 memory.cc
                 memory.h
@@ -170,7 +170,6 @@ ENDIF()
 				shaderfeature.h
 				shaderidentifier.cc
 				shaderidentifier.h
-				shaderrwbuffer.h
 				shadersemantics.h
 				shaderserver.cc
 				shaderserver.h
@@ -191,9 +190,9 @@ ENDIF()
 				textrenderer.h
 				texture.cc
 				texture.h
+                textureview.h
 				transformdevice.cc
 				transformdevice.h
-				vertexbuffer.h
 				vertexcomponent.h
 				vertexlayout.cc
 				vertexlayout.h
@@ -247,12 +246,6 @@ ENDIF()
 				d3d11event.h
 				d3d11feedbackbuffer.cc
 				d3d11feedbackbuffer.h
-				d3d11indexbuffer.cc
-				d3d11indexbuffer.h
-				d3d11memoryindexbufferloader.cc
-				d3d11memoryindexbufferloader.h
-				d3d11memoryvertexbufferloader.cc
-				d3d11memoryvertexbufferloader.h
 				d3d11mesh.cc
 				d3d11mesh.h
 				d3d11pass.cc
@@ -265,8 +258,6 @@ ENDIF()
 				d3d11resource.h
 				d3d11shader.cc
 				d3d11shader.h
-				d3d11shaderrwbuffer.cc
-				d3d11shaderrwbuffer.h
 				d3d11shaderserver.cc
 				d3d11shaderserver.h
 				d3d11shaderstate.cc
@@ -285,8 +276,6 @@ ENDIF()
 				d3d11texture.h
 				d3d11transformdevice.cc
 				d3d11transformdevice.h
-				d3d11vertexbuffer.cc
-				d3d11vertexbuffer.h
 				d3d11vertexcomponent.h
 				d3d11vertexlayout.cc
 				d3d11vertexlayout.h
@@ -300,6 +289,8 @@ ENDIF()
 			fips_files(
 				vkbarrier.cc
 				vkbarrier.h
+                vkbuffer.cc
+                vkbuffer.h
 				vkcommandbuffer.cc
 				vkcommandbuffer.h
 				vkcommandbufferthread.cc
@@ -310,8 +301,6 @@ ENDIF()
 				vkfence.h
                 vkgraphicsdevice.cc
 				vkgraphicsdevice.h
-				vkindexbuffer.cc
-                vkindexbuffer.h
                 vkloader.cc
                 vkloader.h
                 vkmemory.cc
@@ -330,16 +319,12 @@ ENDIF()
                 vksemaphore.h
 				vkshader.cc
 				vkshader.h
-				vkshaderrwbuffer.cc
-				vkshaderrwbuffer.h
 				vkshaderprogram.cc
 				vkshaderprogram.h
 				vkshaderserver.cc
 				vkshaderserver.h
 				vkshaperenderer.cc
 				vkshaperenderer.h
-                vksparsebuffer.cc
-                vksparsebuffer.h
 				vkshaderpool.cc
 				vkshaderpool.h
                 vksubmissioncontext.cc
@@ -354,6 +339,8 @@ ENDIF()
 				vktextrenderer.h
 				vktexture.cc
 				vktexture.h
+                vktextureview.cc
+                vktextureview.h
 				vktransformdevice.cc
 				vktransformdevice.h
 				vktypes.cc
@@ -362,8 +349,6 @@ ENDIF()
 				vkconstantbuffer.h
 				vkutilities.cc
 				vkutilities.h
-                vkvertexbuffer.cc
-                vkvertexbuffer.h
 				vkvertexsignaturepool.cc
 				vkvertexsignaturepool.h
 			)
@@ -642,8 +627,10 @@ ENDIF()
 
         fips_dir(terrain)
             fips_files(
+                occupancyquadtree.h
                 terraincontext.h
                 terraincontext.cc
+                terrainculljob.cc
             )
 
 		fips_dir(visibility)

@@ -8,8 +8,6 @@
 //------------------------------------------------------------------------------
 #include "coregraphics/base/shaperendererbase.h"
 #include "coregraphics/vertexlayout.h"
-#include "coregraphics/vertexbuffer.h"
-#include "coregraphics/indexbuffer.h"
 #include "coregraphics/resourcetable.h"
 #include "util/fixedarray.h"
 namespace Vulkan
@@ -79,8 +77,8 @@ private:
 
 	Util::Array<CoreGraphics::VertexComponent> comps;
 	static const SizeT MaxVertexIndexBuffers = 2;
-	CoreGraphics::IndexBufferId ibos[MaxVertexIndexBuffers];
-	CoreGraphics::VertexBufferId vbos[MaxVertexIndexBuffers];
+	CoreGraphics::BufferId ibos[MaxVertexIndexBuffers];
+	CoreGraphics::BufferId vbos[MaxVertexIndexBuffers];
 	byte* vertexBufferPtr;
 	byte* indexBufferPtr;
 	IndexT indexBufferActiveIndex;

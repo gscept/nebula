@@ -51,7 +51,7 @@ public:
 
 		Math::mat4 particleTransform;
 		uint particleVboOffset;
-		CoreGraphics::VertexBufferId particleVbo;
+		CoreGraphics::BufferId particleVbo;
 		CoreGraphics::PrimitiveGroup group;
 		uint numParticles;
 
@@ -174,7 +174,7 @@ ParticleSystemNode::Instance::Setup(Models::ModelNode* node, const Models::Model
 	this->surfaceInstance = pparent->materialType->CreateSurfaceInstance(pparent->surface);
 
 	this->particleVboOffset = 0;
-	this->particleVbo = CoreGraphics::VertexBufferId::Invalid();
+	this->particleVbo = CoreGraphics::BufferId::Invalid();
 }
 
 } // namespace Particles

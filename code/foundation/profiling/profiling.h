@@ -6,7 +6,6 @@
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#if NEBULA_ENABLE_PROFILING
 #include "timing/time.h"
 #include "timing/timer.h"
 #include "util/stack.h"
@@ -18,7 +17,6 @@
 #include "threading/criticalsection.h"
 #include "threading/assertingmutex.h"
 #include <atomic>
-#endif
 
 // use these macros to insert markers
 #if NEBULA_ENABLE_PROFILING
@@ -29,6 +27,9 @@
 #define N_MARKER_BEGIN(name, cat)       { Profiling::ProfilingScope __##name##cat##scope__ = {#name, #cat, __FILE__, __LINE__, false}; Profiling::ProfilingPushScope(__##name##cat##scope__); }
 #define N_MARKER_DYN_BEGIN(str, cat)    { Profiling::ProfilingScope __dynmarker##cat##__ = {str, #cat, __FILE__, __LINE__, false}; Profiling::ProfilingPushScope(__dynmarker##cat##__); }
 #define N_MARKER_END()                  { Profiling::ProfilingPopScope(); }
+#define N_COUNTER_INCR(name, value)     Profiling::ProfilingIncreaseCounter(name, value);
+#define N_COUNTER_DECR(name, value)     Profiling::ProfilingDecreaseCounter(name, value);
+#define N_DECLARE_COUNTER(name, label)  static const char* name = #label;
 #else
 #define N_SCOPE(name, cat)
 #define N_SCOPE_DYN(str, cat)
@@ -36,9 +37,14 @@
 #define N_SCOPE_DYN_ACCUM(name, cat)
 #define N_MARKER_BEGIN(name, cat)
 #define N_MARKER_END()
+#define N_COUNTER_INCR(name, value)
+#define N_COUNTER_DECR(name, value)
+#define N_DECLARE_COUNTER(name, label)
 #endif
 
-#if NEBULA_ENABLE_PROFILING
+N_DECLARE_COUNTER(N_GPU_MEMORY_COUNTER, GPU Allocated Memory);
+
+
 namespace Profiling
 {
 
@@ -71,6 +77,16 @@ extern Threading::CriticalSection categoryLock;
 
 /// atomic counter used to give each thread a unique id
 extern std::atomic_uint ProfilingContextCounter;
+
+/// increment profiling counter
+void ProfilingIncreaseCounter(const char* id, uint64 value);
+/// decrement profiling counter
+void ProfilingDecreaseCounter(const char* id, uint64 value);
+/// return table of counters
+const Util::Dictionary<const char*, uint64>& ProfilingGetCounters();
+
+extern Threading::CriticalSection counterLock;
+extern Util::Dictionary<const char*, uint64> counters;
 
 struct ProfilingScope
 {
@@ -145,4 +161,3 @@ struct ProfilingContext
 };
 
 } // namespace Profiling
-#endif

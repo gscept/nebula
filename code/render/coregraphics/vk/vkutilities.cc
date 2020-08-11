@@ -84,7 +84,7 @@ VkUtilities::ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGr
 	vkCreateBuffer(dev, &bufInfo, NULL, &buf);
 
 	// allocate temporary buffer
-	CoreGraphics::Alloc alloc = AllocateMemory(dev, buf, CoreGraphics::MemoryPool_HostCoherent);
+	CoreGraphics::Alloc alloc = AllocateMemory(dev, buf, CoreGraphics::MemoryPool_HostLocal);
 	vkBindBufferMemory(dev, buf, alloc.mem, alloc.offset);
 	char* mapped = (char*)GetMappedMemory(alloc);
 	memcpy(mapped, data, alloc.size);
@@ -323,7 +323,7 @@ VkUtilities::ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format
 	res = vkCreateBuffer(dev, &bufInfo, NULL, &buf);
 	n_assert(res == VK_SUCCESS);
 
-	CoreGraphics::Alloc alloc2 = AllocateMemory(dev, buf, CoreGraphics::MemoryPool_HostCoherent);
+	CoreGraphics::Alloc alloc2 = AllocateMemory(dev, buf, CoreGraphics::MemoryPool_HostLocal);
 	vkBindBufferMemory(dev, buf, alloc2.mem, alloc2.offset);
 
 	VkBufferImageCopy cp;

@@ -1,5 +1,30 @@
 /**
-@namespace CoreGraphics
+@page CoreGraphics CoreGraphics
 
-FIXME!
+@section NebulaCoreGraphicsSystem The CoreGraphics Subsystem
+The CoreGraphics subsystem is the interface between the programmer and the GPU. It wraps the multiplicity of graphics APIs in a single unified interface. The main class is called the CoreGraphics::GraphicsDevice, which is the central hub for managing command buffers, submission logic, GPU queries and such. 
+
+The way CoreGraphics is implemented is by supplying a set of headers which define the interface. Then, during compile time and based on your compilation flags, the function linked to said header interface will also implement the renderer. We cannot change the renderer at runtime because of this reason. 
+
+CoreGraphics can be interface directly, an example of which can look like this:
+
+@code
+CoreGraphics::SetShaderProgram(myShaderProgram);
+CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
+CoreGraphics::MeshBind(myMesh, 0);
+CoreGraphics::SetResourceTable(myResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+CoreGraphics::Draw();
+CoreGraphics::EndBatch();
+@endcode
+
+This code will apply a shader program, start a rendering batch, bind a mesh, bind the necessary resources, issue the draw, and then end the batch. This will ***indirectly*** perform a render, as in, this series of commands will be recorded to what is called a command buffer, and is executed together with a bunch of other commands when the CoreGraphics::GraphicsDevice gets a call to do so. 
+
+In most cases, the rendering is done through what is called a FrameScript. However, we might want to implement plugins for the frame script, such as when we want to write some custom rendering code, but also have it executed in between two passes in a frame script. To do so, we simply register a callback as such:
+
+@code
+Frame::AddCallback("MyFramePluginName", [](IndexT) { ... });
+@endcode
+
+And then replace the ... with the code from before. 
+
 */

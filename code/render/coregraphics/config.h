@@ -13,14 +13,17 @@
 #include "core/rttimacros.h"
 
 #define NEBULA_ENABLE_MT_DRAW 1
+#define NEBULA_WHOLE_BUFFER_SIZE (-1)
 namespace CoreGraphics
 {
 
 enum IdType
 {
+	BufferIdType,
 	VertexBufferIdType,
 	IndexBufferIdType,
 	TextureIdType,
+	TextureViewIdType,
 	VertexLayoutIdType,
 	ConstantBufferIdType,
 	ShaderRWBufferIdType,
@@ -125,11 +128,12 @@ enum QueryType
 	NumQueryTypes
 };
 
-enum BufferUpdateMode
+enum BufferAccessMode
 {
-	HostWriteable,      // host can write to the buffer, but needs to flush to make the updates visible on the GPU
-	HostMapped,			// GPU memory is mapped to CPU memory which makes the memory immediately visible
-	DeviceLocal			// memory lives on the GPU, and the GPU has full access
+	DeviceLocal,		// buffer can only be used by the GPU, typical use is for static geometry data that doesn't change
+	HostLocal,			// buffer can only be updated by the CPU and can be used for GPU transfer operations, typical use is transient copy buffers
+	HostToDevice,		// buffer can be updated on the CPU and sent to the GPU, typical use is for dynamic and frequent buffer updates
+	DeviceToHost		// buffer can be updated by the GPU and be read on the CPU, typical use is to map and read back memory
 };
 
 //------------------------------------------------------------------------------
@@ -208,6 +212,7 @@ QueueNameFromQueueType(const QueueType type)
 #define NEBULA_MARKER_GRAY Math::vec4(0.9f, 0.9f, 0.9f, 1.0f)
 #define NEBULA_MARKER_BLACK Math::vec4(0.001f)
 #define NEBULA_MARKER_WHITE Math::vec4(1)
+
 #endif
 
 //------------------------------------------------------------------------------

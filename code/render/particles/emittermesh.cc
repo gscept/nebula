@@ -46,15 +46,15 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
     // we need to extract mesh vertices from the primitive group
     // without duplicate vertices
 	const PrimitiveGroup& primGroup = MeshGetPrimitiveGroups(mesh)[primGroupIndex];// mesh->GetPrimitiveGroupAtIndex(primGroupIndex);
-    const IndexBufferId indexBuffer = MeshGetIndexBuffer(mesh);    
-    n_assert(IndexBufferGetType(indexBuffer) == IndexType::Index32);
-    const VertexBufferId vertexBuffer = MeshGetVertexBuffer(mesh, 0);
-    SizeT numVBufferVertices = VertexBufferGetNumVertices(vertexBuffer);
+    const BufferId indexBuffer = MeshGetIndexBuffer(mesh);
+    //n_assert(IndexBufferGetType(indexBuffer) == IndexType::Index32);
+    const BufferId vertexBuffer = MeshGetVertexBuffer(mesh, 0);
+    SizeT numVBufferVertices = BufferGetSize(vertexBuffer);
 
     IndexT baseIndex = primGroup.GetBaseIndex();
     SizeT numIndices = primGroup.GetNumIndices();
 
-    int* indices = (int*) IndexBufferMap(indexBuffer, GpuBufferTypes::MapRead);
+    int* indices = (int*) BufferMap(indexBuffer);
 	//int indices[] = { 0 };
 
     // allocate a "flag array" which holds a 0 at a
@@ -80,7 +80,7 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
     }
     Memory::Free(Memory::ScratchHeap, flagArray);
     flagArray = 0;
-	IndexBufferUnmap(indexBuffer);
+	BufferUnmap(indexBuffer);
 
     // the emitterIndices array now contains the indices of all vertices
     // we need to copy
@@ -109,7 +109,7 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
 
 
     // gain access to vertices and transfer vertex info
-    const uchar* verts = (uchar*) VertexBufferMap(vertexBuffer, GpuBufferTypes::MapRead);
+    const uchar* verts = (uchar*) BufferMap(vertexBuffer);
     const SizeT vertexByteSize = VertexLayoutGetSize(vertexLayout);
     for (i = 0; i < this->numPoints; i++)
     {
@@ -121,7 +121,7 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
 		dst.tangent.load_byte4n(src + tanByteOffset, 0.0f);
         dst.tangent = Math::normalize(dst.tangent);
     }
-	VertexBufferUnmap(vertexBuffer);
+	BufferUnmap(vertexBuffer);
 }
 
 //------------------------------------------------------------------------------

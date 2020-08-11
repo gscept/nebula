@@ -1,5 +1,7 @@
 /**
-@namespace System
+@page System
+
+@section NebulaSystem The System Library
 
 The Nebula System subsystem offers close-to-the-metal classes
 which expose information about or manipulate system-level 

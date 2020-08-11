@@ -79,8 +79,13 @@ psMain(
 	UnpackTexture(ImGUI.PackedTextureInfo, id, type, mip, layer, useAlpha);
 	if (type == 0)
 		texColor = sample2DLod(id, TextureSampler, UV, mip);
-	else
+	else if (type == 1)
 		texColor = sample2DArrayLod(id, TextureSampler, vec3(UV, layer), mip);
+	else if (type == 2)
+	{
+		ivec3 size = textureSize(make_sampler3D(id, TextureSampler), int(mip));
+		texColor = sample3DLod(id, TextureSampler, vec3(UV, layer / float(size.z)), mip);
+	}
 
 	if (useAlpha == 0)
 		texColor.a = 1;

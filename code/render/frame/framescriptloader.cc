@@ -102,17 +102,17 @@ FrameScriptLoader::ParseFrameScript(const Ptr<Frame::FrameScript>& script, JzonV
 	{
 		JzonValue* cur = node->array_values[i];
 		Util::String name(cur->key);
-		if (name == "textures")					ParseTextureList(script, cur);
-		else if (name == "read_write_buffers")	ParseReadWriteBufferList(script, cur);
-		else if (name == "blit")				ParseBlit(script, cur);
-		else if (name == "copy")				ParseCopy(script, cur);
-		else if (name == "mipmap")				ParseMipmap(script, cur);
-		else if (name == "compute")				ParseCompute(script, cur);
-		else if (name == "plugin")				ParsePlugin(script, cur);
-		else if (name == "pass")				ParsePass(script, cur);
-		else if (name == "begin_submission")	ParseFrameSubmission(script, 0, cur); // 0 means begin
-		else if (name == "end_submission")		ParseFrameSubmission(script, 1, cur); // 1 means end
-		else if (name == "barrier")				ParseBarrier(script, cur);
+		if (name == "textures")							ParseTextureList(script, cur);
+		else if (name == "read_write_buffers")			ParseReadWriteBufferList(script, cur);
+		else if (name == "blit")						ParseBlit(script, cur);
+		else if (name == "copy")						ParseCopy(script, cur);
+		else if (name == "mipmap")						ParseMipmap(script, cur);
+		else if (name == "compute")						ParseCompute(script, cur);
+		else if (name == "plugin" || name == "call")	ParsePlugin(script, cur);
+		else if (name == "pass")						ParsePass(script, cur);
+		else if (name == "begin_submission")			ParseFrameSubmission(script, 0, cur); // 0 means begin
+		else if (name == "end_submission")				ParseFrameSubmission(script, 1, cur); // 1 means end
+		else if (name == "barrier")						ParseBarrier(script, cur);
 		else if (name == "comment" || name == "_comment") continue; // just skip comments
 		else
 		{
@@ -197,6 +197,7 @@ FrameScriptLoader::ParseTextureList(const Ptr<Frame::FrameScript>& script, JzonV
 			// set relative, dynamic or msaa if defined
 			if (jzon_get(cur, "relative"))	info.windowRelative = jzon_get(cur, "relative")->bool_value;
 			if (jzon_get(cur, "samples"))	info.samples = jzon_get(cur, "samples")->int_value;
+			if (jzon_get(cur, "sparse"))	info.sparse = jzon_get(cur, "sparse")->int_value;
 
 			// set dimension after figuring out if the texture is a cube
 			info.width = (float)width->float_value;
@@ -225,17 +226,16 @@ FrameScriptLoader::ParseReadWriteBufferList(const Ptr<Frame::FrameScript>& scrip
 		n_assert(size != nullptr);
 
 		// create shader buffer 
-		ShaderRWBufferCreateInfo info =
-		{
-			name->string_value, size->int_value, BufferUpdateMode::DeviceLocal, false
-		};
-
-		bool relativeSize = false;
-		if (jzon_get(cur, "relative")) info.screenRelative = jzon_get(cur, "relative")->bool_value;
-
+		BufferCreateInfo info;
+		info.name = name->string_value;
+		info.size = 1;
+		info.elementSize = size->int_value;
+		info.mode = CoreGraphics::DeviceLocal;
+		info.usageFlags = CoreGraphics::ReadWriteBuffer;
+		
 		// add to script
-		ShaderRWBufferId buf = CreateShaderRWBuffer(info);
-		script->AddReadWriteBuffer(name->string_value, buf);
+		BufferId buf = CreateBuffer(info);
+		script->AddBuffer(name->string_value, buf);
 	}
 }
 
@@ -386,16 +386,10 @@ FrameScriptLoader::ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue
 	else
 		op->queue = CoreGraphics::QueueTypeFromString(queue->string_value);
 
-	JzonValue* inputs = jzon_get(node, "inputs");
+	JzonValue* inputs = jzon_get(node, "resource_dependencies");
 	if (inputs != nullptr)
 	{
 		ParseResourceDependencies(script, op, inputs);
-	}
-
-	JzonValue* outputs = jzon_get(node, "outputs");
-	if (outputs != nullptr)
-	{
-		ParseResourceDependencies(script, op, outputs);
 	}
 
 	// create shader state
@@ -449,16 +443,10 @@ FrameScriptLoader::ParsePlugin(const Ptr<Frame::FrameScript>& script, JzonValue*
 		else
 			op->queue = CoreGraphics::QueueTypeFromString(queue->string_value);
 
-		JzonValue* inputs = jzon_get(node, "inputs");
+		JzonValue* inputs = jzon_get(node, "resource_dependencies");
 		if (inputs != nullptr)
 		{
 			ParseResourceDependencies(script, op, inputs);
-		}
-
-		JzonValue* outputs = jzon_get(node, "outputs");
-		if (outputs != nullptr)
-		{
-			ParseResourceDependencies(script, op, outputs);
 		}
 
 		// get algorithm
@@ -482,16 +470,10 @@ FrameScriptLoader::ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue
 	n_assert(name != nullptr);
 	op->SetName(name->string_value);
 
-	JzonValue* inputs = jzon_get(node, "inputs");
+	JzonValue* inputs = jzon_get(node, "resource_dependencies");
 	if (inputs != nullptr)
 	{
 		ParseResourceDependencies(script, op, inputs);
-	}
-
-	JzonValue* outputs = jzon_get(node, "outputs");
-	if (outputs != nullptr)
-	{
-		ParseResourceDependencies(script, op, outputs);
 	}
 
 	// add operation to script
@@ -703,17 +685,17 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraph
 	{
 		JzonValue* cur = node->array_values[i];
 		Util::String name(cur->key);
-		if (name == "name")						frameSubpass->SetName(cur->string_value);
-		else if (name == "dependencies")		ParseSubpassDependencies(framePass, subpass, cur);
-		else if (name == "attachments")			ParseSubpassAttachments(framePass, subpass, attachmentNames, cur);
-		else if (name == "inputs")				ParseSubpassInputs(framePass, subpass, attachmentNames, cur);
-		else if (name == "depth")				subpass.bindDepth = cur->bool_value;
-		else if (name == "resolve")				subpass.resolve = cur->bool_value;
-		else if (name == "resources")			ParseResourceDependencies(script, framePass, cur);
-		else if (name == "plugin")				ParseSubpassPlugin(script, frameSubpass, cur);
-		else if (name == "batch")				ParseSubpassBatch(script, frameSubpass, cur);
-		else if (name == "sorted_batch")		ParseSubpassSortedBatch(script, frameSubpass, cur);
-		else if (name == "fullscreen_effect")	ParseSubpassFullscreenEffect(script, frameSubpass, cur);
+		if (name == "name")								frameSubpass->SetName(cur->string_value);
+		else if (name == "subpass_dependencies")		ParseSubpassDependencies(framePass, subpass, cur);
+		else if (name == "attachments")					ParseSubpassAttachments(framePass, subpass, attachmentNames, cur);
+		else if (name == "inputs")						ParseSubpassInputs(framePass, subpass, attachmentNames, cur);
+		else if (name == "depth")						subpass.bindDepth = cur->bool_value;
+		else if (name == "resolve")						subpass.resolve = cur->bool_value;
+		else if (name == "resource_dependencies")		ParseResourceDependencies(script, framePass, cur);
+		else if (name == "plugin" || name == "call")	ParseSubpassPlugin(script, frameSubpass, cur);
+		else if (name == "batch")						ParseSubpassBatch(script, frameSubpass, cur);
+		else if (name == "sorted_batch")				ParseSubpassSortedBatch(script, frameSubpass, cur);
+		else if (name == "fullscreen_effect")			ParseSubpassFullscreenEffect(script, frameSubpass, cur);
 		else if (name == "comment" || name == "_comment") continue; // just skip comments
 		else
 		{
@@ -847,16 +829,10 @@ FrameScriptLoader::ParseSubpassPlugin(const Ptr<Frame::FrameScript>& script, Fra
 		op->domain = BarrierDomain::Pass;
 		op->queue = CoreGraphics::QueueType::GraphicsQueueType;
 
-		JzonValue* inputs = jzon_get(node, "inputs");
+		JzonValue* inputs = jzon_get(node, "resource_dependencies");
 		if (inputs != nullptr)
 		{
 			ParseResourceDependencies(script, op, inputs);
-		}
-
-		JzonValue* outputs = jzon_get(node, "outputs");
-		if (outputs != nullptr)
-		{
-			ParseResourceDependencies(script, op, outputs);
 		}
 
 		// get algorithm
@@ -877,16 +853,10 @@ FrameScriptLoader::ParseSubpassBatch(const Ptr<Frame::FrameScript>& script, Fram
 	op->domain = BarrierDomain::Pass;
 	op->queue = CoreGraphics::QueueType::GraphicsQueueType;
 
-	JzonValue* inputs = jzon_get(node, "inputs");
+	JzonValue* inputs = jzon_get(node, "resource_dependencies");
 	if (inputs != nullptr)
 	{
 		ParseResourceDependencies(script, op, inputs);
-	}
-
-	JzonValue* outputs = jzon_get(node, "outputs");
-	if (outputs != nullptr)
-	{
-		ParseResourceDependencies(script, op, outputs);
 	}
 
 	op->batch = CoreGraphics::BatchGroup::FromName(node->string_value);
@@ -903,16 +873,10 @@ FrameScriptLoader::ParseSubpassSortedBatch(const Ptr<Frame::FrameScript>& script
 	op->domain = BarrierDomain::Pass;
 	op->queue = CoreGraphics::QueueType::GraphicsQueueType;
 
-	JzonValue* inputs = jzon_get(node, "inputs");
+	JzonValue* inputs = jzon_get(node, "resource_dependencies");
 	if (inputs != nullptr)
 	{
 		ParseResourceDependencies(script, op, inputs);
-	}
-
-	JzonValue* outputs = jzon_get(node, "outputs");
-	if (outputs != nullptr)
-	{
-		ParseResourceDependencies(script, op, outputs);
 	}
 
 	op->batch = CoreGraphics::BatchGroup::FromName(node->string_value);
@@ -935,16 +899,10 @@ FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& s
 	op->domain = BarrierDomain::Pass;
 	op->queue = CoreGraphics::QueueType::GraphicsQueueType;
 
-	JzonValue* inputs = jzon_get(node, "inputs");
+	JzonValue* inputs = jzon_get(node, "resource_dependencies");
 	if (inputs != nullptr)
 	{
 		ParseResourceDependencies(script, op, inputs);
-	}
-
-	JzonValue* outputs = jzon_get(node, "outputs");
-	if (outputs != nullptr)
-	{
-		ParseResourceDependencies(script, op, outputs);
 	}
 
 	// create shader state
@@ -1091,8 +1049,8 @@ FrameScriptLoader::ParseShaderVariables(
 		case BufferReadWriteVariableType:
 		{
 			IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
-			CoreGraphics::ShaderRWBufferId rtid = script->GetReadWriteBuffer(valStr);
-			if (rtid != CoreGraphics::ShaderRWBufferId::Invalid())
+			CoreGraphics::BufferId rtid = script->GetBuffer(valStr);
+			if (rtid != CoreGraphics::BufferId::Invalid())
 				ResourceTableSetRWBuffer(table, { rtid, slot, 0 });
 			else
 				n_error("Unknown resource %s!", valStr.AsCharPtr());
@@ -1137,9 +1095,9 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 
 			op->textureDeps.Add(tex, std::make_tuple(valstr, access, dependency, subres, layout));
 		}
-		else if (script->readWriteBuffersByName.Contains(valstr))
+		else if (script->buffersByName.Contains(valstr))
 		{
-			ShaderRWBufferId buf = script->readWriteBuffersByName[valstr];
+			BufferId buf = script->buffersByName[valstr];
 			CoreGraphics::BufferSubresourceInfo subres;
 			JzonValue* nd = nullptr;
 			if ((nd = jzon_get(dep, "offset")) != nullptr) subres.offset = nd->int_value;

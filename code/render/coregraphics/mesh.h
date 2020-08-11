@@ -10,8 +10,7 @@
 #include "resources/resourceid.h"
 #include "ids/id.h"
 #include "ids/idallocator.h"
-#include "coregraphics/vertexbuffer.h"
-#include "coregraphics/indexbuffer.h"
+#include "coregraphics/buffer.h"
 #include "coregraphics/primitivetopology.h"
 #include "coregraphics/primitivegroup.h"
 namespace CoreGraphics
@@ -23,14 +22,14 @@ struct MeshCreateInfo
 {
 	struct Stream
 	{
-		VertexBufferId vertexBuffer;
+		BufferId vertexBuffer;
 		IndexT index;
 	};
 
 	Resources::ResourceName name;
 	Util::StringAtom tag;
 	Util::ArrayStack<Stream, 16> streams;
-	IndexBufferId indexBuffer;
+	BufferId indexBuffer;
 	VertexLayoutId vertexLayout;
 	CoreGraphics::PrimitiveTopology::Code topology;
 	Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
@@ -46,9 +45,9 @@ void MeshBind(const MeshId id, const IndexT prim);
 /// get number of primitive groups
 const Util::Array<CoreGraphics::PrimitiveGroup>& MeshGetPrimitiveGroups(const MeshId id);
 /// get vertex buffer
-const VertexBufferId MeshGetVertexBuffer(const MeshId id, const IndexT stream);
+const BufferId MeshGetVertexBuffer(const MeshId id, const IndexT stream);
 /// get index buffer
-const IndexBufferId MeshGetIndexBuffer(const MeshId id);
+const BufferId MeshGetIndexBuffer(const MeshId id);
 /// get topology
 const CoreGraphics::PrimitiveTopology::Code MeshGetTopology(const MeshId id);
 

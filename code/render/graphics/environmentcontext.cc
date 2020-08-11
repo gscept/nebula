@@ -133,6 +133,28 @@ EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 	Shared::PerTickParams& tickParams = CoreGraphics::ShaderServer::Instance()->GetTickParams();
 	Math::mat4 transform = Lighting::LightContext::GetTransform(envState.sunEntity);
 	Math::vec4 sunDir = -transform.z_axis;
+
+	tickParams.RayleighFactor = 1.0f;
+	tickParams.RayleighZenithLength = 615;
+	tickParams.RefractiveIndex = 1.000317f;
+	tickParams.DepolarizationFactor = 0.067f;
+	tickParams.Molecules = 2.542e25;
+	tickParams.MieV = 4.012f;
+	tickParams.MieCoefficient = 0.00335f;
+	tickParams.MieDirectionalG = 0.787f;
+	tickParams.MieZenithLength = 500;
+	tickParams.Turbidity = 1.25f;
+	tickParams.SunIntensityFactor = 1111;
+	tickParams.SunIntensityFalloff = 0.98f;
+	tickParams.MieKCoefficient[0] = 0.686f;
+	tickParams.MieKCoefficient[1] = 0.678f;
+	tickParams.MieKCoefficient[2] = 0.666f;
+	tickParams.PrimaryColors[0] = 6.8e-7;
+	tickParams.PrimaryColors[1] = 5.5e-7;
+	tickParams.PrimaryColors[2] = 4.5e-7;
+	tickParams.SunDiscSize = 0.00758f;
+	tickParams.TonemapWeight = 9.0f;
+	tickParams.Lum = 1.0f;
 	
 	// update perez distribution coefficients to the shared constants
 	Math::vec4 A, B, C, D, E, Z;

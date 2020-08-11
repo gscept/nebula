@@ -17,6 +17,8 @@
 namespace CoreGraphics
 {
 
+struct ImageSubresourceInfo;
+
 /// texture type
 RESOURCE_ID_TYPE(TextureId);
 
@@ -49,12 +51,12 @@ enum TextureCubeFace
 /// type of texture usage
 enum TextureUsage
 {
-	InvalidUsage	= 0x0,		// invalid usage
-	ImmutableUsage	= 0x1,		// texture is a shader sampleable 1D, 2D, 3D or Cube texture, and is fed by a texture resource
-	RenderUsage		= 0x2,		// texture supports to be rendered to as an attachment
-	ReadWriteUsage	= 0x4,		// texture supports to be bound as an RWTexture (DX) or Image (GL/Vulkan)
-	MapableUsage	= 0x8,		// texture supports memory mapping
-	CopyUsage		= 0x10		// texture supports being a copy source and destination
+	InvalidTextureUsage			= 0x0,		// invalid usage
+	SampleTexture				= 0x1,		// texture is a shader sampleable 1D, 2D, 3D or Cube texture
+	RenderTexture				= 0x2,		// texture supports to be rendered to as an attachment
+	ReadWriteTexture			= 0x4,		// texture supports to be bound as an RWTexture (DX) or Image (GL/Vulkan)
+	TransferTextureSource		= 0x8,		// texture supports being a copy source
+	TransferTextureDestination  = 0x10		// texture supports being a copy destination
 };
 __ImplementEnumBitOperators(CoreGraphics::TextureUsage);
 
@@ -87,7 +89,7 @@ struct TextureCreateInfo
 {
 	TextureCreateInfo()
 		: name(""_atm)
-		, usage(CoreGraphics::TextureUsage::ImmutableUsage)
+		, usage(CoreGraphics::TextureUsage::SampleTexture)
 		, tag(""_atm)
 		, buffer(nullptr)
 		, type(Texture2D)
@@ -172,6 +174,8 @@ void DestroyTexture(const TextureId id);
 
 /// get texture dimensions
 TextureDimensions TextureGetDimensions(const TextureId id);
+/// get texture relative dimensions
+TextureRelativeDimensions TextureGetRelativeDimensions(const TextureId id);
 /// get texture pixel format
 CoreGraphics::PixelFormat::Code TextureGetPixelFormat(const TextureId id);
 /// get texture type
@@ -218,18 +222,39 @@ IndexT TextureSparseGetPageIndex(const CoreGraphics::TextureId id, IndexT layer,
 const TextureSparsePage& TextureSparseGetPage(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex);
 /// get the number of pages for a given layer and mip
 SizeT TextureSparseGetNumPages(const CoreGraphics::TextureId id, IndexT layer, IndexT mip);
+/// get highest sparse mip
+IndexT TextureSparseGetMaxMip(const CoreGraphics::TextureId id);
 
 /// evict a page
 void TextureSparseEvict(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex);
 /// make a page resident
 void TextureSparseMakeResident(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex);
+/// evict a whole mip
+void TextureSparseEvictMip(const CoreGraphics::TextureId id, IndexT layer, IndexT mip);
+/// make a whole mip resident
+void TextureSparseMakeMipResident(const CoreGraphics::TextureId id, IndexT layer, IndexT mip);
 /// commit texture sparse page updates
 void TextureSparseCommitChanges(const CoreGraphics::TextureId id);
 
-/// update a region of the sparse texture, make sure to insert barriers before doing this though
-void TextureSparseUpdate(const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, const CoreGraphics::TextureId source, const CoreGraphics::SubmissionContextId sub);
-/// update a region of the sparse texture from a buffer
-void TextureSparseUpdate(const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, char* buf, const CoreGraphics::SubmissionContextId sub);
+/// copy pixels between textures
+void TextureCopy(
+	const CoreGraphics::TextureId toId, const Math::rectangle<int> toRegion, IndexT toMip, IndexT toLayer,
+	const CoreGraphics::TextureId fromId, const Math::rectangle<int> fromRegion, IndexT fromMip, IndexT fromLayer,
+	const CoreGraphics::SubmissionContextId sub);
+/// copy pixels from buffer to texture
+void TextureCopy(
+	const CoreGraphics::TextureId toId, const Math::rectangle<int> toRegion, IndexT toMip, IndexT toLayer,
+	const CoreGraphics::BufferId fromId, IndexT offset, 
+	const CoreGraphics::SubmissionContextId sub);
+/// update texture from data stream
+void TextureUpdate(const CoreGraphics::TextureId id, const Math::rectangle<int>& region, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub);
+/// update texture with unspecified region
+void TextureUpdate(const CoreGraphics::TextureId id, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub);
+
+/// clear texture with color
+void TextureClearColor(const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres);
+/// clear texture with depth-stencil
+void TextureClearDepthStencil(const CoreGraphics::TextureId id, float depth, uint stencil, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres);
 
 /// helper function to setup RenderTextureInfo, already implemented
 TextureCreateInfoAdjusted TextureGetAdjustedInfo(const TextureCreateInfo& info);
@@ -265,11 +290,11 @@ TextureUsageFromString(const Util::String& string)
 
 	for (IndexT i = 0; i < comps.Size(); i++)
 	{
-		if		(comps[i] == "Immutable") usage |= ImmutableUsage;
-		else if (comps[i] == "Render") usage |= RenderUsage;
-		else if (comps[i] == "ReadWrite") usage |= ReadWriteUsage;
-		else if (comps[i] == "Mapable") usage |= MapableUsage;
-		else if (comps[i] == "Copy") usage |= CopyUsage;
+		if		(comps[i] == "Sample") usage |= SampleTexture;
+		else if (comps[i] == "Render") usage |= RenderTexture;
+		else if (comps[i] == "ReadWrite") usage |= ReadWriteTexture;
+		else if (comps[i] == "TransferSource") usage |= TransferTextureSource;
+		else if (comps[i] == "TransferDestination") usage |= TransferTextureDestination;		
 	}
 
 	return usage;

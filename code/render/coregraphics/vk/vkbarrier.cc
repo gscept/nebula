@@ -8,7 +8,7 @@
 #include "vkcommandbuffer.h"
 #include "vktypes.h"
 #include "vktexture.h"
-#include "vkshaderrwbuffer.h"
+#include "vkbuffer.h"
 #include "coregraphics/vk/vkgraphicsdevice.h"
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -47,9 +47,9 @@ CreateBarrier(const BarrierCreateInfo& info)
 
 	n_assert(info.textures.Size() < MaxNumBarriers);
 	n_assert(info.rwBuffers.Size() < MaxNumBarriers);
+	n_assert(info.barriers.Size() < MaxNumBarriers);
 
-	IndexT i;
-	for (i = 0; i < info.textures.Size(); i++)
+	for (IndexT i = 0; i < info.textures.Size(); i++)
 	{
 		vkInfo.imageBarriers[vkInfo.numImageBarriers].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 		vkInfo.imageBarriers[vkInfo.numImageBarriers].pNext = nullptr;
@@ -73,7 +73,7 @@ CreateBarrier(const BarrierCreateInfo& info)
 		rts.Append(info.textures[i].tex);
 	}
 
-	for (i = 0; i < info.rwBuffers.Size(); i++)
+	for (IndexT i = 0; i < info.rwBuffers.Size(); i++)
 	{
 		vkInfo.bufferBarriers[vkInfo.numBufferBarriers].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
 		vkInfo.bufferBarriers[vkInfo.numBufferBarriers].pNext = nullptr;
@@ -81,7 +81,7 @@ CreateBarrier(const BarrierCreateInfo& info)
 		vkInfo.bufferBarriers[vkInfo.numBufferBarriers].srcAccessMask = VkTypes::AsVkResourceAccessFlags(info.rwBuffers[i].fromAccess);
 		vkInfo.bufferBarriers[vkInfo.numBufferBarriers].dstAccessMask = VkTypes::AsVkResourceAccessFlags(info.rwBuffers[i].toAccess);
 
-		vkInfo.bufferBarriers[vkInfo.numBufferBarriers].buffer = ShaderRWBufferGetVkBuffer(info.rwBuffers[i].buf);
+		vkInfo.bufferBarriers[vkInfo.numBufferBarriers].buffer = BufferGetVk(info.rwBuffers[i].buf);
 		vkInfo.bufferBarriers[vkInfo.numBufferBarriers].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkInfo.bufferBarriers[vkInfo.numBufferBarriers].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkInfo.bufferBarriers[vkInfo.numBufferBarriers].offset = 0;
@@ -100,6 +100,18 @@ CreateBarrier(const BarrierCreateInfo& info)
 
 		vkInfo.numBufferBarriers++;
 	}
+
+	for (IndexT i = 0; i < info.barriers.Size(); i++)
+	{
+		vkInfo.memoryBarriers[i].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+		vkInfo.memoryBarriers[i].pNext = nullptr;
+
+		vkInfo.memoryBarriers[i].srcAccessMask = VkTypes::AsVkResourceAccessFlags(info.barriers[i].fromAccess);
+		vkInfo.memoryBarriers[i].dstAccessMask = VkTypes::AsVkResourceAccessFlags(info.barriers[i].toAccess);
+
+		vkInfo.numMemoryBarriers++;
+	}
+
 
 	BarrierId eventId;
 	eventId.id24 = id;
@@ -172,7 +184,7 @@ BarrierInsert(
 	{
 		VkBufferMemoryBarrier& vkBar = barrier.bufferBarriers[i];
 		BufferBarrier& nebBar = rwBuffers[i];
-		vkBar.buffer = ShaderRWBufferGetVkBuffer(nebBar.buf);
+		vkBar.buffer = BufferGetVk(nebBar.buf);
 		vkBar.srcAccessMask = VkTypes::AsVkResourceAccessFlags(nebBar.fromAccess);
 		vkBar.dstAccessMask = VkTypes::AsVkResourceAccessFlags(nebBar.toAccess);
 		vkBar.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
@@ -217,7 +229,7 @@ BarrierInsert(
 #if NEBULA_BARRIER_INSERT_MARKER
 	CommandBufferBeginMarker(queue, NEBULA_MARKER_GRAY, name);
 #endif
-	Vulkan::InsertBarrier(barrier.srcFlags, barrier.dstFlags, barrier.dep, barrier.numMemoryBarriers, barrier.memoryBarriers, barrier.numBufferBarriers, barrier.bufferBarriers, barrier.numImageBarriers, barrier.imageBarriers, queue);
+	Vulkan::InsertBarrier(barrier, queue);
 
 #if NEBULA_BARRIER_INSERT_MARKER
 	CommandBufferEndMarker(queue);
@@ -240,7 +252,7 @@ BarrierInsert(const CoreGraphics::CommandBufferId buf, CoreGraphics::BarrierStag
 	{
 		VkBufferMemoryBarrier& vkBar = barrier.bufferBarriers[i];
 		BufferBarrier& nebBar = rwBuffers[i];
-		vkBar.buffer = ShaderRWBufferGetVkBuffer(nebBar.buf);
+		vkBar.buffer = BufferGetVk(nebBar.buf);
 		vkBar.srcAccessMask = VkTypes::AsVkResourceAccessFlags(nebBar.fromAccess);
 		vkBar.dstAccessMask = VkTypes::AsVkResourceAccessFlags(nebBar.toAccess);
 		vkBar.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
@@ -281,6 +293,92 @@ BarrierInsert(const CoreGraphics::CommandBufferId buf, CoreGraphics::BarrierStag
 		vkBar.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	}
 	barrier.numMemoryBarriers = 0; // maybe support this?
+
+	// insert barrier
+	vkCmdPipelineBarrier(CommandBufferGetVk(buf),
+		barrier.srcFlags,
+		barrier.dstFlags,
+		barrier.dep,
+		barrier.numMemoryBarriers, barrier.memoryBarriers,
+		barrier.numBufferBarriers, barrier.bufferBarriers,
+		barrier.numImageBarriers, barrier.imageBarriers);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+BarrierInsert(
+	const CoreGraphics::QueueType queue, 
+	CoreGraphics::BarrierStage fromStage,
+	CoreGraphics::BarrierStage toStage,
+	CoreGraphics::BarrierDomain domain,
+	const Util::FixedArray<ExecutionBarrier>& barriers,
+	const char* name)
+{
+	VkBarrierInfo barrier;
+	barrier.name = name;
+	barrier.srcFlags = VkTypes::AsVkPipelineFlags(fromStage);
+	barrier.dstFlags = VkTypes::AsVkPipelineFlags(toStage);
+	barrier.dep = domain == CoreGraphics::BarrierDomain::Pass ? VK_DEPENDENCY_BY_REGION_BIT : 0;
+	barrier.numImageBarriers = 0;
+	barrier.numBufferBarriers = 0;
+	barrier.numMemoryBarriers = barriers.Size();
+	for (int i = 0; i < barriers.Size(); i++)
+	{
+		VkMemoryBarrier memBarrier =
+		{
+			VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+			nullptr,
+			VkTypes::AsVkResourceAccessFlags(barriers[i].fromAccess),
+			VkTypes::AsVkResourceAccessFlags(barriers[i].toAccess)
+		};
+		barrier.memoryBarriers[i] = memBarrier;
+	}
+
+#if NEBULA_BARRIER_INSERT_MARKER
+	CommandBufferBeginMarker(queue, NEBULA_MARKER_GRAY, name);
+#endif
+
+	Vulkan::InsertBarrier(barrier, queue);
+
+#if NEBULA_BARRIER_INSERT_MARKER
+	CommandBufferEndMarker(queue);
+#endif
+
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+BarrierInsert(
+	const CoreGraphics::CommandBufferId buf, 
+	CoreGraphics::BarrierStage fromStage,
+	CoreGraphics::BarrierStage toStage,
+	CoreGraphics::BarrierDomain domain,
+	const Util::FixedArray<ExecutionBarrier>& barriers,
+	const char* name)
+{
+	VkBarrierInfo barrier;
+	barrier.name = name;
+	barrier.srcFlags = VkTypes::AsVkPipelineFlags(fromStage);
+	barrier.dstFlags = VkTypes::AsVkPipelineFlags(toStage);
+	barrier.dep = domain == CoreGraphics::BarrierDomain::Pass ? VK_DEPENDENCY_BY_REGION_BIT : 0;
+	barrier.numImageBarriers = 0;
+	barrier.numBufferBarriers = 0;
+	barrier.numMemoryBarriers = barriers.Size();
+	for (int i = 0; i < barriers.Size(); i++)
+	{
+		VkMemoryBarrier memBarrier =
+		{
+			VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+			nullptr,
+			VkTypes::AsVkResourceAccessFlags(barriers[i].fromAccess),
+			VkTypes::AsVkResourceAccessFlags(barriers[i].toAccess)
+		};
+		barrier.memoryBarriers[i] = memBarrier;
+	}
 
 	// insert barrier
 	vkCmdPipelineBarrier(CommandBufferGetVk(buf),

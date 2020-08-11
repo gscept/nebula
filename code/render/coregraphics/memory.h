@@ -8,6 +8,7 @@
 //------------------------------------------------------------------------------
 #include "threading/criticalsection.h"
 #include "util/array.h"
+#include "ids/idpool.h"
 
 
 #if __VULKAN__
@@ -24,9 +25,10 @@ namespace CoreGraphics
 
 enum MemoryPoolType
 {
-	MemoryPool_DeviceLocal,		/// image memory which should reside only on the GPU
-	MemoryPool_ManualFlush,		/// temporary image memory which resides only on the GPU but will be discarded and allocated
-	MemoryPool_HostCoherent,	/// buffer memory which should reside only on the GPU
+	MemoryPool_DeviceLocal,		/// memory which should reside solely on the GPU
+	MemoryPool_HostLocal,		/// memory which should reside solely on the CPU
+	MemoryPool_HostToDevice,	/// memory which should be used to directly write from CPU to GPU
+	MemoryPool_DeviceToHost,	/// memory which should be used to read feedback from the GPU to the CPU
 
 	NumMemoryPoolTypes
 };
@@ -61,6 +63,7 @@ struct MemoryPool
 
 	DeviceSize blockSize;
 	uint memoryType;
+	Ids::IdPool blockPool;
 	Util::Array<DeviceMemory> blocks;
 	Util::Array<Util::Array<AllocRange>> blockRanges;
 	Util::Array<void*> blockMappedPointers;
@@ -99,8 +102,9 @@ extern Threading::CriticalSection AllocationLoc;
 /// setup memory pools
 void SetupMemoryPools(
 	DeviceSize deviceLocalMemory,
-	DeviceSize manuallyFlushedMemory,
-	DeviceSize hostCoherentMemory);
+	DeviceSize hostLocalMemory,
+	DeviceSize hostToDeviceMemory,
+	DeviceSize deviceToHostMemory);
 /// discard memory pools
 void DiscardMemoryPools(VkDevice dev);
 

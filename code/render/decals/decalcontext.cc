@@ -28,9 +28,9 @@ struct
 	CoreGraphics::ShaderProgramId renderPBRProgram;
 	CoreGraphics::ShaderProgramId renderEmissiveProgram;
 	RenderUtil::DrawFullScreenQuad fsq;
-	CoreGraphics::ShaderRWBufferId clusterDecalIndexLists;
-	Util::FixedArray<CoreGraphics::ShaderRWBufferId> stagingClusterDecalsList;
-	CoreGraphics::ShaderRWBufferId clusterDecalsList;
+	CoreGraphics::BufferId clusterDecalIndexLists;
+	Util::FixedArray<CoreGraphics::BufferId> stagingClusterDecalsList;
+	CoreGraphics::BufferId clusterDecalsList;
 	CoreGraphics::ConstantBufferId clusterPointDecals;
 	CoreGraphics::ConstantBufferId clusterSpotDecals;
 
@@ -107,27 +107,28 @@ DecalContext::Create()
 	DisplayMode mode = WindowGetDisplayMode(DisplayDevice::Instance()->GetCurrentWindow());
 	decalState.fsq.Setup(mode.GetWidth(), mode.GetHeight());
 
-	ShaderRWBufferCreateInfo rwbInfo =
-	{
-		"DecalIndexListsBuffer",
-		sizeof(DecalsCluster::DecalIndexLists),
-		BufferUpdateMode::DeviceLocal,
-		false
-	};
-	decalState.clusterDecalIndexLists = CreateShaderRWBuffer(rwbInfo);
+	BufferCreateInfo rwbInfo;
+	rwbInfo.name = "DecalIndexListsBuffer";
+	rwbInfo.size = 1;
+	rwbInfo.elementSize = sizeof(DecalsCluster::DecalIndexLists);
+	rwbInfo.mode = BufferAccessMode::DeviceLocal;
+	rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
+	decalState.clusterDecalIndexLists = CreateBuffer(rwbInfo);
 
 	rwbInfo.name = "DecalLists";
-	rwbInfo.size = sizeof(DecalsCluster::DecalLists);
-	decalState.clusterDecalsList = CreateShaderRWBuffer(rwbInfo);
+	rwbInfo.elementSize = sizeof(DecalsCluster::DecalLists);
+	decalState.clusterDecalsList = CreateBuffer(rwbInfo);
 
-	rwbInfo.mode = BufferUpdateMode::HostWriteable;
+	rwbInfo.name = "DecalListsStagingBuffer";
+	rwbInfo.mode = BufferAccessMode::HostToDevice;
+	rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferSource;
 	decalState.resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
 	decalState.stagingClusterDecalsList.Resize(CoreGraphics::GetNumBufferedFrames());
 
 	for (IndexT i = 0; i < decalState.resourceTables.Size(); i++)
 	{
 		decalState.resourceTables[i] = ShaderCreateResourceTable(decalState.classificationShader, NEBULA_BATCH_GROUP);
-		decalState.stagingClusterDecalsList[i] = CreateShaderRWBuffer(rwbInfo);
+		decalState.stagingClusterDecalsList[i] = CreateBuffer(rwbInfo);
 
 		// update resource table
 		ResourceTableSetRWBuffer(decalState.resourceTables[i], { decalState.clusterDecalIndexLists, decalIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
@@ -338,8 +339,8 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 		DecalsCluster::DecalLists decalList;
 		Memory::CopyElements(decalState.pbrDecals, decalList.PBRDecals, numPbrDecals);
 		Memory::CopyElements(decalState.emissiveDecals, decalList.EmissiveDecals, numEmissiveDecals);
-		CoreGraphics::ShaderRWBufferUpdate(decalState.stagingClusterDecalsList[bufferIndex], &decalList, sizeof(DecalsCluster::DecalLists));
-		CoreGraphics::ShaderRWBufferFlush(decalState.stagingClusterDecalsList[bufferIndex]);
+		CoreGraphics::BufferUpdate(decalState.stagingClusterDecalsList[bufferIndex], decalList);
+		CoreGraphics::BufferFlush(decalState.stagingClusterDecalsList[bufferIndex]);
 	}
 
 	ResourceTableCommitChanges(decalState.resourceTables[bufferIndex]);

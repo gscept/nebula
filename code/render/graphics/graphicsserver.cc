@@ -60,8 +60,9 @@ GraphicsServer::Open()
 		{ 1_MB, 0_MB },		// Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
 		{
 			128_MB,			// device local memory block size, textures and vertex/index buffers
+			32_MB,			// memory to use for temporary host buffers which are copied to the GPU
+			32_MB,			// memory used to read back from the GPU
 			128_MB,			// manually flushed memory block size, constant buffers, storage buffers
-			32_MB,			// host coherent memory block size, particles, cloth, dynamic meshes
 		},
 		3,					// number of simultaneous frames (3 = triple buffering, 2 = ... you get the idea)
 		false 				// validation
@@ -108,7 +109,7 @@ GraphicsServer::Open()
 		const unsigned char white = 0xFF;
 		const unsigned char black = 0x00;
 		CoreGraphics::TextureCreateInfo texInfo;
-		texInfo.usage = CoreGraphics::TextureUsage::CopyUsage;
+		texInfo.usage = CoreGraphics::TextureUsage::SampleTexture;
 
 		texInfo.tag = "system";
 		texInfo.format = CoreGraphics::PixelFormat::R8;

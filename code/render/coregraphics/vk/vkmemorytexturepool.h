@@ -79,8 +79,28 @@ public:
 		IndexT srcMip, IndexT srcLayer, SizeT srcXOffset, SizeT srcYOffset, SizeT srcZOffset,
 		IndexT dstMip, IndexT dstLayer, SizeT dstXOffset, SizeT dstYOffset, SizeT dstZOffset);
 
+	/// copy pixels between textures
+	void Copy(
+		const CoreGraphics::TextureId toId, const Math::rectangle<int> toRegion, IndexT toMip, IndexT toLayer,
+		const CoreGraphics::TextureId fromId, const Math::rectangle<int> fromRegion, IndexT fromMip, IndexT fromLayer,
+		const CoreGraphics::SubmissionContextId sub);
+	/// copy pixels from buffer to texture
+	void Copy(
+		const CoreGraphics::TextureId toId, const Math::rectangle<int> toRegion, IndexT toMip, IndexT toLayer,
+		const CoreGraphics::BufferId fromId, IndexT offset,
+		const CoreGraphics::SubmissionContextId sub);
+	/// update texture from data stream
+	void Update(const CoreGraphics::TextureId id, const Math::rectangle<int>& region, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub);
+
+	/// clear texture with color
+	void ClearColor(const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres);
+	/// clear texture with depth-stencil
+	void ClearDepthStencil(const CoreGraphics::TextureId id, float depth, uint stencil, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres);
+
 	/// get texture dimensions
 	CoreGraphics::TextureDimensions GetDimensions(const CoreGraphics::TextureId id);
+	/// get texture relative dimensions
+	CoreGraphics::TextureRelativeDimensions GetRelativeDimensions(const CoreGraphics::TextureId id);
 	/// get texture pixel format
 	CoreGraphics::PixelFormat::Code GetPixelFormat(const CoreGraphics::TextureId id);
 	/// get texture type
@@ -110,16 +130,26 @@ public:
 	const CoreGraphics::TextureSparsePage& SparseGetPage(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex);
 	/// get the number of pages for a given layer and mip
 	SizeT SparseGetNumPages(const CoreGraphics::TextureId id, IndexT layer, IndexT mip);
+	/// get max mip
+	IndexT SparseGetMaxMip(const CoreGraphics::TextureId id);
 
 	/// evict a page
 	void SparseEvict(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex);
 	/// make a page resident
 	void SparseMakeResident(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex);
+	/// evict a mip
+	void SparseEvictMip(const CoreGraphics::TextureId id, IndexT layer, IndexT mip);
+	/// make mip resident
+	void SparseMakeMipResident(const CoreGraphics::TextureId id, IndexT layer, IndexT mip);
 	/// commit texture sparse page updates
 	void SparseCommitChanges(const CoreGraphics::TextureId id);
 
 	/// update a region of the sparse texture, make sure to insert barriers before doing this though
-	void SparseUpdate(const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, const CoreGraphics::TextureId source, const CoreGraphics::SubmissionContextId sub);
+	void SparseUpdate(const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, IndexT layer, const CoreGraphics::TextureId source, const CoreGraphics::SubmissionContextId sub);
+	/// update a region of the sparse texture, make sure to insert barriers before doing this though
+	void SparseUpdate(const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub);
+	/// update a whole mip
+	void SparseUpdate(const CoreGraphics::TextureId id, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub);
 
 	/// swap buffers for texture
 	IndexT SwapBuffers(const CoreGraphics::TextureId id);

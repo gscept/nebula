@@ -22,6 +22,7 @@ VkTypes::AsVkFormat(CoreGraphics::PixelFormat::Code p)
 	{
 	case PixelFormat::R8G8B8X8:         return VK_FORMAT_R8G8B8A8_UNORM;
 	case PixelFormat::R8G8B8A8:         return VK_FORMAT_R8G8B8A8_UNORM;
+	case PixelFormat::B8G8R8A8:         return VK_FORMAT_B8G8R8A8_UNORM;
 	case PixelFormat::R8G8B8:           return VK_FORMAT_R8G8B8_UNORM;
 	case PixelFormat::R5G6B5:           return VK_FORMAT_R5G6B5_UNORM_PACK16;
 	case PixelFormat::SRGBA8:			return VK_FORMAT_R8G8B8A8_SRGB;
@@ -35,6 +36,7 @@ VkTypes::AsVkFormat(CoreGraphics::PixelFormat::Code p)
 	case PixelFormat::DXT1AsRGB:        return VK_FORMAT_BC1_RGBA_SRGB_BLOCK;
 	case PixelFormat::DXT3sRGB:         return VK_FORMAT_BC2_SRGB_BLOCK;
 	case PixelFormat::DXT5sRGB:         return VK_FORMAT_BC3_SRGB_BLOCK;
+	case PixelFormat::BC4:				return VK_FORMAT_BC4_UNORM_BLOCK;
 	case PixelFormat::BC5:				return VK_FORMAT_BC5_UNORM_BLOCK;
 	case PixelFormat::BC7:				return VK_FORMAT_BC7_UNORM_BLOCK;
 	case PixelFormat::BC7sRGB:			return VK_FORMAT_BC7_SRGB_BLOCK;
@@ -163,6 +165,7 @@ VkTypes::IsCompressedFormat(VkFormat p)
 	case VK_FORMAT_BC1_RGBA_UNORM_BLOCK: 	return true;
 	case VK_FORMAT_BC2_UNORM_BLOCK:			return true;
 	case VK_FORMAT_BC3_UNORM_BLOCK:			return true;
+	case VK_FORMAT_BC4_UNORM_BLOCK:			return true;
 	case VK_FORMAT_BC5_UNORM_BLOCK:			return true;
 	case VK_FORMAT_BC7_UNORM_BLOCK:			return true;
 	case VK_FORMAT_BC1_RGBA_SRGB_BLOCK:		return true;
@@ -196,6 +199,7 @@ VkTypes::AsVkBlockSize(CoreGraphics::PixelFormat::Code p)
 	case PixelFormat::DXT1AsRGB:        return { 4, 4 };
 	case PixelFormat::DXT3sRGB:         return { 4, 4 };
 	case PixelFormat::DXT5sRGB:         return { 4, 4 };
+	case PixelFormat::BC4:				return { 4, 4 };
 	case PixelFormat::BC5:				return { 4, 4 };
 	case PixelFormat::BC7:				return { 4, 4 };
 	case PixelFormat::BC7sRGB:			return { 4, 4 };
@@ -243,6 +247,7 @@ VkTypes::AsVkBlockSize(VkFormat fmt)
 	case VK_FORMAT_BC1_RGBA_SRGB_BLOCK:		return {4, 4};
 	case VK_FORMAT_BC2_SRGB_BLOCK:			return {4, 4};
 	case VK_FORMAT_BC3_SRGB_BLOCK:			return {4, 4};
+	case VK_FORMAT_BC4_UNORM_BLOCK:			return {4, 4};
 	case VK_FORMAT_BC5_UNORM_BLOCK:			return {4, 4};
 	case VK_FORMAT_BC7_UNORM_BLOCK:			return {4, 4};
 	case VK_FORMAT_BC7_SRGB_BLOCK:			return {4, 4};
@@ -295,6 +300,7 @@ VkTypes::AsVkMappableImageFormat(VkFormat fmt)
 	case VK_FORMAT_BC1_RGBA_SRGB_BLOCK:		return VK_FORMAT_R8G8B8A8_UNORM;
 	case VK_FORMAT_BC2_SRGB_BLOCK:			return VK_FORMAT_R8G8B8A8_UNORM;
 	case VK_FORMAT_BC3_SRGB_BLOCK:			return VK_FORMAT_R8G8B8A8_UNORM;
+	case VK_FORMAT_BC4_UNORM_BLOCK:			return VK_FORMAT_R8_UNORM;
 	case VK_FORMAT_BC5_UNORM_BLOCK:			return VK_FORMAT_R8G8B8A8_UNORM;
 	case VK_FORMAT_BC7_UNORM_BLOCK:			return VK_FORMAT_R8G8B8A8_UNORM;
 	case VK_FORMAT_BC7_SRGB_BLOCK:			return VK_FORMAT_R8G8B8A8_UNORM;
@@ -346,17 +352,6 @@ VkTypes::AsVkFramebufferFormat(CoreGraphics::PixelFormat::Code p)
 	case PixelFormat::SRGBA8:			return VK_FORMAT_B8G8R8A8_SRGB;
 	case PixelFormat::R5G5B5A1:         return VK_FORMAT_R5G5B5A1_UNORM_PACK16;
 	case PixelFormat::R4G4B4A4:         return VK_FORMAT_R4G4B4A4_UNORM_PACK16;
-	case PixelFormat::DXT1:             return VK_FORMAT_BC1_RGB_UNORM_BLOCK;
-	case PixelFormat::DXT1A:            return VK_FORMAT_BC1_RGBA_UNORM_BLOCK;
-	case PixelFormat::DXT3:             return VK_FORMAT_BC2_UNORM_BLOCK;
-	case PixelFormat::DXT5:             return VK_FORMAT_BC3_UNORM_BLOCK;
-	case PixelFormat::DXT1sRGB:         return VK_FORMAT_BC1_RGB_SRGB_BLOCK;
-	case PixelFormat::DXT1AsRGB:        return VK_FORMAT_BC1_RGBA_SRGB_BLOCK;
-	case PixelFormat::DXT3sRGB:         return VK_FORMAT_BC2_SRGB_BLOCK;
-	case PixelFormat::DXT5sRGB:         return VK_FORMAT_BC3_SRGB_BLOCK;
-	case PixelFormat::BC5:				return VK_FORMAT_BC5_UNORM_BLOCK;
-	case PixelFormat::BC7:				return VK_FORMAT_BC7_UNORM_BLOCK;
-	case PixelFormat::BC7sRGB:			return VK_FORMAT_BC7_SRGB_BLOCK;
 	case PixelFormat::R8:               return VK_FORMAT_R8_UNORM;
 	case PixelFormat::R16F:             return VK_FORMAT_R16_SFLOAT;
 	case PixelFormat::R16:              return VK_FORMAT_R16_SNORM;
@@ -540,6 +535,7 @@ VkTypes::AsNebulaPixelFormat(VkFormat f)
 	case VK_FORMAT_BC1_RGBA_SRGB_BLOCK:				return PixelFormat::DXT1AsRGB;
 	case VK_FORMAT_BC2_SRGB_BLOCK:					return PixelFormat::DXT3sRGB;
 	case VK_FORMAT_BC3_SRGB_BLOCK:					return PixelFormat::DXT5sRGB;
+	case VK_FORMAT_BC4_UNORM_BLOCK:					return PixelFormat::BC4;
 	case VK_FORMAT_BC5_UNORM_BLOCK:					return PixelFormat::BC5;
 	case VK_FORMAT_BC7_UNORM_BLOCK:					return PixelFormat::BC7;
 	case VK_FORMAT_BC7_SRGB_BLOCK:					return PixelFormat::BC7sRGB;
@@ -578,19 +574,6 @@ VkTypes::AsVkMapping(CoreGraphics::PixelFormat::Code p)
 	mapping.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 	mapping.b = VK_COMPONENT_SWIZZLE_IDENTITY;
 	mapping.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-	switch (p)
-	{
-	case CoreGraphics::PixelFormat::B8G8R8:
-	case CoreGraphics::PixelFormat::B8G8R8A8:
-	case CoreGraphics::PixelFormat::B4G4R4A4:
-	case CoreGraphics::PixelFormat::B5G6R5:
-	case CoreGraphics::PixelFormat::B5G6R5A1:
-		mapping.r = VK_COMPONENT_SWIZZLE_B;
-		mapping.b = VK_COMPONENT_SWIZZLE_R;
-		break;
-	
-	}
 
 	return mapping;
 }

@@ -131,7 +131,6 @@ void SetupPass(const PassId pid)
     runtimeInfo.subpassViewports.Resize(loadInfo.subpasses.Size());
     runtimeInfo.subpassRects.Resize(loadInfo.subpasses.Size());
     runtimeInfo.subpassPipelineInfo.Resize(loadInfo.subpasses.Size());
-    Util::FixedArray<bool> subpassHasDependencies(loadInfo.subpasses.Size(), false);
 
     for (i = 0; i < loadInfo.subpasses.Size(); i++)
     {
@@ -240,7 +239,6 @@ void SetupPass(const PassId pid)
         if (subpass.dependencies.Size() > 0) for (j = 0; j < subpass.dependencies.Size(); j++)
         {
             VkSubpassDependency dep;
-            subpassHasDependencies[subpass.dependencies[j]] = true;
             dep.srcSubpass = subpass.dependencies[j];
             dep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             dep.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
@@ -444,7 +442,7 @@ void SetupPass(const PassId pid)
     VkFramebufferCreateInfo fbInfo =
     {
         VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-        NULL,
+        nullptr,
         0,
         loadInfo.pass,
         (uint32_t)images.Size(),
@@ -453,7 +451,7 @@ void SetupPass(const PassId pid)
         height,
         layers
     };
-    res = vkCreateFramebuffer(loadInfo.dev, &fbInfo, NULL, &loadInfo.framebuffer);
+    res = vkCreateFramebuffer(loadInfo.dev, &fbInfo, nullptr, &loadInfo.framebuffer);
     n_assert(res == VK_SUCCESS);
 
     // setup info
@@ -464,12 +462,12 @@ void SetupPass(const PassId pid)
     beginInfo =
     {
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        NULL,
+        nullptr,
         loadInfo.pass,
         loadInfo.framebuffer,
         loadInfo.renderArea,
         (uint32_t)loadInfo.clearValues.Size(),
-        loadInfo.clearValues.Size() > 0 ? loadInfo.clearValues.Begin() : NULL
+        loadInfo.clearValues.Size() > 0 ? loadInfo.clearValues.Begin() : nullptr
     };
 
 }

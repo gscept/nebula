@@ -1,0 +1,41 @@
+Virtual Terrain Texturing:
+
+This idea is collected from the talk about Adaptive Virtual Texture Rendering in Far Cry 4.
+
+https://www.youtube.com/watch?v=SVPMhGteeuE&t=1017s
+
+-- Prepass --
+
+Render terrain and output position to a deferred buffer. Meanwhile, also bin pixel into indirection texture pixel by dividing WorldPosition by WorldSize / PageSize. PageSize and WorldSize can be configured, while WorldPosition comes from the vertex pipeline.
+
+-- Extraction --
+
+Run compute job to extract which mips for which pages we need to update. Do this by comparing with previous frames buffer, and output to a new buffer how many new pages, and their corresponding page index and mip.
+
+-- CPU --
+
+Read the buffer from the compute job. Based on camera position, create a mapping from WorldSize to the page table, and determine the page coverage size. For pages close to the camera, let each page be covered by a 1024 pixel image. For pages further away, let them get 512 pixels each. Mips follow naturally like so:
+
+Distance    0-49m       50-149m     150-300m    300-500m
+Mip 0       1024        512         256         128
+Mip 1       512         256         128         64
+Mip 2       256         128         64          32
+.           .           .           .           .
+.           .           .           .           .
+.           .           .           .           .
+
+Allocate blocks of the requested size in a mapping structure. The mapping structure will keep track of which regions are taken and will return a block which fits the requested size. The size request depends on the distance to the page, so for a page in the range 0-49m, and mip 0, the page size would be 1024, but for a page in the range 100-299m and mip 0 it would be a mere 128. For pixels further away, we have a low-resolution pre-baked terrain texture which covers the ranges [501, inf].
+
+Every such allocation generates a compute job for splatting, which is the next step.
+
+Note: It should be possible to do this work on the GPU and generate an indirect dispatch buffer and a parameter buffer to deal with this whole step, thus avoiding the readback and some of the latency of waiting N frames on the CPU side to have access to the information. 
+
+-- Texture splatting --
+
+From the previous step, we now have a bunch of blocks which we want to update. This shader will sample the mask texture and the material textures and perform texture splatting based on the texturing rules. Basically, we apply a slope and height rule to determine which material to chose. The output is then going to be a square region in the physical texture which the shading pass will sample from. When this is done, the redirection texture is updated by outputting the tile offset in X and Y and it's size (for 0m mip 0, output 1024, for 50m mip 2, output 128), such that when we sample it in the screenspace pass, we can properly scale our UV coordinate to sample the whole tile. Remember, the redirection texture maps directly from world space, and because of the 64x64 region subdivision, many pixels may get the same redirection pixel. 
+
+Remember that the redirection texture is mip-mapped, so in the texture splatting job we have to make sure we are updating the correct mip-level of the redirection texture, meaning we will have to launch individual jobs for each mip level of the indirection texture and texture splatting that we wish to do. 
+
+-- Terrain Screenspace Pass --
+
+Using the position buffer from the Prepass, we sample the world coordinate, divide by WorldSize to get it in normalized space, and do a lookup in the redirection texture. The redirection texture is mipped, but if the mip happens between two levels, we will need to do two samples and do mip blending manually. Minifaction and magnification filtering can also be handled if we increase the tile size slightly, such that there is a border around the sampling area. This would mean having to add something like a 4 pixel border to our physical tile size to natively support it. Another option is to do it manually, but I doubt we want to write anisotropic filtering ourselves... 

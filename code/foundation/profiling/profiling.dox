@@ -6,7 +6,7 @@
 The Profiling system provides very much needed functions which allows for measuring the time some code is taking, or to provide a thread-safe counting mechanism, such as counting the amount of bytes allocated, triangles drawn, or what have you. The Profiling API is very simple to use.
 
 @subsection NebulaProfilingThreads Profiling Thread Contexts
-If starting a new thread, on which you would like, or have to support profiling, run Profiling::ProfilingRegisterThread() when within the context of that thread. Don't worry about the JobPort, it takes care of this for us.
+If starting a new thread, on which you would like to, or have to support profiling, run Profiling::ProfilingRegisterThread() when within the context of that thread. Don't worry about the JobPort, it takes care of this for us.
 
 @subsection NebulaProfilingScopes Scopes
 Time-keeping is implemented through scopes. We can think of the start of the scope as starting a timer, and the end as closing it. To open a scope, we initialize a Profiling::ProfilingScope which we provide with a name, category, file, line in that file, and a flag if this scope is unique, or there will be many smaller scopes following, which we want to accumulate the value for, rather than create unique ones. Then we push the scope to the Profiling System by using Profiling::ProfilingPushScope(). When we are at the end of the area of code we want to profile, we run Profiling::ProfilingPopScope().

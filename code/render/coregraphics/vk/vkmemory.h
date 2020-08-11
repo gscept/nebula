@@ -20,7 +20,9 @@ CoreGraphics::Alloc AllocateMemory(const VkDevice dev, const VkBuffer& buf, Core
 CoreGraphics::Alloc AllocateMemory(const VkDevice dev, VkMemoryRequirements reqs, VkDeviceSize allocSize);
 
 /// flush a mapped memory region
-void Flush(const VkDevice dev, const CoreGraphics::Alloc& alloc);
+void Flush(const VkDevice dev, const CoreGraphics::Alloc& alloc, IndexT offset, SizeT size);
+/// invalidate a mapped memory region
+void Invalidate(const VkDevice dev, const CoreGraphics::Alloc& alloc, IndexT offset, SizeT size);
 
 /// get vulkan memory type based on resource requirements and wanted memory properties
 VkResult GetMemoryType(uint32_t bits, VkMemoryPropertyFlags flags, uint32_t& index);

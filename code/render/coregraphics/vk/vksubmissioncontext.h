@@ -53,15 +53,9 @@ extern SubmissionContextAllocator submissionContextAllocator;
 
 /// TODO: make these generic
 /// add buffer for deletion
-void SubmissionContextFreeBuffer(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkBuffer buf);
+void SubmissionContextFreeVkBuffer(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkBuffer buf);
 /// add image for deletion
-void SubmissionContextFreeImage(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkImage img);
-/// add command buffer for deletion
-void SubmissionContextFreeCommandBuffer(const CoreGraphics::SubmissionContextId id, const CoreGraphics::CommandBufferId cmd);
-/// add command buffer for reset
-void SubmissionContextClearCommandBuffer(const CoreGraphics::SubmissionContextId id, const CoreGraphics::CommandBufferId cmd);
-/// add a memory alloc for freeing
-void SubmissionContextFreeMemory(const CoreGraphics::SubmissionContextId id, const CoreGraphics::Alloc& alloc);
+void SubmissionContextFreeVkImage(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkImage img);
 
 /// set the submission timeline index for this cycle
 void SubmissionContextSetTimelineIndex(const CoreGraphics::SubmissionContextId id, uint64 index);

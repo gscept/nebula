@@ -95,9 +95,9 @@ public:
 	/// get lighting texture
 	static const CoreGraphics::TextureId GetLightingTexture();
 	/// get light index lists buffer
-	static const CoreGraphics::ShaderRWBufferId GetLightIndexBuffer();
+	static const CoreGraphics::BufferId GetLightIndexBuffer();
 	/// get light lists buffer
-	static const CoreGraphics::ShaderRWBufferId GetLightsBuffer();
+	static const CoreGraphics::BufferId GetLightsBuffer();
 private:
 
 	/// set transform, type must match the type the entity was created with

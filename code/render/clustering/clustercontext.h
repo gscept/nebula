@@ -7,7 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"
-#include "coregraphics/shaderrwbuffer.h"
+#include "coregraphics/buffer.h"
 #include "coregraphics/constantbuffer.h"
 #include "coregraphics/window.h"
 #include <array>
@@ -29,7 +29,7 @@ public:
 	static void Create(float ZNear, float ZFar, const CoreGraphics::WindowId window);
 
 	/// get cluster buffer
-	static const CoreGraphics::ShaderRWBufferId GetClusterBuffer();
+	static const CoreGraphics::BufferId GetClusterBuffer();
 	/// get number of clusters 
 	static const SizeT GetNumClusters();
 	/// get cluster dimensions

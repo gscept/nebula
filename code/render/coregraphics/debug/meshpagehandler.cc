@@ -169,14 +169,14 @@ MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stre
 
 		// write vertex buffer info
 		htmlWriter->Element(HtmlElement::Heading3, "Vertices");
-		VertexBufferId vbo = MeshGetVertexBuffer(id, 0);
-		if (vbo != VertexBufferId::Invalid())
+		BufferId vbo = MeshGetVertexBuffer(id, 0);
+		if (vbo != BufferId::Invalid())
 		{
             VertexLayoutId vlo = MeshGetPrimitiveGroups(id)[0].GetVertexLayout();
 			htmlWriter->Begin(HtmlElement::Table);
 				htmlWriter->Begin(HtmlElement::TableRow);
 					htmlWriter->Element(HtmlElement::TableData, "Num Vertices: ");
-					htmlWriter->Element(HtmlElement::TableData, String::FromInt(VertexBufferGetNumVertices(vbo)));
+					htmlWriter->Element(HtmlElement::TableData, String::FromInt(BufferGetSize(vbo)));
 				htmlWriter->End(HtmlElement::TableRow);
 				htmlWriter->Begin(HtmlElement::TableRow);
 					htmlWriter->Element(HtmlElement::TableData, "Vertex Stride: ");
@@ -218,17 +218,17 @@ MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stre
 
 		// write index buffer info
 		htmlWriter->Element(HtmlElement::Heading3, "Indices");
-		IndexBufferId ibo = MeshGetIndexBuffer(id);
-		if (ibo != IndexBufferId::Invalid())
+		BufferId ibo = MeshGetIndexBuffer(id);
+		if (ibo != BufferId::Invalid())
 		{
 			htmlWriter->Begin(HtmlElement::Table);
 				htmlWriter->Begin(HtmlElement::TableRow);
 					htmlWriter->Element(HtmlElement::TableData, "Num Indices: ");
-					htmlWriter->Element(HtmlElement::TableData, String::FromInt(IndexBufferGetNumIndices(ibo)));
+					htmlWriter->Element(HtmlElement::TableData, String::FromInt(BufferGetSize(ibo)));
 				htmlWriter->End(HtmlElement::TableRow);
 				htmlWriter->Begin(HtmlElement::TableRow);
 					htmlWriter->Element(HtmlElement::TableData, "Index Type: ");
-					htmlWriter->Element(HtmlElement::TableData, IndexType::ToString(IndexBufferGetType(ibo)));
+					htmlWriter->Element(HtmlElement::TableData, IndexType::ToString(CoreGraphics::IndexType::Index32));
 				htmlWriter->End(HtmlElement::TableRow);
 			htmlWriter->End(HtmlElement::Table);
 		}
@@ -295,12 +295,12 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
 		return HttpStatus::NotFound;
 	}
 	
-	const VertexBufferId vb = MeshGetVertexBuffer(id, 0);
+	const BufferId vb = MeshGetVertexBuffer(id, 0);
     //FIXME does not deal with different primitivegroup vertex layouts
 	const VertexLayoutId vl = MeshGetPrimitiveGroups(id)[0].GetVertexLayout();
 
 	// clip to valid range
-	SizeT numverts = VertexBufferGetNumVertices(vb);
+	SizeT numverts = BufferGetSize(vb);
 	if (minVertexIndex > numverts)
 	{
 		minVertexIndex = numverts;
@@ -377,7 +377,7 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
 			
 			// for each vertex...
 			SizeT vertexStride = VertexLayoutGetSize(vl);
-			ubyte* ptr = (ubyte*)VertexBufferMap(vb, GpuBufferTypes::MapRead);
+			ubyte* ptr = (ubyte*)BufferMap(vb);
 			IndexT vertexIndex;
 			for (vertexIndex = minVertexIndex; vertexIndex < maxVertexIndex; vertexIndex++)
 			{
@@ -442,7 +442,7 @@ MeshPageHandler::HandleVertexDumpRequest(const Util::String& resId, IndexT minVe
 				} // for compIndex
 				htmlWriter->End(HtmlElement::TableRow);                    
 			} // for vertexIndex
-			VertexBufferUnmap(vb);
+			BufferUnmap(vb);
 			
 		htmlWriter->End(HtmlElement::Table);
 		htmlWriter->Close();

@@ -595,6 +595,111 @@ hash32(vec2 p)
     return fract(vec3((p3.x + p3.y) * p3.z, (p3.x + p3.z) * p3.y, (p3.y + p3.z) * p3.x));
 }
 
+const int m = 1540483477;
+//------------------------------------------------------------------------------
+/**
+    Murmur hash function
+*/
+float murmur(int k)
+{
+    int h = k ^ 1;
+
+    k *= m;
+    k ^= k >> 24;
+    k *= m;
+
+    h *= m;
+    h ^= k;
+
+    return float(h);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Discontinuous pseudorandom uniformly distributed in [-0.5, +0.5]^3
+*/
+vec3
+random3(vec3 c) {
+
+    vec3 r;
+    float c1 = dot(c, vec3(17.0f, 59.4f, 15.0f));
+    r.x = fract(murmur(int(c.x * c1)) / 512.0f);
+    r.y = fract(murmur(int(c.y * c1)) / 512.0f);
+    r.z = fract(murmur(int(c.z * c1)) / 512.0f);
+    return r - 0.5f;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Source: https://www.shadertoy.com/view/XsX3zB
+
+    With modifications to the random3 function using a murmur hash instead of trigonometry
+*/
+
+const float F3 = 0.3333333;
+const float G3 = 0.1666667;
+float simplex3D(vec3 p)
+{
+    /* 1. find current tetrahedron T and it's four vertices */
+    /* s, s+i1, s+i2, s+1.0 - absolute skewed (integer) coordinates of T vertices */
+    /* x, x1, x2, x3 - unskewed coordinates of p relative to each of T vertices*/
+
+    /* calculate s and x */
+    vec3 s = floor(p + dot(p, vec3(F3)));
+    vec3 x = p - s + dot(s, vec3(G3));
+
+    /* calculate i1 and i2 */
+    vec3 e = step(vec3(0.0f), x - x.yzx);
+    vec3 i1 = e * (1.0f - e.zxy);
+    vec3 i2 = 1.0f - e.zxy * (1.0f - e);
+
+    /* x1, x2, x3 */
+    vec3 x1 = x - i1 + G3;
+    vec3 x2 = x - i2 + 2.0f * G3;
+    vec3 x3 = x - 1.0f + 3.0f * G3;
+
+    /* 2. find four surflets and store them in d */
+    vec4 w, d;
+
+    /* calculate surflet weights */
+    w.x = dot(x, x);
+    w.y = dot(x1, x1);
+    w.z = dot(x2, x2);
+    w.w = dot(x3, x3);
+
+    /* w fades from 0.6 at the center of the surflet to 0.0 at the margin */
+    w = max(0.6f - w, 0.0f);
+
+    /* calculate surflet components */
+    d.x = dot(random3(s), x);
+    d.y = dot(random3(s + i1), x1);
+    d.z = dot(random3(s + i2), x2);
+    d.w = dot(random3(s + 1.0f), x3);
+
+    /* multiply d by w^4 */
+    w *= w;
+    w *= w;
+    d *= w;
+
+    /* 3. return the sum of the four surflets */
+    return dot(d, vec4(52.0f));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+
+const mat3 rot1 = mat3(-0.37, 0.36, 0.85, -0.14, -0.93, 0.34, 0.92, 0.01, 0.4);
+const mat3 rot2 = mat3(-0.55, -0.39, 0.74, 0.33, -0.91, -0.24, 0.77, 0.12, 0.63);
+const mat3 rot3 = mat3(-0.71, 0.52, -0.47, -0.08, -0.72, -0.68, -0.7, -0.45, 0.56);
+float
+simplex3D_fractal(vec3 m)
+{
+    return  0.5333333f * simplex3D(m * rot1)
+        + 0.2666667f * simplex3D(2.0f * m * rot2)
+        + 0.1333333f * simplex3D(4.0f * m * rot3)
+        + 0.0666667f * simplex3D(8.0f * m);
+}
 
 //------------------------------------------------------------------------------
 #endif

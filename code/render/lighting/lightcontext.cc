@@ -69,9 +69,9 @@ struct
 	CoreGraphics::ShaderProgramId cullProgram;
 	CoreGraphics::ShaderProgramId debugProgram;
 	CoreGraphics::ShaderProgramId renderProgram;
-	CoreGraphics::ShaderRWBufferId clusterLightIndexLists;
-	Util::FixedArray<CoreGraphics::ShaderRWBufferId> stagingClusterLightsList;
-	CoreGraphics::ShaderRWBufferId clusterLightsList;
+	CoreGraphics::BufferId clusterLightIndexLists;
+	Util::FixedArray<CoreGraphics::BufferId> stagingClusterLightsList;
+	CoreGraphics::BufferId clusterLightsList;
 	CoreGraphics::ConstantBufferId clusterPointLights;
 	CoreGraphics::ConstantBufferId clusterSpotLights;
 
@@ -249,27 +249,28 @@ LightContext::Create()
 	clusterState.debugProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Debug"));
 #endif
 
-	ShaderRWBufferCreateInfo rwbInfo =
-	{
-		"LightIndexListsBuffer",
-		sizeof(LightsCluster::LightIndexLists),
-		BufferUpdateMode::DeviceLocal,
-		false
-	};
-	clusterState.clusterLightIndexLists = CreateShaderRWBuffer(rwbInfo);
+	BufferCreateInfo rwbInfo;
+	rwbInfo.name = "LightIndexListsBuffer";
+	rwbInfo.size = 1;
+	rwbInfo.elementSize = sizeof(LightsCluster::LightIndexLists);
+	rwbInfo.mode = BufferAccessMode::DeviceLocal;
+	rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
+	clusterState.clusterLightIndexLists = CreateBuffer(rwbInfo);
 
 	rwbInfo.name = "LightLists";
-	rwbInfo.size = sizeof(LightsCluster::LightLists);
-	clusterState.clusterLightsList = CreateShaderRWBuffer(rwbInfo);
+	rwbInfo.elementSize = sizeof(LightsCluster::LightLists);
+	clusterState.clusterLightsList = CreateBuffer(rwbInfo);
 
-	rwbInfo.mode = BufferUpdateMode::HostWriteable;
+	rwbInfo.name = "LightListsStagingBuffer";
+	rwbInfo.mode = BufferAccessMode::HostToDevice;
+	rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferSource;
 	clusterState.resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
 	clusterState.stagingClusterLightsList.Resize(CoreGraphics::GetNumBufferedFrames());
 
 	for (IndexT i = 0; i < clusterState.resourceTables.Size(); i++)
 	{
 		clusterState.resourceTables[i] = ShaderCreateResourceTable(clusterState.classificationShader, NEBULA_BATCH_GROUP);
-		clusterState.stagingClusterLightsList[i] = CreateShaderRWBuffer(rwbInfo);
+		clusterState.stagingClusterLightsList[i] = CreateBuffer(rwbInfo);
 
 		// update resource table
 		ResourceTableSetRWBuffer(clusterState.resourceTables[i], { Clustering::ClusterContext::GetClusterBuffer(), clusterAABBSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
@@ -674,7 +675,7 @@ const CoreGraphics::TextureId LightContext::GetLightingTexture()
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphics::ShaderRWBufferId 
+const CoreGraphics::BufferId 
 LightContext::GetLightIndexBuffer()
 {
 	return clusterState.clusterLightIndexLists;
@@ -683,7 +684,7 @@ LightContext::GetLightIndexBuffer()
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphics::ShaderRWBufferId 
+const CoreGraphics::BufferId
 LightContext::GetLightsBuffer()
 {
 	return clusterState.clusterLightsList;
@@ -929,8 +930,8 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 		Memory::CopyElements(clusterState.spotLights, lightList.SpotLights, numSpotLights);
 		Memory::CopyElements(clusterState.spotLightProjection, lightList.SpotLightProjection, numSpotLightsProjection);
 		Memory::CopyElements(clusterState.spotLightShadow, lightList.SpotLightShadow, numSpotLightShadows);
-		CoreGraphics::ShaderRWBufferUpdate(clusterState.stagingClusterLightsList[bufferIndex], &lightList, sizeof(LightsCluster::LightLists));
-		CoreGraphics::ShaderRWBufferFlush(clusterState.stagingClusterLightsList[bufferIndex]);
+		CoreGraphics::BufferUpdate(clusterState.stagingClusterLightsList[bufferIndex], lightList);
+		CoreGraphics::BufferFlush(clusterState.stagingClusterLightsList[bufferIndex]);
 	}
 
 	// a little ugly, but since the view can change the script, this has to adopt

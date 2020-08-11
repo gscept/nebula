@@ -9,7 +9,7 @@
 #include "coregraphics/config.h"
 #include "vktypes.h"
 #include "vktexture.h"
-#include "vkshaderrwbuffer.h"
+#include "vkbuffer.h"
 
 #ifdef CreateEvent
 #pragma push_macro("CreateEvent")
@@ -47,15 +47,13 @@ CreateEvent(const EventCreateInfo& info)
 	vkInfo.numImageBarriers = 0;
 	vkInfo.numBufferBarriers = 0;
 	vkInfo.numMemoryBarriers = 0;
-	vkInfo.leftDependency = VkTypes::AsVkPipelineFlags(info.leftDependency);
-	vkInfo.rightDependency = VkTypes::AsVkPipelineFlags(info.rightDependency);
 	eventAllocator.Get<0>(id) = dev;
 
 	n_assert(info.textures.Size() < EventMaxNumBarriers);
 	n_assert(info.rwBuffers.Size() < EventMaxNumBarriers);
+	n_assert(info.barriers.Size() < EventMaxNumBarriers);
 
-	IndexT i;
-	for (i = 0; i < info.textures.Size(); i++)
+	for (IndexT i = 0; i < info.textures.Size(); i++)
 	{
 		vkInfo.imageBarriers[vkInfo.numImageBarriers].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 		vkInfo.imageBarriers[vkInfo.numImageBarriers].pNext = nullptr;
@@ -77,7 +75,7 @@ CreateEvent(const EventCreateInfo& info)
 		vkInfo.numImageBarriers++;
 	}
 
-	for (i = 0; i < info.rwBuffers.Size(); i++)
+	for (IndexT i = 0; i < info.rwBuffers.Size(); i++)
 	{
 		vkInfo.bufferBarriers[i].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
 		vkInfo.bufferBarriers[i].pNext = nullptr;
@@ -85,7 +83,7 @@ CreateEvent(const EventCreateInfo& info)
 		vkInfo.bufferBarriers[i].srcAccessMask = VkTypes::AsVkResourceAccessFlags(info.rwBuffers[i].fromAccess);
 		vkInfo.bufferBarriers[i].dstAccessMask = VkTypes::AsVkResourceAccessFlags(info.rwBuffers[i].toAccess);
 
-		vkInfo.bufferBarriers[i].buffer = ShaderRWBufferGetVkBuffer(info.rwBuffers[i].buf);
+		vkInfo.bufferBarriers[i].buffer = BufferGetVk(info.rwBuffers[i].buf);
 		vkInfo.bufferBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkInfo.bufferBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
@@ -101,9 +99,17 @@ CreateEvent(const EventCreateInfo& info)
 		}
 
 		vkInfo.numBufferBarriers++;
+	}
 
-		vkInfo.bufferBarriers[i].pNext = nullptr;
-		vkInfo.bufferBarriers[i].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+	for (IndexT i = 0; i < info.barriers.Size(); i++)
+	{
+		vkInfo.memoryBarriers[i].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+		vkInfo.memoryBarriers[i].pNext = nullptr;
+
+		vkInfo.memoryBarriers[i].srcAccessMask = VkTypes::AsVkResourceAccessFlags(info.barriers[i].fromAccess);
+		vkInfo.memoryBarriers[i].dstAccessMask = VkTypes::AsVkResourceAccessFlags(info.barriers[i].toAccess);
+
+		vkInfo.numMemoryBarriers++;
 	}
 
 	EventId eventId;
@@ -128,13 +134,13 @@ DestroyEvent(const EventId id)
 /**
 */
 void 
-EventSignal(const EventId id, const CoreGraphics::QueueType queue)
+EventSignal(const EventId id, const CoreGraphics::BarrierStage stage, const CoreGraphics::QueueType queue)
 {
 #if NEBULA_GRAPHICS_DEBUG
 	const Util::StringAtom& name = eventAllocator.Get<1>(id.id24).name;
-	CommandBufferBeginMarker(queue, NEBULA_MARKER_PURPLE, (name.AsString() + " Signal").AsCharPtr());
+	CommandBufferBeginMarker(queue, NEBULA_MARKER_ORANGE, name.Value());
 #endif
-	CoreGraphics::SignalEvent(id, queue);
+	CoreGraphics::SignalEvent(id, stage, queue);
 
 #if NEBULA_GRAPHICS_DEBUG
 	CommandBufferEndMarker(queue);
@@ -145,13 +151,17 @@ EventSignal(const EventId id, const CoreGraphics::QueueType queue)
 /**
 */
 void
-EventWait(const EventId id, const CoreGraphics::QueueType queue)
+EventWait(
+	const EventId id,
+	const CoreGraphics::BarrierStage waitStage,
+	const CoreGraphics::BarrierStage signalStage,
+	const CoreGraphics::QueueType queue)
 {
 #if NEBULA_GRAPHICS_DEBUG
 	const Util::StringAtom& name = eventAllocator.Get<1>(id.id24).name;
-	CommandBufferBeginMarker(queue, NEBULA_MARKER_ORANGE, (name.AsString() + " Wait").AsCharPtr());
+	CommandBufferBeginMarker(queue, NEBULA_MARKER_ORANGE, name.Value());
 #endif
-	CoreGraphics::WaitEvent(id, queue);
+	CoreGraphics::WaitEvent(id, waitStage, signalStage, queue);
 
 #if NEBULA_GRAPHICS_DEBUG
 	CommandBufferEndMarker(queue);
@@ -162,19 +172,71 @@ EventWait(const EventId id, const CoreGraphics::QueueType queue)
 /**
 */
 void
-EventReset(const EventId id, const CoreGraphics::QueueType queue)
+EventReset(const EventId id, const CoreGraphics::BarrierStage stage, const CoreGraphics::QueueType queue)
 {
-	CoreGraphics::ResetEvent(id, queue);
+#if NEBULA_GRAPHICS_DEBUG
+	const Util::StringAtom& name = eventAllocator.Get<1>(id.id24).name;
+	CommandBufferBeginMarker(queue, NEBULA_MARKER_ORANGE, name.Value());
+#endif
+
+	CoreGraphics::ResetEvent(id, stage, queue);
+
+#if NEBULA_GRAPHICS_DEBUG
+	CommandBufferEndMarker(queue);
+#endif
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-EventWaitAndReset(const EventId id, const CoreGraphics::QueueType queue)
+EventWaitAndReset(const EventId id, const CoreGraphics::BarrierStage waitStage, const CoreGraphics::BarrierStage signalStage, const CoreGraphics::QueueType queue)
 {
-	CoreGraphics::WaitEvent(id, queue);
-	CoreGraphics::ResetEvent(id, queue);
+#if NEBULA_GRAPHICS_DEBUG
+	const Util::StringAtom& name = eventAllocator.Get<1>(id.id24).name;
+	CommandBufferBeginMarker(queue, NEBULA_MARKER_ORANGE, name.Value());
+#endif
+
+	CoreGraphics::WaitEvent(id, waitStage, signalStage, queue);
+	CoreGraphics::ResetEvent(id, signalStage, queue);
+
+#if NEBULA_GRAPHICS_DEBUG
+	CommandBufferEndMarker(queue);
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool 
+EventPoll(const EventId id)
+{
+	const VkEventInfo& info = eventAllocator.Get<1>(id.id24);
+	VkDevice dev = eventAllocator.Get<0>(id.id24);
+	VkResult res = vkGetEventStatus(dev, info.event);
+	return res == VK_EVENT_SET;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+EventHostReset(const EventId id)
+{
+	const VkEventInfo& info = eventAllocator.Get<1>(id.id24);
+	VkDevice dev = eventAllocator.Get<0>(id.id24);
+	vkResetEvent(dev, info.event);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+EventHostSignal(const EventId id)
+{
+	const VkEventInfo& info = eventAllocator.Get<1>(id.id24);
+	VkDevice dev = eventAllocator.Get<0>(id.id24);
+	vkSetEvent(dev, info.event);
 }
 
 } // namespace CoreGraphics

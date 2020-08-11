@@ -44,4 +44,13 @@ TextureGetVkStencilImageView(const CoreGraphics::TextureId id)
 	return textureStencilExtensionAllocator.GetSafe<TextureExtension_StencilInfo>(stencil).view;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+const VkDevice 
+TextureGetVkDevice(const CoreGraphics::TextureId id)
+{
+	return textureAllocator.GetSafe<Texture_LoadInfo>(id.resourceId).dev;
+}
+
 } // namespace Vulkan
