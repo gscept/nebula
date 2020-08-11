@@ -157,14 +157,45 @@ void OpenScene()
     terrain = Graphics::CreateEntity();
     Terrain::TerrainContext::RegisterEntity(terrain);
 
-    Terrain::TerrainSetupSettings settings{ 
-        -25.0f, 25.0f,  // min/max height
-        8192, 8192,     // world size in meters
-        256, 256,       // tile size in meters
-        8, 8            // 1 vertex every 8 meters
-    };      
-    Terrain::TerrainContext::SetupTerrain(terrain, "tex:test/crater_dmap.dds", "tex:test/crater_nmap.dds", "tex:test/crater_cm.dds", settings);
-    //Terrain::TerrainContext::SetupTerrain(terrain, "tex:system/light.dds", settings);
+    Terrain::TerrainSetupSettings settings{
+            0, 1024.0f,      // min/max height
+            8192, 8192,   // world size in meters
+            256, 256,     // tile size in meters
+            16, 16        // 1 vertex every X meters
+    };
+    Terrain::TerrainContext::SetupTerrain(terrain,
+        "tex:terrain/everest Height Map (Merged)_PNG_BC4_1.dds",
+        "tex:system/black.dds",
+        "tex:terrain/dirt_aerial_02_diff_2k.dds",
+        settings);
+
+    Terrain::BiomeSetupSettings biomeSettings =
+    {
+        0.5f, 900.0f, 64.0f
+    };
+    Terrain::TerrainContext::CreateBiome(biomeSettings,
+        {
+            "tex:terrain/base_material/brown_mud_leaves_01_diff_2k_PNG_BC7_1.dds",
+            "tex:terrain/base_material/brown_mud_leaves_01_nor_2k_PNG_BC5_1.dds",
+            "tex:terrain/base_material/brown_mud_leaves_01_material_2k_PNG_BC7_1.dds"
+        },
+        {
+            "tex:terrain/base_material/dirt_aerial_02_diff_2k_PNG_BC7_1.dds",
+            "tex:terrain/base_material/dirt_aerial_02_nor_2k_PNG_BC5_1.dds",
+            "tex:terrain/base_material/dirt_aerial_02_material_2k_PNG_BC7_1.dds"
+        },
+        {
+            "tex:terrain/base_material/snow_02_albedo_2k_PNG_BC7_1.dds",
+            "tex:terrain/base_material/snow_02_nor_2k_PNG_BC5_1.dds",
+            "tex:terrain/base_material/snow_02_material_2k_PNG_BC7_1.dds"
+        },
+        {
+            "tex:terrain/base_material/rock_ground_02_albedo_2k_PNG_BC7_1.dds",
+            "tex:terrain/base_material/rock_ground_02_nor_2k_PNG_BC5_1.dds",
+            "tex:terrain/base_material/rock_ground_02_material_2k_PNG_BC7_1.dds"
+        },
+        "tex:system/white.dds"
+    );
 
 	particle = Graphics::CreateEntity();
 	Graphics::RegisterEntity<ModelContext, ObservableContext, Particles::ParticleContext>(particle);
