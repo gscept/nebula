@@ -63,10 +63,10 @@
 
 			subpass: {
 				name: "SunShadows",
-				dependencies: [],
+				subpass_dependencies: [],
 				attachments: [ "SunShadow" ],
 				depth: false,
-				plugin: {
+				call: {
 					name: "LightContext - Sun Shadows"
 				}
 			},
@@ -83,20 +83,20 @@
 			],
 			subpass: {
 				name: "SpotlightShadows",
-				dependencies: [],
+				subpass_dependencies: [],
 				attachments: [ "LocalLightShadow" ],
 				depth: false,
-				plugin: {
+				call: {
 					name: "LightContext - Spotlight Shadows"
 				}
 			}
 		},
 
-		plugin: {
+		call: {
 			name: "LightContext - Spotlight Blur"
 		}
-		plugin: {
-			inputs: [
+		call: {
+			resource_dependencies: [
 				{
 					name: "SunShadow",
 					access: "ShaderRead",
