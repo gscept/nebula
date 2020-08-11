@@ -3,13 +3,13 @@
 /**
 	@class	Game::Message
 
-	Messages the main communications channel between components.
+	Messages the main communications channel between entities.
 
-	Messages aren't exclusive to component however, any method or function can be
+	Messages aren't exclusive to entities however; any method or function can be
 	used as a callback from a message which means you can hook into a message
 	from anywhere. This can be useful for debugging, tools, managers etc.
 
-	A component can register a message callback by using the __RegisterMsg macro.
+	A property can register a message callback by using the __RegisterMsg macro.
 
 	Messages should be generated using Nebula's IDLC.
 	If that's not preferred, you can implement a message by deriving from the
@@ -75,82 +75,6 @@ struct MessageListener
 //------------------------------------------------------------------------------
 /**
 */
-template <class MSG, class RETURNTYPE, class ... TYPES>
-class Fetcher
-{
-public:
-	Fetcher<MSG, RETURNTYPE, TYPES...>(const Fetcher<MSG, RETURNTYPE, TYPES...>&) = delete;
-	void operator=(const Fetcher<MSG, RETURNTYPE, TYPES...>&) = delete;
-
-	/// callback type.
-	typedef RETURNTYPE(*callback_function)(TYPES...);
-
-	/// Register a listener to this message. There can be only one listener to this type of message.
-	/// Will return a listener that must be used to deregister.
-	static MessageListener Register(callback_function func)
-	{
-		n_assert2(Instance()->callback == nullptr, "There can be only one listener to a fetch message");
-		Instance()->callback = func;
-		MessageListener listener = { Instance()->fourcc, Instance()->validId };
-		return listener;
-	}
-
-	/// Deregister a listener
-	static void Deregister(MessageListener listener)
-	{
-		n_assert2(listener.fourcc == Instance()->fourcc, "MessageListener does not belong to this message!");
-		n_assert2(listener.listenerId == validId, "MessageListener is not valid. It might already have been deregistered!");
-		Instance()->callback = nullptr;
-		Instance()->validId++;
-	}
-
-	/// Fetch a value. Returns the returnvalue of the callback.
-	static RETURNTYPE Fetch(TYPES... values)
-	{
-		return Instance()->callback(values ...);
-	}
-private:
-	friend MSG;
-
-	Fetcher() :
-		callback(nullptr),
-		validId(0)
-	{
-		this->name = MSG::GetName();
-		this->fourcc = MSG::GetFourCC();
-	}
-
-	~Fetcher()
-	{
-		// empty
-	}
-
-	MessageListenerId validId;
-
-	// There can be only ONE!
-	callback_function callback;
-
-	Util::StringAtom name;
-	Util::FourCC fourcc;
-
-	static Fetcher<MSG, RETURNTYPE, TYPES...>* Instance()
-	{
-		static Fetcher<MSG, RETURNTYPE, TYPES...> instance;
-		return &instance;
-	}
-};
-
-//------------------------------------------------------------------------------
-/**
-	@todo	Biggest performance hog right now is that listeners
-			themselves need to check if, for example, an entity is
-			registered or not. Although this is potentially O(1) per lookup,
-			it can probably be improved by adding some registry over which
-			entities are registered to which component systems.
-			This will however add a lot of memory overhead that is not
-			necessarily needed for anything else.
-			In the end, the api will (hopefully) most likely to stay the same.
-*/
 template <class MSG, class ... TYPES>
 class Message
 {
@@ -167,7 +91,7 @@ public:
 	using Delegate = Util::Delegate<void(TYPES...)>;
 
     /// Type definition for this message's queues
-    using MessageQueue = typename Util::ArrayAllocator<UnqualifiedType<TYPES> ...>;
+    using MessageQueue = typename Util::ArrayAllocator<std::tuple<UnqualifiedType<TYPES> ...>>;
 
 	/// Register a listener to this message. Returns an ID for the listener so that we can associate it.
 	static MessageListener Register(Delegate&& callback);
@@ -246,7 +170,7 @@ private:
 	template<std::size_t...Is>
 	void send_expander(MessageQueue& data, const IndexT cid, const SizeT index, std::index_sequence<Is...>)
 	{
-		this->callbacks.Get<1>(cid)(data.Get<Is>(index)...);
+		this->callbacks.Get<1>(cid)(std::get<Is>(data.Get<0>(index))...);
 	}
 
 	void send_expander(MessageQueue& data, const IndexT cid, const SizeT index)
@@ -358,7 +282,7 @@ Message<MSG, TYPES...>::Defer(MessageQueueId qid, TYPES ...values)
 	SizeT index = Ids::Index(qid.id);
 
 	auto i = instance->messageQueues[index].Alloc();
-	instance->messageQueues[index].Set(i, values...);
+	instance->messageQueues[index].Set(i, std::make_tuple(values...));
 }
 
 //------------------------------------------------------------------------------

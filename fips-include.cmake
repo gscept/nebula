@@ -208,24 +208,42 @@ macro(add_material)
 		endforeach()
 endmacro()
 
+macro(add_blueprint)
+    foreach(bp ${ARGN})
+            get_filename_component(basename ${bp} NAME)
+            set(output ${EXPORT_DIR}/data/tables/${basename})
+            add_custom_command(OUTPUT ${output}
+                COMMAND ${CMAKE_COMMAND} -E copy ${bp} ${EXPORT_DIR}/data/tables/
+                MAIN_DEPENDENCY ${bp}
+                WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
+                COMMENT "Copying material ${bp} to ${EXPORT_DIR}/data/tables"
+                VERBATIM
+                )
+            fips_files(${bp})
+            SOURCE_GROUP("res\\blueprints" FILES ${bp})
+		endforeach()
+endmacro()
+
+macro(set_nebula_export_dir)
+    if(FIPS_WINDOWS)
+        get_filename_component(workdir "[HKEY_CURRENT_USER\\SOFTWARE\\gscept\\ToolkitShared;workdir]" ABSOLUTE)
+        # get_filename_component returns /registry when a key is not found...
+        if(${workdir} STREQUAL "/registry")
+            MESSAGE(WARNING "Registry keys for project not found, did you set your workdir?")
+            return()
+        endif()
+        set(EXPORT_DIR "${workdir}/export")
+    else()
+        # use environment
+        set(EXPORT_DIR $ENV{NEBULA_WORK}/export)
+    endif()
+endmacro()
+
 macro(add_nebula_shaders)
     if(NOT SHADERC)
         MESSAGE(WARNING "Not compiling shaders, anyfxcompiler not found, did you run fips anyfx setup?")
     else()
-        if(FIPS_WINDOWS)
-
-            get_filename_component(workdir "[HKEY_CURRENT_USER\\SOFTWARE\\gscept\\ToolkitShared;workdir]" ABSOLUTE)
-            # get_filename_component returns /registry when a key is not found...
-            if(${workdir} STREQUAL "/registry")
-                MESSAGE(WARNING "Registry keys for project not found, did you set your workdir?")
-                return()
-            endif()
-            set(EXPORT_DIR "${workdir}/export_win32")
-        else()
-            # use environment
-            set(EXPORT_DIR $ENV{NEBULA_WORK}/export_win32)
-        endif()
-
+        set_nebula_export_dir()
         file(GLOB_RECURSE FXH "${NROOT}/work/shaders/vk/*.fxh")
         SOURCE_GROUP("res\\shaders\\headers" FILES ${FXH})
         fips_files(${FXH})
@@ -243,27 +261,19 @@ macro(add_nebula_shaders)
         foreach(shd ${MAT})
             add_material(${shd})
         endforeach()
-
     endif()
+endmacro()
+
+macro(add_nebula_blueprints)
+    set_nebula_export_dir()
+    add_blueprint("${NROOT}/work/data/tables/blueprints.json")
 endmacro()
 
 macro(add_shaders)
     if(NOT SHADERC)
         MESSAGE(WARNING "Not compiling shaders, ShaderC not found, did you compile nebula-toolkit?")
     else()
-        if(FIPS_WINDOWS)
-
-            get_filename_component(workdir "[HKEY_CURRENT_USER\\SOFTWARE\\gscept\\ToolkitShared;workdir]" ABSOLUTE)
-            # get_filename_component returns /registry when a key is not found...
-            if(${workdir} STREQUAL "/registry")
-                MESSAGE(WARNING "Registry keys for project not found, did you set your workdir?")
-                return()
-            endif()
-            set(EXPORT_DIR "${workdir}/export_win32")
-        else()
-            # use environment
-            set(EXPORT_DIR $ENV{NEBULA_WORK}/export_win32)
-        endif()
+        set_nebula_export_dir()
         foreach(shd ${ARGN})
             add_shaders_intern(${CMAKE_CURRENT_SOURCE_DIR}/${shd})
         endforeach()

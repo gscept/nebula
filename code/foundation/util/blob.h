@@ -40,13 +40,13 @@ public:
 	/// copy constructor
 	Blob(const Blob& rhs);
     /// move constructor
-    Blob(Blob&& rhs);
+    Blob(Blob&& rhs) noexcept;
 	/// destructor
 	~Blob();
 	/// assignment operator
 	void operator=(const Blob& rhs);
     /// move assignment operator
-    void operator=(Blob&& rhs);
+    void operator=(Blob&& rhs) noexcept;
 
 	/// equality operator
 	bool operator==(const Blob& rhs) const;
@@ -210,7 +210,7 @@ Blob::Blob(const Blob& rhs) :
 /**
 */
 inline
-Blob::Blob(Blob&& rhs) :
+Blob::Blob(Blob&& rhs) noexcept :
     ptr(0),
     size(0),
     allocSize(0)
@@ -336,7 +336,7 @@ Blob::operator=(const Blob& rhs)
 /**
 */
 inline void
-Blob::operator=(Blob&& rhs)
+Blob::operator=(Blob&& rhs) noexcept
 {
     if (this != &rhs)
     {

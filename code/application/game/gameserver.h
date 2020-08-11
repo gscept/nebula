@@ -26,6 +26,7 @@
 #include "core/singleton.h"
 #include "game/featureunit.h"
 #include "debug/debugtimer.h"
+#include "game/database/database.h"
 
 //------------------------------------------------------------------------------
 namespace Game

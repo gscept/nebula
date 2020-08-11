@@ -920,12 +920,14 @@ VkTypes::AsVkSize(CoreGraphics::VertexComponent::Format f)
 	case VertexComponent::Byte4:    return 4;
 	case VertexComponent::Short2:   return 4;
 	case VertexComponent::Short4:   return 8;
+	case VertexComponent::UShort4:  return 8;
 	case VertexComponent::UByte4N:  return 4;
 	case VertexComponent::Byte4N:   return 4;
 	case VertexComponent::Short2N:  return 4;
 	case VertexComponent::Short4N:  return 8;
+	case VertexComponent::UShort:	return 2;
 	default:
-		n_error("OGL4Types::AsOGL4Size(): invalid input parameter!");
+		n_error("VkTypes::AsVkSize(): invalid input parameter!");
 		return 1;
 	}
 }
@@ -946,12 +948,14 @@ VkTypes::AsVkNumComponents(CoreGraphics::VertexComponent::Format f)
 	case VertexComponent::Byte4:    return 4;
 	case VertexComponent::Short2:   return 2;
 	case VertexComponent::Short4:   return 4;
+	case VertexComponent::UShort4:  return 4;
 	case VertexComponent::UByte4N:  return 4;
 	case VertexComponent::Byte4N:   return 4;
 	case VertexComponent::Short2N:  return 2;
 	case VertexComponent::Short4N:  return 4;
+	case VertexComponent::UShort:	return 1;
 	default:
-		n_error("OGL4Types::AsOGL4Size(): invalid input parameter!");
+		n_error("VkTypes::AsVkNumComponents(): invalid input parameter!");
 		return 1;
 	}
 }
@@ -972,12 +976,14 @@ VkTypes::AsVkVertexType(CoreGraphics::VertexComponent::Format f)
 	case VertexComponent::Byte4:	return VK_FORMAT_R8G8B8A8_SINT;
 	case VertexComponent::Short2:   return VK_FORMAT_R16G16_SINT;
 	case VertexComponent::Short4:   return VK_FORMAT_R16G16B16A16_SINT;
+	case VertexComponent::UShort4:  return VK_FORMAT_R16G16B16A16_UINT;
 	case VertexComponent::UByte4N:  return VK_FORMAT_R8G8B8A8_UNORM;
 	case VertexComponent::Byte4N:	return VK_FORMAT_R8G8B8A8_SNORM;
 	case VertexComponent::Short2N:  return VK_FORMAT_R16G16_SNORM;
 	case VertexComponent::Short4N:  return VK_FORMAT_R16G16B16A16_SNORM;
-	case VertexComponent::UShort2N:  return VK_FORMAT_R16G16_UNORM;
-	case VertexComponent::UShort4N:  return VK_FORMAT_R16G16B16A16_UNORM;
+	case VertexComponent::UShort2N: return VK_FORMAT_R16G16_UNORM;
+	case VertexComponent::UShort4N: return VK_FORMAT_R16G16B16A16_UNORM;
+	case VertexComponent::UShort:	return VK_FORMAT_R16_UINT;
 	default:
 		n_error("VkTypes::AsVkVertexType(): invalid input parameter!");
 		return VK_FORMAT_R32G32B32A32_SFLOAT;

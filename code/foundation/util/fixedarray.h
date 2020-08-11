@@ -40,7 +40,7 @@ public:
     /// assignment operator
     void operator=(const FixedArray<TYPE>& rhs);
     /// move assignment operator
-    void operator=(FixedArray<TYPE>&& rhs);
+    void operator=(FixedArray<TYPE>&& rhs) noexcept;
     /// write [] operator
     TYPE& operator[](IndexT index) const;
     /// equality operator
@@ -262,7 +262,7 @@ FixedArray<TYPE>::operator=(const FixedArray<TYPE>& rhs)
 /**
 */
 template<class TYPE> void
-FixedArray<TYPE>::operator=(FixedArray<TYPE>&& rhs)
+FixedArray<TYPE>::operator=(FixedArray<TYPE>&& rhs) noexcept
 {
     if (this != &rhs)
     {
@@ -282,7 +282,7 @@ template<class TYPE> TYPE&
 FixedArray<TYPE>::operator[](IndexT index) const
 {
     #if NEBULA_BOUNDSCHECKS
-    n_assert(this->elements && (index < this->count));
+//    n_assert(this->elements && (index < this->count));
     #endif
     return this->elements[index];
 }
@@ -420,7 +420,7 @@ template<class TYPE> void
 FixedArray<TYPE>::Fill(IndexT first, SizeT num, const TYPE& val)
 {
     #if NEBULA_BOUNDSCHECKS
-    n_assert((first + num) < this->count);
+    n_assert((first + num) <= this->count);
     n_assert(0 != this->elements);
     #endif
     IndexT i;

@@ -18,55 +18,37 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
+#include "ids/id.h"
 
 //------------------------------------------------------------------------------
 namespace Game
 {
-class Manager : public Core::RefCounted
-{
-    __DeclareClass(Manager)
-public:
-    /// constructor
-    Manager();
-    /// destructor
-    virtual ~Manager();
 
+ID_32_TYPE(ManagerHandle)
+
+struct ManagerAPI
+{
     /// called when attached to game server
-    virtual void OnActivate();
+    void(*OnActivate)() = nullptr;
     /// called when removed from game server
-    virtual void OnDeactivate();
-    /// return true if currently active
-    bool IsActive() const;
+    void(*OnDeactivate)() = nullptr;
     /// called before frame by the game server
-    virtual void OnBeginFrame();
+    void(*OnBeginFrame)() = nullptr;
     /// called per-frame by the game server
-    virtual void OnFrame();
+    void(*OnFrame)() = nullptr;
     /// called after frame by the game server
-    virtual void OnEndFrame();
+    void(*OnEndFrame)() = nullptr;
     /// called after loading game state
-    virtual void OnLoad();
+    void(*OnLoad)() = nullptr;
     /// called before saving game state
-    virtual void OnSave();
+    void(*OnSave)() = nullptr;
     /// called by Game::Server::Start()
-    virtual void OnStart();
+    void(*OnStart)() = nullptr;
     /// render a debug visualization 
-    virtual void OnRenderDebug();
-
-private:
-    bool isActive;
+    void(*OnRenderDebug)() = nullptr;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline bool
-Manager::IsActive() const
-{
-    return this->isActive;
-}
 
 }; // namespace Game
 //------------------------------------------------------------------------------
  
-    
     

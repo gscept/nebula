@@ -115,7 +115,7 @@ point::point(const vec3& rhs)
 {
     // mask out xyz and set w to 1
 #if NEBULA_DEBUG
-    n_assert(rhs.__w == 0.0f);
+    n_assert(rhs.__w == 0.0f || rhs.__w == 1.0f);
 #endif
     this->vec = _mm_or_ps(rhs.vec, _id_w);
 }

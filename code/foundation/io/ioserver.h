@@ -89,6 +89,8 @@ public:
     FileTime GetFileWriteTime(const URI& path) const;
 	/// read contents of file and return as string
 	Util::String ReadFile(const URI& path) const;
+    /// return native path
+    static Util::String NativePath(const Util::String& path);
 
     /// list all files matching a pattern in a directory
     Util::Array<Util::String> ListFiles(const URI& dir, const Util::String& pattern, bool asFullPath=false) const;

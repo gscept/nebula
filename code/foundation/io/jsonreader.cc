@@ -226,7 +226,8 @@ JsonReader::SetToFirstChild(const Util::String& name)
 {
     n_assert(this->IsOpen());
     n_assert(0 != this->curNode);
-    const value_variant* child = 0;    
+    const value_variant* child = 0;
+	IndexT cIdx = 0;
     if (name.IsEmpty())
     {
         child = &this->curNode->get_value_at_index(0);
@@ -234,13 +235,14 @@ JsonReader::SetToFirstChild(const Util::String& name)
     else
     {
         child = this->curNode->find_value_variant(name.AsCharPtr());
+		cIdx = this->curNode->find_key(name.AsCharPtr());
     }
     if (child)
     {
         this->parents.Push(this->curNode);
         this->parentIdx.Push(this->childIdx);
         this->curNode = child;
-        this->childIdx = 0;
+        this->childIdx = cIdx;
         return true;
     }
     else

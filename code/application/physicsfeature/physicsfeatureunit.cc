@@ -3,7 +3,7 @@
 //  (C) 2019-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
-#include "Physicsfeature/Physicsfeatureunit.h"
+#include "physicsfeature/physicsfeatureunit.h"
 #include "physicsinterface.h"
 #include "graphics/graphicsserver.h"
 
@@ -39,7 +39,6 @@ PhysicsFeatureUnit::OnActivate()
     Physics::CreateScene();
 	//FIXME
     IndexT dummyMaterial = Physics::CreateMaterial("dummy"_atm, 0.8, 0.6, 0.3, 1.0);
-	ActorComponent::Create();
 }
 
 //------------------------------------------------------------------------------
@@ -49,7 +48,6 @@ void
 PhysicsFeatureUnit::OnDeactivate()
 {	
     FeatureUnit::OnDeactivate();    
-    ActorComponent::Discard();
     Physics::ShutDown();
 }
 

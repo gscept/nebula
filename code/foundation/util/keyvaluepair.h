@@ -26,11 +26,11 @@ public:
     /// copy constructor
     KeyValuePair(const KeyValuePair<KEYTYPE, VALUETYPE>& rhs);
     /// move constructor
-    KeyValuePair(KeyValuePair<KEYTYPE, VALUETYPE>&& rhs);
+    KeyValuePair(KeyValuePair<KEYTYPE, VALUETYPE>&& rhs) noexcept;
     /// assignment operator
     void operator=(const KeyValuePair<KEYTYPE, VALUETYPE>& rhs);
     /// move assignment operator
-    void operator=(KeyValuePair<KEYTYPE, VALUETYPE>&& rhs);
+    void operator=(KeyValuePair<KEYTYPE, VALUETYPE>&& rhs) noexcept;
     /// equality operator
     bool operator==(const KeyValuePair<KEYTYPE, VALUETYPE>& rhs) const;
     /// inequality operator
@@ -114,7 +114,7 @@ KeyValuePair<KEYTYPE, VALUETYPE>::KeyValuePair(const KeyValuePair<KEYTYPE, VALUE
 /**
 */
 template<class KEYTYPE, class VALUETYPE>
-KeyValuePair<KEYTYPE, VALUETYPE>::KeyValuePair(KeyValuePair<KEYTYPE, VALUETYPE>&& rhs) :
+KeyValuePair<KEYTYPE, VALUETYPE>::KeyValuePair(KeyValuePair<KEYTYPE, VALUETYPE>&& rhs) noexcept:
     keyData(std::move(rhs.keyData)),
     valueData(std::move(rhs.valueData))
 {
@@ -137,7 +137,7 @@ KeyValuePair<KEYTYPE, VALUETYPE>::operator=(const KeyValuePair<KEYTYPE, VALUETYP
 */
 template<class KEYTYPE, class VALUETYPE>
 void
-KeyValuePair<KEYTYPE, VALUETYPE>::operator=(KeyValuePair<KEYTYPE, VALUETYPE>&& rhs)
+KeyValuePair<KEYTYPE, VALUETYPE>::operator=(KeyValuePair<KEYTYPE, VALUETYPE>&& rhs) noexcept
 {
     this->keyData = std::move(rhs.keyData);
     this->valueData = std::move(rhs.valueData);
@@ -296,4 +296,3 @@ KeyValuePair<KEYTYPE, VALUETYPE>::Value() const
 
 } // namespace Util
 //------------------------------------------------------------------------------
-    

@@ -150,9 +150,5 @@ AttributeDefinition<VALUETYPE, TYPE>::AttributeDefinition(const Util::String& n,
 #define DefineGuidArray(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::GuidArrayTypeClass, Util::Array<Util::Guid>> NAME(#NAME, "Util::Array<Util::Guid>", FOURCC,ACCESSMODE, Util::Array<Util::Guid>());
 #define DefineGuidArrayWithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::GuidArrayTypeClass, Util::Array<Util::Guid>> NAME(#NAME, "Util::Array<Util::Guid>", FOURCC,ACCESSMODE,DEFVAL);
 
-#define DeclareEntity(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::EntityTypeClass, Game::Entity> NAME;
-#define DefineEntity(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::EntityTypeClass, Game::Entity> NAME(#NAME, "Game::Entity", FOURCC,ACCESSMODE, Game::Entity(-1));
-#define DefineEntityWithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::EntityTypeClass, Game::Entity> NAME(#NAME, "Game::Entity", FOURCC,ACCESSMODE,DEFVAL);
-
 } // namespace Attr
 //------------------------------------------------------------------------------
