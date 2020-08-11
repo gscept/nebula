@@ -1,7 +1,11 @@
 /**
-@page frame Frame Subsystem
+@page Frame Frame
 
-@section Resource Declarations
+@section NebulaFrameSystem The Frame Subsystem
+
+The Nebula Frame system provides a scriptable interface for defining the passes and resources in a frame. Where most engines define their passes, draw batches, computes, copies and such, the frame system uses a JSON-script which is loaded at runtime, and which can be modified and customized for each game, without changing a single line of C++ code. The point is to have a modular and interpretable rendering routine, which allows the engine to properly syncrhonize resources automatically, define resizing behavior, and to quickly add, remove and modify sections of the frame without rewriting huge swats of code or to have to think about unforseen side effects. As such, the frame script provides a JSON-based language which we will go through in this document.
+
+@subsection Resource Declarations
 The Nebula frame script system allows rendering to be scripted, rather than it being hard-coded. Frame scripts allows us to create resources needed for rendering, them being:
 
 - Textures, either used for rendering, or shader writing, or for sampling.
@@ -65,7 +69,7 @@ An example can look like this:
 
 This will make the buffer 4096 * screen width * screen height in size.
 
-@section Operations
+@subsection Operations
 The operations allowed in the 'global' scope of a frame script are:
 
 - \b blit copies a texture to another with a filtering and/or image conversion method, such as like RGB -> sRGB, BGR->RGB.
@@ -76,7 +80,7 @@ The operations allowed in the 'global' scope of a frame script are:
 - \b pass triggers a rendering pass, within which only subpasses and subpass-related operations are allowed. In a pass, we are inside a 'render' scope, wherein only and exclusively render related commands are allowed.
 - \b barrier puts an explicit synchronization point in the script, which has some rare uses, for example when synchronizing a texture before presenting, as the present system knows nothing of the layout changes from the framescript.
 
-@subsection frame_dependency Dependencies
+@subsubsection frame_dependency Dependencies
 
 Operations may and usually should define a set of resources which they need to be in a certain state before being operated on. This is a necessity since Vulkan, DX12 and Metal requires explicit synchronization for resources, and texture require a transition of layouts depending on their intended usage. Therefore, all operations share two fields which are to be used for this type of behavior. The benefits are that if two operations are rearranged, the frame script system will ensure the synchronization is kept valid, which would otherwise require a lot of hassle.
 
@@ -114,7 +118,7 @@ This requires the operation to wait for the ZBuffer to finish any operation lead
 - \b layer - The start layer being used.
 - \b layer_count - The amount of layers to depend on.
 
-@section Pass
+@subsection Pass
 Within a pass, we must list some color-renderable textures and a single (or none) depth-stencil renderable texture. If a clear value is provided for any of these textures, the texture will be cleared with said value when the pass begins. We call color or depth-stencil renderable textures inside passes as attachments, since they are used for attaching to a fragment shader in order to receive color outputs.
 
 Attachments are by default considered to NOT be stored when the pass ends, meaning that the implementation may decide that the result of an attachment is null and void after the pass is done. To avoid this, an attachment must be provided with a store flag, making sure the implementation knows this attachment will be needed after the render pass is done. Try avoid using store as much as possible, since it could improve performance for high-resolution images if the implementation doesn't need to perform a write-back on every attachment.
@@ -176,7 +180,7 @@ For \b depth_stencil, the following fields are accepted:
 - \b store - If true, the pixel values will be kept after this pass ends, otherwise, there is no such guarantee.
 - \b load - If true, the pass operations may load values, and perform blending on this attachment.
 
-@subsection Subpass
+@subsubsection Subpass
 Subpasses use a subset of the color attachments, and optionally the depth-stencil attachment in the pass. Only within a subpass is it legal to perform rendering calls. The following list of operations are available in a subpass:
 
 - \b name - Name of the subpass, this is important to remember, because it is used to setup subpass dependencies.
@@ -225,7 +229,7 @@ fullscreen_effect: {
 
 The \b shader_state member defines an object encapsulating a shader and a set of variables to apply when rendering. The \b semantic corresponds to a shader variable name, and the \b value is the texture or buffer from the frame script. \b size_from_texture determines the size to use when rendering the post effect.
 
-@section frame_interface Script Interface
+@subsection frame_interface Script Interface
 A frame script then executes actions, and all actions are inherited from the class FrameOp. FrameOp provides a couple of default functions used to handle rendering.
 FrameOp is the base class, and is meant as the template from which a FrameOp::Compiled is constructed. Compiled frame ops are the finished product, constructed automatically when we run FrameScript::Compile, and will construct Compiled operations only for the operations which are enabled. This allows for the frame script to always run a minimal update, and arrange the internal synchronization correctly.
 

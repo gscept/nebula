@@ -1,8 +1,87 @@
 /**
-@namespace CoreAnimation
+@page CoreAnimation CoreAnimation
 
-The CoreAnimation subsystem contains the base functionality for higher level
-animation-related systems. 
+@section NebulaCoreAnimationSystem The CoreAnimation Subsystem
+The CoreAnimation system provides an interface to play, pause and seek nax3 animation clips, which can be extracted either from an asset file at import, or constructed by some tool. The animation system also provides support for animation events - triggers which should play when an animation arrives at a certain frame. Animations are played as a sequence timeline with several tracks, each track corresponding to a single animation clip for a certain time. The tracks have weights attached to them, and can also be provided a skeleton mask. This allows for animations to play simultaneously, blend together, and mask out certain parts of the skeleton we wish to not animate for that track. 
 
-FIXME: continue...
+An animation resource is split up into several clips, each clip being a sequence of transforms, a duration, begin and end interpolation modes.
+
+To construct an instance of an animation resource in Nebula, we need to run:
+
+@code
+CoreAnimation::AnimResourceId id = Resources::CreateResource()
+@endcode
+
+Providing CreateResource with a file with the extension .nax3 and it will load as an animation. This means we have now loaded all the animation data and handle `id` will hold on to it. Animations are evaluated by interpolating between frames, and there are two functions (which can be passed to the job system), that provides this functionality. The following code shows how we can evaluate animation samples on a job, clip being the clip index we want to evaluate:
+
+@code
+if (firstAnimTrack || playing.blend != 1.0f)
+    job = Jobs::CreateJob({ AnimSampleJob });
+else
+    job = Jobs::CreateJob({ AnimSampleJobWithMix });
+
+const CoreAnimation::AnimClip& clip = CoreAnimation::AnimGetClip(id, clip);
+Timing::Tick keyDuration = clip.GetKeyDuration();
+IndexT keyIndex0 = ClampKeyIndex((sampleTime / keyDuration), clip);
+IndexT keyIndex1 = ClampKeyIndex(keyIndex0 + 1, clip);
+Timing::Tick inbetweenTicks = InbetweenTicks(sampleTime, clip);
+
+// create scratch memory
+AnimSampleMixInfo* sampleMixInfo = (AnimSampleMixInfo*)Jobs::JobAllocateScratchMemory(job, Memory::ScratchHeap, sizeof(CoreAnimation::AnimSampleMixInfo));
+Memory::Clear(sampleMixInfo, sizeof(AnimSampleMixInfo));
+sampleMixInfo->sampleType = SampleType::Linear;
+sampleMixInfo->sampleWeight = float(inbetweenTicks) / float(keyDuration);
+sampleMixInfo->velocityScale.set(timeFactor, timeFactor, timeFactor, 0);
+
+// get pointers to memory and size
+SizeT src0Size, src1Size;
+const Math::vec4 *src0Ptr = nullptr, *src1Ptr = nullptr;
+AnimComputeSlice(anim, clip, keyIndex0, src0Size, src0Ptr);
+AnimComputeSlice(anim, clip, keyIndex1, src1Size, src1Ptr);
+
+// setup output
+Math::vec4* outSamplesPtr = sampleBuffer.GetSamplesPointer();
+SizeT numOutSamples = sampleBuffer.GetNumSamples();
+SizeT outSamplesByteSize = numOutSamples * sizeof(Math::vec4);
+uchar* outSampleCounts = sampleBuffer.GetSampleCountsPointer();
+
+ctx.input.numBuffers = 2;
+ctx.output.numBuffers = 2;
+ctx.uniform.numBuffers = 3;
+
+// setup inputs
+ctx.input.data[0] = (void*)src0Ptr;
+ctx.input.dataSize[0] = src0Size;
+ctx.input.sliceSize[0] = src0Size;
+ctx.input.data[1] = (void*)src1Ptr;
+ctx.input.dataSize[1] = src1Size;
+ctx.input.sliceSize[1] = src1Size;
+
+// setup outputs
+ctx.output.data[0] = (void*)outSamplesPtr;
+ctx.output.dataSize[0] = outSamplesByteSize;
+ctx.output.sliceSize[0] = outSamplesByteSize;
+ctx.output.data[1] = (void*)outSampleCounts;
+ctx.output.dataSize[1] = Util::Round::RoundUp16(numOutSamples);
+ctx.output.sliceSize[1] = Util::Round::RoundUp16(numOutSamples);
+
+// setup uniforms
+ctx.uniform.data[0] = &clip.CurveByIndex(0);
+ctx.uniform.dataSize[0] = clip.GetNumCurves() * sizeof(AnimCurve);
+ctx.uniform.data[1] = sampleMixInfo;
+ctx.uniform.dataSize[1] = sizeof(AnimSampleMixInfo);
+ctx.uniform.data[2] = (const void*)playing.mask; 
+ctx.uniform.dataSize[2] = sizeof(AnimSampleMask*);
+ctx.uniform.scratchSize = 0;
+
+// schedule jobs
+Jobs::JobSchedule(job, jobPort, ctx);
+
+firstAnimTrack = false;
+@endcode
+
+This code is takien from Characters::CharacterContext and slightly modified to make it simpler. What we are doing is we are setting up a duration, how much time there is between animation ticks, a temporary buffer (called a scratch buffer) to hold intermediate data in the job. We then prepare the job context with all this information, and schedule it to execute. outSamplesPtr will then contain the result of this job when the job is finished. 
+
+Using CoreAnimation::AnimSampleBuffer (which is outSamplesPtr in the above example), we can then figure out how many Math::vec4 elements we have, such that we can intelligently make decisions about how to use this data to perform transformations. In most cases, a single joint contains 3 Math::vec4, because we have a scale, rotation and transformation vector, which when combined will be our final matrix. 
+
 */

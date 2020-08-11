@@ -1,7 +1,7 @@
 /**
-@namespace Util
+@page Util
 
-@section NebulaUtilSystem The Nebula Util Subsystem
+@section NebulaUtilSystem The Util Library
 
-The Util namespace is a toolbox of general utility classes, mainly containers and a powerful string class.
+The Util namespace is a toolbox of general utility classes, such as containers, strings, bit operations a variant type, RLE compression, GUID, command line arguments, etc.
 */

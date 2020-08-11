@@ -3,10 +3,12 @@
 
 At the moment of writing this documentation, the Nebula engine uses Vulkan as its primary renderer.
 
-@subpage frame \n
+@subpage AppRender \n
+@subpage CoreAnimation \n
 @subpage CoreGraphics \n
 @subpage Visibility \n
-@subpage graphics \n
+@subpage Frame \n
+@subpage Graphics \n
 @subpage Lighting \n
 
 */
