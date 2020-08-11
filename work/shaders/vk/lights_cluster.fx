@@ -8,6 +8,7 @@
 #include "lib/clustering.fxh"
 #include "lib/lights_clustered.fxh"
 #include "lib/preetham.fxh"
+#include "lib/mie-rayleigh.fxh" 
 
 group(BATCH_GROUP) constant LightUniforms [ string Visibility = "CS"; ]
 {
@@ -107,7 +108,7 @@ void csDebug()
 		color.g = count / float(NumSpotLights);
 	}
 	
-	imageStore(DebugOutput, int2(coord), color);
+	imageStore(DebugOutput, int2(coord), color); 
 }
 
 //------------------------------------------------------------------------------
@@ -140,7 +141,7 @@ void csRender()
 	uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
 
 	vec3 light = vec3(0,0,0); 
-
+	 
 	// render lights where we have geometry
 	if (normal.a != -1.0f)
 	{
@@ -163,17 +164,18 @@ void csRender()
 		
 		vec3 kD = vec3(1.0f) - F;
 		kD *= 1.0f - material[MAT_METALLIC];
-
+		 
 		const vec3 ambientTerm = (irradiance * kD * albedo.rgb) * ssao;
-		light += (ambientTerm + reflection * F) * cavity;
-   	}	
+		light += (ambientTerm + reflection * F) * cavity; 
+   	} 
 	else // sky pixels
-	{
+	{ 
 		//light += sampleCubeLod(EnvironmentMap, CubeSampler, normalize(worldPos.xyz), 0).rgb;
-		light += Preetham(-worldViewVec, GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * GlobalLightColor.rgb;
-	}
-    
-	// write final output
+		//light += Preetham(-worldViewVec, GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * GlobalLightColor.rgb;
+		light = CalculateAtmosphericScattering(-worldViewVec, GlobalLightDirWorldspace.xyz);
+	}  
+     
+	// write final output 
 	imageStore(Lighting, coord, light.xyzx);
 }
 
