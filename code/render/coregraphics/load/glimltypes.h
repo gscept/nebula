@@ -8,7 +8,9 @@
 //------------------------------------------------------------------------------
 #include "core/types.h"
 #include "coregraphics/pixelformat.h"
+#ifndef GLIML_ASSERT
 #define GLIML_ASSERT(x) n_assert(x)
+#endif
 #include "gliml.h"
 namespace CoreGraphics
 {

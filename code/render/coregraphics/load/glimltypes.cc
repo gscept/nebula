@@ -28,6 +28,7 @@ Gliml::ToPixelFormat(gliml::context const& ctx)
         case gliml::DXGI_FORMAT_BC1_UNORM_SRGB:         return PixelFormat::DXT1sRGB;
         case gliml::DXGI_FORMAT_BC2_UNORM_SRGB:         return PixelFormat::DXT3sRGB;
         case gliml::DXGI_FORMAT_BC3_UNORM_SRGB:         return PixelFormat::DXT5sRGB;
+        case gliml::DXGI_FORMAT_BC4_UNORM:              return PixelFormat::BC4;
         case gliml::DXGI_FORMAT_BC5_UNORM:              return PixelFormat::BC5;
         case gliml::DXGI_FORMAT_BC7_UNORM:              return PixelFormat::BC7;
         case gliml::DXGI_FORMAT_BC7_UNORM_SRGB:         return PixelFormat::BC7sRGB;
@@ -160,6 +161,11 @@ Gliml::ToPixelFormat(gliml::context const& ctx)
                 }
             }
             case GLIML_FOURCC_BC7U:                         return PixelFormat::BC7;
+            case GLIML_FOURCC_BC4S:                         return PixelFormat::BC4;
+            case GLIML_FOURCC_BC4U:                         return PixelFormat::BC4;
+            case GLIML_FOURCC_BC5S:                         return PixelFormat::BC5;
+            case GLIML_FOURCC_ATI1:                         return PixelFormat::BC4;
+            case GLIML_FOURCC_ATI2:                         return PixelFormat::BC5;
             case GLIML_GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:    return PixelFormat::DXT1;
             case GLIML_GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:    return PixelFormat::DXT3;
             case GLIML_GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:    return PixelFormat::DXT5;

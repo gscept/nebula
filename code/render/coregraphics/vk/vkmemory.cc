@@ -16,13 +16,15 @@ using namespace Vulkan;
 void 
 SetupMemoryPools(
 	DeviceSize deviceLocalMemory,
-	DeviceSize manuallyFlushedMemory,
-	DeviceSize hostCoherentMemory)
+	DeviceSize hostLocalMemory,
+	DeviceSize deviceToHostMemory,
+	DeviceSize hostToDeviceMemory)
 {
 	VkPhysicalDeviceMemoryProperties props = Vulkan::GetMemoryProperties();
 
 	// setup a pool for every memory type
 	CoreGraphics::Pools.Resize(VK_MAX_MEMORY_TYPES);
+	bool deviceLocalFound = false, hostLocalFound = false, hostToDeviceFound = false, deviceToHostFound = false;
 	for (uint32_t i = 0; i < VK_MAX_MEMORY_TYPES; i++)
 	{
 		CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[i];
@@ -31,26 +33,37 @@ SetupMemoryPools(
 		pool.mapMemory = false;
 		pool.blockSize = 0;
 
-		if (CheckBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT))
+		if (CheckBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) && !deviceLocalFound)
 		{
-			// setup pool info
+			// device memory is persistent, allocate conservatively
 			pool.mapMemory = false;
 			pool.blockSize = deviceLocalMemory;
 			pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
+			deviceLocalFound = true;
 		}
-		else if (CheckBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT))
+		else if (CheckBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) && !hostLocalFound)
 		{
-			// setup pool info
+			// host memory is used for transient transfer buffers, make it allocate and deallocate fast
 			pool.mapMemory = true;
-			pool.blockSize = manuallyFlushedMemory;
-			pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
-		}
-		else if (CheckBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
-		{
-			// setup pool info
-			pool.mapMemory = true;
-			pool.blockSize = hostCoherentMemory;
+			pool.blockSize = hostLocalMemory;
 			pool.allocMethod = MemoryPool::MemoryPool_AllocLinear;
+			hostLocalFound = true;
+		}
+		else if (CheckBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT) && !deviceToHostFound)
+		{
+			// memory used to read from the GPU should also be conservative
+			pool.mapMemory = true;
+			pool.blockSize = deviceToHostMemory;
+			pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
+			deviceToHostFound = true;
+		}
+		else if (CheckBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) && !hostToDeviceFound)
+		{
+			// memory used to directly write to the device with a flush should be allocated conservatively
+			pool.mapMemory = true;
+			pool.blockSize = hostToDeviceMemory;
+			pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
+			hostToDeviceFound = true;
 		}
 	}
 }
@@ -78,6 +91,8 @@ FreeMemory(const Alloc& alloc)
 	AllocationLoc.Enter();
 	bool res = pool.DeallocateMemory(alloc);
 	AllocationLoc.Leave();
+
+	N_COUNTER_DECR(N_GPU_MEMORY_COUNTER, alloc.size);
 
 	// assert result
 	n_assert(res);
@@ -171,6 +186,8 @@ AllocateMemory(const VkDevice dev, const VkImage& img, MemoryPoolType type)
 	Alloc ret = pool.AllocateMemory(req.alignment, req.size);
 	AllocationLoc.Leave();
 
+	N_COUNTER_INCR(N_GPU_MEMORY_COUNTER, ret.size);
+
 	// make sure we are not over-allocating, and return
 	n_assert(ret.offset + ret.size < pool.maxSize);
 	return ret;
@@ -192,11 +209,14 @@ AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type)
 	case MemoryPool_DeviceLocal:
 		flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 		break;
-	case MemoryPool_HostCoherent:
+	case MemoryPool_HostLocal:
 		flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 		break;
-	case MemoryPool_ManualFlush:
+	case MemoryPool_DeviceToHost:
 		flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+		break;
+	case MemoryPool_HostToDevice:
+		flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 		break;
 	default:
 		n_crash("AllocateMemory(): Only buffer pool types are allowed for buffer memory");
@@ -211,6 +231,8 @@ AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type)
 	AllocationLoc.Enter();
 	Alloc ret = pool.AllocateMemory(req.alignment, req.size);
 	AllocationLoc.Leave();
+
+	N_COUNTER_INCR(N_GPU_MEMORY_COUNTER, ret.size);
 
 	// make sure we are not over-allocating, and return
 	n_assert(ret.offset + ret.size < pool.maxSize);
@@ -233,6 +255,8 @@ AllocateMemory(const VkDevice dev, VkMemoryRequirements reqs, VkDeviceSize alloc
 	Alloc ret = pool.AllocateMemory(reqs.alignment, allocSize);
 	AllocationLoc.Leave();
 
+	N_COUNTER_INCR(N_GPU_MEMORY_COUNTER, ret.size);
+
 	// make sure we are not over-allocating, and return
 	n_assert(ret.offset + ret.size < pool.maxSize);
 	return ret;
@@ -242,19 +266,41 @@ AllocateMemory(const VkDevice dev, VkMemoryRequirements reqs, VkDeviceSize alloc
 /**
 */
 void 
-Flush(const VkDevice dev, const Alloc& alloc)
+Flush(const VkDevice dev, const Alloc& alloc, IndexT offset, SizeT size)
 {
 	VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
 	CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[alloc.poolIndex];
 	VkMappedMemoryRange range;
 	range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 	range.pNext = nullptr;
-	range.offset = Math::n_align_down(alloc.offset, props.limits.nonCoherentAtomSize);
+	range.offset = Math::n_align_down(alloc.offset + offset, props.limits.nonCoherentAtomSize);
+	uint flushSize = size == NEBULA_WHOLE_BUFFER_SIZE ? alloc.size : Math::n_min(size, alloc.size);
 	range.size = Math::n_min(
-		Math::n_align(alloc.size + (alloc.offset - range.offset), props.limits.nonCoherentAtomSize),
+		Math::n_align(flushSize + (alloc.offset + offset - range.offset), props.limits.nonCoherentAtomSize),
 		pool.blockSize);
 	range.memory = alloc.mem;
 	VkResult res = vkFlushMappedMemoryRanges(dev, 1, &range);
+	n_assert(res == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+Invalidate(const VkDevice dev, const CoreGraphics::Alloc& alloc, IndexT offset, SizeT size)
+{
+	VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
+	CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[alloc.poolIndex];
+	VkMappedMemoryRange range;
+	range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+	range.pNext = nullptr;
+	range.offset = Math::n_align_down(alloc.offset + offset, props.limits.nonCoherentAtomSize);
+	uint flushSize = size == NEBULA_WHOLE_BUFFER_SIZE ? alloc.size : Math::n_min(size, alloc.size);
+	range.size = Math::n_min(
+		Math::n_align(flushSize + (alloc.offset + offset - range.offset), props.limits.nonCoherentAtomSize),
+		pool.blockSize);
+	range.memory = alloc.mem;
+	VkResult res = vkInvalidateMappedMemoryRanges(dev, 1, &range);
 	n_assert(res == VK_SUCCESS);
 }
 
