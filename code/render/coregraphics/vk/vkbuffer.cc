@@ -348,6 +348,26 @@ BufferUpdateArray(const BufferId id, const void* data, const uint size, const ui
 /**
 */
 void
+BufferUpload(const BufferId id, const void* data, const uint size, const uint count, const uint offset, const CoreGraphics::SubmissionContextId sub)
+{
+	CoreGraphics::CommandBufferId cmd = SubmissionContextGetCmdBuffer(sub);
+
+	uint numChunks = Math::n_divandroundup(size * count, 65535);
+	int remainingBytes = size * count;
+	int chunkOffset = offset;
+	for (uint i = 0; i < numChunks; i++)
+	{
+		int chunkSize = Math::n_min(remainingBytes, 65535);
+		vkCmdUpdateBuffer(Vulkan::CommandBufferGetVk(cmd), Vulkan::BufferGetVk(id), chunkOffset, chunkSize, data);
+		chunkOffset += chunkSize;
+		remainingBytes -= chunkSize;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 BufferUpdate(const BufferId id, const ConstantBufferAllocId alloc, const void* data, const uint size, const uint offset)
 {
 	VkBufferMapInfo& map = bufferAllocator.GetUnsafe<Buffer_MapInfo>(id.id24);
@@ -361,6 +381,30 @@ BufferUpdate(const BufferId id, const ConstantBufferAllocId alloc, const void* d
 	memcpy(buf, data, size);
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BufferFill(const BufferId id, char pattern, const CoreGraphics::SubmissionContextId sub)
+{
+	CoreGraphics::CommandBufferId cmd = SubmissionContextGetCmdBuffer(sub);
+	VkBufferLoadInfo& setup = bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id.id24);
+	
+	int remainingBytes = setup.byteSize;
+	uint numChunks = Math::n_divandroundup(setup.byteSize, 65535);
+	int chunkOffset = 0;
+	for (uint i = 0; i < numChunks; i++)
+	{
+		int chunkSize = Math::n_min(remainingBytes, 65535);
+		char* buf = n_new_array(char, chunkSize);
+		memset(buf, pattern, chunkSize);
+		vkCmdUpdateBuffer(Vulkan::CommandBufferGetVk(cmd), Vulkan::BufferGetVk(id), chunkOffset, chunkSize, buf);
+		chunkOffset += chunkSize;
+		remainingBytes -= chunkSize;
+		n_delete_array(buf);
+	}
+}
 
 //------------------------------------------------------------------------------
 /**

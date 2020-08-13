@@ -16,6 +16,7 @@
 namespace CoreGraphics
 {
 
+struct SubmissionContextId;
 ID_24_8_TYPE(BufferId);
 
 enum BufferUsageFlag
@@ -80,10 +81,17 @@ void BufferUnmap(const BufferId id);
 void BufferUpdate(const BufferId id, const void* data, const uint size, const uint offset = 0);
 /// update buffer data as array
 void BufferUpdateArray(const BufferId id, const void* data, const uint size, const uint count, const uint offset = 0);
+/// update buffer through submission instead of mapped buffer (slower, but allows for updates to DeviceLocal buffers)
+void BufferUpload(const BufferId id, const void* data, const uint size, const uint count, const uint offset, const CoreGraphics::SubmissionContextId sub);
 /// update buffer data
 template<class TYPE> void BufferUpdate(const BufferId id, const TYPE& data, const uint offset = 0);
 /// update buffer data as array
 template<class TYPE> void BufferUpdateArray(const BufferId id, const TYPE* data, const uint count, const uint offset = 0);
+/// upload data from pointer directly to buffer through submission context
+template<class TYPE> void BufferUpload(const BufferId id, const TYPE* data, const uint count, const uint offset, const CoreGraphics::SubmissionContextId sub);
+
+/// fill buffer with data much like memset
+void BufferFill(const BufferId id, char pattern, const CoreGraphics::SubmissionContextId sub);
 
 /// flush any changes done to the buffer so they are visible on the GPU
 void BufferFlush(const BufferId id, IndexT offset = 0, SizeT size = NEBULA_WHOLE_BUFFER_SIZE);
@@ -115,6 +123,15 @@ template<class TYPE>
 void BufferUpdateArray(const BufferId id, const TYPE* data, const uint count, const uint offset)
 {
     BufferUpdateArray(id, data, sizeof(TYPE), count, offset);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+void BufferUpload(const BufferId id, const TYPE* data, const uint count, const uint offset, const CoreGraphics::SubmissionContextId sub)
+{
+    BufferUpload(id, data, sizeof(TYPE), count, offset, sub);
 }
 
 } // namespace CoreGraphics
