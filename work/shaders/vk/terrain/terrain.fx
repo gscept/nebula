@@ -84,7 +84,6 @@ group(DYNAMIC_OFFSET_GROUP) constant TerrainTileUpdateUniforms [ string Visbilit
 	uvec2 SparseTileOutputOffset;
 	uint Mip;
 	float PixelsPerMeter;
-	uint SubTextureTiles;
 };
 
 group(SYSTEM_GROUP) write r11g11b10f image2D VirtualAlbedoOutput [ string Visbility = "CS"; ];
@@ -116,16 +115,10 @@ group(SYSTEM_GROUP) rw_buffer		VirtualTerrainSubTextures [ string Visibility = "
 
 const int MAX_PAGE_UPDATES = 1024;
 
-struct PageUpdateEntry
-{
-	uvec4 indirection;
-	vec4 coord;
-};
-
 struct PageUpdateList
 {
 	uint NumEntries;
-	PageUpdateEntry Entry[MAX_PAGE_UPDATES];
+	uvec4 Entry[MAX_PAGE_UPDATES];
 };
 
 group(SYSTEM_GROUP) rw_buffer		VirtualTerrainPageUpdateList [ string Visibility = "CS"; ]
@@ -133,15 +126,9 @@ group(SYSTEM_GROUP) rw_buffer		VirtualTerrainPageUpdateList [ string Visibility 
 	PageUpdateList PageList;
 };
 
-struct PageEntry
-{
-	uvec4 Coordinates;	// xy is page coord, xy is subtexture tile
-	uvec2 PackedAndMip;
-};
-
 group(SYSTEM_GROUP) rw_buffer		PageUpdateBuffer [ string Visibility = "PS|CS"; ]
 {
-	PageEntry PageEntries[];
+	uvec4 PageEntries[];
 };
 
 #define sampleBiomeAlbedo(biome, sampler, uv, layer)		texture(sampler2DArray(MaterialAlbedoArray[biome], sampler), vec3(uv, layer))
@@ -666,6 +653,43 @@ csTerrainPageClearUpdateTexture()
 	}
 }
 
+//------------------------------------------------------------------------------
+/**
+	Pack data entry 
+*/
+uvec4
+PackPageDataEntry(uint status, uint subTextureTile, uint mip, uint pageCoordX, uint pageCoordY, uint subTextureTileX, uint subTextureTileY)
+{
+	uvec4 ret;
+	ret.x = (status & 0x3) | (subTextureTile << 2);
+	ret.y = mip;
+	ret.z = (pageCoordX & 0xFFFF) | (pageCoordY << 16);
+	ret.w = (subTextureTileX & 0xFFFF) | (subTextureTileY << 16);
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+	Pack data entry
+*/
+uvec4
+PageDataSetStatus(uint status, uvec4 data)
+{
+	uvec4 ret = data;
+	ret.x &= ~0x3;
+	ret.x |= (status & 0x3);
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+	Pack data entry
+*/
+uint
+PageDataGetStatus(uvec4 data)
+{
+	return data.x & 0x3;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -679,26 +703,16 @@ csTerrainPageClearUpdateBuffer()
 	if (index >= VirtualPageBufferNumPages)
 		return;
 
-	PageEntry entry = PageEntries[index]; 
-	uint status = entry.PackedAndMip.x & 0x3;
-	if (status == 1)
-	{
-		entry.PackedAndMip = uvec2(2, 0);
-		entry.Coordinates = uvec4(0, 0, 0, 0);
-		PageEntries[index] = entry;
-	}
+	uvec4 entry = PageEntries[index];
+	uint status = PageDataGetStatus(entry);
+	if (status == 1u)
+		PageEntries[index] = PageDataSetStatus(2u, entry);
 	else
-	{
-		entry.PackedAndMip = uvec2(0, 0);
-		entry.Coordinates = uvec4(0, 0, 0, 0);
-		PageEntries[index] = entry;
-	}
+		PageEntries[index] = PageDataSetStatus(0u, entry);
 
 	// clear page entries
-	if (index == 0)
-	{
+	if (index == 0u)
 		PageList.NumEntries = 0u;
-	}
 }
 
 //------------------------------------------------------------------------------
@@ -753,38 +767,39 @@ psTerrainPrepass(
 		uvec2 subTextureTileLower = uvec2(tileCoordLower);
 		uvec2 pageCoordLower = (subTexture.indirectionOffset >> lowerMip) + subTextureTileLower;
 
+		/*
 		uint packedData = 1;
 		packedData |= subTextureIndex << 2; // we will use the first 2 bits to control the update state of the pixel
+		*/
+
+		uint mipOffsetLower = VirtualPageBufferMipOffsets[lowerMip / 4][lowerMip % 4];
+		uint mipSizeLower = VirtualPageBufferMipSizes[lowerMip / 4][lowerMip % 4];
 
 		// update texture (change to buffer later) for both upper and lower
 		if (upperMip != lowerMip)
 		{
-			uint upperIndex = VirtualPageBufferMipOffsets[upperMip / 4][upperMip % 4] + pageCoordUpper.x + pageCoordUpper.y * VirtualPageBufferMipSizes[upperMip / 4][upperMip % 4];
-			PageEntry upperEntry;
-			upperEntry.PackedAndMip = uvec2(packedData, upperMip);
-			upperEntry.Coordinates = uvec4(pageCoordUpper.x, pageCoordUpper.y, subTextureTileUpper.x, subTextureTileUpper.y);
+			uint mipOffsetUpper = VirtualPageBufferMipOffsets[upperMip / 4][upperMip % 4];
+			uint mipSizeUpper = VirtualPageBufferMipSizes[upperMip / 4][upperMip % 4];
+
+			uint upperIndex = mipOffsetUpper + pageCoordUpper.x + pageCoordUpper.y * mipSizeUpper;
+			uvec4 upperEntry = PackPageDataEntry(1u, subTextureIndex, upperMip, pageCoordUpper.x, pageCoordUpper.y, subTextureTileUpper.x, subTextureTileUpper.y);
 			PageEntries[upperIndex] = upperEntry;
 
-			uint lowerIndex = VirtualPageBufferMipOffsets[lowerMip / 4][lowerMip % 4] + pageCoordLower.x + pageCoordLower.y * VirtualPageBufferMipSizes[lowerMip / 4][lowerMip % 4];
-			PageEntry lowerEntry;
-			lowerEntry.PackedAndMip = uvec2(packedData, lowerMip);
-			lowerEntry.Coordinates = uvec4(pageCoordLower.x, pageCoordLower.y, subTextureTileLower.x, subTextureTileLower.y);
+			uint lowerIndex = mipOffsetLower + pageCoordLower.x + pageCoordLower.y * mipSizeLower;
+			uvec4 lowerEntry = PackPageDataEntry(1u, subTextureIndex, lowerMip, pageCoordLower.x, pageCoordLower.y, subTextureTileLower.x, subTextureTileLower.y);
 			PageEntries[lowerIndex] = lowerEntry;
 			//imageStore(PageUpdateTexture, ivec3(pageCoordUpper, upperMip), vec4(packedData, subTextureTileUpper.x, subTextureTileUpper.y, 0));
 			//imageStore(PageUpdateTexture, ivec3(pageCoordLower, lowerMip), vec4(packedData, subTextureTileLower.x, subTextureTileLower.y, 0));
 		}
 		else
 		{
-			uint lowerIndex = VirtualPageBufferMipOffsets[lowerMip / 4][lowerMip % 4] + pageCoordLower.x + pageCoordLower.y * VirtualPageBufferMipSizes[lowerMip / 4][lowerMip % 4];
-			PageEntry lowerEntry;
-			lowerEntry.PackedAndMip = uvec2(packedData, lowerMip);
-			lowerEntry.Coordinates = uvec4(pageCoordLower.x, pageCoordLower.y, subTextureTileLower.x, subTextureTileLower.y);
+			uint lowerIndex = mipOffsetLower + pageCoordLower.x + pageCoordLower.y * mipSizeLower;
+			uvec4 lowerEntry = PackPageDataEntry(1u, subTextureIndex, lowerMip, pageCoordLower.x, pageCoordLower.y, subTextureTileLower.x, subTextureTileLower.y);
 			PageEntries[lowerIndex] = lowerEntry;
 			//imageStore(PageUpdateTexture, ivec3(pageCoordLower, lowerMip), vec4(packedData, subTextureTileLower.x, subTextureTileLower.y, 0));
 		}
 
 		// if the position has w == 1, it means we found a page
-		//Pos.xy = vec2(subTextureTile) / float(subTexture.size >> upperMip);
 		Pos.z = lod;
 		Pos.w = 1.0f;
 	}
@@ -816,11 +831,13 @@ csExtractPageUpdateTexture()
 			uint entryIndex = atomicAdd(PageList.NumEntries, 1u);
 
 			// the pixel can be 1 if written to by the shader, or 2 if cleared in the clear pass
+			/*
 			PageUpdateEntry entry;
 			entry.indirection = uvec4(x, y, mip, resident.x);
 			entry.coord.x = resident.y;
 			entry.coord.y = resident.z;
 			PageList.Entry[entryIndex] = entry;
+			*/
 		}
 	}
 }
@@ -837,19 +854,15 @@ csExtractPageUpdateBuffer()
 	if (index >= VirtualPageBufferNumPages)
 		return;
 
-	PageEntry entry = PageEntries[index];
-	uint residency = entry.PackedAndMip.x & 0x3;
+	uvec4 entry = PageEntries[index];
+	uint residency = PageDataGetStatus(entry);
 	if (residency != 0)
 	{
 		// add one item to NumPageEntries, it's an atomic operation, so the index returned is the one we can use 
 		uint entryIndex = atomicAdd(PageList.NumEntries, 1u);
 
-		// the pixel can be 1 if written to by the shader, or 2 if cleared in the clear pass
-		PageUpdateEntry updateEntry;
-		updateEntry.indirection = uvec4(entry.Coordinates.x, entry.Coordinates.y, entry.PackedAndMip.y, entry.PackedAndMip.x);
-		updateEntry.coord.x = entry.Coordinates.z;
-		updateEntry.coord.y = entry.Coordinates.w;
-		PageList.Entry[entryIndex] = updateEntry;
+		// just copy the data over
+		PageList.Entry[entryIndex] = entry;
 	}
 }
 
@@ -864,6 +877,7 @@ csTerrainTileUpdate()
 {
 	// calculate 
 	vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
+	vec2 invWorldSize = 1.0f / worldSize;
 	vec2 worldPos2D = vec2(SparseTileWorldOffset + gl_GlobalInvocationID.xy * PixelsPerMeter) + worldSize * 0.5f;
 	vec2 inputUv = worldPos2D;
 	ivec2 outputUv = ivec2(SparseTileOutputOffset + gl_GlobalInvocationID.xy);
@@ -878,21 +892,21 @@ csTerrainTileUpdate()
 	}
 	*/
 
-	float heightValue = sample2DLod(HeightMap, TextureSampler, inputUv / worldSize, 0).r;
+	float heightValue = sample2DLod(HeightMap, TextureSampler, inputUv * invWorldSize, 0).r;
 	float height = MinHeight + heightValue * (MaxHeight - MinHeight);
 
 	vec3 worldPos = vec3(worldPos2D.x, height, worldPos2D.y);
 
 	// calculate normals by grabbing pixels around our UV
 	ivec3 offset = ivec3(1, 1, 0.0f);
-	float hl = MinHeight + sample2DLod(HeightMap, TextureSampler, (inputUv - offset.xz) / worldSize, 0).r * (MaxHeight - MinHeight);
-	float hr = MinHeight + sample2DLod(HeightMap, TextureSampler, (inputUv + offset.xz) / worldSize, 0).r * (MaxHeight - MinHeight);
-	float ht = MinHeight + sample2DLod(HeightMap, TextureSampler, (inputUv - offset.zy) / worldSize, 0).r * (MaxHeight - MinHeight);
-	float hb = MinHeight + sample2DLod(HeightMap, TextureSampler, (inputUv + offset.zy) / worldSize, 0).r * (MaxHeight - MinHeight);
+	float hl = sample2DLod(HeightMap, TextureSampler, (inputUv - offset.xz) * invWorldSize, 0).r;
+	float hr = sample2DLod(HeightMap, TextureSampler, (inputUv + offset.xz) * invWorldSize, 0).r;
+	float ht = sample2DLod(HeightMap, TextureSampler, (inputUv - offset.zy) * invWorldSize, 0).r;
+	float hb = sample2DLod(HeightMap, TextureSampler, (inputUv + offset.zy) * invWorldSize, 0).r;
 	vec3 normal = vec3(0, 0, 0);
-	normal.x = hl - hr;
+	normal.x = MinHeight + (hl - hr) * (MaxHeight - MinHeight);
 	normal.y = 2.0f;
-	normal.z = ht - hb;
+	normal.z = MinHeight + (ht - hb) * (MaxHeight - MinHeight);
 	normal = normalize(normal.xyz);
 
 	// setup the TBN
@@ -914,7 +928,7 @@ csTerrainTileUpdate()
 	for (uint i = 0; i < NumBiomes; i++)
 	{
 		// get biome data
-		float mask = sampleBiomeMaskLod(i, TextureSampler, inputUv / worldSize, 0).r;
+		float mask = sampleBiomeMaskLod(i, TextureSampler, inputUv * invWorldSize, 0).r;
 		vec4 rules = BiomeRules[i];
 
 		// calculate rules
@@ -990,7 +1004,6 @@ csTerrainTileUpdate()
 		//totalAlbedo.r = heightCutoff;
 		//totalAlbedo.gb = vec2(0);
 	}
-
 
 	// write output to virtual textures
 	imageStore(VirtualAlbedoOutput, outputUv, vec4(totalAlbedo, 1.0f));
@@ -1071,17 +1084,17 @@ psScreenSpaceVirtual(
 			if (upperMip != lowerMip)
 			{
 				// get the indirection coord and normalize it to the physical space
-				vec3 indirectionUpper = UnpackIndirection(floatBitsToUint(fetch2D(IndirectionBuffer, TextureSampler, ivec2(pageCoordUpper), upperMip).x));
+				vec3 indirectionUpper = UnpackIndirection(floatBitsToUint(fetch2D(IndirectionBuffer, PointSampler, ivec2(pageCoordUpper), upperMip).x));
 				indirectionUpper.xy = (indirectionUpper.xy + physicalUvUpper) / vec2(VirtualTerrainPhysicalTextureSize);
-				vec3 indirectionLower = UnpackIndirection(floatBitsToUint(fetch2D(IndirectionBuffer, TextureSampler, ivec2(pageCoordLower), lowerMip).x));
+				vec3 indirectionLower = UnpackIndirection(floatBitsToUint(fetch2D(IndirectionBuffer, PointSampler, ivec2(pageCoordLower), lowerMip).x));
 				indirectionLower.xy = (indirectionLower.xy + physicalUvLower) / vec2(VirtualTerrainPhysicalTextureSize);
 
-				vec4 albedo0 = sample2DLod(AlbedoPhysicalCacheBuffer, TextureSampler, indirectionUpper.xy, 0);
-				vec4 normal0 = sample2DLod(NormalPhysicalCacheBuffer, TextureSampler, indirectionUpper.xy, 0);
-				vec4 material0 = sample2DLod(MaterialPhysicalCacheBuffer, TextureSampler, indirectionUpper.xy, 0);
-				vec4 albedo1 = sample2DLod(AlbedoPhysicalCacheBuffer, TextureSampler, indirectionLower.xy, 0);
-				vec4 normal1 = sample2DLod(NormalPhysicalCacheBuffer, TextureSampler, indirectionLower.xy, 0);
-				vec4 material1 = sample2DLod(MaterialPhysicalCacheBuffer, TextureSampler, indirectionLower.xy, 0);
+				vec4 albedo0 = sample2DLod(AlbedoPhysicalCacheBuffer, PointSampler, indirectionUpper.xy, 0);
+				vec4 normal0 = sample2DLod(NormalPhysicalCacheBuffer, PointSampler, indirectionUpper.xy, 0);
+				vec4 material0 = sample2DLod(MaterialPhysicalCacheBuffer, PointSampler, indirectionUpper.xy, 0);
+				vec4 albedo1 = sample2DLod(AlbedoPhysicalCacheBuffer, PointSampler, indirectionLower.xy, 0);
+				vec4 normal1 = sample2DLod(NormalPhysicalCacheBuffer, PointSampler, indirectionLower.xy, 0);
+				vec4 material1 = sample2DLod(MaterialPhysicalCacheBuffer, PointSampler, indirectionLower.xy, 0);
 				float weight = fract(pos.z);
 				Albedo = lerp(albedo1, albedo0, weight);
 				Normal = lerp(normal1, normal0, weight).xyz;
@@ -1091,11 +1104,11 @@ psScreenSpaceVirtual(
 			}
 			else
 			{
-				vec3 indirection = UnpackIndirection(floatBitsToUint(fetch2D(IndirectionBuffer, TextureSampler, ivec2(pageCoordLower), lowerMip).x));
+				vec3 indirection = UnpackIndirection(floatBitsToUint(fetch2D(IndirectionBuffer, PointSampler, ivec2(pageCoordLower), lowerMip).x));
 				indirection.xy = (indirection.xy + physicalUvLower) / vec2(VirtualTerrainPhysicalTextureSize);
-				Albedo = sample2DLod(AlbedoPhysicalCacheBuffer, TextureSampler, indirection.xy, 0);
-				Normal = sample2DLod(NormalPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).xyz;
-				Material = sample2DLod(MaterialPhysicalCacheBuffer, TextureSampler, indirection.xy, 0);
+				Albedo = sample2DLod(AlbedoPhysicalCacheBuffer, PointSampler, indirection.xy, 0);
+				Normal = sample2DLod(NormalPhysicalCacheBuffer, PointSampler, indirection.xy, 0).xyz;
+				Material = sample2DLod(MaterialPhysicalCacheBuffer, PointSampler, indirection.xy, 0);
 
 				//Albedo.rg = (indirection.xy + physicalUv) / vec2(VirtualTerrainPhysicalTextureSize);
 
