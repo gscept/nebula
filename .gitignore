@@ -10,6 +10,7 @@ fips-generators/*.pyc
 /fips-files/generators/**/*.pyc
 export_win32/*
 export_linux/*
+export/*
 /code/render/coregraphics/attic
 /code/render/coregraphics/vk/attic
 /code/foundation/jobs/attic
