@@ -87,6 +87,8 @@ public:
 	uint64 GetTimelineIndex(CoreGraphics::QueueType type);
 	/// wait for timeline index
 	void Wait(CoreGraphics::QueueType type, uint64 index);
+	/// check to see if timeline index has passed
+	bool Poll(CoreGraphics::QueueType type, uint64 index);
 
 	/// flush sparse binds
 	void FlushSparseBinds(VkFence fence);

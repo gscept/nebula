@@ -2006,6 +2006,21 @@ BeginFrame(IndexT frameIndex)
 			state.subcontextHandler.Wait(ComputeQueueType, SubmissionContextGetTimelineIndex(state.computeSubmission));
 		});
 
+	CoreGraphics::SubmissionContextPoll(state.setupSubmissionContext, [](uint64 index) -> bool
+		{
+			return state.subcontextHandler.Poll(GraphicsQueueType, index);
+		});
+
+	CoreGraphics::SubmissionContextPoll(state.handoverSubmissionContext, [](uint64 index) -> bool
+		{
+			return state.subcontextHandler.Poll(GraphicsQueueType, index);
+		});
+
+	CoreGraphics::SubmissionContextPoll(state.resourceSubmissionContext, [](uint64 index) -> bool
+		{
+			return state.subcontextHandler.Poll(TransferQueueType, index);
+		});
+
 	N_MARKER_END();
 
 	_ProcessQueriesBeginFrame();
@@ -2127,7 +2142,7 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
 	if (waitQueue != InvalidQueueType)
 	{
 		Util::String fmt = Util::String::Sprintf(
-			"Submit #%d, wait for %s queue, submit #%d",
+			"Submit #%d, wait for %s queue: submit #%d",
 			state.subcontextHandler.GetTimelineIndex(queue) + 1,
 			names[waitQueue],
 			state.subcontextHandler.GetTimelineIndex(waitQueue));
