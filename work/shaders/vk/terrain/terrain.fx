@@ -33,6 +33,10 @@ group(SYSTEM_GROUP) constant TerrainSystemUniforms [ string Visibility = "VS|HS|
 	textureHandle AlbedoPhysicalCacheBuffer;
 	textureHandle NormalPhysicalCacheBuffer;
 	textureHandle MaterialPhysicalCacheBuffer;
+	textureHandle AlbedoLowresBuffer; 
+	textureHandle NormalLowresBuffer;
+	textureHandle MaterialLowresBuffer;
+
 
 	vec4 BiomeRules[MAX_BIOMES];					// rules are x: slope, y: height, z: UV scaling factor, w: mip 
 };
@@ -54,14 +58,14 @@ group(BATCH_GROUP) constant TerrainRuntimeUniforms [ string Visibility = "VS|HS|
 
 	uvec2 VirtualTerrainSubTextureSize;
 	uvec2 VirtualTerrainNumSubTextures;
-	uvec2 VirtualTerrainPhysicalTextureSize;
-	uvec2 VirtualTerrainPhysicalTileSize;
+	float PhysicalInvPaddedTextureSize;
+	uint PhysicalTileSize;
+	uint PhysicalTilePadding;
 
 	uvec4 VirtualTerrainTextureSize;
 	uvec2 VirtualTerrainPageSize;
 	uvec2 VirtualTerrainNumPages;
 	uint VirtualTerrainNumMips;
-	uint PageReadbackBufferSize;
 
 	textureHandle HeightMap;
 	textureHandle DecisionMap;
@@ -89,9 +93,10 @@ group(DYNAMIC_OFFSET_GROUP) constant TerrainTileUpdateUniforms [ string Visbilit
 group(SYSTEM_GROUP) write r11g11b10f image2D VirtualAlbedoOutput [ string Visbility = "CS"; ];
 group(SYSTEM_GROUP) write r11g11b10f image2D VirtualNormalOutput [ string Visbility = "CS"; ];
 group(SYSTEM_GROUP) write rgba16f image2D VirtualMaterialOutput [ string Visbility = "CS"; ];
-group(SYSTEM_GROUP) write r11g11b10f image2D LowresAlbedoOutput[12];
-group(SYSTEM_GROUP) write r11g11b10f image2D LowresNormalOutput[12];
-group(SYSTEM_GROUP) write rgba16f image2D LowresMaterialOutput[12];
+group(SYSTEM_GROUP) write r32f image2D IndirectionTextureOutput[12]  [ string Visbility = "CS"; ];
+group(SYSTEM_GROUP) write r11g11b10f image2D LowresAlbedoOutput;
+group(SYSTEM_GROUP) write r11g11b10f image2D LowresNormalOutput;
+group(SYSTEM_GROUP) write rgba16f image2D LowresMaterialOutput;
 
 group(SYSTEM_GROUP) readwrite rgba32f	image2DArray PageUpdateTexture [ string Visbility = "CS|PS"; ];
 
@@ -617,44 +622,6 @@ psTerrain(
 
 //------------------------------------------------------------------------------
 /**
-*/
-[local_size_x] = 8
-[local_size_y] = 8
-[local_size_z] = 1
-shader
-void
-csTerrainPageClearUpdateTexture()
-{
-	uint mip = gl_GlobalInvocationID.z;
-	uint x = gl_GlobalInvocationID.x;
-	uint y = gl_GlobalInvocationID.y;
-	if ((gl_GlobalInvocationID.x < (VirtualTerrainNumPages.x >> mip)) &&
-		(gl_GlobalInvocationID.y < (VirtualTerrainNumPages.y >> mip)))
-	{
-		ivec3 coord = ivec3(x, y, mip);
-		
-		// read result from last frame
-		uvec4 resident = uvec4(imageLoad(PageUpdateTexture, coord));
-		uint status = resident.x & 0x3;
-
-		// if the page was resident last frame, clear to 2.0f
-		// this means that if the pixel shader does not write to this pixel
-		// then we can find which pages to free up next frame
-		if (status == 1)
-			imageStore(PageUpdateTexture, coord, vec4(2.0f, 0, 0, 0));
-		else
-			imageStore(PageUpdateTexture, coord, vec4(0.0f, 0, 0, 0));
-	}
-
-	// clear page entries
-	if (gl_GlobalInvocationID.x == 0 && gl_GlobalInvocationID.y == 0 && gl_GlobalInvocationID.z == 0)
-	{
-		PageList.NumEntries = 0u;
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
 	Pack data entry 
 */
 uvec4
@@ -707,7 +674,7 @@ csTerrainPageClearUpdateBuffer()
 	uint status = PageDataGetStatus(entry);
 	if (status == 1u)
 		PageEntries[index] = PageDataSetStatus(2u, entry);
-	else
+	else if (status == 2u)
 		PageEntries[index] = PageDataSetStatus(0u, entry);
 
 	// clear page entries
@@ -767,11 +734,6 @@ psTerrainPrepass(
 		uvec2 subTextureTileLower = uvec2(tileCoordLower);
 		uvec2 pageCoordLower = (subTexture.indirectionOffset >> lowerMip) + subTextureTileLower;
 
-		/*
-		uint packedData = 1;
-		packedData |= subTextureIndex << 2; // we will use the first 2 bits to control the update state of the pixel
-		*/
-
 		uint mipOffsetLower = VirtualPageBufferMipOffsets[lowerMip / 4][lowerMip % 4];
 		uint mipSizeLower = VirtualPageBufferMipSizes[lowerMip / 4][lowerMip % 4];
 
@@ -788,57 +750,17 @@ psTerrainPrepass(
 			uint lowerIndex = mipOffsetLower + pageCoordLower.x + pageCoordLower.y * mipSizeLower;
 			uvec4 lowerEntry = PackPageDataEntry(1u, subTextureIndex, lowerMip, pageCoordLower.x, pageCoordLower.y, subTextureTileLower.x, subTextureTileLower.y);
 			PageEntries[lowerIndex] = lowerEntry;
-			//imageStore(PageUpdateTexture, ivec3(pageCoordUpper, upperMip), vec4(packedData, subTextureTileUpper.x, subTextureTileUpper.y, 0));
-			//imageStore(PageUpdateTexture, ivec3(pageCoordLower, lowerMip), vec4(packedData, subTextureTileLower.x, subTextureTileLower.y, 0));
 		}
 		else
 		{
 			uint lowerIndex = mipOffsetLower + pageCoordLower.x + pageCoordLower.y * mipSizeLower;
 			uvec4 lowerEntry = PackPageDataEntry(1u, subTextureIndex, lowerMip, pageCoordLower.x, pageCoordLower.y, subTextureTileLower.x, subTextureTileLower.y);
 			PageEntries[lowerIndex] = lowerEntry;
-			//imageStore(PageUpdateTexture, ivec3(pageCoordLower, lowerMip), vec4(packedData, subTextureTileLower.x, subTextureTileLower.y, 0));
 		}
 
 		// if the position has w == 1, it means we found a page
 		Pos.z = lod;
 		Pos.w = 1.0f;
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-[local_size_x] = 8
-[local_size_y] = 8
-[local_size_z] = 1
-shader
-void
-csExtractPageUpdateTexture()
-{
-	uint mip = gl_GlobalInvocationID.z;
-	uint x = gl_GlobalInvocationID.x;
-	uint y = gl_GlobalInvocationID.y;
-	if ((gl_GlobalInvocationID.x < (VirtualTerrainNumPages.x >> mip)) &&
-		(gl_GlobalInvocationID.y < (VirtualTerrainNumPages.y >> mip)))
-	{
-		// if there is a difference between the buffers, 
-		vec4 resident = imageLoad(PageUpdateTexture, ivec3(x, y, mip));
-		uint residency = uint(resident.x) & 0x3;
-
-		if (residency != 0)
-		{
-			// add one item to NumPageEntries, it's an atomic operation, so the index returned is the one we can use 
-			uint entryIndex = atomicAdd(PageList.NumEntries, 1u);
-
-			// the pixel can be 1 if written to by the shader, or 2 if cleared in the clear pass
-			/*
-			PageUpdateEntry entry;
-			entry.indirection = uvec4(x, y, mip, resident.x);
-			entry.coord.x = resident.y;
-			entry.coord.y = resident.z;
-			PageList.Entry[entryIndex] = entry;
-			*/
-		}
 	}
 }
 
@@ -869,6 +791,36 @@ csExtractPageUpdateBuffer()
 //------------------------------------------------------------------------------
 /**
 */
+float
+PackIndirection(uint mip, uint physicalOffsetX, uint physicalOffsetY)
+{
+	uint res = (mip & 0xF) | ((physicalOffsetX & 0x3FFF) << 4) | ((physicalOffsetY & 0x3FFF) << 18);
+	return uintBitsToFloat(res);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3
+UnpackIndirection(uint indirection)
+{
+	vec3 ret;
+
+	/* IndirectionEntry is formatted as such:
+		uint mip : 4;
+		uint physicalOffsetX : 14;
+		uint physicalOffsetY : 14;
+	*/
+
+	ret.z = indirection & 0xF;
+	ret.x = (indirection >> 4) & 0x3FFF;
+	ret.y = (indirection >> 18) & 0x3FFF;
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 [local_size_x] = 8
 [local_size_y] = 8
 shader
@@ -883,14 +835,13 @@ csTerrainTileUpdate()
 	ivec2 outputUv = ivec2(SparseTileOutputOffset + gl_GlobalInvocationID.xy);
 
 	// update redirect texture if we are on the first thread
-	/*
 	if (gl_GlobalInvocationID.x == 0 &&
 		gl_GlobalInvocationID.y == 0)
 	{
 		// output indirection pixels if it's first pixel in the tile
-		imageStore(IndirectionTextureOutput[Mip], ivec2(SparseTileIndirectionOffset), vec4(SparseTileOutputOffset.x, SparseTileOutputOffset.y, 0, 0));
+		float indirection = PackIndirection(Mip, SparseTileOutputOffset.x, SparseTileOutputOffset.y);
+		imageStore(IndirectionTextureOutput[Mip], ivec2(SparseTileIndirectionOffset), vec4(indirection, 0, 0, 0));
 	}
-	*/
 
 	float heightValue = sample2DLod(HeightMap, TextureSampler, inputUv * invWorldSize, 0).r;
 	float height = MinHeight + heightValue * (MaxHeight - MinHeight);
@@ -898,14 +849,14 @@ csTerrainTileUpdate()
 	vec3 worldPos = vec3(worldPos2D.x, height, worldPos2D.y);
 
 	// calculate normals by grabbing pixels around our UV
-	ivec3 offset = ivec3(1, 1, 0.0f);
+	ivec3 offset = ivec3(2, 2, 0.0f);
 	float hl = sample2DLod(HeightMap, TextureSampler, (inputUv - offset.xz) * invWorldSize, 0).r;
 	float hr = sample2DLod(HeightMap, TextureSampler, (inputUv + offset.xz) * invWorldSize, 0).r;
 	float ht = sample2DLod(HeightMap, TextureSampler, (inputUv - offset.zy) * invWorldSize, 0).r;
 	float hb = sample2DLod(HeightMap, TextureSampler, (inputUv + offset.zy) * invWorldSize, 0).r;
 	vec3 normal = vec3(0, 0, 0);
 	normal.x = MinHeight + (hl - hr) * (MaxHeight - MinHeight);
-	normal.y = 2.0f;
+	normal.y = 4.0f;
 	normal.z = MinHeight + (ht - hb) * (MaxHeight - MinHeight);
 	normal = normalize(normal.xyz);
 
@@ -917,7 +868,7 @@ csTerrainTileUpdate()
 
 	// calculate weights for triplanar mapping
 	vec3 triplanarWeights = abs(normal.xyz);
-	triplanarWeights = normalize(max(triplanarWeights * triplanarWeights, 0.00001f));
+	triplanarWeights = normalize(max(triplanarWeights * triplanarWeights, 0.001f));
 	float norm = (triplanarWeights.x + triplanarWeights.y + triplanarWeights.z);
 	triplanarWeights /= vec3(norm, norm, norm);
 
@@ -1013,27 +964,7 @@ csTerrainTileUpdate()
 
 //------------------------------------------------------------------------------
 /**
-*/
-vec3
-UnpackIndirection(uint indirection)
-{
-	vec3 ret;
-
-	/* IndirectionEntry is formatted as such:
-		uint mip : 4;
-		uint physicalOffsetX : 14;
-		uint physicalOffsetY : 14;
-	*/
-
-	ret.z = indirection & 0xF;
-	ret.x = (indirection >> 4) & 0x3FFF;
-	ret.y = (indirection >> 18) & 0x3FFF;
-	return ret;
-}
-
-//------------------------------------------------------------------------------
-/**
-	Calculate pixel light contribution
+	Calculate pixel GBuffer data
 */
 shader
 void
@@ -1052,6 +983,7 @@ psScreenSpaceVirtual(
 	vec2 worldPos = pos.xy;
 	ivec2 worldSize = ivec2(WorldSizeX, WorldSizeZ);
 	uvec2 subTextureCoord = uvec2(worldPos + worldSize * 0.5f) / VirtualTerrainSubTextureSize;
+	vec2 worldUv = (worldPos + worldSize * 0.5f) / worldSize;
 
 	// get subtexture
 	uint subTextureIndex = subTextureCoord.x + subTextureCoord.y * VirtualTerrainNumSubTextures.x;
@@ -1062,77 +994,113 @@ psScreenSpaceVirtual(
 		int lowerMip = int(floor(pos.z));
 		int upperMip = int(ceil(pos.z));
 
-		vec2 metersPerTileUpper = VirtualTerrainSubTextureSize / float(max(1, subTexture.size >> upperMip));
-		vec2 tileCoordUpper = (worldPos - subTexture.worldCoordinate) / metersPerTileUpper;
-		uvec2 subTextureTileUpper = uvec2(tileCoordUpper);
-		uvec2 pageCoordUpper = (subTexture.indirectionOffset >> upperMip) + subTextureTileUpper;
-		vec2 physicalUvUpper = fract(tileCoordUpper) * 256.0f;
-
+		// calculate lower mip here, and upper mip conditionally
+		// pageCoord represents the beginning of the page
+		// physicalUv represents the pixel offset for this pixel into that page
 		vec2 metersPerTileLower = VirtualTerrainSubTextureSize / float(max(1, subTexture.size >> lowerMip));
 		vec2 tileCoordLower = (worldPos - subTexture.worldCoordinate) / metersPerTileLower;
 		uvec2 subTextureTileLower = uvec2(tileCoordLower);
 		uvec2 pageCoordLower = (subTexture.indirectionOffset >> lowerMip) + subTextureTileLower;
-		vec2 physicalUvLower = fract(tileCoordLower) * 256.0f;
+		vec2 physicalUvLower = fract(tileCoordLower) * PhysicalTileSize + max(1, PhysicalTilePadding >> lowerMip);
 
-		if (pos.w == 2.0f)
-			discard;
-		else if (pos.w == 1.0f)
+		if (pos.w == 1.0f)
 		{
 			vec2 uv = pos.xy;
 
 			// if we need to sample two lods, do bilinear interpolation ourselves
 			if (upperMip != lowerMip)
 			{
+				vec2 metersPerTileUpper = VirtualTerrainSubTextureSize / float(max(1, subTexture.size >> upperMip));
+				vec2 tileCoordUpper = (worldPos - subTexture.worldCoordinate) / metersPerTileUpper;
+				uvec2 subTextureTileUpper = uvec2(tileCoordUpper);
+				uvec2 pageCoordUpper = (subTexture.indirectionOffset >> upperMip) + subTextureTileUpper;
+				vec2 physicalUvUpper = fract(tileCoordUpper) * PhysicalTileSize + max(1, PhysicalTilePadding >> upperMip);
+
 				// get the indirection coord and normalize it to the physical space
 				vec3 indirectionUpper = UnpackIndirection(floatBitsToUint(fetch2D(IndirectionBuffer, PointSampler, ivec2(pageCoordUpper), upperMip).x));
-				indirectionUpper.xy = (indirectionUpper.xy + physicalUvUpper) / vec2(VirtualTerrainPhysicalTextureSize);
 				vec3 indirectionLower = UnpackIndirection(floatBitsToUint(fetch2D(IndirectionBuffer, PointSampler, ivec2(pageCoordLower), lowerMip).x));
-				indirectionLower.xy = (indirectionLower.xy + physicalUvLower) / vec2(VirtualTerrainPhysicalTextureSize);
 
-				vec4 albedo0 = sample2DLod(AlbedoPhysicalCacheBuffer, PointSampler, indirectionUpper.xy, 0);
-				vec4 normal0 = sample2DLod(NormalPhysicalCacheBuffer, PointSampler, indirectionUpper.xy, 0);
-				vec4 material0 = sample2DLod(MaterialPhysicalCacheBuffer, PointSampler, indirectionUpper.xy, 0);
-				vec4 albedo1 = sample2DLod(AlbedoPhysicalCacheBuffer, PointSampler, indirectionLower.xy, 0);
-				vec4 normal1 = sample2DLod(NormalPhysicalCacheBuffer, PointSampler, indirectionLower.xy, 0);
-				vec4 material1 = sample2DLod(MaterialPhysicalCacheBuffer, PointSampler, indirectionLower.xy, 0);
+				vec4 albedo0;
+				vec4 normal0;
+				vec4 material0;
+				vec4 albedo1;
+				vec4 normal1;
+				vec4 material1;
+
+				// if valid mip, sample from physical cache
+				if (indirectionUpper.z != 0xF)
+				{
+					indirectionUpper.xy = (indirectionUpper.xy + physicalUvUpper) * vec2(PhysicalInvPaddedTextureSize);
+					albedo0 = sample2DLod(AlbedoPhysicalCacheBuffer, TextureSampler, indirectionUpper.xy, 0);
+					normal0 = sample2DLod(NormalPhysicalCacheBuffer, TextureSampler, indirectionUpper.xy, 0);
+					material0 = sample2DLod(MaterialPhysicalCacheBuffer, TextureSampler, indirectionUpper.xy, 0);
+				}
+				else
+				{
+					// otherwise, pick fallback texture
+					albedo0 = sample2D(AlbedoLowresBuffer, TextureSampler, worldUv);
+					normal0 = sample2D(NormalLowresBuffer, TextureSampler, worldUv);
+					material0 = sample2D(MaterialLowresBuffer, TextureSampler, worldUv);
+				}
+
+				// same here
+				if (indirectionLower.z != 0xF)
+				{
+					indirectionLower.xy = (indirectionLower.xy + physicalUvLower) * vec2(PhysicalInvPaddedTextureSize);
+					albedo1 = sample2DLod(AlbedoPhysicalCacheBuffer, TextureSampler, indirectionLower.xy, 0);
+					normal1 = sample2DLod(NormalPhysicalCacheBuffer, TextureSampler, indirectionLower.xy, 0);
+					material1 = sample2DLod(MaterialPhysicalCacheBuffer, TextureSampler, indirectionLower.xy, 0);
+				}
+				else
+				{
+					albedo1 = sample2D(AlbedoLowresBuffer, TextureSampler, worldUv);
+					normal1 = sample2D(NormalLowresBuffer, TextureSampler, worldUv);
+					material1 = sample2D(MaterialLowresBuffer, TextureSampler, worldUv);
+				}
+
 				float weight = fract(pos.z);
 				Albedo = lerp(albedo1, albedo0, weight);
 				Normal = lerp(normal1, normal0, weight).xyz;
 				Material = lerp(material1, material0, weight);
-
-				//Albedo.rg = lerp(indirectionUpper, indirectionLower, weight);
 			}
 			else
 			{
+				// do the cheap path and just do a single lookup
 				vec3 indirection = UnpackIndirection(floatBitsToUint(fetch2D(IndirectionBuffer, PointSampler, ivec2(pageCoordLower), lowerMip).x));
-				indirection.xy = (indirection.xy + physicalUvLower) / vec2(VirtualTerrainPhysicalTextureSize);
-				Albedo = sample2DLod(AlbedoPhysicalCacheBuffer, PointSampler, indirection.xy, 0);
-				Normal = sample2DLod(NormalPhysicalCacheBuffer, PointSampler, indirection.xy, 0).xyz;
-				Material = sample2DLod(MaterialPhysicalCacheBuffer, PointSampler, indirection.xy, 0);
 
-				//Albedo.rg = (indirection.xy + physicalUv) / vec2(VirtualTerrainPhysicalTextureSize);
-
+				// use physical cache if indirection is valid
+				if (indirection.z != 0xF)
+				{
+					indirection.xy = (indirection.xy + physicalUvLower) * vec2(PhysicalInvPaddedTextureSize);
+					Albedo = sample2DLod(AlbedoPhysicalCacheBuffer, TextureSampler, indirection.xy, 0);
+					Normal = sample2DLod(NormalPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).xyz;
+					Material = sample2DLod(MaterialPhysicalCacheBuffer, TextureSampler, indirection.xy, 0);
+				}
+				else
+				{
+					// otherwise, pick fallback texture
+					Albedo = sample2D(AlbedoLowresBuffer, TextureSampler, worldUv);
+					Albedo.a = 1.0f;
+					Normal = sample2D(NormalLowresBuffer, TextureSampler, worldUv).xyz;
+					Material = sample2D(MaterialLowresBuffer, TextureSampler, worldUv);
+				}
 			}
 		}
 		else
 		{
-			Albedo = vec4(0, 0, 0, 0);
-			Normal = vec3(0, 0, 0);
-			Material = vec4(0, 0, 0, 0);
+			Albedo = sample2D(AlbedoLowresBuffer, TextureSampler, worldUv);
+			Albedo.a = 1.0f;
+			Normal = sample2D(NormalLowresBuffer, TextureSampler, worldUv).xyz;
+			Material = sample2D(MaterialLowresBuffer, TextureSampler, worldUv);
 		}
-		//Albedo.rg = physicalUv / 256.0f;
-		//Albedo.b = 0.0f;
-		//Albedo.rg = vec2(0.0f);
-		//Albedo.b = pos.z / VirtualTerrainNumMips;
 	}
 	else
 	{
-		Albedo = vec4(0, 0, 0, 0);
-		Normal = vec3(0, 0, 0);
-		Material = vec4(0, 0, 0, 0);
+		Albedo = sample2D(AlbedoLowresBuffer, TextureSampler, worldUv);
+		Albedo.a = 1.0f;
+		Normal = sample2D(NormalLowresBuffer, TextureSampler, worldUv).xyz;
+		Material = sample2D(MaterialLowresBuffer, TextureSampler, worldUv);
 	}
-
-	//Albedo.b = 0.0f;
 }
 
 //------------------------------------------------------------------------------
@@ -1146,25 +1114,26 @@ void
 csGenerateLowresFallback()
 {
 	// calculate 
-	vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
-	vec2 worldPos2D = vec2(gl_GlobalInvocationID.xy);
-	vec2 inputUv = worldPos2D;
+	vec2 textureSize = vec2(imageSize(LowresAlbedoOutput));
+	vec2 pixel = vec2(gl_GlobalInvocationID.xy);
+	vec2 uv = pixel / textureSize;
+	vec2 pixelToWorldScale = vec2(WorldSizeX, WorldSizeZ) / textureSize;
 	ivec2 outputUv = ivec2(gl_GlobalInvocationID.xy);
 
-	float heightValue = sample2DLod(HeightMap, TextureSampler, inputUv / worldSize, 0).r;
+	float heightValue = sample2DLod(HeightMap, TextureSampler, uv, 0).r;
 	float height = MinHeight + heightValue * (MaxHeight - MinHeight);
 
-	vec3 worldPos = vec3(worldPos2D.x, height, worldPos2D.y);
+	vec3 worldPos = vec3(pixel.x * pixelToWorldScale.x, height, pixel.y * pixelToWorldScale.y);
 
 	// calculate normals by grabbing pixels around our UV
-	ivec3 offset = ivec3(1, 1, 0.0f);
-	float hl = MinHeight + sample2DLod(HeightMap, TextureSampler, (inputUv - offset.xz) / worldSize, 0).r * (MaxHeight - MinHeight);
-	float hr = MinHeight + sample2DLod(HeightMap, TextureSampler, (inputUv + offset.xz) / worldSize, 0).r * (MaxHeight - MinHeight);
-	float ht = MinHeight + sample2DLod(HeightMap, TextureSampler, (inputUv - offset.zy) / worldSize, 0).r * (MaxHeight - MinHeight);
-	float hb = MinHeight + sample2DLod(HeightMap, TextureSampler, (inputUv + offset.zy) / worldSize, 0).r * (MaxHeight - MinHeight);
+	ivec3 offset = ivec3(2, 2, 0.0f);
+	float hl = MinHeight + sample2DLod(HeightMap, TextureSampler, (pixel - offset.xz) / textureSize, 0).r * (MaxHeight - MinHeight);
+	float hr = MinHeight + sample2DLod(HeightMap, TextureSampler, (pixel + offset.xz) / textureSize, 0).r * (MaxHeight - MinHeight);
+	float ht = MinHeight + sample2DLod(HeightMap, TextureSampler, (pixel - offset.zy) / textureSize, 0).r * (MaxHeight - MinHeight);
+	float hb = MinHeight + sample2DLod(HeightMap, TextureSampler, (pixel + offset.zy) / textureSize, 0).r * (MaxHeight - MinHeight);
 	vec3 normal = vec3(0, 0, 0);
 	normal.x = hl - hr;
-	normal.y = 2.0f;
+	normal.y = 4.0f;
 	normal.z = ht - hb;
 	normal = normalize(normal.xyz);
 
@@ -1176,7 +1145,7 @@ csGenerateLowresFallback()
 
 	// calculate weights for triplanar mapping
 	vec3 triplanarWeights = abs(normal.xyz);
-	triplanarWeights = normalize(max(triplanarWeights * triplanarWeights, 0.00001f));
+	triplanarWeights = normalize(max(triplanarWeights * triplanarWeights, 0.001f));
 	float norm = (triplanarWeights.x + triplanarWeights.y + triplanarWeights.z);
 	triplanarWeights /= vec3(norm, norm, norm);
 
@@ -1187,14 +1156,14 @@ csGenerateLowresFallback()
 	for (uint i = 0; i < NumBiomes; i++)
 	{
 		// get biome data
-		float mask = sampleBiomeMaskLod(i, TextureSampler, inputUv / worldSize, 0).r;
+		float mask = sampleBiomeMaskLod(i, TextureSampler, uv, 0).r;
 		vec4 rules = BiomeRules[i];
 
 		// calculate rules
 		float angle = saturate((1.0f - dot(normal, vec3(0, 1, 0))) / 0.5f);
 		float heightCutoff = saturate(max(0, height - rules.y) / 25.0f);
 
-		const vec2 tilingFactor = vec2(4.0f);
+		const vec2 tilingFactor = vec2(32.0f);
 
 		if (mask > 0.0f)
 		{
@@ -1262,9 +1231,9 @@ csGenerateLowresFallback()
 	}
 
 	// write output to virtual textures
-	imageStore(LowresAlbedoOutput[Mip], outputUv, vec4(totalAlbedo, 1.0f));
-	imageStore(LowresNormalOutput[Mip], outputUv, vec4(totalNormal, 0.0f));
-	imageStore(LowresMaterialOutput[Mip], outputUv, vec4(totalMaterial, 0.0f));
+	imageStore(LowresAlbedoOutput, outputUv, vec4(totalAlbedo, 1.0f));
+	imageStore(LowresNormalOutput, outputUv, vec4(totalNormal, 0.0f));
+	imageStore(LowresMaterialOutput, outputUv, vec4(totalMaterial, 0.0f));
 }
 
 //------------------------------------------------------------------------------
@@ -1302,16 +1271,6 @@ SimpleTechnique(TerrainVirtualScreenSpace, "TerrainVirtualScreenSpace", vsScreen
 program TerrainTileSplatting [ string Mask = "TerrainTileSplatting"; ]
 {
 	ComputeShader = csTerrainTileUpdate();
-};
-
-program TerrainPageClearUpdateTexture [ string Mask = "TerrainPageClearUpdateTexture"; ]
-{
-	ComputeShader = csTerrainPageClearUpdateTexture();
-};
-
-program TerrainExtractPageTexture [ string Mask = "TerrainExtractPageTexture"; ]
-{
-	ComputeShader = csExtractPageUpdateTexture();
 };
 
 program TerrainPageClearUpdateBuffer [ string Mask = "TerrainPageClearUpdateBuffer"; ]

@@ -26,7 +26,7 @@ public:
     /// allocate a region, return region
     Math::uint2 Allocate(uint size);
     /// deallocate region
-    void Deallocate(const Math::uint2 coord, uint size);
+    bool Deallocate(const Math::uint2 coord, uint size);
     /// check if region is alloced
     bool IsOccupied(const Math::uint2 coord, uint size);
 
@@ -256,7 +256,7 @@ OccupancyQuadTree::RecursiveDeallocate(Node* node, Math::uint2 coord, uint size)
 //------------------------------------------------------------------------------
 /**
 */
-inline void 
+inline bool 
 OccupancyQuadTree::Deallocate(const Math::uint2 coord, uint size)
 {
     // find root node where the coord belongs
@@ -266,9 +266,10 @@ OccupancyQuadTree::Deallocate(const Math::uint2 coord, uint size)
         {
             Node& node = this->topLevelNodes[x][y];
             if (RecursiveDeallocate(&node, coord, size))
-                return;
+                return true;
         }
     }
+    return false;
 }
 
 //------------------------------------------------------------------------------
