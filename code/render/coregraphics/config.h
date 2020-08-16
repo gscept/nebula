@@ -213,6 +213,10 @@ QueueNameFromQueueType(const QueueType type)
 #define NEBULA_MARKER_BLACK Math::vec4(0.001f)
 #define NEBULA_MARKER_WHITE Math::vec4(1)
 
+#define NEBULA_MARKER_COMPUTE NEBULA_MARKER_BLUE
+#define NEBULA_MARKER_GRAPHICS NEBULA_MARKER_GREEN
+#define NEBULA_MARKER_TRANSFER NEBULA_MARKER_RED
+
 #endif
 
 //------------------------------------------------------------------------------
