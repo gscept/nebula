@@ -117,6 +117,11 @@ struct ImageSubresourceInfo
 		return ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, layerCount);
 	}
 
+	static ImageSubresourceInfo ColorNoLayer(uint mipCount)
+	{
+		return ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, mipCount, 0, 1);
+	}
+
 	static ImageSubresourceInfo DepthStencilNoMipNoLayer()
 	{
 		return ImageSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, 1, 0, 1);
@@ -125,6 +130,11 @@ struct ImageSubresourceInfo
 	static ImageSubresourceInfo DepthStencilNoMip(uint layerCount)
 	{
 		return ImageSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, 1, 0, layerCount);
+	}
+
+	static ImageSubresourceInfo DepthStencilNoLayer(uint mipCount)
+	{
+		return ImageSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, mipCount, 0, 1);
 	}
 
 	const bool Overlaps(const ImageSubresourceInfo& rhs) const
