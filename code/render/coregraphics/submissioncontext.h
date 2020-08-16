@@ -22,6 +22,11 @@
 #include "coregraphics/memory.h"
 
 //------------------------------------------------------------------------------
+namespace Resources
+{
+	struct ResourceId;
+}
+
 namespace CoreGraphics
 {
 
@@ -51,8 +56,10 @@ void SubmissionContextNewBuffer(const SubmissionContextId id, CommandBufferId& o
 /// get current buffer
 CommandBufferId SubmissionContextGetCmdBuffer(const SubmissionContextId id);
 
+/// add resource for release
+void SubmissionContextFreeResource(const CoreGraphics::SubmissionContextId id, const Resources::ResourceId res);
 /// add image for deletion
-void SubmissionContextFreeImage(const CoreGraphics::SubmissionContextId id, CoreGraphics::TextureId tex);
+void SubmissionContextFreeTexture(const CoreGraphics::SubmissionContextId id, CoreGraphics::TextureId tex);
 /// add a buffer deletion
 void SubmissionContextFreeBuffer(const CoreGraphics::SubmissionContextId id, CoreGraphics::BufferId buf);
 /// add command buffer for deletion
@@ -69,5 +76,7 @@ const FenceId SubmissionContextGetFence(const SubmissionContextId id);
 
 /// cycle submission context, returns fence to previous cycle
 const FenceId SubmissionContextNextCycle(const SubmissionContextId id, const std::function<void()>& sync);
+/// poll submission context for completion, run function to check status
+void SubmissionContextPoll(const SubmissionContextId id, const std::function<bool(uint64)>& sync);
 }
 
