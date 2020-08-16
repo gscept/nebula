@@ -6,6 +6,7 @@
 #include "vkevent.h"
 #include "coregraphics/event.h"
 #include "vkgraphicsdevice.h"
+#include "vkcommandbuffer.h"
 #include "coregraphics/config.h"
 #include "vktypes.h"
 #include "vktexture.h"
@@ -134,7 +135,7 @@ DestroyEvent(const EventId id)
 /**
 */
 void 
-EventSignal(const EventId id, const CoreGraphics::BarrierStage stage, const CoreGraphics::QueueType queue)
+EventSignal(const EventId id, const CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage stage)
 {
 #if NEBULA_GRAPHICS_DEBUG
 	const Util::StringAtom& name = eventAllocator.Get<1>(id.id24).name;
@@ -151,11 +152,22 @@ EventSignal(const EventId id, const CoreGraphics::BarrierStage stage, const Core
 /**
 */
 void
+EventSignal(const EventId id, const CoreGraphics::CommandBufferId buf, const CoreGraphics::BarrierStage stage)
+{
+	VkEventInfo& info = eventAllocator.Get<1>(id.id24);
+	vkCmdSetEvent(CommandBufferGetVk(buf), info.event, VkTypes::AsVkPipelineFlags(stage));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 EventWait(
 	const EventId id,
+	const CoreGraphics::QueueType queue,
 	const CoreGraphics::BarrierStage waitStage,
-	const CoreGraphics::BarrierStage signalStage,
-	const CoreGraphics::QueueType queue)
+	const CoreGraphics::BarrierStage signalStage
+	)
 {
 #if NEBULA_GRAPHICS_DEBUG
 	const Util::StringAtom& name = eventAllocator.Get<1>(id.id24).name;
@@ -172,7 +184,25 @@ EventWait(
 /**
 */
 void
-EventReset(const EventId id, const CoreGraphics::BarrierStage stage, const CoreGraphics::QueueType queue)
+EventWait(const EventId id, const CoreGraphics::CommandBufferId buf, const CoreGraphics::BarrierStage waitStage, const CoreGraphics::BarrierStage signalStage)
+{
+	VkEventInfo& info = eventAllocator.Get<1>(id.id24);
+	vkCmdWaitEvents(CommandBufferGetVk(buf), 1, &info.event,
+		VkTypes::AsVkPipelineFlags(waitStage),
+		VkTypes::AsVkPipelineFlags(signalStage),
+		info.numMemoryBarriers,
+		info.memoryBarriers,
+		info.numBufferBarriers,
+		info.bufferBarriers,
+		info.numImageBarriers,
+		info.imageBarriers);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EventReset(const EventId id, const CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage stage)
 {
 #if NEBULA_GRAPHICS_DEBUG
 	const Util::StringAtom& name = eventAllocator.Get<1>(id.id24).name;
@@ -190,7 +220,17 @@ EventReset(const EventId id, const CoreGraphics::BarrierStage stage, const CoreG
 /**
 */
 void
-EventWaitAndReset(const EventId id, const CoreGraphics::BarrierStage waitStage, const CoreGraphics::BarrierStage signalStage, const CoreGraphics::QueueType queue)
+EventReset(const EventId id, const CoreGraphics::CommandBufferId buf, const CoreGraphics::BarrierStage stage)
+{
+	VkEventInfo& info = eventAllocator.Get<1>(id.id24);
+	vkCmdResetEvent(CommandBufferGetVk(buf), info.event, VkTypes::AsVkPipelineFlags(stage));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EventWaitAndReset(const EventId id, const CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage waitStage, const CoreGraphics::BarrierStage signalStage)
 {
 #if NEBULA_GRAPHICS_DEBUG
 	const Util::StringAtom& name = eventAllocator.Get<1>(id.id24).name;
@@ -203,6 +243,25 @@ EventWaitAndReset(const EventId id, const CoreGraphics::BarrierStage waitStage, 
 #if NEBULA_GRAPHICS_DEBUG
 	CommandBufferEndMarker(queue);
 #endif
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EventWaitAndReset(const EventId id, const CoreGraphics::CommandBufferId buf, const CoreGraphics::BarrierStage waitStage, const CoreGraphics::BarrierStage signalStage)
+{
+	VkEventInfo& info = eventAllocator.Get<1>(id.id24);
+	vkCmdWaitEvents(CommandBufferGetVk(buf), 1, &info.event,
+		VkTypes::AsVkPipelineFlags(waitStage),
+		VkTypes::AsVkPipelineFlags(signalStage),
+		info.numMemoryBarriers,
+		info.memoryBarriers,
+		info.numBufferBarriers,
+		info.bufferBarriers,
+		info.numImageBarriers,
+		info.imageBarriers);
+	vkCmdResetEvent(CommandBufferGetVk(buf), info.event, VkTypes::AsVkPipelineFlags(waitStage));
 }
 
 //------------------------------------------------------------------------------

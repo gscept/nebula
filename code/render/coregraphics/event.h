@@ -36,18 +36,32 @@ EventId CreateEvent(const EventCreateInfo& info);
 /// destroy even
 void DestroyEvent(const EventId id);
 
+/// insert event in queue to be signaled
+void EventSignal(const EventId id, const CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage stage);
 /// insert event in command buffer to be signaled
-void EventSignal(const EventId id, const CoreGraphics::BarrierStage stage, const CoreGraphics::QueueType queue);
-/// insert wait event in command buffer to wait for
+void EventSignal(const EventId id, const CoreGraphics::CommandBufferId buf, const CoreGraphics::BarrierStage stage);
+/// insert event in queue to wait for
 void EventWait(
 	const EventId id, 
+	const CoreGraphics::QueueType queue,
 	const CoreGraphics::BarrierStage waitStage,
-	const CoreGraphics::BarrierStage signalStage,
-	const CoreGraphics::QueueType queue);
+	const CoreGraphics::BarrierStage signalStage
+	);
+/// insert event in command buffer to wait for
+void EventWait(
+	const EventId id,
+	const CoreGraphics::CommandBufferId buf,
+	const CoreGraphics::BarrierStage waitStage,
+	const CoreGraphics::BarrierStage signalStage
+);
 /// insert reset event
-void EventReset(const EventId id, const CoreGraphics::BarrierStage stage, const CoreGraphics::QueueType queue);
+void EventReset(const EventId id, const CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage stage);
+/// insert reset event
+void EventReset(const EventId id, const CoreGraphics::CommandBufferId buf, const CoreGraphics::BarrierStage stage);
 /// insert both a wait and reset
-void EventWaitAndReset(const EventId id, const CoreGraphics::BarrierStage waitStage, const CoreGraphics::BarrierStage signalStage, const CoreGraphics::QueueType queue);
+void EventWaitAndReset(const EventId id, const CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage waitStage, const CoreGraphics::BarrierStage signalStage);
+/// insert both a wait and reset
+void EventWaitAndReset(const EventId id, const CoreGraphics::CommandBufferId buf, const CoreGraphics::BarrierStage waitStage, const CoreGraphics::BarrierStage signalStage);
 
 /// get event status on host
 bool EventPoll(const EventId id);
