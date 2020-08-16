@@ -246,6 +246,9 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 		loadInfo.mips = Math::n_max(numMips, 1);
 		loadInfo.format = nebulaFormat;// VkTypes::AsNebulaPixelFormat(vkformat);
 		loadInfo.dev = dev;
+		loadInfo.swapExtension = Ids::InvalidId32;
+		loadInfo.stencilExtension = Ids::InvalidId32;
+		loadInfo.sparseExtension = Ids::InvalidId32;
 		runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(res), runtimeInfo.type);
 
 		//stream->MemoryUnmap();
