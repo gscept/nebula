@@ -507,7 +507,7 @@ FrameOp::Compiled::QueuePreSync()
 	IndexT i;
 	for (i = 0; i < this->numWaitEvents; i++)
 	{
-		CoreGraphics::EventWaitAndReset(this->waitEvents[i].event, this->waitEvents[i].waitStage, this->waitEvents[i].signalStage, this->waitEvents[i].queue);
+		CoreGraphics::EventWaitAndReset(this->waitEvents[i].event, this->waitEvents[i].queue, this->waitEvents[i].waitStage, this->waitEvents[i].signalStage);
 	}
 	for (i = 0; i < this->numBarriers; i++)
 	{
@@ -525,7 +525,7 @@ FrameOp::Compiled::QueuePostSync()
 	IndexT i;
 	for (i = 0; i < this->numSignalEvents; i++)
 	{
-		CoreGraphics::EventSignal(this->signalEvents[i].event, this->signalEvents[i].stage, this->signalEvents[i].queue);
+		CoreGraphics::EventSignal(this->signalEvents[i].event, this->signalEvents[i].queue, this->signalEvents[i].stage);
 	}
 }
 
