@@ -1104,7 +1104,7 @@ floor(const vec4& v)
 /**
 */
 __forceinline vec4
-ceiling(const vec4& v)
+ceil(const vec4& v)
 {
 	return _mm_ceil_ps(v.vec);
 }

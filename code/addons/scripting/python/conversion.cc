@@ -81,7 +81,7 @@ PYBIND11_EMBEDDED_MODULE(nmath, m)
 		.def_static("angle", py::overload_cast<Math::vec4 const&, Math::vec4 const&>(&Math::angle))
 		.def_static("perspective_div", &Math::perspective_div)
 		.def_static("floor", py::overload_cast<Math::vec4 const&>(&Math::floor))
-		.def_static("ceil", py::overload_cast<Math::vec4 const&>(&Math::ceiling))
+		.def_static("ceil", py::overload_cast<Math::vec4 const&>(&Math::ceil))
 		.def_buffer([](Math::vec4 &m) -> py::buffer_info {
 			return py::buffer_info(
 				&m[0],				/* Pointer to buffer */
