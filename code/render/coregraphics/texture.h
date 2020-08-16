@@ -53,8 +53,8 @@ enum TextureUsage
 {
 	InvalidTextureUsage			= 0x0,		// invalid usage
 	SampleTexture				= 0x1,		// texture is a shader sampleable 1D, 2D, 3D or Cube texture
-	RenderTexture				= 0x2,		// texture supports to be rendered to as an attachment
-	ReadWriteTexture			= 0x4,		// texture supports to be bound as an RWTexture (DX) or Image (GL/Vulkan)
+	RenderTexture				= 0x2,		// texture supports to be rendered to as an attachment, also supports sampling
+	ReadWriteTexture			= 0x4,		// texture supports to be bound as an RWTexture (DX) or Image (GL/Vulkan), also supports sampling
 	TransferTextureSource		= 0x8,		// texture supports being a copy source
 	TransferTextureDestination  = 0x10		// texture supports being a copy destination
 };

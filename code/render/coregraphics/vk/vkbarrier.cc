@@ -240,7 +240,14 @@ BarrierInsert(
 /**
 */
 void 
-BarrierInsert(const CoreGraphics::CommandBufferId buf, CoreGraphics::BarrierStage fromStage, CoreGraphics::BarrierStage toStage, CoreGraphics::BarrierDomain domain, const Util::FixedArray<TextureBarrier>& textures, const Util::FixedArray<BufferBarrier>& rwBuffers, const char* name)
+BarrierInsert(
+	const CoreGraphics::CommandBufferId buf,
+	CoreGraphics::BarrierStage fromStage,
+	CoreGraphics::BarrierStage toStage,
+	CoreGraphics::BarrierDomain domain,
+	const Util::FixedArray<TextureBarrier>& textures,
+	const Util::FixedArray<BufferBarrier>& rwBuffers,
+	const char* name)
 {
 	VkBarrierInfo barrier;
 	barrier.name = name;

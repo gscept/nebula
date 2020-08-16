@@ -347,7 +347,13 @@ void Copy(
 	IndexT toMip, 
 	IndexT toLayer);
 /// copy data between buffers
-void Copy(const CoreGraphics::QueueType queue, const CoreGraphics::BufferId from, IndexT fromOffset, const CoreGraphics::BufferId to, IndexT toOffset, SizeT size);
+void Copy(
+	const CoreGraphics::QueueType queue, 
+	const CoreGraphics::BufferId from, 
+	IndexT fromOffset, 
+	const CoreGraphics::BufferId to, 
+	IndexT toOffset, 
+	SizeT size);
 /// copy data from buffer to texture
 void Copy(
 	const CoreGraphics::QueueType queue, 
@@ -366,6 +372,7 @@ void Copy(
 	const Math::rectangle<int> toRegion,
 	IndexT toMip,
 	IndexT toLayer);
+
 /// blit between textures
 void Blit(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, IndexT fromMip, IndexT fromLayer, const CoreGraphics::TextureId to, const Math::rectangle<SizeT>& toRegion, IndexT toMip, IndexT toLayer);
 
