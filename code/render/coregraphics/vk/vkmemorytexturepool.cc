@@ -5,6 +5,7 @@
 #include "render/stdneb.h"
 #include "vkmemorytexturepool.h"
 #include "coregraphics/texture.h"
+#include "coregraphics/barrier.h"
 #include "vkbuffer.h"
 #include "vkgraphicsdevice.h"
 #include "vktypes.h"
@@ -203,18 +204,38 @@ VkMemoryTexturePool::Reload(const Resources::ResourceId id)
 void
 VkMemoryTexturePool::GenerateMipmaps(const CoreGraphics::TextureId id)
 {
+	CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_TRANSFER, "Mipmap");
+	SizeT numMips = CoreGraphics::TextureGetNumMips(id);
+
+	// insert initial barrier for texture
+	CoreGraphics::BarrierInsert(
+		CoreGraphics::GraphicsQueueType,
+		CoreGraphics::BarrierStage::AllGraphicsShaders,
+		CoreGraphics::BarrierStage::Transfer,
+		CoreGraphics::BarrierDomain::Global,
+		{
+			{
+				id,
+				CoreGraphics::ImageSubresourceInfo{ImageAspect::ColorBits, 0, (uint)numMips, 0, 1},
+				CoreGraphics::ImageLayout::ShaderRead,
+				CoreGraphics::ImageLayout::TransferSource,
+				CoreGraphics::BarrierAccess::ShaderRead,
+				CoreGraphics::BarrierAccess::TransferRead,
+			},
+		},
+		nullptr,
+		"Mipmap Generation Initial Barrier");
+
 	// calculate number of mips
 	TextureDimensions dims = GetDimensions(id);
-	int mips = 0;
-	while (true)
+
+	CoreGraphics::ImageLayout prevLayout = CoreGraphics::ImageLayout::TransferSource;
+	CoreGraphics::BarrierAccess prevAccess = CoreGraphics::BarrierAccess::TransferRead;
+	for (int mip = 0; mip < numMips - 1; mip++)
 	{
 		TextureDimensions biggerDims = dims;
 		dims.width = dims.width >> 1;
 		dims.height = dims.height >> 1;
-
-		// break if any dimension reaches 0
-		if (dims.width == 0 || dims.height == 0)
-			break;
 
 		Math::rectangle<SizeT> fromRegion;
 		fromRegion.left = 0;
@@ -227,9 +248,65 @@ VkMemoryTexturePool::GenerateMipmaps(const CoreGraphics::TextureId id)
 		toRegion.top = 0;
 		toRegion.right = dims.width;
 		toRegion.bottom = dims.height;
-		CoreGraphics::Blit(id, fromRegion, mips, 0, id, toRegion, mips + 1, 0);
-		mips++;
+		CoreGraphics::BarrierInsert(
+			CoreGraphics::GraphicsQueueType,
+			CoreGraphics::BarrierStage::Transfer,
+			CoreGraphics::BarrierStage::Transfer,
+			CoreGraphics::BarrierDomain::Global,
+			{
+				{
+					id,
+					CoreGraphics::ImageSubresourceInfo{ CoreGraphics::ImageAspect::ColorBits, (uint)mip, 1, 0, 1 },
+					prevLayout,
+					CoreGraphics::ImageLayout::TransferSource,
+					prevAccess,
+					CoreGraphics::BarrierAccess::TransferRead,
+				},
+				{
+					id,
+					CoreGraphics::ImageSubresourceInfo{ CoreGraphics::ImageAspect::ColorBits, (uint)mip + 1, 1, 0, 1 },
+					CoreGraphics::ImageLayout::TransferSource,
+					CoreGraphics::ImageLayout::TransferDestination,
+					CoreGraphics::BarrierAccess::TransferRead,
+					CoreGraphics::BarrierAccess::TransferWrite,
+				}
+			},
+			nullptr,
+			"Mipmap Generation Barrier");
+		CoreGraphics::Blit(id, fromRegion, mip, 0, id, toRegion, mip + 1, 0);
+
+		prevLayout = CoreGraphics::ImageLayout::TransferDestination;
+		prevAccess = CoreGraphics::BarrierAccess::TransferWrite;
 	}
+
+	// insert initial barrier for texture
+	CoreGraphics::BarrierInsert(
+		CoreGraphics::GraphicsQueueType,
+		CoreGraphics::BarrierStage::Transfer,
+		CoreGraphics::BarrierStage::AllGraphicsShaders,
+		CoreGraphics::BarrierDomain::Global,
+		{
+			{
+				id,
+				CoreGraphics::ImageSubresourceInfo{ImageAspect::ColorBits, 0, (uint)numMips - 1, 0, 1},
+				CoreGraphics::ImageLayout::TransferSource,
+				CoreGraphics::ImageLayout::ShaderRead,
+				CoreGraphics::BarrierAccess::TransferRead,
+				CoreGraphics::BarrierAccess::ShaderRead,
+			},
+			{
+				id,
+				CoreGraphics::ImageSubresourceInfo{ImageAspect::ColorBits, (uint)numMips - 1, 1, 0, 1},
+				prevLayout,
+				CoreGraphics::ImageLayout::ShaderRead,
+				prevAccess,
+				CoreGraphics::BarrierAccess::ShaderRead,
+			},
+		},
+		nullptr,
+		"Mipmap Generation Finish Barrier");
+
+	CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
 }
 
 //------------------------------------------------------------------------------
