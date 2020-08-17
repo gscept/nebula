@@ -337,7 +337,7 @@ print(v2);
 	// floor/ceil
 
 	v1.set(1.3, 2.5, 3.8, 5.0);
-	v0 = ceiling(v1);
+	v0 = ceil(v1);
 	VERIFY(v0 == vec4(2.0f, 3.0f, 4.0f, 5.0f));
 	v0 = floor(v1);
 	VERIFY(v0 == vec4(1.0f, 2.0f, 3.0f, 5.0f));
