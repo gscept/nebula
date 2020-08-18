@@ -9,7 +9,7 @@ Get in contact on Discord! https://discord.gg/wuYPxUF
 4. [CMake 3.13+](https://cmake.org/download/)
 5. [Python 3.5+](https://www.python.org/downloads)
     * Python requirements (Windows):
-        1. Correct architecture (64-bit if you're building for 64-bit systems)
+        1. Matching architecture (64-bit if you're building for 64-bit systems)
         2. Installed for all users
         3. Added to PATH
         4. Installed with debugging symbols and binaries
