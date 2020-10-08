@@ -605,8 +605,16 @@ WindowPresent(const WindowId id, const IndexT frameIndex)
 		glfwSwapBuffers(wnd);
 #endif
 		frame = frameIndex;
-		glfwPollEvents();
 	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+WindowPollEvents()
+{
+	glfwPollEvents();
 }
 
 //------------------------------------------------------------------------------

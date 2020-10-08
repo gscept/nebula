@@ -51,7 +51,6 @@ void RecreateVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphic
 /// perform a present
 void Present(const CoreGraphics::WindowId& id);
 
-
 } // namespace Vulkan
 #endif
 

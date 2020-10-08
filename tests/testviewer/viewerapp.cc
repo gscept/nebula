@@ -256,6 +256,7 @@ SimpleViewerApplication::Run()
 #endif NEBULA_ENABLE_PROFILING
 
 		this->gfxServer->BeginFrame();
+        CoreGraphics::WindowPollEvents();
         this->RenderUI();
 
         if (this->renderDebug)
