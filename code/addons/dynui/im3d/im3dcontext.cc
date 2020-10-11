@@ -92,6 +92,7 @@ struct Im3dState
     int gridSize = 20;
     float cellSize = 1.0f;
     Math::vec4 gridColor{ 1.0f,1.0f,1.0f,0.3f };
+	Math::vec2 gridOffset{ 0, 0 };
     Ptr<Im3dInputHandler> inputHandler;
     Im3d::Id depthLayerId;
     byte* vertexPtr;    
@@ -146,7 +147,7 @@ Im3dContext::Create()
 
     CoreGraphics::BufferCreateInfo vboInfo;
     vboInfo.name = "Im3D VBO"_atm;
-    vboInfo.size = 100000 * 3;
+    vboInfo.size = 1000 * 3;
     vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(imState.vlo);
     vboInfo.mode = CoreGraphics::HostToDevice;
     vboInfo.usageFlags = CoreGraphics::VertexBuffer;
@@ -410,12 +411,12 @@ Im3dContext::Render(const IndexT frameIndex)
         Im3d::BeginLines();
         Im3d::Color col = imState.gridColor;
         for (int x = -gridSize; x <= gridSize; ++x) {
-            Im3d::Vertex(-gridSize * cellSize, 0.0f, (float)x * cellSize, col);
-            Im3d::Vertex(gridSize * cellSize, 0.0f, (float)x * cellSize, col);
+            Im3d::Vertex(-gridSize * cellSize + imState.gridOffset.x, 0.0f, (float)x * cellSize + imState.gridOffset.y, col);
+            Im3d::Vertex(gridSize * cellSize + imState.gridOffset.x, 0.0f, (float)x * cellSize + imState.gridOffset.y, col);
         }
         for (int z = -gridSize; z <= gridSize; ++z) {
-            Im3d::Vertex((float)z * cellSize, 0.0f, -gridSize * cellSize, col);
-            Im3d::Vertex((float)z * cellSize, 0.0f, gridSize* cellSize, col);
+            Im3d::Vertex((float)z * cellSize + imState.gridOffset.x, 0.0f, -gridSize * cellSize + imState.gridOffset.y, col);
+            Im3d::Vertex((float)z * cellSize + imState.gridOffset.x, 0.0f, gridSize* cellSize + imState.gridOffset.y, col);
         }
         Im3d::End();
         Im3d::PopLayerId();
@@ -491,6 +492,15 @@ void
 Im3dContext::SetGridColor(Math::vec4 const & color)
 {
     imState.gridColor = color;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::SetGridOffset(Math::vec2 const& offset)
+{
+	imState.gridOffset = offset;
 }
 
 //------------------------------------------------------------------------------

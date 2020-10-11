@@ -67,6 +67,8 @@ public:
     static void SetGridSize(float cellSize, int cellCount);
     ///
     static void SetGridColor(Math::vec4 const& color);
+    ///
+    static void SetGridOffset(Math::vec2 const& offset);
     /// configure size and thickness of gizmos
     static void SetGizmoSize(int size, int width);
 };
