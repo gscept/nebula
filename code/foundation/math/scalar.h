@@ -490,6 +490,16 @@ n_floor(float val)
 
 //------------------------------------------------------------------------------
 /**
+    Floating point rounding
+*/
+__forceinline float
+n_round(float val)
+{
+    return roundf(val);
+}
+
+//------------------------------------------------------------------------------
+/**
     A fuzzy floating point less-then check.
 */
 __forceinline bool
