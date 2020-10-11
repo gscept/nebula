@@ -42,7 +42,9 @@ public:
     /// called when game debug visualization is on
     void OnRenderDebug();
 
+    using UIRenderFunc = std::function<void()>;
 
+    void AddRenderUICallback(UIRenderFunc func);
 
     Ptr<Graphics::View> defaultView;
     Ptr<Graphics::Stage> defaultStage;
@@ -52,7 +54,8 @@ public:
     CoreGraphics::WindowId wnd;
     //FIXME
     Graphics::GraphicsEntityId globalLight;
-
+private:
+    Util::Array<UIRenderFunc> uiCallbacks;
 };
 
 } // namespace GraphicsFeature
