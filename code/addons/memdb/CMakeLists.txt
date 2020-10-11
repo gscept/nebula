@@ -1,0 +1,13 @@
+fips_begin_lib(memdb)
+fips_include_directories(${CODE_ROOT}/foundation)
+fips_files(
+    columnview.h
+    columnview.cc
+    database.h
+    database.cc
+    columndescription.h
+    columndescription.cc
+    table.h
+    table.cc
+)
+fips_end_lib()
