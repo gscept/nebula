@@ -56,6 +56,11 @@ SurfacePool::LoadFromStream(const Resources::ResourceId id, const Util::StringAt
 		// load surface
 		Resources::ResourceName materialType = reader->GetString("template");
 		Materials::MaterialServer* server = Materials::MaterialServer::Instance();
+
+		if (!server->materialTypesByName.Contains(materialType))
+		{
+			n_error("Material '%s', referenced in '%s' could not be found!", materialType.AsString().AsCharPtr(), stream->GetURI().AsString().AsCharPtr());
+		}
 		type = server->materialTypesByName[materialType];
 
 		// add to internal table
