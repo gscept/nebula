@@ -2,7 +2,7 @@
 //  database.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "application/stdneb.h"
+#include "foundation/stdneb.h"
 #include "database.h"
 
 namespace MemDb
