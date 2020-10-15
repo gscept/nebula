@@ -11,6 +11,7 @@
 #include "util/fixedarray.h"
 #include "util/string.h"
 #include "util/stringatom.h"
+#include "columndescriptor.h"
 
 namespace MemDb
 {
@@ -22,7 +23,6 @@ constexpr uint16_t MAX_VALUE_TABLE_COLUMNS = 128;
 
 /// column id
 ID_16_TYPE(ColumnId);
-ID_16_TYPE(ColumnDescriptor);
 
 struct TableCreateInfo
 {

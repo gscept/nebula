@@ -25,7 +25,10 @@ Database::Database()
 */
 Database::~Database()
 {
-	// empty
+	for (IndexT tid = 0; tid < this->numTables; ++tid)
+	{
+		this->DeleteTable(tid);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -58,11 +61,26 @@ Database::CreateTable(TableCreateInfo const& info)
 /**
 */
 void
-Database::DeleteTable(TableId table)
+Database::DeleteTable(TableId tid)
 {
-	n_error("implement me!");
-	// FIXME: Note that the query method (and possibly others) currently assume that all tables that are present in the array are valid... We should change this
+	Table& table = this->tables[tid.id];
+	for (IndexT i = 0; i < table.columns.Size(); ++i)
+	{
+		ColumnDescriptor descriptor = table.columns.Get<0>(i);
+		ColumnDescription* desc = TypeRegistry::GetDescription(descriptor);
+		void*& buf = table.columns.Get<1>(i);
 
+		const SizeT byteSize = desc->typeSize;
+
+		if (desc->trivialType)
+		{
+			Memory::Free(ALLOCATIONHEAP, buf);
+		}
+		else
+		{
+			desc->fTable.Destroy(buf, table.capacity);
+		}
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -133,7 +151,23 @@ Database::AllocateRow(TableId tid)
 		table.numRows++;
 	}
 
-	this->SetToDefault(tid, index);
+	// potentially call constructor and set to default
+	for (int i = 0; i < table.columns.Size(); ++i)
+	{
+		ColumnDescriptor descriptor = table.columns.Get<0>(i);
+		ColumnDescription* desc = TypeRegistry::GetDescription(descriptor.id);
+
+		void*& buf = table.columns.Get<1>(i);
+		void* val = (char*)buf + (index * desc->typeSize);
+		if (desc->trivialType)
+		{
+			Memory::Copy(desc->defVal, val, desc->typeSize);
+		}
+		else
+		{
+			desc->fTable.Create(val, desc->defVal, 1);
+		}
+	}
 	return index;
 }
 
@@ -162,7 +196,7 @@ Database::SetToDefault(TableId tid, IndexT row)
 	for (int i = 0; i < table.columns.Size(); ++i)
 	{
 		ColumnDescriptor descriptor = table.columns.Get<0>(i);
-		ColumnDescription* desc = this->columnDescriptions[descriptor.id];
+		ColumnDescription* desc = TypeRegistry::GetDescription(descriptor.id);
 		void*& buf = table.columns.Get<1>(i);
 		void* val = (char*)buf + (row * desc->typeSize);
 		if (desc->trivialType)
@@ -263,7 +297,7 @@ Database::EraseSwapIndex(Table& table, IndexT instance)
 	for (int i = 0; i < table.columns.Size(); ++i)
 	{
 		ColumnDescriptor descriptor = table.columns.Get<0>(i);
-		ColumnDescription* desc = this->columnDescriptions[descriptor.id];
+		ColumnDescription* desc = TypeRegistry::GetDescription(descriptor.id);
 		void*& buf = table.columns.Get<1>(i);
 		const SizeT byteSize = desc->typeSize;
 		if (desc->trivialType)
@@ -298,7 +332,7 @@ Database::GrowTable(TableId tid)
 	for (int i = 0; i < table.columns.Size(); ++i)
 	{
 		ColumnDescriptor descriptor = table.columns.Get<0>(i);
-		ColumnDescription* desc = this->columnDescriptions[descriptor.id];
+		ColumnDescription* desc = TypeRegistry::GetDescription(descriptor);
 		void*& buf = table.columns.Get<1>(i);
 
 		const SizeT byteSize = desc->typeSize;
@@ -306,16 +340,17 @@ Database::GrowTable(TableId tid)
 		int oldNumBytes = byteSize * oldCapacity;
 		int newNumBytes = byteSize * table.capacity;
 		void* newData = Memory::Alloc(ALLOCATIONHEAP, newNumBytes);
-
+		
 		if (desc->trivialType)
 		{
-			Memory::Move(buf, newData, table.numRows * byteSize);
-			Memory::Free(ALLOCATIONHEAP, buf);
+			Memory::Copy(buf, newData, table.numRows * byteSize);
 		}
 		else
 		{
-			desc->fTable.Copy(buf, newData, table.numRows);
+			Memory::Copy(buf, newData, table.numRows * byteSize);
+			//desc->fTable.Copy(buf, newData, table.numRows);
 		}
+		Memory::Free(ALLOCATIONHEAP, buf);
 		buf = newData;
 	}
 }
@@ -336,7 +371,7 @@ Database::AllocateBuffer(TableId tid, ColumnDescription* desc)
 
 	if (!desc->trivialType)
 	{
-		desc->fTable.Assign(buffer, desc->defVal, table.numRows);
+		desc->fTable.Create(buffer, desc->defVal, table.numRows);
 	}
 	else
 	{
@@ -361,17 +396,20 @@ Database::AddColumn(TableId tid, ColumnDescriptor column)
 
 	IndexT found = table.columns.GetArray<0>().FindIndex(column);
 	if (found != InvalidIndex)
+	{
+		n_printf("Warning: Adding multiple columns of same type to a table is not supported and will result in only one column!\n");
 		return found;
+	}
 
 	uint32_t col = table.columns.Alloc();
 
 	Table::ColumnBuffer& buffer = table.columns.Get<1>(col);
 	table.columns.Get<0>(col) = column;
 
-	buffer = this->AllocateBuffer(tid, this->columnDescriptions[column.id]);
+	buffer = this->AllocateBuffer(tid, TypeRegistry::GetDescription(column.id));
 
 	// add the tid to the columndescriptions table registry so that we can access the buffer with less lookups.
-	this->columnDescriptions[column.id]->tableRegistry.Add(tid, this->GetPersistantBuffer(tid, col));
+	TypeRegistry::GetDescription(column.id)->tableRegistry.Add(tid, this->GetPersistantBuffer(tid, col));
 
 	return col;
 }
@@ -390,7 +428,7 @@ Database::Query(FilterSet const& filterset)
 		bool valid = true;
 		for (auto column : filterset.inclusive)
 		{
-			if (!this->columnDescriptions[column.id]->tableRegistry.Contains(tid))
+			if (!TypeRegistry::GetDescription(column.id)->tableRegistry.Contains(tid))
 			{
 				valid = false;
 				break;
@@ -401,7 +439,7 @@ Database::Query(FilterSet const& filterset)
 		{
 			for (auto column : filterset.exclusive)
 			{
-				if (this->columnDescriptions[column.id]->tableRegistry.Contains(tid))
+				if (TypeRegistry::GetDescription(column.id)->tableRegistry.Contains(tid))
 				{
 					valid = false;
 					break;

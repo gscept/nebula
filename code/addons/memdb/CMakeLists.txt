@@ -7,7 +7,10 @@ fips_files(
     database.cc
     columndescription.h
     columndescription.cc
+    columndescriptor.h
     table.h
     table.cc
+    typeregistry.h
+    typeregistry.cc
 )
 fips_end_lib()
