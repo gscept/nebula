@@ -83,13 +83,13 @@ public:
                 };
             }
 
-            this->fTable.Assign = [](void* buffer, void* defVal, uint64_t const numInstances)
+            this->fTable.Assign = [](void* buffer, void* val, uint64_t const numInstances)
             {
                 T* p = (T*)buffer;
-                T* defaultValue = (T*)defVal;
+                T* val = (T*)val;
                 for (uint64_t i = 0; i < numInstances; ++i)
                 {
-                    p[i] = *defaultValue;
+                    p[i] = *val;
                 }
             };
         }
