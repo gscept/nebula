@@ -13,6 +13,7 @@
 #include "util/stringatom.h"
 #include "util/hashtable.h"
 #include "table.h"
+#include "columndescriptor.h"
 
 namespace MemDb
 {
@@ -27,20 +28,26 @@ public:
         this->name = name;
         this->defVal = Memory::Alloc(Memory::HeapType::ObjectHeap, sizeof(T));
 
-        if constexpr (std::is_trivially_copyable<T>() && std::is_trivially_destructible<T>())
+        if constexpr (std::is_trivial<T>() && std::is_trivially_destructible<T>())
         {
             Memory::Copy(&defaultValue, this->defVal, sizeof(T));
         }
         else
         {
-            // if the type is trivially copyable and trivially destructible, we never have to worry about
-            // constructors since we're "constructing" our objects by copy.
-            // However, if they are not, we need to store function pointers to the various operations required.
+            // placement new. Remember to destroy before freeing buffer!
+            T* d = new(defVal) T(defaultValue);
+            this->trivialType = false;
+
+            // If the type is not trivial, we need to store function pointers to various operations required.
             // This means we need to wrap our constructors, destructors, copy operators and move/assign operators in additional function calls.
             // We remove a bunch of overhead by doing all of this in bulk as much as possible.
-            this->fTable.Create = [](void* buffer, uint64_t const size) -> void*
+            this->fTable.Create = [](void* buffer, void* defVal, uint64_t const size) -> void
             {
-                return new(buffer) T[size];
+                size_t offset = 0;
+                for (uint64_t i = 0; i < size; ++i, offset += sizeof(T))
+                {
+                    new((T*)buffer + offset) T(*((T*)defVal));
+                }
             };
 
             this->fTable.Destroy = [](void* buffer, uint64_t const size) -> void
@@ -85,10 +92,6 @@ public:
                     p[i] = *defaultValue;
                 }
             };
-
-            // placement new. Remember to destroy before freeing buffer!
-            T* d = new(defVal) T(defaultValue);
-            this->trivialType = false;
         }
     }
     ColumnDescription()
@@ -109,10 +112,8 @@ public:
             {
                 this->fTable.Destroy(this->defVal, 1);
             }
-            else
-            {
-                Memory::Free(Memory::HeapType::ObjectHeap, this->defVal);
-            }
+            
+            Memory::Free(Memory::HeapType::ObjectHeap, this->defVal);
         }
     }
     void operator=(ColumnDescription&& rhs) noexcept
@@ -150,7 +151,7 @@ public:
 
     struct FunctionTable
     {
-        void* (*Create)(void*, uint64_t const);
+        void (*Create)(void*, void*, uint64_t const);
         void (*Destroy)(void*, uint64_t const);
         void (*Copy)(void*, void*, uint64_t const);
         void (*Assign)(void*, void*, uint64_t const);
