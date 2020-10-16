@@ -3,14 +3,13 @@
         "TestEntity": {
             "desc": "A test blueprint",
             "properties": [
-                "Game::TransformableProperty",
-                "GraphicsFeature::GraphicsProperty"
+                "WorldTransform"
             ]
         },
         "TestEntity2": {
             "desc": "A test blueprint 2",
             "properties": [
-                "TransformableProperty"
+                "WorldTransform"
             ]
         }
     }

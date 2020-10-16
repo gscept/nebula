@@ -6,7 +6,6 @@
 #include "blueprintmanager.h"
 #include "entitymanager.h"
 #include "io/jsonreader.h"
-#include "game/property.h"
 #include "io/ioserver.h"
 
 namespace Game
@@ -67,19 +66,6 @@ void
 BlueprintManager::OnActivate()
 {
 	Singleton->SetupCategories();
-	Singleton->SetupAttributes();
-}
-
-//------------------------------------------------------------------------------
-/**
-	Create a property by its type name.
-*/
-Ptr<Property>
-BlueprintManager::CreateProperty(const Util::String& type) const
-{
-	Game::Property* result = (Game::Property*) Core::Factory::Instance()->Create(type);
-	n_assert(result != 0);
-	return result;
 }
 
 //------------------------------------------------------------------------------
@@ -155,48 +141,6 @@ BlueprintManager::SetBlueprintsFilename(const Util::String& name, const Util::St
 
 //------------------------------------------------------------------------------
 /**
-	Create the properties of every category and call SetupDefaultAttributes on it.
-*/
-void
-BlueprintManager::SetupAttributes()
-{
-	// create a instance of every property and call SetupDefaultAttributes()
-	IndexT idxBluePrint;
-	for (idxBluePrint = 0; idxBluePrint < this->bluePrints.Size(); idxBluePrint++)
-	{
-		const BluePrint& bluePrint = this->bluePrints[idxBluePrint];
-
-		// category for blueprint type not found
-		if (!Game::CategoryExists(bluePrint.name))
-		{
-			n_printf("Obsolete Category '%s' in blueprints.json", bluePrint.name.AsCharPtr());
-			continue;
-		}
-
-		// begin add category attrs
-		EntityManager::Instance()->BeginAddCategoryAttrs(bluePrint.name);
-
-		const Util::Array<PropertyEntry>& catProperties = bluePrint.properties;
-		IndexT idxCatProperty;
-		for (idxCatProperty = 0; idxCatProperty < catProperties.Size(); idxCatProperty++)
-		{
-			const Util::String& propertyName = catProperties[idxCatProperty].propertyName;
-			if (Core::Factory::Instance()->ClassExists(propertyName))
-			{
-				Ptr<Game::Property> newProperty = this->CreateProperty(propertyName);
-				EntityManager::Instance()->AddProperty(newProperty);
-			}
-			else
-			{
-				n_warning("Blueprint '%s' contains invalid property named '%s'!\n", bluePrint.name.AsCharPtr(), propertyName.AsCharPtr());
-			}
-		}
-		EntityManager::Instance()->EndAddCategoryAttrs();
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
 */
 void
 BlueprintManager::SetupCategories()
@@ -204,6 +148,7 @@ BlueprintManager::SetupCategories()
 
 	// create a instance of every property and call SetupDefaultAttributes()
 	IndexT idxBluePrint;
+	bool failed = false;
 	for (idxBluePrint = 0; idxBluePrint < this->bluePrints.Size(); idxBluePrint++)
 	{
 		const BluePrint& bluePrint = this->bluePrints[idxBluePrint];
@@ -215,9 +160,31 @@ BlueprintManager::SetupCategories()
 		}
 		CategoryCreateInfo info;
 		info.name = bluePrint.name;
-		// Note that we don't setup any attributes for this category yet!
 
-		EntityManager::Instance()->AddCategory(info);
+		const SizeT numCols = bluePrint.properties.Size();
+		info.columns.SetSize(numCols);
+
+		for (int i = 0; i < numCols; i++)
+		{
+			auto descriptor = MemDb::TypeRegistry::GetDescriptor(bluePrint.properties[i].propertyName);
+			if (descriptor != PropertyId::Invalid())
+			{
+				info.columns[i] = descriptor;
+			}
+			else
+			{
+				n_printf("Error: Unrecognized property '%s' in blueprint '%s'\n", bluePrint.properties[i].propertyName.AsString().AsCharPtr(), bluePrint.name.AsCharPtr());
+				failed = true;
+			}
+		}
+
+		if (!failed)
+			EntityManager::Instance()->AddCategory(info);
+	}
+
+	if (failed)
+	{
+		n_error("Aborting due to unrecoverable error(s)!\n");
 	}
 }
 

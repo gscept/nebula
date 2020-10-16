@@ -34,13 +34,8 @@ public:
 
 	/// set a optional blueprints.xml, which is used instead of standard blueprint.xml
 	static void SetBlueprintsFilename(const Util::String& name, const Util::String& folder);
-	/// setup attributes on properties
-	void SetupAttributes();
 	/// setup categories
 	void SetupCategories();
-
-	/// create a new property by type name, extend in subclass for new types
-	Ptr<Game::Property> CreateProperty(const Util::String& type) const;
 
 private:
 	/// constructor
@@ -56,7 +51,7 @@ private:
 
 	struct PropertyEntry
 	{
-		Util::String propertyName;
+		Util::StringAtom propertyName;
 	};
 
 	/// an entity blueprint, these are created by ParseBlueprints()

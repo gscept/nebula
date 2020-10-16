@@ -64,7 +64,7 @@ class AttributeDefinition:
         if numVars == 0:
             util.fmtError("AttributeDefinition does not contain a single variable!")
         elif numVars == 1:
-            return 'typedef {} {};'.format(self.variables[0].type, Capitalize(self.variables[0].name))
+            return 'typedef {} {};\n'.format(self.variables[0].type, self.variables[0].name)
         else:
             varDefs = ""
             retVal = 'struct {}\n{{\n'.format(self.attributeName)
@@ -79,20 +79,26 @@ class AttributeDefinition:
 #
 def GetVariableFromEntry(name, var):
     if isinstance(var, dict):
-        default = None
-        if "_default_" in var:
-            default = IDLTypes.DefaultToString(var["_default_"])
         if not "_type_" in var:
             util.fmtError('{} : {}'.format(name, var.__repr__()))
+        
+        default = None
+        
+        
+        if "_default_" in var:
+            default = IDLTypes.GetTypeString(var["_type_"]) + "(" + IDLTypes.DefaultToString(var["_default_"]) + ")"
+        else:
+            default = IDLTypes.DefaultValue(var["_type_"])
+
         return VariableDefinition(IDLTypes.GetTypeString(var["_type_"]), name, default)
     else:
-        return VariableDefinition(IDLTypes.GetTypeString(var), name, None)
+        return VariableDefinition(IDLTypes.GetTypeString(var), name, IDLTypes.DefaultValue(var))
 
 #------------------------------------------------------------------------------
 ##
 #
 def WriteAttributeHeaderDeclarations(f, document):
-    for attributeName, attribute in document["attributes"].items():
+    for attributeName, attribute in document["properties"].items():
         attributes.append(AttributeDefinition(attributeName, attribute))
     for attr in attributes:
         f.WriteLine(attr.AsTypeDefString())
@@ -111,7 +117,7 @@ def WriteAttributeHeaderDetails(f, document):
         if not attr.isStruct :
             if attr.variables[0].defaultValue is not None:
                 defval = attr.variables[0].defaultValue
-        f.WriteLine('MemDb::TypeRegistry::Register<{}>("{}"_atm, {});'.format(attr.attributeName, attr.attributeName, defval))
+        f.WriteLine('MemDb::TypeRegistry::Register<{type}>("{type}"_atm, {defval});'.format(type=attr.attributeName, defval=defval))
     f.WriteLine("return true;")
     f.DecreaseIndent()
     f.WriteLine("}")
