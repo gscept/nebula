@@ -42,12 +42,12 @@ bool ispointinside(const vec4& p, const mat4& m);
 struct NEBULA_ALIGN16 mat4
 {
 public:
-    /// default constructor
-    mat4() = default;
-    /// copy constructor
-    mat4(const mat4& rhs) = default;
+    /// default constructor, sets up as identity
+    mat4();
     /// construct from components
     mat4(const vec4& row0, const vec4& row1, const vec4& row2, const vec4& row3);
+    /// copy constructor
+    mat4(const mat4& rhs);
     /// construct from individual values
     mat4(
         float m00, float m01, float m02, float m03,
@@ -55,6 +55,8 @@ public:
         float m20, float m21, float m22, float m23,
         float m30, float m31, float m32, float m33);
 
+    /// assignment operator
+    void operator=(const mat4& rhs);
     /// equality operator
     bool operator==(const mat4& rhs) const;
     /// inequality operator
@@ -127,6 +129,18 @@ public:
 /**
 */
 __forceinline
+mat4::mat4()
+{
+	this->r[0] = _id_x;
+	this->r[1] = _id_y;
+	this->r[2] = _id_z;
+	this->r[3] = _id_w;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline
 mat4::mat4(const vec4& row0, const vec4& row1, const vec4& row2, const vec4& row3)
 {
     r[0] = row0.vec;
@@ -139,12 +153,36 @@ mat4::mat4(const vec4& row0, const vec4& row1, const vec4& row2, const vec4& row
 /**
 */
 __forceinline 
+mat4::mat4(const mat4& rhs)
+{
+    r[0] = rhs.r[0];
+    r[1] = rhs.r[1];
+    r[2] = rhs.r[2];
+    r[3] = rhs.r[3];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline 
 mat4::mat4(float m00, float m01, float m02, float m03, float m10, float m11, float m12, float m13, float m20, float m21, float m22, float m23, float m30, float m31, float m32, float m33)
 {
     this->r[0] = vec4(m00, m01, m02, m03);
     this->r[1] = vec4(m10, m11, m12, m13);
     this->r[2] = vec4(m20, m21, m22, m23);
     this->r[3] = vec4(m30, m31, m32, m33);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline void
+mat4::operator=(const mat4& rhs)
+{
+    this->r[0] = rhs.r[0];
+    this->r[1] = rhs.r[1];
+    this->r[2] = rhs.r[2];
+    this->r[3] = rhs.r[3];
 }
 
 //------------------------------------------------------------------------------

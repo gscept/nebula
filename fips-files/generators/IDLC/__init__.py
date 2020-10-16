@@ -53,13 +53,14 @@ class IDLCodeGenerator:
                 fileName = '{}.h'.format(os.path.splitext(dependency)[0]).lower()
                 attributeLibraries.append(fileName)
 
+        attributeLibraries.append("game/entity.h")
+
+        if "components" in self.document:
+            attributeLibraries.append("game/component/component.h")
+
         if "messages" in self.document:
             attributeLibraries.append("game/messaging/message.h")
-
-        attributeLibraries.append("core/sysfunc.h")
-        attributeLibraries.append("memdb/typeregistry.h")
-
-
+            
         IDLDocument.WriteIncludeHeader(f)
         IDLDocument.WriteIncludes(f, self.document)
         IDLComponent.WriteIncludes(f, attributeLibraries)
@@ -77,9 +78,6 @@ class IDLCodeGenerator:
         if "attributes" in self.document:
             IDLDocument.BeginNamespaceOverride(f, self.document, "Attr")
             IDLAttribute.WriteAttributeHeaderDeclarations(f, self.document)
-            IDLDocument.BeginNamespaceOverride(f, self.document, "Details")
-            IDLAttribute.WriteAttributeHeaderDetails(f, self.document)
-            IDLDocument.EndNamespaceOverride(f, self.document, "Details")
             IDLDocument.EndNamespaceOverride(f, self.document, "Attr")
             f.WriteLine("")
 
@@ -132,7 +130,7 @@ class IDLCodeGenerator:
 
         IDLDocument.WriteSourceHeader(f, srcFileName)        
         IDLDocument.AddInclude(f, hdrInclude)
-        
+
         hasMessages = "messages" in self.document
 
         if hasMessages:            
@@ -140,9 +138,7 @@ class IDLCodeGenerator:
 
         if "attributes" in self.document:
             IDLDocument.BeginNamespaceOverride(f, self.document, "Attr")
-            IDLDocument.BeginNamespaceOverride(f, self.document, "Details")
             IDLAttribute.WriteAttributeSourceDefinitions(f, self.document)
-            IDLDocument.EndNamespaceOverride(f, self.document, "Details")
             IDLDocument.EndNamespaceOverride(f, self.document, "Attr")
             f.WriteLine("")
 
