@@ -57,9 +57,11 @@ def ConvertToCamelNotation(attrType):
     elif (T == "bool"):
         return "Bool"
     elif (T == "vec2"):
-        return "Float2"
+        return "Vec2"
+    elif (T == "vec3"):
+        return "Vec3"
     elif (T == "vec4"):
-        return "Float4"
+        return "Vec4"
     elif (T == "vector"):
         return "Vector"
     elif (T == "point"):
@@ -67,7 +69,7 @@ def ConvertToCamelNotation(attrType):
     elif (T == "quat"):
         return "Quaternion"
     elif (T == "mat4"):
-        return "Matrix44"
+        return "Mat4"
     elif (T == "string"):
         return "String"
     elif (T == "resource"):
@@ -112,6 +114,8 @@ def GetTypeString(attrType):
         return "bool"
     elif (T == "vec2"):
         return "Math::vec2"
+    elif (T == "vec3"):
+        return "Math::vec3"
     elif (T == "vec4"):
         return "Math::vec4"
     elif (T == "vector"):
@@ -169,6 +173,8 @@ def GetArgumentType(attrType):
         return "bool"
     elif (T == "vec2"):
         return "Math::vec2 const&"
+    elif (T == "vec3"):
+        return "Math::vec3 const&"
     elif (T == "vec4"):
         return "Math::vec4 const&"
     elif (T == "vector"):
@@ -223,6 +229,8 @@ def DefaultValue(attrType):
         return "bool(false)"
     elif (T == "vec2"):
         return "Math::vec2(0, 0)"
+    elif (T == "vec3"):
+        return "Math::vec3(0, 0, 0)"
     elif (T == "vec4"):
         return "Math::vec4(0, 0, 0, 0)"
     elif (T == "vector"):
@@ -231,8 +239,8 @@ def DefaultValue(attrType):
         return "Math::point(0, 0, 0)"
     elif (T == "quat"):
         return "Math::quat()"
-    elif (T == "mat4"):
-        return "Math::mat4()"
+    elif (T == "mat4" or T == "Math::mat4"):
+        return "Math::mat4::identity()"
     elif (T == "string"):
         return "Util::String()"
     elif (T == "resource"):
@@ -248,8 +256,7 @@ def DefaultValue(attrType):
     elif (T == "variant"):
         return "Util::Variant()"
     else:
-        # try to use just regular constructor
-        return attrType + "()"
+        return None
 
 #------------------------------------------------------------------------------
 ##

@@ -62,9 +62,9 @@ NebulaMain(const Util::CommandLineArgs& args)
 	// setup and run test runner
     Ptr<TestRunner> testRunner = TestRunner::Create();
     testRunner->AttachTestCase(IdTest::Create());
-	testRunner->AttachTestCase(DatabaseTest::Create());
+	//testRunner->AttachTestCase(DatabaseTest::Create());
 	testRunner->AttachTestCase(EntitySystemTest::Create());
-	testRunner->AttachTestCase(ScriptingTest::Create());
+	//testRunner->AttachTestCase(ScriptingTest::Create());
 	
     bool result = testRunner->Run(); 
 

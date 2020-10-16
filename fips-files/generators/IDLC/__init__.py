@@ -57,6 +57,7 @@ class IDLCodeGenerator:
             attributeLibraries.append("game/messaging/message.h")
 
         attributeLibraries.append("core/sysfunc.h")
+        attributeLibraries.append("util/stringatom.h")
         attributeLibraries.append("memdb/typeregistry.h")
 
 
@@ -65,7 +66,7 @@ class IDLCodeGenerator:
         IDLComponent.WriteIncludes(f, attributeLibraries)
 
         # Generate attributes include file
-        if "attributes" in self.document:            
+        if "properties" in self.document:            
             IDLDocument.WriteAttributeLibraryDeclaration(f)
 
         if "enums" in self.document:
@@ -74,13 +75,13 @@ class IDLCodeGenerator:
                 IDLDocument.EndNamespace(f, self.document)
                 f.WriteLine("")
 
-        if "attributes" in self.document:
-            IDLDocument.BeginNamespaceOverride(f, self.document, "Attr")
+        if "properties" in self.document:
+            IDLDocument.BeginNamespaceOverride(f, self.document, "Game")
             IDLAttribute.WriteAttributeHeaderDeclarations(f, self.document)
             IDLDocument.BeginNamespaceOverride(f, self.document, "Details")
             IDLAttribute.WriteAttributeHeaderDetails(f, self.document)
             IDLDocument.EndNamespaceOverride(f, self.document, "Details")
-            IDLDocument.EndNamespaceOverride(f, self.document, "Attr")
+            IDLDocument.EndNamespaceOverride(f, self.document, "Game")
             f.WriteLine("")
 
 
@@ -138,12 +139,12 @@ class IDLCodeGenerator:
         if hasMessages:            
             IDLDocument.AddInclude(f, "scripting/bindings.h")
 
-        if "attributes" in self.document:
-            IDLDocument.BeginNamespaceOverride(f, self.document, "Attr")
+        if "properties" in self.document:
+            IDLDocument.BeginNamespaceOverride(f, self.document, "Game")
             IDLDocument.BeginNamespaceOverride(f, self.document, "Details")
             IDLAttribute.WriteAttributeSourceDefinitions(f, self.document)
             IDLDocument.EndNamespaceOverride(f, self.document, "Details")
-            IDLDocument.EndNamespaceOverride(f, self.document, "Attr")
+            IDLDocument.EndNamespaceOverride(f, self.document, "Game")
             f.WriteLine("")
 
         # Add additional dependencies to document.

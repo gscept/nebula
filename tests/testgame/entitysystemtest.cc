@@ -13,83 +13,31 @@ using namespace Game;
 using namespace Math;
 using namespace Util;
 
-namespace Attr
-{
-__DefineAttribute(ObjectTransform);
-__DefineAttribute(Health);
-__DefineAttribute(Speed);
-__DefineAttribute(MoveDirection);
-__DefineAttribute(Damage);
-__DefineAttribute(Target);
-}
-
 namespace Test
 {
-
-__ImplementClass(Test::TestProperty, 'TPRY', Game::Property);
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TestProperty::SetupExternalAttributes()
-{
-    SetupAttr(Attr::ObjectTransform::Id());
-    SetupAttr(Attr::Health::Id());
-    SetupAttr(Attr::Speed::Id());
-    SetupAttr(Attr::MoveDirection::Id());
-    SetupAttr(Attr::Damage::Id());
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TestProperty::RecieveTestMsg(int i, float f)
-{
-    this->data.health[0] = i;
-    this->data.speed[0] = f;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TestProperty::Init()
-{
-    __this_RegisterMsg(TestMsg, RecieveTestMsg);
-
-    this->data = {
-        Game::GetPropertyData<Attr::Health>(this->category),
-        Game::GetPropertyData<Attr::Speed>(this->category),
-        Game::GetPropertyData<Attr::MoveDirection>(this->category),
-        Game::GetPropertyData<Attr::ObjectTransform>(this->category)
-    };
-}
 
 static int numFramesExecuted = 0;
 
 //------------------------------------------------------------------------------
 /**
 */
-void
-TestProperty::OnBeginFrame()
-{
-    const SizeT num = Game::GetNumInstances(this->category);
-    for (IndexT i = 0; i < num; i++)
-    {
-        this->data.health[i] += 1;
-        
-        Math::vec4 const& move = this->data.moveDirection[i];
-        Math::vec4 newPos = this->data.transform[i].position;
-        newPos += this->data.moveDirection[i] * this->data.speed[i];
-        this->data.transform[i].position = newPos;
-    }
-    numFramesExecuted++;
-}
+//void
+//TestProperty::OnBeginFrame()
+//{
+//    const SizeT num = Game::GetNumInstances(this->category);
+//    for (IndexT i = 0; i < num; i++)
+//    {
+//        this->data.health[i] += 1;
+//        
+//        Math::vec4 const& move = this->data.moveDirection[i];
+//        Math::vec4 newPos = this->data.transform[i].position;
+//        newPos += this->data.moveDirection[i] * this->data.speed[i];
+//        this->data.transform[i].position = newPos;
+//    }
+//    numFramesExecuted++;
+//}
 
 //------------------------------------------------------------------------------
-
 
 __ImplementClass(Test::EntitySystemTest, 'GEST', Test::TestCase);
 
@@ -103,35 +51,26 @@ EntitySystemTest::Run()
 {
     CategoryCreateInfo info;
     info.name = "Enemy";
-    info.columns = {
-        Attr::Runtime::HealthId,
-        Attr::Runtime::SpeedId,
-        Attr::Runtime::MoveDirectionId,
-        Attr::Runtime::DamageId,
-        Attr::Runtime::ObjectTransformId,
-        Attr::Runtime::TargetId,
+	info.columns = {
+		Game::GetPropertyId("WorldTransform"_atm),
+		Game::GetPropertyId("TestStruct"_atm),
+		Game::GetPropertyId("TestVec4"_atm),
+		Game::GetPropertyId("TestHealth"_atm)
     };
     EntityManager::Instance()->AddCategory(info);
 
     info.name = "Player";
     info.columns.Clear();
+	info.columns = {
+		Game::GetPropertyId("TestHealth"_atm),
+		Game::GetPropertyId("TestStruct"_atm),
+		Game::GetPropertyId("WorldTransform"_atm)
+	};
 
     EntityManager::Instance()->AddCategory(info);
-
-    EntityManager::Instance()->BeginAddCategoryAttrs("Player"_atm);
-    EntityManager::Instance()->AddProperty(TestProperty::Create());
-    EntityManager::Instance()->EndAddCategoryAttrs();
-
-    info.name = "Other";
-    info.columns.Clear();
-    EntityManager::Instance()->AddCategory(info);
-
 
     CategoryId const playerCategory = Game::GetCategoryId("Player"_atm);
     CategoryId const enemyCategory = Game::GetCategoryId("Enemy"_atm);
-
-    auto playerHealthData = Game::GetPropertyData<Attr::Health>(playerCategory);
-    auto healthData = Game::GetPropertyData<Attr::Health>(enemyCategory);
 
     for (int i = 0; i < 500; i++)
     {
@@ -141,7 +80,7 @@ EntitySystemTest::Run()
     Util::Array<Entity> enemies;
     for (int i = 0; i < 500; i++)
     {
-        Entity enemy = Game::CreateEntity({ enemyCategory, {{Attr::Health::Create(i)}} });
+        Entity enemy = Game::CreateEntity({ enemyCategory });
         enemies.Append(enemy);
     }
 
@@ -182,7 +121,7 @@ EntitySystemTest::Run()
     Util::Queue<Game::Entity> queue;
     for (int i = 0; i < 10; i++)
     {
-        Entity enemy = Game::CreateEntity({ enemyCategory, {{Attr::Health::Create(i)}} });
+        Entity enemy = Game::CreateEntity({ enemyCategory });
         queue.Enqueue(enemy);
     }
 
@@ -218,7 +157,7 @@ EntitySystemTest::Run()
     Util::Stack<Game::Entity> stack;
     for (int i = 0; i < 10; i++)
     {
-        Entity enemy = Game::CreateEntity({ enemyCategory, {{Attr::Health::Create(i)}} });
+        Entity enemy = Game::CreateEntity({ enemyCategory });
         stack.Push(enemy);
     }
 
@@ -291,7 +230,7 @@ EntitySystemTest::Run()
     VERIFY(true);
 
     // Test query and filtering
-
+	/*
     Game::FilterSet filter;
     filter.inclusive = {
         Attr::Runtime::HealthId,
@@ -335,6 +274,7 @@ EntitySystemTest::Run()
     //VERIFY(set.categories.FindIndex(playerCat) != InvalidIndex);
     //VERIFY(set.categories.FindIndex(enemyCat) == InvalidIndex);
     //VERIFY(set.categories.FindIndex(otherCat) == InvalidIndex);
+	*/
 
     TestMsg::Send(10, 20.0f);
 
