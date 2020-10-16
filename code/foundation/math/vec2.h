@@ -19,15 +19,13 @@ namespace Math
 struct vec2
 {
     /// default constructor, NOTE: does NOT setup components!
-    vec2();
+    vec2() = default;
 	/// construct from single value
 	vec2(scalar x);
     /// construct from values
     vec2(scalar x, scalar y);
     /// copy constructor
-    vec2(const vec2& rhs);
-    /// assignment operator
-    void operator=(const vec2& rhs);
+    vec2(const vec2& rhs) = default;
     /// flip sign
     vec2 operator-() const;
     /// inplace add
@@ -87,15 +85,6 @@ struct vec2
 /**
 */
 inline
-vec2::vec2()
-{
-    //  empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline
 vec2::vec2(scalar x) : 
 	x(x), y(x)
 {
@@ -110,26 +99,6 @@ vec2::vec2(scalar x, scalar y) :
     x(x), y(y)
 {
     // empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline
-vec2::vec2(const vec2& rhs) :
-    x(rhs.x), y(rhs.y)
-{
-    // empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-vec2::operator=(const vec2& rhs)
-{
-    this->x = rhs.x;
-    this->y = rhs.y;
 }
 
 //------------------------------------------------------------------------------
