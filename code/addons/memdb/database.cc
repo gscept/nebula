@@ -69,14 +69,6 @@ Database::DeleteTable(TableId tid)
 		ColumnDescriptor descriptor = table.columns.Get<0>(i);
 		ColumnDescription* desc = TypeRegistry::GetDescription(descriptor);
 		void*& buf = table.columns.Get<1>(i);
-
-		const SizeT byteSize = desc->typeSize;
-
-		if (!desc->trivialType)
-		{
-			desc->fTable.Destroy(buf, table.capacity);
-		}
-
 		Memory::Free(ALLOCATIONHEAP, buf);
 		buf = nullptr;
 	}
@@ -143,14 +135,7 @@ Database::AllocateRow(TableId tid)
 
 		void*& buf = table.columns.Get<1>(i);
 		void* val = (char*)buf + (index * desc->typeSize);
-		if (desc->trivialType)
-		{
-			Memory::Copy(desc->defVal, val, desc->typeSize);
-		}
-		else
-		{
-			desc->fTable.Create(val, desc->defVal, 1);
-		}
+		Memory::Copy(desc->defVal, val, desc->typeSize);
 	}
 	return index;
 }
@@ -165,18 +150,6 @@ Database::DeallocateRow(TableId tid, IndexT row)
 	Table& table = this->tables[Ids::Index(tid.id)];
 	n_assert(row < table.numRows);
 	table.freeIds.InsertSorted(row);
-
-	// This is unfortunate for any trivial types :(
-	for (int i = 0; i < table.columns.Size(); ++i)
-	{
-		ColumnDescriptor descriptor = table.columns.Get<0>(i);
-		ColumnDescription* desc = TypeRegistry::GetDescription(descriptor.id);
-		if (!desc->trivialType)
-		{
-			// Destroy any complex objects
-			desc->fTable.Destroy((char*)table.columns.Get<1>(i) + (desc->typeSize * row), 1);
-		}
-	}
 }
 
 //------------------------------------------------------------------------------
@@ -195,14 +168,7 @@ Database::SetToDefault(TableId tid, IndexT row)
 		ColumnDescription* desc = TypeRegistry::GetDescription(descriptor.id);
 		void*& buf = table.columns.Get<1>(i);
 		void* val = (char*)buf + (row * desc->typeSize);
-		if (desc->trivialType)
-		{
-			Memory::Copy(desc->defVal, val, desc->typeSize);
-		}
-		else
-		{
-			desc->fTable.Assign(val, desc->defVal, 1);
-		}
+		Memory::Copy(desc->defVal, val, desc->typeSize);
 	}
 }
 
@@ -256,14 +222,7 @@ Database::MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
 		if (dstColId != ColumnId::Invalid())
 		{
 			void*& dstBuf = dst.columns.Get<1>(dstColId.id);
-			if (!desc->trivialType)
-			{
-				Memory::Copy((char*)buf + (byteSize * srcRow), (char*)buf + (byteSize * dstRow), byteSize);
-			}
-			else
-			{
-				desc->fTable.Copy((char*)buf + (byteSize * srcRow), (char*)dstBuf + (byteSize * dstRow), 1);
-			}
+			Memory::Copy((char*)buf + (byteSize * srcRow), (char*)buf + (byteSize * dstRow), byteSize);
 		}
 	}
 
@@ -369,7 +328,6 @@ Database::EraseSwapIndex(Table& table, IndexT instance)
 		void*& buf = buffers[i];
 		const SizeT byteSize = desc->typeSize;
 		Memory::Copy((char*)buf + (byteSize * end), (char*)buf + (byteSize * instance), byteSize);
-
 	}
 
 	table.numRows--;
@@ -403,15 +361,7 @@ Database::GrowTable(TableId tid)
 		int newNumBytes = byteSize * table.capacity;
 		void* newData = Memory::Alloc(ALLOCATIONHEAP, newNumBytes);
 		
-		if (desc->trivialType)
-		{
-			Memory::Copy(buf, newData, table.numRows * byteSize);
-		}
-		else
-		{
-			Memory::Copy(buf, newData, table.numRows * byteSize);
-			//desc->fTable.Copy(buf, newData, table.numRows);
-		}
+		Memory::Copy(buf, newData, table.numRows * byteSize);
 		Memory::Free(ALLOCATIONHEAP, buf);
 		buf = newData;
 	}
@@ -431,17 +381,10 @@ Database::AllocateBuffer(TableId tid, ColumnDescription* desc)
 
 	void* buffer = Memory::Alloc(ALLOCATIONHEAP, desc->typeSize * table.capacity);
 
-	if (!desc->trivialType)
+	for (IndexT i = 0; i < table.numRows; ++i)
 	{
-		desc->fTable.Create(buffer, desc->defVal, table.numRows);
-	}
-	else
-	{
-		for (IndexT i = 0; i < table.numRows; ++i)
-		{
-			void* val = (char*)buffer + (i * desc->typeSize);
-			Memory::Copy(desc->defVal, val, desc->typeSize);
-		}
+		void* val = (char*)buffer + (i * desc->typeSize);
+		Memory::Copy(desc->defVal, val, desc->typeSize);
 	}
 	
 	return buffer;
