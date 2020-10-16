@@ -80,16 +80,13 @@ public:
     /// Get the type descriptors for a table
     Util::Array<ColumnDescriptor> const& GetColumns(TableId table);
 
-    /// Move instance from one table to another.
-    IndexT MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid);
-
     /// gets a custom state data column from table.
     template<typename TYPE>
     const ColumnView<typename TYPE> GetColumnView(TableId tid, ColumnDescriptor descriptor);
     
     /// Get a persistant buffer. Only use this if you know what you're doing!
     void** GetPersistantBuffer(TableId table, ColumnId cid);
-
+    
     /// retrieve a table.
     Table& GetTable(TableId tid);
 
@@ -100,7 +97,6 @@ public:
     Dataset Query(FilterSet const& filterset);
 
 private:
-    IndexT AllocateRowIndex(TableId table);
     void EraseSwapIndex(Table& table, IndexT instance);
 
     void GrowTable(TableId tid);

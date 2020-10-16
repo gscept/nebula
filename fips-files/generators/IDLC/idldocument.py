@@ -97,4 +97,5 @@ def BeginNamespaceOverride(f, document, namespace):
 def EndNamespaceOverride(f, document, namespace):
     f.DecreaseIndent()
     f.Write("} // namespace ")
-    f.WriteLine(namespace)
+    f.Write(namespace)
+    f.Write("\n")
