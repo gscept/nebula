@@ -41,6 +41,9 @@ template<typename TYPE>
 inline ColumnDescriptor
 TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue)
 {
+    static_assert(std::is_trivially_copyable<TYPE>(), "TYPE must be trivially copyable.");
+    static_assert(std::is_standard_layout<TYPE>(), "TYPE must be standard layout.");
+    
     auto* reg = Instance();
     // setup a state description with the default values from the type
     ColumnDescription* desc = n_new(ColumnDescription(name, defaultValue));
