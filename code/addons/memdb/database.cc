@@ -69,17 +69,8 @@ Database::DeleteTable(TableId tid)
 		ColumnDescriptor descriptor = table.columns.Get<0>(i);
 		ColumnDescription* desc = TypeRegistry::GetDescription(descriptor);
 		void*& buf = table.columns.Get<1>(i);
-
-		const SizeT byteSize = desc->typeSize;
-
-		if (desc->trivialType)
-		{
-			Memory::Free(ALLOCATIONHEAP, buf);
-		}
-		else
-		{
-			desc->fTable.Destroy(buf, table.capacity);
-		}
+		Memory::Free(ALLOCATIONHEAP, buf);
+		buf = nullptr;
 	}
 }
 
@@ -134,22 +125,7 @@ Database::AllocateRow(TableId tid)
 	n_assert(this->IsValid(tid));
 	Table& table = this->tables[Ids::Index(tid.id)];
 
-	IndexT index;
-	if (table.freeIds.Size() > 0)
-	{
-		index = table.freeIds.Back();
-		table.freeIds.EraseBack();
-	}
-	else
-	{
-		index = table.numRows;
-		if (index >= table.capacity)
-		{
-			this->GrowTable(tid);
-		}
-
-		table.numRows++;
-	}
+	IndexT index = this->AllocateRowIndex(tid);
 
 	// potentially call constructor and set to default
 	for (int i = 0; i < table.columns.Size(); ++i)
@@ -159,14 +135,7 @@ Database::AllocateRow(TableId tid)
 
 		void*& buf = table.columns.Get<1>(i);
 		void* val = (char*)buf + (index * desc->typeSize);
-		if (desc->trivialType)
-		{
-			Memory::Copy(desc->defVal, val, desc->typeSize);
-		}
-		else
-		{
-			desc->fTable.Create(val, desc->defVal, 1);
-		}
+		Memory::Copy(desc->defVal, val, desc->typeSize);
 	}
 	return index;
 }
@@ -199,14 +168,7 @@ Database::SetToDefault(TableId tid, IndexT row)
 		ColumnDescription* desc = TypeRegistry::GetDescription(descriptor.id);
 		void*& buf = table.columns.Get<1>(i);
 		void* val = (char*)buf + (row * desc->typeSize);
-		if (desc->trivialType)
-		{
-			Memory::Copy(desc->defVal, val, desc->typeSize);
-		}
-		else
-		{
-			desc->fTable.Assign(val, desc->defVal, 1);
-		}
+		Memory::Copy(desc->defVal, val, desc->typeSize);
 	}
 }
 
@@ -230,6 +192,43 @@ Database::GetColumns(TableId tid)
 	Table& table = this->tables[Ids::Index(tid.id)];
 	auto& colTypes = table.columns.GetArray<0>();
 	return colTypes;
+}
+
+//------------------------------------------------------------------------------
+/**
+	@note	This might be destructive if the destination table is missing some of the source tables columns!
+	@return	New index/row in destination table
+*/
+IndexT
+Database::MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
+{
+	Table& src = this->tables[Ids::Index(srcTid.id)];
+	Table& dst = this->tables[Ids::Index(dstTid.id)];
+
+	IndexT dstRow = this->AllocateRow(dstTid);
+
+	auto const& cols = src.columns.GetArray<0>();
+	auto& buffers = src.columns.GetArray<1>();
+
+	const int numCols = src.columns.Size();
+	for (int i = 0; i < numCols; ++i)
+	{
+		ColumnDescriptor descriptor = cols[i];
+		ColumnDescription* desc = TypeRegistry::GetDescription(descriptor.id);
+		void*& buf = buffers[i];
+		const SizeT byteSize = desc->typeSize;
+
+		ColumnId dstColId = this->GetColumnId(dstTid, descriptor);
+		if (dstColId != ColumnId::Invalid())
+		{
+			void*& dstBuf = dst.columns.Get<1>(dstColId.id);
+			Memory::Copy((char*)buf + (byteSize * srcRow), (char*)buf + (byteSize * dstRow), byteSize);
+		}
+	}
+
+	this->DeallocateRow(srcTid, srcRow);
+
+	return dstRow;
 }
 
 //------------------------------------------------------------------------------
@@ -284,6 +283,34 @@ Database::Defragment(TableId tid, std::function<void(IndexT, IndexT)> const& mov
 //------------------------------------------------------------------------------
 /**
 */
+IndexT
+Database::AllocateRowIndex(TableId tid)
+{
+	n_assert(this->IsValid(tid));
+	Table& table = this->tables[Ids::Index(tid.id)];
+
+	IndexT index;
+	if (table.freeIds.Size() > 0)
+	{
+		index = table.freeIds.Back();
+		table.freeIds.EraseBack();
+	}
+	else
+	{
+		index = table.numRows;
+		if (index >= table.capacity)
+		{
+			this->GrowTable(tid);
+		}
+
+		table.numRows++;
+	}
+	return index;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 Database::EraseSwapIndex(Table& table, IndexT instance)
 {
@@ -296,18 +323,11 @@ Database::EraseSwapIndex(Table& table, IndexT instance)
 	// erase swap index in column buffers
 	for (int i = 0; i < table.columns.Size(); ++i)
 	{
-		ColumnDescriptor descriptor = table.columns.Get<0>(i);
+		ColumnDescriptor descriptor = cols[i];
 		ColumnDescription* desc = TypeRegistry::GetDescription(descriptor.id);
-		void*& buf = table.columns.Get<1>(i);
+		void*& buf = buffers[i];
 		const SizeT byteSize = desc->typeSize;
-		if (desc->trivialType)
-		{
-			Memory::Copy((char*)buf + (byteSize * end), (char*)buf + (byteSize * instance), byteSize);
-		}
-		else
-		{
-			desc->fTable.Assign((char*)buf + (byteSize * instance), (char*)buf + (byteSize * end), 1);
-		}
+		Memory::Copy((char*)buf + (byteSize * end), (char*)buf + (byteSize * instance), byteSize);
 	}
 
 	table.numRows--;
@@ -341,15 +361,7 @@ Database::GrowTable(TableId tid)
 		int newNumBytes = byteSize * table.capacity;
 		void* newData = Memory::Alloc(ALLOCATIONHEAP, newNumBytes);
 		
-		if (desc->trivialType)
-		{
-			Memory::Copy(buf, newData, table.numRows * byteSize);
-		}
-		else
-		{
-			Memory::Copy(buf, newData, table.numRows * byteSize);
-			//desc->fTable.Copy(buf, newData, table.numRows);
-		}
+		Memory::Copy(buf, newData, table.numRows * byteSize);
 		Memory::Free(ALLOCATIONHEAP, buf);
 		buf = newData;
 	}
@@ -369,17 +381,10 @@ Database::AllocateBuffer(TableId tid, ColumnDescription* desc)
 
 	void* buffer = Memory::Alloc(ALLOCATIONHEAP, desc->typeSize * table.capacity);
 
-	if (!desc->trivialType)
+	for (IndexT i = 0; i < table.numRows; ++i)
 	{
-		desc->fTable.Create(buffer, desc->defVal, table.numRows);
-	}
-	else
-	{
-		for (IndexT i = 0; i < table.numRows; ++i)
-		{
-			void* val = (char*)buffer + (i * desc->typeSize);
-			Memory::Copy(desc->defVal, val, desc->typeSize);
-		}
+		void* val = (char*)buffer + (i * desc->typeSize);
+		Memory::Copy(desc->defVal, val, desc->typeSize);
 	}
 	
 	return buffer;
