@@ -223,7 +223,7 @@ ImguiContext::Create()
     components.Append(VertexComponent((VertexComponent::SemanticName)2, 0, VertexComponentBase::UByte4N, 0));
 	state.vlo = CoreGraphics::CreateVertexLayout({ components });
 
-	Frame::AddCallback("ImGUI", [](const IndexT frameIndex)
+	Frame::AddCallback("ImGUI", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 			CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
 			ImGui::Render();

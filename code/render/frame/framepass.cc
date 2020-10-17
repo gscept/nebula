@@ -82,7 +82,7 @@ FramePass::CompiledImpl::RunJobs(const IndexT frameIndex)
 		// execute contents of this subpass and synchronize
 		// note that we overload the cross queue sync so we do it outside the render pass
 		this->subpasses[i]->QueuePreSync();
-		this->subpasses[i]->Run(frameIndex);
+		this->subpasses[i]->Run(frameIndex, bufferedIndex);
 		this->subpasses[i]->QueuePostSync();
 
 		// finish the draw thread
@@ -97,7 +97,7 @@ FramePass::CompiledImpl::RunJobs(const IndexT frameIndex)
 /**
 */
 void
-FramePass::CompiledImpl::Run(const IndexT frameIndex)
+FramePass::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
 #if NEBULA_ENABLE_MT_DRAW
 	n_assert(this->subpassBuffers.Size() == this->subpasses.Size());

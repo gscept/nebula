@@ -58,7 +58,7 @@ TonemapContext::Create()
 	using namespace CoreGraphics;
 
 	// begin by copying and mipping down to a 2x2 texture
-	Frame::AddCallback("Tonemap-Downsample", [](IndexT)
+	Frame::AddCallback("Tonemap-Downsample", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 #if NEBULA_GRAPHICS_DEBUG
 			CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, "Tonemapping Downsample");
@@ -93,7 +93,7 @@ TonemapContext::Create()
 		});
 
 	// this pass calculates tonemapping from 2x2 cluster down to single pixel, called from the script
-	Frame::AddCallback("Tonemap-AverageLum", [](IndexT)
+	Frame::AddCallback("Tonemap-AverageLum", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 #if NEBULA_GRAPHICS_DEBUG
 			CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Tonemapping Average Luminance");
@@ -114,7 +114,7 @@ TonemapContext::Create()
 		});
 
 	// last pass, copy from render target to copy
-	Frame::AddCallback("Tonemap-Copy", [](IndexT)
+	Frame::AddCallback("Tonemap-Copy", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 #if NEBULA_GRAPHICS_DEBUG
 			CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, "Tonemapping Copy Previous Frame");

@@ -64,16 +64,15 @@ SSRContext::Create()
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
 	using namespace CoreGraphics;
-	Frame::AddCallback("SSR-Trace", [](IndexT)
+	Frame::AddCallback("SSR-Trace", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 #if NEBULA_GRAPHICS_DEBUG
 			CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Screen Space Reflections");
 #endif
 			TextureDimensions dims = TextureGetDimensions(ssrState.traceBuffer);
-			IndexT frameIndex = CoreGraphics::GetBufferedFrameIndex();
 
 			CoreGraphics::SetShaderProgram(ssrState.traceProgram);
-			CoreGraphics::SetResourceTable(ssrState.ssrTraceTables[frameIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+			CoreGraphics::SetResourceTable(ssrState.ssrTraceTables[frameBufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
 			const int TILE_SIZE = 32;
 			int workGroups[2] = {
@@ -87,16 +86,15 @@ SSRContext::Create()
 #endif
 		});
 
-	Frame::AddCallback("SSR-Resolve", [](IndexT)
+	Frame::AddCallback("SSR-Resolve", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 #if NEBULA_GRAPHICS_DEBUG
 			CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Screen Space Reflections");
 #endif
 			TextureDimensions dims = TextureGetDimensions(ssrState.reflectionBuffer);
-			IndexT frameIndex = CoreGraphics::GetBufferedFrameIndex();
 
 			CoreGraphics::SetShaderProgram(ssrState.resolveProgram);
-			CoreGraphics::SetResourceTable(ssrState.ssrResolveTables[frameIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+			CoreGraphics::SetResourceTable(ssrState.ssrResolveTables[frameBufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
 			const int TILE_SIZE = 32;
 			int workGroups[2] = {

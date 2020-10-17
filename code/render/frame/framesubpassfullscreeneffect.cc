@@ -98,7 +98,7 @@ FrameSubpassFullscreenEffect::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& a
 /**
 */
 void
-FrameSubpassFullscreenEffect::CompiledImpl::Run(const IndexT frameIndex)
+FrameSubpassFullscreenEffect::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
 	// activate shader
 	CoreGraphics::SetShaderProgram(this->program);

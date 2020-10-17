@@ -247,7 +247,7 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
 /**
 */
 void
-FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex)
+FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
 	const Ptr<View>& view = Graphics::GraphicsServer::Instance()->GetCurrentView();
 	FrameSubpassBatch::DrawBatch(this->batch, view->GetCamera());

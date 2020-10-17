@@ -216,7 +216,7 @@ TerrainContext::Create(const CoreGraphics::WindowId wnd)
 #endif
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-	Frame::AddCallback("TerrainContext - Render Terrain GBuffer", [](IndexT time)
+	Frame::AddCallback("TerrainContext - Render Terrain GBuffer", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 			Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
 
@@ -253,7 +253,7 @@ TerrainContext::Create(const CoreGraphics::WindowId wnd)
 			CommandBufferEndMarker(GraphicsQueueType);
 		});
 
-	Frame::AddCallback("TerrainContext - Render Terrain Screenspace", [](IndexT time)
+	Frame::AddCallback("TerrainContext - Render Terrain Screenspace", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 			Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
 			if (runtimes.Size() > 0)
@@ -268,7 +268,7 @@ TerrainContext::Create(const CoreGraphics::WindowId wnd)
 			}
 		});
 
-	Frame::AddCallback("TerrainContext - Terrain Shadows", [](IndexT time)
+	Frame::AddCallback("TerrainContext - Terrain Shadows", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 		});
 
@@ -675,7 +675,7 @@ TerrainContext::Create(const CoreGraphics::WindowId wnd)
 		});
 	ResourceTableCommitChanges(terrainVirtualTileState.virtualTerrainDynamicResourceTable);
 
-	Frame::AddCallback("TerrainContext - Clear Page Update Buffer", [](IndexT time)
+	Frame::AddCallback("TerrainContext - Clear Page Update Buffer", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 			CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Terrain Clear Page Update Buffer");
 			BarrierInsert(GraphicsQueueType,
@@ -763,7 +763,7 @@ TerrainContext::Create(const CoreGraphics::WindowId wnd)
 			CommandBufferEndMarker(GraphicsQueueType);
 		});
 
-	Frame::AddCallback("TerrainContext - Render Terrain Prepass", [](IndexT time)
+	Frame::AddCallback("TerrainContext - Render Terrain Prepass", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 			Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
 
@@ -800,7 +800,7 @@ TerrainContext::Create(const CoreGraphics::WindowId wnd)
 			CommandBufferEndMarker(GraphicsQueueType);
 		});
 
-	Frame::AddCallback("TerrainContext - Extract Readback Data Buffer", [](IndexT time)
+	Frame::AddCallback("TerrainContext - Extract Readback Data Buffer", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 			CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Terrain Extract Readback Data Buffer");
 
@@ -918,9 +918,9 @@ TerrainContext::Create(const CoreGraphics::WindowId wnd)
 			CommandBufferEndMarker(GraphicsQueueType);
 		});
 
-	Frame::AddCallback("TerrainContext - Update Physical Texture Cache", [](IndexT time)
 		{
 			if (terrainVirtualTileState.updateLowres && CoreGraphics::EventPoll(terrainVirtualTileState.biomeUpdatedEvent))
+		Frame::AddCallback("TerrainContext - Update Physical Texture Cache", [](const IndexT frame, const IndexT frameBufferIndex)
 			{
 				CoreGraphics::EventHostReset(terrainVirtualTileState.biomeUpdatedEvent);
 				terrainVirtualTileState.updateLowres = false;
@@ -1138,7 +1138,7 @@ TerrainContext::Create(const CoreGraphics::WindowId wnd)
 			CommandBufferEndMarker(GraphicsQueueType);
 		});
 
-	Frame::AddCallback("TerrainContext - Screen Space Resolve", [](IndexT time)
+	Frame::AddCallback("TerrainContext - Screen Space Resolve", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 			CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Terrain Screenspace Pass");
 			SetShaderProgram(terrainVirtualTileState.terrainScreenspacePass);

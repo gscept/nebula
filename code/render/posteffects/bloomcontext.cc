@@ -106,7 +106,7 @@ BloomContext::Create()
 	_CreatePluginContext();
 
 	using namespace CoreGraphics;
-	Frame::AddCallback("Bloom-BrightnessLowpass", [](IndexT)
+	Frame::AddCallback("Bloom-BrightnessLowpass", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 #if NEBULA_GRAPHICS_DEBUG
 			CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_ORANGE, "BrightnessLowpass");
@@ -122,7 +122,7 @@ BloomContext::Create()
 #endif
 		});
 
-	Frame::AddCallback("Bloom-Blur", [](IndexT)
+	Frame::AddCallback("Bloom-Blur", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 #if NEBULA_GRAPHICS_DEBUG
 			CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "BloomBlur");

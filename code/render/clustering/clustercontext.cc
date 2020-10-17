@@ -105,7 +105,7 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
 	ResourceTableCommitChanges(state.resourceTable);
 
 	// called from main script
-	Frame::AddCallback("ClusterContext - Update Clusters", [](IndexT frame) // trigger update
+	Frame::AddCallback("ClusterContext - Update Clusters", [](const IndexT frame, const IndexT frameBufferIndex) // trigger update
 		{
 			UpdateClusters();
 		});

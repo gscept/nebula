@@ -146,18 +146,18 @@ LightContext::Create()
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
 	// called from main script
-	Frame::AddCallback("LightContext - Update Shadowmaps", [](IndexT frame) // trigger update
+	Frame::AddCallback("LightContext - Update Shadowmaps", [](const IndexT frame, const IndexT frameBufferIndex) // trigger update
 		{
 			// run the script
 			N_SCOPE(ShadowMapExecute, Render);
-			lightServerState.shadowMappingFrameScript->Run(frame);
+			lightServerState.shadowMappingFrameScript->Run(frame, frameBufferIndex);
 #ifndef PUBLIC_BUILD
 			//Debug::FrameScriptInspector::Run(lightServerState.shadowMappingFrameScript);
 #endif
 		});
 
 	// register shadow mapping algorithms
-	Frame::AddCallback("LightContext - Spotlight Shadows", [](IndexT frame) // graphics
+	Frame::AddCallback("LightContext - Spotlight Shadows", [](const IndexT frame, const IndexT frameBufferIndex) // graphics
 		{
 			IndexT i;
 			for (i = 0; i < lightServerState.shadowcastingLocalLights.Size(); i++)
@@ -166,11 +166,11 @@ LightContext::Create()
 				Frame::FrameSubpassBatch::DrawBatch(lightServerState.spotlightsBatchCode, lightServerState.shadowcastingLocalLights[i], 1, i);
 			}
 		});
-	Frame::AddCallback("LightContext - Spotlight Blur", [](IndexT frame) // compute
+	Frame::AddCallback("LightContext - Spotlight Blur", [](const IndexT frame, const IndexT frameBufferIndex) // compute
 		{
 		});
 
-	Frame::AddCallback("LightContext - Sun Shadows", [](IndexT frame) // graphics
+	Frame::AddCallback("LightContext - Sun Shadows", [](const IndexT frame, const IndexT frameBufferIndex) // graphics
 		{
 			if (lightServerState.globalLightEntity != Graphics::GraphicsEntityId::Invalid())
 			{
@@ -185,22 +185,22 @@ LightContext::Create()
 				}				
 			}
 		});
-	Frame::AddCallback("LightContext - Sun Blur", [](IndexT frame) // compute
+	Frame::AddCallback("LightContext - Sun Blur", [](const IndexT frame, const IndexT frameBufferIndex) // compute
 		{
 			LightContext::BlurGlobalShadowMap();
 		});
 
-	Frame::AddCallback("LightContext - Cull and Classify", [](IndexT frame)
+	Frame::AddCallback("LightContext - Cull and Classify", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 			LightContext::CullAndClassify();
 		});
 
-	Frame::AddCallback("LightContext - Deferred Cluster", [](IndexT frame)
+	Frame::AddCallback("LightContext - Deferred Cluster", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 			LightContext::ComputeLighting();
 		});
 
-	Frame::AddCallback("LightContext - Combine", [](IndexT frame)
+	Frame::AddCallback("LightContext - Combine", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 			LightContext::CombineLighting();
 		});
