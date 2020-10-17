@@ -3190,7 +3190,6 @@ EndSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue, 
 	}
 
 	CoreGraphics::CommandBufferId commandBuffer = queue == GraphicsQueueType ? state.gfxCmdBuffer : state.computeCmdBuffer;
-	VkPipelineStageFlags stageFlags = queue == GraphicsQueueType ? VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 
 	LockResourceSubmission();
 	if (queue == GraphicsQueueType && state.setupSubmissionActive)
@@ -3232,6 +3231,7 @@ EndSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue, 
 	// if we have a queue that is blocking us, wait for it
 	if (waitQueue != InvalidQueueType)
 	{
+		VkPipelineStageFlags stageFlags = queue == VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 		state.subcontextHandler.AppendWaitTimeline(
 			queue,
 			stageFlags,
