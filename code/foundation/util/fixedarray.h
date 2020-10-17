@@ -51,7 +51,9 @@ public:
     /// set number of elements (clears existing content)
     void SetSize(SizeT s);
     /// get number of elements
-    SizeT Size() const;
+    const SizeT Size() const;
+    /// get total byte size
+    const SizeT ByteSize() const;
     /// resize array without deleting existing content
     void Resize(SizeT newSize);
     /// return true if array if empty (has no elements)
@@ -282,7 +284,7 @@ template<class TYPE> TYPE&
 FixedArray<TYPE>::operator[](IndexT index) const
 {
     #if NEBULA_BOUNDSCHECKS
-//    n_assert(this->elements && (index < this->count));
+    n_assert(this->elements && (index < this->count));
     #endif
     return this->elements[index];
 }
@@ -376,10 +378,19 @@ FixedArray<TYPE>::Resize(SizeT newSize)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> SizeT
+template<class TYPE> const SizeT
 FixedArray<TYPE>::Size() const
 {
     return this->count;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> const SizeT
+FixedArray<TYPE>::ByteSize() const
+{
+    return this->count * sizeof(TYPE);
 }
 
 //------------------------------------------------------------------------------
