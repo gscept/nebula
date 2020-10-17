@@ -321,10 +321,10 @@ ResourceTableSetInputAttachment(const ResourceTableId& id, const ResourceTableIn
 	VkDescriptorImageInfo img;
 	img.sampler = VK_NULL_HANDLE;
 	img.imageLayout = tex.isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	if (tex.tex == TextureId::Invalid())
+	if (tex.tex == TextureViewId::Invalid())
 		img.imageView = VK_NULL_HANDLE;
 	else
-		img.imageView = TextureGetVkImageView(tex.tex);
+		img.imageView = TextureViewGetVk(tex.tex);
 
 	WriteInfo inf;
 	inf.img = img;

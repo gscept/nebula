@@ -24,9 +24,9 @@ struct VkPassLoadInfo
 	CoreGraphics::ConstantBinding renderTargetDimensionsVar;
 
 	// we need these stored for resizing
-	Util::Array<CoreGraphics::TextureId> colorAttachments;
+	Util::Array<CoreGraphics::TextureViewId> colorAttachments;
 	Util::Array<Math::vec4> colorAttachmentClears;
-	CoreGraphics::TextureId depthStencilAttachment;
+	CoreGraphics::TextureViewId depthStencilAttachment;
     Util::Array<CoreGraphics::AttachmentFlagBits> colorAttachmentFlags;
     Util::Array<CoreGraphics::Subpass> subpasses;
     CoreGraphics::AttachmentFlagBits depthStencilFlags;
@@ -52,6 +52,7 @@ struct VkPassRuntimeInfo
 	Util::FixedArray<Util::FixedArray<VkRect2D>> subpassRects;
 	Util::FixedArray<Util::FixedArray<VkViewport>> subpassViewports;
 	Util::FixedArray<VkPipelineViewportStateCreateInfo> subpassPipelineInfo;
+	CoreGraphics::PassRecordMode recordMode;
 };
 
 typedef Ids::IdAllocator<

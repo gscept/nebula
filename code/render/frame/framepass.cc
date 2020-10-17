@@ -61,7 +61,7 @@ void
 FramePass::CompiledImpl::RunJobs(const IndexT frameIndex)
 {
 	// begin pass
-	PassBegin(this->pass);
+	PassBegin(this->pass, PassRecordMode::Record);
 
 	// get frame index
 	IndexT bufferedIndex = CoreGraphics::GetBufferedFrameIndex();
@@ -70,10 +70,6 @@ FramePass::CompiledImpl::RunJobs(const IndexT frameIndex)
 	IndexT i;
 	for (i = 0; i < this->subpasses.Size(); i++)
 	{
-		// progress to next subpass if not on first iteration
-		if (i > 0)
-			PassNextSubpass(this->pass);
-
 		N_SCOPE(RunSubpassRecord, Render);
 
 		// start subpass commands
@@ -87,9 +83,8 @@ FramePass::CompiledImpl::RunJobs(const IndexT frameIndex)
 
 		// finish the draw thread
 		CoreGraphics::EndSubpassCommands();
-	}	
+	}
 
-	// end pass
 	PassEnd(this->pass);
 }
 
@@ -108,7 +103,7 @@ FramePass::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 #endif
 
 	// begin pass
-	PassBegin(this->pass);
+	PassBegin(this->pass, PassRecordMode::ExecuteRecorded);
 	IndexT bufferedIndex = CoreGraphics::GetBufferedFrameIndex();
 
 	// run subpasses
@@ -211,14 +206,15 @@ FramePass::Build(
 	this->SetupSynchronization(allocator, events, barriers, rwBuffers, textures);
 
 	// first add dependency for color attachments
-	const Util::Array<CoreGraphics::TextureId>& attachments = CoreGraphics::PassGetAttachments(this->pass);
+	const Util::Array<CoreGraphics::TextureViewId>& attachments = CoreGraphics::PassGetAttachments(this->pass);
 	for (IndexT i = 0; i < attachments.Size(); i++)
 	{
-		IndexT idx = textures.FindIndex(attachments[i]);
+		TextureId tex = TextureViewGetTexture(attachments[i]);
+		IndexT idx = textures.FindIndex(tex);
 		n_assert(idx != InvalidIndex);
 		Util::Array<TextureDependency>& deps = textures.ValueAtIndex(idx);
-		uint layers = CoreGraphics::TextureGetNumLayers(attachments[i]);
-		uint mips = CoreGraphics::TextureGetNumMips(attachments[i]);
+		uint layers = CoreGraphics::TextureGetNumLayers(tex);
+		uint mips = CoreGraphics::TextureGetNumMips(tex);
 		CoreGraphics::ImageSubresourceInfo subres{ 
 			CoreGraphics::ImageAspect::ColorBits,
 			0, mips, 0, layers };
@@ -235,14 +231,15 @@ FramePass::Build(
 	}
 
 	// then add potential dependency for depth-stencil attachment
-	CoreGraphics::TextureId depthStencilAttachment = CoreGraphics::PassGetDepthStencilAttachment(this->pass);
-	if (depthStencilAttachment != CoreGraphics::TextureId::Invalid())
+	CoreGraphics::TextureViewId depthStencilAttachment = CoreGraphics::PassGetDepthStencilAttachment(this->pass);
+	if (depthStencilAttachment != CoreGraphics::TextureViewId::Invalid())
 	{
-		IndexT idx = textures.FindIndex(depthStencilAttachment);
+		TextureId tex = TextureViewGetTexture(depthStencilAttachment);
+		IndexT idx = textures.FindIndex(tex);
 		n_assert(idx != InvalidIndex);
 		Util::Array<TextureDependency>& deps = textures.ValueAtIndex(idx);
-		uint layers = CoreGraphics::TextureGetNumLayers(depthStencilAttachment);
-		uint mips = CoreGraphics::TextureGetNumMips(depthStencilAttachment);
+		uint layers = CoreGraphics::TextureGetNumLayers(tex);
+		uint mips = CoreGraphics::TextureGetNumMips(tex);
 		CoreGraphics::ImageSubresourceInfo subres{
 			CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits,
 			0, mips, 0, layers };

@@ -2184,14 +2184,24 @@ BeginPass(const CoreGraphics::PassId pass)
 	state.database.SetPass(pass);
 	state.database.SetSubpass(0);
 
-
 #if NEBULA_ENABLE_MT_DRAW
 	const Util::FixedArray<VkViewport>& viewports = PassGetVkViewports(state.pass);
 	CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
 	const Util::FixedArray<VkRect2D>& scissors = PassGetVkRects(state.pass);
 	CoreGraphics::SetVkScissorRects(scissors.Begin(), scissors.Size());
-	if (!state.drawThread)
+
+	switch (mode)
+	{
+	case PassRecordMode::ExecuteInline:
+		vkCmdBeginRenderPass(GetMainBuffer(GraphicsQueueType), &info, VK_SUBPASS_CONTENTS_INLINE);
+		break;
+	case PassRecordMode::ExecuteRecorded:
 		vkCmdBeginRenderPass(GetMainBuffer(GraphicsQueueType), &info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		break;
+	case PassRecordMode::Record:
+	default:
+		break;
+	}
 #else
 	const Util::FixedArray<VkViewport>& viewports = PassGetVkViewports(state.pass);
 	CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
@@ -2240,7 +2250,7 @@ BeginSubpassCommands(CoreGraphics::CommandBufferId buf)
 /**
 */
 void 
-SetToNextSubpass()
+SetToNextSubpass(PassRecordMode mode)
 {
 	n_assert(state.inBeginFrame);
 	n_assert(state.inBeginPass);
@@ -2255,8 +2265,19 @@ SetToNextSubpass()
 	CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
 	const Util::FixedArray<VkRect2D>& scissors = PassGetVkRects(state.pass);
 	CoreGraphics::SetVkScissorRects(scissors.Begin(), scissors.Size());
-	if (!state.drawThread)
+
+	switch (mode)
+	{
+	case PassRecordMode::ExecuteInline:
+		vkCmdNextSubpass(GetMainBuffer(GraphicsQueueType), VK_SUBPASS_CONTENTS_INLINE);
+		break;
+	case PassRecordMode::ExecuteRecorded:
 		vkCmdNextSubpass(GetMainBuffer(GraphicsQueueType), VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		break;
+	case PassRecordMode::Record:
+	default:
+		break;
+	}
 #else
 	const Util::FixedArray<VkViewport>& viewports = PassGetVkViewports(state.pass);
 	CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
@@ -2272,9 +2293,9 @@ SetToNextSubpass()
 void 
 BeginBatch(Frame::FrameBatchType::Code batchType)
 {
-	n_assert(state.inBeginPass);
+	//n_assert(state.inBeginPass);
 	n_assert(!state.inBeginBatch);
-	n_assert(state.pass != PassId::Invalid());
+	//n_assert(state.pass != PassId::Invalid());
 
 	state.inBeginBatch = true;
 }
@@ -3099,7 +3120,7 @@ void
 EndBatch()
 {
 	n_assert(state.inBeginBatch);
-	n_assert(state.pass != PassId::Invalid());
+	//n_assert(state.pass != PassId::Invalid());
 
 	state.currentProgram = -1;
 	state.inBeginBatch = false;
@@ -3109,7 +3130,7 @@ EndBatch()
 /**
 */
 void
-EndPass()
+EndPass(PassRecordMode mode)
 {
 	n_assert(state.inBeginPass);
 	n_assert(state.pass != PassId::Invalid());
@@ -3123,14 +3144,17 @@ EndPass()
 	state.currentProgram = -1;
 
 	// end render pass
-#if NEBULA_ENABLE_MT_DRAW
-	if (!state.drawThread)
+	switch (mode)
+	{
+	case PassRecordMode::ExecuteInline:
+	case PassRecordMode::ExecuteRecorded:
 		vkCmdEndRenderPass(GetMainBuffer(GraphicsQueueType));
-#else
-	vkCmdEndRenderPass(GetMainBuffer(GraphicsQueueType));
-#endif
+		break;
+	case PassRecordMode::Record:
+	default:
+		break;
+	}
 }
-
 
 //------------------------------------------------------------------------------
 /**

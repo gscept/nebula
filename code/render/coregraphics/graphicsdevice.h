@@ -191,12 +191,12 @@ bool BeginFrame(IndexT frameIndex);
 /// start a new submission, with an optional argument for waiting for another queue
 void BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue);
 /// begin a rendering pass
-void BeginPass(const CoreGraphics::PassId pass);
+void BeginPass(const CoreGraphics::PassId pass, PassRecordMode mode);
 
 /// start a new draw thread
 void BeginSubpassCommands(const CoreGraphics::CommandBufferId buf);
 /// progress to next subpass	
-void SetToNextSubpass();
+void SetToNextSubpass(PassRecordMode mode);
 /// begin rendering a batch
 void BeginBatch(Frame::FrameBatchType::Code batchType);
 
@@ -309,7 +309,7 @@ void ExecuteCommands(const CoreGraphics::CommandBufferId cmds);
 /// end current batch
 void EndBatch();
 /// end current pass
-void EndPass();
+void EndPass(PassRecordMode mode);
 /// end the current submission, 
 void EndSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue, bool endOfFrame = false);
 /// end current frame
