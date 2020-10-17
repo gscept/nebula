@@ -9,6 +9,59 @@
 
 namespace Util
 {
+
+//------------------------------------------------------------------------------
+/**
+	Wrap std::tuple
+*/
+template <typename... T>
+using Tuple = std::tuple<T...>;
+
+
+//------------------------------------------------------------------------------
+/**
+	Wrap std::pair
+*/
+template <typename A, typename B>
+using Pair = Tuple<A, B>;
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename... T>
+constexpr Tuple<T...> MakeTuple(const T&... args)
+{
+	return std::make_tuple(args...);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename A, typename B>
+constexpr Pair<A, B> MakePair(const A& a, const B& b)
+{
+	return std::make_pair(a, b);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename C, int INDEX, typename... T>
+constexpr C Get(const Tuple<T...>& tuple)
+{
+	return std::get<INDEX>(tuple);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename C, typename A, typename B, int INDEX>
+constexpr C Get(const Pair<A, B>& pair)
+{
+	static_assert(INDEX == 0 || INDEX == 1, "Index has to be either 0 or 1");
+	return std::get<INDEX>(pair);
+}
+
 template <typename C>
 struct get_template_type;
 
