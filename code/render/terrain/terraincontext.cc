@@ -73,7 +73,6 @@ struct
 	CoreGraphics::TextureId biomeMasks[Terrain::MAX_BIOMES];
 	IndexT biomeCounter;
 
-	RenderUtil::DrawFullScreenQuad fsq;
 	CoreGraphics::TextureId terrainDataBuffer;
 	CoreGraphics::TextureId terrainNormalBuffer;
 	CoreGraphics::TextureId terrainPosBuffer;
@@ -1144,7 +1143,7 @@ TerrainContext::Create(const CoreGraphics::WindowId wnd)
 			SetShaderProgram(terrainVirtualTileState.terrainScreenspacePass);
 
 			CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
-			terrainVirtualTileState.fsq.ApplyMesh();
+			RenderUtil::DrawFullScreenQuad::ApplyMesh();
 			SetResourceTable(terrainVirtualTileState.virtualTerrainSystemResourceTable, NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
 			SetResourceTable(terrainVirtualTileState.virtualTerrainRuntimeResourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 			CoreGraphics::Draw();

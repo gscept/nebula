@@ -27,7 +27,6 @@ struct
 
 	CoreGraphics::ConstantBinding timevar;
 	CoreGraphics::ConstantBufferId constants;
-	RenderUtil::DrawFullScreenQuad fsq;
 
 	CoreGraphics::TextureId colorBuffer;
 	CoreGraphics::TextureId averageLumBuffer;
@@ -102,10 +101,10 @@ TonemapContext::Create()
 			Timing::Time time = FrameSync::FrameSyncTimer::Instance()->GetFrameTime();
 			SetShaderProgram(tonemapState.program);
 			BeginBatch(Frame::FrameBatchType::System);
-			tonemapState.fsq.ApplyMesh();
+			RenderUtil::DrawFullScreenQuad::ApplyMesh();
 			ConstantBufferUpdate(tonemapState.constants, (float)time, tonemapState.timevar);
 			SetResourceTable(tonemapState.tonemapTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
-			tonemapState.fsq.Draw();
+			Draw();
 			EndBatch();
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -169,7 +168,6 @@ TonemapContext::Discard()
 	DestroyTexture(tonemapState.copy);
 	DestroyConstantBuffer(tonemapState.constants);
 	DestroyResourceTable(tonemapState.tonemapTable);
-	tonemapState.fsq.Discard();
 }
 
 //------------------------------------------------------------------------------
@@ -211,8 +209,5 @@ TonemapContext::Setup(const Ptr<Frame::FrameScript>& script)
 	ResourceTableSetTexture(tonemapState.tonemapTable, { tonemapState.copy, tonemapState.prevSlot, 0, SamplerId::Invalid(), false });
 	ResourceTableSetTexture(tonemapState.tonemapTable, { tonemapState.downsample2x2, tonemapState.colorSlot, 0, SamplerId::Invalid(), false });
 	ResourceTableCommitChanges(tonemapState.tonemapTable);
-
-	tonemapState.fsq.Setup(1, 1);
-
 }
 } // namespace PostEffects

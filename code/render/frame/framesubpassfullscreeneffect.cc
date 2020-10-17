@@ -35,7 +35,6 @@ FrameSubpassFullscreenEffect::Setup()
 {
 	n_assert(this->tex != TextureId::Invalid());
 	TextureDimensions dims = TextureGetDimensions(this->tex);
-	this->fsq.Setup(dims.width, dims.height);
 
 	this->program = ShaderGetProgram(this->shader, ShaderFeatureFromString(SHADER_POSTEFFECT_DEFAULT_FEATURE_MASK));
 }
@@ -48,7 +47,6 @@ FrameSubpassFullscreenEffect::Discard()
 {
 	FrameOp::Discard();
 
-	this->fsq.Discard();
 	this->tex = TextureId::Invalid();
 	DestroyResourceTable(this->resourceTable);
 	IndexT i;
@@ -87,7 +85,6 @@ FrameOp::Compiled*
 FrameSubpassFullscreenEffect::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
 	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
-	ret->fsq = this->fsq;
 	ret->program = this->program;
 	ret->resourceTable = this->resourceTable;
 
@@ -105,9 +102,9 @@ FrameSubpassFullscreenEffect::CompiledImpl::Run(const IndexT frameIndex, const I
 
 	// draw
 	CoreGraphics::BeginBatch(FrameBatchType::System);
-	this->fsq.ApplyMesh();
+	RenderUtil::DrawFullScreenQuad::ApplyMesh();
 	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
-	this->fsq.Draw();
+	CoreGraphics::Draw();
 	CoreGraphics::EndBatch();
 }
 

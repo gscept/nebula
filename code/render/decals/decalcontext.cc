@@ -27,7 +27,6 @@ struct
 	CoreGraphics::ShaderProgramId debugProgram;
 	CoreGraphics::ShaderProgramId renderPBRProgram;
 	CoreGraphics::ShaderProgramId renderEmissiveProgram;
-	RenderUtil::DrawFullScreenQuad fsq;
 	CoreGraphics::BufferId clusterDecalIndexLists;
 	Util::FixedArray<CoreGraphics::BufferId> stagingClusterDecalsList;
 	CoreGraphics::BufferId clusterDecalsList;
@@ -105,7 +104,6 @@ DecalContext::Create()
 #endif
 
 	DisplayMode mode = WindowGetDisplayMode(DisplayDevice::Instance()->GetCurrentWindow());
-	decalState.fsq.Setup(mode.GetWidth(), mode.GetHeight());
 
 	BufferCreateInfo rwbInfo;
 	rwbInfo.name = "DecalIndexListsBuffer";
@@ -149,7 +147,6 @@ DecalContext::Create()
 void 
 DecalContext::Discard()
 {
-	decalState.fsq.Discard();
 }
 
 //------------------------------------------------------------------------------
@@ -490,7 +487,7 @@ DecalContext::RenderPBR()
 	// set resources and draw
 	SetResourceTable(decalState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 	SetShaderProgram(decalState.renderPBRProgram);
-	decalState.fsq.ApplyMesh();
+	RenderUtil::DrawFullScreenQuad::ApplyMesh();
 	Draw();
 
 	// end the batch
@@ -514,7 +511,7 @@ DecalContext::RenderEmissive()
 	// set resources and draw
 	SetResourceTable(decalState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 	SetShaderProgram(decalState.renderEmissiveProgram);
-	decalState.fsq.ApplyMesh();
+	RenderUtil::DrawFullScreenQuad::ApplyMesh();
 	SetGraphicsPipeline();
 	Draw();
 

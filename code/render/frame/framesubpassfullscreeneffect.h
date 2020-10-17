@@ -31,7 +31,6 @@ public:
 	{
 		void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
 
-		RenderUtil::DrawFullScreenQuad fsq;
 		CoreGraphics::ShaderProgramId program;
 		CoreGraphics::ResourceTableId resourceTable;
 	};
@@ -42,7 +41,6 @@ public:
 	Util::Array<std::tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>> textures;
 	CoreGraphics::ResourceTableId resourceTable;
 
-	RenderUtil::DrawFullScreenQuad fsq;
 	CoreGraphics::ShaderId shader;
 	CoreGraphics::ShaderProgramId program;
 	CoreGraphics::TextureId tex;
