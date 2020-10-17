@@ -652,7 +652,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
 
 	VkDevice& dev = resourceTableLayoutAllocator.Get<ResourceTableLayoutDevice>(id);
 	VkDescriptorSetLayout& layout = resourceTableLayoutAllocator.Get<ResourceTableLayoutSetLayout>(id);
-	Util::Array<std::pair<CoreGraphics::SamplerId, uint32_t>>& samplers = resourceTableLayoutAllocator.Get<ResourceTableLayoutSamplers>(id);
+	Util::Array<Util::Pair<CoreGraphics::SamplerId, uint32_t>>& samplers = resourceTableLayoutAllocator.Get<ResourceTableLayoutSamplers>(id);
 	Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayoutImmutableSamplerFlags>(id);
 	Util::Array<VkDescriptorPoolSize>& poolSizes = resourceTableLayoutAllocator.Get<ResourceTableLayoutPoolSizes>(id);
 
@@ -825,7 +825,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
 		bindings.Append(binding);
 
 		// add static samplers
-		samplers.Append(std::make_pair(samp.sampler, samp.slot));
+		samplers.Append(Util::MakePair(samp.sampler, samp.slot));
 		samplerSize.descriptorCount++;
 	}
 

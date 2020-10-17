@@ -66,14 +66,14 @@ FrameSubpassFullscreenEffect::OnWindowResized()
 	IndexT i;
 	for (i = 0; i < this->textures.Size(); i++)
 	{
-		const std::tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>& tuple = this->textures[i];
-		if (std::get<1>(tuple) != CoreGraphics::ConstantBufferId::Invalid())
+		const Util::Tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>& tuple = this->textures[i];
+		if (Util::Get<1>(tuple) != CoreGraphics::ConstantBufferId::Invalid())
 		{
-			CoreGraphics::ConstantBufferUpdate(std::get<1>(tuple), CoreGraphics::TextureGetBindlessHandle(std::get<2>(tuple)), std::get<0>(tuple));
+			CoreGraphics::ConstantBufferUpdate(Util::Get<1>(tuple), CoreGraphics::TextureGetBindlessHandle(Util::Get<2>(tuple)), Util::Get<0>(tuple));
 		}
 		else
 		{
-			ResourceTableSetTexture(this->resourceTable, { std::get<2>(tuple), std::get<0>(tuple), 0, CoreGraphics::SamplerId::Invalid(), false });
+			ResourceTableSetTexture(this->resourceTable, { Util::Get<2>(tuple), Util::Get<0>(tuple), 0, CoreGraphics::SamplerId::Invalid(), false });
 		}
 	}
 }

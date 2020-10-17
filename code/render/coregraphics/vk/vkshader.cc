@@ -376,8 +376,8 @@ VkShaderCleanup(
 
 	for (i = 0; i < setLayouts.Size(); i++)
 	{
-		if (std::get<1>(setLayouts[i]) != CoreGraphics::ResourceTableLayoutId::Invalid())
-			CoreGraphics::DestroyResourceTableLayout(std::get<1>(setLayouts[i]));
+		if (Util::Get<1>(setLayouts[i]) != CoreGraphics::ResourceTableLayoutId::Invalid())
+			CoreGraphics::DestroyResourceTableLayout(Util::Get<1>(setLayouts[i]));
 	}
 	setLayouts.Clear();
 

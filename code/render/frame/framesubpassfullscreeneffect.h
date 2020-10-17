@@ -38,7 +38,7 @@ public:
 	FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 	
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId> constantBuffers;
-	Util::Array<std::tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>> textures;
+	Util::Array<Util::Tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>> textures;
 	CoreGraphics::ResourceTableId resourceTable;
 
 	CoreGraphics::ShaderId shader;

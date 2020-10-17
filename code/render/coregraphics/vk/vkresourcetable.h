@@ -61,7 +61,7 @@ typedef Ids::IdAllocator<
 	VkDevice,
 	VkDescriptorSetLayout,
 	Util::Array<VkDescriptorPoolSize>,
-	Util::Array<std::pair<CoreGraphics::SamplerId, uint32_t>>,
+	Util::Array<Util::Pair<CoreGraphics::SamplerId, uint32_t>>,
 	Util::HashTable<uint32_t, bool>,
 	Util::Array<VkDescriptorPool>,
 	VkDescriptorPool,

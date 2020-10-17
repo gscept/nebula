@@ -28,7 +28,8 @@ using Pair = Tuple<A, B>;
 //------------------------------------------------------------------------------
 /**
 */
-template <typename... T> constexpr Tuple<T...> 
+template <typename... T> 
+constexpr Tuple<T...> 
 MakeTuple(const T&... args)
 {
 	return std::make_tuple(args...);
@@ -37,7 +38,8 @@ MakeTuple(const T&... args)
 //------------------------------------------------------------------------------
 /**
 */
-template <typename A, typename B> constexpr Pair<A, B> 
+template <typename A, typename B> 
+constexpr Pair<A, B> 
 MakePair(const A& a, const B& b)
 {
 	return std::make_pair(a, b);

@@ -275,8 +275,8 @@ FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* n
 	subres.layerCount = 1;
 	subres.mip = 0;
 	subres.mipCount = 1;
-	op->textureDeps.Add(fromTex, std::make_tuple(from->string_value, CoreGraphics::BarrierAccess::TransferRead, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferSource));
-	op->textureDeps.Add(toTex, std::make_tuple(to->string_value, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferDestination));
+	op->textureDeps.Add(fromTex, Util::MakeTuple(from->string_value, CoreGraphics::BarrierAccess::TransferRead, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferSource));
+	op->textureDeps.Add(toTex, Util::MakeTuple(to->string_value, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferDestination));
 
 	// setup blit operation
 	op->from = fromTex;
@@ -320,8 +320,8 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
 	subres.layerCount = 1;
 	subres.mip = 0;
 	subres.mipCount = 1;
-	op->textureDeps.Add(fromTex, std::make_tuple(from->string_value, CoreGraphics::BarrierAccess::TransferRead, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferSource));
-	op->textureDeps.Add(toTex, std::make_tuple(to->string_value, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferDestination));
+	op->textureDeps.Add(fromTex, Util::MakeTuple(from->string_value, CoreGraphics::BarrierAccess::TransferRead, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferSource));
+	op->textureDeps.Add(toTex, Util::MakeTuple(to->string_value, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferDestination));
 
 	// setup copy operation
 	op->from = fromTex;
@@ -360,7 +360,7 @@ FrameScriptLoader::ParseMipmap(const Ptr<Frame::FrameScript>& script, JzonValue*
 	subres.layerCount = 1;
 	subres.mip = 0;
 	subres.mipCount = 1;
-	op->textureDeps.Add(ttex, std::make_tuple(tex->string_value, CoreGraphics::BarrierAccess::TransferRead, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferSource));
+	op->textureDeps.Add(ttex, Util::MakeTuple(tex->string_value, CoreGraphics::BarrierAccess::TransferRead, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferSource));
 
 	// setup copy operation
 	op->tex = ttex;
@@ -946,7 +946,7 @@ FrameScriptLoader::ParseShaderState(
 	CoreGraphics::ShaderId& shd, 
 	CoreGraphics::ResourceTableId& table, 
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& constantBuffers,
-	Util::Array<std::tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>>& textures
+	Util::Array<Util::Tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>>& textures
 )
 {
 	JzonValue* shader = jzon_get(node, "shader");
@@ -970,7 +970,7 @@ FrameScriptLoader::ParseShaderVariables(
 	const CoreGraphics::ShaderId& shd, 
 	CoreGraphics::ResourceTableId& table, 
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& constantBuffers, 
-	Util::Array<std::tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>>& textures, JzonValue* node)
+	Util::Array<Util::Tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>>& textures, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -1030,7 +1030,7 @@ FrameScriptLoader::ParseShaderVariables(
 		case TextureHandleType:
 		{
 			CoreGraphics::TextureId rtid = script->GetTexture(valStr);
-			textures.Append(std::make_tuple(bind, cbo, rtid));
+			textures.Append(Util::MakeTuple(bind, cbo, rtid));
 			if (rtid != CoreGraphics::TextureId::Invalid())
 				ConstantBufferUpdate(cbo, CoreGraphics::TextureGetBindlessHandle(rtid), bind);
 			else
@@ -1043,7 +1043,7 @@ FrameScriptLoader::ParseShaderVariables(
 			IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
 			CoreGraphics::TextureId rtid = script->GetTexture(valStr);
 
-			textures.Append(std::make_tuple(slot, ConstantBufferId::Invalid(), rtid));
+			textures.Append(Util::MakeTuple(slot, ConstantBufferId::Invalid(), rtid));
 			if (rtid != CoreGraphics::TextureId::Invalid())
 				ResourceTableSetTexture(table, { rtid, slot, 0, CoreGraphics::SamplerId::Invalid(), false });
 			else
@@ -1055,7 +1055,7 @@ FrameScriptLoader::ParseShaderVariables(
 			IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
 			CoreGraphics::TextureId rtid = script->GetTexture(valStr);
 
-			textures.Append(std::make_tuple(slot, ConstantBufferId::Invalid(), rtid));
+			textures.Append(Util::MakeTuple(slot, ConstantBufferId::Invalid(), rtid));
 			if (rtid != CoreGraphics::TextureId::Invalid())
 				ResourceTableSetRWTexture(table, { rtid, slot, 0, CoreGraphics::SamplerId::Invalid() });
 			else
@@ -1109,7 +1109,7 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 			if ((nd = jzon_get(dep, "layer")) != nullptr) subres.layer = nd->int_value;
 			if ((nd = jzon_get(dep, "layer_count")) != nullptr) subres.layerCount = nd->int_value;
 
-			op->textureDeps.Add(tex, std::make_tuple(valstr, access, dependency, subres, layout));
+			op->textureDeps.Add(tex, Util::MakeTuple(valstr, access, dependency, subres, layout));
 		}
 		else if (script->buffersByName.Contains(valstr))
 		{
@@ -1118,7 +1118,7 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 			JzonValue* nd = nullptr;
 			if ((nd = jzon_get(dep, "offset")) != nullptr) subres.offset = nd->int_value;
 			if ((nd = jzon_get(dep, "size")) != nullptr) subres.size = nd->int_value;
-			op->rwBufferDeps.Add(buf, std::make_tuple(valstr, access, dependency, subres));
+			op->rwBufferDeps.Add(buf, Util::MakeTuple(valstr, access, dependency, subres));
 		}
 		else
 		{
