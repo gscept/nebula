@@ -2163,7 +2163,7 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
 /**
 */
 void 
-BeginPass(const CoreGraphics::PassId pass)
+BeginPass(const CoreGraphics::PassId pass, PassRecordMode mode)
 {
 	n_assert(state.inBeginFrame);
 	n_assert(!state.inBeginPass);
