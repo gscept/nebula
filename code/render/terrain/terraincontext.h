@@ -180,7 +180,6 @@ private:
         CoreGraphics::BufferId vbo;
         CoreGraphics::BufferId ibo;
 
-
         TerrainTextureSource albedoSource;
         TerrainTextureSource heightSource;
     };
