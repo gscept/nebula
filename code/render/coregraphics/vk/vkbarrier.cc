@@ -163,13 +163,75 @@ BarrierReset(const BarrierId id)
 
 //------------------------------------------------------------------------------
 /**
+	Validate barriers to make sure they are compatible, and don't rely on the validation layers
+*/
+void
+ValidateBarrier(
+	BarrierStage stage
+	, BarrierAccess access)
+{
+#if NEBULA_GRAPHICS_DEBUG
+	switch (access)
+	{
+	case BarrierAccess::IndirectRead:
+		n_assert(stage == BarrierStage::Indirect);
+		break;
+	case BarrierAccess::IndexRead:
+	case BarrierAccess::VertexRead:
+		n_assert(stage == BarrierStage::VertexInput);
+		break;
+	case BarrierAccess::UniformRead:
+	case BarrierAccess::ShaderRead:
+	case BarrierAccess::ShaderWrite:
+		n_assert(
+			CheckBits(stage, BarrierStage::VertexShader)
+			|| CheckBits(stage, BarrierStage::HullShader)
+			|| CheckBits(stage, BarrierStage::DomainShader)
+			|| CheckBits(stage, BarrierStage::GeometryShader)
+			|| CheckBits(stage, BarrierStage::PixelShader)
+			|| CheckBits(stage, BarrierStage::ComputeShader)
+		);
+		break;
+	case BarrierAccess::InputAttachmentRead:
+		n_assert(stage == BarrierStage::PixelShader);
+		break;
+	case BarrierAccess::ColorAttachmentRead:
+	case BarrierAccess::ColorAttachmentWrite:
+		n_assert(stage == BarrierStage::PassOutput);
+		break;
+	case BarrierAccess::DepthAttachmentRead:
+	case BarrierAccess::DepthAttachmentWrite:
+		n_assert(
+			CheckBits(stage, BarrierStage::EarlyDepth)
+			|| CheckBits(stage, BarrierStage::LateDepth)
+		);
+		break;
+	case BarrierAccess::TransferRead:
+	case BarrierAccess::TransferWrite:
+		n_assert(stage == BarrierStage::Transfer);
+		break;
+	case BarrierAccess::HostRead:
+	case BarrierAccess::HostWrite:
+		n_assert(stage == BarrierStage::Host);
+		break;
+	case BarrierAccess::MemoryRead:
+	case BarrierAccess::MemoryWrite:
+
+		// do nothing for these
+		break;
+	}
+#endif
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 void 
 BarrierInsert(
-	const CoreGraphics::QueueType queue, 
-	CoreGraphics::BarrierStage fromStage,
-	CoreGraphics::BarrierStage toStage,
-	CoreGraphics::BarrierDomain domain,
+	const QueueType queue, 
+	BarrierStage fromStage,
+	BarrierStage toStage,
+	BarrierDomain domain,
 	const Util::FixedArray<TextureBarrier>& textures,
 	const Util::FixedArray<BufferBarrier>& rwBuffers,
 	const char* name)
@@ -178,24 +240,25 @@ BarrierInsert(
 	barrier.name = name;
 	barrier.srcFlags = VkTypes::AsVkPipelineFlags(fromStage);
 	barrier.dstFlags = VkTypes::AsVkPipelineFlags(toStage);
-	barrier.dep = domain == CoreGraphics::BarrierDomain::Pass ? VK_DEPENDENCY_BY_REGION_BIT : 0;
+	barrier.dep = domain == BarrierDomain::Pass ? VK_DEPENDENCY_BY_REGION_BIT : 0;
 	barrier.numBufferBarriers = rwBuffers.Size();
 	for (uint32_t i = 0; i < barrier.numBufferBarriers; i++)
 	{
 		VkBufferMemoryBarrier& vkBar = barrier.bufferBarriers[i];
 		BufferBarrier& nebBar = rwBuffers[i];
-		vkBar.buffer = BufferGetVk(nebBar.buf);
+
+		ValidateBarrier(fromStage, nebBar.fromAccess);
+		ValidateBarrier(toStage, nebBar.toAccess);
 		vkBar.srcAccessMask = VkTypes::AsVkResourceAccessFlags(nebBar.fromAccess);
 		vkBar.dstAccessMask = VkTypes::AsVkResourceAccessFlags(nebBar.toAccess);
+
+		vkBar.buffer = CoreGraphics::BufferGetVk(nebBar.buf);
 		vkBar.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
 		vkBar.pNext = nullptr;
-
 		vkBar.offset = nebBar.offset;
 		vkBar.size = (nebBar.size == -1) ? VK_WHOLE_SIZE : nebBar.size;
-		
 		vkBar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkBar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
 		vkBar.pNext = nullptr;
 		vkBar.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
 	}
@@ -206,6 +269,8 @@ BarrierInsert(
 		VkImageMemoryBarrier& vkBar = barrier.imageBarriers[j];
 		TextureBarrier& nebBar = textures[i];
 
+		ValidateBarrier(fromStage, nebBar.fromAccess);
+		ValidateBarrier(toStage, nebBar.toAccess);
 		vkBar.srcAccessMask = VkTypes::AsVkResourceAccessFlags(nebBar.fromAccess);
 		vkBar.dstAccessMask = VkTypes::AsVkResourceAccessFlags(nebBar.toAccess);
 
@@ -220,7 +285,6 @@ BarrierInsert(
 		vkBar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkBar.oldLayout = VkTypes::AsVkImageLayout(nebBar.fromLayout);
 		vkBar.newLayout = VkTypes::AsVkImageLayout(nebBar.toLayout);
-
 		vkBar.pNext = nullptr;
 		vkBar.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	}
@@ -259,18 +323,19 @@ BarrierInsert(
 	{
 		VkBufferMemoryBarrier& vkBar = barrier.bufferBarriers[i];
 		BufferBarrier& nebBar = rwBuffers[i];
-		vkBar.buffer = BufferGetVk(nebBar.buf);
+
+		ValidateBarrier(fromStage, nebBar.fromAccess);
+		ValidateBarrier(toStage, nebBar.toAccess);
 		vkBar.srcAccessMask = VkTypes::AsVkResourceAccessFlags(nebBar.fromAccess);
 		vkBar.dstAccessMask = VkTypes::AsVkResourceAccessFlags(nebBar.toAccess);
+
+		vkBar.buffer = CoreGraphics::BufferGetVk(nebBar.buf);
 		vkBar.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
 		vkBar.pNext = nullptr;
-
 		vkBar.offset = nebBar.offset;
 		vkBar.size = (nebBar.size == -1) ? VK_WHOLE_SIZE : nebBar.size;
-
 		vkBar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 		vkBar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
 		vkBar.pNext = nullptr;
 		vkBar.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
 	}
@@ -281,6 +346,8 @@ BarrierInsert(
 		VkImageMemoryBarrier& vkBar = barrier.imageBarriers[j];
 		TextureBarrier& nebBar = textures[i];
 
+		ValidateBarrier(fromStage, nebBar.fromAccess);
+		ValidateBarrier(toStage, nebBar.toAccess);
 		vkBar.srcAccessMask = VkTypes::AsVkResourceAccessFlags(nebBar.fromAccess);
 		vkBar.dstAccessMask = VkTypes::AsVkResourceAccessFlags(nebBar.toAccess);
 
@@ -333,6 +400,8 @@ BarrierInsert(
 	barrier.numMemoryBarriers = barriers.Size();
 	for (int i = 0; i < barriers.Size(); i++)
 	{
+		ValidateBarrier(fromStage, barriers[i].fromAccess);
+		ValidateBarrier(toStage, barriers[i].toAccess);
 		VkMemoryBarrier memBarrier =
 		{
 			VK_STRUCTURE_TYPE_MEMORY_BARRIER,
@@ -377,6 +446,8 @@ BarrierInsert(
 	barrier.numMemoryBarriers = barriers.Size();
 	for (int i = 0; i < barriers.Size(); i++)
 	{
+		ValidateBarrier(fromStage, barriers[i].fromAccess);
+		ValidateBarrier(toStage, barriers[i].toAccess);
 		VkMemoryBarrier memBarrier =
 		{
 			VK_STRUCTURE_TYPE_MEMORY_BARRIER,
