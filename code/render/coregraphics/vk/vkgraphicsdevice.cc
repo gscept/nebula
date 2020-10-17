@@ -139,7 +139,8 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	CoreGraphics::ShaderFeature::Mask currentShaderMask;
 
 	VkGraphicsPipelineCreateInfo currentPipelineInfo;
-	VkPipelineLayout currentPipelineLayout;
+	VkPipelineLayout currentGraphicsPipelineLayout;
+	VkPipelineLayout currentComputePipelineLayout;
 	VkPipeline currentPipeline;
 	VkPipelineInfoBits currentPipelineBits;
 	uint currentStencilFrontRef, currentStencilBackRef, currentStencilReadMask, currentStencilWriteMask;
@@ -538,7 +539,7 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, ui
 		else
 		{
 			// otherwise they go on the main draw
-			vkCmdBindDescriptorSets(GetMainBuffer(CoreGraphics::GraphicsQueueType), VK_PIPELINE_BIND_POINT_GRAPHICS, state.currentPipelineLayout, baseSet, setCount, descriptors, offsetCount, offsets);
+			vkCmdBindDescriptorSets(GetMainBuffer(CoreGraphics::GraphicsQueueType), VK_PIPELINE_BIND_POINT_GRAPHICS, state.currentGraphicsPipelineLayout, baseSet, setCount, descriptors, offsetCount, offsets);
 		}
 	}
 }
@@ -551,7 +552,7 @@ BindDescriptorsCompute(const VkDescriptorSet* descriptors, uint32_t baseSet, uin
 {
 	n_assert(state.inBeginFrame);
 	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
-	vkCmdBindDescriptorSets(GetMainBuffer(queue), VK_PIPELINE_BIND_POINT_COMPUTE, state.currentPipelineLayout, baseSet, setCount, descriptors, offsetCount, offsets);
+	vkCmdBindDescriptorSets(GetMainBuffer(queue), VK_PIPELINE_BIND_POINT_COMPUTE, state.currentComputePipelineLayout, baseSet, setCount, descriptors, offsetCount, offsets);
 }
 
 //------------------------------------------------------------------------------
@@ -666,7 +667,7 @@ CreateAndBindGraphicsPipeline()
 		// send pipeline bind command, this is the first step in our procedure, so we use this as a trigger to switch threads
 		VkCommandBufferThread::VkGfxPipelineBindCommand pipeCommand;
 		pipeCommand.pipeline = pipeline;
-		pipeCommand.layout = state.currentPipelineLayout;
+		pipeCommand.layout = state.currentGraphicsPipelineLayout;
 		state.drawThread->Push(pipeCommand);
 
 		// update stencil stuff
@@ -704,7 +705,7 @@ CreateAndBindGraphicsPipeline()
 				vkCmdBindDescriptorSets(
 					GetMainBuffer(CoreGraphics::GraphicsQueueType),
 					VK_PIPELINE_BIND_POINT_GRAPHICS,
-					state.currentPipelineLayout,
+					state.currentGraphicsPipelineLayout,
 					state.propagateDescriptorSets[i].baseSet,
 					state.propagateDescriptorSets[i].numSets,
 					state.propagateDescriptorSets[i].sets,
@@ -2432,24 +2433,16 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
 	state.currentStencilBackRef = info.stencilBackRef;
 	state.currentStencilReadMask = info.stencilReadMask;
 	state.currentStencilWriteMask = info.stencilWriteMask;
-	if (state.currentPipelineLayout != info.layout)
-	{
-		state.currentPipelineLayout = info.layout;
 
-		// bind textures and camera descriptors
-#if !NEBULA_ENABLE_MT_DRAW
-		VkShaderServer::Instance()->BindTextureDescriptorSetsGraphics();
-		VkTransformDevice::Instance()->BindCameraDescriptorSetsGraphics();
-#endif
-		if (!state.drawThread)
-		{
-			VkShaderServer::Instance()->BindTextureDescriptorSetsCompute(queue);
-			VkTransformDevice::Instance()->BindCameraDescriptorSetsCompute(queue);
-		}		
-	}
+	bool layoutChanged = false;
 
 	// if we are compute, we can set the pipeline straight away, otherwise we have to accumulate the infos
-	if (info.type == ComputePipeline)		Vulkan::BindComputePipeline(info.pipeline, info.layout, queue);
+	if (info.type == ComputePipeline)
+	{
+		Vulkan::BindComputePipeline(info.pipeline, info.layout, queue);
+		layoutChanged = state.currentComputePipelineLayout != info.layout;
+		state.currentComputePipelineLayout = info.layout;
+	}
 	else if (info.type == GraphicsPipeline)
 	{
 		// setup pipeline information regarding the shader state
@@ -2475,9 +2468,29 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
 			VK_NULL_HANDLE, 0				// base pipeline is kept as NULL too, because this is the base for all derivatives
 		};
 		Vulkan::BindGraphicsPipelineInfo(ginfo, pro);
+		layoutChanged = state.currentGraphicsPipelineLayout != info.layout;
+		state.currentGraphicsPipelineLayout = info.layout;
 	}
 	else
 		Vulkan::UnbindPipeline();
+
+	// bind descriptors
+	if (info.type == CoreGraphics::ComputePipeline)
+	{
+		if (layoutChanged)
+		{
+			VkShaderServer::Instance()->BindTextureDescriptorSetsCompute(queue);
+			VkTransformDevice::Instance()->BindCameraDescriptorSetsCompute(queue);
+		}
+	}
+	else // graphics queue
+	{
+		if (!state.drawThread && layoutChanged)
+		{
+			VkShaderServer::Instance()->BindTextureDescriptorSetsGraphics();
+			VkTransformDevice::Instance()->BindCameraDescriptorSetsGraphics();
+		}
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -2537,7 +2550,7 @@ void
 SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout)
 {
 	n_assert(layout != CoreGraphics::ResourcePipelineId::Invalid());
-	state.currentPipelineLayout = ResourcePipelineGetVk(layout);
+	state.currentGraphicsPipelineLayout = ResourcePipelineGetVk(layout);
 }
 
 //------------------------------------------------------------------------------
@@ -2549,10 +2562,10 @@ PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data)
 	switch (pipeline)
 	{
 	case GraphicsPipeline:
-		Vulkan::UpdatePushRanges(VK_SHADER_STAGE_ALL_GRAPHICS, state.currentPipelineLayout, offset, size, data);
+		Vulkan::UpdatePushRanges(VK_SHADER_STAGE_ALL_GRAPHICS, state.currentGraphicsPipelineLayout, offset, size, data);
 		break;
 	case ComputePipeline:
-		Vulkan::UpdatePushRanges(VK_SHADER_STAGE_COMPUTE_BIT, state.currentPipelineLayout, offset, size, data);
+		Vulkan::UpdatePushRanges(VK_SHADER_STAGE_COMPUTE_BIT, state.currentComputePipelineLayout, offset, size, data);
 		break;
 	}
 }
