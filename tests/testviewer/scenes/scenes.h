@@ -46,6 +46,7 @@ extern Scene SSRScene;
 extern Scene BenchmarkScene;
 extern Scene SponzaScene;
 extern Scene BistroScene;
+extern Scene TerrainScene;
 
 // Don't forget to add them to the list of scenes!
 static Scene* scenes[] = 
@@ -55,7 +56,8 @@ static Scene* scenes[] =
 	&BenchmarkScene,
     &SSRScene,
     &SponzaScene,
-    &BistroScene
+    &BistroScene,
+    &TerrainScene
 };
 
 enum
@@ -65,9 +67,10 @@ enum
 	BenchmarkSceneId,
 	SSRSceneId,
     SponzaSceneId,
-    BistroSceneId
+    BistroSceneId,
+    TerrainSceneId
 };
 
 // Which is the currently active scene?
 // This is used to determine which scenes callbacks to call and is normally changed via imgui
-static int currentScene = SponzaSceneId;
+static int currentScene = TerrainSceneId;

@@ -32,7 +32,7 @@ void OpenScene()
     trs = trs * t;
     
     Models::ModelContext::SetTransform(entity, trs);
-};
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -43,7 +43,7 @@ void CloseScene()
     Graphics::DeregisterEntity<Models::ModelContext, Visibility::ObservableContext>(entity);
     Graphics::DestroyEntity(entity);
 
-};
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -52,7 +52,7 @@ void CloseScene()
 void StepFrame()
 {
     // empty
-};
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -61,7 +61,7 @@ void StepFrame()
 void RenderUI()
 {
     // empty
-};
+}
 
 } // namespace BistroSceneData
 

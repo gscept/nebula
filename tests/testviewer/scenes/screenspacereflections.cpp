@@ -21,7 +21,7 @@ void OpenScene()
     // Models::ModelContext::Setup(entity, "mdl:test/sibenik.n3", "SSRScene");
     // Models::ModelContext::SetTransform(entity, Math::translation(Math::vec4(0, 10, 0, 1)));
     // Visibility::ObservableContext::Setup(entity, Visibility::VisibilityEntityType::Model);
-};
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -30,7 +30,7 @@ void OpenScene()
 void CloseScene()
 {
     Graphics::DestroyEntity(entity);
-};
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -38,7 +38,7 @@ void CloseScene()
 */
 void StepFrame()
 {
-};
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -47,7 +47,7 @@ void StepFrame()
 void RenderUI()
 {
     // empty
-};
+}
 
 } // namespace SSRSceneData
 
