@@ -43,6 +43,8 @@ CreateEvent(const EventCreateInfo& info)
 
 	VkDevice dev = Vulkan::GetCurrentDevice();
 	vkCreateEvent(dev, &createInfo, nullptr, &vkInfo.event);
+	if (info.createSignaled)
+		vkSetEvent(dev, vkInfo.event);
 
 	vkInfo.name = info.name;
 	vkInfo.numImageBarriers = 0;
@@ -296,6 +298,24 @@ EventHostSignal(const EventId id)
 	const VkEventInfo& info = eventAllocator.Get<1>(id.id24);
 	VkDevice dev = eventAllocator.Get<0>(id.id24);
 	vkSetEvent(dev, info.event);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EventHostWait(const EventId id)
+{
+	const VkEventInfo& info = eventAllocator.Get<1>(id.id24);
+	VkDevice dev = eventAllocator.Get<0>(id.id24);
+	VkResult res;
+	while (true)
+	{
+		res = vkGetEventStatus(dev, info.event);
+		if (res == VK_EVENT_SET)
+			break;
+	}
+
 }
 
 } // namespace CoreGraphics
