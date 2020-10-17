@@ -45,7 +45,7 @@ FrameBarrier::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void
-FrameBarrier::CompiledImpl::Run(const IndexT frameIndex)
+FrameBarrier::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_GRAY, this->name.Value());

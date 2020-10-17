@@ -60,9 +60,9 @@ FrameSubpassPlugin::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void
-FrameSubpassPlugin::CompiledImpl::Run(const IndexT frameIndex)
+FrameSubpassPlugin::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
-	this->func(frameIndex);
+	this->func(frameIndex, bufferIndex);
 }
 
 } // namespace Frame2

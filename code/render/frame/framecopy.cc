@@ -47,7 +47,7 @@ FrameCopy::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void
-FrameCopy::CompiledImpl::Run(const IndexT frameIndex)
+FrameCopy::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
 	// get dimensions
 	CoreGraphics::TextureDimensions fromDims = TextureGetDimensions(this->from);

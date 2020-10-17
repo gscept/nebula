@@ -68,7 +68,7 @@ FrameSubpass::OnWindowResized()
 /**
 */
 void
-FrameSubpass::CompiledImpl::Run(const IndexT frameIndex)
+FrameSubpass::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
 	IndexT i;
 
@@ -79,7 +79,7 @@ FrameSubpass::CompiledImpl::Run(const IndexT frameIndex)
 	// run ops
 	for (i = 0; i < this->ops.Size(); i++)
 	{
-		this->ops[i]->Run(frameIndex);
+		this->ops[i]->Run(frameIndex, bufferIndex);
 	}
 
 #if NEBULA_GRAPHICS_DEBUG

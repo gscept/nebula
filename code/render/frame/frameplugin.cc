@@ -28,9 +28,9 @@ FramePlugin::~FramePlugin()
 /**
 */
 void
-FramePlugin::CompiledImpl::Run(const IndexT frameIndex)
+FramePlugin::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
-	this->func(frameIndex);
+	this->func(frameIndex, bufferIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -77,12 +77,12 @@ FramePlugin::Build(
 	compiledOps.Append(myCompiled);
 }
 
-Util::Dictionary<Util::StringAtom, std::function<void(IndexT)>> nameToFunction;
+Util::Dictionary<Util::StringAtom, std::function<void(IndexT, IndexT)>> nameToFunction;
 
 //------------------------------------------------------------------------------
 /**
 */
-const std::function<void(IndexT)>&
+const std::function<void(IndexT, IndexT)>&
 GetCallback(const Util::StringAtom& str)
 {
 	if (nameToFunction.Contains(str))
@@ -98,7 +98,7 @@ GetCallback(const Util::StringAtom& str)
 /**
 */
 void
-AddCallback(const Util::StringAtom name, std::function<void(IndexT)> func)
+AddCallback(const Util::StringAtom name, std::function<void(IndexT, IndexT)> func)
 {
 	nameToFunction.Add(name, func);
 }

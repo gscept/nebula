@@ -24,7 +24,7 @@ public:
 		Util::StringAtom name;
 #endif
 		/// running does nothing
-		void Run(const IndexT frameIndex) override;
+		void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
 		void Discard();
 	};
 

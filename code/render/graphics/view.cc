@@ -95,7 +95,8 @@ View::Render(const IndexT frameIndex, const Timing::Time time)
 	if (this->script != nullptr)
 	{
 		N_SCOPE(ViewExecute, Render);
-		this->script->Run(frameIndex);
+		IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
+		this->script->Run(frameIndex, bufferIndex);
 	}
 }
 
