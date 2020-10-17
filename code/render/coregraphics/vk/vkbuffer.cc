@@ -413,6 +413,7 @@ void
 BufferFlush(const BufferId id, IndexT offset, SizeT size)
 {
 	VkBufferLoadInfo& loadInfo = bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id.id24);
+	n_assert(size == NEBULA_WHOLE_BUFFER_SIZE ? true : (uint)offset + size <= loadInfo.byteSize);
 	Flush(loadInfo.dev, loadInfo.mem, offset, size);
 }
 
@@ -423,6 +424,7 @@ void
 BufferInvalidate(const BufferId id, IndexT offset, SizeT size)
 {
 	VkBufferLoadInfo& loadInfo = bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id.id24);
+	n_assert(size == NEBULA_WHOLE_BUFFER_SIZE ? true : (uint)offset + size <= loadInfo.byteSize);
 	Invalidate(loadInfo.dev, loadInfo.mem, offset, size);
 }
 
