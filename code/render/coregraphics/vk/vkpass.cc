@@ -333,7 +333,7 @@ SetupPass(const PassId pid)
         attachment.flags = 0;
         attachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
         attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-        attachment.format = VkTypes::AsVkFramebufferFormat(TextureGetPixelFormat(tex));
+        attachment.format = VkTypes::AsVkFormat(TextureGetPixelFormat(tex));
         attachment.loadOp = loadOps[loadIdx];
         attachment.storeOp = storeOps[storeIdx];
         attachment.stencilLoadOp = loadOps[stencilLoadIdx];
@@ -613,18 +613,6 @@ PassApplyClipSettings(const PassId id)
 
 	const Util::FixedArray<VkRect2D>& scissors = runtimeInfo.subpassRects[runtimeInfo.currentSubpassIndex];
     CoreGraphics::SetVkScissorRects(scissors.Begin(), scissors.Size());
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-PassApplyResources(const PassId id)
-{
-	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
-
-	// bind descriptor set
-	CoreGraphics::SetResourceTable(runtimeInfo.passDescriptorSet, NEBULA_PASS_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 }
 
 //------------------------------------------------------------------------------

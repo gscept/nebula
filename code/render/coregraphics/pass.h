@@ -83,8 +83,6 @@ void PassEnd(const PassId id);
 
 /// apply clip settings (viewport and scissor rect)
 void PassApplyClipSettings(const PassId id);
-/// apply pass resource table
-void PassApplyResources(const PassId id);
 
 /// called when window is resized
 void PassWindowResizeCallback(const PassId id);
