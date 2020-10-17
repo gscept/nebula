@@ -409,7 +409,11 @@ DecalContext::CullAndClassify()
 				0, NEBULA_WHOLE_BUFFER_SIZE
 			},
 		}, "Decals data upload");
-	Copy(ComputeQueueType, decalState.stagingClusterDecalsList[bufferIndex], 0, decalState.clusterDecalsList, 0, sizeof(DecalsCluster::DecalLists));
+
+	CoreGraphics::BufferCopy from, to;
+	from.offset = 0;
+	to.offset = 0;
+	Copy(ComputeQueueType, decalState.stagingClusterDecalsList[bufferIndex], { from }, decalState.clusterDecalsList, { to }, sizeof(DecalsCluster::DecalLists));
 	BarrierInsert(ComputeQueueType,
 		BarrierStage::Transfer,
 		BarrierStage::ComputeShader,

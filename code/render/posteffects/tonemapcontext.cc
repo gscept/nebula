@@ -129,16 +129,14 @@ TonemapContext::Create()
 				nullptr,
 				"Tonemapping Copy Last Frame Begin");
 
-			Copy(
-				GraphicsQueueType, 
-				tonemapState.averageLumBuffer, 
-				Math::rectangle<int>(0, 0, 1, 1), 
-				0, 
-				0, 
-				tonemapState.copy, 
-				Math::rectangle<int>(0, 0, 1, 1),
-				0,
-				0);
+			CoreGraphics::TextureCopy from, to;
+			from.region = Math::rectangle<int>(0, 0, 1, 1);
+			from.mip = 0;
+			from.layer = 0;
+			to.region = Math::rectangle<int>(0, 0, 1, 1);
+			to.mip = 0;
+			to.layer = 0;
+			Copy(GraphicsQueueType, tonemapState.averageLumBuffer, { from }, tonemapState.copy, { to });
 
 			BarrierInsert(
 				GraphicsQueueType,

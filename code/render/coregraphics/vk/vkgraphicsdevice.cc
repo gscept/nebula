@@ -3559,71 +3559,38 @@ EndQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type)
 void 
 Copy(
 	const CoreGraphics::QueueType queue,
-	const CoreGraphics::TextureId from,
-	const Math::rectangle<SizeT>& fromRegion,
-	IndexT fromMip,
-	IndexT fromLayer,
-	const CoreGraphics::TextureId to,
-	const Math::rectangle<SizeT>& toRegion,
-	IndexT toMip,
-	IndexT toLayer)
+	const CoreGraphics::TextureId fromTexture,
+	const Util::Array<CoreGraphics::TextureCopy> from,
+	const CoreGraphics::TextureId toTexture,
+	const Util::Array<CoreGraphics::TextureCopy> to,
+	const CoreGraphics::SubmissionContextId sub)
 {
-	n_assert(from != CoreGraphics::TextureId::Invalid() && to != CoreGraphics::TextureId::Invalid());
-	n_assert(!state.inBeginPass);
-	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+	n_assert(fromTexture != CoreGraphics::TextureId::Invalid() && toTexture != CoreGraphics::TextureId::Invalid());
+	n_assert(from.Size() == to.Size());
 
-	bool isDepth = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(from));
+	bool isDepth = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(fromTexture));
 	VkImageAspectFlags aspect = isDepth ? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
-	VkImageCopy region;
-	region.dstOffset = { fromRegion.left, fromRegion.top, 0 };
-	region.dstSubresource = { aspect, (uint32_t)toMip, (uint32_t)toLayer, 1 };
-	region.extent = { (uint32_t)toRegion.width(), (uint32_t)toRegion.height(), 1 };
-	region.srcOffset = { toRegion.left, toRegion.top, 0 };
-	region.srcSubresource = { aspect, (uint32_t)fromMip, (uint32_t)fromLayer, 1 };
-	vkCmdCopyImage(GetMainBuffer(queue), TextureGetVkImage(from), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, TextureGetVkImage(to), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-}
+	Util::FixedArray<VkImageCopy> copies(from.Size());
+	for (IndexT i = 0; i < copies.Size(); i++)
+	{
+		VkImageCopy& copy = copies[i];
+		copy.dstOffset = { to[i].region.left, to[i].region.top, 0 };
+		copy.dstSubresource = { aspect, (uint32_t)to[i].mip, (uint32_t)to[i].layer, 1 };
+		copy.extent = { (uint32_t)to[i].region.width(), (uint32_t)to[i].region.height(), 1 };
+		copy.srcOffset = { from[i].region.left, from[i].region.top, 0 };
+		copy.srcSubresource = { aspect, (uint32_t)from[i].mip, (uint32_t)from[i].layer, 1 };
+	}
 
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-Copy(const CoreGraphics::QueueType queue, const CoreGraphics::BufferId from, IndexT fromOffset, const CoreGraphics::BufferId to, IndexT toOffset, SizeT size)
-{
-	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
-	VkBufferCopy copy;
-	copy.srcOffset = fromOffset;
-	copy.dstOffset = toOffset;
-	copy.size = size;
-	vkCmdCopyBuffer(GetMainBuffer(queue), BufferGetVk(from), BufferGetVk(to), 1, &copy);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-Copy(
-	const CoreGraphics::QueueType queue, 
-	const CoreGraphics::TextureId toId, 
-	const Math::rectangle<int> toRegion, 
-	IndexT toMip, 
-	IndexT toLayer, 
-	const CoreGraphics::BufferId fromId, 
-	IndexT offset)
-{
-	VkBufferImageCopy copy;
-	copy.bufferOffset = offset;
-	copy.bufferImageHeight = 0;
-	copy.bufferRowLength = 0;
-	copy.imageExtent = { (uint32_t)toRegion.width(), (uint32_t)toRegion.height(), 1 };
-	copy.imageOffset = { (int32_t)toRegion.left, (int32_t)toRegion.top, 0 };
-	copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)toMip, (uint32_t)toLayer, 1 };
-
-	vkCmdCopyImageToBuffer(GetMainBuffer(queue),
-		TextureGetVkImage(toId),
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		BufferGetVk(fromId),
-		1,
-		&copy);
+	VkCommandBuffer buf;
+	if (sub == CoreGraphics::SubmissionContextId::Invalid())
+	{
+		n_assert(!state.inBeginPass);
+		n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+		buf = GetMainBuffer(queue);
+	}
+	else
+		buf = Vulkan::CommandBufferGetVk(CoreGraphics::SubmissionContextGetCmdBuffer(sub));
+	vkCmdCopyImage(buf, TextureGetVkImage(fromTexture), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, TextureGetVkImage(toTexture), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copies.Size(), copies.Begin());
 }
 
 //------------------------------------------------------------------------------
@@ -3631,28 +3598,128 @@ Copy(
 */
 void 
 Copy(
-	const CoreGraphics::QueueType queue, 
-	const CoreGraphics::BufferId fromId, 
-	IndexT offset, 
-	const CoreGraphics::TextureId toId, 
-	const Math::rectangle<int> toRegion, 
-	IndexT toMip, 
-	IndexT toLayer)
+	const CoreGraphics::QueueType queue,
+	const CoreGraphics::BufferId fromBuffer,
+	const Util::Array<CoreGraphics::BufferCopy> from,
+	const CoreGraphics::BufferId toBuffer,
+	const Util::Array<CoreGraphics::BufferCopy> to,
+	SizeT size,
+	const CoreGraphics::SubmissionContextId sub)
 {
-	VkBufferImageCopy copy;
-	copy.bufferOffset = offset;
-	copy.bufferImageHeight = 0;
-	copy.bufferRowLength = 0;
-	copy.imageExtent = { (uint32_t)toRegion.width(), (uint32_t)toRegion.height(), 1 };
-	copy.imageOffset = { (int32_t)toRegion.left, (int32_t)toRegion.top, 0 };
-	copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)toMip, (uint32_t)toLayer, 1 };
+	n_assert(from.Size() > 0);
+	n_assert(from.Size() == to.Size());
 
-	vkCmdCopyBufferToImage(GetMainBuffer(queue),
-		BufferGetVk(fromId),
-		TextureGetVkImage(toId),
+	Util::FixedArray<VkBufferCopy> copies(from.Size());
+	for (IndexT i = 0; i < copies.Size(); i++)
+	{
+		VkBufferCopy& copy = copies[i];
+		copy.srcOffset = from[i].offset;
+		copy.dstOffset = to[i].offset;
+		copy.size = size;
+	}
+	
+	VkCommandBuffer buf;
+	if (sub == CoreGraphics::SubmissionContextId::Invalid())
+	{
+		n_assert(!state.inBeginPass);
+		n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+		buf = GetMainBuffer(queue);
+	}
+	else
+		buf = Vulkan::CommandBufferGetVk(CoreGraphics::SubmissionContextGetCmdBuffer(sub));
+
+	vkCmdCopyBuffer(buf, BufferGetVk(fromBuffer), BufferGetVk(toBuffer), copies.Size(), copies.Begin());
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+Copy(
+	const CoreGraphics::QueueType queue,
+	const CoreGraphics::BufferId fromBuffer,
+	const Util::Array<CoreGraphics::BufferCopy> from,
+	const CoreGraphics::TextureId toTexture,
+	const Util::Array<CoreGraphics::TextureCopy> to,
+	const CoreGraphics::SubmissionContextId sub)
+{
+	n_assert(from.Size() > 0);
+	n_assert(from.Size() == to.Size());
+
+	Util::FixedArray<VkBufferImageCopy> copies(from.Size());
+	for (IndexT i = 0; i < copies.Size(); i++)
+	{
+		VkBufferImageCopy& copy = copies[i];
+		copy.bufferOffset = from[i].offset;
+		copy.bufferImageHeight = 0;
+		copy.bufferRowLength = 0;
+		copy.imageExtent = { (uint32_t)to[i].region.width(), (uint32_t)to[i].region.height(), 1 };
+		copy.imageOffset = { (int32_t)to[i].region.left, (int32_t)to[i].region.top, 0 };
+		copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)to[i].mip, (uint32_t)to[i].layer, 1 };
+	}
+	
+	VkCommandBuffer buf;
+	if (sub == CoreGraphics::SubmissionContextId::Invalid())
+	{
+		n_assert(!state.inBeginPass);
+		n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+		buf = GetMainBuffer(queue);
+	}
+	else
+		buf = Vulkan::CommandBufferGetVk(CoreGraphics::SubmissionContextGetCmdBuffer(sub));
+
+	vkCmdCopyBufferToImage(buf,
+		BufferGetVk(fromBuffer),
+		TextureGetVkImage(toTexture),
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		1,
-		&copy);
+		copies.Size(),
+		copies.Begin());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Copy(
+	const CoreGraphics::QueueType queue,
+	const CoreGraphics::TextureId fromTexture,
+	const Util::Array<CoreGraphics::TextureCopy> from,
+	const CoreGraphics::BufferId toBuffer,
+	const Util::Array<CoreGraphics::BufferCopy> to,
+	const CoreGraphics::SubmissionContextId sub)
+{
+	n_assert(from.Size() > 0);
+	n_assert(from.Size() == to.Size());
+
+	Util::FixedArray<VkBufferImageCopy> copies(from.Size());
+	for (IndexT i = 0; i < copies.Size(); i++)
+	{
+		VkBufferImageCopy& copy = copies[i];
+		copy.bufferOffset = to[i].offset;
+		copy.bufferImageHeight = 0;
+		copy.bufferRowLength = 0;
+		copy.imageExtent = { (uint32_t)from[i].region.width(), (uint32_t)from[i].region.height(), 1 };
+		copy.imageOffset = { (int32_t)from[i].region.left, (int32_t)from[i].region.top, 0 };
+		copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)from[i].mip, (uint32_t)from[i].layer, 1 };
+	}
+	
+	VkCommandBuffer buf;
+	if (sub == CoreGraphics::SubmissionContextId::Invalid())
+	{
+		n_assert(!state.inBeginPass);
+		n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+		buf = GetMainBuffer(queue);
+	}
+	else
+		buf = Vulkan::CommandBufferGetVk(CoreGraphics::SubmissionContextGetCmdBuffer(sub));
+
+	vkCmdCopyImageToBuffer(buf,
+		TextureGetVkImage(fromTexture),
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		BufferGetVk(toBuffer),
+		copies.Size(),
+		copies.Begin());
 }
 
 //------------------------------------------------------------------------------

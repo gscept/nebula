@@ -24,6 +24,19 @@
 namespace CoreGraphics
 {
 
+/// struct for texture copies
+struct TextureCopy
+{
+	Math::rectangle<SizeT> region;
+	uint mip;
+	uint layer;
+};
+
+struct BufferCopy
+{
+	uint offset;
+};
+
 struct GraphicsDeviceCreateInfo
 {
 	uint globalGraphicsConstantBufferMemorySize[NumConstantBufferTypes];
@@ -334,44 +347,43 @@ SizeT GetNumDrawCalls();
 IndexT BeginQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type);
 /// end query
 void EndQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type);
-
 /// copy data between textures
 void Copy(
-	const CoreGraphics::QueueType queue, 
-	const CoreGraphics::TextureId from, 
-	const Math::rectangle<SizeT>& fromRegion, 
-	IndexT fromMip, 
-	IndexT fromLayer,
-	const CoreGraphics::TextureId to, 
-	const Math::rectangle<SizeT>& toRegion, 
-	IndexT toMip, 
-	IndexT toLayer);
+	const CoreGraphics::QueueType queue,
+	const CoreGraphics::TextureId fromTexture,
+	const Util::Array<CoreGraphics::TextureCopy> from,
+	const CoreGraphics::TextureId toTexture,
+	const Util::Array<CoreGraphics::TextureCopy> to,
+	const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
+);
 /// copy data between buffers
 void Copy(
 	const CoreGraphics::QueueType queue, 
-	const CoreGraphics::BufferId from, 
-	IndexT fromOffset, 
-	const CoreGraphics::BufferId to, 
-	IndexT toOffset, 
-	SizeT size);
+	const CoreGraphics::BufferId fromBuffer,
+	const Util::Array<CoreGraphics::BufferCopy> from, 
+	const CoreGraphics::BufferId toBuffer,
+	const Util::Array<CoreGraphics::BufferCopy> to,
+	const SizeT size,
+	const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
+);
 /// copy data from buffer to texture
 void Copy(
 	const CoreGraphics::QueueType queue, 
-	const CoreGraphics::TextureId toId, 
-	const Math::rectangle<int> toRegion, 
-	IndexT toMip, 
-	IndexT toLayer,
-	const CoreGraphics::BufferId fromId, 
-	IndexT offset);
+	const CoreGraphics::BufferId fromBuffer,
+	const Util::Array<CoreGraphics::BufferCopy> from,
+	const CoreGraphics::TextureId toTexture,
+	const Util::Array<CoreGraphics::TextureCopy> to,
+	const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
+);
 /// copy data from texture to buffer
 void Copy(
 	const CoreGraphics::QueueType queue,
-	const CoreGraphics::BufferId fromId,
-	IndexT offset,
-	const CoreGraphics::TextureId toId,
-	const Math::rectangle<int> toRegion,
-	IndexT toMip,
-	IndexT toLayer);
+	const CoreGraphics::TextureId fromTexture,
+	const Util::Array<CoreGraphics::TextureCopy> from,
+	const CoreGraphics::BufferId toBuffer,
+	const Util::Array<CoreGraphics::BufferCopy> to,
+	const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
+);
 
 /// blit between textures
 void Blit(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, IndexT fromMip, IndexT fromLayer, const CoreGraphics::TextureId to, const Math::rectangle<SizeT>& toRegion, IndexT toMip, IndexT toLayer);

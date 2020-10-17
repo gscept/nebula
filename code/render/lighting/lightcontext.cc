@@ -1008,7 +1008,11 @@ LightContext::CullAndClassify()
 				0, NEBULA_WHOLE_BUFFER_SIZE
 			},
 		}, "Lights data upload");
-	Copy(ComputeQueueType, clusterState.stagingClusterLightsList[bufferIndex], 0, clusterState.clusterLightsList, 0, sizeof(LightsCluster::LightLists));
+
+	CoreGraphics::BufferCopy from, to;
+	from.offset = 0;
+	to.offset = 0;
+	Copy(ComputeQueueType, clusterState.stagingClusterLightsList[bufferIndex], { from }, clusterState.clusterLightsList, { to }, sizeof(LightsCluster::LightLists));
 	BarrierInsert(ComputeQueueType,
 		BarrierStage::Transfer,
 		BarrierStage::ComputeShader,

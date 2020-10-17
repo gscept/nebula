@@ -74,21 +74,7 @@ public:
 
 	/// calculate the size of a texture given a certain mip, use face 0 when not accessing a cube or array texture
 	void MipDimensions(IndexT mip, IndexT face, SizeT& width, SizeT& height, SizeT& depth);
-	/// copy from one texture to another
-	void Copy(const CoreGraphics::TextureId from, const CoreGraphics::TextureId to, SizeT width, SizeT height, SizeT depth,
-		IndexT srcMip, IndexT srcLayer, SizeT srcXOffset, SizeT srcYOffset, SizeT srcZOffset,
-		IndexT dstMip, IndexT dstLayer, SizeT dstXOffset, SizeT dstYOffset, SizeT dstZOffset);
 
-	/// copy pixels between textures
-	void Copy(
-		const CoreGraphics::TextureId toId, const Math::rectangle<int> toRegion, IndexT toMip, IndexT toLayer,
-		const CoreGraphics::TextureId fromId, const Math::rectangle<int> fromRegion, IndexT fromMip, IndexT fromLayer,
-		const CoreGraphics::SubmissionContextId sub);
-	/// copy pixels from buffer to texture
-	void Copy(
-		const CoreGraphics::TextureId toId, const Math::rectangle<int> toRegion, IndexT toMip, IndexT toLayer,
-		const CoreGraphics::BufferId fromId, IndexT offset,
-		const CoreGraphics::SubmissionContextId sub);
 	/// update texture from data stream
 	void Update(const CoreGraphics::TextureId id, const Math::rectangle<int>& region, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub);
 

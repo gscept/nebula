@@ -316,34 +316,6 @@ TextureSparseCommitChanges(const CoreGraphics::TextureId id)
 /**
 */
 void 
-TextureCopy(
-	const CoreGraphics::TextureId toId, const Math::rectangle<int> toRegion, IndexT toMip, IndexT toLayer, 
-	const CoreGraphics::TextureId fromId, const Math::rectangle<int> fromRegion, IndexT fromMip, IndexT fromLayer, 
-	const CoreGraphics::SubmissionContextId sub)
-{
-	texturePool->Copy(toId, toRegion, toMip, toLayer, fromId, fromRegion, fromMip, fromLayer, sub);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-TextureCopy(
-	const CoreGraphics::TextureId toId, 
-	const Math::rectangle<int> toRegion, 
-	IndexT toMip, 
-	IndexT toLayer, 
-	const CoreGraphics::BufferId fromId, 
-	IndexT offset, 
-	const CoreGraphics::SubmissionContextId sub)
-{
-	texturePool->Copy(toId, toRegion, toMip, toLayer, fromId, offset, sub);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
 TextureUpdate(const CoreGraphics::TextureId id, const Math::rectangle<int>& region, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub)
 {
 	texturePool->Update(id, region, mip, layer, buf, sub);

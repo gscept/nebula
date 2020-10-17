@@ -69,7 +69,14 @@ FrameCopy::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 	CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, this->name.Value());
 #endif
 
-	CoreGraphics::Copy(GraphicsQueueType, this->from, fromRegion, 0, 0, this->to, toRegion, 0, 0);
+	CoreGraphics::TextureCopy from, to;
+	from.region = fromRegion;
+	from.mip = 0;
+	from.layer = 0;
+	to.region = toRegion;
+	to.mip = 0;
+	to.layer = 0;
+	CoreGraphics::Copy(GraphicsQueueType, this->from, { from }, this->to, { to });
 
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);

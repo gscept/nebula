@@ -557,108 +557,6 @@ VkMemoryTexturePool::UpdateArray(const CoreGraphics::TextureId id, CoreGraphics:
 //------------------------------------------------------------------------------
 /**
 */
-void
-VkMemoryTexturePool::Copy(const CoreGraphics::TextureId from, const CoreGraphics::TextureId to, SizeT width, SizeT height, SizeT depth, IndexT srcMip, IndexT srcLayer, SizeT srcXOffset, SizeT srcYOffset, SizeT srcZOffset, IndexT dstMip, IndexT dstLayer, SizeT dstXOffset, SizeT dstYOffset, SizeT dstZOffset)
-{
-	VkImageCopy copy;
-	copy.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	copy.srcSubresource.baseArrayLayer = srcLayer;
-	copy.srcSubresource.layerCount = 1;
-	copy.srcSubresource.mipLevel = srcMip;
-	copy.srcOffset = { srcXOffset, srcYOffset, srcZOffset };
-
-	copy.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	copy.dstSubresource.baseArrayLayer = dstLayer;
-	copy.dstSubresource.layerCount = 1;
-	copy.dstSubresource.mipLevel = dstMip;
-	copy.dstOffset = { dstXOffset, dstYOffset, dstZOffset };
-
-	copy.extent = { (uint32_t)width, (uint32_t)height, (uint32_t)depth };
-
-	VkTextureLoadInfo& fromLoad = textureAllocator.GetSafe<1>(from.resourceId);
-	VkTextureLoadInfo& toLoad = textureAllocator.GetSafe<1>(to.resourceId);
-
-	// begin immediate action, this might actually be delayed but we can't really know from here
-	CoreGraphics::CommandBufferId cmdBuf = VkUtilities::BeginImmediateTransfer();
-	vkCmdCopyImage(CommandBufferGetVk(cmdBuf), fromLoad.img, VK_IMAGE_LAYOUT_GENERAL, toLoad.img, VK_IMAGE_LAYOUT_GENERAL, 1, &copy);
-	VkUtilities::EndImmediateTransfer(cmdBuf);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-VkMemoryTexturePool::Copy(
-    const CoreGraphics::TextureId toId, const Math::rectangle<int> toRegion, IndexT toMip, IndexT toLayer, 
-    const CoreGraphics::TextureId fromId, const Math::rectangle<int> fromRegion, IndexT fromMip, IndexT fromLayer, 
-    const CoreGraphics::SubmissionContextId sub)
-{
-    TextureDimensions dims = textureAllocator.GetSafe<Texture_LoadInfo>(fromId.resourceId).dims;
-
-    // if sizes are matching, run a faster copy
-    if (toRegion.width() == fromRegion.width() && toRegion.height() == fromRegion.height())
-    {
-        VkImageCopy copy;
-        copy.srcOffset = { (int32_t)fromRegion.left, (int32_t)fromRegion.top, 0 };
-        copy.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)fromMip, (uint32_t)fromLayer, 1 };
-        copy.dstOffset = { (int32_t)toRegion.left, (int32_t)toRegion.top, 0 };
-        copy.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)toMip, (uint32_t)toLayer, 1 };
-        copy.extent = { (uint32_t)fromRegion.width(), (uint32_t)fromRegion.height(), 1 };
-
-        // perform copy
-        vkCmdCopyImage(CommandBufferGetVk(CoreGraphics::SubmissionContextGetCmdBuffer(sub)),
-            TextureGetVkImage(fromId),
-            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            TextureGetVkImage(toId),
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            1, &copy);
-    }
-    else
-    {
-        // otherwise perform a blit
-        VkImageBlit blit;
-        blit.srcOffsets[0] = { (int32_t)fromRegion.left, (int32_t)fromRegion.top, 0 };
-        blit.srcOffsets[1] = { (int32_t)fromRegion.right, (int32_t)fromRegion.bottom, 0 };
-        blit.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)fromMip, (uint32_t)fromLayer, 1 };
-        blit.dstOffsets[0] = { (int32_t)toRegion.left, (int32_t)toRegion.top, 0 };
-        blit.dstOffsets[1] = { (int32_t)toRegion.right, (int32_t)toRegion.bottom, 1 };
-        blit.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)toMip, (uint32_t)toLayer, 1 };
-
-        // perform blit
-        vkCmdBlitImage(CommandBufferGetVk(CoreGraphics::SubmissionContextGetCmdBuffer(sub)),
-            TextureGetVkImage(fromId),
-            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            TextureGetVkImage(toId),
-            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            1, &blit, VK_FILTER_LINEAR);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-VkMemoryTexturePool::Copy(const CoreGraphics::TextureId toId, const Math::rectangle<int> toRegion, IndexT toMip, IndexT toLayer, const CoreGraphics::BufferId fromId, IndexT offset, const CoreGraphics::SubmissionContextId sub)
-{
-    VkBufferImageCopy copy;
-    copy.bufferOffset = offset;
-    copy.bufferImageHeight = 0;
-    copy.bufferRowLength = 0;
-    copy.imageExtent = { (uint32_t)toRegion.width(), (uint32_t)toRegion.height(), 1 };
-    copy.imageOffset = { (int32_t)toRegion.left, (int32_t)toRegion.top, 0 };
-    copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)toMip, (uint32_t)toLayer, 1 };
-
-    vkCmdCopyBufferToImage(CommandBufferGetVk(CoreGraphics::SubmissionContextGetCmdBuffer(sub)),
-        BufferGetVk(fromId), 
-        TextureGetVkImage(toId), 
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
-        1, 
-        &copy);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void 
 VkMemoryTexturePool::Update(const CoreGraphics::TextureId id, const Math::rectangle<int>& region, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub)
 {
@@ -1397,14 +1295,7 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
     loadInfo.stencilExtension = Ids::InvalidId32;
     loadInfo.swapExtension = Ids::InvalidId32;
 
-    VkFormat vkformat;
-
-    if (loadInfo.texUsage & TextureUsage::RenderTexture)
-        vkformat = VkTypes::AsVkFramebufferFormat(loadInfo.format);
-    else if (loadInfo.texUsage & TextureUsage::ReadWriteTexture)
-        vkformat = VkTypes::AsVkDataFormat(loadInfo.format);
-    else
-        vkformat = VkTypes::AsVkFormat(loadInfo.format);
+    VkFormat vkformat = VkTypes::AsVkFormat(loadInfo.format);
 
     VkFormatProperties formatProps;
     VkPhysicalDevice physicalDev = Vulkan::GetCurrentPhysicalDevice();
@@ -1547,7 +1438,6 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
         // if used for render, find appropriate renderable format
         if (loadInfo.texUsage & TextureUsage::RenderTexture)
         {
-            vkformat = VkTypes::AsVkFramebufferFormat(loadInfo.format);
             if (!isDepthFormat)
             {
                 VkFormatProperties formatProps;
