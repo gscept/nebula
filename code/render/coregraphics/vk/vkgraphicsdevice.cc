@@ -3811,6 +3811,8 @@ SetViewport(const Math::rectangle<int>& rect, int index)
 	vp.height = (float)rect.height();
 	vp.x = (float)rect.left;
 	vp.y = (float)rect.top;
+	vp.minDepth = 0.0f;
+	vp.maxDepth = 1.0f;
 
 	// only apply to batch or command buffer if we have a program bound
 	n_assert(state.currentProgram != -1);
