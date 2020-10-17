@@ -28,8 +28,8 @@ using Pair = Tuple<A, B>;
 //------------------------------------------------------------------------------
 /**
 */
-template <typename... T>
-constexpr Tuple<T...> MakeTuple(const T&... args)
+template <typename... T> constexpr Tuple<T...> 
+MakeTuple(const T&... args)
 {
 	return std::make_tuple(args...);
 }
@@ -37,8 +37,8 @@ constexpr Tuple<T...> MakeTuple(const T&... args)
 //------------------------------------------------------------------------------
 /**
 */
-template <typename A, typename B>
-constexpr Pair<A, B> MakePair(const A& a, const B& b)
+template <typename A, typename B> constexpr Pair<A, B> 
+MakePair(const A& a, const B& b)
 {
 	return std::make_pair(a, b);
 }
@@ -46,8 +46,9 @@ constexpr Pair<A, B> MakePair(const A& a, const B& b)
 //------------------------------------------------------------------------------
 /**
 */
-template <typename C, int INDEX, typename... T>
-constexpr C Get(const Tuple<T...>& tuple)
+template <int INDEX, typename... T> 
+constexpr const std::tuple_element_t<INDEX, std::tuple<T...>>&
+Get(const Tuple<T...>& tuple)
 {
 	return std::get<INDEX>(tuple);
 }
@@ -55,8 +56,9 @@ constexpr C Get(const Tuple<T...>& tuple)
 //------------------------------------------------------------------------------
 /**
 */
-template <typename C, typename A, typename B, int INDEX>
-constexpr C Get(const Pair<A, B>& pair)
+template <int INDEX, typename A, typename B> 
+constexpr const std::tuple_element_t<INDEX, std::tuple<A, B>>&
+Get(const Pair<A, B>& pair)
 {
 	static_assert(INDEX == 0 || INDEX == 1, "Index has to be either 0 or 1");
 	return std::get<INDEX>(pair);
