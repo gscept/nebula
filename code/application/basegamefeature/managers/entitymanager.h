@@ -39,12 +39,6 @@ bool IsActive(Entity e);
 /// Returns number of active entities
 uint GetNumEntities();
 
-/// check if category exists
-bool CategoryExists(Util::StringAtom name);
-
-/// return a category id by name
-CategoryId const GetCategoryId(Util::StringAtom name);
-
 /// returns the entity mapping of an entity
 EntityMapping GetEntityMapping(Game::Entity entity);
 
@@ -80,22 +74,22 @@ public:
 	/// destroy entity manager
 	static void Destroy();
 
-	/// Adds a category
-	CategoryId AddCategory(CategoryCreateInfo const& info);
+	/// creates a category
+	CategoryId CreateCategory(CategoryCreateInfo const& info);
 
-	/// Returns a category by name. asserts if category does not exist
-	Category const& GetCategory(Util::StringAtom name) const;
-
-	/// Returns a category by id. asserts if category does not exist
+	/// returns a category by id. asserts if category does not exist
 	Category const& GetCategory(CategoryId cid) const;
 
-	/// Returns the number of existing categories
+	/// returns the number of existing categories
 	SizeT const GetNumCategories() const;
 
-	/// Allocate instance for entity in category instance table
+	/// allocate instance for entity in category instance table
 	InstanceId AllocateInstance(Entity entity, CategoryId category);
+	
+	/// allocate instance for entity in category instance table
+	InstanceId AllocateInstance(Entity entity, BlueprintId blueprint, TemplateId templateId);
 
-	/// Deallocated and recycle instance in category instance table
+	/// deallocated and recycle instance in category instance table
 	void DeallocateInstance(Entity entity);
 
 	// Don't modify state without knowing what you're doing!
@@ -126,7 +120,7 @@ public:
 
 		// - Categories -
 		Util::Array<Category> categoryArray;
-		Util::HashTable<Util::StringAtom, CategoryId> catIndexMap;
+		Util::HashTable<CategoryHash, CategoryId> catIndexMap;
 
 		Util::Array<EntityMapping> entityMap;
 
@@ -139,16 +133,6 @@ private:
 	/// destructor
 	~EntityManager();
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline Category const&
-EntityManager::GetCategory(Util::StringAtom name) const
-{
-	n_assert(this->state.catIndexMap.Contains(name));
-	return this->state.categoryArray[this->state.catIndexMap[name].id];
-}
 
 //------------------------------------------------------------------------------
 /**

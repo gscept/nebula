@@ -5,6 +5,7 @@
 #include "application/stdneb.h"
 #include "entitymanager.h"
 #include "game/entity.h"
+#include "blueprintmanager.h"
 
 namespace Game
 {
@@ -57,21 +58,21 @@ GetWorldDatabase()
 /**
 */
 bool
-CategoryExists(Util::StringAtom name)
+CategoryExists(CategoryHash hash)
 {
 	n_assert(EntityManager::HasInstance());
-	return EntityManager::Singleton->state.catIndexMap.Contains(name);
+	return EntityManager::Singleton->state.catIndexMap.Contains(hash);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 CategoryId const
-GetCategoryId(Util::StringAtom name)
+GetCategoryId(CategoryHash hash)
 {
 	n_assert(EntityManager::HasInstance());
-	n_assert(EntityManager::Singleton->state.catIndexMap.Contains(name));
-	return EntityManager::Singleton->state.catIndexMap[name];
+	n_assert(EntityManager::Singleton->state.catIndexMap.Contains(hash));
+	return EntityManager::Singleton->state.catIndexMap[hash];
 }
 
 //------------------------------------------------------------------------------
@@ -208,8 +209,8 @@ OnEndFrame()
 	{
 		auto const cmd = state->allocQueue.Dequeue();
 		n_assert(IsValid(cmd.entity));
-		CategoryId const cid = cmd.info.category;
-		InstanceId const instance = EntityManager::Singleton->AllocateInstance(cmd.entity, cid);
+
+		InstanceId const instance = EntityManager::Singleton->AllocateInstance(cmd.entity, cmd.info.blueprint, cmd.info.templateId);
 	}
 
 	// Delete all remaining invalid instances
@@ -293,7 +294,7 @@ EntityManager::Destroy()
 /**
 */
 CategoryId
-EntityManager::AddCategory(CategoryCreateInfo const& info)
+EntityManager::CreateCategory(CategoryCreateInfo const& info)
 {
 	MemDb::TableCreateInfo tableInfo;
 	tableInfo.name = info.name;
@@ -308,16 +309,22 @@ EntityManager::AddCategory(CategoryCreateInfo const& info)
 		tableInfo.columns[i] = info.columns[i - 1];
 	}
 	
-
 	Category cat;
-	cat.name = info.name;
 	// Create an instance table
 	cat.instanceTable = this->state.worldDatabase->CreateTable(tableInfo);
-	// Create a identical table that can hold templates of this category
-	cat.templateTable = this->state.worldDatabase->CreateTable(tableInfo);
 
-	CategoryId const cid = this->state.categoryArray.Size();
-	this->state.catIndexMap.Add(cat.name, cid);
+	CategoryHash catHash;
+
+	for (int i = 0; i < info.columns.Size(); i++)
+	{
+		catHash.AddToHash(info.columns[i].id);
+	}
+
+	cat.hash = catHash;
+
+	CategoryId cid = this->state.categoryArray.Size();
+
+	this->state.catIndexMap.Add(catHash, cid.id);
 	this->state.categoryArray.Append(cat);
 
 	return cid;
@@ -348,6 +355,34 @@ EntityManager::AllocateInstance(Entity entity, CategoryId category)
 
 	// Set the owner of this instance
 	Game::Entity* owners = (Game::Entity*) * this->state.worldDatabase->GetPersistantBuffer(cat.instanceTable, 0);
+	owners[instance.id] = entity;
+
+	return instance;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+InstanceId
+EntityManager::AllocateInstance(Entity entity, BlueprintId blueprint, TemplateId templateId)
+{
+	n_assert(IsValid(entity));
+	
+	if (Ids::Index(entity.id) < this->state.entityMap.Size() && this->state.entityMap[Ids::Index(entity.id)].instance != Game::InstanceId::Invalid())
+	{
+		n_warning("Entity already registered!\n");
+		return InvalidIndex;
+	}
+
+	EntityMapping mapping = BlueprintManager::Instance()->Instantiate(blueprint, templateId);
+	this->state.entityMap[Ids::Index(entity.id)] = mapping;
+
+	Category const& cat = this->GetCategory(mapping.category);
+	// Just make sure the first column in always owner!
+	n_assert(this->state.worldDatabase->GetColumnId(cat.instanceTable, this->state.ownerId) == 0);
+
+	// Set the owner of this instance
+	Game::Entity* owners = (Game::Entity*) *this->state.worldDatabase->GetPersistantBuffer(cat.instanceTable, 0);
 	owners[instance.id] = entity;
 
 	return instance;

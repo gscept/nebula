@@ -85,6 +85,8 @@ public:
 	
 	/// move instance from one table to another.
     IndexT MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid);
+    /// duplicate instance from one row into destination table.
+    IndexT DuplicateInstance(TableId srcTid, IndexT srcRow, TableId dstTid);
 
 	/// defragment table
 	SizeT Defragment(TableId tid, std::function<void(IndexT, IndexT)> const& moveCallback);
