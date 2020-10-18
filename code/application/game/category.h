@@ -16,17 +16,19 @@ namespace Game
 
 typedef MemDb::ColumnDescriptor PropertyId;
 
+ID_16_TYPE(BlueprintId);
+ID_16_TYPE(TemplateId);
+
 struct EntityCreateInfo
 {
-	CategoryId category;
+	BlueprintId blueprint = BlueprintId::Invalid();
+	TemplateId templateId = TemplateId::Invalid();
 };
 
-/// describes a category
 struct Category
 {
-	Util::StringAtom name;
 	MemDb::TableId instanceTable;
-	MemDb::TableId templateTable;
+	CategoryHash hash;
 };
 
 struct EntityMapping

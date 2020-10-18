@@ -200,6 +200,7 @@ Database::GetColumns(TableId tid)
 IndexT
 Database::MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
 {
+	n_assert(srcTid != dstTid);
 	Table& src = this->tables[Ids::Index(srcTid.id)];
 	Table& dst = this->tables[Ids::Index(dstTid.id)];
 
@@ -227,6 +228,19 @@ Database::MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
 	this->DeallocateRow(srcTid, srcRow);
 
 	return dstRow;
+}
+
+//------------------------------------------------------------------------------
+/**
+	@returns	New index/row in destination table
+	@note		This might be destructive if the destination table is missing some of the source tables columns!
+	@todo		This has not been optimized
+*/
+IndexT
+Database::DuplicateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
+{
+	n_error("Not implemented!");
+	return -1;
 }
 
 //------------------------------------------------------------------------------
