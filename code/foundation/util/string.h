@@ -165,7 +165,7 @@ public:
     /// pattern matching
     static bool MatchPattern(const String& str, const String& pattern);
     /// return a 32-bit hash code for the string
-    IndexT HashCode() const;
+	uint32_t HashCode() const;
 
     /// set content to char ptr
     void SetCharPtr(const char* s);
@@ -907,13 +907,13 @@ String::IsValid() const
     This method computes a hash code for the string. The method is
     compatible with the Util::HashTable class.
 */
-inline IndexT
+inline uint32_t
 String::HashCode() const
 {
-    IndexT hash = 0;
+	uint32_t hash = 0;
     const char* ptr = this->AsCharPtr();
     SizeT len = this->strLen;
-    IndexT i;
+	SizeT i;
     for (i = 0; i < len; i++)
     {
         hash += ptr[i];
@@ -923,7 +923,6 @@ String::HashCode() const
     hash += hash << 3;
     hash ^= hash >> 11;
     hash += hash << 15;
-    hash &= ~(1<<31);       // don't return a negative number (in case IndexT is defined signed)
     return hash;
 }
 

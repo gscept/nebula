@@ -107,13 +107,13 @@ StringAtom::operator!=(const char* rhs) const
 //------------------------------------------------------------------------------
 /**
 */
-IndexT
+uint32_t
 StringAtom::StringHashCode() const
 {
-    IndexT hash = 0;
+	uint32_t hash = 0;
     const char* ptr = this->content;
     size_t len = strlen(ptr);
-    IndexT i;
+	uint32_t i;
     for (i = 0; i < len; i++)
     {
         hash += ptr[i];
@@ -124,7 +124,6 @@ StringAtom::StringHashCode() const
     hash += hash << 3;
     hash ^= hash >> 11;
     hash += hash << 15;
-    hash &= ~(1 << 31);       // don't return a negative number (in case IndexT is defined signed)
     return hash;
 }
 

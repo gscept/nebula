@@ -17,7 +17,7 @@
 
 	The key class must implement the following method in order to
 	work with the HashTable:    
-	IndexT HashCode() const;
+	uint32_t HashCode() const;
 
 	The Util::String class implements this method as an example.
 	Internally the hash table is implemented as a fixed array
@@ -110,7 +110,7 @@ public:
 	private:
 		friend class HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>;
 		FixedArray<ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE> >* arr;
-		IndexT hashIndex;
+		uint32_t hashIndex;
 		IndexT bucketIndex;
 	};
 
@@ -126,11 +126,11 @@ private:
 	bool inBulkAdd;
 
 	/// if type is integral, just use that value directly
-	template <typename HASHKEY> const IndexT GetHashCode(const typename std::enable_if<std::is_integral<HASHKEY>::value, HASHKEY>::type& key) const { return IndexT(key % this->hashArray.Size()); };
+	template <typename HASHKEY> const uint32_t GetHashCode(const typename std::enable_if<std::is_integral<HASHKEY>::value, HASHKEY>::type& key) const { return uint32_t(key % this->hashArray.Size()); };
 	/// if not, call the function on HashCode on HASHKEY
-	template <typename HASHKEY> const IndexT GetHashCode(const HASHKEY& key) const { return key.HashCode() % this->hashArray.Size(); };
+	template <typename HASHKEY> const uint32_t GetHashCode(const HASHKEY& key) const { return key.HashCode() % this->hashArray.Size(); };
 	/// if type is pointer, convert using questionable method
-	template <typename HASHKEY> const IndexT GetHashCode(const typename std::enable_if<std::is_pointer<HASHKEY>::value, HASHKEY>::type& key) const { return key->HashCode() % this->hashArray.Size(); }
+	template <typename HASHKEY> const uint32_t GetHashCode(const typename std::enable_if<std::is_pointer<HASHKEY>::value, HASHKEY>::type& key) const { return key->HashCode() % this->hashArray.Size(); }
 };
 
 //------------------------------------------------------------------------------
@@ -292,7 +292,7 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::operator[](const KEYTYPE&
 {
 	// get hash code from key, trim to capacity
 	n_assert(!this->inBulkAdd);
-	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
+	uint32_t hashIndex = GetHashCode<KEYTYPE>(key);
 	const ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>& hashElements = this->hashArray[hashIndex];
 	int numHashElements = hashElements.Size();
 	#if NEBULA_BOUNDSCHECKS    
@@ -409,8 +409,7 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Add(const KeyValuePair<KE
 	#if NEBULA_BOUNDSCHECKS
 	n_assert(!this->Contains(kvp.Key()));
 	#endif
-	IndexT hashIndex = GetHashCode<KEYTYPE>(kvp.Key());
-	n_assert(hashIndex >= 0);
+	uint32_t hashIndex = GetHashCode<KEYTYPE>(kvp.Key());
 	IndexT ret;
 	if (this->inBulkAdd)
 	{
@@ -444,7 +443,7 @@ VALUETYPE&
 HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::AddUnique(const KEYTYPE& key)
 {
 	// get hash code from key, trim to capacity
-	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
+	uint32_t hashIndex = GetHashCode<KEYTYPE>(key);
 	IndexT elementIndex = InvalidIndex;
 	ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>& hashElements = this->hashArray[hashIndex];
 	if (hashElements.Size() == 0)
@@ -515,7 +514,7 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Erase(const KEYTYPE& key)
 	n_assert(!this->inBulkAdd);
 	n_assert(this->size > 0);
 	#endif
-	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
+	uint32_t hashIndex = GetHashCode<KEYTYPE>(key);
 	ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>& hashElements = this->hashArray[hashIndex];
 	IndexT hashElementIndex = hashElements.BinarySearchIndex<KEYTYPE>(key);
 	#if NEBULA_BOUNDSCHECKS
@@ -535,7 +534,7 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::EraseIndex(const KEYTYPE&
 #if NEBULA_BOUNDSCHECKS
 	n_assert(this->size > 0);
 #endif
-	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
+	uint32_t hashIndex = GetHashCode<KEYTYPE>(key);
 	ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>& hashElements = this->hashArray[hashIndex];
 #if NEBULA_BOUNDSCHECKS
 	n_assert(InvalidIndex != index); // key doesn't exist
@@ -553,7 +552,7 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Contains(const KEYTYPE& k
 {
 	if (this->size > 0)
 	{
-		IndexT hashIndex = GetHashCode<KEYTYPE>(key);
+		uint32_t hashIndex = GetHashCode<KEYTYPE>(key);
 		ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>& hashElements = this->hashArray[hashIndex];
 		if (hashElements.Size() == 0) return false;
 		else
@@ -579,7 +578,7 @@ template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 IndexT
 HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::FindIndex(const KEYTYPE& key) const
 {
-	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
+	uint32_t hashIndex = GetHashCode<KEYTYPE>(key);
 	ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>& hashElements = this->hashArray[hashIndex];
 	IndexT hashElementIndex;
 	if (this->inBulkAdd)
@@ -596,7 +595,7 @@ template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 VALUETYPE&
 HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::ValueAtIndex(const KEYTYPE& key, IndexT i) const
 {
-	IndexT hashIndex = GetHashCode<KEYTYPE>(key);
+	uint32_t hashIndex = GetHashCode<KEYTYPE>(key);
 	ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>& hashElements = this->hashArray[hashIndex];
 	return hashElements[i].Value();
 }
