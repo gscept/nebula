@@ -62,7 +62,7 @@ public:
     /// return the size of the binary representation in bytes
     static SizeT BinarySize();
     /// get a hash code (compatible with Util::HashTable)
-    IndexT HashCode() const;
+	uint32_t HashCode() const;
 
 private:
     UUID uuid;

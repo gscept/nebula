@@ -81,7 +81,7 @@ public:
 	/// get blob size
 	SizeT Size() const;
 	/// get a hash code (compatible with Util::HashTable)
-	IndexT HashCode() const;
+	uint32_t HashCode() const;
     /// get as base64 encoded
     Util::Blob GetBase64() const;
 
@@ -488,7 +488,7 @@ Blob::Size() const
 //------------------------------------------------------------------------------
 /**
 */
-inline IndexT
+inline uint32_t
 Blob::HashCode() const
 {
     IndexT hash = 0;

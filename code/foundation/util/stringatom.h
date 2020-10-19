@@ -78,9 +78,9 @@ public:
     String AsString() const;
 
 	/// calculate hash code for Util::HashTable (basically just the adress)
-	IndexT HashCode() const;
+	uint32_t HashCode() const;
     /// calculate persistent hash code (based on string content)
-    IndexT StringHashCode() const;
+	uint32_t StringHashCode() const;
 private:
     /// setup the string atom from a string pointer
     void Setup(const char* str);
@@ -352,12 +352,12 @@ StringAtom::AsString() const
 //------------------------------------------------------------------------------
 /**
 */
-inline IndexT
+inline uint32_t
 StringAtom::HashCode() const
 {
 	// FIXME, test this :D
 	PtrT key = PtrT(this->content);
-	return (IndexT)(std::hash<unsigned long long>{}(key) & 0x7FFFFFFF);
+	return (uint32_t)(std::hash<unsigned long long>{}(key) & 0x7FFFFFFF);
 }
 
 } // namespace Util

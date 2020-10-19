@@ -165,7 +165,7 @@ public:
     TYPE* get_unsafe() const;
 
 	/// calculate hash code for Util::HashTable (basically just the adress)
-	IndexT HashCode() const;
+	uint32_t HashCode() const;
 
 private:
     TYPE* ptr;
@@ -455,10 +455,10 @@ Ptr<TYPE>::get_unsafe() const
 /**
 */
 template<class TYPE>
-IndexT
+uint32_t
 Ptr<TYPE>::HashCode() const
 {
-	return (IndexT)(std::hash<unsigned long long>{}((uintptr_t)this->ptr) & 0x7FFFFFFF);
+	return (uint32_t)(std::hash<unsigned long long>{}((uintptr_t)this->ptr) & 0x7FFFFFFF);
 }
 
 //------------------------------------------------------------------------------

@@ -175,12 +175,12 @@ Win32Guid::FromBinary(const unsigned char* ptr, SizeT numBytes)
     This method returns a hash code for the uuid, compatible with 
     Util::HashTable.
 */
-IndexT
+uint32_t
 Win32Guid::HashCode() const
 {
     RPC_STATUS status;
     unsigned short hashCode = UuidHash((UUID*)&this->uuid, &status);
-    return (IndexT) hashCode;
+    return (uint32_t) hashCode;
 }
 
 }; // namespace Win32
