@@ -1,0 +1,11 @@
+{
+	"includes": [
+		"game/entity.h"
+	],
+	"properties": {
+		"Owner": {
+			"_type_": "Game::Entity",
+			"_default_": -1
+		}
+	}
+}
