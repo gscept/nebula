@@ -8,6 +8,7 @@
 #include "basegamefeature/managers/entitymanager.h"
 #include "basegamefeature/managers/blueprintmanager.h"
 #include "basegamefeature/basegamefeatureunit.h"
+#include "testproperties.h"
 
 using namespace Game;
 using namespace Math;
@@ -17,25 +18,6 @@ namespace Test
 {
 
 static int numFramesExecuted = 0;
-
-//------------------------------------------------------------------------------
-/**
-*/
-//void
-//TestProperty::OnBeginFrame()
-//{
-//    const SizeT num = Game::GetNumInstances(this->category);
-//    for (IndexT i = 0; i < num; i++)
-//    {
-//        this->data.health[i] += 1;
-//        
-//        Math::vec4 const& move = this->data.moveDirection[i];
-//        Math::vec4 newPos = this->data.transform[i].position;
-//        newPos += this->data.moveDirection[i] * this->data.speed[i];
-//        this->data.transform[i].position = newPos;
-//    }
-//    numFramesExecuted++;
-//}
 
 //------------------------------------------------------------------------------
 
@@ -49,38 +31,18 @@ __ImplementClass(Test::EntitySystemTest, 'GEST', Test::TestCase);
 void
 EntitySystemTest::Run()
 {
-    CategoryCreateInfo info;
-    info.name = "Enemy";
-	info.columns = {
-		Game::GetPropertyId("WorldTransform"_atm),
-		Game::GetPropertyId("TestStruct"_atm),
-		Game::GetPropertyId("TestVec4"_atm),
-		Game::GetPropertyId("TestHealth"_atm)
-    };
-    EntityManager::Instance()->AddCategory(info);
-
-    info.name = "Player";
-    info.columns.Clear();
-	info.columns = {
-		Game::GetPropertyId("TestHealth"_atm),
-		Game::GetPropertyId("TestStruct"_atm),
-		Game::GetPropertyId("WorldTransform"_atm)
-	};
-
-    EntityManager::Instance()->AddCategory(info);
-
-    CategoryId const playerCategory = Game::GetCategoryId("Player"_atm);
-    CategoryId const enemyCategory = Game::GetCategoryId("Enemy"_atm);
+    BlueprintId const playerBlueprint = Game::GetBlueprintId("Player"_atm);
+    BlueprintId const enemyBlueprint = Game::GetBlueprintId("Enemy"_atm);
 
     for (int i = 0; i < 500; i++)
     {
-        Entity player = Game::CreateEntity({ playerCategory });
+        Entity player = Game::CreateEntity({ playerBlueprint });
     }
 
     Util::Array<Entity> enemies;
     for (int i = 0; i < 500; i++)
     {
-        Entity enemy = Game::CreateEntity({ enemyCategory });
+        Entity enemy = Game::CreateEntity({ enemyBlueprint });
         enemies.Append(enemy);
     }
 
@@ -106,7 +68,7 @@ EntitySystemTest::Run()
         }
     }
 
-    // Delete all entities
+	// Delete all entities
     for (auto e : enemies)
     {
         if (Game::IsValid(e))
@@ -121,7 +83,7 @@ EntitySystemTest::Run()
     Util::Queue<Game::Entity> queue;
     for (int i = 0; i < 10; i++)
     {
-        Entity enemy = Game::CreateEntity({ enemyCategory });
+        Entity enemy = Game::CreateEntity({ enemyBlueprint });
         queue.Enqueue(enemy);
     }
 
@@ -157,7 +119,7 @@ EntitySystemTest::Run()
     Util::Stack<Game::Entity> stack;
     for (int i = 0; i < 10; i++)
     {
-        Entity enemy = Game::CreateEntity({ enemyCategory });
+        Entity enemy = Game::CreateEntity({ enemyBlueprint });
         stack.Push(enemy);
     }
 
@@ -192,16 +154,16 @@ EntitySystemTest::Run()
 
     Game::Entity entities[10] =
     {
-        Game::CreateEntity({ enemyCategory }),
-        Game::CreateEntity({ enemyCategory }),
-        Game::CreateEntity({ enemyCategory }),
-        Game::CreateEntity({ enemyCategory }),
-        Game::CreateEntity({ enemyCategory }),
-        Game::CreateEntity({ enemyCategory }),
-        Game::CreateEntity({ enemyCategory }),
-        Game::CreateEntity({ enemyCategory }),
-        Game::CreateEntity({ enemyCategory }),
-        Game::CreateEntity({ enemyCategory })
+        Game::CreateEntity({ playerBlueprint }),
+        Game::CreateEntity({ playerBlueprint }),
+        Game::CreateEntity({ playerBlueprint }),
+        Game::CreateEntity({ playerBlueprint }),
+        Game::CreateEntity({ playerBlueprint }),
+        Game::CreateEntity({ playerBlueprint }),
+        Game::CreateEntity({ playerBlueprint }),
+        Game::CreateEntity({ playerBlueprint }),
+        Game::CreateEntity({ playerBlueprint }),
+        Game::CreateEntity({ playerBlueprint })
     };
 
     // run a frame
@@ -228,6 +190,22 @@ EntitySystemTest::Run()
     BaseGameFeature::BaseGameFeatureUnit::Instance()->OnEndFrame();
 
     VERIFY(true);
+
+	Game::FilterSet filter;
+	filter.inclusive = {
+		Game::GetPropertyId("TestStruct"_atm),
+		Game::GetPropertyId("TestHealth"_atm)
+	};
+
+	Game::Dataset set = Game::Query(filter);
+
+	Game::TestStruct* structs = (Game::TestStruct*)set.tables[0].buffers[0];
+	Game::TestHealth* healths = (Game::TestHealth*)set.tables[2].buffers[1];
+
+	// add a property to an entity that does not already have it. This should
+	// move the entity from one category to another, effectively (in this case)
+	// creating a new category, that contains only one instance (this one)
+	Game::AddProperty(entities[1], Game::GetPropertyId("TestVec4"_atm));
 
     // Test query and filtering
 	/*

@@ -7,6 +7,7 @@
 #include "testbase/testrunner.h"
 #include "basegamefeature/basegamefeatureunit.h"
 #include "appgame/gameapplication.h"
+#include "basegamefeature/managers/blueprintmanager.h"
 
 // tests
 #include "idtest.h"
@@ -49,6 +50,8 @@ NebulaMain(const Util::CommandLineArgs& args)
 	GameAppTest gameApp;
 	gameApp.SetCompanyName("Test Company");
 	gameApp.SetAppTitle("NEBULA GAME-TESTS");
+
+	Game::BlueprintManager::SetBlueprintsFilename("blueprints_test.json", "bin:");
 
 	if (!gameApp.Open())
 	{
