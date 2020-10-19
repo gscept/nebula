@@ -50,7 +50,7 @@ struct Table
 
     Util::ArrayAllocator<ColumnDescriptor, ColumnBuffer> columns;
 
-    static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::ObjectArrayHeap;
+    static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::DefaultHeap;
 };
 
 } // namespace MemDb

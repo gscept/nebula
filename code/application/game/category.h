@@ -10,11 +10,14 @@
 #include "core/refcounted.h"
 #include "memdb/columndescriptor.h"
 #include "memdb/table.h"
+#include "memdb/database.h"
 
 namespace Game
 {
 
 typedef MemDb::ColumnDescriptor PropertyId;
+typedef MemDb::Dataset Dataset;
+typedef MemDb::FilterSet FilterSet;
 
 ID_16_TYPE(BlueprintId);
 ID_16_TYPE(TemplateId);
@@ -38,5 +41,7 @@ struct EntityMapping
 };
 
 typedef MemDb::TableCreateInfo CategoryCreateInfo;
+
+
 
 } // namespace Game
