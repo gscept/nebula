@@ -45,14 +45,22 @@ TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue)
     static_assert(std::is_trivially_destructible<TYPE>(), "TYPE must be trivially destructible.");
     static_assert(std::is_standard_layout<TYPE>(), "TYPE must be standard layout.");
     
-    auto* reg = Instance();
-    // setup a state description with the default values from the type
-    ColumnDescription* desc = n_new(ColumnDescription(name, defaultValue));
 
-    ColumnDescriptor descriptor = reg->columnDescriptions.Size();
-    reg->columnDescriptions.Append(desc);
-    reg->columnRegistry.Add(name, descriptor);
-    return descriptor;
+    auto* reg = Instance();
+    if (!reg->columnRegistry.Contains(name))
+    {
+        // setup a state description with the default values from the type
+        ColumnDescription* desc = n_new(ColumnDescription(name, defaultValue));
+
+        ColumnDescriptor descriptor = reg->columnDescriptions.Size();
+        reg->columnDescriptions.Append(desc);
+        reg->columnRegistry.Add(name, descriptor);
+        return descriptor;
+    }
+    else
+    {
+        return reg->columnRegistry[name];
+    }
 }
 
 //------------------------------------------------------------------------------
