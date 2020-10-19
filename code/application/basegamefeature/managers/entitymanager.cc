@@ -122,7 +122,12 @@ AddProperty(Game::Entity const entity, PropertyId const pid)
 			info.columns[i] = cols[i + 1];
 		}
 		info.columns[i] = pid;
-		
+
+#ifdef NEBULA_DEBUG
+		info.name = cat.name + " + ";
+		info.name += MemDb::TypeRegistry::GetDescription(pid)->name.AsString();
+#endif
+
 		newCategoryId = EntityManager::Singleton->CreateCategory(info);
 	}
 
@@ -381,6 +386,10 @@ EntityManager::CreateCategory(CategoryCreateInfo const& info)
 	}
 
 	cat.hash = catHash;
+
+#ifdef NEBULA_DEBUG
+	cat.name = info.name;
+#endif
 
 	CategoryId cid = this->state.categoryArray.Size();
 
