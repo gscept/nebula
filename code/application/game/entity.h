@@ -23,6 +23,12 @@ namespace Game
 	struct CategoryHash
 	{
 		uint32_t id = 0;
+
+		const bool operator==(CategoryHash const rhs) const { return id == rhs.id; } \
+		const bool operator!=(CategoryHash const rhs) const { return id != rhs.id; } \
+		const bool operator<(CategoryHash const rhs) const { return HashCode() < rhs.HashCode(); } \
+		const bool operator>(CategoryHash const rhs) const { return HashCode() > rhs.HashCode(); } \
+
 		void AddToHash(uint32_t i)
 		{
 			this->id += i;
@@ -42,7 +48,7 @@ namespace Game
 			i = (i >> 16) ^ i;
 			return i;
 		}
-		IndexT HashCode() const { return id; }
+		uint32_t HashCode() const { return id; }
 	};
 
 	/// instance id point into a category table. Entities are mapped to instanceids

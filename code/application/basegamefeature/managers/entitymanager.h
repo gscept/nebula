@@ -45,6 +45,15 @@ EntityMapping GetEntityMapping(Game::Entity entity);
 /// return an attribute id
 PropertyId const GetPropertyId(Util::StringAtom name);
 
+/// add a property to an entity
+void AddProperty(Game::Entity const entity, PropertyId const pid);
+
+/// returns a blueprint id
+BlueprintId const GetBlueprintId(Util::StringAtom name);
+
+/// query the world database for instances with filter
+Dataset Query(FilterSet const& filter);
+
 /// Returns the world db
 Ptr<MemDb::Database> GetWorldDatabase();
 
@@ -86,11 +95,17 @@ public:
 	/// allocate instance for entity in category instance table
 	InstanceId AllocateInstance(Entity entity, CategoryId category);
 	
-	/// allocate instance for entity in category instance table
+	/// allocate instance for entity in blueprints category instance table
+	InstanceId AllocateInstance(Entity entity, BlueprintId blueprint);
+
+	/// allocate instance for entity in blueprint instance table by copying template
 	InstanceId AllocateInstance(Entity entity, BlueprintId blueprint, TemplateId templateId);
 
 	/// deallocated and recycle instance in category instance table
 	void DeallocateInstance(Entity entity);
+
+	/// migrate an instance from one category to another
+	InstanceId Migrate(Entity entity, CategoryId newCategory);
 
 	// Don't modify state without knowing what you're doing!
 	struct State

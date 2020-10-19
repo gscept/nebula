@@ -37,7 +37,8 @@ public:
 	/// set a optional blueprints.xml, which is used instead of standard blueprint.xml
 	static void SetBlueprintsFilename(const Util::String& name, const Util::String& folder);
 	
-
+	/// get a blueprint id
+	static BlueprintId const GetBlueprintId(Util::StringAtom name);
 
 // private api
 public:

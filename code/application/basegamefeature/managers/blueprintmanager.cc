@@ -47,7 +47,7 @@ BlueprintManager::BlueprintManager()
 {
     if (!this->ParseBlueprints())
     {
-        n_error("Managers::BlueprintManager: Error parsing data:tables/blueprints.json!");
+        n_error("Managers::BlueprintManager: Error parsing %s%s!", BlueprintManager::blueprintFolder.AsCharPtr(), BlueprintManager::blueprintFilename.AsCharPtr());
     }
 }
 
@@ -137,6 +137,16 @@ BlueprintManager::SetBlueprintsFilename(const Util::String& name, const Util::St
 	n_assert(name.IsValid());
 	blueprintFilename = name;
 	blueprintFolder = folder;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+BlueprintId const
+BlueprintManager::GetBlueprintId(Util::StringAtom name)
+{
+	n_assert(Singleton != nullptr);
+	return Singleton->blueprintMap[name];
 }
 
 //------------------------------------------------------------------------------

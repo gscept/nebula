@@ -97,6 +97,59 @@ GetPropertyId(Util::StringAtom name)
 //------------------------------------------------------------------------------
 /**
 */
+void
+AddProperty(Game::Entity const entity, PropertyId const pid)
+{
+	EntityManager::State& state = EntityManager::Singleton->state;
+	EntityMapping mapping = GetEntityMapping(entity);
+	Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
+	CategoryHash newHash = cat.hash;
+	newHash.AddToHash(pid.id);
+	CategoryId newCategoryId;
+	if (state.catIndexMap.Contains(newHash))
+	{
+		newCategoryId = state.catIndexMap[newHash];
+	}
+	else
+	{
+		CategoryCreateInfo info;
+		auto const& cols = state.worldDatabase->GetTable(cat.instanceTable).columns.GetArray<0>();
+		info.columns.SetSize(cols.Size());
+		IndexT i;
+		// Note: Skips owner column
+		for (i = 0; i < cols.Size() - 1; ++i)
+		{
+			info.columns[i] = cols[i + 1];
+		}
+		info.columns[i] = pid;
+		
+		newCategoryId = EntityManager::Singleton->CreateCategory(info);
+	}
+
+	EntityManager::Singleton->Migrate(entity, newCategoryId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+BlueprintId const
+GetBlueprintId(Util::StringAtom name)
+{
+	return BlueprintManager::GetBlueprintId(name);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Dataset
+Query(FilterSet const& filter)
+{
+	return EntityManager::Singleton->state.worldDatabase->Query(filter);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 SizeT
 GetNumInstances(CategoryId category)
 {
@@ -210,7 +263,14 @@ OnEndFrame()
 		auto const cmd = state->allocQueue.Dequeue();
 		n_assert(IsValid(cmd.entity));
 
-		InstanceId const instance = EntityManager::Singleton->AllocateInstance(cmd.entity, cmd.info.blueprint, cmd.info.templateId);
+		if (cmd.info.templateId != TemplateId::Invalid())
+		{
+			EntityManager::Singleton->AllocateInstance(cmd.entity, cmd.info.blueprint, cmd.info.templateId);
+		}
+		else
+		{
+			EntityManager::Singleton->AllocateInstance(cmd.entity, cmd.info.blueprint);
+		}
 	}
 
 	// Delete all remaining invalid instances
@@ -364,6 +424,34 @@ EntityManager::AllocateInstance(Entity entity, CategoryId category)
 /**
 */
 InstanceId
+EntityManager::AllocateInstance(Entity entity, BlueprintId blueprint)
+{
+	n_assert(IsValid(entity));
+
+	if (Ids::Index(entity.id) < this->state.entityMap.Size() && this->state.entityMap[Ids::Index(entity.id)].instance != Game::InstanceId::Invalid())
+	{
+		n_warning("Entity already registered!\n");
+		return InvalidIndex;
+	}
+
+	EntityMapping mapping = BlueprintManager::Instance()->Instantiate(blueprint);
+	this->state.entityMap[Ids::Index(entity.id)] = mapping;
+
+	Category const& cat = this->GetCategory(mapping.category);
+	// Just make sure the first column in always owner!
+	n_assert(this->state.worldDatabase->GetColumnId(cat.instanceTable, this->state.ownerId) == 0);
+
+	// Set the owner of this instance
+	Game::Entity* owners = (Game::Entity*) * this->state.worldDatabase->GetPersistantBuffer(cat.instanceTable, 0);
+	owners[mapping.instance.id] = entity;
+
+	return mapping.instance;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+InstanceId
 EntityManager::AllocateInstance(Entity entity, BlueprintId blueprint, TemplateId templateId)
 {
 	n_assert(IsValid(entity));
@@ -383,9 +471,9 @@ EntityManager::AllocateInstance(Entity entity, BlueprintId blueprint, TemplateId
 
 	// Set the owner of this instance
 	Game::Entity* owners = (Game::Entity*) *this->state.worldDatabase->GetPersistantBuffer(cat.instanceTable, 0);
-	owners[instance.id] = entity;
+	owners[mapping.instance.id] = entity;
 
-	return instance;
+	return mapping.instance;
 }
 
 //------------------------------------------------------------------------------
@@ -405,6 +493,21 @@ EntityManager::DeallocateInstance(Entity entity)
 	this->state.worldDatabase->DeallocateRow(cat.instanceTable, instance.id);
 
 	instance = InstanceId::Invalid();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+InstanceId
+EntityManager::Migrate(Entity entity, CategoryId newCategory)
+{
+	EntityManager::State& state = EntityManager::Singleton->state;
+	EntityMapping mapping = GetEntityMapping(entity);
+	Category const& oldCat = EntityManager::Singleton->GetCategory(mapping.category);
+	Category const& newCat = EntityManager::Singleton->GetCategory(newCategory);
+	InstanceId newInstance = state.worldDatabase->MigrateInstance(oldCat.instanceTable, mapping.instance.id, newCat.instanceTable);
+	state.entityMap[Ids::Index(entity.id)] = { newCategory, newInstance };
+	return newInstance;
 }
 
 } // namespace Game
