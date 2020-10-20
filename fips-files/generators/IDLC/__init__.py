@@ -63,16 +63,15 @@ class IDLCodeGenerator:
         IDLDocument.WriteIncludes(f, self.document)
         IDLDocument.WriteIncludes(f, propertyLibraries)
 
-        if "enums" in self.document:
-            IDLDocument.BeginNamespace(f, self.document)
-            IDLProperty.WriteEnumeratedTypes(f, self.document)
-            IDLDocument.EndNamespace(f, self.document)
-            f.WriteLine("")
 
         hasMessages = "messages" in self.document
         hasProperties = "properties" in self.document
-        if hasProperties or hasMessages:
+        hasEnums = "enums" in self.document
+        if hasProperties or hasMessages or hasEnums:
             IDLDocument.BeginNamespace(f, self.document)
+
+            if hasEnums:
+                IDLProperty.WriteEnumeratedTypes(f, self.document)
 
             if hasMessages:
                 IDLProtocol.WriteMessageDeclarations(f, self.document)
