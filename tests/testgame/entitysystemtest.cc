@@ -199,66 +199,13 @@ EntitySystemTest::Run()
 
 	Game::Dataset set = Game::Query(filter);
 
-	Game::TestStruct* structs = (Game::TestStruct*)set.tables[0].buffers[0];
-	Game::TestHealth* healths = (Game::TestHealth*)set.tables[2].buffers[1];
+	Test::TestStruct* structs = (Test::TestStruct*)set.tables[0].buffers[0];
+	Test::TestHealth* healths = (Test::TestHealth*)set.tables[2].buffers[1];
 
 	// add a property to an entity that does not already have it. This should
 	// move the entity from one category to another, effectively (in this case)
 	// creating a new category, that contains only one instance (this one)
 	Game::AddProperty(entities[1], Game::GetPropertyId("TestVec4"_atm));
-
-    // Test query and filtering
-	/*
-    Game::FilterSet filter;
-    filter.inclusive = {
-        Attr::Runtime::HealthId,
-        Attr::Runtime::SpeedId
-    };
-
-    Game::Dataset set = Game::Query(filter);
-
-    auto const enemyCat = Game::GetCategoryId("Enemy"_atm);
-    auto const playerCat = Game::GetCategoryId("Player"_atm);
-    auto const otherCat = Game::GetCategoryId("Other"_atm);
-
-    VERIFY(set.categories.Size() == 2);
-    //VERIFY(set.categories.FindIndex(enemyCat) != InvalidIndex);
-    //VERIFY(set.categories.FindIndex(playerCat) != InvalidIndex);
-    //VERIFY(set.categories.FindIndex(otherCat) == InvalidIndex);
-
-    filter.inclusive = {
-        Attr::Runtime::HealthId,
-        Attr::Runtime::TargetId
-    };
-
-    set = Game::Query(filter);
-    
-    VERIFY(set.categories.Size() == 1);
-    //VERIFY(set.categories.FindIndex(enemyCat) != InvalidIndex);
-    //VERIFY(set.categories.FindIndex(playerCat) == InvalidIndex);
-    //VERIFY(set.categories.FindIndex(otherCat) == InvalidIndex);
-
-    filter.inclusive = {
-        Attr::Runtime::HealthId
-    };
-
-    filter.exclusive = {
-        Attr::Runtime::TargetId
-    };
-
-    set = Game::Query(filter);
-
-    VERIFY(set.categories.Size() == 1);
-    //VERIFY(set.categories.FindIndex(playerCat) != InvalidIndex);
-    //VERIFY(set.categories.FindIndex(enemyCat) == InvalidIndex);
-    //VERIFY(set.categories.FindIndex(otherCat) == InvalidIndex);
-	*/
-
-    TestMsg::Send(10, 20.0f);
-
-    auto msgQueue = TestMsg::AllocateMessageQueue();
-    TestMsg::Defer(msgQueue, 100, 200.0f);
-    TestMsg::DispatchMessageQueue(msgQueue);
 }
 
 
