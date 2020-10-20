@@ -1,4 +1,5 @@
 {
+	"namespace": "Test",
 	"properties": {
 		"TestVec4": {
 			"_type_": "vec4",
