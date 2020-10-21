@@ -65,10 +65,10 @@ Mat4Test::Run()
 	const vec4 pOneTwoThree(1.0, 2.0, 3.0, 1.0);
 	const vec3 vOneTwoThree(1.0, 2.0, 3.0);
     const mat4 trans123(vec4(1.0f, 0.0f, 0.0f, 0.0f),
-							vec4(0.0f, 1.0f, 0.0f, 0.0f),
-							vec4(0.0f, 0.0f, 1.0f, 0.0f),
-							pOneTwoThree);
-	const mat4 identity;
+						vec4(0.0f, 1.0f, 0.0f, 0.0f),
+						vec4(0.0f, 0.0f, 1.0f, 0.0f),
+						pOneTwoThree);
+	const mat4 identity = mat4::identity;
 	const mat4 rotOneX = rotationx(1.0f);
 	const vec4 pZero(0.0, 0.0, 0.0, 1.0);
 	const vec4 pOneX(1.0, 0.0, 0.0, 1.0);
@@ -77,7 +77,6 @@ Mat4Test::Run()
 
 	// identity and construction
     mat4 m0(identity);
-    VERIFY(m0 == mat4());
     VERIFY(m0 == identity);
 	
 	// multiply by identity
@@ -109,76 +108,76 @@ Mat4Test::Run()
 	m0 = mRotOneX_Trans123;
 	m0 = translation(-0.1f, 4.5f, 2.1f);
 	VERIFY(matnearequal(m0, mat4(vec4( 1.0f, 0.0f, 0.0f, 0.0f),
-				 		vec4( 0.0f, 1.0f, 0.0f, 0.0f),
-				 		vec4( 0.0f, 0.0f, 1.0f, 0.0f),
-				 		vec4(-0.1f, 4.5f, 2.1f, 1.0f))));
+				 				 vec4( 0.0f, 1.0f, 0.0f, 0.0f),
+				 				 vec4( 0.0f, 0.0f, 1.0f, 0.0f),
+				 				 vec4(-0.1f, 4.5f, 2.1f, 1.0f))));
 	m0 = mRotOneX_Trans123;
 	m0 = translation(vec3(-0.1f, 4.5f, 2.1f));
 	VERIFY(matnearequal(m0, mat4(vec4( 1.0f, 0.0f, 0.0f, 0.0f),
-						  		vec4( 0.0f, 1.0f, 0.0f, 0.0f),
-						  		vec4( 0.0f, 0.0f, 1.0f, 0.0f),
-						  		vec4(-0.1f, 4.5f, 2.1f, 1.0f))));
+						  		 vec4( 0.0f, 1.0f, 0.0f, 0.0f),
+						  		 vec4( 0.0f, 0.0f, 1.0f, 0.0f),
+						  		 vec4(-0.1f, 4.5f, 2.1f, 1.0f))));
 
 	// scale
 	m0 = mRotOneX_Trans123;
 	m0.scale(vec3(0.5f, 1.5f, -3.0f));
 	VERIFY(matnearequal(m0, mat4(vec4(0.5f,       0.0f,       0.0f, 0.0f),
-						vec4(0.0f,  0.810453f, -2.524413f, 0.0f),
-						vec4(0.0f, -1.262206f, -1.620907f, 0.0f),
-						vec4(0.5f,  3.000000f, -9.000000f, 1.0f))));
+								 vec4(0.0f,  0.810453f, -2.524413f, 0.0f),
+								 vec4(0.0f, -1.262206f, -1.620907f, 0.0f),
+								 vec4(0.5f,  3.000000f, -9.000000f, 1.0f))));
 	m0 = scaling(0.1f, -2.0f, 13.0f);
 	VERIFY(matnearequal(m0, mat4(vec4(0.1f,  0.0f,  0.0f, 0.0f),
-						vec4(0.0f, -2.0f,  0.0f, 0.0f),
-						vec4(0.0f,  0.0f, 13.0f, 0.0f),
-						vec4(0.0f,  0.0f,  0.0f, 1.0f))));
+								 vec4(0.0f, -2.0f,  0.0f, 0.0f),
+								 vec4(0.0f,  0.0f, 13.0f, 0.0f),
+								 vec4(0.0f,  0.0f,  0.0f, 1.0f))));
 	m0 = scaling(vec3(0.1f, -2.0f, 13.0f));
 	VERIFY(matnearequal(m0, mat4(vec4(0.1f,  0.0f,  0.0f, 0.0f),
-						vec4(0.0f, -2.0f,  0.0f, 0.0f),
-						vec4(0.0f,  0.0f, 13.0f, 0.0f),
-						vec4(0.0f,  0.0f,  0.0f, 1.0f))));
+								 vec4(0.0f, -2.0f,  0.0f, 0.0f),
+								 vec4(0.0f,  0.0f, 13.0f, 0.0f),
+								 vec4(0.0f,  0.0f,  0.0f, 1.0f))));
 
 	// inverse
 	m0 = inverse(mRotOneX_Trans123);
 	VERIFY(matnearequal(m0, mat4(vec4( 1.0f,       0.0f,       0.0f, 0.0f),
-						vec4( 0.0f,  0.540302f, -0.841471f, 0.0f),
-						vec4( 0.0f,  0.841471f,  0.540302f, 0.0f),
-						vec4(-1.0f, -3.605018f,  0.062035f, 1.0f))));
+								 vec4( 0.0f,  0.540302f, -0.841471f, 0.0f),
+								 vec4( 0.0f,  0.841471f,  0.540302f, 0.0f),
+								 vec4(-1.0f, -3.605018f,  0.062035f, 1.0f))));
 	// transpose
 	m0 = transpose(mRotOneX_Trans123);
 	VERIFY(matnearequal(m0, mat4(vec4( 1.0f,       0.0f,       0.0f, 1.0f),
-						vec4( 0.0f,  0.540302f, -0.841471f, 2.0f),
-						vec4( 0.0f,  0.841471f,  0.540302f, 3.0f),
-						vec4( 0.0f,       0.0f,       0.0f, 1.0f))));
+								 vec4( 0.0f,  0.540302f, -0.841471f, 2.0f),
+								 vec4( 0.0f,  0.841471f,  0.540302f, 3.0f),
+								 vec4( 0.0f,       0.0f,       0.0f, 1.0f))));
 	// rotations
 	const mat4 rotX = rotationx(2.0);
 	VERIFY(matnearequal(rotX, mat4(vec4(1.000000f,  0.000000f,  0.000000f, 0.000000f),
-						 vec4(0.000000f, -0.416147f,  0.909297f, 0.000000f),
-						 vec4(0.000000f, -0.909297f, -0.416147f, 0.000000f),
-						 vec4(0.000000f,  0.000000f,  0.000000f, 1.000000f))));
+								   vec4(0.000000f, -0.416147f,  0.909297f, 0.000000f),
+								   vec4(0.000000f, -0.909297f, -0.416147f, 0.000000f),
+								   vec4(0.000000f,  0.000000f,  0.000000f, 1.000000f))));
 	const mat4 rotY = rotationy(-1.7);
 	VERIFY(matnearequal(rotY, mat4(vec4(-0.128845f, 0.000000f,  0.991665f, 0.000000f),
-					       vec4( 0.000000f, 1.000000f,  0.000000f, 0.000000f),
-					       vec4(-0.991665f, 0.000000f, -0.128845f, 0.000000f),
-					       vec4( 0.000000f, 0.000000f,  0.000000f, 1.000000f))));
+								   vec4( 0.000000f, 1.000000f,  0.000000f, 0.000000f),
+								   vec4(-0.991665f, 0.000000f, -0.128845f, 0.000000f),
+								   vec4( 0.000000f, 0.000000f,  0.000000f, 1.000000f))));
 	const mat4 rotZ = rotationz(3.1);
 	VERIFY(matnearequal(rotZ, mat4(vec4(-0.999135f,  0.041581f, 0.000000f, 0.000000f),
-						   vec4(-0.041581f, -0.999135f, 0.000000f, 0.000000f),
-						   vec4( 0.000000f,  0.000000f, 1.000000f, 0.000000f),
-						   vec4( 0.000000f,  0.000000f, 0.000000f, 1.000000f))));
+								   vec4(-0.041581f, -0.999135f, 0.000000f, 0.000000f),
+								   vec4( 0.000000f,  0.000000f, 1.000000f, 0.000000f),
+								   vec4( 0.000000f,  0.000000f, 0.000000f, 1.000000f))));
 	const vec3 rotaxis = normalize(vec3(1.0f, 0.2f, 2.0f));
 	const mat4 rot = rotationaxis(rotaxis, -2.53652f);
 	VERIFY(matnearequal(rot, mat4(vec4(-0.460861f, -0.434427f,  0.773873f, 0.000000f),
-						vec4( 0.579067f, -0.807997f, -0.108734f, 0.000000f),
-						vec4( 0.672524f,  0.398013f,  0.623936f, 0.000000f),
-						vec4( 0.000000f,  0.000000f,  0.000000f, 1.000000f))));
+								  vec4( 0.579067f, -0.807997f, -0.108734f, 0.000000f),
+								  vec4( 0.672524f,  0.398013f,  0.623936f, 0.000000f),
+								  vec4( 0.000000f,  0.000000f,  0.000000f, 1.000000f))));
 	// reflect
 	const vec4 planeXZ(0.0, 1.0, 0.0, 0.0);
 	const mat4 mReflectXZ = reflect(planeXZ);
 	VERIFY(matnearequal(mReflectXZ,
 							   mat4(vec4(1.0f,  0.0f, 0.0f, 0.0f ),
-										vec4(0.0f, -1.0f, 0.0f, 0.0f ),
-										vec4(0.0f,  0.0f, 1.0f, 0.0f ),
-										vec4(0.0f,  0.0f, 0.0f, 1.0f ))));
+									vec4(0.0f, -1.0f, 0.0f, 0.0f ),
+									vec4(0.0f,  0.0f, 1.0f, 0.0f ),
+									vec4(0.0f,  0.0f, 0.0f, 1.0f ))));
 	const vec4 pReflected = mReflectXZ * pOneTwoThree;
 	VERIFY(nearequal(pReflected, vec4(1.0f, -2.0f, 3.0f, 1.0f), E4));
 
@@ -222,132 +221,132 @@ Mat4Test::Run()
 	// rotationquaternion
 	mat4 m = rotationquat(outRotation);
 	VERIFY(matnearequal(m, mat4(vec4(1.0f,       0.0f,      0.0f, 0.0f),
-										   vec4(0.0f,  0.540302f, 0.841471f, 0.0f),
-										   vec4(0.0f, -0.841471f, 0.540302f, 0.0f),
-										   vec4(0.0f,       0.0f,      0.0f, 1.0f))));
+								vec4(0.0f,  0.540302f, 0.841471f, 0.0f),
+								vec4(0.0f, -0.841471f, 0.540302f, 0.0f),
+								vec4(0.0f,       0.0f,      0.0f, 1.0f))));
 
 	// affinetransformation
 	const mat4 affine = affinetransformation(0.1f,
-										vec3(0.5f, 3.0f, -1.7f), 
-										outRotation, 
-										vec3(-20.0f, 17.0f, 9.0f));
+											 vec3(0.5f, 3.0f, -1.7f), 
+											 outRotation, 
+											 vec3(-20.0f, 17.0f, 9.0f));
 
 	VERIFY(matnearequal(affine, mat4(vec4(  0.1f,       0.0f,      0.0f, 0.0f),
-												vec4(  0.0f,  0.054030f, 0.084147f, 0.0f),
-												vec4(  0.0f, -0.084147f, 0.054030f, 0.0f),
-												vec4(-20.0f, 16.948593f, 5.694101f, 1.0f))));
+									 vec4(  0.0f,  0.054030f, 0.084147f, 0.0f),
+									 vec4(  0.0f, -0.084147f, 0.054030f, 0.0f),
+									 vec4(-20.0f, 16.948593f, 5.694101f, 1.0f))));
 
 	// transformation
 	const quat qRotOneX = rotationmatrix(rotOneX);
 
-	const mat4 t = transformation(
-		vec3(10.0f, -3.0f, 4.6f), 
-		outRotation, 
-		vec3(2.0f, -1.0f, 3.0f), 
-		vec3(4.0f, 5.0f, -2.0f), 
-		qRotOneX, 
-		vec3(-33.0f, 10.0f, 15.0f));
+	const mat4 t = transformation(vec3(10.0f, -3.0f, 4.6f), 
+								  outRotation, 
+								  vec3(2.0f, -1.0f, 3.0f), 
+								  vec3(4.0f, 5.0f, -2.0f), 
+								  qRotOneX, 
+								  vec3(-33.0f, 10.0f, 15.0f));
 
 	VERIFY(matnearequal(t, mat4(vec4(  2.0f,       0.0f,       0.0f, 0.0f),
-										   vec4(  0.0f,  2.520287f,  0.559231f, 0.0f),
-										   vec4(  0.0f, -1.123711f, -1.439683f, 0.0f),
-										   vec4(-43.0f, 17.853806f, 18.134460f, 1.0f))));
+								vec4(  0.0f,  2.520287f,  0.559231f, 0.0f),
+								vec4(  0.0f, -1.123711f, -1.439683f, 0.0f),
+								vec4(-43.0f, 17.853806f, 18.134460f, 1.0f))));
+
 	const vec3 eye(3.0f, 2.0f, 10.0f);
 	const vec3 at(3.0f, 2.0f, 2.0f);
 	const vec3 up(0.0f, 1.0f, 0.0f);
 	// lookatlh
 	mat4 tmp = lookatlh(eye, at, up);
 	VERIFY(matnearequal(tmp, mat4(vec4(  -1.0f,  0.0f,  0.0f, 0.0f),
-					    vec4(  0.0f,  1.0f,  0.0f, 0.0f),
-					    vec4(  0.0f, 0.0f,  -1.0f, 0.0f),
-					    vec4(  3.0f, 2.0f, 10.0f, 1.0f))));
+								  vec4(  0.0f,  1.0f,  0.0f, 0.0f),
+								  vec4(  0.0f, 0.0f,  -1.0f, 0.0f),
+								  vec4(  3.0f, 2.0f, 10.0f, 1.0f))));
 	// lookatrh
 	tmp = lookatrh(eye, at, up);
 	VERIFY(matnearequal(tmp, mat4(vec4(  1.0f,  0.0f,  0.0f, 0.0f),
-					    vec4(  0.0f,  1.0f,  0.0f, 0.0f),
-					    vec4(  0.0f,  0.0f,  1.0f, 0.0f),
-					    vec4(  3.0f, 2.0f, 10.0f, 1.0f))));
+								  vec4(  0.0f,  1.0f,  0.0f, 0.0f),
+								  vec4(  0.0f,  0.0f,  1.0f, 0.0f),
+								  vec4(  3.0f, 2.0f, 10.0f, 1.0f))));
 	// ortholh
 	tmp = ortholh(1280.0f, 1024.0f, 0.1f, 100.0f);
 	VERIFY(matnearequal(tmp, mat4(vec4( 0.001563f,      0.0f,       0.0f, 0.0f),
-						vec4(      0.0f, 0.001953f,       0.0f, 0.0f),
-						vec4(      0.0f,      0.0f,   0.01001f, 0.0f),
-						vec4(      0.0f,      0.0f, -0.001001f, 1.0f))));
+								  vec4(      0.0f, 0.001953f,       0.0f, 0.0f),
+								  vec4(      0.0f,      0.0f,   0.01001f, 0.0f),
+								  vec4(      0.0f,      0.0f, -0.001001f, 1.0f))));
 
 	// orthorh
 	tmp = orthorh(1280.0f, 1024.0f, 0.1f, 100.0f);
 	VERIFY(matnearequal(tmp, mat4(vec4( 0.001563f,      0.0f,       0.0f, 0.0f),
-						vec4(      0.0f, 0.001953f,       0.0f, 0.0f),
-						vec4(      0.0f,      0.0f,  -0.01001f, 0.0f),
-						vec4(      0.0f,      0.0f, -0.001001f, 1.0f))));
+								  vec4(      0.0f, 0.001953f,       0.0f, 0.0f),
+								  vec4(      0.0f,      0.0f,  -0.01001f, 0.0f),
+								  vec4(      0.0f,      0.0f, -0.001001f, 1.0f))));
 
 	// orthooffcenterlh
 	tmp = orthooffcenterlh(100.0f, 1380.0f, 200.0f, 1224.0f, 0.1f, 1000.0f);
 	VERIFY(matnearequal(tmp, mat4(vec4( 0.001563f,       0.0f,     0.0f, 0.0f),
-					   vec4(      0.0f,  0.001953f,     0.0f, 0.0f),
-					   vec4(      0.0f,       0.0f,   0.001f, 0.0f),
-					   vec4( -1.15625f, -1.390625f, -0.0001f, 1.0f))));
+								  vec4(      0.0f,  0.001953f,     0.0f, 0.0f),
+								  vec4(      0.0f,       0.0f,   0.001f, 0.0f),
+								  vec4( -1.15625f, -1.390625f, -0.0001f, 1.0f))));
 
 	// orthooffcenterrh
 	tmp = orthooffcenterrh(100.0f, 1380.0f, 200.0f, 1224.0f, 0.1f, 1000.0f);
 	VERIFY(matnearequal(tmp, mat4(vec4( 0.001563f,       0.0f,     0.0f, 0.0f),
-					   vec4(      0.0f,  0.001953f,     0.0f, 0.0f),
-					   vec4(      0.0f,       0.0f,  -0.001f, 0.0f),
-					   vec4( -1.15625f, -1.390625f, -0.0001f, 1.0f))));
+								  vec4(      0.0f,  0.001953f,     0.0f, 0.0f),
+								  vec4(      0.0f,       0.0f,  -0.001f, 0.0f),
+								  vec4( -1.15625f, -1.390625f, -0.0001f, 1.0f))));
 
 	// perspfovlh
 	tmp = perspfovlh(70.0f, 3.0f/4.0f, 0.1f, 50.0f);
 	VERIFY(matnearequal(tmp, mat4(vec4( 2.814039f,     0.0f,      0.0f, 0.0f),
-					    vec4(      0.0f, 2.11053f,      0.0f, 0.0f),
-					    vec4(      0.0f,     0.0f, 1.002004f, 1.0f),
-					    vec4(      0.0f,     0.0f,  -0.1002f, 0.0f))));
+								  vec4(      0.0f, 2.11053f,      0.0f, 0.0f),
+								  vec4(      0.0f,     0.0f, 1.002004f, 1.0f),
+								  vec4(      0.0f,     0.0f,  -0.1002f, 0.0f))));
 	// perspfovrh
 	tmp = perspfovrh(70.0f, 3.0f/4.0f, 0.1f, 50.0f);
 	VERIFY(matnearequal(tmp, mat4(vec4( 2.814039f,     0.0f,       0.0f,  0.0f),
-					    vec4(      0.0f, 2.11053f,       0.0f,  0.0f),
-					    vec4(      0.0f,     0.0f, -1.002004f, -1.0f),
-					    vec4(      0.0f,     0.0f,  -0.1002f,   0.0f))));
+								  vec4(      0.0f, 2.11053f,       0.0f,  0.0f),
+								  vec4(      0.0f,     0.0f, -1.002004f, -1.0f),
+								  vec4(      0.0f,     0.0f,  -0.1002f,   0.0f))));
 
 	// persplh
 	tmp = persplh(1280.0f, 1024.0f, 0.1f, 100.0f);
 	VERIFY(matnearequal(tmp, mat4(vec4( 0.000156f,      0.0f,      0.0f, 0.0f),
-				        vec4(      0.0f, 0.000195f,      0.0f, 0.0f),
-				        vec4(      0.0f,      0.0f, 1.001001f, 1.0f),
-				        vec4(      0.0f,      0.0f,  -0.1001f, 0.0f))));
+								  vec4(      0.0f, 0.000195f,      0.0f, 0.0f),
+								  vec4(      0.0f,      0.0f, 1.001001f, 1.0f),
+								  vec4(      0.0f,      0.0f,  -0.1001f, 0.0f))));
 
 	// persprh
 	tmp = persprh(1280.0f, 1024.0f, 0.1f, 100.0f);
 	VERIFY(matnearequal(tmp, mat4(vec4( 0.000156f,      0.0f,       0.0f,  0.0f),
-					    vec4(      0.0f, 0.000195f,       0.0f,  0.0f),
-					    vec4(      0.0f,      0.0f, -1.001001f, -1.0f),
-					    vec4(      0.0f,      0.0f,   -0.1001f,  0.0f))));
+								  vec4(      0.0f, 0.000195f,       0.0f,  0.0f),
+								  vec4(      0.0f,      0.0f, -1.001001f, -1.0f),
+								  vec4(      0.0f,      0.0f,   -0.1001f,  0.0f))));
 
 	// perspoffcenterlh
 	tmp = perspoffcenterlh(50.0f, 1330.0f, -150.0f, 874.0f, 1.0f, 1000.0f);
 	VERIFY(matnearequal(tmp, mat4(vec4( 0.001563f,       0.0f,       0.0f, 0.0f),
-					    vec4(      0.0f,  0.001953f,       0.0f, 0.0f),
-					    vec4(-1.078125f, -0.707031f,  1.001001f, 1.0f),
-					    vec4(      0.0f,       0.0f, -1.001001f, 0.0f))));
+								  vec4(      0.0f,  0.001953f,       0.0f, 0.0f),
+								  vec4(-1.078125f, -0.707031f,  1.001001f, 1.0f),
+								  vec4(      0.0f,       0.0f, -1.001001f, 0.0f))));
 
 	// perspoffcenterrh
 	tmp = perspoffcenterrh(50.0f, 1330.0f, -150.0f, 874.0f, 1.0f, 1000.0f);
 	VERIFY(matnearequal(tmp, mat4(vec4(0.001563f,      0.0f,       0.0f,  0.0f),
-					    vec4(     0.0f, 0.001953f,       0.0f,  0.0f),
-					    vec4(1.078125f, 0.707031f, -1.001001f, -1.0f),
-					    vec4(     0.0f,      0.0f, -1.001001f,  0.0f))));
+								  vec4(     0.0f, 0.001953f,       0.0f,  0.0f),
+								  vec4(1.078125f, 0.707031f, -1.001001f, -1.0f),
+								  vec4(     0.0f,      0.0f, -1.001001f,  0.0f))));
 
 	// rotationyawpitchroll
 	tmp = rotationyawpitchroll(1.0f, -0.462f, 3.036f);
 	VERIFY(matnearequal(tmp, mat4(vec4(-0.576825f,  0.094347f, 0.811401f, 0.0f),
-					    vec4( 0.316042f, -0.890177f, 0.328181f, 0.0f),
-					    vec4( 0.753254f,  0.445739f, 0.483659f, 0.0f),
-					    vec4(      0.0f,       0.0f,      0.0f, 1.0f))));
+								  vec4( 0.316042f, -0.890177f, 0.328181f, 0.0f),
+								  vec4( 0.753254f,  0.445739f, 0.483659f, 0.0f),
+								  vec4(      0.0f,       0.0f,      0.0f, 1.0f))));
 
 	tmp = rotationyawpitchroll(-7.0f, 3.0f, -2.0f);
 	VERIFY(matnearequal(tmp, mat4(vec4(-0.229430f,  0.900198f, -0.370144f, 0.000000f),
-					    vec4( 0.724104f,  0.411982f,  0.553122f, 0.000000f),
-					    vec4( 0.650412f, -0.141120f, -0.746358f, 0.000000f),
-					    vec4( 0.000000f,  0.000000f,  0.000000f, 1.000000f))));
+								  vec4( 0.724104f,  0.411982f,  0.553122f, 0.000000f),
+								  vec4( 0.650412f, -0.141120f, -0.746358f, 0.000000f),
+								  vec4( 0.000000f,  0.000000f,  0.000000f, 1.000000f))));
 }
 
 } // namespace Test
