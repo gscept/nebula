@@ -42,8 +42,8 @@ bool ispointinside(const vec4& p, const mat4& m);
 struct NEBULA_ALIGN16 mat4
 {
 public:
-    /// default constructor
-    mat4() = default;
+    /// default constructor. returns identity matrix
+    mat4();
     /// copy constructor
     mat4(const mat4& rhs) = default;
     /// construct from components
@@ -125,6 +125,15 @@ public:
         };
     };
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline
+mat4::mat4() : row0(_id_x), row1(_id_y), row2(_id_z), row3(_id_w)
+{
+    // empty
+}
 
 //------------------------------------------------------------------------------
 /**
