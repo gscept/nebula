@@ -480,12 +480,13 @@ Database::Query(FilterSet const& filterset)
 				buffers.Append(tbl.columns.Get<1>(colId.id));
 			}
 
-			Dataset::View view = {
-				tid,
-				this->GetNumRows(tid),
-				std::move(buffers)
-			};
-
+			Dataset::View view;
+			view.tid = tid;
+			view.numInstances = this->GetNumRows(tid);
+			view.buffers = std::move(buffers);
+#ifdef NEBULA_DEBUG
+			view.tableName = tbl.name.Value();
+#endif
 			set.tables.Append(std::move(view));
 		}
 	}

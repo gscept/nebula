@@ -122,7 +122,12 @@ AddProperty(Game::Entity const entity, PropertyId const pid)
 			info.columns[i] = cols[i + 1];
 		}
 		info.columns[i] = pid;
-		
+
+#ifdef NEBULA_DEBUG
+		info.name = cat.name + " + ";
+		info.name += MemDb::TypeRegistry::GetDescription(pid)->name.AsString();
+#endif
+
 		newCategoryId = EntityManager::Singleton->CreateCategory(info);
 	}
 
@@ -356,6 +361,17 @@ EntityManager::Destroy()
 CategoryId
 EntityManager::CreateCategory(CategoryCreateInfo const& info)
 {
+	CategoryHash catHash;
+	for (int i = 0; i < info.columns.Size(); i++)
+	{
+		catHash.AddToHash(info.columns[i].id);
+	}
+
+	if (this->state.catIndexMap.Contains(catHash))
+	{
+		return this->state.catIndexMap[catHash];
+	}
+
 	MemDb::TableCreateInfo tableInfo;
 	tableInfo.name = info.name;
 	const SizeT tableSize = info.columns.Size() + 1;
@@ -372,15 +388,11 @@ EntityManager::CreateCategory(CategoryCreateInfo const& info)
 	Category cat;
 	// Create an instance table
 	cat.instanceTable = this->state.worldDatabase->CreateTable(tableInfo);
-
-	CategoryHash catHash;
-
-	for (int i = 0; i < info.columns.Size(); i++)
-	{
-		catHash.AddToHash(info.columns[i].id);
-	}
-
 	cat.hash = catHash;
+
+#ifdef NEBULA_DEBUG
+	cat.name = info.name;
+#endif
 
 	CategoryId cid = this->state.categoryArray.Size();
 

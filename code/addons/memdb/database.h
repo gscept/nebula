@@ -33,6 +33,9 @@ struct Dataset
     /// A view into a category table.
     struct View
     {
+#ifdef NEBULA_DEBUG
+        Util::String tableName;
+#endif
         TableId tid;
         SizeT numInstances = 0;
         Util::ArrayStack<void*, 16> buffers;

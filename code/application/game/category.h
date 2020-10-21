@@ -32,6 +32,9 @@ struct Category
 {
 	MemDb::TableId instanceTable;
 	CategoryHash hash;
+#ifdef NEBULA_DEBUG
+	Util::String name;
+#endif
 };
 
 struct EntityMapping

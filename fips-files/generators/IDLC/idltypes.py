@@ -1,36 +1,5 @@
 import genutil as util
 
-
-#------------------------------------------------------------------------------
-## Constants
-#
-PACKED_PER_ATTRIBUTE = 0
-PACKED_PER_INSTANCE = 1
-
-#------------------------------------------------------------------------------
-##
-#
-def GetEventEnum(string):
-    s = string.lower()
-    if s == "beginframe":
-        return "Game::ComponentEvent::OnBeginFrame"
-    elif s == "render":
-        return "Game::ComponentEvent::OnRender"
-    elif s == "endframe":
-        return "Game::ComponentEvent::OnEndFrame"
-    elif s == "renderdebug":
-        return "Game::ComponentEvent::OnRenderDebug"
-    elif s == "onactivate":
-        return "Game::ComponentEvent::OnActivate"
-    elif s == "ondeactivate":
-        return "Game::ComponentEvent::OnDeactivate"
-    elif s == "onload":
-        return "Game::ComponentEvent::OnLoad"
-    elif s == "onsave":
-        return "Game::ComponentEvent::OnSave"
-    else:
-        util.fmtError('"{}" is not a valid event!'.format(string))
-
 #------------------------------------------------------------------------------
 ##
 #
@@ -272,22 +241,10 @@ def DefaultToString(default):
         for number in default:
             if len(string) != 0:
                 string += ", "
-            # recursion mother fucker
+            # recursion
             string += DefaultToString(number)
         return string
     elif type(default) is bool:
         return str(default).lower()
     elif type(default) is str:
         return '"{}"'.format(default)
-
-#------------------------------------------------------------------------------
-##
-#
-def AccessModeToClassString(accessMode):
-    access = accessMode.lower()
-    if (access == "rw"):
-        return "Attr::ReadWrite"
-    elif (access == "r"):
-        return "Attr::ReadOnly"
-    else:
-        util.fmtError('"{}" is not a valid access mode!'.format(access))

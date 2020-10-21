@@ -222,6 +222,7 @@ BlueprintManager::SetupCategories()
 			Category const& cat = EntityManager::Instance()->GetCategory(cid);
 
 			// Create the blueprint's template table
+			info.name = "blueprint:" + info.name;
 			MemDb::TableId tid = Game::GetWorldDatabase()->CreateTable(info);
 
 			blueprint.categoryHash = cat.hash;

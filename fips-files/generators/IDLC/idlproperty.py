@@ -2,22 +2,22 @@ import IDLC.idltypes as IDLTypes
 import genutil as util
 
 # fight me
-attributes = list()
+properties = list()
 
 def Capitalize(s):
     return s[:1].upper() + s[1:]
 
-def GetTypeCamelNotation(attributeName, attribute, document):
-    if not "type" in attribute:
-        util.fmtError('Attribute type is required. Attribute "{}" does not name a type!'.format(attributeName))
-    typeString = IDLTypes.ConvertToCamelNotation(attribute["type"])
+def GetTypeCamelNotation(propertyName, prop, document):
+    if not "_type_" in prop:
+        util.fmtError('Property type is required. Property "{}" does not name a type!'.format(propertyName))
+    typeString = IDLTypes.ConvertToCamelNotation(prop["_type_"])
 
     if not typeString:
         # Figure out what type it actually is.
-        if attribute["type"] in document["enums"]:
+        if prop["_type_"] in document["enums"]:
             typeString = IDLTypes.ConvertToCamelNotation("uint") # type for enums is uint
         else:
-            util.fmtError('"{}" is not a valid type!'.format(attribute["type"]))
+            util.fmtError('"{}" is not a valid type!'.format(prop["_type_"]))
     return typeString
 
 #------------------------------------------------------------------------------
@@ -43,31 +43,31 @@ class VariableDefinition:
 #------------------------------------------------------------------------------
 ##
 #
-class AttributeDefinition:
-    def __init__(self, attributeName, attribute):
-        self.attributeName = attributeName
+class PropertyDefinition:
+    def __init__(self, propertyName, prop):
+        self.propertyName = propertyName
         self.variables = list()
         self.isStruct = False
-        if isinstance(attribute, dict):
-            if not "_type_" in attribute:
-                for varName, var in attribute.items():
+        if isinstance(prop, dict):
+            if not "_type_" in prop:
+                for varName, var in prop.items():
                     self.variables.append(GetVariableFromEntry(varName, var))
             else:
-                self.variables.append(GetVariableFromEntry(attributeName, attribute))
+                self.variables.append(GetVariableFromEntry(propertyName, prop))
         else:
-            self.variables.append(GetVariableFromEntry(attributeName, attribute))
+            self.variables.append(GetVariableFromEntry(propertyName, prop))
         if len(self.variables) > 1:
             self.isStruct = True
 
     def AsTypeDefString(self):
         numVars = len(self.variables)
         if numVars == 0:
-            util.fmtError("AttributeDefinition does not contain a single variable!")
+            util.fmtError("PropertyDefinition does not contain a single variable!")
         elif numVars == 1:
             return 'typedef {} {};\n'.format(self.variables[0].type, self.variables[0].name)
         else:
             varDefs = ""
-            retVal = 'struct {}\n{{\n'.format(self.attributeName)
+            retVal = 'struct {}\n{{\n'.format(self.propertyName)
             for v in self.variables:
                 retVal += '    {}\n'.format(v.AsString())
             retVal += "};\n"
@@ -97,36 +97,36 @@ def GetVariableFromEntry(name, var):
 #------------------------------------------------------------------------------
 ##
 #
-def WriteAttributeHeaderDeclarations(f, document):
-    for attributeName, attribute in document["properties"].items():
-        attributes.append(AttributeDefinition(attributeName, attribute))
-    for attr in attributes:
-        f.WriteLine(attr.AsTypeDefString())
+def WritePropertyHeaderDeclarations(f, document):
+    for propertyName, prop in document["properties"].items():
+        properties.append(PropertyDefinition(propertyName, prop))
+    for p in properties:
+        f.WriteLine(p.AsTypeDefString())
 
 #------------------------------------------------------------------------------
 ##
 #
-def WriteAttributeHeaderDetails(f, document):
-    f.WriteLine('inline const bool RegisterAttributeLibrary_{filename}()'.format(filename=f.fileName))
+def WritePropertyHeaderDetails(f, document):
+    f.WriteLine('inline const bool RegisterPropertyLibrary_{filename}()'.format(filename=f.fileName))
     f.WriteLine('{')
     f.IncreaseIndent()
     f.WriteLine('// Make sure string atom tables have been set up.')
     f.WriteLine('Core::SysFunc::Setup();')
-    for attr in attributes:
-        defval = attr.attributeName + "()"
-        if not attr.isStruct :
-            if attr.variables[0].defaultValue is not None:
-                defval = attr.variables[0].defaultValue
-        f.WriteLine('MemDb::TypeRegistry::Register<{type}>("{type}"_atm, {defval});'.format(type=attr.attributeName, defval=defval))
+    for prop in properties:
+        defval = prop.propertyName + "()"
+        if not prop.isStruct :
+            if prop.variables[0].defaultValue is not None:
+                defval = prop.variables[0].defaultValue
+        f.WriteLine('MemDb::TypeRegistry::Register<{type}>("{type}"_atm, {defval});'.format(type=prop.propertyName, defval=defval))
     f.WriteLine("return true;")
     f.DecreaseIndent()
     f.WriteLine("}")
-    f.WriteLine('static const bool {filename}_registered = RegisterAttributeLibrary_{filename}();'.format(filename=f.fileName))
+    f.WriteLine('static const bool {filename}_registered = RegisterPropertyLibrary_{filename}();'.format(filename=f.fileName))
 
 #------------------------------------------------------------------------------
 ##
 #
-def WriteAttributeSourceDefinitions(f, document):
+def WritePropertySourceDefinitions(f, document):
     f.WriteLine("")
 
 #------------------------------------------------------------------------------
