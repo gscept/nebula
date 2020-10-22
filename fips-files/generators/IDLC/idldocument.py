@@ -68,6 +68,7 @@ def BeginNamespace(f, document):
         f.Write(default_namespace)
     f.WriteLine("")
     f.WriteLine("{")
+    f.WriteLine("")
 
 #------------------------------------------------------------------------------
 ##

@@ -69,7 +69,7 @@ class IDLCodeGenerator:
         hasEnums = "enums" in self.document
         if hasProperties or hasMessages or hasEnums:
             IDLDocument.BeginNamespace(f, self.document)
-
+            
             if hasEnums:
                 IDLProperty.WriteEnumeratedTypes(f, self.document)
 
