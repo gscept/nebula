@@ -57,6 +57,8 @@ def ConvertToCamelNotation(attrType):
         return "Entity"
     elif (T == "variant"):
         return "Variant"
+    elif (T == "fourcc"):
+        return "FourCC"
     else:
         return None
 
@@ -117,6 +119,8 @@ def GetTypeString(attrType):
         return "Game::Entity"
     elif (T == "variant"):
         return "Util::Variant"
+    elif (T == "fourcc"):
+        return "Util::FourCC"
     else:
         return attrType
 
@@ -180,6 +184,8 @@ def GetArgumentType(attrType):
         return "Game::Entity"
     elif (T == "variant"):
         return "Util::Variant const&"
+    elif (T == "fourcc"):
+        return "Util::FourCC"
     else:
         return attrType
 
@@ -240,6 +246,8 @@ def DefaultValue(attrType):
         return "Game::Entity(-1)"
     elif (T == "variant"):
         return "Util::Variant()"
+    elif (T == "fourcc"):
+        return None
     else:
         return None
 
