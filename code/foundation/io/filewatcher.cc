@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "io/filewatcher.h"
-#include "io/ioserver.h"
 
 namespace IO
 {
@@ -28,7 +27,8 @@ FileWatcher::FileWatcher() :
 */
 FileWatcher::~FileWatcher()
 {
-    this->Stop();
+	if (this->IsRunning())
+		this->Stop();
     n_assert(this->watchers.IsEmpty());    
     __DestructInterfaceSingleton;
 }
@@ -122,7 +122,7 @@ FileWatcher::CheckQueue()
 */
 void 
 FileWatcher::DoWork()
-{	   
+{
 	while (!this->ThreadStopRequested())
 	{        
         this->CheckQueue();
