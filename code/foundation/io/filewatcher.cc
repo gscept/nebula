@@ -123,7 +123,6 @@ FileWatcher::CheckQueue()
 void 
 FileWatcher::DoWork()
 {	   
-	this->ioServer = IO::IoServer::Create();
 	while (!this->ThreadStopRequested())
 	{        
         this->CheckQueue();
