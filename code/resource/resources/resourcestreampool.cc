@@ -57,7 +57,8 @@ ResourceStreamPool::Setup()
 void
 ResourceStreamPool::Discard()
 {
-	// empty
+	this->streamerThread->Stop();
+	this->streamerThread = nullptr;
 }
 
 //------------------------------------------------------------------------------
