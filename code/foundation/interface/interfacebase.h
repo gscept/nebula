@@ -30,6 +30,8 @@ public:
     virtual void AttachHandler(const Ptr<Messaging::Handler>& h);
     /// open the async port
     virtual void Open();
+	/// close the async port
+	virtual void Close();
 
     /// get the company name
     const Util::StringAtom& GetCompanyName() const;
@@ -107,4 +109,3 @@ InterfaceBase::GetRootDirectory() const
 
 } // namespace Interface
 //------------------------------------------------------------------------------
-    
