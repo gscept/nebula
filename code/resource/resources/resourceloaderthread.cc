@@ -37,7 +37,6 @@ ResourceLoaderThread::DoWork()
 	Profiling::ProfilingRegisterThread();
 	Util::Array<std::function<void()>> arr;
 	arr.Reserve(1000);
-	this->ioServer = IO::IoServer::Create();
 	while (!this->ThreadStopRequested())
 	{
 		this->completeEvent.Reset();
