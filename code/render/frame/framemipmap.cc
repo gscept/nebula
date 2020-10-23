@@ -46,7 +46,7 @@ FrameMipmap::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void
-FrameMipmap::CompiledImpl::Run(const IndexT frameIndex)
+FrameMipmap::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
 #if NEBULA_GRAPHICS_DEBUG
 	CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, this->name.Value());

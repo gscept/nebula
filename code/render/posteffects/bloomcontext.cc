@@ -25,7 +25,6 @@ struct
 
 	CoreGraphics::TextureId blurredBloom;
 
-	RenderUtil::DrawFullScreenQuad fsq;
 } bloomState;
 
 //------------------------------------------------------------------------------
@@ -94,7 +93,7 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
 
 	// get size of target texture
 	TextureDimensions dims = TextureGetDimensions(bloomState.internalTargets[0]);
-	bloomState.fsq.Setup(dims.width, dims.height);
+
 }
 
 //------------------------------------------------------------------------------
@@ -106,23 +105,23 @@ BloomContext::Create()
 	_CreatePluginContext();
 
 	using namespace CoreGraphics;
-	Frame::AddCallback("Bloom-BrightnessLowpass", [](IndexT)
+	Frame::AddCallback("Bloom-BrightnessLowpass", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 #if NEBULA_GRAPHICS_DEBUG
 			CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_ORANGE, "BrightnessLowpass");
 #endif
 			CoreGraphics::SetShaderProgram(bloomState.brightPassProgram);
 			CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
-			bloomState.fsq.ApplyMesh();
+			RenderUtil::DrawFullScreenQuad::ApplyMesh();
 			CoreGraphics::SetResourceTable(bloomState.brightPassTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
-			bloomState.fsq.Draw();
+			CoreGraphics::Draw();
 			CoreGraphics::EndBatch();
 #if NEBULA_GRAPHICS_DEBUG
 			CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
 #endif
 		});
 
-	Frame::AddCallback("Bloom-Blur", [](IndexT)
+	Frame::AddCallback("Bloom-Blur", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 #if NEBULA_GRAPHICS_DEBUG
 			CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "BloomBlur");
@@ -198,7 +197,6 @@ BloomContext::Discard()
 	DestroyResourceTable(bloomState.brightPassTable);
 	DestroyResourceTable(bloomState.blurTable);
 	DestroyTexture(bloomState.internalTargets[0]);
-	bloomState.fsq.Discard();
 }
 
 } // namespace PostEffects

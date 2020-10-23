@@ -275,8 +275,8 @@ FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* n
 	subres.layerCount = 1;
 	subres.mip = 0;
 	subres.mipCount = 1;
-	op->textureDeps.Add(fromTex, std::make_tuple(from->string_value, CoreGraphics::BarrierAccess::TransferRead, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferSource));
-	op->textureDeps.Add(toTex, std::make_tuple(to->string_value, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferDestination));
+	op->textureDeps.Add(fromTex, Util::MakeTuple(from->string_value, CoreGraphics::BarrierAccess::TransferRead, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferSource));
+	op->textureDeps.Add(toTex, Util::MakeTuple(to->string_value, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferDestination));
 
 	// setup blit operation
 	op->from = fromTex;
@@ -320,8 +320,8 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
 	subres.layerCount = 1;
 	subres.mip = 0;
 	subres.mipCount = 1;
-	op->textureDeps.Add(fromTex, std::make_tuple(from->string_value, CoreGraphics::BarrierAccess::TransferRead, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferSource));
-	op->textureDeps.Add(toTex, std::make_tuple(to->string_value, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferDestination));
+	op->textureDeps.Add(fromTex, Util::MakeTuple(from->string_value, CoreGraphics::BarrierAccess::TransferRead, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferSource));
+	op->textureDeps.Add(toTex, Util::MakeTuple(to->string_value, CoreGraphics::BarrierAccess::TransferWrite, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferDestination));
 
 	// setup copy operation
 	op->from = fromTex;
@@ -360,7 +360,7 @@ FrameScriptLoader::ParseMipmap(const Ptr<Frame::FrameScript>& script, JzonValue*
 	subres.layerCount = 1;
 	subres.mip = 0;
 	subres.mipCount = 1;
-	op->textureDeps.Add(ttex, std::make_tuple(tex->string_value, CoreGraphics::BarrierAccess::TransferRead, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferSource));
+	op->textureDeps.Add(ttex, Util::MakeTuple(tex->string_value, CoreGraphics::BarrierAccess::TransferRead, CoreGraphics::BarrierStage::Transfer, subres, CoreGraphics::ImageLayout::TransferSource));
 
 	// setup copy operation
 	op->tex = ttex;
@@ -553,18 +553,18 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
 		{
 			float clearDepth = 1;
 			uint clearStencil = 0;
-			uint depthStencilClearFlags = 0;
+			AttachmentFlagBits depthStencilClearFlags = AttachmentFlagBits::NoFlags;
 			JzonValue* cd = jzon_get(cur, "clear");
 			if (cd != nullptr)
 			{
-				depthStencilClearFlags |= Clear;
+				depthStencilClearFlags |= AttachmentFlagBits::Clear;
 				info.clearDepth = (float)cd->float_value;
 			}
 
 			JzonValue* cs = jzon_get(cur, "clear_stencil");
 			if (cs != nullptr)
 			{
-				depthStencilClearFlags |= ClearStencil;
+				depthStencilClearFlags |= AttachmentFlagBits::ClearStencil;
 				info.clearStencil = cs->int_value;
 			}
 
@@ -572,7 +572,7 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
 			if (ld != nullptr && ld->bool_value)
 			{
 				n_assert2(cd == nullptr, "Can't load depth from previous pass AND clear.");				
-				depthStencilClearFlags |= Load;
+				depthStencilClearFlags |= AttachmentFlagBits::Load;
 			}
 
 			JzonValue* ls = jzon_get(cur, "load_stencil");
@@ -580,19 +580,19 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
 			{
 				// can't really load and store
 				n_assert2(cs == nullptr, "Can't load stenil from previous pass AND clear.");
-				depthStencilClearFlags |= LoadStencil;
+				depthStencilClearFlags |= AttachmentFlagBits::LoadStencil;
 			}
 
 			JzonValue* sd = jzon_get(cur, "store");
 			if (sd != nullptr && sd->bool_value)
 			{
-				depthStencilClearFlags |= Store;
+				depthStencilClearFlags |= AttachmentFlagBits::Store;
 			}
 
 			JzonValue* ss = jzon_get(cur, "store_stencil");
 			if (ss != nullptr && ss->bool_value)
 			{
-				depthStencilClearFlags |= StoreStencil;
+				depthStencilClearFlags |= AttachmentFlagBits::StoreStencil;
 			}
 
 			info.depthStencilFlags = (AttachmentFlagBits)depthStencilClearFlags;
@@ -601,8 +601,15 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
 
 			// set attachment in framebuffer
 			JzonValue* ds = jzon_get(cur, "name");
-			
-			info.depthStencilAttachment = script->GetTexture(ds->string_value);
+
+			TextureId tex = script->GetTexture(ds->string_value);
+			TextureViewCreateInfo viewCreate =
+			{
+				tex
+				, 0, 1, 0, TextureGetNumLayers(tex)
+				, TextureGetPixelFormat(tex)
+			};
+			info.depthStencilAttachment = CreateTextureView(viewCreate);
 		}
 		else if (name == "subpass")
 			ParseSubpass(script, info, op, attachmentNames, cur);
@@ -629,12 +636,21 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
 		JzonValue* cur = node->array_values[i];
 		JzonValue* name = jzon_get(cur, "name");
 		n_assert(name != nullptr);
-		pass.colorAttachments.Append(script->GetTexture(name->string_value));
+
+		TextureId tex = script->GetTexture(name->string_value);
+		TextureViewCreateInfo viewCreate =
+		{
+			tex
+			, 0, 1, 0, TextureGetNumLayers(tex)
+			, TextureGetPixelFormat(tex)
+		};
+
+		pass.colorAttachments.Append(CreateTextureView(viewCreate));
 		attachmentNames.Append(name->string_value);
 
 		// set clear flag if present
 		JzonValue* clear = jzon_get(cur, "clear");
-		uint flags = 0;
+		AttachmentFlagBits flags = AttachmentFlagBits::NoFlags;
 		if (clear != nullptr)
 		{
 			Math::vec4 clearValue;
@@ -645,7 +661,7 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
 				clearValue[j] = clear->array_values[j]->float_value;
 			}
 			pass.colorAttachmentClears.Append(clearValue);
-			flags |= Clear;
+			flags |= AttachmentFlagBits::Clear;
 		}
 		else
 			pass.colorAttachmentClears.Append(Math::vec4(1)); // we set the clear to 1, but the flag is not to clear...
@@ -654,7 +670,7 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
 		JzonValue* store = jzon_get(cur, "store");
 		if (store && store->bool_value)
 		{
-			flags |= Store;
+			flags |= AttachmentFlagBits::Store;
 		}
 
 		JzonValue* load = jzon_get(cur, "load");
@@ -662,7 +678,7 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
 		{
 			// we can't really load and clear
 			n_assert2(clear == nullptr, "Can't load color if it's being cleared.");
-			flags |= Load;
+			flags |= AttachmentFlagBits::Load;
 		}
 		pass.colorAttachmentFlags.Append((AttachmentFlagBits)flags);
 	}
@@ -930,7 +946,7 @@ FrameScriptLoader::ParseShaderState(
 	CoreGraphics::ShaderId& shd, 
 	CoreGraphics::ResourceTableId& table, 
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& constantBuffers,
-	Util::Array<std::tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>>& textures
+	Util::Array<Util::Tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>>& textures
 )
 {
 	JzonValue* shader = jzon_get(node, "shader");
@@ -954,7 +970,7 @@ FrameScriptLoader::ParseShaderVariables(
 	const CoreGraphics::ShaderId& shd, 
 	CoreGraphics::ResourceTableId& table, 
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& constantBuffers, 
-	Util::Array<std::tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>>& textures, JzonValue* node)
+	Util::Array<Util::Tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>>& textures, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -1014,7 +1030,7 @@ FrameScriptLoader::ParseShaderVariables(
 		case TextureHandleType:
 		{
 			CoreGraphics::TextureId rtid = script->GetTexture(valStr);
-			textures.Append(std::make_tuple(bind, cbo, rtid));
+			textures.Append(Util::MakeTuple(bind, cbo, rtid));
 			if (rtid != CoreGraphics::TextureId::Invalid())
 				ConstantBufferUpdate(cbo, CoreGraphics::TextureGetBindlessHandle(rtid), bind);
 			else
@@ -1027,7 +1043,7 @@ FrameScriptLoader::ParseShaderVariables(
 			IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
 			CoreGraphics::TextureId rtid = script->GetTexture(valStr);
 
-			textures.Append(std::make_tuple(slot, ConstantBufferId::Invalid(), rtid));
+			textures.Append(Util::MakeTuple(slot, ConstantBufferId::Invalid(), rtid));
 			if (rtid != CoreGraphics::TextureId::Invalid())
 				ResourceTableSetTexture(table, { rtid, slot, 0, CoreGraphics::SamplerId::Invalid(), false });
 			else
@@ -1039,7 +1055,7 @@ FrameScriptLoader::ParseShaderVariables(
 			IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
 			CoreGraphics::TextureId rtid = script->GetTexture(valStr);
 
-			textures.Append(std::make_tuple(slot, ConstantBufferId::Invalid(), rtid));
+			textures.Append(Util::MakeTuple(slot, ConstantBufferId::Invalid(), rtid));
 			if (rtid != CoreGraphics::TextureId::Invalid())
 				ResourceTableSetRWTexture(table, { rtid, slot, 0, CoreGraphics::SamplerId::Invalid() });
 			else
@@ -1093,7 +1109,7 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 			if ((nd = jzon_get(dep, "layer")) != nullptr) subres.layer = nd->int_value;
 			if ((nd = jzon_get(dep, "layer_count")) != nullptr) subres.layerCount = nd->int_value;
 
-			op->textureDeps.Add(tex, std::make_tuple(valstr, access, dependency, subres, layout));
+			op->textureDeps.Add(tex, Util::MakeTuple(valstr, access, dependency, subres, layout));
 		}
 		else if (script->buffersByName.Contains(valstr))
 		{
@@ -1102,7 +1118,7 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 			JzonValue* nd = nullptr;
 			if ((nd = jzon_get(dep, "offset")) != nullptr) subres.offset = nd->int_value;
 			if ((nd = jzon_get(dep, "size")) != nullptr) subres.size = nd->int_value;
-			op->rwBufferDeps.Add(buf, std::make_tuple(valstr, access, dependency, subres));
+			op->rwBufferDeps.Add(buf, Util::MakeTuple(valstr, access, dependency, subres));
 		}
 		else
 		{

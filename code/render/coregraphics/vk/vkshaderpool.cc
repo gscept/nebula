@@ -211,7 +211,7 @@ VkShaderPool::CreateResourceTable(const CoreGraphics::ShaderId id, const IndexT 
 	{
 		ResourceTableCreateInfo crInfo =
 		{
-			std::get<1>(info.descriptorSetLayouts[info.descriptorSetLayoutMap.ValueAtIndex(idx)])
+			Util::Get<1>(info.descriptorSetLayouts[info.descriptorSetLayoutMap.ValueAtIndex(idx)])
 		};
 		return CoreGraphics::CreateResourceTable(crInfo);
 	}	
@@ -280,7 +280,7 @@ const SizeT VkShaderPool::GetConstantBindingsCount(const CoreGraphics::ShaderId 
 CoreGraphics::ResourceTableLayoutId
 VkShaderPool::GetResourceTableLayout(const CoreGraphics::ShaderId id, const IndexT group)
 {
-	return std::get<1>(this->shaderAlloc.Get<1>(id.resourceId).descriptorSetLayouts[group]);
+	return Util::Get<1>(this->shaderAlloc.Get<1>(id.resourceId).descriptorSetLayouts[group]);
 }
 
 //------------------------------------------------------------------------------

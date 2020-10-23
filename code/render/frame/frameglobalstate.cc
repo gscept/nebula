@@ -39,7 +39,7 @@ FrameGlobalState::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void
-FrameGlobalState::CompiledImpl::Run(const IndexT frameIndex)
+FrameGlobalState::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
 }
 

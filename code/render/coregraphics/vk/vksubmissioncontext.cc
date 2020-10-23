@@ -29,8 +29,8 @@ SubmissionContextFreeVkBuffer(const CoreGraphics::SubmissionContextId id, VkDevi
 {
 	// get fence so we can wait for it
 	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
-	Util::Array<std::tuple<VkDevice, VkBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContext_FreeBuffers>(id.id24)[currentIndex];
-	buffers.Append(std::make_tuple(dev, buf));
+	Util::Array<Util::Tuple<VkDevice, VkBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContext_FreeBuffers>(id.id24)[currentIndex];
+	buffers.Append(Util::MakeTuple(dev, buf));
 }
 
 //------------------------------------------------------------------------------
@@ -41,8 +41,8 @@ SubmissionContextFreeVkImage(const CoreGraphics::SubmissionContextId id, VkDevic
 {
 	// get fence so we can wait for it
 	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
-	Util::Array<std::tuple<VkDevice, VkImage>>& images = submissionContextAllocator.Get<SubmissionContext_FreeImages>(id.id24)[currentIndex];
-	images.Append(std::make_tuple(dev, img));
+	Util::Array<Util::Tuple<VkDevice, VkImage>>& images = submissionContextAllocator.Get<SubmissionContext_FreeImages>(id.id24)[currentIndex];
+	images.Append(Util::MakeTuple(dev, img));
 }
 
 //------------------------------------------------------------------------------
@@ -176,10 +176,10 @@ void
 SubmissionContextFreeTexture(const CoreGraphics::SubmissionContextId id, CoreGraphics::TextureId tex)
 {
 	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
-	Util::Array<std::tuple<VkDevice, VkImage>>& images = submissionContextAllocator.Get<SubmissionContext_FreeImages>(id.id24)[currentIndex];
+	Util::Array<Util::Tuple<VkDevice, VkImage>>& images = submissionContextAllocator.Get<SubmissionContext_FreeImages>(id.id24)[currentIndex];
 	VkImage img = Vulkan::TextureGetVkImage(tex);
 	VkDevice dev = Vulkan::TextureGetVkDevice(tex);
-	images.Append(std::make_tuple(dev, img));
+	images.Append(Util::MakeTuple(dev, img));
 }
 
 //------------------------------------------------------------------------------
@@ -189,10 +189,10 @@ void
 SubmissionContextFreeBuffer(const CoreGraphics::SubmissionContextId id, CoreGraphics::BufferId buf)
 {
 	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
-	Util::Array<std::tuple<VkDevice, VkBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContext_FreeBuffers>(id.id24)[currentIndex];
+	Util::Array<Util::Tuple<VkDevice, VkBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContext_FreeBuffers>(id.id24)[currentIndex];
 	VkBuffer vkBuf = Vulkan::BufferGetVk(buf);
 	VkDevice dev = Vulkan::BufferGetVkDevice(buf);
-	buffers.Append(std::make_tuple(dev, vkBuf));
+	buffers.Append(Util::MakeTuple(dev, vkBuf));
 }
 
 //------------------------------------------------------------------------------
@@ -322,14 +322,14 @@ CleanupPendingDeletes(const SubmissionContextId id, IndexT currentIndex)
 		//Resources::DiscardResource(resources[i]);
 	resources.Clear();
 
-	Util::Array<std::tuple<VkDevice, VkBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContext_FreeBuffers>(id.id24)[currentIndex];
+	Util::Array<Util::Tuple<VkDevice, VkBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContext_FreeBuffers>(id.id24)[currentIndex];
 	for (IndexT i = 0; i < buffers.Size(); i++)
-		vkDestroyBuffer(std::get<0>(buffers[i]), std::get<1>(buffers[i]), nullptr);
+		vkDestroyBuffer(Util::Get<0>(buffers[i]), Util::Get<1>(buffers[i]), nullptr);
 	buffers.Clear();
 
-	Util::Array<std::tuple<VkDevice, VkImage>>& images = submissionContextAllocator.Get<SubmissionContext_FreeImages>(id.id24)[currentIndex];
+	Util::Array<Util::Tuple<VkDevice, VkImage>>& images = submissionContextAllocator.Get<SubmissionContext_FreeImages>(id.id24)[currentIndex];
 	for (IndexT i = 0; i < images.Size(); i++)
-		vkDestroyImage(std::get<0>(images[i]), std::get<1>(images[i]), nullptr);
+		vkDestroyImage(Util::Get<0>(images[i]), Util::Get<1>(images[i]), nullptr);
 	images.Clear();
 
 	Util::Array<CoreGraphics::CommandBufferId>& freeCommandBuffers = submissionContextAllocator.Get<SubmissionContext_FreeCommandBuffers>(id.id24)[currentIndex];

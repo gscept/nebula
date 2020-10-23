@@ -33,7 +33,6 @@ GraphicsEntityToName(GraphicsEntityId id)
     return "Entity";
 }
 
-
 //------------------------------------------------------------------------------
 /**
     Open scene, load resources
@@ -80,7 +79,7 @@ void OpenScene()
         }
     }
 
-    static const int NumDecals = 5;
+    static const int NumDecals = 1;
     for (int i = -NumDecals; i < NumDecals; i++)
     {
         for (int j = -NumDecals; j < NumDecals; j++)
@@ -145,59 +144,18 @@ void OpenScene()
     entities.Append(tower);
     entityNames.Append("Tower");
 
-    /*
     ground = Graphics::CreateEntity();
     Graphics::RegisterEntity<ModelContext, ObservableContext>(ground);
-    ModelContext::Setup(ground, "mdl:environment/plcholder_world.n3", "Viewer");
+    ModelContext::Setup(ground, "mdl:environment/plcholder_world.n3", "Viewer", []()
+        {
+            ObservableContext::Setup(ground, VisibilityEntityType::Model);
+        });
     ModelContext::SetTransform(ground, Math::scaling(4) * Math::translation(0,0,0));
     entities.Append(ground);
     entityNames.Append("Ground");
-    */
 
-    terrain = Graphics::CreateEntity();
-    Terrain::TerrainContext::RegisterEntity(terrain);
-
-    Terrain::TerrainSetupSettings settings{
-            0, 1024.0f,      // min/max height
-            8192, 8192,   // world size in meters
-            256, 256,     // tile size in meters
-            16, 16        // 1 vertex every X meters
-    };
-    Terrain::TerrainContext::SetupTerrain(terrain,
-        "tex:terrain/everest Height Map (Merged)_PNG_BC4_1.dds",
-        "tex:system/black.dds",
-        "tex:terrain/dirt_aerial_02_diff_2k.dds",
-        settings);
-
-    Terrain::BiomeSetupSettings biomeSettings =
-    {
-        0.5f, 900.0f, 64.0f
-    };
-    Terrain::TerrainContext::CreateBiome(biomeSettings,
-        {
-            "tex:terrain/base_material/brown_mud_leaves_01_diff_2k_PNG_BC7_1.dds",
-            "tex:terrain/base_material/brown_mud_leaves_01_nor_2k_PNG_BC5_1.dds",
-            "tex:terrain/base_material/brown_mud_leaves_01_material_2k_PNG_BC7_1.dds"
-        },
-        {
-            "tex:terrain/base_material/dirt_aerial_02_diff_2k_PNG_BC7_1.dds",
-            "tex:terrain/base_material/dirt_aerial_02_nor_2k_PNG_BC5_1.dds",
-            "tex:terrain/base_material/dirt_aerial_02_material_2k_PNG_BC7_1.dds"
-        },
-        {
-            "tex:terrain/base_material/snow_02_albedo_2k_PNG_BC7_1.dds",
-            "tex:terrain/base_material/snow_02_nor_2k_PNG_BC5_1.dds",
-            "tex:terrain/base_material/snow_02_material_2k_PNG_BC7_1.dds"
-        },
-        {
-            "tex:terrain/base_material/rock_ground_02_albedo_2k_PNG_BC7_1.dds",
-            "tex:terrain/base_material/rock_ground_02_nor_2k_PNG_BC5_1.dds",
-            "tex:terrain/base_material/rock_ground_02_material_2k_PNG_BC7_1.dds"
-        },
-        "tex:system/white.dds"
-    );
-
-	particle = Graphics::CreateEntity();
+    /*
+    particle = Graphics::CreateEntity();
 	Graphics::RegisterEntity<ModelContext, ObservableContext, Particles::ParticleContext>(particle);
     ModelContext::Setup(particle, "mdl:Particles/Build_dust.n3", "Viewer", []()
         {
@@ -207,9 +165,9 @@ void OpenScene()
         });	
 	entities.Append(particle);
 	entityNames.Append("Particle");
+    */
 
     // setup visibility
-    //ObservableContext::Setup(ground, VisibilityEntityType::Model);
 
     const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3", "mdl:Units/Unit_Rifleman.n3" };
     //const Util::StringAtom modelRes[] = { "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3" };
@@ -225,7 +183,7 @@ void OpenScene()
         for (IndexT j = -NumModels; j < NumModels; j++)
         {
             Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
-            Graphics::RegisterEntity<ModelContext, ObservableContext, Characters::CharacterContext>(ent);
+            Graphics::RegisterEntity<ModelContext, ObservableContext>(ent);
             entities.Append(ent);
             Util::String sid;
             sid.Format("%s: %d", GraphicsEntityToName(ent), ent);
@@ -238,8 +196,8 @@ void OpenScene()
                 {
                     ModelContext::SetTransform(ent, Math::translation(i * 16, 0, j * 16));
                     ObservableContext::Setup(ent, VisibilityEntityType::Model);
-                    Characters::CharacterContext::Setup(ent, skeletonRes[modelIndex], animationRes[modelIndex], "Viewer");
-                    Characters::CharacterContext::PlayClip(ent, nullptr, 1, 0, Characters::Append, 1.0f, 1, Math::n_rand() * 100.0f, 0.0f, 0.0f, Math::n_rand() * 100.0f);
+                    //Characters::CharacterContext::Setup(ent, skeletonRes[modelIndex], animationRes[modelIndex], "Viewer");
+                    //Characters::CharacterContext::PlayClip(ent, nullptr, 1, 0, Characters::Append, 1.0f, 1, Math::n_rand() * 100.0f, 0.0f, 0.0f, Math::n_rand() * 100.0f);
                 });
             
             modelIndex = (modelIndex + 1) % 4;
@@ -248,7 +206,7 @@ void OpenScene()
 
     ModelContext::EndBulkRegister();
     ObservableContext::EndBulkRegister();
-};
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -257,7 +215,7 @@ void OpenScene()
 void CloseScene()
 {
     n_error("implement me!");
-};
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -294,7 +252,7 @@ void StepFrame()
         globalLightTransform = globalLightTransform * rotX * rotY;
         Lighting::LightContext::SetTransform(globalLight, globalLightTransform);
     */
-};
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -404,7 +362,7 @@ void RenderUI()
             Decals::DecalContext::SetTransform(id, trans);
         }
     }
-};
+}
 
 } // namespace ClusteredSceneData
 

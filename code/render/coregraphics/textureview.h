@@ -16,17 +16,20 @@ ID_24_8_TYPE(TextureViewId);
 
 struct TextureViewCreateInfo
 {
-    CoreGraphics::TextureId tex;
+    TextureId tex;
     IndexT startMip;
     SizeT numMips;
     IndexT startLayer;
     SizeT numLayers;
-    CoreGraphics::PixelFormat::Code format;
+    PixelFormat::Code format;
 };
 
 /// create texture view
 TextureViewId CreateTextureView(const TextureViewCreateInfo& info);
 /// destroy texture view
 void DestroyTextureView(const TextureViewId id);
+
+/// get texture
+TextureId TextureViewGetTexture(const TextureViewId id);
 
 } // namespace CoreGraphics

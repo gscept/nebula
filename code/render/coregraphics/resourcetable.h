@@ -129,7 +129,7 @@ struct ResourceTableConstantBuffer
 
 struct ResourceTableInputAttachment
 {
-	CoreGraphics::TextureId tex;
+	CoreGraphics::TextureViewId tex;
 	IndexT slot;
 	IndexT index;
 	CoreGraphics::SamplerId sampler;

@@ -19,7 +19,7 @@ public:
 
 	struct CompiledImpl : public FrameOp::Compiled
 	{
-		void Run(const IndexT frameIndex);
+		void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
 
 		CoreGraphics::TextureId from, to;
 

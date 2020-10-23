@@ -11,6 +11,7 @@
 #include "vkconstantbuffer.h"
 #include "vkshader.h"
 #include "vkresourcetable.h"
+#include "vktextureview.h"
 
 using namespace CoreGraphics;
 namespace Vulkan
@@ -75,7 +76,8 @@ using namespace Vulkan;
 //------------------------------------------------------------------------------
 /**
 */
-void SetupPass(const PassId pid)
+void
+SetupPass(const PassId pid)
 {
     Ids::Id32 id = pid.id24;
     VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id);
@@ -84,7 +86,7 @@ void SetupPass(const PassId pid)
     Util::Array<uint32_t>& subpassAttachmentCounts = passAllocator.Get<3>(id);
 
     Util::FixedArray<VkImageView> images;
-    images.Resize(loadInfo.colorAttachments.Size() + (loadInfo.depthStencilAttachment != TextureId::Invalid() ? 1 : 0));
+    images.Resize(loadInfo.colorAttachments.Size() + (loadInfo.depthStencilAttachment != TextureViewId::Invalid() ? 1 : 0));
 
     uint32_t width = 0;
     uint32_t height = 0;
@@ -93,11 +95,12 @@ void SetupPass(const PassId pid)
     IndexT i;
     for (i = 0; i < loadInfo.colorAttachments.Size(); i++)
     {
-        images[i] = TextureGetVkImageView(loadInfo.colorAttachments[i]);
-        const CoreGraphics::TextureDimensions dims = TextureGetDimensions(loadInfo.colorAttachments[i]);
+        images[i] = TextureViewGetVk(loadInfo.colorAttachments[i]);
+		TextureId tex = TextureViewGetTexture(loadInfo.colorAttachments[i]);
+        const CoreGraphics::TextureDimensions dims = TextureGetDimensions(tex);
         width = Math::n_max(width, (uint32_t)dims.width);
         height = Math::n_max(height, (uint32_t)dims.height);
-        layers = Math::n_max(layers, (uint32_t)TextureGetNumLayers(loadInfo.colorAttachments[i]));
+        layers = Math::n_max(layers, (uint32_t)TextureGetNumLayers(tex));
 
         VkRect2D& rect = loadInfo.rects[i];
         rect.offset.x = 0;
@@ -176,7 +179,7 @@ void SetupPass(const PassId pid)
         // if subpass binds depth, the slot for the depth-stencil buffer is color attachments + 1
         if (subpass.bindDepth)
         {
-            n_assert(loadInfo.depthStencilAttachment != TextureId::Invalid());
+            n_assert(loadInfo.depthStencilAttachment != TextureViewId::Invalid());
             VkAttachmentReference& ds = subpassDepthStencils[i];
             ds.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
             ds.attachment = loadInfo.colorAttachments.Size();
@@ -296,10 +299,14 @@ void SetupPass(const PassId pid)
     attachments.Resize(loadInfo.colorAttachments.Size() + 1);
     for (i = 0; i < loadInfo.colorAttachments.Size(); i++)
     {
-        VkFormat fmt = VkTypes::AsVkFramebufferFormat(TextureGetPixelFormat(loadInfo.colorAttachments[i]));
+		TextureId tex = TextureViewGetTexture(loadInfo.colorAttachments[i]);
+		TextureUsage usage = TextureGetUsage(tex);
+		n_assert(CheckBits(usage, RenderTexture));
+
+        VkFormat fmt = VkTypes::AsVkFormat(TextureGetPixelFormat(tex));
         VkAttachmentDescription& attachment = attachments[i];
-        IndexT loadIdx = loadInfo.colorAttachmentFlags[i] & Load ? 2 : loadInfo.colorAttachmentFlags[i] & Clear ? 1 : 0;
-        IndexT storeIdx = loadInfo.colorAttachmentFlags[i] & Store ? 1 : 0;
+        IndexT loadIdx = CheckBits(loadInfo.colorAttachmentFlags[i], AttachmentFlagBits::Load) ? 2 : CheckBits(loadInfo.colorAttachmentFlags[i], AttachmentFlagBits::Clear) ? 1 : 0;
+        IndexT storeIdx = CheckBits(loadInfo.colorAttachmentFlags[i], AttachmentFlagBits::Store) ? 1 : 0;
         attachment.flags = 0;
         attachment.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         attachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -308,26 +315,30 @@ void SetupPass(const PassId pid)
         attachment.storeOp = storeOps[storeIdx];
         attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachment.samples = VkTypes::AsVkSampleFlags(TextureGetNumSamples(loadInfo.colorAttachments[i]));
+        attachment.samples = VkTypes::AsVkSampleFlags(TextureGetNumSamples(tex));
     }
 
     // use depth stencil attachments if pointer is not null
-    if (loadInfo.depthStencilAttachment != CoreGraphics::TextureId::Invalid())
+    if (loadInfo.depthStencilAttachment != CoreGraphics::TextureViewId::Invalid())
     {
+		TextureId tex = TextureViewGetTexture(loadInfo.depthStencilAttachment);
+		TextureUsage usage = TextureGetUsage(tex);
+		n_assert(CheckBits(usage, RenderTexture));
+
         VkAttachmentDescription& attachment = attachments[i];
-        IndexT loadIdx = loadInfo.depthStencilFlags & Load ? 2 : loadInfo.depthStencilFlags & Clear ? 1 : 0;
-        IndexT storeIdx = loadInfo.depthStencilFlags & Store ? 1 : 0;
-        IndexT stencilLoadIdx = loadInfo.depthStencilFlags & LoadStencil ? 2 : loadInfo.depthStencilFlags & ClearStencil ? 1 : 0;
-        IndexT stencilStoreIdx = loadInfo.depthStencilFlags & StoreStencil ? 1 : 0;
+        IndexT loadIdx = CheckBits(loadInfo.depthStencilFlags, AttachmentFlagBits::Load) ? 2 : CheckBits(loadInfo.depthStencilFlags, AttachmentFlagBits::Clear) ? 1 : 0;
+        IndexT storeIdx = CheckBits(loadInfo.depthStencilFlags, AttachmentFlagBits::Store) ? 1 : 0;
+        IndexT stencilLoadIdx = CheckBits(loadInfo.depthStencilFlags, AttachmentFlagBits::LoadStencil) ? 2 : CheckBits(loadInfo.depthStencilFlags, AttachmentFlagBits::ClearStencil) ? 1 : 0;
+        IndexT stencilStoreIdx = CheckBits(loadInfo.depthStencilFlags, AttachmentFlagBits::StoreStencil) ? 1 : 0;
         attachment.flags = 0;
         attachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
         attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-        attachment.format = VkTypes::AsVkFramebufferFormat(TextureGetPixelFormat(loadInfo.depthStencilAttachment));
+        attachment.format = VkTypes::AsVkFormat(TextureGetPixelFormat(tex));
         attachment.loadOp = loadOps[loadIdx];
         attachment.storeOp = storeOps[storeIdx];
         attachment.stencilLoadOp = loadOps[stencilLoadIdx];
         attachment.stencilStoreOp = storeOps[stencilStoreIdx];
-        attachment.samples = VkTypes::AsVkSampleFlags(TextureGetNumSamples(loadInfo.depthStencilAttachment));
+        attachment.samples = VkTypes::AsVkSampleFlags(TextureGetNumSamples(tex));
         numUsedAttachments++;
     }
 
@@ -347,10 +358,11 @@ void SetupPass(const PassId pid)
     VkResult res = vkCreateRenderPass(loadInfo.dev, &rpinfo, nullptr, &loadInfo.pass);
     n_assert(res == VK_SUCCESS);
 
-    if (loadInfo.depthStencilAttachment != CoreGraphics::TextureId::Invalid())
+    if (loadInfo.depthStencilAttachment != CoreGraphics::TextureViewId::Invalid())
     {
-        images[i] = TextureGetVkImageView(loadInfo.depthStencilAttachment);
-        const CoreGraphics::TextureDimensions dims = TextureGetDimensions(loadInfo.depthStencilAttachment);
+		TextureId tex = TextureViewGetTexture(loadInfo.depthStencilAttachment);
+        images[i] = TextureViewGetVk(loadInfo.depthStencilAttachment);
+        const CoreGraphics::TextureDimensions dims = TextureGetDimensions(tex);
         VkRect2D& rect = loadInfo.rects[i];
         rect.offset.x = 0;
         rect.offset.y = 0;
@@ -417,11 +429,12 @@ void SetupPass(const PassId pid)
         ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
 
         // create dimensions vec4
-        const CoreGraphics::TextureDimensions rtdims = TextureGetDimensions(loadInfo.colorAttachments[i]);
+		TextureId tex = TextureViewGetTexture(loadInfo.colorAttachments[i]);
+        const CoreGraphics::TextureDimensions rtdims = TextureGetDimensions(tex);
         Math::vec4& dims = dimensions[i];
         dims = Math::vec4((Math::scalar)rtdims.width, (Math::scalar)rtdims.height, 1 / (Math::scalar)rtdims.width, 1 / (Math::scalar)rtdims.height);
     }
-    if (loadInfo.depthStencilAttachment != CoreGraphics::TextureId::Invalid())
+    if (loadInfo.depthStencilAttachment != CoreGraphics::TextureViewId::Invalid())
     {
         // update descriptor set based on images attachments
         IndexT inputAttachmentLocation = ShaderGetResourceSlot(sid, Util::String::Sprintf("DepthAttachment", i));
@@ -490,7 +503,7 @@ CreatePass(const PassCreateInfo& info)
 	loadInfo.depthStencilAttachment = info.depthStencilAttachment;
 	loadInfo.dev = Vulkan::GetCurrentDevice();
 
-	SizeT numImages = info.colorAttachments.Size() + (info.depthStencilAttachment != TextureId::Invalid() ? 1 : 0);
+	SizeT numImages = info.colorAttachments.Size() + (info.depthStencilAttachment != TextureViewId::Invalid() ? 1 : 0);
 	loadInfo.clearValues.Resize(numImages);
 	loadInfo.rects.Resize(numImages);
 	loadInfo.viewports.Resize(numImages);
@@ -511,7 +524,7 @@ CreatePass(const PassCreateInfo& info)
         clear.color.float32[3] = value.w;
     }
     
-    if (loadInfo.depthStencilAttachment != CoreGraphics::TextureId::Invalid())
+    if (loadInfo.depthStencilAttachment != CoreGraphics::TextureViewId::Invalid())
     {
         VkClearValue& clear = loadInfo.clearValues[i];
         clear.depthStencil.depth = info.clearDepth;
@@ -548,7 +561,7 @@ DiscardPass(const PassId id)
 /**
 */
 void
-PassBegin(const PassId id)
+PassBegin(const PassId id, PassRecordMode recordMode)
 {
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
 
@@ -559,8 +572,9 @@ PassBegin(const PassId id)
 	runtimeInfo.currentSubpassIndex = 0;
 	runtimeInfo.framebufferPipelineInfo.subpass = 0;
 	runtimeInfo.framebufferPipelineInfo.pViewportState = &runtimeInfo.subpassPipelineInfo[0];
+	runtimeInfo.recordMode = recordMode;
 
-	CoreGraphics::BeginPass(id);
+	CoreGraphics::BeginPass(id, recordMode);
 }
 
 //------------------------------------------------------------------------------
@@ -574,7 +588,7 @@ PassNextSubpass(const PassId id)
 	runtimeInfo.framebufferPipelineInfo.subpass = runtimeInfo.currentSubpassIndex;
 	runtimeInfo.framebufferPipelineInfo.pViewportState = &runtimeInfo.subpassPipelineInfo[runtimeInfo.currentSubpassIndex];
 
-	CoreGraphics::SetToNextSubpass();
+	CoreGraphics::SetToNextSubpass(runtimeInfo.recordMode);
 }
 
 //------------------------------------------------------------------------------
@@ -583,7 +597,8 @@ PassNextSubpass(const PassId id)
 void
 PassEnd(const PassId id)
 {
-	CoreGraphics::EndPass();
+	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
+	CoreGraphics::EndPass(runtimeInfo.recordMode);
 }
 
 //------------------------------------------------------------------------------
@@ -613,7 +628,7 @@ PassWindowResizeCallback(const PassId id)
 //------------------------------------------------------------------------------
 /**
 */
-const Util::Array<CoreGraphics::TextureId>&
+const Util::Array<CoreGraphics::TextureViewId>&
 PassGetAttachments(const CoreGraphics::PassId id)
 {
 	return passAllocator.Get<0>(id.id24).colorAttachments;
@@ -622,7 +637,7 @@ PassGetAttachments(const CoreGraphics::PassId id)
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphics::TextureId 
+const CoreGraphics::TextureViewId 
 PassGetDepthStencilAttachment(const CoreGraphics::PassId id)
 {
 	return passAllocator.Get<0>(id.id24).depthStencilAttachment;

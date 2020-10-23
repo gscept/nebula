@@ -69,6 +69,8 @@ bool EventPoll(const EventId id);
 void EventHostReset(const EventId id);
 /// signal event on host
 void EventHostSignal(const EventId id);
+/// wait for event to be signaled on host
+void EventHostWait(const EventId id);
 
 } // CoreGraphics
 

@@ -88,7 +88,7 @@ SSAOContext::Create()
 
 	// calculate HBAO and blur
 	using namespace CoreGraphics;
-	Frame::AddCallback("HBAO-Run", [](IndexT)
+	Frame::AddCallback("HBAO-Run", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 			ShaderServer* shaderServer = ShaderServer::Instance();
 
@@ -104,8 +104,6 @@ SSAOContext::Create()
 			uint numGroupsY1 = Math::n_divandroundup(height, TILE_WIDTH);
 			uint numGroupsY2 = height;
 
-			IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
-
 			// we are running the SSAO on the graphics queue
 #if NEBULA_GRAPHICS_DEBUG
 			CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "HBAO");
@@ -113,25 +111,25 @@ SSAOContext::Create()
 
 			// render AO in X
 			CoreGraphics::SetShaderProgram(ssaoState.xDirectionHBAO);
-			CoreGraphics::SetResourceTable(ssaoState.hbaoTable[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+			CoreGraphics::SetResourceTable(ssaoState.hbaoTable[frameBufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 			CoreGraphics::BarrierInsert(ssaoState.barriers[0], GraphicsQueueType); // transition from shader read to general
 			CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
 
 			// now do it in Y
 			CoreGraphics::SetShaderProgram(ssaoState.yDirectionHBAO);
-			CoreGraphics::SetResourceTable(ssaoState.hbaoTable[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+			CoreGraphics::SetResourceTable(ssaoState.hbaoTable[frameBufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 			CoreGraphics::BarrierInsert(ssaoState.barriers[1], GraphicsQueueType); // transition from shader read to general
 			CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
 
 			// blur in X
 			CoreGraphics::SetShaderProgram(ssaoState.xDirectionBlur);
-			CoreGraphics::SetResourceTable(ssaoState.blurTableX[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+			CoreGraphics::SetResourceTable(ssaoState.blurTableX[frameBufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 			CoreGraphics::BarrierInsert(ssaoState.barriers[2], GraphicsQueueType); // transition from shader read to general
 			CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
 
 			// blur in Y
 			CoreGraphics::SetShaderProgram(ssaoState.yDirectionBlur);
-			CoreGraphics::SetResourceTable(ssaoState.blurTableY[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+			CoreGraphics::SetResourceTable(ssaoState.blurTableY[frameBufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 			CoreGraphics::BarrierInsert(ssaoState.barriers[3], GraphicsQueueType);
 			CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
 

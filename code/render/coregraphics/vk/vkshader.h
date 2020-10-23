@@ -24,7 +24,7 @@ void VkShaderSetup(
 	AnyFX::ShaderEffect* effect,
 	Util::FixedArray<CoreGraphics::ResourcePipelinePushConstantRange>& constantRange,
 	Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
-	Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
+	Util::FixedArray<Util::Pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
 	Util::Dictionary<uint32_t, uint32_t>& setLayoutMap,
 	CoreGraphics::ResourcePipelineId& pipelineLayout,
 	Util::Dictionary<Util::StringAtom, uint32_t>& resourceSlotMapping,
@@ -34,7 +34,7 @@ void VkShaderSetup(
 void VkShaderCleanup(
 	VkDevice dev,
 	Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
-	Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
+	Util::FixedArray<Util::Pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& buffers,
 	CoreGraphics::ResourcePipelineId& pipelineLayout
 );

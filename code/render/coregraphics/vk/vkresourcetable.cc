@@ -321,10 +321,10 @@ ResourceTableSetInputAttachment(const ResourceTableId& id, const ResourceTableIn
 	VkDescriptorImageInfo img;
 	img.sampler = VK_NULL_HANDLE;
 	img.imageLayout = tex.isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	if (tex.tex == TextureId::Invalid())
+	if (tex.tex == TextureViewId::Invalid())
 		img.imageView = VK_NULL_HANDLE;
 	else
-		img.imageView = TextureGetVkImageView(tex.tex);
+		img.imageView = TextureViewGetVk(tex.tex);
 
 	WriteInfo inf;
 	inf.img = img;
@@ -652,7 +652,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
 
 	VkDevice& dev = resourceTableLayoutAllocator.Get<ResourceTableLayoutDevice>(id);
 	VkDescriptorSetLayout& layout = resourceTableLayoutAllocator.Get<ResourceTableLayoutSetLayout>(id);
-	Util::Array<std::pair<CoreGraphics::SamplerId, uint32_t>>& samplers = resourceTableLayoutAllocator.Get<ResourceTableLayoutSamplers>(id);
+	Util::Array<Util::Pair<CoreGraphics::SamplerId, uint32_t>>& samplers = resourceTableLayoutAllocator.Get<ResourceTableLayoutSamplers>(id);
 	Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayoutImmutableSamplerFlags>(id);
 	Util::Array<VkDescriptorPoolSize>& poolSizes = resourceTableLayoutAllocator.Get<ResourceTableLayoutPoolSizes>(id);
 
@@ -825,7 +825,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
 		bindings.Append(binding);
 
 		// add static samplers
-		samplers.Append(std::make_pair(samp.sampler, samp.slot));
+		samplers.Append(Util::MakePair(samp.sampler, samp.slot));
 		samplerSize.descriptorCount++;
 	}
 

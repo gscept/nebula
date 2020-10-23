@@ -176,8 +176,8 @@ private:
 	Ids::IdAllocator<
 		Util::FixedArray<CoreGraphics::ResourceTableId>,										// surface level resource table, mapped batch -> table
 		Util::FixedArray<CoreGraphics::ResourceTableId>,										// instance level resource table, mapped batch -> table
-		Util::FixedArray<Util::Array<std::tuple<IndexT, CoreGraphics::ConstantBufferId>>>,		// surface level constant buffers, mapped batch -> buffers
-		Util::FixedArray<Util::Array<std::tuple<IndexT, void*, SizeT>>>,						// instance level instance buffers, mapped batch -> memory + size
+		Util::FixedArray<Util::Array<Util::Tuple<IndexT, CoreGraphics::ConstantBufferId>>>,		// surface level constant buffers, mapped batch -> buffers
+		Util::FixedArray<Util::Array<Util::Tuple<IndexT, void*, SizeT>>>,						// instance level instance buffers, mapped batch -> memory + size
 		Util::FixedArray<Util::Array<SurfaceTexture>>,											// textures
 		Util::FixedArray<Util::Array<SurfaceConstant>>,											// constants
 		Util::Dictionary<Util::StringAtom, IndexT>,												// name to resource map

@@ -139,7 +139,8 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	CoreGraphics::ShaderFeature::Mask currentShaderMask;
 
 	VkGraphicsPipelineCreateInfo currentPipelineInfo;
-	VkPipelineLayout currentPipelineLayout;
+	VkPipelineLayout currentGraphicsPipelineLayout;
+	VkPipelineLayout currentComputePipelineLayout;
 	VkPipeline currentPipeline;
 	VkPipelineInfoBits currentPipelineBits;
 	uint currentStencilFrontRef, currentStencilBackRef, currentStencilReadMask, currentStencilWriteMask;
@@ -538,7 +539,7 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, ui
 		else
 		{
 			// otherwise they go on the main draw
-			vkCmdBindDescriptorSets(GetMainBuffer(CoreGraphics::GraphicsQueueType), VK_PIPELINE_BIND_POINT_GRAPHICS, state.currentPipelineLayout, baseSet, setCount, descriptors, offsetCount, offsets);
+			vkCmdBindDescriptorSets(GetMainBuffer(CoreGraphics::GraphicsQueueType), VK_PIPELINE_BIND_POINT_GRAPHICS, state.currentGraphicsPipelineLayout, baseSet, setCount, descriptors, offsetCount, offsets);
 		}
 	}
 }
@@ -551,7 +552,7 @@ BindDescriptorsCompute(const VkDescriptorSet* descriptors, uint32_t baseSet, uin
 {
 	n_assert(state.inBeginFrame);
 	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
-	vkCmdBindDescriptorSets(GetMainBuffer(queue), VK_PIPELINE_BIND_POINT_COMPUTE, state.currentPipelineLayout, baseSet, setCount, descriptors, offsetCount, offsets);
+	vkCmdBindDescriptorSets(GetMainBuffer(queue), VK_PIPELINE_BIND_POINT_COMPUTE, state.currentComputePipelineLayout, baseSet, setCount, descriptors, offsetCount, offsets);
 }
 
 //------------------------------------------------------------------------------
@@ -666,7 +667,7 @@ CreateAndBindGraphicsPipeline()
 		// send pipeline bind command, this is the first step in our procedure, so we use this as a trigger to switch threads
 		VkCommandBufferThread::VkGfxPipelineBindCommand pipeCommand;
 		pipeCommand.pipeline = pipeline;
-		pipeCommand.layout = state.currentPipelineLayout;
+		pipeCommand.layout = state.currentGraphicsPipelineLayout;
 		state.drawThread->Push(pipeCommand);
 
 		// update stencil stuff
@@ -704,7 +705,7 @@ CreateAndBindGraphicsPipeline()
 				vkCmdBindDescriptorSets(
 					GetMainBuffer(CoreGraphics::GraphicsQueueType),
 					VK_PIPELINE_BIND_POINT_GRAPHICS,
-					state.currentPipelineLayout,
+					state.currentGraphicsPipelineLayout,
 					state.propagateDescriptorSets[i].baseSet,
 					state.propagateDescriptorSets[i].numSets,
 					state.propagateDescriptorSets[i].sets,
@@ -2162,7 +2163,7 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
 /**
 */
 void 
-BeginPass(const CoreGraphics::PassId pass)
+BeginPass(const CoreGraphics::PassId pass, PassRecordMode mode)
 {
 	n_assert(state.inBeginFrame);
 	n_assert(!state.inBeginPass);
@@ -2184,14 +2185,24 @@ BeginPass(const CoreGraphics::PassId pass)
 	state.database.SetPass(pass);
 	state.database.SetSubpass(0);
 
-
 #if NEBULA_ENABLE_MT_DRAW
 	const Util::FixedArray<VkViewport>& viewports = PassGetVkViewports(state.pass);
 	CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
 	const Util::FixedArray<VkRect2D>& scissors = PassGetVkRects(state.pass);
 	CoreGraphics::SetVkScissorRects(scissors.Begin(), scissors.Size());
-	if (!state.drawThread)
+
+	switch (mode)
+	{
+	case PassRecordMode::ExecuteInline:
+		vkCmdBeginRenderPass(GetMainBuffer(GraphicsQueueType), &info, VK_SUBPASS_CONTENTS_INLINE);
+		break;
+	case PassRecordMode::ExecuteRecorded:
 		vkCmdBeginRenderPass(GetMainBuffer(GraphicsQueueType), &info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		break;
+	case PassRecordMode::Record:
+	default:
+		break;
+	}
 #else
 	const Util::FixedArray<VkViewport>& viewports = PassGetVkViewports(state.pass);
 	CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
@@ -2240,7 +2251,7 @@ BeginSubpassCommands(CoreGraphics::CommandBufferId buf)
 /**
 */
 void 
-SetToNextSubpass()
+SetToNextSubpass(PassRecordMode mode)
 {
 	n_assert(state.inBeginFrame);
 	n_assert(state.inBeginPass);
@@ -2255,8 +2266,19 @@ SetToNextSubpass()
 	CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
 	const Util::FixedArray<VkRect2D>& scissors = PassGetVkRects(state.pass);
 	CoreGraphics::SetVkScissorRects(scissors.Begin(), scissors.Size());
-	if (!state.drawThread)
+
+	switch (mode)
+	{
+	case PassRecordMode::ExecuteInline:
+		vkCmdNextSubpass(GetMainBuffer(GraphicsQueueType), VK_SUBPASS_CONTENTS_INLINE);
+		break;
+	case PassRecordMode::ExecuteRecorded:
 		vkCmdNextSubpass(GetMainBuffer(GraphicsQueueType), VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		break;
+	case PassRecordMode::Record:
+	default:
+		break;
+	}
 #else
 	const Util::FixedArray<VkViewport>& viewports = PassGetVkViewports(state.pass);
 	CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
@@ -2272,9 +2294,9 @@ SetToNextSubpass()
 void 
 BeginBatch(Frame::FrameBatchType::Code batchType)
 {
-	n_assert(state.inBeginPass);
+	//n_assert(state.inBeginPass);
 	n_assert(!state.inBeginBatch);
-	n_assert(state.pass != PassId::Invalid());
+	//n_assert(state.pass != PassId::Invalid());
 
 	state.inBeginBatch = true;
 }
@@ -2411,24 +2433,16 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
 	state.currentStencilBackRef = info.stencilBackRef;
 	state.currentStencilReadMask = info.stencilReadMask;
 	state.currentStencilWriteMask = info.stencilWriteMask;
-	if (state.currentPipelineLayout != info.layout)
-	{
-		state.currentPipelineLayout = info.layout;
 
-		// bind textures and camera descriptors
-#if !NEBULA_ENABLE_MT_DRAW
-		VkShaderServer::Instance()->BindTextureDescriptorSetsGraphics();
-		VkTransformDevice::Instance()->BindCameraDescriptorSetsGraphics();
-#endif
-		if (!state.drawThread)
-		{
-			VkShaderServer::Instance()->BindTextureDescriptorSetsCompute(queue);
-			VkTransformDevice::Instance()->BindCameraDescriptorSetsCompute(queue);
-		}		
-	}
+	bool layoutChanged = false;
 
 	// if we are compute, we can set the pipeline straight away, otherwise we have to accumulate the infos
-	if (info.type == ComputePipeline)		Vulkan::BindComputePipeline(info.pipeline, info.layout, queue);
+	if (info.type == ComputePipeline)
+	{
+		Vulkan::BindComputePipeline(info.pipeline, info.layout, queue);
+		layoutChanged = state.currentComputePipelineLayout != info.layout;
+		state.currentComputePipelineLayout = info.layout;
+	}
 	else if (info.type == GraphicsPipeline)
 	{
 		// setup pipeline information regarding the shader state
@@ -2454,9 +2468,29 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
 			VK_NULL_HANDLE, 0				// base pipeline is kept as NULL too, because this is the base for all derivatives
 		};
 		Vulkan::BindGraphicsPipelineInfo(ginfo, pro);
+		layoutChanged = state.currentGraphicsPipelineLayout != info.layout;
+		state.currentGraphicsPipelineLayout = info.layout;
 	}
 	else
 		Vulkan::UnbindPipeline();
+
+	// bind descriptors
+	if (info.type == CoreGraphics::ComputePipeline)
+	{
+		if (layoutChanged)
+		{
+			VkShaderServer::Instance()->BindTextureDescriptorSetsCompute(queue);
+			VkTransformDevice::Instance()->BindCameraDescriptorSetsCompute(queue);
+		}
+	}
+	else // graphics queue
+	{
+		if (!state.drawThread && layoutChanged)
+		{
+			VkShaderServer::Instance()->BindTextureDescriptorSetsGraphics();
+			VkTransformDevice::Instance()->BindCameraDescriptorSetsGraphics();
+		}
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -2516,7 +2550,7 @@ void
 SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout)
 {
 	n_assert(layout != CoreGraphics::ResourcePipelineId::Invalid());
-	state.currentPipelineLayout = ResourcePipelineGetVk(layout);
+	state.currentGraphicsPipelineLayout = ResourcePipelineGetVk(layout);
 }
 
 //------------------------------------------------------------------------------
@@ -2528,10 +2562,10 @@ PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data)
 	switch (pipeline)
 	{
 	case GraphicsPipeline:
-		Vulkan::UpdatePushRanges(VK_SHADER_STAGE_ALL_GRAPHICS, state.currentPipelineLayout, offset, size, data);
+		Vulkan::UpdatePushRanges(VK_SHADER_STAGE_ALL_GRAPHICS, state.currentGraphicsPipelineLayout, offset, size, data);
 		break;
 	case ComputePipeline:
-		Vulkan::UpdatePushRanges(VK_SHADER_STAGE_COMPUTE_BIT, state.currentPipelineLayout, offset, size, data);
+		Vulkan::UpdatePushRanges(VK_SHADER_STAGE_COMPUTE_BIT, state.currentComputePipelineLayout, offset, size, data);
 		break;
 	}
 }
@@ -3099,7 +3133,7 @@ void
 EndBatch()
 {
 	n_assert(state.inBeginBatch);
-	n_assert(state.pass != PassId::Invalid());
+	//n_assert(state.pass != PassId::Invalid());
 
 	state.currentProgram = -1;
 	state.inBeginBatch = false;
@@ -3109,7 +3143,7 @@ EndBatch()
 /**
 */
 void
-EndPass()
+EndPass(PassRecordMode mode)
 {
 	n_assert(state.inBeginPass);
 	n_assert(state.pass != PassId::Invalid());
@@ -3123,14 +3157,17 @@ EndPass()
 	state.currentProgram = -1;
 
 	// end render pass
-#if NEBULA_ENABLE_MT_DRAW
-	if (!state.drawThread)
+	switch (mode)
+	{
+	case PassRecordMode::ExecuteInline:
+	case PassRecordMode::ExecuteRecorded:
 		vkCmdEndRenderPass(GetMainBuffer(GraphicsQueueType));
-#else
-	vkCmdEndRenderPass(GetMainBuffer(GraphicsQueueType));
-#endif
+		break;
+	case PassRecordMode::Record:
+	default:
+		break;
+	}
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -3153,7 +3190,6 @@ EndSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue, 
 	}
 
 	CoreGraphics::CommandBufferId commandBuffer = queue == GraphicsQueueType ? state.gfxCmdBuffer : state.computeCmdBuffer;
-	VkPipelineStageFlags stageFlags = queue == GraphicsQueueType ? VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 
 	LockResourceSubmission();
 	if (queue == GraphicsQueueType && state.setupSubmissionActive)
@@ -3195,6 +3231,7 @@ EndSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue, 
 	// if we have a queue that is blocking us, wait for it
 	if (waitQueue != InvalidQueueType)
 	{
+		VkPipelineStageFlags stageFlags = queue == VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 		state.subcontextHandler.AppendWaitTimeline(
 			queue,
 			stageFlags,
@@ -3559,71 +3596,38 @@ EndQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type)
 void 
 Copy(
 	const CoreGraphics::QueueType queue,
-	const CoreGraphics::TextureId from,
-	const Math::rectangle<SizeT>& fromRegion,
-	IndexT fromMip,
-	IndexT fromLayer,
-	const CoreGraphics::TextureId to,
-	const Math::rectangle<SizeT>& toRegion,
-	IndexT toMip,
-	IndexT toLayer)
+	const CoreGraphics::TextureId fromTexture,
+	const Util::Array<CoreGraphics::TextureCopy> from,
+	const CoreGraphics::TextureId toTexture,
+	const Util::Array<CoreGraphics::TextureCopy> to,
+	const CoreGraphics::SubmissionContextId sub)
 {
-	n_assert(from != CoreGraphics::TextureId::Invalid() && to != CoreGraphics::TextureId::Invalid());
-	n_assert(!state.inBeginPass);
-	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+	n_assert(fromTexture != CoreGraphics::TextureId::Invalid() && toTexture != CoreGraphics::TextureId::Invalid());
+	n_assert(from.Size() == to.Size());
 
-	bool isDepth = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(from));
+	bool isDepth = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(fromTexture));
 	VkImageAspectFlags aspect = isDepth ? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
-	VkImageCopy region;
-	region.dstOffset = { fromRegion.left, fromRegion.top, 0 };
-	region.dstSubresource = { aspect, (uint32_t)toMip, (uint32_t)toLayer, 1 };
-	region.extent = { (uint32_t)toRegion.width(), (uint32_t)toRegion.height(), 1 };
-	region.srcOffset = { toRegion.left, toRegion.top, 0 };
-	region.srcSubresource = { aspect, (uint32_t)fromMip, (uint32_t)fromLayer, 1 };
-	vkCmdCopyImage(GetMainBuffer(queue), TextureGetVkImage(from), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, TextureGetVkImage(to), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-}
+	Util::FixedArray<VkImageCopy> copies(from.Size());
+	for (IndexT i = 0; i < copies.Size(); i++)
+	{
+		VkImageCopy& copy = copies[i];
+		copy.dstOffset = { to[i].region.left, to[i].region.top, 0 };
+		copy.dstSubresource = { aspect, (uint32_t)to[i].mip, (uint32_t)to[i].layer, 1 };
+		copy.extent = { (uint32_t)to[i].region.width(), (uint32_t)to[i].region.height(), 1 };
+		copy.srcOffset = { from[i].region.left, from[i].region.top, 0 };
+		copy.srcSubresource = { aspect, (uint32_t)from[i].mip, (uint32_t)from[i].layer, 1 };
+	}
 
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-Copy(const CoreGraphics::QueueType queue, const CoreGraphics::BufferId from, IndexT fromOffset, const CoreGraphics::BufferId to, IndexT toOffset, SizeT size)
-{
-	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
-	VkBufferCopy copy;
-	copy.srcOffset = fromOffset;
-	copy.dstOffset = toOffset;
-	copy.size = size;
-	vkCmdCopyBuffer(GetMainBuffer(queue), BufferGetVk(from), BufferGetVk(to), 1, &copy);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-Copy(
-	const CoreGraphics::QueueType queue, 
-	const CoreGraphics::TextureId toId, 
-	const Math::rectangle<int> toRegion, 
-	IndexT toMip, 
-	IndexT toLayer, 
-	const CoreGraphics::BufferId fromId, 
-	IndexT offset)
-{
-	VkBufferImageCopy copy;
-	copy.bufferOffset = offset;
-	copy.bufferImageHeight = 0;
-	copy.bufferRowLength = 0;
-	copy.imageExtent = { (uint32_t)toRegion.width(), (uint32_t)toRegion.height(), 1 };
-	copy.imageOffset = { (int32_t)toRegion.left, (int32_t)toRegion.top, 0 };
-	copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)toMip, (uint32_t)toLayer, 1 };
-
-	vkCmdCopyImageToBuffer(GetMainBuffer(queue),
-		TextureGetVkImage(toId),
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		BufferGetVk(fromId),
-		1,
-		&copy);
+	VkCommandBuffer buf;
+	if (sub == CoreGraphics::SubmissionContextId::Invalid())
+	{
+		n_assert(!state.inBeginPass);
+		n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+		buf = GetMainBuffer(queue);
+	}
+	else
+		buf = Vulkan::CommandBufferGetVk(CoreGraphics::SubmissionContextGetCmdBuffer(sub));
+	vkCmdCopyImage(buf, TextureGetVkImage(fromTexture), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, TextureGetVkImage(toTexture), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copies.Size(), copies.Begin());
 }
 
 //------------------------------------------------------------------------------
@@ -3631,28 +3635,128 @@ Copy(
 */
 void 
 Copy(
-	const CoreGraphics::QueueType queue, 
-	const CoreGraphics::BufferId fromId, 
-	IndexT offset, 
-	const CoreGraphics::TextureId toId, 
-	const Math::rectangle<int> toRegion, 
-	IndexT toMip, 
-	IndexT toLayer)
+	const CoreGraphics::QueueType queue,
+	const CoreGraphics::BufferId fromBuffer,
+	const Util::Array<CoreGraphics::BufferCopy> from,
+	const CoreGraphics::BufferId toBuffer,
+	const Util::Array<CoreGraphics::BufferCopy> to,
+	SizeT size,
+	const CoreGraphics::SubmissionContextId sub)
 {
-	VkBufferImageCopy copy;
-	copy.bufferOffset = offset;
-	copy.bufferImageHeight = 0;
-	copy.bufferRowLength = 0;
-	copy.imageExtent = { (uint32_t)toRegion.width(), (uint32_t)toRegion.height(), 1 };
-	copy.imageOffset = { (int32_t)toRegion.left, (int32_t)toRegion.top, 0 };
-	copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)toMip, (uint32_t)toLayer, 1 };
+	n_assert(from.Size() > 0);
+	n_assert(from.Size() == to.Size());
 
-	vkCmdCopyBufferToImage(GetMainBuffer(queue),
-		BufferGetVk(fromId),
-		TextureGetVkImage(toId),
+	Util::FixedArray<VkBufferCopy> copies(from.Size());
+	for (IndexT i = 0; i < copies.Size(); i++)
+	{
+		VkBufferCopy& copy = copies[i];
+		copy.srcOffset = from[i].offset;
+		copy.dstOffset = to[i].offset;
+		copy.size = size;
+	}
+	
+	VkCommandBuffer buf;
+	if (sub == CoreGraphics::SubmissionContextId::Invalid())
+	{
+		n_assert(!state.inBeginPass);
+		n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+		buf = GetMainBuffer(queue);
+	}
+	else
+		buf = Vulkan::CommandBufferGetVk(CoreGraphics::SubmissionContextGetCmdBuffer(sub));
+
+	vkCmdCopyBuffer(buf, BufferGetVk(fromBuffer), BufferGetVk(toBuffer), copies.Size(), copies.Begin());
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+Copy(
+	const CoreGraphics::QueueType queue,
+	const CoreGraphics::BufferId fromBuffer,
+	const Util::Array<CoreGraphics::BufferCopy> from,
+	const CoreGraphics::TextureId toTexture,
+	const Util::Array<CoreGraphics::TextureCopy> to,
+	const CoreGraphics::SubmissionContextId sub)
+{
+	n_assert(from.Size() > 0);
+	n_assert(from.Size() == to.Size());
+
+	Util::FixedArray<VkBufferImageCopy> copies(from.Size());
+	for (IndexT i = 0; i < copies.Size(); i++)
+	{
+		VkBufferImageCopy& copy = copies[i];
+		copy.bufferOffset = from[i].offset;
+		copy.bufferImageHeight = 0;
+		copy.bufferRowLength = 0;
+		copy.imageExtent = { (uint32_t)to[i].region.width(), (uint32_t)to[i].region.height(), 1 };
+		copy.imageOffset = { (int32_t)to[i].region.left, (int32_t)to[i].region.top, 0 };
+		copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)to[i].mip, (uint32_t)to[i].layer, 1 };
+	}
+	
+	VkCommandBuffer buf;
+	if (sub == CoreGraphics::SubmissionContextId::Invalid())
+	{
+		n_assert(!state.inBeginPass);
+		n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+		buf = GetMainBuffer(queue);
+	}
+	else
+		buf = Vulkan::CommandBufferGetVk(CoreGraphics::SubmissionContextGetCmdBuffer(sub));
+
+	vkCmdCopyBufferToImage(buf,
+		BufferGetVk(fromBuffer),
+		TextureGetVkImage(toTexture),
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		1,
-		&copy);
+		copies.Size(),
+		copies.Begin());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Copy(
+	const CoreGraphics::QueueType queue,
+	const CoreGraphics::TextureId fromTexture,
+	const Util::Array<CoreGraphics::TextureCopy> from,
+	const CoreGraphics::BufferId toBuffer,
+	const Util::Array<CoreGraphics::BufferCopy> to,
+	const CoreGraphics::SubmissionContextId sub)
+{
+	n_assert(from.Size() > 0);
+	n_assert(from.Size() == to.Size());
+
+	Util::FixedArray<VkBufferImageCopy> copies(from.Size());
+	for (IndexT i = 0; i < copies.Size(); i++)
+	{
+		VkBufferImageCopy& copy = copies[i];
+		copy.bufferOffset = to[i].offset;
+		copy.bufferImageHeight = 0;
+		copy.bufferRowLength = 0;
+		copy.imageExtent = { (uint32_t)from[i].region.width(), (uint32_t)from[i].region.height(), 1 };
+		copy.imageOffset = { (int32_t)from[i].region.left, (int32_t)from[i].region.top, 0 };
+		copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)from[i].mip, (uint32_t)from[i].layer, 1 };
+	}
+	
+	VkCommandBuffer buf;
+	if (sub == CoreGraphics::SubmissionContextId::Invalid())
+	{
+		n_assert(!state.inBeginPass);
+		n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+		buf = GetMainBuffer(queue);
+	}
+	else
+		buf = Vulkan::CommandBufferGetVk(CoreGraphics::SubmissionContextGetCmdBuffer(sub));
+
+	vkCmdCopyImageToBuffer(buf,
+		TextureGetVkImage(fromTexture),
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		BufferGetVk(toBuffer),
+		copies.Size(),
+		copies.Begin());
 }
 
 //------------------------------------------------------------------------------
@@ -3707,6 +3811,8 @@ SetViewport(const Math::rectangle<int>& rect, int index)
 	vp.height = (float)rect.height();
 	vp.x = (float)rect.left;
 	vp.y = (float)rect.top;
+	vp.minDepth = 0.0f;
+	vp.maxDepth = 1.0f;
 
 	// only apply to batch or command buffer if we have a program bound
 	n_assert(state.currentProgram != -1);

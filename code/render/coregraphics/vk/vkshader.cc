@@ -35,7 +35,7 @@ VkShaderSetup(
 	AnyFX::ShaderEffect* effect,
 	Util::FixedArray<CoreGraphics::ResourcePipelinePushConstantRange>& constantRange,
 	Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
-	Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
+	Util::FixedArray<Util::Pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
 	Util::Dictionary<uint32_t, uint32_t>& setLayoutMap,
 	CoreGraphics::ResourcePipelineId& pipelineLayout,
 	Util::Dictionary<Util::StringAtom, uint32_t>& resourceSlotMapping,
@@ -327,7 +327,7 @@ VkShaderSetup(
 		{
 			const ResourceTableLayoutCreateInfo& info = layoutCreateInfos.ValueAtIndex(i);
 			ResourceTableLayoutId layout = CreateResourceTableLayout(info);
-			setLayouts[i] = std::make_pair(layoutCreateInfos.KeyAtIndex(i), layout);
+			setLayouts[i] = Util::MakePair(layoutCreateInfos.KeyAtIndex(i), layout);
 			setLayoutMap.Add(layoutCreateInfos.KeyAtIndex(i), i);
 		}
 	}
@@ -336,11 +336,11 @@ VkShaderSetup(
 	Util::Array<uint32_t> layoutIndices;
 	for (IndexT i = 0; i < setLayouts.Size(); i++)
 	{
-		const ResourceTableLayoutId& a = std::get<1>(setLayouts[i]);
+		const ResourceTableLayoutId& a = Util::Get<1>(setLayouts[i]);
 		if (a != ResourceTableLayoutId::Invalid())
 		{
 			layoutList.Append(a);
-			layoutIndices.Append(std::get<0>(setLayouts[i]));
+			layoutIndices.Append(Util::Get<0>(setLayouts[i]));
 		}
 	}
 
@@ -362,7 +362,7 @@ void
 VkShaderCleanup(
 	VkDevice dev,
 	Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
-	Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
+	Util::FixedArray<Util::Pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& buffers,
 	CoreGraphics::ResourcePipelineId& pipelineLayout
 )
@@ -376,8 +376,8 @@ VkShaderCleanup(
 
 	for (i = 0; i < setLayouts.Size(); i++)
 	{
-		if (std::get<1>(setLayouts[i]) != CoreGraphics::ResourceTableLayoutId::Invalid())
-			CoreGraphics::DestroyResourceTableLayout(std::get<1>(setLayouts[i]));
+		if (Util::Get<1>(setLayouts[i]) != CoreGraphics::ResourceTableLayoutId::Invalid())
+			CoreGraphics::DestroyResourceTableLayout(Util::Get<1>(setLayouts[i]));
 	}
 	setLayouts.Clear();
 

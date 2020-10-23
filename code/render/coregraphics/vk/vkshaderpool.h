@@ -154,7 +154,7 @@ private:
 		Util::Array<CoreGraphics::SamplerId> immutableSamplers;
 		Util::Dictionary<Util::StringAtom, uint32_t> resourceIndexMap;
 		Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBinding> constantBindings;
-		Util::FixedArray<std::pair<uint32_t, CoreGraphics::ResourceTableLayoutId>> descriptorSetLayouts;
+		Util::FixedArray<Util::Pair<uint32_t, CoreGraphics::ResourceTableLayoutId>> descriptorSetLayouts;
 		Util::Dictionary<uint32_t, uint32_t> descriptorSetLayoutMap;
 	};
 

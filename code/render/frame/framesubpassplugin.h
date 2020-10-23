@@ -25,13 +25,13 @@ public:
 
 	struct CompiledImpl : public FrameOp::Compiled
 	{
-		void Run(const IndexT frameIndex);
+		void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
 
-		std::function<void(IndexT)> func;
+		std::function<void(IndexT, IndexT)> func;
 	};
 
 	FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
-	std::function<void(IndexT)> func;
+	std::function<void(IndexT, IndexT)> func;
 
 private:
 

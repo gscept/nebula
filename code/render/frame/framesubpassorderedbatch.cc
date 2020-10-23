@@ -39,7 +39,7 @@ FrameSubpassOrderedBatch::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& alloc
 /**
 */
 void
-FrameSubpassOrderedBatch::CompiledImpl::Run(const IndexT frameIndex)
+FrameSubpassOrderedBatch::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
 
 }

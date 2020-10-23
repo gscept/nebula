@@ -92,9 +92,9 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
 	const CoreGraphics::ImageSubresourceInfo& subres,
 	IndexT toIndex,
 	CoreGraphics::QueueType toQueue,
-	Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
-	Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
-	Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
+	Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
+	Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
+	Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
 	Util::Array<FrameOp::TextureDependency>& textureDependencies)
 {
 	Util::Array<CoreGraphics::ImageSubresourceInfo> subresources{ subres };
@@ -131,7 +131,7 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
 				else
 				{
 					// construct pair between ops
-					const std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage> tuple = std::make_tuple(toIndex, dep.index, dep.stage);
+					const Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage> tuple = Util::MakeTuple(toIndex, dep.index, dep.stage);
 					CoreGraphics::TextureBarrier barrier{ tex, subres, dep.layout, layout, dep.access, access };
 
 					const bool enableEvent = false;
@@ -234,9 +234,9 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
 	const CoreGraphics::BufferSubresourceInfo& subres,
 	IndexT toIndex,
 	CoreGraphics::QueueType toQueue,
-	Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
-	Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
-	Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
+	Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
+	Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
+	Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
 	Util::Array<FrameOp::BufferDependency>& bufferDependencies)
 {
 	Util::Array<CoreGraphics::BufferSubresourceInfo> subresources{ subres };
@@ -269,7 +269,7 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
 				else
 				{
 					// construct pair between ops
-					const std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage> tuple = std::make_tuple(toIndex, dep.index, dep.stage);
+					const Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage> tuple = Util::MakeTuple(toIndex, dep.index, dep.stage);
 					CoreGraphics::BufferBarrier barrier{ buf, dep.access, access, subres.offset, subres.size };
 
 					const bool enableEvent = false;
@@ -348,9 +348,9 @@ FrameOp::SetupSynchronization(
 
 	if (!this->textureDeps.IsEmpty() || !this->rwBufferDeps.IsEmpty())
 	{
-		Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo> waitEvents;
-		Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo> barriers;
-		Util::Dictionary<std::tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, FrameOp::Compiled*> signalEvents;
+		Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo> waitEvents;
+		Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo> barriers;
+		Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, FrameOp::Compiled*> signalEvents;
 		uint numOutputs = 0;
 
 		// go through texture dependencies
@@ -360,11 +360,11 @@ FrameOp::SetupSynchronization(
 			const CoreGraphics::TextureId& alias = TextureGetAlias(tex);
 
 			// right dependency set
-			const Util::StringAtom& name = std::get<0>(this->textureDeps.ValueAtIndex(i));
-			const CoreGraphics::BarrierAccess& access = std::get<1>(this->textureDeps.ValueAtIndex(i));
-			const CoreGraphics::BarrierStage& stage = std::get<2>(this->textureDeps.ValueAtIndex(i));
-			const CoreGraphics::ImageSubresourceInfo& subres = std::get<3>(this->textureDeps.ValueAtIndex(i));
-			const CoreGraphics::ImageLayout& layout = std::get<4>(this->textureDeps.ValueAtIndex(i));
+			const Util::StringAtom& name = Util::Get<0>(this->textureDeps.ValueAtIndex(i));
+			const CoreGraphics::BarrierAccess& access = Util::Get<1>(this->textureDeps.ValueAtIndex(i));
+			const CoreGraphics::BarrierStage& stage = Util::Get<2>(this->textureDeps.ValueAtIndex(i));
+			const CoreGraphics::ImageSubresourceInfo& subres = Util::Get<3>(this->textureDeps.ValueAtIndex(i));
+			const CoreGraphics::ImageLayout& layout = Util::Get<4>(this->textureDeps.ValueAtIndex(i));
 
 			DependencyIntent readOrWrite = DependencyIntent::Read;
 			switch (access)
@@ -406,10 +406,10 @@ FrameOp::SetupSynchronization(
 			IndexT idx = rwBuffers.FindIndex(this->rwBufferDeps.KeyAtIndex(i));
 
 			// right dependency set
-			const Util::StringAtom& name = std::get<0>(this->rwBufferDeps.ValueAtIndex(i));
-			const CoreGraphics::BarrierAccess& access = std::get<1>(this->rwBufferDeps.ValueAtIndex(i));
-			const CoreGraphics::BarrierStage& stage = std::get<2>(this->rwBufferDeps.ValueAtIndex(i));
-			const CoreGraphics::BufferSubresourceInfo& subres = std::get<3>(this->rwBufferDeps.ValueAtIndex(i));
+			const Util::StringAtom& name = Util::Get<0>(this->rwBufferDeps.ValueAtIndex(i));
+			const CoreGraphics::BarrierAccess& access = Util::Get<1>(this->rwBufferDeps.ValueAtIndex(i));
+			const CoreGraphics::BarrierStage& stage = Util::Get<2>(this->rwBufferDeps.ValueAtIndex(i));
+			const CoreGraphics::BufferSubresourceInfo& subres = Util::Get<3>(this->rwBufferDeps.ValueAtIndex(i));
 
 			DependencyIntent readOrWrite = DependencyIntent::Read;
 			switch (access)

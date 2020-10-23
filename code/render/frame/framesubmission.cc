@@ -32,7 +32,7 @@ FrameSubmission::~FrameSubmission()
 /**
 */
 void
-FrameSubmission::CompiledImpl::Run(const IndexT frameIndex)
+FrameSubmission::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
 	switch (this->startOrEnd)
 	{

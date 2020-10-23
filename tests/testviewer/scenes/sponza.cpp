@@ -42,7 +42,7 @@ void OpenScene()
     light = Graphics::CreateEntity();
     Graphics::RegisterEntity<Lighting::LightContext>(light);
     Lighting::LightContext::SetupPointLight(light, Math::vec3(1, 1, 1), 10.0f, Math::translation(0, 1, 0), 10.0f, false);
-};
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -55,7 +55,7 @@ void CloseScene()
     Graphics::DeregisterEntity<Lighting::LightContext>(light);
     Graphics::DestroyEntity(light);
 
-};
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -74,7 +74,7 @@ void StepFrame()
         x += speed;
         y += speed;
     }
-};
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -83,7 +83,7 @@ void StepFrame()
 void RenderUI()
 {
     // empty
-};
+}
 
 } // namespace SponzaSceneData
 

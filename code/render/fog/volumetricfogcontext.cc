@@ -86,12 +86,12 @@ VolumetricFogContext::Create()
 
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-	Frame::AddCallback("VolumetricFogContext - Cull and Classify", [](IndexT frame)
+	Frame::AddCallback("VolumetricFogContext - Cull and Classify", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 			VolumetricFogContext::CullAndClassify();
 		});
 
-	Frame::AddCallback("VolumetricFogContext - Render", [](IndexT frame)
+	Frame::AddCallback("VolumetricFogContext - Render", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 			VolumetricFogContext::Render();
 		});
@@ -475,7 +475,11 @@ VolumetricFogContext::CullAndClassify()
 				0, NEBULA_WHOLE_BUFFER_SIZE
 			},
 		}, "Decals data upload");
-	Copy(ComputeQueueType, fogState.stagingClusterFogLists[bufferIndex], 0, fogState.clusterFogLists, 0, sizeof(Volumefog::FogLists));
+
+	CoreGraphics::BufferCopy from, to;
+	from.offset = 0;
+	to.offset = 0;
+	Copy(ComputeQueueType, fogState.stagingClusterFogLists[bufferIndex], { from }, fogState.clusterFogLists, { to }, sizeof(Volumefog::FogLists));
 	BarrierInsert(ComputeQueueType,
 		BarrierStage::Transfer,
 		BarrierStage::ComputeShader,

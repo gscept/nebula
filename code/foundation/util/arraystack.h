@@ -60,9 +60,11 @@ public:
     /// increase capacity to fit N more elements into the array
     void Reserve(SizeT num);
     /// get number of elements in array
-    SizeT Size() const;
+    const SizeT Size() const;
+    /// return the byte size of the array.
+    const SizeT ByteSize() const;
     /// get overall allocated size of array in number of elements
-    SizeT Capacity() const;
+    const SizeT Capacity() const;
     /// return reference to first element
     TYPE& Front() const;
     /// return reference to last element
@@ -651,7 +653,7 @@ ArrayStack<TYPE, STACK_SIZE>::Reserve(SizeT num)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int STACK_SIZE> SizeT
+template<class TYPE, int STACK_SIZE> const SizeT
 ArrayStack<TYPE, STACK_SIZE>::Size() const
 {
     return this->count;
@@ -660,7 +662,16 @@ ArrayStack<TYPE, STACK_SIZE>::Size() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE, int STACK_SIZE> SizeT
+template<class TYPE, int STACK_SIZE> const SizeT 
+ArrayStack<TYPE, STACK_SIZE>::ByteSize() const
+{
+    return this->count * sizeof(TYPE);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE, int STACK_SIZE> const SizeT
 ArrayStack<TYPE, STACK_SIZE>::Capacity() const
 {
     return this->capacity;

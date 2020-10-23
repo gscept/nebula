@@ -20,37 +20,31 @@ namespace RenderUtil
 class DrawFullScreenQuad
 {
 public:
-    /// constructor
-    DrawFullScreenQuad();
-    /// destructor
-    ~DrawFullScreenQuad();
 
     /// setup the object
-    void Setup(SizeT rtWidth, SizeT rtHeight);
+    static void Setup();
     /// discard the object
-    void Discard();
+    static void Discard();
     /// return true if object is valid
-    bool IsValid() const;
+    static bool IsValid();
 
 	/// apply mesh
-	void ApplyMesh();
-    /// draw the fullscreen quad
-    void Draw();
+	static void ApplyMesh();
 
 private:
-    CoreGraphics::BufferId vertexBuffer;
-	CoreGraphics::VertexLayoutId vertexLayout;
-    CoreGraphics::PrimitiveGroup primGroup;
-    bool isValid;
+    static CoreGraphics::BufferId vertexBuffer;
+	static CoreGraphics::VertexLayoutId vertexLayout;
+    static CoreGraphics::PrimitiveGroup primGroup;
+    static bool isValid;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
 inline bool
-DrawFullScreenQuad::IsValid() const
+DrawFullScreenQuad::IsValid()
 {
-    return this->isValid;
+    return DrawFullScreenQuad::isValid;
 }
 
 } // namespace RnederUtil

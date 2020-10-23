@@ -59,7 +59,7 @@ FrameCompute::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void
-FrameCompute::CompiledImpl::Run(const IndexT frameIndex)
+FrameCompute::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
 	n_assert(this->program != ShaderProgramId::Invalid());
 

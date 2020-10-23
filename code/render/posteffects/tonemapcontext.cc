@@ -27,7 +27,6 @@ struct
 
 	CoreGraphics::ConstantBinding timevar;
 	CoreGraphics::ConstantBufferId constants;
-	RenderUtil::DrawFullScreenQuad fsq;
 
 	CoreGraphics::TextureId colorBuffer;
 	CoreGraphics::TextureId averageLumBuffer;
@@ -58,7 +57,7 @@ TonemapContext::Create()
 	using namespace CoreGraphics;
 
 	// begin by copying and mipping down to a 2x2 texture
-	Frame::AddCallback("Tonemap-Downsample", [](IndexT)
+	Frame::AddCallback("Tonemap-Downsample", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 #if NEBULA_GRAPHICS_DEBUG
 			CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, "Tonemapping Downsample");
@@ -93,7 +92,7 @@ TonemapContext::Create()
 		});
 
 	// this pass calculates tonemapping from 2x2 cluster down to single pixel, called from the script
-	Frame::AddCallback("Tonemap-AverageLum", [](IndexT)
+	Frame::AddCallback("Tonemap-AverageLum", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 #if NEBULA_GRAPHICS_DEBUG
 			CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Tonemapping Average Luminance");
@@ -102,10 +101,10 @@ TonemapContext::Create()
 			Timing::Time time = FrameSync::FrameSyncTimer::Instance()->GetFrameTime();
 			SetShaderProgram(tonemapState.program);
 			BeginBatch(Frame::FrameBatchType::System);
-			tonemapState.fsq.ApplyMesh();
+			RenderUtil::DrawFullScreenQuad::ApplyMesh();
 			ConstantBufferUpdate(tonemapState.constants, (float)time, tonemapState.timevar);
 			SetResourceTable(tonemapState.tonemapTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
-			tonemapState.fsq.Draw();
+			Draw();
 			EndBatch();
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -114,7 +113,7 @@ TonemapContext::Create()
 		});
 
 	// last pass, copy from render target to copy
-	Frame::AddCallback("Tonemap-Copy", [](IndexT)
+	Frame::AddCallback("Tonemap-Copy", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 #if NEBULA_GRAPHICS_DEBUG
 			CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, "Tonemapping Copy Previous Frame");
@@ -130,16 +129,14 @@ TonemapContext::Create()
 				nullptr,
 				"Tonemapping Copy Last Frame Begin");
 
-			Copy(
-				GraphicsQueueType, 
-				tonemapState.averageLumBuffer, 
-				Math::rectangle<int>(0, 0, 1, 1), 
-				0, 
-				0, 
-				tonemapState.copy, 
-				Math::rectangle<int>(0, 0, 1, 1),
-				0,
-				0);
+			CoreGraphics::TextureCopy from, to;
+			from.region = Math::rectangle<int>(0, 0, 1, 1);
+			from.mip = 0;
+			from.layer = 0;
+			to.region = Math::rectangle<int>(0, 0, 1, 1);
+			to.mip = 0;
+			to.layer = 0;
+			Copy(GraphicsQueueType, tonemapState.averageLumBuffer, { from }, tonemapState.copy, { to });
 
 			BarrierInsert(
 				GraphicsQueueType,
@@ -169,7 +166,6 @@ TonemapContext::Discard()
 	DestroyTexture(tonemapState.copy);
 	DestroyConstantBuffer(tonemapState.constants);
 	DestroyResourceTable(tonemapState.tonemapTable);
-	tonemapState.fsq.Discard();
 }
 
 //------------------------------------------------------------------------------
@@ -211,8 +207,5 @@ TonemapContext::Setup(const Ptr<Frame::FrameScript>& script)
 	ResourceTableSetTexture(tonemapState.tonemapTable, { tonemapState.copy, tonemapState.prevSlot, 0, SamplerId::Invalid(), false });
 	ResourceTableSetTexture(tonemapState.tonemapTable, { tonemapState.downsample2x2, tonemapState.colorSlot, 0, SamplerId::Invalid(), false });
 	ResourceTableCommitChanges(tonemapState.tonemapTable);
-
-	tonemapState.fsq.Setup(1, 1);
-
 }
 } // namespace PostEffects

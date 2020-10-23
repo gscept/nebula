@@ -75,8 +75,9 @@ operator"" _MB(const uint64 val)
 #define N_XRGB(r,g,b)   N_ARGB(0xff,r,g,b)
 #define N_COLORVALUE(r,g,b,a) N_RGBA((uint)((r)*255.f),(uint)((g)*255.f),(uint)((b)*255.f),(uint)((a)*255.f))
 
+template <class FLAGS, class BITS>
 constexpr bool
-CheckBits(const uint32_t flags, const uint32_t bits)
+CheckBits(const FLAGS flags, const BITS bits)
 {
     return (flags & bits) == bits;
 }

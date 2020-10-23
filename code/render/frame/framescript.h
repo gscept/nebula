@@ -70,7 +70,7 @@ public:
 	/// run through script and generate thread jobs where applicable
 	void RunJobs(const IndexT frameIndex);
 	/// run script
-	void Run(const IndexT frameIndex);
+	void Run(const IndexT frameIndex, const IndexT bufferIndex);
 
 	/// build framescript, this will delete and replace the old frame used for Run()
 	void Build();
