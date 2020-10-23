@@ -11,10 +11,6 @@
 #include <functional>
 #include "resourceid.h"
 
-namespace IO
-{
-	class IoServer;
-};
 namespace Resources
 {
 class ResourceLoaderThread : public Threading::Thread
@@ -39,6 +35,5 @@ private:
 
 	Threading::SafeQueue<std::function<void()>> jobs;
 	Threading::Event completeEvent;
-	Ptr<IO::IoServer> ioServer;
 };
 } // namespace Resources
