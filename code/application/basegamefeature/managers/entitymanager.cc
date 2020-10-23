@@ -342,6 +342,7 @@ EntityManager::Create()
 	api.OnBeginFrame	= &OnBeginFrame;
 	api.OnFrame			= &OnFrame;
 	api.OnEndFrame		= &OnEndFrame;
+	api.OnDeactivate	= &Destroy;
 	return api;
 }
 
