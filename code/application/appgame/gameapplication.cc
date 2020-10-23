@@ -99,8 +99,8 @@ GameApplication::Open()
         this->ioInterface = IoInterface::Create();
         this->ioInterface->Open();
 
-        this->resourceManager = Resources::ResourceServer::Create();
-        this->resourceManager->Open();        
+        this->resourceServer = Resources::ResourceServer::Create();
+        this->resourceServer->Open();        
 
         // attach a log file console handler
 #if __WIN32__
@@ -167,9 +167,12 @@ GameApplication::Close()
     this->gameContentServer->Discard();
     this->gameContentServer = nullptr;
 
-    this->ioInterface->Close();
-    this->ioInterface = nullptr;
-    this->ioServer = nullptr;
+	this->ioInterface->Close();
+	this->ioInterface = nullptr;
+	this->ioServer = nullptr;
+
+	this->resourceServer->Close();
+	this->resourceServer = nullptr;
 
 #if __NEBULA_HTTP__
 	this->debugInterface->Close();
@@ -222,7 +225,7 @@ GameApplication::StepFrame()
 	this->coreServer->Trigger();
 
     // update resources
-    this->resourceManager->Update(GameApplication::FrameIndex);
+    this->resourceServer->Update(GameApplication::FrameIndex);
 	// trigger beginning of frame for feature units
 	this->gameServer->OnBeginFrame();
 
