@@ -121,13 +121,12 @@ def WritePropertyHeaderDetails(f, document):
     f.WriteLine("return true;")
     f.DecreaseIndent()
     f.WriteLine("}")
-    f.WriteLine('static const bool {filename}_registered = RegisterPropertyLibrary_{filename}();'.format(filename=f.fileName))
 
 #------------------------------------------------------------------------------
 ##
 #
 def WritePropertySourceDefinitions(f, document):
-    f.WriteLine("")
+    f.WriteLine('static const bool {filename}_registered = RegisterPropertyLibrary_{filename}();'.format(filename=f.fileName))
 
 #------------------------------------------------------------------------------
 ##
@@ -136,7 +135,6 @@ def WriteEnumeratedTypes(f, document):
     if "enums" in document:
         for enumName, enum in document["enums"].items():
             # Declare Enums
-            f.InsertNebulaDivider()
             f.WriteLine("enum {}".format(enumName))
             f.WriteLine("{")
             f.IncreaseIndent()

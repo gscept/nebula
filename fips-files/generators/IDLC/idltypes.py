@@ -21,10 +21,14 @@ def ConvertToCamelNotation(attrType):
         return "UInt64"
     elif (T == "float"):
         return "Float"
+    elif (T == "scalar"):
+        return "Scalar"
     elif (T == "double"):
         return "Double"
     elif (T == "bool"):
         return "Bool"
+    elif (T == "int2"):
+        return "Int2"
     elif (T == "vec2"):
         return "Vec2"
     elif (T == "vec3"):
@@ -53,6 +57,8 @@ def ConvertToCamelNotation(attrType):
         return "Entity"
     elif (T == "variant"):
         return "Variant"
+    elif (T == "fourcc"):
+        return "FourCC"
     else:
         return None
 
@@ -73,6 +79,8 @@ def GetTypeString(attrType):
         return "uint"
     elif (T == "float"):
         return "float"
+    elif (T == "scalar"):
+        return "Math::scalar"
     elif (T == "int64"):
         return "int64_t"
     elif (T == "uint64"):
@@ -81,6 +89,8 @@ def GetTypeString(attrType):
         return "double"
     elif (T == "bool"):
         return "bool"
+    elif (T == "int2"):
+        return "Math::int2"
     elif (T == "vec2"):
         return "Math::vec2"
     elif (T == "vec3"):
@@ -109,6 +119,8 @@ def GetTypeString(attrType):
         return "Game::Entity"
     elif (T == "variant"):
         return "Util::Variant"
+    elif (T == "fourcc"):
+        return "Util::FourCC"
     else:
         return attrType
 
@@ -132,6 +144,8 @@ def GetArgumentType(attrType):
         return "uint"
     elif (T == "float"):
         return "float"
+    elif (T == "scalar"):
+        return "Math::scalar"
     elif (T == "int64"):
         return "int64_t"
     elif (T == "uint64"):
@@ -140,6 +154,8 @@ def GetArgumentType(attrType):
         return "double"
     elif (T == "bool"):
         return "bool"
+    elif (T == "int2"):
+        return "Math::int2"
     elif (T == "vec2"):
         return "Math::vec2 const&"
     elif (T == "vec3"):
@@ -168,6 +184,8 @@ def GetArgumentType(attrType):
         return "Game::Entity"
     elif (T == "variant"):
         return "Util::Variant const&"
+    elif (T == "fourcc"):
+        return "Util::FourCC"
     else:
         return attrType
 
@@ -188,6 +206,8 @@ def DefaultValue(attrType):
         return "uint(0)"
     elif (T == "float"):
         return "float(0)"
+    elif (T == "scalar"):
+        return "Math::scalar(0)"
     elif (T == "int64"):
         return "int64_t(0)"
     elif (T == "uint64"):
@@ -196,6 +216,8 @@ def DefaultValue(attrType):
         return "double(0.0)"
     elif (T == "bool"):
         return "bool(false)"
+    elif (T == "int2"):
+        return 'Math::int2{0, 0}'
     elif (T == "vec2"):
         return "Math::vec2(0, 0)"
     elif (T == "vec3"):
@@ -224,6 +246,8 @@ def DefaultValue(attrType):
         return "Game::Entity(-1)"
     elif (T == "variant"):
         return "Util::Variant()"
+    elif (T == "fourcc"):
+        return None
     else:
         return None
 

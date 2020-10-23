@@ -4,15 +4,14 @@
     @class Game::Manager
     
     Managers are Singleton objects which care about some "specific global 
-    stuff". They should be subclassed by applications to implement
+    stuff". They should be defined by applications to implement
     globals aspects of the application (mainly global game play related).
     
     Managers are created and triggered by game features. The frame trigger
     functions are invoked when the gameserver triggers the game feature.
     
     Standard-Nebula uses several managers to offer timing information
-    (TimeManager), create components (ComponentManager), 
-    manage game entities (EntityManager) and so forth.
+    (TimeManager), manage game entities (EntityManager) and so forth.
 
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
