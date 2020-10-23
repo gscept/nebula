@@ -34,6 +34,7 @@ ResourceLoaderThread::~ResourceLoaderThread()
 void
 ResourceLoaderThread::DoWork()
 {
+	this->ioServer = IO::IoServer::Create();
 	Profiling::ProfilingRegisterThread();
 	Util::Array<std::function<void()>> arr;
 	arr.Reserve(1000);
@@ -54,7 +55,9 @@ ResourceLoaderThread::DoWork()
 
 		// wait for more jobs!
 		this->jobs.Wait();
-	}	
+	}
+
+	this->ioServer = nullptr;
 }
 
 //------------------------------------------------------------------------------
