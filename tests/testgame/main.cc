@@ -34,7 +34,6 @@ private:
 	{
 		this->gameServer->RemoveGameFeature(gameFeature);
 		gameFeature->CleanupWorld();
-		gameFeature->Release();
 		gameFeature = nullptr;
 	}
 
@@ -72,6 +71,8 @@ NebulaMain(const Util::CommandLineArgs& args)
     bool result = testRunner->Run(); 
 
     testRunner = nullptr;
+
+	gameApp.Close();
 
     Core::SysFunc::Exit(result?0:-1);
 }
