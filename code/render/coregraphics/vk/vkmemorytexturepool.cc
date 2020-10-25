@@ -1314,7 +1314,7 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
     if (loadInfo.texUsage & TextureUsage::SampleTexture)
         usage |= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     if (loadInfo.texUsage & TextureUsage::RenderTexture)
-        usage |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | (isDepthFormat ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) | VK_IMAGE_USAGE_SAMPLED_BIT;
+        usage |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT | (isDepthFormat ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     if (loadInfo.texUsage & TextureUsage::ReadWriteTexture)
         usage |= VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     if (loadInfo.texUsage & TextureUsage::TransferTextureSource)
@@ -1487,7 +1487,6 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
         if (loadInfo.texUsage & TextureUsage::RenderTexture)
         {
             // perform initial clear if render target
-            /*
             if (!isDepthFormat)
             {
                 VkClearColorValue clear = { 0, 0, 0, 0 };
@@ -1505,7 +1504,6 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
                 VkUtilities::ImageDepthStencilClear(SubmissionContextGetCmdBuffer(sub), loadInfo.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, clear, clearRange);
                 VkUtilities::ImageBarrier(SubmissionContextGetCmdBuffer(sub), CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierStage::LateDepth, VkUtilities::ImageMemoryBarrier(loadInfo.img, clearRange, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL));
             }
-            */
         }
         else if (loadInfo.texUsage & TextureUsage::ReadWriteTexture)
         {

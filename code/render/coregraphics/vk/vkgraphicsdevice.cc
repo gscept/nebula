@@ -3231,10 +3231,9 @@ EndSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue, 
 	// if we have a queue that is blocking us, wait for it
 	if (waitQueue != InvalidQueueType)
 	{
-		VkPipelineStageFlags stageFlags = queue == VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 		state.subcontextHandler.AppendWaitTimeline(
 			queue,
-			stageFlags,
+			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
 			waitQueue
 		);
 	}
@@ -3597,9 +3596,9 @@ void
 Copy(
 	const CoreGraphics::QueueType queue,
 	const CoreGraphics::TextureId fromTexture,
-	const Util::Array<CoreGraphics::TextureCopy> from,
+	const Util::Array<CoreGraphics::TextureCopy>& from,
 	const CoreGraphics::TextureId toTexture,
-	const Util::Array<CoreGraphics::TextureCopy> to,
+	const Util::Array<CoreGraphics::TextureCopy>& to,
 	const CoreGraphics::SubmissionContextId sub)
 {
 	n_assert(fromTexture != CoreGraphics::TextureId::Invalid() && toTexture != CoreGraphics::TextureId::Invalid());
@@ -3637,9 +3636,9 @@ void
 Copy(
 	const CoreGraphics::QueueType queue,
 	const CoreGraphics::BufferId fromBuffer,
-	const Util::Array<CoreGraphics::BufferCopy> from,
+	const Util::Array<CoreGraphics::BufferCopy>& from,
 	const CoreGraphics::BufferId toBuffer,
-	const Util::Array<CoreGraphics::BufferCopy> to,
+	const Util::Array<CoreGraphics::BufferCopy>& to,
 	SizeT size,
 	const CoreGraphics::SubmissionContextId sub)
 {
@@ -3676,9 +3675,9 @@ void
 Copy(
 	const CoreGraphics::QueueType queue,
 	const CoreGraphics::BufferId fromBuffer,
-	const Util::Array<CoreGraphics::BufferCopy> from,
+	const Util::Array<CoreGraphics::BufferCopy>& from,
 	const CoreGraphics::TextureId toTexture,
-	const Util::Array<CoreGraphics::TextureCopy> to,
+	const Util::Array<CoreGraphics::TextureCopy>& to,
 	const CoreGraphics::SubmissionContextId sub)
 {
 	n_assert(from.Size() > 0);
@@ -3721,9 +3720,9 @@ void
 Copy(
 	const CoreGraphics::QueueType queue,
 	const CoreGraphics::TextureId fromTexture,
-	const Util::Array<CoreGraphics::TextureCopy> from,
+	const Util::Array<CoreGraphics::TextureCopy>& from,
 	const CoreGraphics::BufferId toBuffer,
-	const Util::Array<CoreGraphics::BufferCopy> to,
+	const Util::Array<CoreGraphics::BufferCopy>& to,
 	const CoreGraphics::SubmissionContextId sub)
 {
 	n_assert(from.Size() > 0);

@@ -135,6 +135,8 @@ SetupPass(const PassId pid)
     runtimeInfo.subpassRects.Resize(loadInfo.subpasses.Size());
     runtimeInfo.subpassPipelineInfo.Resize(loadInfo.subpasses.Size());
 
+	Util::FixedArray<bool> subpassIsDependendedOn(loadInfo.subpasses.Size());
+	subpassIsDependendedOn.Fill(false);
     for (i = 0; i < loadInfo.subpasses.Size(); i++)
     {
         const CoreGraphics::Subpass& subpass = loadInfo.subpasses[i];
@@ -239,7 +241,7 @@ SetupPass(const PassId pid)
             preserveAttachments++;
         }
 
-        if (subpass.dependencies.Size() > 0) for (j = 0; j < subpass.dependencies.Size(); j++)
+        for (j = 0; j < subpass.dependencies.Size(); j++)
         {
             VkSubpassDependency dep;
             dep.srcSubpass = subpass.dependencies[j];
@@ -250,7 +252,23 @@ SetupPass(const PassId pid)
             dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
             dep.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
             subpassDeps.Append(dep);
+
+			subpassIsDependendedOn[dep.srcSubpass] = true;
         }
+
+		// if subpass has no dependencies from any other subpass, then it must mean it's the first subpass
+		if (subpass.dependencies.Size() == 0)
+		{
+			VkSubpassDependency dep;
+			dep.srcSubpass = VK_SUBPASS_EXTERNAL;
+			dep.srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+			dep.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+			dep.dstSubpass = i;
+			dep.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			dep.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+			subpassDeps.Append(dep);
+		}
 
         // set color attachments
         vksubpass.colorAttachmentCount = usedAttachments;
@@ -280,6 +298,23 @@ SetupPass(const PassId pid)
 
         subpassAttachmentCounts.Append(vksubpass.colorAttachmentCount);
     }
+
+	// add subpass dependencies for subpasses at the end of the render pass
+	for (i = 0; i < subpassIsDependendedOn.Size(); i++)
+	{
+		if (!subpassIsDependendedOn[i])
+		{
+			VkSubpassDependency dep;
+			dep.srcSubpass = i;
+			dep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dep.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			dep.dstSubpass = VK_SUBPASS_EXTERNAL;
+			dep.dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+			dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+			dep.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+			subpassDeps.Append(dep);
+		}
+	}
 
     VkAttachmentLoadOp loadOps[] =
     {

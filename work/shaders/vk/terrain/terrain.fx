@@ -60,6 +60,7 @@ group(BATCH_GROUP) constant TerrainRuntimeUniforms [ string Visibility = "VS|HS|
 	uvec2 VirtualTerrainNumSubTextures;
 	float PhysicalInvPaddedTextureSize;
 	uint PhysicalTileSize;
+	uint PhysicalTilePaddedSize;
 	uint PhysicalTilePadding;
 
 	uvec4 VirtualTerrainTextureSize;
@@ -84,7 +85,8 @@ group(BATCH_GROUP) constant TerrainRuntimeUniforms [ string Visibility = "VS|HS|
 group(DYNAMIC_OFFSET_GROUP) constant TerrainTileUpdateUniforms [ string Visbility = "PS|CS"; ]
 {
 	vec2 SparseTileWorldOffset;
-	float PixelsPerMeter;
+	float MetersPerPixel;
+	float MetersPerTile;
 };
 
 struct IndirectionUpdate
@@ -166,6 +168,12 @@ group(SYSTEM_GROUP) sampler_state TextureSampler
 group(SYSTEM_GROUP) sampler_state PointSampler
 {
 	Filter = Point;
+};
+
+group(SYSTEM_GROUP) sampler_state AnisoSampler
+{
+	Filter = Anisotropic;
+	MaxAnisotropic = 4;
 };
 
 //------------------------------------------------------------------------------
@@ -468,12 +476,12 @@ SampleSlopeRule(
 		2 - height surface
 		3 - height slope surface
 	*/
-	outAlbedo = sampleBiomeAlbedo(i, TextureSampler, uv, baseArrayIndex).rgb * mask * (1.0f - angle);
-	outAlbedo += sampleBiomeAlbedo(i, TextureSampler, uv, baseArrayIndex + 1).rgb * mask * angle;
-	outMaterial = sampleBiomeMaterial(i, TextureSampler, uv, baseArrayIndex).rgb * mask * (1.0f - angle);
-	outMaterial += sampleBiomeMaterial(i, TextureSampler, uv, baseArrayIndex + 1).rgb * mask * angle;
-	outNormal = sampleBiomeNormal(i, TextureSampler, uv, baseArrayIndex).rgb * (1.0f - angle);
-	outNormal += sampleBiomeNormal(i, TextureSampler, uv, baseArrayIndex + 1).rgb * angle;
+	outAlbedo = sampleBiomeAlbedo(i, AnisoSampler, uv, baseArrayIndex).rgb * mask * (1.0f - angle);
+	outAlbedo += sampleBiomeAlbedo(i, AnisoSampler, uv, baseArrayIndex + 1).rgb * mask * angle;
+	outMaterial = sampleBiomeMaterial(i, AnisoSampler, uv, baseArrayIndex).rgb * mask * (1.0f - angle);
+	outMaterial += sampleBiomeMaterial(i, AnisoSampler, uv, baseArrayIndex + 1).rgb * mask * angle;
+	outNormal = sampleBiomeNormal(i, AnisoSampler, uv, baseArrayIndex).rgb * (1.0f - angle);
+	outNormal += sampleBiomeNormal(i, AnisoSampler, uv, baseArrayIndex + 1).rgb * angle;
 }
 
 //------------------------------------------------------------------------------
@@ -693,13 +701,15 @@ csTerrainPageClearUpdateBuffer()
 	Calculate the values needed to insert and extract tile data
 */
 void
-CalculateTileCoords(in uint mip, in uint maxTiles, in vec2 relativePos, in uvec2 subTextureIndirectionOffset, out uvec2 pageCoord, out uvec2 subTextureTile)
+CalculateTileCoords(in uint mip, in uint maxTiles, in vec2 relativePos, in uvec2 subTextureIndirectionOffset, out uvec2 pageCoord, out uvec2 subTextureTile, out vec2 tilePosFract)
 {
 	// calculate the amount of meters a single tile is, this is adjusted by the mip and the number of tiles at max lod
 	vec2 metersPerTile = VirtualTerrainSubTextureSize / float(maxTiles >> mip);
 
 	// calculate subtexture tile index by dividing the relative position by the amount of meters there are per tile
-	subTextureTile = uvec2(floor(relativePos / metersPerTile));
+	vec2 tilePos = relativePos / metersPerTile;
+	tilePosFract = fract(tilePos);
+	subTextureTile = uvec2(tilePos);
 
 	// the actual page within that tile is the indirection offset of the whole
 	// subtexture, plus the sub texture tile index
@@ -726,8 +736,10 @@ psTerrainPrepass(
 
 	// convert world space to positive integer interval [0..WorldSize]
 	vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
-	vec2 clampedPos = clamp(worldPos.xz + worldSize * 0.5f, vec2(0.0f), worldSize - vec2(1.0f));
-	uvec2 subTextureCoord = uvec2(floor(clampedPos / VirtualTerrainSubTextureSize));
+	vec2 unsignedPos = worldPos.xz + worldSize * 0.5f;
+	if (any(lessThan(unsignedPos, vec2(0))) || any(greaterThan(unsignedPos, worldSize - vec2(1.0f))))
+		return;
+	uvec2 subTextureCoord = uvec2(unsignedPos / VirtualTerrainSubTextureSize);
 
 	// calculate subtexture index
 	uint subTextureIndex = subTextureCoord.x + subTextureCoord.y * VirtualTerrainNumSubTextures.x;
@@ -756,7 +768,8 @@ psTerrainPrepass(
 		// calculate tile coords
 		uvec2 subTextureTile;
 		uvec2 pageCoord;
-		CalculateTileCoords(lowerMip, subTexture.tiles, relativePos, subTexture.indirectionOffset, pageCoord, subTextureTile);
+		vec2 dummy;
+		CalculateTileCoords(lowerMip, subTexture.tiles, relativePos, subTexture.indirectionOffset, pageCoord, subTextureTile, dummy);
 
 		// since we have a buffer, we must find the appropriate offset and size into the buffer for this mip
 		uint mipOffset = VirtualPageBufferMipOffsets[lowerMip / 4][lowerMip % 4];
@@ -779,7 +792,7 @@ psTerrainPrepass(
 			// otherwise, we have to account for both by calculating new tile coords for the upper mip
 			uvec2 subTextureTile;
 			uvec2 pageCoord;
-			CalculateTileCoords(upperMip, subTexture.tiles, relativePos, subTexture.indirectionOffset, pageCoord, subTextureTile);
+			CalculateTileCoords(upperMip, subTexture.tiles, relativePos, subTexture.indirectionOffset, pageCoord, subTextureTile, dummy);
 
 			mipOffset = VirtualPageBufferMipOffsets[upperMip / 4][upperMip % 4];
 			mipSize = VirtualPageBufferMipSizes[upperMip / 4][upperMip % 4];
@@ -863,7 +876,7 @@ psTerrainTileUpdate(
 	// calculate 
 	vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
 	vec2 invWorldSize = 1.0f / worldSize;
-	vec2 worldPos2D = vec2(SparseTileWorldOffset + gl_FragCoord.xy * PixelsPerMeter) + worldSize * 0.5f;
+	vec2 worldPos2D = vec2(SparseTileWorldOffset + uv * MetersPerTile) + worldSize * 0.5f;
 	vec2 inputUv = worldPos2D;
 
 	float heightValue = sample2DLod(HeightMap, TextureSampler, inputUv * invWorldSize, 0).r;
@@ -909,7 +922,7 @@ psTerrainTileUpdate(
 		float angle = saturate((1.0f - dot(normal, vec3(0, 1, 0))) / 0.5f);
 		float heightCutoff = saturate(max(0, height - rules.y) / 25.0f);
 
-		const vec2 tilingFactor = vec2(64.0f);
+		const vec2 tilingFactor = vec2(64);
 
 		if (mask > 0.0f)
 		{
@@ -1005,11 +1018,18 @@ psScreenSpaceVirtual(
 	// calculate the subtexture coordinate
 
 	vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
-
 	vec2 worldPos = pos.xy;
-	vec2 clampedPos = clamp(worldPos + worldSize * 0.5f, vec2(0.0f), worldSize - vec2(1.0f));
-	uvec2 subTextureCoord = uvec2(floor(clampedPos / VirtualTerrainSubTextureSize));
 	vec2 worldUv = (worldPos + worldSize * 0.5f) / worldSize;
+	vec2 unsignedPos = worldPos + worldSize * 0.5f;
+	if (any(lessThan(unsignedPos, vec2(0))) || any(greaterThan(unsignedPos, worldSize)))
+	{
+		Albedo = sample2D(AlbedoLowresBuffer, TextureSampler, worldUv);
+		Albedo.a = 1.0f;
+		Normal = sample2D(NormalLowresBuffer, TextureSampler, worldUv).xyz;
+		Material = sample2D(MaterialLowresBuffer, TextureSampler, worldUv);
+		return;
+	}
+	uvec2 subTextureCoord = uvec2(unsignedPos / VirtualTerrainSubTextureSize);
 
 	// get subtexture
 	uint subTextureIndex = subTextureCoord.x + subTextureCoord.y * VirtualTerrainNumSubTextures.x;
@@ -1022,25 +1042,26 @@ psScreenSpaceVirtual(
 			int lowerMip = int(floor(pos.z));
 			int upperMip = int(ceil(pos.z));
 
-			// calculate lower mip here, and upper mip conditionally
-			// pageCoord represents the beginning of the page
-			// physicalUv represents the pixel offset for this pixel into that page
-			vec2 metersPerTileLower = VirtualTerrainSubTextureSize / float(subTexture.tiles >> lowerMip);
-			vec2 tileCoordLower = (worldPos - subTexture.worldCoordinate) / metersPerTileLower;
-			uvec2 subTextureTileLower = uvec2(tileCoordLower);
-			uvec2 pageCoordLower = (subTexture.indirectionOffset >> lowerMip) + subTextureTileLower;
-			vec2 physicalUvLower = fract(tileCoordLower) * PhysicalTileSize + max(1, PhysicalTilePadding >> lowerMip);
+			vec2 relativePos = worldPos - subTexture.worldCoordinate;
 
-			vec2 uv = pos.xy;
+			// calculate lower mip page coord, page tile coord, and the fractional of the page tile
+			uvec2 pageCoordLower;
+			uvec2 dummy;
+			vec2 subTextureTileFractLower;
+			CalculateTileCoords(lowerMip, subTexture.tiles, relativePos, subTexture.indirectionOffset, pageCoordLower, dummy, subTextureTileFractLower);
+
+			// physicalUv represents the pixel offset for this pixel into that page
+			vec2 physicalUvLower = subTextureTileFractLower * (PhysicalTileSize);
 
 			// if we need to sample two lods, do bilinear interpolation ourselves
 			if (upperMip != lowerMip)
 			{
-				vec2 metersPerTileUpper = VirtualTerrainSubTextureSize / float(subTexture.tiles >> upperMip);
-				vec2 tileCoordUpper = (worldPos - subTexture.worldCoordinate) / metersPerTileUpper;
-				uvec2 subTextureTileUpper = uvec2(tileCoordUpper);
-				uvec2 pageCoordUpper = (subTexture.indirectionOffset >> upperMip) + subTextureTileUpper;
-				vec2 physicalUvUpper = fract(tileCoordUpper) * PhysicalTileSize + max(1, PhysicalTilePadding >> upperMip);
+
+				uvec2 pageCoordUpper;
+				uvec2 dummy;
+				vec2 subTextureTileFractUpper;
+				CalculateTileCoords(upperMip, subTexture.tiles, relativePos, subTexture.indirectionOffset, pageCoordUpper, dummy, subTextureTileFractUpper);
+				vec2 physicalUvUpper = subTextureTileFractUpper * (PhysicalTileSize);
 
 				// get the indirection coord and normalize it to the physical space
 				vec3 indirectionUpper = UnpackIndirection(floatBitsToUint(fetch2D(IndirectionBuffer, PointSampler, ivec2(pageCoordUpper), upperMip).x));
@@ -1095,6 +1116,7 @@ psScreenSpaceVirtual(
 			{
 				// do the cheap path and just do a single lookup
 				vec3 indirection = UnpackIndirection(floatBitsToUint(fetch2D(IndirectionBuffer, PointSampler, ivec2(pageCoordLower), lowerMip).x));
+				vec3 orig = indirection;
 
 				// use physical cache if indirection is valid
 				if (indirection.z != 0xF)
@@ -1112,6 +1134,12 @@ psScreenSpaceVirtual(
 					Normal = sample2D(NormalLowresBuffer, TextureSampler, worldUv).xyz;
 					Material = sample2D(MaterialLowresBuffer, TextureSampler, worldUv);
 				}
+
+				/*
+				Albedo = vec4(0, 0, 0, 0);
+				Albedo.r = orig.x;
+				Albedo.g = orig.y;
+				*/
 			}
 		}
 		else
@@ -1121,6 +1149,8 @@ psScreenSpaceVirtual(
 			Normal = sample2D(NormalLowresBuffer, TextureSampler, worldUv).xyz;
 			Material = sample2D(MaterialLowresBuffer, TextureSampler, worldUv);
 		}
+
+
 	}
 	else
 	{

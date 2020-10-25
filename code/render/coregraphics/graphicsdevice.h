@@ -351,18 +351,18 @@ void EndQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type);
 void Copy(
 	const CoreGraphics::QueueType queue,
 	const CoreGraphics::TextureId fromTexture,
-	const Util::Array<CoreGraphics::TextureCopy> from,
+	const Util::Array<CoreGraphics::TextureCopy>& from,
 	const CoreGraphics::TextureId toTexture,
-	const Util::Array<CoreGraphics::TextureCopy> to,
+	const Util::Array<CoreGraphics::TextureCopy>& to,
 	const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
 );
 /// copy data between buffers
 void Copy(
 	const CoreGraphics::QueueType queue, 
 	const CoreGraphics::BufferId fromBuffer,
-	const Util::Array<CoreGraphics::BufferCopy> from, 
+	const Util::Array<CoreGraphics::BufferCopy>& from,
 	const CoreGraphics::BufferId toBuffer,
-	const Util::Array<CoreGraphics::BufferCopy> to,
+	const Util::Array<CoreGraphics::BufferCopy>& to,
 	const SizeT size,
 	const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
 );
@@ -370,18 +370,18 @@ void Copy(
 void Copy(
 	const CoreGraphics::QueueType queue, 
 	const CoreGraphics::BufferId fromBuffer,
-	const Util::Array<CoreGraphics::BufferCopy> from,
+	const Util::Array<CoreGraphics::BufferCopy>& from,
 	const CoreGraphics::TextureId toTexture,
-	const Util::Array<CoreGraphics::TextureCopy> to,
+	const Util::Array<CoreGraphics::TextureCopy>& to,
 	const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
 );
 /// copy data from texture to buffer
 void Copy(
 	const CoreGraphics::QueueType queue,
 	const CoreGraphics::TextureId fromTexture,
-	const Util::Array<CoreGraphics::TextureCopy> from,
+	const Util::Array<CoreGraphics::TextureCopy>& from,
 	const CoreGraphics::BufferId toBuffer,
-	const Util::Array<CoreGraphics::BufferCopy> to,
+	const Util::Array<CoreGraphics::BufferCopy>& to,
 	const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
 );
 
