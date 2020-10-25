@@ -55,6 +55,9 @@ public:
         float m20, float m21, float m22, float m23,
         float m30, float m31, float m32, float m33);
 
+	/// creates an identity matrix
+	static mat4 identity();
+
     /// equality operator
     bool operator==(const mat4& rhs) const;
     /// inequality operator
@@ -156,6 +159,15 @@ mat4::mat4(float m00, float m01, float m02, float m03, float m10, float m11, flo
     this->r[1] = vec4(m10, m11, m12, m13);
     this->r[2] = vec4(m20, m21, m22, m23);
     this->r[3] = vec4(m30, m31, m32, m33);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline
+mat4 mat4::identity()
+{
+	return mat4(_id_x, _id_y, _id_z, _id_w);
 }
 
 //------------------------------------------------------------------------------
