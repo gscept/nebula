@@ -39,12 +39,10 @@ public:
 	/// construct from single value
     explicit vec3(scalar v);
 	/// copy constructor
-    vec3(const vec3& rhs);
+    vec3(const vec3& rhs) = default;
 	/// construct from SSE 128 byte float array
     vec3(const __m128& rhs);
 
-    /// assignment operator
-    void operator=(const vec3& rhs);
     /// assign an vmVector4
     void operator=(const __m128& rhs);
     /// inplace add
@@ -115,28 +113,10 @@ vec3::vec3(scalar v)
 /**
 */
 __forceinline
-vec3::vec3(const vec3& rhs)
-{
-    this->vec = rhs.vec;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline
 vec3::vec3(const __m128& rhs) :
 	vec(rhs)
 {
 	// empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline void
-vec3::operator=(const vec3& rhs)
-{
-    this->vec = rhs.vec;
 }
 
 //------------------------------------------------------------------------------

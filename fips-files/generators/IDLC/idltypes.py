@@ -1,36 +1,5 @@
 import genutil as util
 
-
-#------------------------------------------------------------------------------
-## Constants
-#
-PACKED_PER_ATTRIBUTE = 0
-PACKED_PER_INSTANCE = 1
-
-#------------------------------------------------------------------------------
-##
-#
-def GetEventEnum(string):
-    s = string.lower()
-    if s == "beginframe":
-        return "Game::ComponentEvent::OnBeginFrame"
-    elif s == "render":
-        return "Game::ComponentEvent::OnRender"
-    elif s == "endframe":
-        return "Game::ComponentEvent::OnEndFrame"
-    elif s == "renderdebug":
-        return "Game::ComponentEvent::OnRenderDebug"
-    elif s == "onactivate":
-        return "Game::ComponentEvent::OnActivate"
-    elif s == "ondeactivate":
-        return "Game::ComponentEvent::OnDeactivate"
-    elif s == "onload":
-        return "Game::ComponentEvent::OnLoad"
-    elif s == "onsave":
-        return "Game::ComponentEvent::OnSave"
-    else:
-        util.fmtError('"{}" is not a valid event!'.format(string))
-
 #------------------------------------------------------------------------------
 ##
 #
@@ -52,14 +21,20 @@ def ConvertToCamelNotation(attrType):
         return "UInt64"
     elif (T == "float"):
         return "Float"
+    elif (T == "scalar"):
+        return "Scalar"
     elif (T == "double"):
         return "Double"
     elif (T == "bool"):
         return "Bool"
+    elif (T == "int2"):
+        return "Int2"
     elif (T == "vec2"):
-        return "Float2"
+        return "Vec2"
+    elif (T == "vec3"):
+        return "Vec3"
     elif (T == "vec4"):
-        return "Float4"
+        return "Vec4"
     elif (T == "vector"):
         return "Vector"
     elif (T == "point"):
@@ -67,7 +42,7 @@ def ConvertToCamelNotation(attrType):
     elif (T == "quat"):
         return "Quaternion"
     elif (T == "mat4"):
-        return "Matrix44"
+        return "Mat4"
     elif (T == "string"):
         return "String"
     elif (T == "resource"):
@@ -82,6 +57,8 @@ def ConvertToCamelNotation(attrType):
         return "Entity"
     elif (T == "variant"):
         return "Variant"
+    elif (T == "fourcc"):
+        return "FourCC"
     else:
         return None
 
@@ -102,6 +79,8 @@ def GetTypeString(attrType):
         return "uint"
     elif (T == "float"):
         return "float"
+    elif (T == "scalar"):
+        return "Math::scalar"
     elif (T == "int64"):
         return "int64_t"
     elif (T == "uint64"):
@@ -110,8 +89,12 @@ def GetTypeString(attrType):
         return "double"
     elif (T == "bool"):
         return "bool"
+    elif (T == "int2"):
+        return "Math::int2"
     elif (T == "vec2"):
         return "Math::vec2"
+    elif (T == "vec3"):
+        return "Math::vec3"
     elif (T == "vec4"):
         return "Math::vec4"
     elif (T == "vector"):
@@ -136,6 +119,8 @@ def GetTypeString(attrType):
         return "Game::Entity"
     elif (T == "variant"):
         return "Util::Variant"
+    elif (T == "fourcc"):
+        return "Util::FourCC"
     else:
         return attrType
 
@@ -159,6 +144,8 @@ def GetArgumentType(attrType):
         return "uint"
     elif (T == "float"):
         return "float"
+    elif (T == "scalar"):
+        return "Math::scalar"
     elif (T == "int64"):
         return "int64_t"
     elif (T == "uint64"):
@@ -167,8 +154,12 @@ def GetArgumentType(attrType):
         return "double"
     elif (T == "bool"):
         return "bool"
+    elif (T == "int2"):
+        return "Math::int2"
     elif (T == "vec2"):
         return "Math::vec2 const&"
+    elif (T == "vec3"):
+        return "Math::vec3 const&"
     elif (T == "vec4"):
         return "Math::vec4 const&"
     elif (T == "vector"):
@@ -193,6 +184,8 @@ def GetArgumentType(attrType):
         return "Game::Entity"
     elif (T == "variant"):
         return "Util::Variant const&"
+    elif (T == "fourcc"):
+        return "Util::FourCC"
     else:
         return attrType
 
@@ -213,6 +206,8 @@ def DefaultValue(attrType):
         return "uint(0)"
     elif (T == "float"):
         return "float(0)"
+    elif (T == "scalar"):
+        return "Math::scalar(0)"
     elif (T == "int64"):
         return "int64_t(0)"
     elif (T == "uint64"):
@@ -221,8 +216,12 @@ def DefaultValue(attrType):
         return "double(0.0)"
     elif (T == "bool"):
         return "bool(false)"
+    elif (T == "int2"):
+        return 'Math::int2{0, 0}'
     elif (T == "vec2"):
         return "Math::vec2(0, 0)"
+    elif (T == "vec3"):
+        return "Math::vec3(0, 0, 0)"
     elif (T == "vec4"):
         return "Math::vec4(0, 0, 0, 0)"
     elif (T == "vector"):
@@ -231,8 +230,8 @@ def DefaultValue(attrType):
         return "Math::point(0, 0, 0)"
     elif (T == "quat"):
         return "Math::quat()"
-    elif (T == "mat4"):
-        return "Math::mat4()"
+    elif (T == "mat4" or T == "Math::mat4"):
+        return "Math::mat4::identity"
     elif (T == "string"):
         return "Util::String()"
     elif (T == "resource"):
@@ -247,9 +246,10 @@ def DefaultValue(attrType):
         return "Game::Entity(-1)"
     elif (T == "variant"):
         return "Util::Variant()"
+    elif (T == "fourcc"):
+        return None
     else:
-        # try to use just regular constructor
-        return attrType + "()"
+        return None
 
 #------------------------------------------------------------------------------
 ##
@@ -265,22 +265,10 @@ def DefaultToString(default):
         for number in default:
             if len(string) != 0:
                 string += ", "
-            # recursion mother fucker
+            # recursion
             string += DefaultToString(number)
         return string
     elif type(default) is bool:
         return str(default).lower()
     elif type(default) is str:
         return '"{}"'.format(default)
-
-#------------------------------------------------------------------------------
-##
-#
-def AccessModeToClassString(accessMode):
-    access = accessMode.lower()
-    if (access == "rw"):
-        return "Attr::ReadWrite"
-    elif (access == "r"):
-        return "Attr::ReadOnly"
-    else:
-        util.fmtError('"{}" is not a valid access mode!'.format(access))

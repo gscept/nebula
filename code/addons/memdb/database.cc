@@ -10,8 +10,6 @@ namespace MemDb
 
 __ImplementClass(MemDb::Database, 'MmDb', Core::RefCounted);
 
-static constexpr Memory::HeapType ALLOCATIONHEAP = Memory::HeapType::DefaultHeap;
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -69,7 +67,7 @@ Database::DeleteTable(TableId tid)
 		ColumnDescriptor descriptor = table.columns.Get<0>(i);
 		ColumnDescription* desc = TypeRegistry::GetDescription(descriptor);
 		void*& buf = table.columns.Get<1>(i);
-		Memory::Free(ALLOCATIONHEAP, buf);
+		Memory::Free(Table::HEAP_MEMORY_TYPE, buf);
 		buf = nullptr;
 	}
 }
@@ -127,7 +125,6 @@ Database::AllocateRow(TableId tid)
 
 	IndexT index = this->AllocateRowIndex(tid);
 
-	// potentially call constructor and set to default
 	for (int i = 0; i < table.columns.Size(); ++i)
 	{
 		ColumnDescriptor descriptor = table.columns.Get<0>(i);
@@ -196,11 +193,28 @@ Database::GetColumns(TableId tid)
 
 //------------------------------------------------------------------------------
 /**
-	@note	This might be destructive if the destination table is missing some of the source tables columns!
-	@return	New index/row in destination table
+	@returns	New index/row in destination table
+	@note		This might be destructive if the destination table is missing some of the source tables columns!
+	@note		This is an instant erase swap on src table, which means any external references to rows (instance ids) will be invalidated!
+	@todo		This has not been optimized
 */
 IndexT
 Database::MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
+{
+	n_assert(srcTid != dstTid);
+	IndexT dstRow = this->DuplicateInstance(srcTid, srcRow, dstTid);
+	this->EraseSwapIndex(GetTable(srcTid), srcRow);
+	return dstRow;
+}
+
+//------------------------------------------------------------------------------
+/**
+	@returns	New index/row in destination table
+	@note		This might be destructive if the destination table is missing some of the source tables columns!
+	@todo		This has not been optimized
+*/
+IndexT
+Database::DuplicateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
 {
 	Table& src = this->tables[Ids::Index(srcTid.id)];
 	Table& dst = this->tables[Ids::Index(dstTid.id)];
@@ -226,8 +240,6 @@ Database::MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
 		}
 	}
 
-	this->DeallocateRow(srcTid, srcRow);
-
 	return dstRow;
 }
 
@@ -243,7 +255,7 @@ Database::GetTable(TableId tid)
 //------------------------------------------------------------------------------
 /**
 	Defragments a table and call the move callback BEFORE moving elements.
-	Returns number of erased instances.
+	@returns	number of erased instances.
 */
 SizeT
 Database::Defragment(TableId tid, std::function<void(IndexT, IndexT)> const& moveCallback)
@@ -317,17 +329,19 @@ Database::EraseSwapIndex(Table& table, IndexT instance)
 	// Swap the element with the last element, and decrement size of array.
 	auto const& cols = table.columns.GetArray<0>();
 	auto& buffers = table.columns.GetArray<1>();
+	uint32_t const end = table.numRows - 1;
 
-	uint32_t end = table.numRows - 1;
-
-	// erase swap index in column buffers
-	for (int i = 0; i < table.columns.Size(); ++i)
+	if (end != instance)
 	{
-		ColumnDescriptor descriptor = cols[i];
-		ColumnDescription* desc = TypeRegistry::GetDescription(descriptor.id);
-		void*& buf = buffers[i];
-		const SizeT byteSize = desc->typeSize;
-		Memory::Copy((char*)buf + (byteSize * end), (char*)buf + (byteSize * instance), byteSize);
+		// erase swap index in column buffers
+		for (int i = 0; i < table.columns.Size(); ++i)
+		{
+			ColumnDescriptor descriptor = cols[i];
+			ColumnDescription* desc = TypeRegistry::GetDescription(descriptor.id);
+			void*& buf = buffers[i];
+			const SizeT byteSize = desc->typeSize;
+			Memory::Copy((char*)buf + (byteSize * end), (char*)buf + (byteSize * instance), byteSize);
+		}
 	}
 
 	table.numRows--;
@@ -359,10 +373,10 @@ Database::GrowTable(TableId tid)
 
 		int oldNumBytes = byteSize * oldCapacity;
 		int newNumBytes = byteSize * table.capacity;
-		void* newData = Memory::Alloc(ALLOCATIONHEAP, newNumBytes);
+		void* newData = Memory::Alloc(Table::HEAP_MEMORY_TYPE, newNumBytes);
 		
 		Memory::Copy(buf, newData, table.numRows * byteSize);
-		Memory::Free(ALLOCATIONHEAP, buf);
+		Memory::Free(Table::HEAP_MEMORY_TYPE, buf);
 		buf = newData;
 	}
 }
@@ -379,7 +393,7 @@ Database::AllocateBuffer(TableId tid, ColumnDescription* desc)
 
 	Table& table = this->tables[Ids::Index(tid.id)];
 
-	void* buffer = Memory::Alloc(ALLOCATIONHEAP, desc->typeSize * table.capacity);
+	void* buffer = Memory::Alloc(Table::HEAP_MEMORY_TYPE, desc->typeSize * table.capacity);
 
 	for (IndexT i = 0; i < table.numRows; ++i)
 	{
@@ -466,12 +480,13 @@ Database::Query(FilterSet const& filterset)
 				buffers.Append(tbl.columns.Get<1>(colId.id));
 			}
 
-			Dataset::View view = {
-				tid,
-				this->GetNumRows(tid),
-				std::move(buffers)
-			};
-
+			Dataset::View view;
+			view.tid = tid;
+			view.numInstances = this->GetNumRows(tid);
+			view.buffers = std::move(buffers);
+#ifdef NEBULA_DEBUG
+			view.tableName = tbl.name.Value();
+#endif
 			set.tables.Append(std::move(view));
 		}
 	}

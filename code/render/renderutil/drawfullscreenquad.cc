@@ -13,92 +13,72 @@ using namespace Util;
 using namespace CoreGraphics;
 using namespace Resources;
 
-//------------------------------------------------------------------------------
-/**
-*/
-DrawFullScreenQuad::DrawFullScreenQuad() :
-    isValid(false)
-{
-    // empty
-}    
-
-//------------------------------------------------------------------------------
-/**
-*/
-DrawFullScreenQuad::~DrawFullScreenQuad()
-{
-    if (this->IsValid())
-    {
-        this->Discard();
-    }
-}
+CoreGraphics::BufferId DrawFullScreenQuad::vertexBuffer = CoreGraphics::BufferId::Invalid();
+CoreGraphics::VertexLayoutId DrawFullScreenQuad::vertexLayout = CoreGraphics::VertexLayoutId::Invalid();
+CoreGraphics::PrimitiveGroup DrawFullScreenQuad::primGroup;
+bool DrawFullScreenQuad::isValid = false;
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-DrawFullScreenQuad::Setup(SizeT rtWidth, SizeT rtHeight)
+DrawFullScreenQuad::Setup()
 {
-    n_assert(!this->IsValid());
-    this->isValid = true;
+    n_assert(!DrawFullScreenQuad::IsValid());
+	DrawFullScreenQuad::isValid = true;
 
-    // setup vertex components
-    Array<VertexComponent> vertexComponents;
-    vertexComponents.Append(VertexComponent(VertexComponent::Position, 0, VertexComponent::Float3));
-    vertexComponents.Append(VertexComponent(VertexComponent::TexCoord1, 0, VertexComponent::Float2));
-    
-#if COREGRAPHICS_PIXEL_CENTER_HALF_PIXEL
-	// compute screen rectangle coordinates
-	Math::vec4 pixelSize(1.0f / float(rtWidth), 1.0f / float(rtHeight), 0.0f, 0.0f);
-    Math::vec4 halfPixelSize = pixelSize * 0.5f;
-#else
-	Math::vec4 halfPixelSize(0.0f);
-#endif
+	if (DrawFullScreenQuad::vertexBuffer == CoreGraphics::BufferId::Invalid())
+	{
+		// setup vertex components
+		Array<VertexComponent> vertexComponents;
+		vertexComponents.Append(VertexComponent(VertexComponent::Position, 0, VertexComponent::Float3));
+		vertexComponents.Append(VertexComponent(VertexComponent::TexCoord1, 0, VertexComponent::Float2));
 
-	// create corners and uvs
-    float left   = -1.0f - halfPixelSize.x;
-    float right  = +3.0f - halfPixelSize.x;
-    float top    = +3.0f + halfPixelSize.y;
-    float bottom = -1.0f + halfPixelSize.y;
+		// create corners and uvs
+		float left = -1.0f;
+		float right = +3.0f;
+		float top = +3.0f;
+		float bottom = -1.0f;
 
-    float u0 = 0.0f;
-    float u1 = 2.0f;
-    float v0 = 0.0f;
-    float v1 = 2.0f;
+		float u0 = 0.0f;
+		float u1 = 2.0f;
+		float v0 = 0.0f;
+		float v1 = 2.0f;
 
-    // setup a vertex buffer with 2 triangles
-    float v[3][5];
+		// setup a vertex buffer with 2 triangles
+		float v[3][5];
 
 #if (__VULKAN__ || __DX12__)
-	// first triangle
-	v[0][0] = left;		v[0][1] = bottom;	v[0][2] = 0.0f; v[0][3] = u0; v[0][4] = v0;
-	v[1][0] = left;		v[1][1] = top;		v[1][2] = 0.0f; v[1][3] = u0; v[1][4] = v1;
-	v[2][0] = right;	v[2][1] = bottom;	v[2][2] = 0.0f; v[2][3] = u1; v[2][4] = v0;
+		// first triangle
+		v[0][0] = left;		v[0][1] = bottom;	v[0][2] = 0.0f; v[0][3] = u0; v[0][4] = v0;
+		v[1][0] = left;		v[1][1] = top;		v[1][2] = 0.0f; v[1][3] = u0; v[1][4] = v1;
+		v[2][0] = right;	v[2][1] = bottom;	v[2][2] = 0.0f; v[2][3] = u1; v[2][4] = v0;
 #else
-	// first triangle
-	v[0][0] = left;		v[0][1] = top;		v[0][2] = 0.0f; v[0][3] = u0; v[0][4] = v0;
-	v[1][0] = left;		v[1][1] = bottom;	v[1][2] = 0.0f; v[1][3] = u0; v[1][4] = v1;
-	v[2][0] = right;	v[2][1] = top;		v[2][2] = 0.0f; v[2][3] = u1; v[2][4] = v0;
+		// first triangle
+		v[0][0] = left;		v[0][1] = top;		v[0][2] = 0.0f; v[0][3] = u0; v[0][4] = v0;
+		v[1][0] = left;		v[1][1] = bottom;	v[1][2] = 0.0f; v[1][3] = u0; v[1][4] = v1;
+		v[2][0] = right;	v[2][1] = top;		v[2][2] = 0.0f; v[2][3] = u1; v[2][4] = v0;
 #endif
 
-    this->vertexLayout = CoreGraphics::CreateVertexLayout({ vertexComponents });
+		DrawFullScreenQuad::vertexLayout = CoreGraphics::CreateVertexLayout({ vertexComponents });
 
-    // load vertex buffer
-    BufferCreateInfo info;
-    info.name = "FullScreen Quad VBO"_atm;
-    info.size = 3;
-    info.elementSize = CoreGraphics::VertexLayoutGetSize(this->vertexLayout);
-    info.mode = CoreGraphics::DeviceLocal;
-    info.usageFlags = CoreGraphics::VertexBuffer;
-    info.data = v;
-    info.dataSize = sizeof(v);
-	this->vertexBuffer = CreateBuffer(info);
+		// load vertex buffer
+		BufferCreateInfo info;
+		info.name = "FullScreen Quad VBO"_atm;
+		info.size = 3;
+		info.elementSize = CoreGraphics::VertexLayoutGetSize(DrawFullScreenQuad::vertexLayout);
+		info.mode = CoreGraphics::DeviceLocal;
+		info.usageFlags = CoreGraphics::VertexBuffer;
+		info.data = v;
+		info.dataSize = sizeof(v);
+		DrawFullScreenQuad::vertexBuffer = CreateBuffer(info);
 
-    // setup a primitive group object
-    this->primGroup.SetBaseVertex(0);
-    this->primGroup.SetNumVertices(3);
-    this->primGroup.SetBaseIndex(0);
-    this->primGroup.SetNumIndices(0);
+		// setup a primitive group object
+		DrawFullScreenQuad::primGroup.SetBaseVertex(0);
+		DrawFullScreenQuad::primGroup.SetNumVertices(3);
+		DrawFullScreenQuad::primGroup.SetBaseIndex(0);
+		DrawFullScreenQuad::primGroup.SetNumIndices(0);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -107,10 +87,10 @@ DrawFullScreenQuad::Setup(SizeT rtWidth, SizeT rtHeight)
 void
 DrawFullScreenQuad::Discard()
 {
-    n_assert(this->IsValid());
-    this->isValid = false;
-	DestroyBuffer(this->vertexBuffer);
-	DestroyVertexLayout(this->vertexLayout);
+    n_assert(DrawFullScreenQuad::IsValid());
+	DrawFullScreenQuad::isValid = false;
+	DestroyBuffer(DrawFullScreenQuad::vertexBuffer);
+	DestroyVertexLayout(DrawFullScreenQuad::vertexLayout);
 }
 
 //------------------------------------------------------------------------------
@@ -120,22 +100,13 @@ void
 DrawFullScreenQuad::ApplyMesh()
 {
 	// setup pipeline
-	CoreGraphics::SetVertexLayout(this->vertexLayout);
+	CoreGraphics::SetVertexLayout(DrawFullScreenQuad::vertexLayout);
 	CoreGraphics::SetPrimitiveTopology(PrimitiveTopology::TriangleList);
 	CoreGraphics::SetGraphicsPipeline();
 
 	// setup input data
-	CoreGraphics::SetStreamVertexBuffer(0, this->vertexBuffer, 0);
-	CoreGraphics::SetPrimitiveGroup(this->primGroup);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-DrawFullScreenQuad::Draw()
-{
-	CoreGraphics::Draw();
+	CoreGraphics::SetStreamVertexBuffer(0, DrawFullScreenQuad::vertexBuffer, 0);
+	CoreGraphics::SetPrimitiveGroup(DrawFullScreenQuad::primGroup);
 }
 
 } // namespace RenderUtil

@@ -5,7 +5,7 @@
 nebula_begin_module(application)
 	add_nebula_blueprints()
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/audio)
-	fips_deps(foundation render audio resource physics attr scripting dynui)
+	fips_deps(foundation render audio resource physics scripting dynui memdb)
 	fips_dir(.)
 	if (FIPS_WINDOWS)
 		fips_files(application.natvis)
@@ -26,20 +26,6 @@ nebula_begin_module(application)
 			gameserver.cc
 			manager.h
 			manager.cc
-			property.h
-			property.cc
-		)
-	fips_dir(game/database)
-		fips_files(
-			database.h
-			database.cc
-			table.h
-			table.cc
-			statedescription.h
-			statedescription.cc
-			columndata.h
-			columndata.cc
-			attribute.h
 		)
 	fips_dir(game/messaging)
 		fips_files(
@@ -58,31 +44,21 @@ nebula_begin_module(application)
 				blueprintmanager.h
 				blueprintmanager.cc
 			)
-		fips_dir(basegamefeature/properties)
-			fips_files(
-				transformableproperty.h
-				transformableproperty.cc
-			)
+	fips_dir(basegamefeature/properties)
+		nebula_add_nidl(
+			owner.nidl
+			transform.nidl
+		)
 	fips_dir(graphicsfeature)
 		fips_files(
 			graphicsfeatureunit.h
 			graphicsfeatureunit.cc
 		)
-		fips_dir(graphicsfeature/properties)
-			fips_files(
-				graphicsproperty.h
-				graphicsproperty.cc
-			)
 	fips_dir(physicsfeature)
 		fips_files(
 			physicsfeatureunit.h
 			physicsfeatureunit.cc
 		)
-		fips_dir(physicsfeature/properties)
-			fips_files(
-				rigidbodyproperty.h
-				rigidbodyproperty.cc
-			)
 	fips_dir(appgame)
 		fips_files(
 			gameapplication.h

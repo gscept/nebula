@@ -27,7 +27,6 @@ struct
 	CoreGraphics::ShaderProgramId debugProgram;
 	CoreGraphics::ShaderProgramId renderPBRProgram;
 	CoreGraphics::ShaderProgramId renderEmissiveProgram;
-	RenderUtil::DrawFullScreenQuad fsq;
 	CoreGraphics::BufferId clusterDecalIndexLists;
 	Util::FixedArray<CoreGraphics::BufferId> stagingClusterDecalsList;
 	CoreGraphics::BufferId clusterDecalsList;
@@ -72,17 +71,17 @@ DecalContext::Create()
 
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-	Frame::AddCallback("DecalContext - Cull and Classify", [](IndexT frame)
+	Frame::AddCallback("DecalContext - Cull and Classify", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 			DecalContext::CullAndClassify();
 		});
 
-	Frame::AddCallback("DecalContext - Render PBR Decals", [](IndexT frame)
+	Frame::AddCallback("DecalContext - Render PBR Decals", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 			DecalContext::RenderPBR();
 		});
 
-	Frame::AddCallback("DecalContext - Render Emissive Decals", [](IndexT frame)
+	Frame::AddCallback("DecalContext - Render Emissive Decals", [](const IndexT frame, const IndexT frameBufferIndex)
 		{
 			DecalContext::RenderEmissive();
 		});
@@ -105,7 +104,6 @@ DecalContext::Create()
 #endif
 
 	DisplayMode mode = WindowGetDisplayMode(DisplayDevice::Instance()->GetCurrentWindow());
-	decalState.fsq.Setup(mode.GetWidth(), mode.GetHeight());
 
 	BufferCreateInfo rwbInfo;
 	rwbInfo.name = "DecalIndexListsBuffer";
@@ -149,7 +147,6 @@ DecalContext::Create()
 void 
 DecalContext::Discard()
 {
-	decalState.fsq.Discard();
 }
 
 //------------------------------------------------------------------------------
@@ -412,7 +409,11 @@ DecalContext::CullAndClassify()
 				0, NEBULA_WHOLE_BUFFER_SIZE
 			},
 		}, "Decals data upload");
-	Copy(ComputeQueueType, decalState.stagingClusterDecalsList[bufferIndex], 0, decalState.clusterDecalsList, 0, sizeof(DecalsCluster::DecalLists));
+
+	CoreGraphics::BufferCopy from, to;
+	from.offset = 0;
+	to.offset = 0;
+	Copy(ComputeQueueType, decalState.stagingClusterDecalsList[bufferIndex], { from }, decalState.clusterDecalsList, { to }, sizeof(DecalsCluster::DecalLists));
 	BarrierInsert(ComputeQueueType,
 		BarrierStage::Transfer,
 		BarrierStage::ComputeShader,
@@ -490,7 +491,7 @@ DecalContext::RenderPBR()
 	// set resources and draw
 	SetResourceTable(decalState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 	SetShaderProgram(decalState.renderPBRProgram);
-	decalState.fsq.ApplyMesh();
+	RenderUtil::DrawFullScreenQuad::ApplyMesh();
 	Draw();
 
 	// end the batch
@@ -514,7 +515,7 @@ DecalContext::RenderEmissive()
 	// set resources and draw
 	SetResourceTable(decalState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 	SetShaderProgram(decalState.renderEmissiveProgram);
-	decalState.fsq.ApplyMesh();
+	RenderUtil::DrawFullScreenQuad::ApplyMesh();
 	SetGraphicsPipeline();
 	Draw();
 

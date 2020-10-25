@@ -136,7 +136,7 @@ FrameScript::RunJobs(const IndexT frameIndex)
 /**
 */
 void
-FrameScript::Run(const IndexT frameIndex)
+FrameScript::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
 #if NEBULA_ENABLE_MT_DRAW
 	N_MARKER_BEGIN(WaitForRecord, Render);
@@ -151,7 +151,7 @@ FrameScript::Run(const IndexT frameIndex)
 	for (i = 0; i < this->compiled.Size(); i++)
 	{
 		this->compiled[i]->QueuePreSync();			// wait within queue
-		this->compiled[i]->Run(frameIndex);
+		this->compiled[i]->Run(frameIndex, bufferIndex);
 		this->compiled[i]->QueuePostSync();			// signal within queue
 	}
 }

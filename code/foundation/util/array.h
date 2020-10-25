@@ -87,9 +87,11 @@ public:
     /// set number of elements (clears existing content)
     void SetSize(SizeT s);
     /// get number of elements in array
-    SizeT Size() const;
+    const SizeT Size() const;
+    /// return the byte size of the array.
+    const SizeT ByteSize() const;
     /// get overall allocated size of array in number of elements
-    SizeT Capacity() const;
+    const SizeT Capacity() const;
     /// return reference to first element
     TYPE& Front() const;
     /// return reference to last element
@@ -151,10 +153,6 @@ public:
 	
 	/// Set size. Grows array if num is greater than capacity. Calls destroy on all objects at index > num!
 	void Resize(SizeT num);
-
-	/// Return the byte size of the array.
-	/// Note that this is not the entire size of this object, only the size (not capacity) of the elements buffer in bytes
-	SizeT ByteSize() const;
 
 	/// Returns sizeof(TYPE)
 	constexpr SizeT TypeSize() const;
@@ -708,7 +706,7 @@ Array<TYPE>::Reserve(SizeT num)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> SizeT
+template<class TYPE> const SizeT
 Array<TYPE>::Size() const
 {
     return this->count;
@@ -717,7 +715,16 @@ Array<TYPE>::Size() const
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> SizeT
+template<class TYPE> const SizeT
+Array<TYPE>::ByteSize() const
+{
+    return this->count * sizeof(TYPE);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> const SizeT
 Array<TYPE>::Capacity() const
 {
     return this->capacity;
@@ -1291,17 +1298,8 @@ Array<TYPE>::SetSize(SizeT s)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> SizeT
-Array<TYPE>::ByteSize() const
-{
-	return this->count * sizeof(TYPE);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class TYPE>
-inline constexpr SizeT Array<TYPE>::TypeSize() const
+template<class TYPE> inline constexpr SizeT 
+Array<TYPE>::TypeSize() const
 {
 	return sizeof(TYPE);
 }

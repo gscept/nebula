@@ -5,11 +5,7 @@
 #include "application/stdneb.h"
 #include "entitymanager.h"
 #include "game/entity.h"
-
-namespace Attr
-{
-__DefineAttribute(Owner);
-}
+#include "blueprintmanager.h"
 
 namespace Game
 {
@@ -50,7 +46,7 @@ GetNumEntities()
 //------------------------------------------------------------------------------
 /**
 */
-Ptr<Game::Db::Database>
+Ptr<MemDb::Database>
 GetWorldDatabase()
 {
 	n_assert(EntityManager::HasInstance());
@@ -62,21 +58,21 @@ GetWorldDatabase()
 /**
 */
 bool
-CategoryExists(Util::StringAtom name)
+CategoryExists(CategoryHash hash)
 {
 	n_assert(EntityManager::HasInstance());
-	return EntityManager::Singleton->state.catIndexMap.Contains(name);
+	return EntityManager::Singleton->state.catIndexMap.Contains(hash);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 CategoryId const
-GetCategoryId(Util::StringAtom name)
+GetCategoryId(CategoryHash hash)
 {
 	n_assert(EntityManager::HasInstance());
-	n_assert(EntityManager::Singleton->state.catIndexMap.Contains(name));
-	return EntityManager::Singleton->state.catIndexMap[name];
+	n_assert(EntityManager::Singleton->state.catIndexMap.Contains(hash));
+	return EntityManager::Singleton->state.catIndexMap[hash];
 }
 
 //------------------------------------------------------------------------------
@@ -92,11 +88,78 @@ GetEntityMapping(Game::Entity entity)
 //------------------------------------------------------------------------------
 /**
 */
+PropertyId const
+GetPropertyId(Util::StringAtom name)
+{
+	return MemDb::TypeRegistry::GetDescriptor(name);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AddProperty(Game::Entity const entity, PropertyId const pid)
+{
+	EntityManager::State& state = EntityManager::Singleton->state;
+	EntityMapping mapping = GetEntityMapping(entity);
+	Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
+	CategoryHash newHash = cat.hash;
+	newHash.AddToHash(pid.id);
+	CategoryId newCategoryId;
+	if (state.catIndexMap.Contains(newHash))
+	{
+		newCategoryId = state.catIndexMap[newHash];
+	}
+	else
+	{
+		CategoryCreateInfo info;
+		auto const& cols = state.worldDatabase->GetTable(cat.instanceTable).columns.GetArray<0>();
+		info.columns.SetSize(cols.Size());
+		IndexT i;
+		// Note: Skips owner column
+		for (i = 0; i < cols.Size() - 1; ++i)
+		{
+			info.columns[i] = cols[i + 1];
+		}
+		info.columns[i] = pid;
+
+#ifdef NEBULA_DEBUG
+		info.name = cat.name + " + ";
+		info.name += MemDb::TypeRegistry::GetDescription(pid)->name.AsString();
+#endif
+
+		newCategoryId = EntityManager::Singleton->CreateCategory(info);
+	}
+
+	EntityManager::Singleton->Migrate(entity, newCategoryId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+BlueprintId const
+GetBlueprintId(Util::StringAtom name)
+{
+	return BlueprintManager::GetBlueprintId(name);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Dataset
+Query(FilterSet const& filter)
+{
+	return EntityManager::Singleton->state.worldDatabase->Query(filter);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 SizeT
 GetNumInstances(CategoryId category)
 {
-	Ptr<Game::Db::Database> db = GetWorldDatabase();
-	Db::TableId tid = EntityManager::Instance()->GetCategory(category).instanceTable;
+	Ptr<MemDb::Database> db = GetWorldDatabase();
+	MemDb::TableId tid = EntityManager::Instance()->GetCategory(category).instanceTable;
 	return db->GetNumRows(tid);
 }
 
@@ -164,87 +227,11 @@ DeleteEntity(Game::Entity entity)
 //------------------------------------------------------------------------------
 /**
 */
-Dataset
-Query(FilterSet const& filterset)
-{
-	n_assert(EntityManager::HasInstance());
-	EntityManager::State* const state = &EntityManager::Singleton->state;
-
-	Dataset set;
-	set.filter = filterset;
-
-	state->worldDatabase;
-
-	SizeT const numCats = state->categoryArray.Size();
-	for (IndexT cid = 0; cid < numCats; cid++)
-	{
-		bool valid = true;
-		for (auto attrid : filterset.inclusive)
-		{
-			if (!attrid.GetCategoryTable()->Contains(cid))
-			{
-				valid = false;
-				break;
-			}
-		}
-
-		if (valid)
-		{
-			for (auto attrid : filterset.exclusive)
-			{
-				if (attrid.GetCategoryTable()->Contains(cid))
-				{
-					valid = false;
-					break;
-				}
-			}
-		}
-
-		if (valid)
-		{
-			Util::ArrayStack<void*, 16> buffers;
-			buffers.Reserve(filterset.inclusive.Size());
-
-			Db::TableId const tid = state->categoryArray[cid].instanceTable;
-			Db::Table const& tbl = state->worldDatabase->GetTable(tid);
-
-			IndexT i = 0;
-			for (auto attrid : filterset.inclusive)
-			{
-				Db::ColumnId colId = state->worldDatabase->GetColumnId(tid, attrid);
-				buffers.Append(tbl.columns.Get<1>(colId.id));
-			}
-
-			Dataset::View view = {
-				cid,
-				GetNumInstances(cid),
-				std::move(buffers)
-			};
-
-			set.categories.Append(std::move(view));
-		}
-	}
-
-	return set;
-}
-
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 OnBeginFrame()
 {
 	n_assert(EntityManager::HasInstance());
-	EntityManager::State* const state = &EntityManager::Singleton->state;
-
-	for (IndexT i = 0; i < state->categoryArray.Size(); i++)
-	{
-		for (auto const& prop : state->categoryArray[i].properties)
-		{
-			prop->OnBeginFrame();
-		}
-	}
+	// empty
 }
 
 //------------------------------------------------------------------------------
@@ -254,15 +241,7 @@ void
 OnFrame()
 {
 	n_assert(EntityManager::HasInstance());
-	EntityManager::State* const state = &EntityManager::Singleton->state;
-
-	for (IndexT i = 0; i < state->categoryArray.Size(); i++)
-	{
-		for (auto const& prop : state->categoryArray[i].properties)
-		{
-			prop->OnRender();
-		}
-	}
+	// empty
 }
 
 //------------------------------------------------------------------------------
@@ -274,25 +253,12 @@ OnEndFrame()
 	n_assert(EntityManager::HasInstance());
 	EntityManager::State* const state = &EntityManager::Singleton->state;
 
-	for (IndexT i = 0; i < state->categoryArray.Size(); i++)
-	{
-		for (auto const& prop : state->categoryArray[i].properties)
-		{
-			prop->OnEndFrame();
-		}
-	}
-
 	// Clean up entities
 	while (!state->deallocQueue.IsEmpty())
 	{
 		auto const cmd = state->deallocQueue.Dequeue();
 		EntityMapping mapping = state->entityMap[Ids::Index(cmd.entity.id)];
 		Category const& category = EntityManager::Singleton->GetCategory(mapping.category);
-		for (auto const& prop : category.properties)
-		{
-			prop->OnDeactivate(mapping.instance);
-		}
-
 		EntityManager::Singleton->DeallocateInstance(cmd.entity);
 	}
 
@@ -302,44 +268,26 @@ OnEndFrame()
 		auto const cmd = state->allocQueue.Dequeue();
 		n_assert(IsValid(cmd.entity));
 
-		CategoryId const cid = cmd.info.category;
-		InstanceId const instance = EntityManager::Singleton->AllocateInstance(cmd.entity, cid);
-		Category const& category = EntityManager::Singleton->GetCategory(cid);
-
-		// Set attributes before activating
-		// TODO: We should probably create a Game namespace abstraction for setting an attribute value by AttributeId and AttributeValue
-		SizeT const numAttrs = cmd.info.attributes.size();
-		for (IndexT i = 0; i < numAttrs; ++i)
+		if (cmd.info.templateId != TemplateId::Invalid())
 		{
-			//Db::Table const& table = db->GetTable(category.instanceTable);
-			Db::ColumnId columnId = state->worldDatabase->GetColumnId(category.instanceTable, cmd.info.attributes.begin()[i].Key());
-			n_assert(columnId != Db::ColumnId::Invalid());
-			state->worldDatabase->Set(category.instanceTable, columnId, instance.id, cmd.info.attributes.begin()[i].Value());
+			EntityManager::Singleton->AllocateInstance(cmd.entity, cmd.info.blueprint, cmd.info.templateId);
 		}
-
-		for (auto const& prop : category.properties)
+		else
 		{
-			prop->OnActivate(instance);
+			EntityManager::Singleton->AllocateInstance(cmd.entity, cmd.info.blueprint);
 		}
 	}
 
 	// Delete all remaining invalid instances
-	Ptr<Game::Db::Database> const& db = state->worldDatabase;
+	Ptr<MemDb::Database> const& db = state->worldDatabase;
 
 	for (IndexT c = 0; c < state->categoryArray.Size(); c++)
 	{
 		Category& cat = state->categoryArray[c];
-		Game::Db::Table& table = db->GetTable(cat.instanceTable);
-		Db::ColumnId ownerColumnId = db->GetColumnId(cat.instanceTable, Attr::Owner::Id());
+		MemDb::Table& table = db->GetTable(cat.instanceTable);
+		MemDb::ColumnId ownerColumnId = db->GetColumnId(cat.instanceTable, state->ownerId);
 
-		// First, deactivate all deleted instances
-		for (auto const& prop : cat.properties)
-		{
-			for (IndexT id : table.freeIds)
-				prop->OnDeactivate(id);
-		}
-
-		// Now, defragment the table. Any instances that has been deleted will be swap'n'popped,
+		// defragment the table. Any instances that has been deleted will be swap'n'popped,
 		// which means we need to update the entity mapping.
 		// The move callback is signaled BEFORE the swap has happened.
 		auto* const map = &state->entityMap;
@@ -349,8 +297,8 @@ OnEndFrame()
 			Game::Entity toEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[to.id].id;
 			if (!IsValid(fromEntity))
 			{
-				// we need to add this instances new index to the to the freeids list, since it's been deleted
-				// the 'from' instance will be swapped with the 'to' instance, so we just add the to id to the list;
+				// we need to add this instances new index to the to the freeids list, since it's been deleted.
+				// the 'from' instance will be swapped with the 'to' instance, so we just add the 'to' id to the list;
 				// and it will automatically be defragged
 				table.freeIds.Append(to.id);
 			}
@@ -358,15 +306,6 @@ OnEndFrame()
 			{
 				(*map)[Ids::Index(fromEntity.id)].instance = to;
 				(*map)[Ids::Index(to.id)].instance = from;
-
-				// Let the properties react to any moved instances.
-				// TODO: this might be really expensive... We should consider letting each property register
-				//       a callback for this instead, just to not waste time on empty function calls
-				for (auto const& prop : cat.properties)
-				{
-					for (IndexT id : table.freeIds)
-						prop->OnInstanceMoved(from, to);
-				}
 			}
 		});
 	}
@@ -378,9 +317,8 @@ OnEndFrame()
 EntityManager::EntityManager()
 {
 	this->state.numEntities = 0;
-	this->state.inBeginAddCategoryAttrs = false;
-	this->state.addAttrCategoryIndex = 0;
-	this->state.worldDatabase = Game::Db::Database::Create();
+	this->state.worldDatabase = MemDb::Database::Create();
+	this->state.ownerId = MemDb::TypeRegistry::GetDescriptor("Owner"_atm);
 }
 
 //------------------------------------------------------------------------------
@@ -398,14 +336,13 @@ ManagerAPI
 EntityManager::Create()
 {
 	n_assert(!EntityManager::HasInstance());
-
-	// FIXME: this became a bit convoluted... maybe we should just move the entire state to this .cc file and let the methods just be in another namespace (namespace EntityManager)
 	EntityManager::Singleton = n_new(EntityManager);
 
 	ManagerAPI api;
 	api.OnBeginFrame	= &OnBeginFrame;
 	api.OnFrame			= &OnFrame;
 	api.OnEndFrame		= &OnEndFrame;
+	api.OnDeactivate	= &Destroy;
 	return api;
 }
 
@@ -423,31 +360,45 @@ EntityManager::Destroy()
 /**
 */
 CategoryId
-EntityManager::AddCategory(CategoryCreateInfo const& info)
+EntityManager::CreateCategory(CategoryCreateInfo const& info)
 {
-	Db::TableCreateInfo tableInfo;
-	tableInfo.name = info.name;
+	CategoryHash catHash;
+	for (int i = 0; i < info.columns.Size(); i++)
+	{
+		catHash.AddToHash(info.columns[i].id);
+	}
 
+	if (this->state.catIndexMap.Contains(catHash))
+	{
+		return this->state.catIndexMap[catHash];
+	}
+
+	MemDb::TableCreateInfo tableInfo;
+	tableInfo.name = info.name;
+	const SizeT tableSize = info.columns.Size() + 1;
+	tableInfo.columns.SetSize(tableSize);
+
+	// always add owner as first column
+	tableInfo.columns[0] = this->state.ownerId;
+	for (int i = 1; i < tableSize; i++)
+	{
+		n_assert2(info.columns[i - 1] != PropertyId::Invalid(), "ERROR: Invalid property in CategoryCreateInfo!\n");
+		tableInfo.columns[i] = info.columns[i - 1];
+	}
+	
 	Category cat;
-	cat.name = info.name;
 	// Create an instance table
 	cat.instanceTable = this->state.worldDatabase->CreateTable(tableInfo);
-	// Create a identical table that can hold templates of this category
-	cat.templateTable = this->state.worldDatabase->CreateTable(tableInfo);
+	cat.hash = catHash;
 
-	CategoryId const cid = this->state.categoryArray.Size();
-	this->state.catIndexMap.Add(cat.name, cid);
+#ifdef NEBULA_DEBUG
+	cat.name = info.name;
+#endif
+
+	CategoryId cid = this->state.categoryArray.Size();
+
+	this->state.catIndexMap.Add(catHash, cid.id);
 	this->state.categoryArray.Append(cat);
-
-	this->BeginAddCategoryAttrs(info.name);
-	// Add the owner attribute to the table.
-	// NOTE: This is always assumed to be the first column!
-	this->AddCategoryAttr(Attr::Runtime::OwnerId);
-	for (auto col : info.columns)
-	{
-		this->AddCategoryAttr(col);
-	}
-	this->EndAddCategoryAttrs();
 
 	return cid;
 }
@@ -473,13 +424,69 @@ EntityManager::AllocateInstance(Entity entity, CategoryId category)
 	this->state.entityMap[Ids::Index(entity.id)] = { category, instance };
 
 	// Just make sure the first column in always owner!
-	n_assert(this->state.worldDatabase->GetColumnId(cat.instanceTable, Attr::Owner::Id()) == 0);
+	n_assert(this->state.worldDatabase->GetColumnId(cat.instanceTable, this->state.ownerId) == 0);
 
 	// Set the owner of this instance
 	Game::Entity* owners = (Game::Entity*) * this->state.worldDatabase->GetPersistantBuffer(cat.instanceTable, 0);
 	owners[instance.id] = entity;
 
 	return instance;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+InstanceId
+EntityManager::AllocateInstance(Entity entity, BlueprintId blueprint)
+{
+	n_assert(IsValid(entity));
+
+	if (Ids::Index(entity.id) < this->state.entityMap.Size() && this->state.entityMap[Ids::Index(entity.id)].instance != Game::InstanceId::Invalid())
+	{
+		n_warning("Entity already registered!\n");
+		return InvalidIndex;
+	}
+
+	EntityMapping mapping = BlueprintManager::Instance()->Instantiate(blueprint);
+	this->state.entityMap[Ids::Index(entity.id)] = mapping;
+
+	Category const& cat = this->GetCategory(mapping.category);
+	// Just make sure the first column in always owner!
+	n_assert(this->state.worldDatabase->GetColumnId(cat.instanceTable, this->state.ownerId) == 0);
+
+	// Set the owner of this instance
+	Game::Entity* owners = (Game::Entity*) * this->state.worldDatabase->GetPersistantBuffer(cat.instanceTable, 0);
+	owners[mapping.instance.id] = entity;
+
+	return mapping.instance;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+InstanceId
+EntityManager::AllocateInstance(Entity entity, BlueprintId blueprint, TemplateId templateId)
+{
+	n_assert(IsValid(entity));
+	
+	if (Ids::Index(entity.id) < this->state.entityMap.Size() && this->state.entityMap[Ids::Index(entity.id)].instance != Game::InstanceId::Invalid())
+	{
+		n_warning("Entity already registered!\n");
+		return InvalidIndex;
+	}
+
+	EntityMapping mapping = BlueprintManager::Instance()->Instantiate(blueprint, templateId);
+	this->state.entityMap[Ids::Index(entity.id)] = mapping;
+
+	Category const& cat = this->GetCategory(mapping.category);
+	// Just make sure the first column in always owner!
+	n_assert(this->state.worldDatabase->GetColumnId(cat.instanceTable, this->state.ownerId) == 0);
+
+	// Set the owner of this instance
+	Game::Entity* owners = (Game::Entity*) *this->state.worldDatabase->GetPersistantBuffer(cat.instanceTable, 0);
+	owners[mapping.instance.id] = entity;
+
+	return mapping.instance;
 }
 
 //------------------------------------------------------------------------------
@@ -504,54 +511,16 @@ EntityManager::DeallocateInstance(Entity entity)
 //------------------------------------------------------------------------------
 /**
 */
-void
-EntityManager::BeginAddCategoryAttrs(Util::StringAtom categoryName)
+InstanceId
+EntityManager::Migrate(Entity entity, CategoryId newCategory)
 {
-	n_assert(!this->state.inBeginAddCategoryAttrs);
-	this->state.addAttrCategoryIndex = this->state.catIndexMap[categoryName].id;
-	this->state.inBeginAddCategoryAttrs = true;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-EntityManager::AddCategoryAttr(const Game::AttributeId& attrId)
-{
-	n_assert(this->state.inBeginAddCategoryAttrs);
-	Category& cat = this->state.categoryArray[this->state.addAttrCategoryIndex];
-	this->state.worldDatabase->AddColumn(cat.templateTable, attrId);
-	this->state.worldDatabase->AddColumn(cat.instanceTable, attrId);
-
-	if (!attrId.GetCategoryTable()->Contains(this->state.addAttrCategoryIndex))
-	{
-		void** buf = this->state.worldDatabase->GetPersistantBuffer(cat.instanceTable, this->state.worldDatabase->GetColumnId(cat.instanceTable, attrId));
-		n_assert(!attrId.GetCategoryTable()->Contains(this->state.addAttrCategoryIndex));
-		attrId.GetCategoryTable()->Add(this->state.addAttrCategoryIndex, buf);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-EntityManager::AddProperty(const Ptr<Game::Property>& prop)
-{
-	n_assert(this->state.inBeginAddCategoryAttrs);
-	this->state.categoryArray[this->state.addAttrCategoryIndex].properties.Append(prop);
-	const_cast<CategoryId&>(prop->category) = CategoryId(this->state.addAttrCategoryIndex);
-	prop->SetupExternalAttributes();
-	prop->Init();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-EntityManager::EndAddCategoryAttrs()
-{
-	n_assert(this->state.inBeginAddCategoryAttrs);
-	this->state.inBeginAddCategoryAttrs = false;
+	EntityManager::State& state = EntityManager::Singleton->state;
+	EntityMapping mapping = GetEntityMapping(entity);
+	Category const& oldCat = EntityManager::Singleton->GetCategory(mapping.category);
+	Category const& newCat = EntityManager::Singleton->GetCategory(newCategory);
+	InstanceId newInstance = state.worldDatabase->MigrateInstance(oldCat.instanceTable, mapping.instance.id, newCat.instanceTable);
+	state.entityMap[Ids::Index(entity.id)] = { newCategory, newInstance };
+	return newInstance;
 }
 
 } // namespace Game

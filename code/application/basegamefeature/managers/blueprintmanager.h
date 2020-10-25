@@ -16,6 +16,8 @@
 #include "game/entity.h"
 #include "game/manager.h"
 #include "util/stringatom.h"
+#include "memdb/table.h"
+#include "game/category.h"
 
 namespace Game
 {
@@ -34,13 +36,15 @@ public:
 
 	/// set a optional blueprints.xml, which is used instead of standard blueprint.xml
 	static void SetBlueprintsFilename(const Util::String& name, const Util::String& folder);
-	/// setup attributes on properties
-	void SetupAttributes();
-	/// setup categories
-	void SetupCategories();
+	
+	/// get a blueprint id
+	static BlueprintId const GetBlueprintId(Util::StringAtom name);
 
-	/// create a new property by type name, extend in subclass for new types
-	Ptr<Game::Property> CreateProperty(const Util::String& type) const;
+// private api
+public:
+	/// create an instance from blueprint. Note that this does not tie it to an entity! It's not recommended to create entities this way. @see entitymanager.h
+	EntityMapping Instantiate(BlueprintId blueprint);
+	EntityMapping Instantiate(BlueprintId blueprint, TemplateId templateId);
 
 private:
 	/// constructor
@@ -52,20 +56,40 @@ private:
 	static void OnActivate();
 
 	/// parse entity blueprints file
-	virtual bool ParseBluePrints();
+	virtual bool ParseBlueprints();
+	/// setup categories
+	void SetupCategories();
 
 	struct PropertyEntry
 	{
-		Util::String propertyName;
+		Util::StringAtom propertyName;
 	};
 
-	/// an entity blueprint, these are created by ParseBlueprints()
-	struct BluePrint
+	/// an entity blueprint
+	struct Blueprint
 	{
-		Util::String name;
+		// this is setup when calling SetupCategories
+		/// The blueprint table. Contains all templates for the blueprint.
+		MemDb::TableId tableId;
+		
+		/// category hash for the specific setup of properties
+		CategoryHash categoryHash;
+		/// the category id for the specific category that we instantiate to.
+		CategoryId categoryId;
+
+		// these are created by ParseBlueprints()
+		Util::StringAtom name;
 		Util::Array<PropertyEntry> properties;
 	};
-	Util::Array<BluePrint> bluePrints;
+
+	/// contains all blueprints and their information.
+	Util::Array<Blueprint> blueprints;
+
+	/// maps from blueprint name to blueprint id, which is the index in the blueprints array.
+	Util::HashTable<Util::StringAtom, BlueprintId> blueprintMap;
+
+	/// maps from template name to template id, which is the row within a blueprint table.
+	Util::HashTable<Util::StringAtom, TemplateId> templateMap;
 
 	static Util::String blueprintFilename;
 	static Util::String blueprintFolder;

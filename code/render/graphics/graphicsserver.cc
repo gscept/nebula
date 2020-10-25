@@ -17,6 +17,7 @@
 #include "coreanimation/streamanimationpool.h"
 #include "characters/streamskeletonpool.h"
 #include "models/streammodelpool.h"
+#include "renderutil/drawfullscreenquad.h"
 
 namespace Graphics
 {
@@ -104,6 +105,8 @@ GraphicsServer::Open()
 
 		CoreAnimation::animPool = Resources::GetStreamPool<CoreAnimation::StreamAnimationPool>();
 		Characters::skeletonPool = Resources::GetStreamPool<Characters::StreamSkeletonPool>();
+
+		RenderUtil::DrawFullScreenQuad::Setup();
 
 		// load base textures before setting up major subsystems
 		const unsigned char white = 0xFF;
@@ -211,7 +214,9 @@ GraphicsServer::Close()
 {
 	n_assert(this->isOpen);
 	
-	this->isOpen = false;	
+	this->isOpen = false;
+
+	RenderUtil::DrawFullScreenQuad::Discard();
 
 	this->textRenderer->Close();
 	this->textRenderer = nullptr;
@@ -341,7 +346,7 @@ GraphicsServer::BeginFrame()
 {
 	N_SCOPE(BeginFrame, Graphics);
 	this->timer->UpdateTimePolling();
-	
+
 	this->frameContext.frameIndex = this->timer->GetFrameIndex();
 	this->frameContext.frameTime = this->timer->GetFrameTime();
 	this->frameContext.time = this->timer->GetTime();

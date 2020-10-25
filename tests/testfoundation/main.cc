@@ -50,6 +50,8 @@
 #include "bxmlreadertest.h"
 #include "blobtest.h"
 #include "profilingtest.h"
+#include "bitfieldtest.h"
+
 using namespace Core;
 using namespace Test;
 
@@ -77,6 +79,7 @@ __cdecl main()
     testRunner->AttachTestCase(DelegateTableTest::Create());
     testRunner->AttachTestCase(DelegateTest::Create());
     testRunner->AttachTestCase(BlobTest::Create());
+    testRunner->AttachTestCase(BitFieldTest::Create());
     //testRunner->AttachTestCase(ExcelXmlReaderTest::Create());
     testRunner->AttachTestCase(RingBufferTest::Create());
     testRunner->AttachTestCase(RunLengthCodecTest::Create());

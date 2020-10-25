@@ -29,9 +29,8 @@ public:
 
 	struct CompiledImpl : public FrameOp::Compiled
 	{
-		void Run(const IndexT frameIndex);
+		void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
 
-		RenderUtil::DrawFullScreenQuad fsq;
 		CoreGraphics::ShaderProgramId program;
 		CoreGraphics::ResourceTableId resourceTable;
 	};
@@ -39,10 +38,9 @@ public:
 	FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 	
 	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId> constantBuffers;
-	Util::Array<std::tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>> textures;
+	Util::Array<Util::Tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>> textures;
 	CoreGraphics::ResourceTableId resourceTable;
 
-	RenderUtil::DrawFullScreenQuad fsq;
 	CoreGraphics::ShaderId shader;
 	CoreGraphics::ShaderProgramId program;
 	CoreGraphics::TextureId tex;

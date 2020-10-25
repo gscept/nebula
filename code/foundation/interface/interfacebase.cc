@@ -51,6 +51,17 @@ InterfaceBase::Open()
 /**
 */
 void
+InterfaceBase::Close()
+{
+	n_assert(this->IsOpen());
+
+	Messaging::AsyncPort::Close();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 InterfaceBase::AttachHandler(const Ptr<Messaging::Handler>& handler)
 {
     // set application attributes on handler

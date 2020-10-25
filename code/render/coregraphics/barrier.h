@@ -23,30 +23,31 @@ enum class BarrierDomain
 	Pass
 };
 
-enum class BarrierStage
+enum class BarrierStage : uint16
 {
 	NoDependencies = (1 << 0),
-	VertexInput = (1 << 1),				// blocks vertex input
-	VertexShader = (1 << 2),			// blocks vertex shader
-	HullShader = (1 << 3),				// blocks hull (tessellation control) shader
-	DomainShader = (1 << 4),			// blocks domain (tessellation evaluation) shader
-	GeometryShader = (1 << 5),			// blocks geometry shader
-	EarlyDepth = (1 << 6),				// blocks early fragment test
-	PixelShader = (1 << 7),				// blocks pixel shader
-	LateDepth = (1 << 8),				// blocks late fragment test
-	PassOutput = (1 << 9),				// blocks outputs from render texture attachments		
+	Indirect = (1 << 1),				// blocks indirect draw commands
+	VertexInput = (1 << 2),				// blocks vertex input
+	VertexShader = (1 << 3),			// blocks vertex shader
+	HullShader = (1 << 4),				// blocks hull (tessellation control) shader
+	DomainShader = (1 << 5),			// blocks domain (tessellation evaluation) shader
+	GeometryShader = (1 << 6),			// blocks geometry shader
+	EarlyDepth = (1 << 7),				// blocks early fragment test
+	PixelShader = (1 << 8),				// blocks pixel shader
+	LateDepth = (1 << 9),				// blocks late fragment test
+	PassOutput = (1 << 10),				// blocks outputs from render texture attachments		
 	AllGraphicsShaders = VertexShader | HullShader | DomainShader | GeometryShader | PixelShader,
 
-	ComputeShader = (1 << 10),			// blocks compute shaders to complete
+	ComputeShader = (1 << 11),			// blocks compute shaders to complete
 
-	Transfer = (1 << 11),				// blocks transfers
-	Host = (1 << 12),					// blocks host operations
+	Transfer = (1 << 12),				// blocks transfers
+	Host = (1 << 13),					// blocks host operations
 
-	Top = (1 << 13),					// blocks start of pipeline 
-	Bottom = (1 << 14)					// blocks end of pipeline
+	Top = (1 << 14),					// blocks start of pipeline 
+	Bottom = (1 << 15)					// blocks end of pipeline
 };
 
-enum class BarrierAccess
+enum class BarrierAccess : uint32
 {
 	NoAccess = (1 << 0),
 	IndirectRead = (1 << 1),			// indirect buffers are read

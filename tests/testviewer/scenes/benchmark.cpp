@@ -26,7 +26,6 @@ GraphicsEntityToName(GraphicsEntityId id)
     return "Entity";
 }
 
-
 //------------------------------------------------------------------------------
 /**
     Open scene, load resources
@@ -79,7 +78,7 @@ void OpenScene()
     }
     ModelContext::EndBulkRegister();
     ObservableContext::EndBulkRegister();
-};
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -88,7 +87,7 @@ void OpenScene()
 void CloseScene()
 {
     n_error("implement me!");
-};
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -113,7 +112,7 @@ void StepFrame()
         globalLightTransform = globalLightTransform * rotX * rotY;
         Lighting::LightContext::SetTransform(globalLight, globalLightTransform);
     */
-};
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -197,7 +196,7 @@ void RenderUI()
             Lighting::LightContext::SetTransform(id, trans);
         }
     }
-};
+}
 
 } // namespace ClusteredSceneData
 

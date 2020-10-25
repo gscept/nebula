@@ -57,7 +57,8 @@ ResourceStreamPool::Setup()
 void
 ResourceStreamPool::Discard()
 {
-	// empty
+	this->streamerThread->Stop();
+	this->streamerThread = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -258,6 +259,7 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 		{
 			ret = this->LoadFromStream(res.id, res.tag, stream, res.immediate);
 			this->asyncSection.Enter();
+			this->RunCallbacks(ret, res.id);
 			if (ret == Success)
 				this->states[res.id.poolId] = Resource::Loaded;
 			else if (ret == Failed)
@@ -267,6 +269,7 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 		else
 		{
 			this->asyncSection.Enter();
+			this->RunCallbacks(Failed, res.id);
 			this->states[res.id.poolId] = Resource::Failed;
 			this->asyncSection.Leave();
 			ret = Failed;
@@ -333,22 +336,10 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 		if (immediate)
 		{
 			LoadStatus status = this->PrepareLoad(pending);
-			if (status == Success)
-			{
-				if (success != nullptr) 
-					success(ret);
-				this->states[instanceId] = Resource::Loaded;
-			}
-			else if (status == Failed)
+			if (status == Failed)
 			{
 				// change return resource id to be fail resource
 				ret.resourceId = this->failResourceId.resourceId;
-
-				if (failed != nullptr)
-				{
-					failed(ret);
-				}
-				this->states[instanceId] = Resource::Failed;
 			}
 		}
 		else

@@ -91,7 +91,7 @@ VkShapeRenderer::Open()
 	// also create an extra vertex layout, in case we get a mesh which doesn't fit with our special layout
 	this->vertexLayout = CreateVertexLayout(VertexLayoutCreateInfo{ comps });
 
-	Frame::AddCallback("Debug Shapes", [this](IndexT)
+	Frame::AddCallback("Debug Shapes", [this](const IndexT frame, const IndexT frameBufferIndex)
 		{
 			CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
 			this->DrawShapes();

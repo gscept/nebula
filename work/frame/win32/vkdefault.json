@@ -275,6 +275,9 @@
 
 		_comment: "------------ TERRAIN ------------",
 		call: {
+			name: "TerrainContext - Prepare"
+		},
+		call: {
 			name: "TerrainContext - Clear Page Update Buffer"
 		},
 		pass: {

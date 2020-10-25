@@ -236,16 +236,6 @@ void TextureSparseMakeMipResident(const CoreGraphics::TextureId id, IndexT layer
 /// commit texture sparse page updates
 void TextureSparseCommitChanges(const CoreGraphics::TextureId id);
 
-/// copy pixels between textures
-void TextureCopy(
-	const CoreGraphics::TextureId toId, const Math::rectangle<int> toRegion, IndexT toMip, IndexT toLayer,
-	const CoreGraphics::TextureId fromId, const Math::rectangle<int> fromRegion, IndexT fromMip, IndexT fromLayer,
-	const CoreGraphics::SubmissionContextId sub);
-/// copy pixels from buffer to texture
-void TextureCopy(
-	const CoreGraphics::TextureId toId, const Math::rectangle<int> toRegion, IndexT toMip, IndexT toLayer,
-	const CoreGraphics::BufferId fromId, IndexT offset, 
-	const CoreGraphics::SubmissionContextId sub);
 /// update texture from data stream
 void TextureUpdate(const CoreGraphics::TextureId id, const Math::rectangle<int>& region, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub);
 /// update texture with unspecified region

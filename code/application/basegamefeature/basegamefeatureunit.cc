@@ -90,7 +90,6 @@ BaseGameFeatureUnit::SetupEmptyWorld()
 void
 BaseGameFeatureUnit::CleanupWorld()
 {
-	n_error("Not implemented!");
 	Game::GameServer::Instance()->NotifyBeforeCleanup();            
 }
 

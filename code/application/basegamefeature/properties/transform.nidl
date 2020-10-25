@@ -1,0 +1,8 @@
+{
+	"includes": [
+		"math/mat4.h"
+	],
+	"properties": {
+		"WorldTransform": "mat4"
+	}
+}

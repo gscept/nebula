@@ -29,7 +29,7 @@ namespace Ids
 	constexpr x(const Ids::Id64 id) : id(id) {}; \
 	constexpr explicit operator Ids::Id64() const { return id; } \
 	static constexpr x Invalid() { return Ids::InvalidId64; } \
-	constexpr IndexT HashCode() const { return (IndexT)(id & 0x00000000FFFFFFFF); } \
+	constexpr uint32_t HashCode() const { return (uint32_t)(id & 0x00000000FFFFFFFF); } \
 	constexpr Ids::Id64 HashCode64() const { return id; } \
 	const bool operator==(const x& rhs) const { return id == rhs.id; } \
 	const bool operator!=(const x& rhs) const { return id != rhs.id; } \
@@ -44,7 +44,7 @@ namespace Ids
 	constexpr x(const Ids::Id32 id) : id(id) {}; \
 	constexpr explicit operator Ids::Id32() const { return id; } \
 	static constexpr x Invalid() { return Ids::InvalidId32; } \
-	constexpr IndexT HashCode() const { return id; } \
+	constexpr uint32_t HashCode() const { return id; } \
 	const bool operator==(const x& rhs) const { return id == rhs.id; } \
 	const bool operator!=(const x& rhs) const { return id != rhs.id; } \
 	const bool operator<(const x& rhs) const { return HashCode() < rhs.HashCode(); } \
@@ -58,7 +58,7 @@ namespace Ids
 	constexpr x(const Ids::Id24 id) : id(id) {}; \
 	constexpr explicit operator Ids::Id24() const { return id; } \
 	static constexpr x Invalid() { return Ids::InvalidId24; } \
-	constexpr IndexT HashCode() const { return (IndexT)(id); } \
+	constexpr uint32_t HashCode() const { return (uint32_t)(id); } \
 	const bool operator==(const x& rhs) const { return id == rhs.id; } \
 	const bool operator!=(const x& rhs) const { return id != rhs.id; } \
 	const bool operator<(const x& rhs) const { return HashCode() < rhs.HashCode(); } \
@@ -72,7 +72,7 @@ namespace Ids
 	constexpr x(const Ids::Id16 id) : id(id) {}; \
 	constexpr explicit operator Ids::Id16() const { return id; } \
 	static constexpr x Invalid() { return Ids::InvalidId16; } \
-	constexpr IndexT HashCode() const { return (IndexT)(id); } \
+	constexpr uint32_t HashCode() const { return (uint32_t)(id); } \
 	const bool operator==(const x& rhs) const { return id == rhs.id; } \
 	const bool operator!=(const x& rhs) const { return id != rhs.id; } \
 	const bool operator<(const x& rhs) const { return HashCode() < rhs.HashCode(); } \
@@ -86,7 +86,7 @@ namespace Ids
 	constexpr x(const Ids::Id8 id) : id(id) {}; \
 	constexpr explicit operator Ids::Id8() const { return id; } \
 	static constexpr x Invalid() { return Ids::InvalidId8; } \
-	constexpr IndexT HashCode() const { return (IndexT)(id); } \
+	constexpr uint32_t HashCode() const { return (uint32_t)(id); } \
 	const bool operator==(const x& rhs) const { return id == rhs.id; } \
 	const bool operator!=(const x& rhs) const { return id != rhs.id; } \
 	const bool operator<(const x& rhs) const { return HashCode() < rhs.HashCode(); } \
@@ -103,7 +103,7 @@ namespace Ids
 	constexpr x(const Ids::Id64 id) : id32_name(Ids::Id::GetHigh(id)), id24_name(Ids::Id::GetBig(Ids::Id::GetLow(id))), id8_name(Ids::Id::GetTiny(Ids::Id::GetLow(id))) {};\
 	explicit constexpr operator Ids::Id64() const { return Ids::Id::MakeId32_24_8(id32_name, id24_name, id8_name); }\
 	static constexpr x Invalid() { return Ids::Id::MakeId32_24_8(Ids::InvalidId32, Ids::InvalidId24, Ids::InvalidId8); }\
-	constexpr IndexT HashCode() const { return (IndexT)Ids::Id::MakeId24_8(id24_name, id8_name); }\
+	constexpr uint32_t HashCode() const { return (uint32_t)Ids::Id::MakeId24_8(id24_name, id8_name); }\
 	constexpr Ids::Id64 HashCode64() const { return Ids::Id::MakeId32_24_8(id32_name, id24_name, id8_name); }\
 	const bool operator==(const x& rhs) const { return id32_name == rhs.id32_name && id24_name == rhs.id24_name && id8_name == rhs.id8_name; }\
 	const bool operator!=(const x& rhs) const { return id32_name != rhs.id32_name || id24_name != rhs.id24_name || id8_name != rhs.id8_name; }\
@@ -122,7 +122,7 @@ namespace Ids
 	constexpr x(const Ids::Id64 id) : id32_name(Ids::Id::GetHigh(id)), id16_0_name(Ids::Id::GetHigh(Ids::Id::GetLow(id))), id16_1_name(Ids::Id::GetLow(Ids::Id::GetLow(id))) {};\
 	explicit constexpr operator Ids::Id64() const { return Ids::Id::MakeId32_16_16(id32_name, id16_0_name, id16_1_name); }\
 	static constexpr x Invalid() { return Ids::Id::MakeId32_16_16(Ids::InvalidId32, Ids::InvalidId16, Ids::InvalidId16); }\
-	constexpr IndexT HashCode() const { return (IndexT)Ids::Id::MakeId32(id16_0_name, id16_1_name); }\
+	constexpr uint32_t HashCode() const { return (uint32_t)Ids::Id::MakeId32(id16_0_name, id16_1_name); }\
 	constexpr Ids::Id64 HashCode64() const { return Ids::Id::MakeId32_16_16(id32_name, id16_0_name, id16_1_name); }\
 	const bool operator==(const x& rhs) const { return id32_name == rhs.id32_name && id16_0_name == rhs.id16_0_name && id16_1_name == rhs.id16_1_name; }\
 	const bool operator!=(const x& rhs) const { return id32_name != rhs.id32_name || id16_0_name != rhs.id16_0_name || id16_1_name != rhs.id16_1_name; }\
@@ -143,7 +143,7 @@ namespace Ids
 	explicit constexpr operator Ids::Id64() const { return Ids::Id::MakeId24_8_24_8(id24_0_name, id8_0_name, id24_1_name, id8_1_name); }\
 	static constexpr x Invalid() { return Ids::Id::MakeId24_8_24_8(Ids::InvalidId24, Ids::InvalidId8, Ids::InvalidId24, Ids::InvalidId8); }\
 	constexpr Ids::Id32 AllocId() const { return Ids::Id::MakeId24_8(id24_1_name, id8_1_name); }\
-	constexpr IndexT HashCode() const { return (IndexT)Ids::Id::MakeId24_8(id24_0_name, id8_0_name); }\
+	constexpr uint32_t HashCode() const { return (uint32_t)Ids::Id::MakeId24_8(id24_0_name, id8_0_name); }\
 	constexpr Ids::Id64 HashCode64() const { return Ids::Id::MakeId24_8_24_8(id24_0_name, id8_0_name, id24_1_name, id8_1_name); }\
 	const bool operator==(const x& rhs) const { return id24_0_name == rhs.id24_0_name && id8_0_name == rhs.id8_0_name && id24_1_name == rhs.id24_1_name && id8_1_name == rhs.id8_1_name; }\
 	const bool operator!=(const x& rhs) const { return id24_0_name != rhs.id24_0_name || id8_0_name != rhs.id8_0_name || id24_1_name != rhs.id24_1_name || id8_1_name != rhs.id8_1_name; }\
@@ -161,7 +161,7 @@ namespace Ids
 	constexpr x(const Ids::Id64 id) : id32_0_name(Ids::Id::GetHigh(id)), id32_1_name(Ids::Id::GetLow(id)) {};\
 	explicit constexpr operator Ids::Id64() const { return Ids::Id::MakeId64(id32_0_name, id32_1_name); }\
 	static constexpr x Invalid() { return Ids::Id::MakeId64(Ids::InvalidId32, Ids::InvalidId32); }\
-	constexpr IndexT HashCode() const { return (IndexT)(id32_1_name); }\
+	constexpr uint32_t HashCode() const { return (uint32_t)(id32_1_name); }\
 	constexpr Ids::Id64 HashCode64() const { return Ids::Id::MakeId64(id32_0_name, id32_1_name); }\
 	const bool operator==(const x& rhs) const { return id32_0_name == rhs.id32_0_name && id32_1_name == rhs.id32_1_name; }\
 	const bool operator!=(const x& rhs) const { return id32_0_name != rhs.id32_0_name || id32_1_name != rhs.id32_1_name; }\
@@ -179,7 +179,7 @@ namespace Ids
 	constexpr x(const Ids::Id32 id) : id24_name(Ids::Id::GetBig(id)), id8_name(Ids::Id::GetTiny(id)) {};\
 	explicit constexpr operator Ids::Id32() const { return Ids::Id::MakeId24_8(id24_name, id8_name); }\
 	static constexpr x Invalid() { return Ids::Id::MakeId24_8(Ids::InvalidId24, Ids::InvalidId8); }\
-	constexpr IndexT HashCode() const { return (IndexT)Ids::Id::MakeId24_8(id24_name, id8_name); }\
+	constexpr uint32_t HashCode() const { return (uint32_t)Ids::Id::MakeId24_8(id24_name, id8_name); }\
 	const bool operator==(const x& rhs) const { return id24_name == rhs.id24_name && id8_name == rhs.id8_name; }\
 	const bool operator!=(const x& rhs) const { return id24_name != rhs.id24_name || id8_name != rhs.id8_name; }\
 	const bool operator<(const x& rhs) const { return HashCode() < rhs.HashCode(); }\
@@ -196,7 +196,7 @@ namespace Ids
 	constexpr x(const Ids::Id64 id) : id16_0_name(Ids::Id::GetHigh(id)), id16_1_name(Ids::Id::GetLow(id)) {};\
 	explicit constexpr operator Ids::Id64() const { return Ids::Id::MakeId64(id16_0_name, id16_1_name); }\
 	static constexpr x Invalid() { return Ids::Id::MakeId64(Ids::InvalidId16, Ids::InvalidId16); }\
-	constexpr IndexT HashCode() const { return (IndexT)(id16_1_name); }\
+	constexpr uint32_t HashCode() const { return (uint32_t)(id16_1_name); }\
 	constexpr Ids::Id64 HashCode64() const { return Ids::Id::MakeId64(id16_0_name, id16_1_name); }\
 	const bool operator==(const x& rhs) const { return id16_0_name == rhs.id16_0_name && id16_1_name == rhs.id16_1_name; }\
 	const bool operator!=(const x& rhs) const { return id16_0_name != rhs.id16_0_name || id16_1_name != rhs.id16_1_name; }\

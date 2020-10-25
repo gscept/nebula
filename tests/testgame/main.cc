@@ -7,6 +7,7 @@
 #include "testbase/testrunner.h"
 #include "basegamefeature/basegamefeatureunit.h"
 #include "appgame/gameapplication.h"
+#include "basegamefeature/managers/blueprintmanager.h"
 
 // tests
 #include "idtest.h"
@@ -33,7 +34,6 @@ private:
 	{
 		this->gameServer->RemoveGameFeature(gameFeature);
 		gameFeature->CleanupWorld();
-		gameFeature->Release();
 		gameFeature = nullptr;
 	}
 
@@ -50,6 +50,8 @@ NebulaMain(const Util::CommandLineArgs& args)
 	gameApp.SetCompanyName("Test Company");
 	gameApp.SetAppTitle("NEBULA GAME-TESTS");
 
+	Game::BlueprintManager::SetBlueprintsFilename("blueprints_test.json", "bin:");
+
 	if (!gameApp.Open())
 	{
 		n_printf("Aborting game system test due to unrecoverable error...\n");
@@ -64,11 +66,13 @@ NebulaMain(const Util::CommandLineArgs& args)
     testRunner->AttachTestCase(IdTest::Create());
 	testRunner->AttachTestCase(DatabaseTest::Create());
 	testRunner->AttachTestCase(EntitySystemTest::Create());
-	testRunner->AttachTestCase(ScriptingTest::Create());
+	//testRunner->AttachTestCase(ScriptingTest::Create());
 	
     bool result = testRunner->Run(); 
 
     testRunner = nullptr;
+
+	gameApp.Close();
 
     Core::SysFunc::Exit(result?0:-1);
 }

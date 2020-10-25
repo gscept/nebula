@@ -47,7 +47,7 @@ FrameBlit::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void
-FrameBlit::CompiledImpl::Run(const IndexT frameIndex)
+FrameBlit::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
 	// get dimensions
 	CoreGraphics::TextureDimensions fromDims = TextureGetDimensions(this->from);
