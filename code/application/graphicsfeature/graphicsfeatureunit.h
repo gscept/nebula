@@ -42,10 +42,20 @@ public:
     /// called when game debug visualization is on
     void OnRenderDebug();
 
-    using UIRenderFunc = std::function<void()>;
+    /// retrieve the default view
+    Ptr<Graphics::View> GetDefaultView() const;
+    /// retrieve the default stage
+    Ptr<Graphics::Stage> GetDefaultStage() const;
 
+    /// set framescript. must be done before OnActivate!
+    void SetFrameScript(IO::URI const& uri);
+    
+    using UIRenderFunc = std::function<void()>;
+    /// add a custom UI render function
     void AddRenderUICallback(UIRenderFunc func);
 
+private:
+    IO::URI defaultFrameScript;
     Ptr<Graphics::View> defaultView;
     Ptr<Graphics::Stage> defaultStage;
 
@@ -54,9 +64,36 @@ public:
     CoreGraphics::WindowId wnd;
     //FIXME
     Graphics::GraphicsEntityId globalLight;
-private:
+
     Util::Array<UIRenderFunc> uiCallbacks;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Ptr<Graphics::View>
+GraphicsFeatureUnit::GetDefaultView() const
+{
+    return this->defaultView;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Ptr<Graphics::Stage>
+GraphicsFeatureUnit::GetDefaultStage() const
+{
+    return this->defaultStage;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+GraphicsFeatureUnit::SetFrameScript(IO::URI const& uri)
+{
+    this->defaultFrameScript = uri;
+}
 
 } // namespace GraphicsFeature
 //------------------------------------------------------------------------------
