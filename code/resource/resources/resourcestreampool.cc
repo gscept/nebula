@@ -257,9 +257,18 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 		if (stream->Open())
 		{
 			ret = this->LoadFromStream(res.id, res.tag, stream, res.immediate);
+			this->asyncSection.Enter();
+			if (ret == Success)
+				this->states[res.id.poolId] = Resource::Loaded;
+			else if (ret == Failed)
+				this->states[res.id.poolId] = Resource::Failed;
+			this->asyncSection.Leave();
 		}
 		else
 		{
+			this->asyncSection.Enter();
+			this->states[res.id.poolId] = Resource::Failed;
+			this->asyncSection.Leave();
 			ret = Failed;
 			n_printf("Failed to load resource %s\n", this->names[res.id.poolId].Value());
 		}
