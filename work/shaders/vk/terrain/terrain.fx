@@ -106,8 +106,6 @@ group(SYSTEM_GROUP) constant IndirectionCountBuffer [ string Visibility = "CS"; 
 	uint NumIndirectionUpdates;
 };
 
-group(SYSTEM_GROUP) write r32f image2D IndirectionTextureOutput[12]  [ string Visibility = "CS"; ];
-
 group(SYSTEM_GROUP) texture2D		MaterialMaskArray[MAX_BIOMES];
 group(SYSTEM_GROUP) texture2DArray	MaterialAlbedoArray[MAX_BIOMES];
 group(SYSTEM_GROUP) texture2DArray	MaterialNormalArray[MAX_BIOMES];
@@ -737,12 +735,12 @@ psTerrainPrepass(
 	// convert world space to positive integer interval [0..WorldSize]
 	vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
 	vec2 unsignedPos = worldPos.xz + worldSize * 0.5f;
-	if (any(lessThan(unsignedPos, vec2(0))) || any(greaterThan(unsignedPos, worldSize - vec2(1.0f))))
-		return;
 	uvec2 subTextureCoord = uvec2(unsignedPos / VirtualTerrainSubTextureSize);
 
 	// calculate subtexture index
 	uint subTextureIndex = subTextureCoord.x + subTextureCoord.y * VirtualTerrainNumSubTextures.x;
+	if (subTextureIndex >= VirtualTerrainNumSubTextures.x * VirtualTerrainNumSubTextures.y)
+		return;
 	TerrainSubTexture subTexture = SubTextures[subTextureIndex];
 
 	// if this subtexture is bound on the CPU side, use it
