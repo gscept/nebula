@@ -50,7 +50,7 @@ public:
     /// convert string to fourcc
     static FourCC FromString(const String& s);
 	/// return a hashcode (just returns the fourcc)
-	IndexT HashCode() const;
+	uint32_t HashCode() const;
 
 private:
     uint fourCC;
@@ -217,7 +217,7 @@ FourCC::FromString(const String& s)
 //------------------------------------------------------------------------------
 /**
 */
-inline IndexT
+inline uint32_t
 FourCC::HashCode() const
 {
 	return this->fourCC;

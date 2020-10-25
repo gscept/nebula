@@ -46,11 +46,6 @@ class Blob;
 class String
 {
 public:
-    /// override new operator
-    void* operator new(size_t s);
-    /// override delete operator
-    void operator delete(void* ptr);
-
     /// constructor
     String();
     /// copy constructor
@@ -170,7 +165,7 @@ public:
     /// pattern matching
     static bool MatchPattern(const String& str, const String& pattern);
     /// return a 32-bit hash code for the string
-    IndexT HashCode() const;
+	uint32_t HashCode() const;
 
     /// set content to char ptr
     void SetCharPtr(const char* s);
@@ -402,36 +397,6 @@ private:
     SizeT strLen;
     SizeT heapBufferSize;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline void*
-String::operator new(size_t size)
-{
-    #if NEBULA_DEBUG
-    n_assert(size == sizeof(String));
-    #endif
-
-    #if NEBULA_OBJECTS_USE_MEMORYPOOL
-        return Memory::ObjectPoolAllocator->Alloc(size);
-    #else
-        return Memory::Alloc(Memory::ObjectHeap, size);
-    #endif
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline void
-String::operator delete(void* ptr)
-{
-    #if NEBULA_OBJECTS_USE_MEMORYPOOL
-        return Memory::ObjectPoolAllocator->Free(ptr, sizeof(String));
-    #else
-        return Memory::Free(Memory::ObjectHeap, ptr);
-    #endif
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -833,6 +798,7 @@ String::operator=(String&& rhs) noexcept
     {
         this->Delete();
         this->strLen = rhs.strLen;
+        rhs.strLen = 0;
         if (rhs.heapBuffer)
         {
             this->heapBuffer = rhs.heapBuffer;
@@ -941,13 +907,13 @@ String::IsValid() const
     This method computes a hash code for the string. The method is
     compatible with the Util::HashTable class.
 */
-inline IndexT
+inline uint32_t
 String::HashCode() const
 {
-    IndexT hash = 0;
+	uint32_t hash = 0;
     const char* ptr = this->AsCharPtr();
     SizeT len = this->strLen;
-    IndexT i;
+	SizeT i;
     for (i = 0; i < len; i++)
     {
         hash += ptr[i];
@@ -957,7 +923,6 @@ String::HashCode() const
     hash += hash << 3;
     hash ^= hash >> 11;
     hash += hash << 15;
-    hash &= ~(1<<31);       // don't return a negative number (in case IndexT is defined signed)
     return hash;
 }
 

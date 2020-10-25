@@ -177,12 +177,13 @@ macro(nebula_add_nidl)
 endmacro()
 
 macro(add_frameshader)
+    set_nebula_export_dir()
     foreach(frm ${ARGN})
             get_filename_component(basename ${frm} NAME)
             set(output ${EXPORT_DIR}/frame/${basename})
             add_custom_command(OUTPUT ${output}
-                COMMAND ${CMAKE_COMMAND} -E copy ${frm} ${EXPORT_DIR}/frame/
-                MAIN_DEPENDENCY ${frm}
+                COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${frm} ${EXPORT_DIR}/frame/
+                MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${frm}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
                 COMMENT "Copying Frameshader ${frm} to ${EXPORT_DIR}/frame"
                 VERBATIM
@@ -193,12 +194,13 @@ macro(add_frameshader)
 endmacro()
 
 macro(add_material)
+    set_nebula_export_dir()
     foreach(mat ${ARGN})
             get_filename_component(basename ${mat} NAME)
             set(output ${EXPORT_DIR}/materials/${basename})
             add_custom_command(OUTPUT ${output}
-                COMMAND ${CMAKE_COMMAND} -E copy ${mat} ${EXPORT_DIR}/materials/
-                MAIN_DEPENDENCY ${mat}
+                COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${mat} ${EXPORT_DIR}/materials/
+                MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${mat}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
                 COMMENT "Copying material ${mat} to ${EXPORT_DIR}/materials"
                 VERBATIM
@@ -209,14 +211,15 @@ macro(add_material)
 endmacro()
 
 macro(add_blueprint)
+    set_nebula_export_dir()
     foreach(bp ${ARGN})
             get_filename_component(basename ${bp} NAME)
             set(output ${EXPORT_DIR}/data/tables/${basename})
             add_custom_command(OUTPUT ${output}
-                COMMAND ${CMAKE_COMMAND} -E copy ${bp} ${EXPORT_DIR}/data/tables/
-                MAIN_DEPENDENCY ${bp}
+                COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${bp} ${EXPORT_DIR}/data/tables/
+                MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${bp}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
-                COMMENT "Copying material ${bp} to ${EXPORT_DIR}/data/tables"
+                COMMENT "Copying blueprint ${bp} to ${EXPORT_DIR}/data/tables"
                 VERBATIM
                 )
             fips_files(${bp})

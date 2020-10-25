@@ -1,4 +1,4 @@
-default_namespace = "Components"
+default_namespace = "Game"
 
 #------------------------------------------------------------------------------
 ##
@@ -25,17 +25,17 @@ def WriteIncludeHeader(f):
 ## parse and write include statements to file
 #
 def WriteIncludes(f, document):
-    if "includes" in document:
-        for include in document["includes"]:
+    if isinstance(document, dict):
+        if "includes" in document:
+            for include in document["includes"]:
+                f.Write("#include \"")
+                f.Write(include)
+                f.Write("\"\n")
+    elif isinstance(document, list):
+        for include in document:
             f.Write("#include \"")
             f.Write(include)
             f.Write("\"\n")
-
-#------------------------------------------------------------------------------
-## Write attribute library declarations to file.
-#
-def WriteAttributeLibraryDeclaration(f):
-    f.WriteLine("")
 
 #------------------------------------------------------------------------------
 ## Write source file header
@@ -68,6 +68,7 @@ def BeginNamespace(f, document):
         f.Write(default_namespace)
     f.WriteLine("")
     f.WriteLine("{")
+    f.WriteLine("")
 
 #------------------------------------------------------------------------------
 ##
@@ -97,5 +98,4 @@ def BeginNamespaceOverride(f, document, namespace):
 def EndNamespaceOverride(f, document, namespace):
     f.DecreaseIndent()
     f.Write("} // namespace ")
-    f.Write(namespace)
-    f.Write("\n")
+    f.WriteLine(namespace)

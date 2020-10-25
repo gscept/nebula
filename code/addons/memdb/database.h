@@ -15,6 +15,7 @@
 #include "util/stringatom.h"
 #include "ids/idgenerationpool.h"
 #include "columndescription.h"
+#include "typeregistry.h"
 
 namespace MemDb
 {
@@ -32,6 +33,9 @@ struct Dataset
     /// A view into a category table.
     struct View
     {
+#ifdef NEBULA_DEBUG
+        Util::String tableName;
+#endif
         TableId tid;
         SizeT numInstances = 0;
         Util::ArrayStack<void*, 16> buffers;
@@ -48,82 +52,75 @@ class Database : public Core::RefCounted
 {
     __DeclareClass(MemDb::Database);
 public:
+	/// constructor
     Database();
+	/// destructor
     ~Database();
-
+	
+	/// create new table
     TableId CreateTable(TableCreateInfo const& info);
+	/// delete table
     void DeleteTable(TableId table);
+	/// check if table is valid
     bool IsValid(TableId table) const;
-    
+	/// retrieve a table.
+	Table& GetTable(TableId tid);
+	
+	/// check if table has a certain column
     bool HasColumn(TableId table, ColumnDescriptor col);
-
-    /// Returns a column descriptor
+    /// returns a descriptor for a given column id
     ColumnDescriptor GetColumn(TableId table, ColumnId columnId);
-    /// Returns a column descriptor or Invalid if not registered
-    ColumnDescriptor GetColumn(Util::StringAtom name);
-
+	/// returns a column id or invalid if column is missing from table
     ColumnId GetColumnId(TableId table, ColumnDescriptor column);
-
+	/// add a column to a table
     ColumnId AddColumn(TableId table, ColumnDescriptor column);
+	/// get the all descriptors for a table
+	Util::Array<ColumnDescriptor> const& GetColumns(TableId table);
 
+	/// allocate a row within a table
     IndexT AllocateRow(TableId table);
+	/// deallocate a row from a table. This only frees the row for recycling. See ::Defragment
     void DeallocateRow(TableId table, IndexT row);
-
-    /// Set all row values to default
+	/// get number of rows in a table
+	SizeT GetNumRows(TableId table) const;
+	/// set all row values to default
     void SetToDefault(TableId table, IndexT row);
+	
+	/// move instance from one table to another.
+    IndexT MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid);
+    /// duplicate instance from one row into destination table.
+    IndexT DuplicateInstance(TableId srcTid, IndexT srcRow, TableId dstTid);
 
-    /// Set an attribute value
-    //void Set(TableId table, ColumnId columnId, IndexT row, AttributeValue const& value);
+	/// defragment table
+	SizeT Defragment(TableId tid, std::function<void(IndexT, IndexT)> const& moveCallback);
 
-    /// get number of rows in a table
-    SizeT GetNumRows(TableId table) const;
-
-    /// Get the column descriptors for a table
-    Util::Array<ColumnDescriptor> const& GetColumns(TableId table);
-
-    /// Adds a custom state data column to table.
+	/// Query the database for a dataset of categories
+	Dataset Query(FilterSet const& filterset);
+	/// gets a column view from table.
     template<typename TYPE>
-    ColumnView<typename TYPE> AddStateColumn(TableId tid, Util::StringAtom name);
-
-    /// gets a custom state data column from table.
-    template<typename TYPE>
-    const ColumnView<typename TYPE> GetStateColumn(TableId tid, ColumnDescriptor descriptor);
-
-    /// returns a persistant array accessor
-    template<typename ATTR>
-    ColumnView<typename ATTR::TYPE> GetColumnData(TableId table);
-    
-    /// Get a persistant buffer. Only use this if you know what you're doing!
+    const ColumnView<typename TYPE> GetColumnView(TableId tid, ColumnDescriptor descriptor);
+    /// get a persistant buffer. Only use this if you know what you're doing!
     void** GetPersistantBuffer(TableId table, ColumnId cid);
-    
-    /// retrieve a table.
-    Table& GetTable(TableId tid);
-
-    SizeT Defragment(TableId tid, std::function<void(IndexT, IndexT)> const& moveCallback);
-
-    /// Adds a custom state data column to table.
-    template<typename TYPE>
-    ColumnDescriptor CreateColumn(Util::StringAtom name);
-
-    /// Query the database for a dataset of categories
-    Dataset Query(FilterSet const& filterset);
-
+	
 private:
+	/// recycle free row or allocate new row
+    IndexT AllocateRowIndex(TableId table);
+	/// erase row by swapping with last row and reducing number of rows in table
     void EraseSwapIndex(Table& table, IndexT instance);
-
+	/// grow each column within table
     void GrowTable(TableId tid);
-
+	/// allocate a buffer for a column. Sets all values to default
     void* AllocateBuffer(TableId tid, ColumnDescription* desc);
 
+	/// id pool for table ids
     Ids::IdGenerationPool tableIdPool;
 
     // @note    Keep this a fixed size array, because we want to be able to keep persistent references to the tables, and their buffers within
     static constexpr uint32_t MAX_NUM_TABLES = 512;
+	/// all tables within the database
     Table tables[MAX_NUM_TABLES];
+	/// number of tables existing currently
     SizeT numTables = 0;
-
-    Util::Array<ColumnDescription*> columnDescriptions;
-    Util::Dictionary<Util::StringAtom, ColumnDescriptor> columnRegistry;
 };
 
 //------------------------------------------------------------------------------
@@ -141,105 +138,27 @@ Database::GetPersistantBuffer(TableId table, ColumnId cid)
 //------------------------------------------------------------------------------
 /**
 */
-template<typename ATTR>
-inline ColumnView<typename ATTR::TYPE>
-Database::GetColumnData(TableId table)
-{
-    n_assert(this->IsValid(table));
-    Table& tbl = this->tables[Ids::Index(table.id)];
-    ColumnId cid = this->GetColumnId(table, ATTR::Id());
-    return ColumnView<ATTR::TYPE>(cid, &tbl.columns.Get<1>(cid.id), &tbl.numRows);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<typename TYPE>
-inline ColumnView<TYPE>
-Database::AddStateColumn(TableId tid, Util::StringAtom name)
-{
-    n_assert(this->IsValid(tid));
-    Table& table = this->tables[Ids::Index(tid.id)];
-
-    uint32_t col = table.states.Alloc();
-
-    Table::ColumnBuffer& buffer = table.states.Get<1>(col);
-
-    ColumnDescription* desc;
-    ColumnDescriptor descriptor;
-    if (this->columnRegistry.Contains(name))
-    {
-        descriptor = this->columnRegistry[name];
-        desc = this->columnDescriptions[descriptor.id];
-    }
-    else
-    {
-        // Create state descriptor
-        descriptor = this->CreateColumn<TYPE>(name);
-        desc = this->columnDescriptions[descriptor.id];
-    }
-
-    buffer = this->AllocateState(tid, desc);
-    table.states.Get<0>(col) = descriptor;
-
-    return ColumnView<TYPE>(col, &table.states.Get<1>(col), &table.numRows, true);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 template<typename TYPE>
 inline const ColumnView<TYPE>
-Database::GetStateColumn(TableId tid, ColumnDescriptor descriptor)
+Database::GetColumnView(TableId tid, ColumnDescriptor descriptor)
 {
     n_assert(this->IsValid(tid));
     Table& table = this->tables[Ids::Index(tid.id)];
 
-    auto const& descriptors = table.states.GetArray<0>();
+    auto const& descriptors = table.columns.GetArray<0>();
     for (int i = 0; i < descriptors.Size(); i++)
     {
         auto const& desc = descriptors[i];
 
         if (desc == descriptor)
         {
-            return ColumnView<TYPE>(i, &table.states.Get<1>(i), &table.numRows, true);
+            return ColumnView<TYPE>(i, &table.columns.Get<1>(i), &table.numRows);
         }
     }
 
     n_error("State does not exist in table!\n");
 
-    return ColumnView<TYPE>(NULL, nullptr, nullptr, true);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<typename TYPE>
-inline ColumnDescriptor
-Database::CreateColumn(Util::StringAtom name)
-{
-    // setup a state description with the default values from the type
-    ColumnDescription* desc = n_new(ColumnDescription(name, TYPE()));
-
-    ColumnDescriptor descriptor = this->columnDescriptions.Size();
-    this->columnDescriptions.Append(desc);
-    this->columnRegistry.Add(name, descriptor);
-    return descriptor;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline ColumnDescriptor
-Database::GetColumn(Util::StringAtom name)
-{
-    IndexT index = this->columnRegistry.FindIndex(name);
-    if (index != InvalidIndex)
-    {
-        return this->columnRegistry.ValueAtIndex(index);
-    }
-    
-    return ColumnDescriptor::Invalid();
+    return ColumnView<TYPE>(NULL, nullptr, nullptr);
 }
 
 } // namespace MemDb

@@ -22,14 +22,14 @@ Matrix44Test::Run()
         vec4(0.0f, 1.0f, 0.0f, 0.0f),
         vec4(0.0f, 0.0f, 1.0f, 0.0f),
         vec4(0.0f, 0.0f, 0.0f, 1.0f));
-    VERIFY(m0 == mat4());
+    VERIFY(m0 == mat4::identity);
     mat4 m1(m0);
-    VERIFY(m1 == mat4());
+    VERIFY(m1 == mat4::identity);
     VERIFY(m0 == m1);
     mat4 m2(vec4(1.0f, 0.0f, 0.0f, 0.0f),
-        vec4(0.0f, 1.0f, 0.0f, 0.0f),
-        vec4(0.0f, 0.0f, 1.0f, 0.0f),
-        vec4(1.0f, 2.0f, 3.0f, 1.0f));
+			vec4(0.0f, 1.0f, 0.0f, 0.0f),
+			vec4(0.0f, 0.0f, 1.0f, 0.0f),
+			vec4(1.0f, 2.0f, 3.0f, 1.0f));
     VERIFY(m0 != m2);
     m2 = m0;
     VERIFY(m0 == m2);
@@ -42,21 +42,21 @@ Matrix44Test::Run()
                  f[8]==0.0f && f[9]==0.0f && f[10]==1.0f && f[11]==0.0f &&
                  f[12]==0.0f && f[13]==0.0f && f[14]==0.0f && f[15]==1.0f);
     m1.load(f);
-    VERIFY(m1 == mat4());
+    VERIFY(m1 == mat4::identity);
     m0.storeu(f);
     VERIFY(f[0]==1.0f && f[1]==0.0f && f[2]==0.0f && f[3]==0.0f &&
                  f[4]==0.0f && f[5]==1.0f && f[6]==0.0f && f[7]==0.0f &&
                  f[8]==0.0f && f[9]==0.0f && f[10]==1.0f && f[11]==0.0f &&
                  f[12]==0.0f && f[13]==0.0f && f[14]==0.0f && f[15]==1.0f);
     m1.loadu(f);
-    VERIFY(m1 == mat4());
+    VERIFY(m1 == mat4::identity);
     m0.stream(f);
     VERIFY(f[0]==1.0f && f[1]==0.0f && f[2]==0.0f && f[3]==0.0f &&
                  f[4]==0.0f && f[5]==1.0f && f[6]==0.0f && f[7]==0.0f &&
                  f[8]==0.0f && f[9]==0.0f && f[10]==1.0f && f[11]==0.0f &&
                  f[12]==0.0f && f[13]==0.0f && f[14]==0.0f && f[15]==1.0f);
     m1.load(f);
-    VERIFY(m1 == mat4());
+    VERIFY(m1 == mat4::identity);
 
     // component-wise access
     m0.set(vec4(2.0f, 0.0f, 0.0f, 0.0f),

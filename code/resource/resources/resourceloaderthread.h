@@ -13,8 +13,9 @@
 
 namespace IO
 {
-	class IoServer;
-};
+class IoServer;
+}
+
 namespace Resources
 {
 class ResourceLoaderThread : public Threading::Thread

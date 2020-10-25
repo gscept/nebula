@@ -15,16 +15,15 @@ namespace Util
 {
 template<unsigned int NUMBITS> class BitField
 {
+    static_assert(NUMBITS > 0);
 public:
     /// constructor
     BitField();
 	/// constructs a bitfield based on multiple values
 	constexpr BitField(std::initializer_list<unsigned int> list);
     /// copy constructor
-    BitField(const BitField<NUMBITS>& rhs);
+    BitField(const BitField<NUMBITS>& rhs) = default;
     
-    /// assignment operator
-    void operator=(const BitField<NUMBITS>& rhs);
     /// equality operator
 	constexpr bool operator==(const BitField<NUMBITS>& rhs) const;
     /// inequality operator
@@ -98,32 +97,6 @@ BitField<NUMBITS>::BitField(std::initializer_list<unsigned int> list)
 	{
 		this->SetBit(bit);
 	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<unsigned int NUMBITS>
-BitField<NUMBITS>::BitField(const BitField<NUMBITS>& rhs)
-{
-    IndexT i;
-    for (i = 0; i < size; i++)
-    {
-        this->bits[i] = rhs.bits[i];
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<unsigned int NUMBITS> void
-BitField<NUMBITS>::operator=(const BitField<NUMBITS>& rhs)
-{
-    IndexT i;
-    for (i = 0; i < size; i++)
-    {
-        this->bits[i] = rhs.bits[i];
-    }
 }
 
 //------------------------------------------------------------------------------

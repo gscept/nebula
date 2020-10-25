@@ -6,7 +6,6 @@
 #include "blueprintmanager.h"
 #include "entitymanager.h"
 #include "io/jsonreader.h"
-#include "game/property.h"
 #include "io/ioserver.h"
 
 namespace Game
@@ -46,9 +45,9 @@ BlueprintManager::Destroy()
 */
 BlueprintManager::BlueprintManager()
 {
-    if (!this->ParseBluePrints())
+    if (!this->ParseBlueprints())
     {
-        n_error("Managers::BlueprintManager: Error parsing data:tables/blueprints.json!");
+        n_error("Managers::BlueprintManager: Error parsing %s%s!", BlueprintManager::blueprintFolder.AsCharPtr(), BlueprintManager::blueprintFilename.AsCharPtr());
     }
 }
 
@@ -67,28 +66,15 @@ void
 BlueprintManager::OnActivate()
 {
 	Singleton->SetupCategories();
-	Singleton->SetupAttributes();
-}
-
-//------------------------------------------------------------------------------
-/**
-	Create a property by its type name.
-*/
-Ptr<Property>
-BlueprintManager::CreateProperty(const Util::String& type) const
-{
-	Game::Property* result = (Game::Property*) Core::Factory::Instance()->Create(type);
-	n_assert(result != 0);
-	return result;
 }
 
 //------------------------------------------------------------------------------
 /**
 	This method parses the file data:tables/blueprints.json into
-	the bluePrints array.
+	the blueprints array.
 */
 bool
-BlueprintManager::ParseBluePrints()
+BlueprintManager::ParseBlueprints()
 {
 	// it is not an error here if blueprints.json doesn't exist
 	Util::String blueprintsPath = BlueprintManager::blueprintFolder;
@@ -103,12 +89,12 @@ BlueprintManager::ParseBluePrints()
 			// make sure it's a BluePrints file
 			if (!jsonReader->SetToNode("blueprints"))
 			{
-				n_error("BlueprintManager::ParseBluePrints(): not a valid blueprints file!");
+				n_error("BlueprintManager::ParseBlueprints(): not a valid blueprints file!");
 				return false;
 			}
 			if (jsonReader->SetToFirstChild()) do
 			{
-				BluePrint bluePrint;
+				Blueprint bluePrint;
 				bluePrint.name = jsonReader->GetCurrentNodeName();
 
 				if (jsonReader->SetToFirstChild("properties"))
@@ -125,7 +111,7 @@ BlueprintManager::ParseBluePrints()
 					jsonReader->SetToParent();
 				}
 
-				this->bluePrints.Append(bluePrint);
+				this->blueprints.Append(bluePrint);
 
 				//jsonReader->SetToParent();
 			} while (jsonReader->SetToNextChild());
@@ -135,7 +121,7 @@ BlueprintManager::ParseBluePrints()
 		}
 		else
 		{
-			n_error("Managers::BlueprintManager::ParseBluePrints(): could not open '%s'!", blueprintsPath.AsCharPtr());
+			n_error("Managers::BlueprintManager::ParseBlueprints(): could not open '%s'!", blueprintsPath.AsCharPtr());
 			return false;
 		}
 	}
@@ -155,44 +141,39 @@ BlueprintManager::SetBlueprintsFilename(const Util::String& name, const Util::St
 
 //------------------------------------------------------------------------------
 /**
-	Create the properties of every category and call SetupDefaultAttributes on it.
 */
-void
-BlueprintManager::SetupAttributes()
+BlueprintId const
+BlueprintManager::GetBlueprintId(Util::StringAtom name)
 {
-	// create a instance of every property and call SetupDefaultAttributes()
-	IndexT idxBluePrint;
-	for (idxBluePrint = 0; idxBluePrint < this->bluePrints.Size(); idxBluePrint++)
-	{
-		const BluePrint& bluePrint = this->bluePrints[idxBluePrint];
+	n_assert(Singleton != nullptr);
+	return Singleton->blueprintMap[name];
+}
 
-		// category for blueprint type not found
-		if (!Game::CategoryExists(bluePrint.name))
-		{
-			n_printf("Obsolete Category '%s' in blueprints.json", bluePrint.name.AsCharPtr());
-			continue;
-		}
+//------------------------------------------------------------------------------
+/**
+*/
+EntityMapping
+BlueprintManager::Instantiate(BlueprintId blueprint)
+{
+	EntityManager::State const& emState = EntityManager::Instance()->state;
+	CategoryId cid = Singleton->blueprints[blueprint.id].categoryId;
+	Category& cat = emState.categoryArray[cid.id];
+	InstanceId instance = emState.worldDatabase->AllocateRow(cat.instanceTable);
+	return { cid, instance };
+}
 
-		// begin add category attrs
-		EntityManager::Instance()->BeginAddCategoryAttrs(bluePrint.name);
-
-		const Util::Array<PropertyEntry>& catProperties = bluePrint.properties;
-		IndexT idxCatProperty;
-		for (idxCatProperty = 0; idxCatProperty < catProperties.Size(); idxCatProperty++)
-		{
-			const Util::String& propertyName = catProperties[idxCatProperty].propertyName;
-			if (Core::Factory::Instance()->ClassExists(propertyName))
-			{
-				Ptr<Game::Property> newProperty = this->CreateProperty(propertyName);
-				EntityManager::Instance()->AddProperty(newProperty);
-			}
-			else
-			{
-				n_warning("Blueprint '%s' contains invalid property named '%s'!\n", bluePrint.name.AsCharPtr(), propertyName.AsCharPtr());
-			}
-		}
-		EntityManager::Instance()->EndAddCategoryAttrs();
-	}
+//------------------------------------------------------------------------------
+/**
+*/
+EntityMapping
+BlueprintManager::Instantiate(BlueprintId blueprint, TemplateId templateId)
+{
+	EntityManager::State const& emState = EntityManager::Instance()->state;
+	Ptr<MemDb::Database> const& db = emState.worldDatabase;
+	CategoryId cid = Singleton->blueprints[blueprint.id].categoryId;
+	Category& cat = emState.categoryArray[cid.id];
+	InstanceId instance = db->DuplicateInstance(Singleton->blueprints[blueprint.id].tableId, templateId.id, cat.instanceTable);
+	return { cid, instance };
 }
 
 //------------------------------------------------------------------------------
@@ -204,20 +185,57 @@ BlueprintManager::SetupCategories()
 
 	// create a instance of every property and call SetupDefaultAttributes()
 	IndexT idxBluePrint;
-	for (idxBluePrint = 0; idxBluePrint < this->bluePrints.Size(); idxBluePrint++)
+	bool failed = false;
+	for (idxBluePrint = 0; idxBluePrint < this->blueprints.Size(); idxBluePrint++)
 	{
-		const BluePrint& bluePrint = this->bluePrints[idxBluePrint];
+		Blueprint& blueprint = this->blueprints[idxBluePrint];
 
-		if (Game::CategoryExists(bluePrint.name))
+		if (this->blueprintMap.Contains(blueprint.name))
 		{
-			n_warning("Duplicate blueprint named '%s' found in blueprints.json\n", bluePrint.name.AsCharPtr());
+			n_warning("Duplicate blueprint named '%s' found in blueprints.json\n", blueprint.name.Value());
 			continue;
 		}
-		CategoryCreateInfo info;
-		info.name = bluePrint.name;
-		// Note that we don't setup any attributes for this category yet!
+		MemDb::TableCreateInfo info;
+		info.name = blueprint.name.AsString();
 
-		EntityManager::Instance()->AddCategory(info);
+		const SizeT numCols = blueprint.properties.Size();
+		info.columns.SetSize(numCols);
+
+		for (int i = 0; i < numCols; i++)
+		{
+			auto descriptor = MemDb::TypeRegistry::GetDescriptor(blueprint.properties[i].propertyName);
+			if (descriptor != PropertyId::Invalid())
+			{
+				info.columns[i] = descriptor;
+			}
+			else
+			{
+				n_printf("Error: Unrecognized property '%s' in blueprint '%s'\n", blueprint.properties[i].propertyName.AsString().AsCharPtr(), blueprint.name.Value());
+				failed = true;
+			}
+		}
+
+		if (!failed)
+		{
+			// Create the category table. This is just to that we always have access to the category directly
+			CategoryId cid = EntityManager::Instance()->CreateCategory(info);
+			Category const& cat = EntityManager::Instance()->GetCategory(cid);
+
+			// Create the blueprint's template table
+			info.name = "blueprint:" + info.name;
+			MemDb::TableId tid = Game::GetWorldDatabase()->CreateTable(info);
+
+			blueprint.categoryHash = cat.hash;
+			blueprint.categoryId = cid;
+
+			blueprint.tableId = tid;
+			this->blueprintMap.Add(blueprint.name, idxBluePrint);
+		}
+	}
+
+	if (failed)
+	{
+		n_error("Aborting due to unrecoverable error(s)!\n");
 	}
 }
 

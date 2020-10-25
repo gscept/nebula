@@ -42,12 +42,12 @@ bool ispointinside(const vec4& p, const mat4& m);
 struct NEBULA_ALIGN16 mat4
 {
 public:
-    /// default constructor, sets up as identity
+    /// default constructor. returns identity matrix
     mat4();
+    /// copy constructor
+    mat4(const mat4& rhs) = default;
     /// construct from components
     mat4(const vec4& row0, const vec4& row1, const vec4& row2, const vec4& row3);
-    /// copy constructor
-    mat4(const mat4& rhs);
     /// construct from individual values
     mat4(
         float m00, float m01, float m02, float m03,
@@ -55,8 +55,6 @@ public:
         float m20, float m21, float m22, float m23,
         float m30, float m31, float m32, float m33);
 
-    /// assignment operator
-    void operator=(const mat4& rhs);
     /// equality operator
     bool operator==(const mat4& rhs) const;
     /// inequality operator
@@ -123,18 +121,17 @@ public:
             vec4 row3;
         };
     };
+
+	static const mat4 identity;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
 __forceinline
-mat4::mat4()
+mat4::mat4() : row0(_id_x), row1(_id_y), row2(_id_z), row3(_id_w)
 {
-	this->r[0] = _id_x;
-	this->r[1] = _id_y;
-	this->r[2] = _id_z;
-	this->r[3] = _id_w;
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -153,36 +150,12 @@ mat4::mat4(const vec4& row0, const vec4& row1, const vec4& row2, const vec4& row
 /**
 */
 __forceinline 
-mat4::mat4(const mat4& rhs)
-{
-    r[0] = rhs.r[0];
-    r[1] = rhs.r[1];
-    r[2] = rhs.r[2];
-    r[3] = rhs.r[3];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline 
 mat4::mat4(float m00, float m01, float m02, float m03, float m10, float m11, float m12, float m13, float m20, float m21, float m22, float m23, float m30, float m31, float m32, float m33)
 {
     this->r[0] = vec4(m00, m01, m02, m03);
     this->r[1] = vec4(m10, m11, m12, m13);
     this->r[2] = vec4(m20, m21, m22, m23);
     this->r[3] = vec4(m30, m31, m32, m33);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline void
-mat4::operator=(const mat4& rhs)
-{
-    this->r[0] = rhs.r[0];
-    this->r[1] = rhs.r[1];
-    this->r[2] = rhs.r[2];
-    this->r[3] = rhs.r[3];
 }
 
 //------------------------------------------------------------------------------
@@ -711,7 +684,7 @@ operator*(const mat4& m, const point& p)
 __forceinline mat4
 ortholh(scalar w, scalar h, scalar zn, scalar zf)
 {
-	mat4 m;
+	mat4 m = mat4::identity;
 	scalar dist = 1.0f / (zf - zn);
 	m.r[0] = vec4(2.0f / w, 0.0f, 0.0f, 0.0f);
 	m.r[1] = vec4(0.0f, 2.0f / h, 0.0f, 0.0f);
@@ -726,7 +699,7 @@ ortholh(scalar w, scalar h, scalar zn, scalar zf)
 __forceinline mat4
 orthorh(scalar w, scalar h, scalar zn, scalar zf)
 {
-	mat4 m;
+	mat4 m = mat4::identity;
 	scalar dist = 1.0f / (zn - zf);
     m.r[0] = vec4(2.0f / w, 0.0f, 0.0f, 0.0f);
     m.r[1] = vec4(0.0f, 2.0f / h, 0.0f, 0.0f);
@@ -741,7 +714,7 @@ orthorh(scalar w, scalar h, scalar zn, scalar zf)
 __forceinline mat4
 orthooffcenterlh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
 {
-	mat4 m;
+	mat4 m = mat4::identity;
 	scalar divwidth = 1.0f / (r - l);
 	scalar divheight = 1.0f / (t - b);
 	scalar dist = 1.0f / (zf - zn);
@@ -758,7 +731,7 @@ orthooffcenterlh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
 __forceinline mat4
 orthooffcenterrh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
 {
-	mat4 m;
+	mat4 m = mat4::identity;
 	scalar divwidth = 1.0f / (r - l);
 	scalar divheight = 1.0f / (t - b);
 	scalar dist = 1.0f / (zn - zf);
@@ -775,7 +748,7 @@ orthooffcenterrh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
 __forceinline mat4
 perspfovlh(scalar fovy, scalar aspect, scalar zn, scalar zf)
 {
-    mat4 m;
+    mat4 m = mat4::identity;
 	scalar halfFov = 0.5f * fovy;
 	scalar sinfov = n_sin(halfFov);
 	scalar cosfov = n_cos(halfFov);
@@ -798,7 +771,7 @@ perspfovlh(scalar fovy, scalar aspect, scalar zn, scalar zf)
 __forceinline mat4
 perspfovrh(scalar fovy, scalar aspect, scalar zn, scalar zf)
 {
-	mat4 m;
+	mat4 m = mat4::identity;
 	scalar halfFov = 0.5f * fovy;
 	scalar sinfov = n_sin(halfFov);
 	scalar cosfov = n_cos(halfFov);
@@ -822,7 +795,7 @@ perspfovrh(scalar fovy, scalar aspect, scalar zn, scalar zf)
 __forceinline mat4
 persplh(scalar w, scalar h, scalar zn, scalar zf)
 {
-	mat4 m;
+	mat4 m = mat4::identity;
 	scalar dist = zf / (zf - zn);	
 
     m.r[0] = vec4(2.0f * zn / w, 0.0f, 0.0f, 0.0f);
@@ -838,7 +811,7 @@ persplh(scalar w, scalar h, scalar zn, scalar zf)
 __forceinline mat4
 persprh(scalar w, scalar h, scalar zn, scalar zf)
 {
-	mat4 m;
+	mat4 m = mat4::identity;
 	scalar dist = zf / (zn - zf);	
 
     m.r[0] = vec4(2.0f * zn / w, 0.0f, 0.0f, 0.0f);
@@ -854,7 +827,7 @@ persprh(scalar w, scalar h, scalar zn, scalar zf)
 __forceinline mat4
 perspoffcenterlh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
 {
-	mat4 m;
+	mat4 m = mat4::identity;
 	scalar divwidth = 1.0f / (r - l);
 	scalar divheight = 1.0f / (t - b);
 	scalar dist = zf / (zf - zn);
@@ -872,7 +845,7 @@ perspoffcenterlh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
 __forceinline mat4
 perspoffcenterrh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
 {
-	mat4 m;
+	mat4 m = mat4::identity;
 	scalar divwidth = 1.0f / (r - l);
 	scalar divheight = 1.0f / (t - b);
 	scalar dist = zf / (zn - zf);
@@ -948,7 +921,7 @@ rotationaxis(const vec3& axis, scalar angle)
 __forceinline mat4
 rotationx(scalar angle)
 {
-	mat4 m;
+	mat4 m = mat4::identity;
 
 	scalar sangle = n_sin(angle);
 	scalar cangle = n_cos(angle);
@@ -967,7 +940,7 @@ rotationx(scalar angle)
 __forceinline mat4
 rotationy(scalar angle)
 {
-	mat4 m;
+	mat4 m = mat4::identity;
 
 	scalar sangle = n_sin(angle);
 	scalar cangle = n_cos(angle);
@@ -986,7 +959,7 @@ rotationy(scalar angle)
 __forceinline mat4
 rotationz(scalar angle)
 {
-	mat4 m;
+	mat4 m = mat4::identity;
 
 	scalar sangle = n_sin(angle);
 	scalar cangle = n_cos(angle);
@@ -1015,7 +988,7 @@ rotationyawpitchroll(scalar yaw, scalar pitch, scalar roll)
 __forceinline mat4
 scaling(scalar scale)
 {
-    mat4 m;
+    mat4 m = mat4::identity;
     m.r[0] = _mm_setr_ps(scale, 0.0f, 0.0f, 0.0f);
     m.r[1] = _mm_setr_ps(0.0f, scale, 0.0f, 0.0f);
     m.r[2] = _mm_setr_ps(0.0f, 0.0f, scale, 0.0f);
@@ -1030,7 +1003,7 @@ scaling(scalar scale)
 __forceinline mat4
 scaling(scalar sx, scalar sy, scalar sz)
 {
-	mat4 m;
+	mat4 m = mat4::identity;
 	m.r[0] = _mm_setr_ps(sx, 0.0f, 0.0f, 0.0f);
     m.r[1] = _mm_setr_ps(0.0f, sy, 0.0f, 0.0f);
     m.r[2] = _mm_setr_ps(0.0f, 0.0f, sz, 0.0f);
@@ -1045,7 +1018,7 @@ scaling(scalar sx, scalar sy, scalar sz)
 __forceinline mat4
 scaling(const vec3& s)
 {
-	mat4 m;
+	mat4 m = mat4::identity;
 	m.r[0] = _mm_and_ps(s.vec, _mm_castsi128_ps(maskX));
 	m.r[1] = _mm_and_ps(s.vec, _mm_castsi128_ps(maskY));
 	m.r[2] = _mm_and_ps(s.vec, _mm_castsi128_ps(maskZ));	
@@ -1059,7 +1032,7 @@ scaling(const vec3& s)
 __forceinline mat4
 translation(scalar x, scalar y, scalar z)
 {
-	mat4 m;
+	mat4 m = mat4::identity;
 	m.r[3] = _mm_set_ps(1.0f,z,y,x);
 	return m;    
 }
@@ -1070,7 +1043,7 @@ translation(scalar x, scalar y, scalar z)
 __forceinline mat4
 translation(const vec3& t)
 {
-	mat4 m;
+	mat4 m = mat4::identity;
 	m.r[3] = vec4(t.vec, 1.0f);
     return m;
 }

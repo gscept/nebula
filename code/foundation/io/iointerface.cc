@@ -51,4 +51,13 @@ IoInterface::Open()
     InterfaceBase::Open();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+IoInterface::Close()
+{
+	InterfaceBase::Close();
+}
+
 } // namespace IO

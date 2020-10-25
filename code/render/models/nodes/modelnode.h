@@ -116,7 +116,7 @@ public:
 	/// return name
 	const Util::StringAtom& GetName() const;
 	/// get hash
-	const IndexT HashCode() const;
+	const uint32_t HashCode() const;
 
 	/// apply node-level state
 	virtual void ApplyNodeState();
@@ -206,10 +206,10 @@ ModelNode::GetName() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const IndexT 
+inline const uint32_t
 ModelNode::HashCode() const
 {
-	return this->uniqueId;
+	return (uint32_t)this->uniqueId;
 }
 
 } // namespace Models

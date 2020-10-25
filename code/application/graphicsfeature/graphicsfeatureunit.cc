@@ -34,7 +34,7 @@ __ImplementSingleton(GraphicsFeatureUnit);
 //------------------------------------------------------------------------------
 /**
 */
-GraphicsFeatureUnit::GraphicsFeatureUnit()
+GraphicsFeatureUnit::GraphicsFeatureUnit() : defaultFrameScript("frame:vkdefault.json"_uri)
 {
     __ConstructSingleton;
 }
@@ -93,7 +93,7 @@ GraphicsFeatureUnit::OnActivate()
 	PostEffects::SSRContext::Create();
 	PostEffects::TonemapContext::Create();
 
-    this->defaultView = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
+    this->defaultView = gfxServer->CreateView("mainview", this->defaultFrameScript);
     this->defaultStage = gfxServer->CreateStage("defaultStage", true);
     this->defaultView->SetStage(this->defaultStage);
 

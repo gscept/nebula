@@ -11,6 +11,8 @@
 namespace Math
 {
 
+const mat4 mat4::identity = mat4(_id_x, _id_y, _id_z, _id_w);
+
 //------------------------------------------------------------------------------
 /**
 	based on this http://www.opengl.org/discussion_boards/showthread.php/169605-reflection-matrix-how-to-derive
@@ -134,7 +136,7 @@ affinetransformation(scalar scale, const vec3& rotationCenter, const quat& rotat
 mat4
 rotationquat(const quat& q)
 {	
-	mat4 ret;
+	mat4 ret = mat4::identity;
 	float d = lengthsq(q);
 	n_assert(d != 0.0f);
 	float s = 2.0f / d;

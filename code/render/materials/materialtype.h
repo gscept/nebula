@@ -87,7 +87,7 @@ public:
 	/// get name
 	const Util::String& GetName();
 	/// get hash code 
-	const IndexT HashCode() const;
+	const uint32_t HashCode() const;
 
 private:
 	friend class MaterialServer;
@@ -210,10 +210,10 @@ MaterialType::GetName()
 //------------------------------------------------------------------------------
 /**
 */
-inline const IndexT
+inline const uint32_t
 MaterialType::HashCode() const
 {
-	return this->uniqueId;
+	return (uint32_t)this->uniqueId;
 }
 
 } // namespace Materials

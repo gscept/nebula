@@ -14,16 +14,9 @@
 #include "game/entity.h"
 #include "game/manager.h"
 #include "util/delegate.h"
-#include "game/database/database.h"
 #include "game/category.h"
-#include "game/property.h"
-
-#define SetupAttr(ATTRID) Game::EntityManager::Instance()->AddCategoryAttr(ATTRID)
-
-namespace Attr
-{
-__DeclareAttribute(Owner, AccessMode::ReadOnly, Game::Entity, 'OWNR', Game::Entity::Invalid());
-}
+#include "memdb/database.h"
+#include "basegamefeature/properties/owner.h"
 
 namespace Game
 {
@@ -46,44 +39,26 @@ bool IsActive(Entity e);
 /// Returns number of active entities
 uint GetNumEntities();
 
-/// Query the database for a dataset of categories
-Dataset Query(FilterSet const& filterset);
-
-/// check if category exists
-bool CategoryExists(Util::StringAtom name);
-
-/// return a category id by name
-CategoryId const GetCategoryId(Util::StringAtom name);
-
 /// returns the entity mapping of an entity
 EntityMapping GetEntityMapping(Game::Entity entity);
 
+/// return an attribute id
+PropertyId const GetPropertyId(Util::StringAtom name);
+
+/// add a property to an entity
+void AddProperty(Game::Entity const entity, PropertyId const pid);
+
+/// returns a blueprint id
+BlueprintId const GetBlueprintId(Util::StringAtom name);
+
+/// query the world database for instances with filter
+Dataset Query(FilterSet const& filter);
+
 /// Returns the world db
-Ptr<Game::Db::Database> GetWorldDatabase();
+Ptr<MemDb::Database> GetWorldDatabase();
 
 /// Get number of instances in a specific category
 SizeT GetNumInstances(CategoryId category);
-
-/// Get an attribute from an entity
-template<typename ATTR> typename
-ATTR::TYPE const& GetAttribute(Game::Entity entity);
-
-/// Set an attribute of an entity
-template<typename ATTR>
-void SetAttribute(Game::Entity entity, typename ATTR::TYPE const& value);
-
-/// create a property state and retrieve the buffer
-template<typename TYPE> Game::PropertyData<TYPE>
-CreatePropertyState(CategoryId category, Util::StringAtom name);
-
-///	Retrieve a state buffer from a category
-template<typename TYPE> Game::PropertyData<TYPE>
-GetPropertyState(CategoryId category);
-
-///	Shortcut for fetching property data buffers(table columns)
-template<typename ATTR> Game::PropertyData<typename ATTR::TYPE>
-GetPropertyData(CategoryId category);
-
 
 //------------------------------------------------------------------------------
 /**
@@ -97,15 +72,6 @@ GetPropertyData(CategoryId category);
 	The entity manager handles all entity categories in the game.
 	Categories are collections of attributes, arranged as a table where each row
 	is an instance, mapped to an entity.
-
-	Categories can have properties attached. When the event methods of this
-	manager is called, it subsequently calls the event callbacks for all properties
-	for all categories.
-
-	Categories can also have custom, temporary states. These are commonly used
-	by properties, and only by the property that uses it. If the data that exists
-	in a state needs to be exposed to other properties, you should consider moving
-	it to a public attribute.
 */
 class EntityManager
 {
@@ -114,34 +80,32 @@ public:
 	/// retrieve the api
 	static ManagerAPI Create();
 
+	/// destroy entity manager
 	static void Destroy();
 
-	/// Adds a category
-	CategoryId AddCategory(CategoryCreateInfo const& info);
+	/// creates a category
+	CategoryId CreateCategory(CategoryCreateInfo const& info);
 
-	/// Returns a category by name. asserts if category does not exist
-	Category const& GetCategory(Util::StringAtom name) const;
-
-	/// Returns a category by id. asserts if category does not exist
+	/// returns a category by id. asserts if category does not exist
 	Category const& GetCategory(CategoryId cid) const;
 
-	/// Begin adding category attributes
-	void BeginAddCategoryAttrs(Util::StringAtom categoryName);
-	/// Add a category attribute
-	void AddCategoryAttr(const Game::AttributeId& attrId);
-	/// Add a category property. This automatically adds all attributes for said property
-	void AddProperty(const Ptr<Game::Property>& prop);
-	/// End adding category attributes
-	void EndAddCategoryAttrs();
-
-	/// Returns the number of existing categories
+	/// returns the number of existing categories
 	SizeT const GetNumCategories() const;
 
-	/// Allocate instance for entity in category instance table
+	/// allocate instance for entity in category instance table
 	InstanceId AllocateInstance(Entity entity, CategoryId category);
+	
+	/// allocate instance for entity in blueprints category instance table
+	InstanceId AllocateInstance(Entity entity, BlueprintId blueprint);
 
-	/// Deallocated and recycle instance in category instance table
+	/// allocate instance for entity in blueprint instance table by copying template
+	InstanceId AllocateInstance(Entity entity, BlueprintId blueprint, TemplateId templateId);
+
+	/// deallocated and recycle instance in category instance table
 	void DeallocateInstance(Entity entity);
+
+	/// migrate an instance from one category to another
+	InstanceId Migrate(Entity entity, CategoryId newCategory);
 
 	// Don't modify state without knowing what you're doing!
 	struct State
@@ -164,20 +128,18 @@ public:
 		SizeT numEntities;
 
 		/// Contains the entire world database
-		Ptr<Game::Db::Database> worldDatabase;
+		Ptr<MemDb::Database> worldDatabase;
 
 		Util::Queue<AllocateInstanceCommand> allocQueue;
 		Util::Queue<DeallocInstanceCommand> deallocQueue;
 
 		// - Categories -
 		Util::Array<Category> categoryArray;
-		Util::HashTable<Util::StringAtom, CategoryId> catIndexMap;
+		Util::HashTable<CategoryHash, CategoryId> catIndexMap;
 
 		Util::Array<EntityMapping> entityMap;
 
-		// These are used when adding attributes from a property
-		bool inBeginAddCategoryAttrs;
-		IndexT addAttrCategoryIndex;
+		PropertyId ownerId;
 	} state;
 
 private:
@@ -186,16 +148,6 @@ private:
 	/// destructor
 	~EntityManager();
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline Category const&
-EntityManager::GetCategory(Util::StringAtom name) const
-{
-	n_assert(this->state.catIndexMap.Contains(name));
-	return this->state.categoryArray[this->state.catIndexMap[name].id];
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -213,104 +165,6 @@ inline SizeT const
 EntityManager::GetNumCategories() const
 {
 	return this->state.categoryArray.Size();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<typename ATTR>
-typename ATTR::TYPE const&
-GetAttribute(Game::Entity entity)
-{
-	auto mapping = GetEntityMapping(entity);
-	void** ptrptr = (*(ATTR::Id().GetCategoryTable()))[mapping.category.id];
-	n_assert(ptrptr != nullptr);
-	n_assert(*ptrptr != nullptr);
-
-	ATTR::TYPE* data = (ATTR::TYPE*) * ptrptr;
-
-#ifdef NEBULA_BOUNDSCHECKS
-	Game::EntityManager const* mgr = EntityManager::Instance();
-	auto const& cat = mgr->GetCategory(mapping.category);
-	Ptr<Game::Db::Database> db = mgr->state.worldDatabase;
-	SizeT const size = db->GetTable(cat.instanceTable).numRows;
-	n_assert(mapping.instance.id >= 0 && mapping.instance.id < size);
-#endif
-	return data[mapping.instance.id];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<typename ATTR>
-void
-SetAttribute(Game::Entity entity, typename ATTR::TYPE const& value)
-{
-	n_assert2(ATTR::AccessMode() == Attr::AccessMode::ReadWrite, "Attribute is not directly writable!\n");
-
-	auto mapping = GetEntityMapping(entity);
-	
-	if (!ATTR::Id().GetCategoryTable()->Contains(mapping.category.id))
-		return;
-
-	auto& ct = *(ATTR::Id().GetCategoryTable());
-	void** ptrptr = ct[mapping.category.id];
-	n_assert(ptrptr != nullptr);
-	n_assert(*ptrptr != nullptr);
-
-	ATTR::TYPE* data = (ATTR::TYPE*) * ptrptr;
-#ifdef NEBULA_BOUNDSCHECKS
-	Game::EntityManager const* mgr = EntityManager::Instance();
-	auto const& cat = mgr->GetCategory(mapping.category);
-	Ptr<Game::Db::Database> db = mgr->state.worldDatabase;
-	SizeT const size = db->GetTable(cat.instanceTable).numRows;
-	n_assert(mapping.instance.id >= 0 && mapping.instance.id < size);
-#endif
-	data[mapping.instance.id] = value;
-}
-
-//------------------------------------------------------------------------------
-/**
-	Create and retrieve a state buffer from a category
-*/
-template<typename TYPE>
-Game::PropertyData<typename TYPE>
-CreatePropertyState(CategoryId category, Util::StringAtom name)
-{
-	Game::EntityManager const* mgr = Game::EntityManager::Instance();
-	Ptr<Game::Db::Database> db = mgr->state.worldDatabase;
-	Db::TableId const tid = mgr->GetCategory(category).instanceTable;
-	return db->AddStateColumn<TYPE>(tid, name);
-}
-
-//------------------------------------------------------------------------------
-/**
-	Retrieve a state buffer from a category
-*/
-template<typename TYPE>
-Game::PropertyData<typename TYPE>
-GetPropertyState(CategoryId category)
-{
-	Game::EntityManager const* mgr = Game::EntityManager::Instance();
-	Ptr<Game::Db::Database> db = mgr->state.worldDatabase;
-	Db::TableId const tid = mgr->GetCategory(category).instanceTable;
-	n_assert2(db->HasStateColumn(tid, TYPE::ID), "Entity category does not contain state!\n");
-	return db->GetStateColumn<TYPE>(tid);
-}
-
-//------------------------------------------------------------------------------
-/**
-	Shortcut for fetching property data buffers(table columns)
-*/
-template<typename ATTR>
-Game::PropertyData<typename ATTR::TYPE>
-GetPropertyData(CategoryId category)
-{
-	Game::EntityManager const* mgr = Game::EntityManager::Instance();
-	Ptr<Game::Db::Database> const& db = mgr->state.worldDatabase;
-	Db::TableId const tid = mgr->GetCategory(category).instanceTable;
-	n_assert2(db->HasColumn(tid, ATTR::Id()), "Category does not have specified attribute!");
-	return db->GetColumnData<ATTR>(tid);
 }
 
 //-------------------------
