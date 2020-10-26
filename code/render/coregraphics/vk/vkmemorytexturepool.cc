@@ -1332,6 +1332,9 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
         VkSharingMode sharingMode = (loadInfo.texUsage & TextureUsage::ReadWriteTexture) ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
         const Util::Set<uint32_t>& queues = Vulkan::GetQueueFamilies();
 
+		if (queues.Size() <= 1)
+			sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
+
         VkImageCreateFlags createFlags = 0;
 
         if (loadInfo.alias != CoreGraphics::TextureId::Invalid())
