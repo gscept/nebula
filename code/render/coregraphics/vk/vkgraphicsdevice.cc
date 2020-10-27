@@ -731,7 +731,7 @@ CreateAndBindGraphicsPipeline()
 /**
 */
 void 
-BindComputePipeline(const VkPipeline& pipeline, const VkPipelineLayout& layout, const CoreGraphics::QueueType queue)
+BindComputePipeline(const VkPipeline& pipeline, const CoreGraphics::QueueType queue)
 {
 	n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
 
@@ -2439,7 +2439,7 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
 	// if we are compute, we can set the pipeline straight away, otherwise we have to accumulate the infos
 	if (info.type == ComputePipeline)
 	{
-		Vulkan::BindComputePipeline(info.pipeline, info.layout, queue);
+		Vulkan::BindComputePipeline(info.pipeline, queue);
 		layoutChanged = state.currentComputePipelineLayout != info.layout;
 		state.currentComputePipelineLayout = info.layout;
 	}

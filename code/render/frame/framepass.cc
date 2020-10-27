@@ -75,6 +75,10 @@ FramePass::CompiledImpl::RunJobs(const IndexT frameIndex)
 		// start subpass commands
 		CoreGraphics::BeginSubpassCommands(this->subpassBuffers[i][bufferedIndex]);
 
+		// progress to next subpass if not on first iteration
+		if (i > 0)
+			PassNextSubpass(this->pass);
+
 		// execute contents of this subpass and synchronize
 		// note that we overload the cross queue sync so we do it outside the render pass
 		this->subpasses[i]->QueuePreSync();

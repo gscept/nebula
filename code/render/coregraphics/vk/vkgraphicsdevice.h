@@ -73,7 +73,7 @@ void SetInputLayoutInfo(VkPipelineInputAssemblyStateCreateInfo* inputLayout);
 /// create a new pipeline (or fetch from cache) and bind to command queue
 void CreateAndBindGraphicsPipeline();
 /// bind compute pipeline
-void BindComputePipeline(const VkPipeline& pipeline, const VkPipelineLayout& layout, const CoreGraphics::QueueType queue);
+void BindComputePipeline(const VkPipeline& pipeline, const CoreGraphics::QueueType queue);
 /// bind no pipeline (effectively making all descriptor binds happen on both graphics and compute)
 void UnbindPipeline();
 /// set array of viewports directly
