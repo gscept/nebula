@@ -85,7 +85,6 @@ group(BATCH_GROUP) constant TerrainRuntimeUniforms [ string Visibility = "VS|HS|
 group(DYNAMIC_OFFSET_GROUP) constant TerrainTileUpdateUniforms [ string Visbility = "PS|CS"; ]
 {
 	vec2 SparseTileWorldOffset;
-	float MetersPerPixel;
 	float MetersPerTile;
 };
 
@@ -1048,8 +1047,8 @@ psScreenSpaceVirtual(
 			vec2 subTextureTileFractLower;
 			CalculateTileCoords(lowerMip, subTexture.tiles, relativePos, subTexture.indirectionOffset, pageCoordLower, dummy, subTextureTileFractLower);
 
-			// physicalUv represents the pixel offset for this pixel into that page
-			vec2 physicalUvLower = subTextureTileFractLower * (PhysicalTileSize);
+			// physicalUv represents the pixel offset for this pixel into that page, add padding to account for anisotropy
+			vec2 physicalUvLower = subTextureTileFractLower * (PhysicalTileSize) + PhysicalTilePadding;
 
 			// if we need to sample two lods, do bilinear interpolation ourselves
 			if (upperMip != lowerMip)
@@ -1059,7 +1058,7 @@ psScreenSpaceVirtual(
 				uvec2 dummy;
 				vec2 subTextureTileFractUpper;
 				CalculateTileCoords(upperMip, subTexture.tiles, relativePos, subTexture.indirectionOffset, pageCoordUpper, dummy, subTextureTileFractUpper);
-				vec2 physicalUvUpper = subTextureTileFractUpper * (PhysicalTileSize);
+				vec2 physicalUvUpper = subTextureTileFractUpper * (PhysicalTileSize) + PhysicalTilePadding;
 
 				// get the indirection coord and normalize it to the physical space
 				vec3 indirectionUpper = UnpackIndirection(floatBitsToUint(fetch2D(IndirectionBuffer, PointSampler, ivec2(pageCoordUpper), upperMip).x));

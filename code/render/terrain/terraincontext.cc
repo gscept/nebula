@@ -1976,11 +1976,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
 				entry.physicalOffsetX = physicalCoord.x;
 				entry.physicalOffsetY = physicalCoord.y;
 
-				// since we have 256 + 8 sized tiles, each entry should be slightly offset to account for anisotropy
-				IndirectionEntry offsettedEntry = entry;
-				offsettedEntry.physicalOffsetX += PhysicalTextureTileHalfPadding;
-				offsettedEntry.physicalOffsetY += PhysicalTextureTileHalfPadding;
-				terrainVirtualTileState.indirectionEntryUpdates.Append(offsettedEntry);
+				terrainVirtualTileState.indirectionEntryUpdates.Append(entry);
 				terrainVirtualTileState.indirectionTextureCopies.Append(CoreGraphics::TextureCopy{ Math::rectangle<SizeT>(pageCoordX, pageCoordY, pageCoordX + 1, pageCoordY + 1), mip, 0 });
 
 				// calculate the world space size of this tile
@@ -1993,7 +1989,6 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
 
 				// value to normalize [0..264]i to [0..1]f (1/tilesize) *
 				Terrain::TerrainTileUpdateUniforms tileUpdateUniforms;
-				tileUpdateUniforms.MetersPerPixel = metersPerPixel;
 				tileUpdateUniforms.MetersPerTile = metersPerTilePadded;
 
 				// pagePos is the relative page id into the subtexture, ranging from 0-subTexture.size
