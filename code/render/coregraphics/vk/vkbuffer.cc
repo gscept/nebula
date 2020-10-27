@@ -63,7 +63,6 @@ CreateBuffer(const BufferCreateInfo& info)
 	Util::Set<uint32_t> queues;
 	if (info.usageFlags & CoreGraphics::TransferBufferSource)
 	{
-		sharingMode = VK_SHARING_MODE_CONCURRENT;
 		queues.Add(Vulkan::GetQueueFamily(GraphicsQueueType));
 		queues.Add(Vulkan::GetQueueFamily(ComputeQueueType));
 		queues.Add(Vulkan::GetQueueFamily(TransferQueueType));
@@ -71,7 +70,6 @@ CreateBuffer(const BufferCreateInfo& info)
 	}
 	if (info.usageFlags & CoreGraphics::TransferBufferDestination)
 	{
-		sharingMode = VK_SHARING_MODE_CONCURRENT;
 		queues.Add(Vulkan::GetQueueFamily(GraphicsQueueType));
 		queues.Add(Vulkan::GetQueueFamily(ComputeQueueType));
 		queues.Add(Vulkan::GetQueueFamily(TransferQueueType));
@@ -79,21 +77,18 @@ CreateBuffer(const BufferCreateInfo& info)
 	}
 	if (info.usageFlags & CoreGraphics::ReadWriteBuffer)
 	{
-		sharingMode = VK_SHARING_MODE_CONCURRENT;
 		queues.Add(Vulkan::GetQueueFamily(GraphicsQueueType));
 		queues.Add(Vulkan::GetQueueFamily(ComputeQueueType));
 		flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 	}
 	if (info.usageFlags & CoreGraphics::ReadWriteTexelBuffer)
 	{
-		sharingMode = VK_SHARING_MODE_CONCURRENT;
 		queues.Add(Vulkan::GetQueueFamily(GraphicsQueueType));
 		queues.Add(Vulkan::GetQueueFamily(ComputeQueueType));
 		flags |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
 	}
 	if (info.usageFlags & CoreGraphics::IndirectBuffer)
 	{
-		sharingMode = VK_SHARING_MODE_CONCURRENT;
 		queues.Add(Vulkan::GetQueueFamily(GraphicsQueueType));
 		queues.Add(Vulkan::GetQueueFamily(ComputeQueueType));
 		flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
@@ -109,6 +104,9 @@ CreateBuffer(const BufferCreateInfo& info)
 
 	if (info.mode == DeviceLocal && info.dataSize != 0)
 		flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+	if (queues.Size() > 1)
+		sharingMode = VK_SHARING_MODE_CONCURRENT;
 
 	// start by creating buffer
 	uint size = info.byteSize == 0 ? info.size * info.elementSize : info.byteSize;
