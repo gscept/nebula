@@ -256,20 +256,6 @@ SetupPass(const PassId pid)
 			subpassIsDependendedOn[dep.srcSubpass] = true;
         }
 
-		// if subpass has no dependencies from any other subpass, then it must mean it's the first subpass
-		if (subpass.dependencies.Size() == 0)
-		{
-			VkSubpassDependency dep;
-			dep.srcSubpass = VK_SUBPASS_EXTERNAL;
-			dep.srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-			dep.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-			dep.dstSubpass = i;
-			dep.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-			dep.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-			subpassDeps.Append(dep);
-		}
-
         // set color attachments
         vksubpass.colorAttachmentCount = usedAttachments;
         vksubpass.pColorAttachments = references.Begin();
@@ -298,23 +284,6 @@ SetupPass(const PassId pid)
 
         subpassAttachmentCounts.Append(vksubpass.colorAttachmentCount);
     }
-
-	// add subpass dependencies for subpasses at the end of the render pass
-	for (i = 0; i < subpassIsDependendedOn.Size(); i++)
-	{
-		if (!subpassIsDependendedOn[i])
-		{
-			VkSubpassDependency dep;
-			dep.srcSubpass = i;
-			dep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dep.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-			dep.dstSubpass = VK_SUBPASS_EXTERNAL;
-			dep.dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-			dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-			dep.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-			subpassDeps.Append(dep);
-		}
-	}
 
     VkAttachmentLoadOp loadOps[] =
     {
