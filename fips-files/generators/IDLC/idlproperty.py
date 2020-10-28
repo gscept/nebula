@@ -48,6 +48,7 @@ class PropertyDefinition:
         self.propertyName = propertyName
         self.variables = list()
         self.isStruct = False
+        self.isResource = False
         if isinstance(prop, dict):
             if not "_type_" in prop:
                 for varName, var in prop.items():
@@ -58,6 +59,12 @@ class PropertyDefinition:
             self.variables.append(GetVariableFromEntry(propertyName, prop))
         if len(self.variables) > 1:
             self.isStruct = True
+        # Check to see if any of the types within the struct are resource.
+        for var in self.variables:
+            if var.type == IDLTypes.GetTypeString("resource"):
+                if self.isStruct:
+                    util.fmtError("Structs containing resources not supported!");
+                self.isResource = True
 
     def AsTypeDefString(self):
         numVars = len(self.variables)
@@ -97,9 +104,23 @@ def GetVariableFromEntry(name, var):
 #------------------------------------------------------------------------------
 ##
 #
-def WritePropertyHeaderDeclarations(f, document):
+def ParseProperties(document):
     for propertyName, prop in document["properties"].items():
         properties.append(PropertyDefinition(propertyName, prop))
+
+#------------------------------------------------------------------------------
+##
+#
+def ContainsResourceTypes():
+    for prop in properties:
+        if prop.isResource:
+            return True
+    return False
+
+#------------------------------------------------------------------------------
+##
+#
+def WritePropertyHeaderDeclarations(f, document):
     for p in properties:
         f.WriteLine(p.AsTypeDefString())
 

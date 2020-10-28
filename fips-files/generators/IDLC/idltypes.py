@@ -46,7 +46,7 @@ def ConvertToCamelNotation(attrType):
     elif (T == "string"):
         return "String"
     elif (T == "resource"):
-        return "String"
+        return "ResourceName"
     elif (T == "blob"):
         return "Blob"
     elif (T == "guid"):
@@ -108,7 +108,7 @@ def GetTypeString(attrType):
     elif (T == "string"):
         return "Util::String"
     elif (T == "resource"):
-        return "Util::String"
+        return "Resources::ResourceName"
     elif (T == "blob"):
         return "Util::Blob"
     elif (T == "guid"):
@@ -173,7 +173,7 @@ def GetArgumentType(attrType):
     elif (T == "string"):
         return "Util::String const&"
     elif (T == "resource"):
-        return "Util::String const&"
+        return "Resources::ResourceName"
     elif (T == "blob"):
         return "Util::Blob const&"
     elif (T == "guid"):
@@ -235,7 +235,7 @@ def DefaultValue(attrType):
     elif (T == "string"):
         return "Util::String()"
     elif (T == "resource"):
-        return "Util::String()"
+        return "Resources::ResourceName()"
     elif (T == "blob"):
         return "Util::Blob()"
     elif (T == "guid"):
