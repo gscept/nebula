@@ -105,8 +105,9 @@ def GetVariableFromEntry(name, var):
 ##
 #
 def ParseProperties(document):
-    for propertyName, prop in document["properties"].items():
-        properties.append(PropertyDefinition(propertyName, prop))
+    if "properties" in document:
+        for propertyName, prop in document["properties"].items():
+            properties.append(PropertyDefinition(propertyName, prop))
 
 #------------------------------------------------------------------------------
 ##

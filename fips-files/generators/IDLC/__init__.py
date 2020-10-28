@@ -121,7 +121,7 @@ class IDLCodeGenerator:
         hasMessages = "messages" in self.document
 
         if hasMessages:            
-            IDLDocument.AddInclude(f, "scripting/bindings.h")
+            IDLDocument.AddInclude(f, "scripting/python/conversion.h")
 
         # Add additional dependencies to document.
         if "dependencies" in self.document:
