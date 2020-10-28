@@ -196,7 +196,6 @@ Database::GetColumns(TableId tid)
 	@returns	New index/row in destination table
 	@note		This might be destructive if the destination table is missing some of the source tables columns!
 	@note		This is an instant erase swap on src table, which means any external references to rows (instance ids) will be invalidated!
-	@todo		This has not been optimized
 */
 IndexT
 Database::MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
@@ -211,7 +210,7 @@ Database::MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
 /**
 	@returns	New index/row in destination table
 	@note		This might be destructive if the destination table is missing some of the source tables columns!
-	@todo		This has not been optimized
+	@todo		GetColumnId is quite expensive, should be possible to improve
 */
 IndexT
 Database::DuplicateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
@@ -219,24 +218,34 @@ Database::DuplicateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
 	Table& src = this->tables[Ids::Index(srcTid.id)];
 	Table& dst = this->tables[Ids::Index(dstTid.id)];
 
-	IndexT dstRow = this->AllocateRow(dstTid);
+	IndexT dstRow = this->AllocateRowIndex(dstTid);
 
 	auto const& cols = src.columns.GetArray<0>();
 	auto& buffers = src.columns.GetArray<1>();
+	auto const& dstCols = dst.columns.GetArray<0>();
+	auto& dstBuffers = dst.columns.GetArray<1>();
 
-	const int numCols = src.columns.Size();
-	for (int i = 0; i < numCols; ++i)
+	const int numDstCols = dst.columns.Size();
+
+	for (int i = 0; i < numDstCols; ++i)
 	{
-		ColumnDescriptor descriptor = cols[i];
-		ColumnDescription* desc = TypeRegistry::GetDescription(descriptor.id);
-		void*& buf = buffers[i];
-		const SizeT byteSize = desc->typeSize;
+		ColumnDescriptor descriptor = dstCols[i];
+		ColumnDescription const* const desc = TypeRegistry::GetDescription(descriptor.id);
+		void*& dstBuf = dstBuffers[i];
+		SizeT const byteSize = desc->typeSize;
 
-		ColumnId dstColId = this->GetColumnId(dstTid, descriptor);
-		if (dstColId != ColumnId::Invalid())
+		ColumnId const srcColId = this->GetColumnId(srcTid, descriptor);
+		if (srcColId != ColumnId::Invalid())
 		{
-			void*& dstBuf = dst.columns.Get<1>(dstColId.id);
-			Memory::Copy((char*)buf + (byteSize * srcRow), (char*)buf + (byteSize * dstRow), byteSize);
+			// Copy value from src
+			void*& srcBuf = buffers[srcColId.id];
+			Memory::Copy((char*)srcBuf + (byteSize * srcRow), (char*)dstBuf + (byteSize * dstRow), byteSize);
+		}
+		else
+		{
+			// Set default value
+			void* val = (char*)dstBuf + (dstRow * desc->typeSize);
+			Memory::Copy(desc->defVal, val, desc->typeSize);
 		}
 	}
 
