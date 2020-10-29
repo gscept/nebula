@@ -13,6 +13,26 @@ __ImplementClass(MemDb::Database, 'MmDb', Core::RefCounted);
 //------------------------------------------------------------------------------
 /**
 */
+void
+Dataset::Validate()
+{
+	for (IndexT i = 0; i < this->tables.Size();)
+	{
+		auto& view = this->tables[i];
+		if (!db->IsValid(view.tid))
+		{
+			this->tables.EraseIndexSwap(i);
+			continue;
+		}
+
+		view.numInstances = db->GetNumRows(view.tid);
+		i++;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Database::Database()
 {
 	// empty
@@ -110,7 +130,6 @@ Database::GetColumnId(TableId table, ColumnDescriptor column)
 	n_assert(this->IsValid(table));
 	n_assert(column != ColumnDescriptor::Invalid());
 	ColumnId cid = this->tables[Ids::Index(table.id)].columns.GetArray<0>().FindIndex(column);
-	n_assert(cid != ColumnId::Invalid());
 	return cid;
 }
 
@@ -499,6 +518,8 @@ Database::Query(FilterSet const& filterset)
 			set.tables.Append(std::move(view));
 		}
 	}
+
+	set.db = this;
 
 	return set;
 }
