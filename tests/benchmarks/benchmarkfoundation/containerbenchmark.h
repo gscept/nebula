@@ -24,7 +24,7 @@ public:
     void Run(Timing::Timer & timer, SizeT numObjects)
     {                
         n_printf("benchmarking type: %s\n", typeid(CONT).name());
-        Time start = timer.GetTime();
+        Timing::Time start = timer.GetTime();
         CONT c;
         for (int i = 0; i < numObjects; i++)
         {
@@ -35,11 +35,11 @@ public:
         {
             v = this->remove(c);
         }
-        Time last = timer.GetTime();
+        Timing::Time last = timer.GetTime();
         n_printf("adding all %d items remove all after: %f\n", numObjects, last-start);
         
         c.Clear();
-        Time now = timer.GetTime();
+        Timing::Time now = timer.GetTime();
         n_printf("clear: %f\n", now - last);
         last = now;
 
@@ -98,8 +98,8 @@ public:
     {
         return typeid(CONT).name();
     }
-    typedef typename CONT ctype ;
-    typedef typename DATA dtype;
+    typedef CONT ctype ;
+    typedef DATA dtype;
 };
 
 

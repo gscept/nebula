@@ -120,7 +120,7 @@ ImguiContext::ImguiDrawFunction()
 				texInfo.useAlpha = 1;
 
 				// set texture in shader, we shouldn't have to put it into ImGui
-				CoreGraphics::TextureId texture = tex.nebulaHandle;
+				CoreGraphics::TextureId texture = (CoreGraphics::TextureId)tex.nebulaHandle;
 				CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(texture);
 				auto usage = CoreGraphics::TextureGetUsage(texture);
 				if (usage & CoreGraphics::TextureUsage::RenderTexture || usage & CoreGraphics::TextureUsage::ReadWriteTexture)

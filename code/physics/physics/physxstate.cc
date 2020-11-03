@@ -63,7 +63,7 @@ PhysxState::onWake(physx::PxActor** actors, physx::PxU32 count)
     this->awakeActors.BeginBulkAdd();
     for (physx::PxU32 i = 0; i < count; i++)
     {
-        Ids::Id32 id = (Ids::Id32)actors[i]->userData;
+        Ids::Id32 id = (Ids::Id32)(int64_t)actors[i]->userData;
         this->awakeActors.BulkAdd(id);
     }
     this->awakeActors.EndBulkAdd();
@@ -77,7 +77,7 @@ PhysxState::onSleep(physx::PxActor** actors, physx::PxU32 count)
 {
     for (physx::PxU32 i = 0; i < count; i++)
     {
-        Ids::Id32 id = (Ids::Id32)actors[i]->userData;
+        Ids::Id32 id = (Ids::Id32)(int64_t)actors[i]->userData;
         this->awakeActors.Erase(id);
     }
 }

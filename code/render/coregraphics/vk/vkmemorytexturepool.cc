@@ -574,7 +574,7 @@ VkMemoryTexturePool::Update(const CoreGraphics::TextureId id, const Math::rectan
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         NULL,
         0,
-        bufSize,
+        (uint32_t)bufSize,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VK_SHARING_MODE_EXCLUSIVE,
         1,
@@ -1040,13 +1040,13 @@ VkMemoryTexturePool::SparseCommitChanges(const CoreGraphics::TextureId id)
     VkSparseImageMemoryBindInfo imageMemoryBindInfo =
     {
         img,
-        pageBinds.Size(),
+        (uint32_t)(uint32_t)pageBinds.Size(),
         pageBinds.Size() > 0 ? pageBinds.Begin() : nullptr
     };
     VkSparseImageOpaqueMemoryBindInfo opaqueMemoryBindInfo =
     {
         img,
-        opaqueBinds.Size(),
+        (uint32_t)opaqueBinds.Size(),
         opaqueBinds.Size() > 0 ? opaqueBinds.Begin() : nullptr
     };
     VkBindSparseInfo bindInfo =
@@ -1055,8 +1055,8 @@ VkMemoryTexturePool::SparseCommitChanges(const CoreGraphics::TextureId id)
         nullptr,
         0, nullptr,
         0, nullptr,
-        opaqueBinds.IsEmpty() ? 0 : 1, &opaqueMemoryBindInfo,
-        pageBinds.IsEmpty() ? 0 : 1, &imageMemoryBindInfo,
+        opaqueBinds.IsEmpty() ? 0u : 1u, &opaqueMemoryBindInfo,
+        pageBinds.IsEmpty() ? 0u : 1u, &imageMemoryBindInfo,
         0, nullptr
     };
 
@@ -1144,7 +1144,7 @@ VkMemoryTexturePool::SparseUpdate(const CoreGraphics::TextureId id, const Math::
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         NULL,
         0,
-        bufSize,
+        (uint32_t)bufSize,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VK_SHARING_MODE_EXCLUSIVE,
         1,
@@ -1209,7 +1209,7 @@ VkMemoryTexturePool::SparseUpdate(const CoreGraphics::TextureId id, IndexT mip, 
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         NULL,
         0,
-        bufSize,
+        (uint32_t)bufSize,
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VK_SHARING_MODE_EXCLUSIVE,
         1,
@@ -1363,7 +1363,7 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
             VK_IMAGE_TILING_OPTIMAL,
             usage,
             sharingMode,
-            sharingMode == VK_SHARING_MODE_CONCURRENT ? queues.Size() : 0,
+            sharingMode == VK_SHARING_MODE_CONCURRENT ? queues.Size() : 0u,
             sharingMode == VK_SHARING_MODE_CONCURRENT ? queues.KeysAsArray().Begin() : nullptr,
             VK_IMAGE_LAYOUT_UNDEFINED
         };

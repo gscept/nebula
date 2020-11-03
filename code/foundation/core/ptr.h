@@ -54,7 +54,7 @@ public:
 
 	/// construct from C++ pointer of other type
 	template<class OTHERTYPE>
-	Ptr(OTHERTYPE* rhs)
+	Ptr(OTHERTYPE* rhs) : ptr(nullptr)
 	{
 		this->ptr = nullptr;
 		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit cast assumes left hand side must be base of right");
@@ -68,7 +68,7 @@ public:
 	}
 	/// construct from smart pointer of other type
 	template <class OTHERTYPE>
-	Ptr(const Ptr<OTHERTYPE>& rhs)
+	Ptr(const Ptr<OTHERTYPE>& rhs) : ptr(nullptr)
 	{
 		this->ptr = nullptr;
 		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit cast assumes left hand side must be base of right");

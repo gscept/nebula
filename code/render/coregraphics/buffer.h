@@ -12,11 +12,12 @@
 #include "coregraphics/indextype.h"
 #include "coregraphics/vertexlayout.h"
 #include "coregraphics/config.h"
+#include "coregraphics/submissioncontext.h"
 #include "gpubuffertypes.h"
+
 namespace CoreGraphics
 {
 
-struct SubmissionContextId;
 ID_24_8_TYPE(BufferId);
 
 enum BufferUsageFlag

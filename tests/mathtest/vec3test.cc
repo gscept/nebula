@@ -117,8 +117,6 @@ Vec3Test::Run()
 	n_assert(((size_t)fUnalignedStore & 0xF));
     v2.loadu(fUnalignedLoad);
     VERIFY(v2 == vec3(1.0f, 2.0f, 3.0f));
-	v2.load(fUnalignedLoad);
-    VERIFY(v2 == vec3(1.0f, 2.0f, 3.0f));
     v2.storeu(fUnalignedStore);
     VERIFY((fUnalignedStore[0] == 1.0f) && (fUnalignedStore[1] == 2.0f) && (fUnalignedStore[2] == 3.0f));
 
