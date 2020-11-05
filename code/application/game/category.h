@@ -20,7 +20,7 @@ typedef MemDb::Dataset Dataset;
 typedef MemDb::FilterSet FilterSet;
 
 ID_16_TYPE(BlueprintId);
-ID_16_TYPE(TemplateId);
+ID_16_16_NAMED_TYPE(TemplateId, blueprintId, templateId);
 
 struct EntityCreateInfo
 {

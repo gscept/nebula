@@ -48,8 +48,14 @@ PropertyId const GetPropertyId(Util::StringAtom name);
 /// add a property to an entity
 void AddProperty(Game::Entity const entity, PropertyId const pid);
 
+/// check if entity has a specific property. (SLOW!)
+bool HasProperty(Game::Entity const entity, PropertyId const pid);
+
 /// returns a blueprint id
 BlueprintId const GetBlueprintId(Util::StringAtom name);
+
+/// returns a template id by name
+TemplateId const GetTemplateId(Util::StringAtom name);
 
 /// query the world database for instances with filter
 Dataset Query(FilterSet const& filter);
@@ -99,7 +105,7 @@ public:
 	InstanceId AllocateInstance(Entity entity, BlueprintId blueprint);
 
 	/// allocate instance for entity in blueprint instance table by copying template
-	InstanceId AllocateInstance(Entity entity, BlueprintId blueprint, TemplateId templateId);
+	InstanceId AllocateInstance(Entity entity, TemplateId templateId);
 
 	/// deallocated and recycle instance in category instance table
 	void DeallocateInstance(Entity entity);
@@ -113,7 +119,7 @@ public:
 		struct AllocateInstanceCommand
 		{
 			Game::Entity entity;
-			EntityCreateInfo info;
+			TemplateId tid;
 		};
 
 		struct DeallocInstanceCommand

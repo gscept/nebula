@@ -45,7 +45,7 @@ BlueprintManager::Destroy()
 */
 BlueprintManager::BlueprintManager()
 {
-    if (!this->ParseBlueprints())
+	if (!this->ParseBlueprints())
     {
         n_error("Managers::BlueprintManager: Error parsing %s%s!", BlueprintManager::blueprintFolder.AsCharPtr(), BlueprintManager::blueprintFilename.AsCharPtr());
     }
@@ -152,6 +152,25 @@ BlueprintManager::GetBlueprintId(Util::StringAtom name)
 //------------------------------------------------------------------------------
 /**
 */
+TemplateId const
+BlueprintManager::GetTemplateId(Util::StringAtom name)
+{
+	IndexT index = Singleton->templateMap.FindIndex(name);
+	if (index != InvalidIndex)
+	{
+		TemplateId tid = Singleton->templateMap.ValueAtIndex(name, index);
+		n_assert(Singleton->blueprints.Size() > tid.blueprintId);
+		return tid;
+	}
+	else
+	{
+		return TemplateId::Invalid();
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 EntityMapping
 BlueprintManager::Instantiate(BlueprintId blueprint)
 {
@@ -166,13 +185,13 @@ BlueprintManager::Instantiate(BlueprintId blueprint)
 /**
 */
 EntityMapping
-BlueprintManager::Instantiate(BlueprintId blueprint, TemplateId templateId)
+BlueprintManager::Instantiate(TemplateId templateId)
 {
 	EntityManager::State const& emState = EntityManager::Instance()->state;
 	Ptr<MemDb::Database> const& db = emState.worldDatabase;
-	CategoryId cid = Singleton->blueprints[blueprint.id].categoryId;
+	CategoryId cid = Singleton->blueprints[templateId.blueprintId].categoryId;
 	Category& cat = emState.categoryArray[cid.id];
-	InstanceId instance = db->DuplicateInstance(Singleton->blueprints[blueprint.id].tableId, templateId.id, cat.instanceTable);
+	InstanceId instance = db->DuplicateInstance(Singleton->blueprints[blueprint.id].tableId, templateId.templateId, cat.instanceTable);
 	return { cid, instance };
 }
 

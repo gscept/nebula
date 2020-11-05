@@ -137,10 +137,32 @@ AddProperty(Game::Entity const entity, PropertyId const pid)
 //------------------------------------------------------------------------------
 /**
 */
+bool
+HasProperty(Game::Entity const entity, PropertyId const pid)
+{
+	EntityManager::State& state = EntityManager::Singleton->state;
+	EntityMapping mapping = GetEntityMapping(entity);
+	Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
+	MemDb::ColumnDescription const* const desc = MemDb::TypeRegistry::GetDescription(pid);
+	return desc->tableRegistry.Contains(cat.instanceTable);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 BlueprintId const
 GetBlueprintId(Util::StringAtom name)
 {
 	return BlueprintManager::GetBlueprintId(name);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+TemplateId const
+GetTemplateId(Util::StringAtom name)
+{
+	return BlueprintManager::GetTemplateId(name);
 }
 
 //------------------------------------------------------------------------------
@@ -194,7 +216,15 @@ CreateEntity(EntityCreateInfo const& info)
 
 	EntityManager::State::AllocateInstanceCommand cmd;
 	cmd.entity = entity;
-	cmd.info = info;
+	if (info.templateId != TemplateId::Invalid())
+	{
+		cmd.tid = info.templateId;
+	}
+	else
+	{
+		cmd.tid.blueprintId = info.blueprint.id;
+		cmd.tid.templateId = Ids::InvalidId16;
+	}
 
 	state->allocQueue.Enqueue(std::move(cmd));
 
@@ -268,13 +298,13 @@ OnEndFrame()
 		auto const cmd = state->allocQueue.Dequeue();
 		n_assert(IsValid(cmd.entity));
 
-		if (cmd.info.templateId != TemplateId::Invalid())
+		if (cmd.tid.templateId != Ids::InvalidId16)
 		{
-			EntityManager::Singleton->AllocateInstance(cmd.entity, cmd.info.blueprint, cmd.info.templateId);
+			EntityManager::Singleton->AllocateInstance(cmd.entity, cmd.tid);
 		}
 		else
 		{
-			EntityManager::Singleton->AllocateInstance(cmd.entity, cmd.info.blueprint);
+			EntityManager::Singleton->AllocateInstance(cmd.entity, (BlueprintId)cmd.tid.blueprintId);
 		}
 	}
 
@@ -465,7 +495,7 @@ EntityManager::AllocateInstance(Entity entity, BlueprintId blueprint)
 /**
 */
 InstanceId
-EntityManager::AllocateInstance(Entity entity, BlueprintId blueprint, TemplateId templateId)
+EntityManager::AllocateInstance(Entity entity, TemplateId templateId)
 {
 	n_assert(IsValid(entity));
 	
@@ -475,7 +505,7 @@ EntityManager::AllocateInstance(Entity entity, BlueprintId blueprint, TemplateId
 		return InvalidIndex;
 	}
 
-	EntityMapping mapping = BlueprintManager::Instance()->Instantiate(blueprint, templateId);
+	EntityMapping mapping = BlueprintManager::Instance()->Instantiate(templateId);
 	this->state.entityMap[Ids::Index(entity.id)] = mapping;
 
 	Category const& cat = this->GetCategory(mapping.category);
