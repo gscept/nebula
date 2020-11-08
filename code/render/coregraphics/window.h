@@ -76,6 +76,4 @@ const Util::StringAtom& WindowGetIcon(const WindowId id);
 /// get render texture associated with window
 const CoreGraphics::TextureId& WindowGetTexture(const WindowId id);
 
-extern Ids::IdPool windowIdPool;
-
 } // CoreGraphics
