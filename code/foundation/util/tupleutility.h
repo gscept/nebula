@@ -20,13 +20,6 @@ using Tuple = std::tuple<T...>;
 
 //------------------------------------------------------------------------------
 /**
-	Wrap std::pair
-*/
-template <typename A, typename B>
-using Pair = Tuple<A, B>;
-
-//------------------------------------------------------------------------------
-/**
 */
 template <typename... T> 
 constexpr Tuple<T...> 
@@ -38,21 +31,28 @@ MakeTuple(const T&... args)
 //------------------------------------------------------------------------------
 /**
 */
-template <typename A, typename B> 
-constexpr Pair<A, B> 
-MakePair(const A& a, const B& b)
-{
-	return std::make_pair(a, b);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 template <int INDEX, typename... T> 
 constexpr const std::tuple_element_t<INDEX, std::tuple<T...>>&
 Get(const Tuple<T...>& tuple)
 {
 	return std::get<INDEX>(tuple);
+}
+
+//------------------------------------------------------------------------------
+/**
+	Wrap std::pair
+*/
+template <typename A, typename B>
+using Pair = std::pair<A, B>;
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename A, typename B>
+constexpr Pair<A, B>
+MakePair(const A& a, const B& b)
+{
+	return std::make_pair(a, b);
 }
 
 //------------------------------------------------------------------------------
