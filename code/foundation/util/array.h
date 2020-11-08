@@ -459,7 +459,7 @@ Array<TYPE>::operator=(Array<TYPE>&& rhs) noexcept
         this->capacity = rhs.capacity;
         rhs.elements = nullptr;
         rhs.count = 0;
-        rhs.capacity;
+        rhs.capacity = 0;
     }
 }
 
