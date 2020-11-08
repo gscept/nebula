@@ -146,18 +146,18 @@ LightContext::Create()
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
 	// called from main script
-	Frame::AddCallback("LightContext - Update Shadowmaps", [](const IndexT frame, const IndexT frameBufferIndex) // trigger update
+	Frame::AddCallback("LightContext - Update Shadowmaps", [](const IndexT frame, const IndexT bufferIndex) // trigger update
 		{
 			// run the script
 			N_SCOPE(ShadowMapExecute, Render);
-			lightServerState.shadowMappingFrameScript->Run(frame, frameBufferIndex);
+			lightServerState.shadowMappingFrameScript->Run(frame, bufferIndex);
 #ifndef PUBLIC_BUILD
 			//Debug::FrameScriptInspector::Run(lightServerState.shadowMappingFrameScript);
 #endif
 		});
 
 	// register shadow mapping algorithms
-	Frame::AddCallback("LightContext - Spotlight Shadows", [](const IndexT frame, const IndexT frameBufferIndex) // graphics
+	Frame::AddCallback("LightContext - Spotlight Shadows", [](const IndexT frame, const IndexT bufferIndex) // graphics
 		{
 			IndexT i;
 			for (i = 0; i < lightServerState.shadowcastingLocalLights.Size(); i++)
@@ -166,11 +166,11 @@ LightContext::Create()
 				Frame::FrameSubpassBatch::DrawBatch(lightServerState.spotlightsBatchCode, lightServerState.shadowcastingLocalLights[i], 1, i);
 			}
 		});
-	Frame::AddCallback("LightContext - Spotlight Blur", [](const IndexT frame, const IndexT frameBufferIndex) // compute
+	Frame::AddCallback("LightContext - Spotlight Blur", [](const IndexT frame, const IndexT bufferIndex) // compute
 		{
 		});
 
-	Frame::AddCallback("LightContext - Sun Shadows", [](const IndexT frame, const IndexT frameBufferIndex) // graphics
+	Frame::AddCallback("LightContext - Sun Shadows", [](const IndexT frame, const IndexT bufferIndex) // graphics
 		{
 			if (lightServerState.globalLightEntity != Graphics::GraphicsEntityId::Invalid())
 			{
@@ -185,22 +185,22 @@ LightContext::Create()
 				}				
 			}
 		});
-	Frame::AddCallback("LightContext - Sun Blur", [](const IndexT frame, const IndexT frameBufferIndex) // compute
+	Frame::AddCallback("LightContext - Sun Blur", [](const IndexT frame, const IndexT bufferIndex) // compute
 		{
 			LightContext::BlurGlobalShadowMap();
 		});
 
-	Frame::AddCallback("LightContext - Cull and Classify", [](const IndexT frame, const IndexT frameBufferIndex)
+	Frame::AddCallback("LightContext - Cull and Classify", [](const IndexT frame, const IndexT bufferIndex)
 		{
 			LightContext::CullAndClassify();
 		});
 
-	Frame::AddCallback("LightContext - Deferred Cluster", [](const IndexT frame, const IndexT frameBufferIndex)
+	Frame::AddCallback("LightContext - Deferred Cluster", [](const IndexT frame, const IndexT bufferIndex)
 		{
 			LightContext::ComputeLighting();
 		});
 
-	Frame::AddCallback("LightContext - Combine", [](const IndexT frame, const IndexT frameBufferIndex)
+	Frame::AddCallback("LightContext - Combine", [](const IndexT frame, const IndexT bufferIndex)
 		{
 			LightContext::CombineLighting();
 		});
@@ -979,7 +979,7 @@ LightContext::RunFrameScriptJobs(const Graphics::FrameContext& ctx)
 	N_SCOPE(ShadowMapRecord, Render);
 
 	// run jobs for shadow frame script after all constants are updated
-	lightServerState.shadowMappingFrameScript->RunJobs(ctx.frameIndex);
+	lightServerState.shadowMappingFrameScript->RunJobs(ctx.frameIndex, ctx.bufferIndex);
 }
 
 //------------------------------------------------------------------------------

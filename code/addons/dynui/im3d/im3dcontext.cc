@@ -158,7 +158,7 @@ Im3dContext::Create()
     // map buffer
     imState.vertexPtr = (byte*)CoreGraphics::BufferMap(imState.vbo);
 
-	Frame::AddCallback("Im3D", [](const IndexT frame, const IndexT frameBufferIndex)
+	Frame::AddCallback("Im3D", [](const IndexT frame, const IndexT bufferIndex)
 	{
 		Render(frame);
 	});

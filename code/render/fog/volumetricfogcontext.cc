@@ -86,12 +86,12 @@ VolumetricFogContext::Create()
 
 	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-	Frame::AddCallback("VolumetricFogContext - Cull and Classify", [](const IndexT frame, const IndexT frameBufferIndex)
+	Frame::AddCallback("VolumetricFogContext - Cull and Classify", [](const IndexT frame, const IndexT bufferIndex)
 		{
 			VolumetricFogContext::CullAndClassify();
 		});
 
-	Frame::AddCallback("VolumetricFogContext - Render", [](const IndexT frame, const IndexT frameBufferIndex)
+	Frame::AddCallback("VolumetricFogContext - Render", [](const IndexT frame, const IndexT bufferIndex)
 		{
 			VolumetricFogContext::Render();
 		});
