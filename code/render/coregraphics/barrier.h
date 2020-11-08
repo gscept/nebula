@@ -239,6 +239,33 @@ void BarrierInsert(
 	const Util::FixedArray<ExecutionBarrier>& barriers,
 	const char* name = nullptr);
 
+/// push barrier to stack
+void BarrierPush(
+	const CoreGraphics::QueueType queue,
+	CoreGraphics::BarrierStage fromStage,
+	CoreGraphics::BarrierStage toStage,
+	CoreGraphics::BarrierDomain domain,
+	const Util::FixedArray<TextureBarrier>& textures,
+	const Util::FixedArray<BufferBarrier>& buffers);
+/// push barrier to stack
+void BarrierPush(
+	const CoreGraphics::QueueType queue,
+	CoreGraphics::BarrierStage fromStage,
+	CoreGraphics::BarrierStage toStage,
+	CoreGraphics::BarrierDomain domain,
+	const Util::FixedArray<TextureBarrier>& textures);
+/// push barrier to stack
+void BarrierPush(
+	const CoreGraphics::QueueType queue,
+	CoreGraphics::BarrierStage fromStage,
+	CoreGraphics::BarrierStage toStage,
+	CoreGraphics::BarrierDomain domain,
+	const Util::FixedArray<BufferBarrier>& buffers);
+/// pop barrier, reverses the from-to stages and any access flags in the buffers and texture barriers
+void BarrierPop(const CoreGraphics::QueueType queue);
+/// repeat barrier in queue
+void BarrierRepeat(const CoreGraphics::QueueType queue);
+
 //------------------------------------------------------------------------------
 /**
 */

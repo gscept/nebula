@@ -468,4 +468,133 @@ BarrierInsert(
 		barrier.numImageBarriers, barrier.imageBarriers);
 }
 
+struct BarrierStackEntry
+{
+	CoreGraphics::BarrierStage fromStage;
+	CoreGraphics::BarrierStage toStage;
+	CoreGraphics::BarrierDomain domain;
+	Util::FixedArray<TextureBarrier> textures;
+	Util::FixedArray<BufferBarrier> buffers;
+};
+
+static Util::Stack<BarrierStackEntry> BarrierStack;
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BarrierPush(const CoreGraphics::QueueType queue
+	, CoreGraphics::BarrierStage fromStage
+	, CoreGraphics::BarrierStage toStage
+	, CoreGraphics::BarrierDomain domain
+	, const Util::FixedArray<TextureBarrier>& textures
+	, const Util::FixedArray<BufferBarrier>& buffers)
+{
+	// first insert the barrier as is
+	BarrierInsert(queue, fromStage, toStage, domain, textures, buffers);
+
+	// create a stack entry to reverse this barrier
+	BarrierStackEntry entry;
+	entry.fromStage = fromStage;
+	entry.toStage = toStage;
+	entry.domain = domain;
+	entry.textures = textures;
+	entry.buffers = buffers;
+
+	// push to stack
+	BarrierStack.Push(entry);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BarrierPush(const CoreGraphics::QueueType queue
+	, CoreGraphics::BarrierStage fromStage
+	, CoreGraphics::BarrierStage toStage
+	, CoreGraphics::BarrierDomain domain
+	, const Util::FixedArray<TextureBarrier>& textures)
+{
+	// first insert the barrier as is
+	BarrierInsert(queue, fromStage, toStage, domain, textures, nullptr);
+
+	// create a stack entry to reverse this barrier
+	BarrierStackEntry entry;
+	entry.fromStage = fromStage;
+	entry.toStage = toStage;
+	entry.domain = domain;
+	entry.textures = textures;
+	entry.buffers = nullptr;
+
+	// push to stack
+	BarrierStack.Push(entry);
+}
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BarrierPush(const CoreGraphics::QueueType queue
+	, CoreGraphics::BarrierStage fromStage
+	, CoreGraphics::BarrierStage toStage
+	, CoreGraphics::BarrierDomain domain
+	, const Util::FixedArray<BufferBarrier>& buffers)
+{
+	// first insert the barrier as is
+	BarrierInsert(queue, fromStage, toStage, domain, nullptr, buffers);
+
+	// create a stack entry to reverse this barrier
+	BarrierStackEntry entry;
+	entry.fromStage = fromStage;
+	entry.toStage = toStage;
+	entry.domain = domain;
+	entry.textures = nullptr;
+	entry.buffers = buffers;
+
+	// push to stack
+	BarrierStack.Push(entry);
+}
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BarrierPop(const CoreGraphics::QueueType queue)
+{
+	// pop from stack
+	BarrierStackEntry entry = BarrierStack.Pop();
+
+	// reverse barriers
+	for (TextureBarrier& texture : entry.textures)
+	{
+		// flip dependencies
+		auto intermediateAccess = texture.toAccess;
+		auto intermediateLayout = texture.toLayout;
+		texture.toAccess = texture.fromAccess;
+		texture.toLayout = texture.fromLayout;
+		texture.fromAccess = intermediateAccess;
+		texture.fromLayout = intermediateLayout;
+	}
+	for (BufferBarrier& buffer : entry.buffers)
+	{
+		auto intermediateAccess = buffer.toAccess;
+		buffer.toAccess = buffer.fromAccess;
+		buffer.fromAccess = intermediateAccess;
+	}
+
+	// insert barrier
+	BarrierInsert(queue, entry.toStage, entry.fromStage, entry.domain, entry.textures, entry.buffers);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BarrierRepeat(const CoreGraphics::QueueType queue)
+{
+	// pop from stack
+	const BarrierStackEntry& entry = BarrierStack.Peek();
+
+	// insert barrier
+	BarrierInsert(queue, entry.fromStage, entry.toStage, entry.domain, entry.textures, entry.buffers);
+}
+
 } // namespace CoreGraphics
