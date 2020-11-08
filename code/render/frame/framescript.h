@@ -68,7 +68,7 @@ public:
 	/// discard script
 	void Discard();
 	/// run through script and generate thread jobs where applicable
-	void RunJobs(const IndexT frameIndex);
+	void RunJobs(const IndexT frameIndex, const IndexT bufferIndex);
 	/// run script
 	void Run(const IndexT frameIndex, const IndexT bufferIndex);
 

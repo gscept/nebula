@@ -29,11 +29,11 @@ public:
 	void UpdateResources(const IndexT frameIndex);
 	
 	/// begin frame
-	void BeginFrame(const IndexT frameIndex, const Timing::Time time);
+	void BeginFrame(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex);
 	/// render through view
-	void Render(const IndexT frameIndex, const Timing::Time time);
+	void Render(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex);
 	/// end frame
-	void EndFrame(const IndexT frameIndex, const Timing::Time time);
+	void EndFrame(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex);
 
 	/// get frame script
 	const Ptr<Frame::FrameScript> GetFrameScript() const;

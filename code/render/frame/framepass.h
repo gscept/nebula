@@ -38,7 +38,7 @@ public:
 
 	struct CompiledImpl : public FrameOp::Compiled
 	{
-		void RunJobs(const IndexT frameIndex);
+		void RunJobs(const IndexT frameIndex, const IndexT bufferIndex) override;
 		void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
 		void Discard();
 

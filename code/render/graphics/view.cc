@@ -65,7 +65,7 @@ View::UpdateResources(const IndexT frameIndex)
 /**
 */
 void 
-View::BeginFrame(const IndexT frameIndex, const Timing::Time time)
+View::BeginFrame(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex)
 {
 	n_assert(!inBeginFrame);
 	DisplayDevice* displayDevice = DisplayDevice::Instance();
@@ -79,7 +79,7 @@ View::BeginFrame(const IndexT frameIndex, const Timing::Time time)
 	if (this->script != nullptr)
 	{
 		N_SCOPE(ViewRecord, Render);
-		this->script->RunJobs(frameIndex);
+		this->script->RunJobs(frameIndex, bufferIndex);
 	}
 }
 
@@ -87,7 +87,7 @@ View::BeginFrame(const IndexT frameIndex, const Timing::Time time)
 /**
 */
 void
-View::Render(const IndexT frameIndex, const Timing::Time time)
+View::Render(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex)
 {
 	n_assert(inBeginFrame);
 
@@ -95,7 +95,6 @@ View::Render(const IndexT frameIndex, const Timing::Time time)
 	if (this->script != nullptr)
 	{
 		N_SCOPE(ViewExecute, Render);
-		IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 		this->script->Run(frameIndex, bufferIndex);
 	}
 }
@@ -104,7 +103,7 @@ View::Render(const IndexT frameIndex, const Timing::Time time)
 /**
 */
 void 
-View::EndFrame(const IndexT frameIndex, const Timing::Time time)
+View::EndFrame(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex)
 {
 	n_assert(inBeginFrame);
 	inBeginFrame = false;

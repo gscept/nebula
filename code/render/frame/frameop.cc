@@ -484,7 +484,7 @@ FrameOp::Compiled::UpdateResources(const IndexT frameIndex)
 /**
 */
 void
-FrameOp::Compiled::RunJobs(const IndexT frameIndex)
+FrameOp::Compiled::RunJobs(const IndexT frameIndex, const IndexT bufferIndex)
 {
 	// implement in subclass
 }

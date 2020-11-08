@@ -60,7 +60,7 @@ protected:
 		}
 
 		virtual void UpdateResources(const IndexT frameIndex);
-		virtual void RunJobs(const IndexT frameIndex);
+		virtual void RunJobs(const IndexT frameIndex, const IndexT bufferIndex);
 		virtual void Run(const IndexT frameIndex, const IndexT bufferIndex) = 0;
 		virtual void Discard();
 

@@ -58,13 +58,10 @@ FramePass::Discard()
 	Builds jobs in parallel in preparation for the Run() function later
 */
 void 
-FramePass::CompiledImpl::RunJobs(const IndexT frameIndex)
+FramePass::CompiledImpl::RunJobs(const IndexT frameIndex, const IndexT bufferIndex)
 {
 	// begin pass
 	PassBegin(this->pass, PassRecordMode::Record);
-
-	// get frame index
-	IndexT bufferedIndex = CoreGraphics::GetBufferedFrameIndex();
 
 	// run subpasses
 	IndexT i;
@@ -73,7 +70,7 @@ FramePass::CompiledImpl::RunJobs(const IndexT frameIndex)
 		N_SCOPE(RunSubpassRecord, Render);
 
 		// start subpass commands
-		CoreGraphics::BeginSubpassCommands(this->subpassBuffers[i][bufferedIndex]);
+		CoreGraphics::BeginSubpassCommands(this->subpassBuffers[i][bufferIndex]);
 
 		// progress to next subpass if not on first iteration
 		if (i > 0)
@@ -82,7 +79,7 @@ FramePass::CompiledImpl::RunJobs(const IndexT frameIndex)
 		// execute contents of this subpass and synchronize
 		// note that we overload the cross queue sync so we do it outside the render pass
 		this->subpasses[i]->QueuePreSync();
-		this->subpasses[i]->Run(frameIndex, bufferedIndex);
+		this->subpasses[i]->Run(frameIndex, bufferIndex);
 		this->subpasses[i]->QueuePostSync();
 
 		// finish the draw thread

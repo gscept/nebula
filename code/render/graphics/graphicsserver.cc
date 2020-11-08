@@ -351,6 +351,7 @@ GraphicsServer::BeginFrame()
 	this->frameContext.frameTime = this->timer->GetFrameTime();
 	this->frameContext.time = this->timer->GetTime();
 	this->frameContext.ticks = this->timer->GetTicks();
+	this->frameContext.bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
 	// update shader server
 	this->shaderServer->BeforeFrame();
@@ -396,6 +397,9 @@ GraphicsServer::BeginFrame()
 
 	// begin frame
 	CoreGraphics::BeginFrame(this->frameContext.frameIndex);
+
+	// update frame context after begin frame
+	this->frameContext.bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
 	N_MARKER_BEGIN(ContextBeforeFrame, Graphics);
 	for (i = 0; i < this->contexts.Size(); i++)
@@ -489,7 +493,7 @@ GraphicsServer::BeforeViews()
 
 		// begin frame on view, this will construct view build jobs
 		this->currentView = view;
-		this->currentView->BeginFrame(this->frameContext.frameIndex, this->frameContext.time);
+		this->currentView->BeginFrame(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
 
 		N_MARKER_BEGIN(ContextBeforeView, Graphics);
 		IndexT j;
@@ -521,7 +525,7 @@ GraphicsServer::RenderViews()
 		if (!view->enabled)
 			continue;
 
-		view->Render(this->frameContext.frameIndex, this->frameContext.time);
+		view->Render(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
 	}
 }
 
@@ -543,7 +547,7 @@ GraphicsServer::EndViews()
 			continue;
 
 		this->shaderServer->AfterView();
-		this->currentView->EndFrame(this->frameContext.frameIndex, this->frameContext.time);
+		this->currentView->EndFrame(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
 		
 		N_MARKER_BEGIN(ContextAfterView, Graphics);
 		IndexT j;

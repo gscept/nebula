@@ -35,6 +35,7 @@ struct FrameContext
 	Timing::Tick ticks;
 	Timing::Time frameTime;
 	IndexT frameIndex;
+	IndexT bufferIndex;
 };
 
 class GraphicsContext;

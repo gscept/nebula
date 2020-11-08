@@ -112,7 +112,7 @@ FrameScript::Discard()
 /**
 */
 void 
-FrameScript::RunJobs(const IndexT frameIndex)
+FrameScript::RunJobs(const IndexT frameIndex, const IndexT bufferIndex)
 {
 #if NEBULA_ENABLE_MT_DRAW
 	// tell graphics to start using our draw thread
@@ -121,7 +121,7 @@ FrameScript::RunJobs(const IndexT frameIndex)
 	IndexT i;
 	for (i = 0; i < this->compiled.Size(); i++)
 	{
-		this->compiled[i]->RunJobs(frameIndex);
+		this->compiled[i]->RunJobs(frameIndex, bufferIndex);
 	}
 
 	// tell graphics to stop using our thread
