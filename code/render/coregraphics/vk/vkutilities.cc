@@ -72,7 +72,7 @@ VkUtilities::ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGr
 	VkBufferCreateInfo bufInfo =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		NULL,
+		nullptr,
 		0,
 		size,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -81,13 +81,13 @@ VkUtilities::ImageUpdate(VkDevice dev, CoreGraphics::CommandBufferId cmd, CoreGr
 		&qfamily
 	};
 	VkBuffer buf;
-	vkCreateBuffer(dev, &bufInfo, NULL, &buf);
+	vkCreateBuffer(dev, &bufInfo, nullptr, &buf);
 
 	// allocate temporary buffer
 	CoreGraphics::Alloc alloc = AllocateMemory(dev, buf, CoreGraphics::MemoryPool_HostLocal);
 	vkBindBufferMemory(dev, buf, alloc.mem, alloc.offset);
 	char* mapped = (char*)GetMappedMemory(alloc);
-	memcpy(mapped, data, alloc.size);
+	memcpy(mapped, data, size);
 
 	// perform update of buffer, and stage a copy of buffer data to image
 	VkBufferImageCopy copy;
@@ -160,7 +160,7 @@ VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subr
 {
 	VkImageMemoryBarrier barrier;
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.pNext = NULL;
+	barrier.pNext = nullptr;
 	barrier.image = img;
 	barrier.oldLayout = oldLayout;
 	barrier.newLayout = newLayout;
@@ -183,7 +183,7 @@ VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subr
 
 	VkImageMemoryBarrier barrier;
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.pNext = NULL;
+	barrier.pNext = nullptr;
 	barrier.image = img;
 	barrier.oldLayout = oldLayout;
 	barrier.newLayout = newLayout;
@@ -205,7 +205,7 @@ VkUtilities::ImageMemoryBarrier(const VkImage& img, VkImageSubresourceRange subr
 
 	VkImageMemoryBarrier barrier;
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.pNext = NULL;
+	barrier.pNext = nullptr;
 	barrier.image = img;
 	barrier.oldLayout = oldLayout;
 	barrier.newLayout = newLayout;
@@ -225,7 +225,7 @@ VkUtilities::BufferMemoryBarrier(const VkBuffer& buf, VkDeviceSize offset, VkDev
 {
 	VkBufferMemoryBarrier barrier;
 	barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-	barrier.pNext = NULL;
+	barrier.pNext = nullptr;
 	barrier.buffer = buf;
 	barrier.dstAccessMask = dstAccess;
 	barrier.srcAccessMask = srcAccess;
@@ -254,7 +254,7 @@ VkUtilities::ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format
 	VkImageCreateInfo info =
 	{
 		VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-		NULL,
+		nullptr,
 		0,
 		type == CoreGraphics::Texture2D ? VK_IMAGE_TYPE_2D :
 		type == CoreGraphics::Texture3D ? VK_IMAGE_TYPE_3D :
@@ -268,11 +268,11 @@ VkUtilities::ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format
 		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 		VK_SHARING_MODE_EXCLUSIVE,
 		0,
-		NULL,
+		nullptr,
 		VK_IMAGE_LAYOUT_UNDEFINED
 	};
 	VkImage img;
-	VkResult res = vkCreateImage(dev, &info, NULL, &img);
+	VkResult res = vkCreateImage(dev, &info, nullptr, &img);
 	n_assert(res == VK_SUCCESS);
 
 	CoreGraphics::Alloc alloc1 = AllocateMemory(dev, img, CoreGraphics::MemoryPool_DeviceLocal);
@@ -311,16 +311,16 @@ VkUtilities::ReadImage(const VkImage tex, CoreGraphics::PixelFormat::Code format
 	VkBufferCreateInfo bufInfo =
 	{
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		NULL,
+		nullptr,
 		0,
 		alloc1.size,
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_SHARING_MODE_EXCLUSIVE,
 		0,
-		NULL
+		nullptr
 	};
 	VkBuffer buf;
-	res = vkCreateBuffer(dev, &bufInfo, NULL, &buf);
+	res = vkCreateBuffer(dev, &bufInfo, nullptr, &buf);
 	n_assert(res == VK_SUCCESS);
 
 	CoreGraphics::Alloc alloc2 = AllocateMemory(dev, buf, CoreGraphics::MemoryPool_HostLocal);
@@ -373,9 +373,9 @@ VkUtilities::BeginImmediateTransfer()
 	VkCommandBufferBeginInfo begin =
 	{
 		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		NULL,
+		nullptr,
 		0,
-		NULL
+		nullptr
 	};
 	vkBeginCommandBuffer(CommandBufferGetVk(cmdBuf), &begin);
 	return cmdBuf;
