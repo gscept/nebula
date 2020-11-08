@@ -30,29 +30,31 @@ public:
 	/// constructor
 	IdPool();
 	/// constructor with maximum size
-	IdPool(const uint32_t max, const uint32_t grow = 512);
+	IdPool(const uint max, const uint grow = 512);
 	/// destructor
 	~IdPool();
 
 	/// get new id
-	uint32_t Alloc();
+	uint Alloc();
 	/// free id
-	void Dealloc(uint32_t id);
+	void Dealloc(uint id);
+	/// reserve ids
+	void Reserve(uint numIds);
 	/// get number of active ids
-	uint32_t GetNumUsed() const;
+	uint GetNumUsed() const;
 	/// get number of free elements
-	uint32_t GetNumFree() const;
+	uint GetNumFree() const;
 	/// iterate free indices
-	void ForEachFree(const std::function<void(uint32_t, uint32_t)> fun, SizeT num);
+	void ForEachFree(const std::function<void(uint, uint)> fun, SizeT num);
 	/// frees up lhs and erases rhs
-	void Move(uint32_t lhs, uint32_t rhs);
+	void Move(uint lhs, uint rhs);
 	/// get grow
-	const uint32_t GetGrow() const;
+	const uint GetGrow() const;
 private:
 
-	Util::Array<uint32_t> free;
-	uint32_t maxId;
-	uint32_t grow;
+	Util::Array<uint> free;
+	uint maxId;
+	uint grow;
 };
 
 //------------------------------------------------------------------------------
@@ -70,7 +72,7 @@ IdPool::IdPool() :
 /**
 */
 inline
-IdPool::IdPool(const uint32_t max, const uint32_t grow) :
+IdPool::IdPool(const uint max, const uint grow) :
 	maxId(max),
 	grow(grow)
 {
@@ -89,7 +91,7 @@ IdPool::~IdPool()
 //------------------------------------------------------------------------------
 /**
 */
-inline uint32_t
+inline uint
 IdPool::Alloc()
 {
 	// if we're out of ids, allocate more, but with a controlled grow (not log2 as per Array)
@@ -100,7 +102,7 @@ IdPool::Alloc()
 		SizeT oldCapacity = this->free.Capacity();
 
 		// make sure we don't allocate too many indices
-		n_assert2((uint32_t)(oldCapacity + growTo) < this->maxId, "Pool is full! Be careful with how much you allocate!\n");
+		n_assert2((uint)(oldCapacity + growTo) < this->maxId, "Pool is full! Be careful with how much you allocate!\n");
 
 		// reserve more space for new Ids
 		this->free.Reserve(oldCapacity + growTo);
@@ -113,7 +115,7 @@ IdPool::Alloc()
 	}
 
 	// if we do an inverse erase, we don't have to move elements, and since we know the max id, subtract it
-	uint32_t id = this->maxId - this->free.Back();
+	uint id = this->maxId - this->free.Back();
 	this->free.EraseIndex(this->free.Size() - 1);
 	return id;
 }
@@ -122,7 +124,7 @@ IdPool::Alloc()
 /**
 */
 inline void
-IdPool::Dealloc(uint32_t id)
+IdPool::Dealloc(uint id)
 {
 	this->free.Append(this->maxId - id);
 }
@@ -130,7 +132,21 @@ IdPool::Dealloc(uint32_t id)
 //------------------------------------------------------------------------------
 /**
 */
-inline uint32_t
+inline void 
+IdPool::Reserve(uint numIds)
+{
+	this->maxId = numIds;
+	this->free.Reserve(numIds);
+	for (int i = numIds - 1; i >= 0; i--)
+	{
+		this->free.Append(this->maxId - i);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint
 IdPool::GetNumUsed() const
 {
 	return this->free.Capacity() - this->free.Size();
@@ -139,7 +155,7 @@ IdPool::GetNumUsed() const
 //------------------------------------------------------------------------------
 /**
 */
-inline uint32_t
+inline uint
 IdPool::GetNumFree() const
 {
 	return this->free.Size();
@@ -149,13 +165,13 @@ IdPool::GetNumFree() const
 /**
 */
 inline void
-IdPool::ForEachFree(const std::function<void(uint32_t, uint32_t)> fun, SizeT num)
+IdPool::ForEachFree(const std::function<void(uint, uint)> fun, SizeT num)
 {
 	SizeT size = this->free.Size();
 	for (IndexT i = size - 1; i >= 0; i--)
 	{
-		const uint32_t id = this->maxId - this->free[i];
-		if (id < (uint32_t)num)
+		const uint id = this->maxId - this->free[i];
+		if (id < (uint)num)
 		{
 			fun(id, i);
 			num--;
@@ -167,7 +183,7 @@ IdPool::ForEachFree(const std::function<void(uint32_t, uint32_t)> fun, SizeT num
 /**
 */
 inline void
-IdPool::Move(uint32_t idx, uint32_t id)
+IdPool::Move(uint idx, uint id)
 {
 	this->free.Append(this->maxId - id);
 	this->free.EraseIndex(idx);
@@ -176,7 +192,7 @@ IdPool::Move(uint32_t idx, uint32_t id)
 //------------------------------------------------------------------------------
 /**
 */
-inline const uint32_t
+inline const uint
 IdPool::GetGrow() const
 {
 	return this->grow;
