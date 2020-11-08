@@ -51,6 +51,7 @@ public:
 	template<class OTHERTYPE>
 	Ptr(OTHERTYPE* rhs)
 	{
+		this->ptr = nullptr;
 		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit cast assumes left hand side must be base of right");
 		TYPE* p = reinterpret_cast<TYPE*>(rhs);
 		if (p != this->ptr)
@@ -64,6 +65,7 @@ public:
 	template <class OTHERTYPE>
 	Ptr(const Ptr<OTHERTYPE>& rhs)
 	{
+		this->ptr = nullptr;
 		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit cast assumes left hand side must be base of right");
 		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
 		if (p != this->ptr)
@@ -77,6 +79,7 @@ public:
 	template <class OTHERTYPE>
 	Ptr(Ptr<OTHERTYPE>&& rhs)
 	{
+		this->ptr = nullptr;
 		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit cast assumes left hand side must be base of right");
 		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
 		this->ptr = p;
