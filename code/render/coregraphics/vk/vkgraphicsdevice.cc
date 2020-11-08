@@ -40,19 +40,20 @@
 namespace Vulkan
 {
 
-enum VkPipelineInfoBits
+enum class PipelineBuildBits : uint
 {
-	NoInfoSet = 0,
-	ShaderInfoSet = 1,
-	VertexLayoutInfoSet = 2,
-	FramebufferLayoutInfoSet = 4,
-	InputLayoutInfoSet = 8,
+	NoInfoSet						= 0,
+	ShaderInfoSet					= N_BIT(0),
+	VertexLayoutInfoSet				= N_BIT(1),
+	FramebufferLayoutInfoSet		= N_BIT(2),
+	InputLayoutInfoSet				= N_BIT(3),
 
-	AllInfoSet = 15,
+	AllInfoSet						= ShaderInfoSet | VertexLayoutInfoSet | FramebufferLayoutInfoSet | InputLayoutInfoSet,
 
-	PipelineBuilt = 16
+	PipelineBuilt					= N_BIT(4)
 };
-__ImplementEnumBitOperators(VkPipelineInfoBits);
+__ImplementEnumBitOperators(PipelineBuildBits);
+__ImplementEnumComparisonOperators(PipelineBuildBits);
 
 struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 {
@@ -142,7 +143,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	VkPipelineLayout currentGraphicsPipelineLayout;
 	VkPipelineLayout currentComputePipelineLayout;
 	VkPipeline currentPipeline;
-	VkPipelineInfoBits currentPipelineBits;
+	PipelineBuildBits currentPipelineBits;
 	uint currentStencilFrontRef, currentStencilBackRef, currentStencilReadMask, currentStencilWriteMask;
 
 	Util::FixedArray<Util::Array<VkBuffer>> delayedDeleteBuffers;
@@ -584,10 +585,10 @@ UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layou
 void 
 BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const CoreGraphics::ShaderProgramId programId)
 {
-	if (state.currentProgram != programId || !(state.currentPipelineBits & ShaderInfoSet))
+	if (state.currentProgram != programId || CheckBits(state.currentPipelineBits, PipelineBuildBits::ShaderInfoSet))
 	{
 		state.database.SetShader(programId, shader);
-		state.currentPipelineBits |= ShaderInfoSet;
+		state.currentPipelineBits |= PipelineBuildBits::ShaderInfoSet;
 
 		state.blendInfo.pAttachments = shader.pColorBlendState->pAttachments;
 		memcpy(state.blendInfo.blendConstants, shader.pColorBlendState->blendConstants, sizeof(float) * 4);
@@ -602,7 +603,7 @@ BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const CoreG
 		state.currentPipelineInfo.stageCount = shader.stageCount;
 		state.currentPipelineInfo.pStages = shader.pStages;
 		state.currentPipelineInfo.layout = shader.layout;
-		state.currentPipelineBits &= ~PipelineBuilt;
+		state.currentPipelineBits &= ~PipelineBuildBits::PipelineBuilt;
 		state.currentProgram = programId;
 	}
 }
@@ -613,13 +614,13 @@ BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const CoreG
 void 
 SetVertexLayoutPipelineInfo(VkPipelineVertexInputStateCreateInfo* vertexLayout)
 {
-	if (state.currentPipelineInfo.pVertexInputState != vertexLayout || !(state.currentPipelineBits & VertexLayoutInfoSet))
+	if (state.currentPipelineInfo.pVertexInputState != vertexLayout || CheckBits(state.currentPipelineBits, PipelineBuildBits::VertexLayoutInfoSet))
 	{
 		state.database.SetVertexLayout(vertexLayout);
-		state.currentPipelineBits |= VertexLayoutInfoSet;
+		state.currentPipelineBits |= PipelineBuildBits::VertexLayoutInfoSet;
 		state.currentPipelineInfo.pVertexInputState = vertexLayout;
 
-		state.currentPipelineBits &= ~PipelineBuilt;
+		state.currentPipelineBits &= ~PipelineBuildBits::PipelineBuilt;
 	}
 }
 
@@ -629,11 +630,11 @@ SetVertexLayoutPipelineInfo(VkPipelineVertexInputStateCreateInfo* vertexLayout)
 void 
 SetFramebufferLayoutInfo(const VkGraphicsPipelineCreateInfo& framebufferLayout)
 {
-	state.currentPipelineBits |= FramebufferLayoutInfoSet;
+	state.currentPipelineBits |= PipelineBuildBits::FramebufferLayoutInfoSet;
 	state.currentPipelineInfo.renderPass = framebufferLayout.renderPass;
 	state.currentPipelineInfo.subpass = framebufferLayout.subpass;
 	state.currentPipelineInfo.pViewportState = framebufferLayout.pViewportState;
-	state.currentPipelineBits &= ~PipelineBuilt;
+	state.currentPipelineBits &= ~PipelineBuildBits::PipelineBuilt;
 }
 
 //------------------------------------------------------------------------------
@@ -642,12 +643,12 @@ SetFramebufferLayoutInfo(const VkGraphicsPipelineCreateInfo& framebufferLayout)
 void 
 SetInputLayoutInfo(VkPipelineInputAssemblyStateCreateInfo* inputLayout)
 {
-	if (state.currentPipelineInfo.pInputAssemblyState != inputLayout || !(state.currentPipelineBits & InputLayoutInfoSet))
+	if (state.currentPipelineInfo.pInputAssemblyState != inputLayout || CheckBits(state.currentPipelineBits, PipelineBuildBits::InputLayoutInfoSet))
 	{
 		state.database.SetInputLayout(inputLayout);
-		state.currentPipelineBits |= InputLayoutInfoSet;
+		state.currentPipelineBits |= PipelineBuildBits::InputLayoutInfoSet;
 		state.currentPipelineInfo.pInputAssemblyState = inputLayout;
-		state.currentPipelineBits &= ~PipelineBuilt;
+		state.currentPipelineBits &= ~PipelineBuildBits::PipelineBuilt;
 	}
 }
 
@@ -749,7 +750,7 @@ void
 UnbindPipeline()
 {
 	state.currentBindPoint = CoreGraphics::InvalidPipeline;
-	state.currentPipelineBits &= ~ShaderInfoSet;
+	state.currentPipelineBits &= ~PipelineBuildBits::ShaderInfoSet;
 }
 
 //------------------------------------------------------------------------------
