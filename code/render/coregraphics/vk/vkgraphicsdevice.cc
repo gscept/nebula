@@ -3688,8 +3688,8 @@ Copy(
 	{
 		VkBufferImageCopy& copy = copies[i];
 		copy.bufferOffset = from[i].offset;
-		copy.bufferImageHeight = 0;
-		copy.bufferRowLength = 0;
+		copy.bufferImageHeight = from[i].imageHeight;
+		copy.bufferRowLength = from[i].rowLength;
 		copy.imageExtent = { (uint32_t)to[i].region.width(), (uint32_t)to[i].region.height(), 1 };
 		copy.imageOffset = { (int32_t)to[i].region.left, (int32_t)to[i].region.top, 0 };
 		copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)to[i].mip, (uint32_t)to[i].layer, 1 };
@@ -3733,8 +3733,8 @@ Copy(
 	{
 		VkBufferImageCopy& copy = copies[i];
 		copy.bufferOffset = to[i].offset;
-		copy.bufferImageHeight = 0;
-		copy.bufferRowLength = 0;
+		copy.bufferImageHeight = to[i].imageHeight;
+		copy.bufferRowLength = to[i].rowLength;
 		copy.imageExtent = { (uint32_t)from[i].region.width(), (uint32_t)from[i].region.height(), 1 };
 		copy.imageOffset = { (int32_t)from[i].region.left, (int32_t)from[i].region.top, 0 };
 		copy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)from[i].mip, (uint32_t)from[i].layer, 1 };
