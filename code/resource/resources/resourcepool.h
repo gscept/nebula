@@ -68,6 +68,7 @@
 	inline void DeallocObject(const Resources::ResourceUnknownId id) { name.Dealloc(id.id24); } \
 	inline void EnterGet() { name.EnterGet(); } \
 	inline void LeaveGet() { name.LeaveGet(); } \
+	inline auto* Allocator() { return &name; } \
 	template<int MEMBER> inline auto& Get(const Ids::Id24 id) { return name.Get<MEMBER>(id); } \
 	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.resourceId); } \
 	template<int MEMBER> inline auto& GetUnsafe(const Ids::Id24 id) { return name.GetUnsafe<MEMBER>(id); } \
@@ -128,6 +129,7 @@ public:
 		Threaded		/// resource is loaded from a thread, which is like Delay, but is no longer pending
 	};
 	static const uint32_t ResourceIndexGrow = 512;
+
 protected:
 	friend class ResourceServer;
 

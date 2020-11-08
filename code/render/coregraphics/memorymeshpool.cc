@@ -37,13 +37,12 @@ MemoryMeshPool::~MemoryMeshPool()
 ResourcePool::LoadStatus
 MemoryMeshPool::LoadFromMemory(const Resources::ResourceId id, const void* info)
 {
-	this->EnterGet();
+	__LockName(this->Allocator(), lock);
 	MeshCreateInfo* data = (MeshCreateInfo*)info;
 	MeshCreateInfo& mesh = this->Get<0>(id.resourceId);
 	mesh = *data;
 
 	this->states[id.poolId] = Resource::Loaded;
-	this->LeaveGet();
 
 	return ResourcePool::Success;
 }
@@ -66,7 +65,7 @@ MemoryMeshPool::BindMesh(const MeshId id, const IndexT prim)
 #if _DEBUG
 	n_assert(id.resourceType == MeshIdType);
 #endif
-	this->allocator.EnterGet();
+	__LockName(this->Allocator(), lock);
 	MeshCreateInfo& inf = this->allocator.Get<0>(id.resourceId);
 
 	// setup pipeline (a bit ugly)
@@ -83,7 +82,6 @@ MemoryMeshPool::BindMesh(const MeshId id, const IndexT prim)
 
 	if (inf.indexBuffer != CoreGraphics::BufferId::Invalid())
 		CoreGraphics::SetIndexBuffer(inf.indexBuffer, 0);
-	this->allocator.LeaveGet();
 }
 
 //------------------------------------------------------------------------------
@@ -92,9 +90,8 @@ MemoryMeshPool::BindMesh(const MeshId id, const IndexT prim)
 const Util::Array<CoreGraphics::PrimitiveGroup>&
 MemoryMeshPool::GetPrimitiveGroups(const MeshId id)
 {
-	this->EnterGet();
+	__LockName(this->Allocator(), lock);
 	const MeshCreateInfo& inf = this->allocator.Get<0>(id.resourceId);
-	this->LeaveGet();
 	return inf.primitiveGroups;
 }
 
@@ -104,9 +101,8 @@ MemoryMeshPool::GetPrimitiveGroups(const MeshId id)
 const BufferId
 MemoryMeshPool::GetVertexBuffer(const MeshId id, const IndexT stream)
 {
-	this->EnterGet();
+	__LockName(this->Allocator(), lock);
 	const MeshCreateInfo& inf = this->allocator.Get<0>(id.resourceId);
-	this->LeaveGet();
 	return inf.streams[stream].vertexBuffer;
 }
 
@@ -116,9 +112,8 @@ MemoryMeshPool::GetVertexBuffer(const MeshId id, const IndexT stream)
 const BufferId
 MemoryMeshPool::GetIndexBuffer(const MeshId id)
 {
-	this->EnterGet();
+	__LockName(this->Allocator(), lock);
 	const MeshCreateInfo& inf = this->allocator.Get<0>(id.resourceId);
-	this->LeaveGet();
 	return inf.indexBuffer;
 }
 
@@ -128,9 +123,8 @@ MemoryMeshPool::GetIndexBuffer(const MeshId id)
 const CoreGraphics::PrimitiveTopology::Code
 MemoryMeshPool::GetPrimitiveTopology(const MeshId id)
 {
-	this->EnterGet();
+	__LockName(this->Allocator(), lock);
 	const MeshCreateInfo& inf = this->allocator.Get<0>(id.resourceId);
-	this->LeaveGet();
 	return inf.topology;
 }
 

@@ -76,7 +76,8 @@ void
 StreamMeshPool::Unload(const Resources::ResourceId id)
 {
 	n_assert(id.resourceId != Ids::InvalidId24);
-	const MeshCreateInfo& msh = meshPool->GetSafe<0>(id.resourceId);
+	__LockName(meshPool->Allocator(), lock);
+	const MeshCreateInfo& msh = meshPool->Get<0>(id.resourceId);
 
 	if (msh.indexBuffer != BufferId::Invalid())
 		DestroyBuffer(msh.indexBuffer);
@@ -124,7 +125,7 @@ StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Resources::Re
 	// opening the reader also loads the file
 	if (nvx2Reader->Open(name))
 	{
-		meshPool->EnterGet();
+		__LockName(meshPool->Allocator(), lock);
 		MeshCreateInfo& msh = meshPool->Get<0>(res);
 		n_assert(this->GetState(res) == Resources::Resource::Pending);
 		auto vertexLayout = CreateVertexLayout({ nvx2Reader->GetVertexComponents() });
@@ -137,7 +138,6 @@ StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Resources::Re
         {
             i.SetVertexLayout(vertexLayout);
         }
-		meshPool->LeaveGet();
 
 		nvx2Reader->Close();
 		return ResourcePool::Success;
@@ -178,7 +178,7 @@ StreamMeshPool::SetupMeshFromN3d3(const Ptr<Stream>& stream, const Resources::Re
 void
 StreamMeshPool::MeshBind(const Resources::ResourceId id)
 {
-	meshPool->EnterGet();
+	__LockName(meshPool->Allocator(), lock);
 	const MeshCreateInfo& msh = meshPool->Get<0>(id);
 
 	// bind vbo, and optional ibo
@@ -191,7 +191,6 @@ StreamMeshPool::MeshBind(const Resources::ResourceId id)
 	if (msh.indexBuffer != BufferId::Invalid())
 		CoreGraphics::SetIndexBuffer(msh.indexBuffer, 0);
 
-	meshPool->LeaveGet();
 	this->activeMesh = id;
 }
 
@@ -202,11 +201,10 @@ void
 StreamMeshPool::BindPrimitiveGroup(const IndexT primgroup)
 {
 	n_assert(this->activeMesh != MeshId::Invalid());
-	meshPool->EnterGet();
+	__LockName(meshPool->Allocator(), lock);
 	const MeshCreateInfo& msh = meshPool->Get<0>(this->activeMesh);
 	CoreGraphics::SetPrimitiveGroup(msh.primitiveGroups[primgroup]);
     CoreGraphics::SetVertexLayout(msh.primitiveGroups[primgroup].GetVertexLayout());
-	meshPool->LeaveGet();
 }
 
 } // namespace Vulkan

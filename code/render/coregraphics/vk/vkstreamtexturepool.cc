@@ -86,7 +86,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 	if (ctx.load_dds(srcData, srcDataSize))
 	{
 		// during the load-phase, we can safetly get the structs
-		texturePool->EnterGet();
+		__LockName(texturePool->Allocator(), lock);
 		VkTextureRuntimeInfo& runtimeInfo = texturePool->Get<Texture_RuntimeInfo>(res.resourceId);
 		VkTextureLoadInfo& loadInfo = texturePool->Get<Texture_LoadInfo>(res.resourceId);
 		VkTextureStreamInfo& streamInfo = texturePool->Get<Texture_StreamInfo>(res.resourceId);
@@ -97,7 +97,6 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 		streamInfo.ctx = ctx;
 
 		loadInfo.dev = Vulkan::GetCurrentDevice();
-		texturePool->LeaveGet();
 
 		VkPhysicalDevice physicalDev = Vulkan::GetCurrentPhysicalDevice();
 		VkDevice dev = Vulkan::GetCurrentDevice();
@@ -268,14 +267,11 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 inline void
 VkStreamTexturePool::Unload(const Resources::ResourceId id)
 {
-	texturePool->EnterGet();
+	__LockName(texturePool->Allocator(), lock);
 	VkTextureStreamInfo& streamInfo = texturePool->Get<Texture_StreamInfo>(id.resourceId);
-	VkTextureLoadInfo& loadInfo = texturePool->Get<Texture_LoadInfo>(id.resourceId);
-	VkTextureRuntimeInfo& runtimeInfo = texturePool->Get<Texture_RuntimeInfo>(id.resourceId);
 
 	streamInfo.stream->MemoryUnmap();
 	texturePool->Unload(id);
-	texturePool->LeaveGet();
 }
 
 //------------------------------------------------------------------------------
@@ -285,11 +281,11 @@ void
 VkStreamTexturePool::StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate)
 {
 	N_SCOPE_ACCUM(StreamMaxLOD, TextureStream);
-	texturePool->EnterGet();
+
+	__LockName(texturePool->Allocator(), lock);
 	VkTextureStreamInfo& streamInfo = texturePool->Get<Texture_StreamInfo>(id.resourceId);
-	VkTextureLoadInfo& loadInfo = texturePool->Get<Texture_LoadInfo>(id.resourceId);
+	const VkTextureLoadInfo& loadInfo = texturePool->Get<Texture_LoadInfo>(id.resourceId);
 	VkTextureRuntimeInfo& runtimeInfo = texturePool->Get<Texture_RuntimeInfo>(id.resourceId);
-	texturePool->LeaveGet();
 
 	// if the lod is undefined, just add 1 mip
 	IndexT adjustedLod = Math::n_max(0.0f, Math::n_ceil(loadInfo.mips * lod));

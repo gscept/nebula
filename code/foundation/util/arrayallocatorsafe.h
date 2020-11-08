@@ -25,8 +25,33 @@
 #include "tupleutility.h"
 #include "ids/id.h"
 
+// use this macro to safetly access an array allocator from within a scope
+#define __Lock(name) auto __allocator_lock_##name##__ = Util::AllocatorLock(&name);
+
+// use this macro when we need to retrieve an allocator and lock it with an explicit name
+#define __LockName(allocator, name) auto __allocator_lock_##name##__ = Util::AllocatorLock(allocator);
+
 namespace Util
 {
+
+template <class T>
+struct AllocatorLock
+{
+	T* locker;
+	AllocatorLock(T* locker)
+	{
+		this->locker = locker;
+		this->locker->EnterGet();
+	}
+	~AllocatorLock()
+	{
+		if (this->locker)
+		{
+			this->locker->LeaveGet();
+			this->locker = nullptr;
+		}
+	}
+};
 
 template <class ... TYPES>
 class ArrayAllocatorSafe
@@ -96,17 +121,13 @@ public:
 	/// leave thread safe get-mode
 	void LeaveGet();
 
-	/// get single item safely 
-	template<int MEMBER> Util::tuple_array_t<MEMBER, TYPES...>& GetSafe(const Ids::Id32 index);
-	/// get single item safely 
-	template<int MEMBER> Util::tuple_array_t<MEMBER, TYPES...>& GetSafe(const Ids::Id64 index);
 	/// get single item unsafe (use with extreme caution)
 	template<int MEMBER> Util::tuple_array_t<MEMBER, TYPES...>& GetUnsafe(const Ids::Id32 index);
 	/// get single item unsafe (use with extreme caution)
 	template<int MEMBER> Util::tuple_array_t<MEMBER, TYPES...>& GetUnsafe(const Ids::Id64 index);
 
 protected:
-	bool inBeginGet;
+	volatile int lockCount;
 	Threading::CriticalSection sect;
 	uint32_t size;
 	std::tuple<Util::Array<TYPES>...> objects;
@@ -118,7 +139,7 @@ protected:
 template<class ... TYPES>
 inline ArrayAllocatorSafe<TYPES...>::ArrayAllocatorSafe() :
 	size(0),
-	inBeginGet(false)
+	lockCount(0)
 {
 	// empty
 }
@@ -129,8 +150,10 @@ inline ArrayAllocatorSafe<TYPES...>::ArrayAllocatorSafe() :
 template<class ...TYPES>
 inline ArrayAllocatorSafe<TYPES...>::ArrayAllocatorSafe(ArrayAllocatorSafe<TYPES...>&& rhs)
 {
+	n_assert(rhs.lockCount == 0);
 	this->objects = rhs.objects;
 	this->size = rhs.size;
+	this->lockCount = 0;
 	rhs.Clear();
 }
 
@@ -140,8 +163,10 @@ inline ArrayAllocatorSafe<TYPES...>::ArrayAllocatorSafe(ArrayAllocatorSafe<TYPES
 template<class ...TYPES>
 inline ArrayAllocatorSafe<TYPES...>::ArrayAllocatorSafe(const ArrayAllocatorSafe<TYPES...>& rhs)
 {
+	n_assert(rhs.lockCount == 0);
 	this->objects = rhs.objects;
 	this->size = rhs.size;
+	this->lockCount = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -160,8 +185,10 @@ template<class ...TYPES>
 inline void
 ArrayAllocatorSafe<TYPES...>::operator=(const ArrayAllocatorSafe<TYPES...>& rhs)
 {
+	n_assert(rhs.lockCount == 0);
 	this->objects = rhs.objects;
 	this->size = rhs.size;
+	this->lockCount = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -171,8 +198,10 @@ template<class ...TYPES>
 inline void
 ArrayAllocatorSafe<TYPES...>::operator=(ArrayAllocatorSafe<TYPES...>&& rhs)
 {
+	n_assert(rhs.lockCount == 0);
 	this->objects = rhs.objects;
 	this->size = rhs.size;
+	this->lockCount = 0;
 	rhs.Clear();
 }
 
@@ -259,7 +288,7 @@ template<int MEMBER>
 inline tuple_array_t<MEMBER, TYPES...>&
 ArrayAllocatorSafe<TYPES...>::Get(const uint32_t index)
 {
-	n_assert(this->inBeginGet);
+	n_assert(this->lockCount > 0);
 	return std::get<MEMBER>(this->objects)[index];
 }
 
@@ -271,7 +300,7 @@ template<int MEMBER>
 inline const tuple_array_t<MEMBER, TYPES...>&
 ArrayAllocatorSafe<TYPES...>::Get(const uint32_t index) const
 {
-	n_assert(this->inBeginGet);
+	n_assert(this->lockCount > 0);
 	return std::get<MEMBER>(this->objects)[index];
 }
 
@@ -283,7 +312,7 @@ template<int MEMBER>
 inline const Util::Array<tuple_array_t<MEMBER, TYPES...>>&
 ArrayAllocatorSafe<TYPES...>::GetArray() const
 {
-	n_assert(this->inBeginGet);
+	n_assert(this->lockCount > 0);
 	return std::get<MEMBER>(this->objects);
 }
 
@@ -295,7 +324,7 @@ template<int MEMBER>
 inline Util::Array<tuple_array_t<MEMBER, TYPES...>>&
 ArrayAllocatorSafe<TYPES...>::GetArray()
 {
-	n_assert(this->inBeginGet);
+	n_assert(this->lockCount > 0);
 	return std::get<MEMBER>(this->objects);
 }
 
@@ -305,7 +334,7 @@ ArrayAllocatorSafe<TYPES...>::GetArray()
 template<class ...TYPES> void
 ArrayAllocatorSafe<TYPES...>::Set(const uint32_t index, TYPES... values)
 {
-	n_assert(this->inBeginGet);
+	n_assert(this->lockCount > 0);
 	set_for_each_in_tuple(this->objects, index, values...);
 }
 
@@ -324,8 +353,9 @@ ArrayAllocatorSafe<TYPES...>::UpdateSize()
 template<class ... TYPES> void
 ArrayAllocatorSafe<TYPES...>::EnterGet()
 {
-	this->sect.Enter();
-	this->inBeginGet = true;
+	int count = Threading::Interlocked::Add(this->lockCount, 1);
+	if (count == 0)
+		this->sect.Enter();
 }
 
 //------------------------------------------------------------------------------
@@ -334,39 +364,10 @@ ArrayAllocatorSafe<TYPES...>::EnterGet()
 template<class ... TYPES> void
 ArrayAllocatorSafe<TYPES...>::LeaveGet()
 {
-	this->sect.Leave();
-	this->inBeginGet = false;
-}
-
-//------------------------------------------------------------------------------
-/**
-	Get single item safely
-*/
-template<class ... TYPES>
-template<int MEMBER>
-Util::tuple_array_t<MEMBER, TYPES...>&
-ArrayAllocatorSafe<TYPES...>::GetSafe(const Ids::Id32 index)
-{
-	this->sect.Enter();
-	Util::tuple_array_t<MEMBER, TYPES...>& res = std::get<MEMBER>(this->objects)[index];
-	this->sect.Leave();
-	return res;
-}
-
-//------------------------------------------------------------------------------
-/**
-	Get single item safely
-*/
-template<class ... TYPES>
-template<int MEMBER>
-Util::tuple_array_t<MEMBER, TYPES...>&
-ArrayAllocatorSafe<TYPES...>::GetSafe(const Ids::Id64 index)
-{
-	Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(index));
-	this->sect.Enter();
-	Util::tuple_array_t<MEMBER, TYPES...>& res = std::get<MEMBER>(this->objects)[resId];
-	this->sect.Leave();
-	return res;
+	n_assert(this->lockCount > 0);
+	int count = Threading::Interlocked::Add(this->lockCount, -1);
+	if (count == 1)
+		this->sect.Leave();
 }
 
 //------------------------------------------------------------------------------

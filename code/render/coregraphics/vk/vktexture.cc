@@ -21,7 +21,7 @@ VkTextureSparseExtensionAllocator textureSparseExtensionAllocator(0x00FFFFFF);
 const VkImage
 TextureGetVkImage(const CoreGraphics::TextureId id)
 {
-	return textureAllocator.GetSafe<Texture_LoadInfo>(id.resourceId).img;
+	return textureAllocator.GetUnsafe<Texture_LoadInfo>(id.resourceId).img;
 }
 
 //------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ TextureGetVkImage(const CoreGraphics::TextureId id)
 const VkImageView
 TextureGetVkImageView(const CoreGraphics::TextureId id)
 {
-	return textureAllocator.GetSafe<Texture_RuntimeInfo>(id.resourceId).view;
+	return textureAllocator.GetUnsafe<Texture_RuntimeInfo>(id.resourceId).view;
 }
 
 //------------------------------------------------------------------------------
@@ -39,9 +39,9 @@ TextureGetVkImageView(const CoreGraphics::TextureId id)
 const VkImageView 
 TextureGetVkStencilImageView(const CoreGraphics::TextureId id)
 {
-	Ids::Id32 stencil = textureAllocator.GetSafe<Texture_LoadInfo>(id.resourceId).stencilExtension;
+	Ids::Id32 stencil = textureAllocator.GetUnsafe<Texture_LoadInfo>(id.resourceId).stencilExtension;
 	n_assert(stencil != Ids::InvalidId32);
-	return textureStencilExtensionAllocator.GetSafe<TextureExtension_StencilInfo>(stencil).view;
+	return textureStencilExtensionAllocator.GetUnsafe<TextureExtension_StencilInfo>(stencil).view;
 }
 
 //------------------------------------------------------------------------------
@@ -50,7 +50,7 @@ TextureGetVkStencilImageView(const CoreGraphics::TextureId id)
 const VkDevice 
 TextureGetVkDevice(const CoreGraphics::TextureId id)
 {
-	return textureAllocator.GetSafe<Texture_LoadInfo>(id.resourceId).dev;
+	return textureAllocator.GetUnsafe<Texture_LoadInfo>(id.resourceId).dev;
 }
 
 } // namespace Vulkan
