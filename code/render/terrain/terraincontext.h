@@ -46,6 +46,32 @@ struct BiomeMaterial
     Resources::ResourceName material;
 };
 
+struct SubTextureUpdateJobUniforms
+{
+    uint subTextureWorldSize;
+    uint maxMip;
+    uint physicalTileSize;
+};
+
+enum class SubTextureUpdateState : uint8
+{
+    NoChange,           // subtexture remains the same
+    Deleted,            // subtexture went to 0 tiles
+    Created,            // subtexture was 0 tiles but grew
+    Grew,               // subtexture grew to more tiles
+    Shrank              // subtexture shrank
+};
+
+struct SubTextureUpdateJobOutput
+{
+    uint oldTiles, newTiles;
+    uint oldMaxMip, newMaxMip;
+    Math::uint2 oldCoord;
+    Math::uint2 newCoord;
+    SubTextureUpdateState updateState;
+};
+
+
 //------------------------------------------------------------------------------
 /**
     This type keeps track of subregions of a texture so we can update them when
@@ -103,7 +129,7 @@ public:
     virtual ~TerrainContext();
 
     /// create terrain context
-    static void Create(const CoreGraphics::WindowId wnd);
+    static void Create(const TerrainSetupSettings& settings);
     /// destroy terrain context
     static void Discard();
 
@@ -112,8 +138,7 @@ public:
         const Graphics::GraphicsEntityId entity, 
         const Resources::ResourceName& heightMap, 
         const Resources::ResourceName& decisionMap,
-        const Resources::ResourceName& albedoMap,
-        const TerrainSetupSettings& settings);
+        const Resources::ResourceName& albedoMap);
 
     /// setup a new biome
     static TerrainBiomeId CreateBiome(
@@ -136,6 +161,8 @@ public:
     static void UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
     /// render IMGUI
     static void RenderUI(const Graphics::FrameContext& ctx);
+
+    static void Dumb();
 
 #ifndef PUBLIC_DEBUG    
     /// debug rendering

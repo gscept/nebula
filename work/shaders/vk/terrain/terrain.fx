@@ -23,9 +23,6 @@ group(SYSTEM_GROUP) constant TerrainSystemUniforms [ string Visibility = "VS|HS|
 	uint Debug;
 	float VirtualLodDistance;
 
-	uint FrameIndex;
-	uint UpdateIndex;
-
 	textureHandle TerrainDataBuffer;
 	textureHandle TerrainNormalBuffer;
 	textureHandle TerrainPosBuffer;
@@ -88,23 +85,6 @@ group(DYNAMIC_OFFSET_GROUP) constant TerrainTileUpdateUniforms [ string Visbilit
 	float MetersPerTile;
 };
 
-struct IndirectionUpdate
-{
-	uvec2 SparseTileIndirectionOffset;
-	uvec2 SparseTileOutputOffset;
-	uint Mip;
-};
-
-group(SYSTEM_GROUP) rw_buffer IndirectionUpdateBuffer [ string Visibility = "CS"; ]
-{
-	IndirectionUpdate Updates[];
-};
-
-group(SYSTEM_GROUP) constant IndirectionCountBuffer [ string Visibility = "CS"; ]
-{
-	uint NumIndirectionUpdates;
-};
-
 group(SYSTEM_GROUP) texture2D		MaterialMaskArray[MAX_BIOMES];
 group(SYSTEM_GROUP) texture2DArray	MaterialAlbedoArray[MAX_BIOMES];
 group(SYSTEM_GROUP) texture2DArray	MaterialNormalArray[MAX_BIOMES];
@@ -114,7 +94,7 @@ struct TerrainSubTexture
 {
 	vec2 worldCoordinate;
 	uvec2 indirectionOffset;
-	uint maxLod;
+	uint maxMip;
 	uint tiles;
 };
 
@@ -136,9 +116,9 @@ group(SYSTEM_GROUP) rw_buffer		PageUpdateListBuffer [ string Visibility = "PS|CS
 	PageUpdateList PageList;
 };
 
-group(SYSTEM_GROUP) rw_buffer		PageUpdateBuffer [ string Visibility = "PS|CS"; ]
+group(SYSTEM_GROUP) rw_buffer		PageStatusBuffer [ string Visibility = "PS"; ]
 {
-	uvec4 PageEntries[];
+	uint PageStatuses[];
 };
 
 #define sampleBiomeAlbedo(biome, sampler, uv, layer)		texture(sampler2DArray(MaterialAlbedoArray[biome], sampler), vec3(uv, layer))
@@ -185,7 +165,8 @@ vsTerrain(
 	out vec4 Position,
 	out vec2 UV,
 	out vec2 LocalUV,
-	out vec3 Normal) 
+	out vec3 Normal,
+	out float Tessellation) 
 {
 	vec3 offsetPos = position + vec3(OffsetPatchPos.x, 0, OffsetPatchPos.y);
 	vec4 modelSpace = Transform * vec4(offsetPos, 1);
@@ -196,6 +177,7 @@ vsTerrain(
 	float vertexDistance = distance( Position.xyz, EyePos.xyz);
 	float factor = 1.0f - saturate((MinLODDistance - vertexDistance) / (MinLODDistance - MaxLODDistance));
 	float decision = 1.0f - sample2D(DecisionMap, TextureSampler, UV).r;
+	Tessellation = MinTessellation + factor * (MaxTessellation - MinTessellation) * decision;
 
 	vec2 sampleUV = (Position.xz / vec2(WorldSizeX, WorldSizeZ)) - 0.5f;
 
@@ -260,6 +242,7 @@ hsTerrain(
 	in vec2 uv[],
 	in vec2 localUv[],
 	in vec3 normal[],
+	in float tessellation[],
 	out vec2 UV[],
 	out vec2 LocalUV[],
 	out vec4 Position[],
@@ -274,10 +257,14 @@ hsTerrain(
 	if (gl_InvocationID == 0)
 	{
 		vec4 EdgeTessFactors;
-		EdgeTessFactors.x = TessellationFactorScreenSpace(Position[2], Position[0]);
-		EdgeTessFactors.y = TessellationFactorScreenSpace(Position[0], Position[1]);
-		EdgeTessFactors.z = TessellationFactorScreenSpace(Position[1], Position[3]);
-		EdgeTessFactors.w = TessellationFactorScreenSpace(Position[3], Position[2]);
+		//EdgeTessFactors.x = TessellationFactorScreenSpace(Position[2], Position[0]);
+		//EdgeTessFactors.y = TessellationFactorScreenSpace(Position[0], Position[1]);
+		//EdgeTessFactors.z = TessellationFactorScreenSpace(Position[1], Position[3]);
+		//EdgeTessFactors.w = TessellationFactorScreenSpace(Position[3], Position[2]);
+		EdgeTessFactors.x = 0.5f * (tessellation[2] + tessellation[0]);
+		EdgeTessFactors.y = 0.5f * (tessellation[0] + tessellation[1]);
+		EdgeTessFactors.z = 0.5f * (tessellation[1] + tessellation[3]);
+		EdgeTessFactors.w = 0.5f * (tessellation[3] + tessellation[2]);
 
 
 		gl_TessLevelOuter[0] = EdgeTessFactors.x;
@@ -672,25 +659,12 @@ PageDataGetStatus(uvec4 data)
 //------------------------------------------------------------------------------
 /**
 */
-[local_size_x] = 64
+[local_size_x] = 1
 shader
 void
 csTerrainPageClearUpdateBuffer()
 {
-	uint index = gl_GlobalInvocationID.x + gl_GlobalInvocationID.y * 2048;
-	if (index >= VirtualPageBufferNumPages)
-		return;
-
-	uvec4 entry = PageEntries[index];
-	uint status = PageDataGetStatus(entry);
-	if (status == 1u)
-		PageEntries[index] = PageDataSetStatus(entry, 2u);
-	else if (status == 2u)
-		PageEntries[index] = PageDataSetStatus(entry, 0u);
-
-	// clear page entries
-	if (index == 0u)
-		PageList.NumEntries = 0u;
+	PageList.NumEntries = 0u;
 }
 
 //------------------------------------------------------------------------------
@@ -728,32 +702,31 @@ psTerrainPrepass(
 	[color0] out vec4 Pos)
 {
 	Pos.xy = worldPos.xz;
-	Pos.w = 0.0f;
 	Pos.z = 0.0f;
+	Pos.w = 0.0f;
 
 	// convert world space to positive integer interval [0..WorldSize]
 	vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
 	vec2 unsignedPos = worldPos.xz + worldSize * 0.5f;
-	uvec2 subTextureCoord = uvec2(unsignedPos / VirtualTerrainSubTextureSize);
+	ivec2 subTextureCoord = ivec2(unsignedPos / VirtualTerrainSubTextureSize);
+
+	if (any(lessThan(subTextureCoord, ivec2(0, 0))) || any(greaterThanEqual(subTextureCoord, VirtualTerrainNumSubTextures)))
+		return;
 
 	// calculate subtexture index
 	uint subTextureIndex = subTextureCoord.x + subTextureCoord.y * VirtualTerrainNumSubTextures.x;
-	if (subTextureIndex >= VirtualTerrainNumSubTextures.x * VirtualTerrainNumSubTextures.y)
-		return;
 	TerrainSubTexture subTexture = SubTextures[subTextureIndex];
 
 	// if this subtexture is bound on the CPU side, use it
-	if (subTexture.tiles != 0xFFFFFFFF)
+	if (subTexture.tiles != 0)
 	{
 		// calculate LOD
 		const float lodScale = 4 * subTexture.tiles;
-		vec2 dy = dFdy(worldPos.xz * lodScale);
-		vec2 dx = dFdx(worldPos.xz * lodScale);
+		vec2 dy = dFdyFine(worldPos.xz * lodScale);
+		vec2 dx = dFdxFine(worldPos.xz * lodScale);
 		float d = max(1.0f, max(dot(dx, dx), dot(dy, dy)));
-		d = clamp(sqrt(d), 1.0f, pow(2, subTexture.maxLod));
+		d = clamp(sqrt(d), 1.0f, pow(2, subTexture.maxMip));
 		float lod = log2(d);
-		//lod = (lod / (VirtualTerrainNumMips - 1)) * subTexture.maxLod;
-		//float lod = min(d, subTexture.maxLod);
 
 		// calculate pixel position relative to the world coordinate for the subtexture
 		vec2 relativePos = worldPos.xz - subTexture.worldCoordinate;
@@ -773,14 +746,20 @@ psTerrainPrepass(
 		uint mipSize = VirtualPageBufferMipSizes[lowerMip / 4][lowerMip % 4];
 
 		uint index = mipOffset + pageCoord.x + pageCoord.y * mipSize;
-		uvec4 entry = PackPageDataEntry(1u, subTextureIndex, lowerMip, pageCoord.x, pageCoord.y, subTextureTile.x, subTextureTile.y);
-		PageEntries[index] = entry;
+		uint status = atomicExchange(PageStatuses[index], 1u);
+		if (status == 0x0)
+		{
+			uvec4 entry = PackPageDataEntry(1u, subTextureIndex, lowerMip, pageCoord.x, pageCoord.y, subTextureTile.x, subTextureTile.y);
+
+			uint entryIndex = atomicAdd(PageList.NumEntries, 1u);
+			PageList.Entry[entryIndex] = entry;
+		}
 
 		/*
 		Pos.x = pageCoord.x;
 		Pos.y = pageCoord.y;
 		Pos.z = subTextureIndex;
-		Pos.w = subTexture.maxLod;
+		Pos.w = subTexture.maxMip;
 		*/
 
 		// if the mips are not identical, we need to repeat this process for the upper mip
@@ -795,37 +774,19 @@ psTerrainPrepass(
 			mipSize = VirtualPageBufferMipSizes[upperMip / 4][upperMip % 4];
 
 			index = mipOffset + pageCoord.x + pageCoord.y * mipSize;
-			entry = PackPageDataEntry(1u, subTextureIndex, upperMip, pageCoord.x, pageCoord.y, subTextureTile.x, subTextureTile.y);
-			PageEntries[index] = entry;
+			uint status = atomicExchange(PageStatuses[index], 1u);
+			if (status == 0x0)
+			{
+				uvec4 entry = PackPageDataEntry(1u, subTextureIndex, upperMip, pageCoord.x, pageCoord.y, subTextureTile.x, subTextureTile.y);
+
+				uint entryIndex = atomicAdd(PageList.NumEntries, 1u);
+				PageList.Entry[entryIndex] = entry;
+			}
 		}
 
 		// if the position has w == 1, it means we found a page
 		Pos.z = lod;
 		Pos.w = 1.0f;
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-[local_size_x] = 64
-shader
-void
-csExtractPageUpdateBuffer()
-{
-	uint index = gl_GlobalInvocationID.x + gl_GlobalInvocationID.y * 2048;
-	if (index >= VirtualPageBufferNumPages)
-		return;
-
-	uvec4 entry = PageEntries[index];
-	uint residency = PageDataGetStatus(entry);
-	if (residency != 0)
-	{
-		// add one item to NumPageEntries, it's an atomic operation, so the index returned is the one we can use 
-		uint entryIndex = atomicAdd(PageList.NumEntries, 1u);
-
-		// just copy the data over
-		PageList.Entry[entryIndex] = entry;
 	}
 }
 
@@ -984,9 +945,6 @@ psTerrainTileUpdate(
 				totalNormal += (tbn * blendNormal) * mask;
 			}
 		}
-
-		//totalAlbedo.r = heightCutoff;
-		//totalAlbedo.gb = vec2(0);
 	}
 
 	// write output to virtual textures
@@ -1013,12 +971,13 @@ psScreenSpaceVirtual(
 		discard;
 
 	// calculate the subtexture coordinate
-
 	vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
 	vec2 worldPos = pos.xy;
 	vec2 worldUv = (worldPos + worldSize * 0.5f) / worldSize;
 	vec2 unsignedPos = worldPos + worldSize * 0.5f;
-	if (any(lessThan(unsignedPos, vec2(0))) || any(greaterThan(unsignedPos, worldSize)))
+	ivec2 subTextureCoord = ivec2(unsignedPos / VirtualTerrainSubTextureSize);
+
+	if (any(lessThan(subTextureCoord, ivec2(0, 0))) || any(greaterThanEqual(subTextureCoord, VirtualTerrainNumSubTextures)))
 	{
 		Albedo = sample2D(AlbedoLowresBuffer, TextureSampler, worldUv);
 		Albedo.a = 1.0f;
@@ -1026,13 +985,12 @@ psScreenSpaceVirtual(
 		Material = sample2D(MaterialLowresBuffer, TextureSampler, worldUv);
 		return;
 	}
-	uvec2 subTextureCoord = uvec2(unsignedPos / VirtualTerrainSubTextureSize);
 
 	// get subtexture
 	uint subTextureIndex = subTextureCoord.x + subTextureCoord.y * VirtualTerrainNumSubTextures.x;
 	TerrainSubTexture subTexture = SubTextures[subTextureIndex];
 
-	if (subTexture.tiles != 0xFFFFFFFF)
+	if (subTexture.tiles != 0)
 	{
 		if (pos.w == 1.0f)
 		{
@@ -1053,7 +1011,6 @@ psScreenSpaceVirtual(
 			// if we need to sample two lods, do bilinear interpolation ourselves
 			if (upperMip != lowerMip)
 			{
-
 				uvec2 pageCoordUpper;
 				uvec2 dummy;
 				vec2 subTextureTileFractUpper;
@@ -1131,12 +1088,6 @@ psScreenSpaceVirtual(
 					Normal = sample2D(NormalLowresBuffer, TextureSampler, worldUv).xyz;
 					Material = sample2D(MaterialLowresBuffer, TextureSampler, worldUv);
 				}
-
-				/*
-				Albedo = vec4(0, 0, 0, 0);
-				Albedo.r = orig.x;
-				Albedo.g = orig.y;
-				*/
 			}
 		}
 		else
@@ -1146,7 +1097,6 @@ psScreenSpaceVirtual(
 			Normal = sample2D(NormalLowresBuffer, TextureSampler, worldUv).xyz;
 			Material = sample2D(MaterialLowresBuffer, TextureSampler, worldUv);
 		}
-
 
 	}
 	else
@@ -1325,9 +1275,4 @@ SimpleTechnique(TerrainLowresFallback, "TerrainLowresFallback", vsScreenSpace(),
 program TerrainPageClearUpdateBuffer [ string Mask = "TerrainPageClearUpdateBuffer"; ]
 {
 	ComputeShader = csTerrainPageClearUpdateBuffer();
-};
-
-program TerrainExtractPageBuffer [ string Mask = "TerrainExtractPageBuffer"; ]
-{
-	ComputeShader = csExtractPageUpdateBuffer();
 };
