@@ -336,7 +336,7 @@ VkSubContextHandler::Wait(CoreGraphics::QueueType type, uint64 index)
 	// we can't really signal index 0, so skip it
 	if (index > 0)
 	{
-		// skip the undefined submission
+		// setup wait
 		VkSemaphoreWaitInfo waitInfo =
 		{
 			VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,

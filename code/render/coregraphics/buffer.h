@@ -93,7 +93,7 @@ template<class TYPE> void BufferUpload(const BufferId id, const TYPE* data, cons
 /// fill buffer with data much like memset
 void BufferFill(const BufferId id, char pattern, const CoreGraphics::SubmissionContextId sub);
 
-/// flush any changes done to the buffer so they are visible on the GPU
+/// flush any changes done to the buffer CPU side so they are visible on the GPU
 void BufferFlush(const BufferId id, IndexT offset = 0, SizeT size = NEBULA_WHOLE_BUFFER_SIZE);
 /// invalidate buffer CPU side, such that any GPU changes will be made visible
 void BufferInvalidate(const BufferId id, IndexT offset = 0, SizeT size = NEBULA_WHOLE_BUFFER_SIZE);
