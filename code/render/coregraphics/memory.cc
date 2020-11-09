@@ -33,12 +33,25 @@ MemoryPool::AllocateMemory(uint alignment, uint size)
 bool 
 MemoryPool::DeallocateMemory(const Alloc& alloc)
 {
-	switch (this->allocMethod)
+	Util::Array<AllocRange>& ranges = this->blockRanges[alloc.blockIndex];
+	for (IndexT i = 0; i < ranges.Size(); i++)
 	{
-	case MemoryPool_AllocConservative:
-		return this->DeallocConservative(alloc);
-	case MemoryPool_AllocLinear:
-		return this->DeallocLinear(alloc);
+		if (ranges[i].offset == alloc.offset)
+		{
+			ranges.EraseIndex(i);
+
+			// if the range is empty, dealloc the memory block
+			if (ranges.IsEmpty())
+			{
+				// deallocate the memory and remove this index
+				this->DestroyBlock(this->blocks[alloc.blockIndex], this->mapMemory);
+
+				this->blockPool.Dealloc(alloc.blockIndex);
+				this->blocks[alloc.blockIndex] = DeviceMemory(0);
+				this->blockMappedPointers[alloc.blockIndex] = nullptr;
+			}
+			return true;
+		}
 	}
 	return false;
 }
@@ -75,10 +88,10 @@ MemoryPool::AllocateConservative(DeviceSize alignment, DeviceSize size)
 	if (size > this->blockSize)
 	{
 		// store old block size and reset it after block allocation
-		uint32_t oldSize = this->blockSize;
+		uint oldSize = this->blockSize;
 		this->blockSize = size;
 
-		uint32_t id = this->blockPool.Alloc();
+		uint id = this->blockPool.Alloc();
 		this->blockMappedPointers.Append(nullptr);
 		DeviceMemory mem = this->CreateBlock(this->mapMemory, &this->blockMappedPointers[id]);
 
@@ -142,7 +155,7 @@ MemoryPool::AllocateConservative(DeviceSize alignment, DeviceSize size)
 	n_assert(this->size + this->blockSize <= this->maxSize);
 	this->size += this->blockSize;
 
-	uint32_t id = this->blockPool.Alloc();
+	uint id = this->blockPool.Alloc();
 	if (id >= (uint)this->blockMappedPointers.Size())
 	{
 		this->blockMappedPointers.Append(nullptr);
@@ -166,45 +179,16 @@ MemoryPool::AllocateConservative(DeviceSize alignment, DeviceSize size)
 //------------------------------------------------------------------------------
 /**
 */
-bool 
-MemoryPool::DeallocConservative(const Alloc& alloc)
-{
-	Util::Array<AllocRange>& ranges = this->blockRanges[alloc.blockIndex];
-	for (IndexT i = 0; i < ranges.Size(); i++)
-	{
-		if (ranges[i].offset == alloc.offset)
-		{
-			ranges.EraseIndex(i);
-
-			// if the range is empty, dealloc the memory block
-			if (ranges.IsEmpty())
-			{
-				// deallocate the memory and remove this index
-				this->DestroyBlock(this->blocks[alloc.blockIndex], this->mapMemory);
-
-				this->blockPool.Dealloc(alloc.blockIndex);
-				this->blocks[alloc.blockIndex] = DeviceMemory(0);
-				this->blockMappedPointers[alloc.blockIndex] = nullptr;
-			}
-			return true;
-		}
-	}
-	return false;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 Alloc
 MemoryPool::AllocateLinear(DeviceSize alignment, DeviceSize size)
 {
 	if (size > this->blockSize)
 	{
 		// store old block size and reset it after block allocation
-		uint32_t oldSize = this->blockSize;
+		uint oldSize = this->blockSize;
 		this->blockSize = size;
 
-		uint32_t id = this->blockPool.Alloc();
+		uint id = this->blockPool.Alloc();
 		this->blockMappedPointers.Append(nullptr);
 		DeviceMemory mem = this->CreateBlock(this->mapMemory, &this->blockMappedPointers[id]);
 
@@ -258,7 +242,7 @@ MemoryPool::AllocateLinear(DeviceSize alignment, DeviceSize size)
 	n_assert(this->size + this->blockSize <= this->maxSize);
 	this->size += this->blockSize;
 
-	uint32_t id = this->blockPool.Alloc();
+	uint id = this->blockPool.Alloc();
 	if (id >= (uint)this->blockMappedPointers.Size())
 	{
 		this->blockMappedPointers.Append(nullptr);
@@ -277,35 +261,6 @@ MemoryPool::AllocateLinear(DeviceSize alignment, DeviceSize size)
 	}
 	Alloc ret{ this->blocks[id], DeviceSize(0), size, this->memoryType, id };
 	return ret;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-bool 
-MemoryPool::DeallocLinear(const Alloc& alloc)
-{
-	Util::Array<AllocRange>& ranges = this->blockRanges[alloc.blockIndex];
-	for (IndexT i = 0; i < ranges.Size(); i++)
-	{
-		if (ranges[i].offset == alloc.offset)
-		{
-			ranges.EraseIndex(i);
-
-			// if the range is empty, dealloc the memory block
-			if (ranges.IsEmpty())
-			{
-				// deallocate the memory and remove this index
-				this->DestroyBlock(this->blocks[alloc.blockIndex], this->mapMemory);
-
-				this->blockPool.Dealloc(alloc.blockIndex);
-				this->blocks[alloc.blockIndex] = DeviceMemory(0);
-				this->blockMappedPointers[alloc.blockIndex] = nullptr;
-			}
-			return true;
-		}
-	}
-	return false;
 }
 
 } // namespace CoreGraphics

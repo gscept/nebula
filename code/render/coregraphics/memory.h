@@ -84,12 +84,8 @@ private:
 
 	// allocate conservatively
 	Alloc AllocateConservative(DeviceSize alignment, DeviceSize size);
-	// deallocate conservatively
-	bool DeallocConservative(const Alloc& alloc);
 	// allocate linearly
 	Alloc AllocateLinear(DeviceSize alignment, DeviceSize size);
-	// deallocate linearly
-	bool DeallocLinear(const Alloc& alloc);
 	// create new memory block
 	DeviceMemory CreateBlock(bool map, void** outMappedPtr);
 	// destroy block
