@@ -60,7 +60,23 @@ Move(const void* from, void* to, size_t numBytes)
         n_assert(from != to);
         MoveMemory(to, from, numBytes);
     }
+}
 
+//------------------------------------------------------------------------------
+/**
+    Move a chunk of memory, can handle overlapping regions
+*/
+template <typename T>
+__forceinline void
+MoveElements(const T* from, T* to, size_t numElements)
+{
+    if (numElements > 0)
+    {
+        n_assert(0 != from);
+        n_assert(0 != to);
+        n_assert(from != to);
+        MoveMemory(to, from, numElements * sizeof(T));
+    }
 }
 //------------------------------------------------------------------------------
 /**
@@ -96,4 +112,3 @@ Fill(void* ptr, size_t numBytes, unsigned char value)
 
 } // namespace Memory
 //------------------------------------------------------------------------------
-    
