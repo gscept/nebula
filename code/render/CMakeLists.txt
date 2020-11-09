@@ -631,6 +631,8 @@ ENDIF()
                 terraincontext.h
                 terraincontext.cc
                 terrainculljob.cc
+                terrainsubtextureupdatejob.cc
+				texturetilecache.h
             )
 
 		fips_dir(visibility)

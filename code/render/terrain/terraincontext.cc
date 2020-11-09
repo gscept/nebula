@@ -452,7 +452,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 		bufInfo.elementSize = sizeof(uint);
 		bufInfo.size = offset;
 		bufInfo.mode = BufferAccessMode::DeviceLocal;
-		bufInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
+		bufInfo.usageFlags = CoreGraphics::TransferBufferSource;
 		bufInfo.data = nullptr;
 		bufInfo.dataSize = 0;
 		terrainVirtualTileState.pageStatusClearBuffer = CoreGraphics::CreateBuffer(bufInfo);
@@ -1116,6 +1116,43 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 					}
 
 					PassEnd(terrainVirtualTileState.tileUpdatePass);
+
+					// we need a barrier here for the tile updates since we are not using the framescript and thus don't get any automatic barriers
+					BarrierInsert(GraphicsQueueType,
+						BarrierStage::PassOutput,
+						BarrierStage::AllGraphicsShaders,
+						BarrierDomain::Global,
+						{
+							TextureBarrier
+							{
+								terrainVirtualTileState.physicalAlbedoCache,
+								ImageSubresourceInfo::ColorNoMipNoLayer(),
+								ImageLayout::ColorRenderTexture,
+								ImageLayout::ShaderRead,
+								BarrierAccess::ColorAttachmentWrite,
+								BarrierAccess::ShaderRead,
+							},
+							TextureBarrier
+							{
+								terrainVirtualTileState.physicalNormalCache,
+								ImageSubresourceInfo::ColorNoMipNoLayer(),
+								ImageLayout::ColorRenderTexture,
+								ImageLayout::ShaderRead,
+								BarrierAccess::ColorAttachmentWrite,
+								BarrierAccess::ShaderRead,
+							},
+							TextureBarrier
+							{
+								terrainVirtualTileState.physicalMaterialCache,
+								ImageSubresourceInfo::ColorNoMipNoLayer(),
+								ImageLayout::ColorRenderTexture,
+								ImageLayout::ShaderRead,
+								BarrierAccess::ColorAttachmentWrite,
+								BarrierAccess::ShaderRead,
+							},
+						},
+						nullptr,
+						"Terrain Physical Cache Update Barrier");
 					
 					CommandBufferEndMarker(GraphicsQueueType);
 				}
@@ -1123,44 +1160,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 
 	Frame::AddCallback("TerrainContext - Screen Space Resolve", [](const IndexT frame, const IndexT bufferIndex)
 		{
-
-			// we need a barrier here for the tile updates since we are not using the framescript and thus don't get any automatic barriers
-			BarrierInsert(GraphicsQueueType,
-				BarrierStage::PassOutput,
-				BarrierStage::AllGraphicsShaders,
-				BarrierDomain::Global,
-				{
-					TextureBarrier
-					{
-						terrainVirtualTileState.physicalAlbedoCache,
-						ImageSubresourceInfo::ColorNoMipNoLayer(),
-						ImageLayout::ColorRenderTexture,
-						ImageLayout::ShaderRead,
-						BarrierAccess::ColorAttachmentWrite,
-						BarrierAccess::ShaderRead,
-					},
-					TextureBarrier
-					{
-						terrainVirtualTileState.physicalNormalCache,
-						ImageSubresourceInfo::ColorNoMipNoLayer(),
-						ImageLayout::ColorRenderTexture,
-						ImageLayout::ShaderRead,
-						BarrierAccess::ColorAttachmentWrite,
-						BarrierAccess::ShaderRead,
-					},
-					TextureBarrier
-					{
-						terrainVirtualTileState.physicalMaterialCache,
-						ImageSubresourceInfo::ColorNoMipNoLayer(),
-						ImageLayout::ColorRenderTexture,
-						ImageLayout::ShaderRead,
-						BarrierAccess::ColorAttachmentWrite,
-						BarrierAccess::ShaderRead,
-					},
-				},
-				nullptr,
-				"Terrain Physical Cache Update Barrier");
-
 			CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_GRAPHICS, "Terrain Screenspace Pass");
 			SetShaderProgram(terrainVirtualTileState.terrainScreenspacePass);
 
