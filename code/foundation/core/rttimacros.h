@@ -381,6 +381,8 @@ private:
 	inline type operator&(type a, unsigned b) { return static_cast<type>(static_cast<unsigned>(a) & b); }\
 	inline type& operator|=(type& a, unsigned b) { a = static_cast<type>(static_cast<unsigned>(a) | b); return a; }\
 	inline type& operator&=(type& a, unsigned b) { a = static_cast<type>(static_cast<unsigned>(a) & b); return a; }\
+    inline type operator~(type a) { return static_cast<type>(~static_cast<unsigned>(a)); }\
+    inline type operator!(type a) { return static_cast<type>(!static_cast<unsigned>(a)); }\
 	inline unsigned operator|(unsigned a, type b) { return a | static_cast<unsigned>(b); }\
 	inline unsigned operator&(unsigned a, type b) { return a & static_cast<unsigned>(b); }\
 	inline unsigned& operator|=(unsigned& a, type b) { a = a | static_cast<unsigned>(b); return a; }\
