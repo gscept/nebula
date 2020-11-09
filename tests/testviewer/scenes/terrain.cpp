@@ -52,17 +52,10 @@ void OpenScene()
     terrain = Graphics::CreateEntity();
     Terrain::TerrainContext::RegisterEntity(terrain);
 
-    Terrain::TerrainSetupSettings settings{
-            0, 1024.0f,      // min/max height
-            8192, 8192,   // world size in meters
-            256, 256,     // tile size in meters
-            16, 16        // 1 vertex every X meters
-    };
     Terrain::TerrainContext::SetupTerrain(terrain,
         "tex:terrain/everest Height Map (Merged)_PNG_BC4_1.dds",
         "tex:system/black.dds",
-        "tex:terrain/dirt_aerial_02_diff_2k.dds",
-        settings);
+        "tex:terrain/dirt_aerial_02_diff_2k.dds");
 
     Terrain::BiomeSetupSettings biomeSettings =
     {
