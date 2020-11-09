@@ -340,18 +340,18 @@ TextureUpdate(const CoreGraphics::TextureId id, IndexT mip, IndexT layer, char* 
 /**
 */
 void 
-TextureClearColor(const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres)
+TextureClearColor(const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres, const CoreGraphics::SubmissionContextId sub)
 {
-	texturePool->ClearColor(id, color, layout, subres);
+	texturePool->ClearColor(id, color, layout, subres, sub);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-TextureClearDepthStencil(const CoreGraphics::TextureId id, float depth, uint stencil, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres)
+TextureClearDepthStencil(const CoreGraphics::TextureId id, float depth, uint stencil, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres, const CoreGraphics::SubmissionContextId sub)
 {
-	texturePool->ClearDepthStencil(id, depth, stencil, layout, subres);
+	texturePool->ClearDepthStencil(id, depth, stencil, layout, subres, sub);
 }
 
 //------------------------------------------------------------------------------
@@ -381,6 +381,7 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
 		rt.widthScale = rt.heightScale = rt.depthScale = 1.0f;
 		rt.layers = 1;
 		rt.mips = 1;
+		rt.clear = false;
 		rt.samples = 1;
 		rt.windowTexture = true;
 		rt.windowRelative = true;
@@ -406,7 +407,9 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
 		rt.heightScale = 0;
 		rt.depthScale = 0;
 		rt.mips = info.mips;
-		rt.layers = (info.type == CoreGraphics::TextureCubeArray || info.type == CoreGraphics::TextureCube) ? 6 : info.layers; 
+		rt.layers = (info.type == CoreGraphics::TextureCubeArray || info.type == CoreGraphics::TextureCube) ? 6 : info.layers;
+		rt.clear = info.clear;
+		rt.clearColor = info.clearColorF4;
 		rt.samples = info.samples;
 		rt.windowTexture = false;
 		rt.windowRelative = info.windowRelative;

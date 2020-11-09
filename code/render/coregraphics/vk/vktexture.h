@@ -32,6 +32,12 @@ struct VkTextureLoadInfo
 	uint32_t mips;
 	uint32_t layers;
 	uint8_t samples;
+	bool clear;
+	union
+	{
+		Math::float4 clearColor;
+		Math::uint2 clearDepthStencil;
+	};
 	CoreGraphics::PixelFormat::Code format;
 	CoreGraphics::TextureUsage texUsage;
 	CoreGraphics::TextureId alias;
