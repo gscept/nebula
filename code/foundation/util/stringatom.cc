@@ -82,7 +82,7 @@ StringAtom::operator==(const char* rhs) const
 /**
 */
 bool 
-StringAtom::operator==(nullptr_t) const
+StringAtom::operator==(std::nullptr_t) const
 {
 	return this->content == nullptr;
 }

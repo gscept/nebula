@@ -27,16 +27,27 @@ public:
     void Wait() const;
     /// wait for the event with timeout in millisecs, resets the event
     bool WaitTimeout(int ms) const;
-    /// check if event is signalled
+    /// check if event is signaled
     bool Peek() const;
     /// manually reset the event
     void Reset();
 
 private:
+    // emulate windows event behaviour (*sigh*)
+    enum EventStatus
+    {
+        SIGNAL_NONE = 0,
+        SIGNAL_ONE = 1,
+        SIGNAL_ALL = 2,
+    };
+
     mutable pthread_mutex_t mutex;
     mutable pthread_cond_t cond;
-    mutable volatile int signalled;
+    
+    volatile mutable int foo;
     bool manualReset;
+    volatile mutable EventStatus status;
+    volatile mutable EventStatus status2;
 };
 
 //------------------------------------------------------------------------------
@@ -44,22 +55,17 @@ private:
 */
 inline
 LinuxEvent::LinuxEvent(bool manual) :
-    signalled(0),
-    manualReset(manual)
+    status(SIGNAL_NONE),
+    status2(SIGNAL_NONE),
+    manualReset(manual),foo(16)
 {
-    // setup the mutex
-    pthread_mutexattr_t mutexAttrs;
-    pthread_mutexattr_init(&mutexAttrs);
-    int res = pthread_mutex_init(&this->mutex, &mutexAttrs);
+    // setup the mutex    
+    int res = pthread_mutex_init(&this->mutex, nullptr);
     n_assert(0 == res);
-    pthread_mutexattr_destroy(&mutexAttrs);
 
     // setup the condition variable
-    pthread_condattr_t condAttrs;
-    pthread_condattr_init(&condAttrs);
-    res = pthread_cond_init(&this->cond, &condAttrs);
+    res = pthread_cond_init(&this->cond, nullptr);
     n_assert(0 == res);
-    pthread_condattr_destroy(&condAttrs);
 }
 
 //------------------------------------------------------------------------------
@@ -80,9 +86,17 @@ LinuxEvent::~LinuxEvent()
 inline void
 LinuxEvent::Signal()
 {
-    pthread_mutex_lock(&this->mutex);    
-    __sync_lock_test_and_set(&this->signalled, 1);
-    pthread_cond_signal(&this->cond);
+    pthread_mutex_lock(&this->mutex);
+    if(this->manualReset)
+    {
+        this->status = SIGNAL_ALL;
+        pthread_cond_broadcast(&this->cond);
+    }
+    else
+    {
+        this->status = SIGNAL_ONE;
+        pthread_cond_signal(&this->cond);
+    }
     pthread_mutex_unlock(&this->mutex);
 }
 
@@ -93,14 +107,28 @@ inline void
 LinuxEvent::Wait() const
 {
     pthread_mutex_lock(&this->mutex);
-    while (!this->signalled)
+
+    bool locked = false;
+    do
     {
-        pthread_cond_wait(&this->cond, &this->mutex);
-    }
-    if(!this->manualReset)
-    {
-        __sync_lock_test_and_set(&this->signalled, 0);
-    }
+        // dont wait for cond if already triggered
+        if (this->status == SIGNAL_ONE)
+        {
+            this->status = SIGNAL_NONE;
+            locked = true;
+        }
+        else if( this->status == SIGNAL_ALL)
+        {
+            // we are in a manual reset event, do nothing
+            locked = true;
+        }
+        else
+        {
+            // we actually have to wait
+            int res = pthread_cond_wait(&this->cond, &this->mutex);
+            n_assert(res == 0);
+        }
+    } while (!locked);
     pthread_mutex_unlock(&this->mutex);
 }
 
@@ -112,48 +140,35 @@ LinuxEvent::WaitTimeout(int ms) const
 {
     bool timeOutOccured = false;
     pthread_mutex_lock(&this->mutex);
-
-    while (!this->signalled)
+    
+    bool locked = false;
+    do
     {
-        // TODO: needs testing
-        /*
-        timeval timeVal;
-        gettimeofday(&timeVal, 0);
-
-        timespec timeSpec;
-        timeSpec.tv_sec = timeVal.tv_sec;
-        timeSpec.tv_nsec = timeVal.tv_usec * 1000 + ms * 1000000;
-
-        timeSpec.tv_sec += timeSpec.tv_nsec/1000000000;
-        timeSpec.tv_nsec += timeSpec.tv_nsec%1000000000;        
-
-        int res = pthread_cond_timedwait(&this->cond, &this->mutex, &timeSpec);
-        */
-        
-        timespec timeSpec;
-        timeSpec.tv_sec = ms / 1000;
-        timeSpec.tv_nsec = (ms % 1000) * 1000000;
-		#if __NACL__
-        	timeval tv;
-        	gettimeofday(&tv, 0);
-        	timeSpec.tv_sec += tv.tv_sec;
-        	timeSpec.tv_nsec += tv.tv_usec * 1000;
-        	int res = pthread_cond_timedwait_abs(&this->cond, &this->mutex, &timeSpec);
-		#elif __OSX__
-        	int res = pthread_cond_timedwait_relative_np(&this->cond, &this->mutex, &timeSpec);
-        #elif __LINUX__
-            int res = pthread_cond_timedwait(&this->cond, &this->mutex, &timeSpec);
-		#endif
-        if (ETIMEDOUT == res)
+        // dont wait for cond if already triggered
+        if (this->status == SIGNAL_ONE)
         {
-            timeOutOccured = true;
-            break;
+            this->status = SIGNAL_NONE;
+            locked = true;
         }
-    }
-    if (!this->manualReset)
-    {
-        __sync_lock_test_and_set(&this->signalled, 0);
-    }
+        else if( this->status == SIGNAL_ALL)
+        {
+            // we are in a manual reset event, do nothing
+            locked = true;
+        }
+        else
+        {
+            timespec timeSpec;
+            timeSpec.tv_sec = ms / 1000;
+            timeSpec.tv_nsec = (ms - timeSpec.tv_sec * 1000) * 1000000;
+		
+            int res = pthread_cond_timedwait(&this->cond, &this->mutex, &timeSpec);
+
+            if (ETIMEDOUT == res)
+            {
+                timeOutOccured = true;
+            }
+        }
+    } while(!locked && !timeOutOccured);
     pthread_mutex_unlock(&this->mutex);    
     return !timeOutOccured;
 }
@@ -164,7 +179,7 @@ LinuxEvent::WaitTimeout(int ms) const
 inline bool
 LinuxEvent::Peek() const
 {
-    return this->signalled;
+    return this->status != SIGNAL_NONE;
 }
 
 //------------------------------------------------------------------------------
@@ -174,7 +189,7 @@ inline void
 LinuxEvent::Reset()
 {
     pthread_mutex_lock(&this->mutex);
-    __sync_lock_test_and_set(&this->signalled, 0);    
+    this->status = SIGNAL_NONE;
     pthread_mutex_unlock(&this->mutex);    
 }
 

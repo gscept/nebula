@@ -33,6 +33,10 @@ public:
     static void Write(Handle h, const void* buf, IO::Stream::Size numBytes);
     /// read from a file
     static IO::Stream::Size Read(Handle h, void* buf, IO::Stream::Size numBytes);
+    /// map file to virtual memory
+    static char* Map(Handle h, IO::Stream::AccessMode accessMode, Handle& mappedHandle);
+    /// unmap file
+    static void Unmap(Handle mapHandle, char* buf);
     /// seek in a file
     static void Seek(Handle h, IO::Stream::Offset offset, IO::Stream::SeekOrigin orig);
     /// get position in file

@@ -14,11 +14,11 @@ namespace System
 {
 typedef Win32::Win32Process Process;
 }
-#elif __LINUX__
+#elif __linux__
 #include "posix/posixprocess.h"
 namespace System
 {
-typedef Posix::PosixAppLauncher Process;
+typedef Posix::PosixProcess Process;
 }
 #else
 #error "System::Process not implemented on this platform!"

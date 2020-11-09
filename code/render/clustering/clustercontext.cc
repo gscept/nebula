@@ -13,7 +13,7 @@
 namespace Clustering
 {
 
-struct
+struct _state
 {
 	CoreGraphics::ShaderId clusterShader;
 	CoreGraphics::ShaderProgramId clusterGenerateProgram;

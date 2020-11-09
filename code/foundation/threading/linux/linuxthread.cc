@@ -149,17 +149,17 @@ LinuxThread::EmitWakeupSignal()
 void
 LinuxThread::Stop()
 {
-    n_assert(this->IsRunning());
+    if(this->IsRunning())
+    {
+        // signal the thread to stop
+        this->stopRequestEvent.Signal();
 
-    // signal the thread to stop
-    this->stopRequestEvent.Signal();
-
-    // call the wakeup-thread method, may be derived in a subclass
-    // if the threads needs to be woken up, it is important that this
-    // method is called AFTER the stopRequestEvent is signalled!
-    this->EmitWakeupSignal();
-
-    // wait for the thread to terminate
+        // call the wakeup-thread method, may be derived in a subclass
+        // if the threads needs to be woken up, it is important that this
+        // method is called AFTER the stopRequestEvent is signalled!
+        this->EmitWakeupSignal();
+        // wait for the thread to terminate
+    }
     pthread_join(this->thread, 0);
     this->threadState = Stopped;
 }
@@ -277,7 +277,7 @@ LinuxThread::GetRunningThreadDebugInfos()
             ThreadDebugInfo info;
             info.threadName = cur->GetName();
             info.threadPriority = cur->GetPriority();
-            info.threadCoreId = cur->GetCoreId();
+            info.threadCoreId = (System::Cpu::CoreId)cur->GetThreadAffinity();
             info.threadStackSize = cur->GetStackSize();
             infos.Append(info);
         }
@@ -348,6 +348,25 @@ LinuxThread::SetThreadAffinity(uint mask)
     {
 	    pthread_setaffinity_np(this->thread, sizeof(cpu_set_t), &this->affinity);
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+ */
+uint
+LinuxThread::GetThreadAffinity()
+{    
+	cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    if(this->thread != 0)
+    {
+	    pthread_getaffinity_np(this->thread, sizeof(cpu_set_t), &cpuset);
+    }
+    if(CPU_COUNT(&cpuset) == 1)
+    {
+        return (uint)cpuset.__bits[0];
+    }
+    return 0;
 }
 
 } // namespace Linux

@@ -5,6 +5,9 @@
 #include "render/stdneb.h"
 #include "vkloader.h"
 #include "core/debug.h"
+#ifdef __linux__
+#include <dlfcn.h>
+#endif
 namespace Vulkan
 {
 
@@ -21,10 +24,11 @@ void InitVulkan()
 	vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)GetProcAddress(vulkanLib, "vkGetInstanceProcAddr");
 #elif __linux__
 	void* vulkanLib = dlopen("libvulkan.so.1", RTLD_NOW | RTLD_LOCAL);
-	if (!vulkanLib)
-		vulkanLib = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
-	else
+	if (!vulkanLib) vulkanLib = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
+	if(!vulkanLib)
+    {
 		n_error("Could not find 'libvulkan', make sure you have installed vulkan");
+    }
 
 	vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)dlsym(vulkanLib, "vkGetInstanceProcAddr");
 #elif ( __OSX__ || __APPLE__ )

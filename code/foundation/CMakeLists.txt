@@ -4,7 +4,7 @@
 
 nebula_begin_module(foundation)
 	if(FIPS_LINUX)
-		fips_libs(uuid cjson)
+		fips_libs(uuid cjson stdc++fs)
 	endif()
 	fips_vs_warning_level(3)
 	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})

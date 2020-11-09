@@ -181,7 +181,7 @@ FrameScriptLoader::ParseTextureList(const Ptr<Frame::FrameScript>& script, JzonV
 
 			if (JzonValue* layers = jzon_get(cur, "layers"))
 			{
-				n_assert_fmt(info.type >= Texture1DArray, "Texture format must be array type if the layers value is set");
+				n_assert2(info.type >= Texture1DArray, "Texture format must be array type if the layers value is set");
 				info.layers = layers->int_value;
 			}
 

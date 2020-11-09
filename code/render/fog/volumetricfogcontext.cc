@@ -380,14 +380,14 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 void 
 VolumetricFogContext::RenderUI(const Graphics::FrameContext& ctx)
 {
-	float col[4];
+	float col[3];
 	fogState.color.storeu(col);
 	Shared::PerTickParams& tickParams = CoreGraphics::ShaderServer::Instance()->GetTickParams();
 	if (ImGui::Begin("Volumetric Fog Params"))
 	{
 		ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
 		ImGui::SliderFloat("Turbidity", &fogState.turbidity, 0, 200.0f);
-		ImGui::ColorEdit4("Fog Color", col);
+		ImGui::ColorEdit3("Fog Color", col);
 	}
 	fogState.color.loadu(col);
 

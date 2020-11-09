@@ -60,8 +60,8 @@ Move(const void* from, void* to, size_t numBytes)
         n_assert(from != to);
         MoveMemory(to, from, numBytes);
     }
-
 }
+
 //------------------------------------------------------------------------------
 /**
     Copy data from a system memory buffer to graphics resource memory. Some

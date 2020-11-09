@@ -25,7 +25,7 @@ void OpenScene()
 {
     entity = Graphics::CreateEntity();
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(entity);
-    Models::ModelContext::Setup(entity, "mdl:sponza/sponza.n3", "SponzaScene", []()
+    Models::ModelContext::Setup(entity, "mdl:sponza/Sponza.n3", "SponzaScene", []()
         {
             Visibility::ObservableContext::Setup(entity, Visibility::VisibilityEntityType::Model);
         });

@@ -106,12 +106,9 @@ TrivialArray<TYPE>::TrivialArray(std::initializer_list<TYPE> list) :
 /**
 */
 template<class TYPE>
-TrivialArray<TYPE>::TrivialArray(const TrivialArray<TYPE>& rhs) :
-	grow(0),
-	capacity(0),
-	size(0),
-	elements(0)
+TrivialArray<TYPE>::TrivialArray(const TrivialArray<TYPE>& rhs) 
 {
+    this->elements = 0;
 	this->Copy(rhs);
 }
 
@@ -119,12 +116,9 @@ TrivialArray<TYPE>::TrivialArray(const TrivialArray<TYPE>& rhs) :
 /**
 */
 template<class TYPE>
-TrivialArray<TYPE>::TrivialArray(const Array<TYPE>& rhs) :
-    grow(0),
-    capacity(0),
-    size(0),
-    elements(0)
+TrivialArray<TYPE>::TrivialArray(const Array<TYPE>& rhs)
 {
+    this->elements = 0;
     this->Copy(rhs);
 }
 

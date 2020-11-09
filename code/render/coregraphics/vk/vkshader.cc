@@ -110,7 +110,7 @@ VkShaderSetup(
 			usePushConstants = true;
 			goto skipbuffer; // if push-constant block, do not add to resource table, but add constant bindings!
 		};
-
+        {
 		// add to resource map
 		resourceSlotMapping.Add(block->name.c_str(), block->binding);
 		ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.AddUnique(block->set);
@@ -121,7 +121,7 @@ VkShaderSetup(
 
 		rinfo.constantBuffers.Append(cbo);
 		n_assert(block->alignedSize <= maxUniformBufferRange);
-
+        }
 		skipbuffer:
 
 		const std::vector<AnyFX::VariableBase*>& vars = block->variables;

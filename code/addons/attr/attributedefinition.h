@@ -22,7 +22,7 @@ public:
     AttributeDefinition(const Util::String& n, const Util::String& tn, const Util::FourCC& fourCC, AccessMode am, TYPE defVal);
 
     /// Inner type
-    using AttrDeclType = typename TYPE;
+    using AttrDeclType = TYPE;
 };
 
 //------------------------------------------------------------------------------

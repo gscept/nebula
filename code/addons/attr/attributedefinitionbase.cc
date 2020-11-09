@@ -636,7 +636,7 @@ AttributeDefinitionBase::RegisterDynamicAttribute(const Util::String &name, cons
 
     case Vec4Type:
     {
-        const static Math::vec4 nullVec;
+        const static Math::vec4 nullVec {0.0f, 0.0f, 0.0f, 0.0f};
         dynAttr = n_new(AttributeDefinitionBase(name, typeName, fourCC, accessMode, nullVec, true));
         break;
     }
