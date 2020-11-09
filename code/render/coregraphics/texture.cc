@@ -363,9 +363,9 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
 	TextureCreateInfoAdjusted rt;
 	if (info.windowTexture)
 	{
-		n_assert_fmt(info.samples == 1, "Texture created as window may not have any multisampling enabled");
-		n_assert_fmt(info.alias == CoreGraphics::TextureId::Invalid(), "Texture created as window may not be alias");
-		n_assert_fmt(info.buffer == nullptr, "Texture created as window may not have any buffer data");
+		n_assert2(info.samples == 1, "Texture created as window may not have any multisampling enabled");
+		n_assert2(info.alias == CoreGraphics::TextureId::Invalid(), "Texture created as window may not be alias");
+		n_assert2(info.buffer == nullptr, "Texture created as window may not have any buffer data");
 		
 		rt.window = CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow();
 		const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(rt.window);

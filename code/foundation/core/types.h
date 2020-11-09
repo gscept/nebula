@@ -54,7 +54,7 @@ static const int InvalidIndex = -1;
 /**
 */
 constexpr uint64
-operator"" _KB(const uint64 val)
+operator"" _KB(const unsigned long long val)
 {
 	return val * 1024;
 }
@@ -63,7 +63,7 @@ operator"" _KB(const uint64 val)
 /**
 */
 constexpr uint64
-operator"" _MB(const uint64 val)
+operator"" _MB(const unsigned long long val)
 {
 	return val * 1024 * 1024;
 }

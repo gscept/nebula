@@ -27,6 +27,11 @@
 #define NEBULA_UNUSED_ATTR
 #endif // NEBULA_DEBUG
 
+namespace Core 
+{
+	class RefCounted;
+}
+
 //------------------------------------------------------------------------------
 template<class TYPE>
 class Ptr
@@ -49,7 +54,7 @@ public:
 
 	/// construct from C++ pointer of other type
 	template<class OTHERTYPE>
-	Ptr(OTHERTYPE* rhs)
+	Ptr(OTHERTYPE* rhs) : ptr(nullptr)
 	{
 		this->ptr = nullptr;
 		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit cast assumes left hand side must be base of right");
@@ -63,7 +68,7 @@ public:
 	}
 	/// construct from smart pointer of other type
 	template <class OTHERTYPE>
-	Ptr(const Ptr<OTHERTYPE>& rhs)
+	Ptr(const Ptr<OTHERTYPE>& rhs) : ptr(nullptr)
 	{
 		this->ptr = nullptr;
 		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit cast assumes left hand side must be base of right");
@@ -191,7 +196,7 @@ template<class TYPE>
 Ptr<TYPE>::Ptr(TYPE* p) :
     ptr(p)
 {
-	static_assert(std::is_base_of<Core::RefCounted, TYPE>::value, "Ptr only works on RefCounted types");
+	//static_assert(std::is_base_of<Core::RefCounted, TYPE>::value, "Ptr only works on RefCounted types");
     if (0 != this->ptr)
     {
         this->ptr->AddRef();

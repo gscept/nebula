@@ -195,7 +195,7 @@ VkSubContextHandler::AppendSparseBind(CoreGraphics::QueueType type, const VkImag
 		VkSparseImageMemoryBindInfo imageMemoryBindInfo =
 		{
 			img,
-			submission.imageMemoryBinds.Size(),
+			(uint32_t)submission.imageMemoryBinds.Size(),
 			submission.imageMemoryBinds.Size() > 0 ? submission.imageMemoryBinds.Begin() : nullptr
 		};
 		submission.imageMemoryBindInfos.Append(imageMemoryBindInfo);
@@ -208,7 +208,7 @@ VkSubContextHandler::AppendSparseBind(CoreGraphics::QueueType type, const VkImag
 		VkSparseImageOpaqueMemoryBindInfo opaqueMemoryBindInfo =
 		{
 			img,
-			submission.opaqueMemoryBinds.Size(),
+			(uint32_t)submission.opaqueMemoryBinds.Size(),
 			submission.opaqueMemoryBinds.Size() > 0 ? submission.opaqueMemoryBinds.Begin() : nullptr
 		};
 		submission.imageOpaqueBindInfos.Append(opaqueMemoryBindInfo);
@@ -285,9 +285,9 @@ VkSubContextHandler::FlushSubmissionsTimeline(CoreGraphics::QueueType type, VkFe
 		{
 			VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
 			nullptr,
-			sub.waitIndices.Size(),
+			(uint32_t)sub.waitIndices.Size(),
 			sub.waitIndices.Size() > 0 ? sub.waitIndices.Begin() : nullptr,
-			sub.signalIndices.Size(),
+			(uint32_t)sub.signalIndices.Size(),
 			sub.signalIndices.Size() > 0 ? sub.signalIndices.Begin() : nullptr
 		};
 		extensions[i] = ext;
@@ -296,12 +296,12 @@ VkSubContextHandler::FlushSubmissionsTimeline(CoreGraphics::QueueType type, VkFe
 		{
 			VK_STRUCTURE_TYPE_SUBMIT_INFO,
 			&extensions[i],
-			sub.waitSemaphores.Size(),
+			(uint32_t)sub.waitSemaphores.Size(),
 			sub.waitSemaphores.Size() > 0 ? sub.waitSemaphores.Begin() : nullptr,
 			sub.waitFlags.Size() > 0 ? sub.waitFlags.Begin() : nullptr,
-			sub.buffers.Size(),
+			(uint32_t)sub.buffers.Size(),
 			sub.buffers.Size() > 0 ? sub.buffers.Begin() : nullptr,
-			sub.signalSemaphores.Size(),								// if we have a finish semaphore, add it on the submit
+			(uint32_t)sub.signalSemaphores.Size(),								// if we have a finish semaphore, add it on the submit
 			sub.signalSemaphores.Size() > 0 ? sub.signalSemaphores.Begin() : nullptr
 		};
 		submitInfos[i] = info;
@@ -387,9 +387,9 @@ VkSubContextHandler::FlushSparseBinds(VkFence fence)
 		{
 			VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO,
 			nullptr,
-			sub.waitIndices.Size(),
+			(uint32_t)sub.waitIndices.Size(),
 			sub.waitIndices.Begin(),
-			sub.signalIndices.Size(),
+			(uint32_t)sub.signalIndices.Size(),
 			sub.signalIndices.Begin()
 		};
 		extensions[i] = timelineSubmitInfo;

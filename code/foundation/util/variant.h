@@ -113,7 +113,7 @@ public:
     /// void pointer constructor
     Variant(void* ptr);
 	/// null pointer construction
-	Variant(nullptr_t);
+	Variant(std::nullptr_t);
     /// int array constructor
     Variant(const Util::Array<int>& rhs);
     /// float array constructor
@@ -940,7 +940,7 @@ Variant::Variant(void* ptr) :
 /**
 */
 inline 
-Variant::Variant(nullptr_t)	:
+Variant::Variant(std::nullptr_t)	:
 	type(VoidPtr)
 {
 	this->voidPtr = nullptr;

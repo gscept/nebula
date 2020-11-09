@@ -307,7 +307,7 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::operator[](const KEYTYPE&
 	{
 		// here's a hash collision, find the right key
 		// with a binary search
-		IndexT hashElementIndex = hashElements.BinarySearchIndex<KEYTYPE>(key);
+    IndexT hashElementIndex = hashElements.template BinarySearchIndex<KEYTYPE>(key);
 		#if NEBULA_BOUNDSCHECKS
 		n_assert(InvalidIndex != hashElementIndex);
 		#endif
@@ -454,9 +454,9 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::AddUnique(const KEYTYPE& 
 	{
         // binary search requires the array to be sorted, which it isn't if we're in bulk add mode
         if (this->inBulkAdd)
-		    elementIndex = hashElements.FindIndex<KEYTYPE>(key);
+		    elementIndex = hashElements.template FindIndex<KEYTYPE>(key);
         else
-		    elementIndex = hashElements.BinarySearchIndex<KEYTYPE>(key);
+		    elementIndex = hashElements.template BinarySearchIndex<KEYTYPE>(key);
 
 		if (elementIndex == InvalidIndex)
 		{
@@ -516,7 +516,7 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Erase(const KEYTYPE& key)
 	#endif
 	uint32_t hashIndex = GetHashCode<KEYTYPE>(key);
 	ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>& hashElements = this->hashArray[hashIndex];
-	IndexT hashElementIndex = hashElements.BinarySearchIndex<KEYTYPE>(key);
+	IndexT hashElementIndex = hashElements.template BinarySearchIndex<KEYTYPE>(key);
 	#if NEBULA_BOUNDSCHECKS
 	n_assert(InvalidIndex != hashElementIndex); // key doesn't exist
 	#endif
@@ -559,9 +559,9 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Contains(const KEYTYPE& k
 		{
 			IndexT hashElementIndex;
 			if (this->inBulkAdd)
-				hashElementIndex = hashElements.FindIndex<KEYTYPE>(key);
+				hashElementIndex = hashElements.template FindIndex<KEYTYPE>(key);
 			else
-				hashElementIndex = hashElements.BinarySearchIndex<KEYTYPE>(key);
+				hashElementIndex = hashElements.template BinarySearchIndex<KEYTYPE>(key);
 			return (InvalidIndex != hashElementIndex);
 		}
 	}
@@ -582,9 +582,9 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::FindIndex(const KEYTYPE& 
 	ArrayStack<KeyValuePair<KEYTYPE, VALUETYPE>, STACK_SIZE>& hashElements = this->hashArray[hashIndex];
 	IndexT hashElementIndex;
 	if (this->inBulkAdd)
-		hashElementIndex = hashElements.FindIndex<KEYTYPE>(key);
+		hashElementIndex = hashElements.template FindIndex<KEYTYPE>(key);
 	else
-		hashElementIndex = hashElements.BinarySearchIndex<KEYTYPE>(key);
+		hashElementIndex = hashElements.template BinarySearchIndex<KEYTYPE>(key);
 	return hashElementIndex;
 }
 

@@ -48,7 +48,7 @@ class ParticleContext;
 namespace CoreGraphics
 {
 struct ResourceTableId;
-enum ShaderPipeline;
+//enum ShaderPipeline;
 }
 
 namespace Models

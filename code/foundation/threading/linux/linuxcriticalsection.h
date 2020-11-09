@@ -11,6 +11,8 @@
     (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
+#include <mutex>
+#include <atomic>
 
 //------------------------------------------------------------------------------
 namespace Linux
@@ -27,7 +29,8 @@ public:
     /// leave the critical section
     void Leave() const;
 private:
-    mutable pthread_mutex_t mutex;
+    //mutable pthread_mutex_t mutex;
+    mutable std::recursive_mutex mutex;
 };
 
 //------------------------------------------------------------------------------
@@ -36,12 +39,14 @@ private:
 inline
 LinuxCriticalSection::LinuxCriticalSection()
 {
+    /*
     pthread_mutexattr_t mutexAttrs;
     pthread_mutexattr_init(&mutexAttrs);
     pthread_mutexattr_settype(&mutexAttrs, PTHREAD_MUTEX_RECURSIVE);    // allow nesting
     int res = pthread_mutex_init(&this->mutex, &mutexAttrs);
     n_assert(0 == res);
     pthread_mutexattr_destroy(&mutexAttrs);
+    */
 }
 
 //------------------------------------------------------------------------------
@@ -50,8 +55,8 @@ LinuxCriticalSection::LinuxCriticalSection()
 inline 
 LinuxCriticalSection::~LinuxCriticalSection()
 {
-    int res = pthread_mutex_destroy(&this->mutex);
-    n_assert(0 == res);
+    //int res = pthread_mutex_destroy(&this->mutex);
+    //n_assert(0 == res);
 }
 
 //------------------------------------------------------------------------------
@@ -60,7 +65,10 @@ LinuxCriticalSection::~LinuxCriticalSection()
 inline void
 LinuxCriticalSection::Enter() const
 {
-    pthread_mutex_lock(&this->mutex);
+    //N_SCOPETRACETHIS();
+    std::atomic_thread_fence(std::memory_order_acquire);
+    mutex.lock();
+    //pthread_mutex_lock(&this->mutex);
 }
     
 //------------------------------------------------------------------------------
@@ -69,7 +77,11 @@ LinuxCriticalSection::Enter() const
 inline void
 LinuxCriticalSection::Leave() const
 {
-    pthread_mutex_unlock(&this->mutex);
+    //N_SCOPETRACETHIS();
+    std::atomic_thread_fence(std::memory_order_release);
+    mutex.unlock();
+  
+    //pthread_mutex_unlock(&this->mutex);
 }
 
 } // namespace Linux

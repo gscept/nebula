@@ -12,8 +12,8 @@ using namespace Core;
 using namespace Test;
 
 
-void
-__cdecl main()
+int
+__cdecl main(int argc, char ** argv)
 {
 	// create Nebula runtime
 	Ptr<CoreServer> coreServer = CoreServer::Create();
@@ -34,4 +34,5 @@ __cdecl main()
 	testRunner = nullptr;
 
 	Core::SysFunc::Exit(0);
+    return 0;
 }

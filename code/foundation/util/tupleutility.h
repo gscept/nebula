@@ -118,6 +118,7 @@ alloc_for_each_in_tuple(std::tuple<Ts...>& tuple)
 
 //------------------------------------------------------------------------------
 /**
+	Unpacks allocations for each member in a tuple
 */
 template<class...Ts, std::size_t...Is> void
 clear_for_each_in_tuple(std::tuple<Ts...>& tuple, std::index_sequence<Is...>)
@@ -137,11 +138,12 @@ clear_for_each_in_tuple(std::tuple<Ts...>& tuple)
 
 //------------------------------------------------------------------------------
 /**
+	Entry point for moving an element between two indices
 */
 template <class...Ts, std::size_t...Is> void
 move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from, std::index_sequence<Is...>)
 {
-	(std::get<Is>(tuple)[to] = std::get<Is>(tuple)[from], ...);
+	((std::get<Is>(tuple)[to] = std::get<Is>(tuple)[from]), ...);
 }
 
 //------------------------------------------------------------------------------
@@ -156,6 +158,8 @@ move_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t to, uint32_t from)
 
 //------------------------------------------------------------------------------
 /**
+	Entry point for erasing an element. Keeps sorting but is generally slow
+	due to shifting all element at i + 1 one step left.
 */
 template <class...Ts, std::size_t...Is> void
 erase_index_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, std::index_sequence<Is...>)
@@ -176,6 +180,10 @@ erase_index_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i)
 
 //------------------------------------------------------------------------------
 /**
+	Entry point for erasing an element by swapping with
+	the last and reducing size.
+
+	@note	Destroys sorting!
 */
 template <class...Ts, std::size_t...Is> void
 erase_index_swap_for_each_in_tuple(std::tuple<Ts...>& tuple, uint32_t i, std::index_sequence<Is...>)

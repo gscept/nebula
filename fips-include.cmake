@@ -3,7 +3,6 @@ SET(NROOT ${CMAKE_CURRENT_LIST_DIR})
 SET(CODE_ROOT ${CMAKE_CURRENT_LIST_DIR}/code)
 
 set (CMAKE_MODULE_PATH "${NROOT}/extlibs/scripts")
-include(cotire)
 
 option(N_USE_PRECOMPILED_HEADERS "Use precompiled headers" OFF)
 option(N_ENABLE_SHADER_COMMAND_GENERATION "Generate shader compile file for live shader reload" ON)
@@ -51,32 +50,55 @@ set(N_QT ${DEFQT} CACHE STRING "Qt Version")
 set_property(CACHE N_QT PROPERTY STRINGS "N_QT4" "N_QT5")
 set(${N_QT} ON)
 
-find_package(Python 3.5 COMPONENTS Development REQUIRED)
-MESSAGE(WARNING "Python Debug: ${Python_LIBRARY_DEBUG} Release: ${Python_LIBRARY_RELEASE}")
+find_package(Python 3.7 COMPONENTS Development REQUIRED)
+MESSAGE(WARNING "Python Debug: ${Python_LIBRARY_DEBUG} Release: ${Python_LIBRARY_RELEASE} ${Python_INCLUDE_DIRS}")
 
 #physx
+
+
+if(FIPS_WINDOWS)
+    
 if(NOT PX_TARGET)
-    MESSAGE(WARNING "PX_TARGET undefined, select a physx build folder (eg. win.x86_64.vs141)")
+        MESSAGE(WARNING "PX_TARGET undefined, select a physx build folder (eg. win.x86_64.vs141)")
+    endif()
+    SET(PX_DIR_DEBUG ${FIPS_DEPLOY_DIR}/physx/bin/${PX_TARGET}/debug/)
+    SET(PX_DIR_RELEASE ${FIPS_DEPLOY_DIR}/physx/bin/${PX_TARGET}/release/)
+    
+
+
+    SET(PX_LIBRARY_NAMES PhysX PhysXCommon PhysXCooking  PhysXFoundation  PhysXCharacterKinematic_static PhysXExtensions_static PhysXPvdSDK_static  PhysXTask_static PhysXVehicle_static)
+    SET(PX_STATIC_NAMES PhysXCharacterKinematic_static_64 PhysXExtensions_static_64 PhysXPvdSDK_static_64  PhysXTask_static_64 PhysXVehicle_static_64)
+
+    SET(PX_DEBUG_LIBRARIES)
+    SET(PX_RELEASE_LIBRARIES)
+
+    foreach(CUR_LIB ${PX_LIBRARY_NAMES})
+        find_library(PX_DBG_${CUR_LIB} ${CUR_LIB}DEBUG_64 PATHS ${PX_DIR_DEBUG})
+        LIST(APPEND PX_DEBUG_LIBRARIES ${PX_DBG_${CUR_LIB}})
+        find_library(PX_REL_${CUR_LIB} ${CUR_LIB}_64 PATHS ${PX_DIR_RELEASE})
+        LIST(APPEND PX_RELEASE_LIBRARIES ${PX_REL_${CUR_LIB}})
+    endforeach()
+
+    add_library(PxLibs INTERFACE)
+    target_link_libraries(PxLibs INTERFACE $<$<CONFIG:Debug>:${PX_DEBUG_LIBRARIES}> $<$<CONFIG:Release>:${PX_RELEASE_LIBRARIES}>)
+
+    MESSAGE(WARNING "Found PhysX: ${PX_DEBUG_LIBRARIES} ${PX_RELEASE_LIBRARIES}")
+
+else()
+    SET(PX_DIR_LINUX ${FIPS_DEPLOY_DIR}/physx/bin/linux.clang/checked/)
+    SET(PX_LIBRARY_NAMES PhysX PhysXCooking PhysXCharacterKinematic PhysXExtensions PhysXPvdSDK PhysXVehicle  PhysXCommon PhysXFoundation)
+    SET(PX_POST _static_64.a)
+    SET(PX_LIBRARIES)
+    foreach(CUR_LIB ${PX_LIBRARY_NAMES})
+        find_library(PX_${CUR_LIB} lib${CUR_LIB}${PX_POST} PATHS ${PX_DIR_LINUX})
+        LIST(APPEND PX_LIBRARIES ${PX_${CUR_LIB}})
+    endforeach()
+
+    add_library(PxLibs INTERFACE)
+    target_link_libraries(PxLibs INTERFACE ${PX_LIBRARIES})
+    MESSAGE(WARNING "Found PhysX: ${PX_LIBRARIES}")
 endif()
 
-SET(PX_DIR_DEBUG ${FIPS_DEPLOY_DIR}/physx/bin/${PX_TARGET}/debug/)
-SET(PX_DIR_RELEASE ${FIPS_DEPLOY_DIR}/physx/bin/${PX_TARGET}/release/)
-
-SET(PX_LIBRARY_NAMES PhysX PhysXCommon PhysXCooking  PhysXFoundation  PhysXCharacterKinematic_static PhysXExtensions_static PhysXPvdSDK_static  PhysXTask_static PhysXVehicle_static)
-SET(PX_STATIC_NAMES PhysXCharacterKinematic_static_64 PhysXExtensions_static_64 PhysXPvdSDK_static_64  PhysXTask_static_64 PhysXVehicle_static_64)
-SET(PX_DEBUG_LIBRARIES)
-SET(PX_RELEASE_LIBRARIES)
-
-foreach(CUR_LIB ${PX_LIBRARY_NAMES})
-    find_library(PX_DBG_${CUR_LIB} ${CUR_LIB}DEBUG_64 PATHS ${PX_DIR_DEBUG})
-    LIST(APPEND PX_DEBUG_LIBRARIES ${PX_DBG_${CUR_LIB}})
-    find_library(PX_REL_${CUR_LIB} ${CUR_LIB}_64 PATHS ${PX_DIR_RELEASE})
-    LIST(APPEND PX_RELEASE_LIBRARIES ${PX_REL_${CUR_LIB}})
-endforeach()
-MESSAGE(WARNING "Found PhysX: ${PX_DEBUG_LIBRARIES} ${PX_RELEASE_LIBRARIES}")
-
-add_library(PxLibs INTERFACE)
-target_link_libraries(PxLibs INTERFACE $<$<CONFIG:Debug>:${PX_DEBUG_LIBRARIES}> $<$<CONFIG:Release>:${PX_RELEASE_LIBRARIES}>)
 target_include_directories(PxLibs INTERFACE ${FIPS_DEPLOY_DIR}/physx/include)
 
 set(DEF_RENDERER "N_RENDERER_VULKAN")
@@ -316,10 +338,7 @@ macro(nebula_end_app)
     if (target_has_shaders)
         target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/shaders/${CurTargetName}")
     endif()
-    if(N_USE_PRECOMPILED_HEADERS)
-        set_target_properties(${CurTargetName} PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
-        cotire(${CurTargetName})
-    endif()
+    set_target_properties(${curtarget} PROPERTIES ENABLE_EXPORTS false)
 endmacro()
 
 macro(nebula_begin_module name)
@@ -341,10 +360,6 @@ macro(nebula_end_module)
     if (target_has_flatc)
         target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/flatbuffer/${CurTargetName}")
     endif()
-    if(N_USE_PRECOMPILED_HEADERS)
-        set_target_properties(${CurTargetName} PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
-        cotire(${CurTargetName})
-    endif()
 endmacro()
 
 macro(nebula_begin_lib name)
@@ -365,9 +380,5 @@ macro(nebula_end_lib)
     endif()
     if (target_has_flatc)
         target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/flatbuffer/${CurTargetName}")
-    endif()
-    if(N_USE_PRECOMPILED_HEADERS)
-        set_target_properties(${CurTargetName} PROPERTIES COTIRE_ADD_UNITY_BUILD FALSE)
-        cotire(${CurTargetName})
     endif()
 endmacro()

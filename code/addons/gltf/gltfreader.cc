@@ -511,7 +511,7 @@ IO::JsonReader::GetOpt<Gltf::Material::AlphaMode>(Gltf::Material::AlphaMode & it
 /**
 */
 template<> bool
-IO::JsonReader::GetOpt<Gltf::Material::Texture>(Gltf::Material::Texture& item, const char * key)
+IO::JsonReader::GetOpt<Gltf::Material::Texture>(Gltf::Material::Texture & item, const char * key)
 {
     if (this->SetToFirstChild(key))
     {
@@ -531,7 +531,8 @@ IO::JsonReader::GetOpt<Gltf::Material::Texture>(Gltf::Material::Texture& item, c
 template<> bool
 IO::JsonReader::GetOpt<Gltf::Material::NormalTexture>(Gltf::Material::NormalTexture& item, const char * key)
 {
-    if (this->GetOpt(static_cast<Gltf::Material::Texture>(item), key))
+    Gltf::Material::Texture& texitem = item;
+    if (this->GetOpt(texitem, key))
     {
         this->SetToFirstChild(key);
         this->GetOpt(item.scale, "scale");
@@ -548,7 +549,8 @@ IO::JsonReader::GetOpt<Gltf::Material::NormalTexture>(Gltf::Material::NormalText
 template<> bool
 IO::JsonReader::GetOpt<Gltf::Material::OcclusionTexture>(Gltf::Material::OcclusionTexture& item, const char * key)
 {
-    if (this->GetOpt(static_cast<Gltf::Material::Texture>(item), key))
+    Gltf::Material::Texture& texitem = item;
+    if (this->GetOpt(texitem, key))
     {
         this->SetToFirstChild(key);
         this->GetOpt(item.strength, "strength");

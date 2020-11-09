@@ -104,7 +104,7 @@ public:
 	Dataset Query(FilterSet const& filterset);
 	/// gets a column view from table.
     template<typename TYPE>
-    const ColumnView<typename TYPE> GetColumnView(TableId tid, ColumnDescriptor descriptor);
+    const ColumnView<TYPE> GetColumnView(TableId tid, ColumnDescriptor descriptor);
     /// get a persistant buffer. Only use this if you know what you're doing!
     void** GetPersistantBuffer(TableId table, ColumnId cid);
 	

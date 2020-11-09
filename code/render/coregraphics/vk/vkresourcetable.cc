@@ -94,7 +94,7 @@ ResourceTableLayoutNewPool(const CoreGraphics::ResourceTableLayoutId& id)
 		nullptr,
 		VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
 		grow,
-		poolSizes.Size(),
+		(uint32_t)poolSizes.Size(),
 		poolSizes.Size() > 0 ? poolSizes.Begin() : nullptr
 	};
 
@@ -620,7 +620,7 @@ ResourceTableBlock(bool b)
 void
 ResourceTableCommitChanges(const ResourceTableId& id)
 {
-	n_assert_fmt(!ResourceTableBlocked, "Resource table updates are blocked! Please move your resource table update code to UpdateViewDepdendentResources or UpdateResources");
+	n_assert2(!ResourceTableBlocked, "Resource table updates are blocked! Please move your resource table update code to UpdateViewDepdendentResources or UpdateResources");
 	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
 	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
 	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
@@ -868,7 +868,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
 			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 			nullptr,
 			0,																// USE vkCmdPushDescriptorSetKHR IN THE FUTURE!
-			bindings.Size(),
+			(uint32_t)bindings.Size(),
 			bindings.Begin()
 		};
 		VkResult res = vkCreateDescriptorSetLayout(dev, &dslInfo, nullptr, &layout);
@@ -940,9 +940,9 @@ CreateResourcePipeline(const ResourcePipelineCreateInfo& info)
 		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 		nullptr,
 		0,
-		layouts.Size(),
+		(uint32_t)layouts.Size(),
 		layouts.Begin(),
-		push.size > 0 ? 1 : 0,
+		push.size > 0 ? 1u : 0u,
 		&push
 	};
 	VkResult res = vkCreatePipelineLayout(dev, &crInfo, nullptr, &layout);

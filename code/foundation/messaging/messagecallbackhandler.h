@@ -56,7 +56,8 @@ MessageCallbackHandler::AbortCallbacks( CLASS* obj )
 	IndexT i;
 	for (i = 0; i < Callbacks.Size(); i++)
 	{
-		const Util::Delegate<const Ptr<Messaging::Message>& >& callback = Callbacks[i];
+		//const Util::Delegate<const Ptr<Messaging::Message>& >& callback = Callbacks[i];
+		const Util::Delegate<void(const Ptr<Messaging::Message>&)>& callback = Callbacks[i];
 		if (callback.GetObject<CLASS>() == obj)
 		{
 			Callbacks.EraseIndex(i);
@@ -73,7 +74,7 @@ template<class CLASS, void (CLASS::*METHOD)(const Ptr<Messaging::Message>&)>
 void 
 MessageCallbackHandler::AddCallback(const Ptr<Messaging::Message>& msg, CLASS* obj)
 {
-	Util::Delegate<const Ptr<Messaging::Message>& > del = Util::Delegate<const Ptr<Messaging::Message>& >::FromMethod<CLASS,METHOD>(obj);
+	Util::Delegate<void(const Ptr<Messaging::Message>&)> del = Util::Delegate<void(const Ptr<Messaging::Message>&)>::FromMethod<CLASS,METHOD>(obj);
 	Messages.Append(msg);
 	Callbacks.Append(del);
 }

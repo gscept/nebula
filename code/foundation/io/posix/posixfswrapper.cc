@@ -13,6 +13,7 @@
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/file.h>
+#include <sys/mman.h>
 
 #ifdef __APPLE__
 namespace CoreFoundation {
@@ -110,6 +111,35 @@ PosixFSWrapper::Read(Handle handle, void* buf, Stream::Size numBytes)
     return bytesRead;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+char*
+PosixFSWrapper::Map(Handle h, IO::Stream::AccessMode accessMode, Handle& mappedHandle)
+{
+    int fd = fileno(h);
+    n_assert(fd >= 0);
+
+    IO::Stream::Size fileSize = GetFileSize(h);
+    n_assert(fileSize > 0);
+
+    void* buffer = mmap(0, fileSize, PROT_READ, MAP_PRIVATE, fd, 0);
+    
+    // FIXME 
+    mappedHandle = (Handle)fileSize;
+    return (char*)buffer;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+PosixFSWrapper::Unmap(Handle mapHandle, char* buf)
+{
+    IO::Stream::Size mapSize = (int64_t)mapHandle;
+    int ret = munmap(buf, mapSize);
+    n_assert(ret==0);
+}
 //------------------------------------------------------------------------------
 /**
     Seek in a file.

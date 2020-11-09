@@ -29,6 +29,7 @@ namespace Models
 {
 
 class ModelNode;
+class ModelContext;
 class StreamModelPool : public Resources::ResourceStreamPool
 {
 	__DeclareClass(StreamModelPool);

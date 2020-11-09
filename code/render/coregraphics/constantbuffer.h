@@ -18,6 +18,7 @@
 #include "util/stringatom.h"
 #include "util/variant.h"
 #include "coregraphics/config.h"
+#include <limits.h>
 
 namespace CoreGraphics
 {

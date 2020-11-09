@@ -841,7 +841,7 @@ operator==(const char* cStr, const String& b)
 /**
 */
 bool
-operator==(const String& a, nullptr_t)
+operator==(const String& a, std::nullptr_t)
 {
 	return a.Length() == 0;
 }

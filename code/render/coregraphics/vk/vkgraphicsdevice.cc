@@ -1194,7 +1194,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		NULL,										// pointer to next
 		0,											// flags
 		&appInfo,									// application
-		numLayers,
+		(uint32_t)numLayers,
 		usedLayers,
 		state.usedExtensions,
 		state.extensions
@@ -1409,7 +1409,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		0,
 		(uint32_t)queueInfos.Size(),
 		&queueInfos[0],
-		numLayers,
+		(uint32_t)numLayers,
 		layers,
 		state.numCaps[state.currentDevice],
 		state.deviceFeatureStrings[state.currentDevice].Begin(),

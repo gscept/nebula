@@ -116,7 +116,7 @@ public:
     /// generic getter for optional items
     template<typename T> bool GetOpt(T& target, const char* attr = 0);
     /// generic getter for optional items
-    template<typename T> bool GetOpt(T& target, const char* attr, const T& default);
+    template<typename T> bool GetOpt(T& target, const char* attr, const T& _default);
     
 private:  
     ///

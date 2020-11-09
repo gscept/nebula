@@ -78,6 +78,7 @@ MoveElements(const T* from, T* to, size_t numElements)
         MoveMemory(to, from, numElements * sizeof(T));
     }
 }
+
 //------------------------------------------------------------------------------
 /**
     Copy data from a system memory buffer to graphics resource memory. Some

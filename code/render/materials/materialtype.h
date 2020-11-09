@@ -149,7 +149,7 @@ private:
 		
 		SurfaceConstant()
 			: buffer(CoreGraphics::ConstantBufferId::Invalid())
-			, mem(nullptr)
+			//, mem(nullptr)
 		{}
 	};
 

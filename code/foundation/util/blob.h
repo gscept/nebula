@@ -32,7 +32,7 @@ public:
 	/// default constructor
 	Blob();
 	/// nullptr constructor
-	Blob(nullptr_t t);
+	Blob(std::nullptr_t t);
 	/// constructor
 	Blob(const void* ptr, SizeT size);
 	/// reserve N bytes
@@ -171,7 +171,7 @@ Blob::Blob() :
 /**
 */
 inline
-Blob::Blob(nullptr_t t) :
+Blob::Blob(std::nullptr_t t) :
 	ptr(0),
 	size(0),
 	allocSize(0)

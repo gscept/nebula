@@ -120,8 +120,6 @@ Vec4Test::Run()
 	n_assert(((size_t)fUnalignedStore & 0xF));
     v2.loadu(fUnalignedLoad);
     VERIFY(v2 == vec4(1.0f, 2.0f, 3.0f, 4.0f));
-	v2.load_float3(fUnalignedLoad,4.0f);
-    VERIFY(v2 == vec4(1.0f, 2.0f, 3.0f, 4.0f));
     v2.storeu(fUnalignedStore);
     VERIFY((fUnalignedStore[0] == 1.0f) && (fUnalignedStore[1] == 2.0f) && (fUnalignedStore[2] == 3.0f) && (fUnalignedStore[3] == 4.0f));
 

@@ -118,7 +118,7 @@ CreateBuffer(const BufferCreateInfo& info)
 		size,
 		flags,
 		sharingMode,												// can only be accessed from the creator queue,
-		queues.Size(),												// number of queues in family
+		(uint)queues.Size(),												// number of queues in family
 		queues.Size() > 0 ? queues.KeysAsArray().Begin() : nullptr	// array of queues belonging to family
 	};
 
@@ -295,7 +295,7 @@ void*
 BufferMap(const BufferId id)
 {
 	VkBufferMapInfo& mapInfo = bufferAllocator.GetUnsafe<Buffer_MapInfo>(id.id24);
-	n_assert_fmt(mapInfo.mappedMemory != nullptr, "Buffer must be created as dynamic or mapped to support mapping");
+	n_assert2(mapInfo.mappedMemory != nullptr, "Buffer must be created as dynamic or mapped to support mapping");
 	mapInfo.mapCount++;
 	return mapInfo.mappedMemory;
 }

@@ -147,7 +147,7 @@ MemoryPool::AllocateConservative(DeviceSize alignment, DeviceSize size)
 		range.offset = prevOffset;
 		range.size = size;
 		ranges.Insert(i, range);
-		Alloc ret{ this->blocks[blockIndex], range.offset, range.size, this->memoryType, blockIndex };
+		Alloc ret{ this->blocks[blockIndex], range.offset, range.size, this->memoryType, (uint)blockIndex };
 		return ret;
 	}
 
@@ -221,7 +221,7 @@ MemoryPool::AllocateLinear(DeviceSize alignment, DeviceSize size)
 				continue;
 
 			ranges.Append(range);
-			Alloc ret{ this->blocks[blockIndex], range.offset, range.size, this->memoryType, blockIndex };
+			Alloc ret{ this->blocks[blockIndex], range.offset, range.size, this->memoryType, (uint)blockIndex };
 			return ret;
 		}
 		else
@@ -233,7 +233,7 @@ MemoryPool::AllocateLinear(DeviceSize alignment, DeviceSize size)
 			// no need to safe-proof the code here since we know at the first condition if we have space to allocate
 			ranges.Append(range);
 
-			Alloc ret{ this->blocks[blockIndex], range.offset, range.size, this->memoryType, blockIndex };
+			Alloc ret{ this->blocks[blockIndex], range.offset, range.size, this->memoryType, (uint)blockIndex };
 			return ret;
 		};
 	}
