@@ -91,7 +91,7 @@ public:
 	using Delegate = Util::Delegate<void(TYPES...)>;
 
     /// Type definition for this message's queues
-    using MessageQueue = typename Util::ArrayAllocator<std::tuple<UnqualifiedType<TYPES> ...>>;
+    using MessageQueue = typename Util::ArrayAllocator<Util::Tuple<UnqualifiedType<TYPES> ...>>;
 
 	/// Register a listener to this message. Returns an ID for the listener so that we can associate it.
 	static MessageListener Register(Delegate&& callback);

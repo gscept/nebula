@@ -50,7 +50,7 @@ public:
         auto instance = Instance();
         SizeT index = Ids::Index(qid.id);
         auto i = instance->messageQueues[index].Alloc();
-        instance->messageQueues[index].Set(i, {SendArguments});
+        instance->messageQueues[index].Set(i, {{ {SendArguments} }});
     }}
 }};
         """.format(

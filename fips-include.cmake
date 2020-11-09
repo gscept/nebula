@@ -176,14 +176,13 @@ macro(nebula_add_nidl)
     endforeach()
 endmacro()
 
-macro(add_frameshader)
-    set_nebula_export_dir()
+macro(add_frameshader_intern)
     foreach(frm ${ARGN})
             get_filename_component(basename ${frm} NAME)
             set(output ${EXPORT_DIR}/frame/${basename})
             add_custom_command(OUTPUT ${output}
-                COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${frm} ${EXPORT_DIR}/frame/
-                MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${frm}
+                COMMAND ${CMAKE_COMMAND} -E copy ${frm} ${EXPORT_DIR}/frame/
+                MAIN_DEPENDENCY ${frm}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
                 COMMENT "Copying Frameshader ${frm} to ${EXPORT_DIR}/frame"
                 VERBATIM
@@ -193,14 +192,20 @@ macro(add_frameshader)
         endforeach()
 endmacro()
 
-macro(add_material)
+macro(add_frameshader)
     set_nebula_export_dir()
+    foreach(frm ${ARGN})
+        add_frameshader_intern(${CMAKE_CURRENT_SOURCE_DIR}/${frm})
+    endforeach()
+endmacro()
+
+macro(add_material_intern)
     foreach(mat ${ARGN})
             get_filename_component(basename ${mat} NAME)
             set(output ${EXPORT_DIR}/materials/${basename})
             add_custom_command(OUTPUT ${output}
-                COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${mat} ${EXPORT_DIR}/materials/
-                MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${mat}
+                COMMAND ${CMAKE_COMMAND} -E copy ${mat} ${EXPORT_DIR}/materials/
+                MAIN_DEPENDENCY ${mat}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
                 COMMENT "Copying material ${mat} to ${EXPORT_DIR}/materials"
                 VERBATIM
@@ -210,20 +215,32 @@ macro(add_material)
 		endforeach()
 endmacro()
 
-macro(add_blueprint)
-    set_nebula_export_dir()
+macro(add_material)
+    foreach(mat ${ARGN})
+        add_material_intern(${CMAKE_CURRENT_SOURCE_DIR}/${mat})
+    endforeach()
+endmacro()
+
+macro(add_blueprint_intern)
     foreach(bp ${ARGN})
             get_filename_component(basename ${bp} NAME)
             set(output ${EXPORT_DIR}/data/tables/${basename})
             add_custom_command(OUTPUT ${output}
-                COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${bp} ${EXPORT_DIR}/data/tables/
-                MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${bp}
+                COMMAND ${CMAKE_COMMAND} -E copy ${bp} ${EXPORT_DIR}/data/tables/
+                MAIN_DEPENDENCY ${bp}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
                 COMMENT "Copying blueprint ${bp} to ${EXPORT_DIR}/data/tables"
                 VERBATIM
                 )
             fips_files(${bp})
             SOURCE_GROUP("res\\blueprints" FILES ${bp})
+		endforeach()
+endmacro()
+
+macro(add_blueprint)
+    set_nebula_export_dir()
+    foreach(bp ${ARGN})
+            add_blueprint_intern(${CMAKE_CURRENT_SOURCE_DIR}/${bp})
 		endforeach()
 endmacro()
 
@@ -257,19 +274,19 @@ macro(add_nebula_shaders)
 
         file(GLOB_RECURSE FRM "${NROOT}/work/frame/win32/*.json")
         foreach(shd ${FRM})
-            add_frameshader(${shd})
+            add_frameshader_intern(${shd})
         endforeach()
 
          file(GLOB_RECURSE MAT "${NROOT}/work/materials/*.json")
         foreach(shd ${MAT})
-            add_material(${shd})
+            add_material_intern(${shd})
         endforeach()
     endif()
 endmacro()
 
 macro(add_nebula_blueprints)
     set_nebula_export_dir()
-    add_blueprint("${NROOT}/work/data/tables/blueprints.json")
+    add_blueprint_intern("${NROOT}/work/data/tables/blueprints.json")
 endmacro()
 
 macro(add_shaders)

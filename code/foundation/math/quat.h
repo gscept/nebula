@@ -26,6 +26,8 @@ struct NEBULA_ALIGN16 quat
 public:
     /// default constructor, NOTE: does NOT setup components!
     quat();
+	/// default copy constructor
+	quat(quat const&) = default;
     /// construct from components
     quat(scalar x, scalar y, scalar z, scalar w);
     /// construct from vec4
@@ -33,8 +35,6 @@ public:
     /// construct from __m128
     quat(const __m128& rhs);
 	
-    /// assignment operator
-    void operator=(const quat& rhs);
     /// assign __m128
     void operator=(const __m128& rhs);
     /// equality operator
@@ -104,15 +104,6 @@ __forceinline
 quat::quat(const __m128& rhs)
 {
 	this->vec = rhs;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline void
-quat::operator=(const quat& rhs)
-{
-	this->vec = rhs.vec;
 }
 
 //------------------------------------------------------------------------------

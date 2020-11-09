@@ -41,8 +41,12 @@ template<typename TYPE>
 inline ColumnDescriptor
 TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue)
 {
-    static_assert(std::is_trivially_copyable<TYPE>(), "TYPE must be trivially copyable.");
-    static_assert(std::is_trivially_destructible<TYPE>(), "TYPE must be trivially destructible.");
+    if constexpr (!std::is_same<TYPE, Util::StringAtom>())
+    {
+        static_assert(std::is_trivially_copyable<TYPE>(), "TYPE must be trivially copyable.");
+        static_assert(std::is_trivially_destructible<TYPE>(), "TYPE must be trivially destructible.");
+    }
+    
     static_assert(std::is_standard_layout<TYPE>(), "TYPE must be standard layout.");
     
 

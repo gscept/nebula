@@ -46,6 +46,12 @@ struct Dataset
 
     /// views into the tables
     Util::Array<View> tables;
+
+    /// Validate tables and num instances. This ensures valid data, but does not re-query for new tables.
+    void Validate();
+private:
+    friend class Database;
+    Ptr<Database> db;
 };
 
 class Database : public Core::RefCounted

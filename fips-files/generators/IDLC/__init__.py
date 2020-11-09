@@ -59,10 +59,13 @@ class IDLCodeGenerator:
         propertyLibraries.append("util/stringatom.h")
         propertyLibraries.append("memdb/typeregistry.h")
 
+        IDLProperty.ParseProperties(self.document)
+        if (IDLProperty.ContainsResourceTypes()):
+            propertyLibraries.append("resources/resource.h")
+
         IDLDocument.WriteIncludeHeader(f)
         IDLDocument.WriteIncludes(f, self.document)
         IDLDocument.WriteIncludes(f, propertyLibraries)
-
 
         hasMessages = "messages" in self.document
         hasProperties = "properties" in self.document
@@ -118,7 +121,7 @@ class IDLCodeGenerator:
         hasMessages = "messages" in self.document
 
         if hasMessages:            
-            IDLDocument.AddInclude(f, "scripting/bindings.h")
+            IDLDocument.AddInclude(f, "scripting/python/conversion.h")
 
         # Add additional dependencies to document.
         if "dependencies" in self.document:
