@@ -121,7 +121,6 @@ Win32Interlocked::Exchange(int volatile* dest, int value)
     return _InterlockedExchange((volatile LONG*)dest, value);
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */

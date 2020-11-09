@@ -127,7 +127,7 @@ public:
 	template<int MEMBER> Util::tuple_array_t<MEMBER, TYPES...>& GetUnsafe(const Ids::Id64 index);
 
 protected:
-	volatile int lockCount;
+	volatile int locked;
 	Threading::CriticalSection sect;
 	uint32_t size;
 	std::tuple<Util::Array<TYPES>...> objects;
@@ -139,7 +139,7 @@ protected:
 template<class ... TYPES>
 inline ArrayAllocatorSafe<TYPES...>::ArrayAllocatorSafe() :
 	size(0),
-	lockCount(0)
+	locked(0)
 {
 	// empty
 }
@@ -150,10 +150,10 @@ inline ArrayAllocatorSafe<TYPES...>::ArrayAllocatorSafe() :
 template<class ...TYPES>
 inline ArrayAllocatorSafe<TYPES...>::ArrayAllocatorSafe(ArrayAllocatorSafe<TYPES...>&& rhs)
 {
-	n_assert(rhs.lockCount == 0);
+	n_assert(rhs.locked == 0);
 	this->objects = rhs.objects;
 	this->size = rhs.size;
-	this->lockCount = 0;
+	this->locked = 0;
 	rhs.Clear();
 }
 
@@ -163,10 +163,10 @@ inline ArrayAllocatorSafe<TYPES...>::ArrayAllocatorSafe(ArrayAllocatorSafe<TYPES
 template<class ...TYPES>
 inline ArrayAllocatorSafe<TYPES...>::ArrayAllocatorSafe(const ArrayAllocatorSafe<TYPES...>& rhs)
 {
-	n_assert(rhs.lockCount == 0);
+	n_assert(rhs.locked == 0);
 	this->objects = rhs.objects;
 	this->size = rhs.size;
-	this->lockCount = 0;
+	this->locked = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -185,10 +185,10 @@ template<class ...TYPES>
 inline void
 ArrayAllocatorSafe<TYPES...>::operator=(const ArrayAllocatorSafe<TYPES...>& rhs)
 {
-	n_assert(rhs.lockCount == 0);
+	n_assert(rhs.locked == 0);
 	this->objects = rhs.objects;
 	this->size = rhs.size;
-	this->lockCount = 0;
+	this->locked = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -198,10 +198,10 @@ template<class ...TYPES>
 inline void
 ArrayAllocatorSafe<TYPES...>::operator=(ArrayAllocatorSafe<TYPES...>&& rhs)
 {
-	n_assert(rhs.lockCount == 0);
+	n_assert(rhs.locked == 0);
 	this->objects = rhs.objects;
 	this->size = rhs.size;
-	this->lockCount = 0;
+	this->locked = 0;
 	rhs.Clear();
 }
 
@@ -288,7 +288,7 @@ template<int MEMBER>
 inline tuple_array_t<MEMBER, TYPES...>&
 ArrayAllocatorSafe<TYPES...>::Get(const uint32_t index)
 {
-	n_assert(this->lockCount > 0);
+	n_assert(this->locked > 0);
 	return std::get<MEMBER>(this->objects)[index];
 }
 
@@ -300,7 +300,7 @@ template<int MEMBER>
 inline const tuple_array_t<MEMBER, TYPES...>&
 ArrayAllocatorSafe<TYPES...>::Get(const uint32_t index) const
 {
-	n_assert(this->lockCount > 0);
+	n_assert(this->locked > 0);
 	return std::get<MEMBER>(this->objects)[index];
 }
 
@@ -312,7 +312,7 @@ template<int MEMBER>
 inline const Util::Array<tuple_array_t<MEMBER, TYPES...>>&
 ArrayAllocatorSafe<TYPES...>::GetArray() const
 {
-	n_assert(this->lockCount > 0);
+	n_assert(this->locked > 0);
 	return std::get<MEMBER>(this->objects);
 }
 
@@ -324,7 +324,7 @@ template<int MEMBER>
 inline Util::Array<tuple_array_t<MEMBER, TYPES...>>&
 ArrayAllocatorSafe<TYPES...>::GetArray()
 {
-	n_assert(this->lockCount > 0);
+	n_assert(this->locked > 0);
 	return std::get<MEMBER>(this->objects);
 }
 
@@ -334,7 +334,7 @@ ArrayAllocatorSafe<TYPES...>::GetArray()
 template<class ...TYPES> void
 ArrayAllocatorSafe<TYPES...>::Set(const uint32_t index, TYPES... values)
 {
-	n_assert(this->lockCount > 0);
+	n_assert(this->locked > 0);
 	set_for_each_in_tuple(this->objects, index, values...);
 }
 
@@ -353,9 +353,8 @@ ArrayAllocatorSafe<TYPES...>::UpdateSize()
 template<class ... TYPES> void
 ArrayAllocatorSafe<TYPES...>::EnterGet()
 {
-	int count = Threading::Interlocked::Add(this->lockCount, 1);
-	if (count == 0)
-		this->sect.Enter();
+	this->sect.Enter();
+	Threading::Interlocked::Increment(this->locked);
 }
 
 //------------------------------------------------------------------------------
@@ -364,10 +363,9 @@ ArrayAllocatorSafe<TYPES...>::EnterGet()
 template<class ... TYPES> void
 ArrayAllocatorSafe<TYPES...>::LeaveGet()
 {
-	n_assert(this->lockCount > 0);
-	int count = Threading::Interlocked::Add(this->lockCount, -1);
-	if (count == 1)
-		this->sect.Leave();
+	n_assert(this->locked > 0);
+	this->sect.Leave();
+	Threading::Interlocked::Decrement(this->locked);
 }
 
 //------------------------------------------------------------------------------
