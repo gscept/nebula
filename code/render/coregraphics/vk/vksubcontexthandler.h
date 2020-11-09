@@ -92,6 +92,8 @@ public:
 
 	/// flush sparse binds
 	void FlushSparseBinds(VkFence fence);
+	/// insert fence
+	void InsertFence(CoreGraphics::QueueType type, VkFence fence);
 
 	/// wait for a queue to finish working
 	void WaitIdle(const CoreGraphics::QueueType type);

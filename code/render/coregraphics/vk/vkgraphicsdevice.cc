@@ -1556,11 +1556,11 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
 	// create transfer submission context
 	cmdCreateInfo.pool = state.submissionTransferCmdPool;
-	state.resourceSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, false });
+	state.resourceSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
 	state.resourceSubmissionActive = false;
 
 	cmdCreateInfo.pool = state.submissionTransferGraphicsHandoverCmdPool;
-	state.handoverSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, false });
+	state.handoverSubmissionContext = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, true });
 	state.handoverSubmissionActive = false;
 
 	state.sparseSubmitActive = false;
@@ -1998,30 +1998,18 @@ BeginFrame(IndexT frameIndex)
 	N_MARKER_BEGIN(WaitForLastFrame, Render);
 
 	// cycle submissions, will wait for the fence to finish
-	CoreGraphics::SubmissionContextNextCycle(state.gfxSubmission, []()
+	CoreGraphics::SubmissionContextNextCycle(state.gfxSubmission, [](uint64 index)
 		{
-			state.subcontextHandler.Wait(GraphicsQueueType, SubmissionContextGetTimelineIndex(state.gfxSubmission));
+			state.subcontextHandler.Wait(GraphicsQueueType, index);
 		});	
 
-	CoreGraphics::SubmissionContextNextCycle(state.computeSubmission, []()
+	CoreGraphics::SubmissionContextNextCycle(state.computeSubmission, [](uint64 index)
 		{
-			state.subcontextHandler.Wait(ComputeQueueType, SubmissionContextGetTimelineIndex(state.computeSubmission));
+			state.subcontextHandler.Wait(ComputeQueueType, index);
 		});
 
-	CoreGraphics::SubmissionContextPoll(state.setupSubmissionContext, [](uint64 index) -> bool
-		{
-			return state.subcontextHandler.Poll(GraphicsQueueType, index);
-		});
-
-	CoreGraphics::SubmissionContextPoll(state.handoverSubmissionContext, [](uint64 index) -> bool
-		{
-			return state.subcontextHandler.Poll(GraphicsQueueType, index);
-		});
-
-	CoreGraphics::SubmissionContextPoll(state.resourceSubmissionContext, [](uint64 index) -> bool
-		{
-			return state.subcontextHandler.Poll(TransferQueueType, index);
-		});
+	CoreGraphics::SubmissionContextPoll(state.resourceSubmissionContext);
+	CoreGraphics::SubmissionContextPoll(state.handoverSubmissionContext);
 
 	N_MARKER_END();
 
@@ -2038,7 +2026,7 @@ BeginFrame(IndexT frameIndex)
 	}
 
 	// reset current thread
-	state.currentPipelineBits = NoInfoSet;
+	state.currentPipelineBits = PipelineBuildBits::NoInfoSet;
 
 	return true;
 }
@@ -2739,9 +2727,9 @@ GetResourceSubmissionContext()
 	// if not active, issue a new resource submission (only done once per frame)
 	if (!state.resourceSubmissionActive)
 	{
-		SubmissionContextNextCycle(state.resourceSubmissionContext, []()
+		SubmissionContextNextCycle(state.resourceSubmissionContext, [](uint64 index)
 			{
-				state.subcontextHandler.Wait(TransferQueueType, SubmissionContextGetTimelineIndex(state.resourceSubmissionContext));
+				state.subcontextHandler.Wait(TransferQueueType, index);
 			});
 		SubmissionContextNewBuffer(state.resourceSubmissionContext, state.resourceSubmissionCmdBuffer);
 
@@ -2763,10 +2751,10 @@ GetHandoverSubmissionContext()
 	// if not active, issue a new resource submission (only done once per frame)
 	if (!state.handoverSubmissionActive)
 	{
-		SubmissionContextNextCycle(state.handoverSubmissionContext, []()
+		SubmissionContextNextCycle(state.handoverSubmissionContext, [](uint64 index)
 			{
 				// wait for the submission to finish
-				state.subcontextHandler.Wait(GraphicsQueueType, SubmissionContextGetTimelineIndex(state.handoverSubmissionContext));
+				state.subcontextHandler.Wait(GraphicsQueueType, index);
 			});
 		SubmissionContextNewBuffer(state.handoverSubmissionContext, state.handoverSubmissionCmdBuffer);
 
@@ -2797,10 +2785,10 @@ GetSetupSubmissionContext()
 	// if not active, issue a new resource submission (only done once per frame)
 	if (!state.setupSubmissionActive)
 	{
-		SubmissionContextNextCycle(state.setupSubmissionContext, []()
+		SubmissionContextNextCycle(state.setupSubmissionContext, [](uint64 index)
 			{
 				// wait for the submission to finish
-				state.subcontextHandler.Wait(GraphicsQueueType, SubmissionContextGetTimelineIndex(state.setupSubmissionContext));
+				state.subcontextHandler.Wait(GraphicsQueueType, index);
 			});
 		SubmissionContextNewBuffer(state.setupSubmissionContext, state.setupSubmissionCmdBuffer);
 
@@ -2837,12 +2825,12 @@ GetComputeCommandBuffer()
 void 
 SetGraphicsPipeline()
 {
-	n_assert((state.currentPipelineBits & AllInfoSet) != 0);
+	n_assert((state.currentPipelineBits & PipelineBuildBits::AllInfoSet) != 0);
 	state.currentBindPoint = CoreGraphics::GraphicsPipeline;
-	if ((state.currentPipelineBits & PipelineBuilt) == 0)
+	if ((state.currentPipelineBits & PipelineBuildBits::PipelineBuilt) == 0)
 	{
 		CreateAndBindGraphicsPipeline();
-		state.currentPipelineBits |= PipelineBuilt;
+		state.currentPipelineBits |= PipelineBuildBits::PipelineBuilt;
 	}
 }
 
@@ -3288,6 +3276,9 @@ EndFrame(IndexT frameIndex)
 		);
 		SubmissionContextSetTimelineIndex(state.handoverSubmissionContext, index);
 
+		CoreGraphics::FenceId fence = SubmissionContextGetFence(state.handoverSubmissionContext);
+		state.subcontextHandler.InsertFence(GraphicsQueueType, FenceGetVk(fence));
+
 		state.handoverSubmissionActive = false;
 	}
 
@@ -3321,7 +3312,8 @@ EndFrame(IndexT frameIndex)
 #endif
 
 		// submit transfers
-		state.subcontextHandler.FlushSubmissionsTimeline(TransferQueueType, nullptr);
+		CoreGraphics::FenceId fence = SubmissionContextGetFence(state.resourceSubmissionContext);
+		state.subcontextHandler.FlushSubmissionsTimeline(TransferQueueType, FenceGetVk(fence));
 
 #if NEBULA_GRAPHICS_DEBUG
 		CoreGraphics::QueueEndMarker(TransferQueueType);

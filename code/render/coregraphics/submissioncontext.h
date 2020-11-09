@@ -40,7 +40,7 @@ struct SubmissionContextCreateInfo
 {
 	CommandBufferCreateInfo cmdInfo;	// creation info for the cmd buffers
 	uint numBuffers : 3;				// number of buffers it should keep track of
-	bool useFence : 1;					// set if a fence should be used when we cycle				
+	bool useFence : 1;					// set if a fence should be used when we cycle	
 #if NEBULA_GRAPHICS_DEBUG
 	Util::String name;
 #endif
@@ -75,8 +75,8 @@ void SubmissionContextFreeHostMemory(const SubmissionContextId id, void* buf);
 const FenceId SubmissionContextGetFence(const SubmissionContextId id);
 
 /// cycle submission context, returns fence to previous cycle
-const FenceId SubmissionContextNextCycle(const SubmissionContextId id, const std::function<void()>& sync);
+const FenceId SubmissionContextNextCycle(const SubmissionContextId id, const std::function<void(uint64 index)>& sync);
 /// poll submission context for completion, run function to check status
-void SubmissionContextPoll(const SubmissionContextId id, const std::function<bool(uint64)>& sync);
+void SubmissionContextPoll(const SubmissionContextId id);
 }
 

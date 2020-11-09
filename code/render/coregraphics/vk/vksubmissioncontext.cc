@@ -102,6 +102,15 @@ CreateSubmissionContext(const SubmissionContextCreateInfo& info)
 
 	submissionContextAllocator.Get<SubmissionContext_FreeHostMemories>(id).Resize(info.numBuffers);
 
+	if (info.useFence)
+	{
+		submissionContextAllocator.Get<SubmissionContext_Fences>(id).Resize(info.numBuffers);
+		for (uint i = 0; i < info.numBuffers; i++)
+		{
+			submissionContextAllocator.Get<SubmissionContext_Fences>(id)[i] = CreateFence({ false });
+		}
+	}
+
 	ret.id24 = id;
 	ret.id8 = SubmissionContextIdType;
 	return ret;
@@ -115,10 +124,16 @@ DestroySubmissionContext(const SubmissionContextId id)
 {
 	const SizeT numCycles = submissionContextAllocator.Get<SubmissionContext_NumCycles>(id.id24);
 	Util::FixedArray<CommandBufferId>& cmdBufs = submissionContextAllocator.Get<SubmissionContext_CmdBuffer>(id.id24);
+	Util::FixedArray<FenceId>& fences = submissionContextAllocator.Get<SubmissionContext_Fences>(id.id24);
 
 	for (IndexT i = 0; i < numCycles; i++)
 	{
 		CleanupPendingDeletes(id, i);
+	}
+
+	for (IndexT i = 0; i < fences.Size(); i++)
+	{
+		DestroyFence(fences[i]);
 	}
 	
 	submissionContextAllocator.Dealloc(id.id24);
@@ -246,14 +261,15 @@ const FenceId
 SubmissionContextGetFence(const SubmissionContextId id)
 {
 	// for vulkan, we use timeline
-	return FenceId::Invalid();
+	const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
+	return submissionContextAllocator.Get<SubmissionContext_Fences>(id.id24)[currentIndex];
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 const FenceId
-SubmissionContextNextCycle(const SubmissionContextId id, const std::function<void()>& sync)
+SubmissionContextNextCycle(const SubmissionContextId id, const std::function<void(uint64 index)>& sync)
 {
 	// get fence so we can wait for it
 	IndexT& currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
@@ -261,9 +277,12 @@ SubmissionContextNextCycle(const SubmissionContextId id, const std::function<voi
 	// cycle index and update
 	currentIndex = (currentIndex + 1) % submissionContextAllocator.Get<SubmissionContext_NumCycles>(id.id24);
 
+	// get timeline index
+	uint64 timelineIndex = submissionContextAllocator.Get<SubmissionContext_TimelineIndex>(id.id24)[currentIndex];
+
 	// run sync function
 	if (sync)
-		sync();
+		sync(timelineIndex);
 
 	// clean up retired buffers and semaphores
 	Util::Array<CommandBufferId>& bufs = submissionContextAllocator.Get<SubmissionContext_RetiredCmdBuffer>(id.id24)[currentIndex];
@@ -291,13 +310,13 @@ SubmissionContextNextCycle(const SubmissionContextId id, const std::function<voi
 /**
 */
 void
-SubmissionContextPoll(const SubmissionContextId id, const std::function<bool(uint64)>& sync)
+SubmissionContextPoll(const SubmissionContextId id)
 {
 	SizeT numCycles = submissionContextAllocator.Get<SubmissionContext_NumCycles>(id.id24);
 	for (IndexT i = 0; i < numCycles; i++)
 	{
-		uint64 index = submissionContextAllocator.Get<SubmissionContext_TimelineIndex>(id.id24)[i];
-		if (index != 0 && sync(index))
+		FenceId fence = submissionContextAllocator.Get<SubmissionContext_Fences>(id.id24)[i];
+		if (FencePeek(fence))
 		{
 			Util::Array<CommandBufferId>& bufs = submissionContextAllocator.Get<SubmissionContext_RetiredCmdBuffer>(id.id24)[i];
 			for (IndexT j = 0; j < bufs.Size(); j++)
@@ -306,6 +325,8 @@ SubmissionContextPoll(const SubmissionContextId id, const std::function<bool(uin
 			}
 			bufs.Clear();
 			CleanupPendingDeletes(id, i);
+
+			FenceReset(fence);
 		}
 	}
 }

@@ -422,6 +422,17 @@ VkSubContextHandler::FlushSparseBinds(VkFence fence)
 /**
 */
 void
+VkSubContextHandler::InsertFence(CoreGraphics::QueueType type, VkFence fence)
+{
+	VkQueue queue = this->GetQueue(type);
+	VkResult res = vkQueueSubmit(queue, 0, nullptr, fence);
+	n_assert(res == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 VkSubContextHandler::WaitIdle(const CoreGraphics::QueueType type)
 {
 	Util::FixedArray<VkQueue>* list = nullptr;
