@@ -49,7 +49,6 @@ TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue)
     
     static_assert(std::is_standard_layout<TYPE>(), "TYPE must be standard layout.");
     
-
     auto* reg = Instance();
     if (!reg->columnRegistry.Contains(name))
     {
@@ -63,8 +62,10 @@ TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue)
     }
     else
     {
-        return reg->columnRegistry[name];
+        n_error("Tried to register property named %s: Cannot register two properties with same name!", name.Value());
     }
+
+    return ColumnDescriptor::Invalid();
 }
 
 //------------------------------------------------------------------------------
