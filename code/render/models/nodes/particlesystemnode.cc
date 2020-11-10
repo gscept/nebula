@@ -89,7 +89,7 @@ ParticleSystemNode::OnFinishedLoading()
 	this->emitterMesh.Setup(this->mesh, this->primGroupIndex);
 
 	ShaderId shader = ShaderServer::Instance()->GetShader("shd:particle.fxb"_atm);
-	ConstantBufferId cbo = GetGraphicsConstantBuffer(GlobalConstantBufferType::VisibilityThreadConstantBuffer);
+	BufferId cbo = GetGraphicsConstantBuffer(GlobalConstantBufferType::VisibilityThreadConstantBuffer);
 	this->objectTransformsIndex = ShaderGetResourceSlot(shader, "ObjectBlock");
 	this->instancingTransformsIndex = ShaderGetResourceSlot(shader, "InstancingBlock");
 	this->skinningTransformsIndex = ShaderGetResourceSlot(shader, "JointBlock");

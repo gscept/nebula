@@ -14,7 +14,7 @@
 #include "lowlevel/vk/vkprogram.h"
 #include "coregraphics/shader.h"
 #include "vkloader.h"
-#include "coregraphics/constantbuffer.h"
+#include "coregraphics/buffer.h"
 #include "coregraphics/shaderidentifier.h"
 #include "coregraphics/resourcetable.h"
 #include "vkshaderprogram.h"
@@ -54,14 +54,14 @@ public:
 	/// create resource table 
 	CoreGraphics::ResourceTableId CreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group);
 	/// create constant buffer from name
-	CoreGraphics::ConstantBufferId CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAtom& name, CoreGraphics::BufferAccessMode mode);
+	CoreGraphics::BufferId CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAtom& name, CoreGraphics::BufferAccessMode mode);
 	/// create constant buffer from id
-	CoreGraphics::ConstantBufferId CreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT cbIndex, CoreGraphics::BufferAccessMode mode);
+	CoreGraphics::BufferId CreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT cbIndex, CoreGraphics::BufferAccessMode mode);
 
 	/// get constant buffer binding from name
-	const CoreGraphics::ConstantBinding GetConstantBinding(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const;
+	const IndexT GetConstantBinding(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const;
 	/// get constant buffer binding from index
-	const CoreGraphics::ConstantBinding GetConstantBinding(const CoreGraphics::ShaderId id, const IndexT cIndex) const;
+	const IndexT GetConstantBinding(const CoreGraphics::ShaderId id, const IndexT cIndex) const;
 	/// get constant buffer bindings
 	const SizeT GetConstantBindingsCount(const CoreGraphics::ShaderId id) const;
 
@@ -110,8 +110,6 @@ public:
 private:
 	friend class VkVertexSignaturePool;
 	friend class VkPipelineDatabase;
-	friend const CoreGraphics::ConstantBufferId CoreGraphics::CreateConstantBuffer(const CoreGraphics::ConstantBufferCreateInfo& info);
-
 	friend void ::CoreGraphics::SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::QueueType queue);
 
 	/// get shader program
@@ -124,8 +122,8 @@ private:
 	/// unload shader
 	void Unload(const Resources::ResourceId id) override;
 
-	typedef Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId> UniformBufferMap;
-	typedef Util::Dictionary<uint32_t, Util::Array<CoreGraphics::ConstantBufferId>> UniformBufferGroupMap;
+	typedef Util::Dictionary<Util::StringAtom, CoreGraphics::BufferId> UniformBufferMap;
+	typedef Util::Dictionary<uint32_t, Util::Array<CoreGraphics::BufferId>> UniformBufferGroupMap;
 
 	struct DescriptorSetBinding
 	{
@@ -153,7 +151,7 @@ private:
 		Util::FixedArray<CoreGraphics::ResourcePipelinePushConstantRange> constantRangeLayout;
 		Util::Array<CoreGraphics::SamplerId> immutableSamplers;
 		Util::Dictionary<Util::StringAtom, uint32_t> resourceIndexMap;
-		Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBinding> constantBindings;
+		Util::Dictionary<Util::StringAtom, IndexT> constantBindings;
 		Util::FixedArray<Util::Pair<uint32_t, CoreGraphics::ResourceTableLayoutId>> descriptorSetLayouts;
 		Util::Dictionary<uint32_t, uint32_t> descriptorSetLayoutMap;
 	};

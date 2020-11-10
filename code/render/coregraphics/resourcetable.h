@@ -12,7 +12,6 @@
 #include "texture.h"
 #include "textureview.h"
 #include "buffer.h"
-#include "constantbuffer.h"
 #include "sampler.h"
 #include "coregraphics/config.h"
 namespace CoreGraphics
@@ -115,18 +114,6 @@ struct ResourceTableBuffer
 	SizeT offset;
 };
 
-struct ResourceTableConstantBuffer
-{
-	CoreGraphics::ConstantBufferId buf;
-	IndexT slot;
-	IndexT index;
-	bool dynamicOffset;
-	bool texelBuffer;
-
-	SizeT size;
-	SizeT offset;
-};
-
 struct ResourceTableInputAttachment
 {
 	CoreGraphics::TextureViewId tex;
@@ -166,8 +153,6 @@ void ResourceTableSetRWTexture(const ResourceTableId& id, const ResourceTableTex
 void ResourceTableSetConstantBuffer(const ResourceTableId& id, const ResourceTableBuffer& buf);
 /// set resource table shader rw buffer
 void ResourceTableSetRWBuffer(const ResourceTableId& id, const ResourceTableBuffer& buf);
-/// set resource table constant buffer
-void ResourceTableSetConstantBuffer(const ResourceTableId& id, const ResourceTableConstantBuffer& buf);
 /// set resource table sampler
 void ResourceTableSetSampler(const ResourceTableId& id, const ResourceTableSampler& samp);
 

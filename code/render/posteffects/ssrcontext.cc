@@ -33,7 +33,7 @@ struct
 	CoreGraphics::ShaderProgramId traceProgram;
 	CoreGraphics::ShaderProgramId resolveProgram;
 
-	CoreGraphics::ConstantBufferId constants;
+	CoreGraphics::BufferId constants;
 
 	CoreGraphics::TextureId traceBuffer;
 	CoreGraphics::TextureId reflectionBuffer;

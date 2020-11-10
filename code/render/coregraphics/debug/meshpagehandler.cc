@@ -9,6 +9,7 @@
 #include "http/html/htmlpagewriter.h"
 #include "resources/resourceserver.h"
 #include "coregraphics/streammeshpool.h"
+#include "coregraphics/indextype.h"
 #include "io/ioserver.h"
 
 namespace Debug

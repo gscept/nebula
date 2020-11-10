@@ -15,7 +15,7 @@
 #include "util/arraystack.h"
 #include "material.h"
 #include "coregraphics/texture.h"
-#include "coregraphics/constantbuffer.h"
+#include "coregraphics/buffer.h"
 
 namespace Materials
 {
@@ -37,7 +37,7 @@ struct MaterialConstant
 	Util::Variant::Type type;
 	bool system : 1;
 
-	CoreGraphics::ConstantBinding offset;
+	IndexT offset;
 	IndexT slot;
 	IndexT group;
 };
@@ -131,7 +131,7 @@ private:
 	// the reason whe have an instance type is because it doesn't need the default value
 	struct SurfaceInstanceConstant
 	{
-		CoreGraphics::ConstantBinding binding;
+		IndexT binding;
 		void* mem;
 	};
 
@@ -140,15 +140,15 @@ private:
 		Util::Variant defaultValue;
 		IndexT bufferIndex;
 		bool instanceConstant : 1;
-		CoreGraphics::ConstantBinding binding;
+		IndexT binding;
 		union
 		{
-			CoreGraphics::ConstantBufferId buffer;
+			CoreGraphics::BufferId buffer;
 			void*						   mem;
 		};
 		
 		SurfaceConstant()
-			: buffer(CoreGraphics::ConstantBufferId::Invalid())
+			: buffer(CoreGraphics::BufferId::Invalid())
 			//, mem(nullptr)
 		{}
 	};
@@ -176,7 +176,7 @@ private:
 	Ids::IdAllocator<
 		Util::FixedArray<CoreGraphics::ResourceTableId>,										// surface level resource table, mapped batch -> table
 		Util::FixedArray<CoreGraphics::ResourceTableId>,										// instance level resource table, mapped batch -> table
-		Util::FixedArray<Util::Array<Util::Tuple<IndexT, CoreGraphics::ConstantBufferId>>>,		// surface level constant buffers, mapped batch -> buffers
+		Util::FixedArray<Util::Array<Util::Tuple<IndexT, CoreGraphics::BufferId>>>,		// surface level constant buffers, mapped batch -> buffers
 		Util::FixedArray<Util::Array<Util::Tuple<IndexT, void*, SizeT>>>,						// instance level instance buffers, mapped batch -> memory + size
 		Util::FixedArray<Util::Array<SurfaceTexture>>,											// textures
 		Util::FixedArray<Util::Array<SurfaceConstant>>,											// constants

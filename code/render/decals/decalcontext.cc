@@ -30,8 +30,8 @@ struct
 	CoreGraphics::BufferId clusterDecalIndexLists;
 	Util::FixedArray<CoreGraphics::BufferId> stagingClusterDecalsList;
 	CoreGraphics::BufferId clusterDecalsList;
-	CoreGraphics::ConstantBufferId clusterPointDecals;
-	CoreGraphics::ConstantBufferId clusterSpotDecals;
+	CoreGraphics::BufferId clusterPointDecals;
+	CoreGraphics::BufferId clusterSpotDecals;
 
 	IndexT clusterUniformsSlot;
 	IndexT uniformsSlot;
@@ -118,8 +118,8 @@ DecalContext::Create()
 	decalState.clusterDecalsList = CreateBuffer(rwbInfo);
 
 	rwbInfo.name = "DecalListsStagingBuffer";
-	rwbInfo.mode = BufferAccessMode::HostToDevice;
-	rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferSource;
+	rwbInfo.mode = BufferAccessMode::HostLocal;
+	rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
 	decalState.resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
 	decalState.stagingClusterDecalsList.Resize(CoreGraphics::GetNumBufferedFrames());
 

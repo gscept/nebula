@@ -11,7 +11,6 @@
 #include "vktexture.h"
 #include "vktextureview.h"
 #include "vkbuffer.h"
-#include "vkconstantbuffer.h"
 namespace Vulkan
 {
 
@@ -504,55 +503,6 @@ ResourceTableSetRWBuffer(const ResourceTableId& id, const ResourceTableBuffer& b
 		buff.buffer = BufferGetVk(buf.buf);
 	buff.offset = buf.offset;
 	buff.range = buf.size == NEBULA_WHOLE_BUFFER_SIZE ? VK_WHOLE_SIZE : buf.size;
-	WriteInfo inf;
-	inf.buf = buff;
-	infoList.Append(inf);
-
-	write.pImageInfo = nullptr;
-	write.pTexelBufferView = nullptr;
-	write.pBufferInfo = &buff;			// this is just provisionary, it will go out of scope immediately, but it wont be null!
-
-	writeList.Append(write);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ResourceTableSetConstantBuffer(const ResourceTableId& id, const ResourceTableConstantBuffer& buf)
-{
-	n_assert(!buf.texelBuffer);
-	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
-
-	n_assert(buf.slot != InvalidIndex);
-
-	VkWriteDescriptorSet write;
-	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.pNext = nullptr;
-	if (buf.dynamicOffset)
-		write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-	else if (buf.texelBuffer)
-		write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-	else
-		write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	write.descriptorCount = 1;
-	write.dstArrayElement = buf.index;
-	write.dstBinding = buf.slot;
-	write.dstSet = set;
-
-	n_assert2(write.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, "Texel buffers are not implemented");
-
-	VkDescriptorBufferInfo buff;
-	if (buf.buf == ConstantBufferId::Invalid())
-		buff.buffer = VK_NULL_HANDLE;
-	else
-		buff.buffer = ConstantBufferGetVk(buf.buf);
-	buff.offset = buf.offset;
-	buff.range = buf.size == NEBULA_WHOLE_BUFFER_SIZE ? VK_WHOLE_SIZE : buf.size;
-
 	WriteInfo inf;
 	inf.buf = buff;
 	infoList.Append(inf);

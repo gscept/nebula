@@ -8,7 +8,7 @@
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"
 #include "coregraphics/shader.h"
-#include "coregraphics/constantbuffer.h"
+#include "coregraphics/buffer.h"
 #include <array>
 
 namespace Lighting

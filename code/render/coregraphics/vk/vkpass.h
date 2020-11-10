@@ -8,7 +8,7 @@
 //------------------------------------------------------------------------------
 #include "coregraphics/shader.h"
 #include "coregraphics/pass.h"
-#include "coregraphics/constantbuffer.h"
+#include "coregraphics/buffer.h"
 #include "coregraphics/resourcetable.h"
 
 namespace Vulkan
@@ -20,8 +20,8 @@ struct VkPassLoadInfo
 	Util::StringAtom name;
 
 	// these hold the per-pass shader state
-	CoreGraphics::ConstantBufferId passBlockBuffer;
-	CoreGraphics::ConstantBinding renderTargetDimensionsVar;
+	CoreGraphics::BufferId passBlockBuffer;
+	IndexT renderTargetDimensionsVar;
 
 	// we need these stored for resizing
 	Util::Array<CoreGraphics::TextureViewId> colorAttachments;

@@ -26,13 +26,12 @@
 #include "ids/idpool.h"
 #include "resources/resourceid.h"
 #include "coregraphics/shaderfeature.h"
+#include "coregraphics/buffer.h"
 #include "util/variant.h"
-#include "coregraphics/constantbuffer.h"
 
 namespace CoreGraphics
 {
 
-struct ConstantBufferId;
 struct TextureId;
 struct ShaderRWBufferId;
 struct ResourceTableId;
@@ -89,9 +88,9 @@ const ShaderId ShaderGet(const Resources::ResourceName& name);
 /// create resource table from shader
 const ResourceTableId ShaderCreateResourceTable(const ShaderId id, const IndexT group);
 /// create constant buffer from shader using name (don't use too frequently)
-const ConstantBufferId ShaderCreateConstantBuffer(const ShaderId id, const Util::StringAtom& name, BufferAccessMode mode = BufferAccessMode::HostToDevice);
+const BufferId ShaderCreateConstantBuffer(const ShaderId id, const Util::StringAtom& name, BufferAccessMode mode = BufferAccessMode::HostToDevice);
 /// create constant buffer from index
-const ConstantBufferId ShaderCreateConstantBuffer(const ShaderId id, const IndexT cbIndex, BufferAccessMode mode = BufferAccessMode::HostToDevice);
+const BufferId ShaderCreateConstantBuffer(const ShaderId id, const IndexT cbIndex, BufferAccessMode mode = BufferAccessMode::HostToDevice);
 
 /// get the number of constants from shader
 const SizeT ShaderGetConstantCount(const ShaderId id);
@@ -102,9 +101,9 @@ const ShaderConstantType ShaderGetConstantType(const ShaderId id, const Util::St
 /// get name of variable by index
 const Util::StringAtom ShaderGetConstantName(const ShaderId id, const IndexT i);
 /// get constant buffer binding by name
-const ConstantBinding ShaderGetConstantBinding(const ShaderId id, const Util::StringAtom& name);
+const IndexT ShaderGetConstantBinding(const ShaderId id, const Util::StringAtom& name);
 /// get constant buffer binding by index
-const ConstantBinding ShaderGetConstantBinding(const ShaderId id, const IndexT cIndex);
+const IndexT ShaderGetConstantBinding(const ShaderId id, const IndexT cIndex);
 /// get name of constant buffer wherein constant with name resides
 const Util::StringAtom ShaderGetConstantBlockName(const ShaderId id, const Util::StringAtom& name);
 /// get name of constant buffer where in constant with index resides

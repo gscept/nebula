@@ -72,8 +72,8 @@ struct
 	CoreGraphics::BufferId clusterLightIndexLists;
 	Util::FixedArray<CoreGraphics::BufferId> stagingClusterLightsList;
 	CoreGraphics::BufferId clusterLightsList;
-	CoreGraphics::ConstantBufferId clusterPointLights;
-	CoreGraphics::ConstantBufferId clusterSpotLights;
+	CoreGraphics::BufferId clusterPointLights;
+	CoreGraphics::BufferId clusterSpotLights;
 
 	IndexT clusterUniformsSlot;
 	IndexT lightingUniformsSlot;
@@ -262,8 +262,8 @@ LightContext::Create()
 	clusterState.clusterLightsList = CreateBuffer(rwbInfo);
 
 	rwbInfo.name = "LightListsStagingBuffer";
-	rwbInfo.mode = BufferAccessMode::HostToDevice;
-	rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferSource;
+	rwbInfo.mode = BufferAccessMode::HostLocal;
+	rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
 	clusterState.resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
 	clusterState.stagingClusterLightsList.Resize(CoreGraphics::GetNumBufferedFrames());
 

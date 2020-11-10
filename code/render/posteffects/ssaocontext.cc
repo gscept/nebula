@@ -27,10 +27,10 @@ struct
 
 	Util::FixedArray<CoreGraphics::ResourceTableId> hbaoTable, blurTableX, blurTableY;
 	//CoreGraphics::ResourceTableId hbaoTable, blurTableX, blurTableY;
-	CoreGraphics::ConstantBufferId hbaoConstants, blurConstants;
+	CoreGraphics::BufferId hbaoConstants, blurConstants;
 	IndexT hbao0, hbao1, hbaoX, hbaoY, hbaoBlurRG, hbaoBlurR, hbaoC, blurC;
 
-	CoreGraphics::ConstantBinding uvToViewAVar, uvToViewBVar, r2Var,
+	IndexT uvToViewAVar, uvToViewBVar, r2Var,
 		aoResolutionVar, invAOResolutionVar, strengthVar, tanAngleBiasVar,
 		powerExponentVar, blurFalloff, blurDepthThreshold;
 

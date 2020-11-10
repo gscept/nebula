@@ -71,7 +71,7 @@ MaterialType::Setup()
 			}
 			else
 			{
-				this->constantsByBatch[*it.val].Add(constant.name, { constant.name, constant.defaultValue, nullptr, nullptr, constant.defaultValue.GetType(), false, UINT_MAX, InvalidIndex, InvalidIndex });
+				this->constantsByBatch[*it.val].Add(constant.name, { constant.name, constant.defaultValue, nullptr, nullptr, constant.defaultValue.GetType(), false, InvalidIndex, InvalidIndex, InvalidIndex });
 			}
 		}
 
@@ -115,7 +115,7 @@ MaterialType::CreateSurface()
 		SizeT numBuffers = CoreGraphics::ShaderGetConstantBufferCount(shd);
 
 		// get arrays to pre-allocated buffers
-		Util::Array<Util::Tuple<IndexT, CoreGraphics::ConstantBufferId>>& surfaceBuffers = this->surfaceAllocator.Get<SurfaceBuffers>(sur)[*batchIt.val];
+		Util::Array<Util::Tuple<IndexT, CoreGraphics::BufferId>>& surfaceBuffers = this->surfaceAllocator.Get<SurfaceBuffers>(sur)[*batchIt.val];
 		Util::Array<Util::Tuple<IndexT, void*, SizeT>>& instanceBuffers = this->surfaceAllocator.Get<InstanceBuffers>(sur)[*batchIt.val];
 
 		// create instance of constant buffers
@@ -126,8 +126,8 @@ MaterialType::CreateSurface()
 			IndexT group = CoreGraphics::ShaderGetConstantBufferResourceGroup(shd, j);
 			if (group == NEBULA_BATCH_GROUP && surfaceTable != CoreGraphics::ResourceTableId::Invalid())
 			{
-				CoreGraphics::ConstantBufferId buf = CoreGraphics::ShaderCreateConstantBuffer(shd, j);
-				if (buf != CoreGraphics::ConstantBufferId::Invalid())
+				CoreGraphics::BufferId buf = CoreGraphics::ShaderCreateConstantBuffer(shd, j);
+				if (buf != CoreGraphics::BufferId::Invalid())
 				{
 					CoreGraphics::ResourceTableSetConstantBuffer(surfaceTable, { buf, slot, 0, false, false, -1, 0 });
 
@@ -137,8 +137,8 @@ MaterialType::CreateSurface()
 			}			
 			else if (group == NEBULA_INSTANCE_GROUP && instanceTable != CoreGraphics::ResourceTableId::Invalid())
 			{
-				CoreGraphics::ConstantBufferId buf = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphics::MainThreadConstantBuffer);
-				if (buf != CoreGraphics::ConstantBufferId::Invalid())
+				CoreGraphics::BufferId buf = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphics::MainThreadConstantBuffer);
+				if (buf != CoreGraphics::BufferId::Invalid())
 				{
 					SizeT bufSize = CoreGraphics::ShaderGetConstantBufferSize(shd, j);
 					CoreGraphics::ResourceTableSetConstantBuffer(instanceTable, { buf, slot, 0, true, false, bufSize, 0 });
@@ -353,10 +353,10 @@ MaterialType::SetSurfaceConstant(const SurfaceId sur, IndexT name, const Util::V
 	while (it != this->batchToIndexMap.End())
 	{
 		const SurfaceConstant& constant = this->surfaceAllocator.Get<Constants>(sur.id)[*it.val][name];
-		if (constant.buffer != CoreGraphics::ConstantBufferId::Invalid() && constant.binding != UINT_MAX)
+		if (constant.buffer != CoreGraphics::BufferId::Invalid() && constant.binding != UINT_MAX)
 		{
 			n_assert(!constant.instanceConstant);
-			CoreGraphics::ConstantBufferUpdate(constant.buffer, value, constant.binding);
+			CoreGraphics::BufferUpdate(constant.buffer, value, constant.binding);
 		}
 		it++;
 	}

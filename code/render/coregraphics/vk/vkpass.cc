@@ -8,7 +8,7 @@
 #include "vktypes.h"
 #include "coregraphics/config.h"
 #include "coregraphics/shaderserver.h"
-#include "vkconstantbuffer.h"
+#include "vkbuffer.h"
 #include "vkshader.h"
 #include "vkresourcetable.h"
 #include "vktextureview.h"
@@ -405,7 +405,7 @@ SetupPass(const PassId pid)
     runtimeInfo.passDescriptorSet = CreateResourceTable(ResourceTableCreateInfo{ tableLayout });
     runtimeInfo.passPipelineLayout = ShaderGetResourcePipeline(sid);
 
-    CoreGraphics::ResourceTableConstantBuffer write;
+    CoreGraphics::ResourceTableBuffer write;
     write.buf = loadInfo.passBlockBuffer;
     write.offset = 0;
     write.size = -1;
@@ -452,7 +452,7 @@ SetupPass(const PassId pid)
         write.index = 0;
         ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
     }
-    ConstantBufferUpdateArray(loadInfo.passBlockBuffer, dimensions.Begin(), dimensions.Size(), loadInfo.renderTargetDimensionsVar);
+    BufferUpdateArray(loadInfo.passBlockBuffer, dimensions.Begin(), dimensions.Size(), loadInfo.renderTargetDimensionsVar);
     ResourceTableCommitChanges(runtimeInfo.passDescriptorSet);
 
     // create framebuffer
@@ -556,7 +556,7 @@ DiscardPass(const PassId id)
 
 	// destroy pass and our descriptor set
 	DestroyResourceTable(runtimeInfo.passDescriptorSet);
-	DestroyConstantBuffer(loadInfo.passBlockBuffer);
+	DestroyBuffer(loadInfo.passBlockBuffer);
 	vkDestroyRenderPass(loadInfo.dev, loadInfo.pass, NULL);
 	vkDestroyFramebuffer(loadInfo.dev, loadInfo.framebuffer, NULL);
 }

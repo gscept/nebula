@@ -127,12 +127,12 @@ struct GraphicsDeviceState
 	Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
 
 	uint globalGraphicsConstantBufferMaxValue[NumConstantBufferTypes];
-	CoreGraphics::ConstantBufferId globalGraphicsConstantStagingBuffer[NumConstantBufferTypes];
-	CoreGraphics::ConstantBufferId globalGraphicsConstantBuffer[NumConstantBufferTypes];
+	CoreGraphics::BufferId globalGraphicsConstantStagingBuffer[NumConstantBufferTypes];
+	CoreGraphics::BufferId globalGraphicsConstantBuffer[NumConstantBufferTypes];
 
 	uint globalComputeConstantBufferMaxValue[NumConstantBufferTypes];
-	CoreGraphics::ConstantBufferId globalComputeConstantStagingBuffer[NumConstantBufferTypes];
-	CoreGraphics::ConstantBufferId globalComputeConstantBuffer[NumConstantBufferTypes];
+	CoreGraphics::BufferId globalComputeConstantStagingBuffer[NumConstantBufferTypes];
+	CoreGraphics::BufferId globalComputeConstantBuffer[NumConstantBufferTypes];
 
 	CoreGraphics::DrawThread* drawThread;
 	Util::Stack<CoreGraphics::DrawThread*> drawThreads;
@@ -256,11 +256,11 @@ void SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, ui
 /// reserve range of graphics constant buffer memory and return offset
 uint AllocateGraphicsConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type, uint size);
 /// return id to global graphics constant buffer
-CoreGraphics::ConstantBufferId GetGraphicsConstantBuffer(CoreGraphics::GlobalConstantBufferType type);
+CoreGraphics::BufferId GetGraphicsConstantBuffer(CoreGraphics::GlobalConstantBufferType type);
 /// reserve range of compute constant buffer memory and return offset
 uint AllocateComputeConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type, uint size);
 /// return id to global compute constant buffer
-CoreGraphics::ConstantBufferId GetComputeConstantBuffer(CoreGraphics::GlobalConstantBufferType type);
+CoreGraphics::BufferId GetComputeConstantBuffer(CoreGraphics::GlobalConstantBufferType type);
 
 /// lock resource updates, blocks if other thread is using it
 void LockResourceSubmission();

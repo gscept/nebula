@@ -8,6 +8,7 @@
 #include "coregraphics/legacy/nvx2fileformatstructs.h"
 #include "resources/resourceserver.h"
 #include "coregraphics/config.h"
+#include "coregraphics/indextype.h"
 
 #if NEBULA_LEGACY_SUPPORT
 namespace Legacy

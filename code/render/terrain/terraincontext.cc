@@ -634,7 +634,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 			CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer),
 			ShaderGetResourceSlot(terrainState.terrainShader, "TerrainTileUpdateUniforms"),
 			0,
-			true, false,
+			false, true,
 			sizeof(Terrain::TerrainTileUpdateUniforms),
 			0
 		});
@@ -1242,7 +1242,7 @@ TerrainContext::SetupTerrain(
 
 	IndexT slot = ShaderGetResourceSlot(terrainState.terrainShader, "PatchUniforms");
 	ResourceTableSetConstantBuffer(runtimeInfo.terrainResourceTable, { runtimeInfo.terrainConstants, constantsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-	ResourceTableSetConstantBuffer(runtimeInfo.patchTable, { CoreGraphics::GetGraphicsConstantBuffer(CoreGraphics::MainThreadConstantBuffer), slot, 0, true, false, sizeof(Terrain::PatchUniforms), 0 });
+	ResourceTableSetConstantBuffer(runtimeInfo.patchTable, { CoreGraphics::GetGraphicsConstantBuffer(CoreGraphics::MainThreadConstantBuffer), slot, 0, false, true, sizeof(Terrain::PatchUniforms), 0 });
 	ResourceTableCommitChanges(runtimeInfo.patchTable);
 	ResourceTableCommitChanges(runtimeInfo.terrainResourceTable);
 

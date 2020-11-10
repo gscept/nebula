@@ -51,7 +51,7 @@ ShaderCreateResourceTable(const ShaderId id, const IndexT group)
 //------------------------------------------------------------------------------
 /**
 */
-const ConstantBufferId 
+const BufferId
 ShaderCreateConstantBuffer(const ShaderId id, const Util::StringAtom& name, BufferAccessMode mode)
 {
 	return shaderPool->CreateConstantBuffer(id, name, mode);
@@ -60,7 +60,7 @@ ShaderCreateConstantBuffer(const ShaderId id, const Util::StringAtom& name, Buff
 //------------------------------------------------------------------------------
 /**
 */
-const ConstantBufferId 
+const BufferId
 ShaderCreateConstantBuffer(const ShaderId id, const IndexT cbIndex, BufferAccessMode mode)
 {
 	return shaderPool->CreateConstantBuffer(id, cbIndex, mode);
@@ -105,7 +105,7 @@ ShaderGetConstantName(const CoreGraphics::ShaderId id, const IndexT i)
 //------------------------------------------------------------------------------
 /**
 */
-const ConstantBinding 
+const IndexT 
 ShaderGetConstantBinding(const ShaderId id, const Util::StringAtom& name)
 {
 	return shaderPool->GetConstantBinding(id, name);
@@ -114,7 +114,7 @@ ShaderGetConstantBinding(const ShaderId id, const Util::StringAtom& name)
 //------------------------------------------------------------------------------
 /**
 */
-const ConstantBinding 
+const IndexT
 ShaderGetConstantBinding(const ShaderId id, const IndexT cIndex)
 {
 	return shaderPool->GetConstantBinding(id, cIndex);

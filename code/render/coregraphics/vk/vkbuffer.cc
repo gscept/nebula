@@ -366,24 +366,6 @@ BufferUpload(const BufferId id, const void* data, const uint size, const uint co
 /**
 */
 void
-BufferUpdate(const BufferId id, const ConstantBufferAllocId alloc, const void* data, const uint size, const uint offset)
-{
-	VkBufferMapInfo& map = bufferAllocator.GetUnsafe<Buffer_MapInfo>(id.id24);
-
-#if NEBULA_DEBUG
-	VkBufferLoadInfo& setup = bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id.id24);
-	n_assert(size >= alloc.size);
-	n_assert(size + offset + alloc.offset <= (uint)setup.byteSize);
-#endif
-	byte* buf = (byte*)map.mappedMemory + offset + alloc.offset;
-	memcpy(buf, data, size);
-}
-
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 BufferFill(const BufferId id, char pattern, const CoreGraphics::SubmissionContextId sub)
 {
 	CoreGraphics::CommandBufferId cmd = SubmissionContextGetCmdBuffer(sub);

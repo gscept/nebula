@@ -87,8 +87,8 @@ private:
 	SizeT indexBufferCapacity;
 
 	CoreGraphics::VertexLayoutId vertexLayout;
-	CoreGraphics::ConstantBinding model;
-	CoreGraphics::ConstantBinding diffuseColor;
+	IndexT model;
+	IndexT diffuseColor;
 
 	SizeT numPrimitives;
 	SizeT numIndices;

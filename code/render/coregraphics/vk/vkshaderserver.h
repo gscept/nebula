@@ -88,17 +88,17 @@ private:
 	IndexT image3DTextureVar;
 	IndexT imageCubeTextureVar;
 
-	CoreGraphics::ConstantBinding normalBufferTextureVar;
-	CoreGraphics::ConstantBinding depthBufferTextureVar;
-	CoreGraphics::ConstantBinding specularBufferTextureVar;
-	CoreGraphics::ConstantBinding albedoBufferTextureVar;
-	CoreGraphics::ConstantBinding emissiveBufferTextureVar;
-	CoreGraphics::ConstantBinding lightBufferTextureVar;
-	CoreGraphics::ConstantBinding depthBufferCopyTextureVar;
+	IndexT normalBufferTextureVar;
+	IndexT depthBufferTextureVar;
+	IndexT specularBufferTextureVar;
+	IndexT albedoBufferTextureVar;
+	IndexT emissiveBufferTextureVar;
+	IndexT lightBufferTextureVar;
+	IndexT depthBufferCopyTextureVar;
 
-	CoreGraphics::ConstantBinding environmentMapVar;
-	CoreGraphics::ConstantBinding irradianceMapVar;
-	CoreGraphics::ConstantBinding numEnvMipsVar;
+	IndexT environmentMapVar;
+	IndexT irradianceMapVar;
+	IndexT numEnvMipsVar;
 
 	Threading::CriticalSection bindResourceCriticalSection;
 	struct _PendingView
@@ -121,7 +121,7 @@ private:
 	IndexT spotlightAtlasShadowBufferTextureVar;
 
 	alignas(16) Shared::PerTickParams tickParams;
-	CoreGraphics::ConstantBufferId ticksCbo;
+	CoreGraphics::BufferId ticksCbo;
 	IndexT cboOffset;
 	IndexT cboSlot;
 

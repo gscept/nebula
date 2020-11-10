@@ -20,7 +20,7 @@ struct _state
 	CoreGraphics::BufferId clusterBuffer;
 
 	ClusterGenerate::ClusterUniforms uniforms;
-	CoreGraphics::ConstantBufferId constantBuffer;
+	CoreGraphics::BufferId constantBuffer;
 	IndexT uniformsSlot;
 
 	SizeT clusterDimensions[3];
@@ -150,7 +150,7 @@ ClusterContext::GetUniforms()
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphics::ConstantBufferId 
+const CoreGraphics::BufferId 
 ClusterContext::GetConstantBuffer()
 {
 	return state.constantBuffer;
@@ -178,7 +178,7 @@ ClusterContext::UpdateResources(const Graphics::FrameContext& ctx)
 	state.uniforms.BlockSize[1] = state.ClusterSubdivsY;
 
 	// update constant buffer, probably super unnecessary since these values never change
-	ConstantBufferUpdate(state.constantBuffer, state.uniforms, 0);
+	BufferUpdate(state.constantBuffer, state.uniforms, 0);
 }
 
 //------------------------------------------------------------------------------

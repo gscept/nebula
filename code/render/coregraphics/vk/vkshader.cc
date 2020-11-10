@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vkshader.h"
-#include "vkconstantbuffer.h"
 #include "coregraphics/shaderserver.h"
 #include "lowlevel/vk/vksampler.h"
 #include "lowlevel/vk/vkvarblock.h"
@@ -39,7 +38,7 @@ VkShaderSetup(
 	Util::Dictionary<uint32_t, uint32_t>& setLayoutMap,
 	CoreGraphics::ResourcePipelineId& pipelineLayout,
 	Util::Dictionary<Util::StringAtom, uint32_t>& resourceSlotMapping,
-	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBinding>& constantBindings
+	Util::Dictionary<Util::StringAtom, IndexT>& constantBindings
 	)
 {
 	const std::vector<AnyFX::VarblockBase*>& varblocks = effect->GetVarblocks();
@@ -132,7 +131,7 @@ VkShaderSetup(
 #if NEBULA_DEBUG
 			n_assert(!constantBindings.Contains(var->name.c_str()));
 #endif
-			constantBindings.Add(var->name.c_str(), { block->offsetsByName[var->name] });
+			constantBindings.Add(var->name.c_str(), { (IndexT)block->offsetsByName[var->name] });
 		}
 	}
     n_assert(maxUniformBuffersDyn >= numUniformDyn);
@@ -363,7 +362,7 @@ VkShaderCleanup(
 	VkDevice dev,
 	Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
 	Util::FixedArray<Util::Pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
-	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& buffers,
+	Util::Dictionary<Util::StringAtom, CoreGraphics::BufferId>& buffers,
 	CoreGraphics::ResourcePipelineId& pipelineLayout
 )
 {
@@ -383,7 +382,7 @@ VkShaderCleanup(
 
 	for (i = 0; i < buffers.Size(); i++)
 	{
-		CoreGraphics::DestroyConstantBuffer(buffers.ValueAtIndex(i));
+		CoreGraphics::DestroyBuffer(buffers.ValueAtIndex(i));
 	}
 	buffers.Clear();
 

@@ -12,7 +12,7 @@
 #include "models/nodes/transformnode.h"
 #include "models/model.h"
 #include "coregraphics/shader.h"
-#include "coregraphics/constantbuffer.h"
+#include "coregraphics/buffer.h"
 
 //------------------------------------------------------------------------------
 namespace Models
@@ -89,7 +89,7 @@ protected:
     Resources::ResourceId managedVariationResource;
 
 	CoreGraphics::ShaderId sharedShader;
-	CoreGraphics::ConstantBufferId cbo;
+	CoreGraphics::BufferId cbo;
 	IndexT cboIndex;
 };
 

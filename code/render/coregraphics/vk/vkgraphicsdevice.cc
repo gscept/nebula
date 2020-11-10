@@ -27,7 +27,6 @@
 #include "coregraphics/vertexsignaturepool.h"
 #include "coregraphics/glfw/glfwwindow.h"
 #include "coregraphics/displaydevice.h"
-#include "coregraphics/vk/vkconstantbuffer.h"
 #include "coregraphics/vk/vksemaphore.h"
 #include "coregraphics/vk/vkfence.h"
 #include "coregraphics/vk/vksubmissioncontext.h"
@@ -1489,37 +1488,32 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		static const Util::String threadName[] = { "Main Thread ", "Visibility Thread " };
 		static const Util::String systemName[] = { "Staging ", "Device " };
 		static const Util::String queueName[] = { "Graphics Constant Buffer", "Compute Constant Buffer" };
-		ConstantBufferCreateInfo cboInfo =
-		{
-			"",
-			-1,
-			CoreGraphics::BufferAccessMode(0)
-		};
+		BufferCreateInfo cboInfo;
 
-		cboInfo.size = info.globalGraphicsConstantBufferMemorySize[i] * info.numBufferedFrames;
+		cboInfo.byteSize = info.globalGraphicsConstantBufferMemorySize[i] * info.numBufferedFrames;
 		state.globalGraphicsConstantBufferMaxValue[i] = info.globalGraphicsConstantBufferMemorySize[i];
-		if (cboInfo.size > 0)
+		if (cboInfo.byteSize > 0)
 		{
 			cboInfo.name = systemName[0] + threadName[i] + queueName[0];
-			cboInfo.mode = CoreGraphics::BufferAccessMode::HostToDevice;
-			state.globalGraphicsConstantStagingBuffer[i] = CreateConstantBuffer(cboInfo);
+			cboInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
+			state.globalGraphicsConstantStagingBuffer[i] = CreateBuffer(cboInfo);
 
 			cboInfo.name = systemName[1] + threadName[i] + queueName[0];
 			cboInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-			state.globalGraphicsConstantBuffer[i] = CreateConstantBuffer(cboInfo);
+			state.globalGraphicsConstantBuffer[i] = CreateBuffer(cboInfo);
 		}
 
-		cboInfo.size = info.globalComputeConstantBufferMemorySize[i] * info.numBufferedFrames;
+		cboInfo.byteSize = info.globalComputeConstantBufferMemorySize[i] * info.numBufferedFrames;
 		state.globalComputeConstantBufferMaxValue[i] = info.globalComputeConstantBufferMemorySize[i];
-		if (cboInfo.size > 0)
+		if (cboInfo.byteSize > 0)
 		{
 			cboInfo.name = systemName[0] + threadName[i] + queueName[1];
-			cboInfo.mode = CoreGraphics::BufferAccessMode::HostToDevice;
-			state.globalComputeConstantStagingBuffer[i] = CreateConstantBuffer(cboInfo);
+			cboInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
+			state.globalComputeConstantStagingBuffer[i] = CreateBuffer(cboInfo);
 
 			cboInfo.name = systemName[1] + threadName[i] + queueName[1];
 			cboInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-			state.globalComputeConstantBuffer[i] = CreateConstantBuffer(cboInfo);
+			state.globalComputeConstantBuffer[i] = CreateBuffer(cboInfo);
 		}
 	}
 
@@ -1813,19 +1807,19 @@ DestroyGraphicsDevice()
 	{
 		if (state.globalGraphicsConstantBufferMaxValue[i] > 0)
 		{
-			DestroyConstantBuffer(state.globalGraphicsConstantBuffer[i]);
-			DestroyConstantBuffer(state.globalGraphicsConstantStagingBuffer[i]);
+			DestroyBuffer(state.globalGraphicsConstantBuffer[i]);
+			DestroyBuffer(state.globalGraphicsConstantStagingBuffer[i]);
 		}
-		state.globalGraphicsConstantBuffer[i] = ConstantBufferId::Invalid();
-		state.globalGraphicsConstantStagingBuffer[i] = ConstantBufferId::Invalid();
+		state.globalGraphicsConstantBuffer[i] = BufferId::Invalid();
+		state.globalGraphicsConstantStagingBuffer[i] = BufferId::Invalid();
 
 		if (state.globalComputeConstantBufferMaxValue[i] > 0)
 		{
-			DestroyConstantBuffer(state.globalComputeConstantBuffer[i]);
-			DestroyConstantBuffer(state.globalComputeConstantStagingBuffer[i]);
+			DestroyBuffer(state.globalComputeConstantBuffer[i]);
+			DestroyBuffer(state.globalComputeConstantStagingBuffer[i]);
 		}
-		state.globalComputeConstantBuffer[i] = ConstantBufferId::Invalid();
-		state.globalComputeConstantStagingBuffer[i] = ConstantBufferId::Invalid();
+		state.globalComputeConstantBuffer[i] = BufferId::Invalid();
+		state.globalComputeConstantStagingBuffer[i] = BufferId::Invalid();
 	}
 	state.database.Discard();
 
@@ -2070,8 +2064,8 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
 
 	uint* cboStartAddress = queue == GraphicsQueueType ? sub.cboGfxStartAddress : sub.cboComputeStartAddress;
 	uint* cboEndAddress = queue == GraphicsQueueType ? sub.cboGfxEndAddress : sub.cboComputeEndAddress;
-	CoreGraphics::ConstantBufferId* stagingCbo = queue == GraphicsQueueType ? state.globalGraphicsConstantStagingBuffer : state.globalComputeConstantStagingBuffer;
-	CoreGraphics::ConstantBufferId* cbo = queue == GraphicsQueueType ? state.globalGraphicsConstantBuffer : state.globalComputeConstantBuffer;
+	CoreGraphics::BufferId* stagingCbo = queue == GraphicsQueueType ? state.globalGraphicsConstantStagingBuffer : state.globalComputeConstantStagingBuffer;
+	CoreGraphics::BufferId* cbo = queue == GraphicsQueueType ? state.globalGraphicsConstantBuffer : state.globalComputeConstantBuffer;
 
 	IndexT i;
 	for (i = 0; i < NumConstantBufferTypes; i++)
@@ -2084,7 +2078,7 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
 			range.pNext = nullptr;
 			range.offset = cboStartAddress[i];
 			range.size = Math::n_align(size, state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
-			range.memory = ConstantBufferGetVkMemory(stagingCbo[i]);
+			range.memory = BufferGetVkMemory(stagingCbo[i]);
 			VkResult res = vkFlushMappedMemoryRanges(dev, 1, &range);
 			n_assert(res == VK_SUCCESS);
 			cboEndAddress[i] = Math::n_align(cboEndAddress[i], state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
@@ -2094,8 +2088,8 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
 			copy.size = range.size;
 			vkCmdCopyBuffer(
 				CommandBufferGetVk(cmds),
-				ConstantBufferGetVk(stagingCbo[i]),
-				ConstantBufferGetVk(cbo[i]), 1, &copy);
+				BufferGetVk(stagingCbo[i]),
+				BufferGetVk(cbo[i]), 1, &copy);
 
 			// make sure to put a barrier after the copy so that subsequent calls may wait for the copy to finish
 			VkBufferMemoryBarrier barrier =
@@ -2104,7 +2098,7 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
 				nullptr,
 				VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
 				VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
-				ConstantBufferGetVk(cbo[i]), copy.srcOffset, copy.size
+				BufferGetVk(cbo[i]), copy.srcOffset, copy.size
 			};
 			
 			VkPipelineStageFlagBits stageFlag = queue == GraphicsQueueType ? VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
@@ -2583,7 +2577,7 @@ SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const 
 
 	// just bump the current frame submission pointer
 	sub.cboGfxEndAddress[type] = newEnd;
-	ConstantBufferUpdate(state.globalGraphicsConstantStagingBuffer[type], data, size, ret);
+	BufferUpdate(state.globalGraphicsConstantStagingBuffer[type], data, size, ret);
 	return ret;
 }
 
@@ -2611,7 +2605,7 @@ SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const v
 
 	// just bump the current frame submission pointer
 	sub.cboComputeEndAddress[type] = newEnd;
-	ConstantBufferUpdate(state.globalComputeConstantStagingBuffer[type], data, size, ret);
+	BufferUpdate(state.globalComputeConstantStagingBuffer[type], data, size, ret);
 	return ret;
 }
 
@@ -2621,7 +2615,7 @@ SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const v
 void
 SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, uint offset, const void* data, SizeT size)
 {
-	ConstantBufferUpdate(state.globalGraphicsConstantStagingBuffer[type], data, size, offset);
+	BufferUpdate(state.globalGraphicsConstantStagingBuffer[type], data, size, offset);
 }
 
 //------------------------------------------------------------------------------
@@ -2630,7 +2624,7 @@ SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, uint o
 void 
 SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, uint offset, const void* data, SizeT size)
 {
-	ConstantBufferUpdate(state.globalComputeConstantStagingBuffer[type], data, size, offset);
+	BufferUpdate(state.globalComputeConstantStagingBuffer[type], data, size, offset);
 }
 
 //------------------------------------------------------------------------------
@@ -2665,7 +2659,7 @@ AllocateGraphicsConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type
 //------------------------------------------------------------------------------
 /**
 */
-CoreGraphics::ConstantBufferId 
+CoreGraphics::BufferId
 GetGraphicsConstantBuffer(CoreGraphics::GlobalConstantBufferType type)
 {
 	return state.globalGraphicsConstantBuffer[type];
@@ -2703,7 +2697,7 @@ AllocateComputeConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type,
 //------------------------------------------------------------------------------
 /**
 */
-CoreGraphics::ConstantBufferId 
+CoreGraphics::BufferId
 GetComputeConstantBuffer(CoreGraphics::GlobalConstantBufferType type)
 {
 	return state.globalComputeConstantBuffer[type];
@@ -3943,26 +3937,6 @@ GetTexture(const Util::StringAtom& name)
 }
 
 #if NEBULA_GRAPHICS_DEBUG
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<>
-void
-ObjectSetName(const CoreGraphics::ConstantBufferId id, const char* name)
-{
-	VkDebugUtilsObjectNameInfoEXT info =
-	{
-		VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-		nullptr,
-		VK_OBJECT_TYPE_BUFFER,
-		(uint64_t)Vulkan::ConstantBufferGetVk(id),
-		name
-	};
-	VkDevice dev = GetCurrentDevice();
-	VkResult res = VkDebugObjectName(dev, &info);
-	n_assert(res == VK_SUCCESS);
-}
 
 //------------------------------------------------------------------------------
 /**

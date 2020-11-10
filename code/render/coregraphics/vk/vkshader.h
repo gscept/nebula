@@ -28,14 +28,14 @@ void VkShaderSetup(
 	Util::Dictionary<uint32_t, uint32_t>& setLayoutMap,
 	CoreGraphics::ResourcePipelineId& pipelineLayout,
 	Util::Dictionary<Util::StringAtom, uint32_t>& resourceSlotMapping,
-	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBinding>& constantBindings
+	Util::Dictionary<Util::StringAtom, IndexT>& constantBindings
 );
 /// cleanup shader
 void VkShaderCleanup(
 	VkDevice dev,
 	Util::Array<CoreGraphics::SamplerId>& immutableSamplers,
 	Util::FixedArray<Util::Pair<uint32_t, CoreGraphics::ResourceTableLayoutId>>& setLayouts,
-	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& buffers,
+	Util::Dictionary<Util::StringAtom, CoreGraphics::BufferId>& buffers,
 	CoreGraphics::ResourcePipelineId& pipelineLayout
 );
 

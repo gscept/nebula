@@ -10,7 +10,6 @@
 #include "coregraphics/base/transformdevicebase.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/graphicsdevice.h"
-#include "coregraphics/constantbuffer.h"
 #include "coregraphics/resourcetable.h"
 #include "shared.h"
 
@@ -47,21 +46,21 @@ private:
 
 	Math::mat4 viewMatrixArray[6];
 
-	CoreGraphics::ConstantBinding viewVar;
-	CoreGraphics::ConstantBinding invViewVar;
-	CoreGraphics::ConstantBinding viewProjVar;
-	CoreGraphics::ConstantBinding invViewProjVar;
-	CoreGraphics::ConstantBinding projVar;
-	CoreGraphics::ConstantBinding invProjVar;
-	CoreGraphics::ConstantBinding eyePosVar;
-	CoreGraphics::ConstantBinding focalLengthNearFarVar;
-	CoreGraphics::ConstantBinding viewMatricesVar;
-	CoreGraphics::ConstantBinding timeAndRandomVar;
-	CoreGraphics::ConstantBinding nearFarPlaneVar;
+	IndexT viewVar;
+	IndexT invViewVar;
+	IndexT viewProjVar;
+	IndexT invViewProjVar;
+	IndexT projVar;
+	IndexT invProjVar;
+	IndexT eyePosVar;
+	IndexT focalLengthNearFarVar;
+	IndexT viewMatricesVar;
+	IndexT timeAndRandomVar;
+	IndexT nearFarPlaneVar;
 	uint32_t frameOffset;
 
-	CoreGraphics::ConstantBinding shadowCameraBlockVar;
-	CoreGraphics::ConstantBufferId viewConstants;
+	IndexT shadowCameraBlockVar;
+	CoreGraphics::BufferId viewConstants;
 
 	Util::FixedArray<CoreGraphics::ResourceTableId> viewTables;	
 	IndexT viewConstantsSlot;

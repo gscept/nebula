@@ -199,7 +199,7 @@ private:
         CoreGraphics::TextureId decisionMap;
         CoreGraphics::TextureId lowResAlbedoMap;
 
-        CoreGraphics::ConstantBufferId terrainConstants;
+        CoreGraphics::BufferId terrainConstants;
         CoreGraphics::ResourceTableId terrainResourceTable;
         
         CoreGraphics::ResourceTableId patchTable;

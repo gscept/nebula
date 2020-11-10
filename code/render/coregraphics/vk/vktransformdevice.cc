@@ -5,7 +5,7 @@
 #include "render/stdneb.h"
 #include "vktransformdevice.h"
 #include "coregraphics/shaderserver.h"
-#include "coregraphics/constantbuffer.h"
+#include "coregraphics/buffer.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/config.h"
 #include "coregraphics/shadersemantics.h"
@@ -24,20 +24,20 @@ __ImplementSingleton(Vulkan::VkTransformDevice);
 /**
 */
 VkTransformDevice::VkTransformDevice()
-	: viewVar(CoreGraphics::InvalidConstantBinding)
-	, invViewVar(CoreGraphics::InvalidConstantBinding)
-	, viewProjVar(CoreGraphics::InvalidConstantBinding)
-	, invViewProjVar(CoreGraphics::InvalidConstantBinding)
-	, projVar(CoreGraphics::InvalidConstantBinding)
-	, invProjVar(CoreGraphics::InvalidConstantBinding)
-	, eyePosVar(CoreGraphics::InvalidConstantBinding)
-	, focalLengthNearFarVar(CoreGraphics::InvalidConstantBinding)
-	, viewMatricesVar(CoreGraphics::InvalidConstantBinding)
-	, timeAndRandomVar(CoreGraphics::InvalidConstantBinding)
-	, nearFarPlaneVar(CoreGraphics::InvalidConstantBinding)
+	: viewVar(InvalidIndex)
+	, invViewVar(InvalidIndex)
+	, viewProjVar(InvalidIndex)
+	, invViewProjVar(InvalidIndex)
+	, projVar(InvalidIndex)
+	, invProjVar(InvalidIndex)
+	, eyePosVar(InvalidIndex)
+	, focalLengthNearFarVar(InvalidIndex)
+	, viewMatricesVar(InvalidIndex)
+	, timeAndRandomVar(InvalidIndex)
+	, nearFarPlaneVar(InvalidIndex)
 	, frameOffset(0)
-	, shadowCameraBlockVar(CoreGraphics::InvalidConstantBinding)
-	, viewConstants(CoreGraphics::ConstantBufferId::Invalid())
+	, shadowCameraBlockVar(InvalidIndex)
+	, viewConstants(CoreGraphics::BufferId::Invalid())
 	, viewConstantsSlot(InvalidIndex)
 	, shadowConstantsSlot(InvalidIndex)
 	, tableLayout(CoreGraphics::ResourcePipelineId::Invalid())

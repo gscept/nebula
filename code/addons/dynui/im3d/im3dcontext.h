@@ -9,7 +9,7 @@
 */
 //------------------------------------------------------------------------------
 
-#include "coregraphics/constantbuffer.h"
+#include "coregraphics/buffer.h"
 #include "coregraphics/buffer.h"
 #include "graphics/graphicscontext.h"
 #include "input/inputevent.h"

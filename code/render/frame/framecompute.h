@@ -33,8 +33,8 @@ public:
 
 	FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 
-	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId> constantBuffers;
-	Util::Array<Util::Tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>> textures;
+	Util::Dictionary<Util::StringAtom, CoreGraphics::BufferId> constantBuffers;
+	Util::Array<Util::Tuple<IndexT, CoreGraphics::BufferId, CoreGraphics::TextureId>> textures;
 	CoreGraphics::ResourceTableId resourceTable;
 	CoreGraphics::ShaderId shader;
 	CoreGraphics::ShaderProgramId program;

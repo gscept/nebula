@@ -125,7 +125,6 @@ ENDIF()
 				gpubuffertypes.h
 				commandbuffer.h
 				config.h
-				constantbuffer.h
 				displaydevice.cc
 				displaydevice.h
 				displayevent.h
@@ -238,8 +237,6 @@ ENDIF()
 				d3d11buffer.h
 				d3d11bufferlock.cc
 				d3d11bufferlock.h
-				d3d11constantbuffer.cc
-				d3d11constantbuffer.h
 				d3d11displaydevice.cc
 				d3d11displaydevice.h
 				d3d11event.cc
@@ -345,8 +342,6 @@ ENDIF()
 				vktransformdevice.h
 				vktypes.cc
 				vktypes.h
-				vkconstantbuffer.cc
-				vkconstantbuffer.h
 				vkutilities.cc
 				vkutilities.h
 				vkvertexsignaturepool.cc

@@ -6,11 +6,11 @@
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
+#include "config.h"
 #include "ids/id.h"
 #include "ids/idpool.h"
 #include "util/stringatom.h"
-#include "coregraphics/indextype.h"
-#include "coregraphics/vertexlayout.h"
+#include "util/variant.h"
 #include "coregraphics/config.h"
 #include "coregraphics/submissioncontext.h"
 #include "gpubuffertypes.h"

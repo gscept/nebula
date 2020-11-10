@@ -13,7 +13,7 @@
 #include "materials/materialserver.h"
 #include "transformnode.h"
 #include "jobs/jobs.h"
-#include "coregraphics/constantbuffer.h"
+#include "coregraphics/buffer.h"
 #include "coregraphics/resourcetable.h"
 
 namespace Visibility

@@ -9,10 +9,11 @@
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/texture.h"
-#include "coregraphics/constantbuffer.h"
+#include "coregraphics/buffer.h"
 #include "coregraphics/resourcetable.h"
 #include "input/inputevent.h"
 #include "graphics/graphicscontext.h"
+#include "coregraphics/vertexlayout.h"
 #include "imguiinputhandler.h"
 
 struct ImDrawData;
@@ -21,8 +22,8 @@ namespace Dynui
 
 struct ImguiRendererParams
 {
-	CoreGraphics::ConstantBinding projVar;
-	CoreGraphics::ConstantBinding fontVar;
+	IndexT projVar;
+	IndexT fontVar;
 };
 
 struct ImguiTextureId
@@ -70,9 +71,9 @@ private:
 		Util::FixedArray<CoreGraphics::BufferId> ibos;
 		CoreGraphics::VertexLayoutId vlo;
 
-		CoreGraphics::ConstantBinding textureConstant;
-		CoreGraphics::ConstantBinding textProjectionConstant;
-		CoreGraphics::ConstantBinding packedTextureInfo;
+		IndexT textureConstant;
+		IndexT textProjectionConstant;
+		IndexT packedTextureInfo;
 		CoreGraphics::ResourceTableId resourceTable;
 		//Ptr<CoreGraphics::BufferLock> vboBufferLock;
 		//Ptr<CoreGraphics::BufferLock> iboBufferLock;

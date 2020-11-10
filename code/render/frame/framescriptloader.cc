@@ -945,8 +945,8 @@ FrameScriptLoader::ParseShaderState(
 	JzonValue* node, 
 	CoreGraphics::ShaderId& shd, 
 	CoreGraphics::ResourceTableId& table, 
-	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& constantBuffers,
-	Util::Array<Util::Tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>>& textures
+	Util::Dictionary<Util::StringAtom, CoreGraphics::BufferId>& constantBuffers,
+	Util::Array<Util::Tuple<IndexT, CoreGraphics::BufferId, CoreGraphics::TextureId>>& textures
 )
 {
 	JzonValue* shader = jzon_get(node, "shader");
@@ -969,8 +969,8 @@ FrameScriptLoader::ParseShaderVariables(
 	const Ptr<Frame::FrameScript>& script,
 	const CoreGraphics::ShaderId& shd, 
 	CoreGraphics::ResourceTableId& table, 
-	Util::Dictionary<Util::StringAtom, CoreGraphics::ConstantBufferId>& constantBuffers, 
-	Util::Array<Util::Tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>>& textures, JzonValue* node)
+	Util::Dictionary<Util::StringAtom, CoreGraphics::BufferId>& constantBuffers, 
+	Util::Array<Util::Tuple<IndexT, CoreGraphics::BufferId, CoreGraphics::TextureId>>& textures, JzonValue* node)
 {
 	uint i;
 	for (i = 0; i < node->size; i++)
@@ -986,8 +986,8 @@ FrameScriptLoader::ParseShaderVariables(
 
 		// get variable
 		ShaderConstantType type = ShaderGetConstantType(shd, sem->string_value);
-		ConstantBufferId cbo = ConstantBufferId::Invalid();
-		ConstantBinding bind = -1;
+		BufferId cbo = BufferId::Invalid();
+		IndexT bind = InvalidIndex;
 		if (type != SamplerVariableType && type != TextureVariableType && type != ImageReadWriteVariableType && type != BufferReadWriteVariableType)
 		{
 			Util::StringAtom block = ShaderGetConstantBlockName(shd, sem->string_value);
@@ -1008,22 +1008,22 @@ FrameScriptLoader::ParseShaderVariables(
 		switch (type)
 		{
 		case IntVariableType:
-			ConstantBufferUpdate(cbo, valStr.AsInt(), bind);
+			BufferUpdate(cbo, valStr.AsInt(), bind);
 			break;
 		case FloatVariableType:
-			ConstantBufferUpdate(cbo, valStr.AsFloat(), bind);
+			BufferUpdate(cbo, valStr.AsFloat(), bind);
 			break;
 		case VectorVariableType:
-			ConstantBufferUpdate(cbo, valStr.AsVec4(), bind);
+			BufferUpdate(cbo, valStr.AsVec4(), bind);
 			break;
 		case Vector2VariableType:
-			ConstantBufferUpdate(cbo, valStr.AsVec2(), bind);
+			BufferUpdate(cbo, valStr.AsVec2(), bind);
 			break;
 		case MatrixVariableType:
-			ConstantBufferUpdate(cbo, valStr.AsMat4(), bind);
+			BufferUpdate(cbo, valStr.AsMat4(), bind);
 			break;
 		case BoolVariableType:
-			ConstantBufferUpdate(cbo, valStr.AsBool(), bind);
+			BufferUpdate(cbo, valStr.AsBool(), bind);
 			break;
 		case SamplerHandleType:
 		case ImageHandleType:
@@ -1032,7 +1032,7 @@ FrameScriptLoader::ParseShaderVariables(
 			CoreGraphics::TextureId rtid = script->GetTexture(valStr);
 			textures.Append(Util::MakeTuple(bind, cbo, rtid));
 			if (rtid != CoreGraphics::TextureId::Invalid())
-				ConstantBufferUpdate(cbo, CoreGraphics::TextureGetBindlessHandle(rtid), bind);
+				BufferUpdate(cbo, CoreGraphics::TextureGetBindlessHandle(rtid), bind);
 			else
 				n_error("Unknown resource %s!", valStr.AsCharPtr());
 			break;
@@ -1043,7 +1043,7 @@ FrameScriptLoader::ParseShaderVariables(
 			IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
 			CoreGraphics::TextureId rtid = script->GetTexture(valStr);
 
-			textures.Append(Util::MakeTuple(slot, ConstantBufferId::Invalid(), rtid));
+			textures.Append(Util::MakeTuple(slot, BufferId::Invalid(), rtid));
 			if (rtid != CoreGraphics::TextureId::Invalid())
 				ResourceTableSetTexture(table, { rtid, slot, 0, CoreGraphics::SamplerId::Invalid(), false });
 			else
@@ -1055,7 +1055,7 @@ FrameScriptLoader::ParseShaderVariables(
 			IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
 			CoreGraphics::TextureId rtid = script->GetTexture(valStr);
 
-			textures.Append(Util::MakeTuple(slot, ConstantBufferId::Invalid(), rtid));
+			textures.Append(Util::MakeTuple(slot, BufferId::Invalid(), rtid));
 			if (rtid != CoreGraphics::TextureId::Invalid())
 				ResourceTableSetRWTexture(table, { rtid, slot, 0, CoreGraphics::SamplerId::Invalid() });
 			else

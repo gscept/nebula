@@ -8,7 +8,7 @@
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"
 #include "coregraphics/buffer.h"
-#include "coregraphics/constantbuffer.h"
+#include "coregraphics/buffer.h"
 #include "coregraphics/window.h"
 #include <array>
 #include "cluster_generate.h"
@@ -37,7 +37,7 @@ public:
 	/// get cluster uniforms
 	static const ClusterGenerate::ClusterUniforms& GetUniforms();
 	/// get cluster constant buffer
-	static const CoreGraphics::ConstantBufferId GetConstantBuffer();
+	static const CoreGraphics::BufferId GetConstantBuffer();
 
 	/// update constants
 	static void UpdateResources(const Graphics::FrameContext& ctx);

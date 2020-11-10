@@ -56,7 +56,7 @@ private:
 	CoreGraphics::ResourceTableId textTable;
 	CoreGraphics::ShaderProgramId program;
 	IndexT texVar;
-	CoreGraphics::ConstantBinding modelVar;
+	IndexT modelVar;
 	CoreGraphics::TextureId glyphTexture;
 	CoreGraphics::PrimitiveGroup group;
 	CoreGraphics::BufferId vbo;

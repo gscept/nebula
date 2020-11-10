@@ -51,7 +51,7 @@ FrameSubpassFullscreenEffect::Discard()
 	DestroyResourceTable(this->resourceTable);
 	IndexT i;
 	for (i = 0; i < this->constantBuffers.Size(); i++)
-		DestroyConstantBuffer(this->constantBuffers.ValueAtIndex(i));
+		DestroyBuffer(this->constantBuffers.ValueAtIndex(i));
 }
 
 //------------------------------------------------------------------------------
@@ -66,10 +66,10 @@ FrameSubpassFullscreenEffect::OnWindowResized()
 	IndexT i;
 	for (i = 0; i < this->textures.Size(); i++)
 	{
-		const Util::Tuple<IndexT, CoreGraphics::ConstantBufferId, CoreGraphics::TextureId>& tuple = this->textures[i];
-		if (Util::Get<1>(tuple) != CoreGraphics::ConstantBufferId::Invalid())
+		const Util::Tuple<IndexT, CoreGraphics::BufferId, CoreGraphics::TextureId>& tuple = this->textures[i];
+		if (Util::Get<1>(tuple) != CoreGraphics::BufferId::Invalid())
 		{
-			CoreGraphics::ConstantBufferUpdate(Util::Get<1>(tuple), CoreGraphics::TextureGetBindlessHandle(Util::Get<2>(tuple)), Util::Get<0>(tuple));
+			CoreGraphics::BufferUpdate(Util::Get<1>(tuple), CoreGraphics::TextureGetBindlessHandle(Util::Get<2>(tuple)), Util::Get<0>(tuple));
 		}
 		else
 		{

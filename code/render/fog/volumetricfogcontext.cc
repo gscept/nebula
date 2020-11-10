@@ -122,8 +122,8 @@ VolumetricFogContext::Create()
 	fogState.clusterFogLists = CreateBuffer(rwbInfo);
 
 	rwbInfo.name = "FogListsStagingBuffer";
-	rwbInfo.mode = BufferAccessMode::HostToDevice;
-	rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferSource;
+	rwbInfo.mode = BufferAccessMode::HostLocal;
+	rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
 	fogState.stagingClusterFogLists.Resize(CoreGraphics::GetNumBufferedFrames());
 
 	fogState.cullProgram = ShaderGetProgram(fogState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Cull"));

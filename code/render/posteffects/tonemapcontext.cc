@@ -25,8 +25,8 @@ struct
 
 	CoreGraphics::ShaderProgramId program;
 
-	CoreGraphics::ConstantBinding timevar;
-	CoreGraphics::ConstantBufferId constants;
+	IndexT timevar;
+	CoreGraphics::BufferId constants;
 
 	CoreGraphics::TextureId colorBuffer;
 	CoreGraphics::TextureId averageLumBuffer;
@@ -102,7 +102,7 @@ TonemapContext::Create()
 			SetShaderProgram(tonemapState.program);
 			BeginBatch(Frame::FrameBatchType::System);
 			RenderUtil::DrawFullScreenQuad::ApplyMesh();
-			ConstantBufferUpdate(tonemapState.constants, (float)time, tonemapState.timevar);
+			BufferUpdate(tonemapState.constants, (float)time, tonemapState.timevar);
 			SetResourceTable(tonemapState.tonemapTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
 			Draw();
 			EndBatch();
@@ -164,7 +164,7 @@ TonemapContext::Discard()
 	using namespace CoreGraphics;
 	DestroyTexture(tonemapState.downsample2x2);
 	DestroyTexture(tonemapState.copy);
-	DestroyConstantBuffer(tonemapState.constants);
+	DestroyBuffer(tonemapState.constants);
 	DestroyResourceTable(tonemapState.tonemapTable);
 }
 

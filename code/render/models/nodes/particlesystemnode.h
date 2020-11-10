@@ -12,7 +12,7 @@
 #include "particles/emitterattrs.h"
 #include "particles/envelopesamplebuffer.h"
 #include "particles/emittermesh.h"
-#include "coregraphics/constantbuffer.h"
+#include "coregraphics/buffer.h"
 #include "coregraphics/resourcetable.h"
 
 //------------------------------------------------------------------------------

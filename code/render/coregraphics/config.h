@@ -20,13 +20,9 @@ namespace CoreGraphics
 enum IdType
 {
 	BufferIdType,
-	VertexBufferIdType,
-	IndexBufferIdType,
 	TextureIdType,
 	TextureViewIdType,
 	VertexLayoutIdType,
-	ConstantBufferIdType,
-	ShaderRWBufferIdType,
 	ShaderIdType,
 	ShaderProgramIdType,
 	ShaderStateIdType,
@@ -48,9 +44,7 @@ enum IdType
 	SamplerIdType,
 	MaterialIdType,
 	SubmissionContextIdType,
-	ImageIdType,
-	SparseBufferIdType,
-	SparseTextureIdType
+	ImageIdType
 };
 
 enum QueueType

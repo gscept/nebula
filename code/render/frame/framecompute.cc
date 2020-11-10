@@ -37,7 +37,7 @@ FrameCompute::Discard()
 	DestroyResourceTable(this->resourceTable);
 	IndexT i;
 	for (i = 0; i < this->constantBuffers.Size(); i++)
-		DestroyConstantBuffer(this->constantBuffers.ValueAtIndex(i));
+		DestroyBuffer(this->constantBuffers.ValueAtIndex(i));
 }
 
 //------------------------------------------------------------------------------

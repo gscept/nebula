@@ -5,7 +5,6 @@
 #include "render/stdneb.h"
 #include "vkshaderpool.h"
 #include "vkshader.h"
-#include "coregraphics/constantbuffer.h"
 #include "effectfactory.h"
 #include "coregraphics/config.h"
 #include "vkgraphicsdevice.h"
@@ -220,45 +219,57 @@ VkShaderPool::CreateResourceTable(const CoreGraphics::ShaderId id, const IndexT 
 //------------------------------------------------------------------------------
 /**
 */
-CoreGraphics::ConstantBufferId 
+CoreGraphics::BufferId 
 VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAtom& name, CoreGraphics::BufferAccessMode mode)
 {
 	AnyFX::VarblockBase* var = this->shaderAlloc.Get<0>(id.resourceId)->GetVarblock(name.Value());
 	if (var->alignedSize > 0)
-		return CoreGraphics::CreateConstantBuffer({ name, (SizeT)var->alignedSize, mode });
+	{
+		BufferCreateInfo info;
+		info.byteSize = var->alignedSize;
+		info.name = name;
+		info.mode = mode;
+		return CoreGraphics::CreateBuffer(info);
+	}
 	else
-		return CoreGraphics::ConstantBufferId::Invalid();
+		return CoreGraphics::BufferId::Invalid();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-CoreGraphics::ConstantBufferId 
+CoreGraphics::BufferId
 VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT cbIndex, CoreGraphics::BufferAccessMode mode)
 {
 	AnyFX::VarblockBase* var = this->shaderAlloc.Get<0>(id.resourceId)->GetVarblock(cbIndex);
 	if (var->alignedSize > 0)
-		return CoreGraphics::CreateConstantBuffer({ var->name.c_str(), (SizeT)var->alignedSize, mode });
+	{
+		BufferCreateInfo info;
+		info.byteSize = var->alignedSize;
+		info.name = var->name.c_str();
+		info.mode = mode;
+		return CoreGraphics::CreateBuffer(info);
+	}
 	else
-		return CoreGraphics::ConstantBufferId::Invalid();
+		return CoreGraphics::BufferId::Invalid();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphics::ConstantBinding
+const IndexT
 VkShaderPool::GetConstantBinding(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const
 {
 	const VkShaderSetupInfo& info = this->shaderAlloc.Get<1>(id.resourceId);
 	IndexT index = info.constantBindings.FindIndex(name.Value());
-	if (index == InvalidIndex)	return { UINT_MAX }; // invalid binding
+	if (index == InvalidIndex)	return { INT32_MAX }; // invalid binding
 	else						return info.constantBindings.ValueAtIndex(index);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphics::ConstantBinding 
+const IndexT
 VkShaderPool::GetConstantBinding(const CoreGraphics::ShaderId id, const IndexT cIndex) const
 {
 	const VkShaderSetupInfo& info = this->shaderAlloc.Get<1>(id.resourceId);

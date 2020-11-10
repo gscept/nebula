@@ -223,7 +223,7 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 
 						constant.system = system;
 						constant.name = name;
-						constant.offset = { UINT_MAX };
+						constant.offset = InvalidIndex;
 						constant.slot = InvalidIndex;
 						constant.group = InvalidIndex;
 						type->constants.Add(name, constant);
@@ -289,7 +289,7 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 
 						constant.system = system;
 						constant.name = name;
-						constant.offset = { UINT_MAX };
+						constant.offset = InvalidIndex;
 						constant.slot = InvalidIndex;
 						constant.group = InvalidIndex;
 						type->constants.Add(name, constant);
