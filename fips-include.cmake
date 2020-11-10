@@ -266,6 +266,34 @@ macro(add_blueprint)
 		endforeach()
 endmacro()
 
+macro(add_template_intern)
+    foreach(tp ${ARGN})
+        get_filename_component(basename ${tp} NAME)
+        get_filename_component(dir ${tp} DIRECTORY)
+        string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/data/tables/templates/" "" dir ${dir})
+        set(output ${EXPORT_DIR}/data/tables/templates/${dir}/${basename})
+        add_custom_command(OUTPUT ${output}
+            COMMAND ${CMAKE_COMMAND} -E copy ${tp} ${EXPORT_DIR}/data/tables/templates/${dir}/
+            MAIN_DEPENDENCY ${tp}
+            WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
+            COMMENT "Copying template ${tp} to ${EXPORT_DIR}/data/tables/templates"
+            VERBATIM
+            )
+        fips_files(${tp})
+        SOURCE_GROUP("res\\templates\\${dir}" FILES ${tp})
+    endforeach()
+endmacro()
+
+macro(add_template_dir)
+    set_nebula_export_dir()
+    foreach(tpdir ${ARGN})
+        file(GLOB_RECURSE templates "${tpdir}/*.json")
+        foreach (tp ${templates})
+            add_template_intern(${tp})
+        endforeach()
+    endforeach()
+endmacro()
+
 macro(set_nebula_export_dir)
     if(FIPS_WINDOWS)
         get_filename_component(workdir "[HKEY_CURRENT_USER\\SOFTWARE\\gscept\\ToolkitShared;workdir]" ABSOLUTE)

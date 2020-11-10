@@ -59,7 +59,11 @@ private:
 	static void OnActivate();
 
 	/// parse entity blueprints file
-	virtual bool ParseBlueprints();
+	bool ParseBlueprint(Util::String const& blueprintsPath);
+	/// load a template folder
+	bool LoadTemplateFolder(Util::String const& path);
+	/// parse blueprint template file
+	bool ParseTemplate(Util::String const& templatePath);
 	/// setup categories
 	void SetupCategories();
 
@@ -94,8 +98,8 @@ private:
 	/// maps from blueprint name to blueprint id, which is the index in the blueprints array.
 	Util::HashTable<Util::StringAtom, BlueprintId> blueprintMap;
 
-	static Util::String blueprintFilename;
 	static Util::String blueprintFolder;
+	static Util::String templatesFolder;
 };
 
 } // namespace Game
