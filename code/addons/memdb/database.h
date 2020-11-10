@@ -104,10 +104,14 @@ public:
 	Dataset Query(FilterSet const& filterset);
 	/// gets a column view from table.
     template<typename TYPE>
-    const ColumnView<TYPE> GetColumnView(TableId tid, ColumnDescriptor descriptor);
+    const ColumnView<typename TYPE> GetColumnView(TableId tid, ColumnDescriptor descriptor);
+    /// get a buffer. Might be invalidated if rows are allocated or deallocated
+    void* GetValuePointer(TableId table, ColumnId cid, IndexT row);
+    /// get a buffer. Might be invalidated if rows are allocated or deallocated
+    void* GetBuffer(TableId table, ColumnId cid);
     /// get a persistant buffer. Only use this if you know what you're doing!
     void** GetPersistantBuffer(TableId table, ColumnId cid);
-	
+
 private:
 	/// recycle free row or allocate new row
     IndexT AllocateRowIndex(TableId table);
@@ -132,12 +136,35 @@ private:
 //------------------------------------------------------------------------------
 /**
 */
+inline void*
+Database::GetValuePointer(TableId table, ColumnId cid, IndexT row)
+{
+    n_assert(this->IsValid(table));
+    Table& tbl = this->tables[Ids::Index(table.id)];
+    ColumnDescriptor descriptor = tbl.columns.Get<0>(cid.id);
+    ColumnDescription* desc = MemDb::TypeRegistry::GetDescription(descriptor);
+    return ((byte*)tbl.columns.Get<1>(cid.id)) + (desc->typeSize * row);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void*
+Database::GetBuffer(TableId table, ColumnId cid)
+{
+    n_assert(this->IsValid(table));
+    Table& tbl = this->tables[Ids::Index(table.id)];
+    return tbl.columns.Get<1>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline void**
 Database::GetPersistantBuffer(TableId table, ColumnId cid)
 {
     n_assert(this->IsValid(table));
     Table& tbl = this->tables[Ids::Index(table.id)];
-    void* ptr = &tbl.columns.Get<1>(cid.id);
     return &tbl.columns.Get<1>(cid.id);
 }
 
