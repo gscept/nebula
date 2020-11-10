@@ -504,7 +504,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 	materialCacheInfo.name = "MaterialPhysicalCache"_atm;
 	materialCacheInfo.width = PhysicalTexturePaddedSize;
 	materialCacheInfo.height = PhysicalTexturePaddedSize;
-	materialCacheInfo.format = CoreGraphics::PixelFormat::R16G16B16A16F;
+	materialCacheInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
 	materialCacheInfo.usage = CoreGraphics::TextureUsage::RenderTexture;
 	terrainVirtualTileState.physicalMaterialCache = CoreGraphics::CreateTexture(materialCacheInfo);
 
@@ -514,7 +514,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 	lowResAlbedoInfo.width = LowresFallbackSize;
 	lowResAlbedoInfo.height = LowresFallbackSize;
 	lowResAlbedoInfo.format = CoreGraphics::PixelFormat::R11G11B10F;
-	lowResAlbedoInfo.usage = CoreGraphics::TextureUsage::RenderTexture | CoreGraphics::TextureUsage::TransferTextureSource | CoreGraphics::TextureUsage::TransferTextureDestination;
+	lowResAlbedoInfo.usage = CoreGraphics::TextureUsage::RenderTexture;
 	terrainVirtualTileState.lowresAlbedo = CoreGraphics::CreateTexture(lowResAlbedoInfo);
 
 	CoreGraphics::TextureCreateInfo lowResNormalInfo;
@@ -523,7 +523,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 	lowResNormalInfo.width = LowresFallbackSize;
 	lowResNormalInfo.height = LowresFallbackSize;
 	lowResNormalInfo.format = CoreGraphics::PixelFormat::R11G11B10F;
-	lowResNormalInfo.usage = CoreGraphics::TextureUsage::RenderTexture | CoreGraphics::TextureUsage::TransferTextureSource | CoreGraphics::TextureUsage::TransferTextureDestination;
+	lowResNormalInfo.usage = CoreGraphics::TextureUsage::RenderTexture;
 	terrainVirtualTileState.lowresNormal = CoreGraphics::CreateTexture(lowResNormalInfo);
 
 	CoreGraphics::TextureCreateInfo lowResMaterialInfo;
@@ -531,8 +531,8 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 	lowResMaterialInfo.mips = LowresFallbackMips;
 	lowResMaterialInfo.width = LowresFallbackSize;
 	lowResMaterialInfo.height = LowresFallbackSize;
-	lowResMaterialInfo.format = CoreGraphics::PixelFormat::R16G16B16A16F;
-	lowResMaterialInfo.usage = CoreGraphics::TextureUsage::RenderTexture | CoreGraphics::TextureUsage::TransferTextureSource | CoreGraphics::TextureUsage::TransferTextureDestination;
+	lowResMaterialInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
+	lowResMaterialInfo.usage = CoreGraphics::TextureUsage::RenderTexture;
 	terrainVirtualTileState.lowresMaterial = CoreGraphics::CreateTexture(lowResMaterialInfo);
 
 #ifdef CreateEvent
