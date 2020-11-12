@@ -4,14 +4,12 @@
             "desc": "A test enemy blueprint",
             "properties": [
                 "TestVec4",
-				"TestStruct",
 				"TestHealth"
             ]
         },
 		"Player": {
             "desc": "A test player blueprint",
             "properties": [
-				"TestStruct",
 				"TestHealth"
             ]
         },

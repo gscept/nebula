@@ -193,14 +193,13 @@ EntitySystemTest::Run()
 
 	Game::FilterSet filter;
 	filter.inclusive = {
-		Game::GetPropertyId("TestStruct"_atm),
 		Game::GetPropertyId("TestHealth"_atm)
 	};
 
 	Game::Dataset set = Game::Query(filter);
 
-	Test::TestStruct* structs = (Test::TestStruct*)set.tables[0].buffers[0];
-	Test::TestHealth* healths = (Test::TestHealth*)set.tables[2].buffers[1];
+	Test::TestHealth* healths = (Test::TestHealth*)set.tables[2].buffers[0];
+	//Test::TestStruct* structs = (Test::TestStruct*)set.tables[0].buffers[0];
 
 	// add a property to an entity that does not already have it. This should
 	// move the entity from one category to another, effectively (in this case)
