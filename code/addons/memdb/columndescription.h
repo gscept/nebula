@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    ColumnDescription
+    PropertyDescription
 
     Describes a context state's type and default value.
 
@@ -18,35 +18,35 @@
 namespace MemDb
 {
 
-class ColumnDescription
+class PropertyDescription
 {
 public:
     template<typename T>
-    explicit ColumnDescription(Util::StringAtom name, T const& defaultValue)
+    explicit PropertyDescription(Util::StringAtom name, T const& defaultValue)
     {
         this->typeSize = sizeof(T);
         this->name = name;
         this->defVal = Memory::Alloc(Memory::HeapType::ObjectHeap, sizeof(T));
         Memory::Copy(&defaultValue, this->defVal, sizeof(T));
     }
-    ColumnDescription()
+    PropertyDescription()
     {
         // empty
     }
-    ColumnDescription(ColumnDescription&& desc) : defVal(desc.defVal), typeSize(desc.typeSize), name(desc.name)
+    PropertyDescription(PropertyDescription&& desc) : defVal(desc.defVal), typeSize(desc.typeSize), name(desc.name)
     {
         desc.defVal = nullptr;
         desc.name = nullptr;
         desc.typeSize = 0;
     }
-    ~ColumnDescription()
+    ~PropertyDescription()
     {
         if (this->defVal != nullptr)
         {
             Memory::Free(Memory::HeapType::ObjectHeap, this->defVal);
         }
     }
-    void operator=(ColumnDescription&& rhs) noexcept
+    void operator=(PropertyDescription&& rhs) noexcept
     {
         this->typeSize = rhs.typeSize;
         this->defVal = rhs.defVal;
@@ -56,7 +56,7 @@ public:
         rhs.defVal = nullptr;
         rhs.name = nullptr;
     }
-    void operator=(ColumnDescription& rhs)
+    void operator=(PropertyDescription& rhs)
     {
         this->typeSize = rhs.typeSize;
         this->defVal = rhs.defVal;

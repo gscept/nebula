@@ -55,10 +55,6 @@ class IDLCodeGenerator:
         if "messages" in self.document:
             propertyLibraries.append("game/messaging/message.h")
 
-        propertyLibraries.append("core/sysfunc.h")
-        propertyLibraries.append("util/stringatom.h")
-        propertyLibraries.append("memdb/typeregistry.h")
-
         IDLProperty.ParseProperties(self.document)
         if (IDLProperty.ContainsResourceTypes()):
             propertyLibraries.append("resources/resource.h")
@@ -81,9 +77,9 @@ class IDLCodeGenerator:
 
             if hasProperties:
                 IDLProperty.WritePropertyHeaderDeclarations(f, self.document)
-                IDLDocument.BeginNamespaceOverride(f, self.document, "Details")
-                IDLProperty.WritePropertyHeaderDetails(f, self.document)
-                IDLDocument.EndNamespaceOverride(f, self.document, "Details")
+                #IDLDocument.BeginNamespaceOverride(f, self.document, "Details")
+                #IDLProperty.WritePropertyHeaderDetails(f, self.document)
+                #IDLDocument.EndNamespaceOverride(f, self.document, "Details")
                 f.WriteLine("")
 
             # Add additional dependencies to document.
@@ -117,6 +113,10 @@ class IDLCodeGenerator:
 
         IDLDocument.WriteSourceHeader(f, srcFileName)        
         IDLDocument.AddInclude(f, hdrInclude)
+        IDLDocument.AddInclude(f, "core/sysfunc.h")
+        IDLDocument.AddInclude(f, "util/stringatom.h")
+        IDLDocument.AddInclude(f, "memdb/typeregistry.h")
+        IDLDocument.AddInclude(f, "game/propertyserialization.h")
         
         hasMessages = "messages" in self.document
 

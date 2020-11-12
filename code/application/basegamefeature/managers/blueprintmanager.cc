@@ -210,15 +210,15 @@ BlueprintManager::ParseTemplate(Util::String const& templatePath)
 					do
 					{
 						Util::StringAtom propertyName = jsonReader->GetCurrentNodeName();
-						MemDb::ColumnDescriptor descriptor = MemDb::TypeRegistry::GetDescriptor(propertyName);
-						if (descriptor == MemDb::ColumnDescriptor::Invalid())
+						MemDb::PropertyId descriptor = MemDb::TypeRegistry::GetDescriptor(propertyName);
+						if (descriptor == MemDb::PropertyId::Invalid())
 						{
 							n_warning("Warning: Template contains invalid property named '%s'. (%s)\n", propertyName.Value(), templatePath.AsCharPtr());
 							continue;
 						}
 
-						MemDb::ColumnId column = GetWorldDatabase()->GetColumnId(templateTid, descriptor);
-						if (column == MemDb::ColumnId::Invalid())
+						MemDb::ColumnIndex column = GetWorldDatabase()->GetColumnId(templateTid, descriptor);
+						if (column == MemDb::ColumnIndex::Invalid())
 						{
 							n_warning("Warning: Template contains property named '%s' that does not exist in blueprint. (%s)\n", propertyName.Value(), templatePath.AsCharPtr());
 							continue;

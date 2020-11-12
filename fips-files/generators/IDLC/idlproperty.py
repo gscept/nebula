@@ -1,6 +1,44 @@
 import IDLC.idltypes as IDLTypes
 import genutil as util
 
+#template<> void JsonReader::Get<Heathen::OrientationType>(Heathen::OrientationType& ret, const char* attr)
+#{
+#    const pjson::value_variant* node = this->GetChild(attr);
+#
+#    if (node->is_string())
+#    {
+#        Util::String str = node->as_string_ptr();
+#        if (str == "NORTH")
+#            ret = Heathen::OrientationType::NORTH;
+#        else if (str == "SOUTH")
+#            ret = Heathen::OrientationType::SOUTH;
+#        
+#        return;
+#    }
+#    else if (node->is_int())
+#    {
+#        ret = (Heathen::OrientationType)node->as_int32();
+#        return;
+#    }
+#    
+#    ret = Heathen::OrientationType();
+#}
+#
+#template<> void JsonReader::Get<Heathen::LookDescription>(Heathen::LookDescription& ret, const char* attr)
+#{
+#    //
+#}
+#
+#template<> void JsonReader::Get<Heathen::OutfitColors>(Heathen::OutfitColors& ret, const char* attr)
+#{
+#    //
+#}
+#
+#template<> void JsonReader::Get<Heathen::Outfit>(Heathen::Outfit& ret, const char* attr)
+#{
+#    //
+#}
+
 # fight me
 properties = list()
 
@@ -128,7 +166,13 @@ def WritePropertyHeaderDeclarations(f, document):
 ##
 #
 def WritePropertyHeaderDetails(f, document):
-    f.WriteLine('inline const bool RegisterPropertyLibrary_{filename}()'.format(filename=f.fileName))
+    pass
+
+#------------------------------------------------------------------------------
+##
+#
+def WritePropertySourceDefinitions(f, document):
+    f.WriteLine('const bool RegisterPropertyLibrary_{filename}()'.format(filename=f.fileName))
     f.WriteLine('{')
     f.IncreaseIndent()
     f.WriteLine('// Make sure string atom tables have been set up.')
@@ -138,15 +182,14 @@ def WritePropertyHeaderDetails(f, document):
         if not prop.isStruct :
             if prop.variables[0].defaultValue is not None:
                 defval = prop.variables[0].defaultValue
-        f.WriteLine('MemDb::TypeRegistry::Register<{type}>("{type}"_atm, {defval});'.format(type=prop.propertyName, defval=defval))
+        f.WriteLine('{')
+        f.WriteLine('Util::StringAtom const name = "{}"_atm;'.format(prop.propertyName))
+        f.WriteLine('MemDb::TypeRegistry::Register<{type}>(name, {defval});'.format(type=prop.propertyName, defval=defval))
+        f.WriteLine('Game::PropertySerialization::Register<{type}>(name);'.format(type=prop.propertyName))
+        f.WriteLine('}')
     f.WriteLine("return true;")
     f.DecreaseIndent()
     f.WriteLine("}")
-
-#------------------------------------------------------------------------------
-##
-#
-def WritePropertySourceDefinitions(f, document):
     f.WriteLine('static const bool {filename}_registered = RegisterPropertyLibrary_{filename}();'.format(filename=f.fileName))
 
 #------------------------------------------------------------------------------

@@ -22,6 +22,8 @@
 #include "decals/decalcontext.h"
 #include "debug/framescriptinspector.h"
 
+#include "graphicsfeature/managers/graphicsmanager.h"
+
 using namespace Graphics;
 using namespace Visibility;
 using namespace Models;
@@ -108,9 +110,12 @@ GraphicsFeatureUnit::OnActivate()
 	Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1, 1, 1), 1.0f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(0.1, 0.1, 0.1), true);
 
 	ObserverContext::CreateBruteforceSystem({});
-
+	
     // create environment context for the atmosphere effects
     EnvironmentContext::Create(this->globalLight);
+
+	// Attach managers
+	this->graphicsManagerHandle = this->AttachManager(GraphicsManager::Create());
 }
 
 //------------------------------------------------------------------------------
@@ -138,6 +143,7 @@ GraphicsFeatureUnit::OnDeactivate()
 void
 GraphicsFeatureUnit::OnBeginFrame()
 {
+	FeatureUnit::OnBeginFrame();
     this->inputServer->BeginFrame();
 	this->inputServer->OnFrame();
 
@@ -161,6 +167,7 @@ GraphicsFeatureUnit::OnBeginFrame()
 void
 GraphicsFeatureUnit::OnFrame()
 {
+	FeatureUnit::OnFrame();
     this->gfxServer->RenderViews();
     this->gfxServer->EndViews();
 }
@@ -171,6 +178,7 @@ GraphicsFeatureUnit::OnFrame()
 void
 GraphicsFeatureUnit::OnEndFrame()
 {
+	FeatureUnit::OnEndFrame();
     this->gfxServer->EndFrame();
     CoreGraphics::WindowPresent(this->wnd, App::GameApplication::FrameIndex);
     this->inputServer->EndFrame();
@@ -182,6 +190,7 @@ GraphicsFeatureUnit::OnEndFrame()
 void
 GraphicsFeatureUnit::OnRenderDebug()
 {
+	FeatureUnit::OnRenderDebug();
 }
 
 //------------------------------------------------------------------------------

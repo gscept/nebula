@@ -19,10 +19,10 @@ public:
     static void Destroy();
 
     template<typename TYPE>
-    static ColumnDescriptor Register(Util::StringAtom name, TYPE defaultValue);
+    static PropertyId Register(Util::StringAtom name, TYPE defaultValue);
 
-    static ColumnDescriptor GetDescriptor(Util::StringAtom name);
-    static ColumnDescription* GetDescription(ColumnDescriptor descriptor);
+    static PropertyId GetDescriptor(Util::StringAtom name);
+    static PropertyDescription* GetDescription(PropertyId descriptor);
 
 private:
     TypeRegistry();
@@ -30,15 +30,15 @@ private:
 
     static TypeRegistry* Singleton;
 
-    Util::Array<ColumnDescription*> columnDescriptions;
-    Util::Dictionary<Util::StringAtom, ColumnDescriptor> columnRegistry;
+    Util::Array<PropertyDescription*> columnDescriptions;
+    Util::Dictionary<Util::StringAtom, PropertyId> columnRegistry;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
 template<typename TYPE>
-inline ColumnDescriptor
+inline PropertyId
 TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue)
 {
     if constexpr (!std::is_same<TYPE, Util::StringAtom>())
@@ -53,9 +53,9 @@ TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue)
     if (!reg->columnRegistry.Contains(name))
     {
         // setup a state description with the default values from the type
-        ColumnDescription* desc = n_new(ColumnDescription(name, defaultValue));
+        PropertyDescription* desc = n_new(PropertyDescription(name, defaultValue));
 
-        ColumnDescriptor descriptor = reg->columnDescriptions.Size();
+        PropertyId descriptor = reg->columnDescriptions.Size();
         reg->columnDescriptions.Append(desc);
         reg->columnRegistry.Add(name, descriptor);
         return descriptor;
@@ -65,13 +65,13 @@ TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue)
         n_error("Tried to register property named %s: Cannot register two properties with same name!", name.Value());
     }
 
-    return ColumnDescriptor::Invalid();
+    return PropertyId::Invalid();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline ColumnDescriptor
+inline PropertyId
 TypeRegistry::GetDescriptor(Util::StringAtom name)
 {
     auto* reg = Instance();
@@ -81,14 +81,14 @@ TypeRegistry::GetDescriptor(Util::StringAtom name)
         return reg->columnRegistry.ValueAtIndex(index);
     }
 
-    return ColumnDescriptor::Invalid();
+    return PropertyId::Invalid();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline ColumnDescription*
-TypeRegistry::GetDescription(ColumnDescriptor descriptor)
+inline PropertyDescription*
+TypeRegistry::GetDescription(PropertyId descriptor)
 {
     auto* reg = Instance();
     if (descriptor.id >= 0 && descriptor.id < reg->columnDescriptions.Size())

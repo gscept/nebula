@@ -23,9 +23,9 @@ namespace MemDb
 struct FilterSet
 {
     /// categories must include all attributes in this array
-    Util::Array<ColumnDescriptor> inclusive;
+    Util::Array<PropertyId> inclusive;
     /// categories must NOT contain any attributes in this array
-    Util::Array<ColumnDescriptor> exclusive;
+    Util::Array<PropertyId> exclusive;
 };
 
 struct Dataset
@@ -73,15 +73,15 @@ public:
 	Table& GetTable(TableId tid);
 	
 	/// check if table has a certain column
-    bool HasColumn(TableId table, ColumnDescriptor col);
+    bool HasProperty(TableId table, PropertyId col);
     /// returns a descriptor for a given column id
-    ColumnDescriptor GetColumn(TableId table, ColumnId columnId);
+    PropertyId GetPropertyId(TableId table, ColumnIndex columnId);
 	/// returns a column id or invalid if column is missing from table
-    ColumnId GetColumnId(TableId table, ColumnDescriptor column);
+    ColumnIndex GetColumnId(TableId table, PropertyId column);
 	/// add a column to a table
-    ColumnId AddColumn(TableId table, ColumnDescriptor column);
+    ColumnIndex AddColumn(TableId table, PropertyId column);
 	/// get the all descriptors for a table
-	Util::Array<ColumnDescriptor> const& GetColumns(TableId table);
+	Util::Array<PropertyId> const& GetColumns(TableId table);
 
 	/// allocate a row within a table
     IndexT AllocateRow(TableId table);
@@ -104,13 +104,16 @@ public:
 	Dataset Query(FilterSet const& filterset);
 	/// gets a column view from table.
     template<typename TYPE>
-    const ColumnView<typename TYPE> GetColumnView(TableId tid, ColumnDescriptor descriptor);
+    const ColumnView<typename TYPE> GetColumnView(TableId tid, PropertyId descriptor);
     /// get a buffer. Might be invalidated if rows are allocated or deallocated
-    void* GetValuePointer(TableId table, ColumnId cid, IndexT row);
+    void* GetValuePointer(TableId table, ColumnIndex cid, IndexT row);
     /// get a buffer. Might be invalidated if rows are allocated or deallocated
-    void* GetBuffer(TableId table, ColumnId cid);
+    void* GetBuffer(TableId table, ColumnIndex cid);
     /// get a persistant buffer. Only use this if you know what you're doing!
-    void** GetPersistantBuffer(TableId table, ColumnId cid);
+    void** GetPersistantBuffer(TableId table, ColumnIndex cid);
+
+    // @note    Keep this a fixed size array, because we want to be able to keep persistent references to the tables, and their buffers within
+    static constexpr uint32_t MAX_NUM_TABLES = 512;
 
 private:
 	/// recycle free row or allocate new row
@@ -120,14 +123,12 @@ private:
 	/// grow each column within table
     void GrowTable(TableId tid);
 	/// allocate a buffer for a column. Sets all values to default
-    void* AllocateBuffer(TableId tid, ColumnDescription* desc);
+    void* AllocateBuffer(TableId tid, PropertyDescription* desc);
 
 	/// id pool for table ids
     Ids::IdGenerationPool tableIdPool;
 
-    // @note    Keep this a fixed size array, because we want to be able to keep persistent references to the tables, and their buffers within
-    static constexpr uint32_t MAX_NUM_TABLES = 512;
-	/// all tables within the database
+    /// all tables within the database
     Table tables[MAX_NUM_TABLES];
 	/// number of tables existing currently
     SizeT numTables = 0;
@@ -137,12 +138,12 @@ private:
 /**
 */
 inline void*
-Database::GetValuePointer(TableId table, ColumnId cid, IndexT row)
+Database::GetValuePointer(TableId table, ColumnIndex cid, IndexT row)
 {
     n_assert(this->IsValid(table));
     Table& tbl = this->tables[Ids::Index(table.id)];
-    ColumnDescriptor descriptor = tbl.columns.Get<0>(cid.id);
-    ColumnDescription* desc = MemDb::TypeRegistry::GetDescription(descriptor);
+    PropertyId descriptor = tbl.columns.Get<0>(cid.id);
+    PropertyDescription* desc = MemDb::TypeRegistry::GetDescription(descriptor);
     return ((byte*)tbl.columns.Get<1>(cid.id)) + (desc->typeSize * row);
 }
 
@@ -150,7 +151,7 @@ Database::GetValuePointer(TableId table, ColumnId cid, IndexT row)
 /**
 */
 inline void*
-Database::GetBuffer(TableId table, ColumnId cid)
+Database::GetBuffer(TableId table, ColumnIndex cid)
 {
     n_assert(this->IsValid(table));
     Table& tbl = this->tables[Ids::Index(table.id)];
@@ -161,7 +162,7 @@ Database::GetBuffer(TableId table, ColumnId cid)
 /**
 */
 inline void**
-Database::GetPersistantBuffer(TableId table, ColumnId cid)
+Database::GetPersistantBuffer(TableId table, ColumnIndex cid)
 {
     n_assert(this->IsValid(table));
     Table& tbl = this->tables[Ids::Index(table.id)];
@@ -173,7 +174,7 @@ Database::GetPersistantBuffer(TableId table, ColumnId cid)
 */
 template<typename TYPE>
 inline const ColumnView<TYPE>
-Database::GetColumnView(TableId tid, ColumnDescriptor descriptor)
+Database::GetColumnView(TableId tid, PropertyId descriptor)
 {
     n_assert(this->IsValid(tid));
     Table& table = this->tables[Ids::Index(tid.id)];

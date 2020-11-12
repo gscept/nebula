@@ -26,6 +26,8 @@ nebula_begin_module(application)
 			gameserver.cc
 			manager.h
 			manager.cc
+			propertyserialization.h
+			propertyserialization.cc
 		)
 	fips_dir(game/messaging)
 		fips_files(
@@ -44,16 +46,29 @@ nebula_begin_module(application)
 				blueprintmanager.h
 				blueprintmanager.cc
 			)
-	fips_dir(basegamefeature/properties)
-		nebula_add_nidl(
-			owner.nidl
-			transform.nidl
-		)
+		fips_dir(basegamefeature/messages)
+			nebula_add_nidl(
+				entitymessages.nidl
+			)
+		fips_dir(basegamefeature/properties)
+			nebula_add_nidl(
+				owner.nidl
+				transform.nidl
+			)
 	fips_dir(graphicsfeature)
 		fips_files(
 			graphicsfeatureunit.h
 			graphicsfeatureunit.cc
 		)
+		fips_dir(graphicsfeature/managers)
+			fips_files(
+				graphicsmanager.h
+				graphicsmanager.cc
+			)
+		fips_dir(graphicsfeature/properties)
+			nebula_add_nidl(
+				graphics.nidl
+			)
 	fips_dir(physicsfeature)
 		fips_files(
 			physicsfeatureunit.h

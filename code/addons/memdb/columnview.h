@@ -22,7 +22,7 @@ public:
     {
         // empty
     }
-    ColumnView(ColumnId const columnId, void** ptrptr, uint32_t const* const numRows) :
+    ColumnView(ColumnIndex const columnId, void** ptrptr, uint32_t const* const numRows) :
         data(ptrptr),
         cid(columnId),
         numRows(numRows)
@@ -56,7 +56,7 @@ public:
     }
 private:
     void** data;
-    ColumnId cid;
+    ColumnIndex cid;
     uint32_t const* numRows;
 };
 

@@ -1,0 +1,13 @@
+{
+    "namespace": "GraphicsFeature",
+    "includes": [
+        "graphics/graphicsentity.h"
+    ],
+    "properties": {
+        "ModelResource": {
+            "_type_": "resource",
+            "_default_": "mdl:system/placeholder.n3"
+        },
+        "GraphicsId": "Graphics::GraphicsEntityId"
+    }
+}

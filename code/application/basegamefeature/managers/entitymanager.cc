@@ -143,7 +143,7 @@ HasProperty(Game::Entity const entity, PropertyId const pid)
 	EntityManager::State& state = EntityManager::Singleton->state;
 	EntityMapping mapping = GetEntityMapping(entity);
 	Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
-	MemDb::ColumnDescription const* const desc = MemDb::TypeRegistry::GetDescription(pid);
+	MemDb::PropertyDescription const* const desc = MemDb::TypeRegistry::GetDescription(pid);
 	return desc->tableRegistry.Contains(cat.instanceTable);
 }
 
@@ -226,7 +226,21 @@ CreateEntity(EntityCreateInfo const& info)
 		cmd.tid.templateId = Ids::InvalidId16;
 	}
 
-	state->allocQueue.Enqueue(std::move(cmd));
+	if (!info.immediate)
+	{
+		state->allocQueue.Enqueue(std::move(cmd));
+	}
+	else
+	{
+		if (cmd.tid.templateId != Ids::InvalidId16)
+		{
+			EntityManager::Singleton->AllocateInstance(cmd.entity, cmd.tid);
+		}
+		else
+		{
+			EntityManager::Singleton->AllocateInstance(cmd.entity, (BlueprintId)cmd.tid.blueprintId);
+		}
+	}
 
 	return entity;
 }
@@ -315,7 +329,7 @@ OnEndFrame()
 	{
 		Category& cat = state->categoryArray[c];
 		MemDb::Table& table = db->GetTable(cat.instanceTable);
-		MemDb::ColumnId ownerColumnId = db->GetColumnId(cat.instanceTable, state->ownerId);
+		MemDb::ColumnIndex ownerColumnId = db->GetColumnId(cat.instanceTable, state->ownerId);
 
 		// defragment the table. Any instances that has been deleted will be swap'n'popped,
 		// which means we need to update the entity mapping.

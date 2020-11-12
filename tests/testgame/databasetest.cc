@@ -10,6 +10,7 @@
 #include "jobs/jobs.h"
 #include "timing/timer.h"
 #include "memdb/database.h"
+#include "util/bitfield.h"
 
 using namespace Math;
 using namespace Util;
@@ -38,9 +39,11 @@ DatabaseTest::Run()
     
     db = MemDb::Database::Create();
 
-    MemDb::ColumnDescriptor TestIntId = MemDb::TypeRegistry::Register<int>("TestIntId", int(1));
-    MemDb::ColumnDescriptor TestFloatId = MemDb::TypeRegistry::Register<float>("TestFloatId", float(20.0f));
-    MemDb::ColumnDescriptor TestStructId = MemDb::TypeRegistry::Register<StructTest>("TestStructId", StructTest());
+    MemDb::PropertyId TestIntId = MemDb::TypeRegistry::Register<int>("TestIntId", int(1));
+    MemDb::PropertyId TestFloatId = MemDb::TypeRegistry::Register<float>("TestFloatId", float(20.0f));
+
+
+    MemDb::PropertyId TestStructId = MemDb::TypeRegistry::Register<StructTest>("TestStructId", StructTest());
 
     MemDb::TableCreateInfo info = {
         "Table0",
@@ -98,7 +101,31 @@ DatabaseTest::Run()
         passed |= (floatData[i] == *(float*)MemDb::TypeRegistry::GetDescription(TestFloatId)->defVal);
     }
 
-    VERIFY(passed);
+    MemDb::TableMask mask = MemDb::TableMask({ TestIntId, 129 });
+    MemDb::TableMask mask0 = MemDb::TableMask({ TestIntId, 129 });
+
+    VERIFY(mask == mask0);
+    VERIFY(MemDb::TableMask::CheckBits(mask, mask0));
+
+    MemDb::TableMask mask2 = MemDb::TableMask({ TestIntId, TestFloatId, });
+    MemDb::TableMask mask3 = MemDb::TableMask({ TestFloatId, TestIntId });
+    
+    VERIFY(mask2 == mask3);
+    VERIFY(MemDb::TableMask::CheckBits(mask2, mask3));
+
+    MemDb::TableMask mask4 = MemDb::TableMask({ TestIntId, TestFloatId, TestStructId });
+    MemDb::TableMask mask5 = MemDb::TableMask({ TestFloatId, TestStructId, TestIntId});
+    
+    VERIFY(mask4 == mask5);
+    VERIFY(MemDb::TableMask::CheckBits(mask4, mask5));
+    VERIFY(!(mask2 == mask5));
+    
+    VERIFY(!MemDb::TableMask::CheckBits(mask2, mask5));
+
+    VERIFY(MemDb::TableMask::CheckBits(mask5, mask2));
+
+    MemDb::TableMask mask6 = MemDb::TableMask({ TestStructId });
+
 
     // TODO: More robust testing
 }

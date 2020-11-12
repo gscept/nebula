@@ -4,7 +4,8 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "table.h"
-namespace Game
+
+namespace MemDb
 {
 
 } // namespace Game

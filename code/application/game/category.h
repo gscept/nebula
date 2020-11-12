@@ -15,7 +15,7 @@
 namespace Game
 {
 
-typedef MemDb::ColumnDescriptor PropertyId;
+typedef MemDb::PropertyId PropertyId;
 typedef MemDb::Dataset Dataset;
 typedef MemDb::FilterSet FilterSet;
 
@@ -26,6 +26,7 @@ struct EntityCreateInfo
 {
 	BlueprintId blueprint = BlueprintId::Invalid();
 	TemplateId templateId = TemplateId::Invalid();
+	bool immediate = false;
 };
 
 struct Category

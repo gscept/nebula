@@ -66,6 +66,8 @@ private:
     Graphics::GraphicsEntityId globalLight;
 
     Util::Array<UIRenderFunc> uiCallbacks;
+
+    Game::ManagerHandle graphicsManagerHandle;
 };
 
 //------------------------------------------------------------------------------

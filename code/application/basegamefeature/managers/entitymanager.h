@@ -51,6 +51,10 @@ void AddProperty(Game::Entity const entity, PropertyId const pid);
 /// check if entity has a specific property. (SLOW!)
 bool HasProperty(Game::Entity const entity, PropertyId const pid);
 
+/// Set a property
+template<typename TYPE>
+void SetProperty(Game::Entity const entity, PropertyId const pid, TYPE value);
+
 /// returns a blueprint id
 BlueprintId const GetBlueprintId(Util::StringAtom name);
 
@@ -173,6 +177,20 @@ EntityManager::GetNumCategories() const
 	return this->state.categoryArray.Size();
 }
 
-//-------------------------
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename TYPE>
+void
+SetProperty(Game::Entity const entity, PropertyId const pid, TYPE value)
+{
+	EntityMapping mapping = GetEntityMapping(entity);
+	Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
+	Ptr<MemDb::Database> db = EntityManager::Singleton->state.worldDatabase;
+	auto cid = db->GetColumnId(cat.instanceTable, pid);
+	TYPE* ptr = (TYPE*)db->GetValuePointer(cat.instanceTable, cid, mapping.instance.id);
+	*ptr = value;
+}
 
+//-------------------------
 } // namespace Game
