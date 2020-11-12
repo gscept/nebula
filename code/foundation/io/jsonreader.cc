@@ -883,6 +883,44 @@ template<> void JsonReader::Get<Math::vector>(Math::vector& ret, const char* att
 //------------------------------------------------------------------------------
 /**
 */
+template<> void JsonReader::Get<Math::vec4>(Math::vec4& ret, const char* attr)
+{
+	const value_variant* node = this->GetChild(attr);
+	NEBULA_ALIGN16 float v[4];
+	for (int i = 0; i < 4; i++)
+	{
+		v[i] = node->get_value_at_index(i).as_float();
+	}
+	ret.load(v);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<Math::vec3>(Math::vec3& ret, const char* attr)
+{
+	const value_variant* node = this->GetChild(attr);
+	NEBULA_ALIGN16 float v[4];
+	for (int i = 0; i < 3; i++)
+	{
+		v[i] = node->get_value_at_index(i).as_float();
+	}
+	ret.load(v);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<Math::vec2>(Math::vec2& ret, const char* attr)
+{
+	const value_variant* node = this->GetChild(attr);
+	ret.x = node->get_value_at_index(0).as_float();
+	ret.y = node->get_value_at_index(1).as_float();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<> void JsonReader::Get<uint32_t>(uint32_t & ret, const char* attr)
 {
 	const value_variant* node = this->GetChild(attr);
