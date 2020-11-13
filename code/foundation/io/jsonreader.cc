@@ -1086,6 +1086,21 @@ template<> void JsonReader::Get<Util::String>(Util::String & ret, const char* at
 //------------------------------------------------------------------------------
 /**
 */
+template<> void JsonReader::Get<Util::FourCC>(Util::FourCC& ret, const char* attr)
+{
+	const value_variant* node = this->GetChild(attr);
+
+	if (node->is_string())
+		ret.FromString(node->as_string_ptr());
+	else if (node->is_int())
+		ret.SetFromUInt(node->as_int32());
+	else
+		n_error("Invalid input\n");
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<> void JsonReader::Get<Util::StringAtom>(Util::StringAtom & ret, const char* attr)
 {
     const value_variant * node = this->GetChild(attr);
