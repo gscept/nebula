@@ -133,6 +133,19 @@ class IDLCodeGenerator:
                 self.document["properties"].update(deps)
                 fstream.close()
 
+        hasStructs = IDLProperty.HasStructProperties()
+        hasEnums = "enums" in self.document
+
+        if hasEnums or hasStructs:
+            IDLDocument.AddInclude(f, "pjson/pjson.h");
+            IDLDocument.BeginNamespaceOverride(f, self.document, "IO")
+            if hasEnums:
+                IDLProperty.WriteEnumJsonSerializers(f, self.document);
+            if hasStructs:
+                IDLProperty.WriteStructJsonSerializers(f, self.document);
+                
+            IDLDocument.EndNamespaceOverride(f, self.document, "IO")
+
         hasProperties = "properties" in self.document
         if hasProperties or hasMessages:
             IDLDocument.BeginNamespace(f, self.document)

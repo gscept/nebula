@@ -1,6 +1,6 @@
 import IDLC.idltypes as IDLTypes
 import genutil as util
-
+import IDLC.idldocument as IDLDocument
 #template<> void JsonReader::Get<Heathen::OrientationType>(Heathen::OrientationType& ret, const char* attr)
 #{
 #    const pjson::value_variant* node = this->GetChild(attr);
@@ -70,7 +70,7 @@ class VariableDefinition:
             util.fmtError('_name_ value is not a string value!')
         self.name = name
         self.defaultValue = defVal
-    
+        
     def AsString(self):
         if self.defaultValue is None:
             return '{} {};'.format(self.type, self.name)
@@ -171,6 +171,15 @@ def WritePropertyHeaderDetails(f, document):
 #------------------------------------------------------------------------------
 ##
 #
+def HasStructProperties():
+    for prop in properties:
+        if prop.isStruct:
+            return True
+    return False
+
+#------------------------------------------------------------------------------
+##
+#
 def WritePropertySourceDefinitions(f, document):
     f.WriteLine('const bool RegisterPropertyLibrary_{filename}()'.format(filename=f.fileName))
     f.WriteLine('{')
@@ -191,6 +200,64 @@ def WritePropertySourceDefinitions(f, document):
     f.DecreaseIndent()
     f.WriteLine("}")
     f.WriteLine('static const bool {filename}_registered = RegisterPropertyLibrary_{filename}();'.format(filename=f.fileName))
+
+#------------------------------------------------------------------------------
+##
+#
+def WriteEnumJsonSerializers(f, document):
+    namespace = IDLDocument.GetNamespace(document)
+    for enumName, enum in document["enums"].items():
+        f.WriteLine('template<> void JsonReader::Get<{namespace}::{name}>({namespace}::{name}& ret, const char* attr)'.format(namespace=namespace, name=enumName))
+        f.WriteLine('{')
+        f.IncreaseIndent()
+        f.WriteLine("const pjson::value_variant* node = this->GetChild(attr);");
+        f.WriteLine("if (node->is_string())")
+        f.WriteLine("{")
+        f.IncreaseIndent()
+        f.WriteLine("Util::String str = node->as_string_ptr();")
+        for value in enum:
+            f.WriteLine('if (str == "{val}") {{ ret = {namespace}::{name}::{val}; return; }}'.format(val=value, namespace=namespace, name=enumName))
+        f.DecreaseIndent()
+        f.WriteLine("}")
+        f.WriteLine("else if (node->is_int())")
+        f.WriteLine("{")
+        f.IncreaseIndent()
+        f.WriteLine('ret = ({namespace}::{name})node->as_int32();'.format(namespace=namespace, name=enumName))
+        f.WriteLine('return;')
+        f.DecreaseIndent()
+        f.WriteLine("}")
+        f.WriteLine('ret = {namespace}::{name}();'.format(namespace=namespace, name=enumName))
+        f.DecreaseIndent()
+        f.WriteLine("}")
+        f.WriteLine("");
+
+#------------------------------------------------------------------------------
+##
+#
+def WriteStructJsonSerializers(f, document):
+    namespace = IDLDocument.GetNamespace(document)
+    for prop in properties:
+        if not prop.isStruct:
+            continue
+
+        f.WriteLine('template<> void JsonReader::Get<{namespace}::{name}>({namespace}::{name}& ret, const char* attr)'.format(namespace=namespace, name=prop.propertyName))
+        f.WriteLine('{')
+        f.IncreaseIndent()
+        f.WriteLine('ret = {namespace}::{name}();'.format(namespace=namespace, name=prop.propertyName))
+        f.WriteLine("const pjson::value_variant* node = this->GetChild(attr);");
+        f.WriteLine("if (node->is_object())")
+        f.WriteLine("{")
+        f.IncreaseIndent()
+        f.WriteLine("this->SetToFirstChild();")
+        for var in prop.variables:
+            f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=var.type));
+        f.WriteLine("this->SetToParent();")
+        f.DecreaseIndent()
+        f.WriteLine("}")
+        f.DecreaseIndent()
+        f.WriteLine("}")
+        f.WriteLine("");
+
 
 #------------------------------------------------------------------------------
 ##

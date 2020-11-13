@@ -13,22 +13,22 @@
             "_type_": "vec4",
             "_default_": [ 1, 2, 3, 4 ]
         },
-        //"TestStruct": {
-        //    "pos": {
-        //        "_type_": "vec3",
-        //        "_default_": [ 1, 2, 3 ]
-        //    },
-        //    "cell": {
-        //        "_type_": "vec2",
-        //        "_default_": [ 10, 20.2 ]
-        //    },
-        //    "foo": "int",
-        //    "bar": "float",
-        //    "gnyrf" {
-        //        "_type_": "bool"
-        //    },
-        //    "enumerable": "TestEnumType"
-        //},
+        "TestStruct": {
+            "pos": {
+                "_type_": "vec3",
+                "_default_": [ 1, 2, 3 ]
+            },
+            "cell": {
+                "_type_": "vec2",
+                "_default_": [ 10, 20.2 ]
+            },
+            "foo": "int",
+            "bar": "float",
+            "gnyrf" {
+                "_type_": "bool"
+            },
+            "enumerable": "Test::TestEnumType"
+        },
         "TestHealth": "uint"
     }
 }
