@@ -6,7 +6,7 @@
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "columndescription.h"
+#include "propertydescription.h"
 #include "util/stringatom.h"
 
 namespace MemDb

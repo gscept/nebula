@@ -11,10 +11,9 @@
 #include "core/refcounted.h"
 #include "util/arrayallocator.h"
 #include "table.h"
-#include "columnview.h"
 #include "util/stringatom.h"
 #include "ids/idgenerationpool.h"
-#include "columndescription.h"
+#include "propertyid.h"
 #include "typeregistry.h"
 
 namespace MemDb
@@ -102,10 +101,7 @@ public:
 
 	/// Query the database for a dataset of categories
 	Dataset Query(FilterSet const& filterset);
-	/// gets a column view from table.
-    template<typename TYPE>
-    const ColumnView<typename TYPE> GetColumnView(TableId tid, PropertyId descriptor);
-    /// get a buffer. Might be invalidated if rows are allocated or deallocated
+	/// get a buffer. Might be invalidated if rows are allocated or deallocated
     void* GetValuePointer(TableId table, ColumnIndex cid, IndexT row);
     /// get a buffer. Might be invalidated if rows are allocated or deallocated
     void* GetBuffer(TableId table, ColumnIndex cid);
@@ -167,32 +163,6 @@ Database::GetPersistantBuffer(TableId table, ColumnIndex cid)
     n_assert(this->IsValid(table));
     Table& tbl = this->tables[Ids::Index(table.id)];
     return &tbl.columns.Get<1>(cid.id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<typename TYPE>
-inline const ColumnView<TYPE>
-Database::GetColumnView(TableId tid, PropertyId descriptor)
-{
-    n_assert(this->IsValid(tid));
-    Table& table = this->tables[Ids::Index(tid.id)];
-
-    auto const& descriptors = table.columns.GetArray<0>();
-    for (int i = 0; i < descriptors.Size(); i++)
-    {
-        auto const& desc = descriptors[i];
-
-        if (desc == descriptor)
-        {
-            return ColumnView<TYPE>(i, &table.columns.Get<1>(i), &table.numRows);
-        }
-    }
-
-    n_error("State does not exist in table!\n");
-
-    return ColumnView<TYPE>(NULL, nullptr, nullptr);
 }
 
 } // namespace MemDb

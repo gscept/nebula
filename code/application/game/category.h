@@ -8,7 +8,7 @@
 //------------------------------------------------------------------------------
 #include "entity.h"
 #include "core/refcounted.h"
-#include "memdb/columndescriptor.h"
+#include "memdb/propertyid.h"
 #include "memdb/table.h"
 #include "memdb/database.h"
 

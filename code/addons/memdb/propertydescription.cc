@@ -1,10 +1,10 @@
 //------------------------------------------------------------------------------
-//  columnview.cc
+//  statedescription.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "columnview.h"
-namespace MemDb
+#include "propertydescription.h"
+namespace Game
 {
 
-} // namespace MemDb
+} // namespace Base

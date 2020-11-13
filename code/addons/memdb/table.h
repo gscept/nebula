@@ -11,7 +11,7 @@
 #include "util/fixedarray.h"
 #include "util/string.h"
 #include "util/stringatom.h"
-#include "columndescriptor.h"
+#include "propertyid.h"
 
 namespace MemDb
 {

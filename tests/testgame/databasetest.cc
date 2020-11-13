@@ -83,22 +83,24 @@ DatabaseTest::Run()
         instances.Append(db->AllocateRow(table0));
     }
 
-    MemDb::ColumnView<int> intData = db->GetColumnView<int>(table0, TestIntId);
-    MemDb::ColumnView<float> floatData = db->GetColumnView<float>(table0, TestFloatId);
-    MemDb::ColumnView<StructTest> structData = db->GetColumnView<StructTest>(table0, TestStructId);
-    
     // make sure we allocate enough so that we need to grow/reallocate the buffers
     for (size_t i = 0; i < 10000; i++)
     {
         instances.Append(db->AllocateRow(table0));
     }
     
-    SizeT numRows = db->GetNumRows(table0);
-    bool passed = false;
-    for (size_t i = 0; i < numRows; i++)
     {
-        passed |= (intData[i] == *(int*)MemDb::TypeRegistry::GetDescription(TestIntId)->defVal);
-        passed |= (floatData[i] == *(float*)MemDb::TypeRegistry::GetDescription(TestFloatId)->defVal);
+        int* intData = (int*)db->GetBuffer(table0, db->GetColumnId(table0, TestIntId));
+        float* floatData = (float*)db->GetBuffer(table0, db->GetColumnId(table0, TestFloatId));
+        StructTest* structData = (StructTest*)db->GetBuffer(table0, db->GetColumnId(table0, TestStructId));
+
+        SizeT numRows = db->GetNumRows(table0);
+        bool passed = false;
+        for (size_t i = 0; i < numRows; i++)
+        {
+            passed |= (intData[i] == *(int*)MemDb::TypeRegistry::GetDescription(TestIntId)->defVal);
+            passed |= (floatData[i] == *(float*)MemDb::TypeRegistry::GetDescription(TestFloatId)->defVal);
+        }
     }
 
     MemDb::TableMask mask = MemDb::TableMask({ TestIntId, 129 });

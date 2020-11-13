@@ -13,7 +13,7 @@
 #include "util/stringatom.h"
 #include "util/hashtable.h"
 #include "table.h"
-#include "columndescriptor.h"
+#include "propertyid.h"
 
 namespace MemDb
 {
