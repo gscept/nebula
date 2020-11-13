@@ -70,6 +70,8 @@ Database::CreateTable(TableCreateInfo const& info)
 		this->AddColumn(id, info.columns[i]);
 	}
 
+	table.signature = TableSignature(info.columns);
+
 	this->numTables = (Ids::Index(id.id) + 1 > this->numTables ? Ids::Index(id.id) + 1 : this->numTables);
 
 	return id;
@@ -472,55 +474,38 @@ Database::Query(FilterSet const& filterset)
 
 	for (IndexT tid = 0; tid < this->numTables; tid++)
 	{
-		bool valid = true;
-		for (auto column : filterset.inclusive)
+		if (!MemDb::TableSignature::CheckBits(this->tables[tid].signature, filterset.inclusive))
+			continue;
+
+		if (filterset.exclusive.descriptors.Size() > 0)
 		{
-			if (!TypeRegistry::GetDescription(column.id)->tableRegistry.Contains(tid))
-			{
-				valid = false;
-				break;
-			}
+			if (MemDb::TableSignature::HasAny(this->tables[tid].signature, filterset.exclusive))
+				continue;
 		}
 
-		if (valid)
+		Util::ArrayStack<void*, 16> buffers;
+		buffers.Reserve(filterset.inclusive.descriptors.Size());
+
+		Table const& tbl = this->GetTable(tid);
+
+		IndexT i = 0;
+		for (auto attrid : filterset.inclusive.descriptors)
 		{
-			for (auto column : filterset.exclusive)
-			{
-				if (TypeRegistry::GetDescription(column.id)->tableRegistry.Contains(tid))
-				{
-					valid = false;
-					break;
-				}
-			}
+			ColumnIndex colId = this->GetColumnId(tid, attrid);
+			buffers.Append(tbl.columns.Get<1>(colId.id));
 		}
 
-		if (valid)
-		{
-			Util::ArrayStack<void*, 16> buffers;
-			buffers.Reserve(filterset.inclusive.Size());
-
-			Table const& tbl = this->GetTable(tid);
-
-			IndexT i = 0;
-			for (auto attrid : filterset.inclusive)
-			{
-				ColumnIndex colId = this->GetColumnId(tid, attrid);
-				buffers.Append(tbl.columns.Get<1>(colId.id));
-			}
-
-			Dataset::View view;
-			view.tid = tid;
-			view.numInstances = this->GetNumRows(tid);
-			view.buffers = std::move(buffers);
+		Dataset::View view;
+		view.tid = tid;
+		view.numInstances = this->GetNumRows(tid);
+		view.buffers = std::move(buffers);
 #ifdef NEBULA_DEBUG
-			view.tableName = tbl.name.Value();
+		view.tableName = tbl.name.Value();
 #endif
-			set.tables.Append(std::move(view));
-		}
+		set.tables.Append(std::move(view));
 	}
 
 	set.db = this;
-
 	return set;
 }
 

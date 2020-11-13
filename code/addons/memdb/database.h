@@ -21,10 +21,10 @@ namespace MemDb
 
 struct FilterSet
 {
-    /// categories must include all attributes in this array
-    Util::Array<PropertyId> inclusive;
+    /// categories must include all properties in this signature
+    TableSignature inclusive;
     /// categories must NOT contain any attributes in this array
-    Util::Array<PropertyId> exclusive;
+    TableSignature exclusive;
 };
 
 struct Dataset

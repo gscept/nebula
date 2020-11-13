@@ -60,7 +60,12 @@ QueryBenchmark::Run(Timer& timer)
         DA da = DA(numColumns);
         for (int a = 0; a < numColumns; a++)
         {
-            IndexT descriptorIndex = PsuedoRand() % numDescs;
+            IndexT descriptorIndex;
+            do
+            {
+                descriptorIndex = PsuedoRand() % numDescs;
+            } while (da.FindIndex(d[descriptorIndex]) != InvalidIndex);
+            
             da[a] = d[descriptorIndex];
         }
 
@@ -68,23 +73,10 @@ QueryBenchmark::Run(Timer& timer)
         db->CreateTable(info);
     }
 
-    /*Util::Array<TableMask> masks;
-    const SizeT numQueries = 20000;
-    for (int i = 0; i < numQueries; i++)
-    {
-        const SizeT numBitsSet = (numDescs / 8);
-        DA da = DA(numBitsSet);
-        for (int a = 0; a < numBitsSet; a++)
-        {
-            IndexT descriptorIndex = PsuedoRand() % numDescs;
-            da[a] = d[descriptorIndex];
-        }
-        TableMask mask = TableMask(da);
-        masks.Append(mask);
-    }*/
-
-    Util::Array<FilterSet> masks;
+    Util::Array<FilterSet> filters;
     const SizeT numQueries = 100000;
+    filters.Reserve(numQueries);
+    Timer t;
     for (int i = 0; i < numQueries; i++)
     {
         const SizeT numBitsSet = (numDescs / 8);
@@ -94,15 +86,18 @@ QueryBenchmark::Run(Timer& timer)
             IndexT descriptorIndex = PsuedoRand() % numDescs;
             da[a] = d[descriptorIndex];
         }
-        FilterSet mask;
-        mask.inclusive = da.AsArray();
-        masks.Append(mask);
+        t.Start();
+        FilterSet filter = { da };
+        t.Stop();
+        filters.Append(filter);
     }
+
+    n_printf("Signature generation time: %f\n", t.GetTime());
 
     timer.Start();
     for (int i = 0; i < numQueries; i++)
     {
-        volatile Dataset data = db->Query(masks[i]);
+        volatile Dataset data = db->Query(filters[i]);
     }
     timer.Stop();
 }
