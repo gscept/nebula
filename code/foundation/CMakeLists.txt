@@ -305,6 +305,7 @@ nebula_begin_module(foundation)
 			criticalsection.h
 			event.h
 			interlocked.h
+			lockfreequeue.h
 			objectref.cc
 			objectref.h
 			safeflag.h
