@@ -53,6 +53,10 @@ jobs:
           python fips fetch
           python fips set config ${{ matrix.config }}
 
+      - name: Setup OpenGL
+        if: startsWith(matrix.os, 'ubuntu')
+        run: sudo apt-get install libgl1-mesa-dev
+        
       - name: Cache PhysX
         id: cache-physx
         uses: actions/cache@v1.1.2
