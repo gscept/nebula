@@ -76,13 +76,7 @@ jobs:
           #echo "::set-env name=anyfx-rev::$(git rev-parse HEAD)"
           echo "anyfx-rev=$(git rev-parse HEAD)" >> $GITHUB_ENV
           popd
-
-      - name: Set compiler environment
-        if: startsWith(matrix.os, 'ubuntu')
-        run: |
-          echo "CC=clang-10" >> $GITHUB_ENV
-          echo "CXX=clang++-10" >> $GITHUB_ENV
-          
+                    
       - name: Check for Anyfx cached build
         id: cache-anyfx
         uses: actions/cache@v1.1.2
