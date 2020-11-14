@@ -53,6 +53,12 @@ jobs:
         run: |
           python fips fetch
           python fips set config ${{ matrix.config }}
+          
+      - name: Fix clang version
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          echo "CC=clang-9" >> $GITHUB_ENV
+          echo "CXX=clang++-9" >> $GITHUB_ENV
 
       - name: Setup OpenGL
         if: startsWith(matrix.os, 'ubuntu')
@@ -69,6 +75,9 @@ jobs:
         if: steps.cache-physx.outputs.cache-hit != 'true'
         run: |
           python fips physx build ${{ matrix.physx }}
+        env: 
+          CC: clang-7
+          CXX: clang++-7 
 
       - name: Check Anyfx version
         run: |
