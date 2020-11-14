@@ -17,5 +17,7 @@ nebula_begin_module(audio)
 
 nebula_end_module()
 
-target_link_options(audio PUBLIC "/WHOLEARCHIVE:audio")
+if(FIPS_WINDOWS)
+	target_link_options(audio PUBLIC "/WHOLEARCHIVE:audio")
+endif()
 target_include_directories(audio PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

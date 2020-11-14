@@ -386,7 +386,7 @@ PYBIND11_EMBEDDED_MODULE(util, m)
 			{
 				return Core::Factory::Instance()->GetClassRtti(s)->GetFourCC();
 			}
-			else throw(std::exception("Unknown class!"));
+			else throw(std::runtime_error("Unknown class!"));
 			return Util::FourCC();
 		});
 }
@@ -503,7 +503,7 @@ pybind11::handle VariantToPyType(Util::Variant src, pybind11::return_value_polic
 	// TODO: the rest of these...
 
 	// TODO: Error handling
-	throw std::exception("Unimplemented variant type!\n");
+	throw std::runtime_error("Unimplemented variant type!\n");
 	return PyBool_FromLong(0);
 }
 } // namespace Python

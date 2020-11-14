@@ -13,8 +13,8 @@
 using namespace Core;
 using namespace Benchmarking;
 
-void __cdecl
-main()
+int 
+main(int argc, char ** argv)
 {
     // create Nebula runtime
     Ptr<CoreServer> coreServer = CoreServer::Create();

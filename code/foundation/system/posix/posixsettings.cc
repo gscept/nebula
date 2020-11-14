@@ -19,16 +19,22 @@ using namespace Util;
 static cJSON*
 GetSettingsJson(const Util::String & path)
 {
+    cJSON* json = nullptr;
     if(IO::FSWrapper::FileExists(path))
     {
-        Ptr<IO::TextReader> reader = IO::TextReader::Create();
-        reader->SetStream(IO::IoServer::Instance()->CreateStream(path));
-        if(reader->Open())
+        // at this point we don't want to be depending on an instance of the ioserver so we use the wrapper instead
+        PosixFSWrapper::Handle file = PosixFSWrapper::OpenFile(path, IO::Stream::AccessMode::ReadAccess, IO::Stream::AccessPattern::Random);
+        if(file != nullptr)
         {
-            Util::String str = reader->ReadAll();
-            return cJSON_Parse(str.AsCharPtr());            
+            IO::Stream::Size size = IO::FSWrapper::GetFileSize(file);
+            char* buffer = (char*)Memory::Alloc(Memory::HeapType::ScratchHeap, size + 1);
+            IO::FSWrapper::Read(file, (void*)buffer, size);
+            buffer[size] = '\0';
+            json = cJSON_Parse(buffer);
+            Memory::Free(Memory::HeapType::ScratchHeap, buffer);
         }
-    }    
+    }
+    return nullptr; 
 }
 //------------------------------------------------------------------------------
 /**

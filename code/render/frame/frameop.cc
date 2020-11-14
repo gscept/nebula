@@ -270,7 +270,7 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
 				{
 					// construct pair between ops
 					const Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage> tuple = Util::MakeTuple(toIndex, dep.index, dep.stage);
-					CoreGraphics::BufferBarrier barrier{ buf, dep.access, access, subres.offset, subres.size };
+					CoreGraphics::BufferBarrier barrier{ buf, dep.access, access, (IndexT)subres.offset, (IndexT)subres.size };
 
 					const bool enableEvent = false;
 

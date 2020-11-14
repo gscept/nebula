@@ -1190,6 +1190,7 @@ PYBIND11_MODULE(deargui, deargui)
     , py::return_value_policy::automatic_reference);
     deargui.def("open_popup", &ImGui::OpenPopup
     , py::arg("str_id")
+    , py::arg("flags") = 0
     , py::return_value_policy::automatic_reference);
     deargui.def("begin_popup", &ImGui::BeginPopup
     , py::arg("str_id")
@@ -1198,11 +1199,6 @@ PYBIND11_MODULE(deargui, deargui)
     deargui.def("begin_popup_context_item", &ImGui::BeginPopupContextItem
     , py::arg("str_id") = nullptr
     , py::arg("mouse_button") = 1
-    , py::return_value_policy::automatic_reference);
-    deargui.def("begin_popup_context_window", &ImGui::BeginPopupContextWindow
-    , py::arg("str_id") = nullptr
-    , py::arg("mouse_button") = 1
-    , py::arg("also_over_items") = true
     , py::return_value_policy::automatic_reference);
     deargui.def("begin_popup_context_void", &ImGui::BeginPopupContextVoid
     , py::arg("str_id") = nullptr
@@ -1222,9 +1218,6 @@ PYBIND11_MODULE(deargui, deargui)
     deargui.def("open_popup_on_item_click", &ImGui::OpenPopupOnItemClick
     , py::arg("str_id") = nullptr
     , py::arg("mouse_button") = 1
-    , py::return_value_policy::automatic_reference);
-    deargui.def("is_popup_open", py::overload_cast<const char *>(&ImGui::IsPopupOpen)
-    , py::arg("str_id")
     , py::return_value_policy::automatic_reference);
     deargui.def("close_current_popup", &ImGui::CloseCurrentPopup
     , py::return_value_policy::automatic_reference);
@@ -2468,10 +2461,6 @@ PYBIND11_MODULE(deargui, deargui)
     DrawList.def("channels_set_current", &ImDrawList::ChannelsSetCurrent
     , py::arg("n")
     , py::return_value_policy::automatic_reference);
-    DrawList.def("clear", &ImDrawList::Clear
-    , py::return_value_policy::automatic_reference);
-    DrawList.def("clear_free_memory", &ImDrawList::ClearFreeMemory
-    , py::return_value_policy::automatic_reference);
     DrawList.def("prim_reserve", &ImDrawList::PrimReserve
     , py::arg("idx_count")
     , py::arg("vtx_count")
@@ -2512,10 +2501,6 @@ PYBIND11_MODULE(deargui, deargui)
     , py::arg("uv")
     , py::arg("col")
     , py::return_value_policy::automatic_reference);
-    DrawList.def("update_clip_rect", &ImDrawList::UpdateClipRect
-    , py::return_value_policy::automatic_reference);
-    DrawList.def("update_texture_id", &ImDrawList::UpdateTextureID
-    , py::return_value_policy::automatic_reference);
     py::class_<ImDrawData> DrawData(deargui, "DrawData");
     DrawData.def_readwrite("valid", &ImDrawData::Valid);
     DrawData.def_readwrite("cmd_lists_count", &ImDrawData::CmdListsCount);
@@ -2554,7 +2539,6 @@ PYBIND11_MODULE(deargui, deargui)
     FontConfig.def_readwrite("dst_font", &ImFontConfig::DstFont);
     FontConfig.def(py::init<>());
     py::class_<ImFontGlyph> FontGlyph(deargui, "FontGlyph");
-    FontGlyph.def_readwrite("codepoint", &ImFontGlyph::Codepoint);
     FontGlyph.def_readwrite("advance_x", &ImFontGlyph::AdvanceX);
     FontGlyph.def_readwrite("x0", &ImFontGlyph::X0);
     FontGlyph.def_readwrite("y0", &ImFontGlyph::Y0);
@@ -2589,7 +2573,7 @@ PYBIND11_MODULE(deargui, deargui)
     , py::arg("out_ranges")
     , py::return_value_policy::automatic_reference);
     py::class_<ImFontAtlasCustomRect> FontAtlasCustomRect(deargui, "FontAtlasCustomRect");
-    FontAtlasCustomRect.def_readwrite("id", &ImFontAtlasCustomRect::ID);
+    FontAtlasCustomRect.def_readwrite("id", &ImFontAtlasCustomRect::GlyphID);
     FontAtlasCustomRect.def_readwrite("width", &ImFontAtlasCustomRect::Width);
     FontAtlasCustomRect.def_readwrite("height", &ImFontAtlasCustomRect::Height);
     FontAtlasCustomRect.def_readwrite("x", &ImFontAtlasCustomRect::X);
