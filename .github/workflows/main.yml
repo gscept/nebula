@@ -69,6 +69,7 @@ jobs:
         run: |
           pushd ../fips-anyfx
           echo "::set-env name=anyfx-rev::$(git rev-parse HEAD)"
+          popd
 
       - name: Check for Anyfx cached build
         id: cache-anyfx
@@ -80,7 +81,7 @@ jobs:
       - name: Build AnyfxCompiler
         if: steps.cache-anyfx.outputs.cache-hit != 'true'
         run: |
-          pushd ../fips/fips-anyfx
+          pushd ../fips-anyfx
           python fips build ${{ matrix.anyfx }}
           popd
 
