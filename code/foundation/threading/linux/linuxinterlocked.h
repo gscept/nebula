@@ -28,6 +28,9 @@ public:
     static void* ExchangePointer(void* volatile* dest, void* value);
     /// interlocked compare-exchange
     static int CompareExchange(int volatile* dest, int exchange, int comparand);
+    /// interlocked exchange
+    static void* CompareExchangePointer(void* volatile* dest, void* exchange, void* comparand);
+
 };
 
 //------------------------------------------------------------------------------
@@ -80,6 +83,15 @@ LinuxInterlocked::ExchangePointer(void* volatile* dest, void* value)
  */
 inline int
 LinuxInterlocked::CompareExchange(int volatile* dest, int exchange, int comparand)
+{
+    return __sync_val_compare_and_swap(dest, comparand, exchange);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void*
+LinuxInterlocked::CompareExchangePointer(void* volatile* dest, void* exchange, void* comparand)
 {
     return __sync_val_compare_and_swap(dest, comparand, exchange);
 }
