@@ -27,11 +27,13 @@ jobs:
             config: vulkan-win64-vs2019-debug
             physx: win-vs16
             physxkey: vs16
+            anyfx: anyfxcompiler-windows
           - name: ubuntu-latest
             os: ubuntu-latest
             config: vulkan-linux-vscode-debug
             physx: linux
             physxkey: linux
+            anyfx: anyfxcompiler-linux
           
       # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -78,7 +80,9 @@ jobs:
       - name: Build AnyfxCompiler
         if: steps.cache-anyfx.outputs.cache-hit != 'true'
         run: |
-          python fips anyfx setup
+          pushd ../fips/fips-anyfx
+          python fips build ${{ matrix.anyfx }}
+          popd
 
       # Runs a set of commands using the runners shell
       - name: Run prebuild steps
