@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: [windows-latest, ubuntu-latest]
+        name: [windows-latest, ubuntu-ubuntu-20.04]
         include:
           - name: windows-latest
             os: windows-latest
@@ -28,8 +28,8 @@ jobs:
             physx: win-vs16
             physxkey: vs16
             anyfx: anyfxcompiler-windows
-          - name: ubuntu-latest
-            os: ubuntu-latest
+          - name: ubuntu-ubuntu-20.04
+            os: ubuntu-ubuntu-20.04
             config: vulkan-linux-vscode-debug
             physx: linux
             physxkey: linux
@@ -42,6 +42,13 @@ jobs:
       - name: setup-msbuild
         if: startsWith(matrix.name, 'windows')
         uses: microsoft/setup-msbuild@v1
+      
+      - name: Set Compiler Environment
+        if: startsWith(matrix.name, 'ubuntu')
+        uses: lukka/set-shell-env@v1
+        with:
+          CXX: clang++-10
+          CC: clang-10
 
       - name: Set up Python 3.x
         uses: actions/setup-python@v1
@@ -55,7 +62,7 @@ jobs:
 
       - name: Setup OpenGL
         if: startsWith(matrix.os, 'ubuntu')
-        run: sudo apt-get install libgl1-mesa-dev
+        run: sudo apt-get install libgl1-mesa-dev libglu1-mesa-dev
         
       - name: Cache PhysX
         id: cache-physx
