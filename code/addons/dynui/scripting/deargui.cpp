@@ -2573,7 +2573,6 @@ PYBIND11_MODULE(deargui, deargui)
     , py::arg("out_ranges")
     , py::return_value_policy::automatic_reference);
     py::class_<ImFontAtlasCustomRect> FontAtlasCustomRect(deargui, "FontAtlasCustomRect");
-    FontAtlasCustomRect.def_readwrite("id", &ImFontAtlasCustomRect::GlyphID);
     FontAtlasCustomRect.def_readwrite("width", &ImFontAtlasCustomRect::Width);
     FontAtlasCustomRect.def_readwrite("height", &ImFontAtlasCustomRect::Height);
     FontAtlasCustomRect.def_readwrite("x", &ImFontAtlasCustomRect::X);
