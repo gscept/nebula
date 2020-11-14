@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: [windows-latest, ubuntu-20.04]
+        name: [windows-latest, ubuntu-18.04]
         include:
           - name: windows-latest
             os: windows-latest
@@ -28,8 +28,8 @@ jobs:
             physx: win-vs16
             physxkey: vs16
             anyfx: anyfxcompiler-windows
-          - name: ubuntu-20.04
-            os: ubuntu-20.04
+          - name: ubuntu-18.04
+            os: ubuntu-18.04
             config: vulkan-linux-vscode-debug
             physx: linux
             physxkey: linux
@@ -75,9 +75,6 @@ jobs:
         if: steps.cache-physx.outputs.cache-hit != 'true'
         run: |
           python fips physx build ${{ matrix.physx }}
-        env: 
-          CC: clang-7
-          CXX: clang++-7 
 
       - name: Check Anyfx version
         run: |
