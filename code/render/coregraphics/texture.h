@@ -84,6 +84,11 @@ struct TextureRelativeDimensions
 };
 
 static const ubyte TextureAutoMips = 0xFF;
+struct DepthStencilClear
+{
+	float depth;
+	uint stencil;
+};
 
 struct TextureCreateInfo
 {
@@ -125,7 +130,7 @@ struct TextureCreateInfo
 		Math::float4 clearColorF4;
 		Math::uint4 clearColorU4;
 		Math::int4 clearColorI4;
-		Math::uint2 clearDepthStencil;
+		DepthStencilClear clearDepthStencil;
 	};
 	bool windowRelative : 1;					// size is a window relative percentage if true, other wise size is an absolute size
 	bool windowTexture : 1;						// texture is supposed to be a backbuffer target
@@ -151,7 +156,7 @@ struct TextureCreateInfoAdjusted
 	union
 	{
 		Math::float4 clearColor;
-		Math::uint2 clearDepthStencil;
+		DepthStencilClear clearDepthStencil;
 	};
 	bool windowTexture : 1;						// texture is meant to be a window back buffer
 	bool windowRelative : 1;					// size is a window relative percentage if true, other wise size is an absolute size

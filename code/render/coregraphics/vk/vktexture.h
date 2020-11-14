@@ -36,7 +36,7 @@ struct VkTextureLoadInfo
 	union
 	{
 		Math::float4 clearColor;
-		Math::uint2 clearDepthStencil;
+		CoreGraphics::DepthStencilClear clearDepthStencil;
 	};
 	CoreGraphics::PixelFormat::Code format;
 	CoreGraphics::TextureUsage texUsage;
