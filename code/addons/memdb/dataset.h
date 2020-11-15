@@ -11,6 +11,8 @@
 namespace MemDb
 {
 
+class Database;
+
 struct Dataset
 {
     /// A view into a category table.

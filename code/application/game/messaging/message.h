@@ -359,7 +359,7 @@ Message<MSG, TYPES...>::DeregisterAll()
 	SizeT size = instance->callbacks.Size();
 	for (SizeT i = 0; i < size; i++)
 	{
-		instance->listenerPool.Deallocate((instance->callbacks.Get<0>(i)).id);
+		instance->listenerPool.Deallocate((instance->callbacks.template Get<0>(i)).id);
 	}
 	instance->callbacks.Clear();
 	instance->distributedMessages.Clear();
