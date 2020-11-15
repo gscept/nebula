@@ -77,9 +77,9 @@ class IDLCodeGenerator:
 
             if hasProperties:
                 IDLProperty.WritePropertyHeaderDeclarations(f, self.document)
-                #IDLDocument.BeginNamespaceOverride(f, self.document, "Details")
-                #IDLProperty.WritePropertyHeaderDetails(f, self.document)
-                #IDLDocument.EndNamespaceOverride(f, self.document, "Details")
+                IDLDocument.BeginNamespaceOverride(f, self.document, "Details")
+                IDLProperty.WritePropertyHeaderDetails(f, self.document)
+                IDLDocument.EndNamespaceOverride(f, self.document, "Details")
                 f.WriteLine("")
 
             # Add additional dependencies to document.

@@ -166,6 +166,7 @@ def WritePropertyHeaderDeclarations(f, document):
 ##
 #
 def WritePropertyHeaderDetails(f, document):
+    f.WriteLine('extern const bool {}_registered;'.format(f.fileName))
     pass
 
 #------------------------------------------------------------------------------
