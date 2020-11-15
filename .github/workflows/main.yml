@@ -62,7 +62,7 @@ jobs:
 
       - name: Setup missing software
         if: startsWith(matrix.os, 'ubuntu')
-        run: sudo apt-get install libgl1-mesa-dev libglu1-mesa-dev ninja-build libxcursor-dev
+        run: sudo apt-get install libgl1-mesa-dev libglu1-mesa-dev ninja-build libxcursor-dev libxrandr-dev
         
       - name: Cache PhysX
         id: cache-physx
