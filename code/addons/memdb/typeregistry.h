@@ -15,9 +15,6 @@ namespace MemDb
 class TypeRegistry
 {
 public:
-    static TypeRegistry* Instance();
-    static void Destroy();
-
     /// register a type
     template<typename TYPE>
     static PropertyId Register(Util::StringAtom name, TYPE defaultValue);
@@ -28,6 +25,9 @@ public:
     static PropertyDescription* GetDescription(PropertyId descriptor);
 
 private:
+    static TypeRegistry* Instance();
+    static void Destroy();
+
     TypeRegistry();
     ~TypeRegistry();
 

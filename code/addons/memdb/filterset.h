@@ -3,6 +3,11 @@
 /**
     @class	MemDb::Filterset
 
+    Used to query a database.
+    
+    @note   Setting up a filterset is not cheap, and should be done as
+            infrequently as possible
+
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
