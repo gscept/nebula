@@ -46,6 +46,4 @@ struct EntityMapping
 
 typedef MemDb::TableCreateInfo CategoryCreateInfo;
 
-
-
 } // namespace Game

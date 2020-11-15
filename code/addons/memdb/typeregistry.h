@@ -18,10 +18,13 @@ public:
     static TypeRegistry* Instance();
     static void Destroy();
 
+    /// register a type
     template<typename TYPE>
     static PropertyId Register(Util::StringAtom name, TYPE defaultValue);
 
-    static PropertyId GetDescriptor(Util::StringAtom name);
+    /// get property id from name
+    static PropertyId GetPropertyId(Util::StringAtom name);
+    /// get property description by id
     static PropertyDescription* GetDescription(PropertyId descriptor);
 
 private:
@@ -30,8 +33,8 @@ private:
 
     static TypeRegistry* Singleton;
 
-    Util::Array<PropertyDescription*> columnDescriptions;
-    Util::Dictionary<Util::StringAtom, PropertyId> columnRegistry;
+    Util::Array<PropertyDescription*> propertyDescriptions;
+    Util::Dictionary<Util::StringAtom, PropertyId> registry;
 };
 
 //------------------------------------------------------------------------------
@@ -50,14 +53,14 @@ TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue)
     static_assert(std::is_standard_layout<TYPE>(), "TYPE must be standard layout.");
     
     auto* reg = Instance();
-    if (!reg->columnRegistry.Contains(name))
+    if (!reg->registry.Contains(name))
     {
         // setup a state description with the default values from the type
         PropertyDescription* desc = n_new(PropertyDescription(name, defaultValue));
 
-        PropertyId descriptor = reg->columnDescriptions.Size();
-        reg->columnDescriptions.Append(desc);
-        reg->columnRegistry.Add(name, descriptor);
+        PropertyId descriptor = reg->propertyDescriptions.Size();
+        reg->propertyDescriptions.Append(desc);
+        reg->registry.Add(name, descriptor);
         return descriptor;
     }
     else
@@ -72,13 +75,13 @@ TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue)
 /**
 */
 inline PropertyId
-TypeRegistry::GetDescriptor(Util::StringAtom name)
+TypeRegistry::GetPropertyId(Util::StringAtom name)
 {
     auto* reg = Instance();
-    IndexT index = reg->columnRegistry.FindIndex(name);
+    IndexT index = reg->registry.FindIndex(name);
     if (index != InvalidIndex)
     {
-        return reg->columnRegistry.ValueAtIndex(index);
+        return reg->registry.ValueAtIndex(index);
     }
 
     return PropertyId::Invalid();
@@ -91,8 +94,8 @@ inline PropertyDescription*
 TypeRegistry::GetDescription(PropertyId descriptor)
 {
     auto* reg = Instance();
-    if (descriptor.id >= 0 && descriptor.id < reg->columnDescriptions.Size())
-        return reg->columnDescriptions[descriptor.id];
+    if (descriptor.id >= 0 && descriptor.id < reg->propertyDescriptions.Size())
+        return reg->propertyDescriptions[descriptor.id];
     
     return nullptr;
 }

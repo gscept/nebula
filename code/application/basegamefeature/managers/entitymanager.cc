@@ -91,7 +91,7 @@ GetEntityMapping(Game::Entity entity)
 PropertyId const
 GetPropertyId(Util::StringAtom name)
 {
-	return MemDb::TypeRegistry::GetDescriptor(name);
+	return MemDb::TypeRegistry::GetPropertyId(name);
 }
 
 //------------------------------------------------------------------------------
@@ -362,7 +362,7 @@ EntityManager::EntityManager()
 {
 	this->state.numEntities = 0;
 	this->state.worldDatabase = MemDb::Database::Create();
-	this->state.ownerId = MemDb::TypeRegistry::GetDescriptor("Owner"_atm);
+	this->state.ownerId = MemDb::TypeRegistry::GetPropertyId("Owner"_atm);
 }
 
 //------------------------------------------------------------------------------

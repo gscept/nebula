@@ -89,15 +89,16 @@ GraphicsManager::OnBeginFrame()
 void
 GraphicsManager::InitModelEntities()
 {
-	Game::FilterSet filter;
-	filter.inclusive = {
-		Singleton->pids.owner,
-		Singleton->pids.worldTransform,
-		Singleton->pids.modelResource,
-		Singleton->pids.graphicsId
-	};
-	filter.exclusive = {
-		Singleton->pids.modelEntityData
+	Game::FilterSet filter = {
+		{ // inclusive
+			Singleton->pids.owner,
+			Singleton->pids.worldTransform,
+			Singleton->pids.modelResource,
+			Singleton->pids.graphicsId
+		},
+		{ // exclusive
+			Singleton->pids.modelEntityData
+		}
 	};
 
 	Game::Dataset const data = Game::Query(filter);

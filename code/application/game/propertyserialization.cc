@@ -77,7 +77,7 @@ PropertySerialization::~PropertySerialization()
 bool
 PropertySerialization::ValidateTypeSize(Util::StringAtom name, uint32_t size)
 {
-	auto id = MemDb::TypeRegistry::GetDescriptor(name);
+	auto id = MemDb::TypeRegistry::GetPropertyId(name);
 	MemDb::PropertyDescription* desc = MemDb::TypeRegistry::GetDescription(id);
 	if (!desc->typeSize == size)
 	{

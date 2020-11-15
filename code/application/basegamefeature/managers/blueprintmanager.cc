@@ -210,7 +210,7 @@ BlueprintManager::ParseTemplate(Util::String const& templatePath)
 					do
 					{
 						Util::StringAtom propertyName = jsonReader->GetCurrentNodeName();
-						MemDb::PropertyId descriptor = MemDb::TypeRegistry::GetDescriptor(propertyName);
+						MemDb::PropertyId descriptor = MemDb::TypeRegistry::GetPropertyId(propertyName);
 						if (descriptor == MemDb::PropertyId::Invalid())
 						{
 							n_warning("Warning: Template contains invalid property named '%s'. (%s)\n", propertyName.Value(), templatePath.AsCharPtr());
@@ -352,7 +352,7 @@ BlueprintManager::SetupCategories()
 
 		for (int i = 0; i < numBlueprintProperties; i++)
 		{
-			auto descriptor = MemDb::TypeRegistry::GetDescriptor(blueprint.properties[i].propertyName);
+			auto descriptor = MemDb::TypeRegistry::GetPropertyId(blueprint.properties[i].propertyName);
 			if (descriptor != PropertyId::Invalid())
 			{
 				// append to dynamically resizable array

@@ -15,44 +15,12 @@
 #include "ids/idgenerationpool.h"
 #include "propertyid.h"
 #include "typeregistry.h"
+#include "dataset.h"
+#include "filterset.h"
 
 namespace MemDb
 {
     class Database;
-
-struct FilterSet
-{
-    /// categories must include all properties in this signature
-    TableSignature inclusive;
-    /// categories must NOT contain any attributes in this array
-    TableSignature exclusive;
-};
-
-struct Dataset
-{
-    /// A view into a category table.
-    struct View
-    {
-#ifdef NEBULA_DEBUG
-        Util::String tableName;
-#endif
-        TableId tid;
-        SizeT numInstances = 0;
-        Util::ArrayStack<void*, 16> buffers;
-    };
-
-    /// the filter that has been used to attain this dataset
-    FilterSet filter;
-
-    /// views into the tables
-    Util::Array<View> tables;
-
-    /// Validate tables and num instances. This ensures valid data, but does not re-query for new tables.
-    void Validate();
-private:
-    friend class Database;
-    Ptr<Database> db;
-};
 
 class Database : public Core::RefCounted
 {
@@ -127,6 +95,9 @@ private:
 
     /// all tables within the database
     Table tables[MAX_NUM_TABLES];
+    /// all table signatures
+    TableSignature tableSignatures[MAX_NUM_TABLES];
+
 	/// number of tables existing currently
     SizeT numTables = 0;
 };

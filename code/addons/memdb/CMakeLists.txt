@@ -3,11 +3,12 @@ fips_include_directories(${CODE_ROOT}/foundation)
 fips_files(
     database.h
     database.cc
+    dataset.h
+    filterset.h
     propertydescription.h
-    propertydescription.cc
     propertyid.h
     table.h
-    table.cc
+    tablesignature.h
     typeregistry.h
     typeregistry.cc
 )

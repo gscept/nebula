@@ -9,6 +9,7 @@
 #include "basegamefeature/managers/blueprintmanager.h"
 #include "basegamefeature/basegamefeatureunit.h"
 #include "testproperties.h"
+#include "basegamefeature/messages/entitymessages.h"
 
 using namespace Game;
 using namespace Math;
@@ -191,10 +192,9 @@ EntitySystemTest::Run()
 
     VERIFY(true);
 
-	Game::FilterSet filter;
-	filter.inclusive = {
-		Game::GetPropertyId("TestHealth"_atm)
-	};
+    Game::FilterSet filter({
+            Game::GetPropertyId("TestHealth"_atm)
+    });
 
 	Game::Dataset set = Game::Query(filter);
 
@@ -205,8 +205,8 @@ EntitySystemTest::Run()
 	// move the entity from one category to another, effectively (in this case)
 	// creating a new category, that contains only one instance (this one)
 	Game::AddProperty(entities[1], Game::GetPropertyId("TestVec4"_atm));
+
+    Msg::AddProperty::DeregisterAll();
 }
-
-
 
 }

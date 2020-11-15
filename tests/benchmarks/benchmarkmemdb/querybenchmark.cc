@@ -87,7 +87,7 @@ QueryBenchmark::Run(Timer& timer)
             da[a] = d[descriptorIndex];
         }
         t.Start();
-        FilterSet filter = { da };
+        FilterSet filter(da);
         t.Stop();
         filters.Append(filter);
     }
