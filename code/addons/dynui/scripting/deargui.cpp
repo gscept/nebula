@@ -1188,9 +1188,10 @@ PYBIND11_MODULE(deargui, deargui)
     , py::arg("fmt")
     , py::arg("args")
     , py::return_value_policy::automatic_reference);
-    deargui.def("open_popup", &ImGui::OpenPopup
-    , py::arg("str_id")
-    , py::return_value_policy::automatic_reference);
+// FIXME disabled for now because of incompatible imgui versions. fix once we updated imgui
+//    deargui.def("open_popup", &ImGui::OpenPopup
+//    , py::arg("str_id")
+//    , py::return_value_policy::automatic_reference);
     deargui.def("begin_popup", &ImGui::BeginPopup
     , py::arg("str_id")
     , py::arg("flags") = 0
