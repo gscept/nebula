@@ -34,7 +34,7 @@ GetSettingsJson(const Util::String & path)
             Memory::Free(Memory::HeapType::ScratchHeap, buffer);
         }
     }
-    return nullptr; 
+    return json; 
 }
 //------------------------------------------------------------------------------
 /**
@@ -129,7 +129,7 @@ PosixSettings::ReadString(const Util::String & vendor, const String& key, const 
         const cJSON * keys = cJSON_GetObjectItemCaseSensitive(js, key.AsCharPtr());
         if(keys != NULL)
         {
-            cJSON * val = cJSON_GetObjectItemCaseSensitive(js, name.AsCharPtr());
+            cJSON * val = cJSON_GetObjectItemCaseSensitive(keys, name.AsCharPtr());
             if( val != NULL && cJSON_IsString(val))
             {
                 Util::String ret(val->valuestring);

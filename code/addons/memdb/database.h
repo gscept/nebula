@@ -18,6 +18,7 @@
 
 namespace MemDb
 {
+    class Database;
 
 struct FilterSet
 {

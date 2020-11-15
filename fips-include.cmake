@@ -294,6 +294,8 @@ macro(add_template_dir)
     endforeach()
 endmacro()
 
+include(JSONParser)
+
 macro(set_nebula_export_dir)
     if(FIPS_WINDOWS)
         get_filename_component(workdir "[HKEY_CURRENT_USER\\SOFTWARE\\gscept\\ToolkitShared;workdir]" ABSOLUTE)
@@ -304,8 +306,14 @@ macro(set_nebula_export_dir)
         endif()
         set(EXPORT_DIR "${workdir}/export")
     else()
-        # use environment
-        set(EXPORT_DIR $ENV{NEBULA_WORK}/export)
+        if(EXISTS $ENV{HOME}/.config/nebula/gscept.cfg)
+            FILE(READ "$ENV{HOME}/.config/nebula/gscept.cfg" SettingsJson)
+            sbeParseJson(Settings SettingsJson)
+            set(EXPORT_DIR ${Settings.ToolkitShared.workdir}/export)
+        else()
+            # use environment
+            set(EXPORT_DIR $ENV{NEBULA_WORK}/export)
+        endif()
     endif()
 endmacro()
 

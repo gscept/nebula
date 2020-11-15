@@ -1508,7 +1508,7 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
             else
             {
                 // clear image and transition layout
-                VkClearDepthStencilValue clear = { loadInfo.clearDepthStencil.x, loadInfo.clearDepthStencil.y };
+                VkClearDepthStencilValue clear = { (float)loadInfo.clearDepthStencil.x, loadInfo.clearDepthStencil.y };
                 VkImageSubresourceRange clearRange = viewRange;
                 clearRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
                 VkUtilities::ImageBarrier(cmdBuf, CoreGraphics::BarrierStage::Host, CoreGraphics::BarrierStage::Transfer, VkUtilities::ImageMemoryBarrier(loadInfo.img, clearRange, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
