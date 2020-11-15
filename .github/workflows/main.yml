@@ -30,7 +30,7 @@ jobs:
             anyfx: anyfxcompiler-windows
           - name: ubuntu-18.04
             os: ubuntu-18.04
-            config: vulkan-linux-vscode-debug
+            config: vulkan-linux-ninja-debug
             physx: linux
             physxkey: linux
             anyfx: anyfxcompiler-linux
@@ -60,9 +60,9 @@ jobs:
           echo "CC=clang-9" >> $GITHUB_ENV
           echo "CXX=clang++-9" >> $GITHUB_ENV
 
-      - name: Setup OpenGL
+      - name: Setup missing software
         if: startsWith(matrix.os, 'ubuntu')
-        run: sudo apt-get install libgl1-mesa-dev libglu1-mesa-dev
+        run: sudo apt-get install libgl1-mesa-dev libglu1-mesa-dev ninja-build
         
       - name: Cache PhysX
         id: cache-physx
