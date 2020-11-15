@@ -345,10 +345,10 @@ Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fram
     // The following key states control which gizmo to use for the generic Gizmo() function. Here using the left ctrl
     // key as an additional predicate.
     bool ctrlDown = keyboard->KeyPressed(Input::Key::LeftControl) || keyboard->KeyPressed(Input::Key::RightControl);
-    ad.m_keyDown[Im3d::Key_L/*Action_GizmoLocal*/] = ctrlDown && (GetAsyncKeyState(0x4c) & 0x8000) != 0;
-    ad.m_keyDown[Im3d::Key_T/*Action_GizmoTranslation*/] = keyboard->KeyPressed(Input::Key::W);
-    ad.m_keyDown[Im3d::Key_R/*Action_GizmoRotation*/] = keyboard->KeyPressed(Input::Key::E);
-    ad.m_keyDown[Im3d::Key_S/*Action_GizmoScale*/] = keyboard->KeyPressed(Input::Key::R);
+    ad.m_keyDown[Im3d::Key_L/*Action_GizmoLocal*/] = ctrlDown && keyboard->KeyPressed(Input::Key::L);
+    ad.m_keyDown[Im3d::Key_T/*Action_GizmoTranslation*/] = ctrlDown && keyboard->KeyPressed(Input::Key::W);
+    ad.m_keyDown[Im3d::Key_R/*Action_GizmoRotation*/] = ctrlDown && keyboard->KeyPressed(Input::Key::E);
+    ad.m_keyDown[Im3d::Key_S/*Action_GizmoScale*/] = ctrlDown && keyboard->KeyPressed(Input::Key::R);
 
     // FIXME make these configurable
     // Enable gizmo snapping by setting the translation/rotation/scale increments to be > 0
