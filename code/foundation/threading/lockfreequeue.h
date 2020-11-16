@@ -1,7 +1,68 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    A lock-free queue implements a queue which completely relies on atomic operations
+    A lock-free queue implements a queue which completely relies on atomic operations.
+
+    All operations first performs a detachment of a node, followed by a modification of that node.
+
+    Removal:
+
+    1. Get the node you want to pop.
+    2. If non-null, get the next node from 1.
+    3. Do an interlocked comparison-swap, if we won the race, set head to the next node.
+    4. Otherwise, go back to 1.
+    5. oldHead is now a node which is detached and can not be reached by any other thread.
+
+    Node* oldHead;
+    Node* newHead;
+    while (true)
+    {
+        oldHead = this->head;
+        if (oldHead == nullptr)
+            return false;
+
+        newHead = oldHead->next;
+        if (CompareAndSwap(&this->head, oldHead, newHead))
+            break;
+    }
+
+    Insertion:
+
+    1. Get the value you expect to modify (head, tail, free head, free tail)
+    2. Do an interlocked comparison exchange, check if value from 1. matches current value of what you expect, exchange values.
+    3. If not, go back to 1.
+    4. oldTail is now detached and can not reached by any other thread.
+
+    Example:
+
+    Node* oldTail = nullptr;
+    while (true)
+    {
+        oldTail = this->tail;
+
+        // if we won the race (oldTail == this->tail), swap this->tail to newNode
+        if (CompareAndSwap(&this->tail, oldTail, newNode)
+            break;
+    }
+
+    if (oldTail != nullptr)
+        oldTail->next = newNode;
+
+    This queue implements two linked lists. One for the resident nodes and one for the free nodes.
+    The free nodes and resident nodes follow identical patterns, howeven the resident nodes will
+    attempt to allocate from the free nodes (and assert that it worked) or return a node to the free
+    list. 
+
+    TODO: 
+        Add support for ABA - make a new type of node which accompanies the node pointer with an integer
+        allowing for knowing if a node has been modified even if it's state looks identical.
+        For example, we might be Thread A running an Enqueue operation, and in the CompareAndSwap
+        we assume we wont the race because this->tail is equivalent to oldTail, BUT! 
+        What can also happen is that between where we get oldTail and to the CompareAndSwap (CAS) 
+        operation, Thread B comes in and does Enqueue, Dequeue, leaving us in the same state but
+        with changes having happened. If we instead accompany each node with an atomic counter, and
+        increase it for every time we make a modification, we can safetly do the CAS and know for sure
+        if the node has been tampered with or not. 
 
     (C) 2020 Individual contributors, see AUTHORS file
 */
@@ -26,7 +87,7 @@ public:
     /// enqueue item
     void Enqueue(const TYPE& item);
     /// dequeue item
-    TYPE Dequeue();
+    bool Dequeue(TYPE& item);
 
     /// get size
     SizeT Size();
@@ -55,6 +116,9 @@ private:
     /// deallocs a node and puts it back into storage
     void Dealloc(Node* node);
 
+    /// does a compare-and-swap
+    bool CompareAndSwap(Node** currentValue, Node* expectValue, Node* newValue);
+
     Node* freeHead;
     Node* freeTail;
     Util::FixedArray<Node> storage;
@@ -67,11 +131,7 @@ private:
 template<class TYPE>
 inline 
 LockFreeQueue<TYPE>::LockFreeQueue()
-    : head(nullptr)
-    , tail(nullptr)
-    , freeHead(nullptr)
-    , freeTail(nullptr)
-    , size(0)
+    : size(0)
 {
 }
 
@@ -95,17 +155,15 @@ LockFreeQueue<TYPE>::Resize(const SizeT size)
     this->storage.Resize(size);
 
     // setup free list
-    Node* prev = this->freeHead;
-    for (Node& node : this->storage)
+    Node* prev = nullptr;
+    for (IndexT i = 0; i < this->storage.Size(); i++)
     {
-        if (prev == nullptr)
-            this->freeHead = &node;
-        else
-            prev->next = &node;
-
-        prev = &node;
+        if (prev != nullptr)
+            prev->next = &this->storage[i];
+        prev = &this->storage[i];
     }
-    this->freeTail = prev;
+    this->freeHead = this->storage.Begin();
+    this->freeTail = this->storage.End() - 1;
 }
 
 //------------------------------------------------------------------------------
@@ -115,6 +173,10 @@ template<class TYPE>
 inline void 
 LockFreeQueue<TYPE>::Enqueue(const TYPE& item)
 {
+    // increase size
+    int size = Interlocked::Increment(this->size);
+    n_assert(size <= this->capacity);
+
     // allocate a new node from storage
     Node* newNode = this->Alloc();
     newNode->data = item;
@@ -125,50 +187,55 @@ LockFreeQueue<TYPE>::Enqueue(const TYPE& item)
     {
         oldTail = this->tail;
 
-        // try to change the tail to the new node, retry if tail doesn't match (not our turn)
-        if (Interlocked::CompareExchangePointer((void* volatile*)&this->tail, (void*)newNode, (void*)oldTail) == oldTail)
-        {
-            // we can safetly change oldTail because nobody else can access the node yet
-            if (oldTail != nullptr)
-                oldTail->next = newNode;
+        if (CompareAndSwap(&this->tail, oldTail, newNode))
             break;
-        }
     }
 
-    // set head to the new node if nullptr
-    Interlocked::CompareExchangePointer((void* volatile*)&this->head, (void*)newNode, nullptr);
+    if (oldTail != nullptr)
+        oldTail->next = newNode;
+
+    // if head is null, set head to new node
+    CompareAndSwap(&this->head, nullptr, newNode);
+    CompareAndSwap(&this->tail, nullptr, newNode);
+
+    /*
+    CompareAndSwap(this->tail, oldTail, newNode);
+    */
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template<class TYPE>
-inline TYPE
-LockFreeQueue<TYPE>::Dequeue()
+inline bool
+LockFreeQueue<TYPE>::Dequeue(TYPE& item)
 {
-    n_assert(this->size != 0);
-
-    // reduce size
-    Interlocked::Decrement(this->size);
-
-    Node* oldHead = nullptr;
+    Node* oldHead;
+    Node* newHead;
     while (true)
     {
         oldHead = this->head;
+        if (oldHead == nullptr)
+            return false;
 
-        // repoint head to the next in the chain
-        if (Interlocked::CompareExchangePointer((void* volatile*)&this->head, (void*)oldHead->next, (void*)oldHead) == oldHead)
-        {
+        newHead = oldHead->next;
+        if (CompareAndSwap(&this->head, oldHead, newHead))
             break;
-        }
     }
 
+    // set tail to nullptr if head became tail
+    oldHead->next = nullptr;
+
     // copy return value here, if we dealloc and someone else allocs, they might have time to change the value
-    TYPE ret = oldHead->data;
+    item = oldHead->data;
 
     // make sure to return this node to the free list
     this->Dealloc(oldHead);
-    return ret;
+
+    int size = Interlocked::Decrement(this->size);
+    n_assert(size >= 0);
+
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -193,26 +260,27 @@ LockFreeQueue<TYPE>::IsEmpty()
 
 //------------------------------------------------------------------------------
 /**
-    Remove node from free list
+    
 */
 template<class TYPE>
 __forceinline typename LockFreeQueue<TYPE>::Node*
 LockFreeQueue<TYPE>::Alloc()
 {
-    n_assert(this->size != this->capacity);
-
-    // increase size
-    Interlocked::Increment(this->size);
-
     Node* oldHead = nullptr;
+    Node* newHead = nullptr;
     while (true)
     {
         oldHead = this->freeHead;
-        if (Interlocked::CompareExchangePointer((void* volatile*)&this->freeHead, (void*)oldHead->next, (void*)oldHead) == oldHead)
-        {
+        if (oldHead == nullptr)
+            continue;
+        newHead = oldHead->next;
+
+        if (CompareAndSwap(&this->freeHead, oldHead, newHead))
             break;
-        }
     }
+
+    n_assert(oldHead != nullptr);
+    oldHead->next = nullptr;
 
     return oldHead;
 }
@@ -225,21 +293,32 @@ template<class TYPE>
 __forceinline void 
 LockFreeQueue<TYPE>::Dealloc(LockFreeQueue<TYPE>::Node* node)
 {
+    n_assert(node != nullptr);
     Node* oldTail = nullptr;
     while (true)
     {
         oldTail = this->freeTail;
 
-        if (Interlocked::CompareExchangePointer((void* volatile*)&this->freeTail, (void*)node, (void*)oldTail) == oldTail)
-        {
-            if (oldTail != nullptr)
-                oldTail->next = node;
+        if (CompareAndSwap(&this->freeTail, oldTail, node))
             break;
-        }
     }
 
-    // set head to tail if head is null
-    Interlocked::CompareExchangePointer((void* volatile*)&this->freeHead, (void*)node, nullptr);
+    if (oldTail != nullptr)
+        oldTail->next = node;
+
+    // if null, set both iterators to the same node
+    CompareAndSwap(&this->freeHead, nullptr, node);
+    CompareAndSwap(&this->freeTail, nullptr, node);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline bool 
+LockFreeQueue<TYPE>::CompareAndSwap(Node** currentValue, Node* expectValue, Node* newValue)
+{
+    return Interlocked::CompareExchangePointer((void* volatile*)currentValue, (void*)newValue, (void*)expectValue) == expectValue;
 }
 
 } // namespace Threading
