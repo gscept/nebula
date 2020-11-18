@@ -183,9 +183,10 @@ BlueprintManager::ParseTemplate(Util::String const& templatePath)
 			if (this->blueprintMap.Contains(blueprintName))
 			{
 				// Instantiate template
+				Ptr<MemDb::Database> templateDatabase = EntityManager::Instance()->state.templateDatabase;
 				BlueprintId blueprint = this->blueprintMap[blueprintName];
 				MemDb::TableId templateTid = this->blueprints[blueprint.id].tableId;
-				IndexT instance = GetWorldDatabase()->AllocateRow(templateTid);
+				IndexT instance = templateDatabase->AllocateRow(templateTid);
 
 				n_assert2(instance < 0xFFFF, "Maximum number of templates per blueprint reached! You win!");
 
@@ -217,14 +218,14 @@ BlueprintManager::ParseTemplate(Util::String const& templatePath)
 							continue;
 						}
 
-						MemDb::ColumnIndex column = GetWorldDatabase()->GetColumnId(templateTid, descriptor);
+						MemDb::ColumnIndex column = templateDatabase->GetColumnId(templateTid, descriptor);
 						if (column == MemDb::ColumnIndex::Invalid())
 						{
 							n_warning("Warning: Template contains property named '%s' that does not exist in blueprint. (%s)\n", propertyName.Value(), templatePath.AsCharPtr());
 							continue;
 						}
 
-						void* propertyValue = GetWorldDatabase()->GetValuePointer(templateTid, column, instance);
+						void* propertyValue = templateDatabase->GetValuePointer(templateTid, column, instance);
 						PropertySerialization::Deserialize(jsonReader, propertyName, propertyValue);
 					} while (jsonReader->SetToNextChild());
 
@@ -319,9 +320,10 @@ BlueprintManager::Instantiate(TemplateId templateId)
 {
 	EntityManager::State const& emState = EntityManager::Instance()->state;
 	Ptr<MemDb::Database> const& db = emState.worldDatabase;
+	Ptr<MemDb::Database> const& tdb = emState.templateDatabase;
 	CategoryId cid = Singleton->blueprints[templateId.blueprintId].categoryId;
 	Category& cat = emState.categoryArray[cid.id];
-	InstanceId instance = db->DuplicateInstance(Singleton->blueprints[templateId.blueprintId].tableId, templateId.templateId, cat.instanceTable);
+	InstanceId instance = tdb->DuplicateInstance(Singleton->blueprints[templateId.blueprintId].tableId, templateId.templateId, db, cat.instanceTable);
 	return { cid, instance };
 }
 
@@ -380,7 +382,7 @@ BlueprintManager::SetupCategories()
 
 			// Create the blueprint's template table
 			info.name = "blueprint:" + info.name;
-			MemDb::TableId tid = Game::GetWorldDatabase()->CreateTable(info);
+			MemDb::TableId tid = EntityManager::Instance()->state.templateDatabase->CreateTable(info);
 
 			blueprint.categoryHash = cat.hash;
 			blueprint.categoryId = cid;

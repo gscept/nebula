@@ -43,6 +43,8 @@ public:
     bool const operator==(TableSignature const& rhs) const;
 	/// check if signature is valid
 	bool const IsValid() const { return size > 0; }
+	/// check if a single bit is set
+	bool const IsSet(PropertyId pid) const;
 
 	/// (src & mask) == mask
 	static bool const CheckBits(TableSignature const& src, TableSignature const& mask);
@@ -170,6 +172,24 @@ TableSignature::operator==(TableSignature const& rhs) const
 	};
 
 	return true;
+}//------------------------------------------------------------------------------
+/**
+*/
+inline bool const
+TableSignature::IsSet(PropertyId pid) const
+{
+	int offset = pid.id / 128;
+	if (offset < this->size)
+	{
+		alignas(16) uint64_t partialMask[2] = { 0, 0 };
+		uint64_t bit = pid.id % 128;
+		partialMask[bit / 64] |= 1ull << bit;
+		__m128i temp = _mm_set_epi64x(partialMask[0], partialMask[1]);
+		int isSet = !_mm_testz_si128(temp, this->mask[offset]);
+		return isSet;
+	}
+
+	return false;
 }
 
 //------------------------------------------------------------------------------

@@ -185,8 +185,19 @@ DatabaseTest::Run()
         }
     }
 
+    TableSignature signature = { 1, 6, 250, 1010 };
 
-    // TODO: More robust testing
+    VERIFY(signature.IsSet(1));
+    VERIFY(signature.IsSet(6));
+    VERIFY(signature.IsSet(250));
+    VERIFY(signature.IsSet(1010));
+    VERIFY(!signature.IsSet(0));
+    VERIFY(!signature.IsSet(2));
+    VERIFY(!signature.IsSet(8));
+    VERIFY(!signature.IsSet(9));
+    VERIFY(!signature.IsSet(255));
+    VERIFY(!signature.IsSet(256));
+    VERIFY(!signature.IsSet(2000));
 }
 
 }

@@ -115,6 +115,7 @@ bool
 Database::HasProperty(TableId table, PropertyId col)
 {
 	n_assert(this->IsValid(table));
+	return this->tableSignatures[Ids::Index(table.id)].IsSet(col);
 	return this->tables[Ids::Index(table.id)].columns.GetArray<0>().FindIndex(col) != InvalidIndex;
 }
 
@@ -238,6 +239,20 @@ Database::MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
 /**
 	@returns	New index/row in destination table
 	@note		This might be destructive if the destination table is missing some of the source tables columns!
+	@note		This is an instant erase swap on src table, which means any external references to rows (instance ids) will be invalidated!
+*/
+IndexT
+Database::MigrateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& dstDb, TableId dstTid)
+{
+	IndexT dstRow = this->DuplicateInstance(srcTid, srcRow, dstDb, dstTid);
+	this->EraseSwapIndex(GetTable(srcTid), srcRow);
+	return dstRow;
+}
+
+//------------------------------------------------------------------------------
+/**
+	@returns	New index/row in destination table
+	@note		This might be destructive if the destination table is missing some of the source tables columns!
 	@todo		GetColumnId is quite expensive, should be possible to improve
 */
 IndexT
@@ -250,6 +265,55 @@ Database::DuplicateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
 	Table& dst = this->tables[Ids::Index(dstTid.id)];
 
 	IndexT dstRow = this->AllocateRowIndex(dstTid);
+
+	auto const& cols = src.columns.GetArray<0>();
+	auto& buffers = src.columns.GetArray<1>();
+	auto const& dstCols = dst.columns.GetArray<0>();
+	auto& dstBuffers = dst.columns.GetArray<1>();
+
+	const SizeT numDstCols = dst.columns.Size();
+
+	for (IndexT i = 0; i < numDstCols; ++i)
+	{
+		PropertyId descriptor = dstCols[i];
+		PropertyDescription const* const desc = TypeRegistry::GetDescription(descriptor.id);
+		void*& dstBuf = dstBuffers[i];
+		SizeT const byteSize = desc->typeSize;
+
+		ColumnIndex const srcColId = this->GetColumnId(srcTid, descriptor);
+		if (srcColId != ColumnIndex::Invalid())
+		{
+			// Copy value from src
+			void*& srcBuf = buffers[srcColId.id];
+			Memory::Copy((char*)srcBuf + ((size_t)byteSize * srcRow), (char*)dstBuf + ((size_t)byteSize * dstRow), byteSize);
+		}
+		else
+		{
+			// Set default value
+			void* val = (char*)dstBuf + ((size_t)dstRow * desc->typeSize);
+			Memory::Copy(desc->defVal, val, desc->typeSize);
+		}
+	}
+
+	return dstRow;
+}
+
+//------------------------------------------------------------------------------
+/**
+	@returns	New index/row in destination table
+	@note		This might be destructive if the destination table is missing some of the source tables columns!
+	@todo		GetColumnId is quite expensive, should be possible to improve
+*/
+IndexT
+Database::DuplicateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& dstDb, TableId dstTid)
+{
+	n_assert(this->IsValid(srcTid));
+	n_assert(dstDb->IsValid(dstTid));
+
+	Table& src = this->tables[Ids::Index(srcTid.id)];
+	Table& dst = dstDb->tables[Ids::Index(dstTid.id)];
+
+	IndexT dstRow = dstDb->AllocateRowIndex(dstTid);
 
 	auto const& cols = src.columns.GetArray<0>();
 	auto& buffers = src.columns.GetArray<1>();
@@ -467,11 +531,7 @@ Database::AddColumn(TableId tid, PropertyId column)
 
 	Table::ColumnBuffer& buffer = table.columns.Get<1>(col);
 	table.columns.Get<0>(col) = column;
-
 	buffer = this->AllocateBuffer(tid, TypeRegistry::GetDescription(column.id));
-
-	// add the tid to the columndescriptions table registry so that we can access the buffer with less lookups.
-	TypeRegistry::GetDescription(column.id)->tableRegistry.Add(tid, this->GetPersistantBuffer(tid, col));
 
 	return col;
 }

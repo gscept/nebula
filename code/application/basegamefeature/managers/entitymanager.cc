@@ -186,8 +186,7 @@ HasProperty(Game::Entity const entity, PropertyId const pid)
 	EntityManager::State& state = EntityManager::Singleton->state;
 	EntityMapping mapping = GetEntityMapping(entity);
 	Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
-	MemDb::PropertyDescription const* const desc = MemDb::TypeRegistry::GetDescription(pid);
-	return desc->tableRegistry.Contains(cat.instanceTable);
+	return EntityManager::Singleton->state.worldDatabase->HasProperty(cat.instanceTable, pid);
 }
 
 //------------------------------------------------------------------------------
@@ -416,6 +415,7 @@ EntityManager::EntityManager()
 {
 	this->state.numEntities = 0;
 	this->state.worldDatabase = MemDb::Database::Create();
+	this->state.templateDatabase = MemDb::Database::Create();
 	this->state.ownerId = MemDb::TypeRegistry::GetPropertyId("Owner"_atm);
 }
 
@@ -425,6 +425,7 @@ EntityManager::EntityManager()
 EntityManager::~EntityManager()
 {
 	this->state.worldDatabase = nullptr;
+	this->state.templateDatabase = nullptr;
 }
 
 //------------------------------------------------------------------------------

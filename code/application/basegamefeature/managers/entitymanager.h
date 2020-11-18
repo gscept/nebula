@@ -150,6 +150,9 @@ public:
 		/// Contains the entire world database
 		Ptr<MemDb::Database> worldDatabase;
 
+		/// Contains all templates
+		Ptr<MemDb::Database> templateDatabase;
+
 		Util::Queue<AllocateInstanceCommand> allocQueue;
 		Util::Queue<DeallocInstanceCommand> deallocQueue;
 

@@ -46,10 +46,6 @@ public:
     SizeT typeSize = 0;
     /// default value
     void* defVal = nullptr;
-    
-    using TableRegistry = Util::HashTable<TableId, void**, 32, 1>;
-    // direct access to all buffers within tables
-    TableRegistry tableRegistry;
 };
 
 //------------------------------------------------------------------------------
