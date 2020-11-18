@@ -39,7 +39,6 @@ private:
 
 	static void InitModelEntities();
 	
-	
 	struct Pids
 	{
 		Game::PropertyId owner;
@@ -48,8 +47,6 @@ private:
 		Game::PropertyId graphicsId;
 		Game::PropertyId modelEntityData;
 	} pids;
-
-	Msg::AddProperty::MessageQueueId addPropertyMsgQueue;
 };
 
 } // namespace GraphicsFeature

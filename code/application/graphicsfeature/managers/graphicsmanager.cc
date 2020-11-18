@@ -9,6 +9,7 @@
 #include "graphics/graphicsserver.h"
 #include "models/modelcontext.h"
 #include "visibility/visibilitycontext.h"
+#include "game/op.h"
 
 namespace GraphicsFeature
 {
@@ -52,8 +53,6 @@ GraphicsManager::Create()
 	Singleton->pids.graphicsId		= Game::GetPropertyId("GraphicsId"_atm);
 	Singleton->pids.modelEntityData = MemDb::TypeRegistry::Register("ModelEntityData"_atm, ModelEntityData());
 
-	Singleton->addPropertyMsgQueue = Msg::AddProperty::AllocateMessageQueue();
-
 	Game::ManagerAPI api;
 	api.OnBeginFrame = &OnBeginFrame;
 	api.OnDeactivate = &Destroy;
@@ -66,8 +65,6 @@ GraphicsManager::Create()
 void
 GraphicsManager::Destroy()
 {
-	Msg::AddProperty::DeAllocateMessageQueue(Singleton->addPropertyMsgQueue);
-
 	n_delete(GraphicsManager::Singleton);
 	GraphicsManager::Singleton = nullptr;
 }
@@ -103,6 +100,8 @@ GraphicsManager::InitModelEntities()
 
 	Game::Dataset const data = Game::Query(filter);
 
+	Game::OpQueue queue;
+
 	for (auto const& tbl : data.tables)
 	{
 		Game::Entity const* const owners = (Game::Entity*)tbl.buffers[0];
@@ -129,21 +128,14 @@ GraphicsManager::InitModelEntities()
 				Models::ModelContext::SetTransform(gid, t);
 				Visibility::ObservableContext::Setup(gid, Visibility::VisibilityEntityType::Model);
 			});
-			
-			Msg::AddProperty::Defer(Singleton->addPropertyMsgQueue, entity, Singleton->pids.modelEntityData);
+
+			Game::Op::AddProperty addOp(entity, Singleton->pids.modelEntityData);
+			queue.Add(std::forward<Game::Op::AddProperty>(addOp));
 		}
 	}
 
-	// Dispatch queue internally
-	auto& queue = Msg::AddProperty::GetMessageQueue(Singleton->addPropertyMsgQueue);
-	SizeT queueSize = queue.Size();
-	for (IndexT i = 0; i < queueSize; i++)
-	{
-		auto& tuple = queue.Get<0>(i);
-		Game::AddProperty(Util::Get<0>(tuple), Util::Get<1>(tuple));
-	}
-	// clear queue
-	queue.Clear();
+	// execute ops queue
+	Game::RunOps(queue);
 }
 
 } // namespace Game

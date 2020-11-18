@@ -49,7 +49,7 @@ public:
 
     /// set framescript. must be done before OnActivate!
     void SetFrameScript(IO::URI const& uri);
-    
+
     using UIRenderFunc = std::function<void()>;
     /// add a custom UI render function
     void AddRenderUICallback(UIRenderFunc func);

@@ -17,6 +17,7 @@
 #include "game/category.h"
 #include "memdb/database.h"
 #include "basegamefeature/properties/owner.h"
+#include "game/op.h"
 
 namespace Game
 {
@@ -48,6 +49,9 @@ PropertyId const GetPropertyId(Util::StringAtom name);
 /// add a property to an entity
 void AddProperty(Game::Entity const entity, PropertyId const pid);
 
+/// add a property to an entity
+void RemoveProperty(Game::Entity const entity, PropertyId const pid);
+
 /// check if entity has a specific property. (SLOW!)
 bool HasProperty(Game::Entity const entity, PropertyId const pid);
 
@@ -69,6 +73,9 @@ Ptr<MemDb::Database> GetWorldDatabase();
 
 /// Get number of instances in a specific category
 SizeT GetNumInstances(CategoryId category);
+
+/// execute operations stored in an operations queue
+void RunOps(OpQueue& queue);
 
 //------------------------------------------------------------------------------
 /**
@@ -116,6 +123,9 @@ public:
 
 	/// migrate an instance from one category to another
 	InstanceId Migrate(Entity entity, CategoryId newCategory);
+
+	/// execute all operations within a op queue
+	void ExecuteOperations(OpQueue& queue);
 
 	// Don't modify state without knowing what you're doing!
 	struct State

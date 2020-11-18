@@ -136,6 +136,49 @@ AddProperty(Game::Entity const entity, PropertyId const pid)
 
 //------------------------------------------------------------------------------
 /**
+	@todo	Optimize: utilize the new TableSignature and remove the old CategoryHash system
+*/
+void
+RemoveProperty(Game::Entity const entity, PropertyId const pid)
+{
+	EntityManager::State& state = EntityManager::Singleton->state;
+	EntityMapping mapping = GetEntityMapping(entity);
+	Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
+	CategoryHash newHash = cat.hash;
+	newHash.id = cat.hash.UnHash(pid.id);
+	CategoryId newCategoryId;
+	if (state.catIndexMap.Contains(newHash))
+	{
+		newCategoryId = state.catIndexMap[newHash];
+	}
+	else
+	{
+		CategoryCreateInfo info;
+		auto const& cols = state.worldDatabase->GetTable(cat.instanceTable).columns.GetArray<0>();
+		info.columns.SetSize(cols.Size() - 1);
+		// Note: Skips owner column
+		int col = 0;
+		for (int i = 0; i < cols.Size(); ++i)
+		{
+			if (cols[i] == pid)
+				continue;
+
+			info.columns[col++] = cols[i];
+		}
+
+#ifdef NEBULA_DEBUG
+		info.name = cat.name + " - ";
+		info.name += MemDb::TypeRegistry::GetDescription(pid)->name.AsString();
+#endif
+
+		newCategoryId = EntityManager::Singleton->CreateCategory(info);
+	}
+
+	EntityManager::Singleton->Migrate(entity, newCategoryId);
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 bool
 HasProperty(Game::Entity const entity, PropertyId const pid)
@@ -183,6 +226,15 @@ GetNumInstances(CategoryId category)
 	Ptr<MemDb::Database> db = GetWorldDatabase();
 	MemDb::TableId tid = EntityManager::Instance()->GetCategory(category).instanceTable;
 	return db->GetNumRows(tid);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+RunOps(OpQueue& queue)
+{
+	EntityManager::Singleton->ExecuteOperations(queue);
 }
 
 //------------------------------------------------------------------------------
@@ -353,6 +405,8 @@ OnEndFrame()
 			}
 		});
 	}
+
+	OpQueue::ReleaseAllOps();
 }
 
 //------------------------------------------------------------------------------
@@ -565,6 +619,77 @@ EntityManager::Migrate(Entity entity, CategoryId newCategory)
 	InstanceId newInstance = state.worldDatabase->MigrateInstance(oldCat.instanceTable, mapping.instance.id, newCat.instanceTable);
 	state.entityMap[Ids::Index(entity.id)] = { newCategory, newInstance };
 	return newInstance;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EntityManager::ExecuteOperations(OpQueue& queue)
+{
+	while (!queue.addPropertyQueue.IsEmpty())
+	{
+		auto& front = queue.addPropertyQueue.Peek();
+		Game::Entity entity = front.entity;
+		using P = Util::KeyValuePair<PropertyId, void const*>;
+		Util::ArrayStack<P, 16> props;
+
+		while (!queue.addPropertyQueue.IsEmpty())
+		{
+			if (entity == queue.addPropertyQueue.Peek().entity)
+			{
+				auto op = queue.addPropertyQueue.Dequeue();
+				P p(op.pid, op.value);
+				props.Append(p);
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		for (IndexT i = 0; i < props.Size(); i++)
+		{
+			// TODO: bundle all property adds for the same entity into only ONE migration!
+			const PropertyId pid = props[0].Key();
+			const void* value = props[0].Value();
+			AddProperty(entity, pid);
+
+			EntityMapping mapping = GetEntityMapping(entity);
+			Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
+			Ptr<MemDb::Database> db = EntityManager::Singleton->state.worldDatabase;
+			auto cid = db->GetColumnId(cat.instanceTable, pid);
+			void* ptr = db->GetValuePointer(cat.instanceTable, cid, mapping.instance.id);
+			Memory::Copy(value, ptr, MemDb::TypeRegistry::TypeSize(pid));
+		}
+	}
+
+	while (!queue.removePropertyQueue.IsEmpty())
+	{
+		auto& front = queue.removePropertyQueue.Peek();
+		Game::Entity entity = front.entity;
+		Util::ArrayStack<PropertyId, 16> props;
+
+		while (!queue.removePropertyQueue.IsEmpty())
+		{
+			if (entity == queue.removePropertyQueue.Peek().entity)
+			{
+				auto op = queue.removePropertyQueue.Dequeue();
+				props.Append(op.pid);
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		for (IndexT i = 0; i < props.Size(); i++)
+		{
+			// TODO: bundle all property removes for the same entity into only ONE migration!
+			const PropertyId pid = props[0];
+			RemoveProperty(entity, pid);
+		}
+	}
 }
 
 } // namespace Game
