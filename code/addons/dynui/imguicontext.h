@@ -83,6 +83,7 @@ private:
 	};
 	static ImguiState state;
     static void ImguiDrawFunction();
+	static void RecoverImGuiContextErrors();
 };
 
 } // namespace Dynui
