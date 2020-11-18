@@ -202,10 +202,8 @@ def WriteStructJsonSerializers(f, document):
         f.WriteLine("if (node->is_object())")
         f.WriteLine("{")
         f.IncreaseIndent()
-        f.WriteLine("this->SetToFirstChild();")
         for var in prop.variables:
             f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=var.type));
-        f.WriteLine("this->SetToParent();")
         f.DecreaseIndent()
         f.WriteLine("}")
         f.DecreaseIndent()
