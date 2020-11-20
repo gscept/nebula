@@ -1,0 +1,73 @@
+{
+	"Nebula": {
+		"Materials": [
+			{
+				"passes": [
+					{
+						"batch": "Picking",
+						"shader": "picking",
+						"variation": "Static"
+					},
+					{
+						"batch": "SpotLightShadow",
+						"shader": "shadow",
+						"variation": "Static|Spot"
+					},
+					{
+						"batch": "PointLightShadow",
+						"shader": "shadow",
+						"variation": "Static|Point"
+					},
+					{
+						"batch": "GlobalShadow",
+						"shader": "shadow",
+						"variation": "Static|Global"
+					},
+					{
+						"batch": "FlatGeometryLit",
+						"shader": "gltf",
+						"variation": "Static"
+					}
+				],
+				"variables": [
+					{
+					   "name": "baseColorTexture",
+					   "type": "textureHandle",
+					   "defaultValue": "tex:system/placeholder"
+					},
+					{
+					   "name": "normalTexture",
+					   "type": "textureHandle",
+					   "defaultValue": "tex:system/nobump"
+					},
+					{
+					   "name": "metallicRoughnessTexture",
+					   "type": "textureHandle",
+					   "defaultValue": "tex:system/white"
+					},
+					{
+					   "name": "baseColorFactor",
+					   "type": "vec4",
+					   "defaultValue": [1.0, 1.0, 1.0, 1.0],
+					   "max": [1.0, 1.0, 1.0, 1.0]
+					},
+					{
+						"name": "metallicFactor",
+						"type": "float",
+						"defaultValue": 1.0
+					},
+					{
+						"name": "roughnessFactor",
+						"type": "float",
+						"defaultValue": 1.0
+					}
+				 ],
+				"name": "GLTF Static",
+				"inherits": "PBR + IBL",
+				"vertexType": "3f|3f|2f|3f|3f",
+				"desc": "Standard material for static GLTF models",
+				"group": "Standard"
+			}
+		]
+	}
+}

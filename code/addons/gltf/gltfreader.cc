@@ -862,7 +862,7 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Image>>(Util::Array<Gltf::Image> & item
                     Util::String mimeType = item.uri.ExtractRange(5, item.uri.FindCharIndex(';', 5) - 5);
                     if (mimeType == "image/jpeg") { item.type = Gltf::Image::Type::Jpg; }
                     else if (mimeType == "image/png") { item.type = Gltf::Image::Type::Png; }
-                    else { n_assert("unkown mimeType"); }
+                    else { n_assert("unknown mimeType"); }
                     IndexT start = item.uri.FindCharIndex(',', 5) + 1;
                     const char * buffer = item.uri.AsCharPtr() + start;
                     item.data.SetFromBase64(buffer, item.uri.Length() - start);
