@@ -25,3 +25,4 @@ fips_dir(scripting)
 nebula_end_module()
 
 target_compile_options(dynui PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
+target_link_options(dynui PUBLIC "/WHOLEARCHIVE:dynui")

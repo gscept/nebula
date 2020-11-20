@@ -2,6 +2,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/functional.h>
 #include <pybind11/stl.h>
+#include <pybind11/embed.h>
 #include <limits>
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -35,7 +36,7 @@ void template_ImVector(py::module &module, const char* name)
         ;
 }
 
-PYBIND11_MODULE(deargui, deargui)
+PYBIND11_EMBEDDED_MODULE(deargui, deargui)
 {
     py::class_<ImGuiContext>(deargui, "Context");
     template_ImVector<char>(deargui, "Vector_char");
