@@ -1,62 +1,9 @@
 import IDLC.idltypes as IDLTypes
 import genutil as util
 import IDLC.idldocument as IDLDocument
-#template<> void JsonReader::Get<Heathen::OrientationType>(Heathen::OrientationType& ret, const char* attr)
-#{
-#    const pjson::value_variant* node = this->GetChild(attr);
-#
-#    if (node->is_string())
-#    {
-#        Util::String str = node->as_string_ptr();
-#        if (str == "NORTH")
-#            ret = Heathen::OrientationType::NORTH;
-#        else if (str == "SOUTH")
-#            ret = Heathen::OrientationType::SOUTH;
-#        
-#        return;
-#    }
-#    else if (node->is_int())
-#    {
-#        ret = (Heathen::OrientationType)node->as_int32();
-#        return;
-#    }
-#    
-#    ret = Heathen::OrientationType();
-#}
-#
-#template<> void JsonReader::Get<Heathen::LookDescription>(Heathen::LookDescription& ret, const char* attr)
-#{
-#    //
-#}
-#
-#template<> void JsonReader::Get<Heathen::OutfitColors>(Heathen::OutfitColors& ret, const char* attr)
-#{
-#    //
-#}
-#
-#template<> void JsonReader::Get<Heathen::Outfit>(Heathen::Outfit& ret, const char* attr)
-#{
-#    //
-#}
 
-# fight me
+# Global property list
 properties = list()
-
-def Capitalize(s):
-    return s[:1].upper() + s[1:]
-
-def GetTypeCamelNotation(propertyName, prop, document):
-    if not "_type_" in prop:
-        util.fmtError('Property type is required. Property "{}" does not name a type!'.format(propertyName))
-    typeString = IDLTypes.ConvertToCamelNotation(prop["_type_"])
-
-    if not typeString:
-        # Figure out what type it actually is.
-        if prop["_type_"] in document["enums"]:
-            typeString = IDLTypes.ConvertToCamelNotation("uint") # type for enums is uint
-        else:
-            util.fmtError('"{}" is not a valid type!'.format(prop["_type_"]))
-    return typeString
 
 #------------------------------------------------------------------------------
 ##
@@ -117,6 +64,12 @@ class PropertyDefinition:
             retVal += "};\n"
             return retVal
     pass
+
+#------------------------------------------------------------------------------
+##
+#
+def Capitalize(s):
+    return s[:1].upper() + s[1:]
 
 #------------------------------------------------------------------------------
 ##
@@ -249,10 +202,8 @@ def WriteStructJsonSerializers(f, document):
         f.WriteLine("if (node->is_object())")
         f.WriteLine("{")
         f.IncreaseIndent()
-        f.WriteLine("this->SetToFirstChild();")
         for var in prop.variables:
             f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=var.type));
-        f.WriteLine("this->SetToParent();")
         f.DecreaseIndent()
         f.WriteLine("}")
         f.DecreaseIndent()

@@ -1,4 +1,4 @@
-Version = 74
+Version = 80
 
 import sys
 if __name__ == '__main__':
@@ -9,7 +9,9 @@ import IDLC
 
 #-------------------------------------------------------------------------------
 def generate(input, out_src, out_hdr) :
-    #if util.isDirty(Version, [input], [out_src, out_hdr]) :
+    if not util.isDirty(Version, [input], [out_src, out_hdr]) :
+        return
+        
     idlc = IDLC.IDLCodeGenerator()
     
     idlc.SetVersion(Version)

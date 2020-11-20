@@ -23,6 +23,10 @@ public:
     static PropertyId GetPropertyId(Util::StringAtom name);
     /// get property description by id
     static PropertyDescription* GetDescription(PropertyId descriptor);
+    /// get type size by property id
+    static SizeT TypeSize(PropertyId descriptor);
+    /// get property default value pointer
+    static void const* const DefaultValue(PropertyId descriptor);
 
 private:
     static TypeRegistry* Instance();
@@ -98,6 +102,28 @@ TypeRegistry::GetDescription(PropertyId descriptor)
         return reg->propertyDescriptions[descriptor.id];
     
     return nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline SizeT
+TypeRegistry::TypeSize(PropertyId descriptor)
+{
+    auto* reg = Instance();
+    n_assert(descriptor.id >= 0 && descriptor.id < reg->propertyDescriptions.Size());
+    return reg->propertyDescriptions[descriptor.id]->typeSize;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void const* const
+TypeRegistry::DefaultValue(PropertyId descriptor)
+{
+    auto* reg = Instance();
+    n_assert(descriptor.id >= 0 && descriptor.id < reg->propertyDescriptions.Size());
+    return reg->propertyDescriptions[descriptor.id]->defVal;
 }
 
 } // namespace MemDb

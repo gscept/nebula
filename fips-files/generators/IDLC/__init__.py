@@ -53,16 +53,17 @@ class IDLCodeGenerator:
                 propertyLibraries.append(fileName)
 
         if "messages" in self.document:
-            propertyLibraries.append("game/messaging/message.h")
-
+            IDLDocument.AddInclude(f, "game/messaging/message.h")
+            
         IDLProperty.ParseProperties(self.document)
+
         if (IDLProperty.ContainsResourceTypes()):
-            propertyLibraries.append("resources/resource.h")
+            IDLDocument.AddInclude(f, "resources/resource.h")
 
         IDLDocument.WriteIncludeHeader(f)
         IDLDocument.WriteIncludes(f, self.document)
         IDLDocument.WriteIncludes(f, propertyLibraries)
-
+        
         hasMessages = "messages" in self.document
         hasProperties = "properties" in self.document
         hasEnums = "enums" in self.document
