@@ -18,7 +18,7 @@ StreamActorPool *actorPool = nullptr;
 */
 StreamActorPool::StreamActorPool()
 {
-    // empty
+	this->streamerThreadName = "Physics Actor Pool Streamer Thread";
 }
 
 //------------------------------------------------------------------------------

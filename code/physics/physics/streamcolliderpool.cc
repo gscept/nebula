@@ -43,7 +43,7 @@ StreamColliderPool * colliderPool = nullptr;
 */
 StreamColliderPool::StreamColliderPool()
 {
-    // empty
+	this->streamerThreadName = "Collider Pool Streamer Thread";
 }
 
 //------------------------------------------------------------------------------
