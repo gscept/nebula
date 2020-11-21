@@ -443,6 +443,14 @@ ObserverContext::Discard()
 	Jobs::DestroyJobPort(ObserverContext::jobPort);
 	Jobs::DestroyJobSync(ObserverContext::jobInternalSync);
 	Jobs::DestroyJobSync(ObserverContext::jobHostSync);
+
+	for (int i = 0; i < ObserverContext::systems.Size(); i++)
+	{
+		n_delete(ObserverContext::systems[i]);
+	}
+
+	ObserverContext::systems.Clear();
+
 	Graphics::GraphicsServer::Instance()->UnregisterGraphicsContext(&__bundle);
 }
 
