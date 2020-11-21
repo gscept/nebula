@@ -59,10 +59,11 @@ Win32StringConverter::WideToUTF8(ushort* src, SizeT length)
     String returnString;
     char dstBuf[1024];
     int numBytesWritten = WideCharToMultiByte(CP_UTF8, 0, (LPCWSTR) src, length, dstBuf, sizeof(dstBuf), 0, 0);
-    if (numBytesWritten > 0)
+	int strLength = Math::n_max(0, numBytesWritten - 1); // WideCharToMultiByte will return num bytes including null termination character, so length should be minimum of 2 characters
+    if (strLength > 0)
     {
         n_assert(numBytesWritten < sizeof(dstBuf));
-        returnString.Set(dstBuf, numBytesWritten);
+        returnString.Set(dstBuf, strLength);
         return returnString;
     }
     else
