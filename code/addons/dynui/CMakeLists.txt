@@ -10,14 +10,14 @@ fips_files(
 	imguiinputhandler.cc
 	imguiinputhandler.h
 	imguicontext.cc
-	imguicontext.h    
-	)
+	imguicontext.h
+)
 fips_dir(console)
 	fips_files(imguiconsole.cc imguiconsole.h
-				imguiconsolehandler.cc imguiconsolehandler.h
-		)
+	imguiconsolehandler.cc imguiconsolehandler.h
+)
 fips_dir(im3d)
-    fips_files(im3d.h im3d.cpp im3d_config.h im3d_math.h im3dcontext.h im3dcontext.cc)    
+	fips_files(im3d.h im3d.cpp im3d_config.h im3d_math.h im3dcontext.h im3dcontext.cc)
 fips_dir(graph)
 	fips_files(imguigraph.h imguigraph.cc)
 fips_dir(scripting)
