@@ -136,7 +136,6 @@ AddProperty(Game::Entity const entity, PropertyId const pid)
 
 //------------------------------------------------------------------------------
 /**
-	@todo	Optimize: utilize the new TableSignature and remove the old CategoryHash system
 */
 void
 RemoveProperty(Game::Entity const entity, PropertyId const pid)
@@ -145,7 +144,7 @@ RemoveProperty(Game::Entity const entity, PropertyId const pid)
 	EntityMapping mapping = GetEntityMapping(entity);
 	Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
 	CategoryHash newHash = cat.hash;
-	newHash.id = cat.hash.UnHash(pid.id);
+	newHash.RemoveFromHash(pid.id);
 	CategoryId newCategoryId;
 	if (state.catIndexMap.Contains(newHash))
 	{
@@ -613,13 +612,49 @@ EntityManager::DeallocateInstance(Entity entity)
 InstanceId
 EntityManager::Migrate(Entity entity, CategoryId newCategory)
 {
-	EntityManager::State& state = EntityManager::Singleton->state;
 	EntityMapping mapping = GetEntityMapping(entity);
-	Category const& oldCat = EntityManager::Singleton->GetCategory(mapping.category);
-	Category const& newCat = EntityManager::Singleton->GetCategory(newCategory);
-	InstanceId newInstance = state.worldDatabase->MigrateInstance(oldCat.instanceTable, mapping.instance.id, newCat.instanceTable);
-	state.entityMap[Ids::Index(entity.id)] = { newCategory, newInstance };
+	Category const& oldCat = this->GetCategory(mapping.category);
+	Category const& newCat = this->GetCategory(newCategory);
+	InstanceId newInstance = this->state.worldDatabase->MigrateInstance(oldCat.instanceTable, mapping.instance.id, newCat.instanceTable);
+	this->state.entityMap[Ids::Index(entity.id)] = { newCategory, newInstance };
 	return newInstance;
+}
+
+//------------------------------------------------------------------------------
+/**
+	@param newInstances		Will be filled with the new instance ids in the destination category.
+	@note	This assumes ALL entities in the entity array is of same category!
+*/
+void
+EntityManager::Migrate(Util::Array<Entity> const& entities, CategoryId fromCategory, CategoryId newCategory, Util::FixedArray<IndexT>& newInstances)
+{
+	if (newInstances.Size() != entities.Size())
+	{
+		newInstances.SetSize(entities.Size());
+	}
+
+	Util::Array<IndexT> instances;
+	SizeT const num = entities.Size();
+	instances.Reserve(num);
+
+	for (auto entity : entities)
+	{
+		EntityMapping mapping = GetEntityMapping(entity);
+#ifdef NEBULA_DEBUG
+		n_assert(mapping.category == fromCategory);
+#endif // NEBULA_DEBUG
+		instances.Append(mapping.instance.id);
+	}
+
+	Category const& oldCat = this->GetCategory(fromCategory);
+	Category const& newCat = this->GetCategory(newCategory);
+
+	GetWorldDatabase()->MigrateInstances(oldCat.instanceTable, instances, newCat.instanceTable, newInstances);
+
+	for (IndexT i = 0; i < num; i++)
+	{
+		this->state.entityMap[Ids::Index(entities[i].id)] = { newCategory, (uint32_t)newInstances[i] };
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -628,13 +663,80 @@ EntityManager::Migrate(Entity entity, CategoryId newCategory)
 void
 EntityManager::ExecuteOperations(OpQueue& queue)
 {
+	for (auto& batch : queue.batchAdds)
+	{
+		// potentially create new table
+		Category const& fromCat = this->GetCategory(batch.fromCategory);
+
+		CategoryHash hash = fromCat.hash;
+		for (auto pid : batch.pids)
+		{
+			hash.AddToHash(pid.id);
+		}
+		
+		CategoryId toCategoryId;
+		if (this->state.catIndexMap.Contains(hash))
+		{
+			toCategoryId = state.catIndexMap[hash];
+		}
+		else
+		{
+			CategoryCreateInfo info;
+			auto const& cols = this->state.worldDatabase->GetTable(fromCat.instanceTable).columns.GetArray<0>();
+			info.columns.SetSize(cols.Size() + batch.pids.Size() - 1);
+
+			// We need to create a table to hold these entities
+			IndexT i;
+			// Note: Skips owner column
+			for (i = 0; i < cols.Size() - 1; ++i)
+			{
+				info.columns[i] = cols[i + 1];
+			}
+
+			for (PropertyId pid : batch.pids)
+			{
+				info.columns[i] = pid;
+				i++;
+
+#ifdef NEBULA_DEBUG
+				info.name = fromCat.name + " + ";
+				info.name += MemDb::TypeRegistry::GetDescription(pid)->name.AsString();
+#endif
+			}
+
+			toCategoryId = this->CreateCategory(info);
+		}
+
+		Util::FixedArray<IndexT> instances(batch.entities.Size());
+		this->Migrate(batch.entities, batch.fromCategory, toCategoryId, instances);
+
+		Category const& cat = this->GetCategory(toCategoryId);
+		for (IndexT p = 0; p < batch.pids.Size(); p++)
+		{
+			// TODO: bundle all property adds for the same entity into only ONE migration!
+			const PropertyId pid = batch.pids[p];
+			auto const& values = batch.values[p];
+			n_assert(values.Size() == instances.Size());
+			SizeT const typeSize = MemDb::TypeRegistry::TypeSize(pid);
+
+			auto const cid = this->state.worldDatabase->GetColumnId(cat.instanceTable, pid);
+			for (IndexT i = 0; i < values.Size(); i++)
+			{
+				const void* value = values[0];
+				IndexT const instance = instances[i];
+				void* const ptr = this->state.worldDatabase->GetValuePointer(cat.instanceTable, cid, instance);
+				Memory::Copy(value, ptr, typeSize);
+			}
+		}
+	}
+
 	while (!queue.addPropertyQueue.IsEmpty())
 	{
 		auto& front = queue.addPropertyQueue.Peek();
 		Game::Entity entity = front.entity;
 		using P = Util::KeyValuePair<PropertyId, void const*>;
 		Util::ArrayStack<P, 16> props;
-
+	
 		while (!queue.addPropertyQueue.IsEmpty())
 		{
 			if (entity == queue.addPropertyQueue.Peek().entity)
@@ -648,14 +750,14 @@ EntityManager::ExecuteOperations(OpQueue& queue)
 				break;
 			}
 		}
-
+	
 		for (IndexT i = 0; i < props.Size(); i++)
 		{
 			// TODO: bundle all property adds for the same entity into only ONE migration!
 			const PropertyId pid = props[0].Key();
 			const void* value = props[0].Value();
 			AddProperty(entity, pid);
-
+	
 			EntityMapping mapping = GetEntityMapping(entity);
 			Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
 			Ptr<MemDb::Database> db = EntityManager::Singleton->state.worldDatabase;

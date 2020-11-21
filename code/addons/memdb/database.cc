@@ -133,12 +133,16 @@ Database::GetPropertyId(TableId table, ColumnIndex columnId)
 /**
 */
 ColumnIndex
-Database::GetColumnId(TableId table, PropertyId column)
+Database::GetColumnId(TableId table, PropertyId descriptor)
 {
 	n_assert(this->IsValid(table));
-	n_assert(column != PropertyId::Invalid());
-	ColumnIndex cid = this->tables[Ids::Index(table.id)].columns.GetArray<0>().FindIndex(column);
-	return cid;
+	n_assert(descriptor != PropertyId::Invalid());
+	auto& reg = this->tables[Ids::Index(table.id)].columnRegistry;
+	IndexT index = reg.FindIndex(descriptor);
+	if (index != InvalidIndex)
+		return reg.ValueAtIndex(descriptor, index);
+	//ColumnIndex cid = this->tables[Ids::Index(table.id)].columns.GetArray<0>().FindIndex(descriptor);
+	return ColumnIndex::Invalid();
 }
 
 //------------------------------------------------------------------------------
@@ -253,7 +257,6 @@ Database::MigrateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& ds
 /**
 	@returns	New index/row in destination table
 	@note		This might be destructive if the destination table is missing some of the source tables columns!
-	@todo		GetColumnId is quite expensive, should be possible to improve
 */
 IndexT
 Database::DuplicateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
@@ -302,7 +305,6 @@ Database::DuplicateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
 /**
 	@returns	New index/row in destination table
 	@note		This might be destructive if the destination table is missing some of the source tables columns!
-	@todo		GetColumnId is quite expensive, should be possible to improve
 */
 IndexT
 Database::DuplicateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& dstDb, TableId dstTid)
@@ -349,12 +351,97 @@ Database::DuplicateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& 
 
 //------------------------------------------------------------------------------
 /**
+	@param srcRows	Array of source table instances that should be moved.
+	@param dstRows	Array reference that is filled with new indices/rows in destionation table
+	@note			This might be destructive if the destination table is missing some of the source tables columns!
+	@note			This is an instant erase swap on src table, which means any external references to rows (instance ids) will be invalidated!
+*/
+void
+Database::MigrateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows, TableId dstTid, Util::FixedArray<IndexT>& dstRows)
+{
+	n_assert(srcTid != dstTid);
+	this->DuplicateInstances(srcTid, srcRows, dstTid, dstRows);
+	const SizeT num = srcRows.Size();
+	auto& table = GetTable(srcTid);
+	for (IndexT i = 0; i < num; i++)
+		this->EraseSwapIndex(table, srcRows[i]);
+}
+
+//------------------------------------------------------------------------------
+/**
+	@param srcRows	Array of source table instances that should be duplicated.
+	@param dstRows	Array reference that is filled with new indices/rows in destionation table
+	@note		This might be destructive if the destination table is missing some of the source tables columns!
+*/
+void
+Database::DuplicateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows, TableId dstTid, Util::FixedArray<IndexT>& dstRows)
+{
+	n_assert(this->IsValid(srcTid));
+	n_assert(this->IsValid(dstTid));
+
+	Table& src = this->tables[Ids::Index(srcTid.id)];
+	Table& dst = this->tables[Ids::Index(dstTid.id)];
+
+	SizeT const numRows = dstRows.Size();
+	for (IndexT i = 0; i < numRows; i++)
+	{
+		dstRows[i] = this->AllocateRowIndex(dstTid);
+	}
+
+	auto const& cols = src.columns.GetArray<0>();
+	auto& buffers = src.columns.GetArray<1>();
+	auto const& dstCols = dst.columns.GetArray<0>();
+	auto& dstBuffers = dst.columns.GetArray<1>();
+
+	SizeT const numDstCols = dst.columns.Size();
+
+	for (IndexT i = 0; i < numDstCols; ++i)
+	{
+		PropertyId descriptor = dstCols[i];
+		PropertyDescription const* const desc = TypeRegistry::GetDescription(descriptor.id);
+		void*& dstBuf = dstBuffers[i];
+		SizeT const byteSize = desc->typeSize;
+
+		ColumnIndex const srcColId = this->GetColumnId(srcTid, descriptor);
+		if (srcColId != ColumnIndex::Invalid())
+		{
+			for (IndexT rowIndex = 0; rowIndex < numRows; rowIndex++)
+			{
+				// Copy value from src
+				void*& srcBuf = buffers[srcColId.id];
+				Memory::Copy((char*)srcBuf + ((size_t)byteSize * srcRows[rowIndex]), (char*)dstBuf + ((size_t)byteSize * dstRows[rowIndex]), byteSize);
+			}
+		}
+		else
+		{
+			for (IndexT rowIndex = 0; rowIndex < numRows; rowIndex++)
+			{
+				// Set default value
+				void* val = (char*)dstBuf + ((size_t)dstRows[rowIndex] * desc->typeSize);
+				Memory::Copy(desc->defVal, val, desc->typeSize);
+			}
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 Table&
 Database::GetTable(TableId tid)
 {
 	n_assert(this->IsValid(tid));
 	return this->tables[Ids::Index(tid.id)];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+TableSignature const&
+Database::GetTableSignature(TableId tid)
+{
+	n_assert(this->IsValid(tid));
+	return this->tableSignatures[Ids::Index(tid.id)];
 }
 
 //------------------------------------------------------------------------------
@@ -515,12 +602,12 @@ Database::AllocateBuffer(TableId tid, PropertyDescription* desc)
 /**
 */
 ColumnIndex
-Database::AddColumn(TableId tid, PropertyId column)
+Database::AddColumn(TableId tid, PropertyId descriptor)
 {
 	n_assert(this->IsValid(tid));
 	Table& table = this->tables[Ids::Index(tid.id)];
 
-	IndexT found = table.columns.GetArray<0>().FindIndex(column);
+	IndexT found = table.columns.GetArray<0>().FindIndex(descriptor);
 	if (found != InvalidIndex)
 	{
 		n_printf("Warning: Adding multiple columns of same type to a table is not supported and will result in only one column!\n");
@@ -529,9 +616,11 @@ Database::AddColumn(TableId tid, PropertyId column)
 
 	uint32_t col = table.columns.Alloc();
 
+	table.columnRegistry.Add(descriptor, col);
+
 	Table::ColumnBuffer& buffer = table.columns.Get<1>(col);
-	table.columns.Get<0>(col) = column;
-	buffer = this->AllocateBuffer(tid, TypeRegistry::GetDescription(column.id));
+	table.columns.Get<0>(col) = descriptor;
+	buffer = this->AllocateBuffer(tid, TypeRegistry::GetDescription(descriptor.id));
 
 	return col;
 }
@@ -568,6 +657,9 @@ Database::Query(FilterSet const& filterset)
 		Table const& tbl = this->GetTable(tid);
 		if (this->IsValid(tbl.tid))
 		{
+			if (tbl.numRows == 0) // ignore empty tables
+				continue;
+
 			Util::ArrayStack<void*, 16> buffers;
 			buffers.Reserve(filterset.PropertyIds().Size());
 

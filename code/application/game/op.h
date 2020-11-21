@@ -73,6 +73,47 @@ namespace Op
 		static Memory::ArenaAllocator<1024> allocator;
 	};
 
+	//------------------------------------------------------------------------------
+	/**
+		Used to batch multiple property adds to multiple entities of the same category
+	*/
+	struct BatchAddProperty
+	{
+		BatchAddProperty() = default;
+		BatchAddProperty(CategoryId entityCategory, std::initializer_list<PropertyId> pids) :
+			fromCategory(entityCategory),
+			pids(pids)
+		{
+			this->values.Resize(pids.size());
+		}
+
+		void Add(std::initializer_list<AddProperty> addOps)
+		{
+			Entity entity = addOps.begin()->entity;
+
+			this->entities.Append(entity);
+			IndexT pid = 0;
+			for (auto& op : addOps)
+			{
+#ifdef NEBULA_DEBUG
+				n_assert2(entity == op.entity, "All ops must be for the same entity!\n");
+				n_assert2(this->pids[pid] == op.pid, "Properties must be in same order as when constructing the batch!\n")
+#endif
+				this->values[pid].Append(op.value);
+			}
+		}
+
+		bool const IsEmpty() const { return this->entities.Size() > 0; }
+
+	private:
+		friend class Game::EntityManager;
+		
+		CategoryId fromCategory;
+		Util::ArrayStack<Game::PropertyId, 4> pids;
+		Util::Array<Util::ArrayStack<void const*, 256>> values;
+		Util::Array<Game::Entity> entities;
+	};
+
 	struct RemoveProperty
 	{
 		Game::Entity entity;
@@ -91,6 +132,11 @@ public:
 		this->addPropertyQueue.Enqueue(std::move(op));
 	}
 
+	void Add(Op::BatchAddProperty&& op)
+	{
+		this->batchAdds.Append(std::move(op));
+	}
+
 	void Add(Op::RemoveProperty&& op)
 	{
 		this->removePropertyQueue.Enqueue(std::move(op));
@@ -105,7 +151,8 @@ public:
 
 private:
 	friend class EntityManager;
-
+	
+	Util::Array<Op::BatchAddProperty> batchAdds;
 	Util::Queue<Op::AddProperty> addPropertyQueue;
 	Util::Queue<Op::RemoveProperty> removePropertyQueue;
 };

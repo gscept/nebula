@@ -39,6 +39,8 @@ public:
     bool IsValid(TableId table) const;
 	/// retrieve a table.
 	Table& GetTable(TableId tid);
+    /// retrieve a table signature
+	TableSignature const& GetTableSignature(TableId tid);
 	
 	/// check if table has a certain column
     bool HasProperty(TableId table, PropertyId col);
@@ -68,6 +70,11 @@ public:
     IndexT DuplicateInstance(TableId srcTid, IndexT srcRow, TableId dstTid);
     /// duplicate instance from one row into destination table in a different database.
     IndexT DuplicateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& dstDb, TableId dstTid);
+
+    /// move n instances from one table to another.
+    void MigrateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows, TableId dstTid, Util::FixedArray<IndexT>& dstRows);
+    /// duplicate instance from one row into destination table.
+    void DuplicateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows, TableId dstTid, Util::FixedArray<IndexT>& dstRows);
 
 	/// defragment table
 	SizeT Defragment(TableId tid, std::function<void(IndexT, IndexT)> const& moveCallback);

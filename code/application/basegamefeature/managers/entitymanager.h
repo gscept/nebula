@@ -124,6 +124,9 @@ public:
 	/// migrate an instance from one category to another
 	InstanceId Migrate(Entity entity, CategoryId newCategory);
 
+	/// migrate an n instances from one category to another
+	void Migrate(Util::Array<Entity> const& entities, CategoryId fromCategory, CategoryId newCategory, Util::FixedArray<IndexT>& newInstances);
+
 	/// execute all operations within a op queue
 	void ExecuteOperations(OpQueue& queue);
 

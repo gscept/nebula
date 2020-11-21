@@ -58,6 +58,8 @@ struct Table
     Util::Array<IndexT> freeIds;
     /// arrays that hold the property identifier, and the buffers
     Util::ArrayAllocator<PropertyId, ColumnBuffer> columns;
+    /// 
+    Util::HashTable<PropertyId, IndexT, 32, 1> columnRegistry;
     /// allocation heap used for the column buffers
     static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::DefaultHeap;
 };

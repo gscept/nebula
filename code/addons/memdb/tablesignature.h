@@ -45,6 +45,8 @@ public:
 	bool const IsValid() const { return size > 0; }
 	/// check if a single bit is set
 	bool const IsSet(PropertyId pid) const;
+	/// flip a bit. returns new bit state
+	void FlipBit(PropertyId pid);
 
 	/// (src & mask) == mask
 	static bool const CheckBits(TableSignature const& src, TableSignature const& mask);
@@ -172,7 +174,9 @@ TableSignature::operator==(TableSignature const& rhs) const
 	};
 
 	return true;
-}//------------------------------------------------------------------------------
+}
+
+//------------------------------------------------------------------------------
 /**
 */
 inline bool const
@@ -190,6 +194,21 @@ TableSignature::IsSet(PropertyId pid) const
 	}
 
 	return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+TableSignature::FlipBit(PropertyId pid)
+{
+	int offset = pid.id / 128;
+	n_assert(offset < this->size);
+	alignas(16) uint64_t partialMask[2] = { 0, 0 };
+	uint64_t bit = pid.id % 128;
+	partialMask[bit / 64] |= 1ull << bit;
+	__m128i temp = _mm_set_epi64x(partialMask[0], partialMask[1]);
+	this->mask[offset] = _mm_and_si128(this->mask[offset], temp);
 }
 
 //------------------------------------------------------------------------------

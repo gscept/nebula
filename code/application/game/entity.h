@@ -34,6 +34,11 @@ namespace Game
 			this->id += i;
 			this->id = Hash(this->id);
 		}
+		void RemoveFromHash(uint32_t i)
+		{
+			this->id = UnHash(this->id);
+			this->id -= i;
+		}
 		static uint32_t Hash(uint32_t i)
 		{
 			i = ((i >> 16) ^ i) * 0x45d9f3b;
