@@ -6,6 +6,9 @@
 #include "stringtest.h"
 #include "util/string.h"
 #include "util/array.h"
+#if __WIN32__
+#include "util/win32/win32stringconverter.h"
+#endif
 
 namespace Test
 {
@@ -211,6 +214,22 @@ StringTest::Run()
         VERIFY(str == dec);
     }
     
+
+#if __WIN32__
+    LPCWSTR wideString = L"foo/";
+    Util::String utf8str = Win32::Win32StringConverter::WideToUTF8((const ushort*)wideString);
+    VERIFY(utf8str.Length() == 4);
+    VERIFY(utf8str[0] == 'f');
+    VERIFY(utf8str[1] == 'o');
+    VERIFY(utf8str[2] == 'o');
+    VERIFY(utf8str[3] == '/');
+    VERIFY(utf8str.AsCharPtr()[4] == '\0');
+
+    utf8str.TrimRight("/");
+    VERIFY(utf8str == "foo");
+    VERIFY(utf8str.Length() == 3);
+    VERIFY(utf8str.AsCharPtr()[3] == '\0');
+#endif
 }
 
 }; // namespace Test
