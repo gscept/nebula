@@ -155,7 +155,11 @@ GraphicsFeatureUnit::OnBeginFrame()
 		uiFunc();
 	}
 
-	Debug::FrameScriptInspector::Run(this->defaultView->GetFrameScript());
+	if (this->renderDebug)
+	{
+		this->gfxServer->RenderDebug(0);
+		Debug::FrameScriptInspector::Run(this->defaultView->GetFrameScript());
+	}
 
     //FIXME
     this->gfxServer->BeforeViews();

@@ -204,6 +204,11 @@ SetProperty(Game::Entity const entity, PropertyId const pid, TYPE value)
 	Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
 	Ptr<MemDb::Database> db = EntityManager::Singleton->state.worldDatabase;
 	auto cid = db->GetColumnId(cat.instanceTable, pid);
+
+#if NEBULA_DEBUG
+	n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(pid), "SetProperty: Provided value's type is not the correct size for the given PropertyId.");
+#endif
+
 	TYPE* ptr = (TYPE*)db->GetValuePointer(cat.instanceTable, cid, mapping.instance.id);
 	*ptr = value;
 }
