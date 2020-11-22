@@ -234,7 +234,7 @@
 						"variation": "Static|Global"
 					},
 					{
-						"batch": "FlatGeometryLit",
+						"batch": "FlatGeometryAlphaLit",
 						"shader": "gltf",
 						"variation": "Static|AlphaBlend"
 					}
@@ -268,7 +268,7 @@
 						"variation": "Static|Global"
 					},
 					{
-						"batch": "FlatGeometryLit",
+						"batch": "FlatGeometryAlphaLit",
 						"shader": "gltf",
 						"variation": "Static|AlphaBlend|DoubleSided"
 					}

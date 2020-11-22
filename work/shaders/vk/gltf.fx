@@ -32,6 +32,18 @@ float Greyscale(in vec4 color)
 	return dot(color.rgb, vec3(0.299, 0.587, 0.114));
 }
 
+subroutine (CalculateBump) vec3 GLTFNormalMapFunctor(
+	in vec3 tangent,
+	in vec3 binormal,
+	in vec3 normal,
+	in vec4 bumpData)
+{
+	mat3 tangentViewMatrix = mat3(normalize(tangent.xyz), normalize(binormal.xyz), normalize(normal.xyz));
+	vec3 tNormal = vec3(0,0,0);
+	tNormal.xyz = (bumpData.xyz * 2.0f) - 1.0f;
+	return tangentViewMatrix * tNormal;
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -109,7 +121,7 @@ SimpleTechnique(
 	vsStatic(), 
 	psGLTF(
 		calcColor = SimpleColor,
-		calcBump = NormalMapFunctor
+		calcBump = GLTFNormalMapFunctor
 	),
 	StandardState);
 
@@ -119,7 +131,7 @@ SimpleTechnique(
 	vsStatic(), 
 	psGLTF(
 		calcColor = SimpleColor,
-		calcBump = NormalMapFunctor
+		calcBump = GLTFNormalMapFunctor
 	),
 	DoubleSidedState);
 
@@ -129,7 +141,7 @@ SimpleTechnique(
 	vsStatic(),
 	psGLTFAlphaMask(
 		calcColor = SimpleColor,
-		calcBump = NormalMapFunctor
+		calcBump = GLTFNormalMapFunctor
 	),
 	StandardState);
 	
@@ -139,7 +151,7 @@ SimpleTechnique(
 	vsStatic(),
 	psGLTFAlphaMask(
 		calcColor = SimpleColor,
-		calcBump = NormalMapFunctor
+		calcBump = GLTFNormalMapFunctor
 	),
 	DoubleSidedState);
 	
@@ -149,7 +161,7 @@ SimpleTechnique(
 	vsStatic(),
 	psGLTF(
 		calcColor = SimpleColor,
-		calcBump = NormalMapFunctor
+		calcBump = GLTFNormalMapFunctor
 	),
 	AlphaState);
 
@@ -159,6 +171,6 @@ SimpleTechnique(
 	vsStatic(),
 	psGLTF(
 		calcColor = SimpleColor,
-		calcBump = NormalMapFunctor
+		calcBump = GLTFNormalMapFunctor
 	),
 	DoubleSidedState);
