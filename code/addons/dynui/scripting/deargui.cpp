@@ -19,7 +19,7 @@ void template_ImVector(py::module &module, const char* name)
         })
         .def_property_readonly("data", [](const ImVector<T>& self)
         {
-            return long long((void*)self.Data);
+            return uintptr_t((void*)self.Data);
         })
         .def("__len__", [](const ImVector<T>& self)
         {
@@ -2968,30 +2968,6 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     , py::arg("c_last")
     , py::return_value_policy::automatic_reference);
     py::class_<ImGuiPlatformIO> PlatformIO(deargui, "PlatformIO");
-    PlatformIO.def_readwrite("platform_create_window", &ImGuiPlatformIO::Platform_CreateWindow);
-    PlatformIO.def_readwrite("platform_destroy_window", &ImGuiPlatformIO::Platform_DestroyWindow);
-    PlatformIO.def_readwrite("platform_show_window", &ImGuiPlatformIO::Platform_ShowWindow);
-    PlatformIO.def_readwrite("platform_set_window_pos", &ImGuiPlatformIO::Platform_SetWindowPos);
-    PlatformIO.def_readwrite("platform_get_window_pos", &ImGuiPlatformIO::Platform_GetWindowPos);
-    PlatformIO.def_readwrite("platform_set_window_size", &ImGuiPlatformIO::Platform_SetWindowSize);
-    PlatformIO.def_readwrite("platform_get_window_size", &ImGuiPlatformIO::Platform_GetWindowSize);
-    PlatformIO.def_readwrite("platform_set_window_focus", &ImGuiPlatformIO::Platform_SetWindowFocus);
-    PlatformIO.def_readwrite("platform_get_window_focus", &ImGuiPlatformIO::Platform_GetWindowFocus);
-    PlatformIO.def_readwrite("platform_get_window_minimized", &ImGuiPlatformIO::Platform_GetWindowMinimized);
-    PlatformIO.def_readwrite("platform_set_window_title", &ImGuiPlatformIO::Platform_SetWindowTitle);
-    PlatformIO.def_readwrite("platform_set_window_alpha", &ImGuiPlatformIO::Platform_SetWindowAlpha);
-    PlatformIO.def_readwrite("platform_update_window", &ImGuiPlatformIO::Platform_UpdateWindow);
-    PlatformIO.def_readwrite("platform_render_window", &ImGuiPlatformIO::Platform_RenderWindow);
-    PlatformIO.def_readwrite("platform_swap_buffers", &ImGuiPlatformIO::Platform_SwapBuffers);
-    PlatformIO.def_readwrite("platform_get_window_dpi_scale", &ImGuiPlatformIO::Platform_GetWindowDpiScale);
-    PlatformIO.def_readwrite("platform_on_changed_viewport", &ImGuiPlatformIO::Platform_OnChangedViewport);
-    PlatformIO.def_readwrite("platform_set_ime_input_pos", &ImGuiPlatformIO::Platform_SetImeInputPos);
-    PlatformIO.def_readwrite("platform_create_vk_surface", &ImGuiPlatformIO::Platform_CreateVkSurface);
-    PlatformIO.def_readwrite("renderer_create_window", &ImGuiPlatformIO::Renderer_CreateWindow);
-    PlatformIO.def_readwrite("renderer_destroy_window", &ImGuiPlatformIO::Renderer_DestroyWindow);
-    PlatformIO.def_readwrite("renderer_set_window_size", &ImGuiPlatformIO::Renderer_SetWindowSize);
-    PlatformIO.def_readwrite("renderer_render_window", &ImGuiPlatformIO::Renderer_RenderWindow);
-    PlatformIO.def_readwrite("renderer_swap_buffers", &ImGuiPlatformIO::Renderer_SwapBuffers);
     PlatformIO.def_readwrite("monitors", &ImGuiPlatformIO::Monitors);
     PlatformIO.def_readwrite("main_viewport", &ImGuiPlatformIO::MainViewport);
     PlatformIO.def_readwrite("viewports", &ImGuiPlatformIO::Viewports);
