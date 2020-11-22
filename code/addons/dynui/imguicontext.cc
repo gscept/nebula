@@ -461,6 +461,9 @@ ImguiContext::Create()
 
 	// enable keyboard navigation
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+#ifdef IMGUI_HAS_DOCK
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+#endif
 
 	// load default font
 	ImFontConfig config;

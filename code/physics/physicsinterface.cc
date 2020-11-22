@@ -99,6 +99,7 @@ CreateScene()
     scene.scene->setVisualizationParameter(PxVisualizationParameter::eWORLD_AXES, 1.0f);
     scene.scene->setVisualizationParameter(PxVisualizationParameter::eBODY_AXES, 1.0f);
     scene.scene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 1.0f);
+	scene.scene->getScenePvdClient()->setScenePvdFlags(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS | PxPvdSceneFlag::eTRANSMIT_CONTACTS | PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES );
 #endif
     scene.physics = state.physics;
     scene.foundation = state.foundation;

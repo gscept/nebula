@@ -5,6 +5,8 @@
 #include "physics/utils.h"
 #include "PxPhysicsAPI.h"
 #include "pvd/PxPvd.h"
+#include "input/inputserver.h"
+#include "input/keyboard.h"
 #include "pvd/PxPvdTransport.h"
 #include "PxSimulationEventCallback.h"
 
@@ -30,9 +32,8 @@ PhysxState::Setup()
     this->foundation = PxCreateFoundation(PX_PHYSICS_VERSION, this->allocator, this->errorCallback);
     n_assert2(this->foundation, "PxCreateFoundation failed!");
 
-    this->pvd = PxCreatePvd(*this->foundation);
-    this->transport = PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 100);
-    this->pvd->connect(*this->transport, PxPvdInstrumentationFlag::eALL);
+    this->pvd = PxCreatePvd(*this->foundation);   
+    
 
     this->physics = PxCreatePhysics(PX_PHYSICS_VERSION, *this->foundation, PxTolerancesScale(), false, this->pvd);
     n_assert2(this->physics, "PxCreatePhysics failed!");
@@ -50,6 +51,35 @@ PhysxState::Setup()
 
     this->time = 0.0;
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysxState::ConnectPVD()
+{
+    if (!this->pvd->isConnected())
+    {
+        if (this->transport == nullptr)
+        {
+            this->transport = PxDefaultPvdSocketTransportCreate("127.0.0.1", 5425, 100);
+        }
+        this->pvd->connect(*this->transport, PxPvdInstrumentationFlag::ePROFILE | PxPvdInstrumentationFlag::eDEBUG);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysxState::DisconnectPVD()
+{
+    if (pvd != nullptr && this->pvd->isConnected())
+    {
+        this->pvd->disconnect();
+    }
+}
+
 
 // avoid warning about truncating the void
 #pragma warning(push)
@@ -120,7 +150,12 @@ PhysxState::DiscardActor(ActorId id)
 */
 void
 PhysxState::Update(Timing::Time delta)
-{    
+{
+	if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::F3))
+	{
+		if (!this->pvd->isConnected()) this->ConnectPVD();
+		else this->DisconnectPVD();
+	}
     this->time -= delta;
     // we limit the simulation to 5 frames
     this->time = Math::n_max(this->time, -5.0 * PHYSICS_RATE);
@@ -144,6 +179,8 @@ PhysxState::Update(Timing::Time delta)
             actor.moveCallback(actor.id, trans);
         }
     }
+	
+
 }
 PhysxState state;
 }
