@@ -278,7 +278,7 @@ struct Material : GltfBase
     PBRMetallicRoughness pbrMetallicRoughness;
 
     Texture emissiveTexture;
-    Math::vector emissiveFactor = { Math::vector(0.0f) };
+    Math::vec3 emissiveFactor = { Math::vec3(0.0f) };
 
     Util::String name;
 };
