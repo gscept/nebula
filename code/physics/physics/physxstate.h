@@ -55,6 +55,11 @@ public:
     /// deregister an actor
     void DiscardActor(ActorId id);
 
+    /// connect to an instance of pvd
+    void ConnectPVD();
+    /// disconnect from pvd again
+    void DisconnectPVD();
+
     /// these are implementations of PxSimulationEventCallback
     ///
     void onConstraintBreak(physx::PxConstraintInfo* constraints, physx::PxU32 count) {}
