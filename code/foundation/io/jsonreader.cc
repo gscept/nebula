@@ -848,6 +848,17 @@ template<> void JsonReader::Get<int8_t>(int8_t& ret, const char* attr)
 //------------------------------------------------------------------------------
 /**
 */
+template<> void JsonReader::Get<char>(char& ret, const char* attr)
+{
+	const value_variant* node = this->GetChild(attr);
+
+	n_assert(node->is_int());
+	ret = (char)node->as_int32();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<> void JsonReader::Get<Math::mat4>(Math::mat4 & ret, const char* attr)
 {        
     ret = this->GetMat4(attr);
