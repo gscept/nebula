@@ -78,7 +78,6 @@ GraphicsFeatureUnit::OnActivate()
     };
     this->wnd = CreateWindow(wndInfo);
 
-
     CameraContext::Create();
     ModelContext::Create();
     ObserverContext::Create();

@@ -103,7 +103,7 @@ namespace Op
 			}
 		}
 
-		bool const IsEmpty() const { return this->entities.Size() > 0; }
+		bool const IsEmpty() const { return this->entities.Size() == 0; }
 
 	private:
 		friend class Game::EntityManager;

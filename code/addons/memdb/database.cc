@@ -141,7 +141,6 @@ Database::GetColumnId(TableId table, PropertyId descriptor)
 	IndexT index = reg.FindIndex(descriptor);
 	if (index != InvalidIndex)
 		return reg.ValueAtIndex(descriptor, index);
-	//ColumnIndex cid = this->tables[Ids::Index(table.id)].columns.GetArray<0>().FindIndex(descriptor);
 	return ColumnIndex::Invalid();
 }
 
