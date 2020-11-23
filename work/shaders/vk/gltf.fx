@@ -25,6 +25,7 @@ group(BATCH_GROUP) shared constant GLTFBlock
 	float metallicFactor;
 	float roughnessFactor;
 	float alphaCutoff;
+	float normalScale;
 };
 
 float Greyscale(in vec4 color)
@@ -40,8 +41,9 @@ subroutine (CalculateBump) vec3 GLTFNormalMapFunctor(
 {
 	mat3 tangentViewMatrix = mat3(normalize(tangent.xyz), normalize(binormal.xyz), normalize(normal.xyz));
 	vec3 tNormal = vec3(0,0,0);
-	tNormal.xyz = (bumpData.xyz * 2.0f) - 1.0f;
-	return tangentViewMatrix * tNormal;
+	tNormal.xy = (bumpData.xy * 2.0f) - 1.0f;
+	tNormal.z = saturate(sqrt(1.0f - dot(tNormal.xy, tNormal.xy)));
+	return tangentViewMatrix * normalize((tNormal * vec3(normalScale, normalScale, 1.0f)));
 }
 
 //------------------------------------------------------------------------------
@@ -58,7 +60,8 @@ psGLTF(
 	in vec3 WorldViewVec,
 	[color0] out vec4 Albedo,
 	[color1] out vec3 Normals,
-	[color2] out vec4 Material)
+	[color2] out vec4 Material,
+	[color3] out vec4 Emissive)
 {
 	vec4 baseColor = sample2D(baseColorTexture, MaterialSampler, UV) * vec4(baseColorFactor.rgb, 1);
 	vec4 material = sample2D(metallicRoughnessTexture, MaterialSampler, UV) * vec4(1.0f, roughnessFactor, metallicFactor, 1.0f);
@@ -73,7 +76,8 @@ psGLTF(
 	Material[MAT_METALLIC] = material.b;
 	Material[MAT_ROUGHNESS] = material.g;
 	Material[MAT_CAVITY] = Greyscale(occlusion);
-	Material[MAT_EMISSIVE] = Greyscale(emissive);
+	Material[MAT_EMISSIVE] = 0;
+	Emissive = emissive;
 }
 
 //------------------------------------------------------------------------------

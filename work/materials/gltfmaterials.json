@@ -21,7 +21,7 @@
 					{
 					   "name": "emissiveTexture",
 					   "type": "textureHandle",
-					   "defaultValue": "tex:system/black"
+					   "defaultValue": "tex:system/white"
 					},
 					{
 					   "name": "occlusionTexture",
@@ -35,6 +35,11 @@
 					   "max": [1.0, 1.0, 1.0, 1.0]
 					},
 					{
+						"name": "emissiveFactor",
+						"type": "vec4",
+						"defaultValue": [0.0, 0.0, 0.0, 0.0]
+					},
+					{
 						"name": "metallicFactor",
 						"type": "float",
 						"defaultValue": 1.0
@@ -45,11 +50,10 @@
 						"defaultValue": 1.0
 					},
 					{
-						"name": "emissiveFactor",
-						"type": "vec4",
-						"defaultValue": [1.0, 1.0, 1.0, 1.0],
-						"max": [1.0, 1.0, 1.0, 1.0]
-					 }
+						"name": "normalScale",
+						"type": "float",
+						"defaultValue": 1.0
+					}
 				 ],
 				"name": "GLTF Base",
 				"virtual": true,
