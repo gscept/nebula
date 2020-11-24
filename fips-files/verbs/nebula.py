@@ -2,7 +2,6 @@
 
 nebula work [working directory]
 nebula toolkit [toolkit directory]
-physx [win-vs15,winvs16]
 cleannidl
 """
 
@@ -49,7 +48,7 @@ if sys.platform == "win32" :
                 if len(args) > 2 :
                     setKey(args[1], args[2])
                 else :
-                    log.error("expected setting and value")            
+                    log.error("Expected setting and value")            
             elif noun == 'get' :
                 if len(args) > 1 :
                     key = argToKey(args[1])
@@ -59,9 +58,9 @@ if sys.platform == "win32" :
                         _winreg.CloseKey(reg_key)
                         log.info(keyval)
                     else :
-                        log.error("invalid setting")
+                        log.error("Invalid setting")
                 else :
-                    log.error("expected setting name")
+                    log.error("Expected setting name")
             elif noun == 'cleannidl' :
                 proj = util.get_project_name_from_dir(proj_dir)
                 cfg = settings.get(proj_dir, 'config')
@@ -73,12 +72,11 @@ if sys.platform == "win32" :
                 workval, regtype = _winreg.QueryValueEx(reg_key,"workdir")
                 rootval, regtype = _winreg.QueryValueEx(reg_key,"path")
                 _winreg.CloseKey(reg_key)
-                log.info(log.YELLOW +
-                    "Current settings:\n"
-                    "Project directory: " + workval + "\n"
-                    "Nebula root directory: " + rootval + "\n")
+                log.colored(log.YELLOW, "Current settings")
+                log.optional("Project directory", workval)
+                log.optional("Nebula root director", rootval)
             except WindowsError:
-                log.info(log.YELLOW + "No Nebula settings in registry\n")
+                log.colored(log.YELLOW, "No Nebula settings in registry\n")
 else:
     import json
     from os.path import expanduser
@@ -120,7 +118,7 @@ else:
                         key = argToKey(args[1])
                         setKey(cfg_file, key, args[2])
                     else :
-                        log.error("expected setting and value")            
+                        log.error("Expected setting and value")            
                 elif noun == 'get' :
                     if len(args) == 2 :
                         key = argToKey(args[1])
@@ -129,11 +127,9 @@ else:
             else:
                 workval = getKey(cfg_file, "workdir")
                 rootval = getKey(cfg_file, "path")
-                log.info(log.YELLOW +
-                "Current settings:\n"
-                "Project directory: " + workval + "\n"
-                "Nebula root directory: " + rootval + "\n")
-
+                log.colored(log.YELLOW, "Current settings")
+                log.optional("Project directory", workval)
+                log.optional("Nebula root director", rootval)
         except (RuntimeError, KeyError):
             log.error("failed manipulating settings")
 
