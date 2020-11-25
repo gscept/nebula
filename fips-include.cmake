@@ -63,8 +63,6 @@ if(NOT PX_TARGET)
     endif()
     SET(PX_DIR_DEBUG ${FIPS_DEPLOY_DIR}/physx/bin/${PX_TARGET}/debug/)
     SET(PX_DIR_RELEASE ${FIPS_DEPLOY_DIR}/physx/bin/${PX_TARGET}/release/)
-    
-
 
     SET(PX_LIBRARY_NAMES PhysX PhysXCommon PhysXCooking  PhysXFoundation  PhysXCharacterKinematic_static PhysXExtensions_static PhysXPvdSDK_static  PhysXTask_static PhysXVehicle_static)
     SET(PX_STATIC_NAMES PhysXCharacterKinematic_static_64 PhysXExtensions_static_64 PhysXPvdSDK_static_64  PhysXTask_static_64 PhysXVehicle_static_64)
@@ -81,9 +79,6 @@ if(NOT PX_TARGET)
 
     add_library(PxLibs INTERFACE)
     target_link_libraries(PxLibs INTERFACE $<$<CONFIG:Debug>:${PX_DEBUG_LIBRARIES}> $<$<CONFIG:Release>:${PX_RELEASE_LIBRARIES}>)
-
-    MESSAGE(WARNING "Found PhysX: ${PX_DEBUG_LIBRARIES} ${PX_RELEASE_LIBRARIES}")
-
 else()
     SET(PX_DIR_LINUX ${FIPS_DEPLOY_DIR}/physx/bin/linux.clang/checked/)
     SET(PX_LIBRARY_NAMES PhysX PhysXCooking PhysXCharacterKinematic PhysXExtensions PhysXPvdSDK PhysXVehicle  PhysXCommon PhysXFoundation)
@@ -167,6 +162,7 @@ macro(add_shaders_intern)
                 )
             fips_files(${shd})
             SOURCE_GROUP("res\\shaders" FILES ${shd})
+
             if(N_ENABLE_SHADER_COMMAND_GENERATION)
                 # create compile flags file for live shader compile
                 file(WRITE ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}")
@@ -328,8 +324,11 @@ macro(add_nebula_shaders)
         fips_files(${FXH})
         file(GLOB_RECURSE FX "${NROOT}/work/shaders/vk/*.fx")
         foreach(shd ${FX})
-            add_shaders_intern(${shd})
+        add_shaders_intern(${shd})
         endforeach()
+        
+        # add configurations for the .vscode anyfx linter
+        execute_process(COMMAND python ${NROOT}/fips-files/anyfx_linter/add_include_dir.py ${FIPS_PROJECT_DIR}/.vscode/anyfx_properties.json ${NROOT}/work/shaders/vk)
 
         file(GLOB_RECURSE FRM "${NROOT}/work/frame/win32/*.json")
         foreach(shd ${FRM})
@@ -356,6 +355,14 @@ macro(add_shaders)
         foreach(shd ${ARGN})
             add_shaders_intern(${CMAKE_CURRENT_SOURCE_DIR}/${shd})
         endforeach()
+
+        # add configurations for the .vscode anyfx linter
+        SET(folders)
+        foreach(shd ${ARGN})
+            get_filename_component(foldername ${CMAKE_CURRENT_SOURCE_DIR}/${shd} DIRECTORY)
+            list(APPEND folders ${foldername})
+        endforeach()
+        execute_process(COMMAND python ${NROOT}/fips-files/anyfx_linter/add_include_dir.py ${FIPS_PROJECT_DIR}/.vscode/anyfx_properties.json ${folders})
 
     endif()
 endmacro()
