@@ -42,16 +42,7 @@ jobs:
       - name: setup-msbuild
         if: startsWith(matrix.name, 'windows')
         uses: microsoft/setup-msbuild@v1
-      
-      - name: notification
-        if: cancelled() == false
-        uses: xinthink/action-telegram@v1.1
-        with:
-          botToken: ${{ secrets.BotToken }}
-          chatId: ${{ secrets.ChatID }}
-          jobStatus: ${{ job.status }}
-          skipSuccess: false
-      
+           
       - name: Set up Python 3.x
         uses: actions/setup-python@v1
         with:
@@ -122,7 +113,7 @@ jobs:
            python fips run testmath
            python fips run testfoundation
            
-      - name: notification
+      - name: Notification
         if: cancelled() == false
         uses: xinthink/action-telegram@v1.1
         with:
