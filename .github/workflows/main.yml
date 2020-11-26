@@ -117,12 +117,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     name: Notify
+    if: cancelled() == false
     steps:
-     - name: Notification
-       if: cancelled() == false
+     - name: Notification       
        uses: xinthink/action-telegram@v1.1
        with:
          botToken: ${{ secrets.BotToken }}
          chatId: ${{ secrets.ChatID }}
-         jobStatus: ${{ job.status }}
+         jobStatus: ${{ needs.build.result }}
          skipSuccess: false
