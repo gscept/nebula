@@ -43,6 +43,15 @@ jobs:
         if: startsWith(matrix.name, 'windows')
         uses: microsoft/setup-msbuild@v1
       
+      - name: notification
+        if: cancelled() == false
+        uses: xinthink/action-telegram@v1.1
+        with:
+          botToken: ${{ secrets.BotToken }}
+          chatId: ${{ secrets.ChatID }}
+          jobStatus: ${{ job.status }}
+          skipSuccess: false
+      
       - name: Set up Python 3.x
         uses: actions/setup-python@v1
         with:
@@ -59,14 +68,6 @@ jobs:
         run: |
           echo "CC=clang-9" >> $GITHUB_ENV
           echo "CXX=clang++-9" >> $GITHUB_ENV
-          
-      - name: notification
-        if: cancelled() == false
-        uses: xinthink/action-telegram@v1.1
-        with:
-          botToken: ${{ secrets.BotToken }}
-          chatId: ${{ secrets.ChatID }}
-          jobStatus: ${{ job.status }}
 
       - name: Setup missing software
         if: startsWith(matrix.os, 'ubuntu')
@@ -128,3 +129,4 @@ jobs:
           botToken: ${{ secrets.BotToken }}
           chatId: ${{ secrets.ChatID }}
           jobStatus: ${{ job.status }}
+          skipSuccess: false
