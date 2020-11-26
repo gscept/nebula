@@ -113,11 +113,16 @@ jobs:
            python fips run testmath
            python fips run testfoundation
            
-      - name: Notification
-        if: cancelled() == false
-        uses: xinthink/action-telegram@v1.1
-        with:
-          botToken: ${{ secrets.BotToken }}
-          chatId: ${{ secrets.ChatID }}
-          jobStatus: ${{ job.status }}
-          skipSuccess: false
+  Notify:
+    runs-on: ubuntu-latest
+    needs: [build]
+    name: Notify
+    steps:
+     - name: Notification
+       if: cancelled() == false
+       uses: xinthink/action-telegram@v1.1
+       with:
+         botToken: ${{ secrets.BotToken }}
+         chatId: ${{ secrets.ChatID }}
+         jobStatus: ${{ job.status }}
+         skipSuccess: false
