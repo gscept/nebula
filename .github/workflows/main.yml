@@ -112,3 +112,11 @@ jobs:
         run: |
            python fips run testmath
            python fips run testfoundation
+           
+      - name: notification
+        if: cancelled() == false
+        uses: xinthink/action-telegram@v1.1
+        with:
+          botToken: ${{ secrets.BotToken }}
+          chatId: ${{ secrets.ChatID }}
+          jobStatus: ${{ job.status }}
