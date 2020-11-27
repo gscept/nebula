@@ -1,6 +1,7 @@
 fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 fips_ide_group(tests)
 fips_add_subdirectory(testbase)
+fips_add_subdirectory(testfibers)
 fips_add_subdirectory(testfoundation)
 fips_add_subdirectory(testrender)
 fips_add_subdirectory(mathtest)
