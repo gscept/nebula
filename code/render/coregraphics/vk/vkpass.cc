@@ -548,7 +548,7 @@ CreatePass(const PassCreateInfo& info)
 /**
 */
 void
-DiscardPass(const PassId id)
+DestroyPass(const PassId id)
 {
 	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id.id24);
 	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
@@ -625,7 +625,7 @@ PassApplyClipSettings(const PassId id)
 void
 PassWindowResizeCallback(const PassId id)
 {
-    DiscardPass(id);
+    DestroyPass(id);
     SetupPass(id);
 }
 

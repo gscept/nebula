@@ -72,7 +72,7 @@ enum class PassRecordMode : uint8
 /// create pass
 const PassId CreatePass(const PassCreateInfo& info);
 /// discard pass
-void DiscardPass(const PassId id);
+void DestroyPass(const PassId id);
 
 /// begin using a pass
 void PassBegin(const PassId id, PassRecordMode recordMode);
