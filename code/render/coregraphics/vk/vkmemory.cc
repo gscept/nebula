@@ -88,9 +88,9 @@ FreeMemory(const Alloc& alloc)
 {
 	// dealloc
 	CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[alloc.poolIndex];
-	AllocationLoc.Enter();
+	AllocationLock.Enter();
 	bool res = pool.DeallocateMemory(alloc);
-	AllocationLoc.Leave();
+	AllocationLock.Leave();
 
 	N_COUNTER_DECR(N_GPU_MEMORY_COUNTER, alloc.size);
 
@@ -111,7 +111,7 @@ GetMappedMemory(const CoreGraphics::Alloc& alloc)
 /**
 */
 DeviceMemory 
-MemoryPool::CreateBlock(bool map, void** outMappedPtr)
+MemoryPool::CreateBlock(void** outMappedPtr)
 {
 	VkDevice dev = GetCurrentDevice();
 	VkMemoryAllocateInfo allocInfo =
@@ -125,7 +125,7 @@ MemoryPool::CreateBlock(bool map, void** outMappedPtr)
 	VkResult res = vkAllocateMemory(dev, &allocInfo, nullptr, &mem);
 	n_assert(res == VK_SUCCESS);
 
-	if (map)
+	if (this->mapMemory)
 	{
 		res = vkMapMemory(dev, mem, 0, VK_WHOLE_SIZE, 0, outMappedPtr);
 		n_assert(res == VK_SUCCESS);
@@ -138,10 +138,10 @@ MemoryPool::CreateBlock(bool map, void** outMappedPtr)
 /**
 */
 void 
-MemoryPool::DestroyBlock(DeviceMemory mem, bool unmap)
+MemoryPool::DestroyBlock(DeviceMemory mem)
 {
 	VkDevice dev = GetCurrentDevice();
-	if (unmap)
+	if (this->mapMemory)
 	{
 		vkUnmapMemory(dev, mem);
 	}
@@ -159,7 +159,7 @@ using namespace CoreGraphics;
 //------------------------------------------------------------------------------
 /**
 */
-Alloc
+CoreGraphics::Alloc
 AllocateMemory(const VkDevice dev, const VkImage& img, MemoryPoolType type)
 {
 	VkMemoryRequirements req;
@@ -173,7 +173,7 @@ AllocateMemory(const VkDevice dev, const VkImage& img, MemoryPoolType type)
 		flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 		break;
 	default:
-		n_crash("AllocateMemory(): Only buffer pool types are allowed for buffer memory");
+		n_crash("AllocateMemory(): Only image pool types are allowed for image memory");
 	}
 
 	uint32_t poolIndex;
@@ -182,9 +182,9 @@ AllocateMemory(const VkDevice dev, const VkImage& img, MemoryPoolType type)
 	CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[poolIndex];
 
 	// allocate
-	AllocationLoc.Enter();
+	AllocationLock.Enter();
 	Alloc ret = pool.AllocateMemory(req.alignment, req.size);
-	AllocationLoc.Leave();
+	AllocationLock.Leave();
 
 	N_COUNTER_INCR(N_GPU_MEMORY_COUNTER, ret.size);
 
@@ -196,7 +196,7 @@ AllocateMemory(const VkDevice dev, const VkImage& img, MemoryPoolType type)
 //------------------------------------------------------------------------------
 /**
 */
-Alloc
+CoreGraphics::Alloc
 AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type)
 {
 	VkMemoryRequirements req;
@@ -228,9 +228,9 @@ AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type)
 	CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[poolIndex];
 
 	// allocate
-	AllocationLoc.Enter();
+	AllocationLock.Enter();
 	Alloc ret = pool.AllocateMemory(req.alignment, req.size);
-	AllocationLoc.Leave();
+	AllocationLock.Leave();
 
 	N_COUNTER_INCR(N_GPU_MEMORY_COUNTER, ret.size);
 
@@ -251,9 +251,9 @@ AllocateMemory(const VkDevice dev, VkMemoryRequirements reqs, VkDeviceSize alloc
 	CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[poolIndex];
 
 	// allocate
-	AllocationLoc.Enter();
+	AllocationLock.Enter();
 	Alloc ret = pool.AllocateMemory(reqs.alignment, allocSize);
-	AllocationLoc.Leave();
+	AllocationLock.Leave();
 
 	N_COUNTER_INCR(N_GPU_MEMORY_COUNTER, ret.size);
 
