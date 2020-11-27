@@ -9,7 +9,7 @@ namespace CoreGraphics
 {
 
 Util::Array<MemoryPool> Pools;
-Threading::CriticalSection AllocationLoc;
+Threading::CriticalSection AllocationLock;
 
 //------------------------------------------------------------------------------
 /**
@@ -44,7 +44,7 @@ MemoryPool::DeallocateMemory(const Alloc& alloc)
 			if (ranges.IsEmpty())
 			{
 				// deallocate the memory and remove this index
-				this->DestroyBlock(this->blocks[alloc.blockIndex], this->mapMemory);
+				this->DestroyBlock(this->blocks[alloc.blockIndex]);
 
 				this->blockPool.Dealloc(alloc.blockIndex);
 				this->blocks[alloc.blockIndex] = DeviceMemory(0);
@@ -63,7 +63,7 @@ void
 MemoryPool::Clear()
 {
 	for (IndexT i = 0; i < this->blocks.Size(); i++)
-		this->DestroyBlock(this->blocks[i], this->mapMemory);
+		this->DestroyBlock(this->blocks[i]);
 
 	this->blocks.Clear();
 	this->blockRanges.Clear();
@@ -93,7 +93,7 @@ MemoryPool::AllocateConservative(DeviceSize alignment, DeviceSize size)
 
 		uint id = this->blockPool.Alloc();
 		this->blockMappedPointers.Append(nullptr);
-		DeviceMemory mem = this->CreateBlock(this->mapMemory, &this->blockMappedPointers[id]);
+		DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
 
 		this->blockSize = oldSize;
 
@@ -159,7 +159,7 @@ MemoryPool::AllocateConservative(DeviceSize alignment, DeviceSize size)
 	if (id >= (uint)this->blockMappedPointers.Size())
 	{
 		this->blockMappedPointers.Append(nullptr);
-		DeviceMemory mem = this->CreateBlock(this->mapMemory, &this->blockMappedPointers[id]);
+		DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
 
 		this->blocks.Append(mem);
 		this->blockRanges.Append({ AllocRange{0, size} });
@@ -167,7 +167,7 @@ MemoryPool::AllocateConservative(DeviceSize alignment, DeviceSize size)
 	else
 	{
 		this->blockMappedPointers[id] = nullptr;
-		DeviceMemory mem = this->CreateBlock(this->mapMemory, &this->blockMappedPointers[id]);
+		DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
 
 		this->blocks[id] = mem;
 		this->blockRanges[id] = { AllocRange{ 0, size } };
@@ -190,7 +190,7 @@ MemoryPool::AllocateLinear(DeviceSize alignment, DeviceSize size)
 
 		uint id = this->blockPool.Alloc();
 		this->blockMappedPointers.Append(nullptr);
-		DeviceMemory mem = this->CreateBlock(this->mapMemory, &this->blockMappedPointers[id]);
+		DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
 
 		this->blockSize = oldSize;
 
@@ -246,7 +246,7 @@ MemoryPool::AllocateLinear(DeviceSize alignment, DeviceSize size)
 	if (id >= (uint)this->blockMappedPointers.Size())
 	{
 		this->blockMappedPointers.Append(nullptr);
-		DeviceMemory mem = this->CreateBlock(this->mapMemory, &this->blockMappedPointers[id]);
+		DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
 
 		this->blocks.Append(mem);
 		this->blockRanges.Append({ AllocRange{0, size} });
@@ -254,7 +254,7 @@ MemoryPool::AllocateLinear(DeviceSize alignment, DeviceSize size)
 	else
 	{
 		this->blockMappedPointers[id] = nullptr;
-		DeviceMemory mem = this->CreateBlock(this->mapMemory, &this->blockMappedPointers[id]);
+		DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
 
 		this->blocks[id] = mem;
 		this->blockRanges[id] = { AllocRange{ 0, size } };

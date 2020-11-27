@@ -87,13 +87,13 @@ private:
 	// allocate linearly
 	Alloc AllocateLinear(DeviceSize alignment, DeviceSize size);
 	// create new memory block
-	DeviceMemory CreateBlock(bool map, void** outMappedPtr);
+	DeviceMemory CreateBlock(void** outMappedPtr);
 	// destroy block
-	void DestroyBlock(DeviceMemory mem, bool unmap);
+	void DestroyBlock(DeviceMemory mem);
 };
 
 extern Util::Array<MemoryPool> Pools;
-extern Threading::CriticalSection AllocationLoc;
+extern Threading::CriticalSection AllocationLock;
 
 /// setup memory pools
 void SetupMemoryPools(
