@@ -26,6 +26,8 @@
 #include "core/singleton.h"
 #include "game/featureunit.h"
 #include "debug/debugtimer.h"
+#include "api.h"
+#include "ids/idgenerationpool.h"
 
 //------------------------------------------------------------------------------
 namespace Game
@@ -77,10 +79,36 @@ public:
 
 	Util::Array<Ptr<FeatureUnit>> const& GetGameFeatures() const;
 
+    ProcessorHandle CreateProcessor(ProcessorCreateInfo const& info);
+
 protected:
     bool isOpen;
     bool isStarted;
     Util::Array<Ptr<FeatureUnit> > gameFeatures;
+
+    struct CallbackInfo
+    {
+        ProcessorHandle handle;
+        Filter filter;
+        ProcessorFrameCallback func;
+    };
+
+    struct ProcessorInfo
+    {
+        Util::StringAtom name;
+        /// set if this processor should run as a job
+        bool async = false;
+        /// called when removed from game server
+        void(*OnDeactivate)() = nullptr;
+    };
+
+    Util::Array<CallbackInfo> onBeginFrameCallbacks;
+    Util::Array<CallbackInfo> onFrameCallbacks;
+    Util::Array<CallbackInfo> onEndFrameCallbacks;
+    Util::Array<CallbackInfo> onLoadCallbacks;
+    Util::Array<CallbackInfo> onSaveCallbacks;
+    Util::Array<ProcessorInfo> processors;
+    Ids::IdGenerationPool processorHandlePool;
 
 	_declare_timer(GameServerOnBeginFrame)
     _declare_timer(GameServerOnFrame)

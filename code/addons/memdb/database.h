@@ -41,7 +41,7 @@ public:
 	Table& GetTable(TableId tid);
     /// retrieve a table signature
 	TableSignature const& GetTableSignature(TableId tid);
-	
+    
 	/// check if table has a certain column
     bool HasProperty(TableId table, PropertyId col);
     /// returns a descriptor for a given column id
@@ -81,6 +81,8 @@ public:
 
 	/// Query the database for a dataset of categories
 	Dataset Query(FilterSet const& filterset);
+    /// Query the database for a dataset of categories
+    Util::Array<TableId> Query(TableSignature inclusive, TableSignature exclusive);
 	/// get a buffer. Might be invalidated if rows are allocated or deallocated
     void* GetValuePointer(TableId table, ColumnIndex cid, IndexT row);
     /// get a buffer. Might be invalidated if rows are allocated or deallocated

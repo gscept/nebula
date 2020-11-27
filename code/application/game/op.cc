@@ -7,10 +7,5 @@
 
 namespace Game
 {
-namespace Op
-{
 
-Memory::ArenaAllocator<1024> AddProperty::allocator = Memory::ArenaAllocator<1024>();
-
-} // namespace Op
 } // namespace Game

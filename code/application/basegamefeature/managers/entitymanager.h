@@ -17,7 +17,7 @@
 #include "game/category.h"
 #include "memdb/database.h"
 #include "basegamefeature/properties/owner.h"
-#include "game/op.h"
+#include "game/api.h"
 
 namespace Game
 {
@@ -28,54 +28,12 @@ Game::Entity CreateEntity(EntityCreateInfo const& info);
 /// delete entity
 void DeleteEntity(Game::Entity entity);
 
-/// Get instanceid of entity
-Game::InstanceId GetInstanceId(Game::Entity entity);
-
-/// Check if an entity ID is still valid.
-bool IsValid(Entity e);
-
-/// Check if an entity is active (has an instance). It might be valid, but inactive just after it has been created.
-bool IsActive(Entity e);
-
-/// Returns number of active entities
-uint GetNumEntities();
-
-/// returns the entity mapping of an entity
-EntityMapping GetEntityMapping(Game::Entity entity);
-
-/// return an attribute id
-PropertyId const GetPropertyId(Util::StringAtom name);
-
-/// add a property to an entity
-void AddProperty(Game::Entity const entity, PropertyId const pid);
-
-/// add a property to an entity
-void RemoveProperty(Game::Entity const entity, PropertyId const pid);
-
-/// check if entity has a specific property. (SLOW!)
-bool HasProperty(Game::Entity const entity, PropertyId const pid);
-
-/// Set a property
+/// typed set a property method.
 template<typename TYPE>
 void SetProperty(Game::Entity const entity, PropertyId const pid, TYPE value);
 
-/// returns a blueprint id
-BlueprintId const GetBlueprintId(Util::StringAtom name);
-
-/// returns a template id by name
-TemplateId const GetTemplateId(Util::StringAtom name);
-
-/// query the world database for instances with filter
-Dataset Query(FilterSet const& filter);
-
 /// Returns the world db
 Ptr<MemDb::Database> GetWorldDatabase();
-
-/// Get number of instances in a specific category
-SizeT GetNumInstances(CategoryId category);
-
-/// execute operations stored in an operations queue
-void RunOps(OpQueue& queue);
 
 //------------------------------------------------------------------------------
 /**
@@ -87,7 +45,7 @@ void RunOps(OpQueue& queue);
 	variables within this manager directly.
 
 	The entity manager handles all entity categories in the game.
-	Categories are collections of attributes, arranged as a table where each row
+	Categories are collections of properties, arranged as a table where each row
 	is an instance, mapped to an entity.
 */
 class EntityManager
@@ -126,9 +84,6 @@ public:
 
 	/// migrate an n instances from one category to another
 	void Migrate(Util::Array<Entity> const& entities, CategoryId fromCategory, CategoryId newCategory, Util::FixedArray<IndexT>& newInstances);
-
-	/// execute all operations within a op queue
-	void ExecuteOperations(OpQueue& queue);
 
 	// Don't modify state without knowing what you're doing!
 	struct State

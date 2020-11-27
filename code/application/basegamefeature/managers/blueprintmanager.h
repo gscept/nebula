@@ -18,6 +18,7 @@
 #include "util/stringatom.h"
 #include "memdb/table.h"
 #include "game/category.h"
+#include "game/api.h"
 
 namespace Game
 {

@@ -27,6 +27,8 @@ public:
     explicit FilterSet(const Util::FixedArray<PropertyId>& inclusive);
     /// construct from inclusive and exclusive arrays
     explicit FilterSet(const Util::FixedArray<PropertyId>& inclusive, const Util::FixedArray<PropertyId>& exclusive);
+    /// construct from table signatures
+    explicit FilterSet(const TableSignature& inclusive, const TableSignature& exclusive, const Util::FixedArray<PropertyId>& inclusiveProperties);
 
     /// get the inclusive signature mask
     TableSignature const& Inclusive() const;
@@ -78,7 +80,18 @@ FilterSet::FilterSet(const Util::FixedArray<PropertyId>& inclusive, const Util::
     inclusiveProperties(inclusive)
 {
     // empty
-};
+}
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+FilterSet::FilterSet(const TableSignature& inclusive, const TableSignature& exclusive, const Util::FixedArray<PropertyId>& inclusiveProperties) :
+    inclusive(inclusive),
+    exclusive(exclusive),
+    inclusiveProperties(inclusiveProperties)
+{
+}
+;
 
 //------------------------------------------------------------------------------
 /**

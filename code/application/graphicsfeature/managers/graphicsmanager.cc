@@ -10,6 +10,7 @@
 #include "models/modelcontext.h"
 #include "visibility/visibilitycontext.h"
 #include "game/op.h"
+#include "game/gameserver.h"
 
 namespace GraphicsFeature
 {
@@ -47,15 +48,78 @@ GraphicsManager::Create()
 	n_assert(!GraphicsManager::HasInstance());
 	GraphicsManager::Singleton = n_new(GraphicsManager);
 	
-	Singleton->pids.owner			= Game::GetPropertyId("Owner"_atm);
-	Singleton->pids.worldTransform	= Game::GetPropertyId("WorldTransform"_atm);
-	Singleton->pids.modelResource	= Game::GetPropertyId("ModelResource"_atm);
-	Singleton->pids.graphicsId		= Game::GetPropertyId("GraphicsId"_atm);
 	Singleton->pids.modelEntityData = MemDb::TypeRegistry::Register("ModelEntityData"_atm, ModelEntityData());
 
+	Game::FilterCreateInfo filterInfo;
+	filterInfo.inclusive[0] = Game::GetPropertyId("Owner");
+	filterInfo.access   [0] = Game::AccessMode::READ;
+	filterInfo.inclusive[1] = Game::GetPropertyId("WorldTransform");
+	filterInfo.access   [1] = Game::AccessMode::READ;
+	filterInfo.inclusive[2] = Game::GetPropertyId("ModelResource");
+	filterInfo.access   [2] = Game::AccessMode::READ;
+	filterInfo.inclusive[3] = Game::GetPropertyId("GraphicsId");
+	filterInfo.access   [3] = Game::AccessMode::READ;
+	filterInfo.numInclusive = 4;
+
+	filterInfo.exclusive[0] = Singleton->pids.modelEntityData;
+	filterInfo.numExclusive = 1;
+
+	Game::Filter filter = Game::CreateFilter(filterInfo);
+
+	Game::ProcessorCreateInfo processorInfo;
+	processorInfo.async = false;
+	processorInfo.filter = filter;
+	processorInfo.name = "GraphicsManager - CreateModels"_atm;
+	processorInfo.OnBeginFrame = [](Game::Dataset data)
+	{
+		Game::OpBuffer opBuffer = Game::CreateOpBuffer();
+
+		for (int v = 0; v < data.numViews; v++)
+		{
+			Game::Dataset::CategoryTableView const& view = data.views[v];
+			Game::Entity const* const owners = (Game::Entity*)view.buffers[0];
+			Math::mat4 const* const transforms = (Math::mat4*)view.buffers[1];
+			Resources::ResourceName const* const resources = (Resources::ResourceName*)view.buffers[2];
+			Graphics::GraphicsEntityId* const gids = (Graphics::GraphicsEntityId*)view.buffers[3];
+
+			for (IndexT i = 0; i < view.numInstances; ++i)
+			{
+				Game::Owner const& entity = owners[i];
+				Math::mat4 const& t = transforms[i];
+				Resources::ResourceName const& res = resources[i];
+				Graphics::GraphicsEntityId& gid = gids[i];
+
+				if (gid == Graphics::GraphicsEntityId::Invalid())
+				{
+					gid = Graphics::CreateEntity();
+				}
+
+				Models::ModelContext::RegisterEntity(gid);
+				Visibility::ObservableContext::RegisterEntity(gid);
+				Models::ModelContext::Setup(gid, res, "NONE", [gid, t]()
+				{
+					Models::ModelContext::SetTransform(gid, t);
+					Visibility::ObservableContext::Setup(gid, Visibility::VisibilityEntityType::Model);
+				});
+
+				Game::Op::RegisterProperty regOp;
+				regOp.entity = entity;
+				regOp.pid = Singleton->pids.modelEntityData;
+				regOp.value = NULL;
+				Game::AddOp(opBuffer, regOp);
+			}
+		}
+
+		// execute ops
+		Game::Dispatch(opBuffer);
+	};
+	processorInfo.OnDeactivate = &Destroy;
+
+	Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
+
 	Game::ManagerAPI api;
-	api.OnBeginFrame = &OnBeginFrame;
-	api.OnDeactivate = &Destroy;
+	//api.OnBeginFrame = &OnBeginFrame;
+	//api.OnDeactivate = &Destroy;
 	return api;
 }
 
@@ -76,66 +140,6 @@ void
 GraphicsManager::OnBeginFrame()
 {
 	n_assert(GraphicsManager::HasInstance());
-
-	InitModelEntities();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-GraphicsManager::InitModelEntities()
-{
-	Game::FilterSet filter = {
-		{ // inclusive
-			Singleton->pids.owner,
-			Singleton->pids.worldTransform,
-			Singleton->pids.modelResource,
-			Singleton->pids.graphicsId
-		},
-		{ // exclusive
-			Singleton->pids.modelEntityData
-		}
-	};
-
-	Game::Dataset const data = Game::Query(filter);
-
-	Game::OpQueue queue;
-
-	for (auto const& tbl : data.tables)
-	{
-		Game::Entity const* const owners = (Game::Entity*)tbl.buffers[0];
-		Math::mat4 const* const transforms = (Math::mat4*)tbl.buffers[1];
-		Resources::ResourceName const* const resources = (Resources::ResourceName*)tbl.buffers[2];
-		Graphics::GraphicsEntityId* const gids = (Graphics::GraphicsEntityId*)tbl.buffers[3];
-
-		for (IndexT i = 0; i < tbl.numInstances; ++i)
-		{
-			Game::Owner const& entity = owners[i];
-			Math::mat4 const& t = transforms[i];
-			Resources::ResourceName const& res = resources[i];
-			Graphics::GraphicsEntityId& gid = gids[i];
-
-			if (gid == Graphics::GraphicsEntityId::Invalid())
-			{
-				gid = Graphics::CreateEntity();
-			}
-
-			Models::ModelContext::RegisterEntity(gid);
-			Visibility::ObservableContext::RegisterEntity(gid);
-			Models::ModelContext::Setup(gid, res, "NONE", [gid, t]()
-			{
-				Models::ModelContext::SetTransform(gid, t);
-				Visibility::ObservableContext::Setup(gid, Visibility::VisibilityEntityType::Model);
-			});
-
-			Game::Op::AddProperty addOp(entity, Singleton->pids.modelEntityData);
-			queue.Add(std::forward<Game::Op::AddProperty>(addOp));
-		}
-	}
-
-	// execute ops queue
-	Game::RunOps(queue);
 }
 
 } // namespace Game

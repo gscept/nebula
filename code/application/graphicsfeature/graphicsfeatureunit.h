@@ -80,7 +80,7 @@ private:
 inline void
 GraphicsFeature::GraphicsFeatureUnit::SetGraphicsDebugging(bool value)
 {
-    this->renderDebug = true;
+    this->renderDebug = value;
 }
 
 //------------------------------------------------------------------------------

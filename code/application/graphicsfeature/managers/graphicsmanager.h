@@ -37,14 +37,8 @@ private:
 
 	static void OnBeginFrame();
 
-	static void InitModelEntities();
-	
 	struct Pids
 	{
-		Game::PropertyId owner;
-		Game::PropertyId worldTransform;
-		Game::PropertyId modelResource;
-		Game::PropertyId graphicsId;
 		Game::PropertyId modelEntityData;
 	} pids;
 };

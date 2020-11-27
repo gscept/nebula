@@ -91,7 +91,9 @@ TableSignature::Setup(Util::FixedArray<PropertyId> descriptors)
 	if (descriptors.Size() > 0)
 	{
 		descriptors.Sort();
-		uint largestBit = (descriptors.End() - 1)->id;
+        PropertyId const last = *(descriptors.End() - 1);
+        n_assert(last != PropertyId::Invalid());
+		uint const largestBit = last.id;
 		this->size = (largestBit / 128) + 1;
 		this->mask = (__m128i*)Memory::Alloc(Memory::HeapType::ObjectHeap, this->size * 16);
 
@@ -104,6 +106,7 @@ TableSignature::Setup(Util::FixedArray<PropertyId> descriptors)
 		uint64_t prevOffset = offset;
 		for (PropertyId i : descriptors)
 		{
+            n_assert(i != PropertyId::Invalid());
 			offset = i.id / 128;
 			if (offset != prevOffset)
 			{

@@ -16,6 +16,8 @@ nebula_begin_module(application)
 		)
 	fips_dir(game)
 		fips_files(
+			api.h
+			api.cc
 			category.h
 			category.cc
 			entity.h
