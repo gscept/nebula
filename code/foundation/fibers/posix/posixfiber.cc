@@ -25,7 +25,7 @@ struct fiber_ctx_t
 	ucontext_t* prv;
 };
 
-thread_local fiber_t* currentThreadFiber;
+thread_local fiber_t* currentFiber;
 
 //------------------------------------------------------------------------------
 /**
@@ -166,10 +166,10 @@ Fiber::Start()
 {
 	n_assert(this->handle != nullptr);
 	fiber_t* implHandle = (fiber_t*)this->handle;
-	if (_setjmp(currentThreadFiber->jmp) == 0)
+	if (_setjmp(currentFiber->jmp) == 0)
 	{
 		_longjmp(implHandle->jmp, 1);
-		currentThreadFiber = implHandle;
+		currentFiber = implHandle;
 	}
 }
 

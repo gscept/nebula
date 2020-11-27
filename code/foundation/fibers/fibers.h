@@ -67,8 +67,6 @@ struct FiberQueueCreateInfo
     uint numFibers;
 };
 
-typedef volatile int AtomicCounter;
-
 class FiberQueue
 {
 public:

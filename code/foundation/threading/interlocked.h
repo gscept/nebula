@@ -9,6 +9,9 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
+
+typedef volatile int AtomicCounter;
+
 #if (__WIN32__)
 #include "threading/win32/win32interlocked.h"
 namespace Threading

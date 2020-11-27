@@ -16,7 +16,7 @@ public:
     /// constructor
     Fiber();
     /// construct from nullpointer
-    Fiber(nullptr_t);
+    Fiber(std::nullptr_t);
     /// constructor
     Fiber(void(*Function)(void*), void* context);
     /// copy constructor
