@@ -41,18 +41,6 @@ nebula_begin_module(foundation)
 				debug/stringatompagehandler.cc
 				debug/stringatompagehandler.h
 			)
-		fips_dir(memory)
-		fips_files(
-			arenaallocator.h
-			heap.h
-			memory.h
-			memorypool.h
-			poolarrayallocator.cc
-			poolarrayallocator.h
-			ringallocator.h
-			debug/memorypagehandler.cc
-			debug/memorypagehandler.h
-		)
 		fips_dir(debug)
 		fips_files(
 			debugcounter.cc
@@ -265,6 +253,18 @@ nebula_begin_module(foundation)
 			vec4.h
 			vector.h
 		)
+		fips_dir(memory)
+		fips_files(
+			arenaallocator.h
+			heap.h
+			memory.h
+			memorypool.h
+			poolarrayallocator.cc
+			poolarrayallocator.h
+			ringallocator.h
+			debug/memorypagehandler.cc
+			debug/memorypagehandler.h
+		)
 		fips_dir(messaging)
 		fips_files(
 			asyncport.cc
@@ -441,6 +441,12 @@ nebula_begin_module(foundation)
 			jobs.cc
 			jobs.h
 		)
+		fips_dir(fibers)
+		fips_files(
+			fiber.h
+			fibers.cc
+			fibers.h
+		)
 		fips_dir(framesync)
 		fips_files(
 			framesynctimer.cc
@@ -519,6 +525,10 @@ nebula_begin_module(foundation)
 				win32/win32systeminfo.cc
 				win32/win32systeminfo.h
 			)
+		fips_dir(fibers GROUP "fibers/win32")
+			fips_files(
+				win32/win32fiber.cc
+			)
 		fips_dir(.)
 	endif()
 	if (FIPS_POSIX)
@@ -527,6 +537,8 @@ nebula_begin_module(foundation)
 			core/posix/posixsingleton.h
 			core/posix/posixsysfunc.cc
 			core/posix/posixsysfunc.h
+			fibers/posix/posixfiber.cc
+			fibers/posix/posixfiber.h
 			memory/posix/posixmemory.h
 			memory/posix/posixheap.cc
 			memory/posix/posixheap.h
