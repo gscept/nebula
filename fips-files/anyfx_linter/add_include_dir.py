@@ -5,6 +5,7 @@
 import sys
 import os
 import json
+import pathlib
 
 if len(sys.argv) > 2:
     filename = sys.argv[1]
@@ -24,7 +25,9 @@ if len(sys.argv) > 2:
         # Make sure we only same directory once
         if includeDir not in data['includeDirs']:
             data['includeDirs'].append(includeDir)
-            
+    
+    folder = os.path.dirname(filename)
+    pathlib.Path(folder).mkdir(parents=True, exist_ok=True)
     with open(filename, 'w') as outfile:
         json.dump(data, outfile)
 
