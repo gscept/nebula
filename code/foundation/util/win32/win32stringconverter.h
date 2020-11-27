@@ -21,9 +21,8 @@ public:
     /// convert from UTF-8 raw string to wide string, return number of used bytes
     static SizeT UTF8ToWide(const char* src, ushort* dst, SizeT dstMaxBytes);
     /// convert from wide string to UTF-8 string
-    static Util::String WideToUTF8(ushort* src, SizeT length = -1);
+    static Util::String WideToUTF8(const ushort* src, SizeT length = -1);
 };
 
 } // namespace Win32
 //------------------------------------------------------------------------------
-    

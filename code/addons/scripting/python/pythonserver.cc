@@ -125,7 +125,10 @@ bool
 PythonServer::Eval(const String& str)
 {
     n_assert(this->IsOpen());    
-    n_assert(str.IsValid());
+	if (!str.IsValid())
+	{
+		return false;
+	}
 
     return 0 != PyRun_SimpleString(str.AsCharPtr());
 }

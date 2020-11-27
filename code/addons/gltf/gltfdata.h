@@ -278,7 +278,7 @@ struct Material : GltfBase
     PBRMetallicRoughness pbrMetallicRoughness;
 
     Texture emissiveTexture;
-    Math::vector emissiveFactor = { Math::vector(0.0f) };
+    Math::vec3 emissiveFactor = { Math::vec3(0.0f) };
 
     Util::String name;
 };
@@ -345,10 +345,10 @@ struct Node : GltfBase
     int32_t skin{ -1 };
 
     bool hasTRS{ false };
-    Math::vec4 matrix;
+    Math::mat4 matrix;
     Math::quat rotation;
-    Math::vector scale{ Math::vector(1.0f) };
-    Math::point translation;
+    Math::vec3 scale{ Math::vector(1.0f) };
+    Math::vec3 translation;
 
     Util::Array<int32_t> children;
     Util::Array<float> weights;    

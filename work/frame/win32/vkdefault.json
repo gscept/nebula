@@ -337,6 +337,11 @@
 					name: "SSSBuffer",
 					clear: [ 0.5, 0.5, 0.5, 1 ],
 					store: true
+				},
+				{
+					name: "EmissiveBuffer",
+					clear: [ 0, 0, 0, 1 ],
+					store: true
 				}
 			],
 
@@ -348,7 +353,7 @@
 			subpass: {
 				name: "GeometryPass",
 				subpass_dependencies: [],
-				attachments: [ "AlbedoBuffer", "NormalBuffer", "SpecularBuffer" ],
+				attachments: [ "AlbedoBuffer", "NormalBuffer", "SpecularBuffer", "EmissiveBuffer" ],
 				depth: true,
 				call: {
 					name: "TerrainContext - Screen Space Resolve",
@@ -499,6 +504,12 @@
 				},
 				{
 					name: "SpecularBuffer",
+					access: "ShaderRead",
+					layout: "ShaderRead",
+					stage: "ComputeShader"
+				},
+				{
+					name: "EmissiveBuffer",
 					access: "ShaderRead",
 					layout: "ShaderRead",
 					stage: "ComputeShader"

@@ -9,12 +9,12 @@
 
 namespace Game
 {
-__ImplementClass(FeatureUnit, 'GAFE' , Core::RefCounted);
+__ImplementClass(FeatureUnit, 'GAFE', Core::RefCounted);
 
 //------------------------------------------------------------------------------
 /**
 */
-FeatureUnit::FeatureUnit() : 
+FeatureUnit::FeatureUnit() :
     active(false)
 {
     // empty
@@ -30,19 +30,19 @@ FeatureUnit::~FeatureUnit()
 
 //------------------------------------------------------------------------------
 /**
-    This method is called by Game::GameServer::AttachGameFeature(). 
+    This method is called by Game::GameServer::AttachGameFeature().
     Use this method for one-time initializations of the FeatureUnit.
 */
 void
 FeatureUnit::OnActivate()
 {
-	n_assert(!this->IsActive());
-	this->active = true;
+    n_assert(!this->IsActive());
+    this->active = true;
 }
 
 //------------------------------------------------------------------------------
 /**
-    This method is called by Game::GameServer::RemoveGameFeature(). Use this 
+    This method is called by Game::GameServer::RemoveGameFeature(). Use this
     method to cleanup stuff which has been initialized in OnActivate().
 */
 void
@@ -53,8 +53,8 @@ FeatureUnit::OnDeactivate()
     // remove all managers
     while (this->managers.Size() > 0)
     {
-		if (this->managers.Get<1>(0).OnDeactivate != nullptr)
-			this->managers.Get<1>(0).OnDeactivate();
+        if (this->managers.Get<1>(0).OnDeactivate != nullptr)
+            this->managers.Get<1>(0).OnDeactivate();
         this->managers.EraseIndex(0);
     }
 
@@ -74,14 +74,14 @@ FeatureUnit::OnLoad()
     for (managerIndex = 0; managerIndex < numManagers; managerIndex++)
     {
         // invoke OnLoad() on manager
-		if (this->managers.Get<1>(managerIndex).OnLoad != nullptr)
-			this->managers.Get<1>(managerIndex).OnLoad();
+        if (this->managers.Get<1>(managerIndex).OnLoad != nullptr)
+            this->managers.Get<1>(managerIndex).OnLoad();
     }
 }
 
 //------------------------------------------------------------------------------
 /**
-    This method is called from within Game::GameServer::OnStart(). 
+    This method is called from within Game::GameServer::OnStart().
     Its called after all game features are activated and have initialized their subsystems.
 */
 void
@@ -92,8 +92,8 @@ FeatureUnit::OnStart()
     int num = this->managers.Size();
     for (i = 0; i < num; i++)
     {
-		if (this->managers.Get<1>(i).OnStart != nullptr)
-			this->managers.Get<1>(i).OnStart();
+        if (this->managers.Get<1>(i).OnStart != nullptr)
+            this->managers.Get<1>(i).OnStart();
     }
 }
 
@@ -108,15 +108,15 @@ FeatureUnit::OnSave()
     int numManagers = this->managers.Size();
     for (managerIndex = 0; managerIndex < numManagers; managerIndex++)
     {
-		if (this->managers.Get<1>(managerIndex).OnSave != nullptr)
-			this->managers.Get<1>(managerIndex).OnSave();
-    }  
+        if (this->managers.Get<1>(managerIndex).OnSave != nullptr)
+            this->managers.Get<1>(managerIndex).OnSave();
+    }
 }
 
 //------------------------------------------------------------------------------
 /**
-    This method is called from Game::GameServer::OnBeginFrame() on all 
-    game features attached to an GameServer in the order of attachment. Override this 
+    This method is called from Game::GameServer::OnBeginFrame() on all
+    game features attached to an GameServer in the order of attachment. Override this
     method if your FeatureUnit has to do any work at the beginning of the frame.
 */
 void
@@ -127,14 +127,14 @@ FeatureUnit::OnBeginFrame()
     SizeT num = this->managers.Size();
     for (i = 0; i < num; i++)
     {
-		if (this->managers.Get<1>(i).OnBeginFrame != nullptr)
-			this->managers.Get<1>(i).OnBeginFrame();
-    }    
+        if (this->managers.Get<1>(i).OnBeginFrame != nullptr)
+            this->managers.Get<1>(i).OnBeginFrame();
+    }
 }
 
 //------------------------------------------------------------------------------
 /**
-    This method is called from Game::GameServer::OnMoveBefore() on all 
+    This method is called from Game::GameServer::OnMoveBefore() on all
     game features attached to an GameServer in the order of attachment. Override this
     method if your FeatureUnit has any work to do before the physics subsystem
     is triggered.
@@ -147,8 +147,8 @@ FeatureUnit::OnFrame()
     SizeT num = this->managers.Size();
     for (i = 0; i < num; i++)
     {
-		if (this->managers.Get<1>(i).OnFrame != nullptr)
-			this->managers.Get<1>(i).OnFrame();
+        if (this->managers.Get<1>(i).OnFrame != nullptr)
+            this->managers.Get<1>(i).OnFrame();
     }
 }
 
@@ -166,8 +166,8 @@ FeatureUnit::OnEndFrame()
     SizeT num = this->managers.Size();
     for (i = 0; i < num; i++)
     {
-		if (this->managers.Get<1>(i).OnEndFrame != nullptr)
-			this->managers.Get<1>(i).OnEndFrame();
+        if (this->managers.Get<1>(i).OnEndFrame != nullptr)
+            this->managers.Get<1>(i).OnEndFrame();
     }
 }
 
@@ -185,8 +185,8 @@ FeatureUnit::OnRenderDebug()
     SizeT num = this->managers.Size();
     for (i = 0; i < num; i++)
     {
-		if (this->managers.Get<1>(i).OnRenderDebug != nullptr)
-			this->managers.Get<1>(i).OnRenderDebug();
+        if (this->managers.Get<1>(i).OnRenderDebug != nullptr)
+            this->managers.Get<1>(i).OnRenderDebug();
     }
 }
 
@@ -199,17 +199,17 @@ FeatureUnit::OnRenderDebug()
 ManagerHandle
 FeatureUnit::AttachManager(ManagerAPI api)
 {
-	if (api.OnActivate != nullptr)
-		api.OnActivate();
+    if (api.OnActivate != nullptr)
+        api.OnActivate();
 
-	Ids::Id32 handle;
-	this->managerPool.Allocate(handle);
+    Ids::Id32 handle;
+    this->managerPool.Allocate(handle);
 
-	uint32_t index = this->managers.Alloc();
-	this->managers.Get<0>(index) = handle;
-	this->managers.Get<1>(index) = std::move(api);
+    uint32_t index = this->managers.Alloc();
+    this->managers.Get<0>(index) = handle;
+    this->managers.Get<1>(index) = std::move(api);
 
-	return handle;
+    return handle;
 }
 
 //------------------------------------------------------------------------------
@@ -221,18 +221,18 @@ void
 FeatureUnit::RemoveManager(ManagerHandle handle)
 {
     n_assert(this->managerPool.IsValid(handle.id));
-    for (IndexT i = 0 ; i < this->managers.Size(); ++i)
-	{
-		if (this->managers.Get<0>(i) == handle)
-		{
-			if (this->managers.Get<1>(i).OnDeactivate != nullptr)
-				this->managers.Get<1>(i).OnDeactivate();
+    for (IndexT i = 0; i < this->managers.Size(); ++i)
+    {
+        if (this->managers.Get<0>(i) == handle)
+        {
+            if (this->managers.Get<1>(i).OnDeactivate != nullptr)
+                this->managers.Get<1>(i).OnDeactivate();
 
-			this->managers.EraseIndex(i);
-			break;
-		}
+            this->managers.EraseIndex(i);
+            break;
+        }
     }
-	this->managerPool.Deallocate(handle.id);
+    this->managerPool.Deallocate(handle.id);
 }
 
 //------------------------------------------------------------------------------
@@ -241,7 +241,7 @@ FeatureUnit::RemoveManager(ManagerHandle handle)
 void
 FeatureUnit::OnBeforeLoad()
 {
-	// override in subclass if needed
+    // override in subclass if needed
 }
 
 //------------------------------------------------------------------------------
@@ -250,7 +250,7 @@ FeatureUnit::OnBeforeLoad()
 void
 FeatureUnit::OnBeforeCleanup()
 {
-	// override in subclass if needed
+    // override in subclass if needed
 }
 
 }; // namespace Game

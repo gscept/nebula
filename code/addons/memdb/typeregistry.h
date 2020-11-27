@@ -6,7 +6,7 @@
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "columndescription.h"
+#include "propertydescription.h"
 #include "util/stringatom.h"
 
 namespace MemDb
@@ -15,30 +15,37 @@ namespace MemDb
 class TypeRegistry
 {
 public:
+    /// register a type
+    template<typename TYPE>
+    static PropertyId Register(Util::StringAtom name, TYPE defaultValue);
+
+    /// get property id from name
+    static PropertyId GetPropertyId(Util::StringAtom name);
+    /// get property description by id
+    static PropertyDescription* GetDescription(PropertyId descriptor);
+    /// get type size by property id
+    static SizeT TypeSize(PropertyId descriptor);
+    /// get property default value pointer
+    static void const* const DefaultValue(PropertyId descriptor);
+
+private:
     static TypeRegistry* Instance();
     static void Destroy();
 
-    template<typename TYPE>
-    static ColumnDescriptor Register(Util::StringAtom name, TYPE defaultValue);
-
-    static ColumnDescriptor GetDescriptor(Util::StringAtom name);
-    static ColumnDescription* GetDescription(ColumnDescriptor descriptor);
-
-private:
     TypeRegistry();
     ~TypeRegistry();
 
     static TypeRegistry* Singleton;
 
-    Util::Array<ColumnDescription*> columnDescriptions;
-    Util::Dictionary<Util::StringAtom, ColumnDescriptor> columnRegistry;
+    Util::Array<PropertyDescription*> propertyDescriptions;
+    Util::Dictionary<Util::StringAtom, PropertyId> registry;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
 template<typename TYPE>
-inline ColumnDescriptor
+inline PropertyId
 TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue)
 {
     if constexpr (!std::is_same<TYPE, Util::StringAtom>())
@@ -49,51 +56,74 @@ TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue)
     
     static_assert(std::is_standard_layout<TYPE>(), "TYPE must be standard layout.");
     
-
     auto* reg = Instance();
-    if (!reg->columnRegistry.Contains(name))
+    if (!reg->registry.Contains(name))
     {
         // setup a state description with the default values from the type
-        ColumnDescription* desc = n_new(ColumnDescription(name, defaultValue));
+        PropertyDescription* desc = n_new(PropertyDescription(name, defaultValue));
 
-        ColumnDescriptor descriptor = reg->columnDescriptions.Size();
-        reg->columnDescriptions.Append(desc);
-        reg->columnRegistry.Add(name, descriptor);
+        PropertyId descriptor = reg->propertyDescriptions.Size();
+        reg->propertyDescriptions.Append(desc);
+        reg->registry.Add(name, descriptor);
         return descriptor;
     }
     else
     {
-        return reg->columnRegistry[name];
+        n_error("Tried to register property named %s: Cannot register two properties with same name!", name.Value());
     }
+
+    return PropertyId::Invalid();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline ColumnDescriptor
-TypeRegistry::GetDescriptor(Util::StringAtom name)
+inline PropertyId
+TypeRegistry::GetPropertyId(Util::StringAtom name)
 {
     auto* reg = Instance();
-    IndexT index = reg->columnRegistry.FindIndex(name);
+    IndexT index = reg->registry.FindIndex(name);
     if (index != InvalidIndex)
     {
-        return reg->columnRegistry.ValueAtIndex(index);
+        return reg->registry.ValueAtIndex(index);
     }
 
-    return ColumnDescriptor::Invalid();
+    return PropertyId::Invalid();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline ColumnDescription*
-TypeRegistry::GetDescription(ColumnDescriptor descriptor)
+inline PropertyDescription*
+TypeRegistry::GetDescription(PropertyId descriptor)
 {
     auto* reg = Instance();
-    if (descriptor.id >= 0 && descriptor.id < reg->columnDescriptions.Size())
-        return reg->columnDescriptions[descriptor.id];
+    if (descriptor.id >= 0 && descriptor.id < reg->propertyDescriptions.Size())
+        return reg->propertyDescriptions[descriptor.id];
     
     return nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline SizeT
+TypeRegistry::TypeSize(PropertyId descriptor)
+{
+    auto* reg = Instance();
+    n_assert(descriptor.id >= 0 && descriptor.id < reg->propertyDescriptions.Size());
+    return reg->propertyDescriptions[descriptor.id]->typeSize;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void const* const
+TypeRegistry::DefaultValue(PropertyId descriptor)
+{
+    auto* reg = Instance();
+    n_assert(descriptor.id >= 0 && descriptor.id < reg->propertyDescriptions.Size());
+    return reg->propertyDescriptions[descriptor.id]->defVal;
 }
 
 } // namespace MemDb

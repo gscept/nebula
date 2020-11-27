@@ -12,6 +12,7 @@
 #include "pjson/pjson.h"
 #include "io/jsonreader.h"
 #include "util/variant.h"
+#include <climits>
 
 namespace IO
 {
@@ -803,7 +804,18 @@ template<> void JsonReader::Get<bool>(bool & ret, const char* attr)
 //------------------------------------------------------------------------------
 /**
 */
-template<> void JsonReader::Get<int>(int & ret, const char* attr)
+template<> void JsonReader::Get<int64_t>(int64_t& ret, const char* attr)
+{
+	const value_variant* node = this->GetChild(attr);
+
+	n_assert(node->is_int());
+	ret = node->as_int64();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<int32_t>(int32_t& ret, const char* attr)
 {
     const value_variant * node = this->GetChild(attr);
 
@@ -814,9 +826,55 @@ template<> void JsonReader::Get<int>(int & ret, const char* attr)
 //------------------------------------------------------------------------------
 /**
 */
+template<> void JsonReader::Get<int16_t>(int16_t& ret, const char* attr)
+{
+	const value_variant* node = this->GetChild(attr);
+
+	n_assert(node->is_int());
+	ret = (int16_t)node->as_int32();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<int8_t>(int8_t& ret, const char* attr)
+{
+	const value_variant* node = this->GetChild(attr);
+
+	n_assert(node->is_int());
+	ret = (int8_t)node->as_int32();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<char>(char& ret, const char* attr)
+{
+	const value_variant* node = this->GetChild(attr);
+
+	n_assert(node->is_int());
+	ret = (char)node->as_int32();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<> void JsonReader::Get<Math::mat4>(Math::mat4 & ret, const char* attr)
 {        
     ret = this->GetMat4(attr);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<Math::int2>(Math::int2& ret, const char* attr)
+{
+	const value_variant* node = this->GetChild(attr);
+
+	n_assert(node->is_array());
+	n_assert(node->size() == 2);
+	ret.x = node->get_value_at_index(0).as_int32();
+	ret.y = node->get_value_at_index(1).as_int32();
 }
 
 //------------------------------------------------------------------------------
@@ -837,12 +895,61 @@ template<> void JsonReader::Get<Math::vector>(Math::vector& ret, const char* att
 //------------------------------------------------------------------------------
 /**
 */
+template<> void JsonReader::Get<Math::vec4>(Math::vec4& ret, const char* attr)
+{
+	const value_variant* node = this->GetChild(attr);
+	NEBULA_ALIGN16 float v[4];
+	for (int i = 0; i < 4; i++)
+	{
+		v[i] = node->get_value_at_index(i).as_float();
+	}
+	ret.load(v);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<Math::vec3>(Math::vec3& ret, const char* attr)
+{
+	const value_variant* node = this->GetChild(attr);
+	NEBULA_ALIGN16 float v[4];
+	for (int i = 0; i < 3; i++)
+	{
+		v[i] = node->get_value_at_index(i).as_float();
+	}
+	ret.load(v);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<Math::vec2>(Math::vec2& ret, const char* attr)
+{
+	const value_variant* node = this->GetChild(attr);
+	ret.x = node->get_value_at_index(0).as_float();
+	ret.y = node->get_value_at_index(1).as_float();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<> void JsonReader::Get<uint32_t>(uint32_t & ret, const char* attr)
 {
-    const value_variant * node = this->GetChild(attr);
+	const value_variant* node = this->GetChild(attr);
+	n_assert(node->is_int());
+	int32_t val = node->as_int32();
 
-    n_assert(node->is_int());
-    ret = node->as_int32();
+#if NEBULA_DEBUG
+	if (val < 0)
+	{
+		n_warning("JsonReader::Get<uint32_t>: unsigned integer underflow! ('%s': %i)\n", attr, val);
+	}
+#endif
+#if NEBULA_BOUNDSCHECKS
+	n_assert(val >= 0 && val <= UINT_MAX)
+#endif
+
+		ret = (uint32_t)val;
 }
 
 //------------------------------------------------------------------------------
@@ -850,10 +957,43 @@ template<> void JsonReader::Get<uint32_t>(uint32_t & ret, const char* attr)
 */
 template<> void JsonReader::Get<uint16_t>(uint16_t & ret, const char* attr)
 {
-    const value_variant * node = this->GetChild(attr);
+	const value_variant* node = this->GetChild(attr);
+	n_assert(node->is_int());
+	int32_t val = node->as_int32();
 
-    n_assert(node->is_int());
-    ret = (uint16_t)node->as_int32();
+#if NEBULA_DEBUG
+	if (val < 0)
+	{
+		n_warning("JsonReader::Get<uint16_t>: unsigned integer underflow! ('%s': %i)\n", attr, val);
+	}
+#endif
+#if NEBULA_BOUNDSCHECKS
+	n_assert(val >= 0 && val <= USHRT_MAX)
+#endif
+
+	ret = (uint16_t)val;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void JsonReader::Get<uint8_t>(uint8_t & ret, const char* attr)
+{
+	const value_variant* node = this->GetChild(attr);
+	n_assert(node->is_int());
+	int32_t val = node->as_int32();
+
+#if NEBULA_DEBUG
+	if (val < 0)
+	{
+		n_warning("JsonReader::Get<uint8_t>: unsigned integer underflow! ('%s': %i)\n", attr, val);
+	}
+#endif
+#if NEBULA_BOUNDSCHECKS
+	n_assert(val >= 0 && val <= UCHAR_MAX)
+#endif
+
+	ret = (uint8_t)val;
 }
 
 //------------------------------------------------------------------------------
@@ -958,6 +1098,21 @@ template<> void JsonReader::Get<Util::String>(Util::String & ret, const char* at
 //------------------------------------------------------------------------------
 /**
 */
+template<> void JsonReader::Get<Util::FourCC>(Util::FourCC& ret, const char* attr)
+{
+	const value_variant* node = this->GetChild(attr);
+
+	if (node->is_string())
+		ret.FromString(node->as_string_ptr());
+	else if (node->is_int())
+		ret.SetFromUInt(node->as_int32());
+	else
+		n_error("Invalid input\n");
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<> void JsonReader::Get<Util::StringAtom>(Util::StringAtom & ret, const char* attr)
 {
     const value_variant * node = this->GetChild(attr);
@@ -997,7 +1152,6 @@ template<> void JsonReader::Get<Util::Array<Util::String>>(Util::Array<Util::Str
         ret.Append(node->get_value_at_index(i).as_string_ptr());
     }    
 }
-
 
 //------------------------------------------------------------------------------
 /**

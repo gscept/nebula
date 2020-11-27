@@ -224,8 +224,9 @@ GameApplication::StepFrame()
 	// trigger core server
 	this->coreServer->Trigger();
 
-    // update resources
-    this->resourceServer->Update(GameApplication::FrameIndex);
+	// update resources
+	this->resourceServer->Update(GameApplication::FrameIndex);
+
 	// trigger beginning of frame for feature units
 	this->gameServer->OnBeginFrame();
 

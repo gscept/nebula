@@ -53,20 +53,17 @@ class IDLCodeGenerator:
                 propertyLibraries.append(fileName)
 
         if "messages" in self.document:
-            propertyLibraries.append("game/messaging/message.h")
-
-        propertyLibraries.append("core/sysfunc.h")
-        propertyLibraries.append("util/stringatom.h")
-        propertyLibraries.append("memdb/typeregistry.h")
-
+            IDLDocument.AddInclude(f, "game/messaging/message.h")
+            
         IDLProperty.ParseProperties(self.document)
+
         if (IDLProperty.ContainsResourceTypes()):
-            propertyLibraries.append("resources/resource.h")
+            IDLDocument.AddInclude(f, "resources/resource.h")
 
         IDLDocument.WriteIncludeHeader(f)
         IDLDocument.WriteIncludes(f, self.document)
         IDLDocument.WriteIncludes(f, propertyLibraries)
-
+        
         hasMessages = "messages" in self.document
         hasProperties = "properties" in self.document
         hasEnums = "enums" in self.document
@@ -117,6 +114,10 @@ class IDLCodeGenerator:
 
         IDLDocument.WriteSourceHeader(f, srcFileName)        
         IDLDocument.AddInclude(f, hdrInclude)
+        IDLDocument.AddInclude(f, "core/sysfunc.h")
+        IDLDocument.AddInclude(f, "util/stringatom.h")
+        IDLDocument.AddInclude(f, "memdb/typeregistry.h")
+        IDLDocument.AddInclude(f, "game/propertyserialization.h")
         
         hasMessages = "messages" in self.document
 
@@ -132,6 +133,19 @@ class IDLCodeGenerator:
                 # Add all properties to this document
                 self.document["properties"].update(deps)
                 fstream.close()
+
+        hasStructs = IDLProperty.HasStructProperties()
+        hasEnums = "enums" in self.document
+
+        if hasEnums or hasStructs:
+            IDLDocument.AddInclude(f, "pjson/pjson.h");
+            IDLDocument.BeginNamespaceOverride(f, self.document, "IO")
+            if hasEnums:
+                IDLProperty.WriteEnumJsonSerializers(f, self.document);
+            if hasStructs:
+                IDLProperty.WriteStructJsonSerializers(f, self.document);
+                
+            IDLDocument.EndNamespaceOverride(f, self.document, "IO")
 
         hasProperties = "properties" in self.document
         if hasProperties or hasMessages:

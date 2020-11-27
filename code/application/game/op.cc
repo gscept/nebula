@@ -1,10 +1,11 @@
 //------------------------------------------------------------------------------
-//  columnview.cc
+//  op.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "foundation/stdneb.h"
-#include "columnview.h"
-namespace MemDb
+#include "application/stdneb.h"
+#include "op.h"
+
+namespace Game
 {
 
-} // namespace MemDb
+} // namespace Game

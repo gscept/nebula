@@ -7,14 +7,16 @@
 #include "entitymanager.h"
 #include "io/jsonreader.h"
 #include "io/ioserver.h"
+#include "game/propertyserialization.h"
+#include "util/arraystack.h"
 
 namespace Game
 {
 
 __ImplementSingleton(BlueprintManager)
 
-Util::String BlueprintManager::blueprintFilename("blueprints.json");
 Util::String BlueprintManager::blueprintFolder("data:tables/");
+Util::String BlueprintManager::templatesFolder("data:tables/templates");
 
 //------------------------------------------------------------------------------
 /**
@@ -45,10 +47,15 @@ BlueprintManager::Destroy()
 */
 BlueprintManager::BlueprintManager()
 {
-    if (!this->ParseBlueprints())
-    {
-        n_error("Managers::BlueprintManager: Error parsing %s%s!", BlueprintManager::blueprintFolder.AsCharPtr(), BlueprintManager::blueprintFilename.AsCharPtr());
-    }
+	Util::Array<Util::String> files = IO::IoServer::Instance()->ListFiles(this->blueprintFolder, "*.json", true);
+	for (int i = 0; i < files.Size(); i++)
+	{
+		if (!this->ParseBlueprint(files[i]))
+		{
+			n_warning("Warning: Managers::BlueprintManager: Error parsing %s!\n", files[i].AsCharPtr());
+		}
+	}
+
 }
 
 //------------------------------------------------------------------------------
@@ -66,6 +73,12 @@ void
 BlueprintManager::OnActivate()
 {
 	Singleton->SetupCategories();
+	
+	// parse all templates.
+	if (IO::IoServer::Instance()->DirectoryExists(Singleton->templatesFolder))
+	{
+		Singleton->LoadTemplateFolder(Singleton->templatesFolder);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -74,12 +87,8 @@ BlueprintManager::OnActivate()
 	the blueprints array.
 */
 bool
-BlueprintManager::ParseBlueprints()
+BlueprintManager::ParseBlueprint(Util::String const& blueprintsPath)
 {
-	// it is not an error here if blueprints.json doesn't exist
-	Util::String blueprintsPath = BlueprintManager::blueprintFolder;
-	blueprintsPath.Append(BlueprintManager::blueprintFilename);
-
 	if (IO::IoServer::Instance()->FileExists(blueprintsPath))
 	{
 		Ptr<IO::JsonReader> jsonReader = IO::JsonReader::Create();
@@ -89,7 +98,7 @@ BlueprintManager::ParseBlueprints()
 			// make sure it's a BluePrints file
 			if (!jsonReader->SetToNode("blueprints"))
 			{
-				n_error("BlueprintManager::ParseBlueprints(): not a valid blueprints file!");
+				n_warning("Warning: BlueprintManager::ParseBlueprints(): not a valid blueprints file!\n");
 				return false;
 			}
 			if (jsonReader->SetToFirstChild()) do
@@ -113,7 +122,6 @@ BlueprintManager::ParseBlueprints()
 
 				this->blueprints.Append(bluePrint);
 
-				//jsonReader->SetToParent();
 			} while (jsonReader->SetToNextChild());
 
 			jsonReader->Close();
@@ -121,7 +129,131 @@ BlueprintManager::ParseBlueprints()
 		}
 		else
 		{
-			n_error("Managers::BlueprintManager::ParseBlueprints(): could not open '%s'!", blueprintsPath.AsCharPtr());
+			n_error("Managers::BlueprintManager::ParseBlueprint(): could not open '%s'!", blueprintsPath.AsCharPtr());
+			return false;
+		}
+	}
+	return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+BlueprintManager::LoadTemplateFolder(Util::String const& path)
+{
+	Util::Array<Util::String> files = IO::IoServer::Instance()->ListFiles(path, "*.json", true);
+
+	// Parse files
+	for (int i = 0; i < files.Size(); i++)
+	{
+		if (!this->ParseTemplate(files[i]))
+		{
+			n_warning("Managers::BlueprintManager: Error parsing %s!\n", files[i].AsCharPtr());
+		}
+	}
+
+	// Recurse all folders
+	Util::Array<Util::String> dirs = IO::IoServer::Instance()->ListDirectories(path, "*", true);
+	for (auto const& dir : dirs)
+		this->LoadTemplateFolder(dir);
+
+	return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+BlueprintManager::ParseTemplate(Util::String const& templatePath)
+{
+	if (IO::IoServer::Instance()->FileExists(templatePath))
+	{
+		Ptr<IO::JsonReader> jsonReader = IO::JsonReader::Create();
+		jsonReader->SetStream(IO::IoServer::Instance()->CreateStream(templatePath));
+		if (jsonReader->Open())
+		{
+			jsonReader->SetToRoot();
+			if (!jsonReader->HasNode("blueprint"))
+			{
+				jsonReader->Close();
+				return false;
+			}
+			Util::StringAtom blueprintName = jsonReader->GetString("blueprint");
+			if (this->blueprintMap.Contains(blueprintName))
+			{
+				// Instantiate template
+				Ptr<MemDb::Database> templateDatabase = EntityManager::Instance()->state.templateDatabase;
+				BlueprintId blueprint = this->blueprintMap[blueprintName];
+				MemDb::TableId templateTid = this->blueprints[blueprint.id].tableId;
+				IndexT instance = templateDatabase->AllocateRow(templateTid);
+
+				n_assert2(instance < 0xFFFF, "Maximum number of templates per blueprint reached! You win!");
+
+				// Create template name
+				Util::String fileName = templatePath.ExtractFileName();
+				fileName.StripFileExtension();
+				Util::String templateName;
+				templateName.Append(blueprintName.Value());
+				templateName += "/" + fileName;
+
+				TemplateId templateId;
+				templateId.blueprintId = blueprint.id;
+				templateId.templateId = instance;
+
+				// Add to map
+				this->templateMap.Add(Util::StringAtom(templateName), templateId);
+
+				// Override properties if necessary
+				if (jsonReader->SetToFirstChild("properties"))
+				{
+					jsonReader->SetToFirstChild();
+					do
+					{
+						Util::StringAtom propertyName = jsonReader->GetCurrentNodeName();
+						MemDb::PropertyId descriptor = MemDb::TypeRegistry::GetPropertyId(propertyName);
+						if (descriptor == MemDb::PropertyId::Invalid())
+						{
+							n_warning("Warning: Template contains invalid property named '%s'. (%s)\n", propertyName.Value(), templatePath.AsCharPtr());
+							continue;
+						}
+
+						MemDb::ColumnIndex column = templateDatabase->GetColumnId(templateTid, descriptor);
+						if (column == MemDb::ColumnIndex::Invalid())
+						{
+							n_warning("Warning: Template contains property named '%s' that does not exist in blueprint. (%s)\n", propertyName.Value(), templatePath.AsCharPtr());
+							continue;
+						}
+
+						void* propertyValue = templateDatabase->GetValuePointer(templateTid, column, instance);
+						PropertySerialization::Deserialize(jsonReader, propertyName, propertyValue);
+					} while (jsonReader->SetToNextChild());
+
+					jsonReader->SetToParent();
+				}
+
+				// TODO: Create template in blueprint table
+
+				if (jsonReader->SetToFirstChild("variations"))
+				{
+					jsonReader->SetToFirstChild();
+					do
+					{
+						Util::StringAtom propertyName = jsonReader->GetCurrentNodeName();
+						// TODO: GetValue!
+					} while (jsonReader->SetToNextChild());
+
+					// TODO: Create template variations in blueprint table
+
+					jsonReader->SetToParent();
+				}
+			}
+			jsonReader->Close();
+			return true;
+		}
+		else
+		{
+			n_error("Managers::BlueprintManager::ParseTemplate(): could not open '%s'!", templatePath.AsCharPtr());
 			return false;
 		}
 	}
@@ -135,7 +267,6 @@ void
 BlueprintManager::SetBlueprintsFilename(const Util::String& name, const Util::String& folder)
 {
 	n_assert(name.IsValid());
-	blueprintFilename = name;
 	blueprintFolder = folder;
 }
 
@@ -147,6 +278,25 @@ BlueprintManager::GetBlueprintId(Util::StringAtom name)
 {
 	n_assert(Singleton != nullptr);
 	return Singleton->blueprintMap[name];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+TemplateId const
+BlueprintManager::GetTemplateId(Util::StringAtom name)
+{
+	IndexT index = Singleton->templateMap.FindIndex(name);
+	if (index != InvalidIndex)
+	{
+		TemplateId tid = Singleton->templateMap.ValueAtIndex(name, index);
+		n_assert(Singleton->blueprints.Size() > tid.blueprintId);
+		return tid;
+	}
+	else
+	{
+		return TemplateId::Invalid();
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -166,13 +316,14 @@ BlueprintManager::Instantiate(BlueprintId blueprint)
 /**
 */
 EntityMapping
-BlueprintManager::Instantiate(BlueprintId blueprint, TemplateId templateId)
+BlueprintManager::Instantiate(TemplateId templateId)
 {
 	EntityManager::State const& emState = EntityManager::Instance()->state;
 	Ptr<MemDb::Database> const& db = emState.worldDatabase;
-	CategoryId cid = Singleton->blueprints[blueprint.id].categoryId;
+	Ptr<MemDb::Database> const& tdb = emState.templateDatabase;
+	CategoryId cid = Singleton->blueprints[templateId.blueprintId].categoryId;
 	Category& cat = emState.categoryArray[cid.id];
-	InstanceId instance = db->DuplicateInstance(Singleton->blueprints[blueprint.id].tableId, templateId.id, cat.instanceTable);
+	InstanceId instance = tdb->DuplicateInstance(Singleton->blueprints[templateId.blueprintId].tableId, templateId.templateId, db, cat.instanceTable);
 	return { cid, instance };
 }
 
@@ -198,21 +349,29 @@ BlueprintManager::SetupCategories()
 		MemDb::TableCreateInfo info;
 		info.name = blueprint.name.AsString();
 
-		const SizeT numCols = blueprint.properties.Size();
-		info.columns.SetSize(numCols);
+		const SizeT numBlueprintProperties = blueprint.properties.Size();
+		Util::ArrayStack<PropertyId, 32> columns;
 
-		for (int i = 0; i < numCols; i++)
+		for (int i = 0; i < numBlueprintProperties; i++)
 		{
-			auto descriptor = MemDb::TypeRegistry::GetDescriptor(blueprint.properties[i].propertyName);
+			auto descriptor = MemDb::TypeRegistry::GetPropertyId(blueprint.properties[i].propertyName);
 			if (descriptor != PropertyId::Invalid())
 			{
-				info.columns[i] = descriptor;
+				// append to dynamically resizable array
+				columns.Append(descriptor);
 			}
 			else
 			{
-				n_printf("Error: Unrecognized property '%s' in blueprint '%s'\n", blueprint.properties[i].propertyName.AsString().AsCharPtr(), blueprint.name.Value());
-				failed = true;
+				n_warning("Warning: Unrecognized property '%s' in blueprint '%s'\n", blueprint.properties[i].propertyName.AsString().AsCharPtr(), blueprint.name.Value());
 			}
+		}
+
+		// move properties from dynamically sized array to fixed array.
+		// this is kinda wonky, but then we don't need to do anything special with invalid properties...
+		info.columns.SetSize(columns.Size());
+		for (int i = 0; i < columns.Size(); i++)
+		{
+			info.columns[i] = columns[i];
 		}
 
 		if (!failed)
@@ -223,7 +382,7 @@ BlueprintManager::SetupCategories()
 
 			// Create the blueprint's template table
 			info.name = "blueprint:" + info.name;
-			MemDb::TableId tid = Game::GetWorldDatabase()->CreateTable(info);
+			MemDb::TableId tid = EntityManager::Instance()->state.templateDatabase->CreateTable(info);
 
 			blueprint.categoryHash = cat.hash;
 			blueprint.categoryId = cid;

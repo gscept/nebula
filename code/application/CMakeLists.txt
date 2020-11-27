@@ -16,6 +16,8 @@ nebula_begin_module(application)
 		)
 	fips_dir(game)
 		fips_files(
+			api.h
+			api.cc
 			category.h
 			category.cc
 			entity.h
@@ -26,6 +28,10 @@ nebula_begin_module(application)
 			gameserver.cc
 			manager.h
 			manager.cc
+			op.h
+			op.cc
+			propertyserialization.h
+			propertyserialization.cc
 		)
 	fips_dir(game/messaging)
 		fips_files(
@@ -44,16 +50,29 @@ nebula_begin_module(application)
 				blueprintmanager.h
 				blueprintmanager.cc
 			)
-	fips_dir(basegamefeature/properties)
-		nebula_add_nidl(
-			owner.nidl
-			transform.nidl
-		)
+		fips_dir(basegamefeature/messages)
+			nebula_add_nidl(
+				entitymessages.nidl
+			)
+		fips_dir(basegamefeature/properties)
+			nebula_add_nidl(
+				owner.nidl
+				transform.nidl
+			)
 	fips_dir(graphicsfeature)
 		fips_files(
 			graphicsfeatureunit.h
 			graphicsfeatureunit.cc
 		)
+		fips_dir(graphicsfeature/managers)
+			fips_files(
+				graphicsmanager.h
+				graphicsmanager.cc
+			)
+		fips_dir(graphicsfeature/properties)
+			nebula_add_nidl(
+				graphics.nidl
+			)
 	fips_dir(physicsfeature)
 		fips_files(
 			physicsfeatureunit.h
@@ -67,7 +86,9 @@ nebula_begin_module(application)
 	fips_dir(.)
 nebula_end_module()
 
+if(FIPS_WINDOWS)
 target_link_options(application PUBLIC "/WHOLEARCHIVE:application")
+endif()
 target_include_directories(application PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
 	target_precompile_headers(application PRIVATE "application/stdneb.h")

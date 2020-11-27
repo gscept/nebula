@@ -1,7 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    Game::Table
+    @file   memdb/table.h
+
+    Contains declarations for tables.
 
     (C) 2020 Individual contributors, see AUTHORS file
 */
@@ -11,7 +13,8 @@
 #include "util/fixedarray.h"
 #include "util/string.h"
 #include "util/stringatom.h"
-#include "columndescriptor.h"
+#include "propertyid.h"
+#include "tablesignature.h"
 
 namespace MemDb
 {
@@ -19,37 +22,45 @@ namespace MemDb
 /// TableId contains an id reference to the database it's attached to, and the id of the table.
 ID_32_TYPE(TableId);
 
-constexpr uint16_t MAX_VALUE_TABLE_COLUMNS = 128;
-
 /// column id
-ID_16_TYPE(ColumnId);
+ID_16_TYPE(ColumnIndex);
 
+/// information for creating a table
 struct TableCreateInfo
 {
+    /// name to be given to the table
     Util::String name;
-    Util::FixedArray<ColumnDescriptor> columns;
+    /// which properties the table should initially have
+    Util::FixedArray<PropertyId> columns;
 };
 
 //------------------------------------------------------------------------------
 /**
-    A table describes and holds columns, and buffers for those columns.
-    
-    Tables can also contain state columns, that are specific to a certain context only.
+    A table hold properties as columns, and buffers for those columns.
+    Property descriptions are retrieved from the MemDb::TypeRegistry
+
+    @see    memdb/typeregistry.h
 */
 struct Table
 {
     using ColumnBuffer = void*;
-
+    /// table identifier
+    TableId tid;
+    /// name of the table
     Util::StringAtom name;
-
+    /// number of rows
     uint32_t numRows = 0;
+    /// total number of rows allocated
     uint32_t capacity = 128;
+    /// initial grow. Gets doubled when table is saturated and expanded
     uint32_t grow = 128;
-    // Holds freed indices to be reused in the attribute table.
+    // holds freed indices/rows to be reused in the table.
     Util::Array<IndexT> freeIds;
-
-    Util::ArrayAllocator<ColumnDescriptor, ColumnBuffer> columns;
-
+    /// arrays that hold the property identifier, and the buffers
+    Util::ArrayAllocator<PropertyId, ColumnBuffer> columns;
+    /// 
+    Util::HashTable<PropertyId, IndexT, 32, 1> columnRegistry;
+    /// allocation heap used for the column buffers
     static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::DefaultHeap;
 };
 

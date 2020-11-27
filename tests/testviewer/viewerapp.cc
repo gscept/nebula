@@ -162,6 +162,7 @@ SimpleViewerApplication::Open()
 
 
 		this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
+        gfxServer->SetCurrentView(this->view);
 		this->stage = gfxServer->CreateStage("stage1", true);
 
         // setup post effects

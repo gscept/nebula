@@ -5,6 +5,7 @@
 #include "render/stdneb.h"
 #include "imguicontext.h"
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "graphics/graphicsserver.h"
 #include "resources/resourceserver.h"
 #include "math/rectangle.h"
@@ -13,7 +14,6 @@
 #include "input/inputserver.h"
 #include "io/ioserver.h"
 #include "frame/frameplugin.h"
-
 using namespace Math;
 using namespace CoreGraphics;
 using namespace Base;
@@ -31,7 +31,7 @@ ImguiContext::ImguiState ImguiContext::state;
 void
 ImguiContext::ImguiDrawFunction()
 {
-    ImDrawData* data = ImGui::GetDrawData();
+	ImDrawData* data = ImGui::GetDrawData();
 	// get Imgui context
 	ImGuiIO& io = ImGui::GetIO();
 	int fb_width = (int)(io.DisplaySize.x * io.DisplayFramebufferScale.x);
@@ -174,6 +174,83 @@ ImguiContext::ImguiDrawFunction()
 	CoreGraphics::ResetClipSettings();
 }
 
+//------------------------------------------------------------------------------
+/**
+	@todo	update imgui and uncomment the commented code below!
+*/
+void
+ImguiContext::RecoverImGuiContextErrors()
+{
+	ImGuiContext& g = *ImGui::GetCurrentContext();
+
+	while (g.CurrentWindowStack.Size > 0)
+	{
+#ifdef IMGUI_HAS_TABLE
+		while (g.CurrentTable && (g.CurrentTable->OuterWindow == g.CurrentWindow || g.CurrentTable->InnerWindow == g.CurrentWindow))
+		{
+			if (verbose) LogWarning("Recovered from missing EndTable() call.");
+			ImGui::EndTable();
+		}
+#endif
+
+		while (g.CurrentTabBar != NULL)
+		{
+			n_warning("WARNING: Recovered from missing ImGui::EndTabBar() call.\n");
+			ImGui::EndTabBar();
+		}
+
+		while (g.CurrentWindow->DC.TreeDepth > 0)
+		{
+			n_warning("WARNING: Recovered from missing ImGui::TreePop() call.\n");
+			ImGui::TreePop();
+		}
+
+		//while (g.GroupStack.Size > g.CurrentWindow->DC.StackSizesOnBegin.SizeOfGroupStack)
+		//{
+		//	n_warning("WARNING: Recovered from missing ImGui::EndGroup() call.\n");
+		//	ImGui::EndGroup();
+		//}
+
+		while (g.CurrentWindow->IDStack.Size > 1)
+		{
+			n_warning("WARNING: Recovered from missing ImGui::PopID() call.\n");
+			ImGui::PopID();
+		}
+
+		//while (g.ColorStack.Size > g.CurrentWindow->DC.StackSizesOnBegin.SizeOfColorStack)
+		//{
+		//	n_warning("WARNING: Recovered from missing PopStyleColor() for '%s'\n", ImGui::GetStyleColorName(g.ColorStack.back().Col));
+		//	ImGui::PopStyleColor();
+		//}
+		//while (g.StyleVarStack.Size > g.CurrentWindow->DC.StackSizesOnBegin.SizeOfStyleVarStack)
+		//{
+		//	n_warning("WARNING: Recovered from missing ImGui::PopStyleVar() call.\n");
+		//	ImGui::PopStyleVar();
+		//}
+		//while (g.FocusScopeStack.Size > g.CurrentWindow->DC.StackSizesOnBegin.SizeOfFocusScopeStack)
+		//{
+		//	n_warning("WARNING: Recovered from missing ImGui::PopFocusScope() call.\n");
+		//	ImGui::PopFocusScope();
+		//}
+
+		if (g.CurrentWindowStack.Size == 1)
+		{
+			break;
+		}
+
+		if (g.CurrentWindow->Flags & ImGuiWindowFlags_ChildWindow)
+		{
+			n_warning("WARNING: Recovered from missing ImGui::EndChild() call.\n");
+			ImGui::EndChild();
+		}
+		else
+		{
+			n_warning("WARNING: Recovered from missing ImGui::End() call.\n");
+			ImGui::End();
+		}
+	}
+}
+
 _ImplementPluginContext(ImguiContext);
 //------------------------------------------------------------------------------
 /**
@@ -225,6 +302,10 @@ ImguiContext::Create()
 
 	Frame::AddCallback("ImGUI", [](const IndexT frame, const IndexT bufferIndex)
 		{
+#ifdef NEBULA_NO_DYNUI_ASSERTS
+			ImguiContext::RecoverImGuiContextErrors();
+#endif
+
 			CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
 			ImGui::Render();
 			ImguiContext::ImguiDrawFunction();
@@ -380,6 +461,9 @@ ImguiContext::Create()
 
 	// enable keyboard navigation
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+#ifdef IMGUI_HAS_DOCK
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+#endif
 
 	// load default font
 	ImFontConfig config;

@@ -1,14 +1,21 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    MemDb::ColumnDescriptor
+    @file	op.h
 
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-namespace MemDb
+#include "util/array.h"
+#include "game/entity.h"
+#include "game/category.h"
+#include "memory/arenaallocator.h"
+#include "memdb/typeregistry.h"
+
+namespace Game
 {
 
-ID_16_TYPE(ColumnDescriptor);
+} // namespace Game
 
-} // namespace MemDb
+
+

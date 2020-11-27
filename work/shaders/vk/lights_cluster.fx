@@ -123,11 +123,9 @@ void csRender()
 	vec4 normal = fetch2D(NormalBuffer, PosteffectSampler, coord, 0).rgba;
 	float depth = fetch2D(DepthBuffer, PosteffectSampler, coord, 0).r;
 	vec4 material = fetch2D(SpecularBuffer, PosteffectSampler, coord, 0).rgba;
-	//material[MAT_ROUGHNESS] = 1 - material[MAT_ROUGHNESS] ;
-	// material.a = 1.0f;
-    float ssao = 1.0f - fetch2D(SSAOBuffer, PosteffectSampler, coord, 0).r;
+	vec4 emissive = fetch2D(EmissiveBuffer, PosteffectSampler, coord, 0).rgba;
+	float ssao = 1.0f - fetch2D(SSAOBuffer, PosteffectSampler, coord, 0).r;
 	float ssaoSq = ssao * ssao;
-	//material = vec4(1, 0, 1.0, 1.0f);
 	vec4 albedo = fetch2D(AlbedoBuffer, PosteffectSampler, coord, 0).rgba;
 
 	// convert screen coord to view-space position
@@ -159,20 +157,21 @@ void csRender()
 		float cosTheta = dot(normal.xyz, worldViewVec);
 		vec3 F = FresnelSchlickGloss(F0, cosTheta, material[MAT_ROUGHNESS]);
 		vec3 reflection = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, material[MAT_ROUGHNESS] * NumEnvMips).rgb * GlobalLightColor.xyz;
-        vec3 irradiance = sampleCubeLod(IrradianceMap, CubeSampler, normal.xyz, 0).rgb * GlobalLightColor.xyz;
+		vec3 irradiance = sampleCubeLod(IrradianceMap, CubeSampler, normal.xyz, 0).rgb * GlobalLightColor.xyz;
 		float cavity = material[MAT_CAVITY];
 		
 		vec3 kD = vec3(1.0f) - F;
 		kD *= 1.0f - material[MAT_METALLIC];
-		 
+		
 		const vec3 ambientTerm = (irradiance * kD * albedo.rgb) * ssao;
 		light += (ambientTerm + reflection * F) * cavity; 
+		light += emissive.rgb;
    	} 
 	else // sky pixels
 	{ 
 		//light += sampleCubeLod(EnvironmentMap, CubeSampler, normalize(worldPos.xyz), 0).rgb;
 		//light += Preetham(-worldViewVec, GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * GlobalLightColor.rgb;
-		light = CalculateAtmosphericScattering(-worldViewVec, GlobalLightDirWorldspace.xyz);
+		light = CalculateAtmosphericScattering(-worldViewVec, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
 	}  
      
 	// write final output 

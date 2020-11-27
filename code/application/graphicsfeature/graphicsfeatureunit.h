@@ -42,6 +42,8 @@ public:
     /// called when game debug visualization is on
     void OnRenderDebug();
 
+    void SetGraphicsDebugging(bool value);
+
     /// retrieve the default view
     Ptr<Graphics::View> GetDefaultView() const;
     /// retrieve the default stage
@@ -49,7 +51,7 @@ public:
 
     /// set framescript. must be done before OnActivate!
     void SetFrameScript(IO::URI const& uri);
-    
+
     using UIRenderFunc = std::function<void()>;
     /// add a custom UI render function
     void AddRenderUICallback(UIRenderFunc func);
@@ -66,7 +68,20 @@ private:
     Graphics::GraphicsEntityId globalLight;
 
     Util::Array<UIRenderFunc> uiCallbacks;
+
+    Game::ManagerHandle graphicsManagerHandle;
+
+    bool renderDebug = false;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+GraphicsFeature::GraphicsFeatureUnit::SetGraphicsDebugging(bool value)
+{
+    this->renderDebug = value;
+}
 
 //------------------------------------------------------------------------------
 /**

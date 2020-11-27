@@ -1,24 +1,9 @@
 import IDLC.idltypes as IDLTypes
 import genutil as util
+import IDLC.idldocument as IDLDocument
 
-# fight me
+# Global property list
 properties = list()
-
-def Capitalize(s):
-    return s[:1].upper() + s[1:]
-
-def GetTypeCamelNotation(propertyName, prop, document):
-    if not "_type_" in prop:
-        util.fmtError('Property type is required. Property "{}" does not name a type!'.format(propertyName))
-    typeString = IDLTypes.ConvertToCamelNotation(prop["_type_"])
-
-    if not typeString:
-        # Figure out what type it actually is.
-        if prop["_type_"] in document["enums"]:
-            typeString = IDLTypes.ConvertToCamelNotation("uint") # type for enums is uint
-        else:
-            util.fmtError('"{}" is not a valid type!'.format(prop["_type_"]))
-    return typeString
 
 #------------------------------------------------------------------------------
 ##
@@ -32,7 +17,7 @@ class VariableDefinition:
             util.fmtError('_name_ value is not a string value!')
         self.name = name
         self.defaultValue = defVal
-    
+        
     def AsString(self):
         if self.defaultValue is None:
             return '{} {};'.format(self.type, self.name)
@@ -83,6 +68,12 @@ class PropertyDefinition:
 #------------------------------------------------------------------------------
 ##
 #
+def Capitalize(s):
+    return s[:1].upper() + s[1:]
+
+#------------------------------------------------------------------------------
+##
+#
 def GetVariableFromEntry(name, var):
     if isinstance(var, dict):
         if not "_type_" in var:
@@ -128,7 +119,23 @@ def WritePropertyHeaderDeclarations(f, document):
 ##
 #
 def WritePropertyHeaderDetails(f, document):
-    f.WriteLine('inline const bool RegisterPropertyLibrary_{filename}()'.format(filename=f.fileName))
+    f.WriteLine('extern const bool {}_registered;'.format(f.fileName))
+    pass
+
+#------------------------------------------------------------------------------
+##
+#
+def HasStructProperties():
+    for prop in properties:
+        if prop.isStruct:
+            return True
+    return False
+
+#------------------------------------------------------------------------------
+##
+#
+def WritePropertySourceDefinitions(f, document):
+    f.WriteLine('const bool RegisterPropertyLibrary_{filename}()'.format(filename=f.fileName))
     f.WriteLine('{')
     f.IncreaseIndent()
     f.WriteLine('// Make sure string atom tables have been set up.')
@@ -138,16 +145,71 @@ def WritePropertyHeaderDetails(f, document):
         if not prop.isStruct :
             if prop.variables[0].defaultValue is not None:
                 defval = prop.variables[0].defaultValue
-        f.WriteLine('MemDb::TypeRegistry::Register<{type}>("{type}"_atm, {defval});'.format(type=prop.propertyName, defval=defval))
+        f.WriteLine('{')
+        f.WriteLine('Util::StringAtom const name = "{}"_atm;'.format(prop.propertyName))
+        f.WriteLine('MemDb::TypeRegistry::Register<{type}>(name, {defval});'.format(type=prop.propertyName, defval=defval))
+        f.WriteLine('Game::PropertySerialization::Register<{type}>(name);'.format(type=prop.propertyName))
+        f.WriteLine('}')
     f.WriteLine("return true;")
     f.DecreaseIndent()
     f.WriteLine("}")
+    f.WriteLine('const bool {filename}_registered = RegisterPropertyLibrary_{filename}();'.format(filename=f.fileName))
 
 #------------------------------------------------------------------------------
 ##
 #
-def WritePropertySourceDefinitions(f, document):
-    f.WriteLine('static const bool {filename}_registered = RegisterPropertyLibrary_{filename}();'.format(filename=f.fileName))
+def WriteEnumJsonSerializers(f, document):
+    namespace = IDLDocument.GetNamespace(document)
+    for enumName, enum in document["enums"].items():
+        f.WriteLine('template<> void JsonReader::Get<{namespace}::{name}>({namespace}::{name}& ret, const char* attr)'.format(namespace=namespace, name=enumName))
+        f.WriteLine('{')
+        f.IncreaseIndent()
+        f.WriteLine("const pjson::value_variant* node = this->GetChild(attr);");
+        f.WriteLine("if (node->is_string())")
+        f.WriteLine("{")
+        f.IncreaseIndent()
+        f.WriteLine("Util::String str = node->as_string_ptr();")
+        for value in enum:
+            f.WriteLine('if (str == "{val}") {{ ret = {namespace}::{name}::{val}; return; }}'.format(val=value, namespace=namespace, name=enumName))
+        f.DecreaseIndent()
+        f.WriteLine("}")
+        f.WriteLine("else if (node->is_int())")
+        f.WriteLine("{")
+        f.IncreaseIndent()
+        f.WriteLine('ret = ({namespace}::{name})node->as_int32();'.format(namespace=namespace, name=enumName))
+        f.WriteLine('return;')
+        f.DecreaseIndent()
+        f.WriteLine("}")
+        f.WriteLine('ret = {namespace}::{name}();'.format(namespace=namespace, name=enumName))
+        f.DecreaseIndent()
+        f.WriteLine("}")
+        f.WriteLine("");
+
+#------------------------------------------------------------------------------
+##
+#
+def WriteStructJsonSerializers(f, document):
+    namespace = IDLDocument.GetNamespace(document)
+    for prop in properties:
+        if not prop.isStruct:
+            continue
+
+        f.WriteLine('template<> void JsonReader::Get<{namespace}::{name}>({namespace}::{name}& ret, const char* attr)'.format(namespace=namespace, name=prop.propertyName))
+        f.WriteLine('{')
+        f.IncreaseIndent()
+        f.WriteLine('ret = {namespace}::{name}();'.format(namespace=namespace, name=prop.propertyName))
+        f.WriteLine("const pjson::value_variant* node = this->GetChild(attr);");
+        f.WriteLine("if (node->is_object())")
+        f.WriteLine("{")
+        f.IncreaseIndent()
+        for var in prop.variables:
+            f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=var.type));
+        f.DecreaseIndent()
+        f.WriteLine("}")
+        f.DecreaseIndent()
+        f.WriteLine("}")
+        f.WriteLine("");
+
 
 #------------------------------------------------------------------------------
 ##

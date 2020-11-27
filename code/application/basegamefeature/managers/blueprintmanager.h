@@ -18,6 +18,7 @@
 #include "util/stringatom.h"
 #include "memdb/table.h"
 #include "game/category.h"
+#include "game/api.h"
 
 namespace Game
 {
@@ -40,11 +41,14 @@ public:
 	/// get a blueprint id
 	static BlueprintId const GetBlueprintId(Util::StringAtom name);
 
+	/// get a template id
+	static TemplateId const GetTemplateId(Util::StringAtom name);
+
 // private api
 public:
 	/// create an instance from blueprint. Note that this does not tie it to an entity! It's not recommended to create entities this way. @see entitymanager.h
 	EntityMapping Instantiate(BlueprintId blueprint);
-	EntityMapping Instantiate(BlueprintId blueprint, TemplateId templateId);
+	EntityMapping Instantiate(TemplateId templateId);
 
 private:
 	/// constructor
@@ -56,7 +60,11 @@ private:
 	static void OnActivate();
 
 	/// parse entity blueprints file
-	virtual bool ParseBlueprints();
+	bool ParseBlueprint(Util::String const& blueprintsPath);
+	/// load a template folder
+	bool LoadTemplateFolder(Util::String const& path);
+	/// parse blueprint template file
+	bool ParseTemplate(Util::String const& templatePath);
 	/// setup categories
 	void SetupCategories();
 
@@ -85,14 +93,14 @@ private:
 	/// contains all blueprints and their information.
 	Util::Array<Blueprint> blueprints;
 
+	/// maps from template name to template id, which is both BlueprintId and the the row within a blueprint table.
+	Util::HashTable<Util::StringAtom, TemplateId> templateMap;
+
 	/// maps from blueprint name to blueprint id, which is the index in the blueprints array.
 	Util::HashTable<Util::StringAtom, BlueprintId> blueprintMap;
 
-	/// maps from template name to template id, which is the row within a blueprint table.
-	Util::HashTable<Util::StringAtom, TemplateId> templateMap;
-
-	static Util::String blueprintFilename;
 	static Util::String blueprintFolder;
+	static Util::String templatesFolder;
 };
 
 } // namespace Game

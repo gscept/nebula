@@ -2142,6 +2142,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
 		case SubTextureUpdateState::Grew:
 		case SubTextureUpdateState::Shrank:
 		case SubTextureUpdateState::Created:
+        {
 			Math::uint2 newCoord = terrainVirtualTileState.indirectionOccupancy.Allocate(output.newTiles);
 			n_assert(newCoord.x != 0xFFFFFFFF && newCoord.y != 0xFFFFFFFF);
 
@@ -2162,6 +2163,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
 			deferredOutput.newCoord = newCoord;
 			terrainVirtualTileState.subTextureJobHistoryOutputs[ctx.bufferIndex].Append(deferredOutput);
 			terrainVirtualTileState.subTextureUpdateKeys[i]++;
+        }
 			break;
 		case SubTextureUpdateState::Deleted:
 			subTex.tiles = 0;

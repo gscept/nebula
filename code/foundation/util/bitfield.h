@@ -87,8 +87,7 @@ template<unsigned int NUMBITS>
 constexpr
 BitField<NUMBITS>::BitField(std::initializer_list<unsigned int> list)
 {
-	IndexT i;
-	for (i = 0; i < size; i++)
+	for (IndexT i = 0; i < size; i++)
 	{
 		this->bits[i] = 0;
 	}
@@ -105,8 +104,7 @@ BitField<NUMBITS>::BitField(std::initializer_list<unsigned int> list)
 template<unsigned int NUMBITS> constexpr bool
 BitField<NUMBITS>::operator==(const BitField<NUMBITS>& rhs) const
 {
-    IndexT i;
-    for (i = 0; i < size; i++)
+    for (IndexT i = 0; i < size; i++)
     {
         if (this->bits[i] != rhs.bits[i])
         {
@@ -228,8 +226,7 @@ template<unsigned int NUMBITS> constexpr BitField<NUMBITS>
 BitField<NUMBITS>::Or(const BitField<NUMBITS>& b0, const BitField<NUMBITS>& b1)
 {
     BitField<NUMBITS> res;
-    IndexT i;
-    for (i = 0; i < size; i++)
+    for (IndexT i = 0; i < size; i++)
     {
         res.bits[i] = b0.bits[i] | b1.bits[i];
     }
@@ -243,8 +240,7 @@ template<unsigned int NUMBITS> constexpr BitField<NUMBITS>
 BitField<NUMBITS>::And(const BitField<NUMBITS>& b0, const BitField<NUMBITS>& b1)
 {
     BitField<NUMBITS> res;
-    IndexT i;
-    for (i = 0; i < size; i++)
+    for (IndexT i = 0; i < size; i++)
     {
         res.bits[i] = b0.bits[i] & b1.bits[i];
     }

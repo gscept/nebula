@@ -5,3 +5,5 @@ build_tool: vscode_cmake
 build_type: Debug
 defines:
     N_USE_VULKAN: ON
+    FIPS_RTTI: ON
+    FIPS_EXCEPTIONS: ON

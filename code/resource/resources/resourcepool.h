@@ -72,9 +72,7 @@
 	template<int MEMBER> inline auto& Get(const Ids::Id24 id) { return name.Get<MEMBER>(id); } \
 	template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.resourceId); } \
 	template<int MEMBER> inline auto& GetUnsafe(const Ids::Id24 id) { return name.GetUnsafe<MEMBER>(id); } \
-	template<int MEMBER> inline auto& GetUnsafe(const Resources::ResourceId id) { return name.GetUnsafe<MEMBER>(id.resourceId); } \
-	template<int MEMBER> inline auto& GetSafe(const Ids::Id24 id) { return name.GetSafe<MEMBER>(id); } \
-	template<int MEMBER> inline auto& GetSafe(const Resources::ResourceId id) { return name.GetSafe<MEMBER>(id.resourceId); }
+	template<int MEMBER> inline auto& GetUnsafe(const Resources::ResourceId id) { return name.GetUnsafe<MEMBER>(id.resourceId); } 
 
 namespace Resources
 {

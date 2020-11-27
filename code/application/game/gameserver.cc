@@ -20,9 +20,9 @@ GameServer::GameServer() :
     isStarted(false)
 {
     __ConstructSingleton;
-	_setup_grouped_timer(GameServerOnBeginFrame, "Game Subsystem");
-	_setup_grouped_timer(GameServerOnFrame, "Game Subsystem");
-	_setup_grouped_timer(GameServerOnEndFrame, "Game Subsystem");
+    _setup_grouped_timer(GameServerOnBeginFrame, "Game Subsystem");
+    _setup_grouped_timer(GameServerOnFrame, "Game Subsystem");
+    _setup_grouped_timer(GameServerOnEndFrame, "Game Subsystem");
 }
 
 //------------------------------------------------------------------------------
@@ -31,10 +31,10 @@ GameServer::GameServer() :
 GameServer::~GameServer()
 {
     n_assert(!this->isOpen);
-	_discard_timer(GameServerOnBeginFrame);
+    _discard_timer(GameServerOnBeginFrame);
     _discard_timer(GameServerOnFrame);
-	_discard_timer(GameServerOnEndFrame);
-	
+    _discard_timer(GameServerOnEndFrame);
+
     __DestructSingleton;
 }
 
@@ -61,7 +61,7 @@ GameServer::Close()
 {
     n_assert(!this->isStarted);
     n_assert(this->isOpen);
-    
+
     // remove all gameFeatures
     while (this->gameFeatures.Size() > 0)
     {
@@ -113,7 +113,7 @@ GameServer::Start()
     {
         this->gameFeatures[i]->OnStart();
     }
-    
+
     this->isStarted = true;
     return true;
 }
@@ -136,7 +136,7 @@ GameServer::Stop()
 {
     n_assert(this->isOpen);
     n_assert(this->isStarted);
-    
+
     this->isStarted = false;
 }
 
@@ -146,17 +146,26 @@ GameServer::Stop()
 void
 GameServer::OnBeginFrame()
 {
-	_start_timer(GameServerOnBeginFrame);
+    _start_timer(GameServerOnBeginFrame);
 
-	// trigger game features to at the beginning of a frame
-	IndexT i;
-	SizeT num = this->gameFeatures.Size();
-	for (i = 0; i < num; i++)
-	{
-		this->gameFeatures[i]->OnBeginFrame();
-	}
+    // trigger game features to at the beginning of a frame
+    IndexT i;
+    SizeT num = this->gameFeatures.Size();
+    for (i = 0; i < num; i++)
+    {
+        this->gameFeatures[i]->OnBeginFrame();
+    }
 
-	_stop_timer(GameServerOnBeginFrame);
+    num = this->onBeginFrameCallbacks.Size();
+    for (i = 0; i < num; i++)
+    {
+        Dataset data = Game::Query(this->onBeginFrameCallbacks[i].filter);
+        this->onBeginFrameCallbacks[i].func(data);
+    }
+
+    Game::ReleaseDatasets();
+
+    _stop_timer(GameServerOnBeginFrame);
 }
 
 //------------------------------------------------------------------------------
@@ -176,7 +185,16 @@ GameServer::OnFrame()
     for (i = 0; i < num; i++)
     {
         this->gameFeatures[i]->OnFrame();
-    } 
+    }
+
+    num = this->onFrameCallbacks.Size();
+    for (i = 0; i < num; i++)
+    {
+        Dataset data = Game::Query(this->onFrameCallbacks[i].filter);
+        this->onFrameCallbacks[i].func(data);
+    }
+
+    Game::ReleaseDatasets();
 
     _stop_timer(GameServerOnFrame);
 }
@@ -187,16 +205,25 @@ GameServer::OnFrame()
 void
 GameServer::OnEndFrame()
 {
-	_start_timer(GameServerOnEndFrame);
+    _start_timer(GameServerOnEndFrame);
 
-	IndexT i;
-	SizeT num = this->gameFeatures.Size();
-	for (i = 0; i < num; i++)
-	{
-		this->gameFeatures[i]->OnEndFrame();
-	}
+    IndexT i;
+    SizeT num = this->gameFeatures.Size();
+    for (i = 0; i < num; i++)
+    {
+        this->gameFeatures[i]->OnEndFrame();
+    }
 
-	_stop_timer(GameServerOnEndFrame);
+    num = this->onEndFrameCallbacks.Size();
+    for (i = 0; i < num; i++)
+    {
+        Dataset data = Game::Query(this->onEndFrameCallbacks[i].filter);
+        this->onEndFrameCallbacks[i].func(data);
+    }
+
+    Game::ReleaseDatasets();
+
+    _stop_timer(GameServerOnEndFrame);
 }
 
 //------------------------------------------------------------------------------
@@ -205,13 +232,13 @@ GameServer::OnEndFrame()
 void
 GameServer::NotifyBeforeLoad()
 {
-	// call the SetupDefault method on all gameFeatures
-	int i;
-	int num = this->gameFeatures.Size();
-	for (i = 0; i < num; i++)
-	{
-		this->gameFeatures[i]->OnBeforeLoad();
-	}
+    // call the SetupDefault method on all gameFeatures
+    int i;
+    int num = this->gameFeatures.Size();
+    for (i = 0; i < num; i++)
+    {
+        this->gameFeatures[i]->OnBeforeLoad();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -220,17 +247,17 @@ GameServer::NotifyBeforeLoad()
 void
 GameServer::NotifyBeforeCleanup()
 {
-	// call the SetupDefault method on all gameFeatures
-	int i;
-	int num = this->gameFeatures.Size();
-	for (i = 0; i < num; i++)
-	{
-		this->gameFeatures[i]->OnBeforeCleanup();
-	}
+    // call the SetupDefault method on all gameFeatures
+    int i;
+    int num = this->gameFeatures.Size();
+    for (i = 0; i < num; i++)
+    {
+        this->gameFeatures[i]->OnBeforeCleanup();
+    }
 }
 
 //------------------------------------------------------------------------------
-/**    
+/**
 */
 void
 GameServer::NotifyGameLoad()
@@ -242,10 +269,19 @@ GameServer::NotifyGameLoad()
     {
         this->gameFeatures[i]->OnLoad();
     }
+
+    num = this->onLoadCallbacks.Size();
+    for (i = 0; i < num; i++)
+    {
+        Dataset data = Game::Query(this->onLoadCallbacks[i].filter);
+        this->onLoadCallbacks[i].func(data);
+    }
+
+    Game::ReleaseDatasets();
 }
 
 //------------------------------------------------------------------------------
-/**    
+/**
 */
 void
 GameServer::NotifyGameSave()
@@ -257,12 +293,21 @@ GameServer::NotifyGameSave()
     {
         this->gameFeatures[i]->OnSave();
     }
+
+    num = this->onSaveCallbacks.Size();
+    for (i = 0; i < num; i++)
+    {
+        Dataset data = Game::Query(this->onSaveCallbacks[i].filter);
+        this->onSaveCallbacks[i].func(data);
+    }
+
+    Game::ReleaseDatasets();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-bool 
+bool
 GameServer::IsFeatureAttached(const Util::String& stringName) const
 {
     int i;
@@ -283,7 +328,55 @@ GameServer::IsFeatureAttached(const Util::String& stringName) const
 Util::Array<Ptr<FeatureUnit>> const&
 GameServer::GetGameFeatures() const
 {
-	return this->gameFeatures;
+    return this->gameFeatures;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ProcessorHandle
+GameServer::CreateProcessor(ProcessorCreateInfo const& info)
+{
+    ProcessorInfo processor;
+    processor.async = info.async;
+    processor.name = info.name;
+    
+    if (info.OnDeactivate != nullptr)
+        processor.OnDeactivate = info.OnDeactivate;
+
+    ProcessorHandle handle;
+    this->processorHandlePool.Allocate(handle);
+
+    if (this->processors.Size() <= Ids::Index(handle))
+    {
+        this->processors.Append(std::move(processor));
+    }
+    else
+    {
+        this->processors[Ids::Index(handle)] = std::move(processor);
+    }
+
+    if (info.OnBeginFrame != nullptr)
+        this->onBeginFrameCallbacks.Append({ handle, info.filter, info.OnBeginFrame });
+
+    if (info.OnFrame != nullptr)
+        this->onFrameCallbacks.Append({ handle, info.filter, info.OnEndFrame });
+
+    if (info.OnEndFrame != nullptr)
+        this->onEndFrameCallbacks.Append({ handle, info.filter, info.OnEndFrame });
+
+    if (info.OnLoad != nullptr)
+        this->onLoadCallbacks.Append({ handle, info.filter, info.OnLoad });
+
+    if (info.OnSave != nullptr)
+        this->onSaveCallbacks.Append({ handle, info.filter, info.OnSave });
+    
+    if (info.OnActivate != nullptr)
+    {
+        info.OnActivate();
+    }
+
+    return handle;
 }
 
 } // namespace Game

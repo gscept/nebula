@@ -63,8 +63,6 @@ if(NOT PX_TARGET)
     endif()
     SET(PX_DIR_DEBUG ${FIPS_DEPLOY_DIR}/physx/bin/${PX_TARGET}/debug/)
     SET(PX_DIR_RELEASE ${FIPS_DEPLOY_DIR}/physx/bin/${PX_TARGET}/release/)
-    
-
 
     SET(PX_LIBRARY_NAMES PhysX PhysXCommon PhysXCooking  PhysXFoundation  PhysXCharacterKinematic_static PhysXExtensions_static PhysXPvdSDK_static  PhysXTask_static PhysXVehicle_static)
     SET(PX_STATIC_NAMES PhysXCharacterKinematic_static_64 PhysXExtensions_static_64 PhysXPvdSDK_static_64  PhysXTask_static_64 PhysXVehicle_static_64)
@@ -81,9 +79,6 @@ if(NOT PX_TARGET)
 
     add_library(PxLibs INTERFACE)
     target_link_libraries(PxLibs INTERFACE $<$<CONFIG:Debug>:${PX_DEBUG_LIBRARIES}> $<$<CONFIG:Release>:${PX_RELEASE_LIBRARIES}>)
-
-    MESSAGE(WARNING "Found PhysX: ${PX_DEBUG_LIBRARIES} ${PX_RELEASE_LIBRARIES}")
-
 else()
     SET(PX_DIR_LINUX ${FIPS_DEPLOY_DIR}/physx/bin/linux.clang/checked/)
     SET(PX_LIBRARY_NAMES PhysX PhysXCooking PhysXCharacterKinematic PhysXExtensions PhysXPvdSDK PhysXVehicle  PhysXCommon PhysXFoundation)
@@ -167,6 +162,7 @@ macro(add_shaders_intern)
                 )
             fips_files(${shd})
             SOURCE_GROUP("res\\shaders" FILES ${shd})
+
             if(N_ENABLE_SHADER_COMMAND_GENERATION)
                 # create compile flags file for live shader compile
                 file(WRITE ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}")
@@ -195,7 +191,8 @@ macro(nebula_add_nidl)
         SOURCE_GROUP("${CurGroup}\\Generated" FILES "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}" )
         source_group("${CurGroup}" FILES ${f_abs})
         list(APPEND CurSources "${abs_output_folder}/${out_source}" "${abs_output_folder}/${out_header}")
-    endforeach()
+        endforeach()
+    include_directories("${CMAKE_BINARY_DIR}/nidl/${CurTargetName}")
 endmacro()
 
 macro(add_frameshader_intern)
@@ -266,6 +263,36 @@ macro(add_blueprint)
 		endforeach()
 endmacro()
 
+macro(add_template_intern)
+    foreach(tp ${ARGN})
+        get_filename_component(basename ${tp} NAME)
+        get_filename_component(dir ${tp} DIRECTORY)
+        string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/data/tables/templates/" "" dir ${dir})
+        set(output ${EXPORT_DIR}/data/tables/templates/${dir}/${basename})
+        add_custom_command(OUTPUT ${output}
+            COMMAND ${CMAKE_COMMAND} -E copy ${tp} ${EXPORT_DIR}/data/tables/templates/${dir}/
+            MAIN_DEPENDENCY ${tp}
+            WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
+            COMMENT "Copying template ${tp} to ${EXPORT_DIR}/data/tables/templates"
+            VERBATIM
+            )
+        fips_files(${tp})
+        SOURCE_GROUP("res\\templates\\${dir}" FILES ${tp})
+    endforeach()
+endmacro()
+
+macro(add_template_dir)
+    set_nebula_export_dir()
+    foreach(tpdir ${ARGN})
+        file(GLOB_RECURSE templates "${tpdir}/*.json")
+        foreach (tp ${templates})
+            add_template_intern(${tp})
+        endforeach()
+    endforeach()
+endmacro()
+
+include(JSONParser)
+
 macro(set_nebula_export_dir)
     if(FIPS_WINDOWS)
         get_filename_component(workdir "[HKEY_CURRENT_USER\\SOFTWARE\\gscept\\ToolkitShared;workdir]" ABSOLUTE)
@@ -276,8 +303,14 @@ macro(set_nebula_export_dir)
         endif()
         set(EXPORT_DIR "${workdir}/export")
     else()
-        # use environment
-        set(EXPORT_DIR $ENV{NEBULA_WORK}/export)
+        if(EXISTS $ENV{HOME}/.config/nebula/gscept.cfg)
+            FILE(READ "$ENV{HOME}/.config/nebula/gscept.cfg" SettingsJson)
+            sbeParseJson(Settings SettingsJson)
+            set(EXPORT_DIR ${Settings.ToolkitShared.workdir}/export)
+        else()
+            # use environment
+            set(EXPORT_DIR $ENV{NEBULA_WORK}/export)
+        endif()
     endif()
 endmacro()
 
@@ -291,8 +324,11 @@ macro(add_nebula_shaders)
         fips_files(${FXH})
         file(GLOB_RECURSE FX "${NROOT}/work/shaders/vk/*.fx")
         foreach(shd ${FX})
-            add_shaders_intern(${shd})
+        add_shaders_intern(${shd})
         endforeach()
+        
+        # add configurations for the .vscode anyfx linter
+        execute_process(COMMAND python ${NROOT}/fips-files/anyfx_linter/add_include_dir.py ${FIPS_PROJECT_DIR}/.vscode/anyfx_properties.json ${NROOT}/work/shaders/vk)
 
         file(GLOB_RECURSE FRM "${NROOT}/work/frame/win32/*.json")
         foreach(shd ${FRM})
@@ -320,6 +356,14 @@ macro(add_shaders)
             add_shaders_intern(${CMAKE_CURRENT_SOURCE_DIR}/${shd})
         endforeach()
 
+        # add configurations for the .vscode anyfx linter
+        SET(folders)
+        foreach(shd ${ARGN})
+            get_filename_component(foldername ${CMAKE_CURRENT_SOURCE_DIR}/${shd} DIRECTORY)
+            list(APPEND folders ${foldername})
+        endforeach()
+        execute_process(COMMAND python ${NROOT}/fips-files/anyfx_linter/add_include_dir.py ${FIPS_PROJECT_DIR}/.vscode/anyfx_properties.json ${folders})
+
     endif()
 endmacro()
 
@@ -327,6 +371,7 @@ macro(nebula_begin_app name type)
     fips_begin_app(${name} ${type})
     set(target_has_nidl 0)
     set(target_has_shaders 0)
+    include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 endmacro()
 
 macro(nebula_end_app)

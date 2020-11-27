@@ -27,7 +27,7 @@
             "gnyrf" {
                 "_type_": "bool"
             },
-            "enumerable": "TestEnumType"
+            "enumerable": "Test::TestEnumType"
         },
         "TestHealth": "uint"
     }

@@ -16,6 +16,7 @@
 #include "util/stack.h"
 #include "util/array.h"
 #include "util/stringatom.h"
+#include "util/bitfield.h"
 
 
 namespace pjson
@@ -94,8 +95,10 @@ public:
 	/// get transform44 attribute value from current node
 	Math::transform44 GetTransform44(const char* attr = 0) const;
     /// generic getter for extension types
-    template<typename T> void Get(T& target, const char* attr = 0);    
-
+    template<typename T> void Get(T& target, const char* attr = 0);
+    /// getter for bitfield of N size
+    template<unsigned int N> void Get(Util::BitField<N>& target, const char* attr = 0);
+    
     /// get optional string attribute value from current node
     Util::String GetOptString(const char* attr, const Util::String& defaultValue) const;
     /// get optional bool attribute value from current node
@@ -159,6 +162,24 @@ JsonReader::GetOpt(T& target, const char* attr, const T& defaultVal)
         return false;
     }
     return true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<unsigned int N>
+inline void
+JsonReader::Get(Util::BitField<N>& ret, const char* attr)
+{
+    Util::Array<int> arr;
+    this->Get<Util::Array<int>>(arr);
+
+    unsigned int count = arr.Size();
+    n_assert(count <= N);
+    for (unsigned int i = 0; i < count; i++)
+    {
+        ret.SetBit(arr[i]);
+    }
 }
 
 } // namespace IO

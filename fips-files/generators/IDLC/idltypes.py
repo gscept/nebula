@@ -231,7 +231,7 @@ def DefaultValue(attrType):
     elif (T == "quat"):
         return "Math::quat()"
     elif (T == "mat4" or T == "Math::mat4"):
-        return "Math::mat4::identity"
+        return "Math::mat4()"
     elif (T == "string"):
         return "Util::String()"
     elif (T == "resource"):

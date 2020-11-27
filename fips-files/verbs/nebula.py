@@ -2,7 +2,6 @@
 
 nebula work [working directory]
 nebula toolkit [toolkit directory]
-physx [win-vs15,winvs16]
 cleannidl
 """
 
@@ -12,23 +11,23 @@ import sys
 import shutil
 import subprocess
 
+keys = {
+        "work" : "workdir",
+        "toolkit" : "path"
+        }
+
+def argToKey(key) :
+        """translate argument to registry key"""
+        return keys[key]
+
 if sys.platform == "win32" :
     if sys.version_info.major > 2:
         import winreg as _winreg
     else:
         import _winreg
         
-
     base_reg = r"SOFTWARE\gscept\ToolkitShared"
-
-    def argToKey(key) :
-        """translate argument to registry key"""
-        keys = {
-            "work" : "workdir",
-            "toolkit" : "path"
-            }
-        return keys.get(key,"")
-    
+ 
     def setKey(key, value) :
         """set nebula key"""
         try :
@@ -49,7 +48,7 @@ if sys.platform == "win32" :
                 if len(args) > 2 :
                     setKey(args[1], args[2])
                 else :
-                    log.error("expected setting and value")            
+                    log.error("Expected setting and value")            
             elif noun == 'get' :
                 if len(args) > 1 :
                     key = argToKey(args[1])
@@ -59,9 +58,9 @@ if sys.platform == "win32" :
                         _winreg.CloseKey(reg_key)
                         log.info(keyval)
                     else :
-                        log.error("invalid setting")
+                        log.error("Invalid setting")
                 else :
-                    log.error("expected setting name")
+                    log.error("Expected setting name")
             elif noun == 'cleannidl' :
                 proj = util.get_project_name_from_dir(proj_dir)
                 cfg = settings.get(proj_dir, 'config')
@@ -73,15 +72,66 @@ if sys.platform == "win32" :
                 workval, regtype = _winreg.QueryValueEx(reg_key,"workdir")
                 rootval, regtype = _winreg.QueryValueEx(reg_key,"path")
                 _winreg.CloseKey(reg_key)
-                log.info(log.YELLOW +
-                    "Current settings:\n"
-                    "Project directory: " + workval + "\n"
-                    "Nebula root directory: " + rootval + "\n")
+                log.colored(log.YELLOW, "Current settings")
+                log.optional("Project directory", workval)
+                log.optional("Nebula root director", rootval)
             except WindowsError:
-                log.info(log.YELLOW + "No Nebula settings in registry\n")
+                log.colored(log.YELLOW, "No Nebula settings in registry\n")
 else:
+    import json
+    from os.path import expanduser
+
+    def setKey(cfg_file, key, value) :
+        """set nebula key"""
+        if not os.path.isfile(cfg_file):
+            folder = expanduser("~") + "/.config/nebula/"
+            os.makedirs(folder, exist_ok=True)
+            # create dummy data
+            jsn = {}
+            jsn["ToolkitShared"] = {}
+            jsn["ToolkitShared"]["workdir"] = ""
+            jsn["ToolkitShared"]["path"] = ""
+            with open(cfg_file, 'w') as json_out:
+                json.dump(jsn, json_out)
+            
+        with open(cfg_file) as old_json_file:
+            old_json = json.load(old_json_file)
+            path = os.path.abspath(value)
+            old_json["ToolkitShared"][key] = path
+            with open(cfg_file, 'w') as new_json_file:
+                json.dump(old_json, new_json_file)
+        
+    def getKey(cfg_file, key) :
+         with open(cfg_file) as json_file:
+            cfg = json.load(json_file)
+            toolkit_shared = cfg['ToolkitShared']
+            return toolkit_shared[key]
+
     def run(fips_dir,proj_dir,args):
-        log.error("Not supported")
+        """run the 'nebula' verb"""
+        try:
+            cfg_file = expanduser("~") + "/.config/nebula/gscept.cfg"
+            if len(args) > 0 :
+                noun = args[0]
+                if noun == 'set' :
+                    if len(args) == 3 :
+                        key = argToKey(args[1])
+                        setKey(cfg_file, key, args[2])
+                    else :
+                        log.error("Expected setting and value")            
+                elif noun == 'get' :
+                    if len(args) == 2 :
+                        key = argToKey(args[1])
+                        value = getKey(cfg_file, key)
+                        log.info(value)
+            else:
+                workval = getKey(cfg_file, "workdir")
+                rootval = getKey(cfg_file, "path")
+                log.colored(log.YELLOW, "Current settings")
+                log.optional("Project directory", workval)
+                log.optional("Nebula root director", rootval)
+        except (RuntimeError, KeyError):
+            log.error("failed manipulating settings")
 
 def help():
     """print 'nebula' help"""

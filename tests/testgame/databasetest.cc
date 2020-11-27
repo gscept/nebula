@@ -10,9 +10,11 @@
 #include "jobs/jobs.h"
 #include "timing/timer.h"
 #include "memdb/database.h"
+#include "util/bitfield.h"
 
 using namespace Math;
 using namespace Util;
+using namespace MemDb;
 
 namespace Test
 {
@@ -31,18 +33,20 @@ struct StructTest
 void
 DatabaseTest::Run()
 {
-    Ptr<MemDb::Database> db;
-    MemDb::TableId table0;
-    MemDb::TableId table1;
-    MemDb::TableId table2;
+    Ptr<Database> db;
+    TableId table0;
+    TableId table1;
+    TableId table2;
     
-    db = MemDb::Database::Create();
+    db = Database::Create();
 
-    MemDb::ColumnDescriptor TestIntId = MemDb::TypeRegistry::Register<int>("TestIntId", int(1));
-    MemDb::ColumnDescriptor TestFloatId = MemDb::TypeRegistry::Register<float>("TestFloatId", float(20.0f));
-    MemDb::ColumnDescriptor TestStructId = MemDb::TypeRegistry::Register<StructTest>("TestStructId", StructTest());
+    PropertyId TestIntId = TypeRegistry::Register<int>("TestIntId", int(1));
+    PropertyId TestFloatId = TypeRegistry::Register<float>("TestFloatId", float(20.0f));
 
-    MemDb::TableCreateInfo info = {
+
+    PropertyId TestStructId = TypeRegistry::Register<StructTest>("TestStructId", StructTest());
+
+    TableCreateInfo info = {
         "Table0",
         {
             TestIntId,
@@ -80,27 +84,120 @@ DatabaseTest::Run()
         instances.Append(db->AllocateRow(table0));
     }
 
-    MemDb::ColumnView<int> intData = db->GetColumnView<int>(table0, TestIntId);
-    MemDb::ColumnView<float> floatData = db->GetColumnView<float>(table0, TestFloatId);
-    MemDb::ColumnView<StructTest> structData = db->GetColumnView<StructTest>(table0, TestStructId);
-    
     // make sure we allocate enough so that we need to grow/reallocate the buffers
     for (size_t i = 0; i < 10000; i++)
     {
         instances.Append(db->AllocateRow(table0));
     }
     
-    SizeT numRows = db->GetNumRows(table0);
-    bool passed = false;
-    for (size_t i = 0; i < numRows; i++)
     {
-        passed |= (intData[i] == *(int*)MemDb::TypeRegistry::GetDescription(TestIntId)->defVal);
-        passed |= (floatData[i] == *(float*)MemDb::TypeRegistry::GetDescription(TestFloatId)->defVal);
+        int* intData = (int*)db->GetBuffer(table0, db->GetColumnId(table0, TestIntId));
+        float* floatData = (float*)db->GetBuffer(table0, db->GetColumnId(table0, TestFloatId));
+        StructTest* structData = (StructTest*)db->GetBuffer(table0, db->GetColumnId(table0, TestStructId));
+
+        SizeT numRows = db->GetNumRows(table0);
+        bool passed = false;
+        for (size_t i = 0; i < numRows; i++)
+        {
+            passed |= (intData[i] == *(int*)TypeRegistry::GetDescription(TestIntId)->defVal);
+            passed |= (floatData[i] == *(float*)TypeRegistry::GetDescription(TestFloatId)->defVal);
+        }
     }
 
-    VERIFY(passed);
+    TableSignature mask = TableSignature({ TestIntId, 129 });
+    TableSignature mask0 = TableSignature({ TestIntId, 129 });
 
-    // TODO: More robust testing
+    VERIFY(mask == mask0);
+    VERIFY(TableSignature::CheckBits(mask, mask0));
+
+    TableSignature mask2 = TableSignature({ TestIntId, TestFloatId, });
+    TableSignature mask3 = TableSignature({ TestFloatId, TestIntId });
+    
+    VERIFY(mask2 == mask3);
+    VERIFY(TableSignature::CheckBits(mask2, mask3));
+
+    TableSignature mask4 = TableSignature({ TestIntId, TestFloatId, TestStructId });
+    TableSignature mask5 = TableSignature({ TestFloatId, TestStructId, TestIntId});
+    
+    VERIFY(mask4 == mask5);
+    VERIFY(TableSignature::CheckBits(mask4, mask5));
+    VERIFY(!(mask2 == mask5));
+    
+    VERIFY(!TableSignature::CheckBits(mask2, mask5));
+
+    VERIFY(TableSignature::CheckBits(mask5, mask2));
+
+    TableSignature mask6 = TableSignature({ TestIntId, TestFloatId, TestStructId });
+    TableSignature mask7 = TableSignature({ TestFloatId });
+    TableSignature mask8 = TableSignature({ TestIntId });
+
+    VERIFY(TableSignature::HasAny(mask6, mask7) == true);
+    VERIFY(TableSignature::HasAny(mask8, mask7) == false);
+
+    VERIFY(!TableSignature::CheckBits({ 1 }, { 0, 1, 2 }));
+    VERIFY(!TableSignature::CheckBits({ 0 }, { 0, 1, 2 }));
+    VERIFY(TableSignature::CheckBits({ 0, 1, 2 }, { 0, 1, 2 }));
+    VERIFY(TableSignature::CheckBits({ 0, 1, 2 }, { 0, 2 }));
+    VERIFY(TableSignature::CheckBits({ 0, 1, 2 }, { 0, 1 }));
+    VERIFY(TableSignature::CheckBits({ 0, 1, 2 }, { 0 }));
+    VERIFY(TableSignature::CheckBits({ 0, 1, 2 }, { 1 }));
+    VERIFY(TableSignature::CheckBits({ 0, 1, 2 }, { 2 }));
+    VERIFY(!TableSignature::CheckBits({ 0, 1, 2 }, { 3 }));
+    VERIFY(!TableSignature::CheckBits({ 0, 1, 2 }, { 4 }));
+    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 0 }));
+    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 1 }));
+    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 2 }));
+    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 3 }));
+    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 4 }));
+    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 5 }));
+    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 6 }));
+    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 7 }));
+    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 8 }));
+    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 9 }));
+    VERIFY(TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 10 }));
+    VERIFY(!TableSignature::CheckBits({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, { 11 }));
+
+    {
+        const ushort num = 8096;
+        Util::FixedArray<PropertyId> da(num);
+        for (ushort i = 0; i < num; i++)
+        {
+            da[i] = i;
+        }
+
+        TableSignature s = da;
+        VERIFY(TableSignature::CheckBits(s, { 0 }));
+        VERIFY(TableSignature::CheckBits(s, { 1 }));
+        VERIFY(TableSignature::CheckBits(s, { 2 }));
+        VERIFY(TableSignature::CheckBits(s, { 3 }));
+        VERIFY(TableSignature::CheckBits(s, { 4 }));
+        VERIFY(TableSignature::CheckBits(s, { 0,1,2,3,4 }));
+        VERIFY(TableSignature::CheckBits(s, { 0, 1023 }));
+        VERIFY(TableSignature::CheckBits(s, { 0, 8000 }));
+        VERIFY(TableSignature::CheckBits(s, s));
+    }
+
+    {
+        for (ushort i = 2; i < 10000; i++)
+        {
+            TableSignature s = { (PropertyId)i };
+            VERIFY(!TableSignature::CheckBits(s, { 1 }));
+        }
+    }
+
+    TableSignature signature = { 1, 6, 250, 1010 };
+
+    VERIFY(signature.IsSet(1));
+    VERIFY(signature.IsSet(6));
+    VERIFY(signature.IsSet(250));
+    VERIFY(signature.IsSet(1010));
+    VERIFY(!signature.IsSet(0));
+    VERIFY(!signature.IsSet(2));
+    VERIFY(!signature.IsSet(8));
+    VERIFY(!signature.IsSet(9));
+    VERIFY(!signature.IsSet(255));
+    VERIFY(!signature.IsSet(256));
+    VERIFY(!signature.IsSet(2000));
 }
 
 }

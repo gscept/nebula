@@ -265,8 +265,8 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
 
 #define MAX_RADIUS_PIXELS 0.5f
 	ssaoState.vars.maxRadiusPixels = MAX_RADIUS_PIXELS * Math::n_min(ssaoState.vars.fullWidth, ssaoState.vars.fullHeight);
-	ssaoState.vars.tanAngleBias = tanf(Math::n_deg2rad(15.0));
-	ssaoState.vars.strength = 2.0f;
+	ssaoState.vars.tanAngleBias = tanf(Math::n_deg2rad(35.0));
+	ssaoState.vars.strength = 1.0f;
 
 	// setup hbao params
 	ssaoState.uvToViewAVar = ShaderGetConstantBinding(ssaoState.hbaoShader, NEBULA_SEMANTIC_UVTOVIEWA);

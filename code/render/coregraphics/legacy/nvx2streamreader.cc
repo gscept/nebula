@@ -70,7 +70,15 @@ Nvx2StreamReader::Open(const Resources::ResourceName& name)
     if (StreamReader::Open())
     {
         // map the stream to memory
-        this->mapPtr = this->stream->MemoryMap();
+		if (!this->rawMode)
+		{
+			this->mapPtr = this->stream->MemoryMap();
+		}
+		else
+		{
+			this->mapPtr = this->stream->Map();
+		}
+        
         n_assert(0 != this->mapPtr);
 
         // read data
@@ -83,7 +91,7 @@ Nvx2StreamReader::Open(const Resources::ResourceName& name)
             this->SetupIndexBuffer(name);
             this->UpdateGroupBoundingBoxes();
         }
-        stream->MemoryUnmap();
+        if (!this->rawMode) stream->MemoryUnmap();
         return true;
     }
     return false;

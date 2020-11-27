@@ -25,17 +25,18 @@ struct IndirectionEntry
 
 struct TileCacheEntry
 {
+    struct Entry
+    {
+        uint64 mip : 4;                   // max value 15 (0xF)
+        uint64 tiles : 10;                // must hold at least SubTextureMaxTiles from TerrainContext.h
+        uint64 tileX : 9;                 // must hold at least SubTextureMaxTiles
+        uint64 tileY : 9;                 // same as above
+        uint64 subTextureIndex : 24;      //
+        uint64 subTextureUpdateKey : 8;
+    };
     union
     {
-        struct Entry
-        {
-            uint64 mip : 4;                   // max value 15 (0xF)
-            uint64 tiles : 10;                // must hold at least SubTextureMaxTiles from TerrainContext.h
-            uint64 tileX : 9;                 // must hold at least SubTextureMaxTiles
-            uint64 tileY : 9;                 // same as above
-            uint64 subTextureIndex : 24;      //
-            uint64 subTextureUpdateKey : 8;
-        } entry;
+        Entry entry;
         uint64 hash;
     };
 

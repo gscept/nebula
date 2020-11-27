@@ -1,15 +1,14 @@
 fips_begin_lib(memdb)
 fips_include_directories(${CODE_ROOT}/foundation)
 fips_files(
-    columnview.h
-    columnview.cc
     database.h
     database.cc
-    columndescription.h
-    columndescription.cc
-    columndescriptor.h
+    dataset.h
+    filterset.h
+    propertydescription.h
+    propertyid.h
     table.h
-    table.cc
+    tablesignature.h
     typeregistry.h
     typeregistry.cc
 )
