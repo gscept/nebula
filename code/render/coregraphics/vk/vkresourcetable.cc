@@ -19,13 +19,15 @@ VkResourceTableLayoutAllocator resourceTableLayoutAllocator;
 VkResourcePipelineAllocator resourcePipelineAllocator;
 VkDescriptorSetLayout emptySetLayout;
 
-static bool ResourceTableBlocked = false;
+bool ResourceTableBlocked = true;
+Util::Array<CoreGraphics::ResourceTableId> PendingTableCommits;
+Threading::CriticalSection PendingTableCommitsLock;
 
 //------------------------------------------------------------------------------
 /**
 */
 const VkDescriptorSet&
-ResourceTableGetVkDescriptorSet(const CoreGraphics::ResourceTableId& id)
+ResourceTableGetVkDescriptorSet(CoreGraphics::ResourceTableId id)
 {
 	return resourceTableAllocator.Get<1>(id.id24);
 }
@@ -34,7 +36,7 @@ ResourceTableGetVkDescriptorSet(const CoreGraphics::ResourceTableId& id)
 /**
 */
 const VkDescriptorSetLayout&
-ResourceTableGetVkLayout(const CoreGraphics::ResourceTableId& id)
+ResourceTableGetVkLayout(CoreGraphics::ResourceTableId id)
 {
 	return ResourceTableLayoutGetVk(resourceTableAllocator.Get<3>(id.id24));
 }
@@ -172,7 +174,7 @@ CreateResourceTable(const ResourceTableCreateInfo& info)
 /**
 */
 void
-DestroyResourceTable(const ResourceTableId& id)
+DestroyResourceTable(const ResourceTableId id)
 {
     n_assert(id != ResourceTableId::Invalid());
 	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
@@ -187,7 +189,7 @@ DestroyResourceTable(const ResourceTableId& id)
 /**
 */
 void
-ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTexture& tex)
+ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& tex)
 {
 	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
 	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
@@ -244,7 +246,7 @@ ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTexture& t
 /**
 */
 void 
-ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTextureView& tex)
+ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView& tex)
 {
 	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
 	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
@@ -299,7 +301,7 @@ ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTextureVie
 /**
 */
 void
-ResourceTableSetInputAttachment(const ResourceTableId& id, const ResourceTableInputAttachment& tex)
+ResourceTableSetInputAttachment(const ResourceTableId id, const ResourceTableInputAttachment& tex)
 {
 	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
 	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
@@ -340,7 +342,7 @@ ResourceTableSetInputAttachment(const ResourceTableId& id, const ResourceTableIn
 /**
 */
 void
-ResourceTableSetRWTexture(const ResourceTableId& id, const ResourceTableTexture& tex)
+ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& tex)
 {
 	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
 	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
@@ -381,7 +383,7 @@ ResourceTableSetRWTexture(const ResourceTableId& id, const ResourceTableTexture&
 /**
 */
 void 
-ResourceTableSetRWTexture(const ResourceTableId& id, const ResourceTableTextureView& tex)
+ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTextureView& tex)
 {
 	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
 	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
@@ -422,7 +424,7 @@ ResourceTableSetRWTexture(const ResourceTableId& id, const ResourceTableTextureV
 /**
 */
 void 
-ResourceTableSetConstantBuffer(const ResourceTableId& id, const ResourceTableBuffer& buf)
+ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuffer& buf)
 {
 	n_assert(!buf.texelBuffer);
 	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
@@ -471,7 +473,7 @@ ResourceTableSetConstantBuffer(const ResourceTableId& id, const ResourceTableBuf
 /**
 */
 void 
-ResourceTableSetRWBuffer(const ResourceTableId& id, const ResourceTableBuffer& buf)
+ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& buf)
 {
 	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
 	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
@@ -518,7 +520,7 @@ ResourceTableSetRWBuffer(const ResourceTableId& id, const ResourceTableBuffer& b
 /**
 */
 void
-ResourceTableSetSampler(const ResourceTableId& id, const ResourceTableSampler& samp)
+ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& samp)
 {
 	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
 	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
@@ -568,28 +570,52 @@ ResourceTableBlock(bool b)
 /**
 */
 void
-ResourceTableCommitChanges(const ResourceTableId& id)
+ResourceTableCommitChanges(const ResourceTableId id)
+{
+	// resource tables are blocked, add to pending write queue
+	if (ResourceTableBlocked)
+	{
+		PendingTableCommitsLock.Enter();
+		PendingTableCommits.Append(id);
+		PendingTableCommitsLock.Leave();
+	}
+	else
+	{
+		Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
+		Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+		VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
+
+		// because we store the write-infos in the other list, and the VkWriteDescriptorSet wants a pointer to the structure
+		// we need to re-assign the pointers, but thankfully they have values from before
+		IndexT i;
+		for (i = 0; i < writeList.Size(); i++)
+		{
+			if (writeList[i].pBufferInfo != nullptr) writeList[i].pBufferInfo = &infoList[i].buf;
+			if (writeList[i].pImageInfo != nullptr) writeList[i].pImageInfo = &infoList[i].img;
+			if (writeList[i].pTexelBufferView != nullptr) writeList[i].pTexelBufferView = &infoList[i].tex;
+		}
+		if (i != 0)
+		{
+			vkUpdateDescriptorSets(dev, writeList.Size(), writeList.Begin(), 0, nullptr);
+			writeList.Free();
+			infoList.Free();
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ResourceTableFlushPendingCommits()
 {
 	n_assert2(!ResourceTableBlocked, "Resource table updates are blocked! Please move your resource table update code to UpdateViewDepdendentResources or UpdateResources");
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
-	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
+	PendingTableCommitsLock.Enter();
+	for (ResourceTableId& table : PendingTableCommits)
+		ResourceTableCommitChanges(table);
 
-	// because we store the write-infos in the other list, and the VkWriteDescriptorSet wants a pointer to the structure
-	// we need to re-assign the pointers, but thankfully they have values from before
-	IndexT i;
-	for (i = 0; i < writeList.Size(); i++)
-	{
-		if (writeList[i].pBufferInfo != nullptr) writeList[i].pBufferInfo = &infoList[i].buf;
-		if (writeList[i].pImageInfo != nullptr) writeList[i].pImageInfo = &infoList[i].img;
-		if (writeList[i].pTexelBufferView != nullptr) writeList[i].pTexelBufferView = &infoList[i].tex;
-	}
-	if (i != 0) 
-	{
-		vkUpdateDescriptorSets(dev, writeList.Size(), writeList.Begin(), 0, nullptr);
-		writeList.Free();
-		infoList.Free();
-	}
+	PendingTableCommits.Clear();
+	PendingTableCommitsLock.Leave();
 }
 
 //------------------------------------------------------------------------------

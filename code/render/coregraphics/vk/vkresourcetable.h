@@ -37,9 +37,9 @@ typedef Ids::IdAllocator<
 extern VkResourceTableAllocator resourceTableAllocator;
 
 /// get descriptor set
-const VkDescriptorSet& ResourceTableGetVkDescriptorSet(const CoreGraphics::ResourceTableId& id);
+const VkDescriptorSet& ResourceTableGetVkDescriptorSet(CoreGraphics::ResourceTableId id);
 /// get set layout 
-const VkDescriptorSetLayout& ResourceTableGetVkLayout(const CoreGraphics::ResourceTableId& id);
+const VkDescriptorSetLayout& ResourceTableGetVkLayout(CoreGraphics::ResourceTableId id);
 
 //------------------------------------------------------------------------------
 /**

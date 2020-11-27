@@ -17,6 +17,7 @@
 namespace CoreGraphics
 {
 
+
 ID_24_8_TYPE(ResourceTableLayoutId);
 
 struct ResourceTableLayoutTexture
@@ -81,6 +82,10 @@ void DestroyResourceTableLayout(const ResourceTableLayoutId& id);
 
 ID_24_8_TYPE(ResourceTableId);
 
+extern Util::Array<CoreGraphics::ResourceTableId> PendingTableCommits;
+extern bool ResourceTableBlocked;
+extern Threading::CriticalSection PendingTableCommitsLock;
+
 struct ResourceTableTexture
 {
 	CoreGraphics::TextureId tex;
@@ -137,29 +142,32 @@ struct ResourceTableCreateInfo
 /// create resource table
 ResourceTableId CreateResourceTable(const ResourceTableCreateInfo& info);
 /// destroy resource table
-void DestroyResourceTable(const ResourceTableId& id);
+void DestroyResourceTable(const ResourceTableId id);
 
 /// set resource table texture
-void ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTexture& tex);
+void ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& tex);
 /// set resource table texture
-void ResourceTableSetTexture(const ResourceTableId& id, const ResourceTableTextureView& tex);
+void ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView& tex);
 /// set resource table input attachment
-void ResourceTableSetInputAttachment(const ResourceTableId& id, const ResourceTableInputAttachment& tex);
+void ResourceTableSetInputAttachment(const ResourceTableId id, const ResourceTableInputAttachment& tex);
 /// set resource table texture as read-write
-void ResourceTableSetRWTexture(const ResourceTableId& id, const ResourceTableTexture& tex);
+void ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& tex);
 /// set resource table texture as read-write
-void ResourceTableSetRWTexture(const ResourceTableId& id, const ResourceTableTextureView& tex);
+void ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTextureView& tex);
 /// set resource table constant buffer
-void ResourceTableSetConstantBuffer(const ResourceTableId& id, const ResourceTableBuffer& buf);
+void ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuffer& buf);
 /// set resource table shader rw buffer
-void ResourceTableSetRWBuffer(const ResourceTableId& id, const ResourceTableBuffer& buf);
+void ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& buf);
 /// set resource table sampler
-void ResourceTableSetSampler(const ResourceTableId& id, const ResourceTableSampler& samp);
+void ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& samp);
 
 /// disallow the resource table system to make modifications
 void ResourceTableBlock(bool b);
 /// apply updates of previous sets
-void ResourceTableCommitChanges(const ResourceTableId& id);
+void ResourceTableCommitChanges(const ResourceTableId id);
+
+/// flushes the pending commit queue
+void ResourceTableFlushPendingCommits();
 
 //------------------------------------------------------------------------------
 /**
