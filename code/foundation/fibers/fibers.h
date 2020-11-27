@@ -136,7 +136,6 @@ FiberQueue::Enqueue(JobFunction function, const Util::FixedArray<T*>& contexts, 
         job.context = contexts[i];
         job.counter = counter;
         FiberQueue::PendingJobsQueue.Enqueue(job);
-        Threading::Interlocked::Increment(FiberQueue::JobsAvailable);
     }
 }
 
