@@ -8,6 +8,7 @@
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
+#include "core/rttimacros.h"
 namespace System
 {
 class Cpu
@@ -50,7 +51,7 @@ public:
 	};
 };
 
-__ImplementEnumBitOperators(Cpu::CoreId);
+__ImplementEnumBitOperators(System::Cpu::CoreId);
 }
 //------------------------------------------------------------------------------
     
