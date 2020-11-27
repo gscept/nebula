@@ -45,7 +45,7 @@ FramePass::Discard()
 {
 	FrameOp::Discard();
 
-	DiscardPass(this->pass);
+	DestroyPass(this->pass);
 	this->pass = PassId::Invalid();
 
 	IndexT i;
