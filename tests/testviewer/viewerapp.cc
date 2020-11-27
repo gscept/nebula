@@ -297,8 +297,8 @@ SimpleViewerApplication::Run()
             || this->cameraMode == 1)
             this->UpdateCamera();
         
-		if (keyboard->KeyPressed(Input::Key::F8))
-			Resources::ResourceServer::Instance()->ReloadResource("shd:imgui.fxb");
+        if (keyboard->KeyPressed(Input::Key::F8))
+            Terrain::TerrainContext::ClearCache();
 
         if (keyboard->KeyDown(Input::Key::F3))
             this->pauseProfiling = !this->pauseProfiling;
