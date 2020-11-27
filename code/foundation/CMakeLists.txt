@@ -538,7 +538,6 @@ nebula_begin_module(foundation)
 			core/posix/posixsysfunc.cc
 			core/posix/posixsysfunc.h
 			fibers/posix/posixfiber.cc
-			fibers/posix/posixfiber.h
 			memory/posix/posixmemory.h
 			memory/posix/posixheap.cc
 			memory/posix/posixheap.h
