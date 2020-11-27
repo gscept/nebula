@@ -23,8 +23,6 @@
 
 N_DECLARE_COUNTER(N_TERRAIN_TOTAL_AVAILABLE_DATA, Terrain Total Data Size);
 
-#define USE_SPARSE
-
 namespace Terrain
 {
 TerrainContext::TerrainAllocator TerrainContext::terrainAllocator;
@@ -67,7 +65,6 @@ struct
 	CoreGraphics::BufferId systemConstants;
 	Util::Array<CoreGraphics::VertexComponent> components;
 	CoreGraphics::VertexLayoutId vlo;
-	Util::Array<TerrainMaterial> materials;
 
 	CoreGraphics::WindowId wnd;
 
@@ -111,7 +108,7 @@ struct
 
 	bool															virtualSubtextureBufferUpdate;
 	Util::FixedArray<CoreGraphics::BufferId>						subtextureStagingBuffers;
-	CoreGraphics::BufferId											subtextureBuffer;
+	CoreGraphics::BufferId											subTextureBuffer;
 
 	Util::FixedArray < CoreGraphics::BufferId>						pageUpdateReadbackBuffers;
 	CoreGraphics::TextureId											indirectionTexture;
@@ -358,7 +355,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 	bufInfo.elementSize = sizeof(Terrain::TerrainSubTexture);
 	bufInfo.mode = BufferAccessMode::DeviceLocal;
 	bufInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
-	terrainVirtualTileState.subtextureBuffer = CoreGraphics::CreateBuffer(bufInfo);
+	terrainVirtualTileState.subTextureBuffer = CoreGraphics::CreateBuffer(bufInfo);
 
 	bufInfo.name = "SubTextureStagingBuffer"_atm;
 	bufInfo.size = size * size;
@@ -398,14 +395,14 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 	for (IndexT i = 0; i < terrainVirtualTileState.indirectionUploadBuffers.Size(); i++)
 	{
 		uint size = 4096; // allow 4096 copies per frame
-		SizeT bufferSize = size * size * sizeof(IndirectionEntry);
+		SizeT bufferSize = size * sizeof(IndirectionEntry);
 		char* buf = n_new_array(char, bufferSize);
 		memset(buf, 0xFF, bufferSize);
 
 		CoreGraphics::BufferCreateInfo bufInfo;
 		bufInfo.name = "IndirectionUploadBuffer"_atm;
 		bufInfo.elementSize = sizeof(IndirectionEntry);
-		bufInfo.size = size * size;
+		bufInfo.size = size;
 		bufInfo.mode = CoreGraphics::HostLocal;
 		bufInfo.usageFlags = CoreGraphics::TransferBufferSource;
 		bufInfo.data = buf;
@@ -588,7 +585,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 
 	ResourceTableSetRWBuffer(terrainVirtualTileState.virtualTerrainSystemResourceTable,
 		{
-			terrainVirtualTileState.subtextureBuffer,
+			terrainVirtualTileState.subTextureBuffer,
 			ShaderGetResourceSlot(terrainState.terrainShader, "TerrainSubTexturesBuffer"),
 			0, 
 			false, false,
@@ -865,7 +862,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 					{
 						BufferBarrier
 						{
-							terrainVirtualTileState.subtextureBuffer,
+							terrainVirtualTileState.subTextureBuffer,
 							BarrierAccess::ShaderRead,
 							BarrierAccess::TransferWrite,
 							0, NEBULA_WHOLE_BUFFER_SIZE
@@ -877,8 +874,8 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 				to.offset = 0;
 				Copy(GraphicsQueueType
 					, terrainVirtualTileState.subtextureStagingBuffers[bufferIndex], { from }
-					, terrainVirtualTileState.subtextureBuffer, { to }
-					, BufferGetByteSize(terrainVirtualTileState.subtextureBuffer));
+					, terrainVirtualTileState.subTextureBuffer, { to }
+					, BufferGetByteSize(terrainVirtualTileState.subTextureBuffer));
 
 				BarrierPop(GraphicsQueueType);
 				BarrierPop(GraphicsQueueType);
@@ -1187,6 +1184,16 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 void 
 TerrainContext::Discard()
 {
+	DestroyBuffer(terrainVirtualTileState.pageStatusBuffer);
+	DestroyBuffer(terrainVirtualTileState.pageStatusClearBuffer);
+	DestroyBuffer(terrainVirtualTileState.subTextureBuffer);
+	for (CoreGraphics::BufferId id : terrainVirtualTileState.subtextureStagingBuffers)
+		DestroyBuffer(id);
+	DestroyBuffer(terrainVirtualTileState.pageUpdateListBuffer);
+	for (CoreGraphics::BufferId id : terrainVirtualTileState.pageUpdateReadbackBuffers)
+		DestroyBuffer(id);
+	DestroyPass(terrainVirtualTileState.tileFallbackPass);
+	DestroyPass(terrainVirtualTileState.tileUpdatePass);
 }
 
 //------------------------------------------------------------------------------
@@ -1902,26 +1909,6 @@ IndirectionMoveShiftDown(uint oldMaxMip, uint oldTiles, const Math::uint2& oldCo
 
 		terrainVirtualTileState.indirectionTextureCopiesFromThisFrame.Append(CoreGraphics::TextureCopy{ Math::rectangle<SizeT>(mippedOldCoord.x, mippedOldCoord.y, mippedOldCoord.x + width, mippedOldCoord.y + width), i, 0 });
 		terrainVirtualTileState.indirectionTextureCopiesToThisFrame.Append(CoreGraphics::TextureCopy{ Math::rectangle<SizeT>(mippedNewCoord.x, mippedNewCoord.y, mippedNewCoord.x + width, mippedNewCoord.y + width), newMip, 0 });
-
-		/*
-		// add copy commands
-		terrainVirtualTileState.indirectionBufferShufflesThisFrame.Append(CoreGraphics::BufferCopy{ uploadBufferOffset });
-		terrainVirtualTileState.indirectionTextureShufflesThisFrame.Append(CoreGraphics::TextureCopy{ Math::rectangle<SizeT>(mippedNewCoord.x, mippedNewCoord.y, mippedNewCoord.x + width, mippedNewCoord.y + width), newMip, 0 });
-
-		// the width also corresponds to the amount of rows we should copy
-		for (uint j = 0; j < width; j++)
-		{
-			uint targetIndex = mippedNewCoord.x + (mippedNewCoord.y + j) * width;
-			uint sourceIndex = mippedOldCoord.x + (mippedOldCoord.y + j) * width;
-
-			// copy CPU buffer
-			Memory::MoveElements(&terrainVirtualTileState.indirection[i][sourceIndex], &terrainVirtualTileState.indirection[newMip][targetIndex], width);
-
-			// update upload buffer
-			CoreGraphics::BufferUpdateArray(terrainVirtualTileState.indirectionUploadBuffers[bufferIndex], &terrainVirtualTileState.indirection[newMip][targetIndex], width, uploadBufferOffset);
-			uploadBufferOffset += dataSize;
-		}
-		*/
 	}
 }
 
@@ -1948,25 +1935,6 @@ IndirectionMoveShiftUp(uint oldMaxMip, uint oldTiles, const Math::uint2& oldCoor
 
 		terrainVirtualTileState.indirectionTextureCopiesFromThisFrame.Append(CoreGraphics::TextureCopy{ Math::rectangle<SizeT>(mippedOldCoord.x, mippedOldCoord.y, mippedOldCoord.x + width, mippedOldCoord.y + width), oldMip, 0 });
 		terrainVirtualTileState.indirectionTextureCopiesToThisFrame.Append(CoreGraphics::TextureCopy{ Math::rectangle<SizeT>(mippedNewCoord.x, mippedNewCoord.y, mippedNewCoord.x + width, mippedNewCoord.y + width), i, 0 });
-
-		/*
-		// add copy commands
-		terrainVirtualTileState.indirectionBufferShufflesThisFrame.Append(CoreGraphics::BufferCopy{ uploadBufferOffset });
-		terrainVirtualTileState.indirectionTextureShufflesThisFrame.Append(CoreGraphics::TextureCopy{ Math::rectangle<SizeT>(mippedNewCoord.x, mippedNewCoord.y, mippedNewCoord.x + width, mippedNewCoord.y + width), i, 0 });
-
-		for (uint j = 0; j < width; j++)
-		{
-			uint targetIndex = mippedNewCoord.x + (mippedNewCoord.y + j) * width;
-			uint sourceIndex = mippedOldCoord.x + (mippedOldCoord.y + j) * width;
-
-			// copy CPU buffer
-			Memory::MoveElements(&terrainVirtualTileState.indirection[i][sourceIndex], &terrainVirtualTileState.indirection[i][targetIndex], width);
-
-			// update upload buffer
-			CoreGraphics::BufferUpdateArray(terrainVirtualTileState.indirectionUploadBuffers[bufferIndex], &terrainVirtualTileState.indirection[i][targetIndex], width, uploadBufferOffset);
-			uploadBufferOffset += dataSize;
-		}
-		*/
 	}
 }
 
@@ -2026,7 +1994,6 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
 	systemUniforms.MinTessellation = 1.0f;
 	systemUniforms.MaxTessellation = 32.0f;
 	systemUniforms.Debug = terrainState.debugRender;
-	systemUniforms.NumLayers = terrainState.materials.Size();
 	systemUniforms.NumBiomes = terrainState.biomeCounter;
 	systemUniforms.AlbedoPhysicalCacheBuffer = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.physicalAlbedoCache);
 	systemUniforms.NormalPhysicalCacheBuffer = CoreGraphics::TextureGetBindlessHandle(terrainVirtualTileState.physicalNormalCache);
@@ -2240,6 +2207,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
 	}
 
 	// clear old updates
+	n_assert(uploadBufferOffset <= 4096);
 	terrainVirtualTileState.subTextureJobHistoryOutputs[ctx.bufferIndex].Clear();
 
 	// update history buffer
@@ -2276,14 +2244,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
 		TerrainRuntimeUniforms uniforms;
 		Math::mat4().store(uniforms.Transform);
 		uniforms.DecisionMap = TextureGetBindlessHandle(rt.decisionMap);
-#ifdef USE_SPARSE
-		//uniforms.AlbedoMap = TextureGetBindlessHandle(rt.albedoSource.tex);
-		uniforms.AlbedoMap = TextureGetBindlessHandle(rt.lowResAlbedoMap);
 		uniforms.HeightMap = TextureGetBindlessHandle(rt.heightMap);
-#else
-		uniforms.AlbedoMap = 0;
-		uniforms.HeightMap = 0;
-#endif
 
 		CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(rt.heightMap);
 		uniforms.VirtualTerrainTextureSize[0] = dims.width;
@@ -2419,7 +2380,11 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
 	ImGui::End();
 }
 
-void TerrainContext::Dumb()
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TerrainContext::ClearCache()
 {
 	terrainVirtualTileState.physicalTextureTileCache.Clear();
 }
@@ -2460,550 +2425,6 @@ void
 TerrainContext::Dealloc(Graphics::ContextEntityId id)
 {
 	terrainAllocator.Dealloc(id.id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-TerrainTextureSource::Setup(const Resources::ResourceName& path, bool manualRegister)
-{
-	this->stream = IO::IoServer::Instance()->CreateStream(path.Value());
-	this->stream->SetAccessMode(IO::Stream::ReadAccess);
-	if (this->stream->Open())
-	{
-		void* buf = this->stream->MemoryMap();
-		SizeT size = this->stream->GetSize();
-
-		if (this->source.load(buf, size))
-		{
-			// okay, we're loaded!
-			CoreGraphics::PixelFormat::Code nebulaFormat = CoreGraphics::Gliml::ToPixelFormat(this->source);
-
-#ifdef USE_SPARSE
-			// create virtual texture for albedo
-			CoreGraphics::TextureCreateInfo info;
-			info.name = path;
-			info.tag = "render"_atm;
-			info.width = this->source.image_width(0, 0);
-			info.height = this->source.image_height(0, 0);
-			info.sparse = true;
-			info.mips = Math::n_max(0, this->source.num_mipmaps(0) - 7);
-			info.layers = this->source.num_faces();
-			info.format = nebulaFormat;
-			info.bindless = !manualRegister;
-
-			this->tex = CreateTexture(info);
-			IndexT maxMip = CoreGraphics::TextureSparseGetMaxMip(this->tex);
-
-			// create pages
-			this->pageReferenceCount.Resize(terrainState.layers);
-			for (int i = 0; i < terrainState.layers; i++)
-			{
-				this->pageReferenceCount[i].Resize(maxMip);
-
-				for (int j = 0; j < maxMip; j++)
-				{
-					SizeT numPages = CoreGraphics::TextureSparseGetNumPages(this->tex, i, j);
-					this->pageReferenceCount[i][j].Resize(numPages);
-					this->pageReferenceCount[i][j].Fill(0);
-				}
-
-				for (int j = 0; j < this->source.num_mipmaps(i); j++)
-					N_COUNTER_INCR(N_TERRAIN_TOTAL_AVAILABLE_DATA, this->source.image_size(i, j));
-			}
-
-			// lock the handover submission because it's on the graphics queue
-			CoreGraphics::LockResourceSubmission();
-			CoreGraphics::SubmissionContextId sub = CoreGraphics::GetHandoverSubmissionContext();
-
-			// insert barrier before starting our blits
-			CoreGraphics::BarrierInsert(
-				CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-				CoreGraphics::BarrierStage::AllGraphicsShaders,
-				CoreGraphics::BarrierStage::Transfer,
-				CoreGraphics::BarrierDomain::Global,
-				{
-					CoreGraphics::TextureBarrier
-					{
-						tex,
-						CoreGraphics::ImageSubresourceInfo { CoreGraphics::ImageAspect::ColorBits, (uint)maxMip - 1, (uint)(info.mips - maxMip), 0, 1 },
-						CoreGraphics::ImageLayout::ShaderRead,
-						CoreGraphics::ImageLayout::TransferDestination,
-						CoreGraphics::BarrierAccess::ShaderRead,
-						CoreGraphics::BarrierAccess::TransferWrite,
-					}
-				},
-				nullptr,
-				nullptr);
-
-			// update mips which are not paged
-			for (int i = maxMip; i < info.mips; i++)
-			{
-				CoreGraphics::TextureUpdate(tex, i, 0, (char*)this->source.image_data(0, i), sub);
-			}
-
-			// transfer textures back to being read by shaders
-			CoreGraphics::BarrierInsert(
-				CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-				CoreGraphics::BarrierStage::Transfer,
-				CoreGraphics::BarrierStage::AllGraphicsShaders,
-				CoreGraphics::BarrierDomain::Global,
-				{
-					CoreGraphics::TextureBarrier
-					{
-						tex,
-						CoreGraphics::ImageSubresourceInfo { CoreGraphics::ImageAspect::ColorBits, (uint)maxMip - 1, (uint)(info.mips - maxMip), 0, 1 },
-						CoreGraphics::ImageLayout::TransferDestination,
-						CoreGraphics::ImageLayout::ShaderRead,
-						CoreGraphics::BarrierAccess::TransferWrite,
-						CoreGraphics::BarrierAccess::ShaderRead,
-					}
-				},
-				nullptr,
-				nullptr);
-
-			// unlock handover submission
-			CoreGraphics::UnlockResourceSubmission();
-#endif
-		}
-		else
-		{
-			this->stream->MemoryUnmap();
-			this->stream->Close();
-		}
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-TerrainMaterialSource::Setup(const Resources::ResourceName& path)
-{
-	this->stream = IO::IoServer::Instance()->CreateStream(path.Value());
-	this->stream->SetAccessMode(IO::Stream::ReadAccess);
-	if (this->stream->Open())
-	{
-		void* buf = this->stream->MemoryMap();
-		SizeT size = this->stream->GetSize();
-
-		if (this->source.load(buf, size))
-		{
-			// okay, we're loaded!
-			CoreGraphics::PixelFormat::Code nebulaFormat = CoreGraphics::Gliml::ToPixelFormat(this->source);
-
-#ifdef USE_SPARSE
-			// create virtual texture for albedo
-			CoreGraphics::TextureCreateInfo info;
-			info.name = path;
-			info.tag = "render"_atm;
-			info.width = this->source.image_width(0, 0);
-			info.height = this->source.image_height(0, 0);
-			info.sparse = true;
-			info.mips = this->source.num_mipmaps(0);
-			info.layers = this->source.num_faces();
-			info.format = nebulaFormat;
-			info.bindless = false;
-
-
-			this->mipReferenceCount.Resize(this->source.num_faces());
-			for (int i = 0; i < this->source.num_faces(); i++)
-			{
-				this->mipReferenceCount[i].Resize(this->source.num_mipmaps(i));
-				this->mipReferenceCount[i].Fill(0);
-
-				for (int j = 0; j < this->source.num_mipmaps(i); j++)
-					N_COUNTER_INCR(N_TERRAIN_TOTAL_AVAILABLE_DATA, this->source.image_size(i, j));
-			}
-
-			this->tex = CreateTexture(info);
-
-			IndexT maxMip = CoreGraphics::TextureSparseGetMaxMip(this->tex);
-
-			// lock the handover submission because it's on the graphics queue
-			CoreGraphics::LockResourceSubmission();
-			CoreGraphics::SubmissionContextId sub = CoreGraphics::GetHandoverSubmissionContext();
-
-			// insert barrier before starting our blits
-			CoreGraphics::BarrierInsert(
-				CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-				CoreGraphics::BarrierStage::AllGraphicsShaders,
-				CoreGraphics::BarrierStage::Transfer,
-				CoreGraphics::BarrierDomain::Global,
-				{
-					CoreGraphics::TextureBarrier
-					{
-						tex,
-						CoreGraphics::ImageSubresourceInfo { CoreGraphics::ImageAspect::ColorBits, (uint)maxMip, (uint)(info.mips - maxMip), 0, 1 },
-						CoreGraphics::ImageLayout::ShaderRead,
-						CoreGraphics::ImageLayout::TransferDestination,
-						CoreGraphics::BarrierAccess::ShaderRead,
-						CoreGraphics::BarrierAccess::TransferWrite,
-					}
-				},
-				nullptr,
-				nullptr);
-
-			// update unpaged mips directly
-			for (int i = maxMip; i < info.mips; i++)
-			{
-				CoreGraphics::TextureUpdate(tex, i, 0, (char*)this->source.image_data(0, i), sub);
-			}
-
-			// transfer textures back to being read by shaders
-			CoreGraphics::BarrierInsert(
-				CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-				CoreGraphics::BarrierStage::Transfer,
-				CoreGraphics::BarrierStage::AllGraphicsShaders,
-				CoreGraphics::BarrierDomain::Global,
-				{
-					CoreGraphics::TextureBarrier
-					{
-						tex,
-						CoreGraphics::ImageSubresourceInfo { CoreGraphics::ImageAspect::ColorBits, (uint)maxMip, (uint)(info.mips - maxMip), 0, 1 },
-						CoreGraphics::ImageLayout::TransferDestination,
-						CoreGraphics::ImageLayout::ShaderRead,
-						CoreGraphics::BarrierAccess::TransferWrite,
-						CoreGraphics::BarrierAccess::ShaderRead,
-					}
-				},
-				nullptr,
-				nullptr);
-
-			// unlock handover submission
-			CoreGraphics::UnlockResourceSubmission();
-#endif
-		}
-		else
-		{
-			this->stream->MemoryUnmap();
-			this->stream->Close();
-		}
-	}
-}
-
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-EvictMip(
-	const CoreGraphics::TextureId tex,
-	uint mip,
-	CoreGraphics::TextureSparsePageSize pageSize,
-	TerrainMaterialSource& source,
-	CoreGraphics::SubmissionContextId sub)
-{
-	source.mipReferenceCount[0][mip]--;
-	if (source.mipReferenceCount[0][mip] == 0)
-		CoreGraphics::TextureSparseEvictMip(source.tex, 0, mip);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-MakeResidentMip(
-	const CoreGraphics::TextureId tex,
-	uint mip,
-	CoreGraphics::TextureSparsePageSize pageSize,
-	TerrainMaterialSource& source,
-	CoreGraphics::SubmissionContextId sub)
-{
-	// if ref count is 0, make the mip resident and stream data
-	if (source.mipReferenceCount[0][mip] == 0)
-	{
-		CoreGraphics::TextureSparseMakeMipResident(source.tex, 0, mip);
-
-		CoreGraphics::BarrierInsert(
-			CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-			CoreGraphics::BarrierStage::AllGraphicsShaders,
-			CoreGraphics::BarrierStage::Transfer,
-			CoreGraphics::BarrierDomain::Global,
-			{
-				CoreGraphics::TextureBarrier
-				{
-					source.tex,
-					CoreGraphics::ImageSubresourceInfo { CoreGraphics::ImageAspect::ColorBits, mip, 1, 0, 1 },
-					CoreGraphics::ImageLayout::ShaderRead,
-					CoreGraphics::ImageLayout::TransferDestination,
-					CoreGraphics::BarrierAccess::ShaderRead,
-					CoreGraphics::BarrierAccess::TransferWrite,
-				}
-			},
-			nullptr,
-			nullptr);
-
-		// update the texture
-		CoreGraphics::TextureUpdate(tex, mip, 0, (char*)source.source.image_data(0, mip), sub);
-
-		// transfer textures back to being read by shaders
-		CoreGraphics::BarrierInsert(
-			CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-			CoreGraphics::BarrierStage::Transfer,
-			CoreGraphics::BarrierStage::AllGraphicsShaders,
-			CoreGraphics::BarrierDomain::Global,
-			{
-				CoreGraphics::TextureBarrier
-				{
-					source.tex,
-					CoreGraphics::ImageSubresourceInfo { CoreGraphics::ImageAspect::ColorBits, mip, 1, 0, 1 },
-					CoreGraphics::ImageLayout::TransferDestination,
-					CoreGraphics::ImageLayout::ShaderRead,
-					CoreGraphics::BarrierAccess::TransferWrite,
-					CoreGraphics::BarrierAccess::ShaderRead,
-				}
-			},
-			nullptr,
-			nullptr);
-	}
-
-	// then add the reference counter
-	source.mipReferenceCount[0][mip]++;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-TerrainMaterialSource::UpdateMip(float oldDistance, float newDistance, CoreGraphics::SubmissionContextId sub)
-{
-	float oldMip = oldDistance * (CoreGraphics::TextureSparseGetMaxMip(this->tex) - 1);
-	float newMip = newDistance * (CoreGraphics::TextureSparseGetMaxMip(this->tex) - 1);
-
-	uint texMips = CoreGraphics::TextureSparseGetMaxMip(this->tex);
-
-	uint oldBottomMip = Math::n_floor(oldMip);
-	uint oldTopMip = Math::n_ceil(oldMip);
-	uint newBottomMip = Math::n_floor(newMip);
-	uint newTopMip = Math::n_ceil(newMip);
-
-	CoreGraphics::TextureSparsePageSize pageSize = CoreGraphics::TextureSparseGetPageSize(this->tex);
-
-	// check if lower mip doesn't match
-	if (oldBottomMip != newBottomMip)
-	{
-		// okay, it means we should unload the lower mip in case it's valid
-		if (oldBottomMip < texMips && oldBottomMip != newTopMip)
-			EvictMip(tex, oldBottomMip, pageSize, *this, sub);
-
-		// and load in the new lower mip
-		MakeResidentMip(tex, newBottomMip, pageSize, *this, sub);
-	}
-
-	// check if upper mip doesn't match
-	if (oldTopMip != newTopMip && newBottomMip != newTopMip)
-	{
-		// okay, it means we should unload the upper mip in case it's valid
-		if (oldTopMip < texMips && oldTopMip != newBottomMip)
-			EvictMip(tex, oldTopMip, pageSize, *this, sub);
-
-		// and load in the new upper mip
-		MakeResidentMip(tex, newTopMip, pageSize, *this, sub);
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-TerrainMaterial::UpdateMip(float oldDistance, float newDistance, CoreGraphics::SubmissionContextId sub)
-{
-	this->albedo.UpdateMip(oldDistance, newDistance, sub);
-	this->normals.UpdateMip(oldDistance, newDistance, sub);
-	this->material.UpdateMip(oldDistance, newDistance, sub);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-EvictSection(
-	const CoreGraphics::TextureId tex,
-	Math::rectangle<uint> section,
-	uint mip,
-	CoreGraphics::TextureSparsePageSize pageSize,
-	TerrainTextureSource& source,
-	CoreGraphics::SubmissionContextId sub)
-{
-	// calculate page ranges offset by mip
-	uint offsetX = section.left >> mip;
-	uint rangeX = Math::n_min(Math::n_max(section.width() >> mip, 1u), pageSize.width);
-	uint endX = offsetX + Math::n_max(section.width() >> mip, 1u);
-
-	uint offsetY = section.top >> mip;
-	uint rangeY = Math::n_min(Math::n_max(section.height() >> mip, 1u), pageSize.height);
-	uint endY = offsetY + Math::n_max(section.height() >> mip, 1u);
-
-	// go through pages and evict
-	for (uint y = offsetY; y < endY; y += rangeY)
-	{
-		for (uint x = offsetX; x < endX; x += rangeX)
-		{
-			uint pageIndex = CoreGraphics::TextureSparseGetPageIndex(tex, 0, mip, x, y, 0);
-
-			// decrease the reference count
-			if (pageIndex != InvalidIndex && source.pageReferenceCount[0][mip][pageIndex] > 0)
-			{
-				source.pageReferenceCount[0][mip][pageIndex]--;
-
-				// if reference count for this page is 0
-				if (source.pageReferenceCount[0][mip][pageIndex] == 0)
-					CoreGraphics::TextureSparseEvict(tex, 0, mip, pageIndex);
-			}
-		}
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-MakeResidentSection(
-	const CoreGraphics::TextureId tex,
-	Math::rectangle<uint> section,
-	uint mip,
-	CoreGraphics::TextureSparsePageSize pageSize,
-	TerrainTextureSource& source,
-	CoreGraphics::SubmissionContextId sub)
-{
-	// calculate page ranges offset by mip
-	uint offsetX = section.left >> mip;
-	uint rangeX = Math::n_min(Math::n_max(section.width() >> mip, 1u), pageSize.width);
-	uint endX = offsetX + Math::n_max(section.width() >> mip, 1u);
-
-	uint offsetY = section.top >> mip;
-	uint rangeY = Math::n_min(Math::n_max(section.height() >> mip, 1u), pageSize.height);
-	uint endY = offsetY + Math::n_max(section.height() >> mip, 1u);
-
-	// insert barrier before starting our blits
-	CoreGraphics::BarrierInsert(
-		CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-		CoreGraphics::BarrierStage::AllGraphicsShaders,
-		CoreGraphics::BarrierStage::Transfer,
-		CoreGraphics::BarrierDomain::Global,
-		{
-			CoreGraphics::TextureBarrier
-			{
-				tex,
-				CoreGraphics::ImageSubresourceInfo { CoreGraphics::ImageAspect::ColorBits, mip, 1, 0, 1 },
-				CoreGraphics::ImageLayout::ShaderRead,
-				CoreGraphics::ImageLayout::TransferDestination,
-				CoreGraphics::BarrierAccess::ShaderRead,
-				CoreGraphics::BarrierAccess::TransferWrite,
-			}
-		},
-		nullptr,
-		nullptr);
-
-	// go through pages and make resident
-	for (uint y = offsetY; y < endY; y += rangeY)
-	{
-		for (uint x = offsetX; x < endX; x += rangeX)
-		{
-			uint pageIndex = CoreGraphics::TextureSparseGetPageIndex(tex, 0, mip, x, y, 0);
-
-			Math::rectangle<int> updateSection;
-			updateSection.left = x;
-			updateSection.right = x + rangeX;
-			updateSection.top = y;
-			updateSection.bottom = y + rangeY;
-
-			// if this will be our first reference, make the page resident
-			if (pageIndex != InvalidIndex)
-			{
-				if (source.pageReferenceCount[0][mip][pageIndex] == 0)
-				{
-					CoreGraphics::TextureSparseMakeResident(tex, 0, mip, pageIndex);
-					const CoreGraphics::TextureSparsePage& page = CoreGraphics::TextureSparseGetPage(tex, 0, mip, pageIndex);
-
-					// if we are allocating the page, fill it immediately because it may contain old data
-					updateSection.left = Math::n_min(updateSection.left, (int32_t)page.offset.x);
-					updateSection.right = Math::n_max((int32_t)(page.offset.x + page.extent.width), updateSection.right);
-					updateSection.top = Math::n_min(updateSection.top, (int32_t)page.offset.y);
-					updateSection.bottom = Math::n_max((int32_t)(page.offset.y + page.extent.height), updateSection.bottom);
-				}
-
-				// add a reference count
-				source.pageReferenceCount[0][mip][pageIndex]++;
-			}
-
-			// update the texture
-			CoreGraphics::TextureUpdate(tex, updateSection, mip, 0, (char*)source.source.image_data(0, mip), sub);
-		}
-	}
-
-	// transfer textures back to being read by shaders
-	CoreGraphics::BarrierInsert(
-		CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-		CoreGraphics::BarrierStage::Transfer,
-		CoreGraphics::BarrierStage::AllGraphicsShaders,
-		CoreGraphics::BarrierDomain::Global,
-		{
-			CoreGraphics::TextureBarrier
-			{
-				tex,
-				CoreGraphics::ImageSubresourceInfo { CoreGraphics::ImageAspect::ColorBits, mip, 1, 0, 1 },
-				CoreGraphics::ImageLayout::TransferDestination,
-				CoreGraphics::ImageLayout::ShaderRead,
-				CoreGraphics::BarrierAccess::TransferWrite,
-				CoreGraphics::BarrierAccess::ShaderRead,
-			}
-		},
-		nullptr,
-		nullptr);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-UpdateSparseTexture(
-	const CoreGraphics::TextureId tex,
-	Math::rectangle<uint> section,
-	float oldDistance,
-	float newDistance,
-	CoreGraphics::TextureSparsePageSize pageSize,
-	TerrainTextureSource& source,
-	CoreGraphics::SubmissionContextId sub)
-{
-	float oldMip = oldDistance * (CoreGraphics::TextureSparseGetMaxMip(source.tex) - 1);
-	float newMip = newDistance * (CoreGraphics::TextureSparseGetMaxMip(source.tex) - 1);
-
-	uint texMips = CoreGraphics::TextureSparseGetMaxMip(source.tex);
-
-	uint oldBottomMip = Math::n_floor(oldMip);
-	uint oldTopMip = Math::n_ceil(oldMip);
-	uint newBottomMip = Math::n_floor(newMip);
-	uint newTopMip = Math::n_ceil(newMip);
-
-	section.left *= source.scaleFactorX;
-	section.right *= source.scaleFactorX;
-	section.top *= source.scaleFactorY;
-	section.bottom *= source.scaleFactorY;
-
-	// check if lower mip doesn't match
-	if (oldBottomMip != newBottomMip)
-	{
-		// okay, it means we should unload the lower mip in case it's valid
-		if (oldBottomMip < texMips && oldBottomMip != newTopMip)
-			EvictSection(tex, section, oldBottomMip, pageSize, source, sub);
-
-		// and load in the new lower mip
-		MakeResidentSection(tex, section, newBottomMip, pageSize, source, sub);
-	}
-
-	// check if upper mip doesn't match
-	if (oldTopMip != newTopMip && newBottomMip != newTopMip)
-	{
-		// okay, it means we should unload the upper mip in case it's valid
-		if (oldTopMip < texMips && oldTopMip != newBottomMip)
-			EvictSection(tex, section, oldTopMip, pageSize, source, sub);
-
-		// and load in the new upper mip
-		MakeResidentSection(tex, section, newTopMip, pageSize, source, sub);
-	}
 }
 
 } // namespace Terrain

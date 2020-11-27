@@ -71,53 +71,6 @@ struct SubTextureUpdateJobOutput
     SubTextureUpdateState updateState;
 };
 
-
-//------------------------------------------------------------------------------
-/**
-    This type keeps track of subregions of a texture so we can update them when
-    we need it. Can handle huge textures, max 16k for compliance with nvidia GPUs.
-*/
-struct TerrainTextureSource
-{
-    Ptr<IO::Stream> stream;
-    gliml::context source;
-    float scaleFactorX, scaleFactorY;
-    CoreGraphics::TextureId tex;
-    Util::FixedArray<Util::FixedArray<Util::FixedArray<uint>>> pageReferenceCount;
-
-    /// setup source
-    void Setup(const Resources::ResourceName& path, bool manualRegister = false);
-};
-
-//------------------------------------------------------------------------------
-/**
-    This type keeps track of individual resident mips and is used within a terrain
-    tile to render a repeating pattern. Can handle big textures, max 4k.
-*/
-struct TerrainMaterialSource
-{
-    Ptr<IO::Stream> stream;
-    gliml::context source;
-    CoreGraphics::TextureId tex;
-    Util::FixedArray<Util::FixedArray<uint>> mipReferenceCount;
-
-    /// setup source
-    void Setup(const Resources::ResourceName& path);
-    /// update mip
-    void UpdateMip(float oldDistance, float newDistance, CoreGraphics::SubmissionContextId sub);
-};
-
-struct TerrainMaterial
-{
-    TerrainMaterialSource albedo;
-    TerrainMaterialSource normals;
-    TerrainMaterialSource material;
-    TerrainTextureSource mask;
-
-    /// update mip status
-    void UpdateMip(float oldDistance, float newDistance, CoreGraphics::SubmissionContextId sub);
-};
-
 class TerrainContext : public Graphics::GraphicsContext
 {
     _DeclareContext();
@@ -161,8 +114,8 @@ public:
     static void UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
     /// render IMGUI
     static void RenderUI(const Graphics::FrameContext& ctx);
-
-    static void Dumb();
+    /// clear the tile cache (use when we need to force update the terrain)
+    static void ClearCache();
 
 #ifndef PUBLIC_DEBUG    
     /// debug rendering
@@ -206,9 +159,6 @@ private:
 
         CoreGraphics::BufferId vbo;
         CoreGraphics::BufferId ibo;
-
-        TerrainTextureSource albedoSource;
-        TerrainTextureSource heightSource;
     };
 
     enum
