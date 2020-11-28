@@ -9,7 +9,6 @@
 #include "graphics/graphicsserver.h"
 #include "models/modelcontext.h"
 #include "visibility/visibilitycontext.h"
-#include "game/op.h"
 #include "game/gameserver.h"
 
 namespace GraphicsFeature
