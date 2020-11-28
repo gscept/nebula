@@ -95,7 +95,7 @@ ParticleSystemNode::OnFinishedLoading()
 	this->skinningTransformsIndex = ShaderGetResourceSlot(shader, "JointBlock");
 	this->particleConstantsIndex = ShaderGetResourceSlot(shader, "ParticleObjectBlock");
 	this->resourceTable = ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP);
-	ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->particleConstantsIndex, 0, true, false, sizeof(::Particle::ParticleObjectBlock), 0 });
+	ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->particleConstantsIndex, 0, false, true, sizeof(::Particle::ParticleObjectBlock), 0 });
     ResourceTableCommitChanges(this->resourceTable);
 
     IndexT clusterAABBsSlot = ShaderGetResourceSlot(shader, "ClusterAABBs");
