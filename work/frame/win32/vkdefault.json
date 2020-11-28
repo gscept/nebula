@@ -206,26 +206,8 @@
 				type: "Texture2D"
 			},
 			{
-				name: "TerrainDataBuffer",
-				format: "R32G32F",
-				relative: true,
-				usage: "Render",
-				width: 1.0,
-				height: 1.0,
-				type: "Texture2D"
-			},
-			{
-				name: "TerrainNormalBuffer",
-				format: "R16G16B16A16F",
-				relative: true,
-				usage: "Render",
-				width: 1.0,
-				height: 1.0,
-				type: "Texture2D"
-			},
-			{
 				name: "TerrainPosBuffer",
-				format: "R16G16B16A16F",
+				format: "R32G32B32A32F",
 				relative: true,
 				usage: "Render",
 				width: 1.0,
