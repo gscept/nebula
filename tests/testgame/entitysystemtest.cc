@@ -192,22 +192,29 @@ EntitySystemTest::Run()
 
     VERIFY(true);
 
-    Game::FilterSet filter({
-            Game::GetPropertyId("TestHealth"_atm),
-            Game::GetPropertyId("TestStruct"_atm)
-    });
+    Game::FilterCreateInfo filterInfo;
+    filterInfo.inclusive[0] = Game::GetPropertyId("TestHealth");
+    filterInfo.access[0] = Game::AccessMode::READ;
+    filterInfo.inclusive[1] = Game::GetPropertyId("TestStruct");
+    filterInfo.access[1] = Game::AccessMode::WRITE;
+
+    Game::Filter filter = Game::CreateFilter(filterInfo);
 
 	Game::Dataset set = Game::Query(filter);
     
-    VERIFY(set.tables.Size() == 1); // We should only get one table, since the other ones does not have any entities.
+    VERIFY(set.numViews == 1); // We should only get one table, since the other ones does not have any entities.
 
-	Test::TestHealth* healths = (Test::TestHealth*)set.tables[0].buffers[0];
-	Test::TestStruct* structs = (Test::TestStruct*)set.tables[0].buffers[1];
+	Test::TestHealth* healths = (Test::TestHealth*)set.views[0].buffers[0];
+	Test::TestStruct* structs = (Test::TestStruct*)set.views[0].buffers[1];
 
 	// add a property to an entity that does not already have it. This should
 	// move the entity from one category to another, effectively (in this case)
 	// creating a new category, that contains only one instance (this one)
-	Game::AddProperty(entities[1], Game::GetPropertyId("TestVec4"_atm));
+    Game::Op::RegisterProperty registerOp;
+    registerOp.entity = entities[1];
+    registerOp.pid = Game::GetPropertyId("TestVec4"_atm);
+    registerOp.value = nullptr;
+	Game::Execute(registerOp);
 }
 
 }

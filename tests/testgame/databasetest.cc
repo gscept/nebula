@@ -178,7 +178,7 @@ DatabaseTest::Run()
     }
 
     {
-        for (ushort i = 2; i < 10000; i++)
+        for (ushort i = 2; i < 10000; i += 7)
         {
             TableSignature s = { (PropertyId)i };
             VERIFY(!TableSignature::CheckBits(s, { 1 }));
