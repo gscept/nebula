@@ -21,6 +21,7 @@
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
+//------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "core/singleton.h"
 #include "coregraphics/shader.h"
@@ -46,7 +47,6 @@ namespace CoreGraphics
 class Shader;
 }
 
-//------------------------------------------------------------------------------
 namespace Base
 {
 class ShaderServerBase : public Core::RefCounted
