@@ -13,6 +13,7 @@
 #include "io/filestream.h"
 #include "io/archfs/archive.h"
 #include "io/archfs/archivefilesystem.h"
+#include "io/filewatcher.h"
 #include <filesystem>
 
 namespace IO

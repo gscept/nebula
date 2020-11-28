@@ -10,9 +10,11 @@
 #include "core/types.h"
 #include "core/refcounted.h"
 #include "core/singleton.h"
+#include "core/ptr.h"
 #include "util/stringatom.h"
 #include "util/dictionary.h"
 #include "io/uri.h"
+#include "io/ioserver.h"
 #include "util/delegate.h"
 #include "threading/thread.h"
 #include "threading/safequeue.h"
@@ -94,6 +96,7 @@ private:
     ///
     void DoWork();
    	
+    Ptr<IO::IoServer> ioServer;
     Util::Dictionary<Util::StringAtom, EventHandlerData> watchers;    
     Threading::SafeQueue< EventHandlerData> watcherQueue;
     double interval;

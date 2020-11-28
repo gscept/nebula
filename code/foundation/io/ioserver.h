@@ -25,13 +25,12 @@
 #include "util/stringatom.h"
 #include "io/assignregistry.h"
 #include "io/schemeregistry.h"
-#include "io/filewatcher.h"
 
 //------------------------------------------------------------------------------
 namespace IO
 {
 class ArchiveFileSystem;
-
+class FileWatcher;
 class Stream;
 class URI;
 
