@@ -19,12 +19,9 @@ group(SYSTEM_GROUP) constant TerrainSystemUniforms [ string Visibility = "VS|HS|
 	float MaxTessellation;
 
 	uint NumBiomes;
-	uint NumLayers;
 	uint Debug;
 	float VirtualLodDistance;
 
-	textureHandle TerrainDataBuffer;
-	textureHandle TerrainNormalBuffer;
 	textureHandle TerrainPosBuffer;
 	textureHandle IndirectionBuffer;
 	textureHandle AlbedoPhysicalCacheBuffer;
@@ -67,12 +64,6 @@ group(BATCH_GROUP) constant TerrainRuntimeUniforms [ string Visibility = "VS|HS|
 
 	textureHandle HeightMap;
 	textureHandle DecisionMap;
-	textureHandle AlbedoMap;
-
-	textureHandle VirtualAlbedoTexture;
-	textureHandle VirtualNormalTexture;
-	textureHandle VirtualMaterialTexture;
-	textureHandle RedirectionTexture;
 
 	uint VirtualPageBufferNumPages;
 	uvec4 VirtualPageBufferMipOffsets[4];
@@ -342,53 +333,6 @@ dsTerrain(
 
 //------------------------------------------------------------------------------
 /**
-	Pixel shader for Z pass
-*/
-[early_depth]
-shader
-void
-psTerrainZ(
-	in vec2 uv,
-	in vec2 localUv,
-	in vec3 viewPos,
-	in vec3 normal,
-	in vec3 worldPos,
-	[color0] out vec2 Data,
-	[color1] out vec4 Normal,
-	[color3] out vec4 Pos)
-{
-	// go through the masks and figure out which ids we want to use
-	int finalMask = 0x0;
-	Data.x = saturate(length(viewPos) / VirtualLodDistance);
-
-	uint bucketX = uint(worldPos.x + WorldSizeX * 0.5f) / uint(TileWidth);
-	uint bucketZ = uint(worldPos.z + WorldSizeZ * 0.5f) / uint(TileHeight);
-	uint lodIndex = bucketX + bucketZ * NumTilesX;
-	int lod = 1000;
-
-	vec2 uvuv = worldPos.xz / vec2(WorldSizeX, WorldSizeZ);
-
-	// figure out which lod we should pick for this pixel
-	if (NumBiomes > 0)
-		lod = max(0, int(textureQueryLod(sampler2DArray(MaterialAlbedoArray[0], PointSampler), uvuv).y * 1000.0f));
-
-	for (uint i = 0; i < NumBiomes; i++)
-	{
-		float mask = sampleBiomeMask(i, TextureSampler, uvuv).r;
-		if (mask > 0.0f)
-		{
-			finalMask |= 1 << i;
-		}
-	}
-
-	Data.y = float(finalMask); // use max 256 materials
-	Normal.xyz = normal;
-	Normal.a = worldPos.y;
-	Pos.xyz = worldPos.xyz;
-}
-
-//------------------------------------------------------------------------------
-/**
 	Pixel shader for multilayered painting
 */
 shader
@@ -466,156 +410,6 @@ SampleSlopeRule(
 	outMaterial += sampleBiomeMaterial(i, AnisoSampler, uv, baseArrayIndex + 1).rgb * mask * angle;
 	outNormal = sampleBiomeNormal(i, AnisoSampler, uv, baseArrayIndex).rgb * (1.0f - angle);
 	outNormal += sampleBiomeNormal(i, AnisoSampler, uv, baseArrayIndex + 1).rgb * angle;
-}
-
-//------------------------------------------------------------------------------
-/**
-	Calculate pixel light contribution
-*/
-shader
-void 
-psScreenSpace(
-	in vec2 ScreenUV,
-	[color0] out vec4 Albedo,
-	[color1] out vec3 Normal,
-	[color2] out vec4 Material)
-{
-	vec2 data = sample2DLod(TerrainDataBuffer, PointSampler, ScreenUV, 0).rg;
-
-	// get the mask back
-	uint mask = uint(data.y);
-	if (mask == 0)
-		discard;
-
-	vec4 normal = sample2DLod(TerrainNormalBuffer, PointSampler, ScreenUV, 0);
-	vec3 triplanarWeights = abs(normal.xyz);
-	triplanarWeights = normalize(max(triplanarWeights * triplanarWeights, 0.00001f));
-	float norm = (triplanarWeights.x + triplanarWeights.y + triplanarWeights.z);
-	triplanarWeights /= vec3(norm, norm, norm);
-
-	vec4 worldPos = sample2DLod(TerrainPosBuffer, PointSampler, ScreenUV, 0).rgba;
-	vec2 globalUV = worldPos.xz;
-	vec2 tileUV = worldPos.xz / 64.0f;
-	vec3 totalAlbedo = vec3(0, 0, 0);
-	vec3 totalMaterial = vec3(0, 0, 0);
-	vec3 totalNormal = vec3(0, 0, 0);
-	vec3 tangent = cross(normal.xyz, vec3(0, 0, 1));
-	tangent = normalize(cross(normal.xyz, tangent));
-	vec3 binormal = normalize(cross(normal.xyz, tangent));
-	mat3 tbn = mat3(tangent, binormal, normal.xyz);
-
-	//SampleSlopeRule(0, 0, 0, 1.0f, uvs.zw, tbn, totalAlbedo, totalMaterial, totalNormal);
-
-	for (int i = 0; i < NumBiomes; i++)
-	{
-		if ((mask & 1) == 1)
-		{
-			// first get the mask value
-			float maskValue = sampleBiomeMask(i, TextureSampler, globalUV).r;
-			vec4 rules = BiomeRules[i];
-
-			float angle = saturate((1.0f - dot(normal.xyz, vec3(0, 1, 0))) / 0.5f);
-			float height = saturate(max(0, normal.a - rules.y) / 25.0f);
-			//float angle = 0.5f;
-			//float height = 0.0f;
-			vec3 blendNormal = vec3(0, 0, 0);
-			if (height == 0.0f)
-			{
-				vec3 albedo = vec3(0, 0, 0);
-				vec3 normal = vec3(0, 0, 0);
-				vec3 material = vec3(0, 0, 0);
-
-				SampleSlopeRule(i, 0, angle, maskValue, worldPos.yz / 64.0f, albedo, material, normal);
-				totalAlbedo += albedo * triplanarWeights.x;
-				totalMaterial += material * triplanarWeights.x;
-				blendNormal += normal * triplanarWeights.x;
-
-				SampleSlopeRule(i, 0, angle, maskValue, worldPos.xz / 64.0f, albedo, material, normal);
-				totalAlbedo += albedo * triplanarWeights.y;
-				totalMaterial += material * triplanarWeights.y;
-				blendNormal += normal * triplanarWeights.y;
-
-				SampleSlopeRule(i, 0, angle, maskValue, worldPos.xy / 64.0f, albedo, material, normal);
-				totalAlbedo += albedo * triplanarWeights.z;
-				totalMaterial += material * triplanarWeights.z;
-				blendNormal += normal * triplanarWeights.z;
-
-				blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
-				blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
-				totalNormal += (tbn * blendNormal) * maskValue;
-			}
-			else
-			{
-				vec3 albedo = vec3(0, 0, 0);
-				vec3 normal = vec3(0, 0, 0);
-				vec3 material = vec3(0, 0, 0);
-				SampleSlopeRule(i, 2, angle, maskValue, worldPos.yz / 64.0f, albedo, material, normal);
-				totalAlbedo += albedo * triplanarWeights.x * height;
-				totalMaterial += material * triplanarWeights.x * height;
-				blendNormal += normal * triplanarWeights.x * height;
-				SampleSlopeRule(i, 2, angle, maskValue, worldPos.xz / 64.0f, albedo, material, normal);
-				totalAlbedo += albedo * triplanarWeights.y * height;
-				totalMaterial += material * triplanarWeights.y * height;
-				blendNormal += normal * triplanarWeights.y * height;
-				SampleSlopeRule(i, 2, angle, maskValue, worldPos.xy / 64.0f, albedo, material, normal);
-				totalAlbedo += albedo * triplanarWeights.z * height;
-				totalMaterial += material * triplanarWeights.z * height;
-				blendNormal += normal * triplanarWeights.z * height;
-				SampleSlopeRule(i, 0, angle, maskValue, worldPos.yz / 64.0f, albedo, material, normal);
-				totalAlbedo += albedo * triplanarWeights.x * (1.0f - height);
-				totalMaterial += material * triplanarWeights.x * (1.0f - height);
-				blendNormal += normal * triplanarWeights.x * (1.0f - height);
-				SampleSlopeRule(i, 0, angle, maskValue, worldPos.xz / 64.0f, albedo, material, normal);
-				totalAlbedo += albedo * triplanarWeights.y * (1.0f - height);
-				totalMaterial += material * triplanarWeights.y * (1.0f - height);
-				blendNormal += normal * triplanarWeights.y * (1.0f - height);
-				SampleSlopeRule(i, 0, angle, maskValue, worldPos.xy / 64.0f, albedo, material, normal);
-				totalAlbedo += albedo * triplanarWeights.z * (1.0f - height);
-				totalMaterial += material * triplanarWeights.z * (1.0f - height);
-				blendNormal += normal * triplanarWeights.z * (1.0f - height);
-
-				blendNormal.xy = blendNormal.xy * 2.0f - 1.0f;
-				blendNormal.z = saturate(sqrt(1.0f - dot(blendNormal.xy, blendNormal.xy)));
-				totalNormal += (tbn * blendNormal) * maskValue;
-			}
-		}
-		mask = mask >> 1;
-	}
-
-
-	Albedo = vec4(totalAlbedo, 1.0f);
-	Material = vec4(totalMaterial, 0.0f);
-	Normal = normalize(totalNormal);
-}
-
-//------------------------------------------------------------------------------
-/**
-	Pixel shader for shading
-*/
-[early_depth]
-shader
-void
-psTerrain(
-	in vec2 uv,
-	in vec2 localUv,
-	in vec3 viewPos,
-	in vec3 normal,
-	in vec3 worldPos,
-	[color0] out vec4 Albedo,
-	[color1] out vec3 Normal,
-	[color2] out vec4 Material)
-{
-	vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
-	vec2 worldUv = vec2(worldPos.xz + worldSize * 0.5f);
-	vec2 redirect = fetch2D(RedirectionTexture, TextureSampler, ivec2(worldUv / VirtualTerrainPageSize), 0).xy;
-	vec2 relativeUv = localUv / PatchUvScale + redirect / worldSize;
-	//relativeUv.x = 1.0f - relativeUv.x;
-	vec4 albedo = sample2D(VirtualAlbedoTexture, TextureSampler, relativeUv);
-	vec4 normal = sample2D(VirtualNormalTexture, TextureSampler, relativeUv);
-	vec4 material = sample2D(VirtualMaterialTexture, TextureSampler, relativeUv);
-	Albedo = vec4(albedo.rgb, 1.0f);
-	Normal = normal.xyz;// normal.xyz;
-	Material = material;
 }
 
 //------------------------------------------------------------------------------
@@ -979,10 +773,10 @@ psScreenSpaceVirtual(
 
 	if (any(lessThan(subTextureCoord, ivec2(0, 0))) || any(greaterThanEqual(subTextureCoord, VirtualTerrainNumSubTextures)))
 	{
-		Albedo = sample2D(AlbedoLowresBuffer, TextureSampler, worldUv);
+		Albedo = sample2D(AlbedoLowresBuffer, AnisoSampler, worldUv);
 		Albedo.a = 1.0f;
-		Normal = sample2D(NormalLowresBuffer, TextureSampler, worldUv).xyz;
-		Material = sample2D(MaterialLowresBuffer, TextureSampler, worldUv);
+		Normal = sample2D(NormalLowresBuffer, AnisoSampler, worldUv).xyz;
+		Material = sample2D(MaterialLowresBuffer, AnisoSampler, worldUv);
 		return;
 	}
 
@@ -1033,16 +827,16 @@ psScreenSpaceVirtual(
 				{
 					// convert from texture space to normalized space
 					indirectionUpper.xy = (indirectionUpper.xy + physicalUvUpper) * vec2(PhysicalInvPaddedTextureSize);
-					albedo0 = sample2DLod(AlbedoPhysicalCacheBuffer, TextureSampler, indirectionUpper.xy, 0);
-					normal0 = sample2DLod(NormalPhysicalCacheBuffer, TextureSampler, indirectionUpper.xy, 0);
-					material0 = sample2DLod(MaterialPhysicalCacheBuffer, TextureSampler, indirectionUpper.xy, 0);
+					albedo0 = sample2DLod(AlbedoPhysicalCacheBuffer, AnisoSampler, indirectionUpper.xy, 0);
+					normal0 = sample2DLod(NormalPhysicalCacheBuffer, AnisoSampler, indirectionUpper.xy, 0);
+					material0 = sample2DLod(MaterialPhysicalCacheBuffer, AnisoSampler, indirectionUpper.xy, 0);
 				}
 				else
 				{
 					// otherwise, pick fallback texture
-					albedo0 = sample2D(AlbedoLowresBuffer, TextureSampler, worldUv);
-					normal0 = sample2D(NormalLowresBuffer, TextureSampler, worldUv);
-					material0 = sample2D(MaterialLowresBuffer, TextureSampler, worldUv);
+					albedo0 = sample2D(AlbedoLowresBuffer, AnisoSampler, worldUv);
+					normal0 = sample2D(NormalLowresBuffer, AnisoSampler, worldUv);
+					material0 = sample2D(MaterialLowresBuffer, AnisoSampler, worldUv);
 				}
 
 				// same here
@@ -1050,15 +844,15 @@ psScreenSpaceVirtual(
 				{
 					// convert from texture space to normalized space
 					indirectionLower.xy = (indirectionLower.xy + physicalUvLower) * vec2(PhysicalInvPaddedTextureSize);
-					albedo1 = sample2DLod(AlbedoPhysicalCacheBuffer, TextureSampler, indirectionLower.xy, 0);
-					normal1 = sample2DLod(NormalPhysicalCacheBuffer, TextureSampler, indirectionLower.xy, 0);
-					material1 = sample2DLod(MaterialPhysicalCacheBuffer, TextureSampler, indirectionLower.xy, 0);
+					albedo1 = sample2DLod(AlbedoPhysicalCacheBuffer, AnisoSampler, indirectionLower.xy, 0);
+					normal1 = sample2DLod(NormalPhysicalCacheBuffer, AnisoSampler, indirectionLower.xy, 0);
+					material1 = sample2DLod(MaterialPhysicalCacheBuffer, AnisoSampler, indirectionLower.xy, 0);
 				}
 				else
 				{
-					albedo1 = sample2D(AlbedoLowresBuffer, TextureSampler, worldUv);
-					normal1 = sample2D(NormalLowresBuffer, TextureSampler, worldUv);
-					material1 = sample2D(MaterialLowresBuffer, TextureSampler, worldUv);
+					albedo1 = sample2D(AlbedoLowresBuffer, AnisoSampler, worldUv);
+					normal1 = sample2D(NormalLowresBuffer, AnisoSampler, worldUv);
+					material1 = sample2D(MaterialLowresBuffer, AnisoSampler, worldUv);
 				}
 
 				float weight = fract(pos.z);
@@ -1076,35 +870,35 @@ psScreenSpaceVirtual(
 				if (indirection.z != 0xF)
 				{
 					indirection.xy = (indirection.xy + physicalUvLower) * vec2(PhysicalInvPaddedTextureSize);
-					Albedo = sample2DLod(AlbedoPhysicalCacheBuffer, TextureSampler, indirection.xy, 0);
-					Normal = sample2DLod(NormalPhysicalCacheBuffer, TextureSampler, indirection.xy, 0).xyz;
-					Material = sample2DLod(MaterialPhysicalCacheBuffer, TextureSampler, indirection.xy, 0);
+					Albedo = sample2DLod(AlbedoPhysicalCacheBuffer, AnisoSampler, indirection.xy, 0);
+					Normal = sample2DLod(NormalPhysicalCacheBuffer, AnisoSampler, indirection.xy, 0).xyz;
+					Material = sample2DLod(MaterialPhysicalCacheBuffer, AnisoSampler, indirection.xy, 0);
 				}
 				else
 				{
 					// otherwise, pick fallback texture
-					Albedo = sample2D(AlbedoLowresBuffer, TextureSampler, worldUv);
+					Albedo = sample2D(AlbedoLowresBuffer, AnisoSampler, worldUv);
 					Albedo.a = 1.0f;
-					Normal = sample2D(NormalLowresBuffer, TextureSampler, worldUv).xyz;
-					Material = sample2D(MaterialLowresBuffer, TextureSampler, worldUv);
+					Normal = sample2D(NormalLowresBuffer, AnisoSampler, worldUv).xyz;
+					Material = sample2D(MaterialLowresBuffer, AnisoSampler, worldUv);
 				}
 			}
 		}
 		else
 		{
-			Albedo = sample2D(AlbedoLowresBuffer, TextureSampler, worldUv);
+			Albedo = sample2D(AlbedoLowresBuffer, AnisoSampler, worldUv);
 			Albedo.a = 1.0f;
-			Normal = sample2D(NormalLowresBuffer, TextureSampler, worldUv).xyz;
-			Material = sample2D(MaterialLowresBuffer, TextureSampler, worldUv);
+			Normal = sample2D(NormalLowresBuffer, AnisoSampler, worldUv).xyz;
+			Material = sample2D(MaterialLowresBuffer, AnisoSampler, worldUv);
 		}
 
 	}
 	else
 	{
-		Albedo = sample2D(AlbedoLowresBuffer, TextureSampler, worldUv);
+		Albedo = sample2D(AlbedoLowresBuffer, AnisoSampler, worldUv);
 		Albedo.a = 1.0f;
-		Normal = sample2D(NormalLowresBuffer, TextureSampler, worldUv).xyz;
-		Material = sample2D(MaterialLowresBuffer, TextureSampler, worldUv);
+		Normal = sample2D(NormalLowresBuffer, AnisoSampler, worldUv).xyz;
+		Material = sample2D(MaterialLowresBuffer, AnisoSampler, worldUv);
 	}
 }
 
@@ -1264,10 +1058,7 @@ render_state TerrainShadowState
 	BlendOp[0] = Min;
 };
 
-TessellationTechnique(TerrainZ, "TerrainZ", vsTerrain(), psTerrainZ(), hsTerrain(), dsTerrain(), TerrainState);
-TessellationTechnique(Terrain, "Terrain", vsTerrain(), psTerrain(), hsTerrain(), dsTerrain(), TerrainState);
 TessellationTechnique(TerrainPrepass, "TerrainPrepass", vsTerrain(), psTerrainPrepass(), hsTerrain(), dsTerrain(), TerrainState);
-SimpleTechnique(TerrainScreenSpace, "TerrainScreenSpace", vsScreenSpace(), psScreenSpace(), FinalState);
 SimpleTechnique(TerrainVirtualScreenSpace, "TerrainVirtualScreenSpace", vsScreenSpace(), psScreenSpaceVirtual(), FinalState);
 SimpleTechnique(TerrainTileUpdate, "TerrainTileUpdate", vsScreenSpace(), psTerrainTileUpdate(), FinalState);
 SimpleTechnique(TerrainLowresFallback, "TerrainLowresFallback", vsScreenSpace(), psGenerateLowresFallback(), FinalState);
