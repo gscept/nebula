@@ -39,7 +39,7 @@ Fiber::Fiber()
 //------------------------------------------------------------------------------
 /**
 */
-Fiber::Fiber(nullptr_t)
+Fiber::Fiber(std::nullptr_t)
 	: handle(nullptr)
 	, context(nullptr)
 {
