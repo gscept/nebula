@@ -50,6 +50,8 @@ const uint PhysicalTextureTilePaddedSize = PhysicalTextureTileSize + PhysicalTex
 const uint PhysicalTextureSize = (PhysicalTextureTileSize) * PhysicalTextureNumTiles;
 const uint PhysicalTexturePaddedSize = (PhysicalTextureTilePaddedSize) * PhysicalTextureNumTiles;
 
+const uint IndirectionUpdateBufferSize = 1024 * 1024 * sizeof(Terrain::IndirectionEntry);
+
 _ImplementContext(TerrainContext, TerrainContext::terrainAllocator);
 
 
@@ -74,8 +76,6 @@ struct
 	CoreGraphics::TextureId biomeMasks[Terrain::MAX_BIOMES];
 	IndexT biomeCounter;
 
-	CoreGraphics::TextureId terrainDataBuffer;
-	CoreGraphics::TextureId terrainNormalBuffer;
 	CoreGraphics::TextureId terrainPosBuffer;
 	
 	IndexT albedoSlot;
@@ -112,7 +112,6 @@ struct
 
 	Util::FixedArray < CoreGraphics::BufferId>						pageUpdateReadbackBuffers;
 	CoreGraphics::TextureId											indirectionTexture;
-	Util::FixedArray<CoreGraphics::TextureViewId>					indirectionTextureViews;
 	CoreGraphics::BufferId											pageUpdateListBuffer;
 	CoreGraphics::BufferId											pageStatusBuffer;
 	CoreGraphics::BufferId											pageStatusClearBuffer;
@@ -377,32 +376,17 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 	texInfo.clearColorU4 = Math::uint4{ 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
 	terrainVirtualTileState.indirectionTexture = CoreGraphics::CreateTexture(texInfo);
 
-	terrainVirtualTileState.indirectionTextureViews.Resize(IndirectionNumMips);
-	for (uint i = 0; i < IndirectionNumMips; i++)
-	{
-		CoreGraphics::TextureViewCreateInfo viewInfo;
-		viewInfo.tex = terrainVirtualTileState.indirectionTexture;
-		viewInfo.startMip = i;
-		viewInfo.numMips = 1;
-		viewInfo.startLayer = 0;
-		viewInfo.numLayers = 1;
-		viewInfo.format = TextureGetPixelFormat(terrainVirtualTileState.indirectionTexture);
-		terrainVirtualTileState.indirectionTextureViews[i] = CoreGraphics::CreateTextureView(viewInfo);
-	}
-
 	// setup indirection texture upload buffer
 	terrainVirtualTileState.indirectionUploadBuffers.Resize(CoreGraphics::GetNumBufferedFrames());
 	for (IndexT i = 0; i < terrainVirtualTileState.indirectionUploadBuffers.Size(); i++)
 	{
-		uint size = 4096; // allow 4096 copies per frame
-		SizeT bufferSize = size * sizeof(IndirectionEntry);
+		SizeT bufferSize = IndirectionUpdateBufferSize;
 		char* buf = n_new_array(char, bufferSize);
 		memset(buf, 0xFF, bufferSize);
 
 		CoreGraphics::BufferCreateInfo bufInfo;
 		bufInfo.name = "IndirectionUploadBuffer"_atm;
-		bufInfo.elementSize = sizeof(IndirectionEntry);
-		bufInfo.size = size;
+		bufInfo.byteSize = IndirectionUpdateBufferSize;
 		bufInfo.mode = CoreGraphics::HostLocal;
 		bufInfo.usageFlags = CoreGraphics::TransferBufferSource;
 		bufInfo.data = buf;
@@ -1980,13 +1964,9 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
 	const Math::mat4& viewProj = Graphics::CameraContext::GetViewProjection(view->GetCamera());
 	Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
 
-	CoreGraphics::TextureId dataBuffer = view->GetFrameScript()->GetTexture("TerrainDataBuffer");
-	CoreGraphics::TextureId normalBuffer = view->GetFrameScript()->GetTexture("TerrainNormalBuffer");
 	CoreGraphics::TextureId posBuffer = view->GetFrameScript()->GetTexture("TerrainPosBuffer");
 
 	Terrain::TerrainSystemUniforms systemUniforms;
-	systemUniforms.TerrainDataBuffer = CoreGraphics::TextureGetBindlessHandle(dataBuffer);
-	systemUniforms.TerrainNormalBuffer = CoreGraphics::TextureGetBindlessHandle(normalBuffer);
 	systemUniforms.TerrainPosBuffer = CoreGraphics::TextureGetBindlessHandle(posBuffer);
 	systemUniforms.MinLODDistance = 0.0f;
 	systemUniforms.MaxLODDistance = terrainState.mipLoadDistance;
@@ -2163,8 +2143,8 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
 			deferredOutput.newCoord = newCoord;
 			terrainVirtualTileState.subTextureJobHistoryOutputs[ctx.bufferIndex].Append(deferredOutput);
 			terrainVirtualTileState.subTextureUpdateKeys[i]++;
-        }
 			break;
+		}
 		case SubTextureUpdateState::Deleted:
 			subTex.tiles = 0;
 			subTex.indirectionOffset[0] = 0xFFFFFFFF;
@@ -2209,7 +2189,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
 	}
 
 	// clear old updates
-	n_assert(uploadBufferOffset <= 4096);
+	n_assert(uploadBufferOffset <= IndirectionUpdateBufferSize);
 	terrainVirtualTileState.subTextureJobHistoryOutputs[ctx.bufferIndex].Clear();
 
 	// update history buffer

@@ -47,7 +47,7 @@ TerrainSubTextureUpdateJob(const Jobs::JobFuncContext& ctx)
 		uint lod = 0;
 		if (distance > 300)
 			goto skipResolution;
-        {
+
 		// at every regular distance interval, increase t
 		uint t = Math::n_max(1.0f, (distance / switchDistance));
 
@@ -56,7 +56,6 @@ TerrainSubTextureUpdateJob(const Jobs::JobFuncContext& ctx)
 
 		// calculate the resolution by offseting the max resolution with the lod
 		resolution = maxResolution >> lod;
-        }
 
 	skipResolution:
 
