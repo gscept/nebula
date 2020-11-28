@@ -166,9 +166,6 @@ void ResourceTableBlock(bool b);
 /// apply updates of previous sets
 void ResourceTableCommitChanges(const ResourceTableId id);
 
-/// flushes the pending commit queue
-void ResourceTableFlushPendingCommits();
-
 //------------------------------------------------------------------------------
 /**
 */

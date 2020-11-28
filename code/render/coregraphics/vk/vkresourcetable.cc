@@ -564,12 +564,19 @@ ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& sa
 void 
 ResourceTableBlock(bool b)
 {
-	if (ResourceTableBlocked && !b)
-	{
-		// if we unblock, let's make sure we flush all the pending commits
-		ResourceTableFlushPendingCommits();
-	}
+	bool wasUnblocked = ResourceTableBlocked && !b;
 	ResourceTableBlocked = b;
+
+	if (wasUnblocked)
+	{
+		// if we were blocked but aren't anymore, make sure to flush any pending resource tables
+		PendingTableCommitsLock.Enter();
+		for (ResourceTableId& table : PendingTableCommits)
+			ResourceTableCommitChanges(table);
+
+		PendingTableCommits.Clear();
+		PendingTableCommitsLock.Leave();
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -607,21 +614,6 @@ ResourceTableCommitChanges(const ResourceTableId id)
 			infoList.Free();
 		}
 	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ResourceTableFlushPendingCommits()
-{
-	n_assert2(!ResourceTableBlocked, "Resource table updates are blocked! Please move your resource table update code to UpdateViewDepdendentResources or UpdateResources");
-	PendingTableCommitsLock.Enter();
-	for (ResourceTableId& table : PendingTableCommits)
-		ResourceTableCommitChanges(table);
-
-	PendingTableCommits.Clear();
-	PendingTableCommitsLock.Leave();
 }
 
 //------------------------------------------------------------------------------
