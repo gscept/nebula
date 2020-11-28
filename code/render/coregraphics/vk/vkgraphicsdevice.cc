@@ -87,10 +87,10 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 	struct ConstantsRingBuffer
 	{
 		// handle global constant memory
-		uint32_t cboGfxStartAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
-		uint32_t cboGfxEndAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
-		uint32_t cboComputeStartAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
-		uint32_t cboComputeEndAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
+		AtomicCounter cboGfxStartAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
+		AtomicCounter cboGfxEndAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
+		AtomicCounter cboComputeStartAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
+		AtomicCounter cboComputeEndAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
 	};
 	Util::FixedArray<ConstantsRingBuffer> constantBufferRings;
 
@@ -2062,15 +2062,15 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
 	};
 	CommandBufferBeginRecord(cmds, cmdInfo);
 
-	uint* cboStartAddress = queue == GraphicsQueueType ? sub.cboGfxStartAddress : sub.cboComputeStartAddress;
-	uint* cboEndAddress = queue == GraphicsQueueType ? sub.cboGfxEndAddress : sub.cboComputeEndAddress;
+	AtomicCounter* cboStartAddress = queue == GraphicsQueueType ? sub.cboGfxStartAddress : sub.cboComputeStartAddress;
+	AtomicCounter* cboEndAddress = queue == GraphicsQueueType ? sub.cboGfxEndAddress : sub.cboComputeEndAddress;
 	CoreGraphics::BufferId* stagingCbo = queue == GraphicsQueueType ? state.globalGraphicsConstantStagingBuffer : state.globalComputeConstantStagingBuffer;
 	CoreGraphics::BufferId* cbo = queue == GraphicsQueueType ? state.globalGraphicsConstantBuffer : state.globalComputeConstantBuffer;
 
 	IndexT i;
 	for (i = 0; i < NumConstantBufferTypes; i++)
 	{
-		uint size = cboEndAddress[i] - cboStartAddress[i];
+		int size = cboEndAddress[i] - cboStartAddress[i];
 		if (size > 0)
 		{
 			VkMappedMemoryRange range;
@@ -2556,27 +2556,25 @@ PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data)
 //------------------------------------------------------------------------------
 /**
 */
-uint 
+int
 SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const void* data, SizeT size)
 {
 	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
 
 	// no matter how we spin it
-	uint ret = sub.cboGfxEndAddress[type];
-	uint newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+	int alignedSize = Math::n_align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+	int ret = Threading::Interlocked::Add(sub.cboGfxEndAddress[type], alignedSize);
 
 	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
-	if (newEnd >= state.globalGraphicsConstantBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
+	if (ret + alignedSize >= state.globalGraphicsConstantBufferMaxValue[type] * int(state.currentBufferedFrameIndex + 1))
 	{
 		n_error("Over allocation of graphics constant memory! Memory will be overwritten!\n");
 
 		// return the beginning of the buffer, will definitely stomp the memory!
-		ret = state.globalGraphicsConstantBufferMaxValue[type] * state.currentBufferedFrameIndex;
-		newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+		return ret;
 	}
 
 	// just bump the current frame submission pointer
-	sub.cboGfxEndAddress[type] = newEnd;
 	BufferUpdate(state.globalGraphicsConstantStagingBuffer[type], data, size, ret);
 	return ret;
 }
@@ -2584,27 +2582,25 @@ SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const 
 //------------------------------------------------------------------------------
 /**
 */
-uint 
+int
 SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const void* data, SizeT size)
 {
 	Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
 
 	// no matter how we spin it
-	uint ret = sub.cboComputeEndAddress[type];
-	uint newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+	int alignedSize = Math::n_align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+	int ret = Threading::Interlocked::Add(sub.cboComputeEndAddress[type], alignedSize);
 
 	// if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
-	if (newEnd >= state.globalComputeConstantBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
+	if (ret + alignedSize >= state.globalComputeConstantBufferMaxValue[type] * int(state.currentBufferedFrameIndex + 1))
 	{
 		n_error("Over allocation of compute constant memory! Memory will be overwritten!\n");
 
 		// return the beginning of the buffer, will definitely stomp the memory!
-		ret = state.globalComputeConstantBufferMaxValue[type] * state.currentBufferedFrameIndex;
-		newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+		return ret;
 	}
 
 	// just bump the current frame submission pointer
-	sub.cboComputeEndAddress[type] = newEnd;
 	BufferUpdate(state.globalComputeConstantStagingBuffer[type], data, size, ret);
 	return ret;
 }

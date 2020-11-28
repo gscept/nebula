@@ -126,11 +126,11 @@ struct GraphicsDeviceState
 	Util::FixedArray<CoreGraphics::FenceId> presentFences;
 	Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
 
-	uint globalGraphicsConstantBufferMaxValue[NumConstantBufferTypes];
+	int globalGraphicsConstantBufferMaxValue[NumConstantBufferTypes];
 	CoreGraphics::BufferId globalGraphicsConstantStagingBuffer[NumConstantBufferTypes];
 	CoreGraphics::BufferId globalGraphicsConstantBuffer[NumConstantBufferTypes];
 
-	uint globalComputeConstantBufferMaxValue[NumConstantBufferTypes];
+	int globalComputeConstantBufferMaxValue[NumConstantBufferTypes];
 	CoreGraphics::BufferId globalComputeConstantStagingBuffer[NumConstantBufferTypes];
 	CoreGraphics::BufferId globalComputeConstantBuffer[NumConstantBufferTypes];
 
@@ -245,11 +245,11 @@ template<class TYPE> uint SetComputeConstants(CoreGraphics::GlobalConstantBuffer
 template<class TYPE> void SetComputeConstants(CoreGraphics::GlobalConstantBufferType type, uint offset, const TYPE& data);
 
 /// allocate range of graphics memory and set data, return offset
-uint SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const void* data, SizeT size);
+int SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const void* data, SizeT size);
 /// use pre-allocated range of memory to update graphics constants
 void SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, uint offset, const void* data, SizeT size);
 /// allocate range of compute memory and set data, return offset
-uint SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const void* data, SizeT size);
+int SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const void* data, SizeT size);
 /// use pre-allocated range of memory to update compute constants
 void SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, uint offset, const void* data, SizeT size);
 
