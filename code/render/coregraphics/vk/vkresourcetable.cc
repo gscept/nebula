@@ -11,6 +11,7 @@
 #include "vktexture.h"
 #include "vktextureview.h"
 #include "vkbuffer.h"
+
 namespace Vulkan
 {
 
@@ -18,10 +19,6 @@ VkResourceTableAllocator resourceTableAllocator;
 VkResourceTableLayoutAllocator resourceTableLayoutAllocator;
 VkResourcePipelineAllocator resourcePipelineAllocator;
 VkDescriptorSetLayout emptySetLayout;
-
-bool ResourceTableBlocked = true;
-Util::Array<CoreGraphics::ResourceTableId> PendingTableCommits;
-Threading::CriticalSection PendingTableCommitsLock;
 
 //------------------------------------------------------------------------------
 /**
@@ -38,7 +35,7 @@ ResourceTableGetVkDescriptorSet(CoreGraphics::ResourceTableId id)
 const VkDescriptorSetLayout&
 ResourceTableGetVkLayout(CoreGraphics::ResourceTableId id)
 {
-	return ResourceTableLayoutGetVk(resourceTableAllocator.Get<3>(id.id24));
+	return ResourceTableLayoutGetVk(resourceTableAllocator.Get<ResourceTable_Layout>(id.id24));
 }
 
 //------------------------------------------------------------------------------
@@ -128,6 +125,10 @@ namespace CoreGraphics
 
 using namespace Vulkan;
 
+Util::Array<CoreGraphics::ResourceTableId> PendingTableCommits;
+bool ResourceTableBlocked = true;
+Threading::CriticalSection PendingTableCommitsLock;
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -136,10 +137,10 @@ CreateResourceTable(const ResourceTableCreateInfo& info)
 {
 	Ids::Id32 id = resourceTableAllocator.Alloc();
 
-	VkDevice& dev = resourceTableAllocator.Get<0>(id);
-	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id);
-	VkDescriptorPool& pool = resourceTableAllocator.Get<2>(id);
-	CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<3>(id);
+	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id);
+	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id);
+	VkDescriptorPool& pool = resourceTableAllocator.Get<ResourceTable_DescriptorPool>(id);
+	CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<ResourceTable_Layout>(id);
 
 	dev = Vulkan::GetCurrentDevice();
 	layout = info.layout;
@@ -177,9 +178,9 @@ void
 DestroyResourceTable(const ResourceTableId id)
 {
     n_assert(id != ResourceTableId::Invalid());
-	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
-	VkDescriptorPool& pool = resourceTableAllocator.Get<2>(id.id24);
+	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+	VkDescriptorPool& pool = resourceTableAllocator.Get<ResourceTable_DescriptorPool>(id.id24);
 	vkFreeDescriptorSets(dev, pool, 1, &set);
 
 	resourceTableAllocator.Dealloc(id.id24);
@@ -191,10 +192,10 @@ DestroyResourceTable(const ResourceTableId id)
 void
 ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& tex)
 {
-	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
 	n_assert(tex.slot != InvalidIndex);
 
@@ -202,7 +203,7 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& te
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.pNext = nullptr;
 
-	const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<3>(id.id24);
+	const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<ResourceTable_Layout>(id.id24);
 	const Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayoutImmutableSamplerFlags>(layout.id24);
 
 	VkDescriptorImageInfo img;
@@ -248,10 +249,10 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& te
 void 
 ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView& tex)
 {
-	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
 	n_assert(tex.slot != InvalidIndex);
 
@@ -259,7 +260,7 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView
 	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write.pNext = nullptr;
 
-	const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<3>(id.id24);
+	const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<ResourceTable_Layout>(id.id24);
 	const Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayoutImmutableSamplerFlags>(layout.id24);
 
 	VkDescriptorImageInfo img;
@@ -303,10 +304,10 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView
 void
 ResourceTableSetInputAttachment(const ResourceTableId id, const ResourceTableInputAttachment& tex)
 {
-	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
 	n_assert(tex.slot != InvalidIndex);
 
@@ -344,10 +345,10 @@ ResourceTableSetInputAttachment(const ResourceTableId id, const ResourceTableInp
 void
 ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& tex)
 {
-	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
 	n_assert(tex.slot != InvalidIndex);
 
@@ -385,10 +386,10 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& 
 void 
 ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTextureView& tex)
 {
-	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
 	n_assert(tex.slot != InvalidIndex);
 
@@ -427,10 +428,10 @@ void
 ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuffer& buf)
 {
 	n_assert(!buf.texelBuffer);
-	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
 	n_assert(buf.slot != InvalidIndex);
 
@@ -475,10 +476,10 @@ ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuff
 void 
 ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& buf)
 {
-	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
 	n_assert(buf.slot != InvalidIndex);
 
@@ -522,10 +523,10 @@ ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& bu
 void
 ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& samp)
 {
-	VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<1>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
 	n_assert(samp.slot != InvalidIndex);
 
@@ -563,6 +564,11 @@ ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& sa
 void 
 ResourceTableBlock(bool b)
 {
+	if (ResourceTableBlocked && !b)
+	{
+		// if we unblock, let's make sure we flush all the pending commits
+		ResourceTableFlushPendingCommits();
+	}
 	ResourceTableBlocked = b;
 }
 

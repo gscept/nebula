@@ -26,6 +26,16 @@ union WriteInfo
 	VkBufferView tex;
 };
 
+enum
+{
+	ResourceTable_Device,
+	ResourceTable_DescriptorSet,
+	ResourceTable_DescriptorPool,
+	ResourceTable_Layout,
+	ResourceTable_Writes,
+	ResourceTable_WriteInfos
+};
+
 typedef Ids::IdAllocator<
 	VkDevice,
 	VkDescriptorSet,
