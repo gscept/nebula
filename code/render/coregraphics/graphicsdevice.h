@@ -301,6 +301,10 @@ void ResetEvent(const CoreGraphics::EventId ev, const CoreGraphics::BarrierStage
 void Draw();
 /// draw indexed, instanced primitives
 void DrawInstanced(SizeT numInstances, IndexT baseInstance);
+/// draw indirect, draws is the amount of draws in the buffer, and stride is the byte offset between each call
+void DrawIndirect(const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT draws, IndexT stride);
+/// draw indirect, draws is the amount of draws in the buffer, and stride is the byte offset between each call
+void DrawIndirectIndexed(const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT draws, IndexT stride);
 /// perform computation
 void Compute(int dimX, int dimY, int dimZ, const CoreGraphics::QueueType queue = GraphicsQueueType);
 

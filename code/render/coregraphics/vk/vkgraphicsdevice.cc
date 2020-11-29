@@ -3063,9 +3063,61 @@ DrawInstanced(SizeT numInstances, IndexT baseInstance)
 			vkCmdDraw(GetMainBuffer(GraphicsQueueType), state.primitiveGroup.GetNumVertices(), numInstances, state.primitiveGroup.GetBaseVertex(), baseInstance);
 	}
 
-	// go to next thread
+	// increase counters
 	_incr_counter(state.GraphicsDeviceNumDrawCalls, 1);
 	_incr_counter(state.GraphicsDeviceNumPrimitives, state.primitiveGroup.GetNumIndices() * numInstances / 3);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DrawIndirect(const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT draws, IndexT stride)
+{
+	n_assert(state.inBeginPass);
+	if (state.drawThread)
+	{
+		n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+		VkCommandBufferThread::VkIndirectDrawCommand cmd;
+		cmd.buffer = BufferGetVk(buffer);
+		cmd.offset = bufferOffset;
+		cmd.drawCount = draws;
+		cmd.stride = stride;
+		state.drawThread->Push(cmd);
+	}
+	else
+	{
+		vkCmdDrawIndirect(GetMainBuffer(GraphicsQueueType), BufferGetVk(buffer), bufferOffset, draws, stride);
+	}
+
+	// increase counters, we are missing the primitives here though :(
+	_incr_counter(state.GraphicsDeviceNumDrawCalls, draws);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DrawIndirectIndexed(const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT draws, IndexT stride)
+{
+	n_assert(state.inBeginPass);
+	if (state.drawThread)
+	{
+		n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+		VkCommandBufferThread::VkIndirectIndexedDrawCommand cmd;
+		cmd.buffer = BufferGetVk(buffer);
+		cmd.offset = bufferOffset;
+		cmd.drawCount = draws;
+		cmd.stride = stride;
+		state.drawThread->Push(cmd);
+	}
+	else
+	{
+		vkCmdDrawIndexedIndirect(GetMainBuffer(GraphicsQueueType), BufferGetVk(buffer), bufferOffset, draws, stride);
+	}
+
+	// increase counters, we are missing the primitives here though :(
+	_incr_counter(state.GraphicsDeviceNumDrawCalls, draws);
 }
 
 //------------------------------------------------------------------------------
