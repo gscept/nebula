@@ -5,9 +5,7 @@
 #include "foundation/stdneb.h"
 #include "jobs.h"
 
-#if NEBULA_ENABLE_PROFILING
 #include "profiling/profiling.h"
-#endif
 
 namespace Jobs
 {

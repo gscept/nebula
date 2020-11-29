@@ -981,9 +981,11 @@ _ProcessQueriesBeginFrame()
 		}
 	}
 
+#if NEBULA_ENABLE_PROFILING
 	// write beginning of frame timestamps
 	Vulkan::__Timestamp(state.queryGraphicsSubmissionCmdBuffer, GraphicsQueueType, CoreGraphics::BarrierStage::Top, "BeginFrameGraphics");
 	Vulkan::__Timestamp(state.queryComputeSubmissionCmdBuffer, ComputeQueueType, CoreGraphics::BarrierStage::Top, "BeginFrameCompute");
+#endif	
 
 	// append submission
 	if (submitGraphics)

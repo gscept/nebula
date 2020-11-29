@@ -41,9 +41,9 @@ struct Dataset
     };
 
     /// number of views in tablesViews array
-    uint32_t numViews;
+    uint32_t numViews = 0;
     /// views into the tables
-    CategoryTableView* views;
+    CategoryTableView* views = nullptr;
 };
 
 /// Opaque entity operations buffer
@@ -91,13 +91,13 @@ struct FilterCreateInfo
     static const uint32_t MAX_EXCLUSIVE_PROPERTIES = 32;
 
     /// number of properties in the inclusive set
-    uint8_t numInclusive;
+    uint8_t numInclusive = 0;
     /// inclusive set
     PropertyId inclusive[Dataset::MAX_PROPERTY_BUFFERS];
     /// how we indend to access the properties
     AccessMode access[Dataset::MAX_PROPERTY_BUFFERS];
     /// number of properties in the exclusive set
-    uint8_t numExclusive;
+    uint8_t numExclusive = 0;
     /// exclusive set
     PropertyId exclusive[MAX_EXCLUSIVE_PROPERTIES];
 };
@@ -169,7 +169,7 @@ struct RegisterProperty
 {
     Entity entity;
     PropertyId pid;
-    void const* value;
+    void const* value = nullptr;
 };
 
 //------------------------------------------------------------------------------

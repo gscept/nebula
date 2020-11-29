@@ -197,7 +197,7 @@ EntitySystemTest::Run()
     filterInfo.access[0] = Game::AccessMode::READ;
     filterInfo.inclusive[1] = Game::GetPropertyId("TestStruct");
     filterInfo.access[1] = Game::AccessMode::WRITE;
-
+    filterInfo.numInclusive = 2;
     Game::Filter filter = Game::CreateFilter(filterInfo);
 
 	Game::Dataset set = Game::Query(filter);

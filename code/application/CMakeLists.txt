@@ -28,8 +28,6 @@ nebula_begin_module(application)
 			gameserver.cc
 			manager.h
 			manager.cc
-			op.h
-			op.cc
 			propertyserialization.h
 			propertyserialization.cc
 		)

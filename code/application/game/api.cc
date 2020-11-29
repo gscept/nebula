@@ -202,6 +202,7 @@ ReleaseAllOps()
 Filter
 CreateFilter(FilterCreateInfo const& info)
 {
+	n_assert(info.numInclusive > 0);
     uint32_t filter = filterAllocator.Alloc();
 
     PropertyArray inclusiveArray;
