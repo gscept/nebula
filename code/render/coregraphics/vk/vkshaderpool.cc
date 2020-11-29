@@ -229,6 +229,7 @@ VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::
 		info.byteSize = var->alignedSize;
 		info.name = name;
 		info.mode = mode;
+		info.usageFlags = CoreGraphics::ConstantBuffer;
 		return CoreGraphics::CreateBuffer(info);
 	}
 	else
@@ -248,6 +249,7 @@ VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT
 		info.byteSize = var->alignedSize;
 		info.name = var->name.c_str();
 		info.mode = mode;
+		info.usageFlags = CoreGraphics::ConstantBuffer;
 		return CoreGraphics::CreateBuffer(info);
 	}
 	else
