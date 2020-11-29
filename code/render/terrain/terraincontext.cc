@@ -369,7 +369,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 	texInfo.name = "IndirectionTexture"_atm;
 	texInfo.width = IndirectionTextureSize;
 	texInfo.height = IndirectionTextureSize;
-	texInfo.format = CoreGraphics::PixelFormat::R32;
+	texInfo.format = CoreGraphics::PixelFormat::R32F;
 	texInfo.usage = CoreGraphics::SampleTexture | CoreGraphics::TransferTextureDestination | CoreGraphics::TransferTextureSource;
 	texInfo.mips = IndirectionNumMips;
 	texInfo.clear = true;
@@ -1238,11 +1238,11 @@ TerrainContext::SetupTerrain(
 	ResourceTableCommitChanges(runtimeInfo.terrainResourceTable);
 
 	// allocate a tile vertex buffer
-	TerrainVert* verts = (TerrainVert*)Memory::Alloc(Memory::ResourceHeap, numVertsX * numVertsY * sizeof(TerrainVert));
+	Util::FixedArray<TerrainVert> verts(numVertsX * numVertsY);
 
 	// allocate terrain index buffer, every fourth pixel will generate two triangles 
 	SizeT numTris = numVertsX * numVertsY;
-	TerrainQuad* quads = (TerrainQuad*)Memory::Alloc(Memory::ResourceHeap, numTris * sizeof(TerrainQuad));
+	Util::FixedArray<TerrainQuad> quads(numTris);
 
 	// setup sections
 	for (uint y = 0; y < runtimeInfo.numTilesY; y++)
@@ -1364,8 +1364,8 @@ TerrainContext::SetupTerrain(
 	vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(terrainState.vlo);
 	vboInfo.mode = CoreGraphics::DeviceLocal;
 	vboInfo.usageFlags = CoreGraphics::VertexBuffer;
-	vboInfo.data = verts;
-	vboInfo.dataSize = numVertsX * numVertsY * sizeof(TerrainVert);
+	vboInfo.data = verts.Begin();
+	vboInfo.dataSize = verts.ByteSize();;
 	runtimeInfo.vbo = CreateBuffer(vboInfo);
 
 	// create ibo
@@ -1375,12 +1375,9 @@ TerrainContext::SetupTerrain(
 	iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index32);
 	iboInfo.mode = CoreGraphics::HostToDevice;
 	iboInfo.usageFlags = CoreGraphics::IndexBuffer;
-	iboInfo.data = quads;
-	iboInfo.dataSize = numTris * sizeof(TerrainQuad);
+	iboInfo.data = quads.Begin();
+	iboInfo.dataSize = quads.ByteSize();
 	runtimeInfo.ibo = CreateBuffer(iboInfo);
-
-	Memory::Free(Memory::ResourceHeap, verts);
-	Memory::Free(Memory::ResourceHeap, quads);
 }
 
 //------------------------------------------------------------------------------
