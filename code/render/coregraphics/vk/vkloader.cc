@@ -104,6 +104,8 @@ InitInstance(VkInstance instance)
 	// command buffer
 	_IMP_VK(vkCmdDraw);
 	_IMP_VK(vkCmdDrawIndexed);
+	_IMP_VK(vkCmdDrawIndirect);
+	_IMP_VK(vkCmdDrawIndexedIndirect);
 	_IMP_VK(vkCmdDispatch);
 
 	_IMP_VK(vkCmdCopyImage);
@@ -265,6 +267,8 @@ _DEF_VK(vkGetImageSparseMemoryRequirements);
 // command buffer
 _DEF_VK(vkCmdDraw);
 _DEF_VK(vkCmdDrawIndexed);
+_DEF_VK(vkCmdDrawIndirect);
+_DEF_VK(vkCmdDrawIndexedIndirect);
 _DEF_VK(vkCmdDispatch);
 
 _DEF_VK(vkCmdCopyImage);

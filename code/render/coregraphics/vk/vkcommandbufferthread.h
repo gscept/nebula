@@ -89,6 +89,24 @@ public:
 		uint32_t numInstances;
 	};
 
+	struct VkIndirectDrawCommand
+	{
+		static const CommandType Type = IndirectDraw;
+		VkBuffer buffer;
+		VkDeviceSize offset;
+		uint32_t drawCount;
+		uint32_t stride;
+	};
+
+	struct VkIndirectIndexedDrawCommand
+	{
+		static const CommandType Type = IndirectIndexedDraw;
+		VkBuffer buffer;
+		VkDeviceSize offset;
+		uint32_t drawCount;
+		uint32_t stride;
+	};
+
 	struct VkDispatchCommand
 	{
 		static const CommandType Type = Dispatch;

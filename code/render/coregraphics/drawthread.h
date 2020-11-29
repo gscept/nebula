@@ -28,6 +28,8 @@ public:
 		InputAssemblyVertex,
 		InputAssemblyIndex,
 		Draw,
+		IndirectDraw,
+		IndirectIndexedDraw,
 		Dispatch,
 		BindDescriptors,
 		PushRange,

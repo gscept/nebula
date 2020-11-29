@@ -158,6 +158,20 @@ VkCommandBufferThread::DoWork()
 				else						vkCmdDraw(this->vkCommandBuffer, vkcmd->numVerts, vkcmd->numInstances, vkcmd->baseVertex, vkcmd->baseInstance);
 				break;
 			}
+			case IndirectDraw:
+			{
+				VkIndirectDrawCommand* vkcmd = reinterpret_cast<VkIndirectDrawCommand*>(commandBuf);
+				n_assert(this->vkCommandBuffer != VK_NULL_HANDLE);
+				vkCmdDrawIndirect(this->vkCommandBuffer, vkcmd->buffer, vkcmd->offset, vkcmd->drawCount, vkcmd->stride);
+				break;
+			}
+			case IndirectIndexedDraw:
+			{
+				VkIndirectIndexedDrawCommand* vkcmd = reinterpret_cast<VkIndirectIndexedDrawCommand*>(commandBuf);
+				n_assert(this->vkCommandBuffer != VK_NULL_HANDLE);
+				vkCmdDrawIndexedIndirect(this->vkCommandBuffer, vkcmd->buffer, vkcmd->offset, vkcmd->drawCount, vkcmd->stride);
+				break;
+			}
 			case Dispatch:
 			{
 				VkDispatchCommand* vkcmd = reinterpret_cast<VkDispatchCommand*>(commandBuf);

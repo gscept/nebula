@@ -87,6 +87,8 @@ _DEC_VK(vkGetImageSparseMemoryRequirements);
 // command buffer
 _DEC_VK(vkCmdDraw);
 _DEC_VK(vkCmdDrawIndexed);
+_DEC_VK(vkCmdDrawIndirect);
+_DEC_VK(vkCmdDrawIndexedIndirect);
 _DEC_VK(vkCmdDispatch);
 
 _DEC_VK(vkCmdCopyImage);
