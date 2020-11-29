@@ -104,7 +104,7 @@ void
 Fiber::SwitchToFiber(Fiber& CurrentFiber)
 {
 	n_assert(this->handle != nullptr);
-	SwitchToFiber(this->handle);
+	::SwitchToFiber(this->handle);
 }
 
 }
