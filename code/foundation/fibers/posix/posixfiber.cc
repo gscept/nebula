@@ -4,8 +4,10 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "fibers/fiber.h"
+#include "memory/memory.h"
 #include "core/debug.h"
 #include <ucontext.h>
+#include <setjmp.h>
 
 namespace Fibers
 {
@@ -24,8 +26,6 @@ struct fiber_ctx_t
 	jmp_buf* cur;
 	ucontext_t* prv;
 };
-
-thread_local fiber_t* currentFiber;
 
 //------------------------------------------------------------------------------
 /**
@@ -78,19 +78,9 @@ Fiber::Fiber(void(*function)(void*), void* context)
 	implHandle->fib.uc_link = nullptr;
 
 	ucontext_t temp;
-	fiber_ctx_t ctx = { function, context, &implHandke->fib.jmp, &temp };
+	fiber_ctx_t ctx = { function, context, &implHandle->jmp, &temp };
 	makecontext(&implHandle->fib, (void(*)())FiberStartFunction, 1, &ctx);
 	swapcontext(&temp, &implHandle->fib);
-		/*
-		* fib.fib.uc_stack.ss_sp = (::malloc)(stack_size);
-    fib.fib.uc_stack.ss_size = stack_size;
-    fib.fib.uc_link = 0;
-    ucontext_t tmp;
-    fiber_ctx_t ctx = {ufnc, uctx, &fib.jmp, &tmp};
-    makecontext(&fib.fib, (void(*)())fiber_start_fnc, 1, &ctx);
-    swapcontext(&tmp, &fib.fib); */
-
-	//this->handle = CreateFiber(0, { function }, context);
 	this->context = context;
 }
 
@@ -143,8 +133,8 @@ Fiber::operator=(const Fiber& rhs)
 void
 Fiber::ThreadToFiber(Fiber& fiber)
 {
-	fiber.handle = ConvertThreadToFiber(nullptr);
-	fiber.context = nullptr;
+	fiber.handle = Memory::Alloc(Memory::AppHeap, sizeof(fiber_t));
+	Memory::Clear(fiber.handle, sizeof(fiber_t));
 }
 
 //------------------------------------------------------------------------------
@@ -153,7 +143,7 @@ Fiber::ThreadToFiber(Fiber& fiber)
 void
 Fiber::FiberToThread(Fiber& fiber)
 {
-	n_assert(ConvertFiberToThread());
+	Memory::Free(Memory::AppHeap, fiber.handle);
 	fiber.handle = nullptr;
 	fiber.context = nullptr;
 }
@@ -162,14 +152,14 @@ Fiber::FiberToThread(Fiber& fiber)
 /**
 */
 void
-Fiber::Start()
+Fiber::SwitchToFiber(Fiber& CurrentFiber)
 {
 	n_assert(this->handle != nullptr);
 	fiber_t* implHandle = (fiber_t*)this->handle;
-	if (_setjmp(currentFiber->jmp) == 0)
+	fiber_t* currHandle = (fiber_t*)CurrentFiber.handle;
+	if (_setjmp(currHandle->jmp) == 0)
 	{
 		_longjmp(implHandle->jmp, 1);
-		currentFiber = implHandle;
 	}
 }
 

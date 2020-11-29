@@ -32,7 +32,7 @@ public:
     static void FiberToThread(Fiber& fiber);
 
     /// switch to this fiber
-    void Start();
+    void SwitchToFiber(Fiber& CurrentFiber);
 private:
     void* handle;
     void* context;

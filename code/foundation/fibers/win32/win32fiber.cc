@@ -101,7 +101,7 @@ Fiber::FiberToThread(Fiber& fiber)
 /**
 */
 void
-Fiber::Start()
+Fiber::SwitchToFiber(Fiber& CurrentFiber)
 {
 	n_assert(this->handle != nullptr);
 	SwitchToFiber(this->handle);

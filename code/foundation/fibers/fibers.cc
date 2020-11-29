@@ -97,7 +97,7 @@ FiberThread::NewFiber()
 	}
 
 	// set the current fiber, start it and when finished, decrement counter
-	this->currentFiber.fiber->Start();
+	this->currentFiber.fiber->SwitchToFiber(this->threadFiber);
 }
 
 //------------------------------------------------------------------------------
@@ -106,7 +106,7 @@ FiberThread::NewFiber()
 void
 FiberThread::SwitchFiber()
 {
-	this->threadFiber.Start();
+	this->threadFiber.SwitchToFiber(*this->currentFiber.fiber);
 }
 
 Threading::LockFreeQueue<FiberQueue::Job> FiberQueue::PendingJobsQueue;
