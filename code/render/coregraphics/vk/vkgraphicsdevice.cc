@@ -1490,16 +1490,19 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		static const Util::String queueName[] = { "Graphics Constant Buffer", "Compute Constant Buffer" };
 		BufferCreateInfo cboInfo;
 
+		
 		cboInfo.byteSize = info.globalGraphicsConstantBufferMemorySize[i] * info.numBufferedFrames;
 		state.globalGraphicsConstantBufferMaxValue[i] = info.globalGraphicsConstantBufferMemorySize[i];
 		if (cboInfo.byteSize > 0)
 		{
 			cboInfo.name = systemName[0] + threadName[i] + queueName[0];
 			cboInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
+			cboInfo.usageFlags = CoreGraphics::TransferBufferSource;
 			state.globalGraphicsConstantStagingBuffer[i] = CreateBuffer(cboInfo);
 
 			cboInfo.name = systemName[1] + threadName[i] + queueName[0];
 			cboInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
+			cboInfo.usageFlags = CoreGraphics::TransferBufferDestination | CoreGraphics::ConstantBuffer;
 			state.globalGraphicsConstantBuffer[i] = CreateBuffer(cboInfo);
 		}
 
@@ -1509,10 +1512,12 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 		{
 			cboInfo.name = systemName[0] + threadName[i] + queueName[1];
 			cboInfo.mode = CoreGraphics::BufferAccessMode::HostLocal;
+			cboInfo.usageFlags = CoreGraphics::TransferBufferSource;
 			state.globalComputeConstantStagingBuffer[i] = CreateBuffer(cboInfo);
 
 			cboInfo.name = systemName[1] + threadName[i] + queueName[1];
 			cboInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
+			cboInfo.usageFlags = CoreGraphics::TransferBufferDestination | CoreGraphics::ConstantBuffer;
 			state.globalComputeConstantBuffer[i] = CreateBuffer(cboInfo);
 		}
 	}
