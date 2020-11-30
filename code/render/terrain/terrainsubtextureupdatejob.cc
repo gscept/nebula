@@ -45,11 +45,12 @@ TerrainSubTextureUpdateJob(const Jobs::JobFuncContext& ctx)
 		// if we are outside the virtual area, just default the resolution to 0
 		uint resolution = 0;
 		uint lod = 0;
+		uint t = 0;
 		if (distance > 300)
 			goto skipResolution;
 
 		// at every regular distance interval, increase t
-		uint t = Math::n_max(1.0f, (distance / switchDistance));
+		t = Math::n_max(1.0f, (distance / switchDistance));
 
 		// calculate lod logarithmically, such that it goes geometrically slower to progress to higher lods
 		lod = Math::n_min((uint)Math::n_log2(t), uniforms->maxMip);
