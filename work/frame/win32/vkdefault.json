@@ -255,6 +255,14 @@
 			name: "LightContext - Update Shadowmaps"
 		}
 
+		_comment: "------------ VEGETATION ------------",
+		call: {
+			name: "VegetationContext - Generate Draws"
+		},
+		call: {
+			name: "VegetationContext - Readback"
+		},
+
 		_comment: "------------ TERRAIN ------------",
 		call: {
 			name: "TerrainContext - Prepare"
@@ -340,6 +348,9 @@
 				call: {
 					name: "TerrainContext - Screen Space Resolve",
 				},
+				call: {
+					name: "VegetationContext - Render",
+				}, 
 				batch: "FlatGeometryLit",
 				batch: "TesselatedGeometryLit",
 			},

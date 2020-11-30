@@ -630,6 +630,12 @@ ENDIF()
 				texturetilecache.h
             )
 
+        fips_dir(vegetation)
+            fips_files(
+                vegetationcontext.h
+                vegetationcontext.cc
+            )
+                
 		fips_dir(visibility)
 			fips_files(
 				visibility.h
