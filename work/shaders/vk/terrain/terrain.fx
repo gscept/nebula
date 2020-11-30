@@ -394,7 +394,7 @@ SampleSlopeRule(
 	in float mask, 
 	in vec2 uv, 
 	out vec3 outAlbedo, 
-	out vec3 outMaterial, 
+	out vec4 outMaterial, 
 	out vec3 outNormal)
 {
 	/*
@@ -406,8 +406,8 @@ SampleSlopeRule(
 	*/
 	outAlbedo = sampleBiomeAlbedo(i, AnisoSampler, uv, baseArrayIndex).rgb * mask * (1.0f - angle);
 	outAlbedo += sampleBiomeAlbedo(i, AnisoSampler, uv, baseArrayIndex + 1).rgb * mask * angle;
-	outMaterial = sampleBiomeMaterial(i, AnisoSampler, uv, baseArrayIndex).rgb * mask * (1.0f - angle);
-	outMaterial += sampleBiomeMaterial(i, AnisoSampler, uv, baseArrayIndex + 1).rgb * mask * angle;
+	outMaterial = sampleBiomeMaterial(i, AnisoSampler, uv, baseArrayIndex) * mask * (1.0f - angle);
+	outMaterial += sampleBiomeMaterial(i, AnisoSampler, uv, baseArrayIndex + 1) * mask * angle;
 	outNormal = sampleBiomeNormal(i, AnisoSampler, uv, baseArrayIndex).rgb * (1.0f - angle);
 	outNormal += sampleBiomeNormal(i, AnisoSampler, uv, baseArrayIndex + 1).rgb * angle;
 }
@@ -623,7 +623,7 @@ psTerrainTileUpdate(
 	in vec2 uv,
 	[color0] out vec4 Albedo,
 	[color1] out vec3 Normal,
-	[color2] out vec3 Material)
+	[color2] out vec4 Material)
 {
 	// calculate 
 	vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
@@ -661,7 +661,7 @@ psTerrainTileUpdate(
 	triplanarWeights /= vec3(norm, norm, norm);
 
 	vec3 totalAlbedo = vec3(0, 0, 0);
-	vec3 totalMaterial = vec3(0, 0, 0);
+	vec4 totalMaterial = vec4(0, 0, 0, 0);
 	vec3 totalNormal = vec3(0, 0, 0);
 
 	for (uint i = 0; i < NumBiomes; i++)
@@ -683,7 +683,7 @@ psTerrainTileUpdate(
 			{
 				vec3 albedo = vec3(0, 0, 0);
 				vec3 normal = vec3(0, 0, 0);
-				vec3 material = vec3(0, 0, 0);
+				vec4 material = vec4(0, 0, 0, 0);
 
 				SampleSlopeRule(i, 0, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
 				totalAlbedo += albedo * triplanarWeights.x;
@@ -708,7 +708,7 @@ psTerrainTileUpdate(
 			{
 				vec3 albedo = vec3(0, 0, 0);
 				vec3 normal = vec3(0, 0, 0);
-				vec3 material = vec3(0, 0, 0);
+				vec4 material = vec4(0, 0, 0, 0);
 				SampleSlopeRule(i, 2, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
 				totalAlbedo += albedo * triplanarWeights.x * heightCutoff;
 				totalMaterial += material * triplanarWeights.x * heightCutoff;
@@ -910,7 +910,7 @@ void
 psGenerateLowresFallback(
 	[color0] out vec4 Albedo,
 	[color1] out vec3 Normal,
-	[color2] out vec3 Material)
+	[color2] out vec4 Material)
 {
 	// calculate 
 	vec2 textureSize = RenderTargetDimensions[0].zw;
@@ -948,7 +948,7 @@ psGenerateLowresFallback(
 	triplanarWeights /= vec3(norm, norm, norm);
 
 	vec3 totalAlbedo = vec3(0, 0, 0);
-	vec3 totalMaterial = vec3(0, 0, 0);
+	vec4 totalMaterial = vec4(0, 0, 0, 0);
 	vec3 totalNormal = vec3(0, 0, 0);
 
 	for (uint i = 0; i < NumBiomes; i++)
@@ -970,7 +970,7 @@ psGenerateLowresFallback(
 			{
 				vec3 albedo = vec3(0, 0, 0);
 				vec3 normal = vec3(0, 0, 0);
-				vec3 material = vec3(0, 0, 0);
+				vec4 material = vec4(0, 0, 0, 0);
 
 				SampleSlopeRule(i, 0, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
 				totalAlbedo += albedo * triplanarWeights.x;
@@ -995,7 +995,7 @@ psGenerateLowresFallback(
 			{
 				vec3 albedo = vec3(0, 0, 0);
 				vec3 normal = vec3(0, 0, 0);
-				vec3 material = vec3(0, 0, 0);
+				vec4 material = vec4(0, 0, 0, 0);
 				SampleSlopeRule(i, 2, angle, mask, worldPos.yz / tilingFactor, albedo, material, normal);
 				totalAlbedo += albedo * triplanarWeights.x * heightCutoff;
 				totalMaterial += material * triplanarWeights.x * heightCutoff;
@@ -1044,6 +1044,8 @@ render_state TerrainState
 
 render_state FinalState
 {
+	DepthWrite = false;
+	DepthEnabled = false;
 };
 
 render_state TerrainShadowState
