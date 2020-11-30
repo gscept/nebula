@@ -35,6 +35,7 @@
 #include "posteffects/tonemapcontext.h"
 
 #include "terrain/terraincontext.h"
+#include "vegetation/vegetationcontext.h"
 
 #include "imgui.h"
 
@@ -141,14 +142,33 @@ SimpleViewerApplication::Open()
 
         Dynui::ImguiContext::Create();
 
-        Terrain::TerrainSetupSettings settings{
+        Terrain::TerrainSetupSettings terSettings{
             0, 1024.0f,      // min/max height 
             //0, 0,
             8192, 8192,   // world size in meters
             256, 256,     // tile size in meters
             16, 16        // 1 vertex every X meters
         };
-        Terrain::TerrainContext::Create(settings);
+        Terrain::TerrainContext::Create(terSettings);
+
+        // setup vegetation
+        Vegetation::VegetationSetupSettings vegSettings{
+            "tex:terrain/everest Height Map (Merged)_PNG_BC4_1.dds",
+            0, 1024.0f,      // min/max height 
+            Math::uint2{8192, 8192}, 3, 0.5f
+        };
+        Vegetation::VegetationContext::Create(vegSettings);
+
+        Graphics::GraphicsEntityId vegetation = Graphics::CreateEntity();
+        Vegetation::VegetationContext::RegisterEntity(vegetation);
+        Vegetation::VegetationGrassSetup grassSetup;
+        grassSetup.mask = "tex:system/white.dds";
+        grassSetup.albedo = "tex:system/white.dds";
+        grassSetup.normals = "tex:system/nobump.dds";
+        grassSetup.material = "tex:system/default_material.dds";
+        grassSetup.slopeThreshold = 0.5f;
+        grassSetup.heightThreshold = 0.5f;
+        Vegetation::VegetationContext::SetupGrass(vegetation, grassSetup);
 
 		Clustering::ClusterContext::Create(0.1f, 1000.0f, this->wnd);
 		Lighting::LightContext::Create();
@@ -253,6 +273,7 @@ SimpleViewerApplication::Run()
 
         N_MARKER_BEGIN(Input, App);
         this->inputServer->BeginFrame();
+        CoreGraphics::WindowPollEvents();
         this->inputServer->OnFrame();
         N_MARKER_END();
 
@@ -265,7 +286,6 @@ SimpleViewerApplication::Run()
 #endif NEBULA_ENABLE_PROFILING
 
 		this->gfxServer->BeginFrame();
-        CoreGraphics::WindowPollEvents();
         this->RenderUI();
 
         if (this->renderDebug)
