@@ -40,7 +40,7 @@ struct Dataset
         void* buffers[MAX_PROPERTY_BUFFERS];
     };
 
-    /// number of views in tablesViews array
+    /// number of views in views array
     uint32_t numViews = 0;
     /// views into the tables
     CategoryTableView* views = nullptr;
@@ -119,6 +119,7 @@ struct _PropertyInfo
     void* defaultValue;
 };
 
+/// per frame callback for processors
 typedef void(*ProcessorFrameCallback)(Dataset);
 
 //------------------------------------------------------------------------------

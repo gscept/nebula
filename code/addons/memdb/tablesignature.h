@@ -45,7 +45,7 @@ public:
 	bool const IsValid() const { return size > 0; }
 	/// check if a single bit is set
 	bool const IsSet(PropertyId pid) const;
-	/// flip a bit. returns new bit state
+	/// flip a bit.
 	void FlipBit(PropertyId pid);
 
 	/// (src & mask) == mask
