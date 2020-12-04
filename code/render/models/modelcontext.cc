@@ -384,7 +384,7 @@ ModelContext::OnRenderDebug(uint32_t flags)
         const ModelInstanceId& instance = instances[i];
         if (instance == ModelInstanceId::Invalid()) continue;
 		CoreGraphics::RenderShape shape;
-		shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), transforms[instance.instance], white);
+		shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), instanceBoxes[instance.instance].to_mat4(), white);
 		CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
     }
 }
