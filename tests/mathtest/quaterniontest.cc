@@ -154,7 +154,7 @@ QuaternionTest::Run()
 
 	// rotationaxis
 	const vec3 rotaxis = normalize(vec3(1.0f, 3.0f, 5.0f));
-	q0 = rotatioquataxis(rotaxis, -1.348f);
+	q0 = rotationquataxis(rotaxis, -1.348f);
 	VERIFY(quaternionequal(q0, quat(-0.105495f, -0.316485f, -0.527475f, 0.781331f)));
 
 	// rotationmatrix
