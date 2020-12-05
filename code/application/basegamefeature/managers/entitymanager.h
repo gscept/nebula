@@ -18,6 +18,7 @@
 #include "memdb/database.h"
 #include "basegamefeature/properties/owner.h"
 #include "game/api.h"
+#include "util/set.h"
 
 namespace Game
 {
@@ -113,6 +114,8 @@ public:
 
         Util::Queue<AllocateInstanceCommand> allocQueue;
         Util::Queue<DeallocInstanceCommand> deallocQueue;
+        /// a set that contains all categories that has entities in their managed property tables.
+        Util::Set<CategoryId> managedCleanupSet;
 
         // - Categories -
         Util::Array<Category> categoryArray;

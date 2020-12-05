@@ -43,10 +43,10 @@ BaseGameFeatureUnit::~BaseGameFeatureUnit()
 void
 BaseGameFeatureUnit::OnActivate()
 {
-	FeatureUnit::OnActivate();
+    FeatureUnit::OnActivate();
     
-	this->entityManager = this->AttachManager(EntityManager::Create());
-	this->blueprintManager = this->AttachManager(BlueprintManager::Create());
+    this->entityManager = this->AttachManager(EntityManager::Create());
+    this->blueprintManager = this->AttachManager(BlueprintManager::Create());
 }
 
 //------------------------------------------------------------------------------
@@ -55,9 +55,9 @@ BaseGameFeatureUnit::OnActivate()
 void
 BaseGameFeatureUnit::OnDeactivate()
 {
-	this->RemoveManager(this->entityManager);
-	this->RemoveManager(this->blueprintManager);
-	
+    this->RemoveManager(this->entityManager);
+    this->RemoveManager(this->blueprintManager);
+    
     FeatureUnit::OnDeactivate();
 }
 
@@ -78,7 +78,7 @@ BaseGameFeatureUnit::OnRenderDebug()
 void
 BaseGameFeatureUnit::SetupEmptyWorld()
 {
-	Game::GameServer::Instance()->NotifyBeforeLoad();
+    Game::GameServer::Instance()->NotifyBeforeLoad();
 }
 
 //------------------------------------------------------------------------------
@@ -90,7 +90,7 @@ BaseGameFeatureUnit::SetupEmptyWorld()
 void
 BaseGameFeatureUnit::CleanupWorld()
 {
-	Game::GameServer::Instance()->NotifyBeforeCleanup();            
+    Game::GameServer::Instance()->NotifyBeforeCleanup();            
 }
 
 //------------------------------------------------------------------------------

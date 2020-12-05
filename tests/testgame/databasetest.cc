@@ -37,45 +37,49 @@ DatabaseTest::Run()
     TableId table0;
     TableId table1;
     TableId table2;
-    
+
     db = Database::Create();
 
     PropertyId TestIntId = TypeRegistry::Register<int>("TestIntId", int(1));
     PropertyId TestFloatId = TypeRegistry::Register<float>("TestFloatId", float(20.0f));
-
-
     PropertyId TestStructId = TypeRegistry::Register<StructTest>("TestStructId", StructTest());
 
-    TableCreateInfo info = {
-        "Table0",
-        {
-            TestIntId,
-            TestFloatId,
-            TestStructId
-        }
-    };
+    {
+        TableCreateInfo info;
+        info.name = "Table0";
+        PropertyId pids[] = {
+                TestIntId,
+                TestFloatId,
+                TestStructId
+        };
+        info.columns = pids;
+        info.numColumns = 3;
+        table0 = db->CreateTable(info);
+    }
 
-    table0 = db->CreateTable(info);
-    
-    info = {
-        "Table1",
-        {
+    {
+        TableCreateInfo info;
+        info.name = "Table1";
+        PropertyId pids[] = {
             TestIntId,
             TestFloatId
-        }
+        };
+        info.columns = pids;
+        info.numColumns = 2;
+        table1 = db->CreateTable(info);
     };
 
-    table1 = db->CreateTable(info);
-
-    info = {
-        "Table2",
-        {
+    {
+        TableCreateInfo info;
+        info.name = "Table2";
+        PropertyId pids[] = {
             TestStructId,
             TestIntId
-        }
+        };
+        info.columns = pids;
+        info.numColumns = 2;
+        table2 = db->CreateTable(info);
     };
-
-    table2 = db->CreateTable(info);
 
     Util::Array<IndexT> instances;
     

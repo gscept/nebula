@@ -19,7 +19,7 @@
 namespace MemDb
 {
 
-/// TableId contains an id reference to the database it's attached to, and the id of the table.
+/// Table identifier
 ID_32_TYPE(TableId);
 
 /// column id
@@ -30,8 +30,10 @@ struct TableCreateInfo
 {
     /// name to be given to the table
     Util::String name;
-    /// which properties the table should initially have
-    Util::FixedArray<PropertyId> columns;
+    /// array of properties the table should initially have
+    PropertyId const* columns;
+    /// number of columns
+    SizeT numColumns;
 };
 
 //------------------------------------------------------------------------------

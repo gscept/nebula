@@ -55,7 +55,7 @@ GraphicsFeatureUnit::~GraphicsFeatureUnit()
 void
 GraphicsFeatureUnit::OnActivate()
 {
-	FeatureUnit::OnActivate();
+    FeatureUnit::OnActivate();
 
     this->gfxServer = Graphics::GraphicsServer::Create();
     this->inputServer = Input::InputServer::Create();
@@ -84,37 +84,37 @@ GraphicsFeatureUnit::OnActivate()
     ObservableContext::Create();
     Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
     Lighting::LightContext::Create();
-	Decals::DecalContext::Create();
+    Decals::DecalContext::Create();
     Characters::CharacterContext::Create();
     Im3d::Im3dContext::Create();
     Dynui::ImguiContext::Create();
-	Fog::VolumetricFogContext::Create();
-	PostEffects::BloomContext::Create();
-	PostEffects::SSAOContext::Create();
-	PostEffects::SSRContext::Create();
-	PostEffects::TonemapContext::Create();
+    Fog::VolumetricFogContext::Create();
+    PostEffects::BloomContext::Create();
+    PostEffects::SSAOContext::Create();
+    PostEffects::SSRContext::Create();
+    PostEffects::TonemapContext::Create();
 
     this->defaultView = gfxServer->CreateView("mainview", this->defaultFrameScript);
     this->defaultStage = gfxServer->CreateStage("defaultStage", true);
     this->defaultView->SetStage(this->defaultStage);
 
-	Ptr<Frame::FrameScript> frameScript = this->defaultView->GetFrameScript();
-	PostEffects::BloomContext::Setup(frameScript);
-	PostEffects::SSAOContext::Setup(frameScript);
-	PostEffects::SSRContext::Setup(frameScript);
-	PostEffects::TonemapContext::Setup(frameScript);
+    Ptr<Frame::FrameScript> frameScript = this->defaultView->GetFrameScript();
+    PostEffects::BloomContext::Setup(frameScript);
+    PostEffects::SSAOContext::Setup(frameScript);
+    PostEffects::SSRContext::Setup(frameScript);
+    PostEffects::TonemapContext::Setup(frameScript);
 
     this->globalLight = Graphics::CreateEntity();
     Lighting::LightContext::RegisterEntity(this->globalLight);
-	Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1, 1, 1), 1.0f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(0.1, 0.1, 0.1), true);
+    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1, 1, 1), 1.0f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(0.1, 0.1, 0.1), true);
 
-	ObserverContext::CreateBruteforceSystem({});
-	
+    ObserverContext::CreateBruteforceSystem({});
+    
     // create environment context for the atmosphere effects
     EnvironmentContext::Create(this->globalLight);
 
-	// Attach managers
-	this->graphicsManagerHandle = this->AttachManager(GraphicsManager::Create());
+    // Attach managers
+    this->graphicsManagerHandle = this->AttachManager(GraphicsManager::Create());
 }
 
 //------------------------------------------------------------------------------
@@ -129,8 +129,8 @@ GraphicsFeatureUnit::OnDeactivate()
     this->gfxServer->DiscardView(this->defaultView);
     ObserverContext::Discard();
     Lighting::LightContext::Discard();
-	Decals::DecalContext::Discard();
-	Fog::VolumetricFogContext::Discard();
+    Decals::DecalContext::Discard();
+    Fog::VolumetricFogContext::Discard();
 
     this->gfxServer->Close();
     this->inputServer->Close();
@@ -142,23 +142,23 @@ GraphicsFeatureUnit::OnDeactivate()
 void
 GraphicsFeatureUnit::OnBeginFrame()
 {
-	FeatureUnit::OnBeginFrame();
+    FeatureUnit::OnBeginFrame();
     this->inputServer->BeginFrame();
-	this->inputServer->OnFrame();
+    this->inputServer->OnFrame();
 
     this->gfxServer->BeginFrame();
-	CoreGraphics::WindowPollEvents();
+    CoreGraphics::WindowPollEvents();
 
-	for (auto const& uiFunc : this->uiCallbacks)
-	{
-		uiFunc();
-	}
+    for (auto const& uiFunc : this->uiCallbacks)
+    {
+        uiFunc();
+    }
 
-	if (this->renderDebug)
-	{
-		this->gfxServer->RenderDebug(0);
-		Debug::FrameScriptInspector::Run(this->defaultView->GetFrameScript());
-	}
+    if (this->renderDebug)
+    {
+        this->gfxServer->RenderDebug(0);
+        Debug::FrameScriptInspector::Run(this->defaultView->GetFrameScript());
+    }
 
     //FIXME
     this->gfxServer->BeforeViews();
@@ -170,7 +170,7 @@ GraphicsFeatureUnit::OnBeginFrame()
 void
 GraphicsFeatureUnit::OnFrame()
 {
-	FeatureUnit::OnFrame();
+    FeatureUnit::OnFrame();
     this->gfxServer->RenderViews();
     this->gfxServer->EndViews();
 }
@@ -181,7 +181,7 @@ GraphicsFeatureUnit::OnFrame()
 void
 GraphicsFeatureUnit::OnEndFrame()
 {
-	FeatureUnit::OnEndFrame();
+    FeatureUnit::OnEndFrame();
     this->gfxServer->EndFrame();
     CoreGraphics::WindowPresent(this->wnd, App::GameApplication::FrameIndex);
     this->inputServer->EndFrame();
@@ -193,7 +193,7 @@ GraphicsFeatureUnit::OnEndFrame()
 void
 GraphicsFeatureUnit::OnRenderDebug()
 {
-	FeatureUnit::OnRenderDebug();
+    FeatureUnit::OnRenderDebug();
 }
 
 //------------------------------------------------------------------------------
@@ -202,7 +202,7 @@ GraphicsFeatureUnit::OnRenderDebug()
 void
 GraphicsFeatureUnit::AddRenderUICallback(UIRenderFunc func)
 {
-	this->uiCallbacks.Append(func);
+    this->uiCallbacks.Append(func);
 }
 
 } // namespace Game

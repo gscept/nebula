@@ -84,7 +84,7 @@ public:
 	/// Erase element for each
 	void EraseIndexSwap(const uint32_t id);
 
-	/// get single item from resource, template expansion might give you cancer
+	/// get single item from resource
 	template <int MEMBER>
 	tuple_array_t<MEMBER, TYPES...>& Get(const uint32_t index);
 

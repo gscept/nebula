@@ -74,13 +74,26 @@ struct CategoryHash
 
 struct Category
 {
+    /// instance table contains all instances of this category
     MemDb::TableId instanceTable;
+    /// hash identifier for this specific category
     CategoryHash hash;
+    /// contains only the managed property columns that are in the instance table
+    /// entities that are destroyed are moved to this table, so that manager have a
+    /// chance of cleaning up any externally allocated resources.
+    MemDb::TableId managedPropertyTable;
+
 #ifdef NEBULA_DEBUG
     Util::String name;
 #endif
 };
 
-typedef MemDb::TableCreateInfo CategoryCreateInfo;
+struct CategoryCreateInfo
+{
+    /// name to be given to the category
+    Util::String name;
+    /// which properties the category should initially have
+    Util::FixedArray<PropertyId> properties;
+};
 
 } // namespace Game

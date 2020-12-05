@@ -1,12 +1,12 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	@class	GraphicsFeature::GraphicsManager
+    @class	GraphicsFeature::GraphicsManager
 
-	Handles logic for connecting the game layer with the render layer.
-	Also handles simple graphics entities such as static models and similar.
+    Handles logic for connecting the game layer with the render layer.
+    Also handles simple graphics entities such as static models and similar.
 
-	(C) 2020 Individual contributors, see AUTHORS file
+    (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -19,28 +19,35 @@
 namespace GraphicsFeature
 {
 
+struct ModelEntityData
+{
+    Graphics::GraphicsEntityId gid;
+};
+
 class GraphicsManager
 {
-	__DeclareSingleton(GraphicsManager);
+    __DeclareSingleton(GraphicsManager);
 public:
-	/// retrieve the api
-	static Game::ManagerAPI Create();
+    /// retrieve the api
+    static Game::ManagerAPI Create();
 
-	/// destroy entity manager
-	static void Destroy();
+    /// destroy entity manager
+    static void Destroy();
 
+    struct Pids
+    {
+        Game::PropertyId modelEntityData;
+    } pids;
 private:
-	/// constructor
-	GraphicsManager();
-	/// destructor
-	~GraphicsManager();
+    /// constructor
+    GraphicsManager();
+    /// destructor
+    ~GraphicsManager();
 
-	static void OnBeginFrame();
+    void InitCreateModelProcessor();
+    void InitDestroyModelProcessor();
 
-	struct Pids
-	{
-		Game::PropertyId modelEntityData;
-	} pids;
+    static void OnBeginFrame();
 };
 
 } // namespace GraphicsFeature

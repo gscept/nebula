@@ -126,6 +126,15 @@ OnEndFrame()
     n_assert(EntityManager::HasInstance());
     EntityManager::State* const state = &EntityManager::Singleton->state;
 
+    // NOTE: The order of the following loops are important!
+
+    // Clean up any managed property instances.
+    for (IndexT c = 0; c < state->categoryArray.Size(); c++)
+    {
+        MemDb::TableId tid = state->categoryArray[c].managedPropertyTable;
+        state->worldDatabase->Clean(tid);
+    }
+
     // Clean up entities
     while (!state->deallocQueue.IsEmpty())
     {
@@ -240,9 +249,9 @@ CategoryId
 EntityManager::CreateCategory(CategoryCreateInfo const& info)
 {
     CategoryHash catHash;
-    for (int i = 0; i < info.columns.Size(); i++)
+    for (int i = 0; i < info.properties.Size(); i++)
     {
-        catHash.AddToHash(info.columns[i].id);
+        catHash.AddToHash(info.properties[i].id);
     }
 
     if (this->state.catIndexMap.Contains(catHash))
@@ -250,22 +259,61 @@ EntityManager::CreateCategory(CategoryCreateInfo const& info)
         return this->state.catIndexMap[catHash];
     }
 
+    Category cat;
+    constexpr ushort NUM_PROPS = 256;
+    PropertyId properties[NUM_PROPS];
+
     MemDb::TableCreateInfo tableInfo;
     tableInfo.name = info.name;
-    const SizeT tableSize = info.columns.Size() + 1;
-    tableInfo.columns.SetSize(tableSize);
-
-    // always add owner as first column
-    tableInfo.columns[0] = this->state.ownerId;
-    for (int i = 1; i < tableSize; i++)
+    if (info.properties[0] != this->state.ownerId)
     {
-        n_assert2(info.columns[i - 1] != PropertyId::Invalid(), "ERROR: Invalid property in CategoryCreateInfo!\n");
-        tableInfo.columns[i] = info.columns[i - 1];
+        // push owner id into the property array
+        const SizeT tableSize = 1 + info.properties.Size();
+        n_assert(tableSize < NUM_PROPS);
+        tableInfo.numColumns = tableSize;
+        tableInfo.columns = properties;
+
+        // always add owner as first column
+        properties[0] = this->state.ownerId;
+        for (int i = 1; i < tableSize; i++)
+        {
+            properties[i] = info.properties[i - 1];
+        }
     }
-    
-    Category cat;
+    else
+    {
+        const SizeT tableSize = info.properties.Size();
+        tableInfo.numColumns = tableSize;
+        tableInfo.columns = info.properties.begin();
+    }
+
     // Create an instance table
     cat.instanceTable = this->state.worldDatabase->CreateTable(tableInfo);
+
+    // Find all managed properties
+    int numManaged = 0;
+    for (int i = 0; i < info.properties.Size(); i++)
+    {
+        if ((MemDb::TypeRegistry::Flags(info.properties[i]) & PropertyFlags::PROPERTYFLAG_MANAGED) == PropertyFlags::PROPERTYFLAG_MANAGED)
+        {
+            properties[numManaged] = info.properties[i];
+            numManaged++;
+            n_assert(numManaged < NUM_PROPS);
+        }
+    }
+
+    // Managed properties table
+    if (numManaged > 0)
+    {
+        MemDb::TableCreateInfo managedTableInfo;
+        managedTableInfo.name = "<MNGD>:" + info.name;
+        managedTableInfo.columns = properties;
+        managedTableInfo.numColumns = numManaged;
+        cat.managedPropertyTable = this->state.worldDatabase->CreateTable(managedTableInfo);
+    }
+    else
+        cat.managedPropertyTable = MemDb::TableId::Invalid();
+
     cat.hash = catHash;
 
 #ifdef NEBULA_DEBUG
@@ -380,7 +428,14 @@ EntityManager::DeallocateInstance(Entity entity)
     
     n_assert(instance != Game::InstanceId::Invalid());
 
-    this->state.worldDatabase->DeallocateRow(cat.instanceTable, instance.id);
+    if (cat.managedPropertyTable == MemDb::TableId::Invalid())
+        this->state.worldDatabase->DeallocateRow(cat.instanceTable, instance.id);
+    else
+    {
+        // migrate to managed property table so that we can allow the managers
+        // to clean up any externally allocated resources.
+        this->state.worldDatabase->MigrateInstance(cat.instanceTable, instance.id, cat.managedPropertyTable, false);
+    }
 
     instance = InstanceId::Invalid();
 }

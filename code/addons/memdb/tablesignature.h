@@ -35,6 +35,8 @@ public:
     TableSignature(Util::FixedArray<PropertyId> const& descriptors);
 	/// construct from property id initializer list, for convenience
     TableSignature(std::initializer_list<PropertyId> descriptors);
+    /// construct from property id pointer array
+    TableSignature(PropertyId const* descriptors, SizeT num);
     /// destructor
 	~TableSignature();
 	/// assignment operator
@@ -55,7 +57,7 @@ public:
 
 protected:
 	/// create bitfield from fixed array.
-	void Setup(Util::FixedArray<PropertyId> descriptors);
+	void Setup(PropertyId const* descriptors, SizeT num);
 
 	/// large bit field, using SSE registers
 	__m128i* mask;
@@ -69,7 +71,7 @@ protected:
 inline
 TableSignature::TableSignature(Util::FixedArray<PropertyId> const& descriptors)
 {
-	this->Setup(descriptors);
+    this->Setup(descriptors.Begin(), descriptors.Size());
 }
 
 //------------------------------------------------------------------------------
@@ -78,7 +80,16 @@ TableSignature::TableSignature(Util::FixedArray<PropertyId> const& descriptors)
 inline
 TableSignature::TableSignature(std::initializer_list<PropertyId> descriptors)
 {
-	this->Setup(descriptors);
+	this->Setup(descriptors.begin(), descriptors.size());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+TableSignature::TableSignature(PropertyId const* descriptors, SizeT num)
+{
+    this->Setup(descriptors, num);
 }
 
 //------------------------------------------------------------------------------
@@ -86,10 +97,11 @@ TableSignature::TableSignature(std::initializer_list<PropertyId> descriptors)
 */
 inline
 void
-TableSignature::Setup(Util::FixedArray<PropertyId> descriptors)
+TableSignature::Setup(PropertyId const* propertyBuffer, SizeT num)
 {
-	if (descriptors.Size() > 0)
+    if (num > 0)
 	{
+        Util::Array<PropertyId> descriptors(propertyBuffer, num);
 		descriptors.Sort();
         PropertyId const last = *(descriptors.End() - 1);
         n_assert(last != PropertyId::Invalid());

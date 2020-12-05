@@ -104,19 +104,28 @@ struct FilterCreateInfo
 
 //------------------------------------------------------------------------------
 /**
+*/
+enum PropertyFlags : uint32_t
+{
+    PROPERTYFLAG_NONE = 0,
+    PROPERTYFLAG_MANAGED = 1 << 0
+};
+
+//------------------------------------------------------------------------------
+/**
     @note   types must be mem- copyable, and trivially destructible and should
             preferably not define a constructor.
 */
-struct _PropertyInfo
+struct PropertyCreateInfo
 {
     /// name of the property
     const char* name;
-    /// property descriptor as a four character code.
-    // uint32_t descriptor;
     /// size of the property type in bytes
     uint32_t byteSize;
     /// a default value for the property type, or NULL if we always want to initialize to 0's
-    void* defaultValue;
+    void const* defaultValue;
+    /// property flags
+    PropertyFlags flags = PropertyFlags::PROPERTYFLAG_NONE;
 };
 
 /// per frame callback for processors
@@ -235,6 +244,9 @@ uint GetNumEntities();
 
 /// Returns the entity mapping of an entity
 EntityMapping GetEntityMapping(Entity entity);
+
+/// Create a property
+PropertyId CreateProperty(PropertyCreateInfo const& info);
 
 /// Returns a property id
 PropertyId GetPropertyId(Util::StringAtom name);

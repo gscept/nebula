@@ -4,11 +4,11 @@
     @class Game::GameServer
 
     The game server setups and runs the game world.
-	Functionality and queries on the game world are divided amongst
-	several FeaturesUnits.
+    Functionality and queries on the game world are divided amongst
+    several FeaturesUnits.
     This keeps the game server's interface small and clean, and lets applications
-	easily extend functionality by implementing new, or deriving from existing
-	game features.
+    easily extend functionality by implementing new, or deriving from existing
+    game features.
 
     To add or replace FeatureUnit objects, derive from Game::FeatureUnit and 
     add your features on application start or gamestatehandler enter.
@@ -19,7 +19,7 @@
     beginning a new game, load or save a game.
     
     (C) 2007 RadonLabs GmbH
-	(C) 2013-2020 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "core/ptr.h"
@@ -53,17 +53,17 @@ public:
     bool HasStarted() const;
     /// stop the game world
     virtual void Stop();
-	/// trigger actions before rendering the game world
-	virtual void OnBeginFrame();
+    /// trigger actions before rendering the game world
+    virtual void OnBeginFrame();
     /// trigger the game world
     virtual void OnFrame();
-	/// trigger actions after rendering the game world
-	virtual void OnEndFrame();
+    /// trigger actions after rendering the game world
+    virtual void OnEndFrame();
 
-	/// call OnBeforeLoad on all game features
-	virtual void NotifyBeforeLoad();
-	/// call OnBeforeCleanup on all game features
-	virtual void NotifyBeforeCleanup();
+    /// call OnBeforeLoad on all game features
+    virtual void NotifyBeforeLoad();
+    /// call OnBeforeCleanup on all game features
+    virtual void NotifyBeforeCleanup();
    
     /// call OnLoad on all game features
     virtual void NotifyGameLoad();
@@ -77,7 +77,7 @@ public:
     /// is feature attached
     bool IsFeatureAttached(const Util::String& stringName) const;
 
-	Util::Array<Ptr<FeatureUnit>> const& GetGameFeatures() const;
+    Util::Array<Ptr<FeatureUnit>> const& GetGameFeatures() const;
 
     ProcessorHandle CreateProcessor(ProcessorCreateInfo const& info);
 
@@ -110,9 +110,9 @@ protected:
     Util::Array<ProcessorInfo> processors;
     Ids::IdGenerationPool processorHandlePool;
 
-	_declare_timer(GameServerOnBeginFrame)
+    _declare_timer(GameServerOnBeginFrame)
     _declare_timer(GameServerOnFrame)
-	_declare_timer(GameServerOnEndFrame)
+    _declare_timer(GameServerOnEndFrame)
 };
 
 }; // namespace Game

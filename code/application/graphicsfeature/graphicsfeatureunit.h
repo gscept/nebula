@@ -17,8 +17,8 @@ namespace GraphicsFeature
 
 class GraphicsFeatureUnit : public Game::FeatureUnit
 {
-	__DeclareClass(GraphicsFeatureUnit)
-	__DeclareSingleton(GraphicsFeatureUnit)
+    __DeclareClass(GraphicsFeatureUnit)
+    __DeclareSingleton(GraphicsFeatureUnit)
 
 public:
 
@@ -27,10 +27,10 @@ public:
     /// destructor
     ~GraphicsFeatureUnit();
 
-	/// Called upon activation of feature unit
-	void OnActivate();
-	/// Called upon deactivation of feature unit
-	void OnDeactivate();
+    /// Called upon activation of feature unit
+    void OnActivate();
+    /// Called upon deactivation of feature unit
+    void OnDeactivate();
 
     /// called on begin of frame
     void OnBeginFrame();

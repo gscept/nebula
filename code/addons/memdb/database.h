@@ -63,21 +63,24 @@ public:
     void SetToDefault(TableId table, IndexT row);
 	
 	/// move instance from one table to another.
-    IndexT MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid);
+    IndexT MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid, bool defragment = true);
     /// move instance from one table to a table in another database.
-    IndexT MigrateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& dstDb, TableId dstTid);
+    IndexT MigrateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& dstDb, TableId dstTid, bool defragment = true);
     /// duplicate instance from one row into destination table.
     IndexT DuplicateInstance(TableId srcTid, IndexT srcRow, TableId dstTid);
     /// duplicate instance from one row into destination table in a different database.
     IndexT DuplicateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& dstDb, TableId dstTid);
 
     /// move n instances from one table to another.
-    void MigrateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows, TableId dstTid, Util::FixedArray<IndexT>& dstRows);
+    void MigrateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows, TableId dstTid, Util::FixedArray<IndexT>& dstRows, bool defragment = true);
     /// duplicate instance from one row into destination table.
     void DuplicateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows, TableId dstTid, Util::FixedArray<IndexT>& dstRows);
 
 	/// defragment table
 	SizeT Defragment(TableId tid, std::function<void(IndexT, IndexT)> const& moveCallback);
+
+    /// clean table. Does not deallocate anything; just sets the size of the table to zero.
+    void Clean(TableId tid);
 
 	/// Query the database for a dataset of categories
 	Dataset Query(FilterSet const& filterset);

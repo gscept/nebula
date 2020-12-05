@@ -115,16 +115,16 @@ Execute(Op::RegisterProperty const& op)
     }
     else
     {
+        // Category with this hash does not exist. Create a new category.
         CategoryCreateInfo info;
         auto const& cols = state.worldDatabase->GetTable(cat.instanceTable).columns.GetArray<0>();
-        info.columns.SetSize(cols.Size());
+        info.properties.SetSize(cols.Size() + 1);
         IndexT i;
-        // Note: Skips owner column
-        for (i = 0; i < cols.Size() - 1; ++i)
+        for (i = 0; i < cols.Size(); ++i)
         {
-            info.columns[i] = cols[i + 1];
+            info.properties[i] = cols[i];
         }
-        info.columns[i] = op.pid;
+        info.properties[i] = op.pid;
 
 #ifdef NEBULA_DEBUG
         info.name = cat.name + " + ";
@@ -134,14 +134,15 @@ Execute(Op::RegisterProperty const& op)
         newCategoryId = EntityManager::Singleton->CreateCategory(info);
     }
 
-    EntityManager::Singleton->Migrate(op.entity, newCategoryId);
+    InstanceId newInstance = EntityManager::Singleton->Migrate(op.entity, newCategoryId);
 
     if (op.value == nullptr)
         return; // default value should already be set
 
     Ptr<MemDb::Database> db = Game::GetWorldDatabase();
-    auto cid = db->GetColumnId(cat.instanceTable, op.pid);
-    void* ptr = db->GetValuePointer(cat.instanceTable, cid, mapping.instance.id);
+    Category const& newCat = EntityManager::Singleton->GetCategory(newCategoryId);
+    auto cid = db->GetColumnId(newCat.instanceTable, op.pid);
+    void* ptr = db->GetValuePointer(newCat.instanceTable, cid, newInstance.id);
     Memory::Copy(op.value, ptr, MemDb::TypeRegistry::TypeSize(op.pid));
 }
 
@@ -165,15 +166,14 @@ Execute(Op::DeregisterProperty const& op)
     {
         CategoryCreateInfo info;
         auto const& cols = state.worldDatabase->GetTable(cat.instanceTable).columns.GetArray<0>();
-        info.columns.SetSize(cols.Size() - 1);
-        // Note: Skips owner column
+        info.properties.SetSize(cols.Size() - 1);
         int col = 0;
         for (int i = 0; i < cols.Size(); ++i)
         {
             if (cols[i] == op.pid)
                 continue;
 
-            info.columns[col++] = cols[i];
+            info.properties[col++] = cols[i];
         }
 
 #ifdef NEBULA_DEBUG
@@ -202,7 +202,7 @@ ReleaseAllOps()
 Filter
 CreateFilter(FilterCreateInfo const& info)
 {
-	n_assert(info.numInclusive > 0);
+    n_assert(info.numInclusive > 0);
     uint32_t filter = filterAllocator.Alloc();
 
     PropertyArray inclusiveArray;
@@ -359,6 +359,15 @@ GetEntityMapping(Game::Entity entity)
 {
     n_assert(EntityManager::HasInstance());
     return EntityManager::Singleton->state.entityMap[Ids::Index(entity.id)];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+PropertyId
+CreateProperty(PropertyCreateInfo const& info)
+{
+    return MemDb::TypeRegistry::Register(info.name, info.byteSize, info.defaultValue, info.flags);
 }
 
 //------------------------------------------------------------------------------
