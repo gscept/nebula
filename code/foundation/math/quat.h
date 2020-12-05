@@ -388,7 +388,7 @@ normalize(const quat& q)
 	quat from rotation axis + angle. Axis has to be normalized
 */
 __forceinline quat
-rotatioquataxis(const vec3& axis, scalar angle)
+rotationquataxis(const vec3& axis, scalar angle)
 {
 	n_assert2(n_nearequal(length(axis), 1.0f, 0.001f), "axis needs to be normalized");
 
