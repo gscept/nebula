@@ -20,7 +20,7 @@ RefCountedList::DumpLeaks()
 {
     if (!this->IsEmpty())
     {
-        SysFunc::DebugOut("\n\n\n******** NEBULA T REFCOUNTING LEAKS DETECTED ********\n\n");
+        SysFunc::DebugOut("\n\n\n******** NEBULA REFCOUNTING LEAKS DETECTED ********\n\n");
         RefCountedList::Iterator iter;
         for (iter = this->Begin(); iter != this->End(); iter++)
         {
@@ -44,12 +44,12 @@ RefCountedList::DumpLeaks()
 				SysFunc::DebugOut(msg.AsCharPtr());
 			}            
         }
-        SysFunc::DebugOut("\n******** END OF NEBULA T REFCOUNT LEAK REPORT ********\n\n\n");
+        SysFunc::DebugOut("\n******** END OF NEBULA REFCOUNT LEAK REPORT ********\n\n\n");
 		this->refcountedDebugNames.Clear();
     }
     else
     {
-        SysFunc::DebugOut("\n>>> HOORAY, NO NEBULA T REFCOUNT LEAKS!!!\n\n\n");
+        SysFunc::DebugOut("\n>>> HOORAY, NO NEBULA REFCOUNT LEAKS!!!\n\n\n");
     }
 }
 

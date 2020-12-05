@@ -1,11 +1,11 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	@class	Game::EntityManager
+    @class	Game::EntityManager
 
-	Keeps track of all existing entites.
+    Keeps track of all existing entites.
 
-	(C) 2018-2020 Individual contributors, see AUTHORS file
+    (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -37,97 +37,97 @@ Ptr<MemDb::Database> GetWorldDatabase();
 
 //------------------------------------------------------------------------------
 /**
-	@class	Game::EntityManager
-	
-	Contains state with categories and the world database.
+    @class	Game::EntityManager
+    
+    Contains state with categories and the world database.
 
-	Generally, you won't need to access any of the methods or
-	variables within this manager directly.
+    Generally, you won't need to access any of the methods or
+    variables within this manager directly.
 
-	The entity manager handles all entity categories in the game.
-	Categories are collections of properties, arranged as a table where each row
-	is an instance, mapped to an entity.
+    The entity manager handles all entity categories in the game.
+    Categories are collections of properties, arranged as a table where each row
+    is an instance, mapped to an entity.
 */
 class EntityManager
 {
-	__DeclareSingleton(EntityManager);
+    __DeclareSingleton(EntityManager);
 public:
-	/// retrieve the api
-	static ManagerAPI Create();
+    /// retrieve the api
+    static ManagerAPI Create();
 
-	/// destroy entity manager
-	static void Destroy();
+    /// destroy entity manager
+    static void Destroy();
 
-	/// creates a category
-	CategoryId CreateCategory(CategoryCreateInfo const& info);
+    /// creates a category
+    CategoryId CreateCategory(CategoryCreateInfo const& info);
 
-	/// returns a category by id. asserts if category does not exist
-	Category const& GetCategory(CategoryId cid) const;
+    /// returns a category by id. asserts if category does not exist
+    Category const& GetCategory(CategoryId cid) const;
 
-	/// returns the number of existing categories
-	SizeT const GetNumCategories() const;
+    /// returns the number of existing categories
+    SizeT const GetNumCategories() const;
 
-	/// allocate instance for entity in category instance table
-	InstanceId AllocateInstance(Entity entity, CategoryId category);
-	
-	/// allocate instance for entity in blueprints category instance table
-	InstanceId AllocateInstance(Entity entity, BlueprintId blueprint);
+    /// allocate instance for entity in category instance table
+    InstanceId AllocateInstance(Entity entity, CategoryId category);
+    
+    /// allocate instance for entity in blueprints category instance table
+    InstanceId AllocateInstance(Entity entity, BlueprintId blueprint);
 
-	/// allocate instance for entity in blueprint instance table by copying template
-	InstanceId AllocateInstance(Entity entity, TemplateId templateId);
+    /// allocate instance for entity in blueprint instance table by copying template
+    InstanceId AllocateInstance(Entity entity, TemplateId templateId);
 
-	/// deallocated and recycle instance in category instance table
-	void DeallocateInstance(Entity entity);
+    /// deallocated and recycle instance in category instance table
+    void DeallocateInstance(Entity entity);
 
-	/// migrate an instance from one category to another
-	InstanceId Migrate(Entity entity, CategoryId newCategory);
+    /// migrate an instance from one category to another
+    InstanceId Migrate(Entity entity, CategoryId newCategory);
 
-	/// migrate an n instances from one category to another
-	void Migrate(Util::Array<Entity> const& entities, CategoryId fromCategory, CategoryId newCategory, Util::FixedArray<IndexT>& newInstances);
+    /// migrate an n instances from one category to another
+    void Migrate(Util::Array<Entity> const& entities, CategoryId fromCategory, CategoryId newCategory, Util::FixedArray<IndexT>& newInstances);
 
-	// Don't modify state without knowing what you're doing!
-	struct State
-	{
-		struct AllocateInstanceCommand
-		{
-			Game::Entity entity;
-			TemplateId tid;
-		};
+    // Don't modify state without knowing what you're doing!
+    struct State
+    {
+        struct AllocateInstanceCommand
+        {
+            Game::Entity entity;
+            TemplateId tid;
+        };
 
-		struct DeallocInstanceCommand
-		{
-			Game::Entity entity;
-		};
+        struct DeallocInstanceCommand
+        {
+            Game::Entity entity;
+        };
 
-		/// Generation pool
-		Ids::IdGenerationPool pool;
+        /// Generation pool
+        Ids::IdGenerationPool pool;
 
-		/// Number of entities alive
-		SizeT numEntities;
+        /// Number of entities alive
+        SizeT numEntities;
 
-		/// Contains the entire world database
-		Ptr<MemDb::Database> worldDatabase;
+        /// Contains the entire world database
+        Ptr<MemDb::Database> worldDatabase;
 
-		/// Contains all templates
-		Ptr<MemDb::Database> templateDatabase;
+        /// Contains all templates
+        Ptr<MemDb::Database> templateDatabase;
 
-		Util::Queue<AllocateInstanceCommand> allocQueue;
-		Util::Queue<DeallocInstanceCommand> deallocQueue;
+        Util::Queue<AllocateInstanceCommand> allocQueue;
+        Util::Queue<DeallocInstanceCommand> deallocQueue;
 
-		// - Categories -
-		Util::Array<Category> categoryArray;
-		Util::HashTable<CategoryHash, CategoryId> catIndexMap;
+        // - Categories -
+        Util::Array<Category> categoryArray;
+        Util::HashTable<CategoryHash, CategoryId> catIndexMap;
 
-		Util::Array<EntityMapping> entityMap;
+        Util::Array<EntityMapping> entityMap;
 
-		PropertyId ownerId;
-	} state;
+        PropertyId ownerId;
+    } state;
 
 private:
-	/// constructor
-	EntityManager();
-	/// destructor
-	~EntityManager();
+    /// constructor
+    EntityManager();
+    /// destructor
+    ~EntityManager();
 };
 
 //------------------------------------------------------------------------------
@@ -136,7 +136,7 @@ private:
 inline Category const&
 EntityManager::GetCategory(CategoryId cid) const
 {
-	return this->state.categoryArray[cid.id];
+    return this->state.categoryArray[cid.id];
 }
 
 //------------------------------------------------------------------------------
@@ -145,7 +145,7 @@ EntityManager::GetCategory(CategoryId cid) const
 inline SizeT const
 EntityManager::GetNumCategories() const
 {
-	return this->state.categoryArray.Size();
+    return this->state.categoryArray.Size();
 }
 
 //------------------------------------------------------------------------------
@@ -155,17 +155,17 @@ template<typename TYPE>
 void
 SetProperty(Game::Entity const entity, PropertyId const pid, TYPE value)
 {
-	EntityMapping mapping = GetEntityMapping(entity);
-	Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
-	Ptr<MemDb::Database> db = EntityManager::Singleton->state.worldDatabase;
-	auto cid = db->GetColumnId(cat.instanceTable, pid);
+    EntityMapping mapping = GetEntityMapping(entity);
+    Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
+    Ptr<MemDb::Database> db = EntityManager::Singleton->state.worldDatabase;
+    auto cid = db->GetColumnId(cat.instanceTable, pid);
 
 #if NEBULA_DEBUG
-	n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(pid), "SetProperty: Provided value's type is not the correct size for the given PropertyId.");
+    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(pid), "SetProperty: Provided value's type is not the correct size for the given PropertyId.");
 #endif
 
-	TYPE* ptr = (TYPE*)db->GetValuePointer(cat.instanceTable, cid, mapping.instance.id);
-	*ptr = value;
+    TYPE* ptr = (TYPE*)db->GetValuePointer(cat.instanceTable, cid, mapping.instance.id);
+    *ptr = value;
 }
 
 //-------------------------

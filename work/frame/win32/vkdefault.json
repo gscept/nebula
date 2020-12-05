@@ -136,7 +136,7 @@
 				name: "LightBuffer",
 				format: "R16G16B16A16F",
 				relative: true,
-				usage: "ReadWrite|TransferSource",
+				usage: "Render|ReadWrite|TransferSource",
 				width: 1.0,
 				height: 1.0,
 				type: "Texture2D"
@@ -359,7 +359,6 @@
 			},
 		}
 
-
 		copy: {
 			name: "Copy Depth",
 			from: "ZBuffer",
@@ -536,6 +535,30 @@
 				},
 			],
 		},
+
+		_comment: "------------ FOWARD PASS ------------",
+		pass: {
+			name: "ForwardRendering",
+			attachments: [
+				{
+					name: "LightBuffer",
+					store: true
+				}
+			],
+
+			depth_stencil: {
+				name: "ZBuffer",
+				store: true
+			},
+
+			subpass: {
+				name: "AlphaPass",
+				subpass_dependencies: [],
+				attachments: [ "LightBuffer" ],
+				depth: true,
+				batch: "FlatGeometryAlphaLit"
+			},
+		}
 
 		call: {
 			name: "VolumetricFogContext - Render",

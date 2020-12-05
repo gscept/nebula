@@ -304,7 +304,7 @@ EntityManager::AllocateInstance(Entity entity, CategoryId category)
     n_assert(this->state.worldDatabase->GetColumnId(cat.instanceTable, this->state.ownerId) == 0);
 
     // Set the owner of this instance
-    Game::Entity* owners = (Game::Entity*) * this->state.worldDatabase->GetPersistantBuffer(cat.instanceTable, 0);
+    Game::Entity* owners = (Game::Entity*)this->state.worldDatabase->GetBuffer(cat.instanceTable, 0);
     owners[instance.id] = entity;
 
     return instance;
