@@ -482,7 +482,7 @@ VertexComponentBase::GetSignature() const
         case SkinWeights:   str = "skw"; break;
         case SkinJIndices:  str = "sji"; break;
         default:
-            n_error("can't happen!");
+            str = Util::String::Sprintf("cst%d", this->semName);
             break;
     }
     str.AppendInt(this->semIndex);    

@@ -80,13 +80,6 @@ private:
         MeshType        // use for rocks or other objects which might need meshes
     };
 
-    struct VegetationMeshFragment
-    {
-        uint vertexOffset;
-        uint firstIndex;
-        uint indices;
-    };
-
     enum
     {
         Vegetation_Mask,
@@ -94,7 +87,7 @@ private:
         Vegetation_Normals,
         Vegetation_Materials,
         Vegetation_Meshes,
-        Vegetation_MeshFragment,
+        Vegetation_MeshInfo,
         Vegetation_TextureIndex,
         Vegetation_SlopeThreshold,
         Vegetation_HeightThreshold,
@@ -107,8 +100,8 @@ private:
         CoreGraphics::TextureId,
         CoreGraphics::TextureId,
         CoreGraphics::MeshId,
-        VegetationMeshFragment,
         uint,
+        IndexT,
         float, float,
         VegetationType
     > VegetationAllocator;

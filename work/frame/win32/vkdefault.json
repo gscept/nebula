@@ -257,6 +257,9 @@
 
 		_comment: "------------ VEGETATION ------------",
 		call: {
+			name: "VegetationContext - Update Meshes"
+		},
+		call: {
 			name: "VegetationContext - Generate Draws"
 		},
 		call: {
@@ -350,7 +353,7 @@
 				},
 				call: {
 					name: "VegetationContext - Render",
-				}, 
+				},
 				batch: "FlatGeometryLit",
 				batch: "TesselatedGeometryLit",
 			},
