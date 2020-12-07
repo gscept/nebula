@@ -19,7 +19,7 @@ public:
     /// construct from generic attribute id
     StringAttrId(const AttrId& rhs);
     /// construct from attribute definition
-    StringAttrId(const AttributeDefinition<StringTypeClass, const Util::String&>& rhs);
+    StringAttrId(const AttributeDefinition<StringTypeClass, Util::String>& rhs);
     /// construct from name
     StringAttrId(const Util::String& rhs);
     /// construct from fourcc code
@@ -44,7 +44,7 @@ StringAttrId::StringAttrId(const AttrId& rhs) :
 /**
 */
 inline
-StringAttrId::StringAttrId(const AttributeDefinition<StringTypeClass, const Util::String&>& rhs) :
+StringAttrId::StringAttrId(const AttributeDefinition<StringTypeClass, Util::String>& rhs) :
     AttrId(&rhs)
 {
     // empty

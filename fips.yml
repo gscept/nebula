@@ -41,6 +41,8 @@ imports:
         git: https://github.com/gscept/fips-flatbuffers.git
     gliml:
         git: https://github.com/gscept/gliml.git
+    fips-sqlite3:
+        git: https://github.com/gscept/fips-sqlite3.git
 
 exports:
     header-dirs :

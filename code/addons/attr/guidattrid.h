@@ -19,7 +19,7 @@ public:
     /// construct from generic attribute id
     GuidAttrId(const AttrId& rhs);
     /// construct from attribute definition
-    GuidAttrId(const AttributeDefinition<GuidTypeClass,const Util::Guid&>& rhs);
+    GuidAttrId(const AttributeDefinition<GuidTypeClass, Util::Guid>& rhs);
     /// construct from name
     GuidAttrId(const Util::String& rhs);
     /// construct from fourcc code
@@ -44,7 +44,7 @@ GuidAttrId::GuidAttrId(const AttrId& rhs) :
 /**
 */
 inline
-GuidAttrId::GuidAttrId(const AttributeDefinition<GuidTypeClass,const Util::Guid&>& rhs) :
+GuidAttrId::GuidAttrId(const AttributeDefinition<GuidTypeClass, Util::Guid>& rhs) :
     AttrId(&rhs)
 {
     // empty

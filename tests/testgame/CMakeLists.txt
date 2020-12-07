@@ -8,7 +8,6 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/blueprints_test.json ${abs_output_folder}/blueprints_test.json
     MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/blueprints_test.json
 )
-MESSAGE(${abs_output_folder})
 
 nebula_add_nidl(testproperties.nidl)
 fips_deps(foundation application testbase scripting )
