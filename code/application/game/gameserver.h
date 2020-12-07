@@ -81,9 +81,15 @@ public:
 
     ProcessorHandle CreateProcessor(ProcessorCreateInfo const& info);
 
+    /// set command line args
+    void SetCmdLineArgs(const Util::CommandLineArgs& a);
+    /// get command line args
+    const Util::CommandLineArgs& GetCmdLineArgs() const;
+
 protected:
     bool isOpen;
     bool isStarted;
+    Util::CommandLineArgs args;
     Util::Array<Ptr<FeatureUnit> > gameFeatures;
 
     struct CallbackInfo
@@ -114,6 +120,24 @@ protected:
     _declare_timer(GameServerOnFrame)
     _declare_timer(GameServerOnEndFrame)
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+GameServer::SetCmdLineArgs(const Util::CommandLineArgs& a)
+{
+    this->args = a;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Util::CommandLineArgs&
+GameServer::GetCmdLineArgs() const
+{
+    return this->args;
+}
 
 }; // namespace Game
 //------------------------------------------------------------------------------

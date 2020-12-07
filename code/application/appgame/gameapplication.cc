@@ -62,7 +62,7 @@ GameApplication::Open()
         this->coreServer = CoreServer::Create();
         this->coreServer->SetCompanyName(Application::Instance()->GetCompanyName());
         this->coreServer->SetAppName(Application::Instance()->GetAppTitle());
-                
+		        
 		Util::String root = IO::FSWrapper::GetHomeDirectory();
 
 #if PUBLIC_BUILD
@@ -135,6 +135,7 @@ GameApplication::Open()
 
         // create our game server and open it
         this->gameServer = Game::GameServer::Create();
+		this->gameServer->SetCmdLineArgs(this->GetCmdLineArgs());
         this->gameServer->Open();
 
         // create and add new game features

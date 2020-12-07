@@ -79,6 +79,7 @@ GameServer::AttachGameFeature(const Ptr<FeatureUnit>& feature)
 {
     n_assert(0 != feature);
     n_assert(InvalidIndex == this->gameFeatures.FindIndex(feature));
+	feature->SetCmdLineArgs(this->GetCmdLineArgs());
     feature->OnActivate();
     this->gameFeatures.Append(feature);
 }
