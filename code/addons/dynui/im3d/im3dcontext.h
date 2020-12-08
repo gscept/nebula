@@ -14,6 +14,7 @@
 #include "graphics/graphicscontext.h"
 #include "input/inputevent.h"
 #include "math/bbox.h"
+#include "math/line.h"
 
 namespace Im3d
 {
@@ -38,17 +39,21 @@ public:
     static void Create();
     static void Discard();
 
-    static void DrawBox(const Math::bbox& box, const Math::vec4& color, uint32_t depthFlag = CheckDepth|Wireframe);
+    static void DrawPoint(const Math::vec3& position, const float size = 10.0f, const Math::vec4 color = { 1.0f, 0.0f, 0.0f, 1.0f }, uint32_t renderFlags = CheckDepth);
 
-    static void DrawOrientedBox(const Math::mat4& transform, const Math::bbox& box, const Math::vec4& color, uint32_t depthFlag = CheckDepth | Wireframe);
+    static void DrawLine(const Math::line& line, const float size = 1.0f, const Math::vec4 color = {1.0f, 0.0f, 0.0f, 1.0f}, uint32_t renderFlags = CheckDepth);
 
-    static void DrawBox(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t depthFlag = CheckDepth | Wireframe);
+    static void DrawBox(const Math::bbox& box, const Math::vec4& color, uint32_t renderFlags = CheckDepth|Wireframe);
+
+    static void DrawOrientedBox(const Math::mat4& transform, const Math::bbox& box, const Math::vec4& color, uint32_t renderFlags = CheckDepth | Wireframe);
+
+    static void DrawBox(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t renderFlags = CheckDepth | Wireframe);
     /// draw a sphere
-    static void DrawSphere(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t depthFlag = CheckDepth | Wireframe);
+    static void DrawSphere(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t renderFlags = CheckDepth | Wireframe);
     /// draw a cylinder
-    static void DrawCylinder(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t depthFlag = CheckDepth | Wireframe);
+    static void DrawCylinder(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t renderFlags = CheckDepth | Wireframe);
     /// draw a cone
-    static void DrawCone(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t depthFlag = CheckDepth | Wireframe);
+    static void DrawCone(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t renderFlags = CheckDepth | Wireframe);
 
     /// Start a new Im3d frame
     static void OnBeforeFrame(const Graphics::FrameContext& ctx);

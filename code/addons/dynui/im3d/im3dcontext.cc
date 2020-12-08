@@ -181,6 +181,28 @@ Im3dContext::Discard()
 //------------------------------------------------------------------------------
 /**
 */
+void
+Im3dContext::DrawPoint(const Math::vec3& position, const float size, const Math::vec4 color, uint32_t renderFlags)
+{
+	if (renderFlags & CheckDepth) Im3d::PushLayerId(imState.depthLayerId);
+	Im3d::DrawPoint(Im3d::Vec3(position), size, Im3d::Vec4(color));
+	if (renderFlags & CheckDepth) Im3d::PopLayerId();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::DrawLine(const Math::line& line, const float size, const Math::vec4 color, uint32_t renderFlags)
+{
+	if (renderFlags & CheckDepth) Im3d::PushLayerId(imState.depthLayerId);
+	Im3d::DrawLine(line.start(), line.end(), size, Im3d::Vec4(color));
+	if (renderFlags & CheckDepth) Im3d::PopLayerId();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 Im3dContext::DrawBox(const Math::bbox & box, const Math::vec4 & color, uint32_t depthFlag)
 {
