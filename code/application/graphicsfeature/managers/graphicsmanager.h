@@ -46,6 +46,7 @@ private:
 
     void InitCreateModelProcessor();
     void InitDestroyModelProcessor();
+    void InitUpdateTransformProcessor();
 
     static void OnBeginFrame();
 };

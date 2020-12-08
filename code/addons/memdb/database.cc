@@ -66,14 +66,14 @@ Database::CreateTable(TableCreateInfo const& info)
     table.tid = id;
     table.name = info.name;
 
-    const SizeT numColumns = info.numColumns;
+    const SizeT numColumns = info.numProperties;
     for (IndexT i = 0; i < numColumns; i++)
     {
-        this->AddColumn(id, info.columns[i]);
+		this->AddColumn(id, info.properties[i], false);
     }
 
     TableSignature& signature = this->tableSignatures[Ids::Index(id.id)];
-    signature = TableSignature(info.columns, info.numColumns);
+    signature = TableSignature(info.properties, info.numProperties);
 
     this->numTables = (Ids::Index(id.id) + 1 > this->numTables ? Ids::Index(id.id) + 1 : this->numTables);
 
@@ -116,7 +116,6 @@ Database::HasProperty(TableId table, PropertyId col)
 {
     n_assert(this->IsValid(table));
     return this->tableSignatures[Ids::Index(table.id)].IsSet(col);
-    return this->tables[Ids::Index(table.id)].columns.GetArray<0>().FindIndex(col) != InvalidIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -635,13 +634,17 @@ Database::AllocateBuffer(TableId tid, PropertyDescription* desc)
 
 //------------------------------------------------------------------------------
 /**
+	@param	updateSignature		Set to true if you are just casually adding a property to the table
+								IMPORTANT: If this is set to false, make sure you add it to the signature manually!
+
+	@returns	Index of column in table, or InvalidIndex if it was not added
 */
 ColumnIndex
-Database::AddColumn(TableId tid, PropertyId descriptor)
+Database::AddColumn(TableId tid, PropertyId descriptor, bool updateSignature)
 {
     n_assert(this->IsValid(tid));
 	n_assert(descriptor != PropertyId::Invalid());
-    Table& table = this->tables[Ids::Index(tid.id)];
+	Table& table = this->tables[Ids::Index(tid.id)];
 
     IndexT found = table.columns.GetArray<0>().FindIndex(descriptor);
     if (found != InvalidIndex)
@@ -650,15 +653,33 @@ Database::AddColumn(TableId tid, PropertyId descriptor)
         return found;
     }
 
-    uint32_t col = table.columns.Alloc();
+	table.properties.Append(descriptor);
 
-    table.columnRegistry.Add(descriptor, col);
+	if (updateSignature)
+	{
+		TableSignature& signature = this->tableSignatures[Ids::Index(tid.id)];
+#if NEBULA_DEBUG
+		// Bit should not be set if the property has not already been registered
+		n_assert(!signature.IsSet(descriptor))
+#endif
+		signature.FlipBit(descriptor);
+	}
 
-    Table::ColumnBuffer& buffer = table.columns.Get<1>(col);
-    table.columns.Get<0>(col) = descriptor;
-    buffer = this->AllocateBuffer(tid, TypeRegistry::GetDescription(descriptor.id));
+	PropertyDescription const* const desc = TypeRegistry::GetDescription(descriptor);
+	if (desc->typeSize > 0)
+	{
+		uint32_t col = table.columns.Alloc();
 
-    return col;
+		table.columnRegistry.Add(descriptor, col);
+
+		Table::ColumnBuffer& buffer = table.columns.Get<1>(col);
+		table.columns.Get<0>(col) = descriptor;
+		buffer = this->AllocateBuffer(tid, TypeRegistry::GetDescription(descriptor.id));
+
+		return col;
+	}
+
+	return InvalidIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -699,12 +720,12 @@ Database::Query(FilterSet const& filterset)
             Util::ArrayStack<void*, 16> buffers;
             buffers.Reserve(filterset.PropertyIds().Size());
 
-
             IndexT i = 0;
             for (auto attrid : filterset.PropertyIds())
             {
                 ColumnIndex colId = this->GetColumnId(tbl.tid, attrid);
-                buffers.Append(tbl.columns.Get<1>(colId.id));
+				if (colId != InvalidIndex) // There might be some non-typed properties
+					buffers.Append(tbl.columns.Get<1>(colId.id));
             }
 
             Dataset::View view;
@@ -726,7 +747,7 @@ Database::Query(FilterSet const& filterset)
 /**
 */
 Util::Array<TableId>
-Database::Query(TableSignature inclusive, TableSignature exclusive)
+Database::Query(TableSignature const& inclusive, TableSignature const& exclusive)
 {
     Util::Array<TableId> result;
 

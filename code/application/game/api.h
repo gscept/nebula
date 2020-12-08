@@ -27,6 +27,8 @@ struct EntityMapping
 
 //------------------------------------------------------------------------------
 /**
+    A dataset that contains views into category tables. These are created by
+    querying the world database.
 */
 struct Dataset
 {
@@ -35,8 +37,11 @@ struct Dataset
     /// a view into a category table
     struct CategoryTableView
     {
+        /// category identifier
         CategoryId cid;
+        /// number of instances in view
         uint32_t numInstances = 0;
+        /// property buffers. @note Can be NULL if a queried property is a flag
         void* buffers[MAX_PROPERTY_BUFFERS];
     };
 

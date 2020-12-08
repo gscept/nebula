@@ -49,7 +49,7 @@ public:
 	/// returns a column id or invalid if column is missing from table
     ColumnIndex GetColumnId(TableId table, PropertyId column);
 	/// add a column to a table
-    ColumnIndex AddColumn(TableId table, PropertyId column);
+    ColumnIndex AddColumn(TableId table, PropertyId column, bool updateSignature = true);
 	/// get the all descriptors for a table
 	Util::Array<PropertyId> const& GetColumns(TableId table);
 
@@ -85,7 +85,7 @@ public:
 	/// Query the database for a dataset of categories
 	Dataset Query(FilterSet const& filterset);
     /// Query the database for a dataset of categories
-    Util::Array<TableId> Query(TableSignature inclusive, TableSignature exclusive);
+    Util::Array<TableId> Query(TableSignature const& inclusive, TableSignature const& exclusive);
 	/// get a buffer. Might be invalidated if rows are allocated or deallocated
     void* GetValuePointer(TableId table, ColumnIndex cid, IndexT row);
     /// get a buffer. Might be invalidated if rows are allocated or deallocated
@@ -126,7 +126,10 @@ Database::GetValuePointer(TableId table, ColumnIndex cid, IndexT row)
     Table& tbl = this->tables[Ids::Index(table.id)];
     PropertyId descriptor = tbl.columns.Get<0>(cid.id);
     PropertyDescription* desc = MemDb::TypeRegistry::GetDescription(descriptor);
-    return ((byte*)tbl.columns.Get<1>(cid.id)) + (desc->typeSize * row);
+    if (desc->typeSize > 0)
+        return ((byte*)tbl.columns.Get<1>(cid.id)) + (desc->typeSize * row);
+    
+    return nullptr;
 }
 
 //------------------------------------------------------------------------------

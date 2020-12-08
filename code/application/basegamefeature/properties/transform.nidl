@@ -2,7 +2,11 @@
 	"includes": [
 		"math/mat4.h"
 	],
-	"properties": {
-		"WorldTransform": "mat4"
-	}
+    "properties": {
+        "WorldTransform": "mat4",
+        "Static": {
+            "_type_": "_flag_",
+            "_desc_": "Tells the render subsystem that this entitys transform won't change each frame. Omitting this flag will cause the rendering system to fetch the transform every frame."
+        }
+    }
 }

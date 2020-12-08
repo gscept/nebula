@@ -4,6 +4,8 @@
     PropertyDescription
 
     Describes a property's type and default value.
+    The propertys type can be omitted by registering it with a size of zero bytes.
+        This essentially means the property is only used when querying the database
     This information is used to allocate the table columns.
 
     @note   This is mostly just used internally by the database and typeregistry,
@@ -74,15 +76,18 @@ PropertyDescription::PropertyDescription(Util::StringAtom name, SizeT typeSizeBy
     typeSize(typeSizeBytes),
     externalFlags(flags)
 {
-    this->defVal = Memory::Alloc(Memory::HeapType::ObjectHeap, typeSizeBytes);
-    if (defaultValue != nullptr)
+    if (typeSizeBytes > 0)
     {
-        Memory::Copy(defaultValue, this->defVal, typeSizeBytes);
-    }
-    else
-    {
-        // just set everything to zero
-        Memory::Clear(this->defVal, typeSizeBytes);
+        this->defVal = Memory::Alloc(Memory::HeapType::ObjectHeap, typeSizeBytes);
+        if (defaultValue != nullptr)
+        {
+            Memory::Copy(defaultValue, this->defVal, typeSizeBytes);
+        }
+        else
+        {
+            // just set everything to zero
+            Memory::Clear(this->defVal, typeSizeBytes);
+        }
     }
 }
 

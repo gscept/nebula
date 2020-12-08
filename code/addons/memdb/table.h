@@ -31,9 +31,9 @@ struct TableCreateInfo
     /// name to be given to the table
     Util::String name;
     /// array of properties the table should initially have
-    PropertyId const* columns;
+    PropertyId const* properties;
     /// number of columns
-    SizeT numColumns;
+    SizeT numProperties;
 };
 
 //------------------------------------------------------------------------------
@@ -58,9 +58,11 @@ struct Table
     uint32_t grow = 128;
     // holds freed indices/rows to be reused in the table.
     Util::Array<IndexT> freeIds;
-    /// arrays that hold the property identifier, and the buffers
+    /// all properties that this table has
+    Util::Array<PropertyId> properties;
+    /// holds all the column buffers. This excludes non-typed properties
     Util::ArrayAllocator<PropertyId, ColumnBuffer> columns;
-    /// 
+    /// maps propertyid -> index in columns array
     Util::HashTable<PropertyId, IndexT, 32, 1> columnRegistry;
     /// allocation heap used for the column buffers
     static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::DefaultHeap;

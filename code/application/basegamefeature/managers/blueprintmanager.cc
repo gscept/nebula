@@ -387,8 +387,8 @@ BlueprintManager::SetupCategories()
             // Create the blueprint's template table
             MemDb::TableCreateInfo tableInfo;
             tableInfo.name = "blueprint:" + info.name;
-            tableInfo.numColumns = info.properties.Size();
-            tableInfo.columns = info.properties.begin();
+            tableInfo.numProperties = info.properties.Size();
+            tableInfo.properties = info.properties.Begin();
             MemDb::TableId tid = EntityManager::Instance()->state.templateDatabase->CreateTable(tableInfo);
 
             blueprint.categoryHash = cat.hash;

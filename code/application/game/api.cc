@@ -117,7 +117,7 @@ Execute(Op::RegisterProperty const& op)
     {
         // Category with this hash does not exist. Create a new category.
         CategoryCreateInfo info;
-        auto const& cols = state.worldDatabase->GetTable(cat.instanceTable).columns.GetArray<0>();
+        auto const& cols = state.worldDatabase->GetTable(cat.instanceTable).properties;
         info.properties.SetSize(cols.Size() + 1);
         IndexT i;
         for (i = 0; i < cols.Size(); ++i)
@@ -165,7 +165,7 @@ Execute(Op::DeregisterProperty const& op)
     else
     {
         CategoryCreateInfo info;
-        auto const& cols = state.worldDatabase->GetTable(cat.instanceTable).columns.GetArray<0>();
+        auto const& cols = state.worldDatabase->GetTable(cat.instanceTable).properties;
         info.properties.SetSize(cols.Size() - 1);
         int col = 0;
         for (int i = 0; i < cols.Size(); ++i)
@@ -256,6 +256,10 @@ ReleaseDatasets()
 
 //------------------------------------------------------------------------------
 /**
+	@returns	Dataset with category table views.
+
+	@note		The category table view buffer can be NULL if the filter contains
+				a non-typed/flag property.
 */
 Dataset Query(Filter filter)
 {
@@ -280,7 +284,7 @@ Dataset Query(Filter filter)
     {
         Dataset::CategoryTableView* view = data.views + viewIndex;
         // FIXME
-        view->cid = CategoryId::Invalid();
+		view->cid = CategoryId::Invalid();
 
         MemDb::Table const& tbl = db->GetTable(tids[viewIndex]);
 
@@ -288,7 +292,11 @@ Dataset Query(Filter filter)
         for (auto pid : properties)
         {
             MemDb::ColumnIndex colId = db->GetColumnId(tbl.tid, pid);
-            view->buffers[i] = db->GetBuffer(tbl.tid, colId);
+			// Check if the property is a flag, and return a nullptr in that case.
+			if (colId != InvalidIndex)
+				view->buffers[i] = db->GetBuffer(tbl.tid, colId);
+			else
+				view->buffers[i] = nullptr;
             i++;
         }
 

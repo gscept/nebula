@@ -37,12 +37,14 @@ DatabaseTest::Run()
     TableId table0;
     TableId table1;
     TableId table2;
+    TableId table3;
 
     db = Database::Create();
 
     PropertyId TestIntId = TypeRegistry::Register<int>("TestIntId", int(1));
     PropertyId TestFloatId = TypeRegistry::Register<float>("TestFloatId", float(20.0f));
     PropertyId TestStructId = TypeRegistry::Register<StructTest>("TestStructId", StructTest());
+    PropertyId TestNonTypedProperty = TypeRegistry::Register("TestNonTypedProperty", 0, nullptr);
 
     {
         TableCreateInfo info;
@@ -52,8 +54,8 @@ DatabaseTest::Run()
                 TestFloatId,
                 TestStructId
         };
-        info.columns = pids;
-        info.numColumns = 3;
+        info.properties = pids;
+        info.numProperties = 3;
         table0 = db->CreateTable(info);
     }
 
@@ -64,8 +66,8 @@ DatabaseTest::Run()
             TestIntId,
             TestFloatId
         };
-        info.columns = pids;
-        info.numColumns = 2;
+        info.properties = pids;
+        info.numProperties = 2;
         table1 = db->CreateTable(info);
     };
 
@@ -74,11 +76,23 @@ DatabaseTest::Run()
         info.name = "Table2";
         PropertyId pids[] = {
             TestStructId,
-            TestIntId
+            TestIntId,
+            TestNonTypedProperty
         };
-        info.columns = pids;
-        info.numColumns = 2;
+        info.properties = pids;
+        info.numProperties = 3;
         table2 = db->CreateTable(info);
+    };
+
+    {
+        TableCreateInfo info;
+        info.name = "Table3";
+        PropertyId pids[] = {
+            TestNonTypedProperty
+        };
+        info.properties = pids;
+        info.numProperties = 1;
+        table3 = db->CreateTable(info);
     };
 
     Util::Array<IndexT> instances;
@@ -87,6 +101,12 @@ DatabaseTest::Run()
     {
         instances.Append(db->AllocateRow(table0));
     }
+    
+    for (auto i : instances)
+    {
+        db->DeallocateRow(table0, i);
+    }
+    instances.Clear();
 
     // make sure we allocate enough so that we need to grow/reallocate the buffers
     for (size_t i = 0; i < 10000; i++)
@@ -106,6 +126,120 @@ DatabaseTest::Run()
             passed |= (intData[i] == *(int*)TypeRegistry::GetDescription(TestIntId)->defVal);
             passed |= (floatData[i] == *(float*)TypeRegistry::GetDescription(TestFloatId)->defVal);
         }
+        VERIFY(passed);
+    }
+
+    for (auto i : instances)
+    {
+        db->DeallocateRow(table0, i);
+    }
+
+    instances.Clear();
+
+    VERIFY(db->GetNumRows(table0) == 10000);
+
+    instances.Append(db->AllocateRow(table0));
+    instances.Append(db->AllocateRow(table0));
+    instances.Append(db->AllocateRow(table0));
+
+    VERIFY(db->GetNumRows(table0) == 10000);
+
+    db->Defragment(table0, [](IndexT, IndexT){});
+
+    VERIFY(db->GetNumRows(table0) == 3);
+
+    for (auto i : instances)
+        VERIFY(i < 10010);
+
+    db->Clean(table0);
+    
+    VERIFY(db->GetNumRows(table0) == 0);
+
+    instances.Clear();
+
+    for (size_t i = 0; i < 10; i++)
+    {
+        instances.Append(db->AllocateRow(table1));
+    }
+
+    const auto tbl1cid = db->GetColumnId(table1, TestFloatId);
+    for (auto i : instances)
+    {
+        VERIFY(*((float*)db->GetValuePointer(table1, tbl1cid, i)) == *(float*)TypeRegistry::GetDescription(TestFloatId)->defVal);
+    }
+
+    db->Clean(table1);
+    instances.Clear();
+
+    for (size_t i = 0; i < 10; i++)
+    {
+        instances.Append(db->AllocateRow(table2));
+    }
+
+    VERIFY(db->GetNumRows(table2) == 10);
+
+    const auto tbl2cid = db->GetColumnId(table2, TestNonTypedProperty);
+    VERIFY(tbl2cid == InvalidIndex);
+    VERIFY(db->HasProperty(table2, TestNonTypedProperty));
+    
+    db->Clean(table2);
+    instances.Clear();
+
+    for (size_t i = 0; i < 10; i++)
+    {
+        instances.Append(db->AllocateRow(table3));
+    }
+
+    VERIFY(db->GetNumRows(table3) == 10);
+
+    const auto tbl3cid = db->GetColumnId(table3, TestNonTypedProperty);
+    VERIFY(tbl3cid == InvalidIndex);
+    VERIFY(db->HasProperty(table3, TestNonTypedProperty));
+
+    for (auto i : instances)
+    {
+        db->DeallocateRow(table3, i);
+    }
+
+    db->Defragment(table3, [](IndexT, IndexT) {});
+
+    db->Clean(table3);
+    instances.Clear();
+
+    for (size_t i = 0; i < 10; i++)
+    {
+        db->AllocateRow(table0);
+        db->AllocateRow(table1);
+        db->AllocateRow(table2);
+        db->AllocateRow(table3);
+    }
+
+    {
+        FilterSet filter = FilterSet({ TestIntId,
+                                       TestNonTypedProperty
+                                     });
+        Dataset data = db->Query(filter);
+        VERIFY(data.tables.Size() == 1);
+    }
+
+    {
+        FilterSet filter = FilterSet({ TestNonTypedProperty });
+        Dataset data = db->Query(filter);
+        VERIFY(data.tables.Size() == 2);
+    }
+
+    {
+        FilterSet filter = FilterSet(
+            { // inclusive
+                TestNonTypedProperty
+            },
+            { // exclusive
+                TestIntId
+            }
+        );
+
+        Dataset data = db->Query(filter);
+        VERIFY(data.tables.Size() == 1);
     }
 
     TableSignature mask = TableSignature({ TestIntId, 129 });

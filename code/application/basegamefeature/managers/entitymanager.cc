@@ -270,8 +270,8 @@ EntityManager::CreateCategory(CategoryCreateInfo const& info)
         // push owner id into the property array
         const SizeT tableSize = 1 + info.properties.Size();
         n_assert(tableSize < NUM_PROPS);
-        tableInfo.numColumns = tableSize;
-        tableInfo.columns = properties;
+        tableInfo.numProperties = tableSize;
+        tableInfo.properties = properties;
 
         // always add owner as first column
         properties[0] = this->state.ownerId;
@@ -283,8 +283,8 @@ EntityManager::CreateCategory(CategoryCreateInfo const& info)
     else
     {
         const SizeT tableSize = info.properties.Size();
-        tableInfo.numColumns = tableSize;
-        tableInfo.columns = info.properties.begin();
+        tableInfo.numProperties = tableSize;
+        tableInfo.properties = info.properties.begin();
     }
 
     // Create an instance table
@@ -307,8 +307,8 @@ EntityManager::CreateCategory(CategoryCreateInfo const& info)
     {
         MemDb::TableCreateInfo managedTableInfo;
         managedTableInfo.name = "<MNGD>:" + info.name;
-        managedTableInfo.columns = properties;
-        managedTableInfo.numColumns = numManaged;
+        managedTableInfo.properties = properties;
+        managedTableInfo.numProperties = numManaged;
         cat.managedPropertyTable = this->state.worldDatabase->CreateTable(managedTableInfo);
     }
     else
