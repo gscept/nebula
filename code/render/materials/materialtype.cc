@@ -216,12 +216,7 @@ MaterialType::CreateSurface()
 					}
 				}
 			}
-#if NEBULA_DEBUG
-			else
-			{
-				n_warning("Material constant %s does not belong to a constant buffer bound to either the BATCH or INSTANCE group\n", constant.name.AsCharPtr());
-			}
-#endif
+
 			if (batchIt == this->batchToIndexMap.Begin())
 				this->surfaceAllocator.Get<ConstantMap>(sur).Add(constant.name, this->surfaceAllocator.Get<Constants>(sur)[*batchIt.val].Size());
 
