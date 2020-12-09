@@ -43,6 +43,7 @@ imports:
         git: https://github.com/gscept/gliml.git
     fips-sqlite3:
         git: https://github.com/gscept/fips-sqlite3.git
+        branch: main
 
 exports:
     header-dirs :
