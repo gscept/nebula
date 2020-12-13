@@ -670,7 +670,8 @@ __forceinline vec4
 normalize3(const vec4& v)
 {
 	if (v == vec4(0)) return v;
-	return _mm_div_ps(v.vec, _mm_sqrt_ps(_mm_dp_ps(v.vec, v.vec, 0x71)));
+	__m128 t = _mm_div_ps(v.vec, _mm_sqrt_ps(_mm_dp_ps(v.vec, v.vec, 0x77)));
+	return _mm_insert_ps(t, v.vec, 0xF0);
 }
 
 //------------------------------------------------------------------------------
@@ -680,7 +681,8 @@ __forceinline vec4
 normalize3approx(const vec4& v)
 {
 	if (v == vec4(0)) return v;
-	return _mm_mul_ps(v.vec, _mm_rsqrt_ps(_mm_dp_ps(v.vec, v.vec, 0x71)));
+	__m128 t = _mm_mul_ps(v.vec, _mm_rsqrt_ps(_mm_dp_ps(v.vec, v.vec, 0x77)));
+	return _mm_insert_ps(t, v.vec, 0xF0);
 }
 //------------------------------------------------------------------------------
 /**
