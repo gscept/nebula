@@ -16,7 +16,9 @@
 #include "coregraphics/barrier.h"
 #include "coregraphics/gpubuffertypes.h"
 #include "coregraphics/config.h"
-#include "IL/il.h"
+#ifndef __IL_H__
+typedef unsigned int ILenum;
+#endif
 
 namespace Vulkan
 {

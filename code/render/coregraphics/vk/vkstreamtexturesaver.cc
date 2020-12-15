@@ -9,7 +9,10 @@
 #include "vktypes.h"
 #include "resources/resourceserver.h"
 #include "io/ioserver.h"
-#include "coregraphics//streamtexturesaver.h"
+#include "coregraphics/streamtexturesaver.h"
+
+#ifdef WITH_DEVIL
+
 #include <IL/il.h>
 #include <IL/ilu.h>
 
@@ -252,3 +255,4 @@ VkStreamTextureSaver::SaveTexture3D(CoreGraphics::TextureId tex, const Ptr<IO::S
 }
 
 } // namespace Vulkan
+#endif

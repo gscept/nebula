@@ -3,6 +3,11 @@
 
 # 3.7.2 required for using FindVulkan
 # 3.13 require for target_link_options, required for scripting atm
+
+
+# Devil is disabled by default to speed up CI builds
+OPTION(N_WITH_DEVIL "Enable Devil" OFF)
+
 if(NOT FIPS_IMPORT)
     cmake_minimum_required(VERSION 3.13)
     project(Nebula)
