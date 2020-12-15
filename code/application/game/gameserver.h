@@ -79,6 +79,7 @@ public:
 
     Util::Array<Ptr<FeatureUnit>> const& GetGameFeatures() const;
 
+    /// create a processor
     ProcessorHandle CreateProcessor(ProcessorCreateInfo const& info);
 
     /// set command line args
@@ -116,9 +117,14 @@ protected:
     Util::Array<ProcessorInfo> processors;
     Ids::IdGenerationPool processorHandlePool;
 
-    _declare_timer(GameServerOnBeginFrame)
-    _declare_timer(GameServerOnFrame)
-    _declare_timer(GameServerOnEndFrame)
+#if NEBULA_ENABLE_PROFILING
+    _declare_timer(GameServerOnBeginFrame);
+    _declare_timer(GameServerOnFrame);
+    _declare_timer(GameServerOnEndFrame);
+    Util::Array<Ptr<Debug::DebugTimer>> onBeginFrameTimers;
+    Util::Array<Ptr<Debug::DebugTimer>> onFrameTimers;
+    Util::Array<Ptr<Debug::DebugTimer>> onEndFrameTimers;
+#endif
 };
 
 //------------------------------------------------------------------------------

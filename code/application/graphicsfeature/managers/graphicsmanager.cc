@@ -69,7 +69,7 @@ void GraphicsManager::InitCreateModelProcessor()
     Game::ProcessorCreateInfo processorInfo;
     processorInfo.async = false;
     processorInfo.filter = filter;
-    processorInfo.name = "GraphicsManager - CreateModels"_atm;
+    processorInfo.name = "GraphicsManager.CreateModels"_atm;
     processorInfo.OnBeginFrame = [](Game::Dataset data)
     {
         Game::OpBuffer opBuffer = Game::CreateOpBuffer();
@@ -126,7 +126,7 @@ void GraphicsManager::InitDestroyModelProcessor()
     Game::ProcessorCreateInfo processorInfo;
     processorInfo.async = false;
     processorInfo.filter = filter;
-    processorInfo.name = "GraphicsManager - DestroyModels"_atm;
+    processorInfo.name = "GraphicsManager.DestroyModels"_atm;
     processorInfo.OnBeginFrame = [](Game::Dataset data)
     {
         for (int v = 0; v < data.numViews; v++)
@@ -171,7 +171,7 @@ void GraphicsManager::InitUpdateTransformProcessor()
 	Game::ProcessorCreateInfo processorInfo;
 	processorInfo.async = false;
 	processorInfo.filter = filter;
-	processorInfo.name = "GraphicsManager - UpdateTransforms"_atm;
+	processorInfo.name = "GraphicsManager.UpdateTransforms"_atm;
 	processorInfo.OnBeginFrame = [](Game::Dataset data)
 	{
 		for (int v = 0; v < data.numViews; v++)

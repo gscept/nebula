@@ -141,9 +141,11 @@ typedef void(*ProcessorFrameCallback)(Dataset);
 */
 struct ProcessorCreateInfo
 {
+    /// name of the processor
     Util::StringAtom name;
 
-    /// set if this processor should run as a job
+    /// set if this processor should run as a job.
+    /// TODO: this is currently not used
     bool async = false;
     /// filter used for creating the dataset
     Filter filter;
