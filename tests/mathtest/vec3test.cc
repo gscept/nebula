@@ -219,6 +219,9 @@ print(v2);
     v0.set(2.5f, 0.0f, 0.0f);
     v1 = normalize(v0);
     VERIFY(v1 == vec3(1.0f, 0.0f, 0.0f));
+    v0.set(4.0f, 2.0f, 3.0f);
+    v1 = normalize(v0);
+    VERIFY(nearequal(v1, vec4(0.742781341f, 0.371390671f, 0.557086051f, 0.371390671f), E3));
 
 	// transform (point and vector)
     /* turn back when we have mat3

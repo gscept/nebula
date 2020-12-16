@@ -15,6 +15,8 @@ using namespace Math;
 
 static const scalar E = 0.00001;
 static const vec4 E4(E, E, E, E);
+static const scalar EL = 0.001;
+static const vec4 E2(EL, EL, EL, EL);
 
 namespace Test
 {
@@ -198,6 +200,14 @@ print(v2);
     VERIFY(dot3(v0, v1) == -1.0f);
     v1.set(0.0f, 1.0f, 0.0f, 0.0f);
     VERIFY(dot3(v0, v1) == 0.0f);
+    v0.set(1.0f, 2.0f, 3.0f, 0.0f);
+    v1.set(2.0f, -2.0f, -5.0f, 0.0f);
+    VERIFY(dot3(v0, v1) == -17.0f);
+    v0.set(1.0f, 2.0f, 3.0f, 3.0f);
+    v1.set(2.0f, -2.0f, -5.0f, 4.0f);
+    VERIFY(dot3(v0, v1) == -17.0f);
+
+
 
     // @todo: test barycentric(), catmullrom(), hermite()
 
@@ -224,6 +234,14 @@ print(v2);
     v1 = normalize(v0);
     VERIFY(v1 == vec4(1.0f, 0.0f, 0.0f, 0.0f));
 
+    v0.set(4.0f, 2.0f, 3.0f, 2.0f);
+    v1 = normalize3(v0);
+    VERIFY(nearequal(v1, vec4(0.742781341f, 0.371390671f, 0.557086051f, 2.0f), E4));
+
+    v0.set(4.0f, 2.0f, 3.0f, 2.0f);
+    v1 = normalize3approx(v0);
+    VERIFY(nearequal(v1, vec4(0.742781341f, 0.371390671f, 0.557086051f, 2.0f), E2));
+    
 	// transform (point and vector)
     mat4 m = translation(1.0f, 2.0f, 3.0f);
     v0.set(1.0f, 0.0f, 0.0f, 1.0f);
