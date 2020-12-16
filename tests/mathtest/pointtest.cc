@@ -25,9 +25,13 @@ PointTest::Run()
 {
     STACK_CHECKPOINT("Test::PointTest::Run()");
 
+    __m128 m128vector = _mm_setr_ps(1, 2, 3, 0);
+    
 	// construction
     point t;
     VERIFY(vec4equal(t, vec4(0.0, 0.0, 0.0, 1.0)));
+    point m(m128vector);
+    VERIFY(vec4equal(m, vec4(1.0f, 2.0f, 3.0f, 1.0f)));
     point z(t);
     VERIFY(vec4equal(z, vec4(0.0, 0.0, 0.0, 1.0)));
 	point p(1.0, 2.0, 3.0);
@@ -46,6 +50,9 @@ PointTest::Run()
     VERIFY(v2 == v1);
     v2 = v0;
     VERIFY(v2 == v0);
+    point m2;
+    m2 = m128vector;
+    VERIFY(m == m2);
 
     // test 16-byte alignment of embedded members on the stack, if we use SSE/SSE2 on windows or
     // xbox or ps3

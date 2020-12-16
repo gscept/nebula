@@ -113,10 +113,9 @@ vec3::vec3(scalar v)
 /**
 */
 __forceinline
-vec3::vec3(const __m128& rhs) :
-	vec(rhs)
+vec3::vec3(const __m128& rhs)
 {
-	// empty
+    this->vec = _mm_insert_ps(rhs, _id_w, 0b111000);
 }
 
 //------------------------------------------------------------------------------
@@ -125,7 +124,7 @@ vec3::vec3(const __m128& rhs) :
 __forceinline void
 vec3::operator=(const __m128& rhs)
 {
-	this->vec = rhs;
+    this->vec = _mm_insert_ps(rhs, _id_w, 0b111000);
 }
 
 //------------------------------------------------------------------------------
