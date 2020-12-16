@@ -360,22 +360,17 @@ GameServer::CreateProcessor(ProcessorCreateInfo const& info)
     ProcessorInfo processor;
     processor.async = info.async;
     processor.name = info.name;
-    
-    if (info.OnDeactivate != nullptr)
-        processor.OnDeactivate = info.OnDeactivate;
+    processor.OnDeactivate = info.OnDeactivate;
 
     ProcessorHandle handle;
     this->processorHandlePool.Allocate(handle);
 
     if (this->processors.Size() <= Ids::Index(handle))
-    {
         this->processors.Append(std::move(processor));
-    }
     else
-    {
         this->processors[Ids::Index(handle)] = std::move(processor);
-    }
 
+	// Setup frame callbacks
 	if (info.OnBeginFrame != nullptr)
 	{
 		this->onBeginFrameCallbacks.Append({ handle, info.filter, info.OnBeginFrame });
