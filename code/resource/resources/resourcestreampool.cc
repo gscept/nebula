@@ -336,10 +336,17 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 		if (immediate)
 		{
 			LoadStatus status = this->PrepareLoad(pending);
-			if (status == Failed)
+			if (status == Success)
+			{
+				if (success != nullptr)
+					success(ret);
+			}
+			else if (status == Failed)
 			{
 				// change return resource id to be fail resource
 				ret.resourceId = this->failResourceId.resourceId;
+				if (failed != nullptr)
+					failed(ret);
 			}
 		}
 		else
@@ -368,7 +375,7 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 		
 		// if the resource has been loaded (through a previous Update), just call the success callback
 		const Resource::State state = this->states[ret.poolId];
-		if (state == Resource::Loaded && !immediate && success != nullptr)
+		if (state == Resource::Loaded && success != nullptr)
 		{
 			// if loaded and not immediate, run callback, otherwise just return id
 			success(ret);
