@@ -51,11 +51,13 @@ struct Dataset
     CategoryTableView* views = nullptr;
 };
 
+
 /// Opaque entity operations buffer
 typedef uint32_t OpBuffer;
 
 /// Opaque processor handle
 typedef uint32_t ProcessorHandle;
+
 
 //------------------------------------------------------------------------------
 //      Create, Setup and Registration

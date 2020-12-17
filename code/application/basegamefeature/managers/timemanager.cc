@@ -74,10 +74,10 @@ TimeManager::Create()
 //------------------------------------------------------------------------------
 /**
 */
-TimeSource*
-TimeManager::RegisterTimeSource(TimeSourceCreateInfo const& info)
+TimeSource* const
+TimeManager::CreateTimeSource(TimeSourceCreateInfo const& info)
 {
-	state->timeSourceTable.Add(info.fourcc, state->numTimeSources);
+	state->timeSourceTable.Add(info.hash, state->numTimeSources);
 	TimeSourceState& timesource = state->timeSources[state->numTimeSources++];
 	timesource.frameTime = Timing::TicksToSeconds(state->frameTime);
 	return reinterpret_cast<TimeSource*>(&timesource);
@@ -86,7 +86,7 @@ TimeManager::RegisterTimeSource(TimeSourceCreateInfo const& info)
 //------------------------------------------------------------------------------
 /**
 */
-TimeSource*
+TimeSource* const
 TimeManager::GetTimeSource(uint32_t TIMESOURCE_HASH)
 {
 	return reinterpret_cast<TimeSource*>(&state->timeSources[state->timeSourceTable[TIMESOURCE_HASH]]);
@@ -132,16 +132,16 @@ TimeManager::OnActivate()
 	// register default time sources
 
 	TimeSourceCreateInfo systemTimeInfo;
-	systemTimeInfo.fourcc = TIMESOURCE_SYSTEM;
-	RegisterTimeSource(systemTimeInfo);
+	systemTimeInfo.hash = TIMESOURCE_SYSTEM;
+	CreateTimeSource(systemTimeInfo);
 
 	TimeSourceCreateInfo gameTimeInfo;
-	gameTimeInfo.fourcc = TIMESOURCE_GAMEPLAY;
-	RegisterTimeSource(gameTimeInfo);
+	gameTimeInfo.hash = TIMESOURCE_GAMEPLAY;
+	CreateTimeSource(gameTimeInfo);
 
 	TimeSourceCreateInfo inputTimeInfo;
-	inputTimeInfo.fourcc = TIMESOURCE_INPUT;
-	RegisterTimeSource(inputTimeInfo);
+	inputTimeInfo.hash = TIMESOURCE_INPUT;
+	CreateTimeSource(inputTimeInfo);
 }
 
 //------------------------------------------------------------------------------

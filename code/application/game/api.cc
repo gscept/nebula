@@ -130,7 +130,6 @@ Execute(Op::RegisterProperty const& op)
         info.name = cat.name + " + ";
         info.name += MemDb::TypeRegistry::GetDescription(op.pid)->name.AsString();
 #endif
-
         newCategoryId = EntityManager::Singleton->CreateCategory(info);
     }
 
@@ -152,7 +151,10 @@ Execute(Op::RegisterProperty const& op)
 void
 Execute(Op::DeregisterProperty const& op)
 {
-    EntityManager::State& state = EntityManager::Singleton->state;
+#if NEBULA_DEBUG
+	n_assert(Game::HasProperty(op.entity, op.pid));
+#endif
+	EntityManager::State& state = EntityManager::Singleton->state;
     EntityMapping mapping = GetEntityMapping(op.entity);
     Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
     CategoryHash newHash = cat.hash;
@@ -166,9 +168,10 @@ Execute(Op::DeregisterProperty const& op)
     {
         CategoryCreateInfo info;
         auto const& cols = state.worldDatabase->GetTable(cat.instanceTable).properties;
-        info.properties.SetSize(cols.Size() - 1);
+		SizeT const num = cols.Size();
+        info.properties.SetSize(num - 1);
         int col = 0;
-        for (int i = 0; i < cols.Size(); ++i)
+        for (int i = 0; i < num; ++i)
         {
             if (cols[i] == op.pid)
                 continue;

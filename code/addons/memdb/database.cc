@@ -229,12 +229,20 @@ Database::GetColumns(TableId tid)
     @note		This is an instant erase swap on src table, which means any external references to rows (instance ids) will be invalidated!
 */
 IndexT
-Database::MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid, bool defragment)
+Database::MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid, bool defragment, std::function<void(IndexT, IndexT)> const& moveCallback)
 {
     n_assert(srcTid != dstTid);
     IndexT dstRow = this->DuplicateInstance(srcTid, srcRow, dstTid);
 	if (defragment)
-		this->EraseSwapIndex(GetTable(srcTid), srcRow);
+	{
+		Table& table = GetTable(srcTid);
+		if (moveCallback != nullptr)
+		{
+			IndexT lastIndex = table.numRows - 1;
+			moveCallback(lastIndex, srcRow);
+		}
+		this->EraseSwapIndex(table, srcRow);
+	}
 	else
 		this->DeallocateRow(srcTid, srcRow);
     return dstRow;
@@ -247,11 +255,19 @@ Database::MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid, bool de
     @note		This is an instant erase swap on src table, which means any external references to rows (instance ids) will be invalidated!
 */
 IndexT
-Database::MigrateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& dstDb, TableId dstTid, bool defragment)
+Database::MigrateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& dstDb, TableId dstTid, bool defragment, std::function<void(IndexT, IndexT)> const& moveCallback)
 {
     IndexT dstRow = this->DuplicateInstance(srcTid, srcRow, dstDb, dstTid);
 	if (defragment)
-		this->EraseSwapIndex(GetTable(srcTid), srcRow);
+	{
+		Table& table = GetTable(srcTid);
+		if (moveCallback != nullptr)
+		{
+			IndexT lastIndex = table.numRows - 1;
+			moveCallback(lastIndex, srcRow);
+		}
+		this->EraseSwapIndex(table, srcRow);
+	}
 	else
 		this->DeallocateRow(srcTid, srcRow);
     return dstRow;
@@ -363,7 +379,7 @@ Database::DuplicateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& 
     @note	This is an instant erase swap on src table, which means any external references to rows (instance ids) will be invalidated!
 */
 void
-Database::MigrateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows, TableId dstTid, Util::FixedArray<IndexT>& dstRows, bool defragment)
+Database::MigrateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows, TableId dstTid, Util::FixedArray<IndexT>& dstRows, bool defragment, std::function<void(IndexT, IndexT)> const& moveCallback)
 {
     n_assert(srcTid != dstTid);
     this->DuplicateInstances(srcTid, srcRows, dstTid, dstRows);
@@ -371,8 +387,24 @@ Database::MigrateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows, T
     auto& table = GetTable(srcTid);
 	if (defragment)
 	{
-		for (IndexT i = 0; i < num; i++)
-			this->EraseSwapIndex(table, srcRows[i]);
+		Table& table = GetTable(srcTid);
+		if (moveCallback != nullptr)
+		{
+			for (IndexT i = 0; i < num; i++)
+			{
+				if (moveCallback != nullptr)
+				{
+					IndexT lastIndex = table.numRows - 1;
+					moveCallback(lastIndex, srcRows[i]);
+				}
+				this->EraseSwapIndex(table, srcRows[i]);
+			}
+		}
+		else
+		{
+			for (IndexT i = 0; i < num; i++)
+				this->EraseSwapIndex(table, srcRows[i]);
+		}
 	}
 	else
 	{

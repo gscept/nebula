@@ -136,6 +136,24 @@ GetMaterial(IndexT idx)
 //------------------------------------------------------------------------------
 /**
 */
+void
+SetOnSleepCallback(Util::Delegate<void(ActorId* id, SizeT num)> const& callback)
+{
+	state.onSleepCallback = callback;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SetOnWakeCallback(Util::Delegate<void(ActorId* id, SizeT num)> const& callback)
+{
+	state.onWakeCallback = callback;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 IndexT 
 CreateMaterial(Util::StringAtom name, float staticFriction, float dynamicFriction, float restition, float density)
 {

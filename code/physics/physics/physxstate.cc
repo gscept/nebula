@@ -12,7 +12,6 @@
 
 using namespace physx;
 
-
 namespace Physics
 {
 //------------------------------------------------------------------------------
@@ -90,13 +89,17 @@ PhysxState::DisconnectPVD()
 void
 PhysxState::onWake(physx::PxActor** actors, physx::PxU32 count)
 {
-    this->awakeActors.BeginBulkAdd();
-    for (physx::PxU32 i = 0; i < count; i++)
-    {
-        Ids::Id32 id = (Ids::Id32)(int64_t)actors[i]->userData;
-        this->awakeActors.BulkAdd(id);
-    }
-    this->awakeActors.EndBulkAdd();
+	if (this->onWakeCallback.IsValid())
+	{
+		Util::ArrayStack<ActorId, 128> actorIds;
+		actorIds.Reserve(count);
+		for (physx::PxU32 i = 0; i < count; i++)
+		{
+			Ids::Id32 id = (Ids::Id32)(int64_t)actors[i]->userData;
+			actorIds.Append(id);
+		}
+		this->onWakeCallback(actorIds.Begin(), actorIds.Size());
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -105,11 +108,17 @@ PhysxState::onWake(physx::PxActor** actors, physx::PxU32 count)
 void
 PhysxState::onSleep(physx::PxActor** actors, physx::PxU32 count)
 {
-    for (physx::PxU32 i = 0; i < count; i++)
-    {
-        Ids::Id32 id = (Ids::Id32)(int64_t)actors[i]->userData;
-        this->awakeActors.Erase(id);
-    }
+	if (this->onSleepCallback.IsValid())
+	{
+		Util::ArrayStack<ActorId, 128> actorIds;
+		actorIds.Reserve(count);
+		for (physx::PxU32 i = 0; i < count; i++)
+		{
+			Ids::Id32 id = (Ids::Id32)(int64_t)actors[i]->userData;
+			actorIds.Append(id);
+		}
+		this->onSleepCallback(actorIds.Begin(), actorIds.Size());
+	}
 }
 #pragma warning(pop)
 
@@ -169,18 +178,6 @@ PhysxState::Update(Timing::Time delta)
         }
         state.time += PHYSICS_RATE;
     }
-
-    for (IndexT i = 0; i < this->awakeActors.Size(); i++)
-    {
-        Actor& actor = ActorContext::actors[Ids::Index(this->awakeActors.KeyAtIndex(i))];
-        if (actor.moveCallback.IsValid())
-        {
-            Math::mat4 trans = Px2NebMat(static_cast<PxRigidActor*>(actor.actor)->getGlobalPose());
-            actor.moveCallback(actor.id, trans);
-        }
-    }
-	
-
 }
 PhysxState state;
 }

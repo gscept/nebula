@@ -1,7 +1,21 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	@class	Game::TransformManager
+	Game::TimeManager
+
+    Singleton object which manages the current game time. These are
+    the standard time source objects provided by Application layer:
+
+    TIMESOURCE_SYSTEM   - timing for low level Application layer subsystems
+    TIMESOURCE_GAMEPLAY - timing for the game logic
+    TIMESOURCE_INPUT    - extra time source for input handling
+    
+    Each time source tracks its own time independently from the other
+    time sources, they can also be paused and unpaused independentlty 
+    from each other, and they may also run faster or slower then
+    realtime. 
+
+    You can create custom time sources by using the create interface.
 
 	(C) 2020 Individual contributors, see AUTHORS file
 */
@@ -20,14 +34,19 @@ namespace Game
 
 //------------------------------------------------------------------------------
 /**
+    Used to create a timesource.
 */
 struct TimeSourceCreateInfo
 {
-    uint32_t fourcc;
+    /// time source hash number. Ex. 'ABC1'
+    uint32_t hash = 0;
 };
 
 //------------------------------------------------------------------------------
 /**
+    A generic time source POD struct which is created and deleted by the TimeManager.
+    
+    You can get TimeSources by calling the Game::TimeManager::GetTimeSource function.
 */
 struct TimeSource
 {
@@ -45,17 +64,20 @@ struct TimeSource
 
 //------------------------------------------------------------------------------
 /**
+    @namespace TimeManager
+
+    Interface to the TimeManager singleton.
 */
 namespace TimeManager
 {
-    /// Create the singleton
+    /// create the singleton
     Game::ManagerAPI Create();
 
-    /// register a timesource
-    TimeSource* RegisterTimeSource(TimeSourceCreateInfo const& info);
+    /// create a timesource. The time managers handles the timesources.
+    TimeSource* const CreateTimeSource(TimeSourceCreateInfo const& info);
 
     /// get a time source by hash
-    TimeSource* GetTimeSource(uint32_t TIMESOURCE_HASH);
+    TimeSource* const GetTimeSource(uint32_t TIMESOURCE_HASH);
 
     /// set global time scale. This should be used sparingly. You can usually set individual time sources time factor instead.
     void SetGlobalTimeFactor(float factor);

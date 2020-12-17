@@ -53,15 +53,11 @@ float v = 0.0f;
 
 bool PvdFrame = false;
 
-
-
-
 //------------------------------------------------------------------------------
 /**
 */
-
-
-void Spawn(const Math::mat4& trans, Math::vector linvel, Math::vector angvel)
+void
+Spawn(const Math::mat4& trans, Math::vector linvel, Math::vector angvel)
 {
 
     Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
@@ -75,18 +71,9 @@ void Spawn(const Math::mat4& trans, Math::vector linvel, Math::vector angvel)
                     //ModelContext::Setup(ent, "mdl:system/sphere.n3", "NotA");
     ModelContext::SetTransform(ent, trans);
 
-
     Physics::ActorId actor = Physics::CreateActorInstance(towerResource, trans, true);
 
-
     auto& pactor = Physics::ActorContext::GetActor(actor);
-    pactor.moveCallback = [](Physics::ActorId id, Math::mat4 const& trans)
-    {
-        ModelContext::SetTransform(Graphics::GraphicsEntityId{ (Ids::Id32)Physics::ActorContext::GetActor(id).userData }, trans);
-    };
-        
-        
-        //Util::Delegate<void(Physics::ActorId, Math::mat4 const&)>::FromMethod<SimpleViewerApplication, &SimpleViewerApplication::UpdateTransform>(this);
     pactor.userData = (uint64_t)ent.id;
 
     Physics::ActorContext::SetLinearVelocity(actor, linvel);
@@ -94,7 +81,9 @@ void Spawn(const Math::mat4& trans, Math::vector linvel, Math::vector angvel)
     objects.Append(TestObject{ ent, actor });
 }
 
-
+//------------------------------------------------------------------------------
+/**
+*/
 void
 Shoot(int count)
 {
@@ -227,6 +216,11 @@ void StepFrame()
         {
             Shoot(1);
         }
+    }
+
+    for (auto const& o : objects)
+    {
+        UpdateTransform(o.actor, Physics::ActorContext::GetTransform(o.actor));
     }
 };
 

@@ -383,7 +383,7 @@ GameServer::CreateProcessor(ProcessorCreateInfo const& info)
 
 	if (info.OnFrame != nullptr)
 	{
-        this->onFrameCallbacks.Append({ handle, info.filter, info.OnEndFrame });
+        this->onFrameCallbacks.Append({ handle, info.filter, info.OnFrame });
 #if NEBULA_ENABLE_PROFILING
 		Ptr<Debug::DebugTimer> timer = Debug::DebugTimer::Create();
 		timer->Setup(info.name, "Processors - OnFrame");

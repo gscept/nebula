@@ -7,6 +7,8 @@
 */
 #include "game/featureunit.h"
 
+#define TIMESOURCE_PHYSICS 'PHTS'
+
 //------------------------------------------------------------------------------
 namespace PhysicsFeature
 {

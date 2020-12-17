@@ -78,6 +78,15 @@ nebula_begin_module(application)
 			physicsfeatureunit.h
 			physicsfeatureunit.cc
 		)
+		fips_dir(physicsfeature/managers)
+			fips_files(
+				physicsmanager.h
+				physicsmanager.cc
+			)
+		fips_dir(physicsfeature/properties)
+			nebula_add_nidl(
+				physics.nidl
+			)
 	fips_dir(appgame)
 		fips_files(
 			gameapplication.h

@@ -143,6 +143,7 @@ private:
 inline Category const&
 EntityManager::GetCategory(CategoryId cid) const
 {
+    n_assert(cid != CategoryId::Invalid());
     return this->state.categoryArray[cid.id];
 }
 

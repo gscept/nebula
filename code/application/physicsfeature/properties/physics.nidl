@@ -1,0 +1,9 @@
+{
+    "namespace": "PhysicsFeature",
+    "properties": {
+        "PhysicsResource": {
+            "_type_": "resource",
+            "_default_": "phys:cube.np"
+        }
+    }
+}
