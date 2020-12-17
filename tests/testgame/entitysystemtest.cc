@@ -10,6 +10,7 @@
 #include "basegamefeature/basegamefeatureunit.h"
 #include "testproperties.h"
 #include "basegamefeature/messages/entitymessages.h"
+#include "framesync/framesynctimer.h"
 
 using namespace Game;
 using namespace Math;
@@ -45,6 +46,9 @@ struct ManagedTestProperty
 void
 EntitySystemTest::Run()
 {
+    Ptr<FrameSync::FrameSyncTimer> t = FrameSync::FrameSyncTimer::Create();
+    t->Setup();
+
     BlueprintId const playerBlueprint = Game::GetBlueprintId("Player"_atm);
     BlueprintId const enemyBlueprint = Game::GetBlueprintId("Enemy"_atm);
 
@@ -270,6 +274,8 @@ EntitySystemTest::Run()
     registerOp.pid = Game::GetPropertyId("TestVec4"_atm);
     registerOp.value = nullptr;
     Game::Execute(registerOp);
+
+    t->StopTime();
 }
 
 }

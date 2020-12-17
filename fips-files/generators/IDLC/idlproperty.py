@@ -200,6 +200,14 @@ def WriteEnumJsonSerializers(f, document):
         f.WriteLine("}")
         f.WriteLine("")
 
+        f.WriteLine('template<> void JsonWriter::Add<{namespace}::{name}>({namespace}::{name} const& value, Util::String const& attr)'.format(namespace=namespace, name=enumName))
+        f.WriteLine('{')
+        f.IncreaseIndent()
+        f.WriteLine('this->Add<int>(value, attr);');
+        f.DecreaseIndent()
+        f.WriteLine("}")
+        f.WriteLine("")
+
 #------------------------------------------------------------------------------
 ##
 #
