@@ -12,6 +12,7 @@
 #include "io/console.h"
 #include "managers/entitymanager.h"
 #include "managers/blueprintmanager.h"
+#include "managers/timemanager.h"
 
 namespace BaseGameFeature
 {
@@ -47,6 +48,7 @@ BaseGameFeatureUnit::OnActivate()
     
     this->entityManager = this->AttachManager(EntityManager::Create());
     this->blueprintManager = this->AttachManager(BlueprintManager::Create());
+	this->timeManager = this->AttachManager(TimeManager::Create());
 }
 
 //------------------------------------------------------------------------------
@@ -57,6 +59,7 @@ BaseGameFeatureUnit::OnDeactivate()
 {
     this->RemoveManager(this->entityManager);
     this->RemoveManager(this->blueprintManager);
+	this->RemoveManager(this->timeManager);
     
     FeatureUnit::OnDeactivate();
 }

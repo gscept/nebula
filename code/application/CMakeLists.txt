@@ -47,6 +47,8 @@ nebula_begin_module(application)
 				entitymanager.cc
 				blueprintmanager.h
 				blueprintmanager.cc
+				timemanager.h
+				timemanager.cc
 			)
 		fips_dir(basegamefeature/messages)
 			nebula_add_nidl(

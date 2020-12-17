@@ -53,6 +53,7 @@ public:
 protected:
     Game::ManagerHandle entityManager;
     Game::ManagerHandle blueprintManager;
+    Game::ManagerHandle timeManager;
     Math::bbox worldBox;
 };
 
