@@ -42,6 +42,7 @@ struct TableCreateInfo
     Property descriptions are retrieved from the MemDb::TypeRegistry
 
     @see    memdb/typeregistry.h
+    @todo   This should be changed to SOAs
 */
 struct Table
 {

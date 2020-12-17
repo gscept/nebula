@@ -2,8 +2,9 @@
 //------------------------------------------------------------------------------
 /**
 	@class	Game::Message
+    @deprecated
 
-	Messages the main communications channel between entities.
+	Messages are the main communications channel between entities.
 
 	Messages aren't exclusive to entities however; any method or function can be
 	used as a callback from a message which means you can hook into a message
@@ -334,8 +335,6 @@ Message<MSG, TYPES...>::IsMessageQueueValid(MessageQueueId id)
 {
 	return Instance()->messageQueueIdPool.IsValid(id.id);
 }
-
-
 
 //------------------------------------------------------------------------------
 /**

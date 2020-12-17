@@ -366,6 +366,7 @@ EntityMapping
 GetEntityMapping(Game::Entity entity)
 {
     n_assert(EntityManager::HasInstance());
+	n_assert(IsActive(entity));
     return EntityManager::Singleton->state.entityMap[Ids::Index(entity.id)];
 }
 

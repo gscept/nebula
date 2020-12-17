@@ -404,9 +404,6 @@ EntityManager::AllocateInstance(Entity entity, TemplateId templateId)
     this->state.entityMap[Ids::Index(entity.id)] = mapping;
 
     Category const& cat = this->GetCategory(mapping.category);
-    // Just make sure the first column in always owner!
-    n_assert(this->state.worldDatabase->GetColumnId(cat.instanceTable, this->state.ownerId) == 0);
-
     // Set the owner of this instance
     Game::Entity* owners = (Game::Entity*)this->state.worldDatabase->GetBuffer(cat.instanceTable, 0);
     owners[mapping.instance.id] = entity;

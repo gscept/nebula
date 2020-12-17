@@ -226,7 +226,7 @@ BlueprintManager::ParseTemplate(Util::String const& templatePath)
                         }
 
                         void* propertyValue = templateDatabase->GetValuePointer(templateTid, column, instance);
-                        PropertySerialization::Deserialize(jsonReader, propertyName, propertyValue);
+                        PropertySerialization::Deserialize(jsonReader, descriptor, propertyValue);
                     } while (jsonReader->SetToNextChild());
 
                     jsonReader->SetToParent();

@@ -160,8 +160,8 @@ def WritePropertySourceDefinitions(f, document):
         f.WriteLine('{')
         f.WriteLine('Util::StringAtom const name = "{}"_atm;'.format(prop.propertyName))
         if prop.isFlag is False:
-            f.WriteLine('MemDb::TypeRegistry::Register<{type}>(name, {defval});'.format(type=prop.propertyName, defval=defval))
-            f.WriteLine('Game::PropertySerialization::Register<{type}>(name);'.format(type=prop.propertyName))
+            f.WriteLine('MemDb::PropertyId const pid = MemDb::TypeRegistry::Register<{type}>(name, {defval});'.format(type=prop.propertyName, defval=defval))
+            f.WriteLine('Game::PropertySerialization::Register<{type}>(pid);'.format(type=prop.propertyName))
         else:
             f.WriteLine('MemDb::TypeRegistry::Register(name, 0, nullptr);')
         f.WriteLine('}')
@@ -179,7 +179,7 @@ def WriteEnumJsonSerializers(f, document):
         f.WriteLine('template<> void JsonReader::Get<{namespace}::{name}>({namespace}::{name}& ret, const char* attr)'.format(namespace=namespace, name=enumName))
         f.WriteLine('{')
         f.IncreaseIndent()
-        f.WriteLine("const pjson::value_variant* node = this->GetChild(attr);");
+        f.WriteLine("const pjson::value_variant* node = this->GetChild(attr);")
         f.WriteLine("if (node->is_string())")
         f.WriteLine("{")
         f.IncreaseIndent()
@@ -198,7 +198,7 @@ def WriteEnumJsonSerializers(f, document):
         f.WriteLine('ret = {namespace}::{name}();'.format(namespace=namespace, name=enumName))
         f.DecreaseIndent()
         f.WriteLine("}")
-        f.WriteLine("");
+        f.WriteLine("")
 
 #------------------------------------------------------------------------------
 ##
@@ -213,17 +213,28 @@ def WriteStructJsonSerializers(f, document):
         f.WriteLine('{')
         f.IncreaseIndent()
         f.WriteLine('ret = {namespace}::{name}();'.format(namespace=namespace, name=prop.propertyName))
-        f.WriteLine("const pjson::value_variant* node = this->GetChild(attr);");
+        f.WriteLine("const pjson::value_variant* node = this->GetChild(attr);")
         f.WriteLine("if (node->is_object())")
         f.WriteLine("{")
         f.IncreaseIndent()
         for var in prop.variables:
-            f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=var.type));
+            f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=var.type))
         f.DecreaseIndent()
         f.WriteLine("}")
         f.DecreaseIndent()
         f.WriteLine("}")
-        f.WriteLine("");
+        f.WriteLine("")
+
+        f.WriteLine('template<> void JsonWriter::Add<{namespace}::{name}>({namespace}::{name} const& value, Util::String const& attr)'.format(namespace=namespace, name=prop.propertyName))
+        f.WriteLine('{')
+        f.IncreaseIndent()
+        f.WriteLine("this->BeginObject(attr.AsCharPtr());")
+        for var in prop.variables:
+            f.WriteLine('this->Add<{type}>(value.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=var.type))
+        f.WriteLine("this->End();")
+        f.DecreaseIndent()
+        f.WriteLine("}")
+        f.WriteLine("")
 
 
 #------------------------------------------------------------------------------
