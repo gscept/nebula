@@ -120,13 +120,12 @@ void PhysicsManager::InitCreateActorProcessor()
 */
 void PhysicsManager::InitDestroyActorProcessor()
 {
-    /*
     Game::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = this->pids.modelEntityData;
+    filterInfo.inclusive[0] = this->pids.physicsActor;
     filterInfo.access[0] = Game::AccessMode::READ;
     filterInfo.numInclusive = 1;
 
-    filterInfo.exclusive[0] = Game::GetPropertyId("ModelResource");
+    filterInfo.exclusive[0] = Game::GetPropertyId("PhysicsResource");
     filterInfo.numExclusive = 1;
 
     Game::Filter filter = Game::CreateFilter(filterInfo);
@@ -134,30 +133,23 @@ void PhysicsManager::InitDestroyActorProcessor()
     Game::ProcessorCreateInfo processorInfo;
     processorInfo.async = false;
     processorInfo.filter = filter;
-    processorInfo.name = "PhysicsManager.DestroyModels"_atm;
+    processorInfo.name = "PhysicsManager.DestroyActors"_atm;
     processorInfo.OnBeginFrame = [](Game::Dataset data)
     {
         for (int v = 0; v < data.numViews; v++)
         {
             Game::Dataset::CategoryTableView const& view = data.views[v];
-            ModelEntityData const* const modelEntityDatas = (ModelEntityData*)view.buffers[0];
+            Physics::ActorId* const actors = (Physics::ActorId*)view.buffers[0];
 
             for (IndexT i = 0; i < view.numInstances; ++i)
             {
-                ModelEntityData const& modelEntityData = modelEntityDatas[i];
-
-                // FIXME: Removing graphics entities is broken!
-                Models::ModelContext::SetTransform(modelEntityData.gid, Math::translation(0, -10000000.0f, 0));
-
-                //Visibility::ObservableContext::DeregisterEntity(modelEntityData.gid);
-                //Models::ModelContext::DeregisterEntity(modelEntityData.gid);
-                //Graphics::DestroyEntity(modelEntityData.gid);
+                Physics::ActorId const& actorid = actors[i];
+				Physics::DestroyActorInstance(actorid);
             }
         }
     };
 
     Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
-    */
 }
 
 //------------------------------------------------------------------------------

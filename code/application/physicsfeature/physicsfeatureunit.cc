@@ -79,10 +79,6 @@ PhysicsFeatureUnit::OnActivate()
 				deregisterOp.pid = staticPid;
 				Game::AddOp(buffer, deregisterOp);
 			}
-			else
-			{
-				n_printf("foobar \n");
-			}
 		}
 		Game::Dispatch(buffer);
 	});

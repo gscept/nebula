@@ -14,7 +14,6 @@
 #define PHYSX_MEMORY_ALLOCATION_DEBUG false
 #define PHYSX_THREADS 2
 
-
 using namespace physx;
 using namespace Physics;
 
@@ -42,9 +41,6 @@ PxFilterFlags Simulationfilter(PxFilterObjectAttributes	attributes0,
 	}    
 	return filterFlags;
 }
-
-
-
 
 namespace Physics
 {
@@ -216,7 +212,5 @@ DestroyActorInstance(Physics::ActorId id)
 {
     Physics::actorPool->DiscardActorInstance(id);
 }
-
-
 
 }
