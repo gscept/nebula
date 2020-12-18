@@ -1,0 +1,4 @@
+*.h linguist-language=C++
+*.fx linguist-language=GLSL
+*.fxh linguist-language=GLSL
+*.nidl linguist-language=jsonc
