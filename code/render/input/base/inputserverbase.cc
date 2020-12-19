@@ -26,7 +26,7 @@ InputServerBase::InputServerBase() :
     isOpen(false),
     inBeginFrame(false),
     isQuitRequested(false),
-	hasFocus(false),
+    hasFocus(false),
     inputHandlersLockCount(0),
     maxNumLocalPlayers(4),
     defaultGamePad(GamePad::GetMaxNumControllers()),
@@ -69,7 +69,7 @@ InputServerBase::Open()
     n_assert(!this->isOpen);
     n_assert(!this->inBeginFrame);
     this->isOpen = true;
-	this->hasFocus = true; // Assume we have focus when opening
+    this->hasFocus = true; // Assume we have focus when opening
 }
 
 //------------------------------------------------------------------------------
@@ -187,8 +187,8 @@ InputServerBase::BeginFrame()
     }
     this->inputHandlersLockCount--;
 
-	// update events
-	DisplayDevice::Instance()->ProcessWindowMessages();
+    // update events
+    DisplayDevice::Instance()->ProcessWindowMessages();
 }
 
 //------------------------------------------------------------------------------
@@ -254,8 +254,8 @@ InputServerBase::PutEvent(const InputEvent& inputEvent)
             case InputEvent::MouseWheelBackward:
                 this->mouseCaptureHandler->OnEvent(inputEvent);
                 return;
-			default:
-				break;
+            default:
+                break;
         }
     }
 
@@ -281,21 +281,21 @@ InputServerBase::PutEvent(const InputEvent& inputEvent)
                 this->keyboardCaptureHandler->OnEvent(inputEvent);
                 return;
 
-			default:
-				break;
+            default:
+                break;
         }
     }
 
-	switch (inputEvent.GetType())
-	{
-		case InputEvent::AppLoseFocus:
-			this->hasFocus = false;
-			break;
+    switch (inputEvent.GetType())
+    {
+        case InputEvent::AppLoseFocus:
+            this->hasFocus = false;
+            break;
 
-		case InputEvent::AppObtainFocus:
-			this->hasFocus = true;
-			break;
-	}
+        case InputEvent::AppObtainFocus:
+            this->hasFocus = true;
+            break;
+    }
 
     // normal input event handling
     this->inputHandlersLockCount++;
@@ -306,7 +306,7 @@ InputServerBase::PutEvent(const InputEvent& inputEvent)
         if (this->inputHandlers[i].Value()->OnEvent(inputEvent))
         {
             handled = true;
-			break;
+            break;
         }
     }
     //n_assert(handled);

@@ -81,7 +81,7 @@ LinuxThread::Start()
     pthread_attr_init(&attr);
 
     // set priority
-	#if !__NACL__
+    #if !__NACL__
     /*
     NOTE: don't mess around with thread priorities (at least for now)
 
@@ -103,12 +103,12 @@ LinuxThread::Start()
     }
 
     // start thread
-	#if __ANDROID__
-		// on Android, native threads must be registered with the Java runtime
-		NVThreadSpawnJNIThread(&this->thread, &attr, ThreadProc, (void*)this);
-	#else
-		pthread_create(&this->thread, &attr, ThreadProc, (void*)this);
-	#endif
+    #if __ANDROID__
+        // on Android, native threads must be registered with the Java runtime
+        NVThreadSpawnJNIThread(&this->thread, &attr, ThreadProc, (void*)this);
+    #else
+        pthread_create(&this->thread, &attr, ThreadProc, (void*)this);
+    #endif
     pthread_attr_destroy(&attr);
 
     // FIXME: on NACL, use pthread_setschedprio() to set the
@@ -296,7 +296,7 @@ LinuxThread::SetMyThreadName(const String& n)
     #if __OSX__
     // OSX is BSD style UNIX and has pthread_np functions
     pthread_setname_np(n.AsCharPtr());
-	#elif __NACL__
+    #elif __NACL__
     // FIXME: can't set thread name in NACL?
     #else
     // Linux is a bit more complicated...
@@ -315,9 +315,9 @@ LinuxThread::SetMyThreadName(const String& n)
 const char *
 LinuxThread::GetMyThreadName()
 {
-	#if __OSX__
+    #if __OSX__
     // OSX is BSD style UNIX and has pthread_np functions
- 	return "<FIXME>";   
+    return "<FIXME>";   
     #else
     static char buffer[16];
     prctl(PR_GET_NAME, buffer,0,0,0,0);
@@ -343,10 +343,10 @@ LinuxThread::GetMyThreadPriority()
 void
 LinuxThread::SetThreadAffinity(uint mask)
 {    
-	CPU_SET(mask, &this->affinity);
+    CPU_SET(mask, &this->affinity);
     if(this->thread != 0)
     {
-	    pthread_setaffinity_np(this->thread, sizeof(cpu_set_t), &this->affinity);
+        pthread_setaffinity_np(this->thread, sizeof(cpu_set_t), &this->affinity);
     }
 }
 
@@ -356,11 +356,11 @@ LinuxThread::SetThreadAffinity(uint mask)
 uint
 LinuxThread::GetThreadAffinity()
 {    
-	cpu_set_t cpuset;
+    cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
     if(this->thread != 0)
     {
-	    pthread_getaffinity_np(this->thread, sizeof(cpu_set_t), &cpuset);
+        pthread_getaffinity_np(this->thread, sizeof(cpu_set_t), &cpuset);
     }
     if(CPU_COUNT(&cpuset) == 1)
     {

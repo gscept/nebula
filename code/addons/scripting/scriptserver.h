@@ -45,7 +45,7 @@ public:
     virtual bool Eval(const Util::String& str) { return false; }
     /// evaluate script in file
     virtual bool EvalFile(const IO::URI& file) { return false; }
-protected:	
+protected:  
     bool isOpen;
     bool debug;
 };

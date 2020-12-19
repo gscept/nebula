@@ -164,7 +164,7 @@ Writer::Close()
     table->UnbindValueTable();
 
     // finally release the value table and return
-	this->valueTable = nullptr;
+    this->valueTable = nullptr;
     this->database = nullptr;
     this->isOpen = false;
 }

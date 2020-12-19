@@ -8,24 +8,24 @@
 
 class StackWalkerToString: public StackWalker
 {
-public:	
+public: 
 
-	StackWalkerToString(int options) : StackWalker(options) {};
-	const Util::Array<Util::String>& GetTrace()
-	{
-		return this->trace;
-	}
+    StackWalkerToString(int options) : StackWalker(options) {};
+    const Util::Array<Util::String>& GetTrace()
+    {
+        return this->trace;
+    }
 
 protected:
-	virtual void OnOutput(LPCSTR szText)
-	{
-		this->trace.Append(szText);		
-	}
-	virtual void OnSymInit(LPCSTR szSearchPath, DWORD symOptions, LPCSTR szUserName){}
-	virtual void OnLoadModule(LPCSTR img, LPCSTR mod, DWORD64 baseAddr, DWORD size, DWORD result, LPCSTR symType, LPCSTR pdbName, ULONGLONG fileVersion){}
-	//virtual void OnCallstackEntry(CallstackEntryType eType, CallstackEntry &entry);
-	virtual void OnDbgHelpErr(LPCSTR szFuncName, DWORD gle, DWORD64 addr){}
-	Util::Array<Util::String> trace;
+    virtual void OnOutput(LPCSTR szText)
+    {
+        this->trace.Append(szText);     
+    }
+    virtual void OnSymInit(LPCSTR szSearchPath, DWORD symOptions, LPCSTR szUserName){}
+    virtual void OnLoadModule(LPCSTR img, LPCSTR mod, DWORD64 baseAddr, DWORD size, DWORD result, LPCSTR symType, LPCSTR pdbName, ULONGLONG fileVersion){}
+    //virtual void OnCallstackEntry(CallstackEntryType eType, CallstackEntry &entry);
+    virtual void OnDbgHelpErr(LPCSTR szFuncName, DWORD gle, DWORD64 addr){}
+    Util::Array<Util::String> trace;
 };
 
 
@@ -35,9 +35,9 @@ protected:
 const Util::Array<Util::String>
 Win32::Win32StackTrace::GenerateStackTrace()
 {
-	StackWalkerToString sw(StackWalker::RetrieveVerbose & StackWalker::SymBuildPath);
-	sw.ShowCallstack();
-	return sw.GetTrace();
+    StackWalkerToString sw(StackWalker::RetrieveVerbose & StackWalker::SymBuildPath);
+    sw.ShowCallstack();
+    return sw.GetTrace();
 }
 
 //------------------------------------------------------------------------------
@@ -46,9 +46,9 @@ Win32::Win32StackTrace::GenerateStackTrace()
 void
 Win32::Win32StackTrace::PrintStackTrace(int skiprows)
 {
-	const Util::Array<Util::String>& trace = Win32::Win32StackTrace::GenerateStackTrace();	
-	for (int i = Math::n_max(0,skiprows-1); i < trace.Size(); i++)
-	{
-		n_printf(trace[i].AsCharPtr());
-	}
+    const Util::Array<Util::String>& trace = Win32::Win32StackTrace::GenerateStackTrace();  
+    for (int i = Math::n_max(0,skiprows-1); i < trace.Size(); i++)
+    {
+        n_printf(trace[i].AsCharPtr());
+    }
 }

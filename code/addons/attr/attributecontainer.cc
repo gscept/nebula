@@ -117,8 +117,8 @@ void
 AttributeContainer::RemoveAttr(const AttrId& attrId)
 {
     IndexT id = this->attrs.FindIndex(attrId);
-	n_assert(id != InvalidIndex);
-	this->attrs.EraseAtIndex(id);
+    n_assert(id != InvalidIndex);
+    this->attrs.EraseAtIndex(id);
 }
 
 

@@ -247,9 +247,9 @@ in Write or ReadWrite mode for this.
 void
 XmlWriter::SetTransform44(const String& name, const transform44& value)
 {
-	String s;
-	s.SetTransform44(value);
-	this->SetString(name, s);
+    String s;
+    s.SetTransform44(value);
+    this->SetString(name, s);
 }
 
 //------------------------------------------------------------------------------

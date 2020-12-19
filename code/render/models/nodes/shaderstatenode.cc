@@ -20,8 +20,8 @@ namespace Models
 */
 ShaderStateNode::ShaderStateNode()
 {
-	this->type = ShaderStateNodeType;
-	this->bits = HasTransformBit | HasStateBit;
+    this->type = ShaderStateNodeType;
+    this->bits = HasTransformBit | HasStateBit;
 }
 
 //------------------------------------------------------------------------------
@@ -29,7 +29,7 @@ ShaderStateNode::ShaderStateNode()
 */
 ShaderStateNode::~ShaderStateNode()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -38,7 +38,7 @@ ShaderStateNode::~ShaderStateNode()
 void 
 ShaderStateNode::SetMaxLOD(const float lod)
 {
-	Materials::surfacePool->SetMaxLOD(this->surRes, lod);
+    Materials::surfacePool->SetMaxLOD(this->surRes, lod);
 }
 
 //------------------------------------------------------------------------------
@@ -47,76 +47,76 @@ ShaderStateNode::SetMaxLOD(const float lod)
 bool
 ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate)
 {
-	bool retval = true;
-	if (FourCC('MNMT') == fourcc)
-	{
-		// this isn't used, it's been deprecated, the 'MATE' tag is the relevant one
-		Util::String materialName = reader->ReadString();
-	}
-	else if (FourCC('MATE') == fourcc)
-	{
-		this->materialName = reader->ReadString() + NEBULA_SURFACE_EXTENSION;
-	}
-	else if (FourCC('STXT') == fourcc)
-	{
-		// ShaderTexture
-		StringAtom paramName = reader->ReadString();
-		StringAtom paramValue = reader->ReadString();
-		String fullTexResId = String(paramValue.AsString() + NEBULA_TEXTURE_EXTENSION);
-	}
-	else if (FourCC('SINT') == fourcc)
-	{
-		// ShaderInt
-		StringAtom paramName = reader->ReadString();
-		int paramValue = reader->ReadInt();
-	}
-	else if (FourCC('SFLT') == fourcc)
-	{
-		// ShaderFloat
-		StringAtom paramName = reader->ReadString();
-		float paramValue = reader->ReadFloat();
-	}
-	else if (FourCC('SBOO') == fourcc)
-	{
-		// ShaderBool
-		StringAtom paramName = reader->ReadString();
-		bool paramValue = reader->ReadBool();
-	}
-	else if (FourCC('SFV2') == fourcc)
-	{
-		// ShaderVector
-		StringAtom paramName = reader->ReadString();
-		vec2 paramValue = reader->ReadFloat2();
-	}
-	else if (FourCC('SFV4') == fourcc)
-	{
-		// ShaderVector
-		StringAtom paramName = reader->ReadString();
-		vec4 paramValue = reader->ReadVec4();
-	}
-	else if (FourCC('STUS') == fourcc)
-	{
-		// @todo: implement universal indexed shader parameters!
-		// shaderparameter used by multilayered nodes
-		int index = reader->ReadInt();
-		vec4 paramValue = reader->ReadVec4();
-		String paramName("MLPUVStretch");
-		paramName.AppendInt(index);
-	}
-	else if (FourCC('SSPI') == fourcc)
-	{
-		// @todo: implement universal indexed shader parameters!
-		// shaderparameter used by multilayered nodes
-		int index = reader->ReadInt();
-		vec4 paramValue = reader->ReadVec4();
-		String paramName("MLPSpecIntensity");
-		paramName.AppendInt(index);
-	}
-	else
-	{
-		retval = TransformNode::Load(fourcc, tag, reader, immediate);
-	}
-	return retval;
+    bool retval = true;
+    if (FourCC('MNMT') == fourcc)
+    {
+        // this isn't used, it's been deprecated, the 'MATE' tag is the relevant one
+        Util::String materialName = reader->ReadString();
+    }
+    else if (FourCC('MATE') == fourcc)
+    {
+        this->materialName = reader->ReadString() + NEBULA_SURFACE_EXTENSION;
+    }
+    else if (FourCC('STXT') == fourcc)
+    {
+        // ShaderTexture
+        StringAtom paramName = reader->ReadString();
+        StringAtom paramValue = reader->ReadString();
+        String fullTexResId = String(paramValue.AsString() + NEBULA_TEXTURE_EXTENSION);
+    }
+    else if (FourCC('SINT') == fourcc)
+    {
+        // ShaderInt
+        StringAtom paramName = reader->ReadString();
+        int paramValue = reader->ReadInt();
+    }
+    else if (FourCC('SFLT') == fourcc)
+    {
+        // ShaderFloat
+        StringAtom paramName = reader->ReadString();
+        float paramValue = reader->ReadFloat();
+    }
+    else if (FourCC('SBOO') == fourcc)
+    {
+        // ShaderBool
+        StringAtom paramName = reader->ReadString();
+        bool paramValue = reader->ReadBool();
+    }
+    else if (FourCC('SFV2') == fourcc)
+    {
+        // ShaderVector
+        StringAtom paramName = reader->ReadString();
+        vec2 paramValue = reader->ReadFloat2();
+    }
+    else if (FourCC('SFV4') == fourcc)
+    {
+        // ShaderVector
+        StringAtom paramName = reader->ReadString();
+        vec4 paramValue = reader->ReadVec4();
+    }
+    else if (FourCC('STUS') == fourcc)
+    {
+        // @todo: implement universal indexed shader parameters!
+        // shaderparameter used by multilayered nodes
+        int index = reader->ReadInt();
+        vec4 paramValue = reader->ReadVec4();
+        String paramName("MLPUVStretch");
+        paramName.AppendInt(index);
+    }
+    else if (FourCC('SSPI') == fourcc)
+    {
+        // @todo: implement universal indexed shader parameters!
+        // shaderparameter used by multilayered nodes
+        int index = reader->ReadInt();
+        vec4 paramValue = reader->ReadVec4();
+        String paramName("MLPSpecIntensity");
+        paramName.AppendInt(index);
+    }
+    else
+    {
+        retval = TransformNode::Load(fourcc, tag, reader, immediate);
+    }
+    return retval;
 }
 
 //------------------------------------------------------------------------------
@@ -125,11 +125,11 @@ ShaderStateNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, c
 void 
 ShaderStateNode::Unload()
 {
-	// free material
-	Resources::DiscardResource(this->surRes);
+    // free material
+    Resources::DiscardResource(this->surRes);
 
-	// destroy table and constant buffer
-	CoreGraphics::DestroyResourceTable(this->resourceTable);
+    // destroy table and constant buffer
+    CoreGraphics::DestroyResourceTable(this->resourceTable);
 }
 
 //------------------------------------------------------------------------------
@@ -138,21 +138,21 @@ ShaderStateNode::Unload()
 void
 ShaderStateNode::OnFinishedLoading()
 {
-	TransformNode::OnFinishedLoading();
+    TransformNode::OnFinishedLoading();
 
-	// load surface immediately, however it will load textures async
-	this->surRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
-	this->materialType = Materials::surfacePool->GetType(this->surRes);
-	this->surface = Materials::surfacePool->GetId(this->surRes);
-	CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
-	CoreGraphics::BufferId cbo = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer);
-	this->objectTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "ObjectBlock");
-	this->instancingTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "InstancingBlock");
-	this->skinningTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "JointBlock");
+    // load surface immediately, however it will load textures async
+    this->surRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
+    this->materialType = Materials::surfacePool->GetType(this->surRes);
+    this->surface = Materials::surfacePool->GetId(this->surRes);
+    CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
+    CoreGraphics::BufferId cbo = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer);
+    this->objectTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "ObjectBlock");
+    this->instancingTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "InstancingBlock");
+    this->skinningTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "JointBlock");
 
-	this->resourceTable = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP);
-	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->objectTransformsIndex, 0, false, true, sizeof(ObjectsShared::ObjectBlock), 0 });
-	CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
+    this->resourceTable = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP);
+    CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->objectTransformsIndex, 0, false, true, sizeof(ObjectsShared::ObjectBlock), 0 });
+    CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
 }
 
 //------------------------------------------------------------------------------
@@ -161,15 +161,15 @@ ShaderStateNode::OnFinishedLoading()
 SizeT
 ShaderStateNode::Instance::GetDrawPacketSize() const
 {
-	// the size of the data field should be multiplied by the amount of resource tables we use
-	return sizeof(DrawPacket)								// header size
-		+ sizeof(Materials::SurfaceInstanceId)				// surface instance
-		+ this->offsets.Size() * sizeof(uint32)				// offsets are just one big list, with the numOffsets denoting how many offsets per table should be consumed
-		+ sizeof(SizeT)										// number of resource tables
-		+ sizeof(CoreGraphics::ResourceTableId) * NumTables // tables
-		+ sizeof(uint32) * NumTables						// number of offset lists
-		+ sizeof(IndexT) * NumTables						// one slot for resource tables (NEBULA_DYNAMIC_OFFSET_GROUP)
-		;
+    // the size of the data field should be multiplied by the amount of resource tables we use
+    return sizeof(DrawPacket)                               // header size
+        + sizeof(Materials::SurfaceInstanceId)              // surface instance
+        + this->offsets.Size() * sizeof(uint32)             // offsets are just one big list, with the numOffsets denoting how many offsets per table should be consumed
+        + sizeof(SizeT)                                     // number of resource tables
+        + sizeof(CoreGraphics::ResourceTableId) * NumTables // tables
+        + sizeof(uint32) * NumTables                        // number of offset lists
+        + sizeof(IndexT) * NumTables                        // one slot for resource tables (NEBULA_DYNAMIC_OFFSET_GROUP)
+        ;
 }
 
 //------------------------------------------------------------------------------
@@ -178,37 +178,37 @@ ShaderStateNode::Instance::GetDrawPacketSize() const
 Models::ModelNode::DrawPacket*
 ShaderStateNode::Instance::UpdateDrawPacket(void* mem)
 {
-	char* buf = (char*) mem;
+    char* buf = (char*) mem;
 
-	// first write header
-	Models::ModelNode::DrawPacket* ret = (Models::ModelNode::DrawPacket*)buf;
-	buf += sizeof(Models::ModelNode::DrawPacket);
-	ret->node = this;
+    // first write header
+    Models::ModelNode::DrawPacket* ret = (Models::ModelNode::DrawPacket*)buf;
+    buf += sizeof(Models::ModelNode::DrawPacket);
+    ret->node = this;
 
-	// setup struct offsets
-	ret->surfaceInstance = (Materials::SurfaceInstanceId*)buf;
-	buf += sizeof(Materials::SurfaceInstanceId);
-	ret->offsets = (uint32*)buf;
-	buf += sizeof(uint32) * this->offsets.Size();
-	ret->numTables = (SizeT*) buf;
-	buf += sizeof(SizeT);
-	ret->tables = (CoreGraphics::ResourceTableId*)buf;
-	buf += sizeof(CoreGraphics::ResourceTableId) * NumTables;
-	ret->numOffsets = (uint32*) buf;
-	buf += sizeof(uint32) * NumTables;
-	ret->slots = (IndexT*) buf;
-	buf += sizeof(IndexT) * NumTables;
+    // setup struct offsets
+    ret->surfaceInstance = (Materials::SurfaceInstanceId*)buf;
+    buf += sizeof(Materials::SurfaceInstanceId);
+    ret->offsets = (uint32*)buf;
+    buf += sizeof(uint32) * this->offsets.Size();
+    ret->numTables = (SizeT*) buf;
+    buf += sizeof(SizeT);
+    ret->tables = (CoreGraphics::ResourceTableId*)buf;
+    buf += sizeof(CoreGraphics::ResourceTableId) * NumTables;
+    ret->numOffsets = (uint32*) buf;
+    buf += sizeof(uint32) * NumTables;
+    ret->slots = (IndexT*) buf;
+    buf += sizeof(IndexT) * NumTables;
 
-	*ret->surfaceInstance = this->surfaceInstance;
-	*ret->numTables = NumTables;
+    *ret->surfaceInstance = this->surfaceInstance;
+    *ret->numTables = NumTables;
 
-	ret->offsets = this->offsets.Begin();
-	ret->numOffsets[0] = this->offsets.Size();
+    ret->offsets = this->offsets.Begin();
+    ret->numOffsets[0] = this->offsets.Size();
 
-	ret->slots[0] = NEBULA_DYNAMIC_OFFSET_GROUP;
-	ret->tables[0] = this->resourceTable;
+    ret->slots[0] = NEBULA_DYNAMIC_OFFSET_GROUP;
+    ret->tables[0] = this->resourceTable;
 
-	return ret;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -217,17 +217,17 @@ ShaderStateNode::Instance::UpdateDrawPacket(void* mem)
 void
 ShaderStateNode::Instance::Update()
 {
-	if (!this->dirty)
-		return;
+    if (!this->dirty)
+        return;
 
-	ObjectsShared::ObjectBlock block;
-	this->modelTransform.store(block.Model);
-	this->invModelTransform.store(block.InvModel);
-	block.DitherFactor = this->lodFactor;
+    ObjectsShared::ObjectBlock block;
+    this->modelTransform.store(block.Model);
+    this->invModelTransform.store(block.InvModel);
+    block.DitherFactor = this->lodFactor;
 
-	uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
-	this->offsets[this->objectTransformsIndex] = offset;
-	this->dirty = false;
+    uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
+    this->offsets[this->objectTransformsIndex] = offset;
+    this->dirty = false;
 }
 
 //------------------------------------------------------------------------------
@@ -236,7 +236,7 @@ ShaderStateNode::Instance::Update()
 void 
 ShaderStateNode::Instance::SetDirty(bool b)
 {
-	this->dirty = b;
+    this->dirty = b;
 }
 
 //------------------------------------------------------------------------------
@@ -245,7 +245,7 @@ ShaderStateNode::Instance::SetDirty(bool b)
 void
 ShaderStateNode::Instance::Draw(const SizeT numInstances, const IndexT baseInstance, Models::ModelNode::DrawPacket* packet)
 {
-	CoreGraphics::DrawInstanced(numInstances, baseInstance);
+    CoreGraphics::DrawInstanced(numInstances, baseInstance);
 }
 
 } // namespace Models

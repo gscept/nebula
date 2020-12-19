@@ -15,14 +15,14 @@ namespace Lighting
 {
 class LightServer : public Lighting::VkLightServer
 {
-	__DeclareClass(LightServer);
-	__DeclareSingleton(LightServer);
+    __DeclareClass(LightServer);
+    __DeclareSingleton(LightServer);
 public:
-	/// constructor
-	LightServer();
-	/// destructor
-	virtual ~LightServer();
-};	
+    /// constructor
+    LightServer();
+    /// destructor
+    virtual ~LightServer();
+};  
 } // namespace Lighting
 #else
 #error "LightServer class not implemented on this platform!"

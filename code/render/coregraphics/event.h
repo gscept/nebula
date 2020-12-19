@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	An event is a signal and wait type object which is used for in-queue GPU sync.
+    An event is a signal and wait type object which is used for in-queue GPU sync.
 
-	(C) 2017-2020 Individual contributors, see AUTHORS file
+    (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
@@ -24,11 +24,11 @@ ID_24_8_TYPE(EventId);
 
 struct EventCreateInfo
 {
-	Util::StringAtom name;
-	bool createSignaled : 1;
-	Util::Array<TextureBarrier> textures;
-	Util::Array<BufferBarrier> rwBuffers;
-	Util::Array<ExecutionBarrier> barriers;
+    Util::StringAtom name;
+    bool createSignaled : 1;
+    Util::Array<TextureBarrier> textures;
+    Util::Array<BufferBarrier> rwBuffers;
+    Util::Array<ExecutionBarrier> barriers;
 };
 
 /// create new event
@@ -42,17 +42,17 @@ void EventSignal(const EventId id, const CoreGraphics::QueueType queue, const Co
 void EventSignal(const EventId id, const CoreGraphics::CommandBufferId buf, const CoreGraphics::BarrierStage stage);
 /// insert event in queue to wait for
 void EventWait(
-	const EventId id, 
-	const CoreGraphics::QueueType queue,
-	const CoreGraphics::BarrierStage waitStage,
-	const CoreGraphics::BarrierStage signalStage
-	);
+    const EventId id, 
+    const CoreGraphics::QueueType queue,
+    const CoreGraphics::BarrierStage waitStage,
+    const CoreGraphics::BarrierStage signalStage
+    );
 /// insert event in command buffer to wait for
 void EventWait(
-	const EventId id,
-	const CoreGraphics::CommandBufferId buf,
-	const CoreGraphics::BarrierStage waitStage,
-	const CoreGraphics::BarrierStage signalStage
+    const EventId id,
+    const CoreGraphics::CommandBufferId buf,
+    const CoreGraphics::BarrierStage waitStage,
+    const CoreGraphics::BarrierStage signalStage
 );
 /// insert reset event
 void EventReset(const EventId id, const CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage stage);

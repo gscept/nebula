@@ -17,8 +17,8 @@ namespace Fibers
 /**
 */
 Fiber::Fiber()
-	: handle(nullptr)
-	, context(nullptr)
+    : handle(nullptr)
+    , context(nullptr)
 {
 }
 
@@ -26,8 +26,8 @@ Fiber::Fiber()
 /**
 */
 Fiber::Fiber(std::nullptr_t)
-	: handle(nullptr)
-	, context(nullptr)
+    : handle(nullptr)
+    , context(nullptr)
 {
 }
 
@@ -35,11 +35,11 @@ Fiber::Fiber(std::nullptr_t)
 /**
 */
 Fiber::Fiber(void(*function)(void*), void* context)
-	: handle(nullptr)
-	, context(nullptr)
+    : handle(nullptr)
+    , context(nullptr)
 {
-	this->handle = CreateFiber(0, { function }, context);
-	this->context = context;
+    this->handle = CreateFiber(0, { function }, context);
+    this->context = context;
 }
 
 //------------------------------------------------------------------------------
@@ -47,10 +47,10 @@ Fiber::Fiber(void(*function)(void*), void* context)
 */
 Fiber::Fiber(const Fiber& rhs)
 {
-	if (this->handle != nullptr)
-		DeleteFiber(this->handle);
-	this->handle = rhs.handle;
-	this->context = rhs.context;
+    if (this->handle != nullptr)
+        DeleteFiber(this->handle);
+    this->handle = rhs.handle;
+    this->context = rhs.context;
 }
 
 //------------------------------------------------------------------------------
@@ -58,10 +58,10 @@ Fiber::Fiber(const Fiber& rhs)
 */
 Fiber::~Fiber()
 {
-	if (this->handle != nullptr)
-		DeleteFiber(this->handle);
-	this->handle = nullptr;
-	this->context = nullptr;
+    if (this->handle != nullptr)
+        DeleteFiber(this->handle);
+    this->handle = nullptr;
+    this->context = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -70,10 +70,10 @@ Fiber::~Fiber()
 void
 Fiber::operator=(const Fiber& rhs)
 {
-	if (this->handle != nullptr)
-		DeleteFiber(this->handle);
-	this->handle = rhs.handle;
-	this->context = rhs.context;
+    if (this->handle != nullptr)
+        DeleteFiber(this->handle);
+    this->handle = rhs.handle;
+    this->context = rhs.context;
 }
 
 //------------------------------------------------------------------------------
@@ -82,8 +82,8 @@ Fiber::operator=(const Fiber& rhs)
 void
 Fiber::ThreadToFiber(Fiber& fiber)
 {
-	fiber.handle = ConvertThreadToFiber(nullptr);
-	fiber.context = nullptr;
+    fiber.handle = ConvertThreadToFiber(nullptr);
+    fiber.context = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -92,9 +92,9 @@ Fiber::ThreadToFiber(Fiber& fiber)
 void
 Fiber::FiberToThread(Fiber& fiber)
 {
-	n_assert(ConvertFiberToThread());
-	fiber.handle = nullptr;
-	fiber.context = nullptr;
+    n_assert(ConvertFiberToThread());
+    fiber.handle = nullptr;
+    fiber.context = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -103,8 +103,8 @@ Fiber::FiberToThread(Fiber& fiber)
 void
 Fiber::SwitchToFiber(Fiber& CurrentFiber)
 {
-	n_assert(this->handle != nullptr);
-	::SwitchToFiber(this->handle);
+    n_assert(this->handle != nullptr);
+    ::SwitchToFiber(this->handle);
 }
 
 }

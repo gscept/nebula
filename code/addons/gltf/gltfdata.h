@@ -304,7 +304,7 @@ struct Primitive : GltfBase
         Tangent = 2,
         TexCoord0 = 3, TexCoord1 = 4, TexCoord2 = 5, TexCoord3 = 6, TexCoord4 = 7, TexCoord5 = 8, TexCoord6 = 9, TexCoord7 = 10,
         Color0 = 11, Color1 = 12, Color2 = 13, Color3 = 14, Color4 = 15, Color5 = 16, Color6 = 17, Color7 = 18,        
-        Joints0	= 19, Joints1 = 20, Joints2 = 21, Joints3 = 22, Joints4 = 23, Joints5 = 24, Joints6 = 25, Joints7 = 26,
+        Joints0 = 19, Joints1 = 20, Joints2 = 21, Joints3 = 22, Joints4 = 23, Joints5 = 24, Joints6 = 25, Joints7 = 26,
         Weights0 = 27, Weights1 = 28, Weights2 = 29, Weights3 = 30, Weights4 = 31, Weights5 = 32, Weights6 = 33, Weights7 = 34
     };
     int32_t indices{ -1 };

@@ -56,8 +56,8 @@ public:
     bool IsStoppingOrExpired(Timing::Tick time) const;
     /// return true when the job has expired
     bool IsExpired(Timing::Tick time) const;
-	/// returns true if the clip is playing, but has been paused
-	bool IsPaused() const;
+    /// returns true if the clip is playing, but has been paused
+    bool IsPaused() const;
 
     /// set track index, defines blend priority and relationship to other jobs on same track
     void SetTrackIndex(IndexT trackIndex);
@@ -90,10 +90,10 @@ public:
     void SetFadeOutTime(Timing::Tick fadeOutTime);
     /// get the fade-out time of the anim job
     Timing::Tick GetFadeOutTime() const;
-	/// jump to a specific time in the job
-	void SetTime(Timing::Tick time);
-	/// get current time of anim job
-	Timing::Tick GetTime() const;
+    /// jump to a specific time in the job
+    void SetTime(Timing::Tick time);
+    /// get current time of anim job
+    Timing::Tick GetTime() const;
     /// set time factor
     void SetTimeFactor(float timeFactor);
     /// get time factor
@@ -108,10 +108,10 @@ public:
     /// get blend weight of the anim job
     float GetBlendWeight() const;
 
-	/// set joint mask
-	void SetMask(const Characters::CharacterJointMask* mask);
-	/// get joint mask
-	const Characters::CharacterJointMask* GetMask() const;
+    /// set joint mask
+    void SetMask(const Characters::CharacterJointMask* mask);
+    /// get joint mask
+    const Characters::CharacterJointMask* GetMask() const;
 
     /// get the absolute start time (BaseTime + StartTime)
     Timing::Tick GetAbsoluteStartTime() const;
@@ -143,12 +143,12 @@ protected:
     virtual void UpdateTimes(Timing::Tick time);
     /// stop the anim job at the given time
     virtual void Stop(Timing::Tick time);
-	/// pause the anim job at the given time
-	virtual void Pause(bool pause);
+    /// pause the anim job at the given time
+    virtual void Pause(bool pause);
 
 
     const AnimSequencer* animSequencer;
-	const Characters::CharacterJointMask* mask;
+    const Characters::CharacterJointMask* mask;
     Util::StringAtom name;
     AnimJobEnqueueMode::Code enqueueMode;
     IndexT trackIndex;
@@ -165,7 +165,7 @@ protected:
     Timing::Tick timeOffset;
     float timeFactor;
     float blendWeight;
-	bool isPaused;
+    bool isPaused;
 };
 
 //------------------------------------------------------------------------------
@@ -346,8 +346,8 @@ AnimJob::GetFadeOutTime() const
 inline void 
 AnimJob::SetTime( Timing::Tick time )
 {
-	this->curSampleTime = this->startTime + time;
-	this->lastSampleTime = this->curSampleTime;
+    this->curSampleTime = this->startTime + time;
+    this->lastSampleTime = this->curSampleTime;
 }
 
 //------------------------------------------------------------------------------
@@ -356,7 +356,7 @@ AnimJob::SetTime( Timing::Tick time )
 inline Timing::Tick 
 AnimJob::GetTime() const
 {
-	return this->curSampleTime;
+    return this->curSampleTime;
 }
 
 //------------------------------------------------------------------------------
@@ -383,7 +383,7 @@ AnimJob::GetBlendWeight() const
 inline void
 AnimJob::SetMask(const Characters::CharacterJointMask* mask)
 {
-	this->mask = mask;
+    this->mask = mask;
 }
 
 //------------------------------------------------------------------------------
@@ -392,7 +392,7 @@ AnimJob::SetMask(const Characters::CharacterJointMask* mask)
 inline const Characters::CharacterJointMask*
 AnimJob::GetMask() const
 {
-	return this->mask;
+    return this->mask;
 }
 
 //------------------------------------------------------------------------------
@@ -437,7 +437,7 @@ AnimJob::GetTimeOffset() const
 inline bool
 AnimJob::IsPaused() const
 {
-	return this->isPaused;
+    return this->isPaused;
 }
 
 } // namespace Animation

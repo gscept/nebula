@@ -156,15 +156,15 @@ void OpenScene()
 
     /*
     particle = Graphics::CreateEntity();
-	Graphics::RegisterEntity<ModelContext, ObservableContext, Particles::ParticleContext>(particle);
+    Graphics::RegisterEntity<ModelContext, ObservableContext, Particles::ParticleContext>(particle);
     ModelContext::Setup(particle, "mdl:Particles/Build_dust.n3", "Viewer", []()
         {
             ObservableContext::Setup(particle, VisibilityEntityType::Particle);
             Particles::ParticleContext::Setup(particle);
             Particles::ParticleContext::Play(particle, Particles::ParticleContext::RestartIfPlaying);
-        });	
-	entities.Append(particle);
-	entityNames.Append("Particle");
+        }); 
+    entities.Append(particle);
+    entityNames.Append("Particle");
     */
 
     // setup visibility

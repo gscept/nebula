@@ -18,7 +18,7 @@ using namespace IO;
 */
 RenderShape::RenderShape() :
     shapeType(InvalidShapeType),
-	depthFlag(CheckDepth),
+    depthFlag(CheckDepth),
     topology(PrimitiveTopology::InvalidPrimitiveTopology),
     numPrimitives(0),
     vertexWidth(0),
@@ -37,7 +37,7 @@ RenderShape::RenderShape() :
 */
 RenderShape::RenderShape(Type shapeType_, RenderFlag depthFlag_, const mat4& modelTransform_, const vec4& color_) :
     shapeType(shapeType_),
-	depthFlag(depthFlag_),
+    depthFlag(depthFlag_),
     modelTransform(modelTransform_),
     topology(PrimitiveTopology::InvalidPrimitiveTopology),
     numPrimitives(0),
@@ -61,7 +61,7 @@ RenderShape::SetupSimpleShape(Type shapeType_, RenderFlag depthFlag_, const mat4
     n_assert(!this->IsValid());
     n_assert(!((Primitives == shapeType) || (IndexedPrimitives == shapeType)));
     this->shapeType      = shapeType_;
-	this->depthFlag		 = depthFlag_;
+    this->depthFlag      = depthFlag_;
     this->modelTransform = modelTransform_;
     this->color          = color_;
 }
@@ -75,7 +75,7 @@ RenderShape::SetupPrimitives(const Math::mat4& modelTransform_, PrimitiveTopolog
     n_assert(!this->IsValid());
     
     this->shapeType        = Primitives;
-	this->depthFlag		   = depthFlag_;
+    this->depthFlag        = depthFlag_;
     this->modelTransform   = modelTransform_;
     this->topology         = topology_;
     this->numPrimitives    = numPrimitives_;
@@ -102,8 +102,8 @@ RenderShape::SetupIndexedPrimitives(const Math::mat4& modelTransform_, Primitive
 {
     n_assert(!this->IsValid());
 
-	this->shapeType      = IndexedPrimitives;
-	this->depthFlag		 = depthFlag_;
+    this->shapeType      = IndexedPrimitives;
+    this->depthFlag      = depthFlag_;
     this->modelTransform = modelTransform_;
     this->topology       = topology_;
     this->numPrimitives  = numPrimitives_;
@@ -135,15 +135,15 @@ RenderShape::SetupIndexedPrimitives(const Math::mat4& modelTransform_, Primitive
 void 
 RenderShape::SetupMesh(const Math::mat4& modelTransform, const MeshId mesh, const IndexT groupIndex, const Math::vec4& color, RenderFlag depthFlag)
 {
-	n_assert(!this->IsValid());
-	n_assert(mesh != MeshId::Invalid());
+    n_assert(!this->IsValid());
+    n_assert(mesh != MeshId::Invalid());
 
-	this->shapeType      = RenderMesh;
-	this->depthFlag		 = depthFlag;
-	this->modelTransform = modelTransform;
-	this->color          = color;
-	this->mesh			 = mesh;
-	this->groupIndex	 = groupIndex;
+    this->shapeType      = RenderMesh;
+    this->depthFlag      = depthFlag;
+    this->modelTransform = modelTransform;
+    this->color          = color;
+    this->mesh           = mesh;
+    this->groupIndex     = groupIndex;
 }
 
 } // namespace CoreGraphics

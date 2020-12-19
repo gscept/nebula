@@ -67,14 +67,14 @@ public:
         UShort4,    //> four-component unsigned short
 
         UByte4,     //> four-component unsigned byte
-        Byte4,		//> four-component signed byte
+        Byte4,      //> four-component signed byte
         UByte4N,    //> four-component normalized unsigned byte (value / 255.0f)
-		Byte4N,		//> four-component normalized signed byte (value / 127.0f)
+        Byte4N,     //> four-component normalized signed byte (value / 127.0f)
 
         Short2N,    //> two-component normalized signed short (value / 32767.0f)
         Short4N,    //> four-component normalized signed short (value / 32767.0f)
-		UShort2N,	//> two-component unnormalized signed short
-		UShort4N,	//> four-component unnormalized signed short
+        UShort2N,   //> two-component unnormalized signed short
+        UShort4N,   //> four-component unnormalized signed short
 
 
         InvalidFormat,
@@ -90,12 +90,12 @@ public:
         Index32,    //> component is indexed with 32-bit indices
     };
 
-	/// stride type tells if the compoent should be per-instance or per-vertex
-	enum StrideType
-	{
-		PerVertex,
-		PerInstance
-	};
+    /// stride type tells if the compoent should be per-instance or per-vertex
+    enum StrideType
+    {
+        PerVertex,
+        PerInstance
+    };
 
     /// default constructor
     VertexComponentBase();
@@ -115,10 +115,10 @@ public:
     Util::String GetSignature() const;
     /// get access type
     AccessType GetAccessType() const;
-	/// get stride type
-	StrideType GetStrideType() const;
-	/// get stride between instances
-	SizeT GetStride() const;
+    /// get stride type
+    StrideType GetStrideType() const;
+    /// get stride between instances
+    SizeT GetStride() const;
     /// convert string to semantic name
     static SemanticName StringToSemanticName(const Util::String& str);
     /// convert semantic name to string
@@ -127,14 +127,14 @@ public:
     static Format StringToFormat(const Util::String& str);
     /// convert format to string
     static Util::String FormatToString(Format f);
-	/// convert format to signature
-	static Util::String FormatToSignature(Format f);
+    /// convert format to signature
+    static Util::String FormatToSignature(Format f);
     /// get the byte offset of this component (only valid when part of a VertexLayout)
     IndexT GetByteOffset() const;
 
 protected:
 
-	friend const CoreGraphics::VertexLayoutId CoreGraphics::CreateVertexLayout(const CoreGraphics::VertexLayoutCreateInfo& info);
+    friend const CoreGraphics::VertexLayoutId CoreGraphics::CreateVertexLayout(const CoreGraphics::VertexLayoutCreateInfo& info);
 
     /// set the vertex byte offset (called from VertexLayoutBase::Setup())
     void SetByteOffset(IndexT offset);
@@ -143,8 +143,8 @@ protected:
     IndexT semIndex;
     Format format;
     AccessType accessType;
-	StrideType strideType;
-	SizeT stride;
+    StrideType strideType;
+    SizeT stride;
     IndexT streamIndex;
     IndexT byteOffset;
 };
@@ -160,8 +160,8 @@ VertexComponentBase::VertexComponentBase() :
     accessType(Index16),
     streamIndex(0),
     byteOffset(0),
-	strideType(PerVertex),
-	stride(0)
+    strideType(PerVertex),
+    stride(0)
 {
     // empty
 }
@@ -177,8 +177,8 @@ VertexComponentBase::VertexComponentBase(SemanticName semName_, IndexT semIndex_
     accessType(Index16),
     streamIndex(streamIndex_),
     byteOffset(0),
-	strideType(strideType_),
-	stride(stride_)
+    strideType(strideType_),
+    stride(stride_)
 {
     // empty
 }
@@ -234,7 +234,7 @@ VertexComponentBase::GetStreamIndex() const
 inline VertexComponentBase::StrideType
 VertexComponentBase::GetStrideType() const
 {
-	return this->strideType;
+    return this->strideType;
 }
 
 //------------------------------------------------------------------------------
@@ -243,7 +243,7 @@ VertexComponentBase::GetStrideType() const
 inline SizeT
 VertexComponentBase::GetStride() const
 {
-	return this->stride;
+    return this->stride;
 }
 
 //------------------------------------------------------------------------------
@@ -258,14 +258,14 @@ VertexComponentBase::GetByteSize() const
         case Float2:    return 8;
         case Float3:    return 12;
         case Float4:    return 16;
-        case UInt:		return 4;
-        case UInt2:	    return 8;
-        case UInt3:	    return 12;
-        case UInt4:	    return 16;
-        case Int:		return 4;
-        case Int2:		return 8;
-        case Int3:		return 12;
-        case Int4:		return 16;
+        case UInt:      return 4;
+        case UInt2:     return 8;
+        case UInt3:     return 12;
+        case UInt4:     return 16;
+        case Int:       return 4;
+        case Int2:      return 8;
+        case Int3:      return 12;
+        case Int4:      return 16;
         case Short:     return 2;
         case Short2:    return 4;
         case Short3:    return 6;
@@ -276,9 +276,9 @@ VertexComponentBase::GetByteSize() const
         case UShort4:   return 8;
 
         case UByte4:    return 4;
-		case Byte4:		return 4;
+        case Byte4:     return 4;
         case UByte4N:   return 4;
-		case Byte4N:	return 4;
+        case Byte4N:    return 4;
         case UShort2N:  return 4;
         case UShort4N:  return 8;
         case Short2N:   return 4;
@@ -343,14 +343,14 @@ VertexComponentBase::FormatToString(Format f)
         case Float2:    return "Float2";
         case Float3:    return "Float3";
         case Float4:    return "Float4";
-        case UInt:		return "UInt";
-        case UInt2:	    return "UInt2";
-        case UInt3:	    return "UInt3";
-        case UInt4:	    return "UInt4";
-        case Int:		return "Int";
-        case Int2:		return "Int2";
-        case Int3:		return "Int3";
-        case Int4:		return "Int4";
+        case UInt:      return "UInt";
+        case UInt2:     return "UInt2";
+        case UInt3:     return "UInt3";
+        case UInt4:     return "UInt4";
+        case Int:       return "Int";
+        case Int2:      return "Int2";
+        case Int3:      return "Int3";
+        case Int4:      return "Int4";
         case Short:     return "Short";
         case Short2:    return "Short2";
         case Short3:    return "Short3";
@@ -361,9 +361,9 @@ VertexComponentBase::FormatToString(Format f)
         case UShort4:   return "UShort4";
 
         case UByte4:    return "UByte4";
-		case Byte4:		return "Byte4";
+        case Byte4:     return "Byte4";
         case UByte4N:   return "UByte4N";
-		case Byte4N:	return "Byte4N";
+        case Byte4N:    return "Byte4N";
         case UShort2N:  return "UShort2N";
         case UShort4N:  return "UShort4N";
         case Short2N:   return "Short2N";
@@ -381,20 +381,20 @@ VertexComponentBase::FormatToString(Format f)
 inline Util::String
 VertexComponentBase::FormatToSignature(Format f)
 {
-	switch (f)
-	{
-	case Float:     return "f";
-	case Float2:    return "f2";
-	case Float3:    return "f3";
-	case Float4:    return "f4";
-    case UInt:		return "ui";
-    case UInt2:	    return "ui2";
-    case UInt3:	    return "ui3";
-    case UInt4:	    return "ui4";
-    case Int:		return "i";
-    case Int2:		return "i2";
-    case Int3:		return "i3";
-    case Int4:		return "i4";
+    switch (f)
+    {
+    case Float:     return "f";
+    case Float2:    return "f2";
+    case Float3:    return "f3";
+    case Float4:    return "f4";
+    case UInt:      return "ui";
+    case UInt2:     return "ui2";
+    case UInt3:     return "ui3";
+    case UInt4:     return "ui4";
+    case Int:       return "i";
+    case Int2:      return "i2";
+    case Int3:      return "i3";
+    case Int4:      return "i4";
     case Short:     return "s";
     case Short2:    return "s2";
     case Short3:    return "s3";
@@ -404,20 +404,20 @@ VertexComponentBase::FormatToSignature(Format f)
     case UShort3:   return "us3";
     case UShort4:   return "s4";
 
-	case UByte4:    return "ub4";
-	case Byte4:		return "b4";
+    case UByte4:    return "ub4";
+    case Byte4:     return "b4";
     case UByte4N:   return "ub4n";
-    case Byte4N:	return "b4n";
+    case Byte4N:    return "b4n";
     case UShort2N:   return "us2n";
     case UShort4N:   return "us4n";
-	case Short2N:   return "s2n";
-	case Short4N:   return "s4n";
+    case Short2N:   return "s2n";
+    case Short4N:   return "s4n";
     
 
-	default:
-		n_error("VertexComponent::FormatToString(): invalid Format code!");
-		return "";
-	}
+    default:
+        n_error("VertexComponent::FormatToString(): invalid Format code!");
+        return "";
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -478,7 +478,7 @@ VertexComponentBase::GetSignature() const
         case Binormal:      str = "bin"; break;
         case TexCoord1:     str = "tex"; break;
         case Color:         str = "clr"; break;
-		case TexCoord2:		str = "lgh"; break;
+        case TexCoord2:     str = "lgh"; break;
         case SkinWeights:   str = "skw"; break;
         case SkinJIndices:  str = "sji"; break;
         default:

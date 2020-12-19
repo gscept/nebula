@@ -161,7 +161,7 @@ void
 Table::UnbindValueTable()
 {
     n_assert(this->valueTable.isvalid());
-	this->valueTable = nullptr;
+    this->valueTable = nullptr;
 }
 
 //------------------------------------------------------------------------------

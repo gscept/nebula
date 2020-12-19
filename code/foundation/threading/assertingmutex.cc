@@ -12,9 +12,9 @@ namespace Threading
 /**
 */
 AssertingMutex::AssertingMutex()
-	: locked(false)
+    : locked(false)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -22,7 +22,7 @@ AssertingMutex::AssertingMutex()
 */
 AssertingMutex::~AssertingMutex()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -30,8 +30,8 @@ AssertingMutex::~AssertingMutex()
 */
 AssertingMutex::AssertingMutex(AssertingMutex&& rhs)
 {
-	this->locked.store(rhs.locked.load());
-	rhs.locked.exchange(false);
+    this->locked.store(rhs.locked.load());
+    rhs.locked.exchange(false);
 }
 
 //------------------------------------------------------------------------------
@@ -40,8 +40,8 @@ AssertingMutex::AssertingMutex(AssertingMutex&& rhs)
 void 
 AssertingMutex::operator=(AssertingMutex&& rhs)
 {
-	this->locked.store(rhs.locked.load());
-	rhs.locked.exchange(false);
+    this->locked.store(rhs.locked.load());
+    rhs.locked.exchange(false);
 }
 
 //------------------------------------------------------------------------------
@@ -50,8 +50,8 @@ AssertingMutex::operator=(AssertingMutex&& rhs)
 void 
 AssertingMutex::Lock()
 {
-	bool res = this->locked.exchange(true);
-	n_assert(!res);
+    bool res = this->locked.exchange(true);
+    n_assert(!res);
 }
 
 //------------------------------------------------------------------------------
@@ -60,8 +60,8 @@ AssertingMutex::Lock()
 void 
 AssertingMutex::Unlock()
 {
-	bool res = this->locked.exchange(false);
-	n_assert(res);
+    bool res = this->locked.exchange(false);
+    n_assert(res);
 }
 
 } // namespace Threading

@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Samplers
+    Samplers
 
-	(C) 2018-2020 Individual contributors, see AUTHORS file
+    (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
@@ -14,65 +14,65 @@ ID_24_8_TYPE(SamplerId);
 
 enum SamplerFilter
 {
-	NearestFilter,
-	LinearFilter,
-	CubicFilter
+    NearestFilter,
+    LinearFilter,
+    CubicFilter
 };
 
 enum SamplerMipMode
 {
-	NearestMipMode,
-	LinearMipMode
+    NearestMipMode,
+    LinearMipMode
 };
 
 enum SamplerAddressMode
 {
-	RepeatAddressMode,
-	MirroredRepeatAddressMode,
-	ClampToEdgeAddressMode,
-	ClampToBorderAddressMode,
-	MirrorClampToEdgeAddressMode,
+    RepeatAddressMode,
+    MirroredRepeatAddressMode,
+    ClampToEdgeAddressMode,
+    ClampToBorderAddressMode,
+    MirrorClampToEdgeAddressMode,
 };
 
 enum SamplerCompareOperation
 {
-	NeverCompare,
-	LessCompare,
-	EqualCompare,
-	LessOrEqualCompare,
-	GreaterCompare,
-	GreaterOrEqualCompare,
-	NotEqualCompare,
-	AlwaysCompare
+    NeverCompare,
+    LessCompare,
+    EqualCompare,
+    LessOrEqualCompare,
+    GreaterCompare,
+    GreaterOrEqualCompare,
+    NotEqualCompare,
+    AlwaysCompare
 };
 
 enum SamplerBorderMode
 {
-	FloatTransparentBlackBorder,
-	IntTransparentBlackBorder,
-	FloatOpaqueBlackBorder,
-	IntOpaqueBlackBorder,
-	FloatOpaqueWhiteBorder,
-	IntOpaqueWhiteBorder,
+    FloatTransparentBlackBorder,
+    IntTransparentBlackBorder,
+    FloatOpaqueBlackBorder,
+    IntOpaqueBlackBorder,
+    FloatOpaqueWhiteBorder,
+    IntOpaqueWhiteBorder,
 };
 
 struct SamplerCreateInfo
 {
-	SamplerFilter				magFilter;
-	SamplerFilter				minFilter;
-	SamplerMipMode				mipmapMode;
-	SamplerAddressMode			addressModeU;
-	SamplerAddressMode			addressModeV;
-	SamplerAddressMode			addressModeW;
-	float						mipLodBias;
-	bool						anisotropyEnable;
-	float						maxAnisotropy;
-	bool						compareEnable;
-	SamplerCompareOperation		compareOp;
-	float						minLod;
-	float						maxLod;
-	SamplerBorderMode			borderColor;
-	bool						unnormalizedCoordinates;
+    SamplerFilter               magFilter;
+    SamplerFilter               minFilter;
+    SamplerMipMode              mipmapMode;
+    SamplerAddressMode          addressModeU;
+    SamplerAddressMode          addressModeV;
+    SamplerAddressMode          addressModeW;
+    float                       mipLodBias;
+    bool                        anisotropyEnable;
+    float                       maxAnisotropy;
+    bool                        compareEnable;
+    SamplerCompareOperation     compareOp;
+    float                       minLod;
+    float                       maxLod;
+    SamplerBorderMode           borderColor;
+    bool                        unnormalizedCoordinates;
 };
 
 /// create sampler

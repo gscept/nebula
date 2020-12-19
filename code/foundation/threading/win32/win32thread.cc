@@ -26,7 +26,7 @@ List<Win32Thread*> Win32Thread::ThreadList;
 */
 Win32Thread::Win32Thread() :
     threadHandle(0),
-	affinityMask(0),
+    affinityMask(0),
     priority(Normal),
     stackSize(NEBULA_THREAD_DEFAULTSTACKSIZE)
 {
@@ -93,8 +93,8 @@ Win32Thread::Start()
             break;
     }
     
-	if (this->affinityMask != 0)
-		SetThreadAffinityMask(this->threadHandle, this->affinityMask);
+    if (this->affinityMask != 0)
+        SetThreadAffinityMask(this->threadHandle, this->affinityMask);
     #if __WIN32__
         // select a good processor for the thread
         /*
@@ -312,7 +312,7 @@ Win32Thread::GetRunningThreadDebugInfos()
             info.threadName = cur->GetName();
             info.threadPriority = cur->GetPriority();
             info.threadStackSize = cur->GetStackSize();
-			info.threadCoreId = (System::Cpu::CoreId)cur->GetThreadAffinity();
+            info.threadCoreId = (System::Cpu::CoreId)cur->GetThreadAffinity();
             infos.Append(info);
         }
     }

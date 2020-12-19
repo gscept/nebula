@@ -31,9 +31,9 @@ using namespace IO;
 */
 ParticleSystemNode::ParticleSystemNode() :
     primGroupIndex(InvalidIndex),
-	mesh(Ids::InvalidId64)
+    mesh(Ids::InvalidId64)
 {
-	this->type = ParticleSystemNodeType;
+    this->type = ParticleSystemNodeType;
     this->bits = HasTransformBit | HasStateBit;
 }
 
@@ -51,17 +51,17 @@ ParticleSystemNode::~ParticleSystemNode()
 void
 ParticleSystemNode::UpdateMeshResource(const Resources::ResourceName& resName)
 {
-	// discard old mesh
-	if (this->mesh != CoreGraphics::MeshId::Invalid())
-		Resources::DiscardResource(this->mesh);
-	
-	// load new mesh
-	this->meshResId = resName;
+    // discard old mesh
+    if (this->mesh != CoreGraphics::MeshId::Invalid())
+        Resources::DiscardResource(this->mesh);
+    
+    // load new mesh
+    this->meshResId = resName;
 
-	if (this->meshResId.IsValid())
-		this->mesh = Resources::CreateResource(this->meshResId, this->tag, nullptr, nullptr, false);
-	else
-		this->mesh = ParticleContext::DefaultEmitterMesh;
+    if (this->meshResId.IsValid())
+        this->mesh = Resources::CreateResource(this->meshResId, this->tag, nullptr, nullptr, false);
+    else
+        this->mesh = ParticleContext::DefaultEmitterMesh;
 }
 
 //------------------------------------------------------------------------------
@@ -70,32 +70,32 @@ ParticleSystemNode::UpdateMeshResource(const Resources::ResourceName& resName)
 void
 ParticleSystemNode::OnFinishedLoading()
 {
-	// skip state node intentionally because we don't want its setup
-	TransformNode::OnFinishedLoading();
+    // skip state node intentionally because we don't want its setup
+    TransformNode::OnFinishedLoading();
 
-	// load surface ourselves since state node does the resource table setup too, but we need it explicit
-	this->surRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
-	this->materialType = Materials::surfacePool->GetType(this->surRes);
-	this->surface = Materials::surfacePool->GetId(this->surRes);
+    // load surface ourselves since state node does the resource table setup too, but we need it explicit
+    this->surRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
+    this->materialType = Materials::surfacePool->GetType(this->surRes);
+    this->surface = Materials::surfacePool->GetId(this->surRes);
 
-	float activityDist = this->emitterAttrs.GetFloat(EmitterAttrs::ActivityDistance) * 0.5f;
+    float activityDist = this->emitterAttrs.GetFloat(EmitterAttrs::ActivityDistance) * 0.5f;
 
     // calculate bounding box using activity distance
-	Math::bbox& box = modelPool->GetModelBoundingBox(this->model);
+    Math::bbox& box = modelPool->GetModelBoundingBox(this->model);
     this->boundingBox.set(box.center(), Math::vector(activityDist, activityDist, activityDist));
 
-	// setup sample buffer and emitter mesh
-	this->sampleBuffer.Setup(this->emitterAttrs, ParticleSystemNumEnvelopeSamples);
-	this->emitterMesh.Setup(this->mesh, this->primGroupIndex);
+    // setup sample buffer and emitter mesh
+    this->sampleBuffer.Setup(this->emitterAttrs, ParticleSystemNumEnvelopeSamples);
+    this->emitterMesh.Setup(this->mesh, this->primGroupIndex);
 
-	ShaderId shader = ShaderServer::Instance()->GetShader("shd:particle.fxb"_atm);
-	BufferId cbo = GetGraphicsConstantBuffer(GlobalConstantBufferType::VisibilityThreadConstantBuffer);
-	this->objectTransformsIndex = ShaderGetResourceSlot(shader, "ObjectBlock");
-	this->instancingTransformsIndex = ShaderGetResourceSlot(shader, "InstancingBlock");
-	this->skinningTransformsIndex = ShaderGetResourceSlot(shader, "JointBlock");
-	this->particleConstantsIndex = ShaderGetResourceSlot(shader, "ParticleObjectBlock");
-	this->resourceTable = ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP);
-	ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->particleConstantsIndex, 0, false, true, sizeof(::Particle::ParticleObjectBlock), 0 });
+    ShaderId shader = ShaderServer::Instance()->GetShader("shd:particle.fxb"_atm);
+    BufferId cbo = GetGraphicsConstantBuffer(GlobalConstantBufferType::VisibilityThreadConstantBuffer);
+    this->objectTransformsIndex = ShaderGetResourceSlot(shader, "ObjectBlock");
+    this->instancingTransformsIndex = ShaderGetResourceSlot(shader, "InstancingBlock");
+    this->skinningTransformsIndex = ShaderGetResourceSlot(shader, "JointBlock");
+    this->particleConstantsIndex = ShaderGetResourceSlot(shader, "ParticleObjectBlock");
+    this->resourceTable = ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP);
+    ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->particleConstantsIndex, 0, false, true, sizeof(::Particle::ParticleObjectBlock), 0 });
     ResourceTableCommitChanges(this->resourceTable);
 
     IndexT clusterAABBsSlot = ShaderGetResourceSlot(shader, "ClusterAABBs");
@@ -274,31 +274,31 @@ ParticleSystemNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag
     {
         this->emitterAttrs.SetBool(EmitterAttrs::ViewAngleFade, (1 == reader->ReadInt()));
     }
-	else if (FourCC('PVAP') == fourcc)
-	{
-		this->emitterAttrs.SetInt(EmitterAttrs::AnimPhases, reader->ReadInt());
-	}
+    else if (FourCC('PVAP') == fourcc)
+    {
+        this->emitterAttrs.SetInt(EmitterAttrs::AnimPhases, reader->ReadInt());
+    }
     else if (FourCC('PDEL') == fourcc)
     {
         this->emitterAttrs.SetFloat(EmitterAttrs::StartDelay, reader->ReadFloat());
     }
-	else if (FourCC('PDPS') == fourcc)
-	{
-		this->emitterAttrs.SetFloat(EmitterAttrs::PhasesPerSecond, reader->ReadFloat());
-	}
-	else if (FourCC('WIDR') == fourcc)
-	{
-		this->emitterAttrs.SetVec4(EmitterAttrs::WindDirection, reader->ReadVec4());	
-	}
+    else if (FourCC('PDPS') == fourcc)
+    {
+        this->emitterAttrs.SetFloat(EmitterAttrs::PhasesPerSecond, reader->ReadFloat());
+    }
+    else if (FourCC('WIDR') == fourcc)
+    {
+        this->emitterAttrs.SetVec4(EmitterAttrs::WindDirection, reader->ReadVec4());    
+    }
     else if (FourCC('MESH') == fourcc)
     {
-		this->meshResId = reader->ReadString();
-		this->tag = tag;
-		this->UpdateMeshResource(this->meshResId);
+        this->meshResId = reader->ReadString();
+        this->tag = tag;
+        this->UpdateMeshResource(this->meshResId);
     }
     else if (FourCC('PGRI') == fourcc)
     {
-		this->primGroupIndex = reader->ReadInt();
+        this->primGroupIndex = reader->ReadInt();
     }
     else
     {
@@ -314,11 +314,11 @@ ParticleSystemNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag
 void
 ParticleSystemNode::ApplyNodeState()
 {
-	TransformNode::ApplyNodeState();
+    TransformNode::ApplyNodeState();
 
-	SetStreamVertexBuffer(0, ParticleContext::GetParticleVertexBuffer(), 0);
-	SetVertexLayout(ParticleContext::GetParticleVertexLayout());
-	SetIndexBuffer(ParticleContext::GetParticleIndexBuffer(), 0);
+    SetStreamVertexBuffer(0, ParticleContext::GetParticleVertexBuffer(), 0);
+    SetVertexLayout(ParticleContext::GetParticleVertexLayout());
+    SetIndexBuffer(ParticleContext::GetParticleIndexBuffer(), 0);
 }
 
 //------------------------------------------------------------------------------
@@ -340,22 +340,22 @@ ParticleSystemNode::Instance::Update()
         return;
 
     ShaderStateNode::Instance::Update();
-	ParticleSystemNode* pnode = reinterpret_cast<ParticleSystemNode*>(this->node);
+    ParticleSystemNode* pnode = reinterpret_cast<ParticleSystemNode*>(this->node);
 
-	::Particle::ParticleObjectBlock block;
-	block.Billboard = pnode->emitterAttrs.GetBool(EmitterAttrs::Billboard);
+    ::Particle::ParticleObjectBlock block;
+    block.Billboard = pnode->emitterAttrs.GetBool(EmitterAttrs::Billboard);
 
     this->particleTransform.store(block.EmitterTransform);
 
-	// update parameters
+    // update parameters
     this->boundingBox.center().store(block.BBoxCenter);
     this->boundingBox.extents().store(block.BBoxSize);
-	block.NumAnimPhases = pnode->emitterAttrs.GetInt(EmitterAttrs::AnimPhases);
-	block.AnimFramesPerSecond = pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond);
+    block.NumAnimPhases = pnode->emitterAttrs.GetInt(EmitterAttrs::AnimPhases);
+    block.AnimFramesPerSecond = pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond);
 
-	// allocate block
-	uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
-	this->offsets[this->particleConstantsIndex] = offset;
+    // allocate block
+    uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
+    this->offsets[this->particleConstantsIndex] = offset;
 }
 
 //------------------------------------------------------------------------------
@@ -364,11 +364,11 @@ ParticleSystemNode::Instance::Update()
 void
 ParticleSystemNode::Instance::Draw(const SizeT numInstances, const IndexT baseInstance, Models::ModelNode::DrawPacket* packet)
 {
-	if (this->particleVbo == CoreGraphics::BufferId::Invalid())
-		return;
+    if (this->particleVbo == CoreGraphics::BufferId::Invalid())
+        return;
 
-	CoreGraphics::SetStreamVertexBuffer(1, this->particleVbo, this->particleVboOffset);
-	CoreGraphics::SetPrimitiveGroup(this->group);
-	CoreGraphics::DrawInstanced(this->numParticles, baseInstance);
+    CoreGraphics::SetStreamVertexBuffer(1, this->particleVbo, this->particleVboOffset);
+    CoreGraphics::SetPrimitiveGroup(this->group);
+    CoreGraphics::DrawInstanced(this->numParticles, baseInstance);
 }
 } // namespace Particles

@@ -25,7 +25,7 @@ PosixThread::PosixThread() :
     stackSize(4096),
     coreId(System::Cpu::Core0)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -178,7 +178,7 @@ void
 Posix::PosixThread::YieldThread()
 {
 #if (__APPLE__ || __OSX__)
-	pthread_yield_np();
+    pthread_yield_np();
 #else
     int r = pthread_yield();
     n_assert(r == 0);
@@ -191,9 +191,9 @@ Posix::PosixThread::YieldThread()
 void
 PosixThread::SetThreadAffinity(uint mask)
 {
-	n_assert(this->threadHandle != 0);
-	CPU_SET(mask, &this->affinity);
-	pthread_set_affinity_np(this->threadHandle, sizeof(cpu_set_t), &this->affinity);
+    n_assert(this->threadHandle != 0);
+    CPU_SET(mask, &this->affinity);
+    pthread_set_affinity_np(this->threadHandle, sizeof(cpu_set_t), &this->affinity);
 }
-	
+    
 };

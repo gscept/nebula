@@ -114,7 +114,7 @@ __cdecl main()
     testRunner->AttachTestCase(VariantTest::Create());
     testRunner->AttachTestCase(IOInterfaceTest::Create());
     testRunner->AttachTestCase(ThreadTest::Create());
-	testRunner->AttachTestCase(ArrayAllocatorTest::Create());
+    testRunner->AttachTestCase(ArrayAllocatorTest::Create());
     testRunner->AttachTestCase(ProfilingTest::Create());
     bool result = testRunner->Run(); 
 

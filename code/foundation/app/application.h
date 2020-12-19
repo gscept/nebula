@@ -165,7 +165,7 @@ Application::GetAppVersion() const
 /**
 */
 inline
-void	
+void    
 Application::SetCmdLineArgs(const Util::CommandLineArgs& a)
 {
     this->args = a;

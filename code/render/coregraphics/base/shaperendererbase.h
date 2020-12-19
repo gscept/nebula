@@ -55,8 +55,8 @@ public:
 
 protected:
     bool isOpen;
-	Util::Array<CoreGraphics::RenderShape> shapes[CoreGraphics::RenderShape::NumDepthFlags];
-	Util::Array<CoreGraphics::RenderShape> primitives[CoreGraphics::RenderShape::NumDepthFlags];
+    Util::Array<CoreGraphics::RenderShape> shapes[CoreGraphics::RenderShape::NumDepthFlags];
+    Util::Array<CoreGraphics::RenderShape> primitives[CoreGraphics::RenderShape::NumDepthFlags];
 
     SizeT numIndicesThisFrame;
     SizeT numVerticesThisFrame;

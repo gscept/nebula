@@ -8,7 +8,7 @@
     gamestate (such as level gamestates or only gui gamestates).
 
     (C) 2007 Radon Labs GmbH
-    (C) 2013-2020 Individual contributors, see AUTHORS file	
+    (C) 2013-2020 Individual contributors, see AUTHORS file 
 */
 #include "app/application.h"
 #include "game/gameserver.h"
@@ -43,8 +43,8 @@ public:
     virtual void Close();
     /// run the application
     virtual void Run();
-	/// step one frame
-	virtual void StepFrame();
+    /// step one frame
+    virtual void StepFrame();
 
     static IndexT FrameIndex;
 
@@ -55,7 +55,7 @@ protected:
     virtual void CleanupGameFeatures(); 
     /// setup app from cmd lines
     virtual void SetupAppFromCmdLineArgs();
-	
+    
     Ptr<Core::CoreServer> coreServer;   
     Ptr<IO::GameContentServer> gameContentServer;
     Ptr<Resources::ResourceServer> resourceServer;
@@ -64,22 +64,22 @@ protected:
 
     
 #if __NEBULA_HTTP__
-	Ptr<Debug::DebugInterface> debugInterface;
-	Ptr<Http::HttpInterface> httpInterface;
-	Ptr<Http::HttpServerProxy> httpServerProxy;
+    Ptr<Debug::DebugInterface> debugInterface;
+    Ptr<Http::HttpInterface> httpInterface;
+    Ptr<Http::HttpServerProxy> httpServerProxy;
 
-	ushort defaultTcpPort;
+    ushort defaultTcpPort;
 #endif
 
 #if __NEBULA_HTTP_FILESYSTEM__
-	Ptr<Http::HttpClientRegistry> httpClientRegistry;
+    Ptr<Http::HttpClientRegistry> httpClientRegistry;
 #endif      
 
     // game server
     Ptr<Game::GameServer> gameServer;
 
     // profiling
-	_declare_timer(GameApplicationFrameTimeAll);
+    _declare_timer(GameApplicationFrameTimeAll);
 };
 
 } // namespace App

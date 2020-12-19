@@ -37,7 +37,7 @@ SetupHeaps()
                 break;
 
             case ResourceHeap:
-	    case PhysicsHeap:
+        case PhysicsHeap:
             case AppHeap:
             case NetworkHeap:
                 // the large block and resource heaps start at 32 megabyte and may grow(?)

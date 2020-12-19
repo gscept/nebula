@@ -34,8 +34,8 @@ protected:
     void UpdateTriggerAxis(const XINPUT_GAMEPAD& curState, Axis axis);
     /// update the state of a thumb stick axis
     void UpdateThumbAxis(const XINPUT_GAMEPAD& curState, Axis axis);
-	/// called when an input event should be processed
-	bool OnEvent(const Input::InputEvent& inputEvent);
+    /// called when an input event should be processed
+    bool OnEvent(const Input::InputEvent& inputEvent);
 
 
     static const Timing::Tick CheckConnectedInterval = 500;     // 500 ms between connection checks

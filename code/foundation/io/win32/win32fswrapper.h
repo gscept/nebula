@@ -49,12 +49,12 @@ public:
     static void SetReadOnly(const Util::String& path, bool readOnly);
     /// get read-only status of a file
     static bool IsReadOnly(const Util::String& path);
-	/// get locked status of file
-	static bool IsLocked(const Util::String& path);
+    /// get locked status of file
+    static bool IsLocked(const Util::String& path);
     /// delete a file
     static bool DeleteFile(const Util::String& path);
-	/// rename a file
-	static bool ReplaceFile(const Util::String& source, const Util::String& target);
+    /// rename a file
+    static bool ReplaceFile(const Util::String& source, const Util::String& target);
     /// delete an empty directory
     static bool DeleteDirectory(const Util::String& path);
     /// return true if a file exists
@@ -67,8 +67,8 @@ public:
     static IO::FileTime GetFileWriteTime(const Util::String& path);
     /// create a directory
     static bool CreateDirectory(const Util::String& path);
-	/// create a temporary file name
-	static Util::String CreateTemporaryFilename(const Util::String& path);
+    /// create a temporary file name
+    static Util::String CreateTemporaryFilename(const Util::String& path);
     /// list all files in a directory
     static Util::Array<Util::String> ListFiles(const Util::String& dirPath, const Util::String& pattern);
     /// list all subdirectories in a directory

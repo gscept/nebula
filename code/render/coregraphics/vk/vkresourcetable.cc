@@ -26,7 +26,7 @@ VkDescriptorSetLayout emptySetLayout;
 const VkDescriptorSet&
 ResourceTableGetVkDescriptorSet(CoreGraphics::ResourceTableId id)
 {
-	return resourceTableAllocator.Get<1>(id.id24);
+    return resourceTableAllocator.Get<1>(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -35,7 +35,7 @@ ResourceTableGetVkDescriptorSet(CoreGraphics::ResourceTableId id)
 const VkDescriptorSetLayout&
 ResourceTableGetVkLayout(CoreGraphics::ResourceTableId id)
 {
-	return ResourceTableLayoutGetVk(resourceTableAllocator.Get<ResourceTable_Layout>(id.id24));
+    return ResourceTableLayoutGetVk(resourceTableAllocator.Get<ResourceTable_Layout>(id.id24));
 }
 
 //------------------------------------------------------------------------------
@@ -44,16 +44,16 @@ ResourceTableGetVkLayout(CoreGraphics::ResourceTableId id)
 void
 SetupEmptyDescriptorSetLayout()
 {
-	VkDescriptorSetLayoutCreateInfo info = 
-	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-		nullptr,
-		0,
-		0,
-		nullptr
-	};
-	VkResult res = vkCreateDescriptorSetLayout(Vulkan::GetCurrentDevice(), &info, nullptr, &emptySetLayout);
-	n_assert(res == VK_SUCCESS);
+    VkDescriptorSetLayoutCreateInfo info = 
+    {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        nullptr,
+        0,
+        0,
+        nullptr
+    };
+    VkResult res = vkCreateDescriptorSetLayout(Vulkan::GetCurrentDevice(), &info, nullptr, &emptySetLayout);
+    n_assert(res == VK_SUCCESS);
 }
 
 //------------------------------------------------------------------------------
@@ -62,7 +62,7 @@ SetupEmptyDescriptorSetLayout()
 const VkDescriptorSetLayout&
 ResourceTableLayoutGetVk(const CoreGraphics::ResourceTableLayoutId& id)
 {
-	return resourceTableLayoutAllocator.Get<ResourceTableLayoutSetLayout>(id.id24);
+    return resourceTableLayoutAllocator.Get<ResourceTableLayoutSetLayout>(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -71,7 +71,7 @@ ResourceTableLayoutGetVk(const CoreGraphics::ResourceTableLayoutId& id)
 const VkDescriptorPool& 
 ResourceTableLayoutGetPool(const CoreGraphics::ResourceTableLayoutId& id)
 {
-	return resourceTableLayoutAllocator.Get<ResourceTableLayoutCurrentPool>(id.id24);
+    return resourceTableLayoutAllocator.Get<ResourceTableLayoutCurrentPool>(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -80,33 +80,33 @@ ResourceTableLayoutGetPool(const CoreGraphics::ResourceTableLayoutId& id)
 const VkDescriptorPool& 
 ResourceTableLayoutNewPool(const CoreGraphics::ResourceTableLayoutId& id)
 {
-	// orphan old pool
-	Util::Array<VkDescriptorPoolSize>& poolSizes = resourceTableLayoutAllocator.Get<ResourceTableLayoutPoolSizes>(id.id24);
-	const VkDevice& dev = resourceTableLayoutAllocator.Get<ResourceTableLayoutDevice>(id.id24);
-	uint32_t& grow = resourceTableLayoutAllocator.Get<ResourceTableLayoutPoolGrow>(id.id24);
+    // orphan old pool
+    Util::Array<VkDescriptorPoolSize>& poolSizes = resourceTableLayoutAllocator.Get<ResourceTableLayoutPoolSizes>(id.id24);
+    const VkDevice& dev = resourceTableLayoutAllocator.Get<ResourceTableLayoutDevice>(id.id24);
+    uint32_t& grow = resourceTableLayoutAllocator.Get<ResourceTableLayoutPoolGrow>(id.id24);
 
-	// create new pool
-	VkDescriptorPoolCreateInfo poolInfo =
-	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-		nullptr,
-		VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-		grow,
-		(uint32_t)poolSizes.Size(),
-		poolSizes.Size() > 0 ? poolSizes.Begin() : nullptr
-	};
+    // create new pool
+    VkDescriptorPoolCreateInfo poolInfo =
+    {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        nullptr,
+        VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+        grow,
+        (uint32_t)poolSizes.Size(),
+        poolSizes.Size() > 0 ? poolSizes.Begin() : nullptr
+    };
 
-	// grow, but also clamp to 65535 so as to not grow too much
-	grow = Math::n_min(grow << 2, 65535u);
+    // grow, but also clamp to 65535 so as to not grow too much
+    grow = Math::n_min(grow << 2, 65535u);
 
-	VkDescriptorPool pool;
-	VkResult res = vkCreateDescriptorPool(dev, &poolInfo, nullptr, &pool);
-	n_assert(res == VK_SUCCESS);
+    VkDescriptorPool pool;
+    VkResult res = vkCreateDescriptorPool(dev, &poolInfo, nullptr, &pool);
+    n_assert(res == VK_SUCCESS);
 
-	// add to list of pools, and set new pointer to the new pool
-	resourceTableLayoutAllocator.Get<ResourceTableLayoutDescriptorPools>(id.id24).Append(pool);
-	resourceTableLayoutAllocator.Get<ResourceTableLayoutCurrentPool>(id.id24) = pool;
-	return resourceTableLayoutAllocator.Get<ResourceTableLayoutDescriptorPools>(id.id24).Back();
+    // add to list of pools, and set new pointer to the new pool
+    resourceTableLayoutAllocator.Get<ResourceTableLayoutDescriptorPools>(id.id24).Append(pool);
+    resourceTableLayoutAllocator.Get<ResourceTableLayoutCurrentPool>(id.id24) = pool;
+    return resourceTableLayoutAllocator.Get<ResourceTableLayoutDescriptorPools>(id.id24).Back();
 }
 
 //------------------------------------------------------------------------------
@@ -115,7 +115,7 @@ ResourceTableLayoutNewPool(const CoreGraphics::ResourceTableLayoutId& id)
 const VkPipelineLayout&
 ResourcePipelineGetVk(const CoreGraphics::ResourcePipelineId& id)
 {
-	return resourcePipelineAllocator.Get<1>(id.id24);
+    return resourcePipelineAllocator.Get<1>(id.id24);
 }
 
 } // namespace Vulkan
@@ -135,40 +135,40 @@ Threading::CriticalSection PendingTableCommitsLock;
 ResourceTableId
 CreateResourceTable(const ResourceTableCreateInfo& info)
 {
-	Ids::Id32 id = resourceTableAllocator.Alloc();
+    Ids::Id32 id = resourceTableAllocator.Alloc();
 
-	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id);
-	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id);
-	VkDescriptorPool& pool = resourceTableAllocator.Get<ResourceTable_DescriptorPool>(id);
-	CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<ResourceTable_Layout>(id);
+    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id);
+    VkDescriptorPool& pool = resourceTableAllocator.Get<ResourceTable_DescriptorPool>(id);
+    CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<ResourceTable_Layout>(id);
 
-	dev = Vulkan::GetCurrentDevice();
-	layout = info.layout;
-	pool = ResourceTableLayoutGetPool(layout);
+    dev = Vulkan::GetCurrentDevice();
+    layout = info.layout;
+    pool = ResourceTableLayoutGetPool(layout);
 
-	VkDescriptorSetAllocateInfo dsetAlloc =
-	{
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-		nullptr,
-		pool,
-		1,
-		&ResourceTableLayoutGetVk(layout)
-	};
-	VkResult res = vkAllocateDescriptorSets(dev, &dsetAlloc, &set);
+    VkDescriptorSetAllocateInfo dsetAlloc =
+    {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        nullptr,
+        pool,
+        1,
+        &ResourceTableLayoutGetVk(layout)
+    };
+    VkResult res = vkAllocateDescriptorSets(dev, &dsetAlloc, &set);
 
-	// if we are full, request new pool
-	if (res == VK_ERROR_OUT_OF_POOL_MEMORY)
-	{
-		pool = ResourceTableLayoutNewPool(layout);
-		dsetAlloc.descriptorPool = pool;
-		VkResult res = vkAllocateDescriptorSets(dev, &dsetAlloc, &set);
-		n_assert(res == VK_SUCCESS);
-	}
+    // if we are full, request new pool
+    if (res == VK_ERROR_OUT_OF_POOL_MEMORY)
+    {
+        pool = ResourceTableLayoutNewPool(layout);
+        dsetAlloc.descriptorPool = pool;
+        VkResult res = vkAllocateDescriptorSets(dev, &dsetAlloc, &set);
+        n_assert(res == VK_SUCCESS);
+    }
 
-	ResourceTableId ret;
-	ret.id24 = id;
-	ret.id8 = ResourceTableIdType;
-	return ret;
+    ResourceTableId ret;
+    ret.id24 = id;
+    ret.id8 = ResourceTableIdType;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -178,12 +178,12 @@ void
 DestroyResourceTable(const ResourceTableId id)
 {
     n_assert(id != ResourceTableId::Invalid());
-	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
-	VkDescriptorPool& pool = resourceTableAllocator.Get<ResourceTable_DescriptorPool>(id.id24);
-	vkFreeDescriptorSets(dev, pool, 1, &set);
+    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    VkDescriptorPool& pool = resourceTableAllocator.Get<ResourceTable_DescriptorPool>(id.id24);
+    vkFreeDescriptorSets(dev, pool, 1, &set);
 
-	resourceTableAllocator.Dealloc(id.id24);
+    resourceTableAllocator.Dealloc(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -192,55 +192,55 @@ DestroyResourceTable(const ResourceTableId id)
 void
 ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& tex)
 {
-	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
-	n_assert(tex.slot != InvalidIndex);
+    n_assert(tex.slot != InvalidIndex);
 
-	VkWriteDescriptorSet write;
-	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.pNext = nullptr;
+    VkWriteDescriptorSet write;
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.pNext = nullptr;
 
-	const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<ResourceTable_Layout>(id.id24);
-	const Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayoutImmutableSamplerFlags>(layout.id24);
+    const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<ResourceTable_Layout>(id.id24);
+    const Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayoutImmutableSamplerFlags>(layout.id24);
 
-	VkDescriptorImageInfo img;
-	if (immutable[tex.slot])
-	{
-		n_assert(tex.sampler == SamplerId::Invalid());
-		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		img.sampler = VK_NULL_HANDLE;
-	}
-	else
-	{
-		write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-		img.sampler = tex.sampler == SamplerId::Invalid() ? VK_NULL_HANDLE : SamplerGetVk(tex.sampler);
-	}
+    VkDescriptorImageInfo img;
+    if (immutable[tex.slot])
+    {
+        n_assert(tex.sampler == SamplerId::Invalid());
+        write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        img.sampler = VK_NULL_HANDLE;
+    }
+    else
+    {
+        write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        img.sampler = tex.sampler == SamplerId::Invalid() ? VK_NULL_HANDLE : SamplerGetVk(tex.sampler);
+    }
 
-	write.descriptorCount = 1;
-	write.dstArrayElement = tex.index;
-	write.dstBinding = tex.slot;
-	write.dstSet = set;
-	img.imageLayout = tex.isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    write.descriptorCount = 1;
+    write.dstArrayElement = tex.index;
+    write.dstBinding = tex.slot;
+    write.dstSet = set;
+    img.imageLayout = tex.isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-	if (tex.tex == TextureId::Invalid())
-		img.imageView = VK_NULL_HANDLE;
-	else if (tex.isStencil)
-		img.imageView = TextureGetVkStencilImageView(tex.tex);
-	else
-		img.imageView = TextureGetVkImageView(tex.tex);
+    if (tex.tex == TextureId::Invalid())
+        img.imageView = VK_NULL_HANDLE;
+    else if (tex.isStencil)
+        img.imageView = TextureGetVkStencilImageView(tex.tex);
+    else
+        img.imageView = TextureGetVkImageView(tex.tex);
 
-	WriteInfo inf;
-	inf.img = img;
-	infoList.Append(inf);
+    WriteInfo inf;
+    inf.img = img;
+    infoList.Append(inf);
 
-	write.pImageInfo = &img;			// this is just provisionary, it will go out of scope immediately, but it wont be null!
-	write.pTexelBufferView = nullptr;
-	write.pBufferInfo = nullptr;
+    write.pImageInfo = &img;            // this is just provisionary, it will go out of scope immediately, but it wont be null!
+    write.pTexelBufferView = nullptr;
+    write.pBufferInfo = nullptr;
 
-	writeList.Append(write);
+    writeList.Append(write);
 }
 
 //------------------------------------------------------------------------------
@@ -249,53 +249,53 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& te
 void 
 ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView& tex)
 {
-	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
-	n_assert(tex.slot != InvalidIndex);
+    n_assert(tex.slot != InvalidIndex);
 
-	VkWriteDescriptorSet write;
-	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.pNext = nullptr;
+    VkWriteDescriptorSet write;
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.pNext = nullptr;
 
-	const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<ResourceTable_Layout>(id.id24);
-	const Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayoutImmutableSamplerFlags>(layout.id24);
+    const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<ResourceTable_Layout>(id.id24);
+    const Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayoutImmutableSamplerFlags>(layout.id24);
 
-	VkDescriptorImageInfo img;
-	if (immutable[tex.slot])
-	{
-		n_assert(tex.sampler == SamplerId::Invalid());
-		write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		img.sampler = VK_NULL_HANDLE;
-	}
-	else
-	{
-		write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-		img.sampler = tex.sampler == SamplerId::Invalid() ? VK_NULL_HANDLE : SamplerGetVk(tex.sampler);
-	}
+    VkDescriptorImageInfo img;
+    if (immutable[tex.slot])
+    {
+        n_assert(tex.sampler == SamplerId::Invalid());
+        write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        img.sampler = VK_NULL_HANDLE;
+    }
+    else
+    {
+        write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+        img.sampler = tex.sampler == SamplerId::Invalid() ? VK_NULL_HANDLE : SamplerGetVk(tex.sampler);
+    }
 
-	write.descriptorCount = 1;
-	write.dstArrayElement = tex.index;
-	write.dstBinding = tex.slot;
-	write.dstSet = set;
-	img.imageLayout = tex.isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    write.descriptorCount = 1;
+    write.dstArrayElement = tex.index;
+    write.dstBinding = tex.slot;
+    write.dstSet = set;
+    img.imageLayout = tex.isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-	if (tex.tex == TextureViewId::Invalid())
-		img.imageView = VK_NULL_HANDLE;
-	else
-		img.imageView = TextureViewGetVk(tex.tex);
+    if (tex.tex == TextureViewId::Invalid())
+        img.imageView = VK_NULL_HANDLE;
+    else
+        img.imageView = TextureViewGetVk(tex.tex);
 
-	WriteInfo inf;
-	inf.img = img;
-	infoList.Append(inf);
+    WriteInfo inf;
+    inf.img = img;
+    infoList.Append(inf);
 
-	write.pImageInfo = &img;			// this is just provisionary, it will go out of scope immediately, but it wont be null!
-	write.pTexelBufferView = nullptr;
-	write.pBufferInfo = nullptr;
+    write.pImageInfo = &img;            // this is just provisionary, it will go out of scope immediately, but it wont be null!
+    write.pTexelBufferView = nullptr;
+    write.pBufferInfo = nullptr;
 
-	writeList.Append(write);
+    writeList.Append(write);
 }
 
 //------------------------------------------------------------------------------
@@ -304,39 +304,39 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView
 void
 ResourceTableSetInputAttachment(const ResourceTableId id, const ResourceTableInputAttachment& tex)
 {
-	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
-	n_assert(tex.slot != InvalidIndex);
+    n_assert(tex.slot != InvalidIndex);
 
-	VkWriteDescriptorSet write;
-	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.pNext = nullptr;
-	write.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-	write.descriptorCount = 1;
-	write.dstArrayElement = tex.index;
-	write.dstBinding = tex.slot;
-	write.dstSet = set;
+    VkWriteDescriptorSet write;
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.pNext = nullptr;
+    write.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+    write.descriptorCount = 1;
+    write.dstArrayElement = tex.index;
+    write.dstBinding = tex.slot;
+    write.dstSet = set;
 
-	VkDescriptorImageInfo img;
-	img.sampler = VK_NULL_HANDLE;
-	img.imageLayout = tex.isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	if (tex.tex == TextureViewId::Invalid())
-		img.imageView = VK_NULL_HANDLE;
-	else
-		img.imageView = TextureViewGetVk(tex.tex);
+    VkDescriptorImageInfo img;
+    img.sampler = VK_NULL_HANDLE;
+    img.imageLayout = tex.isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    if (tex.tex == TextureViewId::Invalid())
+        img.imageView = VK_NULL_HANDLE;
+    else
+        img.imageView = TextureViewGetVk(tex.tex);
 
-	WriteInfo inf;
-	inf.img = img;
-	infoList.Append(inf);
+    WriteInfo inf;
+    inf.img = img;
+    infoList.Append(inf);
 
-	write.pImageInfo = &img;			// this is just provisionary, it will go out of scope immediately, but it wont be null!
-	write.pTexelBufferView = nullptr;
-	write.pBufferInfo = nullptr;
+    write.pImageInfo = &img;            // this is just provisionary, it will go out of scope immediately, but it wont be null!
+    write.pTexelBufferView = nullptr;
+    write.pBufferInfo = nullptr;
 
-	writeList.Append(write);
+    writeList.Append(write);
 }
 
 //------------------------------------------------------------------------------
@@ -345,39 +345,39 @@ ResourceTableSetInputAttachment(const ResourceTableId id, const ResourceTableInp
 void
 ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& tex)
 {
-	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
-	n_assert(tex.slot != InvalidIndex);
+    n_assert(tex.slot != InvalidIndex);
 
-	VkWriteDescriptorSet write;
-	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.pNext = nullptr;
-	write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-	write.descriptorCount = 1;
-	write.dstArrayElement = tex.index;
-	write.dstBinding = tex.slot;
-	write.dstSet = set;
+    VkWriteDescriptorSet write;
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.pNext = nullptr;
+    write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+    write.descriptorCount = 1;
+    write.dstArrayElement = tex.index;
+    write.dstBinding = tex.slot;
+    write.dstSet = set;
 
-	VkDescriptorImageInfo img;
-	img.sampler = VK_NULL_HANDLE;
-	img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-	if (tex.tex == TextureId::Invalid())
-		img.imageView = VK_NULL_HANDLE;
-	else
-		img.imageView = TextureGetVkImageView(tex.tex);
+    VkDescriptorImageInfo img;
+    img.sampler = VK_NULL_HANDLE;
+    img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+    if (tex.tex == TextureId::Invalid())
+        img.imageView = VK_NULL_HANDLE;
+    else
+        img.imageView = TextureGetVkImageView(tex.tex);
 
-	WriteInfo inf;
-	inf.img = img;
-	infoList.Append(inf);
+    WriteInfo inf;
+    inf.img = img;
+    infoList.Append(inf);
 
-	write.pImageInfo = &img;			// this is just provisionary, it will go out of scope immediately, but it wont be null!
-	write.pTexelBufferView = nullptr;
-	write.pBufferInfo = nullptr;
+    write.pImageInfo = &img;            // this is just provisionary, it will go out of scope immediately, but it wont be null!
+    write.pTexelBufferView = nullptr;
+    write.pBufferInfo = nullptr;
 
-	writeList.Append(write);
+    writeList.Append(write);
 }
 
 //------------------------------------------------------------------------------
@@ -386,39 +386,39 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& 
 void 
 ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTextureView& tex)
 {
-	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
-	n_assert(tex.slot != InvalidIndex);
+    n_assert(tex.slot != InvalidIndex);
 
-	VkWriteDescriptorSet write;
-	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.pNext = nullptr;
-	write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-	write.descriptorCount = 1;
-	write.dstArrayElement = tex.index;
-	write.dstBinding = tex.slot;
-	write.dstSet = set;
+    VkWriteDescriptorSet write;
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.pNext = nullptr;
+    write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+    write.descriptorCount = 1;
+    write.dstArrayElement = tex.index;
+    write.dstBinding = tex.slot;
+    write.dstSet = set;
 
-	VkDescriptorImageInfo img;
-	img.sampler = VK_NULL_HANDLE;
-	img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-	if (tex.tex == TextureViewId::Invalid())
-		img.imageView = VK_NULL_HANDLE;
-	else
-		img.imageView = TextureViewGetVk(tex.tex);
+    VkDescriptorImageInfo img;
+    img.sampler = VK_NULL_HANDLE;
+    img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+    if (tex.tex == TextureViewId::Invalid())
+        img.imageView = VK_NULL_HANDLE;
+    else
+        img.imageView = TextureViewGetVk(tex.tex);
 
-	WriteInfo inf;
-	inf.img = img;
-	infoList.Append(inf);
+    WriteInfo inf;
+    inf.img = img;
+    infoList.Append(inf);
 
-	write.pImageInfo = &img;			// this is just provisionary, it will go out of scope immediately, but it wont be null!
-	write.pTexelBufferView = nullptr;
-	write.pBufferInfo = nullptr;
+    write.pImageInfo = &img;            // this is just provisionary, it will go out of scope immediately, but it wont be null!
+    write.pTexelBufferView = nullptr;
+    write.pBufferInfo = nullptr;
 
-	writeList.Append(write);
+    writeList.Append(write);
 }
 
 //------------------------------------------------------------------------------
@@ -427,47 +427,47 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTextureVi
 void 
 ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuffer& buf)
 {
-	n_assert(!buf.texelBuffer);
-	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+    n_assert(!buf.texelBuffer);
+    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
-	n_assert(buf.slot != InvalidIndex);
+    n_assert(buf.slot != InvalidIndex);
 
-	VkWriteDescriptorSet write;
-	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.pNext = nullptr;
-	if (buf.dynamicOffset)
-		write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-	else if (buf.texelBuffer)
-		write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-	else
-		write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	write.descriptorCount = 1;
-	write.dstArrayElement = buf.index;
-	write.dstBinding = buf.slot;
-	write.dstSet = set;
+    VkWriteDescriptorSet write;
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.pNext = nullptr;
+    if (buf.dynamicOffset)
+        write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+    else if (buf.texelBuffer)
+        write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+    else
+        write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    write.descriptorCount = 1;
+    write.dstArrayElement = buf.index;
+    write.dstBinding = buf.slot;
+    write.dstSet = set;
 
-	n_assert2(write.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, "Texel buffers are not implemented");
+    n_assert2(write.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, "Texel buffers are not implemented");
 
-	VkDescriptorBufferInfo buff;
-	if (buf.buf == BufferId::Invalid())
-		buff.buffer = VK_NULL_HANDLE;
-	else
-		buff.buffer = BufferGetVk(buf.buf);
-	buff.offset = buf.offset;
-	buff.range = buf.size == NEBULA_WHOLE_BUFFER_SIZE ? VK_WHOLE_SIZE : buf.size;
+    VkDescriptorBufferInfo buff;
+    if (buf.buf == BufferId::Invalid())
+        buff.buffer = VK_NULL_HANDLE;
+    else
+        buff.buffer = BufferGetVk(buf.buf);
+    buff.offset = buf.offset;
+    buff.range = buf.size == NEBULA_WHOLE_BUFFER_SIZE ? VK_WHOLE_SIZE : buf.size;
 
-	WriteInfo inf;
-	inf.buf = buff;
-	infoList.Append(inf);
+    WriteInfo inf;
+    inf.buf = buff;
+    infoList.Append(inf);
 
-	write.pImageInfo = nullptr;
-	write.pTexelBufferView = nullptr;
-	write.pBufferInfo = &buff;			// this is just provisionary, it will go out of scope immediately, but it wont be null!
+    write.pImageInfo = nullptr;
+    write.pTexelBufferView = nullptr;
+    write.pBufferInfo = &buff;          // this is just provisionary, it will go out of scope immediately, but it wont be null!
 
-	writeList.Append(write);
+    writeList.Append(write);
 }
 
 //------------------------------------------------------------------------------
@@ -476,45 +476,45 @@ ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuff
 void 
 ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& buf)
 {
-	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
-	n_assert(buf.slot != InvalidIndex);
+    n_assert(buf.slot != InvalidIndex);
 
-	VkWriteDescriptorSet write;
-	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.pNext = nullptr;
-	if (buf.dynamicOffset)
-		write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
-	else if (buf.texelBuffer)
-		write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
-	else
-		write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	write.descriptorCount = 1;
-	write.dstArrayElement = buf.index;
-	write.dstBinding = buf.slot;
-	write.dstSet = set;
+    VkWriteDescriptorSet write;
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.pNext = nullptr;
+    if (buf.dynamicOffset)
+        write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+    else if (buf.texelBuffer)
+        write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+    else
+        write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    write.descriptorCount = 1;
+    write.dstArrayElement = buf.index;
+    write.dstBinding = buf.slot;
+    write.dstSet = set;
 
-	n_assert2(write.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, "Texel buffers are not implemented");
+    n_assert2(write.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, "Texel buffers are not implemented");
 
-	VkDescriptorBufferInfo buff;
-	if (buf.buf == BufferId::Invalid())
-		buff.buffer = VK_NULL_HANDLE;
-	else
-		buff.buffer = BufferGetVk(buf.buf);
-	buff.offset = buf.offset;
-	buff.range = buf.size == NEBULA_WHOLE_BUFFER_SIZE ? VK_WHOLE_SIZE : buf.size;
-	WriteInfo inf;
-	inf.buf = buff;
-	infoList.Append(inf);
+    VkDescriptorBufferInfo buff;
+    if (buf.buf == BufferId::Invalid())
+        buff.buffer = VK_NULL_HANDLE;
+    else
+        buff.buffer = BufferGetVk(buf.buf);
+    buff.offset = buf.offset;
+    buff.range = buf.size == NEBULA_WHOLE_BUFFER_SIZE ? VK_WHOLE_SIZE : buf.size;
+    WriteInfo inf;
+    inf.buf = buff;
+    infoList.Append(inf);
 
-	write.pImageInfo = nullptr;
-	write.pTexelBufferView = nullptr;
-	write.pBufferInfo = &buff;			// this is just provisionary, it will go out of scope immediately, but it wont be null!
+    write.pImageInfo = nullptr;
+    write.pTexelBufferView = nullptr;
+    write.pBufferInfo = &buff;          // this is just provisionary, it will go out of scope immediately, but it wont be null!
 
-	writeList.Append(write);
+    writeList.Append(write);
 }
 
 //------------------------------------------------------------------------------
@@ -523,39 +523,39 @@ ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& bu
 void
 ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& samp)
 {
-	VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
-	VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
-	Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
-	Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
+    VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+    Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+    Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
-	n_assert(samp.slot != InvalidIndex);
+    n_assert(samp.slot != InvalidIndex);
 
-	VkWriteDescriptorSet write;
-	write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write.pNext = nullptr;
-	write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-	write.descriptorCount = 1;
-	write.dstArrayElement = 0;
-	write.dstBinding = samp.slot;
-	write.dstSet = set;
+    VkWriteDescriptorSet write;
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.pNext = nullptr;
+    write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+    write.descriptorCount = 1;
+    write.dstArrayElement = 0;
+    write.dstBinding = samp.slot;
+    write.dstSet = set;
 
-	VkDescriptorImageInfo img;
-	if (samp.samp == SamplerId::Invalid())
-		img.sampler = VK_NULL_HANDLE;
-	else
-		img.sampler = SamplerGetVk(samp.samp);
+    VkDescriptorImageInfo img;
+    if (samp.samp == SamplerId::Invalid())
+        img.sampler = VK_NULL_HANDLE;
+    else
+        img.sampler = SamplerGetVk(samp.samp);
 
-	img.imageView = VK_NULL_HANDLE;
-	img.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	WriteInfo inf;
-	inf.img = img;
-	infoList.Append(inf);
+    img.imageView = VK_NULL_HANDLE;
+    img.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    WriteInfo inf;
+    inf.img = img;
+    infoList.Append(inf);
 
-	write.pImageInfo = &img; // this is just provisionary, it will go out of scope immediately, but it wont be null!
-	write.pBufferInfo = nullptr;
-	write.pTexelBufferView = nullptr;
+    write.pImageInfo = &img; // this is just provisionary, it will go out of scope immediately, but it wont be null!
+    write.pBufferInfo = nullptr;
+    write.pTexelBufferView = nullptr;
 
-	writeList.Append(write);
+    writeList.Append(write);
 }
 
 //------------------------------------------------------------------------------
@@ -564,19 +564,19 @@ ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& sa
 void 
 ResourceTableBlock(bool b)
 {
-	bool wasUnblocked = ResourceTableBlocked && !b;
-	ResourceTableBlocked = b;
+    bool wasUnblocked = ResourceTableBlocked && !b;
+    ResourceTableBlocked = b;
 
-	if (wasUnblocked)
-	{
-		// if we were blocked but aren't anymore, make sure to flush any pending resource tables
-		PendingTableCommitsLock.Enter();
-		for (ResourceTableId& table : PendingTableCommits)
-			ResourceTableCommitChanges(table);
+    if (wasUnblocked)
+    {
+        // if we were blocked but aren't anymore, make sure to flush any pending resource tables
+        PendingTableCommitsLock.Enter();
+        for (ResourceTableId& table : PendingTableCommits)
+            ResourceTableCommitChanges(table);
 
-		PendingTableCommits.Clear();
-		PendingTableCommitsLock.Leave();
-	}
+        PendingTableCommits.Clear();
+        PendingTableCommitsLock.Leave();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -585,35 +585,35 @@ ResourceTableBlock(bool b)
 void
 ResourceTableCommitChanges(const ResourceTableId id)
 {
-	// resource tables are blocked, add to pending write queue
-	if (ResourceTableBlocked)
-	{
-		PendingTableCommitsLock.Enter();
-		PendingTableCommits.Append(id);
-		PendingTableCommitsLock.Leave();
-	}
-	else
-	{
-		Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
-		Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
-		VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
+    // resource tables are blocked, add to pending write queue
+    if (ResourceTableBlocked)
+    {
+        PendingTableCommitsLock.Enter();
+        PendingTableCommits.Append(id);
+        PendingTableCommitsLock.Leave();
+    }
+    else
+    {
+        Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
+        Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
+        VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
 
-		// because we store the write-infos in the other list, and the VkWriteDescriptorSet wants a pointer to the structure
-		// we need to re-assign the pointers, but thankfully they have values from before
-		IndexT i;
-		for (i = 0; i < writeList.Size(); i++)
-		{
-			if (writeList[i].pBufferInfo != nullptr) writeList[i].pBufferInfo = &infoList[i].buf;
-			if (writeList[i].pImageInfo != nullptr) writeList[i].pImageInfo = &infoList[i].img;
-			if (writeList[i].pTexelBufferView != nullptr) writeList[i].pTexelBufferView = &infoList[i].tex;
-		}
-		if (i != 0)
-		{
-			vkUpdateDescriptorSets(dev, writeList.Size(), writeList.Begin(), 0, nullptr);
-			writeList.Free();
-			infoList.Free();
-		}
-	}
+        // because we store the write-infos in the other list, and the VkWriteDescriptorSet wants a pointer to the structure
+        // we need to re-assign the pointers, but thankfully they have values from before
+        IndexT i;
+        for (i = 0; i < writeList.Size(); i++)
+        {
+            if (writeList[i].pBufferInfo != nullptr) writeList[i].pBufferInfo = &infoList[i].buf;
+            if (writeList[i].pImageInfo != nullptr) writeList[i].pImageInfo = &infoList[i].img;
+            if (writeList[i].pTexelBufferView != nullptr) writeList[i].pTexelBufferView = &infoList[i].tex;
+        }
+        if (i != 0)
+        {
+            vkUpdateDescriptorSets(dev, writeList.Size(), writeList.Begin(), 0, nullptr);
+            writeList.Free();
+            infoList.Free();
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -622,242 +622,242 @@ ResourceTableCommitChanges(const ResourceTableId id)
 ResourceTableLayoutId
 CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
 {
-	Ids::Id32 id = resourceTableLayoutAllocator.Alloc();
+    Ids::Id32 id = resourceTableLayoutAllocator.Alloc();
 
-	VkDevice& dev = resourceTableLayoutAllocator.Get<ResourceTableLayoutDevice>(id);
-	VkDescriptorSetLayout& layout = resourceTableLayoutAllocator.Get<ResourceTableLayoutSetLayout>(id);
-	Util::Array<Util::Pair<CoreGraphics::SamplerId, uint32_t>>& samplers = resourceTableLayoutAllocator.Get<ResourceTableLayoutSamplers>(id);
-	Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayoutImmutableSamplerFlags>(id);
-	Util::Array<VkDescriptorPoolSize>& poolSizes = resourceTableLayoutAllocator.Get<ResourceTableLayoutPoolSizes>(id);
+    VkDevice& dev = resourceTableLayoutAllocator.Get<ResourceTableLayoutDevice>(id);
+    VkDescriptorSetLayout& layout = resourceTableLayoutAllocator.Get<ResourceTableLayoutSetLayout>(id);
+    Util::Array<Util::Pair<CoreGraphics::SamplerId, uint32_t>>& samplers = resourceTableLayoutAllocator.Get<ResourceTableLayoutSamplers>(id);
+    Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayoutImmutableSamplerFlags>(id);
+    Util::Array<VkDescriptorPoolSize>& poolSizes = resourceTableLayoutAllocator.Get<ResourceTableLayoutPoolSizes>(id);
 
-	dev = Vulkan::GetCurrentDevice();
-	Util::Array<VkDescriptorSetLayoutBinding> bindings;
+    dev = Vulkan::GetCurrentDevice();
+    Util::Array<VkDescriptorSetLayoutBinding> bindings;
 
-	//------------------------------------------------------------------------------
-	/**
-		Textures and Texture-Sampler pairs
-	*/
-	//------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------
+    /**
+        Textures and Texture-Sampler pairs
+    */
+    //------------------------------------------------------------------------------
 
-	VkDescriptorPoolSize sampledImageSize, combinedImageSize;
-	sampledImageSize.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-	sampledImageSize.descriptorCount = 0;
-	combinedImageSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	combinedImageSize.descriptorCount = 0;
+    VkDescriptorPoolSize sampledImageSize, combinedImageSize;
+    sampledImageSize.type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    sampledImageSize.descriptorCount = 0;
+    combinedImageSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    combinedImageSize.descriptorCount = 0;
 
-	// setup textures, or texture-sampler pairs
-	for (IndexT i = 0; i < info.textures.Size(); i++)
-	{
-		const ResourceTableLayoutTexture& tex = info.textures[i];
-		n_assert(tex.num >= 0);
-		VkDescriptorSetLayoutBinding binding;
-		binding.binding = tex.slot;
-		binding.descriptorCount = tex.num;
-		if (tex.immutableSampler == SamplerId::Invalid())
-		{
-			binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-			binding.pImmutableSamplers = nullptr;
-			immutable.Add(tex.slot, false);
-			sampledImageSize.descriptorCount += tex.num;
-		}
-		else
-		{
-			binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			binding.pImmutableSamplers = &SamplerGetVk(tex.immutableSampler);
-			immutable.Add(tex.slot, true);
-			combinedImageSize.descriptorCount += tex.num;
-		}
-		binding.stageFlags = VkTypes::AsVkShaderVisibility(tex.visibility);
-		bindings.Append(binding);
-	}
+    // setup textures, or texture-sampler pairs
+    for (IndexT i = 0; i < info.textures.Size(); i++)
+    {
+        const ResourceTableLayoutTexture& tex = info.textures[i];
+        n_assert(tex.num >= 0);
+        VkDescriptorSetLayoutBinding binding;
+        binding.binding = tex.slot;
+        binding.descriptorCount = tex.num;
+        if (tex.immutableSampler == SamplerId::Invalid())
+        {
+            binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            binding.pImmutableSamplers = nullptr;
+            immutable.Add(tex.slot, false);
+            sampledImageSize.descriptorCount += tex.num;
+        }
+        else
+        {
+            binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            binding.pImmutableSamplers = &SamplerGetVk(tex.immutableSampler);
+            immutable.Add(tex.slot, true);
+            combinedImageSize.descriptorCount += tex.num;
+        }
+        binding.stageFlags = VkTypes::AsVkShaderVisibility(tex.visibility);
+        bindings.Append(binding);
+    }
 
-	// add to list of sizes
-	if (sampledImageSize.descriptorCount > 0)
-		poolSizes.Append(sampledImageSize);
-	if (combinedImageSize.descriptorCount > 0)
-		poolSizes.Append(combinedImageSize);
+    // add to list of sizes
+    if (sampledImageSize.descriptorCount > 0)
+        poolSizes.Append(sampledImageSize);
+    if (combinedImageSize.descriptorCount > 0)
+        poolSizes.Append(combinedImageSize);
 
-	//------------------------------------------------------------------------------
-	/**
-		RW texture
-	*/
-	//------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------
+    /**
+        RW texture
+    */
+    //------------------------------------------------------------------------------
 
-	VkDescriptorPoolSize rwImageSize;
-	rwImageSize.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-	rwImageSize.descriptorCount = 0;
+    VkDescriptorPoolSize rwImageSize;
+    rwImageSize.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+    rwImageSize.descriptorCount = 0;
 
-	// setup readwrite textures
-	for (IndexT i = 0; i < info.rwTextures.Size(); i++)
-	{
-		const ResourceTableLayoutTexture& tex = info.rwTextures[i];
-		n_assert(tex.num >= 0);
-		n_assert(tex.immutableSampler == SamplerId::Invalid());
-		VkDescriptorSetLayoutBinding binding;
-		binding.binding = tex.slot;
-		binding.descriptorCount = tex.num;
-		binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		binding.pImmutableSamplers = nullptr;
-		binding.stageFlags = VkTypes::AsVkShaderVisibility(tex.visibility);
-		bindings.Append(binding);
-		rwImageSize.descriptorCount += tex.num;
-	}
+    // setup readwrite textures
+    for (IndexT i = 0; i < info.rwTextures.Size(); i++)
+    {
+        const ResourceTableLayoutTexture& tex = info.rwTextures[i];
+        n_assert(tex.num >= 0);
+        n_assert(tex.immutableSampler == SamplerId::Invalid());
+        VkDescriptorSetLayoutBinding binding;
+        binding.binding = tex.slot;
+        binding.descriptorCount = tex.num;
+        binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        binding.pImmutableSamplers = nullptr;
+        binding.stageFlags = VkTypes::AsVkShaderVisibility(tex.visibility);
+        bindings.Append(binding);
+        rwImageSize.descriptorCount += tex.num;
+    }
 
-	// add to list of sizes
-	if (rwImageSize.descriptorCount > 0)
-		poolSizes.Append(rwImageSize);
-
-
-	//------------------------------------------------------------------------------
-	/**
-		Constant buffers
-	*/
-	//------------------------------------------------------------------------------
-
-	VkDescriptorPoolSize cbSize, cbDynamicSize;
-	cbSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	cbSize.descriptorCount = 0;
-	cbDynamicSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-	cbDynamicSize.descriptorCount = 0;
-
-	// setup constant buffers
-	for (IndexT i = 0; i < info.constantBuffers.Size(); i++)
-	{
-		const ResourceTableLayoutConstantBuffer& buf = info.constantBuffers[i];
-		n_assert(buf.num >= 0);
-		VkDescriptorSetLayoutBinding binding;
-		binding.binding = buf.slot;
-		binding.descriptorCount = buf.num;
-		binding.descriptorType = buf.dynamicOffset ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		binding.pImmutableSamplers = nullptr;
-		binding.stageFlags = VkTypes::AsVkShaderVisibility(buf.visibility);
-		bindings.Append(binding);
-		buf.dynamicOffset ? cbDynamicSize.descriptorCount += buf.num : cbSize.descriptorCount += buf.num;
-	}
-
-	// add to list of sizes
-	if (cbDynamicSize.descriptorCount > 0)
-		poolSizes.Append(cbDynamicSize);
-	if (cbSize.descriptorCount > 0)
-		poolSizes.Append(cbSize);
+    // add to list of sizes
+    if (rwImageSize.descriptorCount > 0)
+        poolSizes.Append(rwImageSize);
 
 
-	//------------------------------------------------------------------------------
-	/**
-		RW buffers
-	*/
-	//------------------------------------------------------------------------------
-	
-	VkDescriptorPoolSize rwBufferSize, rwDynamicBufferSize;
-	rwBufferSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	rwBufferSize.descriptorCount = 0;
-	rwDynamicBufferSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
-	rwDynamicBufferSize.descriptorCount = 0;
+    //------------------------------------------------------------------------------
+    /**
+        Constant buffers
+    */
+    //------------------------------------------------------------------------------
 
-	// setup readwrite buffers
-	for (IndexT i = 0; i < info.rwBuffers.Size(); i++)
-	{
-		const ResourceTableLayoutShaderRWBuffer& buf = info.rwBuffers[i];
-		n_assert(buf.num >= 0);
-		VkDescriptorSetLayoutBinding binding;
-		binding.binding = buf.slot;
-		binding.descriptorCount = buf.num;
-		binding.descriptorType = buf.dynamicOffset ? VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		binding.pImmutableSamplers = nullptr;
-		binding.stageFlags = VkTypes::AsVkShaderVisibility(buf.visibility);
-		bindings.Append(binding);
-		buf.dynamicOffset ? rwDynamicBufferSize.descriptorCount += buf.num : rwBufferSize.descriptorCount += buf.num;
-	}
+    VkDescriptorPoolSize cbSize, cbDynamicSize;
+    cbSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    cbSize.descriptorCount = 0;
+    cbDynamicSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+    cbDynamicSize.descriptorCount = 0;
 
-	// add to list of sizes
-	if (rwDynamicBufferSize.descriptorCount > 0)
-		poolSizes.Append(rwDynamicBufferSize);
-	if (rwBufferSize.descriptorCount > 0)
-		poolSizes.Append(rwBufferSize);
+    // setup constant buffers
+    for (IndexT i = 0; i < info.constantBuffers.Size(); i++)
+    {
+        const ResourceTableLayoutConstantBuffer& buf = info.constantBuffers[i];
+        n_assert(buf.num >= 0);
+        VkDescriptorSetLayoutBinding binding;
+        binding.binding = buf.slot;
+        binding.descriptorCount = buf.num;
+        binding.descriptorType = buf.dynamicOffset ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        binding.pImmutableSamplers = nullptr;
+        binding.stageFlags = VkTypes::AsVkShaderVisibility(buf.visibility);
+        bindings.Append(binding);
+        buf.dynamicOffset ? cbDynamicSize.descriptorCount += buf.num : cbSize.descriptorCount += buf.num;
+    }
 
-
-	//------------------------------------------------------------------------------
-	/**
-		Samplers
-	*/
-	//------------------------------------------------------------------------------
-	
-	VkDescriptorPoolSize samplerSize;
-	samplerSize.type = VK_DESCRIPTOR_TYPE_SAMPLER;
-	samplerSize.descriptorCount = 0;
-
-	// setup sampler objects
-	for (IndexT i = 0; i < info.samplers.Size(); i++)
-	{
-		const ResourceTableLayoutSampler& samp = info.samplers[i];
-		VkDescriptorSetLayoutBinding binding;
-		binding.binding = samp.slot;
-		binding.descriptorCount = 1;
-		binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-		binding.pImmutableSamplers = &SamplerGetVk(samp.sampler);
-		binding.stageFlags = VkTypes::AsVkShaderVisibility(samp.visibility);
-		bindings.Append(binding);
-
-		// add static samplers
-		samplers.Append(Util::MakePair(samp.sampler, samp.slot));
-		samplerSize.descriptorCount++;
-	}
-
-	if (samplerSize.descriptorCount > 0)
-		poolSizes.Append(samplerSize);
+    // add to list of sizes
+    if (cbDynamicSize.descriptorCount > 0)
+        poolSizes.Append(cbDynamicSize);
+    if (cbSize.descriptorCount > 0)
+        poolSizes.Append(cbSize);
 
 
-	//------------------------------------------------------------------------------
-	/**
-		Input attachments
-	*/
-	//------------------------------------------------------------------------------
-	
-	VkDescriptorPoolSize inputAttachmentSize;
-	inputAttachmentSize.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-	inputAttachmentSize.descriptorCount = 0;
+    //------------------------------------------------------------------------------
+    /**
+        RW buffers
+    */
+    //------------------------------------------------------------------------------
+    
+    VkDescriptorPoolSize rwBufferSize, rwDynamicBufferSize;
+    rwBufferSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    rwBufferSize.descriptorCount = 0;
+    rwDynamicBufferSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+    rwDynamicBufferSize.descriptorCount = 0;
 
-	// setup input attachments
-	for (IndexT i = 0; i < info.inputAttachments.Size(); i++)
-	{
-		const ResourceTableLayoutInputAttachment& tex = info.inputAttachments[i];
-		n_assert(tex.num >= 0);
-		VkDescriptorSetLayoutBinding binding;
-		binding.binding = tex.slot;
-		binding.descriptorCount = tex.num;
-		binding.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		binding.pImmutableSamplers = nullptr;
-		binding.stageFlags = VkTypes::AsVkShaderVisibility(tex.visibility);
-		bindings.Append(binding);
-		inputAttachmentSize.descriptorCount += tex.num;
-	}
+    // setup readwrite buffers
+    for (IndexT i = 0; i < info.rwBuffers.Size(); i++)
+    {
+        const ResourceTableLayoutShaderRWBuffer& buf = info.rwBuffers[i];
+        n_assert(buf.num >= 0);
+        VkDescriptorSetLayoutBinding binding;
+        binding.binding = buf.slot;
+        binding.descriptorCount = buf.num;
+        binding.descriptorType = buf.dynamicOffset ? VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        binding.pImmutableSamplers = nullptr;
+        binding.stageFlags = VkTypes::AsVkShaderVisibility(buf.visibility);
+        bindings.Append(binding);
+        buf.dynamicOffset ? rwDynamicBufferSize.descriptorCount += buf.num : rwBufferSize.descriptorCount += buf.num;
+    }
 
-	if (inputAttachmentSize.descriptorCount > 0)
-		poolSizes.Append(inputAttachmentSize);
+    // add to list of sizes
+    if (rwDynamicBufferSize.descriptorCount > 0)
+        poolSizes.Append(rwDynamicBufferSize);
+    if (rwBufferSize.descriptorCount > 0)
+        poolSizes.Append(rwBufferSize);
 
-	if (bindings.Size() > 0)
-	{
-		VkDescriptorSetLayoutCreateInfo dslInfo =
-		{
-			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-			nullptr,
-			0,																// USE vkCmdPushDescriptorSetKHR IN THE FUTURE!
-			(uint32_t)bindings.Size(),
-			bindings.Begin()
-		};
-		VkResult res = vkCreateDescriptorSetLayout(dev, &dslInfo, nullptr, &layout);
-		n_assert(res == VK_SUCCESS);
-	}
 
-	ResourceTableLayoutId ret;
-	ret.id24 = id;
-	ret.id8 = ResourceTableLayoutIdType;
+    //------------------------------------------------------------------------------
+    /**
+        Samplers
+    */
+    //------------------------------------------------------------------------------
+    
+    VkDescriptorPoolSize samplerSize;
+    samplerSize.type = VK_DESCRIPTOR_TYPE_SAMPLER;
+    samplerSize.descriptorCount = 0;
 
-	// set initial grow and create an initial resource pool
-	resourceTableLayoutAllocator.Get<ResourceTableLayoutPoolGrow>(id) = info.descriptorPoolInitialGrow;
-	ResourceTableLayoutNewPool(ret);
+    // setup sampler objects
+    for (IndexT i = 0; i < info.samplers.Size(); i++)
+    {
+        const ResourceTableLayoutSampler& samp = info.samplers[i];
+        VkDescriptorSetLayoutBinding binding;
+        binding.binding = samp.slot;
+        binding.descriptorCount = 1;
+        binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+        binding.pImmutableSamplers = &SamplerGetVk(samp.sampler);
+        binding.stageFlags = VkTypes::AsVkShaderVisibility(samp.visibility);
+        bindings.Append(binding);
 
-	return ret;
+        // add static samplers
+        samplers.Append(Util::MakePair(samp.sampler, samp.slot));
+        samplerSize.descriptorCount++;
+    }
+
+    if (samplerSize.descriptorCount > 0)
+        poolSizes.Append(samplerSize);
+
+
+    //------------------------------------------------------------------------------
+    /**
+        Input attachments
+    */
+    //------------------------------------------------------------------------------
+    
+    VkDescriptorPoolSize inputAttachmentSize;
+    inputAttachmentSize.type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+    inputAttachmentSize.descriptorCount = 0;
+
+    // setup input attachments
+    for (IndexT i = 0; i < info.inputAttachments.Size(); i++)
+    {
+        const ResourceTableLayoutInputAttachment& tex = info.inputAttachments[i];
+        n_assert(tex.num >= 0);
+        VkDescriptorSetLayoutBinding binding;
+        binding.binding = tex.slot;
+        binding.descriptorCount = tex.num;
+        binding.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+        binding.pImmutableSamplers = nullptr;
+        binding.stageFlags = VkTypes::AsVkShaderVisibility(tex.visibility);
+        bindings.Append(binding);
+        inputAttachmentSize.descriptorCount += tex.num;
+    }
+
+    if (inputAttachmentSize.descriptorCount > 0)
+        poolSizes.Append(inputAttachmentSize);
+
+    if (bindings.Size() > 0)
+    {
+        VkDescriptorSetLayoutCreateInfo dslInfo =
+        {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            nullptr,
+            0,                                                              // USE vkCmdPushDescriptorSetKHR IN THE FUTURE!
+            (uint32_t)bindings.Size(),
+            bindings.Begin()
+        };
+        VkResult res = vkCreateDescriptorSetLayout(dev, &dslInfo, nullptr, &layout);
+        n_assert(res == VK_SUCCESS);
+    }
+
+    ResourceTableLayoutId ret;
+    ret.id24 = id;
+    ret.id8 = ResourceTableLayoutIdType;
+
+    // set initial grow and create an initial resource pool
+    resourceTableLayoutAllocator.Get<ResourceTableLayoutPoolGrow>(id) = info.descriptorPoolInitialGrow;
+    ResourceTableLayoutNewPool(ret);
+
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -866,18 +866,18 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
 void
 DestroyResourceTableLayout(const ResourceTableLayoutId& id)
 {
-	VkDevice& dev = resourceTableLayoutAllocator.Get<ResourceTableLayoutDevice>(id.id24);
-	VkDescriptorSetLayout& layout = resourceTableLayoutAllocator.Get<ResourceTableLayoutSetLayout>(id.id24);
-	vkDestroyDescriptorSetLayout(dev, layout, nullptr);
+    VkDevice& dev = resourceTableLayoutAllocator.Get<ResourceTableLayoutDevice>(id.id24);
+    VkDescriptorSetLayout& layout = resourceTableLayoutAllocator.Get<ResourceTableLayoutSetLayout>(id.id24);
+    vkDestroyDescriptorSetLayout(dev, layout, nullptr);
 
-	// destroy all pools
-	Util::Array<VkDescriptorPool>& pools = resourceTableLayoutAllocator.Get<ResourceTableLayoutDescriptorPools>(id.id24);
-	for (IndexT i = 0; i < pools.Size(); i++)
-		vkDestroyDescriptorPool(dev, pools[i], nullptr);
+    // destroy all pools
+    Util::Array<VkDescriptorPool>& pools = resourceTableLayoutAllocator.Get<ResourceTableLayoutDescriptorPools>(id.id24);
+    for (IndexT i = 0; i < pools.Size(); i++)
+        vkDestroyDescriptorPool(dev, pools[i], nullptr);
 
-	pools.Clear();
+    pools.Clear();
 
-	resourceTableLayoutAllocator.Dealloc(id.id24);
+    resourceTableLayoutAllocator.Dealloc(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -886,46 +886,46 @@ DestroyResourceTableLayout(const ResourceTableLayoutId& id)
 ResourcePipelineId
 CreateResourcePipeline(const ResourcePipelineCreateInfo& info)
 {
-	Ids::Id32 id = resourcePipelineAllocator.Alloc();
+    Ids::Id32 id = resourcePipelineAllocator.Alloc();
 
-	VkDevice& dev = resourcePipelineAllocator.Get<0>(id);
-	VkPipelineLayout& layout = resourcePipelineAllocator.Get<1>(id);
-	dev = Vulkan::GetCurrentDevice();
+    VkDevice& dev = resourcePipelineAllocator.Get<0>(id);
+    VkPipelineLayout& layout = resourcePipelineAllocator.Get<1>(id);
+    dev = Vulkan::GetCurrentDevice();
 
-	Util::Array<VkDescriptorSetLayout> layouts;
+    Util::Array<VkDescriptorSetLayout> layouts;
 
-	IndexT i;
-	for (i = 0; i < info.indices.Size(); i++)
-	{
-		while (info.indices[i] != layouts.Size())
-		{
-			layouts.Append(emptySetLayout);
-		}
-		layouts.Append(resourceTableLayoutAllocator.Get<ResourceTableLayoutSetLayout>(info.tables[i].id24));
-	}
+    IndexT i;
+    for (i = 0; i < info.indices.Size(); i++)
+    {
+        while (info.indices[i] != layouts.Size())
+        {
+            layouts.Append(emptySetLayout);
+        }
+        layouts.Append(resourceTableLayoutAllocator.Get<ResourceTableLayoutSetLayout>(info.tables[i].id24));
+    }
 
-	VkPushConstantRange push;
-	push.size = info.push.size;
-	push.offset = info.push.offset;
-	push.stageFlags = VkTypes::AsVkShaderVisibility(info.push.vis);
+    VkPushConstantRange push;
+    push.size = info.push.size;
+    push.offset = info.push.offset;
+    push.stageFlags = VkTypes::AsVkShaderVisibility(info.push.vis);
 
-	VkPipelineLayoutCreateInfo crInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		nullptr,
-		0,
-		(uint32_t)layouts.Size(),
-		layouts.Begin(),
-		push.size > 0 ? 1u : 0u,
-		&push
-	};
-	VkResult res = vkCreatePipelineLayout(dev, &crInfo, nullptr, &layout);
-	n_assert(res == VK_SUCCESS);
+    VkPipelineLayoutCreateInfo crInfo =
+    {
+        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        nullptr,
+        0,
+        (uint32_t)layouts.Size(),
+        layouts.Begin(),
+        push.size > 0 ? 1u : 0u,
+        &push
+    };
+    VkResult res = vkCreatePipelineLayout(dev, &crInfo, nullptr, &layout);
+    n_assert(res == VK_SUCCESS);
 
-	ResourcePipelineId ret;
-	ret.id24 = id;
-	ret.id8 = ResourcePipelineIdType;
-	return ret;
+    ResourcePipelineId ret;
+    ret.id24 = id;
+    ret.id8 = ResourcePipelineIdType;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -934,11 +934,11 @@ CreateResourcePipeline(const ResourcePipelineCreateInfo& info)
 void
 DestroyResourcePipeline(const ResourcePipelineId& id)
 {
-	VkDevice& dev = resourcePipelineAllocator.Get<0>(id.id24);
-	VkPipelineLayout& layout = resourcePipelineAllocator.Get<1>(id.id24);
-	vkDestroyPipelineLayout(dev, layout, nullptr);
+    VkDevice& dev = resourcePipelineAllocator.Get<0>(id.id24);
+    VkPipelineLayout& layout = resourcePipelineAllocator.Get<1>(id.id24);
+    vkDestroyPipelineLayout(dev, layout, nullptr);
 
-	resourcePipelineAllocator.Dealloc(id.id24);
+    resourcePipelineAllocator.Dealloc(id.id24);
 }
 
 } // namespace CoreGraphics

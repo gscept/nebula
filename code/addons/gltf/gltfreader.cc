@@ -176,7 +176,7 @@ AccessorTypeToNebula(Gltf::Accessor::ComponentType component, Gltf::Accessor::Ty
         case Type::Mat2:
         case Type::Mat3:
         case Type::Mat4:
-		case Type::None: break;
+        case Type::None: break;
     }
     //n_assert2(format != Base::VertexComponentBase::Format::InvalidFormat, "undefined component type");
     return format;

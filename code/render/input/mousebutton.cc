@@ -20,8 +20,8 @@ MouseButton::ToString(Code code)
         case LeftButton:    return "LeftButton";
         case RightButton:   return "RightButton";
         case MiddleButton:  return "MiddleButton";
-		default:			break;
-				
+        default:            break;
+                
     }
     n_error("Invalid mouse button code!\n");
     return "";

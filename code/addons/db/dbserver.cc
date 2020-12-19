@@ -49,8 +49,8 @@ DbServer::OpenStaticDatabase(const String& dbURI)
 
     this->staticDatabase = DbFactory::Instance()->CreateDatabase();
     this->staticDatabase->SetURI(dbURI);
-	// FIXME why was this as exclusive, it is read only anyway
-	this->staticDatabase->SetExclusiveMode(false);
+    // FIXME why was this as exclusive, it is read only anyway
+    this->staticDatabase->SetExclusiveMode(false);
     this->staticDatabase->SetAccessMode(Database::ReadOnly);
     this->staticDatabase->SetIgnoreUnknownColumns(true);
     this->staticDatabase->SetInMemoryDatabase(this->workDbInMemory);
@@ -88,7 +88,7 @@ DbServer::OpenGameDatabase(const String& dbURI)
 
     this->gameDatabase = DbFactory::Instance()->CreateDatabase();
     this->gameDatabase->SetURI(dbURI);
-	this->gameDatabase->SetExclusiveMode(true);
+    this->gameDatabase->SetExclusiveMode(true);
     this->gameDatabase->SetAccessMode(Database::ReadWriteExisting);
     this->gameDatabase->SetIgnoreUnknownColumns(true);
     this->gameDatabase->SetInMemoryDatabase(this->workDbInMemory);
@@ -188,13 +188,13 @@ DbServer::OpenNewGame(const String& profileURI, const String& dbURI)
         }
         bool dbCopied = ioServer->CopyFile("export:db/game.db4", dbURI);
         n_assert(dbCopied);
-		// open the copied database file
-		return this->OpenGameDatabase(dbURI);		
+        // open the copied database file
+        return this->OpenGameDatabase(dbURI);       
     }
-	else
-	{
-		return this->OpenGameDatabase("export:db/game.db4");
-	}    
+    else
+    {
+        return this->OpenGameDatabase("export:db/game.db4");
+    }    
 }
 
 //------------------------------------------------------------------------------

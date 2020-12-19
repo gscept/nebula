@@ -13,8 +13,8 @@ textureHandle ScatterMap;
 
 sampler_state SubsurfaceSampler
 {
-	//Samplers = { AbsorptionMap, ScatterMap };
-	Filter = MinMagMipLinear;
+    //Samplers = { AbsorptionMap, ScatterMap };
+    Filter = MinMagMipLinear;
 };
 
 float SubsurfaceStrength = 0.0f;
@@ -23,35 +23,35 @@ float SubsurfaceCorrection = 0.0f;
 
 render_state SubsurfaceState
 {
-//	DepthEnabled = true;
-//	DepthWrite = true;
-	DepthFunc = Lequal;
+//  DepthEnabled = true;
+//  DepthWrite = true;
+    DepthFunc = Lequal;
 };
 
 //------------------------------------------------------------------------------
 /**
-	Renders Subsurface geometry to buffers.
-	Writes absorption, scattering and mask
+    Renders Subsurface geometry to buffers.
+    Writes absorption, scattering and mask
 */
 shader
 void
 psSkin(
-	in vec3 ViewSpacePos,
-	in vec3 Tangent,
-	in vec3 Normal,
-	in vec3 Binormal,
-	in vec2 UV,
-	[color0] out vec4 absorption,
-	[color1] out vec4 scatter,
-	[color2] out vec4 mask)
+    in vec3 ViewSpacePos,
+    in vec3 Tangent,
+    in vec3 Normal,
+    in vec3 Binormal,
+    in vec2 UV,
+    [color0] out vec4 absorption,
+    [color1] out vec4 scatter,
+    [color2] out vec4 mask)
 {
-	// sample textures
-	absorption = sample2D(AbsorptionMap, SubsurfaceSampler, UV);
-	scatter = sample2D(ScatterMap, SubsurfaceSampler, UV);
-	mask.a = 255;
-	mask.r = SubsurfaceStrength;
-	mask.g = SubsurfaceWidth;
-	mask.b = SubsurfaceCorrection;
+    // sample textures
+    absorption = sample2D(AbsorptionMap, SubsurfaceSampler, UV);
+    scatter = sample2D(ScatterMap, SubsurfaceSampler, UV);
+    mask.a = 255;
+    mask.r = SubsurfaceStrength;
+    mask.g = SubsurfaceWidth;
+    mask.b = SubsurfaceCorrection;
 }
 
 //------------------------------------------------------------------------------

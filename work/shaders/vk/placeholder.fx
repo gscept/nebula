@@ -17,10 +17,10 @@ textureHandle AlbedoMap;
 shader
 void
 vsMain(
-	[slot=0] in vec3 position,
-	[slot=1] in vec3 normal,
-	[slot=2] in vec2 uv,
-	out vec2 UV) 
+    [slot=0] in vec3 position,
+    [slot=1] in vec3 normal,
+    [slot=2] in vec2 uv,
+    out vec2 UV) 
 {
     gl_Position = ViewProjection * Model * vec4(position, 1);
     UV = uv;
@@ -32,9 +32,9 @@ vsMain(
 shader
 void
 psMain(in vec2 uv,
-	[color0] out vec4 Color)
+    [color0] out vec4 Color)
 {
-	Color = sample2D(AlbedoMap, Basic2DSampler, uv);
+    Color = sample2D(AlbedoMap, Basic2DSampler, uv);
 }
 
 //------------------------------------------------------------------------------

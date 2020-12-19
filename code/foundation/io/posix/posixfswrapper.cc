@@ -271,8 +271,8 @@ PosixFSWrapper::IsReadOnly(const String& path)
 
 //------------------------------------------------------------------------------
 /**
-	try to check for a lock by trying to lock the file. inherently racey, but
-	good enough in some situations
+    try to check for a lock by trying to lock the file. inherently racey, but
+    good enough in some situations
 */
 bool
 PosixFSWrapper::IsLocked(const Util::String& path)
@@ -532,7 +532,7 @@ PosixFSWrapper::GetBinDirectory()
     int bytes = MIN(readlink(szTmp, buf, MAXPATHLEN), MAXPATHLEN / 1);
     if (bytes >= 0)
     {
-	buf[bytes] = '\0';
+    buf[bytes] = '\0';
     }
 #endif /* __APPLE__ */
     
@@ -564,7 +564,7 @@ PosixFSWrapper::GetHomeDirectory()
     int bytes = MIN(readlink(szTmp, buf, MAXPATHLEN), MAXPATHLEN / 1);
     if (bytes >= 0)
     {
-	buf[bytes] = '\0';
+    buf[bytes] = '\0';
     }
 #endif
     String pathToExe(buf);

@@ -14,7 +14,7 @@ namespace CoreGraphics
 {
 class ShaderPool : public Vulkan::VkShaderPool
 {
-	__DeclareClass(ShaderPool);
+    __DeclareClass(ShaderPool);
 };
 }
 #else

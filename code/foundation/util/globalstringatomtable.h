@@ -37,9 +37,9 @@ public:
     {
         Util::Array<const char*> strings;
         size_t chunkSize;
-		size_t numChunks;
-		size_t allocSize;
-		size_t usedSize;
+        size_t numChunks;
+        size_t allocSize;
+        size_t usedSize;
         bool growthEnabled;
     };
     

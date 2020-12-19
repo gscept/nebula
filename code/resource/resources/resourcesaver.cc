@@ -14,7 +14,7 @@ __ImplementAbstractClass(Resources::ResourceSaver, 'RESA', Core::RefCounted);
 */
 ResourceSaver::ResourceSaver()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -22,7 +22,7 @@ ResourceSaver::ResourceSaver()
 */
 ResourceSaver::~ResourceSaver()
 {
-	// empty
+    // empty
 }
 
 } // namespace Resources

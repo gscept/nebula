@@ -12,10 +12,10 @@
 #include "input/base/gamepadbase.h"
 namespace Input
 {
-	class GamePad : public Base::GamePadBase
-	{
-		__DeclareClass(GamePad);
-	};
+    class GamePad : public Base::GamePadBase
+    {
+        __DeclareClass(GamePad);
+    };
 }
 #elif __WIN32__
 #include "input/xinput/xinputgamepad.h"

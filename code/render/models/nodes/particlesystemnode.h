@@ -26,79 +26,79 @@ public:
     /// destructor
     virtual ~ParticleSystemNode();
 
-	/// change a mesh during runtime
-	virtual void UpdateMeshResource(const Resources::ResourceName& msh);
+    /// change a mesh during runtime
+    virtual void UpdateMeshResource(const Resources::ResourceName& msh);
     /// get the primitive group index in the emitter mesh
     IndexT GetPrimitiveGroupIndex() const;
     /// set emitter attributes
     void SetEmitterAttrs(const Particles::EmitterAttrs& attrs);
     /// get emitter attributes
     const Particles::EmitterAttrs& GetEmitterAttrs() const;
-	/// get emitter mesh
-	const Particles::EmitterMesh& GetEmitterMesh() const;
-	/// get emitter sample buffer
-	const Particles::EnvelopeSampleBuffer& GetSampleBuffer() const;
+    /// get emitter mesh
+    const Particles::EmitterMesh& GetEmitterMesh() const;
+    /// get emitter sample buffer
+    const Particles::EnvelopeSampleBuffer& GetSampleBuffer() const;
 
-	struct Instance : public ShaderStateNode::Instance
-	{
-		enum DynamicOffsetType
-		{
-			ObjectTransforms,
-			InstancingTransforms,
-			Skinning,
-			Particle
-		};
+    struct Instance : public ShaderStateNode::Instance
+    {
+        enum DynamicOffsetType
+        {
+            ObjectTransforms,
+            InstancingTransforms,
+            Skinning,
+            Particle
+        };
 
-		Math::mat4 particleTransform;
-		uint particleVboOffset;
-		CoreGraphics::BufferId particleVbo;
-		CoreGraphics::PrimitiveGroup group;
-		uint numParticles;
+        Math::mat4 particleTransform;
+        uint particleVboOffset;
+        CoreGraphics::BufferId particleVbo;
+        CoreGraphics::PrimitiveGroup group;
+        uint numParticles;
 
-		IndexT particleConstantsIndex;
+        IndexT particleConstantsIndex;
 
-		Math::bbox boundingBox;
+        Math::bbox boundingBox;
 
-		/// update prior to drawing
-		void Update() override;
-		/// setup instance
-		void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
+        /// update prior to drawing
+        void Update() override;
+        /// setup instance
+        void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 
-		/// another draw function
-		void Draw(const SizeT numInstances, const IndexT baseInstance, Models::ModelNode::DrawPacket* packet);
-	};
+        /// another draw function
+        void Draw(const SizeT numInstances, const IndexT baseInstance, Models::ModelNode::DrawPacket* packet);
+    };
 
-	/// create instance
-	virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent) override;
-	/// get size of instance
-	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
+    /// create instance
+    virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent) override;
+    /// get size of instance
+    virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
 private:
     /// helper function to parse an EnvelopeCurve from a data stream
     Particles::EnvelopeCurve ParseEnvelopeCurveData(const Ptr<IO::BinaryReader>& reader) const;
 
 protected:    
-	/// called once when all pending resource have been loaded
-	virtual void OnFinishedLoading();
-	/// parse data tag (called by loader code)
-	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
+    /// called once when all pending resource have been loaded
+    virtual void OnFinishedLoading();
+    /// parse data tag (called by loader code)
+    virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
 
-	/// apply state
-	void ApplyNodeState() override;
-	/// apply node-level resources
-	void ApplyNodeResources() override;
-	
-	Particles::EnvelopeSampleBuffer sampleBuffer;
-	Particles::EmitterAttrs emitterAttrs;
-	Particles::EmitterMesh emitterMesh;
+    /// apply state
+    void ApplyNodeState() override;
+    /// apply node-level resources
+    void ApplyNodeResources() override;
+    
+    Particles::EnvelopeSampleBuffer sampleBuffer;
+    Particles::EmitterAttrs emitterAttrs;
+    Particles::EmitterMesh emitterMesh;
     Resources::ResourceName meshResId;
 
-	IndexT particleConstantsIndex;
-	IndexT clusteringOffset;
-	CoreGraphics::ResourceTableId clusterResources;
+    IndexT particleConstantsIndex;
+    IndexT clusteringOffset;
+    CoreGraphics::ResourceTableId clusterResources;
 
-	Util::StringAtom tag;
+    Util::StringAtom tag;
     IndexT primGroupIndex;
-	CoreGraphics::MeshId mesh;
+    CoreGraphics::MeshId mesh;
 };
 
 //------------------------------------------------------------------------------
@@ -107,7 +107,7 @@ protected:
 inline const Particles::EmitterMesh&
 ParticleSystemNode::GetEmitterMesh() const
 {
-	return this->emitterMesh;
+    return this->emitterMesh;
 }
 
 //------------------------------------------------------------------------------
@@ -116,7 +116,7 @@ ParticleSystemNode::GetEmitterMesh() const
 inline const Particles::EnvelopeSampleBuffer& 
 ParticleSystemNode::GetSampleBuffer() const
 {
-	return this->sampleBuffer;
+    return this->sampleBuffer;
 }
 
 //------------------------------------------------------------------------------
@@ -154,27 +154,27 @@ ModelNodeInstanceCreator(ParticleSystemNode)
 inline void
 ParticleSystemNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
-	TransformNode::Instance::Setup(node, parent);
-	this->dirty = true;
-	ParticleSystemNode* pparent = static_cast<ParticleSystemNode*>(node);
-	this->resourceTable = pparent->resourceTable;
+    TransformNode::Instance::Setup(node, parent);
+    this->dirty = true;
+    ParticleSystemNode* pparent = static_cast<ParticleSystemNode*>(node);
+    this->resourceTable = pparent->resourceTable;
 
-	this->particleConstantsIndex = pparent->particleConstantsIndex;
-	this->objectTransformsIndex = pparent->objectTransformsIndex;
-	this->instancingTransformsIndex = pparent->instancingTransformsIndex;
-	this->skinningTransformsIndex = pparent->skinningTransformsIndex;
+    this->particleConstantsIndex = pparent->particleConstantsIndex;
+    this->objectTransformsIndex = pparent->objectTransformsIndex;
+    this->instancingTransformsIndex = pparent->instancingTransformsIndex;
+    this->skinningTransformsIndex = pparent->skinningTransformsIndex;
 
-	this->offsets.Resize(4);
-	this->offsets[this->particleConstantsIndex] = 0;
-	this->offsets[this->objectTransformsIndex] = 0;
-	this->offsets[this->skinningTransformsIndex] = 0;
-	this->offsets[this->instancingTransformsIndex] = 0;
+    this->offsets.Resize(4);
+    this->offsets[this->particleConstantsIndex] = 0;
+    this->offsets[this->objectTransformsIndex] = 0;
+    this->offsets[this->skinningTransformsIndex] = 0;
+    this->offsets[this->instancingTransformsIndex] = 0;
 
-	// create surface instance
-	this->surfaceInstance = pparent->materialType->CreateSurfaceInstance(pparent->surface);
+    // create surface instance
+    this->surfaceInstance = pparent->materialType->CreateSurfaceInstance(pparent->surface);
 
-	this->particleVboOffset = 0;
-	this->particleVbo = CoreGraphics::BufferId::Invalid();
+    this->particleVboOffset = 0;
+    this->particleVbo = CoreGraphics::BufferId::Invalid();
 }
 
 } // namespace Particles

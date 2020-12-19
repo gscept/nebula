@@ -48,7 +48,7 @@ BaseGameFeatureUnit::OnActivate()
     
     this->entityManager = this->AttachManager(EntityManager::Create());
     this->blueprintManager = this->AttachManager(BlueprintManager::Create());
-	this->timeManager = this->AttachManager(TimeManager::Create());
+    this->timeManager = this->AttachManager(TimeManager::Create());
 }
 
 //------------------------------------------------------------------------------
@@ -59,7 +59,7 @@ BaseGameFeatureUnit::OnDeactivate()
 {
     this->RemoveManager(this->entityManager);
     this->RemoveManager(this->blueprintManager);
-	this->RemoveManager(this->timeManager);
+    this->RemoveManager(this->timeManager);
     
     FeatureUnit::OnDeactivate();
 }

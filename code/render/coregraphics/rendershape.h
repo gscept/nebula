@@ -37,23 +37,23 @@ public:
         Sphere,
         Cylinder,
         Torus,
-		Cone,
+        Cone,
         Primitives,
         IndexedPrimitives,
-		RenderMesh,
+        RenderMesh,
 
         NumShapeTypes,
         InvalidShapeType,
     };
 
-	enum RenderFlag
-	{
-		CheckDepth = 0,
-		AlwaysOnTop,
-		Wireframe,
+    enum RenderFlag
+    {
+        CheckDepth = 0,
+        AlwaysOnTop,
+        Wireframe,
 
-		NumDepthFlags
-	};
+        NumDepthFlags
+    };
 
     struct RenderShapeVertex
     {
@@ -95,8 +95,8 @@ public:
         RenderFlag depthFlag
     );
 
-	/// setup mesh
-	void SetupMesh(
+    /// setup mesh
+    void SetupMesh(
         const Math::mat4& modelTransform
         , const MeshId mesh
         , const IndexT groupIndex
@@ -107,8 +107,8 @@ public:
     /// get shape type
     Type GetShapeType() const;
     /// get depth flag
-	RenderFlag GetDepthFlag() const;
-	/// get model transform
+    RenderFlag GetDepthFlag() const;
+    /// get model transform
     const Math::mat4& GetModelTransform() const;
     /// get primitive topology
     PrimitiveTopology::Code GetTopology() const;
@@ -128,14 +128,14 @@ public:
     const Math::vec4& GetColor() const;
     /// get vertex layout, returns NULL if none exist
     const VertexLayoutId GetVertexLayout() const;
-	/// get mesh
-	const MeshId GetMesh() const;
-	/// get primitive group
-	const IndexT& GetPrimitiveGroupIndex() const;
+    /// get mesh
+    const MeshId GetMesh() const;
+    /// get primitive group
+    const IndexT& GetPrimitiveGroupIndex() const;
 
 private:
     Type shapeType;
-	RenderFlag depthFlag;
+    RenderFlag depthFlag;
     Math::mat4 modelTransform;
     PrimitiveTopology::Code topology;
     SizeT numPrimitives;
@@ -145,8 +145,8 @@ private:
     Math::vec4 color;
     IndexT vertexDataOffset;
 
-	IndexT groupIndex;
-	MeshId mesh;
+    IndexT groupIndex;
+    MeshId mesh;
     VertexLayoutId vertexLayout;
     Ptr<IO::MemoryStream> dataStream;       // contains vertex/index data
 };
@@ -175,7 +175,7 @@ RenderShape::GetShapeType() const
 inline RenderShape::RenderFlag
 RenderShape::GetDepthFlag() const
 {
-	return this->depthFlag;
+    return this->depthFlag;
 }
 
 //------------------------------------------------------------------------------
@@ -283,7 +283,7 @@ RenderShape::GetVertexLayout() const
 inline const MeshId
 RenderShape::GetMesh() const
 {
-	return this->mesh;
+    return this->mesh;
 }
 
 //------------------------------------------------------------------------------
@@ -292,7 +292,7 @@ RenderShape::GetMesh() const
 inline const IndexT&
 RenderShape::GetPrimitiveGroupIndex() const
 {
-	return this->groupIndex;
+    return this->groupIndex;
 }
 
 } // namespace CoreGraphics

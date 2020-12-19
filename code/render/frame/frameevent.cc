@@ -13,7 +13,7 @@ namespace Frame
 */
 FrameEvent::FrameEvent()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ FrameEvent::FrameEvent()
 */
 FrameEvent::~FrameEvent()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ FrameEvent::~FrameEvent()
 void
 FrameEvent::Discard()
 {
-	this->event = CoreGraphics::EventId::Invalid();
+    this->event = CoreGraphics::EventId::Invalid();
 }
 
 //------------------------------------------------------------------------------
@@ -39,22 +39,22 @@ FrameEvent::Discard()
 void
 FrameEvent::Run(const IndexT frameIndex)
 {
-	IndexT i;
-	for (i = 0; i < this->actions.Size(); i++)
-	{
-		switch (this->actions[i])
-		{
-		case Set:
-			CoreGraphics::EventSignal(this->event, this->queueType, this->dependency);
-			break;
-		case Reset:
-			CoreGraphics::EventReset(this->event, this->queueType, this->dependency);
-			break;
-		case Wait:
-			CoreGraphics::EventWait(this->event, this->queueType);
-			break;
-		}
-	}
+    IndexT i;
+    for (i = 0; i < this->actions.Size(); i++)
+    {
+        switch (this->actions[i])
+        {
+        case Set:
+            CoreGraphics::EventSignal(this->event, this->queueType, this->dependency);
+            break;
+        case Reset:
+            CoreGraphics::EventReset(this->event, this->queueType, this->dependency);
+            break;
+        case Wait:
+            CoreGraphics::EventWait(this->event, this->queueType);
+            break;
+        }
+    }
 }
 
 } // namespace Frame2

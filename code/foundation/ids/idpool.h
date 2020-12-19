@@ -1,19 +1,19 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	This simple Id pool implements a set of free and used consecutive integers.
-	The pool can be configured to only release new Ids up to a certain maximum,
-	after which it asserts. 
+    This simple Id pool implements a set of free and used consecutive integers.
+    The pool can be configured to only release new Ids up to a certain maximum,
+    after which it asserts. 
 
-	Essentially, it allocates a certain amount of new Ids when needed 
-	(not following the Array method of doubling its size) and can recycle
-	the indices for later. Unlike the IdGenerationPool, this one does not
-	keep track of how many times an id has been reused, so use this with
-	caution!
+    Essentially, it allocates a certain amount of new Ids when needed 
+    (not following the Array method of doubling its size) and can recycle
+    the indices for later. Unlike the IdGenerationPool, this one does not
+    keep track of how many times an id has been reused, so use this with
+    caution!
 
-	Maximum amount of bits produced by this system is 32.
-	
-	(C) 2017-2020 Individual contributors, see AUTHORS file
+    Maximum amount of bits produced by this system is 32.
+    
+    (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include <cstdint>
@@ -27,34 +27,34 @@ namespace Ids
 class IdPool
 {
 public:
-	/// constructor
-	IdPool();
-	/// constructor with maximum size
-	IdPool(const uint max, const uint grow = 512);
-	/// destructor
-	~IdPool();
+    /// constructor
+    IdPool();
+    /// constructor with maximum size
+    IdPool(const uint max, const uint grow = 512);
+    /// destructor
+    ~IdPool();
 
-	/// get new id
-	uint Alloc();
-	/// free id
-	void Dealloc(uint id);
-	/// reserve ids
-	void Reserve(uint numIds);
-	/// get number of active ids
-	uint GetNumUsed() const;
-	/// get number of free elements
-	uint GetNumFree() const;
-	/// iterate free indices
-	void ForEachFree(const std::function<void(uint, uint)> fun, SizeT num);
-	/// frees up lhs and erases rhs
-	void Move(uint lhs, uint rhs);
-	/// get grow
-	const uint GetGrow() const;
+    /// get new id
+    uint Alloc();
+    /// free id
+    void Dealloc(uint id);
+    /// reserve ids
+    void Reserve(uint numIds);
+    /// get number of active ids
+    uint GetNumUsed() const;
+    /// get number of free elements
+    uint GetNumFree() const;
+    /// iterate free indices
+    void ForEachFree(const std::function<void(uint, uint)> fun, SizeT num);
+    /// frees up lhs and erases rhs
+    void Move(uint lhs, uint rhs);
+    /// get grow
+    const uint GetGrow() const;
 private:
 
-	Util::Array<uint> free;
-	uint maxId;
-	uint grow;
+    Util::Array<uint> free;
+    uint maxId;
+    uint grow;
 };
 
 //------------------------------------------------------------------------------
@@ -62,10 +62,10 @@ private:
 */
 inline
 IdPool::IdPool() :
-	maxId(0xFFFFFFFF),		// int max
-	grow(512)
+    maxId(0xFFFFFFFF),      // int max
+    grow(512)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -73,10 +73,10 @@ IdPool::IdPool() :
 */
 inline
 IdPool::IdPool(const uint max, const uint grow) :
-	maxId(max),
-	grow(grow)
+    maxId(max),
+    grow(grow)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -85,7 +85,7 @@ IdPool::IdPool(const uint max, const uint grow) :
 inline
 IdPool::~IdPool()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -94,30 +94,30 @@ IdPool::~IdPool()
 inline uint
 IdPool::Alloc()
 {
-	// if we're out of ids, allocate more, but with a controlled grow (not log2 as per Array)
-	if (this->free.Size() == 0)
-	{
-		// calculate how many more indices we are allowed to get
-		SizeT growTo = Math::n_min(this->maxId, this->grow);
-		SizeT oldCapacity = this->free.Capacity();
+    // if we're out of ids, allocate more, but with a controlled grow (not log2 as per Array)
+    if (this->free.Size() == 0)
+    {
+        // calculate how many more indices we are allowed to get
+        SizeT growTo = Math::n_min(this->maxId, this->grow);
+        SizeT oldCapacity = this->free.Capacity();
 
-		// make sure we don't allocate too many indices
-		n_assert2((uint)(oldCapacity + growTo) < this->maxId, "Pool is full! Be careful with how much you allocate!\n");
+        // make sure we don't allocate too many indices
+        n_assert2((uint)(oldCapacity + growTo) < this->maxId, "Pool is full! Be careful with how much you allocate!\n");
 
-		// reserve more space for new Ids
-		this->free.Reserve(oldCapacity + growTo);
-		IndexT i;
-		for (i = this->free.Capacity()-1; i >= oldCapacity; i--)
-		{
-			// count backwards from the max id
-			this->free.Append(this->maxId - i);
-		}
-	}
+        // reserve more space for new Ids
+        this->free.Reserve(oldCapacity + growTo);
+        IndexT i;
+        for (i = this->free.Capacity()-1; i >= oldCapacity; i--)
+        {
+            // count backwards from the max id
+            this->free.Append(this->maxId - i);
+        }
+    }
 
-	// if we do an inverse erase, we don't have to move elements, and since we know the max id, subtract it
-	uint id = this->maxId - this->free.Back();
-	this->free.EraseIndex(this->free.Size() - 1);
-	return id;
+    // if we do an inverse erase, we don't have to move elements, and since we know the max id, subtract it
+    uint id = this->maxId - this->free.Back();
+    this->free.EraseIndex(this->free.Size() - 1);
+    return id;
 }
 
 //------------------------------------------------------------------------------
@@ -126,7 +126,7 @@ IdPool::Alloc()
 inline void
 IdPool::Dealloc(uint id)
 {
-	this->free.Append(this->maxId - id);
+    this->free.Append(this->maxId - id);
 }
 
 //------------------------------------------------------------------------------
@@ -135,12 +135,12 @@ IdPool::Dealloc(uint id)
 inline void 
 IdPool::Reserve(uint numIds)
 {
-	this->maxId = numIds;
-	this->free.Reserve(numIds);
-	for (int i = numIds - 1; i >= 0; i--)
-	{
-		this->free.Append(this->maxId - i);
-	}
+    this->maxId = numIds;
+    this->free.Reserve(numIds);
+    for (int i = numIds - 1; i >= 0; i--)
+    {
+        this->free.Append(this->maxId - i);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -149,7 +149,7 @@ IdPool::Reserve(uint numIds)
 inline uint
 IdPool::GetNumUsed() const
 {
-	return this->free.Capacity() - this->free.Size();
+    return this->free.Capacity() - this->free.Size();
 }
 
 //------------------------------------------------------------------------------
@@ -158,7 +158,7 @@ IdPool::GetNumUsed() const
 inline uint
 IdPool::GetNumFree() const
 {
-	return this->free.Size();
+    return this->free.Size();
 }
 
 //------------------------------------------------------------------------------
@@ -167,16 +167,16 @@ IdPool::GetNumFree() const
 inline void
 IdPool::ForEachFree(const std::function<void(uint, uint)> fun, SizeT num)
 {
-	SizeT size = this->free.Size();
-	for (IndexT i = size - 1; i >= 0; i--)
-	{
-		const uint id = this->maxId - this->free[i];
-		if (id < (uint)num)
-		{
-			fun(id, i);
-			num--;
-		}
-	}
+    SizeT size = this->free.Size();
+    for (IndexT i = size - 1; i >= 0; i--)
+    {
+        const uint id = this->maxId - this->free[i];
+        if (id < (uint)num)
+        {
+            fun(id, i);
+            num--;
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -185,8 +185,8 @@ IdPool::ForEachFree(const std::function<void(uint, uint)> fun, SizeT num)
 inline void
 IdPool::Move(uint idx, uint id)
 {
-	this->free.Append(this->maxId - id);
-	this->free.EraseIndex(idx);
+    this->free.Append(this->maxId - id);
+    this->free.EraseIndex(idx);
 }
 
 //------------------------------------------------------------------------------
@@ -195,7 +195,7 @@ IdPool::Move(uint idx, uint id)
 inline const uint
 IdPool::GetGrow() const
 {
-	return this->grow;
+    return this->grow;
 }
 
 } // namespace Ids

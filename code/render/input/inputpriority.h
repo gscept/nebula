@@ -18,7 +18,7 @@ class InputPriority
 public:
     enum Code
     {
-		DynUi = 0,
+        DynUi = 0,
         Gui,
         Game,
         Other,

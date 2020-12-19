@@ -48,7 +48,7 @@ StdTcpServer::Open()
     this->listenerThread->SetName("StdTcpServer::ListenerThread");
     this->listenerThread->SetTcpServer(this);
     this->listenerThread->SetAddress(this->ipAddress);
-	this->listenerThread->SetThreadAffinity(System::Cpu::Core4);
+    this->listenerThread->SetThreadAffinity(System::Cpu::Core4);
     this->listenerThread->SetClientConnectionClass(*this->connectionClassRtti);
     this->listenerThread->Start();
     

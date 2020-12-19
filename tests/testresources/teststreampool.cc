@@ -15,7 +15,7 @@ __ImplementClass(Test::TestStreamPool, 'TSPO', Resources::ResourceStreamPool);
 */
 TestStreamPool::TestStreamPool() 
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -23,7 +23,7 @@ TestStreamPool::TestStreamPool()
 */
 TestStreamPool::~TestStreamPool()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -32,8 +32,8 @@ TestStreamPool::~TestStreamPool()
 void
 TestStreamPool::Setup()
 {
-	ResourceStreamPool::Setup();
-	this->async = true;
+    ResourceStreamPool::Setup();
+    this->async = true;
 }
 
 //------------------------------------------------------------------------------
@@ -42,7 +42,7 @@ TestStreamPool::Setup()
 void
 TestStreamPool::Discard()
 {
-	ResourceStreamPool::Discard();
+    ResourceStreamPool::Discard();
 }
 
 //------------------------------------------------------------------------------
@@ -51,12 +51,12 @@ TestStreamPool::Discard()
 Resources::ResourcePool::LoadStatus
 TestStreamPool::LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream)
 {
-	void* buf = stream->Map();
-	SizeT size = stream->GetSize();
-	TestResourceData& res = this->alloc.Get<0>(id);
-	res.data.Set((char*)buf, size);
-	stream->Unmap();
-	return ResourcePool::Success;
+    void* buf = stream->Map();
+    SizeT size = stream->GetSize();
+    TestResourceData& res = this->alloc.Get<0>(id);
+    res.data.Set((char*)buf, size);
+    stream->Unmap();
+    return ResourcePool::Success;
 }
 
 //------------------------------------------------------------------------------
@@ -74,7 +74,7 @@ TestStreamPool::Unload(const Ids::Id24 id)
 const TestResourceData&
 TestStreamPool::GetResource(const Resources::ResourceId id)
 {
-	return this->alloc.Get<0>(id.allocId);
+    return this->alloc.Get<0>(id.allocId);
 }
 
 } // namespace Test

@@ -23,13 +23,13 @@ __ImplementClass(Graphics::View, 'VIEW', Core::RefCounted);
 /**
 */
 View::View() :
-	script(nullptr),
-	camera(GraphicsEntityId::Invalid()),
-	stage(nullptr),
-	enabled(true),
-	inBeginFrame(false)
+    script(nullptr),
+    camera(GraphicsEntityId::Invalid()),
+    stage(nullptr),
+    enabled(true),
+    inBeginFrame(false)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -37,7 +37,7 @@ View::View() :
 */
 View::~View()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -46,19 +46,19 @@ View::~View()
 void 
 View::UpdateResources(const IndexT frameIndex)
 {
-	if (this->camera != GraphicsEntityId::Invalid())
-	{
-		// update camera
-		TransformDevice* transDev = TransformDevice::Instance();
-		auto settings = CameraContext::GetSettings(this->camera);
-		transDev->SetViewTransform(CameraContext::GetTransform(this->camera));
-		transDev->SetProjTransform(CameraContext::GetProjection(this->camera));
-		transDev->SetFocalLength(settings.GetFocalLength());
-		transDev->SetNearFarPlane(Math::vec2(settings.GetZNear(), settings.GetZFar()));
+    if (this->camera != GraphicsEntityId::Invalid())
+    {
+        // update camera
+        TransformDevice* transDev = TransformDevice::Instance();
+        auto settings = CameraContext::GetSettings(this->camera);
+        transDev->SetViewTransform(CameraContext::GetTransform(this->camera));
+        transDev->SetProjTransform(CameraContext::GetProjection(this->camera));
+        transDev->SetFocalLength(settings.GetFocalLength());
+        transDev->SetNearFarPlane(Math::vec2(settings.GetZNear(), settings.GetZFar()));
 
-		// fixme! view should hold its own resource tables and send them to ApplyViewSettings!
-		transDev->ApplyViewSettings();
-	}	
+        // fixme! view should hold its own resource tables and send them to ApplyViewSettings!
+        transDev->ApplyViewSettings();
+    }   
 }
 
 //------------------------------------------------------------------------------
@@ -67,20 +67,20 @@ View::UpdateResources(const IndexT frameIndex)
 void 
 View::BeginFrame(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex)
 {
-	n_assert(!inBeginFrame);
-	DisplayDevice* displayDevice = DisplayDevice::Instance();
-	if (this->camera != GraphicsEntityId::Invalid())
-	{
-		//n_assert(this->stage.isvalid()); // hmm, we never use stages
-		inBeginFrame = true;
-	}
+    n_assert(!inBeginFrame);
+    DisplayDevice* displayDevice = DisplayDevice::Instance();
+    if (this->camera != GraphicsEntityId::Invalid())
+    {
+        //n_assert(this->stage.isvalid()); // hmm, we never use stages
+        inBeginFrame = true;
+    }
 
-	// run script asynchronous jobs
-	if (this->script != nullptr)
-	{
-		N_SCOPE(ViewRecord, Render);
-		this->script->RunJobs(frameIndex, bufferIndex);
-	}
+    // run script asynchronous jobs
+    if (this->script != nullptr)
+    {
+        N_SCOPE(ViewRecord, Render);
+        this->script->RunJobs(frameIndex, bufferIndex);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -89,14 +89,14 @@ View::BeginFrame(const IndexT frameIndex, const Timing::Time time, const IndexT 
 void
 View::Render(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex)
 {
-	n_assert(inBeginFrame);
+    n_assert(inBeginFrame);
 
-	// run the actual script
-	if (this->script != nullptr)
-	{
-		N_SCOPE(ViewExecute, Render);
-		this->script->Run(frameIndex, bufferIndex);
-	}
+    // run the actual script
+    if (this->script != nullptr)
+    {
+        N_SCOPE(ViewExecute, Render);
+        this->script->Run(frameIndex, bufferIndex);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -105,7 +105,7 @@ View::Render(const IndexT frameIndex, const Timing::Time time, const IndexT buff
 void 
 View::EndFrame(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex)
 {
-	n_assert(inBeginFrame);
-	inBeginFrame = false;
+    n_assert(inBeginFrame);
+    inBeginFrame = false;
 }
 } // namespace Graphics

@@ -4,7 +4,7 @@
     @class IO::SafeFileStream
   
     Wrapper around FileStream that will save to a temporary file and swap
-	when closed
+    when closed
         
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
@@ -21,7 +21,7 @@ class SafeFileStream : public FileStream
     __DeclareClass(SafeFileStream);
 public:
     /// constructor
-	SafeFileStream();
+    SafeFileStream();
     /// destructor
     virtual ~SafeFileStream();    
     /// open the stream
@@ -29,7 +29,7 @@ public:
     /// close the stream
     virtual void Close();
 protected:
-	IO::URI tmpUri;
+    IO::URI tmpUri;
 };
 
 } // namespace IO

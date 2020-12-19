@@ -18,10 +18,10 @@ using namespace Ids;
 const MeshId
 CreateMesh(const MeshCreateInfo& info)
 {
-	MeshId id = meshPool->ReserveResource(info.name, info.tag);
-	n_assert(id.resourceType == MeshIdType);
-	meshPool->LoadFromMemory(id, &info);
-	return id;
+    MeshId id = meshPool->ReserveResource(info.name, info.tag);
+    n_assert(id.resourceType == MeshIdType);
+    meshPool->LoadFromMemory(id, &info);
+    return id;
 }
 
 //------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ CreateMesh(const MeshCreateInfo& info)
 void
 DestroyMesh(const MeshId id)
 {
-	meshPool->DiscardResource(id);
+    meshPool->DiscardResource(id);
 }
 
 //------------------------------------------------------------------------------
@@ -39,7 +39,7 @@ DestroyMesh(const MeshId id)
 void
 MeshBind(const MeshId id, const IndexT prim)
 {
-	meshPool->BindMesh(id, prim);
+    meshPool->BindMesh(id, prim);
 }
 
 //------------------------------------------------------------------------------
@@ -48,7 +48,7 @@ MeshBind(const MeshId id, const IndexT prim)
 const Util::Array<CoreGraphics::PrimitiveGroup>&
 MeshGetPrimitiveGroups(const MeshId id)
 {
-	return meshPool->GetPrimitiveGroups(id);
+    return meshPool->GetPrimitiveGroups(id);
 }
 
 //------------------------------------------------------------------------------
@@ -57,7 +57,7 @@ MeshGetPrimitiveGroups(const MeshId id)
 const BufferId
 MeshGetVertexBuffer(const MeshId id, const IndexT stream)
 {
-	return meshPool->GetVertexBuffer(id, stream);
+    return meshPool->GetVertexBuffer(id, stream);
 }
 
 //------------------------------------------------------------------------------
@@ -66,7 +66,7 @@ MeshGetVertexBuffer(const MeshId id, const IndexT stream)
 const BufferId
 MeshGetIndexBuffer(const MeshId id)
 {
-	return meshPool->GetIndexBuffer(id);
+    return meshPool->GetIndexBuffer(id);
 }
 
 //------------------------------------------------------------------------------
@@ -75,7 +75,7 @@ MeshGetIndexBuffer(const MeshId id)
 const CoreGraphics::PrimitiveTopology::Code
 MeshGetTopology(const MeshId id)
 {
-	return meshPool->GetPrimitiveTopology(id);
+    return meshPool->GetPrimitiveTopology(id);
 }
 
 } // Base

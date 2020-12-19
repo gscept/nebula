@@ -12,12 +12,12 @@
 
 //------------------------------------------------------------------------------
 /**
-	Literal constructor form string, to use "foobar"_atm will automatically construct a StringAtom
+    Literal constructor form string, to use "foobar"_atm will automatically construct a StringAtom
 */
 Util::StringAtom
 operator ""_atm(const char* c, std::size_t s)
 {
-	return Util::StringAtom(c);
+    return Util::StringAtom(c);
 }
 
 namespace Util
@@ -84,7 +84,7 @@ StringAtom::operator==(const char* rhs) const
 bool 
 StringAtom::operator==(std::nullptr_t) const
 {
-	return this->content == nullptr;
+    return this->content == nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -110,10 +110,10 @@ StringAtom::operator!=(const char* rhs) const
 uint32_t
 StringAtom::StringHashCode() const
 {
-	uint32_t hash = 0;
+    uint32_t hash = 0;
     const char* ptr = this->content;
     size_t len = strlen(ptr);
-	uint32_t i;
+    uint32_t i;
     for (i = 0; i < len; i++)
     {
         hash += ptr[i];
@@ -133,7 +133,7 @@ StringAtom::StringHashCode() const
 Util::StringAtom
 operator""_atm(const char* c)
 {
-	return Util::StringAtom();
+    return Util::StringAtom();
 }
 
 } // namespace Util

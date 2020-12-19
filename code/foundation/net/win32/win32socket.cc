@@ -315,17 +315,17 @@ Win32Socket::Accept(Ptr<Net::Socket>& outSocket)
     n_assert(this->IsOpen());
     n_assert(this->IsBound());
 
-	// check if socket will block
-	fd_set readFd;
-	FD_ZERO(&readFd);
-	FD_SET(this->sock,&readFd);
-	timeval tv;
-	tv.tv_sec = 2;
-	tv.tv_usec = 0;
-	if(select(0,&readFd,0,0,&tv) != 1)
-	{
-		return false;
-	}
+    // check if socket will block
+    fd_set readFd;
+    FD_ZERO(&readFd);
+    FD_SET(this->sock,&readFd);
+    timeval tv;
+    tv.tv_sec = 2;
+    tv.tv_usec = 0;
+    if(select(0,&readFd,0,0,&tv) != 1)
+    {
+        return false;
+    }
 
     this->ClearError();
     outSocket = nullptr;

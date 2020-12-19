@@ -38,8 +38,8 @@ public:
     void Clear();
     /// return true if stack contains element
     bool Contains(const TYPE& e) const;
-	/// erase element at index
-	void EraseIndex(const IndexT i);
+    /// erase element at index
+    void EraseIndex(const IndexT i);
 
     /// push an element on the stack
     void Push(const TYPE& e);
@@ -157,7 +157,7 @@ template<class TYPE>
 void
 Util::Stack<TYPE>::EraseIndex(const IndexT i)
 {
-	this->stackArray.EraseIndex(i);
+    this->stackArray.EraseIndex(i);
 }
 
 //------------------------------------------------------------------------------

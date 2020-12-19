@@ -27,13 +27,13 @@ public:
 
     /// called once when all pending resource have been loaded
     void OnFinishedLoading();
-	/// called when resources have loaded
-	void OnResourcesLoaded();
+    /// called when resources have loaded
+    void OnResourcesLoaded();
     /// parse data tag (called by loader code)
     bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
 
-	/// discard node
-	void Discard();
+    /// discard node
+    void Discard();
 
     /// get the owned character object
     //const Ptr<Character>& GetCharacter() const;
@@ -43,26 +43,26 @@ public:
     /// get the character's animation resource
     const Resources::ResourceId GetAnimationResourceId() const;
 
-	struct Instance : public TransformNode::Instance
-	{
-		Ids::Id32 characterId;
-		IndexT updateFrame;
-		bool updateThisFrame;
-		Util::HashTable<Util::StringAtom, Models::ModelNode::Instance*, 8> activeSkinInstances;
-		const Util::FixedArray<Math::mat4>* joints;
+    struct Instance : public TransformNode::Instance
+    {
+        Ids::Id32 characterId;
+        IndexT updateFrame;
+        bool updateThisFrame;
+        Util::HashTable<Util::StringAtom, Models::ModelNode::Instance*, 8> activeSkinInstances;
+        const Util::FixedArray<Math::mat4>* joints;
 
-		void ApplySkin(const Util::StringAtom& skinName);
-		void RemoveSkin(const Util::StringAtom& skinName);
-	};
+        void ApplySkin(const Util::StringAtom& skinName);
+        void RemoveSkin(const Util::StringAtom& skinName);
+    };
 
-	/// create instance
-	virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent) override;
+    /// create instance
+    virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent) override;
 
-	/// get size of instance
-	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
+    /// get size of instance
+    virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
 
-	/// character nodes should not create the hierarchy implicitly
-	bool GetImplicitHierarchyActivation() const override;
+    /// character nodes should not create the hierarchy implicitly
+    bool GetImplicitHierarchyActivation() const override;
 
 private:
     /// recursively create model node instance and child model node instances
@@ -70,27 +70,27 @@ private:
 
 protected:
 
-	struct SkinList
-	{
-		Util::StringAtom name;
-		Util::FixedArray<Util::StringAtom> skinNames;
-		Util::FixedArray<Models::ModelNode*> skinNodes;
-	};
+    struct SkinList
+    {
+        Util::StringAtom name;
+        Util::FixedArray<Util::StringAtom> skinNames;
+        Util::FixedArray<Models::ModelNode*> skinNodes;
+    };
 
-	Util::FixedArray<SkinList> skinLists;
-	IndexT skinListIndex;
+    Util::FixedArray<SkinList> skinLists;
+    IndexT skinListIndex;
 
-	Util::HashTable<Util::StringAtom, IndexT, 8> skinNodes;
+    Util::HashTable<Util::StringAtom, IndexT, 8> skinNodes;
     Resources::ResourceName animResId;
-	Resources::ResourceName skeletonResId;
+    Resources::ResourceName skeletonResId;
     Resources::ResourceName variationResId;
-	Util::StringAtom tag;
+    Util::StringAtom tag;
     Resources::ResourceId managedAnimResource;
     Resources::ResourceId managedVariationResource;
 
-	CoreGraphics::ShaderId sharedShader;
-	CoreGraphics::BufferId cbo;
-	IndexT cboIndex;
+    CoreGraphics::ShaderId sharedShader;
+    CoreGraphics::BufferId cbo;
+    IndexT cboIndex;
 };
 
 //------------------------------------------------------------------------------
@@ -117,7 +117,7 @@ CharacterNode::GetAnimationResourceId() const
 inline bool 
 CharacterNode::GetImplicitHierarchyActivation() const
 {
-	return true;
+    return true;
 }
 
 ModelNodeInstanceCreator(CharacterNode)

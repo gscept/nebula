@@ -33,8 +33,8 @@ public:
     void UpdateStdoutStream();
     /// Detect if an instance of the process is already running
     bool CheckIfExists();
-	/// Detect if an instance of a given process is running
-	static bool CheckIfExists(const IO::URI & program);
+    /// Detect if an instance of a given process is running
+    static bool CheckIfExists(const IO::URI & program);
 
 private:
     /// launch without stdout capturing

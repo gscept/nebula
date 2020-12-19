@@ -43,34 +43,34 @@ public:
     void EndAttachVisibleLights();
     /// update shadow buffer
     void UpdateShadowBuffers();
-	/// update spot light shadow buffers
-	void UpdateSpotLightShadowBuffers();
-	/// update point light shadow buffers
-	void UpdatePointLightShadowBuffers();
-	/// update global light shadow buffers
-	void UpdateGlobalLightShadowBuffers();
+    /// update spot light shadow buffers
+    void UpdateSpotLightShadowBuffers();
+    /// update point light shadow buffers
+    void UpdatePointLightShadowBuffers();
+    /// update global light shadow buffers
+    void UpdateGlobalLightShadowBuffers();
     /// end lighting frame
     void EndFrame();      
     /// set PointOfInterest
     void SetPointOfInterest(const Math::point& val);
 
-	/// gets array of global light split distances
-	virtual const float* GetSplitDistances() const;
-	/// gets array of global light split transforms
-	virtual const Math::matrix44* GetSplitTransforms() const;
-	/// gets global ligth shadow view
-	virtual const Math::matrix44* GetShadowView() const;
-	/// gets array of far plane global light frustum corners
-	virtual const Math::float4* GetFarPlane() const;
-	/// gets array of near plane global light frustum corners
-	virtual const Math::float4* GetNearPlane() const;
+    /// gets array of global light split distances
+    virtual const float* GetSplitDistances() const;
+    /// gets array of global light split transforms
+    virtual const Math::matrix44* GetSplitTransforms() const;
+    /// gets global ligth shadow view
+    virtual const Math::matrix44* GetShadowView() const;
+    /// gets array of far plane global light frustum corners
+    virtual const Math::float4* GetFarPlane() const;
+    /// gets array of near plane global light frustum corners
+    virtual const Math::float4* GetNearPlane() const;
 
     static const int MaxNumShadowSpotLights = 16;
-	static const int MaxNumShadowPointLights = 4;
-	static const int SplitsPerRow = 2;
-	static const int SplitsPerColumn = 2;
-	static const int ShadowLightsPerRow = 4;
-	static const int ShadowLightsPerColumn = 4;
+    static const int MaxNumShadowPointLights = 4;
+    static const int SplitsPerRow = 2;
+    static const int SplitsPerColumn = 2;
+    static const int ShadowLightsPerRow = 4;
+    static const int ShadowLightsPerColumn = 4;
 
     static const int ShadowAtlasBorderPixels = 32;
     
@@ -84,7 +84,7 @@ protected:
     Ptr<Graphics::CameraEntity> cameraEntity;
     Ptr<Graphics::GlobalLightEntity> globalLightEntity;
     Util::Array<Ptr<Graphics::SpotLightEntity> > spotLightEntities;
-	Util::Array<Ptr<Graphics::PointLightEntity> > pointLightEntities;
+    Util::Array<Ptr<Graphics::PointLightEntity> > pointLightEntities;
     Math::point pointOfInterest;
 };
 

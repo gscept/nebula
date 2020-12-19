@@ -48,13 +48,13 @@ NebulaMain(const Util::CommandLineArgs& args)
     n_printf("NEBULA FOUNDATION MATH-TESTS\n");
     n_printf("========================\n");
 
-	// setup and run test runner
-    Ptr<TestRunner> testRunner = TestRunner::Create();	
+    // setup and run test runner
+    Ptr<TestRunner> testRunner = TestRunner::Create();  
     testRunner->AttachTestCase(ScalarTest::Create());
     testRunner->AttachTestCase(Vec3Test::Create());
     testRunner->AttachTestCase(Vec4Test::Create());
     testRunner->AttachTestCase(Mat4Test::Create());
-	testRunner->AttachTestCase(QuaternionTest::Create());
+    testRunner->AttachTestCase(QuaternionTest::Create());
     testRunner->AttachTestCase(VectorTest::Create());
     testRunner->AttachTestCase(PointTest::Create());
     testRunner->AttachTestCase(PlaneTest::Create());

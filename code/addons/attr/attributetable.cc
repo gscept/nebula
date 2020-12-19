@@ -1088,9 +1088,9 @@ AttributeTable::SetRowToDefaultValues(IndexT rowIndex)
         case UIntType:      this->SetUInt(colIndex, rowIndex, colAttrId.GetUIntDefValue()); break;
         case FloatType:     this->SetFloat(colIndex, rowIndex, colAttrId.GetFloatDefValue()); break;
         case BoolType:      this->SetBool(colIndex, rowIndex, colAttrId.GetBoolDefValue()); break;
-        case Vec4Type:		this->SetVec4(colIndex, rowIndex, colAttrId.GetVec4DefValue()); break;
+        case Vec4Type:      this->SetVec4(colIndex, rowIndex, colAttrId.GetVec4DefValue()); break;
         case StringType:    this->SetString(colIndex, rowIndex, colAttrId.GetStringDefValue()); break;
-        case Mat4Type:		this->SetMat4(colIndex, rowIndex, colAttrId.GetMat4DefValue()); break;
+        case Mat4Type:      this->SetMat4(colIndex, rowIndex, colAttrId.GetMat4DefValue()); break;
         case BlobType:      this->SetBlob(colIndex, rowIndex, colAttrId.GetBlobDefValue()); break;
         case GuidType:      this->SetGuid(colIndex, rowIndex, colAttrId.GetGuidDefValue()); break;
         default:
@@ -1221,9 +1221,9 @@ AttributeTable::SetAttr(const Attr::Attribute& attr, IndexT rowIndex)
     case UIntType:      this->SetUInt(colIndex, rowIndex, attr.GetUInt()); break;
     case FloatType:     this->SetFloat(colIndex, rowIndex, attr.GetFloat()); break;
     case BoolType:      this->SetBool(colIndex, rowIndex, attr.GetBool()); break;
-    case Vec4Type:		this->SetVec4(colIndex, rowIndex, attr.GetVec4()); break;
+    case Vec4Type:      this->SetVec4(colIndex, rowIndex, attr.GetVec4()); break;
     case StringType:    this->SetString(colIndex, rowIndex, attr.GetString()); break;
-    case Mat4Type:		this->SetMat4(colIndex, rowIndex, attr.GetMat4()); break;
+    case Mat4Type:      this->SetMat4(colIndex, rowIndex, attr.GetMat4()); break;
     case BlobType:      this->SetBlob(colIndex, rowIndex, attr.GetBlob()); break;
     case GuidType:      this->SetGuid(colIndex, rowIndex, attr.GetGuid()); break;
     default:
@@ -1246,9 +1246,9 @@ AttributeTable::GetAttr(IndexT rowIndex, IndexT colIndex) const
     case UIntType:      return Attr::Attribute(attrId, this->GetUInt(colIndex, rowIndex)); break;
     case FloatType:     return Attr::Attribute(attrId, this->GetFloat(colIndex, rowIndex)); break;
     case BoolType:      return Attr::Attribute(attrId, this->GetBool(colIndex, rowIndex)); break;
-    case Vec4Type:		return Attr::Attribute(attrId, this->GetVec4(colIndex, rowIndex)); break;
+    case Vec4Type:      return Attr::Attribute(attrId, this->GetVec4(colIndex, rowIndex)); break;
     case StringType:    return Attr::Attribute(attrId, this->GetString(colIndex, rowIndex)); break;
-    case Mat4Type:		return Attr::Attribute(attrId, this->GetMat4(colIndex, rowIndex)); break;
+    case Mat4Type:      return Attr::Attribute(attrId, this->GetMat4(colIndex, rowIndex)); break;
     case BlobType:      return Attr::Attribute(attrId, this->GetBlob(colIndex, rowIndex)); break;
     case GuidType:      return Attr::Attribute(attrId, this->GetGuid(colIndex, rowIndex)); break;
     default:
@@ -1309,9 +1309,9 @@ AttributeTable::PrintDebug()
             case IntType:       str = Util::String::FromInt(this->GetInt(colIndex, rowIndex)); break;
             case FloatType:     str = Util::String::FromFloat(this->GetFloat(colIndex, rowIndex)); break;
             case BoolType:      str = Util::String::FromBool(this->GetBool(colIndex, rowIndex)); break;
-            case Vec4Type:		str = Util::String::FromVec4(this->GetVec4(colIndex, rowIndex)); break;
+            case Vec4Type:      str = Util::String::FromVec4(this->GetVec4(colIndex, rowIndex)); break;
             case StringType:    str = this->GetString(colIndex, rowIndex); break;
-            case Mat4Type:		str = Util::String::FromMat4(this->GetMat4(colIndex, rowIndex)); break;
+            case Mat4Type:      str = Util::String::FromMat4(this->GetMat4(colIndex, rowIndex)); break;
             case BlobType:      str = "(blob)"; break;
             case GuidType:      str = this->GetGuid(colIndex, rowIndex).AsString(); break;
             default:

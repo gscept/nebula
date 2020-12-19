@@ -16,9 +16,9 @@ __ImplementSingleton(Frame::FrameServer);
 /**
 */
 FrameServer::FrameServer() :
-	isOpen(false)
+    isOpen(false)
 {
-	__ConstructSingleton;
+    __ConstructSingleton;
 }
 
 //------------------------------------------------------------------------------
@@ -26,7 +26,7 @@ FrameServer::FrameServer() :
 */
 FrameServer::~FrameServer()
 {
-	__DestructSingleton;
+    __DestructSingleton;
 }
 
 //------------------------------------------------------------------------------
@@ -35,10 +35,10 @@ FrameServer::~FrameServer()
 void
 FrameServer::Open()
 {
-	n_assert(!this->isOpen);
-	this->isOpen = true;
+    n_assert(!this->isOpen);
+    this->isOpen = true;
 
-	Frame::InitPluginTable();
+    Frame::InitPluginTable();
 }
 
 //------------------------------------------------------------------------------
@@ -47,8 +47,8 @@ FrameServer::Open()
 void
 FrameServer::Close()
 {
-	n_assert(this->isOpen);
-	n_assert(this->frameScripts.IsEmpty());
+    n_assert(this->isOpen);
+    n_assert(this->frameScripts.IsEmpty());
 }
 
 //------------------------------------------------------------------------------
@@ -69,12 +69,12 @@ FrameServer::OnWindowResize()
 Ptr<Frame::FrameScript>
 FrameServer::LoadFrameScript(const Resources::ResourceName& name, const IO::URI& path)
 {
-	n_assert(!this->frameScripts.Contains(name));
-	Ptr<Frame::FrameScript> script = FrameScriptLoader::LoadFrameScript(path);
-	script->SetResourceName(name);
-	script->Setup();
-	this->frameScripts.Add(name, script);
-	return script;
+    n_assert(!this->frameScripts.Contains(name));
+    Ptr<Frame::FrameScript> script = FrameScriptLoader::LoadFrameScript(path);
+    script->SetResourceName(name);
+    script->Setup();
+    this->frameScripts.Add(name, script);
+    return script;
 }
 
 //------------------------------------------------------------------------------
@@ -83,9 +83,9 @@ FrameServer::LoadFrameScript(const Resources::ResourceName& name, const IO::URI&
 void
 FrameServer::UnloadFrameScript(const Resources::ResourceName& name)
 {
-	n_assert(this->frameScripts.Contains(name));
-	this->frameScripts[name]->Cleanup();
-	this->frameScripts.Erase(name);
+    n_assert(this->frameScripts.Contains(name));
+    this->frameScripts[name]->Cleanup();
+    this->frameScripts.Erase(name);
 }
 
 } // namespace Frame2

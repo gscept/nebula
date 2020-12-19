@@ -87,13 +87,13 @@ __ImplementClass(ReaderThread, 'RDTR', Threading::Thread);
 void
 ThreadStressTest::Run()
 {
-	App::Application app;
+    App::Application app;
 
-	Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
+    Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
 
-	app.SetAppTitle("Jobs test!");
-	app.SetCompanyName("gscept");
-	app.Open();
+    app.SetAppTitle("Jobs test!");
+    app.SetCompanyName("gscept");
+    app.Open();
 
     Util::Array<Ptr<WorkerThread>> workers;
     for (int i = 0; i < 20; i++)
@@ -108,7 +108,7 @@ ThreadStressTest::Run()
     Ptr<ReaderThread> reader = ReaderThread::Create();
     reader->SetName("Reader");
     reader->Start();
-	
+    
     while (stoppedQueue.Size() < 10)
     {
         n_sleep(0.1);
@@ -119,7 +119,7 @@ ThreadStressTest::Run()
         n_sleep(0.1);
     }
 
-	app.Close();
+    app.Close();
 }
 
 } // namespace Test

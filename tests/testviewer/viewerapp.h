@@ -68,8 +68,8 @@ protected:
     int selectedFile = 0;
 
     Math::transform44 transform;
-	float prevAverageFrameTime = 0.0f;
-	float averageFrameTime = 0.0f;
+    float prevAverageFrameTime = 0.0f;
+    float averageFrameTime = 0.0f;
     float currentFrameTime = 0.0f;
 
     bool showCameraWindow = true;
@@ -85,12 +85,12 @@ protected:
     Math::vec2 orbiting{ 0.0f,0.0f };
     RenderUtil::MayaCameraUtil mayaCameraUtil;
     RenderUtil::FreeCameraUtil freeCamUtil;        
-	Math::vec3 defaultViewPoint{ 8.0f, 8.0f, 0.0f };
+    Math::vec3 defaultViewPoint{ 8.0f, 8.0f, 0.0f };
     Util::Array<float> frametimeHistory;
     
 #if __NEBULA_HTTP__
-	Ptr<Debug::DebugInterface> debugInterface;
-	ushort defaultTcpPort;
+    Ptr<Debug::DebugInterface> debugInterface;
+    ushort defaultTcpPort;
 #endif
 
 #ifdef NEBULA_ENABLE_PROFILING

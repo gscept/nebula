@@ -191,13 +191,13 @@ Database::GetTableByIndex(IndexT i) const
 const Ptr<Table>&
 Database::GetTableByName(const Util::String& tableName) const
 {
-	IndexT idx = this->FindTableIndex(tableName);
-	if(idx == InvalidIndex)
-	{				
-		n_error("Invalid table name in database: %s\ndid you forget a template file?\n",tableName.AsCharPtr());
-	}
-	
-	return this->tables[idx];
+    IndexT idx = this->FindTableIndex(tableName);
+    if(idx == InvalidIndex)
+    {               
+        n_error("Invalid table name in database: %s\ndid you forget a template file?\n",tableName.AsCharPtr());
+    }
+    
+    return this->tables[idx];
 }
 
 //------------------------------------------------------------------------------

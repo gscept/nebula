@@ -13,20 +13,20 @@
 vec4 MatDiffuse;
 render_state WireframeState
 {
-	CullMode = None;
-	DepthWrite = false;
-	DepthEnabled = false;
-	FillMode = Line;
-	MultisampleEnabled = true;
+    CullMode = None;
+    DepthWrite = false;
+    DepthEnabled = false;
+    FillMode = Line;
+    MultisampleEnabled = true;
 };
 
 render_state SolidState
 {
-	CullMode = None;
-	DepthWrite = false;
-	DepthEnabled = false;
-	FillMode = Fill;
-	MultisampleEnabled = true;
+    CullMode = None;
+    DepthWrite = false;
+    DepthEnabled = false;
+    FillMode = Fill;
+    MultisampleEnabled = true;
 };
 
 
@@ -37,7 +37,7 @@ shader
 void
 vsMain([slot=0] in vec4 position)
 {
-	gl_Position = ViewProjection * Model * position;
+    gl_Position = ViewProjection * Model * position;
 }
 
 //------------------------------------------------------------------------------
@@ -48,7 +48,7 @@ shader
 void
 psPicking([color0] out float Id) 
 {
-	Id = float(ObjectId);
+    Id = float(ObjectId);
 }
 
 //------------------------------------------------------------------------------
@@ -58,7 +58,7 @@ shader
 void
 psColor([color0] out vec4 Color) 
 {
-	Color = MatDiffuse;
+    Color = MatDiffuse;
 }
 
 //------------------------------------------------------------------------------

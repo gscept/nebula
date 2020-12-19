@@ -37,8 +37,8 @@ public:
     virtual bool HandleMessage(const Ptr<Messaging::Message>& msg);
     /// do per-frame work
     virtual void DoWork();
-	/// set tcpPort
-	void SetTcpPort(ushort port);
+    /// set tcpPort
+    void SetTcpPort(ushort port);
 
 private:
     ushort DefaultTcpPort;
@@ -57,7 +57,7 @@ private:
 inline void
 HttpMessageHandler::SetTcpPort(ushort port)
 {
-	this->DefaultTcpPort = port;
+    this->DefaultTcpPort = port;
 }
 
 } // namespace HttpMessageHandler

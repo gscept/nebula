@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class	GraphicsFeature::GraphicsManager
+    @class  GraphicsFeature::GraphicsManager
 
     Handles logic for connecting the game layer with the render layer.
     Also handles simple graphics entities such as static models and similar.

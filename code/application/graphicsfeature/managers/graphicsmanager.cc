@@ -156,41 +156,41 @@ void GraphicsManager::InitDestroyModelProcessor()
 */
 void GraphicsManager::InitUpdateTransformProcessor()
 {
-	Game::FilterCreateInfo filterInfo;
-	filterInfo.inclusive[0] = this->pids.modelEntityData;
-	filterInfo.access[0] = Game::AccessMode::READ;
-	filterInfo.inclusive[1] = Game::GetPropertyId("WorldTransform"_atm);
-	filterInfo.access[1] = Game::AccessMode::READ;
-	filterInfo.numInclusive = 2;
+    Game::FilterCreateInfo filterInfo;
+    filterInfo.inclusive[0] = this->pids.modelEntityData;
+    filterInfo.access[0] = Game::AccessMode::READ;
+    filterInfo.inclusive[1] = Game::GetPropertyId("WorldTransform"_atm);
+    filterInfo.access[1] = Game::AccessMode::READ;
+    filterInfo.numInclusive = 2;
 
-	filterInfo.exclusive[0] = Game::GetPropertyId("Static");
-	filterInfo.numExclusive = 1;
+    filterInfo.exclusive[0] = Game::GetPropertyId("Static");
+    filterInfo.numExclusive = 1;
 
-	Game::Filter filter = Game::CreateFilter(filterInfo);
+    Game::Filter filter = Game::CreateFilter(filterInfo);
 
-	Game::ProcessorCreateInfo processorInfo;
-	processorInfo.async = false;
-	processorInfo.filter = filter;
-	processorInfo.name = "GraphicsManager.UpdateTransforms"_atm;
-	processorInfo.OnBeginFrame = [](Game::Dataset data)
-	{
-		for (int v = 0; v < data.numViews; v++)
-		{
-			Game::Dataset::CategoryTableView const& view = data.views[v];
-			ModelEntityData const* const modelEntityDatas = (ModelEntityData*)view.buffers[0];
-			Math::mat4 const* const transforms = (Math::mat4*)view.buffers[1];
+    Game::ProcessorCreateInfo processorInfo;
+    processorInfo.async = false;
+    processorInfo.filter = filter;
+    processorInfo.name = "GraphicsManager.UpdateTransforms"_atm;
+    processorInfo.OnBeginFrame = [](Game::Dataset data)
+    {
+        for (int v = 0; v < data.numViews; v++)
+        {
+            Game::Dataset::CategoryTableView const& view = data.views[v];
+            ModelEntityData const* const modelEntityDatas = (ModelEntityData*)view.buffers[0];
+            Math::mat4 const* const transforms = (Math::mat4*)view.buffers[1];
 
-			for (IndexT i = 0; i < view.numInstances; ++i)
-			{
-				ModelEntityData const& modelEntityData = modelEntityDatas[i];
-				Math::mat4 const& transform = transforms[i];
+            for (IndexT i = 0; i < view.numInstances; ++i)
+            {
+                ModelEntityData const& modelEntityData = modelEntityDatas[i];
+                Math::mat4 const& transform = transforms[i];
 
-				Models::ModelContext::SetTransform(modelEntityData.gid, transform);
-			}
-		}
-	};
+                Models::ModelContext::SetTransform(modelEntityData.gid, transform);
+            }
+        }
+    };
 
-	Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
+    Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
 }
 
 //------------------------------------------------------------------------------
@@ -206,7 +206,7 @@ GraphicsManager::Create()
 
     Singleton->InitCreateModelProcessor();
     Singleton->InitDestroyModelProcessor();
-	Singleton->InitUpdateTransformProcessor();
+    Singleton->InitUpdateTransformProcessor();
 
     Game::ManagerAPI api;
     api.OnBeginFrame = &OnBeginFrame;

@@ -30,9 +30,9 @@ Jobs::JobPortId GraphicsServer::renderSystemsJobPort;
 /**
 */
 GraphicsServer::GraphicsServer() :
-	isOpen(false)
+    isOpen(false)
 {
-	__ConstructSingleton;
+    __ConstructSingleton;
 }
 
 //------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ GraphicsServer::GraphicsServer() :
 */
 GraphicsServer::~GraphicsServer()
 {
-	__DestructSingleton;
+    __DestructSingleton;
 }
 
 //------------------------------------------------------------------------------
@@ -49,161 +49,161 @@ GraphicsServer::~GraphicsServer()
 void
 GraphicsServer::Open()
 {
-	n_assert(!this->isOpen);
-	this->timer = FrameSync::FrameSyncTimer::Create();
-	this->isOpen = true;
+    n_assert(!this->isOpen);
+    this->timer = FrameSync::FrameSyncTimer::Create();
+    this->isOpen = true;
 
-	this->displayDevice = CoreGraphics::DisplayDevice::Create();
-	this->displayDevice->Open();
+    this->displayDevice = CoreGraphics::DisplayDevice::Create();
+    this->displayDevice->Open();
 
-	CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{ 
-		{ 1_MB, 30_MB },	// Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 50
-		{ 1_MB, 0_MB },		// Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
-		{
-			128_MB,			// device local memory block size, textures and vertex/index buffers
-			32_MB,			// memory to use for temporary host buffers which are copied to the GPU
-			32_MB,			// memory used to read back from the GPU
-			128_MB,			// manually flushed memory block size, constant buffers, storage buffers
-		},
-		3,					// number of simultaneous frames (3 = triple buffering, 2 = ... you get the idea)
-		false 				// validation
-	};
-	this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
+    CoreGraphics::GraphicsDeviceCreateInfo gfxInfo{ 
+        { 1_MB, 30_MB },    // Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 50
+        { 1_MB, 0_MB },     // Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
+        {
+            128_MB,         // device local memory block size, textures and vertex/index buffers
+            32_MB,          // memory to use for temporary host buffers which are copied to the GPU
+            32_MB,          // memory used to read back from the GPU
+            128_MB,         // manually flushed memory block size, constant buffers, storage buffers
+        },
+        3,                  // number of simultaneous frames (3 = triple buffering, 2 = ... you get the idea)
+        false               // validation
+    };
+    this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 
-	Jobs::CreateJobPortInfo info =
-	{
-		"RenderJobPort",
-		4,
-		System::Cpu::Core1 | System::Cpu::Core2 | System::Cpu::Core3 | System::Cpu::Core4,
-		UINT_MAX
-	};
-	renderSystemsJobPort = CreateJobPort(info);
-	if (this->graphicsDevice)
-	{
+    Jobs::CreateJobPortInfo info =
+    {
+        "RenderJobPort",
+        4,
+        System::Cpu::Core1 | System::Cpu::Core2 | System::Cpu::Core3 | System::Cpu::Core4,
+        UINT_MAX
+    };
+    renderSystemsJobPort = CreateJobPort(info);
+    if (this->graphicsDevice)
+    {
 
-		// register graphics context pools
-		Resources::ResourceServer::Instance()->RegisterMemoryPool(CoreGraphics::VertexSignaturePool::RTTI);
-		Resources::ResourceServer::Instance()->RegisterMemoryPool(CoreGraphics::MemoryTexturePool::RTTI);
-		Resources::ResourceServer::Instance()->RegisterMemoryPool(CoreGraphics::MemoryMeshPool::RTTI);
+        // register graphics context pools
+        Resources::ResourceServer::Instance()->RegisterMemoryPool(CoreGraphics::VertexSignaturePool::RTTI);
+        Resources::ResourceServer::Instance()->RegisterMemoryPool(CoreGraphics::MemoryTexturePool::RTTI);
+        Resources::ResourceServer::Instance()->RegisterMemoryPool(CoreGraphics::MemoryMeshPool::RTTI);
 
-		Resources::ResourceServer::Instance()->RegisterStreamPool("dds", CoreGraphics::StreamTexturePool::RTTI);
-		Resources::ResourceServer::Instance()->RegisterStreamPool("fxb", CoreGraphics::ShaderPool::RTTI);
-		Resources::ResourceServer::Instance()->RegisterStreamPool("nax3", CoreAnimation::StreamAnimationPool::RTTI);
-		Resources::ResourceServer::Instance()->RegisterStreamPool("nsk3", Characters::StreamSkeletonPool::RTTI); 
-		Resources::ResourceServer::Instance()->RegisterStreamPool("nvx2", CoreGraphics::StreamMeshPool::RTTI);
-		Resources::ResourceServer::Instance()->RegisterStreamPool("sur", Materials::SurfacePool::RTTI);
-		Resources::ResourceServer::Instance()->RegisterStreamPool("n3", Models::StreamModelPool::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("dds", CoreGraphics::StreamTexturePool::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("fxb", CoreGraphics::ShaderPool::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("nax3", CoreAnimation::StreamAnimationPool::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("nsk3", Characters::StreamSkeletonPool::RTTI); 
+        Resources::ResourceServer::Instance()->RegisterStreamPool("nvx2", CoreGraphics::StreamMeshPool::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("sur", Materials::SurfacePool::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("n3", Models::StreamModelPool::RTTI);
 
-		// setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
-		CoreGraphics::layoutPool = Resources::GetMemoryPool<CoreGraphics::VertexSignaturePool>();
-		CoreGraphics::texturePool = Resources::GetMemoryPool<CoreGraphics::MemoryTexturePool>();
-		CoreGraphics::meshPool = Resources::GetMemoryPool<CoreGraphics::MemoryMeshPool>();
+        // setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
+        CoreGraphics::layoutPool = Resources::GetMemoryPool<CoreGraphics::VertexSignaturePool>();
+        CoreGraphics::texturePool = Resources::GetMemoryPool<CoreGraphics::MemoryTexturePool>();
+        CoreGraphics::meshPool = Resources::GetMemoryPool<CoreGraphics::MemoryMeshPool>();
 
-		CoreGraphics::shaderPool = Resources::GetStreamPool<CoreGraphics::ShaderPool>();
-		Models::modelPool = Resources::GetStreamPool<Models::StreamModelPool>();
-		Materials::surfacePool = Resources::GetStreamPool<Materials::SurfacePool>();
+        CoreGraphics::shaderPool = Resources::GetStreamPool<CoreGraphics::ShaderPool>();
+        Models::modelPool = Resources::GetStreamPool<Models::StreamModelPool>();
+        Materials::surfacePool = Resources::GetStreamPool<Materials::SurfacePool>();
 
-		CoreAnimation::animPool = Resources::GetStreamPool<CoreAnimation::StreamAnimationPool>();
-		Characters::skeletonPool = Resources::GetStreamPool<Characters::StreamSkeletonPool>();
+        CoreAnimation::animPool = Resources::GetStreamPool<CoreAnimation::StreamAnimationPool>();
+        Characters::skeletonPool = Resources::GetStreamPool<Characters::StreamSkeletonPool>();
 
-		RenderUtil::DrawFullScreenQuad::Setup();
+        RenderUtil::DrawFullScreenQuad::Setup();
 
-		// load base textures before setting up major subsystems
-		const unsigned char white = 0xFF;
-		const unsigned char black = 0x00;
-		CoreGraphics::TextureCreateInfo texInfo;
-		texInfo.usage = CoreGraphics::TextureUsage::SampleTexture;
+        // load base textures before setting up major subsystems
+        const unsigned char white = 0xFF;
+        const unsigned char black = 0x00;
+        CoreGraphics::TextureCreateInfo texInfo;
+        texInfo.usage = CoreGraphics::TextureUsage::SampleTexture;
 
-		texInfo.tag = "system";
-		texInfo.format = CoreGraphics::PixelFormat::R8;
-		texInfo.bindless = false;
+        texInfo.tag = "system";
+        texInfo.format = CoreGraphics::PixelFormat::R8;
+        texInfo.bindless = false;
 
-		texInfo.type = CoreGraphics::TextureType::Texture1D;
-		texInfo.name = "White1D";
-		texInfo.buffer = &white;
-		CoreGraphics::White1D = CoreGraphics::CreateTexture(texInfo);
+        texInfo.type = CoreGraphics::TextureType::Texture1D;
+        texInfo.name = "White1D";
+        texInfo.buffer = &white;
+        CoreGraphics::White1D = CoreGraphics::CreateTexture(texInfo);
 
-		texInfo.type = CoreGraphics::TextureType::Texture1DArray;
-		texInfo.name = "White1DArray";
-		texInfo.buffer = &white;
-		CoreGraphics::White1DArray = CoreGraphics::CreateTexture(texInfo);
+        texInfo.type = CoreGraphics::TextureType::Texture1DArray;
+        texInfo.name = "White1DArray";
+        texInfo.buffer = &white;
+        CoreGraphics::White1DArray = CoreGraphics::CreateTexture(texInfo);
 
-		texInfo.type = CoreGraphics::TextureType::Texture2D;
-		texInfo.name = "White2D";
-		texInfo.buffer = &white;
-		CoreGraphics::White2D = CoreGraphics::CreateTexture(texInfo);
+        texInfo.type = CoreGraphics::TextureType::Texture2D;
+        texInfo.name = "White2D";
+        texInfo.buffer = &white;
+        CoreGraphics::White2D = CoreGraphics::CreateTexture(texInfo);
 
-		texInfo.type = CoreGraphics::TextureType::Texture2D;
-		texInfo.name = "Black2D";
-		texInfo.buffer = &black;
-		CoreGraphics::Black2D = CoreGraphics::CreateTexture(texInfo);
+        texInfo.type = CoreGraphics::TextureType::Texture2D;
+        texInfo.name = "Black2D";
+        texInfo.buffer = &black;
+        CoreGraphics::Black2D = CoreGraphics::CreateTexture(texInfo);
 
-		texInfo.type = CoreGraphics::TextureType::Texture2DArray;
-		texInfo.name = "White2DArray";
-		texInfo.buffer = &white;
-		CoreGraphics::White2DArray = CoreGraphics::CreateTexture(texInfo);
+        texInfo.type = CoreGraphics::TextureType::Texture2DArray;
+        texInfo.name = "White2DArray";
+        texInfo.buffer = &white;
+        CoreGraphics::White2DArray = CoreGraphics::CreateTexture(texInfo);
 
-		texInfo.type = CoreGraphics::TextureType::Texture3D;
-		texInfo.name = "White3D";
-		texInfo.buffer = &white;
-		CoreGraphics::White3D = CoreGraphics::CreateTexture(texInfo);
+        texInfo.type = CoreGraphics::TextureType::Texture3D;
+        texInfo.name = "White3D";
+        texInfo.buffer = &white;
+        CoreGraphics::White3D = CoreGraphics::CreateTexture(texInfo);
 
-		texInfo.type = CoreGraphics::TextureType::TextureCube;
-		texInfo.name = "WhiteCube";
-		texInfo.buffer = &white;
-		CoreGraphics::WhiteCube = CoreGraphics::CreateTexture(texInfo);
+        texInfo.type = CoreGraphics::TextureType::TextureCube;
+        texInfo.name = "WhiteCube";
+        texInfo.buffer = &white;
+        CoreGraphics::WhiteCube = CoreGraphics::CreateTexture(texInfo);
 
-		texInfo.type = CoreGraphics::TextureType::TextureCubeArray;
-		texInfo.name = "WhiteCubeArray";
-		texInfo.buffer = &white;
-		CoreGraphics::WhiteCubeArray = CoreGraphics::CreateTexture(texInfo);
+        texInfo.type = CoreGraphics::TextureType::TextureCubeArray;
+        texInfo.name = "WhiteCubeArray";
+        texInfo.buffer = &white;
+        CoreGraphics::WhiteCubeArray = CoreGraphics::CreateTexture(texInfo);
 
-		const unsigned int red = 0x000000FF;
-		const unsigned int green = 0x0000FF00;
-		const unsigned int blue = 0x00FF0000;
-		texInfo.type = CoreGraphics::TextureType::Texture2D;
-		texInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
+        const unsigned int red = 0x000000FF;
+        const unsigned int green = 0x0000FF00;
+        const unsigned int blue = 0x00FF0000;
+        texInfo.type = CoreGraphics::TextureType::Texture2D;
+        texInfo.format = CoreGraphics::PixelFormat::R8G8B8A8;
 
-		texInfo.name = "Red2D";
-		texInfo.buffer = &red;
-		CoreGraphics::Red2D = CoreGraphics::CreateTexture(texInfo);
+        texInfo.name = "Red2D";
+        texInfo.buffer = &red;
+        CoreGraphics::Red2D = CoreGraphics::CreateTexture(texInfo);
 
-		texInfo.name = "Green2D";
-		texInfo.buffer = &green;
-		CoreGraphics::Green2D = CoreGraphics::CreateTexture(texInfo);
+        texInfo.name = "Green2D";
+        texInfo.buffer = &green;
+        CoreGraphics::Green2D = CoreGraphics::CreateTexture(texInfo);
 
-		texInfo.name = "Blue2D";
-		texInfo.buffer = &blue;
-		CoreGraphics::Blue2D = CoreGraphics::CreateTexture(texInfo);
+        texInfo.name = "Blue2D";
+        texInfo.buffer = &blue;
+        CoreGraphics::Blue2D = CoreGraphics::CreateTexture(texInfo);
 
-		this->shaderServer = CoreGraphics::ShaderServer::Create();
-		this->shaderServer->Open();
+        this->shaderServer = CoreGraphics::ShaderServer::Create();
+        this->shaderServer->Open();
 
-		this->frameServer = Frame::FrameServer::Create();
-		this->frameServer->Open();
+        this->frameServer = Frame::FrameServer::Create();
+        this->frameServer->Open();
 
-		this->materialServer = Materials::MaterialServer::Create();
-		this->materialServer->Open();
+        this->materialServer = Materials::MaterialServer::Create();
+        this->materialServer->Open();
 
-		this->transformDevice = CoreGraphics::TransformDevice::Create();
-		this->transformDevice->Open();
+        this->transformDevice = CoreGraphics::TransformDevice::Create();
+        this->transformDevice->Open();
 
-		this->shapeRenderer = CoreGraphics::ShapeRenderer::Create();
-		this->shapeRenderer->Open();
-		
-		this->textRenderer = CoreGraphics::TextRenderer::Create();
-		this->textRenderer->Open();
+        this->shapeRenderer = CoreGraphics::ShapeRenderer::Create();
+        this->shapeRenderer->Open();
+        
+        this->textRenderer = CoreGraphics::TextRenderer::Create();
+        this->textRenderer->Open();
 
-		// start timer
-		this->timer->StartTime();
+        // start timer
+        this->timer->StartTime();
 
-		// tell the resource manager to load default resources once we are done setting everything up
-		Resources::ResourceServer::Instance()->LoadDefaultResources();
-	}
-	else
-	{
-		n_error("Failed to create render device");
-	}
+        // tell the resource manager to load default resources once we are done setting everything up
+        Resources::ResourceServer::Instance()->LoadDefaultResources();
+    }
+    else
+    {
+        n_error("Failed to create render device");
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -212,38 +212,38 @@ GraphicsServer::Open()
 void
 GraphicsServer::Close()
 {
-	n_assert(this->isOpen);
-	
-	this->isOpen = false;
+    n_assert(this->isOpen);
+    
+    this->isOpen = false;
 
-	RenderUtil::DrawFullScreenQuad::Discard();
+    RenderUtil::DrawFullScreenQuad::Discard();
 
-	this->textRenderer->Close();
-	this->textRenderer = nullptr;
+    this->textRenderer->Close();
+    this->textRenderer = nullptr;
 
-	this->shapeRenderer->Close();
-	this->shapeRenderer = nullptr;
+    this->shapeRenderer->Close();
+    this->shapeRenderer = nullptr;
 
-	this->transformDevice->Close();
-	this->transformDevice = nullptr;
+    this->transformDevice->Close();
+    this->transformDevice = nullptr;
 
-	this->materialServer->Close();
-	this->materialServer = nullptr;
+    this->materialServer->Close();
+    this->materialServer = nullptr;
 
-	this->frameServer->Close();
-	this->frameServer = nullptr;
+    this->frameServer->Close();
+    this->frameServer = nullptr;
 
-	this->shaderServer->Close();
-	this->shaderServer = nullptr;
+    this->shaderServer->Close();
+    this->shaderServer = nullptr;
 
-	this->displayDevice->Close();
-	this->displayDevice = nullptr;
+    this->displayDevice->Close();
+    this->displayDevice = nullptr;
 
-	this->timer->StopTime();
+    this->timer->StopTime();
     this->timer = nullptr;
 
-	if (this->graphicsDevice) 
-		CoreGraphics::DestroyGraphicsDevice();
+    if (this->graphicsDevice) 
+        CoreGraphics::DestroyGraphicsDevice();
 }
 
 //------------------------------------------------------------------------------
@@ -252,8 +252,8 @@ GraphicsServer::Close()
 void
 GraphicsServer::RegisterGraphicsContext(GraphicsContextFunctionBundle* context, GraphicsContextState* state)
 {
-	this->contexts.Append(context);
-	this->states.Append(state);
+    this->contexts.Append(context);
+    this->states.Append(state);
 }
 
 //------------------------------------------------------------------------------
@@ -262,10 +262,10 @@ GraphicsServer::RegisterGraphicsContext(GraphicsContextFunctionBundle* context, 
 void
 GraphicsServer::UnregisterGraphicsContext(GraphicsContextFunctionBundle* context)
 {
-	IndexT i = this->contexts.FindIndex(context);
-	n_assert(i != InvalidIndex);
-	this->contexts.EraseIndex(i);
-	this->states.EraseIndex(i);
+    IndexT i = this->contexts.FindIndex(context);
+    n_assert(i != InvalidIndex);
+    this->contexts.EraseIndex(i);
+    this->states.EraseIndex(i);
 }
 
 //------------------------------------------------------------------------------
@@ -283,8 +283,8 @@ GraphicsServer::OnWindowResized(CoreGraphics::WindowId wndId)
         }
     }
 
-	// setup gbuffer bindings after frame script is loaded
-	this->shaderServer->SetupGBufferConstants();
+    // setup gbuffer bindings after frame script is loaded
+    this->shaderServer->SetupGBufferConstants();
 }
 
 //------------------------------------------------------------------------------
@@ -293,9 +293,9 @@ GraphicsServer::OnWindowResized(CoreGraphics::WindowId wndId)
 GraphicsEntityId
 GraphicsServer::CreateGraphicsEntity()
 {
-	GraphicsEntityId id;
-	this->entityPool.Allocate(id.id);
-	return id;
+    GraphicsEntityId id;
+    this->entityPool.Allocate(id.id);
+    return id;
 }
 
 //------------------------------------------------------------------------------
@@ -304,7 +304,7 @@ GraphicsServer::CreateGraphicsEntity()
 void
 GraphicsServer::DiscardGraphicsEntity(const GraphicsEntityId id)
 {
-	this->entityPool.Deallocate(id.id);
+    this->entityPool.Deallocate(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -313,7 +313,7 @@ GraphicsServer::DiscardGraphicsEntity(const GraphicsEntityId id)
 bool
 GraphicsServer::IsValidGraphicsEntity(const GraphicsEntityId id)
 {
-	return this->entityPool.IsValid(id.id);
+    return this->entityPool.IsValid(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -322,9 +322,9 @@ GraphicsServer::IsValidGraphicsEntity(const GraphicsEntityId id)
 Ptr<Graphics::Stage>
 GraphicsServer::CreateStage(const Util::StringAtom& name, bool main)
 {
-	Ptr<Stage> stage = Stage::Create();
-	this->stages.Append(stage);
-	return stage;
+    Ptr<Stage> stage = Stage::Create();
+    this->stages.Append(stage);
+    return stage;
 }
 
 //------------------------------------------------------------------------------
@@ -333,9 +333,9 @@ GraphicsServer::CreateStage(const Util::StringAtom& name, bool main)
 void
 GraphicsServer::DiscardStage(const Ptr<Stage>& stage)
 {
-	IndexT i = this->stages.FindIndex(stage);
-	n_assert(i != InvalidIndex);
-	this->stages.EraseIndex(i);
+    IndexT i = this->stages.FindIndex(stage);
+    n_assert(i != InvalidIndex);
+    this->stages.EraseIndex(i);
 }
 
 //------------------------------------------------------------------------------
@@ -344,113 +344,113 @@ GraphicsServer::DiscardStage(const Ptr<Stage>& stage)
 void
 GraphicsServer::BeginFrame()
 {
-	N_SCOPE(BeginFrame, Graphics);
-	this->timer->UpdateTimePolling();
+    N_SCOPE(BeginFrame, Graphics);
+    this->timer->UpdateTimePolling();
 
-	this->frameContext.frameIndex = this->timer->GetFrameIndex();
-	this->frameContext.frameTime = this->timer->GetFrameTime();
-	this->frameContext.time = this->timer->GetTime();
-	this->frameContext.ticks = this->timer->GetTicks();
-	this->frameContext.bufferIndex = CoreGraphics::GetBufferedFrameIndex();
+    this->frameContext.frameIndex = this->timer->GetFrameIndex();
+    this->frameContext.frameTime = this->timer->GetFrameTime();
+    this->frameContext.time = this->timer->GetTime();
+    this->frameContext.ticks = this->timer->GetTicks();
+    this->frameContext.bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-	// update shader server
-	this->shaderServer->BeforeFrame();
+    // update shader server
+    this->shaderServer->BeforeFrame();
 
-	// Collect garbage
-	IndexT i;
-	for (i = 0; i < this->contexts.Size(); i++)
-	{
-		auto state = this->states[i];
+    // Collect garbage
+    IndexT i;
+    for (i = 0; i < this->contexts.Size(); i++)
+    {
+        auto state = this->states[i];
         state->CleanupDelayedRemoveQueue();
 
-		// give contexts a chance to defragment their data
-		if (state->Defragment != nullptr)
-			state->Defragment();
-	}
+        // give contexts a chance to defragment their data
+        if (state->Defragment != nullptr)
+            state->Defragment();
+    }
 
-	N_MARKER_BEGIN(ContextBegin, Graphics);
-	for (i = 0; i < this->contexts.Size(); i++)
-	{
-		if (this->contexts[i]->StageBits)
-			*this->contexts[i]->StageBits = Graphics::OnBeginStage;
-		if (this->contexts[i]->OnBegin != nullptr)
-			this->contexts[i]->OnBegin(this->frameContext);
-	}
-	N_MARKER_END();
+    N_MARKER_BEGIN(ContextBegin, Graphics);
+    for (i = 0; i < this->contexts.Size(); i++)
+    {
+        if (this->contexts[i]->StageBits)
+            *this->contexts[i]->StageBits = Graphics::OnBeginStage;
+        if (this->contexts[i]->OnBegin != nullptr)
+            this->contexts[i]->OnBegin(this->frameContext);
+    }
+    N_MARKER_END();
 
-	// go through views and call prepare view
-	N_MARKER_BEGIN(ContextPrepareView, Graphics);
-	for (i = 0; i < this->views.Size(); i++)
-	{
-		const Ptr<View>& view = this->views[i];
+    // go through views and call prepare view
+    N_MARKER_BEGIN(ContextPrepareView, Graphics);
+    for (i = 0; i < this->views.Size(); i++)
+    {
+        const Ptr<View>& view = this->views[i];
 
-		IndexT j;
-		for (j = 0; j < this->contexts.Size(); j++)
-		{
-			if (this->contexts[j]->StageBits)
-				*this->contexts[j]->StageBits = Graphics::OnPrepareViewStage;
-			if (this->contexts[j]->OnPrepareView != nullptr)
-				this->contexts[j]->OnPrepareView(view, this->frameContext);
-		}		
-	}
-	N_MARKER_END();
+        IndexT j;
+        for (j = 0; j < this->contexts.Size(); j++)
+        {
+            if (this->contexts[j]->StageBits)
+                *this->contexts[j]->StageBits = Graphics::OnPrepareViewStage;
+            if (this->contexts[j]->OnPrepareView != nullptr)
+                this->contexts[j]->OnPrepareView(view, this->frameContext);
+        }       
+    }
+    N_MARKER_END();
 
-	// begin frame
-	CoreGraphics::BeginFrame(this->frameContext.frameIndex);
+    // begin frame
+    CoreGraphics::BeginFrame(this->frameContext.frameIndex);
 
-	// update frame context after begin frame
-	this->frameContext.bufferIndex = CoreGraphics::GetBufferedFrameIndex();
+    // update frame context after begin frame
+    this->frameContext.bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-	N_MARKER_BEGIN(ContextBeforeFrame, Graphics);
-	for (i = 0; i < this->contexts.Size(); i++)
-	{
-		if (this->contexts[i]->StageBits)
-			*this->contexts[i]->StageBits = Graphics::OnBeforeFrameStage;
-		if (this->contexts[i]->OnBeforeFrame != nullptr)
-			this->contexts[i]->OnBeforeFrame(this->frameContext);
-	}
-	N_MARKER_END();
+    N_MARKER_BEGIN(ContextBeforeFrame, Graphics);
+    for (i = 0; i < this->contexts.Size(); i++)
+    {
+        if (this->contexts[i]->StageBits)
+            *this->contexts[i]->StageBits = Graphics::OnBeforeFrameStage;
+        if (this->contexts[i]->OnBeforeFrame != nullptr)
+            this->contexts[i]->OnBeforeFrame(this->frameContext);
+    }
+    N_MARKER_END();
 
-	// consider this whole block of code viable for updating resource tables
-	CoreGraphics::ResourceTableBlock(false);
+    // consider this whole block of code viable for updating resource tables
+    CoreGraphics::ResourceTableBlock(false);
 
-	N_MARKER_BEGIN(ContextUpdateResources, Graphics);
-	for (i = 0; i < this->contexts.Size(); i++)
-	{
-		if (this->contexts[i]->StageBits)
-			*this->contexts[i]->StageBits = Graphics::OnUpdateResourcesStage;
-		if (this->contexts[i]->OnUpdateResources != nullptr)
-			this->contexts[i]->OnUpdateResources(this->frameContext);
-	}
-	N_MARKER_END();
+    N_MARKER_BEGIN(ContextUpdateResources, Graphics);
+    for (i = 0; i < this->contexts.Size(); i++)
+    {
+        if (this->contexts[i]->StageBits)
+            *this->contexts[i]->StageBits = Graphics::OnUpdateResourcesStage;
+        if (this->contexts[i]->OnUpdateResources != nullptr)
+            this->contexts[i]->OnUpdateResources(this->frameContext);
+    }
+    N_MARKER_END();
 
-	// update shader server resources (textures and tick params)
-	this->shaderServer->UpdateResources();
+    // update shader server resources (textures and tick params)
+    this->shaderServer->UpdateResources();
 
-	// go through views and call prepare view
-	N_MARKER_BEGIN(ContextUpdateViewResources, Graphics);
-	for (i = 0; i < this->views.Size(); i++)
-	{
-		const Ptr<View>& view = this->views[i];
+    // go through views and call prepare view
+    N_MARKER_BEGIN(ContextUpdateViewResources, Graphics);
+    for (i = 0; i < this->views.Size(); i++)
+    {
+        const Ptr<View>& view = this->views[i];
 
-		// update view resources (camera)
-		view->UpdateResources(this->frameContext.frameIndex);
+        // update view resources (camera)
+        view->UpdateResources(this->frameContext.frameIndex);
 
-		IndexT j;
-		for (j = 0; j < this->contexts.Size(); j++)
-		{
-			if (this->contexts[j]->StageBits)
-				*this->contexts[j]->StageBits = Graphics::OnUpdateViewResourcesStage;
-			if (this->contexts[j]->OnUpdateViewResources != nullptr)
-				this->contexts[j]->OnUpdateViewResources(view, this->frameContext);
-		}
-	}
-	N_MARKER_END();
+        IndexT j;
+        for (j = 0; j < this->contexts.Size(); j++)
+        {
+            if (this->contexts[j]->StageBits)
+                *this->contexts[j]->StageBits = Graphics::OnUpdateViewResourcesStage;
+            if (this->contexts[j]->OnUpdateViewResources != nullptr)
+                this->contexts[j]->OnUpdateViewResources(view, this->frameContext);
+        }
+    }
+    N_MARKER_END();
 
-	this->currentView = nullptr;
+    this->currentView = nullptr;
 
-	// finish resource updates
-	CoreGraphics::ResourceTableBlock(true);
+    // finish resource updates
+    CoreGraphics::ResourceTableBlock(true);
 }
 
 //------------------------------------------------------------------------------
@@ -459,53 +459,53 @@ GraphicsServer::BeginFrame()
 void 
 GraphicsServer::BeforeViews()
 {
-	N_SCOPE(BeforeViews, Graphics);
+    N_SCOPE(BeforeViews, Graphics);
 
-	// wait for visibility
-	N_MARKER_BEGIN(ContextWaitForWork, Graphics);
-	IndexT i;
-	for (i = 0; i < this->contexts.Size(); i++)
-	{
-		if (this->contexts[i]->StageBits)
-			*this->contexts[i]->StageBits = Graphics::OnWaitForWorkStage;
-		if (this->contexts[i]->OnWaitForWork != nullptr)
-			this->contexts[i]->OnWaitForWork(this->frameContext);
-	}
-	N_MARKER_END();
+    // wait for visibility
+    N_MARKER_BEGIN(ContextWaitForWork, Graphics);
+    IndexT i;
+    for (i = 0; i < this->contexts.Size(); i++)
+    {
+        if (this->contexts[i]->StageBits)
+            *this->contexts[i]->StageBits = Graphics::OnWaitForWorkStage;
+        if (this->contexts[i]->OnWaitForWork != nullptr)
+            this->contexts[i]->OnWaitForWork(this->frameContext);
+    }
+    N_MARKER_END();
 
-	N_MARKER_BEGIN(ContextWorkFinished, Graphics);
-	for (i = 0; i < this->contexts.Size(); i++)
-	{
-		if (this->contexts[i]->StageBits)
-			*this->contexts[i]->StageBits = Graphics::OnWorkFinishedStage;
-		if (this->contexts[i]->OnWorkFinished != nullptr)
-			this->contexts[i]->OnWorkFinished(this->frameContext);
-	}
-	N_MARKER_END();
+    N_MARKER_BEGIN(ContextWorkFinished, Graphics);
+    for (i = 0; i < this->contexts.Size(); i++)
+    {
+        if (this->contexts[i]->StageBits)
+            *this->contexts[i]->StageBits = Graphics::OnWorkFinishedStage;
+        if (this->contexts[i]->OnWorkFinished != nullptr)
+            this->contexts[i]->OnWorkFinished(this->frameContext);
+    }
+    N_MARKER_END();
 
-	// go through views and call before view
-	for (i = 0; i < this->views.Size(); i++)
-	{
-		const Ptr<View>& view = this->views[i];
-		
-		if (!view->enabled)
-			continue;
+    // go through views and call before view
+    for (i = 0; i < this->views.Size(); i++)
+    {
+        const Ptr<View>& view = this->views[i];
+        
+        if (!view->enabled)
+            continue;
 
-		// begin frame on view, this will construct view build jobs
-		this->currentView = view;
-		this->currentView->BeginFrame(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
+        // begin frame on view, this will construct view build jobs
+        this->currentView = view;
+        this->currentView->BeginFrame(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
 
-		N_MARKER_BEGIN(ContextBeforeView, Graphics);
-		IndexT j;
-		for (j = 0; j < this->contexts.Size(); j++)
-		{
-			if (this->contexts[i]->StageBits)
-				*this->contexts[i]->StageBits = Graphics::OnBeforeViewStage;
-			if (this->contexts[j]->OnBeforeView != nullptr)
-				this->contexts[j]->OnBeforeView(view, this->frameContext);
-		}
-		N_MARKER_END();
-	}
+        N_MARKER_BEGIN(ContextBeforeView, Graphics);
+        IndexT j;
+        for (j = 0; j < this->contexts.Size(); j++)
+        {
+            if (this->contexts[i]->StageBits)
+                *this->contexts[i]->StageBits = Graphics::OnBeforeViewStage;
+            if (this->contexts[j]->OnBeforeView != nullptr)
+                this->contexts[j]->OnBeforeView(view, this->frameContext);
+        }
+        N_MARKER_END();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -514,19 +514,19 @@ GraphicsServer::BeforeViews()
 void
 GraphicsServer::RenderViews()
 {
-	N_SCOPE(RenderViews, Graphics);
-	IndexT i;
+    N_SCOPE(RenderViews, Graphics);
+    IndexT i;
 
-	// go through views and call before view
-	for (i = 0; i < this->views.Size(); i++)
-	{
-		const Ptr<View>& view = this->views[i];
+    // go through views and call before view
+    for (i = 0; i < this->views.Size(); i++)
+    {
+        const Ptr<View>& view = this->views[i];
 
-		if (!view->enabled)
-			continue;
+        if (!view->enabled)
+            continue;
 
-		view->Render(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
-	}
+        view->Render(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -535,33 +535,33 @@ GraphicsServer::RenderViews()
 void 
 GraphicsServer::EndViews()
 {
-	N_SCOPE(EndViews, Graphics);
+    N_SCOPE(EndViews, Graphics);
 
-	// go through views and call before view
-	IndexT i;
-	for (i = 0; i < this->views.Size(); i++)
-	{
-		const Ptr<View>& view = this->views[i];
+    // go through views and call before view
+    IndexT i;
+    for (i = 0; i < this->views.Size(); i++)
+    {
+        const Ptr<View>& view = this->views[i];
 
-		if (!view->enabled)
-			continue;
+        if (!view->enabled)
+            continue;
 
-		this->shaderServer->AfterView();
-		this->currentView->EndFrame(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
-		
-		N_MARKER_BEGIN(ContextAfterView, Graphics);
-		IndexT j;
-		for (j = 0; j < this->contexts.Size(); j++)
-		{
-			if (this->contexts[i]->StageBits)
-				*this->contexts[i]->StageBits = Graphics::OnAfterViewStage;
-			if (this->contexts[j]->OnAfterView != nullptr)
-				this->contexts[j]->OnAfterView(view, this->frameContext);
-		}
-		N_MARKER_END();
-	}
+        this->shaderServer->AfterView();
+        this->currentView->EndFrame(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
+        
+        N_MARKER_BEGIN(ContextAfterView, Graphics);
+        IndexT j;
+        for (j = 0; j < this->contexts.Size(); j++)
+        {
+            if (this->contexts[i]->StageBits)
+                *this->contexts[i]->StageBits = Graphics::OnAfterViewStage;
+            if (this->contexts[j]->OnAfterView != nullptr)
+                this->contexts[j]->OnAfterView(view, this->frameContext);
+        }
+        N_MARKER_END();
+    }
 
-	this->currentView = nullptr;
+    this->currentView = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -570,22 +570,22 @@ GraphicsServer::EndViews()
 void 
 GraphicsServer::EndFrame()
 {
-	N_SCOPE(EndFrame, Graphics);
+    N_SCOPE(EndFrame, Graphics);
 
-	// stop the graphics side frame
-	CoreGraphics::EndFrame(this->frameContext.frameIndex);
+    // stop the graphics side frame
+    CoreGraphics::EndFrame(this->frameContext.frameIndex);
 
-	// finish frame and prepare for the next one
-	N_MARKER_BEGIN(ContextAfterFrame, Graphics);
-	IndexT i;
-	for (i = 0; i < this->contexts.Size(); i++)
-	{
-		if (this->contexts[i]->StageBits) 
-			*this->contexts[i]->StageBits = Graphics::OnAfterFrameStage;
-		if (this->contexts[i]->OnAfterFrame != nullptr)
-			this->contexts[i]->OnAfterFrame(this->frameContext);
-	}
-	N_MARKER_END();
+    // finish frame and prepare for the next one
+    N_MARKER_BEGIN(ContextAfterFrame, Graphics);
+    IndexT i;
+    for (i = 0; i < this->contexts.Size(); i++)
+    {
+        if (this->contexts[i]->StageBits) 
+            *this->contexts[i]->StageBits = Graphics::OnAfterFrameStage;
+        if (this->contexts[i]->OnAfterFrame != nullptr)
+            this->contexts[i]->OnAfterFrame(this->frameContext);
+    }
+    N_MARKER_END();
 }
 
 //------------------------------------------------------------------------------
@@ -594,15 +594,15 @@ GraphicsServer::EndFrame()
 Ptr<Graphics::View>
 GraphicsServer::CreateView(const Util::StringAtom& name, const IO::URI& framescript)
 {
-	Ptr<View> view = View::Create();
-	Ptr<Frame::FrameScript> frameScript = Frame::FrameServer::Instance()->LoadFrameScript(name.AsString() + "_framescript", framescript);
-	frameScript->Build();
+    Ptr<View> view = View::Create();
+    Ptr<Frame::FrameScript> frameScript = Frame::FrameServer::Instance()->LoadFrameScript(name.AsString() + "_framescript", framescript);
+    frameScript->Build();
 
-	// setup gbuffer bindings after frame script is loaded
-	this->shaderServer->SetupGBufferConstants();
+    // setup gbuffer bindings after frame script is loaded
+    this->shaderServer->SetupGBufferConstants();
 
-	view->script = frameScript;
-	this->views.Append(view);
+    view->script = frameScript;
+    this->views.Append(view);
 
     // invoke all interested contexts
     IndexT i;
@@ -611,7 +611,7 @@ GraphicsServer::CreateView(const Util::StringAtom& name, const IO::URI& framescr
         if (this->contexts[i]->OnViewCreated != nullptr)
             this->contexts[i]->OnViewCreated(view);
     }
-	return view;
+    return view;
 }
 
 //------------------------------------------------------------------------------
@@ -620,22 +620,22 @@ GraphicsServer::CreateView(const Util::StringAtom& name, const IO::URI& framescr
 Ptr<Graphics::View> 
 GraphicsServer::CreateView(const Util::StringAtom& name)
 {
-	Ptr<View> view = View::Create();
+    Ptr<View> view = View::Create();
 
-	// setup gbuffer bindings after frame script is loaded
-	this->shaderServer->SetupGBufferConstants();
+    // setup gbuffer bindings after frame script is loaded
+    this->shaderServer->SetupGBufferConstants();
 
-	view->script = nullptr;
-	this->views.Append(view);
+    view->script = nullptr;
+    this->views.Append(view);
 
-	// invoke all interested contexts
-	IndexT i;
-	for (i = 0; i < this->contexts.Size(); i++)
-	{
-		if (this->contexts[i]->OnViewCreated != nullptr)
-			this->contexts[i]->OnViewCreated(view);
-	}
-	return view;
+    // invoke all interested contexts
+    IndexT i;
+    for (i = 0; i < this->contexts.Size(); i++)
+    {
+        if (this->contexts[i]->OnViewCreated != nullptr)
+            this->contexts[i]->OnViewCreated(view);
+    }
+    return view;
 }
 
 //------------------------------------------------------------------------------
@@ -644,16 +644,16 @@ GraphicsServer::CreateView(const Util::StringAtom& name)
 void
 GraphicsServer::DiscardView(const Ptr<View>& view)
 {
-	IndexT idx = this->views.FindIndex(view);
-	n_assert(idx != InvalidIndex);
-	this->views.EraseIndex(idx);
+    IndexT idx = this->views.FindIndex(view);
+    n_assert(idx != InvalidIndex);
+    this->views.EraseIndex(idx);
     // invoke all interested contexts    
     for (IndexT i = 0; i < this->contexts.Size(); i++)
     {
         if (this->contexts[i]->OnDiscardView != nullptr)
             this->contexts[i]->OnDiscardView(view);
     }
-	view->script->Discard();
+    view->script->Discard();
 }
 
 
@@ -663,7 +663,7 @@ GraphicsServer::DiscardView(const Ptr<View>& view)
 void
 GraphicsServer::SetCurrentView(const Ptr<View>& view)
 {
-	this->currentView = view;
+    this->currentView = view;
 }
 
 

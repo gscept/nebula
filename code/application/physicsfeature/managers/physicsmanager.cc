@@ -144,7 +144,7 @@ void PhysicsManager::InitDestroyActorProcessor()
             for (IndexT i = 0; i < view.numInstances; ++i)
             {
                 Physics::ActorId const& actorid = actors[i];
-				Physics::DestroyActorInstance(actorid);
+                Physics::DestroyActorInstance(actorid);
             }
         }
     };

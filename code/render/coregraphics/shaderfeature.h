@@ -4,10 +4,10 @@
     @class CoreGraphics::ShaderFeature
     
     Wrapper class for shader permutations by name. 
-	Permutations contain several flags or'ed with | to 
-	indicate shader functionality as modules. Strings
-	are converted to hashes and stored in a hash table for
-	reverse lookup.
+    Permutations contain several flags or'ed with | to 
+    indicate shader functionality as modules. Strings
+    are converted to hashes and stored in a hash table for
+    reverse lookup.
 
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
@@ -41,7 +41,7 @@ private:
     /// convert a bit mask into a shader feature string
     Util::String MaskToString(Mask mask);
 
-	Util::HashTable<Mask, Name> nameHash;
+    Util::HashTable<Mask, Name> nameHash;
 };
 
 } // namespace CoreGraphics

@@ -120,31 +120,31 @@ OnFrame()
 void
 DefragmentCategoryInstances(Category const& cat)
 {
-	Ptr<MemDb::Database> db = GetWorldDatabase();
-	MemDb::Table& table = db->GetTable(cat.instanceTable);
-	MemDb::ColumnIndex ownerColumnId = db->GetColumnId(cat.instanceTable, EntityManager::Singleton->state.ownerId);
+    Ptr<MemDb::Database> db = GetWorldDatabase();
+    MemDb::Table& table = db->GetTable(cat.instanceTable);
+    MemDb::ColumnIndex ownerColumnId = db->GetColumnId(cat.instanceTable, EntityManager::Singleton->state.ownerId);
 
-	// defragment the table. Any instances that has been deleted will be swap'n'popped,
-	// which means we need to update the entity mapping.
-	// The move callback is signaled BEFORE the swap has happened.
-	auto* const map = &(EntityManager::Singleton->state.entityMap);
-	SizeT numErased = db->Defragment(cat.instanceTable, [map, cat, &ownerColumnId, &table](InstanceId from, InstanceId to)
-	{
-		Game::Entity fromEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[from.id].id;
-		Game::Entity toEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[to.id].id;
-		if (!IsValid(fromEntity))
-		{
-			// we need to add this instances new index to the to the freeids list, since it's been deleted.
-			// the 'from' instance will be swapped with the 'to' instance, so we just add the 'to' id to the list;
-			// and it will automatically be defragged
-			table.freeIds.Append(to.id);
-		}
-		else
-		{
-			(*map)[Ids::Index(fromEntity.id)].instance = to;
-			(*map)[Ids::Index(toEntity.id)].instance = from;
-		}
-	});
+    // defragment the table. Any instances that has been deleted will be swap'n'popped,
+    // which means we need to update the entity mapping.
+    // The move callback is signaled BEFORE the swap has happened.
+    auto* const map = &(EntityManager::Singleton->state.entityMap);
+    SizeT numErased = db->Defragment(cat.instanceTable, [map, cat, &ownerColumnId, &table](InstanceId from, InstanceId to)
+    {
+        Game::Entity fromEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[from.id].id;
+        Game::Entity toEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[to.id].id;
+        if (!IsValid(fromEntity))
+        {
+            // we need to add this instances new index to the to the freeids list, since it's been deleted.
+            // the 'from' instance will be swapped with the 'to' instance, so we just add the 'to' id to the list;
+            // and it will automatically be defragged
+            table.freeIds.Append(to.id);
+        }
+        else
+        {
+            (*map)[Ids::Index(fromEntity.id)].instance = to;
+            (*map)[Ids::Index(toEntity.id)].instance = from;
+        }
+    });
 }
 
 //------------------------------------------------------------------------------
@@ -196,7 +196,7 @@ OnEndFrame()
     for (IndexT c = 0; c < state->categoryArray.Size(); c++)
     {
         Category& cat = state->categoryArray[c];
-		DefragmentCategoryInstances(cat);
+        DefragmentCategoryInstances(cat);
     }
 
     Game::ReleaseAllOps();
@@ -232,10 +232,10 @@ EntityManager::Create()
     EntityManager::Singleton = n_new(EntityManager);
 
     ManagerAPI api;
-    api.OnBeginFrame	= &OnBeginFrame;
-    api.OnFrame			= &OnFrame;
-    api.OnEndFrame		= &OnEndFrame;
-    api.OnDeactivate	= &Destroy;
+    api.OnBeginFrame    = &OnBeginFrame;
+    api.OnFrame         = &OnFrame;
+    api.OnEndFrame      = &OnEndFrame;
+    api.OnDeactivate    = &Destroy;
     return api;
 }
 
@@ -453,16 +453,16 @@ EntityManager::Migrate(Entity entity, CategoryId newCategory)
     EntityMapping mapping = GetEntityMapping(entity);
     Category const& oldCat = this->GetCategory(mapping.category);
     Category const& newCat = this->GetCategory(newCategory);
-	InstanceId newInstance = this->state.worldDatabase->MigrateInstance(oldCat.instanceTable, mapping.instance.id, newCat.instanceTable, false);
-	DefragmentCategoryInstances(oldCat);
+    InstanceId newInstance = this->state.worldDatabase->MigrateInstance(oldCat.instanceTable, mapping.instance.id, newCat.instanceTable, false);
+    DefragmentCategoryInstances(oldCat);
     this->state.entityMap[Ids::Index(entity.id)] = { newCategory, newInstance };
     return newInstance;
 }
 
 //------------------------------------------------------------------------------
 /**
-    @param newInstances		Will be filled with the new instance ids in the destination category.
-    @note	This assumes ALL entities in the entity array is of same category!
+    @param newInstances     Will be filled with the new instance ids in the destination category.
+    @note   This assumes ALL entities in the entity array is of same category!
 */
 void
 EntityManager::Migrate(Util::Array<Entity> const& entities, CategoryId fromCategory, CategoryId newCategory, Util::FixedArray<IndexT>& newInstances)
@@ -489,7 +489,7 @@ EntityManager::Migrate(Util::Array<Entity> const& entities, CategoryId fromCateg
     Category const& newCat = this->GetCategory(newCategory);
 
     GetWorldDatabase()->MigrateInstances(oldCat.instanceTable, instances, newCat.instanceTable, newInstances, false);
-	DefragmentCategoryInstances(oldCat);
+    DefragmentCategoryInstances(oldCat);
     for (IndexT i = 0; i < num; i++)
     {
         this->state.entityMap[Ids::Index(entities[i].id)] = { newCategory, (uint32_t)newInstances[i] };

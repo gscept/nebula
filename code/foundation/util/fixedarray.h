@@ -31,10 +31,10 @@ public:
     FixedArray(const FixedArray<TYPE>& rhs);
     /// move constructor
     FixedArray(FixedArray<TYPE>&& rhs);
-	/// constructor from initializer list
-	FixedArray(std::initializer_list<TYPE> list);
-	/// construct an empty fixed array
-	FixedArray(std::nullptr_t);
+    /// constructor from initializer list
+    FixedArray(std::initializer_list<TYPE> list);
+    /// construct an empty fixed array
+    FixedArray(std::nullptr_t);
     /// destructor
     ~FixedArray();
     /// assignment operator
@@ -68,7 +68,7 @@ public:
     Iterator Begin() const;
     /// get iterator past last element
     Iterator End() const;
-	/// find identical element in unsorted array (slow)
+    /// find identical element in unsorted array (slow)
     Iterator Find(const TYPE& val) const;
     /// find index of identical element in unsorted array (slow)
     IndexT FindIndex(const TYPE& val) const;
@@ -79,11 +79,11 @@ public:
     /// return content as Array (slow!)
     Array<TYPE> AsArray() const;
 
-	/// for range-based iteration
-	Iterator begin() const;
-	Iterator end() const;
-	size_t size() const;
-	void resize(size_t size);
+    /// for range-based iteration
+    Iterator begin() const;
+    Iterator end() const;
+    size_t size() const;
+    void resize(size_t size);
 private:
     /// delete content
     void Delete();
@@ -147,16 +147,16 @@ FixedArray<TYPE>::Copy(const FixedArray<TYPE>& rhs)
     if (this != &rhs && rhs.count > 0)
     {
         this->Alloc(rhs.count);
-		if constexpr (!std::is_trivially_copyable<TYPE>::value)
-		{
-			IndexT i;
-			for (i = 0; i < this->count; i++)
-			{
-				this->elements[i] = rhs.elements[i];
-			}
-		}
-		else
-			memcpy(this->elements, rhs.elements, this->count * sizeof(TYPE));
+        if constexpr (!std::is_trivially_copyable<TYPE>::value)
+        {
+            IndexT i;
+            for (i = 0; i < this->count; i++)
+            {
+                this->elements[i] = rhs.elements[i];
+            }
+        }
+        else
+            memcpy(this->elements, rhs.elements, this->count * sizeof(TYPE));
     }
 }
 
@@ -211,20 +211,20 @@ FixedArray<TYPE>::FixedArray(FixedArray<TYPE>&& rhs) :
 */
 template<class TYPE>
 FixedArray<TYPE>::FixedArray(std::initializer_list<TYPE> list) :
-	count(0),
-	elements(nullptr)
+    count(0),
+    elements(nullptr)
 {
-	this->Alloc((SizeT)list.size());
-	if constexpr (!std::is_trivially_copyable<TYPE>::value)
-	{
-		IndexT i;
-		for (i = 0; i < this->count; i++)
-		{
-			this->elements[i] = list.begin()[i];
-		}
-	}
-	else
-		memcpy(this->elements, list.begin(), this->count * sizeof(TYPE));
+    this->Alloc((SizeT)list.size());
+    if constexpr (!std::is_trivially_copyable<TYPE>::value)
+    {
+        IndexT i;
+        for (i = 0; i < this->count; i++)
+        {
+            this->elements[i] = list.begin()[i];
+        }
+    }
+    else
+        memcpy(this->elements, list.begin(), this->count * sizeof(TYPE));
 }
 
 //------------------------------------------------------------------------------
@@ -232,8 +232,8 @@ FixedArray<TYPE>::FixedArray(std::initializer_list<TYPE> list) :
 */
 template<class TYPE>
 FixedArray<TYPE>::FixedArray(std::nullptr_t) :
-	count(0),
-	elements(nullptr)
+    count(0),
+    elements(nullptr)
 {
 }
 
@@ -514,8 +514,8 @@ FixedArray<TYPE>::BinarySearchIndex(const TYPE& elm) const
     {
         IndexT half;
         IndexT lo = 0;
-	    IndexT hi = num - 1;
-	    IndexT mid;
+        IndexT hi = num - 1;
+        IndexT mid;
         while (lo <= hi) 
         {
             if (0 != (half = num/2)) 
@@ -578,7 +578,7 @@ FixedArray<TYPE>::AsArray() const
 template<class TYPE> typename FixedArray<TYPE>::Iterator
 FixedArray<TYPE>::begin() const
 {
-	return this->elements;
+    return this->elements;
 }
 
 //------------------------------------------------------------------------------
@@ -587,7 +587,7 @@ FixedArray<TYPE>::begin() const
 template<class TYPE> typename FixedArray<TYPE>::Iterator
 FixedArray<TYPE>::end() const
 {
-	return this->elements + this->count;
+    return this->elements + this->count;
 }
 
 //------------------------------------------------------------------------------
@@ -596,11 +596,11 @@ FixedArray<TYPE>::end() const
 template<class TYPE> void
 FixedArray<TYPE>::resize(size_t s)
 {
-	if (s > this->capacity)
-	{
-		this->GrowTo(s);
-	}
-	this->count = s;
+    if (s > this->capacity)
+    {
+        this->GrowTo(s);
+    }
+    this->count = s;
 }
 
 //------------------------------------------------------------------------------
@@ -609,7 +609,7 @@ FixedArray<TYPE>::resize(size_t s)
 template<class TYPE> size_t
 FixedArray<TYPE>::size() const
 {
-	return this->count;
+    return this->count;
 }
 
 } // namespace Util

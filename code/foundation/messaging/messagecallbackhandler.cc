@@ -17,27 +17,27 @@ Util::Array<Util::Delegate<void(const Ptr<Messaging::Message>&)> >  MessageCallb
 void 
 MessageCallbackHandler::Update()
 {
-	IndexT i;
-	for (i = 0; i < Messages.Size(); i++)
-	{
-		const Util::Delegate<void(const Ptr<Messaging::Message>&)>& del = Callbacks[i];
-		const Ptr<Messaging::Message>& msg = Messages[i];
+    IndexT i;
+    for (i = 0; i < Messages.Size(); i++)
+    {
+        const Util::Delegate<void(const Ptr<Messaging::Message>&)>& del = Callbacks[i];
+        const Ptr<Messaging::Message>& msg = Messages[i];
 
-		// if the message is handled, invoke delegate
-		if (msg->Handled() || msg->DeferredHandled())
-		{
+        // if the message is handled, invoke delegate
+        if (msg->Handled() || msg->DeferredHandled())
+        {
             // set message to be handled, in case its just flagged as deferred handled
             msg->SetHandled(true);
 
-			// invoke delegate
-			del(msg);
+            // invoke delegate
+            del(msg);
 
-			// remove callback and decrease index
-			Callbacks.EraseIndex(i);
-			Messages.EraseIndex(i);
-			i--;
-		}
-	}
+            // remove callback and decrease index
+            Callbacks.EraseIndex(i);
+            Messages.EraseIndex(i);
+            i--;
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -46,13 +46,13 @@ MessageCallbackHandler::Update()
 void 
 MessageCallbackHandler::AbortCallback( const Ptr<Messaging::Message>& msg )
 {
-	n_assert(msg.isvalid());
-	IndexT i = Messages.FindIndex(msg);
-	if (i != InvalidIndex)
-	{
-		Callbacks.EraseIndex(i);
-		Messages.EraseIndex(i);
-	}	
+    n_assert(msg.isvalid());
+    IndexT i = Messages.FindIndex(msg);
+    if (i != InvalidIndex)
+    {
+        Callbacks.EraseIndex(i);
+        Messages.EraseIndex(i);
+    }   
 }
 
 } // namespace Messaging

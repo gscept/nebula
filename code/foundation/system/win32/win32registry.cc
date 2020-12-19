@@ -80,7 +80,7 @@ bool
 Win32Registry::Exists(const Util::String& vendor, const String& key, const String& name)
 {
     Util::String replvendor = vendor;
-	replvendor.SubstituteString(".", "\\");
+    replvendor.SubstituteString(".", "\\");
     Util::String regKey = "Software\\" + replvendor + "\\" + key;
     return Exists(CurrentUser, regKey, name);    
 }
@@ -257,10 +257,10 @@ This deletes a complete registry key with all its values.
 bool
 Win32Registry::Delete(const Util::String& vendor, const String& key)
 {
-	Util::String replvendor = vendor;
-	replvendor.SubstituteString(".", "\\");
-	Util::String regKey = "Software\\" + replvendor + "\\" + key;
-	return Delete(CurrentUser, regKey);
+    Util::String replvendor = vendor;
+    replvendor.SubstituteString(".", "\\");
+    Util::String regKey = "Software\\" + replvendor + "\\" + key;
+    return Delete(CurrentUser, regKey);
 }
 
 //------------------------------------------------------------------------------

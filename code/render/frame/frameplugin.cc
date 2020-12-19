@@ -13,7 +13,7 @@ namespace Frame
 */
 FramePlugin::FramePlugin()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ FramePlugin::FramePlugin()
 */
 FramePlugin::~FramePlugin()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ FramePlugin::~FramePlugin()
 void
 FramePlugin::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
-	this->func(frameIndex, bufferIndex);
+    this->func(frameIndex, bufferIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -39,7 +39,7 @@ FramePlugin::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex
 void
 FramePlugin::CompiledImpl::Discard()
 {
-	this->func = nullptr;
+    this->func = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -48,14 +48,14 @@ FramePlugin::CompiledImpl::Discard()
 FrameOp::Compiled* 
 FramePlugin::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
-	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+    CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 
 #if NEBULA_GRAPHICS_DEBUG
-	ret->name = this->name;
+    ret->name = this->name;
 #endif
 
-	ret->func = this->func;
-	return ret;
+    ret->func = this->func;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -63,18 +63,18 @@ FramePlugin::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 */
 void
 FramePlugin::Build(
-	Memory::ArenaAllocator<BIG_CHUNK>& allocator,
-	Util::Array<FrameOp::Compiled*>& compiledOps,
-	Util::Array<CoreGraphics::EventId>& events,
-	Util::Array<CoreGraphics::BarrierId>& barriers,
-	Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-	Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
+    Memory::ArenaAllocator<BIG_CHUNK>& allocator,
+    Util::Array<FrameOp::Compiled*>& compiledOps,
+    Util::Array<CoreGraphics::EventId>& events,
+    Util::Array<CoreGraphics::BarrierId>& barriers,
+    Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
+    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
 {
-	CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
+    CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
 
-	this->compiled = myCompiled;
-	this->SetupSynchronization(allocator, events, barriers, rwBuffers, textures);
-	compiledOps.Append(myCompiled);
+    this->compiled = myCompiled;
+    this->SetupSynchronization(allocator, events, barriers, rwBuffers, textures);
+    compiledOps.Append(myCompiled);
 }
 
 Util::Dictionary<Util::StringAtom, std::function<void(IndexT, IndexT)>> nameToFunction;
@@ -85,13 +85,13 @@ Util::Dictionary<Util::StringAtom, std::function<void(IndexT, IndexT)>> nameToFu
 const std::function<void(IndexT, IndexT)>&
 GetCallback(const Util::StringAtom& str)
 {
-	if (nameToFunction.Contains(str))
-		return nameToFunction[str];
-	else
-	{
-		n_printf("No function '%s' found\n", str.Value());
-		return nameToFunction["null"];
-	}
+    if (nameToFunction.Contains(str))
+        return nameToFunction[str];
+    else
+    {
+        n_printf("No function '%s' found\n", str.Value());
+        return nameToFunction["null"];
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -100,7 +100,7 @@ GetCallback(const Util::StringAtom& str)
 void
 AddCallback(const Util::StringAtom name, std::function<void(IndexT, IndexT)> func)
 {
-	nameToFunction.Add(name, func);
+    nameToFunction.Add(name, func);
 }
 
 //------------------------------------------------------------------------------
@@ -109,7 +109,7 @@ AddCallback(const Util::StringAtom name, std::function<void(IndexT, IndexT)> fun
 void
 InitPluginTable()
 {
-	nameToFunction.Add("null", nullptr);
+    nameToFunction.Add("null", nullptr);
 }
 
 

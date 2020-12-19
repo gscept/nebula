@@ -5,7 +5,7 @@
     
     Allows to save texture data in a standard file format into a stream.
 
-	Look in the renderer implementation for the implementation.
+    Look in the renderer implementation for the implementation.
     
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
@@ -20,7 +20,7 @@ namespace CoreGraphics
 
 //------------------------------------------------------------------------------
 /**
-	Save texture to path with wanted image format, and select mip map.
+    Save texture to path with wanted image format, and select mip map.
 */
 bool
 SaveTexture(const Resources::ResourceId& id, const IO::URI& path, IndexT mip, CoreGraphics::ImageFileFormat::Code code);

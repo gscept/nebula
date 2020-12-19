@@ -1,11 +1,11 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	The graphics server is the main singleton for the Graphics subsystem.
+    The graphics server is the main singleton for the Graphics subsystem.
 
-	Updating the GraphicsServer will progress the rendering process by one frame. 
-	
-	(C)2017-2020 Individual contributors, see AUTHORS file
+    Updating the GraphicsServer will progress the rendering process by one frame. 
+    
+    (C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -31,11 +31,11 @@ namespace Graphics
 
 struct FrameContext
 {
-	Timing::Time time;
-	Timing::Tick ticks;
-	Timing::Time frameTime;
-	IndexT frameIndex;
-	IndexT bufferIndex;
+    Timing::Time time;
+    Timing::Tick ticks;
+    Timing::Time frameTime;
+    IndexT frameIndex;
+    IndexT bufferIndex;
 };
 
 class GraphicsContext;
@@ -44,100 +44,100 @@ struct GraphicsContextState;
 class View;
 class GraphicsServer : public Core::RefCounted
 {
-	__DeclareClass(GraphicsServer);
-	__DeclareSingleton(GraphicsServer);
+    __DeclareClass(GraphicsServer);
+    __DeclareSingleton(GraphicsServer);
 public:
-	/// constructor
-	GraphicsServer();
-	/// destructor
-	virtual ~GraphicsServer();
+    /// constructor
+    GraphicsServer();
+    /// destructor
+    virtual ~GraphicsServer();
 
-	/// opens the graphics server
-	void Open();
-	/// closes the graphics server
-	void Close();
+    /// opens the graphics server
+    void Open();
+    /// closes the graphics server
+    void Close();
 
-	/// create graphics entity
-	GraphicsEntityId CreateGraphicsEntity();
-	/// discard graphics entity
-	void DiscardGraphicsEntity(const GraphicsEntityId id);
-	/// check if graphics entity is valid
-	bool IsValidGraphicsEntity(const GraphicsEntityId id);
+    /// create graphics entity
+    GraphicsEntityId CreateGraphicsEntity();
+    /// discard graphics entity
+    void DiscardGraphicsEntity(const GraphicsEntityId id);
+    /// check if graphics entity is valid
+    bool IsValidGraphicsEntity(const GraphicsEntityId id);
 
-	/// create a new view with a new framescript
-	Ptr<View> CreateView(const Util::StringAtom& name, const IO::URI& framescript);
-	/// create a new view without a framescript
-	Ptr<View> CreateView(const Util::StringAtom& name);
-	/// discard view
-	void DiscardView(const Ptr<View>& view);
-	/// get current view
-	const Ptr<View>& GetCurrentView() const;
-	/// set current view (do not use unless you know what you are doing since this is normally handled by the graphicssserver)
-	void SetCurrentView(const Ptr<View>& view);
+    /// create a new view with a new framescript
+    Ptr<View> CreateView(const Util::StringAtom& name, const IO::URI& framescript);
+    /// create a new view without a framescript
+    Ptr<View> CreateView(const Util::StringAtom& name);
+    /// discard view
+    void DiscardView(const Ptr<View>& view);
+    /// get current view
+    const Ptr<View>& GetCurrentView() const;
+    /// set current view (do not use unless you know what you are doing since this is normally handled by the graphicssserver)
+    void SetCurrentView(const Ptr<View>& view);
 
-	/// create a new stage
-	Ptr<Stage> CreateStage(const Util::StringAtom& name, bool main);
-	/// discard stage
-	void DiscardStage(const Ptr<Stage>& stage);	
+    /// create a new stage
+    Ptr<Stage> CreateStage(const Util::StringAtom& name, bool main);
+    /// discard stage
+    void DiscardStage(const Ptr<Stage>& stage); 
 
-	/// call to prepare for the frame
-	void BeginFrame();
-	/// call before rendering to a view
-	void BeforeViews();
-	/// go through and render views
-	void RenderViews();
-	/// end views
-	void EndViews();
-	/// call when ending the frame
-	void EndFrame();
+    /// call to prepare for the frame
+    void BeginFrame();
+    /// call before rendering to a view
+    void BeforeViews();
+    /// go through and render views
+    void RenderViews();
+    /// end views
+    void EndViews();
+    /// call when ending the frame
+    void EndFrame();
 
-	/// get total time in seconds
-	const Timing::Time GetTime() const;
-	/// get frame time in seconds
-	const Timing::Time GetFrameTime() const;
-	/// get frame index
-	const IndexT GetFrameIndex() const;
+    /// get total time in seconds
+    const Timing::Time GetTime() const;
+    /// get frame time in seconds
+    const Timing::Time GetFrameTime() const;
+    /// get frame index
+    const IndexT GetFrameIndex() const;
 
     /// debug rendering
     void RenderDebug(uint32_t flags);
 
-	/// register function bundle from graphics context, see GraphicsContextType::Create
-	void RegisterGraphicsContext(GraphicsContextFunctionBundle* context, GraphicsContextState* state);
-	/// unregister function bundle
-	void UnregisterGraphicsContext(GraphicsContextFunctionBundle* context);
+    /// register function bundle from graphics context, see GraphicsContextType::Create
+    void RegisterGraphicsContext(GraphicsContextFunctionBundle* context, GraphicsContextState* state);
+    /// unregister function bundle
+    void UnregisterGraphicsContext(GraphicsContextFunctionBundle* context);
     
     /// call when the window has been resized
     void OnWindowResized(CoreGraphics::WindowId wndId);
 
-	static Jobs::JobPortId renderSystemsJobPort;
+    static Jobs::JobPortId renderSystemsJobPort;
 
 private:
-	friend class CoreGraphics::BatchGroup;
+    friend class CoreGraphics::BatchGroup;
 
-	Ids::IdGenerationPool entityPool;
+    Ids::IdGenerationPool entityPool;
 
-	Ptr<FrameSync::FrameSyncTimer> timer;
-	FrameContext frameContext;
+    Ptr<FrameSync::FrameSyncTimer> timer;
+    FrameContext frameContext;
 
-	Util::Array<GraphicsContextFunctionBundle*> contexts;
-	Util::Array<GraphicsContextState*> states;
+    Util::Array<GraphicsContextFunctionBundle*> contexts;
+    Util::Array<GraphicsContextState*> states;
 
-	Util::Array<Ptr<Stage>> stages;
-	Util::Array<Ptr<View>> views;
-	CoreGraphics::BatchGroup batchGroupRegistry;
-	Ptr<View> currentView;
+    Util::Array<Ptr<Stage>> stages;
+    Util::Array<Ptr<View>> views;
+    CoreGraphics::BatchGroup batchGroupRegistry;
+    Ptr<View> currentView;
 
-	Ptr<CoreGraphics::DisplayDevice> displayDevice;
-	bool graphicsDevice;
-	Ptr<CoreGraphics::ShaderServer> shaderServer;
-	Ptr<Materials::MaterialServer> materialServer;
-	Ptr<CoreGraphics::TransformDevice> transformDevice;
-	Ptr<CoreGraphics::ShapeRenderer> shapeRenderer;
-	Ptr<CoreGraphics::TextRenderer> textRenderer;
-	Ptr<Frame::FrameServer> frameServer;
+    Ptr<CoreGraphics::DisplayDevice> displayDevice;
+    bool graphicsDevice;
+    Ptr<CoreGraphics::ShaderServer> shaderServer;
+    Ptr<Materials::MaterialServer> materialServer;
+    Ptr<CoreGraphics::TransformDevice> transformDevice;
+    Ptr<CoreGraphics::ShapeRenderer> shapeRenderer;
+    Ptr<CoreGraphics::TextRenderer> textRenderer;
+    Ptr<Frame::FrameServer> frameServer;
 
 
-	bool isOpen;
+    bool isOpen;
 };
 
 //------------------------------------------------------------------------------
@@ -146,7 +146,7 @@ private:
 static GraphicsEntityId
 CreateEntity()
 {
-	return GraphicsServer::Instance()->CreateGraphicsEntity();
+    return GraphicsServer::Instance()->CreateGraphicsEntity();
 }
 
 //------------------------------------------------------------------------------
@@ -155,7 +155,7 @@ CreateEntity()
 static void
 DestroyEntity(const GraphicsEntityId id)
 {
-	GraphicsServer::Instance()->DiscardGraphicsEntity(id);
+    GraphicsServer::Instance()->DiscardGraphicsEntity(id);
 }
 
 //------------------------------------------------------------------------------
@@ -165,7 +165,7 @@ template<typename ... CONTEXTS>
 static void
 RegisterEntity(const GraphicsEntityId id)
 {
-	(CONTEXTS::RegisterEntity(id), ...);
+    (CONTEXTS::RegisterEntity(id), ...);
 }
 
 //------------------------------------------------------------------------------
@@ -175,7 +175,7 @@ template<typename ... CONTEXTS>
 static void
 DeregisterEntity(const GraphicsEntityId id)
 {
-	(CONTEXTS::DeregisterEntity(id), ...);
+    (CONTEXTS::DeregisterEntity(id), ...);
 }
 
 //------------------------------------------------------------------------------
@@ -184,7 +184,7 @@ DeregisterEntity(const GraphicsEntityId id)
 inline const Ptr<View>&
 GraphicsServer::GetCurrentView() const
 {
-	return this->currentView;
+    return this->currentView;
 }
 
 //------------------------------------------------------------------------------
@@ -193,7 +193,7 @@ GraphicsServer::GetCurrentView() const
 inline const Timing::Time 
 GraphicsServer::GetTime() const
 {
-	return this->frameContext.time;
+    return this->frameContext.time;
 }
 
 //------------------------------------------------------------------------------
@@ -202,7 +202,7 @@ GraphicsServer::GetTime() const
 inline const Timing::Time
 GraphicsServer::GetFrameTime() const
 {
-	return this->frameContext.frameTime;
+    return this->frameContext.frameTime;
 }
 
 //------------------------------------------------------------------------------
@@ -211,7 +211,7 @@ GraphicsServer::GetFrameTime() const
 inline const IndexT
 GraphicsServer::GetFrameIndex() const
 {
-	return this->frameContext.frameIndex;
+    return this->frameContext.frameIndex;
 }
 
 } // namespace Graphics

@@ -23,21 +23,21 @@ using namespace Test;
 class GameAppTest : public App::GameApplication
 {
 private:
-	/// setup game features
-	void SetupGameFeatures()
-	{
-		gameFeature = BaseGameFeature::BaseGameFeatureUnit::Create();
-		this->gameServer->AttachGameFeature(gameFeature);
-	}
-	/// cleanup game features
-	void CleanupGameFeatures()
-	{
-		this->gameServer->RemoveGameFeature(gameFeature);
-		gameFeature->CleanupWorld();
-		gameFeature = nullptr;
-	}
+    /// setup game features
+    void SetupGameFeatures()
+    {
+        gameFeature = BaseGameFeature::BaseGameFeatureUnit::Create();
+        this->gameServer->AttachGameFeature(gameFeature);
+    }
+    /// cleanup game features
+    void CleanupGameFeatures()
+    {
+        this->gameServer->RemoveGameFeature(gameFeature);
+        gameFeature->CleanupWorld();
+        gameFeature = nullptr;
+    }
 
-	Ptr<BaseGameFeature::BaseGameFeatureUnit> gameFeature;
+    Ptr<BaseGameFeature::BaseGameFeatureUnit> gameFeature;
 };
 
 //------------------------------------------------------------------------------
@@ -46,33 +46,33 @@ private:
 void
 NebulaMain(const Util::CommandLineArgs& args)
 {
-	GameAppTest gameApp;
-	gameApp.SetCompanyName("Test Company");
-	gameApp.SetAppTitle("NEBULA GAME-TESTS");
+    GameAppTest gameApp;
+    gameApp.SetCompanyName("Test Company");
+    gameApp.SetAppTitle("NEBULA GAME-TESTS");
 
-	Game::BlueprintManager::SetBlueprintsFilename("blueprints_test.json", "bin:");
+    Game::BlueprintManager::SetBlueprintsFilename("blueprints_test.json", "bin:");
 
-	if (!gameApp.Open())
-	{
-		n_printf("Aborting game system test due to unrecoverable error...\n");
-		return;
-	}
+    if (!gameApp.Open())
+    {
+        n_printf("Aborting game system test due to unrecoverable error...\n");
+        return;
+    }
     
-	n_printf("NEBULA GAME-TESTS\n");
-	n_printf("========================\n");
+    n_printf("NEBULA GAME-TESTS\n");
+    n_printf("========================\n");
 
-	// setup and run test runner
+    // setup and run test runner
     Ptr<TestRunner> testRunner = TestRunner::Create();
     testRunner->AttachTestCase(IdTest::Create());
-	testRunner->AttachTestCase(DatabaseTest::Create());
-	testRunner->AttachTestCase(EntitySystemTest::Create());
-	//testRunner->AttachTestCase(ScriptingTest::Create());
-	
+    testRunner->AttachTestCase(DatabaseTest::Create());
+    testRunner->AttachTestCase(EntitySystemTest::Create());
+    //testRunner->AttachTestCase(ScriptingTest::Create());
+    
     bool result = testRunner->Run(); 
 
     testRunner = nullptr;
 
-	gameApp.Close();
+    gameApp.Close();
 
     Core::SysFunc::Exit(result?0:-1);
 }

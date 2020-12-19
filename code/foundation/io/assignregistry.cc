@@ -93,7 +93,7 @@ AssignRegistry::SetupSystemAssigns()
         this->SetAssign(Assign("home", homeLocation));
     }
 
-	String binLocation = FSWrapper::GetBinDirectory();
+    String binLocation = FSWrapper::GetBinDirectory();
     if (binLocation.IsValid())
     {
         this->SetAssign(Assign("bin", binLocation));
@@ -142,7 +142,7 @@ AssignRegistry::SetupProjectAssigns()
     // setup content assigns
     this->SetAssign(Assign("msh", "export:meshes"));
     this->SetAssign(Assign("ani", "export:anims"));
-	this->SetAssign(Assign("ske", "export:skeletons"));
+    this->SetAssign(Assign("ske", "export:skeletons"));
     this->SetAssign(Assign("data", "export:data"));        
     this->SetAssign(Assign("video", "export:video"));
     this->SetAssign(Assign("db", "export:db"));
@@ -157,7 +157,7 @@ AssignRegistry::SetupProjectAssigns()
     this->SetAssign(Assign("audio", "export:audio"));    
     this->SetAssign(Assign("sui", "export:sui"));       
     this->SetAssign(Assign("mat", "export:materials"));
-	this->SetAssign(Assign("sur", "export:surfaces"));
+    this->SetAssign(Assign("sur", "export:surfaces"));
     this->SetAssign(Assign("scr", "root:data/scripts"));
     this->SetAssign(Assign("gui", "root:data/gui"));
 

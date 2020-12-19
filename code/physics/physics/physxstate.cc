@@ -89,17 +89,17 @@ PhysxState::DisconnectPVD()
 void
 PhysxState::onWake(physx::PxActor** actors, physx::PxU32 count)
 {
-	if (this->onWakeCallback.IsValid())
-	{
-		Util::ArrayStack<ActorId, 128> actorIds;
-		actorIds.Reserve(count);
-		for (physx::PxU32 i = 0; i < count; i++)
-		{
-			Ids::Id32 id = (Ids::Id32)(int64_t)actors[i]->userData;
-			actorIds.Append(id);
-		}
-		this->onWakeCallback(actorIds.Begin(), actorIds.Size());
-	}
+    if (this->onWakeCallback.IsValid())
+    {
+        Util::ArrayStack<ActorId, 128> actorIds;
+        actorIds.Reserve(count);
+        for (physx::PxU32 i = 0; i < count; i++)
+        {
+            Ids::Id32 id = (Ids::Id32)(int64_t)actors[i]->userData;
+            actorIds.Append(id);
+        }
+        this->onWakeCallback(actorIds.Begin(), actorIds.Size());
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -108,17 +108,17 @@ PhysxState::onWake(physx::PxActor** actors, physx::PxU32 count)
 void
 PhysxState::onSleep(physx::PxActor** actors, physx::PxU32 count)
 {
-	if (this->onSleepCallback.IsValid())
-	{
-		Util::ArrayStack<ActorId, 128> actorIds;
-		actorIds.Reserve(count);
-		for (physx::PxU32 i = 0; i < count; i++)
-		{
-			Ids::Id32 id = (Ids::Id32)(int64_t)actors[i]->userData;
-			actorIds.Append(id);
-		}
-		this->onSleepCallback(actorIds.Begin(), actorIds.Size());
-	}
+    if (this->onSleepCallback.IsValid())
+    {
+        Util::ArrayStack<ActorId, 128> actorIds;
+        actorIds.Reserve(count);
+        for (physx::PxU32 i = 0; i < count; i++)
+        {
+            Ids::Id32 id = (Ids::Id32)(int64_t)actors[i]->userData;
+            actorIds.Append(id);
+        }
+        this->onSleepCallback(actorIds.Begin(), actorIds.Size());
+    }
 }
 #pragma warning(pop)
 
@@ -160,11 +160,11 @@ PhysxState::DiscardActor(ActorId id)
 void
 PhysxState::Update(Timing::Time delta)
 {
-	if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::F3))
-	{
-		if (!this->pvd->isConnected()) this->ConnectPVD();
-		else this->DisconnectPVD();
-	}
+    if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::F3))
+    {
+        if (!this->pvd->isConnected()) this->ConnectPVD();
+        else this->DisconnectPVD();
+    }
     this->time -= delta;
     // we limit the simulation to 5 frames
     this->time = Math::n_max(this->time, -5.0 * PHYSICS_RATE);

@@ -96,7 +96,7 @@ Win32Heap::Alloc(size_t size)
 {
     #if NEBULA_MEMORY_STATS
     Threading::Interlocked::Increment(this->allocCount);
-	// __HeapAlloc16 will always add 16 bytes for memory alignment padding
+    // __HeapAlloc16 will always add 16 bytes for memory alignment padding
     Threading::Interlocked::Add(this->allocSize, int(size + 16));
     #endif
     void* ptr = Memory::__HeapAlloc16(this->heap, HEAP_GENERATE_EXCEPTIONS, size);
@@ -111,8 +111,8 @@ Win32Heap::Realloc(void* ptr, size_t size)
 {
     #if NEBULA_MEMORY_STATS
     size_t curSize = Memory::__HeapSize16(this->heap, 0, ptr);
-	// __HeapAlloc16 will always add 16 bytes for memory alignment padding
-	Threading::Interlocked::Add(this->allocSize, int(size - curSize + 16));
+    // __HeapAlloc16 will always add 16 bytes for memory alignment padding
+    Threading::Interlocked::Add(this->allocSize, int(size - curSize + 16));
     #endif
     void* newPtr = Memory::__HeapReAlloc16(this->heap, HEAP_GENERATE_EXCEPTIONS, ptr, size);
     return newPtr;

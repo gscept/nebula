@@ -6,7 +6,7 @@
     The instance renderer performs actual rendering and updating of shader variables for transforms.
 
     (C) 2012 Gustav Sterbrant
-	(C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -18,13 +18,13 @@ namespace Instancing
 {
 class InstanceRenderer : public Vulkan::VkInstanceRenderer
 {
-	__DeclareClass(InstanceRenderer);
-	__DeclareSingleton(InstanceRenderer);
+    __DeclareClass(InstanceRenderer);
+    __DeclareSingleton(InstanceRenderer);
 public:
-	/// constructor
-	InstanceRenderer();
-	/// destructor
-	virtual ~InstanceRenderer();
+    /// constructor
+    InstanceRenderer();
+    /// destructor
+    virtual ~InstanceRenderer();
 };
 } // namespace Instancing
 #else

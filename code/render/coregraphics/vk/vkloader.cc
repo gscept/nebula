@@ -17,40 +17,40 @@ namespace Vulkan
 void InitVulkan()
 {
 #if __WIN32__
-	HMODULE vulkanLib = LoadLibraryA("vulkan-1.dll");
-	if (!vulkanLib)
-		n_error("Could not find 'vulkan-1.dll', make sure you have installed vulkan");
+    HMODULE vulkanLib = LoadLibraryA("vulkan-1.dll");
+    if (!vulkanLib)
+        n_error("Could not find 'vulkan-1.dll', make sure you have installed vulkan");
 
-	vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)GetProcAddress(vulkanLib, "vkGetInstanceProcAddr");
+    vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)GetProcAddress(vulkanLib, "vkGetInstanceProcAddr");
 #elif __linux__
-	void* vulkanLib = dlopen("libvulkan.so.1", RTLD_NOW | RTLD_LOCAL);
-	if (!vulkanLib) vulkanLib = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
-	if(!vulkanLib)
+    void* vulkanLib = dlopen("libvulkan.so.1", RTLD_NOW | RTLD_LOCAL);
+    if (!vulkanLib) vulkanLib = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
+    if(!vulkanLib)
     {
-		n_error("Could not find 'libvulkan', make sure you have installed vulkan");
+        n_error("Could not find 'libvulkan', make sure you have installed vulkan");
     }
 
-	vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)dlsym(vulkanLib, "vkGetInstanceProcAddr");
+    vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)dlsym(vulkanLib, "vkGetInstanceProcAddr");
 #elif ( __OSX__ || __APPLE__ )
-	void* vulkanLib = dlopen("libvulkan.dylib", RTLD_NOW | RTLD_LOCAL);
-	if (!vulkanLib)
-		vulkanLib = dlopen("libvulkan.1.dylib", RTLD_NOW | RTLD_LOCAL);
-	if (!vulkanLib)
-		vulkanLib = dlopen("libMoltenVK.dylib", RTLD_NOW | RTLD_LOCAL);
-	else
-		n_error("Could not find 'libvulkan', make sure you have installed vulkan");
+    void* vulkanLib = dlopen("libvulkan.dylib", RTLD_NOW | RTLD_LOCAL);
+    if (!vulkanLib)
+        vulkanLib = dlopen("libvulkan.1.dylib", RTLD_NOW | RTLD_LOCAL);
+    if (!vulkanLib)
+        vulkanLib = dlopen("libMoltenVK.dylib", RTLD_NOW | RTLD_LOCAL);
+    else
+        n_error("Could not find 'libvulkan', make sure you have installed vulkan");
 
-	vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)dlsym(vulkanLib, "vkGetInstanceProcAddr");
+    vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)dlsym(vulkanLib, "vkGetInstanceProcAddr");
 #else
 #error "Vulkan not supported on your platform!"
 #endif
 
-	// setup non-instance calls
-	VkInstance instance = VK_NULL_HANDLE;
-	_IMP_VK(vkCreateInstance);
-	_IMP_VK(vkEnumerateInstanceExtensionProperties);
-	_IMP_VK(vkEnumerateInstanceLayerProperties);
-	_IMP_VK(vkEnumerateInstanceVersion);
+    // setup non-instance calls
+    VkInstance instance = VK_NULL_HANDLE;
+    _IMP_VK(vkCreateInstance);
+    _IMP_VK(vkEnumerateInstanceExtensionProperties);
+    _IMP_VK(vkEnumerateInstanceLayerProperties);
+    _IMP_VK(vkEnumerateInstanceVersion);
 }
 
 //------------------------------------------------------------------------------
@@ -59,157 +59,157 @@ void InitVulkan()
 void 
 InitInstance(VkInstance instance)
 {
-	// implement instance functions
-	_IMP_VK(vkCreateDevice);
-	_IMP_VK(vkDestroyDevice);
-	_IMP_VK(vkDestroyInstance);
-	_IMP_VK(vkDeviceWaitIdle);
-	_IMP_VK(vkGetDeviceQueue);
+    // implement instance functions
+    _IMP_VK(vkCreateDevice);
+    _IMP_VK(vkDestroyDevice);
+    _IMP_VK(vkDestroyInstance);
+    _IMP_VK(vkDeviceWaitIdle);
+    _IMP_VK(vkGetDeviceQueue);
 
-	_IMP_VK(vkGetPhysicalDeviceSurfaceFormatsKHR);
-	_IMP_VK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
-	_IMP_VK(vkGetPhysicalDeviceSurfacePresentModesKHR);
-	_IMP_VK(vkGetPhysicalDeviceSurfaceSupportKHR);
-	_IMP_VK(vkCreateSwapchainKHR);
-	_IMP_VK(vkGetSwapchainImagesKHR);
-	_IMP_VK(vkAcquireNextImageKHR);
-	_IMP_VK(vkDestroySwapchainKHR);
-	_IMP_VK(vkQueuePresentKHR);
+    _IMP_VK(vkGetPhysicalDeviceSurfaceFormatsKHR);
+    _IMP_VK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
+    _IMP_VK(vkGetPhysicalDeviceSurfacePresentModesKHR);
+    _IMP_VK(vkGetPhysicalDeviceSurfaceSupportKHR);
+    _IMP_VK(vkCreateSwapchainKHR);
+    _IMP_VK(vkGetSwapchainImagesKHR);
+    _IMP_VK(vkAcquireNextImageKHR);
+    _IMP_VK(vkDestroySwapchainKHR);
+    _IMP_VK(vkQueuePresentKHR);
 
-	_IMP_VK(vkQueueSubmit);
-	_IMP_VK(vkQueueBindSparse);
-	_IMP_VK(vkQueueWaitIdle);
+    _IMP_VK(vkQueueSubmit);
+    _IMP_VK(vkQueueBindSparse);
+    _IMP_VK(vkQueueWaitIdle);
 
-	_IMP_VK(vkEnumerateDeviceExtensionProperties);
-	_IMP_VK(vkEnumerateDeviceLayerProperties);
-	_IMP_VK(vkEnumeratePhysicalDevices);
-	_IMP_VK(vkGetDeviceProcAddr);
+    _IMP_VK(vkEnumerateDeviceExtensionProperties);
+    _IMP_VK(vkEnumerateDeviceLayerProperties);
+    _IMP_VK(vkEnumeratePhysicalDevices);
+    _IMP_VK(vkGetDeviceProcAddr);
 
-	_IMP_VK(vkCreatePipelineCache);
-	_IMP_VK(vkDestroyPipelineCache);
-	_IMP_VK(vkGetPipelineCacheData);
-	_IMP_VK(vkCreateQueryPool);
-	_IMP_VK(vkDestroyQueryPool);
-	_IMP_VK(vkResetQueryPool);
+    _IMP_VK(vkCreatePipelineCache);
+    _IMP_VK(vkDestroyPipelineCache);
+    _IMP_VK(vkGetPipelineCacheData);
+    _IMP_VK(vkCreateQueryPool);
+    _IMP_VK(vkDestroyQueryPool);
+    _IMP_VK(vkResetQueryPool);
 
-	// physical device
-	_IMP_VK(vkGetPhysicalDeviceProperties);
-	_IMP_VK(vkGetPhysicalDeviceFeatures);
-	_IMP_VK(vkGetPhysicalDeviceQueueFamilyProperties);
-	_IMP_VK(vkGetPhysicalDeviceMemoryProperties);
-	_IMP_VK(vkGetPhysicalDeviceFormatProperties);
-	_IMP_VK(vkGetPhysicalDeviceSparseImageFormatProperties);
-	_IMP_VK(vkGetImageSparseMemoryRequirements);
+    // physical device
+    _IMP_VK(vkGetPhysicalDeviceProperties);
+    _IMP_VK(vkGetPhysicalDeviceFeatures);
+    _IMP_VK(vkGetPhysicalDeviceQueueFamilyProperties);
+    _IMP_VK(vkGetPhysicalDeviceMemoryProperties);
+    _IMP_VK(vkGetPhysicalDeviceFormatProperties);
+    _IMP_VK(vkGetPhysicalDeviceSparseImageFormatProperties);
+    _IMP_VK(vkGetImageSparseMemoryRequirements);
 
-	// command buffer
-	_IMP_VK(vkCmdDraw);
-	_IMP_VK(vkCmdDrawIndexed);
-	_IMP_VK(vkCmdDrawIndirect);
-	_IMP_VK(vkCmdDrawIndexedIndirect);
-	_IMP_VK(vkCmdDispatch);
+    // command buffer
+    _IMP_VK(vkCmdDraw);
+    _IMP_VK(vkCmdDrawIndexed);
+    _IMP_VK(vkCmdDrawIndirect);
+    _IMP_VK(vkCmdDrawIndexedIndirect);
+    _IMP_VK(vkCmdDispatch);
 
-	_IMP_VK(vkCmdCopyImage);
-	_IMP_VK(vkCmdBlitImage);
-	_IMP_VK(vkCmdCopyBuffer);
-	_IMP_VK(vkCmdUpdateBuffer);
-	_IMP_VK(vkCmdCopyBufferToImage);
-	_IMP_VK(vkCmdCopyImageToBuffer);
+    _IMP_VK(vkCmdCopyImage);
+    _IMP_VK(vkCmdBlitImage);
+    _IMP_VK(vkCmdCopyBuffer);
+    _IMP_VK(vkCmdUpdateBuffer);
+    _IMP_VK(vkCmdCopyBufferToImage);
+    _IMP_VK(vkCmdCopyImageToBuffer);
 
-	_IMP_VK(vkCmdBindDescriptorSets);
-	_IMP_VK(vkCmdPushConstants);
-	_IMP_VK(vkCmdSetViewport);
-	_IMP_VK(vkCmdSetScissor);
-	_IMP_VK(vkCmdSetStencilCompareMask);
-	_IMP_VK(vkCmdSetStencilWriteMask);
-	_IMP_VK(vkCmdSetStencilReference);
+    _IMP_VK(vkCmdBindDescriptorSets);
+    _IMP_VK(vkCmdPushConstants);
+    _IMP_VK(vkCmdSetViewport);
+    _IMP_VK(vkCmdSetScissor);
+    _IMP_VK(vkCmdSetStencilCompareMask);
+    _IMP_VK(vkCmdSetStencilWriteMask);
+    _IMP_VK(vkCmdSetStencilReference);
 
-	_IMP_VK(vkCreateCommandPool);
-	_IMP_VK(vkDestroyCommandPool);
-	_IMP_VK(vkAllocateCommandBuffers);
-	_IMP_VK(vkFreeCommandBuffers);
-	_IMP_VK(vkCmdExecuteCommands);
-	_IMP_VK(vkBeginCommandBuffer);
-	_IMP_VK(vkEndCommandBuffer);
-	_IMP_VK(vkResetCommandBuffer);
+    _IMP_VK(vkCreateCommandPool);
+    _IMP_VK(vkDestroyCommandPool);
+    _IMP_VK(vkAllocateCommandBuffers);
+    _IMP_VK(vkFreeCommandBuffers);
+    _IMP_VK(vkCmdExecuteCommands);
+    _IMP_VK(vkBeginCommandBuffer);
+    _IMP_VK(vkEndCommandBuffer);
+    _IMP_VK(vkResetCommandBuffer);
 
-	_IMP_VK(vkCreateEvent);
-	_IMP_VK(vkDestroyEvent);
-	_IMP_VK(vkCmdSetEvent);
-	_IMP_VK(vkCmdWaitEvents);
-	_IMP_VK(vkCmdResetEvent);
-	_IMP_VK(vkGetEventStatus);
-	_IMP_VK(vkResetEvent);
-	_IMP_VK(vkSetEvent);
+    _IMP_VK(vkCreateEvent);
+    _IMP_VK(vkDestroyEvent);
+    _IMP_VK(vkCmdSetEvent);
+    _IMP_VK(vkCmdWaitEvents);
+    _IMP_VK(vkCmdResetEvent);
+    _IMP_VK(vkGetEventStatus);
+    _IMP_VK(vkResetEvent);
+    _IMP_VK(vkSetEvent);
 
-	_IMP_VK(vkCmdPipelineBarrier);
-	_IMP_VK(vkCreateFence);
-	_IMP_VK(vkDestroyFence);
-	_IMP_VK(vkResetFences);
-	_IMP_VK(vkGetFenceStatus);
-	_IMP_VK(vkWaitForFences);
-	_IMP_VK(vkWaitSemaphores);
-	_IMP_VK(vkGetSemaphoreCounterValue);
+    _IMP_VK(vkCmdPipelineBarrier);
+    _IMP_VK(vkCreateFence);
+    _IMP_VK(vkDestroyFence);
+    _IMP_VK(vkResetFences);
+    _IMP_VK(vkGetFenceStatus);
+    _IMP_VK(vkWaitForFences);
+    _IMP_VK(vkWaitSemaphores);
+    _IMP_VK(vkGetSemaphoreCounterValue);
 
-	_IMP_VK(vkCreateRenderPass);
-	_IMP_VK(vkDestroyRenderPass);
-	_IMP_VK(vkCmdBeginRenderPass);
-	_IMP_VK(vkCmdEndRenderPass);
-	_IMP_VK(vkCmdNextSubpass);
-	_IMP_VK(vkCmdBindIndexBuffer);
-	_IMP_VK(vkCmdBindVertexBuffers);
-	_IMP_VK(vkCmdClearDepthStencilImage);
-	_IMP_VK(vkCmdClearColorImage);
-	_IMP_VK(vkCreateFramebuffer);
-	_IMP_VK(vkDestroyFramebuffer);
+    _IMP_VK(vkCreateRenderPass);
+    _IMP_VK(vkDestroyRenderPass);
+    _IMP_VK(vkCmdBeginRenderPass);
+    _IMP_VK(vkCmdEndRenderPass);
+    _IMP_VK(vkCmdNextSubpass);
+    _IMP_VK(vkCmdBindIndexBuffer);
+    _IMP_VK(vkCmdBindVertexBuffers);
+    _IMP_VK(vkCmdClearDepthStencilImage);
+    _IMP_VK(vkCmdClearColorImage);
+    _IMP_VK(vkCreateFramebuffer);
+    _IMP_VK(vkDestroyFramebuffer);
 
-	_IMP_VK(vkCreateGraphicsPipelines);
-	_IMP_VK(vkCreateComputePipelines);
-	_IMP_VK(vkDestroyPipeline);
-	_IMP_VK(vkCreateShaderModule);
-	_IMP_VK(vkDestroyShaderModule);
-	_IMP_VK(vkCreateDescriptorSetLayout);
-	_IMP_VK(vkDestroyDescriptorSetLayout);
-	_IMP_VK(vkCreateDescriptorPool);
-	_IMP_VK(vkDestroyDescriptorPool);
-	_IMP_VK(vkAllocateDescriptorSets);
-	_IMP_VK(vkFreeDescriptorSets);
-	_IMP_VK(vkUpdateDescriptorSets);
-	_IMP_VK(vkCreatePipelineLayout);
-	_IMP_VK(vkDestroyPipelineLayout);
-	_IMP_VK(vkCreateSampler);
-	_IMP_VK(vkDestroySampler);
+    _IMP_VK(vkCreateGraphicsPipelines);
+    _IMP_VK(vkCreateComputePipelines);
+    _IMP_VK(vkDestroyPipeline);
+    _IMP_VK(vkCreateShaderModule);
+    _IMP_VK(vkDestroyShaderModule);
+    _IMP_VK(vkCreateDescriptorSetLayout);
+    _IMP_VK(vkDestroyDescriptorSetLayout);
+    _IMP_VK(vkCreateDescriptorPool);
+    _IMP_VK(vkDestroyDescriptorPool);
+    _IMP_VK(vkAllocateDescriptorSets);
+    _IMP_VK(vkFreeDescriptorSets);
+    _IMP_VK(vkUpdateDescriptorSets);
+    _IMP_VK(vkCreatePipelineLayout);
+    _IMP_VK(vkDestroyPipelineLayout);
+    _IMP_VK(vkCreateSampler);
+    _IMP_VK(vkDestroySampler);
 
-	_IMP_VK(vkCmdBindPipeline);
-	_IMP_VK(vkCmdCopyQueryPoolResults);
-	_IMP_VK(vkCmdResetQueryPool);
-	_IMP_VK(vkCmdWriteTimestamp);
-	_IMP_VK(vkCmdBeginQuery);
-	_IMP_VK(vkCmdEndQuery);
+    _IMP_VK(vkCmdBindPipeline);
+    _IMP_VK(vkCmdCopyQueryPoolResults);
+    _IMP_VK(vkCmdResetQueryPool);
+    _IMP_VK(vkCmdWriteTimestamp);
+    _IMP_VK(vkCmdBeginQuery);
+    _IMP_VK(vkCmdEndQuery);
 
-	_IMP_VK(vkCreateSemaphore);
-	_IMP_VK(vkDestroySemaphore);
+    _IMP_VK(vkCreateSemaphore);
+    _IMP_VK(vkDestroySemaphore);
 
-	// memory
-	_IMP_VK(vkAllocateMemory);
-	_IMP_VK(vkFreeMemory);
-	_IMP_VK(vkMapMemory);
-	_IMP_VK(vkUnmapMemory);
-	_IMP_VK(vkFlushMappedMemoryRanges);
-	_IMP_VK(vkInvalidateMappedMemoryRanges);
+    // memory
+    _IMP_VK(vkAllocateMemory);
+    _IMP_VK(vkFreeMemory);
+    _IMP_VK(vkMapMemory);
+    _IMP_VK(vkUnmapMemory);
+    _IMP_VK(vkFlushMappedMemoryRanges);
+    _IMP_VK(vkInvalidateMappedMemoryRanges);
 
-	_IMP_VK(vkGetBufferMemoryRequirements);
-	_IMP_VK(vkGetImageMemoryRequirements);
+    _IMP_VK(vkGetBufferMemoryRequirements);
+    _IMP_VK(vkGetImageMemoryRequirements);
 
-	_IMP_VK(vkCreateBuffer);
-	_IMP_VK(vkCreateBufferView);
-	_IMP_VK(vkDestroyBuffer);
-	_IMP_VK(vkBindBufferMemory);
+    _IMP_VK(vkCreateBuffer);
+    _IMP_VK(vkCreateBufferView);
+    _IMP_VK(vkDestroyBuffer);
+    _IMP_VK(vkBindBufferMemory);
 
-	_IMP_VK(vkCreateImage);
-	_IMP_VK(vkDestroyImage);
-	_IMP_VK(vkBindImageMemory);
-	_IMP_VK(vkCreateImageView);
-	_IMP_VK(vkDestroyImageView);
+    _IMP_VK(vkCreateImage);
+    _IMP_VK(vkDestroyImage);
+    _IMP_VK(vkBindImageMemory);
+    _IMP_VK(vkCreateImageView);
+    _IMP_VK(vkDestroyImageView);
 }
 
 } // namespace Vulkan

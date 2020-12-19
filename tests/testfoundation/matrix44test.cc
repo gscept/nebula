@@ -27,9 +27,9 @@ Matrix44Test::Run()
     VERIFY(m1 == mat4::identity);
     VERIFY(m0 == m1);
     mat4 m2(vec4(1.0f, 0.0f, 0.0f, 0.0f),
-			vec4(0.0f, 1.0f, 0.0f, 0.0f),
-			vec4(0.0f, 0.0f, 1.0f, 0.0f),
-			vec4(1.0f, 2.0f, 3.0f, 1.0f));
+            vec4(0.0f, 1.0f, 0.0f, 0.0f),
+            vec4(0.0f, 0.0f, 1.0f, 0.0f),
+            vec4(1.0f, 2.0f, 3.0f, 1.0f));
     VERIFY(m0 != m2);
     m2 = m0;
     VERIFY(m0 == m2);

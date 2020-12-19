@@ -43,7 +43,7 @@ StreamColliderPool * colliderPool = nullptr;
 */
 StreamColliderPool::StreamColliderPool()
 {
-	this->streamerThreadName = "Collider Pool Streamer Thread";
+    this->streamerThreadName = "Collider Pool Streamer Thread";
 }
 
 //------------------------------------------------------------------------------
@@ -239,6 +239,6 @@ StreamColliderPool::Unload(const Resources::ResourceId id)
         }
     }
 
-	this->states[id.poolId] = Resources::Resource::State::Unloaded;
+    this->states[id.poolId] = Resources::Resource::State::Unloaded;
 }
 }

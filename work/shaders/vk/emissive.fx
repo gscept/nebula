@@ -17,17 +17,17 @@ textureHandle EmissiveMap;
 /// Declaring used samplers
 sampler_state DefaultSampler
 {
-	//Samplers = { EmissiveMap };
+    //Samplers = { EmissiveMap };
 };
 
 render_state EmissiveState
 {
-	CullMode = Back;
-	DepthEnabled = true;
-	DepthFunc = Equal;
-	BlendEnabled[0] = true;
-	SrcBlend[0] = SrcAlpha;
-	DstBlend[0] = OneMinusSrcAlpha;
+    CullMode = Back;
+    DepthEnabled = true;
+    DepthFunc = Equal;
+    BlendEnabled[0] = true;
+    SrcBlend[0] = SrcAlpha;
+    DstBlend[0] = OneMinusSrcAlpha;
 };
 
 
@@ -37,12 +37,12 @@ render_state EmissiveState
 shader
 void
 vsMain(
-	[slot=0] in vec3 position,
-	[slot=1] in vec3 normal,
-	[slot=2] in vec2 uv,
-	[slot=3] in vec3 tangent,
-	[slot=4] in vec3 binormal,
-	out vec2 UV) 
+    [slot=0] in vec3 position,
+    [slot=1] in vec3 normal,
+    [slot=2] in vec2 uv,
+    [slot=3] in vec3 tangent,
+    [slot=4] in vec3 binormal,
+    out vec2 UV) 
 {
     gl_Position = ViewProjection * Model * vec4(position, 1);
     UV = uv;
@@ -54,10 +54,10 @@ vsMain(
 shader
 void
 psMain(in vec2 UV,
-	[color0] out vec4 Albedo) 
+    [color0] out vec4 Albedo) 
 {
-	vec4 diffColor = texture(sampler2D(Textures2D[EmissiveMap], DefaultSampler), UV.xy) * EmissiveIntensity;	
-	Albedo = EncodeHDR(diffColor);
+    vec4 diffColor = texture(sampler2D(Textures2D[EmissiveMap], DefaultSampler), UV.xy) * EmissiveIntensity;    
+    Albedo = EncodeHDR(diffColor);
 }
 
 

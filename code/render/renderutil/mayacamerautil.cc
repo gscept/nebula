@@ -123,7 +123,7 @@ MayaCameraUtil::Update()
     // avoid that the camera slips past the center of interest
     if (this->viewDistance < 1.0f)
     {
-		this->centerOfInterest -= xyz(this->cameraTransform.row2 * (1.0f-this->viewDistance));
+        this->centerOfInterest -= xyz(this->cameraTransform.row2 * (1.0f-this->viewDistance));
         this->viewDistance = 1.0f;
     }
 

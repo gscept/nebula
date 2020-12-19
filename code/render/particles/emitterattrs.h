@@ -33,7 +33,7 @@ public:
         PrecalcTime,
         StartDelay,
         TextureTile,
-		PhasesPerSecond,
+        PhasesPerSecond,
 
         NumFloatAttrs,
     };
@@ -55,18 +55,18 @@ public:
     enum IntAttr
     {
         StretchDetail = 0,
-		AnimPhases,
+        AnimPhases,
 
         NumIntAttrs,
     };
 
-	/// vec4 attributes
-	enum Float4Attr
-	{
-		WindDirection = 0,
+    /// vec4 attributes
+    enum Float4Attr
+    {
+        WindDirection = 0,
 
-		NumFloat4Attrs
-	};
+        NumFloat4Attrs
+    };
     
     /// scalar envelope attributes
     enum EnvelopeAttr
@@ -106,35 +106,35 @@ public:
     void SetInt(IntAttr key, int value);
     /// get int attribute
     int GetInt(IntAttr key) const;
-	/// set vec4 attribute
-	void SetVec4(Float4Attr key, const Math::vec4& value);
-	/// get vec4 attribute
-	const Math::vec4& GetVec4(Float4Attr key) const;
+    /// set vec4 attribute
+    void SetVec4(Float4Attr key, const Math::vec4& value);
+    /// get vec4 attribute
+    const Math::vec4& GetVec4(Float4Attr key) const;
     /// set envelope attribute
     void SetEnvelope(EnvelopeAttr key, const EnvelopeCurve& value);
     /// get envelope attribute
     const EnvelopeCurve& GetEnvelope(EnvelopeAttr key) const;
 
 private:
-	Math::vec4 vec4Values[NumFloat4Attrs];
+    Math::vec4 vec4Values[NumFloat4Attrs];
     float floatValues[NumFloatAttrs];
     EnvelopeCurve envelopeValues[NumEnvelopeAttrs];
 
-	struct IntAttributes
-	{
-		uint stretchDetail : 8;
-		uint animPhases : 8;
-	} intAttributes;
+    struct IntAttributes
+    {
+        uint stretchDetail : 8;
+        uint animPhases : 8;
+    } intAttributes;
 
-	struct BoolAttributes
-	{
-		bool looping : 1;
-		bool randomizeRotation : 1;
-		bool stretchToStart : 1;
-		bool renderOldestFirst : 1;
-		bool viewAngleFade : 1;
-		bool billboard : 1;
-	} boolAttributes;
+    struct BoolAttributes
+    {
+        bool looping : 1;
+        bool randomizeRotation : 1;
+        bool stretchToStart : 1;
+        bool renderOldestFirst : 1;
+        bool viewAngleFade : 1;
+        bool billboard : 1;
+    } boolAttributes;
 };
 
 //------------------------------------------------------------------------------
@@ -161,27 +161,27 @@ EmitterAttrs::GetFloat(FloatAttr key) const
 inline void
 EmitterAttrs::SetBool(BoolAttr key, bool value)
 {
-	switch (key)
-	{
-	case Looping:
-		this->boolAttributes.looping = value;
-		break;
-	case RandomizeRotation:
-		this->boolAttributes.randomizeRotation = value;
-		break;
-	case StretchToStart:
-		this->boolAttributes.stretchToStart = value;
-		break;
-	case RenderOldestFirst:
-		this->boolAttributes.renderOldestFirst = value;
-		break;
-	case ViewAngleFade:
-		this->boolAttributes.viewAngleFade = value;
-		break;
-	case Billboard:
-		this->boolAttributes.billboard = value;
-		break;
-	};
+    switch (key)
+    {
+    case Looping:
+        this->boolAttributes.looping = value;
+        break;
+    case RandomizeRotation:
+        this->boolAttributes.randomizeRotation = value;
+        break;
+    case StretchToStart:
+        this->boolAttributes.stretchToStart = value;
+        break;
+    case RenderOldestFirst:
+        this->boolAttributes.renderOldestFirst = value;
+        break;
+    case ViewAngleFade:
+        this->boolAttributes.viewAngleFade = value;
+        break;
+    case Billboard:
+        this->boolAttributes.billboard = value;
+        break;
+    };
 }
 
 //------------------------------------------------------------------------------
@@ -190,22 +190,22 @@ EmitterAttrs::SetBool(BoolAttr key, bool value)
 inline bool
 EmitterAttrs::GetBool(BoolAttr key) const
 {
-	switch (key)
-	{
-	case Looping:
-		return this->boolAttributes.looping;
-	case RandomizeRotation:
-		return this->boolAttributes.randomizeRotation;
-	case StretchToStart:
-		return this->boolAttributes.stretchToStart;
-	case RenderOldestFirst:
-		return this->boolAttributes.renderOldestFirst;
-	case ViewAngleFade:
-		return this->boolAttributes.viewAngleFade;
-	case Billboard:
-		return this->boolAttributes.billboard;
-	};
-	return false;
+    switch (key)
+    {
+    case Looping:
+        return this->boolAttributes.looping;
+    case RandomizeRotation:
+        return this->boolAttributes.randomizeRotation;
+    case StretchToStart:
+        return this->boolAttributes.stretchToStart;
+    case RenderOldestFirst:
+        return this->boolAttributes.renderOldestFirst;
+    case ViewAngleFade:
+        return this->boolAttributes.viewAngleFade;
+    case Billboard:
+        return this->boolAttributes.billboard;
+    };
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -214,15 +214,15 @@ EmitterAttrs::GetBool(BoolAttr key) const
 inline void
 EmitterAttrs::SetInt(IntAttr key, int value)
 {
-	switch (key)
-	{
-	case StretchDetail:
-		this->intAttributes.stretchDetail = value;
-		break;
-	case AnimPhases:
-		this->intAttributes.stretchDetail = value;
-		break;
-	};
+    switch (key)
+    {
+    case StretchDetail:
+        this->intAttributes.stretchDetail = value;
+        break;
+    case AnimPhases:
+        this->intAttributes.stretchDetail = value;
+        break;
+    };
 }
 
 //------------------------------------------------------------------------------
@@ -231,14 +231,14 @@ EmitterAttrs::SetInt(IntAttr key, int value)
 inline int
 EmitterAttrs::GetInt(IntAttr key) const
 {
-	switch (key)
-	{
-	case StretchDetail:
-		return this->intAttributes.stretchDetail;
-	case AnimPhases:
-		return this->intAttributes.stretchDetail;
-	};
-	return 0;
+    switch (key)
+    {
+    case StretchDetail:
+        return this->intAttributes.stretchDetail;
+    case AnimPhases:
+        return this->intAttributes.stretchDetail;
+    };
+    return 0;
 }
 
 //------------------------------------------------------------------------------
@@ -247,7 +247,7 @@ EmitterAttrs::GetInt(IntAttr key) const
 inline void 
 EmitterAttrs::SetVec4( Float4Attr key, const Math::vec4& value )
 {
-	this->vec4Values[key] = value;
+    this->vec4Values[key] = value;
 }
 
 //------------------------------------------------------------------------------
@@ -256,7 +256,7 @@ EmitterAttrs::SetVec4( Float4Attr key, const Math::vec4& value )
 inline const Math::vec4& 
 EmitterAttrs::GetVec4( Float4Attr key ) const
 {
-	return this->vec4Values[key];
+    return this->vec4Values[key];
 }
 
 //------------------------------------------------------------------------------

@@ -27,15 +27,15 @@ PointTest::Run()
 
     __m128 m128vector = _mm_setr_ps(1, 2, 3, 0);
     
-	// construction
+    // construction
     point t;
     VERIFY(vec4equal(t, vec4(0.0, 0.0, 0.0, 1.0)));
     point m(m128vector);
     VERIFY(vec4equal(m, vec4(1.0f, 2.0f, 3.0f, 1.0f)));
     point z(t);
     VERIFY(vec4equal(z, vec4(0.0, 0.0, 0.0, 1.0)));
-	point p(1.0, 2.0, 3.0);
-	VERIFY(vec4equal(p, vec4(1.0, 2.0, 3.0, 1.0)));
+    point p(1.0, 2.0, 3.0);
+    VERIFY(vec4equal(p, vec4(1.0, 2.0, 3.0, 1.0)));
     point v0(1.0f, 2.0f, 3.0f);
     point v1(4.0f, 3.0f, 2.0f);
     point v2(v0);

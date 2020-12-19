@@ -71,8 +71,8 @@ public:
     friend bool operator==(const String& a, const char* cStr);
     /// shortcut equality operator
     friend bool operator==(const char* cStr, const String& a);
-	/// empty string operator
-	friend bool operator==(const String&, std::nullptr_t);
+    /// empty string operator
+    friend bool operator==(const String&, std::nullptr_t);
     /// inequality operator
     friend bool operator !=(const String& a, const String& b);
     /// less-then operator
@@ -132,10 +132,10 @@ public:
     IndexT FindStringIndex(const String& s, IndexT startIndex = 0) const;
     /// return index of character in string, or InvalidIndex if not found
     IndexT FindCharIndex(char c, IndexT startIndex = 0) const;
-	/// returns true if string begins with string
-	bool BeginsWithString(const String& s) const;
-	/// returns true if string ends with string
-	bool EndsWithString(const String& s) const;
+    /// returns true if string begins with string
+    bool BeginsWithString(const String& s) const;
+    /// returns true if string ends with string
+    bool EndsWithString(const String& s) const;
     /// terminate string at given index
     void TerminateAtIndex(IndexT index);
     /// returns true if string contains any character from set
@@ -165,39 +165,39 @@ public:
     /// pattern matching
     static bool MatchPattern(const String& str, const String& pattern);
     /// return a 32-bit hash code for the string
-	uint32_t HashCode() const;
+    uint32_t HashCode() const;
 
     /// set content to char ptr
     void SetCharPtr(const char* s);
     /// set as char ptr, with explicit length
     void Set(const char* ptr, SizeT length);
-	/// set as byte value
-	void SetByte(byte val);
-	/// set as ubyte value
-	void SetUByte(ubyte val);
-	/// set as short value
-	void SetShort(short val);
-	/// set as ushort value
-	void SetUShort(ushort val);
-	/// set as int value
+    /// set as byte value
+    void SetByte(byte val);
+    /// set as ubyte value
+    void SetUByte(ubyte val);
+    /// set as short value
+    void SetShort(short val);
+    /// set as ushort value
+    void SetUShort(ushort val);
+    /// set as int value
     void SetInt(int val);
-	/// set as uint value
-	void SetUInt(uint val);
+    /// set as uint value
+    void SetUInt(uint val);
     /// set as long value
     void SetLong(long val);
-	/// set as long value
-	void SetSizeT(size_t val);
-	/// set as long long value
-	void SetLongLong(long long val);
+    /// set as long value
+    void SetSizeT(size_t val);
+    /// set as long long value
+    void SetLongLong(long long val);
     /// set as float value
     void SetFloat(float val);
-	/// set as double value
-	void SetDouble(double val);
+    /// set as double value
+    void SetDouble(double val);
     /// set as bool value
-    void SetBool(bool val);	
+    void SetBool(bool val); 
     
-	/// set string length and fill all characters with arg
-	void Fill(SizeT length, unsigned char character);
+    /// set string length and fill all characters with arg
+    void Fill(SizeT length, unsigned char character);
 
     #if !__OSX__
     /// set as vec2 value
@@ -206,24 +206,24 @@ public:
     void SetVec4(const Math::vec4& v);
     /// set as vec3 value
     void SetVec3(const Math::vec3& vec);
-	/// set as quaternion
-	void SetQuaternion(const Math::quat& v);
+    /// set as quaternion
+    void SetQuaternion(const Math::quat& v);
     /// set as mat4 value
     void SetMat4(const Math::mat4& v);
-	/// set as transform44 value
-	void SetTransform44(const Math::transform44& v);
+    /// set as transform44 value
+    void SetTransform44(const Math::transform44& v);
     #endif
     /// generic setter
     template<typename T> void Set(const T& t);
 
-	/// append character
-	void AppendChar(char val);
+    /// append character
+    void AppendChar(char val);
     /// append int value
     void AppendInt(int val);
-	/// append byte value
-	void AppendByte(byte val);
-	/// append unsigned byte value
-	void AppendUByte(ubyte val);
+    /// append byte value
+    void AppendByte(byte val);
+    /// append unsigned byte value
+    void AppendUByte(ubyte val);
     /// append float value
     void AppendFloat(float val);
     /// append bool value
@@ -245,8 +245,8 @@ public:
     const char* Get() const;
     /// return contents as integer
     int AsInt() const;
-	/// return contents as long long
-	long long AsLongLong() const;
+    /// return contents as long long
+    long long AsLongLong() const;
     /// return contents as float
     float AsFloat() const;
     /// return contents as bool
@@ -259,12 +259,12 @@ public:
     Math::vec4 AsVec4() const;
     /// return contents as mat4
     Math::mat4 AsMat4() const;
-	/// return contents as transform44
-	Math::transform44 AsTransform44() const;
+    /// return contents as transform44
+    Math::transform44 AsTransform44() const;
     /// return contents as blob
     Util::Blob AsBlob() const;
-	/// return contents as base64 string
-	Util::String AsBase64() const;
+    /// return contents as base64 string
+    Util::String AsBase64() const;
     /// convert to "anything"
     template<typename T> T As() const;
 
@@ -280,33 +280,33 @@ public:
     bool IsValidVec4() const;
     /// return true if content is a valid mat4
     bool IsValidMat4() const;
-	/// return true if content is a valid transform44
-	bool IsValidTransform44() const;
+    /// return true if content is a valid transform44
+    bool IsValidTransform44() const;
     /// generic valid checker
     template<typename T> bool IsValid() const;
 
-	/// construct a string from a byte
-	static String FromByte(byte i);
-	/// construct a string from a ubyte
-	static String FromUByte(ubyte i);
-	/// construct a string from a short
-	static String FromShort(short i);
-	/// construct a string from a ushort
-	static String FromUShort(ushort i);
+    /// construct a string from a byte
+    static String FromByte(byte i);
+    /// construct a string from a ubyte
+    static String FromUByte(ubyte i);
+    /// construct a string from a short
+    static String FromShort(short i);
+    /// construct a string from a ushort
+    static String FromUShort(ushort i);
     /// construct a string from an int
     static String FromInt(int i);
-	/// construct a string from a uint
-	static String FromUInt(uint i);
+    /// construct a string from a uint
+    static String FromUInt(uint i);
     /// construct a string from a long
     static String FromLong(long i);
-	/// construct a string from a size_t
-	static String FromSize(size_t i);
-	/// construct a string from a long long
-	static String FromLongLong(long long i);
+    /// construct a string from a size_t
+    static String FromSize(size_t i);
+    /// construct a string from a long long
+    static String FromLongLong(long long i);
     /// construct a string from a float
     static String FromFloat(float f);
-	/// construct a string from a double
-	static String FromDouble(double f);
+    /// construct a string from a double
+    static String FromDouble(double f);
     /// construct a string from a bool
     static String FromBool(bool b);
     /// construct a string from vec2
@@ -315,22 +315,22 @@ public:
     static String FromVec3(const Math::vec3& v);
     /// construct a string from vec4
     static String FromVec4(const Math::vec4& v);
-	/// construct a string from quat
-	static String FromQuat(const Math::quat& q);
+    /// construct a string from quat
+    static String FromQuat(const Math::quat& q);
     /// construct a string from mat4
     static String FromMat4(const Math::mat4& m);
-	/// construct a string from transform44
-	static String FromTransform44(const Math::transform44& m);
+    /// construct a string from transform44
+    static String FromTransform44(const Math::transform44& m);
     /// create from blob
     static String FromBlob(const Util::Blob & b);
-	/// create from base64
-	static String FromBase64(const String&);
+    /// create from base64
+    static String FromBase64(const String&);
     /// convert from "anything"
     template<typename T> static String From(const T& t);
 
-	/// construct a hex string from an int
-	template<typename INTEGER>
-	static String Hex(INTEGER i);
+    /// construct a hex string from an int
+    template<typename INTEGER>
+    static String Hex(INTEGER i);
 
     /// get filename extension without dot
     String GetFileExtension() const;
@@ -342,10 +342,10 @@ public:
     void StripFileExtension();
     /// change file extension
     void ChangeFileExtension(const Util::String& newExt);
-	/// remove assign prefix (for example tex:)
-	void StripAssignPrefix();
-	/// change assign prefix
-	void ChangeAssignPrefix(const Util::String& newPref);
+    /// remove assign prefix (for example tex:)
+    void StripAssignPrefix();
+    /// change assign prefix
+    void ChangeAssignPrefix(const Util::String& newPref);
     /// extract the part after the last directory separator
     String ExtractFileName() const;
     /// extract the last directory of the path
@@ -510,7 +510,7 @@ String::Reserve(SizeT newSize)
 inline void
 String::SetByte(byte val)
 {
-	this->Format("%d", val);
+    this->Format("%d", val);
 }
 
 //------------------------------------------------------------------------------
@@ -519,7 +519,7 @@ String::SetByte(byte val)
 inline void
 String::SetUByte(ubyte val)
 {
-	this->Format("%u", val);
+    this->Format("%u", val);
 }
 
 //------------------------------------------------------------------------------
@@ -528,7 +528,7 @@ String::SetUByte(ubyte val)
 inline void
 String::SetShort(short val)
 {
-	this->Format("%d", val);
+    this->Format("%d", val);
 }
 
 //------------------------------------------------------------------------------
@@ -537,7 +537,7 @@ String::SetShort(short val)
 inline void
 String::SetUShort(ushort val)
 {
-	this->Format("%u", val);
+    this->Format("%u", val);
 }
 
 //------------------------------------------------------------------------------
@@ -555,7 +555,7 @@ String::SetInt(int val)
 inline void
 String::SetUInt(uint val)
 {
-	this->Format("%u", val);
+    this->Format("%u", val);
 }
 
 //------------------------------------------------------------------------------
@@ -564,7 +564,7 @@ String::SetUInt(uint val)
 inline void
 String::SetLong(long val)
 {
-	this->Format("%ld", val);
+    this->Format("%ld", val);
 }
 
 //------------------------------------------------------------------------------
@@ -573,7 +573,7 @@ String::SetLong(long val)
 inline void
 String::SetSizeT(size_t val)
 {
-	this->Format("%zu", val);
+    this->Format("%zu", val);
 }
 
 //------------------------------------------------------------------------------
@@ -582,7 +582,7 @@ String::SetSizeT(size_t val)
 inline void
 String::SetLongLong(long long val)
 {
-	this->Format("%lld", val);
+    this->Format("%lld", val);
 }
 
 //------------------------------------------------------------------------------
@@ -600,7 +600,7 @@ String::SetFloat(float val)
 inline void
 String::SetDouble(double val)
 {
-	this->Format("%.6f", val);
+    this->Format("%.6f", val);
 }
 
 //------------------------------------------------------------------------------
@@ -625,11 +625,11 @@ String::SetBool(bool val)
 inline void
 String::Fill(SizeT length, unsigned char character)
 {
-	this->Alloc(length + 1);
-	Memory::Fill(this->heapBuffer, length, character);
-	this->heapBuffer[length] = 0;
-	this->localBuffer[0] = 0;
-	this->strLen = length;
+    this->Alloc(length + 1);
+    Memory::Fill(this->heapBuffer, length, character);
+    this->heapBuffer[length] = 0;
+    this->localBuffer[0] = 0;
+    this->strLen = length;
 }
 
 #if !__OSX__
@@ -666,7 +666,7 @@ String::SetVec3(const Math::vec3& v)
 inline void
 String::SetQuaternion(const Math::quat& v)
 {
-	this->Format("%.6f,%.6f,%.6f,%.6f", v.x, v.y, v.z, v.w);
+    this->Format("%.6f,%.6f,%.6f,%.6f", v.x, v.y, v.z, v.w);
 }
 
 //------------------------------------------------------------------------------
@@ -691,13 +691,13 @@ String::SetMat4(const Math::mat4& m)
 inline void
 String::SetTransform44(const Math::transform44& t)
 {
-	this->Format("%s|%s|%s|%s|%s|%s",
-		this->FromVec3(t.getposition()).AsCharPtr(),
-		this->FromQuat(t.getrotate()).AsCharPtr(),
-		this->FromVec3(t.getscale()).AsCharPtr(),
-		this->FromVec3(t.getrotatepivot()).AsCharPtr(),
-		this->FromVec3(t.getscalepivot()).AsCharPtr(),
-		this->FromMat4(t.getoffset()).AsCharPtr());
+    this->Format("%s|%s|%s|%s|%s|%s",
+        this->FromVec3(t.getposition()).AsCharPtr(),
+        this->FromQuat(t.getrotate()).AsCharPtr(),
+        this->FromVec3(t.getscale()).AsCharPtr(),
+        this->FromVec3(t.getrotatepivot()).AsCharPtr(),
+        this->FromVec3(t.getscalepivot()).AsCharPtr(),
+        this->FromMat4(t.getoffset()).AsCharPtr());
 }
 #endif // __OSX__
     
@@ -747,7 +747,7 @@ String::String(String&& rhs) noexcept:
         {
             Memory::Copy(rhs.localBuffer, this->localBuffer, this->strLen);
         }
-		this->localBuffer[this->strLen] = 0;
+        this->localBuffer[this->strLen] = 0;
     }
 }
 
@@ -812,7 +812,7 @@ String::operator=(String&& rhs) noexcept
             {
                 Memory::Copy(rhs.localBuffer, this->localBuffer, this->strLen);
             } 
-			this->localBuffer[this->strLen] = 0;
+            this->localBuffer[this->strLen] = 0;
         }
     }
 }
@@ -910,10 +910,10 @@ String::IsValid() const
 inline uint32_t
 String::HashCode() const
 {
-	uint32_t hash = 0;
+    uint32_t hash = 0;
     const char* ptr = this->AsCharPtr();
     SizeT len = this->strLen;
-	SizeT i;
+    SizeT i;
     for (i = 0; i < len; i++)
     {
         hash += ptr[i];
@@ -1063,8 +1063,8 @@ String::IsValidFloat() const
 inline bool
 String::IsValidVec2() const
 {
-	Array<String> tokens(2, 0);
-	this->Tokenize(", \t", tokens);
+    Array<String> tokens(2, 0);
+    this->Tokenize(", \t", tokens);
     return this->CheckValidCharSet(" \t-+.,e1234567890") && tokens.Size() == 2;
 }
 
@@ -1075,8 +1075,8 @@ String::IsValidVec2() const
 inline bool
 String::IsValidVec4() const
 {
-	Array<String> tokens(4, 0);
-	this->Tokenize(", \t", tokens);
+    Array<String> tokens(4, 0);
+    this->Tokenize(", \t", tokens);
     return this->CheckValidCharSet(" \t-+.,e1234567890") && tokens.Size() == 4;
 }
 
@@ -1087,8 +1087,8 @@ String::IsValidVec4() const
 inline bool
 String::IsValidMat4() const
 {
-	Array<String> tokens(16, 0);
-	this->Tokenize(", \t", tokens);
+    Array<String> tokens(16, 0);
+    this->Tokenize(", \t", tokens);
     return this->CheckValidCharSet(" \t-+.,e1234567890") && tokens.Size() == 16;
 }
     
@@ -1099,9 +1099,9 @@ Note: this method is not 100% correct, it just checks for invalid characters.
 inline bool
 String::IsValidTransform44() const
 {
-	Array<String> tokens(6, 0);
-	this->Tokenize("|", tokens);
-	return this->CheckValidCharSet("| \t-+.,e1234567890") && tokens.Size() == 6;
+    Array<String> tokens(6, 0);
+    this->Tokenize("|", tokens);
+    return this->CheckValidCharSet("| \t-+.,e1234567890") && tokens.Size() == 6;
 }
 
 //------------------------------------------------------------------------------
@@ -1165,9 +1165,9 @@ String::ReplaceIllegalFilenameChars(char replacement)
 inline String
 String::FromByte(byte i)
 {
-	String str;
-	str.SetByte(i);
-	return str;
+    String str;
+    str.SetByte(i);
+    return str;
 }
 
 //------------------------------------------------------------------------------
@@ -1176,9 +1176,9 @@ String::FromByte(byte i)
 inline String
 String::FromUByte(ubyte i)
 {
-	String str;
-	str.SetUByte(i);
-	return str;
+    String str;
+    str.SetUByte(i);
+    return str;
 }
 
 //------------------------------------------------------------------------------
@@ -1187,9 +1187,9 @@ String::FromUByte(ubyte i)
 inline String
 String::FromShort(short i)
 {
-	String str;
-	str.SetShort(i);
-	return str;
+    String str;
+    str.SetShort(i);
+    return str;
 }
 
 //------------------------------------------------------------------------------
@@ -1198,9 +1198,9 @@ String::FromShort(short i)
 inline String
 String::FromUShort(ushort i)
 {
-	String str;
-	str.SetUShort(i);
-	return str;
+    String str;
+    str.SetUShort(i);
+    return str;
 }
 
 //------------------------------------------------------------------------------
@@ -1208,7 +1208,7 @@ String::FromUShort(ushort i)
 */
 inline String
 String::FromInt(int i)
-{	
+{   
     String str;
     str.SetInt(i);
     return str;
@@ -1220,9 +1220,9 @@ String::FromInt(int i)
 inline String
 String::FromUInt(uint i)
 {
-	String str;
-	str.SetUInt(i);
-	return str;
+    String str;
+    str.SetUInt(i);
+    return str;
 }
 
 //------------------------------------------------------------------------------
@@ -1230,10 +1230,10 @@ String::FromUInt(uint i)
 */
 inline String
 String::FromLong(long i)
-{	
-	String str;
-	str.SetLong(i);
-	return str;
+{   
+    String str;
+    str.SetLong(i);
+    return str;
 }
 
 //------------------------------------------------------------------------------
@@ -1242,9 +1242,9 @@ String::FromLong(long i)
 inline String
 String::FromSize(size_t i)
 {
-	String str;
-	str.SetSizeT(i);
-	return str;
+    String str;
+    str.SetSizeT(i);
+    return str;
 }
 
 //------------------------------------------------------------------------------
@@ -1253,9 +1253,9 @@ String::FromSize(size_t i)
 inline Util::String
 String::FromLongLong(long long i)
 {
-	String str;
-	str.SetLongLong(i);
-	return str;
+    String str;
+    str.SetLongLong(i);
+    return str;
 }
 
 //------------------------------------------------------------------------------
@@ -1275,9 +1275,9 @@ String::FromFloat(float f)
 inline String
 String::FromDouble(double i)
 {
-	String str;
-	str.SetDouble(i);
-	return str;
+    String str;
+    str.SetDouble(i);
+    return str;
 }
 
 //------------------------------------------------------------------------------
@@ -1331,9 +1331,9 @@ String::FromVec3(const Math::vec3& v)
 inline String
 String::FromQuat(const Math::quat& q)
 {
-	String str;
-	str.SetQuaternion(q);
-	return str;
+    String str;
+    str.SetQuaternion(q);
+    return str;
 }
 
 //------------------------------------------------------------------------------
@@ -1353,9 +1353,9 @@ String::FromMat4(const Math::mat4& m)
 inline String
 String::FromTransform44(const Math::transform44& t)
 {
-	String str;
-	str.SetTransform44(t);
-	return str;
+    String str;
+    str.SetTransform44(t);
+    return str;
 }
 #endif
 
@@ -1366,18 +1366,18 @@ template<typename INTEGER>
 inline String
 String::Hex(INTEGER i)
 {
-	constexpr SizeT hexLength = sizeof(INTEGER) << 1;
-	static Util::String digits = "0123456789ABCDEF";
+    constexpr SizeT hexLength = sizeof(INTEGER) << 1;
+    static Util::String digits = "0123456789ABCDEF";
 
-	String str("0x");
-	str.Reserve(hexLength + 2);
+    String str("0x");
+    str.Reserve(hexLength + 2);
 
-	for (SizeT n = 0, j = (hexLength - 1) * 4; n < hexLength; ++n, j -= 4)
-	{
-		str.AppendChar(digits[(i >> j) & 0x0f]);
-	}
+    for (SizeT n = 0, j = (hexLength - 1) * 4; n < hexLength; ++n, j -= 4)
+    {
+        str.AppendChar(digits[(i >> j) & 0x0f]);
+    }
 
-	return str;
+    return str;
 }
 
 //------------------------------------------------------------------------------
@@ -1386,7 +1386,7 @@ String::Hex(INTEGER i)
 inline void
 String::AppendChar(char val)
 {
-	this->AppendRange(&val, 1);
+    this->AppendRange(&val, 1);
 }
 
 //------------------------------------------------------------------------------
@@ -1404,7 +1404,7 @@ String::AppendInt(int val)
 inline void
 String::AppendByte(byte val)
 {
-	this->Append(FromByte(val));
+    this->Append(FromByte(val));
 }
 
 //------------------------------------------------------------------------------
@@ -1413,7 +1413,7 @@ String::AppendByte(byte val)
 inline void
 String::AppendUByte(ubyte val)
 {
-	this->Append(FromUByte(val));
+    this->Append(FromUByte(val));
 }
 
 //------------------------------------------------------------------------------

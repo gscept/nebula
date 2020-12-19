@@ -47,10 +47,10 @@ public:
     /// get mouse movement
     const Math::vec2& GetMovement() const;
 
-	/// locks the mouse to a screen position (0.0 .. 1.0)
-	virtual void LockToPosition(bool locked, Math::vec2& position);
-	/// return true if the mouse is locked
-	bool IsLocked() const;    
+    /// locks the mouse to a screen position (0.0 .. 1.0)
+    virtual void LockToPosition(bool locked, Math::vec2& position);
+    /// return true if the mouse is locked
+    bool IsLocked() const;    
 
 protected:
     /// called when the handler is attached to the input server
@@ -88,12 +88,12 @@ private:
     Math::vec2 pixelPosition;
     Math::vec2 screenPosition;
     Math::vec2 movement;
-	Math::vec2 mouseLockedPosition;
+    Math::vec2 mouseLockedPosition;
     bool wheelForward;
     bool wheelBackward;
     bool initialMouseMovement;
-	bool mouseLocked;
-	bool mouseWasLocked;
+    bool mouseLocked;
+    bool mouseWasLocked;
 };
 
 //------------------------------------------------------------------------------
@@ -183,9 +183,9 @@ MouseBase::WheelBackward() const
 inline void
 MouseBase::LockToPosition(bool locked, Math::vec2& position)
 {
-	mouseLockedPosition = position;
-	mouseLocked = locked;
-	mouseWasLocked = locked;
+    mouseLockedPosition = position;
+    mouseLocked = locked;
+    mouseWasLocked = locked;
 }
 
 //------------------------------------------------------------------------------
@@ -194,7 +194,7 @@ MouseBase::LockToPosition(bool locked, Math::vec2& position)
 inline bool
 MouseBase::IsLocked() const
 {
-	return mouseLocked;
+    return mouseLocked;
 }
 
 } // namespace Base

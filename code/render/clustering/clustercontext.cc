@@ -15,27 +15,27 @@ namespace Clustering
 
 struct _state
 {
-	CoreGraphics::ShaderId clusterShader;
-	CoreGraphics::ShaderProgramId clusterGenerateProgram;
-	CoreGraphics::BufferId clusterBuffer;
+    CoreGraphics::ShaderId clusterShader;
+    CoreGraphics::ShaderProgramId clusterGenerateProgram;
+    CoreGraphics::BufferId clusterBuffer;
 
-	ClusterGenerate::ClusterUniforms uniforms;
-	CoreGraphics::BufferId constantBuffer;
-	IndexT uniformsSlot;
+    ClusterGenerate::ClusterUniforms uniforms;
+    CoreGraphics::BufferId constantBuffer;
+    IndexT uniformsSlot;
 
-	SizeT clusterDimensions[3];
-	float zDistribution;
-	float zInvScale, zInvBias;
-	float xResolution, yResolution;
-	float invXResolution, invYResolution;
+    SizeT clusterDimensions[3];
+    float zDistribution;
+    float zInvScale, zInvBias;
+    float xResolution, yResolution;
+    float invXResolution, invYResolution;
 
-	SizeT numThreads;
+    SizeT numThreads;
 
-	CoreGraphics::ResourceTableId resourceTable;
+    CoreGraphics::ResourceTableId resourceTable;
 
-	static const SizeT ClusterSubdivsX = 64;
-	static const SizeT ClusterSubdivsY = 64;
-	static const SizeT ClusterSubdivsZ = 24;
+    static const SizeT ClusterSubdivsX = 64;
+    static const SizeT ClusterSubdivsY = 64;
+    static const SizeT ClusterSubdivsZ = 24;
 } state;
 
 _ImplementPluginContext(ClusterContext);
@@ -60,55 +60,55 @@ ClusterContext::~ClusterContext()
 void 
 ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId window)
 {
-	__bundle.OnUpdateResources = ClusterContext::UpdateResources;
-	__bundle.StageBits = &ClusterContext::__state.currentStage;
+    __bundle.OnUpdateResources = ClusterContext::UpdateResources;
+    __bundle.StageBits = &ClusterContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
-	__bundle.OnRenderDebug = ClusterContext::OnRenderDebug;
+    __bundle.OnRenderDebug = ClusterContext::OnRenderDebug;
 #endif
-	Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
+    Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-	using namespace CoreGraphics;
-	state.clusterShader = ShaderGet("shd:cluster_generate.fxb");
-	state.clusterGenerateProgram = ShaderGetProgram(state.clusterShader, ShaderFeatureFromString("AABBGenerate"));
+    using namespace CoreGraphics;
+    state.clusterShader = ShaderGet("shd:cluster_generate.fxb");
+    state.clusterGenerateProgram = ShaderGetProgram(state.clusterShader, ShaderFeatureFromString("AABBGenerate"));
 
-	uint numBuffers = CoreGraphics::GetNumBufferedFrames();
+    uint numBuffers = CoreGraphics::GetNumBufferedFrames();
 
-	state.uniformsSlot = ShaderGetResourceSlot(state.clusterShader, "ClusterUniforms");
-	IndexT clusterAABBSlot = ShaderGetResourceSlot(state.clusterShader, "ClusterAABBs");
+    state.uniformsSlot = ShaderGetResourceSlot(state.clusterShader, "ClusterUniforms");
+    IndexT clusterAABBSlot = ShaderGetResourceSlot(state.clusterShader, "ClusterAABBs");
 
-	CoreGraphics::DisplayMode displayMode = CoreGraphics::WindowGetDisplayMode(window);
+    CoreGraphics::DisplayMode displayMode = CoreGraphics::WindowGetDisplayMode(window);
 
-	state.clusterDimensions[0] = Math::n_divandroundup(displayMode.GetWidth(), state.ClusterSubdivsX);
-	state.clusterDimensions[1] = Math::n_divandroundup(displayMode.GetHeight(), state.ClusterSubdivsY);
-	state.clusterDimensions[2] = state.ClusterSubdivsZ;
+    state.clusterDimensions[0] = Math::n_divandroundup(displayMode.GetWidth(), state.ClusterSubdivsX);
+    state.clusterDimensions[1] = Math::n_divandroundup(displayMode.GetHeight(), state.ClusterSubdivsY);
+    state.clusterDimensions[2] = state.ClusterSubdivsZ;
 
-	state.zDistribution = ZFar / ZNear;
-	state.zInvScale = float(state.clusterDimensions[2]) / Math::n_log2(state.zDistribution);
-	state.zInvBias = -(float(state.clusterDimensions[2]) * Math::n_log2(ZNear) / Math::n_log2(state.zDistribution));
-	state.xResolution = displayMode.GetWidth();
-	state.yResolution = displayMode.GetHeight();
-	state.invXResolution = 1.0f / displayMode.GetWidth();
-	state.invYResolution = 1.0f / displayMode.GetHeight();
+    state.zDistribution = ZFar / ZNear;
+    state.zInvScale = float(state.clusterDimensions[2]) / Math::n_log2(state.zDistribution);
+    state.zInvBias = -(float(state.clusterDimensions[2]) * Math::n_log2(ZNear) / Math::n_log2(state.zDistribution));
+    state.xResolution = displayMode.GetWidth();
+    state.yResolution = displayMode.GetHeight();
+    state.invXResolution = 1.0f / displayMode.GetWidth();
+    state.invYResolution = 1.0f / displayMode.GetHeight();
 
-	BufferCreateInfo rwb3Info;
-	rwb3Info.name = "ClusterAABBBuffer";
-	rwb3Info.size = state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2];
-	rwb3Info.elementSize = sizeof(ClusterGenerate::ClusterAABB);
-	rwb3Info.mode = BufferAccessMode::DeviceLocal;
-	rwb3Info.usageFlags = CoreGraphics::ReadWriteBuffer;
-	state.clusterBuffer = CreateBuffer(rwb3Info);
-	state.constantBuffer = ShaderCreateConstantBuffer(state.clusterShader, "ClusterUniforms");
+    BufferCreateInfo rwb3Info;
+    rwb3Info.name = "ClusterAABBBuffer";
+    rwb3Info.size = state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2];
+    rwb3Info.elementSize = sizeof(ClusterGenerate::ClusterAABB);
+    rwb3Info.mode = BufferAccessMode::DeviceLocal;
+    rwb3Info.usageFlags = CoreGraphics::ReadWriteBuffer;
+    state.clusterBuffer = CreateBuffer(rwb3Info);
+    state.constantBuffer = ShaderCreateConstantBuffer(state.clusterShader, "ClusterUniforms");
 
-	state.resourceTable = ShaderCreateResourceTable(state.clusterShader, NEBULA_BATCH_GROUP);
-	ResourceTableSetRWBuffer(state.resourceTable, { state.clusterBuffer, clusterAABBSlot, 0, false, false, -1, 0 });
-	ResourceTableSetConstantBuffer(state.resourceTable, { state.constantBuffer, state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
-	ResourceTableCommitChanges(state.resourceTable);
+    state.resourceTable = ShaderCreateResourceTable(state.clusterShader, NEBULA_BATCH_GROUP);
+    ResourceTableSetRWBuffer(state.resourceTable, { state.clusterBuffer, clusterAABBSlot, 0, false, false, -1, 0 });
+    ResourceTableSetConstantBuffer(state.resourceTable, { state.constantBuffer, state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
+    ResourceTableCommitChanges(state.resourceTable);
 
-	// called from main script
-	Frame::AddCallback("ClusterContext - Update Clusters", [](const IndexT frame, const IndexT bufferIndex) // trigger update
-		{
-			UpdateClusters();
-		});
+    // called from main script
+    Frame::AddCallback("ClusterContext - Update Clusters", [](const IndexT frame, const IndexT bufferIndex) // trigger update
+        {
+            UpdateClusters();
+        });
 }
 
 //------------------------------------------------------------------------------
@@ -117,7 +117,7 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
 const CoreGraphics::BufferId 
 ClusterContext::GetClusterBuffer()
 {
-	return state.clusterBuffer;
+    return state.clusterBuffer;
 }
 
 //------------------------------------------------------------------------------
@@ -126,7 +126,7 @@ ClusterContext::GetClusterBuffer()
 const SizeT 
 ClusterContext::GetNumClusters()
 {
-	return state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2];
+    return state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2];
 }
 
 //------------------------------------------------------------------------------
@@ -135,7 +135,7 @@ ClusterContext::GetNumClusters()
 const std::array<SizeT, 3> 
 ClusterContext::GetClusterDimensions()
 {
-	return std::array<SizeT, 3> { state.clusterDimensions[0], state.clusterDimensions[1], state.clusterDimensions[2] };
+    return std::array<SizeT, 3> { state.clusterDimensions[0], state.clusterDimensions[1], state.clusterDimensions[2] };
 }
 
 //------------------------------------------------------------------------------
@@ -144,7 +144,7 @@ ClusterContext::GetClusterDimensions()
 const ClusterGenerate::ClusterUniforms&
 ClusterContext::GetUniforms()
 {
-	return state.uniforms;
+    return state.uniforms;
 }
 
 //------------------------------------------------------------------------------
@@ -153,7 +153,7 @@ ClusterContext::GetUniforms()
 const CoreGraphics::BufferId 
 ClusterContext::GetConstantBuffer()
 {
-	return state.constantBuffer;
+    return state.constantBuffer;
 }
 
 //------------------------------------------------------------------------------
@@ -162,23 +162,23 @@ ClusterContext::GetConstantBuffer()
 void 
 ClusterContext::UpdateResources(const Graphics::FrameContext& ctx)
 {
-	using namespace CoreGraphics;
+    using namespace CoreGraphics;
 
-	state.uniforms.ZDistribution = state.zDistribution;
-	state.uniforms.InvZScale = state.zInvScale;
-	state.uniforms.InvZBias = state.zInvBias;
-	state.uniforms.InvFramebufferDimensions[0] = state.invXResolution;
-	state.uniforms.InvFramebufferDimensions[1] = state.invYResolution;
-	state.uniforms.FramebufferDimensions[0] = state.xResolution;
-	state.uniforms.FramebufferDimensions[1] = state.yResolution;
-	state.uniforms.NumCells[0] = state.clusterDimensions[0];
-	state.uniforms.NumCells[1] = state.clusterDimensions[1];
-	state.uniforms.NumCells[2] = state.clusterDimensions[2];
-	state.uniforms.BlockSize[0] = state.ClusterSubdivsX;
-	state.uniforms.BlockSize[1] = state.ClusterSubdivsY;
+    state.uniforms.ZDistribution = state.zDistribution;
+    state.uniforms.InvZScale = state.zInvScale;
+    state.uniforms.InvZBias = state.zInvBias;
+    state.uniforms.InvFramebufferDimensions[0] = state.invXResolution;
+    state.uniforms.InvFramebufferDimensions[1] = state.invYResolution;
+    state.uniforms.FramebufferDimensions[0] = state.xResolution;
+    state.uniforms.FramebufferDimensions[1] = state.yResolution;
+    state.uniforms.NumCells[0] = state.clusterDimensions[0];
+    state.uniforms.NumCells[1] = state.clusterDimensions[1];
+    state.uniforms.NumCells[2] = state.clusterDimensions[2];
+    state.uniforms.BlockSize[0] = state.ClusterSubdivsX;
+    state.uniforms.BlockSize[1] = state.ClusterSubdivsY;
 
-	// update constant buffer, probably super unnecessary since these values never change
-	BufferUpdate(state.constantBuffer, state.uniforms, 0);
+    // update constant buffer, probably super unnecessary since these values never change
+    BufferUpdate(state.constantBuffer, state.uniforms, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -195,53 +195,53 @@ ClusterContext::OnRenderDebug(uint32_t flags)
 void 
 ClusterContext::UpdateClusters()
 {
-	// update constants
-	using namespace CoreGraphics;
+    // update constants
+    using namespace CoreGraphics;
 
-	// begin command buffer work
-	CommandBufferBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Cluster AABB Generation");
+    // begin command buffer work
+    CommandBufferBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Cluster AABB Generation");
 
-	// make sure to sync so we don't read from data that is being written...
-	BarrierInsert(ComputeQueueType,
-		BarrierStage::ComputeShader,
-		BarrierStage::ComputeShader,
-		BarrierDomain::Global,
-		nullptr,
-		{
-			BufferBarrier
-			{
-				state.clusterBuffer,
-				BarrierAccess::ShaderRead,
-				BarrierAccess::ShaderWrite,
-				0, -1
-			}
-		}, "AABB begin barrier");
+    // make sure to sync so we don't read from data that is being written...
+    BarrierInsert(ComputeQueueType,
+        BarrierStage::ComputeShader,
+        BarrierStage::ComputeShader,
+        BarrierDomain::Global,
+        nullptr,
+        {
+            BufferBarrier
+            {
+                state.clusterBuffer,
+                BarrierAccess::ShaderRead,
+                BarrierAccess::ShaderWrite,
+                0, -1
+            }
+        }, "AABB begin barrier");
 
-	SetShaderProgram(state.clusterGenerateProgram, ComputeQueueType);
+    SetShaderProgram(state.clusterGenerateProgram, ComputeQueueType);
 
-	uint bufferIndex = CoreGraphics::GetBufferedFrameIndex();
-	SetResourceTable(state.resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr, ComputeQueueType);
+    uint bufferIndex = CoreGraphics::GetBufferedFrameIndex();
+    SetResourceTable(state.resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr, ComputeQueueType);
 
-	// run the job as series of 1024 clusters at a time
-	Compute(Math::n_ceil((state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2]) / 64.0f), 1, 1, ComputeQueueType);
+    // run the job as series of 1024 clusters at a time
+    Compute(Math::n_ceil((state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2]) / 64.0f), 1, 1, ComputeQueueType);
 
-	// make sure to sync so we don't read from data that is being written...
-	BarrierInsert(ComputeQueueType,
-		BarrierStage::ComputeShader,
-		BarrierStage::ComputeShader,
-		BarrierDomain::Global,
-		nullptr,
-		{
-			BufferBarrier
-			{
-				state.clusterBuffer,
-				BarrierAccess::ShaderWrite,
-				BarrierAccess::ShaderRead,
-				0, -1
-			}
-		}
-		, "AABB finish barrier");
+    // make sure to sync so we don't read from data that is being written...
+    BarrierInsert(ComputeQueueType,
+        BarrierStage::ComputeShader,
+        BarrierStage::ComputeShader,
+        BarrierDomain::Global,
+        nullptr,
+        {
+            BufferBarrier
+            {
+                state.clusterBuffer,
+                BarrierAccess::ShaderWrite,
+                BarrierAccess::ShaderRead,
+                0, -1
+            }
+        }
+        , "AABB finish barrier");
 
-	CommandBufferEndMarker(ComputeQueueType);
+    CommandBufferEndMarker(ComputeQueueType);
 }
 } // namespace Clustering

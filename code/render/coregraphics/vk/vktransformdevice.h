@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Implements the transform device to manage object and camera transforms in Vulkan.
-	
-	(C) 2016-2020 Individual contributors, see AUTHORS file
+    Implements the transform device to manage object and camera transforms in Vulkan.
+    
+    (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -17,55 +17,55 @@ namespace Vulkan
 {
 class VkTransformDevice : public Base::TransformDeviceBase
 {
-	__DeclareClass(VkTransformDevice);
-	__DeclareSingleton(VkTransformDevice);
+    __DeclareClass(VkTransformDevice);
+    __DeclareSingleton(VkTransformDevice);
 public:
-	/// constructor
-	VkTransformDevice();
-	/// destructor
-	virtual ~VkTransformDevice();
+    /// constructor
+    VkTransformDevice();
+    /// destructor
+    virtual ~VkTransformDevice();
 
-	/// open the transform device
-	bool Open();
-	/// close the transform device
-	void Close();
+    /// open the transform device
+    bool Open();
+    /// close the transform device
+    void Close();
 
-	/// set projection transform
-	void SetProjTransform(const Math::mat4& m);
+    /// set projection transform
+    void SetProjTransform(const Math::mat4& m);
 
-	/// updates shared shader variables dependent on view matrix
-	void ApplyViewSettings();
-	/// update the csm matrix block
-	void ApplyShadowSettings(const Shared::ShadowMatrixBlock& block);
+    /// updates shared shader variables dependent on view matrix
+    void ApplyViewSettings();
+    /// update the csm matrix block
+    void ApplyShadowSettings(const Shared::ShadowMatrixBlock& block);
 
-	/// bind descriptors for view in the graphics pipeline
-	void BindCameraDescriptorSetsGraphics();
-	/// bind descriptors for view in the compute pipeline
-	void BindCameraDescriptorSetsCompute(const CoreGraphics::QueueType queue = CoreGraphics::GraphicsQueueType);
+    /// bind descriptors for view in the graphics pipeline
+    void BindCameraDescriptorSetsGraphics();
+    /// bind descriptors for view in the compute pipeline
+    void BindCameraDescriptorSetsCompute(const CoreGraphics::QueueType queue = CoreGraphics::GraphicsQueueType);
 private:
 
-	Math::mat4 viewMatrixArray[6];
+    Math::mat4 viewMatrixArray[6];
 
-	IndexT viewVar;
-	IndexT invViewVar;
-	IndexT viewProjVar;
-	IndexT invViewProjVar;
-	IndexT projVar;
-	IndexT invProjVar;
-	IndexT eyePosVar;
-	IndexT focalLengthNearFarVar;
-	IndexT viewMatricesVar;
-	IndexT timeAndRandomVar;
-	IndexT nearFarPlaneVar;
-	uint32_t frameOffset;
+    IndexT viewVar;
+    IndexT invViewVar;
+    IndexT viewProjVar;
+    IndexT invViewProjVar;
+    IndexT projVar;
+    IndexT invProjVar;
+    IndexT eyePosVar;
+    IndexT focalLengthNearFarVar;
+    IndexT viewMatricesVar;
+    IndexT timeAndRandomVar;
+    IndexT nearFarPlaneVar;
+    uint32_t frameOffset;
 
-	IndexT shadowCameraBlockVar;
-	CoreGraphics::BufferId viewConstants;
+    IndexT shadowCameraBlockVar;
+    CoreGraphics::BufferId viewConstants;
 
-	Util::FixedArray<CoreGraphics::ResourceTableId> viewTables;	
-	IndexT viewConstantsSlot;
-	IndexT shadowConstantsSlot;
-	CoreGraphics::ResourcePipelineId tableLayout;
+    Util::FixedArray<CoreGraphics::ResourceTableId> viewTables; 
+    IndexT viewConstantsSlot;
+    IndexT shadowConstantsSlot;
+    CoreGraphics::ResourcePipelineId tableLayout;
 };
 
 //------------------------------------------------------------------------------
@@ -74,8 +74,8 @@ private:
 inline void
 VkTransformDevice::BindCameraDescriptorSetsGraphics()
 {
-	IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
-	CoreGraphics::SetResourceTable(this->viewTables[bufferedFrameIndex], NEBULA_FRAME_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+    IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
+    CoreGraphics::SetResourceTable(this->viewTables[bufferedFrameIndex], NEBULA_FRAME_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 }
 
 //------------------------------------------------------------------------------
@@ -84,7 +84,7 @@ VkTransformDevice::BindCameraDescriptorSetsGraphics()
 inline void
 VkTransformDevice::BindCameraDescriptorSetsCompute(const CoreGraphics::QueueType queue)
 {
-	IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
-	CoreGraphics::SetResourceTable(this->viewTables[bufferedFrameIndex], NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr, queue);
+    IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
+    CoreGraphics::SetResourceTable(this->viewTables[bufferedFrameIndex], NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr, queue);
 }
 } // namespace Vulkan

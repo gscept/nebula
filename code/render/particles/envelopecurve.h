@@ -35,40 +35,40 @@ public:
     void PreSample(float* sampleBuffer, SizeT numSamples, SizeT sampleStride) const;
     /// get the max of val0, val1, val2, val3
     float GetMaxValue() const;
-	/// get the min of val0, v1l, val2, val3
-	float GetMinValue() const;
-	/// get values
-	const float* GetValues() const;
-	/// set values
-	void SetValues(float v0, float v1, float v2, float v3);
-	/// get limits in y
-	const float* GetLimits() const;
-	/// set limits in y
-	void SetLimits(float min, float max);
-	/// get keypos0
-	const float GetKeyPos0() const;
-	/// set keypos0
-	void SetKeyPos0(float f);
-	/// get keypos1
-	const float GetKeyPos1() const;
-	/// set keypos1
-	void SetKeyPos1(float f);
-	/// get frequency
-	const float GetFrequency() const;
-	/// set frequency
-	void SetFrequency(float f);
-	/// get amplitude
-	const float GetAmplitude() const;
-	/// set amplitude
-	void SetAmplitude(float f);
-	/// get modFunction
-	const int GetModFunc() const;
-	/// set mod function
-	void SetModFunc(int func);
+    /// get the min of val0, v1l, val2, val3
+    float GetMinValue() const;
+    /// get values
+    const float* GetValues() const;
+    /// set values
+    void SetValues(float v0, float v1, float v2, float v3);
+    /// get limits in y
+    const float* GetLimits() const;
+    /// set limits in y
+    void SetLimits(float min, float max);
+    /// get keypos0
+    const float GetKeyPos0() const;
+    /// set keypos0
+    void SetKeyPos0(float f);
+    /// get keypos1
+    const float GetKeyPos1() const;
+    /// set keypos1
+    void SetKeyPos1(float f);
+    /// get frequency
+    const float GetFrequency() const;
+    /// set frequency
+    void SetFrequency(float f);
+    /// get amplitude
+    const float GetAmplitude() const;
+    /// set amplitude
+    void SetAmplitude(float f);
+    /// get modFunction
+    const int GetModFunc() const;
+    /// set mod function
+    void SetModFunc(int func);
 
 private:
     float values[4];
-	float limits[2];
+    float limits[2];
     float keyPos0;
     float keyPos1;
     float frequency;
@@ -82,7 +82,7 @@ private:
 inline const float*
 EnvelopeCurve::GetValues() const
 {
-	return this->values;
+    return this->values;
 }
 
 //------------------------------------------------------------------------------
@@ -91,10 +91,10 @@ EnvelopeCurve::GetValues() const
 inline void 
 EnvelopeCurve::SetValues( float v0, float v1, float v2, float v3 )
 {
-	this->values[0] = v0;
-	this->values[1] = v1;
-	this->values[2] = v2;
-	this->values[3] = v3;
+    this->values[0] = v0;
+    this->values[1] = v1;
+    this->values[2] = v2;
+    this->values[3] = v3;
 }
 
 //------------------------------------------------------------------------------
@@ -103,7 +103,7 @@ EnvelopeCurve::SetValues( float v0, float v1, float v2, float v3 )
 inline const float
 EnvelopeCurve::GetKeyPos0() const
 {
-	return this->keyPos0;
+    return this->keyPos0;
 }
 
 //------------------------------------------------------------------------------
@@ -112,7 +112,7 @@ EnvelopeCurve::GetKeyPos0() const
 inline void 
 EnvelopeCurve::SetKeyPos0( float f )
 {
-	this->keyPos0 = f;
+    this->keyPos0 = f;
 }
 
 //------------------------------------------------------------------------------
@@ -121,7 +121,7 @@ EnvelopeCurve::SetKeyPos0( float f )
 inline const float
 EnvelopeCurve::GetKeyPos1() const
 {
-	return this->keyPos1;
+    return this->keyPos1;
 }
 
 //------------------------------------------------------------------------------
@@ -130,7 +130,7 @@ EnvelopeCurve::GetKeyPos1() const
 inline void 
 EnvelopeCurve::SetKeyPos1( float f )
 {
-	this->keyPos1 = f;
+    this->keyPos1 = f;
 }
 
 //------------------------------------------------------------------------------
@@ -139,7 +139,7 @@ EnvelopeCurve::SetKeyPos1( float f )
 inline const float
 EnvelopeCurve::GetFrequency() const
 {
-	return this->frequency;
+    return this->frequency;
 }
 
 //------------------------------------------------------------------------------
@@ -148,7 +148,7 @@ EnvelopeCurve::GetFrequency() const
 inline void 
 EnvelopeCurve::SetFrequency( float f )
 {
-	this->frequency = f;
+    this->frequency = f;
 }
 
 //------------------------------------------------------------------------------
@@ -157,7 +157,7 @@ EnvelopeCurve::SetFrequency( float f )
 inline const float
 EnvelopeCurve::GetAmplitude() const
 {
-	return this->amplitude;
+    return this->amplitude;
 }
 
 //------------------------------------------------------------------------------
@@ -166,7 +166,7 @@ EnvelopeCurve::GetAmplitude() const
 inline void 
 EnvelopeCurve::SetAmplitude( float f )
 {
-	this->amplitude = f;
+    this->amplitude = f;
 }
 
 //------------------------------------------------------------------------------
@@ -175,7 +175,7 @@ EnvelopeCurve::SetAmplitude( float f )
 inline const int
 EnvelopeCurve::GetModFunc() const
 {
-	return this->modFunction;
+    return this->modFunction;
 }
 
 //------------------------------------------------------------------------------
@@ -184,7 +184,7 @@ EnvelopeCurve::GetModFunc() const
 inline void 
 EnvelopeCurve::SetModFunc( int i )
 {
-	this->modFunction = (ModFunc)i;
+    this->modFunction = (ModFunc)i;
 }
 
 
@@ -194,7 +194,7 @@ EnvelopeCurve::SetModFunc( int i )
 inline const float* 
 EnvelopeCurve::GetLimits() const
 {
-	return this->limits;
+    return this->limits;
 }
 
 //------------------------------------------------------------------------------
@@ -203,8 +203,8 @@ EnvelopeCurve::GetLimits() const
 inline void 
 EnvelopeCurve::SetLimits( float min, float max )
 {
-	this->limits[0] = min;
-	this->limits[1] = max;
+    this->limits[0] = min;
+    this->limits[1] = max;
 }
 
 } // namespace Particles

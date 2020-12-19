@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Vertex layout declares the interface between application and vertex shader
+    Vertex layout declares the interface between application and vertex shader
 
-	(C)2017-2020 Individual contributors, see AUTHORS file
+    (C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
@@ -19,15 +19,15 @@ static const IndexT MaxNumVertexStreams = 16;
 
 struct VertexLayoutCreateInfo
 {
-	Util::Array<VertexComponent> comps;
+    Util::Array<VertexComponent> comps;
 };
 
 struct VertexLayoutInfo
 {
-	Util::StringAtom signature;
-	SizeT vertexByteSize;
-	Util::Array<VertexComponent> comps;
-	ShaderProgramId shader;
+    Util::StringAtom signature;
+    SizeT vertexByteSize;
+    Util::Array<VertexComponent> comps;
+    ShaderProgramId shader;
 };
 
 /// create new vertex layout

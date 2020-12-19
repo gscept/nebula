@@ -8,7 +8,7 @@
     A 2-component float vector class.
     
     (C) 2007 RadonLabs GmbH
-	(C) 2013-2020 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "math/scalar.h"
@@ -20,8 +20,8 @@ struct vec2
 {
     /// default constructor, NOTE: does NOT setup components!
     vec2() = default;
-	/// construct from single value
-	vec2(scalar x);
+    /// construct from single value
+    vec2(scalar x);
     /// construct from values
     vec2(scalar x, scalar y);
     /// copy constructor
@@ -86,9 +86,9 @@ struct vec2
 */
 inline
 vec2::vec2(scalar x) : 
-	x(x), y(x)
+    x(x), y(x)
 {
-	//  empty
+    //  empty
 }
 
 //------------------------------------------------------------------------------

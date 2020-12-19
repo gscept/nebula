@@ -15,7 +15,7 @@ namespace Frame
 */
 FrameMipmap::FrameMipmap()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -23,7 +23,7 @@ FrameMipmap::FrameMipmap()
 */
 FrameMipmap::~FrameMipmap()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -32,14 +32,14 @@ FrameMipmap::~FrameMipmap()
 FrameOp::Compiled*
 FrameMipmap::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
-	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+    CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 
 #if NEBULA_GRAPHICS_DEBUG
-	ret->name = this->name;
+    ret->name = this->name;
 #endif
 
-	ret->tex = this->tex;
-	return ret;
+    ret->tex = this->tex;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -49,12 +49,12 @@ void
 FrameMipmap::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, this->name.Value());
+    CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, this->name.Value());
 #endif
 
-	CoreGraphics::TextureGenerateMipmaps(this->tex);
+    CoreGraphics::TextureGenerateMipmaps(this->tex);
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
+    CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
 #endif
 }
 
@@ -64,7 +64,7 @@ FrameMipmap::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex
 void
 FrameMipmap::CompiledImpl::Discard()
 {
-	this->tex = TextureId::Invalid();
+    this->tex = TextureId::Invalid();
 }
 
 } // namespace Frame2

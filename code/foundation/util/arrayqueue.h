@@ -5,7 +5,7 @@
     
     Nebula's queue class (a FIFO container).
     
-	@todo	This is extremely slow and should probably use a list instead.
+    @todo   This is extremely slow and should probably use a list instead.
 
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
@@ -25,7 +25,7 @@ public:
     ArrayQueue(const ArrayQueue<TYPE>& rhs);
     /// move constructor
     ArrayQueue(ArrayQueue<TYPE>&& rhs);
-	/// conversion constructor for array
+    /// conversion constructor for array
     ArrayQueue(const Array<TYPE>& rhs);
 
     /// assignment operator
@@ -48,8 +48,8 @@ public:
     void Clear();
     /// return true if queue contains element
     bool Contains(const TYPE& e) const;
-	/// erase element at index
-	void EraseIndex(const IndexT i);
+    /// erase element at index
+    void EraseIndex(const IndexT i);
 
     /// add element to the back of the queue
     void Enqueue(const TYPE& e);
@@ -96,7 +96,7 @@ ArrayQueue<TYPE>::ArrayQueue(ArrayQueue<TYPE>&& rhs):
 template<class TYPE>
 Util::ArrayQueue<TYPE>::ArrayQueue(const Array<TYPE>& rhs)
 {
-	this->queueArray = rhs;
+    this->queueArray = rhs;
 }
 
 //------------------------------------------------------------------------------
@@ -166,7 +166,7 @@ template<class TYPE>
 void
 Util::ArrayQueue<TYPE>::EraseIndex(const IndexT i)
 {
-	this->queueArray.EraseIndex(i);
+    this->queueArray.EraseIndex(i);
 }
 
 //------------------------------------------------------------------------------

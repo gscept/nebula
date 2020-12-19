@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Implements a Vulkan depth-stencil renderable texture.
-	
-	(C) 2016-2018 Individual contributors, see AUTHORS file
+    Implements a Vulkan depth-stencil renderable texture.
+    
+    (C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -12,39 +12,39 @@ namespace Vulkan
 {
 class VkDepthStencilTarget : public Base::DepthStencilTargetBase
 {
-	__DeclareClass(VkDepthStencilTarget);
+    __DeclareClass(VkDepthStencilTarget);
 public:
-	/// constructor
-	VkDepthStencilTarget();
-	/// destructor
-	virtual ~VkDepthStencilTarget();
+    /// constructor
+    VkDepthStencilTarget();
+    /// destructor
+    virtual ~VkDepthStencilTarget();
 
-	/// setup depth-stencil target
-	void Setup();
-	/// discard depth-stencil target
-	void Discard();
+    /// setup depth-stencil target
+    void Setup();
+    /// discard depth-stencil target
+    void Discard();
 
-	/// called after we change the display size
-	void OnDisplayResized(SizeT width, SizeT height);
+    /// called after we change the display size
+    void OnDisplayResized(SizeT width, SizeT height);
 
-	/// begins pass
-	void BeginPass();
-	/// ends pass
-	void EndPass();
+    /// begins pass
+    void BeginPass();
+    /// ends pass
+    void EndPass();
 
-	/// get the vulkan viewports
-	const VkViewport& GetVkViewport() const;
-	/// get the vulkan scissor rectangles
-	const VkRect2D& GetVkScissorRect() const;
-	/// return handle to the view
-	VkImageView GetVkImageView();
+    /// get the vulkan viewports
+    const VkViewport& GetVkViewport() const;
+    /// get the vulkan scissor rectangles
+    const VkRect2D& GetVkScissorRect() const;
+    /// return handle to the view
+    VkImageView GetVkImageView();
 private:
 
-	VkViewport viewport;
-	VkRect2D scissor;
-	VkImage image;
-	VkDeviceMemory mem;
-	VkImageView view;
+    VkViewport viewport;
+    VkRect2D scissor;
+    VkImage image;
+    VkDeviceMemory mem;
+    VkImageView view;
 };
 
 //------------------------------------------------------------------------------
@@ -53,7 +53,7 @@ private:
 inline const VkViewport&
 VkDepthStencilTarget::GetVkViewport() const
 {
-	return this->viewport;
+    return this->viewport;
 }
 
 //------------------------------------------------------------------------------
@@ -62,7 +62,7 @@ VkDepthStencilTarget::GetVkViewport() const
 inline const VkRect2D&
 VkDepthStencilTarget::GetVkScissorRect() const
 {
-	return this->scissor;
+    return this->scissor;
 }
 
 //------------------------------------------------------------------------------
@@ -71,7 +71,7 @@ VkDepthStencilTarget::GetVkScissorRect() const
 inline VkImageView
 VkDepthStencilTarget::GetVkImageView()
 {
-	return this->view;
+    return this->view;
 }
 
 } // namespace Vulkan

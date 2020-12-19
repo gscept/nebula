@@ -47,13 +47,13 @@ public:
     /// get class rtti object by fourcc code
     const Rtti* GetClassRtti(const Util::FourCC& classFourCC) const;
     /// create an object by class name
-	void* Create(const Util::String& className) const;
+    void* Create(const Util::String& className) const;
     /// create an object by FourCC code
-	void* Create(const Util::FourCC classFourCC) const;
-	/// create an array of objects by class name
-	void* CreateArray(const Util::String& className, SizeT num) const;
-	/// create an array object by FourCC code
-	void* CreateArray(const Util::FourCC classFourCC, SizeT num) const;
+    void* Create(const Util::FourCC classFourCC) const;
+    /// create an array of objects by class name
+    void* CreateArray(const Util::String& className, SizeT num) const;
+    /// create an array object by FourCC code
+    void* CreateArray(const Util::FourCC classFourCC, SizeT num) const;
 
 private:
     /// constructor is private
@@ -62,8 +62,8 @@ private:
     ~Factory();
 
     static Factory* Singleton;
-    Util::HashTable<Util::String, const Rtti*, 1024> nameTable;	// for fast lookup by class name
-    Util::Dictionary<Util::FourCC, const Rtti*> fourccTable;	// for fast lookup by fourcc code
+    Util::HashTable<Util::String, const Rtti*, 1024> nameTable; // for fast lookup by class name
+    Util::Dictionary<Util::FourCC, const Rtti*> fourccTable;    // for fast lookup by fourcc code
 };
 
 } // namespace Foundation

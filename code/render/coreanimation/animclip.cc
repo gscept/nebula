@@ -170,7 +170,7 @@ AnimClip::GetEventsInRange(Timing::Tick startTime, Timing::Tick endTime, IndexT&
 
     // skip all events which lay before starttime
     IndexT i = 0;
-	while ((i < numEvents) && (startTime > this->events[i].GetTime()))
+    while ((i < numEvents) && (startTime > this->events[i].GetTime()))
     {
         i++;
     }
@@ -180,7 +180,7 @@ AnimClip::GetEventsInRange(Timing::Tick startTime, Timing::Tick endTime, IndexT&
         outStartEventIndex = i;
         SizeT numEventsInRange = 0;
         // check if event is before endtime
-		while ((i < numEvents) && (endTime > this->events[i].GetTime()))
+        while ((i < numEvents) && (endTime > this->events[i].GetTime()))
         {
             numEventsInRange++;
             i++;

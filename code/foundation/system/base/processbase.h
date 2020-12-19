@@ -21,7 +21,7 @@ public:
     /// constructor
     Process();
 
-	/// set the executable path
+    /// set the executable path
     void SetExecutable(const IO::URI& uri);
     /// set working directory
     void SetWorkingDirectory(const IO::URI& uri);
@@ -68,7 +68,7 @@ inline
 Process::Process() :    
     stdoutCaptureStream(nullptr),
     isRunning(false),
-	noConsoleWindow(false)
+    noConsoleWindow(false)
 { 
     // empty
 }
@@ -107,7 +107,7 @@ Process::SetArguments(const Util::String& a)
 inline void
 Process::SetNoConsoleWindow(bool b)
 {
-	this->noConsoleWindow = b;
+    this->noConsoleWindow = b;
 }
 
 //------------------------------------------------------------------------------

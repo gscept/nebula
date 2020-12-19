@@ -20,11 +20,11 @@ public:
     /// default constructor
     DisplayMode();
     /// windowed mode constructor
-	DisplayMode(uint x, uint y, SizeT w, SizeT h);
+    DisplayMode(uint x, uint y, SizeT w, SizeT h);
     /// fullscreen constructor
-	DisplayMode(SizeT w, SizeT h, PixelFormat::Code p);
+    DisplayMode(SizeT w, SizeT h, PixelFormat::Code p);
     /// generic constructor
-	DisplayMode(uint x, uint y, SizeT w, SizeT h, PixelFormat::Code p);
+    DisplayMode(uint x, uint y, SizeT w, SizeT h, PixelFormat::Code p);
     /// equality operator
     bool operator==(const DisplayMode& rhs) const;
     /// inequality operator
@@ -38,13 +38,13 @@ public:
     /// get y position
     uint GetYPos() const;
     /// set width
-	void SetWidth(SizeT w);
+    void SetWidth(SizeT w);
     /// get width
-	SizeT GetWidth() const;
+    SizeT GetWidth() const;
     /// set height
-	void SetHeight(SizeT h);
+    void SetHeight(SizeT h);
     /// get height
-	SizeT GetHeight() const;
+    SizeT GetHeight() const;
     /// set pixel format
     void SetPixelFormat(PixelFormat::Code p);
     /// get pixel format
@@ -54,22 +54,22 @@ public:
     /// get aspect ratio
     float GetAspectRatio() const;
 
-	/// using DirectX 11, the refresh rate exists within the display mode
-	void SetRefreshRate( uint refreshRate );
-	/// gives you the refresh rate
-	uint GetRefreshRate() const;
+    /// using DirectX 11, the refresh rate exists within the display mode
+    void SetRefreshRate( uint refreshRate );
+    /// gives you the refresh rate
+    uint GetRefreshRate() const;
 
 
 private:
-	
+    
     uint xPos;
     uint yPos;
-	SizeT width;
-	SizeT height;
-	uint refreshRate;
+    SizeT width;
+    SizeT height;
+    uint refreshRate;
     float aspectRatio;
     PixelFormat::Code pixelFormat;
-	
+    
 };
 
 //------------------------------------------------------------------------------
@@ -81,9 +81,9 @@ DisplayMode::DisplayMode() :
     yPos(0),
     width(1024),
     height(768),
-	refreshRate(60),
+    refreshRate(60),
     aspectRatio(4.0f / 3.0f),
-	pixelFormat(PixelFormat::SRGBA8)
+    pixelFormat(PixelFormat::SRGBA8)
 {
     // empty
 }
@@ -98,9 +98,9 @@ DisplayMode::DisplayMode(uint x, uint y, SizeT w, SizeT h) :
     yPos(y),
     width(w),
     height(h),
-	refreshRate(60),
+    refreshRate(60),
     aspectRatio(float(w) / float(h)),
-	pixelFormat(PixelFormat::SRGBA8)
+    pixelFormat(PixelFormat::SRGBA8)
 {
     // empty
 }
@@ -115,7 +115,7 @@ DisplayMode::DisplayMode(SizeT w, SizeT h, PixelFormat::Code p) :
     yPos(0),
     width(w),
     height(h),
-	refreshRate(60),
+    refreshRate(60),
     aspectRatio(float(w) / float(h)),
     pixelFormat(p)
 {
@@ -131,7 +131,7 @@ DisplayMode::DisplayMode(uint x, uint y, SizeT w, SizeT h, PixelFormat::Code p) 
     yPos(y),
     width(w),
     height(h),
-	refreshRate(60),
+    refreshRate(60),
     aspectRatio(float(w) / float(h)),
     pixelFormat(p)
 {
@@ -148,7 +148,7 @@ DisplayMode::operator==(const DisplayMode& rhs) const
             (this->yPos == rhs.yPos) &&
             (this->width == rhs.width) &&
             (this->height == rhs.height) &&
-			(this->refreshRate == rhs.refreshRate) && 
+            (this->refreshRate == rhs.refreshRate) && 
             (this->aspectRatio == rhs.aspectRatio) &&            
             (this->pixelFormat == rhs.pixelFormat));
 }
@@ -276,7 +276,7 @@ DisplayMode::GetAspectRatio() const
 inline void 
 DisplayMode::SetRefreshRate( uint refreshRate )
 {
-	this->refreshRate = refreshRate;
+    this->refreshRate = refreshRate;
 }
 
 //------------------------------------------------------------------------------
@@ -285,7 +285,7 @@ DisplayMode::SetRefreshRate( uint refreshRate )
 inline uint 
 DisplayMode::GetRefreshRate() const
 {
-	return this->refreshRate;
+    return this->refreshRate;
 }
 } // namespace CoreGraphics
 //------------------------------------------------------------------------------

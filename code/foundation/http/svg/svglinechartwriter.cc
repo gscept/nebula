@@ -134,7 +134,7 @@ SvgLineChartWriter::Draw()
         float minVal = 1000000.0f;
         float maxVal = -1000000.0f;
         float avgVal = 0.0f;
-		float curVal = 0.0f;
+        float curVal = 0.0f;
         IndexT valIndex = 0;
         SizeT batchSize = 100;
         Array<vec2> points(batchSize + 1, 0);
@@ -170,7 +170,7 @@ SvgLineChartWriter::Draw()
                 IndexT txtIdx;
                 for (txtIdx = 0; txtIdx < timeText.Size(); ++txtIdx)
                 {
-                    this->Text(points[txtIdx].x, 210, timeText[txtIdx]);      	
+                    this->Text(points[txtIdx].x, 210, timeText[txtIdx]);        
                 }
                 this->EndGroup();
                 this->BeginPaintGroup("none", curTrack.color, 2);
@@ -184,33 +184,33 @@ SvgLineChartWriter::Draw()
         this->EndGroup();
         // compute average value
         avgVal /= curTrack.values.Size();
-		curVal = curTrack.values.Back();
+        curVal = curTrack.values.Back();
 
         // draw min/max/avg/current lines
         float minY = 1.0f - (minVal - this->yAxisMinVal) / (this->yAxisMaxVal - this->yAxisMinVal);
         float maxY = 1.0f - (maxVal - this->yAxisMinVal) / (this->yAxisMaxVal - this->yAxisMinVal);
         float avgY = 1.0f - (avgVal - this->yAxisMinVal) / (this->yAxisMaxVal - this->yAxisMinVal);
-		float curY = 1.0f - (curVal - this->yAxisMinVal) / (this->yAxisMaxVal - this->yAxisMinVal);
+        float curY = 1.0f - (curVal - this->yAxisMinVal) / (this->yAxisMaxVal - this->yAxisMinVal);
         this->BeginPaintGroup("none", curTrack.color, 1);
         this->Line(0.0f, 200.0f * minY, 1000.0f, 200.0f * minY);
         this->Line(0.0f, 200.0f * maxY, 1000.0f, 200.0f * maxY);
         this->Line(0.0f, 200.0f * avgY, 1000.0f, 200.0f * avgY);
-		this->Line(0.0f, 200.0f * curY, 1000.0f, 200.0f * curY);
+        this->Line(0.0f, 200.0f * curY, 1000.0f, 200.0f * curY);
         this->EndGroup();
 
         // draw min/max/avg text
         String minText;
         String maxText;
         String avgText;
-		String curText;
+        String curText;
         maxText.Format("max = %.3f", maxVal);
-		if (curVal != maxVal) curText.Format("current = %.3f", curVal);
+        if (curVal != maxVal) curText.Format("current = %.3f", curVal);
         if (avgVal != maxVal) avgText.Format("avg = %.3f", avgVal);
         if (maxVal != minVal) minText.Format("min = %.3f", minVal);                              
 
         this->BeginTextGroup(10, curTrack.color);                                                        
         this->Text(1010.0f, 200.0f * maxY, maxText);
-		if (curText.IsValid()) this->Text(1010.0f, 200.0f * curY, curText);
+        if (curText.IsValid()) this->Text(1010.0f, 200.0f * curY, curText);
         float curOffset = 0;
         const float minDist = 0.04f;
         if (avgY - maxY < minDist)

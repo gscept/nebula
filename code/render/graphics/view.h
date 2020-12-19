@@ -1,10 +1,10 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	A view describes a camera which can observe a Stage. The view processes 
-	the attached Stage through its FrameScript each frame.
-	
-	(C)2017-2020 Individual contributors, see AUTHORS file
+    A view describes a camera which can observe a Stage. The view processes 
+    the attached Stage through its FrameScript each frame.
+    
+    (C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -18,52 +18,52 @@ class Stage;
 class Camera;
 class View : public Core::RefCounted
 {
-	__DeclareClass(View);
+    __DeclareClass(View);
 public:
-	/// constructor
-	View();
-	/// destructor
-	virtual ~View();
+    /// constructor
+    View();
+    /// destructor
+    virtual ~View();
 
-	/// apply view settings
-	void UpdateResources(const IndexT frameIndex);
-	
-	/// begin frame
-	void BeginFrame(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex);
-	/// render through view
-	void Render(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex);
-	/// end frame
-	void EndFrame(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex);
+    /// apply view settings
+    void UpdateResources(const IndexT frameIndex);
+    
+    /// begin frame
+    void BeginFrame(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex);
+    /// render through view
+    void Render(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex);
+    /// end frame
+    void EndFrame(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex);
 
-	/// get frame script
-	const Ptr<Frame::FrameScript> GetFrameScript() const;
+    /// get frame script
+    const Ptr<Frame::FrameScript> GetFrameScript() const;
 
-	/// set camera
-	void SetCamera(const GraphicsEntityId& camera);
-	/// get camera
-	const GraphicsEntityId& GetCamera();
+    /// set camera
+    void SetCamera(const GraphicsEntityId& camera);
+    /// get camera
+    const GraphicsEntityId& GetCamera();
 
-	/// set stage
-	void SetStage(const Ptr<Stage>& stage);
-	/// get stage
-	const Ptr<Stage>& GetStage() const;
+    /// set stage
+    void SetStage(const Ptr<Stage>& stage);
+    /// get stage
+    const Ptr<Stage>& GetStage() const;
 
-	/// returns whether view is enabled
-	bool IsEnabled() const;
-	
-	/// enable this view
-	void Enable();
+    /// returns whether view is enabled
+    bool IsEnabled() const;
+    
+    /// enable this view
+    void Enable();
 
-	/// disable this view
-	void Disable();
-private:	
-	friend class GraphicsServer;
+    /// disable this view
+    void Disable();
+private:    
+    friend class GraphicsServer;
 
-	Ptr<Frame::FrameScript> script;
-	GraphicsEntityId camera;
-	Ptr<Stage> stage;
-	bool inBeginFrame;
-	bool enabled;
+    Ptr<Frame::FrameScript> script;
+    GraphicsEntityId camera;
+    Ptr<Stage> stage;
+    bool inBeginFrame;
+    bool enabled;
 };
 
 //------------------------------------------------------------------------------
@@ -72,7 +72,7 @@ private:
 inline void
 View::SetCamera(const GraphicsEntityId& camera)
 {
-	this->camera = camera;
+    this->camera = camera;
 }
 
 //------------------------------------------------------------------------------
@@ -81,7 +81,7 @@ View::SetCamera(const GraphicsEntityId& camera)
 inline const GraphicsEntityId&
 Graphics::View::GetCamera()
 {
-	return this->camera;
+    return this->camera;
 }
 
 //------------------------------------------------------------------------------
@@ -90,7 +90,7 @@ Graphics::View::GetCamera()
 inline void
 View::SetStage(const Ptr<Stage>& stage)
 {
-	this->stage = stage;
+    this->stage = stage;
 }
 
 //------------------------------------------------------------------------------
@@ -99,7 +99,7 @@ View::SetStage(const Ptr<Stage>& stage)
 inline const Ptr<Stage>&
 View::GetStage() const
 {
-	return this->stage;
+    return this->stage;
 }
 
 //------------------------------------------------------------------------------
@@ -108,7 +108,7 @@ View::GetStage() const
 inline bool
 View::IsEnabled() const
 {
-	return this->enabled;
+    return this->enabled;
 }
 
 //------------------------------------------------------------------------------
@@ -117,7 +117,7 @@ View::IsEnabled() const
 inline void
 View::Enable()
 {
-	this->enabled = true;
+    this->enabled = true;
 }
 
 //------------------------------------------------------------------------------
@@ -126,7 +126,7 @@ View::Enable()
 inline void
 View::Disable()
 {
-	this->enabled = false;
+    this->enabled = false;
 }
 
 //------------------------------------------------------------------------------
@@ -135,7 +135,7 @@ View::Disable()
 inline const Ptr<Frame::FrameScript> 
 View::GetFrameScript() const
 {
-	return this->script;
+    return this->script;
 }
 
 } // namespace Graphics

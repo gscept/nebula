@@ -21,7 +21,7 @@
     throw an assertion between BeginBulkAdd() and EndBulkAdd().
 
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2020 Individual contributors, see AUTHORS file	
+    (C) 2013-2020 Individual contributors, see AUTHORS file 
 */    
 #include "util/array.h"
 #include "util/keyvaluepair.h"
@@ -57,15 +57,15 @@ public:
     /// begin a bulk insert (array will be sorted at End)
     void BeginBulkAdd();
     /// add a key/value pair
-	IndexT Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp);
+    IndexT Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp);
     /// add a key and associated value
     IndexT Add(const KEYTYPE& key, const VALUETYPE& value);
-	/// creates a new entry of VALUETYPE if key does not exist, 
-	VALUETYPE& AddUnique(const KEYTYPE& key);
+    /// creates a new entry of VALUETYPE if key does not exist, 
+    VALUETYPE& AddUnique(const KEYTYPE& key);
     /// end a bulk insert (this will sort the internal array)
     void EndBulkAdd();
-	/// merge two dictionaries
-	void Merge(const Dictionary<KEYTYPE, VALUETYPE>& rhs);
+    /// merge two dictionaries
+    void Merge(const Dictionary<KEYTYPE, VALUETYPE>& rhs);
     /// erase a key and its associated value
     void Erase(const KEYTYPE& key);
     /// erase a key at index
@@ -74,8 +74,8 @@ public:
     IndexT FindIndex(const KEYTYPE& key) const;
     /// return true if key exists in the array
     bool Contains(const KEYTYPE& key) const;
-	/// return true if key exists in the array, and saves index
-	bool Contains(const KEYTYPE& key, IndexT& index) const;
+    /// return true if key exists in the array, and saves index
+    bool Contains(const KEYTYPE& key, IndexT& index) const;
     /// get a key at given index
     const KEYTYPE& KeyAtIndex(IndexT index) const;
     /// access to value at given index
@@ -248,13 +248,13 @@ template<class KEYTYPE, class VALUETYPE>
 inline void
 Dictionary<KEYTYPE, VALUETYPE>::Merge(const Dictionary<KEYTYPE, VALUETYPE>& rhs)
 {
-	this->BeginBulkAdd();
-	IndexT i;
-	for (i = 0; i < rhs.keyValuePairs.Size(); i++)
-	{
-		this->keyValuePairs.Append(rhs.keyValuePairs[i]);
-	}
-	this->EndBulkAdd();
+    this->BeginBulkAdd();
+    IndexT i;
+    for (i = 0; i < rhs.keyValuePairs.Size(); i++)
+    {
+        this->keyValuePairs.Append(rhs.keyValuePairs[i]);
+    }
+    this->EndBulkAdd();
 }
 
 
@@ -265,15 +265,15 @@ template<class KEYTYPE, class VALUETYPE>
 inline IndexT
 Dictionary<KEYTYPE, VALUETYPE>::Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp)
 {
-	if (this->inBulkInsert)
-	{
-		this->keyValuePairs.Append(kvp);
-		return this->keyValuePairs.Size() - 1;
-	}
-	else
-	{
-		return this->keyValuePairs.InsertSorted(kvp);
-	}
+    if (this->inBulkInsert)
+    {
+        this->keyValuePairs.Append(kvp);
+        return this->keyValuePairs.Size() - 1;
+    }
+    else
+    {
+        return this->keyValuePairs.InsertSorted(kvp);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -288,7 +288,7 @@ Dictionary<KEYTYPE, VALUETYPE>::Add(const KEYTYPE& key, const VALUETYPE& value)
     if (this->inBulkInsert)
     {
         this->keyValuePairs.Append(kvp);
-		return this->keyValuePairs.Size() - 1;
+        return this->keyValuePairs.Size() - 1;
     }
     else
     {
@@ -303,15 +303,15 @@ template<class KEYTYPE, class VALUETYPE>
 inline VALUETYPE&
 Dictionary<KEYTYPE, VALUETYPE>::AddUnique(const KEYTYPE& key)
 {
-	IndexT i = this->FindIndex(key);
-	if (i == InvalidIndex)
-	{
-		return this->ValueAtIndex(this->Add(key, VALUETYPE()));
-	}
-	else
-	{
-		return this->ValueAtIndex(i);
-	}
+    IndexT i = this->FindIndex(key);
+    if (i == InvalidIndex)
+    {
+        return this->ValueAtIndex(this->Add(key, VALUETYPE()));
+    }
+    else
+    {
+        return this->ValueAtIndex(i);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -364,9 +364,9 @@ template<class KEYTYPE, class VALUETYPE>
 inline bool
 Dictionary<KEYTYPE, VALUETYPE>::Contains(const KEYTYPE& key) const
 {
-	#if NEBULA_BOUNDSCHECKS
-	n_assert(!this->inBulkInsert);
-	#endif
+    #if NEBULA_BOUNDSCHECKS
+    n_assert(!this->inBulkInsert);
+    #endif
     return (InvalidIndex != this->keyValuePairs.template BinarySearchIndex<KEYTYPE>(key));
 }
 
@@ -378,10 +378,10 @@ inline bool
 Dictionary<KEYTYPE, VALUETYPE>::Contains(const KEYTYPE& key, IndexT& index) const
 {
 #if NEBULA_BOUNDSCHECKS
-	n_assert(!this->inBulkInsert);
+    n_assert(!this->inBulkInsert);
 #endif
-	index = this->keyValuePairs.template BinarySearchIndex<KEYTYPE>(key);
-	return (InvalidIndex != index);
+    index = this->keyValuePairs.template BinarySearchIndex<KEYTYPE>(key);
+    return (InvalidIndex != index);
 }
 
 //------------------------------------------------------------------------------
@@ -445,7 +445,7 @@ Dictionary<KEYTYPE, VALUETYPE>::operator[](const KEYTYPE& key)
 {
     int keyValuePairIndex = this->FindIndex(key);
     #if NEBULA_BOUNDSCHECKS
-	n_assert(InvalidIndex != keyValuePairIndex);
+    n_assert(InvalidIndex != keyValuePairIndex);
     #endif   
     return this->keyValuePairs[keyValuePairIndex].Value();
 }

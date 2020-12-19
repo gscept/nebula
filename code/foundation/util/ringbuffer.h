@@ -25,14 +25,14 @@ public:
     RingBuffer(SizeT capacity);
     /// copy constructor
     RingBuffer(const RingBuffer<TYPE>& rhs);
-	/// move constructor
-	RingBuffer(RingBuffer<TYPE>&& rhs);
+    /// move constructor
+    RingBuffer(RingBuffer<TYPE>&& rhs);
     /// destructor
     ~RingBuffer();
     /// assignment operator
     void operator=(const RingBuffer<TYPE>& rhs);
-	/// mover operator
-	void operator=(RingBuffer<TYPE>&& rhs);
+    /// mover operator
+    void operator=(RingBuffer<TYPE>&& rhs);
     /// index operator
     TYPE& operator[](IndexT index) const;
     
@@ -159,8 +159,8 @@ template<class TYPE>
 RingBuffer<TYPE>::RingBuffer(const RingBuffer<TYPE>& rhs) :
     elements(0)
 {
-	if (rhs.size > 0)
-		this->Copy(rhs);
+    if (rhs.size > 0)
+        this->Copy(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -169,17 +169,17 @@ RingBuffer<TYPE>::RingBuffer(const RingBuffer<TYPE>& rhs) :
 template<class TYPE>
 RingBuffer<TYPE>::RingBuffer(RingBuffer<TYPE>&& rhs)
 {
-	this->size = rhs.size;
-	this->capacity = rhs.capacity;
-	this->headIndex = rhs.headIndex;
-	this->baseIndex = rhs.baseIndex;
-	this->elements = rhs.elements;
+    this->size = rhs.size;
+    this->capacity = rhs.capacity;
+    this->headIndex = rhs.headIndex;
+    this->baseIndex = rhs.baseIndex;
+    this->elements = rhs.elements;
 
-	rhs.size = 0;
-	rhs.capacity = 0;
-	rhs.headIndex = 0;
-	rhs.baseIndex = 0;
-	rhs.elements = nullptr;
+    rhs.size = 0;
+    rhs.capacity = 0;
+    rhs.headIndex = 0;
+    rhs.baseIndex = 0;
+    rhs.elements = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -198,8 +198,8 @@ template<class TYPE> void
 RingBuffer<TYPE>::operator=(const RingBuffer<TYPE>& rhs)
 {
     this->Delete();
-	if (rhs.capacity > 0)
-		this->Copy(rhs);
+    if (rhs.capacity > 0)
+        this->Copy(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -208,17 +208,17 @@ RingBuffer<TYPE>::operator=(const RingBuffer<TYPE>& rhs)
 template<class TYPE> void 
 RingBuffer<TYPE>::operator=(RingBuffer<TYPE>&& rhs)
 {
-	this->size = rhs.size;
-	this->capacity = rhs.capacity;
-	this->headIndex = rhs.headIndex;
-	this->baseIndex = rhs.baseIndex;
-	this->elements = rhs.elements;
+    this->size = rhs.size;
+    this->capacity = rhs.capacity;
+    this->headIndex = rhs.headIndex;
+    this->baseIndex = rhs.baseIndex;
+    this->elements = rhs.elements;
 
-	rhs.size = 0;
-	rhs.capacity = 0;
-	rhs.headIndex = 0;
-	rhs.baseIndex = 0;
-	rhs.elements = nullptr;
+    rhs.size = 0;
+    rhs.capacity = 0;
+    rhs.headIndex = 0;
+    rhs.baseIndex = 0;
+    rhs.elements = nullptr;
 }
 
 //------------------------------------------------------------------------------

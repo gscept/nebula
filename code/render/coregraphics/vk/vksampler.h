@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Vulkan sampler implemention
+    Vulkan sampler implemention
 
-	(C) 2018-2020 Individual contributors, see AUTHORS file
+    (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/sampler.h"
@@ -14,8 +14,8 @@ namespace Vulkan
 {
 
 typedef Ids::IdAllocator<
-	VkDevice,
-	VkSampler
+    VkDevice,
+    VkSampler
 > VkSamplerAllocator;
 extern VkSamplerAllocator samplerAllocator;
 

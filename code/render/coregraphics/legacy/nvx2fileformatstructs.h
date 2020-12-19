@@ -24,23 +24,23 @@ namespace CoreGraphics
 */
 struct Nvx2Header
 {
-	uint magic;
-	uint numGroups;
-	uint numVertices;
-	uint vertexWidth;
-	uint numIndices;
-	uint numEdges;
-	uint vertexComponentMask;
+    uint magic;
+    uint numGroups;
+    uint numVertices;
+    uint vertexWidth;
+    uint numIndices;
+    uint numEdges;
+    uint vertexComponentMask;
 };
 
 struct Nvx2Group
 {
-	uint firstVertex;
-	uint numVertices;
-	uint firstTriangle;
-	uint numTriangles;
-	uint firstEdge;
-	uint numEdges;
+    uint firstVertex;
+    uint numVertices;
+    uint firstTriangle;
+    uint numTriangles;
+    uint firstEdge;
+    uint numEdges;
 };
 
 #pragma pack(pop)

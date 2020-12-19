@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  gaussianblur.fx
 //
-//	Performs a 5x5 gaussian blur as a post effect
+//  Performs a 5x5 gaussian blur as a post effect
 //
 //  (C) 2013 Gustav Sterbrant
 //------------------------------------------------------------------------------
@@ -14,10 +14,10 @@ sampler2D SourceMap;
 
 sampler_state GaussianSampler
 {
-	Samplers = { SourceMap };
-	Filter = Point;
-	AddressU = Clamp;
-	AddressV = Clamp;
+    Samplers = { SourceMap };
+    Filter = Point;
+    AddressU = Clamp;
+    AddressV = Clamp;
 };
 
 const vec3 sampleOffsetWeights[] = {
@@ -38,9 +38,9 @@ const vec3 sampleOffsetWeights[] = {
 
 render_state GaussianBlurState
 {
-	CullMode = Back;
-	DepthEnabled = false;
-	DepthWrite = false;
+    CullMode = Back;
+    DepthEnabled = false;
+    DepthWrite = false;
 };
 
 //------------------------------------------------------------------------------
@@ -49,12 +49,12 @@ render_state GaussianBlurState
 shader
 void
 vsMain(
-	[slot=0] in vec3 position,
-	[slot=2] in vec2 uv,
-	out vec2 UV) 
+    [slot=0] in vec3 position,
+    [slot=2] in vec2 uv,
+    out vec2 UV) 
 {
-	gl_Position = vec4(position, 1);
-	UV = uv;
+    gl_Position = vec4(position, 1);
+    UV = uv;
 }
 
 //------------------------------------------------------------------------------
@@ -63,9 +63,9 @@ vsMain(
 shader
 void
 psMain(in vec2 uv,
-	[color0] out vec4 Color) 
+    [color0] out vec4 Color) 
 {
-	vec2 pixelSize = GetPixelSize(SourceMap);
+    vec2 pixelSize = GetPixelSize(SourceMap);
     vec4 sampleColor = vec4(0.0);
     int i;
     for (i = 0; i < 13; i++)

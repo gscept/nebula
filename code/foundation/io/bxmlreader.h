@@ -61,8 +61,8 @@ public:
     /// get float attribute value from current node
     float GetFloat(const char* attr) const;
     #if !__OSX__
-	/// get vec2 attribute value from current node
-	Math::vec2 GetVec2(const char* attr) const;
+    /// get vec2 attribute value from current node
+    Math::vec2 GetVec2(const char* attr) const;
     /// get vec4 attribute value from current node
     Math::vec4 GetVec4(const char* attr) const;
     /// get mat4 attribute value from current node

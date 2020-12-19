@@ -32,8 +32,8 @@ public:
     virtual ~IoInterface();
     /// open the interface object
     virtual void Open();
-	/// close the interface object
-	virtual void Close();
+    /// close the interface object
+    virtual void Close();
 };
 
 } // namespace IO

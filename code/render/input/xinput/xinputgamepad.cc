@@ -134,7 +134,7 @@ XInputGamePad::OnBeginFrame()
             IndexT btnIdx;
             for (btnIdx = 0; btnIdx < this->buttonStates.Size(); ++btnIdx)
             {
-            	this->buttonStates[btnIdx].up = false;
+                this->buttonStates[btnIdx].up = false;
                 this->buttonStates[btnIdx].down = false;
             }
         }
@@ -266,25 +266,25 @@ XInputGamePad::UpdateThumbAxis(const XINPUT_GAMEPAD& curState, Axis axis)
 
 //------------------------------------------------------------------------------
 /**
-	Heh, implement perhaps :P
+    Heh, implement perhaps :P
 */
 bool
 XInputGamePad::OnEvent(const Input::InputEvent& inputEvent)
 {
-	switch (inputEvent.GetType())
-	{
+    switch (inputEvent.GetType())
+    {
 #ifndef _DEBUG
-	case InputEvent::AppObtainFocus:
-	case InputEvent::AppLoseFocus:
+    case InputEvent::AppObtainFocus:
+    case InputEvent::AppLoseFocus:
 #endif
-	case InputEvent::Reset:
-		this->OnReset();
-		break;
+    case InputEvent::Reset:
+        this->OnReset();
+        break;
 
-	default:
-		break;
-	}
-	return false;
+    default:
+        break;
+    }
+    return false;
 }
 
 } // namespace XInput

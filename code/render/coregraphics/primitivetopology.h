@@ -27,7 +27,7 @@ public:
         LineStrip,
         TriangleList,
         TriangleStrip,
-		PatchList,
+        PatchList,
 
         NumTopologies = PatchList
     };

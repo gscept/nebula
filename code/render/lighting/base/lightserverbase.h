@@ -46,21 +46,21 @@ public:
     void BeginAttachVisibleLights();
     /// attach a visible light source
     void AttachVisibleLight(const Ptr<Graphics::AbstractLightEntity>& lightEntity);
-	/// attach a visible light probe
-	void AttachVisibleLightProbe(const Ptr<Graphics::LightProbeEntity>& lightProbe);
+    /// attach a visible light probe
+    void AttachVisibleLightProbe(const Ptr<Graphics::LightProbeEntity>& lightProbe);
     /// end attaching visible light sources
     void EndAttachVisibleLights();
     /// apply lighting parameters for a visible model entity 
     void ApplyModelEntityLights(const Ptr<Graphics::ModelEntity>& modelEntity);
     /// render light pass
     void RenderLights();
-	/// render light probes
-	void RenderLightProbes();
+    /// render light probes
+    void RenderLightProbes();
     /// end lighting frame
     void EndFrame();
 
-	/// get global light entity
-	const Ptr<Graphics::GlobalLightEntity>& GetGlobalLight();
+    /// get global light entity
+    const Ptr<Graphics::GlobalLightEntity>& GetGlobalLight();
 
 protected:
     bool isOpen;
@@ -69,7 +69,7 @@ protected:
     Ptr<Graphics::CameraEntity> cameraEntity;
     Ptr<Graphics::GlobalLightEntity> globalLightEntity;
     Util::Array<Ptr<Graphics::AbstractLightEntity> > visibleLightEntities;
-	Util::Array<Ptr<Graphics::LightProbeEntity> > visibleLightProbes;
+    Util::Array<Ptr<Graphics::LightProbeEntity> > visibleLightProbes;
 };
 
 //------------------------------------------------------------------------------
@@ -87,7 +87,7 @@ LightServerBase::IsOpen() const
 inline const Ptr<Graphics::GlobalLightEntity>& 
 LightServerBase::GetGlobalLight()
 {
-	return this->globalLightEntity;
+    return this->globalLightEntity;
 }
 
 } // namespace Lighting

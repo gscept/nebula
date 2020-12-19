@@ -59,9 +59,9 @@ public:
     /// read a 32-bit unsigned int from the stream
     unsigned int ReadUInt();
     /// read a 64-bit int from the stream
-	long long ReadInt64();
+    long long ReadInt64();
     /// read a 64-bit unsigned int from the stream
-	unsigned long long ReadUInt64();
+    unsigned long long ReadUInt64();
     /// read a float value from the stream
     float ReadFloat();
     /// read a compressed float value from the stream, lossy and needed to be in the range of -1.0 and +1.0
@@ -88,8 +88,8 @@ public:
     Util::Array<float> ReadFloatArray();
     /// read an int array from the stream
     Util::Array<int> ReadIntArray();
-	/// read an int array from the stream
-	Util::Array<uint> ReadUIntArray();
+    /// read an int array from the stream
+    Util::Array<uint> ReadUIntArray();
     /// read a bool array from the stream
     Util::Array<bool> ReadBoolArray();
     /// read a guid

@@ -69,8 +69,8 @@ public:
     /// return names of all attrs on current node
     Util::Array<Util::String> GetAttrs() const;
 
-	/// get name of current node
-	Util::String GetCurrentNodeName() const;
+    /// get name of current node
+    Util::String GetCurrentNodeName() const;
 
     /// get string attribute value from current node
     Util::String GetString(const char* attr =  0) const;
@@ -80,8 +80,8 @@ public:
     bool GetBool(const char* attr = 0) const;
     /// get int attribute value from current node
     int GetInt(const char* attr = 0) const;
-	/// get unsigned int attribute value from current node
-	uint GetUInt(const char* attr = 0) const;
+    /// get unsigned int attribute value from current node
+    uint GetUInt(const char* attr = 0) const;
     /// get float attribute value from current node
     float GetFloat(const char* attr = 0) const;
     /// get vec2 attribute value from current node
@@ -92,8 +92,8 @@ public:
     Math::vec4 GetVec4(const char* attr = 0) const;
     /// get mat4 attribute value from current node
     Math::mat4 GetMat4(const char* attr = 0) const;
-	/// get transform44 attribute value from current node
-	Math::transform44 GetTransform44(const char* attr = 0) const;
+    /// get transform44 attribute value from current node
+    Math::transform44 GetTransform44(const char* attr = 0) const;
     /// generic getter for extension types
     template<typename T> void Get(T& target, const char* attr = 0);
     /// getter for bitfield of N size
@@ -113,8 +113,8 @@ public:
     Math::vec4 GetOptVec4(const char* attr, const Math::vec4& defaultValue) const;
     /// get optional mat4 attribute value from current node
     Math::mat4 GetOptMat4(const char* attr, const Math::mat4& defaultValue) const;
-	/// get transform44 attribute value from current node
-	Math::transform44 GetOptTransform44(const char* attr, const Math::transform44& defaultValue) const;
+    /// get transform44 attribute value from current node
+    Math::transform44 GetOptTransform44(const char* attr, const Math::transform44& defaultValue) const;
 
     /// generic getter for optional items
     template<typename T> bool GetOpt(T& target, const char* attr = 0);
@@ -141,12 +141,12 @@ template<typename T>
 inline bool
 JsonReader::GetOpt(T& target, const char* attr)
 {
-	if (this->HasAttr(attr))
-	{
-		this->Get(target, attr);
-		return true;
-	}
-	return false;
+    if (this->HasAttr(attr))
+    {
+        this->Get(target, attr);
+        return true;
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------------

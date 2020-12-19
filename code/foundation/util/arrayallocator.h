@@ -1,22 +1,22 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	The ArrayAllocator provides a variadic list of types which is to be contained in the allocator
-	and fetching each value by providing the index into the list of types, which means the members
-	are nameless.
+    The ArrayAllocator provides a variadic list of types which is to be contained in the allocator
+    and fetching each value by providing the index into the list of types, which means the members
+    are nameless.
 
-	Note that this is not a container for multiple arrays, but a object allocator that uses
-	multiple arrays to store their variables parallelly, and should be treated as such.
+    Note that this is not a container for multiple arrays, but a object allocator that uses
+    multiple arrays to store their variables parallelly, and should be treated as such.
 
-	There are two versions of this type, an unsafe and a safe one. Both are implemented
-	in the same way.
+    There are two versions of this type, an unsafe and a safe one. Both are implemented
+    in the same way.
 
-	The thread safe allocator requires the Get-methods to be within an Enter/Leave
-	lockstep phase.
+    The thread safe allocator requires the Get-methods to be within an Enter/Leave
+    lockstep phase.
 
-	@see	arrayallocatorsafe.h
+    @see    arrayallocatorsafe.h
 
-	(C) 2019-2020 Individual contributors, see AUTHORS file
+    (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "types.h"
@@ -30,76 +30,76 @@ template <class ... TYPES>
 class ArrayAllocator
 {
 public:
-	/// constructor
-	ArrayAllocator();
+    /// constructor
+    ArrayAllocator();
 
-	/// move constructor
-	ArrayAllocator(ArrayAllocator<TYPES...>&& rhs);
+    /// move constructor
+    ArrayAllocator(ArrayAllocator<TYPES...>&& rhs);
 
-	/// copy constructor
-	ArrayAllocator(const ArrayAllocator<TYPES...>& rhs);
+    /// copy constructor
+    ArrayAllocator(const ArrayAllocator<TYPES...>& rhs);
 
-	/// destructor
-	~ArrayAllocator();
+    /// destructor
+    ~ArrayAllocator();
 
-	/// assign operator
-	void operator=(const ArrayAllocator<TYPES...>& rhs);
+    /// assign operator
+    void operator=(const ArrayAllocator<TYPES...>& rhs);
 
-	/// move operator
-	void operator=(ArrayAllocator<TYPES...>&& rhs);
+    /// move operator
+    void operator=(ArrayAllocator<TYPES...>&& rhs);
 
-	/// allocate a new resource
-	uint32_t Alloc();
+    /// allocate a new resource
+    uint32_t Alloc();
 
-	/// Erase element for each
-	void EraseIndex(const uint32_t id);
-	/// Erase element for each
-	void EraseIndexSwap(const uint32_t id);
-	/// erase range
-	void EraseRange(const uint32_t start, const uint32_t end);
+    /// Erase element for each
+    void EraseIndex(const uint32_t id);
+    /// Erase element for each
+    void EraseIndexSwap(const uint32_t id);
+    /// erase range
+    void EraseRange(const uint32_t start, const uint32_t end);
 
-	/// get single item from resource
-	template <int MEMBER>
-	tuple_array_t<MEMBER, TYPES...>& Get(const uint32_t index);
+    /// get single item from resource
+    template <int MEMBER>
+    tuple_array_t<MEMBER, TYPES...>& Get(const uint32_t index);
 
-	/// same as 32 bit get, but const
-	template <int MEMBER>
-	const tuple_array_t<MEMBER, TYPES...>& Get(const uint32_t index) const;
+    /// same as 32 bit get, but const
+    template <int MEMBER>
+    const tuple_array_t<MEMBER, TYPES...>& Get(const uint32_t index) const;
 
-	/// set single item
-	template <int MEMBER>
-	void Set(const uint32_t index, const tuple_array_t<MEMBER, TYPES...>& type);
+    /// set single item
+    template <int MEMBER>
+    void Set(const uint32_t index, const tuple_array_t<MEMBER, TYPES...>& type);
 
-	/// get array const reference
-	template <int MEMBER>
-	const Util::Array<tuple_array_t<MEMBER, TYPES...>>& GetArray() const;
+    /// get array const reference
+    template <int MEMBER>
+    const Util::Array<tuple_array_t<MEMBER, TYPES...>>& GetArray() const;
 
-	/// get array
-	template <int MEMBER>
-	Util::Array<tuple_array_t<MEMBER, TYPES...>>& GetArray();
+    /// get array
+    template <int MEMBER>
+    Util::Array<tuple_array_t<MEMBER, TYPES...>>& GetArray();
 
-	/// set for each in tuple
-	void Set(const uint32_t index, TYPES...);
+    /// set for each in tuple
+    void Set(const uint32_t index, TYPES...);
 
-	/// get number of used indices
-	const uint32_t Size() const;
+    /// get number of used indices
+    const uint32_t Size() const;
 
-	/// grow capacity of arrays to size
-	void Reserve(uint32_t size);
+    /// grow capacity of arrays to size
+    void Reserve(uint32_t size);
 
     /// set size of arrays to param size
     void SetSize(uint32_t size);
 
-	/// clear entire allocator and start from scratch.
-	void Clear();
+    /// clear entire allocator and start from scratch.
+    void Clear();
 
-	/// Any reserve and direct array access might mess with the size.
-	/// This will update the size to reflect the first member array size in objects.
-	void UpdateSize();
+    /// Any reserve and direct array access might mess with the size.
+    /// This will update the size to reflect the first member array size in objects.
+    void UpdateSize();
 
 protected:
-	uint32_t size;
-	std::tuple<Util::Array<TYPES>...> objects;
+    uint32_t size;
+    std::tuple<Util::Array<TYPES>...> objects;
 };
 
 //------------------------------------------------------------------------------
@@ -107,9 +107,9 @@ protected:
 */
 template<class ... TYPES>
 inline ArrayAllocator<TYPES...>::ArrayAllocator() :
-	size(0)
+    size(0)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -118,9 +118,9 @@ inline ArrayAllocator<TYPES...>::ArrayAllocator() :
 template<class ...TYPES>
 inline ArrayAllocator<TYPES...>::ArrayAllocator(ArrayAllocator<TYPES...>&& rhs)
 {
-	this->objects = rhs.objects;
-	this->size = rhs.size;
-	rhs.Clear();
+    this->objects = rhs.objects;
+    this->size = rhs.size;
+    rhs.Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -129,8 +129,8 @@ inline ArrayAllocator<TYPES...>::ArrayAllocator(ArrayAllocator<TYPES...>&& rhs)
 template<class ...TYPES>
 inline ArrayAllocator<TYPES...>::ArrayAllocator(const ArrayAllocator<TYPES...>& rhs)
 {
-	this->objects = rhs.objects;
-	this->size = rhs.size;
+    this->objects = rhs.objects;
+    this->size = rhs.size;
 }
 
 //------------------------------------------------------------------------------
@@ -139,7 +139,7 @@ inline ArrayAllocator<TYPES...>::ArrayAllocator(const ArrayAllocator<TYPES...>& 
 template<class ...TYPES>
 inline ArrayAllocator<TYPES...>::~ArrayAllocator()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -149,8 +149,8 @@ template<class ...TYPES>
 inline void
 ArrayAllocator<TYPES...>::operator=(const ArrayAllocator<TYPES...>& rhs)
 {
-	this->objects = rhs.objects;
-	this->size = rhs.size;
+    this->objects = rhs.objects;
+    this->size = rhs.size;
 }
 
 //------------------------------------------------------------------------------
@@ -160,9 +160,9 @@ template<class ...TYPES>
 inline void
 ArrayAllocator<TYPES...>::operator=(ArrayAllocator<TYPES...>&& rhs)
 {
-	this->objects = rhs.objects;
-	this->size = rhs.size;
-	rhs.Clear();
+    this->objects = rhs.objects;
+    this->size = rhs.size;
+    rhs.Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -171,8 +171,8 @@ ArrayAllocator<TYPES...>::operator=(ArrayAllocator<TYPES...>&& rhs)
 template<class ...TYPES>
 inline uint32_t ArrayAllocator<TYPES...>::Alloc()
 {
-	alloc_for_each_in_tuple(this->objects);
-	return this->size++;
+    alloc_for_each_in_tuple(this->objects);
+    return this->size++;
 }
 
 //------------------------------------------------------------------------------
@@ -181,8 +181,8 @@ inline uint32_t ArrayAllocator<TYPES...>::Alloc()
 template<class ...TYPES> inline void 
 ArrayAllocator<TYPES...>::EraseIndex(const uint32_t id)
 {
-	erase_index_for_each_in_tuple(this->objects, id);
-	this->size--;
+    erase_index_for_each_in_tuple(this->objects, id);
+    this->size--;
 }
 
 //------------------------------------------------------------------------------
@@ -191,8 +191,8 @@ ArrayAllocator<TYPES...>::EraseIndex(const uint32_t id)
 template<class ...TYPES> inline void 
 ArrayAllocator<TYPES...>::EraseIndexSwap(const uint32_t id)
 {
-	erase_index_swap_for_each_in_tuple(this->objects, id);
-	this->size--;
+    erase_index_swap_for_each_in_tuple(this->objects, id);
+    this->size--;
 }
 
 //------------------------------------------------------------------------------
@@ -201,8 +201,8 @@ ArrayAllocator<TYPES...>::EraseIndexSwap(const uint32_t id)
 template<class ...TYPES> inline void 
 ArrayAllocator<TYPES...>::EraseRange(const uint32_t start, const uint32_t end)
 {
-	erase_range_for_each_in_tuple(this->objects, start, end);
-	this->size -= (end + 1) - start;
+    erase_range_for_each_in_tuple(this->objects, start, end);
+    this->size -= (end + 1) - start;
 }
 
 //------------------------------------------------------------------------------
@@ -212,7 +212,7 @@ template<class ...TYPES>
 inline const uint32_t
 ArrayAllocator<TYPES...>::Size() const
 {
-	return this->size;
+    return this->size;
 }
 
 //------------------------------------------------------------------------------
@@ -222,8 +222,8 @@ template<class ...TYPES>
 inline void
 ArrayAllocator<TYPES...>::Reserve(uint32_t num)
 {
-	reserve_for_each_in_tuple(this->objects, num);
-	// Size is still the same.
+    reserve_for_each_in_tuple(this->objects, num);
+    // Size is still the same.
 }
 
 //------------------------------------------------------------------------------
@@ -244,8 +244,8 @@ template<class ...TYPES>
 inline void
 ArrayAllocator<TYPES...>::Clear()
 {
-	clear_for_each_in_tuple(this->objects);
-	this->size = 0;
+    clear_for_each_in_tuple(this->objects);
+    this->size = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -256,7 +256,7 @@ template<int MEMBER>
 inline tuple_array_t<MEMBER, TYPES...>&
 ArrayAllocator<TYPES...>::Get(const uint32_t index)
 {
-	return std::get<MEMBER>(this->objects)[index];
+    return std::get<MEMBER>(this->objects)[index];
 }
 
 //------------------------------------------------------------------------------
@@ -267,7 +267,7 @@ template<int MEMBER>
 inline const tuple_array_t<MEMBER, TYPES...>&
 ArrayAllocator<TYPES...>::Get(const uint32_t index) const
 {
-	return std::get<MEMBER>(this->objects)[index];
+    return std::get<MEMBER>(this->objects)[index];
 }
 
 //------------------------------------------------------------------------------
@@ -278,7 +278,7 @@ template<int MEMBER>
 inline void 
 ArrayAllocator<TYPES...>::Set(const uint32_t index, const tuple_array_t<MEMBER, TYPES...>& type)
 {
-	std::get<MEMBER>(this->objects)[index] = type;
+    std::get<MEMBER>(this->objects)[index] = type;
 }
 
 //------------------------------------------------------------------------------
@@ -289,7 +289,7 @@ template<int MEMBER>
 inline const Util::Array<tuple_array_t<MEMBER, TYPES...>>&
 ArrayAllocator<TYPES...>::GetArray() const
 {
-	return std::get<MEMBER>(this->objects);
+    return std::get<MEMBER>(this->objects);
 }
 
 //------------------------------------------------------------------------------
@@ -300,7 +300,7 @@ template<int MEMBER>
 inline Util::Array<tuple_array_t<MEMBER, TYPES...>>&
 ArrayAllocator<TYPES...>::GetArray()
 {
-	return std::get<MEMBER>(this->objects);
+    return std::get<MEMBER>(this->objects);
 }
 
 //------------------------------------------------------------------------------
@@ -309,7 +309,7 @@ ArrayAllocator<TYPES...>::GetArray()
 template<class ...TYPES> void
 ArrayAllocator<TYPES...>::Set(const uint32_t index, TYPES... values)
 {
-	set_for_each_in_tuple(this->objects, index, values...);
+    set_for_each_in_tuple(this->objects, index, values...);
 }
 
 //------------------------------------------------------------------------------
@@ -318,7 +318,7 @@ ArrayAllocator<TYPES...>::Set(const uint32_t index, TYPES... values)
 template<class ...TYPES> void
 ArrayAllocator<TYPES...>::UpdateSize()
 {
-	this->size = this->GetArray<0>().Size();
+    this->size = this->GetArray<0>().Size();
 }
 
 } // namespace Util

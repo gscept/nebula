@@ -36,27 +36,27 @@ HttpRequestWriter::WriteRequestHeader()
     // attach a text writer to our stream
     Ptr<TextWriter> textWriter = TextWriter::Create();
     textWriter->SetStream(this->stream);
-	if (textWriter->Open())
-	{
-		// write header
-		textWriter->WriteFormatted("%s /%s HTTP/1.1\r\n",
-			HttpMethod::ToString(this->httpMethod).AsCharPtr(),
-			this->uri.LocalPath().AsCharPtr());
-		if (this->httpMethod == HttpMethod::Delete)
-		{
-			textWriter->WriteString("Content-Length: 0\r\n");
-		}
-		textWriter->WriteFormatted("Host: %s\r\n", this->uri.Host().AsCharPtr());
-		textWriter->WriteFormatted("User-Agent: %s\r\n", this->userAgent.AsCharPtr());
-		if (this->httpMethod == HttpMethod::Delete)
-		{			
-			textWriter->WriteString("Connection: close\r\n");
-		}
-		else
-		{
-			textWriter->WriteString("Keep-Alive: 300\r\n");
-			textWriter->WriteString("Connection: keep-alive\r\n");
-		}        		
+    if (textWriter->Open())
+    {
+        // write header
+        textWriter->WriteFormatted("%s /%s HTTP/1.1\r\n",
+            HttpMethod::ToString(this->httpMethod).AsCharPtr(),
+            this->uri.LocalPath().AsCharPtr());
+        if (this->httpMethod == HttpMethod::Delete)
+        {
+            textWriter->WriteString("Content-Length: 0\r\n");
+        }
+        textWriter->WriteFormatted("Host: %s\r\n", this->uri.Host().AsCharPtr());
+        textWriter->WriteFormatted("User-Agent: %s\r\n", this->userAgent.AsCharPtr());
+        if (this->httpMethod == HttpMethod::Delete)
+        {           
+            textWriter->WriteString("Connection: close\r\n");
+        }
+        else
+        {
+            textWriter->WriteString("Keep-Alive: 300\r\n");
+            textWriter->WriteString("Connection: keep-alive\r\n");
+        }               
         textWriter->WriteString("\r\n");
         textWriter->Close();
         return true;
@@ -70,29 +70,29 @@ HttpRequestWriter::WriteRequestHeader()
 bool
 HttpRequestWriter::WriteRequestHeaderWithBody(const Util::String & body)
 {
-	n_assert(this->IsOpen());
-	n_assert(this->uri.IsValid());
+    n_assert(this->IsOpen());
+    n_assert(this->uri.IsValid());
 
-	// attach a text writer to our stream
-	Ptr<TextWriter> textWriter = TextWriter::Create();
-	textWriter->SetStream(this->stream);
-	if (textWriter->Open())
-	{
-		// write header
-		textWriter->WriteFormatted("%s /%s HTTP/1.1\r\n",
-			HttpMethod::ToString(this->httpMethod).AsCharPtr(),
-			this->uri.LocalPath().AsCharPtr());
-		textWriter->WriteFormatted("Host: %s\r\n", this->uri.Host().AsCharPtr());
-		textWriter->WriteFormatted("User-Agent: %s\r\n", this->userAgent.AsCharPtr());
-		textWriter->WriteString("Keep-Alive: 300\r\n");
-		textWriter->WriteString("Connection: keep-alive\r\n");
-		textWriter->WriteString("Content-Type: text/plain; charset=UTF-8\r\n");
-		textWriter->WriteFormatted("Content-Length: %u\r\n", body.Length());
-		textWriter->WriteString("\r\n");
-		textWriter->WriteString(body);
-		textWriter->Close();
-		return true;
-	}
-	return false;
+    // attach a text writer to our stream
+    Ptr<TextWriter> textWriter = TextWriter::Create();
+    textWriter->SetStream(this->stream);
+    if (textWriter->Open())
+    {
+        // write header
+        textWriter->WriteFormatted("%s /%s HTTP/1.1\r\n",
+            HttpMethod::ToString(this->httpMethod).AsCharPtr(),
+            this->uri.LocalPath().AsCharPtr());
+        textWriter->WriteFormatted("Host: %s\r\n", this->uri.Host().AsCharPtr());
+        textWriter->WriteFormatted("User-Agent: %s\r\n", this->userAgent.AsCharPtr());
+        textWriter->WriteString("Keep-Alive: 300\r\n");
+        textWriter->WriteString("Connection: keep-alive\r\n");
+        textWriter->WriteString("Content-Type: text/plain; charset=UTF-8\r\n");
+        textWriter->WriteFormatted("Content-Length: %u\r\n", body.Length());
+        textWriter->WriteString("\r\n");
+        textWriter->WriteString(body);
+        textWriter->Close();
+        return true;
+    }
+    return false;
 }
 } // namespace Http

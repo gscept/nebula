@@ -40,8 +40,8 @@ public:
     Priority GetPriority() const;
     /// set thread affinity
     void SetThreadAffinity(uint mask);
-	/// get thread affinity
-	uint GetThreadAffinity();
+    /// get thread affinity
+    uint GetThreadAffinity();
     /// set stack size in bytes (default is 4 KByte)
     void SetStackSize(unsigned int s);
     /// get stack size
@@ -77,7 +77,7 @@ private:
     static void* ThreadProc(void* self);
 
     pthread_t threadHandle;
-	cpu_set_t affinity;
+    cpu_set_t affinity;
     PosixEvent stopRequestEvent;
     bool running;
     Priority priority;

@@ -31,10 +31,10 @@ __StaticHandler(CreateSpotLightEntity)
     lightEntity->SetColor(msg->GetLightColor());
     lightEntity->SetCastShadows(msg->GetCastShadows());
     lightEntity->SetProjMapUvOffsetAndScale(msg->GetProjMapUvOffsetAndScale());
-	lightEntity->SetShadowIntensity(msg->GetShadowIntensity());
-	lightEntity->SetVolumetric(msg->GetVolumetric());
-	lightEntity->SetVolumetricScale(msg->GetVolumetricScale());
-	lightEntity->SetVolumetricIntensity(msg->GetVolumetricIntensity());
+    lightEntity->SetShadowIntensity(msg->GetShadowIntensity());
+    lightEntity->SetVolumetric(msg->GetVolumetric());
+    lightEntity->SetVolumetricScale(msg->GetVolumetricScale());
+    lightEntity->SetVolumetricIntensity(msg->GetVolumetricIntensity());
 
     // lookup stage and attach entity
     const Ptr<Stage>& stage = GraphicsServer::Instance()->GetStageByName(msg->GetStageName());

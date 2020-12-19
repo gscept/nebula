@@ -15,7 +15,7 @@ __ImplementClass(Dynui::ImguiRTPlugin, 'IMRT', RenderModules::RTPlugin);
 */
 ImguiRTPlugin::ImguiRTPlugin()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -23,7 +23,7 @@ ImguiRTPlugin::ImguiRTPlugin()
 */
 ImguiRTPlugin::~ImguiRTPlugin()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -32,8 +32,8 @@ ImguiRTPlugin::~ImguiRTPlugin()
 void
 ImguiRTPlugin::OnRegister()
 {
-	this->renderer = ImguiRenderer::Create();
-	this->renderer->Setup();
+    this->renderer = ImguiRenderer::Create();
+    this->renderer->Setup();
 }
 
 //------------------------------------------------------------------------------
@@ -42,8 +42,8 @@ ImguiRTPlugin::OnRegister()
 void
 ImguiRTPlugin::OnUnregister()
 {
-	this->renderer->Discard();
-	this->renderer = nullptr;
+    this->renderer->Discard();
+    this->renderer = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -52,11 +52,11 @@ ImguiRTPlugin::OnUnregister()
 void
 ImguiRTPlugin::OnRenderFrameBatch(const Ptr<Frame::FrameBatch>& frameBatch)
 {
-	n_assert(this->renderer.isvalid());
+    n_assert(this->renderer.isvalid());
     if (CoreGraphics::FrameBatchType::UI == frameBatch->GetType())
-	{
-		this->renderer->Render();
-	}
+    {
+        this->renderer->Render();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -65,8 +65,8 @@ ImguiRTPlugin::OnRenderFrameBatch(const Ptr<Frame::FrameBatch>& frameBatch)
 void
 ImguiRTPlugin::OnWindowResized(IndexT windowId, SizeT width, SizeT height)
 {
-	n_assert(this->renderer.isvalid());
-	this->renderer->SetRectSize(width, height);
+    n_assert(this->renderer.isvalid());
+    this->renderer->SetRectSize(width, height);
 }
 
 } // namespace Imgui

@@ -16,8 +16,8 @@ EmitterAttrs::EmitterAttrs()
 {
     Memory::Clear(this->floatValues, sizeof(this->floatValues));
     Memory::Clear(&this->intAttributes, sizeof(this->intAttributes));
-	Memory::Clear(&this->boolAttributes, sizeof(this->boolAttributes));
-	Memory::Clear(this->vec4Values, sizeof(this->vec4Values));
+    Memory::Clear(&this->boolAttributes, sizeof(this->boolAttributes));
+    Memory::Clear(this->vec4Values, sizeof(this->vec4Values));
 }
 
 

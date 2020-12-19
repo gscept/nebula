@@ -21,8 +21,8 @@ using namespace Resources;
 CharacterSkinNode::CharacterSkinNode()
 {
     this->skinnedShaderFeatureBits = ShaderServer::Instance()->FeatureStringToMask("Skinned");
-	this->type = CharacterSkinNodeType;
-	this->bits = HasTransformBit | HasStateBit;
+    this->type = CharacterSkinNodeType;
+    this->bits = HasTransformBit | HasStateBit;
 }
 
 //------------------------------------------------------------------------------
@@ -72,12 +72,12 @@ CharacterSkinNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag,
 void 
 CharacterSkinNode::OnFinishedLoading()
 {
-	PrimitiveNode::OnFinishedLoading();
-	CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
-	CoreGraphics::BufferId cbo = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer);
-	IndexT index = CoreGraphics::ShaderGetResourceSlot(shader, "JointBlock");
-	CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { cbo, index, 0, false, true, (SizeT)(sizeof(Math::mat4) * this->skinFragments[0].jointPalette.Size()), 0 });
-	CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
+    PrimitiveNode::OnFinishedLoading();
+    CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
+    CoreGraphics::BufferId cbo = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer);
+    IndexT index = CoreGraphics::ShaderGetResourceSlot(shader, "JointBlock");
+    CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { cbo, index, 0, false, true, (SizeT)(sizeof(Math::mat4) * this->skinFragments[0].jointPalette.Size()), 0 });
+    CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
 }
 
 //------------------------------------------------------------------------------
@@ -86,8 +86,8 @@ CharacterSkinNode::OnFinishedLoading()
 void 
 CharacterSkinNode::ApplyNodeState()
 {
-	ShaderStateNode::ApplyNodeState(); // intentionally circumvent PrimitiveNode since we set the skin fragments explicitly
-	CoreGraphics::MeshBind(this->res, this->skinFragments[0].primGroupIndex);
+    ShaderStateNode::ApplyNodeState(); // intentionally circumvent PrimitiveNode since we set the skin fragments explicitly
+    CoreGraphics::MeshBind(this->res, this->skinFragments[0].primGroupIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -118,39 +118,39 @@ CharacterSkinNode::AddFragment(IndexT primGroupIndex, const Util::Array<IndexT>&
 void
 CharacterSkinNode::Instance::Update()
 {
-	const CharacterNode::Instance* cparent = reinterpret_cast<const CharacterNode::Instance*>(this->parent);
-	if (!this->dirty)
-		return;
+    const CharacterNode::Instance* cparent = reinterpret_cast<const CharacterNode::Instance*>(this->parent);
+    if (!this->dirty)
+        return;
 
-	// apply original state
-	PrimitiveNode::Instance::Update();
+    // apply original state
+    PrimitiveNode::Instance::Update();
 
-	// if parent doesn't have joints, don't continue
-	CharacterSkinNode* sparent = reinterpret_cast<CharacterSkinNode*>(this->node);
-	const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;
-	Util::FixedArray<Math::mat4> usedMatrices(usedIndices.Size());
-	if (cparent->joints != nullptr)
-	{
-		// copy active matrix palette, or set identity
-		IndexT i;
-		for (i = 0; i < usedIndices.Size(); i++)
-		{
-			usedMatrices[i] = (*cparent->joints)[usedIndices[i]];
-		}
-	}
-	else
-	{
-		// copy active matrix palette, or set identity
-		IndexT i;
-		for (i = 0; i < usedIndices.Size(); i++)
-		{
-			usedMatrices[i] = Math::mat4();
-		}
-	}
+    // if parent doesn't have joints, don't continue
+    CharacterSkinNode* sparent = reinterpret_cast<CharacterSkinNode*>(this->node);
+    const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;
+    Util::FixedArray<Math::mat4> usedMatrices(usedIndices.Size());
+    if (cparent->joints != nullptr)
+    {
+        // copy active matrix palette, or set identity
+        IndexT i;
+        for (i = 0; i < usedIndices.Size(); i++)
+        {
+            usedMatrices[i] = (*cparent->joints)[usedIndices[i]];
+        }
+    }
+    else
+    {
+        // copy active matrix palette, or set identity
+        IndexT i;
+        for (i = 0; i < usedIndices.Size(); i++)
+        {
+            usedMatrices[i] = Math::mat4();
+        }
+    }
 
-	// update skinning palette
-	uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, usedMatrices.Begin(), usedMatrices.Size());
-	this->offsets[this->skinningTransformsIndex] = offset;
+    // update skinning palette
+    uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, usedMatrices.Begin(), usedMatrices.Size());
+    this->offsets[this->skinningTransformsIndex] = offset;
 }
 
 } // namespace Characters

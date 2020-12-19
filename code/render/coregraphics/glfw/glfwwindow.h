@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Implements a window using GLFW
-	
-	(C) 2016-2020 Individual contributors, see AUTHORS file
+    Implements a window using GLFW
+    
+    (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "GLFW/glfw3.h"
@@ -19,25 +19,25 @@ namespace Vulkan
 
 struct VkWindowSwapInfo
 {
-	VkDevice dev;
-	VkSwapchainKHR swapchain;
-	VkQueue presentQueue;
+    VkDevice dev;
+    VkSwapchainKHR swapchain;
+    VkQueue presentQueue;
 
-	uint32_t currentBackbuffer;
+    uint32_t currentBackbuffer;
 };
 
 struct VkSwapchainInfo
 {
-	VkFormat format;
-	VkColorSpaceKHR colorSpace;
-	VkSurfaceKHR surface;
+    VkFormat format;
+    VkColorSpaceKHR colorSpace;
+    VkSurfaceKHR surface;
 };
 
 struct VkBackbufferInfo
 {
-	Util::FixedArray<VkImage> backbuffers;
-	Util::FixedArray<VkImageView> backbufferViews;
-	uint32_t numBackbuffers;
+    Util::FixedArray<VkImage> backbuffers;
+    Util::FixedArray<VkImageView> backbufferViews;
+    uint32_t numBackbuffers;
 };
 
 /// get surface
@@ -59,29 +59,29 @@ namespace CoreGraphics
 
 enum
 {
-	GLFW_Window,
-	GLFW_DisplayMode,
-	GLFW_SwapFrame,
-	GLFW_SetupInfo,
-	GLFW_Texture,
+    GLFW_Window,
+    GLFW_DisplayMode,
+    GLFW_SwapFrame,
+    GLFW_SetupInfo,
+    GLFW_Texture,
 #if __VULKAN__
-	GLFW_WindowSwapInfo,
-	GLFW_SwapChain,
-	GLFW_Backbuffer
+    GLFW_WindowSwapInfo,
+    GLFW_SwapChain,
+    GLFW_Backbuffer
 #endif
 };
 
 
 typedef Ids::IdAllocator<
-	  GLFWwindow*					
-	, CoreGraphics::DisplayMode		
-	, IndexT						
-	, WindowCreateInfo
-	, TextureId
+      GLFWwindow*                   
+    , CoreGraphics::DisplayMode     
+    , IndexT                        
+    , WindowCreateInfo
+    , TextureId
 #if __VULKAN__
-	, Vulkan::VkWindowSwapInfo		
-	, Vulkan::VkSwapchainInfo		
-	, Vulkan::VkBackbufferInfo		
+    , Vulkan::VkWindowSwapInfo      
+    , Vulkan::VkSwapchainInfo       
+    , Vulkan::VkBackbufferInfo      
 #endif
 > GLFWWindowAllocatorType;
 extern GLFWWindowAllocatorType glfwWindowAllocator;

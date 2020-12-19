@@ -34,8 +34,8 @@ public:
     StringAtom(const unsigned char* ptr);
     /// construct from string object
     StringAtom(const String& str);
-	/// constructor from nullptr
-	StringAtom(std::nullptr_t);
+    /// constructor from nullptr
+    StringAtom(std::nullptr_t);
 
     /// assignment
     void operator=(const StringAtom& rhs);
@@ -46,8 +46,8 @@ public:
 
     /// equality operator
     bool operator==(const StringAtom& rhs) const;
-	/// equality operator for nullptr
-	bool operator==(std::nullptr_t) const;
+    /// equality operator for nullptr
+    bool operator==(std::nullptr_t) const;
     /// inequality operator
     bool operator!=(const StringAtom& rhs) const;
     /// greater-then operator
@@ -77,10 +77,10 @@ public:
     /// get containted string as string object (SLOW!!!)
     String AsString() const;
 
-	/// calculate hash code for Util::HashTable (basically just the adress)
-	uint32_t HashCode() const;
+    /// calculate hash code for Util::HashTable (basically just the adress)
+    uint32_t HashCode() const;
     /// calculate persistent hash code (based on string content)
-	uint32_t StringHashCode() const;
+    uint32_t StringHashCode() const;
 private:
     /// setup the string atom from a string pointer
     void Setup(const char* str);
@@ -187,7 +187,7 @@ StringAtom::StringAtom(const String& str)
 inline 
 StringAtom::StringAtom(std::nullptr_t)
 {
-	this->content = nullptr;
+    this->content = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -355,9 +355,9 @@ StringAtom::AsString() const
 inline uint32_t
 StringAtom::HashCode() const
 {
-	// FIXME, test this :D
-	PtrT key = PtrT(this->content);
-	return (uint32_t)(std::hash<unsigned long long>{}(key) & 0x7FFFFFFF);
+    // FIXME, test this :D
+    PtrT key = PtrT(this->content);
+    return (uint32_t)(std::hash<unsigned long long>{}(key) & 0x7FFFFFFF);
 }
 
 } // namespace Util

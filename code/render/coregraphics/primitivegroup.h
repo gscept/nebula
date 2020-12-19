@@ -43,7 +43,7 @@ public:
     /// get the primitive group's local bounding box
     const Math::bbox& GetBoundingBox() const;
     /// get computed number of primitives
-	SizeT GetNumPrimitives(const CoreGraphics::PrimitiveTopology::Code& topo) const;
+    SizeT GetNumPrimitives(const CoreGraphics::PrimitiveTopology::Code& topo) const;
     /// set vertex layout
     void SetVertexLayout(const CoreGraphics::VertexLayoutId& layout);
     /// get vertex layout
@@ -169,11 +169,11 @@ PrimitiveGroup::GetNumPrimitives(const CoreGraphics::PrimitiveTopology::Code& to
 {
     if (this->numIndices > 0)
     {
-		return PrimitiveTopology::NumberOfPrimitives(topo, this->numIndices);
+        return PrimitiveTopology::NumberOfPrimitives(topo, this->numIndices);
     }
     else
     {
-		return PrimitiveTopology::NumberOfPrimitives(topo, this->numVertices);
+        return PrimitiveTopology::NumberOfPrimitives(topo, this->numVertices);
     }
 }
 

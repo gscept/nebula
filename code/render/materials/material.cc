@@ -17,8 +17,8 @@ SurfacePool* surfacePool = nullptr;
 bool
 MaterialBeginBatch(MaterialType* type, CoreGraphics::BatchGroup::Code batch)
 {
-	n_assert(type != nullptr);
-	return type->BeginBatch(batch);
+    n_assert(type != nullptr);
+    return type->BeginBatch(batch);
 }
 
 //------------------------------------------------------------------------------
@@ -27,9 +27,9 @@ MaterialBeginBatch(MaterialType* type, CoreGraphics::BatchGroup::Code batch)
 void 
 MaterialApplySurface(MaterialType* type, const SurfaceId id)
 {
-	n_assert(type != nullptr);
-	n_assert(id != SurfaceId::Invalid());	
-	type->ApplySurface(id);
+    n_assert(type != nullptr);
+    n_assert(id != SurfaceId::Invalid());   
+    type->ApplySurface(id);
 }
 
 //------------------------------------------------------------------------------
@@ -38,9 +38,9 @@ MaterialApplySurface(MaterialType* type, const SurfaceId id)
 void 
 MaterialApplySurfaceInstance(MaterialType* type, const SurfaceInstanceId id)
 {
-	n_assert(type != nullptr);
-	n_assert(id != SurfaceInstanceId::Invalid());
-	type->ApplyInstance(id);
+    n_assert(type != nullptr);
+    n_assert(id != SurfaceInstanceId::Invalid());
+    type->ApplyInstance(id);
 }
 
 //------------------------------------------------------------------------------
@@ -49,8 +49,8 @@ MaterialApplySurfaceInstance(MaterialType* type, const SurfaceInstanceId id)
 void
 MaterialEndBatch(MaterialType* type)
 {
-	n_assert(type != nullptr);
-	type->EndBatch();
+    n_assert(type != nullptr);
+    type->EndBatch();
 }
 
 } // namespace Material

@@ -1,11 +1,11 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	@class Dynui::ImguiRenderer
-	
-	Nebula renderer for  the IMGUI dynamic UI library.
-	
-	(C) 2012-2020 Individual contributors, see AUTHORS file
+    @class Dynui::ImguiRenderer
+    
+    Nebula renderer for  the IMGUI dynamic UI library.
+    
+    (C) 2012-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/texture.h"
@@ -22,35 +22,35 @@ namespace Dynui
 
 struct ImguiRendererParams
 {
-	IndexT projVar;
-	IndexT fontVar;
+    IndexT projVar;
+    IndexT fontVar;
 };
 
 struct ImguiTextureId
 
 {
-	uint64 nebulaHandle;
-	uint8 layer;
-	uint8 mip;
+    uint64 nebulaHandle;
+    uint8 layer;
+    uint8 mip;
 };
 
 class ImguiContext : public Graphics::GraphicsContext
 {
-	_DeclarePluginContext();
+    _DeclarePluginContext();
 public:
-	/// constructor
+    /// constructor
     ImguiContext();
-	/// destructor
-	virtual ~ImguiContext();
+    /// destructor
+    virtual ~ImguiContext();
 
     static void Create();
     static void Discard();
 
-	/// set the screen dimensions to use when rendering the UI (all vertices will be mapped to these values)
-	static void SetRectSize(SizeT width, SizeT height);
-	
-	/// handle event
-	static bool HandleInput(const Input::InputEvent& event);
+    /// set the screen dimensions to use when rendering the UI (all vertices will be mapped to these values)
+    static void SetRectSize(SizeT width, SizeT height);
+    
+    /// handle event
+    static bool HandleInput(const Input::InputEvent& event);
 
     /// called if the window size has changed
     static void OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
@@ -58,33 +58,33 @@ public:
     static void OnBeforeFrame(const Graphics::FrameContext& ctx);
 
 private:
-	struct ImguiState
-	{
-		ImguiRendererParams params;
-		CoreGraphics::ShaderId uiShader;
-		CoreGraphics::ShaderProgramId prog;
+    struct ImguiState
+    {
+        ImguiRendererParams params;
+        CoreGraphics::ShaderId uiShader;
+        CoreGraphics::ShaderProgramId prog;
 
-		ImguiTextureId fontTexture;
-		//CoreGraphics::TextureId fontTexture;
+        ImguiTextureId fontTexture;
+        //CoreGraphics::TextureId fontTexture;
 
-		Util::FixedArray<CoreGraphics::BufferId> vbos;
-		Util::FixedArray<CoreGraphics::BufferId> ibos;
-		CoreGraphics::VertexLayoutId vlo;
+        Util::FixedArray<CoreGraphics::BufferId> vbos;
+        Util::FixedArray<CoreGraphics::BufferId> ibos;
+        CoreGraphics::VertexLayoutId vlo;
 
-		IndexT textureConstant;
-		IndexT textProjectionConstant;
-		IndexT packedTextureInfo;
-		CoreGraphics::ResourceTableId resourceTable;
-		//Ptr<CoreGraphics::BufferLock> vboBufferLock;
-		//Ptr<CoreGraphics::BufferLock> iboBufferLock;
-		Util::FixedArray<byte*> vertexPtrs;
-		Util::FixedArray<byte*> indexPtrs;
+        IndexT textureConstant;
+        IndexT textProjectionConstant;
+        IndexT packedTextureInfo;
+        CoreGraphics::ResourceTableId resourceTable;
+        //Ptr<CoreGraphics::BufferLock> vboBufferLock;
+        //Ptr<CoreGraphics::BufferLock> iboBufferLock;
+        Util::FixedArray<byte*> vertexPtrs;
+        Util::FixedArray<byte*> indexPtrs;
 
-		Ptr<ImguiInputHandler> inputHandler;
-	};
-	static ImguiState state;
+        Ptr<ImguiInputHandler> inputHandler;
+    };
+    static ImguiState state;
     static void ImguiDrawFunction();
-	static void RecoverImGuiContextErrors();
+    static void RecoverImGuiContextErrors();
 };
 
 } // namespace Dynui

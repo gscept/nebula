@@ -15,7 +15,7 @@ namespace Frame
 */
 FrameBarrier::FrameBarrier()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -23,7 +23,7 @@ FrameBarrier::FrameBarrier()
 */
 FrameBarrier::~FrameBarrier()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -32,13 +32,13 @@ FrameBarrier::~FrameBarrier()
 FrameOp::Compiled* 
 FrameBarrier::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
-	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+    CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 
 #if NEBULA_GRAPHICS_DEBUG
-	ret->name = this->name;
+    ret->name = this->name;
 #endif
 
-	return ret;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -48,8 +48,8 @@ void
 FrameBarrier::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_GRAY, this->name.Value());
-	CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
+    CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_GRAY, this->name.Value());
+    CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
 #endif
 }
 
@@ -60,7 +60,7 @@ FrameBarrier::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferInde
 void
 FrameBarrier::CompiledImpl::Discard()
 {
-	// empty 
+    // empty 
 }
 
 

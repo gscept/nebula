@@ -72,29 +72,29 @@ KeyboardBase::OnBeginFrame()
 {
     InputHandler::OnBeginFrame();
 
-	// reset the up and down state of all keys
-	IndexT i;
-	for (i = 0; i < this->keyStates.Size(); i++)
-	{
-		KeyState& keyState = this->keyStates[i];
-		KeyState& nextKeyState = this->nextKeyStates[i];
+    // reset the up and down state of all keys
+    IndexT i;
+    for (i = 0; i < this->keyStates.Size(); i++)
+    {
+        KeyState& keyState = this->keyStates[i];
+        KeyState& nextKeyState = this->nextKeyStates[i];
 
-		// NOTE: if the key was released in the previous frame,
-		// clear the pressed state (see the KeyUp-handling
-		// code in OnEvent for details why this is a good thing)
-		if (keyState.up)
-		{
-			keyState.pressed = false;
-		}
-		//keyState.pressed = nextKeyState.pressed;
-		keyState.down = false;
-		keyState.up = false;
-		//nextKeyState.down = false;
-		//nextKeyState.up = false;
-	}
+        // NOTE: if the key was released in the previous frame,
+        // clear the pressed state (see the KeyUp-handling
+        // code in OnEvent for details why this is a good thing)
+        if (keyState.up)
+        {
+            keyState.pressed = false;
+        }
+        //keyState.pressed = nextKeyState.pressed;
+        keyState.down = false;
+        keyState.up = false;
+        //nextKeyState.down = false;
+        //nextKeyState.up = false;
+    }
 
-	// clear character input
-	this->charInput.Clear();
+    // clear character input
+    this->charInput.Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -124,12 +124,12 @@ KeyboardBase::OnEvent(const InputEvent& inputEvent)
                     keyState.pressed = true;
                 }
             }
-			return true;
+            return true;
 
 
         case InputEvent::KeyUp:
             {
-				KeyState& keyState = this->keyStates[inputEvent.GetKey()];
+                KeyState& keyState = this->keyStates[inputEvent.GetKey()];
                 keyState.up = true;
                 // NOTE: we don't clear the pressed flag here because
                 // it may happen that a key was only tapped shortly
@@ -146,10 +146,10 @@ KeyboardBase::OnEvent(const InputEvent& inputEvent)
                 uchar chr = inputEvent.GetChar();
                 this->charInput.AppendRange((const char*)&chr, 1);
             }
-			return true;
+            return true;
 
-		default:
-			break;
+        default:
+            break;
     }
     return false;
 }

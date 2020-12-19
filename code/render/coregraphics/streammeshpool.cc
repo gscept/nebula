@@ -20,13 +20,13 @@ __ImplementClass(CoreGraphics::StreamMeshPool, 'VKML', Resources::ResourceStream
 /**
 */
 StreamMeshPool::StreamMeshPool() :
-	activeMesh(Ids::InvalidId24)
+    activeMesh(Ids::InvalidId24)
 {
-	this->placeholderResourceName = "msh:system/placeholder.nvx2";
-	this->failResourceName = "msh:system/error.nvx2";
-	this->async = true;
+    this->placeholderResourceName = "msh:system/placeholder.nvx2";
+    this->failResourceName = "msh:system/error.nvx2";
+    this->async = true;
 
-	this->streamerThreadName = "Mesh Pool Streamer Thread";
+    this->streamerThreadName = "Mesh Pool Streamer Thread";
 }
 
 //------------------------------------------------------------------------------
@@ -34,7 +34,7 @@ StreamMeshPool::StreamMeshPool() :
 */
 StreamMeshPool::~StreamMeshPool()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -43,30 +43,30 @@ StreamMeshPool::~StreamMeshPool()
 Resources::ResourcePool::LoadStatus
 StreamMeshPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
-	n_assert(stream.isvalid());
-	n_assert(id != Ids::InvalidId24);
-	String resIdExt = this->GetName(id.poolId).AsString().GetFileExtension();
+    n_assert(stream.isvalid());
+    n_assert(id != Ids::InvalidId24);
+    String resIdExt = this->GetName(id.poolId).AsString().GetFileExtension();
 
 #if NEBULA_LEGACY_SUPPORT
-	if (resIdExt == "nvx2")
-	{
-		return this->SetupMeshFromNvx2(stream, id);
-	}
-	else
+    if (resIdExt == "nvx2")
+    {
+        return this->SetupMeshFromNvx2(stream, id);
+    }
+    else
 #endif
-		if (resIdExt == "nvx3")
-		{
-			return this->SetupMeshFromNvx3(stream, id);
-		}
-		else if (resIdExt == "n3d3")
-		{
-			return this->SetupMeshFromN3d3(stream, id);
-		}
-		else
-		{
-			n_error("StreamMeshPool::SetupMeshFromStream(): unrecognized file extension in '%s'\n", resIdExt.AsCharPtr());
-			return Resources::ResourcePool::Failed;
-		}
+        if (resIdExt == "nvx3")
+        {
+            return this->SetupMeshFromNvx3(stream, id);
+        }
+        else if (resIdExt == "n3d3")
+        {
+            return this->SetupMeshFromN3d3(stream, id);
+        }
+        else
+        {
+            n_error("StreamMeshPool::SetupMeshFromStream(): unrecognized file extension in '%s'\n", resIdExt.AsCharPtr());
+            return Resources::ResourcePool::Failed;
+        }
 }
 
 //------------------------------------------------------------------------------
@@ -75,18 +75,18 @@ StreamMeshPool::LoadFromStream(const Resources::ResourceId id, const Util::Strin
 void
 StreamMeshPool::Unload(const Resources::ResourceId id)
 {
-	n_assert(id.resourceId != Ids::InvalidId24);
-	__LockName(meshPool->Allocator(), lock);
-	const MeshCreateInfo& msh = meshPool->Get<0>(id.resourceId);
+    n_assert(id.resourceId != Ids::InvalidId24);
+    __LockName(meshPool->Allocator(), lock);
+    const MeshCreateInfo& msh = meshPool->Get<0>(id.resourceId);
 
-	if (msh.indexBuffer != BufferId::Invalid())
-		DestroyBuffer(msh.indexBuffer);
+    if (msh.indexBuffer != BufferId::Invalid())
+        DestroyBuffer(msh.indexBuffer);
 
-	IndexT i;
-	for (i = 0; i < msh.streams.Size(); i++)
-		DestroyBuffer(msh.streams[i].vertexBuffer);
+    IndexT i;
+    for (i = 0; i < msh.streams.Size(); i++)
+        DestroyBuffer(msh.streams[i].vertexBuffer);
 
-	this->states[id.poolId] = Resources::Resource::State::Unloaded;
+    this->states[id.poolId] = Resources::Resource::State::Unloaded;
 }
 
 //------------------------------------------------------------------------------
@@ -95,7 +95,7 @@ StreamMeshPool::Unload(const Resources::ResourceId id)
 Resources::ResourceUnknownId
 StreamMeshPool::AllocObject()
 {
-	return meshPool->AllocObject();
+    return meshPool->AllocObject();
 }
 
 //------------------------------------------------------------------------------
@@ -104,72 +104,72 @@ StreamMeshPool::AllocObject()
 void
 StreamMeshPool::DeallocObject(const Resources::ResourceUnknownId id)
 {
-	meshPool->DeallocObject(id);
+    meshPool->DeallocObject(id);
 }
 
 //------------------------------------------------------------------------------
 /**
-	Setup the mesh resource from legacy nvx2 file (Nebula2 binary mesh format).
+    Setup the mesh resource from legacy nvx2 file (Nebula2 binary mesh format).
 */
 #if NEBULA_LEGACY_SUPPORT
 Resources::ResourcePool::LoadStatus
 StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Resources::ResourceId res)
 {
-	n_assert(stream.isvalid());
-	Ptr<Legacy::Nvx2StreamReader> nvx2Reader = Legacy::Nvx2StreamReader::Create();
-	nvx2Reader->SetStream(stream);
-	nvx2Reader->SetUsage(this->usage);
-	nvx2Reader->SetAccess(this->access);
-	Resources::ResourceName name = this->GetName(res);
+    n_assert(stream.isvalid());
+    Ptr<Legacy::Nvx2StreamReader> nvx2Reader = Legacy::Nvx2StreamReader::Create();
+    nvx2Reader->SetStream(stream);
+    nvx2Reader->SetUsage(this->usage);
+    nvx2Reader->SetAccess(this->access);
+    Resources::ResourceName name = this->GetName(res);
 
-	// opening the reader also loads the file
-	if (nvx2Reader->Open(name))
-	{
-		__LockName(meshPool->Allocator(), lock);
-		MeshCreateInfo& msh = meshPool->Get<0>(res);
-		n_assert(this->GetState(res) == Resources::Resource::Pending);
-		auto vertexLayout = CreateVertexLayout({ nvx2Reader->GetVertexComponents() });
-		msh.streams.Append({ nvx2Reader->GetVertexBuffer(), 0 });
-		msh.indexBuffer = nvx2Reader->GetIndexBuffer();
-		msh.topology = PrimitiveTopology::TriangleList;
-		msh.primitiveGroups = nvx2Reader->GetPrimitiveGroups();
+    // opening the reader also loads the file
+    if (nvx2Reader->Open(name))
+    {
+        __LockName(meshPool->Allocator(), lock);
+        MeshCreateInfo& msh = meshPool->Get<0>(res);
+        n_assert(this->GetState(res) == Resources::Resource::Pending);
+        auto vertexLayout = CreateVertexLayout({ nvx2Reader->GetVertexComponents() });
+        msh.streams.Append({ nvx2Reader->GetVertexBuffer(), 0 });
+        msh.indexBuffer = nvx2Reader->GetIndexBuffer();
+        msh.topology = PrimitiveTopology::TriangleList;
+        msh.primitiveGroups = nvx2Reader->GetPrimitiveGroups();
         // nvx2 does not have per primitive layouts, we apply them to all
         for (auto & i : msh.primitiveGroups)
         {
             i.SetVertexLayout(vertexLayout);
         }
 
-		nvx2Reader->Close();
-		return ResourcePool::Success;
-	}
-	return ResourcePool::Failed;
+        nvx2Reader->Close();
+        return ResourcePool::Success;
+    }
+    return ResourcePool::Failed;
 }
 #endif
 
 //------------------------------------------------------------------------------
 /**
-	Setup the mesh resource from a nvx3 file (Nebula's
-	native binary mesh file format).
+    Setup the mesh resource from a nvx3 file (Nebula's
+    native binary mesh file format).
 */
 Resources::ResourcePool::LoadStatus
 StreamMeshPool::SetupMeshFromNvx3(const Ptr<Stream>& stream, const Resources::ResourceId res)
 {
-	// FIXME!
-	n_error("StreamMeshPool::SetupMeshFromNvx3() not yet implemented");
-	return Resources::ResourcePool::Failed;
+    // FIXME!
+    n_error("StreamMeshPool::SetupMeshFromNvx3() not yet implemented");
+    return Resources::ResourcePool::Failed;
 }
 
 //------------------------------------------------------------------------------
 /**
-	Setup the mesh resource from a n3d3 file (Nebula's
-	native ascii mesh file format).
+    Setup the mesh resource from a n3d3 file (Nebula's
+    native ascii mesh file format).
 */
 Resources::ResourcePool::LoadStatus
 StreamMeshPool::SetupMeshFromN3d3(const Ptr<Stream>& stream, const Resources::ResourceId res)
 {
-	// FIXME!
-	n_error("StreamMeshPool::SetupMeshFromN3d3() not yet implemented");
-	return Resources::ResourcePool::Failed;
+    // FIXME!
+    n_error("StreamMeshPool::SetupMeshFromN3d3() not yet implemented");
+    return Resources::ResourcePool::Failed;
 }
 
 //------------------------------------------------------------------------------
@@ -178,20 +178,20 @@ StreamMeshPool::SetupMeshFromN3d3(const Ptr<Stream>& stream, const Resources::Re
 void
 StreamMeshPool::MeshBind(const Resources::ResourceId id)
 {
-	__LockName(meshPool->Allocator(), lock);
-	const MeshCreateInfo& msh = meshPool->Get<0>(id);
+    __LockName(meshPool->Allocator(), lock);
+    const MeshCreateInfo& msh = meshPool->Get<0>(id);
 
-	// bind vbo, and optional ibo
-	CoreGraphics::SetPrimitiveTopology(msh.topology);	
+    // bind vbo, and optional ibo
+    CoreGraphics::SetPrimitiveTopology(msh.topology);   
 
-	IndexT i;
-	for (i = 0; i < msh.streams.Size(); i++)
-		CoreGraphics::SetStreamVertexBuffer(msh.streams[i].index, msh.streams[i].vertexBuffer, 0);
+    IndexT i;
+    for (i = 0; i < msh.streams.Size(); i++)
+        CoreGraphics::SetStreamVertexBuffer(msh.streams[i].index, msh.streams[i].vertexBuffer, 0);
 
-	if (msh.indexBuffer != BufferId::Invalid())
-		CoreGraphics::SetIndexBuffer(msh.indexBuffer, 0);
+    if (msh.indexBuffer != BufferId::Invalid())
+        CoreGraphics::SetIndexBuffer(msh.indexBuffer, 0);
 
-	this->activeMesh = id;
+    this->activeMesh = id;
 }
 
 //------------------------------------------------------------------------------
@@ -200,10 +200,10 @@ StreamMeshPool::MeshBind(const Resources::ResourceId id)
 void
 StreamMeshPool::BindPrimitiveGroup(const IndexT primgroup)
 {
-	n_assert(this->activeMesh != MeshId::Invalid());
-	__LockName(meshPool->Allocator(), lock);
-	const MeshCreateInfo& msh = meshPool->Get<0>(this->activeMesh);
-	CoreGraphics::SetPrimitiveGroup(msh.primitiveGroups[primgroup]);
+    n_assert(this->activeMesh != MeshId::Invalid());
+    __LockName(meshPool->Allocator(), lock);
+    const MeshCreateInfo& msh = meshPool->Get<0>(this->activeMesh);
+    CoreGraphics::SetPrimitiveGroup(msh.primitiveGroups[primgroup]);
     CoreGraphics::SetVertexLayout(msh.primitiveGroups[primgroup].GetVertexLayout());
 }
 

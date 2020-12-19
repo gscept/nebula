@@ -1,12 +1,12 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	@class CoreGraphics::DisplayDevice
+    @class CoreGraphics::DisplayDevice
 
-	A DisplayDevice object represents the display where the RenderDevice
-	presents the rendered frame. 
+    A DisplayDevice object represents the display where the RenderDevice
+    presents the rendered frame. 
 
-	(C) 2007 Radon Labs GmbH
+    (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #if __VULKAN__
@@ -15,13 +15,13 @@ namespace CoreGraphics
 {
 class DisplayDevice : public GLFW::GLFWDisplayDevice
 {
-	__DeclareClass(DisplayDevice);
-	__DeclareSingleton(DisplayDevice);
+    __DeclareClass(DisplayDevice);
+    __DeclareSingleton(DisplayDevice);
 public:
-	/// constructor
-	DisplayDevice();
-	/// destructor
-	virtual ~DisplayDevice();
+    /// constructor
+    DisplayDevice();
+    /// destructor
+    virtual ~DisplayDevice();
 };
 } // namespace CoreGraphics
 #else

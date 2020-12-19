@@ -4,10 +4,10 @@
     @class Instancing::InstanceServer
   
     The instance server collects all instances of a model and render each node instanced,
-	so as to decrease draw calls when rendering huge amounts of identical objects
+    so as to decrease draw calls when rendering huge amounts of identical objects
 
     (C) 2012 Gustav Sterbrant
-	(C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 
@@ -17,13 +17,13 @@ namespace Instancing
 {
 class InstanceServer : public Vulkan::VkInstanceServer
 {
-	__DeclareClass(InstanceServer);
-	__DeclareSingleton(InstanceServer);
+    __DeclareClass(InstanceServer);
+    __DeclareSingleton(InstanceServer);
 public:
-	/// constructor
-	InstanceServer();
-	/// destructor
-	virtual ~InstanceServer();
+    /// constructor
+    InstanceServer();
+    /// destructor
+    virtual ~InstanceServer();
 };
 } // namespace Instancing
 #else

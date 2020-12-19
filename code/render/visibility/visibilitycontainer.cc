@@ -14,7 +14,7 @@ __ImplementClass(Visibility::VisibilityContainer, 'VICO', Core::RefCounted);
 */
 VisibilityContainer::VisibilityContainer()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -22,7 +22,7 @@ VisibilityContainer::VisibilityContainer()
 */
 VisibilityContainer::~VisibilityContainer()
 {
-	// empty
+    // empty
 }
 
 } // namespace Visibility

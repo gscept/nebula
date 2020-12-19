@@ -261,7 +261,7 @@ template<class VALUETYPE>
 void
 SimpleTree<VALUETYPE>::Node::Erase(IndexT i)
 {
-	this->children[i]->parent = nullptr;
+    this->children[i]->parent = nullptr;
     this->children.EraseIndex(i);
 }
 

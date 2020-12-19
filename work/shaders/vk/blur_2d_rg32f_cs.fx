@@ -12,10 +12,10 @@
 */
 program BlurX [ string Mask = "Alt0"; ]
 {
-	ComputeShader = csMainX();
+    ComputeShader = csMainX();
 };
 
 program BlurY [ string Mask = "Alt1"; ]
 {
-	ComputeShader = csMainY();
+    ComputeShader = csMainY();
 };

@@ -13,17 +13,17 @@ sampler2D SourceTexture;
 
 sampler_state BloomSampler
 {
-	Samplers = { SourceTexture };
-	Filter = Point;
-	AddressU = Clamp;
-	AddressV = Clamp;
+    Samplers = { SourceTexture };
+    Filter = Point;
+    AddressU = Clamp;
+    AddressV = Clamp;
 };
 
 render_state BloomState
 {
-	CullMode = Back;
-	DepthEnabled = false;
-	DepthWrite = false;
+    CullMode = Back;
+    DepthEnabled = false;
+    DepthWrite = false;
 };
 
 // bloom samples
@@ -35,12 +35,12 @@ render_state BloomState
 shader
 void
 vsMain(
-	[slot=0] in vec3 position,
-	[slot=2] in vec2 uv,
-	out vec2 UV) 
+    [slot=0] in vec3 position,
+    [slot=2] in vec2 uv,
+    out vec2 UV) 
 {
-	gl_Position = vec4(position, 1);
-	UV = uv;
+    gl_Position = vec4(position, 1);
+    UV = uv;
 }
 
 //------------------------------------------------------------------------------
@@ -69,7 +69,7 @@ UpdateSamplesBloom(in bool horizontal, in float pixelSize, in float deviation, i
     float weight = multiplier * GaussianDistribution(0.0f, 0.0f, deviation);
     sampleOffsetsWeights[0]  = vec3(0.0f, 0.0f, weight);
     sampleOffsetsWeights[15] = vec3(0.0f, 0.0f, weight);
-	
+    
     // fill first half
     int i;
     for (i = 1; i < 8; i++)
@@ -85,7 +85,7 @@ UpdateSamplesBloom(in bool horizontal, in float pixelSize, in float deviation, i
         weight = multiplier * GaussianDistribution(float(i), 0, deviation);
         sampleOffsetsWeights[i].z = weight;
     }
-	
+    
     // mirror second half
     for (i = 8; i < 15; i++)
     {
@@ -99,9 +99,9 @@ UpdateSamplesBloom(in bool horizontal, in float pixelSize, in float deviation, i
 shader
 void
 psMain(in vec2 UV,
-	[color0] out vec4 BloomedColor) 
+    [color0] out vec4 BloomedColor) 
 {
-	vec2 pixelSize = GetPixelSize(SourceTexture);
+    vec2 pixelSize = GetPixelSize(SourceTexture);
     vec3 sampleOffsetsWeights[MAXBLOOMSAMPLES];
     UpdateSamplesBloom(true, pixelSize.x, 3.0f, HDRBloomScale, sampleOffsetsWeights);
     

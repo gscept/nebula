@@ -65,15 +65,15 @@ public:
     void SetDeferredHandled(bool b);
     /// get the deferred handled flag
     bool DeferredHandled() const;
-	/// should this message be distributed over the network
-	bool GetDistribute() const;
-	/// enable distribution over network
-	void SetDistribute(bool b);
+    /// should this message be distributed over the network
+    bool GetDistribute() const;
+    /// enable distribution over network
+    void SetDistribute(bool b);
 protected:
     volatile int handled;
     bool deferred;
     bool deferredHandled;
-	bool distribute;
+    bool distribute;
 };
 
 //------------------------------------------------------------------------------
@@ -145,7 +145,7 @@ Message::DeferredHandled() const
 inline bool
 Message::GetDistribute() const
 {
-	return distribute;
+    return distribute;
 }
 
 //------------------------------------------------------------------------------
@@ -154,7 +154,7 @@ Message::GetDistribute() const
 inline void
 Message::SetDistribute(bool b)
 {
-	this->distribute = b;
+    this->distribute = b;
 }
 
 } // namespace Messaging

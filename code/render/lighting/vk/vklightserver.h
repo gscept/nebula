@@ -24,123 +24,123 @@ namespace Lighting
 {
 class VkLightServer : public LightServerBase
 {
-	__DeclareClass(VkLightServer);
+    __DeclareClass(VkLightServer);
 public:
-	/// constructor
-	VkLightServer();
-	/// destructor
-	virtual ~VkLightServer();
+    /// constructor
+    VkLightServer();
+    /// destructor
+    virtual ~VkLightServer();
 
-	/// open the light server
-	void Open();
-	/// close the light server
-	void Close();
-	/// returns if the server needs model-light linking
-	bool NeedsLightModelLinking() const;
+    /// open the light server
+    void Open();
+    /// close the light server
+    void Close();
+    /// returns if the server needs model-light linking
+    bool NeedsLightModelLinking() const;
 
-	/// attach a visible light source
-	void AttachVisibleLight(const Ptr<Graphics::AbstractLightEntity>& lightEntity);
-	/// end lighting frame
-	void EndFrame();
-	/// render lights
-	void RenderLights();
-	/// render light probes
-	void RenderLightProbes();
-	
+    /// attach a visible light source
+    void AttachVisibleLight(const Ptr<Graphics::AbstractLightEntity>& lightEntity);
+    /// end lighting frame
+    void EndFrame();
+    /// render lights
+    void RenderLights();
+    /// render light probes
+    void RenderLightProbes();
+    
 protected:
 
-	/// render the global light
-	void RenderGlobalLight();
-	/// render all point lights
-	void RenderPointLights();
-	/// render all spot lights
-	void RenderSpotLights();
-	/// assign render buffers to shaders
-	void AssignRenderBufferTextures();
+    /// render the global light
+    void RenderGlobalLight();
+    /// render all point lights
+    void RenderPointLights();
+    /// render all spot lights
+    void RenderSpotLights();
+    /// assign render buffers to shaders
+    void AssignRenderBufferTextures();
 
-	/// update descriptor set
-	void UpdateDescriptor(const VkBuffer& buffer, const IndexT binding, VkDescriptorSet set);
+    /// update descriptor set
+    void UpdateDescriptor(const VkBuffer& buffer, const IndexT binding, VkDescriptorSet set);
 
-	enum ShadowFlag
-	{
-		CastShadows = 0,
-		NoShadows,
+    enum ShadowFlag
+    {
+        CastShadows = 0,
+        NoShadows,
 
-		NumShadowFlags
-	};
+        NumShadowFlags
+    };
 
-	enum ProbeFlag
-	{
-		Box,
-		Sphere,
-		BoxParallax,
-		SphereParallax,
+    enum ProbeFlag
+    {
+        Box,
+        Sphere,
+        BoxParallax,
+        SphereParallax,
 
-		NumProbeFlags
-	};
+        NumProbeFlags
+    };
 
-	Util::Array<Ptr<Graphics::PointLightEntity> > pointLights[NumShadowFlags];
-	Util::Array<Ptr<Graphics::SpotLightEntity> > spotLights[NumShadowFlags];
+    Util::Array<Ptr<Graphics::PointLightEntity> > pointLights[NumShadowFlags];
+    Util::Array<Ptr<Graphics::SpotLightEntity> > spotLights[NumShadowFlags];
 
-	CoreGraphics::ShaderFeature::Mask pointLightFeatureBits[NumShadowFlags];
-	CoreGraphics::ShaderFeature::Mask spotLightFeatureBits[NumShadowFlags];
-	CoreGraphics::ShaderFeature::Mask globalLightFeatureBits[NumShadowFlags];
-	CoreGraphics::ShaderFeature::Mask lightProbeFeatureBits[Graphics::LightProbeEntity::NumProbeShapeTypes + 2];
-	RenderUtil::DrawFullScreenQuad fullScreenQuadRenderer;          // fs quad renderer
+    CoreGraphics::ShaderFeature::Mask pointLightFeatureBits[NumShadowFlags];
+    CoreGraphics::ShaderFeature::Mask spotLightFeatureBits[NumShadowFlags];
+    CoreGraphics::ShaderFeature::Mask globalLightFeatureBits[NumShadowFlags];
+    CoreGraphics::ShaderFeature::Mask lightProbeFeatureBits[Graphics::LightProbeEntity::NumProbeShapeTypes + 2];
+    RenderUtil::DrawFullScreenQuad fullScreenQuadRenderer;          // fs quad renderer
 
-	Ptr<CoreGraphics::ShaderState> globalLightShader;
-	Ptr<CoreGraphics::ShaderState> localLightShader;
-	Ptr<CoreGraphics::ShaderState> lightProbeShader;
-	Ptr<Resources::ManagedTexture> lightProjMap;
+    Ptr<CoreGraphics::ShaderState> globalLightShader;
+    Ptr<CoreGraphics::ShaderState> localLightShader;
+    Ptr<CoreGraphics::ShaderState> lightProbeShader;
+    Ptr<Resources::ManagedTexture> lightProjMap;
 
-	/// global light variables
+    /// global light variables
     Ptr<CoreGraphics::ConstantBuffer> lightServerUniformBuffer;
     Ptr<CoreGraphics::ShaderVariable> lightServerUniformBufferVar;
-	Ptr<CoreGraphics::ShaderVariable> globalLightDirWorldspace;
-	Ptr<CoreGraphics::ShaderVariable> globalLightDir;
-	Ptr<CoreGraphics::ShaderVariable> globalLightColor;
-	Ptr<CoreGraphics::ShaderVariable> globalBackLightColor;
-	Ptr<CoreGraphics::ShaderVariable> globalAmbientLightColor;
-	Ptr<CoreGraphics::ShaderVariable> globalBackLightOffset;
+    Ptr<CoreGraphics::ShaderVariable> globalLightDirWorldspace;
+    Ptr<CoreGraphics::ShaderVariable> globalLightDir;
+    Ptr<CoreGraphics::ShaderVariable> globalLightColor;
+    Ptr<CoreGraphics::ShaderVariable> globalBackLightColor;
+    Ptr<CoreGraphics::ShaderVariable> globalAmbientLightColor;
+    Ptr<CoreGraphics::ShaderVariable> globalBackLightOffset;
     Ptr<CoreGraphics::ShaderVariable> globalLightShadowMatrixVar;
 
-	Ptr<CoreGraphics::ShaderVariable> globalLightCascadeOffset;
-	Ptr<CoreGraphics::ShaderVariable> globalLightCascadeScale;
-	Ptr<CoreGraphics::ShaderVariable> globalLightMinBorderPadding;
-	Ptr<CoreGraphics::ShaderVariable> globalLightMaxBorderPadding;
+    Ptr<CoreGraphics::ShaderVariable> globalLightCascadeOffset;
+    Ptr<CoreGraphics::ShaderVariable> globalLightCascadeScale;
+    Ptr<CoreGraphics::ShaderVariable> globalLightMinBorderPadding;
+    Ptr<CoreGraphics::ShaderVariable> globalLightMaxBorderPadding;
 
-	Ptr<CoreGraphics::ShaderVariable> globalLightPartitionSize;
-	Ptr<CoreGraphics::ShaderVariable> globalLightShadowMap;
+    Ptr<CoreGraphics::ShaderVariable> globalLightPartitionSize;
+    Ptr<CoreGraphics::ShaderVariable> globalLightShadowMap;
 
-	/// local light variables
-	Ptr<CoreGraphics::ShaderVariable> lightProjMapVar;
-	Ptr<CoreGraphics::ShaderVariable> lightProjCubeVar;
-	Ptr<CoreGraphics::ShaderVariable> shadowProjMapVar;     
+    /// local light variables
+    Ptr<CoreGraphics::ShaderVariable> lightProjMapVar;
+    Ptr<CoreGraphics::ShaderVariable> lightProjCubeVar;
+    Ptr<CoreGraphics::ShaderVariable> shadowProjMapVar;     
     Ptr<CoreGraphics::ShaderVariable> shadowProjCubeVar;
 
-	/// light variables
-	Ptr<CoreGraphics::ShaderVariable> lightPosRange;
-	Ptr<CoreGraphics::ShaderVariable> lightColor;
-	Ptr<CoreGraphics::ShaderVariable> lightProjTransform;
-	Ptr<CoreGraphics::ShaderVariable> lightTransform;
-	Ptr<CoreGraphics::ConstantBuffer> localLightBuffer;
-	Ptr<CoreGraphics::ShaderVariable> localLightBlockVar;
-	Util::Dictionary<Ptr<Graphics::AbstractLightEntity>, IndexT> lightToInstanceMap;
-	Util::Dictionary<Ptr<Graphics::AbstractLightEntity>, Util::Array<uint32_t>> lightToOffsetMap;
+    /// light variables
+    Ptr<CoreGraphics::ShaderVariable> lightPosRange;
+    Ptr<CoreGraphics::ShaderVariable> lightColor;
+    Ptr<CoreGraphics::ShaderVariable> lightProjTransform;
+    Ptr<CoreGraphics::ShaderVariable> lightTransform;
+    Ptr<CoreGraphics::ConstantBuffer> localLightBuffer;
+    Ptr<CoreGraphics::ShaderVariable> localLightBlockVar;
+    Util::Dictionary<Ptr<Graphics::AbstractLightEntity>, IndexT> lightToInstanceMap;
+    Util::Dictionary<Ptr<Graphics::AbstractLightEntity>, Util::Array<uint32_t>> lightToOffsetMap;
 
-	/// shadow variables
-	Ptr<CoreGraphics::ShaderVariable> shadowIntensityVar;
-	Ptr<CoreGraphics::ShaderVariable> shadowProjTransform;
-	Ptr<CoreGraphics::ShaderVariable> shadowOffsetScaleVar;
+    /// shadow variables
+    Ptr<CoreGraphics::ShaderVariable> shadowIntensityVar;
+    Ptr<CoreGraphics::ShaderVariable> shadowProjTransform;
+    Ptr<CoreGraphics::ShaderVariable> shadowOffsetScaleVar;
 
-	Ptr<Vulkan::VkShaderState::VkDerivativeState> derivativeState;
-	Util::FixedPool<Util::Array<uint32_t>> offsetPool;
-	uint32_t offsetIndex;
+    Ptr<Vulkan::VkShaderState::VkDerivativeState> derivativeState;
+    Util::FixedPool<Util::Array<uint32_t>> offsetPool;
+    uint32_t offsetIndex;
 
-	Ptr<Resources::ManagedMesh> pointLightMesh;         // point light mesh
-	Ptr<Resources::ManagedMesh> spotLightMesh;          // spot light mesh
-	Ptr<Resources::ManagedMesh> lightProbeMesh;
-	bool renderBuffersAssigned;     
+    Ptr<Resources::ManagedMesh> pointLightMesh;         // point light mesh
+    Ptr<Resources::ManagedMesh> spotLightMesh;          // spot light mesh
+    Ptr<Resources::ManagedMesh> lightProbeMesh;
+    bool renderBuffersAssigned;     
 
 }; 
 } // namespace Lighting

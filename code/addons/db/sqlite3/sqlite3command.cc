@@ -315,8 +315,8 @@ Sqlite3Command::ReadRow()
                         this->valueTable->SetFloat4(valueTableColumnIndex, rowIndex, value);
                     #else
                         n_assert(size == sizeof(float4));
-						ByteOrder byteOrder(ByteOrder::LittleEndian, ByteOrder::Host);
-						byteOrder.ConvertInPlace<Math::vec4>(alignedVal);
+                        ByteOrder byteOrder(ByteOrder::LittleEndian, ByteOrder::Host);
+                        byteOrder.ConvertInPlace<Math::vec4>(alignedVal);
                         /**ptr = ByteOrder::ConvertFloat4(ByteOrder::LittleEndian, ByteOrder::Host, *ptr);*/
                         this->valueTable->SetVec4(valueTableColumnIndex, rowIndex, alignedVal);
                     #endif
