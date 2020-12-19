@@ -143,11 +143,15 @@ void
 GraphicsFeatureUnit::OnBeginFrame()
 {
     FeatureUnit::OnBeginFrame();
+
+     CoreGraphics::WindowPollEvents();
+
     this->inputServer->BeginFrame();
     this->inputServer->OnFrame();
 
     this->gfxServer->BeginFrame();
-    CoreGraphics::WindowPollEvents();
+
+
 
     for (auto const& uiFunc : this->uiCallbacks)
     {
