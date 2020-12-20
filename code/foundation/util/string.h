@@ -54,6 +54,8 @@ public:
     String(String&& rhs) noexcept;
     /// construct from C string
     String(const char* cStr);
+    /// construct from C string
+    String(const char* cStr, size_t len);
     /// destructor
     ~String();
 
@@ -356,6 +358,13 @@ public:
     String ExtractToLastSlash() const;
     /// replace illegal filename characters
     void ReplaceIllegalFilenameChars(char replacement);
+
+    /// helpers to interface with libraries that expect std::string like apis
+    inline const char* c_str() const { return this->AsCharPtr(); }
+    ///
+    inline size_t length() const { return this->Length(); }
+    ///
+    inline bool empty() const { return this->IsEmpty(); }
 
     /// test if provided character is a digit (0..9)
     static bool IsDigit(char c);
@@ -713,6 +722,20 @@ String::String(const char* str) :
     this->localBuffer[0] = 0;
     this->SetCharPtr(str);
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+String::String(const char* str, size_t len) :
+    heapBuffer(0),
+    strLen(0),
+    heapBufferSize(0)
+{
+    this->localBuffer[0] = 0;
+    this->Set(str, (SizeT)len);
+}
+
 
 //------------------------------------------------------------------------------
 /**

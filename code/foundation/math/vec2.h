@@ -47,6 +47,11 @@ struct vec2
     /// set content
     void set(scalar x, scalar y);
 
+    /// load content from memory
+    void load(const scalar* ptr);
+    /// write content memory
+    void store(scalar* ptr) const;
+
     /// return length of vector
     scalar length() const;
     /// return squared length of vector
@@ -193,6 +198,26 @@ vec2::set(scalar x, scalar y)
 {
     this->x = x;
     this->y = y;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+void vec2::load(const scalar* ptr)
+{
+    this->x = ptr[0];
+    this->y = ptr[1];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+void vec2::store(scalar* ptr) const
+{
+    ptr[0] = this->x;
+    ptr[1] = this->y;
 }
 
 //------------------------------------------------------------------------------
