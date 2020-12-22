@@ -22,7 +22,7 @@ struct FlatbufferState
     void Init();
     bool LoadFbs(IO::URI const& file);
     void LoadExported();
-    void FlatbufferState::LoadFolder(Util::String const& folder);
+    void LoadFolder(Util::String const& folder);
     
     Util::Dictionary<Util::StringAtom, flatbuffers::Parser*> parsers;
 };
