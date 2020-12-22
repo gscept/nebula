@@ -39,11 +39,11 @@ inline Vec3  Abs(const Vec3& _v)                           { return Vec3(fabs(_v
 inline Vec3  Normalize(const Vec3& _v)                     { return _v / Length(_v);                                         }
 inline Vec3  Cross(const Vec3& _a, const Vec3& _b)         
 {
-	return Vec3(
-		_a.y * _b.z - _b.y * _a.z,
-		_a.z * _b.x - _b.z * _a.x,
-		_a.x * _b.y - _b.x * _a.y
-		);
+    return Vec3(
+        _a.y * _b.z - _b.y * _a.z,
+        _a.z * _b.x - _b.z * _a.x,
+        _a.x * _b.y - _b.x * _a.y
+        );
 }
 
 // Vec4
@@ -63,34 +63,34 @@ inline Vec4  Normalize(const Vec4& _v)                     { return _v / Length(
 // Mat3
 inline Mat3 operator*(const Mat3& _lhs, const Mat3& _rhs)
 {
-	Mat3 ret;
-	ret(0, 0) = _lhs(0, 0) * _rhs(0, 0) + _lhs(0, 1) * _rhs(1, 0) + _lhs(0, 2) * _rhs(2, 0);
-	ret(0, 1) = _lhs(0, 0) * _rhs(0, 1) + _lhs(0, 1) * _rhs(1, 1) + _lhs(0, 2) * _rhs(2, 1);
-	ret(0, 2) = _lhs(0, 0) * _rhs(0, 2) + _lhs(0, 1) * _rhs(1, 2) + _lhs(0, 2) * _rhs(2, 2);
-	ret(1, 0) = _lhs(1, 0) * _rhs(0, 0) + _lhs(1, 1) * _rhs(1, 0) + _lhs(1, 2) * _rhs(2, 0);
-	ret(1, 1) = _lhs(1, 0) * _rhs(0, 1) + _lhs(1, 1) * _rhs(1, 1) + _lhs(1, 2) * _rhs(2, 1);
-	ret(1, 2) = _lhs(1, 0) * _rhs(0, 2) + _lhs(1, 1) * _rhs(1, 2) + _lhs(1, 2) * _rhs(2, 2);
-	ret(2, 0) = _lhs(2, 0) * _rhs(0, 0) + _lhs(2, 1) * _rhs(1, 0) + _lhs(2, 2) * _rhs(2, 0);
-	ret(2, 1) = _lhs(2, 0) * _rhs(0, 1) + _lhs(2, 1) * _rhs(1, 1) + _lhs(2, 2) * _rhs(2, 1);
-	ret(2, 2) = _lhs(2, 0) * _rhs(0, 2) + _lhs(2, 1) * _rhs(1, 2) + _lhs(2, 2) * _rhs(2, 2);
-	return ret;
+    Mat3 ret;
+    ret(0, 0) = _lhs(0, 0) * _rhs(0, 0) + _lhs(0, 1) * _rhs(1, 0) + _lhs(0, 2) * _rhs(2, 0);
+    ret(0, 1) = _lhs(0, 0) * _rhs(0, 1) + _lhs(0, 1) * _rhs(1, 1) + _lhs(0, 2) * _rhs(2, 1);
+    ret(0, 2) = _lhs(0, 0) * _rhs(0, 2) + _lhs(0, 1) * _rhs(1, 2) + _lhs(0, 2) * _rhs(2, 2);
+    ret(1, 0) = _lhs(1, 0) * _rhs(0, 0) + _lhs(1, 1) * _rhs(1, 0) + _lhs(1, 2) * _rhs(2, 0);
+    ret(1, 1) = _lhs(1, 0) * _rhs(0, 1) + _lhs(1, 1) * _rhs(1, 1) + _lhs(1, 2) * _rhs(2, 1);
+    ret(1, 2) = _lhs(1, 0) * _rhs(0, 2) + _lhs(1, 1) * _rhs(1, 2) + _lhs(1, 2) * _rhs(2, 2);
+    ret(2, 0) = _lhs(2, 0) * _rhs(0, 0) + _lhs(2, 1) * _rhs(1, 0) + _lhs(2, 2) * _rhs(2, 0);
+    ret(2, 1) = _lhs(2, 0) * _rhs(0, 1) + _lhs(2, 1) * _rhs(1, 1) + _lhs(2, 2) * _rhs(2, 1);
+    ret(2, 2) = _lhs(2, 0) * _rhs(0, 2) + _lhs(2, 1) * _rhs(1, 2) + _lhs(2, 2) * _rhs(2, 2);
+    return ret;
 }
 inline Vec3 operator*(const Mat3& _m, const Vec3& _v)
 {
-	return Vec3(
-		_m(0, 0) * _v.x + _m(0, 1) * _v.y + _m(0, 2) * _v.z,
-		_m(1, 0) * _v.x + _m(1, 1) * _v.y + _m(1, 2) * _v.z,
-		_m(2, 0) * _v.x + _m(2, 1) * _v.y + _m(2, 2) * _v.z
-		);
+    return Vec3(
+        _m(0, 0) * _v.x + _m(0, 1) * _v.y + _m(0, 2) * _v.z,
+        _m(1, 0) * _v.x + _m(1, 1) * _v.y + _m(1, 2) * _v.z,
+        _m(2, 0) * _v.x + _m(2, 1) * _v.y + _m(2, 2) * _v.z
+        );
 }
 inline Vec4 operator*(const Mat3& _m, const Vec4& _v)
 {
-	return Vec4(
-		_m(0, 0) * _v.x + _m(0, 1) * _v.y + _m(0, 2) * _v.z,
-		_m(1, 0) * _v.x + _m(1, 1) * _v.y + _m(1, 2) * _v.z,
-		_m(2, 0) * _v.x + _m(2, 1) * _v.y + _m(2, 2) * _v.z,
-		_v.w
-		);
+    return Vec4(
+        _m(0, 0) * _v.x + _m(0, 1) * _v.y + _m(0, 2) * _v.z,
+        _m(1, 0) * _v.x + _m(1, 1) * _v.y + _m(1, 2) * _v.z,
+        _m(2, 0) * _v.x + _m(2, 1) * _v.y + _m(2, 2) * _v.z,
+        _v.w
+        );
 }
 Mat3 Transpose(const Mat3& _m);
 Vec3 ToEulerXYZ(const Mat3& _m);
@@ -101,41 +101,41 @@ Mat3 Scale(const Vec3& _s);
 // Mat4
 inline Mat4 operator*(const Mat4& _lhs, const Mat4& _rhs)
 {
-	Mat4 ret;
-	ret(0, 0) = _lhs(0, 0) * _rhs(0, 0) + _lhs(0, 1) * _rhs(1, 0) + _lhs(0, 2) * _rhs(2, 0) + _lhs(0, 3) * _rhs(3, 0);
-	ret(0, 1) = _lhs(0, 0) * _rhs(0, 1) + _lhs(0, 1) * _rhs(1, 1) + _lhs(0, 2) * _rhs(2, 1) + _lhs(0, 3) * _rhs(3, 1);
-	ret(0, 2) = _lhs(0, 0) * _rhs(0, 2) + _lhs(0, 1) * _rhs(1, 2) + _lhs(0, 2) * _rhs(2, 2) + _lhs(0, 3) * _rhs(3, 2);
-	ret(0, 3) = _lhs(0, 0) * _rhs(0, 3) + _lhs(0, 1) * _rhs(1, 3) + _lhs(0, 2) * _rhs(2, 3) + _lhs(0, 3) * _rhs(3, 3);
-	ret(1, 0) = _lhs(1, 0) * _rhs(0, 0) + _lhs(1, 1) * _rhs(1, 0) + _lhs(1, 2) * _rhs(2, 0) + _lhs(1, 3) * _rhs(3, 0);
-	ret(1, 1) = _lhs(1, 0) * _rhs(0, 1) + _lhs(1, 1) * _rhs(1, 1) + _lhs(1, 2) * _rhs(2, 1) + _lhs(1, 3) * _rhs(3, 1);
-	ret(1, 2) = _lhs(1, 0) * _rhs(0, 2) + _lhs(1, 1) * _rhs(1, 2) + _lhs(1, 2) * _rhs(2, 2) + _lhs(1, 3) * _rhs(3, 2);
-	ret(1, 3) = _lhs(1, 0) * _rhs(0, 3) + _lhs(1, 1) * _rhs(1, 3) + _lhs(1, 2) * _rhs(2, 3) + _lhs(1, 3) * _rhs(3, 3);
-	ret(2, 0) = _lhs(2, 0) * _rhs(0, 0) + _lhs(2, 1) * _rhs(1, 0) + _lhs(2, 2) * _rhs(2, 0) + _lhs(2, 3) * _rhs(3, 0);
-	ret(2, 1) = _lhs(2, 0) * _rhs(0, 1) + _lhs(2, 1) * _rhs(1, 1) + _lhs(2, 2) * _rhs(2, 1) + _lhs(2, 3) * _rhs(3, 1);
-	ret(2, 2) = _lhs(2, 0) * _rhs(0, 2) + _lhs(2, 1) * _rhs(1, 2) + _lhs(2, 2) * _rhs(2, 2) + _lhs(2, 3) * _rhs(3, 2);
-	ret(2, 3) = _lhs(2, 0) * _rhs(0, 3) + _lhs(2, 1) * _rhs(1, 3) + _lhs(2, 2) * _rhs(2, 3) + _lhs(2, 3) * _rhs(3, 3);
-	ret(3, 0) = _lhs(3, 0) * _rhs(0, 0) + _lhs(3, 1) * _rhs(1, 0) + _lhs(3, 2) * _rhs(2, 0) + _lhs(3, 3) * _rhs(3, 0);
-	ret(3, 1) = _lhs(3, 0) * _rhs(0, 1) + _lhs(3, 1) * _rhs(1, 1) + _lhs(3, 2) * _rhs(2, 1) + _lhs(3, 3) * _rhs(3, 1);
-	ret(3, 2) = _lhs(3, 0) * _rhs(0, 2) + _lhs(3, 1) * _rhs(1, 2) + _lhs(3, 2) * _rhs(2, 2) + _lhs(3, 3) * _rhs(3, 2);
-	ret(3, 3) = _lhs(3, 0) * _rhs(0, 3) + _lhs(3, 1) * _rhs(1, 3) + _lhs(3, 2) * _rhs(2, 3) + _lhs(3, 3) * _rhs(3, 3);
-	return ret;
+    Mat4 ret;
+    ret(0, 0) = _lhs(0, 0) * _rhs(0, 0) + _lhs(0, 1) * _rhs(1, 0) + _lhs(0, 2) * _rhs(2, 0) + _lhs(0, 3) * _rhs(3, 0);
+    ret(0, 1) = _lhs(0, 0) * _rhs(0, 1) + _lhs(0, 1) * _rhs(1, 1) + _lhs(0, 2) * _rhs(2, 1) + _lhs(0, 3) * _rhs(3, 1);
+    ret(0, 2) = _lhs(0, 0) * _rhs(0, 2) + _lhs(0, 1) * _rhs(1, 2) + _lhs(0, 2) * _rhs(2, 2) + _lhs(0, 3) * _rhs(3, 2);
+    ret(0, 3) = _lhs(0, 0) * _rhs(0, 3) + _lhs(0, 1) * _rhs(1, 3) + _lhs(0, 2) * _rhs(2, 3) + _lhs(0, 3) * _rhs(3, 3);
+    ret(1, 0) = _lhs(1, 0) * _rhs(0, 0) + _lhs(1, 1) * _rhs(1, 0) + _lhs(1, 2) * _rhs(2, 0) + _lhs(1, 3) * _rhs(3, 0);
+    ret(1, 1) = _lhs(1, 0) * _rhs(0, 1) + _lhs(1, 1) * _rhs(1, 1) + _lhs(1, 2) * _rhs(2, 1) + _lhs(1, 3) * _rhs(3, 1);
+    ret(1, 2) = _lhs(1, 0) * _rhs(0, 2) + _lhs(1, 1) * _rhs(1, 2) + _lhs(1, 2) * _rhs(2, 2) + _lhs(1, 3) * _rhs(3, 2);
+    ret(1, 3) = _lhs(1, 0) * _rhs(0, 3) + _lhs(1, 1) * _rhs(1, 3) + _lhs(1, 2) * _rhs(2, 3) + _lhs(1, 3) * _rhs(3, 3);
+    ret(2, 0) = _lhs(2, 0) * _rhs(0, 0) + _lhs(2, 1) * _rhs(1, 0) + _lhs(2, 2) * _rhs(2, 0) + _lhs(2, 3) * _rhs(3, 0);
+    ret(2, 1) = _lhs(2, 0) * _rhs(0, 1) + _lhs(2, 1) * _rhs(1, 1) + _lhs(2, 2) * _rhs(2, 1) + _lhs(2, 3) * _rhs(3, 1);
+    ret(2, 2) = _lhs(2, 0) * _rhs(0, 2) + _lhs(2, 1) * _rhs(1, 2) + _lhs(2, 2) * _rhs(2, 2) + _lhs(2, 3) * _rhs(3, 2);
+    ret(2, 3) = _lhs(2, 0) * _rhs(0, 3) + _lhs(2, 1) * _rhs(1, 3) + _lhs(2, 2) * _rhs(2, 3) + _lhs(2, 3) * _rhs(3, 3);
+    ret(3, 0) = _lhs(3, 0) * _rhs(0, 0) + _lhs(3, 1) * _rhs(1, 0) + _lhs(3, 2) * _rhs(2, 0) + _lhs(3, 3) * _rhs(3, 0);
+    ret(3, 1) = _lhs(3, 0) * _rhs(0, 1) + _lhs(3, 1) * _rhs(1, 1) + _lhs(3, 2) * _rhs(2, 1) + _lhs(3, 3) * _rhs(3, 1);
+    ret(3, 2) = _lhs(3, 0) * _rhs(0, 2) + _lhs(3, 1) * _rhs(1, 2) + _lhs(3, 2) * _rhs(2, 2) + _lhs(3, 3) * _rhs(3, 2);
+    ret(3, 3) = _lhs(3, 0) * _rhs(0, 3) + _lhs(3, 1) * _rhs(1, 3) + _lhs(3, 2) * _rhs(2, 3) + _lhs(3, 3) * _rhs(3, 3);
+    return ret;
 }
 inline Vec3 operator*(const Mat4& _m, const Vec3& _pos)
 {
-	return Vec3(
-		_m(0, 0) * _pos.x + _m(0, 1) * _pos.y + _m(0, 2) * _pos.z + _m(0, 3),
-		_m(1, 0) * _pos.x + _m(1, 1) * _pos.y + _m(1, 2) * _pos.z + _m(1, 3),
-		_m(2, 0) * _pos.x + _m(2, 1) * _pos.y + _m(2, 2) * _pos.z + _m(2, 3)
-		);
+    return Vec3(
+        _m(0, 0) * _pos.x + _m(0, 1) * _pos.y + _m(0, 2) * _pos.z + _m(0, 3),
+        _m(1, 0) * _pos.x + _m(1, 1) * _pos.y + _m(1, 2) * _pos.z + _m(1, 3),
+        _m(2, 0) * _pos.x + _m(2, 1) * _pos.y + _m(2, 2) * _pos.z + _m(2, 3)
+        );
 }
 inline Vec4 operator*(const Mat4& _m, const Vec4& _v)
 {
-	return Vec4(
-		_m(0, 0) * _v.x + _m(0, 1) * _v.y + _m(0, 2) * _v.z + _m(0, 3) * _v.w,
-		_m(1, 0) * _v.x + _m(1, 1) * _v.y + _m(1, 2) * _v.z + _m(1, 3) * _v.w,
-		_m(2, 0) * _v.x + _m(2, 1) * _v.y + _m(2, 2) * _v.z + _m(2, 3) * _v.w,
-		_m(3, 0) * _v.x + _m(3, 1) * _v.y + _m(3, 2) * _v.z + _m(3, 3) * _v.w
-		);
+    return Vec4(
+        _m(0, 0) * _v.x + _m(0, 1) * _v.y + _m(0, 2) * _v.z + _m(0, 3) * _v.w,
+        _m(1, 0) * _v.x + _m(1, 1) * _v.y + _m(1, 2) * _v.z + _m(1, 3) * _v.w,
+        _m(2, 0) * _v.x + _m(2, 1) * _v.y + _m(2, 2) * _v.z + _m(2, 3) * _v.w,
+        _m(3, 0) * _v.x + _m(3, 1) * _v.y + _m(3, 2) * _v.z + _m(3, 3) * _v.w
+        );
 }
 Mat4 Inverse(const Mat4& _m);
 Mat4 Transpose(const Mat4& _m);
@@ -145,53 +145,53 @@ Mat4 LookAt(const Vec3& _from, const Vec3& _to, const Vec3& _up = Vec3(0.0f, 1.0
 
 struct Line
 {
-	Vec3 m_origin;
-	Vec3 m_direction; // unit length
+    Vec3 m_origin;
+    Vec3 m_direction; // unit length
 
-	Line() {}
-	Line(const Vec3& _origin, const Vec3& _direction);
+    Line() {}
+    Line(const Vec3& _origin, const Vec3& _direction);
 };
 struct Ray
 {
-	Vec3 m_origin;
-	Vec3 m_direction; // unit length
+    Vec3 m_origin;
+    Vec3 m_direction; // unit length
 
-	Ray() {}
-	Ray(const Vec3& _origin, const Vec3& _direction);
+    Ray() {}
+    Ray(const Vec3& _origin, const Vec3& _direction);
 };
 struct LineSegment
 {
-	Vec3 m_start;
-	Vec3 m_end;
+    Vec3 m_start;
+    Vec3 m_end;
 
-	LineSegment() {}
-	LineSegment(const Vec3& _start, const Vec3& _end);	
+    LineSegment() {}
+    LineSegment(const Vec3& _start, const Vec3& _end);  
 };
 struct Sphere
 {
-	Vec3  m_origin;
-	float m_radius;
+    Vec3  m_origin;
+    float m_radius;
 
-	Sphere() {}
-	Sphere(const Vec3& _origin, float _radius);	
+    Sphere() {}
+    Sphere(const Vec3& _origin, float _radius); 
 };
 struct Plane
 {
-	Vec3  m_normal;
-	float m_offset;
+    Vec3  m_normal;
+    float m_offset;
 
-	Plane() {}
-	Plane(const Vec3& _normal, float _offset);
-	Plane(const Vec3& _normal, const Vec3& _origin);
+    Plane() {}
+    Plane(const Vec3& _normal, float _offset);
+    Plane(const Vec3& _normal, const Vec3& _origin);
 };
 struct Capsule
 {
-	Vec3  m_start;
-	Vec3  m_end;
-	float m_radius;
-	
-	Capsule() {}
-	Capsule(const Vec3& _start, const Vec3& _end, float _radius);
+    Vec3  m_start;
+    Vec3  m_end;
+    float m_radius;
+    
+    Capsule() {}
+    Capsule(const Vec3& _start, const Vec3& _end, float _radius);
 };
 
 
@@ -224,64 +224,64 @@ inline float Degrees(float _radians) { return _radians * (180.0f / Pi); }
 namespace internal {
 
 struct ScalarT {};
-	struct FloatT: public ScalarT {};
-	struct IntT:   public ScalarT {};
+    struct FloatT: public ScalarT {};
+    struct IntT:   public ScalarT {};
 struct CompositeT {};
-	struct VecT: public CompositeT {};
-	struct MatT: public CompositeT {};
+    struct VecT: public CompositeT {};
+    struct MatT: public CompositeT {};
 template <typename T>
 struct TypeTraits { typedef typename T::Type Type; enum { kSize = T::kSize }; };
-	template<> struct TypeTraits<int>    { typedef IntT   Type; enum { kSize = 1 };  };
-	template<> struct TypeTraits<float>  { typedef FloatT Type; enum { kSize = 1 };  };
-	template<> struct TypeTraits<Vec2>   { typedef VecT   Type; enum { kSize = 2 };  };
-	template<> struct TypeTraits<Vec3>   { typedef VecT   Type; enum { kSize = 3 };  };
-	template<> struct TypeTraits<Vec4>   { typedef VecT   Type; enum { kSize = 4 };  };
-	template<> struct TypeTraits<Mat4>   { typedef MatT   Type; enum { kSize = 16 }; };
+    template<> struct TypeTraits<int>    { typedef IntT   Type; enum { kSize = 1 };  };
+    template<> struct TypeTraits<float>  { typedef FloatT Type; enum { kSize = 1 };  };
+    template<> struct TypeTraits<Vec2>   { typedef VecT   Type; enum { kSize = 2 };  };
+    template<> struct TypeTraits<Vec3>   { typedef VecT   Type; enum { kSize = 3 };  };
+    template<> struct TypeTraits<Vec4>   { typedef VecT   Type; enum { kSize = 4 };  };
+    template<> struct TypeTraits<Mat4>   { typedef MatT   Type; enum { kSize = 16 }; };
 
 template <typename T>
 inline bool _AllLess(const T& _a, const T& _b, ScalarT)
 {
-	return _a < _b;
+    return _a < _b;
 }
 template <typename T>
 inline bool _AllLess(const T& _a, const T& _b, CompositeT)
 {
-	for (int i = 0, n = TypeTraits<T>::kSize; i < n; ++i) {
-		if (_a[i] > _b[i]) {
-			return false;
-		}
-	}
-	return true;
+    for (int i = 0, n = TypeTraits<T>::kSize; i < n; ++i) {
+        if (_a[i] > _b[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 template <typename T>
 inline T _Max(const T& _a, const T& _b, ScalarT)
 {
-	return _a < _b ? _b : _a;
+    return _a < _b ? _b : _a;
 }
 template <typename T>
 inline T _Max(const T& _a, const T& _b, CompositeT)
 {
-	T ret;
-	for (int i = 0, n = TypeTraits<T>::kSize; i < n; ++i) {
-		ret[i] = _Max(_a[i], _b[i], ScalarT());
-	}
-	return ret;
+    T ret;
+    for (int i = 0, n = TypeTraits<T>::kSize; i < n; ++i) {
+        ret[i] = _Max(_a[i], _b[i], ScalarT());
+    }
+    return ret;
 }
 
 template <typename T>
 inline T _Min(const T& _a, const T& _b, ScalarT)
 {
-	return _a < _b ? _a : _b;
+    return _a < _b ? _a : _b;
 }
 template <typename T>
 inline T _Min(const T& _a, const T& _b, CompositeT)
 {
-	T ret;
-	for (int i = 0, n = TypeTraits<T>::kSize; i < n; ++i) {
-		ret[i] = _Min(_a[i], _b[i], ScalarT());
-	}
-	return ret;
+    T ret;
+    for (int i = 0, n = TypeTraits<T>::kSize; i < n; ++i) {
+        ret[i] = _Min(_a[i], _b[i], ScalarT());
+    }
+    return ret;
 }
 
 } // namespace internal

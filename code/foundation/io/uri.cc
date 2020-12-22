@@ -12,12 +12,12 @@
 
 //------------------------------------------------------------------------------
 /**
-	Literal constructor form string, to use "foobar"_uri will automatically construct an IO::URI
+    Literal constructor form string, to use "foobar"_uri will automatically construct an IO::URI
 */
 IO::URI
 operator ""_uri(const char* c, std::size_t s)
 {
-	return IO::URI(c);
+    return IO::URI(c);
 }
 
 namespace IO

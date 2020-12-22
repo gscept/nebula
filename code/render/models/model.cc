@@ -18,7 +18,7 @@ StreamModelPool* modelPool;
 const ModelId
 CreateModel(const ResourceCreateInfo& info)
 {
-	return modelPool->CreateResource(info.resource, info.tag, info.successCallback, info.failCallback, !info.async).As<ModelId>();
+    return modelPool->CreateResource(info.resource, info.tag, info.successCallback, info.failCallback, !info.async).As<ModelId>();
 }
 
 //------------------------------------------------------------------------------
@@ -27,7 +27,7 @@ CreateModel(const ResourceCreateInfo& info)
 void
 DestroyModel(const ModelId id)
 {
-	modelPool->DiscardResource(id);
+    modelPool->DiscardResource(id);
 }
 
 //------------------------------------------------------------------------------
@@ -36,7 +36,7 @@ DestroyModel(const ModelId id)
 const ModelInstanceId
 CreateModelInstance(const ModelId mdl)
 {
-	return modelPool->CreateModelInstance(mdl);
+    return modelPool->CreateModelInstance(mdl);
 }
 
 //------------------------------------------------------------------------------
@@ -45,7 +45,7 @@ CreateModelInstance(const ModelId mdl)
 void
 DestroyModelInstance(const ModelInstanceId id)
 {
-	modelPool->DestroyModelInstance(id);
+    modelPool->DestroyModelInstance(id);
 }
 
 } // namespace Models

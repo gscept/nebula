@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Mesh collects vertex and index buffers with primitive groups which can be used to render with
+    Mesh collects vertex and index buffers with primitive groups which can be used to render with
 
-	(C)2017-2020 Individual contributors, see AUTHORS file
+    (C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/config.h"
@@ -20,19 +20,19 @@ RESOURCE_ID_TYPE(MeshId);
 
 struct MeshCreateInfo
 {
-	struct Stream
-	{
-		BufferId vertexBuffer;
-		IndexT index;
-	};
+    struct Stream
+    {
+        BufferId vertexBuffer;
+        IndexT index;
+    };
 
-	Resources::ResourceName name;
-	Util::StringAtom tag;
-	Util::ArrayStack<Stream, 16> streams;
-	BufferId indexBuffer;
-	VertexLayoutId vertexLayout;
-	CoreGraphics::PrimitiveTopology::Code topology;
-	Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
+    Resources::ResourceName name;
+    Util::StringAtom tag;
+    Util::ArrayStack<Stream, 16> streams;
+    BufferId indexBuffer;
+    VertexLayoutId vertexLayout;
+    CoreGraphics::PrimitiveTopology::Code topology;
+    Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
 };
 
 /// create new mesh

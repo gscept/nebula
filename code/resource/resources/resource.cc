@@ -13,7 +13,7 @@ namespace Resources
 */
 Resource::Resource()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ Resource::Resource()
 */
 Resource::~Resource()
 {
-	// empty
+    // empty
 }
 
 } // namespace Resources

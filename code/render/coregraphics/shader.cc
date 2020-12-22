@@ -16,9 +16,9 @@ ShaderPool* shaderPool;
 const ShaderId
 CreateShader(const ShaderCreateInfo& info)
 {
-	ShaderId ret = shaderPool->CreateResource(info.name, "render_system", nullptr, nullptr, true);
-	ret.resourceType = ShaderIdType;
-	return ret;
+    ShaderId ret = shaderPool->CreateResource(info.name, "render_system", nullptr, nullptr, true);
+    ret.resourceType = ShaderIdType;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -27,7 +27,7 @@ CreateShader(const ShaderCreateInfo& info)
 void
 DestroyShader(const ShaderId id)
 {
-	shaderPool->DiscardResource(id);
+    shaderPool->DiscardResource(id);
 }
 
 //------------------------------------------------------------------------------
@@ -36,7 +36,7 @@ DestroyShader(const ShaderId id)
 const ShaderId
 ShaderGet(const Resources::ResourceName& name)
 {
-	return CoreGraphics::ShaderServer::Instance()->GetShader(name);
+    return CoreGraphics::ShaderServer::Instance()->GetShader(name);
 }
 
 //------------------------------------------------------------------------------
@@ -45,7 +45,7 @@ ShaderGet(const Resources::ResourceName& name)
 const ResourceTableId
 ShaderCreateResourceTable(const ShaderId id, const IndexT group)
 {
-	return shaderPool->CreateResourceTable(id, group);
+    return shaderPool->CreateResourceTable(id, group);
 }
 
 //------------------------------------------------------------------------------
@@ -54,7 +54,7 @@ ShaderCreateResourceTable(const ShaderId id, const IndexT group)
 const BufferId
 ShaderCreateConstantBuffer(const ShaderId id, const Util::StringAtom& name, BufferAccessMode mode)
 {
-	return shaderPool->CreateConstantBuffer(id, name, mode);
+    return shaderPool->CreateConstantBuffer(id, name, mode);
 }
 
 //------------------------------------------------------------------------------
@@ -63,7 +63,7 @@ ShaderCreateConstantBuffer(const ShaderId id, const Util::StringAtom& name, Buff
 const BufferId
 ShaderCreateConstantBuffer(const ShaderId id, const IndexT cbIndex, BufferAccessMode mode)
 {
-	return shaderPool->CreateConstantBuffer(id, cbIndex, mode);
+    return shaderPool->CreateConstantBuffer(id, cbIndex, mode);
 }
 
 //------------------------------------------------------------------------------
@@ -72,7 +72,7 @@ ShaderCreateConstantBuffer(const ShaderId id, const IndexT cbIndex, BufferAccess
 const SizeT
 ShaderGetConstantCount(const CoreGraphics::ShaderId id)
 {
-	return shaderPool->GetConstantCount(id);
+    return shaderPool->GetConstantCount(id);
 }
 
 //------------------------------------------------------------------------------
@@ -81,7 +81,7 @@ ShaderGetConstantCount(const CoreGraphics::ShaderId id)
 const ShaderConstantType
 ShaderGetConstantType(const CoreGraphics::ShaderId id, const IndexT i)
 {
-	return shaderPool->GetConstantType(id, i);
+    return shaderPool->GetConstantType(id, i);
 }
 
 //------------------------------------------------------------------------------
@@ -90,7 +90,7 @@ ShaderGetConstantType(const CoreGraphics::ShaderId id, const IndexT i)
 const ShaderConstantType
 ShaderGetConstantType(const ShaderId id, const Util::StringAtom& name)
 {
-	return shaderPool->GetConstantType(id, name);
+    return shaderPool->GetConstantType(id, name);
 }
 
 //------------------------------------------------------------------------------
@@ -99,7 +99,7 @@ ShaderGetConstantType(const ShaderId id, const Util::StringAtom& name)
 const Util::StringAtom
 ShaderGetConstantName(const CoreGraphics::ShaderId id, const IndexT i)
 {
-	return shaderPool->GetConstantName(id, i);
+    return shaderPool->GetConstantName(id, i);
 }
 
 //------------------------------------------------------------------------------
@@ -108,7 +108,7 @@ ShaderGetConstantName(const CoreGraphics::ShaderId id, const IndexT i)
 const IndexT 
 ShaderGetConstantBinding(const ShaderId id, const Util::StringAtom& name)
 {
-	return shaderPool->GetConstantBinding(id, name);
+    return shaderPool->GetConstantBinding(id, name);
 }
 
 //------------------------------------------------------------------------------
@@ -117,7 +117,7 @@ ShaderGetConstantBinding(const ShaderId id, const Util::StringAtom& name)
 const IndexT
 ShaderGetConstantBinding(const ShaderId id, const IndexT cIndex)
 {
-	return shaderPool->GetConstantBinding(id, cIndex);
+    return shaderPool->GetConstantBinding(id, cIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -126,7 +126,7 @@ ShaderGetConstantBinding(const ShaderId id, const IndexT cIndex)
 const Util::StringAtom
 ShaderGetConstantBlockName(const ShaderId id, const Util::StringAtom& name)
 {
-	return shaderPool->GetConstantBlockName(id, name);
+    return shaderPool->GetConstantBlockName(id, name);
 }
 
 //------------------------------------------------------------------------------
@@ -135,7 +135,7 @@ ShaderGetConstantBlockName(const ShaderId id, const Util::StringAtom& name)
 const Util::StringAtom 
 ShaderGetConstantBlockName(const ShaderId id, const IndexT cIndex)
 {
-	return shaderPool->GetConstantBlockName(id, cIndex);
+    return shaderPool->GetConstantBlockName(id, cIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -144,7 +144,7 @@ ShaderGetConstantBlockName(const ShaderId id, const IndexT cIndex)
 const SizeT
 ShaderGetConstantBindingsCount(const ShaderId id)
 {
-	return shaderPool->GetConstantBindingsCount(id);
+    return shaderPool->GetConstantBindingsCount(id);
 }
 
 //------------------------------------------------------------------------------
@@ -153,7 +153,7 @@ ShaderGetConstantBindingsCount(const ShaderId id)
 const IndexT 
 ShaderGetConstantGroup(const ShaderId id, const Util::StringAtom& name)
 {
-	return shaderPool->GetConstantGroup(id, name);
+    return shaderPool->GetConstantGroup(id, name);
 }
 
 //------------------------------------------------------------------------------
@@ -162,7 +162,7 @@ ShaderGetConstantGroup(const ShaderId id, const Util::StringAtom& name)
 const IndexT
 ShaderGetConstantSlot(const ShaderId id, const Util::StringAtom& name)
 {
-	return shaderPool->GetConstantSlot(id, name);
+    return shaderPool->GetConstantSlot(id, name);
 }
 
 //------------------------------------------------------------------------------
@@ -171,7 +171,7 @@ ShaderGetConstantSlot(const ShaderId id, const Util::StringAtom& name)
 CoreGraphics::ResourceTableLayoutId
 ShaderGetResourceTableLayout(const ShaderId id, const IndexT group)
 {
-	return shaderPool->GetResourceTableLayout(id, group);
+    return shaderPool->GetResourceTableLayout(id, group);
 }
 
 //------------------------------------------------------------------------------
@@ -180,7 +180,7 @@ ShaderGetResourceTableLayout(const ShaderId id, const IndexT group)
 CoreGraphics::ResourcePipelineId
 ShaderGetResourcePipeline(const ShaderId id)
 {
-	return shaderPool->GetResourcePipeline(id);
+    return shaderPool->GetResourcePipeline(id);
 }
 
 //------------------------------------------------------------------------------
@@ -189,24 +189,24 @@ ShaderGetResourcePipeline(const ShaderId id)
 const Util::String
 ConstantTypeToString(const ShaderConstantType& type)
 {
-	switch (type)
-	{
-	case UnknownVariableType:			return "unknown";
-	case IntVariableType:				return "int";
-	case FloatVariableType:				return "float";
-	case VectorVariableType:			return "vector";
-	case Vector2VariableType:			return "vector2";
-	case MatrixVariableType:			return "matrix";
-	case BoolVariableType:				return "bool";
-	case TextureVariableType:			return "texture";
-	case SamplerVariableType:			return "sampler";
-	case ConstantBufferVariableType:	return "constantbuffer";
-	case ImageReadWriteVariableType:	return "image";
-	case BufferReadWriteVariableType:	return "storagebuffer";
-	default:
-		n_error("ConstantTypeToString(): invalid type code!");
-		return "";
-	}
+    switch (type)
+    {
+    case UnknownVariableType:           return "unknown";
+    case IntVariableType:               return "int";
+    case FloatVariableType:             return "float";
+    case VectorVariableType:            return "vector";
+    case Vector2VariableType:           return "vector2";
+    case MatrixVariableType:            return "matrix";
+    case BoolVariableType:              return "bool";
+    case TextureVariableType:           return "texture";
+    case SamplerVariableType:           return "sampler";
+    case ConstantBufferVariableType:    return "constantbuffer";
+    case ImageReadWriteVariableType:    return "image";
+    case BufferReadWriteVariableType:   return "storagebuffer";
+    default:
+        n_error("ConstantTypeToString(): invalid type code!");
+        return "";
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -215,7 +215,7 @@ ConstantTypeToString(const ShaderConstantType& type)
 const SizeT
 ShaderGetConstantBufferCount(const CoreGraphics::ShaderId id)
 {
-	return shaderPool->GetConstantBufferCount(id);
+    return shaderPool->GetConstantBufferCount(id);
 }
 
 //------------------------------------------------------------------------------
@@ -224,7 +224,7 @@ ShaderGetConstantBufferCount(const CoreGraphics::ShaderId id)
 const SizeT
 ShaderGetConstantBufferSize(const CoreGraphics::ShaderId id, const IndexT i)
 {
-	return shaderPool->GetConstantBufferSize(id, i);
+    return shaderPool->GetConstantBufferSize(id, i);
 }
 
 //------------------------------------------------------------------------------
@@ -233,7 +233,7 @@ ShaderGetConstantBufferSize(const CoreGraphics::ShaderId id, const IndexT i)
 const Util::StringAtom
 ShaderGetConstantBufferName(const CoreGraphics::ShaderId id, const IndexT i)
 {
-	return shaderPool->GetConstantBufferName(id, i);
+    return shaderPool->GetConstantBufferName(id, i);
 }
 
 //------------------------------------------------------------------------------
@@ -242,7 +242,7 @@ ShaderGetConstantBufferName(const CoreGraphics::ShaderId id, const IndexT i)
 const IndexT 
 ShaderGetConstantBufferResourceSlot(const ShaderId id, const IndexT i)
 {
-	return shaderPool->GetConstantBufferResourceSlot(id, i);
+    return shaderPool->GetConstantBufferResourceSlot(id, i);
 }
 
 //------------------------------------------------------------------------------
@@ -251,7 +251,7 @@ ShaderGetConstantBufferResourceSlot(const ShaderId id, const IndexT i)
 const IndexT 
 ShaderGetConstantBufferResourceGroup(const ShaderId id, const IndexT i)
 {
-	return shaderPool->GetConstantBufferResourceGroup(id, i);
+    return shaderPool->GetConstantBufferResourceGroup(id, i);
 }
 
 //------------------------------------------------------------------------------
@@ -260,7 +260,7 @@ ShaderGetConstantBufferResourceGroup(const ShaderId id, const IndexT i)
 const IndexT
 ShaderGetResourceSlot(const ShaderId id, const Util::StringAtom& name)
 {
-	return shaderPool->GetResourceSlot(id, name);
+    return shaderPool->GetResourceSlot(id, name);
 }
 
 //------------------------------------------------------------------------------
@@ -269,7 +269,7 @@ ShaderGetResourceSlot(const ShaderId id, const Util::StringAtom& name)
 const Util::Dictionary<CoreGraphics::ShaderFeature::Mask, CoreGraphics::ShaderProgramId>&
 ShaderGetPrograms(const CoreGraphics::ShaderId id)
 {
-	return shaderPool->GetPrograms(id);
+    return shaderPool->GetPrograms(id);
 }
 
 //------------------------------------------------------------------------------
@@ -278,7 +278,7 @@ ShaderGetPrograms(const CoreGraphics::ShaderId id)
 const Util::StringAtom
 ShaderProgramGetName(const CoreGraphics::ShaderProgramId id)
 {
-	return shaderPool->GetProgramName(id);
+    return shaderPool->GetProgramName(id);
 }
 
 //------------------------------------------------------------------------------
@@ -287,7 +287,7 @@ ShaderProgramGetName(const CoreGraphics::ShaderProgramId id)
 const ShaderFeature::Mask
 ShaderFeatureFromString(const Util::String& str)
 {
-	return ShaderServer::Instance()->FeatureStringToMask(str);
+    return ShaderServer::Instance()->FeatureStringToMask(str);
 }
 
 //------------------------------------------------------------------------------
@@ -296,7 +296,7 @@ ShaderFeatureFromString(const Util::String& str)
 const CoreGraphics::ShaderProgramId
 ShaderGetProgram(const ShaderId id, const CoreGraphics::ShaderFeature::Mask program)
 {
-	return shaderPool->GetShaderProgram(id, program);
+    return shaderPool->GetShaderProgram(id, program);
 }
 
 } // namespace CoreGraphics

@@ -20,7 +20,7 @@ using namespace Messaging;
 /**
 */
 HttpInterface::HttpInterface()
-	:tcpPort(2100)
+    :tcpPort(2100)
 {
     __ConstructInterfaceSingleton;
 }
@@ -42,14 +42,14 @@ HttpInterface::Open()
     // setup runthrough handler thread
     Ptr<RunThroughHandlerThread> handlerThread = RunThroughHandlerThread::Create();
     handlerThread->SetName("HttpInterface Thread");
-	
-	// This has been renamed to SetThreadAffinity
+    
+    // This has been renamed to SetThreadAffinity
     // handlerThread->SetCoreId(System::Cpu::::MiscThreadCore); 
-	handlerThread->SetThreadAffinity(System::Cpu::Core4);
+    handlerThread->SetThreadAffinity(System::Cpu::Core4);
 
-	Ptr<HttpMessageHandler> handler = HttpMessageHandler::Create();
-	handler->SetTcpPort(this->tcpPort);
-	handlerThread->AttachHandler(handler.cast<Messaging::Handler>());
+    Ptr<HttpMessageHandler> handler = HttpMessageHandler::Create();
+    handler->SetTcpPort(this->tcpPort);
+    handlerThread->AttachHandler(handler.cast<Messaging::Handler>());
 
     this->SetHandlerThread(handlerThread.cast<HandlerThreadBase>());
 

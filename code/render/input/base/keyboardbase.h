@@ -5,7 +5,7 @@
 
     An input handler which represents a keyboard for polling.
 
-    (C) 2007 Radon Labs GmbH	
+    (C) 2007 Radon Labs GmbH    
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "input/inputhandler.h"
@@ -28,10 +28,10 @@ public:
     /// end input capturing to this event handler
     virtual void EndCapture();
 
-	/// sets a key to be down
-	void SetKeyDown(Input::Key::Code keyCode);
-	/// sets a key to be up
-	void SetKeyUp(Input::Key::Code keyCode);
+    /// sets a key to be down
+    void SetKeyDown(Input::Key::Code keyCode);
+    /// sets a key to be up
+    void SetKeyUp(Input::Key::Code keyCode);
 
     /// return true if a key is currently pressed
     bool KeyPressed(Input::Key::Code keyCode) const;
@@ -79,12 +79,12 @@ private:
 inline void
 KeyboardBase::SetKeyDown(Input::Key::Code keyCode)
 {
-	KeyState& keyState = this->keyStates[keyCode];
-	if (!keyState.pressed)
-	{
-		keyState.down = true;
-		keyState.pressed = true;
-	}	
+    KeyState& keyState = this->keyStates[keyCode];
+    if (!keyState.pressed)
+    {
+        keyState.down = true;
+        keyState.pressed = true;
+    }   
 }
 
 //------------------------------------------------------------------------------
@@ -93,7 +93,7 @@ KeyboardBase::SetKeyDown(Input::Key::Code keyCode)
 inline void
 KeyboardBase::SetKeyUp(Input::Key::Code keyCode)
 {
-	this->keyStates[keyCode].up = true;
+    this->keyStates[keyCode].up = true;
 }
 
 //------------------------------------------------------------------------------

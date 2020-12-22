@@ -28,12 +28,12 @@ public:
         InvalidCode,
         WindowOpen,
         WindowClose,
-		WindowReopen,
+        WindowReopen,
         CloseRequested,
         WindowMinimized,
         WindowRestored,
         ToggleFullscreenWindowed,
-		WindowResized,
+        WindowResized,
         SetCursor,
         Paint,
         SetFocus,
@@ -53,8 +53,8 @@ public:
     DisplayEvent();
     /// constructor with event code
     DisplayEvent(Code c);
-	/// constructor with event code and window id
-	DisplayEvent(Code c, CoreGraphics::WindowId wnd);
+    /// constructor with event code and window id
+    DisplayEvent(Code c, CoreGraphics::WindowId wnd);
     /// constructor with event code and mouse pos
     DisplayEvent(Code c, const Math::vec2& absPos, const Math::vec2& normPos);
     /// constructor with key code
@@ -66,8 +66,8 @@ public:
 
     /// get event code
     Code GetEventCode() const;
-	/// get window id
-	CoreGraphics::WindowId GetWindowId() const;
+    /// get window id
+    CoreGraphics::WindowId GetWindowId() const;
     /// get absolute mouse pos (in pixels)
     const Math::vec2& GetAbsMousePos() const;
     /// get normalized mouse pos (from 0.0 to 1.0)
@@ -80,7 +80,7 @@ public:
     Input::MouseButton::Code GetMouseButton() const;
 
 private:
-	CoreGraphics::WindowId windowId;
+    CoreGraphics::WindowId windowId;
     Code code;
     Math::vec2 absMousePos;
     Math::vec2 normMousePos;
@@ -95,7 +95,7 @@ private:
 inline
 DisplayEvent::DisplayEvent() :
     code(InvalidCode),
-	windowId(Ids::InvalidId32),
+    windowId(Ids::InvalidId32),
     absMousePos(0.0f, 0.0f),
     normMousePos(0.0f, 0.0f),
     keyCode(Input::Key::InvalidKey),
@@ -111,7 +111,7 @@ DisplayEvent::DisplayEvent() :
 inline
 DisplayEvent::DisplayEvent(Code c) :
     code(c),
-	windowId(Ids::InvalidId32),
+    windowId(Ids::InvalidId32),
     absMousePos(0.0f, 0.0f),
     normMousePos(0.0f, 0.0f),
     keyCode(Input::Key::InvalidKey),
@@ -127,15 +127,15 @@ DisplayEvent::DisplayEvent(Code c) :
 */
 inline
 DisplayEvent::DisplayEvent(Code c, CoreGraphics::WindowId wnd) :
-	code(c),
-	windowId(wnd),
-	absMousePos(0.0f, 0.0f),
-	normMousePos(0.0f, 0.0f),
-	keyCode(Input::Key::InvalidKey),
-	charCode(0),
-	mouseButtonCode(Input::MouseButton::InvalidMouseButton)
+    code(c),
+    windowId(wnd),
+    absMousePos(0.0f, 0.0f),
+    normMousePos(0.0f, 0.0f),
+    keyCode(Input::Key::InvalidKey),
+    charCode(0),
+    mouseButtonCode(Input::MouseButton::InvalidMouseButton)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -144,7 +144,7 @@ DisplayEvent::DisplayEvent(Code c, CoreGraphics::WindowId wnd) :
 inline
 DisplayEvent::DisplayEvent(Code c, const Math::vec2& absPos, const Math::vec2& normPos) :
     code(c),
-	windowId(Ids::InvalidId32),
+    windowId(Ids::InvalidId32),
     absMousePos(absPos),
     normMousePos(normPos),
     keyCode(Input::Key::InvalidKey),
@@ -160,7 +160,7 @@ DisplayEvent::DisplayEvent(Code c, const Math::vec2& absPos, const Math::vec2& n
 inline
 DisplayEvent::DisplayEvent(Code c, Input::Key::Code k) :
     code(c),
-	windowId(Ids::InvalidId32),
+    windowId(Ids::InvalidId32),
     absMousePos(0.0f, 0.0f),
     normMousePos(0.0f, 0.0f),
     keyCode(k),
@@ -176,7 +176,7 @@ DisplayEvent::DisplayEvent(Code c, Input::Key::Code k) :
 inline
 DisplayEvent::DisplayEvent(Code c, Input::Char chr) :
     code(c),
-	windowId(Ids::InvalidId32),
+    windowId(Ids::InvalidId32),
     absMousePos(0.0f, 0.0f),
     normMousePos(0.0f, 0.0f),
     keyCode(Input::Key::InvalidKey),
@@ -192,7 +192,7 @@ DisplayEvent::DisplayEvent(Code c, Input::Char chr) :
 inline
 DisplayEvent::DisplayEvent(Code c, Input::MouseButton::Code b, const Math::vec2& absPos, const Math::vec2& normPos) :
     code(c),
-	windowId(Ids::InvalidId32),
+    windowId(Ids::InvalidId32),
     absMousePos(absPos),
     normMousePos(normPos),
     keyCode(Input::Key::InvalidKey),
@@ -217,7 +217,7 @@ DisplayEvent::GetEventCode() const
 inline CoreGraphics::WindowId
 DisplayEvent::GetWindowId() const
 {
-	return this->windowId;
+    return this->windowId;
 }
 
 //------------------------------------------------------------------------------

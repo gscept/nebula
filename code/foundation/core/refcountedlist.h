@@ -24,10 +24,10 @@ class RefCountedList : public Util::List<RefCounted*>
 public:
     /// dump memory leaks, this methods is called by RefCounted::DumpRefCountedLeaks()
     void DumpLeaks();
-	/// add debug name
-	void SetDebugName(RefCounted* ptr, const Util::String& name);
+    /// add debug name
+    void SetDebugName(RefCounted* ptr, const Util::String& name);
 private:
-	Util::Dictionary<RefCounted*, Util::String> refcountedDebugNames;
+    Util::Dictionary<RefCounted*, Util::String> refcountedDebugNames;
 };
 
 }

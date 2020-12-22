@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class	PhysicsFeature::PhysicsManager
+    @class  PhysicsFeature::PhysicsManager
 
     (C) 2020 Individual contributors, see AUTHORS file
 */

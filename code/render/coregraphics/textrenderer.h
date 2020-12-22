@@ -15,13 +15,13 @@ namespace CoreGraphics
 {
 class TextRenderer : public Vulkan::VkTextRenderer
 {
-	__DeclareClass(TextRenderer);
-	__DeclareSingleton(TextRenderer);
+    __DeclareClass(TextRenderer);
+    __DeclareSingleton(TextRenderer);
 public:
-	/// constructor
-	TextRenderer();
-	/// destructor
-	virtual ~TextRenderer();
+    /// constructor
+    TextRenderer();
+    /// destructor
+    virtual ~TextRenderer();
 };
 } // namespace CoreGraphics
 #else

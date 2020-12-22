@@ -27,18 +27,18 @@ namespace Characters
 
 struct Nsk3Header
 {
-	uint magic;
-	uint numJoints;
+    uint magic;
+    uint numJoints;
 };
 
 struct Nsk3Joint
 {
-	Util::String name;
-	Math::vec4 translation;
-	Math::quat rotation;
-	Math::vec4 scale;
-	int parent;
-	int index;
+    Util::String name;
+    Math::vec4 translation;
+    Math::quat rotation;
+    Math::vec4 scale;
+    int parent;
+    int index;
 };
 
 #pragma pack(pop)

@@ -3,7 +3,7 @@
 /**
     @class Characters::CharacterMaterialSkinNode
     
-	A model node that handles materials for characters
+    A model node that handles materials for characters
     
     (C) 2011-2020 Individual contributors, see AUTHORS file
 */
@@ -24,7 +24,7 @@ public:
     
     /// reserve fragments (call before adding fragments)
     void ReserveFragments(SizeT numFragments);
-	/// add a fragment (consisting of a mesh group index and a joint palette)
+    /// add a fragment (consisting of a mesh group index and a joint palette)
     void AddFragment(IndexT primGroupIndex, const Util::Array<IndexT>& jointPalette);
     /// get number of skin fragments
     SizeT GetNumFragments() const;
@@ -33,17 +33,17 @@ public:
     /// get joint palette of a fragment
     const Util::Array<IndexT>& GetFragmentJointPalette(IndexT fragmentIndex) const;
 
-	struct Instance : public PrimitiveNode::Instance
-	{
-		/// apply skinning palette
-		void Update() override;
-	};
+    struct Instance : public PrimitiveNode::Instance
+    {
+        /// apply skinning palette
+        void Update() override;
+    };
 
-	/// create instance
-	virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent) override;
+    /// create instance
+    virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent) override;
 
-	/// get size of instance
-	virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
+    /// get size of instance
+    virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
 private:
     /// a skin fragment
     class Fragment
@@ -58,12 +58,12 @@ private:
 
 protected:
 
-	/// parse data tag (called by loader code)
-	virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
-	/// called when loading finished
-	virtual void OnFinishedLoading();
-	/// apply state
-	void ApplyNodeState() override;
+    /// parse data tag (called by loader code)
+    virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
+    /// called when loading finished
+    virtual void OnFinishedLoading();
+    /// apply state
+    void ApplyNodeState() override;
 
     CoreGraphics::ShaderFeature::Mask skinnedShaderFeatureBits;
     Util::Array<Fragment> skinFragments;

@@ -4,11 +4,11 @@
     @class Util::ArrayStack
 
     Nebula's small vector optimized array. Identical to Array in every way except
-	that it keeps a stack allocated small buffer (much like String) and can allow
-	for arrays to be tightly packed in memory.
+    that it keeps a stack allocated small buffer (much like String) and can allow
+    for arrays to be tightly packed in memory.
 
-	Presented at CppCon 2016:
-	https://www.youtube.com/watch?v=vElZc6zSIXM
+    Presented at CppCon 2016:
+    https://www.youtube.com/watch?v=vElZc6zSIXM
 
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
@@ -24,24 +24,24 @@ public:
     typedef TYPE* Iterator;
 
     /// constructor with default parameters
-	ArrayStack();
+    ArrayStack();
     /// constuctor with initial size and grow size
-	ArrayStack(SizeT initialCapacity, SizeT initialGrow);
+    ArrayStack(SizeT initialCapacity, SizeT initialGrow);
     /// constructor with initial size, grow size and initial values
-	ArrayStack(SizeT initialSize, SizeT initialGrow, const TYPE& initialValue);
+    ArrayStack(SizeT initialSize, SizeT initialGrow, const TYPE& initialValue);
     /// copy constructor
-	ArrayStack(const ArrayStack<TYPE, STACK_SIZE>& rhs);
-	/// move constructor
-	ArrayStack(ArrayStack<TYPE, STACK_SIZE>&& rhs) noexcept;
-	/// constructor from initializer list
-	ArrayStack(std::initializer_list<TYPE> list);
+    ArrayStack(const ArrayStack<TYPE, STACK_SIZE>& rhs);
+    /// move constructor
+    ArrayStack(ArrayStack<TYPE, STACK_SIZE>&& rhs) noexcept;
+    /// constructor from initializer list
+    ArrayStack(std::initializer_list<TYPE> list);
     /// destructor
     ~ArrayStack();
 
     /// assignment operator
     void operator=(const ArrayStack<TYPE, STACK_SIZE>& rhs);
-	/// move operator
-	void operator=(ArrayStack<TYPE, STACK_SIZE>&& rhs) noexcept;
+    /// move operator
+    void operator=(ArrayStack<TYPE, STACK_SIZE>&& rhs) noexcept;
     /// [] operator
     TYPE& operator[](IndexT index) const;
     /// equality operator
@@ -79,10 +79,10 @@ public:
     void EraseIndexSwap(IndexT index);
     /// erase element at iterator, fill gap by swapping in last element, destroys sorting!
     Iterator EraseSwap(Iterator iter);
-	/// erase last element
-	void EraseBack();
-	/// erase first element
-	void EraseFront();
+    /// erase last element
+    void EraseBack();
+    /// erase first element
+    void EraseFront();
     /// insert element before element at index
     void Insert(IndexT index, const TYPE& elm);
     /// insert element into sorted array, return index where element was included
@@ -95,8 +95,8 @@ public:
     void Clear();
     /// reset array (does NOT call destructors)
     void Reset();
-	/// free memory and reset size
-	void Free();
+    /// free memory and reset size
+    void Free();
     /// return iterator to beginning of array
     Iterator Begin() const;
     /// return iterator to end of array
@@ -115,19 +115,19 @@ public:
     ArrayStack<TYPE, STACK_SIZE> Difference(const ArrayStack<TYPE, STACK_SIZE>& rhs);
     /// sort the array
     void Sort();
-	/// sort with custom function
-	void SortWithFunc(bool (*func)(const TYPE& lhs, const TYPE& rhs));
+    /// sort with custom function
+    void SortWithFunc(bool (*func)(const TYPE& lhs, const TYPE& rhs));
     /// do a binary search, requires a sorted array
     IndexT BinarySearchIndex(const TYPE& elm) const;
-	/// do binary search with explicit typed element
-	template <typename KEYTYPE> IndexT BinarySearchIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const;
+    /// do binary search with explicit typed element
+    template <typename KEYTYPE> IndexT BinarySearchIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const;
 
-	/// returns true if the stack is used
-	const bool IsStackUsed() const;
+    /// returns true if the stack is used
+    const bool IsStackUsed() const;
 
-	/// for range-based iteration
-	Iterator begin() const;
-	Iterator end() const;
+    /// for range-based iteration
+    Iterator begin() const;
+    Iterator end() const;
 private:
     /// destroy an element (call destructor without freeing memory)
     void Destroy(TYPE* elm);
@@ -147,7 +147,7 @@ private:
     SizeT grow;                             // grow by this number of elements if array exhausted
     SizeT capacity;                         // number of elements allocated
     SizeT count;                             // number of elements in array
-	TYPE smallVector[STACK_SIZE];
+    TYPE smallVector[STACK_SIZE];
     TYPE* elements;                         // pointer to element array
 };
 
@@ -179,12 +179,12 @@ ArrayStack<TYPE, STACK_SIZE>::ArrayStack(SizeT _capacity, SizeT _grow) :
     }
     if (this->capacity > 0)
     {
-		if (this->capacity > STACK_SIZE)
-			this->elements = n_new_array(TYPE, this->capacity);
+        if (this->capacity > STACK_SIZE)
+            this->elements = n_new_array(TYPE, this->capacity);
         else
         {
             this->capacity = STACK_SIZE;
-			this->elements = smallVector;
+            this->elements = smallVector;
         }
     }
     else
@@ -209,12 +209,12 @@ ArrayStack<TYPE, STACK_SIZE>::ArrayStack(SizeT initialSize, SizeT _grow, const T
     }
     if (this->capacity > 0)
     {
-		if (this->capacity > STACK_SIZE)
-			this->elements = n_new_array(TYPE, this->capacity);
+        if (this->capacity > STACK_SIZE)
+            this->elements = n_new_array(TYPE, this->capacity);
         else
         {
             this->capacity = STACK_SIZE;
-			this->elements = smallVector;
+            this->elements = smallVector;
         }
 
         IndexT i;
@@ -235,31 +235,31 @@ ArrayStack<TYPE, STACK_SIZE>::ArrayStack(SizeT initialSize, SizeT _grow, const T
 */
 template<class TYPE, int STACK_SIZE>
 ArrayStack<TYPE, STACK_SIZE>::ArrayStack(std::initializer_list<TYPE> list) :
-	grow(16),
-	capacity((SizeT)list.size()),
-	count((SizeT)list.size())
+    grow(16),
+    capacity((SizeT)list.size()),
+    count((SizeT)list.size())
 {
-	if (this->capacity > 0)
-	{
-		if (this->capacity > STACK_SIZE)
-			this->elements = n_new_array(TYPE, this->capacity);
+    if (this->capacity > 0)
+    {
+        if (this->capacity > STACK_SIZE)
+            this->elements = n_new_array(TYPE, this->capacity);
         else
         {
             this->capacity = STACK_SIZE;
-			this->elements = smallVector;
+            this->elements = smallVector;
         }
 
-		IndexT i;
-		for (i = 0; i < this->count; i++)
-		{
-			this->elements[i] = list.begin()[i];
-		}
-	}
-	else
-	{
+        IndexT i;
+        for (i = 0; i < this->count; i++)
+        {
+            this->elements[i] = list.begin()[i];
+        }
+    }
+    else
+    {
         this->capacity = STACK_SIZE;
-		this->elements = smallVector;
-	}
+        this->elements = smallVector;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -267,12 +267,12 @@ ArrayStack<TYPE, STACK_SIZE>::ArrayStack(std::initializer_list<TYPE> list) :
 */
 template<class TYPE, int STACK_SIZE>
 ArrayStack<TYPE, STACK_SIZE>::ArrayStack(const ArrayStack<TYPE, STACK_SIZE>& rhs) :
-	grow(0),
-	capacity(0),
-	count(0),
-	elements(smallVector)
+    grow(0),
+    capacity(0),
+    count(0),
+    elements(smallVector)
 {
-	this->Copy(rhs);
+    this->Copy(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -281,25 +281,25 @@ ArrayStack<TYPE, STACK_SIZE>::ArrayStack(const ArrayStack<TYPE, STACK_SIZE>& rhs
 template<class TYPE, int STACK_SIZE>
 inline ArrayStack<TYPE, STACK_SIZE>::ArrayStack(ArrayStack<TYPE, STACK_SIZE>&& rhs) noexcept
 {
-	this->capacity = rhs.capacity;
-	this->count = rhs.count;
-	this->grow = rhs.grow;
-	
+    this->capacity = rhs.capacity;
+    this->count = rhs.count;
+    this->grow = rhs.grow;
+    
     if (this->capacity <= STACK_SIZE)
-	{
-		for (IndexT i = 0; i < rhs.count; ++i)
-		{
-			this->smallVector[i] = rhs.smallVector[i];
-		}
+    {
+        for (IndexT i = 0; i < rhs.count; ++i)
+        {
+            this->smallVector[i] = rhs.smallVector[i];
+        }
 
-		this->elements = this->smallVector;
-	}
+        this->elements = this->smallVector;
+    }
     else
         this->elements = rhs.elements;
 
-	rhs.count = 0;
-	rhs.capacity = 0;
-	rhs.elements = nullptr;
+    rhs.count = 0;
+    rhs.capacity = 0;
+    rhs.elements = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -309,8 +309,8 @@ template<class TYPE, int STACK_SIZE> void
 ArrayStack<TYPE, STACK_SIZE>::Copy(const ArrayStack<TYPE, STACK_SIZE>& src)
 {
     #if NEBULA_BOUNDSCHECKS
-	if (this->elements != this->smallVector)
-		n_assert(0 == this->elements);
+    if (this->elements != this->smallVector)
+        n_assert(0 == this->elements);
     #endif
 
     this->grow = src.grow;
@@ -318,10 +318,10 @@ ArrayStack<TYPE, STACK_SIZE>::Copy(const ArrayStack<TYPE, STACK_SIZE>& src)
     this->count = src.count;
     if (this->capacity > 0)
     {
-		if (this->capacity > STACK_SIZE)
-			this->elements = n_new_array(TYPE, this->capacity);
-		else
-			this->elements = smallVector;
+        if (this->capacity > STACK_SIZE)
+            this->elements = n_new_array(TYPE, this->capacity);
+        else
+            this->elements = smallVector;
 
         IndexT i;
         for (i = 0; i < this->count; i++)
@@ -342,8 +342,8 @@ ArrayStack<TYPE, STACK_SIZE>::Delete()
     this->count = 0;
     if (this->elements)
     {
-		if (this->elements != this->smallVector)
-			n_delete_array(this->elements);
+        if (this->elements != this->smallVector)
+            n_delete_array(this->elements);
 
         this->elements = this->smallVector;
     }
@@ -379,10 +379,10 @@ ArrayStack<TYPE, STACK_SIZE>::Realloc(SizeT _capacity, SizeT _grow)
     this->count = 0;
     if (this->capacity > 0)
     {
-		if (this->capacity > STACK_SIZE)
-			this->elements = n_new_array(TYPE, this->capacity);
-		else
-			this->elements = smallVector;
+        if (this->capacity > STACK_SIZE)
+            this->elements = n_new_array(TYPE, this->capacity);
+        else
+            this->elements = smallVector;
     }
     else
     {
@@ -434,9 +434,9 @@ inline void ArrayStack<TYPE, STACK_SIZE>::operator=(ArrayStack<TYPE, STACK_SIZE>
     if (this->elements && this->capacity > STACK_SIZE)
         n_delete_array(this->elements);
 
-	this->capacity = rhs.capacity;
-	this->count = rhs.count;
-	this->grow = rhs.grow;
+    this->capacity = rhs.capacity;
+    this->count = rhs.count;
+    this->grow = rhs.grow;
     
     if (this->capacity <= STACK_SIZE)
     {
@@ -450,9 +450,9 @@ inline void ArrayStack<TYPE, STACK_SIZE>::operator=(ArrayStack<TYPE, STACK_SIZE>
     else
         this->elements = rhs.elements;
 
-	rhs.count = 0;
-	rhs.capacity = 0;
-	rhs.elements = nullptr;
+    rhs.count = 0;
+    rhs.capacity = 0;
+    rhs.elements = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -461,24 +461,24 @@ inline void ArrayStack<TYPE, STACK_SIZE>::operator=(ArrayStack<TYPE, STACK_SIZE>
 template<class TYPE, int STACK_SIZE> void
 ArrayStack<TYPE, STACK_SIZE>::GrowTo(SizeT newCapacity)
 {
-	if (newCapacity > STACK_SIZE)
-	{
-		TYPE* newArray = n_new_array(TYPE, newCapacity);
-		if (this->elements)
-		{
-			// copy over contents
-			IndexT i;
-			for (i = 0; i < this->count; i++)
-			{
-				newArray[i] = this->elements[i];
-			}
+    if (newCapacity > STACK_SIZE)
+    {
+        TYPE* newArray = n_new_array(TYPE, newCapacity);
+        if (this->elements)
+        {
+            // copy over contents
+            IndexT i;
+            for (i = 0; i < this->count; i++)
+            {
+                newArray[i] = this->elements[i];
+            }
 
-			// discard old array
-			if (this->elements != this->smallVector)
-				n_delete_array(this->elements);
-		}
-		this->elements = newArray;
-	}
+            // discard old array
+            if (this->elements != this->smallVector)
+                n_delete_array(this->elements);
+        }
+        this->elements = newArray;
+    }
     this->capacity = newCapacity;
 
 }
@@ -518,7 +518,7 @@ ArrayStack<TYPE, STACK_SIZE>::Grow()
 //------------------------------------------------------------------------------
 /**
     30-Jan-03   floh    serious bugfixes!
-	07-Dec-04	jo		bugfix: neededSize >= this->capacity => neededSize > capacity	
+    07-Dec-04   jo      bugfix: neededSize >= this->capacity => neededSize > capacity   
 */
 template<class TYPE, int STACK_SIZE> void
 ArrayStack<TYPE, STACK_SIZE>::Move(IndexT fromIndex, IndexT toIndex)
@@ -773,8 +773,8 @@ ArrayStack<TYPE, STACK_SIZE>::EraseIndex(IndexT index)
     #endif
     if (index == (this->count - 1))
     {
-		// special case: last element
-		this->EraseBack();
+        // special case: last element
+        this->EraseBack();
     }
     else
     {
@@ -828,7 +828,7 @@ ArrayStack<TYPE, STACK_SIZE>::EraseSwap(typename ArrayStack<TYPE, STACK_SIZE>::I
     #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (iter >= this->elements) && (iter < (this->elements + this->count)));
     #endif
-	this->EraseIndexSwap(IndexT(iter - this->elements));
+    this->EraseIndexSwap(IndexT(iter - this->elements));
     return iter;
 }
 
@@ -838,9 +838,9 @@ ArrayStack<TYPE, STACK_SIZE>::EraseSwap(typename ArrayStack<TYPE, STACK_SIZE>::I
 template<class TYPE, int STACK_SIZE> void
 ArrayStack<TYPE, STACK_SIZE>::EraseBack()
 {
-	n_assert(this->count > 0);
-	this->Destroy(&(this->elements[this->count - 1]));
-	this->count--;
+    n_assert(this->count > 0);
+    this->Destroy(&(this->elements[this->count - 1]));
+    this->count--;
 }
 
 //------------------------------------------------------------------------------
@@ -849,7 +849,7 @@ ArrayStack<TYPE, STACK_SIZE>::EraseBack()
 template<class TYPE, int STACK_SIZE> void 
 ArrayStack<TYPE, STACK_SIZE>::EraseFront()
 {
-	this->Erase(0);
+    this->Erase(0);
 }
 
 //------------------------------------------------------------------------------
@@ -902,13 +902,13 @@ ArrayStack<TYPE, STACK_SIZE>::Reset()
 
 //------------------------------------------------------------------------------
 /**
-	Free up memory and reset the grow
+    Free up memory and reset the grow
 */
 template<class TYPE, int STACK_SIZE> void 
 ArrayStack<TYPE, STACK_SIZE>::Free()
 {
-	this->Delete();
-	this->grow = 8;
+    this->Delete();
+    this->grow = 8;
 }
 
 //------------------------------------------------------------------------------
@@ -975,8 +975,8 @@ ArrayStack<TYPE, STACK_SIZE>::FindIndex(const TYPE& elm) const
 
 //------------------------------------------------------------------------------
 /**
-	Find element in array, return element index, or InvalidIndex if element not
-	found.
+    Find element in array, return element index, or InvalidIndex if element not
+    found.
 
     Template type is used to force a specific type comparison. This might mitigate
     some expensive implicit constructions to TYPE.
@@ -985,22 +985,22 @@ ArrayStack<TYPE, STACK_SIZE>::FindIndex(const TYPE& elm) const
     by using typename to put the template type in a non-deducable context.
     The enable_if does nothing except allow us to use typename.
 
-	@param  elm     element to find
-	@return         index to element, or InvalidIndex if not found
+    @param  elm     element to find
+    @return         index to element, or InvalidIndex if not found
 */
 template<class TYPE, int STACK_SIZE>
 template<typename KEYTYPE> inline IndexT
 ArrayStack<TYPE, STACK_SIZE>::FindIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const
 {
-	IndexT index;
-	for (index = 0; index < this->count; index++)
-	{
-		if (this->elements[index] == elm)
-		{
-			return index;
-		}
-	}
-	return InvalidIndex;
+    IndexT index;
+    for (index = 0; index < this->count; index++)
+    {
+        if (this->elements[index] == elm)
+        {
+            return index;
+        }
+    }
+    return InvalidIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -1066,7 +1066,7 @@ ArrayStack<TYPE, STACK_SIZE>::Sort()
 template<class TYPE, int STACK_SIZE> void
 Util::ArrayStack<TYPE, STACK_SIZE>::SortWithFunc(bool (*func)(const TYPE& lhs, const TYPE& rhs))
 {
-	std::sort(this->Begin(), this->End(), func);
+    std::sort(this->Begin(), this->End(), func);
 }
 
 //------------------------------------------------------------------------------
@@ -1082,8 +1082,8 @@ ArrayStack<TYPE, STACK_SIZE>::BinarySearchIndex(const TYPE& elm) const
     {
         IndexT half;
         IndexT lo = 0;
-	    IndexT hi = num - 1;
-	    IndexT mid;
+        IndexT hi = num - 1;
+        IndexT mid;
         while (lo <= hi) 
         {
             if (0 != (half = num/2)) 
@@ -1137,51 +1137,51 @@ template<class TYPE, int STACK_SIZE>
 template<typename KEYTYPE> inline IndexT
 ArrayStack<TYPE, STACK_SIZE>::BinarySearchIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const
 {
-	SizeT num = this->Size();
-	if (num > 0)
-	{
-		IndexT half;
-		IndexT lo = 0;
-		IndexT hi = num - 1;
-		IndexT mid;
-		while (lo <= hi)
-		{
-			if (0 != (half = num / 2))
-			{
-				mid = lo + ((num & 1) ? half : (half - 1));
-				if (this->elements[mid] > elm)
-				{
-					hi = mid - 1;
-					num = num & 1 ? half : half - 1;
-				}
-				else if (this->elements[mid] < elm)
-				{
-					lo = mid + 1;
-					num = half;
-				}
-				else
-				{
-					return mid;
-				}
-			}
-			else if (0 != num)
-			{
-				if (this->elements[lo] != elm)
-				{
-					return InvalidIndex;
-				}
-				else
-				{
-					return lo;
-				}
-			}
-			else
-			{
-				break;
-			}
-		}
-	}
-	return InvalidIndex;
+    SizeT num = this->Size();
+    if (num > 0)
+    {
+        IndexT half;
+        IndexT lo = 0;
+        IndexT hi = num - 1;
+        IndexT mid;
+        while (lo <= hi)
+        {
+            if (0 != (half = num / 2))
+            {
+                mid = lo + ((num & 1) ? half : (half - 1));
+                if (this->elements[mid] > elm)
+                {
+                    hi = mid - 1;
+                    num = num & 1 ? half : half - 1;
+                }
+                else if (this->elements[mid] < elm)
+                {
+                    lo = mid + 1;
+                    num = half;
+                }
+                else
+                {
+                    return mid;
+                }
+            }
+            else if (0 != num)
+            {
+                if (this->elements[lo] != elm)
+                {
+                    return InvalidIndex;
+                }
+                else
+                {
+                    return lo;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+    return InvalidIndex;
 }
 
 
@@ -1191,7 +1191,7 @@ ArrayStack<TYPE, STACK_SIZE>::BinarySearchIndex(typename std::enable_if<true, co
 template<class TYPE, int STACK_SIZE>
 const bool ArrayStack<TYPE, STACK_SIZE>::IsStackUsed() const
 {
-	return this->elements == this->smallVector;
+    return this->elements == this->smallVector;
 }
 
 //------------------------------------------------------------------------------
@@ -1200,7 +1200,7 @@ const bool ArrayStack<TYPE, STACK_SIZE>::IsStackUsed() const
 template<class TYPE, int STACK_SIZE> typename ArrayStack<TYPE, STACK_SIZE>::Iterator
 ArrayStack<TYPE, STACK_SIZE>::begin() const
 {
-	return this->elements;
+    return this->elements;
 }
 
 //------------------------------------------------------------------------------
@@ -1209,7 +1209,7 @@ ArrayStack<TYPE, STACK_SIZE>::begin() const
 template<class TYPE, int STACK_SIZE> typename ArrayStack<TYPE, STACK_SIZE>::Iterator
 ArrayStack<TYPE, STACK_SIZE>::end() const
 {
-	return this->elements + this->count;
+    return this->elements + this->count;
 }
 
 //------------------------------------------------------------------------------
@@ -1277,8 +1277,8 @@ ArrayStack<TYPE, STACK_SIZE>::InsertSorted(const TYPE& elm)
     {
         IndexT half;
         IndexT lo = 0;
-	    IndexT hi = num - 1;
-	    IndexT mid;
+        IndexT hi = num - 1;
+        IndexT mid;
         while (lo <= hi) 
         {
             if (0 != (half = num/2)) 

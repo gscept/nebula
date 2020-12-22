@@ -260,12 +260,12 @@ RTPluginRegistry::OnRenderAfter(IndexT frameId, Timing::Time time)
 void
 RTPluginRegistry::OnRender(const Util::StringAtom& filter)
 {
-	n_assert(this->IsValid());
-	IndexT i;
-	for (i = 0; i < this->plugins.Size(); i++)
-	{
-		this->plugins[i]->OnRender(filter);
-	}
+    n_assert(this->IsValid());
+    IndexT i;
+    for (i = 0; i < this->plugins.Size(); i++)
+    {
+        this->plugins[i]->OnRender(filter);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -274,12 +274,12 @@ RTPluginRegistry::OnRender(const Util::StringAtom& filter)
 void
 RTPluginRegistry::OnFrameBefore(IndexT frameId, Timing::Time time)
 {
-	n_assert(this->IsValid());
-	IndexT i;
-	for (i = 0; i < this->plugins.Size(); i++)
-	{
-		this->plugins[i]->OnFrameBefore(frameId, time);
-	}
+    n_assert(this->IsValid());
+    IndexT i;
+    for (i = 0; i < this->plugins.Size(); i++)
+    {
+        this->plugins[i]->OnFrameBefore(frameId, time);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -288,12 +288,12 @@ RTPluginRegistry::OnFrameBefore(IndexT frameId, Timing::Time time)
 void
 RTPluginRegistry::OnFrameAfter(IndexT frameId, Timing::Time time)
 {
-	n_assert(this->IsValid());
-	IndexT i;
-	for (i = 0; i < this->plugins.Size(); i++)
-	{
-		this->plugins[i]->OnFrameAfter(frameId, time);
-	}
+    n_assert(this->IsValid());
+    IndexT i;
+    for (i = 0; i < this->plugins.Size(); i++)
+    {
+        this->plugins[i]->OnFrameAfter(frameId, time);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -301,12 +301,12 @@ RTPluginRegistry::OnFrameAfter(IndexT frameId, Timing::Time time)
 */
 void RTPluginRegistry::OnRenderFrame()
 {
-	n_assert(this->IsValid());
-	IndexT i;
-	for (i = 0; i < this->plugins.Size(); i++)
-	{
-		this->plugins[i]->OnRenderFrame();
-	}
+    n_assert(this->IsValid());
+    IndexT i;
+    for (i = 0; i < this->plugins.Size(); i++)
+    {
+        this->plugins[i]->OnRenderFrame();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -329,12 +329,12 @@ RTPluginRegistry::OnRenderWithoutView(IndexT frameId, Timing::Time time)
 void 
 RTPluginRegistry::OnWindowResized(IndexT windowId, SizeT width, SizeT height)
 {
-	n_assert(this->IsValid());
-	IndexT i;
-	for (i = 0; i < this->plugins.Size(); i++)
-	{
-		this->plugins[i]->OnWindowResized(windowId, width, height);
-	}
+    n_assert(this->IsValid());
+    IndexT i;
+    for (i = 0; i < this->plugins.Size(); i++)
+    {
+        this->plugins[i]->OnWindowResized(windowId, width, height);
+    }
 }
 
 

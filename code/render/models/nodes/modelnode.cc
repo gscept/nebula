@@ -18,7 +18,7 @@ IndexT ModelNode::ModelNodeUniqueIdCounter = 0;
 */
 ModelNode::ModelNode()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -26,7 +26,7 @@ ModelNode::ModelNode()
 */
 ModelNode::~ModelNode()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -35,35 +35,35 @@ ModelNode::~ModelNode()
 bool
 ModelNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate)
 {
-	if (FourCC('LBOX') == fourcc)
-	{
-		// bounding box
-		vec3 center = xyz(reader->ReadVec4());
-		vec3 extents = xyz(reader->ReadVec4());
-		this->boundingBox.set(center, extents);
-	}
-	else if (FourCC('MNTP') == fourcc)
-	{
-		// model node type, deprecated
-		reader->ReadString();
-	}
+    if (FourCC('LBOX') == fourcc)
+    {
+        // bounding box
+        vec3 center = xyz(reader->ReadVec4());
+        vec3 extents = xyz(reader->ReadVec4());
+        this->boundingBox.set(center, extents);
+    }
+    else if (FourCC('MNTP') == fourcc)
+    {
+        // model node type, deprecated
+        reader->ReadString();
+    }
 
-	else if (FourCC('SSTA') == fourcc)
-	{
-		// string attribute, deprecated
-		StringAtom key = reader->ReadString();
-		String value = reader->ReadString();
-		//this->SetStringAttr(key, value);
-	}
-	else
-	{
-		// throw error on unknown tag (we can't skip unknown tags)
-		n_error("ModelNode::Load: unknown data tag '%s' in '%s'!",
-			fourcc.AsString().AsCharPtr(),
-			reader->GetStream()->GetURI().AsString().AsCharPtr());
-		return false;
-	}
-	return true;
+    else if (FourCC('SSTA') == fourcc)
+    {
+        // string attribute, deprecated
+        StringAtom key = reader->ReadString();
+        String value = reader->ReadString();
+        //this->SetStringAttr(key, value);
+    }
+    else
+    {
+        // throw error on unknown tag (we can't skip unknown tags)
+        n_error("ModelNode::Load: unknown data tag '%s' in '%s'!",
+            fourcc.AsString().AsCharPtr(),
+            reader->GetStream()->GetURI().AsString().AsCharPtr());
+        return false;
+    }
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -72,7 +72,7 @@ ModelNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const P
 void
 ModelNode::Unload()
 {
-	// override in subclass
+    // override in subclass
 }
 
 //------------------------------------------------------------------------------
@@ -81,7 +81,7 @@ ModelNode::Unload()
 void
 ModelNode::OnFinishedLoading()
 {
-	this->uniqueId = ModelNodeUniqueIdCounter++;
+    this->uniqueId = ModelNodeUniqueIdCounter++;
 }
 
 //------------------------------------------------------------------------------
@@ -90,7 +90,7 @@ ModelNode::OnFinishedLoading()
 void
 ModelNode::Discard()
 {
-	// override in subclass
+    // override in subclass
 }
 
 //------------------------------------------------------------------------------
@@ -99,7 +99,7 @@ ModelNode::Discard()
 bool 
 ModelNode::GetImplicitHierarchyActivation() const
 {
-	return true;
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -108,7 +108,7 @@ ModelNode::GetImplicitHierarchyActivation() const
 void
 ModelNode::ApplyNodeState()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -117,7 +117,7 @@ ModelNode::ApplyNodeState()
 void 
 ModelNode::ApplyNodeResources()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -126,8 +126,8 @@ ModelNode::ApplyNodeResources()
 SizeT
 ModelNode::Instance::GetDrawPacketSize() const
 {
-	// implement in sublcass
-	return 0;
+    // implement in sublcass
+    return 0;
 }
 
 //------------------------------------------------------------------------------
@@ -136,8 +136,8 @@ ModelNode::Instance::GetDrawPacketSize() const
 Models::ModelNode::DrawPacket*
 ModelNode::Instance::UpdateDrawPacket(void* mem)
 {
-	// implement in sublcass
-	return nullptr;
+    // implement in sublcass
+    return nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -146,7 +146,7 @@ ModelNode::Instance::UpdateDrawPacket(void* mem)
 void
 ModelNode::Instance::Update()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -155,8 +155,8 @@ ModelNode::Instance::Update()
 void
 ModelNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
 {
-	this->node = node;
-	this->parent = parent;
+    this->node = node;
+    this->parent = parent;
 }
 
 //------------------------------------------------------------------------------
@@ -165,17 +165,17 @@ ModelNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Ins
 void 
 ModelNode::DrawPacket::Apply(Materials::MaterialType* type)
 {
-	// apply surface
-	if (*this->surfaceInstance != Materials::SurfaceInstanceId::Invalid())
-		Materials::MaterialApplySurfaceInstance(type, *this->surfaceInstance);
+    // apply surface
+    if (*this->surfaceInstance != Materials::SurfaceInstanceId::Invalid())
+        Materials::MaterialApplySurfaceInstance(type, *this->surfaceInstance);
 
-	// set resource tables
-	IndexT prevOffset = 0;
-	for (IndexT i = 0; i < *this->numTables; i++)
-	{
-		CoreGraphics::SetResourceTable(this->tables[i], this->slots[i], CoreGraphics::GraphicsPipeline, this->numOffsets[i], &this->offsets[prevOffset]);
-		prevOffset = this->numOffsets[i];
-	}
+    // set resource tables
+    IndexT prevOffset = 0;
+    for (IndexT i = 0; i < *this->numTables; i++)
+    {
+        CoreGraphics::SetResourceTable(this->tables[i], this->slots[i], CoreGraphics::GraphicsPipeline, this->numOffsets[i], &this->offsets[prevOffset]);
+        prevOffset = this->numOffsets[i];
+    }
 }
 
 } // namespace Models

@@ -47,10 +47,10 @@ LightServerBase::Open()
     n_assert(!this->isOpen);
     this->isOpen = true;
 
-	// setup default environment probe
-	EnvironmentProbe::DefaultEnvironmentProbe = EnvironmentProbe::Create();
-	n_assert(EnvironmentProbe::DefaultEnvironmentProbe->AssignReflectionMap("tex:system/sky_refl.dds"));
-	n_assert(EnvironmentProbe::DefaultEnvironmentProbe->AssignIrradianceMap("tex:system/sky_irr.dds"));
+    // setup default environment probe
+    EnvironmentProbe::DefaultEnvironmentProbe = EnvironmentProbe::Create();
+    n_assert(EnvironmentProbe::DefaultEnvironmentProbe->AssignReflectionMap("tex:system/sky_refl.dds"));
+    n_assert(EnvironmentProbe::DefaultEnvironmentProbe->AssignIrradianceMap("tex:system/sky_irr.dds"));
 }
 
 //------------------------------------------------------------------------------
@@ -67,8 +67,8 @@ LightServerBase::Close()
     n_assert(this->visibleLightEntities.IsEmpty());
     this->isOpen = false;
 
-	EnvironmentProbe::DefaultEnvironmentProbe->Discard();
-	EnvironmentProbe::DefaultEnvironmentProbe = 0;
+    EnvironmentProbe::DefaultEnvironmentProbe->Discard();
+    EnvironmentProbe::DefaultEnvironmentProbe = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -108,7 +108,7 @@ LightServerBase::EndFrame()
     n_assert(this->inBeginFrame);
     n_assert(!this->inBeginAttach);
     this->visibleLightEntities.Clear();
-	this->visibleLightProbes.Clear();
+    this->visibleLightProbes.Clear();
     this->cameraEntity = 0;
     this->globalLightEntity = 0;
     this->inBeginFrame = false;
@@ -123,7 +123,7 @@ LightServerBase::BeginAttachVisibleLights()
     n_assert(this->inBeginFrame);
     n_assert(!this->inBeginAttach);
     n_assert(this->visibleLightEntities.IsEmpty());
-	n_assert(this->visibleLightProbes.IsEmpty());
+    n_assert(this->visibleLightProbes.IsEmpty());
     n_assert(this->cameraEntity.isvalid());
     this->inBeginAttach = true;
     this->globalLightEntity = 0;
@@ -142,8 +142,8 @@ LightServerBase::AttachVisibleLight(const Ptr<AbstractLightEntity>& lightEntity)
     }
     else
     {
-		// touch light projection map (update if needed)
-		lightEntity->TouchProjectionTexture();
+        // touch light projection map (update if needed)
+        lightEntity->TouchProjectionTexture();
         this->visibleLightEntities.Append(lightEntity);
     }
 }
@@ -154,8 +154,8 @@ LightServerBase::AttachVisibleLight(const Ptr<AbstractLightEntity>& lightEntity)
 void
 LightServerBase::AttachVisibleLightProbe(const Ptr<LightProbeEntity>& lightProbe)
 {
-	n_assert(this->inBeginAttach);
-	this->visibleLightProbes.Append(lightProbe);
+    n_assert(this->inBeginAttach);
+    this->visibleLightProbes.Append(lightProbe);
 }
 
 //------------------------------------------------------------------------------
@@ -197,7 +197,7 @@ LightServerBase::RenderLights()
 void
 LightServerBase::RenderLightProbes()
 {
-	// empty, override in subclass as needed
+    // empty, override in subclass as needed
 }
 
 } // namespace Lighting

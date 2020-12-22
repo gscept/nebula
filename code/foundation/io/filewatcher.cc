@@ -27,8 +27,8 @@ FileWatcher::FileWatcher() :
 */
 FileWatcher::~FileWatcher()
 {
-	if (this->IsRunning())
-		this->Stop();
+    if (this->IsRunning())
+        this->Stop();
     n_assert(this->watchers.IsEmpty());    
     __DestructInterfaceSingleton;
 }
@@ -121,13 +121,13 @@ FileWatcher::CheckQueue()
 void 
 FileWatcher::DoWork()
 {
-	this->ioServer = IO::IoServer::Create();
-	while (!this->ThreadStopRequested())
-	{        
+    this->ioServer = IO::IoServer::Create();
+    while (!this->ThreadStopRequested())
+    {        
         this->CheckQueue();
         this->Update();
         Core::SysFunc::Sleep(this->interval);
-	}
+    }
     // clear queue before shutting down
     this->CheckQueue();
 }

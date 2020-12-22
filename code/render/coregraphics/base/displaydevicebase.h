@@ -34,21 +34,21 @@ public:
     /// destructor
     virtual ~DisplayDeviceBase();
 
-	/// open the display
-	bool Open();
-	/// close the display
-	void Close();
-	/// return true if display is currently open
-	bool IsOpen() const;
-	/// process window system messages, call this method once per frame
-	void ProcessWindowMessages();
-	/// reopens the display device which enables switching from display modes
-	void Reopen();
+    /// open the display
+    bool Open();
+    /// close the display
+    void Close();
+    /// return true if display is currently open
+    bool IsOpen() const;
+    /// process window system messages, call this method once per frame
+    void ProcessWindowMessages();
+    /// reopens the display device which enables switching from display modes
+    void Reopen();
 
-	/// set if vertical sync should be used
-	void SetVerticalSyncEnabled(bool b);
-	/// get if vertical sync is enabled
-	const bool IsVerticalSyncEnabled() const;
+    /// set if vertical sync should be used
+    void SetVerticalSyncEnabled(bool b);
+    /// get if vertical sync is enabled
+    const bool IsVerticalSyncEnabled() const;
 
     /// return true if adapter exists
     bool AdapterExists(CoreGraphics::Adapter::Code adapter);
@@ -64,30 +64,30 @@ public:
     /// set display adapter (make sure adapter exists!)
     void SetAdapter(CoreGraphics::Adapter::Code a);
     /// get display adapter
-	CoreGraphics::Adapter::Code GetAdapter() const;
+    CoreGraphics::Adapter::Code GetAdapter() const;
 
-	/// get if a window is running in full screen
-	const bool IsFullscreen() const;
+    /// get if a window is running in full screen
+    const bool IsFullscreen() const;
 
     /// attach a display event handler
     void AttachEventHandler(const Ptr<CoreGraphics::DisplayEventHandler>& h);
     /// remove a display event handler
     void RemoveEventHandler(const Ptr<CoreGraphics::DisplayEventHandler>& h);
 
-	/// create a new window
-	CoreGraphics::WindowId SetupWindow(const Util::String& title, const Util::String& icon, const CoreGraphics::DisplayMode& displayMode, const CoreGraphics::AntiAliasQuality::Code aa = CoreGraphics::AntiAliasQuality::None);
-	/// create a window from one created by another window system
-	CoreGraphics::WindowId EmbedWindow(const Util::Blob& windowData);
-	/// get the 'main' window, if none exists, returns NULL
-	CoreGraphics::WindowId GetMainWindow() const;
-	/// get the current window
-	const CoreGraphics::WindowId GetCurrentWindow() const;
-	/// get window using index, where 0 is the default window
-	const CoreGraphics::WindowId GetWindow(IndexT index) const;
-	/// get all windows as an array
-	const Util::Array<CoreGraphics::WindowId>& GetWindows() const;
-	/// make ID the current one
-	void MakeWindowCurrent(const CoreGraphics::WindowId id);
+    /// create a new window
+    CoreGraphics::WindowId SetupWindow(const Util::String& title, const Util::String& icon, const CoreGraphics::DisplayMode& displayMode, const CoreGraphics::AntiAliasQuality::Code aa = CoreGraphics::AntiAliasQuality::None);
+    /// create a window from one created by another window system
+    CoreGraphics::WindowId EmbedWindow(const Util::Blob& windowData);
+    /// get the 'main' window, if none exists, returns NULL
+    CoreGraphics::WindowId GetMainWindow() const;
+    /// get the current window
+    const CoreGraphics::WindowId GetCurrentWindow() const;
+    /// get window using index, where 0 is the default window
+    const CoreGraphics::WindowId GetWindow(IndexT index) const;
+    /// get all windows as an array
+    const Util::Array<CoreGraphics::WindowId>& GetWindows() const;
+    /// make ID the current one
+    void MakeWindowCurrent(const CoreGraphics::WindowId id);
         
 protected:
     /// notify event handlers about an event
@@ -97,11 +97,11 @@ protected:
 
     bool verticalSync;
     bool isOpen;
-	bool isFullscreen;
+    bool isFullscreen;
 
     Util::Array<Ptr<CoreGraphics::DisplayEventHandler> > eventHandlers;
-	CoreGraphics::WindowId currentWindow;
-	Util::Array<CoreGraphics::WindowId> windows;
+    CoreGraphics::WindowId currentWindow;
+    Util::Array<CoreGraphics::WindowId> windows;
 };
 
 //------------------------------------------------------------------------------
@@ -119,7 +119,7 @@ DisplayDeviceBase::IsOpen() const
 inline void
 DisplayDeviceBase::SetVerticalSyncEnabled(bool b)
 {
-	this->verticalSync = b;
+    this->verticalSync = b;
 }
 
 //------------------------------------------------------------------------------
@@ -128,7 +128,7 @@ DisplayDeviceBase::SetVerticalSyncEnabled(bool b)
 inline const bool
 DisplayDeviceBase::IsVerticalSyncEnabled() const
 {
-	return this->verticalSync;
+    return this->verticalSync;
 }
 
 //------------------------------------------------------------------------------
@@ -155,7 +155,7 @@ DisplayDeviceBase::GetAdapter() const
 inline const bool
 DisplayDeviceBase::IsFullscreen() const
 {
-	return this->isFullscreen;
+    return this->isFullscreen;
 }
 
 //------------------------------------------------------------------------------
@@ -164,8 +164,8 @@ DisplayDeviceBase::IsFullscreen() const
 inline CoreGraphics::WindowId
 DisplayDeviceBase::GetMainWindow() const
 {
-	if (this->windows.Size() >= 1) return this->windows[0];
-	else						  return NULL;
+    if (this->windows.Size() >= 1) return this->windows[0];
+    else                          return NULL;
 }
 
 //------------------------------------------------------------------------------
@@ -174,7 +174,7 @@ DisplayDeviceBase::GetMainWindow() const
 inline const CoreGraphics::WindowId
 DisplayDeviceBase::GetCurrentWindow() const
 {
-	return this->currentWindow;
+    return this->currentWindow;
 }
 
 //------------------------------------------------------------------------------
@@ -183,8 +183,8 @@ DisplayDeviceBase::GetCurrentWindow() const
 inline const CoreGraphics::WindowId
 DisplayDeviceBase::GetWindow(IndexT index) const
 {
-	n_assert(this->windows.Size() > index && index != InvalidIndex);
-	return this->windows[index];
+    n_assert(this->windows.Size() > index && index != InvalidIndex);
+    return this->windows[index];
 }
 
 //------------------------------------------------------------------------------
@@ -193,7 +193,7 @@ DisplayDeviceBase::GetWindow(IndexT index) const
 inline const Util::Array<CoreGraphics::WindowId>&
 DisplayDeviceBase::GetWindows() const
 {
-	return this->windows;
+    return this->windows;
 }
 
 } // namespace Base

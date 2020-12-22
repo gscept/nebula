@@ -24,25 +24,25 @@ __ImplementSingleton(Vulkan::VkTransformDevice);
 /**
 */
 VkTransformDevice::VkTransformDevice()
-	: viewVar(InvalidIndex)
-	, invViewVar(InvalidIndex)
-	, viewProjVar(InvalidIndex)
-	, invViewProjVar(InvalidIndex)
-	, projVar(InvalidIndex)
-	, invProjVar(InvalidIndex)
-	, eyePosVar(InvalidIndex)
-	, focalLengthNearFarVar(InvalidIndex)
-	, viewMatricesVar(InvalidIndex)
-	, timeAndRandomVar(InvalidIndex)
-	, nearFarPlaneVar(InvalidIndex)
-	, frameOffset(0)
-	, shadowCameraBlockVar(InvalidIndex)
-	, viewConstants(CoreGraphics::BufferId::Invalid())
-	, viewConstantsSlot(InvalidIndex)
-	, shadowConstantsSlot(InvalidIndex)
-	, tableLayout(CoreGraphics::ResourcePipelineId::Invalid())
+    : viewVar(InvalidIndex)
+    , invViewVar(InvalidIndex)
+    , viewProjVar(InvalidIndex)
+    , invViewProjVar(InvalidIndex)
+    , projVar(InvalidIndex)
+    , invProjVar(InvalidIndex)
+    , eyePosVar(InvalidIndex)
+    , focalLengthNearFarVar(InvalidIndex)
+    , viewMatricesVar(InvalidIndex)
+    , timeAndRandomVar(InvalidIndex)
+    , nearFarPlaneVar(InvalidIndex)
+    , frameOffset(0)
+    , shadowCameraBlockVar(InvalidIndex)
+    , viewConstants(CoreGraphics::BufferId::Invalid())
+    , viewConstantsSlot(InvalidIndex)
+    , shadowConstantsSlot(InvalidIndex)
+    , tableLayout(CoreGraphics::ResourcePipelineId::Invalid())
 {
-	__ConstructSingleton
+    __ConstructSingleton
 }
 
 //------------------------------------------------------------------------------
@@ -50,7 +50,7 @@ VkTransformDevice::VkTransformDevice()
 */
 VkTransformDevice::~VkTransformDevice()
 {
-	__DestructSingleton
+    __DestructSingleton
 }
 
 //------------------------------------------------------------------------------
@@ -59,34 +59,34 @@ VkTransformDevice::~VkTransformDevice()
 bool
 VkTransformDevice::Open()
 {
-	ShaderServer* shdServer = ShaderServer::Instance();
+    ShaderServer* shdServer = ShaderServer::Instance();
 
-	// setup tables
-	ShaderId shader = ShaderGet("shd:shared.fxb"_atm);
-	this->viewTables.Resize(CoreGraphics::GetNumBufferedFrames());
-	IndexT i;
-	for (i = 0; i < this->viewTables.Size(); i++)
-	{
-		this->viewTables[i] = ShaderCreateResourceTable(shader, NEBULA_FRAME_GROUP);
-	}
+    // setup tables
+    ShaderId shader = ShaderGet("shd:shared.fxb"_atm);
+    this->viewTables.Resize(CoreGraphics::GetNumBufferedFrames());
+    IndexT i;
+    for (i = 0; i < this->viewTables.Size(); i++)
+    {
+        this->viewTables[i] = ShaderCreateResourceTable(shader, NEBULA_FRAME_GROUP);
+    }
 
-	this->viewConstants = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
-	this->viewConstantsSlot = ShaderGetResourceSlot(shader, "FrameBlock");
-	this->shadowConstantsSlot = ShaderGetResourceSlot(shader, "ShadowMatrixBlock");
-	this->tableLayout = ShaderGetResourcePipeline(shader);
+    this->viewConstants = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
+    this->viewConstantsSlot = ShaderGetResourceSlot(shader, "FrameBlock");
+    this->shadowConstantsSlot = ShaderGetResourceSlot(shader, "ShadowMatrixBlock");
+    this->tableLayout = ShaderGetResourcePipeline(shader);
 
-	// setup camera block, update once per frame - no need to sync
-	this->viewVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_VIEW);
-	this->invViewVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_INVVIEW);
-	this->viewProjVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_VIEWPROJECTION);
-	this->invViewProjVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_INVVIEWPROJECTION);
-	this->projVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_PROJECTION);
-	this->invProjVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_INVPROJECTION);
-	this->eyePosVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_EYEPOS);
-	this->focalLengthNearFarVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_FOCALLENGTHNEARFAR);
-	this->timeAndRandomVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_TIMEANDRANDOM);
+    // setup camera block, update once per frame - no need to sync
+    this->viewVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_VIEW);
+    this->invViewVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_INVVIEW);
+    this->viewProjVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_VIEWPROJECTION);
+    this->invViewProjVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_INVVIEWPROJECTION);
+    this->projVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_PROJECTION);
+    this->invProjVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_INVPROJECTION);
+    this->eyePosVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_EYEPOS);
+    this->focalLengthNearFarVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_FOCALLENGTHNEARFAR);
+    this->timeAndRandomVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_TIMEANDRANDOM);
 
-	return TransformDeviceBase::Open();
+    return TransformDeviceBase::Open();
 }
 
 //------------------------------------------------------------------------------
@@ -95,7 +95,7 @@ VkTransformDevice::Open()
 void
 VkTransformDevice::Close()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -104,9 +104,9 @@ VkTransformDevice::Close()
 void 
 VkTransformDevice::SetProjTransform(const Math::mat4& m)
 {
-	Math::mat4 conv = m;
-	conv.row1 = -conv.row1;
-	TransformDeviceBase::SetProjTransform(conv);
+    Math::mat4 conv = m;
+    conv.row1 = -conv.row1;
+    TransformDeviceBase::SetProjTransform(conv);
 }
 
 //------------------------------------------------------------------------------
@@ -115,28 +115,28 @@ VkTransformDevice::SetProjTransform(const Math::mat4& m)
 void
 VkTransformDevice::ApplyViewSettings()
 {
-	TransformDeviceBase::ApplyViewSettings();
+    TransformDeviceBase::ApplyViewSettings();
 
-	// update block structure
-	alignas(16) Shared::FrameBlock block;
-	this->GetViewTransform().store(block.View);
-	this->GetViewProjTransform().store(block.ViewProjection);
-	this->GetProjTransform().store(block.Projection);
-	this->GetInvViewTransform().store(block.InvView);
-	this->GetInvProjTransform().store(block.InvProjection);
-	Math::inverse(this->GetViewProjTransform()).store(block.InvViewProjection);
-	this->GetInvViewTransform().position.store(block.EyePos);
-	vec4(this->GetFocalLength().x, this->GetFocalLength().y, this->GetNearFarPlane().x, this->GetNearFarPlane().y).store(block.FocalLengthNearFar);
-	vec4((float)FrameSync::FrameSyncTimer::Instance()->GetTime(), Math::n_rand(0, 1), (float)FrameSync::FrameSyncTimer::Instance()->GetFrameTime(), 0).store(block.TimeAndRandom);
-	uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, block);
+    // update block structure
+    alignas(16) Shared::FrameBlock block;
+    this->GetViewTransform().store(block.View);
+    this->GetViewProjTransform().store(block.ViewProjection);
+    this->GetProjTransform().store(block.Projection);
+    this->GetInvViewTransform().store(block.InvView);
+    this->GetInvProjTransform().store(block.InvProjection);
+    Math::inverse(this->GetViewProjTransform()).store(block.InvViewProjection);
+    this->GetInvViewTransform().position.store(block.EyePos);
+    vec4(this->GetFocalLength().x, this->GetFocalLength().y, this->GetNearFarPlane().x, this->GetNearFarPlane().y).store(block.FocalLengthNearFar);
+    vec4((float)FrameSync::FrameSyncTimer::Instance()->GetTime(), Math::n_rand(0, 1), (float)FrameSync::FrameSyncTimer::Instance()->GetFrameTime(), 0).store(block.TimeAndRandom);
+    uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, block);
 
-	// update actual constant buffer
-	frameOffset = offset;
+    // update actual constant buffer
+    frameOffset = offset;
 
-	// update resource table
-	IndexT bufferedFrameIndex = GetBufferedFrameIndex();
-	ResourceTableSetConstantBuffer(this->viewTables[bufferedFrameIndex], { this->viewConstants, this->viewConstantsSlot, 0, false, false, sizeof(Shared::FrameBlock), (SizeT)offset });
-	ResourceTableCommitChanges(this->viewTables[bufferedFrameIndex]);
+    // update resource table
+    IndexT bufferedFrameIndex = GetBufferedFrameIndex();
+    ResourceTableSetConstantBuffer(this->viewTables[bufferedFrameIndex], { this->viewConstants, this->viewConstantsSlot, 0, false, false, sizeof(Shared::FrameBlock), (SizeT)offset });
+    ResourceTableCommitChanges(this->viewTables[bufferedFrameIndex]);
 }
 
 //------------------------------------------------------------------------------
@@ -145,11 +145,11 @@ VkTransformDevice::ApplyViewSettings()
 void 
 VkTransformDevice::ApplyShadowSettings(const Shared::ShadowMatrixBlock& block)
 {
-	uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, block);
+    uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, block);
 
-	IndexT bufferedFrameIndex = GetBufferedFrameIndex();
-	ResourceTableSetConstantBuffer(this->viewTables[bufferedFrameIndex], { this->viewConstants, this->shadowConstantsSlot, 0, false, false, sizeof(Shared::ShadowMatrixBlock), (SizeT)offset });
-	ResourceTableCommitChanges(this->viewTables[bufferedFrameIndex]);
+    IndexT bufferedFrameIndex = GetBufferedFrameIndex();
+    ResourceTableSetConstantBuffer(this->viewTables[bufferedFrameIndex], { this->viewConstants, this->shadowConstantsSlot, 0, false, false, sizeof(Shared::ShadowMatrixBlock), (SizeT)offset });
+    ResourceTableCommitChanges(this->viewTables[bufferedFrameIndex]);
 }
 
 } // namespace Vulkan

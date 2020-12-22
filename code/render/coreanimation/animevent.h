@@ -68,8 +68,8 @@ private:
 inline
 AnimEvent::AnimEvent() :
     time(0),
-	name(nullptr),
-	category(nullptr)
+    name(nullptr),
+    category(nullptr)
 {
     // empty
 }

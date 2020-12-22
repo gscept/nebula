@@ -21,8 +21,8 @@ MouseBase::MouseBase() :
     wheelForward(false),
     wheelBackward(false),
     initialMouseMovement(false),
-	mouseLocked(false),
-	mouseWasLocked(false)
+    mouseLocked(false),
+    mouseWasLocked(false)
 {
     // empty
 }
@@ -83,28 +83,28 @@ MouseBase::OnBeginFrame()
 {
     InputHandler::OnBeginFrame();
 
-	// reset button up/down/doubleclick flags, but retain the pressed state
-	IndexT i;
-	for (i = 0; i < this->buttonStates.Size(); i++)
-	{
-		ButtonState& state = this->buttonStates[i];
+    // reset button up/down/doubleclick flags, but retain the pressed state
+    IndexT i;
+    for (i = 0; i < this->buttonStates.Size(); i++)
+    {
+        ButtonState& state = this->buttonStates[i];
 
-		// NOTE: if the button was released in the previous frame,
-		// clear the pressed state (see the ButtonUp-handling
-		// code in OnEvent for details why this is a good thing)
-		if (state.up)
-		{
-			state.pressed = false;
-		}
-		state.down = false;
-		state.up = false;
-		state.doubleClicked = false;
-	}
-	this->wheelForward = false;
-	this->wheelBackward = false;
-	this->beginFramePixelPosition = this->pixelPosition;
-	this->beginFrameScreenPosition = this->screenPosition;
-	this->movement.set(0.0f, 0.0f);
+        // NOTE: if the button was released in the previous frame,
+        // clear the pressed state (see the ButtonUp-handling
+        // code in OnEvent for details why this is a good thing)
+        if (state.up)
+        {
+            state.pressed = false;
+        }
+        state.down = false;
+        state.up = false;
+        state.doubleClicked = false;
+    }
+    this->wheelForward = false;
+    this->wheelBackward = false;
+    this->beginFramePixelPosition = this->pixelPosition;
+    this->beginFrameScreenPosition = this->screenPosition;
+    this->movement.set(0.0f, 0.0f);
 }
 
 //------------------------------------------------------------------------------
@@ -180,28 +180,28 @@ MouseBase::OnEvent(const InputEvent& inputEvent)
             this->wheelBackward = true;
             return true;
 
-		case InputEvent::AppLoseFocus:
-			{
-				if (this->IsLocked())
-				{
-					this->LockToPosition(false, mouseLockedPosition);
-					mouseWasLocked = true;
-				}
-				break;
-			}
+        case InputEvent::AppLoseFocus:
+            {
+                if (this->IsLocked())
+                {
+                    this->LockToPosition(false, mouseLockedPosition);
+                    mouseWasLocked = true;
+                }
+                break;
+            }
 
-		case InputEvent::AppObtainFocus:
-			{
-				if (mouseWasLocked)
-				{
-					this->LockToPosition(true, mouseLockedPosition);
-					mouseWasLocked = false;
-				}
-				break;
-			}
+        case InputEvent::AppObtainFocus:
+            {
+                if (mouseWasLocked)
+                {
+                    this->LockToPosition(true, mouseLockedPosition);
+                    mouseWasLocked = false;
+                }
+                break;
+            }
 
-		default:
-			break;
+        default:
+            break;
     }
     return false;
 }
@@ -249,7 +249,7 @@ MouseBase::UpdateMousePositions(const Math::vec2& pixelPos, const Math::vec2& sc
     }
     this->pixelPosition = pixelPos;
     this->screenPosition = screenPos;
-	this->movement = this->beginFramePixelPosition - this->pixelPosition;
+    this->movement = this->beginFramePixelPosition - this->pixelPosition;
 }
 
 //------------------------------------------------------------------------------

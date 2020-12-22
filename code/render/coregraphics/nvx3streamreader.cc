@@ -95,8 +95,8 @@ Nvx3StreamReader::Close()
     this->indexDataPtr = 0;
     this->vertexBuffer = 0;
     this->indexBuffer = 0;
-	this->usage = Base::ResourceBase::UsageImmutable;
-	this->access = Base::ResourceBase::AccessNone;
+    this->usage = Base::ResourceBase::UsageImmutable;
+    this->access = Base::ResourceBase::AccessNone;
     this->primGroups.Clear();
     this->vertexComponents.Clear();
     stream->Unmap();
@@ -131,8 +131,8 @@ Nvx3StreamReader::ReadHeaderData()
     this->numVertices = header->numVertices;
     this->vertexWidth = header->vertexWidth;
     this->numIndices = header->numIndices;
-	this->usage = header->usage;
-	this->access = header->access;
+    this->usage = header->usage;
+    this->access = header->access;
     this->vertexComponentMask = header->vertexComponentMask;
     this->groupDataSize = 6 * sizeof(uint) * this->numGroups;
     this->vertexDataSize = this->numVertices * this->vertexWidth * sizeof(float);

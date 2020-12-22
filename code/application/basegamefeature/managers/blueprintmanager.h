@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class	Game::BlueprintManager
+    @class  Game::BlueprintManager
 
     Loads the 'data:tables/blueprint.json' file and subsequently sets up 
     categories based on the blueprints in the entity manager.

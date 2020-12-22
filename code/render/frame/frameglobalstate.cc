@@ -14,7 +14,7 @@ namespace Frame
 */
 FrameGlobalState::FrameGlobalState()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -22,7 +22,7 @@ FrameGlobalState::FrameGlobalState()
 */
 FrameGlobalState::~FrameGlobalState()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -31,8 +31,8 @@ FrameGlobalState::~FrameGlobalState()
 FrameOp::Compiled* 
 FrameGlobalState::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
-	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
-	return ret;
+    CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+    return ret;
 }
 
 //------------------------------------------------------------------------------

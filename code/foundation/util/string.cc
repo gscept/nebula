@@ -15,12 +15,12 @@
 
 //------------------------------------------------------------------------------
 /**
-	Literal constructor form string, to use "foobar"_str will automatically construct a String
+    Literal constructor form string, to use "foobar"_str will automatically construct a String
 */
 Util::String
 operator ""_str(const char* c, std::size_t s)
 {
-	return Util::String(c);
+    return Util::String(c);
 }
 
 namespace Util
@@ -58,7 +58,7 @@ String::Format(const char* fmtString, ...)
         // need to use non-CRT thread safe function under Win32
         StringCchVPrintf(buf, sizeof(buf), fmtString, argList);
     #elif (__OSX__ || __linux__)
-		vsnprintf(buf, sizeof(buf), fmtString, argList);
+        vsnprintf(buf, sizeof(buf), fmtString, argList);
     #else
         _vsnprintf(buf, sizeof(buf), fmtString, argList);
     #endif
@@ -77,7 +77,7 @@ String::FormatArgList(const char* fmtString, va_list argList)
         // need to use non-CRT thread safe function under Win32
         StringCchVPrintf(buf, sizeof(buf), fmtString, argList);
     #elif (__OSX__ || __linux__)
-		vsnprintf(buf, sizeof(buf), fmtString, argList);
+        vsnprintf(buf, sizeof(buf), fmtString, argList);
     #else
         _vsnprintf(buf, sizeof(buf), fmtString, argList);
     #endif
@@ -373,7 +373,7 @@ String::FindCharIndex(char c, IndexT startIndex) const
 bool
 String::BeginsWithString(const String& s) const
 {
-	return FindStringIndex(s) != InvalidIndex;
+    return FindStringIndex(s) != InvalidIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -382,7 +382,7 @@ String::BeginsWithString(const String& s) const
 bool
 String::EndsWithString(const String& s) const
 {
-	return FindStringIndex(s, s.Length()) != InvalidIndex;
+    return FindStringIndex(s, s.Length()) != InvalidIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -706,17 +706,17 @@ String::AsMat4() const
 Math::transform44
 String::AsTransform44() const
 {
-	Array<String> tokens(6, 0);
-	this->Tokenize("|", tokens);
-	n_assert(tokens.Size() == 6);
-	Math::transform44 t;
-	t.setposition(tokens[0].AsVec3());
-	t.setrotate(tokens[1].AsVec4());
-	t.setscale(Math::vec3(tokens[2].AsFloat()));
-	t.setrotatepivot(tokens[3].AsVec3());
-	t.setscalepivot(tokens[4].AsVec3());
-	t.setoffset(tokens[5].AsMat4());
-	return t;
+    Array<String> tokens(6, 0);
+    this->Tokenize("|", tokens);
+    n_assert(tokens.Size() == 6);
+    Math::transform44 t;
+    t.setposition(tokens[0].AsVec3());
+    t.setrotate(tokens[1].AsVec4());
+    t.setscale(Math::vec3(tokens[2].AsFloat()));
+    t.setrotatepivot(tokens[3].AsVec3());
+    t.setscalepivot(tokens[4].AsVec3());
+    t.setoffset(tokens[5].AsMat4());
+    return t;
 }
 #endif
     
@@ -800,12 +800,12 @@ String::StripFileExtension()
 void
 String::StripAssignPrefix()
 {
-	char* str = const_cast<char*>(this->AsCharPtr());
-	char* ext = strchr(str, ':');
-	if (ext)
-	{
-		this->SetCharPtr(ext + 1);
-	}
+    char* str = const_cast<char*>(this->AsCharPtr());
+    char* ext = strchr(str, ':');
+    if (ext)
+    {
+        this->SetCharPtr(ext + 1);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -843,7 +843,7 @@ operator==(const char* cStr, const String& b)
 bool
 operator==(const String& a, std::nullptr_t)
 {
-	return a.Length() == 0;
+    return a.Length() == 0;
 }
 
 //------------------------------------------------------------------------------
@@ -861,7 +861,7 @@ operator != (const String& a, const String& b)
 bool
 operator < (const String& a, const String& b)
 {
-	return strcmp(a.AsCharPtr(), b.AsCharPtr()) < 0;
+    return strcmp(a.AsCharPtr(), b.AsCharPtr()) < 0;
 }
 
 //------------------------------------------------------------------------------
@@ -870,7 +870,7 @@ operator < (const String& a, const String& b)
 bool
 operator > (const String& a, const String& b)
 {
-	return strcmp(a.AsCharPtr(), b.AsCharPtr()) > 0;
+    return strcmp(a.AsCharPtr(), b.AsCharPtr()) > 0;
 }
 
 //------------------------------------------------------------------------------
@@ -879,7 +879,7 @@ operator > (const String& a, const String& b)
 bool
 operator <= (const String& a, const String& b)
 {
-	return strcmp(a.AsCharPtr(), b.AsCharPtr()) <= 0;
+    return strcmp(a.AsCharPtr(), b.AsCharPtr()) <= 0;
 }
 
 //------------------------------------------------------------------------------
@@ -888,7 +888,7 @@ operator <= (const String& a, const String& b)
 bool
 operator >= (const String& a, const String& b)
 {
-	return strcmp(a.AsCharPtr(), b.AsCharPtr()) >= 0;
+    return strcmp(a.AsCharPtr(), b.AsCharPtr()) >= 0;
 }
 
 //------------------------------------------------------------------------------
@@ -1014,7 +1014,7 @@ for this!
 long long
 String::AsLongLong() const
 {
-	return atoll(this->AsCharPtr());
+    return atoll(this->AsCharPtr());
 }
 
 //------------------------------------------------------------------------------
@@ -1159,8 +1159,8 @@ String::ChangeFileExtension(const Util::String& newExt)
 void
 String::ChangeAssignPrefix(const Util::String& newPref)
 {
-	this->StripAssignPrefix();
-	*this = newPref + ":" + *this;
+    this->StripAssignPrefix();
+    *this = newPref + ":" + *this;
 }
 
 //------------------------------------------------------------------------------
@@ -1228,15 +1228,15 @@ String::AsBlob() const
 Util::String
 String::AsBase64() const
 {
-	Util::String ret;
-	int allocsize = BASE64_ENCODE_OUT_SIZE(this->strLen) + 1;
-	char * buffer = (char *)Memory::Alloc(Memory::ScratchHeap, allocsize);
-		
-	base64_encode((unsigned char*)this->AsCharPtr(), this->strLen, buffer);
-	buffer[allocsize - 1] = '\0';
-	ret.SetCharPtr(buffer);
-	Memory::Free(Memory::ScratchHeap, buffer);
-	return ret;
+    Util::String ret;
+    int allocsize = BASE64_ENCODE_OUT_SIZE(this->strLen) + 1;
+    char * buffer = (char *)Memory::Alloc(Memory::ScratchHeap, allocsize);
+        
+    base64_encode((unsigned char*)this->AsCharPtr(), this->strLen, buffer);
+    buffer[allocsize - 1] = '\0';
+    ret.SetCharPtr(buffer);
+    Memory::Free(Memory::ScratchHeap, buffer);
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -1245,15 +1245,15 @@ String::AsBase64() const
 Util::String
 String::FromBase64(const String& in)
 {
-	Util::String ret;
-	int allocsize = BASE64_DECODE_OUT_SIZE(in.strLen);
-	unsigned char * buffer = (unsigned char *)Memory::Alloc(Memory::ScratchHeap, allocsize);
-	
-	base64_decode((char*)in.AsCharPtr(), in.strLen, buffer);
-	buffer[allocsize - 1] = '\0';
-	ret.SetCharPtr((const char*)buffer);
-	Memory::Free(Memory::ScratchHeap, buffer);
-	return ret;
+    Util::String ret;
+    int allocsize = BASE64_DECODE_OUT_SIZE(in.strLen);
+    unsigned char * buffer = (unsigned char *)Memory::Alloc(Memory::ScratchHeap, allocsize);
+    
+    base64_decode((char*)in.AsCharPtr(), in.strLen, buffer);
+    buffer[allocsize - 1] = '\0';
+    ret.SetCharPtr((const char*)buffer);
+    Memory::Free(Memory::ScratchHeap, buffer);
+    return ret;
 }
 
 } // namespace System

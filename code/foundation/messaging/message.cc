@@ -19,7 +19,7 @@ Message::Message() :
     handled(0),
     deferred(false),
     deferredHandled(false),
-	distribute(true)
+    distribute(true)
 {
     // empty
 }

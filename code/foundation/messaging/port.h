@@ -17,7 +17,7 @@
     handlers in a separate thread, please check Message::AsyncPort.
 
     (C) 2006 RadonLabs GmbH
-	(C) 2013-2020 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "core/ptr.h"
@@ -45,7 +45,7 @@ public:
     const Ptr<Handler>& GetHandlerAtIndex(IndexT i) const;
     /// send a message to the port
     virtual void Send(const Ptr<Message>& msg);
-	/// get the array of accepted messages (sorted)
+    /// get the array of accepted messages (sorted)
     const Util::Array<const Id*>& GetAcceptedMessages() const;    
     /// return true if port accepts this msg
     bool AcceptsMessage(const Id& msgId) const;

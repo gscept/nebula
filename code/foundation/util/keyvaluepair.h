@@ -7,7 +7,7 @@
     like Dictionary or HashTable. 
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2020 Individual contributors, see AUTHORS file	
+    (C) 2013-2020 Individual contributors, see AUTHORS file 
 */
 #include "core/types.h"
 
@@ -43,18 +43,18 @@ public:
     bool operator<(const KeyValuePair<KEYTYPE, VALUETYPE>& rhs) const;
     /// lesser-or-equal operator
     bool operator<=(const KeyValuePair<KEYTYPE, VALUETYPE>& rhs) const;
-	/// equality operator
-	bool operator==(const KEYTYPE& rhs) const;
-	/// inequality operator
-	bool operator!=(const KEYTYPE& rhs) const;
-	/// greater operator
-	bool operator>(const KEYTYPE& rhs) const;
-	/// greater-or-equal operator
-	bool operator>=(const KEYTYPE& rhs) const;
-	/// lesser operator
-	bool operator<(const KEYTYPE& rhs) const;
-	/// lesser-or-equal operator
-	bool operator<=(const KEYTYPE& rhs) const;
+    /// equality operator
+    bool operator==(const KEYTYPE& rhs) const;
+    /// inequality operator
+    bool operator!=(const KEYTYPE& rhs) const;
+    /// greater operator
+    bool operator>(const KEYTYPE& rhs) const;
+    /// greater-or-equal operator
+    bool operator>=(const KEYTYPE& rhs) const;
+    /// lesser operator
+    bool operator<(const KEYTYPE& rhs) const;
+    /// lesser-or-equal operator
+    bool operator<=(const KEYTYPE& rhs) const;
     /// read/write access to value
     VALUETYPE& Value();
     /// read access to key
@@ -210,7 +210,7 @@ template<class KEYTYPE, class VALUETYPE>
 bool
 KeyValuePair<KEYTYPE, VALUETYPE>::operator==(const KEYTYPE& rhs) const
 {
-	return (this->keyData == rhs);
+    return (this->keyData == rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -220,7 +220,7 @@ template<class KEYTYPE, class VALUETYPE>
 bool
 KeyValuePair<KEYTYPE, VALUETYPE>::operator!=(const KEYTYPE& rhs) const
 {
-	return (this->keyData != rhs);
+    return (this->keyData != rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -230,7 +230,7 @@ template<class KEYTYPE, class VALUETYPE>
 bool
 KeyValuePair<KEYTYPE, VALUETYPE>::operator>(const KEYTYPE& rhs) const
 {
-	return (this->keyData > rhs);
+    return (this->keyData > rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -240,7 +240,7 @@ template<class KEYTYPE, class VALUETYPE>
 bool
 KeyValuePair<KEYTYPE, VALUETYPE>::operator>=(const KEYTYPE& rhs) const
 {
-	return (this->keyData >= rhs);
+    return (this->keyData >= rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -250,7 +250,7 @@ template<class KEYTYPE, class VALUETYPE>
 bool
 KeyValuePair<KEYTYPE, VALUETYPE>::operator<(const KEYTYPE& rhs) const
 {
-	return (this->keyData < rhs);
+    return (this->keyData < rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -260,7 +260,7 @@ template<class KEYTYPE, class VALUETYPE>
 bool
 KeyValuePair<KEYTYPE, VALUETYPE>::operator<=(const KEYTYPE& rhs) const
 {
-	return (this->keyData <= rhs);
+    return (this->keyData <= rhs);
 }
 
 

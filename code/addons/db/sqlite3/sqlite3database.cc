@@ -97,7 +97,7 @@ Sqlite3Database::Open()
             }
         }
                 
-		// mangle path for SQLite and open the SQL database
+        // mangle path for SQLite and open the SQL database
         String nativePath = this->uri.LocalPath();
         int err = SQLITE_OK;
         if (!this->memoryDatabase)
@@ -112,7 +112,7 @@ Sqlite3Database::Open()
         {
             this->SetError(sqlite3_errmsg(this->sqliteHandle));
             this->sqliteHandle = 0;
-			this->isOpen = false;
+            this->isOpen = false;
             return false;
         }
 
@@ -123,7 +123,7 @@ Sqlite3Database::Open()
             this->SetError(sqlite3_errmsg(this->sqliteHandle));
             sqlite3_close(this->sqliteHandle);
             this->sqliteHandle = 0;
-			this->isOpen = false;
+            this->isOpen = false;
             return false;
         }
             
@@ -327,8 +327,8 @@ Sqlite3Database::ReadTableLayouts()
         attrsTable->Connect(this, Table::AssumeExists, this->ignoreUnknownColumns);
 
         // register all attributes in the table...
-		Ptr<Table> tempTablePtr = attrsTable.cast<Table>();
-		this->RegisterAttributes(tempTablePtr);
+        Ptr<Table> tempTablePtr = attrsTable.cast<Table>();
+        this->RegisterAttributes(tempTablePtr);
     }
 
     // connect all other tables
@@ -341,7 +341,7 @@ Sqlite3Database::ReadTableLayouts()
         if (attrTableRowIndices.IsEmpty() || rowIndex != attrTableRowIndices[0])
         {
             Ptr<Sqlite3Table> table = Sqlite3Factory::Instance()->CreateTable().cast<Sqlite3Table>();
-        	table->SetName(result->GetString(Attr::name, rowIndex));
+            table->SetName(result->GetString(Attr::name, rowIndex));
             this->tables.Append(table.cast<Table>());
             table->Connect(this, Table::AssumeExists, this->ignoreUnknownColumns);
         }

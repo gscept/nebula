@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class	MemDb::Filterset
+    @class  MemDb::Filterset
 
     Used to query a database.
     

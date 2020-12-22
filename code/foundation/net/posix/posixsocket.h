@@ -55,7 +55,7 @@ public:
         ErrorNone,                   // no error occured
         ErrorUnknown,                // an "unknown" error occured     
         ErrorInterrupted,            // EINTR
-	ErrorBrokenPipe,	     // EPIPE
+    ErrorBrokenPipe,         // EPIPE
         ErrorPermissionDenied,       // EACCESS
         ErrorBadAddress,             // EFAULT
         ErrorInvalidArgument,        // EINVAL

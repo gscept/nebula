@@ -48,8 +48,8 @@ public:
 
     /// send request and write result to provided response content stream
     HttpStatus::Code SendRequest(HttpMethod::Code requestMethod, const IO::URI& uri, const Ptr<IO::Stream>& responseContentStream);
-	/// send request with body and write result to provided response content stream
-	HttpStatus::Code SendRequest(HttpMethod::Code requestMethod, const IO::URI& uri, const Util::String & body, const Ptr<IO::Stream>& responseContentStream);
+    /// send request with body and write result to provided response content stream
+    HttpStatus::Code SendRequest(HttpMethod::Code requestMethod, const IO::URI& uri, const Util::String & body, const Ptr<IO::Stream>& responseContentStream);
 private:
     Util::String userAgent;
     Ptr<Net::TcpClient> tcpClient;

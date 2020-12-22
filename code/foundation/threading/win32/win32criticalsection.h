@@ -10,7 +10,7 @@
     of your code.
     
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2020 Individual contributors, see AUTHORS file	
+    (C) 2013-2020 Individual contributors, see AUTHORS file 
 */
 #include "core/types.h"     
 #include "core/sysfunc.h"
@@ -58,10 +58,10 @@ private:
 
     // Declare all variables volatile, so that the compiler won't
     // try to optimize something important.
-    mutable volatile DWORD	lockerThread;
-    volatile DWORD	spinMax;   
-    mutable volatile long	waiterCount; 
-    mutable volatile HANDLE	semaphore;
+    mutable volatile DWORD  lockerThread;
+    volatile DWORD  spinMax;   
+    mutable volatile long   waiterCount; 
+    mutable volatile HANDLE semaphore;
     mutable uint recursiveLockCount;
 #else                                        
     mutable CRITICAL_SECTION criticalSection;

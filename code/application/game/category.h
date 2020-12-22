@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @file	category.h
+    @file   category.h
 
     (C) 2020 Individual contributors, see AUTHORS file
 */

@@ -177,7 +177,7 @@ QuadTree<TYPE>::GetBoundingBox() const
 template<class TYPE> SizeT
 QuadTree<TYPE>::GetNumNodes(uchar level) const
 {
-	//FIXME WTF
+    //FIXME WTF
     return 0x55555555 & ((1 << level * 2) - 1);
 }
 

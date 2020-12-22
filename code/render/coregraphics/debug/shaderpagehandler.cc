@@ -79,7 +79,7 @@ ShaderPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
             for (i = 0; i < shaders.Size(); i++)
             {
                 const ShaderId shd = shaders.ValueAtIndex(i);
-				const ResourceName name = shaders.KeyAtIndex(i);
+                const ResourceName name = shaders.KeyAtIndex(i);
                 htmlWriter->Begin(HtmlElement::TableRow);
                     htmlWriter->Begin(HtmlElement::TableData);
                         htmlWriter->AddAttr("href", "/shader?shaderinfo=" + name.AsString());
@@ -108,8 +108,8 @@ HttpStatus::Code
 ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<Stream>& responseContentStream)
 {
     ShaderServer* shdServer = ShaderServer::Instance();
-	Resources::ResourceId id = resId.AsLongLong();
-	Resources::ResourceName name = shdServer->GetName(id);
+    Resources::ResourceId id = resId.AsLongLong();
+    Resources::ResourceName name = shdServer->GetName(id);
 
     // check if shader actually exists
     if (!shdServer->HasShader(resId))
@@ -117,11 +117,11 @@ ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<
         return HttpStatus::NotFound;
     }
 
-	if (id.resourceType != ShaderIdType)
-	{
-		// id is not a shader type!
-		return HttpStatus::NotFound;
-	}
+    if (id.resourceType != ShaderIdType)
+    {
+        // id is not a shader type!
+        return HttpStatus::NotFound;
+    }
 
     Ptr<HtmlPageWriter> htmlWriter = HtmlPageWriter::Create();
     htmlWriter->SetStream(responseContentStream);
@@ -130,7 +130,7 @@ ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<
     {
         // we need to create a temp shader instance to get reflection info
         const ShaderId& shd = id;
-		SizeT numVars = ShaderGetConstantCount(shd);
+        SizeT numVars = ShaderGetConstantCount(shd);
         htmlWriter->Element(HtmlElement::Heading1, name.Value());
         htmlWriter->AddAttr("href", "/index.html");
         htmlWriter->Element(HtmlElement::Anchor, "Home");
@@ -159,7 +159,7 @@ ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<
         // display shader variables
         htmlWriter->Element(HtmlElement::Heading3, "Shader Variables");
 #if __NEBULA_HTTP__
-		if (numVars > 0)
+        if (numVars > 0)
         {
             this->WriteShaderVariableTable(htmlWriter, shd);
         }
@@ -170,7 +170,7 @@ ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<
             htmlWriter->LineBreak();
         }
 
-		const Util::Dictionary<CoreGraphics::ShaderFeature::Mask, CoreGraphics::ShaderProgramId>& programs = ShaderGetPrograms(id);
+        const Util::Dictionary<CoreGraphics::ShaderFeature::Mask, CoreGraphics::ShaderProgramId>& programs = ShaderGetPrograms(id);
 
         // display shader variations
         htmlWriter->Element(HtmlElement::Heading3, "Shader Variations");
@@ -187,8 +187,8 @@ ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<
                 IndexT i;
                 for (i = 0; i < programs.Size(); i++)
                 {
-					const CoreGraphics::ShaderProgramId& id = programs.ValueAtIndex(i);
-					const CoreGraphics::ShaderFeature::Mask& mask = programs.KeyAtIndex(i);
+                    const CoreGraphics::ShaderProgramId& id = programs.ValueAtIndex(i);
+                    const CoreGraphics::ShaderFeature::Mask& mask = programs.KeyAtIndex(i);
                     htmlWriter->Begin(HtmlElement::TableRow);
                         htmlWriter->Element(HtmlElement::TableData, ShaderProgramGetName(id).AsString());
                         htmlWriter->Element(HtmlElement::TableData, shdServer->FeatureMaskToString(mask));
@@ -202,19 +202,19 @@ ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<
             htmlWriter->LineBreak();
         }
 
-		htmlWriter->Element(HtmlElement::Heading3, "Materials using this shader:");
-		htmlWriter->AddAttr("border", "1");
-		htmlWriter->AddAttr("rules", "cols");
-		htmlWriter->Begin(HtmlElement::Table);
-		htmlWriter->AddAttr("bgcolor", "lightsteelblue");
-		htmlWriter->Begin(HtmlElement::TableRow);
-		htmlWriter->Element(HtmlElement::TableHeader, "Id");
-		htmlWriter->Element(HtmlElement::TableHeader, "Name");
-		htmlWriter->End(HtmlElement::TableRow);
-			htmlWriter->Begin(HtmlElement::TableRow);
-				htmlWriter->Element(HtmlElement::TableData, "IMPLEMENT ME!");
-			htmlWriter->End(HtmlElement::TableRow);
-		htmlWriter->End(HtmlElement::Table);
+        htmlWriter->Element(HtmlElement::Heading3, "Materials using this shader:");
+        htmlWriter->AddAttr("border", "1");
+        htmlWriter->AddAttr("rules", "cols");
+        htmlWriter->Begin(HtmlElement::Table);
+        htmlWriter->AddAttr("bgcolor", "lightsteelblue");
+        htmlWriter->Begin(HtmlElement::TableRow);
+        htmlWriter->Element(HtmlElement::TableHeader, "Id");
+        htmlWriter->Element(HtmlElement::TableHeader, "Name");
+        htmlWriter->End(HtmlElement::TableRow);
+            htmlWriter->Begin(HtmlElement::TableRow);
+                htmlWriter->Element(HtmlElement::TableData, "IMPLEMENT ME!");
+            htmlWriter->End(HtmlElement::TableRow);
+        htmlWriter->End(HtmlElement::Table);
 
 
         htmlWriter->Close();
@@ -240,12 +240,12 @@ ShaderPageHandler::WriteShaderVariableTable(const Ptr<HtmlPageWriter>& htmlWrite
             htmlWriter->Element(HtmlElement::TableHeader, "ArraySize");
         htmlWriter->End(HtmlElement::TableRow);
 
-	SizeT numVars = ShaderGetConstantCount(shader);
+    SizeT numVars = ShaderGetConstantCount(shader);
     IndexT i;
     for (i = 0; i < numVars; i++)
     {
-		const Util::StringAtom& name = ShaderGetConstantName(shader, i);
-		const ShaderConstantType& type = ShaderGetConstantType(shader, i);
+        const Util::StringAtom& name = ShaderGetConstantName(shader, i);
+        const ShaderConstantType& type = ShaderGetConstantType(shader, i);
         htmlWriter->Begin(HtmlElement::TableRow);
             htmlWriter->Element(HtmlElement::TableData, name.AsString());
             htmlWriter->Element(HtmlElement::TableData, ConstantTypeToString(type));

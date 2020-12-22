@@ -121,6 +121,41 @@ endif()
 
 option(N_NEBULA_DEBUG_SHADERS "Compile shaders with debug flag" OFF)
 
+macro(nebula_flatc root files)
+    string(COMPARE EQUAL ${root} "SYSTEM" use_system)
+    if(${use_system})
+        set(rootdir ${NROOT})
+    else()
+        set(rootdir ${PROJECT_SOURCE_DIR})
+    endif()
+
+    foreach(fb ${files})
+        set(target_has_flatc 1)
+        set(datadir ${rootdir}/work/data/flatbuffer/)
+        get_filename_component(filename ${fb} NAME)
+        get_filename_component(foldername ${fb} DIRECTORY)
+        string(REPLACE ".fbs" ".h" out_header ${filename})
+       
+        set(abs_output_folder "${CMAKE_BINARY_DIR}/generated/flat/${foldername}")
+        set(fbs ${datadir}${fb})
+        set(output ${abs_output_folder}/${out_header})
+
+        add_custom_command(OUTPUT ${output}
+                PRE_BUILD COMMAND ${FLATC} -c --gen-object-api --gen-compare --scoped-enums --gen-mutable --cpp-str-flex-ctor --cpp-str-type Util::String -I "${datadir}" -I "${NROOT}/work/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${fbs}" 
+                MAIN_DEPENDENCY "${fbs}"
+                DEPENDS ${FLATC}
+                WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
+                COMMENT "Compiling ${fb} flatbuffer"
+                VERBATIM
+                )
+        list(APPEND CurSources ${fbs})
+
+        SOURCE_GROUP("${CurGroup}\\Generated" FILES "${output}")
+        source_group("res\\flatbuffer" FILES ${fbs})
+        list(APPEND CurSources "${output}")
+    endforeach()
+endmacro()
+
 macro(add_shaders_intern)
     if(SHADERC)
         if(N_NEBULA_DEBUG_SHADERS)
@@ -371,6 +406,7 @@ macro(nebula_begin_app name type)
     fips_begin_app(${name} ${type})
     set(target_has_nidl 0)
     set(target_has_shaders 0)
+	set(target_has_flatc 0)
     include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 endmacro()
 
@@ -382,6 +418,9 @@ macro(nebula_end_app)
     endif()
     if (target_has_shaders)
         target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/shaders/${CurTargetName}")
+    endif()
+	if (target_has_flatc)
+        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/generated/")
     endif()
     set_target_properties(${curtarget} PROPERTIES ENABLE_EXPORTS false)
 endmacro()
@@ -403,7 +442,7 @@ macro(nebula_end_module)
         target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/shaders/${CurTargetName}")
     endif()
     if (target_has_flatc)
-        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/flatbuffer/${CurTargetName}")
+        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/generated")
     endif()
 endmacro()
 
@@ -424,6 +463,6 @@ macro(nebula_end_lib)
         target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/shaders/${CurTargetName}")
     endif()
     if (target_has_flatc)
-        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/flatbuffer/${CurTargetName}")
+        target_include_directories(${curtarget} PUBLIC "${CMAKE_BINARY_DIR}/generated")
     endif()
 endmacro()

@@ -17,7 +17,7 @@ _ImplementContext(LightProbeContext, LightProbeContext::lightProbeAllocator);
 */
 LightProbeContext::LightProbeContext()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -25,7 +25,7 @@ LightProbeContext::LightProbeContext()
 */
 LightProbeContext::~LightProbeContext()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -34,8 +34,8 @@ LightProbeContext::~LightProbeContext()
 const Math::mat4&
 LightProbeContext::GetTransform(const Graphics::GraphicsEntityId id)
 {
-	const ContextEntityId cid = GetContextId(id);
-	return lightProbeAllocator.Get<0>(cid.id);
+    const ContextEntityId cid = GetContextId(id);
+    return lightProbeAllocator.Get<0>(cid.id);
 }
 
 //------------------------------------------------------------------------------
@@ -44,7 +44,7 @@ LightProbeContext::GetTransform(const Graphics::GraphicsEntityId id)
 ContextEntityId
 LightProbeContext::Alloc()
 {
-	return ContextEntityId();
+    return ContextEntityId();
 }
 
 //------------------------------------------------------------------------------

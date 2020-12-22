@@ -142,7 +142,7 @@ RTPlugin::OnRenderAfter(IndexT frameId, Timing::Time time)
 void
 RTPlugin::OnRender(const Util::StringAtom& filter)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -151,7 +151,7 @@ RTPlugin::OnRender(const Util::StringAtom& filter)
 void
 RTPlugin::OnFrameBefore(IndexT frameId, Timing::Time time)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -160,7 +160,7 @@ RTPlugin::OnFrameBefore(IndexT frameId, Timing::Time time)
 void
 RTPlugin::OnFrameAfter(IndexT frameId, Timing::Time time)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -169,7 +169,7 @@ RTPlugin::OnFrameAfter(IndexT frameId, Timing::Time time)
 void 
 RTPlugin::OnRenderFrame()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -187,7 +187,7 @@ RTPlugin::OnRenderWithoutView(IndexT frameId, Timing::Time time)
 void 
 RTPlugin::OnWindowResized(IndexT windowId, SizeT width, SizeT height)
 {
-	// empty
+    // empty
 }
 
 

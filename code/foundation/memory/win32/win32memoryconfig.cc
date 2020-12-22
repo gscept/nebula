@@ -46,9 +46,9 @@ SetupHeaps()
                 useLowFragHeap = true;
                 break;
 
-			case ObjectArrayHeap:
-				initialSize = 4 * megaByte;
-				break;
+            case ObjectArrayHeap:
+                initialSize = 4 * megaByte;
+                break;
 
             case ResourceHeap:
             case PhysicsHeap:
@@ -150,7 +150,7 @@ GetHeapTypeName(HeapType heapType)
         case NetworkHeap:               return "Network Heap";
         case Xbox360GraphicsHeap:       return "Xbox360 Graphics Heap";
         case Xbox360AudioHeap:          return "Xbox360 Audio Heap";
-        case RocketHeap:				return "Librocket Heap";
+        case RocketHeap:                return "Librocket Heap";
         default:
             Core::SysFunc::Error("Invalid HeapType arg in Memory::GetHeapTypeName()! (win360memoryconfig.cc)");
             return 0;

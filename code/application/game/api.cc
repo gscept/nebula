@@ -73,7 +73,7 @@ Dispatch(OpBuffer& buffer)
 
 //------------------------------------------------------------------------------
 /**
-    @todo	optimize
+    @todo   optimize
 */
 void
 AddOp(OpBuffer buffer, Op::RegisterProperty op)
@@ -152,9 +152,9 @@ void
 Execute(Op::DeregisterProperty const& op)
 {
 #if NEBULA_DEBUG
-	n_assert(Game::HasProperty(op.entity, op.pid));
+    n_assert(Game::HasProperty(op.entity, op.pid));
 #endif
-	EntityManager::State& state = EntityManager::Singleton->state;
+    EntityManager::State& state = EntityManager::Singleton->state;
     EntityMapping mapping = GetEntityMapping(op.entity);
     Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
     CategoryHash newHash = cat.hash;
@@ -168,7 +168,7 @@ Execute(Op::DeregisterProperty const& op)
     {
         CategoryCreateInfo info;
         auto const& cols = state.worldDatabase->GetTable(cat.instanceTable).properties;
-		SizeT const num = cols.Size();
+        SizeT const num = cols.Size();
         info.properties.SetSize(num - 1);
         int col = 0;
         for (int i = 0; i < num; ++i)
@@ -259,10 +259,10 @@ ReleaseDatasets()
 
 //------------------------------------------------------------------------------
 /**
-	@returns	Dataset with category table views.
+    @returns    Dataset with category table views.
 
-	@note		The category table view buffer can be NULL if the filter contains
-				a non-typed/flag property.
+    @note       The category table view buffer can be NULL if the filter contains
+                a non-typed/flag property.
 */
 Dataset Query(Filter filter)
 {
@@ -287,7 +287,7 @@ Dataset Query(Filter filter)
     {
         Dataset::CategoryTableView* view = data.views + viewIndex;
         // FIXME
-		view->cid = CategoryId::Invalid();
+        view->cid = CategoryId::Invalid();
 
         MemDb::Table const& tbl = db->GetTable(tids[viewIndex]);
 
@@ -295,11 +295,11 @@ Dataset Query(Filter filter)
         for (auto pid : properties)
         {
             MemDb::ColumnIndex colId = db->GetColumnId(tbl.tid, pid);
-			// Check if the property is a flag, and return a nullptr in that case.
-			if (colId != InvalidIndex)
-				view->buffers[i] = db->GetBuffer(tbl.tid, colId);
-			else
-				view->buffers[i] = nullptr;
+            // Check if the property is a flag, and return a nullptr in that case.
+            if (colId != InvalidIndex)
+                view->buffers[i] = db->GetBuffer(tbl.tid, colId);
+            else
+                view->buffers[i] = nullptr;
             i++;
         }
 
@@ -369,7 +369,7 @@ EntityMapping
 GetEntityMapping(Game::Entity entity)
 {
     n_assert(EntityManager::HasInstance());
-	n_assert(IsActive(entity));
+    n_assert(IsActive(entity));
     return EntityManager::Singleton->state.entityMap[Ids::Index(entity.id)];
 }
 

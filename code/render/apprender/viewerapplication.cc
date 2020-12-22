@@ -71,23 +71,23 @@ ViewerApplication::Open()
         Util::Array<Ptr<VisibilitySystemBase> > visSystems;
         visSystems.Append(visQuadtreeSystem.cast<VisibilitySystemBase>());
         //visSystems.Append(visClusterSystem.cast<VisibilitySystemBase>());
-		//visSystems.Append(visBoxSystem.cast<VisibilitySystemBase>());
+        //visSystems.Append(visBoxSystem.cast<VisibilitySystemBase>());
         this->stage = this->graphicsServer->CreateStage(defaultStageName, visSystems);
 
         // create a default view
         // FIXME: sucks that I have to use Graphics here!
         this->view = this->graphicsServer->CreateView(Graphics::View::RTTI,
                                                       defaultViewName,
-													  0,
+                                                      0,
                                                       true);
 
-		Frame::FrameServer::Instance()->SetWindowTexture(CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow()->GetRenderTexture());
-		Ptr<Frame::FrameScript> frameScript = Frame::FrameServer::Instance()->LoadFrameScript("test", "frame:vkdebug.json");
+        Frame::FrameServer::Instance()->SetWindowTexture(CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow()->GetRenderTexture());
+        Ptr<Frame::FrameScript> frameScript = Frame::FrameServer::Instance()->LoadFrameScript("test", "frame:vkdebug.json");
 
-		// set stage
-		this->view->SetStage(this->stage);
-		this->view->SetFrameScript(frameScript);
-		if (this->useResolveRect) this->view->SetResolveRect(this->resolveRect);
+        // set stage
+        this->view->SetStage(this->stage);
+        this->view->SetFrameScript(frameScript);
+        if (this->useResolveRect) this->view->SetResolveRect(this->resolveRect);
 
         // create a camera entity
         this->camera = CameraEntity::Create();
@@ -214,17 +214,17 @@ ViewerApplication::OnProcessInput()
     this->mayaCameraUtil.Update();
     this->camera->SetTransform(this->mayaCameraUtil.GetCameraTransform());
 #else
-	this->freeCameraUtil.SetRotateButton(mouse->ButtonPressed(MouseButton::LeftButton));
-	this->freeCameraUtil.SetAccelerateButton(keyboard->KeyPressed(Key::Shift));
-	this->freeCameraUtil.SetForwardsKey(keyboard->KeyPressed(Key::W));
-	this->freeCameraUtil.SetBackwardsKey(keyboard->KeyPressed(Key::S));
-	this->freeCameraUtil.SetLeftStrafeKey(keyboard->KeyPressed(Key::A));
-	this->freeCameraUtil.SetRightStrafeKey(keyboard->KeyPressed(Key::D));
-	this->freeCameraUtil.SetUpKey(keyboard->KeyPressed(Key::Space));
-	this->freeCameraUtil.SetDownKey(keyboard->KeyPressed(Key::C));
-	this->freeCameraUtil.SetMouseMovement(mouse->GetMovement());
-	this->freeCameraUtil.Update();
-	this->camera->SetTransform(this->freeCameraUtil.GetTransform());
+    this->freeCameraUtil.SetRotateButton(mouse->ButtonPressed(MouseButton::LeftButton));
+    this->freeCameraUtil.SetAccelerateButton(keyboard->KeyPressed(Key::Shift));
+    this->freeCameraUtil.SetForwardsKey(keyboard->KeyPressed(Key::W));
+    this->freeCameraUtil.SetBackwardsKey(keyboard->KeyPressed(Key::S));
+    this->freeCameraUtil.SetLeftStrafeKey(keyboard->KeyPressed(Key::A));
+    this->freeCameraUtil.SetRightStrafeKey(keyboard->KeyPressed(Key::D));
+    this->freeCameraUtil.SetUpKey(keyboard->KeyPressed(Key::Space));
+    this->freeCameraUtil.SetDownKey(keyboard->KeyPressed(Key::C));
+    this->freeCameraUtil.SetMouseMovement(mouse->GetMovement());
+    this->freeCameraUtil.Update();
+    this->camera->SetTransform(this->freeCameraUtil.GetTransform());
 #endif
 }
 

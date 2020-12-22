@@ -24,8 +24,8 @@ EnvelopeCurve::EnvelopeCurve() :
     this->values[2] = 0.0f;
     this->values[3] = 0.0f;
 
-	this->limits[0] = 0.0f;
-	this->limits[1] = 1.0f;
+    this->limits[0] = 0.0f;
+    this->limits[1] = 1.0f;
 } 
 
 //------------------------------------------------------------------------------
@@ -117,7 +117,7 @@ EnvelopeCurve::GetMaxValue() const
 float 
 EnvelopeCurve::GetMinValue() const
 {
-	return Math::n_min(this->values[0], Math::n_min(this->values[1], Math::n_min(this->values[2], this->values[3])));
+    return Math::n_min(this->values[0], Math::n_min(this->values[1], Math::n_min(this->values[2], this->values[3])));
 }
 
 

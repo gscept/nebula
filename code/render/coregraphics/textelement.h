@@ -32,15 +32,15 @@ public:
     const Math::vec4& GetColor() const;
     /// get position
     const Math::vec2& GetPosition() const;
-	/// get size
-	const float GetSize() const;
+    /// get size
+    const float GetSize() const;
     
 private:
     Threading::ThreadId threadId;
     Util::String text;
     Math::vec4 color;
     Math::vec2 pos;
-	float size;
+    float size;
 };
 
 //------------------------------------------------------------------------------
@@ -86,7 +86,7 @@ TextElement::GetPosition() const
 inline const float 
 TextElement::GetSize() const
 {
-	return this->size;
+    return this->size;
 }
 
 } // namespace CoreGraphics

@@ -15,44 +15,44 @@ namespace Game
 
 namespace TimeManager
 {
-	//------------------------------------------------------------------------------
-	/**
-		This struct needs to be structured exactly like the TimeSource struct, just
-		with different qualifiers.
-	*/
-	struct TimeSourceState
-	{
-		Timing::Time frameTime = 0.0f;
-		Timing::Time time = 0.0f;
-		Timing::Tick ticks = 0;
-		int pauseCounter = 0;
-		float timeFactor = 1.0f;
-	};
+    //------------------------------------------------------------------------------
+    /**
+        This struct needs to be structured exactly like the TimeSource struct, just
+        with different qualifiers.
+    */
+    struct TimeSourceState
+    {
+        Timing::Time frameTime = 0.0f;
+        Timing::Time time = 0.0f;
+        Timing::Tick ticks = 0;
+        int pauseCounter = 0;
+        float timeFactor = 1.0f;
+    };
 
-	/// timemanager singleton state
-	struct State
-	{
-		/// global time factor
-		float timeFactor = 1.0f;
-		/// global ticks
-		Timing::Tick time = 0.0f;
-		/// global delta frame time
-		Timing::Tick frameTime = 167; // start with dt = 1/60s
+    /// timemanager singleton state
+    struct State
+    {
+        /// global time factor
+        float timeFactor = 1.0f;
+        /// global ticks
+        Timing::Tick time = 0.0f;
+        /// global delta frame time
+        Timing::Tick frameTime = 167; // start with dt = 1/60s
 
-		TimeSourceState timeSources[32];
-		uint numTimeSources = 0;
+        TimeSourceState timeSources[32];
+        uint numTimeSources = 0;
 
-		Util::HashTable<uint32_t, uint32_t, 32, 1> timeSourceTable;
-	};
+        Util::HashTable<uint32_t, uint32_t, 32, 1> timeSourceTable;
+    };
 
-	static State* state = nullptr;
+    static State* state = nullptr;
 
-	/// Destroy the singleton
-	void Destroy();
-	/// called after create
-	void OnActivate();
-	/// called at beginning of each frame
-	void OnBeginFrame();
+    /// Destroy the singleton
+    void Destroy();
+    /// called after create
+    void OnActivate();
+    /// called at beginning of each frame
+    void OnBeginFrame();
 }
 
 //------------------------------------------------------------------------------
@@ -61,14 +61,14 @@ namespace TimeManager
 Game::ManagerAPI
 TimeManager::Create()
 {
-	n_assert(state == nullptr);
-	state = n_new(State);
+    n_assert(state == nullptr);
+    state = n_new(State);
 
-	Game::ManagerAPI api;
-	api.OnActivate = &OnActivate;
-	api.OnDeactivate = &Destroy;
-	api.OnBeginFrame = &OnBeginFrame;
-	return api;
+    Game::ManagerAPI api;
+    api.OnActivate = &OnActivate;
+    api.OnDeactivate = &Destroy;
+    api.OnBeginFrame = &OnBeginFrame;
+    return api;
 }
 
 //------------------------------------------------------------------------------
@@ -77,10 +77,10 @@ TimeManager::Create()
 TimeSource* const
 TimeManager::CreateTimeSource(TimeSourceCreateInfo const& info)
 {
-	state->timeSourceTable.Add(info.hash, state->numTimeSources);
-	TimeSourceState& timesource = state->timeSources[state->numTimeSources++];
-	timesource.frameTime = Timing::TicksToSeconds(state->frameTime);
-	return reinterpret_cast<TimeSource*>(&timesource);
+    state->timeSourceTable.Add(info.hash, state->numTimeSources);
+    TimeSourceState& timesource = state->timeSources[state->numTimeSources++];
+    timesource.frameTime = Timing::TicksToSeconds(state->frameTime);
+    return reinterpret_cast<TimeSource*>(&timesource);
 }
 
 //------------------------------------------------------------------------------
@@ -89,7 +89,7 @@ TimeManager::CreateTimeSource(TimeSourceCreateInfo const& info)
 TimeSource* const
 TimeManager::GetTimeSource(uint32_t TIMESOURCE_HASH)
 {
-	return reinterpret_cast<TimeSource*>(&state->timeSources[state->timeSourceTable[TIMESOURCE_HASH]]);
+    return reinterpret_cast<TimeSource*>(&state->timeSources[state->timeSourceTable[TIMESOURCE_HASH]]);
 }
 
 //------------------------------------------------------------------------------
@@ -98,7 +98,7 @@ TimeManager::GetTimeSource(uint32_t TIMESOURCE_HASH)
 void
 TimeManager::SetGlobalTimeFactor(float factor)
 {
-	state->timeFactor = factor;
+    state->timeFactor = factor;
 }
 
 //------------------------------------------------------------------------------
@@ -107,7 +107,7 @@ TimeManager::SetGlobalTimeFactor(float factor)
 float
 TimeManager::GetGlobalTimeFactor()
 {
-	return state->timeFactor;
+    return state->timeFactor;
 }
 
 //------------------------------------------------------------------------------
@@ -116,9 +116,9 @@ TimeManager::GetGlobalTimeFactor()
 void
 TimeManager::Destroy()
 {
-	n_assert(state != nullptr);
-	n_delete(state);
-	state = nullptr;
+    n_assert(state != nullptr);
+    n_delete(state);
+    state = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -127,21 +127,21 @@ TimeManager::Destroy()
 void
 TimeManager::OnActivate()
 {
-	//state->time = FrameSync::FrameSyncTimer::Instance()->GetTicks();
+    //state->time = FrameSync::FrameSyncTimer::Instance()->GetTicks();
 
-	// register default time sources
+    // register default time sources
 
-	TimeSourceCreateInfo systemTimeInfo;
-	systemTimeInfo.hash = TIMESOURCE_SYSTEM;
-	CreateTimeSource(systemTimeInfo);
+    TimeSourceCreateInfo systemTimeInfo;
+    systemTimeInfo.hash = TIMESOURCE_SYSTEM;
+    CreateTimeSource(systemTimeInfo);
 
-	TimeSourceCreateInfo gameTimeInfo;
-	gameTimeInfo.hash = TIMESOURCE_GAMEPLAY;
-	CreateTimeSource(gameTimeInfo);
+    TimeSourceCreateInfo gameTimeInfo;
+    gameTimeInfo.hash = TIMESOURCE_GAMEPLAY;
+    CreateTimeSource(gameTimeInfo);
 
-	TimeSourceCreateInfo inputTimeInfo;
-	inputTimeInfo.hash = TIMESOURCE_INPUT;
-	CreateTimeSource(inputTimeInfo);
+    TimeSourceCreateInfo inputTimeInfo;
+    inputTimeInfo.hash = TIMESOURCE_INPUT;
+    CreateTimeSource(inputTimeInfo);
 }
 
 //------------------------------------------------------------------------------
@@ -150,27 +150,27 @@ TimeManager::OnActivate()
 void
 TimeManager::OnBeginFrame()
 {
-	// compute the current frame time
-	Tick const realTimeFrameTicks = FrameSync::FrameSyncTimer::Instance()->GetFrameTicks();
-	state->frameTime = (Timing::Tick)((float)realTimeFrameTicks * state->timeFactor);
-	state->time = state->time + state->frameTime;
+    // compute the current frame time
+    Tick const realTimeFrameTicks = FrameSync::FrameSyncTimer::Instance()->GetFrameTicks();
+    state->frameTime = (Timing::Tick)((float)realTimeFrameTicks * state->timeFactor);
+    state->time = state->time + state->frameTime;
 
-	// update all time sources
-	Timing::Time const frameTimeInSecs = Timing::TicksToSeconds(state->frameTime);
-	IndexT i;
-	for (i = 0; i < state->numTimeSources; i++)
-	{
-		if (state->timeSources[i].pauseCounter == 0)
-		{
-			state->timeSources[i].frameTime = frameTimeInSecs * state->timeSources[i].timeFactor;
-			state->timeSources[i].ticks += (Timing::Tick)((float)state->frameTime * state->timeSources[i].timeFactor);
-			state->timeSources[i].time = Timing::TicksToSeconds(state->timeSources[i].ticks);
-		}
-		else
-		{
-			state->timeSources[i].frameTime = 0;
-		}
-	}
+    // update all time sources
+    Timing::Time const frameTimeInSecs = Timing::TicksToSeconds(state->frameTime);
+    IndexT i;
+    for (i = 0; i < state->numTimeSources; i++)
+    {
+        if (state->timeSources[i].pauseCounter == 0)
+        {
+            state->timeSources[i].frameTime = frameTimeInSecs * state->timeSources[i].timeFactor;
+            state->timeSources[i].ticks += (Timing::Tick)((float)state->frameTime * state->timeSources[i].timeFactor);
+            state->timeSources[i].time = Timing::TicksToSeconds(state->timeSources[i].ticks);
+        }
+        else
+        {
+            state->timeSources[i].frameTime = 0;
+        }
+    }
 }
 
 } // namespace Game

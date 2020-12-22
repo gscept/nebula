@@ -80,8 +80,8 @@ public:
     void SetVec4(const Util::String& name, const Math::vec4& value);
     /// set mat4 attribute on current node
     void SetMat4(const Util::String& name, const Math::mat4& value);
-	/// set transform44 attribute on current node
-	void SetTransform44(const Util::String& name, const Math::transform44& value);    
+    /// set transform44 attribute on current node
+    void SetTransform44(const Util::String& name, const Math::transform44& value);    
     /// generic setter, template specializations implemented in nebula3/code/addons/nebula2
     template<typename T> void Set(const Util::String& name, const T &value);
     */

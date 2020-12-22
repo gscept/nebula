@@ -18,7 +18,7 @@ __ImplementClass(Net::MessageClientConnection,'MGCC',Net::TcpClientConnection);
 
 //------------------------------------------------------------------------------
 /**
-    Constructor	
+    Constructor 
 */
 MessageClientConnection::MessageClientConnection()
 {
@@ -27,7 +27,7 @@ MessageClientConnection::MessageClientConnection()
 
 //------------------------------------------------------------------------------
 /**
-    Destructor	
+    Destructor  
 */
 MessageClientConnection::~MessageClientConnection()
 {
@@ -78,7 +78,7 @@ MessageClientConnection::Send()
 
 //------------------------------------------------------------------------------
 /**
-	Writes given stream into a message container and sends this container.
+    Writes given stream into a message container and sends this container.
 */
 Socket::Result
 MessageClientConnection::Send(const Ptr<IO::Stream> &stream)
@@ -94,14 +94,14 @@ MessageClientConnection::Send(const Ptr<IO::Stream> &stream)
     stream->SetAccessMode(Stream::ReadAccess);
     this->codec.EncodeToMessage(stream, this->sendStream);
 
-	n_printf("MessageClientConnection: sending %d bytes\n", this->sendStream->GetSize());
+    n_printf("MessageClientConnection: sending %d bytes\n", this->sendStream->GetSize());
 
     return TcpClientConnection::Send(sendStream);
 }
 
 //------------------------------------------------------------------------------
 /**
-	Returns the stream to which data for sending is written.
+    Returns the stream to which data for sending is written.
 */
 const Ptr<IO::Stream>&
 MessageClientConnection::GetSendStream()
@@ -111,7 +111,7 @@ MessageClientConnection::GetSendStream()
 
 //------------------------------------------------------------------------------
 /**
-	Receive data from the clients, but returns only Success, if a
+    Receive data from the clients, but returns only Success, if a
     complete message was available. This message will either return one
     complete message, or none at all.
 */
@@ -168,7 +168,7 @@ MessageClientConnection::Recv()
 
 //------------------------------------------------------------------------------
 /**
-    Returns the stream with the received data	
+    Returns the stream with the received data   
 */
 const Ptr<IO::Stream>&
 MessageClientConnection::GetRecvStream()

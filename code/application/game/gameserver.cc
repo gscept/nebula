@@ -80,7 +80,7 @@ GameServer::AttachGameFeature(const Ptr<FeatureUnit>& feature)
 {
     n_assert(0 != feature);
     n_assert(InvalidIndex == this->gameFeatures.FindIndex(feature));
-	feature->SetCmdLineArgs(this->GetCmdLineArgs());
+    feature->SetCmdLineArgs(this->GetCmdLineArgs());
     feature->OnActivate();
     this->gameFeatures.Append(feature);
 }
@@ -162,12 +162,12 @@ GameServer::OnBeginFrame()
     for (i = 0; i < num; i++)
     {
 #if NEBULA_ENABLE_PROFILING
-		this->onBeginFrameTimers[i]->Start();
+        this->onBeginFrameTimers[i]->Start();
 #endif
         Dataset data = Game::Query(this->onBeginFrameCallbacks[i].filter);
         this->onBeginFrameCallbacks[i].func(data);
 #if NEBULA_ENABLE_PROFILING
-		this->onBeginFrameTimers[i]->Stop();
+        this->onBeginFrameTimers[i]->Stop();
 #endif
     }
 
@@ -199,12 +199,12 @@ GameServer::OnFrame()
     for (i = 0; i < num; i++)
     {
 #if NEBULA_ENABLE_PROFILING
-		this->onFrameTimers[i]->Start();
+        this->onFrameTimers[i]->Start();
 #endif
         Dataset data = Game::Query(this->onFrameCallbacks[i].filter);
         this->onFrameCallbacks[i].func(data);
 #if NEBULA_ENABLE_PROFILING
-		this->onFrameTimers[i]->Stop();
+        this->onFrameTimers[i]->Stop();
 #endif
     }
 
@@ -232,12 +232,12 @@ GameServer::OnEndFrame()
     for (i = 0; i < num; i++)
     {
 #if NEBULA_ENABLE_PROFILING
-		this->onEndFrameTimers[i]->Start();
+        this->onEndFrameTimers[i]->Start();
 #endif
         Dataset data = Game::Query(this->onEndFrameCallbacks[i].filter);
         this->onEndFrameCallbacks[i].func(data);
 #if NEBULA_ENABLE_PROFILING
-		this->onEndFrameTimers[i]->Stop();
+        this->onEndFrameTimers[i]->Stop();
 #endif
     }
 
@@ -370,36 +370,36 @@ GameServer::CreateProcessor(ProcessorCreateInfo const& info)
     else
         this->processors[Ids::Index(handle)] = std::move(processor);
 
-	// Setup frame callbacks
-	if (info.OnBeginFrame != nullptr)
-	{
-		this->onBeginFrameCallbacks.Append({ handle, info.filter, info.OnBeginFrame });
+    // Setup frame callbacks
+    if (info.OnBeginFrame != nullptr)
+    {
+        this->onBeginFrameCallbacks.Append({ handle, info.filter, info.OnBeginFrame });
 #if NEBULA_ENABLE_PROFILING
-		Ptr<Debug::DebugTimer> timer = Debug::DebugTimer::Create();
-		timer->Setup(info.name, "Processors - OnBeginFrame");
-		this->onBeginFrameTimers.Append(timer);
+        Ptr<Debug::DebugTimer> timer = Debug::DebugTimer::Create();
+        timer->Setup(info.name, "Processors - OnBeginFrame");
+        this->onBeginFrameTimers.Append(timer);
 #endif
-	}
+    }
 
-	if (info.OnFrame != nullptr)
-	{
+    if (info.OnFrame != nullptr)
+    {
         this->onFrameCallbacks.Append({ handle, info.filter, info.OnFrame });
 #if NEBULA_ENABLE_PROFILING
-		Ptr<Debug::DebugTimer> timer = Debug::DebugTimer::Create();
-		timer->Setup(info.name, "Processors - OnFrame");
-		this->onFrameTimers.Append(timer);
+        Ptr<Debug::DebugTimer> timer = Debug::DebugTimer::Create();
+        timer->Setup(info.name, "Processors - OnFrame");
+        this->onFrameTimers.Append(timer);
 #endif
-	}
+    }
 
-	if (info.OnEndFrame != nullptr)
-	{
+    if (info.OnEndFrame != nullptr)
+    {
         this->onEndFrameCallbacks.Append({ handle, info.filter, info.OnEndFrame });
 #if NEBULA_ENABLE_PROFILING
-		Ptr<Debug::DebugTimer> timer = Debug::DebugTimer::Create();
-		timer->Setup(info.name, "Processors - OnEndFrame");
-		this->onEndFrameTimers.Append(timer);
+        Ptr<Debug::DebugTimer> timer = Debug::DebugTimer::Create();
+        timer->Setup(info.name, "Processors - OnEndFrame");
+        this->onEndFrameTimers.Append(timer);
 #endif
-	}
+    }
 
     if (info.OnLoad != nullptr)
         this->onLoadCallbacks.Append({ handle, info.filter, info.OnLoad });

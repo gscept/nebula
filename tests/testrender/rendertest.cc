@@ -30,44 +30,44 @@ __ImplementClass(RenderTest, 'RETE', Core::RefCounted);
 void
 RenderTest::Run()
 {
-	Ptr<GraphicsServer> gfxServer = GraphicsServer::Create();
-	Ptr<Resources::ResourceServer> resMgr = Resources::ResourceServer::Create();
+    Ptr<GraphicsServer> gfxServer = GraphicsServer::Create();
+    Ptr<Resources::ResourceServer> resMgr = Resources::ResourceServer::Create();
 
-	App::Application app;
+    App::Application app;
 
-	Ptr<Input::InputServer> inputServer = Input::InputServer::Create();
-	Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
+    Ptr<Input::InputServer> inputServer = Input::InputServer::Create();
+    Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
 
-	app.SetAppTitle("RenderTest!");
-	app.SetCompanyName("gscept");
-	app.Open();
+    app.SetAppTitle("RenderTest!");
+    app.SetCompanyName("gscept");
+    app.Open();
 
-	resMgr->Open();
-	inputServer->Open();
-	gfxServer->Open();
+    resMgr->Open();
+    inputServer->Open();
+    gfxServer->Open();
 
-	CoreGraphics::WindowCreateInfo wndInfo = 
-	{
-		CoreGraphics::DisplayMode{100, 100, 640, 480},
-		"Render test!", "", CoreGraphics::AntiAliasQuality::None, true, true, false
-	};
-	CoreGraphics::WindowId wnd = CreateWindow(wndInfo);
+    CoreGraphics::WindowCreateInfo wndInfo = 
+    {
+        CoreGraphics::DisplayMode{100, 100, 640, 480},
+        "Render test!", "", CoreGraphics::AntiAliasQuality::None, true, true, false
+    };
+    CoreGraphics::WindowId wnd = CreateWindow(wndInfo);
 
-	Ptr<View> view = gfxServer->CreateView("mainview", "frame:vkdefault.json");
-	Ptr<Stage> stage = gfxServer->CreateStage("stage1", true);
-	
-	GraphicsEntityId cam = Graphics::CreateEntity();
-	CameraContext::RegisterEntity(cam);
-	CameraContext::SetupProjectionFov(cam, 16.f / 9.f, Math::n_deg2rad(60.f), 1.0f, 1000.0f);
-	view->SetCamera(cam);
-	view->SetStage(stage);
-	
-	IndexT frameIndex = -1;
-	bool run = true;
-	while (run && !inputServer->IsQuitRequested())
-	{
-		inputServer->OnFrame();
-		resMgr->Update(frameIndex);
+    Ptr<View> view = gfxServer->CreateView("mainview", "frame:vkdefault.json");
+    Ptr<Stage> stage = gfxServer->CreateStage("stage1", true);
+    
+    GraphicsEntityId cam = Graphics::CreateEntity();
+    CameraContext::RegisterEntity(cam);
+    CameraContext::SetupProjectionFov(cam, 16.f / 9.f, Math::n_deg2rad(60.f), 1.0f, 1000.0f);
+    view->SetCamera(cam);
+    view->SetStage(stage);
+    
+    IndexT frameIndex = -1;
+    bool run = true;
+    while (run && !inputServer->IsQuitRequested())
+    {
+        inputServer->OnFrame();
+        resMgr->Update(frameIndex);
         gfxServer->BeginFrame();
 
         // put game code which doesn't need visibility data or animation here
@@ -85,24 +85,24 @@ RenderTest::Run()
         // do stuff after rendering is done
 
         gfxServer->EndFrame();
-		WindowPresent(wnd, frameIndex);
-		if (inputServer->GetDefaultKeyboard()->KeyPressed(Input::Key::Escape)) run = false;
-		frameIndex++;
-	}
+        WindowPresent(wnd, frameIndex);
+        if (inputServer->GetDefaultKeyboard()->KeyPressed(Input::Key::Escape)) run = false;
+        frameIndex++;
+    }
 
-	DestroyWindow(wnd);
+    DestroyWindow(wnd);
 
-	// clean up entities
-	CameraContext::DeregisterEntity(cam);
-	Graphics::DestroyEntity(cam);
+    // clean up entities
+    CameraContext::DeregisterEntity(cam);
+    Graphics::DestroyEntity(cam);
 
-	gfxServer->DiscardStage(stage);
-	gfxServer->DiscardView(view);
+    gfxServer->DiscardStage(stage);
+    gfxServer->DiscardView(view);
 
-	gfxServer->Close();
-	inputServer->Close();
-	resMgr->Close();
-	app.Close();
+    gfxServer->Close();
+    inputServer->Close();
+    resMgr->Close();
+    app.Close();
 }
 
 } // namespace Test

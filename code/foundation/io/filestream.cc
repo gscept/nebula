@@ -19,7 +19,7 @@ using namespace Core;
 FileStream::FileStream() :
     handle(0),
     mappedContent(0),
-	mapHandle(0)
+    mapHandle(0)
 {
     // empty
 }

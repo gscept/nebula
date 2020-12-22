@@ -102,7 +102,7 @@ protected:
     bool isOpen;
     bool inBeginFrame;
     bool isQuitRequested;
-	bool hasFocus;
+    bool hasFocus;
     int inputHandlersLockCount;
     SizeT maxNumLocalPlayers;
     Util::Array<Util::KeyValuePair<Input::InputPriority::Code,Ptr<Input::InputHandler> > > inputHandlers;
@@ -177,7 +177,7 @@ InputServerBase::GetDefaultMouse() const
 inline bool
 InputServerBase::HasFocus() const
 {
-	return hasFocus;
+    return hasFocus;
 }
 
 } // namespace Base

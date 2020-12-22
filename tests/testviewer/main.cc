@@ -15,11 +15,11 @@ using namespace Tests;
 
 int main(int argc, char**argv)
 {
-	// create Nebula runtime
-	Ptr<CoreServer> coreServer = CoreServer::Create();
-	coreServer->SetAppName(Util::StringAtom("Nebula Test Viewer"));
-	coreServer->Open();
-	
+    // create Nebula runtime
+    Ptr<CoreServer> coreServer = CoreServer::Create();
+    coreServer->SetAppName(Util::StringAtom("Nebula Test Viewer"));
+    coreServer->Open();
+    
     Tests::SimpleViewerApplication app;
     if (app.Open())
     {
@@ -27,8 +27,8 @@ int main(int argc, char**argv)
         app.Close();
     }
 
-	coreServer->Close();
-	coreServer = nullptr;	
+    coreServer->Close();
+    coreServer = nullptr;   
 
-	Core::SysFunc::Exit(0);
+    Core::SysFunc::Exit(0);
 }

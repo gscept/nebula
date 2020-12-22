@@ -225,7 +225,7 @@ __ImplementClass(Test::ScriptingTest, 'scrT', Test::TestCase);
 void
 ScriptingTest::Run()
 {
-	Ptr<ScriptServer> server = Scripting::PythonServer::Create();
+    Ptr<ScriptServer> server = Scripting::PythonServer::Create();
     if (!server->Open())
     {
         n_printf("[ERROR]: Could not open python script server!\n");

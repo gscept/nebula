@@ -18,28 +18,28 @@ using namespace physx;
 using namespace Physics;
 
 /// Physx simulation filter
-PxFilterFlags Simulationfilter(PxFilterObjectAttributes	attributes0,
-	PxFilterData				filterData0,
-	PxFilterObjectAttributes	attributes1,
-	PxFilterData				filterData1,
-	PxPairFlags&				pairFlags,
-	const void*					constantBlock,
-	PxU32						constantBlockSize)
+PxFilterFlags Simulationfilter(PxFilterObjectAttributes attributes0,
+    PxFilterData                filterData0,
+    PxFilterObjectAttributes    attributes1,
+    PxFilterData                filterData1,
+    PxPairFlags&                pairFlags,
+    const void*                 constantBlock,
+    PxU32                       constantBlockSize)
 {
-	PxFilterFlags filterFlags = PxDefaultSimulationFilterShader(attributes0,
-		filterData0, attributes1, filterData1, pairFlags, constantBlock, constantBlockSize);
-	if (pairFlags & PxPairFlag::eSOLVE_CONTACT)
-	{
-		if (filterData0.word1 & CollisionFeedbackFull || filterData1.word1 & CollisionFeedbackFull)
-		{
-			pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND | PxPairFlag::eNOTIFY_TOUCH_PERSISTS | PxPairFlag::eNOTIFY_TOUCH_LOST | PxPairFlag::eDETECT_DISCRETE_CONTACT | PxPairFlag::eNOTIFY_CONTACT_POINTS;
-		}
-		else if (filterData0.word1 & CollisionSingle || filterData1.word1 & CollisionSingle)
-		{
-			pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND | PxPairFlag::eDETECT_DISCRETE_CONTACT | PxPairFlag::eNOTIFY_CONTACT_POINTS;
-		}
-	}    
-	return filterFlags;
+    PxFilterFlags filterFlags = PxDefaultSimulationFilterShader(attributes0,
+        filterData0, attributes1, filterData1, pairFlags, constantBlock, constantBlockSize);
+    if (pairFlags & PxPairFlag::eSOLVE_CONTACT)
+    {
+        if (filterData0.word1 & CollisionFeedbackFull || filterData1.word1 & CollisionFeedbackFull)
+        {
+            pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND | PxPairFlag::eNOTIFY_TOUCH_PERSISTS | PxPairFlag::eNOTIFY_TOUCH_LOST | PxPairFlag::eDETECT_DISCRETE_CONTACT | PxPairFlag::eNOTIFY_CONTACT_POINTS;
+        }
+        else if (filterData0.word1 & CollisionSingle || filterData1.word1 & CollisionSingle)
+        {
+            pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND | PxPairFlag::eDETECT_DISCRETE_CONTACT | PxPairFlag::eNOTIFY_CONTACT_POINTS;
+        }
+    }    
+    return filterFlags;
 }
 
 namespace Physics
@@ -84,18 +84,18 @@ CreateScene()
     scene.dispatcher = PxDefaultCpuDispatcherCreate(PHYSX_THREADS);
 
     PxSceneDesc sceneDesc(state.physics->getTolerancesScale());
-	sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
-	sceneDesc.cpuDispatcher = scene.dispatcher;
-	sceneDesc.filterShader = Simulationfilter;
-	scene.scene = state.physics->createScene(sceneDesc);	
-	scene.scene->setSimulationEventCallback(&state);	
-	scene.controllerManager= PxCreateControllerManager(*scene.scene);		
+    sceneDesc.gravity = PxVec3(0.0f, -9.81f, 0.0f);
+    sceneDesc.cpuDispatcher = scene.dispatcher;
+    sceneDesc.filterShader = Simulationfilter;
+    scene.scene = state.physics->createScene(sceneDesc);    
+    scene.scene->setSimulationEventCallback(&state);    
+    scene.controllerManager= PxCreateControllerManager(*scene.scene);       
 #ifdef NEBULA_DEBUG
     scene.scene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 1.0f);
     scene.scene->setVisualizationParameter(PxVisualizationParameter::eWORLD_AXES, 1.0f);
     scene.scene->setVisualizationParameter(PxVisualizationParameter::eBODY_AXES, 1.0f);
     scene.scene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 1.0f);
-	scene.scene->getScenePvdClient()->setScenePvdFlags(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS | PxPvdSceneFlag::eTRANSMIT_CONTACTS | PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES );
+    scene.scene->getScenePvdClient()->setScenePvdFlags(PxPvdSceneFlag::eTRANSMIT_CONSTRAINTS | PxPvdSceneFlag::eTRANSMIT_CONTACTS | PxPvdSceneFlag::eTRANSMIT_SCENEQUERIES );
 #endif
     scene.physics = state.physics;
     scene.foundation = state.foundation;
@@ -135,7 +135,7 @@ GetMaterial(IndexT idx)
 void
 SetOnSleepCallback(Util::Delegate<void(ActorId* id, SizeT num)> const& callback)
 {
-	state.onSleepCallback = callback;
+    state.onSleepCallback = callback;
 }
 
 //------------------------------------------------------------------------------
@@ -144,7 +144,7 @@ SetOnSleepCallback(Util::Delegate<void(ActorId* id, SizeT num)> const& callback)
 void
 SetOnWakeCallback(Util::Delegate<void(ActorId* id, SizeT num)> const& callback)
 {
-	state.onWakeCallback = callback;
+    state.onWakeCallback = callback;
 }
 
 //------------------------------------------------------------------------------

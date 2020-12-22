@@ -13,7 +13,7 @@ namespace Frame
 */
 FrameSubpassOrderedBatch::FrameSubpassOrderedBatch()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ FrameSubpassOrderedBatch::FrameSubpassOrderedBatch()
 */
 FrameSubpassOrderedBatch::~FrameSubpassOrderedBatch()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -30,9 +30,9 @@ FrameSubpassOrderedBatch::~FrameSubpassOrderedBatch()
 FrameOp::Compiled*
 FrameSubpassOrderedBatch::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
-	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
-	ret->batch = this->batch;
-	return ret;
+    CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+    ret->batch = this->batch;
+    return ret;
 }
 
 //------------------------------------------------------------------------------

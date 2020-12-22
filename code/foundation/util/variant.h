@@ -32,23 +32,23 @@ public:
     enum Type
     {
         Void,
-		Byte,
-		Short,
-		UShort,
+        Byte,
+        Short,
+        UShort,
         Int,
         UInt,
-		Int64,
-		UInt64,
+        Int64,
+        UInt64,
         Float,
-		Double,
+        Double,
         Bool,
         Vec2,
         Vec3,
         Vec4,
-		Quaternion,
+        Quaternion,
         String,
         Mat4,
-		Transform44,
+        Transform44,
         Blob,
         Guid,
         Object,
@@ -56,50 +56,50 @@ public:
         IntArray,
         FloatArray,
         BoolArray,
-		Vec2Array,
+        Vec2Array,
         Vec3Array,
         Vec4Array,
         StringArray,
         Mat4Array,
         BlobArray,
         GuidArray,
-		NumTypes,
+        NumTypes,
     };
 
     /// default constructor
     Variant();
-	/// byte constructor
-	Variant(byte rhs);
-	/// short constructor
-	Variant(short rhs);
-	/// ushort constructor
-	Variant(ushort rhs);
+    /// byte constructor
+    Variant(byte rhs);
+    /// short constructor
+    Variant(short rhs);
+    /// ushort constructor
+    Variant(ushort rhs);
     /// int constructor
     Variant(int rhs);
-	/// uint constructor
-	Variant(uint rhs);
-	/// int64 constructor
-	Variant(int64_t rhs);
-	/// uint64 constructor
-	Variant(uint64_t rhs);
+    /// uint constructor
+    Variant(uint rhs);
+    /// int64 constructor
+    Variant(int64_t rhs);
+    /// uint64 constructor
+    Variant(uint64_t rhs);
     /// float constructor
     Variant(float rhs);
-	/// double constructor
-	Variant(double rhs);
+    /// double constructor
+    Variant(double rhs);
     /// bool constructor
     Variant(bool rhs);
-	/// vec2 constructor
-	Variant(const Math::vec2& v);
+    /// vec2 constructor
+    Variant(const Math::vec2& v);
     /// vec4 constructor
     Variant(const Math::vec3& v);
     /// vec4 constructor
     Variant(const Math::vec4& v);
-	/// quaternion constructor
-	Variant(const Math::quat& q);
+    /// quaternion constructor
+    Variant(const Math::quat& q);
     /// mat4 constructor
     Variant(const Math::mat4& m);
-	/// transform44 constructor
-	Variant(const Math::transform44& m);
+    /// transform44 constructor
+    Variant(const Math::transform44& m);
     /// string constructor
     Variant(const Util::String& rhs);
     /// blob constructor
@@ -112,16 +112,16 @@ public:
     Variant(Core::RefCounted* ptr);
     /// void pointer constructor
     Variant(void* ptr);
-	/// null pointer construction
-	Variant(std::nullptr_t);
+    /// null pointer construction
+    Variant(std::nullptr_t);
     /// int array constructor
     Variant(const Util::Array<int>& rhs);
     /// float array constructor
     Variant(const Util::Array<float>& rhs);
     /// bool array constructor
     Variant(const Util::Array<bool>& rhs);
-	/// vec2 array constructor
-	Variant(const Util::Array<Math::vec2>& rhs);
+    /// vec2 array constructor
+    Variant(const Util::Array<Math::vec2>& rhs);
     /// vec3 array constructor
     Variant(const Util::Array<Math::vec3>& rhs);
     /// vec4 array constructor
@@ -148,38 +148,38 @@ public:
     
     /// assignment operator
     void operator=(const Variant& rhs);
-	/// byte assignment operator
-	void operator=(byte val);
-	/// short assignment operator
-	void operator=(short val);
-	/// ushort assignment operator
-	void operator=(ushort val);
+    /// byte assignment operator
+    void operator=(byte val);
+    /// short assignment operator
+    void operator=(short val);
+    /// ushort assignment operator
+    void operator=(ushort val);
     /// int assignment operator
     void operator=(int val);
-	/// uint assignment operator
-	void operator=(uint val);
-	/// int assignment operator
-	void operator=(int64_t val);
-	/// uint assignment operator
-	void operator=(uint64_t val);
+    /// uint assignment operator
+    void operator=(uint val);
+    /// int assignment operator
+    void operator=(int64_t val);
+    /// uint assignment operator
+    void operator=(uint64_t val);
     /// float assignment operator
     void operator=(float val);
-	/// double assignment operator
-	void operator=(double val);
+    /// double assignment operator
+    void operator=(double val);
     /// bool assigment operator
     void operator=(bool val);
-	/// vec2 assignment operator
-	void operator=(const Math::vec2& val);
+    /// vec2 assignment operator
+    void operator=(const Math::vec2& val);
     /// vec3 assignment operator
     void operator=(const Math::vec3& val);
     /// vec4 assignment operator
     void operator=(const Math::vec4& val);
-	/// quat assignment operator
-	void operator=(const Math::quat& val);
+    /// quat assignment operator
+    void operator=(const Math::quat& val);
     /// mat4 assignment operator
     void operator=(const Math::mat4& val);
-	/// transform44 assignment operator
-	void operator=(const Math::transform44& val);
+    /// transform44 assignment operator
+    void operator=(const Math::transform44& val);
     /// string assignment operator
     void operator=(const Util::String& s);
     /// blob assignment operator
@@ -198,8 +198,8 @@ public:
     void operator=(const Util::Array<float>& rhs);
     /// bool array assignment
     void operator=(const Util::Array<bool>& rhs);
-	/// vec2 array assignment
-	void operator=(const Util::Array<Math::vec2>& rhs);
+    /// vec2 array assignment
+    void operator=(const Util::Array<Math::vec2>& rhs);
     /// vec3 array assignment
     void operator=(const Util::Array<Math::vec3>& rhs);
     /// vec4 array assignment
@@ -215,32 +215,32 @@ public:
 
     /// equality operator
     bool operator==(const Variant& rhs) const;
-	/// byte equality operator
-	bool operator==(byte rhs) const;
-	/// short equality operator
-	bool operator==(short rhs) const;
-	/// ushort equality operator
-	bool operator==(ushort rhs) const;
+    /// byte equality operator
+    bool operator==(byte rhs) const;
+    /// short equality operator
+    bool operator==(short rhs) const;
+    /// ushort equality operator
+    bool operator==(ushort rhs) const;
     /// int equality operator
     bool operator==(int rhs) const;
-	/// uint equality operator
-	bool operator==(uint rhs) const;
-	/// int equality operator
-	bool operator==(int64_t rhs) const;
-	/// uint equality operator
-	bool operator==(uint64_t rhs) const;
+    /// uint equality operator
+    bool operator==(uint rhs) const;
+    /// int equality operator
+    bool operator==(int64_t rhs) const;
+    /// uint equality operator
+    bool operator==(uint64_t rhs) const;
     /// float equality operator
     bool operator==(float rhs) const;
-	/// double equality operator
-	bool operator==(double rhs) const;
+    /// double equality operator
+    bool operator==(double rhs) const;
     /// bool equality operator
     bool operator==(bool rhs) const;
-	/// vec2 equality operator
-	bool operator==(const Math::vec2& rhs) const;
+    /// vec2 equality operator
+    bool operator==(const Math::vec2& rhs) const;
     /// vec4 equality operator
     bool operator==(const Math::vec4& rhs) const;
-	/// vec4 equality operator
-	bool operator==(const Math::quat& rhs) const;
+    /// vec4 equality operator
+    bool operator==(const Math::quat& rhs) const;
     /// string equality operator
     bool operator==(const Util::String& rhs) const;
     /// guid equality operator
@@ -254,32 +254,32 @@ public:
 
     /// inequality operator
     bool operator!=(const Variant& rhs) const;
-	/// byte inequality operator
-	bool operator!=(byte rhs) const;
-	/// short inequality operator
-	bool operator!=(short rhs) const;
-	/// ushort inequality operator
-	bool operator!=(ushort rhs) const;
+    /// byte inequality operator
+    bool operator!=(byte rhs) const;
+    /// short inequality operator
+    bool operator!=(short rhs) const;
+    /// ushort inequality operator
+    bool operator!=(ushort rhs) const;
     /// int inequality operator
     bool operator!=(int rhs) const;
-	/// uint inequality operator
-	bool operator!=(uint rhs) const;
-	/// int inequality operator
-	bool operator!=(int64_t rhs) const;
-	/// uint inequality operator
-	bool operator!=(uint64_t rhs) const;
+    /// uint inequality operator
+    bool operator!=(uint rhs) const;
+    /// int inequality operator
+    bool operator!=(int64_t rhs) const;
+    /// uint inequality operator
+    bool operator!=(uint64_t rhs) const;
     /// float inequality operator
     bool operator!=(float rhs) const;
-	/// double inequality operator
-	bool operator!=(double rhs) const;
+    /// double inequality operator
+    bool operator!=(double rhs) const;
     /// bool inequality operator
     bool operator!=(bool rhs) const;
-	/// vec2 inequality operator
-	bool operator!=(const Math::vec2& rhs) const;
+    /// vec2 inequality operator
+    bool operator!=(const Math::vec2& rhs) const;
     /// vec4 inequality operator
     bool operator!=(const Math::vec4& rhs) const;
-	/// quaternion inequality operator
-	bool operator!=(const Math::quat& rhs) const;
+    /// quaternion inequality operator
+    bool operator!=(const Math::quat& rhs) const;
     /// string inequality operator
     bool operator!=(const Util::String& rhs) const;
     /// guid inequality operator
@@ -300,42 +300,42 @@ public:
     /// less equal operator
     bool operator<=(const Variant& rhs) const;
 
-	/// set byte content
-	void SetByte(byte val);
-	/// get byte content
-	byte GetByte() const;
-	/// set short content
-	void SetShort(short val);
-	/// get short content
-	short GetShort() const;
-	/// set ushort content
-	void SetUShort(ushort val);
-	/// get short content
-	ushort GetUShort() const;
+    /// set byte content
+    void SetByte(byte val);
+    /// get byte content
+    byte GetByte() const;
+    /// set short content
+    void SetShort(short val);
+    /// get short content
+    short GetShort() const;
+    /// set ushort content
+    void SetUShort(ushort val);
+    /// get short content
+    ushort GetUShort() const;
     /// set integer content
     void SetInt(int val);
-	/// get integer content
-	int GetInt() const;
-	/// set unsigned integer content
-	void SetUInt(uint val);
-	/// get unsigned integer content
-	uint GetUInt() const;
-	/// set integer content
-	void SetInt64(int64_t val);
-	/// get integer content
-	int64_t GetInt64() const;
-	/// set unsigned integer content
-	void SetUInt64(uint64_t val);
-	/// get unsigned integer content
-	uint64_t GetUInt64() const;
+    /// get integer content
+    int GetInt() const;
+    /// set unsigned integer content
+    void SetUInt(uint val);
+    /// get unsigned integer content
+    uint GetUInt() const;
+    /// set integer content
+    void SetInt64(int64_t val);
+    /// get integer content
+    int64_t GetInt64() const;
+    /// set unsigned integer content
+    void SetUInt64(uint64_t val);
+    /// get unsigned integer content
+    uint64_t GetUInt64() const;
     /// set float content
     void SetFloat(float val);
     /// get float content
     float GetFloat() const;
-	/// set double content
-	void SetDouble(double val);
-	/// get double content
-	double GetDouble() const;
+    /// set double content
+    void SetDouble(double val);
+    /// get double content
+    double GetDouble() const;
     /// set bool content
     void SetBool(bool val);
     /// get bool content
@@ -344,10 +344,10 @@ public:
     void SetString(const Util::String& val);
     /// get string content
     const Util::String& GetString() const;
-	/// set vec2 content
-	void SetVec2(const Math::vec2& val);
-	/// get vec2 content
-	Math::vec2 GetVec2() const;
+    /// set vec2 content
+    void SetVec2(const Math::vec2& val);
+    /// get vec2 content
+    Math::vec2 GetVec2() const;
     /// set vec4 content
     void SetVec3(const Math::vec3& val);
     /// get vec4 content
@@ -356,18 +356,18 @@ public:
     void SetVec4(const Math::vec4& val);
     /// get vec4 content
     Math::vec4 GetVec4() const;
-	/// set quaternion content
-	void SetQuat(const Math::quat& val);
-	/// get quaternion content
-	Math::quat GetQuat() const;
+    /// set quaternion content
+    void SetQuat(const Math::quat& val);
+    /// get quaternion content
+    Math::quat GetQuat() const;
     /// set mat4 content
     void SetMat4(const Math::mat4& val);
     /// get mat4 content
     const Math::mat4& GetMat4() const;
-	/// set transform44 content
-	void SetTransform44(const Math::transform44& val);
-	/// get transform44 content
-	const Math::transform44& GetTransform44() const;
+    /// set transform44 content
+    void SetTransform44(const Math::transform44& val);
+    /// get transform44 content
+    const Math::transform44& GetTransform44() const;
     /// set blob 
     void SetBlob(const Util::Blob& val);
     /// get blob
@@ -396,10 +396,10 @@ public:
     void SetBoolArray(const Util::Array<bool>& val);
     /// get bool array content
     const Util::Array<bool>& GetBoolArray() const;
-	/// set vec2 array content
-	void SetVec2Array(const Util::Array<Math::vec2>& val);
-	/// get vec2 array content
-	const Util::Array<Math::vec2>& GetVec2Array() const;
+    /// set vec2 array content
+    void SetVec2Array(const Util::Array<Math::vec2>& val);
+    /// get vec2 array content
+    const Util::Array<Math::vec2>& GetVec2Array() const;
     /// set vec4 array content
     void SetVec3Array(const Util::Array<Math::vec3>& val);
     /// get vec4 array content
@@ -425,18 +425,18 @@ public:
     /// get blob array content
     const Util::Array<Util::Blob>& GetBlobArray() const;
 
-	/// Templated get method.
-	template <typename TYPE>
-	TYPE Get() const;
+    /// Templated get method.
+    template <typename TYPE>
+    TYPE Get() const;
 
     /// convert value to string
     Util::String ToString() const;
     /// set value from string, if type doesn't match, returns false
     bool SetParseString(const Util::String& string);
-	/// get size
-	const SizeT Size() const;
-	/// get pointer to data (use void pointer union)
-	const void* AsVoidPtr() const;
+    /// get size
+    const SizeT Size() const;
+    /// get pointer to data (use void pointer union)
+    const void* AsVoidPtr() const;
 
     /// create from string
     static Variant FromString(const Util::String& string);
@@ -454,18 +454,18 @@ private:
     Type type;
     union
     {
-		byte i8;
-		short i16;
-		ushort ui16;
+        byte i8;
+        short i16;
+        ushort ui16;
         int i;
-		uint u;
-		int64_t i64;
-		uint64_t u64;
+        uint u;
+        int64_t i64;
+        uint64_t u64;
         bool b;
-		double d;
+        double d;
         float f[4];
         Math::mat4* m;
-		Math::transform44* t;
+        Math::transform44* t;
         Util::String* string;
         Util::Guid* guid;
         Util::Blob* blob;
@@ -474,7 +474,7 @@ private:
         Util::Array<int>* intArray;
         Util::Array<float>* floatArray;
         Util::Array<bool>* boolArray;
-		Util::Array<Math::vec2>* vec2Array;
+        Util::Array<Math::vec2>* vec2Array;
         Util::Array<Math::vec3>* float3Array;
         Util::Array<Math::vec4>* vec4Array;
         Util::Array<Math::mat4>* mat4Array; 
@@ -555,12 +555,12 @@ Variant::Delete()
         n_delete(this->boolArray);
         this->boolArray = 0;
     }
-	else if (Vec2Array == this->type)
-	{
-		n_assert(this->vec2Array);
-		n_delete(this->vec2Array);
-		this->vec2Array = 0;
-	}
+    else if (Vec2Array == this->type)
+    {
+        n_assert(this->vec2Array);
+        n_delete(this->vec2Array);
+        this->vec2Array = 0;
+    }
     else if (Vec3Array == this->type)
     {
         n_assert(this->float3Array);
@@ -621,39 +621,39 @@ Variant::Copy(const Variant& rhs)
     {
         case Void:
             break;
-		case Byte:
-			this->i8 = rhs.i8;
-			break;
-		case Short:
-			this->i16 = rhs.i16;
-			break;
-		case UShort:
-			this->ui16 = rhs.ui16;
-			break;
+        case Byte:
+            this->i8 = rhs.i8;
+            break;
+        case Short:
+            this->i16 = rhs.i16;
+            break;
+        case UShort:
+            this->ui16 = rhs.ui16;
+            break;
         case Int:
             this->i = rhs.i;
             break;
-		case UInt:
-			this->u = rhs.u;
-			break;
-		case Int64:
-			this->i64 = rhs.i64;
-			break;
-		case UInt64:
-			this->u64 = rhs.u64;
-			break;
+        case UInt:
+            this->u = rhs.u;
+            break;
+        case Int64:
+            this->i64 = rhs.i64;
+            break;
+        case UInt64:
+            this->u64 = rhs.u64;
+            break;
         case Float:
             this->f[0] = rhs.f[0];
             break;
-		case Double:
-			this->d = rhs.d;
-			break;
+        case Double:
+            this->d = rhs.d;
+            break;
         case Bool:
             this->b = rhs.b;
             break;
-		case Vec2:
-			this->f[0] = rhs.f[0];
-			this->f[1] = rhs.f[1];
+        case Vec2:
+            this->f[0] = rhs.f[0];
+            this->f[1] = rhs.f[1];
         case Vec3:
             this->f[0] = rhs.f[0];
             this->f[1] = rhs.f[1];
@@ -665,21 +665,21 @@ Variant::Copy(const Variant& rhs)
             this->f[2] = rhs.f[2];
             this->f[3] = rhs.f[3];
             break;
-		case Quaternion:
-			this->f[0] = rhs.f[0];
-			this->f[1] = rhs.f[1];
-			this->f[2] = rhs.f[2];
-			this->f[3] = rhs.f[3];
-			break;
+        case Quaternion:
+            this->f[0] = rhs.f[0];
+            this->f[1] = rhs.f[1];
+            this->f[2] = rhs.f[2];
+            this->f[3] = rhs.f[3];
+            break;
         case String:
             this->string = n_new(Util::String(*rhs.string));
             break;
         case Mat4:
             this->m = n_new(Math::mat4(*rhs.m));
             break;
-		case Transform44:
-			this->t = n_new(Math::transform44(*rhs.t));
-			break;
+        case Transform44:
+            this->t = n_new(Math::transform44(*rhs.t));
+            break;
         case Blob:
             this->blob = n_new(Util::Blob(*rhs.blob));
             break;
@@ -705,9 +705,9 @@ Variant::Copy(const Variant& rhs)
         case BoolArray:
             this->boolArray = n_new(Util::Array<bool>(*rhs.boolArray));
             break;
-		case Vec2Array:
-			this->vec2Array = n_new(Util::Array<Math::vec2>(*rhs.vec2Array));
-			break;
+        case Vec2Array:
+            this->vec2Array = n_new(Util::Array<Math::vec2>(*rhs.vec2Array));
+            break;
         case Vec3Array:
             this->float3Array = n_new(Util::Array<Math::vec3>(*rhs.float3Array));
             break;
@@ -747,10 +747,10 @@ Variant::Variant(const Variant& rhs) :
 */
 inline
 Variant::Variant(byte rhs) :
-	type(Byte),
-	i8(rhs)
+    type(Byte),
+    i8(rhs)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -758,10 +758,10 @@ Variant::Variant(byte rhs) :
 */
 inline
 Variant::Variant(short rhs) :
-	type(Short),
-	i16(rhs)
+    type(Short),
+    i16(rhs)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -769,10 +769,10 @@ Variant::Variant(short rhs) :
 */
 inline
 Variant::Variant(ushort rhs) :
-	type(UShort),
-	ui16(rhs)
+    type(UShort),
+    ui16(rhs)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -792,9 +792,9 @@ Variant::Variant(int rhs) :
 inline
 Variant::Variant(uint rhs) :
 type(UInt),
-	u(rhs)
+    u(rhs)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -802,10 +802,10 @@ type(UInt),
 */
 inline
 Variant::Variant(int64_t rhs) :
-	type(Int64),
-	i64(rhs)
+    type(Int64),
+    i64(rhs)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -813,10 +813,10 @@ Variant::Variant(int64_t rhs) :
 */
 inline
 Variant::Variant(uint64_t rhs) :
-	type(UInt64),
-	u64(rhs)
+    type(UInt64),
+    u64(rhs)
 {
-	// empty
+    // empty
 }
 //------------------------------------------------------------------------------
 /**
@@ -833,10 +833,10 @@ Variant::Variant(float rhs) :
 */
 inline
 Variant::Variant(double rhs) :
-	type(Double),
-	d(rhs)
+    type(Double),
+    d(rhs)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -850,16 +850,16 @@ Variant::Variant(bool rhs) :
     // empty
 }
 
-	
+    
 //------------------------------------------------------------------------------
 /**
 */
 inline
 Variant::Variant( const Math::vec2& rhs ) :
-	type(Vec2)
+    type(Vec2)
 {
-	this->f[0] = rhs.x;
-	this->f[1] = rhs.y;
+    this->f[0] = rhs.x;
+    this->f[1] = rhs.y;
 }
 
 //------------------------------------------------------------------------------
@@ -887,9 +887,9 @@ Variant::Variant(const Math::vec4& rhs) :
 */
 inline
 Variant::Variant(const Math::quat& rhs) :
-	type(Quaternion)
+    type(Quaternion)
 {
-	rhs.storeu(this->f);
+    rhs.storeu(this->f);
 }
 
 //------------------------------------------------------------------------------
@@ -940,10 +940,10 @@ Variant::Variant(void* ptr) :
 /**
 */
 inline 
-Variant::Variant(std::nullptr_t)	:
-	type(VoidPtr)
+Variant::Variant(std::nullptr_t)    :
+    type(VoidPtr)
 {
-	this->voidPtr = nullptr;
+    this->voidPtr = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -961,9 +961,9 @@ Variant::Variant(const Math::mat4& rhs) :
 */
 inline
 Variant::Variant(const Math::transform44& rhs) :
-	type(Transform44)
+    type(Transform44)
 {
-	this->t = n_new(Math::transform44(rhs));
+    this->t = n_new(Math::transform44(rhs));
 }
 
 //------------------------------------------------------------------------------
@@ -1021,9 +1021,9 @@ Variant::Variant(const Util::Array<bool>& rhs) :
 */
 inline
 Variant::Variant(const Util::Array<Math::vec2>& rhs) : 
-	type(Vec2Array)	
+    type(Vec2Array) 
 {
-	this->vec2Array = n_new(Util::Array<Math::vec2>(rhs));
+    this->vec2Array = n_new(Util::Array<Math::vec2>(rhs));
 }
 
 //------------------------------------------------------------------------------
@@ -1111,9 +1111,9 @@ Variant::SetType(Type t)
         case Mat4:
             this->m = n_new(Math::mat4);
             break;
-		case Transform44:
-			this->t = n_new(Math::transform44);
-			break;
+        case Transform44:
+            this->t = n_new(Math::transform44);
+            break;
         case Blob:
             this->blob = n_new(Util::Blob);
             break;
@@ -1135,9 +1135,9 @@ Variant::SetType(Type t)
         case BoolArray:
             this->boolArray = n_new(Util::Array<bool>);
             break;
-		case Vec2Array:
-			this->vec2Array = n_new(Util::Array<Math::vec2>);
-			break;
+        case Vec2Array:
+            this->vec2Array = n_new(Util::Array<Math::vec2>);
+            break;
         case Vec3Array:
             this->float3Array = n_new(Util::Array<Math::vec3>);
             break;
@@ -1186,9 +1186,9 @@ Variant::operator=(const Variant& rhs)
 inline void
 Variant::operator=(byte val)
 {
-	this->Delete();
-	this->type = Byte;
-	this->i8 = val;
+    this->Delete();
+    this->type = Byte;
+    this->i8 = val;
 }
 
 //------------------------------------------------------------------------------
@@ -1197,9 +1197,9 @@ Variant::operator=(byte val)
 inline void
 Variant::operator=(short val)
 {
-	this->Delete();
-	this->type = Short;
-	this->i16 = val;
+    this->Delete();
+    this->type = Short;
+    this->i16 = val;
 }
 
 //------------------------------------------------------------------------------
@@ -1208,9 +1208,9 @@ Variant::operator=(short val)
 inline void
 Variant::operator=(ushort val)
 {
-	this->Delete();
-	this->type = UShort;
-	this->ui16 = val;
+    this->Delete();
+    this->type = UShort;
+    this->ui16 = val;
 }
 
 //------------------------------------------------------------------------------
@@ -1230,9 +1230,9 @@ Variant::operator=(int val)
 inline void
 Variant::operator=(uint val)
 {
-	this->Delete();
-	this->type = UInt;
-	this->u = val;
+    this->Delete();
+    this->type = UInt;
+    this->u = val;
 }
 
 //------------------------------------------------------------------------------
@@ -1241,9 +1241,9 @@ Variant::operator=(uint val)
 inline void
 Variant::operator=(int64_t val)
 {
-	this->Delete();
-	this->type = Int64;
-	this->i64 = val;
+    this->Delete();
+    this->type = Int64;
+    this->i64 = val;
 }
 
 //------------------------------------------------------------------------------
@@ -1252,9 +1252,9 @@ Variant::operator=(int64_t val)
 inline void
 Variant::operator=(uint64_t val)
 {
-	this->Delete();
-	this->type = UInt64;
-	this->u64 = val;
+    this->Delete();
+    this->type = UInt64;
+    this->u64 = val;
 }
 
 //------------------------------------------------------------------------------
@@ -1274,9 +1274,9 @@ Variant::operator=(float val)
 inline void
 Variant::operator=(double val)
 {
-	this->Delete();
-	this->type = Double;
-	this->d = val;
+    this->Delete();
+    this->type = Double;
+    this->d = val;
 }
 
 //------------------------------------------------------------------------------
@@ -1296,10 +1296,10 @@ Variant::operator=(bool val)
 inline void 
 Variant::operator=(const Math::vec2& val)
 {
-	this->Delete();
-	this->type = Vec2;
-	this->f[0] = val.x;
-	this->f[1] = val.y;
+    this->Delete();
+    this->type = Vec2;
+    this->f[0] = val.x;
+    this->f[1] = val.y;
 }
 
 //------------------------------------------------------------------------------
@@ -1330,9 +1330,9 @@ Variant::operator=(const Math::vec4& val)
 inline void
 Variant::operator=(const Math::quat& val)
 {
-	this->Delete();
-	this->type = Quaternion;
-	val.storeu(this->f);
+    this->Delete();
+    this->type = Quaternion;
+    val.storeu(this->f);
 }
 
 //------------------------------------------------------------------------------
@@ -1386,16 +1386,16 @@ Variant::operator=(const Math::mat4& val)
 inline void
 Variant::operator=(const Math::transform44& val)
 {
-	if (Transform44 == this->type)
-	{
-		*this->t = val;
-	}
-	else
-	{
-		this->Delete();
-		this->t = n_new(Math::transform44(val));
-	}
-	this->type = Transform44;
+    if (Transform44 == this->type)
+    {
+        *this->t = val;
+    }
+    else
+    {
+        this->Delete();
+        this->t = n_new(Math::transform44(val));
+    }
+    this->type = Transform44;
 }
 //------------------------------------------------------------------------------
 /**
@@ -1520,16 +1520,16 @@ Variant::operator=(const Util::Array<bool>& val)
 inline void 
 Variant::operator=( const Util::Array<Math::vec2>& rhs )
 {
-	if (Vec2Array == this->type)
-	{
-		*this->vec2Array = rhs;
-	}
-	else
-	{
-		this->Delete();
-		this->vec2Array = n_new(Util::Array<Math::vec2>(rhs));
-	}
-	this->type = Vec2Array;
+    if (Vec2Array == this->type)
+    {
+        *this->vec2Array = rhs;
+    }
+    else
+    {
+        this->Delete();
+        this->vec2Array = n_new(Util::Array<Math::vec2>(rhs));
+    }
+    this->type = Vec2Array;
 }
 
 //------------------------------------------------------------------------------
@@ -1652,40 +1652,40 @@ Variant::operator==(const Variant& rhs) const
         {
             case Void:
                 return true;
-			case Byte:
-				return (this->i8 == rhs.i8);
-			case Short:
-				return (this->i16 == rhs.i16);
-			case UShort:
-				return (this->ui16 == rhs.ui16);
+            case Byte:
+                return (this->i8 == rhs.i8);
+            case Short:
+                return (this->i16 == rhs.i16);
+            case UShort:
+                return (this->ui16 == rhs.ui16);
             case Int:
                 return (this->i == rhs.i);
-			case UInt:
-				return (this->u == rhs.u);
-			case Int64:
-				return (this->i64 == rhs.i64);
-			case UInt64:
-				return (this->u64 == rhs.u64);
+            case UInt:
+                return (this->u == rhs.u);
+            case Int64:
+                return (this->i64 == rhs.i64);
+            case UInt64:
+                return (this->u64 == rhs.u64);
             case Bool:
                 return (this->b == rhs.b);
             case Float:
                 return (this->f[0] == rhs.f[0]);
-			case Double:
-				return (this->d == rhs.d);
+            case Double:
+                return (this->d == rhs.d);
             case String:
                 return ((*this->string) == (*rhs.string));
-			case Vec2:
-				return ((this->f[0] == rhs.f[0]) && (this->f[1] == rhs.f[1]));
+            case Vec2:
+                return ((this->f[0] == rhs.f[0]) && (this->f[1] == rhs.f[1]));
             case Vec4:
                 return ((this->f[0] == rhs.f[0]) &&
                         (this->f[1] == rhs.f[1]) &&
                         (this->f[2] == rhs.f[2]) &&
                         (this->f[3] == rhs.f[3]));
-			case Quaternion:
-				return ((this->f[0] == rhs.f[0]) &&
-						(this->f[1] == rhs.f[1]) &&
-						(this->f[2] == rhs.f[2]) &&
-						(this->f[3] == rhs.f[3]));
+            case Quaternion:
+                return ((this->f[0] == rhs.f[0]) &&
+                        (this->f[1] == rhs.f[1]) &&
+                        (this->f[2] == rhs.f[2]) &&
+                        (this->f[3] == rhs.f[3]));
             case Guid:
                 return ((*this->guid) == (*rhs.guid));
             case Blob:
@@ -1696,8 +1696,8 @@ Variant::operator==(const Variant& rhs) const
                 return (this->voidPtr == rhs.voidPtr);
             case Mat4:
                 return ((*this->m) == (*rhs.m));
-			case Transform44:
-				return ((*this->t) == (*rhs.t));
+            case Transform44:
+                return ((*this->t) == (*rhs.t));
             default:
                 n_error("Variant::operator==(): invalid variant type!");
                 return false;
@@ -1718,40 +1718,40 @@ Variant::operator>(const Variant& rhs) const
         {
         case Void:
             return true;
-		case Byte:
-			return (this->i8 > rhs.i8);
-		case Short:
-			return (this->i16 > rhs.i16);
-		case UShort:
-			return (this->ui16 > rhs.ui16);
+        case Byte:
+            return (this->i8 > rhs.i8);
+        case Short:
+            return (this->i16 > rhs.i16);
+        case UShort:
+            return (this->ui16 > rhs.ui16);
         case Int:
             return (this->i > rhs.i);
-		case UInt:
-			return (this->u > rhs.u);
-		case Int64:
-			return (this->i64 > rhs.i64);
-		case UInt64:
-			return (this->u64 > rhs.u64);
+        case UInt:
+            return (this->u > rhs.u);
+        case Int64:
+            return (this->i64 > rhs.i64);
+        case UInt64:
+            return (this->u64 > rhs.u64);
         case Bool:
             return (this->b > rhs.b);
         case Float:
             return (this->f[0] > rhs.f[0]);
-		case Double:
-			return (this->d > rhs.d);
+        case Double:
+            return (this->d > rhs.d);
         case String:
             return ((*this->string) > (*rhs.string));
-		case Vec2:
-			return ((this->f[0] > rhs.f[0]) && (this->f[1] > rhs.f[1]));
+        case Vec2:
+            return ((this->f[0] > rhs.f[0]) && (this->f[1] > rhs.f[1]));
         case Vec4:
             return ((this->f[0] > rhs.f[0]) &&
-					(this->f[1] > rhs.f[1]) &&
-					(this->f[2] > rhs.f[2]) &&
-					(this->f[3] > rhs.f[3]));
-		case Quaternion:
-			return ((this->f[0] > rhs.f[0]) &&
-					(this->f[1] > rhs.f[1]) &&
-					(this->f[2] > rhs.f[2]) &&
-					(this->f[3] > rhs.f[3]));
+                    (this->f[1] > rhs.f[1]) &&
+                    (this->f[2] > rhs.f[2]) &&
+                    (this->f[3] > rhs.f[3]));
+        case Quaternion:
+            return ((this->f[0] > rhs.f[0]) &&
+                    (this->f[1] > rhs.f[1]) &&
+                    (this->f[2] > rhs.f[2]) &&
+                    (this->f[3] > rhs.f[3]));
         case Guid:
             return ((*this->guid) > (*rhs.guid));
         case Blob:
@@ -1780,40 +1780,40 @@ Variant::operator<(const Variant& rhs) const
         {
         case Void:
             return true;
-		case Byte:
-			return (this->i8 < rhs.i8);
-		case Short:
-			return (this->i16 < rhs.i16);
-		case UShort:
-			return (this->ui16 < rhs.ui16);
+        case Byte:
+            return (this->i8 < rhs.i8);
+        case Short:
+            return (this->i16 < rhs.i16);
+        case UShort:
+            return (this->ui16 < rhs.ui16);
         case Int:
             return (this->i < rhs.i);
-		case UInt:
-			return (this->u < rhs.u);
-		case Int64:
-			return (this->i64 < rhs.i64);
-		case UInt64:
-			return (this->u64 < rhs.u64);
+        case UInt:
+            return (this->u < rhs.u);
+        case Int64:
+            return (this->i64 < rhs.i64);
+        case UInt64:
+            return (this->u64 < rhs.u64);
         case Bool:
             return (this->b < rhs.b);
         case Float:
             return (this->f[0] < rhs.f[0]);
-		case Double:
-			return (this->d > rhs.d);
+        case Double:
+            return (this->d > rhs.d);
         case String:
             return ((*this->string) < (*rhs.string));
-		case Vec2:
-			return ((this->f[0] < rhs.f[0]) && (this->f[1] < rhs.f[1]));
+        case Vec2:
+            return ((this->f[0] < rhs.f[0]) && (this->f[1] < rhs.f[1]));
         case Vec4:
             return ((this->f[0] < rhs.f[0]) &&
-					(this->f[1] < rhs.f[1]) &&
-					(this->f[2] < rhs.f[2]) &&
-					(this->f[3] < rhs.f[3]));
-		case Quaternion:
-			return ((this->f[0] < rhs.f[0]) &&
-					(this->f[1] < rhs.f[1]) &&
-					(this->f[2] < rhs.f[2]) &&
-					(this->f[3] < rhs.f[3]));
+                    (this->f[1] < rhs.f[1]) &&
+                    (this->f[2] < rhs.f[2]) &&
+                    (this->f[3] < rhs.f[3]));
+        case Quaternion:
+            return ((this->f[0] < rhs.f[0]) &&
+                    (this->f[1] < rhs.f[1]) &&
+                    (this->f[2] < rhs.f[2]) &&
+                    (this->f[3] < rhs.f[3]));
         case Guid:
             return ((*this->guid) < (*rhs.guid));
         case Blob:
@@ -1843,40 +1843,40 @@ Variant::operator>=(const Variant& rhs) const
         {
         case Void:
             return true;
-		case Byte:
-			return (this->i8 >= rhs.i8);
-		case Short:
-			return (this->i16 >= rhs.i16);
-		case UShort:
-			return (this->ui16 >= rhs.ui16);
+        case Byte:
+            return (this->i8 >= rhs.i8);
+        case Short:
+            return (this->i16 >= rhs.i16);
+        case UShort:
+            return (this->ui16 >= rhs.ui16);
         case Int:
             return (this->i >= rhs.i);
-		case UInt:
-			return (this->u >= rhs.u);
-		case Int64:
-			return (this->i64 >= rhs.i64);
-		case UInt64:
-			return (this->u64 >= rhs.u64);
+        case UInt:
+            return (this->u >= rhs.u);
+        case Int64:
+            return (this->i64 >= rhs.i64);
+        case UInt64:
+            return (this->u64 >= rhs.u64);
         case Bool:
             return (this->b >= rhs.b);
         case Float:
             return (this->f[0] >= rhs.f[0]);
-		case Double:
-			return (this->d >= rhs.d);
+        case Double:
+            return (this->d >= rhs.d);
         case String:
             return ((*this->string) >= (*rhs.string));
-		case Vec2:
-			return ((this->f[0] >= rhs.f[0]) && (this->f[1] >= rhs.f[1]));
+        case Vec2:
+            return ((this->f[0] >= rhs.f[0]) && (this->f[1] >= rhs.f[1]));
         case Vec4:
             return ((this->f[0] >= rhs.f[0]) &&
-					(this->f[1] >= rhs.f[1]) &&
-					(this->f[2] >= rhs.f[2]) &&
-					(this->f[3] >= rhs.f[3]));
-		case Quaternion:
-			return ((this->f[0] >= rhs.f[0]) &&
-					(this->f[1] >= rhs.f[1]) &&
-					(this->f[2] >= rhs.f[2]) &&
-					(this->f[3] >= rhs.f[3]));
+                    (this->f[1] >= rhs.f[1]) &&
+                    (this->f[2] >= rhs.f[2]) &&
+                    (this->f[3] >= rhs.f[3]));
+        case Quaternion:
+            return ((this->f[0] >= rhs.f[0]) &&
+                    (this->f[1] >= rhs.f[1]) &&
+                    (this->f[2] >= rhs.f[2]) &&
+                    (this->f[3] >= rhs.f[3]));
         case Guid:
             return ((*this->guid) >= (*rhs.guid));
         case Blob:
@@ -1905,40 +1905,40 @@ Variant::operator<=(const Variant& rhs) const
         {
         case Void:
             return true;
-		case Byte:
-			return (this->i8 <= rhs.i8);
-		case Short:
-			return (this->i16 <= rhs.i16);
-		case UShort:
-			return (this->ui16 <= rhs.ui16);
+        case Byte:
+            return (this->i8 <= rhs.i8);
+        case Short:
+            return (this->i16 <= rhs.i16);
+        case UShort:
+            return (this->ui16 <= rhs.ui16);
         case Int:
             return (this->i <= rhs.i);
-		case UInt:
-			return (this->u <= rhs.u);
-		case Int64:
-			return (this->i64 <= rhs.i64);
-		case UInt64:
-			return (this->u64 <= rhs.u64);
+        case UInt:
+            return (this->u <= rhs.u);
+        case Int64:
+            return (this->i64 <= rhs.i64);
+        case UInt64:
+            return (this->u64 <= rhs.u64);
         case Bool:
             return (this->b <= rhs.b);
         case Float:
             return (this->f[0] <= rhs.f[0]);
-		case Double:
-			return (this->d >= rhs.d);
+        case Double:
+            return (this->d >= rhs.d);
         case String:
             return ((*this->string) <= (*rhs.string));
-		case Vec2:
-			return ((this->f[0] <= rhs.f[0]) && (this->f[1] <= rhs.f[1]));
+        case Vec2:
+            return ((this->f[0] <= rhs.f[0]) && (this->f[1] <= rhs.f[1]));
         case Vec4:
             return ((this->f[0] <= rhs.f[0]) &&
-					(this->f[1] <= rhs.f[1]) &&
-					(this->f[2] <= rhs.f[2]) &&
-					(this->f[3] <= rhs.f[3]));
-		case Quaternion:
-			return ((this->f[0] <= rhs.f[0]) &&
-					(this->f[1] <= rhs.f[1]) &&
-					(this->f[2] <= rhs.f[2]) &&
-					(this->f[3] <= rhs.f[3]));
+                    (this->f[1] <= rhs.f[1]) &&
+                    (this->f[2] <= rhs.f[2]) &&
+                    (this->f[3] <= rhs.f[3]));
+        case Quaternion:
+            return ((this->f[0] <= rhs.f[0]) &&
+                    (this->f[1] <= rhs.f[1]) &&
+                    (this->f[2] <= rhs.f[2]) &&
+                    (this->f[3] <= rhs.f[3]));
         case Guid:
             return ((*this->guid) <= (*rhs.guid));
         case Blob:
@@ -1970,8 +1970,8 @@ Variant::operator!=(const Variant& rhs) const
 inline bool
 Variant::operator==(byte rhs) const
 {
-	n_assert(Byte == this->type);
-	return (this->i8 == rhs);
+    n_assert(Byte == this->type);
+    return (this->i8 == rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -1980,8 +1980,8 @@ Variant::operator==(byte rhs) const
 inline bool
 Variant::operator==(short rhs) const
 {
-	n_assert(Short == this->type);
-	return (this->i16 == rhs);
+    n_assert(Short == this->type);
+    return (this->i16 == rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -1990,8 +1990,8 @@ Variant::operator==(short rhs) const
 inline bool
 Variant::operator==(ushort rhs) const
 {
-	n_assert(UShort == this->type);
-	return (this->ui16 == rhs);
+    n_assert(UShort == this->type);
+    return (this->ui16 == rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -2010,8 +2010,8 @@ Variant::operator==(int rhs) const
 inline bool
 Variant::operator==(uint rhs) const
 {
-	n_assert(UInt == this->type);
-	return (this->u == rhs);
+    n_assert(UInt == this->type);
+    return (this->u == rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -2020,8 +2020,8 @@ Variant::operator==(uint rhs) const
 inline bool
 Variant::operator==(int64_t rhs) const
 {
-	n_assert(Int64 == this->type);
-	return (this->i64 == rhs);
+    n_assert(Int64 == this->type);
+    return (this->i64 == rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -2030,8 +2030,8 @@ Variant::operator==(int64_t rhs) const
 inline bool
 Variant::operator==(uint64_t rhs) const
 {
-	n_assert(UInt64 == this->type);
-	return (this->u64 == rhs);
+    n_assert(UInt64 == this->type);
+    return (this->u64 == rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -2050,8 +2050,8 @@ Variant::operator==(float rhs) const
 inline bool
 Variant::operator==(double rhs) const
 {
-	n_assert(Double == this->type);
-	return (this->d == rhs);
+    n_assert(Double == this->type);
+    return (this->d == rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -2090,8 +2090,8 @@ Variant::operator==(const char* chrPtr) const
 inline bool 
 Variant::operator==(const Math::vec2& rhs) const
 {
-	n_assert(Vec2 == this->type);
-	return (this->f[0] == rhs.x && this->f[1] == rhs.y);
+    n_assert(Vec2 == this->type);
+    return (this->f[0] == rhs.x && this->f[1] == rhs.y);
 }
 
 //------------------------------------------------------------------------------
@@ -2113,11 +2113,11 @@ Variant::operator==(const Math::vec4& rhs) const
 inline bool
 Variant::operator==(const Math::quat& rhs) const
 {
-	n_assert(Quaternion == this->type);
-	return ((this->f[0] == rhs.x) &&
-			(this->f[1] == rhs.y) &&
-			(this->f[2] == rhs.z) &&
-			(this->f[3] == rhs.w));
+    n_assert(Quaternion == this->type);
+    return ((this->f[0] == rhs.x) &&
+            (this->f[1] == rhs.y) &&
+            (this->f[2] == rhs.z) &&
+            (this->f[3] == rhs.w));
 }
 
 //------------------------------------------------------------------------------
@@ -2156,8 +2156,8 @@ Variant::operator==(void* ptr) const
 inline bool
 Variant::operator!=(byte rhs) const
 {
-	n_assert(Byte == this->type);
-	return (this->i8 != rhs);
+    n_assert(Byte == this->type);
+    return (this->i8 != rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -2166,8 +2166,8 @@ Variant::operator!=(byte rhs) const
 inline bool
 Variant::operator!=(short rhs) const
 {
-	n_assert(Short == this->type);
-	return (this->i16 != rhs);
+    n_assert(Short == this->type);
+    return (this->i16 != rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -2176,8 +2176,8 @@ Variant::operator!=(short rhs) const
 inline bool
 Variant::operator!=(ushort rhs) const
 {
-	n_assert(UShort == this->type);
-	return (this->ui16 != rhs);
+    n_assert(UShort == this->type);
+    return (this->ui16 != rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -2196,8 +2196,8 @@ Variant::operator!=(int rhs) const
 inline bool
 Variant::operator!=(uint rhs) const
 {
-	n_assert(UInt == this->type);
-	return (this->u != rhs);
+    n_assert(UInt == this->type);
+    return (this->u != rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -2206,8 +2206,8 @@ Variant::operator!=(uint rhs) const
 inline bool
 Variant::operator!=(int64_t rhs) const
 {
-	n_assert(Int64 == this->type);
-	return (this->i64 != rhs);
+    n_assert(Int64 == this->type);
+    return (this->i64 != rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -2216,8 +2216,8 @@ Variant::operator!=(int64_t rhs) const
 inline bool
 Variant::operator!=(uint64_t rhs) const
 {
-	n_assert(UInt64 == this->type);
-	return (this->u64 != rhs);
+    n_assert(UInt64 == this->type);
+    return (this->u64 != rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -2236,8 +2236,8 @@ Variant::operator!=(float rhs) const
 inline bool
 Variant::operator!=(double rhs) const
 {
-	n_assert(Double == this->type);
-	return (this->d != rhs);
+    n_assert(Double == this->type);
+    return (this->d != rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -2276,8 +2276,8 @@ Variant::operator!=(const char* chrPtr) const
 inline bool 
 Variant::operator!=( const Math::vec2& rhs ) const
 {
-	n_assert(Vec2 == this->type);
-	return (this->f[0] != rhs.x || this->f[1] != rhs.y);
+    n_assert(Vec2 == this->type);
+    return (this->f[0] != rhs.x || this->f[1] != rhs.y);
 }
 
 //------------------------------------------------------------------------------
@@ -2299,11 +2299,11 @@ Variant::operator!=(const Math::vec4& rhs) const
 inline bool
 Variant::operator!=(const Math::quat& rhs) const
 {
-	n_assert(Quaternion == this->type);
-	return ((this->f[0] != rhs.x) ||
-			(this->f[1] != rhs.y) ||
-			(this->f[2] != rhs.z) ||
-			(this->f[3] != rhs.w));
+    n_assert(Quaternion == this->type);
+    return ((this->f[0] != rhs.x) ||
+            (this->f[1] != rhs.y) ||
+            (this->f[2] != rhs.z) ||
+            (this->f[3] != rhs.w));
 }
 
 //------------------------------------------------------------------------------
@@ -2342,7 +2342,7 @@ Variant::operator!=(void* ptr) const
 inline void
 Variant::SetByte(byte val)
 {
-	*this = val;
+    *this = val;
 }
 
 //------------------------------------------------------------------------------
@@ -2351,8 +2351,8 @@ Variant::SetByte(byte val)
 inline byte
 Variant::GetByte() const
 {
-	n_assert(Byte == this->type);
-	return this->i8;
+    n_assert(Byte == this->type);
+    return this->i8;
 }
 
 //------------------------------------------------------------------------------
@@ -2361,7 +2361,7 @@ Variant::GetByte() const
 inline void
 Variant::SetShort(short val)
 {
-	*this = val;
+    *this = val;
 }
 
 //------------------------------------------------------------------------------
@@ -2370,7 +2370,7 @@ Variant::SetShort(short val)
 inline void
 Variant::SetUShort(ushort val)
 {
-	*this = val;
+    *this = val;
 }
 
 //------------------------------------------------------------------------------
@@ -2379,8 +2379,8 @@ Variant::SetUShort(ushort val)
 inline short
 Variant::GetShort() const
 {
-	n_assert(Short == this->type);
-	return this->i16;
+    n_assert(Short == this->type);
+    return this->i16;
 }
 
 //------------------------------------------------------------------------------
@@ -2389,8 +2389,8 @@ Variant::GetShort() const
 inline ushort
 Variant::GetUShort() const
 {
-	n_assert(UShort == this->type);
-	return this->ui16;
+    n_assert(UShort == this->type);
+    return this->ui16;
 }
 
 //------------------------------------------------------------------------------
@@ -2408,7 +2408,7 @@ Variant::SetInt(int val)
 inline void
 Variant::SetUInt(uint val)
 {
-	*this = val;
+    *this = val;
 }
 
 //------------------------------------------------------------------------------
@@ -2427,8 +2427,8 @@ Variant::GetInt() const
 inline uint
 Variant::GetUInt() const
 {
-	n_assert(UInt == this->type);
-	return this->u;
+    n_assert(UInt == this->type);
+    return this->u;
 }
 
 //------------------------------------------------------------------------------
@@ -2437,8 +2437,8 @@ Variant::GetUInt() const
 inline void
 Variant::SetInt64(int64_t val)
 {
-	n_assert(Int64 == this->type);
-	this->i64 = val;
+    n_assert(Int64 == this->type);
+    this->i64 = val;
 }
 
 //------------------------------------------------------------------------------
@@ -2447,8 +2447,8 @@ Variant::SetInt64(int64_t val)
 inline int64_t
 Variant::GetInt64() const
 {
-	n_assert(Int64 == this->type);
-	return this->i64;
+    n_assert(Int64 == this->type);
+    return this->i64;
 }
 
 //------------------------------------------------------------------------------
@@ -2457,8 +2457,8 @@ Variant::GetInt64() const
 inline void
 Variant::SetUInt64(uint64_t val)
 {
-	n_assert(UInt64 == this->type);
-	this->u64 = val;
+    n_assert(UInt64 == this->type);
+    this->u64 = val;
 }
 
 //------------------------------------------------------------------------------
@@ -2467,8 +2467,8 @@ Variant::SetUInt64(uint64_t val)
 inline uint64_t
 Variant::GetUInt64() const
 {
-	n_assert(UInt64 == this->type);
-	return this->u64;
+    n_assert(UInt64 == this->type);
+    return this->u64;
 }
 
 //------------------------------------------------------------------------------
@@ -2496,7 +2496,7 @@ Variant::GetFloat() const
 inline void
 Variant::SetDouble(double val)
 {
-	*this = val;
+    *this = val;
 }
 
 //------------------------------------------------------------------------------
@@ -2505,8 +2505,8 @@ Variant::SetDouble(double val)
 inline double
 Variant::GetDouble() const
 {
-	n_assert(Double == this->type);
-	return this->d;
+    n_assert(Double == this->type);
+    return this->d;
 }
 
 //------------------------------------------------------------------------------
@@ -2553,7 +2553,7 @@ Variant::GetString() const
 inline void
 Variant::SetVec2(const Math::vec2& val)
 {
-	*this = val;
+    *this = val;
 }
 
 //------------------------------------------------------------------------------
@@ -2562,8 +2562,8 @@ Variant::SetVec2(const Math::vec2& val)
 inline Math::vec2 
 Variant::GetVec2() const
 {
-	n_assert(Vec2 == this->type);
-	return Math::vec2(this->f[0], this->f[1]);
+    n_assert(Vec2 == this->type);
+    return Math::vec2(this->f[0], this->f[1]);
 }
 
 //------------------------------------------------------------------------------
@@ -2609,7 +2609,7 @@ Variant::GetVec4() const
 inline void
 Variant::SetQuat(const Math::quat& val)
 {
-	*this = val;
+    *this = val;
 }
 
 //------------------------------------------------------------------------------
@@ -2618,8 +2618,8 @@ Variant::SetQuat(const Math::quat& val)
 inline Math::quat
 Variant::GetQuat() const
 {
-	n_assert(Quaternion == this->type);
-	return Math::quat(this->f[0], this->f[1], this->f[2], this->f[3]);
+    n_assert(Quaternion == this->type);
+    return Math::quat(this->f[0], this->f[1], this->f[2], this->f[3]);
 }
 
 //------------------------------------------------------------------------------
@@ -2647,7 +2647,7 @@ Variant::GetMat4() const
 inline void
 Variant::SetTransform44(const Math::transform44& val)
 {
-	*this = val;
+    *this = val;
 }
 
 //------------------------------------------------------------------------------
@@ -2656,8 +2656,8 @@ Variant::SetTransform44(const Math::transform44& val)
 inline const Math::transform44&
 Variant::GetTransform44() const
 {
-	n_assert(Transform44 == this->type);
-	return *(this->t);
+    n_assert(Transform44 == this->type);
+    return *(this->t);
 }
 
 //------------------------------------------------------------------------------
@@ -2799,7 +2799,7 @@ Variant::GetBoolArray() const
 inline void 
 Variant::SetVec2Array( const Util::Array<Math::vec2>& val )
 {
-	*this = val;
+    *this = val;
 }
 
 //------------------------------------------------------------------------------
@@ -2808,8 +2808,8 @@ Variant::SetVec2Array( const Util::Array<Math::vec2>& val )
 inline const Util::Array<Math::vec2>& 
 Variant::GetVec2Array() const
 {
-	n_assert(Vec2Array == this->type);
-	return *(this->vec2Array);
+    n_assert(Vec2Array == this->type);
+    return *(this->vec2Array);
 }
 
 //------------------------------------------------------------------------------
@@ -2933,9 +2933,9 @@ template <typename TYPE>
 inline TYPE
 Variant::Get() const
 {
-	static_assert(true, "Get method for TYPE is not implemented!");
-	TYPE ret;
-	return ret;
+    static_assert(true, "Get method for TYPE is not implemented!");
+    TYPE ret;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -2945,7 +2945,7 @@ template <>
 inline byte
 Variant::Get() const
 {
-	return this->GetByte();
+    return this->GetByte();
 }
 
 //------------------------------------------------------------------------------
@@ -2955,7 +2955,7 @@ template <>
 inline short
 Variant::Get() const
 {
-	return this->GetShort();
+    return this->GetShort();
 }
 
 //------------------------------------------------------------------------------
@@ -2965,7 +2965,7 @@ template <>
 inline int
 Variant::Get() const
 {
-	return this->GetInt();
+    return this->GetInt();
 }
 
 //------------------------------------------------------------------------------
@@ -2975,7 +2975,7 @@ template <>
 inline uint
 Variant::Get() const
 {
-	return this->GetUInt();
+    return this->GetUInt();
 }
 
 //------------------------------------------------------------------------------
@@ -2985,7 +2985,7 @@ template <>
 inline int64_t
 Variant::Get() const
 {
-	return this->GetInt64();
+    return this->GetInt64();
 }
 
 //------------------------------------------------------------------------------
@@ -2995,7 +2995,7 @@ template <>
 inline uint64_t
 Variant::Get() const
 {
-	return this->GetUInt64();
+    return this->GetUInt64();
 }
 
 //------------------------------------------------------------------------------
@@ -3005,7 +3005,7 @@ template <>
 inline bool
 Variant::Get() const
 {
-	return this->GetBool();
+    return this->GetBool();
 }
 
 //------------------------------------------------------------------------------
@@ -3015,7 +3015,7 @@ template <>
 inline double
 Variant::Get() const
 {
-	return this->GetDouble();
+    return this->GetDouble();
 }
 
 //------------------------------------------------------------------------------
@@ -3025,7 +3025,7 @@ template <>
 inline float
 Variant::Get() const
 {
-	return this->GetFloat();
+    return this->GetFloat();
 }
 
 //------------------------------------------------------------------------------
@@ -3035,7 +3035,7 @@ template <>
 inline Math::vec2
 Variant::Get() const
 {
-	return this->GetVec2();
+    return this->GetVec2();
 }
 
 //------------------------------------------------------------------------------
@@ -3055,7 +3055,7 @@ template <>
 inline Math::vec4
 Variant::Get() const
 {
-	return this->GetVec4();
+    return this->GetVec4();
 }
 
 //------------------------------------------------------------------------------
@@ -3065,7 +3065,7 @@ template <>
 inline Math::quat
 Variant::Get() const
 {
-	return this->GetQuat();
+    return this->GetQuat();
 }
 
 //------------------------------------------------------------------------------
@@ -3075,7 +3075,7 @@ template <>
 inline Math::mat4
 Variant::Get() const
 {
-	return this->GetMat4();
+    return this->GetMat4();
 }
 
 //------------------------------------------------------------------------------
@@ -3085,7 +3085,7 @@ template <>
 inline Math::transform44
 Variant::Get() const
 {
-	return this->GetTransform44();
+    return this->GetTransform44();
 }
 
 //------------------------------------------------------------------------------
@@ -3095,7 +3095,7 @@ template <>
 inline Util::String
 Variant::Get() const
 {
-	return this->GetString();
+    return this->GetString();
 }
 
 //------------------------------------------------------------------------------
@@ -3105,7 +3105,7 @@ template <>
 inline Util::Guid
 Variant::Get() const
 {
-	return this->GetGuid();
+    return this->GetGuid();
 }
 
 //------------------------------------------------------------------------------
@@ -3115,7 +3115,7 @@ template <>
 inline Util::Blob
 Variant::Get() const
 {
-	return this->GetBlob();
+    return this->GetBlob();
 }
 
 //------------------------------------------------------------------------------
@@ -3125,7 +3125,7 @@ template <>
 inline Util::Array<int>
 Variant::Get() const
 {
-	return this->GetIntArray();
+    return this->GetIntArray();
 }
 
 //------------------------------------------------------------------------------
@@ -3135,7 +3135,7 @@ template <>
 inline Util::Array<float>
 Variant::Get() const
 {
-	return this->GetFloatArray();
+    return this->GetFloatArray();
 }
 
 //------------------------------------------------------------------------------
@@ -3145,7 +3145,7 @@ template <>
 inline Util::Array<bool>
 Variant::Get() const
 {
-	return this->GetBoolArray();
+    return this->GetBoolArray();
 }
 
 //------------------------------------------------------------------------------
@@ -3155,7 +3155,7 @@ template <>
 inline Util::Array<Math::vec2>
 Variant::Get() const
 {
-	return this->GetVec2Array();
+    return this->GetVec2Array();
 }
 
 //------------------------------------------------------------------------------
@@ -3175,7 +3175,7 @@ template <>
 inline Util::Array<Math::vec4>
 Variant::Get() const
 {
-	return this->GetVec4Array();
+    return this->GetVec4Array();
 }
 
 //------------------------------------------------------------------------------
@@ -3185,7 +3185,7 @@ template <>
 inline Util::Array<Math::mat4>
 Variant::Get() const
 {
-	return this->GetMat4Array();
+    return this->GetMat4Array();
 }
 
 //------------------------------------------------------------------------------
@@ -3195,7 +3195,7 @@ template <>
 inline Util::Array<Util::String>
 Variant::Get() const
 {
-	return this->GetStringArray();
+    return this->GetStringArray();
 }
 
 //------------------------------------------------------------------------------
@@ -3205,7 +3205,7 @@ template <>
 inline Util::Array<Util::Guid>
 Variant::Get() const
 {
-	return this->GetGuidArray();
+    return this->GetGuidArray();
 }
 
 //------------------------------------------------------------------------------
@@ -3215,7 +3215,7 @@ template <>
 inline Util::Array<Util::Blob>
 Variant::Get() const
 {
-	return this->GetBlobArray();
+    return this->GetBlobArray();
 }
 
 //------------------------------------------------------------------------------
@@ -3228,21 +3228,21 @@ Variant::ToString() const
     switch (this->type)
     {
         case Void:          break;
-		case Byte:			{ retval = Util::String::FromByte(this->GetByte()); break; }
-		case Short:			{ retval = Util::String::FromShort(this->GetShort()); break; }
-		case UShort:		{ retval = Util::String::FromUShort(this->GetUShort()); break; }
+        case Byte:          { retval = Util::String::FromByte(this->GetByte()); break; }
+        case Short:         { retval = Util::String::FromShort(this->GetShort()); break; }
+        case UShort:        { retval = Util::String::FromUShort(this->GetUShort()); break; }
         case Int:           { retval = Util::String::FromInt(this->GetInt()); break; }
         case UInt:          { retval = Util::String::FromUInt(this->GetUInt()); break; }
-		case Float:			{ retval = Util::String::FromFloat(this->GetFloat()); break; }
-		case Double:        { retval = Util::String::FromDouble(this->GetDouble()); break; }
+        case Float:         { retval = Util::String::FromFloat(this->GetFloat()); break; }
+        case Double:        { retval = Util::String::FromDouble(this->GetDouble()); break; }
         case Bool:          { retval = Util::String::FromBool(this->GetBool()); break; }
         case Vec2:          { retval = Util::String::FromVec2(this->GetVec2()); break; }
         case Vec3:          { retval = Util::String::FromVec3(this->GetVec3()); break; }
         case Vec4:          { retval = Util::String::FromVec4(this->GetVec4()); break; }
-		case Quaternion:    { retval = Util::String::FromQuat(this->GetQuat()); break; }
+        case Quaternion:    { retval = Util::String::FromQuat(this->GetQuat()); break; }
         case String:        { retval = this->GetString(); break; }
         case Mat4:          { retval = Util::String::FromMat4(this->GetMat4()); break; }
-		case Transform44:   { retval = Util::String::FromTransform44(this->GetTransform44()); break; }
+        case Transform44:   { retval = Util::String::FromTransform44(this->GetTransform44()); break; }
         case Blob:          { retval = Util::String::FromBlob(this->GetBlob()); break; }
         case Guid:          { retval = this->GetGuid().AsString(); break; }
         case IntArray:      { const Util::Array<int>& arr = this->GetIntArray(); for (int i = 0; i < arr.Size(); i++) { retval.AppendInt(arr[i]); retval += (i < arr.Size() - 1 ? "," : ""); } break; }
@@ -3275,7 +3275,7 @@ Util::Variant::SetParseString(const Util::String& string)
         case Vec4:              { if(string.IsValidVec4())         { this->SetVec4(string.AsVec4()); retval = true; break; } }
         case String:            {                                    this->SetString(string); retval = true; break; }
         case Mat4:              { if(string.IsValidMat4())         { this->SetMat4(string.AsMat4()); retval = true; break; } }
-		case Transform44:       { if (string.IsValidTransform44()) { this->SetTransform44(string.AsTransform44()); retval = true; break; } }
+        case Transform44:       { if (string.IsValidTransform44()) { this->SetTransform44(string.AsTransform44()); retval = true; break; } }
 
         case IntArray:          
             { 
@@ -3343,42 +3343,42 @@ inline
 const SizeT 
 Variant::Size() const
 {
-	switch (this->type)
-	{
-	case Void:          return 0;
-	case Byte:          return sizeof(uint8);
-	case Short:         return sizeof(uint16);
-	case UShort:        return sizeof(uint16);
-	case Int:           return sizeof(uint32);
-	case UInt:          return sizeof(uint32);
-	case Int64:         return sizeof(uint64);
-	case UInt64:        return sizeof(uint64);
-	case Float:         return sizeof(float);
-	case Double:        return sizeof(double);
-	case Bool:          return sizeof(bool);
-	case Vec2:		return sizeof(float) * 2;
-	case Vec4:          return sizeof(float) * 4;
-	case Quaternion:    return sizeof(float) * 4;
-	case String:        return sizeof(void*);
-	case Mat4:          return sizeof(void*);
-	case Transform44:   return sizeof(void*);
-	case Blob:          return sizeof(void*);
-	case Guid:          return sizeof(void*);
-	case Object:        return sizeof(void*);
-	case VoidPtr:       return sizeof(void*);
-	case IntArray:      return sizeof(void*);
-	case FloatArray:    return sizeof(void*);
-	case BoolArray:     return sizeof(void*);
-	case Vec2Array:	return sizeof(void*);
-	case Vec4Array:     return sizeof(void*);
-	case Mat4Array:     return sizeof(void*);
-	case StringArray:   return sizeof(void*);
-	case GuidArray:     return sizeof(void*);
-	case BlobArray:     return sizeof(void*);
-	default:
-		n_error("Variant::Size(): invalid type enum '%d'!", t);
-		return 0;
-	}
+    switch (this->type)
+    {
+    case Void:          return 0;
+    case Byte:          return sizeof(uint8);
+    case Short:         return sizeof(uint16);
+    case UShort:        return sizeof(uint16);
+    case Int:           return sizeof(uint32);
+    case UInt:          return sizeof(uint32);
+    case Int64:         return sizeof(uint64);
+    case UInt64:        return sizeof(uint64);
+    case Float:         return sizeof(float);
+    case Double:        return sizeof(double);
+    case Bool:          return sizeof(bool);
+    case Vec2:      return sizeof(float) * 2;
+    case Vec4:          return sizeof(float) * 4;
+    case Quaternion:    return sizeof(float) * 4;
+    case String:        return sizeof(void*);
+    case Mat4:          return sizeof(void*);
+    case Transform44:   return sizeof(void*);
+    case Blob:          return sizeof(void*);
+    case Guid:          return sizeof(void*);
+    case Object:        return sizeof(void*);
+    case VoidPtr:       return sizeof(void*);
+    case IntArray:      return sizeof(void*);
+    case FloatArray:    return sizeof(void*);
+    case BoolArray:     return sizeof(void*);
+    case Vec2Array: return sizeof(void*);
+    case Vec4Array:     return sizeof(void*);
+    case Mat4Array:     return sizeof(void*);
+    case StringArray:   return sizeof(void*);
+    case GuidArray:     return sizeof(void*);
+    case BlobArray:     return sizeof(void*);
+    default:
+        n_error("Variant::Size(): invalid type enum '%d'!", t);
+        return 0;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -3388,7 +3388,7 @@ inline
 const void*
 Variant::AsVoidPtr() const
 {
-	return &this->i8;
+    return &this->i8;
 }
 
 //------------------------------------------------------------------------------
@@ -3418,22 +3418,22 @@ Variant::TypeToString(Type t)
     switch (t)
     {
         case Void:          return "void";
-		case Byte:          return "byte";
-		case Short:         return "short";
-		case UShort:        return "ushort";
-		case Int:           return "int";
-		case UInt:          return "uint";
-		case Int64:         return "int64";
-		case UInt64:        return "uint64";
+        case Byte:          return "byte";
+        case Short:         return "short";
+        case UShort:        return "ushort";
+        case Int:           return "int";
+        case UInt:          return "uint";
+        case Int64:         return "int64";
+        case UInt64:        return "uint64";
         case Float:         return "float";
-		case Double:        return "double";
+        case Double:        return "double";
         case Bool:          return "bool";
-		case Vec2:		return "vec2";
-		case Vec4:          return "vec4";
-		case Quaternion:    return "quaternion";
+        case Vec2:      return "vec2";
+        case Vec4:          return "vec4";
+        case Quaternion:    return "quaternion";
         case String:        return "string";
         case Mat4:          return "mat4";
-		case Transform44:   return "transform44";
+        case Transform44:   return "transform44";
         case Blob:          return "blob";
         case Guid:          return "guid";
         case Object:        return "object";
@@ -3441,7 +3441,7 @@ Variant::TypeToString(Type t)
         case IntArray:      return "intarray";
         case FloatArray:    return "floatarray";
         case BoolArray:     return "boolarray";
-		case Vec2Array:	return "vec2array";
+        case Vec2Array: return "vec2array";
         case Vec4Array:     return "vec4array";
         case Mat4Array:     return "mat4array";
         case StringArray:   return "stringarray";
@@ -3460,23 +3460,23 @@ inline Variant::Type
 Variant::StringToType(const Util::String& str)
 {
     if      ("void" == str)             return Void;
-	else if ("byte" == str)             return Byte;
-	else if ("short" == str)            return Short;
-	else if ("ushort" == str)           return UShort;
+    else if ("byte" == str)             return Byte;
+    else if ("short" == str)            return Short;
+    else if ("ushort" == str)           return UShort;
     else if ("int" == str)              return Int;
-	else if ("uint" == str)             return UInt;
-	else if ("int64" == str)            return Int64;
-	else if ("uint64" == str)           return UInt64;
-	else if ("float" == str)            return Float;
-	else if ("double" == str)           return Double;
+    else if ("uint" == str)             return UInt;
+    else if ("int64" == str)            return Int64;
+    else if ("uint64" == str)           return UInt64;
+    else if ("float" == str)            return Float;
+    else if ("double" == str)           return Double;
     else if ("bool" == str)             return Bool;
-	else if ("vec2" == str)			    return Vec2;
+    else if ("vec2" == str)             return Vec2;
     else if ("vec4" == str)             return Vec4;
-	else if ("color" == str)            return Vec4; // NOT A BUG!
-	else if ("quaternion" == str)       return Quaternion;
+    else if ("color" == str)            return Vec4; // NOT A BUG!
+    else if ("quaternion" == str)       return Quaternion;
     else if ("string" == str)           return String;
     else if ("mat4" == str)             return Mat4;
-	else if ("transform44" == str)      return Transform44;
+    else if ("transform44" == str)      return Transform44;
     else if ("blob" == str)             return Blob;
     else if ("guid" == str)             return Guid;
     else if ("object" == str)           return Object;
@@ -3484,7 +3484,7 @@ Variant::StringToType(const Util::String& str)
     else if ("intarray" == str)         return IntArray;
     else if ("floatarray" == str)       return FloatArray;
     else if ("boolarray" == str)        return BoolArray;
-	else if ("vec2array" == str)		return Vec2Array;
+    else if ("vec2array" == str)        return Vec2Array;
     else if ("vec4array" == str)        return Vec4Array;
     else if ("mat4array" == str)        return Mat4Array;
     else if ("stringarray" == str)      return StringArray;

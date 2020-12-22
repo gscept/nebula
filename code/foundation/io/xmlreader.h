@@ -85,8 +85,8 @@ public:
     Math::vec4 GetVec4(const char* attr) const;
     /// get mat4 attribute value from current node
     Math::mat4 GetMat4(const char* attr) const;
-	/// get transform44 attribute value from current node
-	Math::transform44 GetTransform44(const char* attr) const;
+    /// get transform44 attribute value from current node
+    Math::transform44 GetTransform44(const char* attr) const;
     #endif
     /// generic getter for extension types
     template<typename T> T Get(const char* attr) const;
@@ -106,8 +106,8 @@ public:
     Math::vec4 GetOptVec4(const char* attr, const Math::vec4& defaultValue) const;
     /// get optional mat4 attribute value from current node
     Math::mat4 GetOptMat4(const char* attr, const Math::mat4& defaultValue) const;
-	/// get transform44 attribute value from current node
-	Math::transform44 GetOptTransform44(const char* attr, const Math::transform44& defaultValue) const;
+    /// get transform44 attribute value from current node
+    Math::transform44 GetOptTransform44(const char* attr, const Math::transform44& defaultValue) const;
     #endif
     
 private:

@@ -4,10 +4,10 @@
     @class Instancing::InstanceServerBase
     
     Instancing interface server base. 
-	Instancing in this context means instanced rendering.
+    Instancing in this context means instanced rendering.
     
     (C) 2012 Gustav Sterbrant
-	(C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -17,45 +17,45 @@
 
 namespace Instancing
 {
-	class InstanceRenderer;
+    class InstanceRenderer;
 }
 namespace Base
 {
 class InstanceServerBase : public Core::RefCounted
 {
-	__DeclareSingleton(InstanceServerBase);	
-	__DeclareClass(InstanceServerBase);
+    __DeclareSingleton(InstanceServerBase); 
+    __DeclareClass(InstanceServerBase);
 public:
-	/// constructor
-	InstanceServerBase();
-	/// destructor
-	virtual ~InstanceServerBase();
-	/// open the InstanceServerBase
-	virtual bool Open();
-	/// close the InstanceServerBase
-	virtual void Close();
-	/// return if InstanceServerBase is open
-	bool IsOpen() const;
+    /// constructor
+    InstanceServerBase();
+    /// destructor
+    virtual ~InstanceServerBase();
+    /// open the InstanceServerBase
+    virtual bool Open();
+    /// close the InstanceServerBase
+    virtual void Close();
+    /// return if InstanceServerBase is open
+    bool IsOpen() const;
 
-	/// begins adding model instances to server
-	void BeginInstancing(const Ptr<Models::ModelNode>& modelNode, const SizeT multiplier, const Ptr<CoreGraphics::Shader>& shader, const IndexT& pass);
-	/// adds instance to current model
-	void AddInstance(const IndexT& instanceCode, const Ptr<Models::ModelNodeInstance>& instance);
-	/// ends adding model instances
-	void EndInstancing();
+    /// begins adding model instances to server
+    void BeginInstancing(const Ptr<Models::ModelNode>& modelNode, const SizeT multiplier, const Ptr<CoreGraphics::Shader>& shader, const IndexT& pass);
+    /// adds instance to current model
+    void AddInstance(const IndexT& instanceCode, const Ptr<Models::ModelNodeInstance>& instance);
+    /// ends adding model instances
+    void EndInstancing();
 
-	/// updates instance server (call from batch)
-	virtual void Render(IndexT frameIndex);
+    /// updates instance server (call from batch)
+    virtual void Render(IndexT frameIndex);
 
 protected:
     IndexT pass;
     Ptr<CoreGraphics::Shader> shader;
-	Ptr<Instancing::InstanceRenderer> renderer;
-	Ptr<Models::ModelNode> modelNode;
+    Ptr<Instancing::InstanceRenderer> renderer;
+    Ptr<Models::ModelNode> modelNode;
     Util::Dictionary<IndexT, Util::Array<Ptr<Models::ModelNodeInstance>>> instancesByCode;
-	bool isBeginInstancing;
-	bool isOpen;
-	SizeT multiplier;
+    bool isBeginInstancing;
+    bool isOpen;
+    SizeT multiplier;
 }; 
 
 //------------------------------------------------------------------------------
@@ -64,7 +64,7 @@ protected:
 inline bool
 InstanceServerBase::IsOpen() const
 {
-	return this->isOpen;
+    return this->isOpen;
 }
 
 } // namespace Instancing

@@ -47,7 +47,7 @@ DebugTimer::Setup(const StringAtom& timerName, const Util::StringAtom& group)
 
     this->critSect.Enter();
     this->name = timerName;
-	this->group = group;
+    this->group = group;
     this->history.Reset();
     this->timer.Reset();
     this->critSect.Leave();

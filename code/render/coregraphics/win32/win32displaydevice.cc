@@ -18,8 +18,8 @@ using namespace Math;
 
 struct ParentWindow
 {
-	int width, height;
-	HWND window;
+    int width, height;
+    HWND window;
 };
 
 //------------------------------------------------------------------------------
@@ -28,7 +28,7 @@ struct ParentWindow
 Win32DisplayDevice::Win32DisplayDevice() :
     hInst(0),
     hWnd(0),
-	parentHwnd(0),
+    parentHwnd(0),
     hAccel(0),
     windowedStyle(WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE),
     childWindowStyle(WS_VISIBLE | WS_POPUP),
@@ -59,15 +59,15 @@ Win32DisplayDevice::Open()
     n_assert(!this->IsOpen());
     if (DisplayDeviceBase::Open())
     {
-		bool success;
-		if (this->embedded)
-		{
-			success = this->EmbedWindow();
-		}
-		else
-		{
-			success = this->OpenWindow();
-		}		
+        bool success;
+        if (this->embedded)
+        {
+            success = this->EmbedWindow();
+        }
+        else
+        {
+            success = this->OpenWindow();
+        }       
         return success;
     }
     return false;
@@ -90,31 +90,31 @@ Win32DisplayDevice::Close()
 void 
 Win32DisplayDevice::Reopen()
 {
-	n_assert(this->IsOpen());
+    n_assert(this->IsOpen());
 
-	// embedded windows require their own reopen by external system	
-	if (this->parentHwnd)
-	{
-		SetParent(this->hWnd, parentHwnd);
-		SetWindowLong(this->hWnd, GWL_STYLE, this->childWindowStyle);
-	}
-	else
-	{
-		if (this->IsFullscreen())
-		{
-			SetWindowLong(this->hWnd, GWL_STYLE, this->fullscreenStyle);
-		}
-		else
-		{
-			SetWindowLong(this->hWnd, GWL_STYLE, this->windowedStyle);
-		}
-		SetParent(this->hWnd, parentHwnd);
-		SetWindowLong(this->hWnd, GWL_WNDPROC, (LONG)WinProc);
-	}
+    // embedded windows require their own reopen by external system 
+    if (this->parentHwnd)
+    {
+        SetParent(this->hWnd, parentHwnd);
+        SetWindowLong(this->hWnd, GWL_STYLE, this->childWindowStyle);
+    }
+    else
+    {
+        if (this->IsFullscreen())
+        {
+            SetWindowLong(this->hWnd, GWL_STYLE, this->fullscreenStyle);
+        }
+        else
+        {
+            SetWindowLong(this->hWnd, GWL_STYLE, this->windowedStyle);
+        }
+        SetParent(this->hWnd, parentHwnd);
+        SetWindowLong(this->hWnd, GWL_WNDPROC, (LONG)WinProc);
+    }
 
-	DisplayMode adjMode = this->ComputeAdjustedWindowRect();
-	MoveWindow(this->hWnd, adjMode.GetXPos(), adjMode.GetYPos(), adjMode.GetWidth(), adjMode.GetHeight(), TRUE);
-	DisplayDeviceBase::Reopen();
+    DisplayMode adjMode = this->ComputeAdjustedWindowRect();
+    MoveWindow(this->hWnd, adjMode.GetXPos(), adjMode.GetYPos(), adjMode.GetWidth(), adjMode.GetHeight(), TRUE);
+    DisplayDeviceBase::Reopen();
 }
 
 //------------------------------------------------------------------------------
@@ -207,15 +207,15 @@ Win32DisplayDevice::OpenWindow()
     DisplayMode adjMode = this->ComputeAdjustedWindowRect();
 
     // open window
-    this->hWnd = CreateWindowEx(WS_EX_APPWINDOW,					// dwExStyle
-							  NEBULA_WINDOW_CLASS,                 // lpClassName
+    this->hWnd = CreateWindowEx(WS_EX_APPWINDOW,                    // dwExStyle
+                              NEBULA_WINDOW_CLASS,                 // lpClassName
                               this->windowTitle.AsCharPtr(),        // lpWindowName
                               windowStyle,                          // dwStyle
                               adjMode.GetXPos(),                    // x
                               adjMode.GetYPos(),                    // y
                               adjMode.GetWidth(),                   // nWidth
                               adjMode.GetHeight(),                  // nHeight
-                              NULL,				                    // hWndParent
+                              NULL,                                 // hWndParent
                               NULL,                                 // hMenu
                               this->hInst,                          // hInstance
                               NULL);                                // lParam
@@ -246,23 +246,23 @@ Win32DisplayDevice::OpenWindow()
 bool 
 Win32DisplayDevice::EmbedWindow()
 {
-	n_assert(0 != this->hInst);
-	n_assert(0 != this->windowData.GetPtr());
-	n_assert(0 == this->hWnd);	
+    n_assert(0 != this->hInst);
+    n_assert(0 != this->windowData.GetPtr());
+    n_assert(0 == this->hWnd);  
 
-	// embeds display device into an existing window by setting the hwnd
-	ParentWindow* parentWindow = (ParentWindow*)this->windowData.GetPtr();
-	this->parentHwnd = parentWindow->window;
-	this->displayMode.SetWidth(parentWindow->width);
-	this->displayMode.SetHeight(parentWindow->height);
+    // embeds display device into an existing window by setting the hwnd
+    ParentWindow* parentWindow = (ParentWindow*)this->windowData.GetPtr();
+    this->parentHwnd = parentWindow->window;
+    this->displayMode.SetWidth(parentWindow->width);
+    this->displayMode.SetHeight(parentWindow->height);
 
-	// now open window normally
-	bool result = this->OpenWindow();
+    // now open window normally
+    bool result = this->OpenWindow();
 
-	// set parent
-	SetParent(this->hWnd, this->parentHwnd);
+    // set parent
+    SetParent(this->hWnd, this->parentHwnd);
 
-	return result;
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -412,7 +412,7 @@ Win32DisplayDevice::OnToggleFullscreenWindowed()
 void 
 Win32DisplayDevice::OnResize( WORD newWidth, WORD newHeight )
 {
-	this->NotifyEventHandlers(DisplayEvent(DisplayEvent::DisplayResized));
+    this->NotifyEventHandlers(DisplayEvent(DisplayEvent::DisplayResized));
 }
 
 //------------------------------------------------------------------------------
@@ -603,13 +603,13 @@ Win32DisplayDevice::WinProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 }
                 else if (SIZE_RESTORED == wParam)
                 {
-                    self->OnRestored();					
+                    self->OnRestored();                 
                 }
 
-				// manually change window size in child mode
-				WORD newWidth = LOWORD(lParam);
-				WORD newHeight = HIWORD(lParam);
-				self->OnResize(newWidth, newHeight); 
+                // manually change window size in child mode
+                WORD newWidth = LOWORD(lParam);
+                WORD newHeight = HIWORD(lParam);
+                self->OnResize(newWidth, newHeight); 
             }
             break;
 
@@ -644,12 +644,12 @@ Win32DisplayDevice::WinProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             }
             break;
 
-		case WM_SYSKEYDOWN:
+        case WM_SYSKEYDOWN:
         case WM_KEYDOWN:
             self->OnKeyDown(lParam, wParam);
             break;
 
-		case WM_SYSKEYUP:
+        case WM_SYSKEYUP:
         case WM_KEYUP:
             self->OnKeyUp(lParam, wParam);
             break;
@@ -679,7 +679,7 @@ Win32DisplayDevice::WinProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             break;
     }
 
-	return DefWindowProc(hWnd, uMsg, wParam, lParam); 
+    return DefWindowProc(hWnd, uMsg, wParam, lParam); 
 }
 
 //------------------------------------------------------------------------------
@@ -697,20 +697,20 @@ Win32DisplayDevice::TranslateKeyCode(LPARAM lParam, WPARAM wParam) const
         case VK_CLEAR:                  return Input::Key::Clear;
         case VK_RETURN:                 return Input::Key::Return;
         case VK_SHIFT:                  
-			{
-				if (lParam & 0x01000000) return Input::Key::RightShift;
-				else					 return Input::Key::LeftShift;
-			}
+            {
+                if (lParam & 0x01000000) return Input::Key::RightShift;
+                else                     return Input::Key::LeftShift;
+            }
         case VK_CONTROL:
-			{
-				if (lParam & 0x01000000) return Input::Key::RightControl;
-				else					 return Input::Key::LeftControl;
-			}
+            {
+                if (lParam & 0x01000000) return Input::Key::RightControl;
+                else                     return Input::Key::LeftControl;
+            }
         case VK_MENU:                   
-			{
-				if (lParam & 0x01000000) return Input::Key::RightMenu;
-				else					 return Input::Key::LeftMenu;
-			}
+            {
+                if (lParam & 0x01000000) return Input::Key::RightMenu;
+                else                     return Input::Key::LeftMenu;
+            }
         case VK_PAUSE:                  return Input::Key::Pause;
         case VK_CAPITAL:                return Input::Key::Capital;
         case VK_ESCAPE:                 return Input::Key::Escape;
@@ -750,9 +750,9 @@ Win32DisplayDevice::TranslateKeyCode(LPARAM lParam, WPARAM wParam) const
         case VK_NUMPAD9:                return Input::Key::NumPad9;
         case VK_MULTIPLY:               return Input::Key::Multiply;
         case VK_ADD:                    return Input::Key::Add;
-		case VK_SUBTRACT:				return Input::Key::Subtract;
-		case VK_OEM_COMMA:				return Input::Key::Comma;
-		case VK_OEM_PERIOD:				return Input::Key::Period;
+        case VK_SUBTRACT:               return Input::Key::Subtract;
+        case VK_OEM_COMMA:              return Input::Key::Comma;
+        case VK_OEM_PERIOD:             return Input::Key::Period;
         case VK_SEPARATOR:              return Input::Key::Separator;
         case VK_DECIMAL:                return Input::Key::Decimal;
         case VK_DIVIDE:                 return Input::Key::Divide;
@@ -800,7 +800,7 @@ Win32DisplayDevice::TranslateKeyCode(LPARAM lParam, WPARAM wParam) const
         case VK_LAUNCH_MEDIA_SELECT:    return Input::Key::LaunchMediaSelect;
         case VK_LAUNCH_APP1:            return Input::Key::LaunchApp1;
         case VK_LAUNCH_APP2:            return Input::Key::LaunchApp2;
-		case VK_OEM_3:					return Input::Key::Tilde;
+        case VK_OEM_3:                  return Input::Key::Tilde;
         case '0':                       return Input::Key::Key0;
         case '1':                       return Input::Key::Key1;
         case '2':                       return Input::Key::Key2;
@@ -847,8 +847,8 @@ Win32DisplayDevice::TranslateKeyCode(LPARAM lParam, WPARAM wParam) const
 void 
 Win32DisplayDevice::PostEvent( const Win32::Win32Event& winEvent )
 {
-	// propagates windows event to winproc 
-	// WinProc(winEvent.GetHWND(), winEvent.GetMessage(), winEvent.GetWParam(), winEvent.GetLParam());
+    // propagates windows event to winproc 
+    // WinProc(winEvent.GetHWND(), winEvent.GetMessage(), winEvent.GetWParam(), winEvent.GetLParam());
 }
 
 } // namespace CoreGraphics

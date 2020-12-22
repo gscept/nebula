@@ -47,8 +47,8 @@ public:
     Math::mat4 GetMat4(const String& name, const Math::mat4& defaultValue = Math::mat4()) const;
     #endif
     
-	/// returns true if the argument list is empty
-	bool IsEmpty() const;
+    /// returns true if the argument list is empty
+    bool IsEmpty() const;
     /// get number of arguments (exluding command name)
     SizeT GetNumArgs() const;
     /// get string argument at index
@@ -84,7 +84,7 @@ private:
 inline bool 
 CommandLineArgs::IsEmpty() const
 {
-	return this->args.Size() == 0;
+    return this->args.Size() == 0;
 }
 
 } // namespace Util

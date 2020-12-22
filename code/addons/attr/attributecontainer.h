@@ -29,13 +29,13 @@ public:
     const Attribute& GetAttr(const AttrId& attrId) const;
     /// read access to the attribute array
     const Util::Dictionary<AttrId, Attribute>& GetAttrs() const;
-	/// remove an attribute
-	void RemoveAttr(const AttrId& attrId);
+    /// remove an attribute
+    void RemoveAttr(const AttrId& attrId);
     /// clear the attribute container
     void Clear();
     /// add a new attribute, faster then SetAttr(), but attribute may not exist!
     void AddAttr(const Attribute& attr);
-	/// set bool value
+    /// set bool value
     void SetBool(const BoolAttrId& attrId, bool val);
     /// get bool value
     bool GetBool(const BoolAttrId& attrId) const;
@@ -82,7 +82,7 @@ public:
     /// get blob value
     const Util::Blob& GetBlob(const BlobAttrId& attrId) const;
     /// get blob value with default if not exists
-    const Util::Blob& GetBlob(const BlobAttrId& attrId, const Util::Blob& defaultValue) const;	
+    const Util::Blob& GetBlob(const BlobAttrId& attrId, const Util::Blob& defaultValue) const;  
 
 private:
     /// find index for attribute (SLOW!)

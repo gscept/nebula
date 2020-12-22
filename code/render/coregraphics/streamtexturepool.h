@@ -15,7 +15,7 @@ namespace CoreGraphics
 {
 class StreamTexturePool : public Vulkan::VkStreamTexturePool
 {
-	__DeclareClass(StreamTexturePool);
+    __DeclareClass(StreamTexturePool);
 };
 }
 #else

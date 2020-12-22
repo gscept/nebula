@@ -15,7 +15,7 @@ __ImplementClass(Dynui::ImguiConsoleHandler, 'IMCH', IO::ConsoleHandler);
 */
 ImguiConsoleHandler::ImguiConsoleHandler() 
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -23,7 +23,7 @@ ImguiConsoleHandler::ImguiConsoleHandler()
 */
 ImguiConsoleHandler::~ImguiConsoleHandler()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -32,8 +32,8 @@ ImguiConsoleHandler::~ImguiConsoleHandler()
 void
 ImguiConsoleHandler::Setup()
 {
-	n_assert(IO::Console::HasInstance());
-	IO::Console::Instance()->AttachHandler(this);
+    n_assert(IO::Console::HasInstance());
+    IO::Console::Instance()->AttachHandler(this);
 }
 
 //------------------------------------------------------------------------------
@@ -42,7 +42,7 @@ ImguiConsoleHandler::Setup()
 void
 ImguiConsoleHandler::Discard()
 {
-	IO::Console::Instance()->RemoveHandler(this);
+    IO::Console::Instance()->RemoveHandler(this);
 }
 
 //------------------------------------------------------------------------------
@@ -51,8 +51,8 @@ ImguiConsoleHandler::Discard()
 void
 ImguiConsoleHandler::Open()
 {
-	n_assert(ImguiConsole::HasInstance());	
-	ConsoleHandler::Open();
+    n_assert(ImguiConsole::HasInstance());  
+    ConsoleHandler::Open();
 }
 
 //------------------------------------------------------------------------------
@@ -61,7 +61,7 @@ ImguiConsoleHandler::Open()
 void
 ImguiConsoleHandler::Close()
 {
-	ConsoleHandler::Close();
+    ConsoleHandler::Close();
 }
 
 //------------------------------------------------------------------------------
@@ -70,7 +70,7 @@ ImguiConsoleHandler::Close()
 void
 ImguiConsoleHandler::Print(const Util::String& msg)
 {
-	ImguiConsole::Instance()->AppendToLog({ ImguiConsole::N_MESSAGE, msg });
+    ImguiConsole::Instance()->AppendToLog({ ImguiConsole::N_MESSAGE, msg });
 }
 
 //------------------------------------------------------------------------------
@@ -79,7 +79,7 @@ ImguiConsoleHandler::Print(const Util::String& msg)
 void
 ImguiConsoleHandler::Error(const Util::String& msg)
 {
-	ImguiConsole::Instance()->AppendToLog({ ImguiConsole::N_ERROR, msg });
+    ImguiConsole::Instance()->AppendToLog({ ImguiConsole::N_ERROR, msg });
 }
 //------------------------------------------------------------------------------
 /**
@@ -87,7 +87,7 @@ ImguiConsoleHandler::Error(const Util::String& msg)
 void
 ImguiConsoleHandler::Warning(const Util::String& msg)
 {
-	ImguiConsole::Instance()->AppendToLog({ ImguiConsole::N_WARNING, msg });
+    ImguiConsole::Instance()->AppendToLog({ ImguiConsole::N_WARNING, msg });
 }
 //------------------------------------------------------------------------------
 /**
@@ -95,7 +95,7 @@ ImguiConsoleHandler::Warning(const Util::String& msg)
 void
 ImguiConsoleHandler::DebugOut(const Util::String& msg)
 {
-	ImguiConsole::Instance()->AppendToLog({ImguiConsole::N_SYSTEM, msg});
+    ImguiConsole::Instance()->AppendToLog({ImguiConsole::N_SYSTEM, msg});
 }
 
 

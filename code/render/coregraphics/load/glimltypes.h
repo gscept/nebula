@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Utility functions to convert from gliml/dds types to nebula
+    Utility functions to convert from gliml/dds types to nebula
 
-	(C) 2020 Individual contributors, see AUTHORS file
+    (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/types.h"
@@ -18,7 +18,7 @@ namespace CoreGraphics
 class Gliml
 {
 public:
-	static CoreGraphics::PixelFormat::Code ToPixelFormat(gliml::context const& ctx);
+    static CoreGraphics::PixelFormat::Code ToPixelFormat(gliml::context const& ctx);
 };
 
 }

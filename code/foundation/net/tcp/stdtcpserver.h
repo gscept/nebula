@@ -121,7 +121,7 @@ StdTcpServer::SetClientConnectionClass(const Core::Rtti& type)
 }
 
 //------------------------------------------------------------------------------
-/**	
+/** 
 */
 inline const Core::Rtti&
 StdTcpServer::GetClientConnectionClass()

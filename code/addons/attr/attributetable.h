@@ -121,7 +121,7 @@ public:
     const Util::Array<IndexT>& GetNewRowIndices() const;
     /// return indices of rows deleted since the last ResetModifiedState()
     const Util::Array<IndexT>& GetDeletedRowIndices() const;
-	/// return array of modified rows, exclude rows marked as rows
+    /// return array of modified rows, exclude rows marked as rows
     Util::Array<IndexT> GetModifiedRowsExcludeNewAndDeletedRows() const;
     /// reserve rows to reduce re-allocation overhead
     void ReserveRows(SizeT numRows);    
@@ -140,8 +140,8 @@ public:
 
     /// set a generic attribute (slow!)
     void SetAttr(const Attr::Attribute& attr, IndexT rowIndex); 
-	/// get a generic attribute
-	Attr::Attribute GetAttr(IndexT rowIndex, IndexT colIndex) const;
+    /// get a generic attribute
+    Attr::Attribute GetAttr(IndexT rowIndex, IndexT colIndex) const;
     /// set variant value
     void SetVariant(const Attr::AttrId& attrId, IndexT rowIndex, const Util::Variant& val); 
     /// set bool value
@@ -244,7 +244,7 @@ private:
     void DeleteGuid(IndexT colIndex, IndexT rowIndex);
     /// copy a guid into the table
     void CopyGuid(IndexT colIndex, IndexT rowIndex, const Util::Guid& val);
-	/// internal row-indices-by-attr find method
+    /// internal row-indices-by-attr find method
     Util::Array<IndexT> InternalFindRowIndicesByAttr(const Attr::Attribute& attr, bool firstMatchOnly) const;
     /// internal row-indices-by-multiple-attrs find method
     Util::Array<IndexT> InternalFindRowIndicesByAttrs(const Util::Array<Attr::Attribute>& attr, bool firstMatchOnly) const;
@@ -625,9 +625,9 @@ AttributeTable::SetVec4(IndexT colIndex, IndexT rowIndex, const Math::vec4& val)
     val.storeu(valuePtr);
     if (this->trackModifications)
     {
-    	this->rowModifiedBuffer[rowIndex] = 1;
-    	this->isModified = true;
-		this->rowsModified = true;
+        this->rowModifiedBuffer[rowIndex] = 1;
+        this->isModified = true;
+        this->rowsModified = true;
     }
 }
 
@@ -654,7 +654,7 @@ AttributeTable::SetMat4(IndexT colIndex, IndexT rowIndex, const Math::mat4& val)
     n_assert(!this->IsRowDeleted(rowIndex));
     Math::scalar* valuePtr = (Math::scalar*) this->GetValuePtr(colIndex, rowIndex);
     val.storeu(valuePtr);
-	if (this->trackModifications)
+    if (this->trackModifications)
     {
         this->rowModifiedBuffer[rowIndex] = 1;
         this->isModified = true;

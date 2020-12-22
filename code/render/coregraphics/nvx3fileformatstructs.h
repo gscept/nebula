@@ -6,7 +6,7 @@
     NVX3 file format structures.
     
     (C) 2013 Gustav Sterbrant
-	(C) 2013-2018 Individual contributors, see AUTHORS file
+    (C) 2013-2018 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "coregraphics/gpubuffertypes.h"
@@ -26,23 +26,23 @@ namespace CoreGraphics
 */
 struct Nvx3Header
 {
-	uint magic;
-	uint numGroups;
-	uint numVertices;
-	uint vertexWidth;
-	uint numIndices;
-	uint vertexComponentMask;
-	CoreGraphics::GpuBufferTypes::Usage usage;
-	CoreGraphics::GpuBufferTypes::Access access;
+    uint magic;
+    uint numGroups;
+    uint numVertices;
+    uint vertexWidth;
+    uint numIndices;
+    uint vertexComponentMask;
+    CoreGraphics::GpuBufferTypes::Usage usage;
+    CoreGraphics::GpuBufferTypes::Access access;
 };
 
 struct Nvx3Group
 {
-	uint primType;
-	uint firstVertex;
-	uint numVertices;
-	uint firstTriangle;
-	uint numTriangles;
+    uint primType;
+    uint firstVertex;
+    uint numVertices;
+    uint firstTriangle;
+    uint numTriangles;
 };
 
 #pragma pack(pop)

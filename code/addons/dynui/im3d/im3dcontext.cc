@@ -92,7 +92,7 @@ struct Im3dState
     int gridSize = 20;
     float cellSize = 1.0f;
     Math::vec4 gridColor{ 1.0f,1.0f,1.0f,0.3f };
-	Math::vec2 gridOffset{ 0, 0 };
+    Math::vec2 gridOffset{ 0, 0 };
     Ptr<Im3dInputHandler> inputHandler;
     Im3d::Id depthLayerId;
     byte* vertexPtr;    
@@ -158,10 +158,10 @@ Im3dContext::Create()
     // map buffer
     imState.vertexPtr = (byte*)CoreGraphics::BufferMap(imState.vbo);
 
-	Frame::AddCallback("Im3D", [](const IndexT frame, const IndexT bufferIndex)
-	{
-		Render(frame);
-	});
+    Frame::AddCallback("Im3D", [](const IndexT frame, const IndexT bufferIndex)
+    {
+        Render(frame);
+    });
 }
 
 //------------------------------------------------------------------------------
@@ -184,9 +184,9 @@ Im3dContext::Discard()
 void
 Im3dContext::DrawPoint(const Math::vec3& position, const float size, const Math::vec4 color, uint32_t renderFlags)
 {
-	if (renderFlags & CheckDepth) Im3d::PushLayerId(imState.depthLayerId);
-	Im3d::DrawPoint(Im3d::Vec3(position), size, Im3d::Vec4(color));
-	if (renderFlags & CheckDepth) Im3d::PopLayerId();
+    if (renderFlags & CheckDepth) Im3d::PushLayerId(imState.depthLayerId);
+    Im3d::DrawPoint(Im3d::Vec3(position), size, Im3d::Vec4(color));
+    if (renderFlags & CheckDepth) Im3d::PopLayerId();
 }
 
 //------------------------------------------------------------------------------
@@ -195,9 +195,9 @@ Im3dContext::DrawPoint(const Math::vec3& position, const float size, const Math:
 void
 Im3dContext::DrawLine(const Math::line& line, const float size, const Math::vec4 color, uint32_t renderFlags)
 {
-	if (renderFlags & CheckDepth) Im3d::PushLayerId(imState.depthLayerId);
-	Im3d::DrawLine(line.start(), line.end(), size, Im3d::Vec4(color));
-	if (renderFlags & CheckDepth) Im3d::PopLayerId();
+    if (renderFlags & CheckDepth) Im3d::PushLayerId(imState.depthLayerId);
+    Im3d::DrawLine(line.start(), line.end(), size, Im3d::Vec4(color));
+    if (renderFlags & CheckDepth) Im3d::PopLayerId();
 }
 
 //------------------------------------------------------------------------------
@@ -388,7 +388,7 @@ CollectByFilter(ShaderProgramId const & shader, PrimitiveTopology::Code topology
 {
     CoreGraphics::SetShaderProgram(shader);
     CoreGraphics::SetPrimitiveTopology(topology);
-	CoreGraphics::SetVertexLayout(imState.vlo);
+    CoreGraphics::SetVertexLayout(imState.vlo);
 
     CoreGraphics::SetGraphicsPipeline();
     // setup input buffers
@@ -423,7 +423,7 @@ CollectByFilter(ShaderProgramId const & shader, PrimitiveTopology::Code topology
 void
 Im3dContext::Render(const IndexT frameIndex)
 {
-	CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
+    CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
     if (imState.renderGrid)
     {
         int gridSize = imState.gridSize;            
@@ -467,7 +467,7 @@ Im3dContext::Render(const IndexT frameIndex)
         [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Triangles && l.m_layerId == imState.depthLayerId; });
 
     CoreGraphics::BufferFlush(imState.vbo);
-	CoreGraphics::EndBatch();
+    CoreGraphics::EndBatch();
 }
 
 //------------------------------------------------------------------------------
@@ -522,7 +522,7 @@ Im3dContext::SetGridColor(Math::vec4 const & color)
 void
 Im3dContext::SetGridOffset(Math::vec2 const& offset)
 {
-	imState.gridOffset = offset;
+    imState.gridOffset = offset;
 }
 
 //------------------------------------------------------------------------------

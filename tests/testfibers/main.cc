@@ -13,22 +13,22 @@ using namespace Test;
 
 int main(int argc, char** argv)
 {
-	// create Nebula runtime
-	Ptr<CoreServer> coreServer = CoreServer::Create();
-	coreServer->SetAppName(Util::StringAtom("Nebula Fibers Test"));
-	coreServer->Open();
+    // create Nebula runtime
+    Ptr<CoreServer> coreServer = CoreServer::Create();
+    coreServer->SetAppName(Util::StringAtom("Nebula Fibers Test"));
+    coreServer->Open();
 
-	n_printf("NEBULA FIBERS TESTS\n");
-	n_printf("========================\n");
+    n_printf("NEBULA FIBERS TESTS\n");
+    n_printf("========================\n");
 
-	// setup and run test runner
-	Ptr<TestRunner> testRunner = TestRunner::Create();
-	testRunner->AttachTestCase(FibersTest::Create());
-	bool result = testRunner->Run();	
+    // setup and run test runner
+    Ptr<TestRunner> testRunner = TestRunner::Create();
+    testRunner->AttachTestCase(FibersTest::Create());
+    bool result = testRunner->Run();    
 
-	coreServer->Close();
-	coreServer = nullptr;
-	testRunner = nullptr;
+    coreServer->Close();
+    coreServer = nullptr;
+    testRunner = nullptr;
 
     Core::SysFunc::Exit(result ? 0 : -1);
 }

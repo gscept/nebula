@@ -15,9 +15,9 @@ __ImplementClass(Test::TestMemoryPool, 'TMPO', Resources::ResourceMemoryPool);
 /**
 */
 TestMemoryPool::TestMemoryPool() :
-	alloc(0x00FFFFFF)
+    alloc(0x00FFFFFF)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -25,7 +25,7 @@ TestMemoryPool::TestMemoryPool() :
 */
 TestMemoryPool::~TestMemoryPool()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -34,7 +34,7 @@ TestMemoryPool::~TestMemoryPool()
 void
 TestMemoryPool::Setup()
 {
-	ResourceMemoryPool::Setup();
+    ResourceMemoryPool::Setup();
 }
 
 //------------------------------------------------------------------------------
@@ -43,7 +43,7 @@ TestMemoryPool::Setup()
 void
 TestMemoryPool::Discard()
 {
-	ResourceMemoryPool::Discard();
+    ResourceMemoryPool::Discard();
 }
 
 //------------------------------------------------------------------------------
@@ -52,10 +52,10 @@ TestMemoryPool::Discard()
 Resources::ResourcePool::LoadStatus
 TestMemoryPool::LoadFromMemory(const Ids::Id24 id, const void* info)
 {
-	TestResourceData& res = this->alloc.Get<0>(id);
-	const UpdateInfo* upd = static_cast<const UpdateInfo*>(info);
-	res.data.Set(upd->buf, upd->len);
-	return ResourcePool::Success;
+    TestResourceData& res = this->alloc.Get<0>(id);
+    const UpdateInfo* upd = static_cast<const UpdateInfo*>(info);
+    res.data.Set(upd->buf, upd->len);
+    return ResourcePool::Success;
 }
 
 //------------------------------------------------------------------------------
@@ -64,7 +64,7 @@ TestMemoryPool::LoadFromMemory(const Ids::Id24 id, const void* info)
 void
 TestMemoryPool::Unload(const Ids::Id24 id)
 {
-	// meh, do nothing here since Util::String is recyclabe
+    // meh, do nothing here since Util::String is recyclabe
 }
 
 //------------------------------------------------------------------------------
@@ -73,7 +73,7 @@ TestMemoryPool::Unload(const Ids::Id24 id)
 const TestResourceData&
 TestMemoryPool::GetResource(const Resources::ResourceId id)
 {
-	return this->Get<0>(id.allocId);
+    return this->Get<0>(id.allocId);
 }
 
 } // namespace Test

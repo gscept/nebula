@@ -55,7 +55,7 @@ HtmlPageWriter::Open()
         }
         this->End(HtmlElement::Head);
 
-		this->AddAttr("style", "font-family: 'Segoe UI'");
+        this->AddAttr("style", "font-family: 'Segoe UI'");
         this->Begin(HtmlElement::Body);
 
 

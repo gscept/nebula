@@ -14,7 +14,7 @@ __ImplementClass(Graphics::Stage, 'STAG', Core::RefCounted);
 */
 Stage::Stage()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -22,7 +22,7 @@ Stage::Stage()
 */
 Stage::~Stage()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -31,7 +31,7 @@ Stage::~Stage()
 void
 Stage::AttachEntity(const GraphicsEntityId entity)
 {
-	this->entities.Append(entity);
+    this->entities.Append(entity);
 }
 
 //------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ Stage::AttachEntity(const GraphicsEntityId entity)
 void
 Stage::DetachEntity(const GraphicsEntityId entity)
 {
-	this->entities.EraseIndex(this->entities.FindIndex(entity));
+    this->entities.EraseIndex(this->entities.FindIndex(entity));
 }
 
 } // namespace Graphics

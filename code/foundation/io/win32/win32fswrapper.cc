@@ -314,23 +314,23 @@ Win32FSWrapper::IsReadOnly(const String& path)
 
 //------------------------------------------------------------------------------
 /**
-	try to check for a lock by trying to lock the file. inherently racey, but
-	good enough in some situations
+    try to check for a lock by trying to lock the file. inherently racey, but
+    good enough in some situations
 */
 bool
 Win32FSWrapper::IsLocked(const Util::String& path)
 {
-	n_assert(path.IsValid());
-	Handle h = Win32FSWrapper::OpenFile(path, Stream::ReadWriteAccess, Stream::Sequential);	
-	OVERLAPPED overlap = { 0 };
-	bool locked = true;
-	if (::LockFileEx(h, LOCKFILE_EXCLUSIVE_LOCK| LOCKFILE_FAIL_IMMEDIATELY, 0, MAXDWORD, MAXDWORD, &overlap))
-	{
-		BOOL ret = ::UnlockFileEx(h, 0, MAXDWORD, MAXDWORD, &overlap);		
-		locked = false;
-	}
-	Win32FSWrapper::CloseFile(h);
-	return locked;
+    n_assert(path.IsValid());
+    Handle h = Win32FSWrapper::OpenFile(path, Stream::ReadWriteAccess, Stream::Sequential); 
+    OVERLAPPED overlap = { 0 };
+    bool locked = true;
+    if (::LockFileEx(h, LOCKFILE_EXCLUSIVE_LOCK| LOCKFILE_FAIL_IMMEDIATELY, 0, MAXDWORD, MAXDWORD, &overlap))
+    {
+        BOOL ret = ::UnlockFileEx(h, 0, MAXDWORD, MAXDWORD, &overlap);      
+        locked = false;
+    }
+    Win32FSWrapper::CloseFile(h);
+    return locked;
 }
 
 //------------------------------------------------------------------------------
@@ -359,11 +359,11 @@ Win32FSWrapper::DeleteFile(const String& path)
 bool
 Win32FSWrapper::ReplaceFile(const Util::String& source, const Util::String& target)
 {
-	ushort wideSourcePath[1024];
-	ushort wideTargetPath[1024];
-	Win32::Win32StringConverter::UTF8ToWide(source, wideSourcePath, sizeof(wideSourcePath));
-	Win32::Win32StringConverter::UTF8ToWide(target, wideTargetPath, sizeof(wideTargetPath));
-	return (0 != ::ReplaceFileW((LPCWSTR)wideTargetPath, (LPCWSTR)wideSourcePath, NULL, 0, 0, 0));
+    ushort wideSourcePath[1024];
+    ushort wideTargetPath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(source, wideSourcePath, sizeof(wideSourcePath));
+    Win32::Win32StringConverter::UTF8ToWide(target, wideTargetPath, sizeof(wideTargetPath));
+    return (0 != ::ReplaceFileW((LPCWSTR)wideTargetPath, (LPCWSTR)wideSourcePath, NULL, 0, 0, 0));
 }
 
 //------------------------------------------------------------------------------
@@ -508,14 +508,14 @@ Win32FSWrapper::CreateDirectory(const String& path)
 Util::String
 Win32FSWrapper::CreateTemporaryFilename(const Util::String& path)
 {
-	n_assert(path.IsValid());
-	const String& nativePath = path;
-	ushort widePath[1024];
-	Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
-	const wchar_t* prefix = L"NEB";
-	wchar_t name[MAX_PATH];
-	n_assert(GetTempFileNameW((LPCWSTR)widePath, prefix, 0, name));
-	return Win32::Win32StringConverter::WideToUTF8((ushort*)name);
+    n_assert(path.IsValid());
+    const String& nativePath = path;
+    ushort widePath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
+    const wchar_t* prefix = L"NEB";
+    wchar_t name[MAX_PATH];
+    n_assert(GetTempFileNameW((LPCWSTR)widePath, prefix, 0, name));
+    return Win32::Win32StringConverter::WideToUTF8((ushort*)name);
 }
 
 //------------------------------------------------------------------------------

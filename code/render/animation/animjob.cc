@@ -20,7 +20,7 @@ using namespace CoreAnimation;
 */
 AnimJob::AnimJob() :
     animSequencer(0),
-	mask(0),
+    mask(0),
     enqueueMode(AnimJobEnqueueMode::Intercept),
     trackIndex(0),
     exclusiveTag(InvalidIndex),
@@ -36,7 +36,7 @@ AnimJob::AnimJob() :
     timeOffset(0),
     timeFactor(1.0f),
     blendWeight(1.0f),
-	isPaused(false)
+    isPaused(false)
 {
     // empty
 }    
@@ -62,17 +62,17 @@ AnimJob::OnAttachedToSequencer(const AnimSequencer& animSeq)
     // play duration, we need to fix them in order to prevent blending problems
     this->FixFadeTimes();
 
-	// compute the duration and fade in/fade out times depending on the time factor
-	float timeMultiplier = 1 / float(Math::n_abs(this->timeFactor));
-	int timeDivider = Math::n_frnd(1 / float(Math::n_abs(this->timeFactor)));
-	Timing::Time durationFactored = Timing::TicksToSeconds(this->duration) / timeDivider;
-	Timing::Time fadeInFactored = Timing::TicksToSeconds(this->fadeInTime) / timeDivider;
-	Timing::Time fadeOutFactored = Timing::TicksToSeconds(this->fadeOutTime) / timeDivider;
+    // compute the duration and fade in/fade out times depending on the time factor
+    float timeMultiplier = 1 / float(Math::n_abs(this->timeFactor));
+    int timeDivider = Math::n_frnd(1 / float(Math::n_abs(this->timeFactor)));
+    Timing::Time durationFactored = Timing::TicksToSeconds(this->duration) / timeDivider;
+    Timing::Time fadeInFactored = Timing::TicksToSeconds(this->fadeInTime) / timeDivider;
+    Timing::Time fadeOutFactored = Timing::TicksToSeconds(this->fadeOutTime) / timeDivider;
 
-	// convert back to ticks
-	this->duration = Timing::SecondsToTicks(durationFactored);
-	this->fadeInTime = Timing::SecondsToTicks(fadeInFactored);
-	this->fadeOutTime = Timing::SecondsToTicks(fadeOutFactored);
+    // convert back to ticks
+    this->duration = Timing::SecondsToTicks(durationFactored);
+    this->fadeInTime = Timing::SecondsToTicks(fadeInFactored);
+    this->fadeOutTime = Timing::SecondsToTicks(fadeOutFactored);
 }
 
 //------------------------------------------------------------------------------
@@ -258,18 +258,18 @@ AnimJob::ComputeBlendWeight(Timing::Tick relEvalTime) const
 void 
 AnimJob::UpdateTimes(Timing::Tick time)
 {
-	this->curRelEvalTime = time - (this->baseTime + this->startTime);
-	Timing::Tick frameTicks = this->curRelEvalTime - this->lastRelEvalTime;
-	this->lastRelEvalTime = this->curRelEvalTime;
+    this->curRelEvalTime = time - (this->baseTime + this->startTime);
+    Timing::Tick frameTicks = this->curRelEvalTime - this->lastRelEvalTime;
+    this->lastRelEvalTime = this->curRelEvalTime;
 
-	if (!this->isPaused)
-	{	
-		int timeDivider = Math::n_frnd(1 / this->timeFactor);
-		Timing::Tick timeDiff = frameTicks / timeDivider;
-		this->curSampleTime  = this->lastSampleTime + timeDiff;
-		this->lastSampleTime = this->curSampleTime;
-		this->curSampleTime += this->timeOffset;
-	}
+    if (!this->isPaused)
+    {   
+        int timeDivider = Math::n_frnd(1 / this->timeFactor);
+        Timing::Tick timeDiff = frameTicks / timeDivider;
+        this->curSampleTime  = this->lastSampleTime + timeDiff;
+        this->lastSampleTime = this->curSampleTime;
+        this->curSampleTime += this->timeOffset;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -289,26 +289,26 @@ AnimJob::Stop(Timing::Tick time)
 
         // compute the new duration of the anim job        
         this->duration = newEndTime - this->startTime;
-		//FIXME, why was this an assert
+        //FIXME, why was this an assert
         //n_assert(this->duration >= 0);
     }
 }
 
 //------------------------------------------------------------------------------
 /**
-	Pause the anim job at the given time. Unpauses if already paused.
+    Pause the anim job at the given time. Unpauses if already paused.
 */
 void 
 AnimJob::Pause(bool pause)
 {
-	// toggle pausing
-	this->isPaused = pause;
+    // toggle pausing
+    this->isPaused = pause;
 
-	if (this->isPaused)
-	{
-		this->lastRelEvalTime = this->curRelEvalTime;
-		this->lastSampleTime = this->curSampleTime;
-	}
+    if (this->isPaused)
+    {
+        this->lastRelEvalTime = this->curRelEvalTime;
+        this->lastSampleTime = this->curSampleTime;
+    }
 }
 
 //------------------------------------------------------------------------------

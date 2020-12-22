@@ -55,9 +55,9 @@ public:
     /// write an 32-bit unsigned int to the stream
     void WriteUInt(unsigned int i);
     /// write an 64-bit signed int to the stream
-	void WriteInt64(int64_t i);
+    void WriteInt64(int64_t i);
     /// write an 64-bit unsigned int to the stream
-	void WriteUInt64(uint64_t i);
+    void WriteUInt64(uint64_t i);
     /// write a float value to the stream    
     void WriteFloat(float f);
     /// write a compressed float value to the stream, lossy and needed to be in the range of -1.0 and +1.0
@@ -84,8 +84,8 @@ public:
     void WriteFloatArray(const Util::Array<float>& arr);
     /// write a int array to the stream
     void WriteIntArray(const Util::Array<int>& arr);
-	/// write a unsigned int array to the stream
-	void WriteUIntArray(const Util::Array<uint>& arr);
+    /// write a unsigned int array to the stream
+    void WriteUIntArray(const Util::Array<uint>& arr);
     /// write a bool array to the stream
     void WriteBoolArray(const Util::Array<bool>& arr);
     /// write a guid

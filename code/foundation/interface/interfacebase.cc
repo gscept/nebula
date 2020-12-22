@@ -53,9 +53,9 @@ InterfaceBase::Open()
 void
 InterfaceBase::Close()
 {
-	n_assert(this->IsOpen());
+    n_assert(this->IsOpen());
 
-	Messaging::AsyncPort::Close();
+    Messaging::AsyncPort::Close();
 }
 
 //------------------------------------------------------------------------------

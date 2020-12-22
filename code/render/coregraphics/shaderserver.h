@@ -15,13 +15,13 @@ namespace CoreGraphics
 {
 class ShaderServer : public Vulkan::VkShaderServer
 {
-	__DeclareClass(ShaderServer);
-	__DeclareSingleton(ShaderServer);
+    __DeclareClass(ShaderServer);
+    __DeclareSingleton(ShaderServer);
 public:
-	/// constructor
-	ShaderServer();
-	/// destructor
-	virtual ~ShaderServer();
+    /// constructor
+    ShaderServer();
+    /// destructor
+    virtual ~ShaderServer();
 };
 }
 #else

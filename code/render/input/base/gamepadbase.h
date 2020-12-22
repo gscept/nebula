@@ -49,22 +49,22 @@ public:
         ZButton,                    // Xbox360: /, Wii: Z(Nunchuk), PS3: /
         CButton,                    // Xbox360: /, Wii: C(Nunchuk), PS3: /
 
-		// PS3 specific buttons
-		SelectButton,				// Xbox360: /, Wii: /, PS3: Select
+        // PS3 specific buttons
+        SelectButton,               // Xbox360: /, Wii: /, PS3: Select
 
         NumButtons,
         InvalidButton,
 
 
-		// PS3 aliases !!! MUST BE after NumButtons & InvalidButton !!!
-		CrossButton = AButton,
-		CircleButton = BButton,
-		SquareButton = XButton,
-		TriangleButton = YButton,
-		L1Button = LeftShoulderButton,
-		R1Button = RightShoulderButton,
-		L3Button = LeftThumbButton,
-		R3Button = RightThumbButton,
+        // PS3 aliases !!! MUST BE after NumButtons & InvalidButton !!!
+        CrossButton = AButton,
+        CircleButton = BButton,
+        SquareButton = XButton,
+        TriangleButton = YButton,
+        L1Button = LeftShoulderButton,
+        R1Button = RightShoulderButton,
+        L3Button = LeftThumbButton,
+        R3Button = RightThumbButton,
     };
 
     /// gamepad axis
@@ -109,10 +109,10 @@ public:
     bool ButtonUp(Button btn) const;
     /// get current axis value
     float GetAxisValue(Axis axis) const;
-	/// check if device has 3d location sensor
-	bool HasTransform() const;
-	/// get current position (if supported by device, identity otherwise)
-	const Math::mat4 & GetTransform() const;
+    /// check if device has 3d location sensor
+    bool HasTransform() const;
+    /// get current position (if supported by device, identity otherwise)
+    const Math::mat4 & GetTransform() const;
 
     /// set low-frequency vibration effect (0.0f .. 1.0f)
     void SetLowFrequencyVibrator(float f);
@@ -148,12 +148,12 @@ protected:
     Util::FixedArray<ButtonState> buttonStates;
     Util::FixedArray<float> axisValues;
     bool vibratorsDirty;
-	bool hasTransform;
+    bool hasTransform;
     float lowFreqVibrator;
     float highFreqVibrator;
     Threading::CriticalSection critSect;
     Threading::ThreadId creatorThreadId;
-	Math::mat4 transform;
+    Math::mat4 transform;
 };
 
 //------------------------------------------------------------------------------
@@ -171,8 +171,8 @@ GamePadBase::IsConnected() const
 */
 inline bool
 GamePadBase::HasTransform() const
-{	
-	return this->hasTransform;
+{   
+    return this->hasTransform;
 }
 
 //------------------------------------------------------------------------------
@@ -181,8 +181,8 @@ GamePadBase::HasTransform() const
 inline 
 const Math::mat4 &
 GamePadBase::GetTransform() const
-{	
-	return this->transform;
+{   
+    return this->transform;
 }
 
 //------------------------------------------------------------------------------
@@ -210,7 +210,7 @@ GamePadBase::GetIndex() const
 inline SizeT
 GamePadBase::GetMaxNumControllers()
 {
-	return MAX_GAMEPADS;
+    return MAX_GAMEPADS;
 }
 
 //------------------------------------------------------------------------------

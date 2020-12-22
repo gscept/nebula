@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 //  gaussianblur_cs_rgba8.fx
 //
-//	Performs a 5x5 gaussian blur as a compute shader, producing a 8 bit unsigned byte texture
+//  Performs a 5x5 gaussian blur as a compute shader, producing a 8 bit unsigned byte texture
 //
 //  (C) 2016 Gustav Sterbrant
 //------------------------------------------------------------------------------
@@ -36,11 +36,11 @@ shader
 void
 csMain() 
 {
-	const float x = float(gl_GlobalInvocationID.x);
-	const float y = float(gl_GlobalInvocationID.y);
-	
-	vec2 pixelSize = GetPixelSize(SourceMap);
-	ivec2 uv = ivec2(x, y);
+    const float x = float(gl_GlobalInvocationID.x);
+    const float y = float(gl_GlobalInvocationID.y);
+    
+    vec2 pixelSize = GetPixelSize(SourceMap);
+    ivec2 uv = ivec2(x, y);
     vec4 sampleColor = vec4(0.0);
     int i;
     for (i = 0; i < 13; i++)
@@ -55,5 +55,5 @@ csMain()
 */
 program Blur [ string Mask = "Alt0"; ]
 {
-	ComputeShader = csMain();
+    ComputeShader = csMain();
 };

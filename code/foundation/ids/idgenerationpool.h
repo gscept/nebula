@@ -6,10 +6,10 @@
     Provides a system for creating array friendly id numbers with reuse and 
     generations. Loosely inspired by bitsquid's blog.
 
-	It provides a way to recycle Ids using a separate list of generation numbers,
-	New ids are generated incrementally, but once returned, their generation
-	is increased, such that the next time the id is reused, it can be checked for
-	validity against any dangling instances of the previous generations. 
+    It provides a way to recycle Ids using a separate list of generation numbers,
+    New ids are generated incrementally, but once returned, their generation
+    is increased, such that the next time the id is reused, it can be checked for
+    validity against any dangling instances of the previous generations. 
     
     (C) 2017-2020 Individual contributors, see AUTHORS file
 */
@@ -48,7 +48,7 @@ public:
     ~IdGenerationPool();
 
     /// allocate a new id, returns whether or not the id was reused or new
-	bool Allocate(Id32& id);
+    bool Allocate(Id32& id);
     /// remove an id
     void Deallocate(Id32 id);
     /// check if valid
@@ -60,7 +60,7 @@ private:
 
     /// stores freed indices
     Util::Queue<Id32> freeIds;
-	SizeT freeIdsSize;
+    SizeT freeIdsSize;
 };
 
 //------------------------------------------------------------------------------
@@ -69,7 +69,7 @@ private:
 static Id24 
 Index(const Id32 id)
 {
-	return id & ID_MASK;
+    return id & ID_MASK;
 }
 
 //------------------------------------------------------------------------------
@@ -78,7 +78,7 @@ Index(const Id32 id)
 static generation_t
 Generation(const Id32 id)
 {
-	return (id >> ID_BITS) & GENERATION_MASK;
+    return (id >> ID_BITS) & GENERATION_MASK;
 }
 
 //------------------------------------------------------------------------------
@@ -87,10 +87,10 @@ Generation(const Id32 id)
 static Id32
 CreateId(const Id24 index, generation_t generation)
 {
-	Id32 id;
-	id = (generation << ID_BITS) | index;
-	n_assert2(index < (1 << ID_BITS), "index overflow");
-	return id;
+    Id32 id;
+    id = (generation << ID_BITS) | index;
+    n_assert2(index < (1 << ID_BITS), "index overflow");
+    return id;
 }
 
 } // namespace Ids

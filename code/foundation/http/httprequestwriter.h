@@ -29,8 +29,8 @@ public:
     void SetUserAgent(const Util::String& userAgent);
     /// write the request header to the stream
     bool WriteRequestHeader();
-	/// write a body
-	bool WriteRequestHeaderWithBody(const Util::String & body);
+    /// write a body
+    bool WriteRequestHeaderWithBody(const Util::String & body);
 
 private:
     HttpMethod::Code httpMethod;

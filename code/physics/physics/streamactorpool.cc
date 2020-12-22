@@ -22,7 +22,7 @@ StreamActorPool *actorPool = nullptr;
 */
 StreamActorPool::StreamActorPool()
 {
-	this->streamerThreadName = "Physics Actor Pool Streamer Thread";
+    this->streamerThreadName = "Physics Actor Pool Streamer Thread";
 }
 
 //------------------------------------------------------------------------------
@@ -170,7 +170,7 @@ StreamActorPool::Unload(const Resources::ResourceId id)
         s->release();        
     }    
 
-	this->states[id.poolId] = Resources::Resource::State::Unloaded;
+    this->states[id.poolId] = Resources::Resource::State::Unloaded;
 }
 
 }

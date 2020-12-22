@@ -23,8 +23,8 @@ n_barf(const char* exp, const char* file, int line)
     }
     else
     {
-    	Util::String msg;
-    	msg.Format("*** NEBULA ASSERTION ***\n%s(%d)\nexpression: %s\n", file, line, exp);
+        Util::String msg;
+        msg.Format("*** NEBULA ASSERTION ***\n%s(%d)\nexpression: %s\n", file, line, exp);
         Core::SysFunc::Error(msg.AsCharPtr());
     }
 }
@@ -42,8 +42,8 @@ n_barf2(const char* exp, const char* msg, const char* file, int line)
     }
     else
     {
-    	Util::String fmt;
-		fmt.Format("*** NEBULA ASSERTION ***\n%s(%d)\nprogrammer says : %s\nexpression : %s\n", file, line, msg, exp);
+        Util::String fmt;
+        fmt.Format("*** NEBULA ASSERTION ***\n%s(%d)\nprogrammer says : %s\nexpression : %s\n", file, line, msg, exp);
         Core::SysFunc::Error(fmt.AsCharPtr());
     }
 }
@@ -52,22 +52,22 @@ n_barf2(const char* exp, const char* msg, const char* file, int line)
 /**
 */
 void
-n_barf_fmt(const char *	exp, const char *fmt, const char *file, int line, ...)
+n_barf_fmt(const char * exp, const char *fmt, const char *file, int line, ...)
 {
-	Util::String msg;
-	va_list argList;
-	va_start(argList, line);
-	msg.FormatArgList(fmt, argList);
-	va_end(argList);
-	Util::String format = Util::String::Sprintf("*** NEBULA ASSERTION ***\n%s(%d)\nprogrammer says : %s\nexpression : %s\n", file, line, msg.AsCharPtr(), exp);
-	if (IO::Console::HasInstance())
-	{
-		n_error(format.AsCharPtr());
-	}
-	else
-	{
-		Core::SysFunc::Error(format.AsCharPtr());
-	}
+    Util::String msg;
+    va_list argList;
+    va_start(argList, line);
+    msg.FormatArgList(fmt, argList);
+    va_end(argList);
+    Util::String format = Util::String::Sprintf("*** NEBULA ASSERTION ***\n%s(%d)\nprogrammer says : %s\nexpression : %s\n", file, line, msg.AsCharPtr(), exp);
+    if (IO::Console::HasInstance())
+    {
+        n_error(format.AsCharPtr());
+    }
+    else
+    {
+        Core::SysFunc::Error(format.AsCharPtr());
+    }
 }
 
 //------------------------------------------------------------------------------

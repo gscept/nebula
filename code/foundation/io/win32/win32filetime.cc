@@ -38,7 +38,7 @@ Win32FileTime::AsString() const
 uint 
 Win32FileTime::GetHighBits()
 {
-	return this->time.dwHighDateTime;
+    return this->time.dwHighDateTime;
 }
 
 //------------------------------------------------------------------------------
@@ -47,7 +47,7 @@ Win32FileTime::GetHighBits()
 uint 
 Win32FileTime::GetLowBits()
 {
-	return this->time.dwLowDateTime;
+    return this->time.dwLowDateTime;
 }
 
 //------------------------------------------------------------------------------
@@ -56,7 +56,7 @@ Win32FileTime::GetLowBits()
 void 
 Win32FileTime::SetBits( uint lowBits, uint highBits )
 {
-	this->time.dwLowDateTime = lowBits;
-	this->time.dwHighDateTime = highBits;
+    this->time.dwLowDateTime = lowBits;
+    this->time.dwHighDateTime = highBits;
 }
 } // namespace Win32

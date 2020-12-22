@@ -32,12 +32,12 @@ public:
     /// convert to string
     Util::String AsString() const;
 
-	/// get high bits
-	uint GetHighBits();
-	/// get low bits
-	uint GetLowBits();
-	/// set bits
-	void SetBits(uint lowBits, uint highBits);
+    /// get high bits
+    uint GetHighBits();
+    /// get low bits
+    uint GetLowBits();
+    /// set bits
+    void SetBits(uint lowBits, uint highBits);
 
     FILETIME time;
 };

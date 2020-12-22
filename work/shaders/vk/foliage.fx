@@ -14,8 +14,8 @@
 
 render_state FoliageState
 {
-	CullMode = None;
-	//AlphaToCoverageEnabled = true;
+    CullMode = None;
+    //AlphaToCoverageEnabled = true;
 };
 
 //------------------------------------------------------------------------------
@@ -24,41 +24,41 @@ render_state FoliageState
 shader
 void
 vsTree(
-	[slot=0] in vec3 position,
-	[slot=1] in vec3 normal,
-	[slot=2] in vec2 uv,
-	[slot=3] in vec3 tangent,
-	[slot=4] in vec3 binormal,
-	[slot=5] in vec4 color,
-	out vec3 ViewSpacePos,
-	out vec3 Tangent,
-	out vec3 Normal,
-	out vec3 Binormal,
-	out vec2 UV,
-	out vec3 WorldViewVec)	
+    [slot=0] in vec3 position,
+    [slot=1] in vec3 normal,
+    [slot=2] in vec2 uv,
+    [slot=3] in vec3 tangent,
+    [slot=4] in vec3 binormal,
+    [slot=5] in vec4 color,
+    out vec3 ViewSpacePos,
+    out vec3 Tangent,
+    out vec3 Normal,
+    out vec3 Binormal,
+    out vec2 UV,
+    out vec3 WorldViewVec)  
 {
-	UV = uv;
-	
-	vec4 dir = InvModel * vec4(WindDirection.xyz, 0);
-	vec4 windDir = WindForce * normalize(dir);
-	float len = length(position);
-	
-	float windSpeed = WindSpeed * (TimeAndRandom.x + ObjectId);
-	float windAmplitude = len / WindWaveSize;
-	float windStrength = sin(windSpeed + windAmplitude);
-	
-	vec4 finalOffset = windDir * windStrength * color.r;
-	vec4 finalPos = vec4(position + finalOffset.xyz, 1);
-	vec4 modelSpace = Model * finalPos;
-	gl_Position = ViewProjection * modelSpace;
-
-	mat4 modelView = View * Model;
-	ViewSpacePos = (modelView * finalPos).xyz;
+    UV = uv;
     
-	Tangent  = (modelView * vec4(tangent, 0)).xyz;
-	Normal   = (modelView * vec4(normal, 0)).xyz;
-	Binormal = (modelView * vec4(binormal, 0)).xyz;
-	WorldViewVec = modelSpace.xyz - EyePos.xyz;
+    vec4 dir = InvModel * vec4(WindDirection.xyz, 0);
+    vec4 windDir = WindForce * normalize(dir);
+    float len = length(position);
+    
+    float windSpeed = WindSpeed * (TimeAndRandom.x + ObjectId);
+    float windAmplitude = len / WindWaveSize;
+    float windStrength = sin(windSpeed + windAmplitude);
+    
+    vec4 finalOffset = windDir * windStrength * color.r;
+    vec4 finalPos = vec4(position + finalOffset.xyz, 1);
+    vec4 modelSpace = Model * finalPos;
+    gl_Position = ViewProjection * modelSpace;
+
+    mat4 modelView = View * Model;
+    ViewSpacePos = (modelView * finalPos).xyz;
+    
+    Tangent  = (modelView * vec4(tangent, 0)).xyz;
+    Normal   = (modelView * vec4(normal, 0)).xyz;
+    Binormal = (modelView * vec4(binormal, 0)).xyz;
+    WorldViewVec = modelSpace.xyz - EyePos.xyz;
 }
 
 //------------------------------------------------------------------------------
@@ -67,40 +67,40 @@ vsTree(
 shader
 void
 vsTreeInstanced(
-	[slot=0] in vec3 position,
-	[slot=1] in vec3 normal,
-	[slot=2] in vec2 uv,
-	[slot=3] in vec3 tangent,
-	[slot=4] in vec3 binormal,
-	[slot=5] in vec4 color,
-	out vec3 ViewSpacePos,
-	out vec3 Tangent,
-	out vec3 Normal,
-	out vec3 Binormal,
-	out vec2 UV,
-	out vec3 WorldViewVec)	
+    [slot=0] in vec3 position,
+    [slot=1] in vec3 normal,
+    [slot=2] in vec2 uv,
+    [slot=3] in vec3 tangent,
+    [slot=4] in vec3 binormal,
+    [slot=5] in vec4 color,
+    out vec3 ViewSpacePos,
+    out vec3 Tangent,
+    out vec3 Normal,
+    out vec3 Binormal,
+    out vec2 UV,
+    out vec3 WorldViewVec)  
 {
-	UV = uv;
-	
-	vec4 dir = InvModel * vec4(WindDirection.xyz, 0);
-	vec4 windDir = WindForce * normalize(dir);
-	
-	float windSpeed = WindSpeed * (TimeAndRandom.x + gl_InstanceID);
-	float windAmplitude = length(position) / WindWaveSize;
-	float windStrength = sin(windSpeed + windAmplitude);
-	
-	vec4 finalOffset = windDir * windStrength * color.r;
-	vec4 finalPos = vec4(position + finalOffset.xyz, 1);
-	vec4 modelSpace = ModelArray[gl_InstanceID] * finalPos;
-	gl_Position = ViewProjection * modelSpace;
+    UV = uv;
+    
+    vec4 dir = InvModel * vec4(WindDirection.xyz, 0);
+    vec4 windDir = WindForce * normalize(dir);
+    
+    float windSpeed = WindSpeed * (TimeAndRandom.x + gl_InstanceID);
+    float windAmplitude = length(position) / WindWaveSize;
+    float windStrength = sin(windSpeed + windAmplitude);
+    
+    vec4 finalOffset = windDir * windStrength * color.r;
+    vec4 finalPos = vec4(position + finalOffset.xyz, 1);
+    vec4 modelSpace = ModelArray[gl_InstanceID] * finalPos;
+    gl_Position = ViewProjection * modelSpace;
 
-	mat4 modelView = View * ModelArray[gl_InstanceID];
-	ViewSpacePos = (modelView * finalPos).xyz;
-	    
-	Tangent  = (modelView * vec4(tangent, 0)).xyz;
-	Normal   = (modelView * vec4(normal, 0)).xyz;
-	Binormal = (modelView * vec4(binormal, 0)).xyz;
-	WorldViewVec = modelSpace.xyz - EyePos.xyz;
+    mat4 modelView = View * ModelArray[gl_InstanceID];
+    ViewSpacePos = (modelView * finalPos).xyz;
+        
+    Tangent  = (modelView * vec4(tangent, 0)).xyz;
+    Normal   = (modelView * vec4(normal, 0)).xyz;
+    Binormal = (modelView * vec4(binormal, 0)).xyz;
+    WorldViewVec = modelSpace.xyz - EyePos.xyz;
 }
 
 //------------------------------------------------------------------------------
@@ -109,40 +109,40 @@ vsTreeInstanced(
 shader
 void
 vsGrass(
-	[slot=0] in vec3 position,
-	[slot=1] in vec3 normal,
-	[slot=2] in vec2 uv,
-	[slot=3] in vec3 tangent,
-	[slot=4] in vec3 binormal,
-	[slot=5] in vec4 color,
-	out vec3 ViewSpacePos,
-	out vec3 Tangent,
-	out vec3 Normal,
-	out vec3 Binormal,
-	out vec2 UV,
-	out vec3 WorldViewVec)	
+    [slot=0] in vec3 position,
+    [slot=1] in vec3 normal,
+    [slot=2] in vec2 uv,
+    [slot=3] in vec3 tangent,
+    [slot=4] in vec3 binormal,
+    [slot=5] in vec4 color,
+    out vec3 ViewSpacePos,
+    out vec3 Tangent,
+    out vec3 Normal,
+    out vec3 Binormal,
+    out vec2 UV,
+    out vec3 WorldViewVec)  
 {
-	UV = uv;
-	
-	vec4 dir = InvModel * vec4(WindDirection.xyz, 0);
-	vec4 windDir = WindForce * normalize(dir);
-	
-	float windSpeed = WindSpeed * (TimeAndRandom.x + ObjectId);
-	float windAmplitude = length(position) / WindWaveSize;
-	float windStrength = sin(windSpeed + windAmplitude);
-	
-	vec4 finalOffset = windDir * windStrength * color.r;
-	vec4 finalPos = vec4(position + finalOffset.xyz, 1);
-	vec4 modelSpace = Model * finalPos;
-	gl_Position = ViewProjection * modelSpace;
-	
-	mat4 modelView = View * Model;
-	ViewSpacePos = (modelView * finalPos).xyz;
+    UV = uv;
     
-	Tangent  = (modelView * vec4(tangent, 0)).xyz;
-	Normal   = (modelView * vec4(normal, 0)).xyz;
-	Binormal = (modelView * vec4(binormal, 0)).xyz;
-	WorldViewVec = modelSpace.xyz - EyePos.xyz;
+    vec4 dir = InvModel * vec4(WindDirection.xyz, 0);
+    vec4 windDir = WindForce * normalize(dir);
+    
+    float windSpeed = WindSpeed * (TimeAndRandom.x + ObjectId);
+    float windAmplitude = length(position) / WindWaveSize;
+    float windStrength = sin(windSpeed + windAmplitude);
+    
+    vec4 finalOffset = windDir * windStrength * color.r;
+    vec4 finalPos = vec4(position + finalOffset.xyz, 1);
+    vec4 modelSpace = Model * finalPos;
+    gl_Position = ViewProjection * modelSpace;
+    
+    mat4 modelView = View * Model;
+    ViewSpacePos = (modelView * finalPos).xyz;
+    
+    Tangent  = (modelView * vec4(tangent, 0)).xyz;
+    Normal   = (modelView * vec4(normal, 0)).xyz;
+    Binormal = (modelView * vec4(binormal, 0)).xyz;
+    WorldViewVec = modelSpace.xyz - EyePos.xyz;
 }
 
 //------------------------------------------------------------------------------
@@ -151,40 +151,40 @@ vsGrass(
 shader
 void
 vsGrassInstanced(
-	[slot=0] in vec3 position,
-	[slot=1] in vec3 normal,
-	[slot=2] in vec2 uv,
-	[slot=3] in vec3 tangent,
-	[slot=4] in vec3 binormal,
-	[slot=5] in vec4 color,
-	out vec3 ViewSpacePos,
-	out vec3 Tangent,
-	out vec3 Normal,
-	out vec3 Binormal,
-	out vec2 UV,
-	out vec3 WorldViewVec)	
+    [slot=0] in vec3 position,
+    [slot=1] in vec3 normal,
+    [slot=2] in vec2 uv,
+    [slot=3] in vec3 tangent,
+    [slot=4] in vec3 binormal,
+    [slot=5] in vec4 color,
+    out vec3 ViewSpacePos,
+    out vec3 Tangent,
+    out vec3 Normal,
+    out vec3 Binormal,
+    out vec2 UV,
+    out vec3 WorldViewVec)  
 {
-	UV = uv;
-	
-	vec4 dir = InvModel * vec4(WindDirection.xyz, 0);
-	vec4 windDir = WindForce * normalize(dir);
-	
-	float windSpeed = WindSpeed * (TimeAndRandom.x + gl_InstanceID);
-	float windAmplitude = length(position) / WindWaveSize;
-	float windStrength = sin(windSpeed + windAmplitude);
-	
-	vec4 finalOffset = windDir * windStrength * color.r;
-	vec4 finalPos = vec4(position + finalOffset.xyz, 1);
-	vec4 modelSpace = ModelArray[gl_InstanceID] * finalPos;
-	gl_Position = ViewProjection * modelSpace;
-	
-	mat4 modelView = View * ModelArray[gl_InstanceID];
-	ViewSpacePos = (modelView * finalPos).xyz;
+    UV = uv;
     
-	Tangent  = (modelView * vec4(tangent, 0)).xyz;
-	Normal   = (modelView * vec4(normal, 0)).xyz;
-	Binormal = (modelView * vec4(binormal, 0)).xyz;
-	WorldViewVec = modelSpace.xyz - EyePos.xyz;
+    vec4 dir = InvModel * vec4(WindDirection.xyz, 0);
+    vec4 windDir = WindForce * normalize(dir);
+    
+    float windSpeed = WindSpeed * (TimeAndRandom.x + gl_InstanceID);
+    float windAmplitude = length(position) / WindWaveSize;
+    float windStrength = sin(windSpeed + windAmplitude);
+    
+    vec4 finalOffset = windDir * windStrength * color.r;
+    vec4 finalPos = vec4(position + finalOffset.xyz, 1);
+    vec4 modelSpace = ModelArray[gl_InstanceID] * finalPos;
+    gl_Position = ViewProjection * modelSpace;
+    
+    mat4 modelView = View * ModelArray[gl_InstanceID];
+    ViewSpacePos = (modelView * finalPos).xyz;
+    
+    Tangent  = (modelView * vec4(tangent, 0)).xyz;
+    Normal   = (modelView * vec4(normal, 0)).xyz;
+    Binormal = (modelView * vec4(binormal, 0)).xyz;
+    WorldViewVec = modelSpace.xyz - EyePos.xyz;
 }
 
 //------------------------------------------------------------------------------
@@ -193,26 +193,26 @@ vsGrassInstanced(
 shader
 void
 vsTreeShadow(
-	[slot=0] in vec4 position,
-	[slot=1] in vec3 normal,
-	[slot=2] in vec2 uv,
-	[slot=3] in vec3 tangent,
-	[slot=4] in vec3 binormal,
-	out vec2 UV,
-	out vec4 ProjPos)
+    [slot=0] in vec4 position,
+    [slot=1] in vec3 normal,
+    [slot=2] in vec2 uv,
+    [slot=3] in vec3 tangent,
+    [slot=4] in vec3 binormal,
+    out vec2 UV,
+    out vec4 ProjPos)
 {
-	vec4 dir = InvModel * vec4(WindDirection.xyz, 0);
-	vec4 windDir = WindForce * normalize(dir);
-	
-	float windSpeed = WindSpeed * (TimeAndRandom.x + ObjectId);
-	float windAmplitude = length(position) / WindWaveSize;
-	float windStrength = sin(windSpeed + windAmplitude);
-	
-	vec4 finalOffset = windDir * windStrength;
-	gl_Position = position + finalOffset;
-	gl_Position = LightViewMatrix[gl_InstanceID] * Model * gl_Position;
-	ProjPos = gl_Position;
-	UV = uv;
+    vec4 dir = InvModel * vec4(WindDirection.xyz, 0);
+    vec4 windDir = WindForce * normalize(dir);
+    
+    float windSpeed = WindSpeed * (TimeAndRandom.x + ObjectId);
+    float windAmplitude = length(position) / WindWaveSize;
+    float windStrength = sin(windSpeed + windAmplitude);
+    
+    vec4 finalOffset = windDir * windStrength;
+    gl_Position = position + finalOffset;
+    gl_Position = LightViewMatrix[gl_InstanceID] * Model * gl_Position;
+    ProjPos = gl_Position;
+    UV = uv;
 }
 
 //------------------------------------------------------------------------------
@@ -221,27 +221,27 @@ vsTreeShadow(
 shader
 void
 vsGrassShadow(
-	[slot=0] in vec4 position,
-	[slot=1] in vec3 normal,
-	[slot=2] in vec2 uv,
-	[slot=3] in vec3 tangent,
-	[slot=4] in vec3 binormal,
-	[slot=5] in vec4 color,
-	out vec2 UV,
-	out vec4 ProjPos) 
+    [slot=0] in vec4 position,
+    [slot=1] in vec3 normal,
+    [slot=2] in vec2 uv,
+    [slot=3] in vec3 tangent,
+    [slot=4] in vec3 binormal,
+    [slot=5] in vec4 color,
+    out vec2 UV,
+    out vec4 ProjPos) 
 {
-	vec4 dir = InvModel * vec4(WindDirection.xyz, 0);
-	vec4 windDir = WindForce * normalize(dir);
-	
-	float windSpeed = WindSpeed * (TimeAndRandom.x + ObjectId);
-	float windAmplitude = length(position) / WindWaveSize;
-	float windStrength = sin(windSpeed + windAmplitude);
-	
-	vec4 finalOffset = windDir * windStrength;
-	gl_Position = position + finalOffset * color;
-	gl_Position = ViewMatrixArray[0] * Model * gl_Position;
-	ProjPos = gl_Position;
-	UV = uv;
+    vec4 dir = InvModel * vec4(WindDirection.xyz, 0);
+    vec4 windDir = WindForce * normalize(dir);
+    
+    float windSpeed = WindSpeed * (TimeAndRandom.x + ObjectId);
+    float windAmplitude = length(position) / WindWaveSize;
+    float windStrength = sin(windSpeed + windAmplitude);
+    
+    vec4 finalOffset = windDir * windStrength;
+    gl_Position = position + finalOffset * color;
+    gl_Position = ViewMatrixArray[0] * Model * gl_Position;
+    ProjPos = gl_Position;
+    UV = uv;
 }
 
 //------------------------------------------------------------------------------
@@ -250,27 +250,27 @@ vsGrassShadow(
 shader
 void
 vsTreeShadowCSM(
-	[slot=0] in vec4 position,
-	[slot=1] in vec3 normal,
-	[slot=2] in vec2 uv,
-	[slot=3] in vec3 tangent,
-	[slot=4] in vec3 binormal,
-	out vec2 UV,
-	out vec4 ProjPos,
-	out int Instance) 
+    [slot=0] in vec4 position,
+    [slot=1] in vec3 normal,
+    [slot=2] in vec2 uv,
+    [slot=3] in vec3 tangent,
+    [slot=4] in vec3 binormal,
+    out vec2 UV,
+    out vec4 ProjPos,
+    out int Instance) 
 {
-	vec4 dir = vec4(WindDirection.xyz, 0);
-	vec4 windDir = WindForce * normalize(dir);
-	
-	float windSpeed = WindSpeed * (TimeAndRandom.x + ObjectId);
-	float windAmplitude = length(position) / WindWaveSize;
-	float windStrength = sin(windSpeed + windAmplitude);
-		
-	vec4 finalOffset = windDir * windStrength;
-	finalOffset = position + finalOffset;
-	ProjPos = CSMViewMatrix[gl_InstanceID] * Model * finalOffset;
-	UV = uv;
-	Instance = gl_InstanceID;
+    vec4 dir = vec4(WindDirection.xyz, 0);
+    vec4 windDir = WindForce * normalize(dir);
+    
+    float windSpeed = WindSpeed * (TimeAndRandom.x + ObjectId);
+    float windAmplitude = length(position) / WindWaveSize;
+    float windStrength = sin(windSpeed + windAmplitude);
+        
+    vec4 finalOffset = windDir * windStrength;
+    finalOffset = position + finalOffset;
+    ProjPos = CSMViewMatrix[gl_InstanceID] * Model * finalOffset;
+    UV = uv;
+    Instance = gl_InstanceID;
 }
 
 //------------------------------------------------------------------------------
@@ -279,28 +279,28 @@ vsTreeShadowCSM(
 shader
 void
 vsGrassShadowCSM(
-	[slot=0] in vec4 position,
-	[slot=1] in vec3 normal,
-	[slot=2] in vec2 uv,
-	[slot=3] in vec3 tangent,
-	[slot=4] in vec3 binormal,
-	[slot=5] in vec4 color,
-	out vec2 UV,
-	out vec4 ProjPos,
-	out int Instance) 
+    [slot=0] in vec4 position,
+    [slot=1] in vec3 normal,
+    [slot=2] in vec2 uv,
+    [slot=3] in vec3 tangent,
+    [slot=4] in vec3 binormal,
+    [slot=5] in vec4 color,
+    out vec2 UV,
+    out vec4 ProjPos,
+    out int Instance) 
 {
-	vec4 dir = vec4(WindDirection.xyz, 0);
-	vec4 windDir = WindForce * normalize(dir);
-	
-	float windSpeed = WindSpeed * (TimeAndRandom.x + ObjectId);
-	float windAmplitude = length(position) / WindWaveSize;
-	float windStrength = sin(windSpeed + windAmplitude);
-	
-	vec4 finalOffset = windDir * windStrength;
-	finalOffset = position + finalOffset;
-	ProjPos = ViewMatrixArray[gl_InstanceID] * Model * finalOffset;
-	UV = uv;
-	Instance = gl_InstanceID;
+    vec4 dir = vec4(WindDirection.xyz, 0);
+    vec4 windDir = WindForce * normalize(dir);
+    
+    float windSpeed = WindSpeed * (TimeAndRandom.x + ObjectId);
+    float windAmplitude = length(position) / WindWaveSize;
+    float windStrength = sin(windSpeed + windAmplitude);
+    
+    vec4 finalOffset = windDir * windStrength;
+    finalOffset = position + finalOffset;
+    ProjPos = ViewMatrixArray[gl_InstanceID] * Model * finalOffset;
+    UV = uv;
+    Instance = gl_InstanceID;
 }
 
 //------------------------------------------------------------------------------
@@ -309,27 +309,27 @@ vsGrassShadowCSM(
 shader
 void
 vsTreeShadowPoint(
-	[slot=0] in vec4 position,
-	[slot=1] in vec3 normal,
-	[slot=2] in vec2 uv,
-	[slot=3] in vec3 tangent,
-	[slot=4] in vec3 binormal,
-	out vec2 UV,
-	out vec4 ProjPos,
-	out int Instance) 
+    [slot=0] in vec4 position,
+    [slot=1] in vec3 normal,
+    [slot=2] in vec2 uv,
+    [slot=3] in vec3 tangent,
+    [slot=4] in vec3 binormal,
+    out vec2 UV,
+    out vec4 ProjPos,
+    out int Instance) 
 {
-	vec4 dir = vec4(WindDirection.xyz, 0);
-	vec4 windDir = WindForce * normalize(dir);
-	
-	float windSpeed = WindSpeed * (TimeAndRandom.x + ObjectId);
-	float windAmplitude = length(position) / WindWaveSize;
-	float windStrength = sin(windSpeed + windAmplitude);
-		
-	vec4 finalOffset = windDir * windStrength;
-	finalOffset = position + finalOffset;
-	ProjPos = LightViewMatrix[gl_InstanceID] * Model * finalOffset;
-	UV = uv;
-	Instance = gl_InstanceID;
+    vec4 dir = vec4(WindDirection.xyz, 0);
+    vec4 windDir = WindForce * normalize(dir);
+    
+    float windSpeed = WindSpeed * (TimeAndRandom.x + ObjectId);
+    float windAmplitude = length(position) / WindWaveSize;
+    float windStrength = sin(windSpeed + windAmplitude);
+        
+    vec4 finalOffset = windDir * windStrength;
+    finalOffset = position + finalOffset;
+    ProjPos = LightViewMatrix[gl_InstanceID] * Model * finalOffset;
+    UV = uv;
+    Instance = gl_InstanceID;
 }
 
 //------------------------------------------------------------------------------
@@ -338,72 +338,72 @@ vsTreeShadowPoint(
 shader
 void
 vsGrassShadowPoint(
-	[slot=0] in vec4 position,
-	[slot=1] in vec3 normal,
-	[slot=2] in vec2 uv,
-	[slot=3] in vec3 tangent,
-	[slot=4] in vec3 binormal,
-	[slot=5] in vec4 color,
-	out vec2 UV,
-	out vec4 ProjPos,
-	out int Instance) 
+    [slot=0] in vec4 position,
+    [slot=1] in vec3 normal,
+    [slot=2] in vec2 uv,
+    [slot=3] in vec3 tangent,
+    [slot=4] in vec3 binormal,
+    [slot=5] in vec4 color,
+    out vec2 UV,
+    out vec4 ProjPos,
+    out int Instance) 
 {
-	vec4 dir = vec4(WindDirection.xyz, 0);
-	vec4 windDir = WindForce * normalize(dir);
-	
-	float windSpeed = WindSpeed * (TimeAndRandom.x + ObjectId);
-	float windAmplitude = length(position) / WindWaveSize;
-	float windStrength = sin(windSpeed + windAmplitude);
-	
-	vec4 finalOffset = windDir * windStrength;
-	finalOffset = position + finalOffset;
-	ProjPos = ViewMatrixArray[gl_InstanceID] * Model * finalOffset;
-	UV = uv;
-	Instance = gl_InstanceID;
+    vec4 dir = vec4(WindDirection.xyz, 0);
+    vec4 windDir = WindForce * normalize(dir);
+    
+    float windSpeed = WindSpeed * (TimeAndRandom.x + ObjectId);
+    float windAmplitude = length(position) / WindWaveSize;
+    float windStrength = sin(windSpeed + windAmplitude);
+    
+    vec4 finalOffset = windDir * windStrength;
+    finalOffset = position + finalOffset;
+    ProjPos = ViewMatrixArray[gl_InstanceID] * Model * finalOffset;
+    UV = uv;
+    Instance = gl_InstanceID;
 }
 
 
 //------------------------------------------------------------------------------
 /**
-	Used for lightmapped 
+    Used for lightmapped 
 */
 shader
 void
 vsTreeLightmapped(
-	[slot=0] in vec3 position,
-	[slot=1] in vec3 normal,
-	[slot=2] in vec2 uv1,
-	[slot=3] in vec3 tangent,
-	[slot=4] in vec3 binormal,
-	[slot=5] in vec4 color,
-	[slot=6] in vec2 uv2,
-	out vec3 ViewSpacePos,
-	out vec3 Tangent,
-	out vec3 Normal,
-	out vec3 Binormal,
-	out vec2 UV1,
-	out vec2 UV2)
+    [slot=0] in vec3 position,
+    [slot=1] in vec3 normal,
+    [slot=2] in vec2 uv1,
+    [slot=3] in vec3 tangent,
+    [slot=4] in vec3 binormal,
+    [slot=5] in vec4 color,
+    [slot=6] in vec2 uv2,
+    out vec3 ViewSpacePos,
+    out vec3 Tangent,
+    out vec3 Normal,
+    out vec3 Binormal,
+    out vec2 UV1,
+    out vec2 UV2)
 {
-	vec4 dir = InvModel * vec4(WindDirection.xyz, 0);
-	vec4 windDir = WindForce * normalize(dir);
-	float len = length(position);
-	
-	float windSpeed = WindSpeed * (TimeAndRandom.x + ObjectId);
-	float windAmplitude = len / WindWaveSize;
-	float windStrength = sin(windSpeed + windAmplitude);
-	
-	vec4 finalOffset = windDir * windStrength * color.a;
-	vec4 finalPos = vec4(position + finalOffset.xyz, 1);
-	
-	gl_Position = ViewProjection * Model * finalPos;
-	UV1 = uv1;
-	UV2 = uv2;
-	mat4 modelView = View * Model;
+    vec4 dir = InvModel * vec4(WindDirection.xyz, 0);
+    vec4 windDir = WindForce * normalize(dir);
+    float len = length(position);
+    
+    float windSpeed = WindSpeed * (TimeAndRandom.x + ObjectId);
+    float windAmplitude = len / WindWaveSize;
+    float windStrength = sin(windSpeed + windAmplitude);
+    
+    vec4 finalOffset = windDir * windStrength * color.a;
+    vec4 finalPos = vec4(position + finalOffset.xyz, 1);
+    
+    gl_Position = ViewProjection * Model * finalPos;
+    UV1 = uv1;
+    UV2 = uv2;
+    mat4 modelView = View * Model;
 
-	ViewSpacePos = (modelView * finalPos).xyz;
-	Tangent = (modelView * vec4(tangent, 0)).xyz;
-	Normal = (modelView * vec4(normal, 0)).xyz;
-	Binormal = (modelView * vec4(binormal, 0)).xyz;	
+    ViewSpacePos = (modelView * finalPos).xyz;
+    Tangent = (modelView * vec4(tangent, 0)).xyz;
+    Normal = (modelView * vec4(normal, 0)).xyz;
+    Binormal = (modelView * vec4(binormal, 0)).xyz; 
 }
 
 //------------------------------------------------------------------------------
@@ -412,69 +412,69 @@ vsTreeLightmapped(
 shader
 void
 psPicking(in vec2 UV,
-		in vec4 ProjPos,		
-		[color0] out float Id) 
+        in vec4 ProjPos,        
+        [color0] out float Id) 
 {
-	Id = float(ObjectId);
+    Id = float(ObjectId);
 }
 
 //------------------------------------------------------------------------------
-//	Coloring methods
+//  Coloring methods
 //------------------------------------------------------------------------------
 SimpleTechnique(
-	Tree, 
-	"Static", 
-	vsTree(), 
-	psUberAlphaTest(
-		calcColor = SimpleColor,
-		calcBump = NormalMapFunctor,
-		calcMaterial = DefaultMaterialFunctor,
-		calcDepth = ViewSpaceDepthFunctor,
-		calcEnv = IrradianceOnly
-	),
-	FoliageState);
-	
+    Tree, 
+    "Static", 
+    vsTree(), 
+    psUberAlphaTest(
+        calcColor = SimpleColor,
+        calcBump = NormalMapFunctor,
+        calcMaterial = DefaultMaterialFunctor,
+        calcDepth = ViewSpaceDepthFunctor,
+        calcEnv = IrradianceOnly
+    ),
+    FoliageState);
+    
 SimpleTechnique(
-	TreeInstanced, 
-	"Static|Instanced", 
-	vsTreeInstanced(), 
-	psUberAlphaTest(
-		calcColor = SimpleColor,
-		calcBump = NormalMapFunctor,
-		calcMaterial = DefaultMaterialFunctor,
-		calcDepth = ViewSpaceDepthFunctor,
-		calcEnv = IrradianceOnly
-	),
-	FoliageState);
-	
+    TreeInstanced, 
+    "Static|Instanced", 
+    vsTreeInstanced(), 
+    psUberAlphaTest(
+        calcColor = SimpleColor,
+        calcBump = NormalMapFunctor,
+        calcMaterial = DefaultMaterialFunctor,
+        calcDepth = ViewSpaceDepthFunctor,
+        calcEnv = IrradianceOnly
+    ),
+    FoliageState);
+    
 SimpleTechnique(
-	Grass, 
-	"Static|Colored", 
-	vsGrass(), 
-	psUberAlphaTest(
-		calcColor = SimpleColor,
-		calcBump = NormalMapFunctor,
-		calcMaterial = DefaultMaterialFunctor,
-		calcDepth = ViewSpaceDepthFunctor,
-		calcEnv = IrradianceOnly
-	),
-	FoliageState);
-	
+    Grass, 
+    "Static|Colored", 
+    vsGrass(), 
+    psUberAlphaTest(
+        calcColor = SimpleColor,
+        calcBump = NormalMapFunctor,
+        calcMaterial = DefaultMaterialFunctor,
+        calcDepth = ViewSpaceDepthFunctor,
+        calcEnv = IrradianceOnly
+    ),
+    FoliageState);
+    
 SimpleTechnique(
-	GrassInstanced, 
-	"Static|Colored|Instanced", 
-	vsGrassInstanced(), 
-	psUberAlphaTest(
-		calcColor = SimpleColor,
-		calcBump = NormalMapFunctor,
-		calcMaterial = DefaultMaterialFunctor,
-		calcDepth = ViewSpaceDepthFunctor,
-		calcEnv = IrradianceOnly
-	),
-	FoliageState);
+    GrassInstanced, 
+    "Static|Colored|Instanced", 
+    vsGrassInstanced(), 
+    psUberAlphaTest(
+        calcColor = SimpleColor,
+        calcBump = NormalMapFunctor,
+        calcMaterial = DefaultMaterialFunctor,
+        calcDepth = ViewSpaceDepthFunctor,
+        calcEnv = IrradianceOnly
+    ),
+    FoliageState);
 
 //------------------------------------------------------------------------------
-//	Shadowing methods
+//  Shadowing methods
 //------------------------------------------------------------------------------
 SimpleTechnique(DefaultShadow, "Static|Spot", vsTreeShadow(), psShadowAlpha(), FoliageState);
 SimpleTechnique(CSMShadow, "Static|Global", vsTreeShadowCSM(), psVSMAlpha(), FoliageState);
@@ -482,18 +482,18 @@ SimpleTechnique(PointlightShadow, "Static|Point", vsTreeShadowPoint(), psVSMAlph
 SimpleTechnique(Picking, "Static|Picking", vsTreeShadow(), psPicking(), FoliageState);
 
 //------------------------------------------------------------------------------
-//	Lightmapped methods
+//  Lightmapped methods
 //------------------------------------------------------------------------------
 SimpleTechnique(
-	LitFoliage,
-	"Static|Lightmapped",
-	vsTreeLightmapped(),
-	psLightmappedLit(
-		calcColor = SimpleColor,
-		calcBump = NormalMapFunctor,
-		calcMaterial = DefaultMaterialFunctor
-	),
-	FoliageState
+    LitFoliage,
+    "Static|Lightmapped",
+    vsTreeLightmapped(),
+    psLightmappedLit(
+        calcColor = SimpleColor,
+        calcBump = NormalMapFunctor,
+        calcMaterial = DefaultMaterialFunctor
+    ),
+    FoliageState
 );
 
 SimpleTechnique(UnlitFoliage, "Static|Unlit|Lightmapped", vsTreeLightmapped(), psLightmappedUnlit(), FoliageState);

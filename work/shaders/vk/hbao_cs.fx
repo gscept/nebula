@@ -10,13 +10,13 @@
 
 constant HBAOBlock
 {
-	vec2 UVToViewA = vec2(0.0f, 0.0f);
-	vec2 UVToViewB = vec2(0.0f, 0.0f);
-	vec2 AOResolution = vec2(0.0f, 0.0f);
-	vec2 InvAOResolution = vec2(0.0f, 0.0f);
-	float TanAngleBias = 0.0f;
-	float Strength = 0.0f;
-	float R2 = 0.0f;
+    vec2 UVToViewA = vec2(0.0f, 0.0f);
+    vec2 UVToViewB = vec2(0.0f, 0.0f);
+    vec2 AOResolution = vec2(0.0f, 0.0f);
+    vec2 InvAOResolution = vec2(0.0f, 0.0f);
+    float TanAngleBias = 0.0f;
+    float Strength = 0.0f;
+    float R2 = 0.0f;
 };
 
 // Step size in number of pixels
@@ -35,10 +35,10 @@ write rg16f image2D HBAO1;
 
 sampler_state ClampSampler
 {
-	//Samplers = { DepthBuffer };
-	Filter = Point;
-	AddressU = Clamp;
-	AddressV = Clamp;
+    //Samplers = { DepthBuffer };
+    Filter = Point;
+    AddressU = Clamp;
+    AddressV = Clamp;
 };
 
 // Maximum kernel radius in number of pixels
@@ -98,7 +98,7 @@ vec2 LoadXZFromTexture(uint x, uint y)
 { 
     vec2 uv = (vec2(x, y) + 0.5f) * InvAOResolution;
     float z_eye = fetch2D(DepthBuffer, ClampSampler, ivec2(x, y), 0).r;
-	vec4 viewSpace = PixelToView(uv, z_eye);
+    vec4 viewSpace = PixelToView(uv, z_eye);
     return vec2(viewSpace.x, viewSpace.z);
 }
 
@@ -109,7 +109,7 @@ vec2 LoadYZFromTexture(uint x, uint y)
 {
     vec2 uv = (vec2(x, y) + 0.5f) * InvAOResolution;
     float z_eye = fetch2D(DepthBuffer, ClampSampler, ivec2(x, y), 0).r;
-	vec4 viewSpace = PixelToView(uv, z_eye);
+    vec4 viewSpace = PixelToView(uv, z_eye);
     return vec2(viewSpace.y, viewSpace.z);
 }
 
@@ -129,9 +129,9 @@ float IntegrateDirection(float iAO,
     float tanH = tanT;
     float sinH = TanToSin(tanH);
     float sinT = TanToSin(tanT);
-	float ao = iAO;
+    float ao = iAO;
 
-	#pragma unroll
+    #pragma unroll
     for (int sampleId = 0; sampleId < NUM_STEPS; ++sampleId)
     {
         vec2 S = SharedMemoryLoad(threadId, sampleId * deltaX + X0);
@@ -150,7 +150,7 @@ float IntegrateDirection(float iAO,
             sinH = sinS;
         }
     }
-	return ao;
+    return ao;
 }
 
 //----------------------------------------------------------------------------------
@@ -204,8 +204,8 @@ csMainX()
         // Compute tangent vector using central differences
         vec2 T = MinDiff(P, Pr, Pl);
 
-        float ao = ComputeHBAO(P, T, centerId);		
-		imageStore(HBAO0, int2(ox, oy), vec4(ao, 0, 0, 0));
+        float ao = ComputeHBAO(P, T, centerId);     
+        imageStore(HBAO0, int2(ox, oy), vec4(ao, 0, 0, 0));
     }
 }
 
@@ -217,7 +217,7 @@ shader
 void
 csMainY() 
 {
-	const uint         tileStart = uint(gl_WorkGroupID.x) * HBAO_TILE_WIDTH;
+    const uint         tileStart = uint(gl_WorkGroupID.x) * HBAO_TILE_WIDTH;
     const uint           tileEnd = tileStart + HBAO_TILE_WIDTH;
     const uint        apronStart = tileStart - KERNEL_RADIUS;
     const uint          apronEnd = tileEnd   + KERNEL_RADIUS;
@@ -242,18 +242,18 @@ csMainY()
 
         // Fetch the 2D coordinates of the center point and its nearest neighbors
         vec2 P =  SharedMemoryLoad(centerId, 0);
-		vec2 Pt = SharedMemoryLoad(centerId, 1);
-		vec2 Pb = SharedMemoryLoad(centerId, -1);
+        vec2 Pt = SharedMemoryLoad(centerId, 1);
+        vec2 Pb = SharedMemoryLoad(centerId, -1);
 
         // Compute tangent vector using central differences
-		vec2 T = MinDiff(P, Pt, Pb);
+        vec2 T = MinDiff(P, Pt, Pb);
 
         float aoy = ComputeHBAO(P, T, centerId);
         float aox = imageLoad(HBAO0, int2(gl_WorkGroupID.y, writePos)).x;
         float ao = (aox + aoy) * 0.5f;
-		groupMemoryBarrier();
+        groupMemoryBarrier();
         ao = saturate(ao * Strength);
-		imageStore(HBAO1, int2(ox, oy), vec4(ao, P.y, 0, 0));
+        imageStore(HBAO1, int2(ox, oy), vec4(ao, P.y, 0, 0));
     }
 }
 
@@ -262,10 +262,10 @@ csMainY()
 */
 program HBAOX [ string Mask = "Alt0"; ]
 {
-	ComputeShader = csMainX();
+    ComputeShader = csMainX();
 };
 
 program HBAOY [ string Mask = "Alt1"; ]
 {
-	ComputeShader = csMainY();
+    ComputeShader = csMainY();
 };

@@ -236,14 +236,14 @@ AnimSequencer::StopAllTracks(bool allowFadeOut)
 void
 AnimSequencer::PauseTrack(IndexT trackIndex, bool pause)
 {
-	IndexT i;
-	for (i = 0; i < this->animJobs.Size(); i++)
-	{
-		if (this->animJobs[i]->GetTrackIndex() == trackIndex)
-		{
-			this->animJobs[i]->Pause(pause);
-		}
-	}
+    IndexT i;
+    for (i = 0; i < this->animJobs.Size(); i++)
+    {
+        if (this->animJobs[i]->GetTrackIndex() == trackIndex)
+        {
+            this->animJobs[i]->Pause(pause);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -252,11 +252,11 @@ AnimSequencer::PauseTrack(IndexT trackIndex, bool pause)
 void 
 AnimSequencer::PauseAllTracks(bool pause)
 {
-	IndexT i;
-	for (i = 0; i < this->animJobs.Size(); i++)
-	{
-		this->animJobs[i]->Pause(pause);
-	}
+    IndexT i;
+    for (i = 0; i < this->animJobs.Size(); i++)
+    {
+        this->animJobs[i]->Pause(pause);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -265,11 +265,11 @@ AnimSequencer::PauseAllTracks(bool pause)
 void
 AnimSequencer::SetTime(Timing::Tick time)
 {
-	IndexT i;
-	for (i = 0; i < this->animJobs.Size(); i++)
-	{
-		this->animJobs[i]->SetTime(time);
-	}
+    IndexT i;
+    for (i = 0; i < this->animJobs.Size(); i++)
+    {
+        this->animJobs[i]->SetTime(time);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -640,10 +640,10 @@ Array<Ptr<AnimJob> >
 AnimSequencer::GetAnimJobsByName(const Util::StringAtom& name) const
 {
     Array<Ptr<AnimJob> > result;
-	if(this->animJobs.Size() + this->enqueuedAnimJobs.Size() == 0)
-	{
-		return result;
-	}
+    if(this->animJobs.Size() + this->enqueuedAnimJobs.Size() == 0)
+    {
+        return result;
+    }
     result.Reserve(this->animJobs.Size() + this->enqueuedAnimJobs.Size());
     IndexT i;
     for (i = 0; i < this->animJobs.Size(); i++)
@@ -684,19 +684,19 @@ AnimSequencer::EmitAnimEvents(Timing::Tick startTime, Timing::Tick endTime, bool
 
     for (; i < jobCount; i++)
     {
-		const Ptr<AnimJob>& job = this->animJobs[i];
-		if (job->IsActive(startTime) && !job->IsPaused())
+        const Ptr<AnimJob>& job = this->animJobs[i];
+        if (job->IsActive(startTime) && !job->IsPaused())
         {
-			Timing::Tick effectiveEndTime;
-			if (job->IsInfinite())
-			{
-				effectiveEndTime = endTime;
-			}
-			else
-			{
-				effectiveEndTime = n_min(endTime, job->GetAbsoluteEndTime());
-			}			
-			eventInfos.AppendArray(job->EmitAnimEvents(startTime, effectiveEndTime, optionalCatgeory));
+            Timing::Tick effectiveEndTime;
+            if (job->IsInfinite())
+            {
+                effectiveEndTime = endTime;
+            }
+            else
+            {
+                effectiveEndTime = n_min(endTime, job->GetAbsoluteEndTime());
+            }           
+            eventInfos.AppendArray(job->EmitAnimEvents(startTime, effectiveEndTime, optionalCatgeory));
         }
     }
     return eventInfos;
@@ -892,7 +892,7 @@ AnimSequencer::DebugRenderLineList(const Array<RenderShape::RenderShapeVertex>& 
                           vertices.Size() / 2,
                           &(vertices[0]),
                           color, 
-						  CoreGraphics::RenderShape::CheckDepth);
+                          CoreGraphics::RenderShape::CheckDepth);
     CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
 }
 

@@ -201,11 +201,11 @@ BinaryReader::ReadUInt()
 long long
 BinaryReader::ReadInt64()
 {
-	long long val;
+    long long val;
     if (this->isMapped)
     {
         // note: the memory copy is necessary to circumvent alignment problem on some CPUs
-		n_assert((this->mapCursor + sizeof(long long)) <= this->mapEnd);
+        n_assert((this->mapCursor + sizeof(long long)) <= this->mapEnd);
         Memory::Copy(this->mapCursor, &val, sizeof(val));
         this->mapCursor += sizeof(val);
     }
@@ -213,7 +213,7 @@ BinaryReader::ReadInt64()
     {
         this->stream->Read(&val, sizeof(val));
     }
-	return this->byteOrder.Convert<int64_t>(val);
+    return this->byteOrder.Convert<int64_t>(val);
 }
 
 //------------------------------------------------------------------------------
@@ -222,11 +222,11 @@ BinaryReader::ReadInt64()
 unsigned long long
 BinaryReader::ReadUInt64()
 {
-	unsigned long long val;
+    unsigned long long val;
     if (this->isMapped)
     {
         // note: the memory copy is necessary to circumvent alignment problem on some CPUs
-		n_assert((this->mapCursor + sizeof(unsigned long long)) <= this->mapEnd);
+        n_assert((this->mapCursor + sizeof(unsigned long long)) <= this->mapEnd);
         Memory::Copy(this->mapCursor, &val, sizeof(val));
         this->mapCursor += sizeof(val);
     }
@@ -234,7 +234,7 @@ BinaryReader::ReadUInt64()
     {
         this->stream->Read(&val, sizeof(val));
     }
-	return this->byteOrder.Convert<uint64_t>(val);
+    return this->byteOrder.Convert<uint64_t>(val);
 }
 
 //------------------------------------------------------------------------------
@@ -335,7 +335,7 @@ BinaryReader::ReadString()
         Util::String str;
         if (length > 0)
         {
-			str.Fill(length, 0);
+            str.Fill(length, 0);
             char* buf = (char*) str.AsCharPtr();
             Memory::Copy(this->mapCursor, buf, length);
             this->mapCursor += length;
@@ -545,30 +545,30 @@ BinaryReader::ReadIntArray()
 Util::Array<uint>
 BinaryReader::ReadUIntArray()
 {
-	uint size = this->ReadInt();
-	Util::Array<uint> val(size, 0, 0);
-	if (size == 0)
-	{
-		//Early out if size is 0
-		return val;
-	}
+    uint size = this->ReadInt();
+    Util::Array<uint> val(size, 0, 0);
+    if (size == 0)
+    {
+        //Early out if size is 0
+        return val;
+    }
 
-	uint* buf = (uint*)Memory::Alloc(Memory::ScratchHeap, sizeof(uint) * size);
-	if (this->isMapped)
-	{
-		// note: the memory copy is necessary to circumvent alignment problem on some CPUs
-		n_assert((this->mapCursor + sizeof(Math::mat4)) <= this->mapEnd);
-		Memory::Copy(this->mapCursor, buf, sizeof(uint) * size);
-		this->mapCursor += sizeof(uint) * size;
-	}
-	else
-	{
-		this->stream->Read(buf, sizeof(uint) * size);
-	}
-	uint i;
-	for (i = 0; i < size; i++) val[i] = buf[i];
-	Memory::Free(Memory::ScratchHeap, (void*)buf);
-	return val;
+    uint* buf = (uint*)Memory::Alloc(Memory::ScratchHeap, sizeof(uint) * size);
+    if (this->isMapped)
+    {
+        // note: the memory copy is necessary to circumvent alignment problem on some CPUs
+        n_assert((this->mapCursor + sizeof(Math::mat4)) <= this->mapEnd);
+        Memory::Copy(this->mapCursor, buf, sizeof(uint) * size);
+        this->mapCursor += sizeof(uint) * size;
+    }
+    else
+    {
+        this->stream->Read(buf, sizeof(uint) * size);
+    }
+    uint i;
+    for (i = 0; i < size; i++) val[i] = buf[i];
+    Memory::Free(Memory::ScratchHeap, (void*)buf);
+    return val;
 }
 
 //------------------------------------------------------------------------------

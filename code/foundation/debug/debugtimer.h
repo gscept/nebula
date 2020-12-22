@@ -75,8 +75,8 @@ public:
     
     /// get the timer name
     const Util::StringAtom& GetName() const;
-	/// get the timer group
-	const Util::StringAtom& GetGroup() const;
+    /// get the timer group
+    const Util::StringAtom& GetGroup() const;
     /// get the most current sample
     Timing::Time GetSample() const;
     /// get the timer's history
@@ -90,7 +90,7 @@ public:
 private:
     Threading::CriticalSection critSect;
     Util::StringAtom name;
-	Util::StringAtom group;
+    Util::StringAtom group;
     Timing::Timer timer;
     Timing::Time accumTime;
     Timing::Time startTime;
@@ -196,7 +196,7 @@ DebugTimer::GetName() const
 inline const Util::StringAtom&
 DebugTimer::GetGroup() const
 {
-	return this->group;
+    return this->group;
 }
 
 } // namespace Debug

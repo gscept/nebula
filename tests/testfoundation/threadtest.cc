@@ -34,7 +34,7 @@ MyThread::DoWork()
         con = IO::Console::Create();
         con->Open();
     }
-	
+    
     if (!ThreadTest::InstanceCheck)
     {
         n_printf("no test single available \n");

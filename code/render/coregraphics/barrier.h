@@ -1,10 +1,10 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	A barrier is a memory barrier between two GPU operations, 
-	and thus allows for a guarantee of concurrency.
+    A barrier is a memory barrier between two GPU operations, 
+    and thus allows for a guarantee of concurrency.
 
-	(C)2017-2020 Individual contributors, see AUTHORS file
+    (C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
@@ -19,54 +19,54 @@ namespace CoreGraphics
 
 enum class BarrierDomain
 {
-	Global,
-	Pass
+    Global,
+    Pass
 };
 
 enum class BarrierStage : uint16
 {
-	NoDependencies = (1 << 0),
-	Indirect = (1 << 1),				// blocks indirect draw commands
-	VertexInput = (1 << 2),				// blocks vertex input
-	VertexShader = (1 << 3),			// blocks vertex shader
-	HullShader = (1 << 4),				// blocks hull (tessellation control) shader
-	DomainShader = (1 << 5),			// blocks domain (tessellation evaluation) shader
-	GeometryShader = (1 << 6),			// blocks geometry shader
-	EarlyDepth = (1 << 7),				// blocks early fragment test
-	PixelShader = (1 << 8),				// blocks pixel shader
-	LateDepth = (1 << 9),				// blocks late fragment test
-	PassOutput = (1 << 10),				// blocks outputs from render texture attachments		
-	AllGraphicsShaders = VertexShader | HullShader | DomainShader | GeometryShader | PixelShader,
+    NoDependencies = (1 << 0),
+    Indirect = (1 << 1),                // blocks indirect draw commands
+    VertexInput = (1 << 2),             // blocks vertex input
+    VertexShader = (1 << 3),            // blocks vertex shader
+    HullShader = (1 << 4),              // blocks hull (tessellation control) shader
+    DomainShader = (1 << 5),            // blocks domain (tessellation evaluation) shader
+    GeometryShader = (1 << 6),          // blocks geometry shader
+    EarlyDepth = (1 << 7),              // blocks early fragment test
+    PixelShader = (1 << 8),             // blocks pixel shader
+    LateDepth = (1 << 9),               // blocks late fragment test
+    PassOutput = (1 << 10),             // blocks outputs from render texture attachments       
+    AllGraphicsShaders = VertexShader | HullShader | DomainShader | GeometryShader | PixelShader,
 
-	ComputeShader = (1 << 11),			// blocks compute shaders to complete
+    ComputeShader = (1 << 11),          // blocks compute shaders to complete
 
-	Transfer = (1 << 12),				// blocks transfers
-	Host = (1 << 13),					// blocks host operations
+    Transfer = (1 << 12),               // blocks transfers
+    Host = (1 << 13),                   // blocks host operations
 
-	Top = (1 << 14),					// blocks start of pipeline 
-	Bottom = (1 << 15)					// blocks end of pipeline
+    Top = (1 << 14),                    // blocks start of pipeline 
+    Bottom = (1 << 15)                  // blocks end of pipeline
 };
 
 enum class BarrierAccess : uint32
 {
-	NoAccess = (1 << 0),
-	IndirectRead = (1 << 1),			// indirect buffers are read
-	IndexRead = (1 << 2),				// index buffers are read
-	VertexRead = (1 << 3),				// vertex buffers are read
-	UniformRead = (1 << 4),				// uniforms are read
-	InputAttachmentRead = (1 << 5),		// input attachments (cross-pass attachments) are read
-	ShaderRead = (1 << 6),				// shader reads  (compute?)
-	ShaderWrite = (1 << 7),				// shader writes (compute?)
-	ColorAttachmentRead = (1 << 8),		// color attachments (render textures) are read
-	ColorAttachmentWrite = (1 << 9),	// color attachments (render textures) are written
-	DepthAttachmentRead = (1 << 10),	// depth-stencil attachments are read
-	DepthAttachmentWrite = (1 << 11),	// depth-stencil attachments are written
-	TransferRead = (1 << 12),			// transfers are read
-	TransferWrite = (1 << 13),			// transfers are written
-	HostRead = (1 << 14),				// host reads
-	HostWrite = (1 << 15),				// host writes
-	MemoryRead = (1 << 16),				// memory is read locally
-	MemoryWrite = (1 << 17)				// memory is written locally
+    NoAccess = (1 << 0),
+    IndirectRead = (1 << 1),            // indirect buffers are read
+    IndexRead = (1 << 2),               // index buffers are read
+    VertexRead = (1 << 3),              // vertex buffers are read
+    UniformRead = (1 << 4),             // uniforms are read
+    InputAttachmentRead = (1 << 5),     // input attachments (cross-pass attachments) are read
+    ShaderRead = (1 << 6),              // shader reads  (compute?)
+    ShaderWrite = (1 << 7),             // shader writes (compute?)
+    ColorAttachmentRead = (1 << 8),     // color attachments (render textures) are read
+    ColorAttachmentWrite = (1 << 9),    // color attachments (render textures) are written
+    DepthAttachmentRead = (1 << 10),    // depth-stencil attachments are read
+    DepthAttachmentWrite = (1 << 11),   // depth-stencil attachments are written
+    TransferRead = (1 << 12),           // transfers are read
+    TransferWrite = (1 << 13),          // transfers are written
+    HostRead = (1 << 14),               // host reads
+    HostWrite = (1 << 15),              // host writes
+    MemoryRead = (1 << 16),             // memory is read locally
+    MemoryWrite = (1 << 17)             // memory is written locally
 };
 
 
@@ -89,110 +89,110 @@ ID_24_8_TYPE(BarrierId);
 
 struct ImageSubresourceInfo
 {
-	CoreGraphics::ImageAspect aspect;
-	uint mip, mipCount, layer, layerCount;
+    CoreGraphics::ImageAspect aspect;
+    uint mip, mipCount, layer, layerCount;
 
-	ImageSubresourceInfo() :
-		aspect(CoreGraphics::ImageAspect::ColorBits),
-		mip(0),
-		mipCount(1),
-		layer(0),
-		layerCount(1)
-	{}
+    ImageSubresourceInfo() :
+        aspect(CoreGraphics::ImageAspect::ColorBits),
+        mip(0),
+        mipCount(1),
+        layer(0),
+        layerCount(1)
+    {}
 
-	ImageSubresourceInfo(CoreGraphics::ImageAspect aspect, uint mip, uint mipCount, uint layer, uint layerCount) :
-		aspect(aspect),
-		mip(mip),
-		mipCount(mipCount),
-		layer(layer),
-		layerCount(layerCount)
-	{}
+    ImageSubresourceInfo(CoreGraphics::ImageAspect aspect, uint mip, uint mipCount, uint layer, uint layerCount) :
+        aspect(aspect),
+        mip(mip),
+        mipCount(mipCount),
+        layer(layer),
+        layerCount(layerCount)
+    {}
 
-	static ImageSubresourceInfo ColorNoMipNoLayer()
-	{
-		return ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, 1);
-	}
+    static ImageSubresourceInfo ColorNoMipNoLayer()
+    {
+        return ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, 1);
+    }
 
-	static ImageSubresourceInfo ColorNoMip(uint layerCount)
-	{
-		return ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, layerCount);
-	}
+    static ImageSubresourceInfo ColorNoMip(uint layerCount)
+    {
+        return ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, layerCount);
+    }
 
-	static ImageSubresourceInfo ColorNoLayer(uint mipCount)
-	{
-		return ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, mipCount, 0, 1);
-	}
+    static ImageSubresourceInfo ColorNoLayer(uint mipCount)
+    {
+        return ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, mipCount, 0, 1);
+    }
 
-	static ImageSubresourceInfo DepthStencilNoMipNoLayer()
-	{
-		return ImageSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, 1, 0, 1);
-	}
+    static ImageSubresourceInfo DepthStencilNoMipNoLayer()
+    {
+        return ImageSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, 1, 0, 1);
+    }
 
-	static ImageSubresourceInfo DepthStencilNoMip(uint layerCount)
-	{
-		return ImageSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, 1, 0, layerCount);
-	}
+    static ImageSubresourceInfo DepthStencilNoMip(uint layerCount)
+    {
+        return ImageSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, 1, 0, layerCount);
+    }
 
-	static ImageSubresourceInfo DepthStencilNoLayer(uint mipCount)
-	{
-		return ImageSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, mipCount, 0, 1);
-	}
+    static ImageSubresourceInfo DepthStencilNoLayer(uint mipCount)
+    {
+        return ImageSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, mipCount, 0, 1);
+    }
 
-	const bool Overlaps(const ImageSubresourceInfo& rhs) const
-	{
-		return ((this->aspect & rhs.aspect) != 0) && (this->mip <= rhs.mip && this->mip + this->mipCount >= rhs.mip) && (this->layer <= rhs.layer && this->layer + this->layerCount >= rhs.layer);
-	}
+    const bool Overlaps(const ImageSubresourceInfo& rhs) const
+    {
+        return ((this->aspect & rhs.aspect) != 0) && (this->mip <= rhs.mip && this->mip + this->mipCount >= rhs.mip) && (this->layer <= rhs.layer && this->layer + this->layerCount >= rhs.layer);
+    }
 };
 
 struct BufferSubresourceInfo
 {
-	uint offset, size;
+    uint offset, size;
 
-	BufferSubresourceInfo() :
-		offset(0),
-		size(-1)
-	{}
+    BufferSubresourceInfo() :
+        offset(0),
+        size(-1)
+    {}
 
-	const bool Overlaps(const BufferSubresourceInfo& rhs) const
-	{
-		return (this->offset <= rhs.offset && this->offset + this->size >= rhs.offset);
-	}
+    const bool Overlaps(const BufferSubresourceInfo& rhs) const
+    {
+        return (this->offset <= rhs.offset && this->offset + this->size >= rhs.offset);
+    }
 };
 
 struct TextureBarrier
 {
-	TextureId tex;
-	ImageSubresourceInfo subres;
-	ImageLayout fromLayout;
-	ImageLayout toLayout;
-	BarrierAccess fromAccess;
-	BarrierAccess toAccess;
+    TextureId tex;
+    ImageSubresourceInfo subres;
+    ImageLayout fromLayout;
+    ImageLayout toLayout;
+    BarrierAccess fromAccess;
+    BarrierAccess toAccess;
 };
 
 struct BufferBarrier
 {
-	BufferId buf;
-	BarrierAccess fromAccess;
-	BarrierAccess toAccess;
-	IndexT offset;
-	SizeT size; // set to -1 to use whole buffer
+    BufferId buf;
+    BarrierAccess fromAccess;
+    BarrierAccess toAccess;
+    IndexT offset;
+    SizeT size; // set to -1 to use whole buffer
 };
 
 struct ExecutionBarrier
 {
-	BarrierAccess fromAccess;
-	BarrierAccess toAccess;
+    BarrierAccess fromAccess;
+    BarrierAccess toAccess;
 };
 
 struct BarrierCreateInfo
 {
-	Util::StringAtom name;
-	BarrierDomain domain;
-	BarrierStage leftDependency;
-	BarrierStage rightDependency;
-	Util::Array<TextureBarrier> textures;
-	Util::Array<BufferBarrier> rwBuffers;
-	Util::Array<ExecutionBarrier> barriers;
+    Util::StringAtom name;
+    BarrierDomain domain;
+    BarrierStage leftDependency;
+    BarrierStage rightDependency;
+    Util::Array<TextureBarrier> textures;
+    Util::Array<BufferBarrier> rwBuffers;
+    Util::Array<ExecutionBarrier> barriers;
 };
 
 /// create barrier object
@@ -206,61 +206,61 @@ void BarrierInsert(const BarrierId id, const CoreGraphics::QueueType queue);
 void BarrierReset(const BarrierId id);
 /// create and insert a barrier immediately, without allocating an object
 void BarrierInsert(
-	const CoreGraphics::QueueType queue, 
-	CoreGraphics::BarrierStage fromStage, 
-	CoreGraphics::BarrierStage toStage, 
-	CoreGraphics::BarrierDomain domain,
-	const Util::FixedArray<TextureBarrier>& textures, 
-	const Util::FixedArray<BufferBarrier>& rwBuffers, 
-	const char* name = nullptr);
+    const CoreGraphics::QueueType queue, 
+    CoreGraphics::BarrierStage fromStage, 
+    CoreGraphics::BarrierStage toStage, 
+    CoreGraphics::BarrierDomain domain,
+    const Util::FixedArray<TextureBarrier>& textures, 
+    const Util::FixedArray<BufferBarrier>& rwBuffers, 
+    const char* name = nullptr);
 /// create and insert a barrier into a command buffer
 void BarrierInsert(
-	const CoreGraphics::CommandBufferId buf,
-	CoreGraphics::BarrierStage fromStage,
-	CoreGraphics::BarrierStage toStage,
-	CoreGraphics::BarrierDomain domain,
-	const Util::FixedArray<TextureBarrier>& textures,
-	const Util::FixedArray<BufferBarrier>& rwBuffers,
-	const char* name = nullptr);
+    const CoreGraphics::CommandBufferId buf,
+    CoreGraphics::BarrierStage fromStage,
+    CoreGraphics::BarrierStage toStage,
+    CoreGraphics::BarrierDomain domain,
+    const Util::FixedArray<TextureBarrier>& textures,
+    const Util::FixedArray<BufferBarrier>& rwBuffers,
+    const char* name = nullptr);
 /// insert an execution barrier onto the queue
 void BarrierInsert(
-	const CoreGraphics::QueueType queue,
-	CoreGraphics::BarrierStage fromStage,
-	CoreGraphics::BarrierStage toStage,
-	CoreGraphics::BarrierDomain domain,
-	const Util::FixedArray<ExecutionBarrier>& barriers,
-	const char* name = nullptr);
+    const CoreGraphics::QueueType queue,
+    CoreGraphics::BarrierStage fromStage,
+    CoreGraphics::BarrierStage toStage,
+    CoreGraphics::BarrierDomain domain,
+    const Util::FixedArray<ExecutionBarrier>& barriers,
+    const char* name = nullptr);
 /// insert an execution barrier into a command buffer
 void BarrierInsert(
-	const CoreGraphics::CommandBufferId buf,
-	CoreGraphics::BarrierStage fromStage,
-	CoreGraphics::BarrierStage toStage,
-	CoreGraphics::BarrierDomain domain,
-	const Util::FixedArray<ExecutionBarrier>& barriers,
-	const char* name = nullptr);
+    const CoreGraphics::CommandBufferId buf,
+    CoreGraphics::BarrierStage fromStage,
+    CoreGraphics::BarrierStage toStage,
+    CoreGraphics::BarrierDomain domain,
+    const Util::FixedArray<ExecutionBarrier>& barriers,
+    const char* name = nullptr);
 
 /// push barrier to stack
 void BarrierPush(
-	const CoreGraphics::QueueType queue,
-	CoreGraphics::BarrierStage fromStage,
-	CoreGraphics::BarrierStage toStage,
-	CoreGraphics::BarrierDomain domain,
-	const Util::FixedArray<TextureBarrier>& textures,
-	const Util::FixedArray<BufferBarrier>& buffers);
+    const CoreGraphics::QueueType queue,
+    CoreGraphics::BarrierStage fromStage,
+    CoreGraphics::BarrierStage toStage,
+    CoreGraphics::BarrierDomain domain,
+    const Util::FixedArray<TextureBarrier>& textures,
+    const Util::FixedArray<BufferBarrier>& buffers);
 /// push barrier to stack
 void BarrierPush(
-	const CoreGraphics::QueueType queue,
-	CoreGraphics::BarrierStage fromStage,
-	CoreGraphics::BarrierStage toStage,
-	CoreGraphics::BarrierDomain domain,
-	const Util::FixedArray<TextureBarrier>& textures);
+    const CoreGraphics::QueueType queue,
+    CoreGraphics::BarrierStage fromStage,
+    CoreGraphics::BarrierStage toStage,
+    CoreGraphics::BarrierDomain domain,
+    const Util::FixedArray<TextureBarrier>& textures);
 /// push barrier to stack
 void BarrierPush(
-	const CoreGraphics::QueueType queue,
-	CoreGraphics::BarrierStage fromStage,
-	CoreGraphics::BarrierStage toStage,
-	CoreGraphics::BarrierDomain domain,
-	const Util::FixedArray<BufferBarrier>& buffers);
+    const CoreGraphics::QueueType queue,
+    CoreGraphics::BarrierStage fromStage,
+    CoreGraphics::BarrierStage toStage,
+    CoreGraphics::BarrierDomain domain,
+    const Util::FixedArray<BufferBarrier>& buffers);
 /// pop barrier, reverses the from-to stages and any access flags in the buffers and texture barriers
 void BarrierPop(const CoreGraphics::QueueType queue);
 /// repeat barrier in queue
@@ -272,25 +272,25 @@ void BarrierRepeat(const CoreGraphics::QueueType queue);
 inline BarrierStage
 BarrierStageFromString(const Util::String& str)
 {
-	if (str == "VertexShader")			return BarrierStage::VertexShader;
-	else if (str == "HullShader")		return BarrierStage::HullShader;
-	else if (str == "DomainShader")		return BarrierStage::DomainShader;
-	else if (str == "GeometryShader")	return BarrierStage::GeometryShader;
-	else if (str == "PixelShader")		return BarrierStage::PixelShader;
-	else if (str == "ComputeShader")	return BarrierStage::ComputeShader;
-	else if (str == "VertexInput")		return BarrierStage::VertexInput;
-	else if (str == "EarlyDepth")		return BarrierStage::EarlyDepth;
-	else if (str == "LateDepth")		return BarrierStage::LateDepth;
-	else if (str == "Transfer")			return BarrierStage::Transfer;
-	else if (str == "Host")				return BarrierStage::Host;
-	else if (str == "PassOutput")		return BarrierStage::PassOutput;
-	else if (str == "Top")				return BarrierStage::Top;
-	else if (str == "Bottom")			return BarrierStage::Bottom;
-	else
-	{
-		n_error("Invalid dependency string '%s'\n", str.AsCharPtr());
-		return BarrierStage::NoDependencies;
-	}
+    if (str == "VertexShader")          return BarrierStage::VertexShader;
+    else if (str == "HullShader")       return BarrierStage::HullShader;
+    else if (str == "DomainShader")     return BarrierStage::DomainShader;
+    else if (str == "GeometryShader")   return BarrierStage::GeometryShader;
+    else if (str == "PixelShader")      return BarrierStage::PixelShader;
+    else if (str == "ComputeShader")    return BarrierStage::ComputeShader;
+    else if (str == "VertexInput")      return BarrierStage::VertexInput;
+    else if (str == "EarlyDepth")       return BarrierStage::EarlyDepth;
+    else if (str == "LateDepth")        return BarrierStage::LateDepth;
+    else if (str == "Transfer")         return BarrierStage::Transfer;
+    else if (str == "Host")             return BarrierStage::Host;
+    else if (str == "PassOutput")       return BarrierStage::PassOutput;
+    else if (str == "Top")              return BarrierStage::Top;
+    else if (str == "Bottom")           return BarrierStage::Bottom;
+    else
+    {
+        n_error("Invalid dependency string '%s'\n", str.AsCharPtr());
+        return BarrierStage::NoDependencies;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -299,28 +299,28 @@ BarrierStageFromString(const Util::String& str)
 inline BarrierAccess
 BarrierAccessFromString(const Util::String& str)
 {
-	if (str == "IndirectRead")					return BarrierAccess::IndirectRead;
-	else if (str == "IndexRead")				return BarrierAccess::IndexRead;
-	else if (str == "VertexRead")				return BarrierAccess::VertexRead;
-	else if (str == "UniformRead")				return BarrierAccess::UniformRead;
-	else if (str == "InputAttachmentRead")		return BarrierAccess::InputAttachmentRead;
-	else if (str == "ShaderRead")				return BarrierAccess::ShaderRead;
-	else if (str == "ShaderWrite")				return BarrierAccess::ShaderWrite;
-	else if (str == "ColorAttachmentRead")		return BarrierAccess::ColorAttachmentRead;
-	else if (str == "ColorAttachmentWrite")		return BarrierAccess::ColorAttachmentWrite;
-	else if (str == "DepthAttachmentRead")		return BarrierAccess::DepthAttachmentRead;
-	else if (str == "DepthAttachmentWrite")		return BarrierAccess::DepthAttachmentWrite;
-	else if (str == "TransferRead")				return BarrierAccess::TransferRead;
-	else if (str == "TransferWrite")			return BarrierAccess::TransferWrite;
-	else if (str == "HostRead")					return BarrierAccess::HostRead;
-	else if (str == "HostWrite")				return BarrierAccess::HostWrite;
-	else if (str == "MemoryRead")				return BarrierAccess::MemoryRead;
-	else if (str == "MemoryWrite")				return BarrierAccess::MemoryWrite;
-	else
-	{
-		n_error("Invalid access string '%s'\n", str.AsCharPtr());
-		return BarrierAccess::NoAccess;
-	}
+    if (str == "IndirectRead")                  return BarrierAccess::IndirectRead;
+    else if (str == "IndexRead")                return BarrierAccess::IndexRead;
+    else if (str == "VertexRead")               return BarrierAccess::VertexRead;
+    else if (str == "UniformRead")              return BarrierAccess::UniformRead;
+    else if (str == "InputAttachmentRead")      return BarrierAccess::InputAttachmentRead;
+    else if (str == "ShaderRead")               return BarrierAccess::ShaderRead;
+    else if (str == "ShaderWrite")              return BarrierAccess::ShaderWrite;
+    else if (str == "ColorAttachmentRead")      return BarrierAccess::ColorAttachmentRead;
+    else if (str == "ColorAttachmentWrite")     return BarrierAccess::ColorAttachmentWrite;
+    else if (str == "DepthAttachmentRead")      return BarrierAccess::DepthAttachmentRead;
+    else if (str == "DepthAttachmentWrite")     return BarrierAccess::DepthAttachmentWrite;
+    else if (str == "TransferRead")             return BarrierAccess::TransferRead;
+    else if (str == "TransferWrite")            return BarrierAccess::TransferWrite;
+    else if (str == "HostRead")                 return BarrierAccess::HostRead;
+    else if (str == "HostWrite")                return BarrierAccess::HostWrite;
+    else if (str == "MemoryRead")               return BarrierAccess::MemoryRead;
+    else if (str == "MemoryWrite")              return BarrierAccess::MemoryWrite;
+    else
+    {
+        n_error("Invalid access string '%s'\n", str.AsCharPtr());
+        return BarrierAccess::NoAccess;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -329,24 +329,24 @@ BarrierAccessFromString(const Util::String& str)
 inline CoreGraphics::ImageAspect
 ImageAspectFromString(const Util::String& str)
 {
-	Util::Array<Util::String> comps = str.Tokenize("|");
-	CoreGraphics::ImageAspect aspect = CoreGraphics::ImageAspect(0x0);
-	for (IndexT i = 0; i < comps.Size(); i++)
-	{
-		if (comps[i] == "Color")			aspect |= CoreGraphics::ImageAspect::ColorBits;
-		else if (comps[i] == "Depth")		aspect |= CoreGraphics::ImageAspect::DepthBits;
-		else if (comps[i] == "Stencil")		aspect |= CoreGraphics::ImageAspect::StencilBits;
-		else if (comps[i] == "Metadata")	aspect |= CoreGraphics::ImageAspect::MetaBits;
-		else if (comps[i] == "Plane0")		aspect |= CoreGraphics::ImageAspect::Plane0Bits;
-		else if (comps[i] == "Plane1")		aspect |= CoreGraphics::ImageAspect::Plane1Bits;
-		else if (comps[i] == "Plane2")		aspect |= CoreGraphics::ImageAspect::Plane2Bits;
-		else
-		{
-			n_error("Invalid access string '%s'\n", comps[i].AsCharPtr());
-			return CoreGraphics::ImageAspect::ColorBits;
-		}
-	}
-	return aspect;
+    Util::Array<Util::String> comps = str.Tokenize("|");
+    CoreGraphics::ImageAspect aspect = CoreGraphics::ImageAspect(0x0);
+    for (IndexT i = 0; i < comps.Size(); i++)
+    {
+        if (comps[i] == "Color")            aspect |= CoreGraphics::ImageAspect::ColorBits;
+        else if (comps[i] == "Depth")       aspect |= CoreGraphics::ImageAspect::DepthBits;
+        else if (comps[i] == "Stencil")     aspect |= CoreGraphics::ImageAspect::StencilBits;
+        else if (comps[i] == "Metadata")    aspect |= CoreGraphics::ImageAspect::MetaBits;
+        else if (comps[i] == "Plane0")      aspect |= CoreGraphics::ImageAspect::Plane0Bits;
+        else if (comps[i] == "Plane1")      aspect |= CoreGraphics::ImageAspect::Plane1Bits;
+        else if (comps[i] == "Plane2")      aspect |= CoreGraphics::ImageAspect::Plane2Bits;
+        else
+        {
+            n_error("Invalid access string '%s'\n", comps[i].AsCharPtr());
+            return CoreGraphics::ImageAspect::ColorBits;
+        }
+    }
+    return aspect;
 }
 
 //------------------------------------------------------------------------------
@@ -355,16 +355,16 @@ ImageAspectFromString(const Util::String& str)
 inline CoreGraphics::ImageLayout
 ImageLayoutFromString(const Util::String& str)
 {
-	if (str == "Undefined")					return CoreGraphics::ImageLayout::Undefined;
-	else if (str == "General")				return CoreGraphics::ImageLayout::General;
-	else if (str == "ColorRenderTexture")	return CoreGraphics::ImageLayout::ColorRenderTexture;
-	else if (str == "DepthRenderTexture")	return CoreGraphics::ImageLayout::DepthStencilRenderTexture;
-	else if (str == "DepthStencilRead")		return CoreGraphics::ImageLayout::DepthStencilRead;
-	else if (str == "ShaderRead")			return CoreGraphics::ImageLayout::ShaderRead;
-	else if (str == "TransferSource")		return CoreGraphics::ImageLayout::TransferSource;
-	else if (str == "TransferDestination")	return CoreGraphics::ImageLayout::TransferDestination;
-	else if (str == "Preinitialized")		return CoreGraphics::ImageLayout::Preinitialized;
-	else if (str == "Present")				return CoreGraphics::ImageLayout::Present;
-	return CoreGraphics::ImageLayout::Undefined;
+    if (str == "Undefined")                 return CoreGraphics::ImageLayout::Undefined;
+    else if (str == "General")              return CoreGraphics::ImageLayout::General;
+    else if (str == "ColorRenderTexture")   return CoreGraphics::ImageLayout::ColorRenderTexture;
+    else if (str == "DepthRenderTexture")   return CoreGraphics::ImageLayout::DepthStencilRenderTexture;
+    else if (str == "DepthStencilRead")     return CoreGraphics::ImageLayout::DepthStencilRead;
+    else if (str == "ShaderRead")           return CoreGraphics::ImageLayout::ShaderRead;
+    else if (str == "TransferSource")       return CoreGraphics::ImageLayout::TransferSource;
+    else if (str == "TransferDestination")  return CoreGraphics::ImageLayout::TransferDestination;
+    else if (str == "Preinitialized")       return CoreGraphics::ImageLayout::Preinitialized;
+    else if (str == "Present")              return CoreGraphics::ImageLayout::Present;
+    return CoreGraphics::ImageLayout::Undefined;
 }
 } // namespace CoreGraphics

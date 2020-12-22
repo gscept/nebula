@@ -16,9 +16,9 @@ __ImplementSingleton(Audio::AudioServer)
 /**
 */
 AudioServer::AudioServer() :
-	isOpen(false)
+    isOpen(false)
 {
-	__ConstructSingleton
+    __ConstructSingleton
 }
 
 //------------------------------------------------------------------------------
@@ -26,7 +26,7 @@ AudioServer::AudioServer() :
 */
 AudioServer::~AudioServer()
 {
-	__DestructSingleton
+    __DestructSingleton
 }
 
 //------------------------------------------------------------------------------
@@ -35,11 +35,11 @@ AudioServer::~AudioServer()
 bool
 AudioServer::Open()
 {
-	n_assert(!this->IsOpen());
-	this->device = AudioDevice::Create();
-	this->device->Open();
-	this->isOpen = true;
-	return true;
+    n_assert(!this->IsOpen());
+    this->device = AudioDevice::Create();
+    this->device->Open();
+    this->isOpen = true;
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -48,11 +48,11 @@ AudioServer::Open()
 bool
 AudioServer::Close()
 {
-	n_assert(this->IsOpen());
-	this->device->Close();
-	this->device = nullptr;
-	this->isOpen = false;
-	return true;
+    n_assert(this->IsOpen());
+    this->device->Close();
+    this->device = nullptr;
+    this->isOpen = false;
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -61,7 +61,7 @@ AudioServer::Close()
 void
 AudioServer::OnFrame()
 {
-	this->device->OnFrame();
+    this->device->OnFrame();
 }
 
 } // namespace Audio

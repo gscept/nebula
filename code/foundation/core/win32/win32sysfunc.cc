@@ -143,7 +143,7 @@ void
 SysFunc::Error(const char* error)
 {
     #ifdef _DEBUG
-    OutputDebugString(error);	
+    OutputDebugString(error);   
     #endif
     /*
     HWND hwnd = FindWindow(NEBULA_WINDOW_CLASS, NULL);
@@ -151,16 +151,16 @@ SysFunc::Error(const char* error)
     {
         ShowWindow(hwnd, SW_MINIMIZE);
     }
-	*/
-	Util::Array<Util::String> stacktrace = Win32StackTrace::GenerateStackTrace();
-	Util::String format;
+    */
+    Util::Array<Util::String> stacktrace = Win32StackTrace::GenerateStackTrace();
+    Util::String format;
     // remove the first 7 entries as they are only the assert/error functions and the last 6 as they are windows startup 
-	for (int i = 6; i < Math::n_min(17,stacktrace.Size() - 6); i++)
-	{
-		format.Append(stacktrace[i]);
-		//format.Append("\n");
-	}
-	format.Format("%s\n\
+    for (int i = 6; i < Math::n_min(17,stacktrace.Size() - 6); i++)
+    {
+        format.Append(stacktrace[i]);
+        //format.Append("\n");
+    }
+    format.Format("%s\n\
 ----- *** CALL STACK *** -----\n\
 %s\
 ----- *** CALL STACK *** -----\n\n", error, format.AsCharPtr());
@@ -198,7 +198,7 @@ SysFunc::Error(const char* error)
         exit(1);
 #endif
     }
-	
+    
 }
 
 //------------------------------------------------------------------------------

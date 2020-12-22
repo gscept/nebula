@@ -26,31 +26,31 @@ ShaderFeature::ShaderFeature()
 ShaderFeature::Mask
 ShaderFeature::StringToMask(const String& str)
 {
-	Util::Array<Util::String> features = str.Tokenize("|");
-	Mask mask = 0;
-	IndexT i;
-	for (i = 0; i < features.Size(); i++)
-	{
-		mask += features[i].HashCode();
-	}
-	n_assert(mask != 0);
-	if (!nameHash.Contains(mask))
-	{
-		nameHash.Add(mask, str);
-	}
-	return mask;
+    Util::Array<Util::String> features = str.Tokenize("|");
+    Mask mask = 0;
+    IndexT i;
+    for (i = 0; i < features.Size(); i++)
+    {
+        mask += features[i].HashCode();
+    }
+    n_assert(mask != 0);
+    if (!nameHash.Contains(mask))
+    {
+        nameHash.Add(mask, str);
+    }
+    return mask;
 }
 
 //------------------------------------------------------------------------------
 /**
-	Reverse lookup mask to retrieve the string used to create it.
+    Reverse lookup mask to retrieve the string used to create it.
 */
 String
 ShaderFeature::MaskToString(Mask mask)
 {
-	IndexT i = nameHash.FindIndex(mask);
-	n_assert(i != InvalidIndex);
-	return nameHash.ValueAtIndex(mask, i).AsString();
+    IndexT i = nameHash.FindIndex(mask);
+    n_assert(i != InvalidIndex);
+    return nameHash.ValueAtIndex(mask, i).AsString();
 }
 
 } // namespace CoreGraphics

@@ -15,9 +15,9 @@ __ImplementClass(Resources::ResourceLoaderThread, 'RETH', Threading::Thread);
 /**
 */
 ResourceLoaderThread::ResourceLoaderThread() :
-	completeEvent(true)
+    completeEvent(true)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -25,7 +25,7 @@ ResourceLoaderThread::ResourceLoaderThread() :
 */
 ResourceLoaderThread::~ResourceLoaderThread()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -34,30 +34,30 @@ ResourceLoaderThread::~ResourceLoaderThread()
 void
 ResourceLoaderThread::DoWork()
 {
-	this->ioServer = IO::IoServer::Create();
-	Profiling::ProfilingRegisterThread();
-	Util::Array<std::function<void()>> arr;
-	arr.Reserve(1000);
-	while (!this->ThreadStopRequested())
-	{
-		this->completeEvent.Reset();
+    this->ioServer = IO::IoServer::Create();
+    Profiling::ProfilingRegisterThread();
+    Util::Array<std::function<void()>> arr;
+    arr.Reserve(1000);
+    while (!this->ThreadStopRequested())
+    {
+        this->completeEvent.Reset();
 
-		this->jobs.DequeueAll(arr);
-		IndexT i;
-		for (i = 0; i < arr.Size(); i++)
-		{
-			arr[i]();
-		}
-		arr.Reset();
+        this->jobs.DequeueAll(arr);
+        IndexT i;
+        for (i = 0; i < arr.Size(); i++)
+        {
+            arr[i]();
+        }
+        arr.Reset();
 
-		// signal that this batch is complete
-		this->completeEvent.Signal();
+        // signal that this batch is complete
+        this->completeEvent.Signal();
 
-		// wait for more jobs!
-		this->jobs.Wait();
-	}
+        // wait for more jobs!
+        this->jobs.Wait();
+    }
 
-	this->ioServer = nullptr;
+    this->ioServer = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -66,7 +66,7 @@ ResourceLoaderThread::DoWork()
 void
 ResourceLoaderThread::EmitWakeupSignal()
 {
-	this->jobs.Signal();
+    this->jobs.Signal();
 }
 
 //------------------------------------------------------------------------------
@@ -75,7 +75,7 @@ ResourceLoaderThread::EmitWakeupSignal()
 void
 ResourceLoaderThread::Wait()
 {
-	this->completeEvent.Wait();
+    this->completeEvent.Wait();
 }
 
 } // namespace Resources

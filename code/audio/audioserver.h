@@ -1,12 +1,12 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Audio::AudioServer
+    Audio::AudioServer
 
-	Front-end of the Audio subsystem. Initializes the audio 
+    Front-end of the Audio subsystem. Initializes the audio 
     subsystem.
 
-	(C) 2019-2020 Individual contributors, see AUTHORS file
+    (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -19,24 +19,24 @@ class AudioDevice;
 
 class AudioServer : public Core::RefCounted
 {
-	__DeclareClass(AudioServer);
-	__DeclareSingleton(AudioServer);
+    __DeclareClass(AudioServer);
+    __DeclareSingleton(AudioServer);
 public:
-	AudioServer();
-	~AudioServer();
+    AudioServer();
+    ~AudioServer();
 
-	/// Initialize the audio subsystem
-	bool Open();
-	/// Shutdown the audio subsystem
-	bool Close();
-	/// return true if the audio subsystem is open
-	bool IsOpen() const;
-	/// called per-frame 
-	void OnFrame();
+    /// Initialize the audio subsystem
+    bool Open();
+    /// Shutdown the audio subsystem
+    bool Close();
+    /// return true if the audio subsystem is open
+    bool IsOpen() const;
+    /// called per-frame 
+    void OnFrame();
 
 private:
-	bool isOpen;
-	Ptr<AudioDevice> device;
+    bool isOpen;
+    Ptr<AudioDevice> device;
 };
 
 //------------------------------------------------------------------------------
@@ -45,7 +45,7 @@ private:
 inline bool
 AudioServer::IsOpen() const
 {
-	return this->isOpen;
+    return this->isOpen;
 }
 
 

@@ -13,7 +13,7 @@ namespace Graphics
 */
 GraphicsContext::GraphicsContext()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ GraphicsContext::GraphicsContext()
 */
 GraphicsContext::~GraphicsContext()
 {
-	// empty
+    // empty
 }
 
 } // namespace Graphics

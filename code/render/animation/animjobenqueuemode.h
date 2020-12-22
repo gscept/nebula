@@ -47,7 +47,7 @@ AnimJobEnqueueMode::FromString(const char* s)
     {
         n_error("AnimJobEnqueueMode: Invalid mode string '%s'!\n", s);
     }
-	return Intercept;
+    return Intercept;
 }
 
 //------------------------------------------------------------------------------
@@ -66,7 +66,7 @@ AnimJobEnqueueMode::ToString(Code c)
             n_error("AnimJobEnqueueMode: Invalid mode '%d'!\n", c);
             break;
     }
-	return 0;
+    return 0;
 }
 
 } // namespace Animation

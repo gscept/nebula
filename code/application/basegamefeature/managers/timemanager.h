@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Game::TimeManager
+    Game::TimeManager
 
     Singleton object which manages the current game time. These are
     the standard time source objects provided by Application layer:
@@ -17,7 +17,7 @@
 
     You can create custom time sources by using the create interface.
 
-	(C) 2020 Individual contributors, see AUTHORS file
+    (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

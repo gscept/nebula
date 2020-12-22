@@ -4,7 +4,7 @@
     @class RenderUtil::DrawFullScreenQuad
     
     Actually draws one big triangle which covers the entire screen, which
-	is more efficient than drawing a quad using two triangles.
+    is more efficient than drawing a quad using two triangles.
     
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
@@ -28,12 +28,12 @@ public:
     /// return true if object is valid
     static bool IsValid();
 
-	/// apply mesh
-	static void ApplyMesh();
+    /// apply mesh
+    static void ApplyMesh();
 
 private:
     static CoreGraphics::BufferId vertexBuffer;
-	static CoreGraphics::VertexLayoutId vertexLayout;
+    static CoreGraphics::VertexLayoutId vertexLayout;
     static CoreGraphics::PrimitiveGroup primGroup;
     static bool isValid;
 };

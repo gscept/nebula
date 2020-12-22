@@ -307,9 +307,9 @@ BXmlReader::GetOptBool(const char* attr, bool defaultValue) const
 {
     if (this->HasAttr(attr))
     {
-		String str = this->GetString(attr);
-		if (str.IsValidBool())  return str.AsBool();
-		else					return defaultValue;
+        String str = this->GetString(attr);
+        if (str.IsValidBool())  return str.AsBool();
+        else                    return defaultValue;
     }
     else
     {
@@ -325,9 +325,9 @@ BXmlReader::GetOptInt(const char* attr, int defaultValue) const
 {
     if (this->HasAttr(attr))
     {
-		String str = this->GetString(attr);
-		if (str.IsValidInt())   return str.AsInt();
-		else					return defaultValue;
+        String str = this->GetString(attr);
+        if (str.IsValidInt())   return str.AsInt();
+        else                    return defaultValue;
     }
     else
     {
@@ -343,9 +343,9 @@ BXmlReader::GetOptFloat(const char* attr, float defaultValue) const
 {
     if (this->HasAttr(attr))
     {
-		String str = this->GetString(attr);
-		if (str.IsValidFloat()) return str.AsFloat();
-		else					return defaultValue;
+        String str = this->GetString(attr);
+        if (str.IsValidFloat()) return str.AsFloat();
+        else                    return defaultValue;
     }
     else
     {
@@ -362,9 +362,9 @@ BXmlReader::GetOptVec2(const char* attr, const Math::vec2& defaultValue) const
 {
     if (this->HasAttr(attr))
     {
-		String str = this->GetString(attr);
-		if (str.IsValidVec2()) return str.AsVec2();
-		else					 return defaultValue;
+        String str = this->GetString(attr);
+        if (str.IsValidVec2()) return str.AsVec2();
+        else                     return defaultValue;
     }
     else
     {
@@ -380,9 +380,9 @@ BXmlReader::GetOptVec4(const char* attr, const Math::vec4& defaultValue) const
 {
     if (this->HasAttr(attr))
     {
-		String str = this->GetString(attr);
-		if (str.IsValidVec4()) return str.AsVec4();
-		else					 return defaultValue;
+        String str = this->GetString(attr);
+        if (str.IsValidVec4()) return str.AsVec4();
+        else                     return defaultValue;
     }
     else
     {
@@ -398,9 +398,9 @@ BXmlReader::GetOptMat4(const char* attr, const Math::mat4& defaultValue) const
 {
     if (this->HasAttr(attr))
     {
-		String str = this->GetString(attr);
-		if (str.IsValidMat4())  return str.AsMat4();
-		else						return defaultValue;
+        String str = this->GetString(attr);
+        if (str.IsValidMat4())  return str.AsMat4();
+        else                        return defaultValue;
     }
     else
     {

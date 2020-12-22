@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	CmdBuffer contains general functions related to command buffer management.
+    CmdBuffer contains general functions related to command buffer management.
 
-	(C) 2017-2020 Individual contributors, see AUTHORS file
+    (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
@@ -13,12 +13,12 @@ namespace CoreGraphics
 
 enum CommandBufferUsage
 {
-	CommandGfx,
-	CommandCompute,
-	CommandTransfer,		// CPU GPU data transfer calls
-	CommandSparse,			// Sparse binding calls
-	InvalidCommandUsage,
-	NumCommandBufferUsages = InvalidCommandUsage
+    CommandGfx,
+    CommandCompute,
+    CommandTransfer,        // CPU GPU data transfer calls
+    CommandSparse,          // Sparse binding calls
+    InvalidCommandUsage,
+    NumCommandBufferUsages = InvalidCommandUsage
 };
 
 //------------------------------------------------------------------------------
@@ -28,9 +28,9 @@ ID_24_8_TYPE(CommandBufferPoolId);
 
 struct CommandBufferPoolCreateInfo
 {
-	CoreGraphics::QueueType queue;
-	bool resetable : 1;		// allow the buffer to be reset
-	bool shortlived : 1;	// the buffer won't last long until it's destroyed or reset
+    CoreGraphics::QueueType queue;
+    bool resetable : 1;     // allow the buffer to be reset
+    bool shortlived : 1;    // the buffer won't last long until it's destroyed or reset
 };
 
 /// create new command buffer pool
@@ -40,20 +40,20 @@ void DestroyCommandBufferPool(const CommandBufferPoolId pool);
 
 struct CommandBufferCreateInfo
 {
-	bool subBuffer : 1;		// create buffer to be executed on another command buffer (subBuffer must be 0 on that one)
-	CommandBufferPoolId pool;
+    bool subBuffer : 1;     // create buffer to be executed on another command buffer (subBuffer must be 0 on that one)
+    CommandBufferPoolId pool;
 };
 
 struct CommandBufferBeginInfo
 {
-	bool submitOnce : 1;
-	bool submitDuringPass : 1;
-	bool resubmittable : 1;
+    bool submitOnce : 1;
+    bool submitDuringPass : 1;
+    bool resubmittable : 1;
 };
 
 struct CommandBufferClearInfo
 {
-	bool allowRelease : 1;	// release resources when clearing (don't use if buffer converges in size)
+    bool allowRelease : 1;  // release resources when clearing (don't use if buffer converges in size)
 };
 
 ID_24_8_TYPE(CommandBufferId);

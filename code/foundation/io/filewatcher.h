@@ -35,17 +35,17 @@ enum WatchEventType
 {
     Created,
     Deleted,
-	NameChange,
+    NameChange,
     Modified,
 };
 
 enum WatchFlags
 {
-	NameChanged = N_BIT(0),
-	SizeChanged = N_BIT(1),
-	Write = N_BIT(2),
-	Access = N_BIT(3),
-	Creation = N_BIT(4),
+    NameChanged = N_BIT(0),
+    SizeChanged = N_BIT(1),
+    Write = N_BIT(2),
+    Access = N_BIT(3),
+    Creation = N_BIT(4),
 };
 
 //------------------------------------------------------------------------------
@@ -62,7 +62,7 @@ struct EventHandlerData
 {
     WatchDelegate callback;
     Util::StringAtom folder;
-	WatchFlags flags;
+    WatchFlags flags;
     FileWatcherPlatform data;
 };
 
@@ -95,7 +95,7 @@ private:
     void CheckQueue();
     ///
     void DoWork();
-   	
+    
     Ptr<IO::IoServer> ioServer;
     Util::Dictionary<Util::StringAtom, EventHandlerData> watchers;    
     Threading::SafeQueue< EventHandlerData> watcherQueue;

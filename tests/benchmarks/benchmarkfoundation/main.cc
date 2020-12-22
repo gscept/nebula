@@ -39,7 +39,7 @@ main(int argc, char** argv)
     runner->AttachBenchmark(CreateObjectsByFourCC::Create());
     runner->AttachBenchmark(CreateObjectsByClassName::Create());
     runner->AttachBenchmark(ContainerBench::Create());
-	runner->AttachBenchmark(DelegateBench::Create());
+    runner->AttachBenchmark(DelegateBench::Create());
     runner->Run();
     
     // shutdown Nebula runtime

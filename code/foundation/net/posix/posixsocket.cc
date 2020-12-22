@@ -416,11 +416,11 @@ PosixSocket::IsConnected()
     }
     else if (0 == res)
     {
-	return false;
+    return false;
     }
     else
     {
-	return true;
+    return true;
     }
 }
 
@@ -611,7 +611,7 @@ PosixSocket::SocketErrorToErrorCode(int wsaErrorCode)
     switch (wsaErrorCode)
     {
         case EINTR:              return ErrorInterrupted; break;           
-	case EPIPE:		 return ErrorBrokenPipe; break;
+    case EPIPE:      return ErrorBrokenPipe; break;
         case EACCES:             return ErrorPermissionDenied; break;       
         case EFAULT:             return ErrorBadAddress; break;             
         case EINVAL:             return ErrorInvalidArgument; break;        
@@ -682,7 +682,7 @@ PosixSocket::ErrorAsString(ErrorCode err)
         case ErrorNone:                      return "No error.";
         case ErrorUnknown:                   return "Unknown error (not mapped by PosixSocket class).";
         case ErrorInterrupted:               return "Interrupted function call.";
-	case ErrorBrokenPipe:		     return "Broken pipe.";
+    case ErrorBrokenPipe:            return "Broken pipe.";
         case ErrorPermissionDenied:          return "Permission denied.";
         case ErrorBadAddress:                return "Bad address.";
         case ErrorInvalidArgument:           return "Invalid argument.";

@@ -38,8 +38,8 @@ public:
     Priority GetPriority() const;
     /// set thread affinity
     void SetThreadAffinity(uint mask);
-	/// set thread affinity
-	uint GetThreadAffinity();
+    /// set thread affinity
+    uint GetThreadAffinity();
     /// set stack size in bytes
     void SetStackSize(SizeT s);
     /// get stack size
@@ -104,7 +104,7 @@ private:
     };
 
     pthread_t thread;
-	cpu_set_t affinity;
+    cpu_set_t affinity;
     Priority priority;
     SizeT stackSize;
     Util::String name;

@@ -70,7 +70,7 @@ ShadowServerBase::BeginFrame(const Ptr<CameraEntity>& camEntity)
     n_assert(!this->inBeginFrame);
     n_assert(!this->inBeginAttach);
     n_assert(this->spotLightEntities.IsEmpty());
-	n_assert(this->pointLightEntities.IsEmpty());
+    n_assert(this->pointLightEntities.IsEmpty());
     n_assert(!this->globalLightEntity.isvalid());
     n_assert(!this->cameraEntity.isvalid());
     n_assert(camEntity.isvalid());
@@ -88,7 +88,7 @@ ShadowServerBase::EndFrame()
     n_assert(!this->inBeginAttach);
     this->inBeginFrame = false;
     this->spotLightEntities.Clear();
-	this->pointLightEntities.Clear();
+    this->pointLightEntities.Clear();
     this->globalLightEntity = 0;
     this->cameraEntity = 0;
 }
@@ -102,7 +102,7 @@ ShadowServerBase::BeginAttachVisibleLights()
     n_assert(this->inBeginFrame);
     n_assert(!this->inBeginAttach);
     n_assert(this->spotLightEntities.IsEmpty());
-	n_assert(this->pointLightEntities.IsEmpty());
+    n_assert(this->pointLightEntities.IsEmpty());
     n_assert(!this->globalLightEntity.isvalid());
     this->inBeginAttach = true;
     this->globalLightEntity = 0;
@@ -116,27 +116,27 @@ ShadowServerBase::AttachVisibleLight(const Ptr<AbstractLightEntity>& lightEntity
 {
     n_assert(lightEntity->GetCastShadows());
 
-	// only attach light if it casts shadows this frame
-	if (lightEntity->GetCastShadowsThisFrame())
-	{
-		if (lightEntity->GetLightType() == LightType::Global)
-		{
-			this->globalLightEntity = lightEntity.downcast<GlobalLightEntity>();
-		}
-		else
-		{
-			// if light is pointlight, unset shadow cube pointer
-			if (lightEntity->GetLightType() == LightType::Point)
-			{
-				lightEntity.downcast<PointLightEntity>()->SetShadowCube(0);
-				this->pointLightEntities.Append(lightEntity.downcast<PointLightEntity>());
-			}
-			else
-			{
-				this->spotLightEntities.Append(lightEntity.downcast<SpotLightEntity>());
-			}
-		}
-	}
+    // only attach light if it casts shadows this frame
+    if (lightEntity->GetCastShadowsThisFrame())
+    {
+        if (lightEntity->GetLightType() == LightType::Global)
+        {
+            this->globalLightEntity = lightEntity.downcast<GlobalLightEntity>();
+        }
+        else
+        {
+            // if light is pointlight, unset shadow cube pointer
+            if (lightEntity->GetLightType() == LightType::Point)
+            {
+                lightEntity.downcast<PointLightEntity>()->SetShadowCube(0);
+                this->pointLightEntities.Append(lightEntity.downcast<PointLightEntity>());
+            }
+            else
+            {
+                this->spotLightEntities.Append(lightEntity.downcast<SpotLightEntity>());
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -155,22 +155,22 @@ ShadowServerBase::EndAttachVisibleLights()
     IndexT i;
     for (i = 0; i < this->spotLightEntities.Size(); ++i)
     {           
-		// attach to light server
-        LightServer::Instance()->AttachVisibleLight(this->spotLightEntities[i].upcast<AbstractLightEntity>());			
+        // attach to light server
+        LightServer::Instance()->AttachVisibleLight(this->spotLightEntities[i].upcast<AbstractLightEntity>());          
     }
 
-	for (i = 0; i < this->pointLightEntities.Size(); ++i)
-	{
-		// attach to light server
-		LightServer::Instance()->AttachVisibleLight(this->pointLightEntities[i].upcast<AbstractLightEntity>());
-	}
+    for (i = 0; i < this->pointLightEntities.Size(); ++i)
+    {
+        // attach to light server
+        LightServer::Instance()->AttachVisibleLight(this->pointLightEntities[i].upcast<AbstractLightEntity>());
+    }
 
-	// if the global light goes here, it should always be enabled to cast shadows
-	if (this->globalLightEntity.isvalid())
-	{
-		// attach to light server
-		LightServer::Instance()->AttachVisibleLight(this->globalLightEntity.upcast<AbstractLightEntity>());
-	}
+    // if the global light goes here, it should always be enabled to cast shadows
+    if (this->globalLightEntity.isvalid())
+    {
+        // attach to light server
+        LightServer::Instance()->AttachVisibleLight(this->globalLightEntity.upcast<AbstractLightEntity>());
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -190,7 +190,7 @@ ShadowServerBase::UpdateShadowBuffers()
 void
 ShadowServerBase::UpdateSpotLightShadowBuffers()
 {
-	// override in subclass
+    // override in subclass
 }
 
 //------------------------------------------------------------------------------
@@ -199,7 +199,7 @@ ShadowServerBase::UpdateSpotLightShadowBuffers()
 void
 ShadowServerBase::UpdatePointLightShadowBuffers()
 {
-	// override in subclass
+    // override in subclass
 }
 
 //------------------------------------------------------------------------------
@@ -208,7 +208,7 @@ ShadowServerBase::UpdatePointLightShadowBuffers()
 void
 ShadowServerBase::UpdateGlobalLightShadowBuffers()
 {
-	// override in subclass
+    // override in subclass
 }
 
 //------------------------------------------------------------------------------
@@ -227,8 +227,8 @@ ShadowServerBase::SortLights()
 const float* 
 ShadowServerBase::GetSplitDistances() const
 {
-	// implement in platform dependent class 
-	return 0;
+    // implement in platform dependent class 
+    return 0;
 }
 
 //------------------------------------------------------------------------------
@@ -237,8 +237,8 @@ ShadowServerBase::GetSplitDistances() const
 const Math::matrix44* 
 ShadowServerBase::GetSplitTransforms() const
 {
-	// implement in platform dependent class 
-	return 0;
+    // implement in platform dependent class 
+    return 0;
 }
 
 
@@ -248,8 +248,8 @@ ShadowServerBase::GetSplitTransforms() const
 const Math::matrix44* 
 ShadowServerBase::GetShadowView() const
 {
-	// implement in platform dependent class
-	return 0;
+    // implement in platform dependent class
+    return 0;
 }
 
 //------------------------------------------------------------------------------
@@ -258,8 +258,8 @@ ShadowServerBase::GetShadowView() const
 const Math::float4*
 ShadowServerBase::GetFarPlane() const
 {
-	// implement in platform dependent class
-	return 0;
+    // implement in platform dependent class
+    return 0;
 }
 
 //------------------------------------------------------------------------------
@@ -268,8 +268,8 @@ ShadowServerBase::GetFarPlane() const
 const Math::float4* 
 ShadowServerBase::GetNearPlane() const
 {
-	// implement in platform dependent class
-	return 0;
+    // implement in platform dependent class
+    return 0;
 }
 
 } // namespace Lighting

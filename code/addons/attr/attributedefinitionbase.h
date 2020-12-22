@@ -253,7 +253,7 @@ AttributeDefinitionBase::GetSizeOfType() const
     case FloatType:         return sizeof(float);
     case DoubleType:        return sizeof(double);
     case BoolType:          return sizeof(bool);
-    case Vec2Type:		    return sizeof(float) * 2;
+    case Vec2Type:          return sizeof(float) * 2;
     case Vec4Type:          return sizeof(float) * 4;
     case QuaternionType:    return sizeof(float) * 4;
     case StringType:        return sizeof(Util::String);
@@ -265,7 +265,7 @@ AttributeDefinitionBase::GetSizeOfType() const
     case IntArrayType:      return sizeof(Util::Array<int>);
     case FloatArrayType:    return sizeof(Util::Array<float>);
     case BoolArrayType:     return sizeof(Util::Array<bool>);
-    case Vec2ArrayType:	    return sizeof(Util::Array<Math::vec2>);
+    case Vec2ArrayType:     return sizeof(Util::Array<Math::vec2>);
     case Vec4ArrayType:     return sizeof(Util::Array<Math::vec4>);
     case Mat4ArrayType: return sizeof(Util::Array<Math::mat4>);
     case StringArrayType:   return sizeof(Util::Array<Util::String>);

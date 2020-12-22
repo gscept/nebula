@@ -34,10 +34,10 @@ public:
     void Update();
     /// get the current camera transform
     const Math::mat4& GetCameraTransform() const;
-	/// get view distance
-	const Math::scalar& GetViewDistance() const;
-	/// get center of interest
-	const Math::point& GetCenterOfInterest() const;
+    /// get view distance
+    const Math::scalar& GetViewDistance() const;
+    /// get center of interest
+    const Math::point& GetCenterOfInterest() const;
 
     /// set state of orbit button
     void SetOrbitButton(bool b);
@@ -59,10 +59,10 @@ public:
     void SetPanning(const Math::vec2& v);
     /// set orbiting vector
     void SetOrbiting(const Math::vec2& v);
-	/// set center of interest
-	void SetCenterOfInterest(const Math::point& point);
-	/// set view distance
-	void SetViewDistance(const Math::scalar& distance);
+    /// set center of interest
+    void SetCenterOfInterest(const Math::point& point);
+    /// set view distance
+    void SetViewDistance(const Math::scalar& distance);
 
 private:
     Math::point defaultCenterOfInterest;

@@ -1,0 +1,16 @@
+namespace flat;
+struct Vec4 (native_type:"Math::vec4", force_align:16) {
+  v:[float:4];
+}
+
+struct Vec3 (native_type:"Math::vec3", force_align:16) {
+  v:[float:3];
+}
+
+struct Vec2 (native_type:"Math::vec2", force_align:16) {
+  v:[float:2];
+}
+
+struct Mat4 (native_type:"Math::mat4", force_align:16) {
+  v:[float:16];
+}

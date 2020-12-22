@@ -30,10 +30,10 @@ public:
     virtual ~HttpInterface();
     /// open the interface object
     virtual void Open();
-	/// set the tcp port for the http handler
-	void SetTcpPort(ushort port);
+    /// set the tcp port for the http handler
+    void SetTcpPort(ushort port);
 protected:
-	ushort tcpPort;
+    ushort tcpPort;
 };
 
 //------------------------------------------------------------------------------
@@ -42,7 +42,7 @@ protected:
 inline void
 HttpInterface::SetTcpPort(ushort port)
 {
-	this->tcpPort = port;
+    this->tcpPort = port;
 }
         
 } // namespace HttpInterface

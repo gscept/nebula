@@ -20,7 +20,7 @@ namespace CoreGraphics
 {
 class VertexLayoutServer : public Vulkan::VkVertexLayoutServer
 {
-	__DeclareClass(VertexLayoutServer);
+    __DeclareClass(VertexLayoutServer);
 };
 }
 #else

@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class	Game::EntityManager
+    @class  Game::EntityManager
 
     Keeps track of all existing entites.
 
@@ -42,7 +42,7 @@ Ptr<MemDb::Database> GetWorldDatabase();
 
 //------------------------------------------------------------------------------
 /**
-    @class	Game::EntityManager
+    @class  Game::EntityManager
     
     Contains state with categories and the world database.
 

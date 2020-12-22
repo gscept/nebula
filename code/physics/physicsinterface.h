@@ -28,10 +28,10 @@ RESOURCE_ID_TYPE(ColliderId);
 
 enum CollisionFeedbackFlag
 {
-	/// callbacks for begin, persist, and end collision
-	CollisionFeedbackFull	= 1,
-	/// only on first contact
-	CollisionSingle			= 2
+    /// callbacks for begin, persist, and end collision
+    CollisionFeedbackFull   = 1,
+    /// only on first contact
+    CollisionSingle         = 2
 };
 
 struct Material

@@ -59,23 +59,23 @@ public:
     virtual void OnRenderBefore(IndexT frameId, Timing::Time time);
     /// called after rendering entities
     virtual void OnRenderAfter(IndexT frameId, Timing::Time time);
-	/// called from a frame script
-	virtual void OnRender(const Util::StringAtom& filter);
-	/// called at the beginning of frame
-	virtual void OnFrameBefore(IndexT frameId, Timing::Time time);
-	/// called at the end of frame
-	virtual void OnFrameAfter(IndexT frameId, Timing::Time time);
-	/// called from when rendering with a special tag
-	virtual void OnRenderFrame();
+    /// called from a frame script
+    virtual void OnRender(const Util::StringAtom& filter);
+    /// called at the beginning of frame
+    virtual void OnFrameBefore(IndexT frameId, Timing::Time time);
+    /// called at the end of frame
+    virtual void OnFrameAfter(IndexT frameId, Timing::Time time);
+    /// called from when rendering with a special tag
+    virtual void OnRenderFrame();
     /// called if no view exists, and no default camera is set in view
     virtual void OnRenderWithoutView(IndexT frameId, Timing::Time time);
-	/// called if the window has been resized
-	virtual void OnWindowResized(IndexT windowId, SizeT width, SizeT height);
+    /// called if the window has been resized
+    virtual void OnWindowResized(IndexT windowId, SizeT width, SizeT height);
 
-	/// find plugin index by rtti
-	IndexT FindPlugin(const Core::Rtti* rtti) const;
-	/// get plugin by rtti
-	template<typename T> const Ptr<T>& GetPluginByRTTI(const Core::Rtti* rtti) const;
+    /// find plugin index by rtti
+    IndexT FindPlugin(const Core::Rtti* rtti) const;
+    /// get plugin by rtti
+    template<typename T> const Ptr<T>& GetPluginByRTTI(const Core::Rtti* rtti) const;
 
 private:
 
@@ -107,9 +107,9 @@ RTPluginRegistry::GetRTPlugins() const
 template<typename T> const Ptr<T>&
 RenderModules::RTPluginRegistry::GetPluginByRTTI(const Core::Rtti* rtti) const
 {
-	n_assert(rtti->IsDerivedFrom(RTPlugin::RTTI));
-	IndexT index = this->FindPlugin(rtti);
-	return this->plugins[index].downcast<T>();
+    n_assert(rtti->IsDerivedFrom(RTPlugin::RTTI));
+    IndexT index = this->FindPlugin(rtti);
+    return this->plugins[index].downcast<T>();
 }
 
 } // namespace RenderModules

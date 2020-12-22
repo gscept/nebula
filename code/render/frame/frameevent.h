@@ -1,10 +1,10 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	A frame event is a wait-signal-reset type event which can be used to wait for executions
-	within a frame script.
-	
-	(C) 2016-2018 Individual contributors, see AUTHORS file
+    A frame event is a wait-signal-reset type event which can be used to wait for executions
+    within a frame script.
+    
+    (C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
@@ -15,28 +15,28 @@ class FrameEvent : public FrameOp
 {
 public:
 
-	enum Action
-	{
-		Set,
-		Reset,
-		Wait
-	};
+    enum Action
+    {
+        Set,
+        Reset,
+        Wait
+    };
 
-	/// constructor
-	FrameEvent();
-	/// destructor
-	virtual ~FrameEvent();
+    /// constructor
+    FrameEvent();
+    /// destructor
+    virtual ~FrameEvent();
 
-	/// discard operation
-	void Discard();
-	/// run operation
-	void Run(const IndexT frameIndex);
+    /// discard operation
+    void Discard();
+    /// run operation
+    void Run(const IndexT frameIndex);
 
-	Util::Array<Action> actions;
-	CoreGraphics::EventId event;
-	CoreGraphics::BarrierStage dependency;
-	CoreGraphics::QueueType queueType; 
-	CoreGraphics::CommandBufferUsage commandBufferType;
+    Util::Array<Action> actions;
+    CoreGraphics::EventId event;
+    CoreGraphics::BarrierStage dependency;
+    CoreGraphics::QueueType queueType; 
+    CoreGraphics::CommandBufferUsage commandBufferType;
 };
 
 } // namespace Frame2

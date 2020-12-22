@@ -101,8 +101,8 @@ DestroyTextureView(const TextureViewId id)
 TextureId
 TextureViewGetTexture(const TextureViewId id)
 {
-	VkTextureViewLoadInfo& loadInfo = textureViewAllocator.Get<TextureView_LoadInfo>(id.id24);
-	return loadInfo.tex;
+    VkTextureViewLoadInfo& loadInfo = textureViewAllocator.Get<TextureView_LoadInfo>(id.id24);
+    return loadInfo.tex;
 }
 
 } // namespace CoreGraphics

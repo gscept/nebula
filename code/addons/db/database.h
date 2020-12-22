@@ -100,7 +100,7 @@ protected:
     IndexT FindTableIndex(const Util::String& tableName) const;
 
     bool isOpen;
-	bool ignoreUnknownColumns;
+    bool ignoreUnknownColumns;
     IO::URI uri;         
     Util::String error;
     AccessMode accessMode;

@@ -24,28 +24,28 @@ RefCountedList::DumpLeaks()
         RefCountedList::Iterator iter;
         for (iter = this->Begin(); iter != this->End(); iter++)
         {
-			if (this->refcountedDebugNames.Contains(*iter))
-			{
-				String msg;
-				msg.Format("REFCOUNT LEAK: Object of class '%s' with debug identifier '%s' at address '0x%p', refcount is '%d'\n",
-					(*iter)->GetClassName().AsCharPtr(),
-					this->refcountedDebugNames[*iter].AsCharPtr(),
-					(void*)(*iter),
-					(*iter)->GetRefCount());
-				SysFunc::DebugOut(msg.AsCharPtr());
-			}
-			else
-			{
-				String msg;
-				msg.Format("REFCOUNT LEAK: Object of class '%s' at address '0x%p', refcount is '%d'\n",
-					(*iter)->GetClassName().AsCharPtr(),
-					(void*)(*iter),
-					(*iter)->GetRefCount());
-				SysFunc::DebugOut(msg.AsCharPtr());
-			}            
+            if (this->refcountedDebugNames.Contains(*iter))
+            {
+                String msg;
+                msg.Format("REFCOUNT LEAK: Object of class '%s' with debug identifier '%s' at address '0x%p', refcount is '%d'\n",
+                    (*iter)->GetClassName().AsCharPtr(),
+                    this->refcountedDebugNames[*iter].AsCharPtr(),
+                    (void*)(*iter),
+                    (*iter)->GetRefCount());
+                SysFunc::DebugOut(msg.AsCharPtr());
+            }
+            else
+            {
+                String msg;
+                msg.Format("REFCOUNT LEAK: Object of class '%s' at address '0x%p', refcount is '%d'\n",
+                    (*iter)->GetClassName().AsCharPtr(),
+                    (void*)(*iter),
+                    (*iter)->GetRefCount());
+                SysFunc::DebugOut(msg.AsCharPtr());
+            }            
         }
         SysFunc::DebugOut("\n******** END OF NEBULA REFCOUNT LEAK REPORT ********\n\n\n");
-		this->refcountedDebugNames.Clear();
+        this->refcountedDebugNames.Clear();
     }
     else
     {
@@ -59,8 +59,8 @@ RefCountedList::DumpLeaks()
 void
 RefCountedList::SetDebugName(RefCounted* ptr, const Util::String& name)
 {
-	n_assert(!this->refcountedDebugNames.Contains(ptr));
-	this->refcountedDebugNames.Add(ptr, name);
+    n_assert(!this->refcountedDebugNames.Contains(ptr));
+    this->refcountedDebugNames.Add(ptr, name);
 }
 
 } // namespace Core

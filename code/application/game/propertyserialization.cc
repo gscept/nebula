@@ -62,9 +62,9 @@ PropertySerialization::Deserialize(Ptr<IO::JsonReader> const& reader, PropertyId
 void
 PropertySerialization::Serialize(Ptr<IO::JsonWriter> const& writer, PropertyId pid, void* ptr)
 {
-	n_assert(Singleton != nullptr);
-	const char* name = MemDb::TypeRegistry::GetDescription(pid)->name.Value();
-	Singleton->serializers[pid.id].serializeJson(writer, name, ptr);
+    n_assert(Singleton != nullptr);
+    const char* name = MemDb::TypeRegistry::GetDescription(pid)->name.Value();
+    Singleton->serializers[pid.id].serializeJson(writer, name, ptr);
 }
 
 //------------------------------------------------------------------------------
@@ -113,7 +113,7 @@ IO::JsonReader::Get<Game::Entity>(Game::Entity& entity, const char* key)
 template<> void
 IO::JsonWriter::Add<Game::Entity>(Game::Entity const& entity, Util::String const& key)
 {
-	this->Add(entity.id, key);
+    this->Add(entity.id, key);
 }
 
 //------------------------------------------------------------------------------
@@ -131,5 +131,5 @@ IO::JsonReader::Get<Graphics::GraphicsEntityId>(Graphics::GraphicsEntityId& enti
 template<> void
 IO::JsonWriter::Add<Graphics::GraphicsEntityId>(Graphics::GraphicsEntityId const& entity, Util::String const& key)
 {
-	this->Add(entity.id, key);
+    this->Add(entity.id, key);
 }

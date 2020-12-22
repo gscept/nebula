@@ -12,36 +12,36 @@
 
 group(BATCH_GROUP) shared constant FinalizeBlock
 {
-	textureHandle DepthTexture;
-	textureHandle ColorTexture;
-	textureHandle NormalTexture;
-	textureHandle LuminanceTexture;
-	textureHandle BloomTexture;
+    textureHandle DepthTexture;
+    textureHandle ColorTexture;
+    textureHandle NormalTexture;
+    textureHandle LuminanceTexture;
+    textureHandle BloomTexture;
 };
 
 
 sampler_state UpscaleSampler
 {
-	//Samplers = { BloomTexture, GodrayTexture, LuminanceTexture };
-	AddressU = Border;
-	AddressV = Border;
-	BorderColor = Transparent;
+    //Samplers = { BloomTexture, GodrayTexture, LuminanceTexture };
+    AddressU = Border;
+    AddressV = Border;
+    BorderColor = Transparent;
 };
 
 sampler_state DefaultSampler
 {
-	//Samplers = { ColorTexture, DepthTexture, ShapeTexture};
-	Filter = Point;
-	AddressU = Border;
-	AddressV = Border;
-	BorderColor = Transparent;
+    //Samplers = { ColorTexture, DepthTexture, ShapeTexture};
+    Filter = Point;
+    AddressU = Border;
+    AddressV = Border;
+    BorderColor = Transparent;
 };
 
 render_state FinalizeState
 {
-	CullMode = Back;
-	DepthEnabled = false;
-	DepthWrite = false;
+    CullMode = Back;
+    DepthEnabled = false;
+    DepthWrite = false;
 };
 
 // depth of field samples
@@ -79,29 +79,29 @@ const vec2 DofSamples[MAXDOFSAMPLES] = {
 shader
 void
 vsMain(
-	[slot=0] in vec3 position,
-	[slot=2] in vec2 uv,
-	out vec2 UV) 
+    [slot=0] in vec3 position,
+    [slot=2] in vec2 uv,
+    out vec2 UV) 
 {
-	gl_Position = vec4(position, 1);
-	UV = uv;
+    gl_Position = vec4(position, 1);
+    UV = uv;
 }
 
 //------------------------------------------------------------------------------
 /**
-	Compute fogging given a sampled fog intensity value from the depth
-	pass and a fog color.
+    Compute fogging given a sampled fog intensity value from the depth
+    pass and a fog color.
 */
 float
 Fog(float fogDepth)
 {
-	return clamp((FogDistances.y - fogDepth) / (FogDistances.y - FogDistances.x), FogColor.a, 1.0);
+    return clamp((FogDistances.y - fogDepth) / (FogDistances.y - FogDistances.x), FogColor.a, 1.0);
 }
 
 
 //------------------------------------------------------------------------------
 /**
-	Get a depth-of-field blurred sample. Set all values to 0 in order to disable DoF
+    Get a depth-of-field blurred sample. Set all values to 0 in order to disable DoF
 */
 vec4 
 DepthOfField(float depth, vec2 uv)
@@ -115,7 +115,7 @@ DepthOfField(float depth, vec2 uv)
     // perform a gaussian blur around uv
     vec3 sampleColor = vec3(0.0f);
     float dofWeight = 1.0f / MAXDOFSAMPLES;
-	vec2 pixelSize = RenderTargetDimensions[0].zw;
+    vec2 pixelSize = RenderTargetDimensions[0].zw;
     vec2 uvMul = focus * filterRadius * pixelSize.xy;
     int i;
     for (i = 0; i < MAXDOFSAMPLES; i++)
@@ -132,40 +132,40 @@ DepthOfField(float depth, vec2 uv)
 shader
 void
 psMain(in vec2 UV,
-	[color0] out vec4 color) 
+    [color0] out vec4 color) 
 {
     // get an averaged depth value        
     float depth = sample2DLod(DepthBuffer, DefaultSampler, UV, 0).r;
-	vec4 viewPos = PixelToView(UV, depth);
-	vec3 normal = sample2DLod(NormalBuffer, DefaultSampler, UV, 0).xyz;
+    vec4 viewPos = PixelToView(UV, depth);
+    vec3 normal = sample2DLod(NormalBuffer, DefaultSampler, UV, 0).xyz;
 
-	vec4 worldPos = ViewToWorld(viewPos);
-	vec3 viewVec = EyePos.xyz - worldPos.xyz;
-	vec3 viewNormal = (View * vec4(normal, 0)).xyz;
+    vec4 worldPos = ViewToWorld(viewPos);
+    vec3 viewVec = EyePos.xyz - worldPos.xyz;
+    vec3 viewNormal = (View * vec4(normal, 0)).xyz;
 
-	vec3 fogColor = FogColor.rgb;
-	fogColor *= Preetham(-normalize(viewVec), GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * GlobalLightColor.xyz;
+    vec3 fogColor = FogColor.rgb;
+    fogColor *= Preetham(-normalize(viewVec), GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * GlobalLightColor.xyz;
 
-	float fogIntensity = Fog(length(viewVec)); 
-	
-	vec4 c = DepthOfField(depth, UV);
-	c = vec4(lerp(fogColor, c.rgb, fogIntensity), c.a);
-	
-	// Get the calculated average luminance 
-	float fLumAvg = sample2DLod(LuminanceTexture, UpscaleSampler, vec2(0.5f, 0.5f), 0).r;
-	
-	vec4 bloom = sample2DLod(BloomTexture, UpscaleSampler, UV, 0);
-	//vec4 godray = subpassLoad(InputAttachment1);
-	c += bloom;   
-	//c.rgb += godray.rgb;
-	//c.rgb += godray.rgb;
-	vec4 grey = vec4(dot(c.xyz, Luminance.xyz));
-	c = Balance * lerp(grey, c, Saturation);
-	c.rgb *= FadeValue;
+    float fogIntensity = Fog(length(viewVec)); 
+    
+    vec4 c = DepthOfField(depth, UV);
+    c = vec4(lerp(fogColor, c.rgb, fogIntensity), c.a);
+    
+    // Get the calculated average luminance 
+    float fLumAvg = sample2DLod(LuminanceTexture, UpscaleSampler, vec2(0.5f, 0.5f), 0).r;
+    
+    vec4 bloom = sample2DLod(BloomTexture, UpscaleSampler, UV, 0);
+    //vec4 godray = subpassLoad(InputAttachment1);
+    c += bloom;   
+    //c.rgb += godray.rgb;
+    //c.rgb += godray.rgb;
+    vec4 grey = vec4(dot(c.xyz, Luminance.xyz));
+    c = Balance * lerp(grey, c, Saturation);
+    c.rgb *= FadeValue;
 
-	// tonemap before presenting to screen
-	c = ToneMap(c, vec4(fLumAvg), MaxLuminance);
-	color = c;	
+    // tonemap before presenting to screen
+    c = ToneMap(c, vec4(fLumAvg), MaxLuminance);
+    color = c;	
 }
 
 //------------------------------------------------------------------------------

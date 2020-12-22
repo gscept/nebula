@@ -1,11 +1,11 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	@class Debug::StackTrace
+    @class Debug::StackTrace
 
-	Helper class for generating stack traces
+    Helper class for generating stack traces
 
-	(C) 2015-2020 Individual contributors, see AUTHORS file
+    (C) 2015-2020 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"
 
@@ -13,9 +13,9 @@
 #include "debug/win32/win32stacktrace.h"
 namespace Debug
 {
-	class StackTrace : public Win32::Win32StackTrace
+    class StackTrace : public Win32::Win32StackTrace
 
-	{ };
+    { };
 }
 #endif
 //------------------------------------------------------------------------------

@@ -160,7 +160,7 @@ LinuxEvent::WaitTimeout(int ms) const
             timespec timeSpec;
             timeSpec.tv_sec = ms / 1000;
             timeSpec.tv_nsec = (ms - timeSpec.tv_sec * 1000) * 1000000;
-		
+        
             int res = pthread_cond_timedwait(&this->cond, &this->mutex, &timeSpec);
 
             if (ETIMEDOUT == res)

@@ -222,20 +222,20 @@ ExcelXmlReader::ParseTables(const Ptr<XmlReader>& xmlReader)
                     }
 
                     // check if data node exists
-					if (xmlReader->HasNode(dataString))
-					{
-						xmlReader->SetToNode(dataString);
-						if (xmlReader->HasContent())
-						{
-							this->tables[curTableIndex].Set(curColumnIndex, curRowIndex, xmlReader->GetContent());
-						}
-	                    xmlReader->SetToParent();
-					}
-					// if no data note exists, fill with empty string
-					else
-					{
-						this->tables[curTableIndex].Set(curColumnIndex, curRowIndex, "");
-					}
+                    if (xmlReader->HasNode(dataString))
+                    {
+                        xmlReader->SetToNode(dataString);
+                        if (xmlReader->HasContent())
+                        {
+                            this->tables[curTableIndex].Set(curColumnIndex, curRowIndex, xmlReader->GetContent());
+                        }
+                        xmlReader->SetToParent();
+                    }
+                    // if no data note exists, fill with empty string
+                    else
+                    {
+                        this->tables[curTableIndex].Set(curColumnIndex, curRowIndex, "");
+                    }
                     curColumnIndex++;
                 }
                 while (xmlReader->SetToNextChild(cellString));
