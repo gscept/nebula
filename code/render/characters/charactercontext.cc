@@ -117,7 +117,7 @@ CharacterContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Re
 				SkeletonJobJoint& jobJoint = characterContextAllocator.Get<JobJoints>(cid.id)[i];
 				jobJoint.parentJointIndex = joint.parentJointIndex;
 			}
-		}, nullptr, false);
+		}, nullptr, true);
 
 	characterContextAllocator.Get<AnimationId>(cid.id) = Resources::CreateResource(animation, tag, [cid, id](Resources::ResourceId rid)
 		{
@@ -126,7 +126,7 @@ CharacterContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Re
 
 			// setup sample buffer when animation is done loading
 			characterContextAllocator.Get<SampleBuffer>(cid.id).Setup(rid.As<CoreAnimation::AnimResourceId>());
-		}, nullptr, false);
+		}, nullptr, true);
 
 	// clear playing animation state
 	IndexT i;
