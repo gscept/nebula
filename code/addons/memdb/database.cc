@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+﻿//------------------------------------------------------------------------------
 //  database.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
@@ -58,7 +58,8 @@ Database::CreateTable(TableCreateInfo const& info)
 {
     TableId id;
     this->tableIdPool.Allocate(id.id);
-    n_assert2(Ids::Index(id.id) < MAX_NUM_TABLES, "Tried to allocate more tables than currently allowed! Increase MAX_NUM_TABLES if this keeps occuring!\n");
+    n_assert2(Ids::Index(id.id) < MAX_NUM_TABLES,
+              "Tried to allocate more tables than currently allowed! Increase MAX_NUM_TABLES if this keeps occuring!\n");
 
     Table& table = this->tables[Ids::Index(id.id)];
     // Make sure we don't use any old data
@@ -411,7 +412,6 @@ Database::MigrateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows, T
         for (IndexT i = 0; i < num; i++)
             this->DeallocateRow(srcTid, srcRows[i]);
     }
-    
 }
 
 //------------------------------------------------------------------------------
@@ -634,7 +634,7 @@ Database::GrowTable(TableId tid)
         int oldNumBytes = byteSize * oldCapacity;
         int newNumBytes = byteSize * table.capacity;
         void* newData = Memory::Alloc(Table::HEAP_MEMORY_TYPE, newNumBytes);
-        
+
         Memory::Copy(buf, newData, (size_t)table.numRows * byteSize);
         Memory::Free(Table::HEAP_MEMORY_TYPE, buf);
         buf = newData;
@@ -660,7 +660,7 @@ Database::AllocateBuffer(TableId tid, PropertyDescription* desc)
         void* val = (char*)buffer + (i * desc->typeSize);
         Memory::Copy(desc->defVal, val, desc->typeSize);
     }
-    
+
     return buffer;
 }
 
@@ -692,7 +692,7 @@ Database::AddColumn(TableId tid, PropertyId descriptor, bool updateSignature)
         TableSignature& signature = this->tableSignatures[Ids::Index(tid.id)];
 #if NEBULA_DEBUG
         // Bit should not be set if the property has not already been registered
-        n_assert(!signature.IsSet(descriptor))
+        n_assert(!signature.IsSet(descriptor));
 #endif
         signature.FlipBit(descriptor);
     }

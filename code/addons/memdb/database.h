@@ -20,17 +20,18 @@
 
 namespace MemDb
 {
-    class Database;
+class Database;
 
 class Database : public Core::RefCounted
 {
     __DeclareClass(MemDb::Database);
+
 public:
     /// constructor
     Database();
     /// destructor
     ~Database();
-    
+
     /// create new table
     TableId CreateTable(TableCreateInfo const& info);
     /// delete table
@@ -41,7 +42,7 @@ public:
     Table& GetTable(TableId tid);
     /// retrieve a table signature
     TableSignature const& GetTableSignature(TableId tid);
-    
+
     /// check if table has a certain column
     bool HasProperty(TableId table, PropertyId col);
     /// returns a descriptor for a given column id
@@ -61,7 +62,7 @@ public:
     SizeT GetNumRows(TableId table) const;
     /// set all row values to default
     void SetToDefault(TableId table, IndexT row);
-    
+
     /// move instance from one table to another.
     IndexT MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid, bool defragment = true, std::function<void(IndexT, IndexT)> const& moveCallback = nullptr);
     /// move instance from one table to a table in another database.
@@ -128,7 +129,7 @@ Database::GetValuePointer(TableId table, ColumnIndex cid, IndexT row)
     PropertyDescription* desc = MemDb::TypeRegistry::GetDescription(descriptor);
     if (desc->typeSize > 0)
         return ((byte*)tbl.columns.Get<1>(cid.id)) + (desc->typeSize * row);
-    
+
     return nullptr;
 }
 
