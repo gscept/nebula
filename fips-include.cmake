@@ -102,21 +102,21 @@ set_property(CACHE N_RENDERER PROPERTY STRINGS "N_RENDERER_VULKAN" )
 set(${N_RENDERER} ON)
 
 if(N_QT5)
-	add_definitions(-D__USE_QT5)
+    add_definitions(-D__USE_QT5)
 endif()
 
 if(N_QT4)
-	add_definitions(-D__USE_QT4)
+    add_definitions(-D__USE_QT4)
 endif()
 
 if(N_RENDERER_VULKAN)
-	OPTION(N_VALIDATION "Use Vulkan validation" OFF)
-	if (N_VALIDATION)
-		add_definitions(-DNEBULAT_VULKAN_VALIDATION)
-	endif()
-	add_definitions(-DNEBULA_DEFAULT_FRAMESHADER_NAME="vkdebug")
-	add_definitions(-D__VULKAN__)
-	add_definitions(-DGRAPHICS_IMPLEMENTATION_NAMESPACE=Vulkan)
+    OPTION(N_VALIDATION "Use Vulkan validation" OFF)
+    if (N_VALIDATION)
+        add_definitions(-DNEBULAT_VULKAN_VALIDATION)
+    endif()
+    add_definitions(-DNEBULA_DEFAULT_FRAMESHADER_NAME="vkdebug")
+    add_definitions(-D__VULKAN__)
+    add_definitions(-DGRAPHICS_IMPLEMENTATION_NAMESPACE=Vulkan)
 endif()
 
 option(N_NEBULA_DEBUG_SHADERS "Compile shaders with debug flag" OFF)
@@ -128,6 +128,7 @@ macro(nebula_flatc root files)
     else()
         set(rootdir ${PROJECT_SOURCE_DIR})
     endif()
+    set_nebula_export_dir()
 
     foreach(fb ${files})
         set(target_has_flatc 1)
@@ -141,7 +142,8 @@ macro(nebula_flatc root files)
         set(output ${abs_output_folder}/${out_header})
 
         add_custom_command(OUTPUT ${output}
-                PRE_BUILD COMMAND ${FLATC} -c --gen-object-api --gen-compare --scoped-enums --gen-mutable --cpp-str-flex-ctor --cpp-str-type Util::String -I "${datadir}" -I "${NROOT}/work/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${fbs}" 
+                PRE_BUILD COMMAND ${FLATC} -c --gen-object-api --gen-compare --scoped-enums --gen-mutable --cpp-str-flex-ctor --cpp-str-type Util::String -I "${datadir}" -I "${NROOT}/work/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${fbs}"
+                PRE_BUILD COMMAND ${FLATC} -b -o "${EXPORT_DIR}/data/flatbuffer/${foldername}/" -I "${datadir}" -I "${NROOT}/work/data/flatbuffer/" --schema ${fbs}
                 MAIN_DEPENDENCY "${fbs}"
                 DEPENDS ${FLATC}
                 WORKING_DIRECTORY ${FIPS_PROJECT_DIR}
@@ -266,7 +268,7 @@ macro(add_material_intern)
                 )
             fips_files(${mat})
             SOURCE_GROUP("res\\materials" FILES ${mat})
-		endforeach()
+        endforeach()
 endmacro()
 
 macro(add_material)
@@ -288,14 +290,14 @@ macro(add_blueprint_intern)
                 )
             fips_files(${bp})
             SOURCE_GROUP("res\\blueprints" FILES ${bp})
-		endforeach()
+        endforeach()
 endmacro()
 
 macro(add_blueprint)
     set_nebula_export_dir()
     foreach(bp ${ARGN})
-            add_blueprint_intern(${CMAKE_CURRENT_SOURCE_DIR}/${bp})
-		endforeach()
+        add_blueprint_intern(${CMAKE_CURRENT_SOURCE_DIR}/${bp})
+    endforeach()
 endmacro()
 
 macro(add_template_intern)

@@ -8,7 +8,10 @@
 #include "flatbuffers/util.h"
 #include "flatbuffers/registry.h"
 #include "nflatbuffer/nebula_flat.h"
+#include "nflatbuffer/flatbufferinterface.h"
 #include "flat/tests/flatc_test.h"
+#include "io/ioserver.h"
+
 namespace Test
 {
 __ImplementClass(Test::FlatCTest, 'flct', Test::TestCase);
@@ -22,24 +25,25 @@ using namespace Util;
 void
 FlatCTest::Run()
 {
+    Ptr<IO::IoServer> io = IO::IoServer::Create();
     ItemT testItem;
     testItem.name = "ItemName";
     testItem.pos = Math::vec4(1, 2, 3, 4);
 
+    Flat::FlatbufferInterface::Init();
+    Util::String jsonString = SerializeFlatbufferText(Item, testItem);
+    // TODO find good test for json output
+
     flatbuffers::FlatBufferBuilder builder;
     builder.Finish(Item::Pack(builder, &testItem));
 
-    std::string buf;
-    flatbuffers::LoadFile("flatc_test.fbs", false, &buf);
-    flatbuffers::Parser parser;
-    parser.Parse(buf.c_str());
-    std::string output;
-    flatbuffers::GenerateText(parser, builder.GetBufferPointer(), &output);
+    Util::Blob buf = Flat::FlatbufferInterface::SerializeFlatbuffer<Item>(testItem);
 
-    n_printf("output:\n%s", output.c_str()); 
+    ItemT test2Item;
+    Flat::FlatbufferInterface::DeserializeFlatbuffer<Item>(test2Item, (uint8_t*) buf.GetPtr());
 
-
-
+    VERIFY(test2Item.name == testItem.name);
+    VERIFY(test2Item.pos == testItem.pos);
 }
 
 } // namespace Test

@@ -1,23 +1,84 @@
+//------------------------------------------------------------------------------
+//  nebula_flat.cc
+//  (C) 2020 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "nebula_flat.h"
 #include "flat/foundation/math.h"
 
-#define LOAD_STORE_PACK(FT,NT)\
-FT Pack(const NT& v){\
-FT V;\
-v.store(V.mutable_v()->data());\
-return V;\
-}\
-NT UnPack(const FT& v){\
-    NT m;\
-    m.load(v.v()->data());\
-    return m;\
-}
-
 namespace flatbuffers
 {
-LOAD_STORE_PACK(flat::Vec2, Math::vec2);
-LOAD_STORE_PACK(flat::Vec3, Math::vec3);
-LOAD_STORE_PACK(flat::Vec4, Math::vec4);
-LOAD_STORE_PACK(flat::Mat4, Math::mat4);
+//------------------------------------------------------------------------------
+/**
+*/
+Flat::Mat4 Pack(const Math::mat4& v)
+{
+    Flat::Mat4 V;
+    v.store(V.mutable_mat4()->data());
+    return V;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::mat4 UnPack(const Flat::Mat4& v)
+{
+    Math::mat4 m;
+    m.load(v.mat4()->data());
+    return m;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Flat::Vec2 Pack(const Math::vec2& v)
+{
+    Flat::Vec2 V(v.x, v.y);
+    return V;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::vec2 UnPack(const Flat::Vec2& v)
+{
+    Math::vec2 m(v.x(), v.y());
+    return m;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Flat::Vec3 Pack(const Math::vec3& v)
+{
+    Flat::Vec3 V(v.x, v.y, v.z);
+    return V;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::vec3 UnPack(const Flat::Vec3& v)
+{
+    Math::vec3 m(v.x(), v.y(), v.z());
+    return m;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Flat::Vec4 Pack(const Math::vec4& v)
+{
+    Flat::Vec4 V(v.x, v.y, v.z, v.w);
+    return V;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::vec4 UnPack(const Flat::Vec4& v)
+{
+    Math::vec4 m(v.x(), v.y(), v.z(), v.w());
+    return m;
+}
 }

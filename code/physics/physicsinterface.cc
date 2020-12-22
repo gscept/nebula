@@ -1,3 +1,7 @@
+//------------------------------------------------------------------------------
+//  physicsinterface.cc
+//  (C) 2019-2020 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "PxPhysicsAPI.h"
 #include "physicsinterface.h"
@@ -17,17 +21,19 @@
 using namespace physx;
 using namespace Physics;
 
+namespace
+{
 /// Physx simulation filter
 PxFilterFlags Simulationfilter(PxFilterObjectAttributes attributes0,
-    PxFilterData                filterData0,
-    PxFilterObjectAttributes    attributes1,
-    PxFilterData                filterData1,
-    PxPairFlags&                pairFlags,
-    const void*                 constantBlock,
-    PxU32                       constantBlockSize)
+                               PxFilterData                filterData0,
+                               PxFilterObjectAttributes    attributes1,
+                               PxFilterData                filterData1,
+                               PxPairFlags& pairFlags,
+                               const void* constantBlock,
+                               PxU32                       constantBlockSize)
 {
     PxFilterFlags filterFlags = PxDefaultSimulationFilterShader(attributes0,
-        filterData0, attributes1, filterData1, pairFlags, constantBlock, constantBlockSize);
+                                                                filterData0, attributes1, filterData1, pairFlags, constantBlock, constantBlockSize);
     if (pairFlags & PxPairFlag::eSOLVE_CONTACT)
     {
         if (filterData0.word1 & CollisionFeedbackFull || filterData1.word1 & CollisionFeedbackFull)
@@ -38,9 +44,10 @@ PxFilterFlags Simulationfilter(PxFilterObjectAttributes attributes0,
         {
             pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND | PxPairFlag::eDETECT_DISCRETE_CONTACT | PxPairFlag::eNOTIFY_CONTACT_POINTS;
         }
-    }    
+    }
     return filterFlags;
 }
+};
 
 namespace Physics
 {

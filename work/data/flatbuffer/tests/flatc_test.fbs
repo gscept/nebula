@@ -4,8 +4,11 @@ namespace Test;
 enum Color:byte { Red = 0, Green, Blue = 2 }
 
 table Item {
-  pos:flat.Vec4 (native_inline);
+  pos:Flat.Vec4 (native_inline);
   name:string;
 }
 
 root_type Item;
+
+file_identifier "TSTF";
+file_extension "tstf";
