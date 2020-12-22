@@ -223,21 +223,27 @@ psMultilayered(
 {
 	vec4 blend = Color;
 
+	float sum = blend.r + blend.g + blend.b;
+	float remainSum = 1.0f - sum;
+	
 	vec4 diffColor1 = sample2D(AlbedoMap, Basic2DSampler, UV);
 	vec4 diffColor2 = sample2D(AlbedoMap2, Basic2DSampler, UV);
 	vec4 diffColor3 = sample2D(AlbedoMap3, Basic2DSampler, UV);
 	vec4 diffColor = (diffColor1 * blend.r + diffColor2 * blend.g + diffColor3 * blend.b) * MatAlbedoIntensity;
+	diffColor += diffColor2 * remainSum;
 			
 	vec4 matColor1 = sample2D(ParameterMap, Basic2DSampler, UV);
 	vec4 matColor2 = sample2D(ParameterMap2, Basic2DSampler, UV);
 	vec4 matColor3 = sample2D(ParameterMap3, Basic2DSampler, UV);	
 	vec4 matColor = (matColor1 * blend.r + matColor2 * blend.g + matColor3 * blend.b);
-	
+	matColor += vec4(0,1,1,0) * remainSum;
+
 	vec4 normals1 = sample2D(NormalMap, Basic2DSampler, UV);
 	vec4 normals2 = sample2D(NormalMap2, Basic2DSampler, UV);
 	vec4 normals3 = sample2D(NormalMap3, Basic2DSampler, UV);
 	vec4 normals = normals1 * blend.r + normals2 * blend.g + normals3 * blend.b;
 	vec3 bumpNormal = normalize(calcBump(Tangent, Binormal, Normal, normals));
+	bumpNormal += vec3(0,1,0) * remainSum;
 
 	//mat2x3 env = calcEnv(specColor, bumpNormal, WorldViewVec, roughness);
 

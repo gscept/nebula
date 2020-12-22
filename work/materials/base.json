@@ -308,17 +308,17 @@
           {
             "batch": "SpotLightShadow",
             "shader": "shadow",
-            "variation": "Alpha|Spot"
+            "variation": "Spot|Alpha"
           },
           {
             "batch": "PointLightShadow",
             "shader": "shadow",
-            "variation": "Alpha|Point"
+            "variation": "Point|Alpha"
           },
           {
             "batch": "GlobalShadow",
             "shader": "shadow",
-            "variation": "AlphaTest|Global"
+            "variation": "Global|Alpha"
           },
           {
             "batch": "FlatGeometryLit",

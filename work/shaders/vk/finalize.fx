@@ -149,7 +149,7 @@ psMain(in vec2 UV,
 	float fogIntensity = Fog(length(viewVec)); 
 	
 	vec4 c = DepthOfField(depth, UV);
-	//c = vec4(lerp(fogColor, c.rgb, fogIntensity), c.a);
+	c = vec4(lerp(fogColor, c.rgb, fogIntensity), c.a);
 	
 	// Get the calculated average luminance 
 	float fLumAvg = sample2DLod(LuminanceTexture, UpscaleSampler, vec2(0.5f, 0.5f), 0).r;
