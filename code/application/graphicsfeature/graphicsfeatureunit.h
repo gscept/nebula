@@ -55,6 +55,8 @@ public:
     using UIRenderFunc = std::function<void()>;
     /// add a custom UI render function
     void AddRenderUICallback(UIRenderFunc func);
+    
+    Graphics::GraphicsEntityId globalLight;
 
 private:
     IO::URI defaultFrameScript;
@@ -65,7 +67,6 @@ private:
     Ptr<Input::InputServer> inputServer;
     CoreGraphics::WindowId wnd;
     //FIXME
-    Graphics::GraphicsEntityId globalLight;
 
     Util::Array<UIRenderFunc> uiCallbacks;
 
