@@ -1,4 +1,7 @@
 ---
+### Disable formatting for all languages except those specified
+DisableFormat: true
+---
 Language: Cpp
 ColumnLimit: 0
 UseTab: Never
