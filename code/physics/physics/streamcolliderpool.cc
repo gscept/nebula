@@ -1,3 +1,7 @@
+//------------------------------------------------------------------------------
+//  streamcolliderpool.cc
+//  (C) 2020 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "physics/streamcolliderpool.h"
 #include "physics/physxstate.h"
@@ -78,6 +82,9 @@ StreamColliderPool::GetGeometry(ColliderId id)
     return info.geometry;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 static physx::PxGeometryHolder
 CreateMeshFromResource(MeshTopologyType type, Util::StringAtom resource, int primGroup)
 {
@@ -143,6 +150,7 @@ CreateMeshFromResource(MeshTopologyType type, Util::StringAtom resource, int pri
     }
     return holder;
 }
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -241,4 +249,5 @@ StreamColliderPool::Unload(const Resources::ResourceId id)
 
 	this->states[id.poolId] = Resources::Resource::State::Unloaded;
 }
-}
+
+} // namespace Physics
