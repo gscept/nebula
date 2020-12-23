@@ -24,6 +24,8 @@ fips_files(
             physxstate.cc
             physxstate.h
             )
+nebula_flatc(SYSTEM physics/collider.fbs physics/actor.fbs physics/material.fbs)
+fips_deps(nflatbuffer)
 nebula_end_module()
 target_link_libraries(physics PxLibs) 
 target_include_directories(physics PUBLIC ${CODE_ROOT}/physics)

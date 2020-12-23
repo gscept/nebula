@@ -14,6 +14,8 @@
 #include "physics/streamcolliderpool.h"
 #include "resources/resourceserver.h"
 #include "io/assignregistry.h"
+#include "io/ioserver.h"
+#include "nflatbuffer/flatbufferinterface.h"
 
 #define PHYSX_MEMORY_ALLOCATION_DEBUG false
 #define PHYSX_THREADS 2
@@ -36,11 +38,11 @@ PxFilterFlags Simulationfilter(PxFilterObjectAttributes attributes0,
                                                                 filterData0, attributes1, filterData1, pairFlags, constantBlock, constantBlockSize);
     if (pairFlags & PxPairFlag::eSOLVE_CONTACT)
     {
-        if (filterData0.word1 & CollisionFeedbackFull || filterData1.word1 & CollisionFeedbackFull)
+        if (filterData0.word1 & CollisionFeedback_Full || filterData1.word1 & CollisionFeedback_Full)
         {
             pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND | PxPairFlag::eNOTIFY_TOUCH_PERSISTS | PxPairFlag::eNOTIFY_TOUCH_LOST | PxPairFlag::eDETECT_DISCRETE_CONTACT | PxPairFlag::eNOTIFY_CONTACT_POINTS;
         }
-        else if (filterData0.word1 & CollisionSingle || filterData1.word1 & CollisionSingle)
+        else if (filterData0.word1 & CollisionFeedback_Single || filterData1.word1 & CollisionFeedback_Single)
         {
             pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND | PxPairFlag::eDETECT_DISCRETE_CONTACT | PxPairFlag::eNOTIFY_CONTACT_POINTS;
         }
@@ -52,19 +54,21 @@ PxFilterFlags Simulationfilter(PxFilterObjectAttributes attributes0,
 namespace Physics
 {
 
-//------------------------------------------------------------------------------
+void LoadMaterialTable();
+    //------------------------------------------------------------------------------
 /**
 */
 void 
 Setup()
 {
     state.Setup();
-    Resources::ResourceServer::Instance()->RegisterStreamPool("np", Physics::StreamActorPool::RTTI);
-    Resources::ResourceServer::Instance()->RegisterStreamPool("npc", Physics::StreamColliderPool::RTTI);    
+    Resources::ResourceServer::Instance()->RegisterStreamPool("actor", Physics::StreamActorPool::RTTI);
+    Resources::ResourceServer::Instance()->RegisterStreamPool("collider", Physics::StreamColliderPool::RTTI);
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("phys","export:physics"));
 
     Physics::actorPool = Resources::GetStreamPool<Physics::StreamActorPool>();
     Physics::colliderPool = Resources::GetStreamPool<Physics::StreamColliderPool>();
+    LoadMaterialTable();
 }
 
 //------------------------------------------------------------------------------
@@ -129,6 +133,25 @@ void RenderDebug()
 //------------------------------------------------------------------------------
 /**
 */
+void
+LoadMaterialTable()
+{
+    const IO::URI materialtable("phys:physicsmaterials.pmat");
+    if(IO::IoServer::Instance()->FileExists(materialtable))
+    {
+        Util::String materialsString = IO::IoServer::Instance()->ReadFile(materialtable);
+        Physics::MaterialsT materials;
+        Flat::FlatbufferInterface::DeserializeFlatbuffer<Physics::Materials>(materials, (uint8_t*)materialsString.AsCharPtr());
+        for (auto const& material : materials.entries)
+        {
+            CreateMaterial(material->name, material->staticFriction, material->dynamicFriction, material->restitution, material->density);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Physics::Material&
 GetMaterial(IndexT idx)
 {
@@ -158,10 +181,10 @@ SetOnWakeCallback(Util::Delegate<void(ActorId* id, SizeT num)> const& callback)
 /**
 */
 IndexT 
-CreateMaterial(Util::StringAtom name, float staticFriction, float dynamicFriction, float restition, float density)
+CreateMaterial(Util::StringAtom name, float staticFriction, float dynamicFriction, float restitution, float density)
 {
     n_assert(state.physics);
-    PxMaterial* newMat = state.physics->createMaterial(staticFriction, dynamicFriction, restition);
+    PxMaterial* newMat = state.physics->createMaterial(staticFriction, dynamicFriction, restitution);
     state.materials.Append(Material());
     IndexT newIdx = state.materials.Size() - 1;
     Material & mat = state.materials[newIdx];

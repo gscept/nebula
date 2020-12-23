@@ -1,0 +1,48 @@
+//------------------------------------------------------------------------------
+//
+//    Physics types for flatbuffer
+//
+//    (C) 2020 Individual contributors, see AUTHORS file
+
+include "foundation/math.fbs";
+include "physics/material.fbs";
+
+namespace PhysicsResource;
+
+table MeshCollider
+{
+    primGroup : ushort;
+    type : Physics.MeshTopology;
+    file : string;
+}
+
+table SphereCollider
+{
+    radius : float;
+}
+
+table CapsuleCollider
+{
+    radius : float;
+    halfheight: float;
+}
+
+struct BoxCollider
+{
+     extents : Flat.Vec3 (native_inline);
+}
+
+union ColliderData
+{
+    BoxCollider,SphereCollider, CapsuleCollider, MeshCollider
+}
+
+table Collider
+{
+    type : Physics.ColliderType;
+    data : PhysicsResource.ColliderData;
+}
+
+root_type Collider;
+file_identifier "COLL";
+file_extension "collider";

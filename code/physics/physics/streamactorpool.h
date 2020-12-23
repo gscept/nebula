@@ -10,7 +10,7 @@
 #include "resources/resourcestreampool.h"
 #include "util/stack.h"
 #include "physics/actorcontext.h"
-#include "physics/shapes.h"
+#include "flat/physics/collider.h"
 #include "physicsinterface.h"
 
 namespace Physics
@@ -26,11 +26,11 @@ enum PhysicsIdType
 struct ActorInfo
 {
     Util::Array<physx::PxShape*> shapes;
+    Util::Array<float> densities;
     Util::Array<ColliderId> colliders;
     SizeT instanceCount;
-    CollisionFeedbackFlag feedbackFlag;
+    CollisionFeedback feedbackFlag;
     uint16_t collisionGroup;
-    float density;    
 };
 
     

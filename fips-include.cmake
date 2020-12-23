@@ -121,7 +121,7 @@ endif()
 
 option(N_NEBULA_DEBUG_SHADERS "Compile shaders with debug flag" OFF)
 
-macro(nebula_flatc root files)
+macro(nebula_flatc root)
     string(COMPARE EQUAL ${root} "SYSTEM" use_system)
     if(${use_system})
         set(rootdir ${NROOT})
@@ -130,7 +130,7 @@ macro(nebula_flatc root files)
     endif()
     set_nebula_export_dir()
 
-    foreach(fb ${files})
+    foreach(fb ${ARGN})
         set(target_has_flatc 1)
         set(datadir ${rootdir}/work/data/flatbuffer/)
         get_filename_component(filename ${fb} NAME)
@@ -142,7 +142,7 @@ macro(nebula_flatc root files)
         set(output ${abs_output_folder}/${out_header})
 
         add_custom_command(OUTPUT ${output}
-                PRE_BUILD COMMAND ${FLATC} -c --gen-object-api --gen-compare --scoped-enums --gen-mutable --cpp-str-flex-ctor --cpp-str-type Util::String -I "${datadir}" -I "${NROOT}/work/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${fbs}"
+                PRE_BUILD COMMAND ${FLATC} -c --gen-object-api --gen-compare  --gen-mutable --include-prefix flat --keep-prefix --cpp-str-flex-ctor --cpp-str-type Util::String -I "${datadir}" -I "${NROOT}/work/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${fbs}"
                 PRE_BUILD COMMAND ${FLATC} -b -o "${EXPORT_DIR}/data/flatbuffer/${foldername}/" -I "${datadir}" -I "${NROOT}/work/data/flatbuffer/" --schema ${fbs}
                 MAIN_DEPENDENCY "${fbs}"
                 DEPENDS ${FLATC}

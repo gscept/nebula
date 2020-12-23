@@ -163,7 +163,7 @@ void OpenScene()
                                     Visibility::ObservableContext::Setup(ground, Visibility::VisibilityEntityType::Model);
                                 });
 
-    groundResource = Resources::CreateResource("phys:test/groundplane.np", "Viewer", nullptr, nullptr, true);
+    groundResource = Resources::CreateResource("phys:test/groundplane.actor", "Viewer", nullptr, nullptr, true);
     groundActor = Physics::CreateActorInstance(groundResource, Math::mat4(), false);
 
 
@@ -177,7 +177,7 @@ void OpenScene()
                                 });
     Models::ModelContext::SetTransform(tower, Math::translation(Math::vec3(2, 0, 0)));
 
-    towerResource = Resources::CreateResource("phys:test/tower.np", "Viewer", nullptr, nullptr, true);
+    towerResource = Resources::CreateResource("phys:test/tower.actor", "Viewer", nullptr, nullptr, true);
 
     gfxServer = GraphicsServer::Instance();
     camera = gfxServer->GetCurrentView()->GetCamera();

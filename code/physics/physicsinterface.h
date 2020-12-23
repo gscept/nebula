@@ -26,20 +26,11 @@ namespace Physics
 RESOURCE_ID_TYPE(ActorResourceId);
 RESOURCE_ID_TYPE(ColliderId);
 
-enum CollisionFeedbackFlag
-{
-    /// callbacks for begin, persist, and end collision
-    CollisionFeedbackFull   = 1,
-    /// only on first contact
-    CollisionSingle         = 2
-};
-
 struct Material
 {
     physx::PxMaterial * material;
     Util::StringAtom name;
     uint64_t serialId;
-    // for actors created via streamactorpool this is ignored as it can have multiple materials in it
     float density;
 };
 

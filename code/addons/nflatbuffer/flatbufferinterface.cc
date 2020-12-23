@@ -94,7 +94,7 @@ bool FlatbufferInterface::HasSchema(Util::StringAtom ident)
     return state.parsers.Contains(ident);
 }
 
-Util::String FlatbufferInterface::BufferToText(uint8_t* buf, Util::StringAtom ident)
+Util::String FlatbufferInterface::BufferToText(const uint8_t* buf, Util::StringAtom ident)
 {
     std::string output;
     flatbuffers::GenerateText(*state.parsers[ident], buf, &output);
