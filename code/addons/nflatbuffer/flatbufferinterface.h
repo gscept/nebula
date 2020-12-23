@@ -11,6 +11,7 @@
 #include "flatbuffers/flatbuffers.h"
 #include "nflatbuffer/nebula_flat.h"
 #include "util/blob.h"
+#include "io/ioserver.h"
 
 #define SerializeFlatbufferText(TYPE, ITEM) Flat::FlatbufferInterface::SerializeHelper<TYPE>(ITEM, TYPE##Identifier())
 #define SerializeFlatbufferTextDirect(TYPE, BUFFER) Flat::FlatbufferInterface::BufferToText(BUFFER, TYPE##Identifier())
