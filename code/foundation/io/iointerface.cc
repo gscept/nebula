@@ -42,9 +42,6 @@ IoInterface::Open()
     Ptr<BlockingHandlerThread> handlerThread = BlockingHandlerThread::Create();
     handlerThread->SetName("IoInterface Thread");
     handlerThread->SetThreadAffinity(System::Cpu::Core3);
-#if __WII_
-    handlerThread->SetPriority(Thread::NormalBoost);
-#endif        
     handlerThread->AttachHandler(IoInterfaceHandler::Create());
     this->SetHandlerThread(handlerThread.cast<HandlerThreadBase>());
 

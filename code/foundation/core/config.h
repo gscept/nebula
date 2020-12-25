@@ -55,12 +55,12 @@ static const int JobMaxSliceSize = 0xFFFF;
 #endif
 #define NEBULA_MEMORY_ADVANCED_DEBUGGING (0)
 #else
-#define NEBULA_MEMORY_STATS (0) // not useable on xbox360 in release mode cause of HeapWalk
+#define NEBULA_MEMORY_STATS (0) 
 #define NEBULA_MEMORY_ADVANCED_DEBUGGING (0)
 #endif
 
 // enable/disable memory pool allocation for refcounted object
-// FIXME -> memory pool is disabled for all platforms, cause it causes crashes (reproducable on xbox360)
+// FIXME -> memory pool is disabled for all platforms, cause it causes crashes
 #if (__MAYA__ || __WIN32__ )
 #define NEBULA_OBJECTS_USE_MEMORYPOOL (0)
 #else

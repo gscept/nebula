@@ -276,10 +276,7 @@ Win32Socket::GetBroadcast()
 inline void
 Win32Socket::SetKeepAlive(bool b)
 {
-    // not supported on Xbox360
-    #if __WIN32__   
     this->SetBoolOption(SO_KEEPALIVE, b);
-    #endif
 }
 
 //------------------------------------------------------------------------------
@@ -288,12 +285,7 @@ Win32Socket::SetKeepAlive(bool b)
 inline bool
 Win32Socket::GetKeepAlive()
 {
-    #if __WIN32__
     return this->GetBoolOption(SO_KEEPALIVE);
-    #else
-    // not supported on Xbox360
-    return false;
-    #endif
 }
 
 //------------------------------------------------------------------------------
@@ -374,12 +366,7 @@ Win32Socket::GetSendBufSize()
 inline SizeT
 Win32Socket::GetMaxMsgSize()
 {
-    #if __WIN32__
-        return 8192;
-    #else
-        // see Xbox360 API documentation
-        return 1264;
-    #endif
+    return 8192;
 }
 
 //------------------------------------------------------------------------------
@@ -391,5 +378,5 @@ Win32Socket::GetBlocking() const
     return this->isBlocking;
 }
 
-} // namespace Xbox360
+} // namespace Win32
 //------------------------------------------------------------------------------

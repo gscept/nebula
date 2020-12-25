@@ -95,23 +95,18 @@ Win32Thread::Start()
     
     if (this->affinityMask != 0)
         SetThreadAffinityMask(this->threadHandle, this->affinityMask);
-    #if __WIN32__
-        // select a good processor for the thread
-        /*
-        SystemInfo systemInfo;
-        SizeT numCpuCores = systemInfo.GetNumCpuCores();
-        DWORD threadIdealProc = 0;
-        if (Cpu::InvalidCoreId != this->coreId)
-        {
-            threadIdealProc = this->coreId % systemInfo.GetNumCpuCores();
-        }
-        SetThreadIdealProcessor(this->threadHandle, threadIdealProc);
-        */
-    #elif __XBOX360__
-        // on the 360 we need to define the hardware thread this thread should run on
-        n_assert(this->coreId != Cpu::InvalidCoreId)
-        Xbox360::Xbox360Threading::SetThreadProcessor(this->threadHandle, this->coreId);
-    #endif
+
+    // select a good processor for the thread
+    /*
+    SystemInfo systemInfo;
+    SizeT numCpuCores = systemInfo.GetNumCpuCores();
+    DWORD threadIdealProc = 0;
+    if (Cpu::InvalidCoreId != this->coreId)
+    {
+        threadIdealProc = this->coreId % systemInfo.GetNumCpuCores();
+    }
+    SetThreadIdealProcessor(this->threadHandle, threadIdealProc);
+    */
 
     // resume thread (since it was actived in suspended state)
     ResumeThread(this->threadHandle);

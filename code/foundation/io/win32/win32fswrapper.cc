@@ -20,21 +20,16 @@ using namespace IO;
 
 //------------------------------------------------------------------------------
 /**
-    Open a file using the Xbox360 function CreateFile(). Returns a handle
+    Open a file using the function CreateFile(). Returns a handle
     to the file which must be passed to the other Win32FSWrapper file methods.
     If opening the file fails, the function will return 0. The filename
-    must be a native Xbox360 path (no assigns, etc...).
+    must be a native win32 path (no assigns, etc...).
 */
 Win32FSWrapper::Handle
 Win32FSWrapper::OpenFile(const String& path, Stream::AccessMode accessMode, Stream::AccessPattern accessPattern, DWORD flagsAndAttributes)
 {
-    #if __XBOX360__
-        String xbox360Path = path;
-        xbox360Path.SubstituteChar('/', '\\');
-    #else
-        ushort widePath[1024];
-        Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
-    #endif
+    ushort widePath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
 
     DWORD access = 0;
     DWORD disposition = 0;
@@ -267,49 +262,38 @@ Win32FSWrapper::GetFileSize(Handle handle)
 
 //------------------------------------------------------------------------------
 /**
-    Set the read-only status of a file. This method does nothing on the
-    Xbox360.
+    Set the read-only status of a file. 
 */
 void
 Win32FSWrapper::SetReadOnly(const String& path, bool readOnly)
 {
-    #if __WIN32__
-        n_assert(path.IsValid());
-        ushort widePath[1024];
-        Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
-        DWORD fileAttrs = GetFileAttributesW((LPCWSTR)widePath);
-        if (readOnly)
-        {
-            fileAttrs |= FILE_ATTRIBUTE_READONLY;
-        }
-        else
-        {
-            fileAttrs &= ~FILE_ATTRIBUTE_READONLY;
-        }
-        SetFileAttributes(path.AsCharPtr(), fileAttrs);
-    #else
-        // NOT AVAILABLE ON XBOX360
-    #endif
+    n_assert(path.IsValid());
+    ushort widePath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
+    DWORD fileAttrs = GetFileAttributesW((LPCWSTR)widePath);
+    if (readOnly)
+    {
+        fileAttrs |= FILE_ATTRIBUTE_READONLY;
+    }
+    else
+    {
+        fileAttrs &= ~FILE_ATTRIBUTE_READONLY;
+    }
+    SetFileAttributes(path.AsCharPtr(), fileAttrs);
 }
 
 //------------------------------------------------------------------------------
 /**
-    Get the read-only status of a file. This method always returns true
-    on the Xbox360.
+    Get the read-only status of a file.
 */
 bool
 Win32FSWrapper::IsReadOnly(const String& path)
 {
-    #if __WIN32__
-        n_assert(path.IsValid());
-        ushort widePath[1024];
-        Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
-        DWORD fileAttrs = GetFileAttributesW((LPCWSTR)widePath);
-        return (fileAttrs & FILE_ATTRIBUTE_READONLY);
-    #else
-        // always read-only on the 360
-        return true;
-    #endif
+    n_assert(path.IsValid());
+    ushort widePath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
+    DWORD fileAttrs = GetFileAttributesW((LPCWSTR)widePath);
+    return (fileAttrs & FILE_ATTRIBUTE_READONLY);
 }
 
 //------------------------------------------------------------------------------
@@ -342,15 +326,9 @@ bool
 Win32FSWrapper::DeleteFile(const String& path)
 {
     n_assert(path.IsValid());
-    #if __XBOX360__
-        String nativePath = path;
-        nativePath.SubstituteChar('/', '\\');
-        return (0 != ::DeleteFileA(nativePath.AsCharPtr()));
-    #else
-        ushort widePath[1024];
-        Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
-        return (0 != ::DeleteFileW((LPCWSTR)widePath));
-    #endif
+    ushort widePath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
+    return (0 != ::DeleteFileW((LPCWSTR)widePath));
 }
 
 //------------------------------------------------------------------------------
@@ -374,15 +352,10 @@ bool
 Win32FSWrapper::DeleteDirectory(const String& path)
 {
     n_assert(path.IsValid());
-    #if __XBOX360__
-        String nativePath = path;
-        nativePath.SubstituteChar('/', '\\');
-        return (0 != ::RemoveDirectoryA(nativePath.AsCharPtr()));
-    #else
-        ushort widePath[1024];
-        Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
-        return (0 != ::RemoveDirectoryW((LPCWSTR)widePath));
-    #endif
+
+    ushort widePath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
+    return (0 != ::RemoveDirectoryW((LPCWSTR)widePath));
 }
 
 //------------------------------------------------------------------------------
@@ -393,15 +366,11 @@ bool
 Win32FSWrapper::FileExists(const String& path)
 {
     n_assert(path.IsValid());
-    #if __XBOX360__
-        String nativePath = path;
-        nativePath.SubstituteChar('/', '\\');
-        DWORD fileAttrs = GetFileAttributesA(nativePath.AsCharPtr());
-    #else
-        ushort widePath[1024];
-        Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
-        DWORD fileAttrs = GetFileAttributesW((LPCWSTR)widePath);
-    #endif
+
+    ushort widePath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
+    DWORD fileAttrs = GetFileAttributesW((LPCWSTR)widePath);
+
     if ((-1 != fileAttrs) && (0 == (FILE_ATTRIBUTE_DIRECTORY & fileAttrs)))
     {
         return true;
@@ -420,15 +389,11 @@ bool
 Win32FSWrapper::DirectoryExists(const String& path)
 {
     n_assert(path.IsValid());
-    #if __XBOX360__
-        String nativePath = path;
-        nativePath.SubstituteChar('/', '\\');
-        DWORD fileAttrs = GetFileAttributesA(nativePath.AsCharPtr());
-    #else
-        ushort widePath[1024];
-        Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
-        DWORD fileAttrs = GetFileAttributesW((LPCWSTR)widePath);
-    #endif
+    
+    ushort widePath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
+    DWORD fileAttrs = GetFileAttributesW((LPCWSTR)widePath);
+
     if ((-1 != fileAttrs) && (0 != (FILE_ATTRIBUTE_DIRECTORY & fileAttrs)))
     {
         return true;
@@ -490,16 +455,10 @@ bool
 Win32FSWrapper::CreateDirectory(const String& path)
 {
     n_assert(path.IsValid());
-    #if __XBOX360__
-        String nativePath = path;
-        nativePath.SubstituteChar('/', '\\');
-        return (0 != ::CreateDirectoryA(nativePath.AsCharPtr(), NULL));
-    #else
-        const String& nativePath = path;
-        ushort widePath[1024];
-        Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
-        return (0 != ::CreateDirectoryW((LPCWSTR)widePath, NULL));
-    #endif
+    const String& nativePath = path;
+    ushort widePath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(path, widePath, sizeof(widePath));
+    return (0 != ::CreateDirectoryW((LPCWSTR)widePath, NULL));
 }
 
 //------------------------------------------------------------------------------
@@ -529,46 +488,25 @@ Win32FSWrapper::ListFiles(const String& dirPath, const String& pattern)
     n_assert(pattern.IsValid());
     
     String pathWithPattern = dirPath + "/" + pattern;
-    #if __XBOX360__
-        pathWithPattern.SubstituteChar('/', '\\');
-    #else
-        ushort widePath[1024];
-        Win32::Win32StringConverter::UTF8ToWide(pathWithPattern, widePath, sizeof(widePath));
-    #endif   
+    ushort widePath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(pathWithPattern, widePath, sizeof(widePath));
     
     Array<String> result;
     HANDLE hFind;
-    #if __XBOX360__
-        WIN32_FIND_DATA findFileData;
-        hFind = FindFirstFileA(pathWithPattern.AsCharPtr(), &findFileData);
-        if (INVALID_HANDLE_VALUE != hFind) 
+    WIN32_FIND_DATAW findFileData;
+    hFind = FindFirstFileW((LPCWSTR)widePath, &findFileData);  
+    if (INVALID_HANDLE_VALUE != hFind) 
+    {
+        do
         {
-            do
+            if (0 == (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
             {
-                if (0 == (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-                {
-                    result.Append(findFileData.cFileName);
-                }
+                result.Append(Win32::Win32StringConverter::WideToUTF8((ushort*)findFileData.cFileName));
             }
-            while (FindNextFile(hFind, &findFileData) != 0);
-            FindClose(hFind);
         }
-    #else
-        WIN32_FIND_DATAW findFileData;
-        hFind = FindFirstFileW((LPCWSTR)widePath, &findFileData);  
-        if (INVALID_HANDLE_VALUE != hFind) 
-        {
-            do
-            {
-                if (0 == (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
-                {
-                    result.Append(Win32::Win32StringConverter::WideToUTF8((ushort*)findFileData.cFileName));
-                }
-            }
-            while (FindNextFileW(hFind, &findFileData) != 0);
-            FindClose(hFind);
-        }
-    #endif
+        while (FindNextFileW(hFind, &findFileData) != 0);
+        FindClose(hFind);
+    }
     return result;
 }
 
@@ -584,123 +522,84 @@ Win32FSWrapper::ListDirectories(const String& dirPath, const String& pattern)
     n_assert(pattern.IsValid());
     
     String pathWithPattern = dirPath + "/" + pattern;
-    #if __XBOX360__
-        pathWithPattern.SubstituteChar('/', '\\');
-    #else
-        ushort widePath[1024];
-        Win32::Win32StringConverter::UTF8ToWide(pathWithPattern, widePath, sizeof(widePath));
-    #endif   
+    ushort widePath[1024];
+    Win32::Win32StringConverter::UTF8ToWide(pathWithPattern, widePath, sizeof(widePath));
 
     Array<String> result;
     HANDLE hFind;
-    #if __XBOX360__
-        WIN32_FIND_DATA findFileData;
-        hFind = FindFirstFile(pathWithPattern.AsCharPtr(), &findFileData);
-        if (INVALID_HANDLE_VALUE != hFind) 
+    
+    WIN32_FIND_DATAW findFileData;
+    hFind = FindFirstFileW((LPCWSTR)widePath, &findFileData);  
+    if (INVALID_HANDLE_VALUE != hFind) 
+    {
+        do
         {
-            do
+            String fileName = Win32::Win32StringConverter::WideToUTF8((ushort*)findFileData.cFileName);
+            if ((0 != (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) &&
+                (fileName != "..") && (fileName != "."))
             {
-                String fileName = findFileData.cFileName;
-                if ((0 != (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) &&
-                    (fileName != "..") && (fileName != "."))
-                {
-                    result.Append(findFileData.cFileName);
-                }
+                result.Append(fileName);
             }
-            while (FindNextFile(hFind, &findFileData) != 0);
-            FindClose(hFind);
         }
-    #else
-        WIN32_FIND_DATAW findFileData;
-        hFind = FindFirstFileW((LPCWSTR)widePath, &findFileData);  
-        if (INVALID_HANDLE_VALUE != hFind) 
-        {
-            do
-            {
-                String fileName = Win32::Win32StringConverter::WideToUTF8((ushort*)findFileData.cFileName);
-                if ((0 != (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) &&
-                    (fileName != "..") && (fileName != "."))
-                {
-                    result.Append(fileName);
-                }
-            }
-            while (FindNextFileW(hFind, &findFileData) != 0);
-            FindClose(hFind);
-        }
-    #endif
+        while (FindNextFileW(hFind, &findFileData) != 0);
+        FindClose(hFind);
+    }
     return result;
 }
 
 //------------------------------------------------------------------------------
 /**
-    NOTE: The user: standard assign is not supported on the 360.
 */
 String
 Win32FSWrapper::GetUserDirectory()
 {
-    #if __WIN32__
-        ushort wideBuffer[NEBULA_MAXPATH] = { 0 };
-        HRESULT hr = SHGetFolderPathW(NULL, 
-                                      CSIDL_PERSONAL | CSIDL_FLAG_CREATE, 
-                                      NULL, 
-                                      0,
-                                      (LPWSTR)wideBuffer);
-        n_assert(SUCCEEDED(hr));
-        String result = Win32::Win32StringConverter::WideToUTF8(wideBuffer);
-        result.ConvertBackslashes();
-        return String("file:///") + result;
-    #else
-        // there is no user: assign on the 360
-        return "";
-    #endif
+    ushort wideBuffer[NEBULA_MAXPATH] = { 0 };
+    HRESULT hr = SHGetFolderPathW(NULL, 
+                                    CSIDL_PERSONAL | CSIDL_FLAG_CREATE, 
+                                    NULL, 
+                                    0,
+                                    (LPWSTR)wideBuffer);
+    n_assert(SUCCEEDED(hr));
+    String result = Win32::Win32StringConverter::WideToUTF8(wideBuffer);
+    result.ConvertBackslashes();
+    return String("file:///") + result;
 }
 
 //------------------------------------------------------------------------------
 /**
-    NOTE: The appdata: standard assign is not supported on the 360.
 */
 String
 Win32FSWrapper::GetAppDataDirectory()
 {    
-    #if __WIN32__
-        ushort wideBuffer[NEBULA_MAXPATH] = { 0 };
-        HRESULT hr = SHGetFolderPathW(NULL, 
-                                      CSIDL_APPDATA | CSIDL_FLAG_CREATE, 
-                                      NULL, 
-                                      0,
-                                      (LPWSTR)wideBuffer);
-        n_assert(SUCCEEDED(hr));
-        String result = Win32::Win32StringConverter::WideToUTF8(wideBuffer);
-        result.ConvertBackslashes();
-        return String("file:///") + result;
-    #else
-        // there is no user: assign on the 360
-        return "";
-    #endif
+    ushort wideBuffer[NEBULA_MAXPATH] = { 0 };
+    HRESULT hr = SHGetFolderPathW(NULL, 
+                                    CSIDL_APPDATA | CSIDL_FLAG_CREATE, 
+                                    NULL, 
+                                    0,
+                                    (LPWSTR)wideBuffer);
+    n_assert(SUCCEEDED(hr));
+    String result = Win32::Win32StringConverter::WideToUTF8(wideBuffer);
+    result.ConvertBackslashes();
+    return String("file:///") + result;
 }
 
 //------------------------------------------------------------------------------
 /**
-    NOTE: The programs: standard assign is not supported on the 360.
 */
 String 
 Win32FSWrapper::GetProgramsDirectory()
 {
-    #if __WIN32__
-        ushort wideBuffer[NEBULA_MAXPATH] = { 0 };
-        HRESULT hr = SHGetFolderPathW(NULL,
-                                      CSIDL_PROGRAM_FILES,
-                                      NULL,
-                                      0,
-                                      (LPWSTR)wideBuffer);
-        n_assert(SUCCEEDED(hr));
-        String result = Win32::Win32StringConverter::WideToUTF8(wideBuffer);
-        result.ConvertBackslashes();
-        return String("file:///") + result;
-    #else
-        // there is no programs: assign on the 360
-        return "";
-    #endif
+
+    ushort wideBuffer[NEBULA_MAXPATH] = { 0 };
+    HRESULT hr = SHGetFolderPathW(NULL,
+                                    CSIDL_PROGRAM_FILES,
+                                    NULL,
+                                    0,
+                                    (LPWSTR)wideBuffer);
+    n_assert(SUCCEEDED(hr));
+    String result = Win32::Win32StringConverter::WideToUTF8(wideBuffer);
+    result.ConvertBackslashes();
+    return String("file:///") + result;
 }
 
 //------------------------------------------------------------------------------
@@ -718,23 +617,16 @@ Win32FSWrapper::GetCurrentDirectory()
 
 //------------------------------------------------------------------------------
 /**
-    NOTE: The temp standard assign is not supported on the 360 (only on
-    Devkits!)
 */
 String
 Win32FSWrapper::GetTempDirectory()
 {
-    #if __WIN32__
-        ushort wideBuffer[NEBULA_MAXPATH] = { 0 };
-        GetTempPathW(sizeof(wideBuffer) / 2, (LPWSTR)wideBuffer);
-        String result = Win32::Win32StringConverter::WideToUTF8(wideBuffer);
-        result.ConvertBackslashes();
-        result.TrimRight("/");
-        return String("file:///") + result;
-    #else
-        // @todo: CAREFUL, THIS ONLY EXISTS ON A XBOX360 DEVKIT!
-        return "file:///DEVKIT:";
-    #endif            
+    ushort wideBuffer[NEBULA_MAXPATH] = { 0 };
+    GetTempPathW(sizeof(wideBuffer) / 2, (LPWSTR)wideBuffer);
+    String result = Win32::Win32StringConverter::WideToUTF8(wideBuffer);
+    result.ConvertBackslashes();
+    result.TrimRight("/");
+    return String("file:///") + result;
 }
 
 //------------------------------------------------------------------------------
@@ -745,18 +637,14 @@ Win32FSWrapper::GetTempDirectory()
 String
 Win32FSWrapper::GetBinDirectory()
 {
-    #if __WIN32__
-        ushort wideBuffer[NEBULA_MAXPATH];
-        DWORD res = GetModuleFileNameW(NULL, (LPWSTR)wideBuffer, sizeof(wideBuffer) / 2);
-        n_assert(0 != res);
-        String result = Win32::Win32StringConverter::WideToUTF8(wideBuffer);
-        result.ConvertBackslashes();
-        result = result.ExtractDirName();
-        result.TrimRight("/");
-        return String("file:///") + result;
-    #else
-        return "file:///GAME:/";
-    #endif
+    ushort wideBuffer[NEBULA_MAXPATH];
+    DWORD res = GetModuleFileNameW(NULL, (LPWSTR)wideBuffer, sizeof(wideBuffer) / 2);
+    n_assert(0 != res);
+    String result = Win32::Win32StringConverter::WideToUTF8(wideBuffer);
+    result.ConvertBackslashes();
+    result = result.ExtractDirName();
+    result.TrimRight("/");
+    return String("file:///") + result;
 }
 
 //------------------------------------------------------------------------------
@@ -819,23 +707,16 @@ Win32FSWrapper::GetHomeDirectory()
 bool
 Win32FSWrapper::IsDeviceName(const Util::String& str)
 {
-    #if __WIN32__
-        if (str.Length() == 1)
+    if (str.Length() == 1)
+    {
+        uchar c = str[0];
+        if (((c >= 'A') && (c <= 'Z')) ||
+            ((c >= 'a') && (c <= 'z')))
         {
-            uchar c = str[0];
-            if (((c >= 'A') && (c <= 'Z')) ||
-                ((c >= 'a') && (c <= 'z')))
-            {
-                return true;
-            }
+            return true;
         }
-        return false;
-    #else
-        // on Xbox360:
-        if (str == "GAME") return true;
-        else if (str == "DEVKIT") return true;
-        else return false;
-    #endif
+    }
+    return false;
 }
 
 } // namespace IO

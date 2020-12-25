@@ -3,7 +3,7 @@
 /**
     @file memory/win32/win32memory.h
     
-    Memory subsystem features which are identical on Win32 and Xbox360.
+    Memory subsystem features for win32
     
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
@@ -12,10 +12,8 @@
 #include "core/debug.h"
 #include "threading/interlocked.h"
 #include "memory/win32/win32memoryconfig.h"
-#if __WIN32__
 #include "memory/win32/winmemory.h"
 #include <new>
-#endif
 #pragma warning (disable : 4595)
 
 namespace Memory

@@ -19,14 +19,6 @@
 #include "bboxtest.h"
 #include "testbase/stackdebug.h"
 
-/*
-#if __PS3__
-#include <sys/process.h>
-// change stacksize from default 64kB to 96kB
-SYS_PROCESS_PARAM (1001, 0x18000) // (priority, stack size)
-#endif
-*/
-
 ImplementNebulaApplication();
 
 using namespace Core;

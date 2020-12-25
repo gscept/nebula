@@ -3,7 +3,6 @@
 //  (C) 2008 Radon Labs GmbH
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#if !__PS3__
 #include "delegatetest.h"
 #include "util/delegate.h"
 
@@ -67,6 +66,3 @@ DelegateTest::Run()
 }
 
 } // namespace Test
-#endif
-    
-    
