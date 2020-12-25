@@ -90,8 +90,11 @@ template<typename BaseT, typename ItemT>
 void
 FlatbufferInterface::DeserializeFlatbufferFile(ItemT& item, IO::URI const& file)
 {
-    Util::String contents = IO::IoServer::Instance()->ReadFile(file);
-    const BaseT* bItem = flatbuffers::GetRoot<BaseT>(contents.AsCharPtr());
-    bItem->UnPackTo(&item);
+    Util::String contents;
+    if (IO::IoServer::Instance()->ReadFile(file, contents))
+    {
+        const BaseT* bItem = flatbuffers::GetRoot<BaseT>(contents.AsCharPtr());
+        bItem->UnPackTo(&item);
+    }
 }
 }
