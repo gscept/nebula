@@ -108,12 +108,6 @@ GameApplication::Open()
         Console::Instance()->AttachHandler(logFileHandler.upcast<ConsoleHandler>());
 #endif
 
-#if __NEBULA_HTTP_FILESYSTEM__
-        // setup http subsystem
-        this->httpClientRegistry = Http::HttpClientRegistry::Create();
-        this->httpClientRegistry->Setup();
-#endif
-
 #if __NEBULA_HTTP__
         // setup http subsystem
         this->httpInterface = Http::HttpInterface::Create();
@@ -183,11 +177,6 @@ GameApplication::Close()
     this->httpServerProxy = nullptr;
     this->httpInterface->Close();
     this->httpInterface = nullptr;
-#endif
-
-#if __NEBULA_HTTP_FILESYSTEM__
-    this->httpClientRegistry->Discard();
-    this->httpClientRegistry = nullptr;
 #endif
 
     this->coreServer->Close();

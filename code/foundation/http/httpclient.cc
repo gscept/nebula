@@ -4,9 +4,6 @@
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-
-// HttpClient is not implemented on the Wii
-#if __NEBULA_HTTP_FILESYSTEM__
 #include "http/httpclient.h"
 #include "http/httprequestwriter.h"
 #include "http/httpresponsereader.h"
@@ -289,4 +286,3 @@ HttpClient::SendRequest(HttpMethod::Code requestMethod, const IO::URI& uri, cons
     return HttpStatus::ServiceUnavailable;
 }
 } // namespace Http
-#endif

@@ -162,11 +162,8 @@ SchemeRegistry::SetupStandardSchemes()
 {
     this->RegisterUriScheme("file", FileStream::RTTI);
     this->RegisterUriScheme("safefile", SafeFileStream::RTTI);
-
-#if __NEBULA_HTTP_FILESYSTEM__
     this->RegisterUriScheme("http", Http::HttpStream::RTTI);
     this->RegisterUriScheme("httpnz", Http::HttpNzStream::RTTI);
-#endif
 }
 
 } // namespace IO

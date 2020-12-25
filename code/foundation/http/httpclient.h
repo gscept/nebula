@@ -12,9 +12,6 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    
 #include "core/config.h"
-
-// HttpClient not implemented on the Wii
-#if __NEBULA_HTTP_FILESYSTEM__
 #include "core/refcounted.h"
 #include "net/tcpclient.h"
 #include "http/httpstatus.h"
@@ -75,4 +72,3 @@ HttpClient::GetUserAgent() const
 
 } // namespace Http
 //------------------------------------------------------------------------------
-#endif

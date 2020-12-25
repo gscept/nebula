@@ -23,7 +23,6 @@
 #include "resources/resourceserver.h"
 #include "http/httpinterface.h"
 #include "http/httpserverproxy.h"     
-#include "http/httpclientregistry.h"
 
 //------------------------------------------------------------------------------
 namespace App
@@ -70,10 +69,6 @@ protected:
 
     ushort defaultTcpPort;
 #endif
-
-#if __NEBULA_HTTP_FILESYSTEM__
-    Ptr<Http::HttpClientRegistry> httpClientRegistry;
-#endif      
 
     // game server
     Ptr<Game::GameServer> gameServer;

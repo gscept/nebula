@@ -25,6 +25,8 @@
 #include "util/stringatom.h"
 #include "io/assignregistry.h"
 #include "io/schemeregistry.h"
+#include "http/httpclientregistry.h"
+
 
 //------------------------------------------------------------------------------
 namespace IO
@@ -87,7 +89,7 @@ public:
     /// return the last write-time of a file
     FileTime GetFileWriteTime(const URI& path) const;
     /// read contents of file and return as string
-    Util::String ReadFile(const URI& path) const;
+    static bool ReadFile(const URI& path, Util::String & contents);
     /// return native path
     static Util::String NativePath(const Util::String& path);
 
@@ -108,6 +110,7 @@ private:
     static Threading::CriticalSection archiveCriticalSection;
     static bool StandardArchivesMounted;
     
+    Ptr<Http::HttpClientRegistry> httpClientRegistry;
     Ptr<AssignRegistry> assignRegistry;
     Ptr<SchemeRegistry> schemeRegistry;
     Ptr<FileWatcher> watcher;

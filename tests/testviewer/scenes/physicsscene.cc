@@ -158,7 +158,7 @@ void OpenScene()
 
     ground = Graphics::CreateEntity();
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(ground);
-    Models::ModelContext::Setup(ground, "mdl:environment/groundplane.n3", "ExampleScene", []()
+    Models::ModelContext::Setup(ground, "mdl:environment/Groundplane.n3", "ExampleScene", []()
                                 {
                                     Visibility::ObservableContext::Setup(ground, Visibility::VisibilityEntityType::Model);
                                 });

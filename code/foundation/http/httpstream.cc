@@ -7,8 +7,6 @@
 #include "http/httpstream.h"
 #include "http/httpclientregistry.h"
 
-// HttpStream not implemented on Wii
-#if __NEBULA_HTTP_FILESYSTEM__
 namespace Http
 {
 __ImplementClass(Http::HttpStream, 'HTST', IO::MemoryStream);
@@ -16,7 +14,8 @@ __ImplementClass(Http::HttpStream, 'HTST', IO::MemoryStream);
 //------------------------------------------------------------------------------
 /**
 */
-HttpStream::HttpStream()
+HttpStream::HttpStream() :
+    retries(5)
 {
     // empty
 }
@@ -45,29 +44,48 @@ HttpStream::Open()
     {
         n_printf("HttpStream: Opening '%s'...", this->uri.AsString().AsCharPtr());
 
-        // create a HTTP client and open connection
-        Ptr<HttpClient> httpClient = HttpClientRegistry::Instance()->ObtainConnection(this->uri);
-        if (httpClient->IsConnected())
+        HttpStatus::Code res = HttpStatus::ServiceUnavailable;
+        int retryCount = retries;
+
+        while (res == HttpStatus::ServiceUnavailable && retryCount > 0)
         {
-            AccessMode oldAccessMode = this->accessMode;
-            this->accessMode = WriteAccess;
-            HttpStatus::Code res = httpClient->SendRequest(HttpMethod::Get, this->uri, this);
-            this->accessMode = oldAccessMode;
-            this->Seek(0, Stream::Begin);
-            if (HttpStatus::OK == res)
+            // create a HTTP client and open connection
+            Ptr<HttpClient> httpClient = HttpClientRegistry::Instance()->ObtainConnection(this->uri);
+            if (httpClient->IsConnected())
             {
-                n_printf("ok!\n");
-                retval = true;
+                AccessMode oldAccessMode = this->accessMode;
+                this->accessMode = WriteAccess;
+                res = httpClient->SendRequest(HttpMethod::Get, this->uri, this);
+                this->accessMode = oldAccessMode;
+                this->Seek(0, Stream::Begin);
+                if (HttpStatus::OK == res)
+                {
+                    n_printf("ok!\n");
+                    retval = true;
+                }
+                else if (res == HttpStatus::ServiceUnavailable)
+                {
+                    --retryCount;
+                    if (retryCount > 0)
+                    {
+                        n_printf("...retrying");
+                        // kill socket just in case
+                        httpClient->Disconnect();
+                    }
+                    else
+                    {
+                        n_printf("..failed (%d)\n", res);
+                    }
+                }
+                else
+                {
+                    n_printf("failed! (%d)\n", res);
+                }
+                HttpClientRegistry::Instance()->ReleaseConnection(this->uri);
             }
-            else
-            {
-                n_printf("failed!\n");
-            }
-            HttpClientRegistry::Instance()->ReleaseConnection(this->uri);
         }
     }
     return retval;
 }
 
 } // namespace Http
-#endif

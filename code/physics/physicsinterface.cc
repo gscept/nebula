@@ -137,9 +137,10 @@ void
 LoadMaterialTable()
 {
     const IO::URI materialtable("phys:physicsmaterials.pmat");
-    if(IO::IoServer::Instance()->FileExists(materialtable))
+    Util::String materialsString;
+    
+    if (IO::IoServer::Instance()->ReadFile(materialtable, materialsString))
     {
-        Util::String materialsString = IO::IoServer::Instance()->ReadFile(materialtable);
         Physics::MaterialsT materials;
         Flat::FlatbufferInterface::DeserializeFlatbuffer<Physics::Materials>(materials, (uint8_t*)materialsString.AsCharPtr());
         for (auto const& material : materials.entries)

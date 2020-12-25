@@ -98,13 +98,6 @@ static const int JobMaxSliceSize = 0xFFFF;
 #define __NEBULA_HTTP__ (1)
 #endif
 
-// enable/disable the transparent web filesystem
-#if __WIN32__ || __linux__
-#define __NEBULA_HTTP_FILESYSTEM__ (1)
-#else
-#define __NEBULA_HTTP_FILESYSTEM__ (0)
-#endif
-
 // enable/disable profiling (see Debug::DebugTimer, Debug::DebugCounter)
 #if PUBLIC_BUILD
     #define NEBULA_ENABLE_PROFILING (0)
