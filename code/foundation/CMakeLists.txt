@@ -2,6 +2,8 @@
 # Foundation
 #-------------------------------------------------------------------------------
 
+FIND_PACKAGE(CURL)
+
 nebula_begin_module(foundation)
     if(FIPS_LINUX)
         fips_libs(uuid cjson stdc++fs)
@@ -9,9 +11,17 @@ nebula_begin_module(foundation)
     fips_vs_warning_level(3)
     fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
     fips_deps(nebula-libs zlib tinyxml)
-    fips_libs(curl)
+    
     if(FIPS_WINDOWS)
+        fips_libs(curl)
         fips_deps(StackWalker)
+    else()
+	if(CURL_FOUND)
+           fips_include_directories(${CURL_INCLUDE_DIR})
+           fips_deps(${CURL_LIBRARY_RELEASE})
+	else()
+	   MESSAGE(FATAL_ERROR "libcurl not found!")
+	endif()
     endif()
         fips_files(foundation/stdneb.h foundation/stdneb.cc)
         fips_dir(core)

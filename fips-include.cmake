@@ -35,6 +35,12 @@ set(FIPS_WINDOWS_LTCG OFF)
 
 OPTION(N_USE_AVX "Use AVX instructionset" ON)
 OPTION(N_USE_FMA "Use FMA instructionset" OFF)
+OPTION(N_USE_CURL "Use libcurl for httpclient" ON)
+
+if (N_USE_CURL)
+    add_definitions(-DUSE_CURL)
+endif()
+
 if (N_USE_AVX)
 	add_definitions(-DN_USE_AVX)
 endif()
@@ -202,6 +208,7 @@ macro(add_shaders_intern)
 
             if(N_ENABLE_SHADER_COMMAND_GENERATION)
                 # create compile flags file for live shader compile
+                # MESSAGE(WARNING "fooo   " ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}")
                 file(WRITE ${FIPS_PROJECT_DEPLOY_DIR}/shaders/${basename}.txt "${SHADERC} -i ${shd} -I ${NROOT}/work/shaders/vk -I ${foldername} -o ${EXPORT_DIR} -h ${CMAKE_BINARY_DIR}/shaders/${CurTargetName} -t shader ${shader_debug}")
             endif()
         endforeach()
