@@ -9,6 +9,7 @@ nebula_begin_module(foundation)
     fips_vs_warning_level(3)
     fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
     fips_deps(nebula-libs zlib tinyxml)
+    fips_libs(curl)
     if(FIPS_WINDOWS)
         fips_deps(StackWalker)
     endif()
@@ -384,6 +385,10 @@ nebula_begin_module(foundation)
             defaulthttprequesthandler.h
             httpclient.cc
             httpclient.h
+	    simple/nebulahttpclient.cc
+	    simple/nebulahttpclient.h
+	    curl/curlhttpclient.cc
+	    curl/curlhttpclient.h
             httpclientregistry.cc
             httpclientregistry.h
             httpmethod.h

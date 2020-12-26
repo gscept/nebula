@@ -163,6 +163,9 @@ SchemeRegistry::SetupStandardSchemes()
     this->RegisterUriScheme("file", FileStream::RTTI);
     this->RegisterUriScheme("safefile", SafeFileStream::RTTI);
     this->RegisterUriScheme("http", Http::HttpStream::RTTI);
+#ifdef USE_CURL
+    this->RegisterUriScheme("https", Http::HttpStream::RTTI);
+#endif
     this->RegisterUriScheme("httpnz", Http::HttpNzStream::RTTI);
 }
 

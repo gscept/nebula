@@ -138,6 +138,8 @@ static const int JobMaxSliceSize = 0xFFFF;
 #endif
 #endif
 
+#define USE_CURL 1
+
 // default resource names
 #if __WIN32__ || __LINUX__
 #define NEBULA_TEXTURE_EXTENSION ".dds"

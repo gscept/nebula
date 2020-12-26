@@ -34,6 +34,28 @@ HttpStatus::FromString(const Util::String& str)
 //------------------------------------------------------------------------------
 /**
 */
+HttpStatus::Code
+HttpStatus::FromLong(long l)
+{
+     switch (l)
+    {
+        case 100:                        return Continue;
+        case 200:                        return OK;
+        case 400:                        return BadRequest;
+        case 403:                        return Forbidden;
+        case 404:                        return NotFound;
+        case 500:                        return InternalServerError;
+        case 501:                        return NotImplemented;
+        case 503:                        return ServiceUnavailable;
+        default:
+            n_error("Invalid HTTP status code!");
+            return BadRequest;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 String
 HttpStatus::ToString(Code c)
 {

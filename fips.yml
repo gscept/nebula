@@ -44,6 +44,9 @@ imports:
     fips-sqlite3:
         git: https://github.com/gscept/fips-sqlite3.git
         branch: main
+    fips-curl:
+        git: https://github.com/gscept/fips-curl.git
+        cond: "FIPS_WINDOWS"
 
 exports:
     header-dirs :

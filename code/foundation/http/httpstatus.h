@@ -39,6 +39,8 @@ public:
     static Code FromString(const Util::String& str);
     /// convert to string
     static Util::String ToString(Code c);
+    /// convert from long
+    static Code FromLong(long l);
     /// convert code to human readable string
     static Util::String ToHumanReadableString(Code c);
 };
