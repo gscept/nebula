@@ -1,4 +1,7 @@
 ---
+### Disable formatting for all languages except those specified
+DisableFormat: true
+---
 Language: Cpp
 ColumnLimit: 0
 UseTab: Never
@@ -26,6 +29,7 @@ SpaceBeforeRangeBasedForLoopColon: true
 SpaceBeforeSquareBrackets: false
 SpaceInEmptyBlock: false
 SpaceBeforeCpp11BracedList: true
+Cpp11BracedListStyle: false
 AlignAfterOpenBracket: Align
 AlignOperands: true
 AlwaysBreakTemplateDeclarations: true
@@ -33,3 +37,4 @@ BinPackArguments: true
 BinPackParameters: false
 SortIncludes: false
 AccessModifierOffset: -4
+IndentCaseLabels: false

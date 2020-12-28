@@ -16,7 +16,8 @@ namespace Models
 /**
 */
 PrimitiveNode::PrimitiveNode() :
-    primitiveGroupIndex(InvalidIndex)
+    primitiveGroupIndex(InvalidIndex),
+    primitiveGroupIndexLoaded(0)
 {
     this->type = PrimitiveNodeType;
     this->bits = HasTransformBit | HasStateBit;

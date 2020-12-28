@@ -196,7 +196,7 @@ protected:
 */
 template<class TYPE>
 Array<TYPE>::Array() :
-    grow(MinGrowSize),
+    grow(16),
     capacity(0),
     count(0),
     elements(0)
