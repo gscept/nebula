@@ -15,7 +15,8 @@ __ImplementAbstractClass(Resources::ResourceStreamPool, 'RSLO', Resources::Resou
 //------------------------------------------------------------------------------
 /**
 */
-ResourceStreamPool::ResourceStreamPool()
+ResourceStreamPool::ResourceStreamPool() :
+    async(false)
 {
     // maybe this is arrogant, just 1024 pending resources (actual resources that is) per loader?
     this->pendingLoads.Reserve(1024);

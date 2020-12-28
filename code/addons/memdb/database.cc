@@ -93,7 +93,6 @@ Database::DeleteTable(TableId tid)
     for (IndexT i = 0; i < numColumns; ++i)
     {
         PropertyId descriptor = table.columns.Get<0>(i);
-        PropertyDescription* desc = TypeRegistry::GetDescription(descriptor);
         void*& buf = table.columns.Get<1>(i);
         Memory::Free(Table::HEAP_MEMORY_TYPE, buf);
         buf = nullptr;
@@ -290,7 +289,6 @@ Database::DuplicateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
 
     IndexT dstRow = this->AllocateRowIndex(dstTid);
 
-    auto const& cols = src.columns.GetArray<0>();
     auto& buffers = src.columns.GetArray<1>();
     auto const& dstCols = dst.columns.GetArray<0>();
     auto& dstBuffers = dst.columns.GetArray<1>();
@@ -338,7 +336,6 @@ Database::DuplicateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& 
 
     IndexT dstRow = dstDb->AllocateRowIndex(dstTid);
 
-    auto const& cols = src.columns.GetArray<0>();
     auto& buffers = src.columns.GetArray<1>();
     auto const& dstCols = dst.columns.GetArray<0>();
     auto& dstBuffers = dst.columns.GetArray<1>();
@@ -385,7 +382,6 @@ Database::MigrateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows, T
     n_assert(srcTid != dstTid);
     this->DuplicateInstances(srcTid, srcRows, dstTid, dstRows);
     const SizeT num = srcRows.Size();
-    auto& table = GetTable(srcTid);
     if (defragment)
     {
         Table& table = GetTable(srcTid);
@@ -435,7 +431,6 @@ Database::DuplicateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows,
         dstRows[i] = this->AllocateRowIndex(dstTid);
     }
 
-    auto const& cols = src.columns.GetArray<0>();
     auto& buffers = src.columns.GetArray<1>();
     auto const& dstCols = dst.columns.GetArray<0>();
     auto& dstBuffers = dst.columns.GetArray<1>();
@@ -614,8 +609,6 @@ Database::GrowTable(TableId tid)
 {
     n_assert(this->IsValid(tid));
     Table& table = this->tables[Ids::Index(tid.id)];
-    auto& colTypes = table.columns.GetArray<0>();
-    auto& buffers = table.columns.GetArray<1>();
 
     int oldCapacity = table.capacity;
     table.capacity += table.grow;
@@ -631,7 +624,6 @@ Database::GrowTable(TableId tid)
 
         const SizeT byteSize = desc->typeSize;
 
-        int oldNumBytes = byteSize * oldCapacity;
         int newNumBytes = byteSize * table.capacity;
         void* newData = Memory::Alloc(Table::HEAP_MEMORY_TYPE, newNumBytes);
 
