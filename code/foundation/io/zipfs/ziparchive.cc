@@ -8,6 +8,7 @@
 #include "io/zipfs/zipfileentry.h"
 #include "io/zipfs/zipdirentry.h"
 #include "io/assignregistry.h"
+#include "io/zipfs/ionebula3.h"
 
 namespace IO
 {
@@ -21,7 +22,7 @@ using namespace Util;
 ZipArchive::ZipArchive() :
     zipFileHandle(0)
 {
-    // empty
+    fill_nebula3_filefunc(&this->zlibIoFuncs);
 }
 
 //------------------------------------------------------------------------------
@@ -55,7 +56,7 @@ ZipArchive::Setup(const URI& zipFileURI)
         URI absPath = AssignRegistry::Instance()->ResolveAssigns(this->uri);
         String localPath = absPath.LocalPath();
         localPath.Append(".zip");
-        this->zipFileHandle = unzOpen(localPath.AsCharPtr());
+        this->zipFileHandle = unzOpen2_64(localPath.AsCharPtr(), &this->zlibIoFuncs);
         if (0 == this->zipFileHandle)
         {
             return false;

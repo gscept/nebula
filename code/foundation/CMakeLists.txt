@@ -10,7 +10,7 @@ nebula_begin_module(foundation)
     endif()
     fips_vs_warning_level(3)
     fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-    fips_deps(nebula-libs zlib tinyxml)
+    fips_deps(nebula-libs tinyxml)
     
     if(FIPS_WINDOWS)
         fips_libs(curl)
@@ -208,6 +208,8 @@ nebula_begin_module(foundation)
             zipfs/zipfilestream.h
             zipfs/zipfilesystem.cc
             zipfs/zipfilesystem.h
+            zipfs/ionebula3.cc
+            zipfs/ionebula3.h
             debug/consolepagehandler.cc
             debug/consolepagehandler.h
             debug/iopagehandler.cc
