@@ -10,6 +10,7 @@
 #include "http/httpstream.h"
 #include "http/httpnzstream.h"
 #include "safefilestream.h"
+#include "io/cache/cachedstreamtypes.h"
 
 namespace IO
 {
@@ -162,9 +163,9 @@ SchemeRegistry::SetupStandardSchemes()
 {
     this->RegisterUriScheme("file", FileStream::RTTI);
     this->RegisterUriScheme("safefile", SafeFileStream::RTTI);
-    this->RegisterUriScheme("http", Http::HttpStream::RTTI);
+    this->RegisterUriScheme("http", IO::CachedHttpStream::RTTI);
 #ifdef USE_CURL
-    this->RegisterUriScheme("https", Http::HttpStream::RTTI);
+    this->RegisterUriScheme("https", IO::CachedHttpStream::RTTI);
 #endif
     this->RegisterUriScheme("httpnz", Http::HttpNzStream::RTTI);
 }

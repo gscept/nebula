@@ -26,6 +26,8 @@
 #include "io/assignregistry.h"
 #include "io/schemeregistry.h"
 #include "http/httpclientregistry.h"
+#include "archfs/archivefilesystem.h"
+#include "io/cache/streamcache.h"
 
 
 //------------------------------------------------------------------------------
@@ -114,6 +116,7 @@ private:
     Ptr<AssignRegistry> assignRegistry;
     Ptr<SchemeRegistry> schemeRegistry;
     Ptr<FileWatcher> watcher;
+    Ptr<StreamCache> streamCache;
     static Threading::CriticalSection assignCriticalSection;
     static Threading::CriticalSection schemeCriticalSection;
     static Threading::CriticalSection watcherCriticalSection;
@@ -121,9 +124,6 @@ private:
 
 //------------------------------------------------------------------------------
 /**
-    NOTE: on platforms which provide transparent archive access this method
-    is point less (the archiveFileSystemEnabled flag will be ignored, and
-    IsArchiveFileSystemEnabled() will always return false).
 */
 inline void
 IoServer::SetArchiveFileSystemEnabled(bool b)
@@ -140,11 +140,7 @@ IoServer::SetArchiveFileSystemEnabled(bool b)
 inline bool
 IoServer::IsArchiveFileSystemEnabled() const
 {
-    #if NEBULA_NATIVE_ARCHIVE_SUPPORT
-        return false;
-    #else
-        return this->archiveFileSystemEnabled;
-    #endif
+    return this->archiveFileSystemEnabled && ArchiveFileSystem::Instance()->HasArchives();
 }
 
 } // namespace IO

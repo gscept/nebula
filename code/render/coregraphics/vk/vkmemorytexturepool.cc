@@ -131,6 +131,7 @@ VkMemoryTexturePool::Unload(const Resources::ResourceId id)
     // if sparse, run through and dealloc pages
     if (loadInfo.sparse)
     {
+        __Lock(textureSparseExtensionAllocator);
         // dealloc all opaque bindings
         Util::Array<CoreGraphics::Alloc>& allocs = textureSparseExtensionAllocator.Get<TextureExtension_SparseOpaqueAllocs>(loadInfo.sparseExtension);
         for (IndexT i = 0; i < allocs.Size(); i++)

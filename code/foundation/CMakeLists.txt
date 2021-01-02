@@ -198,35 +198,52 @@ nebula_begin_module(foundation)
             xmlreader.h
             xmlwriter.cc
             xmlwriter.h
-            zipfs/ziparchive.cc
-            zipfs/ziparchive.h
-            zipfs/zipdirentry.cc
-            zipfs/zipdirentry.h
-            zipfs/zipfileentry.cc
-            zipfs/zipfileentry.h
-            zipfs/zipfilestream.cc
-            zipfs/zipfilestream.h
-            zipfs/zipfilesystem.cc
-            zipfs/zipfilesystem.h
-            zipfs/ionebula3.cc
-            zipfs/ionebula3.h
-            debug/consolepagehandler.cc
-            debug/consolepagehandler.h
-            debug/iopagehandler.cc
-            debug/iopagehandler.h
-            archfs/archive.cc
-            archfs/archive.h
-            archfs/archivebase.cc
-            archfs/archivebase.h
-            archfs/archivefilesystem.cc
-            archfs/archivefilesystem.h
-            archfs/archivefilesystembase.cc
-            archfs/archivefilesystembase.h
             util/bxmlfilestructs.h
             util/bxmlloaderutil.cc
             util/bxmlloaderutil.h
             #fixme. these have to be nidld
             iointerfaceprotocol.cc
+        )
+        fips_dir(io/zipfs)
+        fips_files(ziparchive.cc
+            ziparchive.h
+            zipdirentry.cc
+            zipdirentry.h
+            zipfileentry.cc
+            zipfileentry.h
+            zipfilestream.cc
+            zipfilestream.h
+            zipfilesystem.cc
+            zipfilesystem.h
+            ionebula3.cc
+            ionebula3.h
+        )
+        fips_dir(io/archfs)
+        fips_files(
+            archive.cc
+            archive.h
+            archivebase.cc
+            archivebase.h
+            archivefilesystem.cc
+            archivefilesystem.h
+            archivefilesystembase.cc
+            archivefilesystembase.h
+        )
+        fips_dir(io/cache)
+        fips_files(
+            streamcache.cc
+            streamcache.h
+            cachedstream.cc
+            cachedstream.h
+            cachedstreamtypes.cc
+            cachedstreamtypes.h
+        )
+        fips_dir(io/debug)
+        fips_files(
+            consolepagehandler.cc
+            consolepagehandler.h
+            iopagehandler.cc
+            iopagehandler.h
         )
         fips_dir(io/base)
         fips_files(
@@ -360,12 +377,15 @@ nebula_begin_module(foundation)
             socket/ipaddress.h
             socket/socket.cc
             socket/socket.h
-            tcp/stdtcpclient.cc
-            tcp/stdtcpclient.h
-            tcp/stdtcpclientconnection.cc
-            tcp/stdtcpclientconnection.h
-            tcp/stdtcpserver.cc
-            tcp/stdtcpserver.h
+        )
+        fips_dir(net/tcp)
+        fips_files(
+            stdtcpclient.cc
+            stdtcpclient.h
+            stdtcpclientconnection.cc
+            stdtcpclientconnection.h
+            stdtcpserver.cc
+            stdtcpserver.h
         )
         fips_dir(profiling)
         fips_files(

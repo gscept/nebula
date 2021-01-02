@@ -34,7 +34,7 @@ using namespace Util;
 /**
 */
 IoServer::IoServer() :
-    archiveFileSystemEnabled(false)
+    archiveFileSystemEnabled(true)
 {
     __ConstructSingleton;
 
@@ -94,6 +94,7 @@ IoServer::IoServer() :
 
     this->httpClientRegistry = Http::HttpClientRegistry::Create();
     this->httpClientRegistry->Setup();
+    this->streamCache = StreamCache::Create();
 }
 
 //------------------------------------------------------------------------------
@@ -101,6 +102,7 @@ IoServer::IoServer() :
 */
 IoServer::~IoServer()
 {
+    this->streamCache = nullptr;
     this->httpClientRegistry->Discard();
     this->httpClientRegistry = nullptr;
 

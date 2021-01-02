@@ -54,9 +54,9 @@ ZipArchive::Setup(const URI& zipFileURI)
 
         // open the zip file
         URI absPath = AssignRegistry::Instance()->ResolveAssigns(this->uri);
-        String localPath = absPath.LocalPath();
-        localPath.Append(".zip");
-        this->zipFileHandle = unzOpen2_64(localPath.AsCharPtr(), &this->zlibIoFuncs);
+        String realPath = absPath.AsString();
+        realPath.Append(".zip");
+        this->zipFileHandle = unzOpen2_64(realPath.AsCharPtr(), &this->zlibIoFuncs);
         if (0 == this->zipFileHandle)
         {
             return false;

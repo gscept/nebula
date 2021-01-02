@@ -32,6 +32,7 @@ SetupMemoryPools(
         pool.memoryType = i;
         pool.mapMemory = false;
         pool.blockSize = 0;
+        pool.size = 0;
 
         if (CheckBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) && !deviceLocalFound)
         {
@@ -140,6 +141,11 @@ MemoryPool::CreateBlock(void** outMappedPtr)
 void 
 MemoryPool::DestroyBlock(DeviceMemory mem)
 {
+    if (mem == nullptr)
+    {
+        n_warning("MemoryPool::DestroyBlock: Attempting to destroy empty block");
+        return;
+    }
     VkDevice dev = GetCurrentDevice();
     if (this->mapMemory)
     {

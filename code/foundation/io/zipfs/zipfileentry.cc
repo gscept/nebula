@@ -47,12 +47,12 @@ ZipFileEntry::Setup(const StringAtom& n, unzFile h, CriticalSection* critSect)
     this->archiveCritSect = critSect;
 
     // store file position
-    int res = unzGetFilePos(this->zipFileHandle, &this->filePosInfo);
+    int res = unzGetFilePos64(this->zipFileHandle, &this->filePosInfo);
     n_assert(UNZ_OK == res);
 
     // get other data about the file
-    unz_file_info fileInfo;
-    res = unzGetCurrentFileInfo(this->zipFileHandle, &fileInfo, 0, 0, 0, 0, 0, 0);
+    unz_file_info64 fileInfo;
+    res = unzGetCurrentFileInfo64(this->zipFileHandle, &fileInfo, 0, 0, 0, 0, 0, 0);
     n_assert(UNZ_OK == res);
     this->uncompressedSize = fileInfo.uncompressed_size;
 }
@@ -67,7 +67,7 @@ ZipFileEntry::Open(const String& password)
     this->archiveCritSect->Enter();
 
     // set current file to this file
-    int res = unzGoToFilePos(this->zipFileHandle, const_cast<unz_file_pos*>(&this->filePosInfo));
+    int res = unzGoToFilePos64(this->zipFileHandle, const_cast<unz64_file_pos*>(&this->filePosInfo));
     if (UNZ_OK != res) 
     {
         this->archiveCritSect->Leave();

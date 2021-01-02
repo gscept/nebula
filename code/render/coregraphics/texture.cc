@@ -386,6 +386,7 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
         rt.windowTexture = true;
         rt.windowRelative = true;
         rt.bindless = info.bindless;
+        rt.sparse = info.sparse;
         rt.alias = CoreGraphics::TextureId::Invalid();
         rt.defaultLayout = CoreGraphics::ImageLayout::Present;
     }

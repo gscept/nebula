@@ -8,7 +8,8 @@
 */
 #include "foundation/stdneb.h"
 #include "io/filestream.h"
-
+#include "io/ioserver.h"
+#include "io/archfs/archivefilesystem.h"
 #include "minizip/ioapi.h"
 #include "ionebula3.h"
 
@@ -19,7 +20,7 @@ voidpf ZCALLBACK nebula3_open_file_func (voidpf opaque, const void* filename64, 
 {
     const char * filename = (const char*)filename64;
     n_assert(mode == (ZLIB_FILEFUNC_MODE_READ | ZLIB_FILEFUNC_MODE_EXISTING));
-    Ptr<IO::FileStream> fileStream = IO::FileStream::Create();
+    Ptr<IO::Stream> fileStream = IO::IoServer::Instance()->CreateStream(filename);
     fileStream->SetAccessMode(IO::Stream::ReadAccess);
     fileStream->SetURI(filename);
     if (fileStream->Open())
@@ -41,7 +42,7 @@ uint32_t ZCALLBACK nebula3_read_file_func (voidpf opaque, voidpf stream, void* b
     uint32_t ret = 0;
     if (NULL != stream)
     {
-        IO::FileStream* fileStream = (IO::FileStream*) stream;
+        IO::Stream* fileStream = (IO::Stream*) stream;
         ret = fileStream->Read(buf, size);
     }
     return ret;
@@ -64,7 +65,7 @@ uint64_t ZCALLBACK nebula3_tell_file_func (voidpf opaque, voidpf stream)
     uint64_t ret = -1;
     if (NULL != stream)
     {
-        IO::FileStream* fileStream = (IO::FileStream*) stream;
+        IO::Stream* fileStream = (IO::Stream*) stream;
         ret = fileStream->GetPosition();
     }
     return ret;
@@ -78,7 +79,7 @@ long ZCALLBACK nebula3_seek_file_func (voidpf opaque, voidpf stream, uint64_t of
     long ret = -1;
     if (NULL != stream)
     {
-        IO::FileStream* fileStream = (IO::FileStream*) stream;
+        IO::Stream* fileStream = (IO::Stream*) stream;
         IO::Stream::SeekOrigin neb3Origin;
         switch (origin)
         {
@@ -109,7 +110,7 @@ int ZCALLBACK nebula3_close_file_func (voidpf opaque, voidpf stream)
     int ret = -1;
     if (NULL != stream)
     {
-        IO::FileStream* fileStream = (IO::FileStream*) stream;
+        IO::Stream* fileStream = (IO::Stream*) stream;
         fileStream->Close();
         fileStream->Release();
         fileStream = 0;

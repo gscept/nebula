@@ -92,9 +92,9 @@ void
 JsonReader::Close()
 {
     n_assert(0 != this->document);
-    this->document->clear();    
+    this->document->clear();
     n_delete(this->document);
-    this->curNode = 0;    
+    this->curNode = 0;
     Memory::Free(Memory::StreamDataHeap, this->buffer);
     this->buffer = nullptr;
     StreamReader::Close();
@@ -103,7 +103,7 @@ JsonReader::Close()
 //------------------------------------------------------------------------------
 /**
     This method returns true if the node identified by path exists. Path
-    follows the normal filesystem path conventions, "/" is the separator,    
+    follows the normal filesystem path conventions, "/" is the separator,
     starts with a "/", a relative path doesn't.
 */
 bool
@@ -117,7 +117,7 @@ JsonReader::HasNode(const String& path)
     const value_variant* node;
     if (absPath)
     {
-        node = this->document;       
+        node = this->document;
     }
     else
     {
@@ -174,12 +174,12 @@ JsonReader::SetToNode(const String& path)
     bool absPath = (path[0] == '/');
     Array<String> tokens = path.Tokenize("/");
 
-    // get starting node (either root or current node)    
+    // get starting node (either root or current node)
     if (absPath)
     {
-        this->SetToRoot();        
-    }    
-    n_assert(0 != this->curNode);    
+        this->SetToRoot();
+    }
+    n_assert(0 != this->curNode);
 
     // iterate through path components
     int i;
