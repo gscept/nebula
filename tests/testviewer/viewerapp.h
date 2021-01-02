@@ -22,6 +22,10 @@
 #include "profiling/profiling.h"
 #endif
 
+// comment out to use local content
+#define USE_GITHUB_DEMO 1
+
+
 namespace Tests
 {
 
