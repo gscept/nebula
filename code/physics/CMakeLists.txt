@@ -18,6 +18,8 @@ fips_files(
             streamcolliderpool.h
             callbacks.cc
             callbacks.h
+            debugui.cc
+            debugui.h
             utils.h
             visualdebugger.cc
             visualdebugger.h

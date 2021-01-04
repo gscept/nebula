@@ -15,6 +15,8 @@
 // User-defined malloc/free. Define both or neither (default is cstdlib malloc()/free()).
 #define IM3D_MALLOC(size) Memory::Alloc(Memory::DefaultHeap, size)
 #define IM3D_FREE(ptr) Memory::Free(Memory::DefaultHeap, ptr) 
+// User-defined API declaration (e.g. __declspec(dllexport)).
+//#define IM3D_API
 
 // Use a thread-local context pointer.
 //#define IM3D_THREAD_LOCAL_CONTEXT_PTR 1
