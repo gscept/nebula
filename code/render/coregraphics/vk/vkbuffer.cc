@@ -291,6 +291,15 @@ BufferGetByteSize(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
+constexpr SizeT
+BufferGetUploadMaxSize()
+{
+	return 65536;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void* 
 BufferMap(const BufferId id)
 {
@@ -346,16 +355,35 @@ BufferUpdateArray(const BufferId id, const void* data, const uint size, const ui
 /**
 */
 void
-BufferUpload(const BufferId id, const void* data, const uint size, const uint count, const uint offset, const CoreGraphics::SubmissionContextId sub)
+BufferUpload(const BufferId id, const void* data, const uint size, const uint count, const uint offset, const CoreGraphics::QueueType queue)
 {
-	CoreGraphics::CommandBufferId cmd = SubmissionContextGetCmdBuffer(sub);
-
-	uint numChunks = Math::n_divandroundup(size * count, 65536);
+	VkCommandBuffer cmd = CoreGraphics::GetMainBuffer(queue);
+	uint numChunks = Math::n_divandroundup(size * count, BufferGetUploadMaxSize());
 	int remainingBytes = size * count;
 	int chunkOffset = offset;
 	for (uint i = 0; i < numChunks; i++)
 	{
-		int chunkSize = Math::n_min(remainingBytes, 65536);
+		int chunkSize = Math::n_min(remainingBytes, BufferGetUploadMaxSize());
+		vkCmdUpdateBuffer(cmd, Vulkan::BufferGetVk(id), chunkOffset, chunkSize, data);
+		chunkOffset += chunkSize;
+		remainingBytes -= chunkSize;
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BufferUpload(const BufferId id, const void* data, const uint size, const uint count, const uint offset, const CoreGraphics::SubmissionContextId sub)
+{
+	CoreGraphics::CommandBufferId cmd = SubmissionContextGetCmdBuffer(sub);
+
+	uint numChunks = Math::n_divandroundup(size * count, BufferGetUploadMaxSize());
+	int remainingBytes = size * count;
+	int chunkOffset = offset;
+	for (uint i = 0; i < numChunks; i++)
+	{
+		int chunkSize = Math::n_min(remainingBytes, BufferGetUploadMaxSize());
 		vkCmdUpdateBuffer(Vulkan::CommandBufferGetVk(cmd), Vulkan::BufferGetVk(id), chunkOffset, chunkSize, data);
 		chunkOffset += chunkSize;
 		remainingBytes -= chunkSize;
@@ -372,11 +400,11 @@ BufferFill(const BufferId id, char pattern, const CoreGraphics::SubmissionContex
 	VkBufferLoadInfo& setup = bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id.id24);
 	
 	int remainingBytes = setup.byteSize;
-	uint numChunks = Math::n_divandroundup(setup.byteSize, 65536);
+	uint numChunks = Math::n_divandroundup(setup.byteSize, BufferGetUploadMaxSize());
 	int chunkOffset = 0;
 	for (uint i = 0; i < numChunks; i++)
 	{
-		int chunkSize = Math::n_min(remainingBytes, 65536);
+		int chunkSize = Math::n_min(remainingBytes, BufferGetUploadMaxSize());
 		char* buf = n_new_array(char, chunkSize);
 		memset(buf, pattern, chunkSize);
 		vkCmdUpdateBuffer(Vulkan::CommandBufferGetVk(cmd), Vulkan::BufferGetVk(id), chunkOffset, chunkSize, buf);

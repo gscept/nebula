@@ -72,6 +72,8 @@ const SizeT BufferGetSize(const BufferId id);
 const SizeT BufferGetElementSize(const BufferId id);
 /// get buffer total byte size
 const SizeT BufferGetByteSize(const BufferId id);
+/// get maximum size of upload for BufferUpload
+constexpr SizeT BufferGetUploadMaxSize();
 
 /// map memory
 void* BufferMap(const BufferId id);
@@ -83,11 +85,15 @@ void BufferUpdate(const BufferId id, const void* data, const uint size, const ui
 /// update buffer data as array
 void BufferUpdateArray(const BufferId id, const void* data, const uint size, const uint count, const uint offset = 0);
 /// update buffer through submission instead of mapped buffer (slower, but allows for updates to DeviceLocal buffers)
+void BufferUpload(const BufferId id, const void* data, const uint size, const uint count, const uint offset, const CoreGraphics::QueueType queue = GraphicsQueueType);
+/// update buffer through submission instead of mapped buffer (slower, but allows for updates to DeviceLocal buffers)
 void BufferUpload(const BufferId id, const void* data, const uint size, const uint count, const uint offset, const CoreGraphics::SubmissionContextId sub);
 /// update buffer data
 template<class TYPE> void BufferUpdate(const BufferId id, const TYPE& data, const uint offset = 0);
 /// update buffer data as array
 template<class TYPE> void BufferUpdateArray(const BufferId id, const TYPE* data, const uint count, const uint offset = 0);
+/// upload data from pointer directly to buffer through command buffer
+template<class TYPE> void BufferUpload(const BufferId id, const TYPE* data, const uint count, const uint offset, const CoreGraphics::QueueType queue = GraphicsQueueType);
 /// upload data from pointer directly to buffer through submission context
 template<class TYPE> void BufferUpload(const BufferId id, const TYPE* data, const uint count, const uint offset, const CoreGraphics::SubmissionContextId sub);
 
@@ -103,7 +109,8 @@ void BufferInvalidate(const BufferId id, IndexT offset = 0, SizeT size = NEBULA_
 /**
 */
 template<>
-inline void BufferUpdate(const BufferId id, const Util::Variant& data, const uint offset)
+inline void 
+BufferUpdate(const BufferId id, const Util::Variant& data, const uint offset)
 {
     BufferUpdate(id, data.AsVoidPtr(), data.Size(), offset);
 }
@@ -112,7 +119,8 @@ inline void BufferUpdate(const BufferId id, const Util::Variant& data, const uin
 /**
 */
 template<class TYPE>
-void BufferUpdate(const BufferId id, const TYPE& data, const uint offset)
+inline void
+BufferUpdate(const BufferId id, const TYPE& data, const uint offset)
 {
     BufferUpdate(id, &data, sizeof(TYPE), offset);
 }
@@ -121,7 +129,8 @@ void BufferUpdate(const BufferId id, const TYPE& data, const uint offset)
 /**
 */
 template<class TYPE>
-void BufferUpdateArray(const BufferId id, const TYPE* data, const uint count, const uint offset)
+inline void
+BufferUpdateArray(const BufferId id, const TYPE* data, const uint count, const uint offset)
 {
     BufferUpdateArray(id, data, sizeof(TYPE), count, offset);
 }
@@ -130,7 +139,18 @@ void BufferUpdateArray(const BufferId id, const TYPE* data, const uint count, co
 /**
 */
 template<class TYPE>
-void BufferUpload(const BufferId id, const TYPE* data, const uint count, const uint offset, const CoreGraphics::SubmissionContextId sub)
+inline void
+BufferUpload(const BufferId id, const TYPE* data, const uint count, const uint offset, const CoreGraphics::QueueType queue)
+{
+    BufferUpload(id, data, sizeof(TYPE), count, offset, queue);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline void
+BufferUpload(const BufferId id, const TYPE* data, const uint count, const uint offset, const CoreGraphics::SubmissionContextId sub)
 {
     BufferUpload(id, data, sizeof(TYPE), count, offset, sub);
 }
