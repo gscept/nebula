@@ -11,6 +11,7 @@
 #include "dynui/im3d/im3dcontext.h"
 #include "physics/utils.h"
 #include "imgui.h"
+#include "graphics/cameracontext.h"
 
 using namespace physx;
 
@@ -90,6 +91,14 @@ void ApplyToScenes(PxVisualizationParameter::Enum flag, float value)
     }
 }
 
+void ApplyBounds(PxBounds3 const& box)
+{
+    for (auto& scene : Physics::state.activeScenes)
+    {
+        scene.scene->setVisualizationCullingBox(box);
+    }
+}
+
 Math::vec4 Px2Colour(PxU32 col)
 {
     const float div = 1.0f / 255.0f;
@@ -131,7 +140,7 @@ void RenderPhysicsDebug()
 namespace Physics
 {
 
-void RenderUI()
+void RenderUI(Graphics::GraphicsEntityId camera)
 {
     ImGui::Begin("Physics");
     if (ImGui::Checkbox("Debug Rendering", &dstate.enabled))
@@ -148,8 +157,21 @@ void RenderUI()
     }
     if(dstate.enabled)
     {
+        static float viewRange = 50.0f;
+        ImGui::PushItemWidth(100.0f);
+        ImGui::DragFloat("Viewing Distance", &viewRange, 1.0f, 1.0f, 100.0f);
+        ImGui::PopItemWidth();
+        Math::mat4 trans =  Math::inverse(Graphics::CameraContext::GetTransform(camera));
+
+        Math::point center = trans.get_w() - trans.get_z() * viewRange;
+        PxBounds3 bound = PxBounds3::centerExtents(Neb2PxPnt(center), PxVec3(viewRange));
+        ApplyBounds(bound);
+
         ImGui::BeginChild("Debug Flags");
-        ImGui::DragFloat("Scale", &dstate.scale, 0.01f, 10.0f);
+        ImGui::PushItemWidth(100.0f);
+        ImGui::DragFloat("Scale", &dstate.scale, 0.1f, 0.01f, 10.0f);
+        ImGui::PopItemWidth();
+        
         ApplyToScenes(PxVisualizationParameter::eSCALE, dstate.scale);
         for (auto& entry : dstate.flags)
         {

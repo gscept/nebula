@@ -304,6 +304,28 @@ Im3dContext::DrawSphere(const Math::mat4& modelTransform, const Math::vec4& colo
 /**
 */
 void
+Im3dContext::DrawSphere(const Math::point& pos, float radius, const Math::vec4& color, uint32_t depthFlag)
+{
+    Im3d::PushDrawState();
+    if (depthFlag & CheckDepth) Im3d::PushLayerId(imState.depthLayerId);
+    Im3d::SetSize(2.0f);
+    Im3d::SetColor(Im3d::Vec4(color));
+    if (depthFlag & Wireframe)
+    {
+        Im3d::DrawSphere(Vec3(pos), radius, 16);
+    }
+    if (depthFlag & Solid)
+    {
+        Im3d::DrawSphereFilled(Vec3(pos), radius, 16);
+    }
+    if (depthFlag & CheckDepth) Im3d::PopLayerId();
+    Im3d::PopDrawState();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 Im3dContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
     Im3d::NewFrame();
