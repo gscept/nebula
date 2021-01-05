@@ -48,6 +48,8 @@ CreateOpBuffer()
             migration.
             We can also batch them based on their new category, so we won't
             need to do as many column id lookups.
+    @todo   This is not thread safe. Either, we keep it like it is and make sure
+            this function is always called synchronously, or add a critical section?
 */
 void
 Dispatch(OpBuffer& buffer)
@@ -393,6 +395,7 @@ GetPropertyId(Util::StringAtom name)
 
 //------------------------------------------------------------------------------
 /**
+   TODO: This is not thread safe!
 */
 bool
 HasProperty(Game::Entity const entity, PropertyId const pid)

@@ -111,8 +111,6 @@ private:
 
     /// run light classification compute
     static void CullAndClassify();
-    /// run light deferred
-    static void ComputeLighting();
     /// run lighting combination pass
     static void CombineLighting();
     /// run shadow map blurring
