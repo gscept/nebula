@@ -57,7 +57,7 @@ public:
     void AddPendingImageView(CoreGraphics::TextureId tex, VkImageViewCreateInfo viewCreate, uint32_t bind);
 
     /// setup gbuffer bindings
-    void SetupGBufferConstants();
+    void SetupBufferConstants();
 
     /// begin frame
     void UpdateResources();
@@ -91,9 +91,6 @@ private:
     IndexT normalBufferTextureVar;
     IndexT depthBufferTextureVar;
     IndexT specularBufferTextureVar;
-    IndexT albedoBufferTextureVar;
-    IndexT emissiveBufferTextureVar;
-    IndexT lightBufferTextureVar;
     IndexT depthBufferCopyTextureVar;
 
     IndexT environmentMapVar;

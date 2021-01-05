@@ -142,9 +142,6 @@ group(TICK_GROUP) shared constant PerTickParams
 	textureHandle NormalBuffer;
 	textureHandle DepthBuffer;
 	textureHandle SpecularBuffer;
-	textureHandle AlbedoBuffer;
-	textureHandle EmissiveBuffer;
-	textureHandle LightBuffer;
 	textureHandle IrradianceMap;
 	textureHandle DepthBufferCopy;
 };
@@ -197,6 +194,5 @@ group(PASS_GROUP) shared constant PassBlock
 {
 	vec4 RenderTargetDimensions[16]; // render target dimensions are size (xy) inversed size (zw)
 };
-
 
 #endif // SHARED_H

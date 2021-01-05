@@ -9,17 +9,7 @@
 #include "lib/clustering.fxh"
 #include "lib/pbr.fxh"
 #include "lib/stencil.fxh"
-
-// increase if we need more decals in close proximity, for now, 128 is more than enough
-#define MAX_DECALS_PER_CLUSTER 128
-
-sampler_state DecalSampler
-{
-    Filter = MinMagMipLinear;
-    AddressU = Border;
-    AddressV = Border;
-    BorderColor = Transparent;
-};
+#include "lib/decals.fxh"
 
 sampler_state ScreenspaceSampler
 {
@@ -50,52 +40,6 @@ render_state EmissiveState
     DstBlend[0] = One;
     DepthWrite = false;
     DepthEnabled = false;
-};
-
-struct PBRDecal
-{
-    textureHandle albedo;
-    vec4 bboxMin;
-    vec4 bboxMax;
-    mat4 invModel;
-    vec3 direction;
-    textureHandle material;
-    vec3 tangent;
-    textureHandle normal;
-};
-
-struct EmissiveDecal
-{
-    vec4 bboxMin;
-    vec4 bboxMax;
-    mat4 invModel;
-    vec3 direction;
-    textureHandle emissive;
-};
-
-group(BATCH_GROUP) rw_buffer DecalLists [ string Visibility = "CS|PS"; ]
-{
-    EmissiveDecal EmissiveDecals[128];
-    PBRDecal PBRDecals[128];
-};
-
-// this is used to keep track of how many lights we have active
-group(BATCH_GROUP) constant DecalUniforms [ string Visibility = "CS|PS"; ]
-{
-    uint NumPBRDecals;
-    uint NumEmissiveDecals;
-    uint NumClusters;
-    textureHandle NormalBufferCopy;
-    textureHandle StencilBuffer;
-};
-
-// contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
-group(BATCH_GROUP) rw_buffer DecalIndexLists [ string Visibility = "CS|PS"; ]
-{
-    uint EmissiveDecalCountList[NUM_CLUSTER_ENTRIES];
-    uint EmissiveDecalIndexList[NUM_CLUSTER_ENTRIES * MAX_DECALS_PER_CLUSTER];
-    uint PBRDecalCountList[NUM_CLUSTER_ENTRIES];
-    uint PBRDecalIndexList[NUM_CLUSTER_ENTRIES * MAX_DECALS_PER_CLUSTER];
 };
 
 write rgba16f image2D Decals;
@@ -130,7 +74,7 @@ void csCull()
     }
     PBRDecalCountList[index1D] = numDecals;
 
-    // update feature flags if we have any lights
+    // update feature flags if we have any decals
     if (numDecals > 0)
         flags |= CLUSTER_PBR_DECAL_BIT;
 
@@ -147,7 +91,7 @@ void csCull()
     }
     EmissiveDecalCountList[index1D] = numDecals;
 
-    // update feature flags if we have any lights
+    // update feature flags if we have any decals
     if (numDecals > 0)
         flags |= CLUSTER_EMISSIVE_DECAL_BIT;
 

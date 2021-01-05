@@ -8,6 +8,7 @@
 
 texture2D Fog;
 texture2D Reflections;
+texture2D AO;
 readwrite rgba16f image2D Lighting;
 
 group(BATCH_GROUP) constant CombineUniforms [ string Visibility = "CS"; ]
@@ -26,13 +27,12 @@ void csCombine()
     ivec2 fullscaleCoord = ivec2(gl_GlobalInvocationID.xy);
     vec4 fog = texture(sampler2D(Fog, PosteffectUpscaleSampler), coord);
     vec4 reflections = texture(sampler2D(Reflections, PosteffectUpscaleSampler), coord);
+    float ao = texture(sampler2D(AO, PosteffectUpscaleSampler), coord).r;
     vec4 light = imageLoad(Lighting, fullscaleCoord);
 
-    //vec4 res = vec4(mix(light.rgb, fog.rgb, fog.a), 1);
-    vec3 res = 
-        light.rgb * fog.a 
+    vec3 res = light.rgb * (1 - (ao));// * fog.a
         //+ reflections.rgb * fog.a 
-        + fog.rgb;
+        //+ fog.rgb;
     imageStore(Lighting, fullscaleCoord, vec4(res, 1));
 }
 

@@ -1,26 +1,28 @@
 //------------------------------------------------------------------------------
 //  skybox.fx
-//  (C) 2012 Gustav Sterbrant
+//  (C) 2012-2021 Individual contributors, See LICENSE file
 //------------------------------------------------------------------------------
-
 #include "lib/std.fxh"
 #include "lib/shared.fxh"
+#include "lib/objects_shared.fxh"
 #include "lib/util.fxh"
 #include "lib/techniques.fxh"
 #include "lib/preetham.fxh"
+#include "lib/mie-rayleigh.fxh"
 
-const float Contrast = 1.0f;
-const float Brightness = 1.0f;
-float SkyBlendFactor = 0.0f;
-float SkyRotationFactor = 0.03;
-
-// declare two textures, one main texture and one blend texture together with a wrapping sampler
-samplerCube SkyLayer1;
-samplerCube SkyLayer2;
+group(BATCH_GROUP) shared constant SkyBlock
+{
+    // declare two textures, one main texture and one blend texture together with a wrapping sampler
+    textureHandle SkyLayer1;
+    textureHandle SkyLayer2;
+    float Contrast;
+    float Brightness;
+    float SkyBlendFactor;
+    float SkyRotationFactor;
+};
 
 sampler_state SkySampler
 {
-    Samplers = { SkyLayer1, SkyLayer2 };
     AddressU = Wrap;
     AddressV = Wrap;
     AddressW = Wrap;
@@ -74,17 +76,18 @@ psMain(in vec3 UV,
 {
     vec3 lightDir = normalize(GlobalLightDirWorldspace.xyz);
     vec3 dir = normalize(Direction);
-    vec3 atmo = Preetham(dir, lightDir, A, B, C, D, E, Z) * GlobalLightColor.rgb;
-
+    //vec3 atmo = Preetham(dir, lightDir, A, B, C, D, E, Z) * GlobalLightColor.rgb;
+    vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
+    
     // rotate uvs around center with constant speed
-    vec3 baseColor = textureLod(SkyLayer1, UV, 0).rgb;
-    vec3 blendColor = textureLod(SkyLayer2, UV, 0).rgb;
+    vec3 baseColor = sampleCubeLod(EnvironmentMap, SkySampler, UV, 0).rgb;
+    vec3 blendColor = sampleCubeLod(SkyLayer2, SkySampler, UV, 0).rgb;
     vec3 color = mix(baseColor, blendColor, SkyBlendFactor);
     color = ((color - 0.5f) * Contrast) + 0.5f;
     color *= Brightness;
     color = atmo;
 
-    Color = EncodeHDR(vec4(color, 1));
+    Color = vec4(color, 1);
     gl_FragDepth = 1.0f;
 }
 

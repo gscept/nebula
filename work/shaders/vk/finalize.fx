@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 //  finalize.fx
-//  (C) 2013 Gustav Sterbrant
+//  (C) 2013-2021 Individual contributors, See LICENSE file
 //------------------------------------------------------------------------------
 
 #include "lib/std.fxh"
@@ -9,6 +9,7 @@
 #include "lib/techniques.fxh"
 #include "lib/shared.fxh"
 #include "lib/preetham.fxh"
+#include "lib/mie-rayleigh.fxh"
 
 group(BATCH_GROUP) shared constant FinalizeBlock
 {
@@ -22,7 +23,6 @@ group(BATCH_GROUP) shared constant FinalizeBlock
 
 sampler_state UpscaleSampler
 {
-    //Samplers = { BloomTexture, GodrayTexture, LuminanceTexture };
     AddressU = Border;
     AddressV = Border;
     BorderColor = Transparent;
@@ -30,7 +30,6 @@ sampler_state UpscaleSampler
 
 sampler_state DefaultSampler
 {
-    //Samplers = { ColorTexture, DepthTexture, ShapeTexture};
     Filter = Point;
     AddressU = Border;
     AddressV = Border;
@@ -144,11 +143,12 @@ psMain(in vec2 UV,
     vec3 viewNormal = (View * vec4(normal, 0)).xyz;
 
     vec3 fogColor = FogColor.rgb;
-    fogColor *= Preetham(-normalize(viewVec), GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * GlobalLightColor.xyz;
+    //fogColor *= Preetham(-normalize(viewVec), GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * GlobalLightColor.rgb;
+    fogColor *= CalculateAtmosphericScattering(-normalize(viewVec), GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
 
     float fogIntensity = Fog(length(viewVec)); 
     
-    vec4 c = DepthOfField(depth, UV);
+    vec4 c = vec4(sample2DLod(ColorTexture, DefaultSampler, UV, 0).rgb, 1.0f);
     c = vec4(lerp(fogColor, c.rgb, fogIntensity), c.a);
     
     // Get the calculated average luminance 

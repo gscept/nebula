@@ -1,15 +1,10 @@
 //------------------------------------------------------------------------------
 //  multilayered.fx
-//  (C) 2012 Gustav Sterbrant
+//  (C) 2012-2021 Individual contributors, See LICENSE file
 //------------------------------------------------------------------------------
-
-#include "lib/std.fxh"
-#include "lib/util.fxh"
-#include "lib/shared.fxh"
 #include "lib/techniques.fxh"
-#include "lib/defaultsamplers.fxh"
+#include "lib/standard_shading.fxh"
 #include "lib/shadowbase.fxh"
-#include "lib/geometrybase.fxh"
 
 vec2 AnimationDirection;
 float AnimationAngle;
@@ -34,6 +29,9 @@ group(BATCH_GROUP) shared constant MLPTextures [string Visibility = "PS";]
 render_state MLPState
 {
     CullMode = Back;
+    DepthWrite = false;
+    DepthEnabled = true;
+    DepthFunc = Equal;
 };
 
 //------------------------------------------------------------------------------
@@ -54,7 +52,8 @@ vsColored(
     out vec3 Binormal,
     out vec2 UV,
     out vec4 Color,
-    out vec3 WorldViewVec) 
+    out vec3 WorldSpacePos,
+	out vec4 ViewSpacePos) 
 {
     vec4 modelSpace = Model * vec4(position, 1);
     gl_Position = ViewProjection * modelSpace;
@@ -64,7 +63,8 @@ vsColored(
     Tangent = (Model * vec4(tangent, 0)).xyz;
     Normal = (Model * vec4(normal, 0)).xyz;
     Binormal = (Model * vec4(binormal, 0)).xyz;
-    WorldViewVec = modelSpace.xyz - EyePos.xyz;
+    WorldSpacePos = modelSpace.xyz;
+	ViewSpacePos  = View * modelSpace;
 }
 
 //------------------------------------------------------------------------------
@@ -216,10 +216,9 @@ psMultilayered(
     in vec3 Binormal,
     in vec2 UV,
     in vec4 Color,
-    in vec3 WorldViewVec,
-    [color0] out vec4 Albedo,
-    [color1] out vec3 Normals,
-    [color2] out vec4 Material) 
+    in vec3 WorldSpacePos,
+    in vec4 ViewSpacePos,
+    [color0] out vec4 outColor) 
 {
     vec4 blend = Color;
 
@@ -245,14 +244,25 @@ psMultilayered(
     vec3 bumpNormal = normalize(calcBump(Tangent, Binormal, Normal, normals));
     bumpNormal += vec3(0,1,0) * remainSum;
 
-    //mat2x3 env = calcEnv(specColor, bumpNormal, WorldViewVec, roughness);
-
-    vec4 mat = calcMaterial(matColor);
+    vec4 material = calcMaterial(matColor);
     vec4 albedo = calcColor(diffColor); 
     
-    Material = mat;
-    Albedo = albedo;
-    Normals = bumpNormal;
+    uint3 index3D = CalculateClusterIndex(gl_FragCoord.xy / BlockSize, ViewSpacePos.z, InvZScale, InvZBias);
+    uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
+
+    //ApplyDecals(idx, ViewSpacePos, vec4(WorldSpacePos, 1), gl_FragCoord.z, albedo, N, material);
+    
+    vec3 viewVec = normalize(EyePos.xyz - WorldSpacePos.xyz);
+    vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
+    vec3 viewNormal = (View * vec4(bumpNormal.xyz, 0)).xyz;
+    
+    vec3 light = vec3(0, 0, 0);
+    light += CalculateGlobalLight(albedo.rgb, material, F0, viewVec, bumpNormal.xyz, ViewSpacePos);
+    light += LocalLights(idx, albedo.rgb, material, F0, ViewSpacePos, viewNormal, gl_FragCoord.z);
+    light += calcEnv(albedo, F0, bumpNormal, viewVec, material);
+    light += albedo.rgb * material[MAT_EMISSIVE];
+    
+    outColor = vec4(light.rgb, 1.0f);
 }
 
 //------------------------------------------------------------------------------
@@ -547,8 +557,7 @@ SimpleTechnique(MLP, "Static", vsColored(), psMultilayered(
         calcColor = SimpleColor,
         calcBump = NormalMapFunctor,
         calcMaterial = DefaultMaterialFunctor,
-        calcDepth = ViewSpaceDepthFunctor,
-        calcEnv = PBR), MLPState);
+        calcEnv = IBL), MLPState);
         
 SimpleTechnique(MLPShadow, "Spot|Static", vsColoredShadow(), psShadow(), ShadowState);
 SimpleTechnique(MLPCSM, "Global|Static", vsColoredCSM(), psVSM(), ShadowStateCSM);

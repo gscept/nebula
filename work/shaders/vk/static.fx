@@ -5,7 +5,16 @@
 
 #include "lib/std.fxh"
 #include "lib/geometrybase.fxh"
+#include "lib/standard_shading.fxh"
 #include "lib/techniques.fxh"
+
+//------------------------------------------------------------------------------
+//  Depth prepass methods
+//------------------------------------------------------------------------------
+SimpleTechnique(StaticDepth, "Static|Depth", vsDepthStatic(), psDepthOnly(), DepthState);
+SimpleTechnique(StaticDepthDoubleSided, "Static|Depth|DoubleSided", vsDepthStatic(), psDepthOnly(), DepthStateDoubleSided);
+SimpleTechnique(StaticDepthAlphaMask, "Static|Depth|AlphaMask", vsDepthStaticAlphaMask(), psDepthOnlyAlphaMask(), DepthState);
+SimpleTechnique(StaticDepthAlphaMaskDoubleSided, "Static|Depth|AlphaMask|DoubleSided", vsDepthStaticAlphaMask(), psDepthOnlyAlphaMask(), DepthStateDoubleSided);
 
 //------------------------------------------------------------------------------
 //  Standard methods
@@ -14,53 +23,53 @@ SimpleTechnique(
     Static, 
     "Static", 
     vsStatic(), 
-    psUber(
+    psStandard(
         calcColor = SimpleColor,
         calcBump = NormalMapFunctor,
         calcMaterial = DefaultMaterialFunctor,
-        calcDepth = ViewSpaceDepthFunctor,
-        calcEnv = IrradianceOnly
+        calcEnv = NoEnvironment,
+        finalizeColor = FinalizeOpaque
     ),
-    StandardState);
+    DefaultState);
     
 SimpleTechnique(
-    StaticAlphaTest, 
-    "Static|AlphaTest", 
+    StaticAlphaMask,
+    "Static|AlphaMask", 
     vsStatic(), 
-    psUberAlphaTest(
-        calcColor = AlphaColor,
+    psStandard(
+        calcColor = AlphaMaskSimpleColor,
         calcBump = NormalMapFunctor,
         calcMaterial = DefaultMaterialFunctor,
-        calcDepth = ViewSpaceDepthFunctor,
-        calcEnv = IrradianceOnly
+        calcEnv = NoEnvironment,
+        finalizeColor = FinalizeOpaque
     ),
-    StandardState);
+    DefaultState);
     
 SimpleTechnique(
     StaticInstanced, 
     "Static|Instanced", 
     vsStaticInstanced(), 
-    psUber(
+    psStandard(
         calcColor = SimpleColor,
         calcBump = NormalMapFunctor,
         calcMaterial = DefaultMaterialFunctor,
-        calcDepth = ViewSpaceDepthFunctor,
-        calcEnv = IrradianceOnly
+        calcEnv = NoEnvironment,
+        finalizeColor = FinalizeOpaque
     ),
-    StandardState);
+    DefaultState);
     
 SimpleTechnique(
-    StaticInstancedAlphaTest, 
-    "Static|Instanced|AlphaTest", 
+    StaticInstancedAlphaMask, 
+    "Static|Instanced|AlphaMask", 
     vsStaticInstanced(), 
-    psUberAlphaTest(
-        calcColor = AlphaColor,
+    psStandard(
+        calcColor = AlphaMaskSimpleColor,
         calcBump = NormalMapFunctor,
         calcMaterial = DefaultMaterialFunctor,
-        calcDepth = ViewSpaceDepthFunctor,
-        calcEnv = IrradianceOnly
+        calcEnv = NoEnvironment,
+        finalizeColor = FinalizeOpaque
     ),
-    StandardState);
+    DefaultState);
 
 //------------------------------------------------------------------------------
 //  IBL + PBR methods
@@ -69,53 +78,53 @@ SimpleTechnique(
     StaticEnvironment, 
     "Static|Environment", 
     vsStatic(),
-    psUber(
+    psStandard(
         calcColor = SimpleColor,
         calcBump = NormalMapFunctor,
         calcMaterial = DefaultMaterialFunctor,
-        calcDepth = ViewSpaceDepthFunctor,
-        calcEnv = PBR
+        calcEnv = IBL,
+        finalizeColor = FinalizeOpaque
     ),
-    StandardState);
+    DefaultState);
     
 SimpleTechnique(
-    StaticEnvironmentAlphaTest, 
-    "Static|Environment|AlphaTest", 
+    StaticEnvironmentAlphaMask, 
+    "Static|Environment|AlphaMask", 
     vsStatic(),
-    psUberAlphaTest(
-        calcColor = AlphaColor,
+    psStandard(
+        calcColor = AlphaMaskSimpleColor,
         calcBump = NormalMapFunctor,
         calcMaterial = DefaultMaterialFunctor,
-        calcDepth = ViewSpaceDepthFunctor,
-        calcEnv = PBR
+        calcEnv = IBL,
+        finalizeColor = FinalizeOpaque
     ),
-    StandardState);
+    DefaultState);
     
 SimpleTechnique(
     StaticEnvironmentInstanced, 
     "Static|Environment|Instanced", 
     vsStaticInstanced(),
-    psUber(
+    psStandard(
         calcColor = SimpleColor,
         calcBump = NormalMapFunctor,
         calcMaterial = DefaultMaterialFunctor,
-        calcDepth = ViewSpaceDepthFunctor,
-        calcEnv = PBR
+        calcEnv = IBL,
+        finalizeColor = FinalizeOpaque
     ),
-    StandardState);
+    DefaultState);
     
 SimpleTechnique(
-    StaticEnvironmentInstancedAlphaTest, 
-    "Static|Environment|Instanced|AlphaTest", 
+    StaticEnvironmentInstancedAlphaMask, 
+    "Static|Environment|Instanced|AlphaMask", 
     vsStaticInstanced(),
-    psUberAlphaTest(
-        calcColor = AlphaColor,
+    psStandard(
+        calcColor = AlphaMaskSimpleColor,
         calcBump = NormalMapFunctor,
         calcMaterial = DefaultMaterialFunctor,
-        calcDepth = ViewSpaceDepthFunctor,
-        calcEnv = PBR
+        calcEnv = IBL,
+        finalizeColor = FinalizeOpaque
     ),
-    StandardState);
+    DefaultState);
     
 //------------------------------------------------------------------------------
 //  Alpha methods
@@ -124,12 +133,12 @@ SimpleTechnique(
     StaticAlpha, 
     "Static|Alpha", 
     vsStatic(), 
-    psUber(
-        calcColor = AlphaColor,
+    psStandard(
+        calcColor = AlphaMaskAlphaColor,
         calcBump = NormalMapFunctor,
         calcMaterial = DefaultMaterialFunctor,
-        calcDepth = ViewSpaceDepthFunctor,
-        calcEnv = NoEnvironment
+        calcEnv = NoEnvironment,
+        finalizeColor = FinalizeAlpha
     ),
     AlphaState);
     
@@ -137,12 +146,12 @@ SimpleTechnique(
     StaticAlphaEnvironment, 
     "Static|Alpha|Environment", 
     vsStatic(), 
-    psUber(
-        calcColor = AlphaColor,
+    psStandard(
+        calcColor = AlphaMaskAlphaColor,
         calcBump = NormalMapFunctor,
         calcMaterial = DefaultMaterialFunctor,
-        calcDepth = ViewSpaceDepthFunctor,
-        calcEnv = PBR
+        calcEnv = IBL,
+        finalizeColor = FinalizeAlpha
     ),
     AlphaState);
     
@@ -150,12 +159,12 @@ SimpleTechnique(
     StaticAlphaInstanced, 
     "Static|Alpha|Instanced", 
     vsStaticInstanced(), 
-    psUber(
-        calcColor = AlphaColor,
+    psStandard(
+        calcColor = AlphaMaskAlphaColor,
         calcBump = NormalMapFunctor,
         calcMaterial = DefaultMaterialFunctor,
-        calcDepth = ViewSpaceDepthFunctor,
-        calcEnv = NoEnvironment
+        calcEnv = NoEnvironment,
+        finalizeColor = FinalizeAlpha
     ),
     AlphaState);
     
@@ -163,25 +172,11 @@ SimpleTechnique(
     StaticAlphaInstancedEnvironment, 
     "Static|Alpha|Instanced|Environment", 
     vsStaticInstanced(), 
-    psUber(
-        calcColor = AlphaColor,
+    psStandard(
+        calcColor = AlphaMaskAlphaColor,
         calcBump = NormalMapFunctor,
         calcMaterial = DefaultMaterialFunctor,
-        calcDepth = ViewSpaceDepthFunctor,
-        calcEnv = PBR
+        calcEnv = IBL,
+        finalizeColor = FinalizeAlpha
     ),
     AlphaState);
-
-TessellationTechnique(
-    Tessellated,
-    "Static|Tessellated",
-    vsStaticTessellated(),
-    psUber(
-        calcColor = SimpleColor,
-        calcBump = NormalMapFunctor,
-        calcMaterial = DefaultMaterialFunctor
-    ),
-    hsDefault(),
-    dsDefault(),
-    StandardState
-);
