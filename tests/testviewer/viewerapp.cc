@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+﻿//------------------------------------------------------------------------------
 // viewerapp.cc
 // (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
@@ -159,7 +159,7 @@ SimpleViewerApplication::Open()
         Fog::VolumetricFogContext::Create();
         PostEffects::BloomContext::Create();
         PostEffects::SSAOContext::Create();
-        PostEffects::SSRContext::Create();
+        //PostEffects::SSRContext::Create();
         PostEffects::TonemapContext::Create();
 
 
@@ -171,7 +171,7 @@ SimpleViewerApplication::Open()
         Ptr<Frame::FrameScript> frameScript = this->view->GetFrameScript();
         PostEffects::BloomContext::Setup(frameScript);
         PostEffects::SSAOContext::Setup(frameScript);
-        PostEffects::SSRContext::Setup(frameScript);
+        //PostEffects::SSRContext::Setup(frameScript);
         PostEffects::TonemapContext::Setup(frameScript);
 
         Im3d::Im3dContext::SetGridStatus(this->showGrid);

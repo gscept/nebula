@@ -116,7 +116,7 @@ psGLTF(
     material[MAT_EMISSIVE] = 0.0f;
     vec3 N = normalize(calcBump(Tangent, Binormal, Normal, normals));
     
-    ApplyDecals(idx, ViewSpacePos, vec4(WorldSpacePos, 1), gl_FragCoord.z, baseColor, N, material);
+    //ApplyDecals(idx, ViewSpacePos, vec4(WorldSpacePos, 1), gl_FragCoord.z, baseColor, N, material);
     
     vec3 viewVec = normalize(EyePos.xyz - WorldSpacePos.xyz);
     float NdotV = saturate(dot(N, viewVec));
