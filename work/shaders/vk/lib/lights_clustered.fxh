@@ -36,7 +36,6 @@ struct SpotLightShadowExtension
 	textureHandle shadowMap;			// shadow map
 };
 
-
 struct PointLight
 {
 	vec4 position;				// view space position of light, w is range
@@ -56,7 +55,7 @@ struct PointLightShadowExtension
 #endif
 
 #ifndef LIGHTS_CLUSTERED_VISIBILITY
-#define LIGHTS_CLUSTERED_VISIBILITY "CS"
+#define LIGHTS_CLUSTERED_VISIBILITY "CS|PS"
 #endif
 
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
@@ -151,10 +150,11 @@ CalculatePointLight(
 	in PointLightShadowExtension ext, 
 	in vec3 viewPos,
 	in vec3 viewVec, 
-	in vec3 normal, 
+	in vec3 viewSpaceNormal, 
 	in float depth, 
 	in vec4 material, 
-	in vec4 albedo)
+	in vec3 diffuseColor,
+	in vec3 F0)
 {
 	vec3 lightDir = (light.position.xyz - viewPos);
 	float lightDirLen = length(lightDir);
@@ -168,29 +168,15 @@ CalculatePointLight(
 	lightDir = lightDir * oneDivLightDirLen;
 
 	vec3 H = normalize(lightDir.xyz + viewVec);
-	float NL = saturate(dot(lightDir, normal));
-	float NH = saturate(dot(normal, H));
-	float NV = saturate(dot(normal, viewVec));
-	float HL = saturate(dot(H, lightDir.xyz)); 
-	
-	vec3 F0 = vec3(0.04);
-	CalculateF0(albedo.rgb, material[MAT_METALLIC], F0);
+	float NL = saturate(dot(lightDir, viewSpaceNormal));
+	float NH = saturate(dot(viewSpaceNormal, H));
+	float NV = saturate(dot(viewSpaceNormal, viewVec));
+	float LH = saturate(dot(H, lightDir.xyz)); 
 
-	vec3 fresnel;
-	vec3 brdf;
-	CalculateBRDF(NH, NL, NV, HL, material[MAT_ROUGHNESS], F0, fresnel, brdf);
-
-	//Fresnel term (F) denotes the specular contribution of any light that hits the surface
-	//We set kS (specular) to F and because PBR requires the condition that our equation is
-	//energy conserving, we can set kD (diffuse contribution) to 1 - kS directly
-	//as kS represents the energy of light that gets reflected, the remeaining energy gets refracted, resulting in our diffuse term
-	vec3 kD = vec3(1.0f) - fresnel;
-
-	//Fully metallic surfaces won't refract any light
-	kD *= 1.0f - material[MAT_METALLIC];
+	vec3 brdf = EvaluateBRDF(diffuseColor, material, F0, H, NV, NL, NH, LH);
 
 	vec3 radiance = light.color * att;
-	vec3 irradiance = (kD * albedo.rgb / PI + brdf) * radiance * saturate(NL);
+	vec3 irradiance = (brdf * radiance) * saturate(NL);
 
 	float shadowFactor = 1.0f;
 	if (FlagSet(light.flags, USE_SHADOW_BITFLAG))
@@ -213,10 +199,11 @@ CalculateSpotLight(
 	in SpotLightShadowExtension shadowExt, 
 	in vec3 viewPos,
 	in vec3 viewVec, 
-	in vec3 normal, 
+	in vec3 viewSpaceNormal, 
 	in float depth, 
 	in vec4 material, 
-	in vec4 albedo)
+	in vec3 diffuseColor,
+	in vec3 F0)
 {
 	vec3 lightDir = (light.position.xyz - viewPos);
 
@@ -271,121 +258,99 @@ CalculateSpotLight(
 	}
 
 	vec3 H = normalize(lightDir.xyz + viewVec);
-	float NL = saturate(dot(lightDir, normal));
-	float NH = saturate(dot(normal, H));
-	float NV = saturate(dot(normal, viewVec));
-	float HL = saturate(dot(H, lightDir.xyz)); 
+	float NL = saturate(dot(lightDir, viewSpaceNormal));
+	float NH = saturate(dot(viewSpaceNormal, H));
+	float NV = saturate(dot(viewSpaceNormal, viewVec));
+	float LH = saturate(dot(H, lightDir.xyz)); 
 	
-	vec3 F0 = vec3(0.04);
-	CalculateF0(albedo.rgb, material[MAT_METALLIC], F0);
-
-	vec3 fresnel;
-	vec3 brdf;
-	CalculateBRDF(NH, NL, NV, HL, material[MAT_ROUGHNESS], F0, fresnel, brdf);
-
-	//Fresnel term (F) denotes the specular contribution of any light that hits the surface
-	//We set kS (specular) to F and because PBR requires the condition that our equation is
-	//energy conserving, we can set kD (diffuse contribution) to 1 - kS directly
-	//as kS represents the energy of light that gets reflected, the remeaining energy gets refracted, resulting in our diffuse term
-	vec3 kD = vec3(1.0f) - fresnel;
-
-	//Fully metallic surfaces won't refract any light
-	kD *= 1.0f - material[MAT_METALLIC];
+	vec3 brdf = EvaluateBRDF(diffuseColor, material, F0, H, NV, NL, NH, LH);
 
 	vec3 radiance = light.color;
-	vec3 irradiance = (kD * albedo.rgb / PI + brdf) * radiance * saturate(NL);
+	vec3 irradiance = (brdf * radiance) * saturate(NL);
 
 	return irradiance * shadowFactor * lightModColor.rgb;
 }
 
 //------------------------------------------------------------------------------
 /**
+	@param diffuseColor		Material's diffuse reflectance color
+	@param material			Material parameters (metallic, roughness, cavity)
+	@param F0				Fresnel reflectance at 0 degree incidence angle
+	@param viewVec			Unit vector from cameras worldspace position to fragments world space position.
+	@param viewSpacePos		Fragments position in viewspace; used for shadowing.
 */
 vec3
-CalculateGlobalLight(vec4 viewPos, vec3 viewVec, vec3 normal, float depth, vec4 material, vec4 albedo)
+CalculateGlobalLight(vec3 diffuseColor, vec4 material, vec3 F0, vec3 viewVec, vec3 worldSpaceNormal, vec4 viewSpacePos)
 {
-	float NL = saturate(dot(GlobalLightDirWorldspace.xyz, normal));
+	float NL = saturate(dot(GlobalLightDirWorldspace.xyz, worldSpaceNormal));
 	if (NL <= 0) { return vec3(0); }
 
 	float shadowFactor = 1.0f;
 	if (FlagSet(GlobalLightFlags, USE_SHADOW_BITFLAG))
 	{
-		vec4 shadowPos = CSMShadowMatrix * viewPos; // csm contains inversed view + csm transform
+		vec4 shadowPos = CSMShadowMatrix * viewSpacePos; // csm contains inversed view + csm transform
 		shadowFactor = CSMPS(shadowPos,	GlobalLightShadowBuffer);
 		shadowFactor = lerp(1.0f, shadowFactor, GlobalLightShadowIntensity);
 	}
 
 	vec3 H = normalize(GlobalLightDirWorldspace.xyz + viewVec);
-	float NH = saturate(dot(normal, H));
-	float NV = saturate(dot(normal, viewVec));
-	float HL = saturate(dot(H, GlobalLightDirWorldspace.xyz));
+	float NV = saturate(dot(worldSpaceNormal, viewVec));
+	float NH = saturate(dot(worldSpaceNormal, H));
+	float LH = saturate(dot(H, GlobalLightDirWorldspace.xyz));
 
-	vec3 F0 = vec3(0.04);
-	CalculateF0(albedo.rgb, material[MAT_METALLIC], F0);
-
-	vec3 fresnel;
-	vec3 brdf;
-	CalculateBRDF(NH, NL, NV, HL, material[MAT_ROUGHNESS], F0, fresnel, brdf);
-
-	//Fresnel term (F) denotes the specular contribution of any light that hits the surface
-	//We set kS (specular) to F and because PBR requires the condition that our equation is
-	//energy conserving, we can set kD (diffuse contribution) to 1 - kS directly
-	//as kS represents the energy of light that gets reflected, the remeaining energy gets refracted, resulting in our diffuse term
-	vec3 kD = vec3(1.0f) - fresnel;
-
-	//Fully metallic surfaces won't refract any light
-	kD *= 1.0f - material[MAT_METALLIC];
+	vec3 brdf = EvaluateBRDF(diffuseColor, material, F0, H, NV, NL, NH, LH);
 
 	vec3 radiance = GlobalLightColor.xyz;
-	vec3 irradiance = (kD * albedo.rgb / PI + brdf) * radiance * saturate(NL) + GlobalAmbientLightColor.xyz;
-
+	vec3 irradiance = (brdf * radiance) * saturate(NL) + GlobalAmbientLightColor.xyz;
 	return irradiance * shadowFactor;
 }
 
 //------------------------------------------------------------------------------
 /**
+	@param clusterIndex		The 1D cluster/bucket index to evaluate
+	@param diffuseColor		Material's diffuse reflectance color
+	@param material			Material parameters (metallic, roughness, cavity)
+	@param F0				Fresnel reflectance at 0 degree incidence angle
+	@param viewPos			The fragments position in view space
+	@param viewSpaceNormal	The fragments view space normal
+	@param depth			The fragments depth (gl_FragCoord.z)
 */
 vec3
-LocalLights(
-	uint idx,
-	vec4 viewPos,
-	vec3 viewVec,
-	vec3 normal,
-	float depth,
-	vec4 material,
-	vec4 albedo)
+LocalLights(uint clusterIndex, vec3 diffuseColor, vec4 material, vec3 F0, vec4 viewPos, vec3 viewSpaceNormal, float depth)
 {
 	vec3 light = vec3(0, 0, 0);
-	uint flag = AABBs[idx].featureFlags;
+	uint flag = AABBs[clusterIndex].featureFlags;
+	vec3 viewVec = -normalize(viewPos.xyz);
 	if (CHECK_FLAG(flag, CLUSTER_POINTLIGHT_BIT))
 	{
 		// shade point lights
-		uint count = PointLightCountList[idx];
+		uint count = PointLightCountList[clusterIndex];
 		PointLightShadowExtension ext;
 		for (int i = 0; i < count; i++)
 		{
-			uint lidx = PointLightIndexList[idx * MAX_LIGHTS_PER_CLUSTER + i];
+			uint lidx = PointLightIndexList[clusterIndex * MAX_LIGHTS_PER_CLUSTER + i];
 			PointLight li = PointLights[lidx];
 			light += CalculatePointLight(
 				li,
 				ext,
 				viewPos.xyz,
 				viewVec,
-				normal,
+				viewSpaceNormal,
 				depth,
 				material,
-				albedo
+				diffuseColor,
+				F0
 			);
 		}
 	}
 	if (CHECK_FLAG(flag, CLUSTER_SPOTLIGHT_BIT))
 	{
-		uint count = SpotLightCountList[idx];
+		uint count = SpotLightCountList[clusterIndex];
 		SpotLightShadowExtension shadowExt;
 		SpotLightProjectionExtension projExt;
 		for (int i = 0; i < count; i++)
 		{
-			uint lidx = SpotLightIndexList[idx * MAX_LIGHTS_PER_CLUSTER + i];
+			uint lidx = SpotLightIndexList[clusterIndex * MAX_LIGHTS_PER_CLUSTER + i];
 			SpotLight li = SpotLights[lidx];
 
 			// if we have extensions, load them from their respective buffers
@@ -400,10 +365,11 @@ LocalLights(
 				shadowExt,
 				viewPos.xyz,
 				viewVec,
-				normal,
+				viewSpaceNormal,
 				depth,
 				material,
-				albedo
+				diffuseColor,
+				F0
 			);
 		}
 	}

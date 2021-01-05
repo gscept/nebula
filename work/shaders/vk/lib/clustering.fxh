@@ -3,16 +3,16 @@
 //  (C) 2019 Gustav Sterbrant
 //------------------------------------------------------------------------------
 
+#ifndef CLUSTERING_FXH
+#define CLUSTERING_FXH
 
 #ifndef CLUSTERING_GROUP
 #define CLUSTERING_GROUP BATCH_GROUP
 #endif
 
-
 #ifndef CLUSTERING_VISIBILITY
 #define CLUSTERING_VISIBILITY "CS|PS"
 #endif
-
 
 struct ClusterAABB
 {
@@ -121,3 +121,5 @@ TestAABBCone(ClusterAABB aabb, vec3 pos, vec3 forward, float radius, vec2 sinCos
 	const bool backCull = v1len < -aabbRadius;
 	return !(angleCull || backCull || frontCull);
 }
+
+#endif

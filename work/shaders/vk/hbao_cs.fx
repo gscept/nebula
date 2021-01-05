@@ -204,7 +204,7 @@ csMainX()
         // Compute tangent vector using central differences
         vec2 T = MinDiff(P, Pr, Pl);
 
-        float ao = ComputeHBAO(P, T, centerId);     
+        float ao = ComputeHBAO(P, T, centerId);
         imageStore(HBAO0, int2(ox, oy), vec4(ao, 0, 0, 0));
     }
 }

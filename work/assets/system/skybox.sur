@@ -1,5 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
 <!--
-	Surface material for the placeholder material
+	Surface material for the skybox
 -->
 <Nebula>
 	<Surface template="Skybox">

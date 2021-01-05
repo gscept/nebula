@@ -5,7 +5,7 @@ DisableFormat: true
 Language: Cpp
 ColumnLimit: 0
 UseTab: Never
-AllowAllArgumentsOnNextLine: false
+AllowAllArgumentsOnNextLine: true
 AllowAllConstructorInitializersOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: false
 BreakBeforeBraces: Allman

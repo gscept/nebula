@@ -284,7 +284,7 @@ GraphicsServer::OnWindowResized(CoreGraphics::WindowId wndId)
     }
 
     // setup gbuffer bindings after frame script is loaded
-    this->shaderServer->SetupGBufferConstants();
+    this->shaderServer->SetupBufferConstants();
 }
 
 //------------------------------------------------------------------------------
@@ -599,7 +599,7 @@ GraphicsServer::CreateView(const Util::StringAtom& name, const IO::URI& framescr
     frameScript->Build();
 
     // setup gbuffer bindings after frame script is loaded
-    this->shaderServer->SetupGBufferConstants();
+    this->shaderServer->SetupBufferConstants();
 
     view->script = frameScript;
     this->views.Append(view);
@@ -623,7 +623,7 @@ GraphicsServer::CreateView(const Util::StringAtom& name)
     Ptr<View> view = View::Create();
 
     // setup gbuffer bindings after frame script is loaded
-    this->shaderServer->SetupGBufferConstants();
+    this->shaderServer->SetupBufferConstants();
 
     view->script = nullptr;
     this->views.Append(view);

@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+﻿//------------------------------------------------------------------------------
 // vkshaderserver.cc
 // (C) 2016-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
@@ -47,8 +47,7 @@ VkShaderServer::Open()
     this->factory = n_new(AnyFX::EffectFactory);
     ShaderServerBase::Open();
 
-    auto func = [](uint32_t& val, IndexT i) -> void
-    {
+    auto func = [](uint32_t& val, IndexT i) -> void {
         val = i;
     };
 
@@ -74,7 +73,7 @@ VkShaderServer::Open()
     this->textureCubeTextureVar = ShaderGetResourceSlot(shader, "TexturesCube");
     this->texture3DTextureVar = ShaderGetResourceSlot(shader, "Textures3D");
     this->tableLayout = ShaderGetResourcePipeline(shader);
-    
+
     this->ticksCbo = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
     this->cboSlot = ShaderGetResourceSlot(shader, "PerTickParams");
 
@@ -87,7 +86,7 @@ VkShaderServer::Open()
         // fill up all slots with placeholders
         IndexT j;
         for (j = 0; j < Shared::MAX_2D_TEXTURES; j++)
-            ResourceTableSetTexture(this->resourceTables[i], {CoreGraphics::White2D, this->texture2DTextureVar, j, CoreGraphics::SamplerId::Invalid(), false});
+            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2D, this->texture2DTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
 
         for (j = 0; j < Shared::MAX_2D_MS_TEXTURES; j++)
             ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2D, this->texture2DMSTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
@@ -107,9 +106,6 @@ VkShaderServer::Open()
     this->normalBufferTextureVar = ShaderGetConstantBinding(shader, "NormalBuffer");
     this->depthBufferTextureVar = ShaderGetConstantBinding(shader, "DepthBuffer");
     this->specularBufferTextureVar = ShaderGetConstantBinding(shader, "SpecularBuffer");
-    this->albedoBufferTextureVar = ShaderGetConstantBinding(shader, "AlbedoBuffer");
-    this->emissiveBufferTextureVar = ShaderGetConstantBinding(shader, "EmissiveBuffer");
-    this->lightBufferTextureVar = ShaderGetConstantBinding(shader, "LightBuffer");
     this->depthBufferCopyTextureVar = ShaderGetConstantBinding(shader, "DepthBufferCopy");
 
     this->environmentMapVar = ShaderGetConstantBinding(shader, "EnvironmentMap");
@@ -193,7 +189,7 @@ VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VkShaderServer::ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, uint32_t slot, bool depth, bool stencil)
 {
     IndexT var;
@@ -257,7 +253,7 @@ VkShaderServer::UnregisterTexture(const uint32_t id, const CoreGraphics::Texture
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VkShaderServer::SetGlobalEnvironmentTextures(const CoreGraphics::TextureId& env, const CoreGraphics::TextureId& irr, const SizeT numMips)
 {
     this->tickParams.EnvironmentMap = CoreGraphics::TextureGetBindlessHandle(env);
@@ -268,22 +264,19 @@ VkShaderServer::SetGlobalEnvironmentTextures(const CoreGraphics::TextureId& env,
 //------------------------------------------------------------------------------
 /**
 */
-void 
-VkShaderServer::SetupGBufferConstants()
-{
+void
+VkShaderServer::SetupBufferConstants()
+{   
     this->tickParams.NormalBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("NormalBuffer"));
-    this->tickParams.DepthBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("ZBuffer"));
     this->tickParams.SpecularBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("SpecularBuffer"));
-    this->tickParams.AlbedoBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("AlbedoBuffer"));
-    this->tickParams.EmissiveBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("EmissiveBuffer"));
-    this->tickParams.LightBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("LightBuffer"));
+    this->tickParams.DepthBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("ZBuffer"));
     this->tickParams.DepthBufferCopy = TextureGetBindlessHandle(CoreGraphics::GetTexture("ZBufferCopy"));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VkShaderServer::UpdateResources()
 {
     // just allocate the memory
@@ -337,7 +330,7 @@ VkShaderServer::UpdateResources()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VkShaderServer::AfterView()
 {
     // update the constant buffer with the data accumulated in this frame
@@ -347,7 +340,7 @@ VkShaderServer::AfterView()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 VkShaderServer::AddPendingImageView(CoreGraphics::TextureId tex, VkImageViewCreateInfo viewCreate, uint32_t bind)
 {
     _PendingView pend;

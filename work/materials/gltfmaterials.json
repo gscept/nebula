@@ -2,6 +2,10 @@
 	"Nebula": {
 		"Materials": [
 			{
+				"name": "GLTF Base",
+				"virtual": true,
+				"desc": "Base material for all GLTF materials",
+				"group": "Standard",
 				"variables": [
 					{
 					   "name": "baseColorTexture",
@@ -54,11 +58,7 @@
 						"type": "float",
 						"defaultValue": 1.0
 					}
-				 ],
-				"name": "GLTF Base",
-				"virtual": true,
-				"desc": "Base material for all GLTF materials",
-				"group": "Standard"
+				 ]
 			},
 			{
 				"name": "GLTF Static",
@@ -86,6 +86,11 @@
 						"batch": "GlobalShadow",
 						"shader": "shadow",
 						"variation": "Static|Global"
+					},
+					{
+						"batch": "FlatGeometryDepth",
+						"shader": "static",
+						"variation": "Static|Depth"
 					},
 					{
 						"batch": "FlatGeometryLit",
@@ -120,6 +125,11 @@
 						"batch": "GlobalShadow",
 						"shader": "shadow",
 						"variation": "Static|Global"
+					},
+					{
+						"batch": "FlatGeometryDepth",
+						"shader": "static",
+						"variation": "Static|Depth|DoubleSided"
 					},
 					{
 						"batch": "FlatGeometryLit",
@@ -163,6 +173,11 @@
 						"variation": "Static|Global"
 					},
 					{
+						"batch": "FlatGeometryDepth",
+						"shader": "gltf",
+						"variation": "Static|Depth|AlphaMask"
+					},
+					{
 						"batch": "FlatGeometryLit",
 						"shader": "gltf",
 						"variation": "Static|AlphaMask"
@@ -202,6 +217,11 @@
 						"batch": "GlobalShadow",
 						"shader": "shadow",
 						"variation": "Static|Global"
+					},
+					{
+						"batch": "FlatGeometryDepth",
+						"shader": "gltf",
+						"variation": "Static|Depth|AlphaMask|DoubleSided"
 					},
 					{
 						"batch": "FlatGeometryLit",

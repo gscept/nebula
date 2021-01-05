@@ -143,16 +143,15 @@ void csRender()
     // render lights where we have geometry
     if (normal.a != -1.0f)
     {
+        vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
         // render global light
-        light += CalculateGlobalLight(viewPos, worldViewVec, normal.xyz, depth, material, albedo);
+        light += CalculateGlobalLight(albedo.rgb, material, F0, worldViewVec, normal.xyz, worldPos);
 
         // render local lights
         // TODO: new material model for local lights
-        light += LocalLights(idx, viewPos, viewVec, viewNormal, depth, material, albedo);
+        light += LocalLights(idx, albedo.rgb, material, F0, viewPos, viewNormal, depth);
 
         // reflections and irradiance
-        vec3 F0 = vec3(0.04);
-        CalculateF0(albedo.rgb, material[MAT_METALLIC], F0);
         vec3 reflectVec = reflect(-worldViewVec, normal.xyz);
         float cosTheta = dot(normal.xyz, worldViewVec);
         vec3 F = FresnelSchlickGloss(F0, cosTheta, material[MAT_ROUGHNESS]);

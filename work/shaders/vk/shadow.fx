@@ -13,7 +13,6 @@
 #include "lib/util.fxh"
 #include "lib/techniques.fxh"
 #include "lib/materialparams.fxh"
-#include "lib/tessellationparams.fxh"
 
 //------------------------------------------------------------------------------
 /**
@@ -24,7 +23,6 @@ SimpleTechnique(SpotlightAlpha, "Spot|Alpha",                           vsStatic
 SimpleTechnique(SpotlightSkinned, "Spot|Skinned",                       vsSkinned(), psShadow(), ShadowState);
 SimpleTechnique(SpotlightSkinnedAlpha, "Spot|Skinned|Alpha",            vsSkinned(), psShadowAlpha(), ShadowState);
 SimpleTechnique(SpotlightInstanced, "Spot|Static|Instanced",            vsStaticInst(), psShadow(), ShadowState);
-TessellationTechnique(SpotlightTessellated, "Spot|Static|Tessellated",  vsTess(), psShadow(), hsShadow(), dsShadow(), ShadowState);
 
 // Pointlight methods
 SimpleTechnique(PointlightDefault, "Point|Static",              vsStaticPoint(), psVSMPoint(), ShadowState);
@@ -32,7 +30,6 @@ SimpleTechnique(PointlightAlpha, "Point|Alpha",                 vsStaticPoint(),
 SimpleTechnique(PointlightSkinned, "Point|Skinned",             vsSkinnedPoint(), psVSMPoint(), ShadowState);
 SimpleTechnique(PointlightSkinnedAlpha, "Point|Skinned|Alpha",  vsSkinnedPoint(), psVSMAlphaPoint(), ShadowState);
 SimpleTechnique(PointlightInstanced, "Point|Static|Instanced",  vsStaticInstPoint(), psVSMPoint(), ShadowState);
-//FullTechnique(PointlightTessellated, "Point|Static|Tessellated",  vsTessCSM(), psVSMPoint(), hsShadow(), dsCSM(), ShadowState);
 
 // CSM methods
 SimpleTechnique(CSM, "Global|Static",                               vsStaticCSM(), psVSM(), ShadowStateCSM);
@@ -41,4 +38,3 @@ SimpleTechnique(CSMInstanced, "Global|Static|Instanced",            vsStaticInst
 SimpleTechnique(CSMInstancedAlpha, "Global|Alpha|Instanced",        vsStaticInstCSM(), psVSMAlpha(), ShadowStateCSM);
 SimpleTechnique(CSMSkinned, "Global|Skinned",                       vsSkinnedCSM(), psVSM(), ShadowStateCSM);
 SimpleTechnique(CSMSkinnedAlpha, "Global|Skinned|Alpha",            vsSkinnedCSM(), psVSMAlpha(), ShadowStateCSM);
-TessellationTechnique(CSMTessellated, "Global|Static|Tessellated",  vsTessCSM(), psVSM(), hsShadow(), dsCSM(), ShadowStateCSM);

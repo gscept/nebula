@@ -749,20 +749,22 @@ psTerrainTileUpdate(
 
 //------------------------------------------------------------------------------
 /**
-    Calculate pixel GBuffer data
+    Calculate pixel color
 */
 shader
 void
 psScreenSpaceVirtual(
     in vec2 ScreenUV,
-    [color0] out vec4 Albedo,
-    [color1] out vec3 Normal,
-    [color2] out vec4 Material)
+    [color0] out vec4 Color)
 {
     // sample position, lod and texture sampling mode from screenspace buffer
     vec4 pos = sample2DLod(TerrainPosBuffer, TextureSampler, ScreenUV, 0);
     if (pos.w == 2.0f)
         discard;
+
+    vec4 albedo;
+    vec3 normal;
+    vec4 material;
 
     // calculate the subtexture coordinate
     vec2 worldSize = vec2(WorldSizeX, WorldSizeZ);
@@ -773,10 +775,10 @@ psScreenSpaceVirtual(
 
     if (any(lessThan(subTextureCoord, ivec2(0, 0))) || any(greaterThanEqual(subTextureCoord, VirtualTerrainNumSubTextures)))
     {
-        Albedo = sample2D(AlbedoLowresBuffer, AnisoSampler, worldUv);
-        Albedo.a = 1.0f;
-        Normal = sample2D(NormalLowresBuffer, AnisoSampler, worldUv).xyz;
-        Material = sample2D(MaterialLowresBuffer, AnisoSampler, worldUv);
+        albedo = sample2D(AlbedoLowresBuffer, AnisoSampler, worldUv);
+        albedo.a = 1.0f;
+        normal = sample2D(NormalLowresBuffer, AnisoSampler, worldUv).xyz;
+        material = sample2D(MaterialLowresBuffer, AnisoSampler, worldUv);
         return;
     }
 
@@ -856,9 +858,9 @@ psScreenSpaceVirtual(
                 }
 
                 float weight = fract(pos.z);
-                Albedo = lerp(albedo1, albedo0, weight);
-                Normal = lerp(normal1, normal0, weight).xyz;
-                Material = lerp(material1, material0, weight);
+                albedo = lerp(albedo1, albedo0, weight);
+                normal = lerp(normal1, normal0, weight).xyz;
+                material = lerp(material1, material0, weight);
             }
             else
             {
@@ -870,36 +872,38 @@ psScreenSpaceVirtual(
                 if (indirection.z != 0xF)
                 {
                     indirection.xy = (indirection.xy + physicalUvLower) * vec2(PhysicalInvPaddedTextureSize);
-                    Albedo = sample2DLod(AlbedoPhysicalCacheBuffer, AnisoSampler, indirection.xy, 0);
-                    Normal = sample2DLod(NormalPhysicalCacheBuffer, AnisoSampler, indirection.xy, 0).xyz;
-                    Material = sample2DLod(MaterialPhysicalCacheBuffer, AnisoSampler, indirection.xy, 0);
+                    albedo = sample2DLod(AlbedoPhysicalCacheBuffer, AnisoSampler, indirection.xy, 0);
+                    normal = sample2DLod(NormalPhysicalCacheBuffer, AnisoSampler, indirection.xy, 0).xyz;
+                    material = sample2DLod(MaterialPhysicalCacheBuffer, AnisoSampler, indirection.xy, 0);
                 }
                 else
                 {
                     // otherwise, pick fallback texture
-                    Albedo = sample2D(AlbedoLowresBuffer, AnisoSampler, worldUv);
-                    Albedo.a = 1.0f;
-                    Normal = sample2D(NormalLowresBuffer, AnisoSampler, worldUv).xyz;
-                    Material = sample2D(MaterialLowresBuffer, AnisoSampler, worldUv);
+                    albedo = sample2D(AlbedoLowresBuffer, AnisoSampler, worldUv);
+                    albedo.a = 1.0f;
+                    normal = sample2D(NormalLowresBuffer, AnisoSampler, worldUv).xyz;
+                    material = sample2D(MaterialLowresBuffer, AnisoSampler, worldUv);
                 }
             }
         }
         else
         {
-            Albedo = sample2D(AlbedoLowresBuffer, AnisoSampler, worldUv);
-            Albedo.a = 1.0f;
-            Normal = sample2D(NormalLowresBuffer, AnisoSampler, worldUv).xyz;
-            Material = sample2D(MaterialLowresBuffer, AnisoSampler, worldUv);
+            albedo = sample2D(AlbedoLowresBuffer, AnisoSampler, worldUv);
+            albedo.a = 1.0f;
+            normal = sample2D(NormalLowresBuffer, AnisoSampler, worldUv).xyz;
+            material = sample2D(MaterialLowresBuffer, AnisoSampler, worldUv);
         }
 
     }
     else
     {
-        Albedo = sample2D(AlbedoLowresBuffer, AnisoSampler, worldUv);
-        Albedo.a = 1.0f;
-        Normal = sample2D(NormalLowresBuffer, AnisoSampler, worldUv).xyz;
-        Material = sample2D(MaterialLowresBuffer, AnisoSampler, worldUv);
+        albedo = sample2D(AlbedoLowresBuffer, AnisoSampler, worldUv);
+        albedo.a = 1.0f;
+        normal = sample2D(NormalLowresBuffer, AnisoSampler, worldUv).xyz;
+        material = sample2D(MaterialLowresBuffer, AnisoSampler, worldUv);
     }
+
+    Color = vec4(albedo.rgb, 1.0f);
 }
 
 //------------------------------------------------------------------------------

@@ -55,8 +55,8 @@ csMain()
     vec3 color = vec3(0);//sample2DLod(LightBuffer, LinearState, UV, 0).xyz;
     if (rayResult.r >= 0.0f)
     {
-        vec4 albedo = sample2DLod(AlbedoBuffer, LinearState, UV, 0);
-        vec4 material = sample2DLod(SpecularBuffer, LinearState, UV, 0);
+        vec4 albedo = vec4(0);//sample2DLod(AlbedoBuffer, LinearState, UV, 0);
+        vec4 material = vec4(0);//sample2DLod(SpecularBuffer, LinearState, UV, 0);
 
         vec3 F0 = vec3(0.04);
         CalculateF0(albedo.rgb, material[0], F0);
@@ -67,7 +67,7 @@ csMain()
         //vec3 brdf;
         //CalculateBRDF(1, cosTheta, cosTheta, 1, material[1], F0, fresnel, brdf);
 
-        vec3 reflection = sample2DLod(LightBuffer, LinearState, rayResult.xy, 0).xyz;
+        vec3 reflection = vec3(0);//sample2DLod(LightBuffer, LinearState, rayResult.xy, 0).xyz;
         
         //vec3 kD = vec3(1.0f) - F;
         //kD *= 1.0f - material[0];

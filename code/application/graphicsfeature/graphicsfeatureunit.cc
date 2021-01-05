@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+﻿//------------------------------------------------------------------------------
 //  graphicsfeature/graphicsfeatureunit.cc
 //  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
@@ -21,6 +21,7 @@
 #include "posteffects/tonemapcontext.h"
 #include "decals/decalcontext.h"
 #include "debug/framescriptinspector.h"
+#include "terrain/terraincontext.h"
 
 #include "graphicsfeature/managers/graphicsmanager.h"
 
@@ -30,13 +31,14 @@ using namespace Models;
 
 namespace GraphicsFeature
 {
-__ImplementClass(GraphicsFeature::GraphicsFeatureUnit, 'FXFU' , Game::FeatureUnit);
+__ImplementClass(GraphicsFeature::GraphicsFeatureUnit, 'FXFU', Game::FeatureUnit);
 __ImplementSingleton(GraphicsFeatureUnit);
 
 //------------------------------------------------------------------------------
 /**
 */
-GraphicsFeatureUnit::GraphicsFeatureUnit() : defaultFrameScript("frame:vkdefault.json"_uri)
+GraphicsFeatureUnit::GraphicsFeatureUnit() :
+    defaultFrameScript("frame:vkdefault.json"_uri)
 {
     __ConstructSingleton;
 }
@@ -67,15 +69,14 @@ GraphicsFeatureUnit::OnActivate()
 
     //FIXME
     CoreGraphics::WindowCreateInfo wndInfo =
-    {
-        CoreGraphics::DisplayMode{ 100, 100, width, height },
-        "GraphicsFeature",
-        "",
-        CoreGraphics::AntiAliasQuality::None,
-        true,
-        true,
-        false
-    };
+        {
+            CoreGraphics::DisplayMode {100, 100, width, height},
+            "GraphicsFeature",
+            "",
+            CoreGraphics::AntiAliasQuality::None,
+            true,
+            true,
+            false};
     this->wnd = CreateWindow(wndInfo);
 
     CameraContext::Create();
@@ -91,8 +92,15 @@ GraphicsFeatureUnit::OnActivate()
     Fog::VolumetricFogContext::Create();
     PostEffects::BloomContext::Create();
     PostEffects::SSAOContext::Create();
-    PostEffects::SSRContext::Create();
     PostEffects::TonemapContext::Create();
+    //Terrain::TerrainSetupSettings settings{
+    //    0, 1024.0f,      // min/max height 
+    //    //0, 0,
+    //    8192, 8192,   // world size in meters
+    //    256, 256,     // tile size in meters
+    //    16, 16        // 1 vertex every X meters
+    //};
+    //Terrain::TerrainContext::Create(settings);
 
     this->defaultView = gfxServer->CreateView("mainview", this->defaultFrameScript);
     this->defaultStage = gfxServer->CreateStage("defaultStage", true);
@@ -101,15 +109,14 @@ GraphicsFeatureUnit::OnActivate()
     Ptr<Frame::FrameScript> frameScript = this->defaultView->GetFrameScript();
     PostEffects::BloomContext::Setup(frameScript);
     PostEffects::SSAOContext::Setup(frameScript);
-    PostEffects::SSRContext::Setup(frameScript);
     PostEffects::TonemapContext::Setup(frameScript);
 
     this->globalLight = Graphics::CreateEntity();
     Lighting::LightContext::RegisterEntity(this->globalLight);
-    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(0.734, 0.583, 0.377), 1.000f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0, Math::vector(1, -0.6, 1), true);
-	
+    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(0.734, 0.583, 0.377), 50.000f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0, Math::vector(1, -1, 1), true);
+
     ObserverContext::CreateBruteforceSystem({});
-    
+
     // create environment context for the atmosphere effects
     EnvironmentContext::Create(this->globalLight);
 
@@ -144,14 +151,12 @@ GraphicsFeatureUnit::OnBeginFrame()
 {
     FeatureUnit::OnBeginFrame();
 
-     CoreGraphics::WindowPollEvents();
+    CoreGraphics::WindowPollEvents();
 
     this->inputServer->BeginFrame();
     this->inputServer->OnFrame();
 
     this->gfxServer->BeginFrame();
-
-
 
     for (auto const& uiFunc : this->uiCallbacks)
     {
@@ -209,4 +214,4 @@ GraphicsFeatureUnit::AddRenderUICallback(UIRenderFunc func)
     this->uiCallbacks.Append(func);
 }
 
-} // namespace Game
+} // namespace GraphicsFeature

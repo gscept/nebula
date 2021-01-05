@@ -28,6 +28,11 @@
             "variation": "Static|Global"
           },
           {
+            "batch": "FlatGeometryDepth",
+            "shader": "static",
+            "variation": "Static|Depth"
+          },
+          {
             "batch": "FlatGeometryLit",
             "shader": "unit",
             "variation": "Static"
@@ -83,6 +88,11 @@
             "batch": "GlobalShadow",
             "shader": "shadow",
             "variation": "Skinned|Global"
+          },
+          {
+            "batch": "FlatGeometryDepth",
+            "shader": "skinned",
+            "variation": "Skinned|Depth"
           },
           {
             "batch": "FlatGeometryLit",

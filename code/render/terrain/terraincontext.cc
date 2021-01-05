@@ -2276,7 +2276,7 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
     {
         ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
         ImGui::Checkbox("Debug Render", &terrainState.debugRender);
-        ImGui::Checkbox("Don't Render", &terrainState.renderToggle);
+        ImGui::Checkbox("Render", &terrainState.renderToggle);
         ImGui::LabelText("Updates", "Number of updates %d", terrainVirtualTileState.numPixels);
 
         {
