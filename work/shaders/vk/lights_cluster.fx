@@ -113,72 +113,6 @@ void csDebug()
 
 //------------------------------------------------------------------------------
 /**
-    Calculate pixel light contribution
-*/
-[localsizex] = 64
-shader
-void csRender()
-{
-    ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
-    vec4 normal = fetch2D(NormalBuffer, PosteffectSampler, coord, 0).rgba;
-    float depth = fetch2D(DepthBuffer, PosteffectSampler, coord, 0).r;
-    vec4 material = fetch2D(SpecularBuffer, PosteffectSampler, coord, 0).rgba;
-    vec4 emissive = fetch2D(EmissiveBuffer, PosteffectSampler, coord, 0).rgba;
-    float ssao = 1.0f - fetch2D(SSAOBuffer, PosteffectSampler, coord, 0).r;
-    float ssaoSq = ssao * ssao;
-    vec4 albedo = fetch2D(AlbedoBuffer, PosteffectSampler, coord, 0).rgba;
-
-    // convert screen coord to view-space position
-    vec4 viewPos = PixelToView(coord * InvFramebufferDimensions, depth);
-    vec4 worldPos = ViewToWorld(viewPos);
-    vec3 worldViewVec = normalize(EyePos.xyz - worldPos.xyz);
-    vec3 viewVec = -normalize(viewPos.xyz);
-    vec3 viewNormal = (View * vec4(normal.xyz, 0)).xyz;
-
-    uint3 index3D = CalculateClusterIndex(coord / BlockSize, viewPos.z, InvZScale, InvZBias); 
-    uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
-
-    vec3 light = vec3(0,0,0); 
-     
-    // render lights where we have geometry
-    if (normal.a != -1.0f)
-    {
-        vec3 F0 = CalculateF0(albedo.rgb, material[MAT_METALLIC], vec3(0.04));
-        // render global light
-        light += CalculateGlobalLight(albedo.rgb, material, F0, worldViewVec, normal.xyz, worldPos);
-
-        // render local lights
-        // TODO: new material model for local lights
-        light += LocalLights(idx, albedo.rgb, material, F0, viewPos, viewNormal, depth);
-
-        // reflections and irradiance
-        vec3 reflectVec = reflect(-worldViewVec, normal.xyz);
-        float cosTheta = dot(normal.xyz, worldViewVec);
-        vec3 F = FresnelSchlickGloss(F0, cosTheta, material[MAT_ROUGHNESS]);
-        vec3 reflection = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, material[MAT_ROUGHNESS] * NumEnvMips).rgb * GlobalLightColor.xyz;
-        vec3 irradiance = sampleCubeLod(IrradianceMap, CubeSampler, normal.xyz, 0).rgb * GlobalLightColor.xyz;
-        float cavity = material[MAT_CAVITY];
-        
-        vec3 kD = vec3(1.0f) - F;
-        kD *= 1.0f - material[MAT_METALLIC];
-        
-        const vec3 ambientTerm = (irradiance * kD * albedo.rgb) * ssao;
-        light += (ambientTerm + reflection * F) * cavity; 
-        light += emissive.rgb;
-    } 
-    else // sky pixels
-    { 
-        //light += sampleCubeLod(EnvironmentMap, CubeSampler, normalize(worldPos.xyz), 0).rgb;
-        //light += Preetham(-worldViewVec, GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * GlobalLightColor.rgb;
-        light = CalculateAtmosphericScattering(-worldViewVec, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
-    }  
-     
-    // write final output 
-    imageStore(Lighting, coord, light.xyzx);
-}
-
-//------------------------------------------------------------------------------
-/**
 */
 program Cull [ string Mask = "Cull"; ]
 {
@@ -191,12 +125,4 @@ program Cull [ string Mask = "Cull"; ]
 program Debug [ string Mask = "Debug"; ]
 {
     ComputeShader = csDebug();
-};
-
-//------------------------------------------------------------------------------
-/**
-*/
-program Render [ string Mask = "Render"; ]
-{
-    ComputeShader = csRender();
 };

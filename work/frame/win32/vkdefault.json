@@ -286,12 +286,6 @@
 			"_comment": "Mandatory start of graphics submission, must be met with a matching end_submission"
 		},
 
-		"_comment": "------------ CLUSTERING DEFERRED ------------",
-		"call": {
-			"name": "LightContext - Deferred Cluster",
-			"resource_dependencies": []
-		},
-
 		"_comment": "------------ SSAO ------------",
 		"call": {
 			"name": "HBAO-Run",

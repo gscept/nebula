@@ -30,9 +30,9 @@ void csCombine()
     float ao = texture(sampler2D(AO, PosteffectUpscaleSampler), coord).r;
     vec4 light = imageLoad(Lighting, fullscaleCoord);
 
-    vec3 res = light.rgb * (1 - (ao));// * fog.a
+    vec3 res = light.rgb * (1 - (ao)) * fog.a
         //+ reflections.rgb * fog.a 
-        //+ fog.rgb;
+        + fog.rgb;
     imageStore(Lighting, fullscaleCoord, vec4(res, 1));
 }
 

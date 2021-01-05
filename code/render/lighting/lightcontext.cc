@@ -67,7 +67,6 @@ struct
     CoreGraphics::ShaderId classificationShader;
     CoreGraphics::ShaderProgramId cullProgram;
     CoreGraphics::ShaderProgramId debugProgram;
-    CoreGraphics::ShaderProgramId renderProgram;
     CoreGraphics::BufferId clusterLightIndexLists;
     Util::FixedArray<CoreGraphics::BufferId> stagingClusterLightsList;
     CoreGraphics::BufferId clusterLightsList;
@@ -194,10 +193,6 @@ LightContext::Create()
         LightContext::CullAndClassify();
     });
 
-    Frame::AddCallback("LightContext - Deferred Cluster", [](const IndexT frame, const IndexT bufferIndex) {
-        LightContext::ComputeLighting();
-    });
-
     Frame::AddCallback("LightContext - Combine", [](const IndexT frame, const IndexT bufferIndex) {
         LightContext::CombineLighting();
     });
@@ -241,7 +236,6 @@ LightContext::Create()
     clusterState.lightingUniformsSlot = ShaderGetResourceSlot(clusterState.classificationShader, "LightUniforms");
 
     clusterState.cullProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Cull"));
-    clusterState.renderProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Render"));
 #ifdef CLUSTERED_LIGHTING_DEBUG
     clusterState.debugProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Debug"));
 #endif
@@ -1065,40 +1059,6 @@ LightContext::CullAndClassify()
                   "Light cluster culling end");
 
     CommandBufferEndMarker(ComputeQueueType);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-LightContext::ComputeLighting()
-{
-    using namespace CoreGraphics;
-    TextureDimensions dims = TextureGetDimensions(clusterState.lightingTexture);
-    const IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
-
-#ifdef CLUSTERED_LIGHTING_DEBUG
-    CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Cluster DEBUG");
-
-    SetShaderProgram(clusterState.debugProgram, GraphicsQueueType);
-    SetResourceTable(clusterState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr, GraphicsQueueType);
-
-    // perform debug output
-    Compute(Math::n_divandroundup(dims.width, 64), dims.height, 1, GraphicsQueueType);
-
-    CommandBufferEndMarker(GraphicsQueueType);
-#endif
-
-    CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Clustered Shading");
-
-    SetShaderProgram(clusterState.renderProgram, GraphicsQueueType);
-    SetResourceTable(clusterState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr, GraphicsQueueType);
-    
-    // perform debug output
-    dims = TextureGetDimensions(clusterState.lightingTexture);
-    Compute(Math::n_divandroundup(dims.width, 64), dims.height, 1, GraphicsQueueType);
-
-    CommandBufferEndMarker(GraphicsQueueType);
 }
 
 //------------------------------------------------------------------------------
