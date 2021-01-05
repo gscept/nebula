@@ -1,0 +1,121 @@
+#pragma once
+//------------------------------------------------------------------------------
+/**
+    Doesn't actually allocate memory, but is used to keep track of free ranges
+    of elements in a virtual memory buffer
+
+    (C) 2020 Individual contributors, see AUTHORS file
+*/
+//------------------------------------------------------------------------------
+#include "core/types.h"
+#include "util/array.h"
+#include "math/scalar.h"
+namespace Memory
+{
+
+class RangeAllocator
+{
+public:
+
+    /// constructor
+    RangeAllocator();
+    /// destructor
+    ~RangeAllocator();
+
+    /// resize allocator buffer with number of elements
+    void Resize(SizeT numElements);
+
+    /// allocate a range of memory and return the index, returns false if failed because range could not be found
+    bool Alloc(SizeT numElements, SizeT alignment, IndexT& outIndex);
+    /// deallocate a range of memory
+    void Dealloc(IndexT startIndex);
+private:
+    struct Range
+    {
+        IndexT start;
+        SizeT length;
+    };
+    Util::Array<Range> ranges;
+    SizeT size;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline 
+RangeAllocator::RangeAllocator()
+{
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline 
+RangeAllocator::~RangeAllocator()
+{
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+RangeAllocator::Resize(SizeT numElements)
+{
+    this->size = numElements;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool 
+RangeAllocator::Alloc(SizeT numElements, SizeT alignment, IndexT& outIndex)
+{
+    bool ret = false;
+    IndexT currentOffset = 0;
+    IndexT i;
+    for (i = 0; i < this->ranges.Size(); i++)
+    {
+        const Range& range = this->ranges[i];
+
+        if (currentOffset > range.start)
+            goto next;
+        else if (range.start - currentOffset >= size)
+            break;
+
+    next:
+        currentOffset = Math::n_align(range.start + range.length, alignment);
+    }
+
+    // if we can't fit the range, return invalid index and false
+    if (currentOffset + numElements > this->size)
+        outIndex = InvalidIndex;
+    else
+    {
+        // otherwise, return true, output index and insert range
+        ret = true;
+        outIndex = currentOffset;
+
+        this->ranges.Insert(i, Range{ currentOffset, numElements });
+    }
+
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+RangeAllocator::Dealloc(IndexT startIndex)
+{
+    for (IndexT i = 0; i < this->ranges.Size(); i++)
+    {
+        if (this->ranges[i].start == startIndex)
+        {
+            this->ranges.EraseIndex(i);
+            return;
+        }
+    }
+    n_error("Tried to dealloc non-existant range");
+}
+
+} // namespace Memory

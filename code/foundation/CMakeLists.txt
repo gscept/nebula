@@ -65,6 +65,7 @@ nebula_begin_module(foundation)
 			arrayallocator.h
 			arrayallocatorsafe.h
 			arraystack.h
+			arrayqueue.h
 			bit.h
 			bitfield.h
 			blob.cc
@@ -90,7 +91,6 @@ nebula_begin_module(foundation)
 			priorityarray.h
 			quadtree.h
 			queue.h
-			arrayqueue.h
 			random.h
 			random.cc
 			randomnumbertable.cc
@@ -261,6 +261,7 @@ nebula_begin_module(foundation)
 			memorypool.h
 			poolarrayallocator.cc
 			poolarrayallocator.h
+			rangeallocator.h
 			ringallocator.h
 			debug/memorypagehandler.cc
 			debug/memorypagehandler.h
