@@ -8,7 +8,7 @@
 
 	Include this header and then define if you want an RGBA16F, RG16F or RG32F image as input.
 
-  (C) 2016 Gustav Sterbrant
+  (C) 2016-2021 Individual contributors, See LICENSE file
 */
 #include "lib/shared.fxh"
 

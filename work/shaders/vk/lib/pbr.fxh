@@ -9,26 +9,11 @@
 #include "lib/shared.fxh"
 #include "lib/util.fxh"
 
-const float RimIntensity = 0.9;//3.0;//
-const float RimPower = 2.0;
-
 // Definitions for the current setup of the material buffer
 #define MAT_METALLIC 0
 #define MAT_ROUGHNESS 1
 #define MAT_CAVITY 2
 #define MAT_EMISSIVE 3
-
-//------------------------------------------------------------------------------
-/**
-    Compute a rim light intensity value.
-*/
-float RimLightIntensity(vec3 worldNormal,     // surface normal in world space
-                        vec3 worldEyeVec)     // eye vector in world space
-{
-    float rimIntensity  = pow(abs(1.0f - abs(dot(worldNormal, worldEyeVec))), RimPower);
-    rimIntensity *= RimIntensity;
-    return rimIntensity;
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -99,68 +84,49 @@ GeometrySmith(in float NdotV, in float NdotL, in float roughness)
 //------------------------------------------------------------------------------
 /**
 */
-
-void
-CalculateF0(in vec3 color, in float metallic, inout vec3 F0)
+vec3
+CalculateF0(in vec3 color, in float metallic, const vec3 def)
 {
     // F0 as 0.04 will usually look good for all dielectric (non-metal) surfaces
-	//F0 = vec3(0.04);
+	// F0 = vec3(0.04);
 	// for metallic surfaces we interpolate between F0 and the albedo value with metallic value as our lerp weight
-	F0 = mix(F0, color.rgb, metallic);
+	return mix(def, color.rgb, metallic);
+}
+
+//------------------------------------------------------------------------------
+/**
+	TODO: Add more variants of diffuse lobes.
+*/
+vec3
+DiffuseLobe(vec3 diffuseColor, float roughness, float NdotV, float NdotL, float LdotH)
+{
+	// Lambert
+	return diffuseColor / PI;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-
-void
-CalculateBRDF(
-    float NdotH,
-    float NdotL,
-    float NdotV,
-    float cosTheta, // HdotL for direct lighting, NdotV for IBL. Theta is angle of incidence
-    float roughness,
-    vec3 F0,
-    out vec3 F, // fresnel term
-    out vec3 brdf)
+vec3
+SpecularLobe(vec4 material, vec3 F0, vec3 H, float NdotV, float NdotL, float NdotH, float LdotH)
 {
-    // if we are using IBL we should use dot(N,V) for cosTheta. 
-    // The correct way of doing it for direct lighting is using the halfway H for each lightsource (HdotL)
-    F = FresnelSchlickGloss(F0, max(cosTheta, 0.0), roughness);
-
-    float NDF = NormalDistributionGGX(NdotH, roughness);
-    float G = GeometrySmith(NdotV, NdotL, roughness);
-    
-    // Calculate Cook-Torrance BRDF
-    vec3 nominator = NDF * G * F;
-    float denominator = 4 * NdotV * NdotL + 0.001f; //We add 0.001f in case dot ends up becoming zero.
-    brdf = nominator / denominator;
+	float D = NormalDistributionGGX(NdotH, material[MAT_ROUGHNESS]);
+	float G = GeometrySmith(NdotV, NdotL, material[MAT_ROUGHNESS]);
+	vec3 F = FresnelSchlickGloss(F0, max(LdotH, 0.0), material[MAT_ROUGHNESS]);
+	return (D * G) * F;
 }
 
 //------------------------------------------------------------------------------
 /**
-	Calculates light diffuse and specular using physically based lighting
 */
-void
-BRDFLighting(
-	 float NH,
-	 float NL,
-	 float NV,
-	 float HL,
-	 float specPower,
-	 vec3 specColor,
-	 out vec3 spec)
+vec3 EvaluateBRDF(vec3 diffuseColor, vec4 material, vec3 F0, vec3 H, float NdotV, float NdotL, float NdotH, float LdotH)
 {
-	float normalizationTerm = (specPower + 2.0f) / 8.0f;
-	float blinnPhong = pow(NH, specPower);
-	float specularTerm = blinnPhong;
-	float cosineTerm = NL;
-	vec3 fresnelTerm = FresnelSchlick(specColor, HL);
-	float alpha = 1.0f / ( sqrt ( PI_OVER_FOUR * specPower + PI_OVER_TWO) );
-	float visibilityTerm = (NL * (1.0f - alpha) + alpha ) * (NV * ( 1.0f - alpha ) + alpha );
-	visibilityTerm = 1.0f / visibilityTerm;
-	spec = specularTerm * cosineTerm * fresnelTerm * visibilityTerm;
-	//spec = fresnelTerm * (roughness + 2) / 8.0f * pow(NH, roughness) * (NL);
+	//material[MAT_ROUGHNESS] = max(0.07f, material[MAT_ROUGHNESS]);
+	vec3 diffuseContrib = (diffuseColor * (1.0f - material[MAT_METALLIC]));
+	vec3 diffuseTerm = DiffuseLobe(diffuseContrib, material[MAT_ROUGHNESS], NdotV, NdotL, LdotH);
+	vec3 specularTerm = SpecularLobe(material, F0, H, NdotV, NdotL, NdotH, LdotH);
+	vec3 brdf = diffuseTerm + specularTerm;
+	return brdf;
 }
 
 //------------------------------------------------------------------------------

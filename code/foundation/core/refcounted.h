@@ -94,8 +94,8 @@ private:
         bool destroyed;
 
 public:
-		/// register debug name
-		void SetDebugName(const Util::String& name);
+        /// register debug name
+        void SetDebugName(const Util::String& name);
     #endif
 };
 
@@ -227,7 +227,7 @@ RefCounted::GetClassFourCC() const
 inline void
 RefCounted::SetDebugName(const Util::String& name)
 {
-	list.SetDebugName(this, name);
+    list.SetDebugName(this, name);
 }
 #endif
 

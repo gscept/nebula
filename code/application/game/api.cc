@@ -48,6 +48,8 @@ CreateOpBuffer()
             migration.
             We can also batch them based on their new category, so we won't
             need to do as many column id lookups.
+    @todo   This is not thread safe. Either, we keep it like it is and make sure
+            this function is always called synchronously, or add a critical section?
 */
 void
 Dispatch(OpBuffer& buffer)
@@ -73,7 +75,7 @@ Dispatch(OpBuffer& buffer)
 
 //------------------------------------------------------------------------------
 /**
-    @todo	optimize
+    @todo   optimize
 */
 void
 AddOp(OpBuffer buffer, Op::RegisterProperty op)
@@ -115,33 +117,33 @@ Execute(Op::RegisterProperty const& op)
     }
     else
     {
+        // Category with this hash does not exist. Create a new category.
         CategoryCreateInfo info;
-        auto const& cols = state.worldDatabase->GetTable(cat.instanceTable).columns.GetArray<0>();
-        info.columns.SetSize(cols.Size());
+        auto const& cols = state.worldDatabase->GetTable(cat.instanceTable).properties;
+        info.properties.SetSize(cols.Size() + 1);
         IndexT i;
-        // Note: Skips owner column
-        for (i = 0; i < cols.Size() - 1; ++i)
+        for (i = 0; i < cols.Size(); ++i)
         {
-            info.columns[i] = cols[i + 1];
+            info.properties[i] = cols[i];
         }
-        info.columns[i] = op.pid;
+        info.properties[i] = op.pid;
 
 #ifdef NEBULA_DEBUG
         info.name = cat.name + " + ";
         info.name += MemDb::TypeRegistry::GetDescription(op.pid)->name.AsString();
 #endif
-
         newCategoryId = EntityManager::Singleton->CreateCategory(info);
     }
 
-    EntityManager::Singleton->Migrate(op.entity, newCategoryId);
+    InstanceId newInstance = EntityManager::Singleton->Migrate(op.entity, newCategoryId);
 
     if (op.value == nullptr)
         return; // default value should already be set
 
     Ptr<MemDb::Database> db = Game::GetWorldDatabase();
-    auto cid = db->GetColumnId(cat.instanceTable, op.pid);
-    void* ptr = db->GetValuePointer(cat.instanceTable, cid, mapping.instance.id);
+    Category const& newCat = EntityManager::Singleton->GetCategory(newCategoryId);
+    auto cid = db->GetColumnId(newCat.instanceTable, op.pid);
+    void* ptr = db->GetValuePointer(newCat.instanceTable, cid, newInstance.id);
     Memory::Copy(op.value, ptr, MemDb::TypeRegistry::TypeSize(op.pid));
 }
 
@@ -151,6 +153,9 @@ Execute(Op::RegisterProperty const& op)
 void
 Execute(Op::DeregisterProperty const& op)
 {
+#if NEBULA_DEBUG
+    n_assert(Game::HasProperty(op.entity, op.pid));
+#endif
     EntityManager::State& state = EntityManager::Singleton->state;
     EntityMapping mapping = GetEntityMapping(op.entity);
     Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
@@ -164,16 +169,16 @@ Execute(Op::DeregisterProperty const& op)
     else
     {
         CategoryCreateInfo info;
-        auto const& cols = state.worldDatabase->GetTable(cat.instanceTable).columns.GetArray<0>();
-        info.columns.SetSize(cols.Size() - 1);
-        // Note: Skips owner column
+        auto const& cols = state.worldDatabase->GetTable(cat.instanceTable).properties;
+        SizeT const num = cols.Size();
+        info.properties.SetSize(num - 1);
         int col = 0;
-        for (int i = 0; i < cols.Size(); ++i)
+        for (int i = 0; i < num; ++i)
         {
             if (cols[i] == op.pid)
                 continue;
 
-            info.columns[col++] = cols[i];
+            info.properties[col++] = cols[i];
         }
 
 #ifdef NEBULA_DEBUG
@@ -202,7 +207,7 @@ ReleaseAllOps()
 Filter
 CreateFilter(FilterCreateInfo const& info)
 {
-	n_assert(info.numInclusive > 0);
+    n_assert(info.numInclusive > 0);
     uint32_t filter = filterAllocator.Alloc();
 
     PropertyArray inclusiveArray;
@@ -256,6 +261,10 @@ ReleaseDatasets()
 
 //------------------------------------------------------------------------------
 /**
+    @returns    Dataset with category table views.
+
+    @note       The category table view buffer can be NULL if the filter contains
+                a non-typed/flag property.
 */
 Dataset Query(Filter filter)
 {
@@ -288,7 +297,11 @@ Dataset Query(Filter filter)
         for (auto pid : properties)
         {
             MemDb::ColumnIndex colId = db->GetColumnId(tbl.tid, pid);
-            view->buffers[i] = db->GetBuffer(tbl.tid, colId);
+            // Check if the property is a flag, and return a nullptr in that case.
+            if (colId != InvalidIndex)
+                view->buffers[i] = db->GetBuffer(tbl.tid, colId);
+            else
+                view->buffers[i] = nullptr;
             i++;
         }
 
@@ -358,7 +371,17 @@ EntityMapping
 GetEntityMapping(Game::Entity entity)
 {
     n_assert(EntityManager::HasInstance());
+    n_assert(IsActive(entity));
     return EntityManager::Singleton->state.entityMap[Ids::Index(entity.id)];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+PropertyId
+CreateProperty(PropertyCreateInfo const& info)
+{
+    return MemDb::TypeRegistry::Register(info.name, info.byteSize, info.defaultValue, info.flags);
 }
 
 //------------------------------------------------------------------------------
@@ -372,6 +395,7 @@ GetPropertyId(Util::StringAtom name)
 
 //------------------------------------------------------------------------------
 /**
+   TODO: This is not thread safe!
 */
 bool
 HasProperty(Game::Entity const entity, PropertyId const pid)

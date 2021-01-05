@@ -17,8 +17,8 @@
 
 //------------------------------------------------------------------------------
 
-#define mm_ror_ps(vec,i)	\
-	(((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((unsigned char)(i+3)%4,(unsigned char)(i+2)%4,(unsigned char)(i+1)%4,(unsigned char)(i+0)%4))) : (vec))
+#define mm_ror_ps(vec,i)    \
+    (((i)%4) ? (_mm_shuffle_ps(vec,vec, _MM_SHUFFLE((unsigned char)(i+3)%4,(unsigned char)(i+2)%4,(unsigned char)(i+1)%4,(unsigned char)(i+0)%4))) : (vec))
 
 namespace Math
 {
@@ -80,12 +80,20 @@ public:
         float m20, float m21, float m22, float m23,
         float m30, float m31, float m32, float m33);
 
-	/// extracts scale components to target vector
-	void get_scale(vec4& scale) const;
+    /// extracts scale components to target vector
+    void get_scale(vec4& scale) const;
     /// add a translation to pos_component
     void translate(const vec3& t);
     /// add a translation to pos_component
     void translate(const float x, const float y, const float z);
+    ///
+    vec4 get_x() const;
+    ///
+    vec4 get_y() const;
+    ///
+    vec4 get_z() const;
+    ///
+    vec4 get_w() const;
     /// scale matrix
     void scale(const vec3& v);
     /// scale matrix
@@ -122,7 +130,7 @@ public:
         };
     };
 
-	static const mat4 identity;
+    static const mat4 identity;
 };
 
 //------------------------------------------------------------------------------
@@ -141,9 +149,9 @@ __forceinline
 mat4::mat4(const vec4& row0, const vec4& row1, const vec4& row2, const vec4& row3)
 {
     r[0] = row0.vec;
-	r[1] = row1.vec;
-	r[2] = row2.vec;
-	r[3] = row3.vec;
+    r[1] = row1.vec;
+    r[2] = row2.vec;
+    r[3] = row3.vec;
 }
 
 //------------------------------------------------------------------------------
@@ -164,7 +172,7 @@ mat4::mat4(float m00, float m01, float m02, float m03, float m10, float m11, flo
 __forceinline bool
 mat4::operator==(const mat4& rhs) const
 {
-	return vec4(r[0]) == vec4(rhs.r[0]) &&
+    return vec4(r[0]) == vec4(rhs.r[0]) &&
         vec4(r[1]) == vec4(rhs.r[1]) &&
         vec4(r[2]) == vec4(rhs.r[2]) &&
         vec4(r[3]) == vec4(rhs.r[3]);
@@ -176,7 +184,7 @@ mat4::operator==(const mat4& rhs) const
 __forceinline bool
 mat4::operator!=(const mat4& rhs) const
 {
-	return !(*this == rhs);
+    return !(*this == rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -185,10 +193,10 @@ mat4::operator!=(const mat4& rhs) const
 __forceinline void
 mat4::load(const scalar* ptr)
 {
-	r[0] = _mm_load_ps(ptr);
-	r[1] = _mm_load_ps(ptr + 4);
-	r[2] = _mm_load_ps(ptr + 8);
-	r[3] = _mm_load_ps(ptr + 12);
+    r[0] = _mm_load_ps(ptr);
+    r[1] = _mm_load_ps(ptr + 4);
+    r[2] = _mm_load_ps(ptr + 8);
+    r[3] = _mm_load_ps(ptr + 12);
 }
 
 //------------------------------------------------------------------------------
@@ -197,10 +205,10 @@ mat4::load(const scalar* ptr)
 __forceinline void
 mat4::loadu(const scalar* ptr)
 {
-	r[0] = _mm_loadu_ps(ptr);
-	r[1] = _mm_loadu_ps(ptr + 4);
-	r[2] = _mm_loadu_ps(ptr + 8);
-	r[3] = _mm_loadu_ps(ptr + 12);
+    r[0] = _mm_loadu_ps(ptr);
+    r[1] = _mm_loadu_ps(ptr + 4);
+    r[2] = _mm_loadu_ps(ptr + 8);
+    r[3] = _mm_loadu_ps(ptr + 12);
 }
 
 //------------------------------------------------------------------------------
@@ -209,10 +217,10 @@ mat4::loadu(const scalar* ptr)
 __forceinline void
 mat4::store(scalar* ptr) const
 {
-	_mm_store_ps(ptr, r[0].vec);
-	_mm_store_ps((ptr + 4), r[1].vec);
-	_mm_store_ps((ptr + 8), r[2].vec);
-	_mm_store_ps((ptr + 12), r[3].vec);
+    _mm_store_ps(ptr, r[0].vec);
+    _mm_store_ps((ptr + 4), r[1].vec);
+    _mm_store_ps((ptr + 8), r[2].vec);
+    _mm_store_ps((ptr + 12), r[3].vec);
 }
 
 //------------------------------------------------------------------------------
@@ -221,10 +229,10 @@ mat4::store(scalar* ptr) const
 __forceinline void
 mat4::storeu(scalar* ptr) const
 {
-	_mm_storeu_ps(ptr, r[0].vec);
-	_mm_storeu_ps((ptr + 4), r[1].vec);
-	_mm_storeu_ps((ptr + 8), r[2].vec);
-	_mm_storeu_ps((ptr + 12), r[3].vec);
+    _mm_storeu_ps(ptr, r[0].vec);
+    _mm_storeu_ps((ptr + 4), r[1].vec);
+    _mm_storeu_ps((ptr + 8), r[2].vec);
+    _mm_storeu_ps((ptr + 12), r[3].vec);
 }
 
 //------------------------------------------------------------------------------
@@ -233,7 +241,7 @@ mat4::storeu(scalar* ptr) const
 __forceinline void
 mat4::stream(scalar* ptr) const
 {
-	this->storeu(ptr);
+    this->storeu(ptr);
 }
 
 
@@ -270,11 +278,47 @@ mat4::get_scale(vec4& v) const
     vec4 xaxis = r[0];
     vec4 yaxis = r[1];
     vec4 zaxis = r[2];
-	scalar xScale = length3(xaxis);
-	scalar yScale = length3(yaxis);
-	scalar zScale = length3(zaxis);
+    scalar xScale = length3(xaxis);
+    scalar yScale = length3(yaxis);
+    scalar zScale = length3(zaxis);
 
     v = vec4(xScale, yScale, zScale, 1.0f);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4
+mat4::get_x() const
+{
+    return this->r[0];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4
+mat4::get_y() const
+{
+    return this->r[1];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4
+mat4::get_z() const
+{
+    return this->r[2];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4
+mat4::get_w() const
+{
+    return this->r[3];
 }
 
 //------------------------------------------------------------------------------
@@ -331,27 +375,27 @@ determinant(const mat4& m)
 
     // _mm_ror_ps is just a macro using _mm_shuffle_ps().
     tt = _L4; tt2 = mm_ror_ps(_L3,1);
-    Vc = _mm_mul_ps(tt2, mm_ror_ps(tt,0));					// V3' dot V4
-    Va = _mm_mul_ps(tt2, mm_ror_ps(tt,2));					// V3' dot V4"
-    Vb = _mm_mul_ps(tt2, mm_ror_ps(tt,3));					// V3' dot V4^
+    Vc = _mm_mul_ps(tt2, mm_ror_ps(tt,0));                  // V3' dot V4
+    Va = _mm_mul_ps(tt2, mm_ror_ps(tt,2));                  // V3' dot V4"
+    Vb = _mm_mul_ps(tt2, mm_ror_ps(tt,3));                  // V3' dot V4^
 
-    r1 = _mm_sub_ps(mm_ror_ps(Va,1), mm_ror_ps(Vc,2));		// V3" dot V4^ - V3^ dot V4"
-    r2 = _mm_sub_ps(mm_ror_ps(Vb,2), mm_ror_ps(Vb,0));		// V3^ dot V4' - V3' dot V4^
-    r3 = _mm_sub_ps(mm_ror_ps(Va,0), mm_ror_ps(Vc,1));		// V3' dot V4" - V3" dot V4'
+    r1 = _mm_sub_ps(mm_ror_ps(Va,1), mm_ror_ps(Vc,2));      // V3" dot V4^ - V3^ dot V4"
+    r2 = _mm_sub_ps(mm_ror_ps(Vb,2), mm_ror_ps(Vb,0));      // V3^ dot V4' - V3' dot V4^
+    r3 = _mm_sub_ps(mm_ror_ps(Va,0), mm_ror_ps(Vc,1));      // V3' dot V4" - V3" dot V4'
 
     tt = _L2;
-    Va = mm_ror_ps(tt,1);		sum = _mm_mul_ps(Va,r1);
-    Vb = mm_ror_ps(tt,2);		sum = _mm_add_ps(sum,_mm_mul_ps(Vb,r2));
-    Vc = mm_ror_ps(tt,3);		sum = _mm_add_ps(sum,_mm_mul_ps(Vc,r3));
+    Va = mm_ror_ps(tt,1);       sum = _mm_mul_ps(Va,r1);
+    Vb = mm_ror_ps(tt,2);       sum = _mm_add_ps(sum,_mm_mul_ps(Vb,r2));
+    Vc = mm_ror_ps(tt,3);       sum = _mm_add_ps(sum,_mm_mul_ps(Vc,r3));
 
     // Calculating the determinant.
     Det = _mm_mul_ps(sum,_L1);
     Det = _mm_add_ps(Det,_mm_movehl_ps(Det,Det));
 
     // Calculating the minterms of the second line (using previous results).
-    tt = mm_ror_ps(_L1,1);		sum = _mm_mul_ps(tt,r1);
-    tt = mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
-    tt = mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
+    tt = mm_ror_ps(_L1,1);      sum = _mm_mul_ps(tt,r1);
+    tt = mm_ror_ps(tt,1);       sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
+    tt = mm_ror_ps(tt,1);       sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
 
     // Testing the determinant.
     Det = _mm_sub_ss(Det,_mm_shuffle_ps(Det,Det,1));
@@ -369,8 +413,8 @@ inverse(const mat4& m)
     __m128 sum,Det,RDet;
     __m128 trns0,trns1,trns2,trns3;
 
-	const __m128i pnpn = _mm_setr_epi32(0x00000000, static_cast<int>(0x80000000), 0x00000000, static_cast<int>(0x80000000));
-	const __m128i npnp = _mm_setr_epi32(static_cast<int>(0x80000000), 0x00000000, static_cast<int>(0x80000000), 0x00000000);
+    const __m128i pnpn = _mm_setr_epi32(0x00000000, static_cast<int>(0x80000000), 0x00000000, static_cast<int>(0x80000000));
+    const __m128i npnp = _mm_setr_epi32(static_cast<int>(0x80000000), 0x00000000, static_cast<int>(0x80000000), 0x00000000);
     const __m128 zeroone = _mm_setr_ps(1.0f, 0.0f, 0.0f, 1.0f);
 
     __m128 _L1 = m.r[0].vec;
@@ -381,18 +425,18 @@ inverse(const mat4& m)
 
     // _mm_ror_ps is just a macro using _mm_shuffle_ps().
     tt = _L4; tt2 = mm_ror_ps(_L3,1);
-    Vc = _mm_mul_ps(tt2, mm_ror_ps(tt,0));					// V3'dot V4
-    Va = _mm_mul_ps(tt2, mm_ror_ps(tt,2));					// V3'dot V4"
-    Vb = _mm_mul_ps(tt2, mm_ror_ps(tt,3));					// V3' dot V4^
+    Vc = _mm_mul_ps(tt2, mm_ror_ps(tt,0));                  // V3'dot V4
+    Va = _mm_mul_ps(tt2, mm_ror_ps(tt,2));                  // V3'dot V4"
+    Vb = _mm_mul_ps(tt2, mm_ror_ps(tt,3));                  // V3' dot V4^
 
-    r1 = _mm_sub_ps(mm_ror_ps(Va,1), mm_ror_ps(Vc,2));		// V3" dot V4^ - V3^ dot V4"
-    r2 = _mm_sub_ps(mm_ror_ps(Vb,2), mm_ror_ps(Vb,0));		// V3^ dot V4' - V3' dot V4^
-    r3 = _mm_sub_ps(mm_ror_ps(Va,0), mm_ror_ps(Vc,1));		// V3' dot V4" - V3" dot V4'
+    r1 = _mm_sub_ps(mm_ror_ps(Va,1), mm_ror_ps(Vc,2));      // V3" dot V4^ - V3^ dot V4"
+    r2 = _mm_sub_ps(mm_ror_ps(Vb,2), mm_ror_ps(Vb,0));      // V3^ dot V4' - V3' dot V4^
+    r3 = _mm_sub_ps(mm_ror_ps(Va,0), mm_ror_ps(Vc,1));      // V3' dot V4" - V3" dot V4'
 
     tt = _L2;
-    Va = mm_ror_ps(tt,1);		sum = _mm_mul_ps(Va,r1);
-    Vb = mm_ror_ps(tt,2);		sum = _mm_add_ps(sum,_mm_mul_ps(Vb,r2));
-    Vc = mm_ror_ps(tt,3);		sum = _mm_add_ps(sum,_mm_mul_ps(Vc,r3));
+    Va = mm_ror_ps(tt,1);       sum = _mm_mul_ps(Va,r1);
+    Vb = mm_ror_ps(tt,2);       sum = _mm_add_ps(sum,_mm_mul_ps(Vb,r2));
+    Vc = mm_ror_ps(tt,3);       sum = _mm_add_ps(sum,_mm_mul_ps(Vc,r3));
 
     // Calculating the determinant.
     Det = _mm_mul_ps(sum,_L1);
@@ -402,9 +446,9 @@ inverse(const mat4& m)
     __m128 mtL1 = _mm_xor_ps(sum, _mm_castsi128_ps(pnpn));
 
     // Calculating the minterms of the second line (using previous results).
-    tt = mm_ror_ps(_L1,1);		sum = _mm_mul_ps(tt,r1);
-    tt = mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
-    tt = mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
+    tt = mm_ror_ps(_L1,1);      sum = _mm_mul_ps(tt,r1);
+    tt = mm_ror_ps(tt,1);       sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
+    tt = mm_ror_ps(tt,1);       sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
     __m128 mtL2 = _mm_xor_ps(sum, _mm_castsi128_ps(npnp));
 
     // Testing the determinant.
@@ -412,17 +456,17 @@ inverse(const mat4& m)
 
     // Calculating the minterms of the third line.
     tt = mm_ror_ps(_L1,1);
-    Va = _mm_mul_ps(tt,Vb);									// V1' dot V2"
-    Vb = _mm_mul_ps(tt,Vc);									// V1' dot V2^
-    Vc = _mm_mul_ps(tt,_L2);								// V1' dot V2
+    Va = _mm_mul_ps(tt,Vb);                                 // V1' dot V2"
+    Vb = _mm_mul_ps(tt,Vc);                                 // V1' dot V2^
+    Vc = _mm_mul_ps(tt,_L2);                                // V1' dot V2
 
-    r1 = _mm_sub_ps(mm_ror_ps(Va,1), mm_ror_ps(Vc,2));		// V1" dot V2^ - V1^ dot V2"
-    r2 = _mm_sub_ps(mm_ror_ps(Vb,2), mm_ror_ps(Vb,0));		// V1^ dot V2' - V1' dot V2^
-    r3 = _mm_sub_ps(mm_ror_ps(Va,0), mm_ror_ps(Vc,1));		// V1' dot V2" - V1" dot V2'
+    r1 = _mm_sub_ps(mm_ror_ps(Va,1), mm_ror_ps(Vc,2));      // V1" dot V2^ - V1^ dot V2"
+    r2 = _mm_sub_ps(mm_ror_ps(Vb,2), mm_ror_ps(Vb,0));      // V1^ dot V2' - V1' dot V2^
+    r3 = _mm_sub_ps(mm_ror_ps(Va,0), mm_ror_ps(Vc,1));      // V1' dot V2" - V1" dot V2'
 
-    tt = mm_ror_ps(_L4,1);		sum = _mm_mul_ps(tt,r1);
-    tt = mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
-    tt = mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
+    tt = mm_ror_ps(_L4,1);      sum = _mm_mul_ps(tt,r1);
+    tt = mm_ror_ps(tt,1);       sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
+    tt = mm_ror_ps(tt,1);       sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
     __m128 mtL3 = _mm_xor_ps(sum, _mm_castsi128_ps(pnpn));
 
     // Dividing is FASTER than rcp_nr! (Because rcp_nr causes many register-memory RWs).
@@ -435,9 +479,9 @@ inverse(const mat4& m)
     mtL3 = _mm_mul_ps(mtL3, RDet);
 
     // Calculate the minterms of the forth line and devide by the determinant.
-    tt = mm_ror_ps(_L3,1);		sum = _mm_mul_ps(tt,r1);
-    tt = mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
-    tt = mm_ror_ps(tt,1);		sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
+    tt = mm_ror_ps(_L3,1);      sum = _mm_mul_ps(tt,r1);
+    tt = mm_ror_ps(tt,1);       sum = _mm_add_ps(sum,_mm_mul_ps(tt,r2));
+    tt = mm_ror_ps(tt,1);       sum = _mm_add_ps(sum,_mm_mul_ps(tt,r3));
     __m128 mtL4 = _mm_xor_ps(sum, _mm_castsi128_ps(npnp));
     mtL4 = _mm_mul_ps(mtL4, RDet);
 
@@ -475,8 +519,8 @@ lookatlh(const point& eye, const point& at, const vector& up)
         // just rotate y->x, x->z and z->y
         normUp = permute(normUp, normUp, 1, 2, 0);
     }
-	const vector xaxis = normalize(cross(normUp, zaxis));
-	const vector yaxis = normalize(cross(zaxis, xaxis));
+    const vector xaxis = normalize(cross(normUp, zaxis));
+    const vector yaxis = normalize(cross(zaxis, xaxis));
     return mat4(xaxis, yaxis, zaxis, eye);
 }
 
@@ -501,8 +545,8 @@ lookatrh(const point& eye, const point& at, const vector& up)
         // just rotate y->x, x->z and z->y
         normUp = permute(normUp, normUp, 1, 2, 0);
     }
-	const vector xaxis = normalize(cross(normUp, zaxis));
-	const vector yaxis = normalize(cross(zaxis, xaxis));
+    const vector xaxis = normalize(cross(normUp, zaxis));
+    const vector yaxis = normalize(cross(zaxis, xaxis));
     return mat4(xaxis, yaxis, zaxis, eye);
 }
 
@@ -510,12 +554,12 @@ lookatrh(const point& eye, const point& at, const vector& up)
 // dual linear combination using AVX instructions on YMM regs
 static inline __m256 twolincomb_AVX_8(__m256 A01, const mat4 &B)
 {
-	__m256 result;
-	result = _mm256_mul_ps(_mm256_shuffle_ps(A01, A01, 0x00), _mm256_broadcast_ps(&B.r[0].vec));
-	result = _mm256_add_ps(result, _mm256_mul_ps(_mm256_shuffle_ps(A01, A01, 0x55), _mm256_broadcast_ps(&B.r[1].vec)));
-	result = _mm256_add_ps(result, _mm256_mul_ps(_mm256_shuffle_ps(A01, A01, 0xaa), _mm256_broadcast_ps(&B.r[2].vec)));
-	result = _mm256_add_ps(result, _mm256_mul_ps(_mm256_shuffle_ps(A01, A01, 0xff), _mm256_broadcast_ps(&B.r[3].vec)));
-	return result;
+    __m256 result;
+    result = _mm256_mul_ps(_mm256_shuffle_ps(A01, A01, 0x00), _mm256_broadcast_ps(&B.r[0].vec));
+    result = _mm256_add_ps(result, _mm256_mul_ps(_mm256_shuffle_ps(A01, A01, 0x55), _mm256_broadcast_ps(&B.r[1].vec)));
+    result = _mm256_add_ps(result, _mm256_mul_ps(_mm256_shuffle_ps(A01, A01, 0xaa), _mm256_broadcast_ps(&B.r[2].vec)));
+    result = _mm256_add_ps(result, _mm256_mul_ps(_mm256_shuffle_ps(A01, A01, 0xff), _mm256_broadcast_ps(&B.r[3].vec)));
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -524,18 +568,18 @@ static inline __m256 twolincomb_AVX_8(__m256 A01, const mat4 &B)
 __forceinline mat4
 operator*(const mat4& m0, const mat4& m1)
 {
-	mat4 out;
+    mat4 out;
 
-	_mm256_zeroupper();
-	__m256 A01 = _mm256_loadu_ps(&m0.m[0][0]);
-	__m256 A23 = _mm256_loadu_ps(&m0.m[2][0]);
+    _mm256_zeroupper();
+    __m256 A01 = _mm256_loadu_ps(&m0.m[0][0]);
+    __m256 A23 = _mm256_loadu_ps(&m0.m[2][0]);
 
-	__m256 out01x = twolincomb_AVX_8(A01, m1);
-	__m256 out23x = twolincomb_AVX_8(A23, m1);
+    __m256 out01x = twolincomb_AVX_8(A01, m1);
+    __m256 out23x = twolincomb_AVX_8(A23, m1);
 
-	_mm256_storeu_ps(&out.m[0][0], out01x);
-	_mm256_storeu_ps(&out.m[2][0], out23x);
-	return out;
+    _mm256_storeu_ps(&out.m[0][0], out01x);
+    _mm256_storeu_ps(&out.m[2][0], out23x);
+    return out;
 }
 #else
 //------------------------------------------------------------------------------
@@ -544,7 +588,7 @@ operator*(const mat4& m0, const mat4& m1)
 __forceinline mat4
 operator*(const mat4& m0, const mat4& m1)
 {
-	mat4 ret;
+    mat4 ret;
 
     vec4 mw = m0.r[0];
 
@@ -577,10 +621,10 @@ operator*(const mat4& m0, const mat4& m1)
     mz = splat_z(mw);
     mw = splat_w(mw);
 
- 	mx = multiply(mx, m1x);
- 	my = multiply(my, m1y);
- 	mz = multiply(mz, m1z);
- 	mw = multiply(mw, m1w);
+    mx = multiply(mx, m1x);
+    my = multiply(my, m1y);
+    mz = multiply(mz, m1z);
+    mw = multiply(mw, m1w);
 
     mx = mx + my;
     mz = mz + mw;
@@ -609,10 +653,10 @@ operator*(const mat4& m0, const mat4& m1)
     mz = splat_z(mw);
     mw = splat_w(mw);
 
-	mx = multiply(mx, m1x);
-	my = multiply(my, m1y);
-	mz = multiply(mz, m1z);
-	mw = multiply(mw, m1w);
+    mx = multiply(mx, m1x);
+    my = multiply(my, m1y);
+    mz = multiply(mz, m1z);
+    mw = multiply(mw, m1w);
 
     mx = mx + my;
     mz = mz + mw;
@@ -666,16 +710,15 @@ __forceinline vec4
 operator*(const mat4& m, const point& p)
 {
     __m128 x = _mm_shuffle_ps(p.vec, p.vec, _MM_SHUFFLE(0, 0, 0, 0));
-    x = _mm_and_ps(x, _mask_xyz);
     __m128 y = _mm_shuffle_ps(p.vec, p.vec, _MM_SHUFFLE(1, 1, 1, 1));
-    y = _mm_and_ps(y, _mask_xyz);
     __m128 z = _mm_shuffle_ps(p.vec, p.vec, _MM_SHUFFLE(2, 2, 2, 2));
-    z = _mm_and_ps(z, _mask_xyz);
+    __m128 w = _mm_shuffle_ps(p.vec, p.vec, _MM_SHUFFLE(3, 3, 3, 3));
 
     return 
         fmadd(x, m.r[0].vec, 
         fmadd(y, m.r[1].vec,
-        _mm_mul_ps(z, m.r[2].vec)));
+        fmadd(z, m.r[2].vec, 
+        _mm_mul_ps(w, m.r[3].vec))));
 }
 
 //------------------------------------------------------------------------------
@@ -684,13 +727,13 @@ operator*(const mat4& m, const point& p)
 __forceinline mat4
 ortholh(scalar w, scalar h, scalar zn, scalar zf)
 {
-	mat4 m = mat4::identity;
-	scalar dist = 1.0f / (zf - zn);
-	m.r[0] = vec4(2.0f / w, 0.0f, 0.0f, 0.0f);
-	m.r[1] = vec4(0.0f, 2.0f / h, 0.0f, 0.0f);
-	m.r[2] = vec4(0.0f, 0.0f, dist, 0.0f);
-	m.r[3] = vec4(0.0f, 0.0, -dist * zn, 1.0f);
-	return m;
+    mat4 m = mat4::identity;
+    scalar dist = 1.0f / (zf - zn);
+    m.r[0] = vec4(2.0f / w, 0.0f, 0.0f, 0.0f);
+    m.r[1] = vec4(0.0f, 2.0f / h, 0.0f, 0.0f);
+    m.r[2] = vec4(0.0f, 0.0f, dist, 0.0f);
+    m.r[3] = vec4(0.0f, 0.0, -dist * zn, 1.0f);
+    return m;
 }
 
 //------------------------------------------------------------------------------
@@ -699,13 +742,13 @@ ortholh(scalar w, scalar h, scalar zn, scalar zf)
 __forceinline mat4
 orthorh(scalar w, scalar h, scalar zn, scalar zf)
 {
-	mat4 m = mat4::identity;
-	scalar dist = 1.0f / (zn - zf);
+    mat4 m = mat4::identity;
+    scalar dist = 1.0f / (zn - zf);
     m.r[0] = vec4(2.0f / w, 0.0f, 0.0f, 0.0f);
     m.r[1] = vec4(0.0f, 2.0f / h, 0.0f, 0.0f);
     m.r[2] = vec4(0.0f, 0.0f, dist, 0.0f);
     m.r[3] = vec4(0.0f, 0.0, dist * zn, 1.0f);
-	return m;
+    return m;
 }
 
 //------------------------------------------------------------------------------
@@ -714,15 +757,15 @@ orthorh(scalar w, scalar h, scalar zn, scalar zf)
 __forceinline mat4
 orthooffcenterlh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
 {
-	mat4 m = mat4::identity;
-	scalar divwidth = 1.0f / (r - l);
-	scalar divheight = 1.0f / (t - b);
-	scalar dist = 1.0f / (zf - zn);
+    mat4 m = mat4::identity;
+    scalar divwidth = 1.0f / (r - l);
+    scalar divheight = 1.0f / (t - b);
+    scalar dist = 1.0f / (zf - zn);
     m.r[0] = vec4(2.0f * divwidth, 0.0f, 0.0f, 0.0f);
     m.r[1] = vec4(0.0f, 2.0f * divheight, 0.0f, 0.0f);
     m.r[2] = vec4(0.0f, 0.0f, dist, 0.0f);
     m.r[3] = vec4(-(l+r) * divwidth, - (b+t) * divheight, -dist *  zn, 1.0f);
-	return m;
+    return m;
 }
 
 //------------------------------------------------------------------------------
@@ -731,15 +774,15 @@ orthooffcenterlh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
 __forceinline mat4
 orthooffcenterrh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
 {
-	mat4 m = mat4::identity;
-	scalar divwidth = 1.0f / (r - l);
-	scalar divheight = 1.0f / (t - b);
-	scalar dist = 1.0f / (zn - zf);
+    mat4 m = mat4::identity;
+    scalar divwidth = 1.0f / (r - l);
+    scalar divheight = 1.0f / (t - b);
+    scalar dist = 1.0f / (zn - zf);
     m.r[0] = vec4(2.0f * divwidth, 0.0f, 0.0f, 0.0f);
     m.r[1] = vec4(0.0f, 2.0f * divheight, 0.0f, 0.0f);
     m.r[2] = vec4(0.0f, 0.0f, dist, 0.0f);
     m.r[3] = vec4(-(l+r) * divwidth, - (b+t) * divheight, dist *  zn, 1.0f);
-	return m;
+    return m;
 }
 
 //------------------------------------------------------------------------------
@@ -749,20 +792,20 @@ __forceinline mat4
 perspfovlh(scalar fovy, scalar aspect, scalar zn, scalar zf)
 {
     mat4 m = mat4::identity;
-	scalar halfFov = 0.5f * fovy;
-	scalar sinfov = n_sin(halfFov);
-	scalar cosfov = n_cos(halfFov);
+    scalar halfFov = 0.5f * fovy;
+    scalar sinfov = n_sin(halfFov);
+    scalar cosfov = n_cos(halfFov);
 
-	scalar height = cosfov / sinfov;
-	scalar width = height / aspect;
+    scalar height = cosfov / sinfov;
+    scalar width = height / aspect;
 
-	scalar dist = zf / (zf - zn);
+    scalar dist = zf / (zf - zn);
     m.r[0] = vec4(width, 0.0f, 0.0f, 0.0f);
     m.r[1] = vec4(0.0f, height, 0.0f, 0.0f);
     m.r[2] = vec4(0.0f, 0.0f, dist, 1.0f);
     m.r[3] = vec4(0.0f, 0.0f, -dist * zn, 0.0f);
 
-	return m;
+    return m;
 }
 
 //------------------------------------------------------------------------------
@@ -771,22 +814,22 @@ perspfovlh(scalar fovy, scalar aspect, scalar zn, scalar zf)
 __forceinline mat4
 perspfovrh(scalar fovy, scalar aspect, scalar zn, scalar zf)
 {
-	mat4 m = mat4::identity;
-	scalar halfFov = 0.5f * fovy;
-	scalar sinfov = n_sin(halfFov);
-	scalar cosfov = n_cos(halfFov);
+    mat4 m = mat4::identity;
+    scalar halfFov = 0.5f * fovy;
+    scalar sinfov = n_sin(halfFov);
+    scalar cosfov = n_cos(halfFov);
 
-	scalar height = cosfov / sinfov;
-	scalar width = height / aspect;
+    scalar height = cosfov / sinfov;
+    scalar width = height / aspect;
 
-	scalar dist = zf / (zn - zf);
+    scalar dist = zf / (zn - zf);
 
     m.r[0] = vec4(width, 0.0f, 0.0f, 0.0f);
     m.r[1] = vec4(0.0f, height, 0.0f, 0.0f);
     m.r[2] = vec4(0.0f, 0.0f, dist, -1.0f);
     m.r[3] = vec4(0.0f, 0.0f, dist * zn, 0.0f);
 
-	return m;
+    return m;
 }
 
 //------------------------------------------------------------------------------
@@ -795,14 +838,14 @@ perspfovrh(scalar fovy, scalar aspect, scalar zn, scalar zf)
 __forceinline mat4
 persplh(scalar w, scalar h, scalar zn, scalar zf)
 {
-	mat4 m = mat4::identity;
-	scalar dist = zf / (zf - zn);	
+    mat4 m = mat4::identity;
+    scalar dist = zf / (zf - zn);   
 
     m.r[0] = vec4(2.0f * zn / w, 0.0f, 0.0f, 0.0f);
     m.r[1] = vec4(0.0f, 2.0f * zn / h, 0.0f, 0.0f);
     m.r[2] = vec4(0.0f, 0.0f, dist, 1.0f);
     m.r[3] = vec4(0.0f, 0.0, -dist * zn, 0.0f);
-	return m;
+    return m;
 }
 
 //------------------------------------------------------------------------------
@@ -811,14 +854,14 @@ persplh(scalar w, scalar h, scalar zn, scalar zf)
 __forceinline mat4
 persprh(scalar w, scalar h, scalar zn, scalar zf)
 {
-	mat4 m = mat4::identity;
-	scalar dist = zf / (zn - zf);	
+    mat4 m = mat4::identity;
+    scalar dist = zf / (zn - zf);   
 
     m.r[0] = vec4(2.0f * zn / w, 0.0f, 0.0f, 0.0f);
     m.r[1] = vec4(0.0f, 2.0f * zn / h, 0.0f, 0.0f);
     m.r[2] = vec4(0.0f, 0.0f, dist, -1.0f);
     m.r[3] = vec4(0.0f, 0.0, dist * zn, 0.0f);
-	return m;
+    return m;
 }
 
 //------------------------------------------------------------------------------
@@ -827,16 +870,16 @@ persprh(scalar w, scalar h, scalar zn, scalar zf)
 __forceinline mat4
 perspoffcenterlh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
 {
-	mat4 m = mat4::identity;
-	scalar divwidth = 1.0f / (r - l);
-	scalar divheight = 1.0f / (t - b);
-	scalar dist = zf / (zf - zn);
+    mat4 m = mat4::identity;
+    scalar divwidth = 1.0f / (r - l);
+    scalar divheight = 1.0f / (t - b);
+    scalar dist = zf / (zf - zn);
 
     m.r[0] = vec4(2.0f * zn * divwidth, 0.0f, 0.0f, 0.0f);
     m.r[1] = vec4(0.0f, 2.0f * zn * divheight, 0.0f, 0.0f);
     m.r[2] = vec4(-(l + r) * divwidth, -(b + t) * divheight, dist, 1.0f);
     m.r[3] = vec4(0.0f, 0.0f, -dist * zn, 0.0f);
-	return m;
+    return m;
 }
 
 //------------------------------------------------------------------------------
@@ -845,16 +888,16 @@ perspoffcenterlh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
 __forceinline mat4
 perspoffcenterrh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
 {
-	mat4 m = mat4::identity;
-	scalar divwidth = 1.0f / (r - l);
-	scalar divheight = 1.0f / (t - b);
-	scalar dist = zf / (zn - zf);
+    mat4 m = mat4::identity;
+    scalar divwidth = 1.0f / (r - l);
+    scalar divheight = 1.0f / (t - b);
+    scalar dist = zf / (zn - zf);
 
     m.r[0] = vec4(2.0f * zn * divwidth, 0.0f, 0.0f, 0.0f);
     m.r[1] = vec4(0.0f, 2.0f * zn * divheight, 0.0f, 0.0f);
     m.r[2] = vec4((l + r) * divwidth, (b + t) * divheight, dist, -1.0f);
     m.r[3] = vec4(0.0f, 0.0f, dist * zn, 0.0f);
-	return m;
+    return m;
 }
 
 //------------------------------------------------------------------------------
@@ -872,17 +915,17 @@ rotationaxis(const vec3& axis, scalar angle)
     __m128 c = _mm_set_ps1(cangle);
     __m128 s = _mm_set_ps1(sangle);
 
-	__m128 nn1 = _mm_shuffle_ps(norm,norm,_MM_SHUFFLE(3,0,2,1));
-	__m128 nn2 = _mm_shuffle_ps(norm,norm,_MM_SHUFFLE(3,1,0,2));
+    __m128 nn1 = _mm_shuffle_ps(norm,norm,_MM_SHUFFLE(3,0,2,1));
+    __m128 nn2 = _mm_shuffle_ps(norm,norm,_MM_SHUFFLE(3,1,0,2));
 
-	__m128 v = _mm_mul_ps(nn1,m1_c);
-	v = _mm_mul_ps(nn2,v);
+    __m128 v = _mm_mul_ps(nn1,m1_c);
+    v = _mm_mul_ps(nn2,v);
 
-	__m128 nn3 = _mm_mul_ps(norm, m1_c);
+    __m128 nn3 = _mm_mul_ps(norm, m1_c);
     nn3 = _mm_mul_ps(norm, nn3);
     nn3 = _mm_add_ps(nn3, c);
 
-	__m128 nn4 = _mm_mul_ps(norm,s);
+    __m128 nn4 = _mm_mul_ps(norm,s);
     nn4 = _mm_add_ps(nn4, v);
     __m128 nn5 = _mm_mul_ps(s, norm);
     nn5 = _mm_sub_ps(v,nn5);
@@ -899,9 +942,9 @@ rotationaxis(const vec3& axis, scalar angle)
     nn5 = _mm_shuffle_ps(v,v1,_MM_SHUFFLE(1,0,3,0));
     nn5 = _mm_shuffle_ps(nn5,nn5,_MM_SHUFFLE(1,3,2,0));
 
-	mat4 m;	
+    mat4 m; 
     m.row0 = nn5;
-	
+    
     nn5 = _mm_shuffle_ps(v,v1,_MM_SHUFFLE(3,2,3,1));
     nn5 = _mm_shuffle_ps(nn5,nn5,_MM_SHUFFLE(1,3,0,2));
     m.row1 = nn5;
@@ -921,17 +964,17 @@ rotationaxis(const vec3& axis, scalar angle)
 __forceinline mat4
 rotationx(scalar angle)
 {
-	mat4 m = mat4::identity;
+    mat4 m = mat4::identity;
 
-	scalar sangle = n_sin(angle);
-	scalar cangle = n_cos(angle);
+    scalar sangle = n_sin(angle);
+    scalar cangle = n_cos(angle);
 
-	m.m[1][1] = cangle;
-	m.m[1][2] = sangle;
+    m.m[1][1] = cangle;
+    m.m[1][2] = sangle;
 
-	m.m[2][1] = -sangle;
-	m.m[2][2] = cangle;
-	return m;	
+    m.m[2][1] = -sangle;
+    m.m[2][2] = cangle;
+    return m;   
 }
 
 //------------------------------------------------------------------------------
@@ -940,17 +983,17 @@ rotationx(scalar angle)
 __forceinline mat4
 rotationy(scalar angle)
 {
-	mat4 m = mat4::identity;
+    mat4 m = mat4::identity;
 
-	scalar sangle = n_sin(angle);
-	scalar cangle = n_cos(angle);
+    scalar sangle = n_sin(angle);
+    scalar cangle = n_cos(angle);
 
-	m.m[0][0] = cangle;
-	m.m[0][2] = -sangle;
+    m.m[0][0] = cangle;
+    m.m[0][2] = -sangle;
 
-	m.m[2][0] = sangle;
-	m.m[2][2] = cangle;
-	return m;
+    m.m[2][0] = sangle;
+    m.m[2][2] = cangle;
+    return m;
 }
 
 //------------------------------------------------------------------------------
@@ -959,17 +1002,17 @@ rotationy(scalar angle)
 __forceinline mat4
 rotationz(scalar angle)
 {
-	mat4 m = mat4::identity;
+    mat4 m = mat4::identity;
 
-	scalar sangle = n_sin(angle);
-	scalar cangle = n_cos(angle);
+    scalar sangle = n_sin(angle);
+    scalar cangle = n_cos(angle);
 
-	m.m[0][0] = cangle;
-	m.m[0][1] = sangle;
+    m.m[0][0] = cangle;
+    m.m[0][1] = sangle;
 
-	m.m[1][0] = -sangle;
-	m.m[1][1] = cangle;
-	return m;
+    m.m[1][0] = -sangle;
+    m.m[1][1] = cangle;
+    return m;
 }
 
 //------------------------------------------------------------------------------
@@ -978,8 +1021,8 @@ rotationz(scalar angle)
 __forceinline mat4
 rotationyawpitchroll(scalar yaw, scalar pitch, scalar roll)
 {
-	quat q = rotationquatyawpitchroll(yaw,pitch,roll);
-	return rotationquat(q);
+    quat q = rotationquatyawpitchroll(yaw,pitch,roll);
+    return rotationquat(q);
 }
 
 //------------------------------------------------------------------------------
@@ -1003,13 +1046,13 @@ scaling(scalar scale)
 __forceinline mat4
 scaling(scalar sx, scalar sy, scalar sz)
 {
-	mat4 m = mat4::identity;
-	m.r[0] = _mm_setr_ps(sx, 0.0f, 0.0f, 0.0f);
+    mat4 m = mat4::identity;
+    m.r[0] = _mm_setr_ps(sx, 0.0f, 0.0f, 0.0f);
     m.r[1] = _mm_setr_ps(0.0f, sy, 0.0f, 0.0f);
     m.r[2] = _mm_setr_ps(0.0f, 0.0f, sz, 0.0f);
     m.r[3] = _mm_setr_ps(0.0f, 0.0f, 0.0f, 1.0f);
-	
-	return m;
+    
+    return m;
 }
 
 //------------------------------------------------------------------------------
@@ -1018,10 +1061,10 @@ scaling(scalar sx, scalar sy, scalar sz)
 __forceinline mat4
 scaling(const vec3& s)
 {
-	mat4 m = mat4::identity;
-	m.r[0] = _mm_and_ps(s.vec, _mm_castsi128_ps(maskX));
-	m.r[1] = _mm_and_ps(s.vec, _mm_castsi128_ps(maskY));
-	m.r[2] = _mm_and_ps(s.vec, _mm_castsi128_ps(maskZ));	
+    mat4 m = mat4::identity;
+    m.r[0] = _mm_and_ps(s.vec, _mm_castsi128_ps(maskX));
+    m.r[1] = _mm_and_ps(s.vec, _mm_castsi128_ps(maskY));
+    m.r[2] = _mm_and_ps(s.vec, _mm_castsi128_ps(maskZ));    
 
     return m;
 }
@@ -1032,9 +1075,9 @@ scaling(const vec3& s)
 __forceinline mat4
 translation(scalar x, scalar y, scalar z)
 {
-	mat4 m = mat4::identity;
-	m.r[3] = _mm_set_ps(1.0f,z,y,x);
-	return m;    
+    mat4 m = mat4::identity;
+    m.r[3] = _mm_set_ps(1.0f,z,y,x);
+    return m;    
 }
 
 //------------------------------------------------------------------------------
@@ -1043,8 +1086,8 @@ translation(scalar x, scalar y, scalar z)
 __forceinline mat4
 translation(const vec3& t)
 {
-	mat4 m = mat4::identity;
-	m.r[3] = vec4(t.vec, 1.0f);
+    mat4 m = mat4::identity;
+    m.r[3] = vec4(t.vec, 1.0f);
     return m;
 }
 

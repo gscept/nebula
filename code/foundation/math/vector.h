@@ -125,7 +125,7 @@ vector::vector(const vec3& rhs)
 __forceinline
 vector::vector(const __m128& rhs)
 {
-    this->vec = rhs;
+    this->vec = _mm_insert_ps(rhs, _id_w, 0b111000);
 }
 
 //------------------------------------------------------------------------------
@@ -200,7 +200,7 @@ vector::operator=(const vector& rhs)
 __forceinline void
 vector::operator=(const __m128& rhs)
 {
-    this->vec = rhs;
+    this->vec = _mm_insert_ps(rhs, _id_w, 0b111000);
 }
 
 //------------------------------------------------------------------------------

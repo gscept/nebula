@@ -19,7 +19,7 @@ __ImplementSingleton(Instancing::InstanceRenderer);
 */
 InstanceRenderer::InstanceRenderer()
 {
-	__ConstructSingleton;
+    __ConstructSingleton;
 }
 
 //------------------------------------------------------------------------------
@@ -27,7 +27,7 @@ InstanceRenderer::InstanceRenderer()
 */
 InstanceRenderer::~InstanceRenderer()
 {
-	__DestructSingleton;
+    __DestructSingleton;
 }
 
 } // namespace Instancing

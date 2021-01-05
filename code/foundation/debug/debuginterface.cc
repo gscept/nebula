@@ -42,9 +42,6 @@ DebugInterface::Open()
     Ptr<RunThroughHandlerThread> handlerThread = RunThroughHandlerThread::Create();
     handlerThread->SetName("DebugInterface Thread");
     handlerThread->SetThreadAffinity(System::Cpu::Core4);
-#if __WII_
-    handlerThread->SetPriority(Thread::NormalBoost);
-#endif        
     handlerThread->AttachHandler(DebugHandler::Create());
     this->SetHandlerThread(handlerThread.cast<HandlerThreadBase>());
 

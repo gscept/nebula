@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Octree system
+    Octree system
 
-	(C) 2018-2020 Individual contributors, see AUTHORS file
+    (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "visibilitysystem.h"
@@ -17,10 +17,10 @@ class OctreeSystem : public VisibilitySystem
 {
 public:
 private:
-	friend class ObserverContext;
+    friend class ObserverContext;
 
-	/// setup from load info
-	void Setup(const OctreeSystemLoadInfo& info);
+    /// setup from load info
+    void Setup(const OctreeSystemLoadInfo& info);
 };
 
 } // namespace Visibility

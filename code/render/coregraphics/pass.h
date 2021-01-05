@@ -21,52 +21,52 @@ ID_24_8_TYPE(PassId);
 
 enum class AttachmentFlagBits : uint8
 {
-	NoFlags = 0,
-	Clear				= N_BIT(0),
-	ClearStencil		= N_BIT(1),
-	Load				= N_BIT(2),
-	LoadStencil			= N_BIT(3),
-	Store				= N_BIT(4),
-	StoreStencil		= N_BIT(6)
+    NoFlags = 0,
+    Clear               = N_BIT(0),
+    ClearStencil        = N_BIT(1),
+    Load                = N_BIT(2),
+    LoadStencil         = N_BIT(3),
+    Store               = N_BIT(4),
+    StoreStencil        = N_BIT(6)
 };
 __ImplementEnumBitOperators(AttachmentFlagBits);
 __ImplementEnumComparisonOperators(AttachmentFlagBits);
 
 struct Subpass
 {
-	Util::Array<IndexT> attachments;
-	Util::Array<IndexT> dependencies;
-	Util::Array<IndexT> inputs;
-	SizeT numViewports;
-	SizeT numScissors;
-	bool bindDepth;
-	bool resolve;
+    Util::Array<IndexT> attachments;
+    Util::Array<IndexT> dependencies;
+    Util::Array<IndexT> inputs;
+    SizeT numViewports;
+    SizeT numScissors;
+    bool bindDepth;
+    bool resolve;
 
-	Subpass() : bindDepth(false), resolve(false), numViewports(0), numScissors(0) {};
+    Subpass() : bindDepth(false), resolve(false), numViewports(0), numScissors(0) {};
 };
 
 struct PassCreateInfo
 {
-	Util::StringAtom name;
+    Util::StringAtom name;
 
-	Util::Array<CoreGraphics::TextureViewId> colorAttachments;
-	Util::Array<AttachmentFlagBits> colorAttachmentFlags; 
-	Util::Array<Math::vec4> colorAttachmentClears;
-	CoreGraphics::TextureViewId depthStencilAttachment;
-	
-	Util::Array<Subpass> subpasses;
-	Frame::FrameBatchType::Code batchType;
+    Util::Array<CoreGraphics::TextureViewId> colorAttachments;
+    Util::Array<AttachmentFlagBits> colorAttachmentFlags; 
+    Util::Array<Math::vec4> colorAttachmentClears;
+    CoreGraphics::TextureViewId depthStencilAttachment;
+    
+    Util::Array<Subpass> subpasses;
+    Frame::FrameBatchType::Code batchType;
 
-	float clearDepth;
-	uint clearStencil;
-	AttachmentFlagBits depthStencilFlags;
+    float clearDepth;
+    uint clearStencil;
+    AttachmentFlagBits depthStencilFlags;
 };
 
 enum class PassRecordMode : uint8
 {
-	Record,
-	ExecuteRecorded,
-	ExecuteInline
+    Record,
+    ExecuteRecorded,
+    ExecuteInline
 };
 
 /// create pass

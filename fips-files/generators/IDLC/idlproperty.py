@@ -10,10 +10,10 @@ properties = list()
 #
 class VariableDefinition:
     def __init__(self, T, name, defVal):
-        if not isinstance(T, str):
+        if not isinstance(T, str) and T is not None:
             util.fmtError('_type_ value is not a string value!')
         self.type = T
-        if not isinstance(T, str):
+        if not isinstance(name, str):
             util.fmtError('_name_ value is not a string value!')
         self.name = name
         self.defaultValue = defVal
@@ -32,6 +32,7 @@ class PropertyDefinition:
     def __init__(self, propertyName, prop):
         self.propertyName = propertyName
         self.variables = list()
+        self.isFlag = False
         self.isStruct = False
         self.isResource = False
         if isinstance(prop, dict):
@@ -40,8 +41,14 @@ class PropertyDefinition:
                     self.variables.append(GetVariableFromEntry(varName, var))
                 self.isStruct = True
             else:
-                self.variables.append(GetVariableFromEntry(propertyName, prop))
+                var = GetVariableFromEntry(propertyName, prop)
+                if var.type is None:
+                    self.isFlag = True
+                self.variables.append(var)
         else:
+            var = GetVariableFromEntry(propertyName, prop)
+            if var.type is None:
+                    self.isFlag = True
             self.variables.append(GetVariableFromEntry(propertyName, prop))
         # Check to see if any of the types within the struct are resource.
         for var in self.variables:
@@ -51,6 +58,8 @@ class PropertyDefinition:
                 self.isResource = True
 
     def AsTypeDefString(self):
+        if self.isFlag:
+            return ""
         numVars = len(self.variables)
         if numVars == 0:
             util.fmtError("PropertyDefinition does not contain a single variable!")
@@ -81,6 +90,8 @@ def GetVariableFromEntry(name, var):
         
         default = None
         
+        if var["_type_"] == "_flag_":
+            return VariableDefinition(None, name, None)
         
         if "_default_" in var:
             default = IDLTypes.GetTypeString(var["_type_"]) + "(" + IDLTypes.DefaultToString(var["_default_"]) + ")"
@@ -113,7 +124,8 @@ def ContainsResourceTypes():
 #
 def WritePropertyHeaderDeclarations(f, document):
     for p in properties:
-        f.WriteLine(p.AsTypeDefString())
+        if not p.isFlag:
+            f.WriteLine(p.AsTypeDefString())
 
 #------------------------------------------------------------------------------
 ##
@@ -147,8 +159,11 @@ def WritePropertySourceDefinitions(f, document):
                 defval = prop.variables[0].defaultValue
         f.WriteLine('{')
         f.WriteLine('Util::StringAtom const name = "{}"_atm;'.format(prop.propertyName))
-        f.WriteLine('MemDb::TypeRegistry::Register<{type}>(name, {defval});'.format(type=prop.propertyName, defval=defval))
-        f.WriteLine('Game::PropertySerialization::Register<{type}>(name);'.format(type=prop.propertyName))
+        if prop.isFlag is False:
+            f.WriteLine('MemDb::PropertyId const pid = MemDb::TypeRegistry::Register<{type}>(name, {defval});'.format(type=prop.propertyName, defval=defval))
+            f.WriteLine('Game::PropertySerialization::Register<{type}>(pid);'.format(type=prop.propertyName))
+        else:
+            f.WriteLine('MemDb::TypeRegistry::Register(name, 0, nullptr);')
         f.WriteLine('}')
     f.WriteLine("return true;")
     f.DecreaseIndent()
@@ -164,7 +179,7 @@ def WriteEnumJsonSerializers(f, document):
         f.WriteLine('template<> void JsonReader::Get<{namespace}::{name}>({namespace}::{name}& ret, const char* attr)'.format(namespace=namespace, name=enumName))
         f.WriteLine('{')
         f.IncreaseIndent()
-        f.WriteLine("const pjson::value_variant* node = this->GetChild(attr);");
+        f.WriteLine("const pjson::value_variant* node = this->GetChild(attr);")
         f.WriteLine("if (node->is_string())")
         f.WriteLine("{")
         f.IncreaseIndent()
@@ -183,7 +198,15 @@ def WriteEnumJsonSerializers(f, document):
         f.WriteLine('ret = {namespace}::{name}();'.format(namespace=namespace, name=enumName))
         f.DecreaseIndent()
         f.WriteLine("}")
-        f.WriteLine("");
+        f.WriteLine("")
+
+        f.WriteLine('template<> void JsonWriter::Add<{namespace}::{name}>({namespace}::{name} const& value, Util::String const& attr)'.format(namespace=namespace, name=enumName))
+        f.WriteLine('{')
+        f.IncreaseIndent()
+        f.WriteLine('this->Add<int>(value, attr);');
+        f.DecreaseIndent()
+        f.WriteLine("}")
+        f.WriteLine("")
 
 #------------------------------------------------------------------------------
 ##
@@ -198,17 +221,28 @@ def WriteStructJsonSerializers(f, document):
         f.WriteLine('{')
         f.IncreaseIndent()
         f.WriteLine('ret = {namespace}::{name}();'.format(namespace=namespace, name=prop.propertyName))
-        f.WriteLine("const pjson::value_variant* node = this->GetChild(attr);");
+        f.WriteLine("const pjson::value_variant* node = this->GetChild(attr);")
         f.WriteLine("if (node->is_object())")
         f.WriteLine("{")
         f.IncreaseIndent()
         for var in prop.variables:
-            f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=var.type));
+            f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=var.type))
         f.DecreaseIndent()
         f.WriteLine("}")
         f.DecreaseIndent()
         f.WriteLine("}")
-        f.WriteLine("");
+        f.WriteLine("")
+
+        f.WriteLine('template<> void JsonWriter::Add<{namespace}::{name}>({namespace}::{name} const& value, Util::String const& attr)'.format(namespace=namespace, name=prop.propertyName))
+        f.WriteLine('{')
+        f.IncreaseIndent()
+        f.WriteLine("this->BeginObject(attr.AsCharPtr());")
+        for var in prop.variables:
+            f.WriteLine('this->Add<{type}>(value.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=var.type))
+        f.WriteLine("this->End();")
+        f.DecreaseIndent()
+        f.WriteLine("}")
+        f.WriteLine("")
 
 
 #------------------------------------------------------------------------------

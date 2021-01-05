@@ -5,7 +5,7 @@
 /**
     @class Win32::Win32Timer
     
-    Win32/Xbox360 implementation of the Time::Timer class. Uses 
+    Win32 implementation of the Time::Timer class. Uses 
     the QueryPerformanceCounter() functions.
 
     @todo solve multiprocessor issues of QueryPerformanceCounter()

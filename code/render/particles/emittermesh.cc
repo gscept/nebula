@@ -45,7 +45,7 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
 
     // we need to extract mesh vertices from the primitive group
     // without duplicate vertices
-	const PrimitiveGroup& primGroup = MeshGetPrimitiveGroups(mesh)[primGroupIndex];// mesh->GetPrimitiveGroupAtIndex(primGroupIndex);
+    const PrimitiveGroup& primGroup = MeshGetPrimitiveGroups(mesh)[primGroupIndex];// mesh->GetPrimitiveGroupAtIndex(primGroupIndex);
     const BufferId indexBuffer = MeshGetIndexBuffer(mesh);
     //n_assert(IndexBufferGetType(indexBuffer) == IndexType::Index32);
     const BufferId vertexBuffer = MeshGetVertexBuffer(mesh, 0);
@@ -55,7 +55,7 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
     SizeT numIndices = primGroup.GetNumIndices();
 
     int* indices = (int*) BufferMap(indexBuffer);
-	//int indices[] = { 0 };
+    //int indices[] = { 0 };
 
     // allocate a "flag array" which holds a 0 at a
     // vertex index which hasn't been encountered yet, and
@@ -80,7 +80,7 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
     }
     Memory::Free(Memory::ScratchHeap, flagArray);
     flagArray = 0;
-	BufferUnmap(indexBuffer);
+    BufferUnmap(indexBuffer);
 
     // the emitterIndices array now contains the indices of all vertices
     // we need to copy
@@ -88,24 +88,24 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
     this->points = n_new_array(EmitterPoint, this->numPoints);
 
     // make sure the emitter mesh actually has the components we need
-	const VertexLayoutId& vertexLayout = MeshGetPrimitiveGroups(mesh)[primGroupIndex].GetVertexLayout();
+    const VertexLayoutId& vertexLayout = MeshGetPrimitiveGroups(mesh)[primGroupIndex].GetVertexLayout();
 
-	const Util::Array<VertexComponent>& comps = VertexLayoutGetComponents(vertexLayout);
-	bool posValid = false, normValid = false, tanValid = false;
-	IndexT posByteOffset = 0, normByteOffset = 0, tanByteOffset = 0;
-	for (i = 0; i < comps.Size(); i++)
-	{
-		const VertexComponent& comp = comps[i];
-		const VertexComponent::SemanticName name = comp.GetSemanticName();
-		const VertexComponent::Format fmt = comp.GetFormat();
-		if (name == VertexComponent::Position && fmt == VertexComponent::Float3)
-			posValid = true, posByteOffset = comp.GetByteOffset();
-		else if (name == VertexComponent::Normal && fmt == VertexComponent::Byte4N)
-			normValid = true, normByteOffset = comp.GetByteOffset();
-		else if (name == VertexComponent::Tangent && fmt == VertexComponent::Byte4N)
-			tanValid = true, tanByteOffset = comp.GetByteOffset();
-	}
-	n_assert(posValid && normValid && tanValid);
+    const Util::Array<VertexComponent>& comps = VertexLayoutGetComponents(vertexLayout);
+    bool posValid = false, normValid = false, tanValid = false;
+    IndexT posByteOffset = 0, normByteOffset = 0, tanByteOffset = 0;
+    for (i = 0; i < comps.Size(); i++)
+    {
+        const VertexComponent& comp = comps[i];
+        const VertexComponent::SemanticName name = comp.GetSemanticName();
+        const VertexComponent::Format fmt = comp.GetFormat();
+        if (name == VertexComponent::Position && fmt == VertexComponent::Float3)
+            posValid = true, posByteOffset = comp.GetByteOffset();
+        else if (name == VertexComponent::Normal && fmt == VertexComponent::Byte4N)
+            normValid = true, normByteOffset = comp.GetByteOffset();
+        else if (name == VertexComponent::Tangent && fmt == VertexComponent::Byte4N)
+            tanValid = true, tanByteOffset = comp.GetByteOffset();
+    }
+    n_assert(posValid && normValid && tanValid);
 
 
     // gain access to vertices and transfer vertex info
@@ -118,10 +118,10 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
         dst.position.load_float3(src + posByteOffset, 1.0f);
         dst.normal.load_byte4n(src + normByteOffset, 0.0f);
         dst.normal = Math::normalize(dst.normal);
-		dst.tangent.load_byte4n(src + tanByteOffset, 0.0f);
+        dst.tangent.load_byte4n(src + tanByteOffset, 0.0f);
         dst.tangent = Math::normalize(dst.tangent);
     }
-	BufferUnmap(vertexBuffer);
+    BufferUnmap(vertexBuffer);
 }
 
 //------------------------------------------------------------------------------

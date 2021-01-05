@@ -1,12 +1,12 @@
 ﻿#pragma once
 //------------------------------------------------------------------------------
 /**
-	The Vulkan implementation of the graphics device.
+    The Vulkan implementation of the graphics device.
 
-	All functions in the Vulkan namespace are internal helper functions specifically for Vulkan,
-	the other functions implement the abstraction layer.
+    All functions in the Vulkan namespace are internal helper functions specifically for Vulkan,
+    the other functions implement the abstraction layer.
 
-	(C) 2018-2020 Individual contributors, see AUTHORS file
+    (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/graphicsdevice.h"

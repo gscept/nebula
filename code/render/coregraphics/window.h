@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Window related stuff
+    Window related stuff
 
-	(C)2017-2020 Individual contributors, see AUTHORS file
+    (C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
@@ -26,13 +26,13 @@ struct TextureId;
 
 struct WindowCreateInfo
 {
-	CoreGraphics::DisplayMode mode;
-	Util::StringAtom title;
-	Util::StringAtom icon;
-	CoreGraphics::AntiAliasQuality::Code aa;
-	bool resizable : 1;
-	bool decorated : 1;
-	bool fullscreen : 1;
+    CoreGraphics::DisplayMode mode;
+    Util::StringAtom title;
+    Util::StringAtom icon;
+    CoreGraphics::AntiAliasQuality::Code aa;
+    bool resizable : 1;
+    bool decorated : 1;
+    bool fullscreen : 1;
 };
 
 /// create new window

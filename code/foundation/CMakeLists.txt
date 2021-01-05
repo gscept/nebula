@@ -2,16 +2,28 @@
 # Foundation
 #-------------------------------------------------------------------------------
 
+FIND_PACKAGE(CURL)
 nebula_begin_module(foundation)
-	if(FIPS_LINUX)
-		fips_libs(uuid cjson stdc++fs)
-	endif()
-	fips_vs_warning_level(3)
-	fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-	fips_deps(nebula-libs zlib tinyxml)
-	if(FIPS_WINDOWS)
-		fips_deps(StackWalker)
-	endif()
+
+    if(FIPS_LINUX)
+    fips_libs(uuid cjson stdc++fs)
+    endif()
+    fips_vs_warning_level(3)
+    fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+    fips_deps(nebula-libs zlib tinyxml)
+
+    if(FIPS_WINDOWS)
+        fips_libs(curl)
+        fips_deps(StackWalker)
+    else()
+        if(CURL_FOUND)
+            fips_include_directories(${CURL_INCLUDE_DIR})
+            fips_deps(${CURL_LIBRARY_RELEASE})
+        else()
+            MESSAGE(FATAL_ERROR "libcurl not found!")
+        endif()
+    endif()
+
 		fips_files(foundation/stdneb.h foundation/stdneb.cc)
 		fips_dir(core)
 			fips_files(
@@ -575,43 +587,43 @@ nebula_begin_module(foundation)
 	endif()
 	fips_dir(.)
 
-	if(FIPS_WINDOWS)
-		fips_dir(threading/win32 GROUP "threading/win32")
-		fips_files(
-			win32barrier.h
-			win32criticalsection.cc
-			win32criticalsection.h
-			win32event.h
-			win32interlocked.h
-			win32thread.cc
-			win32thread.h
-			win32threadbarrier.h
-			win32threadid.h
-			win32rendezvous.h
-		)
-	elseif(FIPS_LINUX)
-		fips_files(
-			threading/linux/linuxinterlocked.h
-			threading/linux/linuxbarrier.h
-			threading/linux/linuxcriticalsection.h
-			threading/linux/linuxevent.h
-			threading/linux/linuxthread.cc
-			threading/linux/linuxthread.h
-		)
-	else()
-		fips_files(
-			threading/posix/posixinterlocked.h
-			threading/posix/posixbarrier.h
-			threading/posix/posixcriticalsection.h
-			threading/posix/posixevent.h
-			threading/posix/posixthread.cc
-			threading/posix/posixthread.h
-		)
-	endif()
+    if(FIPS_WINDOWS)
+        fips_dir(threading/win32 GROUP "threading/win32")
+        fips_files(
+            win32barrier.h
+            win32criticalsection.cc
+            win32criticalsection.h
+            win32event.h
+            win32interlocked.h
+            win32thread.cc
+            win32thread.h
+            win32threadbarrier.h
+            win32threadid.h
+            win32rendezvous.h
+        )
+    elseif(FIPS_LINUX)
+        fips_files(
+            threading/linux/linuxinterlocked.h
+            threading/linux/linuxbarrier.h
+            threading/linux/linuxcriticalsection.h
+            threading/linux/linuxevent.h
+            threading/linux/linuxthread.cc
+            threading/linux/linuxthread.h
+        )
+    else()
+        fips_files(
+            threading/posix/posixinterlocked.h
+            threading/posix/posixbarrier.h
+            threading/posix/posixcriticalsection.h
+            threading/posix/posixevent.h
+            threading/posix/posixthread.cc
+            threading/posix/posixthread.h
+        )
+    endif()
 nebula_end_module()
 target_include_directories(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 #FIXME cant add python include dir globally as it clashes with antlr4
 target_include_directories(foundation PUBLIC ${PYTHON_INCLUDE_DIRS})
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
-	target_precompile_headers(foundation PRIVATE "foundation/stdneb.h")
+    target_precompile_headers(foundation PRIVATE "foundation/stdneb.h")
 endif()

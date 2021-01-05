@@ -52,7 +52,7 @@ public:
     virtual ~DebugCounter();
 
     /// setup the counter
-	void Setup(const Util::StringAtom& name, const Util::StringAtom& group = Util::StringAtom("Ungrouped"));
+    void Setup(const Util::StringAtom& name, const Util::StringAtom& group = Util::StringAtom("Ungrouped"));
     /// discard the counter
     void Discard();
     /// return true if object has been setup
@@ -73,8 +73,8 @@ public:
     
     /// get the counter's name
     const Util::StringAtom& GetName() const;
-	/// get the timer group
-	const Util::StringAtom& GetGroup() const;
+    /// get the timer group
+    const Util::StringAtom& GetGroup() const;
     /// get the most recent sample
     int GetSample() const;
     /// get the counter's history
@@ -83,7 +83,7 @@ public:
 private:
     Threading::CriticalSection critSect;
     Util::StringAtom name;
-	Util::StringAtom group;
+    Util::StringAtom group;
     int value;
     Util::RingBuffer<int> history;
 };
@@ -171,7 +171,7 @@ DebugCounter::GetName() const
 inline const Util::StringAtom&
 DebugCounter::GetGroup() const
 {
-	return this->group;
+    return this->group;
 }
 
 } // namespace Debug

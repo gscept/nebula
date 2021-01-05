@@ -24,8 +24,8 @@ public:
     /// get mouse movement
     const Math::float2& GetMovement() const;
 
-	/// locks the mouse to a screen position (0.0 .. 1.0)
-	void LockToPosition(bool locked, Math::float2& position);
+    /// locks the mouse to a screen position (0.0 .. 1.0)
+    void LockToPosition(bool locked, Math::float2& position);
 };
 
 //------------------------------------------------------------------------------
@@ -40,8 +40,8 @@ Win32Mouse::GetMovement() const
 inline void
 Win32Mouse::LockToPosition(bool locked, Math::float2& position)
 {
-	Win32InputServer::Instance()->SetMousePosition(position);
-	MouseBase::LockToPosition(locked, position);
+    Win32InputServer::Instance()->SetMousePosition(position);
+    MouseBase::LockToPosition(locked, position);
 }
 
 } // namespace Win32

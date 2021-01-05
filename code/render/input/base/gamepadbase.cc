@@ -19,7 +19,7 @@ using namespace Util;
 GamePadBase::GamePadBase() :
     index(0),
     isConnected(false),
-	hasTransform(false),
+    hasTransform(false),
     buttonStates(NumButtons),
     axisValues(NumAxes, 0.0f),
     vibratorsDirty(false),
@@ -109,7 +109,7 @@ GamePadBase::ButtonAsString(Button btn)
         case TwoButton:             return "TwoButton";
         case ZButton:               return "ZButton";
         case CButton:               return "CButton";
-		case SelectButton:			return "SelectButton";
+        case SelectButton:          return "SelectButton";
         default:
             n_error("GamePadBase::ButtonAsString(): invalid button code!\n");
             return "";

@@ -7,7 +7,7 @@
     (__DeclareClass, __ImplementClass, etc...).
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2020 Individual contributors, see AUTHORS file	
+    (C) 2013-2020 Individual contributors, see AUTHORS file 
 */
 
 //------------------------------------------------------------------------------
@@ -28,18 +28,18 @@ public: \
     { \
         RTTI.FreeInstanceMemory(p); \
     }; \
-	void operator delete(void* p, void*) \
+    void operator delete(void* p, void*) \
     { \
     }; \
-	void operator delete[](void* p) \
-	{ \
+    void operator delete[](void* p) \
+    { \
         RTTI.FreeInstanceMemory(p); \
     }; \
     static Core::Rtti RTTI; \
     static void* FactoryCreator(); \
-	static void* FactoryArrayCreator(SizeT num); \
+    static void* FactoryArrayCreator(SizeT num); \
     static type* Create(); \
-	static type* CreateArray(SizeT num); \
+    static type* CreateArray(SizeT num); \
     static bool RegisterWithFactory(); \
     virtual Core::Rtti* GetRtti() const; \
 private:
@@ -52,10 +52,10 @@ public: \
     }; \
     void operator delete(void* p) \
     { \
-		Memory::Free(Memory::ObjectHeap, p); \
+        Memory::Free(Memory::ObjectHeap, p); \
     }; \
     static type<temp>* Create(); \
-	static type<temp>* CreateArray(SizeT num); \
+    static type<temp>* CreateArray(SizeT num); \
 private:
 
 #define __DeclareAbstractClass(class_name) \
@@ -75,19 +75,19 @@ private:
 //------------------------------------------------------------------------------
 /**
     Implementation macros for RTTI managed classes.
-	__ImplementClass			constructs a class which relies on reference counting. Use __DeclareClass in header.
-	__ImplementWeakClass		constructs a class which does not support reference counting (no garbage collection). Use __DeclareClass in header.
-	__ImplementTemplateClass	constructs a class with template arguments but without FourCC or RTTI. Use __DeclareTemplateClass in header.
+    __ImplementClass            constructs a class which relies on reference counting. Use __DeclareClass in header.
+    __ImplementWeakClass        constructs a class which does not support reference counting (no garbage collection). Use __DeclareClass in header.
+    __ImplementTemplateClass    constructs a class with template arguments but without FourCC or RTTI. Use __DeclareTemplateClass in header.
 */
 #if NEBULA_DEBUG
 #define __ImplementClass(type, fourcc, baseType) \
     Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, &baseType::RTTI, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
     void* type::FactoryCreator() { return type::Create(); } \
-	void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
+    void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
     type* type::Create() \
     { \
-		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
+        static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
         RefCounted::criticalSection.Enter(); \
         RefCounted::isInCreate = true; \
         type* newObject = n_new(type); \
@@ -97,7 +97,7 @@ private:
     }\
     type* type::CreateArray(SizeT num) \
     { \
-		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
+        static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
         RefCounted::criticalSection.Enter(); \
         RefCounted::isInCreate = true; \
         type* newObject = n_new_array(type, num); \
@@ -119,7 +119,7 @@ private:
 /**
 */
 #define __ImplementClassTemplate(type, baseType) \
-	template <class TEMP> \
+    template <class TEMP> \
     inline type<TEMP>* type<TEMP>::Create() \
     { \
         RefCounted::criticalSection.Enter(); \
@@ -129,7 +129,7 @@ private:
         RefCounted::criticalSection.Leave(); \
         return newObject; \
     } \
-	template <class TEMP> \
+    template <class TEMP> \
     inline type<TEMP>* type<TEMP>::CreateArray(SizeT num) \
     { \
         RefCounted::criticalSection.Enter(); \
@@ -144,7 +144,7 @@ private:
 /**
 */
 #define __ImplementClassVariadicTemplate(type, baseType) \
-	template <class ... TEMP> \
+    template <class ... TEMP> \
     inline type<TEMP...>* type<TEMP...>::Create() \
     { \
         RefCounted::criticalSection.Enter(); \
@@ -154,7 +154,7 @@ private:
         RefCounted::criticalSection.Leave(); \
         return newObject; \
     } \
-	template <class ... TEMP> \
+    template <class ... TEMP> \
     inline type<TEMP...>* type<TEMP...>::CreateArray(SizeT num) \
     { \
         RefCounted::criticalSection.Enter(); \
@@ -172,15 +172,15 @@ private:
     Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, &baseType::RTTI, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
     void* type::FactoryCreator() { return type::Create(); } \
-	void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
+    void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
     type* type::Create() \
     { \
-		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
+        static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
         return n_new(type); \
     }\
     type* type::CreateArray(SizeT num) \
     { \
-		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
+        static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
         return n_new_array(type, num); \
     }\
     bool type::RegisterWithFactory() \
@@ -197,13 +197,13 @@ private:
 /**
 */
 #define __ImplementClassTemplate(type, baseType) \
-	template <class TEMP> \
+    template <class TEMP> \
     inline type<TEMP>* type<TEMP>::Create() \
     { \
         type<TEMP>* newObject = n_new(type<TEMP>); \
         return newObject; \
     } \
-	template <class TEMP> \
+    template <class TEMP> \
     inline type<TEMP>* type<TEMP>::CreateArray(SizeT num) \
     { \
         type<TEMP>* newObject = n_new_array(type<TEMP>, num); \
@@ -214,13 +214,13 @@ private:
 /**
 */
 #define __ImplementClassVariadicTemplate(type, baseType) \
-	template <class ... TEMP> \
+    template <class ... TEMP> \
     inline type<TEMP...>* type<TEMP...>::Create() \
     { \
         type<TEMP...>* newObject = n_new(type<TEMP...>); \
         return newObject; \
     } \
-	template <class ... TEMP> \
+    template <class ... TEMP> \
     inline type<TEMP...>* type<TEMP...>::CreateArray(SizeT num) \
     { \
         type<TEMP...>* newObject = n_new_array(type<TEMP...>, num); \
@@ -235,7 +235,7 @@ private:
     Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, &baseType::RTTI, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
     void* type::FactoryCreator() { return type::Create(); } \
-	void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
+    void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
     type* type::Create() \
     { \
         type* newObject = n_new(type); \
@@ -263,7 +263,7 @@ private:
     Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, nullptr, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
     void* type::FactoryCreator() { return type::Create(); } \
-	void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
+    void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
     type* type::Create() \
     { \
         type* newObject = n_new(type); \
@@ -308,10 +308,10 @@ private:
     Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, nullptr, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
     void* type::FactoryCreator() { return type::Create(); } \
-	void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
+    void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
     type* type::Create() \
     { \
-		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
+        static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
         RefCounted::criticalSection.Enter(); \
         RefCounted::isInCreate = true; \
         type* newObject = n_new(type); \
@@ -321,7 +321,7 @@ private:
     }\
    type* type::CreateArray(SizeT num) \
     { \
-		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
+        static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
         RefCounted::criticalSection.Enter(); \
         RefCounted::isInCreate = true; \
         type* newObject = n_new_array(type, num); \
@@ -342,15 +342,15 @@ private:
     Core::Rtti type::RTTI(#type, fourcc, type::FactoryCreator, type::FactoryArrayCreator, nullptr, sizeof(type)); \
     Core::Rtti* type::GetRtti() const { return &this->RTTI; } \
     void* type::FactoryCreator() { return type::Create(); } \
-	void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
+    void* type::FactoryArrayCreator(SizeT num) { return type::CreateArray(num); } \
     type* type::Create() \
     { \
-		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
+        static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
         return n_new(type); \
     }\
     type* type::CreateArray(SizeT num) \
     { \
-		static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
+        static_assert(std::is_base_of<Core::RefCounted, type>::value, "Class must inherit from Core::RefCounted"); \
         return n_new_array(type, num); \
     }\
     bool type::RegisterWithFactory() \
@@ -364,47 +364,47 @@ private:
 #endif
     
 #define __SetupExternalAttributes() \
-	public: \
-	virtual void SetupExternalAttributes(); \
-	private: 
+    public: \
+    virtual void SetupExternalAttributes(); \
+    private: 
 
 //------------------------------------------------------------------------------
 /**
-	Neat macro to make enums act as bit flags, be able to check if bits are set, and convert to integers
+    Neat macro to make enums act as bit flags, be able to check if bits are set, and convert to integers
 */
 #define __ImplementEnumBitOperators(type) \
-	inline type operator|(type a, type b) { return static_cast<type>(static_cast<unsigned>(a) | static_cast<unsigned>(b)); }\
-	inline type operator&(type a, type b) { return static_cast<type>(static_cast<unsigned>(a) & static_cast<unsigned>(b)); }\
-	inline type& operator|=(type& a, type b) { a = static_cast<type>(static_cast<unsigned>(a) | static_cast<unsigned>(b)); return a; }\
-	inline type& operator&=(type& a, type b) { a = static_cast<type>(static_cast<unsigned>(a) & static_cast<unsigned>(b)); return a; }\
-	inline type operator|(type a, unsigned b) { return static_cast<type>(static_cast<unsigned>(a) | b); }\
-	inline type operator&(type a, unsigned b) { return static_cast<type>(static_cast<unsigned>(a) & b); }\
-	inline type& operator|=(type& a, unsigned b) { a = static_cast<type>(static_cast<unsigned>(a) | b); return a; }\
-	inline type& operator&=(type& a, unsigned b) { a = static_cast<type>(static_cast<unsigned>(a) & b); return a; }\
+    inline type operator|(type a, type b) { return static_cast<type>(static_cast<unsigned>(a) | static_cast<unsigned>(b)); }\
+    inline type operator&(type a, type b) { return static_cast<type>(static_cast<unsigned>(a) & static_cast<unsigned>(b)); }\
+    inline type& operator|=(type& a, type b) { a = static_cast<type>(static_cast<unsigned>(a) | static_cast<unsigned>(b)); return a; }\
+    inline type& operator&=(type& a, type b) { a = static_cast<type>(static_cast<unsigned>(a) & static_cast<unsigned>(b)); return a; }\
+    inline type operator|(type a, unsigned b) { return static_cast<type>(static_cast<unsigned>(a) | b); }\
+    inline type operator&(type a, unsigned b) { return static_cast<type>(static_cast<unsigned>(a) & b); }\
+    inline type& operator|=(type& a, unsigned b) { a = static_cast<type>(static_cast<unsigned>(a) | b); return a; }\
+    inline type& operator&=(type& a, unsigned b) { a = static_cast<type>(static_cast<unsigned>(a) & b); return a; }\
     inline type operator~(type a) { return static_cast<type>(~static_cast<unsigned>(a)); }\
     inline type operator!(type a) { return static_cast<type>(!static_cast<unsigned>(a)); }\
-	inline unsigned operator|(unsigned a, type b) { return a | static_cast<unsigned>(b); }\
-	inline unsigned operator&(unsigned a, type b) { return a & static_cast<unsigned>(b); }\
-	inline unsigned& operator|=(unsigned& a, type b) { a = a | static_cast<unsigned>(b); return a; }\
-	inline unsigned& operator&=(unsigned& a, type b) { a = a & static_cast<unsigned>(b); return a; }
+    inline unsigned operator|(unsigned a, type b) { return a | static_cast<unsigned>(b); }\
+    inline unsigned operator&(unsigned a, type b) { return a & static_cast<unsigned>(b); }\
+    inline unsigned& operator|=(unsigned& a, type b) { a = a | static_cast<unsigned>(b); return a; }\
+    inline unsigned& operator&=(unsigned& a, type b) { a = a & static_cast<unsigned>(b); return a; }
 
 #define __ImplementEnumComparisonOperators(type) \
-	inline bool operator>(type a, unsigned b) { return static_cast<unsigned>(a) > b; }\
-	inline bool operator>(unsigned a, type b) { return a > static_cast<unsigned>(b); }\
-	inline bool operator<(type a, unsigned b) { return static_cast<unsigned>(a) < b; }\
-	inline bool operator<(unsigned a, type b) { return a < static_cast<unsigned>(b); }\
-	inline bool operator>=(type a, unsigned b) { return static_cast<unsigned>(a) >= b; }\
-	inline bool operator>=(unsigned a, type b) { return a >= static_cast<unsigned>(b); }\
-	inline bool operator<=(type a, unsigned b) { return static_cast<unsigned>(a) <= b; }\
-	inline bool operator<=(unsigned a, type b) { return a <= static_cast<unsigned>(b); }\
-	inline bool operator==(type a, unsigned b) { return static_cast<unsigned>(a) == b; }\
-	inline bool operator==(unsigned a, type b) { return a == static_cast<unsigned>(b); }\
-	inline bool operator!=(type a, unsigned b) { return static_cast<unsigned>(a) != b; }\
-	inline bool operator!=(unsigned a, type b) { return a != static_cast<unsigned>(b); }
+    inline bool operator>(type a, unsigned b) { return static_cast<unsigned>(a) > b; }\
+    inline bool operator>(unsigned a, type b) { return a > static_cast<unsigned>(b); }\
+    inline bool operator<(type a, unsigned b) { return static_cast<unsigned>(a) < b; }\
+    inline bool operator<(unsigned a, type b) { return a < static_cast<unsigned>(b); }\
+    inline bool operator>=(type a, unsigned b) { return static_cast<unsigned>(a) >= b; }\
+    inline bool operator>=(unsigned a, type b) { return a >= static_cast<unsigned>(b); }\
+    inline bool operator<=(type a, unsigned b) { return static_cast<unsigned>(a) <= b; }\
+    inline bool operator<=(unsigned a, type b) { return a <= static_cast<unsigned>(b); }\
+    inline bool operator==(type a, unsigned b) { return static_cast<unsigned>(a) == b; }\
+    inline bool operator==(unsigned a, type b) { return a == static_cast<unsigned>(b); }\
+    inline bool operator!=(type a, unsigned b) { return static_cast<unsigned>(a) != b; }\
+    inline bool operator!=(unsigned a, type b) { return a != static_cast<unsigned>(b); }
 
-	/*
+    /*
 namespace TYPE {\
-	inline bool HasFlags(const TYPE& a, TYPE flags) { return (a & flags) == flags; }\
-	constexpr typename std::underlying_type<TYPE>::type ToInteger(TYPE a) { return static_cast<typename std::underlying_type<TYPE>::type>(a); }\
-	constexpr TYPE FromInteger(typename std::underlying_type<TYPE>::type a) { return static_cast<TYPE>(a); }}
-	*/
+    inline bool HasFlags(const TYPE& a, TYPE flags) { return (a & flags) == flags; }\
+    constexpr typename std::underlying_type<TYPE>::type ToInteger(TYPE a) { return static_cast<typename std::underlying_type<TYPE>::type>(a); }\
+    constexpr TYPE FromInteger(typename std::underlying_type<TYPE>::type a) { return static_cast<TYPE>(a); }}
+    */

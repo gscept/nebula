@@ -29,9 +29,9 @@ public:
                                                                   bool checkResourceState = true);
 
 private:
-	// gets the names of modelNode and all its children's children children children	
-	static Util::Array<Util::String> RecursiveGetNodeNames(const Ptr<Models::ModelNode>& modelNode /*rootNode*/, const Util::FourCC & fourcc);
-	static Util::String currentNodeLayer;
+    // gets the names of modelNode and all its children's children children children    
+    static Util::Array<Util::String> RecursiveGetNodeNames(const Ptr<Models::ModelNode>& modelNode /*rootNode*/, const Util::FourCC & fourcc);
+    static Util::String currentNodeLayer;
 };
 
 } // namespace RenderUtil

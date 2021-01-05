@@ -43,13 +43,13 @@ protected:
     void ReadDInputMouse();
     /// get the current mouse movement
     const Math::float2& GetMouseMovement() const;
-	/// set the mouse to a screen space position
-	void SetMousePosition(Math::float2& position);
+    /// set the mouse to a screen space position
+    void SetMousePosition(Math::float2& position);
 
     Ptr<Win32InputDisplayEventHandler> eventHandler;
     IDirectInput8* di8;
     IDirectInputDevice8* di8Mouse;
-	POINT previousPos;
+    POINT previousPos;
     Math::float2 mouseMovement;
     static const int DInputMouseBufferSize = 16;
 };

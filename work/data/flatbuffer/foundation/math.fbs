@@ -1,0 +1,32 @@
+//------------------------------------------------------------------------------
+//
+//    Flatbuffer to Nebula type mappings
+//
+//    (C) 2020 Individual contributors, see AUTHORS file
+
+namespace Flat;
+struct Vec4 (native_type:"Math::vec4", force_align:16)
+{
+  x:float;
+  y:float;
+  z:float;
+  w:float;
+}
+
+struct Vec3 (native_type:"Math::vec3", force_align:16) 
+{
+  x:float;
+  y:float;
+  z:float;
+}
+
+struct Vec2 (native_type:"Math::vec2", force_align:16) 
+{
+  x:float;
+  y:float;
+}
+
+struct Mat4 (native_type:"Math::mat4", force_align:16) 
+{
+  mat4:[float:16];
+}

@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	A resource table declares a list of resources (ResourceTable in DX12, DescriptorSet in Vulkan)
+    A resource table declares a list of resources (ResourceTable in DX12, DescriptorSet in Vulkan)
 
-	(C) 2018-2020 Individual contributors, see AUTHORS file	
+    (C) 2018-2020 Individual contributors, see AUTHORS file 
 */
 //------------------------------------------------------------------------------
 
@@ -22,53 +22,53 @@ ID_24_8_TYPE(ResourceTableLayoutId);
 
 struct ResourceTableLayoutTexture
 {
-	IndexT slot;
-	SizeT num;
-	CoreGraphics::ShaderVisibility visibility;
-	CoreGraphics::SamplerId immutableSampler;
+    IndexT slot;
+    SizeT num;
+    CoreGraphics::ShaderVisibility visibility;
+    CoreGraphics::SamplerId immutableSampler;
 };
 
 struct ResourceTableLayoutConstantBuffer
 {
-	IndexT slot;
-	SizeT num;
-	CoreGraphics::ShaderVisibility visibility;
-	
-	bool dynamicOffset;
+    IndexT slot;
+    SizeT num;
+    CoreGraphics::ShaderVisibility visibility;
+    
+    bool dynamicOffset;
 };
 
 struct ResourceTableLayoutShaderRWBuffer
 {
-	IndexT slot;
-	SizeT num;
-	CoreGraphics::ShaderVisibility visibility;
+    IndexT slot;
+    SizeT num;
+    CoreGraphics::ShaderVisibility visibility;
 
-	bool dynamicOffset;
+    bool dynamicOffset;
 };
 
 struct ResourceTableLayoutSampler
 {
-	IndexT slot;
-	CoreGraphics::ShaderVisibility visibility;
-	CoreGraphics::SamplerId sampler;
+    IndexT slot;
+    CoreGraphics::ShaderVisibility visibility;
+    CoreGraphics::SamplerId sampler;
 };
 
 struct ResourceTableLayoutInputAttachment
 {
-	IndexT slot;
-	SizeT num;
-	CoreGraphics::ShaderVisibility visibility;
+    IndexT slot;
+    SizeT num;
+    CoreGraphics::ShaderVisibility visibility;
 };
 
 struct ResourceTableLayoutCreateInfo
 {
-	Util::Array<ResourceTableLayoutTexture> textures;
-	Util::Array<ResourceTableLayoutTexture> rwTextures;
-	Util::Array<ResourceTableLayoutConstantBuffer> constantBuffers;
-	Util::Array<ResourceTableLayoutShaderRWBuffer> rwBuffers;
-	Util::Array<ResourceTableLayoutSampler> samplers;
-	Util::Array<ResourceTableLayoutInputAttachment> inputAttachments;
-	uint32_t descriptorPoolInitialGrow = 1;
+    Util::Array<ResourceTableLayoutTexture> textures;
+    Util::Array<ResourceTableLayoutTexture> rwTextures;
+    Util::Array<ResourceTableLayoutConstantBuffer> constantBuffers;
+    Util::Array<ResourceTableLayoutShaderRWBuffer> rwBuffers;
+    Util::Array<ResourceTableLayoutSampler> samplers;
+    Util::Array<ResourceTableLayoutInputAttachment> inputAttachments;
+    uint32_t descriptorPoolInitialGrow = 1;
 };
 
 /// create resource table layout
@@ -88,55 +88,55 @@ extern Threading::CriticalSection PendingTableCommitsLock;
 
 struct ResourceTableTexture
 {
-	CoreGraphics::TextureId tex;
-	IndexT slot;
-	IndexT index;
-	CoreGraphics::SamplerId sampler;
-	bool isDepth : 1;
-	bool isStencil : 1;
+    CoreGraphics::TextureId tex;
+    IndexT slot;
+    IndexT index;
+    CoreGraphics::SamplerId sampler;
+    bool isDepth : 1;
+    bool isStencil : 1;
 };
 
 struct ResourceTableTextureView
 {
-	CoreGraphics::TextureViewId tex;
-	IndexT slot;
-	IndexT index;
-	CoreGraphics::SamplerId sampler;
-	bool isDepth : 1;
-	bool isStencil : 1;
+    CoreGraphics::TextureViewId tex;
+    IndexT slot;
+    IndexT index;
+    CoreGraphics::SamplerId sampler;
+    bool isDepth : 1;
+    bool isStencil : 1;
 };
 
 struct ResourceTableBuffer
 {
-	CoreGraphics::BufferId buf;
-	IndexT slot;
-	IndexT index;
+    CoreGraphics::BufferId buf;
+    IndexT slot;
+    IndexT index;
 
-	bool texelBuffer;
-	bool dynamicOffset;
+    bool texelBuffer;
+    bool dynamicOffset;
 
-	SizeT size;
-	SizeT offset;
+    SizeT size;
+    SizeT offset;
 };
 
 struct ResourceTableInputAttachment
 {
-	CoreGraphics::TextureViewId tex;
-	IndexT slot;
-	IndexT index;
-	CoreGraphics::SamplerId sampler;
-	bool isDepth : 1;
+    CoreGraphics::TextureViewId tex;
+    IndexT slot;
+    IndexT index;
+    CoreGraphics::SamplerId sampler;
+    bool isDepth : 1;
 };
 
 struct ResourceTableSampler
 {
-	CoreGraphics::SamplerId samp;
-	IndexT slot;
+    CoreGraphics::SamplerId samp;
+    IndexT slot;
 };
 
 struct ResourceTableCreateInfo
 {
-	ResourceTableLayoutId layout;
+    ResourceTableLayoutId layout;
 };
 
 /// create resource table
@@ -174,16 +174,16 @@ ID_24_8_TYPE(ResourcePipelineId);
 
 struct ResourcePipelinePushConstantRange
 {
-	SizeT size;
-	SizeT offset;
-	CoreGraphics::ShaderVisibility vis;
+    SizeT size;
+    SizeT offset;
+    CoreGraphics::ShaderVisibility vis;
 };
 
 struct ResourcePipelineCreateInfo
 {
-	Util::Array<ResourceTableLayoutId> tables;
-	Util::Array<uint32_t> indices;
-	ResourcePipelinePushConstantRange push;
+    Util::Array<ResourceTableLayoutId> tables;
+    Util::Array<uint32_t> indices;
+    ResourcePipelinePushConstantRange push;
 };
 
 /// create resource pipeline

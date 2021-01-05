@@ -16,7 +16,7 @@ namespace Frame
 */
 FrameSubpassFullscreenEffect::FrameSubpassFullscreenEffect()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -24,7 +24,7 @@ FrameSubpassFullscreenEffect::FrameSubpassFullscreenEffect()
 */
 FrameSubpassFullscreenEffect::~FrameSubpassFullscreenEffect()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -33,10 +33,10 @@ FrameSubpassFullscreenEffect::~FrameSubpassFullscreenEffect()
 void
 FrameSubpassFullscreenEffect::Setup()
 {
-	n_assert(this->tex != TextureId::Invalid());
-	TextureDimensions dims = TextureGetDimensions(this->tex);
+    n_assert(this->tex != TextureId::Invalid());
+    TextureDimensions dims = TextureGetDimensions(this->tex);
 
-	this->program = ShaderGetProgram(this->shader, ShaderFeatureFromString(SHADER_POSTEFFECT_DEFAULT_FEATURE_MASK));
+    this->program = ShaderGetProgram(this->shader, ShaderFeatureFromString(SHADER_POSTEFFECT_DEFAULT_FEATURE_MASK));
 }
 
 //------------------------------------------------------------------------------
@@ -45,13 +45,13 @@ FrameSubpassFullscreenEffect::Setup()
 void
 FrameSubpassFullscreenEffect::Discard()
 {
-	FrameOp::Discard();
+    FrameOp::Discard();
 
-	this->tex = TextureId::Invalid();
-	DestroyResourceTable(this->resourceTable);
-	IndexT i;
-	for (i = 0; i < this->constantBuffers.Size(); i++)
-		DestroyBuffer(this->constantBuffers.ValueAtIndex(i));
+    this->tex = TextureId::Invalid();
+    DestroyResourceTable(this->resourceTable);
+    IndexT i;
+    for (i = 0; i < this->constantBuffers.Size(); i++)
+        DestroyBuffer(this->constantBuffers.ValueAtIndex(i));
 }
 
 //------------------------------------------------------------------------------
@@ -63,19 +63,19 @@ FrameSubpassFullscreenEffect::OnWindowResized()
     FrameOp::OnWindowResized();
     TextureWindowResized(this->tex);
 
-	IndexT i;
-	for (i = 0; i < this->textures.Size(); i++)
-	{
-		const Util::Tuple<IndexT, CoreGraphics::BufferId, CoreGraphics::TextureId>& tuple = this->textures[i];
-		if (Util::Get<1>(tuple) != CoreGraphics::BufferId::Invalid())
-		{
-			CoreGraphics::BufferUpdate(Util::Get<1>(tuple), CoreGraphics::TextureGetBindlessHandle(Util::Get<2>(tuple)), Util::Get<0>(tuple));
-		}
-		else
-		{
-			ResourceTableSetTexture(this->resourceTable, { Util::Get<2>(tuple), Util::Get<0>(tuple), 0, CoreGraphics::SamplerId::Invalid(), false });
-		}
-	}
+    IndexT i;
+    for (i = 0; i < this->textures.Size(); i++)
+    {
+        const Util::Tuple<IndexT, CoreGraphics::BufferId, CoreGraphics::TextureId>& tuple = this->textures[i];
+        if (Util::Get<1>(tuple) != CoreGraphics::BufferId::Invalid())
+        {
+            CoreGraphics::BufferUpdate(Util::Get<1>(tuple), CoreGraphics::TextureGetBindlessHandle(Util::Get<2>(tuple)), Util::Get<0>(tuple));
+        }
+        else
+        {
+            ResourceTableSetTexture(this->resourceTable, { Util::Get<2>(tuple), Util::Get<0>(tuple), 0, CoreGraphics::SamplerId::Invalid(), false });
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -84,11 +84,11 @@ FrameSubpassFullscreenEffect::OnWindowResized()
 FrameOp::Compiled*
 FrameSubpassFullscreenEffect::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
-	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
-	ret->program = this->program;
-	ret->resourceTable = this->resourceTable;
+    CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+    ret->program = this->program;
+    ret->resourceTable = this->resourceTable;
 
-	return ret;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -97,15 +97,15 @@ FrameSubpassFullscreenEffect::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& a
 void
 FrameSubpassFullscreenEffect::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
-	// activate shader
-	CoreGraphics::SetShaderProgram(this->program);
+    // activate shader
+    CoreGraphics::SetShaderProgram(this->program);
 
-	// draw
-	CoreGraphics::BeginBatch(FrameBatchType::System);
-	RenderUtil::DrawFullScreenQuad::ApplyMesh();
-	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
-	CoreGraphics::Draw();
-	CoreGraphics::EndBatch();
+    // draw
+    CoreGraphics::BeginBatch(FrameBatchType::System);
+    RenderUtil::DrawFullScreenQuad::ApplyMesh();
+    CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+    CoreGraphics::Draw();
+    CoreGraphics::EndBatch();
 }
 
 } // namespace Frame2

@@ -19,7 +19,7 @@
 namespace MemDb
 {
 
-/// TableId contains an id reference to the database it's attached to, and the id of the table.
+/// Table identifier
 ID_32_TYPE(TableId);
 
 /// column id
@@ -30,8 +30,10 @@ struct TableCreateInfo
 {
     /// name to be given to the table
     Util::String name;
-    /// which properties the table should initially have
-    Util::FixedArray<PropertyId> columns;
+    /// array of properties the table should initially have
+    PropertyId const* properties;
+    /// number of columns
+    SizeT numProperties;
 };
 
 //------------------------------------------------------------------------------
@@ -40,6 +42,7 @@ struct TableCreateInfo
     Property descriptions are retrieved from the MemDb::TypeRegistry
 
     @see    memdb/typeregistry.h
+    @todo   This should be changed to SOAs
 */
 struct Table
 {
@@ -56,9 +59,11 @@ struct Table
     uint32_t grow = 128;
     // holds freed indices/rows to be reused in the table.
     Util::Array<IndexT> freeIds;
-    /// arrays that hold the property identifier, and the buffers
+    /// all properties that this table has
+    Util::Array<PropertyId> properties;
+    /// holds all the column buffers. This excludes non-typed properties
     Util::ArrayAllocator<PropertyId, ColumnBuffer> columns;
-    /// 
+    /// maps propertyid -> index in columns array
     Util::HashTable<PropertyId, IndexT, 32, 1> columnRegistry;
     /// allocation heap used for the column buffers
     static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::DefaultHeap;

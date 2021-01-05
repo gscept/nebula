@@ -4,8 +4,8 @@
     @class IO::ZipFileStream
     
     Wraps a file in a zip archive into a stream. 
-    The file int the zip-archive is not cached. Only forward reading is allowed.
-    Only one file must be opened in that archive at a time.
+    The file is immediately loaded and buffered in a memory buffer and 
+    the ZipEntry is closed directly after.
 
     The IO::Server allows transparent access to data in zip files through
     normal "file:" URIs by first checking whether the file is part of
@@ -68,8 +68,14 @@ public:
     virtual void* Map();
     /// unmap a mapped stream
     virtual void Unmap();
+    /// map for direct memory-access, does nothing but call Map()
+    virtual void* MemoryMap();
+    /// unmap memory stream 
+    virtual void MemoryUnmap();
 
 private:
+    /// uncompress all to mapBuffer
+    bool CopyToMap();
     Size size;
     Position position;
     ZipFileEntry *zipFileEntry;

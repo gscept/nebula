@@ -26,77 +26,75 @@ QuaternionTest::Run()
 {
     STACK_CHECKPOINT("Test::QuaternionTest::Run()");
 
-	quat q0, q1, q2;
+    quat q0, q1, q2;
 
-	// if numbers are the same, only all signeds are swapped, the quaternions represent the same rotation/orientation
-	VERIFY(quaternionequal(quat(-0.525582f, -0.772620f, -0.133313f, -0.330225f),
-		quat( 0.525582f,  0.772620f,  0.133313f,  0.330225f)));
+    // if numbers are the same, only all signeds are swapped, the quaternions represent the same rotation/orientation
+    VERIFY(quaternionequal(quat(-0.525582f, -0.772620f, -0.133313f, -0.330225f),
+        quat( 0.525582f,  0.772620f,  0.133313f,  0.330225f)));
 
-	// inverse
-	const quat qUnnormalized( 1.0f, 2.0f, -0.5, -2.0f);
-	q0 = inverse(qUnnormalized);
-	VERIFY(quaternionequal(q0, quat(-0.108108f, -0.216216f, 0.054054f, -0.216216f)));
+    // inverse
+    const quat qUnnormalized( 1.0f, 2.0f, -0.5, -2.0f);
+    q0 = inverse(qUnnormalized);
+    VERIFY(quaternionequal(q0, quat(-0.108108f, -0.216216f, 0.054054f, -0.216216f)));
 
-	// normalize
-	// conjugated of a unit-q must be the same as its inverse
-	const quat qNormalized = normalize(qUnnormalized);
-	VERIFY(scalarequal(1.0f, length(qNormalized)));
-	VERIFY(scalarequal(1.0f, lengthsq(qNormalized)));
-	q0 = conjugate(qNormalized);
-	q1 = inverse(qNormalized);
-	VERIFY(quaternionequal(q0, q1));
+    // normalize
+    // conjugated of a unit-q must be the same as its inverse
+    const quat qNormalized = normalize(qUnnormalized);
+    VERIFY(scalarequal(1.0f, length(qNormalized)));
+    VERIFY(scalarequal(1.0f, lengthsq(qNormalized)));
+    q0 = conjugate(qNormalized);
+    q1 = inverse(qNormalized);
+    VERIFY(quaternionequal(q0, q1));
 
-	// construction/assignment/comp�arison
-	{
-		quat a(1.0f, 2.0f, 3.0f, 4.0f);
-		quat b(4.0f, 3.0f, 2.0f, 1.0f);
-		quat aa(a);
-		quat bb;
-		bb = b;
-		VERIFY(aa == a);
-		VERIFY(bb == b);
-		VERIFY(a != b);
-		VERIFY(aa != bb);
-		VERIFY(a == quat(1.0f, 2.0f, 3.0f, 4.0f));
-	}
+    // construction/assignment/comp�arison
+    {
+        quat a(1.0f, 2.0f, 3.0f, 4.0f);
+        quat b(4.0f, 3.0f, 2.0f, 1.0f);
+        quat aa(a);
+        quat bb;
+        bb = b;
+        VERIFY(aa == a);
+        VERIFY(bb == b);
+        VERIFY(a != b);
+        VERIFY(aa != bb);
+        VERIFY(a == quat(1.0f, 2.0f, 3.0f, 4.0f));
+    }
 
-#ifndef __WII__
     // load and store aligned
     NEBULA_ALIGN16 const scalar fAlignedLoad[4] = { 1.0f, 2.0f, 3.0f, 4.0f };
     NEBULA_ALIGN16 scalar fAlignedStore[4];
-	// check alignment
-	n_assert(!((size_t)fAlignedLoad & 0xF));
-	n_assert(!((size_t)fAlignedStore & 0xF));
+    // check alignment
+    n_assert(!((size_t)fAlignedLoad & 0xF));
+    n_assert(!((size_t)fAlignedStore & 0xF));
     q0.load(fAlignedLoad);
     VERIFY(q0 == vec4(1.0f, 2.0f, 3.0f, 4.0f));
-	// load unaligned must work with aligned data too
+    // load unaligned must work with aligned data too
     q0.loadu(fAlignedLoad);
     VERIFY(q0 == vec4(1.0f, 2.0f, 3.0f, 4.0f));
     q0.store(fAlignedStore);
     VERIFY((fAlignedStore[0] == 1.0f) && (fAlignedStore[1] == 2.0f) && (fAlignedStore[2] == 3.0f) && (fAlignedStore[3] == 4.0f));
-	// store unaligned must work with aligned data too
+    // store unaligned must work with aligned data too
     q0.storeu(fAlignedStore);
     VERIFY((fAlignedStore[0] == 1.0f) && (fAlignedStore[1] == 2.0f) && (fAlignedStore[2] == 3.0f) && (fAlignedStore[3] == 4.0f));
     q0.stream(fAlignedStore);
     VERIFY((fAlignedStore[0] == 1.0f) && (fAlignedStore[1] == 2.0f) && (fAlignedStore[2] == 3.0f) && (fAlignedStore[3] == 4.0f));
-	
-	// load and store unaligned
-	NEBULA_ALIGN16 const scalar fAlignedLoadBase[5] = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
-	NEBULA_ALIGN16 scalar fAlignedStoreBase[5];
-	const scalar *fUnalignedLoad = fAlignedLoadBase + 1;
-	scalar *fUnalignedStore = fAlignedStoreBase + 1;
-	// check un-alignment
-	n_assert(((size_t)fUnalignedLoad & 0xF));
-	n_assert(((size_t)fUnalignedStore & 0xF));
+    
+    // load and store unaligned
+    NEBULA_ALIGN16 const scalar fAlignedLoadBase[5] = { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
+    NEBULA_ALIGN16 scalar fAlignedStoreBase[5];
+    const scalar *fUnalignedLoad = fAlignedLoadBase + 1;
+    scalar *fUnalignedStore = fAlignedStoreBase + 1;
+    // check un-alignment
+    n_assert(((size_t)fUnalignedLoad & 0xF));
+    n_assert(((size_t)fUnalignedStore & 0xF));
     q0.loadu(fUnalignedLoad);
     VERIFY(q0 == vec4(1.0f, 2.0f, 3.0f, 4.0f));
     q0.storeu(fUnalignedStore);
     VERIFY((fUnalignedStore[0] == 1.0f) && (fUnalignedStore[1] == 2.0f) && (fUnalignedStore[2] == 3.0f) && (fUnalignedStore[3] == 4.0f));
-#endif
 
     // test 16-byte alignment of embedded members on the stack, if we use SSE/SSE2 on windows or
     // xbox or ps3
-#if (__WIN32__ && !defined(_XM_NO_INTRINSICS_)) || __XBOX360__ || __PS3__    
+#if (__WIN32__ && !defined(_XM_NO_INTRINSICS_))
     {
         testStackAlignment16<quat>(this);
     }

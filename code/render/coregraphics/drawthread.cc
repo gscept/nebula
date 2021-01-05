@@ -11,7 +11,7 @@ namespace CoreGraphics
 /**
 */
 DrawThread::DrawThread()
-	: event(nullptr)
+    : event(nullptr)
 {
 }
 
@@ -21,7 +21,7 @@ DrawThread::DrawThread()
 void 
 DrawThread::EmitWakeupSignal()
 {
-	this->signalEvent.Signal();
+    this->signalEvent.Signal();
 }
 
 //------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ DrawThread::EmitWakeupSignal()
 void 
 DrawThread::Flush()
 {
-	this->EmitWakeupSignal();
+    this->EmitWakeupSignal();
 }
 
 //------------------------------------------------------------------------------
@@ -39,12 +39,12 @@ DrawThread::Flush()
 void 
 DrawThread::Signal(Threading::Event* event)
 {
-	SyncCommand cmd;
-	cmd.event = event;
-	this->Push(cmd);
+    SyncCommand cmd;
+    cmd.event = event;
+    this->Push(cmd);
 
-	// add an extra flush
-	this->Flush();
+    // add an extra flush
+    this->Flush();
 }
 
 } // namespace CoreGraphics

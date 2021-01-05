@@ -33,7 +33,7 @@ using namespace Resources;
 /**
 */
 ShaderServerBase::ShaderServerBase() :
-	objectIdShaderVar(Ids::InvalidId32),
+    objectIdShaderVar(Ids::InvalidId32),
     curShaderFeatureBits(0),        
     activeShader(NULL),
     isOpen(false)
@@ -73,11 +73,11 @@ ShaderServerBase::Open()
         IndexT i;
         for (i = 0; i < shaderPaths.Size(); i++)
         {
-			const Util::String& path = shaderPaths[i];
+            const Util::String& path = shaderPaths[i];
             ResourceName resId = shaderPaths[i];
 
-			// load
-			this->LoadShader(resId);
+            // load
+            this->LoadShader(resId);
         }
     }
     else
@@ -148,7 +148,7 @@ ShaderServerBase::Open()
         }
     };
 
-	// create file watcher
+    // create file watcher
     if (IO::IoServer::Instance()->DirectoryExists("home:work/shaders/vk"))
     {
         FileWatcher::Instance()->Watch("home:work/shaders/vk", true, IO::WatchFlags(NameChanged | SizeChanged | Write), reloadFileFunc);
@@ -170,8 +170,8 @@ ShaderServerBase::Open()
     if (this->shaders.Contains(ResourceName("shd:shared.fxb")))
     {
         // get shared object id shader variable
-		this->sharedVariableShader = this->GetShader("shd:shared.fxb");
-		n_assert(this->sharedVariableShader != ShaderId::Invalid());
+        this->sharedVariableShader = this->GetShader("shd:shared.fxb");
+        n_assert(this->sharedVariableShader != ShaderId::Invalid());
     }
 
     this->isOpen = true;
@@ -197,7 +197,7 @@ ShaderServerBase::Close()
     IndexT i;
     for (i = 0; i < this->shaders.Size(); i++)
     {
-		CoreGraphics::shaderPool->DiscardResource(this->shaders.ValueAtIndex(i));
+        CoreGraphics::shaderPool->DiscardResource(this->shaders.ValueAtIndex(i));
     }
     this->shaders.Clear();
 
@@ -215,7 +215,7 @@ ShaderServerBase::ApplyObjectId(IndexT i)
 
     if (this->objectIdShaderVar != Ids::InvalidId32)
     {
-		//CoreGraphics::shaderPool->ShaderConstantSet(this->objectIdShaderVar, this->sharedVariableShaderState, ((float)i) / 255.0f);
+        //CoreGraphics::shaderPool->ShaderConstantSet(this->objectIdShaderVar, this->sharedVariableShaderState, ((float)i) / 255.0f);
     }       
 }
 
@@ -241,7 +241,7 @@ ShaderServerBase::LoadShader(const Resources::ResourceName& shdName)
 void 
 ShaderServerBase::BeforeView()
 {
-	// implement in subclass
+    // implement in subclass
 }
 
 //------------------------------------------------------------------------------
@@ -250,7 +250,7 @@ ShaderServerBase::BeforeView()
 void
 ShaderServerBase::AfterView()
 {
-	// implement in subclass
+    // implement in subclass
 }
 
 //------------------------------------------------------------------------------
@@ -259,20 +259,20 @@ ShaderServerBase::AfterView()
 void 
 ShaderServerBase::BeforeFrame()
 {
-	if (this->pendingShaderReloads.Size() > 0)
-	{
-		// wait for all graphics commands to finish first
-		CoreGraphics::WaitForAllQueues();
+    if (this->pendingShaderReloads.Size() > 0)
+    {
+        // wait for all graphics commands to finish first
+        CoreGraphics::WaitForAllQueues();
 
-		Util::Array<Resources::ResourceName> shaders;
-		shaders.Reserve(4);
-		this->pendingShaderReloads.DequeueAll(shaders);
+        Util::Array<Resources::ResourceName> shaders;
+        shaders.Reserve(4);
+        this->pendingShaderReloads.DequeueAll(shaders);
 
-		// reload shaders
-		IndexT i;
-		for (i = 0; i < shaders.Size(); i++)
-			Resources::ReloadResource(shaders[i]);
-	}
+        // reload shaders
+        IndexT i;
+        for (i = 0; i < shaders.Size(); i++)
+            Resources::ReloadResource(shaders[i]);
+    }
 }
 
 } // namespace Base

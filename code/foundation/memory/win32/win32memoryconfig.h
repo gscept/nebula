@@ -3,7 +3,7 @@
 /**
     @file memory/win32/win32memoryconfig.h
     
-    Central config file for memory setup on the Win32 and Xbox360 platform.
+    Central config file for memory setup on the Win32 platform.
     
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
@@ -34,10 +34,6 @@ enum HeapType
     PhysicsHeap,                // physics engine allocations go here
     AppHeap,                    // for general Application layer stuff
     NetworkHeap,                // for network layer
-    RocketHeap,                 // the librocket UI heap
-
-    Xbox360GraphicsHeap,        // defines special Xbox360 graphical memory
-    Xbox360AudioHeap,           // defines special Xbox360 audio memory
     
     NumHeapTypes,
     InvalidHeapType,
@@ -109,13 +105,9 @@ __HeapUnalignPointer16(unsigned char* ptr)
 __forceinline LPVOID 
 __HeapAlloc16(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes)
 {
-    #if __XBOX360__
-    return ::HeapAlloc(hHeap, dwFlags, dwBytes);
-    #else
     unsigned char* ptr = (unsigned char*) ::HeapAlloc(hHeap, dwFlags, dwBytes + 16);
     ptr = __HeapAlignPointerAndWritePadding16(ptr);
     return (LPVOID) ptr;
-    #endif
 }
 
 //------------------------------------------------------------------------------
@@ -127,9 +119,6 @@ __HeapAlloc16(HANDLE hHeap, DWORD dwFlags, SIZE_T dwBytes)
 __forceinline LPVOID
 __HeapReAlloc16(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem, SIZE_T dwBytes)
 {
-    #if __XBOX360__
-    return HeapReAlloc(hHeap, dwFlags, lpMem, dwBytes);
-    #else
     // restore unaligned pointer
     unsigned char* ptr = (unsigned char*) lpMem;
     unsigned char* rawPtr = __HeapUnalignPointer16(ptr); 
@@ -155,7 +144,6 @@ __HeapReAlloc16(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem, SIZE_T dwBytes)
         ptr = __HeapAlignPointerAndWritePadding16(ptr);
     }
     return (LPVOID) ptr;
-    #endif
 }
 
 //------------------------------------------------------------------------------
@@ -167,13 +155,9 @@ __HeapReAlloc16(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem, SIZE_T dwBytes)
 __forceinline BOOL
 __HeapFree16(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem)
 {
-    #if __XBOX360__
-    return ::HeapFree(hHeap, dwFlags, lpMem);
-    #else
     unsigned char* ptr = (unsigned char*) lpMem;
     ptr = __HeapUnalignPointer16(ptr);
     return ::HeapFree(hHeap, dwFlags, ptr);
-    #endif
 }
 
 //------------------------------------------------------------------------------
@@ -183,13 +167,9 @@ __HeapFree16(HANDLE hHeap, DWORD dwFlags, LPVOID lpMem)
 __forceinline SIZE_T
 __HeapSize16(HANDLE hHeap, DWORD dwFlags, LPCVOID lpMem)
 {
-    #if __XBOX360__
-    return ::HeapSize(hHeap, dwFlags, lpMem);
-    #else
     unsigned char* ptr = (unsigned char*) lpMem;
     ptr = __HeapUnalignPointer16(ptr);
     return ::HeapSize(hHeap, dwFlags, ptr);
-    #endif
 }    
 
 } // namespace Memory    

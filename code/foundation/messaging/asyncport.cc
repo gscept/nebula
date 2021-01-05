@@ -62,7 +62,7 @@ AsyncPort::Close()
     n_assert(this->IsOpen());
     this->thread->Stop();
     this->thread->ClearHandlers();
-	this->thread = nullptr;
+    this->thread = nullptr;
     this->isOpen = false;
 }
 

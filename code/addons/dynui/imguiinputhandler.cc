@@ -17,7 +17,7 @@ __ImplementClass(Dynui::ImguiInputHandler, 'IMIH', Input::InputHandler);
 */
 ImguiInputHandler::ImguiInputHandler()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -25,7 +25,7 @@ ImguiInputHandler::ImguiInputHandler()
 */
 ImguiInputHandler::~ImguiInputHandler()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -34,8 +34,8 @@ ImguiInputHandler::~ImguiInputHandler()
 void
 ImguiInputHandler::BeginCapture()
 {
-	Input::InputServer::Instance()->ObtainMouseCapture(this);
-	Input::InputServer::Instance()->ObtainKeyboardCapture(this);
+    Input::InputServer::Instance()->ObtainMouseCapture(this);
+    Input::InputServer::Instance()->ObtainKeyboardCapture(this);
 }
 
 //------------------------------------------------------------------------------
@@ -44,8 +44,8 @@ ImguiInputHandler::BeginCapture()
 void
 ImguiInputHandler::EndCapture()
 {
-	Input::InputServer::Instance()->ReleaseMouseCapture(this);
-	Input::InputServer::Instance()->ReleaseKeyboardCapture(this);
+    Input::InputServer::Instance()->ReleaseMouseCapture(this);
+    Input::InputServer::Instance()->ReleaseKeyboardCapture(this);
 }
 
 //------------------------------------------------------------------------------
@@ -53,21 +53,21 @@ ImguiInputHandler::EndCapture()
 */
 bool
 ImguiInputHandler::OnEvent(const Input::InputEvent& inputEvent)
-{	
-	switch (inputEvent.GetType())
-	{
+{   
+    switch (inputEvent.GetType())
+    {
 #ifndef _DEBUG
-	case Input::InputEvent::AppObtainFocus:
-	case Input::InputEvent::AppLoseFocus:
+    case Input::InputEvent::AppObtainFocus:
+    case Input::InputEvent::AppLoseFocus:
 #endif
-	case Input::InputEvent::Reset:
-		this->OnReset();
-		break;
+    case Input::InputEvent::Reset:
+        this->OnReset();
+        break;
 
-	default:
-		return ImguiContext::HandleInput(inputEvent);
-	}
-	return false;
+    default:
+        return ImguiContext::HandleInput(inputEvent);
+    }
+    return false;
 }
 
 } // namespace Dynui

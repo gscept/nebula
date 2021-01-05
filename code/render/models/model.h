@@ -1,10 +1,10 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	A model resource consists of nodes, each of which inhibit some information
-	read from an .n3 file. 
-	
-	(C)2017-2020 Individual contributors, see AUTHORS file
+    A model resource consists of nodes, each of which inhibit some information
+    read from an .n3 file. 
+    
+    (C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
@@ -25,21 +25,21 @@ ID_32_32_NAMED_TYPE(ModelInstanceId, model, instance);
 
 enum NodeType
 {
-	CharacterNodeType,
-	TransformNodeType,
-	ShaderStateNodeType,
-	PrimitiveNodeType,
-	ParticleSystemNodeType,
-	CharacterSkinNodeType,
+    CharacterNodeType,
+    TransformNodeType,
+    ShaderStateNodeType,
+    PrimitiveNodeType,
+    ParticleSystemNodeType,
+    CharacterSkinNodeType,
 
-	NumNodeTypes
+    NumNodeTypes
 };
 
 enum NodeBits
 {
-	NoBits = N_BIT(0),
-	HasTransformBit = N_BIT(1),
-	HasStateBit = N_BIT(2)
+    NoBits = N_BIT(0),
+    HasTransformBit = N_BIT(1),
+    HasStateBit = N_BIT(2)
 };
 __ImplementEnumBitOperators(NodeBits);
 

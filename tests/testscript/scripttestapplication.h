@@ -40,7 +40,7 @@ private:
     
 
 private:
-	Ptr<Core::CoreServer> coreServer;
+    Ptr<Core::CoreServer> coreServer;
     int argc;
     char**argv;
     Timing::Timer masterTime;

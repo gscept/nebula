@@ -10,8 +10,8 @@
     This implementation is based on http://www.mindcontrol.org/~hplus/epic/
     Its adapted for use with point and vector class.
 
-	(C) 2009 Radon Labs GmbH
-    (C) 2013-2020 Individual contributors, see AUTHORS file	
+    (C) 2009 Radon Labs GmbH
+    (C) 2013-2020 Individual contributors, see AUTHORS file 
 */
 #include "timing/time.h"
 
@@ -20,10 +20,10 @@ namespace Math
 template<class TYPE> class Extrapolator
 {
 public:
-	/// constructor
-	Extrapolator();
-	/// destructor
-	virtual ~Extrapolator();
+    /// constructor
+    Extrapolator();
+    /// destructor
+    virtual ~Extrapolator();
     /// add sample without velocity, velocity is compute from positions 
     bool AddSample(Timing::Time packetTime, Timing::Time curTime, const TYPE& pos);
     /// add sample with given velocity

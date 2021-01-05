@@ -72,14 +72,14 @@ Nvx2StreamReader::Open(const Resources::ResourceName& name)
     if (StreamReader::Open())
     {
         // map the stream to memory
-		if (!this->rawMode)
-		{
-			this->mapPtr = this->stream->MemoryMap();
-		}
-		else
-		{
-			this->mapPtr = this->stream->Map();
-		}
+        if (!this->rawMode)
+        {
+            this->mapPtr = this->stream->MemoryMap();
+        }
+        else
+        {
+            this->mapPtr = this->stream->Map();
+        }
         
         n_assert(0 != this->mapPtr);
 
@@ -109,8 +109,8 @@ Nvx2StreamReader::Close()
     this->groupDataPtr = nullptr;
     this->vertexDataPtr = nullptr;
     this->indexDataPtr = nullptr;
-	this->ibo = BufferId::Invalid();
-	this->vbo = BufferId::Invalid();
+    this->ibo = BufferId::Invalid();
+    this->vbo = BufferId::Invalid();
     this->primGroups.Clear();
     this->vertexComponents.Clear();
     StreamReader::Close();
@@ -147,7 +147,7 @@ Nvx2StreamReader::ReadHeaderData()
     this->vertexComponentMask = header->vertexComponentMask;
     this->groupDataSize = 6 * sizeof(uint) * this->numGroups;
     this->vertexDataSize = this->numVertices * this->vertexWidth * sizeof(float);
-	this->indexDataSize = this->numIndices * sizeof(int);
+    this->indexDataSize = this->numIndices * sizeof(int);
 
     this->groupDataPtr = header + 1;
     this->vertexDataPtr = ((uchar*)this->groupDataPtr) + this->groupDataSize;
@@ -156,9 +156,9 @@ Nvx2StreamReader::ReadHeaderData()
 
 //------------------------------------------------------------------------------
 /**
-	Question here, basevertex is supposed to be a vertex offset into the vertex buffer.
-	However, the indices describe where to fetch the vertex data, so why would we need it
-	if we are using static buffers?
+    Question here, basevertex is supposed to be a vertex offset into the vertex buffer.
+    However, the indices describe where to fetch the vertex data, so why would we need it
+    if we are using static buffers?
 */
 void
 Nvx2StreamReader::ReadPrimitiveGroups()
@@ -277,16 +277,16 @@ Nvx2StreamReader::UpdateGroupBoundingBoxes()
 void
 Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 {
-	n_assert(this->vbo == BufferId::Invalid());
+    n_assert(this->vbo == BufferId::Invalid());
     n_assert(!this->rawMode);
     n_assert(0 != this->vertexDataPtr);
     n_assert(this->vertexDataSize > 0);
     n_assert(this->numVertices > 0);    
     n_assert(this->vertexComponents.Size() > 0);
 
-	// create vertex buffer
+    // create vertex buffer
     BufferCreateInfo vboInfo;
-	vboInfo.name = name;
+    vboInfo.name = name;
     vboInfo.size = this->numVertices;
     vboInfo.elementSize = VertexLayoutGetSize(this->layout); 
     vboInfo.mode = CoreGraphics::DeviceLocal;
@@ -302,15 +302,15 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 void
 Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
 {
-	n_assert(this->ibo == BufferId::Invalid());
+    n_assert(this->ibo == BufferId::Invalid());
     n_assert(!this->rawMode);
     n_assert(0 != this->indexDataPtr);
     n_assert(this->indexDataSize > 0);
     n_assert(this->numIndices > 0);
     
-	// create index buffer
-	BufferCreateInfo iboInfo;
-	iboInfo.name = name;
+    // create index buffer
+    BufferCreateInfo iboInfo;
+    iboInfo.name = name;
     iboInfo.size = this->numIndices;
     iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index32);
     iboInfo.mode = CoreGraphics::DeviceLocal;

@@ -48,8 +48,8 @@ public:
     void SetOverrideRootDirectory(const Util::String& rootDir);
     /// enable/disable standard archive mounting
     void SetMountStandardArchivesEnabled(bool b);
-	/// set multithreaded rendering
-	void SetMultithreadedRendering(bool b);
+    /// set multithreaded rendering
+    void SetMultithreadedRendering(bool b);
 
     /// sets the parent window
     void SetWindowData(const Util::Blob& data);
@@ -94,7 +94,7 @@ protected:
     Ptr<Graphics::Display> display;       
     Ptr<Input::InputServer> inputServer;   
     Ptr<FrameSync::FrameSyncTimer> frameSyncTimer;
-	Ptr<Resources::ResourceManager> resManager;
+    Ptr<Resources::ResourceManager> resManager;
     Util::Blob windowData;
 
 #if __NEBULA_HTTP__            
@@ -109,7 +109,7 @@ protected:
 
     Timing::Time time;
     Timing::Time frameTime;
-	bool useMultithreadedRendering;
+    bool useMultithreadedRendering;
     bool quitRequested;
     bool logFileEnabled;
     bool mountStandardArchivesEnabled;
@@ -143,7 +143,7 @@ RenderApplication::SetMountStandardArchivesEnabled(bool b)
 inline void 
 RenderApplication::SetMultithreadedRendering( bool b )
 {
-	this->useMultithreadedRendering = b;
+    this->useMultithreadedRendering = b;
 }
 
 //------------------------------------------------------------------------------

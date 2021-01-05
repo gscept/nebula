@@ -1,18 +1,18 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	@type CoreGraphics::SubmissionContext
+    @type CoreGraphics::SubmissionContext
 
-	A submission context encapsulates a body of GPU submission related objects, such as
-	command buffers and synchronization semaphores. It may also be used internally to keep
-	track of, and release resources such as buffers, images and memory once the cycle submission is done.
+    A submission context encapsulates a body of GPU submission related objects, such as
+    command buffers and synchronization semaphores. It may also be used internally to keep
+    track of, and release resources such as buffers, images and memory once the cycle submission is done.
 
-	The SubmissionContext contains two methods, one for creating a new command buffer - semaphore
-	pair, and one for cycling to the next 'frame' or however you want to see it. Cycling may
-	incur a synchronization, and should only be done after the context has been submitted.
+    The SubmissionContext contains two methods, one for creating a new command buffer - semaphore
+    pair, and one for cycling to the next 'frame' or however you want to see it. Cycling may
+    incur a synchronization, and should only be done after the context has been submitted.
 
 
-	(C) 2019-2020 Individual contributors, see AUTHORS file
+    (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 #include "ids/id.h"
 #include "coregraphics/config.h"
@@ -24,7 +24,7 @@
 //------------------------------------------------------------------------------
 namespace Resources
 {
-	struct ResourceId;
+    struct ResourceId;
 }
 
 namespace CoreGraphics
@@ -38,11 +38,11 @@ ID_24_8_TYPE(SubmissionContextId);
 
 struct SubmissionContextCreateInfo
 {
-	CommandBufferCreateInfo cmdInfo;	// creation info for the cmd buffers
-	uint numBuffers : 3;				// number of buffers it should keep track of
-	bool useFence : 1;					// set if a fence should be used when we cycle	
+    CommandBufferCreateInfo cmdInfo;    // creation info for the cmd buffers
+    uint numBuffers : 3;                // number of buffers it should keep track of
+    bool useFence : 1;                  // set if a fence should be used when we cycle  
 #if NEBULA_GRAPHICS_DEBUG
-	Util::String name;
+    Util::String name;
 #endif
 };
 

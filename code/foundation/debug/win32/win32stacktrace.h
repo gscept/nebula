@@ -1,11 +1,11 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	@class Win32::Win32Stacktrace
+    @class Win32::Win32Stacktrace
 
-	Win32 implementation of stacktrace
+    Win32 implementation of stacktrace
 
-	(C) 2015-2020 Individual contributors, see AUTHORS file
+    (C) 2015-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "util/string.h"
@@ -16,9 +16,9 @@ namespace Win32
 class Win32StackTrace
 {
 public:
-	/// create a stack trace string
-	static const Util::Array<Util::String> GenerateStackTrace();
-	static void PrintStackTrace(int skip = 3);
+    /// create a stack trace string
+    static const Util::Array<Util::String> GenerateStackTrace();
+    static void PrintStackTrace(int skip = 3);
 };
 }
 

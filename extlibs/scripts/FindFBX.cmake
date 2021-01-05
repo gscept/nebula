@@ -18,7 +18,7 @@
 # which uses the MIT license (https://github.com/ufz-vislab/VtkFbxConverter/blob/master/LICENSE.txt)
 
 if (NOT FBX_VERSION)
-  set(FBX_VERSION 2019.2)
+  set(FBX_VERSION 2020.0.1)
 endif()
 
 string(REGEX REPLACE "^([0-9]+).*$" "\\1" FBX_VERSION_MAJOR "${FBX_VERSION}")

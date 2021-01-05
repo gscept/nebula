@@ -59,8 +59,8 @@ public:
     void Clear();
     /// return true if Dequeue contains element
     bool Contains(const TYPE& e) const;
-	/// erase element at index (slow!!)
-	void EraseIndex(const IndexT i);
+    /// erase element at index (slow!!)
+    void EraseIndex(const IndexT i);
 
     /// add element to the back of the Dequeue, can trigger grow
     void Enqueue(const TYPE& e);

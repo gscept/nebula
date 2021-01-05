@@ -18,63 +18,63 @@ namespace RenderUtil
 class FreeCameraUtil
 {
 public:
-	/// constructor
-	FreeCameraUtil();
+    /// constructor
+    FreeCameraUtil();
 
-	/// sets up free camera
-	void Setup(const Math::point& defaultEyePos, const Math::vector& defaultEyeVec);
-	/// resets free camera to default values
-	void Reset();
-	/// updates camera matrix
-	void Update();
-	/// gets camera transform
-	const Math::mat4& GetTransform() const;
+    /// sets up free camera
+    void Setup(const Math::point& defaultEyePos, const Math::vector& defaultEyeVec);
+    /// resets free camera to default values
+    void Reset();
+    /// updates camera matrix
+    void Update();
+    /// gets camera transform
+    const Math::mat4& GetTransform() const;
 
-	/// sets the state of the rotate button
-	void SetRotateButton(bool state);
-	/// sets the state of the accelerate button
-	void SetAccelerateButton(bool state);
-	/// sets the mouse movement
-	void SetMouseMovement(Math::vec2 movement);
-	/// sets the rotation speed
-	void SetRotationSpeed(float speed);
-	/// sets the movement speed
-	void SetMovementSpeed(float speed);
+    /// sets the state of the rotate button
+    void SetRotateButton(bool state);
+    /// sets the state of the accelerate button
+    void SetAccelerateButton(bool state);
+    /// sets the mouse movement
+    void SetMouseMovement(Math::vec2 movement);
+    /// sets the rotation speed
+    void SetRotationSpeed(float speed);
+    /// sets the movement speed
+    void SetMovementSpeed(float speed);
 
-	/// sets the forward movement key
-	void SetForwardsKey(bool state);
-	/// sets the backward movement key
-	void SetBackwardsKey(bool state);
-	/// sets the left strafe key
-	void SetLeftStrafeKey(bool state);
-	/// sets the right strafe key
-	void SetRightStrafeKey(bool state);
-	/// sets the up movement key
-	void SetUpKey(bool state);
-	/// sets the down movement key
-	void SetDownKey(bool state);
-	
+    /// sets the forward movement key
+    void SetForwardsKey(bool state);
+    /// sets the backward movement key
+    void SetBackwardsKey(bool state);
+    /// sets the left strafe key
+    void SetLeftStrafeKey(bool state);
+    /// sets the right strafe key
+    void SetRightStrafeKey(bool state);
+    /// sets the up movement key
+    void SetUpKey(bool state);
+    /// sets the down movement key
+    void SetDownKey(bool state);
+    
 private:
-	Math::point defaultEyePos;
-	Math::vector defaultEyeVec;
-	Math::vec2 mouseMovement;
+    Math::point defaultEyePos;
+    Math::vector defaultEyeVec;
+    Math::vec2 mouseMovement;
 
-	Math::polar viewAngles;
-	Math::point position;
-	Math::mat4 cameraTransform;
+    Math::polar viewAngles;
+    Math::point position;
+    Math::mat4 cameraTransform;
 
-	float rotationSpeed;
-	float moveSpeed;
+    float rotationSpeed;
+    float moveSpeed;
 
-	bool rotateButton;
-	bool accelerateButton;
+    bool rotateButton;
+    bool accelerateButton;
 
-	bool forwardsKey;
-	bool backwardsKey;
-	bool leftStrafeKey;
-	bool rightStrafeKey;
-	bool upKey;
-	bool downKey;
+    bool forwardsKey;
+    bool backwardsKey;
+    bool leftStrafeKey;
+    bool rightStrafeKey;
+    bool upKey;
+    bool downKey;
 }; 
 
 
@@ -84,7 +84,7 @@ private:
 inline const Math::mat4& 
 FreeCameraUtil::GetTransform() const
 {
-	return this->cameraTransform;
+    return this->cameraTransform;
 }
 
 //------------------------------------------------------------------------------
@@ -93,7 +93,7 @@ FreeCameraUtil::GetTransform() const
 inline void 
 FreeCameraUtil::SetRotateButton( bool state )
 {
-	this->rotateButton = state;
+    this->rotateButton = state;
 }
 
 //------------------------------------------------------------------------------
@@ -102,7 +102,7 @@ FreeCameraUtil::SetRotateButton( bool state )
 inline void 
 FreeCameraUtil::SetAccelerateButton( bool state )
 {
-	this->accelerateButton = state;
+    this->accelerateButton = state;
 }
 
 //------------------------------------------------------------------------------
@@ -111,7 +111,7 @@ FreeCameraUtil::SetAccelerateButton( bool state )
 inline void 
 FreeCameraUtil::SetMouseMovement( Math::vec2 movement )
 {
-	this->mouseMovement = movement;
+    this->mouseMovement = movement;
 }
 
 //------------------------------------------------------------------------------
@@ -120,7 +120,7 @@ FreeCameraUtil::SetMouseMovement( Math::vec2 movement )
 inline void 
 FreeCameraUtil::SetRotationSpeed( float speed )
 {
-	this->rotationSpeed = speed;
+    this->rotationSpeed = speed;
 }
 
 //------------------------------------------------------------------------------
@@ -129,7 +129,7 @@ FreeCameraUtil::SetRotationSpeed( float speed )
 inline void 
 FreeCameraUtil::SetMovementSpeed( float speed )
 {
-	this->moveSpeed = speed;
+    this->moveSpeed = speed;
 }
 
 //------------------------------------------------------------------------------
@@ -138,7 +138,7 @@ FreeCameraUtil::SetMovementSpeed( float speed )
 inline void 
 FreeCameraUtil::SetForwardsKey( bool state )
 {
-	this->forwardsKey = state;
+    this->forwardsKey = state;
 }
 
 //------------------------------------------------------------------------------
@@ -147,7 +147,7 @@ FreeCameraUtil::SetForwardsKey( bool state )
 inline void 
 FreeCameraUtil::SetBackwardsKey( bool state )
 {
-	this->backwardsKey = state;
+    this->backwardsKey = state;
 }
 
 //------------------------------------------------------------------------------
@@ -156,7 +156,7 @@ FreeCameraUtil::SetBackwardsKey( bool state )
 inline void 
 FreeCameraUtil::SetLeftStrafeKey( bool state )
 {
-	this->leftStrafeKey = state;
+    this->leftStrafeKey = state;
 }
 
 //------------------------------------------------------------------------------
@@ -165,7 +165,7 @@ FreeCameraUtil::SetLeftStrafeKey( bool state )
 inline void 
 FreeCameraUtil::SetRightStrafeKey( bool state )
 {
-	this->rightStrafeKey = state;
+    this->rightStrafeKey = state;
 }
 
 //------------------------------------------------------------------------------
@@ -174,7 +174,7 @@ FreeCameraUtil::SetRightStrafeKey( bool state )
 inline void 
 FreeCameraUtil::SetUpKey( bool state )
 {
-	this->upKey = state;
+    this->upKey = state;
 }
 
 //------------------------------------------------------------------------------
@@ -183,7 +183,7 @@ FreeCameraUtil::SetUpKey( bool state )
 inline void 
 FreeCameraUtil::SetDownKey( bool state )
 {
-	this->downKey = state;
+    this->downKey = state;
 }
 
 } // namespace RenderUtil

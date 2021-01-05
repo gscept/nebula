@@ -27,6 +27,8 @@ struct EntityMapping
 
 //------------------------------------------------------------------------------
 /**
+    A dataset that contains views into category tables. These are created by
+    querying the world database.
 */
 struct Dataset
 {
@@ -35,8 +37,11 @@ struct Dataset
     /// a view into a category table
     struct CategoryTableView
     {
+        /// category identifier
         CategoryId cid;
+        /// number of instances in view
         uint32_t numInstances = 0;
+        /// property buffers. @note Can be NULL if a queried property is a flag
         void* buffers[MAX_PROPERTY_BUFFERS];
     };
 
@@ -46,11 +51,13 @@ struct Dataset
     CategoryTableView* views = nullptr;
 };
 
+
 /// Opaque entity operations buffer
 typedef uint32_t OpBuffer;
 
 /// Opaque processor handle
 typedef uint32_t ProcessorHandle;
+
 
 //------------------------------------------------------------------------------
 //      Create, Setup and Registration
@@ -104,19 +111,28 @@ struct FilterCreateInfo
 
 //------------------------------------------------------------------------------
 /**
+*/
+enum PropertyFlags : uint32_t
+{
+    PROPERTYFLAG_NONE = 0,
+    PROPERTYFLAG_MANAGED = 1 << 0
+};
+
+//------------------------------------------------------------------------------
+/**
     @note   types must be mem- copyable, and trivially destructible and should
             preferably not define a constructor.
 */
-struct _PropertyInfo
+struct PropertyCreateInfo
 {
     /// name of the property
     const char* name;
-    /// property descriptor as a four character code.
-    // uint32_t descriptor;
     /// size of the property type in bytes
     uint32_t byteSize;
     /// a default value for the property type, or NULL if we always want to initialize to 0's
-    void* defaultValue;
+    void const* defaultValue;
+    /// property flags
+    PropertyFlags flags = PropertyFlags::PROPERTYFLAG_NONE;
 };
 
 /// per frame callback for processors
@@ -127,9 +143,11 @@ typedef void(*ProcessorFrameCallback)(Dataset);
 */
 struct ProcessorCreateInfo
 {
+    /// name of the processor
     Util::StringAtom name;
 
-    /// set if this processor should run as a job
+    /// set if this processor should run as a job.
+    /// TODO: this is currently not used
     bool async = false;
     /// filter used for creating the dataset
     Filter filter;
@@ -235,6 +253,9 @@ uint GetNumEntities();
 
 /// Returns the entity mapping of an entity
 EntityMapping GetEntityMapping(Entity entity);
+
+/// Create a property
+PropertyId CreateProperty(PropertyCreateInfo const& info);
 
 /// Returns a property id
 PropertyId GetPropertyId(Util::StringAtom name);

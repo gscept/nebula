@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Vulkan semaphore (cross-queue synchronization primitive)
+    Vulkan semaphore (cross-queue synchronization primitive)
 
-	(C) 2018-2020 Individual contributors, see AUTHORS file
+    (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/semaphore.h"
@@ -15,16 +15,16 @@ namespace Vulkan
 
 enum
 {
-	Semaphore_Device,
-	Semaphore_VkHandle,
-	Semaphore_Type,
-	Semaphore_LastIndex
+    Semaphore_Device,
+    Semaphore_VkHandle,
+    Semaphore_Type,
+    Semaphore_LastIndex
 };
 typedef Ids::IdAllocator<
-	VkDevice,
-	VkSemaphore,
-	CoreGraphics::SemaphoreType,
-	uint64
+    VkDevice,
+    VkSemaphore,
+    CoreGraphics::SemaphoreType,
+    uint64
 > VkSemaphoreAllocator;
 extern VkSemaphoreAllocator semaphoreAllocator;
 

@@ -81,7 +81,7 @@ public:
     /// get event by index
     const AnimEvent& GetEventByIndex(IndexT i) const;
     /// get events in time range (return number of events and start event index)
-	SizeT GetEventsInRange(Timing::Tick startTime, Timing::Tick endTime, IndexT& outStartEventIndex) const;
+    SizeT GetEventsInRange(Timing::Tick startTime, Timing::Tick endTime, IndexT& outStartEventIndex) const;
 
     /// pre-compute the key range values
     void PrecomputeKeySliceValues();

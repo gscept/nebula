@@ -25,7 +25,7 @@ CreateSkeleton(const ResourceCreateInfo& info)
 void 
 DestroySkeleton(const SkeletonId id)
 {
-	skeletonPool->DiscardResource(id);
+    skeletonPool->DiscardResource(id);
 }
 
 //------------------------------------------------------------------------------
@@ -34,7 +34,7 @@ DestroySkeleton(const SkeletonId id)
 const SizeT 
 SkeletonGetNumJoints(const SkeletonId id)
 {
-	return skeletonPool->GetNumJoints(id);
+    return skeletonPool->GetNumJoints(id);
 }
 
 //------------------------------------------------------------------------------
@@ -43,7 +43,7 @@ SkeletonGetNumJoints(const SkeletonId id)
 const Util::FixedArray<CharacterJoint>& 
 SkeletonGetJoints(const SkeletonId id)
 {
-	return skeletonPool->GetJoints(id);
+    return skeletonPool->GetJoints(id);
 }
 
 //------------------------------------------------------------------------------
@@ -52,7 +52,7 @@ SkeletonGetJoints(const SkeletonId id)
 const Util::FixedArray<Math::mat4>&
 SkeletonGetBindPose(const SkeletonId id)
 {
-	return skeletonPool->GetBindPose(id);
+    return skeletonPool->GetBindPose(id);
 }
 
 //------------------------------------------------------------------------------
@@ -61,7 +61,7 @@ SkeletonGetBindPose(const SkeletonId id)
 const IndexT 
 SkeletonGetJointIndex(const SkeletonId id, const Util::StringAtom& name)
 {
-	return skeletonPool->GetJointIndex(id, name);
+    return skeletonPool->GetJointIndex(id, name);
 }
 
 } // namespace Characters

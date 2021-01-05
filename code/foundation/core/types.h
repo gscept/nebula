@@ -44,9 +44,9 @@ typedef int8_t int8;
 typedef uintptr_t uintptr;
 typedef ptrdiff_t ptrdiff;
 
-typedef int IndexT;			// the index type
-typedef int SizeT;			// the size type
-typedef uintptr PtrT;		// the ptr type
+typedef int IndexT;         // the index type
+typedef int SizeT;          // the size type
+typedef uintptr PtrT;       // the ptr type
 typedef ptrdiff PtrDiff;
 static const int InvalidIndex = -1;
 
@@ -56,7 +56,7 @@ static const int InvalidIndex = -1;
 constexpr uint64
 operator"" _KB(const unsigned long long val)
 {
-	return val * 1024;
+    return val * 1024;
 }
 
 //------------------------------------------------------------------------------
@@ -65,7 +65,7 @@ operator"" _KB(const unsigned long long val)
 constexpr uint64
 operator"" _MB(const unsigned long long val)
 {
-	return val * 1024 * 1024;
+    return val * 1024 * 1024;
 }
 
 #define N_BIT(x) (1 << x)

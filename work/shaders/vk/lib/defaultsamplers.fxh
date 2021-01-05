@@ -26,7 +26,7 @@ sampler_state GeometryTextureSampler
 
 sampler_state MaterialSampler
 {
-
+	Filter = MinMagMipLinear;
 };
 
 sampler_state NormalSampler

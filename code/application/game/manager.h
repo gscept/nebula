@@ -1,20 +1,17 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Game::Manager
+    Game managers
     
-    Managers are Singleton objects which care about some "specific global 
-    stuff". They should be defined by applications to implement
-    globals aspects of the application (mainly global game play related).
+    Managers are defined via a simple function API.
+    They are meant to care about "specific global stuff".
+    They should be defined by applications to implement globals aspects of
+    the application (mainly global game play related).
     
-    Managers are created and triggered by game features. The frame trigger
+    Managers should be created and triggered by game features. The frame event
     functions are invoked when the gameserver triggers the game feature.
     
-    Standard-Nebula uses several managers to offer timing information
-    (TimeManager), manage game entities (EntityManager) and so forth.
-
-    (C) 2007 Radon Labs GmbH
-    (C) 2013-2020 Individual contributors, see AUTHORS file
+    (C) 2020 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "ids/id.h"

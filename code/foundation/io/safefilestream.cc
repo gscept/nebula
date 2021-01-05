@@ -45,16 +45,16 @@ SafeFileStream::Open()
 
     if (Stream::Open())
     {
-		if (FSWrapper::FileExists(this->uri.LocalPath()))
-		{
-			String folder = this->uri.LocalPath().ExtractToLastSlash();
-			this->tmpUri = IoServer::Instance()->CreateTemporaryFilename(URI(folder));
-			this->handle = FSWrapper::OpenFile(this->tmpUri.GetHostAndLocalPath(), this->accessMode, this->accessPattern);
-		}
-		else
-		{
-			this->handle = FSWrapper::OpenFile(this->uri.GetHostAndLocalPath(), this->accessMode, this->accessPattern);
-		}
+        if (FSWrapper::FileExists(this->uri.LocalPath()))
+        {
+            String folder = this->uri.LocalPath().ExtractToLastSlash();
+            this->tmpUri = IoServer::Instance()->CreateTemporaryFilename(URI(folder));
+            this->handle = FSWrapper::OpenFile(this->tmpUri.GetHostAndLocalPath(), this->accessMode, this->accessPattern);
+        }
+        else
+        {
+            this->handle = FSWrapper::OpenFile(this->uri.GetHostAndLocalPath(), this->accessMode, this->accessPattern);
+        }
         if (0 != this->handle)
         {
             return true;
@@ -80,11 +80,11 @@ SafeFileStream::Close()
     }
     FSWrapper::CloseFile(this->handle);
     this->handle = 0;
-	Stream::Close();
-	if (this->tmpUri.IsValid())
-	{
-		FSWrapper::ReplaceFile(this->tmpUri.LocalPath(), this->uri.LocalPath());
-	}
+    Stream::Close();
+    if (this->tmpUri.IsValid())
+    {
+        FSWrapper::ReplaceFile(this->tmpUri.LocalPath(), this->uri.LocalPath());
+    }
 }
 
 } // namespace IO

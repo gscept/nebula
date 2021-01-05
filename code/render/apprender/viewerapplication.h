@@ -52,7 +52,7 @@ protected:
 #ifndef FREECAM
     RenderUtil::MayaCameraUtil mayaCameraUtil;
 #else
-	RenderUtil::FreeCameraUtil freeCameraUtil;
+    RenderUtil::FreeCameraUtil freeCameraUtil;
 #endif
 };
 

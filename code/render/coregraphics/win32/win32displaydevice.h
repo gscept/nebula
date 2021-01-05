@@ -28,26 +28,26 @@ public:
     virtual bool Open();
     /// close the display
     virtual void Close();
-	/// reopens the display
-	virtual void Reopen();
+    /// reopens the display
+    virtual void Reopen();
     /// process window system messages, call this method once per frame
     virtual void ProcessWindowMessages();
 
-	/// posts an event sent from an external source (useful for embedded windows)
-	virtual void PostEvent(const Win32::Win32Event& winEvent);
+    /// posts an event sent from an external source (useful for embedded windows)
+    virtual void PostEvent(const Win32::Win32Event& winEvent);
     
     /// get the application window HWND
     HWND GetHwnd() const;
 
 protected:
-	/// the WinProc
-	static LRESULT CALLBACK WinProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+    /// the WinProc
+    static LRESULT CALLBACK WinProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
     /// open the application window
     virtual bool WindowOpen();
     /// close the application window
     virtual void CloseWindow();
-	/// opens the window embedded
-	virtual bool EmbedWindow();
+    /// opens the window embedded
+    virtual bool EmbedWindow();
     /// called on WM_SIZE when window is minimized
     virtual void OnMinimized();
     /// called on WM_SIZE when window is restored
@@ -64,8 +64,8 @@ protected:
     virtual void OnCloseRequested();
     /// called when Alt-Enter is pressed
     virtual void OnToggleFullscreenWindowed();
-	/// called when WM_SIZE gets propagated
-	virtual void OnResize(WORD width, WORD height);
+    /// called when WM_SIZE gets propagated
+    virtual void OnResize(WORD width, WORD height);
     /// called on WM_KEYDOWN
     virtual void OnKeyDown(LPARAM lParam, WPARAM wParam);
     /// called on WM_KEYUP
@@ -89,7 +89,7 @@ protected:
 
     HINSTANCE hInst;
     HWND hWnd;
-	HWND parentHwnd;
+    HWND parentHwnd;
     HACCEL hAccel;
     DWORD windowedStyle;
     DWORD fullscreenStyle;

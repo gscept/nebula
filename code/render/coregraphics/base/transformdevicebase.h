@@ -74,18 +74,18 @@ public:
     /// get current model-view-projection transform
     const Math::mat4& GetModelViewProjTransform();
 
-	/// set object id
-	void SetObjectId(const uint id);
-	/// get object id
-	uint GetObjectId() const;
+    /// set object id
+    void SetObjectId(const uint id);
+    /// get object id
+    uint GetObjectId() const;
     /// set focal length
     void SetFocalLength(const Math::vec2& len);
     /// get focal length
     const Math::vec2& GetFocalLength() const;
-	/// set depth planes
-	void SetNearFarPlane(const Math::vec2& planes);
-	/// get depth planes
-	const Math::vec2& GetNearFarPlane() const;
+    /// set depth planes
+    void SetNearFarPlane(const Math::vec2& planes);
+    /// get depth planes
+    const Math::vec2& GetNearFarPlane() const;
 
 
 private:
@@ -129,9 +129,9 @@ private:
     bool isOpen;
     uint dirtyFlags;                                // or'ed (1<<TransformType) dirty flags
     Util::FixedArray<Math::mat4> transforms;    // index is transform type
-	uint id;										// id of current object
+    uint id;                                        // id of current object
     Math::vec2 focalLength;
-	Math::vec2 nearFarPlane;
+    Math::vec2 nearFarPlane;
 };
 
 //------------------------------------------------------------------------------
@@ -294,7 +294,7 @@ TransformDeviceBase::GetModelViewProjTransform()
 inline void
 TransformDeviceBase::SetObjectId(const uint id)
 {
-	this->id = id;
+    this->id = id;
 }
 
 //------------------------------------------------------------------------------
@@ -303,7 +303,7 @@ TransformDeviceBase::SetObjectId(const uint id)
 inline uint
 TransformDeviceBase::GetObjectId() const
 {
-	return this->id;
+    return this->id;
 }
 
 //------------------------------------------------------------------------------
@@ -330,7 +330,7 @@ TransformDeviceBase::GetFocalLength() const
 inline void 
 TransformDeviceBase::SetNearFarPlane(const Math::vec2& planes)
 {
-	this->nearFarPlane = planes;
+    this->nearFarPlane = planes;
 }
 
 //------------------------------------------------------------------------------
@@ -339,7 +339,7 @@ TransformDeviceBase::SetNearFarPlane(const Math::vec2& planes)
 inline const Math::vec2&
 TransformDeviceBase::GetNearFarPlane() const
 {
-	return this->nearFarPlane;
+    return this->nearFarPlane;
 }
 
 } // namespace Base

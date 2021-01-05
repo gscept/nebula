@@ -12,7 +12,7 @@
 #include "util/stack.h"
 #include "physics/actorcontext.h"
 #include "physics/streamactorpool.h"
-#include "physics/shapes.h"
+#include "flat/physics/collider.h"
 #include "physicsinterface.h"
 
 namespace Physics

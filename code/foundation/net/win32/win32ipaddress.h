@@ -3,11 +3,6 @@
 /**
     @class Win32::Win32IpAddress
 
-    NOTE: Socket network communication on the Xbox360 is only provided
-    for debugging and development purposes. For actual multiplayer and
-    Xbox Live related stuff, use the Xbox-specific add-on modules!
-    (which don't exist yet, ha).
-
     Represents an IP address, consisting of a IPv4 host address
     and a port number. Performs automatic name lookup on the host name.
     Can extract address information from an URI and    

@@ -45,7 +45,7 @@ DebugCounter::Setup(const StringAtom& counterName, const Util::StringAtom& group
 
     this->critSect.Enter();
     this->name = counterName;
-	this->group = group;
+    this->group = group;
     this->history.Reset();
     this->value = 0;
     this->critSect.Leave();

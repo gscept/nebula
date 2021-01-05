@@ -13,9 +13,9 @@ __ImplementAbstractClass(Resources::ResourcePool, 'RELO', Core::RefCounted);
 /**
 */
 ResourcePool::ResourcePool() :
-	resourceInstanceIndexPool(0xFFFFFFFF)
+    resourceInstanceIndexPool(0xFFFFFFFF)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -23,7 +23,7 @@ ResourcePool::ResourcePool() :
 */
 ResourcePool::~ResourcePool()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -32,7 +32,7 @@ ResourcePool::~ResourcePool()
 void
 ResourcePool::Setup()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -41,7 +41,7 @@ ResourcePool::Setup()
 void
 ResourcePool::Discard()
 {
-	// empty
+    // empty
 }
 
 
@@ -51,7 +51,7 @@ ResourcePool::Discard()
 void
 ResourcePool::LoadFallbackResources()
 {
-	// empty, implement in subclass
+    // empty, implement in subclass
 }
 
 //------------------------------------------------------------------------------
@@ -60,8 +60,8 @@ ResourcePool::LoadFallbackResources()
 void
 ResourcePool::DiscardResource(const Resources::ResourceId id)
 {
-	// reduce usage
-	this->usage[id.poolId]--;
+    // reduce usage
+    this->usage[id.poolId]--;
 }
 
 //------------------------------------------------------------------------------
@@ -70,7 +70,7 @@ ResourcePool::DiscardResource(const Resources::ResourceId id)
 void
 ResourcePool::DiscardByTag(const Util::StringAtom& tag)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -79,7 +79,7 @@ ResourcePool::DiscardByTag(const Util::StringAtom& tag)
 void
 ResourcePool::Update(IndexT frameIndex)
 {
-	// do nothing
+    // do nothing
 }
 
 } // namespace Resources

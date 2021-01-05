@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+﻿//------------------------------------------------------------------------------
 //  database.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
@@ -58,7 +58,8 @@ Database::CreateTable(TableCreateInfo const& info)
 {
     TableId id;
     this->tableIdPool.Allocate(id.id);
-    n_assert2(Ids::Index(id.id) < MAX_NUM_TABLES, "Tried to allocate more tables than currently allowed! Increase MAX_NUM_TABLES if this keeps occuring!\n");
+    n_assert2(Ids::Index(id.id) < MAX_NUM_TABLES,
+              "Tried to allocate more tables than currently allowed! Increase MAX_NUM_TABLES if this keeps occuring!\n");
 
     Table& table = this->tables[Ids::Index(id.id)];
     // Make sure we don't use any old data
@@ -66,14 +67,14 @@ Database::CreateTable(TableCreateInfo const& info)
     table.tid = id;
     table.name = info.name;
 
-    const SizeT numColumns = info.columns.Size();
+    const SizeT numColumns = info.numProperties;
     for (IndexT i = 0; i < numColumns; i++)
     {
-        this->AddColumn(id, info.columns[i]);
+        this->AddColumn(id, info.properties[i], false);
     }
 
     TableSignature& signature = this->tableSignatures[Ids::Index(id.id)];
-    signature = TableSignature(info.columns);
+    signature = TableSignature(info.properties, info.numProperties);
 
     this->numTables = (Ids::Index(id.id) + 1 > this->numTables ? Ids::Index(id.id) + 1 : this->numTables);
 
@@ -92,7 +93,6 @@ Database::DeleteTable(TableId tid)
     for (IndexT i = 0; i < numColumns; ++i)
     {
         PropertyId descriptor = table.columns.Get<0>(i);
-        PropertyDescription* desc = TypeRegistry::GetDescription(descriptor);
         void*& buf = table.columns.Get<1>(i);
         Memory::Free(Table::HEAP_MEMORY_TYPE, buf);
         buf = nullptr;
@@ -116,7 +116,6 @@ Database::HasProperty(TableId table, PropertyId col)
 {
     n_assert(this->IsValid(table));
     return this->tableSignatures[Ids::Index(table.id)].IsSet(col);
-    return this->tables[Ids::Index(table.id)].columns.GetArray<0>().FindIndex(col) != InvalidIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -225,37 +224,59 @@ Database::GetColumns(TableId tid)
 
 //------------------------------------------------------------------------------
 /**
-    @returns	New index/row in destination table
-    @note		This might be destructive if the destination table is missing some of the source tables columns!
-    @note		This is an instant erase swap on src table, which means any external references to rows (instance ids) will be invalidated!
+    @returns    New index/row in destination table
+    @note       This might be destructive if the destination table is missing some of the source tables columns!
+    @note       This is an instant erase swap on src table, which means any external references to rows (instance ids) will be invalidated!
 */
 IndexT
-Database::MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
+Database::MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid, bool defragment, std::function<void(IndexT, IndexT)> const& moveCallback)
 {
     n_assert(srcTid != dstTid);
     IndexT dstRow = this->DuplicateInstance(srcTid, srcRow, dstTid);
-    this->EraseSwapIndex(GetTable(srcTid), srcRow);
+    if (defragment)
+    {
+        Table& table = GetTable(srcTid);
+        if (moveCallback != nullptr)
+        {
+            IndexT lastIndex = table.numRows - 1;
+            moveCallback(lastIndex, srcRow);
+        }
+        this->EraseSwapIndex(table, srcRow);
+    }
+    else
+        this->DeallocateRow(srcTid, srcRow);
     return dstRow;
 }
 
 //------------------------------------------------------------------------------
 /**
-    @returns	New index/row in destination table
-    @note		This might be destructive if the destination table is missing some of the source tables columns!
-    @note		This is an instant erase swap on src table, which means any external references to rows (instance ids) will be invalidated!
+    @returns    New index/row in destination table
+    @note       This might be destructive if the destination table is missing some of the source tables columns!
+    @note       This is an instant erase swap on src table, which means any external references to rows (instance ids) will be invalidated!
 */
 IndexT
-Database::MigrateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& dstDb, TableId dstTid)
+Database::MigrateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& dstDb, TableId dstTid, bool defragment, std::function<void(IndexT, IndexT)> const& moveCallback)
 {
     IndexT dstRow = this->DuplicateInstance(srcTid, srcRow, dstDb, dstTid);
-    this->EraseSwapIndex(GetTable(srcTid), srcRow);
+    if (defragment)
+    {
+        Table& table = GetTable(srcTid);
+        if (moveCallback != nullptr)
+        {
+            IndexT lastIndex = table.numRows - 1;
+            moveCallback(lastIndex, srcRow);
+        }
+        this->EraseSwapIndex(table, srcRow);
+    }
+    else
+        this->DeallocateRow(srcTid, srcRow);
     return dstRow;
 }
 
 //------------------------------------------------------------------------------
 /**
-    @returns	New index/row in destination table
-    @note		This might be destructive if the destination table is missing some of the source tables columns!
+    @returns    New index/row in destination table
+    @note       This might be destructive if the destination table is missing some of the source tables columns!
 */
 IndexT
 Database::DuplicateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
@@ -268,7 +289,6 @@ Database::DuplicateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
 
     IndexT dstRow = this->AllocateRowIndex(dstTid);
 
-    auto const& cols = src.columns.GetArray<0>();
     auto& buffers = src.columns.GetArray<1>();
     auto const& dstCols = dst.columns.GetArray<0>();
     auto& dstBuffers = dst.columns.GetArray<1>();
@@ -302,8 +322,8 @@ Database::DuplicateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
 
 //------------------------------------------------------------------------------
 /**
-    @returns	New index/row in destination table
-    @note		This might be destructive if the destination table is missing some of the source tables columns!
+    @returns    New index/row in destination table
+    @note       This might be destructive if the destination table is missing some of the source tables columns!
 */
 IndexT
 Database::DuplicateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& dstDb, TableId dstTid)
@@ -316,7 +336,6 @@ Database::DuplicateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& 
 
     IndexT dstRow = dstDb->AllocateRowIndex(dstTid);
 
-    auto const& cols = src.columns.GetArray<0>();
     auto& buffers = src.columns.GetArray<1>();
     auto const& dstCols = dst.columns.GetArray<0>();
     auto& dstBuffers = dst.columns.GetArray<1>();
@@ -350,27 +369,52 @@ Database::DuplicateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& 
 
 //------------------------------------------------------------------------------
 /**
-    @param srcRows	Array of source table instances that should be moved.
-    @param dstRows	Array reference that is filled with new indices/rows in destionation table
-    @note			This might be destructive if the destination table is missing some of the source tables columns!
-    @note			This is an instant erase swap on src table, which means any external references to rows (instance ids) will be invalidated!
+    @param srcRows      Array of source table instances that should be moved.
+    @param dstRows      Array reference that is filled with new indices/rows in destionation table
+    @param defragment   Erase swap old instances straight away, or recycle the rows (leaving invalid instances in place)
+
+    @note   This might be destructive if the destination table is missing some of the source tables columns!
+    @note   This is an instant erase swap on src table, which means any external references to rows (instance ids) will be invalidated!
 */
 void
-Database::MigrateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows, TableId dstTid, Util::FixedArray<IndexT>& dstRows)
+Database::MigrateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows, TableId dstTid, Util::FixedArray<IndexT>& dstRows, bool defragment, std::function<void(IndexT, IndexT)> const& moveCallback)
 {
     n_assert(srcTid != dstTid);
     this->DuplicateInstances(srcTid, srcRows, dstTid, dstRows);
     const SizeT num = srcRows.Size();
-    auto& table = GetTable(srcTid);
-    for (IndexT i = 0; i < num; i++)
-        this->EraseSwapIndex(table, srcRows[i]);
+    if (defragment)
+    {
+        Table& table = GetTable(srcTid);
+        if (moveCallback != nullptr)
+        {
+            for (IndexT i = 0; i < num; i++)
+            {
+                if (moveCallback != nullptr)
+                {
+                    IndexT lastIndex = table.numRows - 1;
+                    moveCallback(lastIndex, srcRows[i]);
+                }
+                this->EraseSwapIndex(table, srcRows[i]);
+            }
+        }
+        else
+        {
+            for (IndexT i = 0; i < num; i++)
+                this->EraseSwapIndex(table, srcRows[i]);
+        }
+    }
+    else
+    {
+        for (IndexT i = 0; i < num; i++)
+            this->DeallocateRow(srcTid, srcRows[i]);
+    }
 }
 
 //------------------------------------------------------------------------------
 /**
-    @param srcRows	Array of source table instances that should be duplicated.
-    @param dstRows	Array reference that is filled with new indices/rows in destionation table
-    @note		This might be destructive if the destination table is missing some of the source tables columns!
+    @param srcRows  Array of source table instances that should be duplicated.
+    @param dstRows  Array reference that is filled with new indices/rows in destionation table
+    @note       This might be destructive if the destination table is missing some of the source tables columns!
 */
 void
 Database::DuplicateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows, TableId dstTid, Util::FixedArray<IndexT>& dstRows)
@@ -387,7 +431,6 @@ Database::DuplicateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows,
         dstRows[i] = this->AllocateRowIndex(dstTid);
     }
 
-    auto const& cols = src.columns.GetArray<0>();
     auto& buffers = src.columns.GetArray<1>();
     auto const& dstCols = dst.columns.GetArray<0>();
     auto& dstBuffers = dst.columns.GetArray<1>();
@@ -446,7 +489,11 @@ Database::GetTableSignature(TableId tid)
 //------------------------------------------------------------------------------
 /**
     Defragments a table and call the move callback BEFORE moving elements.
-    @returns	number of erased instances.
+
+    @param tid              Table identifier
+    @param moveCallback     Callback when moving an instance. First parameter of callback is 'from index' and second is 'to index'
+
+    @returns    Number of erased instances.
 */
 SizeT
 Database::Defragment(TableId tid, std::function<void(IndexT, IndexT)> const& moveCallback)
@@ -481,6 +528,21 @@ Database::Defragment(TableId tid, std::function<void(IndexT, IndexT)> const& mov
     table.freeIds.Clear();
 
     return numErased;
+}
+
+//------------------------------------------------------------------------------
+/**
+    @note   This does not care for any external references. Everything is just reset.
+*/
+void
+Database::Clean(TableId tid)
+{
+    if (this->IsValid(tid))
+    {
+        Table& table = this->GetTable(Ids::Index(tid.id));
+        table.numRows = 0;
+        table.freeIds.Clear();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -547,8 +609,6 @@ Database::GrowTable(TableId tid)
 {
     n_assert(this->IsValid(tid));
     Table& table = this->tables[Ids::Index(tid.id)];
-    auto& colTypes = table.columns.GetArray<0>();
-    auto& buffers = table.columns.GetArray<1>();
 
     int oldCapacity = table.capacity;
     table.capacity += table.grow;
@@ -564,10 +624,9 @@ Database::GrowTable(TableId tid)
 
         const SizeT byteSize = desc->typeSize;
 
-        int oldNumBytes = byteSize * oldCapacity;
         int newNumBytes = byteSize * table.capacity;
         void* newData = Memory::Alloc(Table::HEAP_MEMORY_TYPE, newNumBytes);
-        
+
         Memory::Copy(buf, newData, (size_t)table.numRows * byteSize);
         Memory::Free(Table::HEAP_MEMORY_TYPE, buf);
         buf = newData;
@@ -593,17 +652,22 @@ Database::AllocateBuffer(TableId tid, PropertyDescription* desc)
         void* val = (char*)buffer + (i * desc->typeSize);
         Memory::Copy(desc->defVal, val, desc->typeSize);
     }
-    
+
     return buffer;
 }
 
 //------------------------------------------------------------------------------
 /**
+    @param  updateSignature     Set to true if you are just casually adding a property to the table
+                                IMPORTANT: If this is set to false, make sure you add it to the signature manually!
+
+    @returns    Index of column in table, or InvalidIndex if it was not added
 */
 ColumnIndex
-Database::AddColumn(TableId tid, PropertyId descriptor)
+Database::AddColumn(TableId tid, PropertyId descriptor, bool updateSignature)
 {
     n_assert(this->IsValid(tid));
+    n_assert(descriptor != PropertyId::Invalid());
     Table& table = this->tables[Ids::Index(tid.id)];
 
     IndexT found = table.columns.GetArray<0>().FindIndex(descriptor);
@@ -613,15 +677,33 @@ Database::AddColumn(TableId tid, PropertyId descriptor)
         return found;
     }
 
-    uint32_t col = table.columns.Alloc();
+    table.properties.Append(descriptor);
 
-    table.columnRegistry.Add(descriptor, col);
+    if (updateSignature)
+    {
+        TableSignature& signature = this->tableSignatures[Ids::Index(tid.id)];
+#if NEBULA_DEBUG
+        // Bit should not be set if the property has not already been registered
+        n_assert(!signature.IsSet(descriptor));
+#endif
+        signature.FlipBit(descriptor);
+    }
 
-    Table::ColumnBuffer& buffer = table.columns.Get<1>(col);
-    table.columns.Get<0>(col) = descriptor;
-    buffer = this->AllocateBuffer(tid, TypeRegistry::GetDescription(descriptor.id));
+    PropertyDescription const* const desc = TypeRegistry::GetDescription(descriptor);
+    if (desc->typeSize > 0)
+    {
+        uint32_t col = table.columns.Alloc();
 
-    return col;
+        table.columnRegistry.Add(descriptor, col);
+
+        Table::ColumnBuffer& buffer = table.columns.Get<1>(col);
+        table.columns.Get<0>(col) = descriptor;
+        buffer = this->AllocateBuffer(tid, TypeRegistry::GetDescription(descriptor.id));
+
+        return col;
+    }
+
+    return InvalidIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -662,12 +744,12 @@ Database::Query(FilterSet const& filterset)
             Util::ArrayStack<void*, 16> buffers;
             buffers.Reserve(filterset.PropertyIds().Size());
 
-
             IndexT i = 0;
             for (auto attrid : filterset.PropertyIds())
             {
                 ColumnIndex colId = this->GetColumnId(tbl.tid, attrid);
-                buffers.Append(tbl.columns.Get<1>(colId.id));
+                if (colId != InvalidIndex) // There might be some non-typed properties
+                    buffers.Append(tbl.columns.Get<1>(colId.id));
             }
 
             Dataset::View view;
@@ -689,7 +771,7 @@ Database::Query(FilterSet const& filterset)
 /**
 */
 Util::Array<TableId>
-Database::Query(TableSignature inclusive, TableSignature exclusive)
+Database::Query(TableSignature const& inclusive, TableSignature const& exclusive)
 {
     Util::Array<TableId> result;
 

@@ -72,55 +72,55 @@ DisplayPageHandler::HandleRequest(const Ptr<Http::HttpRequest>& request)
             htmlWriter->Begin(HtmlElement::TableRow);
                 htmlWriter->Element(HtmlElement::TableData, "Adapter:");
                 htmlWriter->Element(HtmlElement::TableData, Adapter::ToString(disp->GetAdapter()));
-			htmlWriter->End(HtmlElement::TableRow);
-			htmlWriter->Begin(HtmlElement::TableRow);
-				htmlWriter->Element(HtmlElement::TableData, "Vertical Sync:");
-				htmlWriter->Element(HtmlElement::TableData, disp->IsVerticalSyncEnabled() ? "Yes" : "No");
-			htmlWriter->End(HtmlElement::TableRow);
-		htmlWriter->End(HtmlElement::Table);
-		
-		const Util::Array<WindowId>& windows = disp->GetWindows();
-		htmlWriter->Element(HtmlElement::Heading3, "Windows");        
-		htmlWriter->Begin(HtmlElement::Table);
-		IndexT i;
-		for (i = 0; i < windows.Size(); i++)
-		{
-			const WindowId window = windows[i];
-			const DisplayMode& displayMode = WindowGetDisplayMode(window);
-			htmlWriter->Begin(HtmlElement::TableRow);
-				htmlWriter->Element(HtmlElement::TableData, "Size:");
-				str.Format("%d x %d", displayMode.GetWidth(), displayMode.GetHeight());
-				htmlWriter->Element(HtmlElement::TableData, str);
-			htmlWriter->End(HtmlElement::TableRow);
-			htmlWriter->Begin(HtmlElement::TableRow);
-				htmlWriter->Element(HtmlElement::TableData, "Pixel Format:");
-				htmlWriter->Element(HtmlElement::TableData, PixelFormat::ToString(displayMode.GetPixelFormat()));
-			htmlWriter->End(HtmlElement::TableRow);
-			htmlWriter->Begin(HtmlElement::TableRow);
-				htmlWriter->Element(HtmlElement::TableData, "AA Mode:");
-				htmlWriter->Element(HtmlElement::TableData, AntiAliasQuality::ToString(WindowGetAAQuality(window)));
-			htmlWriter->End(HtmlElement::TableRow);
-			htmlWriter->Begin(HtmlElement::TableRow);
-				htmlWriter->Element(HtmlElement::TableData, "Fullscreen:");
-				htmlWriter->Element(HtmlElement::TableData, WindowIsFullscreen(window) ? "Yes" : "No");
-			htmlWriter->End(HtmlElement::TableRow);
-			htmlWriter->Begin(HtmlElement::TableRow);
-				htmlWriter->Element(HtmlElement::TableData, "Resizable:");
-				htmlWriter->Element(HtmlElement::TableData, WindowIsResizable(window) ? "Yes" : "No");
-			htmlWriter->End(HtmlElement::TableRow);
-			htmlWriter->Begin(HtmlElement::TableRow);
-				htmlWriter->Element(HtmlElement::TableData, "Decorated:");
-				htmlWriter->Element(HtmlElement::TableData, WindowIsDecorated(window) ? "Yes" : "No");
-			htmlWriter->End(HtmlElement::TableRow);
-			htmlWriter->Begin(HtmlElement::TableRow);
-				htmlWriter->Element(HtmlElement::TableData, "Icon Name:");
-				htmlWriter->Element(HtmlElement::TableData, WindowGetIcon(window).Value());
-			htmlWriter->End(HtmlElement::TableRow);
-			htmlWriter->Begin(HtmlElement::TableRow);
-				htmlWriter->Element(HtmlElement::TableData, "Window Title:");
-				htmlWriter->Element(HtmlElement::TableData, WindowGetTitle(window).Value());
-			htmlWriter->End(HtmlElement::TableRow);
-		}           
+            htmlWriter->End(HtmlElement::TableRow);
+            htmlWriter->Begin(HtmlElement::TableRow);
+                htmlWriter->Element(HtmlElement::TableData, "Vertical Sync:");
+                htmlWriter->Element(HtmlElement::TableData, disp->IsVerticalSyncEnabled() ? "Yes" : "No");
+            htmlWriter->End(HtmlElement::TableRow);
+        htmlWriter->End(HtmlElement::Table);
+        
+        const Util::Array<WindowId>& windows = disp->GetWindows();
+        htmlWriter->Element(HtmlElement::Heading3, "Windows");        
+        htmlWriter->Begin(HtmlElement::Table);
+        IndexT i;
+        for (i = 0; i < windows.Size(); i++)
+        {
+            const WindowId window = windows[i];
+            const DisplayMode& displayMode = WindowGetDisplayMode(window);
+            htmlWriter->Begin(HtmlElement::TableRow);
+                htmlWriter->Element(HtmlElement::TableData, "Size:");
+                str.Format("%d x %d", displayMode.GetWidth(), displayMode.GetHeight());
+                htmlWriter->Element(HtmlElement::TableData, str);
+            htmlWriter->End(HtmlElement::TableRow);
+            htmlWriter->Begin(HtmlElement::TableRow);
+                htmlWriter->Element(HtmlElement::TableData, "Pixel Format:");
+                htmlWriter->Element(HtmlElement::TableData, PixelFormat::ToString(displayMode.GetPixelFormat()));
+            htmlWriter->End(HtmlElement::TableRow);
+            htmlWriter->Begin(HtmlElement::TableRow);
+                htmlWriter->Element(HtmlElement::TableData, "AA Mode:");
+                htmlWriter->Element(HtmlElement::TableData, AntiAliasQuality::ToString(WindowGetAAQuality(window)));
+            htmlWriter->End(HtmlElement::TableRow);
+            htmlWriter->Begin(HtmlElement::TableRow);
+                htmlWriter->Element(HtmlElement::TableData, "Fullscreen:");
+                htmlWriter->Element(HtmlElement::TableData, WindowIsFullscreen(window) ? "Yes" : "No");
+            htmlWriter->End(HtmlElement::TableRow);
+            htmlWriter->Begin(HtmlElement::TableRow);
+                htmlWriter->Element(HtmlElement::TableData, "Resizable:");
+                htmlWriter->Element(HtmlElement::TableData, WindowIsResizable(window) ? "Yes" : "No");
+            htmlWriter->End(HtmlElement::TableRow);
+            htmlWriter->Begin(HtmlElement::TableRow);
+                htmlWriter->Element(HtmlElement::TableData, "Decorated:");
+                htmlWriter->Element(HtmlElement::TableData, WindowIsDecorated(window) ? "Yes" : "No");
+            htmlWriter->End(HtmlElement::TableRow);
+            htmlWriter->Begin(HtmlElement::TableRow);
+                htmlWriter->Element(HtmlElement::TableData, "Icon Name:");
+                htmlWriter->Element(HtmlElement::TableData, WindowGetIcon(window).Value());
+            htmlWriter->End(HtmlElement::TableRow);
+            htmlWriter->Begin(HtmlElement::TableRow);
+                htmlWriter->Element(HtmlElement::TableData, "Window Title:");
+                htmlWriter->Element(HtmlElement::TableData, WindowGetTitle(window).Value());
+            htmlWriter->End(HtmlElement::TableRow);
+        }           
         htmlWriter->End(HtmlElement::Table);        
 
         this->WriteAdapterInfo(Adapter::Primary, htmlWriter);
@@ -229,7 +229,7 @@ DisplayPageHandler::WriteScreenshot(const String& fileFormat, const Ptr<Stream>&
     {
         fmt = ImageFileFormat::PNG;
     }
-	CoreGraphics::SaveScreenshot(fmt, responseContentStream);
+    CoreGraphics::SaveScreenshot(fmt, responseContentStream);
     return HttpStatus::OK;
 }
 

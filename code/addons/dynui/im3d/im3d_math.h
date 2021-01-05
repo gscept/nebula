@@ -1,6 +1,4 @@
 #pragma once
-#ifndef im3d_math_h
-#define im3d_math_h
 
 // im3d_math.h is optional - include only if you want to use the Im3d math types directly
 
@@ -31,13 +29,13 @@ inline Vec3  operator*(const Vec3& _lhs, const Vec3& _rhs) { return Vec3(_lhs.x 
 inline Vec3  operator/(const Vec3& _lhs, const Vec3& _rhs) { return Vec3(_lhs.x / _rhs.x, _lhs.y / _rhs.y, _lhs.z / _rhs.z); }
 inline Vec3  operator*(const Vec3& _lhs, float _rhs)       { return Vec3(_lhs.x * _rhs, _lhs.y * _rhs, _lhs.z * _rhs);       }
 inline Vec3  operator/(const Vec3& _lhs, float _rhs)       { return Vec3(_lhs.x / _rhs, _lhs.y / _rhs, _lhs.z / _rhs);       }
-inline Vec3  operator-(const Vec3& _v)                     { return Vec3(-_v.x, -_v.y, -_v.z);                               } 
+inline Vec3  operator-(const Vec3& _v)                     { return Vec3(-_v.x, -_v.y, -_v.z);                               }
 inline float Dot(const Vec3& _lhs, const Vec3& _rhs)       { return _lhs.x * _rhs.x + _lhs.y * _rhs.y + _lhs.z * _rhs.z;     }
 inline float Length(const Vec3& _v)                        { return sqrtf(Dot(_v, _v));                                      }
 inline float Length2(const Vec3& _v)                       { return Dot(_v, _v);                                             }
 inline Vec3  Abs(const Vec3& _v)                           { return Vec3(fabs(_v.x), fabs(_v.y), fabs(_v.z));                }
 inline Vec3  Normalize(const Vec3& _v)                     { return _v / Length(_v);                                         }
-inline Vec3  Cross(const Vec3& _a, const Vec3& _b)         
+inline Vec3  Cross(const Vec3& _a, const Vec3& _b)
 {
 	return Vec3(
 		_a.y * _b.z - _b.y * _a.z,
@@ -73,6 +71,7 @@ inline Mat3 operator*(const Mat3& _lhs, const Mat3& _rhs)
 	ret(2, 0) = _lhs(2, 0) * _rhs(0, 0) + _lhs(2, 1) * _rhs(1, 0) + _lhs(2, 2) * _rhs(2, 0);
 	ret(2, 1) = _lhs(2, 0) * _rhs(0, 1) + _lhs(2, 1) * _rhs(1, 1) + _lhs(2, 2) * _rhs(2, 1);
 	ret(2, 2) = _lhs(2, 0) * _rhs(0, 2) + _lhs(2, 1) * _rhs(1, 2) + _lhs(2, 2) * _rhs(2, 2);
+
 	return ret;
 }
 inline Vec3 operator*(const Mat3& _m, const Vec3& _v)
@@ -118,6 +117,7 @@ inline Mat4 operator*(const Mat4& _lhs, const Mat4& _rhs)
 	ret(3, 1) = _lhs(3, 0) * _rhs(0, 1) + _lhs(3, 1) * _rhs(1, 1) + _lhs(3, 2) * _rhs(2, 1) + _lhs(3, 3) * _rhs(3, 1);
 	ret(3, 2) = _lhs(3, 0) * _rhs(0, 2) + _lhs(3, 1) * _rhs(1, 2) + _lhs(3, 2) * _rhs(2, 2) + _lhs(3, 3) * _rhs(3, 2);
 	ret(3, 3) = _lhs(3, 0) * _rhs(0, 3) + _lhs(3, 1) * _rhs(1, 3) + _lhs(3, 2) * _rhs(2, 3) + _lhs(3, 3) * _rhs(3, 3);
+
 	return ret;
 }
 inline Vec3 operator*(const Mat4& _m, const Vec3& _pos)
@@ -165,7 +165,7 @@ struct LineSegment
 	Vec3 m_end;
 
 	LineSegment() {}
-	LineSegment(const Vec3& _start, const Vec3& _end);	
+	LineSegment(const Vec3& _start, const Vec3& _end);
 };
 struct Sphere
 {
@@ -173,7 +173,7 @@ struct Sphere
 	float m_radius;
 
 	Sphere() {}
-	Sphere(const Vec3& _origin, float _radius);	
+	Sphere(const Vec3& _origin, float _radius);
 };
 struct Plane
 {
@@ -189,18 +189,18 @@ struct Capsule
 	Vec3  m_start;
 	Vec3  m_end;
 	float m_radius;
-	
+
 	Capsule() {}
 	Capsule(const Vec3& _start, const Vec3& _end, float _radius);
 };
 
 
 // Ray-primitive intersections. Use Intersects() when you don't need t.
-bool  Intersects(const Ray& _ray, const Plane& _plane);
-bool  Intersect (const Ray& _ray, const Plane& _plane, float& t0_);
-bool  Intersects(const Ray& _ray, const Sphere& _sphere);
-bool  Intersect (const Ray& _ray, const Sphere& _sphere, float& t0_, float& t1_);
-bool  Intersects(const Ray& _ray, const Capsule& _capsule);
+bool  Intersects(const Ray& _ray, const Plane&   _plane                          );
+bool  Intersect (const Ray& _ray, const Plane&   _plane,   float& t0_            );
+bool  Intersects(const Ray& _ray, const Sphere&  _sphere                         );
+bool  Intersect (const Ray& _ray, const Sphere&  _sphere,  float& t0_, float& t1_);
+bool  Intersects(const Ray& _ray, const Capsule& _capsule                        );
 bool  Intersect (const Ray& _ray, const Capsule& _capsule, float& t0_, float& t1_);
 
 // Find point t0_ along _line0 nearest to _line1 and t1_ along _line1 nearest to _line0.
@@ -212,7 +212,7 @@ Vec3  Nearest(const Ray& _ray, const LineSegment& _segment, float& tr_);
 
 float Distance2(const Ray& _ray, const LineSegment& _segment);
 
-inline float Distance(const Vec4& _plane, const Vec3& _point) { return _plane.x * _point.x + _plane.y * _point.y + _plane.z * _point.z - _plane.w; }
+inline float Distance(const Vec4& _plane, const Vec3& _point){ return _plane.x * _point.x + _plane.y * _point.y + _plane.z * _point.z - _plane.w; }
 
 constexpr float Pi      = 3.14159265359f;
 constexpr float TwoPi   = 2.0f * Pi;
@@ -246,8 +246,10 @@ inline bool _AllLess(const T& _a, const T& _b, ScalarT)
 template <typename T>
 inline bool _AllLess(const T& _a, const T& _b, CompositeT)
 {
-	for (int i = 0, n = TypeTraits<T>::kSize; i < n; ++i) {
-		if (_a[i] > _b[i]) {
+	for (int i = 0, n = TypeTraits<T>::kSize; i < n; ++i)
+	{
+		if (_a[i] > _b[i])
+		{
 			return false;
 		}
 	}
@@ -278,7 +280,8 @@ template <typename T>
 inline T _Min(const T& _a, const T& _b, CompositeT)
 {
 	T ret;
-	for (int i = 0, n = TypeTraits<T>::kSize; i < n; ++i) {
+	for (int i = 0, n = TypeTraits<T>::kSize; i < n; ++i)
+	{
 		ret[i] = _Min(_a[i], _b[i], ScalarT());
 	}
 	return ret;
@@ -301,5 +304,3 @@ inline T Clamp(T _a, T _min, T _max)                       { return Max(Min(_a, 
 inline float Remap(float _x, float _start, float _end)     { return Clamp(_x * (1.0f / (_end - _start)) + (-_start / (_end - _start)), 0.0f, 1.0f); }
 
 } // namespace Im3d
-
-#endif // im3d_math_h

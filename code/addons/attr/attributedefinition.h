@@ -95,7 +95,7 @@ AttributeDefinition<VALUETYPE, TYPE>::AttributeDefinition(const Util::String& n,
 #define DefineStringWithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::StringTypeClass, Util::String> NAME(#NAME, "Util::String", FOURCC,ACCESSMODE,DEFVAL);
 
 #define DeclareMatrix44(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::Matrix44TypeClass, Math::mat4> NAME;
-#define DefineMatrix44(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::Matrix44TypeClass, Math::mat4> NAME(#NAME, "Math::mat4", FOURCC,ACCESSMODE, Math::mat4::identity());
+#define DefineMatrix44(NAME,FOURCC,ACCESSMODE) const AttributeDefinition<Attr::Matrix44TypeClass, Math::mat4> NAME(#NAME, "Math::mat4", FOURCC,ACCESSMODE, Math::mat4());
 #define DefineMatrix44WithDefault(NAME,FOURCC,ACCESSMODE,DEFVAL) const AttributeDefinition<Attr::Matrix44TypeClass, Math::mat4> NAME(#NAME, "Math::mat4", FOURCC,ACCESSMODE,DEFVAL);
 
 #define DeclareTransform44(NAME,FOURCC,ACCESSMODE) extern const AttributeDefinition<Attr::Transform44TypeClass, Math::transform44> NAME;

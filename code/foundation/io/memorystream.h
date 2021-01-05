@@ -50,6 +50,8 @@ public:
     virtual bool Eof() const;
     /// map for direct memory-access
     virtual void* Map();
+    /// map for direct memory-access
+    virtual void* MemoryMap();
     /// unmap a mapped stream
     virtual void Unmap();
     /// get a direct "raw" pointer to the data

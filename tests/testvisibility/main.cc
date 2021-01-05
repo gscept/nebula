@@ -13,23 +13,23 @@ using namespace Test;
 
 int main(int argc, char** argv)
 {
-	// create Nebula runtime
-	Ptr<CoreServer> coreServer = CoreServer::Create();
-	coreServer->SetAppName(Util::StringAtom("Nebula Visibility Tests"));
-	coreServer->Open();
+    // create Nebula runtime
+    Ptr<CoreServer> coreServer = CoreServer::Create();
+    coreServer->SetAppName(Util::StringAtom("Nebula Visibility Tests"));
+    coreServer->Open();
 
-	n_printf("NEBULA VISIBILITY TESTS\n");
-	n_printf("========================\n");
+    n_printf("NEBULA VISIBILITY TESTS\n");
+    n_printf("========================\n");
 
-	// setup and run test runner
-	Ptr<TestRunner> testRunner = TestRunner::Create();
-	testRunner->AttachTestCase(VisibilityTest::Create());
-	testRunner->Run();
-	//testRunner->AttachTestCase(BXmlReaderTest::Create());
+    // setup and run test runner
+    Ptr<TestRunner> testRunner = TestRunner::Create();
+    testRunner->AttachTestCase(VisibilityTest::Create());
+    testRunner->Run();
+    //testRunner->AttachTestCase(BXmlReaderTest::Create());
 
-	coreServer->Close();
-	coreServer = nullptr;
-	testRunner = nullptr;
+    coreServer->Close();
+    coreServer = nullptr;
+    testRunner = nullptr;
 
-	Core::SysFunc::Exit(0);
+    Core::SysFunc::Exit(0);
 }

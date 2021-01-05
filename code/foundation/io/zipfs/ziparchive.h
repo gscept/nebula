@@ -63,6 +63,7 @@ private:
     unzFile zipFileHandle;                      // the zip file handle
     ZipDirEntry rootEntry;                      // the root entry of the zip archive
     Threading::CriticalSection archiveCritSect; // need to serialize access to archive from multiple threads!
+    zlib_filefunc64_def zlibIoFuncs;            // io functions struct from zlib to nebula
 };
 
 } // namespace IO

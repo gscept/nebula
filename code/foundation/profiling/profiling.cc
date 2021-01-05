@@ -20,15 +20,15 @@ thread_local IndexT ProfilingContextIndex = InvalidIndex;
 */
 void 
 ProfilingPushScope(const ProfilingScope& scope)
-{	
-	n_assert(ProfilingContextIndex != InvalidIndex);
-	Threading::AssertingScope lock(&contextMutexes[ProfilingContextIndex]);
+{   
+    n_assert(ProfilingContextIndex != InvalidIndex);
+    Threading::AssertingScope lock(&contextMutexes[ProfilingContextIndex]);
 
-	// get thread context
-	ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
+    // get thread context
+    ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
 
-	ctx.scopes.Push(scope);
-	ctx.scopes.Peek().start = ctx.timer.GetTime();
+    ctx.scopes.Push(scope);
+    ctx.scopes.Peek().start = ctx.timer.GetTime();
 }
 
 //------------------------------------------------------------------------------
@@ -37,49 +37,49 @@ ProfilingPushScope(const ProfilingScope& scope)
 void
 ProfilingPopScope()
 {
-	n_assert(ProfilingContextIndex != InvalidIndex);
-	Threading::AssertingScope lock(&contextMutexes[ProfilingContextIndex]);
+    n_assert(ProfilingContextIndex != InvalidIndex);
+    Threading::AssertingScope lock(&contextMutexes[ProfilingContextIndex]);
 
-	// get thread context
-	ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
+    // get thread context
+    ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
 
-	// we can safely assume the scope and timers won't be modified from different threads here
-	ProfilingScope scope = ctx.scopes.Pop();
+    // we can safely assume the scope and timers won't be modified from different threads here
+    ProfilingScope scope = ctx.scopes.Pop();
 
-	// add to category lookup
-	scope.duration = ctx.timer.GetTime() - scope.start;
-	//categoryLock.Enter();
-	//scopesByCategory.AddUnique(scope.category).Append(scope);
-	//categoryLock.Leave();
+    // add to category lookup
+    scope.duration = ctx.timer.GetTime() - scope.start;
+    //categoryLock.Enter();
+    //scopesByCategory.AddUnique(scope.category).Append(scope);
+    //categoryLock.Leave();
 
-	// add to top level scopes if stack is empty
-	if (ctx.scopes.IsEmpty())
-	{
-		if (scope.accum)
-		{
-			if (!ctx.topLevelScopes.IsEmpty())
-			{
-				ProfilingScope& parent = ctx.topLevelScopes.Back();
-				if (parent.name == scope.name)
-					parent.duration += scope.duration;
-				else
-					ctx.topLevelScopes.Append(scope);
-			}
-			else
-				ctx.topLevelScopes.Append(scope);
-		}
-		else
-			ctx.topLevelScopes.Append(scope);
-	}
-	else
-	{
-		// add as child scope
-		ProfilingScope& parent = ctx.scopes.Peek();
-		if (scope.accum && parent.name == scope.name)
-			parent.duration += scope.duration;
-		else
-			parent.children.Append(scope);
-	}
+    // add to top level scopes if stack is empty
+    if (ctx.scopes.IsEmpty())
+    {
+        if (scope.accum)
+        {
+            if (!ctx.topLevelScopes.IsEmpty())
+            {
+                ProfilingScope& parent = ctx.topLevelScopes.Back();
+                if (parent.name == scope.name)
+                    parent.duration += scope.duration;
+                else
+                    ctx.topLevelScopes.Append(scope);
+            }
+            else
+                ctx.topLevelScopes.Append(scope);
+        }
+        else
+            ctx.topLevelScopes.Append(scope);
+    }
+    else
+    {
+        // add as child scope
+        ProfilingScope& parent = ctx.scopes.Peek();
+        if (scope.accum && parent.name == scope.name)
+            parent.duration += scope.duration;
+        else
+            parent.children.Append(scope);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -88,15 +88,15 @@ ProfilingPopScope()
 void
 ProfilingNewFrame()
 {
-	// get thread context
-	ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
-	//n_assert(ctx.threadName == "MainThread");
+    // get thread context
+    ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
+    //n_assert(ctx.threadName == "MainThread");
 
-	for (IndexT i = 0; i < profilingContexts.Size(); i++)
-	{
-		profilingContexts[i].topLevelScopes.Clear();
-		profilingContexts[i].timer.Reset();
-	}
+    for (IndexT i = 0; i < profilingContexts.Size(); i++)
+    {
+        profilingContexts[i].topLevelScopes.Clear();
+        profilingContexts[i].timer.Reset();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -105,9 +105,9 @@ ProfilingNewFrame()
 Timing::Time 
 ProfilingGetTime()
 {
-	// get current context and return time
-	ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
-	return ctx.timer.GetTime();
+    // get current context and return time
+    ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
+    return ctx.timer.GetTime();
 }
 
 //------------------------------------------------------------------------------
@@ -116,13 +116,13 @@ ProfilingGetTime()
 void 
 ProfilingRegisterThread()
 {
-	// make sure we don't add contexts simulatenously
-	Threading::CriticalScope lock(&categoryLock);
-	Threading::ThreadId thread = Threading::Thread::GetMyThreadId();
-	ProfilingContextIndex = ProfilingContextCounter.fetch_add(1);
-	profilingContexts.Append(ProfilingContext());
-	profilingContexts.Back().timer.Start();
-	contextMutexes.Append(Threading::AssertingMutex());
+    // make sure we don't add contexts simulatenously
+    Threading::CriticalScope lock(&categoryLock);
+    Threading::ThreadId thread = Threading::Thread::GetMyThreadId();
+    ProfilingContextIndex = ProfilingContextCounter.fetch_add(1);
+    profilingContexts.Append(ProfilingContext());
+    profilingContexts.Back().timer.Start();
+    contextMutexes.Append(Threading::AssertingMutex());
 }
 
 //------------------------------------------------------------------------------
@@ -132,10 +132,10 @@ const Util::Array<ProfilingScope>&
 ProfilingGetScopes(Threading::ThreadId thread)
 {
 #if NEBULA_DEBUG
-	n_assert(profilingContexts[thread].topLevelScopes.IsEmpty());
+    n_assert(profilingContexts[thread].topLevelScopes.IsEmpty());
 #endif
-	Threading::CriticalScope lock(&categoryLock);
-	return profilingContexts[thread].topLevelScopes;
+    Threading::CriticalScope lock(&categoryLock);
+    return profilingContexts[thread].topLevelScopes;
 }
 
 //------------------------------------------------------------------------------
@@ -144,7 +144,7 @@ ProfilingGetScopes(Threading::ThreadId thread)
 const Util::Array<ProfilingContext>
 ProfilingGetContexts()
 {
-	return profilingContexts;
+    return profilingContexts;
 }
 
 //------------------------------------------------------------------------------
@@ -153,11 +153,11 @@ ProfilingGetContexts()
 void 
 ProfilingClear()
 {
-	for (IndexT i = 0; i < profilingContexts.Size(); i++)
-	{
-		n_assert(profilingContexts[i].scopes.Size() == 0);
-		profilingContexts[i].topLevelScopes.Reset();
-	}
+    for (IndexT i = 0; i < profilingContexts.Size(); i++)
+    {
+        n_assert(profilingContexts[i].scopes.Size() == 0);
+        profilingContexts[i].topLevelScopes.Reset();
+    }
 }
 
 Threading::CriticalSection counterLock;
@@ -169,15 +169,15 @@ Util::Dictionary<const char*, uint64> counters;
 void 
 ProfilingIncreaseCounter(const char* id, uint64 value)
 {
-	counterLock.Enter();
-	IndexT idx = counters.FindIndex(id);
-	if (idx == InvalidIndex)
-		counters.Add(id, value);
-	else
-	{
-		counters.ValueAtIndex(idx) += value;
-	}
-	counterLock.Leave();
+    counterLock.Enter();
+    IndexT idx = counters.FindIndex(id);
+    if (idx == InvalidIndex)
+        counters.Add(id, value);
+    else
+    {
+        counters.ValueAtIndex(idx) += value;
+    }
+    counterLock.Leave();
 }
 
 //------------------------------------------------------------------------------
@@ -186,11 +186,11 @@ ProfilingIncreaseCounter(const char* id, uint64 value)
 void 
 ProfilingDecreaseCounter(const char* id, uint64 value)
 {
-	counterLock.Enter();
-	IndexT idx = counters.FindIndex(id);
-	n_assert(idx != InvalidIndex);
-	counters.ValueAtIndex(idx) -= value;
-	counterLock.Leave();
+    counterLock.Enter();
+    IndexT idx = counters.FindIndex(id);
+    n_assert(idx != InvalidIndex);
+    counters.ValueAtIndex(idx) -= value;
+    counterLock.Leave();
 }
 
 //------------------------------------------------------------------------------
@@ -199,7 +199,7 @@ ProfilingDecreaseCounter(const char* id, uint64 value)
 const Util::Dictionary<const char*, uint64>&
 ProfilingGetCounters()
 {
-	return counters;
+    return counters;
 }
 
 } // namespace Profiling

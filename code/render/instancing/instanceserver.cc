@@ -20,7 +20,7 @@ __ImplementSingleton(Instancing::InstanceServer);
 */
 InstanceServer::InstanceServer()
 {
-	__ConstructSingleton;
+    __ConstructSingleton;
 }
 
 //------------------------------------------------------------------------------
@@ -28,7 +28,7 @@ InstanceServer::InstanceServer()
 */
 InstanceServer::~InstanceServer()
 {
-	__DestructSingleton;
+    __DestructSingleton;
 }
 
 } // namespace Instancing

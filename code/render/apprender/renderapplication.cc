@@ -52,7 +52,7 @@ RenderApplication::RenderApplication() :
     quitRequested(false),
     logFileEnabled(true),
     mountStandardArchivesEnabled(true),
-	useMultithreadedRendering(true)
+    useMultithreadedRendering(true)
 {
     // empty
 }
@@ -142,43 +142,43 @@ RenderApplication::Open()
         #endif
 
 #if __NEBULA_HTTP_FILESYSTEM__
-		// setup http subsystem
-		this->httpClientRegistry = Http::HttpClientRegistry::Create();
-		this->httpClientRegistry->Setup();
+        // setup http subsystem
+        this->httpClientRegistry = Http::HttpClientRegistry::Create();
+        this->httpClientRegistry->Setup();
 #endif
                             
 #if __NEBULA_HTTP__
-		this->httpInterface = Http::HttpInterface::Create();
-		this->httpInterface->Open();
-		this->httpServerProxy = Http::HttpServerProxy::Create();
-		this->httpServerProxy->Open();
-		this->httpServerProxy->AttachRequestHandler(Debug::CorePageHandler::Create());
-		this->httpServerProxy->AttachRequestHandler(Debug::StringAtomPageHandler::Create());
-		this->httpServerProxy->AttachRequestHandler(Debug::ThreadPageHandler::Create());
-		this->httpServerProxy->AttachRequestHandler(Debug::MemoryPageHandler::Create());
-		this->httpServerProxy->AttachRequestHandler(Debug::ConsolePageHandler::Create());
-		this->httpServerProxy->AttachRequestHandler(Debug::IoPageHandler::Create());
-		this->httpServerProxy->AttachRequestHandler(Debug::SvgTestPageHandler::Create());
-		this->httpServerProxy->AttachRequestHandler(Debug::HelloWorldRequestHandler::Create()); 
+        this->httpInterface = Http::HttpInterface::Create();
+        this->httpInterface->Open();
+        this->httpServerProxy = Http::HttpServerProxy::Create();
+        this->httpServerProxy->Open();
+        this->httpServerProxy->AttachRequestHandler(Debug::CorePageHandler::Create());
+        this->httpServerProxy->AttachRequestHandler(Debug::StringAtomPageHandler::Create());
+        this->httpServerProxy->AttachRequestHandler(Debug::ThreadPageHandler::Create());
+        this->httpServerProxy->AttachRequestHandler(Debug::MemoryPageHandler::Create());
+        this->httpServerProxy->AttachRequestHandler(Debug::ConsolePageHandler::Create());
+        this->httpServerProxy->AttachRequestHandler(Debug::IoPageHandler::Create());
+        this->httpServerProxy->AttachRequestHandler(Debug::SvgTestPageHandler::Create());
+        this->httpServerProxy->AttachRequestHandler(Debug::HelloWorldRequestHandler::Create()); 
         
-		// setup debug subsystem, needs http system for visualiuzation in browser
-		this->debugInterface = DebugInterface::Create();
-		this->debugInterface->Open();
-#endif    	
-		
-		// setup graphics subsystem
+        // setup debug subsystem, needs http system for visualiuzation in browser
+        this->debugInterface = DebugInterface::Create();
+        this->debugInterface->Open();
+#endif      
+        
+        // setup graphics subsystem
         this->graphicsInterface = GraphicsInterface::Create();
-		this->graphicsInterface->Open();
+        this->graphicsInterface->Open();
 
         // get framesync timer
         this->frameSyncTimer = FrameSyncTimer::Instance();
 
-		// get resource manager
-		this->resManager = Resources::ResourceManager::Instance();
+        // get resource manager
+        this->resManager = Resources::ResourceManager::Instance();
 
-		// setup input subsystem
-		this->inputServer = InputServer::Create();
-		this->inputServer->Open();
+        // setup input subsystem
+        this->inputServer = InputServer::Create();
+        this->inputServer->Open();
 
         this->display = Display::Create();
         this->OnConfigureDisplay();
@@ -237,7 +237,7 @@ RenderApplication::OnConfigureDisplay()
     this->display->Settings().SetFullscreen(this->args.GetBoolFlag("-fullscreen"));
     this->display->Settings().SetAlwaysOnTop(this->args.GetBoolFlag("-alwaysontop"));
     this->display->Settings().SetVerticalSyncEnabled(this->args.GetBoolFlag("-vsync"));
-	this->display->Settings().SetWindowTitle(this->appName);
+    this->display->Settings().SetWindowTitle(this->appName);
     if (this->args.HasArg("-aa"))
     {
         this->display->Settings().SetAntiAliasQuality(AntiAliasQuality::FromString(this->args.GetString("-aa")));
@@ -301,13 +301,13 @@ RenderApplication::Close()
     this->display->Close();
     this->display = 0;
 
-	this->resManager = 0;
+    this->resManager = 0;
 
     this->graphicsInterface->Close();
-    this->graphicsInterface = 0;	
+    this->graphicsInterface = 0;    
 
-	this->inputServer->Close();
-	this->inputServer = 0;
+    this->inputServer->Close();
+    this->inputServer = 0;
      
     this->ioInterface->Close();
     this->ioInterface = 0;
@@ -324,15 +324,15 @@ RenderApplication::Close()
     this->debugInterface->Close();
     this->debugInterface = 0;
 
-	this->httpServerProxy->Close();
+    this->httpServerProxy->Close();
     this->httpServerProxy = 0;
     this->httpInterface->Close();
     this->httpInterface = 0;
 #endif
 
 #if __NEBULA_HTTP_FILESYSTEM__
-	this->httpClientRegistry->Discard();
-	this->httpClientRegistry = 0;    
+    this->httpClientRegistry->Discard();
+    this->httpClientRegistry = 0;    
 #endif
 
     this->coreServer->Close();
@@ -352,8 +352,8 @@ RenderApplication::Run()
     {
         _start_timer(MainThreadFrameTimeAll);
 
-		// begin new frame of input
-		this->inputServer->BeginFrame();
+        // begin new frame of input
+        this->inputServer->BeginFrame();
 
 #if __NEBULA_HTTP__
         // handle any http requests from the HttpServer thread
@@ -366,8 +366,8 @@ RenderApplication::Run()
         // update time
         this->UpdateTime();
 
-		// update message callbacks
-		Messaging::MessageCallbackHandler::Update();
+        // update message callbacks
+        Messaging::MessageCallbackHandler::Update();
 
         // handle input
         this->OnProcessInput();
@@ -375,10 +375,10 @@ RenderApplication::Run()
         // run "game logic"
         this->OnUpdateFrame();
 
-		// render
-		_start_timer(MainThreadWaitForGraphicsFrame);
-		GraphicsInterface::Instance()->OnFrame();
-		_stop_timer(MainThreadWaitForGraphicsFrame);
+        // render
+        _start_timer(MainThreadWaitForGraphicsFrame);
+        GraphicsInterface::Instance()->OnFrame();
+        _stop_timer(MainThreadWaitForGraphicsFrame);
 
         this->inputServer->EndFrame();
 

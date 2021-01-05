@@ -37,115 +37,115 @@ __ImplementClass(MiscTest, 'RETE', Core::RefCounted);
 void
 MiscTest::Run()
 {
-	App::Application app;
+    App::Application app;
 
-	Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
+    Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
 
-	app.SetAppTitle("Misc test!");
-	app.SetCompanyName("gscept");
-	app.Open();
+    app.SetAppTitle("Misc test!");
+    app.SetCompanyName("gscept");
+    app.Open();
 
-	// 1 MB
-	Memory::RingAllocator<8> alloc(1024*1024);
+    // 1 MB
+    Memory::RingAllocator<8> alloc(1024*1024);
 
-	struct Command
-	{
-		enum Type
-		{
-			DoWork,
-			Sync
-		};
+    struct Command
+    {
+        enum Type
+        {
+            DoWork,
+            Sync
+        };
 
-		union
-		{
-			struct
-			{
-				Threading::Event* ev;
-			} ev;
+        union
+        {
+            struct
+            {
+                Threading::Event* ev;
+            } ev;
 
-			struct
-			{
-				uint offset;
-				byte* buf;
-			} work;
-		};
+            struct
+            {
+                uint offset;
+                byte* buf;
+            } work;
+        };
 
-		Type type;
-	};
-	Threading::SafeQueue<Command> events;
-	byte* buffer = n_new_array(byte, 1024 * 1024);
+        Type type;
+    };
+    Threading::SafeQueue<Command> events;
+    byte* buffer = n_new_array(byte, 1024 * 1024);
 
-	static const uint NumWork = 5;
-	static const uint WorkSize = 512;
+    static const uint NumWork = 5;
+    static const uint WorkSize = 512;
 
-	std::thread th([&alloc, &events, buffer]()
-	{
-		// create buffer for data which we will copy to
-		while (true)
-		{
-			Util::Array<Command> commands;
-			events.DequeueAll(commands);
+    std::thread th([&alloc, &events, buffer]()
+    {
+        // create buffer for data which we will copy to
+        while (true)
+        {
+            Util::Array<Command> commands;
+            events.DequeueAll(commands);
 
-			for (IndexT i = 0; i < commands.Size(); i++)
-			{
-				const Command& cmd = commands[i];
-				switch (cmd.type)
-				{
-				case Command::DoWork:
-					memcpy(buffer + cmd.work.offset, cmd.work.buf, WorkSize);
-					break;
-				case Command::Sync:
-					cmd.ev.ev->Signal();
-					break;	
-				}
-			}
+            for (IndexT i = 0; i < commands.Size(); i++)
+            {
+                const Command& cmd = commands[i];
+                switch (cmd.type)
+                {
+                case Command::DoWork:
+                    memcpy(buffer + cmd.work.offset, cmd.work.buf, WorkSize);
+                    break;
+                case Command::Sync:
+                    cmd.ev.ev->Signal();
+                    break;  
+                }
+            }
 
-			buffer[WorkSize * NumWork] = '\0';
-			printf("%s", buffer);
-			events.Wait();
-		}
-		
-	});
+            buffer[WorkSize * NumWork] = '\0';
+            printf("%s", buffer);
+            events.Wait();
+        }
+        
+    });
 
 
-	while (true)
-	{
-		// start allocation and check for the next upcoming range to be freed
-		alloc.Start();
+    while (true)
+    {
+        // start allocation and check for the next upcoming range to be freed
+        alloc.Start();
 
-		// go through and generate jobs
-		for (IndexT i = 0; i < NumWork; i++)
-		{
-			// allocate buffer region, this should not be accessible until the
-			// thread is done working with this memory
-			Memory::RingAlloc buf;
-			if (alloc.Allocate(WorkSize, buf))
-			{
-				// copy to the offset data pointer, offset by our text sample
-				memcpy(buf.data, lorem_ipsum + i * WorkSize, WorkSize);
+        // go through and generate jobs
+        for (IndexT i = 0; i < NumWork; i++)
+        {
+            // allocate buffer region, this should not be accessible until the
+            // thread is done working with this memory
+            Memory::RingAlloc buf;
+            if (alloc.Allocate(WorkSize, buf))
+            {
+                // copy to the offset data pointer, offset by our text sample
+                memcpy(buf.data, lorem_ipsum + i * WorkSize, WorkSize);
 
-				// send a command to the thread to copy the data to the thread buffer
-				Command cmd;
-				cmd.type = Command::DoWork;
-				cmd.work.buf = buf.data;
-				cmd.work.offset = buf.offset;
-			}
-		}
+                // send a command to the thread to copy the data to the thread buffer
+                Command cmd;
+                cmd.type = Command::DoWork;
+                cmd.work.buf = buf.data;
+                cmd.work.offset = buf.offset;
+            }
+        }
 
-		auto ev = alloc.End();
+        auto ev = alloc.End();
 
-		if (ev)
-		{
-			// push sync command
-			Command cmd;
-			cmd.type = Command::Sync;
-			cmd.ev.ev = ev;
-			events.Enqueue(cmd);
-		}
-	}
-	
+        if (ev)
+        {
+            // push sync command
+            Command cmd;
+            cmd.type = Command::Sync;
+            cmd.ev.ev = ev;
+            events.Enqueue(cmd);
+        }
+    }
+    
 
-	app.Close();
+    app.Close();
 }
 
 } // namespace Test

@@ -34,16 +34,16 @@ void SetupSparse(VkDevice dev, VkImage img, Ids::Id32 sparseExtension, const VkT
 ResourcePool::LoadStatus
 VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* info)
 {
-	const TextureCreateInfo* data = (const TextureCreateInfo*)info;
+    const TextureCreateInfo* data = (const TextureCreateInfo*)info;
 
-	/// during the load-phase, we can safetly get the structs
-	__Lock(textureAllocator);
-	VkTextureRuntimeInfo& runtimeInfo = this->Get<Texture_RuntimeInfo>(id.resourceId);
-	VkTextureLoadInfo& loadInfo = this->Get<Texture_LoadInfo>(id.resourceId);
-	VkTextureWindowInfo& windowInfo = this->Get<Texture_WindowInfo>(id.resourceId);
+    /// during the load-phase, we can safetly get the structs
+    __Lock(textureAllocator);
+    VkTextureRuntimeInfo& runtimeInfo = this->Get<Texture_RuntimeInfo>(id.resourceId);
+    VkTextureLoadInfo& loadInfo = this->Get<Texture_LoadInfo>(id.resourceId);
+    VkTextureWindowInfo& windowInfo = this->Get<Texture_WindowInfo>(id.resourceId);
 
     // create adjusted info
-	TextureCreateInfoAdjusted adjustedInfo = TextureGetAdjustedInfo(*data);
+    TextureCreateInfoAdjusted adjustedInfo = TextureGetAdjustedInfo(*data);
 
     VkPhysicalDevice physicalDev = Vulkan::GetCurrentPhysicalDevice();
     VkDevice dev = Vulkan::GetCurrentDevice();
@@ -61,8 +61,8 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
     loadInfo.texUsage = adjustedInfo.usage;
     loadInfo.alias = adjustedInfo.alias;
     loadInfo.samples = adjustedInfo.samples;
-	loadInfo.clear = adjustedInfo.clear;
-	loadInfo.clearColor = adjustedInfo.clearColor;
+    loadInfo.clear = adjustedInfo.clear;
+    loadInfo.clearColor = adjustedInfo.clearColor;
     loadInfo.defaultLayout = adjustedInfo.defaultLayout;
     loadInfo.windowTexture = adjustedInfo.windowTexture;
     loadInfo.windowRelative = adjustedInfo.windowRelative;
@@ -96,7 +96,7 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
         ObjectSetName((TextureId)id, adjustedInfo.name.Value());
 #endif
 
-    	return ResourcePool::Success;
+        return ResourcePool::Success;
     }
 
     return ResourcePool::Failed;   
@@ -109,14 +109,14 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 void
 VkMemoryTexturePool::Unload(const Resources::ResourceId id)
 {
-	__Lock(textureAllocator);
-	VkTextureLoadInfo& loadInfo = this->Get<Texture_LoadInfo>(id);
-	VkTextureRuntimeInfo& runtimeInfo = this->Get<Texture_RuntimeInfo>(id);
-	VkTextureWindowInfo& windowInfo = this->Get<Texture_WindowInfo>(id);
+    __Lock(textureAllocator);
+    VkTextureLoadInfo& loadInfo = this->Get<Texture_LoadInfo>(id);
+    VkTextureRuntimeInfo& runtimeInfo = this->Get<Texture_RuntimeInfo>(id);
+    VkTextureWindowInfo& windowInfo = this->Get<Texture_WindowInfo>(id);
 
     if (loadInfo.stencilExtension != Ids::InvalidId32)
     {
-		__Lock(textureStencilExtensionAllocator);
+        __Lock(textureStencilExtensionAllocator);
         VkTextureRuntimeInfo& stencil = textureStencilExtensionAllocator.Get<TextureExtension_StencilInfo>(loadInfo.stencilExtension);
         Vulkan::DelayedDeleteImageView(stencil.view);
         VkShaderServer::Instance()->UnregisterTexture(stencil.bind, stencil.type);
@@ -131,6 +131,7 @@ VkMemoryTexturePool::Unload(const Resources::ResourceId id)
     // if sparse, run through and dealloc pages
     if (loadInfo.sparse)
     {
+        __Lock(textureSparseExtensionAllocator);
         // dealloc all opaque bindings
         Util::Array<CoreGraphics::Alloc>& allocs = textureSparseExtensionAllocator.Get<TextureExtension_SparseOpaqueAllocs>(loadInfo.sparseExtension);
         for (IndexT i = 0; i < allocs.Size(); i++)
@@ -160,17 +161,17 @@ VkMemoryTexturePool::Unload(const Resources::ResourceId id)
         textureSparseExtensionAllocator.Dealloc(loadInfo.sparseExtension);
     }
     else if (loadInfo.alias == CoreGraphics::TextureId::Invalid() && loadInfo.mem.mem != VK_NULL_HANDLE)
-		Vulkan::DelayedFreeMemory(loadInfo.mem);
+        Vulkan::DelayedFreeMemory(loadInfo.mem);
 
     // only unload a texture which isn't a window texture, since their textures come from the swap chain
-	if (!loadInfo.windowTexture)
-	{
+    if (!loadInfo.windowTexture)
+    {
         Vulkan::DelayedDeleteImageView(runtimeInfo.view);
         VkShaderServer::Instance()->UnregisterTexture(runtimeInfo.bind, runtimeInfo.type); 
         Vulkan::DelayedDeleteImage(loadInfo.img);
-	}
+    }
 
-	this->states[id.poolId] = Resources::Resource::State::Unloaded;
+    this->states[id.poolId] = Resources::Resource::State::Unloaded;
 }
 
 //------------------------------------------------------------------------------
@@ -179,13 +180,13 @@ VkMemoryTexturePool::Unload(const Resources::ResourceId id)
 void
 VkMemoryTexturePool::Reload(const Resources::ResourceId id)
 {
-	__Lock(textureAllocator);
+    __Lock(textureAllocator);
     VkTextureLoadInfo loadInfo = this->Get<Texture_LoadInfo>(id.resourceId);
     VkTextureWindowInfo windowInfo = this->Get<Texture_WindowInfo>(id.resourceId);
 
     if (!loadInfo.windowTexture && loadInfo.windowRelative)
     {
-		this->Unload(id);
+        this->Unload(id);
 
         // if the window has been resized, we need to update our dimensions based on relative size
         const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(windowInfo.window);
@@ -193,7 +194,7 @@ VkMemoryTexturePool::Reload(const Resources::ResourceId id)
         loadInfo.dims.height = SizeT(mode.GetHeight() * loadInfo.relativeDims.height);
         loadInfo.dims.depth = 1;
 
-		this->Setup(id);
+        this->Setup(id);
     }
 }
 
@@ -203,109 +204,109 @@ VkMemoryTexturePool::Reload(const Resources::ResourceId id)
 void
 VkMemoryTexturePool::GenerateMipmaps(const CoreGraphics::TextureId id)
 {
-	CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_TRANSFER, "Mipmap");
-	SizeT numMips = CoreGraphics::TextureGetNumMips(id);
+    CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_TRANSFER, "Mipmap");
+    SizeT numMips = CoreGraphics::TextureGetNumMips(id);
 
-	// insert initial barrier for texture
-	CoreGraphics::BarrierInsert(
-		CoreGraphics::GraphicsQueueType,
-		CoreGraphics::BarrierStage::AllGraphicsShaders,
-		CoreGraphics::BarrierStage::Transfer,
-		CoreGraphics::BarrierDomain::Global,
-		{
-			{
-				id,
-				CoreGraphics::ImageSubresourceInfo{ImageAspect::ColorBits, 0, (uint)numMips, 0, 1},
-				CoreGraphics::ImageLayout::ShaderRead,
-				CoreGraphics::ImageLayout::TransferSource,
-				CoreGraphics::BarrierAccess::ShaderRead,
-				CoreGraphics::BarrierAccess::TransferRead,
-			},
-		},
-		nullptr,
-		"Mipmap Generation Initial Barrier");
+    // insert initial barrier for texture
+    CoreGraphics::BarrierInsert(
+        CoreGraphics::GraphicsQueueType,
+        CoreGraphics::BarrierStage::AllGraphicsShaders,
+        CoreGraphics::BarrierStage::Transfer,
+        CoreGraphics::BarrierDomain::Global,
+        {
+            {
+                id,
+                CoreGraphics::ImageSubresourceInfo{ImageAspect::ColorBits, 0, (uint)numMips, 0, 1},
+                CoreGraphics::ImageLayout::ShaderRead,
+                CoreGraphics::ImageLayout::TransferSource,
+                CoreGraphics::BarrierAccess::ShaderRead,
+                CoreGraphics::BarrierAccess::TransferRead,
+            },
+        },
+        nullptr,
+        "Mipmap Generation Initial Barrier");
 
-	// calculate number of mips
-	TextureDimensions dims = GetDimensions(id);
+    // calculate number of mips
+    TextureDimensions dims = GetDimensions(id);
 
-	CoreGraphics::ImageLayout prevLayout = CoreGraphics::ImageLayout::TransferSource;
-	CoreGraphics::BarrierAccess prevAccess = CoreGraphics::BarrierAccess::TransferRead;
-	for (int mip = 0; mip < numMips - 1; mip++)
-	{
-		TextureDimensions biggerDims = dims;
-		dims.width = dims.width >> 1;
-		dims.height = dims.height >> 1;
+    CoreGraphics::ImageLayout prevLayout = CoreGraphics::ImageLayout::TransferSource;
+    CoreGraphics::BarrierAccess prevAccess = CoreGraphics::BarrierAccess::TransferRead;
+    for (int mip = 0; mip < numMips - 1; mip++)
+    {
+        TextureDimensions biggerDims = dims;
+        dims.width = dims.width >> 1;
+        dims.height = dims.height >> 1;
 
-		Math::rectangle<SizeT> fromRegion;
-		fromRegion.left = 0;
-		fromRegion.top = 0;
-		fromRegion.right = biggerDims.width;
-		fromRegion.bottom = biggerDims.height;
+        Math::rectangle<SizeT> fromRegion;
+        fromRegion.left = 0;
+        fromRegion.top = 0;
+        fromRegion.right = biggerDims.width;
+        fromRegion.bottom = biggerDims.height;
 
-		Math::rectangle<SizeT> toRegion;
-		toRegion.left = 0;
-		toRegion.top = 0;
-		toRegion.right = dims.width;
-		toRegion.bottom = dims.height;
-		CoreGraphics::BarrierInsert(
-			CoreGraphics::GraphicsQueueType,
-			CoreGraphics::BarrierStage::Transfer,
-			CoreGraphics::BarrierStage::Transfer,
-			CoreGraphics::BarrierDomain::Global,
-			{
-				{
-					id,
-					CoreGraphics::ImageSubresourceInfo{ CoreGraphics::ImageAspect::ColorBits, (uint)mip, 1, 0, 1 },
-					prevLayout,
-					CoreGraphics::ImageLayout::TransferSource,
-					prevAccess,
-					CoreGraphics::BarrierAccess::TransferRead,
-				},
-				{
-					id,
-					CoreGraphics::ImageSubresourceInfo{ CoreGraphics::ImageAspect::ColorBits, (uint)mip + 1, 1, 0, 1 },
-					CoreGraphics::ImageLayout::TransferSource,
-					CoreGraphics::ImageLayout::TransferDestination,
-					CoreGraphics::BarrierAccess::TransferRead,
-					CoreGraphics::BarrierAccess::TransferWrite,
-				}
-			},
-			nullptr,
-			"Mipmap Generation Barrier");
-		CoreGraphics::Blit(id, fromRegion, mip, 0, id, toRegion, mip + 1, 0);
+        Math::rectangle<SizeT> toRegion;
+        toRegion.left = 0;
+        toRegion.top = 0;
+        toRegion.right = dims.width;
+        toRegion.bottom = dims.height;
+        CoreGraphics::BarrierInsert(
+            CoreGraphics::GraphicsQueueType,
+            CoreGraphics::BarrierStage::Transfer,
+            CoreGraphics::BarrierStage::Transfer,
+            CoreGraphics::BarrierDomain::Global,
+            {
+                {
+                    id,
+                    CoreGraphics::ImageSubresourceInfo{ CoreGraphics::ImageAspect::ColorBits, (uint)mip, 1, 0, 1 },
+                    prevLayout,
+                    CoreGraphics::ImageLayout::TransferSource,
+                    prevAccess,
+                    CoreGraphics::BarrierAccess::TransferRead,
+                },
+                {
+                    id,
+                    CoreGraphics::ImageSubresourceInfo{ CoreGraphics::ImageAspect::ColorBits, (uint)mip + 1, 1, 0, 1 },
+                    CoreGraphics::ImageLayout::TransferSource,
+                    CoreGraphics::ImageLayout::TransferDestination,
+                    CoreGraphics::BarrierAccess::TransferRead,
+                    CoreGraphics::BarrierAccess::TransferWrite,
+                }
+            },
+            nullptr,
+            "Mipmap Generation Barrier");
+        CoreGraphics::Blit(id, fromRegion, mip, 0, id, toRegion, mip + 1, 0);
 
-		prevLayout = CoreGraphics::ImageLayout::TransferDestination;
-		prevAccess = CoreGraphics::BarrierAccess::TransferWrite;
-	}
+        prevLayout = CoreGraphics::ImageLayout::TransferDestination;
+        prevAccess = CoreGraphics::BarrierAccess::TransferWrite;
+    }
 
-	// insert initial barrier for texture
-	CoreGraphics::BarrierInsert(
-		CoreGraphics::GraphicsQueueType,
-		CoreGraphics::BarrierStage::Transfer,
-		CoreGraphics::BarrierStage::AllGraphicsShaders,
-		CoreGraphics::BarrierDomain::Global,
-		{
-			{
-				id,
-				CoreGraphics::ImageSubresourceInfo{ImageAspect::ColorBits, 0, (uint)numMips - 1, 0, 1},
-				CoreGraphics::ImageLayout::TransferSource,
-				CoreGraphics::ImageLayout::ShaderRead,
-				CoreGraphics::BarrierAccess::TransferRead,
-				CoreGraphics::BarrierAccess::ShaderRead,
-			},
-			{
-				id,
-				CoreGraphics::ImageSubresourceInfo{ImageAspect::ColorBits, (uint)numMips - 1, 1, 0, 1},
-				prevLayout,
-				CoreGraphics::ImageLayout::ShaderRead,
-				prevAccess,
-				CoreGraphics::BarrierAccess::ShaderRead,
-			},
-		},
-		nullptr,
-		"Mipmap Generation Finish Barrier");
+    // insert initial barrier for texture
+    CoreGraphics::BarrierInsert(
+        CoreGraphics::GraphicsQueueType,
+        CoreGraphics::BarrierStage::Transfer,
+        CoreGraphics::BarrierStage::AllGraphicsShaders,
+        CoreGraphics::BarrierDomain::Global,
+        {
+            {
+                id,
+                CoreGraphics::ImageSubresourceInfo{ImageAspect::ColorBits, 0, (uint)numMips - 1, 0, 1},
+                CoreGraphics::ImageLayout::TransferSource,
+                CoreGraphics::ImageLayout::ShaderRead,
+                CoreGraphics::BarrierAccess::TransferRead,
+                CoreGraphics::BarrierAccess::ShaderRead,
+            },
+            {
+                id,
+                CoreGraphics::ImageSubresourceInfo{ImageAspect::ColorBits, (uint)numMips - 1, 1, 0, 1},
+                prevLayout,
+                CoreGraphics::ImageLayout::ShaderRead,
+                prevAccess,
+                CoreGraphics::BarrierAccess::ShaderRead,
+            },
+        },
+        nullptr,
+        "Mipmap Generation Finish Barrier");
 
-	CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
+    CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
 }
 
 //------------------------------------------------------------------------------
@@ -314,65 +315,65 @@ VkMemoryTexturePool::GenerateMipmaps(const CoreGraphics::TextureId id)
 bool
 VkMemoryTexturePool::Map(const CoreGraphics::TextureId id, IndexT mipLevel, CoreGraphics::GpuBufferTypes::MapType mapType, CoreGraphics::TextureMapInfo & outMapInfo)
 {
-	__Lock(textureAllocator);
-	VkTextureRuntimeInfo& runtime = this->Get<0>(id.resourceId);
-	VkTextureLoadInfo& load = this->Get<1>(id.resourceId);
-	VkTextureMappingInfo& map = this->Get<2>(id.resourceId);
+    __Lock(textureAllocator);
+    VkTextureRuntimeInfo& runtime = this->Get<0>(id.resourceId);
+    VkTextureLoadInfo& load = this->Get<1>(id.resourceId);
+    VkTextureMappingInfo& map = this->Get<2>(id.resourceId);
 
-	bool retval = false;
-	if (Texture2D == runtime.type)
-	{
-		VkFormat vkformat = VkTypes::AsVkFormat(load.format);
-		VkTypes::VkBlockDimensions blockSize = VkTypes::AsVkBlockSize(vkformat);
-		uint32_t size = CoreGraphics::PixelFormat::ToSize(load.format);
+    bool retval = false;
+    if (Texture2D == runtime.type)
+    {
+        VkFormat vkformat = VkTypes::AsVkFormat(load.format);
+        VkTypes::VkBlockDimensions blockSize = VkTypes::AsVkBlockSize(vkformat);
+        uint32_t size = CoreGraphics::PixelFormat::ToSize(load.format);
 
-		uint32_t mipWidth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.width / Math::n_pow(2, (float)mipLevel)));
-		uint32_t mipHeight = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.height / Math::n_pow(2, (float)mipLevel)));
+        uint32_t mipWidth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.width / Math::n_pow(2, (float)mipLevel)));
+        uint32_t mipHeight = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.height / Math::n_pow(2, (float)mipLevel)));
 
-		map.region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
-		map.region.dstOffset = { 0, 0, 0 };
-		map.region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)mipLevel, 0, 1 };
-		map.region.srcOffset = { 0, 0, 0 };
-		map.region.extent = { mipWidth, mipHeight, 1 };
+        map.region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+        map.region.dstOffset = { 0, 0, 0 };
+        map.region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)mipLevel, 0, 1 };
+        map.region.srcOffset = { 0, 0, 0 };
+        map.region.extent = { mipWidth, mipHeight, 1 };
         CoreGraphics::Alloc alloc;
-		VkUtilities::ReadImage(load.img, load.format, load.dims, runtime.type, map.region, alloc, map.buf);
+        VkUtilities::ReadImage(load.img, load.format, load.dims, runtime.type, map.region, alloc, map.buf);
         map.mem = alloc.mem;
 
-		// the row pitch must be the size of one pixel times the number of pixels in width
-		outMapInfo.mipWidth = mipWidth;
-		outMapInfo.mipHeight = mipHeight;
-		outMapInfo.rowPitch = (int32_t)alloc.size / mipHeight;
-		outMapInfo.depthPitch = (int32_t)alloc.size;
+        // the row pitch must be the size of one pixel times the number of pixels in width
+        outMapInfo.mipWidth = mipWidth;
+        outMapInfo.mipHeight = mipHeight;
+        outMapInfo.rowPitch = (int32_t)alloc.size / mipHeight;
+        outMapInfo.depthPitch = (int32_t)alloc.size;
         outMapInfo.data = (char*)GetMappedMemory(alloc);
-		map.mapCount++;
-	}
-	else if (Texture3D == runtime.type)
-	{
-		VkFormat vkformat = VkTypes::AsVkFormat(load.format);
-		VkTypes::VkBlockDimensions blockSize = VkTypes::AsVkBlockSize(vkformat);
-		uint32_t size = CoreGraphics::PixelFormat::ToSize(load.format);
+        map.mapCount++;
+    }
+    else if (Texture3D == runtime.type)
+    {
+        VkFormat vkformat = VkTypes::AsVkFormat(load.format);
+        VkTypes::VkBlockDimensions blockSize = VkTypes::AsVkBlockSize(vkformat);
+        uint32_t size = CoreGraphics::PixelFormat::ToSize(load.format);
 
-		uint32_t mipWidth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.width / Math::n_pow(2, (float)mipLevel)));
-		uint32_t mipHeight = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.height / Math::n_pow(2, (float)mipLevel)));
-		uint32_t mipDepth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.depth / Math::n_pow(2, (float)mipLevel)));
+        uint32_t mipWidth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.width / Math::n_pow(2, (float)mipLevel)));
+        uint32_t mipHeight = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.height / Math::n_pow(2, (float)mipLevel)));
+        uint32_t mipDepth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.depth / Math::n_pow(2, (float)mipLevel)));
 
-		map.region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
-		map.region.dstOffset = { 0, 0, 0 };
-		map.region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)mipLevel, 1, 1 };
-		map.region.srcOffset = { 0, 0, 0 };
-		map.region.extent = { mipWidth, mipHeight, mipDepth };
+        map.region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+        map.region.dstOffset = { 0, 0, 0 };
+        map.region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)mipLevel, 1, 1 };
+        map.region.srcOffset = { 0, 0, 0 };
+        map.region.extent = { mipWidth, mipHeight, mipDepth };
         CoreGraphics::Alloc alloc;
-		VkUtilities::ReadImage(load.img, load.format, load.dims, runtime.type, map.region, alloc, map.buf);
+        VkUtilities::ReadImage(load.img, load.format, load.dims, runtime.type, map.region, alloc, map.buf);
 
-		// the row pitch must be the size of one pixel times the number of pixels in width
-		outMapInfo.mipWidth = mipWidth;
-		outMapInfo.mipHeight = mipHeight;
-		outMapInfo.rowPitch = (int32_t)alloc.size / mipWidth;
-		outMapInfo.depthPitch = (int32_t)alloc.size;
+        // the row pitch must be the size of one pixel times the number of pixels in width
+        outMapInfo.mipWidth = mipWidth;
+        outMapInfo.mipHeight = mipHeight;
+        outMapInfo.rowPitch = (int32_t)alloc.size / mipWidth;
+        outMapInfo.depthPitch = (int32_t)alloc.size;
         outMapInfo.data = (char*)GetMappedMemory(alloc);
-		map.mapCount++;
-	}
-	return retval;
+        map.mapCount++;
+    }
+    return retval;
 }
 
 //------------------------------------------------------------------------------
@@ -381,20 +382,20 @@ VkMemoryTexturePool::Map(const CoreGraphics::TextureId id, IndexT mipLevel, Core
 void
 VkMemoryTexturePool::Unmap(const CoreGraphics::TextureId id, IndexT mipLevel)
 {
-	__Lock(textureAllocator);
-	VkTextureRuntimeInfo& runtime = this->Get<0>(id.resourceId);
-	VkTextureLoadInfo& load = this->Get<1>(id.resourceId);
-	VkTextureMappingInfo& map = this->Get<2>(id.resourceId);
+    __Lock(textureAllocator);
+    VkTextureRuntimeInfo& runtime = this->Get<0>(id.resourceId);
+    VkTextureLoadInfo& load = this->Get<1>(id.resourceId);
+    VkTextureMappingInfo& map = this->Get<2>(id.resourceId);
 
-	// unmap and dealloc
-	vkUnmapMemory(load.dev, load.mem.mem);
-	VkUtilities::WriteImage(map.buf, load.img, map.region);
-	map.mapCount--;
-	if (map.mapCount == 0)
-	{
-		vkFreeMemory(load.dev, map.mem, nullptr);
-		vkDestroyBuffer(load.dev, map.buf, nullptr);
-	}
+    // unmap and dealloc
+    vkUnmapMemory(load.dev, load.mem.mem);
+    VkUtilities::WriteImage(map.buf, load.img, map.region);
+    map.mapCount--;
+    if (map.mapCount == 0)
+    {
+        vkFreeMemory(load.dev, map.mem, nullptr);
+        vkDestroyBuffer(load.dev, map.buf, nullptr);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -403,37 +404,37 @@ VkMemoryTexturePool::Unmap(const CoreGraphics::TextureId id, IndexT mipLevel)
 bool
 VkMemoryTexturePool::MapCubeFace(const CoreGraphics::TextureId id, CoreGraphics::TextureCubeFace face, IndexT mipLevel, CoreGraphics::GpuBufferTypes::MapType mapType, CoreGraphics::TextureMapInfo & outMapInfo)
 {
-	__Lock(textureAllocator);
-	VkTextureRuntimeInfo& runtime = this->Get<0>(id.resourceId);
-	VkTextureLoadInfo& load = this->Get<1>(id.resourceId);
-	VkTextureMappingInfo& map = this->Get<2>(id.resourceId);
+    __Lock(textureAllocator);
+    VkTextureRuntimeInfo& runtime = this->Get<0>(id.resourceId);
+    VkTextureLoadInfo& load = this->Get<1>(id.resourceId);
+    VkTextureMappingInfo& map = this->Get<2>(id.resourceId);
 
-	bool retval = false;
+    bool retval = false;
 
-	VkFormat vkformat = VkTypes::AsVkFormat(load.format);
-	VkTypes::VkBlockDimensions blockSize = VkTypes::AsVkBlockSize(vkformat);
-	uint32_t size = CoreGraphics::PixelFormat::ToSize(load.format);
+    VkFormat vkformat = VkTypes::AsVkFormat(load.format);
+    VkTypes::VkBlockDimensions blockSize = VkTypes::AsVkBlockSize(vkformat);
+    uint32_t size = CoreGraphics::PixelFormat::ToSize(load.format);
 
-	uint32_t mipWidth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.width / Math::n_pow(2, (float)mipLevel)));
-	uint32_t mipHeight = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.height / Math::n_pow(2, (float)mipLevel)));
+    uint32_t mipWidth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.width / Math::n_pow(2, (float)mipLevel)));
+    uint32_t mipHeight = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.height / Math::n_pow(2, (float)mipLevel)));
 
-	map.region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
-	map.region.dstOffset = { 0, 0, 0 };
-	map.region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)mipLevel, (uint32_t)face, 1 };
-	map.region.srcOffset = { 0, 0, 0 };
-	map.region.extent = { mipWidth, mipHeight, 1 };
+    map.region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
+    map.region.dstOffset = { 0, 0, 0 };
+    map.region.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)mipLevel, (uint32_t)face, 1 };
+    map.region.srcOffset = { 0, 0, 0 };
+    map.region.extent = { mipWidth, mipHeight, 1 };
     CoreGraphics::Alloc alloc;
-	VkUtilities::ReadImage(load.img, load.format, load.dims, runtime.type, map.region, alloc, map.buf);
+    VkUtilities::ReadImage(load.img, load.format, load.dims, runtime.type, map.region, alloc, map.buf);
 
-	// the row pitch must be the size of one pixel times the number of pixels in width
-	outMapInfo.mipWidth = mipWidth;
-	outMapInfo.mipHeight = mipHeight;
-	outMapInfo.rowPitch = (int32_t)alloc.size / mipWidth;
-	outMapInfo.depthPitch = (int32_t)alloc.size;
+    // the row pitch must be the size of one pixel times the number of pixels in width
+    outMapInfo.mipWidth = mipWidth;
+    outMapInfo.mipHeight = mipHeight;
+    outMapInfo.rowPitch = (int32_t)alloc.size / mipWidth;
+    outMapInfo.depthPitch = (int32_t)alloc.size;
     outMapInfo.data = (char*)GetMappedMemory(alloc);
-	map.mapCount++;
+    map.mapCount++;
 
-	return retval;
+    return retval;
 }
 
 //------------------------------------------------------------------------------
@@ -442,20 +443,20 @@ VkMemoryTexturePool::MapCubeFace(const CoreGraphics::TextureId id, CoreGraphics:
 void
 VkMemoryTexturePool::UnmapCubeFace(const CoreGraphics::TextureId id, CoreGraphics::TextureCubeFace face, IndexT mipLevel)
 {
-	__Lock(textureAllocator);
-	VkTextureRuntimeInfo& runtime = this->Get<0>(id.resourceId);
-	VkTextureLoadInfo& load = this->Get<1>(id.resourceId);
-	VkTextureMappingInfo& map = this->Get<2>(id.resourceId);
+    __Lock(textureAllocator);
+    VkTextureRuntimeInfo& runtime = this->Get<0>(id.resourceId);
+    VkTextureLoadInfo& load = this->Get<1>(id.resourceId);
+    VkTextureMappingInfo& map = this->Get<2>(id.resourceId);
 
-	// unmap and dealloc
-	vkUnmapMemory(load.dev, load.mem.mem);
-	VkUtilities::WriteImage(map.buf, load.img, map.region);
-	map.mapCount--;
-	if (map.mapCount == 0)
-	{
-		vkFreeMemory(load.dev, map.mem, nullptr);
-		vkDestroyBuffer(load.dev, map.buf, nullptr);
-	}
+    // unmap and dealloc
+    vkUnmapMemory(load.dev, load.mem.mem);
+    VkUtilities::WriteImage(map.buf, load.img, map.region);
+    map.mapCount--;
+    if (map.mapCount == 0)
+    {
+        vkFreeMemory(load.dev, map.mem, nullptr);
+        vkDestroyBuffer(load.dev, map.buf, nullptr);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -464,20 +465,20 @@ VkMemoryTexturePool::UnmapCubeFace(const CoreGraphics::TextureId id, CoreGraphic
 void
 VkMemoryTexturePool::Update(const CoreGraphics::TextureId id, void* data, SizeT dataSize, SizeT width, SizeT height, IndexT left, IndexT top, IndexT mip)
 {
-	VkBufferImageCopy copy;
-	copy.imageExtent.width = width;
-	copy.imageExtent.height = height;
-	copy.imageExtent.depth = 1;			// hmm, might want this for cube maps and volume textures too
-	copy.imageOffset.x = left;
-	copy.imageOffset.y = top;
-	copy.imageOffset.z = 0;
-	copy.imageSubresource.mipLevel = mip;
-	copy.imageSubresource.layerCount = 1;
-	copy.imageSubresource.baseArrayLayer = 0;
-	copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	copy.bufferOffset = 0;
-	copy.bufferRowLength = dataSize / width;
-	copy.bufferImageHeight = height;
+    VkBufferImageCopy copy;
+    copy.imageExtent.width = width;
+    copy.imageExtent.height = height;
+    copy.imageExtent.depth = 1;         // hmm, might want this for cube maps and volume textures too
+    copy.imageOffset.x = left;
+    copy.imageOffset.y = top;
+    copy.imageOffset.z = 0;
+    copy.imageSubresource.mipLevel = mip;
+    copy.imageSubresource.layerCount = 1;
+    copy.imageSubresource.baseArrayLayer = 0;
+    copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copy.bufferOffset = 0;
+    copy.bufferRowLength = dataSize / width;
+    copy.bufferImageHeight = height;
 }
 
 //------------------------------------------------------------------------------
@@ -486,20 +487,20 @@ VkMemoryTexturePool::Update(const CoreGraphics::TextureId id, void* data, SizeT 
 void
 VkMemoryTexturePool::Update(const CoreGraphics::TextureId id, CoreGraphics::TextureDimensions dims, void* data, SizeT dataSize, IndexT mip)
 {
-	VkBufferImageCopy copy;
-	copy.imageExtent.width = dims.width;
-	copy.imageExtent.height = dims.height;
-	copy.imageExtent.depth = 1;			// hmm, might want this for cube maps and volume textures too
-	copy.imageOffset.x = 0;
-	copy.imageOffset.y = 0;
-	copy.imageOffset.z = 0;
-	copy.imageSubresource.mipLevel = mip;
-	copy.imageSubresource.layerCount = 1;
-	copy.imageSubresource.baseArrayLayer = 0;
-	copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	copy.bufferOffset = 0;
-	copy.bufferRowLength = dataSize / dims.width;
-	copy.bufferImageHeight = dims.height;
+    VkBufferImageCopy copy;
+    copy.imageExtent.width = dims.width;
+    copy.imageExtent.height = dims.height;
+    copy.imageExtent.depth = 1;         // hmm, might want this for cube maps and volume textures too
+    copy.imageOffset.x = 0;
+    copy.imageOffset.y = 0;
+    copy.imageOffset.z = 0;
+    copy.imageSubresource.mipLevel = mip;
+    copy.imageSubresource.layerCount = 1;
+    copy.imageSubresource.baseArrayLayer = 0;
+    copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copy.bufferOffset = 0;
+    copy.bufferRowLength = dataSize / dims.width;
+    copy.bufferImageHeight = dims.height;
 }
 
 //------------------------------------------------------------------------------
@@ -508,20 +509,20 @@ VkMemoryTexturePool::Update(const CoreGraphics::TextureId id, CoreGraphics::Text
 void
 VkMemoryTexturePool::UpdateArray(const CoreGraphics::TextureId id, void* data, SizeT dataSize, SizeT width, SizeT height, IndexT left, IndexT top, IndexT mip, IndexT layer)
 {
-	VkBufferImageCopy copy;
-	copy.imageExtent.width = width;
-	copy.imageExtent.height = height;
-	copy.imageExtent.depth = 1;			// hmm, might want this for cube maps and volume textures too
-	copy.imageOffset.x = left;
-	copy.imageOffset.y = top;
-	copy.imageOffset.z = 0;
-	copy.imageSubresource.mipLevel = mip;
-	copy.imageSubresource.layerCount = 1;
-	copy.imageSubresource.baseArrayLayer = layer;
-	copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	copy.bufferOffset = 0;
-	copy.bufferRowLength = dataSize / width;
-	copy.bufferImageHeight = height;
+    VkBufferImageCopy copy;
+    copy.imageExtent.width = width;
+    copy.imageExtent.height = height;
+    copy.imageExtent.depth = 1;         // hmm, might want this for cube maps and volume textures too
+    copy.imageOffset.x = left;
+    copy.imageOffset.y = top;
+    copy.imageOffset.z = 0;
+    copy.imageSubresource.mipLevel = mip;
+    copy.imageSubresource.layerCount = 1;
+    copy.imageSubresource.baseArrayLayer = layer;
+    copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copy.bufferOffset = 0;
+    copy.bufferRowLength = dataSize / width;
+    copy.bufferImageHeight = height;
 }
 
 //------------------------------------------------------------------------------
@@ -530,20 +531,20 @@ VkMemoryTexturePool::UpdateArray(const CoreGraphics::TextureId id, void* data, S
 void
 VkMemoryTexturePool::UpdateArray(const CoreGraphics::TextureId id, CoreGraphics::TextureDimensions dims, void* data, SizeT dataSize, IndexT mip, IndexT layer)
 {
-	VkBufferImageCopy copy;
-	copy.imageExtent.width = dims.width;
-	copy.imageExtent.height = dims.height;
-	copy.imageExtent.depth = 1;			// hmm, might want this for cube maps and volume textures too
-	copy.imageOffset.x = 0;
-	copy.imageOffset.y = 0;
-	copy.imageOffset.z = 0;
-	copy.imageSubresource.mipLevel = mip;
-	copy.imageSubresource.layerCount = 1;
-	copy.imageSubresource.baseArrayLayer = layer;
-	copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	copy.bufferOffset = 0;
-	copy.bufferRowLength = dataSize / dims.width;
-	copy.bufferImageHeight = dims.height;
+    VkBufferImageCopy copy;
+    copy.imageExtent.width = dims.width;
+    copy.imageExtent.height = dims.height;
+    copy.imageExtent.depth = 1;         // hmm, might want this for cube maps and volume textures too
+    copy.imageOffset.x = 0;
+    copy.imageOffset.y = 0;
+    copy.imageOffset.z = 0;
+    copy.imageSubresource.mipLevel = mip;
+    copy.imageSubresource.layerCount = 1;
+    copy.imageSubresource.baseArrayLayer = layer;
+    copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copy.bufferOffset = 0;
+    copy.bufferRowLength = dataSize / dims.width;
+    copy.bufferImageHeight = dims.height;
 }
 
 //------------------------------------------------------------------------------
@@ -623,11 +624,11 @@ VkMemoryTexturePool::ClearColor(const CoreGraphics::TextureId id, Math::vec4 col
     vksubres.baseMipLevel = subres.mip;
     vksubres.levelCount = subres.mipCount;
 
-	VkCommandBuffer buffer = sub == SubmissionContextId::Invalid() ? GetMainBuffer(GraphicsQueueType) : CommandBufferGetVk(SubmissionContextGetCmdBuffer(sub));
+    VkCommandBuffer buffer = sub == SubmissionContextId::Invalid() ? GetMainBuffer(GraphicsQueueType) : CommandBufferGetVk(SubmissionContextGetCmdBuffer(sub));
 
     color.storeu(clear.float32);
     vkCmdClearColorImage(
-		buffer,
+        buffer,
         TextureGetVkImage(id),
         VkTypes::AsVkImageLayout(layout),
         &clear,
@@ -649,12 +650,12 @@ VkMemoryTexturePool::ClearDepthStencil(const CoreGraphics::TextureId id, float d
     vksubres.baseMipLevel = subres.mip;
     vksubres.levelCount = subres.mipCount;
 
-	VkCommandBuffer buffer = sub == SubmissionContextId::Invalid() ? GetMainBuffer(GraphicsQueueType) : CommandBufferGetVk(SubmissionContextGetCmdBuffer(sub));
+    VkCommandBuffer buffer = sub == SubmissionContextId::Invalid() ? GetMainBuffer(GraphicsQueueType) : CommandBufferGetVk(SubmissionContextGetCmdBuffer(sub));
 
     clear.depth = depth;
     clear.stencil = stencil;
     vkCmdClearDepthStencilImage(
-		buffer,
+        buffer,
         TextureGetVkImage(id),
         VkTypes::AsVkImageLayout(layout),
         &clear,
@@ -668,7 +669,7 @@ VkMemoryTexturePool::ClearDepthStencil(const CoreGraphics::TextureId id, float d
 CoreGraphics::TextureDimensions
 VkMemoryTexturePool::GetDimensions(const CoreGraphics::TextureId id)
 {
-	return this->GetUnsafe<Texture_LoadInfo>(id.resourceId).dims;
+    return this->GetUnsafe<Texture_LoadInfo>(id.resourceId).dims;
 }
 
 //------------------------------------------------------------------------------
@@ -686,7 +687,7 @@ VkMemoryTexturePool::GetRelativeDimensions(const CoreGraphics::TextureId id)
 CoreGraphics::PixelFormat::Code
 VkMemoryTexturePool::GetPixelFormat(const CoreGraphics::TextureId id)
 {
-	return this->GetUnsafe<Texture_LoadInfo>(id.resourceId).format;
+    return this->GetUnsafe<Texture_LoadInfo>(id.resourceId).format;
 }
 
 //------------------------------------------------------------------------------
@@ -695,7 +696,7 @@ VkMemoryTexturePool::GetPixelFormat(const CoreGraphics::TextureId id)
 CoreGraphics::TextureType
 VkMemoryTexturePool::GetType(const CoreGraphics::TextureId id)
 {
-	return this->GetUnsafe<Texture_RuntimeInfo>(id.resourceId).type;
+    return this->GetUnsafe<Texture_RuntimeInfo>(id.resourceId).type;
 }
 
 //------------------------------------------------------------------------------
@@ -704,7 +705,7 @@ VkMemoryTexturePool::GetType(const CoreGraphics::TextureId id)
 CoreGraphics::TextureId 
 VkMemoryTexturePool::GetAlias(const CoreGraphics::TextureId id)
 {
-	return this->GetUnsafe<Texture_LoadInfo>(id.resourceId).alias;
+    return this->GetUnsafe<Texture_LoadInfo>(id.resourceId).alias;
 }
 
 //------------------------------------------------------------------------------
@@ -713,7 +714,7 @@ VkMemoryTexturePool::GetAlias(const CoreGraphics::TextureId id)
 CoreGraphics::TextureUsage 
 VkMemoryTexturePool::GetUsageBits(const CoreGraphics::TextureId id)
 {
-	return this->GetUnsafe<Texture_LoadInfo>(id.resourceId).texUsage;
+    return this->GetUnsafe<Texture_LoadInfo>(id.resourceId).texUsage;
 }
 
 //------------------------------------------------------------------------------
@@ -722,7 +723,7 @@ VkMemoryTexturePool::GetUsageBits(const CoreGraphics::TextureId id)
 SizeT
 VkMemoryTexturePool::GetNumMips(const CoreGraphics::TextureId id)
 {
-	return this->GetUnsafe<Texture_LoadInfo>(id.resourceId).mips;
+    return this->GetUnsafe<Texture_LoadInfo>(id.resourceId).mips;
 }
 
 //------------------------------------------------------------------------------
@@ -731,7 +732,7 @@ VkMemoryTexturePool::GetNumMips(const CoreGraphics::TextureId id)
 SizeT 
 VkMemoryTexturePool::GetNumLayers(const CoreGraphics::TextureId id)
 {
-	return this->GetUnsafe<Texture_LoadInfo>(id.resourceId).layers;
+    return this->GetUnsafe<Texture_LoadInfo>(id.resourceId).layers;
 }
 
 //------------------------------------------------------------------------------
@@ -740,7 +741,7 @@ VkMemoryTexturePool::GetNumLayers(const CoreGraphics::TextureId id)
 SizeT 
 VkMemoryTexturePool::GetNumSamples(const CoreGraphics::TextureId id)
 {
-	return this->GetUnsafe<Texture_LoadInfo>(id.resourceId).samples;
+    return this->GetUnsafe<Texture_LoadInfo>(id.resourceId).samples;
 }
 
 //------------------------------------------------------------------------------
@@ -749,7 +750,7 @@ VkMemoryTexturePool::GetNumSamples(const CoreGraphics::TextureId id)
 uint 
 VkMemoryTexturePool::GetBindlessHandle(const CoreGraphics::TextureId id)
 {
-	return this->GetUnsafe<Texture_RuntimeInfo>(id.resourceId).bind;
+    return this->GetUnsafe<Texture_RuntimeInfo>(id.resourceId).bind;
 }
 
 //------------------------------------------------------------------------------
@@ -769,7 +770,7 @@ VkMemoryTexturePool::GetStencilBindlessHandle(const CoreGraphics::TextureId id)
 CoreGraphics::ImageLayout 
 VkMemoryTexturePool::GetDefaultLayout(const CoreGraphics::TextureId id)
 {
-	return this->GetUnsafe<Texture_LoadInfo>(id.resourceId).defaultLayout;
+    return this->GetUnsafe<Texture_LoadInfo>(id.resourceId).defaultLayout;
 }
 
 //------------------------------------------------------------------------------
@@ -796,7 +797,7 @@ VkMemoryTexturePool::SparseGetPageSize(const CoreGraphics::TextureId id)
 IndexT 
 VkMemoryTexturePool::SparseGetPageIndex(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT x, IndexT y, IndexT z)
 {
-	__Lock(textureAllocator);
+    __Lock(textureAllocator);
     Ids::Id32 sparseExtension = this->Get<Texture_LoadInfo>(id.resourceId).sparseExtension;
     n_assert(sparseExtension != Ids::InvalidId32);
 
@@ -861,7 +862,7 @@ VkMemoryTexturePool::SparseGetMaxMip(const CoreGraphics::TextureId id)
 void 
 VkMemoryTexturePool::SparseEvict(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex)
 {
-	__Lock(textureAllocator);
+    __Lock(textureAllocator);
     Ids::Id32 sparseExtension = this->Get<Texture_LoadInfo>(id.resourceId).sparseExtension;
     n_assert(sparseExtension != Ids::InvalidId32);
 
@@ -902,7 +903,7 @@ VkMemoryTexturePool::SparseEvict(const CoreGraphics::TextureId id, IndexT layer,
 void 
 VkMemoryTexturePool::SparseMakeResident(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex)
 {
-	__Lock(textureAllocator);
+    __Lock(textureAllocator);
     Ids::Id32 sparseExtension = this->Get<Texture_LoadInfo>(id.resourceId).sparseExtension;
     n_assert(sparseExtension != Ids::InvalidId32);
 
@@ -941,7 +942,7 @@ VkMemoryTexturePool::SparseMakeResident(const CoreGraphics::TextureId id, IndexT
 void 
 VkMemoryTexturePool::SparseEvictMip(const CoreGraphics::TextureId id, IndexT layer, IndexT mip)
 {
-	__Lock(textureAllocator);
+    __Lock(textureAllocator);
     Ids::Id32 sparseExtension = this->Get<Texture_LoadInfo>(id.resourceId).sparseExtension;
     n_assert(sparseExtension != Ids::InvalidId32);
 
@@ -983,7 +984,7 @@ VkMemoryTexturePool::SparseEvictMip(const CoreGraphics::TextureId id, IndexT lay
 void 
 VkMemoryTexturePool::SparseMakeMipResident(const CoreGraphics::TextureId id, IndexT layer, IndexT mip)
 {
-	__Lock(textureAllocator);
+    __Lock(textureAllocator);
     Ids::Id32 sparseExtension = this->Get<Texture_LoadInfo>(id.resourceId).sparseExtension;
     n_assert(sparseExtension != Ids::InvalidId32);
 
@@ -1024,7 +1025,7 @@ VkMemoryTexturePool::SparseMakeMipResident(const CoreGraphics::TextureId id, Ind
 void 
 VkMemoryTexturePool::SparseCommitChanges(const CoreGraphics::TextureId id)
 {
-	__Lock(textureAllocator);
+    __Lock(textureAllocator);
     Ids::Id32 sparseExtension = this->Get<Texture_LoadInfo>(id.resourceId).sparseExtension;
     VkImage img = this->Get<Texture_LoadInfo>(id.resourceId).img;
     n_assert(sparseExtension != Ids::InvalidId32);
@@ -1074,7 +1075,7 @@ VkMemoryTexturePool::SparseCommitChanges(const CoreGraphics::TextureId id)
 void 
 VkMemoryTexturePool::SparseUpdate(const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, IndexT layer, const CoreGraphics::TextureId source, const CoreGraphics::SubmissionContextId sub)
 {
-	__Lock(textureAllocator);
+    __Lock(textureAllocator);
     TextureDimensions dims = this->Get<Texture_LoadInfo>(source.resourceId).dims;
 
     VkImageBlit blit;
@@ -1100,7 +1101,7 @@ VkMemoryTexturePool::SparseUpdate(const CoreGraphics::TextureId id, const Math::
 void 
 VkMemoryTexturePool::SparseUpdate(const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub)
 {
-	__Lock(textureAllocator);
+    __Lock(textureAllocator);
     // allocate intermediate buffer and copy row-wise
     CoreGraphics::PixelFormat::Code fmt = TextureGetPixelFormat(id);
     TextureDimensions dims = TextureGetDimensions(id);
@@ -1250,40 +1251,40 @@ VkMemoryTexturePool::SparseUpdate(const CoreGraphics::TextureId id, IndexT mip, 
 IndexT 
 VkMemoryTexturePool::SwapBuffers(const CoreGraphics::TextureId id)
 {
-	__Lock(textureAllocator);
-	__Lock(textureSwapExtensionAllocator);
-	VkTextureLoadInfo& loadInfo = this->Get<Texture_LoadInfo>(id.resourceId);
-	VkTextureRuntimeInfo& runtimeInfo = this->Get<Texture_RuntimeInfo>(id.resourceId);
-	VkTextureWindowInfo& wnd = this->Get<Texture_WindowInfo>(id.resourceId);
+    __Lock(textureAllocator);
+    __Lock(textureSwapExtensionAllocator);
+    VkTextureLoadInfo& loadInfo = this->Get<Texture_LoadInfo>(id.resourceId);
+    VkTextureRuntimeInfo& runtimeInfo = this->Get<Texture_RuntimeInfo>(id.resourceId);
+    VkTextureWindowInfo& wnd = this->Get<Texture_WindowInfo>(id.resourceId);
     VkTextureSwapInfo& swap = textureSwapExtensionAllocator.Get<TextureExtension_SwapInfo>(loadInfo.swapExtension);
-	n_assert(wnd.window != CoreGraphics::WindowId::Invalid());
-	VkWindowSwapInfo& swapInfo = CoreGraphics::glfwWindowAllocator.Get<5>(wnd.window.id24);
+    n_assert(wnd.window != CoreGraphics::WindowId::Invalid());
+    VkWindowSwapInfo& swapInfo = CoreGraphics::glfwWindowAllocator.Get<5>(wnd.window.id24);
 
     // get present fence and be sure it is finished before getting the next image
     VkDevice dev = Vulkan::GetCurrentDevice();
-	VkFence fence = Vulkan::GetPresentFence();
+    VkFence fence = Vulkan::GetPresentFence();
     VkResult res = vkWaitForFences(dev, 1, &fence, true, UINT64_MAX);
     n_assert(res == VK_SUCCESS);
     res = vkResetFences(dev, 1, &fence);
     n_assert(res == VK_SUCCESS);
 
     // get the next image
-	res = vkAcquireNextImageKHR(dev, swapInfo.swapchain, UINT64_MAX, VK_NULL_HANDLE, fence, &swapInfo.currentBackbuffer);
+    res = vkAcquireNextImageKHR(dev, swapInfo.swapchain, UINT64_MAX, VK_NULL_HANDLE, fence, &swapInfo.currentBackbuffer);
 
-	//Vulkan::WaitForPresent(sem);
-	if (res == VK_ERROR_OUT_OF_DATE_KHR)
-	{
-		// this means our swapchain needs a resize!
-	}
-	else
-	{
-		n_assert(res == VK_SUCCESS);
-	}
+    //Vulkan::WaitForPresent(sem);
+    if (res == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        // this means our swapchain needs a resize!
+    }
+    else
+    {
+        n_assert(res == VK_SUCCESS);
+    }
 
-	// set image and update texture
-	loadInfo.img = swap.swapimages[swapInfo.currentBackbuffer];
-	runtimeInfo.view = swap.swapviews[swapInfo.currentBackbuffer];
-	return swapInfo.currentBackbuffer;
+    // set image and update texture
+    loadInfo.img = swap.swapimages[swapInfo.currentBackbuffer];
+    runtimeInfo.view = swap.swapviews[swapInfo.currentBackbuffer];
+    return swapInfo.currentBackbuffer;
 }
 
 //------------------------------------------------------------------------------
@@ -1292,7 +1293,7 @@ VkMemoryTexturePool::SwapBuffers(const CoreGraphics::TextureId id)
 bool
 VkMemoryTexturePool::Setup(const Resources::ResourceId id)
 {
-	__Lock(textureAllocator);
+    __Lock(textureAllocator);
     VkTextureRuntimeInfo& runtimeInfo = this->Get<Texture_RuntimeInfo>(id.resourceId);
     VkTextureLoadInfo& loadInfo = this->Get<Texture_LoadInfo>(id.resourceId);
     VkTextureWindowInfo& windowInfo = this->Get<Texture_WindowInfo>(id.resourceId);
@@ -1337,8 +1338,8 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
         VkSharingMode sharingMode = (loadInfo.texUsage & TextureUsage::ReadWriteTexture) ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
         const Util::Set<uint32_t>& queues = Vulkan::GetQueueFamilies();
 
-		if (queues.Size() <= 1)
-			sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
+        if (queues.Size() <= 1)
+            sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
 
         VkImageCreateFlags createFlags = 0;
 
@@ -1480,7 +1481,7 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
         // setup stencil image
         if (isDepthFormat)
         {
-			__Lock(textureStencilExtensionAllocator);
+            __Lock(textureStencilExtensionAllocator);
 
             // setup stencil extension
             loadInfo.stencilExtension = textureStencilExtensionAllocator.Alloc();
@@ -1493,7 +1494,7 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
 
         // use setup submission
         CoreGraphics::SubmissionContextId sub = CoreGraphics::GetSetupSubmissionContext();
-		CommandBufferId cmdBuf = SubmissionContextGetCmdBuffer(sub);
+        CommandBufferId cmdBuf = SubmissionContextGetCmdBuffer(sub);
 
         if (loadInfo.clear || loadInfo.texUsage & TextureUsage::RenderTexture)
         {
@@ -1533,7 +1534,7 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
             // if this is a depth-stencil texture, also register the stencil
             if (isDepthFormat)
             {
-				__Lock(textureStencilExtensionAllocator);
+                __Lock(textureStencilExtensionAllocator);
                 VkTextureRuntimeInfo& stencilRuntimeInfo = textureStencilExtensionAllocator.Get<TextureExtension_StencilInfo>(loadInfo.stencilExtension);
                 stencilRuntimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(id), runtimeInfo.type, true, true);
             }
@@ -1547,10 +1548,10 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
         // get submission context
         n_assert(windowInfo.window != CoreGraphics::WindowId::Invalid());
         CoreGraphics::SubmissionContextId sub = CoreGraphics::GetSetupSubmissionContext();
-		CommandBufferId cmdBuf = SubmissionContextGetCmdBuffer(sub);
+        CommandBufferId cmdBuf = SubmissionContextGetCmdBuffer(sub);
 
         // setup swap extension
-		__Lock(textureSwapExtensionAllocator);
+        __Lock(textureSwapExtensionAllocator);
         loadInfo.swapExtension = textureSwapExtensionAllocator.Alloc();
         VkTextureSwapInfo& swapInfo = textureSwapExtensionAllocator.Get<TextureExtension_SwapInfo>(loadInfo.swapExtension);
 
@@ -1626,7 +1627,7 @@ SetupSparse(VkDevice dev, VkImage img, Ids::Id32 sparseExtension, const VkTextur
     VkSparseImageMemoryRequirements sparseMemoryRequirement = sparseMemoryRequirements[usedMemoryRequirements];
     bool singleMipTail = sparseMemoryRequirement.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT;
 
-	__Lock(textureSparseExtensionAllocator);
+    __Lock(textureSparseExtensionAllocator);
     TextureSparsePageTable& table = textureSparseExtensionAllocator.Get<TextureExtension_SparsePageTable>(sparseExtension);    
     Util::Array<VkSparseMemoryBind>& opaqueBinds = textureSparseExtensionAllocator.Get<TextureExtension_SparseOpaqueBinds>(sparseExtension);
     Util::Array<VkSparseImageMemoryBind>& pendingBinds = textureSparseExtensionAllocator.Get<TextureExtension_SparsePendingBinds>(sparseExtension);

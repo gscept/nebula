@@ -46,36 +46,36 @@ namespace Particles
 
     // uniform data for particle system instances, used for job-uniform data as well,
     // so we dont have to copy that much
-	struct ParticleJobUniformData
-	{
-		ParticleJobUniformData()
-			: gravity(0.0f, 0.0f, 0.0f)
-			, windVector(0.0f, 0.0f, 0.0f)
-			, stretchToStart(false)
-			, stretchTime(0)
-			, sampleBuffer(nullptr)
-		{};
-		Math::vector gravity;
-		Math::vector windVector;
+    struct ParticleJobUniformData
+    {
+        ParticleJobUniformData()
+            : gravity(0.0f, 0.0f, 0.0f)
+            , windVector(0.0f, 0.0f, 0.0f)
+            , stretchToStart(false)
+            , stretchTime(0)
+            , sampleBuffer(nullptr)
+        {};
+        Math::vector gravity;
+        Math::vector windVector;
         bool stretchToStart;
-		float stretchTime;
+        float stretchTime;
 
         // static sample buffer
         const float* sampleBuffer;
-	};
+    };
 
-	struct ParticleJobUniformPerJobData
-	{
-		ParticleJobUniformPerJobData()
-			: stepTime(0.0f)
-		{}
-		float stepTime;
-	};
+    struct ParticleJobUniformPerJobData
+    {
+        ParticleJobUniformPerJobData()
+            : stepTime(0.0f)
+        {}
+        float stepTime;
+    };
 
     // each job-slice generates this output
     struct ParticleJobSliceOutputData
     {
-		Math::bbox bbox;
+        Math::bbox bbox;
         unsigned int numLivingParticles;
     };
 

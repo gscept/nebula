@@ -30,8 +30,8 @@ Util::String NodeLookupUtil::currentNodeLayer;
         - model instances is not valid
 */
 Models::ShaderStateNode::Instance* LookupStateNodeInstance(const GraphicsEntityId& entity,
-	const Util::String& nodeName,
-	bool checkResourceState/* = true*/)
+    const Util::String& nodeName,
+    bool checkResourceState/* = true*/)
 {
     return nullptr;
 }

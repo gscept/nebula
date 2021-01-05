@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Test resource, does nothing for us really :(
-	
-	(C) 2017 Individual contributors, see AUTHORS file
+    Test resource, does nothing for us really :(
+    
+    (C) 2017 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "resources/resource.h"
@@ -15,11 +15,11 @@ RESOURCE_ID_TYPE(TestResourceId);
 
 enum IdTypes
 {
-	TestResourceIdType
+    TestResourceIdType
 };
 
 struct TestResourceData
 {
-	Util::String data;
+    Util::String data;
 };
 } // namespace Test

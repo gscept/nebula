@@ -49,8 +49,8 @@ public:
     static String ToString(const FourCC& f);
     /// convert string to fourcc
     static FourCC FromString(const String& s);
-	/// return a hashcode (just returns the fourcc)
-	uint32_t HashCode() const;
+    /// return a hashcode (just returns the fourcc)
+    uint32_t HashCode() const;
 
 private:
     uint fourCC;
@@ -210,7 +210,7 @@ FourCC::FromString(const String& s)
 #if (__WIN32__ || __LINUX__ )
     return FourCC(uint(s[3] | s[2]<<8 | s[1]<<16 | s[0]<<24));
 #else
-	return FourCC(uint(s[0] | s[1]<<8 | s[2]<<16 | s[3]<<24));
+    return FourCC(uint(s[0] | s[1]<<8 | s[2]<<16 | s[3]<<24));
 #endif
 }
 
@@ -220,7 +220,7 @@ FourCC::FromString(const String& s)
 inline uint32_t
 FourCC::HashCode() const
 {
-	return this->fourCC;
+    return this->fourCC;
 }
 
 } // namespace Util

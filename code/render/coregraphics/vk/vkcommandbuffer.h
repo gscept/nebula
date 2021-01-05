@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Implements a Vulkan command buffer
+    Implements a Vulkan command buffer
 
-	(C)2017-2020 Individual contributors, see AUTHORS file
+    (C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/idallocator.h"
@@ -20,8 +20,8 @@ const VkDevice CommandBufferPoolGetVkDevice(const CoreGraphics::CommandBufferPoo
 
 enum
 {
-	CommandBufferPool_VkDevice,
-	CommandBufferPool_VkCommandPool,
+    CommandBufferPool_VkDevice,
+    CommandBufferPool_VkCommandPool,
 };
 typedef Ids::IdAllocator<VkDevice, VkCommandPool> VkCommandBufferPoolAllocator;
 
@@ -31,9 +31,9 @@ typedef Ids::IdAllocator<VkDevice, VkCommandPool> VkCommandBufferPoolAllocator;
 static const uint NumPoolTypes = 4;
 struct CommandBufferPools
 {
-	VkCommandPool pools[CoreGraphics::NumCommandBufferUsages][NumPoolTypes];
-	uint queueFamilies[CoreGraphics::NumCommandBufferUsages];
-	VkDevice dev;
+    VkCommandPool pools[CoreGraphics::NumCommandBufferUsages][NumPoolTypes];
+    uint queueFamilies[CoreGraphics::NumCommandBufferUsages];
+    VkDevice dev;
 };
 
 /// get vk command buffer
@@ -41,9 +41,9 @@ const VkCommandBuffer CommandBufferGetVk(const CoreGraphics::CommandBufferId id)
 
 enum
 {
-	CommandBuffer_VkDevice,
-	CommandBuffer_VkCommandBuffer,
-	CommandBuffer_VkCommandPool
+    CommandBuffer_VkDevice,
+    CommandBuffer_VkCommandBuffer,
+    CommandBuffer_VkCommandPool
 };
 typedef Ids::IdAllocatorSafe<VkDevice, VkCommandBuffer, VkCommandPool> VkCommandBufferAllocator;
 

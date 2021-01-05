@@ -41,14 +41,13 @@ SetupHeaps()
         {
             case DefaultHeap:
             case ObjectHeap:
-            case RocketHeap:
                 initialSize = 4 * megaByte;
                 useLowFragHeap = true;
                 break;
 
-			case ObjectArrayHeap:
-				initialSize = 4 * megaByte;
-				break;
+            case ObjectArrayHeap:
+                initialSize = 4 * megaByte;
+                break;
 
             case ResourceHeap:
             case PhysicsHeap:
@@ -70,13 +69,6 @@ SetupHeaps()
                 initialSize = 16 * megaByte;
                 break;
 
-            case Xbox360GraphicsHeap:
-            case Xbox360AudioHeap:
-                // the special Xbox360 write combined heap, this is handled as a 
-                // special case in Memory::Alloc()
-                initialSize = 0;
-                break;
-
             default:
                 Core::SysFunc::Error("Invalid heap type in Memory::SetupHeaps() (win360memoryconfig.cc)!");
                 break;
@@ -86,11 +78,9 @@ SetupHeaps()
             Heaps[i] = HeapCreate(0, initialSize, maxSize);
             if (useLowFragHeap)
             {
-                #if __WIN32__
                 // enable the Win32 LowFragmentationHeap
                 ULONG heapFragValue = 2;
                 HeapSetInformation(Heaps[i], HeapCompatibilityInformation, &heapFragValue, sizeof(heapFragValue));
-                #endif
             }
         }
         else
@@ -148,9 +138,6 @@ GetHeapTypeName(HeapType heapType)
         case PhysicsHeap:               return "Physics Heap";
         case AppHeap:                   return "App Heap";
         case NetworkHeap:               return "Network Heap";
-        case Xbox360GraphicsHeap:       return "Xbox360 Graphics Heap";
-        case Xbox360AudioHeap:          return "Xbox360 Audio Heap";
-        case RocketHeap:				return "Librocket Heap";
         default:
             Core::SysFunc::Error("Invalid HeapType arg in Memory::GetHeapTypeName()! (win360memoryconfig.cc)");
             return 0;

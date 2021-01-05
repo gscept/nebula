@@ -8,7 +8,7 @@
     A 2-component float vector class.
     
     (C) 2007 RadonLabs GmbH
-	(C) 2013-2020 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
 #include "math/scalar.h"
@@ -20,8 +20,8 @@ struct vec2
 {
     /// default constructor, NOTE: does NOT setup components!
     vec2() = default;
-	/// construct from single value
-	vec2(scalar x);
+    /// construct from single value
+    vec2(scalar x);
     /// construct from values
     vec2(scalar x, scalar y);
     /// copy constructor
@@ -46,6 +46,11 @@ struct vec2
     bool operator!=(const vec2& rhs) const;
     /// set content
     void set(scalar x, scalar y);
+
+    /// load content from memory
+    void load(const scalar* ptr);
+    /// write content memory
+    void store(scalar* ptr) const;
 
     /// return length of vector
     scalar length() const;
@@ -86,9 +91,9 @@ struct vec2
 */
 inline
 vec2::vec2(scalar x) : 
-	x(x), y(x)
+    x(x), y(x)
 {
-	//  empty
+    //  empty
 }
 
 //------------------------------------------------------------------------------
@@ -193,6 +198,26 @@ vec2::set(scalar x, scalar y)
 {
     this->x = x;
     this->y = y;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+void vec2::load(const scalar* ptr)
+{
+    this->x = ptr[0];
+    this->y = ptr[1];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+void vec2::store(scalar* ptr) const
+{
+    ptr[0] = this->x;
+    ptr[1] = this->y;
 }
 
 //------------------------------------------------------------------------------

@@ -130,7 +130,10 @@ ZipFileStream::Open()
                         // read content of zip file entry into private buffer
                         this->size = this->zipFileEntry->GetFileSize();
                         if(!this->zipFileEntry->Open(pwd)) return false;
+                        if(!this->CopyToMap()) return false;
                         this->position = 0;
+                        this->zipFileEntry->Close();
+                        this->zipFileEntry = nullptr;
                         return true;
                     }
                 }
@@ -149,13 +152,13 @@ void
 ZipFileStream::Close()
 {
     n_assert(this->IsOpen());
-    n_assert(this->zipFileEntry);
     if (this->IsMapped())
     {
         this->Unmap();
     }
+    Memory::Free(Memory::StreamDataHeap, this->mapBuffer);
+    this->mapBuffer = NULL;
     Stream::Close();
-    this->zipFileEntry->Close();
     this->size = 0;
     this->position = 0;
 }
@@ -168,17 +171,15 @@ ZipFileStream::Read(void* ptr, Size numBytes)
 {
     n_assert(ptr);
     n_assert(this->IsOpen());
-    n_assert(!this->IsMapped()); 
     n_assert(ReadAccess == this->accessMode)
     n_assert((this->position >= 0) && (this->position <= this->size));
-    n_assert(this->zipFileEntry);
 
     // check if end-of-stream is near
     Size readBytes = Math::n_min(numBytes, this->size - this->position);
     n_assert((this->position + readBytes) <= this->size);
     if (readBytes > 0)
     {
-        if(!this->zipFileEntry->Read(ptr, readBytes)) return 0;
+        Memory::Copy(this->mapBuffer + this->position, ptr, readBytes);
         this->position += readBytes;
     }
     return readBytes;
@@ -213,17 +214,6 @@ ZipFileStream::Seek(Offset offset, SeekOrigin origin)
 
     // make sure read/write position doesn't become invalid
     this->position = Math::n_iclamp(this->position, 0, this->size);
-
-    n_assert(this->position >= posBefore);
-    if(this->position == posBefore) return;
-
-    const long readBytes = this->position - posBefore;
-    n_assert(readBytes > 0);
-    char *dummyBuffer = (char *) Memory::Alloc(Memory::StreamDataHeap, readBytes);
-    n_assert(dummyBuffer);
-    int read = this->Read(dummyBuffer, readBytes);
-    Memory::Free(Memory::StreamDataHeap, dummyBuffer);
-    dummyBuffer = NULL;
 }
 
 //------------------------------------------------------------------------------
@@ -233,7 +223,7 @@ bool
 ZipFileStream::Eof() const
 {
     n_assert(this->IsOpen());
-    n_assert(!this->IsMapped());
+    //n_assert(!this->IsMapped());
     n_assert((this->position >= 0) && (this->position <= this->size));
     return (this->position == this->size);
 }
@@ -245,14 +235,9 @@ void*
 ZipFileStream::Map()
 {
     n_assert(this->IsOpen());
+    n_assert(this->mapBuffer != nullptr);
     n_assert(ReadAccess == this->accessMode);
     Stream::Map();
-    n_assert(this->GetSize() > 0);
-    n_assert(!this->mapBuffer);
-    this->mapBuffer = (unsigned char*)Memory::Alloc(Memory::StreamDataHeap, this->size);
-    n_assert(0 != this->mapBuffer);
-    bool success = this->zipFileEntry->Read(this->mapBuffer, this->size);
-    n_assert(success);
     return this->mapBuffer;
 }
 
@@ -264,9 +249,37 @@ ZipFileStream::Unmap()
 {
     n_assert(this->IsOpen());
     Stream::Unmap();
-    n_assert(this->mapBuffer);
-    Memory::Free(Memory::StreamDataHeap, this->mapBuffer);
-    this->mapBuffer = NULL;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void*
+ZipFileStream::MemoryMap()
+{
+    return this->Map();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ZipFileStream::MemoryUnmap()
+{
+    return this->Unmap();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool 
+ZipFileStream::CopyToMap()
+{
+    n_assert(this->IsOpen());
+    n_assert(this->GetSize() > 0);
+    n_assert(!this->mapBuffer);
+    this->mapBuffer = (unsigned char*)Memory::Alloc(Memory::StreamDataHeap, this->size);
+    n_assert(0 != this->mapBuffer);
+    return this->zipFileEntry->Read(this->mapBuffer, this->size);
+}
 } // namespace IO

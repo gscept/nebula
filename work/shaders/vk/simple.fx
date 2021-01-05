@@ -10,40 +10,40 @@
 
 group(BATCH_GROUP) push constant Simple
 {
-	mat4 ShapeModel;
-	vec4 MatDiffuse;
+    mat4 ShapeModel;
+    vec4 MatDiffuse;
 };
 
 render_state WireframeState
 {
-	CullMode = None;	
-	BlendEnabled[0] = true;	
-	SrcBlend[0] = SrcAlpha;
-	DstBlend[0] = OneMinusSrcAlpha;
-	FillMode = Line;
-	//MultisampleEnabled = true;
+    CullMode = None;    
+    BlendEnabled[0] = true; 
+    SrcBlend[0] = SrcAlpha;
+    DstBlend[0] = OneMinusSrcAlpha;
+    FillMode = Line;
+    //MultisampleEnabled = true;
 };
 
 render_state DepthEnabledState
 {
-	CullMode = None;	
-	BlendEnabled[0] = true;
-	SrcBlend[0] = SrcAlpha;	
-	DstBlend[0] = OneMinusSrcAlpha;
-	DepthEnabled = true;
-	DepthWrite = false;
-	//MultisampleEnabled = true;
+    CullMode = None;    
+    BlendEnabled[0] = true;
+    SrcBlend[0] = SrcAlpha; 
+    DstBlend[0] = OneMinusSrcAlpha;
+    DepthEnabled = true;
+    DepthWrite = false;
+    //MultisampleEnabled = true;
 };
 
 render_state DepthDisabledState
 {
-	CullMode = None;	
-	BlendEnabled[0] = true;
-	SrcBlend[0] = SrcAlpha;
-	DstBlend[0] = OneMinusSrcAlpha;
-	DepthEnabled = false;
-	DepthWrite = false;
-	//MultisampleEnabled = true;
+    CullMode = None;    
+    BlendEnabled[0] = true;
+    SrcBlend[0] = SrcAlpha;
+    DstBlend[0] = OneMinusSrcAlpha;
+    DepthEnabled = false;
+    DepthWrite = false;
+    //MultisampleEnabled = true;
 };
 
 //------------------------------------------------------------------------------
@@ -52,14 +52,14 @@ render_state DepthDisabledState
 shader
 void
 vsMainPrimitives(
-	[slot=0] in vec3 position, 
-	[slot=5] in vec4 color, 
-	out vec4 Color)  
+    [slot=0] in vec3 position, 
+    [slot=5] in vec4 color, 
+    out vec4 Color)  
 {
-	gl_Position = ViewProjection * Simple.ShapeModel * vec4(position, 1);
-	Color = color;
+    gl_Position = ViewProjection * Simple.ShapeModel * vec4(position, 1);
+    Color = color;
 }
-	
+    
 //------------------------------------------------------------------------------
 /**
 */
@@ -67,7 +67,7 @@ shader
 void
 psMainPrimitives(in vec4 color, [color0] out vec4 Color) 
 {
-	Color = color * Simple.MatDiffuse;
+    Color = color * Simple.MatDiffuse;
 }
 
 //------------------------------------------------------------------------------
@@ -76,11 +76,11 @@ psMainPrimitives(in vec4 color, [color0] out vec4 Color)
 shader
 void
 vsMainShape(
-	[slot=0] in vec3 position)  
+    [slot=0] in vec3 position)  
 {
-	gl_Position = ViewProjection * Simple.ShapeModel * vec4(position, 1);
+    gl_Position = ViewProjection * Simple.ShapeModel * vec4(position, 1);
 }
-	
+    
 //------------------------------------------------------------------------------
 /**
 */
@@ -88,7 +88,7 @@ shader
 void
 psMainShape([color0] out vec4 Color) 
 {
-	Color = Simple.MatDiffuse;
+    Color = Simple.MatDiffuse;
 }
 
 //------------------------------------------------------------------------------

@@ -69,7 +69,8 @@ QueryBenchmark::Run(Timer& timer)
             da[a] = d[descriptorIndex];
         }
 
-        info.columns = da;
+        info.properties = da.Begin();
+        info.numProperties = da.Size();
         db->CreateTable(info);
     }
 

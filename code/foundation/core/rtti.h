@@ -27,7 +27,7 @@ class Rtti
 public:
     /// define a creation callback function prototype
     typedef void* (*Creator)();
-	typedef void* (*ArrayCreator)(SizeT);
+    typedef void* (*ArrayCreator)(SizeT);
 
     /// constructor
     Rtti(const char* className, Util::FourCC fcc, Creator creatorFunc, ArrayCreator arrayCreatorFunc, const Core::Rtti* parentClass, SizeT instSize);
@@ -46,9 +46,9 @@ public:
     /// get instance size in bytes
     SizeT GetInstanceSize() const;
     /// create an object of this class
-	void* Create() const;
-	/// create an array of objects of this class
-	void* CreateArray(SizeT num) const;
+    void* Create() const;
+    /// create an array of objects of this class
+    void* CreateArray(SizeT num) const;
     /// return true if this rtti is equal or derived from to other rtti
     bool IsDerivedFrom(const Rtti& other) const;
     /// return true if this rtti is equal or derived from to other rtti, by string
@@ -57,8 +57,8 @@ public:
     bool IsDerivedFrom(const Util::FourCC& otherClassFourCC) const;
     /// allocate instance memory block (called by class new operator)
     void* AllocInstanceMemory();
-	/// allocate instance memory array block (called by class new operator)
-	void* AllocInstanceMemoryArray(size_t num);
+    /// allocate instance memory array block (called by class new operator)
+    void* AllocInstanceMemoryArray(size_t num);
     /// free instance memory block (called by class delete operator)
     void FreeInstanceMemory(void* ptr);
 
@@ -70,7 +70,7 @@ private:
     const Core::Rtti* parent;
     Util::FourCC fourCC;
     Creator creator;
-	ArrayCreator arrayCreator;
+    ArrayCreator arrayCreator;
     SizeT instanceSize;
 };
 

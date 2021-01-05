@@ -7,6 +7,7 @@
 #include "memdb/typeregistry.h"
 #include "game/entity.h"
 #include "graphics/graphicsentity.h"
+#include "memdb/propertyid.h"
 
 namespace Game
 {
@@ -49,10 +50,21 @@ PropertySerialization::Destroy()
 /**
 */
 void
-PropertySerialization::Deserialize(Ptr<IO::JsonReader> const& reader, Util::StringAtom name, void* ptr)
+PropertySerialization::Deserialize(Ptr<IO::JsonReader> const& reader, PropertyId pid, void* ptr)
 {
     n_assert(Singleton != nullptr);
-    Singleton->serializers[name].deserializeJson(reader, 0, ptr);
+    Singleton->serializers[pid.id].deserializeJson(reader, 0, ptr);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PropertySerialization::Serialize(Ptr<IO::JsonWriter> const& writer, PropertyId pid, void* ptr)
+{
+    n_assert(Singleton != nullptr);
+    const char* name = MemDb::TypeRegistry::GetDescription(pid)->name.Value();
+    Singleton->serializers[pid.id].serializeJson(writer, name, ptr);
 }
 
 //------------------------------------------------------------------------------
@@ -75,10 +87,9 @@ PropertySerialization::~PropertySerialization()
 /**
 */
 bool
-PropertySerialization::ValidateTypeSize(Util::StringAtom name, uint32_t size)
+PropertySerialization::ValidateTypeSize(MemDb::PropertyId pid, uint32_t size)
 {
-    auto id = MemDb::TypeRegistry::GetPropertyId(name);
-    if (!MemDb::TypeRegistry::TypeSize(id) == size)
+    if (!MemDb::TypeRegistry::TypeSize(pid) == size)
     {
         return false;
     }
@@ -100,7 +111,25 @@ IO::JsonReader::Get<Game::Entity>(Game::Entity& entity, const char* key)
 /**
 */
 template<> void
+IO::JsonWriter::Add<Game::Entity>(Game::Entity const& entity, Util::String const& key)
+{
+    this->Add(entity.id, key);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void
 IO::JsonReader::Get<Graphics::GraphicsEntityId>(Graphics::GraphicsEntityId& entity, const char* key)
 {
     this->Get(entity.id, key);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<> void
+IO::JsonWriter::Add<Graphics::GraphicsEntityId>(Graphics::GraphicsEntityId const& entity, Util::String const& key)
+{
+    this->Add(entity.id, key);
 }

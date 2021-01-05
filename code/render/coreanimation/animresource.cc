@@ -26,7 +26,7 @@ CreateAnimation(const ResourceCreateInfo& info)
 */
 void DestroyAnimation(const AnimResourceId id)
 {
-	animPool->DiscardResource(id);
+    animPool->DiscardResource(id);
 }
 
 //------------------------------------------------------------------------------
@@ -35,7 +35,7 @@ void DestroyAnimation(const AnimResourceId id)
 const Util::FixedArray<AnimClip>&
 AnimGetClips(const AnimResourceId& id)
 {
-	return animPool->GetClips(id);
+    return animPool->GetClips(id);
 }
 
 //------------------------------------------------------------------------------
@@ -44,7 +44,7 @@ AnimGetClips(const AnimResourceId& id)
 const AnimClip& 
 AnimGetClip(const AnimResourceId& id, const IndexT index)
 {
-	return animPool->GetClip(id, index);
+    return animPool->GetClip(id, index);
 }
 
 //------------------------------------------------------------------------------
@@ -53,22 +53,22 @@ AnimGetClip(const AnimResourceId& id, const IndexT index)
 void 
 AnimComputeSlice(const AnimResourceId& id, IndexT clipIndex, IndexT keyIndex, SizeT& outSliceByteSize, const Math::vec4*& ptr)
 {
-	const AnimClip& clip = animPool->GetClip(id, clipIndex);
-	n_assert(clip.AreKeySliceValuesValid());
-	IndexT firstKeyIndex = clip.GetKeySliceFirstKeyIndex();
-	if (InvalidIndex == firstKeyIndex)
-	{
-		// all curves of the clip are static
-		outSliceByteSize = 0;
-		ptr = nullptr;
-	}
-	else
-	{
-		const Ptr<AnimKeyBuffer>& buffer = animPool->GetKeyBuffer(id);
-		outSliceByteSize = clip.GetKeySliceByteSize();
-		IndexT sliceKeyIndex = firstKeyIndex + keyIndex * clip.GetKeyStride();
-		ptr = buffer->GetKeyBufferPointer() + sliceKeyIndex;
-	}
+    const AnimClip& clip = animPool->GetClip(id, clipIndex);
+    n_assert(clip.AreKeySliceValuesValid());
+    IndexT firstKeyIndex = clip.GetKeySliceFirstKeyIndex();
+    if (InvalidIndex == firstKeyIndex)
+    {
+        // all curves of the clip are static
+        outSliceByteSize = 0;
+        ptr = nullptr;
+    }
+    else
+    {
+        const Ptr<AnimKeyBuffer>& buffer = animPool->GetKeyBuffer(id);
+        outSliceByteSize = clip.GetKeySliceByteSize();
+        IndexT sliceKeyIndex = firstKeyIndex + keyIndex * clip.GetKeyStride();
+        ptr = buffer->GetKeyBufferPointer() + sliceKeyIndex;
+    }
 }
 
 } // namespace CoreAnimation

@@ -36,7 +36,7 @@ public:
     /// set the intended resource usage (default is UsageImmutable)
     void SetUsage(CoreGraphics::GpuBufferTypes::Usage usage);
     /// get resource usage
-	CoreGraphics::GpuBufferTypes::Usage GetUsage() const;
+    CoreGraphics::GpuBufferTypes::Usage GetUsage() const;
     /// set the intended resource access (default is AccessNone)
     void SetAccess(CoreGraphics::GpuBufferTypes::Access access);
     /// get the resource access
@@ -47,10 +47,10 @@ public:
     virtual bool Open(const Resources::ResourceName& name);
     /// end reading from the stream, destroys loaded objects
     virtual void Close();
-	/// get vertex buffer
-	const CoreGraphics::BufferId GetVertexBuffer() const;
-	/// get index buffer
-	const CoreGraphics::BufferId GetIndexBuffer() const;
+    /// get vertex buffer
+    const CoreGraphics::BufferId GetVertexBuffer() const;
+    /// get index buffer
+    const CoreGraphics::BufferId GetIndexBuffer() const;
     /// get primitive groups
     const Util::Array<CoreGraphics::PrimitiveGroup>& GetPrimitiveGroups() const;
     /// get pointer to raw vertex data
@@ -114,14 +114,14 @@ private:
         N2AllComponents = ((1<<N2NumVertexComponents) - 1),
     };
 
-	CoreGraphics::GpuBufferTypes::Usage usage;
-	CoreGraphics::GpuBufferTypes::Access access;
+    CoreGraphics::GpuBufferTypes::Usage usage;
+    CoreGraphics::GpuBufferTypes::Access access;
 
     bool rawMode;
-	Util::StringAtom tag;
-	Resources::ResourceName name;
-	CoreGraphics::BufferId vbo;
-	CoreGraphics::BufferId ibo;
+    Util::StringAtom tag;
+    Resources::ResourceName name;
+    CoreGraphics::BufferId vbo;
+    CoreGraphics::BufferId ibo;
     CoreGraphics::VertexLayoutId layout;
     bool copySourceFlag;
 
@@ -168,7 +168,7 @@ Nvx2StreamReader::IsRawMode() const
 inline const CoreGraphics::BufferId
 Nvx2StreamReader::GetVertexBuffer() const
 {
-	return this->vbo;
+    return this->vbo;
 }
 
 //------------------------------------------------------------------------------
@@ -177,7 +177,7 @@ Nvx2StreamReader::GetVertexBuffer() const
 inline const CoreGraphics::BufferId
 Nvx2StreamReader::GetIndexBuffer() const
 {
-	return this->ibo;
+    return this->ibo;
 }
 
 //------------------------------------------------------------------------------

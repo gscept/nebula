@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Runs a plugin, which is a code-callback
-	
-	(C) 2016-2020 Individual contributors, see AUTHORS file
+    Runs a plugin, which is a code-callback
+    
+    (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
@@ -14,36 +14,36 @@ namespace Frame
 class FramePlugin : public FrameOp
 {
 public:
-	/// constructor
-	FramePlugin();
-	/// destructor
-	virtual ~FramePlugin();
+    /// constructor
+    FramePlugin();
+    /// destructor
+    virtual ~FramePlugin();
 
-	struct CompiledImpl : public FrameOp::Compiled
-	{
-		void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
-		void Discard();
+    struct CompiledImpl : public FrameOp::Compiled
+    {
+        void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
+        void Discard();
 
 #if NEBULA_GRAPHICS_DEBUG
-		Util::StringAtom name;
+        Util::StringAtom name;
 #endif
 
-		std::function<void(IndexT, IndexT)> func;
-	};
+        std::function<void(IndexT, IndexT)> func;
+    };
 
-	FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
+    FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 
-	std::function<void(IndexT, IndexT)> func;
+    std::function<void(IndexT, IndexT)> func;
 private:
 
 
-	void Build(
-		Memory::ArenaAllocator<BIG_CHUNK>& allocator,
-		Util::Array<FrameOp::Compiled*>& compiledOps,
-		Util::Array<CoreGraphics::EventId>& events,
-		Util::Array<CoreGraphics::BarrierId>& barriers,
-		Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-		Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures) override;
+    void Build(
+        Memory::ArenaAllocator<BIG_CHUNK>& allocator,
+        Util::Array<FrameOp::Compiled*>& compiledOps,
+        Util::Array<CoreGraphics::EventId>& events,
+        Util::Array<CoreGraphics::BarrierId>& barriers,
+        Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
+        Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures) override;
 };
 
 

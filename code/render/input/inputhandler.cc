@@ -125,8 +125,8 @@ InputHandler::OnEvent(const InputEvent& inputEvent)
             this->OnReset();
             break;
 
-		default:
-			break;
+        default:
+            break;
     }        
     return true;
 }

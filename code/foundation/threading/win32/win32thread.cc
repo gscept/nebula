@@ -26,7 +26,7 @@ List<Win32Thread*> Win32Thread::ThreadList;
 */
 Win32Thread::Win32Thread() :
     threadHandle(0),
-	affinityMask(0),
+    affinityMask(0),
     priority(Normal),
     stackSize(NEBULA_THREAD_DEFAULTSTACKSIZE)
 {
@@ -93,25 +93,20 @@ Win32Thread::Start()
             break;
     }
     
-	if (this->affinityMask != 0)
-		SetThreadAffinityMask(this->threadHandle, this->affinityMask);
-    #if __WIN32__
-        // select a good processor for the thread
-        /*
-        SystemInfo systemInfo;
-        SizeT numCpuCores = systemInfo.GetNumCpuCores();
-        DWORD threadIdealProc = 0;
-        if (Cpu::InvalidCoreId != this->coreId)
-        {
-            threadIdealProc = this->coreId % systemInfo.GetNumCpuCores();
-        }
-        SetThreadIdealProcessor(this->threadHandle, threadIdealProc);
-        */
-    #elif __XBOX360__
-        // on the 360 we need to define the hardware thread this thread should run on
-        n_assert(this->coreId != Cpu::InvalidCoreId)
-        Xbox360::Xbox360Threading::SetThreadProcessor(this->threadHandle, this->coreId);
-    #endif
+    if (this->affinityMask != 0)
+        SetThreadAffinityMask(this->threadHandle, this->affinityMask);
+
+    // select a good processor for the thread
+    /*
+    SystemInfo systemInfo;
+    SizeT numCpuCores = systemInfo.GetNumCpuCores();
+    DWORD threadIdealProc = 0;
+    if (Cpu::InvalidCoreId != this->coreId)
+    {
+        threadIdealProc = this->coreId % systemInfo.GetNumCpuCores();
+    }
+    SetThreadIdealProcessor(this->threadHandle, threadIdealProc);
+    */
 
     // resume thread (since it was actived in suspended state)
     ResumeThread(this->threadHandle);
@@ -312,7 +307,7 @@ Win32Thread::GetRunningThreadDebugInfos()
             info.threadName = cur->GetName();
             info.threadPriority = cur->GetPriority();
             info.threadStackSize = cur->GetStackSize();
-			info.threadCoreId = (System::Cpu::CoreId)cur->GetThreadAffinity();
+            info.threadCoreId = (System::Cpu::CoreId)cur->GetThreadAffinity();
             infos.Append(info);
         }
     }

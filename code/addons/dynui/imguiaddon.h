@@ -1,11 +1,11 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	@class Dynui::ImguiAddon
-	
+    @class Dynui::ImguiAddon
+    
 
-	
-	(C) 2012-2016 Individual contributors, see AUTHORS file
+    
+    (C) 2012-2016 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -15,19 +15,19 @@ namespace Dynui
 {
 class ImguiAddon : public Core::RefCounted
 {
-	__DeclareClass(ImguiAddon);
+    __DeclareClass(ImguiAddon);
 public:
-	/// constructor
-	ImguiAddon();
-	/// destructor
-	virtual ~ImguiAddon();
+    /// constructor
+    ImguiAddon();
+    /// destructor
+    virtual ~ImguiAddon();
 
-	/// setup addon
-	void Setup();
-	/// discard addon
-	void Discard();
+    /// setup addon
+    void Setup();
+    /// discard addon
+    void Discard();
 
 private:
-	Ptr<ImguiInputHandler> inputHandler;
+    Ptr<ImguiInputHandler> inputHandler;
 };
 } // namespace Dynui

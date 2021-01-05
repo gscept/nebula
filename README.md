@@ -70,6 +70,17 @@ A lot of effort has been made to the Nebula rendering subsystem, where we curren
 * Virtual texturing using sparse binding.
 * Fast and conservative GPU memory allocation.
 
+#### Entity system
+Nebula has historically had a database-centric approach to entities.
+With the newest iteration of Nebula, we've decided to keep improving by adopting an ECS approach, still keeping it database-centric.
+
+* Data-oriented
+* Data-driven
+* Minimal memory overhead per entity.
+* High performance without compromising usability or simplicity
+* Blueprint and template system for easily instantiating and categorizing entity types.
+* Automatic serialization and deserialization
+
 ## Screenshots
 Deferred Lighting using 3D clustering and GPU culling.
 ![Deferred Lighting using 3D clustering and GPU culling](images/nebula_lights.png)

@@ -3,7 +3,7 @@
 /**
     @class Win32::Win32Thread
     
-    Win32/Xbox360 implementation of thread class.
+    Win32 implementation of thread class.
     
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
@@ -45,10 +45,10 @@ public:
     void SetName(const Util::String& n);
     /// get thread name
     const Util::String& GetName() const;
-	/// set the thread affinity
-	void SetThreadAffinity(const uint mask);
-	/// get the thread affinity
-	uint GetThreadAffinity();
+    /// set the thread affinity
+    void SetThreadAffinity(const uint mask);
+    /// get the thread affinity
+    uint GetThreadAffinity();
 
     /// start executing the thread code, returns when thread has actually started
     void Start();
@@ -94,7 +94,7 @@ private:
     Win32Event threadStartedEvent;
     Win32Event stopRequestEvent;
     Priority priority;
-	uint affinityMask;
+    uint affinityMask;
     SizeT stackSize;
     Util::String name;
     ThreadLocal static const char* ThreadName;
@@ -187,7 +187,7 @@ Win32Thread::GetName() const
 inline void 
 Win32Thread::SetThreadAffinity(const uint mask)
 {
-	this->affinityMask = mask;
+    this->affinityMask = mask;
 }
 
 //------------------------------------------------------------------------------
@@ -196,7 +196,7 @@ Win32Thread::SetThreadAffinity(const uint mask)
 inline uint
 Win32Thread::GetThreadAffinity()
 {
-	return this->affinityMask;
+    return this->affinityMask;
 }
 
 }; // namespace Win32

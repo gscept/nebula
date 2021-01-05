@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class	Game::EntityManager
+    @class  Game::EntityManager
 
     Keeps track of all existing entites.
 
@@ -18,6 +18,7 @@
 #include "memdb/database.h"
 #include "basegamefeature/properties/owner.h"
 #include "game/api.h"
+#include "util/set.h"
 
 namespace Game
 {
@@ -32,12 +33,16 @@ void DeleteEntity(Game::Entity entity);
 template<typename TYPE>
 void SetProperty(Game::Entity const entity, PropertyId const pid, TYPE value);
 
+/// typed get property method
+template<typename TYPE>
+TYPE GetProperty(Game::Entity const entity, PropertyId const pid);
+
 /// Returns the world db
 Ptr<MemDb::Database> GetWorldDatabase();
 
 //------------------------------------------------------------------------------
 /**
-    @class	Game::EntityManager
+    @class  Game::EntityManager
     
     Contains state with categories and the world database.
 
@@ -113,6 +118,8 @@ public:
 
         Util::Queue<AllocateInstanceCommand> allocQueue;
         Util::Queue<DeallocInstanceCommand> deallocQueue;
+        /// a set that contains all categories that has entities in their managed property tables.
+        Util::Set<CategoryId> managedCleanupSet;
 
         // - Categories -
         Util::Array<Category> categoryArray;
@@ -136,6 +143,7 @@ private:
 inline Category const&
 EntityManager::GetCategory(CategoryId cid) const
 {
+    n_assert(cid != CategoryId::Invalid());
     return this->state.categoryArray[cid.id];
 }
 
@@ -161,11 +169,33 @@ SetProperty(Game::Entity const entity, PropertyId const pid, TYPE value)
     auto cid = db->GetColumnId(cat.instanceTable, pid);
 
 #if NEBULA_DEBUG
+    n_assert_fmt(cid != MemDb::ColumnIndex::Invalid(), "SetProperty: Entity does not have property with id '%i'!\n", cid.id);
     n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(pid), "SetProperty: Provided value's type is not the correct size for the given PropertyId.");
 #endif
 
     TYPE* ptr = (TYPE*)db->GetValuePointer(cat.instanceTable, cid, mapping.instance.id);
     *ptr = value;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename TYPE>
+TYPE
+GetProperty(Game::Entity const entity, PropertyId const pid)
+{
+    EntityMapping mapping = GetEntityMapping(entity);
+    Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
+    Ptr<MemDb::Database> db = EntityManager::Singleton->state.worldDatabase;
+    auto cid = db->GetColumnId(cat.instanceTable, pid);
+
+#if NEBULA_DEBUG
+    n_assert_fmt(cid != MemDb::ColumnIndex::Invalid(), "GetProperty: Entity does not have type with PropertyId '%i'!\n", cid.id);
+    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(pid), "GetProperty: Provided value's type is not the correct size for the given PropertyId.");
+#endif
+
+    TYPE* ptr = (TYPE*)db->GetValuePointer(cat.instanceTable, cid, mapping.instance.id);
+    return *ptr;
 }
 
 //-------------------------

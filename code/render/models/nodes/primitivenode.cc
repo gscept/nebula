@@ -16,10 +16,11 @@ namespace Models
 /**
 */
 PrimitiveNode::PrimitiveNode() :
-	primitiveGroupIndex(InvalidIndex)
+    primitiveGroupIndex(InvalidIndex),
+    primitiveGroupIndexLoaded(0)
 {
-	this->type = PrimitiveNodeType;
-	this->bits = HasTransformBit | HasStateBit;
+    this->type = PrimitiveNodeType;
+    this->bits = HasTransformBit | HasStateBit;
 }
 
 //------------------------------------------------------------------------------
@@ -27,7 +28,7 @@ PrimitiveNode::PrimitiveNode() :
 */
 PrimitiveNode::~PrimitiveNode()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -36,30 +37,30 @@ PrimitiveNode::~PrimitiveNode()
 bool
 PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate)
 {
-	bool retval = true;
-	if (FourCC('MESH') == fourcc)
-	{
-		// get mesh resource
-		Resources::ResourceName meshName = reader->ReadString();
+    bool retval = true;
+    if (FourCC('MESH') == fourcc)
+    {
+        // get mesh resource
+        Resources::ResourceName meshName = reader->ReadString();
 
-		// add as pending resource in loader
-		this->primitiveGroupIndex = 0;
-		this->res = Resources::CreateResource(meshName, tag, [this](Resources::ResourceId id)
-			{
-				this->res = id;
-				this->primitiveGroupIndex = this->primitiveGroupIndexLoaded;
-			}, nullptr, immediate);
-	}
-	else if (FourCC('PGRI') == fourcc)
-	{
-		// primitive group index
-		this->primitiveGroupIndexLoaded = reader->ReadUInt();
-	}
-	else
-	{
-		retval = ShaderStateNode::Load(fourcc, tag, reader, immediate);
-	}
-	return retval;
+        // add as pending resource in loader
+        this->primitiveGroupIndex = 0;
+        this->res = Resources::CreateResource(meshName, tag, [this](Resources::ResourceId id)
+            {
+                this->res = id;
+                this->primitiveGroupIndex = this->primitiveGroupIndexLoaded;
+            }, nullptr, immediate);
+    }
+    else if (FourCC('PGRI') == fourcc)
+    {
+        // primitive group index
+        this->primitiveGroupIndexLoaded = reader->ReadUInt();
+    }
+    else
+    {
+        retval = ShaderStateNode::Load(fourcc, tag, reader, immediate);
+    }
+    return retval;
 }
 
 //------------------------------------------------------------------------------
@@ -68,7 +69,7 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 void 
 PrimitiveNode::Unload()
 {
-	Resources::DiscardResource(this->res);
+    Resources::DiscardResource(this->res);
 }
 
 //------------------------------------------------------------------------------
@@ -77,8 +78,8 @@ PrimitiveNode::Unload()
 void
 PrimitiveNode::ApplyNodeState()
 {
-	ShaderStateNode::ApplyNodeState();
-	CoreGraphics::MeshBind(this->res, this->primitiveGroupIndex);
+    ShaderStateNode::ApplyNodeState();
+    CoreGraphics::MeshBind(this->res, this->primitiveGroupIndex);
 }
 
 } // namespace Models

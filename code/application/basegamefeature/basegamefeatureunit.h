@@ -19,8 +19,8 @@ namespace BaseGameFeature
 
 class BaseGameFeatureUnit : public Game::FeatureUnit    
 {
-	__DeclareClass(BaseGameFeatureUnit)
-	__DeclareSingleton(BaseGameFeatureUnit)
+    __DeclareClass(BaseGameFeatureUnit)
+    __DeclareSingleton(BaseGameFeatureUnit)
 
 public:
 
@@ -29,9 +29,9 @@ public:
     /// destructor
     virtual ~BaseGameFeatureUnit();
 
-	/// Called upon activation of feature unit
+    /// Called upon activation of feature unit
     void OnActivate() override;
-	/// Called upon deactivation of feature unit
+    /// Called upon deactivation of feature unit
     void OnDeactivate() override;
          
     /// called at the end of the feature trigger cycle
@@ -49,10 +49,11 @@ public:
     virtual void SetupEmptyWorld();
     /// cleanup the game world
     virtual void CleanupWorld();
-	
+    
 protected:
     Game::ManagerHandle entityManager;
     Game::ManagerHandle blueprintManager;
+    Game::ManagerHandle timeManager;
     Math::bbox worldBox;
 };
 

@@ -188,18 +188,18 @@ Win32InputServer::ReadDInputMouse()
     //HRESULT hr;
     
     this->mouseMovement.set(0.0f, 0.0f);
-	POINT currentPos;
-	GetCursorPos(&currentPos);
+    POINT currentPos;
+    GetCursorPos(&currentPos);
 
-	this->mouseMovement.x() = (Math::scalar)(this->previousPos.x - currentPos.x);
-	this->mouseMovement.y() = (Math::scalar)(this->previousPos.y - currentPos.y);
+    this->mouseMovement.x() = (Math::scalar)(this->previousPos.x - currentPos.x);
+    this->mouseMovement.y() = (Math::scalar)(this->previousPos.y - currentPos.y);
 
-	if (this->defaultMouse->IsLocked())
-		SetCursorPos(previousPos.x, previousPos.y);
-	else
-		this->previousPos = currentPos;
+    if (this->defaultMouse->IsLocked())
+        SetCursorPos(previousPos.x, previousPos.y);
+    else
+        this->previousPos = currentPos;
 
-	/*
+    /*
     // read buffered mouse data
     DWORD inOutNumElements = DInputMouseBufferSize;
     hr = this->di8Mouse->GetDeviceData(sizeof(DIDEVICEOBJECTDATA), didod, &inOutNumElements, 0);
@@ -224,7 +224,7 @@ Win32InputServer::ReadDInputMouse()
             }
         }
     }
-	*/
+    */
 }
 
 //------------------------------------------------------------------------------
@@ -233,16 +233,16 @@ Win32InputServer::ReadDInputMouse()
 void
 Win32InputServer::SetMousePosition(Math::float2& position)
 {
-	WINDOWINFO windowInfo;
-	HWND nebWindow = FindWindow(NEBULA_WINDOW_CLASS, NULL);
-	
-	if (nebWindow != 0 && GetWindowInfo(nebWindow, &windowInfo))
-	{
-		this->previousPos.x = windowInfo.rcWindow.left + (uint)( (windowInfo.rcClient.right - windowInfo.rcClient.left) * position.x() + 0.5f );
-		this->previousPos.y = windowInfo.rcWindow.top + (uint)( (windowInfo.rcClient.bottom - windowInfo.rcClient.top) * position.y() + 0.5f );
+    WINDOWINFO windowInfo;
+    HWND nebWindow = FindWindow(NEBULA_WINDOW_CLASS, NULL);
+    
+    if (nebWindow != 0 && GetWindowInfo(nebWindow, &windowInfo))
+    {
+        this->previousPos.x = windowInfo.rcWindow.left + (uint)( (windowInfo.rcClient.right - windowInfo.rcClient.left) * position.x() + 0.5f );
+        this->previousPos.y = windowInfo.rcWindow.top + (uint)( (windowInfo.rcClient.bottom - windowInfo.rcClient.top) * position.y() + 0.5f );
 
-		SetCursorPos(previousPos.x, previousPos.y);
-	}
+        SetCursorPos(previousPos.x, previousPos.y);
+    }
 }
 
 } // namespace Win32

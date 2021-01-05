@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Test resource loader
-	
-	(C) 2017 Individual contributors, see AUTHORS file
+    Test resource loader
+    
+    (C) 2017 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "resources/resourcestreampool.h"
@@ -12,28 +12,28 @@ namespace Test
 {
 class TestStreamPool : public Resources::ResourceStreamPool
 {
-	__DeclareClass(TestStreamPool);
+    __DeclareClass(TestStreamPool);
 public:
-	/// constructor
-	TestStreamPool();
-	/// destructor
-	virtual ~TestStreamPool();
+    /// constructor
+    TestStreamPool();
+    /// destructor
+    virtual ~TestStreamPool();
 
-	/// setup
-	void Setup();
-	/// discard
-	void Discard();
+    /// setup
+    void Setup();
+    /// discard
+    void Discard();
 
-	/// get resource
-	const TestResourceData& GetResource(const Resources::ResourceId id);
+    /// get resource
+    const TestResourceData& GetResource(const Resources::ResourceId id);
 private:
 
-	/// load resource
-	LoadStatus LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream) override;
-	/// discard resource
-	void Unload(const Ids::Id24 id) override;
+    /// load resource
+    LoadStatus LoadFromStream(const Ids::Id24 id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream) override;
+    /// discard resource
+    void Unload(const Ids::Id24 id) override;
 
-	Ids::IdAllocator<TestResourceData> alloc;
-	__ImplementResourceAllocatorTyped(alloc, TestResourceIdType)
+    Ids::IdAllocator<TestResourceData> alloc;
+    __ImplementResourceAllocatorTyped(alloc, TestResourceIdType)
 };
 } // namespace Test

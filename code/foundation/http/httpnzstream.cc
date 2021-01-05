@@ -8,8 +8,6 @@
 #include "http/httpclientregistry.h"
 #include "zlib/zlib.h"
 
-// HttpStream not implemented on Wii
-#if __NEBULA_HTTP_FILESYSTEM__
 namespace Http
 {
 __ImplementClass(Http::HttpNzStream, 'HZST', IO::MemoryStream);
@@ -102,4 +100,3 @@ HttpNzStream::Open()
 }
 
 } // namespace Http
-#endif

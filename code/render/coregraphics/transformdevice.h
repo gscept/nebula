@@ -20,13 +20,13 @@ namespace CoreGraphics
 {
 class TransformDevice : public Vulkan::VkTransformDevice
 {
-	__DeclareClass(TransformDevice);
-	__DeclareSingleton(TransformDevice);
+    __DeclareClass(TransformDevice);
+    __DeclareSingleton(TransformDevice);
 public:
-	/// constructor
-	TransformDevice();
-	/// destructor
-	virtual ~TransformDevice();
+    /// constructor
+    TransformDevice();
+    /// destructor
+    virtual ~TransformDevice();
 };
 }
 #else

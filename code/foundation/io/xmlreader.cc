@@ -235,15 +235,15 @@ XmlReader::GetCurrentNodePath() const
 
 //------------------------------------------------------------------------------
 /**
-	Resets the xml reader to the root node
+    Resets the xml reader to the root node
 */
 void 
 XmlReader::SetToRoot()
 {
-	// set the current node to the root node
-	this->curNode = this->xmlDocument->RootElement();
+    // set the current node to the root node
+    this->curNode = this->xmlDocument->RootElement();
 
-	n_assert(this->curNode);
+    n_assert(this->curNode);
 }
 
 //------------------------------------------------------------------------------
@@ -495,7 +495,7 @@ the method will fail hard (use HasAttr() to check for its existance).
 transform44
 XmlReader::GetTransform44(const char* name) const
 {
-	return this->GetString(name).AsTransform44();
+    return this->GetString(name).AsTransform44();
 }
 #endif
     
@@ -634,14 +634,14 @@ exist, the default value will be returned.
 transform44
 XmlReader::GetOptTransform44(const char* name, const transform44& defaultValue) const
 {
-	if (this->HasAttr(name))
-	{
-		return this->GetTransform44(name);
-	}
-	else
-	{
-		return defaultValue;
-	}
+    if (this->HasAttr(name))
+    {
+        return this->GetTransform44(name);
+    }
+    else
+    {
+        return defaultValue;
+    }
 }
 #endif
     

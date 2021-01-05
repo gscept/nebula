@@ -33,10 +33,10 @@ __StaticHandler(CreateGlobalLightEntity)
     lightEntity->SetProjMapUvOffsetAndScale(msg->GetProjMapUvOffsetAndScale());
     lightEntity->SetAmbientLightColor(msg->GetAmbientLightColor());
     lightEntity->SetBackLightOffset(msg->GetBackLightOffset());
-	lightEntity->SetShadowIntensity(msg->GetShadowIntensity());
-	lightEntity->SetVolumetric(msg->GetVolumetric());
-	lightEntity->SetVolumetricScale(msg->GetVolumetricScale());
-	lightEntity->SetVolumetricIntensity(msg->GetVolumetricIntensity());
+    lightEntity->SetShadowIntensity(msg->GetShadowIntensity());
+    lightEntity->SetVolumetric(msg->GetVolumetric());
+    lightEntity->SetVolumetricScale(msg->GetVolumetricScale());
+    lightEntity->SetVolumetricIntensity(msg->GetVolumetricIntensity());
 
     // lookup stage and attach entity
     const Ptr<Stage>& stage = GraphicsServer::Instance()->GetStageByName(msg->GetStageName());
@@ -90,7 +90,7 @@ __Dispatcher(GlobalLightEntity)
     __Handle(GlobalLightEntity, SetGlobalBackLightColor);
     __Handle(GlobalLightEntity, SetGlobalAmbientLightColor);
     __Handle(GlobalLightEntity, SetGlobalBackLightOffset);
-    __Handle(GlobalLightEntity, SetGlobalLightParams);	
+    __Handle(GlobalLightEntity, SetGlobalLightParams);  
     __HandleUnknown(AbstractLightEntity);
 }
 

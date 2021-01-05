@@ -15,7 +15,7 @@ namespace Frame
 */
 FrameCompute::FrameCompute()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -23,7 +23,7 @@ FrameCompute::FrameCompute()
 */
 FrameCompute::~FrameCompute()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -32,12 +32,12 @@ FrameCompute::~FrameCompute()
 void 
 FrameCompute::Discard()
 {
-	this->program = ShaderProgramId::Invalid();
+    this->program = ShaderProgramId::Invalid();
 
-	DestroyResourceTable(this->resourceTable);
-	IndexT i;
-	for (i = 0; i < this->constantBuffers.Size(); i++)
-		DestroyBuffer(this->constantBuffers.ValueAtIndex(i));
+    DestroyResourceTable(this->resourceTable);
+    IndexT i;
+    for (i = 0; i < this->constantBuffers.Size(); i++)
+        DestroyBuffer(this->constantBuffers.ValueAtIndex(i));
 }
 
 //------------------------------------------------------------------------------
@@ -46,13 +46,13 @@ FrameCompute::Discard()
 FrameOp::Compiled*
 FrameCompute::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
-	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
-	ret->program = this->program;
-	ret->resourceTable = this->resourceTable;
-	ret->x = this->x;
-	ret->y = this->y;
-	ret->z = this->z;
-	return ret;
+    CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+    ret->program = this->program;
+    ret->resourceTable = this->resourceTable;
+    ret->x = this->x;
+    ret->y = this->y;
+    ret->z = this->z;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -61,13 +61,13 @@ FrameCompute::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 void
 FrameCompute::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
-	n_assert(this->program != ShaderProgramId::Invalid());
+    n_assert(this->program != ShaderProgramId::Invalid());
 
-	CoreGraphics::SetShaderProgram(this->program);
+    CoreGraphics::SetShaderProgram(this->program);
 
-	// compute
-	CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-	CoreGraphics::Compute(this->x, this->y, this->z);
+    // compute
+    CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+    CoreGraphics::Compute(this->x, this->y, this->z);
 }
 
 } // namespace Frame2

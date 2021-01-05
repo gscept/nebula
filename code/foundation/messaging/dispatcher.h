@@ -23,7 +23,7 @@
     a more complex message processing infrastructure underneath.
 
     (C) 2007 RadonLabs GmbH
-	(C) 2013-2020 Individual contributors, see AUTHORS file
+    (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/ptr.h"
 #include "messaging/port.h"
@@ -33,7 +33,7 @@ namespace Messaging
 {
 class Dispatcher : public Port
 {
-	__DeclareClass(Dispatcher);
+    __DeclareClass(Dispatcher);
 public:
     /// constructor
     Dispatcher();

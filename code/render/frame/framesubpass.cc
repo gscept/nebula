@@ -15,7 +15,7 @@ namespace Frame
 */
 FrameSubpass::FrameSubpass()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -23,7 +23,7 @@ FrameSubpass::FrameSubpass()
 */
 FrameSubpass::~FrameSubpass()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -32,7 +32,7 @@ FrameSubpass::~FrameSubpass()
 void
 FrameSubpass::AddOp(Frame::FrameOp* op)
 {
-	this->ops.Append(op);
+    this->ops.Append(op);
 }
 
 //------------------------------------------------------------------------------
@@ -41,13 +41,13 @@ FrameSubpass::AddOp(Frame::FrameOp* op)
 void
 FrameSubpass::Discard()
 {
-	FrameOp::Discard();
+    FrameOp::Discard();
 
-	IndexT i;
-	for (i = 0; i < this->ops.Size(); i++)
-	{
-		this->ops[i]->Discard();
-	}
+    IndexT i;
+    for (i = 0; i < this->ops.Size(); i++)
+    {
+        this->ops[i]->Discard();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -57,11 +57,11 @@ void
 FrameSubpass::OnWindowResized()
 {
 
-	IndexT i;
-	for (i = 0; i < this->ops.Size(); i++)
-	{
-		this->ops[i]->OnWindowResized();
-	}
+    IndexT i;
+    for (i = 0; i < this->ops.Size(); i++)
+    {
+        this->ops[i]->OnWindowResized();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -70,20 +70,20 @@ FrameSubpass::OnWindowResized()
 void
 FrameSubpass::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
-	IndexT i;
+    IndexT i;
 
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_GREEN, this->name.Value());
+    CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_GREEN, this->name.Value());
 #endif
 
-	// run ops
-	for (i = 0; i < this->ops.Size(); i++)
-	{
-		this->ops[i]->Run(frameIndex, bufferIndex);
-	}
+    // run ops
+    for (i = 0; i < this->ops.Size(); i++)
+    {
+        this->ops[i]->Run(frameIndex, bufferIndex);
+    }
 
 #if NEBULA_GRAPHICS_DEBUG
-	CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
+    CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
 #endif
 }
 
@@ -93,8 +93,8 @@ FrameSubpass::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferInde
 void
 FrameSubpass::CompiledImpl::Discard()
 {
-	for (IndexT i = 0; i < this->ops.Size(); i++)
-		this->ops[i]->Discard();
+    for (IndexT i = 0; i < this->ops.Size(); i++)
+        this->ops[i]->Discard();
 }
 
 //------------------------------------------------------------------------------
@@ -103,12 +103,12 @@ FrameSubpass::CompiledImpl::Discard()
 FrameOp::Compiled*
 FrameSubpass::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
-	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+    CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
 #if NEBULA_GRAPHICS_DEBUG
-	ret->name = this->name;
+    ret->name = this->name;
 #endif
-	// don't set ops here, we have to do it when we build
-	return ret;
+    // don't set ops here, we have to do it when we build
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -116,23 +116,23 @@ FrameSubpass::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 */
 void 
 FrameSubpass::Build(
-	Memory::ArenaAllocator<BIG_CHUNK>& allocator,
-	Util::Array<FrameOp::Compiled*>& compiledOps, 
-	Util::Array<CoreGraphics::EventId>& events,
-	Util::Array<CoreGraphics::BarrierId>& barriers,
-	Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-	Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
+    Memory::ArenaAllocator<BIG_CHUNK>& allocator,
+    Util::Array<FrameOp::Compiled*>& compiledOps, 
+    Util::Array<CoreGraphics::EventId>& events,
+    Util::Array<CoreGraphics::BarrierId>& barriers,
+    Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
+    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
 {
-	CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
-	
-	Util::Array<FrameOp::Compiled*> subpassOps;
-	for (IndexT i = 0; i < this->ops.Size(); i++)
-	{
-		this->ops[i]->Build(allocator, subpassOps, events, barriers, rwBuffers, textures);
-	}
-	myCompiled->ops = subpassOps;
-	this->compiled = myCompiled;
-	compiledOps.Append(myCompiled);
+    CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
+    
+    Util::Array<FrameOp::Compiled*> subpassOps;
+    for (IndexT i = 0; i < this->ops.Size(); i++)
+    {
+        this->ops[i]->Build(allocator, subpassOps, events, barriers, rwBuffers, textures);
+    }
+    myCompiled->ops = subpassOps;
+    this->compiled = myCompiled;
+    compiledOps.Append(myCompiled);
 }
 
 } // namespace Frame2

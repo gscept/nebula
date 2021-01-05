@@ -29,10 +29,10 @@ public:
     void MasterReleaseSlave();
     /// called by "slave" thread to "unstuck" master thread
     void SlaveReleaseMaster();
-	/// called by "master" thread to "stick" slave thread
-	void MasterHoldSlave();
-	/// called by "slave" thread to "stick" master thread
-	void SlaveHoldMaster();
+    /// called by "master" thread to "stick" slave thread
+    void MasterHoldSlave();
+    /// called by "slave" thread to "stick" master thread
+    void SlaveHoldMaster();
 
 private:
     HANDLE semMaster;
@@ -107,7 +107,7 @@ Win32Rendezvous::SlaveReleaseMaster()
 inline void 
 Win32Rendezvous::MasterHoldSlave()
 {
-	WaitForSingleObject(this->semSlave, INFINITE);
+    WaitForSingleObject(this->semSlave, INFINITE);
 }
 
 //------------------------------------------------------------------------------
@@ -116,7 +116,7 @@ Win32Rendezvous::MasterHoldSlave()
 inline void 
 Win32Rendezvous::SlaveHoldMaster()
 {
-	WaitForSingleObject(this->semMaster, INFINITE);
+    WaitForSingleObject(this->semMaster, INFINITE);
 }
 } // namespace Win32
 //------------------------------------------------------------------------------

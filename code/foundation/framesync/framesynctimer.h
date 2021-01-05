@@ -18,7 +18,7 @@
     straight through to the FrameSyncHandler object).
     
     (C) 2009 Radon Labs GmbH
-    (C) 2013-2020 Individual contributors, see AUTHORS file	
+    (C) 2013-2020 Individual contributors, see AUTHORS file 
 */ 
 #include "core/refcounted.h"
 #include "core/singleton.h"
@@ -82,16 +82,16 @@ private:
     /// update the time (always called from local thread)
     void Update(Timing::Time masterTime);
 
-	
+    
     Timing::Time time;
     Timing::Tick ticks;
-    Timing::Time frameTime;	
+    Timing::Time frameTime; 
     Timing::Tick frameTicks;
     Timing::Time scaledTime;
     Timing::Time timeFactor;
-	Timing::Time realTime;
-	Timing::Timer masterTimer;
-	IndexT frameIndex;
+    Timing::Time realTime;
+    Timing::Timer masterTimer;
+    IndexT frameIndex;
     bool isValid;
 };
 

@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	A semaphore is an inter-GPU queue synchronization primitive
+    A semaphore is an inter-GPU queue synchronization primitive
 
-	(C) 2018-2020 Individual contributors, see AUTHORS file
+    (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
@@ -21,13 +21,13 @@ ID_24_8_TYPE(SemaphoreId);
 
 enum SemaphoreType
 {
-	Binary,			// binary semaphore means it can only be signaled or unsignaled
-	Timeline		// a timeline semaphore
+    Binary,         // binary semaphore means it can only be signaled or unsignaled
+    Timeline        // a timeline semaphore
 };
 
 struct SemaphoreCreateInfo
 {
-	SemaphoreType type;
+    SemaphoreType type;
 };
 
 /// create semaphore

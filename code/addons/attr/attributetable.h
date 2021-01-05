@@ -32,13 +32,15 @@
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
+#include "core/refcounted.h"
 #include "attribute.h"
 
 //------------------------------------------------------------------------------
 namespace Attr
 {
-class AttributeTable
+class AttributeTable : public Core::RefCounted
 {
+    __DeclareClass(AttributeTable);
 public:
     /// constructor
     AttributeTable();
@@ -119,7 +121,7 @@ public:
     const Util::Array<IndexT>& GetNewRowIndices() const;
     /// return indices of rows deleted since the last ResetModifiedState()
     const Util::Array<IndexT>& GetDeletedRowIndices() const;
-	/// return array of modified rows, exclude rows marked as rows
+    /// return array of modified rows, exclude rows marked as rows
     Util::Array<IndexT> GetModifiedRowsExcludeNewAndDeletedRows() const;
     /// reserve rows to reduce re-allocation overhead
     void ReserveRows(SizeT numRows);    
@@ -138,8 +140,8 @@ public:
 
     /// set a generic attribute (slow!)
     void SetAttr(const Attr::Attribute& attr, IndexT rowIndex); 
-	/// get a generic attribute
-	Attr::Attribute GetAttr(IndexT rowIndex, IndexT colIndex) const;
+    /// get a generic attribute
+    Attr::Attribute GetAttr(IndexT rowIndex, IndexT colIndex) const;
     /// set variant value
     void SetVariant(const Attr::AttrId& attrId, IndexT rowIndex, const Util::Variant& val); 
     /// set bool value
@@ -162,10 +164,10 @@ public:
     void SetVec4(const Vec4AttrId& colAttrId, IndexT rowIndex, const Math::vec4& val);
     /// get float4 value
     Math::vec4 GetVec4(const Vec4AttrId& colAttrId, IndexT rowIndex) const;
-    /// set matrix44 value
-    void SetMatrix44(const Mat4AttrId& colAttrId, IndexT rowIndex, const Math::mat4& val);
-    /// get matrix44 value
-    Math::mat4 GetMatrix44(const Mat4AttrId& colAttrId, IndexT rowIndex) const;
+    /// set mat4 value
+    void SetMat4(const Mat4AttrId& colAttrId, IndexT rowIndex, const Math::mat4& val);
+    /// get mat4 value
+    Math::mat4 GetMat4(const Mat4AttrId& colAttrId, IndexT rowIndex) const;
     /// set guid value
     void SetGuid(const GuidAttrId& colAttrId, IndexT rowIndex, const Util::Guid& guid);
     /// get guid value
@@ -201,10 +203,10 @@ public:
     void SetVec4(IndexT colIndex, IndexT rowIndex, const Math::vec4& val);
     /// get float4 value by column index
     Math::vec4 GetVec4(IndexT colIndex, IndexT rowIndex) const;
-    /// set matrix44 value by column index
-    void SetMatrix44(IndexT colIndex, IndexT rowIndex, const Math::mat4& val);
-    /// get matrix44 value by column index
-    Math::mat4 GetMatrix44(IndexT colIndex, IndexT rowIndex) const;
+    /// set mat4 value by column index
+    void SetMat4(IndexT colIndex, IndexT rowIndex, const Math::mat4& val);
+    /// get mat4 value by column index
+    Math::mat4 GetMat4(IndexT colIndex, IndexT rowIndex) const;
     /// set guid value by column index
     void SetGuid(IndexT colIndex, IndexT rowIndex, const Util::Guid& guid);
     /// get guid value by column index
@@ -242,7 +244,7 @@ private:
     void DeleteGuid(IndexT colIndex, IndexT rowIndex);
     /// copy a guid into the table
     void CopyGuid(IndexT colIndex, IndexT rowIndex, const Util::Guid& val);
-	/// internal row-indices-by-attr find method
+    /// internal row-indices-by-attr find method
     Util::Array<IndexT> InternalFindRowIndicesByAttr(const Attr::Attribute& attr, bool firstMatchOnly) const;
     /// internal row-indices-by-multiple-attrs find method
     Util::Array<IndexT> InternalFindRowIndicesByAttrs(const Util::Array<Attr::Attribute>& attr, bool firstMatchOnly) const;
@@ -262,10 +264,10 @@ private:
     void SetColumnInt(const IntAttrId& attrId, int val);
     /// set entire column to string value
     void SetColumnString(const StringAttrId& attrId, const Util::String& val);
-    /// set entire column vector4 value
-    void SetColumnFloat4(const Vec4AttrId& attrId, const Math::vec4& val);
-    /// set entire column to matrix44 value
-    void SetColumnMatrix44(const Mat4AttrId& attrId, const Math::mat4& val);
+    /// set entire column vec4 value
+    void SetColumnVec4(const Vec4AttrId& attrId, const Math::vec4& val);
+    /// set entire column to mat4 value
+    void SetColumnMat4(const Mat4AttrId& attrId, const Math::mat4& val);
     /// set entire column to guid value
     void SetColumnGuid(const GuidAttrId& attrId, const Util::Guid& guid);
     /// set entire column to blob value
@@ -623,9 +625,9 @@ AttributeTable::SetVec4(IndexT colIndex, IndexT rowIndex, const Math::vec4& val)
     val.storeu(valuePtr);
     if (this->trackModifications)
     {
-    	this->rowModifiedBuffer[rowIndex] = 1;
-    	this->isModified = true;
-		this->rowsModified = true;
+        this->rowModifiedBuffer[rowIndex] = 1;
+        this->isModified = true;
+        this->rowsModified = true;
     }
 }
 
@@ -646,13 +648,13 @@ AttributeTable::GetVec4(IndexT colIndex, IndexT rowIndex) const
 /**
 */
 inline void
-AttributeTable::SetMatrix44(IndexT colIndex, IndexT rowIndex, const Math::mat4& val)
+AttributeTable::SetMat4(IndexT colIndex, IndexT rowIndex, const Math::mat4& val)
 {
     n_assert(this->GetColumnValueType(colIndex) == Mat4Type);
     n_assert(!this->IsRowDeleted(rowIndex));
     Math::scalar* valuePtr = (Math::scalar*) this->GetValuePtr(colIndex, rowIndex);
     val.storeu(valuePtr);
-	if (this->trackModifications)
+    if (this->trackModifications)
     {
         this->rowModifiedBuffer[rowIndex] = 1;
         this->isModified = true;
@@ -664,7 +666,7 @@ AttributeTable::SetMatrix44(IndexT colIndex, IndexT rowIndex, const Math::mat4& 
 /**
 */
 inline Math::mat4
-AttributeTable::GetMatrix44(IndexT colIndex, IndexT rowIndex) const
+AttributeTable::GetMat4(IndexT colIndex, IndexT rowIndex) const
 {
     n_assert(this->GetColumnValueType(colIndex) == Mat4Type);
     Math::scalar* valuePtr = (Math::scalar*) this->GetValuePtr(colIndex, rowIndex);
@@ -833,18 +835,18 @@ AttributeTable::GetVec4(const Vec4AttrId& colAttrId, IndexT rowIndex) const
 /**
 */
 inline void
-AttributeTable::SetMatrix44(const Mat4AttrId& colAttrId, IndexT rowIndex, const Math::mat4& val)
+AttributeTable::SetMat4(const Mat4AttrId& colAttrId, IndexT rowIndex, const Math::mat4& val)
 {
-    this->SetMatrix44(this->indexMap[colAttrId], rowIndex, val);
+    this->SetMat4(this->indexMap[colAttrId], rowIndex, val);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline Math::mat4
-AttributeTable::GetMatrix44(const Mat4AttrId& colAttrId, IndexT rowIndex) const
+AttributeTable::GetMat4(const Mat4AttrId& colAttrId, IndexT rowIndex) const
 {
-    return this->GetMatrix44(this->indexMap[colAttrId], rowIndex);
+    return this->GetMat4(this->indexMap[colAttrId], rowIndex);
 }
 
 //------------------------------------------------------------------------------

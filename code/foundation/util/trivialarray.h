@@ -30,7 +30,7 @@ public:
     TrivialArray(const TrivialArray<TYPE>& rhs);
     /// copy constructor from Array
     TrivialArray(const Array<TYPE>& rhs);
-	/// constructor from initializer list
+    /// constructor from initializer list
     TrivialArray(std::initializer_list<TYPE> list);
     /// destructor
     ~TrivialArray();
@@ -96,7 +96,7 @@ TrivialArray<TYPE>::TrivialArray(SizeT initialSize, SizeT _grow, const TYPE& ini
 */
 template<class TYPE>
 TrivialArray<TYPE>::TrivialArray(std::initializer_list<TYPE> list) :
-    Array<TYPE>(list)	
+    Array<TYPE>(list)   
 {
     static_assert(std::is_trivial<TYPE>::value, "Non trivial type used, try Util::Array instead");
 
@@ -109,7 +109,7 @@ template<class TYPE>
 TrivialArray<TYPE>::TrivialArray(const TrivialArray<TYPE>& rhs) 
 {
     this->elements = 0;
-	this->Copy(rhs);
+    this->Copy(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -241,7 +241,7 @@ TrivialArray<TYPE>::GrowTo(SizeT newCapacity)
     {
         Memory::Copy(this->elements, newArray, this->size * sizeof(TYPE));        
         // discard old array
-		n_delete_array(this->elements);
+        n_delete_array(this->elements);
     }
     this->elements  = newArray;
     this->capacity = newCapacity;
@@ -250,7 +250,7 @@ TrivialArray<TYPE>::GrowTo(SizeT newCapacity)
 //------------------------------------------------------------------------------
 /**
     30-Jan-03   floh    serious bugfixes!
-	07-Dec-04	jo		bugfix: neededSize >= this->capacity => neededSize > capacity	
+    07-Dec-04   jo      bugfix: neededSize >= this->capacity => neededSize > capacity   
 */
 template<class TYPE> void
 TrivialArray<TYPE>::Move(IndexT fromIndex, IndexT toIndex)

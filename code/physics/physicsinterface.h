@@ -26,20 +26,11 @@ namespace Physics
 RESOURCE_ID_TYPE(ActorResourceId);
 RESOURCE_ID_TYPE(ColliderId);
 
-enum CollisionFeedbackFlag
-{
-	/// callbacks for begin, persist, and end collision
-	CollisionFeedbackFull	= 1,
-	/// only on first contact
-	CollisionSingle			= 2
-};
-
 struct Material
 {
     physx::PxMaterial * material;
     Util::StringAtom name;
     uint64_t serialId;
-    // for actors created via streamactorpool this is ignored as it can have multiple materials in it
     float density;
 };
 
@@ -56,9 +47,6 @@ struct Actor
     ActorId id;
     ActorResourceId res;
     uint64_t userData;
-    // FIXME delegate doesnt seem to work here (see testviewer for example)
-    //std::function<void(ActorId id, Math::mat4 const&)> moveCallback;
-    Util::Delegate<void(ActorId id, Math::mat4 const&)> moveCallback;
 };
 
 /// physx scene classes, foundation and physics are duplicated here for convenience
@@ -90,6 +78,11 @@ Physics::Scene& GetScene(IndexT idx = 0);
 void RenderDebug();
 ///
 void HandleCollisions();
+
+/// 
+void SetOnSleepCallback(Util::Delegate<void(ActorId* id, SizeT num)> const& callback);
+///
+void SetOnWakeCallback(Util::Delegate<void(ActorId* id, SizeT num)> const& callback);
 
 ///
 IndexT CreateMaterial(Util::StringAtom name, float staticFriction, float dynamicFriction, float restition, float density);

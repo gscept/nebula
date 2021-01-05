@@ -41,10 +41,7 @@ IoInterface::Open()
     // setup the message handler thread object
     Ptr<BlockingHandlerThread> handlerThread = BlockingHandlerThread::Create();
     handlerThread->SetName("IoInterface Thread");
-	handlerThread->SetThreadAffinity(System::Cpu::Core3);
-#if __WII_
-    handlerThread->SetPriority(Thread::NormalBoost);
-#endif        
+    handlerThread->SetThreadAffinity(System::Cpu::Core3);
     handlerThread->AttachHandler(IoInterfaceHandler::Create());
     this->SetHandlerThread(handlerThread.cast<HandlerThreadBase>());
 
@@ -57,7 +54,7 @@ IoInterface::Open()
 void
 IoInterface::Close()
 {
-	InterfaceBase::Close();
+    InterfaceBase::Close();
 }
 
 } // namespace IO

@@ -14,12 +14,12 @@ vec4 Color = vec4(1,1,1,1);
 
 sampler_state BillboardSampler
 {
-	//Samplers = { AlbedoMap };
+    //Samplers = { AlbedoMap };
 };
 
 render_state BillboardState
 {
-	CullMode = None;
+    CullMode = None;
 };
 
 
@@ -29,9 +29,9 @@ render_state BillboardState
 shader
 void
 vsDefault(
-	[slot=0] in vec2 position,
-	[slot=2] in vec2 uv,
-	out vec2 UV) 
+    [slot=0] in vec2 position,
+    [slot=2] in vec2 uv,
+    out vec2 UV) 
 {
     gl_Position = ViewProjection * Model * vec4(position, 0, 1);
     UV = uv;
@@ -43,15 +43,15 @@ vsDefault(
 shader
 void
 psDefault(in vec2 UV,
-		[color0] out vec4 Albedo)
+        [color0] out vec4 Albedo)
 {
-	// get diffcolor
-	vec4 diffColor = sample2D(AlbedoMap, BillboardSampler, UV) * Color;
-	
-	float alpha = diffColor.a;
-	if (alpha < 0.5f) discard;
-	
-	Albedo = EncodeHDR(diffColor);
+    // get diffcolor
+    vec4 diffColor = sample2D(AlbedoMap, BillboardSampler, UV) * Color;
+    
+    float alpha = diffColor.a;
+    if (alpha < 0.5f) discard;
+    
+    Albedo = EncodeHDR(diffColor);
 }
 
 //------------------------------------------------------------------------------

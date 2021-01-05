@@ -31,7 +31,7 @@ Rtti::Construct(const char* className, FourCC fcc, Creator creatorFunc, ArrayCre
     this->parent = parentClass;
     this->fourCC = fcc;     // NOTE: may be 0
     this->creator = creatorFunc;
-	this->arrayCreator = arrayCreatorFunc;
+    this->arrayCreator = arrayCreatorFunc;
     this->instanceSize = instSize;
 
     // register class with factory
@@ -120,15 +120,15 @@ Rtti::Create() const
 void*
 Rtti::CreateArray(SizeT num) const
 {
-	if (0 == this->arrayCreator)
-	{
-		n_error("Rtti::Create(): Trying to create instance of abstract class '%s'!", this->name.AsCharPtr());
-		return 0;
-	}
-	else
-	{
-		return this->arrayCreator(num);
-	}
+    if (0 == this->arrayCreator)
+    {
+        n_error("Rtti::Create(): Trying to create instance of abstract class '%s'!", this->name.AsCharPtr());
+        return 0;
+    }
+    else
+    {
+        return this->arrayCreator(num);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -203,11 +203,11 @@ void*
 Rtti::AllocInstanceMemoryArray(size_t num)
 {
 #if NEBULA_OBJECTS_USE_MEMORYPOOL    
-	void* ptr = Memory::ObjectPoolAllocator->Alloc(this->instanceSize * num);
+    void* ptr = Memory::ObjectPoolAllocator->Alloc(this->instanceSize * num);
 #else
-	void* ptr = Memory::Alloc(Memory::ObjectHeap, this->instanceSize * (num / this->instanceSize));
+    void* ptr = Memory::Alloc(Memory::ObjectHeap, this->instanceSize * (num / this->instanceSize));
 #endif
-	return ptr;
+    return ptr;
 }
 
 //------------------------------------------------------------------------------

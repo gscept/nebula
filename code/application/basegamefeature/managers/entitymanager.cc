@@ -117,6 +117,36 @@ OnFrame()
     // empty
 }
 
+void
+DefragmentCategoryInstances(Category const& cat)
+{
+    Ptr<MemDb::Database> db = GetWorldDatabase();
+    MemDb::Table& table = db->GetTable(cat.instanceTable);
+    MemDb::ColumnIndex ownerColumnId = db->GetColumnId(cat.instanceTable, EntityManager::Singleton->state.ownerId);
+
+    // defragment the table. Any instances that has been deleted will be swap'n'popped,
+    // which means we need to update the entity mapping.
+    // The move callback is signaled BEFORE the swap has happened.
+    auto* const map = &(EntityManager::Singleton->state.entityMap);
+    SizeT numErased = db->Defragment(cat.instanceTable, [map, cat, &ownerColumnId, &table](InstanceId from, InstanceId to)
+    {
+        Game::Entity fromEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[from.id].id;
+        Game::Entity toEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[to.id].id;
+        if (!IsValid(fromEntity))
+        {
+            // we need to add this instances new index to the to the freeids list, since it's been deleted.
+            // the 'from' instance will be swapped with the 'to' instance, so we just add the 'to' id to the list;
+            // and it will automatically be defragged
+            table.freeIds.Append(to.id);
+        }
+        else
+        {
+            (*map)[Ids::Index(fromEntity.id)].instance = to;
+            (*map)[Ids::Index(toEntity.id)].instance = from;
+        }
+    });
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -125,6 +155,15 @@ OnEndFrame()
 {
     n_assert(EntityManager::HasInstance());
     EntityManager::State* const state = &EntityManager::Singleton->state;
+
+    // NOTE: The order of the following loops are important!
+
+    // Clean up any managed property instances.
+    for (IndexT c = 0; c < state->categoryArray.Size(); c++)
+    {
+        MemDb::TableId tid = state->categoryArray[c].managedPropertyTable;
+        state->worldDatabase->Clean(tid);
+    }
 
     // Clean up entities
     while (!state->deallocQueue.IsEmpty())
@@ -157,30 +196,7 @@ OnEndFrame()
     for (IndexT c = 0; c < state->categoryArray.Size(); c++)
     {
         Category& cat = state->categoryArray[c];
-        MemDb::Table& table = db->GetTable(cat.instanceTable);
-        MemDb::ColumnIndex ownerColumnId = db->GetColumnId(cat.instanceTable, state->ownerId);
-
-        // defragment the table. Any instances that has been deleted will be swap'n'popped,
-        // which means we need to update the entity mapping.
-        // The move callback is signaled BEFORE the swap has happened.
-        auto* const map = &state->entityMap;
-        SizeT numErased = db->Defragment(cat.instanceTable, [map, cat, &ownerColumnId, &table](InstanceId from, InstanceId to)
-        {
-            Game::Entity fromEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[from.id].id;
-            Game::Entity toEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[to.id].id;
-            if (!IsValid(fromEntity))
-            {
-                // we need to add this instances new index to the to the freeids list, since it's been deleted.
-                // the 'from' instance will be swapped with the 'to' instance, so we just add the 'to' id to the list;
-                // and it will automatically be defragged
-                table.freeIds.Append(to.id);
-            }
-            else
-            {
-                (*map)[Ids::Index(fromEntity.id)].instance = to;
-                (*map)[Ids::Index(to.id)].instance = from;
-            }
-        });
+        DefragmentCategoryInstances(cat);
     }
 
     Game::ReleaseAllOps();
@@ -216,10 +232,10 @@ EntityManager::Create()
     EntityManager::Singleton = n_new(EntityManager);
 
     ManagerAPI api;
-    api.OnBeginFrame	= &OnBeginFrame;
-    api.OnFrame			= &OnFrame;
-    api.OnEndFrame		= &OnEndFrame;
-    api.OnDeactivate	= &Destroy;
+    api.OnBeginFrame    = &OnBeginFrame;
+    api.OnFrame         = &OnFrame;
+    api.OnEndFrame      = &OnEndFrame;
+    api.OnDeactivate    = &Destroy;
     return api;
 }
 
@@ -240,9 +256,9 @@ CategoryId
 EntityManager::CreateCategory(CategoryCreateInfo const& info)
 {
     CategoryHash catHash;
-    for (int i = 0; i < info.columns.Size(); i++)
+    for (int i = 0; i < info.properties.Size(); i++)
     {
-        catHash.AddToHash(info.columns[i].id);
+        catHash.AddToHash(info.properties[i].id);
     }
 
     if (this->state.catIndexMap.Contains(catHash))
@@ -250,22 +266,61 @@ EntityManager::CreateCategory(CategoryCreateInfo const& info)
         return this->state.catIndexMap[catHash];
     }
 
+    Category cat;
+    constexpr ushort NUM_PROPS = 256;
+    PropertyId properties[NUM_PROPS];
+
     MemDb::TableCreateInfo tableInfo;
     tableInfo.name = info.name;
-    const SizeT tableSize = info.columns.Size() + 1;
-    tableInfo.columns.SetSize(tableSize);
-
-    // always add owner as first column
-    tableInfo.columns[0] = this->state.ownerId;
-    for (int i = 1; i < tableSize; i++)
+    if (info.properties[0] != this->state.ownerId)
     {
-        n_assert2(info.columns[i - 1] != PropertyId::Invalid(), "ERROR: Invalid property in CategoryCreateInfo!\n");
-        tableInfo.columns[i] = info.columns[i - 1];
+        // push owner id into the property array
+        const SizeT tableSize = 1 + info.properties.Size();
+        n_assert(tableSize < NUM_PROPS);
+        tableInfo.numProperties = tableSize;
+        tableInfo.properties = properties;
+
+        // always add owner as first column
+        properties[0] = this->state.ownerId;
+        for (int i = 1; i < tableSize; i++)
+        {
+            properties[i] = info.properties[i - 1];
+        }
     }
-    
-    Category cat;
+    else
+    {
+        const SizeT tableSize = info.properties.Size();
+        tableInfo.numProperties = tableSize;
+        tableInfo.properties = info.properties.begin();
+    }
+
     // Create an instance table
     cat.instanceTable = this->state.worldDatabase->CreateTable(tableInfo);
+
+    // Find all managed properties
+    int numManaged = 0;
+    for (int i = 0; i < info.properties.Size(); i++)
+    {
+        if ((MemDb::TypeRegistry::Flags(info.properties[i]) & PropertyFlags::PROPERTYFLAG_MANAGED) == PropertyFlags::PROPERTYFLAG_MANAGED)
+        {
+            properties[numManaged] = info.properties[i];
+            numManaged++;
+            n_assert(numManaged < NUM_PROPS);
+        }
+    }
+
+    // Managed properties table
+    if (numManaged > 0)
+    {
+        MemDb::TableCreateInfo managedTableInfo;
+        managedTableInfo.name = "<MNGD>:" + info.name;
+        managedTableInfo.properties = properties;
+        managedTableInfo.numProperties = numManaged;
+        cat.managedPropertyTable = this->state.worldDatabase->CreateTable(managedTableInfo);
+    }
+    else
+        cat.managedPropertyTable = MemDb::TableId::Invalid();
+
     cat.hash = catHash;
 
 #ifdef NEBULA_DEBUG
@@ -356,9 +411,6 @@ EntityManager::AllocateInstance(Entity entity, TemplateId templateId)
     this->state.entityMap[Ids::Index(entity.id)] = mapping;
 
     Category const& cat = this->GetCategory(mapping.category);
-    // Just make sure the first column in always owner!
-    n_assert(this->state.worldDatabase->GetColumnId(cat.instanceTable, this->state.ownerId) == 0);
-
     // Set the owner of this instance
     Game::Entity* owners = (Game::Entity*)this->state.worldDatabase->GetBuffer(cat.instanceTable, 0);
     owners[mapping.instance.id] = entity;
@@ -380,7 +432,14 @@ EntityManager::DeallocateInstance(Entity entity)
     
     n_assert(instance != Game::InstanceId::Invalid());
 
-    this->state.worldDatabase->DeallocateRow(cat.instanceTable, instance.id);
+    if (cat.managedPropertyTable == MemDb::TableId::Invalid())
+        this->state.worldDatabase->DeallocateRow(cat.instanceTable, instance.id);
+    else
+    {
+        // migrate to managed property table so that we can allow the managers
+        // to clean up any externally allocated resources.
+        this->state.worldDatabase->MigrateInstance(cat.instanceTable, instance.id, cat.managedPropertyTable, false);
+    }
 
     instance = InstanceId::Invalid();
 }
@@ -394,15 +453,16 @@ EntityManager::Migrate(Entity entity, CategoryId newCategory)
     EntityMapping mapping = GetEntityMapping(entity);
     Category const& oldCat = this->GetCategory(mapping.category);
     Category const& newCat = this->GetCategory(newCategory);
-    InstanceId newInstance = this->state.worldDatabase->MigrateInstance(oldCat.instanceTable, mapping.instance.id, newCat.instanceTable);
+    InstanceId newInstance = this->state.worldDatabase->MigrateInstance(oldCat.instanceTable, mapping.instance.id, newCat.instanceTable, false);
+    DefragmentCategoryInstances(oldCat);
     this->state.entityMap[Ids::Index(entity.id)] = { newCategory, newInstance };
     return newInstance;
 }
 
 //------------------------------------------------------------------------------
 /**
-    @param newInstances		Will be filled with the new instance ids in the destination category.
-    @note	This assumes ALL entities in the entity array is of same category!
+    @param newInstances     Will be filled with the new instance ids in the destination category.
+    @note   This assumes ALL entities in the entity array is of same category!
 */
 void
 EntityManager::Migrate(Util::Array<Entity> const& entities, CategoryId fromCategory, CategoryId newCategory, Util::FixedArray<IndexT>& newInstances)
@@ -428,8 +488,8 @@ EntityManager::Migrate(Util::Array<Entity> const& entities, CategoryId fromCateg
     Category const& oldCat = this->GetCategory(fromCategory);
     Category const& newCat = this->GetCategory(newCategory);
 
-    GetWorldDatabase()->MigrateInstances(oldCat.instanceTable, instances, newCat.instanceTable, newInstances);
-
+    GetWorldDatabase()->MigrateInstances(oldCat.instanceTable, instances, newCat.instanceTable, newInstances, false);
+    DefragmentCategoryInstances(oldCat);
     for (IndexT i = 0; i < num; i++)
     {
         this->state.entityMap[Ids::Index(entities[i].id)] = { newCategory, (uint32_t)newInstances[i] };

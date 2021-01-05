@@ -51,10 +51,10 @@ public:
     Array(const Array<TYPE>& rhs);
     /// move constructor
     Array(Array<TYPE>&& rhs) noexcept;
-	/// constructor from initializer list
-	Array(std::initializer_list<TYPE> list);
-	/// construct an empty fixed array
-	Array(std::nullptr_t);
+    /// constructor from initializer list
+    Array(std::initializer_list<TYPE> list);
+    /// construct an empty fixed array
+    Array(std::nullptr_t);
     /// constructor from TYPE pointer and size. @note copies the buffer.
     Array(const TYPE* const buf, SizeT num);
     /// destructor
@@ -108,10 +108,10 @@ public:
     Iterator EraseSwap(Iterator iter);
     /// erase range
     void EraseRange(IndexT start, SizeT end);
-	/// erase back
-	void EraseBack();
-	/// erase front
-	void EraseFront();
+    /// erase back
+    void EraseBack();
+    /// erase front
+    void EraseFront();
     /// insert element before element at index
     void Insert(IndexT index, const TYPE& elm);
     /// insert element into sorted array, return index where element was included
@@ -124,8 +124,8 @@ public:
     void Clear();
     /// reset array (does NOT call destructors)
     void Reset();
-	/// free memory and reset size
-	void Free();
+    /// free memory and reset size
+    void Free();
     /// return iterator to beginning of array
     Iterator Begin() const;
     /// return iterator to end of array
@@ -144,26 +144,26 @@ public:
     Array<TYPE> Difference(const Array<TYPE>& rhs);
     /// sort the array
     void Sort();
-	/// sort with custom function
-	void SortWithFunc(bool (*func)(const TYPE& lhs, const TYPE& rhs));
+    /// sort with custom function
+    void SortWithFunc(bool (*func)(const TYPE& lhs, const TYPE& rhs));
     /// do a binary search, requires a sorted array
     IndexT BinarySearchIndex(const TYPE& elm) const;
-	/// do a binary search using a specific key type
-	template <typename KEYTYPE> IndexT BinarySearchIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const;
-	
-	/// Set size. Grows array if num is greater than capacity. Calls destroy on all objects at index > num!
-	void Resize(SizeT num);
+    /// do a binary search using a specific key type
+    template <typename KEYTYPE> IndexT BinarySearchIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const;
+    
+    /// Set size. Grows array if num is greater than capacity. Calls destroy on all objects at index > num!
+    void Resize(SizeT num);
 
-	/// Returns sizeof(TYPE)
-	constexpr SizeT TypeSize() const;
+    /// Returns sizeof(TYPE)
+    constexpr SizeT TypeSize() const;
 
-	/// for range-based iteration
-	Iterator begin() const;
-	Iterator end() const;
+    /// for range-based iteration
+    Iterator begin() const;
+    Iterator end() const;
     size_t size() const;
     void resize(size_t size);
 
-	/// grow array
+    /// grow array
     void Grow();
 protected:
     /// destroy an element (call destructor without freeing memory)
@@ -176,12 +176,12 @@ protected:
     void GrowTo(SizeT newCapacity);
     /// move elements, grows array if needed
     void Move(IndexT fromIndex, IndexT toIndex);
-	/// destroy range of elements
-	void DestroyRange(IndexT fromIndex, IndexT toIndex);
-	/// copy range
-	void CopyRange(TYPE* to, TYPE* from, SizeT num);
-	/// move range
-	void MoveRange(TYPE* to, TYPE* from, SizeT num);
+    /// destroy range of elements
+    void DestroyRange(IndexT fromIndex, IndexT toIndex);
+    /// copy range
+    void CopyRange(TYPE* to, TYPE* from, SizeT num);
+    /// move range
+    void MoveRange(TYPE* to, TYPE* from, SizeT num);
 
     static const SizeT MinGrowSize = 16;
     static const SizeT MaxGrowSize = 65536; // FIXME: big grow size needed for mesh tools
@@ -196,7 +196,7 @@ protected:
 */
 template<class TYPE>
 Array<TYPE>::Array() :
-    grow(MinGrowSize),
+    grow(16),
     capacity(0),
     count(0),
     elements(0)
@@ -275,23 +275,23 @@ Array<TYPE>::Array(const TYPE* const buf, SizeT num) :
 */
 template<class TYPE>
 Array<TYPE>::Array(std::initializer_list<TYPE> list) :
-	grow(16),
-	capacity((SizeT)list.size()),
-	count((SizeT)list.size())
+    grow(16),
+    capacity((SizeT)list.size()),
+    count((SizeT)list.size())
 {
-	if (this->capacity > 0)
-	{
-		this->elements = n_new_array(TYPE, this->capacity);
-		IndexT i;
-		for (i = 0; i < this->count; i++)
-		{
-			this->elements[i] = list.begin()[i];
-		}
-	}
-	else
-	{
-		this->elements = 0;
-	}
+    if (this->capacity > 0)
+    {
+        this->elements = n_new_array(TYPE, this->capacity);
+        IndexT i;
+        for (i = 0; i < this->count; i++)
+        {
+            this->elements[i] = list.begin()[i];
+        }
+    }
+    else
+    {
+        this->elements = 0;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -299,12 +299,12 @@ Array<TYPE>::Array(std::initializer_list<TYPE> list) :
 */
 template<class TYPE>
 Array<TYPE>::Array(std::nullptr_t) :
-	grow(0),
-	capacity(0),
-	count(0),
-	elements(0)
+    grow(0),
+    capacity(0),
+    count(0),
+    elements(0)
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -312,12 +312,12 @@ Array<TYPE>::Array(std::nullptr_t) :
 */
 template<class TYPE>
 Array<TYPE>::Array(const Array<TYPE>& rhs) :
-	grow(0),
-	capacity(0),
-	count(0),
-	elements(0)
+    grow(0),
+    capacity(0),
+    count(0),
+    elements(0)
 {
-	this->Copy(rhs);
+    this->Copy(rhs);
 }
 
 //------------------------------------------------------------------------------
@@ -426,10 +426,10 @@ Array<TYPE>::operator=(const Array<TYPE>& rhs)
             // source array fits into our capacity, copy in place
             n_assert(0 != this->elements);
 
-			this->CopyRange(this->elements, rhs.elements, rhs.count);
+            this->CopyRange(this->elements, rhs.elements, rhs.count);
             if (rhs.count < this->count)
             {
-			    this->DestroyRange(rhs.count, this->count);
+                this->DestroyRange(rhs.count, this->count);
             }
             this->grow = rhs.grow;
             this->count = rhs.count;
@@ -472,10 +472,10 @@ Array<TYPE>::GrowTo(SizeT newCapacity)
     TYPE* newArray = n_new_array(TYPE, newCapacity);
     if (this->elements)
     {
-		this->MoveRange(newArray, this->elements, this->count);
+        this->MoveRange(newArray, this->elements, this->count);
 
         // discard old array
-		n_delete_array(this->elements);
+        n_delete_array(this->elements);
     }
     this->elements  = newArray;
     this->capacity = newCapacity;
@@ -516,7 +516,7 @@ Array<TYPE>::Grow()
 //------------------------------------------------------------------------------
 /**
     30-Jan-03   floh    serious bugfixes!
-	07-Dec-04	jo		bugfix: neededSize >= this->capacity => neededSize > capacity	
+    07-Dec-04   jo      bugfix: neededSize >= this->capacity => neededSize > capacity   
 */
 template<class TYPE> void
 Array<TYPE>::Move(IndexT fromIndex, IndexT toIndex)
@@ -572,18 +572,18 @@ template<class TYPE>
 inline void 
 Array<TYPE>::DestroyRange(IndexT fromIndex, IndexT toIndex)
 {    
-	if constexpr (!std::is_trivially_destructible<TYPE>::value)
-	{
-		for (IndexT i = fromIndex; i < toIndex; i++)
-		{
-			this->Destroy(&(this->elements[i]));
-		}
-	}
+    if constexpr (!std::is_trivially_destructible<TYPE>::value)
+    {
+        for (IndexT i = fromIndex; i < toIndex; i++)
+        {
+            this->Destroy(&(this->elements[i]));
+        }
+    }
 #if NEBULA_DEBUG
-	else
-	{
-        Memory::Clear(&this->elements[fromIndex], sizeof(TYPE) * (toIndex - fromIndex));		
-	}
+    else
+    {
+        Memory::Clear(&this->elements[fromIndex], sizeof(TYPE) * (toIndex - fromIndex));        
+    }
 #endif
 }
 
@@ -594,19 +594,19 @@ template<class TYPE>
 inline void 
 Array<TYPE>::CopyRange(TYPE* to, TYPE* from, SizeT num)
 {
-	// this is a backward move
-	if constexpr (!std::is_trivially_copyable<TYPE>::value)
-	{
-		IndexT i;
-		for (i = 0; i < num; i++)
-		{
-			to[i] = from[i];
-		}
-	}
+    // this is a backward move
+    if constexpr (!std::is_trivially_copyable<TYPE>::value)
+    {
+        IndexT i;
+        for (i = 0; i < num; i++)
+        {
+            to[i] = from[i];
+        }
+    }
     else
     {
         Memory::Copy(from, to, num * sizeof(TYPE));
-    }		
+    }       
 }
 
 //------------------------------------------------------------------------------
@@ -616,15 +616,15 @@ template<class TYPE>
 inline void 
 Array<TYPE>::MoveRange(TYPE* to, TYPE* from, SizeT num)
 {
-	// copy over contents
-	if constexpr (!std::is_trivially_move_assignable<TYPE>::value && std::is_move_assignable<TYPE>::value)
-	{
-		IndexT i;
-		for (i = 0; i < num; i++)
-		{
-			to[i] = std::move(from[i]);
-		}
-	}
+    // copy over contents
+    if constexpr (!std::is_trivially_move_assignable<TYPE>::value && std::is_move_assignable<TYPE>::value)
+    {
+        IndexT i;
+        for (i = 0; i < num; i++)
+        {
+            to[i] = std::move(from[i]);
+        }
+    }
     else
     {
         Memory::Move(from, to, num * sizeof(TYPE));
@@ -693,14 +693,14 @@ template<class TYPE> void
 Array<TYPE>::Reserve(SizeT num)
 {
 #if NEBULA_BOUNDSCHECKS
-	n_assert(num >= 0);
+    n_assert(num >= 0);
 #endif
-	
-	SizeT neededCapacity = this->count + num;
-	if (neededCapacity > this->capacity)
-	{
-		this->GrowTo(neededCapacity);
-	}
+    
+    SizeT neededCapacity = this->count + num;
+    if (neededCapacity > this->capacity)
+    {
+        this->GrowTo(neededCapacity);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -841,7 +841,7 @@ Array<TYPE>::EraseIndex(IndexT index)
     if (index == (this->count - 1))
     {
         // special case: last element
-		this->EraseBack();
+        this->EraseBack();
     }
     else
     {
@@ -895,7 +895,7 @@ Array<TYPE>::EraseSwap(typename Array<TYPE>::Iterator iter)
     #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements && (iter >= this->elements) && (iter < (this->elements + this->count)));
     #endif
-	this->EraseIndexSwap(IndexT(iter - this->elements));
+    this->EraseIndexSwap(IndexT(iter - this->elements));
     return iter;
 }
 
@@ -926,10 +926,10 @@ Array<TYPE>::EraseRange(IndexT start, SizeT end)
 template<class TYPE> void
 Array<TYPE>::EraseBack()
 {
-	n_assert(this->count > 0);
-	if constexpr (!std::is_trivially_destructible<TYPE>::value)
-		this->Destroy(&(this->elements[this->count - 1]));
-	this->count--;
+    n_assert(this->count > 0);
+    if constexpr (!std::is_trivially_destructible<TYPE>::value)
+        this->Destroy(&(this->elements[this->count - 1]));
+    this->count--;
 }
 
 //------------------------------------------------------------------------------
@@ -938,7 +938,7 @@ Array<TYPE>::EraseBack()
 template<class TYPE> void
 Array<TYPE>::EraseFront()
 {
-	this->EraseIndex(0);
+    this->EraseIndex(0);
 }
 
 //------------------------------------------------------------------------------
@@ -970,7 +970,7 @@ Array<TYPE>::Insert(IndexT index, const TYPE& elm)
 template<class TYPE> void
 Array<TYPE>::Clear()
 {
-	this->DestroyRange(0, this->count);
+    this->DestroyRange(0, this->count);
     this->count = 0;
 }
 
@@ -987,13 +987,13 @@ Array<TYPE>::Reset()
 
 //------------------------------------------------------------------------------
 /**
-	Free up memory and reset the grow
+    Free up memory and reset the grow
 */
 template<class TYPE> void 
 Array<TYPE>::Free()
 {
-	this->Delete();
-	this->grow = 8;
+    this->Delete();
+    this->grow = 8;
 }
 
 //------------------------------------------------------------------------------
@@ -1062,8 +1062,8 @@ Array<TYPE>::FindIndex(const TYPE& elm, const IndexT start) const
 
 //------------------------------------------------------------------------------
 /**
-	Find element in array, return element index, or InvalidIndex if element not
-	found.
+    Find element in array, return element index, or InvalidIndex if element not
+    found.
 
     Template type is used to force a specific type comparison. This might mitigate
     some expensive implicit constructions to TYPE.
@@ -1072,8 +1072,8 @@ Array<TYPE>::FindIndex(const TYPE& elm, const IndexT start) const
     by using typename to put the template type in a non-deducable context.
     The enable_if does nothing except allow us to use typename.
 
-	@param  elm     element to find
-	@return         index to element, or InvalidIndex if not found
+    @param  elm     element to find
+    @return         index to element, or InvalidIndex if not found
 */
 template<class TYPE>
 template<typename KEYTYPE> inline IndexT
@@ -1153,7 +1153,7 @@ Array<TYPE>::Sort()
 template<class TYPE> void
 Util::Array<TYPE>::SortWithFunc(bool (*func)(const TYPE& lhs, const TYPE& rhs))
 {
-	std::sort(this->Begin(), this->End(), func);
+    std::sort(this->Begin(), this->End(), func);
 }
 
 //------------------------------------------------------------------------------
@@ -1169,8 +1169,8 @@ Array<TYPE>::BinarySearchIndex(const TYPE& elm) const
     {
         IndexT half;
         IndexT lo = 0;
-	    IndexT hi = num - 1;
-	    IndexT mid;
+        IndexT hi = num - 1;
+        IndexT mid;
         while (lo <= hi) 
         {
             if (0 != (half = num/2)) 
@@ -1224,51 +1224,51 @@ template<class TYPE>
 template<typename KEYTYPE> inline IndexT 
 Array<TYPE>::BinarySearchIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const
 {
-	SizeT num = this->Size();
-	if (num > 0)
-	{
-		IndexT half;
-		IndexT lo = 0;
-		IndexT hi = num - 1;
-		IndexT mid;
-		while (lo <= hi)
-		{
-			if (0 != (half = num / 2))
-			{
-				mid = lo + ((num & 1) ? half : (half - 1));
-				if (this->elements[mid] > elm)
-				{
-					hi = mid - 1;
-					num = num & 1 ? half : half - 1;
-				}
-				else if (this->elements[mid] < elm)
-				{
-					lo = mid + 1;
-					num = half;
-				}
-				else
-				{
-					return mid;
-				}
-			}
-			else if (0 != num)
-			{
-				if (this->elements[lo] != elm)
-				{
-					return InvalidIndex;
-				}
-				else
-				{
-					return lo;
-				}
-			}
-			else
-			{
-				break;
-			}
-		}
-	}
-	return InvalidIndex;
+    SizeT num = this->Size();
+    if (num > 0)
+    {
+        IndexT half;
+        IndexT lo = 0;
+        IndexT hi = num - 1;
+        IndexT mid;
+        while (lo <= hi)
+        {
+            if (0 != (half = num / 2))
+            {
+                mid = lo + ((num & 1) ? half : (half - 1));
+                if (this->elements[mid] > elm)
+                {
+                    hi = mid - 1;
+                    num = num & 1 ? half : half - 1;
+                }
+                else if (this->elements[mid] < elm)
+                {
+                    lo = mid + 1;
+                    num = half;
+                }
+                else
+                {
+                    return mid;
+                }
+            }
+            else if (0 != num)
+            {
+                if (this->elements[lo] != elm)
+                {
+                    return InvalidIndex;
+                }
+                else
+                {
+                    return lo;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+    return InvalidIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -1277,16 +1277,16 @@ Array<TYPE>::BinarySearchIndex(typename std::enable_if<true, const KEYTYPE&>::ty
 template<class TYPE> void
 Array<TYPE>::Resize(SizeT num)
 {
-	if (num < this->count)
-	{
-		this->DestroyRange(num, this->count);
-	}
-	else if (num > capacity)
-	{
-		this->GrowTo(num);
-	}
+    if (num < this->count)
+    {
+        this->DestroyRange(num, this->count);
+    }
+    else if (num > capacity)
+    {
+        this->GrowTo(num);
+    }
 
-	this->count = num;
+    this->count = num;
 }
 
 //------------------------------------------------------------------------------
@@ -1304,7 +1304,7 @@ Array<TYPE>::SetSize(SizeT s)
 template<class TYPE> inline constexpr SizeT 
 Array<TYPE>::TypeSize() const
 {
-	return sizeof(TYPE);
+    return sizeof(TYPE);
 }
 
 //------------------------------------------------------------------------------
@@ -1322,7 +1322,7 @@ Array<TYPE>::size() const
 template<class TYPE> typename Array<TYPE>::Iterator
 Array<TYPE>::begin() const
 {
-	return this->elements;
+    return this->elements;
 }
 
 //------------------------------------------------------------------------------
@@ -1331,7 +1331,7 @@ Array<TYPE>::begin() const
 template<class TYPE> typename Array<TYPE>::Iterator
 Array<TYPE>::end() const
 {
-	return this->elements + this->count;
+    return this->elements + this->count;
 }
 
 //------------------------------------------------------------------------------
@@ -1413,8 +1413,8 @@ Array<TYPE>::InsertSorted(const TYPE& elm)
     {
         IndexT half;
         IndexT lo = 0;
-	    IndexT hi = num - 1;
-	    IndexT mid;
+        IndexT hi = num - 1;
+        IndexT mid;
         while (lo <= hi) 
         {
             if (0 != (half = num/2)) 

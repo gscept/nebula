@@ -21,7 +21,7 @@ PrimitiveTopology::FromString(const String& str)
     else if (str == "LineStrip")        return LineStrip;
     else if (str == "TriangleList")     return TriangleList;
     else if (str == "TriangleStrip")    return TriangleStrip;
-	else if (str == "PatchList")		return PatchList;
+    else if (str == "PatchList")        return PatchList;
 
     else
     {
@@ -43,7 +43,7 @@ PrimitiveTopology::ToString(Code code)
         case LineStrip:     return "LineStrip";
         case TriangleList:  return "TriangleList";
         case TriangleStrip: return "TriangleStrip";
-		case PatchList:		return "PatchList";
+        case PatchList:     return "PatchList";
 
         default:
             n_error("PrimitiveTopology::ToString(): invalid topology code!");
@@ -66,7 +66,7 @@ PrimitiveTopology::NumberOfVertices(Code topology, SizeT numPrimitives)
         case LineStrip:     return numPrimitives + 1;
         case TriangleList:  return numPrimitives * 3;
         case TriangleStrip: return numPrimitives + 2;
-		case PatchList:		return numPrimitives;
+        case PatchList:     return numPrimitives;
         
         default:
             n_error("PrimitiveTopology::NumberOfVertices(): invalid topology!");
@@ -89,7 +89,7 @@ PrimitiveTopology::NumberOfPrimitives(Code topology, SizeT numVertices)
         case LineStrip:     return numVertices - 1;
         case TriangleList:  return numVertices / 3;
         case TriangleStrip: return numVertices - 2;
-		case PatchList:		return numVertices;
+        case PatchList:     return numVertices;
 
         default:
             n_error("PrimitiveTopology::NumberOfPrimitives(): invalid topology!");

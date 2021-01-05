@@ -17,38 +17,38 @@ namespace Vulkan
 
 struct VkBufferLoadInfo
 {
-	VkDevice dev;
-	CoreGraphics::Alloc mem;
-	CoreGraphics::BufferAccessMode mode;
-	uint32_t size;
-	uint32_t elementSize;
-	uint32_t byteSize;
+    VkDevice dev;
+    CoreGraphics::Alloc mem;
+    CoreGraphics::BufferAccessMode mode;
+    uint32_t size;
+    uint32_t elementSize;
+    uint32_t byteSize;
 };
 
 struct VkBufferRuntimeInfo
 {
-	VkBuffer buf;
-	CoreGraphics::BufferUsageFlags usageFlags;
+    VkBuffer buf;
+    CoreGraphics::BufferUsageFlags usageFlags;
 };
 
 struct VkBufferMapInfo
 {
-	void* mappedMemory;
-	uint32_t mapCount;
+    void* mappedMemory;
+    uint32_t mapCount;
 };
 
 enum
 {
-	Buffer_LoadInfo,
-	Buffer_RuntimeInfo,
-	Buffer_MapInfo,
+    Buffer_LoadInfo,
+    Buffer_RuntimeInfo,
+    Buffer_MapInfo,
 };
 
 
 typedef Ids::IdAllocatorSafe<
-	VkBufferLoadInfo,
-	VkBufferRuntimeInfo,
-	VkBufferMapInfo
+    VkBufferLoadInfo,
+    VkBufferRuntimeInfo,
+    VkBufferMapInfo
 > VkBufferAllocator;
 extern VkBufferAllocator bufferAllocator;
 

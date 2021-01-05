@@ -54,7 +54,7 @@ static Scene* scenes[] =
 {
     &ExampleScene,
     &ClusteredScene,
-	&BenchmarkScene,
+    &BenchmarkScene,
     &SSRScene,
     &SponzaScene,
     &BistroScene,
@@ -64,10 +64,10 @@ static Scene* scenes[] =
 
 enum
 {
-	ExampleSceneId,
-	ClusteredSceneId,
-	BenchmarkSceneId,
-	SSRSceneId,
+    ExampleSceneId,
+    ClusteredSceneId,
+    BenchmarkSceneId,
+    SSRSceneId,
     SponzaSceneId,
     BistroSceneId,
     TerrainSceneId,

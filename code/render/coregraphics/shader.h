@@ -1,25 +1,25 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	A shader represents an entire shader resource, containing several stages and programs.
+    A shader represents an entire shader resource, containing several stages and programs.
 
-	ShaderId - A shader resource handle. It cannot be used for anything other than quering
-	the shader file (usually suffixed with .fx) for reflection information.
+    ShaderId - A shader resource handle. It cannot be used for anything other than quering
+    the shader file (usually suffixed with .fx) for reflection information.
 
-	ShaderStateId - An instantiation of either all or a subset of the variables in that shader.
-	The state contains the, well, state of all resources (constant buffers, textures, read/write buffers)
-	as well as the constant values.
+    ShaderStateId - An instantiation of either all or a subset of the variables in that shader.
+    The state contains the, well, state of all resources (constant buffers, textures, read/write buffers)
+    as well as the constant values.
 
-	ShaderProgramId - The shader will most likely have a set of shader permutations, and those permutations
-	are called programs. The ShaderProgramId binds both the shader, and an associated permutation in one
-	call.
+    ShaderProgramId - The shader will most likely have a set of shader permutations, and those permutations
+    are called programs. The ShaderProgramId binds both the shader, and an associated permutation in one
+    call.
 
-	ShaderConstantId - The resources applied with the ShaderStateId are more atomically defined 
-	as constants, and serves both as individual shader constants (variables in CPU time, constant in GPU time)
-	as well as the resource binds to that state. They are bound to a inherently bound to a state, and such
-	modifying a constant requires both the state and constant id for that state. 
+    ShaderConstantId - The resources applied with the ShaderStateId are more atomically defined 
+    as constants, and serves both as individual shader constants (variables in CPU time, constant in GPU time)
+    as well as the resource binds to that state. They are bound to a inherently bound to a state, and such
+    modifying a constant requires both the state and constant id for that state. 
 
-	(C)2017-2020 Individual contributors, see AUTHORS file
+    (C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
@@ -38,40 +38,40 @@ struct ResourceTableId;
 struct ResourceTableLayoutId;
 struct ResourcePipelineId;
 
-RESOURCE_ID_TYPE(ShaderId);				// 32 bits container, 24 bits resource, 8 bits type
-ID_24_8_24_8_NAMED_TYPE(ShaderProgramId, programId, programType, shaderId, shaderType);		// 32 bits shader, 24 bits program, 8 bits type
+RESOURCE_ID_TYPE(ShaderId);             // 32 bits container, 24 bits resource, 8 bits type
+ID_24_8_24_8_NAMED_TYPE(ShaderProgramId, programId, programType, shaderId, shaderType);     // 32 bits shader, 24 bits program, 8 bits type
 
-ID_32_TYPE(DerivativeStateId);			// 32 bits derivative state (already created from an ordinary state)
+ID_32_TYPE(DerivativeStateId);          // 32 bits derivative state (already created from an ordinary state)
 
 struct ShaderCreateInfo
 {
-	const Resources::ResourceName name;
+    const Resources::ResourceName name;
 };
 
 enum ShaderConstantType
 {
-	UnknownVariableType,
-	IntVariableType,
-	FloatVariableType,
-	VectorVariableType,		// vec4
-	Vector2VariableType,	// vec2
-	MatrixVariableType,
-	BoolVariableType,
-	TextureVariableType,
-	SamplerVariableType,
-	ConstantBufferVariableType,
-	ImageReadWriteVariableType,
-	BufferReadWriteVariableType,
-	TextureHandleType,		// just a uint
-	ImageHandleType,		// just a uint
-	SamplerHandleType		// just a uint
+    UnknownVariableType,
+    IntVariableType,
+    FloatVariableType,
+    VectorVariableType,     // vec4
+    Vector2VariableType,    // vec2
+    MatrixVariableType,
+    BoolVariableType,
+    TextureVariableType,
+    SamplerVariableType,
+    ConstantBufferVariableType,
+    ImageReadWriteVariableType,
+    BufferReadWriteVariableType,
+    TextureHandleType,      // just a uint
+    ImageHandleType,        // just a uint
+    SamplerHandleType       // just a uint
 };
 
 enum ShaderPipeline
 {
-	InvalidPipeline,
-	GraphicsPipeline,
-	ComputePipeline
+    InvalidPipeline,
+    GraphicsPipeline,
+    ComputePipeline
 };
 
 /// get constant type as string

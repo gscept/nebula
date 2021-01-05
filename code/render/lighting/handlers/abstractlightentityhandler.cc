@@ -36,7 +36,7 @@ __Handler(AbstractLightEntity, SetLightCastShadows)
 */
 __Handler(AbstractLightEntity, SetLightShadowIntensity)
 {
-	obj->SetShadowIntensity(msg->GetIntensity());
+    obj->SetShadowIntensity(msg->GetIntensity());
 }
 
 //------------------------------------------------------------------------------
@@ -44,7 +44,7 @@ __Handler(AbstractLightEntity, SetLightShadowIntensity)
 */
 __Handler(AbstractLightEntity, SetLightShadowBias)
 {
-	obj->SetShadowBias(msg->GetBias());
+    obj->SetShadowBias(msg->GetBias());
 }
 
 //------------------------------------------------------------------------------
@@ -52,7 +52,7 @@ __Handler(AbstractLightEntity, SetLightShadowBias)
 */
 __Handler(AbstractLightEntity, SetLightProjectionTexture)
 {
-	obj->SetProjectionTexture(msg->GetTexture());
+    obj->SetProjectionTexture(msg->GetTexture());
 }
 
 //------------------------------------------------------------------------------
@@ -60,7 +60,7 @@ __Handler(AbstractLightEntity, SetLightProjectionTexture)
 */
 __Handler(AbstractLightEntity, SetLightVolumetric)
 {
-	obj->SetVolumetric(msg->GetEnabled());
+    obj->SetVolumetric(msg->GetEnabled());
 }
 
 //------------------------------------------------------------------------------
@@ -68,7 +68,7 @@ __Handler(AbstractLightEntity, SetLightVolumetric)
 */
 __Handler(AbstractLightEntity, SetLightVolumetricScale)
 {
-	obj->SetVolumetricScale(msg->GetScale());
+    obj->SetVolumetricScale(msg->GetScale());
 }
 
 //------------------------------------------------------------------------------
@@ -76,7 +76,7 @@ __Handler(AbstractLightEntity, SetLightVolumetricScale)
 */
 __Handler(AbstractLightEntity, SetLightVolumetricIntensity)
 {
-	obj->SetVolumetricIntensity(msg->GetIntensity());
+    obj->SetVolumetricIntensity(msg->GetIntensity());
 }
 
 //------------------------------------------------------------------------------
@@ -86,12 +86,12 @@ __Dispatcher(AbstractLightEntity)
 {
     __Handle(AbstractLightEntity, SetLightColor);
     __Handle(AbstractLightEntity, SetLightCastShadows);
-	__Handle(AbstractLightEntity, SetLightShadowIntensity);
-	__Handle(AbstractLightEntity, SetLightShadowBias);
-	__Handle(AbstractLightEntity, SetLightProjectionTexture);
-	__Handle(AbstractLightEntity, SetLightVolumetric);
-	__Handle(AbstractLightEntity, SetLightVolumetricScale);
-	__Handle(AbstractLightEntity, SetLightVolumetricIntensity);
+    __Handle(AbstractLightEntity, SetLightShadowIntensity);
+    __Handle(AbstractLightEntity, SetLightShadowBias);
+    __Handle(AbstractLightEntity, SetLightProjectionTexture);
+    __Handle(AbstractLightEntity, SetLightVolumetric);
+    __Handle(AbstractLightEntity, SetLightVolumetricScale);
+    __Handle(AbstractLightEntity, SetLightVolumetricIntensity);
     __HandleUnknown(GraphicsEntity);
 }
 

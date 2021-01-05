@@ -18,7 +18,7 @@
 
 // platform secific stuff for handling/suppress "unused-argument"-warnings
 #if NEBULA_DEBUG
-#if (__XBOX360__ || __WIN32__)
+#if __WIN32__
 #pragma warning( push )
 // warning unused param
 #pragma warning(disable: 4189)
@@ -29,7 +29,7 @@
 
 namespace Core 
 {
-	class RefCounted;
+    class RefCounted;
 }
 
 //------------------------------------------------------------------------------
@@ -41,108 +41,108 @@ public:
     Ptr();
     /// construct from C++ pointer
     Ptr(TYPE* p);
-	/// constructor from nullptr
-	Ptr(std::nullptr_t rhs);
+    /// constructor from nullptr
+    Ptr(std::nullptr_t rhs);
     /// construct from smart pointer
     Ptr(const Ptr<TYPE>& p);
-	/// implement move constructor
-	Ptr(Ptr<TYPE>&& p);
+    /// implement move constructor
+    Ptr(Ptr<TYPE>&& p);
 
-	/// make other type Ptr classes friend
-	template <class OTHERTYPE>
-	friend class Ptr;
+    /// make other type Ptr classes friend
+    template <class OTHERTYPE>
+    friend class Ptr;
 
-	/// construct from C++ pointer of other type
-	template<class OTHERTYPE>
-	Ptr(OTHERTYPE* rhs) : ptr(nullptr)
-	{
-		this->ptr = nullptr;
-		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit cast assumes left hand side must be base of right");
-		TYPE* p = reinterpret_cast<TYPE*>(rhs);
-		if (p != this->ptr)
-		{
-			this->ptr = p;
-			if (this->ptr) 
-				this->ptr->AddRef();
-		}
-	}
-	/// construct from smart pointer of other type
-	template <class OTHERTYPE>
-	Ptr(const Ptr<OTHERTYPE>& rhs) : ptr(nullptr)
-	{
-		this->ptr = nullptr;
-		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit cast assumes left hand side must be base of right");
-		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
-		if (p != this->ptr)
-		{
-			this->ptr = p;
-			if (nullptr != this->ptr) 
-				this->ptr->AddRef();
-		}
-	}
-	/// construct from smart pointer of other type
-	template <class OTHERTYPE>
-	Ptr(Ptr<OTHERTYPE>&& rhs)
-	{
-		this->ptr = nullptr;
-		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit cast assumes left hand side must be base of right");
-		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
-		this->ptr = p;
-		rhs.ptr = nullptr;
-	}
+    /// construct from C++ pointer of other type
+    template<class OTHERTYPE>
+    Ptr(OTHERTYPE* rhs) : ptr(nullptr)
+    {
+        this->ptr = nullptr;
+        static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit cast assumes left hand side must be base of right");
+        TYPE* p = reinterpret_cast<TYPE*>(rhs);
+        if (p != this->ptr)
+        {
+            this->ptr = p;
+            if (this->ptr) 
+                this->ptr->AddRef();
+        }
+    }
+    /// construct from smart pointer of other type
+    template <class OTHERTYPE>
+    Ptr(const Ptr<OTHERTYPE>& rhs) : ptr(nullptr)
+    {
+        this->ptr = nullptr;
+        static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit cast assumes left hand side must be base of right");
+        TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
+        if (p != this->ptr)
+        {
+            this->ptr = p;
+            if (nullptr != this->ptr) 
+                this->ptr->AddRef();
+        }
+    }
+    /// construct from smart pointer of other type
+    template <class OTHERTYPE>
+    Ptr(Ptr<OTHERTYPE>&& rhs)
+    {
+        this->ptr = nullptr;
+        static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit cast assumes left hand side must be base of right");
+        TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
+        this->ptr = p;
+        rhs.ptr = nullptr;
+    }
     /// destructor
     ~Ptr();
-	/// assignment operator
-	void operator=(TYPE* rhs);
+    /// assignment operator
+    void operator=(TYPE* rhs);
     /// assignment operator
     void operator=(const Ptr<TYPE>& rhs);    
-	/// move operator
-	void operator=(Ptr<TYPE>&& rhs);
-	/// unassignment operator
-	void operator=(std::nullptr_t rhs);
+    /// move operator
+    void operator=(Ptr<TYPE>&& rhs);
+    /// unassignment operator
+    void operator=(std::nullptr_t rhs);
 
-	/// assign operator to pointer of other type
-	template<class OTHERTYPE>
-	void operator=(OTHERTYPE* rhs)
-	{
-		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit assignment assumes left hand side must be base of right");
-		TYPE* p = reinterpret_cast<TYPE*>(rhs);
-		if (this->ptr != p)
-		{
-			if (this->ptr != nullptr)
-				this->ptr->Release();
-			this->ptr = p;
-			if (this->ptr != nullptr) this->ptr->AddRef();
-		}
-	}
-	/// assign operator to Ptr of other type
-	template<class OTHERTYPE>
-	void operator=(const Ptr<OTHERTYPE>& rhs)
-	{
-		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit assignment assumes left hand side must be base of right");
-		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
-		if (this->ptr != p)
-		{
-			if (this->ptr != nullptr) 
-				this->ptr->Release();
-			this->ptr = p;
-			if (this->ptr != nullptr) this->ptr->AddRef();
-		}
-	}
-	/// move assignment to Ptr of other type
-	template<class OTHERTYPE>
-	void operator=(Ptr<OTHERTYPE>&& rhs)
-	{
-		static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit assignment assumes left hand side must be base of right");
-		TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
-		if (this->ptr != p)
-		{
-			if (this->ptr != nullptr)
-				this->ptr->Release();
-			this->ptr = p;
-			rhs.ptr = nullptr;
-		}
-	}
+    /// assign operator to pointer of other type
+    template<class OTHERTYPE>
+    void operator=(OTHERTYPE* rhs)
+    {
+        static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit assignment assumes left hand side must be base of right");
+        TYPE* p = reinterpret_cast<TYPE*>(rhs);
+        if (this->ptr != p)
+        {
+            if (this->ptr != nullptr)
+                this->ptr->Release();
+            this->ptr = p;
+            if (this->ptr != nullptr) this->ptr->AddRef();
+        }
+    }
+    /// assign operator to Ptr of other type
+    template<class OTHERTYPE>
+    void operator=(const Ptr<OTHERTYPE>& rhs)
+    {
+        static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit assignment assumes left hand side must be base of right");
+        TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
+        if (this->ptr != p)
+        {
+            if (this->ptr != nullptr) 
+                this->ptr->Release();
+            this->ptr = p;
+            if (this->ptr != nullptr) this->ptr->AddRef();
+        }
+    }
+    /// move assignment to Ptr of other type
+    template<class OTHERTYPE>
+    void operator=(Ptr<OTHERTYPE>&& rhs)
+    {
+        static_assert(std::is_base_of<TYPE, OTHERTYPE>::value, "Implicit assignment assumes left hand side must be base of right");
+        TYPE* p = reinterpret_cast<TYPE*>(rhs.ptr);
+        if (this->ptr != p)
+        {
+            if (this->ptr != nullptr)
+                this->ptr->Release();
+            this->ptr = p;
+            rhs.ptr = nullptr;
+        }
+    }
 
     /// equality operator
     bool operator==(const Ptr<TYPE>& rhs) const;
@@ -172,8 +172,8 @@ public:
     /// return direct pointer (returns null pointer)
     TYPE* get_unsafe() const;
 
-	/// calculate hash code for Util::HashTable (basically just the adress)
-	uint32_t HashCode() const;
+    /// calculate hash code for Util::HashTable (basically just the adress)
+    uint32_t HashCode() const;
 
 private:
     TYPE* ptr;
@@ -196,7 +196,7 @@ template<class TYPE>
 Ptr<TYPE>::Ptr(TYPE* p) :
     ptr(p)
 {
-	//static_assert(std::is_base_of<Core::RefCounted, TYPE>::value, "Ptr only works on RefCounted types");
+    //static_assert(std::is_base_of<Core::RefCounted, TYPE>::value, "Ptr only works on RefCounted types");
     if (0 != this->ptr)
     {
         this->ptr->AddRef();
@@ -208,7 +208,7 @@ Ptr<TYPE>::Ptr(TYPE* p) :
 */
 template<class TYPE>
 inline Ptr<TYPE>::Ptr(std::nullptr_t rhs) :
-	ptr(nullptr)
+    ptr(nullptr)
 {
 }
 
@@ -230,9 +230,9 @@ Ptr<TYPE>::Ptr(const Ptr<TYPE>& p) :
 */
 template<class TYPE>
 Ptr<TYPE>::Ptr(Ptr<TYPE>&& p) :
-	ptr(p.ptr)
+    ptr(p.ptr)
 {
-	p.ptr = nullptr;
+    p.ptr = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -255,14 +255,14 @@ template<class TYPE>
 void
 Ptr<TYPE>::operator=(TYPE* rhs)
 {
-	if (this->ptr != rhs)
-	{
-		if (this->ptr != nullptr) 
-			this->ptr->Release();
-		this->ptr = rhs;
-		if (this->ptr != nullptr) 
-			this->ptr->AddRef();
-	}
+    if (this->ptr != rhs)
+    {
+        if (this->ptr != nullptr) 
+            this->ptr->Release();
+        this->ptr = rhs;
+        if (this->ptr != nullptr) 
+            this->ptr->AddRef();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -275,10 +275,10 @@ Ptr<TYPE>::operator=(const Ptr<TYPE>& rhs)
     if (this->ptr != rhs.ptr)
     {
         if (this->ptr != nullptr) 
-			this->ptr->Release();
+            this->ptr->Release();
         this->ptr = rhs.ptr;
         if (this->ptr != nullptr) 
-			this->ptr->AddRef();
+            this->ptr->AddRef();
     }
 }
 
@@ -289,13 +289,13 @@ template<class TYPE>
 void
 Ptr<TYPE>::operator=(Ptr<TYPE>&& rhs)
 {
-	if (this->ptr != rhs.ptr)
-	{
-		if (this->ptr)
-			this->ptr->Release();
-		this->ptr = rhs.ptr;
-		rhs.ptr = nullptr;
-	}
+    if (this->ptr != rhs.ptr)
+    {
+        if (this->ptr)
+            this->ptr->Release();
+        this->ptr = rhs.ptr;
+        rhs.ptr = nullptr;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -305,11 +305,11 @@ template<class TYPE>
 inline void
 Ptr<TYPE>::operator=(std::nullptr_t rhs)
 {
-	if (this->ptr != rhs)
-	{
-		if (this->ptr != nullptr) this->ptr->Release();
-		this->ptr = rhs;
-	}
+    if (this->ptr != rhs)
+    {
+        if (this->ptr != nullptr) this->ptr->Release();
+        this->ptr = rhs;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -394,9 +394,9 @@ Ptr<TYPE>::downcast() const
 #if (NEBULA_DEBUG == 1)
     // if DERIVED is not a derived class of TYPE, compiler complains here
     // compile-time inheritance-test
-	static_assert(std::is_base_of<TYPE, DERIVED>::value, "Incompatible types");
+    static_assert(std::is_base_of<TYPE, DERIVED>::value, "Incompatible types");
 #endif
-	
+    
     return *reinterpret_cast<const Ptr<DERIVED>*>(this);
 }
 
@@ -410,9 +410,9 @@ Ptr<TYPE>::upcast() const
 #if (NEBULA_DEBUG == 1)
     // if BASE is not a base-class of TYPE, compiler complains here
     // compile-time inheritance-test
-	static_assert(std::is_base_of<BASE, TYPE>::value, "Incompatible types");
+    static_assert(std::is_base_of<BASE, TYPE>::value, "Incompatible types");
 #endif
-	
+    
     return *reinterpret_cast<const Ptr<BASE>*>(this);
 }
 
@@ -466,12 +466,12 @@ template<class TYPE>
 uint32_t
 Ptr<TYPE>::HashCode() const
 {
-	return (uint32_t)(std::hash<unsigned long long>{}((uintptr_t)this->ptr) & 0x7FFFFFFF);
+    return (uint32_t)(std::hash<unsigned long long>{}((uintptr_t)this->ptr) & 0x7FFFFFFF);
 }
 
 //------------------------------------------------------------------------------
 
-#if (__XBOX360__ || __WIN32__) && NEBULA_DEBUG
+#if __WIN32__ && NEBULA_DEBUG
 #pragma warning( pop )
 #endif
 #ifdef NEBULA_UNUSED_ATTR

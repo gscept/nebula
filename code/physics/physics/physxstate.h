@@ -39,7 +39,8 @@ public:
     physx::PxOverlapHit overlapBuffer[MAX_SHAPE_OVERLAPS];
     Timing::Time time;
 
-
+    Util::Delegate<void(ActorId*, SizeT)> onSleepCallback;
+    Util::Delegate<void(ActorId*, SizeT)> onWakeCallback;
 
     /// 
     PhysxState();

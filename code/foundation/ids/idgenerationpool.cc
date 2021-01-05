@@ -12,9 +12,9 @@ namespace Ids
 /**
 */
 IdGenerationPool::IdGenerationPool() :
-	freeIdsSize(0)
+    freeIdsSize(0)
 {
-	// this->freeIds.Reserve(2048);
+    // this->freeIds.Reserve(2048);
     this->generations.Reserve(1024);
 }
 
@@ -32,18 +32,18 @@ IdGenerationPool::~IdGenerationPool()
 bool
 IdGenerationPool::Allocate(Id32& id)
 {
-	if (this->freeIdsSize < 1024)
+    if (this->freeIdsSize < 1024)
     {
         this->generations.Append(0);
-		id = CreateId(this->generations.Size() - 1, 0);
-		return false;
+        id = CreateId(this->generations.Size() - 1, 0);
+        return false;
     }
     else
     {
-		this->freeIdsSize--;        
+        this->freeIdsSize--;        
         id = this->freeIds.Dequeue();
         id = CreateId(id, this->generations[id]);
-		return true;
+        return true;
     }
 }
 
@@ -54,7 +54,7 @@ void
 IdGenerationPool::Deallocate(Id32 id)
 {
     n_assert2(this->IsValid(id), "Tried to delete invalid/destroyed id");
-	this->freeIdsSize++;        
+    this->freeIdsSize++;        
     this->freeIds.Enqueue(Index(id));
     this->generations[Index(id)]++;
 }

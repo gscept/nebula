@@ -31,7 +31,7 @@ using namespace Debug;
 */
 GameApplication::GameApplication()
 #if __NEBULA_HTTP__
-	:defaultTcpPort(2100)
+    :defaultTcpPort(2100)
 #endif
 {
     __ConstructSingleton;
@@ -63,25 +63,25 @@ GameApplication::Open()
         this->coreServer->SetCompanyName(Application::Instance()->GetCompanyName());
         this->coreServer->SetAppName(Application::Instance()->GetAppTitle());
                 
-		Util::String root = IO::FSWrapper::GetHomeDirectory();
+        Util::String root = IO::FSWrapper::GetHomeDirectory();
 
 #if PUBLIC_BUILD
-		if(System::NebulaSettings::Exists(Application::Instance()->GetCompanyName(),Application::Instance()->GetAppTitle(),"path"))
-		{
-			root = System::NebulaSettings::ReadString(Application::Instance()->GetCompanyName(),Application::Instance()->GetAppTitle(),"path");
-		}
+        if(System::NebulaSettings::Exists(Application::Instance()->GetCompanyName(),Application::Instance()->GetAppTitle(),"path"))
+        {
+            root = System::NebulaSettings::ReadString(Application::Instance()->GetCompanyName(),Application::Instance()->GetAppTitle(),"path");
+        }
 #else 
-		if(System::NebulaSettings::Exists("gscept", "ToolkitShared", "workdir"))
-		{
-			root = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir");
-		}
+        if(System::NebulaSettings::Exists("gscept", "ToolkitShared", "workdir"))
+        {
+            root = System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir");
+        }
         if (System::NebulaSettings::Exists("gscept", "ToolkitShared", "path"))
         {
             this->coreServer->SetToolDirectory(System::NebulaSettings::ReadString("gscept", "ToolkitShared", "path"));
         }
 #endif
-				
-		//n_assert2(System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir"), "No working directory defined!");
+                
+        //n_assert2(System::NebulaSettings::ReadString("gscept", "ToolkitShared", "workdir"), "No working directory defined!");
 
         this->coreServer->SetRootDirectory(root);
         this->coreServer->Open();        
@@ -108,40 +108,35 @@ GameApplication::Open()
         Console::Instance()->AttachHandler(logFileHandler.upcast<ConsoleHandler>());
 #endif
 
-#if __NEBULA_HTTP_FILESYSTEM__
-		// setup http subsystem
-		this->httpClientRegistry = Http::HttpClientRegistry::Create();
-		this->httpClientRegistry->Setup();
-#endif
-
 #if __NEBULA_HTTP__
-		// setup http subsystem
-		this->httpInterface = Http::HttpInterface::Create();
-		this->httpInterface->SetTcpPort(this->defaultTcpPort);
-		this->httpInterface->Open();
-		this->httpServerProxy = Http::HttpServerProxy::Create();
-		this->httpServerProxy->Open();
-		this->httpServerProxy->AttachRequestHandler(Debug::CorePageHandler::Create());
-		this->httpServerProxy->AttachRequestHandler(Debug::ThreadPageHandler::Create());
-		this->httpServerProxy->AttachRequestHandler(Debug::MemoryPageHandler::Create());
-		this->httpServerProxy->AttachRequestHandler(Debug::ConsolePageHandler::Create());
-		this->httpServerProxy->AttachRequestHandler(Debug::IoPageHandler::Create());
-		//this->httpServerProxy->AttachRequestHandler(Debug::GamePageHandler::Create());
+        // setup http subsystem
+        this->httpInterface = Http::HttpInterface::Create();
+        this->httpInterface->SetTcpPort(this->defaultTcpPort);
+        this->httpInterface->Open();
+        this->httpServerProxy = Http::HttpServerProxy::Create();
+        this->httpServerProxy->Open();
+        this->httpServerProxy->AttachRequestHandler(Debug::CorePageHandler::Create());
+        this->httpServerProxy->AttachRequestHandler(Debug::ThreadPageHandler::Create());
+        this->httpServerProxy->AttachRequestHandler(Debug::MemoryPageHandler::Create());
+        this->httpServerProxy->AttachRequestHandler(Debug::ConsolePageHandler::Create());
+        this->httpServerProxy->AttachRequestHandler(Debug::IoPageHandler::Create());
+        //this->httpServerProxy->AttachRequestHandler(Debug::GamePageHandler::Create());
 
-		// setup debug subsystem
-		this->debugInterface = DebugInterface::Create();
-		this->debugInterface->Open();
+        // setup debug subsystem
+        this->debugInterface = DebugInterface::Create();
+        this->debugInterface->Open();
 #endif
 
         // create our game server and open it
         this->gameServer = Game::GameServer::Create();
+        this->gameServer->SetCmdLineArgs(this->GetCmdLineArgs());
         this->gameServer->Open();
 
         // create and add new game features
         this->SetupGameFeatures();
 
         // setup profiling stuff
-	    _setup_grouped_timer(GameApplicationFrameTimeAll, "Game Subsystem");
+        _setup_grouped_timer(GameApplicationFrameTimeAll, "Game Subsystem");
         
 
         return true;
@@ -167,26 +162,21 @@ GameApplication::Close()
     this->gameContentServer->Discard();
     this->gameContentServer = nullptr;
 
-	this->ioInterface->Close();
-	this->ioInterface = nullptr;
-	this->ioServer = nullptr;
+    this->ioInterface->Close();
+    this->ioInterface = nullptr;
+    this->ioServer = nullptr;
 
-	this->resourceServer->Close();
-	this->resourceServer = nullptr;
+    this->resourceServer->Close();
+    this->resourceServer = nullptr;
 
 #if __NEBULA_HTTP__
-	this->debugInterface->Close();
-	this->debugInterface = nullptr;
+    this->debugInterface->Close();
+    this->debugInterface = nullptr;
 
-	this->httpServerProxy->Close();
-	this->httpServerProxy = nullptr;
-	this->httpInterface->Close();
-	this->httpInterface = nullptr;
-#endif
-
-#if __NEBULA_HTTP_FILESYSTEM__
-	this->httpClientRegistry->Discard();
-	this->httpClientRegistry = nullptr;
+    this->httpServerProxy->Close();
+    this->httpServerProxy = nullptr;
+    this->httpInterface->Close();
+    this->httpInterface = nullptr;
 #endif
 
     this->coreServer->Close();
@@ -205,7 +195,7 @@ GameApplication::Run()
 {
     while (true)
     {
-		this->StepFrame();
+        this->StepFrame();
     }
 }
 
@@ -218,26 +208,26 @@ GameApplication::StepFrame()
     _start_timer(GameApplicationFrameTimeAll);
 
 #if __NEBULA_HTTP__
-	this->httpServerProxy->HandlePendingRequests();
+    this->httpServerProxy->HandlePendingRequests();
 #endif
 
-	// trigger core server
-	this->coreServer->Trigger();
+    // trigger core server
+    this->coreServer->Trigger();
 
-	// update resources
-	this->resourceServer->Update(GameApplication::FrameIndex);
+    // update resources
+    this->resourceServer->Update(GameApplication::FrameIndex);
 
-	// trigger beginning of frame for feature units
-	this->gameServer->OnBeginFrame();
+    // trigger beginning of frame for feature units
+    this->gameServer->OnBeginFrame();
 
-	// trigger frame for feature units
-	this->gameServer->OnFrame();
+    // trigger frame for feature units
+    this->gameServer->OnFrame();
 
-	// call the app's Run() method
-	Application::Run();
+    // call the app's Run() method
+    Application::Run();
 
-	// trigger end of frame for feature units
-	this->gameServer->OnEndFrame();
+    // trigger end of frame for feature units
+    this->gameServer->OnEndFrame();
     
     GameApplication::FrameIndex++;
 
@@ -249,8 +239,8 @@ GameApplication::StepFrame()
     Setup new game features which should be used by this application.
     Overwride for all features which have to be used.
 
-	Make sure that features are setup ONLY in this method, since other
-	systems might not expect otherwise.
+    Make sure that features are setup ONLY in this method, since other
+    systems might not expect otherwise.
 */
 void
 GameApplication::SetupGameFeatures()

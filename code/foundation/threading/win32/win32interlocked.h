@@ -24,20 +24,20 @@ public:
     static long Add(long volatile& var, long add);
     /// interlocked exchange
     static long Exchange(long volatile* dest, long value);
-	/// interlocked exchange
-	static void* ExchangePointer(void* volatile* dest, void* value);
+    /// interlocked exchange
+    static void* ExchangePointer(void* volatile* dest, void* value);
     /// interlocked compare-exchange
     static long CompareExchange(long volatile* dest, long exchange, long comparand);
-	/// interlocked increment, return result
-	static int Increment(int volatile& var);
-	/// interlocked decrement, return result
-	static int Decrement(int volatile& var);
-	/// interlocked add
-	static int Add(int volatile& var, int add);
-	/// interlocked int
-	static int Exchange(int volatile* dest, int value);
-	/// interlocked compare-exchange
-	static int CompareExchange(int volatile* dest, int exchange, int comparand);
+    /// interlocked increment, return result
+    static int Increment(int volatile& var);
+    /// interlocked decrement, return result
+    static int Decrement(int volatile& var);
+    /// interlocked add
+    static int Add(int volatile& var, int add);
+    /// interlocked int
+    static int Exchange(int volatile* dest, int value);
+    /// interlocked compare-exchange
+    static int CompareExchange(int volatile* dest, int exchange, int comparand);
     /// interlocked compare-exchange pointer
     static void* CompareExchangePointer(void* volatile* dest, void* exchange, void* comparand);
 };
@@ -48,7 +48,7 @@ public:
 __forceinline long
 Win32Interlocked::Increment(long volatile& var)
 {
-	return _InterlockedIncrement((volatile LONG*)&var);
+    return _InterlockedIncrement((volatile LONG*)&var);
 }
 
 //------------------------------------------------------------------------------
@@ -57,7 +57,7 @@ Win32Interlocked::Increment(long volatile& var)
 __forceinline long
 Win32Interlocked::Decrement(long volatile& var)
 {
-	return _InterlockedDecrement((volatile LONG*)&var);
+    return _InterlockedDecrement((volatile LONG*)&var);
 }
 
 //------------------------------------------------------------------------------
@@ -66,7 +66,7 @@ Win32Interlocked::Decrement(long volatile& var)
 __forceinline long
 Win32Interlocked::Add(long volatile& var, long add)
 {
-	return _InterlockedExchangeAdd((volatile LONG*)&var, add);
+    return _InterlockedExchangeAdd((volatile LONG*)&var, add);
 }
 
 //------------------------------------------------------------------------------
@@ -75,7 +75,7 @@ Win32Interlocked::Add(long volatile& var, long add)
 __forceinline long
 Win32Interlocked::Exchange(long volatile* dest, long value)
 {
-	return _InterlockedExchange((volatile LONG*)dest, value);
+    return _InterlockedExchange((volatile LONG*)dest, value);
 }
 
 //------------------------------------------------------------------------------
@@ -84,7 +84,7 @@ Win32Interlocked::Exchange(long volatile* dest, long value)
 __forceinline long
 Win32Interlocked::CompareExchange(long volatile* dest, long exchange, long comparand)
 {
-	return _InterlockedCompareExchange((volatile LONG*)dest, exchange, comparand);
+    return _InterlockedCompareExchange((volatile LONG*)dest, exchange, comparand);
 }
 
 //------------------------------------------------------------------------------
@@ -129,7 +129,7 @@ Win32Interlocked::Exchange(int volatile* dest, int value)
 __forceinline void*
 Win32Interlocked::ExchangePointer(void* volatile* dest, void* value)
 {
-	return InterlockedExchangePointer(dest, value);
+    return InterlockedExchangePointer(dest, value);
 }
 
 //------------------------------------------------------------------------------

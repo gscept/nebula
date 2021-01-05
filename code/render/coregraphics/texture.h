@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Texture related functions
+    Texture related functions
 
-	(C)2017-2020 Individual contributors, see AUTHORS file
+    (C)2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/gpubuffertypes.h"
@@ -25,57 +25,57 @@ RESOURCE_ID_TYPE(TextureId);
 /// texture types
 enum TextureType
 {
-	InvalidTextureType,
+    InvalidTextureType,
 
-	Texture1D,		//> a 1-dimensional texture
-	Texture2D,      //> a 2-dimensional texture
-	Texture3D,      //> a 3-dimensional texture
-	TextureCube,    //> a cube texture
+    Texture1D,      //> a 1-dimensional texture
+    Texture2D,      //> a 2-dimensional texture
+    Texture3D,      //> a 3-dimensional texture
+    TextureCube,    //> a cube texture
 
-	Texture1DArray,		//> a 1-dimensional texture array, depth represents array size
-	Texture2DArray,		//> a 2-dimensional texture array, depth represents array size
-	TextureCubeArray,	//> a cube texture array, depth represents array size * 6
+    Texture1DArray,     //> a 1-dimensional texture array, depth represents array size
+    Texture2DArray,     //> a 2-dimensional texture array, depth represents array size
+    TextureCubeArray,   //> a cube texture array, depth represents array size * 6
 };
 
 /// cube map face
 enum TextureCubeFace
 {
-	PosX = 0,
-	NegX,
-	PosY,
-	NegY,
-	PosZ,
-	NegZ,
+    PosX = 0,
+    NegX,
+    PosY,
+    NegY,
+    PosZ,
+    NegZ,
 };
 
 /// type of texture usage
 enum TextureUsage
 {
-	InvalidTextureUsage			= 0x0,		// invalid usage
-	SampleTexture				= 0x1,		// texture is a shader sampleable 1D, 2D, 3D or Cube texture
-	RenderTexture				= 0x2,		// texture supports to be rendered to as an attachment, also supports sampling
-	ReadWriteTexture			= 0x4,		// texture supports to be bound as an RWTexture (DX) or Image (GL/Vulkan), also supports sampling
-	TransferTextureSource		= 0x8,		// texture supports being a copy source
-	TransferTextureDestination  = 0x10		// texture supports being a copy destination
+    InvalidTextureUsage         = 0x0,      // invalid usage
+    SampleTexture               = 0x1,      // texture is a shader sampleable 1D, 2D, 3D or Cube texture
+    RenderTexture               = 0x2,      // texture supports to be rendered to as an attachment, also supports sampling
+    ReadWriteTexture            = 0x4,      // texture supports to be bound as an RWTexture (DX) or Image (GL/Vulkan), also supports sampling
+    TransferTextureSource       = 0x8,      // texture supports being a copy source
+    TransferTextureDestination  = 0x10      // texture supports being a copy destination
 };
 __ImplementEnumBitOperators(CoreGraphics::TextureUsage);
 
 /// access info filled by Map methods
 struct TextureMapInfo
 {
-	/// constructor
-	TextureMapInfo() : data(0), rowPitch(0), depthPitch(0) {};
+    /// constructor
+    TextureMapInfo() : data(0), rowPitch(0), depthPitch(0) {};
 
-	void* data;
-	SizeT rowPitch;
-	SizeT depthPitch;
-	SizeT mipWidth;
-	SizeT mipHeight;
+    void* data;
+    SizeT rowPitch;
+    SizeT depthPitch;
+    SizeT mipWidth;
+    SizeT mipHeight;
 };
 
 struct TextureDimensions
 {
-	SizeT width, height, depth;
+    SizeT width, height, depth;
 };
 
 struct TextureRelativeDimensions
@@ -86,102 +86,102 @@ struct TextureRelativeDimensions
 static const ubyte TextureAutoMips = 0xFF;
 struct DepthStencilClear
 {
-	float depth;
-	uint stencil;
+    float depth;
+    uint stencil;
 };
 
 struct TextureCreateInfo
 {
-	TextureCreateInfo()
-		: name(""_atm)
-		, usage(CoreGraphics::TextureUsage::SampleTexture)
-		, tag(""_atm)
-		, buffer(nullptr)
-		, type(Texture2D)
-		, format(CoreGraphics::PixelFormat::R8G8B8A8)
-		, width(1)
-		, height(1)
-		, depth(1)
-		, mips(1)
-		, layers(1)
-		, samples(1)
-		, clear(false)
-		, clearColorF4{0,0,0,0}
-		, windowRelative(false)
-		, windowTexture(false)
-		, bindless(true)
-		, sparse(false)
-		, alias(CoreGraphics::TextureId::Invalid())
-		, defaultLayout(CoreGraphics::ImageLayout::ShaderRead)
-	{};
+    TextureCreateInfo()
+        : name(""_atm)
+        , usage(CoreGraphics::TextureUsage::SampleTexture)
+        , tag(""_atm)
+        , buffer(nullptr)
+        , type(Texture2D)
+        , format(CoreGraphics::PixelFormat::R8G8B8A8)
+        , width(1)
+        , height(1)
+        , depth(1)
+        , mips(1)
+        , layers(1)
+        , samples(1)
+        , clear(false)
+        , clearColorF4{0,0,0,0}
+        , windowRelative(false)
+        , windowTexture(false)
+        , bindless(true)
+        , sparse(false)
+        , alias(CoreGraphics::TextureId::Invalid())
+        , defaultLayout(CoreGraphics::ImageLayout::ShaderRead)
+    {};
 
-	Resources::ResourceName name;
-	CoreGraphics::TextureUsage usage;
-	Util::StringAtom tag;
-	const void* buffer;
-	CoreGraphics::TextureType type;
-	CoreGraphics::PixelFormat::Code format;
-	float width, height, depth;
-	SizeT mips, layers;
-	SizeT samples;
-	bool clear;
-	union
-	{
-		Math::float4 clearColorF4;
-		Math::uint4 clearColorU4;
-		Math::int4 clearColorI4;
-		DepthStencilClear clearDepthStencil;
-	};
-	bool windowRelative : 1;					// size is a window relative percentage if true, other wise size is an absolute size
-	bool windowTexture : 1;						// texture is supposed to be a backbuffer target
-	bool bindless : 1;
-	bool sparse : 1;							// use sparse memory
-	CoreGraphics::TextureId alias;
-	CoreGraphics::ImageLayout defaultLayout;
+    Resources::ResourceName name;
+    CoreGraphics::TextureUsage usage;
+    Util::StringAtom tag;
+    const void* buffer;
+    CoreGraphics::TextureType type;
+    CoreGraphics::PixelFormat::Code format;
+    float width, height, depth;
+    SizeT mips, layers;
+    SizeT samples;
+    bool clear;
+    union
+    {
+        Math::float4 clearColorF4;
+        Math::uint4 clearColorU4;
+        Math::int4 clearColorI4;
+        DepthStencilClear clearDepthStencil;
+    };
+    bool windowRelative : 1;                    // size is a window relative percentage if true, other wise size is an absolute size
+    bool windowTexture : 1;                     // texture is supposed to be a backbuffer target
+    bool bindless : 1;
+    bool sparse : 1;                            // use sparse memory
+    CoreGraphics::TextureId alias;
+    CoreGraphics::ImageLayout defaultLayout;
 };
 
 struct TextureCreateInfoAdjusted
 {
-	Resources::ResourceName name;
-	CoreGraphics::TextureUsage usage;
-	Util::StringAtom tag;
-	const void* buffer;
-	CoreGraphics::TextureType type;
-	CoreGraphics::PixelFormat::Code format;
-	SizeT width, height, depth;
-	float widthScale, heightScale, depthScale;
-	SizeT mips, layers;
-	SizeT samples;
-	bool clear;
-	union
-	{
-		Math::float4 clearColor;
-		DepthStencilClear clearDepthStencil;
-	};
-	bool windowTexture : 1;						// texture is meant to be a window back buffer
-	bool windowRelative : 1;					// size is a window relative percentage if true, other wise size is an absolute size
-	bool bindless : 1;
-	bool sparse : 1;							// use sparse memory
-	CoreGraphics::WindowId window;
-	CoreGraphics::TextureId alias;
-	CoreGraphics::ImageLayout defaultLayout;
+    Resources::ResourceName name;
+    CoreGraphics::TextureUsage usage;
+    Util::StringAtom tag;
+    const void* buffer;
+    CoreGraphics::TextureType type;
+    CoreGraphics::PixelFormat::Code format;
+    SizeT width, height, depth;
+    float widthScale, heightScale, depthScale;
+    SizeT mips, layers;
+    SizeT samples;
+    bool clear;
+    union
+    {
+        Math::float4 clearColor;
+        DepthStencilClear clearDepthStencil;
+    };
+    bool windowTexture : 1;                     // texture is meant to be a window back buffer
+    bool windowRelative : 1;                    // size is a window relative percentage if true, other wise size is an absolute size
+    bool bindless : 1;
+    bool sparse : 1;                            // use sparse memory
+    CoreGraphics::WindowId window;
+    CoreGraphics::TextureId alias;
+    CoreGraphics::ImageLayout defaultLayout;
 };
 
 struct TextureSparsePageSize
 {
-	uint width, height, depth;
+    uint width, height, depth;
 };
 
 struct TextureSparsePageOffset
 {
-	uint x, y, z;
+    uint x, y, z;
 };
 
 struct TextureSparsePage
 {
-	TextureSparsePageOffset offset;
-	TextureSparsePageSize extent;
-	CoreGraphics::Alloc alloc;
+    TextureSparsePageOffset offset;
+    TextureSparsePageSize extent;
+    CoreGraphics::Alloc alloc;
 };
 
 
@@ -276,18 +276,18 @@ TextureCreateInfoAdjusted TextureGetAdjustedInfo(const TextureCreateInfo& info);
 inline TextureType
 TextureTypeFromString(const Util::String& string)
 {
-	if		(string == "Texture1D") return Texture1D;
-	else if (string == "Texture2D") return Texture2D;
-	else if (string == "Texture3D") return Texture3D;
-	else if (string == "TextureCube") return TextureCube;
-	else if (string == "Texture1DArray") return Texture1DArray;
-	else if (string == "Texture2DArray") return Texture2DArray;
-	else if (string == "TextureCubeArray") return TextureCubeArray;
-	else
-	{
-		n_error("Unknown texture type '%s'", string.AsCharPtr());
-		return Texture1D;
-	}
+    if      (string == "Texture1D") return Texture1D;
+    else if (string == "Texture2D") return Texture2D;
+    else if (string == "Texture3D") return Texture3D;
+    else if (string == "TextureCube") return TextureCube;
+    else if (string == "Texture1DArray") return Texture1DArray;
+    else if (string == "Texture2DArray") return Texture2DArray;
+    else if (string == "TextureCubeArray") return TextureCubeArray;
+    else
+    {
+        n_error("Unknown texture type '%s'", string.AsCharPtr());
+        return Texture1D;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -296,19 +296,19 @@ TextureTypeFromString(const Util::String& string)
 inline TextureUsage
 TextureUsageFromString(const Util::String& string)
 {
-	Util::Array<Util::String> comps = string.Tokenize("|");
-	TextureUsage usage = TextureUsage(0x0);
+    Util::Array<Util::String> comps = string.Tokenize("|");
+    TextureUsage usage = TextureUsage(0x0);
 
-	for (IndexT i = 0; i < comps.Size(); i++)
-	{
-		if		(comps[i] == "Sample") usage |= SampleTexture;
-		else if (comps[i] == "Render") usage |= RenderTexture;
-		else if (comps[i] == "ReadWrite") usage |= ReadWriteTexture;
-		else if (comps[i] == "TransferSource") usage |= TransferTextureSource;
-		else if (comps[i] == "TransferDestination") usage |= TransferTextureDestination;		
-	}
+    for (IndexT i = 0; i < comps.Size(); i++)
+    {
+        if      (comps[i] == "Sample") usage |= SampleTexture;
+        else if (comps[i] == "Render") usage |= RenderTexture;
+        else if (comps[i] == "ReadWrite") usage |= ReadWriteTexture;
+        else if (comps[i] == "TransferSource") usage |= TransferTextureSource;
+        else if (comps[i] == "TransferDestination") usage |= TransferTextureDestination;        
+    }
 
-	return usage;
+    return usage;
 }
 
 extern TextureId White1D;

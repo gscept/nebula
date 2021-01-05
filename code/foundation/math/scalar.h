@@ -6,7 +6,7 @@
     Nebula's scalar datatype.
 
     NOTE: do not add CRT math function calls to this call, but instead
-    into the platform specific headers (for instance, on the Wii the sinf()
+    into the platform specific headers 
     functions are called and must be placed into a .cc file, not into the
     header.
 
@@ -153,9 +153,9 @@ n_rand()
 __forceinline scalar 
 n_rand(scalar min, scalar max)
 {
-	scalar unit = scalar(rand()) / RAND_MAX;
-	scalar diff = max - min;
-	return min + unit * diff;
+    scalar unit = scalar(rand()) / RAND_MAX;
+    scalar diff = max - min;
+    return min + unit * diff;
 }
 
 //------------------------------------------------------------------------------
@@ -238,31 +238,31 @@ n_fchop(scalar f)
 __forceinline scalar
 n_fmod(scalar x, scalar y)
 {
-	return fmodf(x, y);
+    return fmodf(x, y);
 }
 
 //------------------------------------------------------------------------------
 /**
     Normalize an angular value into the range rad(0) to rad(360).
-	FIXME : seems that the xna version limits from -pi to pi, not 0 .. 2pi. 
-			will copy behaviour despite what description says
+    FIXME : seems that the xna version limits from -pi to pi, not 0 .. 2pi. 
+            will copy behaviour despite what description says
 */
 __forceinline scalar 
 n_modangle(scalar a) 
 {
 #if 0
-	static const scalar rev = scalar(6.283185307179586476925286766559);
-	return n_fmod(a,rev);
+    static const scalar rev = scalar(6.283185307179586476925286766559);
+    return n_fmod(a,rev);
 #else
-	static const scalar REVOLUTION = scalar(6.283185307179586476925286766559);
-	a += N_PI;
-	scalar temp = fabs(a);
-	temp = temp - floorf(temp/REVOLUTION) *  REVOLUTION;
-	temp -= N_PI;
-	temp = a<0 ? -temp:temp;	
-	if(temp < scalar(-N_PI)) temp += REVOLUTION;
-	if(temp >= scalar(N_PI)) temp -= REVOLUTION;
-	return temp;
+    static const scalar REVOLUTION = scalar(6.283185307179586476925286766559);
+    a += N_PI;
+    scalar temp = fabs(a);
+    temp = temp - floorf(temp/REVOLUTION) *  REVOLUTION;
+    temp -= N_PI;
+    temp = a<0 ? -temp:temp;    
+    if(temp < scalar(-N_PI)) temp += REVOLUTION;
+    if(temp >= scalar(N_PI)) temp -= REVOLUTION;
+    return temp;
 #endif
 }
 
@@ -306,7 +306,7 @@ n_pow(scalar x, scalar y)
 
 //------------------------------------------------------------------------------
 /**
-	get logarithm of x
+    get logarithm of x
 */
 __forceinline scalar
 n_log(scalar x)
@@ -470,22 +470,22 @@ n_iclamp(int val, int minVal, int maxVal)
 
 //------------------------------------------------------------------------------
 /**
-	Floating point ceiling
+    Floating point ceiling
 */
 __forceinline float
 n_ceil(float val)
 {
-	return ceilf(val);
+    return ceilf(val);
 }
 
 //------------------------------------------------------------------------------
 /**
-	Floating point flooring
+    Floating point flooring
 */
 __forceinline float
 n_floor(float val)
 {
-	return floorf(val);
+    return floorf(val);
 }
 
 //------------------------------------------------------------------------------
@@ -581,7 +581,7 @@ n_lerp(double x, double y, double l)
 __forceinline scalar
 n_angulardistance(scalar from, scalar to)
 {
-	scalar normFrom = n_modangle(from);
+    scalar normFrom = n_modangle(from);
     scalar normTo   = n_modangle(to);
     scalar dist = normTo - normFrom;
     if (dist < n_deg2rad(-180.0f))
@@ -665,24 +665,24 @@ n_smoothstep(scalar edge0, scalar edge1, scalar x)
 */
 __forceinline int 
 n_irand(int min, int max)
-{	
-	int range = max - min + 1;
-	int unit = rand() % range;
-	return min + unit;
+{   
+    int range = max - min + 1;
+    int unit = rand() % range;
+    return min + unit;
 }
 
 //------------------------------------------------------------------------------
 /**
-	Returns the position of the most significant bit of the number
+    Returns the position of the most significant bit of the number
 */
 __forceinline int
 n_mostsignificant(unsigned int val)
 {
 #ifdef WIN32
-	unsigned long ret;
+    unsigned long ret;
     bool res = _BitScanReverse(&ret, val);
     ret = res ? ret : 0;
-	return ret + 1;
+    return ret + 1;
 #else
     unsigned long ret;
     ret = __builtin_clz(val);
@@ -696,7 +696,7 @@ n_mostsignificant(unsigned int val)
 __forceinline unsigned int
 n_align(unsigned int alignant, unsigned int alignment)
 {
-	return (alignant + alignment - 1) & ~(alignment - 1);
+    return (alignant + alignment - 1) & ~(alignment - 1);
 }
 
 //------------------------------------------------------------------------------
@@ -710,12 +710,12 @@ n_align_down(unsigned int alignant, unsigned int alignment)
 
 //------------------------------------------------------------------------------
 /**
-	Integer division with rounding
+    Integer division with rounding
 */
 __forceinline unsigned int
 n_divandroundup(unsigned int dividend, unsigned int divider)
 {
-	return (dividend % divider != 0) ? (dividend / divider + 1) : (dividend / divider);
+    return (dividend % divider != 0) ? (dividend / divider + 1) : (dividend / divider);
 }
 
 #endif // #if !SPU

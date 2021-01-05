@@ -85,7 +85,7 @@ PlayClipJob::CreateEvaluationJob(Timing::Tick time, const Ptr<AnimSampleBuffer>&
                                         SampleType::Linear,
                                         this->curSampleTime,
                                         this->timeFactor,
-										this->mask,
+                                        this->mask,
                                         resultBuffer);
     }
     else
@@ -97,7 +97,7 @@ PlayClipJob::CreateEvaluationJob(Timing::Tick time, const Ptr<AnimSampleBuffer>&
                                               SampleType::Linear,
                                               this->curSampleTime,
                                               this->timeFactor,
-											  this->mask,
+                                              this->mask,
                                               curMixWeight,
                                               optMixIn,
                                               resultBuffer);
@@ -119,22 +119,22 @@ PlayClipJob::EmitAnimEvents(Timing::Tick startTimeEvents, Timing::Tick endTimeEv
     n_assert(this->animSequencer != 0);
     const AnimClip& clip = this->animSequencer->GetAnimResource()->GetClipByIndex(this->clipIndex);
 
-	int timeDivider = Math::n_frnd(1 / this->timeFactor);
+    int timeDivider = Math::n_frnd(1 / this->timeFactor);
 
     // map absolute time to clip relative time
-	Timing::Tick nettoClipDuration = clip.GetClipDuration();
+    Timing::Tick nettoClipDuration = clip.GetClipDuration();
     Timing::Tick relStartTime = startTimeEvents - this->baseTime;
     Timing::Tick duration = endTimeEvents - startTimeEvents;
     Timing::Tick relEndTime = relStartTime + (Timing::Tick)(float(duration));
-	relStartTime /= timeDivider;
-	relEndTime /= timeDivider;
+    relStartTime /= timeDivider;
+    relEndTime /= timeDivider;
 
-	// if we have a cycle we also need to cycle the events
-	if (clip.GetPostInfinityType() == InfinityType::Cycle)
-	{
-		relStartTime %= nettoClipDuration;
-		relEndTime %= nettoClipDuration;
-	}
+    // if we have a cycle we also need to cycle the events
+    if (clip.GetPostInfinityType() == InfinityType::Cycle)
+    {
+        relStartTime %= nettoClipDuration;
+        relEndTime %= nettoClipDuration;
+    }
 
     if (this->firstAnimEventCheck)
     {
@@ -144,7 +144,7 @@ PlayClipJob::EmitAnimEvents(Timing::Tick startTimeEvents, Timing::Tick endTimeEv
         this->firstAnimEventCheck = false;
     }
 
-	Util::Array<AnimEvent> events = AnimEventEmitter::EmitAnimEvents(clip, relStartTime, relEndTime, this->IsInfinite());
+    Util::Array<AnimEvent> events = AnimEventEmitter::EmitAnimEvents(clip, relStartTime, relEndTime, this->IsInfinite());
     //n_printf("PlayClipJob::EmitAnimEvents: num events %i\n", events.Size());
     IndexT i;
     for (i = 0; i < events.Size(); ++i)
@@ -157,7 +157,7 @@ PlayClipJob::EmitAnimEvents(Timing::Tick startTimeEvents, Timing::Tick endTimeEv
             newInfo.SetAnimEvent(events[i]);
             newInfo.SetAnimJobName(this->GetName());
             newInfo.SetWeight(this->blendWeight);
-    	    eventInfos.Append(newInfo);
+            eventInfos.Append(newInfo);
         }
     }
     return eventInfos;

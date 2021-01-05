@@ -4,6 +4,8 @@
     PropertyDescription
 
     Describes a property's type and default value.
+    The propertys type can be omitted by registering it with a size of zero bytes.
+        This essentially means the property is only used when querying the database
     This information is used to allocate the table columns.
 
     @note   This is mostly just used internally by the database and typeregistry,
@@ -27,7 +29,9 @@ class PropertyDescription
 public:
     /// construct from template type, with default value.
     template<typename T>
-    explicit PropertyDescription(Util::StringAtom name, T const& defaultValue);
+    explicit PropertyDescription(Util::StringAtom name, T const& defaultValue, uint32_t flags);
+    /// construct from type size in bytes, with default value from void*.
+    explicit PropertyDescription(Util::StringAtom name, SizeT typeSizeBytes, void const* defaultValue, uint32_t flags);
     /// default constructor
     PropertyDescription() = default;
     /// move constructor
@@ -46,18 +50,45 @@ public:
     SizeT typeSize = 0;
     /// default value
     void* defVal = nullptr;
+    /// externally managed flags
+    uint32_t externalFlags;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
 template<typename T> inline
-PropertyDescription::PropertyDescription(Util::StringAtom name, T const& defaultValue)
+PropertyDescription::PropertyDescription(Util::StringAtom name, T const& defaultValue, uint32_t flags) :
+    name(name),
+    typeSize(sizeof(T)),
+    externalFlags(flags)
 {
-    this->typeSize = sizeof(T);
-    this->name = name;
     this->defVal = Memory::Alloc(Memory::HeapType::ObjectHeap, sizeof(T));
     Memory::Copy(&defaultValue, this->defVal, sizeof(T));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+PropertyDescription::PropertyDescription(Util::StringAtom name, SizeT typeSizeBytes, void const* defaultValue, uint32_t flags) :
+    name(name),
+    typeSize(typeSizeBytes),
+    externalFlags(flags)
+{
+    if (typeSizeBytes > 0)
+    {
+        this->defVal = Memory::Alloc(Memory::HeapType::ObjectHeap, typeSizeBytes);
+        if (defaultValue != nullptr)
+        {
+            Memory::Copy(defaultValue, this->defVal, typeSizeBytes);
+        }
+        else
+        {
+            // just set everything to zero
+            Memory::Clear(this->defVal, typeSizeBytes);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

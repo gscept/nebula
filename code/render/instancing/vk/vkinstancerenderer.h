@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Implements a Vulkan specific renderer for instanced draws.
-	
-	(C) 2016-2018 Individual contributors, see AUTHORS file
+    Implements a Vulkan specific renderer for instanced draws.
+    
+    (C) 2016-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -14,30 +14,30 @@ namespace Vulkan
 {
 class VkInstanceRenderer : public Base::InstanceRendererBase
 {
-	__DeclareClass(VkInstanceRenderer);
+    __DeclareClass(VkInstanceRenderer);
 public:
-	/// constructor
-	VkInstanceRenderer();
-	/// destructor
-	virtual ~VkInstanceRenderer();
+    /// constructor
+    VkInstanceRenderer();
+    /// destructor
+    virtual ~VkInstanceRenderer();
 
-	/// setup renderer
-	void Setup();
-	/// close rendered
-	void Close();
+    /// setup renderer
+    void Setup();
+    /// close rendered
+    void Close();
 
-	/// render
-	void Render(const SizeT multiplier);
+    /// render
+    void Render(const SizeT multiplier);
 private:
-	Ptr<CoreGraphics::ShaderState> shaderState;
-	Ptr<CoreGraphics::ConstantBuffer> instancingBuffer;
-	Ptr<CoreGraphics::ShaderVariable> instancingBlockVar;
+    Ptr<CoreGraphics::ShaderState> shaderState;
+    Ptr<CoreGraphics::ConstantBuffer> instancingBuffer;
+    Ptr<CoreGraphics::ShaderVariable> instancingBlockVar;
 
-	Ptr<CoreGraphics::ShaderVariable> modelArrayVar;
-	Ptr<CoreGraphics::ShaderVariable> modelViewArrayVar;
-	Ptr<CoreGraphics::ShaderVariable> modelViewProjectionArrayVar;
-	Ptr<CoreGraphics::ShaderVariable> idArrayVar;
+    Ptr<CoreGraphics::ShaderVariable> modelArrayVar;
+    Ptr<CoreGraphics::ShaderVariable> modelViewArrayVar;
+    Ptr<CoreGraphics::ShaderVariable> modelViewProjectionArrayVar;
+    Ptr<CoreGraphics::ShaderVariable> idArrayVar;
 
-	static const int MaxInstancesPerBatch = 256;
+    static const int MaxInstancesPerBatch = 256;
 };
 } // namespace Vulkan

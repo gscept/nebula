@@ -16,8 +16,8 @@ __ImplementSingleton(Vulkan::VkDisplayDevice);
 */
 VkDisplayDevice::VkDisplayDevice()
 {
-	__ConstructSingleton;
-	glfwInit();
+    __ConstructSingleton;
+    glfwInit();
 }
 
 //------------------------------------------------------------------------------
@@ -25,8 +25,8 @@ VkDisplayDevice::VkDisplayDevice()
 */
 VkDisplayDevice::~VkDisplayDevice()
 {
-	__DestructSingleton;
-	glfwTerminate();
+    __DestructSingleton;
+    glfwTerminate();
 }
 
 //------------------------------------------------------------------------------
@@ -35,10 +35,10 @@ VkDisplayDevice::~VkDisplayDevice()
 bool
 VkDisplayDevice::WindowOpen()
 {
-	bool res = false;
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	res |= OpenGL4::GLFWDisplayDevice::WindowOpen();
-	return res;
+    bool res = false;
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    res |= OpenGL4::GLFWDisplayDevice::WindowOpen();
+    return res;
 }
 
 //------------------------------------------------------------------------------
@@ -47,10 +47,10 @@ VkDisplayDevice::WindowOpen()
 bool
 VkDisplayDevice::EmbedWindow()
 {
-	bool res = false;
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	res |= OpenGL4::GLFWDisplayDevice::EmbedWindow();
-	return res;
+    bool res = false;
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    res |= OpenGL4::GLFWDisplayDevice::EmbedWindow();
+    return res;
 }
 
 //------------------------------------------------------------------------------
@@ -59,13 +59,13 @@ VkDisplayDevice::EmbedWindow()
 void
 VkDisplayDevice::SetupSwapchain()
 {
-	// create surface in window
-	const VkInstance& inst = VkRenderDevice::Instance()->instance;
+    // create surface in window
+    const VkInstance& inst = VkRenderDevice::Instance()->instance;
 
-	VkResult status;
-	status = glfwCreateWindowSurface(inst, this->window, NULL, &this->surface);
-	
-	n_assert(status == VK_SUCCESS);
+    VkResult status;
+    status = glfwCreateWindowSurface(inst, this->window, NULL, &this->surface);
+    
+    n_assert(status == VK_SUCCESS);
 }
 
 } // namespace Vulkan

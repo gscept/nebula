@@ -18,7 +18,7 @@ using namespace CoreGraphics;
 */
 CameraSettings::CameraSettings()
 {
-	DisplayMode mode = WindowGetDisplayMode(DisplayDevice::Instance()->GetCurrentWindow());
+    DisplayMode mode = WindowGetDisplayMode(DisplayDevice::Instance()->GetCurrentWindow());
     this->SetupPerspectiveFov(n_deg2rad(60.0f), mode.GetHeight() / (float)mode.GetWidth(), 0.1f, 2500.0f);
 }
 
@@ -38,9 +38,9 @@ CameraSettings::SetupPerspectiveFov(float fov_, float aspect_, float zNear_, flo
     this->aspect  = aspect_;
 
 #if PROJECTION_HANDEDNESS_LH
-	this->projMatrix = perspfovlh(this->fov, this->aspect, this->zNear, this->zFar);
+    this->projMatrix = perspfovlh(this->fov, this->aspect, this->zNear, this->zFar);
 #else
-	this->projMatrix = perspfovrh(this->fov, this->aspect, this->zNear, this->zFar);
+    this->projMatrix = perspfovrh(this->fov, this->aspect, this->zNear, this->zFar);
 #endif
     this->invProjMatrix = inverse(this->projMatrix);
 
@@ -74,9 +74,9 @@ CameraSettings::SetupOrthogonal(float w, float h, float zNear_, float zFar_)
     this->focalLength.set(1.0f, 1.0f);
 
 #if PROJECTION_HANDEDNESS_LH
-	this->projMatrix = ortholh(w, h, this->zNear, this->zFar);
+    this->projMatrix = ortholh(w, h, this->zNear, this->zFar);
 #else
-	this->projMatrix = orthorh(w, h, this->zNear, this->zFar);
+    this->projMatrix = orthorh(w, h, this->zNear, this->zFar);
 #endif
     this->invProjMatrix = inverse(this->projMatrix);
 }

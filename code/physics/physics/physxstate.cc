@@ -1,3 +1,7 @@
+//------------------------------------------------------------------------------
+//  physxstate.cc
+//  (C) 2020 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "physicsinterface.h"
 #include "physics/physxstate.h"
@@ -11,7 +15,6 @@
 #include "PxSimulationEventCallback.h"
 
 using namespace physx;
-
 
 namespace Physics
 {
@@ -90,13 +93,17 @@ PhysxState::DisconnectPVD()
 void
 PhysxState::onWake(physx::PxActor** actors, physx::PxU32 count)
 {
-    this->awakeActors.BeginBulkAdd();
-    for (physx::PxU32 i = 0; i < count; i++)
+    if (this->onWakeCallback.IsValid())
     {
-        Ids::Id32 id = (Ids::Id32)(int64_t)actors[i]->userData;
-        this->awakeActors.BulkAdd(id);
+        Util::ArrayStack<ActorId, 128> actorIds;
+        actorIds.Reserve(count);
+        for (physx::PxU32 i = 0; i < count; i++)
+        {
+            Ids::Id32 id = (Ids::Id32)(int64_t)actors[i]->userData;
+            actorIds.Append(id);
+        }
+        this->onWakeCallback(actorIds.Begin(), actorIds.Size());
     }
-    this->awakeActors.EndBulkAdd();
 }
 
 //------------------------------------------------------------------------------
@@ -105,10 +112,16 @@ PhysxState::onWake(physx::PxActor** actors, physx::PxU32 count)
 void
 PhysxState::onSleep(physx::PxActor** actors, physx::PxU32 count)
 {
-    for (physx::PxU32 i = 0; i < count; i++)
+    if (this->onSleepCallback.IsValid())
     {
-        Ids::Id32 id = (Ids::Id32)(int64_t)actors[i]->userData;
-        this->awakeActors.Erase(id);
+        Util::ArrayStack<ActorId, 128> actorIds;
+        actorIds.Reserve(count);
+        for (physx::PxU32 i = 0; i < count; i++)
+        {
+            Ids::Id32 id = (Ids::Id32)(int64_t)actors[i]->userData;
+            actorIds.Append(id);
+        }
+        this->onSleepCallback(actorIds.Begin(), actorIds.Size());
     }
 }
 #pragma warning(pop)
@@ -151,11 +164,11 @@ PhysxState::DiscardActor(ActorId id)
 void
 PhysxState::Update(Timing::Time delta)
 {
-	if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::F3))
-	{
-		if (!this->pvd->isConnected()) this->ConnectPVD();
-		else this->DisconnectPVD();
-	}
+    if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::F3))
+    {
+        if (!this->pvd->isConnected()) this->ConnectPVD();
+        else this->DisconnectPVD();
+    }
     this->time -= delta;
     // we limit the simulation to 5 frames
     this->time = Math::n_max(this->time, -5.0 * PHYSICS_RATE);
@@ -169,18 +182,6 @@ PhysxState::Update(Timing::Time delta)
         }
         state.time += PHYSICS_RATE;
     }
-
-    for (IndexT i = 0; i < this->awakeActors.Size(); i++)
-    {
-        Actor& actor = ActorContext::actors[Ids::Index(this->awakeActors.KeyAtIndex(i))];
-        if (actor.moveCallback.IsValid())
-        {
-            Math::mat4 trans = Px2NebMat(static_cast<PxRigidActor*>(actor.actor)->getGlobalPose());
-            actor.moveCallback(actor.id, trans);
-        }
-    }
-	
-
 }
 PhysxState state;
 }

@@ -191,8 +191,8 @@ Win32IpAddress::GetHostAddr() const
     - "any"         resolves to INADDR_ANY (0.0.0.0)
     - "broadcast"   resolves to INADDR_BROADCAST (255.255.255.255)
     - "localhost"   resolves to 127.0.0.1
-    - "self"        (NOT IMPLEMENTED ON XBOX360) resolves to the first address of this host
-    - "inetself"    (NOT IMPLEMENTED ON XBOX360) resolves to the first address which is not a LAN address
+    - "self"        resolves to the first address of this host
+    - "inetself"    resolves to the first address which is not a LAN address
 
     An empty host name is invalid. A hostname can also be an address string
     of the form xxx.yyy.zzz.www.
@@ -219,45 +219,41 @@ Win32IpAddress::GetHostByName(const Util::String& hostName, in_addr& outAddr)
     }
     else if (("self" == hostName) || ("inetself" == hostName))
     {
-        #if __WIN32__
-            // get the machine's host name
-            char localHostName[512];
-            int err = gethostname(localHostName, sizeof(localHostName));
-            if (SOCKET_ERROR == err)
-            {
-                return false;
-            }
 
-            // resolve own host name
-            struct hostent* he = gethostbyname(localHostName);
-            if (0 == he)
-            {
-                // could not resolve own host name
-                return false;
-            }
+        // get the machine's host name
+        char localHostName[512];
+        int err = gethostname(localHostName, sizeof(localHostName));
+        if (SOCKET_ERROR == err)
+        {
+            return false;
+        }
 
-            // initialize with the default address 
-            const in_addr* inAddr = (const in_addr *) he->h_addr;
-            if (hostName == "inetself")
+        // resolve own host name
+        struct hostent* he = gethostbyname(localHostName);
+        if (0 == he)
+        {
+            // could not resolve own host name
+            return false;
+        }
+
+        // initialize with the default address 
+        const in_addr* inAddr = (const in_addr *) he->h_addr;
+        if (hostName == "inetself")
+        {
+            // if internet address requested, scan list of ip addresses
+            // for a non-Class A,B or C network address
+            int i;
+            for (i = 0; (0 != he->h_addr_list[i]); i++)
             {
-                // if internet address requested, scan list of ip addresses
-                // for a non-Class A,B or C network address
-                int i;
-                for (i = 0; (0 != he->h_addr_list[i]); i++)
+                if (IsInetAddr((const in_addr *)he->h_addr_list[i]))
                 {
-                    if (IsInetAddr((const in_addr *)he->h_addr_list[i]))
-                    {
-                        inAddr = (in_addr *)he->h_addr_list[i];
-                        break;
-                    }
+                    inAddr = (in_addr *)he->h_addr_list[i];
+                    break;
                 }
             }
-            outAddr = *inAddr;
-            return true;
-        #else // __XBOX360__
-            n_error("Win32IpAddress::GetHostByName(): self and inetself not implemented on Xbox360!");
-            return false;
-        #endif
+        }
+        outAddr = *inAddr;
+        return true;
     }
     else if (hostName.CheckValidCharSet(".0123456789"))
     {
@@ -267,20 +263,15 @@ Win32IpAddress::GetHostByName(const Util::String& hostName, in_addr& outAddr)
     }
     else
     {
-        #if __WIN32__
-            // the default case: do a DNS name lookup
-            struct hostent* he = gethostbyname(hostName.AsCharPtr());
-            if (0 == he)
-            {
-                // could not resolve host name!
-                return false;
-            }
-            outAddr = *((in_addr*)he->h_addr);
-            return true;
-        #else // __XBOX360__
-            n_error("Win32IpAddress::GetHostByName(): DNS name lookups not supported on Xbox360!");
+        // the default case: do a DNS name lookup
+        struct hostent* he = gethostbyname(hostName.AsCharPtr());
+        if (0 == he)
+        {
+            // could not resolve host name!
             return false;
-        #endif
+        }
+        outAddr = *((in_addr*)he->h_addr);
+        return true;
     }
 }
 

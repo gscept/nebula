@@ -22,6 +22,9 @@ render_state StandardState
 
 render_state StencilState
 {
+	DepthWrite = false;
+    DepthEnabled = true;
+    DepthFunc = Equal;
 	StencilEnabled = true;
 	StencilWriteMask = STENCIL_BIT_CHARACTER;
 	StencilFrontPassOp = Replace;
@@ -41,11 +44,46 @@ render_state AlphaState
 	DepthEnabled = true;
 };
 
+render_state DefaultState
+{
+    DepthWrite = false;
+    DepthEnabled = true;
+    DepthFunc = Equal;
+};
+
+render_state DoubleSidedState
+{
+    CullMode = None;
+    DepthWrite = false;
+    DepthEnabled = true;
+    DepthFunc = Equal;
+};
+
+render_state AlphaDoubleSidedState
+{
+    BlendEnabled[0] = true;
+    SrcBlend[0] = SrcAlpha;
+    DstBlend[0] = OneMinusSrcAlpha;
+    DepthWrite = false;
+    DepthEnabled = true;
+    DepthFunc = Less;
+    CullMode = None;
+};
+
+render_state DepthState
+{
+    CullMode = Back;
+};
+
+render_state DepthStateDoubleSided
+{
+    CullMode = None;
+};
+
 float FresnelPower = 0.0f;
 float FresnelStrength = 0.0f;
 
 #include "lib/materialparams.fxh"
-#include "lib/tessellationparams.fxh"
 
 //---------------------------------------------------------------------------------------------------------------------------
 //											DIFFUSE
@@ -62,6 +100,28 @@ subroutine (CalculateColor) vec4 AlphaColor(
 	in vec4 albedoColor)
 {
 	return albedoColor;
+}
+
+subroutine (CalculateColor) vec4 AlphaMaskSimpleColor(
+	in vec4 color)
+{
+#if PIXEL_SHADER
+    if (color.a <= alphaCutoff)
+        discard;
+#endif
+
+    return vec4(color.rgb, 1.0f);
+}
+
+subroutine (CalculateColor) vec4 AlphaMaskAlphaColor(
+	in vec4 color)
+{
+#if PIXEL_SHADER
+    if (color.a <= alphaCutoff)
+        discard;
+#endif
+
+    return color;
 }
 
 CalculateColor calcColor;
@@ -113,15 +173,13 @@ CalculateBump calcBump;
 //---------------------------------------------------------------------------------------------------------------------------
 prototype vec4 CalculateMaterial(in vec4 material);
 
-subroutine (CalculateMaterial) vec4 DefaultMaterialFunctor(
-	in vec4 material)
+subroutine (CalculateMaterial) vec4 DefaultMaterialFunctor(in vec4 material)
 {
 	return material;
 }
 
 // OSM = Occlusion, Smoothness, Metalness
-subroutine (CalculateMaterial) vec4 OSMMaterialFunctor(
-	in vec4 material)
+subroutine (CalculateMaterial) vec4 OSMMaterialFunctor(in vec4 material)
 {
 	return ConvertOSM(material);
 }
@@ -130,97 +188,124 @@ CalculateMaterial calcMaterial;
 
 //---------------------------------------------------------------------------------------------------------------------------
 //											ENVIRONMENT
-//
-//	Note: We must return a mat2x3 (for 2 * vec3) since two outputs causes compilation issues, and subroutines cannot return structs.
 //---------------------------------------------------------------------------------------------------------------------------
-prototype mat2x3 CalculateEnvironment(
-	in vec4 specularColor,
-	in vec3 worldNormal,
-	in vec3 worldViewVec,
-	in float roughness);
+prototype vec3 CalculateEnvironment(in vec4 albedo, in vec3 F0, in vec3 worldNormal, in vec3 worldViewVec, in vec4 material);
 
-subroutine (CalculateEnvironment) mat2x3 PBR(
-	in vec4 specularColor,
+subroutine (CalculateEnvironment) vec3 IBL(
+	in vec4 albedo,
+	in vec3 F0,
 	in vec3 worldNormal,
 	in vec3 worldViewVec,
-	in float roughness)
+	in vec4 material)
 {
-	mat2x3 ret;
-	vec3 reflectVec = reflect(worldViewVec, worldNormal.xyz);
-	vec3 viewNorm = (View * vec4(worldNormal, 0)).xyz;
-	float x = dot(-viewNorm, normalize(worldViewVec));
-	vec3 rim = FresnelSchlickGloss(specularColor.rgb, x, roughness);
-	ret[1] = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, (1.0f - roughness) * NumEnvMips).rgb * rim;
-	ret[0] = sampleCubeLod(IrradianceMap, CubeSampler, worldNormal.xyz, 0).rgb;
-	return ret;
+	vec3 reflectVec = reflect(-worldViewVec, worldNormal);
+    float NdotV = saturate(dot(worldNormal, worldViewVec));
+    vec3 F = FresnelSchlickGloss(F0, NdotV, material[MAT_ROUGHNESS]);
+    vec3 reflection = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, material[MAT_ROUGHNESS] * NumEnvMips).rgb;
+    vec3 irradiance = sampleCubeLod(IrradianceMap, CubeSampler, worldNormal, 0).rgb;
+    vec3 kD = vec3(1.0f) - F;
+    kD *= 1.0f - material[MAT_METALLIC];
+
+    vec3 ambientTerm = (irradiance * kD * albedo.rgb);
+    return (ambientTerm + reflection * F) * material[MAT_CAVITY];
 }
 
-subroutine (CalculateEnvironment) mat2x3 ReflectionOnly(
-	in vec4 specularColor,
+subroutine (CalculateEnvironment) vec3 ReflectionOnly(
+	in vec4 albedo,
+	in vec3 F0,
 	in vec3 worldNormal,
 	in vec3 worldViewVec,
-	in float roughness)
+	in vec4 material)
 {
-	mat2x3 ret;
-	vec3 reflectVec = reflect(worldViewVec, worldNormal.xyz);
-	vec3 viewNorm = (View * vec4(worldNormal, 0)).xyz;
-	float x = dot(-viewNorm, normalize(worldViewVec));
-	vec3 rim = FresnelSchlickGloss(specularColor.rgb, x, roughness);
-	ret[1] = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, (1.0f - pow(roughness, 2)) * NumEnvMips).rgb * rim;
-	ret[0] = vec3(0);
-	return ret;
+	vec3 reflectVec = reflect(-worldViewVec, worldNormal);
+    float NdotV = saturate(dot(worldNormal, worldViewVec));
+    vec3 F = FresnelSchlickGloss(F0, NdotV, material[MAT_ROUGHNESS]);
+    vec3 reflection = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, material[MAT_ROUGHNESS] * NumEnvMips).rgb;
+    return (reflection * F);
 }
 
-subroutine (CalculateEnvironment) mat2x3 IrradianceOnly(
-	in vec4 specularColor,
+subroutine (CalculateEnvironment) vec3 IrradianceOnly(
+	in vec4 albedo,
+	in vec3 F0,
 	in vec3 worldNormal,
 	in vec3 worldViewVec,
-	in float roughness)
+	in vec4 material)
 {
-	mat2x3 ret;
-	ret[1] = vec3(0);
-	ret[0] = sampleCubeLod(IrradianceMap, CubeSampler, worldNormal.xyz, 0).rgb;
-	return ret;
+	float NdotV = saturate(dot(worldNormal, worldViewVec));
+    vec3 F = FresnelSchlickGloss(F0, NdotV, material[MAT_ROUGHNESS]);
+    vec3 irradiance = sampleCubeLod(IrradianceMap, CubeSampler, worldNormal, 0).rgb;
+    vec3 kD = vec3(1.0f) - F;
+    kD *= 1.0f - material[MAT_METALLIC];
+	vec3 ambientTerm = (irradiance * kD * albedo.rgb);
+    return ambientTerm * material[MAT_CAVITY];
 }
 
-subroutine (CalculateEnvironment) mat2x3 NoEnvironment(
-	in vec4 specularColor,
+subroutine (CalculateEnvironment) vec3 NoEnvironment(
+	in vec4 albedo,
+	in vec3 F0,
 	in vec3 worldNormal,
 	in vec3 worldViewVec,
-	in float roughness)
+	in vec4 material)
 {
-	mat2x3 ret;
-	ret[1] = vec3(0);
-	ret[0] = vec3(0);
-	return ret;
+	return vec3(0);
 }
 
 CalculateEnvironment calcEnv;
-
-
-mat2x3 PBRSpec(
-	in vec4 specularColor,
-	in vec3 worldNormal,
-	in vec3 viewSpacePos,
-	in vec3 worldViewVec,
-	in mat4 view,
-	in float roughness)
-{
-	mat2x3 ret;
-	vec3 viewNorm = (view * vec4(worldNormal, 0)).xyz;
-	vec3 reflectVec = reflect(worldViewVec, worldNormal.xyz);
-	float x = dot(-viewNorm, normalize(viewSpacePos));
-	vec3 rim = FresnelSchlickGloss(specularColor.rgb, x, roughness);
-	ret[1] = sampleCubeLod(EnvironmentMap, CubeSampler, reflectVec, (1.0f - pow(roughness, 2)) * NumEnvMips).rgb * rim;
-	ret[0] = sampleCubeLod(IrradianceMap, CubeSampler, worldNormal.xyz, 0).rgb;
-	return ret;
-}
 
 //------------------------------------------------------------------------------
 /**
 				STATIC GEOMETRY
 */
 //------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+/**
+*/
+shader
+void
+vsDepthStatic(
+    [slot = 0] in vec3 position)
+{
+    vec4 modelSpace = Model * vec4(position, 1);
+    gl_Position = ViewProjection * modelSpace;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+shader
+void
+vsDepthStaticAlphaMask(
+    [slot = 0] in vec3 position,
+    [slot = 2] in vec2 uv,
+    out vec2 UV)
+{
+    vec4 modelSpace = Model * vec4(position, 1);
+    gl_Position = ViewProjection * modelSpace;
+    UV = uv;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+shader
+void
+psDepthOnly()
+{
+    // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+shader
+void
+psDepthOnlyAlphaMask(in vec2 UV)
+{
+    vec4 baseColor = sample2D(AlbedoMap, MaterialSampler, UV);
+    if (baseColor.a <= AlphaSensitivity)
+        discard;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -237,16 +322,18 @@ vsStatic(
 	out vec3 Normal,
 	out vec3 Binormal,
 	out vec2 UV,
-	out vec3 WorldViewVec)
+	out vec3 WorldSpacePos,
+	out vec4 ViewSpacePos)
 {
 	vec4 modelSpace = Model * vec4(position, 1);
     gl_Position = ViewProjection * modelSpace;
-    UV = uv;
-
-	Tangent 	= (Model * vec4(tangent, 0)).xyz;
-	Normal 		= (Model * vec4(normal, 0)).xyz;
-	Binormal 	= (Model * vec4(binormal, 0)).xyz;
-	WorldViewVec = EyePos.xyz - modelSpace.xyz;
+    
+	Tangent 	  = (Model * vec4(tangent, 0)).xyz;
+	Normal 		  = (Model * vec4(normal, 0)).xyz;
+	Binormal 	  = (Model * vec4(binormal, 0)).xyz;
+	UV            = uv;
+	WorldSpacePos = modelSpace.xyz;
+	ViewSpacePos  = View * modelSpace;
 }
 
 //------------------------------------------------------------------------------
@@ -264,16 +351,18 @@ vsStaticInstanced(
 	out vec3 Normal,
 	out vec3 Binormal,
 	out vec2 UV,
-	out vec3 WorldViewVec)
+	out vec3 WorldSpacePos,
+	out vec4 ViewSpacePos)
 {
 	vec4 modelSpace = ModelArray[gl_InstanceID] * vec4(position, 1);
     gl_Position = ViewProjection * modelSpace;
-    UV = uv;
 
-	Tangent = (Model * vec4(tangent, 0)).xyz;
-	Normal = (Model * vec4(normal, 0)).xyz;
-	Binormal = (Model * vec4(binormal, 0)).xyz;
-	WorldViewVec = EyePos.xyz - modelSpace.xyz;
+	Tangent 	  = (Model * vec4(tangent, 0)).xyz;
+	Normal 		  = (Model * vec4(normal, 0)).xyz;
+	Binormal 	  = (Model * vec4(binormal, 0)).xyz;
+	UV            = uv;
+	WorldSpacePos = modelSpace.xyz;
+	ViewSpacePos  = View * modelSpace;
 }
 
 //------------------------------------------------------------------------------
@@ -346,6 +435,39 @@ vsStaticColored(
 */
 shader
 void
+vsDepthSkinned(
+    [slot = 0] in vec3 position,
+	[slot = 7] in vec4 weights,
+	[slot = 8] in uvec4 indices)
+{
+    vec4 skinnedPos = SkinnedPosition(position, weights, indices);
+    vec4 modelSpace = Model * skinnedPos;
+    gl_Position = ViewProjection * modelSpace;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+shader
+void
+vsDepthSkinnedAlphaMask(
+    [slot = 0] in vec3 position,
+    [slot = 2] in vec2 uv,
+	[slot = 7] in vec4 weights,
+	[slot = 8] in uvec4 indices,
+    out vec2 UV)
+{
+	vec4 skinnedPos = SkinnedPosition(position, weights, indices);
+    vec4 modelSpace = Model * skinnedPos;
+    gl_Position = ViewProjection * modelSpace;
+    UV = uv;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+shader
+void
 vsSkinned(
 	[slot=0] in vec3 position,
 	[slot=1] in vec3 normal,
@@ -358,7 +480,8 @@ vsSkinned(
 	out vec3 Normal,
 	out vec3 Binormal,
 	out vec2 UV,
-	out vec3 WorldViewVec)
+	out vec3 WorldSpacePos,
+	out vec4 ViewSpacePos)
 {
 	vec4 skinnedPos      = SkinnedPosition(position, weights, indices);
 	vec4 skinnedNormal   = SkinnedNormal(normal, weights, indices);
@@ -367,12 +490,13 @@ vsSkinned(
 
 	vec4 modelSpace = Model * skinnedPos;
     gl_Position = ViewProjection * modelSpace;
-	UV = uv;
-
-	Tangent = (Model * skinnedTangent).xyz;
-	Normal = (Model * skinnedNormal).xyz;
-	Binormal = (Model * skinnedBinormal).xyz;
-	WorldViewVec = EyePos.xyz - modelSpace.xyz;
+	
+	Tangent 	  = (Model * skinnedTangent).xyz;
+	Normal 		  = (Model * skinnedNormal).xyz;
+	Binormal 	  = (Model * skinnedBinormal).xyz;
+	UV            = uv;
+	WorldSpacePos = modelSpace.xyz;
+	ViewSpacePos  = View * modelSpace;
 }
 
 //------------------------------------------------------------------------------
@@ -426,140 +550,6 @@ vsBillboard(
 {
 	gl_Position = ViewProjection * Model * vec4(position, 0);
 	UV = uv;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-[inputvertices] = 3
-[outputvertices] = 6
-shader
-void
-hsDefault(in vec3 tangent[],
-		  in vec3 normal[],
-		  in vec4 position[],
-		  in vec3 binormal[],
-		  in vec2 uv[],
-		  in float distance[],
-		  out vec3 Tangent[],
-		  out vec3 Normal[],
-		  out vec4 Position[],
-		  out vec3 Binormal[],
-		  out vec2 UV[]
-#ifdef PN_TRIANGLES
-,
-		  patch out vec3 f3B210,
-		  patch out vec3 f3B120,
-		  patch out vec3 f3B021,
-		  patch out vec3 f3B012,
-		  patch out vec3 f3B102,
-		  patch out vec3 f3B201,
-		  patch out vec3 f3B111
-#endif
-		  )
-{
-	Tangent[gl_InvocationID] 	= tangent[gl_InvocationID];
-	Normal[gl_InvocationID] 	= normal[gl_InvocationID];
-	Position[gl_InvocationID]	= position[gl_InvocationID];
-	Binormal[gl_InvocationID] 	= binormal[gl_InvocationID];
-	UV[gl_InvocationID]			= uv[gl_InvocationID];
-
-	// perform per-patch operation
-	if (gl_InvocationID == 0)
-	{
-		vec4 EdgeTessFactors;
-		EdgeTessFactors.x = 0.5 * (distance[1] + distance[2]);
-		EdgeTessFactors.y = 0.5 * (distance[2] + distance[0]);
-		EdgeTessFactors.z = 0.5 * (distance[0] + distance[1]);
-		EdgeTessFactors *= TessellationFactor;
-
-#ifdef PN_TRIANGLES
-		// compute the cubic geometry control points
-		// edge control points
-		f3B210 = ( ( 2.0f * position[0] ) + position[1] - ( dot( ( position[1] - position[0] ), normal[0] ) * normal[0] ) ) / 3.0f;
-		f3B120 = ( ( 2.0f * position[1] ) + position[0] - ( dot( ( position[0] - position[1] ), normal[1] ) * normal[1] ) ) / 3.0f;
-		f3B021 = ( ( 2.0f * position[1] ) + position[2] - ( dot( ( position[2] - position[1] ), normal[1] ) * normal[1] ) ) / 3.0f;
-		f3B012 = ( ( 2.0f * position[2] ) + position[1] - ( dot( ( position[1] - position[2] ), normal[2] ) * normal[2] ) ) / 3.0f;
-		f3B102 = ( ( 2.0f * position[2] ) + position[0] - ( dot( ( position[0] - position[2] ), normal[2] ) * normal[2] ) ) / 3.0f;
-		f3B201 = ( ( 2.0f * position[0] ) + position[2] - ( dot( ( position[2] - position[0] ), normal[0] ) * normal[0] ) ) / 3.0f;
-		// center control point
-		vec3 f3E = ( f3B210 + f3B120 + f3B021 + f3B012 + f3B102 + f3B201 ) / 6.0f;
-		vec3 f3V = ( indata[0].Position + indata[1].Position + indata[2].Position ) / 3.0f;
-		f3B111 = f3E + ( ( f3E - f3V ) / 2.0f );
-#endif
-
-		gl_TessLevelOuter[0] = EdgeTessFactors.x;
-		gl_TessLevelOuter[1] = EdgeTessFactors.y;
-		gl_TessLevelOuter[2] = EdgeTessFactors.z;
-		gl_TessLevelInner[0] = (gl_TessLevelOuter[0] + gl_TessLevelOuter[1] + gl_TessLevelOuter[2]) / 3;
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-[inputvertices] = 6
-[winding] = ccw
-[topology] = triangle
-[partition] = odd
-shader
-void
-dsDefault(
-	in vec3 tangent[],
-	in vec3 normal[],
-	in vec4 position[],
-	in vec3 binormal[],
-	in vec2 uv[],
-	out vec3 Tangent,
-	out vec3 Normal,
-	out vec3 Binormal,
-	out vec2 UV
-#ifdef PN_TRIANGLES
-	,
-	patch in vec3 f3B210,
-	patch in vec3 f3B120,
-	patch in vec3 f3B021,
-	patch in vec3 f3B012,
-	patch in vec3 f3B102,
-	patch in vec3 f3B201,
-	patch in vec3 f3B111
-#endif
-	)
-{
-	// The barycentric coordinates
-	float fU = gl_TessCoord.z;
-	float fV = gl_TessCoord.x;
-	float fW = gl_TessCoord.y;
-
-	// Precompute squares and squares * 3
-	float fUU = fU * fU;
-	float fVV = fV * fV;
-	float fWW = fW * fW;
-	float fUU3 = fUU * 3.0f;
-	float fVV3 = fVV * 3.0f;
-	float fWW3 = fWW * 3.0f;
-
-#ifdef PN_TRIANGLES
-	// Compute position from cubic control points and barycentric coords
-	vec3 Position = position[0] * fWW * fW + position[1] * fUU * fU + position[2] * fVV * fV +
-					  f3B210 * fWW3 * fU + f3B120 * fW * fUU3 + f3B201 * fWW3 * fV + f3B021 * fUU3 * fV +
-					  f3B102 * fW * fVV3 + f3B012 * fU * fVV3 + f3B111 * 6.0f * fW * fU * fV;
-#else
-	vec3 Position = gl_TessCoord.x * position[0].xyz + gl_TessCoord.y * position[1].xyz + gl_TessCoord.z * position[2].xyz;
-#endif
-
-	UV = gl_TessCoord.x * uv[0] + gl_TessCoord.y * uv[1] + gl_TessCoord.z * uv[2];
-	float Height = 2.0f * texture(sampler2D(Textures2D[DisplacementMap], MaterialSampler), UV).r - 1.0f;
-	vec3 VectorNormalized = normalize( Normal );
-
-	Position += VectorNormalized.xyz * HeightScale * SceneScale * Height;
-
-	gl_Position = vec4(Position, 1);
-	gl_Position = ViewProjection * gl_Position;
-
-	Normal = gl_TessCoord.x * normal[0] + gl_TessCoord.y * normal[1] + gl_TessCoord.z * normal[2];
-	Binormal = gl_TessCoord.x * binormal[0] + gl_TessCoord.y * binormal[1] + gl_TessCoord.z * binormal[2];
-	Tangent = gl_TessCoord.x * tangent[0] + gl_TessCoord.y * tangent[1] + gl_TessCoord.z * tangent[2];
 }
 
 //------------------------------------------------------------------------------

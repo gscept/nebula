@@ -23,7 +23,7 @@ FrameSyncTimer::FrameSyncTimer() :
     frameTicks(0),
     scaledTime(0.0),
     timeFactor(1.0),
-	frameIndex(0),
+    frameIndex(0),
     isValid(false)   
 {
     __ConstructSingleton;
@@ -60,8 +60,8 @@ FrameSyncTimer::Setup()
     this->frameTime = 1.0 / 60.0;
     this->frameTicks = Timing::SecondsToTicks(this->frameTime);
 
-	// start main timer
-	this->masterTimer.Start();
+    // start main timer
+    this->masterTimer.Start();
 }
 
 //------------------------------------------------------------------------------
@@ -85,7 +85,7 @@ FrameSyncTimer::Discard()
 void
 FrameSyncTimer::UpdateTimePolling()
 {
-	this->Update(this->masterTimer.GetTime());
+    this->Update(this->masterTimer.GetTime());
 }
 
 //------------------------------------------------------------------------------
@@ -94,7 +94,7 @@ FrameSyncTimer::UpdateTimePolling()
 void
 FrameSyncTimer::StartTime()
 {
-	this->masterTimer.Start();	
+    this->masterTimer.Start();  
 }
 
 //------------------------------------------------------------------------------
@@ -103,7 +103,7 @@ FrameSyncTimer::StartTime()
 void
 FrameSyncTimer::StopTime()
 {
-	this->masterTimer.Stop();
+    this->masterTimer.Stop();
 }
 
 //------------------------------------------------------------------------------
@@ -112,7 +112,7 @@ FrameSyncTimer::StopTime()
 void
 FrameSyncTimer::ResetTime()
 {
-	this->masterTimer.Reset();
+    this->masterTimer.Reset();
 }
 
 //------------------------------------------------------------------------------
@@ -121,7 +121,7 @@ FrameSyncTimer::ResetTime()
 bool
 FrameSyncTimer::IsTimeRunning() const
 {
-	return this->masterTimer.Running();
+    return this->masterTimer.Running();
 }
 
 //------------------------------------------------------------------------------
@@ -150,7 +150,7 @@ FrameSyncTimer::Update(Time newTime)
     }
     this->ticks = newTicks;
 
-	this->frameIndex++;
+    this->frameIndex++;
 }
 
 //------------------------------------------------------------------------------
@@ -168,7 +168,7 @@ FrameSyncTimer::GetScaledFrameTime() const
 IndexT
 FrameSyncTimer::GetFrameIndex() const
 {
-	return this->frameIndex;
+    return this->frameIndex;
 }
 
 } // namespace FrameSync

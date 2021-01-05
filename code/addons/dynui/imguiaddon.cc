@@ -16,7 +16,7 @@ __ImplementClass(Dynui::ImguiAddon, 'IMFU', Core::RefCounted);
 */
 ImguiAddon::ImguiAddon()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -24,7 +24,7 @@ ImguiAddon::ImguiAddon()
 */
 ImguiAddon::~ImguiAddon()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -33,12 +33,12 @@ ImguiAddon::~ImguiAddon()
 void
 ImguiAddon::Setup()
 {
-	// register context
+    // register context
     Dynui::ImguiContext::Create();
 
-	// create and register input handler
-	this->inputHandler = ImguiInputHandler::Create();
-	Input::InputServer::Instance()->AttachInputHandler(Input::InputPriority::DynUi, this->inputHandler.upcast<Input::InputHandler>());
+    // create and register input handler
+    this->inputHandler = ImguiInputHandler::Create();
+    Input::InputServer::Instance()->AttachInputHandler(Input::InputPriority::DynUi, this->inputHandler.upcast<Input::InputHandler>());
 }
 
 //------------------------------------------------------------------------------
@@ -47,9 +47,9 @@ ImguiAddon::Setup()
 void
 ImguiAddon::Discard()
 {
-	// remove input handler
-	Input::InputServer::Instance()->RemoveInputHandler(this->inputHandler.upcast<Input::InputHandler>());
-	this->inputHandler = nullptr;
+    // remove input handler
+    Input::InputServer::Instance()->RemoveInputHandler(this->inputHandler.upcast<Input::InputHandler>());
+    this->inputHandler = nullptr;
 
     Dynui::ImguiContext::Destroy();
 }

@@ -1,8 +1,5 @@
 ---
 imports:
-    fips-zlib:
-        git: https://github.com/gscept/fips-zlib
-        group: misc
     fips-glfw:
         git: https://github.com/gscept/fips-glfw.git
         group: gfx
@@ -41,6 +38,12 @@ imports:
         git: https://github.com/gscept/fips-flatbuffers.git
     gliml:
         git: https://github.com/gscept/gliml.git
+    fips-sqlite3:
+        git: https://github.com/gscept/fips-sqlite3.git
+        branch: main
+    fips-curl:
+        git: https://github.com/gscept/fips-curl.git
+        cond: "FIPS_WINDOWS"
 
 exports:
     header-dirs :

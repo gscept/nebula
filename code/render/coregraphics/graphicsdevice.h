@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	The Graphics Device is the engine which drives the graphics abstraction layer
+    The Graphics Device is the engine which drives the graphics abstraction layer
 
-	(C) 2018-2020 Individual contributors, see AUTHORS file
+    (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "pass.h"
@@ -27,25 +27,25 @@ namespace CoreGraphics
 /// struct for texture copies
 struct TextureCopy
 {
-	Math::rectangle<SizeT> region;
-	uint mip;
-	uint layer;
+    Math::rectangle<SizeT> region;
+    uint mip;
+    uint layer;
 };
 
 struct BufferCopy
 {
-	uint offset;
-	uint rowLength = 0;		// for buffer to image copies
-	uint imageHeight = 0;	// for buffer to image copies
+    uint offset;
+    uint rowLength = 0;     // for buffer to image copies
+    uint imageHeight = 0;   // for buffer to image copies
 };
 
 struct GraphicsDeviceCreateInfo
 {
-	uint globalGraphicsConstantBufferMemorySize[NumConstantBufferTypes];
-	uint globalComputeConstantBufferMemorySize[NumConstantBufferTypes];
-	uint memoryHeaps[NumMemoryPoolTypes];
-	byte numBufferedFrames : 3;
-	bool enableValidation : 1;		// enables validation layer and writes output to console
+    uint globalGraphicsConstantBufferMemorySize[NumConstantBufferTypes];
+    uint globalComputeConstantBufferMemorySize[NumConstantBufferTypes];
+    uint memoryHeaps[NumMemoryPoolTypes];
+    byte numBufferedFrames : 3;
+    bool enableValidation : 1;      // enables validation layer and writes output to console
 };
 
 /// create graphics device
@@ -64,109 +64,109 @@ struct FrameProfilingMarker
     CoreGraphics::QueueType queue;
     Math::vec4 color;
     const char* name;
-	IndexT gpuBegin;
-	IndexT gpuEnd;
-	uint64_t start;
-	uint64_t duration;
-	Util::Array<FrameProfilingMarker> children;
+    IndexT gpuBegin;
+    IndexT gpuEnd;
+    uint64_t start;
+    uint64_t duration;
+    Util::Array<FrameProfilingMarker> children;
 };
 #endif
 
 struct Query
 {
-	CoreGraphics::QueryType type;
-	IndexT idx;
-	Timing::Time cpuTime;
+    CoreGraphics::QueryType type;
+    IndexT idx;
+    Timing::Time cpuTime;
 };
 
 struct DrawThreadResult
 {
-	CoreGraphics::CommandBufferId buf;
-	Threading::Event* event;
+    CoreGraphics::CommandBufferId buf;
+    Threading::Event* event;
 };
 
 struct GraphicsDeviceState
 {
-	Util::Array<CoreGraphics::TextureId> backBuffers;
-	Util::Dictionary<Util::StringAtom, CoreGraphics::TextureId> textures;
+    Util::Array<CoreGraphics::TextureId> backBuffers;
+    Util::Dictionary<Util::StringAtom, CoreGraphics::TextureId> textures;
 
-	CoreGraphics::CommandBufferPoolId submissionGraphicsCmdPool;
-	CoreGraphics::CommandBufferPoolId submissionComputeCmdPool;
-	CoreGraphics::CommandBufferPoolId submissionTransferCmdPool;
-	CoreGraphics::CommandBufferPoolId submissionTransferGraphicsHandoverCmdPool;
+    CoreGraphics::CommandBufferPoolId submissionGraphicsCmdPool;
+    CoreGraphics::CommandBufferPoolId submissionComputeCmdPool;
+    CoreGraphics::CommandBufferPoolId submissionTransferCmdPool;
+    CoreGraphics::CommandBufferPoolId submissionTransferGraphicsHandoverCmdPool;
 
-	CoreGraphics::SubmissionContextId resourceSubmissionContext;
-	CoreGraphics::CommandBufferId resourceSubmissionCmdBuffer;
-	Threading::CriticalSection resourceSubmissionCriticalSection;
-	bool resourceSubmissionActive;
+    CoreGraphics::SubmissionContextId resourceSubmissionContext;
+    CoreGraphics::CommandBufferId resourceSubmissionCmdBuffer;
+    Threading::CriticalSection resourceSubmissionCriticalSection;
+    bool resourceSubmissionActive;
 
-	CoreGraphics::SubmissionContextId handoverSubmissionContext;
-	CoreGraphics::CommandBufferId handoverSubmissionCmdBuffer;
-	bool handoverSubmissionActive;
+    CoreGraphics::SubmissionContextId handoverSubmissionContext;
+    CoreGraphics::CommandBufferId handoverSubmissionCmdBuffer;
+    bool handoverSubmissionActive;
 
-	CoreGraphics::SubmissionContextId setupSubmissionContext;
-	CoreGraphics::CommandBufferId setupSubmissionCmdBuffer;
-	bool setupSubmissionActive;
+    CoreGraphics::SubmissionContextId setupSubmissionContext;
+    CoreGraphics::CommandBufferId setupSubmissionCmdBuffer;
+    bool setupSubmissionActive;
 
-	bool sparseSubmitActive;
-	bool sparseWaitHandled;
+    bool sparseSubmitActive;
+    bool sparseWaitHandled;
 
-	CoreGraphics::SubmissionContextId queryGraphicsSubmissionContext;
-	CoreGraphics::CommandBufferId queryGraphicsSubmissionCmdBuffer;
+    CoreGraphics::SubmissionContextId queryGraphicsSubmissionContext;
+    CoreGraphics::CommandBufferId queryGraphicsSubmissionCmdBuffer;
 
-	CoreGraphics::SubmissionContextId queryComputeSubmissionContext;
-	CoreGraphics::CommandBufferId queryComputeSubmissionCmdBuffer;
+    CoreGraphics::SubmissionContextId queryComputeSubmissionContext;
+    CoreGraphics::CommandBufferId queryComputeSubmissionCmdBuffer;
 
-	CoreGraphics::SubmissionContextId gfxSubmission;
-	CoreGraphics::CommandBufferId gfxCmdBuffer;
+    CoreGraphics::SubmissionContextId gfxSubmission;
+    CoreGraphics::CommandBufferId gfxCmdBuffer;
 
-	CoreGraphics::SubmissionContextId computeSubmission;
-	CoreGraphics::CommandBufferId computeCmdBuffer;
+    CoreGraphics::SubmissionContextId computeSubmission;
+    CoreGraphics::CommandBufferId computeCmdBuffer;
 
-	Util::FixedArray<CoreGraphics::FenceId> presentFences;
-	Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
+    Util::FixedArray<CoreGraphics::FenceId> presentFences;
+    Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
 
-	int globalGraphicsConstantBufferMaxValue[NumConstantBufferTypes];
-	CoreGraphics::BufferId globalGraphicsConstantStagingBuffer[NumConstantBufferTypes];
-	CoreGraphics::BufferId globalGraphicsConstantBuffer[NumConstantBufferTypes];
+    int globalGraphicsConstantBufferMaxValue[NumConstantBufferTypes];
+    CoreGraphics::BufferId globalGraphicsConstantStagingBuffer[NumConstantBufferTypes];
+    CoreGraphics::BufferId globalGraphicsConstantBuffer[NumConstantBufferTypes];
 
-	int globalComputeConstantBufferMaxValue[NumConstantBufferTypes];
-	CoreGraphics::BufferId globalComputeConstantStagingBuffer[NumConstantBufferTypes];
-	CoreGraphics::BufferId globalComputeConstantBuffer[NumConstantBufferTypes];
+    int globalComputeConstantBufferMaxValue[NumConstantBufferTypes];
+    CoreGraphics::BufferId globalComputeConstantStagingBuffer[NumConstantBufferTypes];
+    CoreGraphics::BufferId globalComputeConstantBuffer[NumConstantBufferTypes];
 
-	CoreGraphics::DrawThread* drawThread;
-	Util::Stack<CoreGraphics::DrawThread*> drawThreads;
+    CoreGraphics::DrawThread* drawThread;
+    Util::Stack<CoreGraphics::DrawThread*> drawThreads;
 
-	Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
-	CoreGraphics::PrimitiveTopology::Code primitiveTopology;
-	CoreGraphics::PrimitiveGroup primitiveGroup;
-	CoreGraphics::PassId pass;
-	bool isOpen : 1;
-	bool inNotifyEventHandlers : 1;
-	bool inBeginFrame : 1;
-	bool inBeginPass : 1;
-	bool inBeginBatch : 1;
-	bool inBeginCompute : 1;
-	bool inBeginAsyncCompute : 1;
-	bool inBeginGraphicsSubmission : 1;
-	bool inBeginComputeSubmission : 1;
-	bool renderWireframe : 1;
-	bool visualizeMipMaps : 1;
-	bool usePatches : 1;
-	bool enableValidation : 1;
-	IndexT currentFrameIndex;
+    Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
+    CoreGraphics::PrimitiveTopology::Code primitiveTopology;
+    CoreGraphics::PrimitiveGroup primitiveGroup;
+    CoreGraphics::PassId pass;
+    bool isOpen : 1;
+    bool inNotifyEventHandlers : 1;
+    bool inBeginFrame : 1;
+    bool inBeginPass : 1;
+    bool inBeginBatch : 1;
+    bool inBeginCompute : 1;
+    bool inBeginAsyncCompute : 1;
+    bool inBeginGraphicsSubmission : 1;
+    bool inBeginComputeSubmission : 1;
+    bool renderWireframe : 1;
+    bool visualizeMipMaps : 1;
+    bool usePatches : 1;
+    bool enableValidation : 1;
+    IndexT currentFrameIndex;
 
-	_declare_counter(NumImageBytesAllocated);
-	_declare_counter(NumBufferBytesAllocated);
-	_declare_counter(NumBytesAllocated);
-	_declare_counter(GraphicsDeviceNumComputes);
-	_declare_counter(GraphicsDeviceNumPrimitives);
-	_declare_counter(GraphicsDeviceNumDrawCalls);
+    _declare_counter(NumImageBytesAllocated);
+    _declare_counter(NumBufferBytesAllocated);
+    _declare_counter(NumBytesAllocated);
+    _declare_counter(GraphicsDeviceNumComputes);
+    _declare_counter(GraphicsDeviceNumPrimitives);
+    _declare_counter(GraphicsDeviceNumDrawCalls);
 
 #ifdef NEBULA_ENABLE_PROFILING
     Util::Stack<FrameProfilingMarker> profilingMarkerStack[NumQueueTypes];
     Util::FixedArray<Util::Array<FrameProfilingMarker>> profilingMarkersPerFrame;
-	Util::Array<FrameProfilingMarker> frameProfilingMarkers;
+    Util::Array<FrameProfilingMarker> frameProfilingMarkers;
 #endif NEBULA_ENABLE_PROFILING
 };
 
@@ -197,7 +197,7 @@ void BeginPass(const CoreGraphics::PassId pass, PassRecordMode mode);
 
 /// start a new draw thread
 void BeginSubpassCommands(const CoreGraphics::CommandBufferId buf);
-/// progress to next subpass	
+/// progress to next subpass    
 void SetToNextSubpass(PassRecordMode mode);
 /// begin rendering a batch
 void BeginBatch(Frame::FrameBatchType::Code batchType);
@@ -289,11 +289,11 @@ void InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphics::Qu
 void SignalEvent(const CoreGraphics::EventId ev, const CoreGraphics::BarrierStage stage, const CoreGraphics::QueueType queue);
 /// signals an event
 void WaitEvent(
-	const EventId id,
-	const CoreGraphics::BarrierStage waitStage,
-	const CoreGraphics::BarrierStage signalStage,
-	const CoreGraphics::QueueType queue
-	);
+    const EventId id,
+    const CoreGraphics::BarrierStage waitStage,
+    const CoreGraphics::BarrierStage signalStage,
+    const CoreGraphics::QueueType queue
+    );
 /// signals an event
 void ResetEvent(const CoreGraphics::EventId ev, const CoreGraphics::BarrierStage stage, const CoreGraphics::QueueType queue);
 
@@ -331,9 +331,9 @@ void WaitForAllQueues();
 CoreGraphics::ImageFileFormat::Code SaveScreenshot(CoreGraphics::ImageFileFormat::Code fmt, const Ptr<IO::Stream>& outStream);
 /// save a region of the screen to the provided stream
 CoreGraphics::ImageFileFormat::Code SaveScreenshot(CoreGraphics::ImageFileFormat::Code fmt, const Ptr<IO::Stream>& outStream, const Math::rectangle<int>& rect, int x, int y);
-/// get visualization of mipmaps flag	
+/// get visualization of mipmaps flag   
 bool GetVisualizeMipMaps();
-/// set visualization of mipmaps flag	
+/// set visualization of mipmaps flag   
 void SetVisualizeMipMaps(bool val);
 /// get the render as wireframe flag
 bool GetRenderWireframe();
@@ -355,40 +355,40 @@ IndexT BeginQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type);
 void EndQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type);
 /// copy data between textures
 void Copy(
-	const CoreGraphics::QueueType queue,
-	const CoreGraphics::TextureId fromTexture,
-	const Util::Array<CoreGraphics::TextureCopy>& from,
-	const CoreGraphics::TextureId toTexture,
-	const Util::Array<CoreGraphics::TextureCopy>& to,
-	const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
+    const CoreGraphics::QueueType queue,
+    const CoreGraphics::TextureId fromTexture,
+    const Util::Array<CoreGraphics::TextureCopy>& from,
+    const CoreGraphics::TextureId toTexture,
+    const Util::Array<CoreGraphics::TextureCopy>& to,
+    const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
 );
 /// copy data between buffers
 void Copy(
-	const CoreGraphics::QueueType queue, 
-	const CoreGraphics::BufferId fromBuffer,
-	const Util::Array<CoreGraphics::BufferCopy>& from,
-	const CoreGraphics::BufferId toBuffer,
-	const Util::Array<CoreGraphics::BufferCopy>& to,
-	const SizeT size,
-	const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
+    const CoreGraphics::QueueType queue, 
+    const CoreGraphics::BufferId fromBuffer,
+    const Util::Array<CoreGraphics::BufferCopy>& from,
+    const CoreGraphics::BufferId toBuffer,
+    const Util::Array<CoreGraphics::BufferCopy>& to,
+    const SizeT size,
+    const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
 );
 /// copy data from buffer to texture
 void Copy(
-	const CoreGraphics::QueueType queue, 
-	const CoreGraphics::BufferId fromBuffer,
-	const Util::Array<CoreGraphics::BufferCopy>& from,
-	const CoreGraphics::TextureId toTexture,
-	const Util::Array<CoreGraphics::TextureCopy>& to,
-	const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
+    const CoreGraphics::QueueType queue, 
+    const CoreGraphics::BufferId fromBuffer,
+    const Util::Array<CoreGraphics::BufferCopy>& from,
+    const CoreGraphics::TextureId toTexture,
+    const Util::Array<CoreGraphics::TextureCopy>& to,
+    const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
 );
 /// copy data from texture to buffer
 void Copy(
-	const CoreGraphics::QueueType queue,
-	const CoreGraphics::TextureId fromTexture,
-	const Util::Array<CoreGraphics::TextureCopy>& from,
-	const CoreGraphics::BufferId toBuffer,
-	const Util::Array<CoreGraphics::BufferCopy>& to,
-	const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
+    const CoreGraphics::QueueType queue,
+    const CoreGraphics::TextureId fromTexture,
+    const Util::Array<CoreGraphics::TextureCopy>& from,
+    const CoreGraphics::BufferId toBuffer,
+    const Util::Array<CoreGraphics::BufferCopy>& to,
+    const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
 );
 
 /// blit between textures
@@ -439,7 +439,7 @@ template<class TYPE>
 inline uint
 SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType type, const TYPE& data)
 {
-	return SetGraphicsConstantsInternal(type, &data, sizeof(TYPE));
+    return SetGraphicsConstantsInternal(type, &data, sizeof(TYPE));
 }
 
 //------------------------------------------------------------------------------
@@ -449,7 +449,7 @@ template<class TYPE>
 inline uint
 SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType type, const TYPE* data, SizeT elements)
 {
-	return SetGraphicsConstantsInternal(type, data, sizeof(TYPE) * elements);
+    return SetGraphicsConstantsInternal(type, data, sizeof(TYPE) * elements);
 }
 
 //------------------------------------------------------------------------------
@@ -459,7 +459,7 @@ template<class TYPE>
 inline void
 SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType type, uint offset, const TYPE& data)
 {
-	return SetGraphicsConstantsInternal(type, offset, &data, sizeof(TYPE));
+    return SetGraphicsConstantsInternal(type, offset, &data, sizeof(TYPE));
 }
 
 //------------------------------------------------------------------------------
@@ -469,7 +469,7 @@ template<class TYPE>
 inline uint
 SetComputeConstants(CoreGraphics::GlobalConstantBufferType type, const TYPE& data)
 {
-	return SetComputeConstantsInternal(type, &data, sizeof(TYPE));
+    return SetComputeConstantsInternal(type, &data, sizeof(TYPE));
 }
 
 //------------------------------------------------------------------------------
@@ -479,7 +479,7 @@ template<class TYPE>
 inline uint 
 SetComputeConstants(CoreGraphics::GlobalConstantBufferType type, const TYPE* data, SizeT elements)
 {
-	return SetComputeConstantsInternal(type, data, sizeof(TYPE) * elements);
+    return SetComputeConstantsInternal(type, data, sizeof(TYPE) * elements);
 }
 
 
@@ -490,7 +490,7 @@ template<class TYPE>
 inline void 
 SetComputeConstants(CoreGraphics::GlobalConstantBufferType type, uint offset, const TYPE& data)
 {
-	return SetComputeConstantsInternal(type, offset, &data, sizeof(TYPE));
+    return SetComputeConstantsInternal(type, offset, &data, sizeof(TYPE));
 }
 
 } // namespace CoreGraphics

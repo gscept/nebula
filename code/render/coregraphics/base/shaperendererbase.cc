@@ -46,11 +46,11 @@ ShapeRendererBase::Open()
 {
     n_assert(!this->isOpen);
     n_assert(this->shapes[RenderShape::AlwaysOnTop].IsEmpty());
-	n_assert(this->shapes[RenderShape::CheckDepth].IsEmpty());
-	n_assert(this->shapes[RenderShape::Wireframe].IsEmpty());
-	n_assert(this->primitives[RenderShape::AlwaysOnTop].IsEmpty());
-	n_assert(this->primitives[RenderShape::CheckDepth].IsEmpty());
-	n_assert(this->primitives[RenderShape::Wireframe].IsEmpty());
+    n_assert(this->shapes[RenderShape::CheckDepth].IsEmpty());
+    n_assert(this->shapes[RenderShape::Wireframe].IsEmpty());
+    n_assert(this->primitives[RenderShape::AlwaysOnTop].IsEmpty());
+    n_assert(this->primitives[RenderShape::CheckDepth].IsEmpty());
+    n_assert(this->primitives[RenderShape::Wireframe].IsEmpty());
     this->isOpen = true;
 }
 
@@ -62,12 +62,12 @@ ShapeRendererBase::Close()
 {
     n_assert(this->isOpen);
     this->isOpen = false;
-	this->shapes[RenderShape::AlwaysOnTop].Clear();
+    this->shapes[RenderShape::AlwaysOnTop].Clear();
     this->shapes[RenderShape::CheckDepth].Clear();
-	this->shapes[RenderShape::Wireframe].Clear();
-	this->primitives[RenderShape::AlwaysOnTop].Clear();
-	this->primitives[RenderShape::CheckDepth].Clear();
-	this->primitives[RenderShape::Wireframe].Clear();
+    this->shapes[RenderShape::Wireframe].Clear();
+    this->primitives[RenderShape::AlwaysOnTop].Clear();
+    this->primitives[RenderShape::CheckDepth].Clear();
+    this->primitives[RenderShape::Wireframe].Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -77,12 +77,12 @@ void
 ShapeRendererBase::ClearShapes()
 {
     n_assert(this->IsOpen());
-	IndexT t;	
-	for(t = 0; t<CoreGraphics::RenderShape::NumDepthFlags; t++)
-	{
+    IndexT t;   
+    for(t = 0; t<CoreGraphics::RenderShape::NumDepthFlags; t++)
+    {
         this->primitives[t].Clear();
         this->shapes[t].Clear();
-	}
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -98,7 +98,7 @@ ShapeRendererBase::AddShape(const RenderShape& shape)
         this->numVerticesThisFrame += PrimitiveTopology::NumberOfVertices(shape.GetTopology(), shape.GetNumPrimitives());
         this->numIndicesThisFrame += PrimitiveTopology::NumberOfVertices(shape.GetTopology(), shape.GetNumPrimitives());
     }
-	else
+    else
         this->shapes[shape.GetDepthFlag()].Append(shape);
 }
 
@@ -109,18 +109,18 @@ void
 ShapeRendererBase::AddShapes(const Array<RenderShape>& shapeArray)
 {
     n_assert(this->IsOpen());
-	for (int i = 0; i < shapeArray.Size(); i++)
-	{
-		const RenderShape& shape = shapeArray[i];
+    for (int i = 0; i < shapeArray.Size(); i++)
+    {
+        const RenderShape& shape = shapeArray[i];
         if (shape.GetShapeType() == RenderShape::Primitives || shape.GetShapeType() == RenderShape::IndexedPrimitives)
         {
             this->primitives[shape.GetDepthFlag()].Append(shape);
             this->numVerticesThisFrame += shape.GetNumVertices();
             this->numIndicesThisFrame += PrimitiveTopology::NumberOfVertices(shape.GetTopology(), shape.GetNumPrimitives());
         }
-		else
+        else
             this->shapes[shape.GetDepthFlag()].Append(shape);
-	}
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -176,7 +176,7 @@ ShapeRendererBase::AddWireFrameBox(const Math::bbox& boundingBox, const Math::ve
     {
         CoreGraphics::RenderShape::RenderShapeVertex vert;
         vert.pos = center + extends * corners[i];
-        lineList.Append(vert);    	
+        lineList.Append(vert);      
     }       
     RenderShape shape;
     shape.SetupPrimitives(mat4(),

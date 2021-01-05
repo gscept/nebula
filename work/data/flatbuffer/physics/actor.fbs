@@ -1,0 +1,27 @@
+//------------------------------------------------------------------------------
+//
+//    Physics types for flatbuffer
+//
+//    (C) 2020 Individual contributors, see AUTHORS file
+
+include "foundation/math.fbs";
+include "physics/material.fbs";
+
+namespace PhysicsResource;
+
+table Shape
+{
+    collider : string;
+    material : string;
+    transform : Flat.Mat4 (native_inline);
+}
+
+table Actor
+{
+    feedback : Physics.CollisionFeedback;
+    shapes : [Shape];
+}
+
+root_type Actor;
+file_identifier "ACTO";
+file_extension "actor";

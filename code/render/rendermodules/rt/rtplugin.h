@@ -72,18 +72,18 @@ public:
     virtual void OnRenderBefore(IndexT frameId, Timing::Time time);
     /// called after rendering entities
     virtual void OnRenderAfter(IndexT frameId, Timing::Time time);
-	/// called when rendering a specific subset of plugins
-	virtual void OnRender(const Util::StringAtom& filter);
-	/// called at the beginning of frame
-	virtual void OnFrameBefore(IndexT frameId, Timing::Time time);
-	/// called at the end of frame
-	virtual void OnFrameAfter(IndexT frameId, Timing::Time time);
-	/// called when rendering from special frame tag
-	virtual void OnRenderFrame();
+    /// called when rendering a specific subset of plugins
+    virtual void OnRender(const Util::StringAtom& filter);
+    /// called at the beginning of frame
+    virtual void OnFrameBefore(IndexT frameId, Timing::Time time);
+    /// called at the end of frame
+    virtual void OnFrameAfter(IndexT frameId, Timing::Time time);
+    /// called when rendering from special frame tag
+    virtual void OnRenderFrame();
     /// called if no view exists, and no default camera is set in view
     virtual void OnRenderWithoutView(IndexT frameId, Timing::Time time);
-	/// called if the window size has changed
-	virtual void OnWindowResized(IndexT windowId, SizeT width, SizeT height);
+    /// called if the window size has changed
+    virtual void OnWindowResized(IndexT windowId, SizeT width, SizeT height);
 };
 
 } // namespace RenderModules

@@ -69,7 +69,7 @@
             "edit": "color",
             "desc": "Material specular reflectivity index"
           }
-        ],
+        ]
       },
       {
         "name": "PBR + IBL",
@@ -84,8 +84,8 @@
             "min": 0.0,
             "max": 1.0,
             "desc": "Material roughness multiplier"
-          },
-        ],
+          }
+        ]
       },
       {
         "name": "Alpha test",
@@ -100,8 +100,7 @@
             "max": 1.0,
             "desc": "Alpha clip sensitivity, every value below this will cause the pixel to become discarded"
           }
-        ],
-
+        ]
       },
       {
         "name": "Alpha blend",
@@ -116,148 +115,7 @@
             "max": 1.0,
             "desc": "Alpha blending value"
           }
-        ],
-      },
-      {
-        "variables": [
-          {
-            "name": "AnimationLinearSpeed",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": -1.0,
-            "max": 1.0
-          },
-          {
-            "name": "AnimationAngularSpeed",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": -1.0,
-            "max": 1.0
-          },
-          {
-            "name": "AnimationAngle",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": -3.14,
-            "max": 3.14
-          },
-          {
-            "name": "AnimationDirection",
-            "type": "vec2",
-            "defaultValue": [
-              0.0,
-              0.0
-            ],
-            "min": [
-              -1.0,
-              -1.0
-            ],
-            "max": [
-              1.0,
-              1.0
-            ]
-          },
-          {
-            "name": "Time",
-            "type": "float",
-            "system": true
-          }
-        ],
-        "name": "Animated UVs",
-        "virtual": true,
-        "desc": "Base material for all materials with animated UVs."
-      },
-      {
-        "name": "Tiled",
-        "virtual": true,
-        "desc": "Base material for tiled UVs",
-        "variables": [
-          {
-            "name": "NumXTiles",
-            "type": "int",
-            "defaultValue": 1,
-            "min": 1,
-            "max": 64
-          },
-          {
-            "name": "NumYTiles",
-            "type": "int",
-            "defaultValue": 1,
-            "min": 1,
-            "max": 64
-          }
-        ],
-      },
-      {
-        "name": "Tessellation",
-        "virtual": true,
-        "desc": "Material which provides tessellation parameters.",
-        "variables": [
-          {
-            "name": "DisplacementMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/placeholder"
-          },
-          {
-            "name": "HeightScale",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": 0.0,
-            "max": 1.0,
-            "desc": "Scales the values in the height map to be able to reach outside the range [0..1]"
-          },
-          {
-            "name": "MinDistance",
-            "type": "float",
-            "defaultValue": 20.0,
-            "min": 0.0,
-            "max": 1000.0,
-            "desc": "The minimal distance at which tessellation should start, tessellation will be applied between this value and MaxDistance"
-          },
-          {
-            "name": "MaxDistance",
-            "type": "float",
-            "defaultValue": 20.0,
-            "min": 0.0,
-            "max": 1000.0,
-            "desc": "The maximal distance at which tessellation should stop, tessellation will be applied between this value and MinDistance"
-          },
-          {
-            "name": "TessellationFactor",
-            "type": "float",
-            "defaultValue": 1.0,
-            "min": 0.0,
-            "max": 32.0,
-            "desc": "Maximum level of tessellation, spawns X more triangles per triangle"
-          }
-        ],
-      },
-      {
-        "name": "Emissive",
-        "virtual": true,
-        "desc": "Material which provides emissive rendering of an object.",
-        "passes": [
-          {
-            "batch": "Unlit",
-            "shader": "emissive",
-            "variation": "Static"
-          }
-        ],
-        "variables": [
-          {
-            "name": "EmissiveMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/white"
-          },
-          {
-            "name": "EmissiveIntensity",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": 0.0,
-            "max": 1.0,
-            "desc": "Multiplies with the diffuse color in order to adjust its intensity"
-          }
-        ],
+        ]
       },
       {
         "name": "Static",
@@ -287,11 +145,16 @@
             "variation": "Static|Global"
           },
           {
+            "batch": "FlatGeometryDepth",
+            "shader": "static",
+            "variation": "Static|Depth"
+          },
+          {
             "batch": "FlatGeometryLit",
             "shader": "static",
             "variation": "Static|Environment"
           }
-        ],
+        ]
       },
       {
         "name": "Static + Alpha test",
@@ -308,24 +171,29 @@
           {
             "batch": "SpotLightShadow",
             "shader": "shadow",
-            "variation": "Alpha|Spot"
+            "variation": "Spot|Alpha"
           },
           {
             "batch": "PointLightShadow",
             "shader": "shadow",
-            "variation": "Alpha|Point"
+            "variation": "Point|Alpha"
           },
           {
             "batch": "GlobalShadow",
             "shader": "shadow",
-            "variation": "AlphaTest|Global"
+            "variation": "Global|Alpha"
+          },
+          {
+            "batch": "FlatGeometryDepth",
+            "shader": "static",
+            "variation": "Static|Depth|AlphaMask"
           },
           {
             "batch": "FlatGeometryLit",
             "shader": "static",
-            "variation": "Static|Environment|AlphaTest"
+            "variation": "Static|Environment|AlphaMask"
           }
-        ],
+        ]
       },
       {
         "name": "Static + Alpha blending",
@@ -344,116 +212,7 @@
             "shader": "static",
             "variation": "Static|Environment|Alpha"
           }
-        ],
-      },
-      {
-        "name": "Static + Emissive",
-        "inherits": "PBR + IBL|Emissive",
-        "vertexType": "3f|3f|2f|3f|3f",
-        "desc": "PBR + IBL based dielectric/metal material. With added emissive mapping.",
-        "group": "Standard",
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Static"
-          },
-          {
-            "batch": "SpotLightShadow",
-            "shader": "shadow",
-            "variation": "Static|Spot"
-          },
-          {
-            "batch": "PointLightShadow",
-            "shader": "shadow",
-            "variation": "Static|Point"
-          },
-          {
-            "batch": "GlobalShadow",
-            "shader": "shadow",
-            "variation": "Static|Global"
-          },
-          {
-            "batch": "FlatGeometryLit",
-            "shader": "static",
-            "variation": "Static|Environment"
-          }
-        ],
-      },
-      {
-        "name": "Organic",
-        "vertexType": "3f|3f|2f|3f|3f",
-        "inherits": "PBR + IBL",
-        "desc": "Specialized PBR + IBL based dielectric/metal material, but with an added subsurface scattering pass.",
-        "group": "Subsurface",
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Static"
-          },
-          {
-            "batch": "SpotLightShadow",
-            "shader": "shadow",
-            "variation": "Static|Spot"
-          },
-          {
-            "batch": "PointLightShadow",
-            "shader": "shadow",
-            "variation": "Static|Point"
-          },
-          {
-            "batch": "GlobalShadow",
-            "shader": "shadow",
-            "variation": "Static|Global"
-          },
-          {
-            "batch": "FlatGeometryLit",
-            "shader": "static",
-            "variation": "Static|Environment"
-          },
-          {
-            "batch": "Subsurface",
-            "shader": "subsurface",
-            "variation": "Static"
-          }
-        ],
-        "variables": [
-          {
-            "name": "AbsorptionMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/white"
-          },
-          {
-            "name": "ScatterMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/white"
-          },
-          {
-            "name": "SubsurfaceStrength",
-            "type": "float",
-            "defaultValue": 0.0,
-            "max": 1.0,
-            "min": 0.0,
-            "desc": "The strength of the subsurface approximation, the higher, the blurrier"
-          },
-          {
-            "name": "SubsurfaceWidth",
-            "type": "float",
-            "defaultValue": 0.0,
-            "max": 1.0,
-            "min": 0.0,
-            "desc": "The radius for the subsurface approximation"
-          },
-          {
-            "name": "SubsurfaceCorrection",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": 0.0,
-            "max": 1.0,
-            "desc": "Performs corrections to some extent, tune to fit your needs"
-          }
-        ],
+        ]
       },
       {
         "name": "Skinned",
@@ -483,11 +242,16 @@
             "variation": "Skinned|Global"
           },
           {
+            "batch": "FlatGeometryDepth",
+            "shader": "skinned",
+            "variation": "Skinned|Depth"
+          },
+          {
             "batch": "FlatGeometryLit",
             "shader": "skinned",
-            "variation": "Skinned"
+            "variation": "Skinned|Environment"
           }
-        ],
+        ]
       },
       {
         "name": "Skinned + Alpha test",
@@ -517,11 +281,16 @@
             "variation": "Skinned|Global"
           },
           {
+            "batch": "FlatGeometryDepth",
+            "shader": "skinned",
+            "variation": "Skinned|Depth|AlphaMask"
+          },
+          {
             "batch": "FlatGeometryLit",
             "shader": "skinned",
-            "variation": "Skinned|AlphaTest"
+            "variation": "Skinned|Environment|AlphaMask"
           }
-        ],
+        ]
       },
       {
         "name": "Skinned + Alpha blending",
@@ -538,84 +307,30 @@
           {
             "batch": "FlatGeometryAlphaLit",
             "shader": "skinned",
-            "variation": "Skinned|Alpha"
+            "variation": "Skinned|Environment|Alpha"
           }
-        ],
+        ]
       },
       {
-        "name": "Skin",
-        "vertexType": "3f|3f|2f|3f|3f|4f|4ui",
-        "inherits": "PBR + IBL",
-        "desc": "Skinned material which uses a mesh with joint indices and joint weights. Uses a subsurface scattering approximation to simulate an organic material. Useful for characters. Affected by lights.",
-        "group": "Subsurface",
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Skinned"
-          },
-          {
-            "batch": "SpotLightShadow",
-            "shader": "shadow",
-            "variation": "Skinned|Spot"
-          },
-          {
-            "batch": "PointLightShadow",
-            "shader": "shadow",
-            "variation": "Skinned|Point"
-          },
-          {
-            "batch": "GlobalShadow",
-            "shader": "shadow",
-            "variation": "Skinned|Global"
-          },
-          {
-            "batch": "FlatGeometryLit",
-            "shader": "skinned",
-            "variation": "Skinned"
-          },
-          {
-            "batch": "Subsurface",
-            "shader": "subsurface",
-            "variation": "Skinned"
-          }
-        ],
+        "name": "Tiled",
+        "virtual": true,
+        "desc": "Base material for tiled UVs",
         "variables": [
           {
-            "name": "AbsorptionMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/white"
+            "name": "NumXTiles",
+            "type": "int",
+            "defaultValue": 1,
+            "min": 1,
+            "max": 64
           },
           {
-            "name": "ScatterMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/white"
-          },
-          {
-            "name": "SubsurfaceStrength",
-            "type": "float",
-            "defaultValue": 0.0,
-            "max": 1.0,
-            "min": 0.0,
-            "desc": "The strength of the subsurface approximation, the higher, the blurrier"
-          },
-          {
-            "name": "SubsurfaceWidth",
-            "type": "float",
-            "defaultValue": 0.0,
-            "max": 1.0,
-            "min": 0.0,
-            "desc": "The radius for the subsurface approximation"
-          },
-          {
-            "name": "SubsurfaceCorrection",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": 0.0,
-            "max": 1.0,
-            "desc": "Performs corrections to some extent, tune to fit your needs"
+            "name": "NumYTiles",
+            "type": "int",
+            "defaultValue": 1,
+            "min": 1,
+            "max": 64
           }
-        ],
+        ]
       },
       {
         "name": "Multilayered",
@@ -645,6 +360,11 @@
             "variation": "Static|Point"
           },
           {
+            "batch": "FlatGeometryDepth",
+            "shader": "static",
+            "variation": "Static|Depth"
+          },
+          {
             "batch": "FlatGeometryLit",
             "shader": "multilayered",
             "variation": "Static"
@@ -691,401 +411,7 @@
             "type": "textureHandle",
             "defaultValue": "tex:system/nobump"
           }
-        ],
-      },
-      {
-        "name": "MultilayeredTessellated",
-        "vertexType": "3f|3f|2f|3f|3f|ub4",
-        "inherits": "Tiled|Tessellation",
-        "desc": "Special material used for meshes with vertex colors. RGB controls the influence of each texture layer in order 1,2,3. Supports tessellation. Affected by lights.",
-        "group": "Terrain",
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Static"
-          },
-          {
-            "batch": "SpotLightShadow",
-            "shader": "shadow",
-            "variation": "Static|Spot"
-          },
-          {
-            "batch": "GlobalShadow",
-            "shader": "shadow",
-            "variation": "Static|Global"
-          },
-          {
-            "batch": "PointLightShadow",
-            "shader": "shadow",
-            "variation": "Static|Point"
-          },
-          {
-            "batch": "TessellatedGeometryLit",
-            "shader": "multilayered",
-            "variation": "Static|Colored|Tessellated"
-          }
-        ],
-        "variables": [
-          {
-            "name": "AlbedoMap2",
-            "type": "texture2d",
-            "defaultValue": "tex:system/black"
-          },
-          {
-            "name": "AlbedoMap3",
-            "type": "texture2d",
-            "defaultValue": "tex:system/black"
-          },
-          {
-            "name": "ParameterMap2",
-            "type": "texture2d",
-            "defaultValue": "tex:system/black"
-          },
-          {
-            "name": "ParameterMap3",
-            "type": "texture2d",
-            "defaultValue": "tex:system/black"
-          },
-          {
-            "name": "EmissiveMap2",
-            "type": "texture2d",
-            "defaultValue": "tex:system/black"
-          },
-          {
-            "name": "EmissiveMap3",
-            "type": "texture2d",
-            "defaultValue": "tex:system/black"
-          },
-          {
-            "name": "NormalMap2",
-            "type": "texture2d",
-            "defaultValue": "tex:system/nobump"
-          },
-          {
-            "name": "NormalMap3",
-            "type": "texture2d",
-            "defaultValue": "tex:system/nobump"
-          }
-        ],
-      },
-      {
-        "name": "LightMappedLit",
-        "vertexType": "3f|3f|2f|3f|3f|2f",
-        "inherits": "PBR + IBL",
-        "desc": "Special material for use with objects with a secondary UV set. Affected by lights.",
-        "group": "Lightmapped",
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Static"
-          },
-          {
-            "batch": "SpotLightShadow",
-            "shader": "shadow",
-            "variation": "Spot"
-          },
-          {
-            "batch": "PointLightShadow",
-            "shader": "shadow",
-            "variation": "Point"
-          },
-          {
-            "batch": "GlobalShadow",
-            "shader": "shadow",
-            "variation": "Global"
-          },
-          {
-            "batch": "FlatGeometryLit",
-            "shader": "lightmapped",
-            "variation": "Static"
-          }
-        ],
-        "variables": [
-          {
-            "name": "LightMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/white"
-          },
-          {
-            "name": "LightMapIntensity",
-            "type": "float",
-            "defaultValue": 0.5,
-            "desc": "Multiplies with the light map color in order to adjust its intensity"
-          }
-        ],
-      },
-      {
-        "name": "LightMappedUnlit",
-        "vertexType": "3f|3f|2f|3f|3f|2f",
-        "desc": "Special material for use with objects with a secondary UV set. Is not affected by lights.",
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Static"
-          },
-          {
-            "batch": "Unlit",
-            "shader": "lightmapped",
-            "variation": "Static|Unlit"
-          }
-        ],
-        "variables": [
-          {
-            "name": "AlbedoMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/placeholder"
-          },
-          {
-            "name": "LightMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/white"
-          },
-          {
-            "name": "LightMapIntensity",
-            "type": "float",
-            "defaultValue": 0.5,
-            "desc": "Multiplies with the light map color in order to adjust its intensity"
-          }
-        ],
-      },
-      {
-        "name": "LightMappedLitVertexColors",
-        "vertexType": "3f|3f|2f|3f|3f|4ub|2f",
-        "inherits": "PBR + IBL",
-        "desc": "Special material for use with objects with a secondary UV set. Affected by lights.",
-        "group": "Lightmapped",
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Static"
-          },
-          {
-            "batch": "SpotLightShadow",
-            "shader": "shadow",
-            "variation": "Spot"
-          },
-          {
-            "batch": "PointLightShadow",
-            "shader": "shadow",
-            "variation": "Point"
-          },
-          {
-            "batch": "GlobalShadow",
-            "shader": "shadow",
-            "variation": "Global"
-          },
-          {
-            "batch": "FlatGeometryLit",
-            "shader": "lightmapped",
-            "variation": "Static|Colored"
-          }
-        ],
-        "variables": [
-          {
-            "name": "LightMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/white"
-          },
-          {
-            "name": "LightMapIntensity",
-            "type": "float",
-            "defaultValue": 0.5,
-            "desc": "Multiplies with the light map color in order to adjust its intensity"
-          }
-        ],
-      },
-      {
-        "name": "LightMappedUnlitVertexColors",
-        "vertexType": "3f|3f|2f|3f|3f|4ub|2f",
-        "desc": "Special material for use with objects with a secondary UV set. Is not affected by lights.",
-        "group": "Lightmapped",
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Static"
-          },
-          {
-            "batch": "Unlit",
-            "shader": "lightmapped",
-            "variation": "Static|Unlit|Colored"
-          }
-        ],
-        "variables": [
-          {
-            "name": "AlbedoMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/placeholder"
-          },
-          {
-            "name": "LightMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/white"
-          },
-          {
-            "name": "LightMapIntensity",
-            "type": "float",
-            "defaultValue": 0.5,
-            "desc": "Multiplies with the light map color in order to adjust its intensity"
-          }
-        ],
-      },
-      {
-        "name": "LightMappedLitFoliage",
-        "vertexType": "3f|3f|2f|3f|3f|4ub|2f",
-        "inherits": "PBR + IBL|Alpha test",
-        "desc": "Special material for use with objects with a secondary UV set and with vertex colors. Uses wind simulation to displace vertices. Uses the vertex color A channel as a wind influence weight. Affected by lights.",
-        "group": "Vegetation",
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Static"
-          },
-          {
-            "batch": "SpotLightShadow",
-            "shader": "foliage",
-            "variation": "Spot"
-          },
-          {
-            "batch": "PointLightShadow",
-            "shader": "shadow",
-            "variation": "Point"
-          },
-          {
-            "batch": "GlobalShadow",
-            "shader": "foliage",
-            "variation": "Global"
-          },
-          {
-            "batch": "FlatGeometryLit",
-            "shader": "foliage",
-            "variation": "Static|Lightmapped"
-          }
-        ],
-        "variables": [
-          {
-            "name": "LightMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/white"
-          },
-          {
-            "name": "LightMapIntensity",
-            "type": "float",
-            "defaultValue": 0.5,
-            "desc": "Multiplies with the light map color in order to adjust its intensity"
-          },
-          {
-            "name": "WindDirection",
-            "type": "vec4",
-            "defaultValue": [
-              0.01,
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          {
-            "name": "WindWaveSize",
-            "type": "float",
-            "defaultValue": 1.0,
-            "min": 1.0,
-            "max": 50.0
-          },
-          {
-            "name": "WindSpeed",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": 0.0,
-            "max": 50.0
-          },
-          {
-            "name": "WindForce",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": 0.0,
-            "max": 50.0
-          }
-        ],
-      },
-      {
-        "name": "LightMappedUnlitFoliage",
-        "vertexType": "3f|3f|2f|3f|3f|4ub|2f",
-        "desc": "Special material for use with objects with a secondary UV set and vertex colors. Uses wind simulation to displace vertices. Uses the vertex color A channel as a wind influence weight.",
-        "group": "Vegetation",
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Static"
-          },
-          {
-            "batch": "Unlit",
-            "shader": "foliage",
-            "variation": "Static|Unlit|Lightmapped"
-          }
-        ],
-        "variables": [
-          {
-            "name": "AlbedoMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/placeholder"
-          },
-          {
-            "name": "LightMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/white"
-          },
-          {
-            "name": "WindDirection",
-            "type": "vec4",
-            "defaultValue": [
-              0.01,
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          {
-            "name": "WindWaveSize",
-            "type": "float",
-            "defaultValue": 1.0,
-            "min": 1.0,
-            "max": 50.0
-          },
-          {
-            "name": "WindSpeed",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": 0.0,
-            "max": 50.0
-          },
-          {
-            "name": "WindForce",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": 0.0,
-            "max": 50.0
-          },
-          {
-            "name": "LightMapIntensity",
-            "type": "float",
-            "defaultValue": 0.5,
-            "desc": "Multiplies with the light map color in order to adjust its intensity"
-          },
-          {
-            "name": "AlphaSensitivity",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": 0.0,
-            "max": 1.0,
-            "desc": "Alpha clip sensitivity, every value below this will cause the pixel to become discarded"
-          }
-        ],
+        ]
       },
       {
         "name": "Unlit",
@@ -1126,7 +452,7 @@
             "max": 2.0,
             "desc": "Multiplies with the diffuse color in order to adjust its intensity"
           }
-        ],
+        ]
       },
       {
         "name": "UnlitAlpha",
@@ -1175,219 +501,7 @@
             "max": 1.0,
             "desc": "Level of transparency"
           }
-        ],
-      },
-      {
-        "name": "Animated",
-        "vertexType": "3f|3f|2f|3f|3f",
-        "inherits": "PBR + IBL|Tiled|Animated UVs",
-        "desc": "Animates UV shells, supports tiling, uses PBR and IBL.",
-        "group": "UV animated",
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Static"
-          },
-          {
-            "batch": "SpotLightShadow",
-            "shader": "shadow",
-            "variation": "Static|Spot"
-          },
-          {
-            "batch": "PointLightShadow",
-            "shader": "shadow",
-            "variation": "Static|Point"
-          },
-          {
-            "batch": "GlobalShadow",
-            "shader": "shadow",
-            "variation": "Static|Global"
-          },
-          {
-            "batch": "FlatGeometryLit",
-            "shader": "animated",
-            "variation": "Static"
-          }
-        ],
-      },
-      {
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Static"
-          },
-          {
-            "batch": "SpotLightShadow",
-            "shader": "shadow",
-            "variation": "Static|Spot"
-          },
-          {
-            "batch": "PointLightShadow",
-            "shader": "shadow",
-            "variation": "Static|Point"
-          },
-          {
-            "batch": "GlobalShadow",
-            "shader": "shadow",
-            "variation": "Static|Global"
-          },
-          {
-            "batch": "FlatGeometryLit",
-            "shader": "animated",
-            "variation": "Static|Colored"
-          }
-        ],
-        "name": "Animated + Vertex colors",
-        "vertexType": "3f|3f|2f|3f|3f|4ub",
-        "inherits": "PBR + IBL|Tiled|Animated UVs",
-        "desc": "Animates UV shells, supports tiling, uses PBR and IBL. Uses vertex colors.",
-        "group": "UV animated"
-      },
-      {
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Static"
-          },
-          {
-            "batch": "FlatGeometryAlphaLit",
-            "shader": "animated",
-            "variation": "Alpha"
-          }
-        ],
-        "name": "Animated + Alpha blending",
-        "vertexType": "3f|3f|2f|3f|3f",
-        "inherits": "PBR + IBL|Tiled|Animated UVs|Alpha blend",
-        "desc": "Animates UV shells, supports tiling, uses PBR and IBL. Uses alpha blending",
-        "group": "UV animated"
-      },
-      {
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Static"
-          },
-          {
-            "batch": "FlatGeometryAlphaLit",
-            "shader": "animated",
-            "variation": "Alpha|Colored"
-          }
-        ],
-        "name": "Animated + Alpha + Vertex color",
-        "vertexType": "3f|3f|2f|3f|3f|4ub",
-        "inherits": "PBR + IBL|Tiled|Animated UVs|Alpha blend",
-        "desc": "Static material for standard meshes but with alpha-blending. Can animate the UV shell using the given parameters. Affected by lights.",
-        "group": "UV animated"
-      },
-      {
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Skinned"
-          },
-          {
-            "batch": "SpotLightShadow",
-            "shader": "shadow",
-            "variation": "Skinned|Spot"
-          },
-          {
-            "batch": "PointLightShadow",
-            "shader": "shadow",
-            "variation": "Skinned|Point"
-          },
-          {
-            "batch": "GlobalShadow",
-            "shader": "shadow",
-            "variation": "Skinned|Global"
-          },
-          {
-            "batch": "FlatGeometryLit",
-            "shader": "animated",
-            "variation": "Skinned"
-          }
-        ],
-        "name": "Animated + Skinned",
-        "vertexType": "3f|3f|2f|3f|3f|4f|4ui",
-        "inherits": "PBR + IBL|Tiled|Animated UVs",
-        "desc": "Animates UV shells, supports tiling, uses PBR and IBL.",
-        "group": "UV animated"
-      },
-      {
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Skinned"
-          },
-          {
-            "batch": "SpotLightShadow",
-            "shader": "shadow",
-            "variation": "Skinned|Spot"
-          },
-          {
-            "batch": "PointLightShadow",
-            "shader": "shadow",
-            "variation": "Skinned|Point"
-          },
-          {
-            "batch": "GlobalShadow",
-            "shader": "shadow",
-            "variation": "Skinned|Global"
-          },
-          {
-            "batch": "FlatGeometryLit",
-            "shader": "animated",
-            "variation": "Skinned|Colored"
-          }
-        ],
-        "name": "Animated + Vertex colors + Skinned",
-        "vertexType": "3f|3f|2f|3f|3f|4ub|4f|4ui",
-        "inherits": "PBR + IBL|Tiled|Animated UVs",
-        "desc": "Animates UV shells, supports tiling, uses PBR and IBL. Uses vertex colors.",
-        "group": "UV animated"
-      },
-      {
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Skinned"
-          },
-          {
-            "batch": "FlatGeometryAlphaLit",
-            "shader": "animated",
-            "variation": "Skinned|Alpha"
-          }
-        ],
-        "name": "Animated + Alpha blending + Skinned",
-        "vertexType": "3f|3f|2f|3f|3f|4f|4ui",
-        "inherits": "PBR + IBL|Tiled|Animated UVs|Alpha blend",
-        "desc": "Animates UV shells, supports tiling, uses PBR and IBL. Uses alpha blending",
-        "group": "UV animated"
-      },
-      {
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Skinned"
-          },
-          {
-            "batch": "FlatGeometryAlphaLit",
-            "shader": "animated",
-            "variation": "Skinned|Alpha|Colored"
-          }
-        ],
-        "name": "Animated + Alpha + Vertex color + Skinned",
-        "vertexType": "3f|3f|2f|3f|3f|4ub|4f|4ui",
-        "inherits": "PBR + IBL|Tiled|Animated UVs|Alpha blend",
-        "desc": "Static material for standard meshes but with alpha-blending. Can animate the UV shell using the given parameters. Affected by lights.",
-        "group": "UV animated"
+        ]
       },
       {
         "name": "Particle",
@@ -1414,8 +528,7 @@
             "type": "textureHandle",
             "defaultValue": "tex:system/placeholder"
           }
-        ],
-
+        ]
       },
       {
         "name": "ParticleUnlitAdditive",
@@ -1436,7 +549,7 @@
             "type": "textureHandle",
             "defaultValue": "tex:system/placeholder"
           }
-        ],
+        ]
       },
       {
         "name": "ParticleUnlitBlendAdd",
@@ -1457,7 +570,7 @@
             "type": "textureHandle",
             "defaultValue": "tex:system/placeholder"
           }
-        ],
+        ]
       },
       {
         "name": "ParticleUnlitBlendAdd2Layers",
@@ -1507,7 +620,7 @@
               10.0
             ]
           }
-        ],
+        ]
       },
       {
         "name": "ParticleUnlitBlendAdd3Layers",
@@ -1574,7 +687,7 @@
               10.0
             ]
           }
-        ],
+        ]
       },
       {
         "passes": [
@@ -1699,550 +812,7 @@
             "type": "float",
             "defaultValue": 0.0
           }
-        ],
-      },
-      {
-        "name": "Foliage",
-        "vertexType": "3f|3f|2f|3f|3f|4ub",
-        "inherits": "PBR + IBL",
-        "desc": "Uses a mesh with vertex colors. Material which uses a wind simulation to displace vertices.",
-        "group": "Vegetation",
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Static"
-          },
-          {
-            "batch": "SpotLightShadow",
-            "shader": "foliage",
-            "variation": "Spot"
-          },
-          {
-            "batch": "PointLightShadow",
-            "shader": "foliage",
-            "variation": "Point"
-          },
-          {
-            "batch": "GlobalShadow",
-            "shader": "foliage",
-            "variation": "Global"
-          },
-          {
-            "batch": "FlatGeometryLit",
-            "shader": "foliage",
-            "variation": "Static"
-          }
-        ],
-        "variables": [
-          {
-            "name": "WindDirection",
-            "type": "vec4",
-            "defaultValue": [
-              0.01,
-              0.0,
-              0.0,
-              0.0
-            ]
-          },
-          {
-            "name": "WindWaveSize",
-            "type": "float",
-            "defaultValue": 1.0,
-            "min": 1.0,
-            "max": 50.0
-          },
-          {
-            "name": "WindSpeed",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": 0.0,
-            "max": 50.0
-          },
-          {
-            "name": "WindForce",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": 0.0,
-            "max": 50.0
-          },
-          {
-            "name": "AlphaSensitivity",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": 0.0,
-            "max": 1.0,
-            "desc": "Alpha clip sensitivity, every value below this will cause the pixel to become discarded"
-          }
-        ],
-      },
-      {
-        "name": "Water",
-        "vertexType": "3f|3f|2f|3f|3f",
-        "desc": "Standard material which looks like water. Uses the xz-coordinates for the vertices to tile the normal map. Renders foam when the distance is close to a surface based on a threshold. Is not affected by lights.",
-        "group": "Environmental",
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Static"
-          },
-          {
-            "batch": "Water",
-            "shader": "water",
-            "variation": "Static"
-          }
-        ],
-        "variables": [
-          {
-            "name": "WaveMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/nobump",
-            "desc": "The wave map describes how the water should be displaced and bump mapped. Should be in the form of an RGB normal map, with the A channel representing the height of the wave."
-          },
-          {
-            "name": "HeightMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/white",
-            "desc": "The height map is used to calibrate the waters displacement and transparency along shores. The closer the value is to 0, the weaker the waves the will be."
-          },
-          {
-            "name": "EnvironmentMap",
-            "system": true,
-            "type": "texturecube",
-            "defaultValue": "tex:system/sky_refl"
-          },
-          {
-            "name": "TileSize",
-            "type": "vec2",
-            "defaultValue": [
-              1.0,
-              1.0
-            ],
-            "min": [
-              0.0,
-              0.0
-            ],
-            "max": [
-              10000.0,
-              10000.0
-            ],
-            "desc": "The size of each tile of water"
-          },
-          {
-            "name": "FogDarkColor",
-            "type": "vec4",
-            "defaultValue": [
-              0.6,
-              0.6,
-              0.7,
-              0.0
-            ],
-            "desc": "Color of dark fog",
-            "edit": "color"
-          },
-          {
-            "name": "FogBrightColor",
-            "type": "vec4",
-            "defaultValue": [
-              0.6,
-              0.6,
-              0.7,
-              0.0
-            ],
-            "desc": "Color of bright fog",
-            "edit": "color"
-          },
-          {
-            "name": "FogDensity",
-            "type": "float",
-            "defaultValue": 0.00143,
-            "min": 0.0,
-            "max": 1.0,
-            "desc": "Density of fog"
-          },
-          {
-            "name": "WaveSpeed",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": 0.0,
-            "max": 5.0,
-            "desc": "Speed of waves"
-          },
-          {
-            "name": "WaveScale",
-            "type": "vec2",
-            "defaultValue": [
-              1.0,
-              1.0
-            ],
-            "min": [
-              0.0,
-              0.0
-            ],
-            "max": [
-              64.0,
-              64.0
-            ],
-            "desc": "Scale of waves"
-          },
-          {
-            "name": "WaveMicroScale",
-            "type": "vec2",
-            "defaultValue": [
-              225.0,
-              225.0
-            ],
-            "min": [
-              0.0,
-              0.0
-            ],
-            "max": [
-              512.0,
-              512.0
-            ],
-            "desc": "Scale of micro facet waves"
-          },
-          {
-            "name": "WaterColor",
-            "type": "vec4",
-            "defaultValue": [
-              0.0,
-              0.1,
-              0.15,
-              1.0
-            ],
-            "desc": "Surface color of water",
-            "edit": "color"
-          },
-          {
-            "name": "WaterScatterColor",
-            "type": "vec4",
-            "defaultValue": [
-              0.3,
-              0.7,
-              0.6,
-              0.0
-            ],
-            "desc": "Subsurface scattering color of water",
-            "edit": "color"
-          },
-          {
-            "name": "WaterSpecular",
-            "type": "vec4",
-            "defaultValue": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ],
-            "desc": "Specular color of the water",
-            "edit": "color"
-          },
-          {
-            "name": "WaterColorIntensity",
-            "type": "vec2",
-            "defaultValue": [
-              0.1,
-              0.2
-            ],
-            "desc": "The intensity of water color."
-          },
-          {
-            "name": "GlobalLightColor",
-            "type": "vec4",
-            "system": true
-          },
-          {
-            "name": "GlobalLightDir",
-            "type": "vec4",
-            "system": true
-          }
-        ],
-      },
-      {
-        "name": "WaterTessellated",
-        "vertexType": "3f|3f|2f|3f|3f",
-        "desc": "Standard material which looks like water. Uses the xz-coordinates for the vertices to tile the normal map. Renders foam when the distance is close to a surface based on a threshold. Supports tessellation (bugged). Is not affected by lights.",
-        "group": "Environmental",
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Static"
-          },
-          {
-            "batch": "Water",
-            "shader": "water",
-            "variation": "Static|Tessellated"
-          }
-        ],
-        "variables": [
-          {
-            "name": "WaveMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/nobump",
-            "desc": "The wave map describes how the water should be displaced and bump mapped. Should be in the form of an RGB normal map, with the A channel representing the height of the wave."
-          },
-          {
-            "name": "HeightMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/white",
-            "desc": "The height map is used to calibrate the waters displacement and transparency along shores. The closer the value is to 0, the weaker the waves the will be."
-          },
-          {
-            "name": "EnvironmentMap",
-            "system": true,
-            "type": "texturecube",
-            "defaultValue": "tex:system/sky_refl"
-          },
-          {
-            "name": "TileSize",
-            "type": "vec2",
-            "defaultValue": [
-              1.0,
-              1.0
-            ],
-            "min": [
-              0.0,
-              0.0
-            ],
-            "max": [
-              10000.0,
-              10000.0
-            ],
-            "desc": "The size of each tile of water"
-          },
-          {
-            "name": "DynamicTessellationFactor",
-            "type": "float",
-            "defaultValue": 1.0,
-            "min": 0.0,
-            "max": 2048.0,
-            "desc": "The dynamic max level of tessellation depending on LOD"
-          },
-          {
-            "name": "FogDarkColor",
-            "type": "vec4",
-            "defaultValue": [
-              0.6,
-              0.6,
-              0.7,
-              0.0
-            ],
-            "desc": "Color of dark fog",
-            "edit": "color"
-          },
-          {
-            "name": "FogBrightColor",
-            "type": "vec4",
-            "defaultValue": [
-              0.6,
-              0.6,
-              0.7,
-              0.0
-            ],
-            "desc": "Color of bright fog",
-            "edit": "color"
-          },
-          {
-            "name": "FogDensity",
-            "type": "float",
-            "defaultValue": 0.00143,
-            "min": 0.0,
-            "max": 1.0,
-            "desc": "Density of fog"
-          },
-          {
-            "name": "WaveSpeed",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": 0.0,
-            "max": 5.0,
-            "desc": "Speed of waves"
-          },
-          {
-            "name": "WaveHeight",
-            "type": "float",
-            "defaultValue": 1.0,
-            "min": 0.0,
-            "max": 64.0,
-            "desc": "Height of waves"
-          },
-          {
-            "name": "WaveScale",
-            "type": "vec2",
-            "defaultValue": [
-              1.0,
-              1.0
-            ],
-            "min": [
-              0.0,
-              0.0
-            ],
-            "max": [
-              64.0,
-              64.0
-            ],
-            "desc": "Scale of waves"
-          },
-          {
-            "name": "WaveMicroScale",
-            "type": "vec2",
-            "defaultValue": [
-              225.0,
-              225.0
-            ],
-            "min": [
-              0.0,
-              0.0
-            ],
-            "max": [
-              512.0,
-              512.0
-            ],
-            "desc": "Scale of micro facet waves"
-          },
-          {
-            "name": "WaterColor",
-            "type": "vec4",
-            "defaultValue": [
-              0.0,
-              0.1,
-              0.15,
-              1.0
-            ],
-            "desc": "Surface color of water",
-            "edit": "color"
-          },
-          {
-            "name": "WaterScatterColor",
-            "type": "vec4",
-            "defaultValue": [
-              0.3,
-              0.7,
-              0.6,
-              0.0
-            ],
-            "desc": "Subsurface scattering color of water",
-            "edit": "color"
-          },
-          {
-            "name": "WaterSpecular",
-            "type": "vec4",
-            "defaultValue": [
-              1.0,
-              1.0,
-              1.0,
-              1.0
-            ],
-            "desc": "Specular color of the water",
-            "edit": "color"
-          },
-          {
-            "name": "WaterColorIntensity",
-            "type": "vec2",
-            "defaultValue": [
-              0.1,
-              0.2
-            ],
-            "desc": "The intensity of water color."
-          },
-          {
-            "name": "GlobalLightColor",
-            "type": "vec4",
-            "system": true
-          },
-          {
-            "name": "GlobalLightDir",
-            "type": "vec4",
-            "system": true
-          }
-        ],
-      },
-      {
-        "name": "Grid",
-        "vertexType": "3f|3f|2f|3f|3f",
-        "desc": "Special material which is used internally for grid rendering.",
-        "group": "System",
-        "variables": [
-          {
-            "name": "GridSize",
-            "type": "float",
-            "min": 0,
-            "max": 3,
-            "defaultValue": 5
-          },
-          {
-            "name": "AlphaSensitivity",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": 0.0,
-            "max": 1.0,
-            "desc": "Alpha clip sensitivity, every value below this will cause the pixel to become discarded"
-          }
-        ],
-      },
-      {
-        "name": "Sprite",
-        "vertexType": "3f|3f|2f|3f|3f",
-        "desc": "Material which traverses tiles based on time.",
-        "passes": [
-          {
-            "batch": "Picking",
-            "shader": "picking",
-            "variation": "Static"
-          },
-          {
-            "batch": "Unlit",
-            "shader": "sprite",
-            "variation": "Static"
-          }
-        ],
-        "variables": [
-          {
-            "name": "AlbedoMap",
-            "type": "texture2d",
-            "defaultValue": "tex:system/placeholder"
-          },
-          {
-            "name": "AlphaSensitivity",
-            "type": "float",
-            "defaultValue": 0.0,
-            "min": 0.0,
-            "max": 1.0,
-            "desc": "Alpha clip sensitivity, every value below this will cause the pixel to become discarded"
-          },
-          {
-            "name": "Brightness",
-            "type": "float",
-            "defaultValue": 1.0,
-            "min": 0.0,
-            "max": 2.0,
-            "desc": "Multiplies with the diffuse color in order to adjust its intensity"
-          },
-          {
-            "name": "NumTilesX",
-            "type": "int",
-            "defaultValue": 1,
-            "min": 1,
-            "max": 256
-          },
-          {
-            "name": "NumTilesY",
-            "type": "int",
-            "defaultValue": 1,
-            "min": 1,
-            "max": 256
-          },
-          {
-            "name": "NumTilesPerSec",
-            "type": "int",
-            "defaultValue": 1,
-            "min": 1,
-            "max": 256
-          }
-        ],
+        ]
       },
       {
         "name": "Billboard",
@@ -2284,7 +854,7 @@
             "type": "bool",
             "defaultValue": false
           }
-        ],
+        ]
       },
       {
         "name": "Skybox",
@@ -2301,12 +871,12 @@
         "variables": [
           {
             "name": "SkyLayer1",
-            "type": "texture2d",
+            "type": "textureHandle",
             "defaultValue": "tex:system/placeholder"
           },
           {
             "name": "SkyLayer2",
-            "type": "texture2d",
+            "type": "textureHandle",
             "defaultValue": "tex:system/placeholder"
           },
           {
@@ -2322,80 +892,14 @@
           {
             "name": "Contrast",
             "type": "float",
-            "defaultValue": 1.0,
-            "system": true
+            "defaultValue": 1.0
           },
           {
             "name": "Brightness",
             "type": "float",
-            "defaultValue": 0.0,
-            "system": true
-          },
-        ],
-      },
-      {
-        "name": "Clouds",
-        "vertexType": "special",
-        "desc": "Special material used for cloud rendering.",
-        "group": "System",
-        "passes": [
-          {
-            "batch": "Background",
-            "shader": "clouds",
-            "variation": "Static"
+            "defaultValue": 0.0
           }
-        ],
-        "variables": [
-          {
-            "name": "CloudLayer1",
-            "type": "texture2d",
-            "defaultValue": "tex:system/placeholder"
-          },
-          {
-            "name": "CloudLayer2",
-            "type": "texture2d",
-            "defaultValue": "tex:system/white"
-          },
-          {
-            "name": "CloudSize",
-            "type": "float",
-            "min": 0.0,
-            "max": 3.0,
-            "defaultValue": 5.0
-          }
-        ],
-      },
-      {
-        "name": "ReflectionProjector",
-        "vertexType": "special",
-        "desc": "Special material which is used internally for rendering reflections and irradiance.",
-        "passes": [
-          {
-            "batch": "Reflections",
-            "shader": "reflectionprojector",
-            "variation": "Static"
-          }
-        ],
-        "variables": [
-          {
-            "name": "EnvironmentMap",
-            "type": "texturecube",
-            "defaultValue": "tex:system/sky_refl",
-            "system": true
-          },
-          {
-            "name": "IrradianceMap",
-            "type": "texturecube",
-            "defaultValue": "tex:system/sky_irr",
-            "system": true
-          },
-          {
-            "name": "NumEnvMips",
-            "type": "int",
-            "defaultValue": 9,
-            "system": true
-          }
-        ],
+        ]
       },
       {
         "name": "Placeholder",
@@ -2420,7 +924,7 @@
             "type": "texture2d",
             "defaultValue": "tex:system/placeholder"
           }
-        ],
+        ]
       },
       {
         "name": "PlaceholderSkinned",
@@ -2444,8 +948,8 @@
             "type": "texture2d",
             "defaultValue": "tex:system/placeholder"
           }
-        ],
-      },
-    ],
-  },
+        ]
+      }
+    ]
+  }
 }

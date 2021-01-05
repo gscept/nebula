@@ -1,3 +1,7 @@
+//------------------------------------------------------------------------------
+//  streamactorpool.cc
+//  (C) 2020 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "physics/streamactorpool.h"
 #include "physics/streamcolliderpool.h"
@@ -5,7 +9,11 @@
 #include "physics/actorcontext.h"
 #include "physics/utils.h"
 #include "resources/resourceserver.h"
-#include "io/jsonreader.h"
+#include "nflatbuffer/flatbufferinterface.h"
+#include "nflatbuffer/nebula_flat.h"
+#include "flat/physics/material.h"
+#include "flat/physics/actor.h"
+
 
 __ImplementClass(Physics::StreamActorPool, 'PSAP', Resources::ResourceStreamPool);
 
@@ -18,7 +26,7 @@ StreamActorPool *actorPool = nullptr;
 */
 StreamActorPool::StreamActorPool()
 {
-	this->streamerThreadName = "Physics Actor Pool Streamer Thread";
+    this->streamerThreadName = "Physics Actor Pool Streamer Thread";
 }
 
 //------------------------------------------------------------------------------
@@ -36,8 +44,8 @@ void
 StreamActorPool::Setup()
 {
     ResourceStreamPool::Setup();
-    this->placeholderResourceName = "phys:system/box.np";
-    this->failResourceName = "phys:system/box.np";
+    this->placeholderResourceName = "phys:system/box.actor";
+    this->failResourceName = "phys:system/box.actor";
 }
 
 //------------------------------------------------------------------------------
@@ -54,11 +62,11 @@ StreamActorPool::CreateActorInstance(ActorResourceId id, Math::mat4 const & tran
     info.instanceCount++;
     for (IndexT i = 0; i < info.shapes.Size(); i++)
     {        
-        newActor->attachShape(*info.shapes[i]);        
+        newActor->attachShape(*info.shapes[i]);
     }
     if (dynamic)
     {
-        physx::PxRigidBodyExt::updateMassAndInertia(*static_cast<physx::PxRigidDynamic*>(newActor), info.density);
+        physx::PxRigidBodyExt::updateMassAndInertia(*static_cast<physx::PxRigidDynamic*>(newActor), info.densities.Begin(), info.densities.Size());
     }
     GetScene(scene).scene->addActor(*newActor);
     
@@ -97,52 +105,41 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
     ActorInfo &actorInfo = this->allocator.Get<0>(res.resourceId);
     actorInfo.instanceCount = 0;
     this->LeaveGet();
-    Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
-    reader->SetStream(stream);
-    if (reader->Open())
+    PhysicsResource::ActorT actor;
+    Flat::FlatbufferInterface::DeserializeFlatbuffer<PhysicsResource::Actor>(actor, (uint8_t*)stream->Map());
+    
+    actorInfo.feedbackFlag = actor.feedback;
+
+    for (auto const& shape : actor.shapes)
     {
-        if (reader->SetToNode("/actor"))
+        Util::String name = shape->collider;
+        Util::StringAtom matAtom = shape->material;
+        IndexT material = LookupMaterial(matAtom);
+
+        Resources::ResourceName collider = name;
+        Math::mat4 trans = shape->transform;
+
+        ColliderId colliderid;
+        if (collider.IsValid())
         {
-            actorInfo.feedbackFlag = (Physics::CollisionFeedbackFlag)reader->GetInt("feedback");            
-            reader->Get(actorInfo.density, "density");
-            reader->SetToFirstChild("colliders");
-            reader->SetToFirstChild();
-            do
+            colliderid = Resources::CreateResource(collider, "", nullptr, nullptr, true);
+            if (colliderPool->GetState(colliderid) == Resources::Resource::Failed)
             {
-                Util::String name = reader->GetString("name");
-                Util::StringAtom matAtom = reader->GetStringAtom("material");                
-                IndexT material = LookupMaterial(matAtom);
-
-                Resources::ResourceName collider = name;
-                
-                uint16_t group;
-                reader->Get(group, "group");
-                Math::mat4 trans;
-                reader->Get(trans, "transform");
-                ColliderId colliderid;
-                if (collider.IsValid())
-                {
-                    colliderid = Resources::CreateResource(collider, "", nullptr, nullptr, true);
-                    if (colliderPool->GetState(colliderid) == Resources::Resource::Failed)
-                    {
-                        return Resources::ResourcePool::Failed;
-                    }
-                }
-                else
-                {
-                    return Resources::ResourcePool::Failed;
-                }
-                actorInfo.colliders.Append(colliderid);
-                physx::PxGeometryHolder & geom = colliderPool->GetGeometry(colliderid);
-                physx::PxShape *newShape = state.physics->createShape(geom.any(), *state.materials[material].material);
-                newShape->setLocalPose(Neb2PxTrans(trans));
-                actorInfo.shapes.Append(newShape);
-
-            } while (reader->SetToNextChild());                            
-            return Resources::ResourcePool::Success;                                    
+                return Resources::ResourcePool::Failed;
+            }
         }
-    }    
-    return Resources::ResourcePool::Failed;
+        else
+        {
+            return Resources::ResourcePool::Failed;
+        }
+        actorInfo.colliders.Append(colliderid);
+        physx::PxGeometryHolder& geom = colliderPool->GetGeometry(colliderid);
+        physx::PxShape* newShape = state.physics->createShape(geom.any(), *state.materials[material].material);
+        newShape->setLocalPose(Neb2PxTrans(trans));
+        actorInfo.shapes.Append(newShape);
+        actorInfo.densities.Append(GetMaterial(material).density);
+    }
+    return Resources::ResourcePool::Success;                                    
 }
 
 //------------------------------------------------------------------------------
@@ -166,7 +163,7 @@ StreamActorPool::Unload(const Resources::ResourceId id)
         s->release();        
     }    
 
-	this->states[id.poolId] = Resources::Resource::State::Unloaded;
+    this->states[id.poolId] = Resources::Resource::State::Unloaded;
 }
 
 }

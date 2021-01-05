@@ -53,7 +53,7 @@ GLFWInputServer::Open()
     this->AttachInputHandler(InputPriority::Game, this->defaultMouse.upcast<InputHandler>());
 
     // create 4 default gamepads (none of them have to be connected)
-	IndexT playerIndex;
+    IndexT playerIndex;
     for (playerIndex = 0; playerIndex < this->maxNumLocalPlayers; playerIndex++)
     {
         this->defaultGamePad[playerIndex] = GamePad::Create();

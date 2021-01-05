@@ -19,14 +19,6 @@
 #include "bboxtest.h"
 #include "testbase/stackdebug.h"
 
-/*
-#if __PS3__
-#include <sys/process.h>
-// change stacksize from default 64kB to 96kB
-SYS_PROCESS_PARAM (1001, 0x18000) // (priority, stack size)
-#endif
-*/
-
 ImplementNebulaApplication();
 
 using namespace Core;
@@ -48,13 +40,13 @@ NebulaMain(const Util::CommandLineArgs& args)
     n_printf("NEBULA FOUNDATION MATH-TESTS\n");
     n_printf("========================\n");
 
-	// setup and run test runner
-    Ptr<TestRunner> testRunner = TestRunner::Create();	
+    // setup and run test runner
+    Ptr<TestRunner> testRunner = TestRunner::Create();  
     testRunner->AttachTestCase(ScalarTest::Create());
     testRunner->AttachTestCase(Vec3Test::Create());
     testRunner->AttachTestCase(Vec4Test::Create());
     testRunner->AttachTestCase(Mat4Test::Create());
-	testRunner->AttachTestCase(QuaternionTest::Create());
+    testRunner->AttachTestCase(QuaternionTest::Create());
     testRunner->AttachTestCase(VectorTest::Create());
     testRunner->AttachTestCase(PointTest::Create());
     testRunner->AttachTestCase(PlaneTest::Create());

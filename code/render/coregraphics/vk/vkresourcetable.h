@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Vulkan implementation of ResourceTable, ResourceTableLayout, and ResourcePipeline
+    Vulkan implementation of ResourceTable, ResourceTableLayout, and ResourcePipeline
 
-	(C) 2018-2020 Individual contributors, see AUTHORS file
+    (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/idallocator.h"
@@ -15,34 +15,34 @@ namespace Vulkan
 
 //------------------------------------------------------------------------------
 /**
-	Resource table
+    Resource table
 */
 //------------------------------------------------------------------------------
 
 union WriteInfo
 {
-	VkDescriptorImageInfo img;
-	VkDescriptorBufferInfo buf;
-	VkBufferView tex;
+    VkDescriptorImageInfo img;
+    VkDescriptorBufferInfo buf;
+    VkBufferView tex;
 };
 
 enum
 {
-	ResourceTable_Device,
-	ResourceTable_DescriptorSet,
-	ResourceTable_DescriptorPool,
-	ResourceTable_Layout,
-	ResourceTable_Writes,
-	ResourceTable_WriteInfos
+    ResourceTable_Device,
+    ResourceTable_DescriptorSet,
+    ResourceTable_DescriptorPool,
+    ResourceTable_Layout,
+    ResourceTable_Writes,
+    ResourceTable_WriteInfos
 };
 
 typedef Ids::IdAllocator<
-	VkDevice,
-	VkDescriptorSet,
-	VkDescriptorPool,
-	CoreGraphics::ResourceTableLayoutId,
-	Util::Array<VkWriteDescriptorSet>,
-	Util::Array<WriteInfo>	
+    VkDevice,
+    VkDescriptorSet,
+    VkDescriptorPool,
+    CoreGraphics::ResourceTableLayoutId,
+    Util::Array<VkWriteDescriptorSet>,
+    Util::Array<WriteInfo>  
 > VkResourceTableAllocator;
 extern VkResourceTableAllocator resourceTableAllocator;
 
@@ -53,29 +53,29 @@ const VkDescriptorSetLayout& ResourceTableGetVkLayout(CoreGraphics::ResourceTabl
 
 //------------------------------------------------------------------------------
 /**
-	Resource table layout
+    Resource table layout
 */
 //------------------------------------------------------------------------------
 enum
 {
-	ResourceTableLayoutDevice,
-	ResourceTableLayoutSetLayout,
-	ResourceTableLayoutPoolSizes,
-	ResourceTableLayoutSamplers,
-	ResourceTableLayoutImmutableSamplerFlags,
-	ResourceTableLayoutDescriptorPools,
-	ResourceTableLayoutCurrentPool,
-	ResourceTableLayoutPoolGrow
+    ResourceTableLayoutDevice,
+    ResourceTableLayoutSetLayout,
+    ResourceTableLayoutPoolSizes,
+    ResourceTableLayoutSamplers,
+    ResourceTableLayoutImmutableSamplerFlags,
+    ResourceTableLayoutDescriptorPools,
+    ResourceTableLayoutCurrentPool,
+    ResourceTableLayoutPoolGrow
 };
 typedef Ids::IdAllocator<
-	VkDevice,
-	VkDescriptorSetLayout,
-	Util::Array<VkDescriptorPoolSize>,
-	Util::Array<Util::Pair<CoreGraphics::SamplerId, uint32_t>>,
-	Util::HashTable<uint32_t, bool>,
-	Util::Array<VkDescriptorPool>,
-	VkDescriptorPool,
-	uint32_t
+    VkDevice,
+    VkDescriptorSetLayout,
+    Util::Array<VkDescriptorPoolSize>,
+    Util::Array<Util::Pair<CoreGraphics::SamplerId, uint32_t>>,
+    Util::HashTable<uint32_t, bool>,
+    Util::Array<VkDescriptorPool>,
+    VkDescriptorPool,
+    uint32_t
 > VkResourceTableLayoutAllocator;
 extern VkResourceTableLayoutAllocator resourceTableLayoutAllocator;
 extern VkDescriptorSetLayout emptySetLayout;
@@ -93,12 +93,12 @@ const VkDescriptorPool& ResourceTableLayoutNewPool(const CoreGraphics::ResourceT
 
 //------------------------------------------------------------------------------
 /**
-	Resource pipeline
+    Resource pipeline
 */
 //------------------------------------------------------------------------------
 typedef Ids::IdAllocator<
-	VkDevice,
-	VkPipelineLayout
+    VkDevice,
+    VkPipelineLayout
 > VkResourcePipelineAllocator;
 extern VkResourcePipelineAllocator resourcePipelineAllocator;
 

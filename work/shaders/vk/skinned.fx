@@ -5,130 +5,102 @@
 
 #include "lib/std.fxh"
 #include "lib/geometrybase.fxh"
+#include "lib/standard_shading.fxh"
 #include "lib/techniques.fxh"
 #include "lib/skinning.fxh"
 
 //------------------------------------------------------------------------------
-//	Standard methods
+//  Depth prepass methods
 //------------------------------------------------------------------------------
-SimpleTechnique(
-	Skinned, 
-	"Skinned", 
-	vsSkinned(), 
-	psUber(
-		calcColor = SimpleColor,
-		calcBump = NormalMapFunctor,
-		calcMaterial = DefaultMaterialFunctor, 
-		calcDepth = ViewSpaceDepthFunctor,
-		calcEnv = PBR
-	),
-	StandardState);
-	
-SimpleTechnique(
-	SkinnedAlphaTest, 
-	"Skinned|AlphaTest", 
-	vsSkinned(), 
-	psUberAlphaTest(
-		calcColor = SimpleColor,
-		calcBump = NormalMapFunctor,
-		calcMaterial = DefaultMaterialFunctor,
-		calcDepth = ViewSpaceDepthFunctor,
-		calcEnv = PBR
-	),
-	StandardState);
-	
-//------------------------------------------------------------------------------
-//	IBL + PBR methods
-//------------------------------------------------------------------------------
-/*
-SimpleTechnique(
-	SkinnedEnvironment, 
-	"Skinned|Environment", 
-	vsSkinned(),
-	psUber(
-		calcColor = SimpleColor,
-		calcBump = NormalMapFunctor,
-		calcMaterial = DefaultMaterialFunctor,
-		calcDepth = ViewSpaceDepthFunctor,
-		calcEnv = PBR
-	),
-	StandardState);
-	
-SimpleTechnique(
-	SkinnedEnvironmentAlphaTest, 
-	"Skinned|Environment|AlphaTest", 
-	vsSkinned(),
-	psUberAlphaTest(
-		calcColor = SimpleColor,
-		calcBump = NormalMapFunctor,
-		calcMaterial = DefaultMaterialFunctor,
-		calcDepth = ViewSpaceDepthFunctor,
-		calcEnv = PBR
-	),
-	StandardState);
-*/
-//------------------------------------------------------------------------------
-//	Alpha methods
-//------------------------------------------------------------------------------
-SimpleTechnique(
-	SkinnedAlpha, 
-	"Skinned|Alpha", 
-	vsSkinned(), 
-	psUber(
-		calcColor = AlphaColor,
-		calcBump = NormalMapFunctor,
-		calcMaterial = DefaultMaterialFunctor,
-		calcDepth = ViewSpaceDepthFunctor,
-		calcEnv = PBR 
-	),
-	AlphaState);
-	
-/*
-SimpleTechnique(
-	SkinnedAlphaEnvironment, 
-	"Skinned|Alpha|Environment", 
-	vsSkinned(), 
-	psUber(
-		calcColor = AlphaColor,
-		calcBump = NormalMapFunctor,
-		calcMaterial = DefaultMaterialFunctor,
-		calcDepth = ViewSpaceDepthFunctor,
-		calcEnv = PBR
-	),
-	AlphaState);
-*/
+SimpleTechnique(SkinnedDepth, "Skinned|Depth", vsDepthSkinned(), psDepthOnly(), DepthState);
+SimpleTechnique(SkinnedDepthDoubleSided, "Skinned|Depth|DoubleSided", vsDepthSkinned(), psDepthOnly(), DepthStateDoubleSided);
+SimpleTechnique(SkinnedDepthAlphaMask, "Skinned|Depth|AlphaMask", vsDepthSkinnedAlphaMask(), psDepthOnlyAlphaMask(), DepthState);
+SimpleTechnique(SkinnedDepthAlphaMaskDoubleSided, "Skinned|Depth|AlphaMask|DoubleSided", vsDepthSkinnedAlphaMask(), psDepthOnlyAlphaMask(), DepthStateDoubleSided);
 
-	/*
-SimpleTechnique(Skinned, "Skinned", vsSkinned(), psUber(), StandardState);
-SimpleTechnique(Environment, "Skinned|Environment", vsSkinned(), psUber(), StandardState);
-SimpleTechnique(Alpha, "Skinned|Alpha", vsSkinned(), psUber(), AlphaState);
-SimpleTechnique(AlphaEnvironment, "Skinned|Alpha|Environment", vsSkinned(), psUber(), AlphaState);
-*/
-TessellationTechnique(
-	Tessellated,
-	"Skinned|Tessellated",
-	vsSkinnedTessellated(),
-	psUber(
-		calcColor = AlphaColor,
-		calcBump = NormalMapFunctor,
-		calcMaterial = DefaultMaterialFunctor
-	),
-	hsDefault(),
-	dsDefault(),
-	StandardState
-);
-TessellationTechnique(
-	TessellatedEnvironment,
-	"Skinned|Tessellated|Environment",
-	vsSkinnedTessellated(),
-	psUber(
-		calcColor = AlphaColor,
-		calcBump = NormalMapFunctor,
-		calcMaterial = DefaultMaterialFunctor
-	),
-	hsDefault(),
-	dsDefault(),
-	StandardState
-);
+//------------------------------------------------------------------------------
+//  Standard methods
+//------------------------------------------------------------------------------
+SimpleTechnique(
+    Skinned, 
+    "Skinned", 
+    vsSkinned(), 
+    psStandard(
+        calcColor = SimpleColor,
+        calcBump = NormalMapFunctor,
+        calcMaterial = DefaultMaterialFunctor,
+        calcEnv = NoEnvironment,
+        finalizeColor = FinalizeOpaque
+    ),
+    DefaultState);
+    
+SimpleTechnique(
+    SkinnedAlphaTest, 
+    "Skinned|AlphaTest", 
+    vsSkinned(), 
+    psStandard(
+        calcColor = AlphaMaskSimpleColor,
+        calcBump = NormalMapFunctor,
+        calcMaterial = DefaultMaterialFunctor,
+        calcEnv = NoEnvironment,
+        finalizeColor = FinalizeOpaque
+    ),
+    DefaultState);
+    
+//------------------------------------------------------------------------------
+//  IBL + PBR methods
+//------------------------------------------------------------------------------
 
-//TransformFeedbackTechnique(SkinnedFeedback, "Skinned|Alt0", vsTransformSkinned());
+SimpleTechnique(
+    SkinnedEnvironment, 
+    "Skinned|Environment", 
+    vsSkinned(),
+    psStandard(
+        calcColor = SimpleColor,
+        calcBump = NormalMapFunctor,
+        calcMaterial = DefaultMaterialFunctor,
+        calcEnv = IBL,
+        finalizeColor = FinalizeOpaque
+    ),
+    DefaultState);
+    
+SimpleTechnique(
+    SkinnedEnvironmentAlphaTest, 
+    "Skinned|Environment|AlphaTest", 
+    vsSkinned(),
+    psStandard(
+        calcColor = AlphaMaskSimpleColor,
+        calcBump = NormalMapFunctor,
+        calcMaterial = DefaultMaterialFunctor,
+        calcEnv = IBL,
+        finalizeColor = FinalizeOpaque
+    ),
+    DefaultState);
+
+//------------------------------------------------------------------------------
+//  Alpha methods
+//------------------------------------------------------------------------------
+SimpleTechnique(
+    SkinnedAlpha, 
+    "Skinned|Alpha", 
+    vsSkinned(), 
+    psStandard(
+        calcColor = AlphaMaskSimpleColor,
+        calcBump = NormalMapFunctor,
+        calcMaterial = DefaultMaterialFunctor,
+        calcEnv = NoEnvironment,
+        finalizeColor = FinalizeAlpha
+    ),
+    AlphaState);
+    
+SimpleTechnique(
+    SkinnedAlphaEnvironment, 
+    "Skinned|Alpha|Environment", 
+    vsSkinned(), 
+    psStandard(
+        calcColor = AlphaMaskSimpleColor,
+        calcBump = NormalMapFunctor,
+        calcMaterial = DefaultMaterialFunctor,
+        calcEnv = IBL,
+        finalizeColor = FinalizeAlpha
+    ),
+    AlphaState);

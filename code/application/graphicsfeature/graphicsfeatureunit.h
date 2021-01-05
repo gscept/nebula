@@ -17,8 +17,8 @@ namespace GraphicsFeature
 
 class GraphicsFeatureUnit : public Game::FeatureUnit
 {
-	__DeclareClass(GraphicsFeatureUnit)
-	__DeclareSingleton(GraphicsFeatureUnit)
+    __DeclareClass(GraphicsFeatureUnit)
+    __DeclareSingleton(GraphicsFeatureUnit)
 
 public:
 
@@ -27,10 +27,10 @@ public:
     /// destructor
     ~GraphicsFeatureUnit();
 
-	/// Called upon activation of feature unit
-	void OnActivate();
-	/// Called upon deactivation of feature unit
-	void OnDeactivate();
+    /// Called upon activation of feature unit
+    void OnActivate();
+    /// Called upon deactivation of feature unit
+    void OnDeactivate();
 
     /// called on begin of frame
     void OnBeginFrame();
@@ -55,6 +55,8 @@ public:
     using UIRenderFunc = std::function<void()>;
     /// add a custom UI render function
     void AddRenderUICallback(UIRenderFunc func);
+    
+    Graphics::GraphicsEntityId globalLight;
 
 private:
     IO::URI defaultFrameScript;
@@ -65,7 +67,6 @@ private:
     Ptr<Input::InputServer> inputServer;
     CoreGraphics::WindowId wnd;
     //FIXME
-    Graphics::GraphicsEntityId globalLight;
 
     Util::Array<UIRenderFunc> uiCallbacks;
 

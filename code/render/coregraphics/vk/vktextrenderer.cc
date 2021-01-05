@@ -33,7 +33,7 @@ __ImplementSingleton(Vulkan::VkTextRenderer);
 */
 VkTextRenderer::VkTextRenderer()
 {
-	__ConstructSingleton;
+    __ConstructSingleton;
 }
 
 //------------------------------------------------------------------------------
@@ -41,11 +41,11 @@ VkTextRenderer::VkTextRenderer()
 */
 VkTextRenderer::~VkTextRenderer()
 {
-	if (this->IsOpen())
-	{
-		this->Close();
-	}
-	__DestructSingleton;
+    if (this->IsOpen())
+    {
+        this->Close();
+    }
+    __DestructSingleton;
 }
 
 
@@ -55,103 +55,103 @@ VkTextRenderer::~VkTextRenderer()
 void
 VkTextRenderer::Open()
 {
-	n_assert(!this->IsOpen());
+    n_assert(!this->IsOpen());
 
-	// call parent
-	Base::TextRendererBase::Open();
+    // call parent
+    Base::TextRendererBase::Open();
 
-	// setup vbo
-	Util::Array<VertexComponent> comps;
-	comps.Append(VertexComponent((VertexComponent::SemanticName)0, 0, VertexComponent::Float2, 0));
-	comps.Append(VertexComponent((VertexComponent::SemanticName)1, 0, VertexComponent::Float2, 0));
-	comps.Append(VertexComponent((VertexComponent::SemanticName)2, 0, VertexComponent::Float4, 0));
+    // setup vbo
+    Util::Array<VertexComponent> comps;
+    comps.Append(VertexComponent((VertexComponent::SemanticName)0, 0, VertexComponent::Float2, 0));
+    comps.Append(VertexComponent((VertexComponent::SemanticName)1, 0, VertexComponent::Float2, 0));
+    comps.Append(VertexComponent((VertexComponent::SemanticName)2, 0, VertexComponent::Float4, 0));
 
-	this->layout = CreateVertexLayout({ comps });
+    this->layout = CreateVertexLayout({ comps });
 
-	BufferCreateInfo vboInfo;
-	vboInfo.name = "TextRenderer VBO"_atm;
-	vboInfo.size = MaxNumChars * 6;
-	vboInfo.elementSize = VertexLayoutGetSize(this->layout);
-	vboInfo.mode = CoreGraphics::HostToDevice;
-	vboInfo.usageFlags = CoreGraphics::VertexBuffer;
-	vboInfo.data = nullptr;
-	vboInfo.dataSize = 0;
-	this->vbo = CreateBuffer(vboInfo);
-	this->vertexPtr = (byte*)BufferMap(this->vbo);
+    BufferCreateInfo vboInfo;
+    vboInfo.name = "TextRenderer VBO"_atm;
+    vboInfo.size = MaxNumChars * 6;
+    vboInfo.elementSize = VertexLayoutGetSize(this->layout);
+    vboInfo.mode = CoreGraphics::HostToDevice;
+    vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+    vboInfo.data = nullptr;
+    vboInfo.dataSize = 0;
+    this->vbo = CreateBuffer(vboInfo);
+    this->vertexPtr = (byte*)BufferMap(this->vbo);
 
-	// setup primitive group
-	this->group.SetNumIndices(0);
-	this->group.SetBaseIndex(0);
-	this->group.SetBaseVertex(0);
+    // setup primitive group
+    this->group.SetNumIndices(0);
+    this->group.SetBaseIndex(0);
+    this->group.SetBaseVertex(0);
 
 #if __WIN32__
-	// find windows font
-	const char* fontPath = "c:/windows/fonts/segoeui.ttf";
+    // find windows font
+    const char* fontPath = "c:/windows/fonts/segoeui.ttf";
 #else
-	// find linux
-	const char* fontPath = "/usr/share/fonts/truetype/freefont/FreeSans.ttf";
+    // find linux
+    const char* fontPath = "/usr/share/fonts/truetype/freefont/FreeSans.ttf";
 #endif
 
-	unsigned char* ttf_buffer;
+    unsigned char* ttf_buffer;
 
-	// load font
-	Ptr<IO::Stream> fontStream = IO::IoServer::Instance()->CreateStream(fontPath);
-	fontStream->SetAccessMode(IO::Stream::ReadAccess);
-	if (fontStream->Open())
-	{
-		ttf_buffer = n_new_array(unsigned char, fontStream->GetSize());
-		void* buf = fontStream->Map();
-		memcpy(ttf_buffer, buf, fontStream->GetSize());
-		fontStream->Unmap();
-		fontStream->Close();
-	}
-	else
-	{
-		n_error("Failed to load font %s!", fontPath);
-	}
+    // load font
+    Ptr<IO::Stream> fontStream = IO::IoServer::Instance()->CreateStream(fontPath);
+    fontStream->SetAccessMode(IO::Stream::ReadAccess);
+    if (fontStream->Open())
+    {
+        ttf_buffer = n_new_array(unsigned char, fontStream->GetSize());
+        void* buf = fontStream->Map();
+        memcpy(ttf_buffer, buf, fontStream->GetSize());
+        fontStream->Unmap();
+        fontStream->Close();
+    }
+    else
+    {
+        n_error("Failed to load font %s!", fontPath);
+    }
 
-	unsigned char* bitmap = n_new_array(unsigned char, GLYPH_TEXTURE_SIZE*GLYPH_TEXTURE_SIZE);
-	int charCount = 96;
-	this->cdata = n_new_array(stbtt_packedchar, charCount);
+    unsigned char* bitmap = n_new_array(unsigned char, GLYPH_TEXTURE_SIZE*GLYPH_TEXTURE_SIZE);
+    int charCount = 96;
+    this->cdata = n_new_array(stbtt_packedchar, charCount);
 
-	stbtt_pack_context context;
-	if (!stbtt_PackBegin(&context, bitmap, GLYPH_TEXTURE_SIZE, GLYPH_TEXTURE_SIZE, 0, 1, NULL))
-	{
-		n_error("VkTextRenderer::Open(): Could not load font!");
-	}
-	stbtt_PackSetOversampling(&context, 4, 4);
-	if (!stbtt_PackFontRange(&context, ttf_buffer, 0, 40.0f, 32, charCount, this->cdata))
-	{
-		n_error("VkTextRenderer::Open(): Could not load font!");
-	}
-	stbtt_PackEnd(&context);
-	stbtt_InitFont(&this->font, ttf_buffer, 0);
+    stbtt_pack_context context;
+    if (!stbtt_PackBegin(&context, bitmap, GLYPH_TEXTURE_SIZE, GLYPH_TEXTURE_SIZE, 0, 1, NULL))
+    {
+        n_error("VkTextRenderer::Open(): Could not load font!");
+    }
+    stbtt_PackSetOversampling(&context, 4, 4);
+    if (!stbtt_PackFontRange(&context, ttf_buffer, 0, 40.0f, 32, charCount, this->cdata))
+    {
+        n_error("VkTextRenderer::Open(): Could not load font!");
+    }
+    stbtt_PackEnd(&context);
+    stbtt_InitFont(&this->font, ttf_buffer, 0);
 
-	// setup random texture
-	TextureCreateInfo texInfo;
-	texInfo.name = "GlyphTexture"_atm;
-	texInfo.usage = TextureUsage::SampleTexture;
-	texInfo.tag = "render_system"_atm;
-	texInfo.buffer = bitmap;
-	texInfo.type = TextureType::Texture2D;
-	texInfo.format = PixelFormat::R8;
-	texInfo.width = GLYPH_TEXTURE_SIZE;
-	texInfo.height = GLYPH_TEXTURE_SIZE;
-	this->glyphTexture = CreateTexture(texInfo);
+    // setup random texture
+    TextureCreateInfo texInfo;
+    texInfo.name = "GlyphTexture"_atm;
+    texInfo.usage = TextureUsage::SampleTexture;
+    texInfo.tag = "render_system"_atm;
+    texInfo.buffer = bitmap;
+    texInfo.type = TextureType::Texture2D;
+    texInfo.format = PixelFormat::R8;
+    texInfo.width = GLYPH_TEXTURE_SIZE;
+    texInfo.height = GLYPH_TEXTURE_SIZE;
+    this->glyphTexture = CreateTexture(texInfo);
 
-	// create shader instance
-	const ShaderId shd = ShaderServer::Instance()->GetShader("shd:text.fxb");
-	this->program = ShaderGetProgram(shd, ShaderServer::Instance()->FeatureStringToMask("Static"));
-	this->textTable = ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP);
-	// get variable
+    // create shader instance
+    const ShaderId shd = ShaderServer::Instance()->GetShader("shd:text.fxb");
+    this->program = ShaderGetProgram(shd, ShaderServer::Instance()->FeatureStringToMask("Static"));
+    this->textTable = ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP);
+    // get variable
 
-	this->texVar = ShaderGetResourceSlot(shd, "Texture");
-	ResourceTableSetTexture(this->textTable, { this->glyphTexture, this->texVar, 0, CoreGraphics::SamplerId::Invalid(), false});
-	ResourceTableCommitChanges(this->textTable);
-	this->modelVar = ShaderGetConstantBinding(shd, "TextProjectionModel");
+    this->texVar = ShaderGetResourceSlot(shd, "Texture");
+    ResourceTableSetTexture(this->textTable, { this->glyphTexture, this->texVar, 0, CoreGraphics::SamplerId::Invalid(), false});
+    ResourceTableCommitChanges(this->textTable);
+    this->modelVar = ShaderGetConstantBinding(shd, "TextProjectionModel");
 
-	n_delete_array(bitmap);
-	n_delete_array(ttf_buffer);
+    n_delete_array(bitmap);
+    n_delete_array(ttf_buffer);
 }
 
 //------------------------------------------------------------------------------
@@ -160,17 +160,17 @@ VkTextRenderer::Open()
 void
 VkTextRenderer::Close()
 {
-	n_assert(this->IsOpen());
+    n_assert(this->IsOpen());
 
-	// call base class
-	Base::TextRendererBase::Close();
+    // call base class
+    Base::TextRendererBase::Close();
 
-	// discard shader
-	BufferUnmap(this->vbo);
-	this->vertexPtr = nullptr;
+    // discard shader
+    BufferUnmap(this->vbo);
+    this->vertexPtr = nullptr;
 
-	DestroyBuffer(this->vbo);
-	DestroyTexture(this->glyphTexture);
+    DestroyBuffer(this->vbo);
+    DestroyTexture(this->glyphTexture);
 }
 
 //------------------------------------------------------------------------------
@@ -179,143 +179,143 @@ VkTextRenderer::Close()
 void
 VkTextRenderer::DrawTextElements()
 {
-	n_assert(this->IsOpen());
+    n_assert(this->IsOpen());
 
-	// get display mode
-	CoreGraphics::WindowId wnd = DisplayDevice::Instance()->GetCurrentWindow();
-	const DisplayMode& displayMode = WindowGetDisplayMode(wnd);
+    // get display mode
+    CoreGraphics::WindowId wnd = DisplayDevice::Instance()->GetCurrentWindow();
+    const DisplayMode& displayMode = WindowGetDisplayMode(wnd);
 
-	// calculate projection matrix
-	mat4 proj = orthooffcenterrh(0, (float)displayMode.GetWidth(), (float)displayMode.GetHeight(), 0, -1.0f, +1.0f);
+    // calculate projection matrix
+    mat4 proj = orthooffcenterrh(0, (float)displayMode.GetWidth(), (float)displayMode.GetHeight(), 0, -1.0f, +1.0f);
 
-	// apply shader and apply state
-	CoreGraphics::SetShaderProgram(this->program);
-	CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->modelVar, sizeof(proj), (byte*)&proj);
-	CoreGraphics::SetResourceTable(this->textTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+    // apply shader and apply state
+    CoreGraphics::SetShaderProgram(this->program);
+    CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->modelVar, sizeof(proj), (byte*)&proj);
+    CoreGraphics::SetResourceTable(this->textTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 
-	CoreGraphics::SetVertexLayout(this->layout);
-	CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
-	CoreGraphics::SetGraphicsPipeline();
+    CoreGraphics::SetVertexLayout(this->layout);
+    CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
+    CoreGraphics::SetGraphicsPipeline();
 
-	uint screenWidth, screenHeight;
-	screenWidth = displayMode.GetWidth();
-	screenHeight = displayMode.GetHeight();
+    uint screenWidth, screenHeight;
+    screenWidth = displayMode.GetWidth();
+    screenHeight = displayMode.GetHeight();
 
-	// update vertex buffer
-	unsigned vert = 0;
-	unsigned totalChars = 0;
+    // update vertex buffer
+    unsigned vert = 0;
+    unsigned totalChars = 0;
 
-	TextElementVertex vertices[MaxNumChars * 6];
+    TextElementVertex vertices[MaxNumChars * 6];
 
-	// draw text elements
-	IndexT i;
-	for (i = 0; i < this->textElements.Size(); i++)
-	{
-		const TextElement& curTextElm = this->textElements[i];
-		const vec4& color = curTextElm.GetColor();
-		const float fontSize = curTextElm.GetSize();
-		const unsigned char* text = (unsigned char*)curTextElm.GetText().AsCharPtr();
-		const unsigned numChars = curTextElm.GetText().Length();
-		totalChars += numChars;
-		vec2 position = curTextElm.GetPosition();
+    // draw text elements
+    IndexT i;
+    for (i = 0; i < this->textElements.Size(); i++)
+    {
+        const TextElement& curTextElm = this->textElements[i];
+        const vec4& color = curTextElm.GetColor();
+        const float fontSize = curTextElm.GetSize();
+        const unsigned char* text = (unsigned char*)curTextElm.GetText().AsCharPtr();
+        const unsigned numChars = curTextElm.GetText().Length();
+        totalChars += numChars;
+        vec2 position = curTextElm.GetPosition();
 
-		// calculate ascent, descent and gap for font
-		int ascent, descent, gap;
-		stbtt_GetFontVMetrics(&this->font, &ascent, &descent, &gap);
-		float scale = stbtt_ScaleForPixelHeight(&this->font, fontSize);
-		float realSize = ceil((ascent - descent + gap) * scale);
+        // calculate ascent, descent and gap for font
+        int ascent, descent, gap;
+        stbtt_GetFontVMetrics(&this->font, &ascent, &descent, &gap);
+        float scale = stbtt_ScaleForPixelHeight(&this->font, fontSize);
+        float realSize = ceil((ascent - descent + gap) * scale);
 
-		// transform position
-		position = vec2(position.x * screenWidth, position.y * screenHeight + (ascent + descent + gap) * scale + 1);
+        // transform position
+        position = vec2(position.x * screenWidth, position.y * screenHeight + (ascent + descent + gap) * scale + 1);
 
-		float top, left;
-		left = 0;
-		top = 0;
+        float top, left;
+        left = 0;
+        top = 0;
 
 
-		// iterate through tokens
-		while (*text)
-		{
-			if (*text >= 32 && *text < 128)
-			{
-				stbtt_aligned_quad quad;
-				stbtt_GetPackedQuad(this->cdata, GLYPH_TEXTURE_SIZE, GLYPH_TEXTURE_SIZE, *text - 32, &left, &top, &quad, 1);
+        // iterate through tokens
+        while (*text)
+        {
+            if (*text >= 32 && *text < 128)
+            {
+                stbtt_aligned_quad quad;
+                stbtt_GetPackedQuad(this->cdata, GLYPH_TEXTURE_SIZE, GLYPH_TEXTURE_SIZE, *text - 32, &left, &top, &quad, 1);
 
-				// create vec4 of data (in order to utilize SSE)
-				vec4 sizeScale = vec4(realSize);
-				vec4 oneOverFontSize = vec4(ONEOVERFONTSIZE);
-				vec4 pos1 = vec4(quad.x0, quad.y0, quad.x1, quad.y0);
-				vec4 pos2 = vec4(quad.x1, quad.y1, quad.x0, quad.y0);
-				vec4 pos3 = vec4(quad.x1, quad.y1, quad.x0, quad.y1);
-				vec4 elementPos = vec4(position.x, position.y, position.x, position.y);
+                // create vec4 of data (in order to utilize SSE)
+                vec4 sizeScale = vec4(realSize);
+                vec4 oneOverFontSize = vec4(ONEOVERFONTSIZE);
+                vec4 pos1 = vec4(quad.x0, quad.y0, quad.x1, quad.y0);
+                vec4 pos2 = vec4(quad.x1, quad.y1, quad.x0, quad.y0);
+                vec4 pos3 = vec4(quad.x1, quad.y1, quad.x0, quad.y1);
+                vec4 elementPos = vec4(position.x, position.y, position.x, position.y);
 
-				// basically multiply everything with ONEOVERFONTSIZE and then the realSize, and then append the position
-				pos1 = pos1 * oneOverFontSize;
-				pos1 = multiplyadd(pos1, sizeScale, elementPos);
-				pos2 = pos2 * oneOverFontSize;
-				pos2 = multiplyadd(pos2, sizeScale, elementPos);
-				pos3 = pos3 * oneOverFontSize;
-				pos3 = multiplyadd(pos3, sizeScale, elementPos);
+                // basically multiply everything with ONEOVERFONTSIZE and then the realSize, and then append the position
+                pos1 = pos1 * oneOverFontSize;
+                pos1 = multiplyadd(pos1, sizeScale, elementPos);
+                pos2 = pos2 * oneOverFontSize;
+                pos2 = multiplyadd(pos2, sizeScale, elementPos);
+                pos3 = pos3 * oneOverFontSize;
+                pos3 = multiplyadd(pos3, sizeScale, elementPos);
 
-				// vertex 1
-				color.storeu(vertices[vert].color.v);
-				vertices[vert].uv.x = quad.s0;
-				vertices[vert].uv.y = quad.t0;
-				vertices[vert].vertex.x = pos1.x;
-				vertices[vert].vertex.y = pos1.y;
+                // vertex 1
+                color.storeu(vertices[vert].color.v);
+                vertices[vert].uv.x = quad.s0;
+                vertices[vert].uv.y = quad.t0;
+                vertices[vert].vertex.x = pos1.x;
+                vertices[vert].vertex.y = pos1.y;
 
-				// vertex 2
-				color.storeu(vertices[vert + 1].color.v);
-				vertices[vert + 1].uv.x = quad.s1;
-				vertices[vert + 1].uv.y = quad.t0;
-				vertices[vert + 1].vertex.x = pos1.z;
-				vertices[vert + 1].vertex.y = pos1.w;
+                // vertex 2
+                color.storeu(vertices[vert + 1].color.v);
+                vertices[vert + 1].uv.x = quad.s1;
+                vertices[vert + 1].uv.y = quad.t0;
+                vertices[vert + 1].vertex.x = pos1.z;
+                vertices[vert + 1].vertex.y = pos1.w;
 
-				// vertex 3
-				color.storeu(vertices[vert + 2].color.v);
-				vertices[vert + 2].uv.x = quad.s1;
-				vertices[vert + 2].uv.y = quad.t1;
-				vertices[vert + 2].vertex.x = pos2.x;
-				vertices[vert + 2].vertex.y = pos2.y;
+                // vertex 3
+                color.storeu(vertices[vert + 2].color.v);
+                vertices[vert + 2].uv.x = quad.s1;
+                vertices[vert + 2].uv.y = quad.t1;
+                vertices[vert + 2].vertex.x = pos2.x;
+                vertices[vert + 2].vertex.y = pos2.y;
 
-				// vertex 4
-				color.storeu(vertices[vert + 3].color.v);
-				vertices[vert + 3].uv.x = quad.s0;
-				vertices[vert + 3].uv.y = quad.t0;
-				vertices[vert + 3].vertex.x = pos2.z;
-				vertices[vert + 3].vertex.y = pos2.w;
+                // vertex 4
+                color.storeu(vertices[vert + 3].color.v);
+                vertices[vert + 3].uv.x = quad.s0;
+                vertices[vert + 3].uv.y = quad.t0;
+                vertices[vert + 3].vertex.x = pos2.z;
+                vertices[vert + 3].vertex.y = pos2.w;
 
-				// vertex 5
-				color.storeu(vertices[vert + 4].color.v);
-				vertices[vert + 4].uv.x = quad.s1;
-				vertices[vert + 4].uv.y = quad.t1;
-				vertices[vert + 4].vertex.x = pos3.x;
-				vertices[vert + 4].vertex.y = pos3.y;
+                // vertex 5
+                color.storeu(vertices[vert + 4].color.v);
+                vertices[vert + 4].uv.x = quad.s1;
+                vertices[vert + 4].uv.y = quad.t1;
+                vertices[vert + 4].vertex.x = pos3.x;
+                vertices[vert + 4].vertex.y = pos3.y;
 
-				// vertex 6
-				color.storeu(vertices[vert + 5].color.v);
-				vertices[vert + 5].uv.x = quad.s0;
-				vertices[vert + 5].uv.y = quad.t1;
-				vertices[vert + 5].vertex.x = pos3.z;
-				vertices[vert + 5].vertex.y = pos3.w;
+                // vertex 6
+                color.storeu(vertices[vert + 5].color.v);
+                vertices[vert + 5].uv.x = quad.s0;
+                vertices[vert + 5].uv.y = quad.t1;
+                vertices[vert + 5].vertex.x = pos3.z;
+                vertices[vert + 5].vertex.y = pos3.w;
 
-				vert += 6;
-			}
+                vert += 6;
+            }
 
-			n_assert(vert <= MaxNumChars * 6);
-			++text;
-		}
-	}
+            n_assert(vert <= MaxNumChars * 6);
+            ++text;
+        }
+    }
 
-	// if we have vertices left, draw them
-	if (vert > 0)
-	{
-		this->Draw(vertices, vert / 6);
-	}
+    // if we have vertices left, draw them
+    if (vert > 0)
+    {
+        this->Draw(vertices, vert / 6);
+    }
 
-	// delete the text elements of my own thread id, all other text elements
-	// are from other threads and will be deleted through DeleteTextByThreadId()
-	this->DeleteTextElementsByThreadId(Thread::GetMyThreadId());
+    // delete the text elements of my own thread id, all other text elements
+    // are from other threads and will be deleted through DeleteTextByThreadId()
+    this->DeleteTextElementsByThreadId(Thread::GetMyThreadId());
 }
 
 //------------------------------------------------------------------------------
@@ -324,29 +324,29 @@ VkTextRenderer::DrawTextElements()
 void
 VkTextRenderer::Draw(TextElementVertex* buffer, SizeT numChars)
 {
-	// copy to buffer
-	memcpy(this->vertexPtr, buffer, sizeof(TextElementVertex) * numChars * 6);
+    // copy to buffer
+    memcpy(this->vertexPtr, buffer, sizeof(TextElementVertex) * numChars * 6);
 
-	// create primitive group
-	this->group.SetNumVertices(numChars * 6);
+    // create primitive group
+    this->group.SetNumVertices(numChars * 6);
 
-	// get render device and set it up
-	CoreGraphics::SetStreamVertexBuffer(0, this->vbo, 0);
-	CoreGraphics::SetPrimitiveGroup(this->group);
+    // get render device and set it up
+    CoreGraphics::SetStreamVertexBuffer(0, this->vbo, 0);
+    CoreGraphics::SetPrimitiveGroup(this->group);
 
-	// set viewport
-	CoreGraphics::WindowId wnd = DisplayDevice::Instance()->GetCurrentWindow();
-	const DisplayMode& displayMode = WindowGetDisplayMode(wnd);
-	uint screenWidth, screenHeight;
-	screenWidth = displayMode.GetWidth();
-	screenHeight = displayMode.GetHeight();
+    // set viewport
+    CoreGraphics::WindowId wnd = DisplayDevice::Instance()->GetCurrentWindow();
+    const DisplayMode& displayMode = WindowGetDisplayMode(wnd);
+    uint screenWidth, screenHeight;
+    screenWidth = displayMode.GetWidth();
+    screenHeight = displayMode.GetHeight();
 
-	CoreGraphics::BufferFlush(this->vbo);
-	//dev->SetViewport(Math::rectangle<int>(0, 0, screenWidth, screenHeight), 0);
-	//dev->SetScissorRect(Math::rectangle<int>(0, 0, screenWidth, screenHeight), 0);
+    CoreGraphics::BufferFlush(this->vbo);
+    //dev->SetViewport(Math::rectangle<int>(0, 0, screenWidth, screenHeight), 0);
+    //dev->SetScissorRect(Math::rectangle<int>(0, 0, screenWidth, screenHeight), 0);
 
-	// setup device
-	CoreGraphics::Draw();
+    // setup device
+    CoreGraphics::Draw();
 }
 
 //------------------------------------------------------------------------------
@@ -355,7 +355,7 @@ VkTextRenderer::Draw(TextElementVertex* buffer, SizeT numChars)
 Math::vec2
 VkTextRenderer::TransformTextVertex(const Math::vec2& pos, const Math::vec2& offset, const Math::vec2& scale)
 {
-	return vec2::multiply(vec2::multiply(pos, offset), scale);
+    return vec2::multiply(vec2::multiply(pos, offset), scale);
 }
 
 } // namespace Vulkan

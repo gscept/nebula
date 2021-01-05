@@ -1,10 +1,10 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	A character encapsulates a skeleton resource, an animation resource, and the ability
-	to instantiate such and drive animations.
+    A character encapsulates a skeleton resource, an animation resource, and the ability
+    to instantiate such and drive animations.
 
-	(C) 2018-2020 Individual contributors, see AUTHORS file
+    (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "resources/resourceid.h"
@@ -20,14 +20,14 @@ extern StreamSkeletonPool* skeletonPool;
 
 struct CharacterJoint
 {
-	Math::vector poseTranslation;
-	Math::quat poseRotation;
-	Math::vector poseScale;
-	Math::mat4 poseMatrix;
-	IndexT parentJointIndex;
-	const CharacterJoint* parentJoint;
+    Math::vector poseTranslation;
+    Math::quat poseRotation;
+    Math::vector poseScale;
+    Math::mat4 poseMatrix;
+    IndexT parentJointIndex;
+    const CharacterJoint* parentJoint;
 #if NEBULA_DEBUG
-	Util::StringAtom name;
+    Util::StringAtom name;
 #endif
 };
 

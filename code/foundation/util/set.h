@@ -3,10 +3,10 @@
 /**
     @class Util::Set
 
-	A collection of unique values with quick lookup.
-	Internally implemented as a sorted array.
+    A collection of unique values with quick lookup.
+    Internally implemented as a sorted array.
 
-	Adding the same value more than once has no obvious effect.
+    Adding the same value more than once has no obvious effect.
   
     On insertion performance:
     Key/value pairs are inserted with the Add() method, which normally
@@ -21,7 +21,7 @@
     throw an assertion between BeginBulkAdd() and EndBulkAdd().
 
     (C) 2006 Radon Labs GmbH
-    (C) 2013-2020 Individual contributors, see AUTHORS file	
+    (C) 2013-2020 Individual contributors, see AUTHORS file 
 */    
 #include "util/array.h"
 #include "util/keyvaluepair.h"
@@ -33,11 +33,11 @@ template<class KEYTYPE> class Set
 {
 public:
     /// default constructor
-	Set();
+    Set();
     /// copy constructor
-	Set(const Set<KEYTYPE>& rhs);
+    Set(const Set<KEYTYPE>& rhs);
     /// assignment operator
-	void operator=(const Set<KEYTYPE>& rhs);
+    void operator=(const Set<KEYTYPE>& rhs);
 
     /// return number of unique keys
     SizeT Size() const;
@@ -111,7 +111,7 @@ Set<KEYTYPE>::operator=(const Set<KEYTYPE>& rhs)
     n_assert(!this->inBulkInsert);
     n_assert(!rhs.inBulkInsert);
     #endif
-	this->values = rhs.values;
+    this->values = rhs.values;
 }
 
 //------------------------------------------------------------------------------
@@ -123,7 +123,7 @@ Set<KEYTYPE>::Clear()
     #if NEBULA_BOUNDSCHECKS
     n_assert(!this->inBulkInsert);
     #endif
-	this->values.Clear();
+    this->values.Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -132,7 +132,7 @@ Set<KEYTYPE>::Clear()
 template<class KEYTYPE> SizeT
 Set<KEYTYPE>::Size() const
 {
-	return this->values.Size();
+    return this->values.Size();
 }
 
 //------------------------------------------------------------------------------
@@ -141,7 +141,7 @@ Set<KEYTYPE>::Size() const
 template<class KEYTYPE> bool
 Set<KEYTYPE>::IsEmpty() const
 {
-	return (0 == this->values.Size());
+    return (0 == this->values.Size());
 }
 
 //------------------------------------------------------------------------------
@@ -150,7 +150,7 @@ Set<KEYTYPE>::IsEmpty() const
 template<class KEYTYPE> void
 Set<KEYTYPE>::Reserve(SizeT numElements)
 {
-	this->values.Reserve(numElements);
+    this->values.Reserve(numElements);
 }
 
 //------------------------------------------------------------------------------
@@ -174,7 +174,7 @@ Set<KEYTYPE>::EndBulkAdd()
 #if NEBULA_BOUNDSCHECKS
     n_assert(this->inBulkInsert);
 #endif
-	this->values.Sort();    
+    this->values.Sort();    
     this->inBulkInsert = false;
 #if NEBULA_BOUNDSCHECKS
     n_assert(this->values.IsSorted());
@@ -203,10 +203,10 @@ Set<KEYTYPE>::Add(const KEYTYPE& key)
 #if NEBULA_BOUNDSCHECKS
     n_assert(!this->inBulkInsert);
 #endif
-	if (!this->Contains(key))
-	{
-	    this->values.InsertSorted(key);
-	}    
+    if (!this->Contains(key))
+    {
+        this->values.InsertSorted(key);
+    }    
 }
 
 //------------------------------------------------------------------------------
@@ -218,11 +218,11 @@ Set<KEYTYPE>::Erase(const KEYTYPE& key)
     #if NEBULA_BOUNDSCHECKS
     n_assert(!this->inBulkInsert);
     #endif
-	IndexT eraseIndex = this->values.BinarySearchIndex(key);
+    IndexT eraseIndex = this->values.BinarySearchIndex(key);
     #if NEBULA_BOUNDSCHECKS
     n_assert(InvalidIndex != eraseIndex);
     #endif
-	this->values.EraseIndex(eraseIndex);
+    this->values.EraseIndex(eraseIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -234,7 +234,7 @@ Set<KEYTYPE>::EraseAtIndex(IndexT index)
     #if NEBULA_BOUNDSCHECKS
     n_assert(!this->inBulkInsert);
     #endif
-	this->values.EraseIndex(index);
+    this->values.EraseIndex(index);
 }
 
 //------------------------------------------------------------------------------
@@ -258,7 +258,7 @@ Set<KEYTYPE>::Contains(const KEYTYPE& key) const
     #if NEBULA_BOUNDSCHECKS
     n_assert(!this->inBulkInsert);
     #endif
-	return (InvalidIndex != this->values.BinarySearchIndex(key));
+    return (InvalidIndex != this->values.BinarySearchIndex(key));
 }
 
 //------------------------------------------------------------------------------
@@ -270,7 +270,7 @@ Set<KEYTYPE>::KeyAtIndex(IndexT index) const
     #if NEBULA_BOUNDSCHECKS
     n_assert(!this->inBulkInsert);
     #endif
-	return this->values[index];
+    return this->values[index];
 }
 
 //------------------------------------------------------------------------------
@@ -286,7 +286,7 @@ Set<KEYTYPE>::KeysAs() const
     #endif
     RETURNTYPE result(this->Size(), this->Size());
     IndexT i;
-	for (i = 0; i < this->values.Size(); i++)
+    for (i = 0; i < this->values.Size(); i++)
     {
         result.Append(this->values[i]);
     }

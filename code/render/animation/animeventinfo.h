@@ -36,17 +36,17 @@ public:
     /// greather-or-equal operator (time only)
     friend bool operator>=(const AnimEventInfo& a, const AnimEventInfo& b);
     
-    /// get AnimEvent	
+    /// get AnimEvent   
     const CoreAnimation::AnimEvent& GetAnimEvent() const;
     /// set AnimEvent
     void SetAnimEvent(const CoreAnimation::AnimEvent& val);
     
-    /// get ClipName	
+    /// get ClipName    
     const Util::StringAtom& GetAnimJobName() const;
     /// set ClipName
     void SetAnimJobName(const Util::StringAtom& val);
     
-    /// get Weight	
+    /// get Weight  
     float GetWeight() const;
     /// set Weight
     void SetWeight(float val);

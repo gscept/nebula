@@ -31,7 +31,7 @@ TextElement::TextElement(ThreadId threadId_, const String& text_, const vec4& co
     text(text_),
     color(color_),
     pos(pos_),
-	size(size_)
+    size(size_)
 {
     // empty
 }

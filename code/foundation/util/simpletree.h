@@ -248,7 +248,9 @@ template<class VALUETYPE>
 void
 SimpleTree<VALUETYPE>::Node::Append(const VALUETYPE& val)
 {
-    Ptr<Node> newNode = n_new(Node(*this, val));
+    Ptr<Node> newNode = static_cast<Node*>(Node::Create());
+    newNode->parent = this;
+    newNode->value = val;
     this->children.Append(newNode);
 }
 
@@ -259,7 +261,7 @@ template<class VALUETYPE>
 void
 SimpleTree<VALUETYPE>::Node::Erase(IndexT i)
 {
-	this->children[i]->parent = nullptr;
+    this->children[i]->parent = nullptr;
     this->children.EraseIndex(i);
 }
 
@@ -333,4 +335,3 @@ SimpleTree<VALUETYPE>::Root() const
 
 } // namespace Util
 //------------------------------------------------------------------------------
-    

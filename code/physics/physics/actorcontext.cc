@@ -1,3 +1,7 @@
+//------------------------------------------------------------------------------
+//  actorcontext.cc
+//  (C) 2020 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "physics/actorcontext.h"
 #include "physics/physxstate.h"

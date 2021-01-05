@@ -34,7 +34,7 @@ using namespace Util;
 /**
 */
 IoServer::IoServer() :
-    archiveFileSystemEnabled(false)
+    archiveFileSystemEnabled(true)
 {
     __ConstructSingleton;
 
@@ -91,6 +91,10 @@ IoServer::IoServer() :
     }
     #endif
     this->watcherCriticalSection.Leave();
+
+    this->httpClientRegistry = Http::HttpClientRegistry::Create();
+    this->httpClientRegistry->Setup();
+    this->streamCache = StreamCache::Create();
 }
 
 //------------------------------------------------------------------------------
@@ -98,6 +102,10 @@ IoServer::IoServer() :
 */
 IoServer::~IoServer()
 {
+    this->streamCache = nullptr;
+    this->httpClientRegistry->Discard();
+    this->httpClientRegistry = nullptr;
+
     this->watcher = nullptr;
     // unmount standard archives if this is the last instance
     if (StandardArchivesMounted && (this->archiveFileSystem->GetRefCount() == 1))
@@ -182,11 +190,11 @@ IoServer::MountStandardArchives()
     String platformString = System::SystemInfo::PlatformAsString(systemInfo.GetPlatform());
     String platformArchivePath = "root:export";
     
-	// prioritize export folder before zip 
-	if (!this->DirectoryExists(platformArchivePath))
-	{
-		this->MountArchive(platformArchivePath);
-	}
+    // prioritize export folder before zip 
+    if (!this->DirectoryExists(platformArchivePath))
+    {
+        this->MountArchive(platformArchivePath);
+    }
 
     this->archiveCriticalSection.Leave();
 }
@@ -505,6 +513,18 @@ IoServer::ListFiles(const URI& uri, const String& pattern, bool asFullPath) cons
         }
     }
 
+    //FIXME this should be handled more generically
+    if (uri.Scheme() != "file")
+    {
+        Util::String fileList;
+        URI listFile = uri;
+        listFile.AppendLocalPath("/_files.lst");
+        if (IoServer::ReadFile(listFile, fileList))
+        {
+            return fileList.Tokenize("\n");
+        }
+    }
+
     // fallthrough: not contained in archive, handle conventionally
     result = FSWrapper::ListFiles(uri.GetHostAndLocalPath(), pattern);
     if (asFullPath)
@@ -573,29 +593,27 @@ IoServer::AddPathPrefixToArray(const String& prefix, const Array<String>& filena
 //------------------------------------------------------------------------------
 /**
 */
-Util::String
-IoServer::ReadFile(const URI& path) const
+bool
+IoServer::ReadFile(const URI& path, Util::String& contents)
 {
-	n_assert(this->FileExists(path));
+    // create file stream
+    Ptr<Stream> stream = IoServer::Instance()->CreateStream(path);
 
-	// open file stream
-	Ptr<Stream> stream = IoServer::Instance()->CreateStream(path);
+    // open file
+    if (stream->Open())
+    {
+        // read all data
+        void* data = stream->Map();
+        SizeT size = stream->GetSize();
 
-	Util::String ret;
-	// open file
-	if (stream->Open())
-	{
-		// read all data
-		void* data = stream->Map();
-		SizeT size = stream->GetSize();
+        // map to string        
+        contents.Set((char*)data, size);
 
-		// map to string		
-		ret.AppendRange((char*)data, size);
-
-		// close stream
-		stream->Close();
-	}
-	return ret;
+        // close stream
+        stream->Close();
+        return true;
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -604,11 +622,11 @@ IoServer::ReadFile(const URI& path) const
 bool
 IoServer::IsLocked(const URI& uri) const
 {
-	n_assert(uri.Scheme() == "file");
-	n_assert(this->FileExists(uri));
-	const String path = uri.GetHostAndLocalPath();
-	n_assert(path.IsValid());
-	return FSWrapper::IsLocked(path);
+    n_assert(uri.Scheme() == "file");
+    n_assert(this->FileExists(uri));
+    const String path = uri.GetHostAndLocalPath();
+    n_assert(path.IsValid());
+    return FSWrapper::IsLocked(path);
 }
 
 //------------------------------------------------------------------------------
@@ -617,10 +635,10 @@ IoServer::IsLocked(const URI& uri) const
 IO::URI
 IoServer::CreateTemporaryFilename(const URI& uri) const
 {
-	n_assert(uri.Scheme() == "file");	
-	const String path = uri.GetHostAndLocalPath();
-	n_assert(path.IsValid());	
-	return URI(FSWrapper::CreateTemporaryFilename(path));
+    n_assert(uri.Scheme() == "file");   
+    const String path = uri.GetHostAndLocalPath();
+    n_assert(path.IsValid());   
+    return URI(FSWrapper::CreateTemporaryFilename(path));
 }
 
 //------------------------------------------------------------------------------
@@ -629,8 +647,8 @@ IoServer::CreateTemporaryFilename(const URI& uri) const
 Util::String
 IoServer::NativePath(const Util::String& path)
 {
-	std::filesystem::path u8path = std::filesystem::absolute(std::filesystem::u8path(path.AsCharPtr()));
-	return u8path.string().c_str();
+    std::filesystem::path u8path = std::filesystem::absolute(std::filesystem::u8path(path.AsCharPtr()));
+    return u8path.string().c_str();
 }
 
 } // namespace IO

@@ -197,7 +197,7 @@ BinaryWriter::WriteUInt(unsigned int i)
 void
 BinaryWriter::WriteInt64(int64_t i)
 {
-	i = this->byteOrder.Convert<int64_t>(i);
+    i = this->byteOrder.Convert<int64_t>(i);
     if (this->isMapped)
     {
         // note: the memory copy is necessary to circumvent alignment problem on some CPUs
@@ -217,7 +217,7 @@ BinaryWriter::WriteInt64(int64_t i)
 void
 BinaryWriter::WriteUInt64(uint64_t i)
 {
-	i = this->byteOrder.Convert<uint64_t>(i);
+    i = this->byteOrder.Convert<uint64_t>(i);
     if (this->isMapped)
     {
         // note: the memory copy is necessary to circumvent alignment problem on some CPUs
@@ -527,30 +527,30 @@ BinaryWriter::WriteIntArray(const Util::Array<int>& arr)
 void
 BinaryWriter::WriteUIntArray(const Util::Array<uint>& arr)
 {
-	const SizeT writeSize = sizeof(uint) * arr.Size();
-	uint* buf = (uint*)Memory::Alloc(Memory::ScratchHeap, writeSize);
+    const SizeT writeSize = sizeof(uint) * arr.Size();
+    uint* buf = (uint*)Memory::Alloc(Memory::ScratchHeap, writeSize);
 
-	IndexT i;
-	for (i = 0; i < arr.Size(); i++)
-	{
-		buf[i] = this->byteOrder.Convert<uint>(arr[i]);
-	}
+    IndexT i;
+    for (i = 0; i < arr.Size(); i++)
+    {
+        buf[i] = this->byteOrder.Convert<uint>(arr[i]);
+    }
 
-	// first write size
-	this->WriteUInt(arr.Size());
+    // first write size
+    this->WriteUInt(arr.Size());
 
-	if (this->isMapped)
-	{
-		// note: the memory copy is necessary to circumvent alignment problem on some CPUs
-		n_assert((this->mapCursor + writeSize) <= this->mapEnd);
-		Memory::Copy(buf, this->mapCursor, writeSize);
-		this->mapCursor += writeSize;
-	}
-	else
-	{
-		this->stream->Write(buf, writeSize);
-	}
-	Memory::Free(Memory::ScratchHeap, (void*)buf);
+    if (this->isMapped)
+    {
+        // note: the memory copy is necessary to circumvent alignment problem on some CPUs
+        n_assert((this->mapCursor + writeSize) <= this->mapEnd);
+        Memory::Copy(buf, this->mapCursor, writeSize);
+        this->mapCursor += writeSize;
+    }
+    else
+    {
+        this->stream->Write(buf, writeSize);
+    }
+    Memory::Free(Memory::ScratchHeap, (void*)buf);
 }
 
 

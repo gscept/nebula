@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Implements a shader variation (shader program within effect) in Vulkan.
-	
-	(C) 2016-2020 Individual contributors, see AUTHORS file
+    Implements a shader variation (shader program within effect) in Vulkan.
+    
+    (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -20,42 +20,42 @@ namespace Vulkan
 
 struct VkShaderProgramSetupInfo
 {
-	VkDevice dev;
-	Util::String name;
-	CoreGraphics::ShaderFeature::Mask mask;
+    VkDevice dev;
+    Util::String name;
+    CoreGraphics::ShaderFeature::Mask mask;
 };
 
 struct VkShaderProgramRuntimeInfo
 {
-	uint32_t stageCount;
-	VkPipelineVertexInputStateCreateInfo vertexInfo;
-	VkPipelineRasterizationStateCreateInfo rasterizerInfo;
-	VkPipelineMultisampleStateCreateInfo multisampleInfo;
-	VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
-	VkPipelineColorBlendStateCreateInfo colorBlendInfo;
-	VkPipelineDynamicStateCreateInfo dynamicInfo;
-	VkPipelineTessellationStateCreateInfo tessInfo;
-	VkPipelineShaderStageCreateInfo shaderInfos[5];
-	VkShaderModule vs, hs, ds, gs, ps, cs;
-	uint stencilFrontRef, stencilBackRef, stencilReadMask, stencilWriteMask;
-	VkPipeline pipeline;
-	VkPipelineLayout layout;
-	CoreGraphics::ShaderPipeline type;
-	uint32_t uniqueId;
+    uint32_t stageCount;
+    VkPipelineVertexInputStateCreateInfo vertexInfo;
+    VkPipelineRasterizationStateCreateInfo rasterizerInfo;
+    VkPipelineMultisampleStateCreateInfo multisampleInfo;
+    VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
+    VkPipelineColorBlendStateCreateInfo colorBlendInfo;
+    VkPipelineDynamicStateCreateInfo dynamicInfo;
+    VkPipelineTessellationStateCreateInfo tessInfo;
+    VkPipelineShaderStageCreateInfo shaderInfos[5];
+    VkShaderModule vs, hs, ds, gs, ps, cs;
+    uint stencilFrontRef, stencilBackRef, stencilReadMask, stencilWriteMask;
+    VkPipeline pipeline;
+    VkPipelineLayout layout;
+    CoreGraphics::ShaderPipeline type;
+    uint32_t uniqueId;
 };
 
 extern uint32_t UniqueIdCounter;
 
 enum
 {
-	ShaderProgram_SetupInfo,
-	ShaderProgram_AnyFXPtr,
-	ShaderProgram_RuntimeInfo
+    ShaderProgram_SetupInfo,
+    ShaderProgram_AnyFXPtr,
+    ShaderProgram_RuntimeInfo
 };
 typedef Ids::IdAllocator<
-	VkShaderProgramSetupInfo,		//0 used for setup
-	AnyFX::VkProgram*,				//1 program object
-	VkShaderProgramRuntimeInfo		//2 used for runtime
+    VkShaderProgramSetupInfo,       //0 used for setup
+    AnyFX::VkProgram*,              //1 program object
+    VkShaderProgramRuntimeInfo      //2 used for runtime
 > VkShaderProgramAllocator;
 
 

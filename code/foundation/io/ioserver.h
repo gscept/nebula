@@ -25,6 +25,10 @@
 #include "util/stringatom.h"
 #include "io/assignregistry.h"
 #include "io/schemeregistry.h"
+#include "http/httpclientregistry.h"
+#include "archfs/archivefilesystem.h"
+#include "io/cache/streamcache.h"
+
 
 //------------------------------------------------------------------------------
 namespace IO
@@ -74,8 +78,8 @@ public:
     bool DeleteFile(const URI& path) const;
     /// return true if file exists
     bool FileExists(const URI& path) const;
-	/// return if file is locked
-	bool IsLocked(const URI& path) const;
+    /// return if file is locked
+    bool IsLocked(const URI& path) const;
     /// set the readonly status of a file
     void SetReadOnly(const URI& path, bool b) const;
     /// return read only status of a file
@@ -86,8 +90,8 @@ public:
     void SetFileWriteTime(const URI& path, FileTime fileTime);
     /// return the last write-time of a file
     FileTime GetFileWriteTime(const URI& path) const;
-	/// read contents of file and return as string
-	Util::String ReadFile(const URI& path) const;
+    /// read contents of file and return as string
+    static bool ReadFile(const URI& path, Util::String & contents);
     /// return native path
     static Util::String NativePath(const Util::String& path);
 
@@ -96,8 +100,8 @@ public:
     /// list all subdirectories matching a pattern in a directory
     Util::Array<Util::String> ListDirectories(const URI& dir, const Util::String& pattern, bool asFullPath=false) const;
 
-	/// create a temporary file name
-	URI CreateTemporaryFilename(const URI& path) const;
+    /// create a temporary file name
+    URI CreateTemporaryFilename(const URI& path) const;
 
 private:
     /// helper function to add path prefix to file or dir names in array
@@ -108,9 +112,11 @@ private:
     static Threading::CriticalSection archiveCriticalSection;
     static bool StandardArchivesMounted;
     
+    Ptr<Http::HttpClientRegistry> httpClientRegistry;
     Ptr<AssignRegistry> assignRegistry;
     Ptr<SchemeRegistry> schemeRegistry;
     Ptr<FileWatcher> watcher;
+    Ptr<StreamCache> streamCache;
     static Threading::CriticalSection assignCriticalSection;
     static Threading::CriticalSection schemeCriticalSection;
     static Threading::CriticalSection watcherCriticalSection;
@@ -118,9 +124,6 @@ private:
 
 //------------------------------------------------------------------------------
 /**
-    NOTE: on platforms which provide transparent archive access this method
-    is point less (the archiveFileSystemEnabled flag will be ignored, and
-    IsArchiveFileSystemEnabled() will always return false).
 */
 inline void
 IoServer::SetArchiveFileSystemEnabled(bool b)
@@ -137,11 +140,7 @@ IoServer::SetArchiveFileSystemEnabled(bool b)
 inline bool
 IoServer::IsArchiveFileSystemEnabled() const
 {
-    #if NEBULA_NATIVE_ARCHIVE_SUPPORT
-        return false;
-    #else
-        return this->archiveFileSystemEnabled;
-    #endif
+    return this->archiveFileSystemEnabled && ArchiveFileSystem::Instance()->HasArchives();
 }
 
 } // namespace IO

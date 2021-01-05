@@ -14,7 +14,7 @@ namespace Frame
 */
 FrameSubpassPlugin::FrameSubpassPlugin()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -22,7 +22,7 @@ FrameSubpassPlugin::FrameSubpassPlugin()
 */
 FrameSubpassPlugin::~FrameSubpassPlugin()
 {
-	// empty
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -40,9 +40,9 @@ FrameSubpassPlugin::Setup()
 void
 FrameSubpassPlugin::Discard()
 {
-	FrameOp::Discard();
+    FrameOp::Discard();
 
-	this->func = nullptr;
+    this->func = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -51,9 +51,9 @@ FrameSubpassPlugin::Discard()
 FrameOp::Compiled*
 FrameSubpassPlugin::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
-	CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
-	ret->func = this->func;
-	return ret;
+    CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+    ret->func = this->func;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -62,7 +62,7 @@ FrameSubpassPlugin::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 void
 FrameSubpassPlugin::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
-	this->func(frameIndex, bufferIndex);
+    this->func(frameIndex, bufferIndex);
 }
 
 } // namespace Frame2

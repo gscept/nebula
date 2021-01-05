@@ -127,7 +127,7 @@ __forceinline
 point::point(const vec4& rhs)
 {
     // mask out xyz and set w to 1
-    this->vec = _mm_or_ps(_mm_and_ps(rhs.vec, _mask_xyz), _id_w);;
+    this->vec = _mm_or_ps(_mm_and_ps(rhs.vec, _mask_xyz), _id_w);
 }
 
 //------------------------------------------------------------------------------
@@ -136,7 +136,7 @@ point::point(const vec4& rhs)
 __forceinline
 point::point(const __m128& rhs)
 {
-    this->vec = rhs;
+    this->vec = _mm_insert_ps(rhs, _id_w, 0b11110000);
 }
 
 //------------------------------------------------------------------------------
@@ -154,7 +154,7 @@ point::operator=(const point& rhs)
 __forceinline void
 point::operator=(const __m128& rhs)
 {
-    this->vec = rhs;
+    this->vec = _mm_insert_ps(rhs, _id_w, 0b11110000);
 }
 
 //------------------------------------------------------------------------------

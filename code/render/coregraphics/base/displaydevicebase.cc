@@ -56,12 +56,12 @@ DisplayDeviceBase::Close()
     n_assert(this->IsOpen());
     this->isOpen = false;
 
-	IndexT i;
-	for (i = 0; i < this->windows.Size(); i++)
-	{
-		CoreGraphics::DestroyWindow(this->windows[i]);
-	}
-	this->windows.Clear();
+    IndexT i;
+    for (i = 0; i < this->windows.Size(); i++)
+    {
+        CoreGraphics::DestroyWindow(this->windows[i]);
+    }
+    this->windows.Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -70,11 +70,11 @@ DisplayDeviceBase::Close()
 void 
 DisplayDeviceBase::Reopen()
 {
-	n_assert(this->IsOpen());
+    n_assert(this->IsOpen());
 
-	// notify all event handlers
-	DisplayEvent closeEvent(DisplayEvent::WindowReopen);
-	this->NotifyEventHandlers(closeEvent);
+    // notify all event handlers
+    DisplayEvent closeEvent(DisplayEvent::WindowReopen);
+    this->NotifyEventHandlers(closeEvent);
 }
 
 //------------------------------------------------------------------------------
@@ -193,18 +193,18 @@ DisplayDeviceBase::GetAdapterInfo(Adapter::Code adapter)
 CoreGraphics::WindowId
 DisplayDeviceBase::SetupWindow(const Util::String& title, const Util::String& icon, const CoreGraphics::DisplayMode& displayMode, const CoreGraphics::AntiAliasQuality::Code aa)
 {
-	WindowCreateInfo info;
-	info.aa = aa;
-	info.mode = displayMode;
-	info.title = title;
-	info.icon = icon;
-	CoreGraphics::WindowId wnd = CoreGraphics::CreateWindow(info);
+    WindowCreateInfo info;
+    info.aa = aa;
+    info.mode = displayMode;
+    info.title = title;
+    info.icon = icon;
+    CoreGraphics::WindowId wnd = CoreGraphics::CreateWindow(info);
 
-	// add to list, and set to current if this is the first
-	if (this->windows.IsEmpty()) this->currentWindow = wnd;
-	this->windows.Append(wnd);
+    // add to list, and set to current if this is the first
+    if (this->windows.IsEmpty()) this->currentWindow = wnd;
+    this->windows.Append(wnd);
 
-	return wnd;
+    return wnd;
 }
 
 //------------------------------------------------------------------------------
@@ -213,12 +213,12 @@ DisplayDeviceBase::SetupWindow(const Util::String& title, const Util::String& ic
 CoreGraphics::WindowId
 DisplayDeviceBase::EmbedWindow(const Util::Blob& windowData)
 {
-	CoreGraphics::WindowId wnd = CoreGraphics::EmbedWindow(windowData);
+    CoreGraphics::WindowId wnd = CoreGraphics::EmbedWindow(windowData);
 
-	// add to list, and set to current if this is the first
-	if (this->windows.IsEmpty()) this->currentWindow = wnd;
-	this->windows.Append(wnd);
-	return wnd;
+    // add to list, and set to current if this is the first
+    if (this->windows.IsEmpty()) this->currentWindow = wnd;
+    this->windows.Append(wnd);
+    return wnd;
 }
 
 //------------------------------------------------------------------------------
@@ -227,9 +227,9 @@ DisplayDeviceBase::EmbedWindow(const Util::Blob& windowData)
 void
 DisplayDeviceBase::MakeWindowCurrent(const CoreGraphics::WindowId id)
 {
-	CoreGraphics::WindowMakeCurrent(id);
-	Frame::FrameServer::Instance()->SetWindowTexture(WindowGetTexture(id));
-	this->currentWindow = id;
+    CoreGraphics::WindowMakeCurrent(id);
+    Frame::FrameServer::Instance()->SetWindowTexture(WindowGetTexture(id));
+    this->currentWindow = id;
 }
 
 } // namespace DisplayDevice

@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-	Box system
+    Box system
 
-	(C) 2018-2020 Individual contributors, see AUTHORS file
+    (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "visibilitysystem.h"
@@ -17,10 +17,10 @@ class BoxSystem : public VisibilitySystem
 {
 public:
 private:
-	friend class ObserverContext;
+    friend class ObserverContext;
 
-	/// setup from load info
-	void Setup(const BoxSystemLoadInfo& info);
+    /// setup from load info
+    void Setup(const BoxSystemLoadInfo& info);
 };
 
 } // namespace Visibility

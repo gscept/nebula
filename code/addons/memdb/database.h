@@ -20,70 +20,74 @@
 
 namespace MemDb
 {
-    class Database;
+class Database;
 
 class Database : public Core::RefCounted
 {
     __DeclareClass(MemDb::Database);
+
 public:
-	/// constructor
+    /// constructor
     Database();
-	/// destructor
+    /// destructor
     ~Database();
-	
-	/// create new table
+
+    /// create new table
     TableId CreateTable(TableCreateInfo const& info);
-	/// delete table
+    /// delete table
     void DeleteTable(TableId table);
-	/// check if table is valid
+    /// check if table is valid
     bool IsValid(TableId table) const;
-	/// retrieve a table.
-	Table& GetTable(TableId tid);
+    /// retrieve a table.
+    Table& GetTable(TableId tid);
     /// retrieve a table signature
-	TableSignature const& GetTableSignature(TableId tid);
-    
-	/// check if table has a certain column
+    TableSignature const& GetTableSignature(TableId tid);
+
+    /// check if table has a certain column
     bool HasProperty(TableId table, PropertyId col);
     /// returns a descriptor for a given column id
     PropertyId GetPropertyId(TableId table, ColumnIndex columnId);
-	/// returns a column id or invalid if column is missing from table
+    /// returns a column id or invalid if column is missing from table
     ColumnIndex GetColumnId(TableId table, PropertyId column);
-	/// add a column to a table
-    ColumnIndex AddColumn(TableId table, PropertyId column);
-	/// get the all descriptors for a table
-	Util::Array<PropertyId> const& GetColumns(TableId table);
+    /// add a column to a table
+    ColumnIndex AddColumn(TableId table, PropertyId column, bool updateSignature = true);
+    /// get the all descriptors for a table
+    Util::Array<PropertyId> const& GetColumns(TableId table);
 
-	/// allocate a row within a table
+    /// allocate a row within a table
     IndexT AllocateRow(TableId table);
-	/// deallocate a row from a table. This only frees the row for recycling. See ::Defragment
+    /// deallocate a row from a table. This only frees the row for recycling. See ::Defragment
     void DeallocateRow(TableId table, IndexT row);
-	/// get number of rows in a table
-	SizeT GetNumRows(TableId table) const;
-	/// set all row values to default
+    /// get number of rows in a table
+    SizeT GetNumRows(TableId table) const;
+    /// set all row values to default
     void SetToDefault(TableId table, IndexT row);
-	
-	/// move instance from one table to another.
-    IndexT MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid);
+
+    /// move instance from one table to another.
+    IndexT MigrateInstance(TableId srcTid, IndexT srcRow, TableId dstTid, bool defragment = true, std::function<void(IndexT, IndexT)> const& moveCallback = nullptr);
     /// move instance from one table to a table in another database.
-    IndexT MigrateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& dstDb, TableId dstTid);
+    IndexT MigrateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& dstDb, TableId dstTid, bool defragment = true, std::function<void(IndexT, IndexT)> const& moveCallback = nullptr);
     /// duplicate instance from one row into destination table.
     IndexT DuplicateInstance(TableId srcTid, IndexT srcRow, TableId dstTid);
     /// duplicate instance from one row into destination table in a different database.
     IndexT DuplicateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& dstDb, TableId dstTid);
 
     /// move n instances from one table to another.
-    void MigrateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows, TableId dstTid, Util::FixedArray<IndexT>& dstRows);
+    void MigrateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows, TableId dstTid, Util::FixedArray<IndexT>& dstRows, bool defragment = true, std::function<void(IndexT, IndexT)> const& moveCallback = nullptr);
     /// duplicate instance from one row into destination table.
     void DuplicateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows, TableId dstTid, Util::FixedArray<IndexT>& dstRows);
 
-	/// defragment table
-	SizeT Defragment(TableId tid, std::function<void(IndexT, IndexT)> const& moveCallback);
+    /// defragment table
+    SizeT Defragment(TableId tid, std::function<void(IndexT, IndexT)> const& moveCallback);
 
-	/// Query the database for a dataset of categories
-	Dataset Query(FilterSet const& filterset);
+    /// clean table. Does not deallocate anything; just sets the size of the table to zero.
+    void Clean(TableId tid);
+
     /// Query the database for a dataset of categories
-    Util::Array<TableId> Query(TableSignature inclusive, TableSignature exclusive);
-	/// get a buffer. Might be invalidated if rows are allocated or deallocated
+    Dataset Query(FilterSet const& filterset);
+    /// Query the database for a dataset of categories
+    Util::Array<TableId> Query(TableSignature const& inclusive, TableSignature const& exclusive);
+    /// get a buffer. Might be invalidated if rows are allocated or deallocated
     void* GetValuePointer(TableId table, ColumnIndex cid, IndexT row);
     /// get a buffer. Might be invalidated if rows are allocated or deallocated
     void* GetBuffer(TableId table, ColumnIndex cid);
@@ -92,16 +96,16 @@ public:
     static constexpr uint32_t MAX_NUM_TABLES = 512;
 
 private:
-	/// recycle free row or allocate new row
+    /// recycle free row or allocate new row
     IndexT AllocateRowIndex(TableId table);
-	/// erase row by swapping with last row and reducing number of rows in table
+    /// erase row by swapping with last row and reducing number of rows in table
     void EraseSwapIndex(Table& table, IndexT instance);
-	/// grow each column within table
+    /// grow each column within table
     void GrowTable(TableId tid);
-	/// allocate a buffer for a column. Sets all values to default
+    /// allocate a buffer for a column. Sets all values to default
     void* AllocateBuffer(TableId tid, PropertyDescription* desc);
 
-	/// id pool for table ids
+    /// id pool for table ids
     Ids::IdGenerationPool tableIdPool;
 
     /// all tables within the database
@@ -109,7 +113,7 @@ private:
     /// all table signatures
     TableSignature tableSignatures[MAX_NUM_TABLES];
 
-	/// number of tables existing currently
+    /// number of tables existing currently
     SizeT numTables = 0;
 };
 
@@ -123,7 +127,10 @@ Database::GetValuePointer(TableId table, ColumnIndex cid, IndexT row)
     Table& tbl = this->tables[Ids::Index(table.id)];
     PropertyId descriptor = tbl.columns.Get<0>(cid.id);
     PropertyDescription* desc = MemDb::TypeRegistry::GetDescription(descriptor);
-    return ((byte*)tbl.columns.Get<1>(cid.id)) + (desc->typeSize * row);
+    if (desc->typeSize > 0)
+        return ((byte*)tbl.columns.Get<1>(cid.id)) + (desc->typeSize * row);
+
+    return nullptr;
 }
 
 //------------------------------------------------------------------------------

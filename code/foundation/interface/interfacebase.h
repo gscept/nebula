@@ -9,7 +9,7 @@
     messages to handlers running in the thread context.
     
     (C) 2008 Radon Labs GmbH
-    (C) 2013-2020 Individual contributors, see AUTHORS file	
+    (C) 2013-2020 Individual contributors, see AUTHORS file 
 */
 #include "messaging/asyncport.h"
 #include "util/stringatom.h"
@@ -30,8 +30,8 @@ public:
     virtual void AttachHandler(const Ptr<Messaging::Handler>& h);
     /// open the async port
     virtual void Open();
-	/// close the async port
-	virtual void Close();
+    /// close the async port
+    virtual void Close();
 
     /// get the company name
     const Util::StringAtom& GetCompanyName() const;
