@@ -34,6 +34,8 @@
 #include "posteffects/ssrcontext.h"
 #include "posteffects/tonemapcontext.h"
 
+#include "physics/debugui.h"
+
 #include "terrain/terraincontext.h"
 
 #include "imgui.h"
@@ -623,6 +625,7 @@ SimpleViewerApplication::RenderUI()
         }
         ImGui::End();
     }
+    Physics::RenderUI(this->cam);
 }
 
 //------------------------------------------------------------------------------

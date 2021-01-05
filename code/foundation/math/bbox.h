@@ -234,22 +234,22 @@ bbox::extend(const bbox& box)
 inline void
 bbox::transform(const mat4& m)
 {
-    vec4 temp;
-    vec4 minP(1000000, 1000000,1000000, 1);
-    vec4 maxP(-1000000, -1000000, -1000000, 1);        
+    point temp;
+    point minP(1000000, 1000000,1000000);
+    point maxP(-1000000, -1000000, -1000000);        
     IndexT i; 
         
     for(i = 0; i < 8; ++i)
     {
         // Transform and check extents
-        vec4 temp_f = m * corner_point(i);
+        point temp_f = m * corner_point(i);
         temp = perspective_div(temp_f);
         maxP = maximize(temp, maxP);
         minP = minimize(temp, minP);        
     }    
 
-    this->pmin = xyz(minP);
-    this->pmax = xyz(maxP);
+    this->pmin = minP;
+    this->pmax = maxP;
 }
 
 //------------------------------------------------------------------------------

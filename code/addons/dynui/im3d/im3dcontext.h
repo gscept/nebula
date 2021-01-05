@@ -50,6 +50,8 @@ public:
     static void DrawBox(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t renderFlags = CheckDepth | Wireframe);
     /// draw a sphere
     static void DrawSphere(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t renderFlags = CheckDepth | Wireframe);
+    /// draw a sphere
+    static void DrawSphere(const Math::point& pos, float radius, const Math::vec4& color, uint32_t renderFlags = CheckDepth | Wireframe);
     /// draw a cylinder
     static void DrawCylinder(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t renderFlags = CheckDepth | Wireframe);
     /// draw a cone

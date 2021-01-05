@@ -273,7 +273,6 @@ void RenderUI()
     }
     ImGui::EndChild();
     ImGui::End();
-    Physics::RenderUI();
 };
 
 } // namespace ExampleSceneData

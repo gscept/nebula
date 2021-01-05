@@ -86,6 +86,14 @@ public:
     void translate(const vec3& t);
     /// add a translation to pos_component
     void translate(const float x, const float y, const float z);
+    ///
+    vec4 get_x() const;
+    ///
+    vec4 get_y() const;
+    ///
+    vec4 get_z() const;
+    ///
+    vec4 get_w() const;
     /// scale matrix
     void scale(const vec3& v);
     /// scale matrix
@@ -275,6 +283,42 @@ mat4::get_scale(vec4& v) const
     scalar zScale = length3(zaxis);
 
     v = vec4(xScale, yScale, zScale, 1.0f);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4
+mat4::get_x() const
+{
+    return this->r[0];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4
+mat4::get_y() const
+{
+    return this->r[1];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4
+mat4::get_z() const
+{
+    return this->r[2];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec4
+mat4::get_w() const
+{
+    return this->r[3];
 }
 
 //------------------------------------------------------------------------------
@@ -666,16 +710,15 @@ __forceinline vec4
 operator*(const mat4& m, const point& p)
 {
     __m128 x = _mm_shuffle_ps(p.vec, p.vec, _MM_SHUFFLE(0, 0, 0, 0));
-    x = _mm_and_ps(x, _mask_xyz);
     __m128 y = _mm_shuffle_ps(p.vec, p.vec, _MM_SHUFFLE(1, 1, 1, 1));
-    y = _mm_and_ps(y, _mask_xyz);
     __m128 z = _mm_shuffle_ps(p.vec, p.vec, _MM_SHUFFLE(2, 2, 2, 2));
-    z = _mm_and_ps(z, _mask_xyz);
+    __m128 w = _mm_shuffle_ps(p.vec, p.vec, _MM_SHUFFLE(3, 3, 3, 3));
 
     return 
         fmadd(x, m.r[0].vec, 
         fmadd(y, m.r[1].vec,
-        _mm_mul_ps(z, m.r[2].vec)));
+        fmadd(z, m.r[2].vec, 
+        _mm_mul_ps(w, m.r[3].vec))));
 }
 
 //------------------------------------------------------------------------------
