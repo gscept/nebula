@@ -226,7 +226,7 @@ void
 ShaderServerBase::LoadShader(const Resources::ResourceName& shdName)
 {
 	n_assert(shdName.IsValid());
-	CoreGraphics::ShaderId sid = CoreGraphics::shaderPool->CreateResource(shdName, "shaders"_atm, nullptr,
+	CoreGraphics::ShaderId sid = CoreGraphics::shaderPool->CreateResource(shdName, nullptr, 0, "shaders"_atm, nullptr,
 		[shdName](const ResourceId id)
 	{
 		n_error("Failed to load shader '%s'!", shdName.Value());

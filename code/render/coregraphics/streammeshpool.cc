@@ -116,11 +116,20 @@ Resources::ResourcePool::LoadStatus
 StreamMeshPool::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Resources::ResourceId res)
 {
 	n_assert(stream.isvalid());
+
 	Ptr<Legacy::Nvx2StreamReader> nvx2Reader = Legacy::Nvx2StreamReader::Create();
 	nvx2Reader->SetStream(stream);
 	nvx2Reader->SetUsage(this->usage);
 	nvx2Reader->SetAccess(this->access);
 	Resources::ResourceName name = this->GetName(res);
+
+	// get potential metadata
+	const _LoadMetaData& metaData = this->metaData[res.poolId];
+	if (metaData.data != nullptr)
+	{
+		StreamMeshLoadMetaData* typedMetadata = static_cast<StreamMeshLoadMetaData*>(metaData.data);
+		nvx2Reader->SetBuffersCopySource(typedMetadata->copySource);
+	}
 
 	// opening the reader also loads the file
 	if (nvx2Reader->Open(name))

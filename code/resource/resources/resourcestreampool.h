@@ -65,7 +65,7 @@ public:
 	virtual void LoadFallbackResources() override;
 
 	/// create a container with a tag associated with it, if no tag is provided, the resource will be untagged
-	Resources::ResourceId CreateResource(const Resources::ResourceName& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate);
+	Resources::ResourceId CreateResource(const Resources::ResourceName& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate);
 	/// discard container
 	void DiscardResource(const Resources::ResourceId id);
 	/// discard all resources associated with a tag
@@ -116,6 +116,12 @@ protected:
 		std::function<void(const Resources::ResourceId)> failed;
 	};
 
+	struct _LoadMetaData
+	{
+		void* data;
+		SizeT size;
+	};
+
 	/// perform actual load, override in subclass
 	virtual LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) = 0;
 	/// perform a reload
@@ -149,6 +155,7 @@ protected:
 	Threading::SafeQueue<_PendingStreamLod> pendingStreamQueue;
 	Util::FixedArray<Util::Array<_Callbacks>> callbacks;
 	Util::FixedArray<_PendingResourceLoad> loads;
+	Util::FixedArray<_LoadMetaData> metaData;
 
 	/// async section to sync callbacks and pending list with thread
 	Threading::CriticalSection asyncSection;

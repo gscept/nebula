@@ -41,6 +41,8 @@ public:
     void SetAccess(CoreGraphics::GpuBufferTypes::Access access);
     /// get the resource access
 	CoreGraphics::GpuBufferTypes::Access GetAccess() const;
+    /// set if buffers should be created as copy sources
+    void SetBuffersCopySource(bool b);
     /// begin reading from the stream, read entire data
     virtual bool Open(const Resources::ResourceName& name);
     /// end reading from the stream, destroys loaded objects
@@ -88,7 +90,7 @@ private:
     {
         N2Coord        = (1<<0),      // 3 floats
         N2Normal       = (1<<1),      // 3 floats
-        N2NormalB4N   = (1<<2),      // 4 unsigned bytes, normalized
+        N2NormalB4N    = (1<<2),      // 4 unsigned bytes, normalized
         N2Uv0          = (1<<3),      // 2 floats
         N2Uv0S2        = (1<<4),      // 2 shorts, 4.12 fixed point
         N2Uv1          = (1<<5),      // 2 floats
@@ -97,12 +99,12 @@ private:
         N2Uv2S2        = (1<<8),      // 2 shorts, 4.12 fixed point
         N2Uv3          = (1<<9),      // 2 floats
         N2Uv3S2        = (1<<10),     // 2 shorts, 4.12 fixed point
-        N2Color        = (1<<11),     // 4 floats
-        N2ColorUB4N    = (1<<12),     // 4 unsigned bytes, normalized
-        N2Tangent      = (1<<13),     // 3 floats
-        N2TangentB4N  = (1<<14),     // 4 unsigned bytes, normalized
-        N2Binormal     = (1<<15),     // 3 floats
-        N2BinormalB4N = (1<<16),     // 4 unsigned bytes, normalized
+        N2Tangent      = (1<<11),     // 3 floats
+        N2TangentB4N   = (1<<12),     // 4 unsigned bytes, normalized
+        N2Binormal     = (1<<13),     // 3 floats
+        N2BinormalB4N  = (1<<14),     // 4 unsigned bytes, normalized
+        N2Color        = (1<<15),     // 4 floats
+        N2ColorUB4N    = (1<<16),     // 4 unsigned bytes, normalized
         N2Weights      = (1<<17),     // 4 floats
         N2WeightsUB4N  = (1<<18),     // 4 unsigned bytes, normalized
         N2JIndices     = (1<<19),     // 4 floats
@@ -121,6 +123,7 @@ private:
 	CoreGraphics::BufferId vbo;
 	CoreGraphics::BufferId ibo;
     CoreGraphics::VertexLayoutId layout;
+    bool copySourceFlag;
 
     Util::Array<CoreGraphics::PrimitiveGroup> primGroups;
     void* mapPtr;
@@ -283,6 +286,15 @@ inline CoreGraphics::GpuBufferTypes::Access
 Nvx2StreamReader::GetAccess() const
 {
     return this->access;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+Nvx2StreamReader::SetBuffersCopySource(bool b)
+{
+    this->copySourceFlag = b;
 }
 
 } // namespace Legacy

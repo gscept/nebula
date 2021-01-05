@@ -30,6 +30,8 @@ Nvx2StreamReader::Nvx2StreamReader() :
     mapPtr(0),
 	ibo(BufferId::Invalid()),
 	vbo(BufferId::Invalid()),
+	layout(VertexLayoutId::Invalid()),
+	copySourceFlag(false),
     groupDataPtr(nullptr),
     vertexDataPtr(nullptr),
     indexDataPtr(nullptr),
@@ -212,12 +214,12 @@ Nvx2StreamReader::SetupVertexComponents()
                 case N2Uv3:          sem = VertexComponent::TexCoord;     fmt = VertexComponent::Float2; index = 3; break;
                 case N2Uv3S2:        sem = VertexComponent::TexCoord;     fmt = VertexComponent::Short2; index = 3; break;
                 */
-                case N2Color:        sem = VertexComponent::Color;        fmt = VertexComponent::Float4; break;
-                case N2ColorUB4N:    sem = VertexComponent::Color;        fmt = VertexComponent::UByte4N; break;
                 case N2Tangent:      sem = VertexComponent::Tangent;      fmt = VertexComponent::Float3; break;
                 case N2TangentB4N:   sem = VertexComponent::Tangent;      fmt = VertexComponent::Byte4N; break;
                 case N2Binormal:     sem = VertexComponent::Binormal;     fmt = VertexComponent::Float3; break;
                 case N2BinormalB4N:  sem = VertexComponent::Binormal;     fmt = VertexComponent::Byte4N; break;
+				case N2Color:        sem = VertexComponent::Color;        fmt = VertexComponent::Float4; break;
+				case N2ColorUB4N:    sem = VertexComponent::Color;        fmt = VertexComponent::UByte4N; break;
                 case N2Weights:      sem = VertexComponent::SkinWeights;  fmt = VertexComponent::Float4; break;
                 case N2WeightsUB4N:  sem = VertexComponent::SkinWeights;  fmt = VertexComponent::UByte4N; break;
                 case N2JIndices:     sem = VertexComponent::SkinJIndices; fmt = VertexComponent::Float4; break;
@@ -288,7 +290,7 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
     vboInfo.size = this->numVertices;
     vboInfo.elementSize = VertexLayoutGetSize(this->layout); 
     vboInfo.mode = CoreGraphics::DeviceLocal;
-    vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+    vboInfo.usageFlags = CoreGraphics::VertexBuffer | (this->copySourceFlag ? CoreGraphics::TransferBufferSource : 0);
 	vboInfo.data = this->vertexDataPtr;
 	vboInfo.dataSize = this->vertexDataSize;
 	this->vbo = CreateBuffer(vboInfo);
@@ -312,7 +314,7 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
     iboInfo.size = this->numIndices;
     iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index32);
     iboInfo.mode = CoreGraphics::DeviceLocal;
-    iboInfo.usageFlags = CoreGraphics::IndexBuffer;
+    iboInfo.usageFlags = CoreGraphics::IndexBuffer | (this->copySourceFlag ? CoreGraphics::TransferBufferSource : 0);
 	iboInfo.data = this->indexDataPtr;
 	iboInfo.dataSize = this->indexDataSize;
 	this->ibo = CreateBuffer(iboInfo);

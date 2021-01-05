@@ -26,6 +26,11 @@ public:
 	/// bind primitive group for currently bound mesh
 	void BindPrimitiveGroup(const IndexT primgroup);
 
+	struct StreamMeshLoadMetaData
+	{
+		bool copySource;
+	};
+
 private:
 	
 	/// perform load

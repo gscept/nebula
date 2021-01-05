@@ -70,13 +70,13 @@ ResourceStreamPool::LoadFallbackResources()
 	// load placeholder, don't load it async
 	if (this->placeholderResourceName.IsValid())
 	{
-		this->placeholderResourceId = this->CreateResource(this->placeholderResourceName, "system"_atm, nullptr, nullptr, true);
+		this->placeholderResourceId = this->CreateResource(this->placeholderResourceName, nullptr, 0, "system"_atm, nullptr, nullptr, true);
 	}
 
 	// load error, don't load it async
 	if (this->failResourceName.IsValid())
 	{
-		this->failResourceId = this->CreateResource(this->failResourceName, "system"_atm, nullptr, nullptr, true);
+		this->failResourceId = this->CreateResource(this->failResourceName, nullptr, 0, "system"_atm, nullptr, nullptr, true);
 	}
 }
 
@@ -219,6 +219,7 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 			// construct stream
 			Ptr<Stream> stream = IO::IoServer::Instance()->CreateStream(this->names[res.id.poolId].Value());
 			stream->SetAccessMode(Stream::ReadAccess);
+			_LoadMetaData& metaData = this->metaData[res.id.poolId];
 
 			// enter critical section
 			if (stream->Open())
@@ -241,6 +242,14 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 				this->states[res.id.poolId] = Resource::Failed;
 				n_printf("Failed to load resource %s\n", this->names[res.id.poolId].Value());
 			}
+
+			// free metadata
+			if (metaData.data != nullptr)
+			{
+				Memory::Free(Memory::ScratchHeap, metaData.data);
+				metaData.data = nullptr;
+				metaData.size = 0;
+			}
 		};
 
 		res.inflight = true;
@@ -255,6 +264,8 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 		// construct stream
 		Ptr<Stream> stream = IoServer::Instance()->CreateStream(this->names[res.id.poolId].Value());
 		stream->SetAccessMode(Stream::ReadAccess);
+
+		_LoadMetaData& metaData = this->metaData[res.id.poolId];
 		if (stream->Open())
 		{
 			ret = this->LoadFromStream(res.id, res.tag, stream, res.immediate);
@@ -275,6 +286,14 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 			ret = Failed;
 			n_printf("Failed to load resource %s\n", this->names[res.id.poolId].Value());
 		}
+
+		// free metadata
+		if (metaData.data != nullptr)
+		{
+			Memory::Free(Memory::ScratchHeap, metaData.data);
+			metaData.data = nullptr;
+			metaData.size = 0;
+		}
 	}	
 	return ret;
 }
@@ -283,7 +302,7 @@ ResourceStreamPool::PrepareLoad(_PendingResourceLoad& res)
 /**
 */
 Resources::ResourceId
-Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate)
+Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate)
 {
 	// this assert should maybe be removed in favor of putting things on a queue if called from another thread
 	n_assert(Threading::Thread::GetMyThreadId() == this->creatorThread);
@@ -309,6 +328,7 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 			this->tags.Resize(this->tags.Size() + ResourceIndexGrow);
 			this->states.Resize(this->states.Size() + ResourceIndexGrow);
 			this->loads.Resize(this->states.Size() + ResourceIndexGrow);
+			this->metaData.Resize(this->states.Size() + ResourceIndexGrow);
 		}
 
 		// add the resource name to the resource id
@@ -316,6 +336,21 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const Uti
 		this->usage[instanceId] = 1;
 		this->tags[instanceId] = tag;
 		this->states[instanceId] = Resource::Pending;
+
+		// allocate metadata if present
+		_LoadMetaData metaData;
+		if (loadInfo != nullptr)
+		{
+			metaData.data = Memory::Alloc(Memory::ScratchHeap, loadInfoSize);
+			metaData.size = loadInfoSize;
+			memcpy(metaData.data, loadInfo, loadInfoSize);
+		}
+		else
+		{
+			metaData.data = nullptr;
+			metaData.size = 0;
+		}
+		this->metaData[instanceId] = metaData;
 
 		// also add as pending resource
 		ret.poolId = instanceId;

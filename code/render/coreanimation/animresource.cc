@@ -18,7 +18,7 @@ StreamAnimationPool* animPool = nullptr;
 const AnimResourceId 
 CreateAnimation(const ResourceCreateInfo& info)
 {
-	return animPool->CreateResource(info.resource, info.tag, info.successCallback, info.failCallback, !info.async).As<AnimResourceId>();
+	return animPool->CreateResource(info.resource, nullptr, 0, info.tag, info.successCallback, info.failCallback, !info.async).As<AnimResourceId>();
 }
 
 //------------------------------------------------------------------------------

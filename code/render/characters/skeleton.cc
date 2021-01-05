@@ -16,7 +16,7 @@ StreamSkeletonPool* skeletonPool;
 const SkeletonId 
 CreateSkeleton(const ResourceCreateInfo& info)
 {
-	return skeletonPool->CreateResource(info.resource, info.tag, info.successCallback, info.failCallback, !info.async).As<SkeletonId>();
+	return skeletonPool->CreateResource(info.resource, nullptr, 0, info.tag, info.successCallback, info.failCallback, !info.async).As<SkeletonId>();
 }
 
 //------------------------------------------------------------------------------

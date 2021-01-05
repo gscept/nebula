@@ -16,7 +16,7 @@ ShaderPool* shaderPool;
 const ShaderId
 CreateShader(const ShaderCreateInfo& info)
 {
-	ShaderId ret = shaderPool->CreateResource(info.name, "render_system", nullptr, nullptr, true);
+	ShaderId ret = shaderPool->CreateResource(info.name, nullptr, 0, "render_system", nullptr, nullptr, true);
 	ret.resourceType = ShaderIdType;
 	return ret;
 }

@@ -37,9 +37,13 @@ public:
 	void Update(IndexT frameIndex);
 
 	/// create a new resource (stream-managed), which will be loaded at some later point, if not already loaded
-	Resources::ResourceId CreateResource(const ResourceName& id, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false);
+	Resources::ResourceId CreateResource(const ResourceName& res, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false);
 	/// overload which also takes an identifying tag, which is used to group-discard resources
-	Resources::ResourceId CreateResource(const ResourceName& id, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false);
+	Resources::ResourceId CreateResource(const ResourceName& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false);
+	/// create a new resource (stream-managed), which will be loaded at some later point, if not already loaded
+	template<class METADATA> Resources::ResourceId CreateResource(const ResourceName& res, const METADATA& metaData, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false);
+	/// overload which also takes an identifying tag, which is used to group-discard resources
+	template<class METADATA> Resources::ResourceId CreateResource(const ResourceName& res, const METADATA& metaData, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false);
 	/// discard resource (stream-managed)
 	void DiscardResource(const Resources::ResourceId res);
 	/// discard all resources by tag (stream-managed)
@@ -124,7 +128,35 @@ Resources::ResourceServer::CreateResource(const ResourceName& res, const Util::S
 	const Ptr<ResourceStreamPool>& loader = this->pools[this->extensionMap.ValueAtIndex(i)].downcast<ResourceStreamPool>();
 
 	// create container and cast to actual resource type
-	Resources::ResourceId id = loader->CreateResource(res, tag, success, failed, immediate);
+	Resources::ResourceId id = loader->CreateResource(res, nullptr, 0, tag, success, failed, immediate);
+	return id;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class METADATA>
+inline Resources::ResourceId
+ResourceServer::CreateResource(const ResourceName& res, const METADATA& metaData, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate)
+{
+	return this->CreateResource(res, metaData, "", success, failed, immediate);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class METADATA>
+inline Resources::ResourceId
+ResourceServer::CreateResource(const ResourceName& res, const METADATA& metaData, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate)
+{
+	// get resource loader by extension
+	Util::String ext = res.AsString().GetFileExtension();
+	IndexT i = this->extensionMap.FindIndex(ext);
+	n_assert_fmt(i != InvalidIndex, "No resource loader is associated with file extension '%s'", ext.AsCharPtr());
+	const Ptr<ResourceStreamPool>& loader = this->pools[this->extensionMap.ValueAtIndex(i)].downcast<ResourceStreamPool>();
+
+	// create container and cast to actual resource type
+	Resources::ResourceId id = loader->CreateResource(res, &metaData, sizeof(METADATA), tag, success, failed, immediate);
 	return id;
 }
 
@@ -324,6 +356,16 @@ inline Resources::ResourceId
 CreateResource(const ResourceName& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false)
 {
 	return ResourceServer::Instance()->CreateResource(res, tag, success, failed, immediate);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class METADATA>
+inline Resources::ResourceId
+CreateResource(const ResourceName& res, const METADATA& metaData, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success = nullptr, std::function<void(const Resources::ResourceId)> failed = nullptr, bool immediate = false)
+{
+	return ResourceServer::Instance()->CreateResource(res, metaData, tag, success, failed, immediate);
 }
 
 //------------------------------------------------------------------------------

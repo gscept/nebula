@@ -18,7 +18,7 @@ StreamModelPool* modelPool;
 const ModelId
 CreateModel(const ResourceCreateInfo& info)
 {
-	return modelPool->CreateResource(info.resource, info.tag, info.successCallback, info.failCallback, !info.async).As<ModelId>();
+	return modelPool->CreateResource(info.resource, nullptr, 0, info.tag, info.successCallback, info.failCallback, !info.async).As<ModelId>();
 }
 
 //------------------------------------------------------------------------------
