@@ -66,9 +66,9 @@ CommandLineArgs::GetCmdName() const
     Returns true if argument exists.
 */
 bool
-CommandLineArgs::HasArg(const String& name) const
+CommandLineArgs::HasArg(const String& name, const IndexT start) const
 {
-    IndexT index = this->args.FindIndex(name);
+    IndexT index = this->args.FindIndex(name, start);
     return (index != InvalidIndex);
 }
 
@@ -77,10 +77,10 @@ CommandLineArgs::HasArg(const String& name) const
     Returns index of argument. Throws an error if argument not found.
 */
 int
-CommandLineArgs::FindArgIndex(const String& name) const
+CommandLineArgs::FindArgIndex(const String& name, const IndexT start) const
 {
     n_assert(name.IsValid());
-    IndexT i = this->args.FindIndex(name);
+    IndexT i = this->args.FindIndex(name, start);
     if (InvalidIndex == i)
     {
         this->Error(name);
@@ -107,6 +107,33 @@ CommandLineArgs::GetString(const String& name, const String& defaultValue) const
 //------------------------------------------------------------------------------
 /**
 */
+Util::Array<Util::String>
+CommandLineArgs::GetStrings(const String& name, const String& defaultValue) const
+{
+	Util::Array<Util::String> ret;
+	if (this->HasArg(name))
+	{
+		IndexT start = 0;
+		IndexT index = this->FindArgIndex(name, start) + 1;
+		while (index != InvalidIndex)
+		{
+			ret.Append(this->args[index]);
+			start = index;
+			if (!this->HasArg(name, start))
+				break;
+			index = this->FindArgIndex(name, start) + 1;
+		}
+	}
+	else
+	{
+		ret.Append(defaultValue);
+	}
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 int
 CommandLineArgs::GetInt(const String& name, int defaultValue) const
 {
@@ -118,6 +145,33 @@ CommandLineArgs::GetInt(const String& name, int defaultValue) const
     {
         return defaultValue;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Array<int>
+CommandLineArgs::GetInts(const String& name, int defaultValue) const
+{
+	Util::Array<int> ret;
+	if (this->HasArg(name))
+	{
+		IndexT start = 0;
+		IndexT index = this->FindArgIndex(name, start) + 1;
+		while (index != InvalidIndex)
+		{
+			ret.Append(this->args[index].AsInt());
+			start = index;
+			if (!this->HasArg(name, start))
+				break;
+			index = this->FindArgIndex(name, start) + 1;
+		}
+	}
+	else
+	{
+		ret.Append(defaultValue);
+	}
+	return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -139,6 +193,33 @@ CommandLineArgs::GetFloat(const String& name, float defaultValue) const
 //------------------------------------------------------------------------------
 /**
 */
+Util::Array<float>
+CommandLineArgs::GetFloats(const String& name, float defaultValue) const
+{
+	Util::Array<float> ret;
+	if (this->HasArg(name))
+	{
+		IndexT start = 0;
+		IndexT index = this->FindArgIndex(name, start) + 1;
+		while (index != InvalidIndex)
+		{
+			ret.Append(this->args[index].AsFloat());
+			start = index;
+			if (!this->HasArg(name, start))
+				break;
+			index = this->FindArgIndex(name, start) + 1;
+		}
+	}
+	else
+	{
+		ret.Append(defaultValue);
+	}
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 bool
 CommandLineArgs::GetBool(const String& name, bool defaultValue) const
 {
@@ -150,6 +231,33 @@ CommandLineArgs::GetBool(const String& name, bool defaultValue) const
     {
         return defaultValue;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Array<bool>
+CommandLineArgs::GetBools(const String& name, bool defaultValue) const
+{
+	Util::Array<bool> ret;
+	if (this->HasArg(name))
+	{
+		IndexT start = 0;
+		IndexT index = this->FindArgIndex(name, start) + 1;
+		while (index != InvalidIndex)
+		{
+			ret.Append(this->args[index].AsBool());
+			start = index;
+			if (!this->HasArg(name, start))
+				break;
+			index = this->FindArgIndex(name, start) + 1;
+		}
+	}
+	else
+	{
+		ret.Append(defaultValue);
+	}
+	return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -181,6 +289,33 @@ CommandLineArgs::GetVec4(const String& name, const vec4& defaultValue) const
 //------------------------------------------------------------------------------
 /**
 */
+Util::Array<Math::vec4>
+CommandLineArgs::GetVec4s(const String& name, const Math::vec4& defaultValue) const
+{
+	Util::Array<Math::vec4> ret;
+	if (this->HasArg(name))
+	{
+		IndexT start = 0;
+		IndexT index = this->FindArgIndex(name, start) + 1;
+		while (index != InvalidIndex)
+		{
+			ret.Append(this->args[index].AsVec4());
+			start = index;
+			if (!this->HasArg(name, start))
+				break;
+			index = this->FindArgIndex(name, start) + 1;
+		}
+	}
+	else
+	{
+		ret.Append(defaultValue);
+	}
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 mat4
 CommandLineArgs::GetMat4(const String& name, const mat4& defaultValue) const
 {
@@ -192,6 +327,33 @@ CommandLineArgs::GetMat4(const String& name, const mat4& defaultValue) const
     {
         return defaultValue;
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Array<Math::mat4>
+CommandLineArgs::GetMat4s(const String& name, const Math::mat4& defaultValue) const
+{
+	Util::Array<Math::mat4> ret;
+	if (this->HasArg(name))
+	{
+		IndexT start = 0;
+		IndexT index = this->FindArgIndex(name, start) + 1;
+		while (index != InvalidIndex)
+		{
+			ret.Append(this->args[index].AsMat4());
+			start = index;
+			if (!this->HasArg(name, start))
+				break;
+			index = this->FindArgIndex(name, start) + 1;
+		}
+	}
+	else
+	{
+		ret.Append(defaultValue);
+	}
+	return ret;
 }
 #endif
     

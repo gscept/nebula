@@ -131,11 +131,11 @@ public:
     /// return iterator to end of array
     Iterator End() const;
     /// find identical element in array, return iterator
-    Iterator Find(const TYPE& elm) const;
+    Iterator Find(const TYPE& elm, const IndexT start = 0) const;
     /// find identical element in array, return index, InvalidIndex if not found
-    IndexT FindIndex(const TYPE& elm) const;
+    IndexT FindIndex(const TYPE& elm, const IndexT start = 0) const;
 	/// find identical element using a specific key type
-	template <typename KEYTYPE> IndexT FindIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const;
+	template <typename KEYTYPE> IndexT FindIndex(typename std::enable_if<true, const KEYTYPE&>::type elm, const IndexT start = 0) const;
     /// fill array range with element
     void Fill(IndexT first, SizeT num, const TYPE& elm);
     /// clear contents and preallocate with new attributes
@@ -1023,10 +1023,11 @@ Array<TYPE>::End() const
     @return         element iterator, or 0 if not found
 */
 template<class TYPE> typename Array<TYPE>::Iterator
-Array<TYPE>::Find(const TYPE& elm) const
+Array<TYPE>::Find(const TYPE& elm, const IndexT start) const
 {
+    n_assert(start <= this->count);
     IndexT index;
-    for (index = 0; index < this->count; index++)
+    for (index = start; index < this->count; index++)
     {
         if (this->elements[index] == elm)
         {
@@ -1045,10 +1046,11 @@ Array<TYPE>::Find(const TYPE& elm) const
     @return         index to element, or InvalidIndex if not found
 */
 template<class TYPE> IndexT
-Array<TYPE>::FindIndex(const TYPE& elm) const
+Array<TYPE>::FindIndex(const TYPE& elm, const IndexT start) const
 {
+    n_assert(start <= this->count);
     IndexT index;
-    for (index = 0; index < this->count; index++)
+    for (index = start; index < this->count; index++)
     {
         if (this->elements[index] == elm)
         {
@@ -1075,10 +1077,11 @@ Array<TYPE>::FindIndex(const TYPE& elm) const
 */
 template<class TYPE>
 template<typename KEYTYPE> inline IndexT
-Array<TYPE>::FindIndex(typename std::enable_if<true, const KEYTYPE&>::type elm) const
+Array<TYPE>::FindIndex(typename std::enable_if<true, const KEYTYPE&>::type elm, const IndexT start) const
 {
+    n_assert(start <= this->count);
 	IndexT index;
-	for (index = 0; index < this->count; index++)
+	for (index = start; index < this->count; index++)
 	{
 		if (this->elements[index] == elm)
 		{
