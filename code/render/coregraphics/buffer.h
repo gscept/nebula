@@ -20,6 +20,14 @@ namespace CoreGraphics
 
 ID_24_8_TYPE(BufferId);
 
+enum BufferAccessMode
+{
+    DeviceLocal,		// buffer can only be used by the GPU, typical use is for static geometry data that doesn't change
+    HostLocal,			// buffer can only be updated by the CPU and can be used for GPU transfer operations, typical use is transient copy buffers
+    HostToDevice,		// buffer can be updated on the CPU and sent to the GPU, typical use is for dynamic and frequent buffer updates
+    DeviceToHost		// buffer can be updated by the GPU and be read on the CPU, typical use is to map and read back memory
+};
+
 enum BufferUsageFlag
 {
     InvalidBufferType           = 0x0,
@@ -35,6 +43,15 @@ enum BufferUsageFlag
 };
 typedef uint BufferUsageFlags;
 
+enum BufferQueueSupport
+{
+    AutomaticQueueSupport       = 0x0,
+    GraphicsQueueSupport        = 0x1,
+    ComputeQueueSupport         = 0x2,
+    TransferQueueSupport        = 0x4
+};
+typedef uint BufferQueueSupportFlags;
+
 struct BufferCreateInfo
 {
     BufferCreateInfo()
@@ -44,6 +61,7 @@ struct BufferCreateInfo
         , byteSize(0)
         , mode(DeviceLocal)
         , usageFlags(InvalidBufferType)
+        , queueSupport(AutomaticQueueSupport)
         , data(nullptr)
         , dataSize(0)
     {}
@@ -54,6 +72,7 @@ struct BufferCreateInfo
     SizeT byteSize;             // if set, uses this for size, otherwise calculates the size from size and elementSize
     BufferAccessMode mode;
     BufferUsageFlags usageFlags;
+    BufferQueueSupportFlags queueSupport;
     void* data;
     uint dataSize;
 };

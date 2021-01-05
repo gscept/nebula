@@ -96,6 +96,7 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
 	rwb3Info.elementSize = sizeof(ClusterGenerate::ClusterAABB);
 	rwb3Info.mode = BufferAccessMode::DeviceLocal;
 	rwb3Info.usageFlags = CoreGraphics::ReadWriteBuffer;
+	rwb3Info.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
 	state.clusterBuffer = CreateBuffer(rwb3Info);
 	state.constantBuffer = ShaderCreateConstantBuffer(state.clusterShader, "ClusterUniforms");
 

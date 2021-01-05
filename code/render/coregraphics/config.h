@@ -122,13 +122,6 @@ enum QueryType
 	NumQueryTypes
 };
 
-enum BufferAccessMode
-{
-	DeviceLocal,		// buffer can only be used by the GPU, typical use is for static geometry data that doesn't change
-	HostLocal,			// buffer can only be updated by the CPU and can be used for GPU transfer operations, typical use is transient copy buffers
-	HostToDevice,		// buffer can be updated on the CPU and sent to the GPU, typical use is for dynamic and frequent buffer updates
-	DeviceToHost		// buffer can be updated by the GPU and be read on the CPU, typical use is to map and read back memory
-};
 
 //------------------------------------------------------------------------------
 /**

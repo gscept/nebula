@@ -111,6 +111,7 @@ DecalContext::Create()
 	rwbInfo.elementSize = sizeof(DecalsCluster::DecalIndexLists);
 	rwbInfo.mode = BufferAccessMode::DeviceLocal;
 	rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
+	rwbInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
 	decalState.clusterDecalIndexLists = CreateBuffer(rwbInfo);
 
 	rwbInfo.name = "DecalLists";

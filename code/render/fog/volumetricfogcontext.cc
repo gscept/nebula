@@ -115,6 +115,7 @@ VolumetricFogContext::Create()
 	rwbInfo.elementSize = sizeof(Volumefog::FogIndexLists);
 	rwbInfo.mode = BufferAccessMode::DeviceLocal;
 	rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
+	rwbInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
 	fogState.clusterFogIndexLists = CreateBuffer(rwbInfo);
 
 	rwbInfo.name = "FogLists";

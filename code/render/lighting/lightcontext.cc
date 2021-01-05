@@ -255,6 +255,7 @@ LightContext::Create()
 	rwbInfo.elementSize = sizeof(LightsCluster::LightIndexLists);
 	rwbInfo.mode = BufferAccessMode::DeviceLocal;
 	rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
+	rwbInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
 	clusterState.clusterLightIndexLists = CreateBuffer(rwbInfo);
 
 	rwbInfo.name = "LightLists";
