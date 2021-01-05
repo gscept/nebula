@@ -38,6 +38,8 @@ public:
     static int Exchange(int volatile* dest, int value);
     /// interlocked compare-exchange
     static int CompareExchange(int volatile* dest, int exchange, int comparand);
+    /// interlocked exchange of two int32 or single 64 bit (pointer or integer) values simultaneously
+    static bool CompareExchange128(int64_t volatile* dest, int64_t* exchange, int64_t* comparand);
     /// interlocked compare-exchange pointer
     static void* CompareExchangePointer(void* volatile* dest, void* exchange, void* comparand);
 };
@@ -139,6 +141,15 @@ __forceinline int
 Win32Interlocked::CompareExchange(int volatile* dest, int exchange, int comparand)
 {
     return _InterlockedCompareExchange((volatile LONG*)dest, exchange, comparand);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool 
+Win32Interlocked::CompareExchange128(int64_t volatile* dest, int64_t* exchange, int64_t* comparand)
+{
+    return _InterlockedCompareExchange128(dest, exchange[0], exchange[1], comparand);
 }
 
 //------------------------------------------------------------------------------
