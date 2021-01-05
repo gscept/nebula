@@ -25,6 +25,10 @@
 #include "util/stringatom.h"
 #include "io/assignregistry.h"
 #include "io/schemeregistry.h"
+#include "http/httpclientregistry.h"
+#include "archfs/archivefilesystem.h"
+#include "io/cache/streamcache.h"
+
 
 //------------------------------------------------------------------------------
 namespace IO
@@ -87,7 +91,7 @@ public:
     /// return the last write-time of a file
     FileTime GetFileWriteTime(const URI& path) const;
     /// read contents of file and return as string
-    Util::String ReadFile(const URI& path) const;
+    static bool ReadFile(const URI& path, Util::String & contents);
     /// return native path
     static Util::String NativePath(const Util::String& path);
 
@@ -108,9 +112,11 @@ private:
     static Threading::CriticalSection archiveCriticalSection;
     static bool StandardArchivesMounted;
     
+    Ptr<Http::HttpClientRegistry> httpClientRegistry;
     Ptr<AssignRegistry> assignRegistry;
     Ptr<SchemeRegistry> schemeRegistry;
     Ptr<FileWatcher> watcher;
+    Ptr<StreamCache> streamCache;
     static Threading::CriticalSection assignCriticalSection;
     static Threading::CriticalSection schemeCriticalSection;
     static Threading::CriticalSection watcherCriticalSection;
@@ -118,9 +124,6 @@ private:
 
 //------------------------------------------------------------------------------
 /**
-    NOTE: on platforms which provide transparent archive access this method
-    is point less (the archiveFileSystemEnabled flag will be ignored, and
-    IsArchiveFileSystemEnabled() will always return false).
 */
 inline void
 IoServer::SetArchiveFileSystemEnabled(bool b)
@@ -137,11 +140,7 @@ IoServer::SetArchiveFileSystemEnabled(bool b)
 inline bool
 IoServer::IsArchiveFileSystemEnabled() const
 {
-    #if NEBULA_NATIVE_ARCHIVE_SUPPORT
-        return false;
-    #else
-        return this->archiveFileSystemEnabled;
-    #endif
+    return this->archiveFileSystemEnabled && ArchiveFileSystem::Instance()->HasArchives();
 }
 
 } // namespace IO

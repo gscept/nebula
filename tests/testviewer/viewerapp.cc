@@ -90,7 +90,6 @@ SimpleViewerApplication::Open()
     if (Application::Open())
     {
 #if __NEBULA_HTTP__
-
         // setup debug subsystem
         this->debugInterface = Debug::DebugInterface::Create();
         this->debugInterface->Open();
@@ -99,6 +98,9 @@ SimpleViewerApplication::Open()
         this->resMgr = Resources::ResourceServer::Create();
         this->inputServer = Input::InputServer::Create();
         this->ioServer = IO::IoServer::Create();
+#ifdef USE_GITHUB_DEMO        
+        this->ioServer->MountArchive("root:export");
+#endif
 
 #if NEBULA_ENABLE_PROFILING
         Profiling::ProfilingRegisterThread();

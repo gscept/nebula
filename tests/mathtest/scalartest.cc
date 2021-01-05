@@ -126,12 +126,10 @@ void ScalarTest::Run()
     RUN_TEST_PARAM1(n_log2,  1.0, 0.0);
     RUN_TEST_PARAM1(n_log2,  2.0, 1.0);
     RUN_TEST_PARAM1(n_log2, 100.0, 6.6438561897747276615228717066083);
-#ifndef __WII__
     // n_exp
     RUN_TEST_PARAM1(n_exp,  0.0, 1.0);
     RUN_TEST_PARAM1(n_exp,  0.5, 1.6487212707001281468486507878142);
     RUN_TEST_PARAM1(n_exp,  1.0, 2.7182818284590452353602874713527);
-#endif
     // n_frnd
     RUN_TEST_PARAM1(n_frnd,  -3.0, -3.0);
     RUN_TEST_PARAM1(n_frnd,  -3.1, -3.0);

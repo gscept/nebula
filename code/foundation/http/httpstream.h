@@ -9,9 +9,6 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    
 #include "core/config.h"
-
-// HttpStream not implemented on Wii
-#if __NEBULA_HTTP_FILESYSTEM__
 #include "io/memorystream.h"
 #include "http/httpclient.h"
 
@@ -29,8 +26,34 @@ public:
     
     /// open the stream
     virtual bool Open();
+
+    ///
+    void SetRetries(int count);
+    ///
+    int GetRetries() const;
+
+private:
+    // amount of retries for slow servers (503 responses)
+    int retries;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+HttpStream::SetRetries(int count)
+{
+    this->retries = count;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline int
+HttpStream::GetRetries() const
+{
+    return this->retries;
+}
 
 } // namespace Http
 //------------------------------------------------------------------------------
-#endif

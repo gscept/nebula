@@ -6,7 +6,7 @@
     Nebula's scalar datatype.
 
     NOTE: do not add CRT math function calls to this call, but instead
-    into the platform specific headers (for instance, on the Wii the sinf()
+    into the platform specific headers 
     functions are called and must be placed into a .cc file, not into the
     header.
 

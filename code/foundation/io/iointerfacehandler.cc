@@ -41,10 +41,6 @@ IoInterfaceHandler::Open()
 {
     InterfaceHandlerBase::Open();
     this->ioServer = IO::IoServer::Create();
-    #if __NEBULA_HTTP_FILESYSTEM__
-    this->httpClientRegistry = Http::HttpClientRegistry::Create();
-    this->httpClientRegistry->Setup();
-    #endif
 }
 
 //------------------------------------------------------------------------------
@@ -56,10 +52,6 @@ IoInterfaceHandler::Open()
 void
 IoInterfaceHandler::Close()
 {
-    #if __NEBULA_HTTP_FILESYSTEM__
-    this->httpClientRegistry->Discard();
-    this->httpClientRegistry = nullptr;
-    #endif
     this->ioServer = nullptr;
     InterfaceHandlerBase::Close();
 }

@@ -147,7 +147,7 @@ Im3dContext::Create()
 
     CoreGraphics::BufferCreateInfo vboInfo;
     vboInfo.name = "Im3D VBO"_atm;
-    vboInfo.size = 1000 * 3;
+    vboInfo.size = 100000 * 3;
     vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(imState.vlo);
     vboInfo.mode = CoreGraphics::HostToDevice;
     vboInfo.usageFlags = CoreGraphics::VertexBuffer;
@@ -408,7 +408,7 @@ CollectByFilter(ShaderProgramId const & shader, PrimitiveTopology::Code topology
             primitive.SetBaseIndex(0);
             primitive.SetNumVertices(drawList.m_vertexCount);
             primitive.SetBaseVertex(vertexCount);
-            CoreGraphics::SetPrimitiveGroup(primitive);            
+            CoreGraphics::SetPrimitiveGroup(primitive);
             CoreGraphics::Draw();
 
             vertexBufferOffset += vertexBufferSize;

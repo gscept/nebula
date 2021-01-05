@@ -79,7 +79,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
     void* srcData = stream->MemoryMap();
     uint srcDataSize = stream->GetSize();
 
-    static const int NumBasicLods = immediate ? 1000 : 5;
+    const int NumBasicLods = immediate ? 1000 : 5;
 
     // load using gliml
     gliml::context ctx;

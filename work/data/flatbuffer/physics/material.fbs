@@ -1,0 +1,60 @@
+//------------------------------------------------------------------------------
+//
+//    Physics types for flatbuffer
+//
+//    (C) 2020 Individual contributors, see AUTHORS file
+
+include "foundation/math.fbs";
+namespace Physics;
+
+enum CollisionFeedback : byte
+{
+    /// callbacks for begin, persist, and end collision
+    Full   = 0,
+    /// only on first contact
+    Single         = 1
+}
+
+enum CollsionGroups : byte
+{
+    Default = 0,    
+    Static = 1,
+    Kinematic = 2,
+    Debris = 3,
+    SensorTrigger = 4,
+    Characters = 5,    
+}
+
+enum MeshTopology :  byte
+{
+    Convex = 0,    
+    ConvexHull = 1,
+    Triangles = 2,
+    HeightField = 3,
+}
+
+enum ColliderType : byte
+{
+    Sphere = 0,
+    Cube = 1,    
+    Capsule = 2,
+    Plane = 3,
+    Mesh = 4
+}
+
+table MaterialDefinition
+{
+    name : string;
+    density : float = 1.0;
+    restitution : float = 1.0;
+    staticFriction : float = 0.5;
+    dynamicFriction : float = 0.5;
+}
+
+table Materials
+{
+    entries : [MaterialDefinition];
+}
+root_type Materials;
+file_identifier "PMAT";
+file_extension "pmat";

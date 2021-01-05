@@ -56,7 +56,7 @@ VectorTest::Run()
 
     // test 16-byte alignment of embedded members on the stack, if we use SSE/SSE2 on windows or
     // xbox or ps3
-#if (__WIN32__ && !defined(_XM_NO_INTRINSICS_)) || __XBOX360__ || __PS3__    
+#if (__WIN32__ && !defined(_XM_NO_INTRINSICS_))
     {
         testStackAlignment16<vector>(this);
     }

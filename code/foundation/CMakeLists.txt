@@ -2,15 +2,26 @@
 # Foundation
 #-------------------------------------------------------------------------------
 
+FIND_PACKAGE(CURL)
+
 nebula_begin_module(foundation)
     if(FIPS_LINUX)
         fips_libs(uuid cjson stdc++fs)
     endif()
     fips_vs_warning_level(3)
     fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-    fips_deps(nebula-libs zlib tinyxml)
+    fips_deps(nebula-libs tinyxml)
+    
     if(FIPS_WINDOWS)
+        fips_libs(curl)
         fips_deps(StackWalker)
+    else()
+	if(CURL_FOUND)
+           fips_include_directories(${CURL_INCLUDE_DIR})
+           fips_deps(${CURL_LIBRARY_RELEASE})
+	else()
+	   MESSAGE(FATAL_ERROR "libcurl not found!")
+	endif()
     endif()
         fips_files(foundation/stdneb.h foundation/stdneb.cc)
         fips_dir(core)
@@ -187,33 +198,52 @@ nebula_begin_module(foundation)
             xmlreader.h
             xmlwriter.cc
             xmlwriter.h
-            zipfs/ziparchive.cc
-            zipfs/ziparchive.h
-            zipfs/zipdirentry.cc
-            zipfs/zipdirentry.h
-            zipfs/zipfileentry.cc
-            zipfs/zipfileentry.h
-            zipfs/zipfilestream.cc
-            zipfs/zipfilestream.h
-            zipfs/zipfilesystem.cc
-            zipfs/zipfilesystem.h
-            debug/consolepagehandler.cc
-            debug/consolepagehandler.h
-            debug/iopagehandler.cc
-            debug/iopagehandler.h
-            archfs/archive.cc
-            archfs/archive.h
-            archfs/archivebase.cc
-            archfs/archivebase.h
-            archfs/archivefilesystem.cc
-            archfs/archivefilesystem.h
-            archfs/archivefilesystembase.cc
-            archfs/archivefilesystembase.h
             util/bxmlfilestructs.h
             util/bxmlloaderutil.cc
             util/bxmlloaderutil.h
             #fixme. these have to be nidld
             iointerfaceprotocol.cc
+        )
+        fips_dir(io/zipfs)
+        fips_files(ziparchive.cc
+            ziparchive.h
+            zipdirentry.cc
+            zipdirentry.h
+            zipfileentry.cc
+            zipfileentry.h
+            zipfilestream.cc
+            zipfilestream.h
+            zipfilesystem.cc
+            zipfilesystem.h
+            ionebula3.cc
+            ionebula3.h
+        )
+        fips_dir(io/archfs)
+        fips_files(
+            archive.cc
+            archive.h
+            archivebase.cc
+            archivebase.h
+            archivefilesystem.cc
+            archivefilesystem.h
+            archivefilesystembase.cc
+            archivefilesystembase.h
+        )
+        fips_dir(io/cache)
+        fips_files(
+            streamcache.cc
+            streamcache.h
+            cachedstream.cc
+            cachedstream.h
+            cachedstreamtypes.cc
+            cachedstreamtypes.h
+        )
+        fips_dir(io/debug)
+        fips_files(
+            consolepagehandler.cc
+            consolepagehandler.h
+            iopagehandler.cc
+            iopagehandler.h
         )
         fips_dir(io/base)
         fips_files(
@@ -347,12 +377,15 @@ nebula_begin_module(foundation)
             socket/ipaddress.h
             socket/socket.cc
             socket/socket.h
-            tcp/stdtcpclient.cc
-            tcp/stdtcpclient.h
-            tcp/stdtcpclientconnection.cc
-            tcp/stdtcpclientconnection.h
-            tcp/stdtcpserver.cc
-            tcp/stdtcpserver.h
+        )
+        fips_dir(net/tcp)
+        fips_files(
+            stdtcpclient.cc
+            stdtcpclient.h
+            stdtcpclientconnection.cc
+            stdtcpclientconnection.h
+            stdtcpserver.cc
+            stdtcpserver.h
         )
         fips_dir(profiling)
         fips_files(
@@ -384,6 +417,10 @@ nebula_begin_module(foundation)
             defaulthttprequesthandler.h
             httpclient.cc
             httpclient.h
+	    simple/nebulahttpclient.cc
+	    simple/nebulahttpclient.h
+	    curl/curlhttpclient.cc
+	    curl/curlhttpclient.h
             httpclientregistry.cc
             httpclientregistry.h
             httpmethod.h

@@ -3,7 +3,6 @@
 //  (C) 2008 Radon Labs GmbH
 //------------------------------------------------------------------------------
 #include "stdneb.h"
-#if !__PS3__
 #include "delegatetabletest.h"
 #include "io/iointerfaceprotocol.h"
 #include "messaging/delegatetable.h"
@@ -61,4 +60,4 @@ DelegateTableTest::Run()
 }    
 
 } // namespace Test
-#endif
+

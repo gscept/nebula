@@ -85,7 +85,6 @@ Vec3Test::Run()
     v2.z = 7.0f;
     VERIFY(v2 == vec3(5.0f, 6.0f, 7.0f));
 
-#ifndef __WII__
     // load and store aligned
     NEBULA_ALIGN16 const scalar fAlignedLoad[4] = { 1.0f, 2.0f, 3.0f, 4.0f };
     NEBULA_ALIGN16 scalar fAlignedStore[4];
@@ -152,11 +151,10 @@ print(v2);
 print(v2);
     //VERIFY(float4equal(v2, float4(-1.0f, 0.003922f, 1.0f, 2.0f)));
 */
-#endif
 
     // test 16-byte alignment of embedded members on the stack, if we use SSE/SSE2 on windows or
     // xbox or ps3
-#if (__WIN32__ && !defined(_XM_NO_INTRINSICS_)) || __XBOX360__ || __PS3__    
+#if (__WIN32__ && !defined(_XM_NO_INTRINSICS_))
     {
         testStackAlignment16<vec3>(this);
     }

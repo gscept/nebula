@@ -43,6 +43,9 @@ public:
     virtual void Unmount(const Ptr<Archive>& archive);
     /// return true if an archive is mounted
     bool IsMounted(const URI& uri) const;
+
+    /// Any archives mounted?
+    bool HasArchives() const;
     
     /// get an array of all mounted archives
     Util::Array<Ptr<Archive> > GetMountedArchives() const;

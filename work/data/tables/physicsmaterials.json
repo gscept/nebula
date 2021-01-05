@@ -1,0 +1,11 @@
+{
+	"entries": [
+		{
+			name: "default",
+			density: 1.0,
+			restitution: 0.7,
+			staticFriction: 0.5,
+			dynamicFriction: 0.5
+		}
+	]
+}

@@ -18,7 +18,7 @@
 
 // platform secific stuff for handling/suppress "unused-argument"-warnings
 #if NEBULA_DEBUG
-#if (__XBOX360__ || __WIN32__)
+#if __WIN32__
 #pragma warning( push )
 // warning unused param
 #pragma warning(disable: 4189)
@@ -471,7 +471,7 @@ Ptr<TYPE>::HashCode() const
 
 //------------------------------------------------------------------------------
 
-#if (__XBOX360__ || __WIN32__) && NEBULA_DEBUG
+#if __WIN32__ && NEBULA_DEBUG
 #pragma warning( pop )
 #endif
 #ifdef NEBULA_UNUSED_ATTR

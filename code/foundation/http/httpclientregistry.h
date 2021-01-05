@@ -10,8 +10,7 @@
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
-// HttpClientRegistry not implemented on the Wii
-#if __NEBULA_HTTP_FILESYSTEM__
+
 #include "core/refcounted.h"
 #include "core/singleton.h"
 #include "http/httpclient.h"
@@ -70,4 +69,3 @@ HttpClientRegistry::IsValid() const
 
 } // namespace Http
 //------------------------------------------------------------------------------
-#endif

@@ -103,37 +103,11 @@ print(const vec4 &vec, const char *msg)
 __forceinline void
 print( const mat4& mat )
 {
-#if (__WIN32__ || __XBOX360__ || __WII__ || __linux__)
+#if (__WIN32__ || __linux__)
     print(mat.row0);
     print(mat.row1);
     print(mat.row2);
     print(mat.row3);
-#elif __PS3__
-/*
-    inline const Vector4 Matrix4::getRow( int row ) const
-    {
-        return Vector4( mCol0.getElem( row ), mCol1.getElem( row ), mCol2.getElem( row ), mCol3.getElem( row ) );
-    }
-    inline const Vector4 Matrix4::getRow( int row ) const
-    {
-        return Vector4( mCol0.getElem( row ), mCol1.getElem( row ), mCol2.getElem( row ), mCol3.getElem( row ) );
-    }
-    inline void print( const Matrix4 & mat )
-    {
-        print( mat.getRow( 0 ) );
-        print( mat.getRow( 1 ) );
-        print( mat.getRow( 2 ) );
-        print( mat.getRow( 3 ) );
-    }
-
-    our mat4::getrow0 is actually a getcol, since this matrix is column-major-form, look at
-    vectormath_aos.h declaration of Matrix4
-*/
-    // yes, looks weird, rows and cols seem to be mixed, look at the above matrix-funcs from mat_aos.h
-    print(vec4(mat.row0.x, mat.row1.x, mat.row2.x, mat.row3.x));
-    print(vec4(mat.row0.y, mat.row1.y, mat.row2.y, mat.row3.y));
-    print(vec4(mat.row0.z, mat.row1.z, mat.row2.z, mat.row3.z));
-    print(vec4(mat.row0.w, mat.row1.w, mat.row2.w, mat.row3.w));
 #else
 #  error unimplemented platform
 #endif

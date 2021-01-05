@@ -18,8 +18,11 @@ int main(int argc, char**argv)
     // create Nebula runtime
     Ptr<CoreServer> coreServer = CoreServer::Create();
     coreServer->SetAppName(Util::StringAtom("Nebula Test Viewer"));
+#ifdef USE_GITHUB_DEMO
+    coreServer->SetRootDirectory("https://github.com/gscept/nebula-test-content/raw/master/");
+#endif
     coreServer->Open();
-    
+
     Tests::SimpleViewerApplication app;
     if (app.Open())
     {

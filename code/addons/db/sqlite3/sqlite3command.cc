@@ -338,20 +338,10 @@ Sqlite3Command::ReadRow()
                         int size = sqlite3_column_bytes(this->sqliteStatement, resultColumnIndex);
                         n_assert(size == sizeof(Math::mat4));
                         
-                        #if __WII__
-                        float* fPtr = (float*)ptr;
-                        Math::matrix44 wiiM(float4(fPtr[0], fPtr[1], fPtr[2], fPtr[3]),
-                                            float4(fPtr[4], fPtr[5], fPtr[6], fPtr[7]),
-                                            float4(fPtr[8], fPtr[9], fPtr[10], fPtr[11]),
-                                            float4(fPtr[12], fPtr[13], fPtr[14], fPtr[15]));                        
-                        byteOrder.ConvertInPlace<Math::matrix44>(wiiM);                    
-                        this->valueTable->SetMatrix44(valueTableColumnIndex, rowIndex, wiiM);                                            
-                        #else
                         Math::mat4 alignedVal;
                         alignedVal.loadu((scalar*)ptr);
                         byteOrder.ConvertInPlace<Math::mat4>(alignedVal);
                         this->valueTable->SetMat4(valueTableColumnIndex, rowIndex, alignedVal);                                            
-                        #endif                        
                     }                   
                     break;
 

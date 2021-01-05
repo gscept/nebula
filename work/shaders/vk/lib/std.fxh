@@ -29,8 +29,6 @@ const int DYNAMIC_OFFSET_GROUP = 6;
 	#define TEXTURE_SIZE(tex, mip) textureSize(tex, mip)
 #elif HLSL
 	#define TEXTURE_SIZE(tex, mip) tex.GetDimensions(mip)
-#elif PS3
-#elif WII
 #endif
 
 /// define a set of macros to convert from HLSL to GLSL
@@ -89,11 +87,6 @@ int2 NPixelSize(Texture2D tex, int lod)
 	val.xy = 1 / val.xy;
 	return val;
 }
-
-#elif PS3
-
-#elif Wii
-
 #endif // platform
 
 #endif // STD_H

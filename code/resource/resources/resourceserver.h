@@ -116,7 +116,7 @@ Resources::ResourceServer::CreateResource(const ResourceName& id, std::function<
 */
 inline Resources::ResourceId
 Resources::ResourceServer::CreateResource(const ResourceName& res, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate)
-{
+{  
     // get resource loader by extension
     Util::String ext = res.AsString().GetFileExtension();
     IndexT i = this->extensionMap.FindIndex(ext);

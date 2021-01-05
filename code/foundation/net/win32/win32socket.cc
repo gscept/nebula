@@ -47,11 +47,6 @@ Win32Socket::InitNetwork()
 {
     n_assert(!NetworkInitialized);
 
-    // first setup the Xbox networking stuff
-    #if __XBOX360__
-    Xbox360::Xbox360Network::SetupNetwork();
-    #endif
-
     // now proceed as usual
     WSADATA wsaData;
     int result = WSAStartup(MAKEWORD(2,2), &wsaData);

@@ -177,6 +177,15 @@ ArchiveFileSystemBase::IsMounted(const URI& uri) const
 
 //------------------------------------------------------------------------------
 /**
+*/
+bool
+ArchiveFileSystemBase::HasArchives() const
+{
+    return !this->archives.IsEmpty();
+}
+
+//------------------------------------------------------------------------------
+/**
     This method should return the archive which contains the provided 
     file URI. Override this method in a derived class!
 */
@@ -209,14 +218,11 @@ ArchiveFileSystemBase::FindArchiveWithDir(const URI& uri) const
 URI
 ArchiveFileSystemBase::ConvertFileToArchiveURIIfExists(const URI& uri) const
 {
-    if (uri.Scheme() == "file")
+    // make sure that derived method is called
+    Ptr<Archive> archive = this->FindArchiveWithFile(uri);
+    if (archive.isvalid())
     {
-        // make sure that derived method is called
-        Ptr<Archive> archive = this->FindArchiveWithFile(uri);
-        if (archive.isvalid())
-        {
-            return archive->ConvertToArchiveURI(uri);
-        }
+        return archive->ConvertToArchiveURI(uri);
     }
     // fallthrough: no match, return original uri
     return uri;
@@ -229,13 +235,10 @@ ArchiveFileSystemBase::ConvertFileToArchiveURIIfExists(const URI& uri) const
 URI
 ArchiveFileSystemBase::ConvertDirToArchiveURIIfExists(const URI& uri) const
 {
-    if (uri.Scheme() == "file")
+    Ptr<Archive> archive = this->FindArchiveWithDir(uri);
+    if (archive.isvalid())
     {
-        Ptr<Archive> archive = this->FindArchiveWithDir(uri);
-        if (archive.isvalid())
-        {
-            return archive->ConvertToArchiveURI(uri);
-        }
+        return archive->ConvertToArchiveURI(uri);
     }
     // fallthrough: no match, return original uri
     return uri;

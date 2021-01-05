@@ -10,6 +10,10 @@
 #include "io/jsonreader.h"
 #include "io/ioserver.h"
 #include "io/uri.h"
+#include "nflatbuffer/flatbufferinterface.h"
+#include "flatbuffers/flatbuffers.h"
+#include "flat/physics/material.h"
+#include "flat/physics/collider.h"
 #include "coregraphics/legacy/nvx2streamreader.h"
 #include "coregraphics/primitivegroup.h"
 
@@ -65,8 +69,8 @@ void
 StreamColliderPool::Setup()
 {
     ResourceStreamPool::Setup();
-    this->placeholderResourceName = "phys:system/box.npc";
-    this->failResourceName = "phys:system/box.npc";
+    this->placeholderResourceName = "phys:system/box.collider";
+    this->failResourceName = "phys:system/box.collider";
 }
 
 
@@ -86,7 +90,7 @@ StreamColliderPool::GetGeometry(ColliderId id)
 /**
 */
 static physx::PxGeometryHolder
-CreateMeshFromResource(MeshTopologyType type, Util::StringAtom resource, int primGroup)
+CreateMeshFromResource(MeshTopology type, Util::StringAtom resource, int primGroup)
 {
     physx::PxGeometryHolder holder;
 
@@ -99,8 +103,8 @@ CreateMeshFromResource(MeshTopologyType type, Util::StringAtom resource, int pri
         {
             // FIXME, cooking doesnt seem to like our meshes,
             // always create convex hull, even if already convex
-            case Convex:
-            case ConvexHull:
+            case MeshTopology_Convex:
+            case MeshTopology_ConvexHull:
             {
                 const CoreGraphics::PrimitiveGroup& group = nvx->GetPrimitiveGroups()[primGroup];
 
@@ -117,7 +121,7 @@ CreateMeshFromResource(MeshTopologyType type, Util::StringAtom resource, int pri
                 holder = PxConvexMeshGeometry(state.physics->createConvexMesh(input));
             }
             break;        
-            case Triangles:
+            case MeshTopology_Triangles:
             {
                 PxTolerancesScale scale;
                 PxCookingParams params(scale);
@@ -155,67 +159,63 @@ CreateMeshFromResource(MeshTopologyType type, Util::StringAtom resource, int pri
 /**
 */
 Resources::ResourcePool::LoadStatus
-StreamColliderPool::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom & tag, const Ptr<IO::Stream>& stream, bool immediate)
+StreamColliderPool::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
-    n_assert(stream.isvalid());    
-    n_assert(this->GetState(res) == Resources::Resource::Pending);    
+    n_assert(stream.isvalid());
+    n_assert(this->GetState(res) == Resources::Resource::Pending);
 
     /// during the load-phase, we can safetly get the structs
     this->EnterGet();
-    ColliderInfo &colliderInfo = this->allocator.Get<0>(res.resourceId);
+    ColliderInfo& colliderInfo = this->allocator.Get<0>(res.resourceId);
     this->LeaveGet();
-    Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
-    reader->SetStream(stream);
-    if (reader->Open())
-    {
-        if (reader->SetToNode("/collider"))
-        {
-            colliderInfo.type = (ColliderType) reader->GetInt("type");
-            
-            switch (colliderInfo.type)
-            {
-                case ColliderSphere:
-                {
-                    float radius = reader->GetFloat("radius");
-                    colliderInfo.geometry = PxSphereGeometry(radius);                    
-                }
-                break;
-                case ColliderCube:
-                {
-                    Math::vector extends;
-                    reader->Get(extends, "extends");
-                    colliderInfo.geometry = PxBoxGeometry(Neb2PxVec(extends));
-                }
-                break;
-                case ColliderPlane:
-                {
-                    // plane is defined via transform of the actor
-                    colliderInfo.geometry = PxPlaneGeometry();
-                }
-                break;
-                case ColliderCapsule:
-                {
-                    float radius = reader->GetFloat("radius");
-                    float halfHeight = reader->GetFloat("halfHeight");
-                    colliderInfo.geometry = PxCapsuleGeometry(radius, halfHeight);
-                }
-                break;
-                case ColliderMesh:
-                {
-                    MeshTopologyType type = (MeshTopologyType)reader->GetInt("meshType");
-                    int primgroup = reader->GetInt("primGroup");
+    PhysicsResource::ColliderT collider;
+    Flat::FlatbufferInterface::DeserializeFlatbuffer<PhysicsResource::Collider>(collider, (uint8_t*)stream->Map());
 
-                    Util::StringAtom resource = reader->GetStringAtom("file");
-                    colliderInfo.geometry = CreateMeshFromResource(type, resource, primgroup);
-                }
-                break;
-                default:
-                    n_assert("unknown collider type");
-            }            
-            return Resources::ResourcePool::Success;
-        }        
+    colliderInfo.type = collider.type;
+
+    switch (colliderInfo.type)
+    {
+        case ColliderType_Sphere:
+        {
+            float radius = collider.data.AsSphereCollider()->radius;
+            colliderInfo.geometry = PxSphereGeometry(radius);
+        }
+        break;
+        case ColliderType_Cube:
+        {
+            Math::vector extents = flatbuffers::UnPack(collider.data.AsBoxCollider()->extents());
+            colliderInfo.geometry = PxBoxGeometry(Neb2PxVec(extents));
+        }
+        break;
+        case ColliderType_Plane:
+        {
+            // plane is defined via transform of the actor
+            colliderInfo.geometry = PxPlaneGeometry();
+        }
+        break;
+        case ColliderType_Capsule:
+        {
+            auto capsule = collider.data.AsCapsuleCollider();
+            float radius = capsule->radius;
+            float halfHeight = capsule->halfheight;
+            colliderInfo.geometry = PxCapsuleGeometry(radius, halfHeight);
+        }
+        break;
+        case ColliderType_Mesh:
+        {
+            auto mesh = collider.data.AsMeshCollider();
+            MeshTopology type = mesh->type;
+            int primgroup = mesh->primGroup;
+
+            Util::StringAtom resource = mesh->file;
+            colliderInfo.geometry = CreateMeshFromResource(type, resource, primgroup);
+        }
+        break;
+        default:
+            n_assert("unknown collider type");
     }
-    return Resources::ResourcePool::Failed;
+    stream->Close();
+    return Resources::ResourcePool::Success;
 }
 
 //------------------------------------------------------------------------------
@@ -228,7 +228,7 @@ StreamColliderPool::Unload(const Resources::ResourceId id)
     ColliderInfo &colliderInfo = this->allocator.Get<0>(id.resourceId);
     this->LeaveGet();
 
-    if(colliderInfo.type == ColliderMesh)
+    if (colliderInfo.type == ColliderType_Mesh)
     {
         auto pxType = colliderInfo.geometry.getType();
         switch (pxType)

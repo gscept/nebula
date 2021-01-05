@@ -3,7 +3,7 @@
 /**
     @class Win32::Win32FSWrapper
 
-    Internal filesystem wrapper for Win32/Xbox360. All paths must be native
+    Internal filesystem wrapper for Win32. All paths must be native
     paths (i.e. not contain Nebula assigns).
 
     (C) 2007 Radon Labs GmbH
@@ -91,10 +91,9 @@ public:
     static bool IsDeviceName(const Util::String& str);
 
 private:
-    #if __WIN32__
+
     /// convert UTF8 path name to WideChar path name
     static void ConvertToWidePath(const Util::String& src, ushort* dst, SizeT dstNumBytes);
-    #endif
 };
 
 }; // namespace Win32

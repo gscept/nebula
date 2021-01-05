@@ -60,7 +60,6 @@ QuaternionTest::Run()
         VERIFY(a == quat(1.0f, 2.0f, 3.0f, 4.0f));
     }
 
-#ifndef __WII__
     // load and store aligned
     NEBULA_ALIGN16 const scalar fAlignedLoad[4] = { 1.0f, 2.0f, 3.0f, 4.0f };
     NEBULA_ALIGN16 scalar fAlignedStore[4];
@@ -92,11 +91,10 @@ QuaternionTest::Run()
     VERIFY(q0 == vec4(1.0f, 2.0f, 3.0f, 4.0f));
     q0.storeu(fUnalignedStore);
     VERIFY((fUnalignedStore[0] == 1.0f) && (fUnalignedStore[1] == 2.0f) && (fUnalignedStore[2] == 3.0f) && (fUnalignedStore[3] == 4.0f));
-#endif
 
     // test 16-byte alignment of embedded members on the stack, if we use SSE/SSE2 on windows or
     // xbox or ps3
-#if (__WIN32__ && !defined(_XM_NO_INTRINSICS_)) || __XBOX360__ || __PS3__    
+#if (__WIN32__ && !defined(_XM_NO_INTRINSICS_))
     {
         testStackAlignment16<quat>(this);
     }

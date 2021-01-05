@@ -46,7 +46,7 @@ private:
     Threading::CriticalSection* archiveCritSect;
     Util::StringAtom name;
     unzFile zipFileHandle;    // handle on zip file
-    unz_file_pos filePosInfo; // info about position in zip file
+    unz64_file_pos filePosInfo; // info about position in zip file
     uint uncompressedSize;    // uncompressed size of the file
 };
 

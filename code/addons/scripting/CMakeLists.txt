@@ -25,7 +25,7 @@ if(NOT FIPS_LINUX)
     target_link_directories(scripting PUBLIC ${PY_DBG_PATH} ${PY_OPT_PATH})
 else()
     target_link_directories(scripting PUBLIC ${Python_LIBRARY_DIRS})
-    target_link_libraries(scripting PUBLIC ${Python_LIBRARIES})
+    target_link_libraries(scripting ${Python_LIBRARIES})
 endif()
 
 if (CMAKE_VERSION VERSION_EQUAL 3.16 OR 

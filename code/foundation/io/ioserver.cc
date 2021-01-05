@@ -34,7 +34,7 @@ using namespace Util;
 /**
 */
 IoServer::IoServer() :
-    archiveFileSystemEnabled(false)
+    archiveFileSystemEnabled(true)
 {
     __ConstructSingleton;
 
@@ -91,6 +91,10 @@ IoServer::IoServer() :
     }
     #endif
     this->watcherCriticalSection.Leave();
+
+    this->httpClientRegistry = Http::HttpClientRegistry::Create();
+    this->httpClientRegistry->Setup();
+    this->streamCache = StreamCache::Create();
 }
 
 //------------------------------------------------------------------------------
@@ -98,6 +102,10 @@ IoServer::IoServer() :
 */
 IoServer::~IoServer()
 {
+    this->streamCache = nullptr;
+    this->httpClientRegistry->Discard();
+    this->httpClientRegistry = nullptr;
+
     this->watcher = nullptr;
     // unmount standard archives if this is the last instance
     if (StandardArchivesMounted && (this->archiveFileSystem->GetRefCount() == 1))
@@ -505,6 +513,18 @@ IoServer::ListFiles(const URI& uri, const String& pattern, bool asFullPath) cons
         }
     }
 
+    //FIXME this should be handled more generically
+    if (uri.Scheme() != "file")
+    {
+        Util::String fileList;
+        URI listFile = uri;
+        listFile.AppendLocalPath("/_files.lst");
+        if (IoServer::ReadFile(listFile, fileList))
+        {
+            return fileList.Tokenize("\n");
+        }
+    }
+
     // fallthrough: not contained in archive, handle conventionally
     result = FSWrapper::ListFiles(uri.GetHostAndLocalPath(), pattern);
     if (asFullPath)
@@ -573,15 +593,12 @@ IoServer::AddPathPrefixToArray(const String& prefix, const Array<String>& filena
 //------------------------------------------------------------------------------
 /**
 */
-Util::String
-IoServer::ReadFile(const URI& path) const
+bool
+IoServer::ReadFile(const URI& path, Util::String& contents)
 {
-    n_assert(this->FileExists(path));
-
-    // open file stream
+    // create file stream
     Ptr<Stream> stream = IoServer::Instance()->CreateStream(path);
 
-    Util::String ret;
     // open file
     if (stream->Open())
     {
@@ -590,12 +607,13 @@ IoServer::ReadFile(const URI& path) const
         SizeT size = stream->GetSize();
 
         // map to string        
-        ret.AppendRange((char*)data, size);
+        contents.Set((char*)data, size);
 
         // close stream
         stream->Close();
+        return true;
     }
-    return ret;
+    return false;
 }
 
 //------------------------------------------------------------------------------

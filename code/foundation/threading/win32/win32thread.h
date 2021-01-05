@@ -3,7 +3,7 @@
 /**
     @class Win32::Win32Thread
     
-    Win32/Xbox360 implementation of thread class.
+    Win32 implementation of thread class.
     
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file

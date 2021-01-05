@@ -21,6 +21,7 @@
 #include "physics/utils.h"
 #include "input/inputserver.h"
 #include "graphics/graphicsserver.h"
+#include "physics/debugui.h"
 
 using namespace Graphics;
 using namespace Visibility;
@@ -64,7 +65,7 @@ Spawn(const Math::mat4& trans, Math::vector linvel, Math::vector angvel)
 
     ModelContext::RegisterEntity(ent);
     ObservableContext::RegisterEntity(ent);
-    ModelContext::Setup(ent, "mdl:Buildings/castle_tower.n3", "NotA", [ent]()
+    ModelContext::Setup(ent, "mdl:test/castle_tower.n3", "NotA", [ent]()
                         {
                             ObservableContext::Setup(ent, VisibilityEntityType::Model);
                         });
@@ -158,12 +159,12 @@ void OpenScene()
 
     ground = Graphics::CreateEntity();
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(ground);
-    Models::ModelContext::Setup(ground, "mdl:environment/groundplane.n3", "ExampleScene", []()
+    Models::ModelContext::Setup(ground, "mdl:test/groundplane.n3", "ExampleScene", []()
                                 {
                                     Visibility::ObservableContext::Setup(ground, Visibility::VisibilityEntityType::Model);
                                 });
 
-    groundResource = Resources::CreateResource("phys:test/groundplane.np", "Viewer", nullptr, nullptr, true);
+    groundResource = Resources::CreateResource("phys:test/groundplane.actor", "Viewer", nullptr, nullptr, true);
     groundActor = Physics::CreateActorInstance(groundResource, Math::mat4(), false);
 
 
@@ -171,13 +172,13 @@ void OpenScene()
 
     tower = Graphics::CreateEntity();
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(tower);
-    Models::ModelContext::Setup(tower, "mdl:Buildings/castle_tower.n3", "ExampleScene", []()
+    Models::ModelContext::Setup(tower, "mdl:test/castle_tower.n3", "ExampleScene", []()
                                 {
                                     Visibility::ObservableContext::Setup(tower, Visibility::VisibilityEntityType::Model);
                                 });
     Models::ModelContext::SetTransform(tower, Math::translation(Math::vec3(2, 0, 0)));
 
-    towerResource = Resources::CreateResource("phys:test/tower.np", "Viewer", nullptr, nullptr, true);
+    towerResource = Resources::CreateResource("phys:test/tower.actor", "Viewer", nullptr, nullptr, true);
 
     gfxServer = GraphicsServer::Instance();
     camera = gfxServer->GetCurrentView()->GetCamera();
@@ -272,6 +273,7 @@ void RenderUI()
     }
     ImGui::EndChild();
     ImGui::End();
+    Physics::RenderUI();
 };
 
 } // namespace ExampleSceneData
