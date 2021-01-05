@@ -1143,7 +1143,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	VkApplicationInfo appInfo =
 	{
 		VK_STRUCTURE_TYPE_APPLICATION_INFO,
-		NULL,
+		nullptr,
 		App::Application::Instance()->GetAppTitle().AsCharPtr(),
 		2,															// application version
 		"Nebula",													// engine name
@@ -1192,7 +1192,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	VkInstanceCreateInfo instanceInfo =
 	{
 		VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,		// type of struct
-		NULL,										// pointer to next
+		nullptr,										// pointer to next
 		0,											// flags
 		&appInfo,									// application
 		(uint32_t)numLayers,
@@ -1202,7 +1202,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	};
 
 	// create instance
-	res = vkCreateInstance(&instanceInfo, NULL, &state.instance);
+	res = vkCreateInstance(&instanceInfo, nullptr, &state.instance);
 	if (res == VK_ERROR_INCOMPATIBLE_DRIVER)
 	{
 		n_error("Your GPU driver is not compatible with Vulkan.\n");
@@ -1442,10 +1442,10 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 	VkPipelineCacheCreateInfo cacheInfo =
 	{
 		VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
-		NULL,
+		nullptr,
 		0,
 		0,
-		NULL
+		nullptr
 	};
 
 	// create cache
