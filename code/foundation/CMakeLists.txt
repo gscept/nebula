@@ -199,34 +199,53 @@ nebula_begin_module(foundation)
 			xmlreader.h
 			xmlwriter.cc
 			xmlwriter.h
-			zipfs/ziparchive.cc
-			zipfs/ziparchive.h
-			zipfs/zipdirentry.cc
-			zipfs/zipdirentry.h
-			zipfs/zipfileentry.cc
-			zipfs/zipfileentry.h
-			zipfs/zipfilestream.cc
-			zipfs/zipfilestream.h
-			zipfs/zipfilesystem.cc
-			zipfs/zipfilesystem.h
-			debug/consolepagehandler.cc
-			debug/consolepagehandler.h
-			debug/iopagehandler.cc
-			debug/iopagehandler.h
-			archfs/archive.cc
-			archfs/archive.h
-			archfs/archivebase.cc
-			archfs/archivebase.h
-			archfs/archivefilesystem.cc
-			archfs/archivefilesystem.h
-			archfs/archivefilesystembase.cc
-			archfs/archivefilesystembase.h
 			util/bxmlfilestructs.h
 			util/bxmlloaderutil.cc
 			util/bxmlloaderutil.h
 			#fixme. these have to be nidld
 			iointerfaceprotocol.cc
 		)
+		fips_dir(io/zipfs)
+        fips_files(ziparchive.cc
+            ziparchive.h
+            zipdirentry.cc
+            zipdirentry.h
+            zipfileentry.cc
+            zipfileentry.h
+            zipfilestream.cc
+            zipfilestream.h
+            zipfilesystem.cc
+            zipfilesystem.h
+            ionebula3.cc
+            ionebula3.h
+        )
+        fips_dir(io/archfs)
+        fips_files(
+            archive.cc
+            archive.h
+            archivebase.cc
+            archivebase.h
+            archivefilesystem.cc
+            archivefilesystem.h
+            archivefilesystembase.cc
+            archivefilesystembase.h
+        )
+        fips_dir(io/cache)
+        fips_files(
+            streamcache.cc
+            streamcache.h
+            cachedstream.cc
+            cachedstream.h
+            cachedstreamtypes.cc
+            cachedstreamtypes.h
+		)
+		fips_dir(io/debug)
+        fips_files(
+            consolepagehandler.cc
+            consolepagehandler.h
+            iopagehandler.cc
+            iopagehandler.h
+        )
 		fips_dir(io/base)
 		fips_files(
 			gamecontentserverbase.cc
@@ -426,20 +445,34 @@ nebula_begin_module(foundation)
 			httpinterface.cc
 			httpmessagehandler.h
 			httpmessagehandler.cc
-			debug/helloworldrequesthandler.cc
-			debug/helloworldrequesthandler.h
-			debug/svgtestpagehandler.cc
-			debug/svgtestpagehandler.h
-			html/htmlelement.cc
-			html/htmlelement.h
-			html/htmlpagewriter.cc
-			html/htmlpagewriter.h
-			svg/svglinechartwriter.cc
-			svg/svglinechartwriter.h
-			svg/svgpagewriter.cc
-			svg/svgpagewriter.h
 			httpprotocol.cc
 			httpprotocol.h
+		)
+		fips_dir(http/curl)
+		fips_files(
+			curlhttpclient.cc
+			curlhttpclient.h
+		)
+		fips_dir(http/debug)
+		fips_files(
+			helloworldrequesthandler.cc
+			helloworldrequesthandler.h
+			svgtestpagehandler.cc
+			svgtestpagehandler.h
+		)
+		fips_dir(http/html)
+		fips_files(
+			htmlelement.cc
+			htmlelement.h
+			htmlpagewriter.cc
+			htmlpagewriter.h
+		)
+		fips_dir(http/svg)
+		fips_files(
+			svglinechartwriter.cc
+			svglinechartwriter.h
+			svgpagewriter.cc
+			svgpagewriter.h
 		)
 		fips_dir(ids)
 		fips_files(
