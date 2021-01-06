@@ -367,18 +367,10 @@ SetupPass(const PassId pid)
         TextureId tex = TextureViewGetTexture(loadInfo.depthStencilAttachment);
         images[i] = TextureViewGetVk(loadInfo.depthStencilAttachment);
         const CoreGraphics::TextureDimensions dims = TextureGetDimensions(tex);
-        VkRect2D& rect = loadInfo.rects[i];
-        rect.offset.x = 0;
-        rect.offset.y = 0;
-        rect.extent.width = dims.width;
-        rect.extent.height = dims.height;
-        VkViewport& viewport = loadInfo.viewports[i];
-        viewport.width = (float)dims.width;
-        viewport.height = (float)dims.height;
-        viewport.minDepth = 0;
-        viewport.maxDepth = 1;
-        viewport.x = 0;
-        viewport.y = 0;
+
+		width = Math::n_max(width, (uint32_t)dims.width);
+        height = Math::n_max(height, (uint32_t)dims.height);
+        layers = Math::n_max(layers, (uint32_t)TextureGetNumLayers(tex));
     }
 
     // setup render area
