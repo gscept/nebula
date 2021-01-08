@@ -90,6 +90,8 @@ private:
     DeviceMemory CreateBlock(void** outMappedPtr);
     // destroy block
     void DestroyBlock(DeviceMemory mem);
+    // allocate an exclusive block
+    Alloc AllocateExclusiveBlock(DeviceSize alignment, DeviceSize size);
 };
 
 extern Util::Array<MemoryPool> Pools;

@@ -125,6 +125,7 @@ MemoryPool::CreateBlock(void** outMappedPtr)
     VkDeviceMemory mem;
     VkResult res = vkAllocateMemory(dev, &allocInfo, nullptr, &mem);
     n_assert(res == VK_SUCCESS);
+	n_assert(mem != nullptr);
 
     if (this->mapMemory)
     {
@@ -141,11 +142,7 @@ MemoryPool::CreateBlock(void** outMappedPtr)
 void 
 MemoryPool::DestroyBlock(DeviceMemory mem)
 {
-    if (mem == nullptr)
-    {
-        n_warning("MemoryPool::DestroyBlock: Attempting to destroy empty block");
-        return;
-    }
+	n_assert(mem != nullptr);
     VkDevice dev = GetCurrentDevice();
     if (this->mapMemory)
     {
