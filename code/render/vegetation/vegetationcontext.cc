@@ -297,14 +297,14 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
 	idBufInfo.usageFlags = CoreGraphics::ReadWriteBuffer;
 	idBufInfo.elementSize = sizeof(Vegetation::InstanceUniforms);
 	idBufInfo.mode = CoreGraphics::DeviceLocal;
-	idBufInfo.size = vegetationState.MaxNumIndirectDraws;
+	idBufInfo.size = MaxNumIndirectDraws;
 	vegetationState.indirectGrassUniformBuffer = CoreGraphics::CreateBuffer(idBufInfo);
 
 	idBufInfo.name = "Indirect Mesh Draw Buffer";
 	idBufInfo.usageFlags = CoreGraphics::IndirectBuffer | CoreGraphics::ReadWriteBuffer;
 	idBufInfo.elementSize = sizeof(DrawIndexedCommand);
 	idBufInfo.mode = CoreGraphics::DeviceLocal;
-	idBufInfo.size = vegetationState.MaxNumIndirectDraws;
+	idBufInfo.size = MaxNumIndirectDraws;
 	vegetationState.indirectMeshDrawBuffer = CoreGraphics::CreateBuffer(idBufInfo);
 
 	// per-instance uniforms (fed through vertex)
@@ -312,7 +312,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
 	idBufInfo.usageFlags = CoreGraphics::ReadWriteBuffer;
 	idBufInfo.elementSize = sizeof(Vegetation::InstanceUniforms);
 	idBufInfo.mode = CoreGraphics::DeviceLocal;
-	idBufInfo.size = vegetationState.MaxNumIndirectDraws;
+	idBufInfo.size = MaxNumIndirectDraws;
 	vegetationState.indirectMeshUniformBuffer = CoreGraphics::CreateBuffer(idBufInfo);
 
 	idBufInfo.name = "Indirect Count Buffer";
