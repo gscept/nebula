@@ -153,9 +153,7 @@ DeleteRandom(int amount)
 */
 void OpenScene()
 {
-    Physics::Setup();
     physicsScene = Physics::CreateScene();
-    IndexT dummyMaterial = Physics::CreateMaterial("dummy"_atm, 0.8, 0.6, 0.3, 1.0);
 
     ground = Graphics::CreateEntity();
     Graphics::RegisterEntity<Models::ModelContext, Visibility::ObservableContext>(ground);

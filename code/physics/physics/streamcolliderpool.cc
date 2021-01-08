@@ -183,7 +183,7 @@ StreamColliderPool::LoadFromStream(const Resources::ResourceId res, const Util::
         break;
         case ColliderType_Cube:
         {
-            Math::vector extents = flatbuffers::UnPack(collider.data.AsBoxCollider()->extents());
+            Math::vector extents = flatbuffers::UnPack(collider.data.AsBoxCollider()->box->extents());
             colliderInfo.geometry = PxBoxGeometry(Neb2PxVec(extents));
         }
         break;

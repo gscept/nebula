@@ -15,6 +15,7 @@
 
 #define SerializeFlatbufferText(TYPE, ITEM) Flat::FlatbufferInterface::SerializeHelper<TYPE>(ITEM, TYPE##Identifier())
 #define SerializeFlatbufferTextDirect(TYPE, BUFFER) Flat::FlatbufferInterface::BufferToText(BUFFER, TYPE##Identifier())
+#define CompileFlatbuffer(TYPE, SOURCE, TARGET) Flat::FlatbufferInterface::Compile(SOURCE, TARGET, TYPE##Identifier())
 
 namespace Flat
 {
@@ -43,7 +44,11 @@ public:
     ///
     template<typename BaseT, typename ItemT> static void DeserializeFlatbuffer(ItemT& item, const uint8_t* buf);
 
+    ///
     static Util::String BufferToText(const uint8_t* buffer, Util::StringAtom identifier);
+
+    /// compile flatbuffer json to binary
+    static bool Compile(IO::URI const& source, IO::URI const& targetFolder, const char* ident);
 
 };
 

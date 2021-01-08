@@ -27,9 +27,15 @@ table CapsuleCollider
     halfheight: float;
 }
 
-struct BoxCollider
+// fugly workaround for unions not being able contain structs
+struct Box
 {
      extents : Flat.Vec3 (native_inline);
+}
+
+table BoxCollider
+{
+     box : Box;
 }
 
 union ColliderData
