@@ -187,11 +187,10 @@ public:
     struct VkUpdateBufferCommand
     {
         static const CommandType Type = UpdateBuffer;
-        bool deleteWhenDone;
         VkBuffer buf;
         VkDeviceSize offset;
         VkDeviceSize size;
-        uint32_t* data;
+        const void* data;
     };
 
     struct VkSetEventCommand
