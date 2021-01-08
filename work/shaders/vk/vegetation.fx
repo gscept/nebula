@@ -9,6 +9,7 @@
 #include "lib/techniques.fxh"
 #include "lib/indirectdraw.fxh"
 #include "lib/math.fxh"
+#include "lib/pbr.fxh"
 
 const int MAX_GRASS_TYPES = 4;
 const int MAX_MESH_TYPES = 4;
@@ -25,12 +26,7 @@ group(SYSTEM_GROUP) constant VegetationGenerateUniforms [ string Visibility = "C
 
     int NumGrassBlades;
     int NumGrassTypes;
-    // contains - x: distribution, y: -, z: slope threshold, w: height threshold
-    vec4 GrassParameters[MAX_GRASS_TYPES];
-
     int NumMeshTypes;
-    // contains - x: distribution, y: mesh index, z: slope threshold, w: height threshold
-    vec4 MeshParameters[MAX_MESH_TYPES];
 };
 
 const int MAX_MESH_INFOS = 8;
@@ -38,17 +34,35 @@ struct MeshInfo
 {
     int numLods;
     int vertexCount;
-    int vertexOffset;               // offset into global vertex buffer
     int indexCount;
-    int indexOffset;                // offset into global index buffer
+    float distribution;
+    float slopeThreshold;
+    float heightThreshold;
     ivec4 lodIndexOffsets;          // hold max 4 lods
     ivec4 lodVertexOffsets;
+    ivec4 lodIndexCount;
+    ivec4 lodVertexCount;
     vec4 lodDistances;
+    uint textureIndex;
 };
 
 group(SYSTEM_GROUP) constant MeshInfoUniforms [ string Visibility = "CS"; ]
 {
     MeshInfo MeshInfos[MAX_MESH_INFOS];
+};
+
+const int MAX_GRASS_INFOS = 8;
+struct GrassInfo
+{
+    float distribution;
+    float slopeThreshold;
+    float heightThreshold;
+    uint textureIndex;
+};
+
+group(SYSTEM_GROUP) constant GrassInfoUniforms [ string Visibility = "CS"; ]
+{
+    GrassInfo GrassInfos[MAX_GRASS_INFOS];
 };
 
 group(SYSTEM_GROUP) texture2D		GrassMaskArray[MAX_GRASS_TYPES];
@@ -137,7 +151,7 @@ csGenerateDraws()
     worldPos = floor(worldPos);
 
     // add some random offset to each patch to avoid a perfect grid pattern
-    float random = noise(worldPos);
+    float random = hash12(worldPos);
     vec2 randomOffset = vec2(sin(random), cos(random));
     worldPos += randomOffset;
 
@@ -166,17 +180,20 @@ csGenerateDraws()
         normal.z = MinHeight + (ht - hb) * (MaxHeight - MinHeight);
         normal = normalize(normal.xyz);
 
-        // go through grass types and generate uniforms, 
+        // go through grass types and generate uniforms
+        uint textureIndex = 0;
         for (int i = 0; i < NumGrassTypes; i++)
         {
-            vec4 params = GrassParameters[i];
+            GrassInfo grassInfo = GrassInfos[i];
+
             float mask = sampleGrassMask(i, PointSampler, samplePos).r;
 
             // calculate rules
-            bool heightCutoff = height < params.w;
-            bool angleCutoff = dot(normal, vec3(0, 1, 0)) > params.z;
+            bool heightCutoff = height < grassInfo.heightThreshold;
+            bool angleCutoff = dot(normal, vec3(0, 1, 0)) > grassInfo.slopeThreshold;
 
-            if (random > params.x && heightCutoff && angleCutoff)
+
+            if (random > grassInfo.distribution && heightCutoff && angleCutoff)
             {
                 uint entry = atomicAdd(NumGrassDraws, 1);
 
@@ -184,23 +201,24 @@ csGenerateDraws()
                 instanceUniform.position.xz = worldPos;
                 instanceUniform.position.y = height;
                 instanceUniform.random = random;
-                instanceUniform.sincos.x = sin(random);
-                instanceUniform.sincos.y = cos(random);
-                instanceUniform.textureIndex = i;
+                instanceUniform.sincos.x = randomOffset.x;
+                instanceUniform.sincos.y = randomOffset.y;
+                instanceUniform.textureIndex = textureIndex;
                 InstanceGrassUniforms[entry] = instanceUniform;
             }
+
+            textureIndex++;
         }
 
         // go through mesh types and generate uniforms and draws
         for (int i = 0; i < NumMeshTypes; i++)
         {
-            vec4 params = MeshParameters[i];
+            MeshInfo meshInfo = MeshInfos[i];
 
             // calculate rules
-            bool heightCutoff = height < params.w;
-            bool angleCutoff = dot(normal, vec3(0, 1, 0)) > params.z;
+            bool heightCutoff = height < meshInfo.heightThreshold;
+            bool angleCutoff = dot(normal, vec3(0, 1, 0)) > meshInfo.slopeThreshold;
 
-            MeshInfo meshInfo = MeshInfos[uint(params.y)];
             float mask = sampleMeshMask(i, PointSampler, samplePos).r;
             int lod = 0;
             for (int j = 0; j < meshInfo.numLods; j++)
@@ -212,7 +230,7 @@ csGenerateDraws()
                 }
             }
 
-            if (random > params.x && heightCutoff && angleCutoff)
+            if (random > meshInfo.distribution && heightCutoff && angleCutoff)
             {
                 uint entry = atomicAdd(NumMeshDraws, 1);
 
@@ -220,19 +238,21 @@ csGenerateDraws()
                 instanceUniform.position.xz = worldPos;
                 instanceUniform.position.y = height;
                 instanceUniform.random = random;
-                instanceUniform.sincos.x = sin(random);
-                instanceUniform.sincos.y = cos(random);
-                instanceUniform.textureIndex = i;
+                instanceUniform.sincos.x = randomOffset.x;
+                instanceUniform.sincos.y = randomOffset.y;
+                instanceUniform.textureIndex = textureIndex;
                 InstanceMeshUniforms[entry] = instanceUniform;
 
                 DrawIndexedCommand command;
-                command.indexCount = meshInfo.indexCount;
+                command.indexCount = meshInfo.lodIndexCount[lod];
                 command.instanceCount = 1;
-                command.startIndex = meshInfo.indexOffset + meshInfo.lodIndexOffsets[lod];
-                command.offsetVertex = meshInfo.vertexOffset + meshInfo.lodVertexOffsets[lod];
-                command.startInstance = 0;
+                command.startIndex = meshInfo.lodIndexOffsets[lod];
+                command.offsetVertex = meshInfo.lodVertexOffsets[lod];
+                command.startInstance = entry;  // pretend to use instancing
                 MeshDraws[entry] = command;
             }
+
+            textureIndex++;
         }
     }
 
@@ -329,19 +349,28 @@ vsDrawMesh(
     , [slot = 2] in vec2 uv
     , [slot = 3] in vec3 tangent
     , [slot = 4] in vec3 binormal
+    , [slot = 5] in vec4 color
     , out vec3 Normal
     , out vec3 Tangent
+    , out vec3 Binormal
     , out vec2 UV
     , out flat uint InstanceTexture
     , out flat float InstanceRandom)
 {
     InstanceUniforms instanceUniforms = InstanceMeshUniforms[gl_InstanceID];
-    float windWeight = position.y * instanceUniforms.random;
-    vec3 displacement = vec3(sin(windWeight * TimeAndRandom.x), 0, cos(windWeight * TimeAndRandom.x));
-    gl_Position = ViewProjection * vec4(instanceUniforms.position + position + displacement, 1);
+    vec3 displacement = vec3(sin(color.r * TimeAndRandom.x * instanceUniforms.random), 0, cos(color.r * TimeAndRandom.x * instanceUniforms.random));
+    mat3 rotation = mat3(
+        instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
+        0, 1, 0,
+        -instanceUniforms.sincos.x, 0, instanceUniforms.sincos.y);
+    vec3 rotatedPos = rotation * (position + displacement * 0.1f);
+    gl_Position = ViewProjection * vec4(instanceUniforms.position + rotatedPos, 1);
 
     UV = uv;
-    Tangent = normalize(vec3(position.x, 0.0f, position.z));
+    UV.y = 1.0f - UV.y;
+    Normal = rotation * normal;
+    Tangent = rotation * tangent;
+    Binormal = rotation * binormal;
     InstanceTexture = instanceUniforms.textureIndex;
     InstanceRandom = instanceUniforms.random;
 }
@@ -354,6 +383,7 @@ void
 psDrawMesh(
     in vec3 normal
     , in vec3 tangent
+    , in vec3 binormal
     , in vec2 uv
     , in flat uint instanceTexture
     , in flat float instanceRandom
@@ -362,6 +392,7 @@ psDrawMesh(
     , [color2] out vec4 Material)
 {
     Albedo = sampleAlbedo(instanceTexture, TextureSampler, uv);
+    
     if (Albedo.a < 0.5f) // alpha cut-off
         discard;
 
@@ -371,7 +402,6 @@ psDrawMesh(
     if (!gl_FrontFacing)
         geometryNormal *= -1.0f;
 
-    vec3 binormal = cross(geometryNormal, tangent);
     mat3 tbn = mat3(tangent, binormal, geometryNormal);
     vec4 normalSample = sampleNormal(instanceTexture, TextureSampler, uv);
 
@@ -400,7 +430,13 @@ render_state GrassState
     DepthFunc = Less;
 };
 
+render_state MeshState
+{
+
+};
+
 SimpleTechnique(VegetationGrassDraw, "VegetationGrassDraw", vsDrawGrass(), psDrawGrass(), GrassState);
+SimpleTechnique(VegetationMeshDraw, "VegetationMeshDraw", vsDrawMesh(), psDrawMesh(), MeshState);
 program VegetationGenerateDraws [ string Mask = "VegetationGenerateDraws"; ]
 {
 	ComputeShader = csGenerateDraws();

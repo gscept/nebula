@@ -87,7 +87,7 @@ private:
         Vegetation_Normals,
         Vegetation_Materials,
         Vegetation_Meshes,
-        Vegetation_MeshInfo,
+        Vegetation_GPUInfo,
         Vegetation_TextureIndex,
         Vegetation_SlopeThreshold,
         Vegetation_HeightThreshold,
