@@ -56,6 +56,41 @@ ImguiContext::ImguiDrawFunction()
     mat4 proj = orthooffcenterrh(0.0f, io.DisplaySize.x, io.DisplaySize.y, 0.0f, -1.0f, +1.0f);
 #endif
 
+	// if buffers are too small, create new buffers
+    if (data->TotalVtxCount > CoreGraphics::BufferGetSize(state.vbos[currentBuffer]))
+    {
+		CoreGraphics::BufferUnmap(state.vbos[currentBuffer]);
+		CoreGraphics::DestroyBuffer(state.vbos[currentBuffer]);
+
+		CoreGraphics::BufferCreateInfo vboInfo;
+		vboInfo.name = "ImGUI VBO"_atm;
+		vboInfo.size = Math::n_roundtopow2(data->TotalVtxCount);
+		vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.vlo);
+		vboInfo.mode = CoreGraphics::HostToDevice;
+		vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+		vboInfo.data = nullptr;
+		vboInfo.dataSize = 0;
+		state.vbos[currentBuffer] = CoreGraphics::CreateBuffer(vboInfo);
+		state.vertexPtrs[currentBuffer] = (byte*)CoreGraphics::BufferMap(state.vbos[currentBuffer]);
+    }
+
+	if (data->TotalIdxCount > CoreGraphics::BufferGetSize(state.ibos[currentBuffer]))
+    {
+		CoreGraphics::BufferUnmap(state.ibos[currentBuffer]);
+		CoreGraphics::DestroyBuffer(state.ibos[currentBuffer]);
+
+		CoreGraphics::BufferCreateInfo iboInfo;
+		iboInfo.name = "ImGUI IBO"_atm;
+		iboInfo.size = Math::n_roundtopow2(data->TotalIdxCount);
+		iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(IndexType::Index16);
+		iboInfo.mode = CoreGraphics::HostToDevice;
+		iboInfo.usageFlags = CoreGraphics::IndexBuffer;
+		iboInfo.data = nullptr;
+		iboInfo.dataSize = 0;
+		state.ibos[currentBuffer] = CoreGraphics::CreateBuffer(iboInfo);
+		state.indexPtrs[currentBuffer] = (byte*)CoreGraphics::BufferMap(state.ibos[currentBuffer]);
+    }
+
     // setup device
     CoreGraphics::SetVertexLayout(state.vlo);
     CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
@@ -82,6 +117,7 @@ ImguiContext::ImguiDrawFunction()
     IndexT indexOffset = 0;
     IndexT vertexBufferOffset = 0;
     IndexT indexBufferOffset = 0;
+
     IndexT i;
     for (i = 0; i < data->CmdListsCount; i++)
     {
@@ -92,13 +128,13 @@ ImguiContext::ImguiDrawFunction()
         const SizeT vertexBufferSize = commandList->VtxBuffer.size() * sizeof(ImDrawVert);                  // 2 for position, 2 for uvs, 1 int for color
         const SizeT indexBufferSize = commandList->IdxBuffer.size() * sizeof(ImDrawIdx);                    // using 16 bit indices
 
-        // if we render too many vertices, we will simply assert
+        // if we render too many vertices, we will simply assert, but should never happen really
         n_assert(vertexBufferOffset + (IndexT)commandList->VtxBuffer.size() < CoreGraphics::BufferGetByteSize(state.vbos[currentBuffer]));
         n_assert(indexBufferOffset + (IndexT)commandList->IdxBuffer.size() < CoreGraphics::BufferGetByteSize(state.ibos[currentBuffer]));
 
         // wait for previous draws to finish...
-        memcpy(state.vertexPtrs[currentBuffer] + vertexBufferOffset, vertexBuffer, vertexBufferSize);
-        memcpy(state.indexPtrs[currentBuffer] + indexBufferOffset, indexBuffer, indexBufferSize);
+		Memory::Copy(vertexBuffer, state.vertexPtrs[currentBuffer] + vertexBufferOffset, vertexBufferSize);
+		Memory::Copy(indexBuffer, state.indexPtrs[currentBuffer] + indexBufferOffset, indexBufferSize);
         IndexT j;
         IndexT primitiveIndexOffset = 0;
         for (j = 0; j < commandList->CmdBuffer.size(); j++)
@@ -316,7 +352,7 @@ ImguiContext::Create()
 
     CoreGraphics::BufferCreateInfo vboInfo;
     vboInfo.name = "ImGUI VBO"_atm;
-    vboInfo.size = 100000 * 3;
+    vboInfo.size = 1;
     vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.vlo);
     vboInfo.mode = CoreGraphics::HostToDevice;
     vboInfo.usageFlags = CoreGraphics::VertexBuffer;
@@ -331,7 +367,7 @@ ImguiContext::Create()
 
     CoreGraphics::BufferCreateInfo iboInfo;
     iboInfo.name = "ImGUI IBO"_atm;
-    iboInfo.size = 100000 * 3;
+    iboInfo.size = 1;
     iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(IndexType::Index16);
     iboInfo.mode = CoreGraphics::HostToDevice;
     iboInfo.usageFlags = CoreGraphics::IndexBuffer;
