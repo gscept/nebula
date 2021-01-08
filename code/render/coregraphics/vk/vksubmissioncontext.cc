@@ -337,6 +337,11 @@ SubmissionContextPoll(const SubmissionContextId id)
 void
 CleanupPendingDeletes(const SubmissionContextId id, IndexT currentIndex)
 {
+	Util::Array<CoreGraphics::Alloc>& mem = submissionContextAllocator.Get<SubmissionContext_FreeMemories>(id.id24)[currentIndex];
+    for (IndexT i = 0; i < mem.Size(); i++)
+        FreeMemory(mem[i]);
+    mem.Clear();
+
     // delete any pending resources this context has allocated
     Util::Array<Resources::ResourceId>& resources = submissionContextAllocator.Get<SubmissionContext_FreeResources>(id.id24)[currentIndex];
     for (IndexT i = 0; i < resources.Size(); i++)
@@ -367,11 +372,6 @@ CleanupPendingDeletes(const SubmissionContextId id, IndexT currentIndex)
     for (IndexT i = 0; i < hostMemories.Size(); i++)
         Memory::Free(Memory::ScratchHeap, hostMemories[i]);
     hostMemories.Clear();
-
-    Util::Array<CoreGraphics::Alloc>& mem = submissionContextAllocator.Get<SubmissionContext_FreeMemories>(id.id24)[currentIndex];
-    for (IndexT i = 0; i < mem.Size(); i++)
-        FreeMemory(mem[i]);
-    mem.Clear();
 }
 
 } // namespace CoreGraphics
