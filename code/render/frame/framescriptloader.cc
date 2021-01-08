@@ -748,20 +748,29 @@ FrameScriptLoader::ParseSubpassDependencies(Frame::FramePass* pass, CoreGraphics
         else if (cur->is_string)
         {
             Util::String id(cur->string_value);
-            const Util::Array<FrameSubpass*>& subpasses = pass->GetSubpasses();
-            IndexT j;
-            for (j = 0; j < subpasses.Size(); j++)
-            {
-                if (subpasses[j]->GetName() == id)
-                {
-                    subpass.dependencies.Append(j);
-                    break;
-                }
-            }
-            if (j == subpasses.Size())
-            {
-                n_error("Could not find previous subpass '%s'", id.AsCharPtr());
-            }
+		    const Util::Array<FrameSubpass*>& subpasses = pass->GetSubpasses();
+
+			// setup subpass self-dependency
+			if (id == "this")
+			{
+				subpass.dependencies.Append(subpasses.Size() - 1);
+			}
+			else
+			{
+				IndexT j;
+				for (j = 0; j < subpasses.Size(); j++)
+				{
+					if (subpasses[j]->GetName() == id)
+					{
+						subpass.dependencies.Append(j);
+						break;
+					}
+				}
+				if (j == subpasses.Size())
+				{
+					n_error("Could not find previous subpass '%s'", id.AsCharPtr());
+				}
+			}
         }
     }
 }
