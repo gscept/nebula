@@ -359,8 +359,8 @@ CleanupPendingDeletes(const SubmissionContextId id, IndexT currentIndex)
     freeCommandBuffers.Clear();
 
     Util::Array<CoreGraphics::CommandBufferId>& clearCommandBuffers = submissionContextAllocator.Get<SubmissionContext_ClearCommandBuffers>(id.id24)[currentIndex];
-    //for (IndexT i = 0; i < clearCommandBuffers.Size(); i++)
-        //CoreGraphics::CommandBufferClear(clearCommandBuffers[i], CommandBufferClearInfo{ false });
+    for (IndexT i = 0; i < clearCommandBuffers.Size(); i++)
+        CoreGraphics::CommandBufferClear(clearCommandBuffers[i], CommandBufferClearInfo{ false });
     clearCommandBuffers.Clear();
 
     Util::Array<void*>& hostMemories = submissionContextAllocator.Get<SubmissionContext_FreeHostMemories>(id.id24)[currentIndex];
