@@ -719,11 +719,14 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraph
         }
     }
 
+	// make sure the subpass has any attacments
+	n_assert2(subpass.attachments.Size() > 0 || subpass.bindDepth, "Subpass must at least either bind color attachments or a depth-stencil attachment");
+
     // correct amount of viewports and scissors if not set explicitly (both values default to 0)
     if (subpass.numViewports == 0)
-        subpass.numViewports = subpass.attachments.Size();
+        subpass.numViewports = subpass.attachments.Size() == 0 ? 1 : subpass.attachments.Size();
     if (subpass.numScissors == 0)
-        subpass.numScissors = subpass.attachments.Size();
+        subpass.numScissors = subpass.attachments.Size() == 0 ? 1 : subpass.attachments.Size();
 
     // link together frame operations
     pass.subpasses.Append(subpass);

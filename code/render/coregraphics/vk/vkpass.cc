@@ -93,28 +93,52 @@ SetupPass(const PassId pid)
     uint32_t layers = 0;
 
     IndexT i;
-    for (i = 0; i < loadInfo.colorAttachments.Size(); i++)
-    {
-        images[i] = TextureViewGetVk(loadInfo.colorAttachments[i]);
-        TextureId tex = TextureViewGetTexture(loadInfo.colorAttachments[i]);
-        const CoreGraphics::TextureDimensions dims = TextureGetDimensions(tex);
-        width = Math::n_max(width, (uint32_t)dims.width);
-        height = Math::n_max(height, (uint32_t)dims.height);
-        layers = Math::n_max(layers, (uint32_t)TextureGetNumLayers(tex));
 
-        VkRect2D& rect = loadInfo.rects[i];
-        rect.offset.x = 0;
-        rect.offset.y = 0;
-        rect.extent.width = dims.width;
-        rect.extent.height = dims.height;
-        VkViewport& viewport = loadInfo.viewports[i];
-        viewport.width = (float)dims.width;
-        viewport.height = (float)dims.height;
-        viewport.minDepth = 0;
-        viewport.maxDepth = 1;
-        viewport.x = 0;
-        viewport.y = 0;
-    }
+	// if we have no attachments, use the depth attachment to setup the viewport
+	if (loadInfo.colorAttachments.Size() == 0)
+	{
+		n_assert(loadInfo.depthStencilAttachment != CoreGraphics::TextureViewId::Invalid());
+		TextureId tex = TextureViewGetTexture(loadInfo.depthStencilAttachment);
+		const CoreGraphics::TextureDimensions dims = TextureGetDimensions(tex);
+		VkRect2D& rect = loadInfo.rects[0];
+		rect.offset.x = 0;
+		rect.offset.y = 0;
+		rect.extent.width = dims.width;
+		rect.extent.height = dims.height;
+		VkViewport& viewport = loadInfo.viewports[0];
+		viewport.width = (float)dims.width;
+		viewport.height = (float)dims.height;
+		viewport.minDepth = 0;
+		viewport.maxDepth = 1;
+		viewport.x = 0;
+		viewport.y = 0;
+	}
+	else
+	{
+		// otherwise, use the render targets to decide viewports
+		for (i = 0; i < loadInfo.colorAttachments.Size(); i++)
+		{
+			images[i] = TextureViewGetVk(loadInfo.colorAttachments[i]);
+			TextureId tex = TextureViewGetTexture(loadInfo.colorAttachments[i]);
+			const CoreGraphics::TextureDimensions dims = TextureGetDimensions(tex);
+			width = Math::n_max(width, (uint32_t)dims.width);
+			height = Math::n_max(height, (uint32_t)dims.height);
+			layers = Math::n_max(layers, (uint32_t)TextureGetNumLayers(tex));
+
+			VkRect2D& rect = loadInfo.rects[i];
+			rect.offset.x = 0;
+			rect.offset.y = 0;
+			rect.extent.width = dims.width;
+			rect.extent.height = dims.height;
+			VkViewport& viewport = loadInfo.viewports[i];
+			viewport.width = (float)dims.width;
+			viewport.height = (float)dims.height;
+			viewport.minDepth = 0;
+			viewport.maxDepth = 1;
+			viewport.x = 0;
+			viewport.y = 0;
+		}
+	}
 
     Util::FixedArray<VkSubpassDescription> subpassDescs;
     Util::FixedArray<Util::FixedArray<VkAttachmentReference>> subpassReferences;
@@ -153,8 +177,8 @@ SetupPass(const PassId pid)
         // resize rects
         n_assert(subpass.numViewports >= subpass.attachments.Size());
         n_assert(subpass.numScissors >= subpass.attachments.Size());
-        runtimeInfo.subpassViewports[i].Resize(subpass.attachments.Size());
-        runtimeInfo.subpassRects[i].Resize(subpass.attachments.Size());
+        runtimeInfo.subpassViewports[i].Resize(subpass.numViewports);
+        runtimeInfo.subpassRects[i].Resize(subpass.numScissors);
         runtimeInfo.subpassPipelineInfo[i] =
         {
             VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
@@ -186,9 +210,18 @@ SetupPass(const PassId pid)
             ds.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
             ds.attachment = loadInfo.colorAttachments.Size();
             vksubpass.pDepthStencilAttachment = &ds;
+
+			// if we have no attachments in the subpass, use the depth stencil viewports
+			if (subpass.attachments.Size() == 0)
+			{
+				runtimeInfo.subpassViewports[i][0] = loadInfo.viewports[ds.attachment];
+				runtimeInfo.subpassRects[i][0] = loadInfo.rects[ds.attachment];
+			}
         }
         else
         {
+			// we are not allowed to have a subpass that doesn't use any attachments
+			n_assert(subpass.attachments.Size() != 0);
             VkAttachmentReference& ds = subpassDepthStencils[i];
             ds.layout = VK_IMAGE_LAYOUT_UNDEFINED;
             ds.attachment = VK_ATTACHMENT_UNUSED;
@@ -206,6 +239,7 @@ SetupPass(const PassId pid)
         IndexT idx = 0;
         SizeT preserveAttachments = 0;
         SizeT usedAttachments = 0;
+
         for (j = 0; j < subpass.attachments.Size(); j++)
         {
             VkAttachmentReference& ref = references[j];
@@ -371,6 +405,8 @@ SetupPass(const PassId pid)
 		width = Math::n_max(width, (uint32_t)dims.width);
         height = Math::n_max(height, (uint32_t)dims.height);
         layers = Math::n_max(layers, (uint32_t)TextureGetNumLayers(tex));
+
+
     }
 
     // setup render area
@@ -499,8 +535,8 @@ CreatePass(const PassCreateInfo& info)
     loadInfo.depthStencilAttachment = info.depthStencilAttachment;
     loadInfo.dev = Vulkan::GetCurrentDevice();
 
-    SizeT numImages = info.colorAttachments.Size() + (info.depthStencilAttachment != TextureViewId::Invalid() ? 1 : 0);
-    loadInfo.clearValues.Resize(numImages);
+    SizeT numImages = info.colorAttachments.Size() == 0 ? 1 : info.colorAttachments.Size();
+    loadInfo.clearValues.Resize(numImages + (loadInfo.depthStencilAttachment != CoreGraphics::TextureViewId::Invalid() ? 1 : 0));
     loadInfo.rects.Resize(numImages);
     loadInfo.viewports.Resize(numImages);
     loadInfo.name = info.name;

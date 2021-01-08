@@ -39,8 +39,8 @@ struct Subpass
     Util::Array<IndexT> inputs;
     SizeT numViewports;
     SizeT numScissors;
-    bool bindDepth;
-    bool resolve;
+    bool bindDepth : 1;
+    bool resolve : 1;
 
     Subpass() : bindDepth(false), resolve(false), numViewports(0), numScissors(0) {};
 };
