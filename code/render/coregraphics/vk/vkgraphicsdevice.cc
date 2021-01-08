@@ -584,7 +584,7 @@ UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layou
 void 
 BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const CoreGraphics::ShaderProgramId programId)
 {
-    if (state.currentProgram != programId || CheckBits(state.currentPipelineBits, PipelineBuildBits::ShaderInfoSet))
+    if (state.currentProgram != programId || !CheckBits(state.currentPipelineBits, PipelineBuildBits::ShaderInfoSet))
     {
         state.database.SetShader(programId, shader);
         state.currentPipelineBits |= PipelineBuildBits::ShaderInfoSet;
@@ -613,7 +613,7 @@ BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const CoreG
 void 
 SetVertexLayoutPipelineInfo(VkPipelineVertexInputStateCreateInfo* vertexLayout)
 {
-    if (state.currentPipelineInfo.pVertexInputState != vertexLayout || CheckBits(state.currentPipelineBits, PipelineBuildBits::VertexLayoutInfoSet))
+    if (state.currentPipelineInfo.pVertexInputState != vertexLayout || !CheckBits(state.currentPipelineBits, PipelineBuildBits::VertexLayoutInfoSet))
     {
         state.database.SetVertexLayout(vertexLayout);
         state.currentPipelineBits |= PipelineBuildBits::VertexLayoutInfoSet;
@@ -642,7 +642,7 @@ SetFramebufferLayoutInfo(const VkGraphicsPipelineCreateInfo& framebufferLayout)
 void 
 SetInputLayoutInfo(VkPipelineInputAssemblyStateCreateInfo* inputLayout)
 {
-    if (state.currentPipelineInfo.pInputAssemblyState != inputLayout || CheckBits(state.currentPipelineBits, PipelineBuildBits::InputLayoutInfoSet))
+    if (state.currentPipelineInfo.pInputAssemblyState != inputLayout || !CheckBits(state.currentPipelineBits, PipelineBuildBits::InputLayoutInfoSet))
     {
         state.database.SetInputLayout(inputLayout);
         state.currentPipelineBits |= PipelineBuildBits::InputLayoutInfoSet;
@@ -2824,7 +2824,7 @@ SetGraphicsPipeline()
 {
     n_assert((state.currentPipelineBits & PipelineBuildBits::AllInfoSet) != 0);
     state.currentBindPoint = CoreGraphics::GraphicsPipeline;
-    if ((state.currentPipelineBits & PipelineBuildBits::PipelineBuilt) == 0)
+    if (!CheckBits(state.currentPipelineBits, PipelineBuildBits::PipelineBuilt))
     {
         CreateAndBindGraphicsPipeline();
         state.currentPipelineBits |= PipelineBuildBits::PipelineBuilt;
@@ -3955,7 +3955,7 @@ SetStencilReadMask(const uint readMask)
 void 
 SetStencilWriteMask(const uint writeMask)
 {
-    state.currentStencilWriteMask;
+    state.currentStencilWriteMask = writeMask;
     if (state.drawThread)
     {
         if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
