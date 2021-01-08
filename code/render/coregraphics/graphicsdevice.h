@@ -410,6 +410,9 @@ void SetStencilReadMask(const uint readMask);
 /// set the stencil write mask
 void SetStencilWriteMask(const uint writeMask);
 
+/// update buffer in command buffer
+void UpdateBuffer(const CoreGraphics::BufferId buffer, uint offset, uint size, const void* data, CoreGraphics::QueueType queue);
+
 /// register texture globally
 void RegisterTexture(const Util::StringAtom& name, const CoreGraphics::TextureId id);
 /// get globally registered texture

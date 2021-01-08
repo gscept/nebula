@@ -292,7 +292,7 @@ BufferGetByteSize(const BufferId id)
 //------------------------------------------------------------------------------
 /**
 */
-constexpr SizeT
+const SizeT
 BufferGetUploadMaxSize()
 {
 	return 65536;
@@ -340,55 +340,21 @@ BufferUpdate(const BufferId id, const void* data, const uint size, const uint of
 /**
 */
 void
-BufferUpdateArray(const BufferId id, const void* data, const uint size, const uint count, const uint offset)
+BufferUpload(const BufferId id, const void* data, const uint size, const uint offset, const CoreGraphics::QueueType queue)
 {
-    VkBufferMapInfo& map = bufferAllocator.GetUnsafe<Buffer_MapInfo>(id.id24);
-
-#if NEBULA_DEBUG
-    VkBufferLoadInfo& setup = bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id.id24);
-    n_assert(size + offset <= (uint)setup.byteSize);
-#endif
-    byte* buf = (byte*)map.mappedMemory + offset;
-    memcpy(buf, data, size * count);
+	n_assert(size <= (uint)BufferGetUploadMaxSize());
+	CoreGraphics::UpdateBuffer(id, offset, size, data, queue);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-BufferUpload(const BufferId id, const void* data, const uint size, const uint count, const uint offset, const CoreGraphics::QueueType queue)
+BufferUpload(const BufferId id, const void* data, const uint size, const uint offset, const CoreGraphics::SubmissionContextId sub)
 {
-	VkCommandBuffer cmd = CoreGraphics::GetMainBuffer(queue);
-	uint numChunks = Math::n_divandroundup(size * count, BufferGetUploadMaxSize());
-	int remainingBytes = size * count;
-	int chunkOffset = offset;
-	for (uint i = 0; i < numChunks; i++)
-	{
-		int chunkSize = Math::n_min(remainingBytes, BufferGetUploadMaxSize());
-		vkCmdUpdateBuffer(cmd, Vulkan::BufferGetVk(id), chunkOffset, chunkSize, data);
-		chunkOffset += chunkSize;
-		remainingBytes -= chunkSize;
-	}
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-BufferUpload(const BufferId id, const void* data, const uint size, const uint count, const uint offset, const CoreGraphics::SubmissionContextId sub)
-{
+	n_assert(size <= (uint)BufferGetUploadMaxSize());
 	CoreGraphics::CommandBufferId cmd = SubmissionContextGetCmdBuffer(sub);
-
-	uint numChunks = Math::n_divandroundup(size * count, BufferGetUploadMaxSize());
-	int remainingBytes = size * count;
-	int chunkOffset = offset;
-	for (uint i = 0; i < numChunks; i++)
-	{
-		int chunkSize = Math::n_min(remainingBytes, BufferGetUploadMaxSize());
-		vkCmdUpdateBuffer(Vulkan::CommandBufferGetVk(cmd), Vulkan::BufferGetVk(id), chunkOffset, chunkSize, data);
-		chunkOffset += chunkSize;
-		remainingBytes -= chunkSize;
-	}
+	vkCmdUpdateBuffer(Vulkan::CommandBufferGetVk(cmd), Vulkan::BufferGetVk(id), offset, size, data);
 }
 
 //------------------------------------------------------------------------------

@@ -3974,6 +3974,30 @@ SetStencilWriteMask(const uint writeMask)
 //------------------------------------------------------------------------------
 /**
 */
+void
+UpdateBuffer(const CoreGraphics::BufferId buffer, uint offset, uint size, const void* data, CoreGraphics::QueueType queue)
+{
+	if (state.drawThread)
+    {
+        if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+        {
+            VkCommandBufferThread::VkUpdateBufferCommand cmd;
+			cmd.buf = BufferGetVk(buffer);
+			cmd.data = data;
+			cmd.offset = offset;
+			cmd.size = size;
+            state.drawThread->Push(cmd);
+        }
+    }
+    else
+    {
+		vkCmdUpdateBuffer(GetMainBuffer(queue), Vulkan::BufferGetVk(buffer), offset, size, data);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 RegisterTexture(const Util::StringAtom& name, const CoreGraphics::TextureId id)
 {

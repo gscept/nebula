@@ -92,7 +92,7 @@ const SizeT BufferGetElementSize(const BufferId id);
 /// get buffer total byte size
 const SizeT BufferGetByteSize(const BufferId id);
 /// get maximum size of upload for BufferUpload
-constexpr SizeT BufferGetUploadMaxSize();
+const SizeT BufferGetUploadMaxSize();
 
 /// map memory
 void* BufferMap(const BufferId id);
@@ -101,12 +101,10 @@ void BufferUnmap(const BufferId id);
 
 /// update buffer data
 void BufferUpdate(const BufferId id, const void* data, const uint size, const uint offset = 0);
-/// update buffer data as array
-void BufferUpdateArray(const BufferId id, const void* data, const uint size, const uint count, const uint offset = 0);
-/// update buffer through submission instead of mapped buffer (slower, but allows for updates to DeviceLocal buffers)
-void BufferUpload(const BufferId id, const void* data, const uint size, const uint count, const uint offset, const CoreGraphics::QueueType queue = GraphicsQueueType);
-/// update buffer through submission instead of mapped buffer (slower, but allows for updates to DeviceLocal buffers)
-void BufferUpload(const BufferId id, const void* data, const uint size, const uint count, const uint offset, const CoreGraphics::SubmissionContextId sub);
+/// update buffer directly on command buffer during frame update, asserts if size is too big
+void BufferUpload(const BufferId id, const void* data, const uint size, const uint offset, const CoreGraphics::QueueType queue = GraphicsQueueType);
+/// update buffer on command buffer in submission context, splits the size into chunks if necessary
+void BufferUpload(const BufferId id, const void* data, const uint size, const uint offset, const CoreGraphics::SubmissionContextId sub);
 /// update buffer data
 template<class TYPE> void BufferUpdate(const BufferId id, const TYPE& data, const uint offset = 0);
 /// update buffer data as array
@@ -141,7 +139,7 @@ template<class TYPE>
 inline void
 BufferUpdate(const BufferId id, const TYPE& data, const uint offset)
 {
-    BufferUpdate(id, &data, sizeof(TYPE), offset);
+    BufferUpdate(id, (const void*)&data, sizeof(TYPE), offset);
 }
 
 //------------------------------------------------------------------------------
@@ -151,7 +149,7 @@ template<class TYPE>
 inline void
 BufferUpdateArray(const BufferId id, const TYPE* data, const uint count, const uint offset)
 {
-    BufferUpdateArray(id, data, sizeof(TYPE), count, offset);
+    BufferUpdate(id, (const void*)data, sizeof(TYPE) * count, offset);
 }
 
 //------------------------------------------------------------------------------
@@ -161,7 +159,7 @@ template<class TYPE>
 inline void
 BufferUpload(const BufferId id, const TYPE* data, const uint count, const uint offset, const CoreGraphics::QueueType queue)
 {
-    BufferUpload(id, data, sizeof(TYPE), count, offset, queue);
+    BufferUpload(id, (const void*)data, sizeof(TYPE) * count, offset, queue);
 }
 
 //------------------------------------------------------------------------------
@@ -171,7 +169,7 @@ template<class TYPE>
 inline void
 BufferUpload(const BufferId id, const TYPE* data, const uint count, const uint offset, const CoreGraphics::SubmissionContextId sub)
 {
-    BufferUpload(id, data, sizeof(TYPE), count, offset, sub);
+    BufferUpload(id, (const void*)data, sizeof(TYPE) * count, offset, sub);
 }
 
 } // namespace CoreGraphics
