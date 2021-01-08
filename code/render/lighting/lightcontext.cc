@@ -21,7 +21,6 @@
 #endif
 
 #include "lights_cluster.h"
-#include "lights.h"
 #include "combine.h"
 
 #define CLUSTERED_LIGHTING_DEBUG 0
