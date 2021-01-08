@@ -69,6 +69,9 @@ Setup()
     Physics::actorPool = Resources::GetStreamPool<Physics::StreamActorPool>();
     Physics::colliderPool = Resources::GetStreamPool<Physics::StreamColliderPool>();
     LoadMaterialTable();
+
+    //FIXME this should be somewhere in a toolkit component instead
+    Flat::FlatbufferInterface::Init();
 }
 
 //------------------------------------------------------------------------------

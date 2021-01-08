@@ -12,6 +12,11 @@
 #include "physics/utils.h"
 #include "imgui.h"
 #include "graphics/cameracontext.h"
+#include "flat/physics/material.h"
+#include "nflatbuffer/flatbufferinterface.h"
+#include "io/safefilestream.h"
+#include "io/textwriter.h"
+
 
 using namespace physx;
 
@@ -185,6 +190,115 @@ void RenderUI(Graphics::GraphicsEntityId camera)
     {
         RenderPhysicsDebug();
     }
+    RenderMaterialsUI();
+}
+
+void RenderMaterialsUI()
+{
+    ImGui::Begin("Physics Materials");
+    struct getname
+    {
+        static bool getter(void* data, int n, const char** ret)
+        {
+            *ret = GetMaterial(n).name.Value();
+            return true;
+        }
+    }; 
+    static bool hasSelection = false;
+    static int selected = 0;
+    static MaterialDefinitionT original;
+    static MaterialDefinitionT current;
+    if (!hasSelection || ImGui::Combo("Selected", &selected, &getname::getter, nullptr, GetNrMaterials()))
+    {
+        hasSelection = true;
+        const Material& mat = GetMaterial(selected);
+        original.density = mat.density;
+        original.dynamicFriction = mat.material->getDynamicFriction();
+        original.staticFriction = mat.material->getStaticFriction();
+        original.restitution = mat.material->getRestitution();
+        current = original;
+    }
+    static bool dirty = false;
+    if (dirty || ImGui::DragFloat("Density", &current.density, 0.05f, 0.0f, 1000.0f))
+    {
+        GetMaterial(selected).density = current.density;
+    }
+    if (dirty || ImGui::DragFloat("Dynamic Friction", &current.dynamicFriction, 0.05f, 0.0f, 2.0f))
+    {
+        GetMaterial(selected).material->setDynamicFriction(current.dynamicFriction);
+    }
+    if (dirty || ImGui::DragFloat("Static Friction", &current.staticFriction, 0.05f, 0.0f, 2.0f))
+    {
+        GetMaterial(selected).material->setStaticFriction(current.staticFriction);
+    }
+    if (dirty || ImGui::DragFloat("Restitution", &current.restitution, 0.05f, 0.0f, 2.0f))
+    {
+        GetMaterial(selected).material->setRestitution(current.restitution);
+    }
+    dirty = false;
+    if (ImGui::Button("Reset",ImVec2(80, 0)))
+    {
+        current = original;
+        dirty = true;
+    }
+    ImGui::SameLine();
+    static char nameBuf[15];
+    if (ImGui::Button("Add new",ImVec2(80, 0)))
+    {
+        ImGui::OpenPopup("New Material");
+        nameBuf[0] = 0;
+    }
+    ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    if (ImGui::BeginPopupModal("New Material", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::InputText("Input", nameBuf, IM_ARRAYSIZE(nameBuf));
+        if (ImGui::Button("Ok", ImVec2(80, 0)))
+        {
+            Util::String name(nameBuf);
+            if (!name.IsEmpty())
+            {
+                CreateMaterial(name.AsCharPtr(),0.5f,0.5f,0.5f,1.0f);
+                ImGui::CloseCurrentPopup();
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(80, 0)))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Save", ImVec2(80, 0)))
+    {
+        MaterialsT mtable;
+        for (int i = 0, j = GetNrMaterials(); i < j; i++)
+        {
+            std::unique_ptr<MaterialDefinitionT> def = std::make_unique<MaterialDefinitionT>();
+            Material const& mat = GetMaterial(i);
+            def->density = mat.density;
+            def->dynamicFriction = mat.material->getDynamicFriction();
+            def->staticFriction = mat.material->getStaticFriction();
+            def->restitution = mat.material->getRestitution();
+            def->name = mat.name.AsString();
+            mtable.entries.push_back(std::move(def));
+        }
+        Util::String saved = SerializeFlatbufferText(Materials, mtable);
+        IO::URI tablePath = "root:work/data/tables/physicsmaterials.json";
+        Util::String wrappedPath = "safefile:///" + tablePath.LocalPath();
+        Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(wrappedPath);
+        Ptr<IO::TextWriter> writer = IO::TextWriter::Create();
+        stream->SetAccessMode(IO::Stream::WriteAccess);
+        writer->SetStream(stream);
+        if (writer->Open())
+        {
+            writer->WriteString(saved);
+        }
+        writer->Close();
+        CompileFlatbuffer(Materials, tablePath, "phys:");
+    }
+    ImGui::End();
 }
 
 }

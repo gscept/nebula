@@ -10,4 +10,5 @@
 namespace Physics
 {
 void RenderUI(Graphics::GraphicsEntityId camera);
+void RenderMaterialsUI();
 };

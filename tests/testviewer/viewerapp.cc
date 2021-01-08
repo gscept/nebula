@@ -34,6 +34,9 @@
 #include "posteffects/ssrcontext.h"
 #include "posteffects/tonemapcontext.h"
 
+#include "physicsinterface.h"
+#include "physics/debugui.h"
+
 #include "terrain/terraincontext.h"
 #include "vegetation/vegetationcontext.h"
 
@@ -218,6 +221,8 @@ SimpleViewerApplication::Open()
 
         this->frametimeHistory.Fill(0, 120, 0.0f);
 
+        Physics::Setup();
+
         return true;
     }
     return false;
@@ -229,7 +234,8 @@ SimpleViewerApplication::Open()
 void 
 SimpleViewerApplication::Close()
 {
-	App::Application::Close();
+    Physics::ShutDown();
+    App::Application::Close();
     DestroyWindow(this->wnd);
     this->gfxServer->DiscardStage(this->stage);
     this->gfxServer->DiscardView(this->view);
@@ -270,13 +276,13 @@ SimpleViewerApplication::Run()
             this->profilingContexts = Profiling::ProfilingGetContexts();
         Profiling::ProfilingNewFrame();
 #endif
-
+        
         N_MARKER_BEGIN(Input, App);
         this->inputServer->BeginFrame();
         CoreGraphics::WindowPollEvents();
         this->inputServer->OnFrame();
         N_MARKER_END();
-
+        CoreGraphics::WindowPollEvents();
         this->resMgr->Update(this->frameIndex);
 
 #if NEBULA_ENABLE_PROFILING
@@ -285,7 +291,8 @@ SimpleViewerApplication::Run()
             this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers();
 #endif NEBULA_ENABLE_PROFILING
 
-		this->gfxServer->BeginFrame();
+        this->gfxServer->BeginFrame();
+        
         this->RenderUI();
 
         if (this->renderDebug)
@@ -326,6 +333,7 @@ SimpleViewerApplication::Run()
 
         frameIndex++;             
         this->inputServer->EndFrame();
+        
     }
 }
 
