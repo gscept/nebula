@@ -203,20 +203,17 @@
 			"name": "LightContext - Update Shadowmaps"
 		},
 
-		_comment: "------------ VEGETATION ------------",
-		call: {
-			name: "VegetationContext - Update Meshes"
+		"_comment": "------------ VEGETATION ------------",
+		"call": {
+			"name": "VegetationContext - Generate Draws"
 		},
-		call: {
-			name: "VegetationContext - Generate Draws"
-		},
-		call: {
-			name: "VegetationContext - Readback"
+		"call": {
+			"name": "VegetationContext - Readback"
 		},
 
-		_comment: "------------ TERRAIN ------------",
-		call: {
-			name: "TerrainContext - Prepare"
+		"_comment": "------------ TERRAIN ------------",
+		"call": {
+			"name": "TerrainContext - Prepare"
 		},
 		"call": {
 			"name": "TerrainContext - Clear Page Update Buffer"
@@ -257,13 +254,6 @@
 		"_comment": "------------ PREPASS ------------",
 		"pass": {
 			"name": "Prepass",
-			"attachments": [
-				{
-					"_comment": "FIXME: We must have an attachment in subpass otherwise Vulkan crashes. Check validation!",
-					"name": "LightBuffer",
-					"store": false
-				}
-			],
 
 			"depth_stencil": {
 				"name": "ZBuffer",
@@ -271,26 +261,19 @@
 				"load": true
 			},
 
-			subpass: {
-				name: "GeometryPass",
-				subpass_dependencies: [],
-				attachments: [ "AlbedoBuffer", "NormalBuffer", "SpecularBuffer", "EmissiveBuffer" ],
-				depth: true,
-				call: {
-					name: "TerrainContext - Screen Space Resolve",
-				},
-				call: {
-					name: "VegetationContext - Render",
-				},
-				batch: "FlatGeometryLit",
-				batch: "TesselatedGeometryLit",
-			},
-		}
+			"subpass": {
+				"name": "DepthPrepass",
+				"subpass_dependencies": [],
+				"attachments": [],
+				"depth": true,
+				"batch": "FlatGeometryDepth"
+			}
+		},
 
-		copy: {
-			name: "Copy Depth",
-			from: "ZBuffer",
-			to: "ZBufferCopy"
+		"copy": {
+			"name": "Copy Depth",
+			"from": "ZBuffer",
+			"to": "ZBufferCopy"
 		},
 
 		"copy": {
@@ -329,7 +312,7 @@
 			]
 		},
 
-		"_comment": "------------ FOWARD PASS ------------",
+		"_comment": "------------ FORWARD PASS ------------",
 		"pass": {
 			"name": "ForwardRendering",
 			"attachments": [
@@ -362,6 +345,9 @@
 				"depth": true,
 				"call": {
 					"name": "TerrainContext - Screen Space Resolve"
+				},
+				"call": {
+					"name": "VegetationContext - Render"
 				},
 				"batch": "FlatGeometryLit"
 			},
@@ -594,7 +580,8 @@
 			"subpass": {
 				"name": "Direct",
 				"subpass_dependencies": [
-					"FinalizePass"
+					"FinalizePass",
+					"this"
 				],
 				"depth": true,
 				"attachments": [
