@@ -81,6 +81,8 @@ public:
     void Append(TYPE&& elm);
     /// append the contents of an array to this array
     void AppendArray(const Array<TYPE>& rhs);
+    /// append from C array
+    void AppendArray(const TYPE* arr, const SizeT count);
     /// increase capacity to fit N more elements into the array.
     void Reserve(SizeT num);
     
@@ -671,12 +673,40 @@ Array<TYPE>::Append(TYPE&& elm)
 template<class TYPE> void
 Array<TYPE>::AppendArray(const Array<TYPE>& rhs)
 {
-    IndexT i;
-    SizeT num = rhs.count;
-    for (i = 0; i < num; i++)
+    SizeT neededCapacity = this->count + rhs.count;
+    if (neededCapacity > this->capacity)
     {
-        this->Append(rhs[i]);
+        this->GrowTo(neededCapacity);
     }
+
+    // forward elements from array
+    IndexT i;
+    for (i = 0; i < rhs.count; i++)
+    {
+        this->elements[this->count + i] = std::forward<TYPE>(rhs.elements[i]);
+    }
+    this->count += rhs.count;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> void
+Array<TYPE>::AppendArray(const TYPE* arr, const SizeT count)
+{
+    SizeT neededCapacity = this->count + count;
+    if (neededCapacity > this->capacity)
+    {
+        this->GrowTo(neededCapacity);
+    }
+
+    // forward elements from array
+    IndexT i;
+    for (i = 0; i < count; i++)
+    {
+        this->elements[this->count + i] = std::forward<const TYPE>(arr[i]);
+    }
+    this->count += count;
 }
 
 //------------------------------------------------------------------------------
