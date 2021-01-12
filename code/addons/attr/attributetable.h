@@ -10,21 +10,12 @@
     one big chunk of memory without additional overhead. Table cells can
     have the NULL status, which means the cell contains no value.
 
-    The table's value buffer consists of 4-byte aligned rows, each
+    The table's value buffer consists of 16-byte aligned rows, each
     row consists of a bitfield with 2 bits per row (one bit is set
     if a column/row value is valid, the other is used as modified-marker).
 
-    The header-bitfield is padded to 4-byte. After the header field follow 
-    the value fields, one field for each column. The size of the field 
-    depends on the datatype of the column, the minimum field size of 4 bytes for
-    data alignment reasons:
-
-    Bool:       sizeof(int)         usually 4 bytes
-    Int:        sizeof(int)         usually 4 bytes
-    Float:      sizeof(float)       usually 4 bytes
-    Float4:     sizeof(float4)      usually 16 bytes
-    Matrix44:   sizeof(matrix44)    usually 48 bytes
-    String:     sizeof(char*)       usually 4 bytes
+    Rows are allocated contigously in memory, which means padding might be
+    inserted "between columns/values" to fulfill memory alignment requirements
 
     The AttributeTable object keeps track of all changes (added columns,
     added rows, modified rows, modified values).
