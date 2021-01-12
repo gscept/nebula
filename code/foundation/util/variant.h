@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 //------------------------------------------------------------------------------
 /**
     @class Util::Variant
@@ -654,6 +654,7 @@ Variant::Copy(const Variant& rhs)
         case Vec2:
             this->f[0] = rhs.f[0];
             this->f[1] = rhs.f[1];
+            break;
         case Vec3:
             this->f[0] = rhs.f[0];
             this->f[1] = rhs.f[1];
