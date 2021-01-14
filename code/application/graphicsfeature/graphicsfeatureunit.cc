@@ -24,6 +24,7 @@
 #include "terrain/terraincontext.h"
 
 #include "graphicsfeature/managers/graphicsmanager.h"
+#include "graphicsfeature/managers/cameramanager.h"
 
 using namespace Graphics;
 using namespace Visibility;
@@ -122,6 +123,9 @@ GraphicsFeatureUnit::OnActivate()
 
     // Attach managers
     this->graphicsManagerHandle = this->AttachManager(GraphicsManager::Create());
+    this->cameraManagerHandle = this->AttachManager(CameraManager::Create());
+
+    this->defaultViewHandle = CameraManager::RegisterView(this->defaultView);
 }
 
 //------------------------------------------------------------------------------

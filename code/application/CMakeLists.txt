@@ -68,6 +68,8 @@ nebula_begin_module(application)
             fips_files(
                 graphicsmanager.h
                 graphicsmanager.cc
+                cameramanager.h
+                cameramanager.cc
             )
         fips_dir(graphicsfeature/properties)
             nebula_add_nidl(

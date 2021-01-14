@@ -11,6 +11,7 @@
 #include "memory/arenaallocator.h"
 #include "basegamefeature/managers/entitymanager.h"
 #include "basegamefeature/managers/blueprintmanager.h"
+#include "profiling/profiling.h"
 
 namespace Game
 {
@@ -268,6 +269,10 @@ ReleaseDatasets()
 */
 Dataset Query(Filter filter)
 {
+#if NEBULA_ENABLE_PROFILING
+    //N_COUNTER_INCR("Calls to Game::Query", 1);
+    N_SCOPE_ACCUM(QueryTime, EntitySystem);
+#endif
     Ptr<MemDb::Database> db = Game::GetWorldDatabase();
 
     Util::Array<MemDb::TableId> tids = db->Query(filterAllocator.Get<0>(filter), filterAllocator.Get<1>(filter));

@@ -117,6 +117,9 @@ OnFrame()
     // empty
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 void
 DefragmentCategoryInstances(Category const& cat)
 {

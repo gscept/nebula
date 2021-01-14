@@ -9,7 +9,9 @@
 #include "graphics/graphicsserver.h"
 #include "models/modelcontext.h"
 #include "visibility/visibilitycontext.h"
+#include "graphics/cameracontext.h"
 #include "game/gameserver.h"
+#include "graphicsfeature/graphicsfeatureunit.h"
 
 namespace GraphicsFeature
 {
@@ -154,7 +156,7 @@ void GraphicsManager::InitDestroyModelProcessor()
 //------------------------------------------------------------------------------
 /**
 */
-void GraphicsManager::InitUpdateTransformProcessor()
+void GraphicsManager::InitUpdateModelTransformProcessor()
 {
     Game::FilterCreateInfo filterInfo;
     filterInfo.inclusive[0] = this->pids.modelEntityData;
@@ -171,7 +173,7 @@ void GraphicsManager::InitUpdateTransformProcessor()
     Game::ProcessorCreateInfo processorInfo;
     processorInfo.async = false;
     processorInfo.filter = filter;
-    processorInfo.name = "GraphicsManager.UpdateTransforms"_atm;
+    processorInfo.name = "GraphicsManager.UpdateModelTransforms"_atm;
     processorInfo.OnBeginFrame = [](Game::Dataset data)
     {
         for (int v = 0; v < data.numViews; v++)
@@ -206,7 +208,7 @@ GraphicsManager::Create()
 
     Singleton->InitCreateModelProcessor();
     Singleton->InitDestroyModelProcessor();
-    Singleton->InitUpdateTransformProcessor();
+    Singleton->InitUpdateModelTransformProcessor();
 
     Game::ManagerAPI api;
     api.OnBeginFrame = &OnBeginFrame;
