@@ -184,9 +184,9 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 
         // transition to transfer
         VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-            CoreGraphics::BarrierStage::Host,
+            CoreGraphics::BarrierStage::Top,
             CoreGraphics::BarrierStage::Transfer,
-            VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+            VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 
         // now load texture by walking through all images and mips
         for (int i = 0; i < ctx.num_faces(); i++)

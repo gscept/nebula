@@ -20,7 +20,6 @@ group(BATCH_GROUP) shared constant FinalizeBlock
     textureHandle BloomTexture;
 };
 
-
 sampler_state UpscaleSampler
 {
     AddressU = Border;
@@ -134,7 +133,7 @@ psMain(in vec2 UV,
     [color0] out vec4 color) 
 {
     // get an averaged depth value        
-    float depth = sample2DLod(DepthBuffer, DefaultSampler, UV, 0).r;
+    float depth = sample2DLod(DepthTexture, DefaultSampler, UV, 0).r;
     vec4 viewPos = PixelToView(UV, depth);
     vec3 normal = sample2DLod(NormalBuffer, DefaultSampler, UV, 0).xyz;
 

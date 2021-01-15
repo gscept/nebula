@@ -31,8 +31,6 @@ struct _state
 
     SizeT numThreads;
 
-    CoreGraphics::ResourceTableId resourceTable;
-
     static const SizeT ClusterSubdivsX = 64;
     static const SizeT ClusterSubdivsY = 64;
     static const SizeT ClusterSubdivsZ = 24;
@@ -100,10 +98,15 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
 	state.clusterBuffer = CreateBuffer(rwb3Info);
 	state.constantBuffer = ShaderCreateConstantBuffer(state.clusterShader, "ClusterUniforms");
 
-	state.resourceTable = ShaderCreateResourceTable(state.clusterShader, NEBULA_BATCH_GROUP);
-	ResourceTableSetRWBuffer(state.resourceTable, { state.clusterBuffer, clusterAABBSlot, 0, false, false, -1, 0 });
-	ResourceTableSetConstantBuffer(state.resourceTable, { state.constantBuffer, state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
-	ResourceTableCommitChanges(state.resourceTable);
+	// get per-view resource tables
+	const Util::FixedArray<CoreGraphics::ResourceTableId>& viewTables = TransformDevice::Instance()->GetViewResourceTables();
+
+	for (IndexT i = 0; i < viewTables.Size(); i++)
+	{
+		CoreGraphics::ResourceTableId table = viewTables[i];
+		ResourceTableSetRWBuffer(table, { state.clusterBuffer, clusterAABBSlot, 0, false, false, -1, 0 });
+		ResourceTableSetConstantBuffer(table, { state.constantBuffer, state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
+	}
 
 	// called from main script
 	Frame::AddCallback("ClusterContext - Update Clusters", [](const IndexT frame, const IndexT bufferIndex) // trigger update
@@ -199,6 +202,9 @@ ClusterContext::UpdateClusters()
     // update constants
     using namespace CoreGraphics;
 
+    const IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
+
+
     // begin command buffer work
     CommandBufferBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Cluster AABB Generation");
 
@@ -219,9 +225,6 @@ ClusterContext::UpdateClusters()
         }, "AABB begin barrier");
 
     SetShaderProgram(state.clusterGenerateProgram, ComputeQueueType);
-
-    uint bufferIndex = CoreGraphics::GetBufferedFrameIndex();
-    SetResourceTable(state.resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr, ComputeQueueType);
 
     // run the job as series of 1024 clusters at a time
     Compute(Math::n_ceil((state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2]) / 64.0f), 1, 1, ComputeQueueType);

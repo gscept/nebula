@@ -17,6 +17,7 @@
 #include "debug/debugcounter.h"
 #include "coregraphics/rendereventhandler.h"
 #include "coregraphics/submissioncontext.h"
+#include "coregraphics/resourcetable.h"
 #include "timing/timer.h"
 #include "util/stack.h"
 #include "memory.h"
@@ -137,6 +138,9 @@ struct GraphicsDeviceState
     CoreGraphics::DrawThread* drawThread;
     Util::Stack<CoreGraphics::DrawThread*> drawThreads;
 
+    CoreGraphics::ResourceTableId tickResourceTable;
+    CoreGraphics::ResourceTableId frameResourceTable;
+
     Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
     CoreGraphics::PrimitiveTopology::Code primitiveTopology;
     CoreGraphics::PrimitiveGroup primitiveGroup;
@@ -227,6 +231,10 @@ void SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT sl
 void SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, uint32 numOffsets, uint32* offsets, const CoreGraphics::QueueType queue = GraphicsQueueType);
 /// set resoure table layout
 void SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout);
+/// set the resource table to be used for the NEBULA_TICK_GROUP, returns the currently used resource table
+CoreGraphics::ResourceTableId SetTickResourceTable(const CoreGraphics::ResourceTableId table);
+/// set the resource table to be used for the NEBULA_FRAME_GROUP, returns the currently used resource table
+CoreGraphics::ResourceTableId SetFrameResourceTable(const CoreGraphics::ResourceTableId table);
 
 /// push constants
 void PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data);

@@ -17,10 +17,11 @@
 #include "core/refcounted.h"
 #include "core/singleton.h"
 #include "math/mat4.h"
+#include "coregraphics/resourcetable.h"
 
 namespace CoreGraphics
 {
-class Shader;
+struct ShaderId;
 }
 
 //------------------------------------------------------------------------------
@@ -42,10 +43,14 @@ public:
     void Close();
     /// return true if device is open
     bool IsOpen() const;
+
+    /// get the per-view resource tables
+    const Util::FixedArray<CoreGraphics::ResourceTableId>& GetViewResourceTables();
+
     /// apply view dependent settings
     void ApplyViewSettings();
     /// apply any model transform needed, implementation is platform dependent
-    void ApplyModelTransforms(const Ptr<CoreGraphics::Shader>& shdInst);
+    void ApplyModelTransforms(const CoreGraphics::ShaderId shdInst);
     
     /// set projection transform
     void SetProjTransform(const Math::mat4& m);
@@ -88,7 +93,7 @@ public:
     const Math::vec2& GetNearFarPlane() const;
 
 
-private:
+protected:
     enum TransformType
     {
         View = 0,
@@ -126,6 +131,7 @@ private:
     /// update model-view-proj transform
     void UpdateModelViewProjTransform();
 
+    Util::FixedArray<CoreGraphics::ResourceTableId> viewTables; 
     bool isOpen;
     uint dirtyFlags;                                // or'ed (1<<TransformType) dirty flags
     Util::FixedArray<Math::mat4> transforms;    // index is transform type
@@ -141,6 +147,15 @@ inline bool
 TransformDeviceBase::IsOpen() const
 {
     return this->isOpen;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Util::FixedArray<CoreGraphics::ResourceTableId>&
+TransformDeviceBase::GetViewResourceTables()
+{
+	return this->viewTables;
 }
 
 //------------------------------------------------------------------------------
@@ -345,4 +360,3 @@ TransformDeviceBase::GetNearFarPlane() const
 } // namespace Base
 //------------------------------------------------------------------------------
 
-    

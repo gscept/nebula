@@ -18,6 +18,30 @@
 
 namespace Vulkan
 {
+
+struct BindlessTexturesContext
+{
+    IndexT texture2DTextureVar;
+    SizeT numBoundTextures2D;
+    IndexT texture2DMSTextureVar;
+    SizeT numBoundTextures2DMS;
+    IndexT texture2DArrayTextureVar;
+    SizeT numBoundTextures2DArray;
+    IndexT texture3DTextureVar;
+    SizeT numBoundTextures3D;
+    IndexT textureCubeTextureVar;
+    SizeT numBoundTexturesCube;
+    Util::FixedArray<CoreGraphics::ResourceTableId> resourceTables;
+
+};
+
+struct TickParametersContext
+{
+    IndexT cboSlot;
+    IndexT cboOffset;
+    CoreGraphics::BufferId cbo;
+};
+
 class VkShaderServer : public Base::ShaderServerBase
 {
     __DeclareClass(VkShaderServer);
@@ -39,6 +63,11 @@ public:
     void ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, uint32_t slot, bool depth = false, bool stencil = false);
     /// unregister texture
     void UnregisterTexture(const uint32_t id, const CoreGraphics::TextureType type);
+
+    /// get resource table based on frame buffer
+    BindlessTexturesContext GetBindlessTextureContext();
+    /// get tick parameter context
+    TickParametersContext GetTickParametersContext();
 
     /// set global irradiance and cubemaps
     void SetGlobalEnvironmentTextures(const CoreGraphics::TextureId& env, const CoreGraphics::TextureId& irr, const SizeT numMips);
@@ -75,7 +104,6 @@ private:
     Util::FixedPool<uint32_t> textureCubePool;
     Util::FixedPool<uint32_t> textureCubeArrayPool;
 
-
     Util::FixedArray<CoreGraphics::ResourceTableId> resourceTables;
     CoreGraphics::ResourcePipelineId tableLayout;
     IndexT texture2DTextureVar;
@@ -83,10 +111,6 @@ private:
     IndexT texture2DArrayTextureVar;
     IndexT texture3DTextureVar;
     IndexT textureCubeTextureVar;
-    IndexT image2DTextureVar;
-    IndexT image2DMSTextureVar;
-    IndexT image3DTextureVar;
-    IndexT imageCubeTextureVar;
 
     IndexT normalBufferTextureVar;
     IndexT depthBufferTextureVar;
@@ -124,16 +148,6 @@ private:
 
     AnyFX::EffectFactory* factory;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-VkShaderServer::SubmitTextureDescriptorChanges()
-{
-    IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
-    ResourceTableCommitChanges(this->resourceTables[bufferedFrameIndex]);
-}
 
 //------------------------------------------------------------------------------
 /**

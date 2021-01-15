@@ -10,11 +10,6 @@
 #include "lib/util.fxh"
 #include "lib/techniques.fxh"
 #include "lib/defaultsamplers.fxh"
-
-#define LIGHTS_CLUSTERED_GROUP SYSTEM_GROUP
-#define LIGHTS_CLUSTERED_VISIBILITY "VS|PS"
-#define CLUSTERING_GROUP SYSTEM_GROUP
-#define CLUSTERING_VISIBILITY "VS|PS"
 #include "lib/clustering.fxh"
 #include "lib/lights_clustered.fxh"
 

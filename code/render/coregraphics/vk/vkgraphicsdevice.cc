@@ -135,8 +135,11 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     Util::FixedArray<Util::FixedArray<const char*>> deviceFeatureStrings;
     IndexT currentDevice;
 
-    CoreGraphics::ShaderProgramId currentShaderProgram;
+	Util::FixedArray<CoreGraphics::ShaderProgramId> currentShaderPrograms;
     CoreGraphics::ShaderFeature::Mask currentShaderMask;
+
+	CoreGraphics::VertexLayoutId currentVertexLayout;
+	CoreGraphics::ShaderProgramId currentVertexLayoutShader;
 
     VkGraphicsPipelineCreateInfo currentPipelineInfo;
     VkPipelineLayout currentGraphicsPipelineLayout;
@@ -161,8 +164,6 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 
     VkCommandBufferThread::VkScissorRectArrayCommand scissorArrayCommand;
     VkCommandBufferThread::VkViewportArrayCommand viewportArrayCommand;
-
-    CoreGraphics::ShaderProgramId currentProgram;
 
     _declare_counter(NumPipelinesBuilt);
     _declare_timer(DebugTimer);
@@ -505,7 +506,7 @@ void
 BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, bool propagate)
 {
     // if we are setting descriptors before we have a pipeline, add them for later submission
-    if (state.currentProgram == -1)
+    if (state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] == CoreGraphics::ShaderProgramId::Invalid())
     {
         for (uint32_t i = 0; i < setCount; i++)
         {
@@ -522,7 +523,7 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, ui
     else
     {
         // if batching, draws goes to thread
-        n_assert(state.currentProgram != -1);
+        n_assert(state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != CoreGraphics::ShaderProgramId::Invalid());
         if (state.drawThread)
         {
             n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid());
@@ -584,7 +585,7 @@ UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layou
 void 
 BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const CoreGraphics::ShaderProgramId programId)
 {
-    if (state.currentProgram != programId || !CheckBits(state.currentPipelineBits, PipelineBuildBits::ShaderInfoSet))
+    if (state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != programId || !CheckBits(state.currentPipelineBits, PipelineBuildBits::ShaderInfoSet))
     {
         state.database.SetShader(programId, shader);
         state.currentPipelineBits |= PipelineBuildBits::ShaderInfoSet;
@@ -603,7 +604,7 @@ BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const CoreG
         state.currentPipelineInfo.pStages = shader.pStages;
         state.currentPipelineInfo.layout = shader.layout;
         state.currentPipelineBits &= ~PipelineBuildBits::PipelineBuilt;
-        state.currentProgram = programId;
+        state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] = programId;
     }
 }
 
@@ -685,8 +686,8 @@ CreateAndBindGraphicsPipeline()
         state.drawThread->Push(stencilWriteMaskCommand);
 
         // bind textures and camera descriptors
-        VkShaderServer::Instance()->BindTextureDescriptorSetsGraphics();
-        VkTransformDevice::Instance()->BindCameraDescriptorSetsGraphics();
+		CoreGraphics::SetResourceTable(state.tickResourceTable, NEBULA_TICK_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+		CoreGraphics::SetResourceTable(state.frameResourceTable, NEBULA_FRAME_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 
         // push propagation descriptors
         for (IndexT i = 0; i < state.propagateDescriptorSets.Size(); i++)
@@ -733,13 +734,7 @@ CreateAndBindGraphicsPipeline()
 void 
 BindComputePipeline(const VkPipeline& pipeline, const CoreGraphics::QueueType queue)
 {
-    n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
 
-    // bind compute pipeline
-    state.currentBindPoint = CoreGraphics::ComputePipeline;
-
-    // bind pipeline
-    vkCmdBindPipeline(GetMainBuffer(queue), VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 }
 
 //------------------------------------------------------------------------------
@@ -762,7 +757,7 @@ SetVkViewports(VkViewport* viewports, SizeT num)
     cmd.first = 0;
     cmd.num = num;
     cmd.vps = viewports;
-    if (state.currentProgram != -1)
+    if (state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != CoreGraphics::ShaderProgramId::Invalid())
     {
         if (state.drawThread)
         {
@@ -791,7 +786,7 @@ SetVkScissorRects(VkRect2D* scissors, SizeT num)
     cmd.num = num;
     cmd.scs = scissors;
 
-    if (state.currentProgram != -1)
+    if (state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != CoreGraphics::ShaderProgramId::Invalid())
     {
         if (state.drawThread)
         {
@@ -1107,11 +1102,13 @@ NebulaVulkanErrorDebugCallback(
         1303270965
     };
 
+	/*
     for (IndexT i = 0; i < sizeof(ignore) / sizeof(int); i++)
     {
         if (callbackData->messageIdNumber == ignore[i])
             return VK_FALSE;
     }
+	*/
 
     n_warning("%s\n", callbackData->pMessage);
     return VK_FALSE;
@@ -1526,17 +1523,17 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
     CommandBufferPoolCreateInfo cmdPoolCreateInfo =
     {
-        CoreGraphics::QueueType::GraphicsQueueType,
+        CoreGraphics::GraphicsQueueType,
         false,
         true,
     };
     state.submissionGraphicsCmdPool = CreateCommandBufferPool(cmdPoolCreateInfo);
     state.submissionTransferGraphicsHandoverCmdPool = CreateCommandBufferPool(cmdPoolCreateInfo);
 
-    cmdPoolCreateInfo.queue = CoreGraphics::QueueType::ComputeQueueType;
+    cmdPoolCreateInfo.queue = CoreGraphics::ComputeQueueType;
     state.submissionComputeCmdPool = CreateCommandBufferPool(cmdPoolCreateInfo);
 
-    cmdPoolCreateInfo.queue = CoreGraphics::QueueType::TransferQueueType;
+    cmdPoolCreateInfo.queue = CoreGraphics::TransferQueueType;
     state.submissionTransferCmdPool = CreateCommandBufferPool(cmdPoolCreateInfo);
     CommandBufferCreateInfo cmdCreateInfo =
     {
@@ -1612,7 +1609,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 #pragma pop_macro("CreateSemaphore")
 
     state.waitForPresentSemaphore = VK_NULL_HANDLE;
-    state.mainSubmitQueue = CoreGraphics::QueueType::GraphicsQueueType; // main queue to submit is on graphics
+    state.mainSubmitQueue = CoreGraphics::GraphicsQueueType; // main queue to submit is on graphics
 
     state.passInfo =
     {
@@ -1628,6 +1625,11 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     state.currentPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     state.currentPipelineInfo.basePipelineIndex = -1;
     state.currentPipelineInfo.pColorBlendState = &state.blendInfo;
+	state.currentPipelineInfo.pVertexInputState = nullptr;
+    state.currentPipelineInfo.pInputAssemblyState = nullptr;
+	state.currentPipelineBits = PipelineBuildBits::NoInfoSet;
+	state.currentShaderPrograms.Resize(NumQueueTypes); // resize to fit all queues, even if only compute and graphics can use shaders...
+	state.currentShaderPrograms.Fill(CoreGraphics::ShaderProgramId::Invalid());
 
     // construct queues
     VkQueryPoolCreateInfo queryInfos[CoreGraphics::NumQueryTypes];
@@ -1698,10 +1700,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     state.blendInfo.flags = 0;
 
     // reset state
-    state.inputInfo.topology = VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
-    state.currentProgram = -1;
-    state.currentPipelineInfo.pVertexInputState = nullptr;
-    state.currentPipelineInfo.pInputAssemblyState = nullptr;
+    state.inputInfo.topology = VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;    
 
     state.inBeginAsyncCompute = false;
     state.inBeginBatch = false;
@@ -2334,9 +2333,14 @@ SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::BufferId& buffer, 
 void 
 SetVertexLayout(const CoreGraphics::VertexLayoutId& vl)
 {
-    n_assert(state.currentShaderProgram != CoreGraphics::ShaderProgramId::Invalid());
-    VkPipelineVertexInputStateCreateInfo* info = CoreGraphics::layoutPool->GetDerivativeLayout(vl, state.currentShaderProgram);
-    SetVertexLayoutPipelineInfo(info);
+    n_assert(state.currentShaderPrograms[GraphicsQueueType] != CoreGraphics::ShaderProgramId::Invalid());
+	if (state.currentVertexLayout != vl || state.currentVertexLayoutShader != state.currentShaderPrograms[GraphicsQueueType])
+	{
+		VkPipelineVertexInputStateCreateInfo* info = CoreGraphics::layoutPool->GetDerivativeLayout(vl, state.currentShaderPrograms[GraphicsQueueType]);
+		SetVertexLayoutPipelineInfo(info);
+		state.currentVertexLayout = vl;
+		state.currentVertexLayoutShader = state.currentShaderPrograms[GraphicsQueueType];
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -2417,8 +2421,8 @@ void
 SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::QueueType queue)
 {
     n_assert(pro != CoreGraphics::ShaderProgramId::Invalid());
+
     const VkShaderProgramRuntimeInfo& info = CoreGraphics::shaderPool->shaderAlloc.Get<VkShaderPool::Shader_ProgramAllocator>(pro.shaderId).Get<ShaderProgram_RuntimeInfo>(pro.programId);
-    state.currentShaderProgram = pro;
     state.currentStencilFrontRef = info.stencilFrontRef;
     state.currentStencilBackRef = info.stencilBackRef;
     state.currentStencilReadMask = info.stencilReadMask;
@@ -2429,7 +2433,14 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
     // if we are compute, we can set the pipeline straight away, otherwise we have to accumulate the infos
     if (info.type == ComputePipeline)
     {
-        Vulkan::BindComputePipeline(info.pipeline, queue);
+		n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+
+		// bind compute pipeline
+		state.currentBindPoint = CoreGraphics::ComputePipeline;
+
+		// bind pipeline
+		vkCmdBindPipeline(GetMainBuffer(queue), VK_PIPELINE_BIND_POINT_COMPUTE, info.pipeline);
+
         layoutChanged = state.currentComputePipelineLayout != info.layout;
         state.currentComputePipelineLayout = info.layout;
     }
@@ -2458,6 +2469,8 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
             VK_NULL_HANDLE, 0               // base pipeline is kept as NULL too, because this is the base for all derivatives
         };
         Vulkan::BindGraphicsPipelineInfo(ginfo, pro);
+		state.currentBindPoint = CoreGraphics::ComputePipeline;
+
         layoutChanged = state.currentGraphicsPipelineLayout != info.layout;
         state.currentGraphicsPipelineLayout = info.layout;
     }
@@ -2469,16 +2482,16 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
     {
         if (layoutChanged)
         {
-            VkShaderServer::Instance()->BindTextureDescriptorSetsCompute(queue);
-            VkTransformDevice::Instance()->BindCameraDescriptorSetsCompute(queue);
+			CoreGraphics::SetResourceTable(state.tickResourceTable, NEBULA_TICK_GROUP, CoreGraphics::ComputePipeline, nullptr, queue);
+			CoreGraphics::SetResourceTable(state.frameResourceTable, NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr, queue);
         }
     }
     else // graphics queue
     {
         if (!state.drawThread && layoutChanged)
         {
-            VkShaderServer::Instance()->BindTextureDescriptorSetsGraphics();
-            VkTransformDevice::Instance()->BindCameraDescriptorSetsGraphics();
+			CoreGraphics::SetResourceTable(state.tickResourceTable, NEBULA_TICK_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+			CoreGraphics::SetResourceTable(state.frameResourceTable, NEBULA_FRAME_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
         }
     }
 }
@@ -2541,6 +2554,30 @@ SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout)
 {
     n_assert(layout != CoreGraphics::ResourcePipelineId::Invalid());
     state.currentGraphicsPipelineLayout = ResourcePipelineGetVk(layout);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::ResourceTableId
+SetTickResourceTable(const CoreGraphics::ResourceTableId table)
+{
+	n_assert(table != CoreGraphics::ResourceTableId::Invalid());
+	CoreGraphics::ResourceTableId ret = state.tickResourceTable;
+	state.tickResourceTable = table;
+	return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::ResourceTableId
+SetFrameResourceTable(const CoreGraphics::ResourceTableId table)
+{
+	n_assert(table != CoreGraphics::ResourceTableId::Invalid());
+	CoreGraphics::ResourceTableId ret = state.frameResourceTable;
+	state.frameResourceTable = table;
+	return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -3173,7 +3210,7 @@ EndBatch()
     n_assert(state.inBeginBatch);
     //n_assert(state.pass != PassId::Invalid());
 
-    state.currentProgram = -1;
+	state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] = CoreGraphics::ShaderProgramId::Invalid();
     state.inBeginBatch = false;
 }
 
@@ -3192,7 +3229,7 @@ EndPass(PassRecordMode mode)
     //this->currentPipelineBits = 0;
     for (IndexT i = 0; i < NEBULA_NUM_GROUPS; i++)
         state.propagateDescriptorSets[i].baseSet = -1;
-    state.currentProgram = -1;
+	state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] = CoreGraphics::ShaderProgramId::Invalid();
 
     // end render pass
     switch (mode)
@@ -3232,6 +3269,7 @@ EndSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue, 
     LockResourceSubmission();
     if (queue == GraphicsQueueType && state.setupSubmissionActive)
     {
+        // end recording and add this command buffer for submission
         // end recording and add this command buffer for submission
         CommandBufferEndRecord(state.setupSubmissionCmdBuffer);
 
@@ -3313,7 +3351,9 @@ EndFrame(IndexT frameIndex)
 
     // if we have an active resource submission, submit it!
     LockResourceSubmission();
-    if (state.handoverSubmissionActive)
+
+	// do transfer-graphics handovers
+	if (state.handoverSubmissionActive)
     {
         // finish up the resource submission and setup submissions
         CommandBufferEndRecord(state.handoverSubmissionCmdBuffer);
@@ -3342,7 +3382,6 @@ EndFrame(IndexT frameIndex)
 
         state.sparseWaitHandled = true;
     }
-
 
     if (state.resourceSubmissionActive)
     {
@@ -3414,7 +3453,7 @@ EndFrame(IndexT frameIndex)
 
     // reset state
     state.inputInfo.topology = VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
-    state.currentProgram = -1;
+	state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] = CoreGraphics::ShaderProgramId::Invalid();
     state.currentPipelineInfo.pVertexInputState = nullptr;
     state.currentPipelineInfo.pInputAssemblyState = nullptr;
 }
@@ -3856,7 +3895,7 @@ SetViewport(const Math::rectangle<int>& rect, int index)
     vp.maxDepth = 1.0f;
 
     // only apply to batch or command buffer if we have a program bound
-    n_assert(state.currentProgram != -1);
+    n_assert(state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != CoreGraphics::ShaderProgramId::Invalid());
     if (state.drawThread)
     {
         if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
@@ -3885,7 +3924,7 @@ SetScissorRect(const Math::rectangle<int>& rect, int index)
     sc.extent.height = rect.height();
     sc.offset.x = rect.left;
     sc.offset.y = rect.top;
-    n_assert(state.currentProgram != -1);
+    n_assert(state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != CoreGraphics::ShaderProgramId::Invalid());
     if (state.drawThread)
     {
         if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
@@ -4097,6 +4136,26 @@ ObjectSetName(const CoreGraphics::ResourcePipelineId id, const char* name)
         nullptr,
         VK_OBJECT_TYPE_PIPELINE_LAYOUT,
         (uint64_t)Vulkan::ResourcePipelineGetVk(id),
+        name
+    };
+    VkDevice dev = GetCurrentDevice();
+    VkResult res = VkDebugObjectName(dev, &info);
+    n_assert(res == VK_SUCCESS);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const CoreGraphics::ResourceTableId id, const char* name)
+{
+    VkDebugUtilsObjectNameInfoEXT info =
+    {
+        VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+        nullptr,
+        VK_OBJECT_TYPE_DESCRIPTOR_SET,
+        (uint64_t)Vulkan::ResourceTableGetVkDescriptorSet(id),
         name
     };
     VkDevice dev = GetCurrentDevice();

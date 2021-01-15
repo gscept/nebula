@@ -475,7 +475,7 @@ FrameOp::SetupSynchronization(
 /**
 */
 void 
-FrameOp::Compiled::UpdateResources(const IndexT frameIndex)
+FrameOp::Compiled::UpdateResources(const IndexT frameIndex, const IndexT bufferIndex)
 {
     // implement in subclass
 }

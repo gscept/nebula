@@ -160,6 +160,8 @@ void ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTabl
 void ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& buf);
 /// set resource table sampler
 void ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& samp);
+/// copy resources from a slot, index and array size between resource tables
+void ResourceTableCopy(const ResourceTableId from, const IndexT fromSlot, const IndexT fromIndex, const ResourceTableId to, const IndexT toSlot, const IndexT toIndex, const SizeT numResources);
 
 /// disallow the resource table system to make modifications
 void ResourceTableBlock(bool b);

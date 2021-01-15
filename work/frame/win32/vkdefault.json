@@ -276,12 +276,6 @@
 			"to": "ZBufferCopy"
 		},
 
-		"copy": {
-			"name": "Copy Depth",
-			"from": "ZBuffer",
-			"to": "ZBufferCopy"
-		},
-
 		"end_submission": {
 			"queue": "Graphics"
 		},
@@ -535,20 +529,32 @@
 				],
 				"depth": false,
 
-				"resource_dependencies": [
-					{
-						"name": "BloomBufferBlurred",
-						"access": "ShaderRead",
-						"layout": "ShaderRead",
-						"stage": "PixelShader"
-					},
-					{
-						"name": "ZBufferCopy",
-						"access": "ShaderRead",
-						"layout": "DepthStencilRead",
-						"stage": "PixelShader"
-					}
-				],
+        "resource_dependencies": [
+          {
+            "name": "BloomBufferBlurred",
+            "access": "ShaderRead",
+            "layout": "ShaderRead",
+            "stage": "PixelShader"
+          },
+          {
+            "name": "AverageLumBuffer",
+            "access": "ShaderRead",
+            "layout": "ShaderRead",
+            "stage": "PixelShader"
+          },
+          {
+            "name": "LightBuffer",
+            "access": "ShaderRead",
+            "layout": "ShaderRead",
+            "stage": "PixelShader"
+          },
+          {
+            "name": "ZBufferCopy",
+            "access": "ShaderRead",
+            "layout": "DepthStencilRead",
+            "stage": "PixelShader"
+          }
+        ],
 
 				"fullscreen_effect": {
 					"name": "Finalize",

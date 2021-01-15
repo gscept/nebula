@@ -206,7 +206,7 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
 
     binfo.name = "HBAO Transition to Blur Pass 0 -> 1";
     binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[0], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead });
-    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[1], subres, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
+    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[1], subres, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::ShaderRead, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
     ssaoState.barriers[3] = CreateBarrier(binfo);
     binfo.textures.Clear();
 

@@ -1406,7 +1406,7 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
             {
                 // use resource submission
                 CoreGraphics::LockResourceSubmission();
-                CoreGraphics::SubmissionContextId sub = CoreGraphics::GetResourceSubmissionContext();
+                CoreGraphics::SubmissionContextId sub = CoreGraphics::GetSetupSubmissionContext();
 
                 // transition into transfer mode
                 VkImageSubresourceRange subres;
@@ -1418,9 +1418,9 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
 
                 // insert barrier
                 VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-                    CoreGraphics::BarrierStage::Host,
+                    CoreGraphics::BarrierStage::Top,
                     CoreGraphics::BarrierStage::Transfer,
-                    VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+                    VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
 
                 // add image update, take the output buffer and memory and add to delayed delete
                 VkBuffer outBuf;

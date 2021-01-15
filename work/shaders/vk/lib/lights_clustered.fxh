@@ -6,75 +6,6 @@
 #include "pbr.fxh"
 #include "CSM.fxh"
 
-// increase if we need more lights in close proximity, for now, 128 is more than enough
-const uint MAX_LIGHTS_PER_CLUSTER = 128;
-
-struct SpotLight
-{
-	vec4 position;				// view space position of light, w is range
-	vec4 forward;				// forward vector of light (spotlight and arealights)
-
-	vec2 angleSinCos;			// angle cutoffs
-
-	vec3 color;					// light color
-	int projectionExtension;	// projection extension index
-	int shadowExtension;		// projection extension index
-	uint flags;					// feature flags (shadows, projection texture, etc)
-};
-
-struct SpotLightProjectionExtension
-{
-	mat4 projection;					// projection transform
-	textureHandle projectionTexture;	// projection texture
-};
-
-struct SpotLightShadowExtension
-{
-	mat4 projection;
-	float shadowIntensity;				// intensity of shadows
-	uint shadowSlice;
-	textureHandle shadowMap;			// shadow map
-};
-
-struct PointLight
-{
-	vec4 position;				// view space position of light, w is range
-
-	vec3 color;					// light color
-	uint flags;					// feature flags (shadows, projection texture, etc)
-};
-
-struct PointLightShadowExtension
-{
-	float shadowIntensity;		// intensity of shadows
-	uint shadowMap;				// shadow map
-};
-
-#ifndef LIGHTS_CLUSTERED_GROUP
-#define LIGHTS_CLUSTERED_GROUP BATCH_GROUP
-#endif
-
-#ifndef LIGHTS_CLUSTERED_VISIBILITY
-#define LIGHTS_CLUSTERED_VISIBILITY "CS|PS"
-#endif
-
-// contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
-group(LIGHTS_CLUSTERED_GROUP) rw_buffer LightIndexLists[string Visibility = LIGHTS_CLUSTERED_VISIBILITY;]
-{
-	uint PointLightCountList[NUM_CLUSTER_ENTRIES];
-	uint PointLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
-	uint SpotLightCountList[NUM_CLUSTER_ENTRIES];
-	uint SpotLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
-};
-
-group(LIGHTS_CLUSTERED_GROUP) rw_buffer LightLists[string Visibility = LIGHTS_CLUSTERED_VISIBILITY;]
-{
-	SpotLight SpotLights[1024];
-	SpotLightProjectionExtension SpotLightProjection[256];
-	SpotLightShadowExtension SpotLightShadow[16];
-	PointLight PointLights[1024];
-};
-
 // match these in lightcontext.cc
 const uint USE_SHADOW_BITFLAG = 1;
 const uint USE_PROJECTION_TEX_BITFLAG = 2;
@@ -97,7 +28,6 @@ sampler_state SpotlightTextureSampler
 
 #define SPECULAR_SCALE 13
 #define ROUGHNESS_TO_SPECPOWER(x) exp2(SPECULAR_SCALE * x + 1)
-
 
 //---------------------------------------------------------------------------------------------------------------------------
 /**

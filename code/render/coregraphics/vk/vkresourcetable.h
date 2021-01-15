@@ -33,7 +33,8 @@ enum
     ResourceTable_DescriptorPool,
     ResourceTable_Layout,
     ResourceTable_Writes,
-    ResourceTable_WriteInfos
+    ResourceTable_WriteInfos,
+    ResourceTable_Copies
 };
 
 typedef Ids::IdAllocator<
@@ -42,7 +43,8 @@ typedef Ids::IdAllocator<
     VkDescriptorPool,
     CoreGraphics::ResourceTableLayoutId,
     Util::Array<VkWriteDescriptorSet>,
-    Util::Array<WriteInfo>  
+    Util::Array<WriteInfo>,
+    Util::Array<VkCopyDescriptorSet>
 > VkResourceTableAllocator;
 extern VkResourceTableAllocator resourceTableAllocator;
 

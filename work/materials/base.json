@@ -889,17 +889,7 @@
             "type": "float",
             "defaultValue": 0.03
           },
-          {
-            "name": "Contrast",
-            "type": "float",
-            "defaultValue": 1.0
-          },
-          {
-            "name": "Brightness",
-            "type": "float",
-            "defaultValue": 0.0
-          }
-        ]
+        ],
       },
       {
         "name": "Placeholder",

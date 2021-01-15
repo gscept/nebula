@@ -6,51 +6,6 @@
 #ifndef CLUSTERING_FXH
 #define CLUSTERING_FXH
 
-#ifndef CLUSTERING_GROUP
-#define CLUSTERING_GROUP BATCH_GROUP
-#endif
-
-#ifndef CLUSTERING_VISIBILITY
-#define CLUSTERING_VISIBILITY "CS|PS"
-#endif
-
-struct ClusterAABB
-{
-	vec4 maxPoint;
-	vec4 minPoint;
-	uint featureFlags;
-};
-
-group(CLUSTERING_GROUP) rw_buffer ClusterAABBs [ string Visibility = CLUSTERING_VISIBILITY; ]
-{
-	ClusterAABB AABBs[];
-};
-
-// this is used to keep track of how many lights we have active
-group(CLUSTERING_GROUP) constant ClusterUniforms [ string Visibility = CLUSTERING_VISIBILITY; ]
-{
-	vec2 FramebufferDimensions;
-	vec2 InvFramebufferDimensions;
-	uvec2 BlockSize;
-	float InvZScale;
-	float InvZBias;
-
-	uvec3 NumCells;
-	float ZDistribution;
-};
-
-const uint CLUSTER_POINTLIGHT_BIT = 0x1u;
-const uint CLUSTER_SPOTLIGHT_BIT = 0x2u;
-const uint CLUSTER_AREALIGHT_BIT = 0x4u;
-const uint CLUSTER_LIGHTPROBE_BIT = 0x8u;
-const uint CLUSTER_PBR_DECAL_BIT = 0x10u;
-const uint CLUSTER_EMISSIVE_DECAL_BIT = 0x20u;
-const uint CLUSTER_FOG_SPHERE_BIT = 0x40u;
-const uint CLUSTER_FOG_BOX_BIT = 0x80u;
-
-// set a fixed number of cluster entries
-const uint NUM_CLUSTER_ENTRIES = 16384;
-
 #define CHECK_FLAG(bits, bit) ((bits & bit) == bit)
 
 //------------------------------------------------------------------------------
@@ -79,7 +34,6 @@ TestAABBAABB(ClusterAABB aabb, vec3 bboxMin, vec3 bboxMax)
 	//	return if all members of E are true
 	return all(equal(lessThan(aabb.minPoint.xyz, bboxMax), greaterThan(aabb.maxPoint.xyz, bboxMin)));
 }
-
 
 //------------------------------------------------------------------------------
 /**

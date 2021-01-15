@@ -38,10 +38,6 @@ public:
     /// update the csm matrix block
     void ApplyShadowSettings(const Shared::ShadowMatrixBlock& block);
 
-    /// bind descriptors for view in the graphics pipeline
-    void BindCameraDescriptorSetsGraphics();
-    /// bind descriptors for view in the compute pipeline
-    void BindCameraDescriptorSetsCompute(const CoreGraphics::QueueType queue = CoreGraphics::GraphicsQueueType);
 private:
 
     Math::mat4 viewMatrixArray[6];
@@ -57,34 +53,13 @@ private:
     IndexT viewMatricesVar;
     IndexT timeAndRandomVar;
     IndexT nearFarPlaneVar;
-    uint32_t frameOffset;
 
     IndexT shadowCameraBlockVar;
     CoreGraphics::BufferId viewConstants;
 
-    Util::FixedArray<CoreGraphics::ResourceTableId> viewTables; 
     IndexT viewConstantsSlot;
     IndexT shadowConstantsSlot;
     CoreGraphics::ResourcePipelineId tableLayout;
 };
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-VkTransformDevice::BindCameraDescriptorSetsGraphics()
-{
-    IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
-    CoreGraphics::SetResourceTable(this->viewTables[bufferedFrameIndex], NEBULA_FRAME_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-VkTransformDevice::BindCameraDescriptorSetsCompute(const CoreGraphics::QueueType queue)
-{
-    IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
-    CoreGraphics::SetResourceTable(this->viewTables[bufferedFrameIndex], NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr, queue);
-}
 } // namespace Vulkan

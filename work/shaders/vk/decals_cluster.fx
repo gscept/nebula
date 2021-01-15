@@ -54,7 +54,7 @@ void csCull()
 {
     uint index1D = gl_GlobalInvocationID.x;
 
-    if (index1D > NumClusters)
+    if (index1D > NumDecalClusters)
         return;
 
     ClusterAABB aabb = AABBs[index1D];

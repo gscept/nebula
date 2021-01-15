@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 
 #ifndef STANDARD_SHADING_FXH
-#define STANDARD_SHADING_FXH
+#define STANDARD_SHADING_FXH 
 
 #include "lib/std.fxh"
 #include "lib/util.fxh"

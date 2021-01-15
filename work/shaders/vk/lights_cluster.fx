@@ -10,14 +10,6 @@
 #include "lib/preetham.fxh"
 #include "lib/mie-rayleigh.fxh" 
 
-group(BATCH_GROUP) constant LightUniforms [ string Visibility = "CS"; ]
-{
-    textureHandle SSAOBuffer;
-    uint NumPointLights;
-    uint NumSpotLights;
-    uint NumClusters;
-};
-
 write rgba16f image2D Lighting;
 write rgba16f image2D DebugOutput;
 
@@ -30,7 +22,7 @@ void csCull()
 {
     uint index1D = gl_GlobalInvocationID.x;
 
-    if (index1D > NumClusters)
+    if (index1D > NumLightClusters)
         return;
 
     ClusterAABB aabb = AABBs[index1D];

@@ -69,6 +69,8 @@ public:
     void Discard();
     /// run through script and generate thread jobs where applicable
     void RunJobs(const IndexT frameIndex, const IndexT bufferIndex);
+    /// update GPU resources
+    void UpdateResources(const IndexT frameIndex, const IndexT bufferIndex);
     /// run script
     void Run(const IndexT frameIndex, const IndexT bufferIndex);
 

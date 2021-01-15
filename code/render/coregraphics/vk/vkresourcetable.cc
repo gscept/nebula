@@ -190,6 +190,31 @@ DestroyResourceTable(const ResourceTableId id)
 /**
 */
 void
+ResourceTableCopy(const ResourceTableId from, IndexT fromSlot, IndexT fromIndex, const ResourceTableId to, IndexT toSlot, IndexT toIndex, const SizeT numResources)
+{
+	VkDescriptorSet& fromSet = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(from.id24);
+	VkDescriptorSet& toSet = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(to.id24);
+	Util::Array<VkCopyDescriptorSet>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(to.id24);
+
+	VkCopyDescriptorSet copy =
+	{
+		VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET,
+		nullptr,
+		fromSet,
+		fromSlot,
+		fromIndex,
+		toSet,
+		toSlot,
+		toIndex,
+		numResources
+	};
+	copies.Append(copy);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& tex)
 {
     VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
@@ -594,9 +619,10 @@ ResourceTableCommitChanges(const ResourceTableId id)
     }
     else
     {
-        Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<4>(id.id24);
-        Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<5>(id.id24);
-        VkDevice& dev = resourceTableAllocator.Get<0>(id.id24);
+        Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+        Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
+		Util::Array<VkCopyDescriptorSet>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(id.id24);
+        VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
 
         // because we store the write-infos in the other list, and the VkWriteDescriptorSet wants a pointer to the structure
         // we need to re-assign the pointers, but thankfully they have values from before
@@ -607,11 +633,12 @@ ResourceTableCommitChanges(const ResourceTableId id)
             if (writeList[i].pImageInfo != nullptr) writeList[i].pImageInfo = &infoList[i].img;
             if (writeList[i].pTexelBufferView != nullptr) writeList[i].pTexelBufferView = &infoList[i].tex;
         }
-        if (i != 0)
+        if (writeList.Size() > 0 || copies.Size() > 0)
         {
-            vkUpdateDescriptorSets(dev, writeList.Size(), writeList.Begin(), 0, nullptr);
+            vkUpdateDescriptorSets(dev, writeList.Size(), writeList.Begin(), copies.Size(), copies.Begin());
             writeList.Free();
             infoList.Free();
+			copies.Free();
         }
     }
 }

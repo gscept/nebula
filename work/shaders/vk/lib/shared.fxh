@@ -166,6 +166,235 @@ group(FRAME_GROUP) shared constant ShadowMatrixBlock[string Visibility = "VS";]
 	mat4 LightViewMatrix[SHADOW_CASTER_COUNT];
 };
 
+//------------------------------------------------------------------------------
+/**
+        CLUSTERS
+*/
+//------------------------------------------------------------------------------
+const uint CLUSTER_POINTLIGHT_BIT = 0x1u;
+const uint CLUSTER_SPOTLIGHT_BIT = 0x2u;
+const uint CLUSTER_AREALIGHT_BIT = 0x4u;
+const uint CLUSTER_LIGHTPROBE_BIT = 0x8u;
+const uint CLUSTER_PBR_DECAL_BIT = 0x10u;
+const uint CLUSTER_EMISSIVE_DECAL_BIT = 0x20u;
+const uint CLUSTER_FOG_SPHERE_BIT = 0x40u;
+const uint CLUSTER_FOG_BOX_BIT = 0x80u;
+
+// set a fixed number of cluster entries
+const uint NUM_CLUSTER_ENTRIES = 16384;
+
+struct ClusterAABB
+{
+	vec4 maxPoint;
+	vec4 minPoint;
+	uint featureFlags;
+};
+
+group(FRAME_GROUP) rw_buffer ClusterAABBs [ string Visibility = "CS|VS|PS"; ]
+{
+	ClusterAABB AABBs[];
+};
+
+// this is used to keep track of how many lights we have active
+group(FRAME_GROUP) shared constant ClusterUniforms [ string Visibility = "CS|VS|PS"; ]
+{
+	vec2 FramebufferDimensions;
+	vec2 InvFramebufferDimensions;
+	uvec2 BlockSize;
+	float InvZScale;
+	float InvZBias;
+
+	uvec3 NumCells;
+	float ZDistribution;
+};
+
+
+//------------------------------------------------------------------------------
+/**
+        LIGHTS
+*/
+//------------------------------------------------------------------------------
+
+// increase if we need more lights in close proximity, for now, 128 is more than enough
+const uint MAX_LIGHTS_PER_CLUSTER = 128;
+
+struct SpotLight
+{
+	vec4 position;				// view space position of light, w is range
+	vec4 forward;				// forward vector of light (spotlight and arealights)
+
+	vec2 angleSinCos;			// angle cutoffs
+
+	vec3 color;					// light color
+	int projectionExtension;	// projection extension index
+	int shadowExtension;		// projection extension index
+	uint flags;					// feature flags (shadows, projection texture, etc)
+};
+
+struct SpotLightProjectionExtension
+{
+	mat4 projection;					// projection transform
+	textureHandle projectionTexture;	// projection texture
+};
+
+struct SpotLightShadowExtension
+{
+	mat4 projection;
+	float shadowIntensity;				// intensity of shadows
+	uint shadowSlice;
+	textureHandle shadowMap;			// shadow map
+};
+
+struct PointLight
+{
+	vec4 position;				// view space position of light, w is range
+
+	vec3 color;					// light color
+	uint flags;					// feature flags (shadows, projection texture, etc)
+};
+
+struct PointLightShadowExtension
+{
+	float shadowIntensity;		// intensity of shadows
+	uint shadowMap;				// shadow map
+};
+
+group(FRAME_GROUP) shared constant LightUniforms [ string Visibility = "CS|VS|PS"; ]
+{
+    textureHandle SSAOBuffer;
+    uint NumPointLights;
+    uint NumSpotLights;
+    uint NumLightClusters;
+};
+
+// contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
+group(FRAME_GROUP) rw_buffer LightIndexLists[string Visibility = "CS|VS|PS";]
+{
+	uint PointLightCountList[NUM_CLUSTER_ENTRIES];
+	uint PointLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
+	uint SpotLightCountList[NUM_CLUSTER_ENTRIES];
+	uint SpotLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
+};
+
+group(FRAME_GROUP) rw_buffer LightLists[string Visibility = "CS|VS|PS";]
+{
+	SpotLight SpotLights[1024];
+	SpotLightProjectionExtension SpotLightProjection[256];
+	SpotLightShadowExtension SpotLightShadow[16];
+	PointLight PointLights[1024];
+};
+
+//------------------------------------------------------------------------------
+/**
+        DECALS
+*/
+//------------------------------------------------------------------------------
+// increase if we need more decals in close proximity, for now, 128 is more than enough
+#define MAX_DECALS_PER_CLUSTER 128
+
+struct PBRDecal
+{
+    textureHandle albedo;
+    vec4 bboxMin;
+    vec4 bboxMax;
+    mat4 invModel;
+    vec3 direction;
+    textureHandle material;
+    vec3 tangent;
+    textureHandle normal;
+};
+
+struct EmissiveDecal
+{
+    vec4 bboxMin;
+    vec4 bboxMax;
+    mat4 invModel;
+    vec3 direction;
+    textureHandle emissive;
+};
+
+
+// this is used to keep track of how many lights we have active
+group(FRAME_GROUP) shared constant DecalUniforms [ string Visibility = "CS|PS"; ]
+{
+    uint NumPBRDecals;
+    uint NumEmissiveDecals;
+    uint NumDecalClusters;
+    textureHandle NormalBufferCopy;
+    textureHandle StencilBuffer;
+};
+
+// contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
+group(FRAME_GROUP) rw_buffer DecalIndexLists [ string Visibility = "CS|PS"; ]
+{
+    uint EmissiveDecalCountList[NUM_CLUSTER_ENTRIES];
+    uint EmissiveDecalIndexList[NUM_CLUSTER_ENTRIES * MAX_DECALS_PER_CLUSTER];
+    uint PBRDecalCountList[NUM_CLUSTER_ENTRIES];
+    uint PBRDecalIndexList[NUM_CLUSTER_ENTRIES * MAX_DECALS_PER_CLUSTER];
+};
+
+group(FRAME_GROUP) rw_buffer DecalLists [ string Visibility = "CS|PS"; ]
+{
+    EmissiveDecal EmissiveDecals[128];
+    PBRDecal PBRDecals[128];
+};
+
+//------------------------------------------------------------------------------
+/**
+        VOLUME FOG
+*/
+//------------------------------------------------------------------------------
+
+
+struct FogSphere
+{
+    vec3 position;
+    float radius;
+    vec3 absorption;
+    float turbidity;
+    float falloff;
+};
+
+struct FogBox
+{
+    vec3 bboxMin;
+    float falloff;
+    vec3 bboxMax;
+    float turbidity;
+    vec3 absorption;
+    mat4 invTransform;
+};
+
+// increase if we need more decals in close proximity, for now, 128 is more than enough
+#define MAX_FOGS_PER_CLUSTER 128
+
+
+// this is used to keep track of how many lights we have active
+group(FRAME_GROUP) shared constant VolumeFogUniforms [ string Visibility = "CS|VS|PS"; ]
+{
+    int Downscale;
+    uint NumFogSpheres;
+    uint NumFogBoxes;
+    uint NumVolumeFogClusters;
+    vec3 GlobalAbsorption;
+    float GlobalTurbidity;
+};
+
+// contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
+group(FRAME_GROUP) rw_buffer FogIndexLists [ string Visibility = "CS|VS|PS"; ]
+{
+    uint FogSphereCountList[NUM_CLUSTER_ENTRIES];
+    uint FogSphereIndexList[NUM_CLUSTER_ENTRIES * MAX_FOGS_PER_CLUSTER];
+    uint FogBoxCountList[NUM_CLUSTER_ENTRIES];
+    uint FogBoxIndexList[NUM_CLUSTER_ENTRIES * MAX_FOGS_PER_CLUSTER];
+};
+
+group(FRAME_GROUP) rw_buffer FogLists [ string Visibility = "CS|VS|PS"; ]
+{
+    FogSphere FogSpheres[128];
+    FogBox FogBoxes[128];
+};
+
 const int SHADOW_CASTER_COUNT = 16;
 
 #define FLT_MAX     3.40282347E+38F

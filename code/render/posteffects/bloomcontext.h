@@ -19,7 +19,6 @@ public:
     /// destructor
     virtual ~BloomContext();
 
-
     /// create context
     static void Create();
     /// discard context

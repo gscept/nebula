@@ -999,52 +999,52 @@ FrameScriptLoader::ParseShaderVariables(
         // get variable
         ShaderConstantType type = ShaderGetConstantType(shd, sem->string_value);
         BufferId cbo = BufferId::Invalid();
-        IndexT bind = InvalidIndex;
+        IndexT bufferOffset = InvalidIndex;
         if (type != SamplerVariableType && type != TextureVariableType && type != ImageReadWriteVariableType && type != BufferReadWriteVariableType)
         {
             Util::StringAtom block = ShaderGetConstantBlockName(shd, sem->string_value);
             IndexT bufferIndex = constantBuffers.FindIndex(block);
+            IndexT slot = ShaderGetResourceSlot(shd, block);
             if (bufferIndex == InvalidIndex)
             {
                 cbo = ShaderCreateConstantBuffer(shd, block);
+	            ResourceTableSetConstantBuffer(table, { cbo, slot, 0, false, false, -1, 0 });
                 constantBuffers.Add(block, cbo);
             }
             else
             {
                 cbo = constantBuffers.ValueAtIndex(bufferIndex);
             }
-            bind = ShaderGetConstantBinding(shd, sem->string_value);
-            IndexT slot = ShaderGetResourceSlot(shd, block);
-            ResourceTableSetConstantBuffer(table, { cbo, slot, 0, false, false, -1, 0 });
+            bufferOffset = ShaderGetConstantBinding(shd, sem->string_value);
         }
         switch (type)
         {
         case IntVariableType:
-            BufferUpdate(cbo, valStr.AsInt(), bind);
+            BufferUpdate(cbo, valStr.AsInt(), bufferOffset);
             break;
         case FloatVariableType:
-            BufferUpdate(cbo, valStr.AsFloat(), bind);
+            BufferUpdate(cbo, valStr.AsFloat(), bufferOffset);
             break;
         case VectorVariableType:
-            BufferUpdate(cbo, valStr.AsVec4(), bind);
+            BufferUpdate(cbo, valStr.AsVec4(), bufferOffset);
             break;
         case Vector2VariableType:
-            BufferUpdate(cbo, valStr.AsVec2(), bind);
+            BufferUpdate(cbo, valStr.AsVec2(), bufferOffset);
             break;
         case MatrixVariableType:
-            BufferUpdate(cbo, valStr.AsMat4(), bind);
+            BufferUpdate(cbo, valStr.AsMat4(), bufferOffset);
             break;
         case BoolVariableType:
-            BufferUpdate(cbo, valStr.AsBool(), bind);
+            BufferUpdate(cbo, valStr.AsBool(), bufferOffset);
             break;
         case SamplerHandleType:
         case ImageHandleType:
         case TextureHandleType:
         {
             CoreGraphics::TextureId rtid = script->GetTexture(valStr);
-            textures.Append(Util::MakeTuple(bind, cbo, rtid));
+            textures.Append(Util::MakeTuple(bufferOffset, cbo, rtid));
             if (rtid != CoreGraphics::TextureId::Invalid())
-                BufferUpdate(cbo, CoreGraphics::TextureGetBindlessHandle(rtid), bind);
+                BufferUpdate(cbo, CoreGraphics::TextureGetBindlessHandle(rtid), bufferOffset);
             else
                 n_error("Unknown resource %s!", valStr.AsCharPtr());
             break;

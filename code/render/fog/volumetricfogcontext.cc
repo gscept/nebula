@@ -32,11 +32,9 @@ struct
 	Util::FixedArray<CoreGraphics::BufferId> stagingClusterFogLists;
 	CoreGraphics::BufferId clusterFogLists;
 
-
 	CoreGraphics::TextureId fogVolumeTexture0;
 	CoreGraphics::TextureId fogVolumeTexture1;
 
-	IndexT clusterUniformsSlot;
 	IndexT uniformsSlot;
 	IndexT lightingTextureSlot;
 	IndexT clusterUniforms;
@@ -98,7 +96,6 @@ VolumetricFogContext::Create()
 
 	using namespace CoreGraphics;
 	fogState.classificationShader = ShaderServer::Instance()->GetShader("shd:volumefog.fxb");
-	fogState.clusterUniformsSlot = ShaderGetResourceSlot(fogState.classificationShader, "ClusterUniforms");
 	fogState.uniformsSlot = ShaderGetResourceSlot(fogState.classificationShader, "VolumeFogUniforms");
 	fogState.lightingTextureSlot = ShaderGetResourceSlot(fogState.classificationShader, "Lighting");
 
@@ -134,15 +131,18 @@ VolumetricFogContext::Create()
 	for (IndexT i = 0; i < fogState.resourceTables.Size(); i++)
 	{
 		fogState.resourceTables[i] = ShaderCreateResourceTable(fogState.classificationShader, NEBULA_BATCH_GROUP);
+	}
+
+	// get per-view resource tables
+	const Util::FixedArray<CoreGraphics::ResourceTableId>& viewTables = TransformDevice::Instance()->GetViewResourceTables();
+
+	for (IndexT i = 0; i < viewTables.Size(); i++)
+	{
 		fogState.stagingClusterFogLists[i] = CreateBuffer(rwbInfo);
 
-		ResourceTableSetRWBuffer(fogState.resourceTables[i], { Clustering::ClusterContext::GetClusterBuffer(), clusterAABBSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-		ResourceTableSetRWBuffer(fogState.resourceTables[i], { Lighting::LightContext::GetLightIndexBuffer(), lightIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-		ResourceTableSetRWBuffer(fogState.resourceTables[i], { Lighting::LightContext::GetLightsBuffer(), lightListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-		ResourceTableSetRWBuffer(fogState.resourceTables[i], { fogState.clusterFogIndexLists, fogIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-		ResourceTableSetRWBuffer(fogState.resourceTables[i], { fogState.clusterFogLists, fogListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-		ResourceTableSetConstantBuffer(fogState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), fogState.clusterUniformsSlot, 0, false, false, sizeof(Volumefog::ClusterUniforms), 0 });
-		ResourceTableSetConstantBuffer(fogState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), fogState.uniformsSlot, 0, false, false, sizeof(Volumefog::VolumeFogUniforms), 0 });
+		ResourceTableSetRWBuffer(viewTables[i], { fogState.clusterFogIndexLists, fogIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+		ResourceTableSetRWBuffer(viewTables[i], { fogState.clusterFogLists, fogListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+		ResourceTableSetConstantBuffer(viewTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), fogState.uniformsSlot, 0, false, false, sizeof(Volumefog::VolumeFogUniforms), 0 });
 	}
 
 	blurState.blurShader = ShaderServer::Instance()->GetShader("shd:blur_2d_rgba16f_cs.fxb");
@@ -340,7 +340,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 	Volumefog::VolumeFogUniforms fogUniforms;
 	fogUniforms.NumFogBoxes = numFogBoxVolumes;
 	fogUniforms.NumFogSpheres = numFogSphereVolumes;
-	fogUniforms.NumClusters = Clustering::ClusterContext::GetNumClusters();
+	fogUniforms.NumVolumeFogClusters = Clustering::ClusterContext::GetNumClusters();
 	fogUniforms.GlobalTurbidity = fogState.turbidity;
 	fogState.color.store(fogUniforms.GlobalAbsorption);
 	fogUniforms.Downscale = 4;
@@ -352,19 +352,14 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 	fogState.fogVolumeTexture1 = fog1;
 	TextureDimensions dims = TextureGetDimensions(fog0);
 
-	uint offset = SetComputeConstants(MainThreadConstantBuffer, fogUniforms);
-	ResourceTableSetConstantBuffer(fogState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), fogState.uniformsSlot, 0, false, false, sizeof(Volumefog::VolumeFogUniforms), (SizeT)offset });
-
-	ClusterGenerate::ClusterUniforms clusterUniforms = Clustering::ClusterContext::GetUniforms();
-	clusterUniforms.FramebufferDimensions[0] = dims.width;
-	clusterUniforms.FramebufferDimensions[1] = dims.height;
-	clusterUniforms.InvFramebufferDimensions[0] = 1 / float(dims.width);
-	clusterUniforms.InvFramebufferDimensions[1] = 1 / float(dims.height);
-	offset = SetComputeConstants(MainThreadConstantBuffer, clusterUniforms);
-	ResourceTableSetConstantBuffer(fogState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), fogState.clusterUniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), (SizeT)offset });
-	
 	ResourceTableSetRWTexture(fogState.resourceTables[bufferIndex], { fog0, fogState.lightingTextureSlot, 0, CoreGraphics::SamplerId::Invalid() });
 	ResourceTableCommitChanges(fogState.resourceTables[bufferIndex]);
+
+	// get per-view resource tables
+	const Util::FixedArray<CoreGraphics::ResourceTableId>& viewTables = TransformDevice::Instance()->GetViewResourceTables();
+
+	uint offset = SetComputeConstants(MainThreadConstantBuffer, fogUniforms);
+	ResourceTableSetConstantBuffer(viewTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), fogState.uniformsSlot, 0, false, false, sizeof(Volumefog::VolumeFogUniforms), (SizeT)offset });
 
 	// setup blur tables
 	ResourceTableSetTexture(blurState.blurXTable[bufferIndex], { fog0, blurState.blurInputXSlot, 0, CoreGraphics::SamplerId::Invalid(), false }); // ping
@@ -516,7 +511,6 @@ VolumetricFogContext::CullAndClassify()
 		}, "Decals cluster culling begin");
 
 	SetShaderProgram(fogState.cullProgram, ComputeQueueType);
-	SetResourceTable(fogState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr, ComputeQueueType);
 
 	// run chunks of 1024 threads at a time
 	std::array<SizeT, 3> dimensions = Clustering::ClusterContext::GetClusterDimensions();
@@ -554,7 +548,9 @@ VolumetricFogContext::Render()
 	CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Volumetric Fog");
 
 	SetShaderProgram(fogState.renderProgram, GraphicsQueueType);
-	SetResourceTable(fogState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr, GraphicsQueueType);
+
+	// set frame resources
+	SetResourceTable(fogState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
 	// run volumetric fog compute
 	Compute(Math::n_divandroundup(dims.width, 64), dims.height, 1, GraphicsQueueType);
@@ -591,8 +587,6 @@ VolumetricFogContext::Render()
 		},
 		nullptr, 
 		"Fog volume update finish barrier");
-
-
 
 	SetShaderProgram(blurState.blurXProgram, GraphicsQueueType);
 	SetResourceTable(blurState.blurXTable[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr, GraphicsQueueType);

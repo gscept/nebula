@@ -136,6 +136,19 @@ FrameScript::RunJobs(const IndexT frameIndex, const IndexT bufferIndex)
 /**
 */
 void
+FrameScript::UpdateResources(const IndexT frameIndex, const IndexT bufferIndex)
+{
+    IndexT i;
+    for (i = 0; i < this->compiled.Size(); i++)
+    {
+        this->compiled[i]->UpdateResources(frameIndex, bufferIndex);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 FrameScript::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
 #if NEBULA_ENABLE_MT_DRAW

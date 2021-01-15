@@ -97,18 +97,6 @@ ParticleSystemNode::OnFinishedLoading()
     this->resourceTable = ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP);
     ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->particleConstantsIndex, 0, false, true, sizeof(::Particle::ParticleObjectBlock), 0 });
     ResourceTableCommitChanges(this->resourceTable);
-
-    IndexT clusterAABBsSlot = ShaderGetResourceSlot(shader, "ClusterAABBs");
-    IndexT lightIndexLists = ShaderGetResourceSlot(shader, "LightIndexLists");
-    IndexT lightLists = ShaderGetResourceSlot(shader, "LightLists");
-    IndexT clusterUniforms = ShaderGetResourceSlot(shader, "ClusterUniforms");
-
-    this->clusterResources = ShaderCreateResourceTable(shader, NEBULA_SYSTEM_GROUP);
-    ResourceTableSetRWBuffer(this->clusterResources, { Clustering::ClusterContext::GetClusterBuffer(), clusterAABBsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-    ResourceTableSetRWBuffer(this->clusterResources, { Lighting::LightContext::GetLightIndexBuffer(), lightIndexLists, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-    ResourceTableSetRWBuffer(this->clusterResources, { Lighting::LightContext::GetLightsBuffer(), lightLists, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-    ResourceTableSetConstantBuffer(this->clusterResources, { Clustering::ClusterContext::GetConstantBuffer(), clusterUniforms, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-    ResourceTableCommitChanges(this->clusterResources);
 }
 
 //------------------------------------------------------------------------------
@@ -327,7 +315,7 @@ ParticleSystemNode::ApplyNodeState()
 void 
 ParticleSystemNode::ApplyNodeResources()
 {
-    SetResourceTable(this->clusterResources, NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
+    // do nothing
 }
 
 //------------------------------------------------------------------------------

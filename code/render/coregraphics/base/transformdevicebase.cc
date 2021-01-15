@@ -74,7 +74,7 @@ TransformDeviceBase::ApplyViewSettings()
 /**
 */
 void
-TransformDeviceBase::ApplyModelTransforms(const Ptr<Shader>& shdInst)
+TransformDeviceBase::ApplyModelTransforms(const CoreGraphics::ShaderId shdInst)
 {
     n_assert(this->IsOpen());
 }

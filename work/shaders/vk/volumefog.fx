@@ -11,54 +11,6 @@
 
 const uint VOLUME_FOG_STEPS = 32;
 
-struct FogSphere
-{
-    vec3 position;
-    float radius;
-    vec3 absorption;
-    float turbidity;
-    float falloff;
-};
-
-struct FogBox
-{
-    vec3 bboxMin;
-    float falloff;
-    vec3 bboxMax;
-    float turbidity;
-    vec3 absorption;
-    mat4 invTransform;
-};
-
-// increase if we need more decals in close proximity, for now, 128 is more than enough
-#define MAX_FOGS_PER_CLUSTER 128
-
-group(BATCH_GROUP) rw_buffer FogLists [ string Visibility = "CS"; ]
-{
-    FogSphere FogSpheres[128];
-    FogBox FogBoxes[128];
-};
-
-// contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
-group(BATCH_GROUP) rw_buffer FogIndexLists [ string Visibility = "CS"; ]
-{
-    uint FogSphereCountList[NUM_CLUSTER_ENTRIES];
-    uint FogSphereIndexList[NUM_CLUSTER_ENTRIES * MAX_FOGS_PER_CLUSTER];
-    uint FogBoxCountList[NUM_CLUSTER_ENTRIES];
-    uint FogBoxIndexList[NUM_CLUSTER_ENTRIES * MAX_FOGS_PER_CLUSTER];
-};
-
-// this is used to keep track of how many lights we have active
-group(BATCH_GROUP) constant VolumeFogUniforms [ string Visibility = "CS"; ]
-{
-    int Downscale;
-    uint NumFogSpheres;
-    uint NumFogBoxes;
-    uint NumClusters;
-    vec3 GlobalAbsorption;
-    float GlobalTurbidity;
-};
-
 readwrite rgba16f image2D Lighting;
 //------------------------------------------------------------------------------
 /**
@@ -69,7 +21,7 @@ void csCull()
 {
     uint index1D = gl_GlobalInvocationID.x;
 
-    if (index1D > NumClusters)
+    if (index1D > NumVolumeFogClusters)
         return;
 
     ClusterAABB aabb = AABBs[index1D];

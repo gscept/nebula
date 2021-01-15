@@ -107,8 +107,13 @@ MaterialType::CreateSurface()
 
 		// create resource tables
 		CoreGraphics::ResourceTableId surfaceTable = CoreGraphics::ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP);
+		if (surfaceTable != CoreGraphics::ResourceTableId::Invalid())
+			CoreGraphics::ObjectSetName(surfaceTable, Util::String::Sprintf("Material '%s' batch table", this->name.AsCharPtr()).AsCharPtr());
 		this->surfaceAllocator.Get<SurfaceTable>(sur)[*batchIt.val] = surfaceTable;
+
 		CoreGraphics::ResourceTableId instanceTable = CoreGraphics::ShaderCreateResourceTable(shd, NEBULA_INSTANCE_GROUP);
+		if (instanceTable != CoreGraphics::ResourceTableId::Invalid())
+			CoreGraphics::ObjectSetName(instanceTable, Util::String::Sprintf("Material '%s' instance table", this->name.AsCharPtr()).AsCharPtr());
 		this->surfaceAllocator.Get<InstanceTable>(sur)[*batchIt.val] = instanceTable;
 		
 		// get constant buffer count

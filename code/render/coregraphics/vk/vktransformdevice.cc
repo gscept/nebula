@@ -35,7 +35,6 @@ VkTransformDevice::VkTransformDevice()
     , viewMatricesVar(InvalidIndex)
     , timeAndRandomVar(InvalidIndex)
     , nearFarPlaneVar(InvalidIndex)
-    , frameOffset(0)
     , shadowCameraBlockVar(InvalidIndex)
     , viewConstants(CoreGraphics::BufferId::Invalid())
     , viewConstantsSlot(InvalidIndex)
@@ -68,6 +67,7 @@ VkTransformDevice::Open()
     for (i = 0; i < this->viewTables.Size(); i++)
     {
         this->viewTables[i] = ShaderCreateResourceTable(shader, NEBULA_FRAME_GROUP);
+		CoreGraphics::ObjectSetName(this->viewTables[i], "Main Frame Group Descriptor");
     }
 
     this->viewConstants = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
@@ -130,13 +130,12 @@ VkTransformDevice::ApplyViewSettings()
     vec4((float)FrameSync::FrameSyncTimer::Instance()->GetTime(), Math::n_rand(0, 1), (float)FrameSync::FrameSyncTimer::Instance()->GetFrameTime(), 0).store(block.TimeAndRandom);
     uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, block);
 
-    // update actual constant buffer
-    frameOffset = offset;
-
     // update resource table
     IndexT bufferedFrameIndex = GetBufferedFrameIndex();
     ResourceTableSetConstantBuffer(this->viewTables[bufferedFrameIndex], { this->viewConstants, this->viewConstantsSlot, 0, false, false, sizeof(Shared::FrameBlock), (SizeT)offset });
     ResourceTableCommitChanges(this->viewTables[bufferedFrameIndex]);
+
+	CoreGraphics::SetFrameResourceTable(this->viewTables[bufferedFrameIndex]);
 }
 
 //------------------------------------------------------------------------------
@@ -150,6 +149,8 @@ VkTransformDevice::ApplyShadowSettings(const Shared::ShadowMatrixBlock& block)
     IndexT bufferedFrameIndex = GetBufferedFrameIndex();
     ResourceTableSetConstantBuffer(this->viewTables[bufferedFrameIndex], { this->viewConstants, this->shadowConstantsSlot, 0, false, false, sizeof(Shared::ShadowMatrixBlock), (SizeT)offset });
     ResourceTableCommitChanges(this->viewTables[bufferedFrameIndex]);
+
+	CoreGraphics::SetFrameResourceTable(this->viewTables[bufferedFrameIndex]);
 }
 
 } // namespace Vulkan

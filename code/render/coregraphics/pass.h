@@ -83,6 +83,8 @@ void PassEnd(const PassId id);
 
 /// apply clip settings (viewport and scissor rect)
 void PassApplyClipSettings(const PassId id);
+/// update pass resources
+void PassUpdateResources(const PassId id, const IndexT bufferIndex);
 
 /// called when window is resized
 void PassWindowResizeCallback(const PassId id);

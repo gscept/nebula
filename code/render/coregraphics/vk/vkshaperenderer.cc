@@ -155,7 +155,6 @@ VkShapeRenderer::DrawShapes()
     if (this->numVerticesThisFrame > this->vertexBufferCapacity)
         this->GrowVertexBuffer();
 
-    CoreGraphics::SetVertexLayout(this->vertexLayout);
     for (int depthType = 0; depthType < RenderShape::NumDepthFlags; depthType++)
     {
         if (this->primitives[depthType].Size() > 0)
@@ -186,6 +185,7 @@ VkShapeRenderer::DrawShapes()
 
             // apply shader
             CoreGraphics::SetShaderProgram(this->programs[depthType]);
+			CoreGraphics::SetVertexLayout(this->vertexLayout);
 
             // flush any buffered primitives
             this->DrawBufferedIndexedPrimitives();
@@ -208,6 +208,7 @@ VkShapeRenderer::DrawShapes()
         if (this->shapes[depthType].Size() > 0)
         {
             CoreGraphics::SetShaderProgram(this->programs[depthType + RenderShape::NumDepthFlags]);
+			CoreGraphics::SetVertexLayout(this->vertexLayout);
             CoreGraphics::SetGraphicsPipeline();
 
             IndexT i;

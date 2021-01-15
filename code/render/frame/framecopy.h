@@ -21,11 +21,11 @@ public:
     {
         void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
 
-        CoreGraphics::TextureId from, to;
-
 #if NEBULA_GRAPHICS_DEBUG
         Util::StringAtom name;
 #endif
+
+        CoreGraphics::TextureId from, to;
     };
 
     FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);

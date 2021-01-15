@@ -93,8 +93,6 @@ protected:
     Resources::ResourceName meshResId;
 
     IndexT particleConstantsIndex;
-    IndexT clusteringOffset;
-    CoreGraphics::ResourceTableId clusterResources;
 
     Util::StringAtom tag;
     IndexT primGroupIndex;
