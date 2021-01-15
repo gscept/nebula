@@ -206,7 +206,7 @@ ResourceTableCopy(const ResourceTableId from, IndexT fromSlot, IndexT fromIndex,
 		toSet,
 		(uint32_t)toSlot,
 		(uint32_t)toIndex,
-		numResources
+		(uint32_t)numResources
 	};
 	copies.Append(copy);
 }
