@@ -201,11 +201,11 @@ ResourceTableCopy(const ResourceTableId from, IndexT fromSlot, IndexT fromIndex,
 		VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET,
 		nullptr,
 		fromSet,
-		fromSlot,
-		fromIndex,
+		(uint32_t)fromSlot,
+		(uint32_t)fromIndex,
 		toSet,
-		toSlot,
-		toIndex,
+		(uint32_t)toSlot,
+		(uint32_t)toIndex,
 		numResources
 	};
 	copies.Append(copy);
