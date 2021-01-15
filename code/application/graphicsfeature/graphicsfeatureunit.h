@@ -10,6 +10,7 @@
 #include "graphics/view.h"
 #include "graphics/stage.h"
 #include "input/inputserver.h"
+#include "managers/cameramanager.h"
 
 //------------------------------------------------------------------------------
 namespace GraphicsFeature
@@ -49,6 +50,9 @@ public:
     /// retrieve the default stage
     Ptr<Graphics::Stage> GetDefaultStage() const;
 
+    /// retrieve the default view handle
+    ViewHandle GetDefaultViewHandle() const;
+
     /// set framescript. must be done before OnActivate!
     void SetFrameScript(IO::URI const& uri);
 
@@ -71,6 +75,9 @@ private:
     Util::Array<UIRenderFunc> uiCallbacks;
 
     Game::ManagerHandle graphicsManagerHandle;
+    Game::ManagerHandle cameraManagerHandle;
+
+    ViewHandle defaultViewHandle;
 
     bool renderDebug = false;
 };
@@ -100,6 +107,15 @@ inline Ptr<Graphics::Stage>
 GraphicsFeatureUnit::GetDefaultStage() const
 {
     return this->defaultStage;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline ViewHandle
+GraphicsFeatureUnit::GetDefaultViewHandle() const
+{
+    return this->defaultViewHandle;
 }
 
 //------------------------------------------------------------------------------

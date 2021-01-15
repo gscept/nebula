@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+﻿//------------------------------------------------------------------------------
 //  testmem/main.cc
 //  (C) 2006 Radon Labs GmbH
 //------------------------------------------------------------------------------
@@ -13,7 +13,7 @@ using namespace Core;
 using namespace Tests;
 
 
-int main(int argc, char**argv)
+int main(int argc, const char**argv)
 {
     // create Nebula runtime
     Ptr<CoreServer> coreServer = CoreServer::Create();
@@ -24,6 +24,7 @@ int main(int argc, char**argv)
     coreServer->Open();
 
     Tests::SimpleViewerApplication app;
+    app.SetCmdLineArgs(Util::CommandLineArgs(argc, argv));
     if (app.Open())
     {
         app.Run();

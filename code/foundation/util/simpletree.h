@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 //------------------------------------------------------------------------------
 /**
     @class Util::SimpleTree
@@ -18,7 +18,7 @@ template<class VALUETYPE> class SimpleTree
 {
 public:
     /// public node class
-    class Node : public Core::RefCounted
+    class Node
     {
     public:
         /// default constructor
@@ -67,7 +67,7 @@ public:
     private:
         Node* parent;
         VALUETYPE value;
-        Array<Ptr<Node> > children;
+        Array<Node*> children;
     };
 
     /// default constructor
@@ -110,9 +110,10 @@ SimpleTree<VALUETYPE>::Node::Node(const Node& p, const VALUETYPE& val) :
 template<class VALUETYPE>
 SimpleTree<VALUETYPE>::Node::~Node()
 {
-    #if NEBULA_BOUNDSCHECKS    
-    //n_assert(0 == this->refCount);
-    #endif
+    for (IndexT i = 0; i < this->children.Size(); i++)
+    {
+        n_delete(children[i]);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -248,7 +249,7 @@ template<class VALUETYPE>
 void
 SimpleTree<VALUETYPE>::Node::Append(const VALUETYPE& val)
 {
-    Ptr<Node> newNode = static_cast<Node*>(Node::Create());
+    Node* newNode = n_new(Node);
     newNode->parent = this;
     newNode->value = val;
     this->children.Append(newNode);
@@ -261,7 +262,7 @@ template<class VALUETYPE>
 void
 SimpleTree<VALUETYPE>::Node::Erase(IndexT i)
 {
-    this->children[i]->parent = nullptr;
+    n_delete(this->children[i]);
     this->children.EraseIndex(i);
 }
 
