@@ -1,0 +1,87 @@
+/**
+@page NebulaApplication Application
+
+The nebula application layer provides high level application utilities, such as gameplay systems.
+
+@section NebulaApplicationGameSystem Game system
+
+Nebula uses a database oriented approach to storing game entities and their respective properties.
+
+The entity system currently consists of a couple of databases, the most important one being the world database. \n
+The world database contains all entity data for active entities. \n
+Properties are what define the entities' data. When an entity is created with a unique combination of properties, a new table will be created in the world database. These tables are referred to as entity "Categories". \n
+Entity behaviour and logic is expressed via "managers" and "processors" that query the database for entities that fulfill certain property requirements, and then process each entity based on their properties states.
+
+@subsection NebulaApplicationGameSystemEntities Entities, Blueprints and Templates
+
+Entities are simply integer identifiers that are mapped to a category, and row within the category table.
+Entities are commonly created by instantiating data-driven blueprints and/or templates. \n
+Blueprints are essentially category descriptions that just describe a named collection of properties. \n
+Templates are derived from blueprints and describe specific property values for an instantiation of a entity. \n
+Lets take an example: \n
+    We declare an "Orc" blueprint that consists of four properties: Position, Health, Strength and Target.
+    - example_blueprints.json:
+    \code{.json}
+    {
+        "blueprints": {
+            "Orc": {
+                "desc": "A mean and green orc.",
+                "properties": [
+                    "Position",
+                    "Health",
+                    "Stats",
+                    "Target"
+                ]
+            }
+        }
+    }
+    \endcode
+    
+    Each and every instantiation of this Orc would have the same values (default set by the property definition) but we might want to have multiple different types of orcs. This is where we can use templates.
+    - templates/Orc/orc_soldier.json:
+    \code{.json}
+    {
+        "blueprint": "Orc",
+        "properties": {
+            "Health": 100
+            "Stats": {
+                "Strength": 75.0,
+                "IQ": 85
+            }
+        }
+    }
+    \endcode
+    - templates/Orc/orc_brute.json:
+    \code{.json}
+    {
+        "blueprint": "Orc",
+        "properties": {
+            "Health": 250
+            "Stats": {
+                "Strength": 120.0,
+                "IQ": 44,
+                "isLarge": true
+            }
+        }
+    }
+    \endcode
+
+    Instantiating these templates will automatically set the defined properties to a specific value. \n
+    Note that we don't need to overwrite all default property values in our templates. \n
+
+@subsection NebulaApplicationGameSystemProperties Properties
+
+Properties are the main way to describe an entity's state. \n
+Properties are declared and defined via .nidl files (Nebula intermediate definition language) and compiled into C++ code via an IDL compiler. \n
+
+The NIDL specification can be found here:
+@subpage NebulaIDL \n
+
+TODO: write about property flags, managed properties, etc.
+
+\subsubsection NebulaApplicationSeeAlso See also
+@subpage api.h \n
+@subpage MemDb \n
+@subpage BaseGameFeature \n
+
+*/

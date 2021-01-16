@@ -1,5 +1,8 @@
 /**
 @page Messaging
 
-FIXME!
+\namespace Messaging
+\deprecated
+Warning: The Messaging namespace is barely used nowadays and will possibly be phased out in the future.
+
 */

@@ -10,12 +10,12 @@ of Nebula which are:
 - a runtime type information system
 - a templated smart pointer class Ptr<> which manages the life time of RefCounted objects
 - a factory mechanism which allows to construct C++ objects from their string class name
-- a central Server object which setsup a basic Nebula runtime environment
+- a central Server object which setup the basic Nebula runtime environment
 
 @subsection NebulaObjectModel The Object Model
 
 Nebula implements a basic object model which implements the following
-new features on top of the C++ object model:
+features on top of the C++ object model:
 
 - lifetime management by refcounting and smart pointers
 - object creation by string or fourcc class identifier
@@ -34,6 +34,8 @@ the Core::RefCounted class
 - if the class is a typical small helper or utility class, like a
 dynamic array class, a math vector class, or something similar, it
 often does not make sense to derive from Core::RefCounted.
+- if the class should mainly be used to store state or data, use
+a struct instead.
 
 Deriving from the Core::RefCounted class implies some restrictions:
 
@@ -91,9 +93,9 @@ ImplementClass(MyNamespace::MyClass, 'MYCL', Core::RefCounted);
 
 The ImplementClass() macro registers the class with the RTTI mechanism, the
 first parameter describes the C++ class name (note that the namespace
-must be present here. The second macro is the class fourcc code, which must be
+must be present here. The second parameter is the class fourcc code, which must be
 unique across all classes (you'll get a runtime error at application startup
-if 2 classes try to register with the same fourcc code). The third argument
+if two classes try to register with the same fourcc code). The third parameter
 is the C++ class name of the parent class. This is used by the RTTI mechanism
 to reconstruct the class tree.
 
@@ -110,11 +112,11 @@ Smart pointers have a number of advantages over plain pointers:
 - accessing a 0-pointer will give you an easy to debug assertion instead of a 
 memory fault
 - you'll never have to call AddRef() or Release() on you refcounted objects (in fact
-if you have, there's something seriously wrong)
+if you have, there's likely something seriously wrong)
 - smart pointers work nicely in container classes, an array of smart pointers
-instead of plain pointers eliminates all the typical lifetime management problems,
+instead of plain pointers eliminates all the typical lifetime management problems;
 you never need to take care about releasing the objects behind the pointers, instead
-the array just behaves like it would contain real C++ objects
+the array just behaves like it would contain standard C++ objects
 - with smart pointers, you generally don't need to define "object ownership" as 
 is often the case when using plain pointers (who's responsible to delete objects,
 and so on...)
@@ -129,6 +131,9 @@ you may have to be aware of it in inner loops.
 only deleted when the last client gives up ownership, objects may exist longer then
 intended. Often this is points to a bug. Nebula will notify you about any refcounting
 leaks (that is, refcounting objects that still exist at application shutdown)
+- Overuse of the RefCounted system might be a sign that your design is not data oriented.
+You should always consider if the object can be stack allocated and/or allocated as part
+of a larger allocation, instead of being allocated as an individual heap object.
 
 @subsection CreatingNebulaObjects Creating Nebula Objects
 
@@ -294,19 +299,7 @@ that no other instance of the class exists (otherwise, an assertion will be thro
 DestructSingleton invalidates the static singleton pointer.
 
 Access to singletons is by default thread-local. This means that a singleton created
-in one thread of a Nebula application isn't accessible from another thread. This
-follows the "Parallel Nebulas" paradigm which simplifies multithreaded programming
-a lot. The idea behind "Parallel Nebulas" is, that a typical Nebula application contains
-of a few "fat threads" each running ideally on a separate CPU core. Fat threads implement
-for instance asynchronous IO, rendering, physics, and so on. Each of those fat threads
-initializes its own Nebula runtime, which just contains the minimal Nebula environment 
-needed to perform the Fat Threads specific task. This basically eliminates the need for 
-fine-grained synchronisation in almost all of the Nebula code and concentrates "thread-aware"
-code to a few well-defined code areas which deals with communication between fat threads.
-Another positive side effect of the "Parallel Nebulas" paradigm is, that a programmer
-typically doesn't have to care too much about running in a multithreaded environment.
-Most of the typical Nebula code looks just like normal singlethreaded code, yet can
-still run in its own fat thread.
+in one thread of a Nebula application isn't accessible from another thread.
 
 @subsection CorePerfAndMemConsideratins Performance And Memory Footprint Considerations
 
@@ -319,13 +312,13 @@ Here are some points how these goals are accomplished:
 member, Nebula2's nRoot class added >60 bytes overhead to each instance.
 - The RTTI mechanism adds somewhere between 30 and 60 bytes overhead, but this is
 per-class, not per instance.
-- A smart pointer is just 4 bytes, just like a raw pointer. The similar Nebula2 nRef
+- A smart pointer is just the size of a regular pointer, just like a raw pointer. The similar Nebula2 nRef
 class was 16 bytes per instance.
 - Several householding structures are only allocated in debug mode, most notably
 the RefCountedList, which is used to detect refcounting leaks.
 
 Here are some timings for creating a million RefCounted objects by the 3 different ways. 
-These timings are on a notebool with Intel Pentium M running at 800 MHz:
+These timings are on a notebook with Intel Pentium M running at 800 MHz:
 
 - Create(): 0.29 seconds
 - by FourCC: 0.65 seconds

@@ -18,6 +18,4 @@ We can also use counters which are useful mechanism for keeping track of certain
 
 @subsection NebulaProfilingReadback Reading Profiling Results
 Now, we would like to somehow extract all the counters, and all the timings for our frame. We can extract counter values with Profiling::ProfilingGetCounters(), and profiling scopes with Profiling::ProfilingGetScopes() for a single thread, or all per-thread contexts, which then contains the scopes, using Profiling::ProfilingGetContexts(). 
-
-
 */

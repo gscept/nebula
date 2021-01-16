@@ -80,7 +80,7 @@ Jobs::JobSchedule(job, jobPort, ctx);
 firstAnimTrack = false;
 @endcode
 
-This code is takien from Characters::CharacterContext and slightly modified to make it simpler. What we are doing is we are setting up a duration, how much time there is between animation ticks, a temporary buffer (called a scratch buffer) to hold intermediate data in the job. We then prepare the job context with all this information, and schedule it to execute. outSamplesPtr will then contain the result of this job when the job is finished. 
+This code is taken from Characters::CharacterContext and slightly modified to make it simpler. What we are doing is we are setting up a duration, how much time there is between animation ticks, a temporary buffer (called a scratch buffer) to hold intermediate data in the job. We then prepare the job context with all this information, and schedule it to execute. outSamplesPtr will then contain the result of this job when the job is finished. 
 
 Using CoreAnimation::AnimSampleBuffer (which is outSamplesPtr in the above example), we can then figure out how many Math::vec4 elements we have, such that we can intelligently make decisions about how to use this data to perform transformations. In most cases, a single joint contains 3 Math::vec4, because we have a scale, rotation and transformation vector, which when combined will be our final matrix. 
 
