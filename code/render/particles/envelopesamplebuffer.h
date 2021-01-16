@@ -61,7 +61,7 @@ EnvelopeSampleBuffer::AsSampleIndex(float t) const
     IndexT index = IndexT(t / this->numSamples);
 
     // make sure index is in valid range
-    index = Math::n_iclamp(index, 0, this->numSamples - 1);
+    index = Math::clamp(index, 0, this->numSamples - 1);
     return index;
 }
 

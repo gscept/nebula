@@ -76,7 +76,7 @@ mat4equal(const mat4 &a, const mat4 &b)
 __forceinline bool
 scalarequal(scalar a, scalar b)
 {
-    return n_nearequal(a, b, TEST_EPSILON);
+    return Math::nearequal(a, b, TEST_EPSILON);
 }
 
 //------------------------------------------------------------------------------
@@ -147,11 +147,11 @@ print(const quat &q)
 {
     if(scalarequal(length(q), 1.0))
     {
-        const scalar angle = n_acos(q.w) * 2.0f;
+        const scalar angle = Math::acos(q.w) * 2.0f;
         n_printf("    axis     : " SCALAR_FORMATOR " " SCALAR_FORMATOR " " SCALAR_FORMATOR "\n"
                  "    w        : " SCALAR_FORMATOR "\n"
                  "    magnitude: " SCALAR_FORMATOR " rad: " SCALAR_FORMATOR " deg: " SCALAR_FORMATOR "\n",
-                 q.x, q.y, q.z, q.w, length(q), angle, n_rad2deg(angle));
+                 q.x, q.y, q.z, q.w, length(q), angle, rad2deg(angle));
     }
     else
     {

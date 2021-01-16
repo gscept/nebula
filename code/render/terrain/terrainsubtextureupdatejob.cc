@@ -50,10 +50,10 @@ TerrainSubTextureUpdateJob(const Jobs::JobFuncContext& ctx)
             goto skipResolution;
 
         // at every regular distance interval, increase t
-        t = Math::n_max(1.0f, (distance / switchDistance));
+        t = Math::max(1.0f, (distance / switchDistance));
 
         // calculate lod logarithmically, such that it goes geometrically slower to progress to higher lods
-        lod = Math::n_min((uint)Math::n_log2(t), uniforms->maxMip);
+        lod = Math::min((uint)Math::log2(t), uniforms->maxMip);
 
         // calculate the resolution by offseting the max resolution with the lod
         resolution = maxResolution >> lod;
@@ -73,7 +73,7 @@ TerrainSubTextureUpdateJob(const Jobs::JobFuncContext& ctx)
         output->oldTiles = subTexture->tiles;
         output->oldCoord = Math::uint2{ subTexture->indirectionOffset[0], subTexture->indirectionOffset[1] };
 
-        output->newMaxMip = tiles > 0 ? Math::n_log2(tiles) : 0;
+        output->newMaxMip = tiles > 0 ? Math::log2(tiles) : 0;
         output->newTiles = tiles;
         output->newCoord = Math::uint2{ 0xFFFFFFFF, 0xFFFFFFFF };
 

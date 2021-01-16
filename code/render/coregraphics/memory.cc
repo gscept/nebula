@@ -152,7 +152,7 @@ MemoryPool::AllocateConservative(DeviceSize alignment, DeviceSize size)
 
         next:
             // set the new offset to be the end of the current range
-            prevOffset = Math::n_align(curOffset + curSize, alignment);
+            prevOffset = Math::align(curOffset + curSize, alignment);
         }
 
         // if we are going to allocate outside of the block, go to the next block
@@ -213,7 +213,7 @@ MemoryPool::AllocateLinear(DeviceSize alignment, DeviceSize size)
         {
             const AllocRange& lastRange = ranges.Back();
             AllocRange range;
-            range.offset = Math::n_align(lastRange.offset + lastRange.size, alignment);
+            range.offset = Math::align(lastRange.offset + lastRange.size, alignment);
             range.size = size;
 
             // if we are over-subscribing a block, go to the next block

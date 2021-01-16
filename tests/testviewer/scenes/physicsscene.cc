@@ -101,7 +101,7 @@ Shoot(int count)
         {
             Math::vector offset;// = Math::Randomvec4(5.0f);
             trans.position = cameraPos + offset;
-            Spawn(trans, xyz(trans.z_axis) * -50.0f, Math::vector(Math::n_rand(-10.0f, 10.0f)));
+            Spawn(trans, xyz(trans.z_axis) * -50.0f, Math::vector(Math::rand(-10.0f, 10.0f)));
         }
     }
 }
@@ -123,8 +123,8 @@ SpawnRandom(int amount)
 {
     for (int i = 0; i < amount; i++)
     {
-        Math::mat4 trans = Math::translation(Math::vector(Math::n_rand(-200.0f, 200.0f), 150.0f, Math::n_rand(-200.00f, 200.0f)));
-        Spawn(trans, Math::vector(0.0), Math::vector(Math::n_rand(-3.0f, 3.0f)));
+        Math::mat4 trans = Math::translation(Math::vector(Math::rand(-200.0f, 200.0f), 150.0f, Math::rand(-200.00f, 200.0f)));
+        Spawn(trans, Math::vector(0.0), Math::vector(Math::rand(-3.0f, 3.0f)));
     }
 }
 
@@ -134,10 +134,10 @@ SpawnRandom(int amount)
 void
 DeleteRandom(int amount)
 {
-    amount = Math::n_min(amount, objects.Size());
+    amount = Math::min(amount, objects.Size());
     for (int i = 0; i < amount; i++)
     {
-        IndexT f = Math::n_rand(0, objects.Size() - 1);
+        IndexT f = Math::rand(0, objects.Size() - 1);
         auto& obj = objects[f];
         ObservableContext::DeregisterEntity(obj.model);
         ModelContext::DeregisterEntity(obj.model);
@@ -202,7 +202,7 @@ void StepFrame()
 {
     const Timing::Time delta = gfxServer->GetFrameTime();
     Physics::Update(delta);
-    Models::ModelContext::SetTransform(tower, Math::translation(Math::vec3(0, 0, Math::n_sin(v))));
+    Models::ModelContext::SetTransform(tower, Math::translation(Math::vec3(0, 0, Math::sin(v))));
     v += 0.01f;
     auto inputServer = Input::InputServer::Instance();
     if (inputServer->GetDefaultKeyboard()->KeyPressed(Input::Key::Space))

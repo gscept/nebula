@@ -117,12 +117,13 @@ StdTcpClientConnection::Send(const Ptr<Stream>& stream)
         // so we may have to split the send data into
         // multiple packets
         SizeT maxMsgSize = this->socket->GetMaxMsgSize();
-        SizeT sendSize = stream->GetSize();
+        Stream::Size sendSize = stream->GetSize();
+        n_assert(sendSize < INT_MAX);
         uchar* ptr = (uchar*) stream->Map();
         SizeT overallBytesSent = 0;
         while ((Socket::Success == res) && (overallBytesSent < sendSize))
         {
-            SizeT bytesToSend = sendSize - overallBytesSent;
+            SizeT bytesToSend = (SizeT)sendSize - overallBytesSent;
             if (bytesToSend > maxMsgSize)
             {
                 bytesToSend = maxMsgSize;

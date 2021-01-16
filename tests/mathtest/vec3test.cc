@@ -162,8 +162,8 @@ print(v2);
 
     // length and abs
     v2.set(1.0f, 2.0f, 3.0f);
-    VERIFY(n_fequal(length(v2), 3.74165738, 0.0001f));
-    VERIFY(n_fequal(lengthsq(v2), 14.0f, 0.0001f));
+    VERIFY(Math::fequal(length(v2), 3.74165738, 0.0001f));
+    VERIFY(Math::fequal(lengthsq(v2), 14.0f, 0.0001f));
     v2.set(-1.0f, 2.0f, -3.0f);
     VERIFY(abs(v2) == vec3(1.0f, 2.0f, 3.0f));
     

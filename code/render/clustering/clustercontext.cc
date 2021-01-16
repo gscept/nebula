@@ -76,13 +76,13 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
 
 	CoreGraphics::DisplayMode displayMode = CoreGraphics::WindowGetDisplayMode(window);
 
-	state.clusterDimensions[0] = Math::n_divandroundup(displayMode.GetWidth(), state.ClusterSubdivsX);
-	state.clusterDimensions[1] = Math::n_divandroundup(displayMode.GetHeight(), state.ClusterSubdivsY);
+	state.clusterDimensions[0] = Math::divandroundup(displayMode.GetWidth(), state.ClusterSubdivsX);
+	state.clusterDimensions[1] = Math::divandroundup(displayMode.GetHeight(), state.ClusterSubdivsY);
 	state.clusterDimensions[2] = state.ClusterSubdivsZ;
 
 	state.zDistribution = ZFar / ZNear;
-	state.zInvScale = float(state.clusterDimensions[2]) / Math::n_log2(state.zDistribution);
-	state.zInvBias = -(float(state.clusterDimensions[2]) * Math::n_log2(ZNear) / Math::n_log2(state.zDistribution));
+	state.zInvScale = float(state.clusterDimensions[2]) / Math::log2(state.zDistribution);
+	state.zInvBias = -(float(state.clusterDimensions[2]) * Math::log2(ZNear) / Math::log2(state.zDistribution));
 	state.xResolution = displayMode.GetWidth();
 	state.yResolution = displayMode.GetHeight();
 	state.invXResolution = 1.0f / displayMode.GetWidth();
@@ -227,7 +227,7 @@ ClusterContext::UpdateClusters()
     SetShaderProgram(state.clusterGenerateProgram, ComputeQueueType);
 
     // run the job as series of 1024 clusters at a time
-    Compute(Math::n_ceil((state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2]) / 64.0f), 1, 1, ComputeQueueType);
+    Compute(Math::ceil((state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2]) / 64.0f), 1, 1, ComputeQueueType);
 
     // make sure to sync so we don't read from data that is being written...
     BarrierInsert(ComputeQueueType,

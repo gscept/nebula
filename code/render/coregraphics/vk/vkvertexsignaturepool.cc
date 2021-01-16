@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------------
+﻿//------------------------------------------------------------------------------
 // vkvertexsignaturepool.cc
 // (C)2017-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
@@ -171,6 +171,9 @@ VkVertexSignaturePool::GetDerivativeLayout(const CoreGraphics::VertexLayoutId la
                 }
             }
         }
+
+        if (program->vsInputSlots.size() != (uint32_t)layout.attrs.Size())
+            n_warning("Warning: Vertex shader (%s) and vertex layout mismatch!\n", program->name.c_str());
 
         layout.info.vertexAttributeDescriptionCount = layout.attrs.Size();
         layout.info.pVertexAttributeDescriptions = layout.attrs.Begin();

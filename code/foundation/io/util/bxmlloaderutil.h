@@ -15,6 +15,7 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"
+#include "io/stream.h"
 #include "io/util/bxmlfilestructs.h"
 #include "util/array.h"
 
@@ -33,7 +34,7 @@ public:
     ~BXmlLoaderUtil();
     
     /// setup the object from a file-in-memory, buffer must remain intact until Discard() is called!
-    void SetupFromFileInMemory(void* buf, SizeT size);
+    void SetupFromFileInMemory(void* buf, Stream::Size size);
     /// discard the object
     void Discard();
     /// return true if the object has been setup
@@ -74,7 +75,7 @@ public:
 
 private:
     void* buffer;
-    SizeT bufSize;
+    Stream::Size bufSize;
 
     BXMLFileHeader* header;
     BXMLFileAttr* attrs;

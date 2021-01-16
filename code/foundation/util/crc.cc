@@ -11,6 +11,9 @@ namespace Util
 unsigned int Crc::Table[NumByteValues] = { 0 };
 bool Crc::TableInitialized = false;
 
+template void Crc::Compute(unsigned char*, int32_t);
+template void Crc::Compute(unsigned char*, int64_t);
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -62,11 +65,12 @@ Crc::Begin()
     Do one run of checksum computation for a chunk of data. Must be 
     executed inside Begin()/End().
 */
+template <typename sizetype>
 void
-Crc::Compute(unsigned char* buf, unsigned int numBytes)
+Crc::Compute(unsigned char* buf, sizetype numBytes)
 {
     n_assert(this->inBegin);
-    unsigned int i;
+    sizetype i;
     for (i = 0; i < numBytes; i++)
     {
         uint top = this->checksum >> 24;

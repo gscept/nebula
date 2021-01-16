@@ -144,7 +144,6 @@ constexpr bool
 BitField<NUMBITS>::IsSet() const
 {
     static_assert(bitIndex < NUMBITS);
-    n_assert(bitIndex < NUMBITS);
     constexpr TYPE i = (1ull << (bitIndex % BASE));
     constexpr TYPE index = bitIndex / BASE;
     return (this->bits[index] & i) == i;
@@ -201,7 +200,6 @@ constexpr void
 BitField<NUMBITS>::SetBit()
 {
     static_assert(i < NUMBITS);
-    n_assert(i < NUMBITS);
     constexpr TYPE index = i / BASE;
     constexpr TYPE bit = (1ull << (i % BASE));
     this->bits[index] |= bit;

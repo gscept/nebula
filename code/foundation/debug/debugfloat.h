@@ -320,13 +320,13 @@ void
 DebugFloat::print(const Math::quat &q, const char *msg)
 {
     if(msg) n_printf("%s:\n", msg);
-    if(Math::n_nearequal(length(q), 1.0f, 0.00001f))
+    if(Math::nearequal(length(q), 1.0f, 0.00001f))
     {
-        const Math::scalar angle = Math::n_acos(q.w) * 2.0f;
+        const Math::scalar angle = Math::acos(q.w) * 2.0f;
         n_printf("    axis     : %f %f %f\n"
                  "    w        : %f\n"
                  "    magnitude: %f rad: %f deg: %f\n",
-                 q.x, q.y, q.z, q.w, length(q), angle, Math::n_rad2deg(angle));
+                 q.x, q.y, q.z, q.w, length(q), angle, Math::rad2deg(angle));
     }
     else
     {

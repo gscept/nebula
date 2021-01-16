@@ -1113,12 +1113,12 @@ const char* TiXmlElement::Parse( const char* p, TiXmlParsingData* data, TiXmlEnc
             }
 
             attrib->SetDocument( document );
-            const char* pErr = p;
+            const char* pErr2 = p;
             p = attrib->Parse( p, data, encoding );
 
             if ( !p || !*p )
             {
-                if ( document ) document->SetError( TIXML_ERROR_PARSING_ELEMENT, pErr, data, encoding );
+                if ( document ) document->SetError( TIXML_ERROR_PARSING_ELEMENT, pErr2, data, encoding );
                 delete attrib;
                 return 0;
             }

@@ -2,6 +2,7 @@
 //  conversion.cc
 //  (C) 2019-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
+//#pragma warning (disable : 4267)
 #include "foundation/stdneb.h"
 #include "conversion.h"
 #include "pybind11/operators.h"
@@ -72,12 +73,12 @@ PYBIND11_EMBEDDED_MODULE(nmath, m)
         .def_static("barycentric", py::overload_cast<Math::vec4 const&, Math::vec4 const&, Math::vec4 const&, Math::scalar, Math::scalar>(&Math::barycentric))
         .def_static("catmullrom", py::overload_cast<Math::vec4 const&, Math::vec4 const&, Math::vec4 const&, Math::vec4 const&, Math::scalar>(&Math::catmullrom))
         .def_static("hermite", py::overload_cast<Math::vec4 const&, Math::vec4 const&, Math::vec4 const&, Math::vec4 const&, Math::scalar>(&Math::hermite))
-        .def_static("lerp", py::overload_cast<Math::vec4 const&, Math::vec4 const&, Math::scalar>(&Math::lerp))
+        .def_static("lerp", py::overload_cast<Math::vec4 const&, Math::vec4 const&, Math::scalar>(&Math::vecLerp))
         .def_static("maximize", py::overload_cast<Math::vec4 const&, Math::vec4 const&>(&Math::maximize))
         .def_static("minimize", py::overload_cast<Math::vec4 const&, Math::vec4 const&>(&Math::minimize))
         .def_static("normalize", py::overload_cast<Math::vec4 const&>(&Math::normalize))
         .def_static("reflect", py::overload_cast<Math::vec4 const&, Math::vec4 const&>(&Math::reflect))
-        .def_static("clamp", py::overload_cast<Math::vec4 const&, Math::vec4 const&, Math::vec4 const&>(&Math::clamp))
+        .def_static("clamp", py::overload_cast<Math::vec4 const&, Math::vec4 const&, Math::vec4 const&>(&Math::vecClamp))
         .def_static("angle", py::overload_cast<Math::vec4 const&, Math::vec4 const&>(&Math::angle))
         .def_static("perspective_div", &Math::perspective_div)
         .def_static("floor", py::overload_cast<Math::vec4 const&>(&Math::floor))
@@ -243,11 +244,11 @@ PYBIND11_EMBEDDED_MODULE(nmath, m)
         .def_readwrite("w", &Math::quat::w)
         .def("length", py::overload_cast<Math::quat const&>(&Math::length))
         .def("length_sq", py::overload_cast<Math::quat const&>(&Math::lengthsq))
-        .def("undenormalize", &Math::undenormalize)
+        .def("undenormalize", &Math::quatUndenormalize)
         .def_static("barycentric", py::overload_cast<Math::quat const&, Math::quat const&, Math::quat const&, Math::scalar, Math::scalar>(&Math::barycentric))
         .def_static("conjugate", &Math::conjugate)
         .def_static("dot", py::overload_cast<Math::quat const&, Math::quat const&>(&Math::dot))
-        .def_static("exp", &Math::exp)
+        .def_static("exp", &Math::quatExp)
         .def_static("identity", &Math::identity)
         .def_static("inverse", py::overload_cast<Math::quat const&>(&Math::inverse))
         .def_static("ln", &Math::ln)

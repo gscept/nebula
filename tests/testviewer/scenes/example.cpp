@@ -63,7 +63,7 @@ void CloseScene()
 */
 void StepFrame()
 {
-    Models::ModelContext::SetTransform(entity, Math::translation(Math::vec3(0, 0, Math::n_sin(v))));
+    Models::ModelContext::SetTransform(entity, Math::translation(Math::vec3(0, 0, Math::sin(v))));
     v += 0.01f;
 };
 

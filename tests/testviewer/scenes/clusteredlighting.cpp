@@ -48,9 +48,9 @@ void OpenScene()
             entities.Append(id);
             int index = (j + NumPointLights) + (i + NumPointLights) * NumPointLights * 2;
             entityNames.Append(Util::String::Sprintf("PointLight%d", index));
-            const float red = Math::n_rand();
-            const float green = Math::n_rand();
-            const float blue = Math::n_rand();
+            const float red = Math::rand();
+            const float green = Math::rand();
+            const float blue = Math::rand();
             Lighting::LightContext::RegisterEntity(id);
             Lighting::LightContext::SetupPointLight(id, Math::vec3(red, green, blue), 25.0f, Math::translation(i * 4, 5, j * 4), 10.0f, false);
             pointLights.Append(id);
@@ -66,15 +66,15 @@ void OpenScene()
             entities.Append(id);
             int index = (j + NumSpotLights) + (i + NumSpotLights) * NumSpotLights * 2;
             entityNames.Append(Util::String::Sprintf("SpotLight%d", index));
-            const float red = Math::n_rand();
-            const float green = Math::n_rand();
-            const float blue = Math::n_rand();
+            const float red = Math::rand();
+            const float green = Math::rand();
+            const float blue = Math::rand();
 
-            Math::mat4 spotLightMatrix = Math::rotationyawpitchroll(Math::n_deg2rad(120), Math::n_deg2rad(25), 0);
+            Math::mat4 spotLightMatrix = Math::rotationyawpitchroll(Math::deg2rad(120), Math::deg2rad(25), 0);
             spotLightMatrix.position = Math::vec4(i * 4, 2.5, j * 4, 1);
 
             Lighting::LightContext::RegisterEntity(id);
-            Lighting::LightContext::SetupSpotLight(id, Math::vec3(red, green, blue), 250.0f, Math::n_deg2rad(45.0f), Math::n_deg2rad(60.0f), spotLightMatrix, 50.0f, true);
+            Lighting::LightContext::SetupSpotLight(id, Math::vec3(red, green, blue), 250.0f, Math::deg2rad(45.0f), Math::deg2rad(60.0f), spotLightMatrix, 50.0f, true);
             spotLights.Append(id);
         }
     }
@@ -89,7 +89,7 @@ void OpenScene()
             int index = (j + NumDecals) + (i + NumDecals) * NumDecals * 2;
             entityNames.Append(Util::String::Sprintf("Decal%d", index));
             Math::mat4 transform = Math::scaling(Math::vec3(10, 10, 50));
-            transform = transform * Math::rotationyawpitchroll(0, Math::n_deg2rad(90), Math::n_deg2rad(Math::n_rand() * 90.0f));
+            transform = transform * Math::rotationyawpitchroll(0, Math::deg2rad(90), Math::deg2rad(Math::rand() * 90.0f));
             transform.position = Math::vec4(i * 16, 0, j * 16, 1);
 
             // load textures
@@ -118,17 +118,17 @@ void OpenScene()
             int index = (j + NumFogVolumes) + (i + NumFogVolumes) * NumFogVolumes * 2;
             entityNames.Append(Util::String::Sprintf("Fog%d", index));
             Math::mat4 transform = Math::scaling(10);
-            transform = transform * Math::rotationyawpitchroll(Math::n_deg2rad(Math::n_rand() * 90.0f), 0, 0);
+            transform = transform * Math::rotationyawpitchroll(Math::deg2rad(Math::rand() * 90.0f), 0, 0);
             transform.position = Math::vec4(4 - i * 4, 0, 4 - j * 4, 1);
 
-            const float red = Math::n_rand();
-            const float green = Math::n_rand();
-            const float blue = Math::n_rand();
+            const float red = Math::rand();
+            const float green = Math::rand();
+            const float blue = Math::rand();
 
             // setup box volume
             Fog::VolumetricFogContext::RegisterEntity(id);
             Fog::VolumetricFogContext::SetupSphereVolume(id, Math::vec3(4 - i * 4, 0, 4 - j * 4), 4.0f, 1.0f, Math::vec3(red, green, blue));
-            //Fog::VolumetricFogContext::SetupBoxVolume(id, transform, Math::n_rand() * 100.0f, Math::vec3(red, green, blue));
+            //Fog::VolumetricFogContext::SetupBoxVolume(id, transform, Math::rand() * 100.0f, Math::vec3(red, green, blue));
 
             fogVolumes.Append(id);
         }
@@ -189,7 +189,7 @@ void OpenScene()
             sid.Format("%s: %d", GraphicsEntityToName(ent), ent);
             entityNames.Append(sid);
 
-            const float timeOffset = Math::n_rand();// (((i + NumModels)* NumModels + (j + NumModels)) % 4) / 3.0f;
+            const float timeOffset = Math::rand();// (((i + NumModels)* NumModels + (j + NumModels)) % 4) / 3.0f;
 
             // create model and move it to the front
             ModelContext::Setup(ent, modelRes[modelIndex], "NotA", [ent, modelIndex, i, j, skeletonRes, animationRes]()
@@ -197,7 +197,7 @@ void OpenScene()
                     ModelContext::SetTransform(ent, Math::translation(i * 16, 0, j * 16));
                     ObservableContext::Setup(ent, VisibilityEntityType::Model);
                     //Characters::CharacterContext::Setup(ent, skeletonRes[modelIndex], animationRes[modelIndex], "Viewer");
-                    //Characters::CharacterContext::PlayClip(ent, nullptr, 1, 0, Characters::Append, 1.0f, 1, Math::n_rand() * 100.0f, 0.0f, 0.0f, Math::n_rand() * 100.0f);
+                    //Characters::CharacterContext::PlayClip(ent, nullptr, 1, 0, Characters::Append, 1.0f, 1, Math::rand() * 100.0f, 0.0f, 0.0f, Math::rand() * 100.0f);
                 });
             
             modelIndex = (modelIndex + 1) % 4;
@@ -228,7 +228,7 @@ void StepFrame()
     for (i = 0; i < spotLights.Size(); i++)
     {
         Math::mat4 spotLightTransform;
-        spotLightTransform = Math::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, Math::n_deg2rad(-55), 0);
+        spotLightTransform = Math::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, Math::deg2rad(-55), 0);
         spotLightTransform.position = Lighting::LightContext::GetTransform(spotLights[i]).position;
         //Lighting::LightContext::SetTransform(spotLights[i], spotLightTransform);
     }
@@ -236,19 +236,19 @@ void StepFrame()
     for (i = 0; i < decals.Size(); i++)
     {
         Math::mat4 decalTransform = Math::scaling(Math::vec3(10, 10, 50));
-        decalTransform = decalTransform * Math::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 0.1f + i, Math::n_deg2rad(90), 0);
+        decalTransform = decalTransform * Math::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 0.1f + i, Math::deg2rad(90), 0);
         decalTransform.position = Decals::DecalContext::GetTransform(decals[i]).position;
         //Decals::DecalContext::SetTransform(decals[i], decalTransform);
     }
 
     for (i = 0; i < fogVolumes.Size(); i++)
     {
-        Fog::VolumetricFogContext::SetTurbidity(fogVolumes[i], (1.0f + Math::n_sin(Graphics::GraphicsServer::Instance()->GetTime() * 0.1f + i) * 0.5f) * 100);
+        Fog::VolumetricFogContext::SetTurbidity(fogVolumes[i], (1.0f + Math::sin(Graphics::GraphicsServer::Instance()->GetTime() * 0.1f + i) * 0.5f) * 100);
     }
     /*
         Math::mat4 globalLightTransform = Lighting::LightContext::GetTransform(globalLight);
-        Math::mat4 rotY = Math::rotationy(Math::n_deg2rad(0.1f));
-        Math::mat4 rotX = Math::rotationz(Math::n_deg2rad(0.05f));
+        Math::mat4 rotY = Math::rotationy(Math::deg2rad(0.1f));
+        Math::mat4 rotX = Math::rotationz(Math::deg2rad(0.05f));
         globalLightTransform = globalLightTransform * rotX * rotY;
         Lighting::LightContext::SetTransform(globalLight, globalLightTransform);
     */
@@ -326,7 +326,7 @@ void RenderUI()
         DestroyEntity(entities[selected]);
         entities.EraseIndex(selected);
         entityNames.EraseIndex(selected);
-        selected = Math::n_max(selected-1, 0);
+        selected = Math::max(selected-1, 0);
     }
     ImGui::End();
     auto id = entities[selected];

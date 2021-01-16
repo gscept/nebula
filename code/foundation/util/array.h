@@ -221,7 +221,7 @@ Array<TYPE>::Array(SizeT _capacity, SizeT _grow) :
     }
     if (this->capacity > 0)
     {
-        this->elements = n_new_array(TYPE, this->capacity);
+        this->elements = n_new_array_alloc<TYPE>(this->capacity);
     }
     else
     {
@@ -244,7 +244,7 @@ Array<TYPE>::Array(SizeT initialSize, SizeT _grow, const TYPE& initialValue) :
     }
     if (initialSize > 0)
     {
-        this->elements = n_new_array(TYPE, this->capacity);
+        this->elements = n_new_array_alloc<TYPE>(this->capacity);
         IndexT i;
         for (i = 0; i < initialSize; i++)
         {
@@ -267,7 +267,7 @@ Array<TYPE>::Array(const TYPE* const buf, SizeT num) :
     count(num)
 {
     static_assert(std::is_trivially_copyable<TYPE>::value, "TYPE is not trivially copyable; Util::Array cannot be constructed from pointer of TYPE.");
-    this->elements = n_new_array(TYPE, this->capacity);
+    this->elements = n_new_array_alloc<TYPE>(this->capacity);
     const SizeT bytes = num * sizeof(TYPE);
     Memory::Copy(buf, this->elements, bytes);
 }
@@ -283,7 +283,7 @@ Array<TYPE>::Array(std::initializer_list<TYPE> list) :
 {
     if (this->capacity > 0)
     {
-        this->elements = n_new_array(TYPE, this->capacity);
+        this->elements = n_new_array_alloc<TYPE>(this->capacity);
         IndexT i;
         for (i = 0; i < this->count; i++)
         {
@@ -352,7 +352,7 @@ Array<TYPE>::Copy(const Array<TYPE>& src)
     this->count = src.count;
     if (this->capacity > 0)
     {
-        this->elements = n_new_array(TYPE, this->capacity);
+        this->elements = n_new_array_alloc<TYPE>(this->capacity);
         IndexT i;
         for (i = 0; i < this->count; i++)
         {
@@ -368,13 +368,14 @@ template<class TYPE> void
 Array<TYPE>::Delete()
 {
     this->grow = 0;
-    this->capacity = 0;
     this->count = 0;
+    
     if (this->elements)
     {
-        n_delete_array(this->elements);
+        n_new_array_free(this->capacity, this->elements);
         this->elements = 0;
     }
+    this->capacity = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -407,7 +408,7 @@ Array<TYPE>::Realloc(SizeT _capacity, SizeT _grow)
     this->count = 0;
     if (this->capacity > 0)
     {
-        this->elements = n_new_array(TYPE, this->capacity);
+        this->elements = n_new_array_alloc<TYPE>(this->capacity);
     }
     else
     {
@@ -454,7 +455,9 @@ Array<TYPE>::operator=(Array<TYPE>&& rhs) noexcept
     if (this != &rhs)
     {
         if (this->elements)
-            n_delete_array(this->elements);
+        {
+            n_new_array_free(this->capacity, this->elements);
+        }
         this->elements = rhs.elements;
         this->grow = rhs.grow;
         this->count = rhs.count;
@@ -471,13 +474,13 @@ Array<TYPE>::operator=(Array<TYPE>&& rhs) noexcept
 template<class TYPE> void
 Array<TYPE>::GrowTo(SizeT newCapacity)
 {
-    TYPE* newArray = n_new_array(TYPE, newCapacity);
+    TYPE* newArray = n_new_array_alloc<TYPE>(newCapacity);
     if (this->elements)
     {
         this->MoveRange(newArray, this->elements, this->count);
 
         // discard old array
-        n_delete_array(this->elements);
+        n_new_array_free(this->capacity, this->elements);
     }
     this->elements  = newArray;
     this->capacity = newCapacity;

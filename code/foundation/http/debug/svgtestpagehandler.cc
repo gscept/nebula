@@ -70,7 +70,7 @@ SvgTestPageHandler::TestShapeRendering(const Ptr<HttpRequest>& request)
             int x;
             for (x = 100; x < 400; x += 2)
             {
-                points.Append(vec2(float(x), 750.0f + n_rand(-250, 250)));
+                points.Append(vec2(float(x), 750.0f + Math::rand(-250, 250)));
             }
             svgWriter->PolyLine(points);
         svgWriter->EndGroup();
@@ -105,7 +105,7 @@ SvgTestPageHandler::TestLineChartRendering(const Ptr<HttpRequest>& request)
         IndexT i;
         for (i = 0; i < 512; i++)
         {
-            values.Append(n_rand(10.0f, 45.0f));
+            values.Append(Math::rand(10.0f, 45.0f));
         }
         writer->AddTrack("fps", "green", values);
         writer->Draw();

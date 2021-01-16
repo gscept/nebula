@@ -34,9 +34,9 @@ public:
     /// nullptr constructor
     Blob(std::nullptr_t t);
     /// constructor
-    Blob(const void* ptr, SizeT size);
+    Blob(const void* ptr, size_t size);
     /// reserve N bytes
-    Blob(SizeT size);
+    Blob(size_t size);
     /// copy constructor
     Blob(const Blob& rhs);
     /// move constructor
@@ -64,22 +64,22 @@ public:
     /// return true if the blob contains data
     bool IsValid() const;
     /// reserve N bytes
-    void Reserve(SizeT size);
+    void Reserve(size_t size);
     /// trim the size member (without re-allocating!)
-    void Trim(SizeT size);
+    void Trim(size_t size);
     /// set blob contents
-    void Set(const void* ptr, SizeT size);
+    void Set(const void* ptr, size_t size);
     /// set from base64 enconded
-    void SetFromBase64(const void* ptr, SizeT size);
+    void SetFromBase64(const void* ptr, size_t size);
     /// set from file
     void SetFromFile(const IO::URI & uri);
 
     /// set chunk contents. Will allocate more memory if necessary.
-    void SetChunk(const void* from, SizeT size, SizeT internalOffset);
+    void SetChunk(const void* from, size_t size, size_t internalOffset);
     /// get blob ptr
     void* GetPtr() const;
     /// get blob size
-    SizeT Size() const;
+    size_t Size() const;
     /// get a hash code (compatible with Util::HashTable)
     uint32_t HashCode() const;
     /// get as base64 encoded
@@ -89,19 +89,19 @@ private:
     /// delete content
     void Delete();
     /// allocate internal buffer
-    void Allocate(SizeT size);
+    void Allocate(size_t size);
     /// copy content
-    void Copy(const void* ptr, SizeT size);
+    void Copy(const void* ptr, size_t size);
     /// Increases allocated size without deleting existing data (reallocate and memcopy).
-    void GrowTo(SizeT size);
+    void GrowTo(size_t size);
     /// do a binary comparison between this and other blob
     int BinaryCompare(const Blob& rhs) const;
 
     static Memory::Heap* DataHeap;
 
     void* ptr;
-    SizeT size;
-    SizeT allocSize;
+    size_t size;
+    size_t allocSize;
 };
 
 //------------------------------------------------------------------------------
@@ -183,7 +183,7 @@ Blob::Blob(std::nullptr_t t) :
 /**
 */
 inline
-Blob::Blob(const void* fromPtr, SizeT fromSize) :
+Blob::Blob(const void* fromPtr, size_t fromSize) :
     ptr(0),
     size(0),
     allocSize(0)
@@ -230,7 +230,7 @@ Blob::Blob(Blob&& rhs) noexcept :
 /**
 */
 inline
-Blob::Blob(SizeT s) :
+Blob::Blob(size_t s) :
     ptr(0),
     size(0),
     allocSize(0)
@@ -276,7 +276,7 @@ Blob::~Blob()
 /**
 */
 inline void
-Blob::Allocate(SizeT s)
+Blob::Allocate(size_t s)
 {
     n_assert(!this->IsValid());
     n_assert(0 != DataHeap);
@@ -289,7 +289,7 @@ Blob::Allocate(SizeT s)
 /**
 */
 inline void
-Blob::Copy(const void* fromPtr, SizeT fromSize)
+Blob::Copy(const void* fromPtr, size_t fromSize)
 {
     n_assert((0 != fromPtr) && (fromSize > 0));
 
@@ -307,7 +307,7 @@ Blob::Copy(const void* fromPtr, SizeT fromSize)
 /**
 */
 inline void
-Blob::GrowTo(SizeT size)
+Blob::GrowTo(size_t size)
 {
     n_assert(this->allocSize < size);
 
@@ -411,7 +411,7 @@ Blob::operator<=(const Blob& rhs) const
 /**
 */
 inline void
-Blob::Reserve(SizeT s)
+Blob::Reserve(size_t s)
 {
     if (this->IsValid())
     {
@@ -432,7 +432,7 @@ Blob::Reserve(SizeT s)
 /**
 */
 inline void
-Blob::Trim(SizeT trimSize)
+Blob::Trim(size_t trimSize)
 {
     n_assert(trimSize <= this->size);
     this->size = trimSize;
@@ -442,7 +442,7 @@ Blob::Trim(SizeT trimSize)
 /**
 */
 inline void
-Blob::Set(const void* fromPtr, SizeT fromSize)
+Blob::Set(const void* fromPtr, size_t fromSize)
 {
     this->Copy(fromPtr, fromSize);
 }
@@ -451,12 +451,12 @@ Blob::Set(const void* fromPtr, SizeT fromSize)
 /**
 */
 inline void
-Blob::SetChunk(const void* from, SizeT size, SizeT internalOffset)
+Blob::SetChunk(const void* from, size_t size, size_t internalOffset)
 {
     n_assert((0 != from) && (size > 0));
     n_assert(nullptr != this->ptr)
 
-    SizeT newSize = (internalOffset + size);
+    size_t newSize = (internalOffset + size);
     if (newSize > this->allocSize)
     {
         this->GrowTo(newSize);
@@ -478,7 +478,7 @@ Blob::GetPtr() const
 //------------------------------------------------------------------------------
 /**
 */
-inline SizeT
+inline size_t
 Blob::Size() const
 {
     n_assert(this->IsValid());

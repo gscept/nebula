@@ -102,13 +102,13 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
         VkDevice dev = Vulkan::GetCurrentDevice();
 
         int numMips = ctx.num_mipmaps(0);
-        int mips = Math::n_max(0, numMips - NumBasicLods);
+        int mips = Math::max(0, numMips - NumBasicLods);
         int depth = ctx.image_depth(0, 0);
         int width = ctx.image_width(0, 0);
         int height = ctx.image_height(0, 0);
         bool isCube = ctx.num_faces() > 1;
 
-        streamInfo.lowestLod = Math::n_max(0, mips);
+        streamInfo.lowestLod = Math::max(0, mips);
 
         CoreGraphics::PixelFormat::Code nebulaFormat = CoreGraphics::Gliml::ToPixelFormat(ctx);
         VkFormat vkformat = VkTypes::AsVkFormat(nebulaFormat);
@@ -161,9 +161,9 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
         VkImageSubresourceRange subres;
         subres.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         subres.baseArrayLayer = 0;
-        subres.baseMipLevel = Math::n_max(mips, 0);
+        subres.baseMipLevel = Math::max(mips, 0);
         subres.layerCount = info.arrayLayers;
-        subres.levelCount = Math::n_min(numMips, NumBasicLods);
+        subres.levelCount = Math::min(numMips, NumBasicLods);
         VkImageViewCreateInfo viewCreate =
         {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -242,7 +242,7 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
         loadInfo.dims.height = height;
         loadInfo.dims.depth = depth;
         loadInfo.layers = info.arrayLayers;
-        loadInfo.mips = Math::n_max(numMips, 1);
+        loadInfo.mips = Math::max(numMips, 1);
         loadInfo.format = nebulaFormat;// VkTypes::AsNebulaPixelFormat(vkformat);
         loadInfo.dev = dev;
         loadInfo.swapExtension = Ids::InvalidId32;
@@ -288,14 +288,14 @@ VkStreamTexturePool::StreamMaxLOD(const Resources::ResourceId& id, const float l
     VkTextureRuntimeInfo& runtimeInfo = texturePool->Get<Texture_RuntimeInfo>(id.resourceId);
 
     // if the lod is undefined, just add 1 mip
-    IndexT adjustedLod = Math::n_max(0.0f, Math::n_ceil(loadInfo.mips * lod));
+    IndexT adjustedLod = Math::max(0.0f, Math::ceil(loadInfo.mips * lod));
 
     // abort if the lod is already higher
     if (streamInfo.lowestLod <= (uint32_t)adjustedLod)
         return;
 
     // bump lod
-    adjustedLod = Math::n_min(adjustedLod, (IndexT)loadInfo.mips);
+    adjustedLod = Math::min(adjustedLod, (IndexT)loadInfo.mips);
     IndexT maxLod = loadInfo.mips - streamInfo.lowestLod;
 
     VkDevice dev = Vulkan::GetCurrentDevice();

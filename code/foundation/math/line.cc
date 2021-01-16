@@ -38,7 +38,7 @@ line::intersect(const line& l, point& pa, point& pb) const
     scalar d2121 = dot(p21, p21);
 
     scalar denom = d2121 * d4343 - d4321 * d4321;
-    if (n_abs(denom) < EPS) return false;
+    if (Math::abs(denom) < EPS) return false;
     scalar numer = d1343 * d4321 - d1321 * d4343;
 
     scalar mua = numer / denom;

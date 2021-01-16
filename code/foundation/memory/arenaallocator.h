@@ -224,7 +224,7 @@ ArenaAllocator<ChunkSize>::Alloc()
 {
     static_assert(sizeof(T) <= ChunkSize, "Size of type is bigger than the chunk size!");
     // pad up to next multiple of 16 to avoid alignment issues
-    SizeT alignedSize = Math::n_align(sizeof(T), 16);
+    SizeT alignedSize = Math::align(sizeof(T), 16);
     if (this->iterator == nullptr)
     {
         this->NewChunk();
@@ -250,7 +250,7 @@ inline void*
 ArenaAllocator<ChunkSize>::Alloc(SizeT size)
 {
     // pad to next alignment.
-    size = Math::n_align(size, 16);
+    size = Math::align(size, 16);
     n_assert(size <= ChunkSize);
     n_assert(size != 0);
     if (this->iterator == nullptr)

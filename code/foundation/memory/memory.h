@@ -17,3 +17,32 @@
 #else
 #error "UNKNOWN PLATFORM"
 #endif
+
+
+template<typename TYPE>
+TYPE* n_new_array_alloc(size_t size)
+{
+    TYPE* buffer = (TYPE*)Memory::Alloc(Memory::ObjectArrayHeap, size * sizeof(TYPE));
+    if constexpr (!std::is_trivially_constructible<TYPE>::value)
+    {
+        for (size_t i = 0; i < size; ++i)
+        {
+            ::new( &buffer[i] ) TYPE;
+        }
+    }
+    return buffer;
+}
+
+template<typename TYPE>
+void n_new_array_free(size_t size, TYPE* buffer)
+{
+
+    if constexpr (!std::is_trivially_destructible<TYPE>::value)
+    {
+        for (size_t i = 0; i < size; ++i)
+        {
+            buffer[i].~TYPE();
+        }
+    }
+    Memory::Free(Memory::ObjectArrayHeap, (void*)buffer);
+}

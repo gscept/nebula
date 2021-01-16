@@ -60,10 +60,11 @@ TcpMessageCodec::~TcpMessageCodec()
 void
 TcpMessageCodec::EncodeToMessage(const Ptr<IO::Stream> &stream, const Ptr<IO::Stream> &output)
 {
+    n_assert(stream->GetSize() < INT_MAX);
     Ptr<BinaryWriter> writer = BinaryWriter::Create();
     writer->SetStreamByteOrder(System::ByteOrder::Network);
     writer->SetStream(output);
-    SizeT streamSize = stream->GetSize();
+    SizeT streamSize = (SizeT)stream->GetSize();
     stream->SetAccessMode(Stream::ReadAccess);
     output->SetAccessMode(Stream::WriteAccess);
     uchar* ptr = 0;

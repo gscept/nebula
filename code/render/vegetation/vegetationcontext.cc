@@ -140,8 +140,8 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
 	int vertex = 0;
 	for (SizeT i = 0; i < settings.numGrassPlanes; i++, index += 6, vertex += 4)
 	{
-		float x = Math::n_cos(Math::n_deg2rad(angle));
-		float z = Math::n_sin(Math::n_deg2rad(angle));
+		float x = Math::cos(Math::deg2rad(angle));
+		float z = Math::sin(Math::deg2rad(angle));
 
 		// calculate a plane at the point facing the center
 		Math::plane plane(Math::point(0, 0, 0), Math::point(0, 0, 0) - Math::point(x, 0, z));
@@ -734,7 +734,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
 	for (IndexT i = 0; i < groups.Size(); i++)
 	{
 		SizeT size = CoreGraphics::VertexLayoutGetSize(groups[i].GetVertexLayout());
-		uint lod = Math::n_log2(i + 1);
+		uint lod = Math::log2(i + 1);
 		info.lodDistances[i] = 50 - (50 >> lod);
 		info.lodIndexOffsets[i] = iboIndex + groups[i].GetBaseIndex();
 		info.lodVertexOffsets[i] = vboIndex + groups[i].GetBaseVertex();

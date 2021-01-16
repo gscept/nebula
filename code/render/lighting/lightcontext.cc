@@ -427,7 +427,7 @@ LightContext::SetupSpotLight(const Graphics::GraphicsEntityId id,
 
 	std::array<float, 2> angles = { innerConeAngle, outerConeAngle };
     if (innerConeAngle >= outerConeAngle)
-		angles[0] = outerConeAngle - Math::n_deg2rad(0.1f);
+		angles[0] = outerConeAngle - Math::deg2rad(0.1f);
 
 	// construct projection from angle and range
 	const float zNear = 0.1f;
@@ -583,7 +583,7 @@ LightContext::SetInnerOuterAngle(const Graphics::GraphicsEntityId id, float inne
 	n_assert(type == SpotLightType);
 	Ids::Id32 lightId = genericLightAllocator.Get<TypedLightId>(cid.id);
 	if (inner >= outer)
-		inner = outer - Math::n_deg2rad(0.1f);
+		inner = outer - Math::deg2rad(0.1f);
 	spotLightAllocator.Get<SpotLight_ConeAngles>(lightId)[0] = inner;
 	spotLightAllocator.Get<SpotLight_ConeAngles>(lightId)[1] = outer;
 }
@@ -911,8 +911,8 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 				(color[i] * intensity[i]).store(spotLight.color);
 				
 				// calculate sine and cosine
-				spotLight.angleSinCos[0] = Math::n_sin(angles[1]);
-				spotLight.angleSinCos[1] = Math::n_cos(angles[1]);
+				spotLight.angleSinCos[0] = Math::sin(angles[1]);
+				spotLight.angleSinCos[1] = Math::cos(angles[1]);
 				spotLight.flags = flags;
 				numSpotLights++;
 			}
@@ -1056,7 +1056,7 @@ LightContext::CullAndClassify()
 
 	// run chunks of 1024 threads at a time
 	std::array<SizeT, 3> dimensions = Clustering::ClusterContext::GetClusterDimensions();
-	Compute(Math::n_ceil((dimensions[0] * dimensions[1] * dimensions[2]) / 64.0f), 1, 1, ComputeQueueType);
+	Compute(Math::ceil((dimensions[0] * dimensions[1] * dimensions[2]) / 64.0f), 1, 1, ComputeQueueType);
 
 	// make sure to sync so we don't read from data that is being written...
 	BarrierInsert(ComputeQueueType,
@@ -1092,7 +1092,7 @@ LightContext::CombineLighting()
 
 	// perform debug output
 	TextureDimensions dims = TextureGetDimensions(clusterState.lightingTexture);
-	Compute(Math::n_divandroundup(dims.width, 64), dims.height, 1, GraphicsQueueType);
+	Compute(Math::divandroundup(dims.width, 64), dims.height, 1, GraphicsQueueType);
 
 	CommandBufferEndMarker(GraphicsQueueType);
 }
@@ -1137,7 +1137,7 @@ LightContext::BlurGlobalShadowMap()
 		TextureDimensions dims = TextureGetDimensions(lightServerState.globalLightShadowMapBlurred0);
 		SetShaderProgram(lightServerState.csmBlurXProgram);
 		SetResourceTable(lightServerState.csmBlurXTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-		Compute(Math::n_divandroundup(dims.width, 320), dims.height, 4);
+		Compute(Math::divandroundup(dims.width, 320), dims.height, 4);
 
 		BarrierInsert(GraphicsQueueType,
 			BarrierStage::ComputeShader,
@@ -1158,7 +1158,7 @@ LightContext::BlurGlobalShadowMap()
 			"CSM Blur X Finish");
 		SetShaderProgram(lightServerState.csmBlurYProgram);
 		SetResourceTable(lightServerState.csmBlurYTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-		Compute(Math::n_divandroundup(dims.height, 320), dims.width, 4);
+		Compute(Math::divandroundup(dims.height, 320), dims.width, 4);
 
 		BarrierInsert(GraphicsQueueType,
 			BarrierStage::ComputeShader,

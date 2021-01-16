@@ -39,13 +39,14 @@ voidpf ZCALLBACK nebula3_open_file_func (voidpf opaque, const void* filename64, 
 */
 uint32_t ZCALLBACK nebula3_read_file_func (voidpf opaque, voidpf stream, void* buf, uint32_t size)
 {
-    uint32_t ret = 0;
+    IO::Stream::Size ret = 0;
     if (NULL != stream)
     {
         IO::Stream* fileStream = (IO::Stream*) stream;
         ret = fileStream->Read(buf, size);
     }
-    return ret;
+    n_assert(ret < INT_MAX);
+    return (uint32_t)ret;
 }
 
 //------------------------------------------------------------------------------

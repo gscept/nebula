@@ -512,7 +512,7 @@ lookatlh(const point& eye, const point& at, const vector& up)
     // need to reverse again!)
     const vector zaxis = normalize(at - eye);
     vector normUp = normalize(up);
-    if (n_abs(dot(zaxis, normUp)) > 0.9999999f)
+    if (Math::abs(dot(zaxis, normUp)) > 0.9999999f)
     {
         // need to choose a different up vector because up and lookat point
         // into same or opposite direction
@@ -538,7 +538,7 @@ lookatrh(const point& eye, const point& at, const vector& up)
     // need to reverse again!)
     const vector zaxis = normalize(eye - at);
     vector normUp = normalize(up);
-    if (n_abs(dot(zaxis, normUp)) > 0.9999999f)
+    if (Math::abs(dot(zaxis, normUp)) > 0.9999999f)
     {
         // need to choose a different up vector because up and lookat point
         // into same or opposite direction
@@ -793,8 +793,8 @@ perspfovlh(scalar fovy, scalar aspect, scalar zn, scalar zf)
 {
     mat4 m = mat4::identity;
     scalar halfFov = 0.5f * fovy;
-    scalar sinfov = n_sin(halfFov);
-    scalar cosfov = n_cos(halfFov);
+    scalar sinfov = Math::sin(halfFov);
+    scalar cosfov = Math::cos(halfFov);
 
     scalar height = cosfov / sinfov;
     scalar width = height / aspect;
@@ -816,8 +816,8 @@ perspfovrh(scalar fovy, scalar aspect, scalar zn, scalar zf)
 {
     mat4 m = mat4::identity;
     scalar halfFov = 0.5f * fovy;
-    scalar sinfov = n_sin(halfFov);
-    scalar cosfov = n_cos(halfFov);
+    scalar sinfov = Math::sin(halfFov);
+    scalar cosfov = Math::cos(halfFov);
 
     scalar height = cosfov / sinfov;
     scalar width = height / aspect;
@@ -908,8 +908,8 @@ rotationaxis(const vec3& axis, scalar angle)
 {
     __m128 norm = normalize(axis).vec;
 
-    scalar sangle = n_sin(angle);
-    scalar cangle = n_cos(angle);
+    scalar sangle = Math::sin(angle);
+    scalar cangle = Math::cos(angle);
 
     __m128 m1_c = _mm_set_ps1(1.0f - cangle);
     __m128 c = _mm_set_ps1(cangle);
@@ -966,8 +966,8 @@ rotationx(scalar angle)
 {
     mat4 m = mat4::identity;
 
-    scalar sangle = n_sin(angle);
-    scalar cangle = n_cos(angle);
+    scalar sangle = Math::sin(angle);
+    scalar cangle = Math::cos(angle);
 
     m.m[1][1] = cangle;
     m.m[1][2] = sangle;
@@ -985,8 +985,8 @@ rotationy(scalar angle)
 {
     mat4 m = mat4::identity;
 
-    scalar sangle = n_sin(angle);
-    scalar cangle = n_cos(angle);
+    scalar sangle = Math::sin(angle);
+    scalar cangle = Math::cos(angle);
 
     m.m[0][0] = cangle;
     m.m[0][2] = -sangle;
@@ -1004,8 +1004,8 @@ rotationz(scalar angle)
 {
     mat4 m = mat4::identity;
 
-    scalar sangle = n_sin(angle);
-    scalar cangle = n_cos(angle);
+    scalar sangle = Math::sin(angle);
+    scalar cangle = Math::cos(angle);
 
     m.m[0][0] = cangle;
     m.m[0][1] = sangle;

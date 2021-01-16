@@ -276,10 +276,10 @@ Flush(const VkDevice dev, const Alloc& alloc, IndexT offset, SizeT size)
     VkMappedMemoryRange range;
     range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
     range.pNext = nullptr;
-    range.offset = Math::n_align_down(alloc.offset + offset, props.limits.nonCoherentAtomSize);
-    uint flushSize = size == NEBULA_WHOLE_BUFFER_SIZE ? alloc.size : Math::n_min(size, alloc.size);
-    range.size = Math::n_min(
-        Math::n_align(flushSize + (alloc.offset + offset - range.offset), props.limits.nonCoherentAtomSize),
+    range.offset = Math::align_down(alloc.offset + offset, props.limits.nonCoherentAtomSize);
+    uint flushSize = size == NEBULA_WHOLE_BUFFER_SIZE ? alloc.size : Math::min(size, (SizeT)alloc.size);
+    range.size = Math::min(
+        (VkDeviceSize)Math::align(flushSize + (alloc.offset + offset - range.offset), props.limits.nonCoherentAtomSize),
         pool.blockSize);
     range.memory = alloc.mem;
     VkResult res = vkFlushMappedMemoryRanges(dev, 1, &range);
@@ -297,10 +297,10 @@ Invalidate(const VkDevice dev, const CoreGraphics::Alloc& alloc, IndexT offset, 
     VkMappedMemoryRange range;
     range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
     range.pNext = nullptr;
-    range.offset = Math::n_align_down(alloc.offset + offset, props.limits.nonCoherentAtomSize);
-    uint flushSize = size == NEBULA_WHOLE_BUFFER_SIZE ? alloc.size : Math::n_min(size, alloc.size);
-    range.size = Math::n_min(
-        Math::n_align(flushSize + (alloc.offset + offset - range.offset), props.limits.nonCoherentAtomSize),
+    range.offset = Math::align_down(alloc.offset + offset, props.limits.nonCoherentAtomSize);
+    uint flushSize = size == NEBULA_WHOLE_BUFFER_SIZE ? alloc.size : Math::min((VkDeviceSize)size, alloc.size);
+    range.size = Math::min(
+        (VkDeviceSize)Math::align(flushSize + (alloc.offset + offset - range.offset), props.limits.nonCoherentAtomSize),
         pool.blockSize);
     range.memory = alloc.mem;
     VkResult res = vkInvalidateMappedMemoryRanges(dev, 1, &range);

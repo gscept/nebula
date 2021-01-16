@@ -81,8 +81,8 @@ Float4Test::Run()
 
     // length and abs
     v2.set(0.0f, 2.0f, 0.0f, 0.0f);
-    VERIFY(n_fequal(length(v2), 2.0f, 0.0001f));
-    VERIFY(n_fequal(lengthsq(v2), 4.0f, 0.0001f));
+    VERIFY(fequal(length(v2), 2.0f, 0.0001f));
+    VERIFY(fequal(lengthsq(v2), 4.0f, 0.0001f));
     v2.set(-1.0f, 2.0f, -3.0f, 4.0f);
     VERIFY(abs(v2) == vec4(1.0f, 2.0f, 3.0f, 4.0f));
     
@@ -106,7 +106,7 @@ Float4Test::Run()
     // lerp
     v0.set(1.0f, 2.0f, 3.0f, 4.0f);
     v1.set(2.0f, 3.0f, 4.0f, 5.0f);
-    v2 = lerp(v0, v1, 0.5f);
+    v2 = vecLerp(v0, v1, 0.5f);
     VERIFY(v2 == vec4(1.5f, 2.5f, 3.5f, 4.5f));
     
     // maximize/minimize

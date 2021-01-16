@@ -514,7 +514,7 @@ VolumetricFogContext::CullAndClassify()
 
 	// run chunks of 1024 threads at a time
 	std::array<SizeT, 3> dimensions = Clustering::ClusterContext::GetClusterDimensions();
-	Compute(Math::n_ceil((dimensions[0] * dimensions[1] * dimensions[2]) / 64.0f), 1, 1, ComputeQueueType);
+	Compute(Math::ceil((dimensions[0] * dimensions[1] * dimensions[2]) / 64.0f), 1, 1, ComputeQueueType);
 
 	// make sure to sync so we don't read from data that is being written...
 	BarrierInsert(ComputeQueueType,
@@ -553,7 +553,7 @@ VolumetricFogContext::Render()
 	SetResourceTable(fogState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
 	// run volumetric fog compute
-	Compute(Math::n_divandroundup(dims.width, 64), dims.height, 1, GraphicsQueueType);
+	Compute(Math::divandroundup(dims.width, 64), dims.height, 1, GraphicsQueueType);
 
 	CommandBufferEndMarker(GraphicsQueueType);
 
@@ -593,7 +593,7 @@ VolumetricFogContext::Render()
 
 	// fog0 -> read, fog1 -> write
 #define TILE_WIDTH 320
-	Compute(Math::n_divandroundup(dims.width, TILE_WIDTH), dims.height, 1, GraphicsQueueType);
+	Compute(Math::divandroundup(dims.width, TILE_WIDTH), dims.height, 1, GraphicsQueueType);
 
 	BarrierInsert(GraphicsQueueType,
 		BarrierStage::ComputeShader,
@@ -626,7 +626,7 @@ VolumetricFogContext::Render()
 	SetResourceTable(blurState.blurYTable[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr, GraphicsQueueType);
 
 	// fog0 -> write, fog1 -> read
-	Compute(Math::n_divandroundup(dims.height, TILE_WIDTH), dims.width, 1, GraphicsQueueType);
+	Compute(Math::divandroundup(dims.height, TILE_WIDTH), dims.width, 1, GraphicsQueueType);
 
 	// no need for an explicit barrier here, because the framescript will assume fog0 is write/general and will sync automatically
 

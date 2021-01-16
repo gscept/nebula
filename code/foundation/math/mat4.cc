@@ -74,9 +74,9 @@ decompose(const mat4& mat, vec3& outScale, quat& outRotation, vec3& outTranslati
 
 
         norm = 0.0f; // dot3((rotation - rotation).abs(), _plus1).x
-        norm = n_max(norm, dot3(abs(rotation.r[0] - nextRotation.r[0]), vec4(_plus1)));
-        norm = n_max(norm, dot3(abs(rotation.r[1] - nextRotation.r[1]), vec4(_plus1)));
-        norm = n_max(norm, dot3(abs(rotation.r[2] - nextRotation.r[2]), vec4(_plus1)));
+        norm = Math::max(norm, dot3(abs(rotation.r[0] - nextRotation.r[0]), vec4(_plus1)));
+        norm = Math::max(norm, dot3(abs(rotation.r[1] - nextRotation.r[1]), vec4(_plus1)));
+        norm = Math::max(norm, dot3(abs(rotation.r[2] - nextRotation.r[2]), vec4(_plus1)));
         
         rotation = nextRotation;
     } while (count < 100 && norm > 0.00001f);

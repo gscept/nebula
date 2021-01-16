@@ -356,7 +356,7 @@ CSMUtil::Compute(const Graphics::GraphicsEntityId camera, const Graphics::Graphi
 
     // calculate near and far range based on scene bounding box
     //float nearFarRange = camSettings.GetZFar() - camSettings.GetZNear();
-    float nearFarRange = n_min(this->shadowBox.diagonal_size() / 2, 300.0f);
+    float nearFarRange = Math::min(this->shadowBox.diagonal_size() / 2, 300.0f);
     vec4 unitsPerTexel = vec4(0,0,0,0);
 
     for (int cascadeIndex = 0; cascadeIndex < NumCascades; ++cascadeIndex)

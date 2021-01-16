@@ -46,6 +46,8 @@ typedef ptrdiff_t ptrdiff;
 
 typedef int IndexT;         // the index type
 typedef int SizeT;          // the size type
+typedef int64_t Index64T;         // the index type
+typedef int64_t Size64T;          // the size type
 typedef uintptr PtrT;       // the ptr type
 typedef ptrdiff PtrDiff;
 static const int InvalidIndex = -1;

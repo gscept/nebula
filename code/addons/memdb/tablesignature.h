@@ -80,7 +80,7 @@ TableSignature::TableSignature(Util::FixedArray<PropertyId> const& descriptors)
 inline
 TableSignature::TableSignature(std::initializer_list<PropertyId> descriptors)
 {
-    this->Setup(descriptors.begin(), descriptors.size());
+    this->Setup(descriptors.begin(), (SizeT)descriptors.size());
 }
 
 //------------------------------------------------------------------------------
@@ -300,7 +300,7 @@ TableSignature::HasAny(TableSignature const& src, TableSignature const& mask)
     }
 #endif
 
-    const int size = Math::n_min(mask.size, src.size);
+    const int size = Math::min(mask.size, src.size);
 
     for (int i = 0; i < size; i++)
     {

@@ -99,9 +99,9 @@ SSAOContext::Create()
             SizeT height = ssaoState.vars.height;
 
             // calculate execution dimensions
-            uint numGroupsX1 = Math::n_divandroundup(width, TILE_WIDTH);
+            uint numGroupsX1 = Math::divandroundup(width, TILE_WIDTH);
             uint numGroupsX2 = width;
-            uint numGroupsY1 = Math::n_divandroundup(height, TILE_WIDTH);
+            uint numGroupsY1 = Math::divandroundup(height, TILE_WIDTH);
             uint numGroupsY2 = height;
 
             // we are running the SSAO on the graphics queue
@@ -264,8 +264,8 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
     ssaoState.vars.sceneScale = 1.0f;
 
 #define MAX_RADIUS_PIXELS 0.5f
-    ssaoState.vars.maxRadiusPixels = MAX_RADIUS_PIXELS * Math::n_min(ssaoState.vars.fullWidth, ssaoState.vars.fullHeight);
-    ssaoState.vars.tanAngleBias = tanf(Math::n_deg2rad(35.0));
+    ssaoState.vars.maxRadiusPixels = MAX_RADIUS_PIXELS * Math::min(ssaoState.vars.fullWidth, ssaoState.vars.fullHeight);
+    ssaoState.vars.tanAngleBias = tanf(Math::deg2rad(35.0));
     ssaoState.vars.strength = 1.0f;
 
     // setup hbao params

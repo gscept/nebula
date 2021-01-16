@@ -81,7 +81,7 @@ UpdateCameraSettings(Graphics::GraphicsEntityId gid, Camera& settings, Camera co
     if (changed)
     {
         if (change.projectionMode == ProjectionMode::PERSPECTIVE)
-            Graphics::CameraContext::SetupProjectionFov(gid, change.aspectRatio, Math::n_deg2rad(change.fieldOfView), change.zNear, change.zFar);
+            Graphics::CameraContext::SetupProjectionFov(gid, change.aspectRatio, Math::deg2rad(change.fieldOfView), change.zNear, change.zFar);
         else
             Graphics::CameraContext::SetupOrthographic(gid, change.orthographicWidth, change.orthographicWidth * change.aspectRatio, change.zNear, change.zFar);
         settings = change;

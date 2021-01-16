@@ -60,7 +60,7 @@ JsonReader::Open()
 
         // create an document object        
         // we need to 0 terminate the input buffer
-        SizeT fileSize = this->stream->GetSize();
+        Stream::Size fileSize = this->stream->GetSize();
         this->buffer = (char*)Memory::Alloc(Memory::StreamDataHeap, fileSize + 1);
         this->stream->Read(buffer, fileSize);
         this->buffer[fileSize] = '\0';
@@ -191,9 +191,9 @@ JsonReader::SetToNode(const String& path)
         // check if token is array access
         if (String::MatchPattern(cur, "\\[[0-9]*\\]"))
         {
-            Util::String num = cur;
-            num.Trim("[]");
-            unsigned int idx = num.AsInt();
+            Util::String numstr = cur;
+            numstr.Trim("[]");
+            unsigned int idx = numstr.AsInt();
             if (!this->curNode->is_object_or_array()) goto fail;
             if (!(idx < this->curNode->size())) goto fail;
 
