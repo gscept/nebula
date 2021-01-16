@@ -121,9 +121,9 @@ SetupPass(const PassId pid)
 			images[i] = TextureViewGetVk(loadInfo.colorAttachments[i]);
 			TextureId tex = TextureViewGetTexture(loadInfo.colorAttachments[i]);
 			const CoreGraphics::TextureDimensions dims = TextureGetDimensions(tex);
-			width = Math::n_max(width, (uint32_t)dims.width);
-			height = Math::n_max(height, (uint32_t)dims.height);
-			layers = Math::n_max(layers, (uint32_t)TextureGetNumLayers(tex));
+			width = Math::max(width, (uint32_t)dims.width);
+			height = Math::max(height, (uint32_t)dims.height);
+			layers = Math::max(layers, (uint32_t)TextureGetNumLayers(tex));
 
 			VkRect2D& rect = loadInfo.rects[i];
 			rect.offset.x = 0;
@@ -431,9 +431,9 @@ SetupPass(const PassId pid)
         images[i] = TextureViewGetVk(loadInfo.depthStencilAttachment);
         const CoreGraphics::TextureDimensions dims = TextureGetDimensions(tex);
 
-		width = Math::n_max(width, (uint32_t)dims.width);
-        height = Math::n_max(height, (uint32_t)dims.height);
-        layers = Math::n_max(layers, (uint32_t)TextureGetNumLayers(tex));
+		width = Math::max(width, (uint32_t)dims.width);
+        height = Math::max(height, (uint32_t)dims.height);
+        layers = Math::max(layers, (uint32_t)TextureGetNumLayers(tex));
     }
 
     // setup render area

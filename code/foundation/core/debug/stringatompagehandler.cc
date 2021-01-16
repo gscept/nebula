@@ -63,14 +63,14 @@ StringAtomPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         htmlWriter->Element(HtmlElement::Heading3, "String Atom Table Dump:");
         const SizeT maxElementsInTable = 100;
         IndexT minIndex = 0;
-        IndexT maxIndex = n_min(debugInfo.strings.Size(), maxElementsInTable);
+        IndexT maxIndex = Math::min(debugInfo.strings.Size(), maxElementsInTable);
         if (query.Contains("min"))
         {
-            minIndex = n_max(query["min"].AsInt(), 0);
+            minIndex = Math::max(query["min"].AsInt(), 0);
         }
         if (query.Contains("max"))
         {
-            maxIndex = n_min(query["max"].AsInt(), debugInfo.strings.Size());
+            maxIndex = Math::min(query["max"].AsInt(), debugInfo.strings.Size());
         }
 
         // write prev/next links

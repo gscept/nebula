@@ -570,7 +570,7 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
                 // if not paused, update sample time
                 if (!playing.paused)
                 {
-                    int timeDivider = Math::n_frnd(1 / playing.timeFactor);
+                    int timeDivider = Math::frnd(1 / playing.timeFactor);
                     Timing::Tick frameTicks = playing.evalTime - playing.prevEvalTime;
                     Timing::Tick timeDiff = frameTicks / timeDivider;
                     playing.sampleTime = playing.prevSampleTime + timeDiff;

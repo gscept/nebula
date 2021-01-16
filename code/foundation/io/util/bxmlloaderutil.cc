@@ -37,7 +37,7 @@ BXmlLoaderUtil::~BXmlLoaderUtil()
 /**
 */
 void
-BXmlLoaderUtil::SetupFromFileInMemory(void* buf, SizeT size)
+BXmlLoaderUtil::SetupFromFileInMemory(void* buf, Stream::Size size)
 {
     n_assert(!this->IsValid());
     n_assert(0 != buf);

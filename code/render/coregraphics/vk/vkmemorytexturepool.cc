@@ -327,8 +327,8 @@ VkMemoryTexturePool::Map(const CoreGraphics::TextureId id, IndexT mipLevel, Core
         VkTypes::VkBlockDimensions blockSize = VkTypes::AsVkBlockSize(vkformat);
         uint32_t size = CoreGraphics::PixelFormat::ToSize(load.format);
 
-        uint32_t mipWidth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.width / Math::n_pow(2, (float)mipLevel)));
-        uint32_t mipHeight = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.height / Math::n_pow(2, (float)mipLevel)));
+        uint32_t mipWidth = (uint32_t)Math::max(1.0f, Math::ceil(load.dims.width / Math::pow(2, (float)mipLevel)));
+        uint32_t mipHeight = (uint32_t)Math::max(1.0f, Math::ceil(load.dims.height / Math::pow(2, (float)mipLevel)));
 
         map.region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
         map.region.dstOffset = { 0, 0, 0 };
@@ -353,9 +353,9 @@ VkMemoryTexturePool::Map(const CoreGraphics::TextureId id, IndexT mipLevel, Core
         VkTypes::VkBlockDimensions blockSize = VkTypes::AsVkBlockSize(vkformat);
         uint32_t size = CoreGraphics::PixelFormat::ToSize(load.format);
 
-        uint32_t mipWidth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.width / Math::n_pow(2, (float)mipLevel)));
-        uint32_t mipHeight = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.height / Math::n_pow(2, (float)mipLevel)));
-        uint32_t mipDepth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.depth / Math::n_pow(2, (float)mipLevel)));
+        uint32_t mipWidth = (uint32_t)Math::max(1.0f, Math::ceil(load.dims.width / Math::pow(2, (float)mipLevel)));
+        uint32_t mipHeight = (uint32_t)Math::max(1.0f, Math::ceil(load.dims.height / Math::pow(2, (float)mipLevel)));
+        uint32_t mipDepth = (uint32_t)Math::max(1.0f, Math::ceil(load.dims.depth / Math::pow(2, (float)mipLevel)));
 
         map.region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
         map.region.dstOffset = { 0, 0, 0 };
@@ -415,8 +415,8 @@ VkMemoryTexturePool::MapCubeFace(const CoreGraphics::TextureId id, CoreGraphics:
     VkTypes::VkBlockDimensions blockSize = VkTypes::AsVkBlockSize(vkformat);
     uint32_t size = CoreGraphics::PixelFormat::ToSize(load.format);
 
-    uint32_t mipWidth = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.width / Math::n_pow(2, (float)mipLevel)));
-    uint32_t mipHeight = (uint32_t)Math::n_max(1.0f, Math::n_ceil(load.dims.height / Math::n_pow(2, (float)mipLevel)));
+    uint32_t mipWidth = (uint32_t)Math::max(1.0f, Math::ceil(load.dims.width / Math::pow(2, (float)mipLevel)));
+    uint32_t mipHeight = (uint32_t)Math::max(1.0f, Math::ceil(load.dims.height / Math::pow(2, (float)mipLevel)));
 
     map.region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
     map.region.dstOffset = { 0, 0, 0 };
@@ -558,8 +558,8 @@ VkMemoryTexturePool::Update(const CoreGraphics::TextureId id, const Math::rectan
     TextureDimensions dims = TextureGetDimensions(id);
 
     // calculate buffer size and mipped dimensions
-    uint width = Math::n_max(1, dims.width >> mip);
-    uint height = Math::n_max(1, dims.height >> mip);
+    uint width = Math::max(1, dims.width >> mip);
+    uint height = Math::max(1, dims.height >> mip);
     uint bpp = CoreGraphics::PixelFormat::ToSize(fmt);
     bool compressed = CoreGraphics::PixelFormat::ToCompressed(fmt);
     SizeT bufSize;
@@ -1106,7 +1106,7 @@ VkMemoryTexturePool::SparseUpdate(const CoreGraphics::TextureId id, const Math::
     CoreGraphics::PixelFormat::Code fmt = TextureGetPixelFormat(id);
     TextureDimensions dims = TextureGetDimensions(id);
 
-    uint mippedWidth = Math::n_max(dims.width >> mip, 1);
+    uint mippedWidth = Math::max(dims.width >> mip, 1);
     uint width = region.width();
     uint height = region.height();
     uint top = region.top;
@@ -1193,8 +1193,8 @@ VkMemoryTexturePool::SparseUpdate(const CoreGraphics::TextureId id, IndexT mip, 
     TextureDimensions dims = TextureGetDimensions(id);
 
     // calculate buffer size and mipped dimensions
-    uint width = Math::n_max(1, dims.width >> mip);
-    uint height = Math::n_max(1, dims.height >> mip);
+    uint width = Math::max(1, dims.width >> mip);
+    uint height = Math::max(1, dims.height >> mip);
     uint bpp = CoreGraphics::PixelFormat::ToSize(fmt);
     bool compressed = CoreGraphics::PixelFormat::ToCompressed(fmt);
     SizeT bufSize;
@@ -1651,9 +1651,9 @@ SetupSparse(VkDevice dev, VkImage img, Ids::Id32 sparseExtension, const VkTextur
         for (SizeT mip = 0; mip < (SizeT)sparseMemoryRequirement.imageMipTailFirstLod; mip++)
         {
             VkExtent3D extent;
-            extent.width = Math::n_max(info.dims.width >> mip, 1);
-            extent.height = Math::n_max(info.dims.height >> mip, 1);
-            extent.depth = Math::n_max(info.dims.depth >> mip, 1);
+            extent.width = Math::max(info.dims.width >> mip, 1);
+            extent.height = Math::max(info.dims.height >> mip, 1);
+            extent.depth = Math::max(info.dims.depth >> mip, 1);
 
             VkImageSubresource subres;
             subres.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;

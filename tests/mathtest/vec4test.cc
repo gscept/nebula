@@ -167,9 +167,9 @@ print(v2);
 
     // length and abs
     v2.set(1.0f, 2.0f, 3.0f, 5.0f);
-    VERIFY(n_fequal(length(v2), 6.244997998f, 0.0001f));
-    VERIFY(n_fequal(length3(v2), 3.741657387f, 0.0001f));
-    VERIFY(n_fequal(lengthsq(v2), 39.0f, 0.0001f));
+    VERIFY(Math::fequal(length(v2), 6.244997998f, 0.0001f));
+    VERIFY(Math::fequal(length3(v2), 3.741657387f, 0.0001f));
+    VERIFY(Math::fequal(lengthsq(v2), 39.0f, 0.0001f));
     v2.set(-1.0f, 2.0f, -3.0f, 4.0f);
     VERIFY(abs(v2) == vec4(1.0f, 2.0f, 3.0f, 4.0f));
     
@@ -212,11 +212,11 @@ print(v2);
     // lerp
     v0.set(1.0f, 2.0f, 3.0f, 4.0f);
     v1.set(2.0f, 3.0f, 4.0f, 5.0f);
-    v2 = lerp(v0, v1, 0.5f);
+    v2 = vecLerp(v0, v1, 0.5f);
     VERIFY(v2 == vec4(1.5f, 2.5f, 3.5f, 4.5f));
-    v2 = lerp(v0, v1, 0.0f);
+    v2 = vecLerp(v0, v1, 0.0f);
     VERIFY(v2 == vec4(1.0f, 2.0f, 3.0f, 4.0f));
-    v2 = lerp(v0, v1, 1.0f);
+    v2 = vecLerp(v0, v1, 1.0f);
     VERIFY(v2 == vec4(2.0f, 3.0f, 4.0f, 5.0f));
     
     // maximize/minimize

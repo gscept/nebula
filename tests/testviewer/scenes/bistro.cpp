@@ -24,7 +24,7 @@ void OpenScene()
         Visibility::ObservableContext::Setup(entity, Visibility::VisibilityEntityType::Model);
 
         Math::mat4 t = Math::translation(Math::vec3(0, 0, 0));
-        Math::mat4 r = Math::rotationx(Math::n_deg2rad(0.0f));
+        Math::mat4 r = Math::rotationx(Math::deg2rad(0.0f));
         Math::mat4 s = Math::scaling(1);
 
         Math::mat4 trs = s * r;

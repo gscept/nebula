@@ -110,14 +110,14 @@ ProfilingTest::Run()
     for (i = 0; i < contexts.Size(); i++)
     {
         const ProfilingContext& ctx = contexts[i];
-        VERIFY(Math::n_nearequal(ctx.topLevelScopes[0].duration, 1.0f, 0.1f));
-        VERIFY(Math::n_nearequal(ctx.topLevelScopes[1].duration, 3.0f, 0.1f));
-        VERIFY(Math::n_nearequal(ctx.topLevelScopes[1].children[0].duration, 2.0f, 0.1f));
-        VERIFY(Math::n_nearequal(ctx.topLevelScopes[1].children[1].duration, 1.0f, 0.1f));
-        VERIFY(Math::n_nearequal(ctx.topLevelScopes[2].duration, 2.0f, 0.1f));
-        VERIFY(Math::n_nearequal(ctx.topLevelScopes[3].duration, 1.0f, 0.1f));
-        VERIFY(Math::n_nearequal(ctx.topLevelScopes[4].duration, 1.0f, 0.1f));
-        VERIFY(Math::n_nearequal(ctx.topLevelScopes[4].children[0].duration, 0.5f, 0.1f));
+        VERIFY(Math::nearequal(ctx.topLevelScopes[0].duration, 1.0f, 0.1f));
+        VERIFY(Math::nearequal(ctx.topLevelScopes[1].duration, 3.0f, 0.1f));
+        VERIFY(Math::nearequal(ctx.topLevelScopes[1].children[0].duration, 2.0f, 0.1f));
+        VERIFY(Math::nearequal(ctx.topLevelScopes[1].children[1].duration, 1.0f, 0.1f));
+        VERIFY(Math::nearequal(ctx.topLevelScopes[2].duration, 2.0f, 0.1f));
+        VERIFY(Math::nearequal(ctx.topLevelScopes[3].duration, 1.0f, 0.1f));
+        VERIFY(Math::nearequal(ctx.topLevelScopes[4].duration, 1.0f, 0.1f));
+        VERIFY(Math::nearequal(ctx.topLevelScopes[4].children[0].duration, 0.5f, 0.1f));
 
         n_printf("%s\n", ctx.threadName.Value());
         for (IndexT j = 0; j < ctx.topLevelScopes.Size(); j++)

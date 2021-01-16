@@ -1,3 +1,4 @@
+#pragma warning (disable : 4267)
 
 #include <pybind11/pybind11.h>
 #include <pybind11/functional.h>
@@ -245,13 +246,13 @@ PYBIND11_EMBEDDED_MODULE(deargui, deargui)
     deargui.def("set_window_focus", py::overload_cast<const char *>(&ImGui::SetWindowFocus)
     , py::arg("name")
     , py::return_value_policy::automatic_reference);
-    deargui.def("get_content_region_max", &ImGui::GetContentRegionMax
+    deargui.def("get_content_regioMath::max", &ImGui::GetContentRegionMax
     , py::return_value_policy::automatic_reference);
     deargui.def("get_content_region_avail", &ImGui::GetContentRegionAvail
     , py::return_value_policy::automatic_reference);
-    deargui.def("get_window_content_region_min", &ImGui::GetWindowContentRegionMin
+    deargui.def("get_window_content_regioMath::min", &ImGui::GetWindowContentRegionMin
     , py::return_value_policy::automatic_reference);
-    deargui.def("get_window_content_region_max", &ImGui::GetWindowContentRegionMax
+    deargui.def("get_window_content_regioMath::max", &ImGui::GetWindowContentRegionMax
     , py::return_value_policy::automatic_reference);
     deargui.def("get_window_content_region_width", &ImGui::GetWindowContentRegionWidth
     , py::return_value_policy::automatic_reference);

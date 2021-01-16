@@ -141,9 +141,9 @@ struct uint4
     Return a pseudo random number between 0 and 1.
 */
 __forceinline scalar 
-n_rand()
+rand()
 {
-    return scalar(rand()) / scalar(RAND_MAX);
+    return scalar(::rand()) / scalar(RAND_MAX);
 }
 
 //------------------------------------------------------------------------------
@@ -151,9 +151,9 @@ n_rand()
     Return a pseudo random number between min and max.
 */
 __forceinline scalar 
-n_rand(scalar min, scalar max)
+rand(scalar min, scalar max)
 {
-    scalar unit = scalar(rand()) / RAND_MAX;
+    scalar unit = scalar(::rand()) / RAND_MAX;
     scalar diff = max - min;
     return min + unit * diff;
 }
@@ -162,7 +162,7 @@ n_rand(scalar min, scalar max)
 /**
 */
 __forceinline scalar
-n_sin(scalar x)
+sin(scalar x)
 {
     return sinf(x);
 }
@@ -171,7 +171,7 @@ n_sin(scalar x)
 /**
 */
 __forceinline scalar
-n_cos(scalar x)
+cos(scalar x)
 {
     return cosf(x);
 }
@@ -180,7 +180,7 @@ n_cos(scalar x)
 /**
 */
 __forceinline scalar
-n_tan(scalar x)
+tan(scalar x)
 {
     return tanf(x);
 }
@@ -189,7 +189,7 @@ n_tan(scalar x)
 /**
 */
 __forceinline scalar
-n_asin(scalar x)
+asin(scalar x)
 {
     return asinf(x);
 }
@@ -198,7 +198,7 @@ n_asin(scalar x)
 /**
 */
 __forceinline scalar
-n_acos(scalar x)
+acos(scalar x)
 {
     return acosf(x);
 }
@@ -207,7 +207,7 @@ n_acos(scalar x)
 /**
 */
 __forceinline scalar
-n_atan(scalar x)
+atan(scalar x)
 {
     return atanf(x);
 }
@@ -216,7 +216,7 @@ n_atan(scalar x)
 /**
 */
 __forceinline scalar 
-n_sqrt(scalar x)
+sqrt(scalar x)
 {
     return sqrtf(x);
 }
@@ -226,7 +226,7 @@ n_sqrt(scalar x)
     Chop float to int.
 */
 __forceinline int 
-n_fchop(scalar f)
+fchop(scalar f)
 {
     /// @todo type cast to int is slow!
     return int(f);
@@ -236,7 +236,7 @@ n_fchop(scalar f)
 /**
 */
 __forceinline scalar
-n_fmod(scalar x, scalar y)
+fmod(scalar x, scalar y)
 {
     return fmodf(x, y);
 }
@@ -248,7 +248,7 @@ n_fmod(scalar x, scalar y)
             will copy behaviour despite what description says
 */
 __forceinline scalar 
-n_modangle(scalar a) 
+modangle(scalar a) 
 {
 #if 0
     static const scalar rev = scalar(6.283185307179586476925286766559);
@@ -256,7 +256,7 @@ n_modangle(scalar a)
 #else
     static const scalar REVOLUTION = scalar(6.283185307179586476925286766559);
     a += N_PI;
-    scalar temp = fabs(a);
+    scalar temp = fabsf(a);
     temp = temp - floorf(temp/REVOLUTION) *  REVOLUTION;
     temp -= N_PI;
     temp = a<0 ? -temp:temp;    
@@ -271,7 +271,7 @@ n_modangle(scalar a)
     log2() function.
 */
 __forceinline scalar 
-n_log2(scalar f) 
+log2(scalar f) 
 { 
     return logf(f) / LN_2; 
 }
@@ -280,7 +280,7 @@ n_log2(scalar f)
 /**
 */
 __forceinline scalar
-n_exp(scalar x)
+exp(scalar x)
 {
     return expf(x);
 }
@@ -290,16 +290,16 @@ n_exp(scalar x)
     Round float to integer.
 */
 __forceinline int 
-n_frnd(scalar f)
+frnd(scalar f)
 {
-    return n_fchop(floorf(f + 0.5f));
+    return fchop(floorf(f + 0.5f));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 __forceinline scalar
-n_pow(scalar x, scalar y)
+pow(scalar x, scalar y)
 {
     return powf(x, y);
 }
@@ -309,7 +309,7 @@ n_pow(scalar x, scalar y)
     get logarithm of x
 */
 __forceinline scalar
-n_log(scalar x)
+log(scalar x)
 {
     return logf(x);
 }
@@ -320,37 +320,19 @@ n_log(scalar x)
     A fuzzy floating point equality check
 */
 __forceinline bool
-n_fequal(scalar f0, scalar f1, scalar tol)
+fequal(scalar f0, scalar f1, scalar tol)
 {
     scalar f = f0 - f1;
     return ((f > (-tol)) && (f < tol));
 }
 
-#if !SPU
 
 //------------------------------------------------------------------------------
 /**
 */
-__forceinline scalar
-n_max(scalar a, scalar b)
-{
-    return (a > b) ? a : b;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline double
-n_max(double a, double b)
-{
-    return (a > b) ? a : b;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline int
-n_max(int a, int b)
+template<typename TYPE>
+__forceinline TYPE
+max(TYPE a, TYPE b)
 {
     return (a > b) ? a : b;
 }
@@ -359,8 +341,9 @@ n_max(int a, int b)
 /**
     branchless max for uint32
 */
+template<>
 __forceinline unsigned int
-n_max(unsigned int a, unsigned int b)
+max(unsigned int a, unsigned int b)
 {
     return a ^ ((a ^ b) & -(a < b));
 }
@@ -368,26 +351,9 @@ n_max(unsigned int a, unsigned int b)
 //------------------------------------------------------------------------------
 /**
 */
-__forceinline scalar
-n_min(scalar a, scalar b)
-{
-    return (a < b) ? a : b;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline double
-n_min(double a, double b)
-{
-    return (a < b) ? a : b;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-__forceinline int
-n_min(int a, int b)
+template<typename TYPE>
+__forceinline TYPE
+min(TYPE a, TYPE b)
 {
     return (a < b) ? a : b;
 }
@@ -396,8 +362,9 @@ n_min(int a, int b)
 /**
     branchless min for uints
 */
+template<>
 __forceinline unsigned int
-n_min(unsigned int a, unsigned int b)
+min(unsigned int a, unsigned int b)
 {
     return b ^ ((a ^ b) & -(a < b));
 }
@@ -405,8 +372,9 @@ n_min(unsigned int a, unsigned int b)
 //------------------------------------------------------------------------------
 /**
 */
+
 __forceinline scalar
-n_abs(scalar a)
+abs(scalar a)
 {
     return (a < 0.0f) ? -a : a;
 }
@@ -415,25 +383,25 @@ n_abs(scalar a)
 /**
 */
 __forceinline double
-n_abs(double a)
+abs(double a)
 {
-    return (a < 0.0f) ? -a : a;
+    return (a < 0.0) ? -a : a;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 __forceinline int
-n_abs(int a)
+abs(int a)
 {
-    return (a < 0.0f) ? -a : a;
+    return (a < 0) ? -a : a;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 __forceinline scalar
-n_sgn(scalar a)
+sgn(scalar a)
 {
     return (a < 0.0f) ? -1.0f : 1.0f;
 }
@@ -442,7 +410,7 @@ n_sgn(scalar a)
 /**
 */
 __forceinline constexpr scalar
-n_deg2rad(scalar d)
+deg2rad(scalar d)
 {
     return (scalar)((d * PI) / 180.0f);
 }
@@ -451,7 +419,7 @@ n_deg2rad(scalar d)
 /**
 */
 __forceinline constexpr scalar
-n_rad2deg(scalar r)
+rad2deg(scalar r)
 {
     return (scalar)((r * 180.0f) / PI);
 }
@@ -460,8 +428,9 @@ n_rad2deg(scalar r)
 /**
     Integer clamping.
 */
-__forceinline int
-n_iclamp(int val, int minVal, int maxVal)
+template<typename TYPE>
+__forceinline TYPE
+clamp(TYPE val, TYPE minVal, TYPE maxVal)
 {
     if (val < minVal)      return minVal;
     else if (val > maxVal) return maxVal;
@@ -473,7 +442,7 @@ n_iclamp(int val, int minVal, int maxVal)
     Floating point ceiling
 */
 __forceinline float
-n_ceil(float val)
+ceil(float val)
 {
     return ceilf(val);
 }
@@ -483,7 +452,7 @@ n_ceil(float val)
     Floating point flooring
 */
 __forceinline float
-n_floor(float val)
+floor(float val)
 {
     return floorf(val);
 }
@@ -493,7 +462,7 @@ n_floor(float val)
     Floating point rounding
 */
 __forceinline float
-n_round(float val)
+round(float val)
 {
     return roundf(val);
 }
@@ -503,7 +472,7 @@ n_round(float val)
     A fuzzy floating point less-then check.
 */
 __forceinline bool
-n_fless(scalar f0, scalar f1, scalar tol)
+fless(scalar f0, scalar f1, scalar tol)
 {
     return ((f0 - f1) < tol);
 }
@@ -513,21 +482,9 @@ n_fless(scalar f0, scalar f1, scalar tol)
     A fuzzy floating point greater-then check.
 */
 __forceinline bool
-n_fgreater(scalar f0, scalar f1, scalar tol)
+fgreater(scalar f0, scalar f1, scalar tol)
 {
     return ((f0 - f1) > tol);
-}
-
-//------------------------------------------------------------------------------
-/**
-    Clamp a value against lower und upper boundary.
-*/
-__forceinline scalar
-n_clamp(scalar val, scalar lower, scalar upper)
-{
-    if (val < lower)      return lower;
-    else if (val > upper) return upper;
-    else                  return val;
 }
 
 //------------------------------------------------------------------------------
@@ -535,7 +492,7 @@ n_clamp(scalar val, scalar lower, scalar upper)
     Saturate a value (clamps between 0.0f and 1.0f)
 */
 __forceinline scalar
-n_saturate(scalar val)
+saturate(scalar val)
 {
     if (val < 0.0f)      return 0.0f;
     else if (val > 1.0f) return 1.0f;
@@ -547,7 +504,7 @@ n_saturate(scalar val)
 Saturate a value (clamps between 0.0f and 1.0f)
 */
 __forceinline double
-n_saturate(double val)
+saturate(double val)
 {
     if (val < 0.0)      return 0.0;
     else if (val > 1.0) return 1.0;
@@ -558,18 +515,9 @@ n_saturate(double val)
 /**
     Linearly interpolate between 2 values: ret = x + l * (y - x)
 */
-__forceinline scalar
-n_lerp(scalar x, scalar y, scalar l)
-{
-    return x + l * (y - x);
-}
-
-//------------------------------------------------------------------------------
-/**
-    Linearly interpolate between 2 values: ret = x + l * (y - x)
-*/
-__forceinline double
-n_lerp(double x, double y, double l)
+template <typename TYPE>
+__forceinline TYPE
+lerp(TYPE x, TYPE y, TYPE l)
 {
     return x + l * (y - x);
 }
@@ -579,18 +527,18 @@ n_lerp(double x, double y, double l)
     Get angular distance.
 */
 __forceinline scalar
-n_angulardistance(scalar from, scalar to)
+angulardistance(scalar from, scalar to)
 {
-    scalar normFrom = n_modangle(from);
-    scalar normTo   = n_modangle(to);
+    scalar normFrom = modangle(from);
+    scalar normTo   = modangle(to);
     scalar dist = normTo - normFrom;
-    if (dist < n_deg2rad(-180.0f))
+    if (dist < deg2rad(-180.0f))
     {
-        dist += n_deg2rad(360.0f);
+        dist += deg2rad(360.0f);
     }
-    else if (dist > n_deg2rad(180.0f))
+    else if (dist > deg2rad(180.0f))
     {
-        dist -= n_deg2rad(360.0f);
+        dist -= deg2rad(360.0f);
     }
     return dist;
 }
@@ -600,7 +548,7 @@ n_angulardistance(scalar from, scalar to)
     Returns true if the input scalar is denormalized (#DEN)
 */
 __forceinline bool
-n_isdenormal(scalar s)
+isdenormal(scalar s)
 {
 #if __GNUC__
     union { scalar s; unsigned int u; } pun;
@@ -616,9 +564,9 @@ n_isdenormal(scalar s)
     Returns 0 if scalar is denormal.
 */
 __forceinline float
-n_undenormalize(scalar s)
+undenormalize(scalar s)
 {
-    if (n_isdenormal(s))
+    if (isdenormal(s))
     {
         return 0.0f;
     }
@@ -633,28 +581,28 @@ n_undenormalize(scalar s)
     test of nearly equal given a tolerance (epsilon)
 */
 __forceinline bool
-n_nearequal(scalar a, scalar b, scalar epsilon)
+nearequal(scalar a, scalar b, scalar epsilon)
 {
-    return n_abs(a - b) <= epsilon;
+    return abs(a - b) <= epsilon;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 __forceinline scalar
-n_cot(scalar x)
+cot(scalar x)
 {
-    return scalar(1.0) / n_tan(x);
+    return scalar(1.0) / tan(x);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 __forceinline scalar
-n_smoothstep(scalar edge0, scalar edge1, scalar x)
+smoothstep(scalar edge0, scalar edge1, scalar x)
 {
     // Scale, bias and saturate x to 0..1 range
-    x = n_saturate((x - edge0) / (edge1 - edge0)); 
+    x = saturate((x - edge0) / (edge1 - edge0)); 
     // Evaluate polynomial
     return x*x*(3-2*x);     
 }
@@ -664,10 +612,10 @@ n_smoothstep(scalar edge0, scalar edge1, scalar x)
     Return a pseudo integer random number between min and max.
 */
 __forceinline int 
-n_irand(int min, int max)
+irand(int min, int max)
 {   
     int range = max - min + 1;
-    int unit = rand() % range;
+    int unit = ::rand() % range;
     return min + unit;
 }
 
@@ -676,7 +624,7 @@ n_irand(int min, int max)
     Returns the position of the most significant bit of the number
 */
 __forceinline int
-n_mostsignificant(unsigned int val)
+mostsignificant(unsigned int val)
 {
 #ifdef WIN32
     unsigned long ret;
@@ -694,7 +642,7 @@ n_mostsignificant(unsigned int val)
 /**
 */
 __forceinline unsigned int
-n_align(unsigned int alignant, unsigned int alignment)
+align(unsigned int alignant, unsigned int alignment)
 {
     return (alignant + alignment - 1) & ~(alignment - 1);
 }
@@ -703,7 +651,7 @@ n_align(unsigned int alignant, unsigned int alignment)
 /**
 */
 __forceinline unsigned int
-n_align_down(unsigned int alignant, unsigned int alignment)
+align_down(unsigned int alignant, unsigned int alignment)
 {
     return (alignant / alignment * alignment);
 }
@@ -713,7 +661,7 @@ n_align_down(unsigned int alignant, unsigned int alignment)
     Integer division with rounding
 */
 __forceinline unsigned int
-n_divandroundup(unsigned int dividend, unsigned int divider)
+divandroundup(unsigned int dividend, unsigned int divider)
 {
     return (dividend % divider != 0) ? (dividend / divider + 1) : (dividend / divider);
 }
@@ -723,7 +671,7 @@ n_divandroundup(unsigned int dividend, unsigned int divider)
     Rounds up to next power of 2
 */
 __forceinline unsigned int
-n_roundtopow2(unsigned int val)
+roundtopow2(unsigned int val)
 {
     val--;
     val |= val >> 1;
@@ -734,9 +682,6 @@ n_roundtopow2(unsigned int val)
     val++;
     return val;
 }
-
-
-#endif // #if !SPU
 
 } // namespace Math
 //------------------------------------------------------------------------------

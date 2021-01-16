@@ -223,7 +223,7 @@ VkTextRenderer::DrawTextElements()
         int ascent, descent, gap;
         stbtt_GetFontVMetrics(&this->font, &ascent, &descent, &gap);
         float scale = stbtt_ScaleForPixelHeight(&this->font, fontSize);
-        float realSize = ceil((ascent - descent + gap) * scale);
+        float realSize = Math::ceil((ascent - descent + gap) * scale);
 
         // transform position
         position = vec2(position.x * screenWidth, position.y * screenHeight + (ascent + descent + gap) * scale + 1);

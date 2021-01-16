@@ -53,30 +53,30 @@ EnvelopeCurve::Setup(float val0, float val1, float val2, float val3, float keyp0
 float
 EnvelopeCurve::Sample(float t) const
 {
-    t = Math::n_saturate(t);
+    t = Math::saturate(t);
 
     float value;
     if (t < this->keyPos0)
     {
-        value = Math::n_lerp(this->values[0], this->values[1], t / this->keyPos0);
+        value = Math::lerp(this->values[0], this->values[1], t / this->keyPos0);
     }
     else if (t < this->keyPos1)
     {
-        value = Math::n_lerp(this->values[1], this->values[2], (t - this->keyPos0) / (this->keyPos1 - this->keyPos0));
+        value = Math::lerp(this->values[1], this->values[2], (t - this->keyPos0) / (this->keyPos1 - this->keyPos0));
     }
     else
     {
-        value = Math::n_lerp(this->values[2], this->values[3], (t - this->keyPos1) / (1.0f - this->keyPos1));
+        value = Math::lerp(this->values[2], this->values[3], (t - this->keyPos1) / (1.0f - this->keyPos1));
     }
     if (this->amplitude > 0.0f)
     {
         if (Sine == this->modFunction)
         {
-            value += Math::n_sin(t * 2.0f * N_PI * this->frequency) * this->amplitude;
+            value += Math::sin(t * 2.0f * N_PI * this->frequency) * this->amplitude;
         }
         else
         {
-            value += Math::n_cos(t * 2.0f * N_PI * this->frequency) * this->amplitude;
+            value += Math::cos(t * 2.0f * N_PI * this->frequency) * this->amplitude;
         }
     }
     return value;
@@ -108,7 +108,7 @@ EnvelopeCurve::PreSample(float* sampleBuffer, SizeT numSamples, SizeT sampleStri
 float
 EnvelopeCurve::GetMaxValue() const
 {
-    return Math::n_max(this->values[0], Math::n_max(this->values[1], Math::n_max(this->values[2], this->values[3])));
+    return Math::max(this->values[0], Math::max(this->values[1], Math::max(this->values[2], this->values[3])));
 }
 
 //------------------------------------------------------------------------------
@@ -117,7 +117,7 @@ EnvelopeCurve::GetMaxValue() const
 float 
 EnvelopeCurve::GetMinValue() const
 {
-    return Math::n_min(this->values[0], Math::n_min(this->values[1], Math::n_min(this->values[2], this->values[3])));
+    return Math::min(this->values[0], Math::min(this->values[1], Math::min(this->values[2], this->values[3])));
 }
 
 

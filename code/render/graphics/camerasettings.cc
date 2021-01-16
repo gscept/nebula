@@ -19,7 +19,7 @@ using namespace CoreGraphics;
 CameraSettings::CameraSettings()
 {
     DisplayMode mode = WindowGetDisplayMode(DisplayDevice::Instance()->GetCurrentWindow());
-    this->SetupPerspectiveFov(n_deg2rad(60.0f), mode.GetHeight() / (float)mode.GetWidth(), 0.1f, 2500.0f);
+    this->SetupPerspectiveFov(Math::deg2rad(60.0f), mode.GetHeight() / (float)mode.GetWidth(), 0.1f, 2500.0f);
 }
 
 //------------------------------------------------------------------------------
@@ -48,7 +48,7 @@ CameraSettings::SetupPerspectiveFov(float fov_, float aspect_, float zNear_, flo
     this->nearHeight = 2.0f * this->zNear / this->projMatrix.r[1].y;
     this->farWidth   = (this->nearWidth / this->zNear) * this->zFar;
     this->farHeight  = (this->nearHeight / this->zNear) * this->zFar;
-    float yLen = Math::n_tan(0.5f * this->fov);
+    float yLen = Math::tan(0.5f * this->fov);
     float xLen = yLen * this->aspect;
     this->focalLength.set(xLen, yLen);
 }

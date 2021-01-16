@@ -73,7 +73,7 @@ public:
 
     /// set content
     void set(scalar x, scalar y, scalar z);
-    
+
     /// read-only access to indexed component
     scalar& operator[](const int index);
     /// read-only access to indexed component
@@ -176,9 +176,9 @@ vec3::loadu(const scalar* ptr)
 __forceinline void
 vec3::store(scalar* ptr) const
 {
-    __m128 v = _mm_permute_ps(this->vec, _MM_SHUFFLE(2, 2, 2, 2));
+    __m128 vv = _mm_permute_ps(this->vec, _MM_SHUFFLE(2, 2, 2, 2));
     _mm_storel_epi64(reinterpret_cast<__m128i*>(ptr), _mm_castps_si128(this->vec));
-    _mm_store_ss(&ptr[2], v);
+    _mm_store_ss(&ptr[2], vv);
 }
 
 //------------------------------------------------------------------------------
@@ -526,7 +526,7 @@ angle(const vec3& v0, const vec3& v1)
 
     scalar cangle;
     _mm_store_ss(&cangle, dot);
-    return n_acos(cangle);
+    return acos(cangle);
 }
 
 //------------------------------------------------------------------------------
@@ -560,7 +560,7 @@ minimize(const vec3& v0, const vec3& v1)
 /**
 */
 __forceinline vec3
-clamp(const vec3& clamp, const vec3& min, const vec3& max)
+vecClamp(const vec3& clamp, const vec3& min, const vec3& max)
 {
     __m128 temp = _mm_max_ps(min.vec, clamp.vec);
     temp = _mm_min_ps(temp, max.vec);

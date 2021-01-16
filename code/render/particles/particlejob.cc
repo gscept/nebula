@@ -143,7 +143,7 @@ void ParticleStep(const ParticleJobUniformData* perSystemUniforms, const Particl
         out.rotation = in.rotation + in.rotationVariation * samples[EmitterAttrs::RotationVelocity] * perJobUniforms->stepTime;
     }
     out.color.loadu(&(samples[EmitterAttrs::Red]));
-    out.color.w = n_clamp(out.color.w, 0, 1);
+    out.color.w = Math::clamp(out.color.w, 0.0f, 1.0f);
     out.size = samples[EmitterAttrs::Size] * in.sizeVariation;
 }
 

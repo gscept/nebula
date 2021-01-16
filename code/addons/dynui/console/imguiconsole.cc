@@ -55,8 +55,9 @@ TextEditCallback(ImGuiInputTextCallbackData* data)
         Util::String command(word_start);
 
         Util::Array<Util::String> commands;
+        /*
         IndexT i;
-        /*for (i = 0; i < console->commands.Size(); i++)
+        for (i = 0; i < console->commands.Size(); i++)
         {
             const Util::String& name = console->commands.KeyAtIndex(i);
             if (name.FindStringIndex(command) == 0 && name != command)
@@ -169,7 +170,7 @@ TextEditCallback(ImGuiInputTextCallbackData* data)
         if (prev_history_pos != console->previousCommandIndex)
         {
             Util::String lastCommand = (console->previousCommandIndex >= 0) ? console->previousCommands[console->previousCommandIndex] : "";
-            lastCommand = lastCommand.ExtractRange(0, Math::n_min(lastCommand.Length(), data->BufSize));
+            lastCommand = lastCommand.ExtractRange(0, Math::min(lastCommand.Length(), data->BufSize));
             sprintf(data->Buf, "%s", lastCommand.AsCharPtr());
             data->BufDirty = true;
             data->CursorPos = data->SelectionStart = data->SelectionEnd = data->BufTextLen = (int)strlen(data->Buf);
@@ -431,8 +432,8 @@ ImguiConsole::RenderContent()
                     completions.Clear();
                     ImGui::CloseCurrentPopup();
                 }
-                selectedSuggestion = Math::n_iclamp(selectedSuggestion, 0, completions.size() - 1);
-                for (int i = 0, c = completions.size(); i < c; ++i)
+                selectedSuggestion = Math::clamp(selectedSuggestion, 0, (SizeT)completions.size() - 1);
+                for (SizeT i = 0, c = (SizeT)completions.size(); i < c; ++i)
                 {
                     completion_t const & comp = completions[i];
                     if (ImGui::Selectable(comp.name.AsCharPtr(), selectedSuggestion == i))

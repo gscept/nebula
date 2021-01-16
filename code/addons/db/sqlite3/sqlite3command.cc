@@ -518,9 +518,10 @@ void
 Sqlite3Command::BindBlob(IndexT index, const Util::Blob& val)
 {
     n_assert(0 != this->sqliteStatement);
+    n_assert(val.Size() < INT_MAX);
     if (val.IsValid())
     {
-    int err = sqlite3_bind_blob(this->sqliteStatement, index + 1, val.GetPtr(), val.Size(), SQLITE_TRANSIENT);
+    int err = sqlite3_bind_blob(this->sqliteStatement, index + 1, val.GetPtr(), (SizeT)val.Size(), SQLITE_TRANSIENT);
     n_assert(SQLITE_OK == err);
 }
 }

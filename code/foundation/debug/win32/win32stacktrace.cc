@@ -47,7 +47,7 @@ void
 Win32::Win32StackTrace::PrintStackTrace(int skiprows)
 {
     const Util::Array<Util::String>& trace = Win32::Win32StackTrace::GenerateStackTrace();  
-    for (int i = Math::n_max(0,skiprows-1); i < trace.Size(); i++)
+    for (int i = Math::max(0,skiprows-1); i < trace.Size(); i++)
     {
         n_printf(trace[i].AsCharPtr());
     }

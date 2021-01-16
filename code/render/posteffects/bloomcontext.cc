@@ -131,9 +131,9 @@ BloomContext::Create()
             TextureDimensions dims = TextureGetDimensions(bloomState.internalTargets[0]);
 
             // calculate execution dimensions
-            uint numGroupsX1 = Math::n_divandroundup(dims.width, TILE_WIDTH);
+            uint numGroupsX1 = Math::divandroundup(dims.width, TILE_WIDTH);
             uint numGroupsX2 = dims.width;
-            uint numGroupsY1 = Math::n_divandroundup(dims.height, TILE_WIDTH);
+            uint numGroupsY1 = Math::divandroundup(dims.height, TILE_WIDTH);
             uint numGroupsY2 = dims.height;
 
             // do 5 bloom steps

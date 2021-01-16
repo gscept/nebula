@@ -64,7 +64,8 @@ HttpNzStream::Open()
             srcStream->SetAccessMode(Stream::ReadAccess);
             srcStream->Open();
             uint* srcPtr = (uint*) srcStream->Map();
-            uLong srcDataSize = srcStream->GetSize() - 8;   // 8 is sizeof header
+            n_assert(srcStream->GetSize() < INT_MAX);
+            uLong srcDataSize = (uLong)srcStream->GetSize() - 8;   // 8 is sizeof header
 
             // check magic number and get uncompressed size
             if (srcPtr[0] != 'NZ__')

@@ -169,7 +169,7 @@ CachedStream::Seek(Offset offset, SeekOrigin origin)
     }
 
     // make sure read/write position doesn't become invalid
-    this->position = Math::n_iclamp(this->position, 0, this->size);
+    this->position = Math::clamp(this->position, 0LL, this->size);
 }
 
 //------------------------------------------------------------------------------

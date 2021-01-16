@@ -797,7 +797,7 @@ SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Displ
     }
 
     // use at least as many swap images as we have buffered frames, if we don't have enough, the swap chain creation will fail
-    uint32_t numSwapchainImages = Math::n_min((uint32_t)CoreGraphics::GetNumBufferedFrames(), surfCaps.maxImageCount);
+    uint32_t numSwapchainImages = Math::min((uint32_t)CoreGraphics::GetNumBufferedFrames(), surfCaps.maxImageCount);
 
     // create a transform
     VkSurfaceTransformFlagBitsKHR transform;

@@ -31,7 +31,7 @@ void OpenScene()
         });
     
     Math::mat4 t = Math::translation(Math::vec3(0, 0, 0));
-    Math::mat4 r = Math::rotationx(Math::n_deg2rad(0.0f));
+    Math::mat4 r = Math::rotationx(Math::deg2rad(0.0f));
     Math::mat4 s = Math::scaling(Math::vec3(1, 1, 1));
     
     Math::mat4 trs = s * r;
@@ -70,7 +70,7 @@ void StepFrame()
     
     if (moveLight)
     {
-        Lighting::LightContext::SetTransform(light, Math::translation(Math::n_sin(x) * scale, 0.5f, Math::n_cos(y) * scale));
+        Lighting::LightContext::SetTransform(light, Math::translation(Math::sin(x) * scale, 0.5f, Math::cos(y) * scale));
         x += speed;
         y += speed;
     }

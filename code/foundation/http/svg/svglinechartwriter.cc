@@ -153,8 +153,8 @@ SvgLineChartWriter::Draw()
                 curY = 1.0f - (curValue - this->yAxisMinVal) / (this->yAxisMaxVal - this->yAxisMinVal);
                 points.Append(vec2(1000.0f * x, 200.0f * curY));
                 x += dx;
-                minVal = n_min(minVal, curValue);
-                maxVal = n_max(maxVal, curValue);
+                minVal = Math::min(minVal, curValue);
+                maxVal = Math::max(maxVal, curValue);
                 avgVal += curValue;  
                 if (curTrack.times.Size() > 0)
                 {           

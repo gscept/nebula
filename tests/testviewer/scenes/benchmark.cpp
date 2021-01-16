@@ -63,7 +63,7 @@ void OpenScene()
             entityNames.Append(sid);
 
             const IndexT resourceIndex = ((i + NumModels) * NumModels + (j + NumModels)) % 3;
-            const float timeOffset = Math::n_rand();// (((i + NumModels)* NumModels + (j + NumModels)) % 4) / 3.0f;
+            const float timeOffset = Math::rand();// (((i + NumModels)* NumModels + (j + NumModels)) % 4) / 3.0f;
 
             // create model and move it to the front
             ModelContext::Setup(ent, modelRes[resourceIndex], "NotA", [ent]()
@@ -73,7 +73,7 @@ void OpenScene()
             ModelContext::SetTransform(ent, Math::translation(i * 16, 0, j * 16));
 
             //Characters::CharacterContext::Setup(ent, skeletonRes[resourceIndex], animationRes[resourceIndex], "Viewer");
-            //Characters::CharacterContext::PlayClip(ent, nullptr, 0, 0, Characters::Append, 1.0f, 1, Math::n_rand() * 100.0f, 0.0f, 0.0f, Math::n_rand() * 100.0f);
+            //Characters::CharacterContext::PlayClip(ent, nullptr, 0, 0, Characters::Append, 1.0f, 1, Math::rand() * 100.0f, 0.0f, 0.0f, Math::rand() * 100.0f);
         }
     }
     ModelContext::EndBulkRegister();
@@ -100,15 +100,15 @@ void StepFrame()
     for (i = 0; i < spotLights.Size(); i++)
     {
         Math::mat4 spotLightTransform;
-        spotLightTransform = Math::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, Math::n_deg2rad(-55), 0);
+        spotLightTransform = Math::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 2 + i, Math::deg2rad(-55), 0);
         spotLightTransform.position = Lighting::LightContext::GetTransform(spotLights[i]).position;
         Lighting::LightContext::SetTransform(spotLights[i], spotLightTransform);
     }
 
     /*
         Math::mat4 globalLightTransform = Lighting::LightContext::GetTransform(globalLight);
-        Math::mat4 rotY = Math::rotationy(Math::n_deg2rad(0.1f));
-        Math::mat4 rotX = Math::rotationz(Math::n_deg2rad(0.05f));
+        Math::mat4 rotY = Math::rotationy(Math::deg2rad(0.1f));
+        Math::mat4 rotX = Math::rotationz(Math::deg2rad(0.05f));
         globalLightTransform = globalLightTransform * rotX * rotY;
         Lighting::LightContext::SetTransform(globalLight, globalLightTransform);
     */

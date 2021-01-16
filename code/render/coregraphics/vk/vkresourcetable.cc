@@ -97,7 +97,7 @@ ResourceTableLayoutNewPool(const CoreGraphics::ResourceTableLayoutId& id)
     };
 
     // grow, but also clamp to 65535 so as to not grow too much
-    grow = Math::n_min(grow << 2, 65535u);
+    grow = Math::min(grow << 2, 65535u);
 
     VkDescriptorPool pool;
     VkResult res = vkCreateDescriptorPool(dev, &poolInfo, nullptr, &pool);

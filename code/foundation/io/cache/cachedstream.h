@@ -60,7 +60,7 @@ protected:
     // underlying object
     Ptr<IO::Stream> parentStream;
 
-    SizeT size;
+    Size size;
     Position position;
     unsigned char* buffer;
 };

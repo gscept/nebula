@@ -174,8 +174,8 @@ VkStreamTextureSaver::SaveCubemap(CoreGraphics::TextureId tex, const Ptr<IO::Str
     uint32_t pixelSize = PixelFormat::ToSize(pfmt);
 
     TextureDimensions dims = TextureGetDimensions(tex);
-    int32_t mipWidth = (int32_t)Math::n_max(1.0f, Math::n_floor(dims.width / Math::n_pow(2, (float)mip)));
-    int32_t mipHeight = (int32_t)Math::n_max(1.0f, Math::n_floor(dims.height / Math::n_pow(2, (float)mip)));
+    int32_t mipWidth = (int32_t)Math::max(1.0f, Math::floor(dims.width / Math::pow(2, (float)mip)));
+    int32_t mipHeight = (int32_t)Math::max(1.0f, Math::floor(dims.height / Math::pow(2, (float)mip)));
     uint32_t totalWidth = mipWidth * 3;
     uint32_t totalHeight = mipHeight * 4;
 

@@ -2083,11 +2083,11 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
             range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
             range.pNext = nullptr;
             range.offset = cboStartAddress[i];
-            range.size = Math::n_align(size, state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
+            range.size = Math::align(size, state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
             range.memory = BufferGetVkMemory(stagingCbo[i]);
             VkResult res = vkFlushMappedMemoryRanges(dev, 1, &range);
             n_assert(res == VK_SUCCESS);
-            cboEndAddress[i] = Math::n_align(cboEndAddress[i], state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
+            cboEndAddress[i] = Math::align(cboEndAddress[i], state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
 
             VkBufferCopy copy;
             copy.srcOffset = copy.dstOffset = cboStartAddress[i];
@@ -2606,7 +2606,7 @@ SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const 
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
 
     // no matter how we spin it
-    int alignedSize = Math::n_align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+    int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
     int ret = Threading::Interlocked::Add(sub.cboGfxEndAddress[type], alignedSize);
 
     // if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
@@ -2632,7 +2632,7 @@ SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const v
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
 
     // no matter how we spin it
-    int alignedSize = Math::n_align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+    int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
     int ret = Threading::Interlocked::Add(sub.cboComputeEndAddress[type], alignedSize);
 
     // if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
@@ -2678,7 +2678,7 @@ AllocateGraphicsConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type
 
     // no matter how we spin it
     uint ret = sub.cboGfxEndAddress[type];
-    uint newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+    uint newEnd = Math::align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
 
     // if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
     if (newEnd >= state.globalGraphicsConstantBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
@@ -2687,7 +2687,7 @@ AllocateGraphicsConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type
 
         // return the beginning of the buffer, will definitely stomp the memory!
         ret = state.globalGraphicsConstantBufferMaxValue[type] * state.currentBufferedFrameIndex;
-        newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+        newEnd = Math::align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
     }
 
     // just bump the current frame submission pointer
@@ -2716,7 +2716,7 @@ AllocateComputeConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type,
 
     // no matter how we spin it
     uint ret = sub.cboComputeEndAddress[type];
-    uint newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+    uint newEnd = Math::align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
 
     // if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
     if (newEnd >= state.globalComputeConstantBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
@@ -2725,7 +2725,7 @@ AllocateComputeConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type,
 
         // return the beginning of the buffer, will definitely stomp the memory!
         ret = state.globalComputeConstantBufferMaxValue[type] * state.currentBufferedFrameIndex;
-        newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+        newEnd = Math::align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
     }
 
     // just bump the current frame submission pointer

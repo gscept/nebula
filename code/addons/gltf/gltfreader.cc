@@ -238,7 +238,6 @@ template<> bool
 IO::JsonReader::GetOpt<Gltf::Animation::Sampler::Type>(Gltf::Animation::Sampler::Type & item, const char * key)
 {
     Util::String type = this->GetString(key);
-    unsigned int foo = chash(type.AsCharPtr());
     switch (chash(type.AsCharPtr()))
     {
         case chash("LINEAR"): item = Gltf::Animation::Sampler::Type::Linear; break;

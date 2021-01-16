@@ -364,7 +364,7 @@ BinaryReader::ReadString()
 Util::Blob
 BinaryReader::ReadBlob()
 {
-    SizeT numBytes = this->ReadUInt();
+    Stream::Size numBytes = this->ReadUInt64();
     Util::Blob blob(numBytes);
     void* ptr = const_cast<void*>(blob.GetPtr());
     if (this->isMapped)
@@ -387,7 +387,7 @@ Util::Guid
 BinaryReader::ReadGuid()
 {
     Util::Blob blob = this->ReadBlob();
-    return Util::Guid((const unsigned char*) blob.GetPtr(), blob.Size());
+    return Util::Guid((const unsigned char*) blob.GetPtr(), (SizeT)blob.Size());
 }
      
 #if !__OSX__

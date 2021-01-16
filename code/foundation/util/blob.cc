@@ -43,11 +43,12 @@ Blob::BinaryCompare(const Blob& rhs) const
     decodes a base64 buffer and stores it inside
 */
 void
-Blob::SetFromBase64(const void* ptr, SizeT size)
+Blob::SetFromBase64(const void* ptr, size_t size)
 {
-    SizeT allocsize = BASE64_DECODE_OUT_SIZE(size);
-    this->Reserve(allocsize);    
-    int ret = base64_decode((char*)ptr, size, (unsigned char*)this->ptr);    
+    n_assert(size < INT_MAX);
+    size_t allocsize = BASE64_DECODE_OUT_SIZE(size);
+    this->Reserve(allocsize);
+    int ret = base64_decode((char*)ptr, (SizeT)size, (unsigned char*)this->ptr);    
     n_assert(ret >= 0);
     this->size = ret;
 }
@@ -58,10 +59,11 @@ Blob::SetFromBase64(const void* ptr, SizeT size)
 */
 Util::Blob 
 Blob::GetBase64() const
-{    
-    SizeT allocsize = BASE64_ENCODE_OUT_SIZE(this->size);    
+{
+    n_assert(this->size < INT_MAX);
+    size_t allocsize = BASE64_ENCODE_OUT_SIZE(this->size);    
     Util::Blob ret(allocsize);
-    int enc = base64_encode((unsigned char*)this->ptr, this->size, (char*)ret.ptr);
+    int enc = base64_encode((unsigned char*)this->ptr, (SizeT)this->size, (char*)ret.ptr);
     n_assert(enc >= 0);
     ret.size = enc;
     return ret;

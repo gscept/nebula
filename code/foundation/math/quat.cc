@@ -28,7 +28,7 @@ rotationmatrix(const mat4& m)
 
     if (trace > 0.0f)
     {
-        scalar s = n_sqrt(trace + 1.0f);
+        scalar s = Math::sqrt(trace + 1.0f);
         temp[3] = (s * 0.5f);
         s = 0.5f / s;
 
@@ -44,7 +44,7 @@ rotationmatrix(const mat4& m)
         int j = (i + 1) % 3;
         int k = (i + 2) % 3;
 
-        scalar s = n_sqrt(mm.m[i][i] - mm.m[j][j] - mm.m[k][k] + 1.0f);
+        scalar s = Math::sqrt(mm.m[i][i] - mm.m[j][j] - mm.m[k][k] + 1.0f);
         temp[i] = s * 0.5f;
         s = 0.5f / s;
 

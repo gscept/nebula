@@ -37,7 +37,7 @@ JobsTest::Run()
     CreateJobPortInfo portInfo;
     portInfo.name = "TestJobPort";
     portInfo.numThreads = 2;
-    portInfo.priority = FLT_MAX;
+    portInfo.priority = UINT_MAX;
     JobPortId port = CreateJobPort(portInfo);
 
     // create a job sync
