@@ -14,7 +14,6 @@
 #include "game/manager.h"
 #include "graphicsfeature/properties/graphics.h"
 #include "game/category.h"
-#include "basegamefeature/messages/entitymessages.h"
 
 namespace GraphicsFeature
 {

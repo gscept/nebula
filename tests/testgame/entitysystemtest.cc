@@ -9,7 +9,6 @@
 #include "basegamefeature/managers/blueprintmanager.h"
 #include "basegamefeature/basegamefeatureunit.h"
 #include "testproperties.h"
-#include "basegamefeature/messages/entitymessages.h"
 #include "framesync/framesynctimer.h"
 
 using namespace Game;

@@ -50,10 +50,6 @@ nebula_begin_module(application)
                 timemanager.h
                 timemanager.cc
             )
-        fips_dir(basegamefeature/messages)
-            nebula_add_nidl(
-                entitymessages.nidl
-            )
         fips_dir(basegamefeature/properties)
             nebula_add_nidl(
                 owner.nidl
