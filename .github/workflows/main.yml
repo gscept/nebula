@@ -126,3 +126,12 @@ jobs:
          chatId: ${{ secrets.ChatID }}
          jobStatus: ${{ needs.build.result }}
          skipSuccess: false
+  
+  Documentation:
+    runs-on: ubuntu-latest
+    needs: [build]
+    name: Documentation
+    uses: peaceiris/actions-gh-pages@v3
+    with:
+      github_token: ${{ secrets.GITHUB_TOKEN }}
+      publish_dir: ./documentation
