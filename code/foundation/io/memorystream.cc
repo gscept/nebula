@@ -229,7 +229,7 @@ MemoryStream::Seek(Offset offset, SeekOrigin origin)
     }
 
     // make sure read/write position doesn't become invalid
-    this->position = Math::clamp(this->position, 0LL, this->size);
+    this->position = Math::clamp(this->position, (Stream::Size)0, this->size);
 }
 
 //------------------------------------------------------------------------------
