@@ -126,7 +126,7 @@ intersectline(const plane& plane, const point& startPoint, const point& endPoint
     scalar v1 = dot(get_normal(plane), startPoint);
     scalar v2 = dot(get_normal(plane), endPoint);
     scalar d = (v1 - v2);
-    if (n_abs(d) < N_TINY)
+    if (Math::abs(d) < N_TINY)
     {
         return false;
     }

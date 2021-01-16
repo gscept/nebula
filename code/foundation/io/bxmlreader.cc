@@ -46,7 +46,7 @@ BXmlReader::Open()
     {
         // map the stream content into memory
         void* buf = this->stream->Map();
-        SizeT bufSize = this->stream->GetSize();
+        Stream::Size bufSize = this->stream->GetSize();
 
         // setup the loader util
         this->loaderUtil.SetupFromFileInMemory(buf, bufSize);

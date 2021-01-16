@@ -148,7 +148,7 @@ private:
         };
         
         SurfaceConstant()
-            : buffer(CoreGraphics::BufferId::Invalid())
+            : buffer(CoreGraphics::InvalidBufferId)
             //, mem(nullptr)
         {}
     };

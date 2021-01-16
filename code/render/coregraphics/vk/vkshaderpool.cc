@@ -193,7 +193,7 @@ VkShaderPool::GetShaderProgram(const CoreGraphics::ShaderId shaderId, const Core
 {
     VkShaderRuntimeInfo& runtime = this->shaderAlloc.Get<2>(shaderId.resourceId);
     IndexT i = runtime.programMap.FindIndex(mask);
-    if (i == InvalidIndex)  return CoreGraphics::ShaderProgramId::Invalid();
+    if (i == InvalidIndex)  return CoreGraphics::InvalidShaderProgramId;
     else                    return runtime.programMap.ValueAtIndex(i);
 }
 
@@ -205,7 +205,7 @@ VkShaderPool::CreateResourceTable(const CoreGraphics::ShaderId id, const IndexT 
 {
     const VkShaderSetupInfo& info = this->shaderAlloc.Get<1>(id.resourceId);
     IndexT idx = info.descriptorSetLayoutMap.FindIndex(group);
-    if (idx == InvalidIndex) return CoreGraphics::ResourceTableId::Invalid();
+    if (idx == InvalidIndex) return CoreGraphics::InvalidResourceTableId;
     else
     {
         ResourceTableCreateInfo crInfo =
@@ -233,7 +233,7 @@ VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::
         return CoreGraphics::CreateBuffer(info);
     }
     else
-        return CoreGraphics::BufferId::Invalid();
+        return CoreGraphics::InvalidBufferId;
 }
 
 //------------------------------------------------------------------------------
@@ -253,7 +253,7 @@ VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT
         return CoreGraphics::CreateBuffer(info);
     }
     else
-        return CoreGraphics::BufferId::Invalid();
+        return CoreGraphics::InvalidBufferId;
 }
 
 //------------------------------------------------------------------------------

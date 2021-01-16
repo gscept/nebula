@@ -169,13 +169,14 @@ StdTcpClient::Send()
         // so we may have to split the send data into
         // multiple packets
         SizeT maxMsgSize = this->socket->GetMaxMsgSize();
-        SizeT sendSize = this->sendStream->GetSize();
+        Stream::Size sendSize = this->sendStream->GetSize();
+        n_assert(sendSize < INT_MAX);
         uchar* ptr = (uchar*) this->sendStream->Map();
         SizeT overallBytesSent = 0;
         Socket::Result socketResult = Socket::Success;
         while ((Socket::Success == socketResult) && (overallBytesSent < sendSize))
         {
-            SizeT bytesToSend = sendSize - overallBytesSent;
+            SizeT bytesToSend = (SizeT)sendSize - overallBytesSent;
             if (bytesToSend > maxMsgSize)
             {
                 bytesToSend = maxMsgSize;

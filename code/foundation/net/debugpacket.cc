@@ -206,9 +206,10 @@ Array<DebugPacket>
 DebugPacket::EncodeStream(ushort portNum, uint packetCounter, const Ptr<Stream>& stream)
 {
     n_assert(stream->CanBeMapped());
+    n_assert(stream->GetSize() < INT_MAX);
 
     Array<DebugPacket> result;
-    SizeT bytesRemaining = stream->GetSize();
+    SizeT bytesRemaining = (SizeT)stream->GetSize();
     stream->SetAccessMode(Stream::ReadAccess);
     bool streamOpenResult = stream->Open();
     n_assert(streamOpenResult);

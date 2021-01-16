@@ -172,7 +172,7 @@ ParticleSystemNode::Instance::Setup(Models::ModelNode* node, const Models::Model
     this->surfaceInstance = pparent->materialType->CreateSurfaceInstance(pparent->surface);
 
     this->particleVboOffset = 0;
-    this->particleVbo = CoreGraphics::BufferId::Invalid();
+    this->particleVbo = CoreGraphics::InvalidBufferId;
 }
 
 } // namespace Particles

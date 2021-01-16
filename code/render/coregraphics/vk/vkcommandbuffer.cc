@@ -41,7 +41,7 @@ CommandBufferGetVk(const CoreGraphics::CommandBufferId id)
 #if NEBULA_DEBUG
     n_assert(id.id8 == CoreGraphics::IdType::CommandBufferIdType);
 #endif
-    if (id == CoreGraphics::CommandBufferId::Invalid()) return VK_NULL_HANDLE;
+    if (id == CoreGraphics::InvalidCommandBufferId) return VK_NULL_HANDLE;
     else                                                return commandBuffers.GetUnsafe<CommandBuffer_VkCommandBuffer>(id.id24);
 }
 
@@ -99,7 +99,7 @@ DestroyCommandBufferPool(const CommandBufferPoolId pool)
 const CommandBufferId
 CreateCommandBuffer(const CommandBufferCreateInfo& info)
 {
-    n_assert(info.pool != CoreGraphics::CommandBufferPoolId::Invalid());
+    n_assert(info.pool != CoreGraphics::InvalidCommandBufferPoolId);
     VkCommandPool pool = CommandBufferPoolGetVk(info.pool);
     VkCommandBufferAllocateInfo vkInfo =
     {

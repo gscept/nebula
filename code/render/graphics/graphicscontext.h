@@ -89,7 +89,7 @@ void ctx::Destroy()\
 Graphics::ContextEntityId ctx::GetContextId(const Graphics::GraphicsEntityId id)\
 {\
     IndexT idx = __state.entitySliceMap.FindIndex(id); \
-    if (idx == InvalidIndex) return Graphics::ContextEntityId::Invalid(); \
+    if (idx == InvalidIndex) return Graphics::InvalidContextEntityId; \
     else return __state.entitySliceMap.ValueAtIndex(id, idx); \
 }\
 const Graphics::ContextEntityId& ctx::GetContextIdRef(const Graphics::GraphicsEntityId id)\

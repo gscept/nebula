@@ -86,7 +86,7 @@ SetupPass(const PassId pid)
     Util::Array<uint32_t>& subpassAttachmentCounts = passAllocator.Get<3>(id);
 
     Util::FixedArray<VkImageView> images;
-    images.Resize(loadInfo.colorAttachments.Size() + (loadInfo.depthStencilAttachment != TextureViewId::Invalid() ? 1 : 0));
+    images.Resize(loadInfo.colorAttachments.Size() + (loadInfo.depthStencilAttachment != InvalidTextureViewId ? 1 : 0));
 
     uint32_t width = 0;
     uint32_t height = 0;
@@ -97,7 +97,7 @@ SetupPass(const PassId pid)
 	// if we have no attachments, use the depth attachment to setup the viewport
 	if (loadInfo.colorAttachments.Size() == 0)
 	{
-		n_assert(loadInfo.depthStencilAttachment != CoreGraphics::TextureViewId::Invalid());
+		n_assert(loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId);
 		TextureId tex = TextureViewGetTexture(loadInfo.depthStencilAttachment);
 		const CoreGraphics::TextureDimensions dims = TextureGetDimensions(tex);
 		VkRect2D& rect = loadInfo.rects[0];
@@ -121,9 +121,9 @@ SetupPass(const PassId pid)
 			images[i] = TextureViewGetVk(loadInfo.colorAttachments[i]);
 			TextureId tex = TextureViewGetTexture(loadInfo.colorAttachments[i]);
 			const CoreGraphics::TextureDimensions dims = TextureGetDimensions(tex);
-			width = Math::n_max(width, (uint32_t)dims.width);
-			height = Math::n_max(height, (uint32_t)dims.height);
-			layers = Math::n_max(layers, (uint32_t)TextureGetNumLayers(tex));
+			width = Math::max(width, (uint32_t)dims.width);
+			height = Math::max(height, (uint32_t)dims.height);
+			layers = Math::max(layers, (uint32_t)TextureGetNumLayers(tex));
 
 			VkRect2D& rect = loadInfo.rects[i];
 			rect.offset.x = 0;
@@ -171,19 +171,19 @@ SetupPass(const PassId pid)
 		// fill up all slots with placeholders
         IndexT j;
         for (j = 0; j < Shared::MAX_2D_TEXTURES; j++)
-            ResourceTableSetTexture(runtimeInfo.passTextureDescriptorSet[i], { CoreGraphics::White2D, texContext.texture2DTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
+            ResourceTableSetTexture(runtimeInfo.passTextureDescriptorSet[i], { CoreGraphics::White2D, texContext.texture2DTextureVar, j, CoreGraphics::InvalidSamplerId, false });
 
 		for (j = 0; j < Shared::MAX_2D_ARRAY_TEXTURES; j++)
-            ResourceTableSetTexture(runtimeInfo.passTextureDescriptorSet[i], { CoreGraphics::White2DArray, texContext.texture2DArrayTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
+            ResourceTableSetTexture(runtimeInfo.passTextureDescriptorSet[i], { CoreGraphics::White2DArray, texContext.texture2DArrayTextureVar, j, CoreGraphics::InvalidSamplerId, false });
 
         for (j = 0; j < Shared::MAX_2D_MS_TEXTURES; j++)
-            ResourceTableSetTexture(runtimeInfo.passTextureDescriptorSet[i], { CoreGraphics::White2D, texContext.texture2DMSTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
+            ResourceTableSetTexture(runtimeInfo.passTextureDescriptorSet[i], { CoreGraphics::White2D, texContext.texture2DMSTextureVar, j, CoreGraphics::InvalidSamplerId, false });
 
         for (j = 0; j < Shared::MAX_3D_TEXTURES; j++)
-            ResourceTableSetTexture(runtimeInfo.passTextureDescriptorSet[i], { CoreGraphics::White3D, texContext.texture3DTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
+            ResourceTableSetTexture(runtimeInfo.passTextureDescriptorSet[i], { CoreGraphics::White3D, texContext.texture3DTextureVar, j, CoreGraphics::InvalidSamplerId, false });
 
         for (j = 0; j < Shared::MAX_CUBE_TEXTURES; j++)
-            ResourceTableSetTexture(runtimeInfo.passTextureDescriptorSet[i], { CoreGraphics::WhiteCube, texContext.textureCubeTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
+            ResourceTableSetTexture(runtimeInfo.passTextureDescriptorSet[i], { CoreGraphics::WhiteCube, texContext.textureCubeTextureVar, j, CoreGraphics::InvalidSamplerId, false });
 
         ResourceTableCommitChanges(runtimeInfo.passTextureDescriptorSet[i]);
 	}
@@ -234,7 +234,7 @@ SetupPass(const PassId pid)
         // if subpass binds depth, the slot for the depth-stencil buffer is color attachments + 1
         if (subpass.bindDepth)
         {
-            n_assert(loadInfo.depthStencilAttachment != TextureViewId::Invalid());
+            n_assert(loadInfo.depthStencilAttachment != InvalidTextureViewId);
             VkAttachmentReference& ds = subpassDepthStencils[i];
             ds.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
             ds.attachment = loadInfo.colorAttachments.Size();
@@ -386,7 +386,7 @@ SetupPass(const PassId pid)
     }
 
     // use depth stencil attachments if pointer is not null
-    if (loadInfo.depthStencilAttachment != CoreGraphics::TextureViewId::Invalid())
+    if (loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId)
     {
         TextureId tex = TextureViewGetTexture(loadInfo.depthStencilAttachment);
         TextureUsage usage = TextureGetUsage(tex);
@@ -425,15 +425,15 @@ SetupPass(const PassId pid)
     VkResult res = vkCreateRenderPass(loadInfo.dev, &rpinfo, nullptr, &loadInfo.pass);
     n_assert(res == VK_SUCCESS);
 
-    if (loadInfo.depthStencilAttachment != CoreGraphics::TextureViewId::Invalid())
+    if (loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId)
     {
         TextureId tex = TextureViewGetTexture(loadInfo.depthStencilAttachment);
         images[i] = TextureViewGetVk(loadInfo.depthStencilAttachment);
         const CoreGraphics::TextureDimensions dims = TextureGetDimensions(tex);
 
-		width = Math::n_max(width, (uint32_t)dims.width);
-        height = Math::n_max(height, (uint32_t)dims.height);
-        layers = Math::n_max(layers, (uint32_t)TextureGetNumLayers(tex));
+		width = Math::max(width, (uint32_t)dims.width);
+        height = Math::max(height, (uint32_t)dims.height);
+        layers = Math::max(layers, (uint32_t)TextureGetNumLayers(tex));
     }
 
     // setup render area
@@ -482,7 +482,7 @@ SetupPass(const PassId pid)
         CoreGraphics::ResourceTableInputAttachment write;
         write.tex = loadInfo.colorAttachments[i];
         write.isDepth = false;
-        write.sampler = SamplerId::Invalid();
+        write.sampler = InvalidSamplerId;
         write.slot = inputAttachmentLocation;
         write.index = 0;
         ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
@@ -493,7 +493,7 @@ SetupPass(const PassId pid)
         Math::vec4& dims = dimensions[i];
         dims = Math::vec4((Math::scalar)rtdims.width, (Math::scalar)rtdims.height, 1 / (Math::scalar)rtdims.width, 1 / (Math::scalar)rtdims.height);
     }
-    if (loadInfo.depthStencilAttachment != CoreGraphics::TextureViewId::Invalid())
+    if (loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId)
     {
         // update descriptor set based on images attachments
         IndexT inputAttachmentLocation = ShaderGetResourceSlot(sid, Util::String::Sprintf("DepthAttachment", i));
@@ -502,7 +502,7 @@ SetupPass(const PassId pid)
         CoreGraphics::ResourceTableInputAttachment write;
         write.tex = loadInfo.depthStencilAttachment;
         write.isDepth = true;
-        write.sampler = SamplerId::Invalid();
+        write.sampler = InvalidSamplerId;
         write.slot = inputAttachmentLocation;
         write.index = 0;
         ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
@@ -561,7 +561,7 @@ CreatePass(const PassCreateInfo& info)
     loadInfo.dev = Vulkan::GetCurrentDevice();
 
     SizeT numImages = info.colorAttachments.Size() == 0 ? 1 : info.colorAttachments.Size();
-    loadInfo.clearValues.Resize(numImages + (loadInfo.depthStencilAttachment != CoreGraphics::TextureViewId::Invalid() ? 1 : 0));
+    loadInfo.clearValues.Resize(numImages + (loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId ? 1 : 0));
     loadInfo.rects.Resize(numImages);
     loadInfo.viewports.Resize(numImages);
     loadInfo.name = info.name;
@@ -581,7 +581,7 @@ CreatePass(const PassCreateInfo& info)
         clear.color.float32[3] = value.w;
     }
     
-    if (loadInfo.depthStencilAttachment != CoreGraphics::TextureViewId::Invalid())
+    if (loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId)
     {
         VkClearValue& clear = loadInfo.clearValues[i];
         clear.depthStencil.depth = info.clearDepth;
@@ -726,23 +726,23 @@ PassUpdateResources(const PassId id, const IndexT bufferIndex)
 			switch (type)
 			{
 			case Texture2D:
-				ResourceTableSetTexture(toTable, {CoreGraphics::White2D, texContext.texture2DTextureVar, slot, CoreGraphics::SamplerId::Invalid(), false, false});
+				ResourceTableSetTexture(toTable, {CoreGraphics::White2D, texContext.texture2DTextureVar, slot, CoreGraphics::InvalidSamplerId, false, false});
 				break;
 			case Texture2DArray:
-				ResourceTableSetTexture(toTable, {CoreGraphics::White2DArray, texContext.texture2DArrayTextureVar, slot, CoreGraphics::SamplerId::Invalid(), false, false});
+				ResourceTableSetTexture(toTable, {CoreGraphics::White2DArray, texContext.texture2DArrayTextureVar, slot, CoreGraphics::InvalidSamplerId, false, false});
 				break;
 			case Texture3D:
-				ResourceTableSetTexture(toTable, {CoreGraphics::White3D, texContext.texture3DTextureVar, slot, CoreGraphics::SamplerId::Invalid(), false, false});
+				ResourceTableSetTexture(toTable, {CoreGraphics::White3D, texContext.texture3DTextureVar, slot, CoreGraphics::InvalidSamplerId, false, false});
 				break;
 			case TextureCube:
-				ResourceTableSetTexture(toTable, {CoreGraphics::WhiteCube, texContext.textureCubeTextureVar, slot, CoreGraphics::SamplerId::Invalid(), false, false});
+				ResourceTableSetTexture(toTable, {CoreGraphics::WhiteCube, texContext.textureCubeTextureVar, slot, CoreGraphics::InvalidSamplerId, false, false});
 				break;
 			}
 		}
 	}
 
 	// detach depth-stencil
-	if (loadInfo.depthStencilAttachment != CoreGraphics::TextureViewId::Invalid())
+	if (loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId)
 	{
 		CoreGraphics::TextureId texture = CoreGraphics::TextureViewGetTexture(loadInfo.depthStencilAttachment);
 		IndexT slot = CoreGraphics::TextureGetBindlessHandle(texture);
@@ -755,16 +755,16 @@ PassUpdateResources(const PassId id, const IndexT bufferIndex)
 			switch (type)
 			{
 			case Texture2D:
-				ResourceTableSetTexture(toTable, {CoreGraphics::White2D, texContext.texture2DTextureVar, slot, CoreGraphics::SamplerId::Invalid(), false, false});
+				ResourceTableSetTexture(toTable, {CoreGraphics::White2D, texContext.texture2DTextureVar, slot, CoreGraphics::InvalidSamplerId, false, false});
 				break;
 			case Texture2DArray:
-				ResourceTableSetTexture(toTable, {CoreGraphics::White2DArray, texContext.texture2DArrayTextureVar, slot, CoreGraphics::SamplerId::Invalid(), false, false});
+				ResourceTableSetTexture(toTable, {CoreGraphics::White2DArray, texContext.texture2DArrayTextureVar, slot, CoreGraphics::InvalidSamplerId, false, false});
 				break;
 			case Texture3D:
-				ResourceTableSetTexture(toTable, {CoreGraphics::White3D, texContext.texture3DTextureVar, slot, CoreGraphics::SamplerId::Invalid(), false, false});
+				ResourceTableSetTexture(toTable, {CoreGraphics::White3D, texContext.texture3DTextureVar, slot, CoreGraphics::InvalidSamplerId, false, false});
 				break;
 			case TextureCube:
-				ResourceTableSetTexture(toTable, {CoreGraphics::WhiteCube, texContext.textureCubeTextureVar, slot, CoreGraphics::SamplerId::Invalid(), false, false});
+				ResourceTableSetTexture(toTable, {CoreGraphics::WhiteCube, texContext.textureCubeTextureVar, slot, CoreGraphics::InvalidSamplerId, false, false});
 				break;
 
 			}

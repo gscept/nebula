@@ -76,7 +76,7 @@ public:
     /// swizzle vector
     template<int X, int Y, int Z, int W>
     vec4 swizzle(const vec4& v);
-    
+
     /// read-only access to indexed component
     scalar& operator[](const int index);
     /// read-only access to indexed component
@@ -205,9 +205,9 @@ vec4::storeu(scalar* ptr) const
 __forceinline void 
 vec4::store3(scalar* ptr) const
 {
-    __m128 v = _mm_permute_ps(this->vec, _MM_SHUFFLE(2, 2, 2, 2));
+    __m128 vv = _mm_permute_ps(this->vec, _MM_SHUFFLE(2, 2, 2, 2));
     _mm_storel_epi64(reinterpret_cast<__m128i*>(ptr), _mm_castps_si128(this->vec));
-    _mm_store_ss(&ptr[2], v);
+    _mm_store_ss(&ptr[2], vv);
 }
 
 //------------------------------------------------------------------------------
@@ -602,14 +602,14 @@ angle(const vec4& v0, const vec4& v1)
 
     scalar cangle;
     _mm_store_ss(&cangle, dot);
-    return n_acos(cangle);
+    return Math::acos(cangle);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 __forceinline vec4
-lerp(const vec4& v0, const vec4& v1, scalar s)
+vecLerp(const vec4& v0, const vec4& v1, scalar s)
 {
     return v0 + ((v1 - v0) * s);
 }
@@ -636,7 +636,7 @@ minimize(const vec4& v0, const vec4& v1)
 /**
 */
 __forceinline vec4
-clamp(const vec4& clamp, const vec4& min, const vec4& max)
+vecClamp(const vec4& clamp, const vec4& min, const vec4& max)
 {
     __m128 temp = _mm_max_ps(min.vec, clamp.vec);
     temp = _mm_min_ps(temp, max.vec);

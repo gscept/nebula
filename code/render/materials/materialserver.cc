@@ -180,7 +180,7 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
                     CoreGraphics::ShaderFeature::Mask mask = CoreGraphics::ShaderServer::Instance()->FeatureStringToMask(shaderFeatures);
                     CoreGraphics::ShaderProgramId program = CoreGraphics::ShaderGetProgram(shd, mask);
 
-                    if (program == CoreGraphics::ShaderProgramId::Invalid())
+                    if (program == CoreGraphics::InvalidShaderProgramId)
                     {
                         n_warning("WARNING: Material '%s' failed to load program with features '%s'\n", type->name.AsCharPtr(), shaderFeatures.AsCharPtr());
                     }

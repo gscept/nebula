@@ -604,10 +604,11 @@ IoServer::ReadFile(const URI& path, Util::String& contents)
     {
         // read all data
         void* data = stream->Map();
-        SizeT size = stream->GetSize();
+        Stream::Size size = stream->GetSize();
 
-        // map to string        
-        contents.Set((char*)data, size);
+        // map to string
+        n_assert(size < INT_MAX);
+        contents.Set((char*)data, (SizeT)size);
 
         // close stream
         stream->Close();

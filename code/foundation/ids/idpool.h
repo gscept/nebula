@@ -98,7 +98,7 @@ IdPool::Alloc()
     if (this->free.Size() == 0)
     {
         // calculate how many more indices we are allowed to get
-        SizeT growTo = Math::n_min(this->maxId, this->grow);
+        SizeT growTo = Math::min(this->maxId, this->grow);
         SizeT oldCapacity = this->free.Capacity();
 
         // make sure we don't allocate too many indices

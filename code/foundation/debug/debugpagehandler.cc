@@ -331,8 +331,8 @@ DebugPageHandler::ComputeMinMaxAvgTimes(const Array<Time>& times, Time& outMin, 
         IndexT i;
         for (i = 0; i < times.Size(); i++)
         {
-            outMin = n_min(float(outMin), float(times[i]));
-            outMax = n_max(float(outMax), float(times[i]));
+            outMin = Math::min(float(outMin), float(times[i]));
+            outMax = Math::max(float(outMax), float(times[i]));
             outAvg += times[i];
         }
         outAvg /= times.Size();
@@ -362,8 +362,8 @@ DebugPageHandler::ComputeMinMaxAvgCounts(const Array<int>& counterValues, int& o
         IndexT i;
         for (i = 0; i < counterValues.Size(); i++)
         {
-            outMin = n_min(outMin, counterValues[i]);
-            outMax = n_max(outMax, counterValues[i]);
+            outMin = Math::min(outMin, counterValues[i]);
+            outMax = Math::max(outMax, counterValues[i]);
             outAvg += counterValues[i];
         }
         outAvg /= counterValues.Size();

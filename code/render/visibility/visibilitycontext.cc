@@ -581,7 +581,7 @@ const ObserverContext::VisibilityDrawList*
 ObserverContext::GetVisibilityDrawList(const Graphics::GraphicsEntityId id)
 {
     const Graphics::ContextEntityId cid = ObserverContext::GetContextId(id);
-    if (cid == Graphics::ContextEntityId::Invalid())
+    if (cid == Graphics::InvalidContextEntityId)
         return nullptr;
     else 
         return &observerAllocator.Get<Observer_DrawList>(cid.id);

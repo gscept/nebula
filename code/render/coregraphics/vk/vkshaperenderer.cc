@@ -33,8 +33,8 @@ __ImplementClass(Vulkan::VkShapeRenderer, 'VKSR', Base::ShapeRendererBase);
 VkShapeRenderer::VkShapeRenderer() 
     : indexBufferPtr(nullptr)
     , vertexBufferPtr(nullptr)
-    , ibos{ BufferId::Invalid() }
-    , vbos{ BufferId::Invalid() }
+    , ibos{ InvalidBufferId }
+    , vbos{ InvalidBufferId }
     , indexBufferActiveIndex()
     , vertexBufferActiveIndex()
     , indexBufferCapacity(0)
@@ -119,20 +119,20 @@ VkShapeRenderer::Close()
     // we don't assert here as the buffer is lazy allocated
     CoreGraphics::BufferId activeVBId = this->vbos[this->vertexBufferActiveIndex];
     CoreGraphics::BufferId activeIBId = this->ibos[this->indexBufferActiveIndex];
-    if (activeVBId != CoreGraphics::BufferId::Invalid())
+    if (activeVBId != CoreGraphics::InvalidBufferId)
     {
         BufferUnmap(activeVBId);
     }
-    if (activeIBId != CoreGraphics::BufferId::Invalid())
+    if (activeIBId != CoreGraphics::InvalidBufferId)
     {
         BufferUnmap(activeIBId);
     }
 
     for (IndexT i = 0; i < MaxVertexIndexBuffers; i++)
     {
-        if (this->vbos[i] != BufferId::Invalid())
+        if (this->vbos[i] != InvalidBufferId)
             DestroyBuffer(this->vbos[i]);
-        if (this->ibos[i] != BufferId::Invalid())
+        if (this->ibos[i] != InvalidBufferId)
         DestroyBuffer(this->ibos[i]);
     }
     
@@ -261,7 +261,7 @@ VkShapeRenderer::DrawSimpleShape(const Math::mat4& modelTransform, CoreGraphics:
 void
 VkShapeRenderer::DrawMesh(const Math::mat4& modelTransform, const CoreGraphics::MeshId mesh, const Math::vec4& color)
 {
-    n_assert(mesh != MeshId::Invalid());
+    n_assert(mesh != InvalidMeshId);
     n_assert(CoreGraphics::IsInBeginFrame());
 
     // resolve model-view-projection matrix and update shader
@@ -436,7 +436,7 @@ VkShapeRenderer::GrowIndexBuffer()
 
     // delete the next buffer if one exists
     this->indexBufferActiveIndex = (this->indexBufferActiveIndex + 1) % MaxVertexIndexBuffers;
-    if (this->ibos[this->indexBufferActiveIndex] != BufferId::Invalid())
+    if (this->ibos[this->indexBufferActiveIndex] != InvalidBufferId)
         DestroyBuffer(this->ibos[this->indexBufferActiveIndex]);
 
     this->indexBufferCapacity = this->numIndicesThisFrame;
@@ -468,7 +468,7 @@ VkShapeRenderer::GrowVertexBuffer()
 
     // delete the next buffer if one exists
     this->vertexBufferActiveIndex = (this->vertexBufferActiveIndex + 1) % MaxVertexIndexBuffers;
-    if (this->vbos[this->vertexBufferActiveIndex] != BufferId::Invalid())
+    if (this->vbos[this->vertexBufferActiveIndex] != InvalidBufferId)
         DestroyBuffer(this->vbos[this->vertexBufferActiveIndex]);
 
     this->vertexBufferCapacity = this->numVerticesThisFrame;

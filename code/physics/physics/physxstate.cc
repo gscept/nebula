@@ -171,7 +171,7 @@ PhysxState::Update(Timing::Time delta)
     }
     this->time -= delta;
     // we limit the simulation to 5 frames
-    this->time = Math::n_max(this->time, -5.0 * PHYSICS_RATE);
+    this->time = Math::max(this->time, -5.0 * PHYSICS_RATE);
     while (this->time < 0.0)
     {
         for (auto & scene : this->activeScenes)

@@ -111,7 +111,7 @@ struct TextureCreateInfo
         , windowTexture(false)
         , bindless(true)
         , sparse(false)
-        , alias(CoreGraphics::TextureId::Invalid())
+        , alias(CoreGraphics::InvalidTextureId)
         , defaultLayout(CoreGraphics::ImageLayout::ShaderRead)
     {};
 
@@ -263,9 +263,9 @@ void TextureUpdate(const CoreGraphics::TextureId id, const Math::rectangle<int>&
 void TextureUpdate(const CoreGraphics::TextureId id, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub);
 
 /// clear texture with color
-void TextureClearColor(const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres, const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid());
+void TextureClearColor(const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres, const CoreGraphics::SubmissionContextId sub = CoreGraphics::InvalidSubmissionContextId);
 /// clear texture with depth-stencil
-void TextureClearDepthStencil(const CoreGraphics::TextureId id, float depth, uint stencil, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres, const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid());
+void TextureClearDepthStencil(const CoreGraphics::TextureId id, float depth, uint stencil, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres, const CoreGraphics::SubmissionContextId sub = CoreGraphics::InvalidSubmissionContextId);
 
 /// helper function to setup RenderTextureInfo, already implemented
 TextureCreateInfoAdjusted TextureGetAdjustedInfo(const TextureCreateInfo& info);

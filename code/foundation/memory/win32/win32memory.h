@@ -135,7 +135,6 @@ operator delete[](void* p)
     Memory::Free(Memory::ObjectArrayHeap, p);
 }
 
-
 #define n_new(type) new type
 #define n_new_inplace(type, mem) new (mem) type 
 #define n_new_array(type, size) new type[size]

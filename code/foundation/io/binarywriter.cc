@@ -343,7 +343,7 @@ BinaryWriter::WriteString(const Util::String& s)
 void
 BinaryWriter::WriteBlob(const Util::Blob& blob)
 {
-    this->WriteUInt(blob.Size());
+    this->WriteUInt64(blob.Size());
     if (this->isMapped)
     {
         n_assert((this->mapCursor + blob.Size()) <= this->mapEnd);

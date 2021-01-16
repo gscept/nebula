@@ -226,7 +226,7 @@ void vec2::store(scalar* ptr) const
 inline scalar
 vec2::length() const
 {
-    return n_sqrt(this->x * this->x + this->y * this->y);
+    return Math::sqrt(this->x * this->x + this->y * this->y);
 }
 
 //------------------------------------------------------------------------------
@@ -244,7 +244,7 @@ vec2::lengthsq() const
 inline vec2
 vec2::abs() const
 {
-    return vec2(n_abs(this->x), n_abs(this->y));
+    return vec2(Math::abs(this->x), Math::abs(this->y));
 }
 
 //------------------------------------------------------------------------------
@@ -346,7 +346,7 @@ vec2::multiply( const vec2& v0, const vec2& v1 )
 inline vec2
 vec2::maximize(const vec2& v0, const vec2& v1)
 {
-    return vec2(n_max(v0.x, v1.x), n_max(v0.y, v1.y));
+    return vec2(Math::max(v0.x, v1.x), Math::max(v0.y, v1.y));
 }
 
 //------------------------------------------------------------------------------
@@ -355,7 +355,7 @@ vec2::maximize(const vec2& v0, const vec2& v1)
 inline vec2
 vec2::minimize(const vec2& v0, const vec2& v1)
 {
-    return vec2(n_min(v0.x, v1.x), n_min(v0.y, v1.y));
+    return vec2(Math::min(v0.x, v1.x), Math::min(v0.y, v1.y));
 }
 
 } // namespace Math

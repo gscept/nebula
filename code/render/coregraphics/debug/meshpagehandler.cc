@@ -171,7 +171,7 @@ MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stre
         // write vertex buffer info
         htmlWriter->Element(HtmlElement::Heading3, "Vertices");
         BufferId vbo = MeshGetVertexBuffer(id, 0);
-        if (vbo != BufferId::Invalid())
+        if (vbo != InvalidBufferId)
         {
             VertexLayoutId vlo = MeshGetPrimitiveGroups(id)[0].GetVertexLayout();
             htmlWriter->Begin(HtmlElement::Table);
@@ -220,7 +220,7 @@ MeshPageHandler::HandleMeshInfoRequest(const Util::String& resId, const Ptr<Stre
         // write index buffer info
         htmlWriter->Element(HtmlElement::Heading3, "Indices");
         BufferId ibo = MeshGetIndexBuffer(id);
-        if (ibo != BufferId::Invalid())
+        if (ibo != InvalidBufferId)
         {
             htmlWriter->Begin(HtmlElement::Table);
                 htmlWriter->Begin(HtmlElement::TableRow);

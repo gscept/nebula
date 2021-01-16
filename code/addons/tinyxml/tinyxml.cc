@@ -972,7 +972,7 @@ bool TiXmlDocument::LoadStream(const Ptr<IO::Stream>& stream, TiXmlEncoding enco
     location.Clear();
 
     // Get the file size, so we can pre-allocate the string. HUGE speed impact.
-    long length = stream->GetSize();
+    IO::Stream::Size length = stream->GetSize();
 
     // Strange case, but good to handle up front.
     if (length == 0)

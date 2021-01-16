@@ -94,8 +94,6 @@ private:
 
     friend void CoreGraphics::SetVertexLayout(const CoreGraphics::VertexLayoutId& vl);
 
-    ID_64_TYPE(DerivativeId);
-
     Ids::IdAllocator<
         Util::HashTable<uint64_t, DerivativeLayout>,        //0 program-to-derivative layout binding
         VkPipelineVertexInputStateCreateInfo,               //1 base vertex input state

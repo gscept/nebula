@@ -103,6 +103,9 @@ SimpleViewerApplication::Open()
         this->resMgr = Resources::ResourceServer::Create();
         this->inputServer = Input::InputServer::Create();
         this->ioServer = IO::IoServer::Create();
+#ifdef USE_GITHUB_DEMO        
+        this->ioServer->MountArchive("root:export");
+#endif
 
 #if NEBULA_ENABLE_PROFILING
         Profiling::ProfilingRegisterThread();
@@ -140,7 +143,7 @@ SimpleViewerApplication::Open()
         ObservableContext::Create();
 
 		Graphics::RegisterEntity<CameraContext, ObserverContext>(this->cam);
-		CameraContext::SetupProjectionFov(this->cam, width / (float)height, Math::n_deg2rad(60.f), 0.1f, 10000.0f);
+		CameraContext::SetupProjectionFov(this->cam, width / (float)height, Math::deg2rad(60.f), 0.1f, 10000.0f);
         CameraContext::SetLODCamera(this->cam);
 
         Dynui::ImguiContext::Create();
@@ -266,8 +269,8 @@ SimpleViewerApplication::Run()
     {
         /*
         Math::mat4 globalLightTransform = Lighting::LightContext::GetTransform(globalLight);
-        Math::mat4 rotY = Math::rotationy(Math::n_deg2rad(0.1f));
-        Math::mat4 rotX = Math::rotationz(Math::n_deg2rad(0.05f));
+        Math::mat4 rotY = Math::rotationy(Math::deg2rad(0.1f));
+        Math::mat4 rotX = Math::rotationz(Math::deg2rad(0.05f));
         globalLightTransform = globalLightTransform * rotX;
         Lighting::LightContext::SetTransform(globalLight, globalLightTransform);
         */
@@ -357,12 +360,12 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
 
     // convert to milliseconds
     float startX = pos.x + scope.start / frameTime * canvas.x;
-    float stopX = startX + Math::n_max(scope.duration / frameTime * canvas.x, 1.0);
+    float stopX = startX + Math::max(scope.duration / frameTime * canvas.x, 1.0);
     float startY = pos.y;
     float stopY = startY + YPad;
 
     ImVec2 bbMin = ImVec2(startX, startY);
-    ImVec2 bbMax = ImVec2(Math::n_min(stopX, startX + fullSize.x), Math::n_min(stopY, startY + fullSize.y));
+    ImVec2 bbMax = ImVec2(Math::min(stopX, startX + fullSize.x), Math::min(stopY, startY + fullSize.y));
 
     // draw a filled rect for background, and normal rect for outline
     drawList->PushClipRect(bbMin, bbMax, true);
@@ -395,7 +398,7 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
     for (IndexT i = 0; i < scope.children.Size(); i++)
     {
         int childLevel = RecursiveDrawScope(scope.children[i], drawList, start, fullSize, pos, canvas, frameTime, level + 1);
-        deepest = Math::n_max(deepest, childLevel);
+        deepest = Math::max(deepest, childLevel);
     }
     return deepest;
 }
@@ -422,12 +425,12 @@ RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, ImDrawL
     float begin = marker.start / 1000000000.0f;
     float duration = marker.duration / 1000000000.0f;
     float startX = pos.x + begin / frameTime * canvas.x;
-    float stopX = startX + Math::n_max(duration / frameTime * canvas.x, 1.0f);
+    float stopX = startX + Math::max(duration / frameTime * canvas.x, 1.0f);
     float startY = pos.y;
     float stopY = startY + YPad;
 
     ImVec2 bbMin = ImVec2(startX, startY);
-    ImVec2 bbMax = ImVec2(Math::n_min(stopX, startX + fullSize.x), Math::n_min(stopY, startY + fullSize.y));
+    ImVec2 bbMax = ImVec2(Math::min(stopX, startX + fullSize.x), Math::min(stopY, startY + fullSize.y));
 
     // draw a filled rect for background, and normal rect for outline
     drawList->PushClipRect(bbMin, bbMax, true);
@@ -453,7 +456,7 @@ RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, ImDrawL
     for (IndexT i = 0; i < marker.children.Size(); i++)
     {
         int childLevel = RecursiveDrawGpuMarker(marker.children[i], drawList, start, fullSize, pos, canvas, frameTime, level + 1);
-        deepest = Math::n_max(deepest, childLevel);
+        deepest = Math::max(deepest, childLevel);
     }
     return deepest;
 }
@@ -580,12 +583,12 @@ SimpleViewerApplication::RenderUI()
                             {
                                 const Profiling::ProfilingScope& scope = ctx.topLevelScopes[i];
                                 int level = RecursiveDrawScope(scope, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, 0);
-                                levels = Math::n_max(levels, level);
+                                levels = Math::max(levels, level);
                             }
 
                             // set back cursor so we can draw our box
                             ImGui::SetCursorScreenPos(pos);
-                            ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, Math::n_max(1.0f, levels * 20.0f)));
+                            ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, Math::max(1.0f, levels * 20.0f)));
                         }
                     }
                     if (ImGui::CollapsingHeader("GPU"))
@@ -604,12 +607,12 @@ SimpleViewerApplication::RenderUI()
                             if (marker.queue != CoreGraphics::GraphicsQueueType)
                                 continue;
                             int level = RecursiveDrawGpuMarker(marker, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, 0);
-                            levels = Math::n_max(levels, level);
+                            levels = Math::max(levels, level);
                         }
 
                         // set back cursor so we can draw our box
                         ImGui::SetCursorScreenPos(pos);
-                        ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, Math::n_max(1.0f, levels * 20.0f)));
+                        ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, Math::max(1.0f, levels * 20.0f)));
                         pos.y += levels * 20.0f;
 
                         drawList->AddText(ImVec2(pos.x, pos.y), IM_COL32_WHITE, "Compute Queue");
@@ -621,12 +624,12 @@ SimpleViewerApplication::RenderUI()
                             if (marker.queue != CoreGraphics::ComputeQueueType)
                                 continue;
                             int level = RecursiveDrawGpuMarker(marker, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, 0);
-                            levels = Math::n_max(levels, level);
+                            levels = Math::max(levels, level);
                         }
 
                         // set back cursor so we can draw our box
                         ImGui::SetCursorScreenPos(pos);
-                        ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, Math::n_max(1.0f, levels * 20.0f)));
+                        ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, Math::max(1.0f, levels * 20.0f)));
                     }
                 }
                 if (ImGui::CollapsingHeader("Memory"))

@@ -261,7 +261,7 @@ GamePadBase::SetLowFrequencyVibrator(float f)
 {        
     critSect.Enter();
     this->vibratorsDirty = true;
-    this->lowFreqVibrator = Math::n_clamp(f, 0.0f, 1.0f);
+    this->lowFreqVibrator = Math::clamp(f, 0.0f, 1.0f);
     critSect.Leave();
 }
 
@@ -285,7 +285,7 @@ GamePadBase::SetHighFrequencyVibrator(float f)
 {   
     critSect.Enter();
     this->vibratorsDirty = true;
-    this->highFreqVibrator = Math::n_clamp(f, 0.0f, 1.0f);;
+    this->highFreqVibrator = Math::clamp(f, 0.0f, 1.0f);;
     critSect.Leave();
 }
 

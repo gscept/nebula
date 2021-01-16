@@ -111,8 +111,9 @@ Win32FSWrapper::Write(Handle handle, const void* buf, Stream::Size numBytes)
     n_assert(0 != handle);
     n_assert(buf != 0);
     n_assert(numBytes > 0);
+    n_assert(numBytes < INT_MAX);
     DWORD bytesWritten;
-    BOOL result = WriteFile(handle, buf, numBytes, &bytesWritten, NULL);
+    BOOL result = WriteFile(handle, buf, (DWORD)numBytes, &bytesWritten, NULL);
     if ((0 == result) || ((DWORD)numBytes != bytesWritten))
     {
         n_error("Win32FSWrapper: WriteFile() failed!");
@@ -129,8 +130,9 @@ Win32FSWrapper::Read(Handle handle, void* buf, Stream::Size numBytes)
     n_assert(0 != handle);
     n_assert(buf != 0);
     n_assert(numBytes > 0);
+    n_assert(numBytes < INT_MAX);
     DWORD bytesRead;
-    BOOL result = ReadFile(handle, buf, numBytes, &bytesRead, NULL);
+    BOOL result = ReadFile(handle, buf, (DWORD)numBytes, &bytesRead, NULL);
     if (0 == result)
     {
         n_error("Win32FSWrapper: ReadFile() failed!");
@@ -192,6 +194,7 @@ void
 Win32FSWrapper::Seek(Handle handle, Stream::Offset offset, Stream::SeekOrigin orig)
 {
     n_assert(0 != handle);
+    n_assert(offset < INT_MAX);
     DWORD moveMethod;
     switch (orig)
     {
@@ -209,7 +212,7 @@ Win32FSWrapper::Seek(Handle handle, Stream::Offset offset, Stream::SeekOrigin or
             moveMethod = FILE_BEGIN;
             break;
     }
-    SetFilePointer(handle, offset, NULL, moveMethod);
+    SetFilePointer(handle, (LONG)offset, NULL, moveMethod);
 }
 
 //------------------------------------------------------------------------------

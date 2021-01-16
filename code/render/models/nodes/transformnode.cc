@@ -78,13 +78,13 @@ TransformNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
     else if (FourCC('SMID') == fourcc)
     {
         this->minDistance = reader->ReadFloat();
-        this->maxDistance = Math::n_max(this->minDistance, this->maxDistance);
+        this->maxDistance = Math::max(this->minDistance, this->maxDistance);
         this->useLodDistances = true;
     }
     else if (FourCC('SMAD') == fourcc)
     {
         this->maxDistance = reader->ReadFloat();
-        this->minDistance = Math::n_min(this->minDistance, this->maxDistance);
+        this->minDistance = Math::min(this->minDistance, this->maxDistance);
         this->useLodDistances = true;
     }
     else

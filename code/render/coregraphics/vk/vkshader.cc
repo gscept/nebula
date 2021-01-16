@@ -271,7 +271,7 @@ VkShaderSetup(
             ResourceTableLayoutTexture tex;
             tex.slot = variable->bindingLayout.binding;
             tex.num = variable->bindingLayout.descriptorCount;
-            tex.immutableSampler = SamplerId::Invalid();
+            tex.immutableSampler = InvalidSamplerId;
             tex.visibility = AllVisibility;
             
             if (variable->HasAnnotation("Visibility"))

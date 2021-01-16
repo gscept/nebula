@@ -128,7 +128,7 @@ inline void
 polar::set(const vec3& vec)
 {
     vec3 normVec3d = normalize(vec);
-    this->theta = n_acos(normVec3d.y);
+    this->theta = Math::acos(normVec3d.y);
 
     // build a normalized 2d vector of the xz component
     vec2 normVec2d(normVec3d.x, normVec3d.z);
@@ -145,22 +145,22 @@ polar::set(const vec3& vec)
     if ((normVec2d.x >= 0.0f) && (normVec2d.y >= 0.0f))
     {
         // quadrant 1
-        this->rho = n_asin(normVec2d.x);
+        this->rho = Math::asin(normVec2d.x);
     }
     else if ((normVec2d.x < 0.0f) && (normVec2d.y >= 0.0f))
     {
         // quadrant 2 
-        this->rho = n_asin(normVec2d.y) + n_deg2rad(270.0f);
+        this->rho = Math::asin(normVec2d.y) + Math::deg2rad(270.0f);
     }
     else if ((normVec2d.x < 0.0f) && (normVec2d.y < 0.0f))
     {
         // quadrant 3
-        this->rho = n_asin(-normVec2d.x) + n_deg2rad(180.0f);
+        this->rho = Math::asin(-normVec2d.x) + Math::deg2rad(180.0f);
     }
     else
     {
         // quadrant 4
-        this->rho = n_asin(-normVec2d.y) + n_deg2rad(90.0f);
+        this->rho = Math::asin(-normVec2d.y) + Math::deg2rad(90.0f);
     }
 }
     
@@ -171,10 +171,10 @@ polar::set(const vec3& vec)
 inline vec3
 polar::get_cartesian() const
 {
-    scalar sinTheta = n_sin(this->theta);
-    scalar cosTheta = n_cos(this->theta);
-    scalar sinRho   = n_sin(this->rho);
-    scalar cosRho   = n_cos(this->rho);
+    scalar sinTheta = Math::sin(this->theta);
+    scalar cosTheta = Math::cos(this->theta);
+    scalar sinRho   = Math::sin(this->rho);
+    scalar cosRho   = Math::cos(this->rho);
     vec3 v(sinTheta * sinRho, cosTheta, sinTheta * cosRho);
     return v;
 }

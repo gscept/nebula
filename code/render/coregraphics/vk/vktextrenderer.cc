@@ -146,7 +146,7 @@ VkTextRenderer::Open()
     // get variable
 
     this->texVar = ShaderGetResourceSlot(shd, "Texture");
-    ResourceTableSetTexture(this->textTable, { this->glyphTexture, this->texVar, 0, CoreGraphics::SamplerId::Invalid(), false});
+    ResourceTableSetTexture(this->textTable, { this->glyphTexture, this->texVar, 0, CoreGraphics::InvalidSamplerId, false});
     ResourceTableCommitChanges(this->textTable);
     this->modelVar = ShaderGetConstantBinding(shd, "TextProjectionModel");
 
@@ -223,7 +223,7 @@ VkTextRenderer::DrawTextElements()
         int ascent, descent, gap;
         stbtt_GetFontVMetrics(&this->font, &ascent, &descent, &gap);
         float scale = stbtt_ScaleForPixelHeight(&this->font, fontSize);
-        float realSize = ceil((ascent - descent + gap) * scale);
+        float realSize = Math::ceil((ascent - descent + gap) * scale);
 
         // transform position
         position = vec2(position.x * screenWidth, position.y * screenHeight + (ascent + descent + gap) * scale + 1);

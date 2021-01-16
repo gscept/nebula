@@ -21,7 +21,7 @@ public:
     /// begin computing a checksum
     void Begin();
     /// continue computing checksum
-    void Compute(unsigned char* buf, unsigned int numBytes);
+    template<typename sizetype> void Compute(unsigned char* buf, sizetype numBytes);
     /// finish computing the checksum
     void End();
     /// get result
@@ -38,5 +38,7 @@ private:
     unsigned int checksum;
 };
 
+//template<> void Crc::Compute(unsigned char* buf, int numBytes);
+//template<> void Crc::Compute(unsigned char* buf, __int64 numBytes);
 } // namespace Util
 //------------------------------------------------------------------------------

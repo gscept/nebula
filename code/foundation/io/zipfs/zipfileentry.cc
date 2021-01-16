@@ -116,9 +116,9 @@ ZipFileEntry::Read(void* buf, Stream::Size numBytes) const
     n_assert(0 != this->zipFileHandle);
     n_assert(0 != buf);
     n_assert(0 != this->archiveCritSect);
-
+    n_assert(numBytes < INT_MAX);
     // read uncompressed data 
-    int readResult = unzReadCurrentFile(this->zipFileHandle, buf, numBytes);    
+    int readResult = unzReadCurrentFile(this->zipFileHandle, buf, (uint32_t)numBytes);
     if (numBytes != readResult) return false;
 
     return true;

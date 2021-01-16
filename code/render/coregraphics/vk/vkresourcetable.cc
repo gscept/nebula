@@ -97,7 +97,7 @@ ResourceTableLayoutNewPool(const CoreGraphics::ResourceTableLayoutId& id)
     };
 
     // grow, but also clamp to 65535 so as to not grow too much
-    grow = Math::n_min(grow << 2, 65535u);
+    grow = Math::min(grow << 2, 65535u);
 
     VkDescriptorPool pool;
     VkResult res = vkCreateDescriptorPool(dev, &poolInfo, nullptr, &pool);
@@ -177,7 +177,7 @@ CreateResourceTable(const ResourceTableCreateInfo& info)
 void
 DestroyResourceTable(const ResourceTableId id)
 {
-    n_assert(id != ResourceTableId::Invalid());
+    n_assert(id != InvalidResourceTableId);
     VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
     VkDescriptorPool& pool = resourceTableAllocator.Get<ResourceTable_DescriptorPool>(id.id24);
@@ -234,14 +234,14 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& te
     VkDescriptorImageInfo img;
     if (immutable[tex.slot])
     {
-        n_assert(tex.sampler == SamplerId::Invalid());
+        n_assert(tex.sampler == InvalidSamplerId);
         write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         img.sampler = VK_NULL_HANDLE;
     }
     else
     {
         write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        img.sampler = tex.sampler == SamplerId::Invalid() ? VK_NULL_HANDLE : SamplerGetVk(tex.sampler);
+        img.sampler = tex.sampler == InvalidSamplerId ? VK_NULL_HANDLE : SamplerGetVk(tex.sampler);
     }
 
     write.descriptorCount = 1;
@@ -250,7 +250,7 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& te
     write.dstSet = set;
     img.imageLayout = tex.isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    if (tex.tex == TextureId::Invalid())
+    if (tex.tex == InvalidTextureId)
         img.imageView = VK_NULL_HANDLE;
     else if (tex.isStencil)
         img.imageView = TextureGetVkStencilImageView(tex.tex);
@@ -291,14 +291,14 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView
     VkDescriptorImageInfo img;
     if (immutable[tex.slot])
     {
-        n_assert(tex.sampler == SamplerId::Invalid());
+        n_assert(tex.sampler == InvalidSamplerId);
         write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         img.sampler = VK_NULL_HANDLE;
     }
     else
     {
         write.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        img.sampler = tex.sampler == SamplerId::Invalid() ? VK_NULL_HANDLE : SamplerGetVk(tex.sampler);
+        img.sampler = tex.sampler == InvalidSamplerId ? VK_NULL_HANDLE : SamplerGetVk(tex.sampler);
     }
 
     write.descriptorCount = 1;
@@ -307,7 +307,7 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView
     write.dstSet = set;
     img.imageLayout = tex.isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    if (tex.tex == TextureViewId::Invalid())
+    if (tex.tex == InvalidTextureViewId)
         img.imageView = VK_NULL_HANDLE;
     else
         img.imageView = TextureViewGetVk(tex.tex);
@@ -348,7 +348,7 @@ ResourceTableSetInputAttachment(const ResourceTableId id, const ResourceTableInp
     VkDescriptorImageInfo img;
     img.sampler = VK_NULL_HANDLE;
     img.imageLayout = tex.isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    if (tex.tex == TextureViewId::Invalid())
+    if (tex.tex == InvalidTextureViewId)
         img.imageView = VK_NULL_HANDLE;
     else
         img.imageView = TextureViewGetVk(tex.tex);
@@ -389,7 +389,7 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& 
     VkDescriptorImageInfo img;
     img.sampler = VK_NULL_HANDLE;
     img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-    if (tex.tex == TextureId::Invalid())
+    if (tex.tex == InvalidTextureId)
         img.imageView = VK_NULL_HANDLE;
     else
         img.imageView = TextureGetVkImageView(tex.tex);
@@ -430,7 +430,7 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTextureVi
     VkDescriptorImageInfo img;
     img.sampler = VK_NULL_HANDLE;
     img.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-    if (tex.tex == TextureViewId::Invalid())
+    if (tex.tex == InvalidTextureViewId)
         img.imageView = VK_NULL_HANDLE;
     else
         img.imageView = TextureViewGetVk(tex.tex);
@@ -477,7 +477,7 @@ ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuff
     n_assert2(write.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, "Texel buffers are not implemented");
 
     VkDescriptorBufferInfo buff;
-    if (buf.buf == BufferId::Invalid())
+    if (buf.buf == InvalidBufferId)
         buff.buffer = VK_NULL_HANDLE;
     else
         buff.buffer = BufferGetVk(buf.buf);
@@ -525,7 +525,7 @@ ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& bu
     n_assert2(write.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, "Texel buffers are not implemented");
 
     VkDescriptorBufferInfo buff;
-    if (buf.buf == BufferId::Invalid())
+    if (buf.buf == InvalidBufferId)
         buff.buffer = VK_NULL_HANDLE;
     else
         buff.buffer = BufferGetVk(buf.buf);
@@ -565,7 +565,7 @@ ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& sa
     write.dstSet = set;
 
     VkDescriptorImageInfo img;
-    if (samp.samp == SamplerId::Invalid())
+    if (samp.samp == InvalidSamplerId)
         img.sampler = VK_NULL_HANDLE;
     else
         img.sampler = SamplerGetVk(samp.samp);
@@ -680,7 +680,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         VkDescriptorSetLayoutBinding binding;
         binding.binding = tex.slot;
         binding.descriptorCount = tex.num;
-        if (tex.immutableSampler == SamplerId::Invalid())
+        if (tex.immutableSampler == InvalidSamplerId)
         {
             binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
             binding.pImmutableSamplers = nullptr;
@@ -719,7 +719,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
     {
         const ResourceTableLayoutTexture& tex = info.rwTextures[i];
         n_assert(tex.num >= 0);
-        n_assert(tex.immutableSampler == SamplerId::Invalid());
+        n_assert(tex.immutableSampler == InvalidSamplerId);
         VkDescriptorSetLayoutBinding binding;
         binding.binding = tex.slot;
         binding.descriptorCount = tex.num;

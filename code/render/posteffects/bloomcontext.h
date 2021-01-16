@@ -30,7 +30,7 @@ public:
 private:
 
     /// implement an empty alloc
-    static Graphics::ContextEntityId Alloc() { return Graphics::ContextEntityId::Invalid(); }
+    static Graphics::ContextEntityId Alloc() { return Graphics::InvalidContextEntityId; }
     /// implement a dummy dealloc
     static void Dealloc(Graphics::ContextEntityId id) {};
 

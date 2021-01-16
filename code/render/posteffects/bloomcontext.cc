@@ -74,17 +74,17 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
     tinfo.windowRelative = true;
     bloomState.internalTargets[0] = CreateTexture(tinfo);
 
-    ResourceTableSetTexture(bloomState.brightPassTable, { script->GetTexture("LightBuffer"), bloomState.colorSourceSlot, 0, CoreGraphics::SamplerId::Invalid() });
-    ResourceTableSetTexture(bloomState.brightPassTable, { script->GetTexture("AverageLumBuffer"), bloomState.luminanceTextureSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
+    ResourceTableSetTexture(bloomState.brightPassTable, { script->GetTexture("LightBuffer"), bloomState.colorSourceSlot, 0, CoreGraphics::InvalidSamplerId });
+    ResourceTableSetTexture(bloomState.brightPassTable, { script->GetTexture("AverageLumBuffer"), bloomState.luminanceTextureSlot, 0, CoreGraphics::InvalidSamplerId , false });
     ResourceTableCommitChanges(bloomState.brightPassTable);
 
     // bloom buffer goes in, internal target goes out
-    ResourceTableSetTexture(bloomState.blurTable, { bloomState.blurredBloom, bloomState.inputImageXSlot, 0, CoreGraphics::SamplerId::Invalid() , false });
-    ResourceTableSetRWTexture(bloomState.blurTable, { bloomState.internalTargets[0], bloomState.blurImageXSlot, 0, CoreGraphics::SamplerId::Invalid() });
+    ResourceTableSetTexture(bloomState.blurTable, { bloomState.blurredBloom, bloomState.inputImageXSlot, 0, CoreGraphics::InvalidSamplerId , false });
+    ResourceTableSetRWTexture(bloomState.blurTable, { bloomState.internalTargets[0], bloomState.blurImageXSlot, 0, CoreGraphics::InvalidSamplerId });
 
     // internal target goes in, blurred buffer goes out
-    ResourceTableSetTexture(bloomState.blurTable, { bloomState.internalTargets[0], bloomState.inputImageYSlot, 0, CoreGraphics::SamplerId::Invalid() });
-    ResourceTableSetRWTexture(bloomState.blurTable, { bloomState.blurredBloom, bloomState.blurImageYSlot, 0, CoreGraphics::SamplerId::Invalid() });
+    ResourceTableSetTexture(bloomState.blurTable, { bloomState.internalTargets[0], bloomState.inputImageYSlot, 0, CoreGraphics::InvalidSamplerId });
+    ResourceTableSetRWTexture(bloomState.blurTable, { bloomState.blurredBloom, bloomState.blurImageYSlot, 0, CoreGraphics::InvalidSamplerId });
     ResourceTableCommitChanges(bloomState.blurTable);
 
     bloomState.blurX = ShaderGetProgram(bloomState.blurShader, ShaderFeatureFromString("Alt0"));
@@ -131,9 +131,9 @@ BloomContext::Create()
             TextureDimensions dims = TextureGetDimensions(bloomState.internalTargets[0]);
 
             // calculate execution dimensions
-            uint numGroupsX1 = Math::n_divandroundup(dims.width, TILE_WIDTH);
+            uint numGroupsX1 = Math::divandroundup(dims.width, TILE_WIDTH);
             uint numGroupsX2 = dims.width;
-            uint numGroupsY1 = Math::n_divandroundup(dims.height, TILE_WIDTH);
+            uint numGroupsY1 = Math::divandroundup(dims.height, TILE_WIDTH);
             uint numGroupsY2 = dims.height;
 
             // do 5 bloom steps

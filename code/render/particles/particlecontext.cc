@@ -198,7 +198,7 @@ ParticleContext::Create()
     state.mappedVertices.Resize(numFrames);
     for (IndexT i = 0; i < numFrames; i++)
     {
-        state.vbos[i] = CoreGraphics::BufferId::Invalid();
+        state.vbos[i] = CoreGraphics::InvalidBufferId;
         state.vboSizes[i] = 0;
         state.mappedVertices[i] = nullptr;
     }
@@ -220,11 +220,11 @@ void
 ParticleContext::Setup(const Graphics::GraphicsEntityId id)
 {
     const ContextEntityId cid = GetContextId(id);
-    n_assert_fmt(cid != ContextEntityId::Invalid(), "Entity %d is not registered in ParticleContext", id.HashCode());
+    n_assert_fmt(cid != InvalidContextEntityId, "Entity %d is not registered in ParticleContext", id.HashCode());
 
     // get model context
     const ContextEntityId mdlId = Models::ModelContext::GetContextId(id);
-    n_assert_fmt(mdlId != ContextEntityId::Invalid(), "Entity %d needs to be setup as a model before character!", id.HashCode());
+    n_assert_fmt(mdlId != InvalidContextEntityId, "Entity %d needs to be setup as a model before character!", id.HashCode());
     particleContextAllocator.Get<ModelId>(cid.id) = mdlId;
 
     // get node map
@@ -499,7 +499,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
         vboInfo.dataSize = 0;
 
         // delete old if needed
-        if (state.vbos[frame] != CoreGraphics::BufferId::Invalid())
+        if (state.vbos[frame] != CoreGraphics::InvalidBufferId)
         {
             CoreGraphics::BufferUnmap(state.vbos[frame]);
             CoreGraphics::DestroyBuffer(state.vbos[frame]);
@@ -536,8 +536,8 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
                     particle.stretchPosition.stream(buf); buf += 4;
                     particle.color.stream(buf); buf += 4;
                     particle.uvMinMax.stream(buf); buf += 4;
-                    float sinRot = Math::n_sin(particle.rotation);
-                    float cosRot = Math::n_cos(particle.rotation);
+                    float sinRot = Math::sin(particle.rotation);
+                    float cosRot = Math::cos(particle.rotation);
                     tmp.set(sinRot, cosRot, particle.size, particle.particleId);
                     tmp.stream(buf); buf += 4;
                     baseVertex++;
@@ -641,7 +641,7 @@ ParticleContext::EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, 
     if (looping && (rt.emissionStartTimeOffset > loopTime))
     {
         // a wrap-around
-        rt.emissionStartTimeOffset = Math::n_fmod((float)rt.emissionStartTimeOffset, (float)loopTime);
+        rt.emissionStartTimeOffset = Math::fmod((float)rt.emissionStartTimeOffset, (float)loopTime);
     }
 
     // if we are before the start delay, we definitely don't need to emit anything
@@ -754,8 +754,8 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, c
     // compute emission direction
     float minSpread = emissionEnvSamples[EmitterAttrs::SpreadMin];
     float maxSpread = emissionEnvSamples[EmitterAttrs::SpreadMax];
-    float theta = n_deg2rad(n_lerp(minSpread, maxSpread, n_rand()));
-    float rho = N_PI_DOUBLE * n_rand();
+    float theta = Math::deg2rad(Math::lerp(minSpread, maxSpread, Math::rand()));
+    float rho = N_PI_DOUBLE * Math::rand();
     mat4 rot = rotationaxis(xyz(emPoint.tangent), theta) * rotationaxis(xyz(emPoint.normal), rho);
     vec4 emNormal = rot * emPoint.normal;
 
@@ -764,7 +764,7 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, c
     decompose(srt.transform, dummy, qrot, dummy2);
     emNormal = rotationquat(qrot) * emNormal;
     // compute start velocity
-    float velocityVariation = 1.0f - (n_rand() * attrs.GetFloat(EmitterAttrs::VelocityRandomize));
+    float velocityVariation = 1.0f - (Math::rand() * attrs.GetFloat(EmitterAttrs::VelocityRandomize));
     float startVelocity = emissionEnvSamples[EmitterAttrs::StartVelocity] * velocityVariation;
 
     // setup particle velocity vector
@@ -772,9 +772,9 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, c
 
     // setup uvMinMax to a random texture tile
     // FIXME: what's up with the horizontal flip?
-    float texTile = n_clamp(attrs.GetFloat(EmitterAttrs::TextureTile), 1.0f, 16.0f);
+    float texTile = Math::clamp(attrs.GetFloat(EmitterAttrs::TextureTile), 1.0f, 16.0f);
     float step = 1.0f / texTile;
-    float tileIndex = floorf(n_rand() * texTile);
+    float tileIndex = floorf(Math::rand() * texTile);
     float vMin = step * tileIndex;
     float vMax = vMin + step;
     particle.uvMinMax.set(1.0f, 1.0f - vMin, 0.0f, 1.0f - vMax);
@@ -785,9 +785,9 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, c
     // setup rotation and rotationVariation
     float startRotMin = attrs.GetFloat(EmitterAttrs::StartRotationMin);
     float startRotMax = attrs.GetFloat(EmitterAttrs::StartRotationMax);
-    particle.rotation = n_clamp(n_rand(), startRotMin, startRotMax);
-    float rotVar = 1.0f - (n_rand() * attrs.GetFloat(EmitterAttrs::RotationRandomize));
-    if (attrs.GetBool(EmitterAttrs::RandomizeRotation) && (n_rand() < 0.5f))
+    particle.rotation = Math::clamp(Math::rand(), startRotMin, startRotMax);
+    float rotVar = 1.0f - (Math::rand() * attrs.GetFloat(EmitterAttrs::RotationRandomize));
+    if (attrs.GetBool(EmitterAttrs::RandomizeRotation) && (Math::rand() < 0.5f))
     {
         rotVar = -rotVar;
     }
@@ -795,7 +795,7 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, c
 
     // setup particle size and size variation
     particle.size = particleEnvSamples[EmitterAttrs::Size];
-    particle.sizeVariation = 1.0f - (n_rand() * attrs.GetFloat(EmitterAttrs::SizeRandomize));
+    particle.sizeVariation = 1.0f - (Math::rand() * attrs.GetFloat(EmitterAttrs::SizeRandomize));
 
     // setup particle age and oneDivLifetime, clamp lifetime to 1.0f if there's a risk we will divide by 0
     float lifeTime = emissionEnvSamples[EmitterAttrs::LifeTime];

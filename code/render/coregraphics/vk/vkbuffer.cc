@@ -163,8 +163,8 @@ CreateBuffer(const BufferCreateInfo& info)
 				VkMappedMemoryRange range;
 				range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 				range.pNext = nullptr;
-				range.offset = Math::n_align_down(alloc.offset, props.limits.nonCoherentAtomSize);
-				range.size = Math::n_align(alloc.size, props.limits.nonCoherentAtomSize);
+				range.offset = Math::align_down(alloc.offset, props.limits.nonCoherentAtomSize);
+				range.size = Math::align(alloc.size, props.limits.nonCoherentAtomSize);
 				range.memory = alloc.mem;
 				VkResult res = vkFlushMappedMemoryRanges(loadInfo.dev, 1, &range);
 				n_assert(res == VK_SUCCESS);
@@ -367,11 +367,11 @@ BufferFill(const BufferId id, char pattern, const CoreGraphics::SubmissionContex
 	VkBufferLoadInfo& setup = bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id.id24);
 	
 	int remainingBytes = setup.byteSize;
-	uint numChunks = Math::n_divandroundup(setup.byteSize, BufferGetUploadMaxSize());
+	uint numChunks = Math::divandroundup(setup.byteSize, BufferGetUploadMaxSize());
 	int chunkOffset = 0;
 	for (uint i = 0; i < numChunks; i++)
 	{
-		int chunkSize = Math::n_min(remainingBytes, BufferGetUploadMaxSize());
+		int chunkSize = Math::min(remainingBytes, BufferGetUploadMaxSize());
 		char* buf = n_new_array(char, chunkSize);
 		memset(buf, pattern, chunkSize);
 		vkCmdUpdateBuffer(Vulkan::CommandBufferGetVk(cmd), Vulkan::BufferGetVk(id), chunkOffset, chunkSize, buf);

@@ -149,7 +149,7 @@ SubmissionContextNewBuffer(const SubmissionContextId id, CommandBufferId& outBuf
     CommandBufferId& oldBuf = submissionContextAllocator.Get<SubmissionContext_CmdBuffer>(id.id24)[currentIndex];
 
     // append to retired buffers
-    if (oldBuf != CommandBufferId::Invalid())
+    if (oldBuf != InvalidCommandBufferId)
         submissionContextAllocator.Get<SubmissionContext_RetiredCmdBuffer>(id.id24)[currentIndex].Append(outBuf);
 
     // create new buffer and semaphore, we will delete the retired buffers upon next cycle when we come back
@@ -295,10 +295,10 @@ SubmissionContextNextCycle(const SubmissionContextId id, const std::function<voi
 
     // also destroy current buffers
     CommandBufferId& buf = submissionContextAllocator.Get<SubmissionContext_CmdBuffer>(id.id24)[currentIndex];
-    if (buf != CommandBufferId::Invalid())
+    if (buf != InvalidCommandBufferId)
     {
         DestroyCommandBuffer(buf);
-        buf = CommandBufferId::Invalid();
+        buf = InvalidCommandBufferId;
     }
 
     CleanupPendingDeletes(id, currentIndex);

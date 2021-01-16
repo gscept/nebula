@@ -152,7 +152,7 @@ Win32ConsoleHandler::GetInput()
     BOOL success = ReadConsole(this->stdinHandle, buf, bufNumChars, &numCharsRead, NULL);
     if (success && (numCharsRead > 0))
     {
-        result.Set(buf, numCharsRead);
+        result.Set(buf, (SizeT)numCharsRead);
         result.TrimRight("\n\r");
     }
     return result;

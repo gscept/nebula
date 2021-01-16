@@ -39,7 +39,8 @@ ID_24_8_TYPE(ResourceUnknownId);
 #define RESOURCE_ID_TYPE(type) struct type : public Resources::ResourceId { \
         constexpr type() {};\
         constexpr type(const Resources::ResourceId& res) : Resources::ResourceId(res) {};\
-    };
+    }; \
+    static constexpr type Invalid##type = Resources::InvalidResourceId;
 
 // use this struct to pass a loading package through to a subsystem, like skeleton, animation, etc
 struct ResourceCreateInfo

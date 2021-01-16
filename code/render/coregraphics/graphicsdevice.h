@@ -368,7 +368,7 @@ void Copy(
     const Util::Array<CoreGraphics::TextureCopy>& from,
     const CoreGraphics::TextureId toTexture,
     const Util::Array<CoreGraphics::TextureCopy>& to,
-    const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
+    const CoreGraphics::SubmissionContextId sub = CoreGraphics::InvalidSubmissionContextId
 );
 /// copy data between buffers
 void Copy(
@@ -378,7 +378,7 @@ void Copy(
     const CoreGraphics::BufferId toBuffer,
     const Util::Array<CoreGraphics::BufferCopy>& to,
     const SizeT size,
-    const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
+    const CoreGraphics::SubmissionContextId sub = CoreGraphics::InvalidSubmissionContextId
 );
 /// copy data from buffer to texture
 void Copy(
@@ -387,7 +387,7 @@ void Copy(
     const Util::Array<CoreGraphics::BufferCopy>& from,
     const CoreGraphics::TextureId toTexture,
     const Util::Array<CoreGraphics::TextureCopy>& to,
-    const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
+    const CoreGraphics::SubmissionContextId sub = CoreGraphics::InvalidSubmissionContextId
 );
 /// copy data from texture to buffer
 void Copy(
@@ -396,7 +396,7 @@ void Copy(
     const Util::Array<CoreGraphics::TextureCopy>& from,
     const CoreGraphics::BufferId toBuffer,
     const Util::Array<CoreGraphics::BufferCopy>& to,
-    const CoreGraphics::SubmissionContextId sub = CoreGraphics::SubmissionContextId::Invalid()
+    const CoreGraphics::SubmissionContextId sub = CoreGraphics::InvalidSubmissionContextId
 );
 
 /// blit between textures

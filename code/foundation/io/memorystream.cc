@@ -229,7 +229,7 @@ MemoryStream::Seek(Offset offset, SeekOrigin origin)
     }
 
     // make sure read/write position doesn't become invalid
-    this->position = Math::n_iclamp(this->position, 0, this->size);
+    this->position = Math::clamp(this->position, (Stream::Size)0, this->size);
 }
 
 //------------------------------------------------------------------------------
@@ -264,7 +264,7 @@ MemoryStream::Realloc(Size newCapacity)
     unsigned char* newBuffer = (unsigned char*) Memory::Alloc(Memory::StreamDataHeap, newCapacity);
     unsigned char* endOfNewBuffer = newBuffer + newCapacity;
     n_assert(0 != newBuffer);
-    int newSize = newCapacity < this->size ? newCapacity : this->size;
+    Size newSize = newCapacity < this->size ? newCapacity : this->size;
     if (0 != this->buffer)
     {
         n_assert((newBuffer + newSize) < endOfNewBuffer);

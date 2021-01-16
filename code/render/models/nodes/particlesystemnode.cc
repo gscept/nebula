@@ -42,7 +42,7 @@ ParticleSystemNode::ParticleSystemNode() :
 */
 ParticleSystemNode::~ParticleSystemNode()
 {
-    n_assert(this->mesh == CoreGraphics::MeshId::Invalid());
+    n_assert(this->mesh == CoreGraphics::InvalidMeshId);
 }
 
 //------------------------------------------------------------------------------
@@ -52,7 +52,7 @@ void
 ParticleSystemNode::UpdateMeshResource(const Resources::ResourceName& resName)
 {
     // discard old mesh
-    if (this->mesh != CoreGraphics::MeshId::Invalid())
+    if (this->mesh != CoreGraphics::InvalidMeshId)
         Resources::DiscardResource(this->mesh);
     
     // load new mesh
@@ -352,7 +352,7 @@ ParticleSystemNode::Instance::Update()
 void
 ParticleSystemNode::Instance::Draw(const SizeT numInstances, const IndexT baseInstance, Models::ModelNode::DrawPacket* packet)
 {
-    if (this->particleVbo == CoreGraphics::BufferId::Invalid())
+    if (this->particleVbo == CoreGraphics::InvalidBufferId)
         return;
 
     CoreGraphics::SetStreamVertexBuffer(1, this->particleVbo, this->particleVboOffset);

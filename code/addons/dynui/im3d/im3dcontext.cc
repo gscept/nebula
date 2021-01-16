@@ -399,7 +399,7 @@ Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fram
     // FIXME make these configurable
     // Enable gizmo snapping by setting the translation/rotation/scale increments to be > 0
     ad.m_snapTranslation = ctrlDown ? 0.5f : 0.0f;
-    ad.m_snapRotation = ctrlDown ? Math::n_deg2rad(30.0f) : 0.0f;
+    ad.m_snapRotation = ctrlDown ? Math::deg2rad(30.0f) : 0.0f;
     ad.m_snapScale = ctrlDown ? 0.5f : 0.0f;
 }
 
@@ -432,12 +432,12 @@ CollectByFilter(ShaderProgramId const & shader, PrimitiveTopology::Code topology
 
 			// copy over buffered vertices
 			bufferedVertices.AppendArray(vertexBuffer, vertexBufferSize);
-			const SizeT numChunks = Math::n_ceil(drawList.m_vertexCount / (float)numVertsPerChunk);
+			const SizeT numChunks = Math::ceil(drawList.m_vertexCount / (float)numVertsPerChunk);
 
 			SizeT remainingVerts = drawList.m_vertexCount;
 			for (uint32_t j = 0; j < numChunks; j++)
 			{
-				const SizeT uploadSize = Math::n_min(remainingVerts, numVertsPerChunk);
+				const SizeT uploadSize = Math::min(remainingVerts, numVertsPerChunk);
 				CoreGraphics::BufferUpload(imState.vbo, bufferedVertices.Begin() + offset, uploadSize, 0);
 				remainingVerts -= numVertsPerChunk;
 				offset += uploadSize;

@@ -18,6 +18,9 @@
 #include "math/vector.h"
 #include "math/point.h"
 
+#pragma warning(push)
+#pragma warning(disable: 4267)
+
 namespace Python
 {
 
@@ -130,3 +133,4 @@ namespace pybind11
             : array_caster<Util::Array<Type>, Type, true> { };   
     }
 }
+#pragma warning(pop)

@@ -87,19 +87,19 @@ VkShaderServer::Open()
         // fill up all slots with placeholders
         IndexT j;
         for (j = 0; j < Shared::MAX_2D_TEXTURES; j++)
-            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2D, this->texture2DTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
+            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2D, this->texture2DTextureVar, j, CoreGraphics::InvalidSamplerId, false });
 
 		for (j = 0; j < Shared::MAX_2D_ARRAY_TEXTURES; j++)
-            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2DArray, this->texture2DArrayTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
+            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2DArray, this->texture2DArrayTextureVar, j, CoreGraphics::InvalidSamplerId, false });
 
         for (j = 0; j < Shared::MAX_2D_MS_TEXTURES; j++)
-            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2D, this->texture2DMSTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
+            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2D, this->texture2DMSTextureVar, j, CoreGraphics::InvalidSamplerId, false });
 
         for (j = 0; j < Shared::MAX_3D_TEXTURES; j++)
-            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White3D, this->texture3DTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
+            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White3D, this->texture3DTextureVar, j, CoreGraphics::InvalidSamplerId, false });
 
         for (j = 0; j < Shared::MAX_CUBE_TEXTURES; j++)
-            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::WhiteCube, this->textureCubeTextureVar, j, CoreGraphics::SamplerId::Invalid(), false });
+            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::WhiteCube, this->textureCubeTextureVar, j, CoreGraphics::InvalidSamplerId, false });
 
         ResourceTableCommitChanges(this->resourceTables[i]);
     }
@@ -170,7 +170,7 @@ VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics
     ResourceTableTexture info;
     info.tex = tex;
     info.index = idx;
-    info.sampler = SamplerId::Invalid();
+    info.sampler = InvalidSamplerId;
     info.isDepth = depth;
     info.isStencil = stencil;
     info.slot = var;
@@ -213,7 +213,7 @@ VkShaderServer::ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphi
     ResourceTableTexture info;
     info.tex = tex;
     info.index = slot;
-    info.sampler = SamplerId::Invalid();
+    info.sampler = InvalidSamplerId;
     info.isDepth = depth;
     info.isStencil = stencil;
     info.slot = var;

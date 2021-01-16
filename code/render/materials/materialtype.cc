@@ -53,7 +53,7 @@ MaterialType::Setup()
 			}
 			else
 			{
-				this->texturesByBatch[*it.val].Add(tex.name, { tex.name, CoreGraphics::TextureId::Invalid(), CoreGraphics::InvalidTextureType, false, InvalidIndex });
+				this->texturesByBatch[*it.val].Add(tex.name, { tex.name, CoreGraphics::InvalidTextureId, CoreGraphics::InvalidTextureType, false, InvalidIndex });
 			}
 		}
 
@@ -107,12 +107,12 @@ MaterialType::CreateSurface()
 
 		// create resource tables
 		CoreGraphics::ResourceTableId surfaceTable = CoreGraphics::ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP);
-		if (surfaceTable != CoreGraphics::ResourceTableId::Invalid())
+		if (surfaceTable != CoreGraphics::InvalidResourceTableId)
 			CoreGraphics::ObjectSetName(surfaceTable, Util::String::Sprintf("Material '%s' batch table", this->name.AsCharPtr()).AsCharPtr());
 		this->surfaceAllocator.Get<SurfaceTable>(sur)[*batchIt.val] = surfaceTable;
 
 		CoreGraphics::ResourceTableId instanceTable = CoreGraphics::ShaderCreateResourceTable(shd, NEBULA_INSTANCE_GROUP);
-		if (instanceTable != CoreGraphics::ResourceTableId::Invalid())
+		if (instanceTable != CoreGraphics::InvalidResourceTableId)
 			CoreGraphics::ObjectSetName(instanceTable, Util::String::Sprintf("Material '%s' instance table", this->name.AsCharPtr()).AsCharPtr());
 		this->surfaceAllocator.Get<InstanceTable>(sur)[*batchIt.val] = instanceTable;
 		
@@ -129,10 +129,10 @@ MaterialType::CreateSurface()
 		{
 			IndexT slot = CoreGraphics::ShaderGetConstantBufferResourceSlot(shd, j);
 			IndexT group = CoreGraphics::ShaderGetConstantBufferResourceGroup(shd, j);
-			if (group == NEBULA_BATCH_GROUP && surfaceTable != CoreGraphics::ResourceTableId::Invalid())
+			if (group == NEBULA_BATCH_GROUP && surfaceTable != CoreGraphics::InvalidResourceTableId)
 			{
 				CoreGraphics::BufferId buf = CoreGraphics::ShaderCreateConstantBuffer(shd, j);
-				if (buf != CoreGraphics::BufferId::Invalid())
+				if (buf != CoreGraphics::InvalidBufferId)
 				{
 					CoreGraphics::ResourceTableSetConstantBuffer(surfaceTable, { buf, slot, 0, false, false, -1, 0 });
 
@@ -140,10 +140,10 @@ MaterialType::CreateSurface()
 					surfaceBuffers.Append(Util::MakeTuple(slot, buf));
 				}
 			}			
-			else if (group == NEBULA_INSTANCE_GROUP && instanceTable != CoreGraphics::ResourceTableId::Invalid())
+			else if (group == NEBULA_INSTANCE_GROUP && instanceTable != CoreGraphics::InvalidResourceTableId)
 			{
 				CoreGraphics::BufferId buf = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphics::MainThreadConstantBuffer);
-				if (buf != CoreGraphics::BufferId::Invalid())
+				if (buf != CoreGraphics::InvalidBufferId)
 				{
 					SizeT bufSize = CoreGraphics::ShaderGetConstantBufferSize(shd, j);
 					CoreGraphics::ResourceTableSetConstantBuffer(instanceTable, { buf, slot, 0, true, false, bufSize, 0 });
@@ -159,7 +159,7 @@ MaterialType::CreateSurface()
 
 		// setup textures
 		const Util::Dictionary<Util::StringAtom, MaterialTexture>& textures = this->texturesByBatch[*batchIt.val];
-		if (surfaceTable != CoreGraphics::ResourceTableId::Invalid()) 
+		if (surfaceTable != CoreGraphics::InvalidResourceTableId) 
 			for (j = 0; j < textures.Size(); j++)
 			{
 				const MaterialTexture& tex = textures.ValueAtIndex(j);
@@ -167,7 +167,7 @@ MaterialType::CreateSurface()
 				surTex.slot = tex.slot;
 				surTex.defaultValue = tex.defaultValue;
 				if (tex.slot != InvalidIndex)
-					CoreGraphics::ResourceTableSetTexture(surfaceTable, { tex.defaultValue, tex.slot, 0, CoreGraphics::SamplerId::Invalid(), false });
+					CoreGraphics::ResourceTableSetTexture(surfaceTable, { tex.defaultValue, tex.slot, 0, CoreGraphics::InvalidSamplerId, false });
 
 				if (batchIt == this->batchToIndexMap.Begin())
 					this->surfaceAllocator.Get<TextureMap>(sur).Add(tex.name, this->surfaceAllocator.Get<Textures>(sur)[*batchIt.val].Size());
@@ -176,10 +176,10 @@ MaterialType::CreateSurface()
 			}
 
 		// update tables
-		if (surfaceTable != CoreGraphics::ResourceTableId::Invalid())
+		if (surfaceTable != CoreGraphics::InvalidResourceTableId)
 			CoreGraphics::ResourceTableCommitChanges(surfaceTable);
 
-		if (instanceTable != CoreGraphics::ResourceTableId::Invalid())
+		if (instanceTable != CoreGraphics::InvalidResourceTableId)
 			CoreGraphics::ResourceTableCommitChanges(instanceTable);
 
 		const Util::Dictionary<Util::StringAtom, MaterialConstant>& constants = this->constantsByBatch[*batchIt.val];
@@ -353,7 +353,7 @@ MaterialType::SetSurfaceConstant(const SurfaceId sur, IndexT name, const Util::V
 	while (it != this->batchToIndexMap.End())
 	{
 		const SurfaceConstant& constant = this->surfaceAllocator.Get<Constants>(sur.id)[*it.val][name];
-		if (constant.buffer != CoreGraphics::BufferId::Invalid() && constant.binding != UINT_MAX)
+		if (constant.buffer != CoreGraphics::InvalidBufferId && constant.binding != UINT_MAX)
 		{
 			n_assert(!constant.instanceConstant);
 			CoreGraphics::BufferUpdate(constant.buffer, value, constant.binding);
@@ -373,7 +373,7 @@ MaterialType::SetSurfaceTexture(const SurfaceId sur, IndexT name, const CoreGrap
 	{
 		const SurfaceTexture& surTex = this->surfaceAllocator.Get<Textures>(sur.id)[*it.val][name];
 		if (surTex.slot != InvalidIndex)
-			CoreGraphics::ResourceTableSetTexture(this->surfaceAllocator.Get<SurfaceTable>(sur.id)[*it.val], { tex, surTex.slot, 0, CoreGraphics::SamplerId::Invalid(), false });
+			CoreGraphics::ResourceTableSetTexture(this->surfaceAllocator.Get<SurfaceTable>(sur.id)[*it.val], { tex, surTex.slot, 0, CoreGraphics::InvalidSamplerId, false });
 		it++;
 	}
 }
@@ -433,7 +433,7 @@ MaterialType::ApplyInstance(const SurfaceInstanceId id)
 	n_assert(this->currentBatch != CoreGraphics::BatchGroup::InvalidBatchGroup);
 	n_assert(this->currentBatchIndex != InvalidIndex);
 	const CoreGraphics::ResourceTableId table = this->surfaceAllocator.Get<InstanceTable>(id.surface)[this->currentBatchIndex];
-	if (table != CoreGraphics::ResourceTableId::Invalid())
+	if (table != CoreGraphics::InvalidResourceTableId)
 	{
 		// update global buffer, save new offsets, and apply table
 		const Util::Array<Util::Tuple<IndexT, void*, SizeT>>& buffers = this->surfaceAllocator.Get<InstanceBuffers>(id.surface)[this->currentBatchIndex];

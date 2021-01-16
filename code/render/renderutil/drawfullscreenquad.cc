@@ -13,8 +13,8 @@ using namespace Util;
 using namespace CoreGraphics;
 using namespace Resources;
 
-CoreGraphics::BufferId DrawFullScreenQuad::vertexBuffer = CoreGraphics::BufferId::Invalid();
-CoreGraphics::VertexLayoutId DrawFullScreenQuad::vertexLayout = CoreGraphics::VertexLayoutId::Invalid();
+CoreGraphics::BufferId DrawFullScreenQuad::vertexBuffer = CoreGraphics::InvalidBufferId;
+CoreGraphics::VertexLayoutId DrawFullScreenQuad::vertexLayout = CoreGraphics::InvalidVertexLayoutId;
 CoreGraphics::PrimitiveGroup DrawFullScreenQuad::primGroup;
 bool DrawFullScreenQuad::isValid = false;
 
@@ -27,7 +27,7 @@ DrawFullScreenQuad::Setup()
     n_assert(!DrawFullScreenQuad::IsValid());
     DrawFullScreenQuad::isValid = true;
 
-    if (DrawFullScreenQuad::vertexBuffer == CoreGraphics::BufferId::Invalid())
+    if (DrawFullScreenQuad::vertexBuffer == CoreGraphics::InvalidBufferId)
     {
         // setup vertex components
         Array<VertexComponent> vertexComponents;

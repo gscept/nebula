@@ -998,7 +998,7 @@ FrameScriptLoader::ParseShaderVariables(
 
         // get variable
         ShaderConstantType type = ShaderGetConstantType(shd, sem->string_value);
-        BufferId cbo = BufferId::Invalid();
+        BufferId cbo = InvalidBufferId;
         IndexT bufferOffset = InvalidIndex;
         if (type != SamplerVariableType && type != TextureVariableType && type != ImageReadWriteVariableType && type != BufferReadWriteVariableType)
         {
@@ -1043,7 +1043,7 @@ FrameScriptLoader::ParseShaderVariables(
         {
             CoreGraphics::TextureId rtid = script->GetTexture(valStr);
             textures.Append(Util::MakeTuple(bufferOffset, cbo, rtid));
-            if (rtid != CoreGraphics::TextureId::Invalid())
+            if (rtid != CoreGraphics::InvalidTextureId)
                 BufferUpdate(cbo, CoreGraphics::TextureGetBindlessHandle(rtid), bufferOffset);
             else
                 n_error("Unknown resource %s!", valStr.AsCharPtr());
@@ -1055,9 +1055,9 @@ FrameScriptLoader::ParseShaderVariables(
             IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
             CoreGraphics::TextureId rtid = script->GetTexture(valStr);
 
-            textures.Append(Util::MakeTuple(slot, BufferId::Invalid(), rtid));
-            if (rtid != CoreGraphics::TextureId::Invalid())
-                ResourceTableSetTexture(table, { rtid, slot, 0, CoreGraphics::SamplerId::Invalid(), false });
+            textures.Append(Util::MakeTuple(slot, InvalidBufferId, rtid));
+            if (rtid != CoreGraphics::InvalidTextureId)
+                ResourceTableSetTexture(table, { rtid, slot, 0, CoreGraphics::InvalidSamplerId, false });
             else
                 n_error("Unknown resource %s!", valStr.AsCharPtr());
             break;
@@ -1067,9 +1067,9 @@ FrameScriptLoader::ParseShaderVariables(
             IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
             CoreGraphics::TextureId rtid = script->GetTexture(valStr);
 
-            textures.Append(Util::MakeTuple(slot, BufferId::Invalid(), rtid));
-            if (rtid != CoreGraphics::TextureId::Invalid())
-                ResourceTableSetRWTexture(table, { rtid, slot, 0, CoreGraphics::SamplerId::Invalid() });
+            textures.Append(Util::MakeTuple(slot, InvalidBufferId, rtid));
+            if (rtid != CoreGraphics::InvalidTextureId)
+                ResourceTableSetRWTexture(table, { rtid, slot, 0, CoreGraphics::InvalidSamplerId });
             else
                 n_error("Unknown resource %s!", valStr.AsCharPtr());
             break;
@@ -1078,7 +1078,7 @@ FrameScriptLoader::ParseShaderVariables(
         {
             IndexT slot = ShaderGetResourceSlot(shd, sem->string_value);
             CoreGraphics::BufferId rtid = script->GetBuffer(valStr);
-            if (rtid != CoreGraphics::BufferId::Invalid())
+            if (rtid != CoreGraphics::InvalidBufferId)
                 ResourceTableSetRWBuffer(table, { rtid, slot, 0 });
             else
                 n_error("Unknown resource %s!", valStr.AsCharPtr());

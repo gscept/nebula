@@ -175,7 +175,7 @@ ZipFileStream::Read(void* ptr, Size numBytes)
     n_assert((this->position >= 0) && (this->position <= this->size));
 
     // check if end-of-stream is near
-    Size readBytes = Math::n_min(numBytes, this->size - this->position);
+    Size readBytes = Math::min(numBytes, this->size - this->position);
     n_assert((this->position + readBytes) <= this->size);
     if (readBytes > 0)
     {
@@ -213,7 +213,7 @@ ZipFileStream::Seek(Offset offset, SeekOrigin origin)
     }
 
     // make sure read/write position doesn't become invalid
-    this->position = Math::n_iclamp(this->position, 0, this->size);
+    this->position = Math::clamp(this->position, (Stream::Size)0, this->size);
 }
 
 //------------------------------------------------------------------------------

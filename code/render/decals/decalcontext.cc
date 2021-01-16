@@ -441,7 +441,7 @@ DecalContext::CullAndClassify()
     // run chunks of 1024 threads at a time
     std::array<SizeT, 3> dimensions = Clustering::ClusterContext::GetClusterDimensions();
 
-    Compute(Math::n_ceil((dimensions[0] * dimensions[1] * dimensions[2]) / 64.0f), 1, 1, ComputeQueueType);
+    Compute(Math::ceil((dimensions[0] * dimensions[1] * dimensions[2]) / 64.0f), 1, 1, ComputeQueueType);
 
     // make sure to sync so we don't read from data that is being written...
     BarrierInsert(ComputeQueueType,

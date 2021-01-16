@@ -201,7 +201,7 @@ QuaternionTest::Run()
 
 	// exp
 	q0 = normalize(quat(1.0f, 2.0f, 3.0f, 4.0f));
-	q0 = exp(q0);
+	q0 = quatExp(q0);
 	VERIFY(quaternionequal(q0, quat(0.168702f, 0.337403f, 0.506105f, 0.775601f)));
 
 	// ln

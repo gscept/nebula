@@ -33,7 +33,7 @@ FrameSubpassFullscreenEffect::~FrameSubpassFullscreenEffect()
 void
 FrameSubpassFullscreenEffect::Setup()
 {
-    n_assert(this->tex != TextureId::Invalid());
+    n_assert(this->tex != InvalidTextureId);
     TextureDimensions dims = TextureGetDimensions(this->tex);
 
     this->program = ShaderGetProgram(this->shader, ShaderFeatureFromString(SHADER_POSTEFFECT_DEFAULT_FEATURE_MASK));
@@ -47,7 +47,7 @@ FrameSubpassFullscreenEffect::Discard()
 {
     FrameOp::Discard();
 
-    this->tex = TextureId::Invalid();
+    this->tex = InvalidTextureId;
     DestroyResourceTable(this->resourceTable);
     IndexT i;
     for (i = 0; i < this->constantBuffers.Size(); i++)
@@ -67,13 +67,13 @@ FrameSubpassFullscreenEffect::OnWindowResized()
     for (i = 0; i < this->textures.Size(); i++)
     {
         const Util::Tuple<IndexT, CoreGraphics::BufferId, CoreGraphics::TextureId>& tuple = this->textures[i];
-        if (Util::Get<1>(tuple) != CoreGraphics::BufferId::Invalid())
+        if (Util::Get<1>(tuple) != CoreGraphics::InvalidBufferId)
         {
             CoreGraphics::BufferUpdate(Util::Get<1>(tuple), CoreGraphics::TextureGetBindlessHandle(Util::Get<2>(tuple)), Util::Get<0>(tuple));
         }
         else
         {
-            ResourceTableSetTexture(this->resourceTable, { Util::Get<2>(tuple), Util::Get<0>(tuple), 0, CoreGraphics::SamplerId::Invalid(), false });
+            ResourceTableSetTexture(this->resourceTable, { Util::Get<2>(tuple), Util::Get<0>(tuple), 0, CoreGraphics::InvalidSamplerId, false });
         }
     }
 }

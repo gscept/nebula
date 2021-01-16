@@ -80,7 +80,7 @@ MemoryMeshPool::BindMesh(const MeshId id, const IndexT prim)
     for (i = 0; i < inf.streams.Size(); i++)
         CoreGraphics::SetStreamVertexBuffer(inf.streams[i].index, inf.streams[i].vertexBuffer, 0);
 
-    if (inf.indexBuffer != CoreGraphics::BufferId::Invalid())
+    if (inf.indexBuffer != CoreGraphics::InvalidBufferId)
         CoreGraphics::SetIndexBuffer(inf.indexBuffer, 0);
 }
 

@@ -46,7 +46,7 @@ FramePass::Discard()
     FrameOp::Discard();
 
     DestroyPass(this->pass);
-    this->pass = PassId::Invalid();
+    this->pass = InvalidPassId;
 
     IndexT i;
     for (i = 0; i < this->subpasses.Size(); i++) this->subpasses[i]->Discard();
@@ -242,7 +242,7 @@ FramePass::Build(
 
     // then add potential dependency for depth-stencil attachment
     CoreGraphics::TextureViewId depthStencilAttachment = CoreGraphics::PassGetDepthStencilAttachment(this->pass);
-    if (depthStencilAttachment != CoreGraphics::TextureViewId::Invalid())
+    if (depthStencilAttachment != CoreGraphics::InvalidTextureViewId)
     {
         TextureId tex = TextureViewGetTexture(depthStencilAttachment);
         IndexT idx = textures.FindIndex(tex);

@@ -87,7 +87,7 @@ Extrapolator<TYPE>::AddSample(Timing::Time packetTime, Timing::Time curTime, con
     //  this sample and the last registered sample.
     // if you use this function, TYPE must implement zero assignment 
     TYPE vel(0);
-    if (n_abs(packetTime - this->lastPacketTime) > N_TINY) //1e-4
+    if (Math::abs(packetTime - this->lastPacketTime) > N_TINY) //1e-4
     {
         float dt = (float)(1.0 / (packetTime - this->lastPacketTime));
         vel = (pos - this->lastPacketPos) * dt;             
@@ -118,7 +118,7 @@ Extrapolator<TYPE>::AddSample(Timing::Time packetTime, Timing::Time curTime, con
     //  I must generate the interpolation velocity based on these two samples.
     //  However, if this->aimTime is the same as this->snapTime, I'm in trouble. In that 
     //  case, use the supplied velocity.
-    if (n_abs(this->aimTime - this->snapTime) < N_TINY) 
+    if (Math::abs(this->aimTime - this->snapTime) < N_TINY) 
     {       
         this->snapVel = vel;                
     }

@@ -798,9 +798,9 @@ AttributeTable::InternalFindRowIndicesByAttrs(const Util::Array<Attribute>& attr
 
     // create a table of column indices for each attribute
     Util::FixedArray<IndexT> attrColIndices(attrs.Size());
-    IndexT attrIndex;
+
     SizeT numAttrs = attrs.Size();
-    for (attrIndex = 0; attrIndex < numAttrs; attrIndex++)
+    for (IndexT attrIndex = 0; attrIndex < numAttrs; attrIndex++)
     {
         attrColIndices[attrIndex] = this->GetColumnIndex(attrs[attrIndex].GetAttrId());
     }
@@ -812,8 +812,7 @@ AttributeTable::InternalFindRowIndicesByAttrs(const Util::Array<Attribute>& attr
         {
             // for each attribute...
             bool isEqual = true;
-            IndexT attrIndex;
-            for (attrIndex = 0; isEqual && (attrIndex < numAttrs); attrIndex++)
+            for (IndexT attrIndex = 0; isEqual && (attrIndex < numAttrs); attrIndex++)
             {
                 IndexT colIndex = attrColIndices[attrIndex];
                 const Attribute& attr = attrs[attrIndex];

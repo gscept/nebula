@@ -564,7 +564,7 @@ ArrayStack<TYPE, STACK_SIZE>::Move(IndexT fromIndex, IndexT toIndex)
     else
     {
         // this is a forward move
-        int i;  // NOTE: this must remain signed for the following loop to work!!!
+        IndexT i;  // NOTE: this must remain signed for the following loop to work!!!
         for (i = num - 1; i >= 0; --i)
         {
             this->elements[toIndex + i] = this->elements[fromIndex + i];

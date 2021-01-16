@@ -28,9 +28,9 @@ class Stream : public Core::RefCounted
     __DeclareClass(Stream);
 public:
     /// typedefs
-    typedef int Position;       // DON'T DEFINE AS UNSIGNED!
-    typedef int Offset;         // DON'T DEFINE AS UNSIGNED!
-    typedef int Size;           // DON'T DEFINE AS UNSIGNED!
+    typedef int64_t Position;       // DON'T DEFINE AS UNSIGNED!
+    typedef int64_t Offset;         // DON'T DEFINE AS UNSIGNED!
+    typedef int64_t Size;           // DON'T DEFINE AS UNSIGNED!
 
     /// access modes
     enum AccessMode

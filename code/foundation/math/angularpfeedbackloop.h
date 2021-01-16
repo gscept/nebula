@@ -169,7 +169,7 @@ AngularPFeedbackLoop::Update(Timing::Time curTime)
     {
         // get angular distance error
         float error = n_angulardistance(this->state, this->goal);
-        if (n_abs(error) > N_TINY)
+        if (Math::abs(error) > N_TINY)
         {
             this->state = n_modangle(this->state - (error * this->gain * this->stepSize));
             this->time += this->stepSize;

@@ -83,7 +83,7 @@ RangeAllocator::Alloc(SizeT numElements, SizeT alignment, IndexT& outIndex)
             break;
 
     next:
-        currentOffset = Math::n_align(range.start + range.length, alignment);
+        currentOffset = Math::align(range.start + range.length, alignment);
     }
 
     // if we can't fit the range, return invalid index and false

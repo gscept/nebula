@@ -28,9 +28,9 @@ Nvx2StreamReader::Nvx2StreamReader() :
     access(CoreGraphics::GpuBufferTypes::AccessNone),
     rawMode(false),
     mapPtr(0),
-	ibo(BufferId::Invalid()),
-	vbo(BufferId::Invalid()),
-	layout(VertexLayoutId::Invalid()),
+	ibo(InvalidBufferId),
+	vbo(InvalidBufferId),
+	layout(InvalidVertexLayoutId),
 	copySourceFlag(false),
     groupDataPtr(nullptr),
     vertexDataPtr(nullptr),
@@ -109,8 +109,8 @@ Nvx2StreamReader::Close()
     this->groupDataPtr = nullptr;
     this->vertexDataPtr = nullptr;
     this->indexDataPtr = nullptr;
-    this->ibo = BufferId::Invalid();
-    this->vbo = BufferId::Invalid();
+    this->ibo = InvalidBufferId;
+    this->vbo = InvalidBufferId;
     this->primGroups.Clear();
     this->vertexComponents.Clear();
     StreamReader::Close();
@@ -277,7 +277,7 @@ Nvx2StreamReader::UpdateGroupBoundingBoxes()
 void
 Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 {
-    n_assert(this->vbo == BufferId::Invalid());
+    n_assert(this->vbo == InvalidBufferId);
     n_assert(!this->rawMode);
     n_assert(0 != this->vertexDataPtr);
     n_assert(this->vertexDataSize > 0);
@@ -302,7 +302,7 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 void
 Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
 {
-    n_assert(this->ibo == BufferId::Invalid());
+    n_assert(this->ibo == InvalidBufferId);
     n_assert(!this->rawMode);
     n_assert(0 != this->indexDataPtr);
     n_assert(this->indexDataSize > 0);

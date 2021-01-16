@@ -322,7 +322,7 @@ GetMemoryProperties()
 VkCommandBuffer 
 GetMainBuffer(const CoreGraphics::QueueType queue)
 {
-    n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+    n_assert(state.drawThreadCommands == CoreGraphics::InvalidCommandBufferId);
 
     switch (queue)
     {
@@ -452,7 +452,7 @@ InsertBarrier(const VkBarrierInfo& barrier, const CoreGraphics::QueueType queue)
     }
     else
     {
-        n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+        n_assert(state.drawThreadCommands == CoreGraphics::InvalidCommandBufferId);
         VkCommandBuffer buf = GetMainBuffer(queue);
         vkCmdPipelineBarrier(buf,
             barrier.srcFlags,
@@ -471,7 +471,7 @@ void
 Copy(const VkImage from, Math::rectangle<SizeT> fromRegion, const VkImage to, Math::rectangle<SizeT> toRegion)
 {
     n_assert(!state.inBeginPass);
-    n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+    n_assert(state.drawThreadCommands == CoreGraphics::InvalidCommandBufferId);
     VkImageCopy region;
     region.dstOffset = { fromRegion.left, fromRegion.top, 0 };
     region.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
@@ -488,7 +488,7 @@ void
 Blit(const VkImage from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, const VkImage to, Math::rectangle<SizeT> toRegion, IndexT toMip)
 {
     n_assert(!state.inBeginPass);
-    n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+    n_assert(state.drawThreadCommands == CoreGraphics::InvalidCommandBufferId);
     VkImageBlit blit;
     blit.srcOffsets[0] = { fromRegion.left, fromRegion.top, 0 };
     blit.srcOffsets[1] = { fromRegion.right, fromRegion.bottom, 1 };
@@ -506,7 +506,7 @@ void
 BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, bool propagate)
 {
     // if we are setting descriptors before we have a pipeline, add them for later submission
-    if (state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] == CoreGraphics::ShaderProgramId::Invalid())
+    if (state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] == CoreGraphics::InvalidShaderProgramId)
     {
         for (uint32_t i = 0; i < setCount; i++)
         {
@@ -523,10 +523,10 @@ BindDescriptorsGraphics(const VkDescriptorSet* descriptors, uint32_t baseSet, ui
     else
     {
         // if batching, draws goes to thread
-        n_assert(state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != CoreGraphics::ShaderProgramId::Invalid());
+        n_assert(state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != CoreGraphics::InvalidShaderProgramId);
         if (state.drawThread)
         {
-            n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid());
+            n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId);
             VkCommandBufferThread::VkDescriptorsCommand cmd;
             cmd.baseSet = baseSet;
             cmd.numSets = setCount;
@@ -552,7 +552,7 @@ void
 BindDescriptorsCompute(const VkDescriptorSet* descriptors, uint32_t baseSet, uint32_t setCount, const uint32_t* offsets, uint32_t offsetCount, const CoreGraphics::QueueType queue)
 {
     n_assert(state.inBeginFrame);
-    n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+    n_assert(state.drawThreadCommands == CoreGraphics::InvalidCommandBufferId);
     vkCmdBindDescriptorSets(GetMainBuffer(queue), VK_PIPELINE_BIND_POINT_COMPUTE, state.currentComputePipelineLayout, baseSet, setCount, descriptors, offsetCount, offsets);
 }
 
@@ -564,7 +564,7 @@ UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layou
 {
     if (state.drawThread)
     {
-        n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid());     
+        n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId);     
         VkCommandBufferThread::VkPushConstantsCommand cmd;
         cmd.layout = layout;
         cmd.offset = offset;
@@ -663,7 +663,7 @@ CreateAndBindGraphicsPipeline()
 
     if (state.drawThread)
     { 
-        n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+        n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
 
         // send pipeline bind command, this is the first step in our procedure, so we use this as a trigger to switch threads
         VkCommandBufferThread::VkGfxPipelineBindCommand pipeCommand;
@@ -757,11 +757,11 @@ SetVkViewports(VkViewport* viewports, SizeT num)
     cmd.first = 0;
     cmd.num = num;
     cmd.vps = viewports;
-    if (state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != CoreGraphics::ShaderProgramId::Invalid())
+    if (state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != CoreGraphics::InvalidShaderProgramId)
     {
         if (state.drawThread)
         {
-            if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+            if (state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
             {
 
                 state.drawThread->Push(cmd);
@@ -786,11 +786,11 @@ SetVkScissorRects(VkRect2D* scissors, SizeT num)
     cmd.num = num;
     cmd.scs = scissors;
 
-    if (state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != CoreGraphics::ShaderProgramId::Invalid())
+    if (state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != CoreGraphics::InvalidShaderProgramId)
     {
         if (state.drawThread)
         {
-            if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+            if (state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
             {
                 state.drawThread->Push(cmd);
             }
@@ -1074,7 +1074,7 @@ __Timestamp(CoreGraphics::CommandBufferId buf, CoreGraphics::QueueType queue, co
     state.queries[state.queriesRingOffset + state.numUsedQueries++] = query;
 
     // write time stamp
-    n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+    n_assert(state.drawThreadCommands == CoreGraphics::InvalidCommandBufferId);
     vkCmdWriteTimestamp(CommandBufferGetVk(buf), (VkPipelineStageFlagBits)flags, state.queryPoolsByType[type], idx);
 }
 #endif
@@ -1543,12 +1543,12 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
     // setup main submission context (Graphics)
     state.gfxSubmission = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, false });
-    state.gfxCmdBuffer = CommandBufferId::Invalid();
+    state.gfxCmdBuffer = InvalidCommandBufferId;
 
     // setup compute submission context
     cmdCreateInfo.pool = state.submissionComputeCmdPool;
     state.computeSubmission = CreateSubmissionContext({ cmdCreateInfo, info.numBufferedFrames, false });
-    state.computeCmdBuffer = CommandBufferId::Invalid();
+    state.computeCmdBuffer = InvalidCommandBufferId;
 
     CommandBufferBeginInfo beginInfo{ true, false, false };
 
@@ -1629,7 +1629,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     state.currentPipelineInfo.pInputAssemblyState = nullptr;
 	state.currentPipelineBits = PipelineBuildBits::NoInfoSet;
 	state.currentShaderPrograms.Resize(NumQueueTypes); // resize to fit all queues, even if only compute and graphics can use shaders...
-	state.currentShaderPrograms.Fill(CoreGraphics::ShaderProgramId::Invalid());
+	state.currentShaderPrograms.Fill(CoreGraphics::InvalidShaderProgramId);
 
     // construct queues
     VkQueryPoolCreateInfo queryInfos[CoreGraphics::NumQueryTypes];
@@ -1816,16 +1816,16 @@ DestroyGraphicsDevice()
             DestroyBuffer(state.globalGraphicsConstantBuffer[i]);
             DestroyBuffer(state.globalGraphicsConstantStagingBuffer[i]);
         }
-        state.globalGraphicsConstantBuffer[i] = BufferId::Invalid();
-        state.globalGraphicsConstantStagingBuffer[i] = BufferId::Invalid();
+        state.globalGraphicsConstantBuffer[i] = InvalidBufferId;
+        state.globalGraphicsConstantStagingBuffer[i] = InvalidBufferId;
 
         if (state.globalComputeConstantBufferMaxValue[i] > 0)
         {
             DestroyBuffer(state.globalComputeConstantBuffer[i]);
             DestroyBuffer(state.globalComputeConstantStagingBuffer[i]);
         }
-        state.globalComputeConstantBuffer[i] = BufferId::Invalid();
-        state.globalComputeConstantStagingBuffer[i] = BufferId::Invalid();
+        state.globalComputeConstantBuffer[i] = InvalidBufferId;
+        state.globalComputeConstantStagingBuffer[i] = InvalidBufferId;
     }
     state.database.Discard();
 
@@ -2083,11 +2083,11 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
             range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
             range.pNext = nullptr;
             range.offset = cboStartAddress[i];
-            range.size = Math::n_align(size, state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
+            range.size = Math::align(size, state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
             range.memory = BufferGetVkMemory(stagingCbo[i]);
             VkResult res = vkFlushMappedMemoryRanges(dev, 1, &range);
             n_assert(res == VK_SUCCESS);
-            cboEndAddress[i] = Math::n_align(cboEndAddress[i], state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
+            cboEndAddress[i] = Math::align(cboEndAddress[i], state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
 
             VkBufferCopy copy;
             copy.srcOffset = copy.dstOffset = cboStartAddress[i];
@@ -2157,7 +2157,7 @@ BeginPass(const CoreGraphics::PassId pass, PassRecordMode mode)
     n_assert(state.inBeginFrame);
     n_assert(!state.inBeginPass);
     n_assert(!state.inBeginBatch);
-    n_assert(state.pass == PassId::Invalid());
+    n_assert(state.pass == InvalidPassId);
     state.inBeginPass = true;
     state.pass = pass;
 
@@ -2223,10 +2223,10 @@ BeginSubpassCommands(CoreGraphics::CommandBufferId buf)
     IndexT i;
     for (i = 0; i < state.MaxVertexStreams; i++)
     {
-        state.vboStreams[i] = CoreGraphics::BufferId::Invalid();
+        state.vboStreams[i] = CoreGraphics::InvalidBufferId;
         state.vboStreamOffsets[i] = -1;
     }
-    state.ibo = CoreGraphics::BufferId::Invalid();
+    state.ibo = CoreGraphics::InvalidBufferId;
     state.iboOffset = -1;
 
     VkCommandBufferThread::VkCommandBufferBeginCommand cmd;
@@ -2245,7 +2245,7 @@ SetToNextSubpass(PassRecordMode mode)
     n_assert(state.inBeginFrame);
     n_assert(state.inBeginPass);
     n_assert(!state.inBeginBatch);
-    n_assert(state.pass != PassId::Invalid());
+    n_assert(state.pass != InvalidPassId);
     SetFramebufferLayoutInfo(PassGetVkFramebufferInfo(state.pass));
     state.database.SetSubpass(state.currentPipelineInfo.subpass);
     state.passInfo.subpass = state.currentPipelineInfo.subpass;
@@ -2285,7 +2285,7 @@ BeginBatch(Frame::FrameBatchType::Code batchType)
 {
     //n_assert(state.inBeginPass);
     n_assert(!state.inBeginBatch);
-    //n_assert(state.pass != PassId::Invalid());
+    //n_assert(state.pass != InvalidPassId);
 
     state.inBeginBatch = true;
 }
@@ -2309,7 +2309,7 @@ SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::BufferId& buffer, 
     {
         if (state.drawThread)
         {
-            n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid());
+            n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId);
             VkCommandBufferThread::VkVertexBufferCommand cmd;
             cmd.buffer = BufferGetVk(buffer);
             cmd.index = streamIndex;
@@ -2333,7 +2333,7 @@ SetStreamVertexBuffer(IndexT streamIndex, const CoreGraphics::BufferId& buffer, 
 void 
 SetVertexLayout(const CoreGraphics::VertexLayoutId& vl)
 {
-    n_assert(state.currentShaderPrograms[GraphicsQueueType] != CoreGraphics::ShaderProgramId::Invalid());
+    n_assert(state.currentShaderPrograms[GraphicsQueueType] != CoreGraphics::InvalidShaderProgramId);
 	if (state.currentVertexLayout != vl || state.currentVertexLayoutShader != state.currentShaderPrograms[GraphicsQueueType])
 	{
 		VkPipelineVertexInputStateCreateInfo* info = CoreGraphics::layoutPool->GetDerivativeLayout(vl, state.currentShaderPrograms[GraphicsQueueType]);
@@ -2355,7 +2355,7 @@ SetIndexBuffer(const CoreGraphics::BufferId& buffer, IndexT offsetIndex)
     {
         if (state.drawThread)
         {
-            n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid());
+            n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId);
             VkCommandBufferThread::VkIndexBufferCommand cmd;
             cmd.buffer = BufferGetVk(buffer);
             cmd.indexType = vkIdxType;
@@ -2420,7 +2420,7 @@ GetPrimitiveGroup()
 void
 SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::QueueType queue)
 {
-    n_assert(pro != CoreGraphics::ShaderProgramId::Invalid());
+    n_assert(pro != CoreGraphics::InvalidShaderProgramId);
 
     const VkShaderProgramRuntimeInfo& info = CoreGraphics::shaderPool->shaderAlloc.Get<VkShaderPool::Shader_ProgramAllocator>(pro.shaderId).Get<ShaderProgram_RuntimeInfo>(pro.programId);
     state.currentStencilFrontRef = info.stencilFrontRef;
@@ -2433,7 +2433,7 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
     // if we are compute, we can set the pipeline straight away, otherwise we have to accumulate the infos
     if (info.type == ComputePipeline)
     {
-		n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+		n_assert(state.drawThreadCommands == CoreGraphics::InvalidCommandBufferId);
 
 		// bind compute pipeline
 		state.currentBindPoint = CoreGraphics::ComputePipeline;
@@ -2502,7 +2502,7 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
 void
 SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, const Util::FixedArray<uint>& offsets, const CoreGraphics::QueueType queue)
 {
-    n_assert(table != CoreGraphics::ResourceTableId::Invalid());
+    n_assert(table != CoreGraphics::InvalidResourceTableId);
     switch (pipeline)
     {
     case GraphicsPipeline:
@@ -2562,7 +2562,7 @@ SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout)
 CoreGraphics::ResourceTableId
 SetTickResourceTable(const CoreGraphics::ResourceTableId table)
 {
-	n_assert(table != CoreGraphics::ResourceTableId::Invalid());
+	n_assert(table != CoreGraphics::InvalidResourceTableId);
 	CoreGraphics::ResourceTableId ret = state.tickResourceTable;
 	state.tickResourceTable = table;
 	return ret;
@@ -2574,7 +2574,7 @@ SetTickResourceTable(const CoreGraphics::ResourceTableId table)
 CoreGraphics::ResourceTableId
 SetFrameResourceTable(const CoreGraphics::ResourceTableId table)
 {
-	n_assert(table != CoreGraphics::ResourceTableId::Invalid());
+	n_assert(table != CoreGraphics::InvalidResourceTableId);
 	CoreGraphics::ResourceTableId ret = state.frameResourceTable;
 	state.frameResourceTable = table;
 	return ret;
@@ -2606,7 +2606,7 @@ SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const 
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
 
     // no matter how we spin it
-    int alignedSize = Math::n_align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+    int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
     int ret = Threading::Interlocked::Add(sub.cboGfxEndAddress[type], alignedSize);
 
     // if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
@@ -2632,7 +2632,7 @@ SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const v
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
 
     // no matter how we spin it
-    int alignedSize = Math::n_align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+    int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
     int ret = Threading::Interlocked::Add(sub.cboComputeEndAddress[type], alignedSize);
 
     // if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
@@ -2678,7 +2678,7 @@ AllocateGraphicsConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type
 
     // no matter how we spin it
     uint ret = sub.cboGfxEndAddress[type];
-    uint newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+    uint newEnd = Math::align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
 
     // if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
     if (newEnd >= state.globalGraphicsConstantBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
@@ -2687,7 +2687,7 @@ AllocateGraphicsConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type
 
         // return the beginning of the buffer, will definitely stomp the memory!
         ret = state.globalGraphicsConstantBufferMaxValue[type] * state.currentBufferedFrameIndex;
-        newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+        newEnd = Math::align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
     }
 
     // just bump the current frame submission pointer
@@ -2716,7 +2716,7 @@ AllocateComputeConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type,
 
     // no matter how we spin it
     uint ret = sub.cboComputeEndAddress[type];
-    uint newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+    uint newEnd = Math::align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
 
     // if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
     if (newEnd >= state.globalComputeConstantBufferMaxValue[type] * (state.currentBufferedFrameIndex + 1))
@@ -2725,7 +2725,7 @@ AllocateComputeConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type,
 
         // return the beginning of the buffer, will definitely stomp the memory!
         ret = state.globalComputeConstantBufferMaxValue[type] * state.currentBufferedFrameIndex;
-        newEnd = Math::n_align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+        newEnd = Math::align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
     }
 
     // just bump the current frame submission pointer
@@ -2889,7 +2889,7 @@ InsertBarrier(const CoreGraphics::BarrierId barrier, const CoreGraphics::QueueTy
     {
         if (state.drawThread)
         {
-            n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid());         
+            n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId);         
             VkCommandBufferThread::VkBarrierCommand cmd;
             cmd.dep = info.dep;
             cmd.srcMask = info.srcFlags;
@@ -2937,7 +2937,7 @@ SignalEvent(const CoreGraphics::EventId ev, const CoreGraphics::BarrierStage sta
     {
         if (state.drawThread)
         {
-            n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid());
+            n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId);
             VkCommandBufferThread::VkSetEventCommand cmd;
             cmd.event = info.event;
             cmd.stages = VkTypes::AsVkPipelineFlags(stage);
@@ -2971,7 +2971,7 @@ WaitEvent(
     {
         if (state.drawThread)
         {
-            n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid());
+            n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId);
             VkCommandBufferThread::VkWaitForEventCommand cmd;
             cmd.event = info.event;
             cmd.numEvents = 1;
@@ -3024,7 +3024,7 @@ ResetEvent(const CoreGraphics::EventId ev, const CoreGraphics::BarrierStage stag
     {
         if (state.drawThread)
         {
-            n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid());
+            n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId);
             VkCommandBufferThread::VkResetEventCommand cmd;
             cmd.event = info.event;
             cmd.stages = VkTypes::AsVkPipelineFlags(stage);
@@ -3051,7 +3051,7 @@ Draw()
     n_assert(state.inBeginPass);
     if (state.drawThread)
     {
-        n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+        n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
         VkCommandBufferThread::VkDrawCommand cmd;
         cmd.baseIndex = state.primitiveGroup.GetBaseIndex();
         cmd.baseVertex = state.primitiveGroup.GetBaseVertex();
@@ -3084,7 +3084,7 @@ DrawInstanced(SizeT numInstances, IndexT baseInstance)
 
     if (state.drawThread)
     {
-        n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+        n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
         VkCommandBufferThread::VkDrawCommand cmd;
         cmd.baseIndex = state.primitiveGroup.GetBaseIndex();
         cmd.baseVertex = state.primitiveGroup.GetBaseVertex();
@@ -3116,7 +3116,7 @@ DrawIndirect(const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT dra
     n_assert(state.inBeginPass);
     if (state.drawThread)
     {
-        n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+        n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
         VkCommandBufferThread::VkIndirectDrawCommand cmd;
         cmd.buffer = BufferGetVk(buffer);
         cmd.offset = bufferOffset;
@@ -3142,7 +3142,7 @@ DrawIndirectIndexed(const CoreGraphics::BufferId buffer, IndexT bufferOffset, Si
     n_assert(state.inBeginPass);
     if (state.drawThread)
     {
-        n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+        n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
         VkCommandBufferThread::VkIndirectIndexedDrawCommand cmd;
         cmd.buffer = BufferGetVk(buffer);
         cmd.offset = bufferOffset;
@@ -3182,13 +3182,13 @@ EndSubpassCommands()
     n_assert(state.drawThread);
 
     // push command to stop recording
-    n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+    n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
     VkCommandBufferThread::VkCommandBufferEndCommand cmd;
     state.drawThread->Push(cmd);
 
     // queue up the command buffer for clear next frame
     CoreGraphics::SubmissionContextClearCommandBuffer(state.gfxSubmission, state.drawThreadCommands);
-    state.drawThreadCommands = CoreGraphics::CommandBufferId::Invalid();
+    state.drawThreadCommands = CoreGraphics::InvalidCommandBufferId;
 }
 
 //------------------------------------------------------------------------------
@@ -3208,9 +3208,9 @@ void
 EndBatch()
 {
     n_assert(state.inBeginBatch);
-    //n_assert(state.pass != PassId::Invalid());
+    //n_assert(state.pass != InvalidPassId);
 
-	state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] = CoreGraphics::ShaderProgramId::Invalid();
+	state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] = CoreGraphics::InvalidShaderProgramId;
     state.inBeginBatch = false;
 }
 
@@ -3221,15 +3221,15 @@ void
 EndPass(PassRecordMode mode)
 {
     n_assert(state.inBeginPass);
-    n_assert(state.pass != PassId::Invalid());
+    n_assert(state.pass != InvalidPassId);
 
-    state.pass = PassId::Invalid();
+    state.pass = InvalidPassId;
     state.inBeginPass = false;
 
     //this->currentPipelineBits = 0;
     for (IndexT i = 0; i < NEBULA_NUM_GROUPS; i++)
         state.propagateDescriptorSets[i].baseSet = -1;
-	state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] = CoreGraphics::ShaderProgramId::Invalid();
+	state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] = CoreGraphics::InvalidShaderProgramId;
 
     // end render pass
     switch (mode)
@@ -3453,7 +3453,7 @@ EndFrame(IndexT frameIndex)
 
     // reset state
     state.inputInfo.topology = VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
-	state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] = CoreGraphics::ShaderProgramId::Invalid();
+	state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] = CoreGraphics::InvalidShaderProgramId;
     state.currentPipelineInfo.pVertexInputState = nullptr;
     state.currentPipelineInfo.pInputAssemblyState = nullptr;
 }
@@ -3570,7 +3570,7 @@ Timestamp(CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage stage,
     // write time stamp
     if (state.drawThread)
     {
-        n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid());
+        n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId);
         VkCommandBufferThread::VkWriteTimestampCommand cmd;
         cmd.flags = flags;
         cmd.pool = state.queryPoolsByType[type];
@@ -3627,7 +3627,7 @@ BeginQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type)
     // start query
     if (state.drawThread)
     {
-        n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid());
+        n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId);
         VkCommandBufferThread::VkBeginQueryCommand cmd;
         cmd.flags = VK_QUERY_CONTROL_PRECISE_BIT;
         cmd.pool = state.queryPoolsByType[type];
@@ -3657,7 +3657,7 @@ EndQuery(CoreGraphics::QueueType queue, CoreGraphics::QueryType type)
     // start query
     if (state.drawThread)
     {
-        n_assert(state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid());
+        n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId);
         VkCommandBufferThread::VkEndQueryCommand cmd;
         cmd.pool = state.queryPoolsByType[type];
         cmd.index = index;
@@ -3682,7 +3682,7 @@ Copy(
     const Util::Array<CoreGraphics::TextureCopy>& to,
     const CoreGraphics::SubmissionContextId sub)
 {
-    n_assert(fromTexture != CoreGraphics::TextureId::Invalid() && toTexture != CoreGraphics::TextureId::Invalid());
+    n_assert(fromTexture != CoreGraphics::InvalidTextureId && toTexture != CoreGraphics::InvalidTextureId);
     n_assert(from.Size() == to.Size());
 
     bool isDepth = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(fromTexture));
@@ -3699,10 +3699,10 @@ Copy(
     }
 
     VkCommandBuffer buf;
-    if (sub == CoreGraphics::SubmissionContextId::Invalid())
+    if (sub == CoreGraphics::InvalidSubmissionContextId)
     {
         n_assert(!state.inBeginPass);
-        n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+        n_assert(state.drawThreadCommands == CoreGraphics::InvalidCommandBufferId);
         buf = GetMainBuffer(queue);
     }
     else
@@ -3736,10 +3736,10 @@ Copy(
     }
     
     VkCommandBuffer buf;
-    if (sub == CoreGraphics::SubmissionContextId::Invalid())
+    if (sub == CoreGraphics::InvalidSubmissionContextId)
     {
         n_assert(!state.inBeginPass);
-        n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+        n_assert(state.drawThreadCommands == CoreGraphics::InvalidCommandBufferId);
         buf = GetMainBuffer(queue);
     }
     else
@@ -3777,10 +3777,10 @@ Copy(
     }
     
     VkCommandBuffer buf;
-    if (sub == CoreGraphics::SubmissionContextId::Invalid())
+    if (sub == CoreGraphics::InvalidSubmissionContextId)
     {
         n_assert(!state.inBeginPass);
-        n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+        n_assert(state.drawThreadCommands == CoreGraphics::InvalidCommandBufferId);
         buf = GetMainBuffer(queue);
     }
     else
@@ -3822,10 +3822,10 @@ Copy(
     }
     
     VkCommandBuffer buf;
-    if (sub == CoreGraphics::SubmissionContextId::Invalid())
+    if (sub == CoreGraphics::InvalidSubmissionContextId)
     {
         n_assert(!state.inBeginPass);
-        n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+        n_assert(state.drawThreadCommands == CoreGraphics::InvalidCommandBufferId);
         buf = GetMainBuffer(queue);
     }
     else
@@ -3845,9 +3845,9 @@ Copy(
 void 
 Blit(const CoreGraphics::TextureId from, const Math::rectangle<SizeT>& fromRegion, IndexT fromMip, IndexT fromLayer, const CoreGraphics::TextureId to, const Math::rectangle<SizeT>& toRegion, IndexT toMip, IndexT toLayer)
 {
-    n_assert(from != CoreGraphics::TextureId::Invalid() && to != CoreGraphics::TextureId::Invalid());
+    n_assert(from != CoreGraphics::InvalidTextureId && to != CoreGraphics::InvalidTextureId);
     n_assert(!state.inBeginPass);
-    n_assert(state.drawThreadCommands == CoreGraphics::CommandBufferId::Invalid());
+    n_assert(state.drawThreadCommands == CoreGraphics::InvalidCommandBufferId);
 
     bool isDepth = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(from));
     VkImageAspectFlags aspect = isDepth ? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
@@ -3895,10 +3895,10 @@ SetViewport(const Math::rectangle<int>& rect, int index)
     vp.maxDepth = 1.0f;
 
     // only apply to batch or command buffer if we have a program bound
-    n_assert(state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != CoreGraphics::ShaderProgramId::Invalid());
+    n_assert(state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != CoreGraphics::InvalidShaderProgramId);
     if (state.drawThread)
     {
-        if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+        if (state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
         {
             VkCommandBufferThread::VkViewportCommand cmd;
             cmd.index = index;
@@ -3924,10 +3924,10 @@ SetScissorRect(const Math::rectangle<int>& rect, int index)
     sc.extent.height = rect.height();
     sc.offset.x = rect.left;
     sc.offset.y = rect.top;
-    n_assert(state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != CoreGraphics::ShaderProgramId::Invalid());
+    n_assert(state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != CoreGraphics::InvalidShaderProgramId);
     if (state.drawThread)
     {
-        if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+        if (state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
         {
             VkCommandBufferThread::VkScissorRectCommand cmd;
             cmd.index = index;
@@ -3951,7 +3951,7 @@ SetStencilRef(const uint frontRef, const uint backRef)
     state.currentStencilBackRef = backRef;
     if (state.drawThread)
     {
-        if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+        if (state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
         {
             VkCommandBufferThread::VkStencilRefCommand cmd;
             cmd.frontRef = frontRef;
@@ -3975,7 +3975,7 @@ SetStencilReadMask(const uint readMask)
     state.currentStencilReadMask = readMask;
     if (state.drawThread)
     {
-        if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+        if (state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
         {
             VkCommandBufferThread::VkStencilReadMaskCommand cmd;
             cmd.mask = readMask;
@@ -3997,7 +3997,7 @@ SetStencilWriteMask(const uint writeMask)
     state.currentStencilWriteMask = writeMask;
     if (state.drawThread)
     {
-        if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+        if (state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
         {
             VkCommandBufferThread::VkStencilWriteMaskCommand cmd;
             cmd.mask = writeMask;
@@ -4018,7 +4018,7 @@ UpdateBuffer(const CoreGraphics::BufferId buffer, uint offset, uint size, const 
 {
 	if (state.drawThread)
     {
-        if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+        if (state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
         {
             VkCommandBufferThread::VkUpdateBufferCommand cmd;
 			cmd.buf = BufferGetVk(buffer);
@@ -4050,7 +4050,7 @@ const CoreGraphics::TextureId
 GetTexture(const Util::StringAtom& name)
 {
     IndexT i = state.textures.FindIndex(name);
-    if (i == InvalidIndex)      return CoreGraphics::TextureId::Invalid();
+    if (i == InvalidIndex)      return CoreGraphics::InvalidTextureId;
     else                        return state.textures[name];
 }
 
@@ -4280,7 +4280,7 @@ CommandBufferBeginMarker(const CoreGraphics::QueueType queue, const Math::vec4& 
     // if batching, draws goes to thread
     if (state.drawThread)
     {
-        if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+        if (state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
         {
             VkCommandBufferThread::VkBeginMarkerCommand cmd;
             cmd.text = name;
@@ -4336,7 +4336,7 @@ CommandBufferEndMarker(const CoreGraphics::QueueType queue)
     // if batching, draws goes to thread
     if (state.drawThread)
     {
-        if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+        if (state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
         {
             VkCommandBufferThread::VkEndMarkerCommand cmd;
             state.drawThread->Push(cmd);
@@ -4358,7 +4358,7 @@ CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::vec4&
     // if batching, draws goes to thread
     if (state.drawThread)
     {
-        if (state.drawThreadCommands != CoreGraphics::CommandBufferId::Invalid())
+        if (state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
         {
             VkCommandBufferThread::VkInsertMarkerCommand cmd;
             cmd.text = name;

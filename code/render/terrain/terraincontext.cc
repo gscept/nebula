@@ -37,10 +37,10 @@ Jobs::JobSyncId TerrainContext::jobHostSync;
 const uint IndirectionTextureSize = 2048;
 const uint SubTextureWorldSize = 64;
 const uint SubTextureMaxTiles = 256;
-const uint IndirectionNumMips = Math::n_log2(SubTextureMaxTiles) + 1;
+const uint IndirectionNumMips = Math::log2(SubTextureMaxTiles) + 1;
 
 const uint LowresFallbackSize = 4096;
-const uint LowresFallbackMips = Math::n_log2(LowresFallbackSize) + 1;
+const uint LowresFallbackMips = Math::log2(LowresFallbackSize) + 1;
 
 const uint PhysicalTextureTileSize = 256;
 const uint PhysicalTextureTileHalfPadding = 4;
@@ -1490,13 +1490,13 @@ TerrainContext::CreateBiome(
                 Math::rectangle<int> to;
                 to.left = 0;
                 to.top = 0;
-                to.right = Math::n_max(1, (int)arrayTexInfo.width >> j);
-                to.bottom = Math::n_max(1, (int)arrayTexInfo.height >> j);
+                to.right = Math::max(1, (int)arrayTexInfo.width >> j);
+                to.bottom = Math::max(1, (int)arrayTexInfo.height >> j);
                 Math::rectangle<int> from;
                 from.left = 0;
                 from.top = 0;
-                from.right = Math::n_max(1, (int)dims.width >> j);
-                from.bottom = Math::n_max(1, (int)dims.height >> j);
+                from.right = Math::max(1, (int)dims.width >> j);
+                from.bottom = Math::max(1, (int)dims.height >> j);
 
                 // copy data over
                 CoreGraphics::TextureCopy fromTex, toTex;
@@ -1562,13 +1562,13 @@ TerrainContext::CreateBiome(
                 Math::rectangle<int> to;
                 to.left = 0;
                 to.top = 0;
-                to.right = Math::n_max(1, (int)arrayTexInfo.width >> j);
-                to.bottom = Math::n_max(1, (int)arrayTexInfo.height >> j);
+                to.right = Math::max(1, (int)arrayTexInfo.width >> j);
+                to.bottom = Math::max(1, (int)arrayTexInfo.height >> j);
                 Math::rectangle<int> from;
                 from.left = 0;
                 from.top = 0;
-                from.right = Math::n_max(1, (int)dims.width >> j);
-                from.bottom = Math::n_max(1, (int)dims.height >> j);
+                from.right = Math::max(1, (int)dims.width >> j);
+                from.bottom = Math::max(1, (int)dims.height >> j);
 
                 // copy data over
                 CoreGraphics::TextureCopy fromTex, toTex;
@@ -1637,13 +1637,13 @@ TerrainContext::CreateBiome(
                 Math::rectangle<int> to;
                 to.left = 0;
                 to.top = 0;
-                to.right = Math::n_max(1, (int)arrayTexInfo.width >> j);
-                to.bottom = Math::n_max(1, (int)arrayTexInfo.height >> j);
+                to.right = Math::max(1, (int)arrayTexInfo.width >> j);
+                to.bottom = Math::max(1, (int)arrayTexInfo.height >> j);
                 Math::rectangle<int> from;
                 from.left = 0;
                 from.top = 0;
-                from.right = Math::n_max(1, (int)dims.width >> j);
-                from.bottom = Math::n_max(1, (int)dims.height >> j);
+                from.right = Math::max(1, (int)dims.width >> j);
+                from.bottom = Math::max(1, (int)dims.height >> j);
 
                 // copy data over
                 CoreGraphics::TextureCopy fromTex, toTex;
@@ -1727,16 +1727,16 @@ TerrainContext::CreateBiome(
     IndexT materialsSlot = ShaderGetResourceSlot(terrainState.terrainShader, "MaterialPBRArray");
     IndexT maskSlot = ShaderGetResourceSlot(terrainState.terrainShader, "MaterialMaskArray");
 
-    ResourceTableSetTexture(terrainState.resourceTable, { terrainState.biomeAlbedoArray[terrainState.biomeCounter], albedoSlot, terrainState.biomeCounter, CoreGraphics::SamplerId::Invalid(), false, false });
-    ResourceTableSetTexture(terrainState.resourceTable, { terrainState.biomeNormalArray[terrainState.biomeCounter], normalsSlot, terrainState.biomeCounter, CoreGraphics::SamplerId::Invalid(), false, false });
-    ResourceTableSetTexture(terrainState.resourceTable, { terrainState.biomeMaterialArray[terrainState.biomeCounter], materialsSlot, terrainState.biomeCounter, CoreGraphics::SamplerId::Invalid(), false, false });
-    ResourceTableSetTexture(terrainState.resourceTable, { terrainState.biomeMasks[terrainState.biomeCounter], maskSlot, terrainState.biomeCounter, CoreGraphics::SamplerId::Invalid(), false, false });
+    ResourceTableSetTexture(terrainState.resourceTable, { terrainState.biomeAlbedoArray[terrainState.biomeCounter], albedoSlot, terrainState.biomeCounter, CoreGraphics::InvalidSamplerId, false, false });
+    ResourceTableSetTexture(terrainState.resourceTable, { terrainState.biomeNormalArray[terrainState.biomeCounter], normalsSlot, terrainState.biomeCounter, CoreGraphics::InvalidSamplerId, false, false });
+    ResourceTableSetTexture(terrainState.resourceTable, { terrainState.biomeMaterialArray[terrainState.biomeCounter], materialsSlot, terrainState.biomeCounter, CoreGraphics::InvalidSamplerId, false, false });
+    ResourceTableSetTexture(terrainState.resourceTable, { terrainState.biomeMasks[terrainState.biomeCounter], maskSlot, terrainState.biomeCounter, CoreGraphics::InvalidSamplerId, false, false });
     ResourceTableCommitChanges(terrainState.resourceTable);
 
-    ResourceTableSetTexture(terrainVirtualTileState.virtualTerrainSystemResourceTable, { terrainState.biomeAlbedoArray[terrainState.biomeCounter], albedoSlot, terrainState.biomeCounter, CoreGraphics::SamplerId::Invalid(), false, false });
-    ResourceTableSetTexture(terrainVirtualTileState.virtualTerrainSystemResourceTable, { terrainState.biomeNormalArray[terrainState.biomeCounter], normalsSlot, terrainState.biomeCounter, CoreGraphics::SamplerId::Invalid(), false, false });
-    ResourceTableSetTexture(terrainVirtualTileState.virtualTerrainSystemResourceTable, { terrainState.biomeMaterialArray[terrainState.biomeCounter], materialsSlot, terrainState.biomeCounter, CoreGraphics::SamplerId::Invalid(), false, false });
-    ResourceTableSetTexture(terrainVirtualTileState.virtualTerrainSystemResourceTable, { terrainState.biomeMasks[terrainState.biomeCounter], maskSlot, terrainState.biomeCounter, CoreGraphics::SamplerId::Invalid(), false, false });
+    ResourceTableSetTexture(terrainVirtualTileState.virtualTerrainSystemResourceTable, { terrainState.biomeAlbedoArray[terrainState.biomeCounter], albedoSlot, terrainState.biomeCounter, CoreGraphics::InvalidSamplerId, false, false });
+    ResourceTableSetTexture(terrainVirtualTileState.virtualTerrainSystemResourceTable, { terrainState.biomeNormalArray[terrainState.biomeCounter], normalsSlot, terrainState.biomeCounter, CoreGraphics::InvalidSamplerId, false, false });
+    ResourceTableSetTexture(terrainVirtualTileState.virtualTerrainSystemResourceTable, { terrainState.biomeMaterialArray[terrainState.biomeCounter], materialsSlot, terrainState.biomeCounter, CoreGraphics::InvalidSamplerId, false, false });
+    ResourceTableSetTexture(terrainVirtualTileState.virtualTerrainSystemResourceTable, { terrainState.biomeMasks[terrainState.biomeCounter], maskSlot, terrainState.biomeCounter, CoreGraphics::InvalidSamplerId, false, false });
     ResourceTableCommitChanges(terrainVirtualTileState.virtualTerrainSystemResourceTable);
 
     terrainBiomeAllocator.Set<TerrainBiome_Index>(ret, terrainState.biomeCounter);
@@ -2065,7 +2065,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
     IndexT i;
 
     // run through tile page updates
-    SizeT numPagesThisFrame = Math::n_min(64, terrainVirtualTileState.pageUniforms.Size());
+    SizeT numPagesThisFrame = Math::min(64, terrainVirtualTileState.pageUniforms.Size());
     for (i = 0; i < numPagesThisFrame; i++)
     {
         PhysicalPageUpdate pageUpdate;
@@ -2082,7 +2082,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
     }
 
     // run through indirection updates and set them up
-    numPagesThisFrame = Math::n_min(64, terrainVirtualTileState.indirectionEntryUpdates.Size());
+    numPagesThisFrame = Math::min(64, terrainVirtualTileState.indirectionEntryUpdates.Size());
     for (i = 0; i < numPagesThisFrame; i++)
     {
         // setup indirection update
@@ -2125,7 +2125,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
 
             // calculate new lowest lod
             lowestLod = (int)output.newMaxMip - (int)output.oldMaxMip;
-            lowestLod = Math::n_max(0, lowestLod);
+            lowestLod = Math::max(0, lowestLod);
 
             // update subtexture
             subTex.tiles = output.newTiles;
@@ -2286,7 +2286,7 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
             ImVec2 fullSize = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y);
             drawList->PushClipRect(
                 ImVec2{ start.x, start.y },
-                ImVec2{ Math::n_max(start.x + fullSize.x, start.x + 512.0f), Math::n_min(start.y + fullSize.y, start.y + 512.0f) }, true);
+                ImVec2{ Math::max(start.x + fullSize.x, start.x + 512.0f), Math::min(start.y + fullSize.y, start.y + 512.0f) }, true);
 
             terrainVirtualTileState.indirectionOccupancy.DebugRender(drawList, start, 0.25f);
             drawList->PopClipRect();
@@ -2304,7 +2304,7 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
             ImVec2 fullSize = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y);
             drawList->PushClipRect(
                 ImVec2{ start.x, start.y },
-                ImVec2{ Math::n_max(start.x + fullSize.x, start.x + 512.0f), Math::n_min(start.y + fullSize.y, start.y + 512.0f) }, true);
+                ImVec2{ Math::max(start.x + fullSize.x, start.x + 512.0f), Math::min(start.y + fullSize.y, start.y + 512.0f) }, true);
 
             terrainVirtualTileState.physicalTextureTileOccupancy.DebugRender(drawList, start, 0.0625f);
             drawList->PopClipRect();

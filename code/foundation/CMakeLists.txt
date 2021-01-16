@@ -2,7 +2,9 @@
 # Foundation
 #-------------------------------------------------------------------------------
 
-FIND_PACKAGE(CURL)
+if(FIPS_LINUX)
+    FIND_PACKAGE(CURL)
+endif()
 nebula_begin_module(foundation)
 
     if(FIPS_LINUX)

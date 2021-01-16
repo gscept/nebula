@@ -36,7 +36,7 @@ VkTransformDevice::VkTransformDevice()
     , timeAndRandomVar(InvalidIndex)
     , nearFarPlaneVar(InvalidIndex)
     , shadowCameraBlockVar(InvalidIndex)
-    , viewConstants(CoreGraphics::BufferId::Invalid())
+    , viewConstants(CoreGraphics::InvalidBufferId)
     , viewConstantsSlot(InvalidIndex)
     , shadowConstantsSlot(InvalidIndex)
     , tableLayout(CoreGraphics::ResourcePipelineId::Invalid())
@@ -127,7 +127,7 @@ VkTransformDevice::ApplyViewSettings()
     Math::inverse(this->GetViewProjTransform()).store(block.InvViewProjection);
     this->GetInvViewTransform().position.store(block.EyePos);
     vec4(this->GetFocalLength().x, this->GetFocalLength().y, this->GetNearFarPlane().x, this->GetNearFarPlane().y).store(block.FocalLengthNearFar);
-    vec4((float)FrameSync::FrameSyncTimer::Instance()->GetTime(), Math::n_rand(0, 1), (float)FrameSync::FrameSyncTimer::Instance()->GetFrameTime(), 0).store(block.TimeAndRandom);
+    vec4((float)FrameSync::FrameSyncTimer::Instance()->GetTime(), Math::rand(0, 1), (float)FrameSync::FrameSyncTimer::Instance()->GetFrameTime(), 0).store(block.TimeAndRandom);
     uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, block);
 
     // update resource table

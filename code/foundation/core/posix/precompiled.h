@@ -25,6 +25,7 @@
 #include <pthread.h>
 #include <errno.h>
 #include <cfloat>
+#include <limits.h>
 
 // sse intrinsics
 #include <emmintrin.h>

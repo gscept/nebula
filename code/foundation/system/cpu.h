@@ -14,7 +14,7 @@ namespace System
 class Cpu
 {
 public:
-    enum CoreId
+    enum CoreId : uint32_t
     {
         Core0  =        0x1,
         Core1  =        0x2,

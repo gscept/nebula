@@ -232,16 +232,16 @@ lengthsq(const quat& q)
 /**
 */
 __forceinline quat
-undenormalize(const quat& q)
+quatUndenormalize(const quat& q)
 {
     // nothing to do on the xbox, since denormal numbers are not supported by the vmx unit,
     // it is being set to zero anyway
     quat ret;
 #if __WIN32__
-    ret.x = n_undenormalize(q.x);
-    ret.y = n_undenormalize(q.y);
-    ret.z = n_undenormalize(q.z);
-    ret.w = n_undenormalize(q.w);
+    ret.x = Math::undenormalize(q.x);
+    ret.y = Math::undenormalize(q.y);
+    ret.z = Math::undenormalize(q.z);
+    ret.w = Math::undenormalize(q.w);
 #endif
     return ret;
 }
@@ -290,12 +290,12 @@ dot(const quat& q0, const quat& q1)
 /**
 */
 __forceinline quat
-exp(const quat& q)
+quatExp(const quat& q)
 {
     vec4 f(q.vec);
     scalar theta = length3(f);
-    scalar costheta = n_cos(theta);
-    scalar sintheta = n_sin(theta);
+    scalar costheta = Math::cos(theta);
+    scalar sintheta = Math::sin(theta);
 
     f *= sintheta / theta;
     f.w = costheta;
@@ -337,8 +337,8 @@ ln(const quat& q)
 {
     quat ret;
 
-    scalar a = n_acos(q.w);
-    scalar isina = 1.0f / n_sin(a);
+    scalar a = Math::acos(q.w);
+    scalar isina = 1.0f / Math::sin(a);
 
     scalar aisina = a * isina;
     if (isina > 0)
@@ -390,10 +390,10 @@ normalize(const quat& q)
 __forceinline quat
 rotationquataxis(const vec3& axis, scalar angle)
 {
-    n_assert2(n_nearequal(length(axis), 1.0f, 0.001f), "axis needs to be normalized");
+    n_assert2(Math::nearequal(length(axis), 1.0f, 0.001f), "axis needs to be normalized");
 
-    float sinangle = n_sin(0.5f * angle);
-    float cosangle = n_cos(0.5f * angle);
+    float sinangle = Math::sin(0.5f * angle);
+    float cosangle = Math::cos(0.5f * angle);
 
     // set w component to 1
     __m128 b = _mm_and_ps(axis.vec, _mask_xyz);
@@ -410,12 +410,12 @@ rotationquatyawpitchroll(scalar yaw, scalar pitch, scalar roll)
     scalar halfYaw = 0.5f * yaw;
     scalar halfPitch = 0.5f * pitch;
     scalar halfRoll = 0.5f * roll;
-    scalar cosYaw = n_cos(halfYaw);
-    scalar sinYaw = n_sin(halfYaw);
-    scalar cosPitch = n_cos(halfPitch);
-    scalar sinPitch = n_sin(halfPitch);
-    scalar cosRoll = n_cos(halfRoll);
-    scalar sinRoll = n_sin(halfRoll);
+    scalar cosYaw = Math::cos(halfYaw);
+    scalar sinYaw = Math::sin(halfYaw);
+    scalar cosPitch = Math::cos(halfPitch);
+    scalar sinPitch = Math::sin(halfPitch);
+    scalar cosRoll = Math::cos(halfRoll);
+    scalar sinRoll = Math::sin(halfRoll);
     quat q(-(cosRoll * sinPitch * cosYaw + sinRoll * cosPitch * sinYaw),
         -(cosRoll * cosPitch * sinYaw - sinRoll * sinPitch * cosYaw),
         -(sinRoll * cosPitch * cosYaw - cosRoll * sinPitch * sinYaw),
@@ -451,12 +451,12 @@ slerp(const quat& q1, const quat& q2, scalar t)
     if (qdot < 0.95f)
     {
         //dont break acos
-        float clamped = n_clamp(qdot, -1.0f, 1.0f);
-        float angle = n_acos(clamped);
+        float clamped = Math::clamp(qdot, -1.0f, 1.0f);
+        float angle = Math::acos(clamped);
 
-        float sin_angle = n_sin(angle);
-        float sin_angle_t = n_sin(angle * t);
-        float sin_omega_t = n_sin(angle * (1.0f - t));
+        float sin_angle = Math::sin(angle);
+        float sin_angle_t = Math::sin(angle * t);
+        float sin_omega_t = Math::sin(angle * (1.0f - t));
 
         __m128 s0 = _mm_set_ps1(sin_omega_t);
         __m128 s1 = _mm_set_ps1(sin_angle_t);
@@ -504,7 +504,7 @@ to_axisangle(const quat& q, vec4& outAxis, scalar& outAngle)
 {
     outAxis = q.vec;
     outAxis.w = 0;
-    outAngle = 2.0f * n_acos(q.w);
+    outAngle = 2.0f * Math::acos(q.w);
     outAxis.w = 0.0f;
 }
 
