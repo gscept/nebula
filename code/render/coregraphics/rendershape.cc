@@ -136,7 +136,7 @@ void
 RenderShape::SetupMesh(const Math::mat4& modelTransform, const MeshId mesh, const IndexT groupIndex, const Math::vec4& color, RenderFlag depthFlag)
 {
     n_assert(!this->IsValid());
-    n_assert(mesh != MeshId::Invalid());
+    n_assert(mesh != InvalidMeshId);
 
     this->shapeType      = RenderMesh;
     this->depthFlag      = depthFlag;

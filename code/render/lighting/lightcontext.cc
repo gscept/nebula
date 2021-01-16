@@ -219,10 +219,10 @@ LightContext::Create()
 	IndexT blurYOutputSlot = ShaderGetResourceSlot(lightServerState.csmBlurShader, "BlurImageY");
 	lightServerState.csmBlurXTable = ShaderCreateResourceTable(lightServerState.csmBlurShader, NEBULA_BATCH_GROUP);
 	lightServerState.csmBlurYTable = ShaderCreateResourceTable(lightServerState.csmBlurShader, NEBULA_BATCH_GROUP);
-	ResourceTableSetTexture(lightServerState.csmBlurXTable, { lightServerState.globalLightShadowMap, blurXInputSlot, 0, CoreGraphics::SamplerId::Invalid(), false }); // ping
-	ResourceTableSetRWTexture(lightServerState.csmBlurXTable, { lightServerState.globalLightShadowMapBlurred0, blurXOutputSlot, 0, CoreGraphics::SamplerId::Invalid() }); // pong
-	ResourceTableSetTexture(lightServerState.csmBlurYTable, { lightServerState.globalLightShadowMapBlurred0, blurYInputSlot, 0, CoreGraphics::SamplerId::Invalid() }); // ping
-	ResourceTableSetRWTexture(lightServerState.csmBlurYTable, { lightServerState.globalLightShadowMapBlurred1, blurYOutputSlot, 0, CoreGraphics::SamplerId::Invalid() }); // pong
+	ResourceTableSetTexture(lightServerState.csmBlurXTable, { lightServerState.globalLightShadowMap, blurXInputSlot, 0, CoreGraphics::InvalidSamplerId, false }); // ping
+	ResourceTableSetRWTexture(lightServerState.csmBlurXTable, { lightServerState.globalLightShadowMapBlurred0, blurXOutputSlot, 0, CoreGraphics::InvalidSamplerId }); // pong
+	ResourceTableSetTexture(lightServerState.csmBlurYTable, { lightServerState.globalLightShadowMapBlurred0, blurYInputSlot, 0, CoreGraphics::InvalidSamplerId }); // ping
+	ResourceTableSetRWTexture(lightServerState.csmBlurYTable, { lightServerState.globalLightShadowMapBlurred1, blurYOutputSlot, 0, CoreGraphics::InvalidSamplerId }); // pong
 	ResourceTableCommitChanges(lightServerState.csmBlurXTable);
 	ResourceTableCommitChanges(lightServerState.csmBlurYTable);
 
@@ -838,7 +838,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 				}
 
 				// check if we should use projection
-				if (tex != TextureId::Invalid())
+				if (tex != InvalidTextureId)
 				{
 					flags |= USE_PROJECTION_TEX_BITFLAG;
 				}
@@ -859,7 +859,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 				auto angles = spotLightAllocator.Get<SpotLight_ConeAngles>(typeIds[i]);
 				auto& spotLight = clusterState.spotLights[numSpotLights];
 				Math::mat4 shadowProj;
-				if (tex != TextureId::Invalid() || castShadow[i])
+				if (tex != InvalidTextureId || castShadow[i])
 				{
 					Graphics::GraphicsEntityId observer = spotLightAllocator.Get<SpotLight_Observer>(typeIds[i]);
 					Graphics::ContextEntityId ctxId = shadowCasterSliceMap[observer];
@@ -886,7 +886,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 				}
 
 				// check if we should use projection
-				if (tex != TextureId::Invalid() && numSpotLightsProjection < 256)
+				if (tex != InvalidTextureId && numSpotLightsProjection < 256)
 				{
 					flags |= USE_PROJECTION_TEX_BITFLAG;
 					spotLight.projectionExtension = numSpotLightsProjection;
@@ -940,12 +940,12 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 	// a little ugly, but since the view can change the script, this has to adopt
 	const CoreGraphics::TextureId lightingTex = view->GetFrameScript()->GetTexture("LightBuffer");
 	clusterState.lightingTexture = lightingTex;
-	ResourceTableSetRWTexture(clusterState.resourceTables[bufferIndex], { lightingTex, clusterState.lightShadingTextureSlot, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetRWTexture(clusterState.resourceTables[bufferIndex], { lightingTex, clusterState.lightShadingTextureSlot, 0, CoreGraphics::InvalidSamplerId });
 
 #ifdef CLUSTERED_LIGHTING_DEBUG
 	const CoreGraphics::TextureId debugTex = view->GetFrameScript()->GetTexture("LightDebugBuffer");
 	clusterState.clusterDebugTexture = debugTex;
-	ResourceTableSetRWTexture(clusterState.resourceTables[bufferIndex], { clusterState.clusterDebugTexture, clusterState.lightShadingDebugTextureSlot, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetRWTexture(clusterState.resourceTables[bufferIndex], { clusterState.clusterDebugTexture, clusterState.lightShadingDebugTextureSlot, 0, CoreGraphics::InvalidSamplerId });
 #endif
 	ResourceTableCommitChanges(clusterState.resourceTables[bufferIndex]);
 
@@ -968,10 +968,10 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 	combineConsts.LowresResolution[1] = 1.0f / dims.height;
 	offset = SetComputeConstants(MainThreadConstantBuffer, combineConsts);
 	ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), combineState.combineUniforms, 0, false, false, sizeof(Combine::CombineUniforms), (SizeT)offset });
-	ResourceTableSetRWTexture(combineState.resourceTables[bufferIndex], { lightingTex, combineState.lightingTextureSlot, 0, CoreGraphics::SamplerId::Invalid() });
-	ResourceTableSetTexture(combineState.resourceTables[bufferIndex], { aoTex, combineState.aoTextureSlot, 0, CoreGraphics::SamplerId::Invalid() });
-	ResourceTableSetTexture(combineState.resourceTables[bufferIndex], { fogTex, combineState.fogTextureSlot, 0, CoreGraphics::SamplerId::Invalid() });
-	ResourceTableSetTexture(combineState.resourceTables[bufferIndex], { reflectionTex, combineState.reflectionsTextureSlot, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetRWTexture(combineState.resourceTables[bufferIndex], { lightingTex, combineState.lightingTextureSlot, 0, CoreGraphics::InvalidSamplerId });
+	ResourceTableSetTexture(combineState.resourceTables[bufferIndex], { aoTex, combineState.aoTextureSlot, 0, CoreGraphics::InvalidSamplerId });
+	ResourceTableSetTexture(combineState.resourceTables[bufferIndex], { fogTex, combineState.fogTextureSlot, 0, CoreGraphics::InvalidSamplerId });
+	ResourceTableSetTexture(combineState.resourceTables[bufferIndex], { reflectionTex, combineState.reflectionsTextureSlot, 0, CoreGraphics::InvalidSamplerId });
 	ResourceTableCommitChanges(combineState.resourceTables[bufferIndex]);
 }
 

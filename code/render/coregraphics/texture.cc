@@ -364,7 +364,7 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
     if (info.windowTexture)
     {
         n_assert2(info.samples == 1, "Texture created as window may not have any multisampling enabled");
-        n_assert2(info.alias == CoreGraphics::TextureId::Invalid(), "Texture created as window may not be alias");
+        n_assert2(info.alias == CoreGraphics::InvalidTextureId, "Texture created as window may not be alias");
         n_assert2(info.buffer == nullptr, "Texture created as window may not have any buffer data");
         
         rt.window = CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow();
@@ -387,7 +387,7 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
         rt.windowRelative = true;
         rt.bindless = info.bindless;
         rt.sparse = info.sparse;
-        rt.alias = CoreGraphics::TextureId::Invalid();
+        rt.alias = CoreGraphics::InvalidTextureId;
         rt.defaultLayout = CoreGraphics::ImageLayout::Present;
     }
     else
@@ -416,7 +416,7 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
         rt.windowRelative = info.windowRelative;
         rt.bindless = info.bindless;
         rt.sparse = info.sparse;
-        rt.window = CoreGraphics::WindowId::Invalid();
+        rt.window = CoreGraphics::InvalidWindowId;
         rt.alias = info.alias;
         rt.defaultLayout = info.defaultLayout;
 

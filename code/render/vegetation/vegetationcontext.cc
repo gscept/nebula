@@ -608,7 +608,7 @@ VegetationContext::SetupGrass(const Graphics::GraphicsEntityId id, const Vegetat
 	albedo = Resources::CreateResource(setup.albedo, "Vegetation", nullptr, nullptr, true);
 	normal = Resources::CreateResource(setup.normals, "Vegetation", nullptr, nullptr, true);
 	material = Resources::CreateResource(setup.material, "Vegetation", nullptr, nullptr, true);
-	mesh = CoreGraphics::MeshId::Invalid();
+	mesh = CoreGraphics::InvalidMeshId;
 	slopeThreshold = setup.slopeThreshold;
 	heightThreshold = setup.heightThreshold;
 	textureIndex = vegetationState.texturePool.Alloc();
@@ -624,7 +624,7 @@ VegetationContext::SetupGrass(const Graphics::GraphicsEntityId id, const Vegetat
 			mask,
 			ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "MaskTextureArray"),
 			textureIndex,
-			CoreGraphics::SamplerId::Invalid(),
+			CoreGraphics::InvalidSamplerId,
 			false, false
 		});
 
@@ -633,7 +633,7 @@ VegetationContext::SetupGrass(const Graphics::GraphicsEntityId id, const Vegetat
 			albedo,
 			ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "AlbedoTextureArray"),
 			textureIndex,
-			CoreGraphics::SamplerId::Invalid(),
+			CoreGraphics::InvalidSamplerId,
 			false, false
 		});
 
@@ -642,7 +642,7 @@ VegetationContext::SetupGrass(const Graphics::GraphicsEntityId id, const Vegetat
 			normal,
 			ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "NormalTextureArray"),
 			textureIndex,
-			CoreGraphics::SamplerId::Invalid(),
+			CoreGraphics::InvalidSamplerId,
 			false, false
 		});
 
@@ -651,7 +651,7 @@ VegetationContext::SetupGrass(const Graphics::GraphicsEntityId id, const Vegetat
 			material,
 			ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "MaterialTextureArray"),
 			textureIndex,
-			CoreGraphics::SamplerId::Invalid(),
+			CoreGraphics::InvalidSamplerId,
 			false, false
 		});
 }
@@ -758,7 +758,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
 			mask,
 			ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "MaskTextureArray"),
 			textureIndex,
-			CoreGraphics::SamplerId::Invalid(),
+			CoreGraphics::InvalidSamplerId,
 			false, false
 		});
 	ResourceTableSetTexture(vegetationState.systemResourceTable,
@@ -766,7 +766,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
 			albedo,
 			ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "AlbedoTextureArray"),
 			textureIndex,
-			CoreGraphics::SamplerId::Invalid(),
+			CoreGraphics::InvalidSamplerId,
 			false, false
 		});
 
@@ -775,7 +775,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
 			normal,
 			ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "NormalTextureArray"),
 			textureIndex,
-			CoreGraphics::SamplerId::Invalid(),
+			CoreGraphics::InvalidSamplerId,
 			false, false
 		});
 
@@ -784,7 +784,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
 			material,
 			ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "MaterialTextureArray"),
 			textureIndex,
-			CoreGraphics::SamplerId::Invalid(),
+			CoreGraphics::InvalidSamplerId,
 			false, false
 		});
 

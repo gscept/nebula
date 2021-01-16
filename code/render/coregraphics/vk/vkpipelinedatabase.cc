@@ -217,9 +217,9 @@ VkPipelineDatabase::GetCompiledPipeline()
 void
 VkPipelineDatabase::Reset()
 {
-    this->currentPass = CoreGraphics::PassId::Invalid();
+    this->currentPass = CoreGraphics::InvalidPassId;
     this->currentSubpass = -1;
-    this->currentShaderProgram = CoreGraphics::ShaderProgramId::Invalid();
+    this->currentShaderProgram = CoreGraphics::InvalidShaderProgramId;
     this->currentVertexLayout = 0;
     this->currentInputAssemblyInfo = 0;
     this->currentPipeline = VK_NULL_HANDLE;

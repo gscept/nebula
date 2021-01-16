@@ -352,7 +352,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 	fogState.fogVolumeTexture1 = fog1;
 	TextureDimensions dims = TextureGetDimensions(fog0);
 
-	ResourceTableSetRWTexture(fogState.resourceTables[bufferIndex], { fog0, fogState.lightingTextureSlot, 0, CoreGraphics::SamplerId::Invalid() });
+	ResourceTableSetRWTexture(fogState.resourceTables[bufferIndex], { fog0, fogState.lightingTextureSlot, 0, CoreGraphics::InvalidSamplerId });
 	ResourceTableCommitChanges(fogState.resourceTables[bufferIndex]);
 
 	// get per-view resource tables
@@ -362,10 +362,10 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 	ResourceTableSetConstantBuffer(viewTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), fogState.uniformsSlot, 0, false, false, sizeof(Volumefog::VolumeFogUniforms), (SizeT)offset });
 
 	// setup blur tables
-	ResourceTableSetTexture(blurState.blurXTable[bufferIndex], { fog0, blurState.blurInputXSlot, 0, CoreGraphics::SamplerId::Invalid(), false }); // ping
-	ResourceTableSetRWTexture(blurState.blurXTable[bufferIndex], { fog1, blurState.blurOutputXSlot, 0, CoreGraphics::SamplerId::Invalid() }); // pong
-	ResourceTableSetTexture(blurState.blurYTable[bufferIndex], { fog1, blurState.blurInputYSlot, 0, CoreGraphics::SamplerId::Invalid() }); // ping
-	ResourceTableSetRWTexture(blurState.blurYTable[bufferIndex], { fog0, blurState.blurOutputYSlot, 0, CoreGraphics::SamplerId::Invalid() }); // pong
+	ResourceTableSetTexture(blurState.blurXTable[bufferIndex], { fog0, blurState.blurInputXSlot, 0, CoreGraphics::InvalidSamplerId, false }); // ping
+	ResourceTableSetRWTexture(blurState.blurXTable[bufferIndex], { fog1, blurState.blurOutputXSlot, 0, CoreGraphics::InvalidSamplerId }); // pong
+	ResourceTableSetTexture(blurState.blurYTable[bufferIndex], { fog1, blurState.blurInputYSlot, 0, CoreGraphics::InvalidSamplerId }); // ping
+	ResourceTableSetRWTexture(blurState.blurYTable[bufferIndex], { fog0, blurState.blurOutputYSlot, 0, CoreGraphics::InvalidSamplerId }); // pong
 	ResourceTableCommitChanges(blurState.blurXTable[bufferIndex]);
 	ResourceTableCommitChanges(blurState.blurYTable[bufferIndex]);
 }

@@ -204,8 +204,8 @@ TonemapContext::Setup(const Ptr<Frame::FrameScript>& script)
     tonemapState.constantsSlot = ShaderGetResourceSlot(tonemapState.shader, "AverageLumBlock");
     tonemapState.program = ShaderGetProgram(tonemapState.shader, ShaderFeatureFromString("Alt0"));
     ResourceTableSetConstantBuffer(tonemapState.tonemapTable, { tonemapState.constants, tonemapState.constantsSlot, 0, false, false, -1, 0 });
-    ResourceTableSetTexture(tonemapState.tonemapTable, { tonemapState.copy, tonemapState.prevSlot, 0, SamplerId::Invalid(), false });
-    ResourceTableSetTexture(tonemapState.tonemapTable, { tonemapState.downsample2x2, tonemapState.colorSlot, 0, SamplerId::Invalid(), false });
+    ResourceTableSetTexture(tonemapState.tonemapTable, { tonemapState.copy, tonemapState.prevSlot, 0, InvalidSamplerId, false });
+    ResourceTableSetTexture(tonemapState.tonemapTable, { tonemapState.downsample2x2, tonemapState.colorSlot, 0, InvalidSamplerId, false });
     ResourceTableCommitChanges(tonemapState.tonemapTable);
 }
 } // namespace PostEffects

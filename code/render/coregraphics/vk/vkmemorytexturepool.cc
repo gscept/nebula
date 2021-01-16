@@ -160,7 +160,7 @@ VkMemoryTexturePool::Unload(const Resources::ResourceId id)
 
         textureSparseExtensionAllocator.Dealloc(loadInfo.sparseExtension);
     }
-    else if (loadInfo.alias == CoreGraphics::TextureId::Invalid() && loadInfo.mem.mem != VK_NULL_HANDLE)
+    else if (loadInfo.alias == CoreGraphics::InvalidTextureId && loadInfo.mem.mem != VK_NULL_HANDLE)
         Vulkan::DelayedFreeMemory(loadInfo.mem);
 
     // only unload a texture which isn't a window texture, since their textures come from the swap chain
@@ -624,7 +624,7 @@ VkMemoryTexturePool::ClearColor(const CoreGraphics::TextureId id, Math::vec4 col
     vksubres.baseMipLevel = subres.mip;
     vksubres.levelCount = subres.mipCount;
 
-    VkCommandBuffer buffer = sub == SubmissionContextId::Invalid() ? GetMainBuffer(GraphicsQueueType) : CommandBufferGetVk(SubmissionContextGetCmdBuffer(sub));
+    VkCommandBuffer buffer = sub == InvalidSubmissionContextId ? GetMainBuffer(GraphicsQueueType) : CommandBufferGetVk(SubmissionContextGetCmdBuffer(sub));
 
     color.storeu(clear.float32);
     vkCmdClearColorImage(
@@ -650,7 +650,7 @@ VkMemoryTexturePool::ClearDepthStencil(const CoreGraphics::TextureId id, float d
     vksubres.baseMipLevel = subres.mip;
     vksubres.levelCount = subres.mipCount;
 
-    VkCommandBuffer buffer = sub == SubmissionContextId::Invalid() ? GetMainBuffer(GraphicsQueueType) : CommandBufferGetVk(SubmissionContextGetCmdBuffer(sub));
+    VkCommandBuffer buffer = sub == InvalidSubmissionContextId ? GetMainBuffer(GraphicsQueueType) : CommandBufferGetVk(SubmissionContextGetCmdBuffer(sub));
 
     clear.depth = depth;
     clear.stencil = stencil;
@@ -1257,7 +1257,7 @@ VkMemoryTexturePool::SwapBuffers(const CoreGraphics::TextureId id)
     VkTextureRuntimeInfo& runtimeInfo = this->Get<Texture_RuntimeInfo>(id.resourceId);
     VkTextureWindowInfo& wnd = this->Get<Texture_WindowInfo>(id.resourceId);
     VkTextureSwapInfo& swap = textureSwapExtensionAllocator.Get<TextureExtension_SwapInfo>(loadInfo.swapExtension);
-    n_assert(wnd.window != CoreGraphics::WindowId::Invalid());
+    n_assert(wnd.window != CoreGraphics::InvalidWindowId);
     VkWindowSwapInfo& swapInfo = CoreGraphics::glfwWindowAllocator.Get<5>(wnd.window.id24);
 
     // get present fence and be sure it is finished before getting the next image
@@ -1343,7 +1343,7 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
 
         VkImageCreateFlags createFlags = 0;
 
-        if (loadInfo.alias != CoreGraphics::TextureId::Invalid())
+        if (loadInfo.alias != CoreGraphics::InvalidTextureId)
             createFlags |= VK_IMAGE_CREATE_ALIAS_BIT;
         if (viewType == VK_IMAGE_VIEW_TYPE_CUBE || viewType == VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
             createFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
@@ -1384,7 +1384,7 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
         else
         {
             // if we don't use aliasing, create new memory
-            if (loadInfo.alias == CoreGraphics::TextureId::Invalid())
+            if (loadInfo.alias == CoreGraphics::InvalidTextureId)
             {
                 // allocate memory backing
                 CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, loadInfo.img, CoreGraphics::MemoryPool_DeviceLocal);
@@ -1546,7 +1546,7 @@ VkMemoryTexturePool::Setup(const Resources::ResourceId id)
     else // setup as window texture
     {
         // get submission context
-        n_assert(windowInfo.window != CoreGraphics::WindowId::Invalid());
+        n_assert(windowInfo.window != CoreGraphics::InvalidWindowId);
         CoreGraphics::SubmissionContextId sub = CoreGraphics::GetSetupSubmissionContext();
         CommandBufferId cmdBuf = SubmissionContextGetCmdBuffer(sub);
 

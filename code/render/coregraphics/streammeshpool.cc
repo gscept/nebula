@@ -79,7 +79,7 @@ StreamMeshPool::Unload(const Resources::ResourceId id)
 	__LockName(meshPool->Allocator(), lock);
 	const MeshCreateInfo& msh = meshPool->Get<0>(id.resourceId);
 
-	if (msh.indexBuffer != BufferId::Invalid())
+	if (msh.indexBuffer != InvalidBufferId)
 		DestroyBuffer(msh.indexBuffer);
 
 	IndexT i;
@@ -197,7 +197,7 @@ StreamMeshPool::MeshBind(const Resources::ResourceId id)
 	for (i = 0; i < msh.streams.Size(); i++)
 		CoreGraphics::SetStreamVertexBuffer(msh.streams[i].index, msh.streams[i].vertexBuffer, 0);
 
-	if (msh.indexBuffer != BufferId::Invalid())
+	if (msh.indexBuffer != InvalidBufferId)
 		CoreGraphics::SetIndexBuffer(msh.indexBuffer, 0);
 
 	this->activeMesh = id;
@@ -209,7 +209,7 @@ StreamMeshPool::MeshBind(const Resources::ResourceId id)
 void
 StreamMeshPool::BindPrimitiveGroup(const IndexT primgroup)
 {
-	n_assert(this->activeMesh != MeshId::Invalid());
+	n_assert(this->activeMesh != InvalidMeshId);
 	__LockName(meshPool->Allocator(), lock);
 	const MeshCreateInfo& msh = meshPool->Get<0>(this->activeMesh);
 	CoreGraphics::SetPrimitiveGroup(msh.primitiveGroups[primgroup]);

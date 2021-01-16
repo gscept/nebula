@@ -64,7 +64,7 @@ FrameMipmap::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex
 void
 FrameMipmap::CompiledImpl::Discard()
 {
-    this->tex = TextureId::Invalid();
+    this->tex = InvalidTextureId;
 }
 
 } // namespace Frame2

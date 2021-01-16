@@ -83,17 +83,17 @@ void
 CharacterContext::Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& skeleton, const Resources::ResourceName& animation, const Util::StringAtom& tag)
 {
     const ContextEntityId cid = GetContextId(id);
-    n_assert_fmt(cid != ContextEntityId::Invalid(), "Entity %d is not registered in CharacterContext", id.HashCode());
+    n_assert_fmt(cid != InvalidContextEntityId, "Entity %d is not registered in CharacterContext", id.HashCode());
     characterContextAllocator.Get<Loaded>(cid.id) = NoneLoaded;
 
     // check to make sure we registered this entity for observation, then get the visibility context
     const ContextEntityId visId = Visibility::ObservableContext::GetContextId(id);
-    n_assert_fmt(visId != ContextEntityId::Invalid(), "Entity %d needs to be setup as observerable before character!", id.HashCode());
+    n_assert_fmt(visId != InvalidContextEntityId, "Entity %d needs to be setup as observerable before character!", id.HashCode());
     characterContextAllocator.Get<VisibilityContextId>(cid.id) = id;
 
     // get model context
     const ContextEntityId mdlId = Models::ModelContext::GetContextId(id);
-    n_assert_fmt(mdlId != ContextEntityId::Invalid(), "Entity %d needs to be setup as a model before character!", id.HashCode());
+    n_assert_fmt(mdlId != InvalidContextEntityId, "Entity %d needs to be setup as a model before character!", id.HashCode());
     characterContextAllocator.Get<ModelContextId>(cid.id) = id;
 
     characterContextAllocator.Get<SkeletonId>(cid.id) = Resources::CreateResource(skeleton, tag, [cid, id](Resources::ResourceId rid)

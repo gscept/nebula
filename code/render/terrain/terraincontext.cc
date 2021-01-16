@@ -1727,16 +1727,16 @@ TerrainContext::CreateBiome(
     IndexT materialsSlot = ShaderGetResourceSlot(terrainState.terrainShader, "MaterialPBRArray");
     IndexT maskSlot = ShaderGetResourceSlot(terrainState.terrainShader, "MaterialMaskArray");
 
-    ResourceTableSetTexture(terrainState.resourceTable, { terrainState.biomeAlbedoArray[terrainState.biomeCounter], albedoSlot, terrainState.biomeCounter, CoreGraphics::SamplerId::Invalid(), false, false });
-    ResourceTableSetTexture(terrainState.resourceTable, { terrainState.biomeNormalArray[terrainState.biomeCounter], normalsSlot, terrainState.biomeCounter, CoreGraphics::SamplerId::Invalid(), false, false });
-    ResourceTableSetTexture(terrainState.resourceTable, { terrainState.biomeMaterialArray[terrainState.biomeCounter], materialsSlot, terrainState.biomeCounter, CoreGraphics::SamplerId::Invalid(), false, false });
-    ResourceTableSetTexture(terrainState.resourceTable, { terrainState.biomeMasks[terrainState.biomeCounter], maskSlot, terrainState.biomeCounter, CoreGraphics::SamplerId::Invalid(), false, false });
+    ResourceTableSetTexture(terrainState.resourceTable, { terrainState.biomeAlbedoArray[terrainState.biomeCounter], albedoSlot, terrainState.biomeCounter, CoreGraphics::InvalidSamplerId, false, false });
+    ResourceTableSetTexture(terrainState.resourceTable, { terrainState.biomeNormalArray[terrainState.biomeCounter], normalsSlot, terrainState.biomeCounter, CoreGraphics::InvalidSamplerId, false, false });
+    ResourceTableSetTexture(terrainState.resourceTable, { terrainState.biomeMaterialArray[terrainState.biomeCounter], materialsSlot, terrainState.biomeCounter, CoreGraphics::InvalidSamplerId, false, false });
+    ResourceTableSetTexture(terrainState.resourceTable, { terrainState.biomeMasks[terrainState.biomeCounter], maskSlot, terrainState.biomeCounter, CoreGraphics::InvalidSamplerId, false, false });
     ResourceTableCommitChanges(terrainState.resourceTable);
 
-    ResourceTableSetTexture(terrainVirtualTileState.virtualTerrainSystemResourceTable, { terrainState.biomeAlbedoArray[terrainState.biomeCounter], albedoSlot, terrainState.biomeCounter, CoreGraphics::SamplerId::Invalid(), false, false });
-    ResourceTableSetTexture(terrainVirtualTileState.virtualTerrainSystemResourceTable, { terrainState.biomeNormalArray[terrainState.biomeCounter], normalsSlot, terrainState.biomeCounter, CoreGraphics::SamplerId::Invalid(), false, false });
-    ResourceTableSetTexture(terrainVirtualTileState.virtualTerrainSystemResourceTable, { terrainState.biomeMaterialArray[terrainState.biomeCounter], materialsSlot, terrainState.biomeCounter, CoreGraphics::SamplerId::Invalid(), false, false });
-    ResourceTableSetTexture(terrainVirtualTileState.virtualTerrainSystemResourceTable, { terrainState.biomeMasks[terrainState.biomeCounter], maskSlot, terrainState.biomeCounter, CoreGraphics::SamplerId::Invalid(), false, false });
+    ResourceTableSetTexture(terrainVirtualTileState.virtualTerrainSystemResourceTable, { terrainState.biomeAlbedoArray[terrainState.biomeCounter], albedoSlot, terrainState.biomeCounter, CoreGraphics::InvalidSamplerId, false, false });
+    ResourceTableSetTexture(terrainVirtualTileState.virtualTerrainSystemResourceTable, { terrainState.biomeNormalArray[terrainState.biomeCounter], normalsSlot, terrainState.biomeCounter, CoreGraphics::InvalidSamplerId, false, false });
+    ResourceTableSetTexture(terrainVirtualTileState.virtualTerrainSystemResourceTable, { terrainState.biomeMaterialArray[terrainState.biomeCounter], materialsSlot, terrainState.biomeCounter, CoreGraphics::InvalidSamplerId, false, false });
+    ResourceTableSetTexture(terrainVirtualTileState.virtualTerrainSystemResourceTable, { terrainState.biomeMasks[terrainState.biomeCounter], maskSlot, terrainState.biomeCounter, CoreGraphics::InvalidSamplerId, false, false });
     ResourceTableCommitChanges(terrainVirtualTileState.virtualTerrainSystemResourceTable);
 
     terrainBiomeAllocator.Set<TerrainBiome_Index>(ret, terrainState.biomeCounter);

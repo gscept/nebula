@@ -32,7 +32,7 @@ FrameCompute::~FrameCompute()
 void 
 FrameCompute::Discard()
 {
-    this->program = ShaderProgramId::Invalid();
+    this->program = InvalidShaderProgramId;
 
     DestroyResourceTable(this->resourceTable);
     IndexT i;
@@ -61,7 +61,7 @@ FrameCompute::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 void
 FrameCompute::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
-    n_assert(this->program != ShaderProgramId::Invalid());
+    n_assert(this->program != InvalidShaderProgramId);
 
     CoreGraphics::SetShaderProgram(this->program);
 

@@ -82,8 +82,8 @@ FrameBlit::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
 void
 FrameBlit::CompiledImpl::Discard()
 {
-    this->from = TextureId::Invalid();
-    this->to = TextureId::Invalid();
+    this->from = InvalidTextureId;
+    this->to = InvalidTextureId;
 }
 
 } // namespace Frame2

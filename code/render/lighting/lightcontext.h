@@ -45,7 +45,7 @@ public:
         const Math::mat4& transform,
         const float range, 
         bool castShadows = false, 
-        const CoreGraphics::TextureId projection = CoreGraphics::TextureId::Invalid());
+        const CoreGraphics::TextureId projection = CoreGraphics::InvalidTextureId);
 
     /// setup entity as spot light
     static void SetupSpotLight(const Graphics::GraphicsEntityId id, 
@@ -56,7 +56,7 @@ public:
         const Math::mat4& transform,
         const float range,
         bool castShadows = false, 
-        const CoreGraphics::TextureId projection = CoreGraphics::TextureId::Invalid());
+        const CoreGraphics::TextureId projection = CoreGraphics::InvalidTextureId);
 
     /// set color of light
     static void SetColor(const Graphics::GraphicsEntityId id, const Math::vec3& color);

@@ -389,7 +389,7 @@ FrameOp::SetupSynchronization(
                 this->compiled, tex, name, readOrWrite, access, stage, layout, this->domain, subres, this->index, this->queue, barriers, waitEvents, signalEvents, deps);
 
             // if alias, also make sure to visit the alias
-            if (alias != CoreGraphics::TextureId::Invalid())
+            if (alias != CoreGraphics::InvalidTextureId)
             {
                 IndexT idx = textures.FindIndex(alias);
                 Util::Array<TextureDependency>& deps = textures.ValueAtIndex(idx);

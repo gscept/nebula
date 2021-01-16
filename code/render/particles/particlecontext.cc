@@ -198,7 +198,7 @@ ParticleContext::Create()
     state.mappedVertices.Resize(numFrames);
     for (IndexT i = 0; i < numFrames; i++)
     {
-        state.vbos[i] = CoreGraphics::BufferId::Invalid();
+        state.vbos[i] = CoreGraphics::InvalidBufferId;
         state.vboSizes[i] = 0;
         state.mappedVertices[i] = nullptr;
     }
@@ -220,11 +220,11 @@ void
 ParticleContext::Setup(const Graphics::GraphicsEntityId id)
 {
     const ContextEntityId cid = GetContextId(id);
-    n_assert_fmt(cid != ContextEntityId::Invalid(), "Entity %d is not registered in ParticleContext", id.HashCode());
+    n_assert_fmt(cid != InvalidContextEntityId, "Entity %d is not registered in ParticleContext", id.HashCode());
 
     // get model context
     const ContextEntityId mdlId = Models::ModelContext::GetContextId(id);
-    n_assert_fmt(mdlId != ContextEntityId::Invalid(), "Entity %d needs to be setup as a model before character!", id.HashCode());
+    n_assert_fmt(mdlId != InvalidContextEntityId, "Entity %d needs to be setup as a model before character!", id.HashCode());
     particleContextAllocator.Get<ModelId>(cid.id) = mdlId;
 
     // get node map
@@ -499,7 +499,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
         vboInfo.dataSize = 0;
 
         // delete old if needed
-        if (state.vbos[frame] != CoreGraphics::BufferId::Invalid())
+        if (state.vbos[frame] != CoreGraphics::InvalidBufferId)
         {
             CoreGraphics::BufferUnmap(state.vbos[frame]);
             CoreGraphics::DestroyBuffer(state.vbos[frame]);

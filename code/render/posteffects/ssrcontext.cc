@@ -119,7 +119,7 @@ SSRContext::Discard()
     for (auto& table : ssrState.ssrTraceTables)
     {
         DestroyResourceTable(table);
-        table = CoreGraphics::ResourceTableId::Invalid();
+        table = CoreGraphics::InvalidResourceTableId;
     }
 }
 
@@ -144,7 +144,7 @@ SSRContext::Setup(const Ptr<Frame::FrameScript>& script)
     for (IndexT i = 0; i < numFrames; ++i)
     {
         ssrState.ssrTraceTables[i] = ShaderCreateResourceTable(ssrState.traceShader, NEBULA_BATCH_GROUP);
-        ResourceTableSetRWTexture(ssrState.ssrTraceTables[i], { ssrState.traceBuffer, ssrState.traceBufferSlot, 0, SamplerId::Invalid() });
+        ResourceTableSetRWTexture(ssrState.ssrTraceTables[i], { ssrState.traceBuffer, ssrState.traceBufferSlot, 0, InvalidSamplerId });
         ResourceTableCommitChanges(ssrState.ssrTraceTables[i]);
     }
 
@@ -158,8 +158,8 @@ SSRContext::Setup(const Ptr<Frame::FrameScript>& script)
     for (IndexT i = 0; i < numFrames; ++i)
     {
         ssrState.ssrResolveTables[i] = ShaderCreateResourceTable(ssrState.resolveShader, NEBULA_BATCH_GROUP);
-        ResourceTableSetRWTexture(ssrState.ssrResolveTables[i], { ssrState.reflectionBuffer, ssrState.reflectionBufferSlot, 0, SamplerId::Invalid() });
-        ResourceTableSetTexture(ssrState.ssrResolveTables[i], { ssrState.traceBuffer, ssrState.resolveTraceBufferSlot, 0, SamplerId::Invalid() });
+        ResourceTableSetRWTexture(ssrState.ssrResolveTables[i], { ssrState.reflectionBuffer, ssrState.reflectionBufferSlot, 0, InvalidSamplerId });
+        ResourceTableSetTexture(ssrState.ssrResolveTables[i], { ssrState.traceBuffer, ssrState.resolveTraceBufferSlot, 0, InvalidSamplerId });
         ResourceTableCommitChanges(ssrState.ssrResolveTables[i]);
     }
 

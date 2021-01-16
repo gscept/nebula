@@ -146,7 +146,7 @@ VkTextRenderer::Open()
     // get variable
 
     this->texVar = ShaderGetResourceSlot(shd, "Texture");
-    ResourceTableSetTexture(this->textTable, { this->glyphTexture, this->texVar, 0, CoreGraphics::SamplerId::Invalid(), false});
+    ResourceTableSetTexture(this->textTable, { this->glyphTexture, this->texVar, 0, CoreGraphics::InvalidSamplerId, false});
     ResourceTableCommitChanges(this->textTable);
     this->modelVar = ShaderGetConstantBinding(shd, "TextProjectionModel");
 
