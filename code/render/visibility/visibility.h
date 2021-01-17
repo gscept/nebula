@@ -1,8 +1,13 @@
 #pragma once
 //------------------------------------------------------------------------------
-// visibility.h
-// (C)2017-2020 Individual contributors, see AUTHORS file
+/**
+    @file visibility.h
+
+    @copyright
+    (C) 2017-2020 Individual contributors, see AUTHORS file
+*/
 //------------------------------------------------------------------------------
+
 namespace Visibility
 {
 

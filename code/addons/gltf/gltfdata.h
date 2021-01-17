@@ -6,6 +6,7 @@
     GLTF container type, loosely adapted from fx-gltf
     https://github.com/jessey-git/fx-gltf
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 #include "util/array.h"

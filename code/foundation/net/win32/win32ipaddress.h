@@ -18,6 +18,7 @@
       a LAN address (which is not a class A, B, or C network) if none such
       exists the address will fall back to "self"
 
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

@@ -6,6 +6,7 @@
     Implements a fixed size pool, from which objects of a specific type can be
     allocated and freed for reuse.
 
+    @copyright
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"

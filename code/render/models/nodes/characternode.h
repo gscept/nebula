@@ -6,6 +6,7 @@
     The CharacterNode class wraps a Character object into a ModelNode
     for rendering.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */  

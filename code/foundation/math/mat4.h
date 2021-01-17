@@ -5,6 +5,7 @@
 
     Matrix4x4
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"

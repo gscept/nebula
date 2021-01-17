@@ -8,6 +8,7 @@
 
     You can instantiate entities from blueprints via the entity interface.
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

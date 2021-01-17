@@ -7,6 +7,7 @@
     to detect refcounting leaks at application shutdown. Will only
     be active when the application is compiled in debug mode.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

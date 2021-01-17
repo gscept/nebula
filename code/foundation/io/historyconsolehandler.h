@@ -6,6 +6,7 @@
     A console handler which stores the last N log messages in a
     Util::RingBuffer<String>.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

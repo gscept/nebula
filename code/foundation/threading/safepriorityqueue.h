@@ -7,6 +7,7 @@
     sections. Offers a method to wait for new elements to be added. Useful 
     for inter-thread communications.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

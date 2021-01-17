@@ -3,7 +3,7 @@
 /**
     Platform-wrapper for memory texture loader
     
-    (C) 2012 Johannes Hirche
+    @copyright
     (C) 2012-2020 Individual contributors, see AUTHORS file
 */
 #if __VULKAN__

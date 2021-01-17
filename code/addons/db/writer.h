@@ -6,6 +6,7 @@
     
     A wrapper class to bulk-write data to the database in a simple way.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */

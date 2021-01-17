@@ -11,6 +11,7 @@
     http://host/mesh                    - provide a list of all meshes with their properties
     http://host/mesh?meshinfo=[resId]   - display information about specific mesh    
     
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

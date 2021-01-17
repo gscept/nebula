@@ -5,6 +5,7 @@
 
     Contains declarations for tables.
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

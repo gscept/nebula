@@ -7,6 +7,7 @@
 
     FIXME: use DX10 notations (more flexible but less readable...)
 
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

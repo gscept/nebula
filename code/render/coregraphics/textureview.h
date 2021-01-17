@@ -4,6 +4,7 @@
     A texture view is used on a texture to change the format, mip or layer 
     range used to sample from in a shader.
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

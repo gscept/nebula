@@ -6,6 +6,7 @@
     An Attack/Sustain/Release envelope curve class with optional
     sine/cosine modulation. Used for animated particle emitter attributes.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

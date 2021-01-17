@@ -3,6 +3,7 @@
 /**
     CmdBuffer contains general functions related to command buffer management.
 
+    @copyright
     (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

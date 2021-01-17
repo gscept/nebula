@@ -11,6 +11,7 @@
     is increased, such that the next time the id is reused, it can be checked for
     validity against any dangling instances of the previous generations. 
     
+    @copyright
     (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 

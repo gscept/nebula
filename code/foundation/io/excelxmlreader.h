@@ -6,6 +6,7 @@
     A stream reader class which reads Excel XML files.
     NOTE: the strings returned by this class will be in UTF-8 format!
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

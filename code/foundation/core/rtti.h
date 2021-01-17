@@ -9,6 +9,7 @@
     will also automatically register the class with the Core::Factory object
     to implement object construction from class name string or fourcc code.
 
+    @copyright
     (C) 2006 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

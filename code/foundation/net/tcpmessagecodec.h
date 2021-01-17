@@ -15,6 +15,7 @@
     Call DecodeStream at the receiving site and check for completed messsages
     with GetMessages.
 
+    @copyright
     (C) 2009 Radon Labs
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

@@ -13,6 +13,7 @@
     NOTE: The current implementation uses linear search and thus is slow
     for large arrays.
     
+    @copyright
     (C) 2003 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

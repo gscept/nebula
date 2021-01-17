@@ -6,6 +6,7 @@
     Explicit cache for reusing read-only streams that are already opened.
     Main use-case are expensive to open streams like http objects/zips
     
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 

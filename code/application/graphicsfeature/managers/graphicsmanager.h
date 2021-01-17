@@ -6,6 +6,7 @@
     Handles logic for connecting the game layer with the render layer.
     Also handles simple graphics entities such as static models and similar.
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

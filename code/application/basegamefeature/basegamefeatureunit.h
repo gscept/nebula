@@ -7,6 +7,7 @@
     Therefore it creates managers to allow creation and handling of
     entities, properties and attributes. 
 
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

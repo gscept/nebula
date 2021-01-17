@@ -7,6 +7,7 @@
     all public methods can be invoked from on the same object from different
     threads.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    

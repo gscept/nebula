@@ -6,6 +6,7 @@
     A message identifier. This is automatically implemented in message classes
     using the __DeclareMsgId and __ImplementMsgId macros.
    
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

@@ -15,6 +15,7 @@
     child nodes are created for the rest of the currently used state. This is somewhat unnecessary,
     instead, the nodes should be created when and if we actually do create a pipeline. 
 
+    @copyright
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

@@ -6,6 +6,7 @@
     Define standard key codes. Note that these are NOT localized character
     codes, but are similar to Windows virtual keys.
 
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

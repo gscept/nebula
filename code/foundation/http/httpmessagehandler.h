@@ -8,6 +8,7 @@
     Runs the HttpServer thread, and owns the central http server. Processes
     messages sent to the HttpInterface from other threads.
 
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

@@ -5,6 +5,7 @@
     
     Implements large bit field with multiple of 32 bits.
     
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

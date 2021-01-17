@@ -8,6 +8,7 @@
     Wraps a general SQL command. Commands may contain placeholders
     and can be precompiled for faster execution.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */

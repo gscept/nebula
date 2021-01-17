@@ -8,6 +8,7 @@
     Use the N3 tool binaryxmlconverter3.exe to convert an XML file to
     a binary XML file.
     
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

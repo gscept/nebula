@@ -9,6 +9,7 @@
     HttpRequestHandlers. Can be used to serve debug information about the 
     Nebula application to web browsers.
 
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

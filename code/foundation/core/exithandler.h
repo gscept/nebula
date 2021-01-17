@@ -11,6 +11,7 @@
     into the constructor or destructor of the class!
     
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    

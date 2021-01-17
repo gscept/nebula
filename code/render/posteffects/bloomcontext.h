@@ -3,6 +3,7 @@
 /**
     Bloom post effect
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

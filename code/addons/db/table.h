@@ -12,6 +12,7 @@
     changes to the Table object will also lead to changes in the
     database (changes are batched until a CommitChanges() is invoked).
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */

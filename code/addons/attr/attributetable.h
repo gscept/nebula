@@ -20,6 +20,7 @@
     The AttributeTable object keeps track of all changes (added columns,
     added rows, modified rows, modified values).
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

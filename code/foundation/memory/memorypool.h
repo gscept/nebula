@@ -5,6 +5,7 @@
     
     A simple thread-safe memory pool. Memory pool items are 16-byte aligned.
 
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

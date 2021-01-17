@@ -3,6 +3,7 @@
 /**
     A semaphore is an inter-GPU queue synchronization primitive
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

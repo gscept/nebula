@@ -9,6 +9,7 @@
     attribute id, but contains additional data, like if the column
     should be indexed, or if it contains a primary key.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */

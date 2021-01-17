@@ -6,6 +6,7 @@
     Decodes a response header from a HTTP server and optionally writes
     received content data to a provided stream.
     
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

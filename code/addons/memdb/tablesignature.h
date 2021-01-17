@@ -11,6 +11,7 @@
     @note   This class runs on the assumption that we never create a bitfield that contains more bits than necessary.
     eg, a field that is 256 bits large but is zero in left most 128 bits is forbidden.
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

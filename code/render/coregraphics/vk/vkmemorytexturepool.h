@@ -18,6 +18,7 @@
     Also be careful when to call Unload, since we might have in-flight texture updates through Update, operating on a texture which may
     have been deleted.
     
+    @copyright
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

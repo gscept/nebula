@@ -5,6 +5,7 @@
 
     In-memory, minimally (memory) fragmented, non-relational database.
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

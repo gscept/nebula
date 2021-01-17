@@ -5,6 +5,7 @@
     
     Base class for message handlers attached to Interface objects.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

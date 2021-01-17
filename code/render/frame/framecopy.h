@@ -3,6 +3,7 @@
 /**
     Performs an image copy without any filtering or image conversion.
     
+    @copyright
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

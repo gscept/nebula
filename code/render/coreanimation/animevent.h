@@ -7,6 +7,7 @@
     will be triggered when the play-cursor passes the point in time of the
     event. AnimEvents are attached to anim clips.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

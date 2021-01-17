@@ -5,6 +5,7 @@
     transformed. A point implements a limited set of operators and functions, which
     distinguishes it from vec4, vec3 and vector.
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

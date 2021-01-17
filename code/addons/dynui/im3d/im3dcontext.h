@@ -5,6 +5,7 @@
 
     Nebula renderer for Im3d gizmos
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

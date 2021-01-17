@@ -21,6 +21,7 @@
     then the string needs to be sorted both into the global, and
     the thread-local atom table.
     
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

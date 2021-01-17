@@ -6,6 +6,7 @@
     Describes how time position outsides of an animation curve's scope 
     are handled.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

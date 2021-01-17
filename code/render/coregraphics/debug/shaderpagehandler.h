@@ -11,6 +11,7 @@
     http://host/shader                      - list of all shaders
     http://host/shader?shaderinfo=[resId]   - information about a specific shader
     
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

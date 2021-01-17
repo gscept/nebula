@@ -5,6 +5,7 @@
     
     glfw-specific InputServer (provides a default Keyboard and Mouse).
         
+    @copyright
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/singleton.h"

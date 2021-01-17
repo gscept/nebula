@@ -7,6 +7,7 @@
     
     Creates Db objects derived for the Sqlite3 Db wrapper.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */

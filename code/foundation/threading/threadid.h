@@ -7,6 +7,7 @@
     main thread always has a ThreadId of 0. Get the current thread-id
     with the static method Thread::GetMyThreadId().
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

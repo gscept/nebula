@@ -21,6 +21,7 @@
     See http://www.codeproject.com/KB/cpp/ImpossiblyFastCppDelegate.aspx
     for details.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

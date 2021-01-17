@@ -19,6 +19,7 @@
     template with the subclass as the first template argument. The rest of the
     template arguments are the callbacks parameters.
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

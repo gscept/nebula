@@ -9,6 +9,7 @@
     NOTE: the Ptr class is not part of the Core namespace for
     convenience reasons.
 
+    @copyright
     (C) 2006 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

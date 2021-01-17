@@ -5,6 +5,7 @@
     
     A simple tree class which stores its nodes in Util::Arrays.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

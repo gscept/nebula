@@ -12,6 +12,7 @@
     allocated linearly in memory, thus providing a cache-friendly access pattern
     for places where memory allocation is somewhat deterministic. 
 
+    @copyright
     (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

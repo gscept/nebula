@@ -3,6 +3,7 @@
 /**
     Implements a shader effect (using AnyFX) in Vulkan.
     
+    @copyright
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

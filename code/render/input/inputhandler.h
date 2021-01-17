@@ -10,6 +10,7 @@
     handlers. Subclasses of InputHandler present the received input in
     more specific ways.
     
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

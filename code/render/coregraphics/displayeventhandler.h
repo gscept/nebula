@@ -9,6 +9,7 @@
     derive a class from DisplayEventHandler and attach to the display
     device via DisplayDevice::AttachEventHandler().
     
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

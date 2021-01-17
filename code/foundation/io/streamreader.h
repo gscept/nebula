@@ -9,6 +9,7 @@
     This is the abstract base class for all stream readers. It is possible
     to attach any number of readers and writers to the same stream.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

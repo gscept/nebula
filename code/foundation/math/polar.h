@@ -12,6 +12,7 @@
     Allowed range for theta is 0..180 degree (in rad!) and for rho 0..360 degree
     (in rad).
 
+    @copyright
     (C) 2004 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

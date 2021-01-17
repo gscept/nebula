@@ -3,6 +3,7 @@
 /**
     Implements a resource loader for physics actors
 
+    @copyright
     (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

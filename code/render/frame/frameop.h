@@ -4,6 +4,7 @@
     A frame op is a base class for frame operations, use as base class for runnable
     sequences within a frame script.
     
+    @copyright
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

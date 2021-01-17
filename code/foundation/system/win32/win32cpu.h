@@ -5,6 +5,7 @@
     
     CPU related definitions for the Win32 platform.  
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

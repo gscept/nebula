@@ -5,6 +5,7 @@
 /**
     @class Db::Sqlite3Table
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */

@@ -7,6 +7,7 @@
     to HTTP servers instead of setting up a HTTP connection for every 
     single HTTP request.     
     
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

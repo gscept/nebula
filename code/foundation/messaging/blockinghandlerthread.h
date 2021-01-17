@@ -6,6 +6,7 @@
     Message handler thread class which blocks until messages arrive
     (or optionally, a time-out occurs).
     
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

@@ -5,6 +5,7 @@
 
     Win32 implementation of stacktrace
 
+    @copyright
     (C) 2015-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"

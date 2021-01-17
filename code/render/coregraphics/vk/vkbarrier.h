@@ -3,7 +3,8 @@
 /**
     The Vulkan implementation of a GPU command barrier
 
-    (C)2017-2020 Individual contributors, see AUTHORS file
+    @copyright
+    (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/idallocator.h"

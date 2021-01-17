@@ -3,6 +3,7 @@
 /**
     @file   category.h
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

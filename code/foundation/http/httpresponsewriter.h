@@ -7,6 +7,7 @@
   
     Stream writer which writes a correct HTTP response to a stream.
     
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

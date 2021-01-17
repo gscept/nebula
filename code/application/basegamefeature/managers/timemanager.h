@@ -17,6 +17,7 @@
 
     You can create custom time sources by using the create interface.
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

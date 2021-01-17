@@ -6,6 +6,7 @@
     The Util::Blob class encapsulates a chunk of raw memory into
     a C++ object which can be copied, compared and hashed.
 
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

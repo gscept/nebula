@@ -8,6 +8,7 @@
     global script commands. Subclasses of script server know how
     to execute scripts of a specific language.
     
+    @copyright
     (C) 2006 Radon Labs
     (C) 2013-2020 Individual contributors, see AUTHORS file
 

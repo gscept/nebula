@@ -8,6 +8,7 @@
     Implements a filter for datatbase data using a condition tree. A filter
     can be compiled into a SQL WHERE statement.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */

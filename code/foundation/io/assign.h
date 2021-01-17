@@ -6,6 +6,7 @@
     An assign associates an intuitive name with a real-world 
     filesystem path.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

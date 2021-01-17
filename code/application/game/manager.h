@@ -11,6 +11,7 @@
     Managers should be created and triggered by game features. The frame event
     functions are invoked when the gameserver triggers the game feature.
     
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"

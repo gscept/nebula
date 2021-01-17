@@ -12,6 +12,7 @@
     Audio clips/resources are loaded and shared between audio emitters until
     their reference count is 0, upon which they are unloaded.
 
+    @copyright
     (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

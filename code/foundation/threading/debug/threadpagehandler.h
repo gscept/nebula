@@ -7,6 +7,7 @@
     
     Displays info about currently running Nebula threads.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

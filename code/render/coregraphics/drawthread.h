@@ -3,6 +3,7 @@
 /**
     A CoreGraphics thread meant to only record draw commands to command buffers
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

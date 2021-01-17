@@ -3,6 +3,7 @@
 /**
     A mutex object which will assert instead of lock the thread
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

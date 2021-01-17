@@ -9,6 +9,7 @@
     @see    property.h
     @see    game/database/attribute.h
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

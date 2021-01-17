@@ -3,6 +3,7 @@
 /**
     Materials represent a set of settings and a correlated type, which tells the engine which shader to use and how
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

@@ -3,6 +3,7 @@
 /**
     The Graphics Device is the engine which drives the graphics abstraction layer
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

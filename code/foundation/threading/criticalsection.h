@@ -7,6 +7,7 @@
     execution. Define a static critical section object and use its Enter() 
     and Leave() methods to protect critical sections of your code.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

@@ -6,6 +6,7 @@
     Subpasses can be dependent on each other, and can declare which attachments in the pass
     should be passed between them. 
 
+    @copyright
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

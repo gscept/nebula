@@ -7,6 +7,7 @@
     by the InputServer and travel through the input handler chain where
     they are processed.
     
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

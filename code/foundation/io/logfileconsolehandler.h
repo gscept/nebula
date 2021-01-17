@@ -7,6 +7,7 @@
     log file will be called appname_calendartime.txt and will be written
     into a bin:logfiles directory.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

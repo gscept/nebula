@@ -5,6 +5,7 @@
 
     Implements some audio clip types.
 
+    @copyright
     (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

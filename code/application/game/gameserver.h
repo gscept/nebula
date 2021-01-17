@@ -18,6 +18,7 @@
     and initialized. Load and Save is invoked from the BaseGameFeature which allows
     beginning a new game, load or save a game.
     
+    @copyright
     (C) 2007 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

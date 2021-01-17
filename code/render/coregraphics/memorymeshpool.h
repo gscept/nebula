@@ -5,6 +5,7 @@
     
     Setup a Mesh object from a given vertex, index buffer and primitive group.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

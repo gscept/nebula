@@ -3,6 +3,7 @@
 /**
     An event is a signal and wait type object which is used for in-queue GPU sync.
 
+    @copyright
     (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

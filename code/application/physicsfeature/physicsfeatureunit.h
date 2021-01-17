@@ -3,6 +3,7 @@
 /**
     @class Game::PhysicsFeatureUnit
 
+    @copyright
     (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 #include "game/featureunit.h"

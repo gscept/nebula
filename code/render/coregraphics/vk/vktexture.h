@@ -5,7 +5,8 @@
 
     For the actual loader code, see VkStreamTextureLoader and VkMemoryTextureLoader.
     
-    (C)2017-2020 Individual contributors, see AUTHORS file
+    @copyright
+    (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/texture.h"

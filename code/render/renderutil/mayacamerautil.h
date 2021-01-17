@@ -9,6 +9,7 @@
     input into the class per its setter methods, call Update(), and get 
     the computed view matrix.
 
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

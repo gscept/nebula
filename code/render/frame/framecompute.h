@@ -3,6 +3,7 @@
 /**
     Executes compute shader.
     
+    @copyright
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

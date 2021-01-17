@@ -3,6 +3,7 @@
 /**
     The Decal context manages the decal system and entities and rendering.
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

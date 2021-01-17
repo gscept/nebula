@@ -7,6 +7,7 @@
     target object. Use this to prevent cyclic dependencies between
     objects. NOTE: The weak ptr only has a subset of methods of Ptr<>.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

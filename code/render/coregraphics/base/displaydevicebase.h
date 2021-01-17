@@ -8,6 +8,7 @@
     get information about available adapters and display modes, and
     to set the preferred display mode of a Nebula application.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

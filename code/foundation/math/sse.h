@@ -3,6 +3,7 @@
 /**
     SSE support header
 
+    @copyright
     (C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

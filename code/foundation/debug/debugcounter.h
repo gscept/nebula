@@ -5,6 +5,7 @@
   
     A debug counter for counting events.
       
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

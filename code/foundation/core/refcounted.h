@@ -16,6 +16,7 @@
     object is only manipulated from the same thread then this 
     thread-synchronization adds unnecessary overhead.
 
+    @copyright
     (C) 2006 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

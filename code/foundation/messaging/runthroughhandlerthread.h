@@ -6,6 +6,7 @@
     A simple handler thread class which "runs thru", and doesn't wait for
     messages. This is the "old behaviour" of the N3 render thread.
     
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

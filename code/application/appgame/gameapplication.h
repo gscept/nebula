@@ -7,6 +7,7 @@
     For game features it creates the core and graphicsfeature which is used in every
     gamestate (such as level gamestates or only gui gamestates).
 
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file 
 */

@@ -6,6 +6,7 @@
     A simple byte-based runlength encoder/decoder. Note that the encoded
     size may actually be bigger then the original size for random data!
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

@@ -6,6 +6,7 @@
     A simple wrapper class to access the Win32 registry.
     NOTE: using this class restricts your code to the Win32 platform.
 
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

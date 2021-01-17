@@ -6,6 +6,7 @@
     Platform independent way for storing persistent settings 
     Will use registry in windows and config files on other platforms
         
+    @copyright
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #if __WIN32__

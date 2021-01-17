@@ -3,6 +3,7 @@
 /**
     Physics::DebugUI
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 #include "graphics/graphicsentity.h"

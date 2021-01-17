@@ -6,6 +6,7 @@
     Base class for text rendering (don't use this for high-quality
     text rendering).
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

@@ -5,6 +5,7 @@
 
     Front-end wrapper class for StdTcpServer, see StdTcpServer for details!
 
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

@@ -3,6 +3,7 @@
    files using zlib + zip or unzip API
    This IO API version uses the Nebula3 file API.
 
+   @copyright
    (C) 2007 Radon Labs GmbH
    (C) 2020 Individual contributors, see AUTHORS file
 */

@@ -5,7 +5,9 @@
     
     A thread barrier for 2 threads using semaphores.
     
+    @copyright
     (C) 2010 Radon Labs GmbH
+    @copyright
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"

@@ -7,6 +7,7 @@
 
     A 2-component float vector class.
     
+    @copyright
     (C) 2007 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

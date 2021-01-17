@@ -4,6 +4,7 @@
     The texture tile cache keeps track of which texture tiles should be used based 
     on a last recently used heuristic
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

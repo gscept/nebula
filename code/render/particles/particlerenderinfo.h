@@ -8,6 +8,7 @@
     this object and needs to hand it back to the ParticleRenderer when
     actually rendering of the particle system needs to happen.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

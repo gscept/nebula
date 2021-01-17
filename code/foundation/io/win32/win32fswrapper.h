@@ -6,6 +6,7 @@
     Internal filesystem wrapper for Win32. All paths must be native
     paths (i.e. not contain Nebula assigns).
 
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

@@ -5,6 +5,7 @@
 
     A quat class using SSE
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"

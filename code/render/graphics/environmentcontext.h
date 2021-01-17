@@ -3,6 +3,7 @@
 /**
     The environment context deals with anything related to the sky and atmosphere effects
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

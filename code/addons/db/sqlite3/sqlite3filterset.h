@@ -6,6 +6,7 @@
   
     SQLite3 implement of Db2::FilterSet.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */    

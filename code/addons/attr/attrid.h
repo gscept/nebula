@@ -7,6 +7,7 @@
     Attribute IDs are compile-time safe, since each attribute ID represents
     its own C++ type.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

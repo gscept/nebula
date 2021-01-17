@@ -7,6 +7,7 @@
     It's also responsible for notifying frame scripts of events, such as window
     resizing.
     
+    @copyright
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

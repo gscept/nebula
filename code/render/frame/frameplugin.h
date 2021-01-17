@@ -3,6 +3,7 @@
 /**
     Runs a plugin, which is a code-callback
     
+    @copyright
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

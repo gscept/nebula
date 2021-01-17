@@ -3,6 +3,7 @@
 /**
     This thread records commands to a Vulkan Command Buffer in its own thread.
     
+    @copyright
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

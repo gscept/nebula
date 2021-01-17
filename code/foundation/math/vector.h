@@ -4,6 +4,7 @@
     A vector is a 3d direction in space, basically like a vec3 but with 
     a limited interface
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

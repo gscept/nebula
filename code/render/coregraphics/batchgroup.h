@@ -13,6 +13,7 @@
     batch type defined will be rendered in this pass, which acts as the bridge
     between the frame shader system and the material rendering system.
     
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

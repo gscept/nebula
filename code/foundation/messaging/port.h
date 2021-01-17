@@ -16,6 +16,7 @@
     For an asynchronous port implementation, which runs the message
     handlers in a separate thread, please check Message::AsyncPort.
 
+    @copyright
     (C) 2006 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

@@ -5,6 +5,7 @@
 
     Helper class to compute a world-space ray from mouse coords.
 
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

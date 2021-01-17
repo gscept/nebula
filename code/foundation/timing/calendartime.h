@@ -7,6 +7,7 @@
     down to milliseconds, convert between filetime and CalendarTime, and
     format the time to a human readable string.
     
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

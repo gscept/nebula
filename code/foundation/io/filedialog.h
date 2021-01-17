@@ -5,6 +5,7 @@
 
     Wrapper around NFD for showing file dialogs
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"

@@ -6,6 +6,7 @@
     Display events are sent by the display device to registered display
     event handlers.
     
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

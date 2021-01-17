@@ -7,6 +7,7 @@
     be associated with any number of handler functions. The order
     of handler functions for one message id will be preserved.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

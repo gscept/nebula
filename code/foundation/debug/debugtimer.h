@@ -5,6 +5,7 @@
     
     A debug timer for measuring time spent in code blocks.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

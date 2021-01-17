@@ -8,6 +8,7 @@
     NOTE: this class exists purely for debugging and shouldn't be used in
     production code!
 
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    

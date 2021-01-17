@@ -11,6 +11,7 @@
     The thread safe allocator requires the Get-methods to be within an Enter/Leave
     lockstep phase. 
     
+    @copyright
     (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

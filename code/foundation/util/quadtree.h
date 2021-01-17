@@ -7,6 +7,7 @@
     A simple quad tree. QuadTree elements are template nodes and
     are inserted and removed from a quadtree by bounding box.
 
+    @copyright
     (C) 2007 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

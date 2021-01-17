@@ -3,6 +3,7 @@
 /**
     Implements a shader loader from stream into a Vulkan shader.
     
+    @copyright
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

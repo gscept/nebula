@@ -7,6 +7,7 @@
 
     A line in 3d space.
 
+    @copyright
     (C) 2004 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

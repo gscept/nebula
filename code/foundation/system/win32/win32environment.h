@@ -6,6 +6,7 @@
     Provides read-access to environment variables. Useful for tools.
     NOTE: using this class restricts your code to the Win32 platform.    
     
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

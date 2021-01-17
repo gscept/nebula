@@ -7,6 +7,7 @@
     compared and provide a hash code, so they can be used as keys in
     most collections.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

@@ -5,7 +5,8 @@
 
     Updating the GraphicsServer will progress the rendering process by one frame. 
     
-    (C)2017-2020 Individual contributors, see AUTHORS file
+    @copyright
+    (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

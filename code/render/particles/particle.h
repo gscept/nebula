@@ -9,6 +9,7 @@
     !! NOTE: this header is also included from job particlejob.cc, so only 
     !! job-compliant headers can be included here
 
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

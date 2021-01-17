@@ -15,8 +15,9 @@
     is that now, the only thing that changes is the flipping of a boolean value, instead of having to reconstruct the triple tuple list
     every frame. It means however, that everytime a graphics entity is attached, the VisibilityContainer MUST be notified so that
     it may change the size of the visibility array.
-    
-    (C)2017-2018 Individual contributors, see AUTHORS file
+
+    @copyright    
+    (C) 2017-2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
