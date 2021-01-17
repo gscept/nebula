@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @class Graphics::Stage
+    
     A stage contains a list of graphics entities, which can be rendered through a View.
     
     The stage is also responsible for negotiating resource loading, and visibility resolution.

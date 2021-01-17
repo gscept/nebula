@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @struct Graphics::GraphicsEntityId
+
     The graphics entity is only an Id, to which we can attach GraphicsContexts.
 
     @copyright

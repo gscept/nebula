@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @class Graphics::GraphicsServer
+
     The graphics server is the main singleton for the Graphics subsystem.
 
     Updating the GraphicsServer will progress the rendering process by one frame. 

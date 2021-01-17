@@ -1,7 +1,9 @@
 /**
 @page NebulaIDL Nebula IDL
 
-The Nebula IDL uses JSON but also supports comments using `//`.
+The Nebula Intermediate Definition Language (NIDL) can be used to generate C++ code for Properties.
+
+NIDL uses JSON but also supports comments using `// `.
 
 @section NebulaIDLHeaders Generated headers
 

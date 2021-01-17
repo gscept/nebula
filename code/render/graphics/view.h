@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @class Graphics::View
+    
     A view describes a camera which can observe a Stage. The view processes 
     the attached Stage through its FrameScript each frame.
     

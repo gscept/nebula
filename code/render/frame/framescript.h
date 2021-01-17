@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @class Graphics::FrameScript
+    
     A FrameScript describes render operations being done to produce a single frame.
 
     Frame scripts are loaded once like a template, and then compiled to produce
