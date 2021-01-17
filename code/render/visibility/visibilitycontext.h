@@ -68,7 +68,7 @@ enum DependencyMode
 
 class ObserverContext : public Graphics::GraphicsContext
 {
-    _DeclareContext();
+    __DeclareContext();
 public:
 
     /// setup entity
@@ -154,7 +154,7 @@ private:
 
 class ObservableContext : public Graphics::GraphicsContext
 {
-    _DeclareContext();
+    __DeclareContext();
 public:
 
     /// setup entity

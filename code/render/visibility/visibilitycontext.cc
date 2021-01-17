@@ -47,7 +47,7 @@ extern void VisibilitySortJob(const Jobs::JobFuncContext& ctx);
 extern void VisibilityDependencyJob(const Jobs::JobFuncContext& ctx);
 extern void VisibilityDrawListUpdateJob(const Jobs::JobFuncContext& ctx);
 
-_ImplementContext(ObserverContext, ObserverContext::observerAllocator);
+__ImplementContext(ObserverContext, ObserverContext::observerAllocator);
 
 //------------------------------------------------------------------------------
 /**
@@ -408,7 +408,7 @@ ObserverContext::GenerateDrawLists(const Graphics::FrameContext& ctx)
 void
 ObserverContext::Create()
 {
-    _CreateContext();
+    __CreateContext();
     
     __bundle.OnBegin = ObserverContext::RunVisibilityTests;
     __bundle.OnBeforeFrame = ObserverContext::GenerateDrawLists;
@@ -431,7 +431,7 @@ ObserverContext::Create()
     ObserverContext::jobInternalSync3 = Jobs::CreateJobSync(sinfo);
     ObserverContext::jobHostSync = Jobs::CreateJobSync(sinfo);
 
-    _CreateContext();
+    __CreateContext();
 }
 
 //------------------------------------------------------------------------------
@@ -627,7 +627,7 @@ ObserverContext::Dealloc(Graphics::ContextEntityId id)
     observerAllocator.Dealloc(id.id);
 }
 
-_ImplementContext(ObservableContext, ObservableContext::observableAllocator);
+__ImplementContext(ObservableContext, ObservableContext::observableAllocator);
 
 //------------------------------------------------------------------------------
 /**
@@ -685,7 +685,7 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
 void 
 ObservableContext::Create()
 {
-    _CreateContext();
+    __CreateContext();
     ObservableContext::__state.OnInstanceMoved = ObservableContext::OnInstanceMoved;
     ObservableContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&ObservableContext::__bundle, &ObservableContext::__state);

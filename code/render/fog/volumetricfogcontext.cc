@@ -19,7 +19,7 @@ namespace Fog
 VolumetricFogContext::FogGenericVolumeAllocator VolumetricFogContext::fogGenericVolumeAllocator;
 VolumetricFogContext::FogBoxVolumeAllocator VolumetricFogContext::fogBoxVolumeAllocator;
 VolumetricFogContext::FogSphereVolumeAllocator VolumetricFogContext::fogSphereVolumeAllocator;
-_ImplementContext(VolumetricFogContext, VolumetricFogContext::fogGenericVolumeAllocator);
+__ImplementContext(VolumetricFogContext, VolumetricFogContext::fogGenericVolumeAllocator);
 
 struct
 {
@@ -165,7 +165,7 @@ VolumetricFogContext::Create()
 	fogState.turbidity = 0.1f;
 	fogState.color = Math::vec3(1);
 
-	_CreateContext();
+	__CreateContext();
 }
 
 //------------------------------------------------------------------------------

@@ -37,7 +37,7 @@ struct ImguiTextureId
 
 class ImguiContext : public Graphics::GraphicsContext
 {
-    _DeclarePluginContext();
+    __DeclarePluginContext();
 public:
     /// constructor
     ImguiContext();

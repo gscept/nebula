@@ -287,7 +287,7 @@ ImguiContext::RecoverImGuiContextErrors()
     }
 }
 
-_ImplementPluginContext(ImguiContext);
+__ImplementPluginContext(ImguiContext);
 //------------------------------------------------------------------------------
 /**
 */

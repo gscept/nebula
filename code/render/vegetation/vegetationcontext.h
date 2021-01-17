@@ -48,7 +48,7 @@ struct VegetationMeshSetup
 
 class VegetationContext : public Graphics::GraphicsContext
 {
-    _DeclareContext();
+    __DeclareContext();
 public:
 
     /// constructor

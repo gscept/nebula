@@ -15,7 +15,7 @@
 
 namespace PostEffects
 {
-_ImplementPluginContext(PostEffects::SSRContext);
+__ImplementPluginContext(PostEffects::SSRContext);
 
 struct
 {
@@ -59,7 +59,7 @@ SSRContext::~SSRContext()
 void 
 SSRContext::Create()
 {
-    _CreatePluginContext();
+    __CreatePluginContext();
     __bundle.OnUpdateViewResources = SSRContext::UpdateViewDependentResources;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 

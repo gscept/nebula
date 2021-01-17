@@ -30,7 +30,7 @@ enum RenderFlag
 
 class Im3dContext : public Graphics::GraphicsContext
 {
-    _DeclarePluginContext();
+    __DeclarePluginContext();
 public:
     /// constructor
     Im3dContext();

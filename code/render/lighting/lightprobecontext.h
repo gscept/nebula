@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @class Graphics::LightProbeContext
+
     Adds a light probe component to graphics entities
     
     @copyright
@@ -12,7 +14,7 @@ namespace Graphics
 {
 class LightProbeContext : public GraphicsContext
 {
-    _DeclareContext();
+    __DeclareContext();
 public:
     /// constructor
     LightProbeContext();

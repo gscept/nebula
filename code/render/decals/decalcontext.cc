@@ -18,7 +18,7 @@ namespace Decals
 DecalContext::GenericDecalAllocator DecalContext::genericDecalAllocator;
 DecalContext::PBRDecalAllocator DecalContext::pbrDecalAllocator;
 DecalContext::EmissiveDecalAllocator DecalContext::emissiveDecalAllocator;
-_ImplementContext(DecalContext, DecalContext::genericDecalAllocator);
+__ImplementContext(DecalContext, DecalContext::genericDecalAllocator);
 
 struct
 {
@@ -129,7 +129,7 @@ DecalContext::Create()
 		ResourceTableSetConstantBuffer(viewTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), decalState.uniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalUniforms), 0 });
 	}
 
-	_CreateContext();
+	__CreateContext();
 }
 
 //------------------------------------------------------------------------------

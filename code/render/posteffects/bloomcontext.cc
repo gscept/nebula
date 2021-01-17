@@ -12,7 +12,7 @@
 namespace PostEffects
 {
 
-_ImplementPluginContext(PostEffects::BloomContext);
+__ImplementPluginContext(PostEffects::BloomContext);
 struct
 {
     CoreGraphics::TextureId internalTargets[1];
@@ -102,7 +102,7 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
 void 
 BloomContext::Create()
 {
-    _CreatePluginContext();
+    __CreatePluginContext();
 
     using namespace CoreGraphics;
     Frame::AddCallback("Bloom-BrightnessLowpass", [](const IndexT frame, const IndexT bufferIndex)

@@ -74,7 +74,7 @@ struct SubTextureUpdateJobOutput
 
 class TerrainContext : public Graphics::GraphicsContext
 {
-    _DeclareContext();
+    __DeclareContext();
 public:
 
     /// constructor

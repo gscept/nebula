@@ -22,7 +22,7 @@ namespace Models
 {
 
 ModelContext::ModelContextAllocator ModelContext::modelContextAllocator;
-_ImplementContext(ModelContext, ModelContext::modelContextAllocator);
+__ImplementContext(ModelContext, ModelContext::modelContextAllocator);
 
 //------------------------------------------------------------------------------
 /**
@@ -46,7 +46,7 @@ ModelContext::~ModelContext()
 void
 ModelContext::Create()
 {
-    _CreateContext();
+    __CreateContext();
 
     __bundle.OnBegin = ModelContext::UpdateTransforms;
     __bundle.StageBits = &ModelContext::__state.currentStage;

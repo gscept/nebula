@@ -14,7 +14,7 @@ namespace PostEffects
 
 class TonemapContext : public Graphics::GraphicsContext
 {
-    _DeclarePluginContext();
+    __DeclarePluginContext();
 public:
     /// constructor
     TonemapContext();

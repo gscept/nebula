@@ -12,7 +12,7 @@ namespace PostEffects
 
 class SSAOContext : public Graphics::GraphicsContext
 {
-    _DeclarePluginContext();
+    __DeclarePluginContext();
 public:
     /// constructor
     SSAOContext();

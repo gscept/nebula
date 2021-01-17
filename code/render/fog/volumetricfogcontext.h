@@ -18,7 +18,7 @@ namespace Fog
 
 class VolumetricFogContext : public Graphics::GraphicsContext
 {
-    _DeclareContext()
+    __DeclareContext()
 public:
 
     /// constructor

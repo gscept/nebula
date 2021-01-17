@@ -56,7 +56,7 @@ enum EnqueueMode
 
 class CharacterContext : public Graphics::GraphicsContext
 {
-    _DeclareContext();
+    __DeclareContext();
 public:
 
     /// constructor

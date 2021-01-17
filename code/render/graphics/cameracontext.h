@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @class Graphics::CameraContext
+
     Handles cameras
 
     @copyright
@@ -15,7 +17,7 @@ namespace Graphics
 
 class CameraContext : public Graphics::GraphicsContext
 {
-    _DeclareContext();
+    __DeclareContext();
 public:
 
     /// constructor

@@ -18,7 +18,7 @@ namespace Vegetation
 {
 
 VegetationContext::VegetationAllocator VegetationContext::vegetationAllocator;
-_ImplementContext(VegetationContext, VegetationContext::vegetationAllocator);
+__ImplementContext(VegetationContext, VegetationContext::vegetationAllocator);
 
 
 struct
@@ -117,7 +117,7 @@ VegetationContext::~VegetationContext()
 void
 VegetationContext::Create(const VegetationSetupSettings& settings)
 {
-	_CreateContext();
+	__CreateContext();
 	using namespace CoreGraphics;
 
 	__bundle.OnUpdateViewResources = VegetationContext::UpdateViewResources;

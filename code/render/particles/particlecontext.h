@@ -23,7 +23,7 @@ class EmitterMesh;
 class EnvelopeSampleBuffer;
 class ParticleContext : public Graphics::GraphicsContext
 {
-    _DeclareContext();
+    __DeclareContext();
 public:
 
     enum PlayMode

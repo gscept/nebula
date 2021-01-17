@@ -11,7 +11,7 @@ namespace Graphics
 
 CameraContext::CameraAllocator CameraContext::cameraAllocator;
 Graphics::GraphicsEntityId CameraContext::lodCamera;
-_ImplementContext(CameraContext, CameraContext::cameraAllocator);
+__ImplementContext(CameraContext, CameraContext::cameraAllocator);
 
 //------------------------------------------------------------------------------
 /**
@@ -35,7 +35,7 @@ CameraContext::~CameraContext()
 void
 CameraContext::Create()
 {
-    _CreateContext();
+    __CreateContext();
 
     __bundle.OnBegin = CameraContext::UpdateCameras;
     __bundle.OnWindowResized = CameraContext::OnWindowResized;

@@ -13,7 +13,7 @@ namespace PostEffects
 
 class SSRContext : public Graphics::GraphicsContext
 {
-    _DeclarePluginContext();
+    __DeclarePluginContext();
 public:
     /// constructor
     SSRContext();

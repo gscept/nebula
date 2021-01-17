@@ -13,7 +13,7 @@ namespace Decals
 
 class DecalContext : public Graphics::GraphicsContext
 {
-    _DeclareContext();
+    __DeclareContext();
 public:
     /// constructor
     DecalContext();

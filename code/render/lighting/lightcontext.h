@@ -16,7 +16,7 @@ namespace Lighting
 {
 class LightContext : public Graphics::GraphicsContext
 {
-    _DeclareContext();
+    __DeclareContext();
 public:
 
     enum LightType

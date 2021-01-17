@@ -34,7 +34,7 @@ struct
     CoreGraphics::TextureId defaultIrradianceMap;
 } envState;
 
-_ImplementPluginContext(EnvironmentContext);
+__ImplementPluginContext(EnvironmentContext);
 
 //------------------------------------------------------------------------------
 /**

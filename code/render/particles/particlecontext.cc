@@ -19,7 +19,7 @@ namespace Particles
 {
 
 ParticleContext::ParticleContextAllocator ParticleContext::particleContextAllocator;
-_ImplementContext(ParticleContext, ParticleContext::particleContextAllocator);
+__ImplementContext(ParticleContext, ParticleContext::particleContextAllocator);
 
 extern void ParticleStepJob(const Jobs::JobFuncContext& ctx);
 
@@ -210,7 +210,7 @@ ParticleContext::Create()
     state.layout = CoreGraphics::CreateVertexLayout(vloInfo);
     state.vertexSize = sizeof(Math::vec4) * 5; // 5 vertex attributes using vec4
 
-    _CreateContext();
+    __CreateContext();
 }
 
 //------------------------------------------------------------------------------
