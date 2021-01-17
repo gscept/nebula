@@ -59,7 +59,7 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
         });
 
     envState.bloomColor = Math::vec4(1.0f);
-    envState.bloomThreshold = 1.0;
+    envState.bloomThreshold = 100.0;
     envState.maxEyeLuminance = 0.9f;
     envState.fogColor = Math::vec4(0.5f, 0.5f, 1.0f, 0.0f);
     envState.fogDistances[0] = 200.0f;  // near
