@@ -3,13 +3,24 @@
 
 The Nebula IDL uses JSON but also supports comments using `//`.
 
-@section NIDL file schema:
+@section NebulaIDLHeaders Generated headers
 
-1. @ref NIDLNamespace Namespace
-2. @ref NIDLIncludes Includes
-3. @ref NIDLDependencies Dependencies
-4. @ref NIDLEnumeratedTypes Enumerated Types
-5. @ref NIDLProperties Properties
+When generating code from NIDL files, the files are placed in the `fips-build/{PROJECT}/{FIPS-CONFIG}/nidl` directory. In C++ code, you can include them as if they were placed in the same directory as the .nidl file.
+
+Example: \n
+NIDL file: `nebula-demo/code/properties/movement.nidl` \n
+C++ include: 
+@code{.cpp}
+#include "properties/movement.h"
+@endcode
+
+@section NebulaIDLSchema NIDL files
+
+1. @ref NIDLNamespace
+2. @ref NIDLIncludes
+3. @ref NIDLDependencies
+4. @ref NIDLEnumeratedTypes
+5. @ref NIDLProperties
 
 @subsection NIDLNamespace Namespace
 
@@ -135,6 +146,7 @@ Additional types are:
 - `Enumerated type` - Any enumerated type defined in a NIDL file can be used as type.
 - `C++ type`
     - Any included C++ headers types can be used as type. Note that C++ type must be trivially destructible and trivially copyable.
+    - The type serializers must be manually created. Check the generated NIDL headers and source files for examples (`fips-build/{PROJECT}/{FIPS-CONFIG}/nidl`).
     - It is required that the type includes its namespace.
 
 The `_default_` value can be specified as:
@@ -151,5 +163,8 @@ The `_default_` value can be specified as:
 | mat4          | `[1,0,0,0,0,1,...]` (16 floats)  |
 | resource      | `"mdl:system/placeholder.n3"`    |
 | Enum Type     | Integer or String                |
+
+
+The default values for different types (usually zero or identity) can be found in `{NEBULA-ROOT}/fips-files/generators/IDLC/idltypes.py`.
 
 */

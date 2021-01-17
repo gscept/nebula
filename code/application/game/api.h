@@ -3,6 +3,8 @@
 /**
     @file   api.h
 
+    The main programming interface for the Game Subsystem.
+
     @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */

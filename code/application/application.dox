@@ -19,7 +19,7 @@ Entities are commonly created by instantiating data-driven blueprints and/or tem
 Blueprints are essentially category descriptions that just describe a named collection of properties. \n
 Templates are derived from blueprints and describe specific property values for an instantiation of a entity. \n
 Lets take an example: \n
-    We declare an "Orc" blueprint that consists of four properties: Position, Health, Strength and Target.
+    We declare an "Orc" blueprint that consists of four properties: Position, Health, Stats and Target.
     - example_blueprints.json:
     \code{.json}
     {
@@ -79,9 +79,21 @@ The NIDL specification can be found here:
 
 TODO: write about property flags, managed properties, etc.
 
-\subsubsection NebulaApplicationSeeAlso See also
+@subsection NebulaApplicationGameManagers Game Managers
+
+Managers are defined via a simple function API.
+They are meant to care about "specific global stuff" and should be defined by applications to implement globals aspects of the application (mainly global game play related).
+Managers should be created and triggered by \ref Game::FeatureUnit "game features". Their frame event functions are invoked when the gameserver triggers the game feature.
+
+@see Game::ManagerAPI
+
+
+\subsection NebulaApplicationSeeAlso See also
 @subpage api.h \n
-@subpage MemDb \n
+@subpage Game \n
 @subpage BaseGameFeature \n
+@subpage GraphicsFeature \n
+@subpage PhysicsFeature \n
+@subpage MemDb \n
 
 */

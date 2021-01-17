@@ -1,13 +1,18 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    Entity
+    @struct Game::Entity
 
     An entity is essentially just an Id with some utility functions attached.
-    What actually makes up the entities are their properties and attributes.
+    What actually makes up the entities are their properties.
 
-    @see    property.h
-    @see    game/database/attribute.h
+    The id is split into two parts: the 8 upper bits are used as a generation
+    counter, so that we can easily reuse the lower 24 bits as an index.
+    
+    @see    Game::IsValid
+    @see    api.h
+    @see    propertyid.h
+    @see    memdb/typeregistry.h
 
     @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
