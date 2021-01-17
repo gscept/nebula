@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    Audio::AudioServer
+    @class Audio::AudioServer
 
     Front-end of the Audio subsystem. Initializes the audio 
     subsystem.

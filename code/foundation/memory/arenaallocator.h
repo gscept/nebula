@@ -1,6 +1,10 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @class Memory::ArenaAllocator
+    
+    Allocates memory in chunks.
+
     This allocator creates memory in user-specified (default 65535) byte chunks.
     Each time an object is requested, the current chunk is checked for storage,
     and if the object fits, an iterator is progressed with the size of the object,

@@ -3,7 +3,13 @@
 /**
     @class Util::BitField
     
-    Implements large bit field with multiple of 32 bits.
+    Implements large bit field.
+    
+    The bit field occupies as little memory as possible, based on how many bits
+    are required per the template parameter.
+
+    Will occupy 8, 16, 32 or 64 bits, or a multiple of 64 bits for larger
+    fields.
     
     @copyright
     (C) 2009 Radon Labs GmbH

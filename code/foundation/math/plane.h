@@ -3,7 +3,7 @@
 /**
     @class Math::plane
 
-    Nebula's plane class.
+    A mathematical plane represented by a normal and a distance from origin.
 
     @copyright
     (C) 2020 Individual contributors, see AUTHORS file

@@ -6,9 +6,10 @@
     @class Math::polar
 
     A polar coordinate inline class, consisting of 2 angles theta (latitude)
-    and rho (longitude). Also offers conversion between cartesian and 
-    polar space.
-
+    and rho (longitude).
+    
+    Also offers conversion between cartesian and polar space.
+    
     Allowed range for theta is 0..180 degree (in rad!) and for rho 0..360 degree
     (in rad).
 

@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @class CoreGraphics::MemoryTexturePool
+    
     Platform-wrapper for memory texture loader
     
     @copyright

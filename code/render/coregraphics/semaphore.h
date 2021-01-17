@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @file coregraphics/semaphore.h
+    
     A semaphore is an inter-GPU queue synchronization primitive
 
     @copyright

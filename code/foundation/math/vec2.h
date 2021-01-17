@@ -3,7 +3,7 @@
 #define MATH_FLOAT2_H
 //------------------------------------------------------------------------------
 /**
-    @class Math::vec2
+    @struct Math::vec2
 
     A 2-component float vector class.
     

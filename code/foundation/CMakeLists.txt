@@ -279,7 +279,6 @@ nebula_begin_module(foundation)
 			sphere.h
 			sse.h
 			transform44.h
-			transform.h
 			vec2.h
 			vec3.h
 			vec4.cc

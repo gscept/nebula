@@ -1,6 +1,10 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @struct Math::point
+
+    Represents a 3D point in space.
+
     A point is a 4d vector with a fixed W coordinate of 1, which allows it to be 
     transformed. A point implements a limited set of operators and functions, which
     distinguishes it from vec4, vec3 and vector.

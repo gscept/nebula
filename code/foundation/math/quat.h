@@ -3,7 +3,7 @@
 /**
     @class Math::quat
 
-    A quat class using SSE
+    A quaternion is usually used to represent an orientation in 3D space.
 
     @copyright
     (C) 2020 Individual contributors, see AUTHORS file

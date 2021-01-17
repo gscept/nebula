@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @file math/scalar.h
+    @file scalar.h
 
     Nebula's scalar datatype.
 

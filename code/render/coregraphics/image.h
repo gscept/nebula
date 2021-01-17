@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @file image.h
+    
     Implements a CPU side image
 
     @copyright

@@ -2,8 +2,7 @@
 #define Math_PQUATFEEDBACKLOOP_H
 //------------------------------------------------------------------------------
 /**
-    @class PQuatFeedbackLoop
-    @ingroup Math
+    @class Math::PQuatFeedbackLoop
 
     A specialized proportional feedback loop for rotations, using a
     quaternion representation.

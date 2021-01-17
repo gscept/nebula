@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @class Util::ArrayAllocatorSafe
+    
     The ArrayAllocatorSafe provides a thread safe variadic list of types which is to be contained in the allocator
     and fetching each value by providing the index into the list of types, which means the members
     are nameless.

@@ -78,6 +78,7 @@ TimeSource* const
 TimeManager::CreateTimeSource(TimeSourceCreateInfo const& info)
 {
     state->timeSourceTable.Add(info.hash, state->numTimeSources);
+    n_assert(state->numTimeSources + 1 < 32);
     TimeSourceState& timesource = state->timeSources[state->numTimeSources++];
     timesource.frameTime = Timing::TicksToSeconds(state->frameTime);
     return reinterpret_cast<TimeSource*>(&timesource);

@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @file coregraphics/memory.h
+
     Graphics memory interface
 
     @copyright

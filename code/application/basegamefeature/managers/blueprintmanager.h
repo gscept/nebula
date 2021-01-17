@@ -8,6 +8,9 @@
 
     You can instantiate entities from blueprints via the entity interface.
 
+    @see api.h
+    @see Game::EntityManager
+
     @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
@@ -47,8 +50,9 @@ public:
 
 // private api
 public:
-    /// create an instance from blueprint. Note that this does not tie it to an entity! It's not recommended to create entities this way. @see entitymanager.h
+    /// create an instance from blueprint. Note that this does not tie it to an entity! It's not recommended to create entities this way. @see Game::EntityManager @see api.h
     EntityMapping Instantiate(BlueprintId blueprint);
+    /// create an instance from template. Note that this does not tie it to an entity! It's not recommended to create entities this way. @see Game::EntityManager @see api.h
     EntityMapping Instantiate(TemplateId templateId);
 
 private:

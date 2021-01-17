@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @file coregraphics/shader.h
+    
     A shader represents an entire shader resource, containing several stages and programs.
 
     ShaderId - A shader resource handle. It cannot be used for anything other than quering

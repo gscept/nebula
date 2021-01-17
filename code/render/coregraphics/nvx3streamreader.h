@@ -5,7 +5,7 @@
   
     A stream reader which reads legacy nvx3 binary mesh files.
 
-    NOTE: this class exists purely for debugging and shouldn't be used in
+    @note This class exists purely for debugging and shouldn't be used in
     production code!
 
     (C) 2012 Gustav Sterbrant

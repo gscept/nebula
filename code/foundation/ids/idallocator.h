@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @class Ids::IdAllocator
+
     An ID allocator associates an id with a slice in an N number of arrays.
 
     There are two versions of this type, an unsafe and a safe one. Both are implemented
@@ -11,6 +13,10 @@
     The thread safe allocator requires the Get-methods to be within an Enter/Leave
     lockstep phase. 
     
+    @class Ids::IdAllocatorSafe
+    
+    @see Ids::IdAllocator
+
     @copyright
     (C) 2017-2020 Individual contributors, see AUTHORS file
 */

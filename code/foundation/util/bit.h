@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Util::Bit
+    @file bit.h
     
     Implements helper functions for checking bits
     

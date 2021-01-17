@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Graphics::FrameScript
+    @class Frame::FrameScript
     
     A FrameScript describes render operations being done to produce a single frame.
 

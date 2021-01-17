@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @struct CoreGraphics::GraphicsDeviceCreateInfo
+
     The Graphics Device is the engine which drives the graphics abstraction layer
 
     @copyright

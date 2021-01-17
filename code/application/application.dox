@@ -72,12 +72,19 @@ Lets take an example: \n
 @subsection NebulaApplicationGameSystemProperties Properties
 
 Properties are the main way to describe an entity's state. \n
-Properties are declared and defined via .nidl files (Nebula intermediate definition language) and compiled into C++ code via an IDL compiler. \n
-
+Properties are usually declared and defined via .nidl files (Nebula intermediate definition language) and compiled into C++ code via an IDL compiler. \n
+All properties must be [trivially destructible](http://www.cplusplus.com/reference/type_traits/is_trivially_destructible/) and [trivially copyable](http://www.cplusplus.com/reference/type_traits/is_trivially_copyable/).
+Note that it can still define a constructor or have initilizers in the declaration.
 The NIDL specification can be found here:
 @subpage NebulaIDL \n
 
-TODO: write about property flags, managed properties, etc.
+Properties can also be created explicitly via the \ref api.h "Game API's" \ref Game::CreateProperty() "CreateProperty" function or the MemDb::TypeRegistry::Register (typesafe) function.
+When explicitly creating a property, you can choose to flag the property with various flags. These flags can for example alter the lifetime of the property, allowing certain managers to clean up external resources before an entity is fully destroyed.
+
+@see Game::PropertyCreateInfo
+@see Game::PropertyFlags
+@see MemDb::TypeRegistry::Register
+
 
 @subsection NebulaApplicationGameManagers Game Managers
 
@@ -87,8 +94,17 @@ Managers should be created and triggered by \ref Game::FeatureUnit "game feature
 
 @see Game::ManagerAPI
 
+@subsection NebulaApplicationBaseGameFeature Base Game Feature
 
-\subsection NebulaApplicationSeeAlso See also
+The BaseGameFeature is integral to the Nebula entity system and sets up the \ref Game::EntityManager "entity", \ref Game::BlueprintManager "blueprint" and \ref Game::TimeManager "time" managers.
+These managers supply the runtime with the core management needed for the entity system, and this feature should most likely always be attached to the \ref Game::GameServer "game server" upon application startup.
+
+@subsection NebulaApplicationGraphicsFeature Graphics Feature
+
+The GraphicsFeature automatically sets up the core rendering subsystem and initializes tons of boilerplate so that you won't have to.
+The feature also creates a number of useful properties and managers that allow you to easily render models, animations, particles etc.
+
+@subsection NebulaApplicationSeeAlso See also
 @subpage api.h \n
 @subpage Game \n
 @subpage BaseGameFeature \n

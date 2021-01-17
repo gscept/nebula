@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class System::AppEntry
+    @file appentry.h
     
     Implements a platform-independent app-entry point. In your main file,
     put the line

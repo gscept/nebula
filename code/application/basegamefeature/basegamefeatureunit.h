@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Game::BaseGameFeatureUnit
+    @class BaseGameFeature::BaseGameFeatureUnit
     
     The BaseGameFeatureUnit creates everything to allow load and run a game level.
     Therefore it creates managers to allow creation and handling of

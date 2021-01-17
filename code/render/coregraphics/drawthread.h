@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @class CoreGraphics::DrawThread
+
     A CoreGraphics thread meant to only record draw commands to command buffers
 
     @copyright

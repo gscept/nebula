@@ -78,8 +78,8 @@ Declares enumerated types. These can be used as types within properties.
 
 @code{.json}
 "properties": {
-    "Health": "float",
-    "Stats": {
+    "Health": "float", // just a regular type
+    "Stats": { // struct
         "Strength": "float",
         "IQ": "int",
         "isLarge": {
@@ -87,12 +87,12 @@ Declares enumerated types. These can be used as types within properties.
             "_default_": false
         }
     },
-    "Target": {
+    "Target": { // detailed type, not aggregate/struct
         "_type_": "Game::Entity",
         "_default_": -1,
         "_desc_": "Target entity to attack."
     },
-    "Movable": "_flag_"
+    "Movable": "_flag_" // a flag type, will not allocate memory per instance and cannot have a value.
 }
 @endcode
 
@@ -145,6 +145,7 @@ Built in non-scalar types are:
 
 Additional types are:
 
+- `_flag_` - Create a flag type property that will not allocate memory per instance and cannot have a value. This is useful for categorizing entities, for example Static vs Dynamic entities.
 - `Enumerated type` - Any enumerated type defined in a NIDL file can be used as type.
 - `C++ type`
     - Any included C++ headers types can be used as type. Note that C++ type must be trivially destructible and trivially copyable.

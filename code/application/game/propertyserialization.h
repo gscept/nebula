@@ -1,7 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    Property serialization functions
+    @class Game::PropertySerialization
+    
+    Property serialization functions.
 
     Implements various serialization functions for different types of properties
     

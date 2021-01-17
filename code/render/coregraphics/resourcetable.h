@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @file coregraphics/resourcetable.h
+    
     A resource table declares a list of resources (ResourceTable in DX12, DescriptorSet in Vulkan)
 
     @copyright

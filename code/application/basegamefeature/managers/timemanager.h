@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    Game::TimeManager
+    @namespace Game::TimeManager
 
     Singleton object which manages the current game time. These are
     the standard time source objects provided by Application layer:
@@ -16,6 +16,8 @@
     realtime. 
 
     You can create custom time sources by using the create interface.
+
+    @todo Thread safety
 
     @copyright
     (C) 2020 Individual contributors, see AUTHORS file
@@ -65,16 +67,13 @@ struct TimeSource
 
 //------------------------------------------------------------------------------
 /**
-    @namespace TimeManager
-
-    Interface to the TimeManager singleton.
 */
 namespace TimeManager
 {
     /// create the singleton
     Game::ManagerAPI Create();
 
-    /// create a timesource. The time managers handles the timesources.
+    /// create a timesource. The global time manager handles the timesources.
     TimeSource* const CreateTimeSource(TimeSourceCreateInfo const& info);
 
     /// get a time source by hash

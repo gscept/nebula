@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    Audio::AudioDevice
+    @class Audio::AudioDevice
 
     Central class of the core audio subsystem.
     Currently implements Soloud as the audio engine.

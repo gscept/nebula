@@ -1,9 +1,12 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Math::vec4
+    @struct Math::vec4
 
-    4D vector
+    A 4D vector.
+
+    @see Math::vector
+    @see Math::point
 
     @copyright
     (C) 2020 Individual contributors, see AUTHORS file

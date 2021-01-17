@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @class Ids::Id
+
     This class implements some static helper functions to set high and low 32-bit integers,
     as well as a function to create a complete id from two of them. 
     
