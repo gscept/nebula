@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Nebula version="4">
+    <Model name="system/material_knob" bboxcenter="-0.011397,0.134706,0.000673,1.000000" bboxextents="0.132633,0.135258,0.144024,0.000000">
+        <ShapeNodes>
+            <ShapeNode name="InnerSphere" type="static" path="root/InnerSphere" useLOD="false" primitive="0" position="0.000000,0.000000,0.000000,1.000000" rotation="-0.000000,-0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" mesh="msh:system/material_knob.nvx2" bboxcenter="0.000000,0.150200,0.000000,1.000000" bboxextents="0.099149,0.099149,0.098582,0.000000" />
+            <ShapeNode name="ObjBase" type="static" path="root/ObjBase" useLOD="false" primitive="1" position="0.000000,0.000000,0.000000,1.000000" rotation="-0.000000,-0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" mesh="msh:system/material_knob.nvx2" bboxcenter="-0.011397,0.134706,0.000673,1.000000" bboxextents="0.132633,0.135258,0.144024,0.000000" />
+        </ShapeNodes>
+    </Model>
+</Nebula>
