@@ -45,9 +45,9 @@ struct BufferCopy
 
 struct GraphicsDeviceCreateInfo
 {
-    uint globalGraphicsConstantBufferMemorySize[NumConstantBufferTypes];
-    uint globalComputeConstantBufferMemorySize[NumConstantBufferTypes];
-    uint memoryHeaps[NumMemoryPoolTypes];
+    uint64 globalGraphicsConstantBufferMemorySize[NumConstantBufferTypes];
+    uint64 globalComputeConstantBufferMemorySize[NumConstantBufferTypes];
+    uint64 memoryHeaps[NumMemoryPoolTypes];
     byte numBufferedFrames : 3;
     bool enableValidation : 1;      // enables validation layer and writes output to console
 };
