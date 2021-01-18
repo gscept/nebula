@@ -129,7 +129,8 @@ jobs:
   
   Documentation:
     runs-on: ubuntu-latest
-    name: Documentation    
+    name: Documentation   
+    if: ${{ github.event_name == 'push' }} 
     steps: 
       - uses: actions/checkout@v2
 
