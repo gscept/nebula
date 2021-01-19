@@ -340,6 +340,7 @@ nebula_begin_module(foundation)
 			event.h
 			interlocked.h
 			lockfreequeue.h
+			mutex.h
 			objectref.cc
 			objectref.h
 			safeflag.h
@@ -629,30 +630,35 @@ nebula_begin_module(foundation)
             win32criticalsection.cc
             win32criticalsection.h
             win32event.h
-            win32interlocked.h
+			win32interlocked.h
+			win32mutex.cc
             win32thread.cc
             win32thread.h
             win32threadbarrier.h
             win32threadid.h
             win32rendezvous.h
         )
-    elseif(FIPS_LINUX)
+	elseif(FIPS_LINUX)
+		fips_dir(threading/linux GROUP "threading/linux")
         fips_files(
-            threading/linux/linuxinterlocked.h
-            threading/linux/linuxbarrier.h
-            threading/linux/linuxcriticalsection.h
-            threading/linux/linuxevent.h
-            threading/linux/linuxthread.cc
-            threading/linux/linuxthread.h
+			linuxinterlocked.h
+			linuxmutex.cc
+            linuxbarrier.h
+            linuxcriticalsection.h
+            linuxevent.h
+            linuxthread.cc
+            linuxthread.h
         )
-    else()
+	else()
+		fips_dir(threading/posix GROUP "threading/posix")
         fips_files(
-            threading/posix/posixinterlocked.h
-            threading/posix/posixbarrier.h
-            threading/posix/posixcriticalsection.h
-            threading/posix/posixevent.h
-            threading/posix/posixthread.cc
-            threading/posix/posixthread.h
+			posixinterlocked.h
+			posixmutex.cc
+            posixbarrier.h
+            posixcriticalsection.h
+            posixevent.h
+            posixthread.cc
+            posixthread.h
         )
     endif()
 nebula_end_module()

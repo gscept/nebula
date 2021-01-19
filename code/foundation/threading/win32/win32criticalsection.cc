@@ -20,7 +20,8 @@ Win32CriticalSection::Win32CriticalSection():
     waiterCount(0),
     recursiveLockCount(0)
 {
-    if (Core::SysFunc::GetSystemInfo()->GetNumCpuCores() == 1) spinMax = 0;
+    if (Core::SysFunc::GetSystemInfo()->GetNumCpuCores() == 1)
+		spinMax = 0;
 }     
 
 //------------------------------------------------------------------------------

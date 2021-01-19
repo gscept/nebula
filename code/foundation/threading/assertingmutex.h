@@ -29,7 +29,7 @@ public:
     /// unlock mutex
     void Unlock();
 private:
-    std::atomic_bool locked;
+    volatile int locked;
 };
 
 struct AssertingScope

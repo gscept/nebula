@@ -5,6 +5,7 @@
 #include "foundation/stdneb.h"
 #include "core/debug.h"
 #include "assertingmutex.h"
+#include "interlocked.h"
 namespace Threading
 {
 
@@ -30,8 +31,8 @@ AssertingMutex::~AssertingMutex()
 */
 AssertingMutex::AssertingMutex(AssertingMutex&& rhs)
 {
-    this->locked.store(rhs.locked.load());
-    rhs.locked.exchange(false);
+	Threading::Interlocked::Exchange(&this->locked, rhs.locked);
+	Threading::Interlocked::Exchange(&rhs.locked, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -40,8 +41,8 @@ AssertingMutex::AssertingMutex(AssertingMutex&& rhs)
 void 
 AssertingMutex::operator=(AssertingMutex&& rhs)
 {
-    this->locked.store(rhs.locked.load());
-    rhs.locked.exchange(false);
+    Threading::Interlocked::Exchange(&this->locked, rhs.locked);
+	Threading::Interlocked::Exchange(&rhs.locked, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -50,8 +51,8 @@ AssertingMutex::operator=(AssertingMutex&& rhs)
 void 
 AssertingMutex::Lock()
 {
-    bool res = this->locked.exchange(true);
-    n_assert(!res);
+	int old = Threading::Interlocked::Exchange(&this->locked, 1);
+	n_assert(old == 0);
 }
 
 //------------------------------------------------------------------------------
@@ -60,8 +61,8 @@ AssertingMutex::Lock()
 void 
 AssertingMutex::Unlock()
 {
-    bool res = this->locked.exchange(false);
-    n_assert(res);
+	int old = Threading::Interlocked::Exchange(&this->locked, 1);
+	n_assert(old != 0);
 }
 
-} // namespace Threading
+} // namespace Thr
