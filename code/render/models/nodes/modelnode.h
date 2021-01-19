@@ -10,8 +10,9 @@
     A node is a part of an N-tree, meaning there are N children [0-infinity]
     for each node. The model itself keeps track of the root node, and a dictionary
     of all nodes and their corresponding names.
-    
-    (C)2017-2020 Individual contributors, see AUTHORS file
+
+    @copyright
+    (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

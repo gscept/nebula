@@ -6,6 +6,7 @@
     An animation clip is a collection of related animation curves (for
     instance all curves required to animate a character).
 
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

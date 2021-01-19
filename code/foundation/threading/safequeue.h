@@ -12,6 +12,7 @@
     Enqueue() method won't signal the internal event, and the Wait()
     method will return immediately without ever waiting.
     
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

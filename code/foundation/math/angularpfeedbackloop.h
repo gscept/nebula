@@ -2,11 +2,11 @@
 #define MATH_ANGULARPFEEDBACKLOOP_H
 //------------------------------------------------------------------------------
 /** 
-    @class AngularPFeedbackLoop
-    @ingroup Util
+    @class Math::AngularPFeedbackLoop
 
     A proportional feedback loop with correct angular interpolation.
     
+    @copyright
     (C) 2004 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

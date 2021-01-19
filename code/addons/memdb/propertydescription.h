@@ -11,6 +11,7 @@
     @note   This is mostly just used internally by the database and typeregistry,
             so you most likely won't need to care about this class in normal use-cases.
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

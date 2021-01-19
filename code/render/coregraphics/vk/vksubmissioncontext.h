@@ -3,6 +3,7 @@
 /**
     Vulkan implementation of a submission context
 
+    @copyright
     (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

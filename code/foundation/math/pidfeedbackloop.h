@@ -2,11 +2,11 @@
 #define Math_PIDFEEDBACKLOOP_H
 //------------------------------------------------------------------------------
 /**
-    @class PIDFeedbackLoop
-    @ingroup Math
+    @class Math::PIDFeedbackLoop
 
     A PID feedback loop (proportional integral derivative feedback loop) 
 
+    @copyright
     (C) 2007 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

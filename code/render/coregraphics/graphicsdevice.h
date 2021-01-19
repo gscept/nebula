@@ -1,8 +1,11 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @struct CoreGraphics::GraphicsDeviceCreateInfo
+
     The Graphics Device is the engine which drives the graphics abstraction layer
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -42,9 +45,9 @@ struct BufferCopy
 
 struct GraphicsDeviceCreateInfo
 {
-    uint globalGraphicsConstantBufferMemorySize[NumConstantBufferTypes];
-    uint globalComputeConstantBufferMemorySize[NumConstantBufferTypes];
-    uint memoryHeaps[NumMemoryPoolTypes];
+    uint64 globalGraphicsConstantBufferMemorySize[NumConstantBufferTypes];
+    uint64 globalComputeConstantBufferMemorySize[NumConstantBufferTypes];
+    uint64 memoryHeaps[NumMemoryPoolTypes];
     byte numBufferedFrames : 3;
     bool enableValidation : 1;      // enables validation layer and writes output to console
 };

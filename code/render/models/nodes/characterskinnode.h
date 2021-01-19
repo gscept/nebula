@@ -5,6 +5,7 @@
     
     A model node that handles materials for characters
     
+    @copyright
     (C) 2011-2020 Individual contributors, see AUTHORS file
 */
 #include "primitivenode.h"

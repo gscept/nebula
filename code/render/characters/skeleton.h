@@ -4,6 +4,7 @@
     A character encapsulates a skeleton resource, an animation resource, and the ability
     to instantiate such and drive animations.
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

@@ -101,7 +101,7 @@ or an error occured (TcpClient::Error).
 
 @note
 An interactive application should never block during network communication
-and instead should provide continouos feedback to the user what's going
+and instead should provide continous feedback to the user what's going
 on. 
 
 Once a connection has been established, a TcpClientConnection object will
@@ -121,7 +121,6 @@ To send some text data from a client to its server, obtain a pointer
 to the send stream, write data to it and call the Send() method:
 
 @code
-
 using namespace Net;
 using namespace IO;
 
@@ -146,7 +145,6 @@ once per frame). More then one TcpClientConnection may be waiting
 for processing, thus the processing loop should look like this:
 
 @code
-
 using namespace Util;
 using namespace IO;
 using namespace Net;
@@ -181,7 +179,6 @@ will block until data arrives (in blocking mode), or come back immediately (in n
 and return true when data from the server is available:
 
 @code
-
 using namespace Net;
 using namespace IO;
 
@@ -223,7 +220,6 @@ IO::BinaryReader and IO::BinaryWriter classes. Simply call the following methods
 before reading from or writing to a network communication stream:
 
 @code
-
 binaryReader->SetStreamByteOrder(System::ByteOrder::Network);
 binaryWriter->SetStreamByteOrder(System::ByteOrder::Network);
 @endcode

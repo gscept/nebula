@@ -18,6 +18,7 @@
     write data to the SendStream, and at any time call the Send() method which
     will send all data accumulated in the SendStream to the client.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    

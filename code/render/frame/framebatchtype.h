@@ -6,6 +6,7 @@
     Frame batch type hints for the render device and render targets. Indicates
     the type of objects that are rendered in a frame batch.
     
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

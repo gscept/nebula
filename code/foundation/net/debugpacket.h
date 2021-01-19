@@ -29,6 +29,7 @@
     The DebugPacket does not allocate any external memory, and thus can be safely used
     from Wii interrupt handlers.    
         
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

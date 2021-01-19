@@ -5,6 +5,10 @@
     
     A simple thread-safe memory pool. Memory pool items are 16-byte aligned.
 
+    @see Win32::Win32MemoryPool
+    @see Posix::PosixMemoryPool
+
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

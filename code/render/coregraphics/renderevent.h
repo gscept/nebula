@@ -6,6 +6,7 @@
     Render events are sent by the RenderDevice to registered render 
     event handlers.
     
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

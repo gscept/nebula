@@ -6,6 +6,7 @@
     The message handler for the debug interface. Just wakes up from time
     to time to check for incoming Http requests.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

@@ -6,6 +6,7 @@
     A simple text renderer for drawing text on screen.
     Only for debug purposes.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    

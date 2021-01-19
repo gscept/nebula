@@ -4,6 +4,7 @@
     Implements a resource loader for physics shapes
     Can be either primitive shapes or meshes saved in seperate files
 
+    @copyright
     (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

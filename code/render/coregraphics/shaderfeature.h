@@ -9,6 +9,7 @@
     are converted to hashes and stored in a hash table for
     reverse lookup.
 
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

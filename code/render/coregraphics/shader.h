@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @file coregraphics/shader.h
+    
     A shader represents an entire shader resource, containing several stages and programs.
 
     ShaderId - A shader resource handle. It cannot be used for anything other than quering
@@ -19,7 +21,8 @@
     as well as the resource binds to that state. They are bound to a inherently bound to a state, and such
     modifying a constant requires both the state and constant id for that state. 
 
-    (C)2017-2020 Individual contributors, see AUTHORS file
+    @copyright
+    (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"

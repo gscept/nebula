@@ -20,7 +20,8 @@
     and use it to construct a Texture id, but we still need the ResourceId if we want to deallocate that
     texture at some later point. To convert to such an id, use the SpecializedId.
     
-    (C)2017-2020 Individual contributors, see AUTHORS file
+    @copyright
+    (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "util/stringatom.h"

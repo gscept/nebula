@@ -6,7 +6,8 @@
     Resources can be loaded asynchronously, and through the ResourceContainer 
     class, a resource can be used before it is loaded.
     
-    (C)2017-2020 Individual contributors, see AUTHORS file
+    @copyright
+    (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

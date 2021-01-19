@@ -3,6 +3,7 @@
 /**
     Utility functions to convert from gliml/dds types to nebula
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

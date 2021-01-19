@@ -7,6 +7,7 @@
     place in memory, dynamic arrays are often the better choice, unless 
     insert/remove performance is more important then traversal performance.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    

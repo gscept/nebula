@@ -1,9 +1,12 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @class Memory::RangeAllocator
+    
     Doesn't actually allocate memory, but is used to keep track of free ranges
     of elements in a virtual memory buffer
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

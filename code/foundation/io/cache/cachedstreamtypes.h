@@ -3,6 +3,7 @@
 /**
     Instances of wrapped stream classes
     
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */    
 #include "core/config.h"

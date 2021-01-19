@@ -8,6 +8,7 @@
     A Relation object describes a relation between 2 tables which are
     linked through a common attribute.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */

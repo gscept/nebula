@@ -3,6 +3,7 @@
 /**
     This is just a container
     
+    @copyright
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

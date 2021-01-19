@@ -8,6 +8,7 @@
     is generally blocking. For non-blocking behaviour it's best
     to wrap the HttpClient into a thread.
     
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    

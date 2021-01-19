@@ -2,6 +2,9 @@
 ![CI](https://github.com/gscept/nebula/workflows/CI/badge.svg)
 
 Get in contact on Discord! https://discord.gg/wuYPxUF
+
+Check out the documentation (WIP) here: https://gscept.github.io/nebula/
+
 ## Requirements
 1. OS: Windows and Linux(WIP)
 2. Compiler with support for C++17.
@@ -25,7 +28,7 @@ Get in contact on Discord! https://discord.gg/wuYPxUF
 In your project directory:
   
   1. `fips fetch`
-  2. `fips physx build win-vs15` (if you are running VS 2019, use `win-vs16` instead)
+  2. `fips physx build win-vs16` (if you are running VS 2017, use `win-vs15` instead)
   2. `fips anyfx setup`
   3. `fips build`
   4. `fips physx deploy`

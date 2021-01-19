@@ -9,6 +9,7 @@
     database subsystem. ValueTables are used to store the result of a
     query or to define the data which should be written back into the database.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */

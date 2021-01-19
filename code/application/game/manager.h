@@ -1,16 +1,16 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    Game managers
+    @struct Game::ManagerAPI
+
+    A Manager is just a bundle of function pointers to static or global functions
+    that is called by the Game::FeatureUnit it is attached to.
+    The managers context/state can be implemented as the developer sees fit, but
+    will most likely be some global or static singleton.
     
-    Managers are defined via a simple function API.
-    They are meant to care about "specific global stuff".
-    They should be defined by applications to implement globals aspects of
-    the application (mainly global game play related).
-    
-    Managers should be created and triggered by game features. The frame event
-    functions are invoked when the gameserver triggers the game feature.
-    
+    @see NebulaApplicationGameManagers
+
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
@@ -20,8 +20,14 @@
 namespace Game
 {
 
+//------------------------------------------------------------------------------
+/**
+*/
 ID_32_TYPE(ManagerHandle)
 
+//------------------------------------------------------------------------------
+/**
+*/
 struct ManagerAPI
 {
     /// called when attached to game server

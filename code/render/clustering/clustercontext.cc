@@ -36,7 +36,7 @@ struct _state
     static const SizeT ClusterSubdivsZ = 24;
 } state;
 
-_ImplementPluginContext(ClusterContext);
+__ImplementPluginContext(ClusterContext);
 
 //------------------------------------------------------------------------------
 /**

@@ -7,6 +7,7 @@
     Translates DisplayEvents that are relevant for the input system
     into InputEvents.
         
+    @copyright
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    
 #include "coregraphics/displayeventhandler.h"

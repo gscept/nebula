@@ -32,9 +32,11 @@ struct
 
     CoreGraphics::TextureId defaultEnvironmentMap;
     CoreGraphics::TextureId defaultIrradianceMap;
+
+    bool showUI = false;
 } envState;
 
-_ImplementPluginContext(EnvironmentContext);
+__ImplementPluginContext(EnvironmentContext);
 
 //------------------------------------------------------------------------------
 /**
@@ -59,7 +61,7 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
         });
 
     envState.bloomColor = Math::vec4(1.0f);
-    envState.bloomThreshold = 1.0;
+    envState.bloomThreshold = 100.0;
     envState.maxEyeLuminance = 0.9f;
     envState.fogColor = Math::vec4(0.5f, 0.5f, 1.0f, 0.0f);
     envState.fogDistances[0] = 200.0f;  // near
@@ -198,24 +200,27 @@ EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 void 
 EnvironmentContext::RenderUI(const Graphics::FrameContext& ctx)
 {
-    float col[4];
-    envState.fogColor.storeu(col);
-    Shared::PerTickParams& tickParams = CoreGraphics::ShaderServer::Instance()->GetTickParams();
-    if (ImGui::Begin("Enviroment Params"))
+    if (envState.showUI)
     {
-        ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
-        ImGui::SliderFloat("Bloom Threshold", &envState.bloomThreshold, 0, 100.0f);
-        ImGui::SliderFloat("Sky Turbidity", &envState.skyTurbidity, 2.0f, 15.0f);
-        ImGui::InputFloat("Fog Start", &envState.fogDistances[0], 0, 10000.0f);
-        ImGui::InputFloat("Fog End", &envState.fogDistances[1], 0, 10000.0f);
-        ImGui::ColorEdit4("Fog Color", col);
-        ImGui::SliderFloat("Max Luminance", &envState.maxEyeLuminance, 0, 100.0f);
-        ImGui::SliderFloat("Color Saturation", &envState.saturation, 0, 1.0f);
-        ImGui::SliderFloat("Fade Value", &envState.fadeValue, 0, 1.0f);
-    }
-    envState.fogColor.loadu(col);
+        float col[4];
+        envState.fogColor.storeu(col);
+        Shared::PerTickParams& tickParams = CoreGraphics::ShaderServer::Instance()->GetTickParams();
+        if (ImGui::Begin("Enviroment Params"))
+        {
+            ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
+            ImGui::SliderFloat("Bloom Threshold", &envState.bloomThreshold, 0, 100.0f);
+            ImGui::SliderFloat("Sky Turbidity", &envState.skyTurbidity, 2.0f, 15.0f);
+            ImGui::InputFloat("Fog Start", &envState.fogDistances[0], 0, 10000.0f);
+            ImGui::InputFloat("Fog End", &envState.fogDistances[1], 0, 10000.0f);
+            ImGui::ColorEdit4("Fog Color", col);
+            ImGui::SliderFloat("Max Luminance", &envState.maxEyeLuminance, 0, 100.0f);
+            ImGui::SliderFloat("Color Saturation", &envState.saturation, 0, 1.0f);
+            ImGui::SliderFloat("Fade Value", &envState.fadeValue, 0, 1.0f);
+        }
+        envState.fogColor.loadu(col);
 
-    ImGui::End();
+        ImGui::End();
+    }
 }
 
 //------------------------------------------------------------------------------

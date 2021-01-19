@@ -6,6 +6,7 @@
     The debug server singleton is visible from all threads and keeps track
     of debug timer and debug counters.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

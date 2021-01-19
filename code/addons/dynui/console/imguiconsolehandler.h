@@ -5,6 +5,7 @@
     
     consolehandler that prints its output to the imgui console
     
+    @copyright
     (C) 2015-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

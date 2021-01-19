@@ -12,6 +12,7 @@
     Maya counterparts, for instance it is not possible to set 
     the pre- and post-infinity types per curve, but only per clip.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

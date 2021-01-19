@@ -20,6 +20,4 @@ The foundation libraries contain support functionality such as containers, strin
 @subpage Threading \n
 @subpage Timing \n
 @subpage Util \n
-
-
 */

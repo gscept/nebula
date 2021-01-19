@@ -3,6 +3,7 @@
 /**
     A frame blit performs an image copy with optional filtering and image type conversions.
     
+    @copyright
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

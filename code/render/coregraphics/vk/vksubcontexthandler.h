@@ -21,7 +21,8 @@
 
     TODO: We should be able to use this handler across devices too...
 
-    (C)2017-2020 Individual contributors, see AUTHORS file
+    @copyright
+    (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "vkloader.h"

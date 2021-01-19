@@ -22,7 +22,7 @@ namespace Models
 {
 
 ModelContext::ModelContextAllocator ModelContext::modelContextAllocator;
-_ImplementContext(ModelContext, ModelContext::modelContextAllocator);
+__ImplementContext(ModelContext, ModelContext::modelContextAllocator);
 
 //------------------------------------------------------------------------------
 /**
@@ -46,7 +46,7 @@ ModelContext::~ModelContext()
 void
 ModelContext::Create()
 {
-    _CreateContext();
+    __CreateContext();
 
     __bundle.OnBegin = ModelContext::UpdateTransforms;
     __bundle.StageBits = &ModelContext::__state.currentStage;
@@ -54,7 +54,6 @@ ModelContext::Create()
     __bundle.OnRenderDebug = ModelContext::OnRenderDebug;
 #endif
     ModelContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
-    ModelContext::__state.OnInstanceMoved = OnInstanceMoved;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 }
 
@@ -386,18 +385,6 @@ ModelContext::OnRenderDebug(uint32_t flags)
         CoreGraphics::RenderShape shape;
         shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), instanceBoxes[instance.instance].to_mat4(), white);
         CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ModelContext::OnInstanceMoved(uint32_t toIndex, uint32_t fromIndex)
-{
-    if ((uint32_t)ModelContext::__state.entities.Size() > toIndex)
-    {
-        Visibility::ObservableContext::UpdateModelContextId(ModelContext::__state.entities[toIndex], toIndex);
     }
 }
 

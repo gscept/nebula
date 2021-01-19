@@ -8,6 +8,10 @@
     to a new platform all that has to be done is to write a new 
     FSWrapper class.
     
+    @see Win32::Win32FSWrapper
+    @see Posix::PosixFSWrapper
+
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

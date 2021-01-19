@@ -4,6 +4,7 @@
     A frame pass prepares a rendering sequence, draws and subpasses must reside
     within one of these objects.
     
+    @copyright
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

@@ -6,6 +6,7 @@
     A timer object is the most basic object for time measurement. More
     advanced timing classes often build on top of Timer.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

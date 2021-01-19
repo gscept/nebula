@@ -1,8 +1,11 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    SSE support header
+    @file sse.h
+    
+    SSE support functions
 
+    @copyright
     (C) 2018 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

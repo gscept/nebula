@@ -1,8 +1,11 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Game::PhysicsFeatureUnit
+    @class PhysicsFeature::PhysicsFeatureUnit
 
+    Sets up and interfaces with the physics subsystem.
+    
+    @copyright
     (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 #include "game/featureunit.h"

@@ -76,76 +76,82 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
     CoreGraphics::BeginBatch(FrameBatchType::Geometry);
 
     const Util::Array<MaterialType*>* types = matServer->GetMaterialTypesByBatch(batch);
-    if ((types != nullptr) && (drawList != nullptr)) for (IndexT typeIdx = 0; typeIdx < types->Size(); typeIdx++)
+    if ((types != nullptr) && (drawList != nullptr))
     {
-        MaterialType* materialType = (*types)[typeIdx];
-        IndexT idx = drawList->FindIndex(materialType);
-        if (idx != InvalidIndex)
+        for (IndexT typeIdx = 0; typeIdx < types->Size(); typeIdx++)
         {
-
-#if NEBULA_GRAPHICS_DEBUG
-            CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_DARK_GREEN, materialType->GetName().AsCharPtr());
-#endif
-
-            // if BeginBatch returns true if this material type has a shader for this batch
-            if (Materials::MaterialBeginBatch(materialType, batch))
+            MaterialType* materialType = (*types)[typeIdx];
+            IndexT idx = drawList->materialOffsets.FindIndex(materialType);
+            if (idx != InvalidIndex)
             {
-                auto& model = drawList->ValueAtIndex(materialType, idx);
-                auto it = model.Begin();
-                auto end = model.End();
 
-                while (it != end)
-                {
-                    Models::ModelNode* node = *it.key;
-                    Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
-                    Models::NodeType type = node->GetType();
-
-                    // only continue if we have instances
-                    const Util::Array<Models::ModelNode::DrawPacket*>& instances = *it.val;
-                    if (instances.Size() > 0)
-                    {
 #if NEBULA_GRAPHICS_DEBUG
-                        CommandBufferInsertMarker(GraphicsQueueType, NEBULA_MARKER_DARK_DARK_GREEN, node->GetName().Value());
+                CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_DARK_GREEN, materialType->GetName().AsCharPtr());
 #endif
-                        // apply node-wide state
-                        node->ApplyNodeState();
-                        
-                        // bind graphics pipeline
-                        CoreGraphics::SetGraphicsPipeline();
 
-                        // apply node-wide resources
-                        node->ApplyNodeResources();
-
-                        // apply surface
-                        Materials::MaterialApplySurface(materialType, stateNode->GetSurface());
-                        Models::NodeType type = node->GetType();
-
-                        IndexT i;
-                        for (i = 0; i < instances.Size(); i++)
+                // if BeginBatch returns true if this material type has a shader for this batch
+                if (Materials::MaterialBeginBatch(materialType, batch))
+                {
+                    uint materialOffset = drawList->materialOffsets.ValueAtIndex(materialType, idx);
+                    auto* cmd = drawList->commandBuffer.Begin() + materialOffset + 1;
+                    auto* end = drawList->commandBuffer.End();
+                    // loop all commands until we hit a new material
+                    while (cmd != end && cmd->type != Visibility::ObserverContext::VisibilityDrawCommand::Type::Begin_Material)
+                    {
+                        if (cmd->type == Visibility::ObserverContext::VisibilityDrawCommand::Type::Draw)
                         {
-                            Models::ModelNode::DrawPacket* instance = instances[i];
-                            instance->Apply(materialType);
+                            // a draw is always following a node change. get the model node from the previous command
+                            Models::ModelNode* node = (cmd - 1)->node;
+                            Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
+                            Models::NodeType type = node->GetType();
 
-                            if (type != ParticleSystemNodeType)
+                            uint32 const end = cmd->draw.packetOffset + cmd->draw.numDrawPackets;
+                            for (uint32 i = cmd->draw.packetOffset; i < end; i++)
                             {
-                                Models::PrimitiveNode::Instance* pinst = reinterpret_cast<Models::PrimitiveNode::Instance*>(instance->node);
-                                pinst->Draw(1, 0, instance);
-                            }
-                            else
-                            {
-                                Models::ParticleSystemNode::Instance* pinst = reinterpret_cast<Models::ParticleSystemNode::Instance*>(instance->node);
-                                pinst->Draw(1, 0, instance);
+                                Models::ModelNode::DrawPacket* instance = drawList->drawPackets[i];
+                                instance->Apply(materialType);
+                                if (type != ParticleSystemNodeType)
+                                {
+                                    Models::PrimitiveNode::Instance* pinst = reinterpret_cast<Models::PrimitiveNode::Instance*>(instance->node);
+                                    pinst->Draw(1, 0, instance);
+                                }
+                                else
+                                {
+                                    Models::ParticleSystemNode::Instance* pinst = reinterpret_cast<Models::ParticleSystemNode::Instance*>(instance->node);
+                                    pinst->Draw(1, 0, instance);
+                                }
                             }
                         }
-                    }
-                    it++;
-                }
-            }
-            Materials::MaterialEndBatch(materialType);
+                        else if (cmd->type == Visibility::ObserverContext::VisibilityDrawCommand::Type::Begin_Node)
+                        {
+                            Models::ModelNode* node = cmd->node;
+                            Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
+                            Models::NodeType type = node->GetType();
 
 #if NEBULA_GRAPHICS_DEBUG
-            CommandBufferEndMarker(GraphicsQueueType);
+                            CommandBufferInsertMarker(GraphicsQueueType, NEBULA_MARKER_DARK_DARK_GREEN, node->GetName().Value());
 #endif
+                            // apply node-wide state
+                            node->ApplyNodeState();
+
+                            // bind graphics pipeline
+                            CoreGraphics::SetGraphicsPipeline();
+
+                            // apply node-wide resources
+                            node->ApplyNodeResources();
+
+                            // apply surface
+                            Materials::MaterialApplySurface(materialType, stateNode->GetSurface());
+                        }
+                        cmd++;
+                    }
+                }
+                Materials::MaterialEndBatch(materialType);
+
+#if NEBULA_GRAPHICS_DEBUG
+                CommandBufferEndMarker(GraphicsQueueType);
+#endif
+            }
         }
     }
 
@@ -170,72 +176,82 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
     CoreGraphics::BeginBatch(FrameBatchType::Geometry);
 
     const Util::Array<MaterialType*>* types = matServer->GetMaterialTypesByBatch(batch);
-    if ((types != nullptr) && (drawList != nullptr)) for (IndexT typeIdx = 0; typeIdx < types->Size(); typeIdx++)
+    if ((types != nullptr) && (drawList != nullptr))
     {
-        MaterialType* materialType = (*types)[typeIdx];
-        IndexT idx = drawList->FindIndex(materialType);
-        if (idx != InvalidIndex)
+        for (IndexT typeIdx = 0; typeIdx < types->Size(); typeIdx++)
         {
-
-#if NEBULA_GRAPHICS_DEBUG
-            CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_DARK_GREEN, materialType->GetName().AsCharPtr());
-#endif
-
-            // if BeginBatch returns true if this material type has a shader for this batch
-            if (Materials::MaterialBeginBatch(materialType, batch))
+            MaterialType* materialType = (*types)[typeIdx];
+            IndexT idx = drawList->materialOffsets.FindIndex(materialType);
+            if (idx != InvalidIndex)
             {
-                auto& model = drawList->ValueAtIndex(materialType, idx);
-                auto it = model.Begin();
-                auto end = model.End();
-                while (it != end)
-                {
-                    Models::ModelNode* node = *it.key;
-                    Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
-
-                    // only continue if we have instances
-                    const Util::Array<Models::ModelNode::DrawPacket*>& instances = *it.val;
-                    if (instances.Size() > 0)
-                    {
 
 #if NEBULA_GRAPHICS_DEBUG
-                        CommandBufferInsertMarker(GraphicsQueueType, NEBULA_MARKER_DARK_DARK_GREEN, node->GetName().Value());
+                CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_DARK_GREEN, materialType->GetName().AsCharPtr());
 #endif
-                        // apply node-wide state
-                        node->ApplyNodeState();
 
-                        // bind graphics pipeline
-                        CoreGraphics::SetGraphicsPipeline();
-
-                        // apply surface level resources
-                        Materials::MaterialApplySurface(materialType, stateNode->GetSurface());
-                        Models::NodeType type = node->GetType();
-
-                        IndexT i;
-                        for (i = 0; i < instances.Size(); i++)
+                // if BeginBatch returns true if this material type has a shader for this batch
+                if (Materials::MaterialBeginBatch(materialType, batch))
+                {
+                    uint materialOffset = drawList->materialOffsets.ValueAtIndex(materialType, idx);
+                    auto* cmd = drawList->commandBuffer.Begin() + materialOffset + 1;
+                    auto* end = drawList->commandBuffer.End();
+                    // loop all commands until we hit a new material
+                    while (cmd != end && cmd->type != Visibility::ObserverContext::VisibilityDrawCommand::Type::Begin_Material)
+                    {
+                        if (cmd->type == Visibility::ObserverContext::VisibilityDrawCommand::Type::Begin_Node)
                         {
-                            Models::ModelNode::DrawPacket* instance = instances[i];
-                            instance->Apply(materialType);
+                            Models::ModelNode* node = cmd->node;
+                            Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
+                            Models::NodeType type = node->GetType();
 
-                            if (type != ParticleSystemNodeType)
+#if NEBULA_GRAPHICS_DEBUG
+                            CommandBufferInsertMarker(GraphicsQueueType, NEBULA_MARKER_DARK_DARK_GREEN, node->GetName().Value());
+#endif
+                            // apply node-wide state
+                            node->ApplyNodeState();
+
+                            // bind graphics pipeline
+                            CoreGraphics::SetGraphicsPipeline();
+
+                            // apply node-wide resources
+                            node->ApplyNodeResources();
+
+                            // apply surface
+                            Materials::MaterialApplySurface(materialType, stateNode->GetSurface());
+                        }
+                        else if (cmd->type == Visibility::ObserverContext::VisibilityDrawCommand::Type::Draw)
+                        {
+                            // a draw is always following a node change. get the model node from the previous command
+                            Models::ModelNode* node = (cmd - 1)->node;
+                            Models::NodeType type = node->GetType();
+
+                            uint32 const end = cmd->draw.packetOffset + cmd->draw.numDrawPackets;
+                            for (uint32 i = cmd->draw.packetOffset; i < end; i++)
                             {
-                                Models::PrimitiveNode::Instance* pinst = reinterpret_cast<Models::PrimitiveNode::Instance*>(instance->node);
-                                pinst->Draw(numInstances, baseInstance, instance);
-                            }
-                            else
-                            {
-                                Models::ParticleSystemNode::Instance* pinst = reinterpret_cast<Models::ParticleSystemNode::Instance*>(instance->node);
-                                pinst->Draw(numInstances, baseInstance, instance);
+                                Models::ModelNode::DrawPacket* instance = drawList->drawPackets[i];
+                                instance->Apply(materialType);
+
+                                if (type != ParticleSystemNodeType)
+                                {
+                                    Models::PrimitiveNode::Instance* pinst = reinterpret_cast<Models::PrimitiveNode::Instance*>(instance->node);
+                                    pinst->Draw(1, baseInstance, instance);
+                                }
+                                else
+                                {
+                                    Models::ParticleSystemNode::Instance* pinst = reinterpret_cast<Models::ParticleSystemNode::Instance*>(instance->node);
+                                    pinst->Draw(1, baseInstance, instance);
+                                }
                             }
                         }
+                        cmd++;
                     }
-                    it++;
                 }
-            }
-            Materials::MaterialEndBatch(materialType);
+                Materials::MaterialEndBatch(materialType);
 
 #if NEBULA_GRAPHICS_DEBUG
-            CommandBufferEndMarker(GraphicsQueueType);
+                CommandBufferEndMarker(GraphicsQueueType);
 #endif
+            }
         }
     }
 

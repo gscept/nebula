@@ -3,6 +3,7 @@
 /**
     Adds a light representation to the graphics entity
     
+    @copyright
     (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -15,7 +16,7 @@ namespace Lighting
 {
 class LightContext : public Graphics::GraphicsContext
 {
-    _DeclareContext();
+    __DeclareContext();
 public:
 
     enum LightType

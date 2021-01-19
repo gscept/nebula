@@ -16,6 +16,7 @@
     in console-byte-order during asset processing on the development PC,
     so that the console doesn't waste loading time with byte conversions!
     
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

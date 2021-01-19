@@ -30,6 +30,7 @@
     There is also a normal "print" for each type. Quite useful is the quaternion-version, since
     it gives a more human-readable output than just the normal debugger.
 
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

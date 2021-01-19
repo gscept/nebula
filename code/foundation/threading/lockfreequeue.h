@@ -64,6 +64,7 @@
         increase it for every time we make a modification, we can safetly do the CAS and know for sure
         if the node has been tampered with or not. 
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

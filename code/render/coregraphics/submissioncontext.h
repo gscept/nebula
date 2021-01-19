@@ -12,6 +12,7 @@
     incur a synchronization, and should only be done after the context has been submitted.
 
 
+    @copyright
     (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 #include "ids/id.h"

@@ -20,6 +20,7 @@
         playing animation on that track.
         
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -55,7 +56,7 @@ enum EnqueueMode
 
 class CharacterContext : public Graphics::GraphicsContext
 {
-    _DeclareContext();
+    __DeclareContext();
 public:
 
     /// constructor

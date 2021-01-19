@@ -3,6 +3,7 @@
 /**
     An anim sample mask controls which samples should be used, and which should be avoided
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

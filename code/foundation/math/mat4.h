@@ -1,10 +1,11 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Math::mat4
+    @struct Math::mat4
 
-    Matrix4x4
+    A 4x4 single point precision float matrix.
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"

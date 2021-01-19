@@ -5,6 +5,7 @@
     
     This input handler passes input events to Imgui.
     
+    @copyright
     (C) 2012-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

@@ -10,7 +10,9 @@
     "client-side" owner-object may be discarded before the target
     object in the other thread is destroyed.
     
+    @copyright
     (C) 2010 Radon Labs GmbH
+    @copyright
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"

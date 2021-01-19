@@ -11,6 +11,7 @@
     its HttpRequestHandlers process the request in the client thread's
     context, then sends the result back to the http thread.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

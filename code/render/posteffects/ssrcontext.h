@@ -3,6 +3,7 @@
 /**
     SSR post effect
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -12,7 +13,7 @@ namespace PostEffects
 
 class SSRContext : public Graphics::GraphicsContext
 {
-    _DeclarePluginContext();
+    __DeclarePluginContext();
 public:
     /// constructor
     SSRContext();

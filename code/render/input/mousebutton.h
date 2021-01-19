@@ -5,6 +5,7 @@
     
     Mouse button codes and conversion from/to string.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

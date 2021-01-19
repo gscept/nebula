@@ -6,6 +6,7 @@
 
     Wrapper to bulk-read the contents of a database table.
 
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */

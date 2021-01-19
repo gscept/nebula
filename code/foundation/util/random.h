@@ -5,6 +5,7 @@
 
     Contains random-number helper functions
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

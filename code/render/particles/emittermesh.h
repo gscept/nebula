@@ -10,6 +10,7 @@
     vec4 normal;
     vec4 tangent;
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

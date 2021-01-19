@@ -24,6 +24,7 @@
     CommitChanges() method. This will try to figure out the most efficient way to write
     the modified data back into the database.
 
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2016 Individual contributors, see AUTHORS file
 */

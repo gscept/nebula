@@ -3,10 +3,11 @@
 #define MATH_FLOAT2_H
 //------------------------------------------------------------------------------
 /**
-    @class Math::vec2
+    @struct Math::vec2
 
     A 2-component float vector class.
     
+    @copyright
     (C) 2007 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

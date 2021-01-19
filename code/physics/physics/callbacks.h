@@ -1,8 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    callback interfaces for PhysX   
+    callback interfaces for PhysX
     
+    @copyright
     (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

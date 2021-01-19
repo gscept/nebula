@@ -6,6 +6,7 @@
     Message handlers are used to process a message. To handle specific
     messages, derive from Handler and overwrite the method HandleMessage().
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

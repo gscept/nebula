@@ -8,6 +8,7 @@
     send messages to the Interface singleton which will dispatch the
     messages to handlers running in the thread context.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file 
 */

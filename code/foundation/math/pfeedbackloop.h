@@ -2,9 +2,8 @@
 #define Math_PFEEDBACKLOOP_H
 //------------------------------------------------------------------------------
 /**
-    @class PFeedbackLoop
-    @ingroup Math
-
+    @class Math::PFeedbackLoop
+    
     A P feedback loop (proportional feedback loop) is a simple object which 
     moves a system's current state towards a goal, using the resulting error 
     (difference between goal and state as feedback on the next run.
@@ -14,6 +13,7 @@
 
     See Game Developer Mag issue June/July 2004.
 
+    @copyright
     (C) 2007 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

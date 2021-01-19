@@ -6,6 +6,7 @@
     Encapsulates a MIME conformant media type description (text/plain, 
     image/jpg, etc...).
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    

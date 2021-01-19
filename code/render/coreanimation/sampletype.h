@@ -5,6 +5,7 @@
   
     Describes how an animation curve should be sampled.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

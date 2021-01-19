@@ -24,6 +24,8 @@
 #endif
 #include "pjson/pjson.h"
 
+#pragma warning( disable : 4307 )
+
 //------------------------------------------------------------------------------
 /** 
     some constexpr string switch magic

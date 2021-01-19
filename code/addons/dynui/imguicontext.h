@@ -5,6 +5,7 @@
     
     Nebula renderer for  the IMGUI dynamic UI library.
     
+    @copyright
     (C) 2012-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -36,7 +37,7 @@ struct ImguiTextureId
 
 class ImguiContext : public Graphics::GraphicsContext
 {
-    _DeclarePluginContext();
+    __DeclarePluginContext();
 public:
     /// constructor
     ImguiContext();

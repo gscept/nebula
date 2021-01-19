@@ -5,6 +5,7 @@
     
     Implements a free camera
     
+    @copyright
     (C) 2012-2020 Individual contributors, see AUTHORS file
 */
 #include "math/mat4.h"

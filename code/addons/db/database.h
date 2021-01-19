@@ -5,7 +5,9 @@
   
     Wraps an entire database into a C++ object.
     
+    @copyright
     (C) 2006 Radon Labs
+    (C) 2013-2021 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
 #include "io/uri.h"

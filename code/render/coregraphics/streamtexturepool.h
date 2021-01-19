@@ -6,6 +6,7 @@
     Resource loader for loading texture data from a Nebula stream. Supports
     synchronous and asynchronous loading.
     
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    

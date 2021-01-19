@@ -19,7 +19,7 @@ namespace Fog
 VolumetricFogContext::FogGenericVolumeAllocator VolumetricFogContext::fogGenericVolumeAllocator;
 VolumetricFogContext::FogBoxVolumeAllocator VolumetricFogContext::fogBoxVolumeAllocator;
 VolumetricFogContext::FogSphereVolumeAllocator VolumetricFogContext::fogSphereVolumeAllocator;
-_ImplementContext(VolumetricFogContext, VolumetricFogContext::fogGenericVolumeAllocator);
+__ImplementContext(VolumetricFogContext, VolumetricFogContext::fogGenericVolumeAllocator);
 
 struct
 {
@@ -46,6 +46,8 @@ struct
 	// these are used to update the light clustering
 	Volumefog::FogBox fogBoxes[128];
 	Volumefog::FogSphere fogSpheres[128];
+
+	bool showUI = false;
 } fogState;
 
 struct
@@ -165,7 +167,7 @@ VolumetricFogContext::Create()
 	fogState.turbidity = 0.1f;
 	fogState.color = Math::vec3(1);
 
-	_CreateContext();
+	__CreateContext();
 }
 
 //------------------------------------------------------------------------------
@@ -376,18 +378,21 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 void 
 VolumetricFogContext::RenderUI(const Graphics::FrameContext& ctx)
 {
-	float col[3];
-	fogState.color.storeu(col);
-	Shared::PerTickParams& tickParams = CoreGraphics::ShaderServer::Instance()->GetTickParams();
-	if (ImGui::Begin("Volumetric Fog Params"))
+	if (fogState.showUI)
 	{
-		ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
-		ImGui::SliderFloat("Turbidity", &fogState.turbidity, 0, 200.0f);
-		ImGui::ColorEdit3("Fog Color", col);
-	}
-	fogState.color.loadu(col);
+		float col[3];
+		fogState.color.storeu(col);
+		Shared::PerTickParams& tickParams = CoreGraphics::ShaderServer::Instance()->GetTickParams();
+		if (ImGui::Begin("Volumetric Fog Params"))
+		{
+			ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
+			ImGui::SliderFloat("Turbidity", &fogState.turbidity, 0, 200.0f);
+			ImGui::ColorEdit3("Fog Color", col);
+		}
+		fogState.color.loadu(col);
 
-	ImGui::End();
+		ImGui::End();
+	}
 }
 
 //------------------------------------------------------------------------------

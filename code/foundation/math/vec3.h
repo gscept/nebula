@@ -1,10 +1,16 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Math::vec3
+    @struct Math::vec3
 
-    4D vector
+    A 3D vector.
 
+    Internally represented as a __m128 for performance and alignment reasons.
+
+    @see Math::vector
+    @see Math::point
+
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"

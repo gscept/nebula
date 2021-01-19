@@ -36,7 +36,7 @@ shortcut resource path "textures:mytexture.dds" would be resolve to the absolute
 - <b>Streams</b> as basic in/out data channel. Streams are the replacement for Nebula2's nFile 
 objects. Streams offer the same basic API with Open()/Close()/Read()/Write(), but may
 hide completely different transport or storage channels behind their common interface. Examples
-of stream classes are IO::FileStream, IO::MemoryStream, or Net::HttpStream
+of stream classes are IO::FileStream, IO::MemoryStream, or Http::HttpStream
 - <b>Stream readers and writers</b> are attached to streams and generally implement 
 easy-to-use interfaces to read and write different data formats. For instance one could
 attach an IO::XmlReader to a IO::FileStream to read XML-formatted data from a filesystem
@@ -46,7 +46,7 @@ A good example to show the power of the Nebula in/out system is the following
 code fragment:
 
 @code
-    IO::FileServer::Instance()->CopyFile("http://www.radonlabs.de/index.html", "temp:index.html");
+    IO::FileServer::Instance()->CopyFile("https://en.wikipedia.org/wiki/Radon_Labs#/media/File:Radonlabslogo.svg", "temp:logo.svg");
 @endcode
 
 This single line of code copies a file from a HTTP server into the current user's 
@@ -58,13 +58,13 @@ content of the HTML file without any intermediate storage file.
 
 Nebula initializes the following standard assigns:
 
-- <b>home:</b> Points to the application directory, in a German Windows
-installation, this is usually somewhere under "C:/Programme". Nebula applications
+- <b>home:</b> Points to the application directory, in a US Windows
+installation, this is usually somewhere under "C:/Programs". Nebula applications
 should treat the home: location as a read only directory so that the user doesn't
 need administrator rights to run the application.
 - <b>user:</b> This points to the currently logged in user directory for this
-Nebula application. In a German Windows installation, this is somewhere under
-"C:/Eigene Dateien/[username]". Nebula will automatically create a local directory in the
+Nebula application. In a US Windows installation, this is somewhere under
+"C:/Users/[username]/Documents". Nebula will automatically create a local directory in the
 user directory to prevent different applications to overwrite their data. It is generally
 safe to write data to the user directory. This is the place where configuration and
 save game data should be written, or any other data which should persist between

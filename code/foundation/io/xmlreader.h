@@ -7,6 +7,7 @@
     TinyXML as backend. The XML document is represented as a tree of
     nodes, which can be navigated and queried.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

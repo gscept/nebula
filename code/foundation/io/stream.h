@@ -12,6 +12,7 @@
     Stream objects can be accessed directly, or through stream reader and
     writer classes, which offer specific read/writing interfaces to streams.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

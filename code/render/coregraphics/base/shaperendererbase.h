@@ -8,6 +8,7 @@
 
     TODO: Add support for appending debug shapes from multiple threads simultaneously
     
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

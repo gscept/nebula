@@ -3,6 +3,7 @@
 /**
     Implements a global state which is initialized at the beginning of the frame.
     
+    @copyright
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

@@ -6,6 +6,7 @@
     Interface object of the Debug subsystem. This just creates a DebugHandler
     which runs the DebugServer in its own thread.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

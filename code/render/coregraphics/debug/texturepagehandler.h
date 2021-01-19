@@ -13,6 +13,7 @@
     http://host/texture?img=[resId]&fmt=[fmt]   - retrieve an image of the texture
     http://host/texture?texinfo=[resId]         - build a HTML page about specific texture    
 
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

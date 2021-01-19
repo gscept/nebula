@@ -5,6 +5,7 @@
     
     Base class for launching an external application.
         
+    @copyright
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "util/string.h"

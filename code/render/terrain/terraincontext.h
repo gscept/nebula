@@ -3,6 +3,7 @@
 /**
     Terrain rendering subsystem
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -73,7 +74,7 @@ struct SubTextureUpdateJobOutput
 
 class TerrainContext : public Graphics::GraphicsContext
 {
-    _DeclareContext();
+    __DeclareContext();
 public:
 
     /// constructor

@@ -6,6 +6,7 @@
     A DisplayDevice object represents the display where the RenderDevice
     presents the rendered frame. 
 
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

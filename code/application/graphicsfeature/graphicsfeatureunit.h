@@ -1,8 +1,12 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Game::GraphicsFeatureUnit
+    @class GraphicsFeature::GraphicsFeatureUnit
 
+    Sets up the core rendering system and provides properties and managers for
+    default usage, such as rendering models, animations, particles, etc.
+
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 #include "game/featureunit.h"

@@ -5,6 +5,7 @@
 
     Helper class to compute a world-space ray from mouse coords.
 
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
@@ -20,6 +21,7 @@ class MouseRayUtil
 public:
     /// compute world-space ray from mouse position (mouse position is expected in the range 0..1)
     static Math::line ComputeWorldMouseRay(const Math::vec2& mousePos, float length, const Math::mat4& invViewMatrix, const Math::mat4& invProjMatrix, float nearPlane);
+    /// compute world-space ray from mouse position (mouse position is expected in the range 0..1). Assumes projection matrix is orthographic
     static Math::line ComputeWorldMouseRayOrtho(const Math::vec2& mousePos, float length, const Math::mat4& invViewMatrix, const Math::mat4& invProjMatrix, float nearPlane);
 };
 

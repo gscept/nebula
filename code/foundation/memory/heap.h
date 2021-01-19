@@ -4,7 +4,11 @@
     @class Memory::Heap
   
     Implements a private heap.
+
+    @see Win32::Win32Heap
+    @see Posix::PosixHeap
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

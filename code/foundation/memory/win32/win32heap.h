@@ -6,6 +6,7 @@
     Win32 implementation of the class Memory::Heap. Under Win32,
     the LowFragmentationHeap feature is generally turned on.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

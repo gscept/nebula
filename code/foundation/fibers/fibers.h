@@ -4,6 +4,7 @@
     Fibers are a more lightweight form of jobs which allows recursive job generation, 
     manual pausing and resuming, and more generic code execution to ordinary jobs.
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

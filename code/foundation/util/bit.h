@@ -1,10 +1,11 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Util::Bit
+    @file bit.h
     
     Implements helper functions for checking bits
     
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

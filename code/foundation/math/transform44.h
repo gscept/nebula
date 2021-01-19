@@ -5,6 +5,7 @@
 
     A 4x4 matrix which is described by translation, rotation and scale.
     
+    @copyright
     (C) 2004 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

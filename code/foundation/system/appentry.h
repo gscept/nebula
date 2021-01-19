@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class System::AppEntry
+    @file appentry.h
     
     Implements a platform-independent app-entry point. In your main file,
     put the line
@@ -12,6 +12,7 @@
     
     void NebulaMain(const CommandLineArgs& args)
 
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

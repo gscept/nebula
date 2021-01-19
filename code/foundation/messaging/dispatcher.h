@@ -22,6 +22,7 @@
     Dispatcher objects usually serve as front end message ports which hide
     a more complex message processing infrastructure underneath.
 
+    @copyright
     (C) 2007 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

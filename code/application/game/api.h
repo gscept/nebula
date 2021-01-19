@@ -3,6 +3,9 @@
 /**
     @file   api.h
 
+    The main programming interface for the Game Subsystem.
+
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -111,15 +114,21 @@ struct FilterCreateInfo
 
 //------------------------------------------------------------------------------
 /**
+   Specifies special behaviour for a property
 */
 enum PropertyFlags : uint32_t
 {
+    /// regular property
     PROPERTYFLAG_NONE = 0,
+    /// managed property. This will delay the deletion of this property by
+    /// one frame, allowing managers to clean up externally allocated resources
     PROPERTYFLAG_MANAGED = 1 << 0
 };
 
 //------------------------------------------------------------------------------
 /**
+    Used to create a property.
+    
     @note   types must be mem- copyable, and trivially destructible and should
             preferably not define a constructor.
 */
@@ -127,7 +136,7 @@ struct PropertyCreateInfo
 {
     /// name of the property
     const char* name;
-    /// size of the property type in bytes
+    /// size of the property type in bytes.
     uint32_t byteSize;
     /// a default value for the property type, or NULL if we always want to initialize to 0's
     void const* defaultValue;

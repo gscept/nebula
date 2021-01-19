@@ -6,6 +6,7 @@
     Wraps an underlying mappable stream object to avoid reopening it more than 
     once (e. g. httpstreams)
     
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */    
 #include "core/config.h"

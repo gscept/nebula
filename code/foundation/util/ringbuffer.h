@@ -7,6 +7,7 @@
     fashion. If the buffer is full, the newest element overwrites the
     oldest element.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

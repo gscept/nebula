@@ -6,21 +6,26 @@
     Nebula delegate class, allows to store a function, method or lambda call into a C++ object
     for later execution.
 
-    Note that this does not store any objects or capture, meaning these are extremely volatile to dangling pointers.
+    Note that this does not store any objects or capture, meaning these are extremely vulnerable to dangling pointers.
     This is by design, since it allows us to have much better performance than for example std::function that does
     expensive runtime heap allocations for storing objects and lambda capture.
 
     Usage:
+    @code{.cpp}
     // 'Foo' can be a function or static method
     Util::Delegate<int(int, float)> funcDelegate = Delegate<int(int, float)>::FromFunction<Foo>();
     // Requires an object
     Util::Delegate<int()> methodDelegate = Delegate<int()>::FromMethod<MyClass, MyMethod>(MyObject);
     // Can not utilize closures!
     Util::Delegate<void(int)> lambdaDelegate = [](int a, int b) { return a + b; };
+    @endcode
 
     See http://www.codeproject.com/KB/cpp/ImpossiblyFastCppDelegate.aspx
-    for details.
+    for implementation details.
+
+    @see Util::Delegate<RETTYPE(ARGTYPES...)>
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
@@ -33,6 +38,10 @@ namespace Util
 template<typename T>
 class Delegate; // This is soooo dirty.
 
+//------------------------------------------------------------------------------
+/**
+   @see Util::Delegate
+*/
 template<typename RETTYPE, typename ... ARGTYPES>
 class Delegate<RETTYPE(ARGTYPES...)>
 {

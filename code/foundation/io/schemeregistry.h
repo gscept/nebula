@@ -6,6 +6,7 @@
     Central registry for URI schemes, associates an URI scheme (e.g. http, 
     file, ...) with a Nebula stream class.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

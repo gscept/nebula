@@ -9,6 +9,7 @@
     
     See http://mrl.nyu.edu/~perlin/noise/ for details.
 
+    @copyright
     (C) 2006 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

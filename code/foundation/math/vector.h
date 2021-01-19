@@ -1,9 +1,14 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    A vector is a 3d direction in space, basically like a vec3 but with 
-    a limited interface
+    @struct Math::vector
+    
+    A vector is a 3D direction in space.
 
+    Represented as a __m128 with the W component being 0 at all times.
+    Useful for representing normal vectors and directions.
+
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

@@ -5,7 +5,8 @@
     
     Types used for buffers, how they are created and their intended usage.
 
-    (C)2017-2020 Individual contributors, see AUTHORS file
+    @copyright
+    (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 #include "resources/resource.h"
 

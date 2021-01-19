@@ -1,9 +1,12 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @struct CoreGraphics::MeshCreateInfo
+    
     Mesh collects vertex and index buffers with primitive groups which can be used to render with
 
-    (C)2017-2020 Individual contributors, see AUTHORS file
+    @copyright
+    (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/config.h"

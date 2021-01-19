@@ -6,6 +6,7 @@
     This extends the typeless AttributeDefinitionBase class by a typed
     template class, which adds compiletime-type-safety to attribute definitions.
 
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

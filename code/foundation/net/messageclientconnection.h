@@ -13,6 +13,7 @@
     The MessageClientConnection will concatenate incoming data chunks to full messages and
     Recv() will only return finished messages.
 
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

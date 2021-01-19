@@ -5,6 +5,7 @@
 
     Helper class for generating stack traces
 
+    @copyright
     (C) 2015-2020 Individual contributors, see AUTHORS file
 */
 #include "core/config.h"

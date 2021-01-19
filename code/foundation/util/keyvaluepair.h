@@ -6,6 +6,7 @@
     Key/Value pair objects are used by most assiociative container classes,
     like Dictionary or HashTable. 
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file 
 */

@@ -1,8 +1,11 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @class Graphics::EnvironmentContext
+
     The environment context deals with anything related to the sky and atmosphere effects
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -12,7 +15,7 @@ namespace Graphics
 
 class EnvironmentContext : public GraphicsContext
 {
-    _DeclarePluginContext();
+    __DeclarePluginContext();
 public:
 
     /// create context
@@ -34,9 +37,6 @@ public:
     static void SetMaxLuminance(const float maxLuminance);
     /// set the number of global environment mips
     static void SetNumEnvironmentMips(const int mips);
-private:
-
-
 };
 
 } // namespace Graphics

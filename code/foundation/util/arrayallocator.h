@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @class Util::ArrayAllocator
+    
     The ArrayAllocator provides a variadic list of types which is to be contained in the allocator
     and fetching each value by providing the index into the list of types, which means the members
     are nameless.
@@ -16,6 +18,7 @@
 
     @see    arrayallocatorsafe.h
 
+    @copyright
     (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

@@ -2,8 +2,9 @@
 //------------------------------------------------------------------------------
 /**
     A model context bind a ModelInstance to a model, which allows it to be rendered using an .n3 file.
-    
-    (C)2017-2020 Individual contributors, see AUTHORS file
+
+    @copyright
+    (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"
@@ -27,7 +28,7 @@ namespace Models
 {
 class ModelContext : public Graphics::GraphicsContext
 {
-    _DeclareContext();
+    __DeclareContext();
 public:
     /// constructor
     ModelContext();
@@ -98,11 +99,8 @@ private:
     static Graphics::ContextEntityId Alloc();
     /// deallocate a slice
     static void Dealloc(Graphics::ContextEntityId id);
-    /// move instance
-    static void OnInstanceMoved(uint32_t toIndex, uint32_t fromIndex);
-
-    friend void Visibility::VisibilitySortJob(const Jobs::JobFuncContext& ctx);
-
+    
+    //friend void Visibility::VisibilitySortJob(const Jobs::JobFuncContext& ctx);
 };
 
 //------------------------------------------------------------------------------

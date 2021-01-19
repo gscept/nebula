@@ -33,6 +33,7 @@
     Bruteforce system:
         Doesn't do anything but view frustum culling on everything in the scene.
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

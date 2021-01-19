@@ -11,6 +11,7 @@
     Uses raw char pointers so that the class can both be used
     with Nebula2 and Nebula.
     
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

@@ -3,6 +3,7 @@
 /**
     The vegetation context handles rendering of grass, trees and other types of vegetation
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -47,7 +48,7 @@ struct VegetationMeshSetup
 
 class VegetationContext : public Graphics::GraphicsContext
 {
-    _DeclareContext();
+    __DeclareContext();
 public:
 
     /// constructor

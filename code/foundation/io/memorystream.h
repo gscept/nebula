@@ -6,6 +6,7 @@
     Implements a stream class which writes to and reads from system RAM. 
     Memory streams provide memory mapping for fast direct read/write access.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

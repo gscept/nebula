@@ -3,6 +3,7 @@
 /**
     Context handling GPU cluster culling
 
+    @copyright
     (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -18,7 +19,7 @@ namespace Clustering
 
 class ClusterContext : public Graphics::GraphicsContext
 {
-    _DeclarePluginContext();
+    __DeclarePluginContext();
 public:
     /// constructor
     ClusterContext();

@@ -52,7 +52,7 @@ const uint PhysicalTexturePaddedSize = (PhysicalTextureTilePaddedSize) * Physica
 
 const uint IndirectionUpdateBufferSize = 1024 * 1024 * sizeof(Terrain::IndirectionEntry);
 
-_ImplementContext(TerrainContext, TerrainContext::terrainAllocator);
+__ImplementContext(TerrainContext, TerrainContext::terrainAllocator);
 
 
 struct
@@ -204,7 +204,7 @@ TerrainContext::~TerrainContext()
 void 
 TerrainContext::Create(const TerrainSetupSettings& settings)
 {
-    _CreateContext();
+    __CreateContext();
     using namespace CoreGraphics;
 
     __bundle.OnPrepareView = TerrainContext::CullPatches;

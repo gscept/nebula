@@ -6,6 +6,7 @@
     Support for generating mini dumps. Mini dumps are automatically 
     created when n_assert() or n_error() triggers.
     
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

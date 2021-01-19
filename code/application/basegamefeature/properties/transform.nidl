@@ -1,7 +1,7 @@
 {
-	"includes": [
-		"math/mat4.h"
-	],
+    "includes": [
+        "math/mat4.h"
+    ],
     "properties": {
         "WorldTransform": "mat4",
         "Static": {

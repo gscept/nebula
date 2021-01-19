@@ -8,6 +8,7 @@
     Since the Variant class has a rich set of assignment and cast operators,
     a variant variable can most of the time be used like a normal C++ variable.
     
+    @copyright
     (C) 2006 RadonLabs GmbH.
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

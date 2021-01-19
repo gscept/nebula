@@ -14,6 +14,7 @@
     content stream (IMPORTANT: don't forget to set the MediaType on the stream!)
     and return with a HttpStatus code.
 
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

@@ -4,7 +4,8 @@
     The shader state node wraps the shader associated with a certain primitive node,
     or group of primitive nodes.
     
-    (C)2017-2020 Individual contributors, see AUTHORS file
+    @copyright
+    (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "modelnode.h"

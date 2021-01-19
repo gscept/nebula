@@ -5,6 +5,7 @@
     
     nvx2 file format structures.
     
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

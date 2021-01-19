@@ -5,6 +5,7 @@
 
     Nebula's bounding box class.
 
+    @copyright
     (C) 2004 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

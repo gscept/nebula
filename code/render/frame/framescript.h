@@ -1,6 +1,8 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @class Frame::FrameScript
+    
     A FrameScript describes render operations being done to produce a single frame.
 
     Frame scripts are loaded once like a template, and then compiled to produce
@@ -10,6 +12,7 @@
     On DX12 and Vulkan, the compile process serves to insert proper barriers, events
     and semaphore operations such that shader resources are not stomped or read prematurely.
     
+    @copyright
     (C) 2016-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

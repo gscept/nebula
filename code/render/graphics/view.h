@@ -1,10 +1,13 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @class Graphics::View
+    
     A view describes a camera which can observe a Stage. The view processes 
     the attached Stage through its FrameScript each frame.
     
-    (C)2017-2020 Individual contributors, see AUTHORS file
+    @copyright
+    (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"

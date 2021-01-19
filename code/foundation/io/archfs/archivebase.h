@@ -6,6 +6,7 @@
     Base class of file archives. Subclasses of this class implemented support
     for specific archive formats, like zip.
 
+    @copyright
     (C) 2009 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

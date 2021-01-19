@@ -3,6 +3,7 @@
 /**
     SSAO post effect
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -11,7 +12,7 @@ namespace PostEffects
 
 class SSAOContext : public Graphics::GraphicsContext
 {
-    _DeclarePluginContext();
+    __DeclarePluginContext();
 public:
     /// constructor
     SSAOContext();

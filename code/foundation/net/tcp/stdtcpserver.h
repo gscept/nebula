@@ -9,6 +9,7 @@
     TcpClientConnection object which can be used by the application
     to communicate with a specific client.
 
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

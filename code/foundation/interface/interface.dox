@@ -1,6 +1,7 @@
 /**
 @page Interface
 
+\deprecated
 Warning: The Interface code isn't used very extensively anymore, so the comments below are legacy and not necessary. 
 
 Interface objects offer asynchronous access to important Nebula subsystems,

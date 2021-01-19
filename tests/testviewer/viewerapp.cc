@@ -95,9 +95,9 @@ SimpleViewerApplication::Open()
     {
 #if __NEBULA_HTTP__
 
-		// setup debug subsystem
-		this->debugInterface = Debug::DebugInterface::Create();
-		this->debugInterface->Open();
+        // setup debug subsystem
+        this->debugInterface = Debug::DebugInterface::Create();
+        this->debugInterface->Open();
 #endif
         this->gfxServer = GraphicsServer::Create();
         this->resMgr = Resources::ResourceServer::Create();
@@ -129,57 +129,57 @@ SimpleViewerApplication::Open()
             this->GetAppTitle(), "", CoreGraphics::AntiAliasQuality::None, true, true, false
         };
         this->wnd = CreateWindow(wndInfo);
-		this->cam = Graphics::CreateEntity();
+        this->cam = Graphics::CreateEntity();
 
         // create contexts, this could and should be bundled together
         CameraContext::Create();
         ModelContext::Create();
         Characters::CharacterContext::Create();
 
-		Particles::ParticleContext::Create();
+        Particles::ParticleContext::Create();
 
-		// make sure all bounding box modifying contexts are created before the observer contexts
+        // make sure all bounding box modifying contexts are created before the observer contexts
         ObserverContext::Create();
         ObservableContext::Create();
 
-		Graphics::RegisterEntity<CameraContext, ObserverContext>(this->cam);
-		CameraContext::SetupProjectionFov(this->cam, width / (float)height, Math::deg2rad(60.f), 0.1f, 10000.0f);
+        Graphics::RegisterEntity<CameraContext, ObserverContext>(this->cam);
+        CameraContext::SetupProjectionFov(this->cam, width / (float)height, Math::deg2rad(60.f), 0.1f, 10000.0f);
         CameraContext::SetLODCamera(this->cam);
 
         Dynui::ImguiContext::Create();
 
-        Terrain::TerrainSetupSettings terSettings{
-            0, 1024.0f,      // min/max height 
-            //0, 0,
-            8192, 8192,   // world size in meters
-            256, 256,     // tile size in meters
-            16, 16        // 1 vertex every X meters
-        };
-        Terrain::TerrainContext::Create(terSettings);
+        //Terrain::TerrainSetupSettings terSettings{
+        //    0, 1024.0f,      // min/max height 
+        //    //0, 0,
+        //    8192, 8192,   // world size in meters
+        //    256, 256,     // tile size in meters
+        //    16, 16        // 1 vertex every X meters
+        //};
+        //Terrain::TerrainContext::Create(terSettings);
 
         // setup vegetation
-        Vegetation::VegetationSetupSettings vegSettings{
-            "tex:terrain/everest Height Map (Merged)_PNG_BC4_1.dds",
-            0, 1024.0f,      // min/max height 
-            Math::uint2{8192, 8192}, 3, 0.5f
-        };
-        Vegetation::VegetationContext::Create(vegSettings);
+        //Vegetation::VegetationSetupSettings vegSettings{
+        //    "tex:terrain/everest Height Map (Merged)_PNG_BC4_1.dds",
+        //    0, 1024.0f,      // min/max height 
+        //    Math::uint2{8192, 8192}, 3, 0.5f
+        //};
+        //Vegetation::VegetationContext::Create(vegSettings);
+        //
+        //Graphics::GraphicsEntityId vegetation = Graphics::CreateEntity();
+        //Vegetation::VegetationContext::RegisterEntity(vegetation);
+        //Vegetation::VegetationGrassSetup grassSetup;
+        //grassSetup.mask = "tex:system/white.dds";
+        //grassSetup.albedo = "tex:system/white.dds";
+        //grassSetup.normals = "tex:system/nobump.dds";
+        //grassSetup.material = "tex:system/default_material.dds";
+        //grassSetup.slopeThreshold = 0.5f;
+        //grassSetup.heightThreshold = 0.5f;
+        //Vegetation::VegetationContext::SetupGrass(vegetation, grassSetup);
 
-        Graphics::GraphicsEntityId vegetation = Graphics::CreateEntity();
-        Vegetation::VegetationContext::RegisterEntity(vegetation);
-        Vegetation::VegetationGrassSetup grassSetup;
-        grassSetup.mask = "tex:system/white.dds";
-        grassSetup.albedo = "tex:system/white.dds";
-        grassSetup.normals = "tex:system/nobump.dds";
-        grassSetup.material = "tex:system/default_material.dds";
-        grassSetup.slopeThreshold = 0.5f;
-        grassSetup.heightThreshold = 0.5f;
-        Vegetation::VegetationContext::SetupGrass(vegetation, grassSetup);
-
-		Clustering::ClusterContext::Create(0.1f, 1000.0f, this->wnd);
-		Lighting::LightContext::Create();
+        Clustering::ClusterContext::Create(0.1f, 1000.0f, this->wnd);
+        Lighting::LightContext::Create();
         Decals::DecalContext::Create();
-		Im3d::Im3dContext::Create();
+        Im3d::Im3dContext::Create();
         Fog::VolumetricFogContext::Create();
         PostEffects::BloomContext::Create();
         PostEffects::SSAOContext::Create();
@@ -187,9 +187,9 @@ SimpleViewerApplication::Open()
         PostEffects::TonemapContext::Create();
 
 
-		this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
+        this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
         gfxServer->SetCurrentView(this->view);
-		this->stage = gfxServer->CreateStage("stage1", true);
+        this->stage = gfxServer->CreateStage("stage1", true);
 
         // setup post effects
         Ptr<Frame::FrameScript> frameScript = this->view->GetFrameScript();
@@ -202,9 +202,9 @@ SimpleViewerApplication::Open()
         Im3d::Im3dContext::SetGridSize(1.0f, 25);
         Im3d::Im3dContext::SetGridColor(Math::vec4(0.2f, 0.2f, 0.2f, 0.8f));
 
-		this->globalLight = Graphics::CreateEntity();
-		Lighting::LightContext::RegisterEntity(this->globalLight);
-		Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1, 1, 1), 1.0f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(0.1, 0.1, 0.1), true);
+        this->globalLight = Graphics::CreateEntity();
+        Lighting::LightContext::RegisterEntity(this->globalLight);
+        Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1, 1, 1), 1.0f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(0.1, 0.1, 0.1), true);
 
         this->ResetCamera();
         CameraContext::SetTransform(this->cam, this->mayaCameraUtil.GetCameraTransform());
@@ -218,7 +218,7 @@ SimpleViewerApplication::Open()
         ObserverContext::Setup(this->cam, VisibilityEntityType::Camera);
 
         // create environment context for the atmosphere effects
-		EnvironmentContext::Create(this->globalLight);
+        EnvironmentContext::Create(this->globalLight);
 
         this->UpdateCamera();
 

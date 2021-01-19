@@ -3,6 +3,7 @@
 /**
     Interface for dealing with flatbuffer files
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 

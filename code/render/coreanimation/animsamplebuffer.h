@@ -8,6 +8,7 @@
     of samples which contributed to a mixing result (this is necessary
     for correct mixing of partial animations).
      
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    

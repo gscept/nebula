@@ -1,10 +1,14 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @class Memory::RingAllocator
+    
     Allocates memory up-front, and then allows other systems to grab regions.
+    
     Synchronizes used regions between frames (thread safe) in order to recycle
     previously occupied memory.
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

@@ -97,11 +97,11 @@ struct Im3dState
     Im3d::Id depthLayerId;
     byte* vertexPtr;
 
-	Util::FixedArray<Util::Array<Im3d::VertexData>> bufferedVertexData;
+    Util::FixedArray<Util::Array<Im3d::VertexData>> bufferedVertexData;
 };
 static Im3dState imState;
 
-_ImplementPluginContext(Im3dContext);
+__ImplementPluginContext(Im3dContext);
 //------------------------------------------------------------------------------
 /**
 */
@@ -128,7 +128,7 @@ Im3dContext::Create()
     __bundle.OnPrepareView = Im3dContext::OnPrepareView;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-	imState.bufferedVertexData.Resize(CoreGraphics::GetNumBufferedFrames());
+    imState.bufferedVertexData.Resize(CoreGraphics::GetNumBufferedFrames());
     imState.inputHandler = Im3dInputHandler::Create();
     //Input::InputServer::Instance()->AttachInputHandler(Input::InputPriority::DynUi, imState.inputHandler.upcast<Input::InputHandler>());
 
@@ -178,6 +178,17 @@ Im3dContext::Discard()
 
     CoreGraphics::DestroyBuffer(imState.vbo);
     imState.vertexPtr = nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Im3dContext::DrawText(const Math::vec3& position, Util::String const& name, const float size, const Math::vec4 color, uint32_t renderFlags)
+{
+    if (renderFlags & CheckDepth) Im3d::PushLayerId(imState.depthLayerId);
+    Im3d::Text(position, size, Im3d::Vec4(color), Im3d::TextFlags::TextFlags_Default, name.AsCharPtr());
+    if (renderFlags & CheckDepth) Im3d::PopLayerId();
 }
 
 //------------------------------------------------------------------------------
@@ -418,9 +429,9 @@ CollectByFilter(ShaderProgramId const & shader, PrimitiveTopology::Code topology
     // setup input buffers
     CoreGraphics::SetStreamVertexBuffer(0, imState.vbo, 0);
 
-	Util::Array<Im3d::VertexData>& bufferedVertices = imState.bufferedVertexData[CoreGraphics::GetBufferedFrameIndex()];
-	SizeT offset = bufferedVertices.Size();
-	const SizeT numVertsPerChunk = CoreGraphics::BufferGetUploadMaxSize() / sizeof(Im3d::VertexData);
+    Util::Array<Im3d::VertexData>& bufferedVertices = imState.bufferedVertexData[CoreGraphics::GetBufferedFrameIndex()];
+    SizeT offset = bufferedVertices.Size();
+    const SizeT numVertsPerChunk = CoreGraphics::BufferGetUploadMaxSize() / sizeof(Im3d::VertexData);
 
     for (uint32_t i = 0, n = Im3d::GetDrawListCount(); i < n; ++i)
     {
@@ -430,53 +441,53 @@ CollectByFilter(ShaderProgramId const & shader, PrimitiveTopology::Code topology
             const Im3d::VertexData* vertexBuffer = (const Im3d::VertexData*)drawList.m_vertexData;
             const SizeT vertexBufferSize = drawList.m_vertexCount;
 
-			// copy over buffered vertices
-			bufferedVertices.AppendArray(vertexBuffer, vertexBufferSize);
-			const SizeT numChunks = Math::ceil(drawList.m_vertexCount / (float)numVertsPerChunk);
+            // copy over buffered vertices
+            bufferedVertices.AppendArray(vertexBuffer, vertexBufferSize);
+            const SizeT numChunks = Math::ceil(drawList.m_vertexCount / (float)numVertsPerChunk);
 
-			SizeT remainingVerts = drawList.m_vertexCount;
-			for (uint32_t j = 0; j < numChunks; j++)
-			{
-				const SizeT uploadSize = Math::min(remainingVerts, numVertsPerChunk);
-				CoreGraphics::BufferUpload(imState.vbo, bufferedVertices.Begin() + offset, uploadSize, 0);
-				remainingVerts -= numVertsPerChunk;
-				offset += uploadSize;
+            SizeT remainingVerts = drawList.m_vertexCount;
+            for (uint32_t j = 0; j < numChunks; j++)
+            {
+                const SizeT uploadSize = Math::min(remainingVerts, numVertsPerChunk);
+                CoreGraphics::BufferUpload(imState.vbo, bufferedVertices.Begin() + offset, uploadSize, 0);
+                remainingVerts -= numVertsPerChunk;
+                offset += uploadSize;
 
-				CoreGraphics::BarrierInsert(
-				CoreGraphics::GraphicsQueueType,
-				CoreGraphics::BarrierStage::Transfer,
-				CoreGraphics::BarrierStage::VertexInput,
-				CoreGraphics::BarrierDomain::Global,
-				{
-					CoreGraphics::ExecutionBarrier
-					{
-						CoreGraphics::BarrierAccess::TransferWrite,
-						CoreGraphics::BarrierAccess::VertexRead
-					}
-				});
+                CoreGraphics::BarrierInsert(
+                CoreGraphics::GraphicsQueueType,
+                CoreGraphics::BarrierStage::Transfer,
+                CoreGraphics::BarrierStage::VertexInput,
+                CoreGraphics::BarrierDomain::Global,
+                {
+                    CoreGraphics::ExecutionBarrier
+                    {
+                        CoreGraphics::BarrierAccess::TransferWrite,
+                        CoreGraphics::BarrierAccess::VertexRead
+                    }
+                });
 
-			    CoreGraphics::PrimitiveGroup primitive;
-				primitive.SetNumIndices(0);
-				primitive.SetBaseIndex(0);
-				primitive.SetNumVertices(drawList.m_vertexCount);
-				primitive.SetBaseVertex(0);
-				CoreGraphics::SetPrimitiveGroup(primitive);
-				CoreGraphics::Draw();
+                CoreGraphics::PrimitiveGroup primitive;
+                primitive.SetNumIndices(0);
+                primitive.SetBaseIndex(0);
+                primitive.SetNumVertices(drawList.m_vertexCount);
+                primitive.SetBaseVertex(0);
+                CoreGraphics::SetPrimitiveGroup(primitive);
+                CoreGraphics::Draw();
 
-				CoreGraphics::BarrierInsert(
-				CoreGraphics::GraphicsQueueType,
-				CoreGraphics::BarrierStage::VertexInput,
-				CoreGraphics::BarrierStage::Transfer,
-				CoreGraphics::BarrierDomain::Global,
-				{
-					CoreGraphics::ExecutionBarrier
-					{
-						CoreGraphics::BarrierAccess::VertexRead,
-						CoreGraphics::BarrierAccess::TransferWrite
-					}
-				});
-			}
-		}
+                CoreGraphics::BarrierInsert(
+                CoreGraphics::GraphicsQueueType,
+                CoreGraphics::BarrierStage::VertexInput,
+                CoreGraphics::BarrierStage::Transfer,
+                CoreGraphics::BarrierDomain::Global,
+                {
+                    CoreGraphics::ExecutionBarrier
+                    {
+                        CoreGraphics::BarrierAccess::VertexRead,
+                        CoreGraphics::BarrierAccess::TransferWrite
+                    }
+                });
+            }
+        }
     }    
 }
 
@@ -513,10 +524,10 @@ Im3dContext::Render(const IndexT frameIndex)
     IndexT vertexBufferOffset = 0;
     // collect draws and loop a couple of times instead
 
-	Util::Array<Im3d::VertexData>& bufferedVertices = imState.bufferedVertexData[CoreGraphics::GetBufferedFrameIndex()];
-	bufferedVertices.Clear();
+    Util::Array<Im3d::VertexData>& bufferedVertices = imState.bufferedVertexData[CoreGraphics::GetBufferedFrameIndex()];
+    bufferedVertices.Clear();
 
-	CoreGraphics::CommandBufferBeginMarker(CoreGraphics::GraphicsQueueType, NEBULA_MARKER_GRAPHICS, "Im3d");
+    CoreGraphics::CommandBufferBeginMarker(CoreGraphics::GraphicsQueueType, NEBULA_MARKER_GRAPHICS, "Im3d");
 
     CollectByFilter(imState.points, CoreGraphics::PrimitiveTopology::PointList, vertexBufferOffset, vertexCount,
         [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Points; });
@@ -535,7 +546,7 @@ Im3dContext::Render(const IndexT frameIndex)
         [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Triangles && l.m_layerId == imState.depthLayerId; });
 
 
-	CoreGraphics::CommandBufferEndMarker(CoreGraphics::GraphicsQueueType);
+    CoreGraphics::CommandBufferEndMarker(CoreGraphics::GraphicsQueueType);
     CoreGraphics::EndBatch();
 }
 

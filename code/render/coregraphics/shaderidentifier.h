@@ -14,6 +14,7 @@
     shader files before this class stops behaving (although this value can 
     be increased if need be)
 
+    @copyright
     (C) 2015-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"

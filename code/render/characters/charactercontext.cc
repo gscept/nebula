@@ -25,7 +25,7 @@ namespace Characters
 {
 
 CharacterContext::CharacterContextAllocator CharacterContext::characterContextAllocator;
-_ImplementContext(CharacterContext, CharacterContext::characterContextAllocator);
+__ImplementContext(CharacterContext, CharacterContext::characterContextAllocator);
 
 Jobs::JobPortId CharacterContext::jobPort;
 Jobs::JobSyncId CharacterContext::jobSync;
@@ -55,7 +55,7 @@ CharacterContext::~CharacterContext()
 void 
 CharacterContext::Create()
 {
-    _CreateContext();
+    __CreateContext();
 
     __bundle.OnBegin = CharacterContext::UpdateAnimations;
     __bundle.OnBeforeFrame = CharacterContext::OnAfterFrame;
@@ -73,7 +73,7 @@ CharacterContext::Create()
     };
     CharacterContext::jobSync = Jobs::CreateJobSync(sinfo);
 
-    _CreateContext();
+    __CreateContext();
 }
 
 //------------------------------------------------------------------------------

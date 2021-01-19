@@ -16,7 +16,7 @@ IdAllocator<
     int,           // this is b
     int            // this is c
     >           
-    FooAllcoator;
+    FooAllocator;
 @endcode
 
 Internally, FooAllocator has just been defined as being a tuple of three Util::Array<int>, one for each type. Each will be numbered, but for the sake of it, let's say that 'member' a is stored in Util::Array<int> A, and b is stored in Util::Array<int> B, etc... The type can of course be different for each member. Whenever FooAllocator.Alloc() is called, the allocator either allocates more memory for A, B and C, or, if there are free slots, returns that free slot. A slot is freed if FooAllocator first does Alloc() which returns an Id, then at some later point, that same Id is passed to Dealloc(), which doesn't destroy the memory, but simply marks that slot as free. This allows us to quickly deallocate and reallocate objects without actually having to allocate any memory, and it can keep each individual member separate, which results in a low-fragmentation container which is extremely benificial for the cache. For a better understanding of this, go to util/arrayallocator.h. You can think of it this way:
@@ -53,7 +53,8 @@ FooAllocator::Alloc() is run:
 5 - Used
 6 - Used
 7 - Used
-
 @endcode
+
+You can access the allocators "free-ids" list to perform defragmentation of the allocator manually if necessary.
 
 */

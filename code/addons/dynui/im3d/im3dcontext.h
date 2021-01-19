@@ -5,6 +5,7 @@
 
     Nebula renderer for Im3d gizmos
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -29,7 +30,7 @@ enum RenderFlag
 
 class Im3dContext : public Graphics::GraphicsContext
 {
-    _DeclarePluginContext();
+    __DeclarePluginContext();
 public:
     /// constructor
     Im3dContext();
@@ -38,6 +39,8 @@ public:
 
     static void Create();
     static void Discard();
+
+    static void DrawText(const Math::vec3& position, Util::String const& text, const float size = 10.0f, const Math::vec4 color = { 1.0f, 0.0f, 0.0f, 1.0f }, uint32_t renderFlags = CheckDepth);
 
     static void DrawPoint(const Math::vec3& position, const float size = 10.0f, const Math::vec4 color = { 1.0f, 0.0f, 0.0f, 1.0f }, uint32_t renderFlags = CheckDepth);
 

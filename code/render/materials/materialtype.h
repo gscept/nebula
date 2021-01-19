@@ -3,6 +3,7 @@
 /**
     A material type declares the draw steps and associated shaders
 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

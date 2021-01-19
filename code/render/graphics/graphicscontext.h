@@ -1,17 +1,19 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    Graphics context is a helper class to setup graphics contexts.
-
+    @struct Graphics::GraphicsContextState
+    
     A graphics context is a resource which holds a contextual representation for
     a graphics entity.
 
-    Use the DeclareRegistration macro in the header and DefineRegistration in the implementation.
+    Use the __DeclareContext macro in the header and __ImplementContext in the implementation.
 
+    @note
     The reason for why the function bundle and state are implemented through macros, is because
     they have to be static, and thus implemented explicitly once per each context.
     
-    (C)2017-2020 Individual contributors, see AUTHORS file
+    @copyright
+    (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
@@ -24,7 +26,7 @@
 #include "graphicsentity.h"
 #include "coregraphics/window.h"
 
-#define _DeclarePluginContext() \
+#define __DeclarePluginContext() \
 private:\
     static Graphics::GraphicsContextState __state;\
     static Graphics::GraphicsContextFunctionBundle __bundle;\
@@ -39,12 +41,12 @@ public:\
     static void EndBulkRegister(); \
 private:
 
-#define _DeclareContext() \
-    _DeclarePluginContext(); \
+#define __DeclareContext() \
+    __DeclarePluginContext(); \
     static void Defragment();
 
 
-#define _ImplementPluginContext(ctx) \
+#define __ImplementPluginContext(ctx) \
 Graphics::GraphicsContextState ctx::__state; \
 Graphics::GraphicsContextFunctionBundle ctx::__bundle; \
 void ctx::RegisterEntity(const Graphics::GraphicsEntityId id) \
@@ -107,8 +109,8 @@ void ctx::EndBulkRegister()\
     __state.entitySliceMap.EndBulkAdd();\
 }
 
-#define _ImplementContext(ctx, idAllocator) \
-_ImplementPluginContext(ctx);\
+#define __ImplementContext(ctx, idAllocator) \
+__ImplementPluginContext(ctx);\
 void ctx::Defragment()\
 {\
     auto& freeIds = idAllocator.FreeIds();\
@@ -144,13 +146,13 @@ void ctx::Defragment()\
     freeIds.Clear();\
 }
 
-#define _CreatePluginContext() \
+#define __CreatePluginContext() \
     __state.Alloc = Alloc; \
     __state.Dealloc = Dealloc; \
     __state.currentStage = Graphics::NoStage;
 
-#define _CreateContext() \
-    _CreatePluginContext() \
+#define __CreateContext() \
+    __CreatePluginContext() \
     __state.Defragment = Defragment;
 
 namespace Graphics

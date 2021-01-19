@@ -20,6 +20,7 @@
     offers methods to convert basic Nebula datatypes from and to string,
     and a group of methods which manipulate filename strings.
 
+    @copyright
     (C) 2006 RadonLabs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

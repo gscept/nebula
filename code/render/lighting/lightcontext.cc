@@ -38,7 +38,7 @@ LightContext::SpotLightAllocator LightContext::spotLightAllocator;
 LightContext::GlobalLightAllocator LightContext::globalLightAllocator;
 LightContext::ShadowCasterAllocator LightContext::shadowCasterAllocator;
 Util::HashTable<Graphics::GraphicsEntityId, Graphics::ContextEntityId, 6, 1> LightContext::shadowCasterSliceMap;
-_ImplementContext(LightContext, LightContext::genericLightAllocator);
+__ImplementContext(LightContext, LightContext::genericLightAllocator);
 
 struct
 {
@@ -129,7 +129,7 @@ LightContext::~LightContext()
 void 
 LightContext::Create()
 {
-	_CreateContext();
+	__CreateContext();
 
 	__bundle.OnPrepareView = LightContext::OnPrepareView;
 	__bundle.OnUpdateViewResources = LightContext::UpdateViewDependentResources;

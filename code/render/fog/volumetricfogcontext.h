@@ -8,6 +8,7 @@
     and controlled through global parameters, and local fog volumes 
     which are individually configurable. 
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
@@ -17,7 +18,7 @@ namespace Fog
 
 class VolumetricFogContext : public Graphics::GraphicsContext
 {
-    _DeclareContext()
+    __DeclareContext()
 public:
 
     /// constructor

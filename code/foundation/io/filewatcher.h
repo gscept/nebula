@@ -5,6 +5,7 @@
 
     For registering callbacks for file modification events.
     
+    @copyright
     (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 #include "core/types.h"

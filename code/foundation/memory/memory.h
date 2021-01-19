@@ -1,10 +1,11 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Memory::Memory
+    @file memory.h
   
-    Implements a private heap.
+    Implements a memory related functions.
     
+    @copyright
     (C) 2006 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

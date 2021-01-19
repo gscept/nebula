@@ -5,6 +5,7 @@
     
     The ImGui console uses ImGui to produce a live interactive console.
     
+    @copyright
     (C) 2012-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

@@ -18,7 +18,7 @@
 
 namespace PostEffects
 {
-_ImplementPluginContext(PostEffects::SSAOContext);
+__ImplementPluginContext(PostEffects::SSAOContext);
 
 struct
 {
@@ -81,7 +81,7 @@ SSAOContext::~SSAOContext()
 void 
 SSAOContext::Create()
 {
-    _CreatePluginContext();
+    __CreatePluginContext();
 
     __bundle.OnUpdateViewResources = SSAOContext::UpdateViewDependentResources;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);

@@ -3,6 +3,7 @@
 /**
     The occupancy quad tree implements a tree which allows for a quick search 
 
+    @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

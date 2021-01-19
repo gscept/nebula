@@ -8,6 +8,7 @@
     data and are usually shared between several clients. One AnimResource
     usually contains the data of one animation resource file.
     
+    @copyright
     (C) 2008 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

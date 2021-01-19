@@ -1,8 +1,11 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
+    @struct FenceCreateInfo
+
     A fence is a CPU-GPU sync object, used to let the CPU wait for the GPU to finish some work.
                 
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------

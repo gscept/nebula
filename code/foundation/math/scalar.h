@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @file math/scalar.h
+    @file scalar.h
 
     Nebula's scalar datatype.
 
@@ -10,6 +10,7 @@
     functions are called and must be placed into a .cc file, not into the
     header.
 
+    @copyright
     (C) 2007 Radon Labs GmbH
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */

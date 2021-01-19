@@ -12,7 +12,7 @@
 namespace PostEffects
 {
 
-_ImplementPluginContext(PostEffects::TonemapContext);
+__ImplementPluginContext(PostEffects::TonemapContext);
 
 struct
 {
@@ -52,7 +52,7 @@ TonemapContext::~TonemapContext()
 void 
 TonemapContext::Create()
 {
-    _CreatePluginContext();
+    __CreatePluginContext();
 
     using namespace CoreGraphics;
 

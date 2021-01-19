@@ -7,6 +7,7 @@
     pjson as backend. The json document is represented as a tree of
     nodes, which can be navigated and queried.
         
+    @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
 */
 #include "io/streamreader.h"
