@@ -21,6 +21,9 @@
 #include "system/cpu.h"
 #include "profiling/profiling.h"
 
+#include "dynui/im3d/im3d.h"
+#include "dynui/im3d/im3dcontext.h"
+
 #ifndef PUBLIC_BUILD
 #include "imgui.h"
 #endif
@@ -32,7 +35,6 @@ ObserverContext::ObserverAllocator ObserverContext::observerAllocator;
 ObservableContext::ObservableAllocator ObservableContext::observableAllocator;
 ObservableContext::ObservableAtomAllocator ObservableContext::observableAtomAllocator;
 
-static Util::Array<Graphics::GraphicsEntityId> PendingObservables;
 
 Util::Array<VisibilitySystem*> ObserverContext::systems;
 
@@ -79,54 +81,17 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 {
     N_SCOPE(RunVisibilityTests, Visibility);
 
-    // 
-    if (PendingObservables.Size() > 0)
-    {
-        Util::Array<VisibilityResultAllocator>& alloc = observerAllocator.GetArray<Observer_ResultAllocator>();
-        for (IndexT i = 0; i < alloc.Size(); i++)
-        {
-            for (IndexT k = 0; k < PendingObservables.Size(); k++)
-            {
-                // get nodes
-                const Util::Array<Models::ModelNode::Instance*>& nodes = Models::ModelContext::GetModelNodeInstances(PendingObservables[k]);
-
-                // go through model nodes and allocate a visibility flag result for each
-                for (IndexT j = 0; j < nodes.Size(); j++)
-                {
-                    Models::ModelNode::Instance* node = nodes[j];
-                    if ((node->node->GetBits() & Models::HasStateBit) == Models::HasStateBit)
-                    {
-                        // allocate visibility result instance
-                        Ids::Id32 obj = alloc[i].Alloc();
-                        alloc[i].Set<VisibilityResult_Flag>(obj, Math::ClipStatus::Inside);
-                    }
-                }
-            }
-        }
-        PendingObservables.Clear();
-    }
-
-    const Util::Array<VisibilityEntityType>& observerTypes = observerAllocator.GetArray<Observer_EntityType>();
-    const Util::Array<VisibilityEntityType>& observableTypes = ObservableContext::observableAllocator.GetArray<Observable_EntityType>();
-
-    const Util::Array<Graphics::GraphicsEntityId>& observerIds = observerAllocator.GetArray<Observer_EntityId>();
-    const Util::Array<Graphics::GraphicsEntityId>& observableIds = ObservableContext::observableAllocator.GetArray<Observable_EntityId>();
-
-    Util::Array<Math::mat4>& observerTransforms = observerAllocator.GetArray<Observer_Matrix>();
-
     Util::Array<Math::mat4>& observableAtomTransforms = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_Transform>();
-    Util::Array<Graphics::ContextEntityId>& observableAtomContexts = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_ContextEntity>();
+    Util::Array<VisibilityEntityType>& observableAtomTypes = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_VisibilityEntityType>();
+    Util::Array<Graphics::GraphicsEntityId>& observableAtomEntities = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_GraphicsEntityId>();
     Util::Array<bool>& observableAtomActiveFlags = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_Active>();
-
-    const Util::Array<VisibilityResultAllocator>& results = observerAllocator.GetArray<Observer_ResultAllocator>();
-    Util::Array<Math::ClipStatus::Type*> observerResults = observerAllocator.GetArray<Observer_Results>();
 
     // go through all transforms and update
     IndexT i;
-    for (i = 0; i < observableAtomContexts.Size(); i++)
+    for (i = 0; i < observableAtomEntities.Size(); i++)
     {
-        const VisibilityEntityType type = observableTypes[observableAtomContexts[i].id];
-        const Graphics::GraphicsEntityId id = observableIds[observableAtomContexts[i].id];
+        const VisibilityEntityType type = observableAtomTypes[i];
+        const Graphics::GraphicsEntityId id = observableAtomEntities[i];
 
         if (id == Graphics::GraphicsEntityId::Invalid())
             continue;
@@ -153,6 +118,12 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         }
     }
 
+    Util::Array<Math::mat4>& observerTransforms = observerAllocator.GetArray<Observer_Matrix>();
+    const Util::Array<Graphics::GraphicsEntityId>& observerIds = observerAllocator.GetArray<Observer_EntityId>();
+    const Util::Array<VisibilityEntityType>& observerTypes = observerAllocator.GetArray<Observer_EntityType>();
+    Util::Array<VisibilityResultArray>& vis = observerAllocator.GetArray<Observer_ResultArray>();
+    Util::Array<Math::ClipStatus::Type*>& observerResults = observerAllocator.GetArray<Observer_Results>();
+
     for (i = 0; i < observerIds.Size(); i++)
     {
         const Graphics::GraphicsEntityId id = observerIds[i];
@@ -160,32 +131,6 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 
         if (id == Graphics::GraphicsEntityId::Invalid())
             continue;
-
-        VisibilityResultAllocator& result = results[i];
-
-        // fetch current context ids
-        IndexT j;
-        for (j = 0; j < observableIds.Size(); j++)
-        {
-            const VisibilityEntityType type = observableTypes[j];
-            Util::Array<Graphics::ContextEntityId>& contextIds = result.GetArray<VisibilityResult_CtxId>();
-
-            if (observableIds[j] == Graphics::GraphicsEntityId::Invalid())
-                continue;
-
-            switch (type)
-            {
-            case Model:
-                contextIds[j] = Models::ModelContext::GetContextId(observableIds[j]);
-                break;
-            case Light:
-                contextIds[j] = Lighting::LightContext::GetContextId(observableIds[j]);
-                break;
-            case LightProbe:
-                contextIds[j] = Graphics::LightProbeContext::GetContextId(observableIds[j]);
-                break;
-            }
-        }
 
         switch (type)
         {
@@ -201,61 +146,48 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         }
     }
 
-    // first step, go through list of visible entities and reset
-    Util::Array<VisibilityResultAllocator>& vis = observerAllocator.GetArray<Observer_ResultAllocator>();
-
     // reset all lists to that all entities are visible
     for (i = 0; i < vis.Size(); i++)
     {
-        Util::Array<Math::ClipStatus::Type>& flags = vis[i].GetArray<VisibilityResult_Flag>();
+        Util::Array<Math::ClipStatus::Type>& flags = vis[i];
         observerResults[i] = flags.Begin();
 
         VisibilityDrawList& visibilities = observerAllocator.Get<Observer_DrawList>(i);
-
-        // clear draw lists
-        auto it1 = visibilities.Begin();
-        while (it1 != visibilities.End())
-        {
-            auto it2 = it1.val->Begin();
-            while (it2 != it1.val->End())
-            {
-                it2.val->Reset();
-                it2++;
-            }
-            it1.val->Reset();
-            it1++;
-        }
-        visibilities.Reset();
-
-        for (IndexT j = 0; j < flags.Size(); j++)
-        {
-            flags[j] = Math::ClipStatus::Outside;
-        }
+        visibilities.commandBuffer.Clear();
+        visibilities.materialOffsets.Clear();
+        visibilities.drawPackets.Clear();
     }
 
     // prepare visibility systems
-    if (observerTransforms.Size() > 0) for (i = 0; i < ObserverContext::systems.Size(); i++)
+    if (observerTransforms.Size() > 0)
     {
-        VisibilitySystem* sys = ObserverContext::systems[i];
-        sys->PrepareObservers(observerTransforms.Begin(), observerResults.Begin(), observerTransforms.Size());
+        for (i = 0; i < ObserverContext::systems.Size(); i++)
+        {
+            VisibilitySystem* sys = ObserverContext::systems[i];
+            sys->PrepareObservers(observerTransforms.Begin(), observerResults.Begin(), observerTransforms.Size());
+        }
     }
 
     // setup observerable entities
     const Util::Array<Graphics::GraphicsEntityId>& ids = ObservableContext::observableAllocator.GetArray<Observable_EntityId>();
-    if (observableAtomTransforms.Size() > 0) for (i = 0; i < ObserverContext::systems.Size(); i++)
+    if (observableAtomTransforms.Size() > 0)
     {
-        VisibilitySystem* sys = ObserverContext::systems[i];
-        sys->PrepareEntities(observableAtomTransforms.Begin(), ids.Begin(), observableAtomActiveFlags.Begin(), observableAtomTransforms.Size());
+        for (i = 0; i < ObserverContext::systems.Size(); i++)
+        {
+            VisibilitySystem* sys = ObserverContext::systems[i];
+            sys->PrepareEntities(observableAtomTransforms.Begin(), ids.Begin(), observableAtomActiveFlags.Begin(), observableAtomTransforms.Size());
+        }
     }
 
     // run all visibility systems
-    IndexT j;
     if ((observerTransforms.Size() > 0) && (observableAtomTransforms.Size() > 0))
-        for (j = 0; j < ObserverContext::systems.Size(); j++)
+    {
+        for (i = 0; i < ObserverContext::systems.Size(); i++)
         {
-            VisibilitySystem* sys = ObserverContext::systems[j];
+            VisibilitySystem* sys = ObserverContext::systems[i];
             sys->Run();
         }
+    }
 
     // put a sync point for the jobs so all results are done when doing the sorting
     Jobs::JobSyncSignal(ObserverContext::jobInternalSync, ObserverContext::jobPort);
@@ -265,7 +197,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     bool dependencyNeeded = false;
     for (i = 0; i < vis.Size(); i++)
     {
-        const Util::Array<Math::ClipStatus::Type>& flags = vis[i].GetArray<VisibilityResult_Flag>();
+        const Util::Array<Math::ClipStatus::Type>& flags = vis[i];
         Graphics::GraphicsEntityId& dependency = observerAllocator.Get<Observer_Dependency>(i);
 
         // run dependency resolve job
@@ -284,7 +216,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
             ctx.uniform.data[1] = &ctxId;
             ctx.uniform.dataSize[1] = sizeof(uint32);
 
-            const Util::Array<Math::ClipStatus::Type>& otherFlags = vis[ctxId.id].GetArray<VisibilityResult_Flag>();
+            const Util::Array<Math::ClipStatus::Type>& otherFlags = vis[ctxId.id];
 
             ctx.input.data[0] = otherFlags.Begin();
             ctx.input.dataSize[0] = sizeof(Math::ClipStatus::Type) * otherFlags.Size();
@@ -311,7 +243,6 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         Jobs::JobSyncThreadWait(ObserverContext::jobInternalSync2, ObserverContext::jobPort);
     }
 
-    // first step, go through list of visible entities and reset
     for (i = 0; i < vis.Size(); i++)
     {
         const Util::Array<Models::ModelNode::Instance*>& nodes = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_Node>();
@@ -322,7 +253,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
             continue;
         }
 
-        const Util::Array<Math::ClipStatus::Type>& flags = vis[i].GetArray<VisibilityResult_Flag>();
+        const Util::Array<Math::ClipStatus::Type>& flags = vis[i];
         VisibilityDrawList& visibilities = observerAllocator.Get<Observer_DrawList>(i);
         Memory::ArenaAllocator<1024>& allocator = observerAllocator.Get<Observer_DrawListAllocator>(i);
 
@@ -370,7 +301,7 @@ ObserverContext::GenerateDrawLists(const Graphics::FrameContext& ctx)
 
     Jobs::JobSyncThreadWait(ObserverContext::jobInternalSync3, ObserverContext::jobPort);
     IndexT i;
-    Util::Array<VisibilityResultAllocator>& vis = observerAllocator.GetArray<Observer_ResultAllocator>();
+    Util::Array<VisibilityResultArray>& vis = observerAllocator.GetArray<Observer_ResultArray>();
     for (i = 0; i < vis.Size(); i++)
     {
         VisibilityDrawList& visibilities = observerAllocator.Get<Observer_DrawList>(i);
@@ -541,13 +472,23 @@ ObserverContext::OnRenderDebug(uint32_t flags)
     // wait for all jobs to finish
     Jobs::JobSyncHostWait(ObserverContext::jobHostSync);
 
-    Util::Array<VisibilityResultAllocator>& vis = observerAllocator.GetArray<3>();
+    static int visIndex = 0;
+    auto const& foo = observerAllocator.GetArray<Observer_DrawList>();
+    for (auto const& a : foo[visIndex].drawPackets)
+    {
+        CoreGraphics::RenderShape shape;
+        Models::ShaderStateNode::Instance* sinst = reinterpret_cast<Models::ShaderStateNode::Instance*>(a->node);
+        shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), sinst->boundingBox.to_mat4(), {1,0,0.5,1});
+        CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
+    }
+
+    Util::Array<VisibilityResultArray>& vis = observerAllocator.GetArray<3>();
     Util::FixedArray<SizeT> insideCounters(vis.Size(), 0);
     Util::FixedArray<SizeT> clippedCounters(vis.Size(), 0);
     Util::FixedArray<SizeT> totalCounters(vis.Size(), 0);
     for (IndexT i = 0; i < vis.Size(); i++)
     {
-        auto res = vis[i].GetArray<VisibilityResult_Flag>();
+        auto res = vis[i];
         for (IndexT j = 0; j < res.Size(); j++)
             switch (res[j])
             {
@@ -565,6 +506,7 @@ ObserverContext::OnRenderDebug(uint32_t flags)
     }
     if (ImGui::Begin("Visibility"))
     {
+        ImGui::SliderInt("visIndex", &visIndex, 0, (int)foo.size() - 1);
         for (IndexT i = 0; i < vis.Size(); i++)
         {
             ImGui::Text("Entities visible for observer %d: %d (inside [%d], clipped [%d])", i, totalCounters[i], insideCounters[i], clippedCounters[i]);
@@ -602,28 +544,10 @@ ObserverContext::Alloc()
 void
 ObserverContext::Dealloc(Graphics::ContextEntityId id)
 {
-    Util::Array<VisibilityDrawList>& draws = observerAllocator.GetArray<Observer_DrawList>();
-
-    // reset all lists to that all entities are visible
-    IndexT i;
-    for (i = 0; i < draws.Size(); i++)
-    {
-        // clear draw lists
-        VisibilityDrawList& draw = draws[i];
-        auto it1 = draw.Begin();
-        while (it1 != draw.End())
-        {
-            auto it2 = it1.val->Begin();
-            while (it2 != it1.val->End())
-            {
-                it2.val->Clear();
-                it2++;
-            }
-            it1.val->Clear();
-            it1++;
-        }
-        draw.Clear();
-    }
+    VisibilityDrawList& draws = observerAllocator.Get<Observer_DrawList>(id.id);
+    draws.commandBuffer.Clear();
+    draws.drawPackets.Clear();
+    draws.materialOffsets.Clear();
     observerAllocator.Dealloc(id.id);
 }
 
@@ -637,43 +561,39 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
 {
     const Graphics::ContextEntityId cid = ObservableContext::GetContextId(id);
     observableAllocator.Get<Observable_EntityId>(cid.id) = id;
-    observableAllocator.Get<Observable_EntityType>(cid.id) = entityType;
-
-    // go through observers and allocate visibility slot for this object
-    const Util::Array<ObserverContext::VisibilityResultAllocator>& visAllocators = ObserverContext::observerAllocator.GetArray<Observer_ResultAllocator>();
-    Graphics::ContextEntityId cid2;
-    switch (entityType)
-    {
-    case Model:
-        cid2 = Models::ModelContext::GetContextId(id);
-        break;
-    case Light:
-        cid2 = Lighting::LightContext::GetContextId(id);
-        break;
-    case LightProbe:
-        cid2 = Graphics::LightProbeContext::GetContextId(id);
-        break;
-    }
-
-    PendingObservables.Append(id);
-
+    
     if (entityType == Model || entityType == Particle)
     {
         // get nodes
         const Util::Array<Models::ModelNode::Instance*>& nodes = Models::ModelContext::GetModelNodeInstances(id);
 
-        // now produce as many atoms as we have visibility results, since they should match 1-1, but does not need to be copied for the results
+        SizeT numAtoms = 0;
+        // produce as many atoms as we have nodes
         for (IndexT j = 0; j < nodes.Size(); j++)
         {
             Models::ModelNode::Instance* node = nodes[j];
             if ((node->node->GetBits() & Models::HasStateBit) == Models::HasStateBit)
             {
                 Ids::Id32 obj = ObservableContext::observableAtomAllocator.Alloc();
-                ObservableContext::observableAtomAllocator.Get<ObservableAtom_ContextEntity>(obj) = cid;
-                ObservableContext::observableAtomAllocator.Get<ObservableAtom_Node>(obj) = nodes[j];
 
-                // append id to observable so we can track it, this id should also directly correspond to the VisibilityResult_Flags (above alloc.Alloc()) in all observers
+                ObservableContext::observableAtomAllocator.Get<ObservableAtom_GraphicsEntityId>(obj) = id;
+                ObservableContext::observableAtomAllocator.Get<ObservableAtom_Node>(obj) = nodes[j];
+                ObservableContext::observableAtomAllocator.Get<ObservableAtom_VisibilityEntityType>(obj) = entityType;
+
+                // append id to observable so we can track it
                 observableAllocator.Get<Observable_Atoms>(cid.id).Append(obj);
+                numAtoms++;
+            }
+        }
+
+        const Util::Array<ObserverContext::VisibilityResultArray>& visAllocators = ObserverContext::observerAllocator.GetArray<Observer_ResultArray>();
+        // add as many atoms to each visibility result allocator
+        for (IndexT i = 0; i < visAllocators.Size(); i++)
+        {
+            ObserverContext::VisibilityResultArray& alloc = visAllocators[i];
+            for (IndexT j = 0; j < numAtoms; j++)
+            {
+                alloc.Append(Math::ClipStatus::Inside);
             }
         }
     }
@@ -686,7 +606,6 @@ void
 ObservableContext::Create()
 {
     __CreateContext();
-    ObservableContext::__state.OnInstanceMoved = ObservableContext::OnInstanceMoved;
     ObservableContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&ObservableContext::__bundle, &ObservableContext::__state);
 }
@@ -710,81 +629,53 @@ ObservableContext::Dealloc(Graphics::ContextEntityId id)
 {
     // find atoms and dealloc
     Util::ArrayStack<Ids::Id32, 1>& atoms = observableAllocator.Get<Observable_Atoms>(id.id);
-    const Util::Array<ObserverContext::VisibilityResultAllocator>& visAllocators = ObserverContext::observerAllocator.GetArray<Observer_ResultAllocator>();
+    const Util::Array<ObserverContext::VisibilityResultArray>& visAllocators = ObserverContext::observerAllocator.GetArray<Observer_ResultArray>();
 
     // cleanup visibility allocator first
+    // just pop the last n number of atoms, since the order doesn't matter.
     for (IndexT i = 0; i < visAllocators.Size(); i++)
     {
-        ObserverContext::VisibilityResultAllocator& alloc = visAllocators[i];
+        ObserverContext::VisibilityResultArray& alloc = visAllocators[i];
         for (IndexT j = 0; j < atoms.Size(); j++)
         {
-            alloc.Dealloc(atoms[j]);
+            alloc.EraseIndex(alloc.Size() - 1);
         }
     }
 
-    // now clean up all atoms
     for (IndexT i = 0; i < atoms.Size(); i++)
     {
         observableAtomAllocator.Dealloc(atoms[i]);
     }
 
-    observableAllocator.Dealloc(id.id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ObservableContext::OnInstanceMoved(uint32_t toIndex, uint32_t fromIndex)
-{
-    //n_assert2(fromIndex >= observableAllocator.Size(), "Instance is assumed to be erased but wasn't!\n");
-    auto size = observableAllocator.Size();
-
-    // get atoms we are moving to
-    Util::ArrayStack<Ids::Id32, 1>& toAtoms = observableAllocator.Get<Observable_Atoms>(toIndex);
-
-    // first, decrement all entities above our current entity
-    for (uint32_t i = toAtoms.Back(); i < observableAtomAllocator.Size(); i++)
+    // Pop'n'swap all invalid atoms
+    auto& freeIds = observableAtomAllocator.FreeIds();
+    uint32_t index;
+    uint32_t oldIndex;
+    Graphics::GraphicsEntityId lastId;
+    uint32_t allocatorSize;
+    SizeT size = freeIds.Size();
+    for (SizeT i = size - 1; i >= 0; --i)
     {
-        observableAtomAllocator.Get<ObservableAtom_ContextEntity>(i).id--;
-    }
-
-    // then erase all atoms in the list, they should appear in order
-    observableAtomAllocator.EraseRange(toAtoms.Front(), toAtoms.Back());
-
-    // go through observers and deallocate visibility slot for this object
-    const Util::Array<ObserverContext::VisibilityResultAllocator>& visAllocators = ObserverContext::observerAllocator.GetArray<Observer_ResultAllocator>();
-    for (IndexT i = 0; i < visAllocators.Size(); i++)
-    {
-        ObserverContext::VisibilityResultAllocator& alloc = visAllocators[i];
-        alloc.EraseRange(toAtoms.Front(), toAtoms.Back());
-    }
-
-    // when atoms are removed, shift all atom indices above where we removed down by the size
-    for (uint32_t i = 0; i < observableAllocator.Size(); i++)
-    {
-        Util::ArrayStack<Ids::Id32, 1>& moveAtoms = observableAllocator.Get<Observable_Atoms>(i);
-        if (i == toIndex)
+        index = freeIds.Back();
+        freeIds.EraseBack();
+        allocatorSize = (uint32_t)observableAtomAllocator.Size();
+        if (index >= allocatorSize)
             continue;
-        for (IndexT j = 0; j < moveAtoms.Size(); j++)
-            if (moveAtoms[j] >= toAtoms.Front())
-                moveAtoms[j] -= toAtoms.Size();
-    }
-}
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ObservableContext::UpdateModelContextId(Graphics::GraphicsEntityId id, Graphics::ContextEntityId modelCid)
-{
-    auto cid = GetContextId(id);
-    const Util::Array<ObserverContext::VisibilityResultAllocator>& visAllocators = ObserverContext::observerAllocator.GetArray<Observer_ResultAllocator>();
-    for (IndexT i = 0; i < visAllocators.Size(); i++)
-    {
-        ObserverContext::VisibilityResultAllocator& alloc = visAllocators[i];
-        alloc.Get<VisibilityResult_CtxId>(cid.id) = modelCid;
+        oldIndex = allocatorSize - 1;
+        lastId = observableAtomAllocator.Get<0>(oldIndex);
+        
+        // Update the index for the atom in the atoms list
+        Graphics::ContextEntityId lastCid = GetContextId(lastId);
+        ObservableAtoms& lastCidAtoms = observableAllocator.Get<Observable_Atoms>(lastCid.id);
+        IndexT atomIndex = lastCidAtoms.FindIndex(oldIndex);
+        lastCidAtoms[atomIndex] = index;
+
+        observableAtomAllocator.EraseIndexSwap(index);
     }
+    freeIds.Clear();
+
+    observableAllocator.Dealloc(id.id);
 }
 
 } // namespace Visibility

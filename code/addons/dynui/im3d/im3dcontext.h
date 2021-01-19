@@ -40,6 +40,8 @@ public:
     static void Create();
     static void Discard();
 
+    static void DrawText(const Math::vec3& position, Util::String const& text, const float size = 10.0f, const Math::vec4 color = { 1.0f, 0.0f, 0.0f, 1.0f }, uint32_t renderFlags = CheckDepth);
+
     static void DrawPoint(const Math::vec3& position, const float size = 10.0f, const Math::vec4 color = { 1.0f, 0.0f, 0.0f, 1.0f }, uint32_t renderFlags = CheckDepth);
 
     static void DrawLine(const Math::line& line, const float size = 1.0f, const Math::vec4 color = {1.0f, 0.0f, 0.0f, 1.0f}, uint32_t renderFlags = CheckDepth);

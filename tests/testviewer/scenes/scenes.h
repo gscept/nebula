@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <functional>
 #include "renderutil/mayacamerautil.h"
 #include "renderutil/freecamerautil.h"
@@ -76,4 +76,4 @@ enum
 
 // Which is the currently active scene?
 // This is used to determine which scenes callbacks to call and is normally changed via imgui
-static int currentScene = SponzaSceneId;
+static int currentScene = ExampleSceneId;

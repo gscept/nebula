@@ -16,7 +16,8 @@ IndexT ModelNode::ModelNodeUniqueIdCounter = 0;
 //------------------------------------------------------------------------------
 /**
 */
-ModelNode::ModelNode()
+ModelNode::ModelNode() :
+    uniqueId(ModelNodeUniqueIdCounter++)
 {
     // empty
 }
