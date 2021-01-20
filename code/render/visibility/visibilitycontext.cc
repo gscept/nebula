@@ -23,6 +23,7 @@
 
 #include "dynui/im3d/im3d.h"
 #include "dynui/im3d/im3dcontext.h"
+#include "util/randomnumbertable.h"
 
 #ifndef PUBLIC_BUILD
 #include "imgui.h"
@@ -153,8 +154,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         observerResults[i] = flags.Begin();
 
         VisibilityDrawList& visibilities = observerAllocator.Get<Observer_DrawList>(i);
-        visibilities.commandBuffer.Clear();
-        visibilities.materialOffsets.Clear();
+        visibilities.visibilityTable.Clear();
         visibilities.drawPackets.Clear();
     }
 
@@ -306,7 +306,6 @@ ObserverContext::GenerateDrawLists(const Graphics::FrameContext& ctx)
     {
         VisibilityDrawList& visibilities = observerAllocator.Get<Observer_DrawList>(i);
 
-        // then execute sort job, which only runs the function once
         Jobs::JobContext ctx;
         ctx.uniform.scratchSize = 0;
         ctx.uniform.numBuffers = 0;
@@ -473,13 +472,44 @@ ObserverContext::OnRenderDebug(uint32_t flags)
     Jobs::JobSyncHostWait(ObserverContext::jobHostSync);
 
     static int visIndex = 0;
+    static int atomIndex = 0;
+    static bool singleAtomMode = false;
+
     auto const& foo = observerAllocator.GetArray<Observer_DrawList>();
-    for (auto const& a : foo[visIndex].drawPackets)
+    if (singleAtomMode)
     {
-        CoreGraphics::RenderShape shape;
-        Models::ShaderStateNode::Instance* sinst = reinterpret_cast<Models::ShaderStateNode::Instance*>(a->node);
-        shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), sinst->boundingBox.to_mat4(), {1,0,0.5,1});
-        CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
+        if (!foo[visIndex].drawPackets.IsEmpty())
+        {
+            atomIndex = Math::clamp(atomIndex, 0, foo[visIndex].drawPackets.Size() - 1);
+            auto const& a = foo[visIndex].drawPackets[atomIndex];
+            CoreGraphics::RenderShape shape;
+            Models::ShaderStateNode::Instance* sinst = reinterpret_cast<Models::ShaderStateNode::Instance*>(a->node);
+            Math::vec4 color = {
+                    Util::RandomNumberTable::Rand(a->node->node->HashCode()),
+                    Util::RandomNumberTable::Rand(a->node->node->HashCode() + 1),
+                    Util::RandomNumberTable::Rand(a->node->node->HashCode() + 2),
+                    1
+            };
+            shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), sinst->boundingBox.to_mat4(), color);
+            CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
+        }
+    }
+    else
+    {
+        for (auto const& a : foo[visIndex].drawPackets)
+        {
+            CoreGraphics::RenderShape shape;
+            Models::ShaderStateNode::Instance* sinst = reinterpret_cast<Models::ShaderStateNode::Instance*>(a->node);
+            Math::vec4 color = { 
+                Util::RandomNumberTable::Rand(a->node->node->HashCode()),
+                Util::RandomNumberTable::Rand(a->node->node->HashCode() + 1),
+                Util::RandomNumberTable::Rand(a->node->node->HashCode() + 2),
+                1 
+            };
+            Math::mat4 t = sinst->boundingBox.to_mat4();
+            shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), sinst->boundingBox.to_mat4(), color);
+            CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
+        }
     }
 
     Util::Array<VisibilityResultArray>& vis = observerAllocator.GetArray<3>();
@@ -506,6 +536,11 @@ ObserverContext::OnRenderDebug(uint32_t flags)
     }
     if (ImGui::Begin("Visibility"))
     {
+        ImGui::Checkbox("Single atom mode", &singleAtomMode);
+        if (singleAtomMode)
+        {
+            ImGui::SliderInt("AtomIndex", &atomIndex, 0, (int)foo[visIndex].drawPackets.Size() - 1);
+        }
         ImGui::SliderInt("visIndex", &visIndex, 0, (int)foo.size() - 1);
         for (IndexT i = 0; i < vis.Size(); i++)
         {
@@ -545,9 +580,8 @@ void
 ObserverContext::Dealloc(Graphics::ContextEntityId id)
 {
     VisibilityDrawList& draws = observerAllocator.Get<Observer_DrawList>(id.id);
-    draws.commandBuffer.Clear();
+    draws.visibilityTable.Clear();
     draws.drawPackets.Clear();
-    draws.materialOffsets.Clear();
     observerAllocator.Dealloc(id.id);
 }
 
