@@ -40,6 +40,9 @@ public:
 
     /// check if viewhandle is valid
     static bool IsViewHandleValid(ViewHandle handle);
+    
+    /// getter for projection matrix
+    static Math::mat4 GetProjection(ViewHandle handle);
 
 private:
     /// constructor
