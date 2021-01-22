@@ -3,7 +3,7 @@
 
 Get in contact on Discord! https://discord.gg/wuYPxUF
 
-Check out the documentation (WIP) here: https://gscept.github.io/nebula/
+Check out the documentation (WIP) here: https://gscept.github.io/nebula-doc/
 
 ## Requirements
 1. OS: Windows and Linux(WIP)
