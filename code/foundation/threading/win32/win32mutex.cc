@@ -42,7 +42,7 @@ void
 Mutex::Release()
 {
 	BOOL res = ReleaseMutex(this->handle);
-	n_assert(res == true);
+	n_assert(res == 1);
 }
 
 } // namespace Threading
