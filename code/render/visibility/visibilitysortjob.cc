@@ -8,6 +8,7 @@
 #include "models/modelcontext.h"
 #include "models/nodes/shaderstatenode.h"
 #include "profiling/profiling.h"
+#include "timing/timer.h"
 namespace Visibility
 {
 
@@ -29,6 +30,9 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 
         // calculate amount of models
         uint32 numNodeInstances = ctx.inputSizes[0] / sizeof(Math::ClipStatus::Type);
+
+        if (numNodeInstances == 0)
+            break;
 
         n_assert(numNodeInstances < 0xFFFFFFFF)
         
@@ -79,51 +83,46 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
             i++;
         }
 
-        // sort the index buffer
-        indexBuffer.SortWithFunc([](uint64 const& lhs, uint64 const& rhs)
-        {
-            // sort in descending order
-            return lhs < rhs;
-        });
+        if (indexBuffer.IsEmpty())
+            return; // early out
 
+        // sort the index buffer
+        std::qsort(indexBuffer.Begin(), indexBuffer.Size(), sizeof(uint64), [](const void* a, const void* b)
+        {
+            uint64 arg1 = *static_cast<const uint64*>(a);
+            uint64 arg2 = *static_cast<const uint64*>(b);
+            return (arg1 > arg2) - (arg1 < arg2);
+        });
+       
         // Now resolve the indexbuffer into draw commands
-        Materials::MaterialType* currentMaterial = nullptr;
-        Models::ModelNode* currentModelNode = nullptr;
         uint32 numDraws = 0;
-        for (uint32 i = 0; i < indexBuffer.Size(); i++)
+        const uint32 numPackets = indexBuffer.Size();
+        drawList->drawPackets.Reserve(numPackets);
+        
+        Materials::MaterialType* currentMaterialType = nullptr;
+        {
+            // set initial material type
+            auto* const inst = nodes[indexBuffer[0] & 0x00000000FFFFFFFF];
+            auto* const shdNode = reinterpret_cast<Models::ShaderStateNode*>(inst->node);
+            currentMaterialType = shdNode->materialType;
+        }
+
+        for (uint32 i = 0; i < numPackets; i++)
         {
             Models::ModelNode::Instance* const inst = nodes[indexBuffer[i] & 0x00000000FFFFFFFF];
             Models::ShaderStateNode::Instance* const shdNodeInst = reinterpret_cast<Models::ShaderStateNode::Instance*>(inst);
             Models::ShaderStateNode* const shdNode = reinterpret_cast<Models::ShaderStateNode*>(inst->node);
-            if (numDraws > 0 && (currentMaterial != shdNode->materialType || currentModelNode != inst->node))
+
+            if (currentMaterialType != shdNode->materialType)
             {
                 ObserverContext::VisibilityDrawCommand cmd;
-                cmd.type = ObserverContext::VisibilityDrawCommand::Type::Draw;
-                cmd.draw.numDrawPackets = numDraws;
-                cmd.draw.packetOffset = drawList->drawPackets.Size() - numDraws;
-                drawList->commandBuffer.Append(cmd);
+                cmd.packetOffset = drawList->drawPackets.Size() - numDraws;
+                cmd.numDrawPackets = numDraws;
+                drawList->visibilityTable.Add(currentMaterialType, cmd);
+                currentMaterialType = shdNode->materialType;
                 numDraws = 0;
             }
 
-            if (currentMaterial != shdNode->materialType)
-            {
-                currentMaterial = shdNode->materialType;
-                ObserverContext::VisibilityDrawCommand cmd;
-                cmd.type = ObserverContext::VisibilityDrawCommand::Type::Begin_Material;
-                cmd.material = currentMaterial;
-                drawList->materialOffsets.Add(currentMaterial, drawList->commandBuffer.Size());
-                drawList->commandBuffer.Append(cmd);
-            }
-
-            if (currentModelNode != inst->node)
-            {
-                currentModelNode = inst->node;
-                ObserverContext::VisibilityDrawCommand cmd;
-                cmd.type = ObserverContext::VisibilityDrawCommand::Type::Begin_Node;
-                cmd.node = currentModelNode;
-                drawList->commandBuffer.Append(cmd);
-            }
-            
             // allocate memory for draw packet
             void* mem = packetAllocator->Alloc(shdNodeInst->GetDrawPacketSize());
             // update packet and add to list
@@ -131,13 +130,14 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
             drawList->drawPackets.Append(packet);
             numDraws++;
         }
-        if (numDraws > 0) // add the last draw packets
+
+        // make sure to not miss the last couple of draw packets material
+        if (numDraws) 
         {
             ObserverContext::VisibilityDrawCommand cmd;
-            cmd.type = ObserverContext::VisibilityDrawCommand::Type::Draw;
-            cmd.draw.numDrawPackets = numDraws;
-            cmd.draw.packetOffset = drawList->drawPackets.Size() - numDraws;
-            drawList->commandBuffer.Append(cmd);
+            cmd.packetOffset = drawList->drawPackets.Size() - numDraws;
+            cmd.numDrawPackets = numDraws;
+            drawList->visibilityTable.Add(currentMaterialType, cmd);
         }
     }
 }

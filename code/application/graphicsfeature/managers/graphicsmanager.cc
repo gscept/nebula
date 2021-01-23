@@ -140,12 +140,9 @@ void GraphicsManager::InitDestroyModelProcessor()
             {
                 ModelEntityData const& modelEntityData = modelEntityDatas[i];
 
-                // FIXME: Removing graphics entities is broken!
-                Models::ModelContext::SetTransform(modelEntityData.gid, Math::translation(0, -10000000.0f, 0));
-
-                //Visibility::ObservableContext::DeregisterEntity(modelEntityData.gid);
-                //Models::ModelContext::DeregisterEntity(modelEntityData.gid);
-                //Graphics::DestroyEntity(modelEntityData.gid);
+                Visibility::ObservableContext::DeregisterEntity(modelEntityData.gid);
+                Models::ModelContext::DeregisterEntity(modelEntityData.gid);
+                Graphics::DestroyEntity(modelEntityData.gid);
             }
         }
     };

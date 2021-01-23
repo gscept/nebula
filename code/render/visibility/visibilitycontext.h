@@ -103,31 +103,13 @@ public:
     
     struct VisibilityDrawCommand
     {
-        enum class Type
-        {
-            Begin_Material,
-            Begin_Node,
-            Draw,
-        };
-        struct PacketBatch
-        {
-            uint32 packetOffset;
-            uint32 numDrawPackets;
-        };
-
-        Type type;
-        union
-        {
-            Materials::MaterialType* material;
-            Models::ModelNode* node;
-            PacketBatch draw;
-        };
+        uint32 packetOffset;
+        uint32 numDrawPackets;
     };
 
     struct VisibilityDrawList
     {
-        Util::HashTable<Materials::MaterialType*, uint64> materialOffsets;
-        Util::Array<VisibilityDrawCommand> commandBuffer;
+        Util::HashTable<Materials::MaterialType*, VisibilityDrawCommand> visibilityTable;
         Util::Array<Models::ModelNode::DrawPacket*> drawPackets;
     };
 

@@ -206,4 +206,15 @@ CameraManager::Destroy()
     CameraManager::Singleton = nullptr;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+Math::mat4
+CameraManager::GetProjection(ViewHandle handle)
+{
+    n_assert(CameraManager::HasInstance());
+    auto gid = Singleton->viewHandleMap[Ids::Index(handle)].gid;
+    return Graphics::CameraContext::GetProjection(gid);
+}
+
 } // namespace Game

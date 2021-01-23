@@ -81,7 +81,7 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
         for (IndexT typeIdx = 0; typeIdx < types->Size(); typeIdx++)
         {
             MaterialType* materialType = (*types)[typeIdx];
-            IndexT idx = drawList->materialOffsets.FindIndex(materialType);
+            IndexT idx = drawList->visibilityTable.FindIndex(materialType);
             if (idx != InvalidIndex)
             {
 
@@ -92,42 +92,18 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
                 // if BeginBatch returns true if this material type has a shader for this batch
                 if (Materials::MaterialBeginBatch(materialType, batch))
                 {
-                    uint materialOffset = drawList->materialOffsets.ValueAtIndex(materialType, idx);
-                    auto* cmd = drawList->commandBuffer.Begin() + materialOffset + 1;
-                    auto* end = drawList->commandBuffer.End();
-                    // loop all commands until we hit a new material
-                    while (cmd != end && cmd->type != Visibility::ObserverContext::VisibilityDrawCommand::Type::Begin_Material)
+                    Visibility::ObserverContext::VisibilityDrawCommand visDrawCmd = drawList->visibilityTable.ValueAtIndex(materialType, idx);
+                    uint const start = visDrawCmd.packetOffset;
+                    uint const end = visDrawCmd.packetOffset + visDrawCmd.numDrawPackets;
+                    
+                    Models::ModelNode* currentNode = nullptr;;
+                    for (uint packetIndex = start; packetIndex < end; ++packetIndex)
                     {
-                        if (cmd->type == Visibility::ObserverContext::VisibilityDrawCommand::Type::Draw)
+                        Models::ModelNode::DrawPacket* instance = drawList->drawPackets[packetIndex];
+                        Models::ModelNode* node = instance->node->node;
+                        Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
+                        if (currentNode != drawList->drawPackets[packetIndex]->node->node)
                         {
-                            // a draw is always following a node change. get the model node from the previous command
-                            Models::ModelNode* node = (cmd - 1)->node;
-                            Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
-                            Models::NodeType type = node->GetType();
-
-                            uint32 const end = cmd->draw.packetOffset + cmd->draw.numDrawPackets;
-                            for (uint32 i = cmd->draw.packetOffset; i < end; i++)
-                            {
-                                Models::ModelNode::DrawPacket* instance = drawList->drawPackets[i];
-                                instance->Apply(materialType);
-                                if (type != ParticleSystemNodeType)
-                                {
-                                    Models::PrimitiveNode::Instance* pinst = reinterpret_cast<Models::PrimitiveNode::Instance*>(instance->node);
-                                    pinst->Draw(1, 0, instance);
-                                }
-                                else
-                                {
-                                    Models::ParticleSystemNode::Instance* pinst = reinterpret_cast<Models::ParticleSystemNode::Instance*>(instance->node);
-                                    pinst->Draw(1, 0, instance);
-                                }
-                            }
-                        }
-                        else if (cmd->type == Visibility::ObserverContext::VisibilityDrawCommand::Type::Begin_Node)
-                        {
-                            Models::ModelNode* node = cmd->node;
-                            Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
-                            Models::NodeType type = node->GetType();
-
 #if NEBULA_GRAPHICS_DEBUG
                             CommandBufferInsertMarker(GraphicsQueueType, NEBULA_MARKER_DARK_DARK_GREEN, node->GetName().Value());
 #endif
@@ -143,7 +119,20 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
                             // apply surface
                             Materials::MaterialApplySurface(materialType, stateNode->GetSurface());
                         }
-                        cmd++;
+                        
+                        Models::NodeType type = node->GetType();
+
+                        instance->Apply(materialType);
+                        if (type != ParticleSystemNodeType)
+                        {
+                            Models::PrimitiveNode::Instance* pinst = reinterpret_cast<Models::PrimitiveNode::Instance*>(instance->node);
+                            pinst->Draw(1, 0, instance);
+                        }
+                        else
+                        {
+                            Models::ParticleSystemNode::Instance* pinst = reinterpret_cast<Models::ParticleSystemNode::Instance*>(instance->node);
+                            pinst->Draw(1, 0, instance);
+                        }
                     }
                 }
                 Materials::MaterialEndBatch(materialType);
@@ -181,7 +170,7 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
         for (IndexT typeIdx = 0; typeIdx < types->Size(); typeIdx++)
         {
             MaterialType* materialType = (*types)[typeIdx];
-            IndexT idx = drawList->materialOffsets.FindIndex(materialType);
+            IndexT idx = drawList->visibilityTable.FindIndex(materialType);
             if (idx != InvalidIndex)
             {
 
@@ -192,18 +181,18 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
                 // if BeginBatch returns true if this material type has a shader for this batch
                 if (Materials::MaterialBeginBatch(materialType, batch))
                 {
-                    uint materialOffset = drawList->materialOffsets.ValueAtIndex(materialType, idx);
-                    auto* cmd = drawList->commandBuffer.Begin() + materialOffset + 1;
-                    auto* end = drawList->commandBuffer.End();
-                    // loop all commands until we hit a new material
-                    while (cmd != end && cmd->type != Visibility::ObserverContext::VisibilityDrawCommand::Type::Begin_Material)
-                    {
-                        if (cmd->type == Visibility::ObserverContext::VisibilityDrawCommand::Type::Begin_Node)
-                        {
-                            Models::ModelNode* node = cmd->node;
-                            Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
-                            Models::NodeType type = node->GetType();
+                    Visibility::ObserverContext::VisibilityDrawCommand visDrawCmd = drawList->visibilityTable.ValueAtIndex(materialType, idx);
+                    uint const start = visDrawCmd.packetOffset;
+                    uint const end = visDrawCmd.packetOffset + visDrawCmd.numDrawPackets;
 
+                    Models::ModelNode* currentNode = nullptr;;
+                    for (uint packetIndex = start; packetIndex < end; ++packetIndex)
+                    {
+                        Models::ModelNode::DrawPacket* instance = drawList->drawPackets[packetIndex];
+                        Models::ModelNode* node = instance->node->node;
+                        Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
+                        if (currentNode != drawList->drawPackets[packetIndex]->node->node)
+                        {
 #if NEBULA_GRAPHICS_DEBUG
                             CommandBufferInsertMarker(GraphicsQueueType, NEBULA_MARKER_DARK_DARK_GREEN, node->GetName().Value());
 #endif
@@ -219,31 +208,20 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
                             // apply surface
                             Materials::MaterialApplySurface(materialType, stateNode->GetSurface());
                         }
-                        else if (cmd->type == Visibility::ObserverContext::VisibilityDrawCommand::Type::Draw)
+
+                        Models::NodeType type = node->GetType();
+
+                        instance->Apply(materialType);
+                        if (type != ParticleSystemNodeType)
                         {
-                            // a draw is always following a node change. get the model node from the previous command
-                            Models::ModelNode* node = (cmd - 1)->node;
-                            Models::NodeType type = node->GetType();
-
-                            uint32 const end = cmd->draw.packetOffset + cmd->draw.numDrawPackets;
-                            for (uint32 i = cmd->draw.packetOffset; i < end; i++)
-                            {
-                                Models::ModelNode::DrawPacket* instance = drawList->drawPackets[i];
-                                instance->Apply(materialType);
-
-                                if (type != ParticleSystemNodeType)
-                                {
-                                    Models::PrimitiveNode::Instance* pinst = reinterpret_cast<Models::PrimitiveNode::Instance*>(instance->node);
-                                    pinst->Draw(1, baseInstance, instance);
-                                }
-                                else
-                                {
-                                    Models::ParticleSystemNode::Instance* pinst = reinterpret_cast<Models::ParticleSystemNode::Instance*>(instance->node);
-                                    pinst->Draw(1, baseInstance, instance);
-                                }
-                            }
+                            Models::PrimitiveNode::Instance* pinst = reinterpret_cast<Models::PrimitiveNode::Instance*>(instance->node);
+                            pinst->Draw(1, baseInstance, instance);
                         }
-                        cmd++;
+                        else
+                        {
+                            Models::ParticleSystemNode::Instance* pinst = reinterpret_cast<Models::ParticleSystemNode::Instance*>(instance->node);
+                            pinst->Draw(1, baseInstance, instance);
+                        }
                     }
                 }
                 Materials::MaterialEndBatch(materialType);
