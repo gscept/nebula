@@ -110,7 +110,8 @@ Win32CriticalSection::Leave() const
 //------------------------------------------------------------------------------
 /**
 */
-inline void Win32CriticalSection::WaiterPlus() const
+inline void 
+Win32CriticalSection::WaiterPlus() const
 {
     _InterlockedIncrement(&this->waiterCount);
 }
@@ -118,7 +119,8 @@ inline void Win32CriticalSection::WaiterPlus() const
 //------------------------------------------------------------------------------
 /**
 */
-inline void Win32CriticalSection::WaiterMinus() const
+inline void 
+Win32CriticalSection::WaiterMinus() const
 {
     _InterlockedDecrement(&this->waiterCount);
 }

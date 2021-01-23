@@ -94,51 +94,51 @@ SetupPass(const PassId pid)
 
     IndexT i;
 
-	// if we have no attachments, use the depth attachment to setup the viewport
-	if (loadInfo.colorAttachments.Size() == 0)
-	{
-		n_assert(loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId);
-		TextureId tex = TextureViewGetTexture(loadInfo.depthStencilAttachment);
-		const CoreGraphics::TextureDimensions dims = TextureGetDimensions(tex);
-		VkRect2D& rect = loadInfo.rects[0];
-		rect.offset.x = 0;
-		rect.offset.y = 0;
-		rect.extent.width = dims.width;
-		rect.extent.height = dims.height;
-		VkViewport& viewport = loadInfo.viewports[0];
-		viewport.width = (float)dims.width;
-		viewport.height = (float)dims.height;
-		viewport.minDepth = 0;
-		viewport.maxDepth = 1;
-		viewport.x = 0;
-		viewport.y = 0;
-	}
-	else
-	{
-		// otherwise, use the render targets to decide viewports
-		for (i = 0; i < loadInfo.colorAttachments.Size(); i++)
-		{
-			images[i] = TextureViewGetVk(loadInfo.colorAttachments[i]);
-			TextureId tex = TextureViewGetTexture(loadInfo.colorAttachments[i]);
-			const CoreGraphics::TextureDimensions dims = TextureGetDimensions(tex);
-			width = Math::max(width, (uint32_t)dims.width);
-			height = Math::max(height, (uint32_t)dims.height);
-			layers = Math::max(layers, (uint32_t)TextureGetNumLayers(tex));
+    // if we have no attachments, use the depth attachment to setup the viewport
+    if (loadInfo.colorAttachments.Size() == 0)
+    {
+        n_assert(loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId);
+        TextureId tex = TextureViewGetTexture(loadInfo.depthStencilAttachment);
+        const CoreGraphics::TextureDimensions dims = TextureGetDimensions(tex);
+        VkRect2D& rect = loadInfo.rects[0];
+        rect.offset.x = 0;
+        rect.offset.y = 0;
+        rect.extent.width = dims.width;
+        rect.extent.height = dims.height;
+        VkViewport& viewport = loadInfo.viewports[0];
+        viewport.width = (float)dims.width;
+        viewport.height = (float)dims.height;
+        viewport.minDepth = 0;
+        viewport.maxDepth = 1;
+        viewport.x = 0;
+        viewport.y = 0;
+    }
+    else
+    {
+        // otherwise, use the render targets to decide viewports
+        for (i = 0; i < loadInfo.colorAttachments.Size(); i++)
+        {
+            images[i] = TextureViewGetVk(loadInfo.colorAttachments[i]);
+            TextureId tex = TextureViewGetTexture(loadInfo.colorAttachments[i]);
+            const CoreGraphics::TextureDimensions dims = TextureGetDimensions(tex);
+            width = Math::max(width, (uint32_t)dims.width);
+            height = Math::max(height, (uint32_t)dims.height);
+            layers = Math::max(layers, (uint32_t)TextureGetNumLayers(tex));
 
-			VkRect2D& rect = loadInfo.rects[i];
-			rect.offset.x = 0;
-			rect.offset.y = 0;
-			rect.extent.width = dims.width;
-			rect.extent.height = dims.height;
-			VkViewport& viewport = loadInfo.viewports[i];
-			viewport.width = (float)dims.width;
-			viewport.height = (float)dims.height;
-			viewport.minDepth = 0;
-			viewport.maxDepth = 1;
-			viewport.x = 0;
-			viewport.y = 0;
-		}
-	}
+            VkRect2D& rect = loadInfo.rects[i];
+            rect.offset.x = 0;
+            rect.offset.y = 0;
+            rect.extent.width = dims.width;
+            rect.extent.height = dims.height;
+            VkViewport& viewport = loadInfo.viewports[i];
+            viewport.width = (float)dims.width;
+            viewport.height = (float)dims.height;
+            viewport.minDepth = 0;
+            viewport.maxDepth = 1;
+            viewport.x = 0;
+            viewport.y = 0;
+        }
+    }
 
     Util::FixedArray<VkSubpassDescription> subpassDescs;
     Util::FixedArray<Util::FixedArray<VkAttachmentReference>> subpassReferences;
@@ -158,22 +158,22 @@ SetupPass(const PassId pid)
     runtimeInfo.subpassViewports.Resize(loadInfo.subpasses.Size());
     runtimeInfo.subpassRects.Resize(loadInfo.subpasses.Size());
     runtimeInfo.subpassPipelineInfo.Resize(loadInfo.subpasses.Size());
-	runtimeInfo.passTextureDescriptorSet.Resize(CoreGraphics::GetNumBufferedFrames());
+    runtimeInfo.passTextureDescriptorSet.Resize(CoreGraphics::GetNumBufferedFrames());
 
-	// get shader for bindless textures
-	ShaderId shader = VkShaderServer::Instance()->GetShader("shd:shared.fxb"_atm);
-	BindlessTexturesContext texContext = Vulkan::VkShaderServer::Instance()->GetBindlessTextureContext();
-	for (i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
-	{
-		runtimeInfo.passTextureDescriptorSet[i] = ShaderCreateResourceTable(shader, NEBULA_TICK_GROUP);
-		CoreGraphics::ObjectSetName(runtimeInfo.passTextureDescriptorSet[i], Util::String::Sprintf("Pass '%s' Descriptor", loadInfo.name.Value()).AsCharPtr());
+    // get shader for bindless textures
+    ShaderId shader = VkShaderServer::Instance()->GetShader("shd:shared.fxb"_atm);
+    BindlessTexturesContext texContext = Vulkan::VkShaderServer::Instance()->GetBindlessTextureContext();
+    for (i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
+    {
+        runtimeInfo.passTextureDescriptorSet[i] = ShaderCreateResourceTable(shader, NEBULA_TICK_GROUP);
+        CoreGraphics::ObjectSetName(runtimeInfo.passTextureDescriptorSet[i], Util::String::Sprintf("Pass '%s' Descriptor", loadInfo.name.Value()).AsCharPtr());
 
-		// fill up all slots with placeholders
+        // fill up all slots with placeholders
         IndexT j;
         for (j = 0; j < Shared::MAX_2D_TEXTURES; j++)
             ResourceTableSetTexture(runtimeInfo.passTextureDescriptorSet[i], { CoreGraphics::White2D, texContext.texture2DTextureVar, j, CoreGraphics::InvalidSamplerId, false });
 
-		for (j = 0; j < Shared::MAX_2D_ARRAY_TEXTURES; j++)
+        for (j = 0; j < Shared::MAX_2D_ARRAY_TEXTURES; j++)
             ResourceTableSetTexture(runtimeInfo.passTextureDescriptorSet[i], { CoreGraphics::White2DArray, texContext.texture2DArrayTextureVar, j, CoreGraphics::InvalidSamplerId, false });
 
         for (j = 0; j < Shared::MAX_2D_MS_TEXTURES; j++)
@@ -186,7 +186,7 @@ SetupPass(const PassId pid)
             ResourceTableSetTexture(runtimeInfo.passTextureDescriptorSet[i], { CoreGraphics::WhiteCube, texContext.textureCubeTextureVar, j, CoreGraphics::InvalidSamplerId, false });
 
         ResourceTableCommitChanges(runtimeInfo.passTextureDescriptorSet[i]);
-	}
+    }
 
     Util::FixedArray<bool> subpassIsDependendedOn(loadInfo.subpasses.Size());
     subpassIsDependendedOn.Fill(false);
@@ -240,17 +240,17 @@ SetupPass(const PassId pid)
             ds.attachment = loadInfo.colorAttachments.Size();
             vksubpass.pDepthStencilAttachment = &ds;
 
-			// if we have no attachments in the subpass, use the depth stencil viewports
-			if (subpass.attachments.Size() == 0)
-			{
-				runtimeInfo.subpassViewports[i][0] = loadInfo.viewports[ds.attachment];
-				runtimeInfo.subpassRects[i][0] = loadInfo.rects[ds.attachment];
-			}
+            // if we have no attachments in the subpass, use the depth stencil viewports
+            if (subpass.attachments.Size() == 0)
+            {
+                runtimeInfo.subpassViewports[i][0] = loadInfo.viewports[ds.attachment];
+                runtimeInfo.subpassRects[i][0] = loadInfo.rects[ds.attachment];
+            }
         }
         else
         {
-			// we are not allowed to have a subpass that doesn't use any attachments
-			n_assert(subpass.attachments.Size() != 0);
+            // we are not allowed to have a subpass that doesn't use any attachments
+            n_assert(subpass.attachments.Size() != 0);
             VkAttachmentReference& ds = subpassDepthStencils[i];
             ds.layout = VK_IMAGE_LAYOUT_UNDEFINED;
             ds.attachment = VK_ATTACHMENT_UNUSED;
@@ -431,7 +431,7 @@ SetupPass(const PassId pid)
         images[i] = TextureViewGetVk(loadInfo.depthStencilAttachment);
         const CoreGraphics::TextureDimensions dims = TextureGetDimensions(tex);
 
-		width = Math::max(width, (uint32_t)dims.width);
+        width = Math::max(width, (uint32_t)dims.width);
         height = Math::max(height, (uint32_t)dims.height);
         layers = Math::max(layers, (uint32_t)TextureGetNumLayers(tex));
     }
@@ -625,8 +625,8 @@ PassBegin(const PassId id, PassRecordMode recordMode)
     // bind descriptor set for pass resources
     CoreGraphics::SetResourceTable(runtimeInfo.passDescriptorSet, NEBULA_PASS_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 
-	// bind descriptor set for bindless textures
-	runtimeInfo.previousPassTextureDescriptorSet = CoreGraphics::SetTickResourceTable(runtimeInfo.passTextureDescriptorSet[CoreGraphics::GetBufferedFrameIndex()]);
+    // bind descriptor set for bindless textures
+    //runtimeInfo.previousPassTextureDescriptorSet = CoreGraphics::SetTickResourceTable(runtimeInfo.passTextureDescriptorSet[CoreGraphics::GetBufferedFrameIndex()]);
 
     // update framebuffer pipeline info to next subpass
     runtimeInfo.currentSubpassIndex = 0;
@@ -660,8 +660,8 @@ PassEnd(const PassId id)
     VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
     CoreGraphics::EndPass(runtimeInfo.recordMode);
 
-	// reset the old tick resources
-	CoreGraphics::SetTickResourceTable(runtimeInfo.previousPassTextureDescriptorSet);
+    // reset the old tick resources
+    //CoreGraphics::SetTickResourceTable(runtimeInfo.previousPassTextureDescriptorSet);
 }
 
 //------------------------------------------------------------------------------
@@ -676,106 +676,6 @@ PassApplyClipSettings(const PassId id)
 
     const Util::FixedArray<VkRect2D>& scissors = runtimeInfo.subpassRects[runtimeInfo.currentSubpassIndex];
     CoreGraphics::SetVkScissorRects(scissors.Begin(), scissors.Size());
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-PassUpdateResources(const PassId id, const IndexT bufferIndex)
-{
-	BindlessTexturesContext texContext = Vulkan::VkShaderServer::Instance()->GetBindlessTextureContext();
-	TickParametersContext constContext = Vulkan::VkShaderServer::Instance()->GetTickParametersContext();
-	VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id.id24);
-	VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
-
-	CoreGraphics::ResourceTableId fromTable = texContext.resourceTables[bufferIndex];
-	CoreGraphics::ResourceTableId toTable = runtimeInfo.passTextureDescriptorSet[bufferIndex];
-
-	// first, copy 
-	if (texContext.numBoundTextures2D > 0)
-		ResourceTableCopy(fromTable, texContext.texture2DTextureVar, 0, toTable, texContext.texture2DTextureVar, 0, texContext.numBoundTextures2D);
-
-	if (texContext.numBoundTextures2DMS > 0)
-		ResourceTableCopy(fromTable, texContext.texture2DMSTextureVar, 0, toTable, texContext.texture2DMSTextureVar, 0, texContext.numBoundTextures2DMS);
-
-	if (texContext.numBoundTextures2DArray > 0)
-		ResourceTableCopy(fromTable, texContext.texture2DArrayTextureVar, 0, toTable, texContext.texture2DArrayTextureVar, 0, texContext.numBoundTextures2DArray);
-
-	if (texContext.numBoundTextures3D > 0)
-		ResourceTableCopy(fromTable, texContext.texture3DTextureVar, 0, toTable, texContext.texture3DTextureVar, 0, texContext.numBoundTextures3D);
-
-	if (texContext.numBoundTexturesCube > 0)
-		ResourceTableCopy(fromTable, texContext.textureCubeTextureVar, 0, toTable, texContext.textureCubeTextureVar, 0, texContext.numBoundTexturesCube);
-
-	// copy first
-	ResourceTableCommitChanges(toTable);
-
-	// detach all color attachments from the texture descriptors
-	for (IndexT i = 0; i < loadInfo.colorAttachments.Size(); i++)
-	{
-		CoreGraphics::TextureViewId colorAttachment = loadInfo.colorAttachments[i];
-		CoreGraphics::TextureId texture = CoreGraphics::TextureViewGetTexture(colorAttachment);
-		IndexT slot = CoreGraphics::TextureGetBindlessHandle(texture);
-
-		// slot 0 is reserved for placeholder
-		if (slot != 0)
-		{
-			CoreGraphics::TextureType type = CoreGraphics::TextureGetType(texture);
-			SizeT samples = CoreGraphics::TextureGetNumSamples(texture);
-			switch (type)
-			{
-			case Texture2D:
-				ResourceTableSetTexture(toTable, {CoreGraphics::White2D, texContext.texture2DTextureVar, slot, CoreGraphics::InvalidSamplerId, false, false});
-				break;
-			case Texture2DArray:
-				ResourceTableSetTexture(toTable, {CoreGraphics::White2DArray, texContext.texture2DArrayTextureVar, slot, CoreGraphics::InvalidSamplerId, false, false});
-				break;
-			case Texture3D:
-				ResourceTableSetTexture(toTable, {CoreGraphics::White3D, texContext.texture3DTextureVar, slot, CoreGraphics::InvalidSamplerId, false, false});
-				break;
-			case TextureCube:
-				ResourceTableSetTexture(toTable, {CoreGraphics::WhiteCube, texContext.textureCubeTextureVar, slot, CoreGraphics::InvalidSamplerId, false, false});
-				break;
-			}
-		}
-	}
-
-	// detach depth-stencil
-	if (loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId)
-	{
-		CoreGraphics::TextureId texture = CoreGraphics::TextureViewGetTexture(loadInfo.depthStencilAttachment);
-		IndexT slot = CoreGraphics::TextureGetBindlessHandle(texture);
-
-		// slot 0 is reserved for placeholder
-		if (slot != 0)
-		{
-			CoreGraphics::TextureType type = CoreGraphics::TextureGetType(texture);
-			SizeT samples = CoreGraphics::TextureGetNumSamples(texture);
-			switch (type)
-			{
-			case Texture2D:
-				ResourceTableSetTexture(toTable, {CoreGraphics::White2D, texContext.texture2DTextureVar, slot, CoreGraphics::InvalidSamplerId, false, false});
-				break;
-			case Texture2DArray:
-				ResourceTableSetTexture(toTable, {CoreGraphics::White2DArray, texContext.texture2DArrayTextureVar, slot, CoreGraphics::InvalidSamplerId, false, false});
-				break;
-			case Texture3D:
-				ResourceTableSetTexture(toTable, {CoreGraphics::White3D, texContext.texture3DTextureVar, slot, CoreGraphics::InvalidSamplerId, false, false});
-				break;
-			case TextureCube:
-				ResourceTableSetTexture(toTable, {CoreGraphics::WhiteCube, texContext.textureCubeTextureVar, slot, CoreGraphics::InvalidSamplerId, false, false});
-				break;
-
-			}
-		}
-	}
-
-	// don't for get the tick params
-	ResourceTableSetConstantBuffer(toTable, { constContext.cbo, constContext.cboSlot, 0, false, false, sizeof(Shared::PerTickParams), (SizeT)constContext.cboOffset });
-
-	// update resource table with new assignments
-	ResourceTableCommitChanges(toTable);
 }
 
 //------------------------------------------------------------------------------

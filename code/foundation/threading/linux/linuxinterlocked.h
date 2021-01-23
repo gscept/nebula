@@ -22,6 +22,12 @@ public:
     static int Decrement(int volatile& var);
     /// interlocked add, return previous value
     static int Add(int volatile& var, int add);
+    /// interlocked or
+    static int Or(int volatile* var, int value);
+    /// interlocked and
+    static int And(int volatile* var, int value);
+    /// interlocked xor
+    static int Xor(int volatile* var, int value);
     /// interlocked exchange
     static int Exchange(int volatile* dest, int value);
     /// interlocked exchange
@@ -58,6 +64,33 @@ inline int
 LinuxInterlocked::Add(int volatile& var, int add)
 {
     return __sync_fetch_and_add(&var, add);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline int
+LinuxInterlocked::Or(int volatile& var, int add)
+{
+    return __sync_fetch_and_or(&var, add);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline int
+LinuxInterlocked::And(int volatile& var, int add)
+{
+    return __sync_fetch_and_and(&var, add);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline int
+LinuxInterlocked::Xor(int volatile& var, int add)
+{
+    return __sync_fetch_and_xor(&var, add);
 }
 
 //------------------------------------------------------------------------------

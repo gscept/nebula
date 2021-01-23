@@ -5,10 +5,6 @@
 #include "foundation/stdneb.h"
 #include "fibers/fiber.h"
 #include "core/debug.h"
-namespace Win32
-{
-
-} // namespace Win32
 
 namespace Fibers
 {

@@ -145,5 +145,6 @@ jobs:
       - name: Doxygen
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          deploy_key: ${{ secrets.NEB_DOC }}
+          external_repository: gscept/nebula-doc
           publish_dir: ./documentation/html/

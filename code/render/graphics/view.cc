@@ -58,9 +58,6 @@ View::UpdateResources(const IndexT frameIndex, const IndexT bufferIndex)
 
         // fixme! view should hold its own resource tables and send them to ApplyViewSettings!
         transDev->ApplyViewSettings();
-
-		// run update resources on framescript
-		this->script->UpdateResources(frameIndex, bufferIndex);
     }   
 }
 

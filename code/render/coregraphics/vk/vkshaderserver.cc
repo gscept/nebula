@@ -82,14 +82,15 @@ VkShaderServer::Open()
     for (i = 0; i < this->resourceTables.Size(); i++)
     {
         this->resourceTables[i] = ShaderCreateResourceTable(shader, NEBULA_TICK_GROUP);
-		CoreGraphics::ObjectSetName(this->resourceTables[i], "Main Tick Group Descriptor");
+        CoreGraphics::ObjectSetName(this->resourceTables[i], "Main Tick Group Descriptor");
 
+        /*
         // fill up all slots with placeholders
         IndexT j;
         for (j = 0; j < Shared::MAX_2D_TEXTURES; j++)
             ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2D, this->texture2DTextureVar, j, CoreGraphics::InvalidSamplerId, false });
 
-		for (j = 0; j < Shared::MAX_2D_ARRAY_TEXTURES; j++)
+        for (j = 0; j < Shared::MAX_2D_ARRAY_TEXTURES; j++)
             ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2DArray, this->texture2DArrayTextureVar, j, CoreGraphics::InvalidSamplerId, false });
 
         for (j = 0; j < Shared::MAX_2D_MS_TEXTURES; j++)
@@ -102,6 +103,7 @@ VkShaderServer::Open()
             ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::WhiteCube, this->textureCubeTextureVar, j, CoreGraphics::InvalidSamplerId, false });
 
         ResourceTableCommitChanges(this->resourceTables[i]);
+        */
     }
 
     this->normalBufferTextureVar = ShaderGetConstantBinding(shader, "NormalBuffer");
@@ -257,20 +259,20 @@ VkShaderServer::UnregisterTexture(const uint32_t id, const CoreGraphics::Texture
 BindlessTexturesContext
 VkShaderServer::GetBindlessTextureContext()
 {
-	BindlessTexturesContext ret;
-	ret.resourceTables = this->resourceTables;
-	ret.numBoundTextures2D = this->texture2DPool.NumUsed();
-	ret.texture2DTextureVar = this->texture2DTextureVar;
-	ret.numBoundTextures2DArray = this->texture2DArrayPool.NumUsed();
-	ret.texture2DArrayTextureVar = this->texture2DArrayTextureVar;
-	ret.numBoundTextures2DMS = this->texture2DMSPool.NumUsed();
-	ret.texture2DMSTextureVar = this->texture2DMSTextureVar;
-	ret.numBoundTextures3D = this->texture3DPool.NumUsed();
-	ret.texture3DTextureVar = this->texture3DTextureVar;
-	ret.textureCubeTextureVar = this->textureCubeTextureVar;
-	ret.numBoundTexturesCube = this->textureCubePool.NumUsed();
+    BindlessTexturesContext ret;
+    ret.resourceTables = this->resourceTables;
+    ret.numBoundTextures2D = this->texture2DPool.NumUsed();
+    ret.texture2DTextureVar = this->texture2DTextureVar;
+    ret.numBoundTextures2DArray = this->texture2DArrayPool.NumUsed();
+    ret.texture2DArrayTextureVar = this->texture2DArrayTextureVar;
+    ret.numBoundTextures2DMS = this->texture2DMSPool.NumUsed();
+    ret.texture2DMSTextureVar = this->texture2DMSTextureVar;
+    ret.numBoundTextures3D = this->texture3DPool.NumUsed();
+    ret.texture3DTextureVar = this->texture3DTextureVar;
+    ret.textureCubeTextureVar = this->textureCubeTextureVar;
+    ret.numBoundTexturesCube = this->textureCubePool.NumUsed();
 
-	return ret;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -278,11 +280,11 @@ VkShaderServer::GetBindlessTextureContext()
 */
 TickParametersContext VkShaderServer::GetTickParametersContext()
 {
-	TickParametersContext ret;
-	ret.cboSlot = this->cboSlot;
-	ret.cboOffset = this->cboOffset;
-	ret.cbo = this->ticksCbo;
-	return ret;
+    TickParametersContext ret;
+    ret.cboSlot = this->cboSlot;
+    ret.cboOffset = this->cboOffset;
+    ret.cbo = this->ticksCbo;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -361,8 +363,8 @@ VkShaderServer::UpdateResources()
     ResourceTableSetConstantBuffer(this->resourceTables[bufferedFrameIndex], { this->ticksCbo, this->cboSlot, 0, false, false, sizeof(Shared::PerTickParams), (SizeT)this->cboOffset });
     ResourceTableCommitChanges(this->resourceTables[bufferedFrameIndex]);
 
-	// set global tick group resources
-	CoreGraphics::SetTickResourceTable(this->resourceTables[bufferedFrameIndex]);
+    // set global tick group resources
+    CoreGraphics::SetTickResourceTable(this->resourceTables[bufferedFrameIndex]);
 }
 
 //------------------------------------------------------------------------------
