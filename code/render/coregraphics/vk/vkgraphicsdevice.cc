@@ -135,11 +135,11 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     Util::FixedArray<Util::FixedArray<const char*>> deviceFeatureStrings;
     IndexT currentDevice;
 
-	Util::FixedArray<CoreGraphics::ShaderProgramId> currentShaderPrograms;
+    Util::FixedArray<CoreGraphics::ShaderProgramId> currentShaderPrograms;
     CoreGraphics::ShaderFeature::Mask currentShaderMask;
 
-	CoreGraphics::VertexLayoutId currentVertexLayout;
-	CoreGraphics::ShaderProgramId currentVertexLayoutShader;
+    CoreGraphics::VertexLayoutId currentVertexLayout;
+    CoreGraphics::ShaderProgramId currentVertexLayoutShader;
 
     VkGraphicsPipelineCreateInfo currentPipelineInfo;
     VkPipelineLayout currentGraphicsPipelineLayout;
@@ -231,7 +231,10 @@ SetupAdapter()
                     "VK_KHR_swapchain",
                     "VK_KHR_maintenance1",
                     "VK_KHR_maintenance2",
-                    "VK_KHR_maintenance3"
+                    "VK_KHR_maintenance3",
+                    "VK_EXT_host_query_reset",
+                    "VK_EXT_descriptor_indexing",
+                    "VK_EXT_robustness2"
                 };
 
                 uint32_t newNumCaps = 0;
@@ -686,8 +689,8 @@ CreateAndBindGraphicsPipeline()
         state.drawThread->Push(stencilWriteMaskCommand);
 
         // bind textures and camera descriptors
-		CoreGraphics::SetResourceTable(state.tickResourceTable, NEBULA_TICK_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
-		CoreGraphics::SetResourceTable(state.frameResourceTable, NEBULA_FRAME_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+        CoreGraphics::SetResourceTable(state.tickResourceTable, NEBULA_TICK_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+        CoreGraphics::SetResourceTable(state.frameResourceTable, NEBULA_FRAME_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 
         // push propagation descriptors
         for (IndexT i = 0; i < state.propagateDescriptorSets.Size(); i++)
@@ -1102,13 +1105,13 @@ NebulaVulkanErrorDebugCallback(
         1303270965
     };
 
-	/*
+    /*
     for (IndexT i = 0; i < sizeof(ignore) / sizeof(int); i++)
     {
         if (callbackData->messageIdNumber == ignore[i])
             return VK_FALSE;
     }
-	*/
+    */
 
     n_warning("%s\n", callbackData->pMessage);
     return VK_FALSE;
@@ -1128,38 +1131,38 @@ template<> void ObjectSetName(const CoreGraphics::CommandBufferId id, const char
 bool
 CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 {
-	DisplayDevice* displayDevice = DisplayDevice::Instance();
-	n_assert(displayDevice->IsOpen());
+    DisplayDevice* displayDevice = DisplayDevice::Instance();
+    n_assert(displayDevice->IsOpen());
 
-	state.enableValidation = info.enableValidation;
+    state.enableValidation = info.enableValidation;
 
-	// create result
-	VkResult res;
+    // create result
+    VkResult res;
 
-	// setup application
-	VkApplicationInfo appInfo =
-	{
-		VK_STRUCTURE_TYPE_APPLICATION_INFO,
-		nullptr,
-		App::Application::Instance()->GetAppTitle().AsCharPtr(),
-		2,															// application version
-		"Nebula",													// engine name
-		4,															// engine version
-		VK_API_VERSION_1_2											// API version
-	};
+    // setup application
+    VkApplicationInfo appInfo =
+    {
+        VK_STRUCTURE_TYPE_APPLICATION_INFO,
+        nullptr,
+        App::Application::Instance()->GetAppTitle().AsCharPtr(),
+        2,															// application version
+        "Nebula",													// engine name
+        4,															// engine version
+        VK_API_VERSION_1_2											// API version
+    };
 
-	state.usedExtensions = 0;
-	uint32_t requiredExtensionsNum;
-	const char** requiredExtensions = glfwGetRequiredInstanceExtensions(&requiredExtensionsNum);
-	uint32_t i;
-	for (i = 0; i < (uint32_t)requiredExtensionsNum; i++)
-	{
-		state.extensions[state.usedExtensions++] = requiredExtensions[i];
-	}
+    state.usedExtensions = 0;
+    uint32_t requiredExtensionsNum;
+    const char** requiredExtensions = glfwGetRequiredInstanceExtensions(&requiredExtensionsNum);
+    uint32_t i;
+    for (i = 0; i < (uint32_t)requiredExtensionsNum; i++)
+    {
+        state.extensions[state.usedExtensions++] = requiredExtensions[i];
+    }
 
-	const char* layers[] = { "VK_LAYER_KHRONOS_validation" };
-	int numLayers = 0;
-	const char** usedLayers = nullptr;
+    const char* layers[] = { "VK_LAYER_KHRONOS_validation" };
+    int numLayers = 0;
+    const char** usedLayers = nullptr;
 
 #if NEBULA_GRAPHICS_DEBUG
     if (info.enableValidation)
@@ -1182,44 +1185,44 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     }
 #endif
 
-	// load layers
-	Vulkan::InitVulkan();
+    // load layers
+    Vulkan::InitVulkan();
 
-	// setup instance
-	VkInstanceCreateInfo instanceInfo =
-	{
-		VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,		// type of struct
-		nullptr,										// pointer to next
-		0,											// flags
-		&appInfo,									// application
-		(uint32_t)numLayers,
-		usedLayers,
-		state.usedExtensions,
-		state.extensions
-	};
+    // setup instance
+    VkInstanceCreateInfo instanceInfo =
+    {
+        VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,		// type of struct
+        nullptr,										// pointer to next
+        0,											// flags
+        &appInfo,									// application
+        (uint32_t)numLayers,
+        usedLayers,
+        state.usedExtensions,
+        state.extensions
+    };
 
-	// create instance
-	res = vkCreateInstance(&instanceInfo, nullptr, &state.instance);
-	if (res == VK_ERROR_INCOMPATIBLE_DRIVER)
-	{
-		n_error("Your GPU driver is not compatible with Vulkan.\n");
-	}
-	else if (res == VK_ERROR_EXTENSION_NOT_PRESENT)
-	{
-		n_error("Vulkan extension failed to load.\n");
-	}
-	else if (res == VK_ERROR_LAYER_NOT_PRESENT)
-	{
-		n_error("Vulkan layer failed to load.\n");
-	}
-	n_assert(res == VK_SUCCESS);
+    // create instance
+    res = vkCreateInstance(&instanceInfo, nullptr, &state.instance);
+    if (res == VK_ERROR_INCOMPATIBLE_DRIVER)
+    {
+        n_error("Your GPU driver is not compatible with Vulkan.\n");
+    }
+    else if (res == VK_ERROR_EXTENSION_NOT_PRESENT)
+    {
+        n_error("Vulkan extension failed to load.\n");
+    }
+    else if (res == VK_ERROR_LAYER_NOT_PRESENT)
+    {
+        n_error("Vulkan layer failed to load.\n");
+    }
+    n_assert(res == VK_SUCCESS);
 
-	// load instance functions
-	Vulkan::InitInstance(state.instance);
+    // load instance functions
+    Vulkan::InitInstance(state.instance);
 
-	// setup adapter
-	SetupAdapter();
-	state.currentDevice = 0;
+    // setup adapter
+    SetupAdapter();
+    state.currentDevice = 0;
 
 #if NEBULA_GRAPHICS_DEBUG
 #else
@@ -1251,219 +1254,226 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     VkCmdDebugMarkerInsert = (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetInstanceProcAddr(state.instance, "vkCmdInsertDebugUtilsLabelEXT");
 #endif
 
-	uint32_t numQueues;
-	vkGetPhysicalDeviceQueueFamilyProperties(state.physicalDevices[state.currentDevice], &numQueues, NULL);
-	n_assert(numQueues > 0);
+    uint32_t numQueues;
+    vkGetPhysicalDeviceQueueFamilyProperties(state.physicalDevices[state.currentDevice], &numQueues, NULL);
+    n_assert(numQueues > 0);
 
-	// now get queues from device
-	VkQueueFamilyProperties* queuesProps = n_new_array(VkQueueFamilyProperties, numQueues);
-	vkGetPhysicalDeviceQueueFamilyProperties(state.physicalDevices[state.currentDevice], &numQueues, queuesProps);
-	vkGetPhysicalDeviceMemoryProperties(state.physicalDevices[state.currentDevice], &state.memoryProps);
+    // now get queues from device
+    VkQueueFamilyProperties* queuesProps = n_new_array(VkQueueFamilyProperties, numQueues);
+    vkGetPhysicalDeviceQueueFamilyProperties(state.physicalDevices[state.currentDevice], &numQueues, queuesProps);
+    vkGetPhysicalDeviceMemoryProperties(state.physicalDevices[state.currentDevice], &state.memoryProps);
 
-	state.drawQueueIdx = UINT32_MAX;
-	state.computeQueueIdx = UINT32_MAX;
-	state.transferQueueIdx = UINT32_MAX;
-	state.sparseQueueIdx = UINT32_MAX;
+    state.drawQueueIdx = UINT32_MAX;
+    state.computeQueueIdx = UINT32_MAX;
+    state.transferQueueIdx = UINT32_MAX;
+    state.sparseQueueIdx = UINT32_MAX;
 
-	// create three queues for each family
-	Util::FixedArray<uint> indexMap;
-	indexMap.Resize(numQueues);
-	indexMap.Fill(0);
-	for (i = 0; i < numQueues; i++)
-	{
-		for (uint32_t j = 0; j < queuesProps[i].queueCount; j++)
-		{
-			// just pick whichever queue supports graphics, it will most likely only be 1
-			if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_GRAPHICS_BIT)
-				&& state.drawQueueIdx == UINT32_MAX)
-			{
-				state.drawQueueFamily = i;
-				state.drawQueueIdx = j;
-				indexMap[i]++;
-				continue;
-			}
+    // create three queues for each family
+    Util::FixedArray<uint> indexMap;
+    indexMap.Resize(numQueues);
+    indexMap.Fill(0);
+    for (i = 0; i < numQueues; i++)
+    {
+        for (uint32_t j = 0; j < queuesProps[i].queueCount; j++)
+        {
+            // just pick whichever queue supports graphics, it will most likely only be 1
+            if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_GRAPHICS_BIT)
+                && state.drawQueueIdx == UINT32_MAX)
+            {
+                state.drawQueueFamily = i;
+                state.drawQueueIdx = j;
+                indexMap[i]++;
+                continue;
+            }
 
-			// find a compute queue which is not for graphics
-			if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_COMPUTE_BIT)
-				&& state.computeQueueIdx == UINT32_MAX)
-			{
-				state.computeQueueFamily = i;
-				state.computeQueueIdx = j;
-				indexMap[i]++;
-				continue;
-			}
+            // find a compute queue which is not for graphics
+            if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_COMPUTE_BIT)
+                && state.computeQueueIdx == UINT32_MAX)
+            {
+                state.computeQueueFamily = i;
+                state.computeQueueIdx = j;
+                indexMap[i]++;
+                continue;
+            }
 
-			// find a transfer queue that is purely for transfers
-			if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_TRANSFER_BIT)
-				&& state.transferQueueIdx == UINT32_MAX)
-			{
-				state.transferQueueFamily = i;
-				state.transferQueueIdx = j;
-				indexMap[i]++;
-				continue;
-			}
+            // find a transfer queue that is purely for transfers
+            if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_TRANSFER_BIT)
+                && state.transferQueueIdx == UINT32_MAX)
+            {
+                state.transferQueueFamily = i;
+                state.transferQueueIdx = j;
+                indexMap[i]++;
+                continue;
+            }
 
-			// find a sparse or transfer queue that supports sparse binding
-			if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_SPARSE_BINDING_BIT)
-				&& state.sparseQueueIdx == UINT32_MAX)
-			{
-				state.sparseQueueFamily = i;
-				state.sparseQueueIdx = j;
-				indexMap[i]++;
-				continue;
-			}
-		}
-	}
+            // find a sparse or transfer queue that supports sparse binding
+            if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_SPARSE_BINDING_BIT)
+                && state.sparseQueueIdx == UINT32_MAX)
+            {
+                state.sparseQueueFamily = i;
+                state.sparseQueueIdx = j;
+                indexMap[i]++;
+                continue;
+            }
+        }
+    }
 
-	// could not find pure compute queue
-	if (state.computeQueueIdx == UINT32_MAX)
-	{
-		// assert that the graphics queue can handle computes
-		n_assert(queuesProps[state.drawQueueFamily].queueFlags& VK_QUEUE_COMPUTE_BIT);
-		state.computeQueueFamily = state.drawQueueFamily;
-		state.computeQueueIdx = state.drawQueueIdx;
-	}
+    // could not find pure compute queue
+    if (state.computeQueueIdx == UINT32_MAX)
+    {
+        // assert that the graphics queue can handle computes
+        n_assert(queuesProps[state.drawQueueFamily].queueFlags& VK_QUEUE_COMPUTE_BIT);
+        state.computeQueueFamily = state.drawQueueFamily;
+        state.computeQueueIdx = state.drawQueueIdx;
+    }
 
-	// could not find pure transfer queue
-	if (state.transferQueueIdx == UINT32_MAX)
-	{
-		// assert the draw queue can handle transfers
-		n_assert(queuesProps[state.drawQueueFamily].queueFlags & VK_QUEUE_TRANSFER_BIT);
-		state.transferQueueFamily = state.drawQueueFamily;
-		state.transferQueueIdx = state.drawQueueIdx;
-	}
+    // could not find pure transfer queue
+    if (state.transferQueueIdx == UINT32_MAX)
+    {
+        // assert the draw queue can handle transfers
+        n_assert(queuesProps[state.drawQueueFamily].queueFlags & VK_QUEUE_TRANSFER_BIT);
+        state.transferQueueFamily = state.drawQueueFamily;
+        state.transferQueueIdx = state.drawQueueIdx;
+    }
 
-	// could not find pure transfer queue
-	if (state.sparseQueueIdx == UINT32_MAX)
-	{
-		if (queuesProps[state.transferQueueFamily].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT)
-		{
-			state.sparseQueueFamily = state.transferQueueFamily;
+    // could not find pure transfer queue
+    if (state.sparseQueueIdx == UINT32_MAX)
+    {
+        if (queuesProps[state.transferQueueFamily].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT)
+        {
+            state.sparseQueueFamily = state.transferQueueFamily;
 
-			// if we have an extra transfer queue, use it for sparse bindings
-			if (queuesProps[state.sparseQueueFamily].queueCount > indexMap[state.sparseQueueFamily])
-				state.sparseQueueIdx = indexMap[state.sparseQueueFamily]++;
-			else
-				state.sparseQueueIdx = state.transferQueueIdx;
-		}
-		else
-		{
-			n_warn2(queuesProps[state.drawQueueFamily].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT, "VkGraphicsDevice: No sparse binding queue could be found!\n");
-			state.sparseQueueFamily = state.drawQueueFamily;
-			state.sparseQueueIdx = state.drawQueueIdx;
-		}
-	}
+            // if we have an extra transfer queue, use it for sparse bindings
+            if (queuesProps[state.sparseQueueFamily].queueCount > indexMap[state.sparseQueueFamily])
+                state.sparseQueueIdx = indexMap[state.sparseQueueFamily]++;
+            else
+                state.sparseQueueIdx = state.transferQueueIdx;
+        }
+        else
+        {
+            n_warn2(queuesProps[state.drawQueueFamily].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT, "VkGraphicsDevice: No sparse binding queue could be found!\n");
+            state.sparseQueueFamily = state.drawQueueFamily;
+            state.sparseQueueIdx = state.drawQueueIdx;
+        }
+    }
 
-	if (state.drawQueueFamily == UINT32_MAX)		n_error("VkGraphicsDevice: Could not find a queue for graphics and present.\n");
-	if (state.computeQueueFamily == UINT32_MAX)		n_error("VkGraphicsDevice: Could not find a queue for compute.\n");
-	if (state.transferQueueFamily == UINT32_MAX)	n_error("VkGraphicsDevice: Could not find a queue for transfers.\n");
-	if (state.sparseQueueFamily == UINT32_MAX)		n_warning("VkGraphicsDevice: Could not find a queue for sparse binding.\n");
+    if (state.drawQueueFamily == UINT32_MAX)		n_error("VkGraphicsDevice: Could not find a queue for graphics and present.\n");
+    if (state.computeQueueFamily == UINT32_MAX)		n_error("VkGraphicsDevice: Could not find a queue for compute.\n");
+    if (state.transferQueueFamily == UINT32_MAX)	n_error("VkGraphicsDevice: Could not find a queue for transfers.\n");
+    if (state.sparseQueueFamily == UINT32_MAX)		n_warning("VkGraphicsDevice: Could not find a queue for sparse binding.\n");
 
-	// create device
-	Util::FixedArray<Util::FixedArray<float>> prios;
-	Util::Array<VkDeviceQueueCreateInfo> queueInfos;
-	prios.Resize(numQueues);
+    // create device
+    Util::FixedArray<Util::FixedArray<float>> prios;
+    Util::Array<VkDeviceQueueCreateInfo> queueInfos;
+    prios.Resize(numQueues);
 
-	for (i = 0; i < numQueues; i++)
-	{
-		if (indexMap[i] == 0) continue;
-		prios[i].Resize(indexMap[i]);
-		prios[i].Fill(1.0f);
-		queueInfos.Append(
-			{
-				VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-				nullptr,
-				0,
-				i,
-				indexMap[i],
-				&prios[i][0]
-			});
-	}
+    for (i = 0; i < numQueues; i++)
+    {
+        if (indexMap[i] == 0) continue;
+        prios[i].Resize(indexMap[i]);
+        prios[i].Fill(1.0f);
+        queueInfos.Append(
+            {
+                VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                nullptr,
+                0,
+                i,
+                indexMap[i],
+                &prios[i][0]
+            });
+    }
 
-	n_delete_array(queuesProps);
+    n_delete_array(queuesProps);
 
-	// get physical device features
-	VkPhysicalDeviceFeatures features;
-	vkGetPhysicalDeviceFeatures(state.physicalDevices[state.currentDevice], &features);
+    // get physical device features
+    VkPhysicalDeviceFeatures features;
+    vkGetPhysicalDeviceFeatures(state.physicalDevices[state.currentDevice], &features);
 
-	VkPhysicalDeviceHostQueryResetFeatures hostQueryReset =
-	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
-		nullptr,
-		true
-	};
+    VkPhysicalDeviceHostQueryResetFeatures hostQueryReset =
+    {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
+        nullptr,
+        true
+    };
 
-	VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphores =
-	{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
-		&hostQueryReset,
-		true
-	};
+    VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphores =
+    {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
+        &hostQueryReset,
+        true
+    };
 
-	VkDeviceCreateInfo deviceInfo =
-	{
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		&timelineSemaphores,
-		0,
-		(uint32_t)queueInfos.Size(),
-		&queueInfos[0],
-		(uint32_t)numLayers,
-		layers,
-		state.numCaps[state.currentDevice],
-		state.deviceFeatureStrings[state.currentDevice].Begin(),
-		&features
-	};
+    VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures =
+    {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
+        &timelineSemaphores
+    };
+    descriptorIndexingFeatures.descriptorBindingPartiallyBound = true;
 
-	// create device
-	res = vkCreateDevice(state.physicalDevices[state.currentDevice], &deviceInfo, NULL, &state.devices[state.currentDevice]);
-	n_assert(res == VK_SUCCESS);
+    VkDeviceCreateInfo deviceInfo =
+    {
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        &descriptorIndexingFeatures,
+        0,
+        (uint32_t)queueInfos.Size(),
+        &queueInfos[0],
+        (uint32_t)numLayers,
+        layers,
+        state.numCaps[state.currentDevice],
+        state.deviceFeatureStrings[state.currentDevice].Begin(),
+        &features
+    };
 
-	// setup queue handler
-	Util::FixedArray<uint> families(4);
-	families[GraphicsQueueType] = state.drawQueueFamily;
-	families[ComputeQueueType] = state.computeQueueFamily;
-	families[TransferQueueType] = state.transferQueueFamily;
-	families[SparseQueueType] = state.sparseQueueFamily;
-	state.subcontextHandler.Setup(state.devices[state.currentDevice], indexMap, families);
+    // create device
+    res = vkCreateDevice(state.physicalDevices[state.currentDevice], &deviceInfo, NULL, &state.devices[state.currentDevice]);
+    n_assert(res == VK_SUCCESS);
 
-	state.usedQueueFamilies.Add(state.drawQueueFamily);
-	state.usedQueueFamilies.Add(state.computeQueueFamily);
-	state.usedQueueFamilies.Add(state.transferQueueFamily);
-	state.usedQueueFamilies.Add(state.sparseQueueFamily);
-	state.queueFamilyMap.Resize(NumQueueTypes);
-	state.queueFamilyMap[GraphicsQueueType] = state.drawQueueFamily;
-	state.queueFamilyMap[ComputeQueueType] = state.computeQueueFamily;
-	state.queueFamilyMap[TransferQueueType] = state.transferQueueFamily;
-	state.queueFamilyMap[SparseQueueType] = state.sparseQueueFamily;
+    // setup queue handler
+    Util::FixedArray<uint> families(4);
+    families[GraphicsQueueType] = state.drawQueueFamily;
+    families[ComputeQueueType] = state.computeQueueFamily;
+    families[TransferQueueType] = state.transferQueueFamily;
+    families[SparseQueueType] = state.sparseQueueFamily;
+    state.subcontextHandler.Setup(state.devices[state.currentDevice], indexMap, families);
 
-	VkPipelineCacheCreateInfo cacheInfo =
-	{
-		VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
-		nullptr,
-		0,
-		0,
-		nullptr
-	};
+    state.usedQueueFamilies.Add(state.drawQueueFamily);
+    state.usedQueueFamilies.Add(state.computeQueueFamily);
+    state.usedQueueFamilies.Add(state.transferQueueFamily);
+    state.usedQueueFamilies.Add(state.sparseQueueFamily);
+    state.queueFamilyMap.Resize(NumQueueTypes);
+    state.queueFamilyMap[GraphicsQueueType] = state.drawQueueFamily;
+    state.queueFamilyMap[ComputeQueueType] = state.computeQueueFamily;
+    state.queueFamilyMap[TransferQueueType] = state.transferQueueFamily;
+    state.queueFamilyMap[SparseQueueType] = state.sparseQueueFamily;
 
-	// create cache
-	res = vkCreatePipelineCache(state.devices[state.currentDevice], &cacheInfo, NULL, &state.cache);
-	n_assert(res == VK_SUCCESS);
+    VkPipelineCacheCreateInfo cacheInfo =
+    {
+        VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
+        nullptr,
+        0,
+        0,
+        nullptr
+    };
 
-	// setup our own pipeline database
-	state.database.Setup(state.devices[state.currentDevice], state.cache);
+    // create cache
+    res = vkCreatePipelineCache(state.devices[state.currentDevice], &cacheInfo, NULL, &state.cache);
+    n_assert(res == VK_SUCCESS);
 
-	// setup the empty descriptor set
-	SetupEmptyDescriptorSetLayout();
+    // setup our own pipeline database
+    state.database.Setup(state.devices[state.currentDevice], state.cache);
 
-	// setup memory pools
-	SetupMemoryPools(
-		info.memoryHeaps[MemoryPool_DeviceLocal],
-		info.memoryHeaps[MemoryPool_HostLocal],
-		info.memoryHeaps[MemoryPool_HostToDevice],
-		info.memoryHeaps[MemoryPool_DeviceToHost]
-		);
+    // setup the empty descriptor set
+    SetupEmptyDescriptorSetLayout();
 
-	state.constantBufferRings.Resize(info.numBufferedFrames);
+    // setup memory pools
+    SetupMemoryPools(
+        info.memoryHeaps[MemoryPool_DeviceLocal],
+        info.memoryHeaps[MemoryPool_HostLocal],
+        info.memoryHeaps[MemoryPool_HostToDevice],
+        info.memoryHeaps[MemoryPool_DeviceToHost]
+        );
+
+    state.constantBufferRings.Resize(info.numBufferedFrames);
 
 #ifdef CreateSemaphore
 #pragma push_macro("CreateSemaphore")
@@ -1625,11 +1635,11 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     state.currentPipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     state.currentPipelineInfo.basePipelineIndex = -1;
     state.currentPipelineInfo.pColorBlendState = &state.blendInfo;
-	state.currentPipelineInfo.pVertexInputState = nullptr;
+    state.currentPipelineInfo.pVertexInputState = nullptr;
     state.currentPipelineInfo.pInputAssemblyState = nullptr;
-	state.currentPipelineBits = PipelineBuildBits::NoInfoSet;
-	state.currentShaderPrograms.Resize(NumQueueTypes); // resize to fit all queues, even if only compute and graphics can use shaders...
-	state.currentShaderPrograms.Fill(CoreGraphics::InvalidShaderProgramId);
+    state.currentPipelineBits = PipelineBuildBits::NoInfoSet;
+    state.currentShaderPrograms.Resize(NumQueueTypes); // resize to fit all queues, even if only compute and graphics can use shaders...
+    state.currentShaderPrograms.Fill(CoreGraphics::InvalidShaderProgramId);
 
     // construct queues
     VkQueryPoolCreateInfo queryInfos[CoreGraphics::NumQueryTypes];
@@ -2334,13 +2344,13 @@ void
 SetVertexLayout(const CoreGraphics::VertexLayoutId& vl)
 {
     n_assert(state.currentShaderPrograms[GraphicsQueueType] != CoreGraphics::InvalidShaderProgramId);
-	if (state.currentVertexLayout != vl || state.currentVertexLayoutShader != state.currentShaderPrograms[GraphicsQueueType])
-	{
-		VkPipelineVertexInputStateCreateInfo* info = CoreGraphics::layoutPool->GetDerivativeLayout(vl, state.currentShaderPrograms[GraphicsQueueType]);
-		SetVertexLayoutPipelineInfo(info);
-		state.currentVertexLayout = vl;
-		state.currentVertexLayoutShader = state.currentShaderPrograms[GraphicsQueueType];
-	}
+    if (state.currentVertexLayout != vl || state.currentVertexLayoutShader != state.currentShaderPrograms[GraphicsQueueType])
+    {
+        VkPipelineVertexInputStateCreateInfo* info = CoreGraphics::layoutPool->GetDerivativeLayout(vl, state.currentShaderPrograms[GraphicsQueueType]);
+        SetVertexLayoutPipelineInfo(info);
+        state.currentVertexLayout = vl;
+        state.currentVertexLayoutShader = state.currentShaderPrograms[GraphicsQueueType];
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -2433,13 +2443,13 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
     // if we are compute, we can set the pipeline straight away, otherwise we have to accumulate the infos
     if (info.type == ComputePipeline)
     {
-		n_assert(state.drawThreadCommands == CoreGraphics::InvalidCommandBufferId);
+        n_assert(state.drawThreadCommands == CoreGraphics::InvalidCommandBufferId);
 
-		// bind compute pipeline
-		state.currentBindPoint = CoreGraphics::ComputePipeline;
+        // bind compute pipeline
+        state.currentBindPoint = CoreGraphics::ComputePipeline;
 
-		// bind pipeline
-		vkCmdBindPipeline(GetMainBuffer(queue), VK_PIPELINE_BIND_POINT_COMPUTE, info.pipeline);
+        // bind pipeline
+        vkCmdBindPipeline(GetMainBuffer(queue), VK_PIPELINE_BIND_POINT_COMPUTE, info.pipeline);
 
         layoutChanged = state.currentComputePipelineLayout != info.layout;
         state.currentComputePipelineLayout = info.layout;
@@ -2469,7 +2479,7 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
             VK_NULL_HANDLE, 0               // base pipeline is kept as NULL too, because this is the base for all derivatives
         };
         Vulkan::BindGraphicsPipelineInfo(ginfo, pro);
-		state.currentBindPoint = CoreGraphics::ComputePipeline;
+        state.currentBindPoint = CoreGraphics::ComputePipeline;
 
         layoutChanged = state.currentGraphicsPipelineLayout != info.layout;
         state.currentGraphicsPipelineLayout = info.layout;
@@ -2482,16 +2492,16 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
     {
         if (layoutChanged)
         {
-			CoreGraphics::SetResourceTable(state.tickResourceTable, NEBULA_TICK_GROUP, CoreGraphics::ComputePipeline, nullptr, queue);
-			CoreGraphics::SetResourceTable(state.frameResourceTable, NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr, queue);
+            CoreGraphics::SetResourceTable(state.tickResourceTable, NEBULA_TICK_GROUP, CoreGraphics::ComputePipeline, nullptr, queue);
+            CoreGraphics::SetResourceTable(state.frameResourceTable, NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr, queue);
         }
     }
     else // graphics queue
     {
         if (!state.drawThread && layoutChanged)
         {
-			CoreGraphics::SetResourceTable(state.tickResourceTable, NEBULA_TICK_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
-			CoreGraphics::SetResourceTable(state.frameResourceTable, NEBULA_FRAME_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+            CoreGraphics::SetResourceTable(state.tickResourceTable, NEBULA_TICK_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+            CoreGraphics::SetResourceTable(state.frameResourceTable, NEBULA_FRAME_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
         }
     }
 }
@@ -2562,10 +2572,10 @@ SetResourceTablePipeline(const CoreGraphics::ResourcePipelineId layout)
 CoreGraphics::ResourceTableId
 SetTickResourceTable(const CoreGraphics::ResourceTableId table)
 {
-	n_assert(table != CoreGraphics::InvalidResourceTableId);
-	CoreGraphics::ResourceTableId ret = state.tickResourceTable;
-	state.tickResourceTable = table;
-	return ret;
+    n_assert(table != CoreGraphics::InvalidResourceTableId);
+    CoreGraphics::ResourceTableId ret = state.tickResourceTable;
+    state.tickResourceTable = table;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -2574,10 +2584,10 @@ SetTickResourceTable(const CoreGraphics::ResourceTableId table)
 CoreGraphics::ResourceTableId
 SetFrameResourceTable(const CoreGraphics::ResourceTableId table)
 {
-	n_assert(table != CoreGraphics::InvalidResourceTableId);
-	CoreGraphics::ResourceTableId ret = state.frameResourceTable;
-	state.frameResourceTable = table;
-	return ret;
+    n_assert(table != CoreGraphics::InvalidResourceTableId);
+    CoreGraphics::ResourceTableId ret = state.frameResourceTable;
+    state.frameResourceTable = table;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -3210,7 +3220,7 @@ EndBatch()
     n_assert(state.inBeginBatch);
     //n_assert(state.pass != InvalidPassId);
 
-	state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] = CoreGraphics::InvalidShaderProgramId;
+    state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] = CoreGraphics::InvalidShaderProgramId;
     state.inBeginBatch = false;
 }
 
@@ -3229,7 +3239,7 @@ EndPass(PassRecordMode mode)
     //this->currentPipelineBits = 0;
     for (IndexT i = 0; i < NEBULA_NUM_GROUPS; i++)
         state.propagateDescriptorSets[i].baseSet = -1;
-	state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] = CoreGraphics::InvalidShaderProgramId;
+    state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] = CoreGraphics::InvalidShaderProgramId;
 
     // end render pass
     switch (mode)
@@ -3352,8 +3362,8 @@ EndFrame(IndexT frameIndex)
     // if we have an active resource submission, submit it!
     LockResourceSubmission();
 
-	// do transfer-graphics handovers
-	if (state.handoverSubmissionActive)
+    // do transfer-graphics handovers
+    if (state.handoverSubmissionActive)
     {
         // finish up the resource submission and setup submissions
         CommandBufferEndRecord(state.handoverSubmissionCmdBuffer);
@@ -3453,7 +3463,7 @@ EndFrame(IndexT frameIndex)
 
     // reset state
     state.inputInfo.topology = VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
-	state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] = CoreGraphics::InvalidShaderProgramId;
+    state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] = CoreGraphics::InvalidShaderProgramId;
     state.currentPipelineInfo.pVertexInputState = nullptr;
     state.currentPipelineInfo.pInputAssemblyState = nullptr;
 }
@@ -4016,21 +4026,21 @@ SetStencilWriteMask(const uint writeMask)
 void
 UpdateBuffer(const CoreGraphics::BufferId buffer, uint offset, uint size, const void* data, CoreGraphics::QueueType queue)
 {
-	if (state.drawThread)
+    if (state.drawThread)
     {
         if (state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
         {
             VkCommandBufferThread::VkUpdateBufferCommand cmd;
-			cmd.buf = BufferGetVk(buffer);
-			cmd.data = data;
-			cmd.offset = offset;
-			cmd.size = size;
+            cmd.buf = BufferGetVk(buffer);
+            cmd.data = data;
+            cmd.offset = offset;
+            cmd.size = size;
             state.drawThread->Push(cmd);
         }
     }
     else
     {
-		vkCmdUpdateBuffer(GetMainBuffer(queue), Vulkan::BufferGetVk(buffer), offset, size, data);
+        vkCmdUpdateBuffer(GetMainBuffer(queue), Vulkan::BufferGetVk(buffer), offset, size, data);
     }
 }
 
@@ -4391,5 +4401,4 @@ CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::vec4&
 CoreGraphics::GraphicsDeviceState const* const
 CoreGraphics::GetGraphicsDeviceState()
 {
-    return (CoreGraphics::GraphicsDeviceState*)&Vulkan::state;
-}
+    return (CoreGraphics::GraphicsDeviceState*)&Vulkan:

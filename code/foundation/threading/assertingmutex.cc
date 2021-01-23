@@ -65,4 +65,4 @@ AssertingMutex::Unlock()
 	n_assert(old != 0);
 }
 
-} // namespace Thr
+} // namespace Threading

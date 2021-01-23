@@ -192,23 +192,23 @@ DestroyResourceTable(const ResourceTableId id)
 void
 ResourceTableCopy(const ResourceTableId from, IndexT fromSlot, IndexT fromIndex, const ResourceTableId to, IndexT toSlot, IndexT toIndex, const SizeT numResources)
 {
-	VkDescriptorSet& fromSet = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(from.id24);
-	VkDescriptorSet& toSet = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(to.id24);
-	Util::Array<VkCopyDescriptorSet>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(to.id24);
+    VkDescriptorSet& fromSet = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(from.id24);
+    VkDescriptorSet& toSet = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(to.id24);
+    Util::Array<VkCopyDescriptorSet>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(to.id24);
 
-	VkCopyDescriptorSet copy =
-	{
-		VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET,
-		nullptr,
-		fromSet,
-		(uint32_t)fromSlot,
-		(uint32_t)fromIndex,
-		toSet,
-		(uint32_t)toSlot,
-		(uint32_t)toIndex,
-		(uint32_t)numResources
-	};
-	copies.Append(copy);
+    VkCopyDescriptorSet copy =
+    {
+        VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET,
+        nullptr,
+        fromSet,
+        (uint32_t)fromSlot,
+        (uint32_t)fromIndex,
+        toSet,
+        (uint32_t)toSlot,
+        (uint32_t)toIndex,
+        (uint32_t)numResources
+    };
+    copies.Append(copy);
 }
 
 //------------------------------------------------------------------------------
@@ -621,7 +621,7 @@ ResourceTableCommitChanges(const ResourceTableId id)
     {
         Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
         Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
-		Util::Array<VkCopyDescriptorSet>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(id.id24);
+        Util::Array<VkCopyDescriptorSet>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(id.id24);
         VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
 
         // because we store the write-infos in the other list, and the VkWriteDescriptorSet wants a pointer to the structure
@@ -638,7 +638,7 @@ ResourceTableCommitChanges(const ResourceTableId id)
             vkUpdateDescriptorSets(dev, writeList.Size(), writeList.Begin(), copies.Size(), copies.Begin());
             writeList.Free();
             infoList.Free();
-			copies.Free();
+            copies.Free();
         }
     }
 }
@@ -864,10 +864,19 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
 
     if (bindings.Size() > 0)
     {
+        Util::FixedArray<VkDescriptorBindingFlags> flags(bindings.Size());
+        flags.Fill(VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
+        VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlags =
+        {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+            nullptr,
+            (uint32_t)flags.Size(),
+            flags.Begin()
+        };
         VkDescriptorSetLayoutCreateInfo dslInfo =
         {
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            nullptr,
+            &bindingFlags,
             0,                                                              // USE vkCmdPushDescriptorSetKHR IN THE FUTURE!
             (uint32_t)bindings.Size(),
             bindings.Begin()

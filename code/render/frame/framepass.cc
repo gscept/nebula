@@ -55,15 +55,6 @@ FramePass::Discard()
 
 //------------------------------------------------------------------------------
 /**
-*/
-void
-FramePass::CompiledImpl::UpdateResources(const IndexT frameIndex, const IndexT bufferIndex)
-{
-	PassUpdateResources(this->pass, bufferIndex);
-}
-
-//------------------------------------------------------------------------------
-/**
     Builds jobs in parallel in preparation for the Run() function later
 */
 void 
