@@ -31,8 +31,8 @@ AssertingMutex::~AssertingMutex()
 */
 AssertingMutex::AssertingMutex(AssertingMutex&& rhs)
 {
-	Threading::Interlocked::Exchange(&this->locked, rhs.locked);
-	Threading::Interlocked::Exchange(&rhs.locked, 0);
+    Threading::Interlocked::Exchange(&this->locked, rhs.locked);
+    Threading::Interlocked::Exchange(&rhs.locked, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -42,7 +42,7 @@ void
 AssertingMutex::operator=(AssertingMutex&& rhs)
 {
     Threading::Interlocked::Exchange(&this->locked, rhs.locked);
-	Threading::Interlocked::Exchange(&rhs.locked, 0);
+    Threading::Interlocked::Exchange(&rhs.locked, 0);
 }
 
 //------------------------------------------------------------------------------
@@ -51,8 +51,8 @@ AssertingMutex::operator=(AssertingMutex&& rhs)
 void 
 AssertingMutex::Lock()
 {
-	int old = Threading::Interlocked::Exchange(&this->locked, 1);
-	n_assert(old == 0);
+    int old = Threading::Interlocked::Exchange(&this->locked, 1);
+    n_assert(old == 0);
 }
 
 //------------------------------------------------------------------------------
@@ -61,8 +61,8 @@ AssertingMutex::Lock()
 void 
 AssertingMutex::Unlock()
 {
-	int old = Threading::Interlocked::Exchange(&this->locked, 1);
-	n_assert(old != 0);
+    int old = Threading::Interlocked::Exchange(&this->locked, 0);
+    n_assert(old != 0);
 }
 
 } // namespace Threading
