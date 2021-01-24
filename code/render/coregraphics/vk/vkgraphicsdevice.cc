@@ -2617,7 +2617,7 @@ SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const 
 
     // no matter how we spin it
     int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
-    int ret = Threading::Interlocked::Add(sub.cboGfxEndAddress[type], alignedSize);
+    int ret = Threading::Interlocked::Add(&sub.cboGfxEndAddress[type], alignedSize);
 
     // if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
     if (ret + alignedSize >= state.globalGraphicsConstantBufferMaxValue[type] * int(state.currentBufferedFrameIndex + 1))
@@ -2643,7 +2643,7 @@ SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const v
 
     // no matter how we spin it
     int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
-    int ret = Threading::Interlocked::Add(sub.cboComputeEndAddress[type], alignedSize);
+    int ret = Threading::Interlocked::Add(&sub.cboComputeEndAddress[type], alignedSize);
 
     // if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
     if (ret + alignedSize >= state.globalComputeConstantBufferMaxValue[type] * int(state.currentBufferedFrameIndex + 1))

@@ -223,7 +223,7 @@ FiberFunction(void* param)
     job->function(job->context);
 
     // decrement the counter
-    Threading::Interlocked::Decrement(*job->counter);
+    Threading::Interlocked::Decrement(job->counter);
     n_assert(*job->counter >= 0);
 
     // free up context

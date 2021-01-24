@@ -121,7 +121,7 @@ RefCounted::RefCounted() :
 inline void
 RefCounted::AddRef()
 {
-    Threading::Interlocked::Increment(this->refCount);
+    Threading::Interlocked::Increment(&this->refCount);
 }
 
 //------------------------------------------------------------------------------
@@ -131,7 +131,7 @@ RefCounted::AddRef()
 inline void
 RefCounted::Release()
 {
-    if (0 == Threading::Interlocked::Decrement(this->refCount))
+    if (0 == Threading::Interlocked::Decrement(&this->refCount))
     {
         n_delete(this);
     }
@@ -237,5 +237,4 @@ RefCounted::SetDebugName(const Util::String& name)
 
 
 
-    
     

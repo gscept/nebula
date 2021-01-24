@@ -16,11 +16,11 @@ class PosixInterlocked
 {
 public:
     /// interlocked increment
-    static int Increment(int volatile& var);
+    static int Increment(int volatile* var);
     /// interlocked decrement
-    static int Decrement(int volatile& var);
+    static int Decrement(int volatile* var);
     /// interlocked add
-    static int Add(int volatile& var, int add);
+    static int Add(int volatile* var, int add);
     /// interlocked exchange
     static int Exchange(int volatile* dest, int value);
     /// interlocked compare-exchange
@@ -31,27 +31,27 @@ public:
 /**
 */
 inline int
-PosixInterlocked::Increment(int volatile& var)
+PosixInterlocked::Increment(int volatile* var)
 {
-    return __sync_add_and_fetch(&var, 1);
+    return __sync_add_and_fetch(var, 1);
 }
     
 //------------------------------------------------------------------------------
 /**
 */
 inline int
-PosixInterlocked::Decrement(int volatile& var)
+PosixInterlocked::Decrement(int volatile* var)
 {
-    return __sync_sub_and_fetch(&var, 1);
+    return __sync_sub_and_fetch(var, 1);
 }
     
 //------------------------------------------------------------------------------
 /**
 */
 inline int
-PosixInterlocked::Add(int volatile& var, int add)
+PosixInterlocked::Add(int volatile* var, int add)
 {
-    return __sync_add_and_fetch(&var, add);
+    return __sync_add_and_fetch(var, add);
 }
    
 //------------------------------------------------------------------------------

@@ -354,21 +354,21 @@ ArrayAllocatorSafe<TYPES...>::UpdateSize()
 /**
 */
 template<class ... TYPES> void
-ArrayAllocatorSafe<TYPES...>::EnterGet()
+ArrayAllocatorSafe<TYPES...>::EnterGet(const ArrayAllocatorAccessBits bits)
 {
     this->sect.Enter();
-    Threading::Interlocked::Increment(this->locked);
+    Threading::Interlocked::Increment(&this->locked);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template<class ... TYPES> void
-ArrayAllocatorSafe<TYPES...>::LeaveGet()
+ArrayAllocatorSafe<TYPES...>::LeaveGet(const ArrayAllocatorAccessBits bits)
 {
     n_assert(this->locked > 0);
     this->sect.Leave();
-    Threading::Interlocked::Decrement(this->locked);
+    Threading::Interlocked::Decrement(&this->locked);
 }
 
 //------------------------------------------------------------------------------

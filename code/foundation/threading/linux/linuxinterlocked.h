@@ -17,11 +17,11 @@ class LinuxInterlocked
 {
 public:
     /// interlocked increment
-    static int Increment(int volatile& var);
+    static int Increment(int volatile* var);
     /// interlocked decrement
-    static int Decrement(int volatile& var);
+    static int Decrement(int volatile* var);
     /// interlocked add, return previous value
-    static int Add(int volatile& var, int add);
+    static int Add(int volatile* var, int add);
     /// interlocked or
     static int Or(int volatile* var, int value);
     /// interlocked and
@@ -43,54 +43,54 @@ public:
 /**
 */
 inline int
-LinuxInterlocked::Increment(int volatile& var)
+LinuxInterlocked::Increment(int volatile* var)
 {
-    return __sync_add_and_fetch(&var, 1);
+    return __sync_add_and_fetch(var, 1);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline int
-LinuxInterlocked::Decrement(int volatile& var)
+LinuxInterlocked::Decrement(int volatile* var)
 {
-    return __sync_sub_and_fetch(&var, 1);
+    return __sync_sub_and_fetch(var, 1);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline int
-LinuxInterlocked::Add(int volatile& var, int add)
+LinuxInterlocked::Add(int volatile* var, int add)
 {
-    return __sync_fetch_and_add(&var, add);
+    return __sync_fetch_and_add(var, add);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline int
-LinuxInterlocked::Or(int volatile& var, int add)
+LinuxInterlocked::Or(int volatile* var, int add)
 {
-    return __sync_fetch_and_or(&var, add);
+    return __sync_fetch_and_or(var, add);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline int
-LinuxInterlocked::And(int volatile& var, int add)
+LinuxInterlocked::And(int volatile* var, int add)
 {
-    return __sync_fetch_and_and(&var, add);
+    return __sync_fetch_and_and(var, add);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline int
-LinuxInterlocked::Xor(int volatile& var, int add)
+LinuxInterlocked::Xor(int volatile* var, int add)
 {
-    return __sync_fetch_and_xor(&var, add);
+    return __sync_fetch_and_xor(var, add);
 }
 
 //------------------------------------------------------------------------------

@@ -175,7 +175,7 @@ inline void
 LockFreeQueue<TYPE>::Enqueue(const TYPE& item)
 {
     // increase size
-    int size = Interlocked::Increment(this->size);
+    int size = Interlocked::Increment(&this->size);
     n_assert(size <= this->capacity);
 
     // allocate a new node from storage
@@ -198,10 +198,6 @@ LockFreeQueue<TYPE>::Enqueue(const TYPE& item)
     // if head is null, set head to new node
     CompareAndSwap(&this->head, nullptr, newNode);
     CompareAndSwap(&this->tail, nullptr, newNode);
-
-    /*
-    CompareAndSwap(this->tail, oldTail, newNode);
-    */
 }
 
 //------------------------------------------------------------------------------
@@ -233,7 +229,7 @@ LockFreeQueue<TYPE>::Dequeue(TYPE& item)
     // make sure to return this node to the free list
     this->Dealloc(oldHead);
 
-    int size = Interlocked::Decrement(this->size);
+    int size = Interlocked::Decrement(&this->size);
     n_assert(size >= 0);
 
     return true;
