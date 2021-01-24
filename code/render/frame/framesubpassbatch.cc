@@ -96,7 +96,7 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
                     uint const start = visDrawCmd.packetOffset;
                     uint const end = visDrawCmd.packetOffset + visDrawCmd.numDrawPackets;
                     
-                    Models::ModelNode* currentNode = nullptr;;
+                    Models::ModelNode* currentNode = nullptr;
                     for (uint packetIndex = start; packetIndex < end; ++packetIndex)
                     {
                         Models::ModelNode::DrawPacket* instance = drawList->drawPackets[packetIndex];
@@ -185,7 +185,7 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
                     uint const start = visDrawCmd.packetOffset;
                     uint const end = visDrawCmd.packetOffset + visDrawCmd.numDrawPackets;
 
-                    Models::ModelNode* currentNode = nullptr;;
+                    Models::ModelNode* currentNode = nullptr;
                     for (uint packetIndex = start; packetIndex < end; ++packetIndex)
                     {
                         Models::ModelNode::DrawPacket* instance = drawList->drawPackets[packetIndex];
