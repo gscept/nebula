@@ -227,23 +227,33 @@ template<typename T>
 inline T*
 ArenaAllocator<ChunkSize>::Alloc()
 {
-    static_assert(sizeof(T) <= ChunkSize, "Size of type is bigger than the chunk size!");
-    // pad up to next multiple of 16 to avoid alignment issues
-    SizeT alignedSize = Math::align(sizeof(T), 16);
-    if (this->iterator == nullptr)
+    T* ret = nullptr;
+    if constexpr (sizeof(T) > ChunkSize)
     {
-        this->NewChunk();
+        // allocate block and retire it directly
+        byte* block = (byte*)Memory::Alloc(ObjectArrayHeap, sizeof(T));
+        this->retiredChunks.Append(block);
+        ret = new (block) T;
     }
     else
     {
-        // we cast the pointer diff but it should be safe since it should never be above ChunkSize
-        SizeT remainder = ChunkSize - SizeT(this->iterator - this->currentChunk);       
-        if (remainder < alignedSize)
+        // pad up to next multiple of 16 to avoid alignment issues
+        SizeT alignedSize = Math::align(sizeof(T), 16);
+        if (this->iterator == nullptr)
+        {
             this->NewChunk();
-    }
+        }
+        else
+        {
+            // we cast the pointer diff but it should be safe since it should never be above ChunkSize
+            SizeT remainder = ChunkSize - SizeT(this->iterator - this->currentChunk);       
+            if (remainder < alignedSize)
+                this->NewChunk();
+        }
 
-    T* ret = new (this->iterator) T;
-    this->iterator += alignedSize;
+        ret = new (this->iterator) T;
+        this->iterator += alignedSize;
+    }
     return ret;
 }
 
@@ -254,22 +264,33 @@ template <int ChunkSize>
 inline void*
 ArenaAllocator<ChunkSize>::Alloc(SizeT size)
 {
-    // pad to next alignment.
-    size = Math::align(size, 16);
-    n_assert(size <= ChunkSize);
     n_assert(size != 0);
-    if (this->iterator == nullptr)
+    void* ret = nullptr;
+    if (size > ChunkSize)
     {
-        this->NewChunk();
+        // allocate block and retire it directly
+        byte* block = (byte*)Memory::Alloc(ObjectArrayHeap, size);
+        this->retiredChunks.Append(block);
+        ret = block;
     }
     else
     {
-        PtrDiff remainder = this->currentChunk + ChunkSize - this->iterator;
-        if (remainder < size)
+        // pad to next alignment.
+        size = Math::align(size, 16);
+        if (this->iterator == nullptr)
+        {
             this->NewChunk();
+        }
+        else
+        {
+            PtrDiff remainder = this->currentChunk + ChunkSize - this->iterator;
+            if (remainder < size)
+                this->NewChunk();
+        }
+        ret = this->iterator;
+        this->iterator += size;
     }
-    void* ret = this->iterator;
-    this->iterator += size;
+    
     return ret;
 }
 
