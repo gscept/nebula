@@ -32,7 +32,7 @@ F2(void* context)
     Enqueue([](void* ctx) 
         {
             int* val = (int*)ctx;
-            Threading::Interlocked::Add(*val, 1);
+            Threading::Interlocked::Add(val, 1);
             //TestQueue.Enqueue(*val);
         }, contexts, &counter);
 
