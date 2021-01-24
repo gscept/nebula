@@ -339,7 +339,6 @@ nebula_begin_module(foundation)
 			event.h
 			interlocked.h
 			lockfreequeue.h
-			mutex.h
 			objectref.cc
 			objectref.h
 			safeflag.h
@@ -630,32 +629,29 @@ nebula_begin_module(foundation)
             win32criticalsection.h
             win32event.h
 			win32interlocked.h
-			win32mutex.cc
+            win32rendezvous.h
             win32thread.cc
             win32thread.h
             win32threadbarrier.h
             win32threadid.h
-            win32rendezvous.h
         )
 	elseif(FIPS_LINUX)
 		fips_dir(threading/linux GROUP "threading/linux")
         fips_files(
-			linuxinterlocked.h
-			linuxmutex.cc
             linuxbarrier.h
             linuxcriticalsection.h
             linuxevent.h
+			linuxinterlocked.h
             linuxthread.cc
             linuxthread.h
         )
 	else()
 		fips_dir(threading/posix GROUP "threading/posix")
         fips_files(
-			posixinterlocked.h
-			posixmutex.cc
             posixbarrier.h
             posixcriticalsection.h
             posixevent.h
+			posixinterlocked.h
             posixthread.cc
             posixthread.h
         )
