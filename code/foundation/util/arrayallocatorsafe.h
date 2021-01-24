@@ -37,20 +37,31 @@
 namespace Util
 {
 
+
+enum ArrayAllocatorAccessBits
+{
+    NoBits = 0x0,
+    ReadBit = 0x1,
+    WriteBit = 0x2,
+    ReadWriteBits = ReadBit | WriteBit
+};
+
 template <class T>
 struct AllocatorLock
 {
     T* locker;
-    AllocatorLock(T* locker)
+    ArrayAllocatorAccessBits bits;
+    AllocatorLock(T* locker, ArrayAllocatorAccessBits bits = ReadWriteBits)
     {
+        this->bits = bits;
         this->locker = locker;
-        this->locker->EnterGet();
+        this->locker->EnterGet(this->bits);
     }
     ~AllocatorLock()
     {
         if (this->locker)
         {
-            this->locker->LeaveGet();
+            this->locker->LeaveGet(this->bits);
             this->locker = nullptr;
         }
     }
@@ -120,9 +131,9 @@ public:
     void UpdateSize();
 
     /// enter thread safe get-mode
-    void EnterGet();
+    void EnterGet(const ArrayAllocatorAccessBits bits = ReadWriteBits);
     /// leave thread safe get-mode
-    void LeaveGet();
+    void LeaveGet(const ArrayAllocatorAccessBits bits = ReadWriteBits);
 
     /// get single item unsafe (use with extreme caution)
     template<int MEMBER> Util::tuple_array_t<MEMBER, TYPES...>& GetUnsafe(const Ids::Id32 index);
@@ -130,8 +141,11 @@ public:
     template<int MEMBER> Util::tuple_array_t<MEMBER, TYPES...>& GetUnsafe(const Ids::Id64 index);
 
 protected:
+
     volatile int locked;
     Threading::CriticalSection sect;
+    volatile int numReaders;
+    volatile int writer;
     uint32_t size;
     std::tuple<Util::Array<TYPES>...> objects;
 };
