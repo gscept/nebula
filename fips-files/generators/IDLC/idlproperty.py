@@ -54,7 +54,7 @@ class PropertyDefinition:
         for var in self.variables:
             if var.type == IDLTypes.GetTypeString("resource"):
                 if self.isStruct:
-                    util.fmtError("Structs containing resources not supported!");
+                    util.fmtError("Structs containing resources not supported!")
                 self.isResource = True
 
     def AsTypeDefString(self):
@@ -117,6 +117,16 @@ def ContainsResourceTypes():
     for prop in properties:
         if prop.isResource:
             return True
+    return False
+
+#------------------------------------------------------------------------------
+##
+#
+def ContainsEntityTypes():
+    for prop in properties:
+        for var in prop.variables:
+            if var.type == IDLTypes.GetTypeString("entity"):
+                return True
     return False
 
 #------------------------------------------------------------------------------

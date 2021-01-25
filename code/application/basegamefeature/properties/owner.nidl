@@ -1,7 +1,4 @@
 {
-	"includes": [
-		"game/entity.h"
-	],
 	"properties": {
 		"Owner": {
 			"_type_": "Game::Entity",

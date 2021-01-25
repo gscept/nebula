@@ -59,6 +59,8 @@ class IDLCodeGenerator:
 
         if (IDLProperty.ContainsResourceTypes()):
             IDLDocument.AddInclude(f, "resources/resource.h")
+        if (IDLProperty.ContainsEntityTypes()):
+            IDLDocument.AddInclude(f, "game/entity.h")
 
         IDLDocument.WriteIncludeHeader(f)
         IDLDocument.WriteIncludes(f, self.document)
