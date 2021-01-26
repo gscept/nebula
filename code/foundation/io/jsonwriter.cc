@@ -50,7 +50,8 @@ JsonWriter::Open()
     
     if (StreamWriter::Open())
     {       
-        this->document = n_new(pjson::document);        
+        this->document = n_new(pjson::document);
+        this->document->set_to_object();
         this->hierarchy.Push(this->document);
         this->nameHierarchy.Push(Util::String());        
         return true;

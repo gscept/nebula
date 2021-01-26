@@ -202,9 +202,6 @@ StdTcpServer::ListenerThread::SetClientConnectionClass(const Core::Rtti& type)
 void
 StdTcpServer::ListenerThread::DoWork()
 {
-    // we need a minimal Nebula runtime to work
-    n_printf("ListenerThread started!\n");
-
     // create a server socket
     Ptr<Socket> serverSocket = Socket::Create();
     if (serverSocket->Open(Socket::TCP))
@@ -213,7 +210,6 @@ StdTcpServer::ListenerThread::DoWork()
         serverSocket->SetReUseAddr(true);
         if (serverSocket->Bind())
         {
-            n_printf("ListenerThread listening...\n");
             while (!this->ThreadStopRequested() && serverSocket->Listen())
             {
                 // check if this was the wakeup function which woke us up...
@@ -234,12 +230,11 @@ StdTcpServer::ListenerThread::DoWork()
         }
         else
         {
-            n_printf("StdTcpServer::ListenerThread: Socket::Bind() failed!");
+            n_warn2(false, "StdTcpServer::ListenerThread: Socket::Bind() failed!");
         }
         serverSocket->Close();
     }
-    n_printf("ListenerThread shutting down!\n");
-
+    
     // NOTE: we don't close the thread locale console manually, because
     // the other objects may have something to say while they're destroyed
 }
