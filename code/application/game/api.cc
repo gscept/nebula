@@ -245,6 +245,15 @@ CreateFilter(FilterCreateInfo const& info)
 //------------------------------------------------------------------------------
 /**
 */
+void
+DestroyFilter(Filter filter)
+{
+    filterAllocator.Dealloc(filter);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 ProcessorHandle
 CreateProcessor(ProcessorCreateInfo const& info)
 {
