@@ -102,7 +102,19 @@ PYBIND11_EMBEDDED_MODULE(nmath, m)
             Math::vec4 f;
             f.loadu((float*)info.ptr);
             return Math::point(f);
-        }));
+        }))
+        .def_readwrite("x", &Math::point::x)
+        .def_readwrite("y", &Math::point::y)
+        .def_readwrite("z", &Math::point::z)
+        .def(py::self == py::self)
+        .def(py::self + Math::vector())
+        .def(py::self - Math::vector())
+        .def("__repr__",
+            [](Math::point const& p)
+            {
+                return Util::String::FromVec3(p.vec);
+            }
+        );
     
     py::class_<Math::vector>(m, "Vector", py::buffer_protocol())
         .def(py::init<float, float, float>())
@@ -114,7 +126,19 @@ PYBIND11_EMBEDDED_MODULE(nmath, m)
             Math::vec3 f;
             f.loadu((float*)info.ptr);
             return Math::vector(f);
-        }));
+        }))
+        .def_readwrite("x", &Math::vector::x)
+        .def_readwrite("y", &Math::vector::y)
+        .def_readwrite("z", &Math::vector::z)
+        .def(py::self + py::self)
+        .def(py::self - py::self)
+        .def(py::self * float())
+        .def("__repr__",
+            [](Math::vector const& v)
+            {
+                return Util::String::FromVec3(v.vec);
+            }
+        );
 
     py::class_<Math::mat4>(m, "Mat4", py::buffer_protocol())
         .def(py::init([](){return Math::mat4();}))
@@ -177,6 +201,14 @@ PYBIND11_EMBEDDED_MODULE(nmath, m)
         )
         .def(py::self == py::self)
         .def(py::self != py::self)
+        .def(py::self * py::self)
+        .def(py::self * Math::vec4())
+        .def(py::self * Math::point())
+        .def("__mul__", 
+                [](const Math::mat4& m, const Math::vector& v)
+                {
+                return Math::vector((m*Math::vec4(v.vec)).vec);
+                } , py::is_operator())
         .def("determinant", &Math::determinant)
         .def("get_determinant", &Math::determinant)
         .def_static("identity", &Math::identity)
