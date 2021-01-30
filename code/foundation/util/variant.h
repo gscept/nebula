@@ -434,9 +434,10 @@ public:
     Util::String ToString() const;
     /// set value from string, if type doesn't match, returns false
     bool SetParseString(const Util::String& string);
-    /// get size
+    
+    /// get size of data
     const SizeT Size() const;
-    /// get pointer to data (use void pointer union)
+    /// get pointer to data
     const void* AsVoidPtr() const;
 
     /// create from string
@@ -3361,22 +3362,22 @@ Variant::Size() const
     case Vec2:      return sizeof(float) * 2;
     case Vec4:          return sizeof(float) * 4;
     case Quaternion:    return sizeof(float) * 4;
-    case String:        return sizeof(void*);
-    case Mat4:          return sizeof(void*);
-    case Transform44:   return sizeof(void*);
-    case Blob:          return sizeof(void*);
-    case Guid:          return sizeof(void*);
-    case Object:        return sizeof(void*);
+    case String:        return sizeof(Util::String);
+    case Mat4:          return sizeof(Math::mat4);
+    case Transform44:   return sizeof(Math::transform44);
+    case Blob:          return sizeof(Util::Blob);
+    case Guid:          return sizeof(Util::Guid);
+    case Object:        return sizeof(Core::RefCounted*);
     case VoidPtr:       return sizeof(void*);
-    case IntArray:      return sizeof(void*);
-    case FloatArray:    return sizeof(void*);
-    case BoolArray:     return sizeof(void*);
-    case Vec2Array: return sizeof(void*);
-    case Vec4Array:     return sizeof(void*);
-    case Mat4Array:     return sizeof(void*);
-    case StringArray:   return sizeof(void*);
-    case GuidArray:     return sizeof(void*);
-    case BlobArray:     return sizeof(void*);
+    case IntArray:      return sizeof(Util::Array<int>);
+    case FloatArray:    return sizeof(Util::Array<float>);
+    case BoolArray:     return sizeof(Util::Array<bool>);
+    case Vec2Array:     return sizeof(Util::Array<Math::vec2>);
+    case Vec4Array:     return sizeof(Util::Array<Math::vec4>);
+    case Mat4Array:     return sizeof(Util::Array<Math::mat4>);
+    case StringArray:   return sizeof(Util::Array<Util::String>);
+    case GuidArray:     return sizeof(Util::Array<Util::Guid>);
+    case BlobArray:     return sizeof(Util::Array<Util::Blob>);
     default:
         n_error("Variant::Size(): invalid type enum '%d'!", t);
         return 0;
@@ -3390,7 +3391,45 @@ inline
 const void*
 Variant::AsVoidPtr() const
 {
-    return &this->i8;
+    switch (this->type)
+    {
+    case Void:
+        return nullptr;
+    case Byte:
+    case Short:
+    case UShort:
+    case Int:
+    case UInt:
+    case Int64:
+    case UInt64:
+    case Float:
+    case Double:
+    case Bool:
+    case Vec2:
+    case Vec4:
+    case Quaternion:
+    case Object: // object and void ptr will be returned as pointers, not "as content"
+    case VoidPtr:
+        return &this->i8;
+    case String:
+    case Mat4:
+    case Transform44:
+    case Blob:
+    case Guid:
+    case IntArray:
+    case FloatArray:
+    case BoolArray:
+    case Vec2Array:
+    case Vec4Array:
+    case Mat4Array:
+    case StringArray:
+    case GuidArray:
+    case BlobArray:
+        return this->voidPtr;
+    default:
+        n_error("Variant::AsVoidPtr(): invalid type enum '%d'!", t);
+        return nullptr;
+    }
 }
 
 //------------------------------------------------------------------------------
