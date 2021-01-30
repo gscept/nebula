@@ -51,33 +51,12 @@ Graphics::GraphicsContextState ctx::__state; \
 Graphics::GraphicsContextFunctionBundle ctx::__bundle; \
 void ctx::RegisterEntity(const Graphics::GraphicsEntityId id) \
 {\
-    n_assert(!__state.entitySliceMap.Contains(id));\
-    Graphics::ContextEntityId allocId = __state.Alloc();\
-    __state.entitySliceMap.Add(id, allocId);\
-    if ((unsigned)__state.entities.Size() <= allocId.id)\
-    {\
-        if ((unsigned)__state.entities.Capacity() <= allocId.id)\
-        {\
-            __state.entities.Grow();\
-        }\
-        __state.entities.resize(allocId.id + 1);\
-    }\
-    __state.entities[allocId.id] = id;\
+    Graphics::GraphicsContext::InternalRegisterEntity(id, std::forward<Graphics::GraphicsContextState>(__state));\
 }\
 \
 void ctx::DeregisterEntity(const Graphics::GraphicsEntityId id)\
 {\
-    IndexT i = __state.entitySliceMap.FindIndex(id);\
-    n_assert(i != InvalidIndex);\
-    if (__state.allowedRemoveStages & __state.currentStage) \
-    { \
-        __state.Dealloc(__state.entitySliceMap.ValueAtIndex(id, i));\
-        __state.entitySliceMap.EraseIndex(id, i);\
-    } \
-    else \
-    { \
-        __state.delayedRemoveQueue.Append(id); \
-    } \
+    Graphics::GraphicsContext::InternalDeregisterEntity(id, std::forward<Graphics::GraphicsContextState>(__state));\
 }\
 \
 bool ctx::IsEntityRegistered(const Graphics::GraphicsEntityId id)\
@@ -113,37 +92,7 @@ void ctx::EndBulkRegister()\
 __ImplementPluginContext(ctx);\
 void ctx::Defragment()\
 {\
-    auto& freeIds = idAllocator.FreeIds();\
-    uint32_t index;\
-    uint32_t oldIndex;\
-    Graphics::GraphicsEntityId lastId;\
-    IndexT mapIndex;\
-    uint32_t dataSize;\
-    SizeT size = freeIds.Size();\
-    for (SizeT i = size - 1; i >= 0; --i)\
-    {\
-        index = freeIds.Back();\
-        freeIds.EraseBack();\
-        dataSize = (uint32_t)idAllocator.Size();\
-        if (index >= dataSize) { continue; }\
-        oldIndex = dataSize - 1;\
-        lastId = __state.entities[oldIndex].id;\
-        if (__state.OnInstanceMoved != nullptr) \
-            __state.OnInstanceMoved(index, oldIndex);\
-        idAllocator.EraseIndexSwap(index); \
-        __state.entities.EraseIndexSwap(index); \
-        mapIndex = __state.entitySliceMap.FindIndex(lastId);\
-        if (mapIndex != InvalidIndex)\
-        {\
-            __state.entitySliceMap.ValueAtIndex(lastId, mapIndex) = index;\
-        }\
-        else\
-        {\
-            freeIds.Append(index);\
-            i++;\
-        }\
-    }\
-    freeIds.Clear();\
+    Graphics::GraphicsContext::InternalDefragment(idAllocator, std::forward<Graphics::GraphicsContextState>(__state));\
 }
 
 #define __CreatePluginContext() \
@@ -259,6 +208,53 @@ public:
 
 protected:
     friend class GraphicsServer;
+    static void InternalRegisterEntity(const Graphics::GraphicsEntityId id, Graphics::GraphicsContextState&& state);
+    static void InternalDeregisterEntity(const Graphics::GraphicsEntityId id, Graphics::GraphicsContextState&& state);
+    template<class ID_ALLOCATOR>
+    static void InternalDefragment(ID_ALLOCATOR& allocator, Graphics::GraphicsContextState&& state);
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class ID_ALLOCATOR>
+inline void
+GraphicsContext::InternalDefragment(ID_ALLOCATOR& allocator, Graphics::GraphicsContextState&& state)
+{
+    auto& freeIds = allocator.FreeIds();
+    uint32_t index;
+    uint32_t oldIndex;
+    Graphics::GraphicsEntityId lastId;
+    IndexT mapIndex;
+    uint32_t dataSize;
+    SizeT size = freeIds.Size();
+    for (SizeT i = size - 1; i >= 0; --i)
+    {
+        index = freeIds.Back();
+        freeIds.EraseBack();
+        dataSize = (uint32_t)allocator.Size();
+        if (index >= dataSize)
+        {
+            continue;
+        }
+        oldIndex = dataSize - 1;
+        lastId = state.entities[oldIndex].id;
+        if (state.OnInstanceMoved != nullptr)
+            state.OnInstanceMoved(index, oldIndex);
+        allocator.EraseIndexSwap(index);
+        state.entities.EraseIndexSwap(index);
+        mapIndex = state.entitySliceMap.FindIndex(lastId);
+        if (mapIndex != InvalidIndex)
+        {
+            state.entitySliceMap.ValueAtIndex(lastId, mapIndex) = index;
+        }
+        else
+        {
+            freeIds.Append(index);
+            i++;
+        }
+    }
+    freeIds.Clear();
+}
 
 } // namespace Graphics
