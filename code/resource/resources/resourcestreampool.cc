@@ -381,8 +381,7 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const voi
                 // change return resource id to be fail resource
                 ret.resourceId = this->failResourceId.resourceId;
             }
-
-            if (success != nullptr)
+            else if (status == Success && success != nullptr)
             {
                 success(ret);
             }

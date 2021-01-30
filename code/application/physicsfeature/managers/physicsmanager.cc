@@ -93,18 +93,14 @@ void PhysicsManager::InitCreateActorProcessor()
                         Physics::ActorId actorid = Physics::CreateActorInstance(id, trans, dynamic);
                         Physics::Actor& actor = Physics::ActorContext::GetActor(actorid);
                         actor.userData = entity.id;
-                        //actor.moveCallback = Util::Delegate<void(Physics::ActorId, Math::mat4 const&)>::FromFunction<&MoveCallback>();
-
+                        
                         Game::Op::RegisterProperty regOp;
                         regOp.entity = entity;
                         regOp.pid = PhysicsManager::Singleton->pids.physicsActor;
                         regOp.value = &actorid;
                         Game::AddOp(opBuffer, regOp);
 
-                    }, [&res](Resources::ResourceId id)
-                    {
-                        n_warning("Failed to load physics actor from %s\n", res.Value());
-                    }, true);
+                    }, nullptr, true);
             }
         }
 
