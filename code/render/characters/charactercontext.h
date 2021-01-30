@@ -1,7 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    The character context assumes control over the character animation functionalities
+    @class Characters::CharacterContext
+
+    Assumes control over the character animation functionalities
     of a model if it contains a character definition and an animation set.
 
     Internally, the character context is responsible for dispatching animation jobs,
@@ -13,12 +15,12 @@
     How the context works is like this:
         Every character has a buffer of samples which is updated every frame.
         Every character has a set of tracks to play animations on, which can be blended
-        between if requested. Tracks are blended in sequential order. 
-        Every character has a list per track of pending animations, which are 
-        ticked off whenever the current animation has finished. 
+        between if requested. Tracks are blended in sequential order.
+        Every character has a list per track of pending animations, which are
+        ticked off whenever the current animation has finished.
         Animations can be played without enqueueing, which replaces the currently
         playing animation on that track.
-        
+
 
     @copyright
     (C) 2018-2020 Individual contributors, see AUTHORS file
@@ -72,7 +74,7 @@ public:
 
     /// perform a clip name lookup
     static IndexT GetClipIndex(const Graphics::GraphicsEntityId id, const Util::StringAtom& name);
-    
+
     /// play animation on a specific track
     static bool PlayClip(
         const Graphics::GraphicsEntityId id,
@@ -95,7 +97,7 @@ public:
     static void PauseTrack(const Graphics::GraphicsEntityId id, const IndexT track);
     /// seek animation to a certain time, clamps to length
     static void Seek(const Graphics::GraphicsEntityId id, const float time);
-     
+
     /// get current time of animation
     static const float GetTime(const Graphics::GraphicsEntityId id);
     /// check if any animation is playing
@@ -132,7 +134,6 @@ public:
     };
 
 private:
-
 
     enum
     {
@@ -179,7 +180,7 @@ private:
         Util::ArrayStack<AnimationRuntime, 8>   pendingAnimations[MaxNumTracks]; // max 16 tracks
         AnimationRuntime                        playingAnimations[MaxNumTracks]; // max 16 tracks
     };
-    
+
     typedef Ids::IdAllocator<
         Characters::SkeletonId,
         CoreAnimation::AnimResourceId,
