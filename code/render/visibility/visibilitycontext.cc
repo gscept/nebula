@@ -661,6 +661,8 @@ ObservableContext::Alloc()
 void 
 ObservableContext::Dealloc(Graphics::ContextEntityId id)
 {
+    Graphics::GraphicsEntityId const eid = __state.entities[id.id];
+
     // find atoms and dealloc
     Util::ArrayStack<Ids::Id32, 1>& atoms = observableAllocator.Get<Observable_Atoms>(id.id);
     const Util::Array<ObserverContext::VisibilityResultArray>& visAllocators = ObserverContext::observerAllocator.GetArray<Observer_ResultArray>();
@@ -694,11 +696,21 @@ ObservableContext::Dealloc(Graphics::ContextEntityId id)
         freeIds.EraseBack();
         allocatorSize = (uint32_t)observableAtomAllocator.Size();
         if (index >= allocatorSize)
+        {
             continue;
+        }
 
         oldIndex = allocatorSize - 1;
-        lastId = observableAtomAllocator.Get<0>(oldIndex);
+        lastId = observableAtomAllocator.Get<ObservableAtom_GraphicsEntityId>(oldIndex);
         
+        if (lastId == eid)
+        {
+            // the ID that we're erase-swapping with belongs to this entity as well, which means it exists in the freeIds list.
+            // Add the index to the freeIds list again so that we don't miss it
+            freeIds.Append(index);
+            i++;
+        }
+
         // Update the index for the atom in the atoms list
         Graphics::ContextEntityId lastCid = GetContextId(lastId);
         ObservableAtoms& lastCidAtoms = observableAllocator.Get<Observable_Atoms>(lastCid.id);
