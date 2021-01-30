@@ -208,12 +208,10 @@ Nvx2StreamReader::SetupVertexComponents()
                 case N2Uv0S2:        sem = VertexComponent::TexCoord1;    fmt = VertexComponent::Short2; index = 0; break;
                 case N2Uv1:          sem = VertexComponent::TexCoord2;    fmt = VertexComponent::Float2; index = 1; break;
                 case N2Uv1S2:        sem = VertexComponent::TexCoord2;    fmt = VertexComponent::Short2; index = 1; break;
-                    /*
-                case N2Uv2:          sem = VertexComponent::TexCoord;     fmt = VertexComponent::Float2; index = 2; break;
-                case N2Uv2S2:        sem = VertexComponent::TexCoord;     fmt = VertexComponent::Short2; index = 2; break;
-                case N2Uv3:          sem = VertexComponent::TexCoord;     fmt = VertexComponent::Float2; index = 3; break;
-                case N2Uv3S2:        sem = VertexComponent::TexCoord;     fmt = VertexComponent::Short2; index = 3; break;
-                */
+                case N2Uv2:          sem = VertexComponent::TexCoord3;    fmt = VertexComponent::Float2; index = 2; break;
+                case N2Uv2S2:        sem = VertexComponent::TexCoord3;    fmt = VertexComponent::Short2; index = 2; break;
+                case N2Uv3:          sem = VertexComponent::TexCoord4;    fmt = VertexComponent::Float2; index = 3; break;
+                case N2Uv3S2:        sem = VertexComponent::TexCoord4;    fmt = VertexComponent::Short2; index = 3; break;
                 case N2Tangent:      sem = VertexComponent::Tangent;      fmt = VertexComponent::Float3; break;
                 case N2TangentB4N:   sem = VertexComponent::Tangent;      fmt = VertexComponent::Byte4N; break;
                 case N2Binormal:     sem = VertexComponent::Binormal;     fmt = VertexComponent::Float3; break;

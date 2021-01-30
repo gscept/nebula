@@ -39,6 +39,8 @@ public:
         TexCoord2 = 6,
         SkinWeights = 7,
         SkinJIndices = 8,
+        TexCoord3 = 9,
+        TexCoord4 = 10,
 
         Invalid,
     };

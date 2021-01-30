@@ -665,10 +665,12 @@ AttributeToNebula(Gltf::Primitive::Attribute attr)
         case Gltf::Primitive::Attribute::Tangent: return Base::VertexComponentBase::Tangent;        
         case Gltf::Primitive::Attribute::TexCoord0: return Base::VertexComponentBase::TexCoord1;
         case Gltf::Primitive::Attribute::TexCoord1: return Base::VertexComponentBase::TexCoord2;
+        case Gltf::Primitive::Attribute::TexCoord2: return Base::VertexComponentBase::TexCoord3;
+        case Gltf::Primitive::Attribute::TexCoord3: return Base::VertexComponentBase::TexCoord4;
         case Gltf::Primitive::Attribute::Color0: return Base::VertexComponentBase::Color;
         case Gltf::Primitive::Attribute::Weights0: return Base::VertexComponentBase::SkinWeights;
         default:
-            n_warning("unhandled primitive attribute type");
+            n_warning("Warning: Unhandled primitive attribute type\n");
         
     }
     return Base::VertexComponentBase::Invalid;
