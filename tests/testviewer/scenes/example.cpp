@@ -64,10 +64,10 @@ void CloseScene()
     if (Models::ModelContext::IsEntityRegistered(gid))
     {
         if (Visibility::ObservableContext::IsEntityRegistered(gid))
-            Visibility::ObservableContext::DeregisterEntity(otherEntity);
+            Visibility::ObservableContext::DeregisterEntity(gid);
 
-        Models::ModelContext::DeregisterEntity(otherEntity);
-        Graphics::DestroyEntity(otherEntity);
+        Models::ModelContext::DeregisterEntity(gid);
+        Graphics::DestroyEntity(gid);
     }
 };
 
@@ -95,9 +95,12 @@ void StepFrame()
     }
     else if (frameIndex % 30 == 0)
     {
-        Visibility::ObservableContext::DeregisterEntity(gid);
-        Models::ModelContext::DeregisterEntity(gid);
-        Graphics::DestroyEntity(gid);
+        if (Models::ModelContext::IsEntityRegistered(gid))
+        {
+            Visibility::ObservableContext::DeregisterEntity(gid);
+            Models::ModelContext::DeregisterEntity(gid);
+            Graphics::DestroyEntity(gid);
+        }
     }
 
     frameIndex++;
