@@ -548,6 +548,18 @@ Database::Clean(TableId tid)
 //------------------------------------------------------------------------------
 /**
 */
+void
+Database::Reset()
+{
+    for (int i = 0; i < MAX_NUM_TABLES; i++)
+    {
+        this->Clean(this->tables[i].tid);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 IndexT
 Database::AllocateRowIndex(TableId tid)
 {
@@ -810,7 +822,7 @@ Database::Copy(Ptr<MemDb::Database> const& dst) const
         
         TableCreateInfo info;
         info.name = srcTable.name.Value();
-        info.numProperties = srcTable.columns.Size();
+        info.numProperties = srcTable.properties.Size();
         info.properties = srcTable.properties.Begin();
         auto dstTid = dst->CreateTable(info);
         
@@ -820,7 +832,7 @@ Database::Copy(Ptr<MemDb::Database> const& dst) const
         dstTable.numRows = srcTable.numRows;
         dstTable.freeIds = srcTable.freeIds;
 
-        for (int p = 0; p < info.numProperties; p++)
+        for (int p = 0; p < srcTable.columns.Size(); p++)
         {
             void const* const srcBuffer = srcTable.columns.Get<1>(p);
             void*& dstBuffer = dstTable.columns.Get<1>(p);

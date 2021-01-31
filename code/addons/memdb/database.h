@@ -86,6 +86,9 @@ public:
     /// clean table. Does not deallocate anything; just sets the size of the table to zero.
     void Clean(TableId tid);
 
+    /// performs Clean on all tables.
+    void Reset();
+
     /// Query the database for a dataset of categories
     Dataset Query(FilterSet const& filterset);
     /// Query the database for a dataset of categories
