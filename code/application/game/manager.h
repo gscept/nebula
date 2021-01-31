@@ -44,6 +44,8 @@ struct ManagerAPI
     void(*OnLoad)() = nullptr;
     /// called before saving game state
     void(*OnSave)() = nullptr;
+    /// called before unloading game state
+    void(*OnCleanup)() = nullptr;
     /// called by Game::Server::Start()
     void(*OnStart)() = nullptr;
     /// render a debug visualization 

@@ -16,7 +16,7 @@
 
 namespace BaseGameFeature
 {
-__ImplementClass(BaseGameFeature::BaseGameFeatureUnit, 'GAGF' , Game::FeatureUnit);
+__ImplementClass(BaseGameFeature::BaseGameFeatureUnit, 'GAGF', Game::FeatureUnit);
 __ImplementSingleton(BaseGameFeatureUnit);
 
 using namespace App;
@@ -45,7 +45,7 @@ void
 BaseGameFeatureUnit::OnActivate()
 {
     FeatureUnit::OnActivate();
-    
+
     this->entityManager = this->AttachManager(EntityManager::Create());
     this->blueprintManager = this->AttachManager(BlueprintManager::Create());
     this->timeManager = this->AttachManager(TimeManager::Create());
@@ -60,7 +60,7 @@ BaseGameFeatureUnit::OnDeactivate()
     this->RemoveManager(this->entityManager);
     this->RemoveManager(this->blueprintManager);
     this->RemoveManager(this->timeManager);
-    
+
     FeatureUnit::OnDeactivate();
 }
 
@@ -87,13 +87,14 @@ BaseGameFeatureUnit::SetupEmptyWorld()
 //------------------------------------------------------------------------------
 /**
     Cleanup the game world. This should undo the stuff in SetupWorld().
-    Override this method in a subclass if your app needs different 
+    Override this method in a subclass if your app needs different
     behaviour.
 */
 void
 BaseGameFeatureUnit::CleanupWorld()
 {
-    Game::GameServer::Instance()->NotifyBeforeCleanup();            
+    Game::GameServer::Instance()->NotifyBeforeCleanup();
+    EntityManager::Instance()->state.worldDatabase->Reset();
 }
 
 //------------------------------------------------------------------------------
@@ -110,7 +111,7 @@ BaseGameFeatureUnit::OnEndFrame()
 */
 void
 BaseGameFeatureUnit::OnFrame()
-{    
+{
     FeatureUnit::OnFrame();
 }
 

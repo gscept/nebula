@@ -40,6 +40,7 @@ private:
     void InitPollTransformProcessor();
 
     static void OnBeginFrame();
+    static void OnCleanup();
 };
 
 } // namespace PhysicsFeature

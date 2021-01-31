@@ -250,7 +250,20 @@ FeatureUnit::OnBeforeLoad()
 void
 FeatureUnit::OnBeforeCleanup()
 {
-    // override in subclass if needed
+    for (IndexT i = 0; i < this->managers.Size(); ++i)
+    {
+        if (this->managers.Get<1>(i).OnCleanup != nullptr)
+            this->managers.Get<1>(i).OnCleanup();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FeatureUnit::OnStop()
+{
+    
 }
 
 }; // namespace Game

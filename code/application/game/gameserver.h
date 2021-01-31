@@ -44,16 +44,18 @@ public:
     /// destructor
     virtual ~GameServer();
 
-    /// open the game world
+    // initialize all features
     virtual bool Open();
-    /// close the game world
-    virtual void Close();
-    /// start the game world
+     // start the game; starts running all processors
     virtual bool Start();
+    // stop the game. Stops running the processors
+    virtual void Stop(); 
+    // shuts down all features
+    virtual void Close(); 
+    
     /// has the game world already started
     bool HasStarted() const;
-    /// stop the game world
-    virtual void Stop();
+
     /// trigger actions before rendering the game world
     virtual void OnBeginFrame();
     /// trigger the game world

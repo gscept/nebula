@@ -117,7 +117,7 @@ void GraphicsManager::InitDestroyModelProcessor()
 {
     Game::FilterCreateInfo filterInfo;
     filterInfo.inclusive[0] = this->pids.modelEntityData;
-    filterInfo.access[0] = Game::AccessMode::READ;
+    filterInfo.access[0] = Game::AccessMode::WRITE;
     filterInfo.numInclusive = 1;
 
     filterInfo.exclusive[0] = Game::GetPropertyId("ModelResource");
@@ -209,6 +209,7 @@ GraphicsManager::Create()
 
     Game::ManagerAPI api;
     api.OnBeginFrame = &OnBeginFrame;
+    api.OnCleanup    = &OnCleanup;
     api.OnDeactivate = &Destroy;
     return api;
 }
@@ -230,6 +231,47 @@ void
 GraphicsManager::OnBeginFrame()
 {
     n_assert(GraphicsManager::HasInstance());
+}
+
+//------------------------------------------------------------------------------
+/**
+    Cleanup all graphics entities
+*/
+void
+GraphicsManager::OnCleanup()
+{
+    n_assert(GraphicsManager::HasInstance());
+    
+    Game::FilterCreateInfo filterInfo;
+    filterInfo.inclusive[0] = Singleton->pids.modelEntityData;
+    filterInfo.access[0] = Game::AccessMode::WRITE;
+    filterInfo.numInclusive = 1;
+
+    Game::Filter filter = Game::CreateFilter(filterInfo);
+    Game::Dataset data = Game::Query(filter);
+
+    for (int v = 0; v < data.numViews; v++)
+    {
+        Game::Dataset::CategoryTableView const& view = data.views[v];
+        ModelEntityData const* const modelEntityDatas = (ModelEntityData*)view.buffers[0];
+        
+        for (IndexT i = 0; i < view.numInstances; ++i)
+        {
+            ModelEntityData const& modelEntityData = modelEntityDatas[i];
+            
+            if (Models::ModelContext::IsEntityRegistered(modelEntityData.gid))
+            {
+                if (Visibility::ObservableContext::IsEntityRegistered(modelEntityData.gid))
+                    Visibility::ObservableContext::DeregisterEntity(modelEntityData.gid);
+
+                Models::ModelContext::DeregisterEntity(modelEntityData.gid);
+            }
+            
+            Graphics::DestroyEntity(modelEntityData.gid);
+        }
+    }
+
+    Game::DestroyFilter(filter);
 }
 
 } // namespace Game

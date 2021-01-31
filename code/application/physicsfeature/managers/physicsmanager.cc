@@ -118,7 +118,7 @@ void PhysicsManager::InitDestroyActorProcessor()
 {
     Game::FilterCreateInfo filterInfo;
     filterInfo.inclusive[0] = this->pids.physicsActor;
-    filterInfo.access[0] = Game::AccessMode::READ;
+    filterInfo.access[0] = Game::AccessMode::WRITE;
     filterInfo.numInclusive = 1;
 
     filterInfo.exclusive[0] = Game::GetPropertyId("PhysicsResource");
@@ -206,6 +206,7 @@ PhysicsManager::Create()
 
     Game::ManagerAPI api;
     api.OnBeginFrame = &OnBeginFrame;
+    api.OnCleanup    = &OnCleanup;
     api.OnDeactivate = &Destroy;
     return api;
 }
@@ -227,6 +228,35 @@ void
 PhysicsManager::OnBeginFrame()
 {
     n_assert(PhysicsManager::HasInstance());
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysicsManager::OnCleanup()
+{
+    n_assert(PhysicsManager::HasInstance());
+    Game::FilterCreateInfo filterInfo;
+    filterInfo.inclusive[0] = Singleton->pids.physicsActor;
+    filterInfo.access[0] = Game::AccessMode::WRITE;
+    filterInfo.numInclusive = 1;
+
+    Game::Filter filter = Game::CreateFilter(filterInfo);
+    Game::Dataset data = Game::Query(filter);
+    for (int v = 0; v < data.numViews; v++)
+    {
+        Game::Dataset::CategoryTableView const& view = data.views[v];
+        Physics::ActorId* const actors = (Physics::ActorId*)view.buffers[0];
+
+        for (IndexT i = 0; i < view.numInstances; ++i)
+        {
+            Physics::ActorId const& actorid = actors[i];
+            Physics::DestroyActorInstance(actorid);
+        }
+    }
+
+    Game::DestroyFilter(filter);
 }
 
 } // namespace PhysicsFeature

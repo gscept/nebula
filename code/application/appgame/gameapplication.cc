@@ -130,11 +130,13 @@ GameApplication::Open()
         // create our game server and open it
         this->gameServer = Game::GameServer::Create();
         this->gameServer->SetCmdLineArgs(this->GetCmdLineArgs());
-        this->gameServer->Open();
-
+        
         // create and add new game features
         this->SetupGameFeatures();
-
+        // open the game server
+        this->gameServer->Open();
+        // start the game
+        this->gameServer->Start();
         // setup profiling stuff
         _setup_grouped_timer(GameApplicationFrameTimeAll, "Game Subsystem");
         

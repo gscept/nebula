@@ -56,6 +56,9 @@ public:
     virtual void OnBeforeLoad();
     /// called from within GameServer::NotifyBeforeCleanup()
     virtual void OnBeforeCleanup();
+    /// called from withing GameServer::Stop()
+    virtual void OnStop();
+
 
     /// called on begin of frame
     virtual void OnBeginFrame();

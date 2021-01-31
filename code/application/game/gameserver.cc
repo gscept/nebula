@@ -41,8 +41,7 @@ GameServer::~GameServer()
 
 //------------------------------------------------------------------------------
 /**
-    Initialize the game server object. This will create and initialize all
-    subsystems.
+    Initialize the game server object.
 */
 bool
 GameServer::Open()
@@ -50,6 +49,14 @@ GameServer::Open()
     n_assert(!this->isOpen);
     n_assert(!this->isStarted);
     this->isOpen = true;
+
+    for (IndexT i = 0; i < this->gameFeatures.Size(); i++)
+    {
+        Ptr<Game::FeatureUnit> const& feature = this->gameFeatures[i];
+        feature->SetCmdLineArgs(this->GetCmdLineArgs());
+        feature->OnActivate();
+    }
+
     return true;
 }
 
@@ -64,10 +71,9 @@ GameServer::Close()
     n_assert(this->isOpen);
 
     // remove all gameFeatures
-    while (this->gameFeatures.Size() > 0)
+    for (IndexT i = 0; i < this->gameFeatures.Size(); i++)
     {
-        this->gameFeatures[0]->OnDeactivate();
-        this->gameFeatures.EraseIndex(0);
+        this->gameFeatures[i]->OnDeactivate();
     }
     this->isOpen = false;
 }
@@ -80,8 +86,6 @@ GameServer::AttachGameFeature(const Ptr<FeatureUnit>& feature)
 {
     n_assert(0 != feature);
     n_assert(InvalidIndex == this->gameFeatures.FindIndex(feature));
-    feature->SetCmdLineArgs(this->GetCmdLineArgs());
-    feature->OnActivate();
     this->gameFeatures.Append(feature);
 }
 
@@ -131,13 +135,20 @@ GameServer::HasStarted() const
 
 //------------------------------------------------------------------------------
 /**
-    Stop the game world, called before the world(current level) is cleaned up.
+    Stop the game world. 
 */
 void
 GameServer::Stop()
 {
     n_assert(this->isOpen);
     n_assert(this->isStarted);
+
+    int i;
+    int num = this->gameFeatures.Size();
+    for (i = 0; i < num; i++)
+    {
+        this->gameFeatures[i]->OnStop();
+    }
 
     this->isStarted = false;
 }
@@ -148,6 +159,9 @@ GameServer::Stop()
 void
 GameServer::OnBeginFrame()
 {
+    if (!this->isStarted)
+        return;
+
     _start_timer(GameServerOnBeginFrame);
 
     // trigger game features to at the beginning of a frame
@@ -185,6 +199,9 @@ GameServer::OnBeginFrame()
 void
 GameServer::OnFrame()
 {
+    if (!this->isStarted)
+        return;
+
     _start_timer(GameServerOnFrame);
 
     // call trigger functions on game features   
@@ -219,6 +236,9 @@ GameServer::OnFrame()
 void
 GameServer::OnEndFrame()
 {
+    if (!this->isStarted)
+        return;
+
     _start_timer(GameServerOnEndFrame);
 
     IndexT i;
@@ -306,7 +326,7 @@ GameServer::NotifyGameLoad()
 void
 GameServer::NotifyGameSave()
 {
-    // call the OnLoad method on all gameFeatures
+    // call the OnSave method on all gameFeatures
     int i;
     int num = this->gameFeatures.Size();
     for (i = 0; i < num; i++)

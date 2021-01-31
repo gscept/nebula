@@ -49,6 +49,7 @@ private:
     void InitUpdateModelTransformProcessor();
 
     static void OnBeginFrame();
+    static void OnCleanup();
 };
 
 } // namespace GraphicsFeature

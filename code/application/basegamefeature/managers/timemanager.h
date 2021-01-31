@@ -30,7 +30,7 @@
 
 #define TIMESOURCE_GAMEPLAY uint32_t('GPTS')
 #define TIMESOURCE_INPUT uint32_t('IPTS')
-#define TIMESOURCE_SYSTEM uint32_t('1234')
+#define TIMESOURCE_SYSTEM uint32_t('SYTS')
 
 namespace Game
 {
