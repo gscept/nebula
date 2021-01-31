@@ -42,7 +42,9 @@ public:
     /// retrieve a table.
     Table& GetTable(TableId tid);
     /// retrieve a table signature
-    TableSignature const& GetTableSignature(TableId tid);
+    TableSignature const& GetTableSignature(TableId tid) const;
+    /// retrieve the number of tables
+    SizeT GetNumTables() const;
 
     /// check if table has a certain column
     bool HasProperty(TableId table, PropertyId col);
@@ -92,6 +94,9 @@ public:
     void* GetValuePointer(TableId table, ColumnIndex cid, IndexT row);
     /// get a buffer. Might be invalidated if rows are allocated or deallocated
     void* GetBuffer(TableId table, ColumnIndex cid);
+
+    /// copy the database into dst
+    void Copy(Ptr<MemDb::Database> const& dst) const;
 
     // @note    Keep this a fixed size array, because we want to be able to keep persistent references to the tables, and their buffers within
     static constexpr uint32_t MAX_NUM_TABLES = 512;
@@ -143,6 +148,15 @@ Database::GetBuffer(TableId table, ColumnIndex cid)
     n_assert(this->IsValid(table));
     Table& tbl = this->tables[Ids::Index(table.id)];
     return tbl.columns.Get<1>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline SizeT
+Database::GetNumTables() const
+{
+    return this->numTables;
 }
 
 } // namespace MemDb

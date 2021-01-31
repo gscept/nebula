@@ -10,6 +10,7 @@
 #include "basegamefeature/basegamefeatureunit.h"
 #include "testproperties.h"
 #include "framesync/framesynctimer.h"
+#include "profiling/profiling.h"
 
 using namespace Game;
 using namespace Math;
@@ -27,6 +28,9 @@ __ImplementClass(Test::EntitySystemTest, 'GEST', Test::TestCase);
 
 void StepFrame()
 {
+#if NEBULA_ENABLE_PROFILING
+    Profiling::ProfilingNewFrame();
+#endif
     BaseGameFeature::BaseGameFeatureUnit::Instance()->OnBeginFrame();
     BaseGameFeature::BaseGameFeatureUnit::Instance()->OnFrame();
     BaseGameFeature::BaseGameFeatureUnit::Instance()->OnEndFrame();
@@ -45,6 +49,10 @@ struct ManagedTestProperty
 void
 EntitySystemTest::Run()
 {
+#if NEBULA_ENABLE_PROFILING
+    Profiling::ProfilingRegisterThread();
+#endif
+
     Ptr<FrameSync::FrameSyncTimer> t = FrameSync::FrameSyncTimer::Create();
     t->Setup();
 

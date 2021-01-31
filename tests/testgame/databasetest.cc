@@ -242,6 +242,18 @@ DatabaseTest::Run()
         VERIFY(data.tables.Size() == 1);
     }
 
+    // Test copying a database
+    Ptr<Database> dbCopy = Database::Create();
+    db->Copy(dbCopy);
+
+    VERIFY(dbCopy->GetNumTables() == db->GetNumTables());
+    // note that the table id is the same for both databases in this case, but doesn't have to be if the original table has deleted tables
+    VERIFY(dbCopy->GetNumRows(table0) == db->GetNumRows(table0));
+    VERIFY(dbCopy->GetTable(table0).columns.Size() == db->GetTable(table0).columns.Size());
+
+
+    // Test table signatures
+
     TableSignature mask = TableSignature({ TestIntId, 129 });
     TableSignature mask0 = TableSignature({ TestIntId, 129 });
 

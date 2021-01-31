@@ -480,7 +480,7 @@ Database::GetTable(TableId tid)
 /**
 */
 TableSignature const&
-Database::GetTableSignature(TableId tid)
+Database::GetTableSignature(TableId tid) const
 {
     n_assert(this->IsValid(tid));
     return this->tableSignatures[Ids::Index(tid.id)];
@@ -792,6 +792,52 @@ Database::Query(TableSignature const& inclusive, TableSignature const& exclusive
     }
 
     return result;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Database::Copy(Ptr<MemDb::Database> const& dst) const
+{
+    for (int i = 0; i < MAX_NUM_TABLES; i++)
+    {
+        Table const& srcTable = this->tables[i];
+        
+        // only copy valid tables
+        if (!this->IsValid(srcTable.tid))
+            continue;
+        
+        TableCreateInfo info;
+        info.name = srcTable.name.Value();
+        info.numProperties = srcTable.columns.Size();
+        info.properties = srcTable.properties.Begin();
+        auto dstTid = dst->CreateTable(info);
+        
+        Table& dstTable = dst->GetTable(dstTid);
+        dstTable.grow = srcTable.grow;
+        dstTable.capacity = srcTable.capacity;
+        dstTable.numRows = srcTable.numRows;
+        dstTable.freeIds = srcTable.freeIds;
+
+        for (int p = 0; p < info.numProperties; p++)
+        {
+            void const* const srcBuffer = srcTable.columns.Get<1>(p);
+            void*& dstBuffer = dstTable.columns.Get<1>(p);
+            
+            PropertyId const descriptor = srcTable.columns.Get<0>(p);
+            PropertyDescription const* const desc = TypeRegistry::GetDescription(descriptor);
+            uint32_t const byteSize = desc->typeSize;
+            uint32_t const numBytes = byteSize * srcTable.capacity;
+            
+            // free the preallocated buffer
+            Memory::Free(Table::HEAP_MEMORY_TYPE, dstBuffer);
+            // allocate new buffer with the same capacity, grow etc. as the src tables
+            dstBuffer = Memory::Alloc(Table::HEAP_MEMORY_TYPE, numBytes);
+
+            Memory::Copy(srcBuffer, dstBuffer, (size_t)byteSize * (size_t)srcTable.numRows);
+        }
+    }
 }
 
 } // namespace MemDb
