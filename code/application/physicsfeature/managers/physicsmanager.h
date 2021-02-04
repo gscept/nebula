@@ -39,7 +39,6 @@ private:
     void InitDestroyActorProcessor();
     void InitPollTransformProcessor();
 
-    static void OnBeginFrame();
     static void OnCleanup();
 };
 

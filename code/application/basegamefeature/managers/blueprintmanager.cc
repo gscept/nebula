@@ -232,8 +232,6 @@ BlueprintManager::ParseTemplate(Util::String const& templatePath)
                     jsonReader->SetToParent();
                 }
 
-                // TODO: Create template in blueprint table
-
                 if (jsonReader->SetToFirstChild("variations"))
                 {
                     jsonReader->SetToFirstChild();

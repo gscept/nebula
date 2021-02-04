@@ -43,6 +43,8 @@ public:
     Table& GetTable(TableId tid);
     /// retrieve a table signature
     TableSignature const& GetTableSignature(TableId tid) const;
+    /// find table by signature
+    TableId FindTable(TableSignature const& signature) const;
     /// retrieve the number of tables
     SizeT GetNumTables() const;
 

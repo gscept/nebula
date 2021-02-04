@@ -48,7 +48,6 @@ private:
     void InitDestroyModelProcessor();
     void InitUpdateModelTransformProcessor();
 
-    static void OnBeginFrame();
     static void OnCleanup();
 };
 

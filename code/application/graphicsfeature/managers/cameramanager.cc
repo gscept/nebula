@@ -54,10 +54,10 @@ CameraManager::RegisterView(Ptr<Graphics::View> const& view)
     if (view->GetCamera() != Graphics::GraphicsEntityId::Invalid())
         n_warning("WARNING: View already has a camera entity assigned which is being overridden!\n");
 
-	Graphics::CameraContext::RegisterEntity(data.gid);
+    Graphics::CameraContext::RegisterEntity(data.gid);
     Graphics::CameraContext::SetLODCamera(data.gid);
-	Visibility::ObserverContext::RegisterEntity(data.gid);
-	Visibility::ObserverContext::Setup(data.gid, Visibility::VisibilityEntityType::Camera);
+    Visibility::ObserverContext::RegisterEntity(data.gid);
+    Visibility::ObserverContext::Setup(data.gid, Visibility::VisibilityEntityType::Camera);
     view->SetCamera(data.gid);
 
     return id;

@@ -73,6 +73,16 @@ struct CategoryHash
     }
 };
 
+//------------------------------------------------------------------------------
+/**
+    @struct Game::Category
+
+    @internal There are some assumptions made about categories that should always
+    be kept in mind:
+        1. Categories NEVER change signature, meaning when the category has been
+        set up, we can never remove or add properties to it. In that case, create
+        a new category.
+*/
 struct Category
 {
     /// instance table contains all instances of this category
@@ -93,7 +103,7 @@ struct CategoryCreateInfo
 {
     /// name to be given to the category
     Util::String name;
-    /// which properties the category should initially have
+    /// which properties the category should have
     Util::FixedArray<PropertyId> properties;
 };
 

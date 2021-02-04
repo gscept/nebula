@@ -9,7 +9,7 @@
     contain a certain set of properties.
 
     @note   This class runs on the assumption that we never create a bitfield that contains more bits than necessary.
-    eg, a field that is 256 bits large but is zero in left most 128 bits is forbidden.
+    i.e, a field that is 256 bits large but is zero in left most 128 bits is forbidden.
 
     @copyright
     (C) 2020 Individual contributors, see AUTHORS file
@@ -202,10 +202,10 @@ TableSignature::IsSet(PropertyId pid) const
     if (offset < this->size)
     {
         alignas(16) uint64_t partialMask[2] = { 0, 0 };
-        uint64_t bit = pid.id % 128;
+        uint64_t const bit = pid.id % 128;
         partialMask[bit / 64] |= 1ull << bit;
         __m128i temp = _mm_set_epi64x(partialMask[0], partialMask[1]);
-        int isSet = !_mm_testz_si128(temp, this->mask[offset]);
+        int const isSet = !_mm_testz_si128(temp, this->mask[offset]);
         return isSet;
     }
 
@@ -219,7 +219,7 @@ inline void
 TableSignature::FlipBit(PropertyId pid)
 {
     int offset = pid.id / 128;
-    n_assert(offset < this->size);
+    n_assert(offset < this->size); // currently, we can't flip a bit that is outside the signatures size.
     alignas(16) uint64_t partialMask[2] = { 0, 0 };
     uint64_t bit = pid.id % 128;
     partialMask[bit / 64] |= 1ull << bit;
@@ -250,7 +250,7 @@ TableSignature::operator=(TableSignature const& rhs)
 //------------------------------------------------------------------------------
 /**
     This runs on the assumption that we never create a mask that contains more bits than necessary.
-    eg, a mask that is 256 bits large but is zero in left most 128 bits is forbidden.
+    i.e, a mask that is 256 bits large but is zero in left most 128 bits is forbidden.
 */
 inline bool const
 TableSignature::CheckBits(TableSignature const& src, TableSignature const& mask)
@@ -285,7 +285,7 @@ TableSignature::CheckBits(TableSignature const& src, TableSignature const& mask)
 //------------------------------------------------------------------------------
 /**
     This runs on the assumption that we never create a mask that contains more bits than necessary.
-    eg, a mask that is 256 bits large but is zero in left most 128 bits is forbidden.
+    i.e, a mask that is 256 bits large but is zero in left most 128 bits is forbidden.
 */
 inline bool const
 TableSignature::HasAny(TableSignature const& src, TableSignature const& mask)

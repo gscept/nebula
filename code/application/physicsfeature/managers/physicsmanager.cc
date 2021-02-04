@@ -205,7 +205,6 @@ PhysicsManager::Create()
     Singleton->InitPollTransformProcessor();
 
     Game::ManagerAPI api;
-    api.OnBeginFrame = &OnBeginFrame;
     api.OnCleanup    = &OnCleanup;
     api.OnDeactivate = &Destroy;
     return api;
@@ -219,15 +218,6 @@ PhysicsManager::Destroy()
 {
     n_delete(PhysicsManager::Singleton);
     PhysicsManager::Singleton = nullptr;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-PhysicsManager::OnBeginFrame()
-{
-    n_assert(PhysicsManager::HasInstance());
 }
 
 //------------------------------------------------------------------------------

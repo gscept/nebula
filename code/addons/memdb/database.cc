@@ -488,6 +488,19 @@ Database::GetTableSignature(TableId tid) const
 
 //------------------------------------------------------------------------------
 /**
+*/
+TableId
+Database::FindTable(TableSignature const& signature) const
+{
+    for (IndexT tableIndex = 0; tableIndex < this->numTables; tableIndex++)
+    {
+        if (signature == this->tableSignatures[tableIndex])
+            return this->tables[tableIndex].tid;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
     Defragments a table and call the move callback BEFORE moving elements.
 
     @param tid              Table identifier
@@ -808,6 +821,7 @@ Database::Query(TableSignature const& inclusive, TableSignature const& exclusive
 
 //------------------------------------------------------------------------------
 /**
+    Note that this function will override an old table if the signature exists
 */
 void
 Database::Copy(Ptr<MemDb::Database> const& dst) const
@@ -820,11 +834,16 @@ Database::Copy(Ptr<MemDb::Database> const& dst) const
         if (!this->IsValid(srcTable.tid))
             continue;
         
-        TableCreateInfo info;
-        info.name = srcTable.name.Value();
-        info.numProperties = srcTable.properties.Size();
-        info.properties = srcTable.properties.Begin();
-        auto dstTid = dst->CreateTable(info);
+
+        TableId dstTid = dst->FindTable(this->tableSignatures[i]);
+        if (dstTid == TableId::Invalid())
+        {
+            TableCreateInfo info;
+            info.name = srcTable.name.Value();
+            info.numProperties = srcTable.properties.Size();
+            info.properties = srcTable.properties.Begin();
+            dstTid = dst->CreateTable(info);
+        }
         
         Table& dstTable = dst->GetTable(dstTid);
         dstTable.grow = srcTable.grow;

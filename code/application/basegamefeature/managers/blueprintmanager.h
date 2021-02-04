@@ -92,6 +92,7 @@ private:
 
         // these are created by ParseBlueprints()
         Util::StringAtom name;
+        /// contains all the properties for this blueprint
         Util::Array<PropertyEntry> properties;
     };
 

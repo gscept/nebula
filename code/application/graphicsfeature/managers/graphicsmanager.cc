@@ -208,7 +208,6 @@ GraphicsManager::Create()
     Singleton->InitUpdateModelTransformProcessor();
 
     Game::ManagerAPI api;
-    api.OnBeginFrame = &OnBeginFrame;
     api.OnCleanup    = &OnCleanup;
     api.OnDeactivate = &Destroy;
     return api;
@@ -222,15 +221,6 @@ GraphicsManager::Destroy()
 {
     n_delete(GraphicsManager::Singleton);
     GraphicsManager::Singleton = nullptr;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-GraphicsManager::OnBeginFrame()
-{
-    n_assert(GraphicsManager::HasInstance());
 }
 
 //------------------------------------------------------------------------------
