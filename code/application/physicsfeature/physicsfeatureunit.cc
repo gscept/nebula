@@ -55,7 +55,7 @@ PhysicsFeatureUnit::OnActivate()
         for (IndexT i = 0; i < num; i++)
         {
             Physics::Actor& actor = Physics::ActorContext::GetActor(actors[i]);
-            Game::Entity entity = (Game::Entity)actor.userData;
+            Game::Entity entity = Game::Entity::FromId((Ids::Id32)actor.userData);
             Game::Op::RegisterProperty registerOp;
             registerOp.entity = entity;
             registerOp.pid = staticPid;
@@ -71,7 +71,7 @@ PhysicsFeatureUnit::OnActivate()
         for (IndexT i = 0; i < num; i++)
         {
             Physics::Actor& actor = Physics::ActorContext::GetActor(actors[i]);
-            Game::Entity entity = (Game::Entity)actor.userData;
+            Game::Entity entity = Game::Entity::FromId((Ids::Id32)actor.userData);
             if (Game::HasProperty(entity, staticPid))
             {
                 Game::Op::DeregisterProperty deregisterOp;

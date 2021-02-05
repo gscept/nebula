@@ -20,7 +20,7 @@ Ptr<MemDb::Database>
 GetWorldDatabase()
 {
     n_assert(EntityManager::HasInstance());
-    return EntityManager::Singleton->state.worldDatabase;
+    return EntityManager::Singleton->state.world.db;
 }
 
 //------------------------------------------------------------------------------
@@ -33,14 +33,14 @@ CreateEntity(EntityCreateInfo const& info)
     EntityManager::State* const state = &EntityManager::Singleton->state;
 
     Entity entity;
-    state->pool.Allocate(entity.id);
-    state->numEntities++;
+    state->world.pool.Allocate(entity);
+    state->world.numEntities++;
 
     // Make sure the entitymap can contain this entity
-    if (state->entityMap.Size() <= Ids::Index(entity.id))
+    if (state->world.entityMap.Size() <= entity.index)
     {
-        state->entityMap.Grow();
-        state->entityMap.Resize(state->entityMap.Capacity());
+        state->world.entityMap.Grow();
+        state->world.entityMap.Resize(state->world.entityMap.Capacity());
     }
 
     EntityManager::State::AllocateInstanceCommand cmd;
@@ -87,14 +87,14 @@ DeleteEntity(Game::Entity entity)
     // make sure we're not trying to dealloc an instance that does not exist
     n_assert2(IsActive(entity), "Cannot delete and entity before it has been instantiated!\n");
 
-    state->pool.Deallocate(entity.id);
+    state->world.pool.Deallocate(entity);
 
     EntityManager::State::DeallocInstanceCommand cmd;
     cmd.entity = entity;
 
     state->deallocQueue.Enqueue(std::move(cmd));
 
-    state->numEntities--;
+    state->world.numEntities--;
 }
 
 //------------------------------------------------------------------------------
@@ -130,11 +130,11 @@ DefragmentCategoryInstances(Category const& cat)
     // defragment the table. Any instances that has been deleted will be swap'n'popped,
     // which means we need to update the entity mapping.
     // The move callback is signaled BEFORE the swap has happened.
-    auto* const map = &(EntityManager::Singleton->state.entityMap);
+    auto* const map = &(EntityManager::Singleton->state.world.entityMap);
     SizeT numErased = db->Defragment(cat.instanceTable, [map, cat, &ownerColumnId, &table](InstanceId from, InstanceId to)
     {
-        Game::Entity fromEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[from.id].id;
-        Game::Entity toEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[to.id].id;
+        Game::Entity fromEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[from.id];
+        Game::Entity toEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[to.id];
         if (!IsValid(fromEntity))
         {
             // we need to add this instances new index to the to the freeids list, since it's been deleted.
@@ -144,8 +144,8 @@ DefragmentCategoryInstances(Category const& cat)
         }
         else
         {
-            (*map)[Ids::Index(fromEntity.id)].instance = to;
-            (*map)[Ids::Index(toEntity.id)].instance = from;
+            (*map)[fromEntity.index].instance = to;
+            (*map)[toEntity.index].instance = from;
         }
     });
 }
@@ -165,14 +165,14 @@ OnEndFrame()
     for (IndexT c = 0; c < state->categoryArray.Size(); c++)
     {
         MemDb::TableId tid = state->categoryArray[c].managedPropertyTable;
-        state->worldDatabase->Clean(tid);
+        state->world.db->Clean(tid);
     }
 
     // Clean up entities
     while (!state->deallocQueue.IsEmpty())
     {
         auto const cmd = state->deallocQueue.Dequeue();
-        EntityMapping mapping = state->entityMap[Ids::Index(cmd.entity.id)];
+        EntityMapping mapping = state->world.entityMap[cmd.entity.index];
         Category const& category = EntityManager::Singleton->GetCategory(mapping.category);
         EntityManager::Singleton->DeallocateInstance(cmd.entity);
     }
@@ -194,7 +194,7 @@ OnEndFrame()
     }
 
     // Delete all remaining invalid instances
-    Ptr<MemDb::Database> const& db = state->worldDatabase;
+    Ptr<MemDb::Database> const& db = state->world.db;
 
     for (IndexT c = 0; c < state->categoryArray.Size(); c++)
     {
@@ -210,8 +210,8 @@ OnEndFrame()
 */
 EntityManager::EntityManager()
 {
-    this->state.numEntities = 0;
-    this->state.worldDatabase = MemDb::Database::Create();
+    this->state.world.numEntities = 0;
+    this->state.world.db = MemDb::Database::Create();
     this->state.templateDatabase = MemDb::Database::Create();
     this->state.ownerId = MemDb::TypeRegistry::GetPropertyId("Owner"_atm);
 }
@@ -221,7 +221,7 @@ EntityManager::EntityManager()
 */
 EntityManager::~EntityManager()
 {
-    this->state.worldDatabase = nullptr;
+    this->state.world.db = nullptr;
     this->state.templateDatabase = nullptr;
 }
 
@@ -259,6 +259,7 @@ CategoryId
 EntityManager::CreateCategory(CategoryCreateInfo const& info)
 {
     CategoryHash catHash;
+    // note that the hash never contains the owner property id
     for (int i = 0; i < info.properties.Size(); i++)
     {
         catHash.AddToHash(info.properties[i].id);
@@ -266,6 +267,20 @@ EntityManager::CreateCategory(CategoryCreateInfo const& info)
 
     if (this->state.catIndexMap.Contains(catHash))
     {
+#if NEBULA_DEBUG
+        // verify that the category's signature is the same as what we're actually trying to create.
+        // failing an assert here should be EXTREMELY unlikely.
+        Category const& cat = this->state.categoryArray[this->state.catIndexMap[catHash].id];
+        MemDb::Table const& table = this->state.world.db->GetTable(cat.instanceTable);
+        SizeT numProperties = info.properties.Size();
+        if (info.properties[0] != this->state.ownerId)
+            numProperties++; // + 1 for the owner property
+
+        n_assert(table.properties.Size() == numProperties);
+        for (int i = 0; i < table.properties.Size(); i++)
+            n_assert(info.properties.FindIndex(table.properties[i]) != InvalidIndex);
+#endif
+
         return this->state.catIndexMap[catHash];
     }
 
@@ -298,7 +313,7 @@ EntityManager::CreateCategory(CategoryCreateInfo const& info)
     }
 
     // Create an instance table
-    cat.instanceTable = this->state.worldDatabase->CreateTable(tableInfo);
+    cat.instanceTable = this->state.world.db->CreateTable(tableInfo);
 
     // Find all managed properties
     int numManaged = 0;
@@ -319,7 +334,7 @@ EntityManager::CreateCategory(CategoryCreateInfo const& info)
         managedTableInfo.name = "<MNGD>:" + info.name;
         managedTableInfo.properties = properties;
         managedTableInfo.numProperties = numManaged;
-        cat.managedPropertyTable = this->state.worldDatabase->CreateTable(managedTableInfo);
+        cat.managedPropertyTable = this->state.world.db->CreateTable(managedTableInfo);
     }
     else
         cat.managedPropertyTable = MemDb::TableId::Invalid();
@@ -347,22 +362,22 @@ EntityManager::AllocateInstance(Entity entity, CategoryId category)
     n_assert(IsValid(entity));
     n_assert(category < this->state.categoryArray.Size());
 
-    if (Ids::Index(entity.id) < this->state.entityMap.Size() && this->state.entityMap[Ids::Index(entity.id)].instance != Game::InstanceId::Invalid())
+    if (entity.index < this->state.world.entityMap.Size() && this->state.world.entityMap[entity.index].instance != Game::InstanceId::Invalid())
     {
         n_warning("Entity already registered!\n");
         return InvalidIndex;
     }
 
     Category& cat = this->state.categoryArray[category.id];
-    InstanceId instance = this->state.worldDatabase->AllocateRow(cat.instanceTable);
+    InstanceId instance = this->state.world.db->AllocateRow(cat.instanceTable);
 
-    this->state.entityMap[Ids::Index(entity.id)] = { category, instance };
+    this->state.world.entityMap[entity.index] = { category, instance };
 
     // Just make sure the first column in always owner!
-    n_assert(this->state.worldDatabase->GetColumnId(cat.instanceTable, this->state.ownerId) == 0);
+    n_assert(this->state.world.db->GetColumnId(cat.instanceTable, this->state.ownerId) == 0);
 
     // Set the owner of this instance
-    Game::Entity* owners = (Game::Entity*)this->state.worldDatabase->GetBuffer(cat.instanceTable, 0);
+    Game::Entity* owners = (Game::Entity*)this->state.world.db->GetBuffer(cat.instanceTable, 0);
     owners[instance.id] = entity;
 
     return instance;
@@ -376,21 +391,21 @@ EntityManager::AllocateInstance(Entity entity, BlueprintId blueprint)
 {
     n_assert(IsValid(entity));
 
-    if (Ids::Index(entity.id) < this->state.entityMap.Size() && this->state.entityMap[Ids::Index(entity.id)].instance != Game::InstanceId::Invalid())
+    if (entity.index < this->state.world.entityMap.Size() && this->state.world.entityMap[entity.index].instance != Game::InstanceId::Invalid())
     {
         n_warning("Entity already registered!\n");
         return InvalidIndex;
     }
 
     EntityMapping mapping = BlueprintManager::Instance()->Instantiate(blueprint);
-    this->state.entityMap[Ids::Index(entity.id)] = mapping;
+    this->state.world.entityMap[entity.index] = mapping;
 
     Category const& cat = this->GetCategory(mapping.category);
     // Just make sure the first column in always owner!
-    n_assert(this->state.worldDatabase->GetColumnId(cat.instanceTable, this->state.ownerId) == 0);
+    n_assert(this->state.world.db->GetColumnId(cat.instanceTable, this->state.ownerId) == 0);
 
     // Set the owner of this instance
-    Game::Entity* owners = (Game::Entity*)this->state.worldDatabase->GetBuffer(cat.instanceTable, 0);
+    Game::Entity* owners = (Game::Entity*)this->state.world.db->GetBuffer(cat.instanceTable, 0);
     owners[mapping.instance.id] = entity;
 
     return mapping.instance;
@@ -404,18 +419,18 @@ EntityManager::AllocateInstance(Entity entity, TemplateId templateId)
 {
     n_assert(IsValid(entity));
     
-    if (Ids::Index(entity.id) < this->state.entityMap.Size() && this->state.entityMap[Ids::Index(entity.id)].instance != Game::InstanceId::Invalid())
+    if (entity.index < this->state.world.entityMap.Size() && this->state.world.entityMap[entity.index].instance != Game::InstanceId::Invalid())
     {
         n_warning("Entity already registered!\n");
         return InvalidIndex;
     }
 
     EntityMapping mapping = BlueprintManager::Instance()->Instantiate(templateId);
-    this->state.entityMap[Ids::Index(entity.id)] = mapping;
+    this->state.world.entityMap[entity.index] = mapping;
 
     Category const& cat = this->GetCategory(mapping.category);
     // Set the owner of this instance
-    Game::Entity* owners = (Game::Entity*)this->state.worldDatabase->GetBuffer(cat.instanceTable, 0);
+    Game::Entity* owners = (Game::Entity*)this->state.world.db->GetBuffer(cat.instanceTable, 0);
     owners[mapping.instance.id] = entity;
 
     return mapping.instance;
@@ -427,21 +442,21 @@ EntityManager::AllocateInstance(Entity entity, TemplateId templateId)
 void
 EntityManager::DeallocateInstance(Entity entity)
 {
-    CategoryId const category = this->state.entityMap[Ids::Index(entity.id)].category;
+    CategoryId const category = this->state.world.entityMap[entity.index].category;
     n_assert(category < this->state.categoryArray.Size());
 
     Category& cat = this->state.categoryArray[category.id];
-    InstanceId& instance = this->state.entityMap[Ids::Index(entity.id)].instance;
+    InstanceId& instance = this->state.world.entityMap[entity.index].instance;
     
     n_assert(instance != Game::InstanceId::Invalid());
 
     if (cat.managedPropertyTable == MemDb::TableId::Invalid())
-        this->state.worldDatabase->DeallocateRow(cat.instanceTable, instance.id);
+        this->state.world.db->DeallocateRow(cat.instanceTable, instance.id);
     else
     {
         // migrate to managed property table so that we can allow the managers
         // to clean up any externally allocated resources.
-        this->state.worldDatabase->MigrateInstance(cat.instanceTable, instance.id, cat.managedPropertyTable, false);
+        this->state.world.db->MigrateInstance(cat.instanceTable, instance.id, cat.managedPropertyTable, false);
     }
 
     instance = InstanceId::Invalid();
@@ -456,9 +471,9 @@ EntityManager::Migrate(Entity entity, CategoryId newCategory)
     EntityMapping mapping = GetEntityMapping(entity);
     Category const& oldCat = this->GetCategory(mapping.category);
     Category const& newCat = this->GetCategory(newCategory);
-    InstanceId newInstance = this->state.worldDatabase->MigrateInstance(oldCat.instanceTable, mapping.instance.id, newCat.instanceTable, false);
+    InstanceId newInstance = this->state.world.db->MigrateInstance(oldCat.instanceTable, mapping.instance.id, newCat.instanceTable, false);
     DefragmentCategoryInstances(oldCat);
-    this->state.entityMap[Ids::Index(entity.id)] = { newCategory, newInstance };
+    this->state.world.entityMap[entity.index] = { newCategory, newInstance };
     return newInstance;
 }
 
@@ -495,8 +510,70 @@ EntityManager::Migrate(Util::Array<Entity> const& entities, CategoryId fromCateg
     DefragmentCategoryInstances(oldCat);
     for (IndexT i = 0; i < num; i++)
     {
-        this->state.entityMap[Ids::Index(entities[i].id)] = { newCategory, (uint32_t)newInstances[i] };
+        this->state.world.entityMap[entities[i].index] = { newCategory, (uint32_t)newInstances[i] };
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+EntityPool::EntityPool()
+{
+    this->generations.Reserve(1024);
+    this->freeIds.Reserve(2048);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+EntityPool::Allocate(Entity& e)
+{
+    if (this->freeIds.Size() < 1024)
+    {
+        this->generations.Append(0);
+        e.index = this->generations.Size() - 1;
+        n_assert2(e.index < 0x003FFFFF, "index overflow");
+        e.generation = 0;
+        e.worldId = this->worldId;
+        return false;
+    }
+    else
+    {
+        uint32_t const index = this->freeIds.Dequeue();
+        e.index = index;
+        e.generation = this->generations[index];
+        e.worldId = this->worldId;
+        return true;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+EntityPool::Deallocate(Entity e)
+{
+    n_assert2(this->IsValid(e), "Tried to deallocate invalid/destroyed entity!");
+    this->freeIds.Enqueue(e.index);
+#if NEBULA_DEBUG
+    // if you get this warning, you might want to consider reserving more bits for the generation.
+    n_warn2(this->generations[e.index] == 0xFF, "Entity generation overflow!");
+#endif
+    this->generations[e.index]++;
+
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool
+EntityPool::IsValid(Entity e) const
+{
+    return e.worldId == worldId &&
+           e.index < (uint32_t)this->generations.Size() &&
+           e.generation == this->generations[e.index];
 }
 
 } // namespace Game

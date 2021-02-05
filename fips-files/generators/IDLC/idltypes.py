@@ -243,7 +243,7 @@ def DefaultValue(attrType):
     elif (T == "void*"):
         return "void*"
     elif (T == "entity"):
-        return "Game::Entity(-1)"
+        return "Game::Entity::Invalid()"
     elif (T == "variant"):
         return "Util::Variant()"
     elif (T == "fourcc"):

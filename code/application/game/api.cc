@@ -120,7 +120,7 @@ Execute(Op::RegisterProperty const& op)
     {
         // Category with this hash does not exist. Create a new category.
         CategoryCreateInfo info;
-        auto const& cols = state.worldDatabase->GetTable(cat.instanceTable).properties;
+        auto const& cols = state.world.db->GetTable(cat.instanceTable).properties;
         info.properties.SetSize(cols.Size() + 1);
         IndexT i;
         for (i = 0; i < cols.Size(); ++i)
@@ -170,7 +170,7 @@ Execute(Op::DeregisterProperty const& op)
     else
     {
         CategoryCreateInfo info;
-        auto const& cols = state.worldDatabase->GetTable(cat.instanceTable).properties;
+        auto const& cols = state.world.db->GetTable(cat.instanceTable).properties;
         SizeT const num = cols.Size();
         info.properties.SetSize(num - 1);
         int col = 0;
@@ -332,7 +332,7 @@ bool
 IsValid(Entity e)
 {
     n_assert(EntityManager::HasInstance());
-    return EntityManager::Singleton->state.pool.IsValid(e.id);
+    return EntityManager::Singleton->state.world.pool.IsValid(e);
 }
 
 //------------------------------------------------------------------------------
@@ -343,7 +343,7 @@ IsActive(Entity e)
 {
     n_assert(EntityManager::HasInstance());
     n_assert(IsValid(e));
-    return EntityManager::Singleton->state.entityMap[Ids::Index(e.id)].instance != InstanceId::Invalid();
+    return EntityManager::Singleton->state.world.entityMap[e.index].instance != InstanceId::Invalid();
 }
 
 //------------------------------------------------------------------------------
@@ -353,7 +353,7 @@ uint
 GetNumEntities()
 {
     n_assert(EntityManager::HasInstance());
-    return EntityManager::Singleton->state.numEntities;
+    return EntityManager::Singleton->state.world.numEntities;
 }
 
 
@@ -386,7 +386,7 @@ GetEntityMapping(Game::Entity entity)
 {
     n_assert(EntityManager::HasInstance());
     n_assert(IsActive(entity));
-    return EntityManager::Singleton->state.entityMap[Ids::Index(entity.id)];
+    return EntityManager::Singleton->state.world.entityMap[entity.index];
 }
 
 //------------------------------------------------------------------------------
@@ -417,7 +417,7 @@ HasProperty(Game::Entity const entity, PropertyId const pid)
     EntityManager::State& state = EntityManager::Singleton->state;
     EntityMapping mapping = GetEntityMapping(entity);
     Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
-    return EntityManager::Singleton->state.worldDatabase->HasProperty(cat.instanceTable, pid);
+    return EntityManager::Singleton->state.world.db->HasProperty(cat.instanceTable, pid);
 }
 
 //------------------------------------------------------------------------------

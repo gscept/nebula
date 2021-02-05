@@ -104,7 +104,7 @@ PropertySerialization::ValidateTypeSize(MemDb::PropertyId pid, uint32_t size)
 template<> void
 IO::JsonReader::Get<Game::Entity>(Game::Entity& entity, const char* key)
 {
-    this->Get(entity.id, key);
+    entity = { this->GetUInt(key) };
 }
 
 //------------------------------------------------------------------------------
@@ -113,7 +113,7 @@ IO::JsonReader::Get<Game::Entity>(Game::Entity& entity, const char* key)
 template<> void
 IO::JsonWriter::Add<Game::Entity>(Game::Entity const& entity, Util::String const& key)
 {
-    this->Add(entity.id, key);
+    this->Add<uint>((uint)entity, key);
 }
 
 //------------------------------------------------------------------------------

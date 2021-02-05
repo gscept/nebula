@@ -1,8 +1,7 @@
 {
 	"properties": {
 		"Owner": {
-			"_type_": "Game::Entity",
-			"_default_": -1
+			"_type_": "entity"
 		}
 	}
 }

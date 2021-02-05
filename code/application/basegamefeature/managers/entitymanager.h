@@ -41,6 +41,93 @@ TYPE GetProperty(Game::Entity const entity, PropertyId const pid);
 /// Returns the world db
 Ptr<MemDb::Database> GetWorldDatabase();
 
+/// Generation pool
+class EntityPool
+{
+public:
+    // default constructor
+    EntityPool();
+
+    /// allocate a new id, returns whether or not the id was reused or new
+    bool Allocate(Entity& e);
+    /// remove an id
+    void Deallocate(Entity e);
+    /// check if valid
+    bool IsValid(Entity e) const;
+
+    uint8_t worldId;
+    /// array containing generation value for every index
+    Util::Array<uint8_t> generations;
+    /// stores freed indices
+    Util::Queue<uint32_t> freeIds;
+};
+
+struct World
+{
+    /// used to allocate entity ids for this world
+    EntityPool pool;
+    /// Number of entities alive
+    SizeT numEntities;
+    /// maps entity index to category+instanceid pair
+    Util::Array<EntityMapping> entityMap;
+    /// contains all entity instances
+    Ptr<MemDb::Database> db;
+    /// the world identifier
+    uint8_t id;
+    /// name of the world
+    Util::StringAtom name;
+
+    /*
+        // TODO: Move entity management and world db management to the game server
+        WorldId worldId = GameServer::CreateWorld("Overworld");
+        
+        // order of processors will set up dependencies for the job system.
+        // processors are binned to different events depending on which callbacks are set.
+        // this can be called multiple times for the same world as well.
+        GameServer::RegisterProcessors(worldId, {
+            "GraphicsManager.CreateModels",
+            "GraphicsManager.DestroyModels",
+            "GraphicsManager.UpdateModelTransforms",
+            "CameraManager.UpdateCameraWorldTransformed",
+            "PhysicsManager.CreateActors",
+            ...
+        });
+
+        // Managers shouldn't need to be registered per world - They should be globally
+        // managing things, mostly just connecting different subsystems to the entity system and
+        // setting up processors.
+
+        // TODO: What do we do with categories?
+        //       Should we just keep a category list per world, or should the categories
+        //       contain an instance table per world?
+    */
+    /*
+    struct ProcessorCallbackInfo
+    {
+        ProcessorHandle handle;
+        Filter filter;
+        ProcessorFrameCallback func;
+    };
+
+    struct ProcessorInfo
+    {
+        Util::StringAtom name;
+        /// set if this processor should run as a job
+        bool async = false;
+        /// called when removed from game server
+        void(*OnDeactivate)() = nullptr;
+    };
+
+    Util::Array<ProcessorCallbackInfo> onBeginFrameCallbacks;
+    Util::Array<ProcessorCallbackInfo> onFrameCallbacks;
+    Util::Array<ProcessorCallbackInfo> onEndFrameCallbacks;
+    Util::Array<ProcessorCallbackInfo> onLoadCallbacks;
+    Util::Array<ProcessorCallbackInfo> onSaveCallbacks;
+    Util::Array<ProcessorInfo> processors;
+    Ids::IdGenerationPool processorHandlePool;
+    */
+};
+
 //------------------------------------------------------------------------------
 /**
     @class  Game::EntityManager
@@ -105,14 +192,11 @@ public:
             Game::Entity entity;
         };
 
-        /// Generation pool
-        Ids::IdGenerationPool pool;
+        World world;
 
-        /// Number of entities alive
-        SizeT numEntities;
-
-        /// Contains the entire world database
-        Ptr<MemDb::Database> worldDatabase;
+        //Ptr<MemDb::Database> worldDatabase;
+        //Ids::IdGenerationPool pool;
+        //SizeT numEntities;
 
         /// Contains all templates
         Ptr<MemDb::Database> templateDatabase;
@@ -120,12 +204,15 @@ public:
         Util::Queue<AllocateInstanceCommand> allocQueue;
         Util::Queue<DeallocInstanceCommand> deallocQueue;
 
-        // - Categories -
+        /// categories
         Util::Array<Category> categoryArray;
+        /// maps from catagory hash to category id
         Util::HashTable<CategoryHash, CategoryId> catIndexMap;
 
-        Util::Array<EntityMapping> entityMap;
+        /// maps from entity index to category and instance id
+        //Util::Array<EntityMapping> entityMap;
 
+        /// quick access to the Owner property id
         PropertyId ownerId;
     } state;
 
@@ -164,7 +251,7 @@ SetProperty(Game::Entity const entity, PropertyId const pid, TYPE value)
 {
     EntityMapping mapping = GetEntityMapping(entity);
     Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
-    Ptr<MemDb::Database> db = EntityManager::Singleton->state.worldDatabase;
+    Ptr<MemDb::Database> db = EntityManager::Singleton->state.world.db;
     auto cid = db->GetColumnId(cat.instanceTable, pid);
 
 #if NEBULA_DEBUG
@@ -185,7 +272,7 @@ GetProperty(Game::Entity const entity, PropertyId const pid)
 {
     EntityMapping mapping = GetEntityMapping(entity);
     Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
-    Ptr<MemDb::Database> db = EntityManager::Singleton->state.worldDatabase;
+    Ptr<MemDb::Database> db = EntityManager::Singleton->state.world.db;
     auto cid = db->GetColumnId(cat.instanceTable, pid);
 
 #if NEBULA_DEBUG

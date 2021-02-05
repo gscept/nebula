@@ -36,18 +36,6 @@ PhysicsManager::~PhysicsManager()
 //------------------------------------------------------------------------------
 /**
 */
-void
-MoveCallback(Physics::ActorId id, Math::mat4 const& trans)
-{
-    static Game::PropertyId const transformPropertyId = Game::GetPropertyId("WorldTransform");
-    Physics::Actor& actor = Physics::ActorContext::GetActor(id);
-    Game::Entity gameId = (Game::Entity)actor.userData;
-    Game::SetProperty(gameId, transformPropertyId, trans);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void PhysicsManager::InitCreateActorProcessor()
 {
     Game::FilterCreateInfo filterInfo;
@@ -92,7 +80,7 @@ void PhysicsManager::InitCreateActorProcessor()
                         bool const dynamic = !Game::HasProperty(entity, staticPID);
                         Physics::ActorId actorid = Physics::CreateActorInstance(id, trans, dynamic);
                         Physics::Actor& actor = Physics::ActorContext::GetActor(actorid);
-                        actor.userData = entity.id;
+                        actor.userData = Ids::Id32(entity);
                         
                         Game::Op::RegisterProperty regOp;
                         regOp.entity = entity;

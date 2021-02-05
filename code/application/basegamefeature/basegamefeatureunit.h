@@ -42,6 +42,11 @@ public:
     /// called at the beginning of a frame
     void OnFrame() override;
 
+    // load a package
+    //virtual PackageId Load(ResourceName npak);
+    // unload a package (unloads all entities associated with the npak file).
+    //virtual void Unload(PackageId id); 
+
     /// set optional world dimensions
     void SetWorldDimensions(const Math::bbox& box);
     /// get world dimensions

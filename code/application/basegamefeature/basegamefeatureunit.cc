@@ -94,7 +94,7 @@ void
 BaseGameFeatureUnit::CleanupWorld()
 {
     Game::GameServer::Instance()->NotifyBeforeCleanup();
-    EntityManager::Instance()->state.worldDatabase->Reset();
+    EntityManager::Instance()->state.world.db->Reset();
 }
 
 //------------------------------------------------------------------------------

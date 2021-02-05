@@ -306,7 +306,7 @@ BlueprintManager::Instantiate(BlueprintId blueprint)
     EntityManager::State const& emState = EntityManager::Instance()->state;
     CategoryId cid = Singleton->blueprints[blueprint.id].categoryId;
     Category& cat = emState.categoryArray[cid.id];
-    InstanceId instance = emState.worldDatabase->AllocateRow(cat.instanceTable);
+    InstanceId instance = emState.world.db->AllocateRow(cat.instanceTable);
     return { cid, instance };
 }
 
@@ -317,7 +317,7 @@ EntityMapping
 BlueprintManager::Instantiate(TemplateId templateId)
 {
     EntityManager::State const& emState = EntityManager::Instance()->state;
-    Ptr<MemDb::Database> const& db = emState.worldDatabase;
+    Ptr<MemDb::Database> const& db = emState.world.db;
     Ptr<MemDb::Database> const& tdb = emState.templateDatabase;
     CategoryId cid = Singleton->blueprints[templateId.blueprintId].categoryId;
     Category& cat = emState.categoryArray[cid.id];
