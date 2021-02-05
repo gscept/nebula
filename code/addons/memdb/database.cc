@@ -497,6 +497,7 @@ Database::FindTable(TableSignature const& signature) const
         if (signature == this->tableSignatures[tableIndex])
             return this->tables[tableIndex].tid;
     }
+    return TableId::Invalid();
 }
 
 //------------------------------------------------------------------------------
