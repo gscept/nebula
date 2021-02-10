@@ -10,6 +10,7 @@
 */
 //------------------------------------------------------------------------------
 #include "category.h"
+#include "memdb/tablesignature.h"
 
 namespace Game
 {
@@ -181,16 +182,8 @@ struct ProcessorCreateInfo
     ProcessorFrameCallback OnRenderDebug = nullptr;
 };
 
-//------------------------------------------------------------------------------
-/**
-*/
-struct WorldCreateInfo
-{
-    /// name of the world
-    Util::StringAtom name;
-    /// which processors should be attached to the world
-    Util::Array<Util::StringAtom> processors;
-};
+typedef MemDb::TableSignature InclusiveTableMask;
+typedef MemDb::TableSignature ExclusiveTableMask;
 
 //------------------------------------------------------------------------------
 //      Entity Operations
@@ -279,6 +272,9 @@ void ReleaseDatasets();
 /// Query the entity database using specified filter set. This does NOT wait for resources to be available.
 Dataset Query(Filter filter);
 
+/// Query a subset of tables using a specified filter set. Modifies the tables array so that it only contains valid tables. This does NOT wait for resources to be available.
+Dataset Query(Util::Array<MemDb::TableId>& tables, Filter filter);
+
 /// Get instanceid of entity
 InstanceId GetInstanceId(Entity entity);
 
@@ -314,6 +310,12 @@ SizeT GetNumInstances(CategoryId category);
 
 /// retrieve the instance buffer for a specific property in a category
 void* GetInstanceBuffer(CategoryId const category, PropertyId const pid);
+
+/// retrieve the inclusive table mask
+InclusiveTableMask const& GetInclusiveTableMask(Filter);
+
+/// retrieve the exclusive table mask
+ExclusiveTableMask const& GetExclusiveTableMask(Filter);
 
 //------------------------------------------------------------------------------
 /**

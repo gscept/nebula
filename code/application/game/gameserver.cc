@@ -28,6 +28,7 @@ GameServer::GameServer() :
     _setup_grouped_timer(GameServerOnEndFrame, "Game Subsystem");
     this->state.templateDatabase = MemDb::Database::Create();
     this->state.ownerId = MemDb::TypeRegistry::GetPropertyId("Owner"_atm);
+    state.world.db = MemDb::Database::Create();
     // always attach the base game feature
     this->AttachGameFeature(BaseGameFeature::BaseGameFeatureUnit::Create());
 }
@@ -186,7 +187,7 @@ GameServer::OnBeginFrame()
 #if NEBULA_ENABLE_PROFILING
         this->onBeginFrameTimers[i]->Start();
 #endif
-        Dataset data = Game::Query(this->onBeginFrameCallbacks[i].filter);
+        Dataset data = Game::Query(this->onBeginFrameCallbacks[i].cache, this->onBeginFrameCallbacks[i].filter);
         this->onBeginFrameCallbacks[i].func(data);
 #if NEBULA_ENABLE_PROFILING
         this->onBeginFrameTimers[i]->Stop();
@@ -226,7 +227,7 @@ GameServer::OnFrame()
 #if NEBULA_ENABLE_PROFILING
         this->onFrameTimers[i]->Start();
 #endif
-        Dataset data = Game::Query(this->onFrameCallbacks[i].filter);
+        Dataset data = Game::Query(this->onBeginFrameCallbacks[i].cache, this->onFrameCallbacks[i].filter);
         this->onFrameCallbacks[i].func(data);
 #if NEBULA_ENABLE_PROFILING
         this->onFrameTimers[i]->Stop();
@@ -262,7 +263,7 @@ GameServer::OnEndFrame()
 #if NEBULA_ENABLE_PROFILING
         this->onEndFrameTimers[i]->Start();
 #endif
-        Dataset data = Game::Query(this->onEndFrameCallbacks[i].filter);
+        Dataset data = Game::Query(this->onBeginFrameCallbacks[i].cache, this->onEndFrameCallbacks[i].filter);
         this->onEndFrameCallbacks[i].func(data);
 #if NEBULA_ENABLE_PROFILING
         this->onEndFrameTimers[i]->Stop();
@@ -376,7 +377,7 @@ GameServer::NotifyGameLoad()
     num = this->onLoadCallbacks.Size();
     for (i = 0; i < num; i++)
     {
-        Dataset data = Game::Query(this->onLoadCallbacks[i].filter);
+        Dataset data = Game::Query(this->onBeginFrameCallbacks[i].cache, this->onLoadCallbacks[i].filter);
         this->onLoadCallbacks[i].func(data);
     }
 
@@ -400,7 +401,7 @@ GameServer::NotifyGameSave()
     num = this->onSaveCallbacks.Size();
     for (i = 0; i < num; i++)
     {
-        Dataset data = Game::Query(this->onSaveCallbacks[i].filter);
+        Dataset data = Game::Query(this->onBeginFrameCallbacks[i].cache, this->onSaveCallbacks[i].filter);
         this->onSaveCallbacks[i].func(data);
     }
 
@@ -519,6 +520,33 @@ GameServer::CleanupWorld()
 {
     Game::GameServer::Instance()->NotifyBeforeCleanup();
     this->state.world.db->Reset();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GameServer::AddTableToCaches(MemDb::TableId tid, MemDb::TableSignature signature)
+{
+    // this is just to compress the code a bit
+    const Util::Array<CallbackInfo>* cbArrays[] = {
+        &this->onBeginFrameCallbacks,
+        &this->onFrameCallbacks,
+        &this->onEndFrameCallbacks,
+        &this->onLoadCallbacks,
+        &this->onSaveCallbacks,
+    };
+
+    for (auto arrPtr : cbArrays)
+    {
+        auto const& arr = *arrPtr;
+        for (auto& cbinfo : arr)
+        {
+            if (MemDb::TableSignature::CheckBits(signature, GetInclusiveTableMask(cbinfo.filter)) &&
+                !MemDb::TableSignature::HasAny(signature, GetExclusiveTableMask(cbinfo.filter)))
+                cbinfo.cache.Append(tid);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

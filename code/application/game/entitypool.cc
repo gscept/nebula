@@ -75,7 +75,7 @@ EntityPool::IsValid(Entity e) const
 */
 World::World()
 {
-    this->db = MemDb::Database::Create();
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -150,6 +150,9 @@ World::CreateCategory(CategoryCreateInfo const& info)
     // Create an instance table
     cat.instanceTable = this->db->CreateTable(tableInfo);
 
+    // "Prefilter" the processors with the new table (insert the table in the cache that accepts it)
+    GameServer::Instance()->AddTableToCaches(cat.instanceTable, this->db->GetTableSignature(cat.instanceTable));
+
     // Find all managed properties
     int numManaged = 0;
     for (int i = 0; i < info.properties.Size(); i++)
@@ -170,6 +173,7 @@ World::CreateCategory(CategoryCreateInfo const& info)
         managedTableInfo.properties = properties;
         managedTableInfo.numProperties = numManaged;
         cat.managedPropertyTable = this->db->CreateTable(managedTableInfo);
+        GameServer::Instance()->AddTableToCaches(cat.managedPropertyTable, this->db->GetTableSignature(cat.managedPropertyTable));
     }
     else
         cat.managedPropertyTable = MemDb::TableId::Invalid();

@@ -116,12 +116,15 @@ protected:
     bool isStarted;
     Util::CommandLineArgs args;
     Util::Array<Ptr<FeatureUnit> > gameFeatures;
+    friend class World;
     
     struct CallbackInfo
     {
         ProcessorHandle handle;
         Filter filter;
         ProcessorFrameCallback func;
+        /// cached tables that we've filtered out.
+        Util::Array<MemDb::TableId> cache;
     };
 
     struct ProcessorInfo
@@ -132,6 +135,9 @@ protected:
         /// called when removed from game server
         void(*OnDeactivate)() = nullptr;
     };
+
+    /// add the table to any callback-caches that accepts it
+    void AddTableToCaches(MemDb::TableId tid, MemDb::TableSignature signature);
 
     Util::Array<CallbackInfo> onBeginFrameCallbacks;
     Util::Array<CallbackInfo> onFrameCallbacks;

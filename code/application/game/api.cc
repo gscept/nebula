@@ -21,7 +21,7 @@ using ExclusiveTableMask = MemDb::TableSignature;
 using PropertyArray = Util::FixedArray<PropertyId>;
 using AccessModeArray = Util::FixedArray<AccessMode>;
 
-static Ids::IdAllocator<InclusiveTableMask, ExclusiveTableMask, PropertyArray, AccessModeArray> filterAllocator;
+Ids::IdAllocator<InclusiveTableMask, ExclusiveTableMask, PropertyArray, AccessModeArray>  filterAllocator;
 static Memory::ArenaAllocator<sizeof(Dataset::CategoryTableView) * 256> viewAllocator;
 //------------------------------------------------------------------------------
 
@@ -376,8 +376,19 @@ Dataset Query(Filter filter)
 
     Util::Array<MemDb::TableId> tids = db->Query(filterAllocator.Get<0>(filter), filterAllocator.Get<1>(filter));
 
+    return Query(tids, filter);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Dataset
+Query(Util::Array<MemDb::TableId>& tids, Filter filter)
+{
+    Ptr<MemDb::Database> db = Game::GetWorldDatabase();
+
     Dataset data;
-    data.numViews = tids.Size();
+    data.numViews = 0;
 
     if (tids.Size() == 0)
     {
@@ -385,31 +396,41 @@ Dataset Query(Filter filter)
         return data;
     }
 
-    data.views = (Dataset::CategoryTableView*)viewAllocator.Alloc(sizeof(Dataset::CategoryTableView) * data.numViews);
+    data.views = (Dataset::CategoryTableView*)viewAllocator.Alloc(sizeof(Dataset::CategoryTableView) * tids.Size());
 
     PropertyArray const& properties = filterAllocator.Get<2>(filter);
 
-    for (IndexT viewIndex = 0; viewIndex < data.numViews; viewIndex++)
+    for (IndexT tableIndex = 0; tableIndex < tids.Size(); tableIndex++)
     {
-        Dataset::CategoryTableView* view = data.views + viewIndex;
-        // FIXME
-        view->cid = CategoryId::Invalid();
-
-        MemDb::Table const& tbl = db->GetTable(tids[viewIndex]);
-
-        IndexT i = 0;
-        for (auto pid : properties)
+        if (db->IsValid(tids[tableIndex]))
         {
-            MemDb::ColumnIndex colId = db->GetColumnId(tbl.tid, pid);
-            // Check if the property is a flag, and return a nullptr in that case.
-            if (colId != InvalidIndex)
-                view->buffers[i] = db->GetBuffer(tbl.tid, colId);
-            else
-                view->buffers[i] = nullptr;
-            i++;
-        }
+            Dataset::CategoryTableView* view = data.views + data.numViews;
+            // FIXME
+            view->cid = CategoryId::Invalid();
 
-        view->numInstances = db->GetNumRows(tbl.tid);
+            MemDb::Table const& tbl = db->GetTable(tids[tableIndex]);
+
+            IndexT i = 0;
+            for (auto pid : properties)
+            {
+                MemDb::ColumnIndex colId = db->GetColumnId(tbl.tid, pid);
+                // Check if the property is a flag, and return a nullptr in that case.
+                if (colId != InvalidIndex)
+                    view->buffers[i] = db->GetBuffer(tbl.tid, colId);
+                else
+                    view->buffers[i] = nullptr;
+                i++;
+            }
+
+            view->numInstances = db->GetNumRows(tbl.tid);
+            data.numViews++;
+        }
+        else
+        {
+            tids.EraseIndexSwap(tableIndex);
+            // re-run the same index
+            tableIndex--;
+        }
     }
 
     return data;
@@ -552,6 +573,24 @@ GetInstanceBuffer(CategoryId const category, PropertyId const pid)
     n_assert_fmt(cid != MemDb::ColumnIndex::Invalid(), "GetInstanceBuffer: Category does not have property with id '%i'!\n", pid.id);
 #endif
     return db->GetBuffer(cat.instanceTable, cid);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+InclusiveTableMask const&
+GetInclusiveTableMask(Filter filter)
+{
+    return filterAllocator.Get<0>(filter);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ExclusiveTableMask const&
+GetExclusiveTableMask(Filter filter)
+{
+    return filterAllocator.Get<1>(filter);
 }
 
 //------------------------------------------------------------------------------
