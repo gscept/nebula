@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
 #include "graphicsmanager.h"
-#include "basegamefeature/managers/entitymanager.h"
 #include "graphics/graphicsentity.h"
 #include "graphics/graphicsserver.h"
 #include "models/modelcontext.h"

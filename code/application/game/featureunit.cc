@@ -6,6 +6,7 @@
 #include "application/stdneb.h"
 #include "game/featureunit.h"
 #include "game/gameserver.h"
+#include "gameserver.h"
 
 namespace Game
 {

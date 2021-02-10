@@ -54,7 +54,6 @@ struct Dataset
     CategoryTableView* views = nullptr;
 };
 
-
 /// Opaque entity operations buffer
 typedef uint32_t OpBuffer;
 
@@ -183,6 +182,17 @@ struct ProcessorCreateInfo
 };
 
 //------------------------------------------------------------------------------
+/**
+*/
+struct WorldCreateInfo
+{
+    /// name of the world
+    Util::StringAtom name;
+    /// which processors should be attached to the world
+    Util::Array<Util::StringAtom> processors;
+};
+
+//------------------------------------------------------------------------------
 //      Entity Operations
 //------------------------------------------------------------------------------
 
@@ -211,6 +221,27 @@ struct DeregisterProperty
 
 } // namespace Op
 //------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//      Functions
+//------------------------------------------------------------------------------
+
+/// Returns the world db
+Ptr<MemDb::Database> GetWorldDatabase();
+
+/// Create a new entity
+Game::Entity CreateEntity(EntityCreateInfo const& info);
+
+/// delete entity
+void DeleteEntity(Game::Entity entity);
+
+/// typed set a property method.
+template<typename TYPE>
+void SetProperty(Game::Entity const entity, PropertyId const pid, TYPE value);
+
+/// typed get property method
+template<typename TYPE>
+TYPE GetProperty(Game::Entity const entity, PropertyId const pid);
 
 /// Create an operations buffer
 OpBuffer CreateOpBuffer();
@@ -280,5 +311,38 @@ TemplateId GetTemplateId(Util::StringAtom name);
 
 /// Get number of instances in a specific category
 SizeT GetNumInstances(CategoryId category);
+
+/// retrieve the instance buffer for a specific property in a category
+void* GetInstanceBuffer(CategoryId const category, PropertyId const pid);
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename TYPE>
+inline void
+SetProperty(Game::Entity const entity, PropertyId const pid, TYPE value)
+{
+#if NEBULA_DEBUG
+    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(pid), "SetProperty: Provided value's type is not the correct size for the given PropertyId.");
+#endif
+    EntityMapping mapping = GetEntityMapping(entity);
+    TYPE* ptr = (TYPE*)GetInstanceBuffer(mapping.category, pid);
+    *(ptr + mapping.instance.id) = value;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename TYPE>
+inline TYPE
+GetProperty(Game::Entity const entity, PropertyId const pid)
+{
+#if NEBULA_DEBUG
+    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(pid), "GetProperty: Provided value's type is not the correct size for the given PropertyId.");
+#endif
+    EntityMapping mapping = GetEntityMapping(entity);
+    TYPE* ptr = (TYPE*)GetInstanceBuffer(mapping.category, pid);
+    return *(ptr + mapping.instance.id);
+}
 
 } // namespace Game

@@ -27,13 +27,18 @@
 #include "core/singleton.h"
 #include "game/featureunit.h"
 #include "debug/debugtimer.h"
-#include "api.h"
 #include "ids/idgenerationpool.h"
+#include "basegamefeature/properties/owner.h"
+#include "api.h"
+#include "entitypool.h"
 
 //------------------------------------------------------------------------------
 namespace Game
 {
 
+//------------------------------------------------------------------------------
+/**
+*/
 class GameServer : public Core::RefCounted
 {
     __DeclareClass(GameServer)
@@ -79,7 +84,7 @@ public:
     void RemoveGameFeature(const Ptr<FeatureUnit>& feature);
     /// is feature attached
     bool IsFeatureAttached(const Util::String& stringName) const;
-
+    /// access to all attached features units
     Util::Array<Ptr<FeatureUnit>> const& GetGameFeatures() const;
 
     /// create a processor
@@ -90,12 +95,28 @@ public:
     /// get command line args
     const Util::CommandLineArgs& GetCmdLineArgs() const;
 
+    /// setup an empty game world
+    virtual void SetupEmptyWorld();
+    /// cleanup the game world
+    virtual void CleanupWorld();
+
+    /// contains internal state and world management
+    struct State
+    {
+        /// world entity management
+        World world;
+        /// Contains all templates
+        Ptr<MemDb::Database> templateDatabase;
+        /// quick access to the Owner property id
+        PropertyId ownerId;
+    } state;
+
 protected:
     bool isOpen;
     bool isStarted;
     Util::CommandLineArgs args;
     Util::Array<Ptr<FeatureUnit> > gameFeatures;
-
+    
     struct CallbackInfo
     {
         ProcessorHandle handle;
@@ -147,6 +168,9 @@ GameServer::GetCmdLineArgs() const
 {
     return this->args;
 }
+
+/// call this if you need to defragment the category instance table
+void DefragmentCategoryInstances(Category const& cat);
 
 }; // namespace Game
 //------------------------------------------------------------------------------

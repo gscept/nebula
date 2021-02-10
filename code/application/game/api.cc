@@ -9,7 +9,6 @@
 #include "memdb/tablesignature.h"
 #include "memdb/database.h"
 #include "memory/arenaallocator.h"
-#include "basegamefeature/managers/entitymanager.h"
 #include "basegamefeature/managers/blueprintmanager.h"
 #include "profiling/profiling.h"
 
@@ -33,6 +32,94 @@ using DeregPidQueue = Util::Queue<Op::DeregisterProperty>;
 static Ids::IdAllocator<RegPidQueue, DeregPidQueue> opBufferAllocator;
 static Memory::ArenaAllocator<1024> opAllocator;
 //------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+/**
+*/
+Ptr<MemDb::Database>
+GetWorldDatabase()
+{
+    n_assert(GameServer::HasInstance());
+    return GameServer::Singleton->state.world.db;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Game::Entity
+CreateEntity(EntityCreateInfo const& info)
+{
+    n_assert(GameServer::HasInstance());
+    GameServer::State* const state = &GameServer::Singleton->state;
+
+    World& world = state->world;
+
+    Entity entity;
+    world.pool.Allocate(entity);
+    world.numEntities++;
+
+    // Make sure the entitymap can contain this entity
+    if (world.entityMap.Size() <= entity.index)
+    {
+        world.entityMap.Grow();
+        world.entityMap.Resize(world.entityMap.Capacity());
+    }
+
+    World::AllocateInstanceCommand cmd;
+    cmd.entity = entity;
+    if (info.templateId != TemplateId::Invalid())
+    {
+        cmd.tid = info.templateId;
+    }
+    else
+    {
+        cmd.tid.blueprintId = info.blueprint.id;
+        cmd.tid.templateId = Ids::InvalidId16;
+    }
+
+    if (!info.immediate)
+    {
+        world.allocQueue.Enqueue(std::move(cmd));
+    }
+    else
+    {
+        if (cmd.tid.templateId != Ids::InvalidId16)
+        {
+            world.AllocateInstance(cmd.entity, cmd.tid);
+        }
+        else
+        {
+            world.AllocateInstance(cmd.entity, (BlueprintId)cmd.tid.blueprintId);
+        }
+    }
+
+    return entity;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DeleteEntity(Game::Entity entity)
+{
+    n_assert(IsValid(entity));
+    n_assert(GameServer::HasInstance());
+    GameServer::State* const state = &GameServer::Singleton->state;
+
+    // make sure we're not trying to dealloc an instance that does not exist
+    n_assert2(IsActive(entity), "Cannot delete and entity before it has been instantiated!\n");
+
+    World& world = state->world;
+
+    world.pool.Deallocate(entity);
+
+    World::DeallocInstanceCommand cmd;
+    cmd.entity = entity;
+
+    world.deallocQueue.Enqueue(std::move(cmd));
+
+    world.numEntities--;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -106,21 +193,22 @@ AddOp(OpBuffer buffer, Op::DeregisterProperty const& op)
 void
 Execute(Op::RegisterProperty const& op)
 {
-    EntityManager::State& state = EntityManager::Singleton->state;
+    GameServer::State* const state = &GameServer::Singleton->state;
     EntityMapping mapping = GetEntityMapping(op.entity);
-    Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
+    World& world = GameServer::Singleton->state.world;
+    Category const& cat = world.GetCategory(mapping.category);
     CategoryHash newHash = cat.hash;
     newHash.AddToHash(op.pid.id);
     CategoryId newCategoryId;
-    if (state.catIndexMap.Contains(newHash))
+    if (world.catIndexMap.Contains(newHash))
     {
-        newCategoryId = state.catIndexMap[newHash];
+        newCategoryId = world.catIndexMap[newHash];
     }
     else
     {
         // Category with this hash does not exist. Create a new category.
         CategoryCreateInfo info;
-        auto const& cols = state.world.db->GetTable(cat.instanceTable).properties;
+        auto const& cols = world.db->GetTable(cat.instanceTable).properties;
         info.properties.SetSize(cols.Size() + 1);
         IndexT i;
         for (i = 0; i < cols.Size(); ++i)
@@ -133,23 +221,24 @@ Execute(Op::RegisterProperty const& op)
         info.name = cat.name + " + ";
         info.name += MemDb::TypeRegistry::GetDescription(op.pid)->name.AsString();
 #endif
-        newCategoryId = EntityManager::Singleton->CreateCategory(info);
+        newCategoryId = world.CreateCategory(info);
     }
 
-    InstanceId newInstance = EntityManager::Singleton->Migrate(op.entity, newCategoryId);
+    InstanceId newInstance = world.Migrate(op.entity, newCategoryId);
 
     if (op.value == nullptr)
         return; // default value should already be set
 
-    Ptr<MemDb::Database> db = Game::GetWorldDatabase();
-    Category const& newCat = EntityManager::Singleton->GetCategory(newCategoryId);
-    auto cid = db->GetColumnId(newCat.instanceTable, op.pid);
-    void* ptr = db->GetValuePointer(newCat.instanceTable, cid, newInstance.id);
+    Category const& newCat = world.GetCategory(newCategoryId);
+    auto cid = world.db->GetColumnId(newCat.instanceTable, op.pid);
+    void* ptr = world.db->GetValuePointer(newCat.instanceTable, cid, newInstance.id);
     Memory::Copy(op.value, ptr, MemDb::TypeRegistry::TypeSize(op.pid));
 }
 
 //------------------------------------------------------------------------------
 /**
+    @bug   If you deregister a managed property, the property will just disappear
+           without letting the manager clean up any resources, leading to memleaks.
 */
 void
 Execute(Op::DeregisterProperty const& op)
@@ -157,20 +246,21 @@ Execute(Op::DeregisterProperty const& op)
 #if NEBULA_DEBUG
     n_assert(Game::HasProperty(op.entity, op.pid));
 #endif
-    EntityManager::State& state = EntityManager::Singleton->state;
+    GameServer::State* const state = &GameServer::Singleton->state;
     EntityMapping mapping = GetEntityMapping(op.entity);
-    Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
+    World& world = GameServer::Singleton->state.world;
+    Category const& cat = world.GetCategory(mapping.category);
     CategoryHash newHash = cat.hash;
     newHash.RemoveFromHash(op.pid.id);
     CategoryId newCategoryId;
-    if (state.catIndexMap.Contains(newHash))
+    if (world.catIndexMap.Contains(newHash))
     {
-        newCategoryId = state.catIndexMap[newHash];
+        newCategoryId = world.catIndexMap[newHash];
     }
     else
     {
         CategoryCreateInfo info;
-        auto const& cols = state.world.db->GetTable(cat.instanceTable).properties;
+        auto const& cols = world.db->GetTable(cat.instanceTable).properties;
         SizeT const num = cols.Size();
         info.properties.SetSize(num - 1);
         int col = 0;
@@ -187,10 +277,10 @@ Execute(Op::DeregisterProperty const& op)
         info.name += MemDb::TypeRegistry::GetDescription(op.pid)->name.AsString();
 #endif
 
-        newCategoryId = EntityManager::Singleton->CreateCategory(info);
+        newCategoryId = world.CreateCategory(info);
     }
 
-    EntityManager::Singleton->Migrate(op.entity, newCategoryId);
+    world.Migrate(op.entity, newCategoryId);
 }
 
 //------------------------------------------------------------------------------
@@ -331,8 +421,8 @@ Dataset Query(Filter filter)
 bool
 IsValid(Entity e)
 {
-    n_assert(EntityManager::HasInstance());
-    return EntityManager::Singleton->state.world.pool.IsValid(e);
+    n_assert(GameServer::HasInstance());
+    return GameServer::Singleton->state.world.pool.IsValid(e);
 }
 
 //------------------------------------------------------------------------------
@@ -341,9 +431,9 @@ IsValid(Entity e)
 bool
 IsActive(Entity e)
 {
-    n_assert(EntityManager::HasInstance());
+    n_assert(GameServer::HasInstance());
     n_assert(IsValid(e));
-    return EntityManager::Singleton->state.world.entityMap[e.index].instance != InstanceId::Invalid();
+    return GameServer::Singleton->state.world.entityMap[e.index].instance != InstanceId::Invalid();
 }
 
 //------------------------------------------------------------------------------
@@ -352,8 +442,8 @@ IsActive(Entity e)
 uint
 GetNumEntities()
 {
-    n_assert(EntityManager::HasInstance());
-    return EntityManager::Singleton->state.world.numEntities;
+    n_assert(GameServer::HasInstance());
+    return GameServer::Singleton->state.world.numEntities;
 }
 
 
@@ -363,8 +453,8 @@ GetNumEntities()
 bool
 CategoryExists(CategoryHash hash)
 {
-    n_assert(EntityManager::HasInstance());
-    return EntityManager::Singleton->state.catIndexMap.Contains(hash);
+    n_assert(GameServer::HasInstance());
+    return GameServer::Singleton->state.world.catIndexMap.Contains(hash);
 }
 
 //------------------------------------------------------------------------------
@@ -373,9 +463,9 @@ CategoryExists(CategoryHash hash)
 CategoryId const
 GetCategoryId(CategoryHash hash)
 {
-    n_assert(EntityManager::HasInstance());
-    n_assert(EntityManager::Singleton->state.catIndexMap.Contains(hash));
-    return EntityManager::Singleton->state.catIndexMap[hash];
+    n_assert(GameServer::HasInstance());
+    n_assert(GameServer::Singleton->state.world.catIndexMap.Contains(hash));
+    return GameServer::Singleton->state.world.catIndexMap[hash];
 }
 
 //------------------------------------------------------------------------------
@@ -384,9 +474,9 @@ GetCategoryId(CategoryHash hash)
 EntityMapping
 GetEntityMapping(Game::Entity entity)
 {
-    n_assert(EntityManager::HasInstance());
+    n_assert(GameServer::HasInstance());
     n_assert(IsActive(entity));
-    return EntityManager::Singleton->state.world.entityMap[entity.index];
+    return GameServer::Singleton->state.world.entityMap[entity.index];
 }
 
 //------------------------------------------------------------------------------
@@ -414,10 +504,10 @@ GetPropertyId(Util::StringAtom name)
 bool
 HasProperty(Game::Entity const entity, PropertyId const pid)
 {
-    EntityManager::State& state = EntityManager::Singleton->state;
+    GameServer::State& state = GameServer::Singleton->state;
     EntityMapping mapping = GetEntityMapping(entity);
-    Category const& cat = EntityManager::Singleton->GetCategory(mapping.category);
-    return EntityManager::Singleton->state.world.db->HasProperty(cat.instanceTable, pid);
+    Category const& cat = GameServer::Singleton->state.world.GetCategory(mapping.category);
+    return GameServer::Singleton->state.world.db->HasProperty(cat.instanceTable, pid);
 }
 
 //------------------------------------------------------------------------------
@@ -445,8 +535,23 @@ SizeT
 GetNumInstances(CategoryId category)
 {
     Ptr<MemDb::Database> db = GetWorldDatabase();
-    MemDb::TableId tid = EntityManager::Instance()->GetCategory(category).instanceTable;
+    MemDb::TableId tid = GameServer::Singleton->state.world.GetCategory(category).instanceTable;
     return db->GetNumRows(tid);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void*
+GetInstanceBuffer(CategoryId const category, PropertyId const pid)
+{
+    Category const& cat = Game::GameServer::Singleton->state.world.GetCategory(category);
+    Ptr<MemDb::Database> db = Game::GameServer::Singleton->state.world.db;
+    auto cid = db->GetColumnId(cat.instanceTable, pid);
+#if NEBULA_DEBUG
+    n_assert_fmt(cid != MemDb::ColumnIndex::Invalid(), "GetInstanceBuffer: Category does not have property with id '%i'!\n", pid.id);
+#endif
+    return db->GetBuffer(cat.instanceTable, cid);
 }
 
 //------------------------------------------------------------------------------

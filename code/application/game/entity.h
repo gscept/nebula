@@ -33,25 +33,23 @@ namespace Game
     /// 
     struct Entity
     {
-        uint32_t index     : 22;
-        uint32_t generation : 8;
-        uint32_t worldId    : 2;
+        uint32_t index     : 22; // 4M concurrent entities
+        uint32_t generation : 10; // 1024 generations per index
     
         static Entity FromId(Ids::Id32 id)
         {
             Entity ret;
             ret.index = id & 0x003FFFFF;
-            ret.generation = (id & 0x3FC0000) >> 22;
-            ret.worldId = (id & 0xC000000) >> 30;
+            ret.generation = (id & 0xFFC0000) >> 22;
             return ret;
         }
         explicit constexpr operator Ids::Id32() const
         {
-            return ((worldId << 30) & 0xC0000000) + ((generation << 22) & 0x3FC0000) + (index & 0x003FFFFF);
+            return ((generation << 22) & 0xFFC0000) + (index & 0x003FFFFF);
         }
         static constexpr Entity Invalid()
         {
-            return { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
+            return { 0xFFFFFFFF, 0xFFFFFFFF };
         }
         constexpr uint32_t HashCode() const
         {

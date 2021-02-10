@@ -371,21 +371,21 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 void
 ModelContext::OnRenderDebug(uint32_t flags)
 {
-    const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<Model_InstanceId>();    
-    Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceBoundingBox>();
-    const Util::Array<Math::mat4>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
-    const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<Model_Id>();
-    
-    Math::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
-    int i, n;
-    for (i = 0,n = instances.Size(); i<n ; i++)
-    {
-        const ModelInstanceId& instance = instances[i];
-        if (instance == ModelInstanceId::Invalid()) continue;
-        CoreGraphics::RenderShape shape;
-        shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), instanceBoxes[instance.instance].to_mat4(), white);
-        CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
-    }
+    //const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<Model_InstanceId>();    
+    //Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceBoundingBox>();
+    //const Util::Array<Math::mat4>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
+    //const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<Model_Id>();
+    //
+    //Math::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
+    //int i, n;
+    //for (i = 0,n = instances.Size(); i<n ; i++)
+    //{
+    //    const ModelInstanceId& instance = instances[i];
+    //    if (instance == ModelInstanceId::Invalid()) continue;
+    //    CoreGraphics::RenderShape shape;
+    //    shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), transforms[instance.instance] * instanceBoxes[instance.instance].to_mat4(), white);
+    //    CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
+    //}
 }
 
 } // namespace Models

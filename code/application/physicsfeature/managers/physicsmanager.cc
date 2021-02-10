@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
 #include "physicsmanager.h"
-#include "basegamefeature/managers/entitymanager.h"
 #include "game/gameserver.h"
 #include "physicsinterface.h"
 #include "physics/streamactorpool.h"
