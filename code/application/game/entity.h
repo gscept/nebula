@@ -6,8 +6,7 @@
     An entity is essentially just an Id with some utility functions attached.
     What actually makes up the entities are their properties.
 
-    The id is split into three parts: the 2 upper bits are used to identify which
-    world the entity exists in; the next 8 bits are used as a generation
+    The id is split into two parts: the upper 10 bits are used as a generation
     counter, so that we can easily reuse the lower 22 bits as an index.
     
     @see    Game::IsValid
