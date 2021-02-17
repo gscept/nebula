@@ -43,7 +43,7 @@ Database::Database()
 */
 Database::~Database()
 {
-    for (IndexT tableIndex = 0; tableIndex < this->numTables; ++tableIndex)
+    for (IndexT tableIndex = 0; tableIndex < this->MAX_NUM_TABLES; ++tableIndex)
     {
         if (this->IsValid(this->tables[tableIndex].tid))
             this->DeleteTable(this->tables[tableIndex].tid);
@@ -94,9 +94,13 @@ Database::DeleteTable(TableId tid)
     {
         PropertyId descriptor = table.columns.Get<0>(i);
         void*& buf = table.columns.Get<1>(i);
-        Memory::Free(Table::HEAP_MEMORY_TYPE, buf);
-        buf = nullptr;
+        if (buf != nullptr)
+        {
+            Memory::Free(Table::HEAP_MEMORY_TYPE, buf);
+            buf = nullptr;
+        }
     }
+    this->tableIdPool.Deallocate(tid.id);
 }
 
 //------------------------------------------------------------------------------
@@ -869,6 +873,19 @@ Database::Copy(Ptr<MemDb::Database> const& dst) const
 
             Memory::Copy(srcBuffer, dstBuffer, (size_t)byteSize * (size_t)srcTable.numRows);
         }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Database::ForEachTable(void(*callback)(TableId))
+{
+    for (IndexT tableIndex = 0; tableIndex < this->numTables; tableIndex++)
+    {
+        if (this->IsValid(this->tables[tableIndex].tid))
+            callback(this->tables[tableIndex].tid);
     }
 }
 

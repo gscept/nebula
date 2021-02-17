@@ -14,6 +14,7 @@
 #include "util/fixedarray.h"
 #include "util/string.h"
 #include "util/stringatom.h"
+#include "util/hashtable.h"
 #include "propertyid.h"
 #include "tablesignature.h"
 

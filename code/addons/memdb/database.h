@@ -47,6 +47,8 @@ public:
     TableId FindTable(TableSignature const& signature) const;
     /// retrieve the number of tables
     SizeT GetNumTables() const;
+    /// run a callback for each table in the db
+    void ForEachTable(void(*callback)(TableId));
 
     /// check if table has a certain column
     bool HasProperty(TableId table, PropertyId col);
@@ -84,16 +86,14 @@ public:
 
     /// defragment table
     SizeT Defragment(TableId tid, std::function<void(IndexT, IndexT)> const& moveCallback);
-
     /// clean table. Does not deallocate anything; just sets the size of the table to zero.
     void Clean(TableId tid);
-
     /// performs Clean on all tables.
     void Reset();
 
-    /// Query the database for a dataset of categories
+    /// Query the database for a dataset of tables
     Dataset Query(FilterSet const& filterset);
-    /// Query the database for a dataset of categories
+    /// Query the database for a set of tables that fulfill the requirements
     Util::Array<TableId> Query(TableSignature const& inclusive, TableSignature const& exclusive);
     /// get a buffer. Might be invalidated if rows are allocated or deallocated
     void* GetValuePointer(TableId table, ColumnIndex cid, IndexT row);
