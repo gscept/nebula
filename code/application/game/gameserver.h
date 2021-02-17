@@ -123,29 +123,6 @@ protected:
     Util::Array<Ptr<FeatureUnit> > gameFeatures;
     friend class World;
     
-    //struct CallbackInfo
-    //{
-    //    ProcessorHandle handle;
-    //    Filter filter;
-    //    ProcessorFrameCallback func;
-    //    /// cached tables that we've filtered out.
-    //    Util::Array<MemDb::TableId> cache;
-    //};
-
-    //struct ProcessorInfo
-    //{
-    //    Util::StringAtom name;
-    //    /// set if this processor should run as a job
-    //    bool async = false;
-    //    /// called when removed from game server
-    //    void(*OnDeactivate)() = nullptr;
-    //};
-
-    //Util::Array<CallbackInfo> onBeginFrameCallbacks;
-    //Util::Array<CallbackInfo> onFrameCallbacks;
-    //Util::Array<CallbackInfo> onEndFrameCallbacks;
-    //Util::Array<CallbackInfo> onLoadCallbacks;
-    //Util::Array<CallbackInfo> onSaveCallbacks;
     Util::Array<ProcessorInfo> processors;
     Ids::IdGenerationPool processorHandlePool;
 
