@@ -33,7 +33,7 @@ public:
     bool IsValid(Entity e) const;
 
     /// array containing generation value for every index
-    Util::Array<uint8_t> generations;
+    Util::Array<uint16_t> generations;
     /// stores freed indices
     Util::Queue<uint32_t> freeIds;
 };
@@ -47,14 +47,15 @@ public:
     World();
     ~World();
 
-    struct AllocateInstanceCommand
+struct AllocateInstanceCommand
     {
         Game::Entity entity;
         TemplateId tid;
     };
     struct DeallocInstanceCommand
     {
-        Game::Entity entity;
+        CategoryId category;
+        InstanceId instance;
     };
 
     /// used to allocate entity ids for this world
@@ -67,10 +68,8 @@ public:
     Ptr<MemDb::Database> db;
     /// name of the world
     Util::StringAtom name;
-    /// categories
-    Util::Array<Category> categoryArray;
-    /// maps from hash to category id
-    Util::HashTable<CategoryHash, CategoryId> catIndexMap;
+    /// when an entity in a category within this table is destroyed, it is moved to the decay table.
+    Util::HashTable<CategoryId, MemDb::TableId> categoryDecayMap;
     /// maps from blueprint to a category that has the same signature
     Util::HashTable<BlueprintId, CategoryId> blueprintCatMap;
     ///
@@ -80,9 +79,6 @@ public:
 
     /// creates a category
     CategoryId CreateCategory(CategoryCreateInfo const& info);
-
-    /// returns a category by id. asserts if category does not exist
-    Category const& GetCategory(CategoryId cid) const;
 
     /// returns the number of existing categories
     SizeT const GetNumCategories() const;
@@ -98,31 +94,40 @@ public:
 
     /// deallocated and recycle instance in category instance table
     void DeallocateInstance(Entity entity);
+    /// deallocated and recycle instance in category instance table
+    void DeallocateInstance(CategoryId category, InstanceId instance);
 
     /// migrate an instance from one category to another
     InstanceId Migrate(Entity entity, CategoryId newCategory);
-
     /// migrate an n instances from one category to another
     void Migrate(Util::Array<Entity> const& entities, CategoryId fromCategory, CategoryId newCategory, Util::FixedArray<IndexT>& newInstances);
+
+    /// register a processor that processes entities in this world
+    void RegisterProcessor(std::initializer_list<ProcessorHandle> handles);
+
+    /// add the table to any callback-caches that accepts it
+    void CacheTable(MemDb::TableId tid, MemDb::TableSignature signature);
+
+    /// reset and pre filter the callbacks
+    void Prefilter();
+
+    /// call this if you need to defragment the category instance table
+    void DefragmentCategoryInstances(CategoryId cat);
+
+    struct CallbackInfo
+    {
+        ProcessorHandle handle;
+        Filter filter;
+        ProcessorFrameCallback func;
+        /// cached tables that we've filtered out.
+        Util::Array<MemDb::TableId> cache;
+    };
+
+    Util::Array<CallbackInfo> onBeginFrameCallbacks;
+    Util::Array<CallbackInfo> onFrameCallbacks;
+    Util::Array<CallbackInfo> onEndFrameCallbacks;
+    Util::Array<CallbackInfo> onLoadCallbacks;
+    Util::Array<CallbackInfo> onSaveCallbacks;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline Category const&
-World::GetCategory(CategoryId cid) const
-{
-    n_assert(cid != CategoryId::Invalid());
-    return this->categoryArray[cid.id];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline SizeT const
-World::GetNumCategories() const
-{
-    return this->categoryArray.Size();
-}
 
 } // namespace Game

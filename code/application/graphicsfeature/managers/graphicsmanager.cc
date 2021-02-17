@@ -88,9 +88,7 @@ void GraphicsManager::InitCreateModelProcessor()
                 Math::mat4 const& t = transforms[i];
                 Resources::ResourceName const& res = resources[i];
                 Graphics::GraphicsEntityId gid = Graphics::CreateEntity();
-
                 RegisterModelEntity(gid, res, t);
-
                 ModelEntityData mdlData;
                 mdlData.gid = gid;
 

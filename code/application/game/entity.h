@@ -19,11 +19,12 @@
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
+#include "memdb/table.h"
 
 namespace Game
 {
     /// category id
-    ID_32_TYPE(CategoryId);
+    typedef MemDb::TableId CategoryId;
 
     /// instance id point into a category table. Entities are mapped to instanceids
     ID_32_TYPE(InstanceId);

@@ -111,12 +111,16 @@ DeleteEntity(Game::Entity entity)
 
     World& world = state->world;
 
-    world.pool.Deallocate(entity);
-
     World::DeallocInstanceCommand cmd;
-    cmd.entity = entity;
+    cmd.category = world.entityMap[entity.index].category;
+    cmd.instance = world.entityMap[entity.index].instance;
 
     world.deallocQueue.Enqueue(std::move(cmd));
+
+    world.entityMap[entity.index].category = CategoryId::Invalid();
+    world.entityMap[entity.index].instance = InstanceId::Invalid();
+
+    world.pool.Deallocate(entity);
 
     world.numEntities--;
 }
@@ -189,6 +193,7 @@ AddOp(OpBuffer buffer, Op::DeregisterProperty const& op)
 
 //------------------------------------------------------------------------------
 /**
+    @todo   Optimize me
 */
 void
 Execute(Op::RegisterProperty const& op)
@@ -196,19 +201,19 @@ Execute(Op::RegisterProperty const& op)
     GameServer::State* const state = &GameServer::Singleton->state;
     EntityMapping mapping = GetEntityMapping(op.entity);
     World& world = GameServer::Singleton->state.world;
-    Category const& cat = world.GetCategory(mapping.category);
-    CategoryHash newHash = cat.hash;
-    newHash.AddToHash(op.pid.id);
-    CategoryId newCategoryId;
-    if (world.catIndexMap.Contains(newHash))
-    {
-        newCategoryId = world.catIndexMap[newHash];
-    }
-    else
+    
+    MemDb::TableSignature signature = world.db->GetTableSignature(mapping.category);
+    if (signature.IsSet(op.pid))
+        return;
+
+    signature.FlipBit(op.pid);
+
+    CategoryId newCategoryId = world.db->FindTable(signature);
+    if (newCategoryId == CategoryId::Invalid())
     {
         // Category with this hash does not exist. Create a new category.
         CategoryCreateInfo info;
-        auto const& cols = world.db->GetTable(cat.instanceTable).properties;
+        auto const& cols = world.db->GetTable(mapping.category).properties;
         info.properties.SetSize(cols.Size() + 1);
         IndexT i;
         for (i = 0; i < cols.Size(); ++i)
@@ -217,10 +222,6 @@ Execute(Op::RegisterProperty const& op)
         }
         info.properties[i] = op.pid;
 
-#ifdef NEBULA_DEBUG
-        info.name = cat.name + " + ";
-        info.name += MemDb::TypeRegistry::GetDescription(op.pid)->name.AsString();
-#endif
         newCategoryId = world.CreateCategory(info);
     }
 
@@ -229,9 +230,8 @@ Execute(Op::RegisterProperty const& op)
     if (op.value == nullptr)
         return; // default value should already be set
 
-    Category const& newCat = world.GetCategory(newCategoryId);
-    auto cid = world.db->GetColumnId(newCat.instanceTable, op.pid);
-    void* ptr = world.db->GetValuePointer(newCat.instanceTable, cid, newInstance.id);
+    auto cid = world.db->GetColumnId(newCategoryId, op.pid);
+    void* ptr = world.db->GetValuePointer(newCategoryId, cid, newInstance.id);
     Memory::Copy(op.value, ptr, MemDb::TypeRegistry::TypeSize(op.pid));
 }
 
@@ -249,18 +249,17 @@ Execute(Op::DeregisterProperty const& op)
     GameServer::State* const state = &GameServer::Singleton->state;
     EntityMapping mapping = GetEntityMapping(op.entity);
     World& world = GameServer::Singleton->state.world;
-    Category const& cat = world.GetCategory(mapping.category);
-    CategoryHash newHash = cat.hash;
-    newHash.RemoveFromHash(op.pid.id);
-    CategoryId newCategoryId;
-    if (world.catIndexMap.Contains(newHash))
-    {
-        newCategoryId = world.catIndexMap[newHash];
-    }
-    else
+    MemDb::TableSignature signature = world.db->GetTableSignature(mapping.category);
+    if (!signature.IsSet(op.pid))
+        return;
+
+    signature.FlipBit(op.pid);
+
+    CategoryId newCategoryId = world.db->FindTable(signature);
+    if (newCategoryId == CategoryId::Invalid())
     {
         CategoryCreateInfo info;
-        auto const& cols = world.db->GetTable(cat.instanceTable).properties;
+        auto const& cols = world.db->GetTable(mapping.category).properties;
         SizeT const num = cols.Size();
         info.properties.SetSize(num - 1);
         int col = 0;
@@ -271,12 +270,7 @@ Execute(Op::DeregisterProperty const& op)
 
             info.properties[col++] = cols[i];
         }
-
-#ifdef NEBULA_DEBUG
-        info.name = cat.name + " - ";
-        info.name += MemDb::TypeRegistry::GetDescription(op.pid)->name.AsString();
-#endif
-
+        
         newCategoryId = world.CreateCategory(info);
     }
 
@@ -386,7 +380,15 @@ Dataset
 Query(Util::Array<MemDb::TableId>& tids, Filter filter)
 {
     Ptr<MemDb::Database> db = Game::GetWorldDatabase();
+    return Query(db, tids, filter);
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+Dataset
+Query(Ptr<MemDb::Database> const& db, Util::Array<MemDb::TableId>& tids, Filter filter)
+{
     Dataset data;
     data.numViews = 0;
 
@@ -404,26 +406,29 @@ Query(Util::Array<MemDb::TableId>& tids, Filter filter)
     {
         if (db->IsValid(tids[tableIndex]))
         {
-            Dataset::CategoryTableView* view = data.views + data.numViews;
-            // FIXME
-            view->cid = CategoryId::Invalid();
-
-            MemDb::Table const& tbl = db->GetTable(tids[tableIndex]);
-
-            IndexT i = 0;
-            for (auto pid : properties)
+            SizeT const numRows = db->GetNumRows(tids[tableIndex]);
+            if (numRows > 0)
             {
-                MemDb::ColumnIndex colId = db->GetColumnId(tbl.tid, pid);
-                // Check if the property is a flag, and return a nullptr in that case.
-                if (colId != InvalidIndex)
-                    view->buffers[i] = db->GetBuffer(tbl.tid, colId);
-                else
-                    view->buffers[i] = nullptr;
-                i++;
-            }
+                Dataset::CategoryTableView* view = data.views + data.numViews;
+                view->cid = tids[tableIndex];
 
-            view->numInstances = db->GetNumRows(tbl.tid);
-            data.numViews++;
+                MemDb::Table const& tbl = db->GetTable(tids[tableIndex]);
+
+                IndexT i = 0;
+                for (auto pid : properties)
+                {
+                    MemDb::ColumnIndex colId = db->GetColumnId(tbl.tid, pid);
+                    // Check if the property is a flag, and return a nullptr in that case.
+                    if (colId != InvalidIndex)
+                        view->buffers[i] = db->GetBuffer(tbl.tid, colId);
+                    else
+                        view->buffers[i] = nullptr;
+                    i++;
+                }
+
+                view->numInstances = numRows;
+                data.numViews++;
+            }
         }
         else
         {
@@ -467,28 +472,6 @@ GetNumEntities()
     return GameServer::Singleton->state.world.numEntities;
 }
 
-
-//------------------------------------------------------------------------------
-/**
-*/
-bool
-CategoryExists(CategoryHash hash)
-{
-    n_assert(GameServer::HasInstance());
-    return GameServer::Singleton->state.world.catIndexMap.Contains(hash);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-CategoryId const
-GetCategoryId(CategoryHash hash)
-{
-    n_assert(GameServer::HasInstance());
-    n_assert(GameServer::Singleton->state.world.catIndexMap.Contains(hash));
-    return GameServer::Singleton->state.world.catIndexMap[hash];
-}
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -527,8 +510,7 @@ HasProperty(Game::Entity const entity, PropertyId const pid)
 {
     GameServer::State& state = GameServer::Singleton->state;
     EntityMapping mapping = GetEntityMapping(entity);
-    Category const& cat = GameServer::Singleton->state.world.GetCategory(mapping.category);
-    return GameServer::Singleton->state.world.db->HasProperty(cat.instanceTable, pid);
+    return GameServer::Singleton->state.world.db->HasProperty(mapping.category, pid);
 }
 
 //------------------------------------------------------------------------------
@@ -556,8 +538,7 @@ SizeT
 GetNumInstances(CategoryId category)
 {
     Ptr<MemDb::Database> db = GetWorldDatabase();
-    MemDb::TableId tid = GameServer::Singleton->state.world.GetCategory(category).instanceTable;
-    return db->GetNumRows(tid);
+    return db->GetNumRows(category);
 }
 
 //------------------------------------------------------------------------------
@@ -566,13 +547,12 @@ GetNumInstances(CategoryId category)
 void*
 GetInstanceBuffer(CategoryId const category, PropertyId const pid)
 {
-    Category const& cat = Game::GameServer::Singleton->state.world.GetCategory(category);
     Ptr<MemDb::Database> db = Game::GameServer::Singleton->state.world.db;
-    auto cid = db->GetColumnId(cat.instanceTable, pid);
+    auto cid = db->GetColumnId(category, pid);
 #if NEBULA_DEBUG
     n_assert_fmt(cid != MemDb::ColumnIndex::Invalid(), "GetInstanceBuffer: Category does not have property with id '%i'!\n", pid.id);
 #endif
-    return db->GetBuffer(cat.instanceTable, cid);
+    return db->GetBuffer(category, cid);
 }
 
 //------------------------------------------------------------------------------

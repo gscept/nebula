@@ -161,12 +161,12 @@ struct ProcessorCreateInfo
     /// filter used for creating the dataset
     Filter filter;
 
-    /// called when attached to game server
-    void(*OnActivate)() = nullptr;
-    /// called when removed from game server
-    void(*OnDeactivate)() = nullptr;
-    /// called by Game::Server::Start()
-    void(*OnStart)() = nullptr;
+    /// called when attached to world
+    //void(*OnActivate)() = nullptr;
+    ///// called when removed from world
+    //void(*OnDeactivate)() = nullptr;
+    ///// called by Game::Server::Start()
+    //void(*OnStart)() = nullptr;
 
     /// called before frame by the game server
     ProcessorFrameCallback OnBeginFrame = nullptr;
@@ -274,6 +274,9 @@ Dataset Query(Filter filter);
 
 /// Query a subset of tables using a specified filter set. Modifies the tables array so that it only contains valid tables. This does NOT wait for resources to be available.
 Dataset Query(Util::Array<MemDb::TableId>& tables, Filter filter);
+
+/// Query a subset of tables in a specific db using a specified filter set. Modifies the tables array so that it only contains valid tables. This does NOT wait for resources to be available.
+Dataset Query(Ptr<MemDb::Database> const& db, Util::Array<MemDb::TableId>& tables, Filter filter);
 
 /// Get instanceid of entity
 InstanceId GetInstanceId(Entity entity);

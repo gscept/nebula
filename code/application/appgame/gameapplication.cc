@@ -158,6 +158,7 @@ GameApplication::Close()
 
     // shutdown basic Nebula runtime
     this->CleanupGameFeatures();
+    this->gameServer->Stop();
     this->gameServer->Close();
     this->gameServer = nullptr;
 

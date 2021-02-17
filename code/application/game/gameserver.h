@@ -36,6 +36,8 @@
 namespace Game
 {
 
+typedef ProcessorCreateInfo ProcessorInfo;
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -90,6 +92,9 @@ public:
     /// create a processor
     ProcessorHandle CreateProcessor(ProcessorCreateInfo const& info);
 
+    /// get info about a processor
+    ProcessorInfo const& GetProcessorInfo(ProcessorHandle handle);
+
     /// set command line args
     void SetCmdLineArgs(const Util::CommandLineArgs& a);
     /// get command line args
@@ -118,32 +123,29 @@ protected:
     Util::Array<Ptr<FeatureUnit> > gameFeatures;
     friend class World;
     
-    struct CallbackInfo
-    {
-        ProcessorHandle handle;
-        Filter filter;
-        ProcessorFrameCallback func;
-        /// cached tables that we've filtered out.
-        Util::Array<MemDb::TableId> cache;
-    };
+    //struct CallbackInfo
+    //{
+    //    ProcessorHandle handle;
+    //    Filter filter;
+    //    ProcessorFrameCallback func;
+    //    /// cached tables that we've filtered out.
+    //    Util::Array<MemDb::TableId> cache;
+    //};
 
-    struct ProcessorInfo
-    {
-        Util::StringAtom name;
-        /// set if this processor should run as a job
-        bool async = false;
-        /// called when removed from game server
-        void(*OnDeactivate)() = nullptr;
-    };
+    //struct ProcessorInfo
+    //{
+    //    Util::StringAtom name;
+    //    /// set if this processor should run as a job
+    //    bool async = false;
+    //    /// called when removed from game server
+    //    void(*OnDeactivate)() = nullptr;
+    //};
 
-    /// add the table to any callback-caches that accepts it
-    void AddTableToCaches(MemDb::TableId tid, MemDb::TableSignature signature);
-
-    Util::Array<CallbackInfo> onBeginFrameCallbacks;
-    Util::Array<CallbackInfo> onFrameCallbacks;
-    Util::Array<CallbackInfo> onEndFrameCallbacks;
-    Util::Array<CallbackInfo> onLoadCallbacks;
-    Util::Array<CallbackInfo> onSaveCallbacks;
+    //Util::Array<CallbackInfo> onBeginFrameCallbacks;
+    //Util::Array<CallbackInfo> onFrameCallbacks;
+    //Util::Array<CallbackInfo> onEndFrameCallbacks;
+    //Util::Array<CallbackInfo> onLoadCallbacks;
+    //Util::Array<CallbackInfo> onSaveCallbacks;
     Util::Array<ProcessorInfo> processors;
     Ids::IdGenerationPool processorHandlePool;
 
@@ -151,6 +153,7 @@ protected:
     _declare_timer(GameServerOnBeginFrame);
     _declare_timer(GameServerOnFrame);
     _declare_timer(GameServerOnEndFrame);
+    _declare_timer(GameServerManageEntities);
     Util::Array<Ptr<Debug::DebugTimer>> onBeginFrameTimers;
     Util::Array<Ptr<Debug::DebugTimer>> onFrameTimers;
     Util::Array<Ptr<Debug::DebugTimer>> onEndFrameTimers;
@@ -175,8 +178,15 @@ GameServer::GetCmdLineArgs() const
     return this->args;
 }
 
-/// call this if you need to defragment the category instance table
-void DefragmentCategoryInstances(Category const& cat);
+//------------------------------------------------------------------------------
+/**
+*/
+inline ProcessorInfo const&
+GameServer::GetProcessorInfo(ProcessorHandle handle)
+{
+    n_assert(this->processorHandlePool.IsValid(handle));
+    return this->processors[Ids::Index(handle)];
+}
 
 }; // namespace Game
 //------------------------------------------------------------------------------

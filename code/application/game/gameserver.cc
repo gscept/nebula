@@ -26,6 +26,7 @@ GameServer::GameServer() :
     _setup_grouped_timer(GameServerOnBeginFrame, "Game Subsystem");
     _setup_grouped_timer(GameServerOnFrame, "Game Subsystem");
     _setup_grouped_timer(GameServerOnEndFrame, "Game Subsystem");
+    _setup_grouped_timer(GameServerManageEntities, "Game Subsystem");
     this->state.templateDatabase = MemDb::Database::Create();
     this->state.ownerId = MemDb::TypeRegistry::GetPropertyId("Owner"_atm);
     state.world.db = MemDb::Database::Create();
@@ -42,6 +43,7 @@ GameServer::~GameServer()
     _discard_timer(GameServerOnBeginFrame);
     _discard_timer(GameServerOnFrame);
     _discard_timer(GameServerOnEndFrame);
+    _discard_timer(GameServerManageEntities);
 
     this->state.templateDatabase = nullptr;
 
@@ -181,17 +183,11 @@ GameServer::OnBeginFrame()
         this->gameFeatures[i]->OnBeginFrame();
     }
 
-    num = this->onBeginFrameCallbacks.Size();
+    num = this->state.world.onBeginFrameCallbacks.Size();
     for (i = 0; i < num; i++)
     {
-#if NEBULA_ENABLE_PROFILING
-        this->onBeginFrameTimers[i]->Start();
-#endif
-        Dataset data = Game::Query(this->onBeginFrameCallbacks[i].cache, this->onBeginFrameCallbacks[i].filter);
-        this->onBeginFrameCallbacks[i].func(data);
-#if NEBULA_ENABLE_PROFILING
-        this->onBeginFrameTimers[i]->Stop();
-#endif
+        Dataset data = Game::Query(this->state.world.onBeginFrameCallbacks[i].cache, this->state.world.onBeginFrameCallbacks[i].filter);
+        this->state.world.onBeginFrameCallbacks[i].func(data);
     }
 
     Game::ReleaseDatasets();
@@ -221,17 +217,11 @@ GameServer::OnFrame()
         this->gameFeatures[i]->OnFrame();
     }
 
-    num = this->onFrameCallbacks.Size();
+    num = this->state.world.onFrameCallbacks.Size();
     for (i = 0; i < num; i++)
     {
-#if NEBULA_ENABLE_PROFILING
-        this->onFrameTimers[i]->Start();
-#endif
-        Dataset data = Game::Query(this->onBeginFrameCallbacks[i].cache, this->onFrameCallbacks[i].filter);
-        this->onFrameCallbacks[i].func(data);
-#if NEBULA_ENABLE_PROFILING
-        this->onFrameTimers[i]->Stop();
-#endif
+        Dataset data = Game::Query(this->state.world.onBeginFrameCallbacks[i].cache, this->state.world.onFrameCallbacks[i].filter);
+        this->state.world.onFrameCallbacks[i].func(data);
     }
 
     Game::ReleaseDatasets();
@@ -257,20 +247,16 @@ GameServer::OnEndFrame()
         this->gameFeatures[i]->OnEndFrame();
     }
 
-    num = this->onEndFrameCallbacks.Size();
+    num = this->state.world.onEndFrameCallbacks.Size();
     for (i = 0; i < num; i++)
     {
-#if NEBULA_ENABLE_PROFILING
-        this->onEndFrameTimers[i]->Start();
-#endif
-        Dataset data = Game::Query(this->onBeginFrameCallbacks[i].cache, this->onEndFrameCallbacks[i].filter);
-        this->onEndFrameCallbacks[i].func(data);
-#if NEBULA_ENABLE_PROFILING
-        this->onEndFrameTimers[i]->Stop();
-#endif
+        Dataset data = Game::Query(this->state.world.onBeginFrameCallbacks[i].cache, this->state.world.onEndFrameCallbacks[i].filter);
+        this->state.world.onEndFrameCallbacks[i].func(data);
     }
 
     Game::ReleaseDatasets();
+
+    _start_timer(GameServerManageEntities);
 
     n_assert(GameServer::HasInstance());
     GameServer::State* const state = &GameServer::Singleton->state;
@@ -279,25 +265,20 @@ GameServer::OnEndFrame()
     // NOTE: The order of the following loops are important!
 
     // Clean up any managed property instances.
-    for (IndexT c = 0; c < world.categoryArray.Size(); c++)
+    for (auto c = world.categoryDecayMap.Begin(); c != world.categoryDecayMap.End(); c++)
     {
-        MemDb::TableId tid = world.categoryArray[c].managedPropertyTable;
-        if (tid != MemDb::TableId::Invalid())
-            world.db->Clean(tid);
+        MemDb::TableId tid = *c.val;
+        world.db->Clean(tid);
     }
 
     // Clean up entities
-    // @todo    We can improve performance by working with one world at a time here, having one cmd queue per world.
     while (!world.deallocQueue.IsEmpty())
     {
         auto const cmd = world.deallocQueue.Dequeue();
-        EntityMapping mapping = world.entityMap[cmd.entity.index];
-        Category const& category = world.GetCategory(mapping.category);
-        world.DeallocateInstance(cmd.entity);
+        world.DeallocateInstance(cmd.category, cmd.instance);
     }
 
     // Allocate instances for new entities, reuse invalid instances if possible
-    // @todo    We can improve performance by working with one world at a time here, having one cmd queue per world.
     while (!world.allocQueue.IsEmpty())
     {
         auto const cmd = world.allocQueue.Dequeue();
@@ -318,12 +299,13 @@ GameServer::OnEndFrame()
 
     if (db.isvalid())
     {
-        for (IndexT c = 0; c < world.categoryArray.Size(); c++)
+        db->ForEachTable([](MemDb::TableId tid)
         {
-            Category& cat = world.categoryArray[c];
-            DefragmentCategoryInstances(cat);
-        }
+            GameServer::Singleton->state.world.DefragmentCategoryInstances(tid);
+        });
     }
+
+    _stop_timer(GameServerManageEntities);
 
     Game::ReleaseAllOps();
 
@@ -374,11 +356,11 @@ GameServer::NotifyGameLoad()
         this->gameFeatures[i]->OnLoad();
     }
 
-    num = this->onLoadCallbacks.Size();
+    num = this->state.world.onLoadCallbacks.Size();
     for (i = 0; i < num; i++)
     {
-        Dataset data = Game::Query(this->onBeginFrameCallbacks[i].cache, this->onLoadCallbacks[i].filter);
-        this->onLoadCallbacks[i].func(data);
+        Dataset data = Game::Query(this->state.world.onBeginFrameCallbacks[i].cache, this->state.world.onLoadCallbacks[i].filter);
+        this->state.world.onLoadCallbacks[i].func(data);
     }
 
     Game::ReleaseDatasets();
@@ -398,11 +380,11 @@ GameServer::NotifyGameSave()
         this->gameFeatures[i]->OnSave();
     }
 
-    num = this->onSaveCallbacks.Size();
+    num = this->state.world.onSaveCallbacks.Size();
     for (i = 0; i < num; i++)
     {
-        Dataset data = Game::Query(this->onBeginFrameCallbacks[i].cache, this->onSaveCallbacks[i].filter);
-        this->onSaveCallbacks[i].func(data);
+        Dataset data = Game::Query(this->state.world.onBeginFrameCallbacks[i].cache, this->state.world.onSaveCallbacks[i].filter);
+        this->state.world.onSaveCallbacks[i].func(data);
     }
 
     Game::ReleaseDatasets();
@@ -441,60 +423,16 @@ GameServer::GetGameFeatures() const
 ProcessorHandle
 GameServer::CreateProcessor(ProcessorCreateInfo const& info)
 {
-    ProcessorInfo processor;
-    processor.async = info.async;
-    processor.name = info.name;
-    processor.OnDeactivate = info.OnDeactivate;
-
+    ProcessorInfo processor = info;
+    
     ProcessorHandle handle;
-    this->processorHandlePool.Allocate(handle);
-
-    if (this->processors.Size() <= Ids::Index(handle))
+    if (!this->processorHandlePool.Allocate(handle))
         this->processors.Append(std::move(processor));
     else
         this->processors[Ids::Index(handle)] = std::move(processor);
 
-    // Setup frame callbacks
-    if (info.OnBeginFrame != nullptr)
-    {
-        this->onBeginFrameCallbacks.Append({ handle, info.filter, info.OnBeginFrame });
-#if NEBULA_ENABLE_PROFILING
-        Ptr<Debug::DebugTimer> timer = Debug::DebugTimer::Create();
-        timer->Setup(info.name, "Processors - OnBeginFrame");
-        this->onBeginFrameTimers.Append(timer);
-#endif
-    }
-
-    if (info.OnFrame != nullptr)
-    {
-        this->onFrameCallbacks.Append({ handle, info.filter, info.OnFrame });
-#if NEBULA_ENABLE_PROFILING
-        Ptr<Debug::DebugTimer> timer = Debug::DebugTimer::Create();
-        timer->Setup(info.name, "Processors - OnFrame");
-        this->onFrameTimers.Append(timer);
-#endif
-    }
-
-    if (info.OnEndFrame != nullptr)
-    {
-        this->onEndFrameCallbacks.Append({ handle, info.filter, info.OnEndFrame });
-#if NEBULA_ENABLE_PROFILING
-        Ptr<Debug::DebugTimer> timer = Debug::DebugTimer::Create();
-        timer->Setup(info.name, "Processors - OnEndFrame");
-        this->onEndFrameTimers.Append(timer);
-#endif
-    }
-
-    if (info.OnLoad != nullptr)
-        this->onLoadCallbacks.Append({ handle, info.filter, info.OnLoad });
-
-    if (info.OnSave != nullptr)
-        this->onSaveCallbacks.Append({ handle, info.filter, info.OnSave });
-    
-    if (info.OnActivate != nullptr)
-    {
-        info.OnActivate();
-    }
+    // TODO: we should handle the registering of the world processors manually
+    this->state.world.RegisterProcessor({ handle });
 
     return handle;
 }
@@ -520,67 +458,6 @@ GameServer::CleanupWorld()
 {
     Game::GameServer::Instance()->NotifyBeforeCleanup();
     this->state.world.db->Reset();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-GameServer::AddTableToCaches(MemDb::TableId tid, MemDb::TableSignature signature)
-{
-    // this is just to compress the code a bit
-    const Util::Array<CallbackInfo>* cbArrays[] = {
-        &this->onBeginFrameCallbacks,
-        &this->onFrameCallbacks,
-        &this->onEndFrameCallbacks,
-        &this->onLoadCallbacks,
-        &this->onSaveCallbacks,
-    };
-
-    for (auto arrPtr : cbArrays)
-    {
-        auto const& arr = *arrPtr;
-        for (auto& cbinfo : arr)
-        {
-            if (MemDb::TableSignature::CheckBits(signature, GetInclusiveTableMask(cbinfo.filter)) &&
-                !MemDb::TableSignature::HasAny(signature, GetExclusiveTableMask(cbinfo.filter)))
-                cbinfo.cache.Append(tid);
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-DefragmentCategoryInstances(Category const& cat)
-{
-    World& world = GameServer::Singleton->state.world;
-    Ptr<MemDb::Database> db = world.db;
-    MemDb::Table& table = db->GetTable(cat.instanceTable);
-    MemDb::ColumnIndex ownerColumnId = db->GetColumnId(cat.instanceTable, GameServer::Singleton->state.ownerId);
-
-    // defragment the table. Any instances that has been deleted will be swap'n'popped,
-    // which means we need to update the entity mapping.
-    // The move callback is signaled BEFORE the swap has happened.
-    auto* const map = &(world.entityMap);
-    SizeT numErased = db->Defragment(cat.instanceTable, [map, cat, &ownerColumnId, &table](InstanceId from, InstanceId to)
-    {
-        Game::Entity fromEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[from.id];
-        Game::Entity toEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[to.id];
-        if (!IsValid(fromEntity))
-        {
-            // we need to add this instances new index to the to the freeids list, since it's been deleted.
-            // the 'from' instance will be swapped with the 'to' instance, so we just add the 'to' id to the list;
-            // and it will automatically be defragged
-            table.freeIds.Append(to.id);
-        }
-        else
-        {
-            (*map)[fromEntity.index].instance = to;
-            (*map)[toEntity.index].instance = from;
-        }
-    });
 }
 
 } // namespace Game

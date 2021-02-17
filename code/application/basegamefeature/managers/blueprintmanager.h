@@ -28,6 +28,7 @@ namespace Game
 {
 
 class Property;
+class World;
 
 class BlueprintManager
 {
@@ -51,9 +52,9 @@ public:
 // private api
 public:
     /// create an instance from blueprint. Note that this does not tie it to an entity! It's not recommended to create entities this way. @see Game::EntityManager @see api.h
-    EntityMapping Instantiate(BlueprintId blueprint);
+    EntityMapping Instantiate(World* const world, BlueprintId blueprint);
     /// create an instance from template. Note that this does not tie it to an entity! It's not recommended to create entities this way. @see Game::EntityManager @see api.h
-    EntityMapping Instantiate(TemplateId templateId);
+    EntityMapping Instantiate(World* const world, TemplateId templateId);
 
 private:
     /// constructor
@@ -73,7 +74,7 @@ private:
     /// setup blueprint database
     void SetupBlueprints();
     /// create a category in the world db
-    CategoryId CreateCategory(BlueprintId bid);
+    CategoryId CreateCategory(World* const world, BlueprintId bid);
 
     struct PropertyEntry
     {

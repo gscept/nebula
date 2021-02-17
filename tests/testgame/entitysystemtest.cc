@@ -5,12 +5,12 @@
 #include "stdneb.h"
 #include "entitysystemtest.h"
 #include "timing/timer.h"
-#include "basegamefeature/managers/entitymanager.h"
 #include "basegamefeature/managers/blueprintmanager.h"
 #include "basegamefeature/basegamefeatureunit.h"
 #include "testproperties.h"
 #include "framesync/framesynctimer.h"
 #include "profiling/profiling.h"
+#include "game/gameserver.h"
 
 using namespace Game;
 using namespace Math;
@@ -31,9 +31,9 @@ void StepFrame()
 #if NEBULA_ENABLE_PROFILING
     Profiling::ProfilingNewFrame();
 #endif
-    BaseGameFeature::BaseGameFeatureUnit::Instance()->OnBeginFrame();
-    BaseGameFeature::BaseGameFeatureUnit::Instance()->OnFrame();
-    BaseGameFeature::BaseGameFeatureUnit::Instance()->OnEndFrame();
+    Game::GameServer::Instance()->OnBeginFrame();
+    Game::GameServer::Instance()->OnFrame();
+    Game::GameServer::Instance()->OnEndFrame();
 }
 
 struct ManagedTestProperty
@@ -214,9 +214,7 @@ EntitySystemTest::Run()
         };
 
         {
-            Category const& cat = EntityManager::Instance()->GetCategory(Game::GetEntityMapping(enemies[0]).category);
-            VERIFY(!Game::GetWorldDatabase()->IsValid(cat.managedPropertyTable));
-            VERIFY(Game::GetWorldDatabase()->GetNumRows(cat.instanceTable) == 5);
+            VERIFY(Game::GetWorldDatabase()->GetNumRows(Game::GetEntityMapping(enemies[0]).category) == 5);
         }
 
         Game::Op::RegisterProperty regOp;
@@ -231,9 +229,8 @@ EntitySystemTest::Run()
         Game::Execute(regOp);
 
         {
-            Category const& cat = EntityManager::Instance()->GetCategory(Game::GetEntityMapping(enemies[0]).category);
-            VERIFY(Game::GetWorldDatabase()->IsValid(cat.managedPropertyTable));
-            VERIFY(Game::GetWorldDatabase()->GetNumRows(cat.instanceTable) == 3);
+            VERIFY(Game::GameServer::Instance()->state.world.categoryDecayMap.Contains(Game::GetEntityMapping(enemies[0]).category));
+            VERIFY(Game::GetWorldDatabase()->GetNumRows(Game::GetEntityMapping(enemies[0]).category) == 3);
         }
 
         StepFrame();
@@ -244,17 +241,18 @@ EntitySystemTest::Run()
         StepFrame();
 
         {
-            Category const& cat = EntityManager::Instance()->GetCategory(Game::GetEntityMapping(enemies[0]).category);
-            VERIFY(Game::GetWorldDatabase()->GetNumRows(cat.managedPropertyTable) == 1);
-            VERIFY(Game::GetWorldDatabase()->GetNumRows(cat.instanceTable) == 2);
+            
+            CategoryId cid = Game::GetEntityMapping(enemies[0]).category;
+            VERIFY(Game::GetWorldDatabase()->GetNumRows(Game::GameServer::Instance()->state.world.categoryDecayMap[cid]) == 1);
+            VERIFY(Game::GetWorldDatabase()->GetNumRows(cid) == 2);
         }
 
         StepFrame();
 
         {
-            Category const& cat = EntityManager::Instance()->GetCategory(Game::GetEntityMapping(enemies[0]).category);
-            VERIFY(Game::GetWorldDatabase()->GetNumRows(cat.managedPropertyTable) == 0);
-            VERIFY(Game::GetWorldDatabase()->GetNumRows(cat.instanceTable) == 2);
+            CategoryId cid = Game::GetEntityMapping(enemies[0]).category;
+            VERIFY(Game::GetWorldDatabase()->GetNumRows(Game::GameServer::Instance()->state.world.categoryDecayMap[cid]) == 0);
+            VERIFY(Game::GetWorldDatabase()->GetNumRows(cid) == 2);
         }
     }
 

@@ -301,27 +301,23 @@ BlueprintManager::GetTemplateId(Util::StringAtom name)
 /**
 */
 EntityMapping
-BlueprintManager::Instantiate(BlueprintId blueprint)
+BlueprintManager::Instantiate(World* const world, BlueprintId blueprint)
 {
     GameServer::State& gsState = GameServer::Instance()->state;
-    Ptr<MemDb::Database> const& db = gsState.world.db;
     Ptr<MemDb::Database> const& tdb = gsState.templateDatabase;
-    World& world = gsState.world;
-    IndexT categoryIndex = world.blueprintCatMap.FindIndex(blueprint);
+    IndexT const categoryIndex = world->blueprintCatMap.FindIndex(blueprint);
 
     if (categoryIndex != InvalidIndex)
     {
-        CategoryId cid = world.blueprintCatMap.ValueAtIndex(blueprint, categoryIndex);
-        Category& cat = world.categoryArray[cid.id];
-        InstanceId instance = world.db->AllocateRow(cat.instanceTable);
+        CategoryId const cid = world->blueprintCatMap.ValueAtIndex(blueprint, categoryIndex);
+        InstanceId const instance = world->db->AllocateRow(cid);
         return { cid, instance };
     }
     else
     {
         // Create the category, and then create the instance
-        CategoryId cid = this->CreateCategory(blueprint);
-        Category& cat = world.categoryArray[cid.id];
-        InstanceId instance = world.db->AllocateRow(cat.instanceTable);
+        CategoryId const cid = this->CreateCategory(world, blueprint);
+        InstanceId const instance = world->db->AllocateRow(cid);
         return { cid, instance };
     }
 }
@@ -330,27 +326,23 @@ BlueprintManager::Instantiate(BlueprintId blueprint)
 /**
 */
 EntityMapping
-BlueprintManager::Instantiate(TemplateId templateId)
+BlueprintManager::Instantiate(World* const world, TemplateId templateId)
 {
     GameServer::State& gsState = GameServer::Instance()->state;
-    Ptr<MemDb::Database> const& db = gsState.world.db;
     Ptr<MemDb::Database> const& tdb = gsState.templateDatabase;
-    World& world = gsState.world;
-    IndexT categoryIndex = world.blueprintCatMap.FindIndex(templateId.blueprintId);
+    IndexT const categoryIndex = world->blueprintCatMap.FindIndex(templateId.blueprintId);
     
     if (categoryIndex != InvalidIndex)
     {
-        CategoryId cid = world.blueprintCatMap.ValueAtIndex(templateId.blueprintId, categoryIndex);
-        Category& cat = world.categoryArray[cid.id];
-        InstanceId instance = tdb->DuplicateInstance(Singleton->blueprints[templateId.blueprintId].tableId, templateId.templateId, db, cat.instanceTable);
+        CategoryId const cid = world->blueprintCatMap.ValueAtIndex(templateId.blueprintId, categoryIndex);
+        InstanceId const instance = tdb->DuplicateInstance(Singleton->blueprints[templateId.blueprintId].tableId, templateId.templateId, world->db, cid);
         return { cid, instance };
     }
     else
     {
         // Create the category, and then create the instance
-        CategoryId cid = this->CreateCategory(templateId.blueprintId);
-        Category& cat = world.categoryArray[cid.id];
-        InstanceId instance = tdb->DuplicateInstance(Singleton->blueprints[templateId.blueprintId].tableId, templateId.templateId, db, cat.instanceTable);
+        CategoryId const cid = this->CreateCategory(world, templateId.blueprintId);
+        InstanceId const instance = tdb->DuplicateInstance(Singleton->blueprints[templateId.blueprintId].tableId, templateId.templateId, world->db, cid);
         return { cid, instance };
     }
 }
@@ -430,9 +422,8 @@ BlueprintManager::SetupBlueprints()
     @todo   this can be optimized
 */
 CategoryId
-BlueprintManager::CreateCategory(BlueprintId bid)
+BlueprintManager::CreateCategory(World* const world, BlueprintId bid)
 {
-    World& world = GameServer::Singleton->state.world;
     CategoryCreateInfo info;
     info.name = blueprints[bid.id].name.Value();
     
@@ -444,7 +435,7 @@ BlueprintManager::CreateCategory(BlueprintId bid)
         info.properties[i] = p;
     }
      
-    return world.CreateCategory(info);
+    return world->CreateCategory(info);
 }
 
 
