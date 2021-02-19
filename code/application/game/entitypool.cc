@@ -169,7 +169,8 @@ InstanceId
 World::AllocateInstance(Entity entity, CategoryId category)
 {
     n_assert(this->pool.IsValid(entity));
-    
+    n_assert(this->entityMap[entity.index].instance == Game::InstanceId::Invalid());
+
     if (entity.index < this->entityMap.Size() && this->entityMap[entity.index].instance != Game::InstanceId::Invalid())
     {
         n_warning("Entity already registered!\n");
@@ -197,6 +198,7 @@ InstanceId
 World::AllocateInstance(Entity entity, BlueprintId blueprint)
 {
     n_assert(this->pool.IsValid(entity));
+    n_assert(this->entityMap[entity.index].instance == Game::InstanceId::Invalid());
 
     if (entity.index < this->entityMap.Size() && this->entityMap[entity.index].instance != Game::InstanceId::Invalid())
     {
@@ -224,6 +226,7 @@ InstanceId
 World::AllocateInstance(Entity entity, TemplateId templateId)
 {
     n_assert(this->pool.IsValid(entity));
+    n_assert(this->entityMap[entity.index].instance == Game::InstanceId::Invalid());
 
     if (entity.index < this->entityMap.Size() && this->entityMap[entity.index].instance != Game::InstanceId::Invalid())
     {
