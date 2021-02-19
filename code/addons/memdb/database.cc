@@ -4,6 +4,9 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "database.h"
+#include "io/binaryreader.h"
+#include "io/binarywriter.h"
+#include "io/memorystream.h"
 
 namespace MemDb
 {
@@ -873,6 +876,68 @@ Database::Copy(Ptr<MemDb::Database> const& dst) const
 
             Memory::Copy(srcBuffer, dstBuffer, (size_t)byteSize * (size_t)srcTable.numRows);
         }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Blob
+Database::SerializeInstance(TableId table, IndexT row)
+{
+    Util::Blob blob;
+    Table const& tbl = this->GetTable(table);
+    
+    // initial size adds room for n amount of pids
+    uint32_t instanceSize = tbl.columns.Size() * sizeof(PropertyId);
+    for (uint32_t i = 0; i < tbl.columns.Size(); i++)
+    {
+        PropertyId const pid = tbl.columns.Get<0>(i);
+        SizeT const typeSize = TypeRegistry::TypeSize(pid);
+        instanceSize += typeSize;
+    }
+    blob.Reserve(instanceSize);
+
+    uint32_t offset = 0;
+    for (uint32_t i = 0; i < tbl.columns.Size(); i++)
+    {
+        PropertyId const pid = tbl.columns.Get<0>(i);
+        blob.SetChunk(&pid, sizeof(PropertyId), offset);
+        offset += sizeof(PropertyId);
+        SizeT const typeSize = TypeRegistry::TypeSize(pid);
+        byte const* const valuePtr = (byte*)tbl.columns.Get<1>(i) + (row * (size_t)typeSize);
+        blob.SetChunk(valuePtr, typeSize, offset);
+        offset += typeSize;
+    }
+
+    return blob;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Database::DeserializeInstance(Util::Blob const& data, TableId table, IndexT row)
+{
+    n_assert(this->IsValid(table));
+    Table& tbl = this->GetTable(table);
+    n_assert(tbl.numRows > row && row != InvalidIndex);
+    
+    uint32_t bytesRead = 0;
+    byte const* ptr = (byte*)data.GetPtr();
+    uint32_t const numBytes = data.Size();
+    while (bytesRead < numBytes)
+    {
+        PropertyId const pid = *reinterpret_cast<PropertyId const*>(ptr);
+        ptr += sizeof(PropertyId);
+        SizeT const typeSize = TypeRegistry::TypeSize(pid);
+        IndexT const bucket = tbl.columnRegistry.FindIndex(pid);
+        if (bucket != InvalidIndex)
+        {
+            byte* valuePtr = (byte*)tbl.columns.Get<1>(tbl.columnRegistry.ValueAtIndex(pid, bucket));
+            Memory::Copy(ptr, valuePtr, typeSize);
+        }
+        ptr += typeSize;
     }
 }
 

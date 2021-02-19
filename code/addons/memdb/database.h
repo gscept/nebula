@@ -18,6 +18,7 @@
 #include "typeregistry.h"
 #include "dataset.h"
 #include "filterset.h"
+#include "util/blob.h"
 
 namespace MemDb
 {
@@ -102,6 +103,11 @@ public:
 
     /// copy the database into dst
     void Copy(Ptr<MemDb::Database> const& dst) const;
+
+    /// serialize an instance into a blob.
+    Util::Blob SerializeInstance(TableId table, IndexT row);
+    /// deserialize a blob into an instance 
+    void DeserializeInstance(Util::Blob const& data, TableId table, IndexT row);
 
     // @note    Keep this a fixed size array, because we want to be able to keep persistent references to the tables, and their buffers within
     static constexpr uint32_t MAX_NUM_TABLES = 512;
