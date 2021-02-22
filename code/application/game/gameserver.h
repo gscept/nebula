@@ -101,15 +101,25 @@ public:
     const Util::CommandLineArgs& GetCmdLineArgs() const;
 
     /// setup an empty game world
-    virtual void SetupEmptyWorld();
+    virtual void SetupEmptyWorld(World*);
     /// cleanup the game world
-    virtual void CleanupWorld();
+    virtual void CleanupWorld(World*);
+    
+    /// create a world. The game server handles all worlds
+    World* CreateWorld(WorldCreateInfo const& info);
+    /// get a world by hash
+    World* GetWorld(uint32_t worldHash);
+    /// destroy a world
+    void DestroyWorld(uint32_t worldHash);
 
     /// contains internal state and world management
     struct State
     {
-        /// world entity management
-        World world;
+        World* worlds[32];
+        uint numWorlds = 0;
+
+        Util::HashTable<uint32_t, uint32_t, 32, 1> worldTable;
+
         /// Contains all templates
         Ptr<MemDb::Database> templateDatabase;
         /// quick access to the Owner property id

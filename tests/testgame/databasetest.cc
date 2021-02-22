@@ -51,49 +51,49 @@ DatabaseTest::Run()
         {
             TableCreateInfo info;
             info.name = "Table0";
-            PropertyId pids[] = {
+            PropertyId const pids[] = {
                     TestIntId,
                     TestFloatId,
                     TestStructId
             };
             info.properties = pids;
-            info.numProperties = 3;
+            info.numProperties = sizeof(pids) / sizeof(PropertyId);
             table0 = db->CreateTable(info);
         }
 
         {
             TableCreateInfo info;
             info.name = "Table1";
-            PropertyId pids[] = {
+            PropertyId const pids[] = {
                 TestIntId,
                 TestFloatId
             };
             info.properties = pids;
-            info.numProperties = 2;
+            info.numProperties = sizeof(pids) / sizeof(PropertyId);
             table1 = db->CreateTable(info);
         };
 
         {
             TableCreateInfo info;
             info.name = "Table2";
-            PropertyId pids[] = {
+            PropertyId const pids[] = {
                 TestStructId,
                 TestIntId,
                 TestNonTypedProperty
             };
             info.properties = pids;
-            info.numProperties = 3;
+            info.numProperties = sizeof(pids) / sizeof(PropertyId);
             table2 = db->CreateTable(info);
         };
 
         {
             TableCreateInfo info;
             info.name = "Table3";
-            PropertyId pids[] = {
+            PropertyId const pids[] = {
                 TestNonTypedProperty
             };
             info.properties = pids;
-            info.numProperties = 1;
+            info.numProperties = sizeof(pids) / sizeof(PropertyId);
             table3 = db->CreateTable(info);
         };
 

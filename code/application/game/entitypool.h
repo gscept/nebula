@@ -11,6 +11,7 @@
 #include "category.h"
 #include "util/queue.h"
 #include "memdb/database.h"
+#include "memdb/table.h"
 
 namespace Game
 {
@@ -25,7 +26,7 @@ public:
     // default constructor
     EntityPool();
 
-    /// allocate a new id, returns whether or not the id was reused or new
+    /// allocate a new id, returns false if the entity id was reused
     bool Allocate(Entity& e);
     /// remove an id
     void Deallocate(Entity e);
@@ -47,15 +48,15 @@ public:
     World();
     ~World();
 
-struct AllocateInstanceCommand
+    struct AllocateInstanceCommand
     {
         Game::Entity entity;
         TemplateId tid;
     };
     struct DeallocInstanceCommand
     {
-        CategoryId category;
-        InstanceId instance;
+        MemDb::TableId table;
+        MemDb::Row row;
     };
 
     /// used to allocate entity ids for this world
@@ -69,50 +70,16 @@ struct AllocateInstanceCommand
     /// name of the world
     Util::StringAtom name;
     /// when an entity in a category within this table is destroyed, it is moved to the decay table.
-    Util::HashTable<CategoryId, MemDb::TableId> categoryDecayMap;
+    Util::HashTable<MemDb::TableId, MemDb::TableId> categoryDecayMap;
     /// maps from blueprint to a category that has the same signature
-    Util::HashTable<BlueprintId, CategoryId> blueprintCatMap;
+    Util::HashTable<BlueprintId, MemDb::TableId> blueprintCatMap;
     ///
     Util::Queue<AllocateInstanceCommand> allocQueue;
     ///
     Util::Queue<DeallocInstanceCommand> deallocQueue;
 
-    /// creates a category
-    CategoryId CreateCategory(CategoryCreateInfo const& info);
-
-    /// returns the number of existing categories
-    SizeT const GetNumCategories() const;
-
-    /// allocate instance for entity in category instance table
-    InstanceId AllocateInstance(Entity entity, CategoryId category);
-
-    /// allocate instance for entity in blueprints category instance table
-    InstanceId AllocateInstance(Entity entity, BlueprintId blueprint);
-
-    /// allocate instance for entity in blueprint instance table by copying template
-    InstanceId AllocateInstance(Entity entity, TemplateId templateId);
-
-    /// deallocated and recycle instance in category instance table
-    void DeallocateInstance(Entity entity);
-    /// deallocated and recycle instance in category instance table
-    void DeallocateInstance(CategoryId category, InstanceId instance);
-
-    /// migrate an instance from one category to another
-    InstanceId Migrate(Entity entity, CategoryId newCategory);
-    /// migrate an n instances from one category to another
-    void Migrate(Util::Array<Entity> const& entities, CategoryId fromCategory, CategoryId newCategory, Util::FixedArray<IndexT>& newInstances);
-
-    /// register a processor that processes entities in this world
-    void RegisterProcessor(std::initializer_list<ProcessorHandle> handles);
-
     /// add the table to any callback-caches that accepts it
     void CacheTable(MemDb::TableId tid, MemDb::TableSignature signature);
-
-    /// reset and pre filter the callbacks
-    void Prefilter();
-
-    /// call this if you need to defragment the category instance table
-    void DefragmentCategoryInstances(CategoryId cat);
 
     struct CallbackInfo
     {

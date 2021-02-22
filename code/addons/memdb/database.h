@@ -49,7 +49,7 @@ public:
     /// retrieve the number of tables
     SizeT GetNumTables() const;
     /// run a callback for each table in the db
-    void ForEachTable(void(*callback)(TableId));
+    void ForEachTable(std::function<void(TableId)> const& callback);
 
     /// check if table has a certain column
     bool HasProperty(TableId table, PropertyId col);

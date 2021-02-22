@@ -923,9 +923,9 @@ Database::DeserializeInstance(Util::Blob const& data, TableId table, IndexT row)
     Table& tbl = this->GetTable(table);
     n_assert(tbl.numRows > row && row != InvalidIndex);
     
-    uint32_t bytesRead = 0;
+    size_t bytesRead = 0;
     byte const* ptr = (byte*)data.GetPtr();
-    uint32_t const numBytes = data.Size();
+    size_t const numBytes = data.Size();
     while (bytesRead < numBytes)
     {
         PropertyId const pid = *reinterpret_cast<PropertyId const*>(ptr);
@@ -945,7 +945,7 @@ Database::DeserializeInstance(Util::Blob const& data, TableId table, IndexT row)
 /**
 */
 void
-Database::ForEachTable(void(*callback)(TableId))
+Database::ForEachTable(std::function<void(TableId)> const& callback)
 {
     for (IndexT tableIndex = 0; tableIndex < this->numTables; tableIndex++)
     {

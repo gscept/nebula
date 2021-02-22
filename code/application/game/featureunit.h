@@ -46,18 +46,18 @@ public:
     bool IsActive() const;
 
     /// called from within GameServer::Load()
-    virtual void OnLoad();
+    virtual void OnLoad(World* world);
     /// called from within GameServer::OnStart() after OnLoad
-    virtual void OnStart();
+    virtual void OnStart(World* world);
     /// called from within GameServer::Save()
-    virtual void OnSave();
+    virtual void OnSave(World* world);
 
     /// called from within GameServer::NotifyBeforeLoad()
-    virtual void OnBeforeLoad();
+    virtual void OnBeforeLoad(World* world);
     /// called from within GameServer::NotifyBeforeCleanup()
-    virtual void OnBeforeCleanup();
+    virtual void OnBeforeCleanup(World* world);
     /// called from withing GameServer::Stop()
-    virtual void OnStop();
+    virtual void OnStop(World* world);
 
 
     /// called on begin of frame

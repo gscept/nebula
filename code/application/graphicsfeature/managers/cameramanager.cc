@@ -111,7 +111,7 @@ CameraManager::InitUpdateCameraProcessor()
         processorInfo.async = false;
         processorInfo.filter = filter;
         processorInfo.name = "CameraManager.UpdateCameraWorldTransformed"_atm;
-        processorInfo.OnBeginFrame = [](Game::Dataset data)
+        processorInfo.OnBeginFrame = [](Game::World*, Game::Dataset data)
         {
             for (int v = 0; v < data.numViews; v++)
             {
@@ -152,7 +152,7 @@ CameraManager::InitUpdateCameraProcessor()
         processorInfo.async = false;
         processorInfo.filter = filter;
         processorInfo.name = "CameraManager.UpdateCamera"_atm;
-        processorInfo.OnBeginFrame = [](Game::Dataset data)
+        processorInfo.OnBeginFrame = [](Game::World*, Game::Dataset data)
         {
             for (int v = 0; v < data.numViews; v++)
             {

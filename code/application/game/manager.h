@@ -20,6 +20,8 @@
 namespace Game
 {
 
+class World;
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -41,13 +43,13 @@ struct ManagerAPI
     /// called after frame by the game server
     void(*OnEndFrame)() = nullptr;
     /// called after loading game state
-    void(*OnLoad)() = nullptr;
+    void(*OnLoad)(World*) = nullptr;
     /// called before saving game state
-    void(*OnSave)() = nullptr;
+    void(*OnSave)(World*) = nullptr;
     /// called before unloading game state
-    void(*OnCleanup)() = nullptr;
+    void(*OnCleanup)(World*) = nullptr;
     /// called by Game::Server::Start()
-    void(*OnStart)() = nullptr;
+    void(*OnStart)(World*) = nullptr;
     /// render a debug visualization 
     void(*OnRenderDebug)() = nullptr;
 };

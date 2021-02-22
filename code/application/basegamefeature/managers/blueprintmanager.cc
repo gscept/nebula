@@ -309,15 +309,15 @@ BlueprintManager::Instantiate(World* const world, BlueprintId blueprint)
 
     if (categoryIndex != InvalidIndex)
     {
-        CategoryId const cid = world->blueprintCatMap.ValueAtIndex(blueprint, categoryIndex);
-        InstanceId const instance = world->db->AllocateRow(cid);
+        MemDb::TableId const cid = world->blueprintCatMap.ValueAtIndex(blueprint, categoryIndex);
+        MemDb::Row const instance = world->db->AllocateRow(cid);
         return { cid, instance };
     }
     else
     {
         // Create the category, and then create the instance
-        CategoryId const cid = this->CreateCategory(world, blueprint);
-        InstanceId const instance = world->db->AllocateRow(cid);
+        MemDb::TableId const cid = this->CreateCategory(world, blueprint);
+        MemDb::Row const instance = world->db->AllocateRow(cid);
         return { cid, instance };
     }
 }
@@ -334,15 +334,15 @@ BlueprintManager::Instantiate(World* const world, TemplateId templateId)
     
     if (categoryIndex != InvalidIndex)
     {
-        CategoryId const cid = world->blueprintCatMap.ValueAtIndex(templateId.blueprintId, categoryIndex);
-        InstanceId const instance = tdb->DuplicateInstance(Singleton->blueprints[templateId.blueprintId].tableId, templateId.templateId, world->db, cid);
+        MemDb::TableId const cid = world->blueprintCatMap.ValueAtIndex(templateId.blueprintId, categoryIndex);
+        MemDb::Row const instance = tdb->DuplicateInstance(Singleton->blueprints[templateId.blueprintId].tableId, templateId.templateId, world->db, cid);
         return { cid, instance };
     }
     else
     {
         // Create the category, and then create the instance
-        CategoryId const cid = this->CreateCategory(world, templateId.blueprintId);
-        InstanceId const instance = tdb->DuplicateInstance(Singleton->blueprints[templateId.blueprintId].tableId, templateId.templateId, world->db, cid);
+        MemDb::TableId const cid = this->CreateCategory(world, templateId.blueprintId);
+        MemDb::Row const instance = tdb->DuplicateInstance(Singleton->blueprints[templateId.blueprintId].tableId, templateId.templateId, world->db, cid);
         return { cid, instance };
     }
 }
@@ -421,7 +421,7 @@ BlueprintManager::SetupBlueprints()
 /**
     @todo   this can be optimized
 */
-CategoryId
+MemDb::TableId
 BlueprintManager::CreateCategory(World* const world, BlueprintId bid)
 {
     CategoryCreateInfo info;
@@ -435,7 +435,7 @@ BlueprintManager::CreateCategory(World* const world, BlueprintId bid)
         info.properties[i] = p;
     }
      
-    return world->CreateCategory(info);
+    return CreateEntityTable(world, info);
 }
 
 

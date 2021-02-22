@@ -59,15 +59,17 @@ EntitySystemTest::Run()
     BlueprintId const playerBlueprint = Game::GetBlueprintId("Player"_atm);
     BlueprintId const enemyBlueprint = Game::GetBlueprintId("Enemy"_atm);
 
+    World* world = Game::GetWorld(WORLD_DEFAULT);
+
     for (int i = 0; i < 500; i++)
     {
-        Entity player = Game::CreateEntity({ playerBlueprint });
+        Entity player = Game::CreateEntity(world, { playerBlueprint });
     }
 
     Util::Array<Entity> enemies;
     for (int i = 0; i < 500; i++)
     {
-        Entity enemy = Game::CreateEntity({ enemyBlueprint });
+        Entity enemy = Game::CreateEntity(world, { enemyBlueprint });
         enemies.Append(enemy);
     }
 
@@ -75,7 +77,7 @@ EntitySystemTest::Run()
 
     for (int i = 0; i < 200; i++)
     {
-        Game::DeleteEntity(enemies[i]);
+        Game::DeleteEntity(world, enemies[i]);
     }
 
     int i;
@@ -85,15 +87,15 @@ EntitySystemTest::Run()
         
         if (i % 5 == 1)
         {
-            Game::DeleteEntity(enemies[i + 200]);
+            Game::DeleteEntity(world, enemies[i + 200]);
         }
     }
 
     // Delete all entities
     for (auto e : enemies)
     {
-        if (Game::IsValid(e))
-            Game::DeleteEntity(e);
+        if (Game::IsValid(world, e))
+            Game::DeleteEntity(world, e);
     }
 
     // Run a frame
@@ -102,7 +104,7 @@ EntitySystemTest::Run()
     Util::Queue<Game::Entity> queue;
     for (int i = 0; i < 10; i++)
     {
-        Entity enemy = Game::CreateEntity({ enemyBlueprint });
+        Entity enemy = Game::CreateEntity(world, { enemyBlueprint });
         queue.Enqueue(enemy);
     }
 
@@ -113,7 +115,7 @@ EntitySystemTest::Run()
     for (int i = 0; i < 5; i++)
     {
         auto e = queue.Dequeue();
-        Game::DeleteEntity(e);
+        Game::DeleteEntity(world, e);
     }
 
     // run a frame
@@ -123,7 +125,7 @@ EntitySystemTest::Run()
     while(!queue.IsEmpty())
     {
         auto e = queue.Dequeue();
-        Game::DeleteEntity(e);
+        Game::DeleteEntity(world, e);
     }
 
     // run a frame
@@ -132,7 +134,7 @@ EntitySystemTest::Run()
     Util::Stack<Game::Entity> stack;
     for (int i = 0; i < 10; i++)
     {
-        Entity enemy = Game::CreateEntity({ enemyBlueprint });
+        Entity enemy = Game::CreateEntity(world, { enemyBlueprint });
         stack.Push(enemy);
     }
 
@@ -143,7 +145,7 @@ EntitySystemTest::Run()
     for (int i = 0; i < 5; i++)
     {
         auto e = stack.Pop();
-        Game::DeleteEntity(e);
+        Game::DeleteEntity(world, e);
     }
 
     // run a frame
@@ -153,7 +155,7 @@ EntitySystemTest::Run()
     while (!stack.IsEmpty())
     {
         auto e = stack.Pop();
-        Game::DeleteEntity(e);
+        Game::DeleteEntity(world, e);
     }
 
     // run a frame
@@ -161,31 +163,31 @@ EntitySystemTest::Run()
 
     Game::Entity entities[10] =
     {
-        Game::CreateEntity({ playerBlueprint }),
-        Game::CreateEntity({ playerBlueprint }),
-        Game::CreateEntity({ playerBlueprint }),
-        Game::CreateEntity({ playerBlueprint }),
-        Game::CreateEntity({ playerBlueprint }),
-        Game::CreateEntity({ playerBlueprint }),
-        Game::CreateEntity({ playerBlueprint }),
-        Game::CreateEntity({ playerBlueprint }),
-        Game::CreateEntity({ playerBlueprint }),
-        Game::CreateEntity({ playerBlueprint })
+        Game::CreateEntity(world, { playerBlueprint }),
+        Game::CreateEntity(world, { playerBlueprint }),
+        Game::CreateEntity(world, { playerBlueprint }),
+        Game::CreateEntity(world, { playerBlueprint }),
+        Game::CreateEntity(world, { playerBlueprint }),
+        Game::CreateEntity(world, { playerBlueprint }),
+        Game::CreateEntity(world, { playerBlueprint }),
+        Game::CreateEntity(world, { playerBlueprint }),
+        Game::CreateEntity(world, { playerBlueprint }),
+        Game::CreateEntity(world, { playerBlueprint })
     };
 
     // run a frame
     StepFrame();
 
     // Delete the last entity only
-    Game::DeleteEntity(entities[9]);
+    Game::DeleteEntity(world, entities[9]);
     
     // run a frame
     StepFrame();
 
     // Delete the last entity, and also another entity. This will cause
     // the entity to swap place with an invalid instance, which SHOULD be OK
-    Game::DeleteEntity(entities[8]);
-    Game::DeleteEntity(entities[4]);
+    Game::DeleteEntity(world, entities[8]);
+    Game::DeleteEntity(world, entities[4]);
 
     // run a frame
     StepFrame();
@@ -206,53 +208,53 @@ EntitySystemTest::Run()
         }
 
         Game::Entity enemies[] = {
-            Game::CreateEntity({ enemyBlueprint, TemplateId::Invalid(), true }),
-            Game::CreateEntity({ enemyBlueprint, TemplateId::Invalid(), true }),
-            Game::CreateEntity({ enemyBlueprint, TemplateId::Invalid(), true }),
-            Game::CreateEntity({ enemyBlueprint, TemplateId::Invalid(), true }),
-            Game::CreateEntity({ enemyBlueprint, TemplateId::Invalid(), true })
+            Game::CreateEntity(world, { enemyBlueprint, TemplateId::Invalid(), true }),
+            Game::CreateEntity(world, { enemyBlueprint, TemplateId::Invalid(), true }),
+            Game::CreateEntity(world, { enemyBlueprint, TemplateId::Invalid(), true }),
+            Game::CreateEntity(world, { enemyBlueprint, TemplateId::Invalid(), true }),
+            Game::CreateEntity(world, { enemyBlueprint, TemplateId::Invalid(), true })
         };
 
         {
-            VERIFY(Game::GetWorldDatabase()->GetNumRows(Game::GetEntityMapping(enemies[0]).category) == 5);
+            VERIFY(Game::GetWorldDatabase(world)->GetNumRows(Game::GetEntityMapping(world, enemies[0]).category) == 5);
         }
 
         Game::Op::RegisterProperty regOp;
         regOp.entity = enemies[0];
         regOp.pid = managedPropertyDescriptor;
-        Game::Execute(regOp);
+        Game::Execute(world, regOp);
         regOp.entity = enemies[1];
         regOp.pid = managedPropertyDescriptor;
-        Game::Execute(regOp);
+        Game::Execute(world, regOp);
         regOp.entity = enemies[2];
         regOp.pid = managedPropertyDescriptor;
-        Game::Execute(regOp);
+        Game::Execute(world, regOp);
 
         {
-            VERIFY(Game::GameServer::Instance()->state.world.categoryDecayMap.Contains(Game::GetEntityMapping(enemies[0]).category));
-            VERIFY(Game::GetWorldDatabase()->GetNumRows(Game::GetEntityMapping(enemies[0]).category) == 3);
+            VERIFY(world->categoryDecayMap.Contains(Game::GetEntityMapping(world, enemies[0]).category));
+            VERIFY(Game::GetWorldDatabase(world)->GetNumRows(Game::GetEntityMapping(world, enemies[0]).category) == 3);
         }
 
         StepFrame();
 
         // delete an entity
-        Game::DeleteEntity(enemies[2]);
+        Game::DeleteEntity(world, enemies[2]);
 
         StepFrame();
 
         {
             
-            CategoryId cid = Game::GetEntityMapping(enemies[0]).category;
-            VERIFY(Game::GetWorldDatabase()->GetNumRows(Game::GameServer::Instance()->state.world.categoryDecayMap[cid]) == 1);
-            VERIFY(Game::GetWorldDatabase()->GetNumRows(cid) == 2);
+            MemDb::TableId cid = Game::GetEntityMapping(world, enemies[0]).category;
+            VERIFY(Game::GetWorldDatabase(world)->GetNumRows(world->categoryDecayMap[cid]) == 1);
+            VERIFY(Game::GetWorldDatabase(world)->GetNumRows(cid) == 2);
         }
 
         StepFrame();
 
         {
-            CategoryId cid = Game::GetEntityMapping(enemies[0]).category;
-            VERIFY(Game::GetWorldDatabase()->GetNumRows(Game::GameServer::Instance()->state.world.categoryDecayMap[cid]) == 0);
-            VERIFY(Game::GetWorldDatabase()->GetNumRows(cid) == 2);
+            MemDb::TableId cid = Game::GetEntityMapping(world, enemies[0]).category;
+            VERIFY(Game::GetWorldDatabase(world)->GetNumRows(world->categoryDecayMap[cid]) == 0);
+            VERIFY(Game::GetWorldDatabase(world)->GetNumRows(cid) == 2);
         }
     }
 
@@ -264,7 +266,7 @@ EntitySystemTest::Run()
     filterInfo.numInclusive = 2;
     Game::Filter filter = Game::CreateFilter(filterInfo);
 
-    Game::Dataset set = Game::Query(filter);
+    Game::Dataset set = Game::Query(world, filter);
     
     VERIFY(set.numViews == 3);
 
@@ -272,13 +274,13 @@ EntitySystemTest::Run()
     Test::TestStruct* structs = (Test::TestStruct*)set.views[0].buffers[1];
 
     // add a property to an entity that does not already have it. This should
-    // move the entity from one category to another, effectively (in this case)
-    // creating a new category, that contains only one instance (this one)
+    // move the entity from one category to another, and in this case
+    // creating a new category that contains only one instance (this one)
     Game::Op::RegisterProperty registerOp;
     registerOp.entity = entities[1];
     registerOp.pid = Game::GetPropertyId("TestVec4"_atm);
     registerOp.value = nullptr;
-    Game::Execute(registerOp);
+    Game::Execute(world, registerOp);
 
     t->StopTime();
 }

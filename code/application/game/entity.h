@@ -23,14 +23,6 @@
 
 namespace Game
 {
-    /// category id
-    typedef MemDb::TableId CategoryId;
-
-    /// instance id point into a category table. Entities are mapped to instanceids
-    ID_32_TYPE(InstanceId);
-
-    //ID_32_TYPE(Entity);
-    /// 
     struct Entity
     {
         uint32_t index     : 22; // 4M concurrent entities

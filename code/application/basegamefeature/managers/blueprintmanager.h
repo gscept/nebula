@@ -74,7 +74,7 @@ private:
     /// setup blueprint database
     void SetupBlueprints();
     /// create a category in the world db
-    CategoryId CreateCategory(World* const world, BlueprintId bid);
+    MemDb::TableId CreateCategory(World* const world, BlueprintId bid);
 
     struct PropertyEntry
     {
