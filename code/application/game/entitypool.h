@@ -67,8 +67,8 @@ public:
     Util::Array<Game::EntityMapping> entityMap;
     /// contains all entity instances
     Ptr<MemDb::Database> db;
-    /// name of the world
-    Util::StringAtom name;
+    /// world hash
+    uint32_t hash;
     /// when an entity in a category within this table is destroyed, it is moved to the decay table.
     Util::HashTable<MemDb::TableId, MemDb::TableId> categoryDecayMap;
     /// maps from blueprint to a category that has the same signature

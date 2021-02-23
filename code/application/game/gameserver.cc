@@ -561,6 +561,7 @@ GameServer::CreateWorld(WorldCreateInfo const& info)
     n_assert(this->state.numWorlds + 1 < 32);
     World*& world = this->state.worlds[this->state.numWorlds++];
     world = n_new(World);
+    world->hash = info.hash;
     return world;
 }
 
