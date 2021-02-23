@@ -342,7 +342,7 @@ SetProperty(World* world, Game::Entity const entity, PropertyId const pid, TYPE 
 #endif
     EntityMapping mapping = GetEntityMapping(world, entity);
     TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.category, pid);
-    *(ptr + mapping.instance.id) = value;
+    *(ptr + mapping.instance) = value;
 }
 
 //------------------------------------------------------------------------------
@@ -357,7 +357,7 @@ GetProperty(World* world, Game::Entity const entity, PropertyId const pid)
 #endif
     EntityMapping mapping = GetEntityMapping(world, entity);
     TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.category, pid);
-    return *(ptr + mapping.instance.id);
+    return *(ptr + mapping.instance);
 }
 
 } // namespace Game
