@@ -924,9 +924,10 @@ Database::DeserializeInstance(Util::Blob const& data, TableId table, IndexT row)
     n_assert(tbl.numRows > row && row != InvalidIndex);
     
     size_t bytesRead = 0;
-    byte const* ptr = (byte*)data.GetPtr();
+    byte const* const basePtr = (byte*)data.GetPtr();
+    byte const* ptr = basePtr;
     size_t const numBytes = data.Size();
-    while (bytesRead < numBytes)
+    while ((size_t)(ptr - basePtr) < numBytes)
     {
         PropertyId const pid = *reinterpret_cast<PropertyId const*>(ptr);
         ptr += sizeof(PropertyId);
@@ -934,7 +935,7 @@ Database::DeserializeInstance(Util::Blob const& data, TableId table, IndexT row)
         IndexT const bucket = tbl.columnRegistry.FindIndex(pid);
         if (bucket != InvalidIndex)
         {
-            byte* valuePtr = (byte*)tbl.columns.Get<1>(tbl.columnRegistry.ValueAtIndex(pid, bucket));
+            byte* valuePtr = (byte*)tbl.columns.Get<1>(tbl.columnRegistry.ValueAtIndex(pid, bucket)) + (row * (size_t)typeSize);
             Memory::Copy(ptr, valuePtr, typeSize);
         }
         ptr += typeSize;
