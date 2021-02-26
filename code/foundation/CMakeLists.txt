@@ -341,6 +341,8 @@ nebula_begin_module(foundation)
 			lockfreequeue.h
 			objectref.cc
 			objectref.h
+            readwritelock.cc
+            readwritelock.h
 			safeflag.h
 			safepriorityqueue.h
 			safequeue.h

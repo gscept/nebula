@@ -36,7 +36,6 @@ public:
     static int CompareExchange(int volatile* dest, int exchange, int comparand);
     /// interlocked exchange
     static void* CompareExchangePointer(void* volatile* dest, void* exchange, void* comparand);
-
 };
 
 //------------------------------------------------------------------------------
