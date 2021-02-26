@@ -188,7 +188,8 @@ FramePass::Build(
     Util::Array<CoreGraphics::EventId>& events,
     Util::Array<CoreGraphics::BarrierId>& barriers,
     Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
+    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
+    CoreGraphics::CommandBufferPoolId commandBufferPool)
 {
     CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
 
@@ -199,7 +200,7 @@ FramePass::Build(
     Util::Array<FrameOp::Compiled*> subpassOps;
     for (IndexT i = 0; i < this->subpasses.Size(); i++)
     {
-        this->subpasses[i]->Build(allocator, subpassOps, events, barriers, rwBuffers, textures);
+        this->subpasses[i]->Build(allocator, subpassOps, events, barriers, rwBuffers, textures, commandBufferPool);
     }
     myCompiled->subpasses = subpassOps;
     this->compiled = myCompiled;
@@ -255,6 +256,26 @@ FramePass::Build(
         deps.Append(dep);
     }
     compiledOps.Append(myCompiled);
+
+#if NEBULA_ENABLE_MT_DRAW
+    myCompiled->subpassBuffers.Resize(myCompiled->subpasses.Size());
+    for (IndexT j = 0; j < myCompiled->subpasses.Size(); j++)
+    {
+        CoreGraphics::CommandBufferCreateInfo cmdInfo =
+        {
+            true,
+            commandBufferPool
+        };
+
+        // allocate a subpass buffer for each buffered frame
+        SizeT numBufferedFrames = CoreGraphics::GetNumBufferedFrames();
+        myCompiled->subpassBuffers[j].Resize(numBufferedFrames);
+        for (IndexT k = 0; k < numBufferedFrames; k++)
+        {
+            myCompiled->subpassBuffers[j][k] = CoreGraphics::CreateCommandBuffer(cmdInfo);
+        }
+    }
+#endif
 }
 
 } // namespace Frame2

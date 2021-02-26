@@ -21,12 +21,13 @@ public:
 
     struct CompiledImpl : public FrameOp::Compiled
     {
+        void RunJobs(const IndexT frameIndex, const IndexT bufferIndex) override;
         void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
 
         CoreGraphics::QueueType queue;
         CoreGraphics::QueueType waitQueue;
         Util::Array<CoreGraphics::BarrierId>* resourceResetBarriers;
-        char startOrEnd;
+        Util::Array<FrameOp::Compiled*> compiled;
 #if NEBULA_GRAPHICS_DEBUG
         Util::StringAtom name;
 #endif
@@ -35,10 +36,21 @@ public:
     /// allocate new instance
     FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 
+        /// build operation
+    virtual void Build(
+        Memory::ArenaAllocator<BIG_CHUNK>& allocator,
+        Util::Array<FrameOp::Compiled*>& compiledOps,
+        Util::Array<CoreGraphics::EventId>& events,
+        Util::Array<CoreGraphics::BarrierId>& barriers,
+        Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
+        Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
+        CoreGraphics::CommandBufferPoolId commandBufferPool);
+
     CoreGraphics::QueueType queue;
     CoreGraphics::QueueType waitQueue;
     Util::Array<CoreGraphics::BarrierId>* resourceResetBarriers;
-    char startOrEnd; // 0 if start, 1 if end
+
+    Util::Array<FrameOp*> ops;
 };
 
 } // namespace Frame

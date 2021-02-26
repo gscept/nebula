@@ -328,7 +328,7 @@ void EndBatch();
 /// end current pass
 void EndPass(PassRecordMode mode);
 /// end the current submission, 
-void EndSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue, bool endOfFrame = false);
+void EndSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue);
 /// end current frame
 void EndFrame(IndexT frameIndex);
 /// check if inside BeginFrame
