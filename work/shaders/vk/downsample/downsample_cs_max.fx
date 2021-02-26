@@ -5,4 +5,4 @@
 //------------------------------------------------------------------------------
 
 #define KERNEL_MAX
-#include "downsample_cs.fx"
+#include "downsample_cs.fxh" 

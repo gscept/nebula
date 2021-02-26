@@ -26,7 +26,7 @@ group_shared IMAGE_DATA_TYPE SharedMemory[SHARED_MEMORY_SIZE][SHARED_MEMORY_SIZE
 group_shared uint Counter;
 
 
-constant DownscaleUniforms
+constant DownsampleUniforms
 {
     uint Mips;
     uint NumGroups;
@@ -414,19 +414,7 @@ csMain()
 //------------------------------------------------------------------------------
 /**
 */
-program Downscale [ string Mask = "Downscale"; ]
+program Downsample [ string Mask = "Downsample"; ]
 {
-    ComputeShader = csMain();
-};
-
-program DownscaleMin [ string Mask = "DownscaleMin"; ]
-{
-    CompileFlags = "KERNEL_MIN=1";
-    ComputeShader = csMain();
-};
-
-program DownscaleMax [ string Mask = "DownscaleMax"; ]
-{
-    CompileFlags = "KERNEL_MAX=1";
     ComputeShader = csMain();
 };

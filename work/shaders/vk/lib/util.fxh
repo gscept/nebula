@@ -540,6 +540,24 @@ Pack3DTo1D(uint3 index3D, uint width, uint height)
 
 //------------------------------------------------------------------------------
 /**
+    Converts a linear sequence to a morton curve 8x8 access pattern
+*/
+uvec2
+MortonCurve8x8(uint idx)
+{
+    // yeah... don't ask
+    uint x = bitfieldExtract(idx, 2, 3);
+    x = bitfieldInsert(x, idx, 0, 1);
+
+    uint y = bitfieldExtract(idx, 3, 3);
+    uint a = bitfieldExtract(idx, 1, 2);
+    y = bitfieldInsert(y, a, 0, 2);
+
+    return uvec2(x, y);
+}
+
+//------------------------------------------------------------------------------
+/**
 */
 bool IntersectLineWithPlane(vec3 lineStart, vec3 lineEnd, vec4 plane, out vec3 intersect)
 {

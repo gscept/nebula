@@ -5,4 +5,4 @@
 //------------------------------------------------------------------------------
 
 #define KERNEL_MIN
-#include "downscale_cs.fx"
+#include "downsample_cs.fxh" 
