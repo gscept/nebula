@@ -30,22 +30,22 @@ private:
     /// parse image read-write buffer list
     static void ParseReadWriteBufferList(const Ptr<Frame::FrameScript>& script, JzonValue* node);
     /// parse blit
-    static void ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* node);
+    static FrameOp* ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* node);
     /// parse subpass copy
-    static void ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* node);
+    static FrameOp* ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* node);
     /// parse subpass copy
-    static void ParseMipmap(const Ptr<Frame::FrameScript>& script, JzonValue* node);
+    static FrameOp* ParseMipmap(const Ptr<Frame::FrameScript>& script, JzonValue* node);
     /// parse compute
-    static void ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue* node);
+    static FrameOp* ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue* node);
     /// parse compute algorithm
-    static void ParsePlugin(const Ptr<Frame::FrameScript>& script, JzonValue* node);
+    static FrameOp* ParsePlugin(const Ptr<Frame::FrameScript>& script, JzonValue* node);
     /// parse frame submission phase
-    static void ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, char startOrEnd, JzonValue* node);
+    static FrameOp* ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, JzonValue* node);
     /// parse barrier
-    static void ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue* node);
+    static FrameOp* ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 
     /// parse pass
-    static void ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* node);
+    static FrameOp* ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* node);
     /// parse attachment list
     static void ParseAttachmentList(const Ptr<Frame::FrameScript>& script, CoreGraphics::PassCreateInfo& pass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node);
     /// parse subpass
