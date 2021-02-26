@@ -239,7 +239,7 @@ shader
 void csRender()
 {
     vec2 coord = vec2(gl_GlobalInvocationID.xy);
-    ivec2 upscaleCoord = ivec2(gl_GlobalInvocationID.xy * Downscale);
+    ivec2 upscaleCoord = ivec2(gl_GlobalInvocationID.xy * DownscaleFog);
     float depth = fetch2D(DepthBuffer, PosteffectUpscaleSampler, upscaleCoord, 0).r;
     vec2 seed = coord * (InvFramebufferDimensions);
 

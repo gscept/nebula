@@ -345,7 +345,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 	fogUniforms.NumVolumeFogClusters = Clustering::ClusterContext::GetNumClusters();
 	fogUniforms.GlobalTurbidity = fogState.turbidity;
 	fogState.color.store(fogUniforms.GlobalAbsorption);
-	fogUniforms.Downscale = 4;
+	fogUniforms.DownscaleFog = 4;
 
 	CoreGraphics::TextureId fog0 = view->GetFrameScript()->GetTexture("VolumetricFogBuffer0");
 	CoreGraphics::TextureId fog1 = view->GetFrameScript()->GetTexture("VolumetricFogBuffer1");
