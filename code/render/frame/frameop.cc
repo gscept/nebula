@@ -30,7 +30,7 @@ FrameOp::~FrameOp()
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 FrameOp::Discard()
 {
 }
@@ -54,7 +54,8 @@ FrameOp::Build(
     Util::Array<CoreGraphics::EventId>& events,
     Util::Array<CoreGraphics::BarrierId>& barriers,
     Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
+    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
+    CoreGraphics::CommandBufferPoolId commandBufferPool)
 {
     // create compiled version of this op, FramePass and FrameSubpass implement this differently than ordinary ops
     this->compiled = this->AllocCompiled(allocator);
@@ -72,7 +73,7 @@ ImageSubresourceHelper(
     const CoreGraphics::ImageSubresourceInfo& toSubres,
     Util::Array<CoreGraphics::ImageSubresourceInfo>& subresources)
 {
-    
+
 }
 
 //------------------------------------------------------------------------------
@@ -222,7 +223,7 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 FrameOp::AnalyzeAndSetupBufferBarriers(
     struct FrameOp::Compiled* op,
     CoreGraphics::BufferId buf,
@@ -335,11 +336,11 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 FrameOp::SetupSynchronization(
     Memory::ArenaAllocator<BIG_CHUNK>& allocator,
-    Util::Array<CoreGraphics::EventId>& events, 
-    Util::Array<CoreGraphics::BarrierId>& barriers, 
+    Util::Array<CoreGraphics::EventId>& events,
+    Util::Array<CoreGraphics::BarrierId>& barriers,
     Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
     Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
 {
@@ -369,12 +370,12 @@ FrameOp::SetupSynchronization(
             DependencyIntent readOrWrite = DependencyIntent::Read;
             switch (access)
             {
-                case CoreGraphics::BarrierAccess::ShaderWrite:
-                case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
-                case CoreGraphics::BarrierAccess::DepthAttachmentWrite:
-                case CoreGraphics::BarrierAccess::HostWrite:
-                case CoreGraphics::BarrierAccess::MemoryWrite:
-                case CoreGraphics::BarrierAccess::TransferWrite:
+            case CoreGraphics::BarrierAccess::ShaderWrite:
+            case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
+            case CoreGraphics::BarrierAccess::DepthAttachmentWrite:
+            case CoreGraphics::BarrierAccess::HostWrite:
+            case CoreGraphics::BarrierAccess::MemoryWrite:
+            case CoreGraphics::BarrierAccess::TransferWrite:
                 readOrWrite = DependencyIntent::Write;
                 numOutputs++;
                 break;
@@ -396,7 +397,7 @@ FrameOp::SetupSynchronization(
                 AnalyzeAndSetupTextureBarriers(
                     this->compiled, alias, name, readOrWrite, access, stage, layout, this->domain, subres, this->index, this->queue, barriers, waitEvents, signalEvents, deps);
             }
-                
+
         }
 
         // go through buffer dependencies
@@ -414,17 +415,17 @@ FrameOp::SetupSynchronization(
             DependencyIntent readOrWrite = DependencyIntent::Read;
             switch (access)
             {
-                case CoreGraphics::BarrierAccess::ShaderWrite:
-                case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
-                case CoreGraphics::BarrierAccess::DepthAttachmentWrite:
-                case CoreGraphics::BarrierAccess::HostWrite:
-                case CoreGraphics::BarrierAccess::MemoryWrite:
-                case CoreGraphics::BarrierAccess::TransferWrite:
+            case CoreGraphics::BarrierAccess::ShaderWrite:
+            case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
+            case CoreGraphics::BarrierAccess::DepthAttachmentWrite:
+            case CoreGraphics::BarrierAccess::HostWrite:
+            case CoreGraphics::BarrierAccess::MemoryWrite:
+            case CoreGraphics::BarrierAccess::TransferWrite:
                 readOrWrite = DependencyIntent::Write;
                 numOutputs++;
                 break;
             }
-            
+
             // dependencies currently on the texture
             Util::Array<BufferDependency>& deps = rwBuffers.ValueAtIndex(idx);
 
@@ -474,7 +475,7 @@ FrameOp::SetupSynchronization(
 //------------------------------------------------------------------------------
 /**
 */
-void 
+void
 FrameOp::Compiled::UpdateResources(const IndexT frameIndex, const IndexT bufferIndex)
 {
     // implement in subclass
