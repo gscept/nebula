@@ -54,7 +54,8 @@ FrameOp::Build(
     Util::Array<CoreGraphics::EventId>& events,
     Util::Array<CoreGraphics::BarrierId>& barriers,
     Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
+    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
+	CoreGraphics::CommandBufferPoolId commandBufferPool)
 {
     // create compiled version of this op, FramePass and FrameSubpass implement this differently than ordinary ops
     this->compiled = this->AllocCompiled(allocator);

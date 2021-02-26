@@ -2078,6 +2078,34 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
     };
     CommandBufferBeginRecord(cmds, cmdInfo);
 
+#if NEBULA_GRAPHICS_DEBUG
+    const char* names[] =
+    {
+        "Graphics",
+        "Compute",
+        "Transfer",
+        "Sparse"
+    };
+
+    // insert some markers explaining the queue synchronization, the +1 is because it will be the submission index on EndSubmission
+    if (waitQueue != InvalidQueueType)
+    {
+        Util::String fmt = Util::String::Sprintf(
+            "Submit #%d, wait for %s queue: submit #%d",
+            state.subcontextHandler.GetTimelineIndex(queue) + 1,
+            names[waitQueue],
+            state.subcontextHandler.GetTimelineIndex(waitQueue));
+        CommandBufferBeginMarker(queue, NEBULA_MARKER_PURPLE, fmt.AsCharPtr());
+    }
+    else
+    {
+        Util::String fmt = Util::String::Sprintf(
+            "Submit #%d",
+            state.subcontextHandler.GetTimelineIndex(queue) + 1);
+        CommandBufferBeginMarker(queue, NEBULA_MARKER_PURPLE, fmt.AsCharPtr());
+    }
+#endif
+
     AtomicCounter* cboStartAddress = queue == GraphicsQueueType ? sub.cboGfxStartAddress : sub.cboComputeStartAddress;
     AtomicCounter* cboEndAddress = queue == GraphicsQueueType ? sub.cboGfxEndAddress : sub.cboComputeEndAddress;
     CoreGraphics::BufferId* stagingCbo = queue == GraphicsQueueType ? state.globalGraphicsConstantStagingBuffer : state.globalComputeConstantStagingBuffer;
@@ -2128,34 +2156,6 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
         }
         cboStartAddress[i] = cboEndAddress[i];
     }
-
-#if NEBULA_GRAPHICS_DEBUG
-    const char* names[] =
-    {
-        "Graphics",
-        "Compute",
-        "Transfer",
-        "Sparse"
-    };
-
-    // insert some markers explaining the queue synchronization, the +1 is because it will be the submission index on EndSubmission
-    if (waitQueue != InvalidQueueType)
-    {
-        Util::String fmt = Util::String::Sprintf(
-            "Submit #%d, wait for %s queue: submit #%d",
-            state.subcontextHandler.GetTimelineIndex(queue) + 1,
-            names[waitQueue],
-            state.subcontextHandler.GetTimelineIndex(waitQueue));
-        CommandBufferInsertMarker(queue, NEBULA_MARKER_PURPLE, fmt.AsCharPtr());
-    }
-    else
-    {
-        Util::String fmt = Util::String::Sprintf(
-            "Submit #%d",
-            state.subcontextHandler.GetTimelineIndex(queue) + 1);
-        CommandBufferInsertMarker(queue, NEBULA_MARKER_PURPLE, fmt.AsCharPtr());
-    }
-#endif
 }
 
 //------------------------------------------------------------------------------
@@ -3258,7 +3258,7 @@ EndPass(PassRecordMode mode)
 /**
 */
 void 
-EndSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue, bool endOfFrame)
+EndSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue)
 {
     n_assert(waitQueue != queue);
 
@@ -3299,6 +3299,11 @@ EndSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue, 
         CommandBufferGetVk(commandBuffer)
     );
     SubmissionContextSetTimelineIndex(queue == GraphicsQueueType ? state.gfxSubmission : state.computeSubmission, index);
+
+#if NEBULA_GRAPHICS_DEBUG
+    // put end marker
+    CommandBufferEndMarker(queue);
+#endif
 
     // stop recording
     CommandBufferEndRecord(commandBuffer);
@@ -4401,5 +4406,4 @@ CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::vec4&
 CoreGraphics::GraphicsDeviceState const* const
 CoreGraphics::GetGraphicsDeviceState()
 {
-    return (CoreGraphics::GraphicsDeviceState*)&Vulkan::state;
-}
+    return (CoreGraphics::GraphicsDeviceState*)&Vulkan::stat
