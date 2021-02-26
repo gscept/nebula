@@ -117,6 +117,7 @@ FrameScript::RunJobs(const IndexT frameIndex, const IndexT bufferIndex)
 #if NEBULA_ENABLE_MT_DRAW
     // tell graphics to start using our draw thread
     CoreGraphics::SetDrawThread(this->drawThread);
+    //this->drawThread->Lock();
 
     IndexT i;
     for (i = 0; i < this->compiled.Size(); i++)
@@ -129,6 +130,7 @@ FrameScript::RunJobs(const IndexT frameIndex, const IndexT bufferIndex)
 
     // make sure to add a sync at the end
     this->drawThread->Signal(&this->drawThreadEvent);
+    //this->drawThread->Unlock();
 #endif
 }
 
@@ -150,9 +152,7 @@ FrameScript::Run(const IndexT frameIndex, const IndexT bufferIndex)
     IndexT i;
     for (i = 0; i < this->compiled.Size(); i++)
     {
-        this->compiled[i]->QueuePreSync();          // wait within queue
         this->compiled[i]->Run(frameIndex, bufferIndex);
-        this->compiled[i]->QueuePostSync();         // signal within queue
     }
 }
 
@@ -213,35 +213,8 @@ FrameScript::Build()
     // build ops
     for (i = 0; i < this->ops.Size(); i++)
     {
-        this->ops[i]->Build(this->buildAllocator, this->compiled, this->events, this->barriers, rwBuffers, textures);
+        this->ops[i]->Build(this->buildAllocator, this->compiled, this->events, this->barriers, rwBuffers, textures, this->drawThreadCommandPool);
     }
-
-    // go through ops and construct subpass buffers for each frame index
-#if NEBULA_ENABLE_MT_DRAW
-    for (i = 0; i < this->compiled.Size(); i++)
-    {
-        if (FramePass::CompiledImpl* pass = dynamic_cast<FramePass::CompiledImpl*>(this->compiled[i]))
-        {
-            pass->subpassBuffers.Resize(pass->subpasses.Size());
-            for (IndexT j = 0; j < pass->subpasses.Size(); j++)
-            {
-                CoreGraphics::CommandBufferCreateInfo cmdInfo =
-                {
-                    true,
-                    this->drawThreadCommandPool
-                };
-
-                // allocate a subpass buffer for each buffered frame
-                SizeT numBufferedFrames = CoreGraphics::GetNumBufferedFrames();
-                pass->subpassBuffers[j].Resize(numBufferedFrames);
-                for (IndexT k = 0; k < numBufferedFrames; k++)
-                {
-                    pass->subpassBuffers[j][k] = CoreGraphics::CreateCommandBuffer(cmdInfo);
-                }
-            }
-        }
-    }
-#endif
 
     // setup a post-frame barrier to reset the resource state of all resources back to their created original (ShaderRead for RenderTexture, General for RWTexture
     Util::Array<CoreGraphics::TextureBarrier> texturesBarr;

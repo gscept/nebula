@@ -104,15 +104,20 @@ FrameScriptLoader::ParseFrameScript(const Ptr<Frame::FrameScript>& script, JzonV
         Util::String name(cur->key);
         if (name == "textures")                         ParseTextureList(script, cur);
         else if (name == "read_write_buffers")          ParseReadWriteBufferList(script, cur);
-        else if (name == "blit")                        ParseBlit(script, cur);
-        else if (name == "copy")                        ParseCopy(script, cur);
-        else if (name == "mipmap")                      ParseMipmap(script, cur);
-        else if (name == "compute")                     ParseCompute(script, cur);
-        else if (name == "plugin" || name == "call")    ParsePlugin(script, cur);
-        else if (name == "pass")                        ParsePass(script, cur);
-        else if (name == "begin_submission")            ParseFrameSubmission(script, 0, cur); // 0 means begin
-        else if (name == "end_submission")              ParseFrameSubmission(script, 1, cur); // 1 means end
-        else if (name == "barrier")                     ParseBarrier(script, cur);
+        else if (name == "blit")                        script->AddOp(ParseBlit(script, cur));
+        else if (name == "copy")                        script->AddOp(ParseCopy(script, cur));
+        else if (name == "mipmap")                      script->AddOp(ParseMipmap(script, cur));
+        else if (name == "compute")                     script->AddOp(ParseCompute(script, cur));
+		else if (name == "plugin" || name == "call")
+		{
+			FrameOp* plugin = ParsePlugin(script, cur);
+			if (plugin != nullptr)
+				script->AddOp(plugin);
+		}
+
+        else if (name == "pass")                        script->AddOp(ParsePass(script, cur));
+        else if (name == "barrier")                     script->AddOp(ParseBarrier(script, cur));
+        else if (name == "submission")					script->AddOp(ParseFrameSubmission(script, cur));
         else if (name == "comment" || name == "_comment") continue; // just skip comments
         else
         {
@@ -242,7 +247,7 @@ FrameScriptLoader::ParseReadWriteBufferList(const Ptr<Frame::FrameScript>& scrip
 //------------------------------------------------------------------------------
 /**
 */
-void
+FrameOp*
 FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
     FrameBlit* op = script->GetAllocator().Alloc<FrameBlit>();
@@ -281,13 +286,13 @@ FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* n
     // setup blit operation
     op->from = fromTex;
     op->to = toTex;
-    script->AddOp(op);
+    return op;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
+FrameOp*
 FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
     FrameCopy* op = script->GetAllocator().Alloc<FrameCopy>();
@@ -326,13 +331,13 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
     // setup copy operation
     op->from = fromTex;
     op->to = toTex;
-    script->AddOp(op);
+    return op;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
+FrameOp*
 FrameScriptLoader::ParseMipmap(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
     FrameMipmap* op = script->GetAllocator().Alloc<FrameMipmap>();
@@ -364,13 +369,13 @@ FrameScriptLoader::ParseMipmap(const Ptr<Frame::FrameScript>& script, JzonValue*
 
     // setup copy operation
     op->tex = ttex;
-    script->AddOp(op);
+    return op;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
+FrameOp*
 FrameScriptLoader::ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {   
     FrameCompute* op = script->GetAllocator().Alloc<FrameCompute>();
@@ -419,13 +424,13 @@ FrameScriptLoader::ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue
     }
 
     // add op to script
-    script->AddOp(op);
+    return op;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
+FrameOp*
 FrameScriptLoader::ParsePlugin(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
     // get function and name
@@ -453,14 +458,15 @@ FrameScriptLoader::ParsePlugin(const Ptr<Frame::FrameScript>& script, JzonValue*
         op->func = callback;
 
         // add to script
-        script->AddOp(op);
+        return op;
     }
+	return nullptr;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
+FrameOp*
 FrameScriptLoader::ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
     FrameBarrier* op = script->GetAllocator().Alloc<FrameBarrier>();
@@ -477,57 +483,61 @@ FrameScriptLoader::ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue
     }
 
     // add operation to script
-    script->AddOp(op);
+    return op;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void 
-FrameScriptLoader::ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, char startOrEnd, JzonValue* node)
+FrameOp*
+FrameScriptLoader::ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
-    FrameSubmission* op = script->GetAllocator().Alloc<FrameSubmission>();
-    op->startOrEnd = startOrEnd;
-
-    // get function and name
-    if (startOrEnd == 0)
-    {
-        JzonValue* name = jzon_get(node, "name");
-        n_assert(name != nullptr);
-        op->SetName(name->string_value);
-    }
-    else
-    {
-        op->SetName("End");
-    }
+    FrameSubmission* submission = script->GetAllocator().Alloc<FrameSubmission>();
 
     JzonValue* queue = jzon_get(node, "queue");
-    op->queue = CoreGraphics::QueueTypeFromString(queue->string_value);
+    submission->queue = CoreGraphics::QueueTypeFromString(queue->string_value);
+	JzonValue* waitQueue = jzon_get(node, "wait_for_queue");
+	if (waitQueue != nullptr)
+		submission->waitQueue = CoreGraphics::QueueTypeFromString(waitQueue->string_value);
 
-    // if we are starting a new submission, also look for the queue wait flag
-    if (startOrEnd == 0)
-    {
-        JzonValue* waitQueue = jzon_get(node, "wait_for_queue");
-        if (waitQueue)
-            op->waitQueue = CoreGraphics::QueueTypeFromString(waitQueue->string_value);
-    }
-    else
-    {
-        // copy wait queue from previous begin on the same queue
-        op->waitQueue = FrameScriptLoader::LastSubmission[op->queue]->waitQueue;
-    }
+    JzonValue* ops = jzon_get(node, "ops");
+	if (ops != nullptr)
+	{
+		for (int i = 0; i < ops->size; i++)
+		{
+			JzonValue* op = ops->array_values[i];
+			Util::String name(op->key);
+			if (name == "blit")								submission->ops.Append(ParseBlit(script, op));
+			else if (name == "copy")                        submission->ops.Append(ParseCopy(script, op));
+			else if (name == "mipmap")                      submission->ops.Append(ParseMipmap(script, op));
+			else if (name == "compute")                     submission->ops.Append(ParseCompute(script, op));
+			else if (name == "pass")                        submission->ops.Append(ParsePass(script, op));
+			else if (name == "barrier")                     submission->ops.Append(ParseBarrier(script, op));
+			else if (name == "plugin" || name == "call")
+			{
+				FrameOp* plugin = ParsePlugin(script, op);
+				if (plugin != nullptr)
+					submission->ops.Append(plugin);
+			}
+			else if (name == "comment" || name == "_comment") continue; // just skip comments
+			else
+			{
+				n_error("Frame script operation '%s' is unrecognized.\n", name.AsCharPtr());
+			}
+		}
+	}
 
     // remember the begin
-    FrameScriptLoader::LastSubmission[op->queue] = op;
+    FrameScriptLoader::LastSubmission[submission->queue] = submission;
 
     // add operation to script
-    script->AddOp(op);
+    return submission;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void
+FrameOp*
 FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
     // create pass
@@ -621,7 +631,7 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
 
     // setup framebuffer and bind to pass
     op->pass = CreatePass(info);
-    script->AddOp(op);
+    return op;
 }
 
 //------------------------------------------------------------------------------
@@ -719,8 +729,8 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraph
         }
     }
 
-	// make sure the subpass has any attacments
-	n_assert2(subpass.attachments.Size() > 0 || subpass.bindDepth, "Subpass must at least either bind color attachments or a depth-stencil attachment");
+    // make sure the subpass has any attacments
+    n_assert2(subpass.attachments.Size() > 0 || subpass.bindDepth, "Subpass must at least either bind color attachments or a depth-stencil attachment");
 
     // correct amount of viewports and scissors if not set explicitly (both values default to 0)
     if (subpass.numViewports == 0)
@@ -748,29 +758,29 @@ FrameScriptLoader::ParseSubpassDependencies(Frame::FramePass* pass, CoreGraphics
         else if (cur->is_string)
         {
             Util::String id(cur->string_value);
-		    const Util::Array<FrameSubpass*>& subpasses = pass->GetSubpasses();
+            const Util::Array<FrameSubpass*>& subpasses = pass->GetSubpasses();
 
-			// setup subpass self-dependency
-			if (id == "this")
-			{
-				subpass.dependencies.Append(subpasses.Size() - 1);
-			}
-			else
-			{
-				IndexT j;
-				for (j = 0; j < subpasses.Size(); j++)
-				{
-					if (subpasses[j]->GetName() == id)
-					{
-						subpass.dependencies.Append(j);
-						break;
-					}
-				}
-				if (j == subpasses.Size())
-				{
-					n_error("Could not find previous subpass '%s'", id.AsCharPtr());
-				}
-			}
+            // setup subpass self-dependency
+            if (id == "this")
+            {
+                subpass.dependencies.Append(subpasses.Size() - 1);
+            }
+            else
+            {
+                IndexT j;
+                for (j = 0; j < subpasses.Size(); j++)
+                {
+                    if (subpasses[j]->GetName() == id)
+                    {
+                        subpass.dependencies.Append(j);
+                        break;
+                    }
+                }
+                if (j == subpasses.Size())
+                {
+                    n_error("Could not find previous subpass '%s'", id.AsCharPtr());
+                }
+            }
         }
     }
 }
@@ -1008,7 +1018,7 @@ FrameScriptLoader::ParseShaderVariables(
             if (bufferIndex == InvalidIndex)
             {
                 cbo = ShaderCreateConstantBuffer(shd, block);
-	            ResourceTableSetConstantBuffer(table, { cbo, slot, 0, false, false, -1, 0 });
+                ResourceTableSetConstantBuffer(table, { cbo, slot, 0, false, false, -1, 0 });
                 constantBuffers.Add(block, cbo);
             }
             else

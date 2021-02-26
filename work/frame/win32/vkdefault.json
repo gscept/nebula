@@ -76,8 +76,9 @@
                 "usage": "Render|ReadWrite|TransferSource",
                 "width": 1.0,
                 "height": 1.0,
+                "mips": "auto",
                 "type": "Texture2D"
-            },			
+            },
             {
                 "name": "LightDebugBuffer",
                 "format": "R16G16B16A16F",
@@ -164,493 +165,495 @@
         ],
 
         "_comment": "------------ COMPUTE CLUSTERING ------------",
-        "begin_submission": {
+        "submission": {
             "name": "Clustering",
             "wait_for_queue": "Graphics",
             "queue": "Compute",
-            "_comment": "Perform clustering calculations"
-        },
+            "_comment": "Perform clustering calculations",
+            "ops": {
+                "call": {
+                    "name": "ClusterContext - Update Clusters"
+                    "_comment": "Run unified clustering subsystems",
+                },
+                "call": {
+                    "name": "DecalContext - Cull and Classify"
+                },
+                "call": {
+                    "name": "VolumetricFogContext - Cull and Classify"
+                },
+            }
+        }
 
-        "call": {
-            "name": "ClusterContext - Update Clusters"
-        },
-
-        "_comment": "Run unified clustering subsystems",
-        "call": {
-            "name": "LightContext - Cull and Classify"
-        },
-
-        "call": {
-            "name": "DecalContext - Cull and Classify"
-        },
-
-        "call": {
-            "name": "VolumetricFogContext - Cull and Classify"
-        },
-
-        "end_submission": {
-            "queue": "Compute"
-        },
-
-        "begin_submission": {
+        "submission": {
             "name": "Shadow maps and Prepass",
             "queue": "Graphics",
-            "_comment": "Calculate shadow maps and depth prepass"
-        },
-
-        "_comment": "------------ SHADOWS ------------",
-        "call": {
-            "name": "LightContext - Update Shadowmaps"
-        },
-
-        "_comment": "------------ VEGETATION ------------",
-        "call": {
-            "name": "VegetationContext - Generate Draws"
-        },
-        "call": {
-            "name": "VegetationContext - Readback"
-        },
-
-        "_comment": "------------ TERRAIN ------------",
-        "call": {
-            "name": "TerrainContext - Prepare"
-        },
-        "call": {
-            "name": "TerrainContext - Clear Page Update Buffer"
-        },
-        "pass": {
-            "name": "Terrain GBuffer",
-            "attachments": [
-                {
-                    "name": "TerrainPosBuffer",
-                    "clear": [ 0, 0, 0, 2 ],
-                    "store": true
-                }
-            ],
-
-            "depth_stencil": {
-                "name": "ZBuffer",
-                "clear": 1,
-                "store": true
-            },
-
-            "subpass": {
-                "name": "TerrainPass",
-                "subpass_dependencies": [],
-                "attachments": [ "TerrainPosBuffer" ],
-                "depth": true,
+            "_comment": "Calculate shadow maps and depth prepass",
+            "ops": {
+                "_comment": "------------ SHADOWS ------------",
                 "call": {
-                    "name": "TerrainContext - Render Terrain Prepass"
-                }
+                    "name": "LightContext - Update Shadowmaps"
+                },
+
+                "_comment": "------------ VEGETATION ------------",
+                "call": {
+                    "name": "VegetationContext - Generate Draws"
+                },
+                "call": {
+                    "name": "VegetationContext - Readback"
+                },
+
+                "_comment": "------------ TERRAIN ------------",
+                "call": {
+                    "name": "TerrainContext - Prepare"
+                },
+                "call": {
+                    "name": "TerrainContext - Clear Page Update Buffer"
+                },
+                "pass": {
+                    "name": "Terrain GBuffer",
+                    "attachments": [
+                        {
+                            "name": "TerrainPosBuffer",
+                            "clear": [ 0, 0, 0, 2 ],
+                            "store": true
+                        }
+                    ],
+
+                    "depth_stencil": {
+                        "name": "ZBuffer",
+                        "clear": 1,
+                        "store": true
+                    },
+
+                    "subpass": {
+                        "name": "TerrainPass",
+                        "subpass_dependencies": [],
+                        "attachments": [ "TerrainPosBuffer" ],
+                        "depth": true,
+                        "call": {
+                            "name": "TerrainContext - Render Terrain Prepass"
+                        }
+                    }
+                },
+                "call": {
+                    "name": "TerrainContext - Extract Readback Data Buffer"
+                },
+                "call": {
+                    "name": "TerrainContext - Update Physical Texture Cache"
+                },
+
+                "_comment": "------------ PREPASS ------------",
+                "pass": {
+                    "name": "Prepass",
+
+                    "depth_stencil": {
+                        "name": "ZBuffer",
+                        "store": true,
+                        "load": true
+                    },
+
+                    "subpass": {
+                        "name": "DepthPrepass",
+                        "subpass_dependencies": [],
+                        "attachments": [],
+                        "depth": true,
+                        "batch": "FlatGeometryDepth"
+                    }
+                },
+
+                "copy": {
+                    "name": "Copy Depth",
+                    "from": "ZBuffer",
+                    "to": "ZBufferCopy"
+                },
             }
         },
-        "call": {
-            "name": "TerrainContext - Extract Readback Data Buffer"
-        },
-        "call": {
-            "name": "TerrainContext - Update Physical Texture Cache"
-        },
 
-        "_comment": "------------ PREPASS ------------",
-        "pass": {
-            "name": "Prepass",
-
-            "depth_stencil": {
-                "name": "ZBuffer",
-                "store": true,
-                "load": true
-            },
-
-            "subpass": {
-                "name": "DepthPrepass",
-                "subpass_dependencies": [],
-                "attachments": [],
-                "depth": true,
-                "batch": "FlatGeometryDepth"
-            }
-        },
-
-        "copy": {
-            "name": "Copy Depth",
-            "from": "ZBuffer",
-            "to": "ZBufferCopy"
-        },
-
-        "end_submission": {
-            "queue": "Graphics"
-        },
-
-        "begin_submission": {
+        "submission": {
             "name": "Forward shading and post effects",
             "wait_for_queue": "Compute",
             "queue": "Graphics",
-            "_comment": "Mandatory start of graphics submission, must be met with a matching end_submission"
-        },
+            "_comment": "Mandatory start of graphics submission, must be met with a matching end_submission",
+            "ops": {
+                "_comment": "------------ FORWARD PASS ------------",
+                "pass": {
+                    "name": "ForwardRendering",
+                    "attachments": [
+                        {
+                            "name": "LightBuffer",
+                            "store": true
+                        },
+                        {
+                            "name": "NormalBuffer",
+                            "store": true,
+                            "clear": [ 0, 0, 0, 0 ]
+                        },
+                        {
+                            "name": "SpecularBuffer",
+                            "store": true,
+                            "clear": [ 0, 0, 0, 0 ]
+                        }
+                    ],
 
-        "_comment": "------------ SSAO ------------",
-        "call": {
-            "name": "HBAO-Run",
-            "resource_dependencies": [
-                {
-                    "name": "ZBuffer",
-                    "access": "ShaderRead",
-                    "layout": "DepthStencilRead",
-                    "stage": "ComputeShader"
-                },
-                {
-                    "name": "SSAOBuffer",
-                    "access": "ShaderWrite",
-                    "layout": "General",
-                    "stage": "ComputeShader"
-                }
-            ]
-        },
-
-        "_comment": "------------ FORWARD PASS ------------",
-        "pass": {
-            "name": "ForwardRendering",
-            "attachments": [
-                {
-                    "name": "LightBuffer",
-                    "store": true
-                },
-                {
-                    "name": "NormalBuffer",
-                    "store": true,
-                    "clear": [0,0,0,0]
-                },
-                {
-                    "name": "SpecularBuffer",
-                    "store": true,
-                    "clear": [0,0,0,0]
-                }
-            ],
-
-            "depth_stencil": {
-                "name": "ZBuffer",
-                "store": true,
-                "load": true
-            },
-            
-            "subpass": {
-                "name": "OpaquePass",
-                "subpass_dependencies": [],
-                "attachments": [ "LightBuffer", "NormalBuffer", "SpecularBuffer" ],
-                "depth": true,
-                "call": {
-                    "name": "TerrainContext - Screen Space Resolve"
-                },
-                "call": {
-                    "name": "VegetationContext - Render"
-                },
-                "batch": "FlatGeometryLit"
-            },
-            "subpass": {
-                "name": "Skypass",
-                "subpass_dependencies": ["OpaquePass"],
-                "attachments": [ "LightBuffer" ],
-                "depth": true,
-                "batch": "Background"
-            },
-            "subpass": {
-                "_comment": "TODO: Move this to a separate pass later on",
-                "name": "AlphaPass",
-                "subpass_dependencies": ["Skypass"],
-                "attachments": [ "LightBuffer" ],
-                "depth": true,
-                "batch": "FlatGeometryAlphaLit"
-            }
-        },
-
-        "_comment": "------------ VOLUMETRIC FOG ------------",
-        "call": {
-            "name": "VolumetricFogContext - Render",
-            "resource_dependencies": [
-                {
-                    "name": "ZBuffer",
-                    "access": "ShaderRead",
-                    "layout": "DepthStencilRead",
-                    "stage": "ComputeShader"
-                },
-                {
-                    "name": "VolumetricFogBuffer0",
-                    "access": "ShaderWrite",
-                    "layout": "General",
-                    "stage": "ComputeShader"
-                }
-            ]
-        },
-
-        "call": {
-            "name": "LightContext - Combine",
-            "resource_dependencies": [
-                {
-                    "name": "SSAOBuffer",
-                    "access": "ShaderRead",
-                    "layout": "ShaderRead",
-                    "stage": "ComputeShader"
-                },
-                {
-                    "name": "ReflectionBuffer",
-                    "access": "ShaderRead",
-                    "layout": "ShaderRead",
-                    "stage": "ComputeShader"
-                },
-                {
-                    "name": "VolumetricFogBuffer0",
-                    "access": "ShaderRead",
-                    "layout": "ShaderRead",
-                    "stage": "ComputeShader"
-                },
-                {
-                    "name": "LightBuffer",
-                    "access": "ShaderWrite",
-                    "layout": "General",
-                    "stage": "ComputeShader"
-                }
-            ]
-        },
-
-        "_comment": "------------ BLOOM ------------",
-        "pass": {
-            "name": "BloomPass",
-            "attachments": [
-                {
-                    "name": "BloomBuffer",
-                    "store": true
-                }
-            ],
-
-            "subpass": {
-                "name": "BrightPass",
-                "depth": false,
-                "attachments": [
-                    "BloomBuffer"
-                ],
-                "resource_dependencies": [
-                    {
-                        "name": "LightBuffer",
-                        "access": "ShaderRead",
-                        "layout": "ShaderRead",
-                        "stage": "PixelShader"
+                    "depth_stencil": {
+                        "name": "ZBuffer",
+                        "store": true,
+                        "load": true
                     },
-                    {
-                        "name": "AverageLumBuffer",
-                        "access": "ShaderRead",
-                        "layout": "ShaderRead",
-                        "stage": "PixelShader"
+
+                    "subpass": {
+                        "name": "OpaquePass",
+                        "subpass_dependencies": [],
+                        "attachments": [ "LightBuffer", "NormalBuffer", "SpecularBuffer" ],
+                        "depth": true,
+                        "call": {
+                            "name": "TerrainContext - Screen Space Resolve"
+                        },
+                        "call": {
+                            "name": "VegetationContext - Render"
+                        },
+                        "batch": "FlatGeometryLit"
+                    },
+                    "subpass": {
+                        "name": "Skypass",
+                        "subpass_dependencies": [ "OpaquePass" ],
+                        "attachments": [ "LightBuffer" ],
+                        "depth": true,
+                        "batch": "Background"
+                    },
+                    "subpass": {
+                        "_comment": "TODO: Move this to a separate pass later on",
+                        "name": "AlphaPass",
+                        "subpass_dependencies": [ "Skypass" ],
+                        "attachments": [ "LightBuffer" ],
+                        "depth": true,
+                        "batch": "FlatGeometryAlphaLit"
                     }
-                ],
+                },
+
+                "_comment": "------------ SSAO ------------",
                 "call": {
-                    "name": "Bloom-BrightnessLowpass"
-                }
-            }
-        },
+                    "name": "HBAO-Run",
+                    "resource_dependencies": [
+                        {
+                            "name": "ZBuffer",
+                            "access": "ShaderRead",
+                            "layout": "DepthStencilRead",
+                            "stage": "ComputeShader"
+                        },
+                        {
+                            "name": "SSAOBuffer",
+                            "access": "ShaderWrite",
+                            "layout": "General",
+                            "stage": "ComputeShader"
+                        }
+                    ]
+                },
 
-        "_comment": "------------ BLOOM BLUR ------------",
-        "blit": {
-            "name": "Bloom Downsample",
-            "from": "BloomBuffer",
-            "to": "BloomBufferBlurred"
-        },
-
-        "call": {
-            "name": "Bloom-Blur",
-            "resource_dependencies": [
-                {
-                    "name": "BloomBufferBlurred",
-                    "access": "ShaderRead",
-                    "layout": "ShaderRead",
-                    "stage": "ComputeShader"
-                }
-            ]
-        },
-
-
-        "call": {
-            "name": "Tonemap-Downsample",
-            "resource_dependencies": [
-                {
-                    "name": "LightBuffer",
-                    "access": "TransferRead",
-                    "layout": "TransferSource",
-                    "stage": "Transfer"
-                }
-            ]
-        },
-
-        "_comment": "------------ EYE ADAPTATION ------------",
-        "pass": {
-            "name": "Luminance",
-            "attachments": [
-                {
-                    "name": "AverageLumBuffer",
-                    "load": false,
-                    "store": true
-                }
-            ],
-
-            "subpass": {
-                "name": "Tonemapping",
-                "subpass_dependencies": [],
-                "depth": false,
-                "attachments": [
-                    "AverageLumBuffer"
-                ],
+                "_comment": "------------ VOLUMETRIC FOG ------------",
+                "call": {
+                    "name": "VolumetricFogContext - Render",
+                    "resource_dependencies": [
+                        {
+                            "name": "ZBuffer",
+                            "access": "ShaderRead",
+                            "layout": "DepthStencilRead",
+                            "stage": "ComputeShader"
+                        },
+                        {
+                            "name": "VolumetricFogBuffer0",
+                            "access": "ShaderWrite",
+                            "layout": "General",
+                            "stage": "ComputeShader"
+                        }
+                    ]
+                },
 
                 "call": {
-                    "name": "Tonemap-AverageLum"
+                    "name": "LightContext - Combine",
+                    "resource_dependencies": [
+                        {
+                            "name": "SSAOBuffer",
+                            "access": "ShaderRead",
+                            "layout": "ShaderRead",
+                            "stage": "ComputeShader"
+                        },
+                        {
+                            "name": "ReflectionBuffer",
+                            "access": "ShaderRead",
+                            "layout": "ShaderRead",
+                            "stage": "ComputeShader"
+                        },
+                        {
+                            "name": "VolumetricFogBuffer0",
+                            "access": "ShaderRead",
+                            "layout": "ShaderRead",
+                            "stage": "ComputeShader"
+                        },
+                        {
+                            "name": "LightBuffer",
+                            "access": "ShaderWrite",
+                            "layout": "General",
+                            "stage": "ComputeShader"
+                        }
+                    ]
+                },
+
+                "_comment": "------------ HISTOGRAM ------------",
+                "call": {
+                    "name": "HistogramContext - Downsample",
+                    "resource_dependencies": [
+                        {
+                            "name": "LightBuffer",
+                            "access": "ShaderWrite",
+                            "layout": "General",
+                            "stage": "ComputeShader"
+                        }
+                    ]
+                },
+
+                "call": {
+                    "name": "HistogramContext - Bucket",
                 }
-            }
-        },
 
-        "_comment": "------------ POST EFFECTS ------------",
-        "pass": {
-            "name": "PostEffects",
-            "attachments": [
-                {
-                    "name": "ColorBuffer",
-                    "load": true,
-                    "store": true
-                }
-            ],
+                "_comment": "------------ BLOOM ------------",
+                "pass": {
+                    "name": "BloomPass",
+                    "attachments": [
+                        {
+                            "name": "BloomBuffer",
+                            "store": true
+                        }
+                    ],
 
-            "depth_stencil": {
-                "name": "ZBuffer",
-                "store": false,
-                "load": true
-            },
-
-            "subpass": {
-                "name": "FinalizePass",
-                "subpass_dependencies": [],
-                "attachments": [
-                    "ColorBuffer"
-                ],
-                "depth": false,
-
-                "resource_dependencies": [
-                    {
-                        "name": "BloomBufferBlurred",
-                        "access": "ShaderRead",
-                        "layout": "ShaderRead",
-                        "stage": "PixelShader"
-                    },
-                    {
-                        "name": "AverageLumBuffer",
-                        "access": "ShaderRead",
-                        "layout": "ShaderRead",
-                        "stage": "PixelShader"
-                    },
-                    {
-                        "name": "LightBuffer",
-                        "access": "ShaderRead",
-                        "layout": "ShaderRead",
-                        "stage": "PixelShader"
-                    },
-                    {
-                        "name": "ZBufferCopy",
-                        "access": "ShaderRead",
-                        "layout": "DepthStencilRead",
-                        "stage": "PixelShader"
-                    }
-                ],
-
-                "fullscreen_effect": {
-                    "name": "Finalize",
-                    "shader_state": {
-                        "shader": "finalize",
-                        "variables": [
+                    "subpass": {
+                        "name": "BrightPass",
+                        "depth": false,
+                        "attachments": [
+                            "BloomBuffer"
+                        ],
+                        "resource_dependencies": [
                             {
-                                "semantic": "LuminanceTexture",
-                                "value": "AverageLumBuffer"
+                                "name": "LightBuffer",
+                                "access": "ShaderRead",
+                                "layout": "ShaderRead",
+                                "stage": "PixelShader"
                             },
                             {
-                                "semantic": "DepthTexture",
-                                "value": "ZBufferCopy"
-                            },
-                            {
-                                "semantic": "ColorTexture",
-                                "value": "LightBuffer"
-                            },
-                            {
-                                "semantic": "BloomTexture",
-                                "value": "BloomBufferBlurred"
+                                "name": "AverageLumBuffer",
+                                "access": "ShaderRead",
+                                "layout": "ShaderRead",
+                                "stage": "PixelShader"
                             }
-                        ]
-                    },
-                    "size_from_texture": "ColorBuffer"
-                }
-            },
-
-            "subpass": {
-                "name": "Direct",
-                "subpass_dependencies": [
-                    "FinalizePass"
-                ],
-                "depth": true,
-                "attachments": [
-                    "ColorBuffer"
-                ],
-
-                "resource_dependencies": [
-                    {
-                        "name": "ZBufferCopy",
-                        "access": "ShaderRead",
-                        "layout": "DepthStencilRead",
-                        "stage": "PixelShader"
+                        ],
+                        "call": {
+                            "name": "Bloom-BrightnessLowpass"
+                        }
                     }
-                ],
+                },
 
-                "batch": "DirectToColor",
-                "batch": "ParticleUnlit",
-                "batch": "ParticleLit",
-                "call": {
-                    "name": "Debug Shapes"
+                "_comment": "------------ BLOOM BLUR ------------",
+                "blit": {
+                    "name": "Bloom Downsample",
+                    "from": "BloomBuffer",
+                    "to": "BloomBufferBlurred"
                 },
+
                 "call": {
-                    "name": "Im3D"
+                    "name": "Bloom-Blur",
+                    "resource_dependencies": [
+                        {
+                            "name": "BloomBufferBlurred",
+                            "access": "ShaderRead",
+                            "layout": "ShaderRead",
+                            "stage": "ComputeShader"
+                        }
+                    ]
                 },
+
+
                 "call": {
-                    "name": "ImGUI"
-                }
+                    "name": "Tonemap-Downsample",
+                    "resource_dependencies": [
+                        {
+                            "name": "LightBuffer",
+                            "access": "TransferRead",
+                            "layout": "TransferSource",
+                            "stage": "Transfer"
+                        }
+                    ]
+                },
+
+                "_comment": "------------ EYE ADAPTATION ------------",
+                "pass": {
+                    "name": "Luminance",
+                    "attachments": [
+                        {
+                            "name": "AverageLumBuffer",
+                            "load": false,
+                            "store": true
+                        }
+                    ],
+
+                    "subpass": {
+                        "name": "Tonemapping",
+                        "subpass_dependencies": [],
+                        "depth": false,
+                        "attachments": [
+                            "AverageLumBuffer"
+                        ],
+
+                        "call": {
+                            "name": "Tonemap-AverageLum"
+                        }
+                    }
+                },
+
+                "_comment": "------------ POST EFFECTS ------------",
+                "pass": {
+                    "name": "PostEffects",
+                    "attachments": [
+                        {
+                            "name": "ColorBuffer",
+                            "load": true,
+                            "store": true
+                        }
+                    ],
+
+                    "depth_stencil": {
+                        "name": "ZBuffer",
+                        "store": false,
+                        "load": true
+                    },
+
+                    "subpass": {
+                        "name": "FinalizePass",
+                        "subpass_dependencies": [],
+                        "attachments": [
+                            "ColorBuffer"
+                        ],
+                        "depth": false,
+
+                        "resource_dependencies": [
+                            {
+                                "name": "BloomBufferBlurred",
+                                "access": "ShaderRead",
+                                "layout": "ShaderRead",
+                                "stage": "PixelShader"
+                            },
+                            {
+                                "name": "AverageLumBuffer",
+                                "access": "ShaderRead",
+                                "layout": "ShaderRead",
+                                "stage": "PixelShader"
+                            },
+                            {
+                                "name": "LightBuffer",
+                                "access": "ShaderRead",
+                                "layout": "ShaderRead",
+                                "stage": "PixelShader"
+                            },
+                            {
+                                "name": "ZBufferCopy",
+                                "access": "ShaderRead",
+                                "layout": "DepthStencilRead",
+                                "stage": "PixelShader"
+                            }
+                        ],
+
+                        "fullscreen_effect": {
+                            "name": "Finalize",
+                            "shader_state": {
+                                "shader": "finalize",
+                                "variables": [
+                                    {
+                                        "semantic": "LuminanceTexture",
+                                        "value": "AverageLumBuffer"
+                                    },
+                                    {
+                                        "semantic": "DepthTexture",
+                                        "value": "ZBufferCopy"
+                                    },
+                                    {
+                                        "semantic": "ColorTexture",
+                                        "value": "LightBuffer"
+                                    },
+                                    {
+                                        "semantic": "BloomTexture",
+                                        "value": "BloomBufferBlurred"
+                                    }
+                                ]
+                            },
+                            "size_from_texture": "ColorBuffer"
+                        }
+                    },
+
+                    "subpass": {
+                        "name": "Direct",
+                        "subpass_dependencies": [
+                            "FinalizePass"
+                        ],
+                        "depth": true,
+                        "attachments": [
+                            "ColorBuffer"
+                        ],
+
+                        "resource_dependencies": [
+                            {
+                                "name": "ZBufferCopy",
+                                "access": "ShaderRead",
+                                "layout": "DepthStencilRead",
+                                "stage": "PixelShader"
+                            }
+                        ],
+
+                        "batch": "DirectToColor",
+                        "batch": "ParticleUnlit",
+                        "batch": "ParticleLit",
+                        "call": {
+                            "name": "Debug Shapes"
+                        },
+                        "call": {
+                            "name": "Im3D"
+                        },
+                        "call": {
+                            "name": "ImGUI"
+                        }
+                    }
+                },
+
+                "_comment": "------------ LUMINANCE COPY ------------",
+                "call": {
+                    "name": "Tonemap-Copy",
+                    "resource_dependencies": [
+                        {
+                            "name": "AverageLumBuffer",
+                            "access": "TransferRead",
+                            "layout": "TransferSource",
+                            "stage": "Transfer"
+                        }
+                    ]
+                },
+
+                "_comment": "------------ COPY TO BACKBUFFER ------------",
+                "blit": {
+                    "name": "Copy To Backbuffer",
+                    "from": "ColorBuffer",
+                    "to": "__WINDOW__"
+                },
+                "barrier": {
+                    "name": "TransitionToPresent",
+                    "resource_dependencies": [
+                        {
+                            "name": "__WINDOW__",
+                            "access": "TransferRead",
+                            "layout": "Present",
+                            "stage": "Transfer"
+                        }
+                    ]
+                },
             }
-        },
 
-        "_comment": "------------ LUMINANCE COPY ------------",
-        "call": {
-            "name": "Tonemap-Copy",
-            "resource_dependencies": [
-                {
-                    "name": "AverageLumBuffer",
-                    "access": "TransferRead",
-                    "layout": "TransferSource",
-                    "stage": "Transfer"
-                }
-            ]
-        },
-
-        "_comment": "------------ COPY TO BACKBUFFER ------------",
-        "blit": {
-            "name": "Copy To Backbuffer",
-            "from": "ColorBuffer",
-            "to": "__WINDOW__"
-        },
-        "barrier": {
-            "name": "TransitionToPresent",
-            "resource_dependencies": [
-                {
-                    "name": "__WINDOW__",
-                    "access": "TransferRead",
-                    "layout": "Present",
-                    "stage": "Transfer"
-                }
-            ]
-        },
-
-        "end_submission": {
-            "queue": "Graphics",
-            "_comment": "Mandatory end of graphics submission, must be met with a matching begin_submission"
         }
     }
 }
