@@ -140,12 +140,12 @@ protected:
     /// run callbacks
     void RunCallbacks(LoadStatus status, const Resources::ResourceId id);
 
-    struct __PlaceholderResource
+    struct _PlaceholderResource
     {
         Resources::ResourceName placeholderName;
         Resources::ResourceId placeholderId;
     };
-    Util::FixedArray<__PlaceholderResource> placeholders;
+    Util::FixedArray<_PlaceholderResource> placeholders;
 
     /// get placeholder based on resource name
     virtual Resources::ResourceId GetPlaceholder(const Resources::ResourceName& name);
