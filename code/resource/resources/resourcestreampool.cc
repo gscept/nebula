@@ -68,6 +68,12 @@ ResourceStreamPool::Discard()
 void 
 ResourceStreamPool::LoadFallbackResources()
 {
+    // load all placeholders
+    for (IndexT i = 0; i < this->placeholders.Size(); i++)
+    {
+        this->placeholders[i].placeholderId = this->CreateResource(this->placeholders[i].placeholderName, nullptr, 0, "system"_atm, nullptr, nullptr, true);
+    }
+
     // load placeholder, don't load it async
     if (this->placeholderResourceName.IsValid())
     {
@@ -197,6 +203,16 @@ ResourceStreamPool::RunCallbacks(LoadStatus status, const Resources::ResourceId 
         }
     }
     cbls.Clear();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Resources::ResourceId
+ResourceStreamPool::GetPlaceholder(const Resources::ResourceName& name)
+{
+    n_assert(this->placeholders.Size() > 0);
+    return this->placeholders[0].placeholderId;
 }
 
 //------------------------------------------------------------------------------
@@ -440,6 +456,52 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const voi
 
             // set to placeholder while waiting
             ret.resourceId = placeholderResourceId.resourceId;
+        }
+        else if (state == Resource::Unloaded)
+        {
+            // allocate metadata if present
+            _LoadMetaData metaData;
+            if (loadInfo != nullptr)
+            {
+                metaData.data = Memory::Alloc(Memory::ScratchHeap, loadInfoSize);
+                metaData.size = loadInfoSize;
+                memcpy(metaData.data, loadInfo, loadInfoSize);
+            }
+            else
+            {
+                metaData.data = nullptr;
+                metaData.size = 0;
+            }
+            this->metaData[ret.poolId] = metaData;
+
+            _PendingResourceLoad pending;
+            pending.id = ret;
+            pending.tag = tag;
+            pending.inflight = false;
+            pending.immediate = immediate;
+            this->loads[ret.poolId] = pending;
+
+            if (immediate)
+            {
+                LoadStatus status = this->PrepareLoad(pending);
+                if (status == Failed)
+                {
+                    // change return resource id to be fail resource
+                    ret.resourceId = this->failResourceId.resourceId;
+                }
+            }
+            else
+            {
+                this->pendingLoads.Append(ret.poolId);
+                if (success != nullptr || failed != nullptr)
+                {
+                    // we need not worry about the thread, since this resource is new
+                    this->callbacks[ret.poolId].Append({ ret, success, failed });
+                }
+
+                // set to placeholder while waiting
+                ret.resourceId = placeholderResourceId.resourceId;
+            }
         }
 
         // leave async section

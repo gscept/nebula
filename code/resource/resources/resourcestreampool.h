@@ -123,6 +123,8 @@ protected:
         SizeT size;
     };
 
+    /// perform 
+
     /// perform actual load, override in subclass
     virtual LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) = 0;
     /// perform a reload
@@ -137,6 +139,16 @@ protected:
     LoadStatus PrepareLoad(_PendingResourceLoad& res);
     /// run callbacks
     void RunCallbacks(LoadStatus status, const Resources::ResourceId id);
+
+    struct __PlaceholderResource
+    {
+        Resources::ResourceName placeholderName;
+        Resources::ResourceId placeholderId;
+    };
+    Util::FixedArray<__PlaceholderResource> placeholders;
+
+    /// get placeholder based on resource name
+    virtual Resources::ResourceId GetPlaceholder(const Resources::ResourceName& name);
 
     /// these types need to be properly initiated in a subclass Setup function
     Util::StringAtom placeholderResourceName;
