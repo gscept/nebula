@@ -1389,6 +1389,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     VkPhysicalDeviceFeatures features;
     vkGetPhysicalDeviceFeatures(state.physicalDevices[state.currentDevice], &features);
 
+
     VkPhysicalDeviceHostQueryResetFeatures hostQueryReset =
     {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
@@ -1531,20 +1532,10 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         }
     }
 
-    CommandBufferPoolCreateInfo cmdPoolCreateInfo =
-    {
-        CoreGraphics::GraphicsQueueType,
-        false,
-        true,
-    };
-    state.submissionGraphicsCmdPool = CreateCommandBufferPool(cmdPoolCreateInfo);
-    state.submissionTransferGraphicsHandoverCmdPool = CreateCommandBufferPool(cmdPoolCreateInfo);
-
-    cmdPoolCreateInfo.queue = CoreGraphics::ComputeQueueType;
-    state.submissionComputeCmdPool = CreateCommandBufferPool(cmdPoolCreateInfo);
-
-    cmdPoolCreateInfo.queue = CoreGraphics::TransferQueueType;
-    state.submissionTransferCmdPool = CreateCommandBufferPool(cmdPoolCreateInfo);
+    state.submissionTransferGraphicsHandoverCmdPool = CreateCommandBufferPool({CoreGraphics::GraphicsQueueType, false, true});
+    state.submissionTransferCmdPool = CreateCommandBufferPool({CoreGraphics::TransferQueueType, false, true});
+    state.submissionGraphicsCmdPool = CreateCommandBufferPool({CoreGraphics::GraphicsQueueType, false, true});
+    state.submissionComputeCmdPool = CreateCommandBufferPool({CoreGraphics::ComputeQueueType, false, true});
     CommandBufferCreateInfo cmdCreateInfo =
     {
         false,
@@ -4406,4 +4397,5 @@ CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::vec4&
 CoreGraphics::GraphicsDeviceState const* const
 CoreGraphics::GetGraphicsDeviceState()
 {
-    return (CoreGraphics::GraphicsDeviceState*)&Vulkan::stat
+    return (CoreGraphics::GraphicsDeviceState*)&Vulkan::state;
+}
