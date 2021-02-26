@@ -68,102 +68,102 @@ group(TICK_GROUP) sampler_state		PosteffectUpscaleSampler { Filter = Linear; };
 // these parameters are updated once per application tick
 group(TICK_GROUP) shared constant PerTickParams
 {
-	vec4 WindDirection;
+    vec4 WindDirection;
 
-	float WindWaveSize;
-	float WindSpeed;
-	float WindIntensity;
-	float WindForce;
+    float WindWaveSize;
+    float WindSpeed;
+    float WindIntensity;
+    float WindForce;
 
-	float Saturation;
-	float MaxLuminance;
-	float FadeValue;
-	uint UseDof;
+    float Saturation;
+    float MaxLuminance;
+    float FadeValue;
+    uint UseDof;
 
-	vec4 Balance;
+    vec4 Balance;
 
-	vec3 DoFDistances;
-	float HDRBrightPassThreshold;
+    vec3 DoFDistances;
+    float HDRBrightPassThreshold;
 
-	vec4 HDRBloomColor;
-	vec4 FogDistances;
-	vec4 FogColor;
+    vec4 HDRBloomColor;
+    vec4 FogDistances;
+    vec4 FogColor;
 
-	// global light stuff
-	uint GlobalLightFlags;
-	float GlobalLightShadowIntensity;
-	vec4 GlobalLightDirWorldspace;
-	vec4 GlobalLightDir;
-	vec4 GlobalLightColor;
-	vec4 GlobalBackLightColor;
-	vec4 GlobalAmbientLightColor;
-	mat4 CSMShadowMatrix;
+    // global light stuff
+    uint GlobalLightFlags;
+    float GlobalLightShadowIntensity;
+    vec4 GlobalLightDirWorldspace;
+    vec4 GlobalLightDir;
+    vec4 GlobalLightColor;
+    vec4 GlobalBackLightColor;
+    vec4 GlobalAmbientLightColor;
+    mat4 CSMShadowMatrix;
 
-	float GlobalBackLightOffset;
-	textureHandle GlobalLightShadowBuffer;
-	int NumEnvMips;
-	textureHandle EnvironmentMap;
+    float GlobalBackLightOffset;
+    textureHandle GlobalLightShadowBuffer;
+    int NumEnvMips;
+    textureHandle EnvironmentMap;
 
-	// these params are for the Preetham sky model
-	vec4 A;
-	vec4 B;
-	vec4 C;
-	vec4 D;
-	vec4 E;
-	vec4 Z;
+    // these params are for the Preetham sky model
+    vec4 A;
+    vec4 B;
+    vec4 C;
+    vec4 D;
+    vec4 E;
+    vec4 Z;
 
-	float RayleighFactor;
-	float RayleighZenithLength;
-	float RefractiveIndex;
-	float DepolarizationFactor;
-	float Molecules;
-	float MieV;
-	float MieCoefficient;
-	float MieDirectionalG;
-	float MieZenithLength;
-	float Turbidity;
-	float SunIntensityFactor;
-	float SunIntensityFalloff;
-	float SunDiscSize;
-	vec3 MieKCoefficient;
-	vec3 PrimaryColors;
-	float TonemapWeight;
-	float Lum;
+    float RayleighFactor;
+    float RayleighZenithLength;
+    float RefractiveIndex;
+    float DepolarizationFactor;
+    float Molecules;
+    float MieV;
+    float MieCoefficient;
+    float MieDirectionalG;
+    float MieZenithLength;
+    float Turbidity;
+    float SunIntensityFactor;
+    float SunIntensityFalloff;
+    float SunDiscSize;
+    vec3 MieKCoefficient;
+    vec3 PrimaryColors;
+    float TonemapWeight;
+    float Lum;
 
-	// CSM params
-	vec4 CascadeOffset[CASCADE_COUNT_FLAG];
-	vec4 CascadeScale[CASCADE_COUNT_FLAG];
-	vec4 CascadeDistances; 
-	float MinBorderPadding;
-	float MaxBorderPadding;
-	float ShadowPartitionSize;
-	float GlobalLightShadowBias;
+    // CSM params
+    vec4 CascadeOffset[CASCADE_COUNT_FLAG];
+    vec4 CascadeScale[CASCADE_COUNT_FLAG];
+    vec4 CascadeDistances; 
+    float MinBorderPadding;
+    float MaxBorderPadding;
+    float ShadowPartitionSize;
+    float GlobalLightShadowBias;
 
-	textureHandle NormalBuffer;
-	textureHandle DepthBuffer;
-	textureHandle SpecularBuffer;
-	textureHandle IrradianceMap;
-	textureHandle DepthBufferCopy;
+    textureHandle NormalBuffer;
+    textureHandle DepthBuffer;
+    textureHandle SpecularBuffer;
+    textureHandle IrradianceMap;
+    textureHandle DepthBufferCopy;
 };
 
 // contains the render_state of the camera (and time)
 group(FRAME_GROUP) shared constant FrameBlock
 {
-	mat4 View;
-	mat4 InvView;
-	mat4 ViewProjection;
-	mat4 Projection;
-	mat4 InvProjection;
-	mat4 InvViewProjection;
-	vec4 EyePos;
-	vec4 FocalLengthNearFar; // x, y is focal length x/y, z, w is near/far planes
-	vec4 TimeAndRandom;
+    mat4 View;
+    mat4 InvView;
+    mat4 ViewProjection;
+    mat4 Projection;
+    mat4 InvProjection;
+    mat4 InvViewProjection;
+    vec4 EyePos;
+    vec4 FocalLengthNearFar; // x, y is focal length x/y, z, w is near/far planes
+    vec4 TimeAndRandom;
 };
 
 group(FRAME_GROUP) shared constant ShadowMatrixBlock[string Visibility = "VS";]
 {
-	mat4 CSMViewMatrix[CASCADE_COUNT_FLAG];
-	mat4 LightViewMatrix[SHADOW_CASTER_COUNT];
+    mat4 CSMViewMatrix[CASCADE_COUNT_FLAG];
+    mat4 LightViewMatrix[SHADOW_CASTER_COUNT];
 };
 
 //------------------------------------------------------------------------------
@@ -185,27 +185,27 @@ const uint NUM_CLUSTER_ENTRIES = 16384;
 
 struct ClusterAABB
 {
-	vec4 maxPoint;
-	vec4 minPoint;
-	uint featureFlags;
+    vec4 maxPoint;
+    vec4 minPoint;
+    uint featureFlags;
 };
 
 group(FRAME_GROUP) rw_buffer ClusterAABBs [ string Visibility = "CS|VS|PS"; ]
 {
-	ClusterAABB AABBs[];
+    ClusterAABB AABBs[];
 };
 
 // this is used to keep track of how many lights we have active
 group(FRAME_GROUP) shared constant ClusterUniforms [ string Visibility = "CS|VS|PS"; ]
 {
-	vec2 FramebufferDimensions;
-	vec2 InvFramebufferDimensions;
-	uvec2 BlockSize;
-	float InvZScale;
-	float InvZBias;
+    vec2 FramebufferDimensions;
+    vec2 InvFramebufferDimensions;
+    uvec2 BlockSize;
+    float InvZScale;
+    float InvZBias;
 
-	uvec3 NumCells;
-	float ZDistribution;
+    uvec3 NumCells;
+    float ZDistribution;
 };
 
 
@@ -220,43 +220,43 @@ const uint MAX_LIGHTS_PER_CLUSTER = 128;
 
 struct SpotLight
 {
-	vec4 position;				// view space position of light, w is range
-	vec4 forward;				// forward vector of light (spotlight and arealights)
+    vec4 position;				// view space position of light, w is range
+    vec4 forward;				// forward vector of light (spotlight and arealights)
 
-	vec2 angleSinCos;			// angle cutoffs
+    vec2 angleSinCos;			// angle cutoffs
 
-	vec3 color;					// light color
-	int projectionExtension;	// projection extension index
-	int shadowExtension;		// projection extension index
-	uint flags;					// feature flags (shadows, projection texture, etc)
+    vec3 color;					// light color
+    int projectionExtension;	// projection extension index
+    int shadowExtension;		// projection extension index
+    uint flags;					// feature flags (shadows, projection texture, etc)
 };
 
 struct SpotLightProjectionExtension
 {
-	mat4 projection;					// projection transform
-	textureHandle projectionTexture;	// projection texture
+    mat4 projection;					// projection transform
+    textureHandle projectionTexture;	// projection texture
 };
 
 struct SpotLightShadowExtension
 {
-	mat4 projection;
-	float shadowIntensity;				// intensity of shadows
-	uint shadowSlice;
-	textureHandle shadowMap;			// shadow map
+    mat4 projection;
+    float shadowIntensity;				// intensity of shadows
+    uint shadowSlice;
+    textureHandle shadowMap;			// shadow map
 };
 
 struct PointLight
 {
-	vec4 position;				// view space position of light, w is range
+    vec4 position;				// view space position of light, w is range
 
-	vec3 color;					// light color
-	uint flags;					// feature flags (shadows, projection texture, etc)
+    vec3 color;					// light color
+    uint flags;					// feature flags (shadows, projection texture, etc)
 };
 
 struct PointLightShadowExtension
 {
-	float shadowIntensity;		// intensity of shadows
-	uint shadowMap;				// shadow map
+    float shadowIntensity;		// intensity of shadows
+    uint shadowMap;				// shadow map
 };
 
 group(FRAME_GROUP) shared constant LightUniforms [ string Visibility = "CS|VS|PS"; ]
@@ -270,18 +270,18 @@ group(FRAME_GROUP) shared constant LightUniforms [ string Visibility = "CS|VS|PS
 // contains amount of lights, and the index of the light (pointing to the indices in PointLightList and SpotLightList), to output
 group(FRAME_GROUP) rw_buffer LightIndexLists[string Visibility = "CS|VS|PS";]
 {
-	uint PointLightCountList[NUM_CLUSTER_ENTRIES];
-	uint PointLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
-	uint SpotLightCountList[NUM_CLUSTER_ENTRIES];
-	uint SpotLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
+    uint PointLightCountList[NUM_CLUSTER_ENTRIES];
+    uint PointLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
+    uint SpotLightCountList[NUM_CLUSTER_ENTRIES];
+    uint SpotLightIndexList[NUM_CLUSTER_ENTRIES * MAX_LIGHTS_PER_CLUSTER];
 };
 
 group(FRAME_GROUP) rw_buffer LightLists[string Visibility = "CS|VS|PS";]
 {
-	SpotLight SpotLights[1024];
-	SpotLightProjectionExtension SpotLightProjection[256];
-	SpotLightShadowExtension SpotLightShadow[16];
-	PointLight PointLights[1024];
+    SpotLight SpotLights[1024];
+    SpotLightProjectionExtension SpotLightProjection[256];
+    SpotLightShadowExtension SpotLightShadow[16];
+    PointLight PointLights[1024];
 };
 
 //------------------------------------------------------------------------------
@@ -372,7 +372,7 @@ struct FogBox
 // this is used to keep track of how many lights we have active
 group(FRAME_GROUP) shared constant VolumeFogUniforms [ string Visibility = "CS|VS|PS"; ]
 {
-    int Downscale;
+    int DownscaleFog;
     uint NumFogSpheres;
     uint NumFogBoxes;
     uint NumVolumeFogClusters;
@@ -421,7 +421,7 @@ group(PASS_GROUP) inputAttachment DepthAttachment;
 
 group(PASS_GROUP) shared constant PassBlock
 {
-	vec4 RenderTargetDimensions[16]; // render target dimensions are size (xy) inversed size (zw)
+    vec4 RenderTargetDimensions[16]; // render target dimensions are size (xy) inversed size (zw)
 };
 
 #endif // SHARED_H
