@@ -112,7 +112,7 @@ SSAOContext::Create()
             // render AO in X
             CoreGraphics::SetShaderProgram(ssaoState.xDirectionHBAO);
             CoreGraphics::SetResourceTable(ssaoState.hbaoTable[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-			CoreGraphics::BarrierInsert(ssaoState.barriers[0], GraphicsQueueType); // transition from shader read to general
+            CoreGraphics::BarrierInsert(ssaoState.barriers[0], GraphicsQueueType); // transition from shader read to general
             CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
 
             // now do it in Y

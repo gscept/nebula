@@ -42,7 +42,7 @@ CommandBufferGetVk(const CoreGraphics::CommandBufferId id)
     n_assert(id.id8 == CoreGraphics::IdType::CommandBufferIdType);
 #endif
     if (id == CoreGraphics::InvalidCommandBufferId) return VK_NULL_HANDLE;
-    else                                                return commandBuffers.GetUnsafe<CommandBuffer_VkCommandBuffer>(id.id24);
+    else                                            return commandBuffers.GetUnsafe<CommandBuffer_VkCommandBuffer>(id.id24);
 }
 
 } // Vulkan
