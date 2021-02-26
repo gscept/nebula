@@ -4397,4 +4397,5 @@ CommandBufferInsertMarker(const CoreGraphics::QueueType queue, const Math::vec4&
 CoreGraphics::GraphicsDeviceState const* const
 CoreGraphics::GetGraphicsDeviceState()
 {
-    return (CoreGraphics::GraphicsDeviceState*)&Vulkan::stat
+    return (CoreGraphics::GraphicsDeviceState*)&Vulkan::state;
+}
