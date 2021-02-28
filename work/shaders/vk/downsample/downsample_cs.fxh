@@ -87,15 +87,15 @@ Sample2x2Output(ivec2 texel, uint slice)
 {
     IMAGE_DATA_TYPE samples[4];
 #if ARRAY_TEXTURE    
-    samples[0] = imageLoad(Output[5], ivec3(texel, slice));
-    samples[1] = imageLoad(Output[5], ivec3(texel, slice) + ivec3(1, 0, 0));
-    samples[2] = imageLoad(Output[5], ivec3(texel, slice) + ivec3(0, 1, 0));
-    samples[3] = imageLoad(Output[5], ivec3(texel, slice) + ivec3(1, 1, 0));
+    samples[0] = imageLoad(Output[6], ivec3(texel, slice));
+    samples[1] = imageLoad(Output[6], ivec3(texel, slice) + ivec3(1, 0, 0));
+    samples[2] = imageLoad(Output[6], ivec3(texel, slice) + ivec3(0, 1, 0));
+    samples[3] = imageLoad(Output[6], ivec3(texel, slice) + ivec3(1, 1, 0));
 #else
-    samples[0] = imageLoad(Output[5], texel);
-    samples[1] = imageLoad(Output[5], texel + ivec2(1, 0));
-    samples[2] = imageLoad(Output[5], texel + ivec2(0, 1));
-    samples[3] = imageLoad(Output[5], texel + ivec2(1, 1));
+    samples[0] = imageLoad(Output[6], texel);
+    samples[1] = imageLoad(Output[6], texel + ivec2(1, 0));
+    samples[2] = imageLoad(Output[6], texel + ivec2(0, 1));
+    samples[3] = imageLoad(Output[6], texel + ivec2(1, 1));
 #endif
     return Reduce(samples[0], samples[1], samples[2], samples[3]);
 }
