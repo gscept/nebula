@@ -173,7 +173,9 @@
             "ops": {
                 "call": {
                     "name": "ClusterContext - Update Clusters"
-                    "_comment": "Run unified clustering subsystems",
+                },
+                "call": {
+                    "name": "LightContext - Cull and Classify"
                 },
                 "call": {
                     "name": "DecalContext - Cull and Classify"
@@ -281,7 +283,8 @@
                     "attachments": [
                         {
                             "name": "LightBuffer",
-                            "store": true
+                            "store": true,
+                            "clear": [ 0, 0, 0, 0 ]
                         },
                         {
                             "name": "NormalBuffer",
