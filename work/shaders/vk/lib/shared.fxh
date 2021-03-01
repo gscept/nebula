@@ -157,7 +157,7 @@ group(FRAME_GROUP) shared constant FrameBlock
     mat4 InvViewProjection;
     vec4 EyePos;
     vec4 FocalLengthNearFar; // x, y is focal length x/y, z, w is near/far planes
-    vec4 TimeAndRandom;
+    vec4 Time_Random_Luminance_X; // x is time, y is random, z is luminance
 };
 
 group(FRAME_GROUP) shared constant ShadowMatrixBlock[string Visibility = "VS";]

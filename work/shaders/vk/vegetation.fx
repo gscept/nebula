@@ -288,14 +288,16 @@ vsDrawGrass(
     , out vec3 Tangent
     , out vec2 UV
     , out flat uint InstanceTexture
-    , out flat float InstanceRandom)
+    , out flat float InstanceRandom
+    )
 {
     InstanceUniforms instanceUniforms = InstanceGrassUniforms[gl_InstanceID];
     float windWeight = position.y * instanceUniforms.random;
-    vec3 displacement = vec3(sin(windWeight * TimeAndRandom.x), 0, cos(windWeight * TimeAndRandom.x));
+    vec3 displacement = vec3(sin(windWeight * Time_Random_Luminance_X.x), 0, cos(windWeight * Time_Random_Luminance_X.x));
     gl_Position = ViewProjection * vec4(position + instanceUniforms.position + displacement * 0.2f, 1);
 
     UV = uv;
+    Normal = normal;
     Tangent = normalize(vec3(position.x, 0.0f, position.z));
     InstanceTexture = instanceUniforms.textureIndex;
     InstanceRandom = instanceUniforms.random;
@@ -358,7 +360,7 @@ vsDrawMesh(
     , out flat float InstanceRandom)
 {
     InstanceUniforms instanceUniforms = InstanceMeshUniforms[gl_InstanceID];
-    vec3 displacement = vec3(sin(color.r * TimeAndRandom.x * instanceUniforms.random), 0, cos(color.r * TimeAndRandom.x * instanceUniforms.random));
+    vec3 displacement = vec3(sin(color.r * Time_Random_Luminance_X.x * instanceUniforms.random), 0, cos(color.r * Time_Random_Luminance_X.x * instanceUniforms.random));
     mat3 rotation = mat3(
         instanceUniforms.sincos.y, 0, instanceUniforms.sincos.x,
         0, 1, 0,

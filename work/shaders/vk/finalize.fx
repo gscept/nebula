@@ -150,9 +150,6 @@ psMain(in vec2 UV,
     vec4 c = vec4(sample2DLod(ColorTexture, DefaultSampler, UV, 0).rgb, 1.0f);
     c = vec4(lerp(fogColor, c.rgb, fogIntensity), c.a);
     
-    // Get the calculated average luminance 
-    float fLumAvg = sample2DLod(LuminanceTexture, UpscaleSampler, vec2(0.5f, 0.5f), 0).r;
-    
     vec4 bloom = sample2DLod(BloomTexture, UpscaleSampler, UV, 0);
     //vec4 godray = subpassLoad(InputAttachment1);
     c += bloom;   
@@ -163,7 +160,8 @@ psMain(in vec2 UV,
     c.rgb *= FadeValue;
 
     // tonemap before presenting to screen
-    c = ToneMap(c, vec4(fLumAvg), MaxLuminance);
+    float lumAvg = Time_Random_Luminance_X.z;
+    c = ToneMap(c, lumAvg, MaxLuminance);
     color = c;	
 }
 

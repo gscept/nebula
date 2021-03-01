@@ -51,11 +51,7 @@ psMain(in vec2 uv,
 {   
     vec4 sampleColor = textureLod(sampler2D(ColorSource, BrightPassSampler), uv, 0);
     
-    // Get the calculated average luminance 
-    //float lumavg = texelFetch(sampler2D(LuminanceTexture, BrightPassSampler), ivec2(0, 0), 0).r;
-    //vec3 brightColor = ToneMap(sampleColor, vec4(lumavg), 1).rgb;
-
-    float pixelLuminance = dot(sampleColor, vec4(0.2126f, 0.7152f, 0.0722f, 0));
+    float pixelLuminance = dot(sampleColor, Luminance);
     vec3 brightColor = mix(vec3(0.0f), sampleColor.rgb, clamp(pixelLuminance - HDRBrightPassThreshold, 0.0f, 1.0f));
     Color = HDRBloomColor * vec4(brightColor, sampleColor.a);
 }

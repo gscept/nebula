@@ -52,7 +52,7 @@ void OpenScene()
             const float green = Math::rand();
             const float blue = Math::rand();
             Lighting::LightContext::RegisterEntity(id);
-            Lighting::LightContext::SetupPointLight(id, Math::vec3(red, green, blue), 25.0f, Math::translation(i * 4, 5, j * 4), 10.0f, false);
+            Lighting::LightContext::SetupPointLight(id, Math::vec3(red, green, blue), 2500.0f, Math::translation(i * 4, 5, j * 4), 10.0f, false);
             pointLights.Append(id);
         }
     }
@@ -74,7 +74,7 @@ void OpenScene()
             spotLightMatrix.position = Math::vec4(i * 4, 2.5, j * 4, 1);
 
             Lighting::LightContext::RegisterEntity(id);
-            Lighting::LightContext::SetupSpotLight(id, Math::vec3(red, green, blue), 250.0f, Math::deg2rad(45.0f), Math::deg2rad(60.0f), spotLightMatrix, 50.0f, true);
+            Lighting::LightContext::SetupSpotLight(id, Math::vec3(red, green, blue), 2500.0f, Math::deg2rad(45.0f), Math::deg2rad(60.0f), spotLightMatrix, 50.0f, true);
             spotLights.Append(id);
         }
     }

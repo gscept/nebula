@@ -188,6 +188,7 @@ SimpleViewerApplication::Open()
         PostEffects::SSAOContext::Setup(frameScript);
         //PostEffects::SSRContext::Setup(frameScript);
         PostEffects::HistogramContext::Setup(frameScript);
+        PostEffects::HistogramContext::SetWindow({ 0.0f, 0.0f }, { 1.0f, 1.0f }, 1);
         PostEffects::TonemapContext::Setup(frameScript);
 
         Im3d::Im3dContext::SetGridStatus(this->showGrid);
@@ -196,7 +197,7 @@ SimpleViewerApplication::Open()
 
         this->globalLight = Graphics::CreateEntity();
         Lighting::LightContext::RegisterEntity(this->globalLight);
-        Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1, 1, 1), 1.0f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(0.1, 0.1, 0.1), true);
+        Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1, 1, 1), 1000.0f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(0.1, 0.1, 0.1), true);
 
         this->ResetCamera();
         CameraContext::SetTransform(this->cam, this->mayaCameraUtil.GetCameraTransform());

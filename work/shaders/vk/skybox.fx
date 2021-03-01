@@ -54,7 +54,7 @@ vsMain(
 {
     vec3 tempPos = normalize(position);
     gl_Position = Projection * vec4(tempPos, 1);
-    float animationSpeed = TimeAndRandom.x * SkyRotationFactor;
+    float animationSpeed = Time_Random_Luminance_X.x * SkyRotationFactor;
     mat3 rotMat = mat3( cos(animationSpeed), 0, sin(animationSpeed),
                         0, 1, 0,
                         -sin(animationSpeed), 0, cos(animationSpeed));
@@ -77,7 +77,7 @@ psMain(in vec3 UV,
     vec3 lightDir = normalize(GlobalLightDirWorldspace.xyz);
     vec3 dir = normalize(Direction);
     //vec3 atmo = Preetham(dir, lightDir, A, B, C, D, E, Z) * GlobalLightColor.rgb;
-    vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
+    //vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
     
     // rotate uvs around center with constant speed
     vec3 baseColor = sampleCubeLod(EnvironmentMap, SkySampler, UV, 0).rgb;
@@ -85,7 +85,7 @@ psMain(in vec3 UV,
     vec3 color = mix(baseColor, blendColor, SkyBlendFactor);
     color = ((color - 0.5f) * Contrast) + 0.5f;
     color *= Brightness;
-    color = atmo;
+    //color = atmo;
 
     Color = vec4(color, 1);
     gl_FragDepth = 1.0f;
