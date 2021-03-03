@@ -202,8 +202,8 @@ psUnlit2Layers(in vec4 ViewSpacePosition,
 {
     vec2 pixelSize = RenderTargetDimensions[0].zw;
     vec2 screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
-    vec4 layer1 = sample2D(Layer1, LayerSampler, UV + UVAnim1 * TimeAndRandom.x);
-    vec4 layer2 = sample2D(Layer2, LayerSampler, UV + UVAnim2 * TimeAndRandom.x);
+    vec4 layer1 = sample2D(Layer1, LayerSampler, UV + UVAnim1 * Time_Random_Luminance_X.x);
+    vec4 layer2 = sample2D(Layer2, LayerSampler, UV + UVAnim2 * Time_Random_Luminance_X.x);
     
     vec4 color = layer1 * layer2 * 2;
     float depth = sample2DLod(DepthBufferCopy, ParticleSampler, screenUV, 0).r;
@@ -226,9 +226,9 @@ psUnlit3Layers(in vec4 ViewSpacePosition,
 {
     vec2 pixelSize = RenderTargetDimensions[0].zw;
     vec2 screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
-    vec4 layer1 = sample2D(Layer1, LayerSampler, UV + UVAnim1 * TimeAndRandom.x);
-    vec4 layer2 = sample2D(Layer2, LayerSampler, UV + UVAnim2 * TimeAndRandom.x);
-    vec4 layer3 = sample2D(Layer3, LayerSampler, UV + UVAnim3 * TimeAndRandom.x);
+    vec4 layer1 = sample2D(Layer1, LayerSampler, UV + UVAnim1 * Time_Random_Luminance_X.x);
+    vec4 layer2 = sample2D(Layer2, LayerSampler, UV + UVAnim2 * Time_Random_Luminance_X.x);
+    vec4 layer3 = sample2D(Layer3, LayerSampler, UV + UVAnim3 * Time_Random_Luminance_X.x);
     
     vec4 color = ((layer1 * layer2 * 2) * layer3 * 2);
     float depth = sample2DLod(DepthBufferCopy, ParticleSampler, screenUV, 0).r;
@@ -251,10 +251,10 @@ psUnlit4Layers(in vec4 ViewSpacePosition,
 {
     vec2 pixelSize = RenderTargetDimensions[0].zw;
     vec2 screenUV = PixelToNormalized(gl_FragCoord.xy, pixelSize.xy);
-    vec4 layer1 = sample2D(Layer1, LayerSampler, UV + UVAnim1 * TimeAndRandom.x);
-    vec4 layer2 = sample2D(Layer2, LayerSampler, UV + UVAnim2 * TimeAndRandom.x);
-    vec4 layer3 = sample2D(Layer3, LayerSampler, UV + UVAnim3 * TimeAndRandom.x);
-    vec4 layer4 = sample2D(Layer4, LayerSampler, UV + UVAnim4 * TimeAndRandom.x);
+    vec4 layer1 = sample2D(Layer1, LayerSampler, UV + UVAnim1 * Time_Random_Luminance_X.x);
+    vec4 layer2 = sample2D(Layer2, LayerSampler, UV + UVAnim2 * Time_Random_Luminance_X.x);
+    vec4 layer3 = sample2D(Layer3, LayerSampler, UV + UVAnim3 * Time_Random_Luminance_X.x);
+    vec4 layer4 = sample2D(Layer4, LayerSampler, UV + UVAnim4 * Time_Random_Luminance_X.x);
     
     vec4 color = ((layer1 * layer2 * 2) * layer3 * 2) * layer4;
     float depth = sample2DLod(DepthBufferCopy, ParticleSampler, screenUV, 0).r;

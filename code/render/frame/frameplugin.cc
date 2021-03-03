@@ -68,7 +68,8 @@ FramePlugin::Build(
     Util::Array<CoreGraphics::EventId>& events,
     Util::Array<CoreGraphics::BarrierId>& barriers,
     Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
+    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
+	CoreGraphics::CommandBufferPoolId commandBufferPool)
 {
     CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
 

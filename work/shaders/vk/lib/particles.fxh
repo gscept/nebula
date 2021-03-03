@@ -61,7 +61,7 @@ ComputeCornerVertex(
 
     // depending on corner, use position or stretchPos as center point
     // also compute uv coordinates (v: texture tiling, x: anim phases)
-    float du = frac(floor(TimeAndRandom.x * AnimFramesPerSecond) / NumAnimPhases);
+    float du = frac(floor(Time_Random_Luminance_X.x * AnimFramesPerSecond) / NumAnimPhases);
     if (corner.x != 0)
     {
 		outputVert.UV.x = (uvMinMax.z / NumAnimPhases) + du;

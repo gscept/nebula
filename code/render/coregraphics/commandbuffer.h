@@ -41,7 +41,7 @@ void DestroyCommandBufferPool(const CommandBufferPoolId pool);
 
 struct CommandBufferCreateInfo
 {
-    bool subBuffer : 1;     // create buffer to be executed on another command buffer (subBuffer must be 0 on that one)
+    bool subBuffer : 1;     // create buffer to be executed on another command buffer (subBuffer must be 0 on the other buffer)
     CommandBufferPoolId pool;
 };
 

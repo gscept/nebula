@@ -35,23 +35,6 @@ vec3 YxyToXYZ( in vec3 Yxy )
 
 //------------------------------------------------------------------------------
 /**
-*/
-vec3 XYZToRGB( in vec3 XYZ )
-{
-	// CIE/E
-	mat3 M = mat3
-	(
-		 2.3706743, -0.9000405, -0.4706338,
-		-0.5138850,  1.4253036,  0.0885814,
- 		 0.0052982, -0.0146949,  1.0093968
-	);
-
-	return XYZ * M;
-}
-
-
-//------------------------------------------------------------------------------
-/**
 	@param sphereDir The direction from the surface to the sky dome.
 	@param lightDir The direction of the global light (sky light) in world space (so multiply by InvView).
 */

@@ -28,10 +28,10 @@ class Interlocked : public Darwin::DarwinInterlocked
 { };
 }
 #elif __linux__
-#include "threading/linux/linuxinterlocked.h"
+#include "threading/posix/posixinterlocked.h"
 namespace Threading
 {
-class Interlocked : public Linux::LinuxInterlocked
+class Interlocked : public Posix::PosixInterlocked
 { };
 }
 #else

@@ -67,7 +67,7 @@
 #define NEBULA_SEMANTIC_BBOXSIZE                   "BBoxSize"
 #define NEBULA_SEMANTIC_TIME                       "Time"
 #define NEBULA_SEMANTIC_TIMEDIFF                   "TimeDiff"
-#define NEBULA_SEMANTIC_TIMEANDRANDOM              "TimeAndRandom"
+#define NEBULA_SEMANTIC_TIMEANDRANDOM              "Time_Random_Luminance_X"
 #define NEBULA_SEMANTIC_RANDOM                     "Random"
 #define NEBULA_SEMANTIC_OBJECTID                   "ObjectId"
 #define NEBULA_SEMANTIC_ANIMPHASES                 "NumAnimPhases"

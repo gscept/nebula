@@ -612,6 +612,8 @@ ENDIF()
             fips_files(
                 bloomcontext.cc
                 bloomcontext.h
+                histogramcontext.cc
+                histogramcontext.h
                 ssaocontext.cc
                 ssaocontext.h
                 ssrcontext.cc

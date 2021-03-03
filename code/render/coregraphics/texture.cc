@@ -444,17 +444,10 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
         {
             SizeT width = rt.width;
             SizeT height = rt.height;
-            rt.mips = 1;
-            while (true)
-            {
-                width = width >> 1;
-                height = height >> 1;
 
-                // break if any dimension reaches 0
-                if (width == 0 || height == 0)
-                    break;
-                rt.mips++;
-            }
+			// calculate the second logarithm of height and width and pick the smallest value to guarantee no 0xN or Nx0 sizes
+			// add 1 because we always have one mip
+            rt.mips = Math::min(Math::log2(rt.width), Math::log2(rt.height)) + 1;
         }
     }
     return rt;

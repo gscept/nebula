@@ -337,7 +337,7 @@ SubmissionContextPoll(const SubmissionContextId id)
 void
 CleanupPendingDeletes(const SubmissionContextId id, IndexT currentIndex)
 {
-	Util::Array<CoreGraphics::Alloc>& mem = submissionContextAllocator.Get<SubmissionContext_FreeMemories>(id.id24)[currentIndex];
+    Util::Array<CoreGraphics::Alloc>& mem = submissionContextAllocator.Get<SubmissionContext_FreeMemories>(id.id24)[currentIndex];
     for (IndexT i = 0; i < mem.Size(); i++)
         FreeMemory(mem[i]);
     mem.Clear();

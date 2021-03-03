@@ -32,6 +32,7 @@
 #include "posteffects/bloomcontext.h"
 #include "posteffects/ssaocontext.h"
 #include "posteffects/ssrcontext.h"
+#include "posteffects/histogramcontext.h"
 #include "posteffects/tonemapcontext.h"
 
 #include "physicsinterface.h"
@@ -158,23 +159,12 @@ SimpleViewerApplication::Open()
         //Terrain::TerrainContext::Create(terSettings);
 
         // setup vegetation
-        //Vegetation::VegetationSetupSettings vegSettings{
-        //    "tex:terrain/everest Height Map (Merged)_PNG_BC4_1.dds",
-        //    0, 1024.0f,      // min/max height 
-        //    Math::uint2{8192, 8192}, 3, 0.5f
-        //};
-        //Vegetation::VegetationContext::Create(vegSettings);
-        //
-        //Graphics::GraphicsEntityId vegetation = Graphics::CreateEntity();
-        //Vegetation::VegetationContext::RegisterEntity(vegetation);
-        //Vegetation::VegetationGrassSetup grassSetup;
-        //grassSetup.mask = "tex:system/white.dds";
-        //grassSetup.albedo = "tex:system/white.dds";
-        //grassSetup.normals = "tex:system/nobump.dds";
-        //grassSetup.material = "tex:system/default_material.dds";
-        //grassSetup.slopeThreshold = 0.5f;
-        //grassSetup.heightThreshold = 0.5f;
-        //Vegetation::VegetationContext::SetupGrass(vegetation, grassSetup);
+        Vegetation::VegetationSetupSettings vegSettings{
+            "tex:terrain/everest Height Map (Merged)_PNG_BC4_1.dds",
+            0, 1024.0f,      // min/max height 
+            Math::uint2{8192, 8192}, 3, 0.5f
+        };
+        Vegetation::VegetationContext::Create(vegSettings);
 
         Clustering::ClusterContext::Create(0.1f, 1000.0f, this->wnd);
         Lighting::LightContext::Create();
@@ -183,6 +173,7 @@ SimpleViewerApplication::Open()
         Fog::VolumetricFogContext::Create();
         PostEffects::BloomContext::Create();
         PostEffects::SSAOContext::Create();
+        PostEffects::HistogramContext::Create();
         //PostEffects::SSRContext::Create();
         PostEffects::TonemapContext::Create();
 
@@ -196,6 +187,8 @@ SimpleViewerApplication::Open()
         PostEffects::BloomContext::Setup(frameScript);
         PostEffects::SSAOContext::Setup(frameScript);
         //PostEffects::SSRContext::Setup(frameScript);
+        PostEffects::HistogramContext::Setup(frameScript);
+        PostEffects::HistogramContext::SetWindow({ 0.0f, 0.0f }, { 1.0f, 1.0f }, 1);
         PostEffects::TonemapContext::Setup(frameScript);
 
         Im3d::Im3dContext::SetGridStatus(this->showGrid);
@@ -204,7 +197,7 @@ SimpleViewerApplication::Open()
 
         this->globalLight = Graphics::CreateEntity();
         Lighting::LightContext::RegisterEntity(this->globalLight);
-        Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1, 1, 1), 1.0f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(0.1, 0.1, 0.1), true);
+        Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1, 1, 1), 1000.0f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(0.1, 0.1, 0.1), true);
 
         this->ResetCamera();
         CameraContext::SetTransform(this->cam, this->mayaCameraUtil.GetCameraTransform());

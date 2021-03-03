@@ -121,6 +121,55 @@ DecodeHDR4(in vec4 rgba)
 }
 #endif
 
+//------------------------------------------------------------------------------
+/**
+*/
+vec3 RGBToXYZ(vec3 rgb)
+{
+    const mat3 RGB_2_XYZ = mat3(
+        0.4124564, 0.2126729, 0.0193339,
+        0.3575761, 0.7151522, 0.1191920,
+        0.1804375, 0.0721750, 0.9503041
+    );
+    return RGB_2_XYZ * rgb;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3 XYZToRGB(vec3 xyz)
+{
+    const mat3 XYZ_2_RGB = mat3(
+        3.2404542, -0.9692660, 0.0556434,
+        -1.5371385, 1.8760108, -0.2040259,
+        -0.4985314, 0.0415560, 1.0572252
+    );
+    return XYZ_2_RGB * xyz;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3 RGBToXYY(vec3 rgb)
+{
+    vec3 xyz = RGBToXYZ(rgb);
+    float Y = xyz.y;
+    float x = xyz.x / (xyz.x + xyz.y + xyz.z);
+    float y = xyz.y / (xyz.x + xyz.y + xyz.z);
+    return vec3(x, y, Y);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3 XYYToRGB(vec3 xyY)
+{
+    float y = xyY.z;
+    float x = y * xyY.x / xyY.y;
+    float z = y * (1.0f - xyY.x - xyY.y) / xyY.y;
+    return XYZToRGB(vec3(x, y, z));
+}
+
 const float MiddleGrey = 0.5f;
 const float Key = 0.3f;
 const vec4 Luminance = vec4(0.2126f, 0.7152f, 0.0722f, 0.0f);
@@ -129,39 +178,31 @@ const vec4 Luminance = vec4(0.2126f, 0.7152f, 0.0722f, 0.0f);
 
 //------------------------------------------------------------------------------
 /**
-	Calculates HDR tone mapping
+    Calculates HDR tone mapping
 */
 vec4
-ToneMap(vec4 vColor, vec4 lumAvg, float maxLum)
+ToneMap(vec4 color, float lumAvg, float maxLum)
 {
-	// Calculate the luminance of the current pixel
-	//float fLumPixel = dot(vColor.rgb, Luminance.rgb);
-	//vec4 lum = lumAvg;
 
+    // convert to xyY color space
+    vec3 xyY = RGBToXYY(color.rgb);
+    float whitePoint = 2.0f;
+    float lp = xyY.z / (9.6 * lumAvg + 0.0001f);
 
-	// Apply the modified operator (Eq. 4)
-	//float fLumScaled = (fLumPixel * MiddleGrey) / lumAvg;
-	//float fLumCompressed = (fLumScaled * (1 + (fLumScaled / (MaxLuminance * MaxLuminance))) / (1 + fLumScaled));
+    // apply reinhard2 tonemapping
+    xyY.z = (lp * (1.0f + lp / (whitePoint * whitePoint))) / (1.0f + lp);
 
-	float L = dot(vColor, Luminance);
-	float Lp = L * Key / lumAvg.x;
-	float nL = (Lp * (1.0f + Lp / (MiddleGrey))) / (1.0f + Lp);
-	//float lp = (MaxLuminance / lumAvg.x) * (vColor.x + vColor.y + vColor.z) * 0.33f;
-    //float luminanceSquared = (lumAvg.y + MiddleGrey * lumAvg.y) * (lumAvg.y + MiddleGrey * lumAvg.y);
-    //float scalar = (lp * (1.0f + (lp / (luminanceSquared)))) / (1.0f + lp);
+    // convert back to rgb
+    vec3 rgb = XYYToRGB(xyY);
 
-	vec3 color = vColor.rgb * (nL / L) * maxLum;
-	//color = color / (1 + color);
-	//color = pow(color, vec3(1/2.2f));
-
-	return vec4(color, 1.0f);
+    return vec4(rgb, 1.0f);
 
 }
 
 //------------------------------------------------------------------------------
 /**
+    From GPUGems3: "Don't know why this isn't in the standard library..."
 */
-// From GPUGems3: "Don't know why this isn't in the standard library..."
 float linstep(float min, float max, float v)
 {
     return clamp((v - min) / (max - min), 0.0f, 1.0f);
@@ -367,9 +408,9 @@ float log_conv( float x0, float x, float y0, float y )
 vec2
 GetPixelSize(in sampler2D tex)
 {
-	vec2 size = textureSize(tex, 0);
-	size = vec2(1.0f) / size;
-	return size;
+    vec2 size = textureSize(tex, 0);
+    size = vec2(1.0f) / size;
+    return size;
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -379,9 +420,9 @@ GetPixelSize(in sampler2D tex)
 vec2
 GetScaledUVs(in vec2 uvs, in sampler2D tex, in vec2 dimensions)
 {
-	vec2 texSize = textureSize(tex, 0);
-	uvs = uvs * (dimensions / texSize);
-	return uvs;
+    vec2 texSize = textureSize(tex, 0);
+    uvs = uvs * (dimensions / texSize);
+    return uvs;
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -391,9 +432,9 @@ GetScaledUVs(in vec2 uvs, in sampler2D tex, in vec2 dimensions)
 vec2
 GetUV(in ivec2 pixel, in sampler2D tex)
 {
-	vec2 size = textureSize(tex, 0);
-	size = pixel / size;
-	return size;
+    vec2 size = textureSize(tex, 0);
+    size = pixel / size;
+    return size;
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -403,9 +444,9 @@ GetUV(in ivec2 pixel, in sampler2D tex)
 ivec2
 GetPixel(in vec2 uv, in sampler2D tex)
 {
-	ivec2 size = textureSize(tex, 0);
-	size = ivec2(uv * size);
-	return size;
+    ivec2 size = textureSize(tex, 0);
+    size = ivec2(uv * size);
+    return size;
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -415,9 +456,9 @@ GetPixel(in vec2 uv, in sampler2D tex)
 vec2
 GetTextureRatio(in sampler2D tex, vec2 pixelSize)
 {
-	ivec2 size = textureSize(tex, 0);
-	vec2 currentTextureSize = vec2(1.0f) / size;
-	return size / currentTextureSize;
+    ivec2 size = textureSize(tex, 0);
+    vec2 currentTextureSize = vec2(1.0f) / size;
+    return size / currentTextureSize;
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -427,7 +468,7 @@ GetTextureRatio(in sampler2D tex, vec2 pixelSize)
 vec2
 FlipY(vec2 uv)
 {
-	return vec2(uv.x, 1.0f - uv.y);
+    return vec2(uv.x, 1.0f - uv.y);
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -436,7 +477,7 @@ FlipY(vec2 uv)
 float
 LinearizeDepth(float depth)
 {
-	return (FocalLengthNearFar.z * FocalLengthNearFar.w) / (depth * (FocalLengthNearFar.z - FocalLengthNearFar.w) + FocalLengthNearFar.w);
+    return (FocalLengthNearFar.z * FocalLengthNearFar.w) / (depth * (FocalLengthNearFar.z - FocalLengthNearFar.w) + FocalLengthNearFar.w);
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -445,72 +486,72 @@ LinearizeDepth(float depth)
 float
 DelinearizeDepth(float depth)
 {
-	return -((FocalLengthNearFar.z + FocalLengthNearFar.w) * depth - (2 * FocalLengthNearFar.z)) / ((FocalLengthNearFar.z - FocalLengthNearFar.w) * depth);
+    return -((FocalLengthNearFar.z + FocalLengthNearFar.w) * depth - (2 * FocalLengthNearFar.z)) / ((FocalLengthNearFar.z - FocalLengthNearFar.w) * depth);
 }
 
 //-------------------------------------------------------------------------------------------------------------
 /**
-	Convert pixel to normalized [0,1] space
+    Convert pixel to normalized [0,1] space
 */
 vec2
 PixelToNormalized(in vec2 screenCoord, in vec2 pixelSize)
 {
-	return screenCoord.xy * pixelSize.xy;
+    return screenCoord.xy * pixelSize.xy;
 }
 
 //-------------------------------------------------------------------------------------------------------------
 /**
-	Convert pixel to projection space
+    Convert pixel to projection space
 */
 vec4
 PixelToProjection(vec2 screenCoord, float depth)
 {
-	// we use DX depth range [0,1], for GL where depth is [-1,1], we would need depth * 2 - 1 too
-	return vec4(screenCoord * 2.0f - 1.0f, depth, 1.0f);
+    // we use DX depth range [0,1], for GL where depth is [-1,1], we would need depth * 2 - 1 too
+    return vec4(screenCoord * 2.0f - 1.0f, depth, 1.0f);
 }
 
 //-------------------------------------------------------------------------------------------------------------
 /**
-	Convert pixel to view space
+    Convert pixel to view space
 */
 vec4
 PixelToView(vec2 screenCoord, float depth)
 {
-	vec4 projectionSpace = PixelToProjection(screenCoord, depth);
+    vec4 projectionSpace = PixelToProjection(screenCoord, depth);
     vec4 viewSpace = InvProjection * projectionSpace;
     viewSpace /= viewSpace.w;
-	return viewSpace;
+    return viewSpace;
 }
 
 //-------------------------------------------------------------------------------------------------------------
 /**
-	Convert pixel to view space
+    Convert pixel to view space
 */
 vec4
 PixelToWorld(vec2 screenCoord, float depth)
 {
-	vec4 viewSpace = PixelToView(screenCoord, depth);
-	return InvView * viewSpace;
+    vec4 viewSpace = PixelToView(screenCoord, depth);
+    return InvView * viewSpace;
 }
 
 //-------------------------------------------------------------------------------------------------------------
 /**
-	Convert view space to world space
+    Convert view space to world space
 */
 vec4
 ViewToWorld(const vec4 viewSpace)
 {
-	return InvView * viewSpace;
+    return InvView * viewSpace;
 }
 
 //------------------------------------------------------------------------------
 /**
-	Get position element from matrix
+    Get position element from matrix
 */
 vec3
 GetPosition(mat4x4 transform)
 {
-	return transform[2].xyz;
+    return transform[2].xyz;
 }
 
 
@@ -536,6 +577,24 @@ uint
 Pack3DTo1D(uint3 index3D, uint width, uint height)
 {
     return index3D.x + (width * (index3D.y + height * index3D.z));
+}
+
+//------------------------------------------------------------------------------
+/**
+    Converts a linear sequence to a morton curve 8x8 access pattern
+*/
+uvec2
+MortonCurve8x8(uint idx)
+{
+    // yeah... don't ask
+    uint x = bitfieldExtract(idx, 2, 3);
+    x = bitfieldInsert(x, idx, 0, 1);
+
+    uint y = bitfieldExtract(idx, 3, 3);
+    uint a = bitfieldExtract(idx, 1, 2);
+    y = bitfieldInsert(y, a, 0, 2);
+
+    return uvec2(x, y);
 }
 
 //------------------------------------------------------------------------------

@@ -49,6 +49,7 @@ protected:
     friend class FrameScript;
     friend class FramePass;
     friend class FrameSubpass;
+    friend class FrameSubmission;
 
     // inherit this class to implement the compiled runtime for the frame operation
     struct Compiled
@@ -162,7 +163,11 @@ protected:
         Util::Array<CoreGraphics::EventId>& events,
         Util::Array<CoreGraphics::BarrierId>& barriers,
         Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-        Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures);
+        Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
+#if NEBULA_ENABLE_MT_DRAW
+        CoreGraphics::CommandBufferPoolId commandBufferPool = CoreGraphics::InvalidCommandBufferPoolId
+#endif
+        );
 
     /// setup synchronization
     void SetupSynchronization(

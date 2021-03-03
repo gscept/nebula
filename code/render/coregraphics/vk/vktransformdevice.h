@@ -39,6 +39,9 @@ public:
     /// update the csm matrix block
     void ApplyShadowSettings(const Shared::ShadowMatrixBlock& block);
 
+    /// get frame block
+    Shared::FrameBlock& GetFrameParams();
+
 private:
 
     Math::mat4 viewMatrixArray[6];
@@ -61,6 +64,17 @@ private:
     IndexT viewConstantsSlot;
     IndexT shadowConstantsSlot;
     CoreGraphics::ResourcePipelineId tableLayout;
+
+    alignas(16) Shared::FrameBlock frameBlock;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Shared::FrameBlock& 
+VkTransformDevice::GetFrameParams()
+{
+    return this->frameBlock;
+}
 
 } // namespace Vulkan

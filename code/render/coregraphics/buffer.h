@@ -97,6 +97,8 @@ const SizeT BufferGetUploadMaxSize();
 
 /// map memory
 void* BufferMap(const BufferId id);
+/// map memory and cast to type
+template <class T> T* BufferMap(const BufferId id);
 /// unmap memory
 void BufferUnmap(const BufferId id);
 
@@ -122,6 +124,16 @@ void BufferFill(const BufferId id, char pattern, const CoreGraphics::SubmissionC
 void BufferFlush(const BufferId id, IndexT offset = 0, SizeT size = NEBULA_WHOLE_BUFFER_SIZE);
 /// invalidate buffer CPU side, such that any GPU changes will be made visible
 void BufferInvalidate(const BufferId id, IndexT offset = 0, SizeT size = NEBULA_WHOLE_BUFFER_SIZE);
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <class T>
+inline T*
+BufferMap(const BufferId id)
+{
+    return reinterpret_cast<T*>(BufferMap(id));
+}
 
 //------------------------------------------------------------------------------
 /**

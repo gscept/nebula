@@ -45,8 +45,6 @@ typedef float scalar;
 typedef float float32;
 typedef double float64;
 
-const scalar LN_2 = 0.693147180559945f;
-
 #ifndef PI
 #define PI (3.1415926535897932384626433832795028841971693993751)
 #endif
@@ -274,7 +272,26 @@ modangle(scalar a)
 __forceinline scalar 
 log2(scalar f) 
 { 
-    return logf(f) / LN_2; 
+    return log2f(f);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline scalar
+exp2(scalar x)
+{
+    return exp2f(x);
+}
+
+//------------------------------------------------------------------------------
+/**
+    get logarithm of x
+*/
+__forceinline scalar
+log(scalar x)
+{
+    return logf(x);
 }
 
 //------------------------------------------------------------------------------
@@ -304,17 +321,6 @@ pow(scalar x, scalar y)
 {
     return powf(x, y);
 }
-
-//------------------------------------------------------------------------------
-/**
-    get logarithm of x
-*/
-__forceinline scalar
-log(scalar x)
-{
-    return logf(x);
-}
-
 
 //------------------------------------------------------------------------------
 /**

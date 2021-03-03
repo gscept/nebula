@@ -67,7 +67,7 @@ VkTransformDevice::Open()
     for (i = 0; i < this->viewTables.Size(); i++)
     {
         this->viewTables[i] = ShaderCreateResourceTable(shader, NEBULA_FRAME_GROUP);
-		CoreGraphics::ObjectSetName(this->viewTables[i], "Main Frame Group Descriptor");
+        CoreGraphics::ObjectSetName(this->viewTables[i], "Main Frame Group Descriptor");
     }
 
     this->viewConstants = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
@@ -85,6 +85,8 @@ VkTransformDevice::Open()
     this->eyePosVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_EYEPOS);
     this->focalLengthNearFarVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_FOCALLENGTHNEARFAR);
     this->timeAndRandomVar = ShaderGetConstantBinding(shader, NEBULA_SEMANTIC_TIMEANDRANDOM);
+
+    memset(&this->frameBlock, 0x0, sizeof(this->frameBlock));
 
     return TransformDeviceBase::Open();
 }
@@ -118,24 +120,27 @@ VkTransformDevice::ApplyViewSettings()
     TransformDeviceBase::ApplyViewSettings();
 
     // update block structure
-    alignas(16) Shared::FrameBlock block;
-    this->GetViewTransform().store(block.View);
-    this->GetViewProjTransform().store(block.ViewProjection);
-    this->GetProjTransform().store(block.Projection);
-    this->GetInvViewTransform().store(block.InvView);
-    this->GetInvProjTransform().store(block.InvProjection);
-    Math::inverse(this->GetViewProjTransform()).store(block.InvViewProjection);
-    this->GetInvViewTransform().position.store(block.EyePos);
-    vec4(this->GetFocalLength().x, this->GetFocalLength().y, this->GetNearFarPlane().x, this->GetNearFarPlane().y).store(block.FocalLengthNearFar);
-    vec4((float)FrameSync::FrameSyncTimer::Instance()->GetTime(), Math::rand(0, 1), (float)FrameSync::FrameSyncTimer::Instance()->GetFrameTime(), 0).store(block.TimeAndRandom);
-    uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, block);
+    this->GetViewTransform().store(this->frameBlock.View);
+    this->GetViewProjTransform().store(this->frameBlock.ViewProjection);
+    this->GetProjTransform().store(this->frameBlock.Projection);
+    this->GetInvViewTransform().store(this->frameBlock.InvView);
+    this->GetInvProjTransform().store(this->frameBlock.InvProjection);
+    Math::inverse(this->GetViewProjTransform()).store(this->frameBlock.InvViewProjection);
+    this->GetInvViewTransform().position.store(this->frameBlock.EyePos);
+    this->frameBlock.FocalLengthNearFar[0] = this->GetFocalLength().x;
+    this->frameBlock.FocalLengthNearFar[1] = this->GetFocalLength().y;
+    this->frameBlock.FocalLengthNearFar[2] = this->GetNearFarPlane().x;
+    this->frameBlock.FocalLengthNearFar[3] = this->GetNearFarPlane().y;
+    this->frameBlock.Time_Random_Luminance_X[0] = (float)FrameSync::FrameSyncTimer::Instance()->GetTime();
+    this->frameBlock.Time_Random_Luminance_X[1] = Math::rand(0, 1);
+    uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, this->frameBlock);
 
     // update resource table
     IndexT bufferedFrameIndex = GetBufferedFrameIndex();
     ResourceTableSetConstantBuffer(this->viewTables[bufferedFrameIndex], { this->viewConstants, this->viewConstantsSlot, 0, false, false, sizeof(Shared::FrameBlock), (SizeT)offset });
     ResourceTableCommitChanges(this->viewTables[bufferedFrameIndex]);
 
-	CoreGraphics::SetFrameResourceTable(this->viewTables[bufferedFrameIndex]);
+    CoreGraphics::SetFrameResourceTable(this->viewTables[bufferedFrameIndex]);
 }
 
 //------------------------------------------------------------------------------
@@ -150,7 +155,7 @@ VkTransformDevice::ApplyShadowSettings(const Shared::ShadowMatrixBlock& block)
     ResourceTableSetConstantBuffer(this->viewTables[bufferedFrameIndex], { this->viewConstants, this->shadowConstantsSlot, 0, false, false, sizeof(Shared::ShadowMatrixBlock), (SizeT)offset });
     ResourceTableCommitChanges(this->viewTables[bufferedFrameIndex]);
 
-	CoreGraphics::SetFrameResourceTable(this->viewTables[bufferedFrameIndex]);
+    CoreGraphics::SetFrameResourceTable(this->viewTables[bufferedFrameIndex]);
 }
 
 } // namespace Vulkan
