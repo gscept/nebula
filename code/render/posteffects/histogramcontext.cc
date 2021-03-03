@@ -324,7 +324,8 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
     uint dispatchY = (dims.height - 1) / 64;
 
     histogramState.logLuminanceRange = Math::log2(65000.0f); // R11G11B10 maxes out around 65k (https://www.khronos.org/opengl/wiki/Small_Float_Formats)
-    histogramState.logMinLuminance = Math::log2(10.0f);
+    /// @todo   luminance range should be configurable.
+    histogramState.logMinLuminance = Math::log2(0.2f);
 
     DownsampleCsMin::DownsampleUniforms constants;
     constants.Mips = numMips;
