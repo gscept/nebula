@@ -140,6 +140,7 @@ private:
 inline void*
 Database::GetValuePointer(TableId table, ColumnIndex cid, IndexT row)
 {
+    n_assert(cid != ColumnIndex::Invalid());
     n_assert(this->IsValid(table));
     Table& tbl = this->tables[Ids::Index(table.id)];
     PropertyId descriptor = tbl.columns.Get<0>(cid.id);
