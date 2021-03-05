@@ -51,6 +51,7 @@
 #include "blobtest.h"
 #include "profilingtest.h"
 #include "bitfieldtest.h"
+#include "cvartest.h"
 
 using namespace Core;
 using namespace Test;
@@ -75,6 +76,7 @@ __cdecl main()
     // setup and run test runner
     Ptr<TestRunner> testRunner = TestRunner::Create();
     //testRunner->AttachTestCase(BXmlReaderTest::Create());
+    testRunner->AttachTestCase(CVarTest::Create());    
     testRunner->AttachTestCase(HttpClientTest::Create());    
     testRunner->AttachTestCase(DelegateTableTest::Create());
     testRunner->AttachTestCase(DelegateTest::Create());

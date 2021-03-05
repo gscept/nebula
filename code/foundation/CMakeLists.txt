@@ -32,6 +32,8 @@ nebula_begin_module(foundation)
 				config.h
 				coreserver.cc
 				coreserver.h
+				cvar.cc
+				cvar.h
 				debug.cc
 				debug.h
 				exithandler.cc
