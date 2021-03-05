@@ -329,6 +329,9 @@ void                        PrefilterProcessors(World*);
 void                        Defragment(World*, MemDb::TableId);
 /// create an entity table
 MemDb::TableId              CreateEntityTable(World* world, CategoryCreateInfo const& info);
+/// set the value of an entity
+void                        SetProperty(World*, Game::Entity entity, Game::PropertyId pid, void* value, uint64_t size);
+
 
 //------------------------------------------------------------------------------
 /**

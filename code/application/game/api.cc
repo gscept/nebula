@@ -934,4 +934,19 @@ DeallocateEntity(World* world, Entity entity)
     world->numEntities--;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SetProperty(World* world, Game::Entity entity, Game::PropertyId pid, void* value, uint64_t size)
+{
+#if NEBULA_DEBUG
+    n_assert2(size == MemDb::TypeRegistry::TypeSize(pid), "SetProperty: Provided value's type is not the correct size for the given PropertyId.");
+#endif
+    EntityMapping mapping = GetEntityMapping(world, entity);
+    byte* const ptr = (byte*)GetInstanceBuffer(world, mapping.category, pid);
+    byte* valuePtr = ptr + (mapping.instance * size);
+    Memory::Copy(value, valuePtr, size);
+}
+
 } // namespace Game
