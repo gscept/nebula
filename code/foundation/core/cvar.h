@@ -37,8 +37,10 @@ struct CVarCreateInfo
     CVarType type;
 };
 
-/// Create a console variable
+/// Create or get a console variable
 CVar* CVarCreate(CVarCreateInfo const&);
+/// Create or get a console variable
+CVar* CVarCreate(CVarType type, const char* name, const char* defaultValue);
 /// Get a console variable
 CVar* CVarGet(const char* name);
 /// Parse value from c string and assign to cvar
@@ -55,5 +57,9 @@ int const CVarReadInt(CVar*);
 float const CVarReadFloat(CVar*);
 /// Read string value from cvar
 const char* CVarReadString(CVar*);
+/// Check if a CVar has been modified
+bool CVarModified(CVar*);
+/// Set the modified status of a cvar
+void CVarSetModified(CVar*, bool);
 
 } // namespace Core

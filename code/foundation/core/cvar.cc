@@ -24,6 +24,7 @@ struct CVar
 {
     Util::String name;
     CVarValue value;
+    bool modified;
 };
 
 constexpr uint16_t MAX_CVARS = 1024;
@@ -33,14 +34,27 @@ Util::HashTable<Util::String, uint16_t> cVarTable;
 
 CVar* CVarCreate(CVarCreateInfo const& info)
 {
+    CVar* ptr = CVarGet(info.name);
+    if (ptr) return ptr;
+
     IndexT varIndex = cVarOffset++;
     n_assert(varIndex < MAX_CVARS);
-    CVar* ptr = &cVars[varIndex];
+    ptr = &cVars[varIndex];
     ptr->name = info.name;
     ptr->value.type = info.type;
+    ptr->modified = false;
     CVarParseWrite(ptr, info.defaultValue);
     cVarTable.Add(info.name, varIndex);
     return ptr;
+}
+
+CVar* CVarCreate(CVarType type, const char* name, const char* defaultValue)
+{
+    CVarCreateInfo info;
+    info.name = name;
+    info.defaultValue = defaultValue;
+    info.type = type;
+    return CVarCreate(info);
 }
 
 CVar* CVarGet(const char* name)
@@ -78,6 +92,7 @@ void CVarWriteFloat(CVar* cVar, float value)
     if (cVar->value.type == CVar_Float)
     {
         cVar->value.f = value;
+        cVar->modified = true;
         return;
     }
 
@@ -90,6 +105,7 @@ void CVarWriteInt(CVar* cVar, int value)
     if (cVar->value.type == CVar_Int)
     {
         cVar->value.i = value;
+        cVar->modified = true;
         return;
     }
 
@@ -105,6 +121,7 @@ void CVarWriteString(CVar* cVar, const char* value)
             Memory::Free(Memory::HeapType::StringDataHeap, cVar->value.cstr);
         
         cVar->value.cstr = Memory::DuplicateCString(value);
+        cVar->modified = true;
         return;
     }
 
@@ -145,7 +162,14 @@ const char* CVarReadString(CVar* cVar)
     return nullptr;
 }
 
+bool CVarModified(CVar* cVar)
+{
+    return cVar->modified;
+}
+
+void CVarSetModified(CVar* cVar, bool value)
+{
+    cVar->modified = value;
+}
+
 } // namespace Core
-
-
-
