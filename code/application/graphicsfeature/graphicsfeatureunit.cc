@@ -22,6 +22,7 @@
 #include "decals/decalcontext.h"
 #include "debug/framescriptinspector.h"
 #include "terrain/terraincontext.h"
+#include "posteffects/histogramcontext.h"
 
 #include "graphicsfeature/managers/graphicsmanager.h"
 #include "graphicsfeature/managers/cameramanager.h"
@@ -94,6 +95,7 @@ GraphicsFeatureUnit::OnActivate()
     PostEffects::BloomContext::Create();
     PostEffects::SSAOContext::Create();
     PostEffects::TonemapContext::Create();
+    PostEffects::HistogramContext::Create();
     //Terrain::TerrainSetupSettings settings{
     //    0, 1024.0f,      // min/max height 
     //    //0, 0,
@@ -111,6 +113,8 @@ GraphicsFeatureUnit::OnActivate()
     PostEffects::BloomContext::Setup(frameScript);
     PostEffects::SSAOContext::Setup(frameScript);
     PostEffects::TonemapContext::Setup(frameScript);
+    PostEffects::HistogramContext::Setup(frameScript);
+    PostEffects::HistogramContext::SetWindow({ 0.0f, 0.0f }, { 1.0f, 1.0f }, 1);
 
     this->globalLight = Graphics::CreateEntity();
     Lighting::LightContext::RegisterEntity(this->globalLight);
