@@ -71,10 +71,17 @@ public:
     /// add line to the log
     void AppendToLog(const LogEntry& msg);
 
+    bool EvaluateCVar(Util::Array<Util::String> const& splits);
 
     //Util::Dictionary<Util::String, Ptr<Scripting::Command>> commands;
     Util::Array<Util::String> previousCommands;
     int previousCommandIndex;
+
+    enum CommandMode
+    {
+        Python,
+        CVar
+    } cmdMode;
 
 private:
     const char * LogEntryTypeAsCharPtr(const LogMessageType & type) const;
@@ -90,7 +97,7 @@ private:
     Ptr<Scripting::ScriptServer> scriptServer;
     bool moveScroll;
     bool visible;
-    
+
     Ptr<IO::TextWriter> persistentHistory;
 };
 } // namespace Dynui

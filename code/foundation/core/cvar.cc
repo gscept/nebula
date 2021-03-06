@@ -37,6 +37,8 @@ CVar* CVarCreate(CVarCreateInfo const& info)
     CVar* ptr = CVarGet(info.name);
     if (ptr) return ptr;
 
+    n_assert2(!Util::String(info.name).ContainsCharFromSet(" "), "CVar name cannot contain spaces.");
+    
     IndexT varIndex = cVarOffset++;
     n_assert(varIndex < MAX_CVARS);
     ptr = &cVars[varIndex];
@@ -171,5 +173,36 @@ void CVarSetModified(CVar* cVar, bool value)
 {
     cVar->modified = value;
 }
+
+CVarType CVarGetType(CVar* cVar)
+{
+    return cVar->value.type;
+}
+
+const char* CVarGetName(CVar* cVar)
+{
+    return cVar->name.AsCharPtr();
+}
+
+int CVarNum()
+{
+    return cVarOffset;
+}
+
+CVar* CVarsBegin()
+{
+    return cVars;
+}
+
+CVar* CVarsEnd()
+{
+    return cVars + cVarOffset;
+}
+
+CVar* CVarNext(CVar* cVar)
+{
+    return cVar + 1;
+}
+
 
 } // namespace Core

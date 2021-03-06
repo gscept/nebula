@@ -61,5 +61,17 @@ const char* CVarReadString(CVar*);
 bool CVarModified(CVar*);
 /// Set the modified status of a cvar
 void CVarSetModified(CVar*, bool);
+/// Get the type of a cvar
+CVarType CVarGetType(CVar*);
+/// Get the cvars name
+const char* CVarGetName(CVar*);
+/// Get the number of vars created
+int CVarNum();
+/// Get a pointer to the first cvar in the array
+CVar* CVarsBegin();
+/// Get a pointer to the address after the last valid cvar in the array
+CVar* CVarsEnd();
+/// increment the iterator
+CVar* CVarNext(CVar*);
 
 } // namespace Core
