@@ -219,7 +219,7 @@ CreateBuffer(const BufferCreateInfo& info)
     // setup resource
     loadInfo.mode = info.mode;
     loadInfo.size = info.size;
-    loadInfo.byteSize = alloc.size;
+    loadInfo.byteSize = size;
     loadInfo.elementSize = info.elementSize;
     mapInfo.mapCount = 0;
 
