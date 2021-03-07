@@ -14,6 +14,7 @@
 #include "io/ioserver.h"
 #include "app/application.h"
 #include "pybind11/embed.h"
+#include "core/cvar.h"
 
 namespace py = pybind11;
 
@@ -29,12 +30,41 @@ Util::Array<completion_t> completions;
 static Util::String selectedCompletion;
 static bool open_autocomplete = false;
 
-static int
-TextEditCallback(ImGuiInputTextCallbackData* data)
+void
+ListHistory(ImGuiInputTextCallbackData* data)
 {
     Dynui::ImguiConsole* console = (Dynui::ImguiConsole*)data->UserData;
 
-    completions.Clear();
+    const int prev_history_pos = console->previousCommandIndex;
+    if (data->EventKey == ImGuiKey_UpArrow)
+    {
+        if (console->previousCommandIndex == -1)
+            console->previousCommandIndex = console->previousCommands.Size() - 1;
+        else if (console->previousCommandIndex > 0)
+            console->previousCommandIndex--;
+    }
+    else if (data->EventKey == ImGuiKey_DownArrow)
+    {
+        if (console->previousCommandIndex != -1)
+            if (++console->previousCommandIndex >= console->previousCommands.Size())
+                console->previousCommandIndex = -1;
+    }
+
+    // A better implementation would preserve the data on the current input line along with cursor position.
+    if (prev_history_pos != console->previousCommandIndex)
+    {
+        Util::String lastCommand = (console->previousCommandIndex >= 0) ? console->previousCommands[console->previousCommandIndex] : "";
+        lastCommand = lastCommand.ExtractRange(0, Math::min(lastCommand.Length(), data->BufSize));
+        sprintf(data->Buf, "%s", lastCommand.AsCharPtr());
+        data->BufDirty = true;
+        data->CursorPos = data->SelectionStart = data->SelectionEnd = data->BufTextLen = (int)strlen(data->Buf);
+    }
+}
+
+int
+TextEditCVars(ImGuiInputTextCallbackData* data)
+{
+    Dynui::ImguiConsole* console = (Dynui::ImguiConsole*)data->UserData;
 
     switch (data->EventFlag)
     {
@@ -53,33 +83,31 @@ TextEditCallback(ImGuiInputTextCallbackData* data)
 
         // get command
         Util::String command(word_start);
+        if (!command.IsValid())
+            break;
 
         Util::Array<Util::String> commands;
-        /*
-        IndexT i;
-        for (i = 0; i < console->commands.Size(); i++)
+        
+        for (Core::CVar* cVarIter = Core::CVarsBegin(); cVarIter != Core::CVarsEnd();)
         {
-            const Util::String& name = console->commands.KeyAtIndex(i);
+            const Util::String& name = Core::CVarGetName(cVarIter);
             if (name.FindStringIndex(command) == 0 && name != command)
             {
                 commands.Append(name);
             }
+            cVarIter = Core::CVarNext(cVarIter);
+
         }
-        */
-        if (commands.IsEmpty())
-        {
-            // n_printf("No completion for '%s'\n", command.AsCharPtr());
-        }
-        else if (commands.Size() == 1)
+        
+        if (commands.Size() == 1)
         {
             // Single match. Delete the beginning of the word and replace it entirely so we've got nice casing
             data->DeleteChars((int)(word_start - data->Buf), (int)(word_end - word_start));
             data->InsertChars(data->CursorPos, commands[0].AsCharPtr());
             data->InsertChars(data->CursorPos, " ");
         }
-        else
+        else if (!commands.IsEmpty())
         {
-            /*
             int match_len = command.Length();
             for (;;)
             {
@@ -94,24 +122,54 @@ TextEditCallback(ImGuiInputTextCallbackData* data)
                     break;
                 match_len++;
             }
-            
-            if (match_len > 0)
-            {
-                data->DeleteChars((int)(word_start - data->Buf), (int)(word_end - word_start));
-                data->InsertChars(data->CursorPos, commands[0].AsCharPtr(), commands[0].AsCharPtr() + match_len);
-            }
 
-            n_printf("Candidates:\n");
+            open_autocomplete = true;
+
             IndexT i;
             for (i = 0; i < commands.Size(); i++)
             {
-                n_printf("- %s\n", commands[i].AsCharPtr());
+                //n_printf("- %s\n", commands[i].AsCharPtr());
+                Util::String complete = commands[i].AsCharPtr() + command.Length();
+                Util::String doc; // FIXME
+                completions.Append({ commands[i], complete, doc });
             }
-            */
         }
 
+        break;
+    }
+    case ImGuiInputTextFlags_CallbackHistory:
+    {
+        ListHistory(data);
+        break;
+    }
+
+    }
+    if (!selectedCompletion.IsEmpty())
+    {
+        data->InsertChars(data->CursorPos, selectedCompletion.AsCharPtr(), selectedCompletion.AsCharPtr() + selectedCompletion.Length());
+        selectedCompletion.Clear();
+        completions.Clear();
+    }
+
+
+    return 0;
+}
+
+int
+TextEditPython(ImGuiInputTextCallbackData* data)
+{
+    Dynui::ImguiConsole* console = (Dynui::ImguiConsole*)data->UserData;
+
+    if (!Scripting::ScriptServer::HasInstance())
+        return 0;
+
+    switch (data->EventFlag)
+    {
+    case ImGuiInputTextFlags_CallbackCompletion:
+    {
         // python command completion using jedi
-        try {
+        try
+        {
             py::object jedi = py::module::import("jedi");
             py::object inter = jedi.attr("Interpreter");
             py::object scope = py::module::import("__main__").attr("__dict__");
@@ -121,7 +179,7 @@ TextEditCallback(ImGuiInputTextCallbackData* data)
             if (pcompletions.size() == 1)
             {
                 std::string rest = (std::string)py::str(pcompletions[0].attr("complete"));
-                data->InsertChars(data->CursorPos, rest.c_str(), rest.c_str() + rest.size());                
+                data->InsertChars(data->CursorPos, rest.c_str(), rest.c_str() + rest.size());
             }
             else if (pcompletions.size() > 0)
             {
@@ -137,45 +195,20 @@ TextEditCallback(ImGuiInputTextCallbackData* data)
                     if (j == 10)
                         break;
                 }
-                
-            }            
+
+            }
         }
         catch (pybind11::error_already_set e)
         {
             n_printf("%s", e.what());
         }
 
-        
+
         break;
     }
     case ImGuiInputTextFlags_CallbackHistory:
     {
-        // Example of HISTORY
-        const int prev_history_pos = console->previousCommandIndex;
-        if (data->EventKey == ImGuiKey_UpArrow)
-        {
-            if (console->previousCommandIndex == -1)
-                console->previousCommandIndex = console->previousCommands.Size() - 1;
-            else if (console->previousCommandIndex > 0)
-                console->previousCommandIndex--;
-        }
-        else if (data->EventKey == ImGuiKey_DownArrow)
-        {
-            if (console->previousCommandIndex != -1)
-                if (++console->previousCommandIndex >= console->previousCommands.Size())
-                    console->previousCommandIndex = -1;
-        }
-
-        // A better implementation would preserve the data on the current input line along with cursor position.
-        if (prev_history_pos != console->previousCommandIndex)
-        {
-            Util::String lastCommand = (console->previousCommandIndex >= 0) ? console->previousCommands[console->previousCommandIndex] : "";
-            lastCommand = lastCommand.ExtractRange(0, Math::min(lastCommand.Length(), data->BufSize));
-            sprintf(data->Buf, "%s", lastCommand.AsCharPtr());
-            data->BufDirty = true;
-            data->CursorPos = data->SelectionStart = data->SelectionEnd = data->BufTextLen = (int)strlen(data->Buf);
-        }
-
+        ListHistory(data);
         break;
     }
 
@@ -186,8 +219,21 @@ TextEditCallback(ImGuiInputTextCallbackData* data)
         selectedCompletion.Clear();
         completions.Clear();
     }
-    
 
+
+    return 0;
+}
+
+static int
+TextEditCallback(ImGuiInputTextCallbackData* data)
+{
+    Dynui::ImguiConsole* console = (Dynui::ImguiConsole*)data->UserData;
+    completions.Clear();
+
+    if (console->cmdMode == Dynui::ImguiConsole::CommandMode::Python)
+        return TextEditPython(data);
+    else if (console->cmdMode == Dynui::ImguiConsole::CommandMode::CVar)
+        return TextEditCVars(data);
     return 0;
 }
 
@@ -229,16 +275,9 @@ ImguiConsole::Setup()
     memset(this->command, '\0', 65535);
 
     // get script server
-    this->scriptServer = Scripting::ScriptServer::Instance();
+    if (Scripting::ScriptServer::HasInstance())
+        this->scriptServer = Scripting::ScriptServer::Instance();
 
-    // load commands into dictionary
-/*  SizeT numCommands = this->scriptServer->GetNumCommands();
-    for (IndexT i = 0; i < numCommands; i++)
-    {
-        const Ptr<Scripting::Command>& command = this->scriptServer->GetCommandByIndex(i);
-        this->commands.Add(command->GetName(), command);
-    }
-    */
     // load persistent history
     auto reader = IO::TextReader::Create();
     Util::String history = App::Application::Instance()->GetAppTitle() + "_history.txt";    
@@ -277,7 +316,7 @@ void
 ImguiConsole::Render()
 {
     ImGuiIO& io = ImGui::GetIO();
-    if (io.KeysDownDuration[Key::F8] == 0.0f)
+    if (io.KeysDownDuration[Key::F9] == 0.0f)
     {
         this->visible = !this->visible;
     }   
@@ -375,7 +414,21 @@ ImguiConsole::RenderContent()
     ImGui::Separator();
 
     // Command-line / Input ----------------------------------------------------
-
+    
+    ImGui::Columns(2, 0, false);
+    ImGui::SetColumnWidth(0, 40.0f);
+    if (!this->scriptServer.isvalid() || this->command[0] == '>')
+    {
+        this->cmdMode = CommandMode::CVar;
+        ImGui::Text("CVar");
+    }
+    else
+    {
+        this->cmdMode = CommandMode::Python;
+        ImGui::Text("   Py");
+    }
+    ImGui::NextColumn();
+    
     if (ImGui::InputText("|", this->command, sizeof(this->command), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_CallbackAlways, &TextEditCallback, (void*)this))
     {
         char* input_end = this->command + strlen(this->command);
@@ -389,9 +442,10 @@ ImguiConsole::RenderContent()
         }
         memset(this->command, '\0', sizeof(this->command));
     }
+    ImGui::EndColumns();
 
     //keeping auto focus on the input box
-    if (ImGui::IsItemHovered() || (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
+    if (!open_autocomplete && (ImGui::IsItemHovered() || (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0))))
         ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
 
     ImGui::SameLine();
@@ -401,8 +455,6 @@ ImguiConsole::RenderContent()
 
     ImGui::PopItemWidth();
     ImGui::Separator();
-
-
 
     if (completions.size() > 0 && completions.size() < 10)
     {
@@ -486,6 +538,24 @@ ImguiConsole::Execute(const Util::String& command)
     {
         this->consoleBuffer.Reset();
     }
+    else
+    {
+        if (this->cmdMode == CommandMode::Python)
+        {
+            if (!this->scriptServer.isvalid())
+            {
+                this->AppendToLog({ LogMessageType::N_SYSTEM, "Script server not running!" });
+            }
+            else if (!this->scriptServer->Eval(command))
+            {
+                //this->consoleBuffer.Add(this->scriptServer->GetError() + "\n");
+            }
+        }
+        else if (this->cmdMode == CommandMode::CVar)
+        {
+            this->EvaluateCVar(splits);
+        }
+    }
 /*  else if (this->commands.Contains(splits[0]) && splits.Size() == 2)
     {
         if (splits[1] == "help")
@@ -497,12 +567,7 @@ ImguiConsole::Execute(const Util::String& command)
             this->consoleBuffer.Add(this->commands[splits[0]]->GetSyntax());
         }
     }*/
-    else if (!this->scriptServer->Eval(command))
-    {
-        //this->consoleBuffer.Add(this->scriptServer->GetError() + "\n");
-    }
     
-
     // add to previous commands
     this->previousCommands.Append(command);
     if (this->persistentHistory->IsOpen())
@@ -525,16 +590,59 @@ ImguiConsole::AppendToLog(const LogEntry& msg)
 //------------------------------------------------------------------------------
 /**
 */
+bool
+ImguiConsole::EvaluateCVar(Util::Array<Util::String> const& splits)
+{
+    const char* cVarName = nullptr;
+    if (splits[0][0] == '>')
+        cVarName = splits[0].AsCharPtr() + 1;
+    else
+        cVarName = splits[0].AsCharPtr();
+
+    Core::CVar* cVar = Core::CVarGet(cVarName);
+    if (cVar)
+    {
+        if (splits.Size() > 1)
+            Core::CVarParseWrite(cVar, splits[1].AsCharPtr());
+        else
+        {
+            Util::String valueString;
+            switch (Core::CVarGetType(cVar))
+            {
+            case Core::CVar_Int:
+                valueString = Util::String::FromInt(Core::CVarReadInt(cVar));
+                break;
+            case Core::CVar_Float:
+                valueString = Util::String::FromFloat(Core::CVarReadFloat(cVar));
+                break;
+            case Core::CVar_String:
+                valueString = Core::CVarReadString(cVar);
+                break;
+            default:
+                break;
+            }
+
+            this->AppendToLog({ LogMessageType::N_MESSAGE, valueString });
+        }
+        return true;
+    }
+
+    this->AppendToLog({ LogMessageType::N_SYSTEM, "Invalid CVar." });
+    return false;
+}   
+
+//------------------------------------------------------------------------------
+/**
+*/
 const char*
 ImguiConsole::LogEntryTypeAsCharPtr(const LogMessageType& type) const
 {
-    //static const prefixes that are appended to messages. Doing this saves a ton of memory.
-    static const Util::String prefix_message = "[Message]: ";
-    static const Util::String prefix_input = ">> ";
-    static const Util::String prefix_warning = "[Warning]: ";
-    static const Util::String prefix_error = "[ Error ]: ";
+    static const Util::String prefix_input =     ">> ";
+    static const Util::String prefix_message =   "[Message]: ";
+    static const Util::String prefix_warning =   "[Warning]: ";
+    static const Util::String prefix_error =     "[ Error ]: ";
+    static const Util::String prefix_system =    "[System]: ";
     static const Util::String prefix_exception = "[FATAL ERROR]: ";
-    static const Util::String prefix_system ="[System]: ";
 
     switch (type)
     {

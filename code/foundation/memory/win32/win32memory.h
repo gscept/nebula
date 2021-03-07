@@ -36,7 +36,7 @@ extern void* Alloc(HeapType heapType, size_t size);
 extern void* Realloc(HeapType heapType, void* ptr, size_t size);
 /// free a chunk of memory
 extern void Free(HeapType heapType, void* ptr);
-/// duplicate a C-string (obsolete)
+/// duplicate a C-string
 extern char* DuplicateCString(const char* from);
 /// check if 2 memory regions are overlapping
 extern bool IsOverlapping(const unsigned char* srcPtr, size_t srcSize, const unsigned char* dstPtr, size_t dstSize);

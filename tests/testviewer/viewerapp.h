@@ -17,6 +17,8 @@
 #include "input/inputserver.h"
 #include "io/ioserver.h"
 #include "debug/debuginterface.h"
+#include "dynui/console/imguiconsole.h"
+#include "dynui/console/imguiconsolehandler.h"
 
 #if NEBULA_ENABLE_PROFILING
 #include "profiling/profiling.h"
@@ -92,6 +94,9 @@ protected:
     Math::vec3 defaultViewPoint{ 8.0f, 8.0f, 0.0f };
     Util::Array<float> frametimeHistory;
     
+    Ptr<Dynui::ImguiConsole> console;
+    Ptr<Dynui::ImguiConsoleHandler> consoleHandler;
+
 #if __NEBULA_HTTP__
     Ptr<Debug::DebugInterface> debugInterface;
     ushort defaultTcpPort;

@@ -219,6 +219,11 @@ SimpleViewerApplication::Open()
 
         Physics::Setup();
 
+        this->console = Dynui::ImguiConsole::Create();
+        this->consoleHandler = Dynui::ImguiConsoleHandler::Create();
+        this->console->Setup();
+        this->consoleHandler->Setup();
+
         return true;
     }
     return false;
@@ -461,6 +466,9 @@ void
 SimpleViewerApplication::RenderUI()
 {
     N_SCOPE(UpdateUI, App);
+
+    this->console->Render();
+    
     ImGui::PushStyleColor(ImGuiCol_MenuBarBg, { 0,0,0,0.15f });
     if (ImGui::BeginMainMenuBar())
     {
