@@ -1,114 +1,85 @@
 {
-	version: 2,
-	engine: "Nebula",
-	sub_script: true,
-	framescript: {
-		textures: [
-			{
-				name: "LocalLightShadow",
-				format: "R32G32F",
-				width: 512,
-				height: 512,
-				layers: 16,
-				usage: "Render",
-				type: "Texture2DArray"
-			},
-			{
-				name: "SunShadow",
-				format: "R32G32F",
-				width: 1024,
-				height: 1024,
-				layers: 4,
-				usage: "Render",
-				type: "Texture2DArray"
-			},
-			{
-				name: "SunShadowFiltered0",
-				format: "R32G32F",
-				width: 1024,
-				height: 1024,
-				layers: 4,
-				usage: "ReadWrite",
-				type: "Texture2DArray"
-			},
-			{
-				name: "SunShadowFiltered1",
-				format: "R32G32F",
-				width: 1024,
-				height: 1024,
-				layers: 4,
-				usage: "ReadWrite",
-				type: "Texture2DArray"
-			},
-			{
-				name: "GlobalLightDepth",
-				format: "D32S8",
-				width: 1024,
-				height: 1024,
-				layers: 4,
-				usage: "Render",
-				type: "Texture2DArray"
-			}
-		]
+    version: 2,
+    engine: "Nebula",
+    sub_script: true,
+    framescript: {
+        textures: [
+            {
+                name: "LocalLightShadow",
+                format: "R32G32F",
+                width: 512,
+                height: 512,
+                layers: 16,
+                usage: "Render",
+                type: "Texture2DArray"
+            },
+            {
+                name: "SunShadow",
+                format: "R16G16B16A16F",
+                width: 1024,
+                height: 1024,
+                usage: "Render",
+                type: "Texture2D"
+            },
+            {
+                name: "SunDepth",
+                format: "D32S8",
+                width: 1024,
+                height: 1024,
+                usage: "Render",
+                type: "Texture2D"
+            }
+        ]
 
-		pass: {
-			name: "SunShadowMapping",
-			attachments: [
-				{
-					name: "SunShadow",
-					clear: [ 1000, 1000, 0, 0 ],
-					store: true
-				}
-			],
+        pass: {
+            name: "SunShadowMapping",
+            attachments: [
+                {
+                    name: "SunShadow",
+                    clear: [ 1000, 1000, 0, 0 ],
+                    store: true
+                }
+            ],
 
-			subpass: {
-				name: "SunShadows",
-				subpass_dependencies: [],
-				attachments: [ "SunShadow" ],
-				depth: false,
-				call: {
-					name: "LightContext - Sun Shadows"
-				}
-			},
-		},
+            "depth_stencil": {
+                "name": "SunDepth",
+                "store": true,
+                "clear": 1
+            },
 
-		pass: {
-			name: "LocalShadowMapping"
-			attachments: [
-				{
-					name: "LocalLightShadow",
-					clear: [ 1000, 1000, 0, 0 ],
-					store: true
-				}
-			],
-			subpass: {
-				name: "SpotlightShadows",
-				subpass_dependencies: [],
-				attachments: [ "LocalLightShadow" ],
-				depth: false,
-				call: {
-					name: "LightContext - Spotlight Shadows"
-				}
-			}
-		},
+            subpass: {
+                name: "SunShadows",
+                subpass_dependencies: [],
+                attachments: [ "SunShadow" ],
+                depth: true,
+                call: {
+                    name: "LightContext - Sun Shadows"
+                }
+            },
+        },
 
-		call: {
-			name: "LightContext - Spotlight Blur"
-		}
-		call: {
-			resource_dependencies: [
-				{
-					name: "SunShadow",
-					access: "ShaderRead",
-					layout: "ShaderRead",
-					stage: "ComputeShader",
-					layer_count: 4,
-					aspect: "Color"
-				}
+        pass: {
+            name: "LocalShadowMapping"
+            attachments: [
+                {
+                    name: "LocalLightShadow",
+                    clear: [ 1000, 1000, 0, 0 ],
+                    store: true
+                }
+            ],
+            subpass: {
+                name: "SpotlightShadows",
+                subpass_dependencies: [],
+                attachments: [ "LocalLightShadow" ],
+                depth: false,
+                call: {
+                    name: "LightContext - Spotlight Shadows"
+                }
+            }
+        },
 
-			]
-			name: "LightContext - Sun Blur"
-		}
-
-	}
+        call: {
+            name: "LightContext - Spotlight Blur"
+        }
+    }
 }

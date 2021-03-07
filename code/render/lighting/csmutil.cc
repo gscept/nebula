@@ -31,7 +31,7 @@ CSMUtil::CSMUtil() :
     floorTexels(true),
     textureWidth(1024)
 {
-    this->cascadeDistances[0] = 15;
+    this->cascadeDistances[0] = 300;
     this->cascadeDistances[1] = 50;
     this->cascadeDistances[2] = 120;
     this->cascadeDistances[3] = 300;
@@ -361,7 +361,7 @@ CSMUtil::Compute(const Graphics::GraphicsEntityId camera, const Graphics::Graphi
 
     for (int cascadeIndex = 0; cascadeIndex < NumCascades; ++cascadeIndex)
     {
-        if (fittingMethod == Cascade)
+        if (this->fittingMethod == Cascade)
         {
             if (cascadeIndex == 0) intervalStart = 0;
             else intervalStart = cascadeDistances[cascadeIndex-1];

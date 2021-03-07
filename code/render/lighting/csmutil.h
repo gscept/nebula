@@ -86,7 +86,7 @@ public:
     /// computes the splits
     void Compute(const Graphics::GraphicsEntityId camera, const Graphics::GraphicsEntityId light);
 
-    static const SizeT NumCascades = 4;
+    static const SizeT NumCascades = 1;
 
 private:
 
@@ -120,13 +120,13 @@ private:
     Graphics::GraphicsEntityId cameraEntity;
     Math::mat4 cascadeProjectionTransform[NumCascades];
     Math::mat4 cascadeViewProjectionTransform[NumCascades];
-    Math::mat4 shadowView;
     float cascadeDistances[NumCascades];
-    float intervalDistances[NumCascades];
+    float intervalDistances[NumCascades]; 
+    Math::mat4 shadowView;
     float cascadeMaxDistance;
     
-    int fittingMethod;
-    int clampingMethod;
+    FittingMethod fittingMethod;
+    ClampingMethod clampingMethod;
     int blurSize;
     int textureWidth;
     bool floorTexels;

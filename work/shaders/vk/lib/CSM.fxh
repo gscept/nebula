@@ -150,9 +150,15 @@ CSMPS(
 	vec2 texCoord = texCoordShadow.xy;
 	float depth = texCoordShadow.z;
 
+    vec4 moments = sample2D(Texture, CSMTextureSampler, texCoord);
+    float occlusion = MSMShadowSample(moments, 0.5f, depth, 0.00000001f);
+
+    /*
 	vec2 mapDepth = sample2DArrayGrad(Texture, CSMTextureSampler, vec3(texCoord, cascadeIndex), shadowPosDDX.xy, shadowPosDDY.xy).rg;
 	float occlusion = ChebyshevUpperBound(mapDepth, depth, 0.0000001f);
+    */
 
+    /*
 	int nextCascade = cascadeIndex + 1;
 	float occlusionBlend = 1.0f;
 	if (blendBandLocation < CascadeBlendArea)
@@ -172,6 +178,7 @@ CSMPS(
 		// blend next cascade onto previous
 		occlusion = lerp(occlusionBlend, occlusion, blendAmount);
 	}
+    */
 	return occlusion;
 }
 
