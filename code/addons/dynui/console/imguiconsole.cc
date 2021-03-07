@@ -322,7 +322,7 @@ ImguiConsole::Render()
     }   
     if (!this->visible) return;
     
-    ImGui::Begin("Nebula Console", &this->visible);// , ImVec2(300, 300), -1.0f, ImGuiWindowFlags_NoScrollbar);
+    ImGui::Begin("Nebula Console", &this->visible, ImGuiWindowFlags_NoScrollbar);
 
     RenderContent();
     
