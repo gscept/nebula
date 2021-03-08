@@ -26,15 +26,12 @@ private:
     /// setup game features
     void SetupGameFeatures()
     {
-        gameFeature = BaseGameFeature::BaseGameFeatureUnit::Create();
-        this->gameServer->AttachGameFeature(gameFeature);
+        // empty
     }
     /// cleanup game features
     void CleanupGameFeatures()
     {
-        this->gameServer->RemoveGameFeature(gameFeature);
-        gameFeature->CleanupWorld();
-        gameFeature = nullptr;
+        // empty
     }
 
     Ptr<BaseGameFeature::BaseGameFeatureUnit> gameFeature;

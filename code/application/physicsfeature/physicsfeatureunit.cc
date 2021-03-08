@@ -50,12 +50,15 @@ PhysicsFeatureUnit::OnActivate()
     Physics::Setup();
     Physics::SetOnSleepCallback([](Physics::ActorId* actors, SizeT num)
     {
+        // FIXME: This assumes all actors are in the default world.
+        //        This might not be true and we should allow multiple physics stages as well.
+        Game::World* world = Game::GetWorld(WORLD_DEFAULT);
         Game::PropertyId staticPid = Game::GetPropertyId("Static"_atm);
-        Game::OpBuffer buffer = Game::CreateOpBuffer();
+        Game::OpBuffer buffer = Game::CreateOpBuffer(world);
         for (IndexT i = 0; i < num; i++)
         {
             Physics::Actor& actor = Physics::ActorContext::GetActor(actors[i]);
-            Game::Entity entity = (Game::Entity)actor.userData;
+            Game::Entity entity = Game::Entity::FromId((Ids::Id32)actor.userData);
             Game::Op::RegisterProperty registerOp;
             registerOp.entity = entity;
             registerOp.pid = staticPid;
@@ -66,13 +69,16 @@ PhysicsFeatureUnit::OnActivate()
     });
     Physics::SetOnWakeCallback([](Physics::ActorId* actors, SizeT num)
     {
+        // FIXME: This assumes all actors are in the default world.
+        //        This might not be true and we should allow multiple physics stages as well.
+        Game::World* world = Game::GetWorld(WORLD_DEFAULT);
         Game::PropertyId staticPid = Game::GetPropertyId("Static"_atm);
-        Game::OpBuffer buffer = Game::CreateOpBuffer();
+        Game::OpBuffer buffer = Game::CreateOpBuffer(world);
         for (IndexT i = 0; i < num; i++)
         {
             Physics::Actor& actor = Physics::ActorContext::GetActor(actors[i]);
-            Game::Entity entity = (Game::Entity)actor.userData;
-            if (Game::HasProperty(entity, staticPid))
+            Game::Entity entity = Game::Entity::FromId((Ids::Id32)actor.userData);
+            if (Game::HasProperty(world, entity, staticPid))
             {
                 Game::Op::DeregisterProperty deregisterOp;
                 deregisterOp.entity = entity;

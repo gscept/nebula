@@ -28,6 +28,7 @@ namespace Game
 {
 
 class Property;
+class World;
 
 class BlueprintManager
 {
@@ -51,9 +52,9 @@ public:
 // private api
 public:
     /// create an instance from blueprint. Note that this does not tie it to an entity! It's not recommended to create entities this way. @see Game::EntityManager @see api.h
-    EntityMapping Instantiate(BlueprintId blueprint);
+    EntityMapping Instantiate(World* const world, BlueprintId blueprint);
     /// create an instance from template. Note that this does not tie it to an entity! It's not recommended to create entities this way. @see Game::EntityManager @see api.h
-    EntityMapping Instantiate(TemplateId templateId);
+    EntityMapping Instantiate(World* const world, TemplateId templateId);
 
 private:
     /// constructor
@@ -70,8 +71,10 @@ private:
     bool LoadTemplateFolder(Util::String const& path);
     /// parse blueprint template file
     bool ParseTemplate(Util::String const& templatePath);
-    /// setup categories
-    void SetupCategories();
+    /// setup blueprint database
+    void SetupBlueprints();
+    /// create a category in the world db
+    MemDb::TableId CreateCategory(World* const world, BlueprintId bid);
 
     struct PropertyEntry
     {
@@ -84,12 +87,6 @@ private:
         // this is setup when calling SetupCategories
         /// The blueprint table. Contains all templates for the blueprint.
         MemDb::TableId tableId;
-        
-        /// category hash for the specific setup of properties
-        CategoryHash categoryHash;
-        /// the category id for the specific category that we instantiate to.
-        CategoryId categoryId;
-
         // these are created by ParseBlueprints()
         Util::StringAtom name;
         /// contains all the properties for this blueprint

@@ -127,6 +127,7 @@ ModelContext::Dealloc(Graphics::ContextEntityId id)
     if (rid != ModelId::Invalid()) // decrement model resource
         Models::DestroyModel(rid);
     mdl = ModelInstanceId::Invalid();
+    rid = ModelId::Invalid();
 
     modelContextAllocator.Dealloc(id.id);
 }

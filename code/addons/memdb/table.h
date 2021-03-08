@@ -14,6 +14,7 @@
 #include "util/fixedarray.h"
 #include "util/string.h"
 #include "util/stringatom.h"
+#include "util/hashtable.h"
 #include "propertyid.h"
 #include "tablesignature.h"
 
@@ -22,6 +23,11 @@ namespace MemDb
 
 /// Table identifier
 ID_32_TYPE(TableId);
+
+/// row identifier
+typedef IndexT Row;
+
+constexpr Row InvalidRow = -1;
 
 /// column id
 ID_16_TYPE(ColumnIndex);

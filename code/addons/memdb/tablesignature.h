@@ -16,10 +16,7 @@
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
-#include "util/arrayallocator.h"
 #include "util/fixedarray.h"
-#include "util/string.h"
-#include "util/stringatom.h"
 #include "propertyid.h"
 
 namespace MemDb

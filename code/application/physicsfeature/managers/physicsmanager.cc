@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
 #include "physicsmanager.h"
-#include "basegamefeature/managers/entitymanager.h"
 #include "game/gameserver.h"
 #include "physicsinterface.h"
 #include "physics/streamactorpool.h"
@@ -36,18 +35,6 @@ PhysicsManager::~PhysicsManager()
 //------------------------------------------------------------------------------
 /**
 */
-void
-MoveCallback(Physics::ActorId id, Math::mat4 const& trans)
-{
-    static Game::PropertyId const transformPropertyId = Game::GetPropertyId("WorldTransform");
-    Physics::Actor& actor = Physics::ActorContext::GetActor(id);
-    Game::Entity gameId = (Game::Entity)actor.userData;
-    Game::SetProperty(gameId, transformPropertyId, trans);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void PhysicsManager::InitCreateActorProcessor()
 {
     Game::FilterCreateInfo filterInfo;
@@ -68,9 +55,9 @@ void PhysicsManager::InitCreateActorProcessor()
     processorInfo.async = false;
     processorInfo.filter = filter;
     processorInfo.name = "PhysicsManager.CreateActors"_atm;
-    processorInfo.OnBeginFrame = [](Game::Dataset data)
+    processorInfo.OnBeginFrame = [](Game::World* world, Game::Dataset data)
     {
-        Game::OpBuffer opBuffer = Game::CreateOpBuffer();
+        Game::OpBuffer opBuffer = Game::CreateOpBuffer(world);
         Game::PropertyId const staticPID = Game::GetPropertyId("Static"_atm);
 
         for (int v = 0; v < data.numViews; v++)
@@ -87,12 +74,12 @@ void PhysicsManager::InitCreateActorProcessor()
                 Resources::ResourceName const& res = resources[i];
 
                 Resources::CreateResource(res, "PHYS",
-                    [trans, &opBuffer, entity, staticPID](Resources::ResourceId id)
+                    [world, trans, &opBuffer, entity, staticPID](Resources::ResourceId id)
                     {
-                        bool const dynamic = !Game::HasProperty(entity, staticPID);
+                        bool const dynamic = !Game::HasProperty(world, entity, staticPID);
                         Physics::ActorId actorid = Physics::CreateActorInstance(id, trans, dynamic);
                         Physics::Actor& actor = Physics::ActorContext::GetActor(actorid);
-                        actor.userData = entity.id;
+                        actor.userData = Ids::Id32(entity);
                         
                         Game::Op::RegisterProperty regOp;
                         regOp.entity = entity;
@@ -130,7 +117,7 @@ void PhysicsManager::InitDestroyActorProcessor()
     processorInfo.async = false;
     processorInfo.filter = filter;
     processorInfo.name = "PhysicsManager.DestroyActors"_atm;
-    processorInfo.OnBeginFrame = [](Game::Dataset data)
+    processorInfo.OnBeginFrame = [](Game::World* world, Game::Dataset data)
     {
         for (int v = 0; v < data.numViews; v++)
         {
@@ -169,7 +156,7 @@ void PhysicsManager::InitPollTransformProcessor()
     processorInfo.async = false;
     processorInfo.filter = filter;
     processorInfo.name = "PhysicsManager.PollTransforms"_atm;
-    processorInfo.OnFrame = [](Game::Dataset data)
+    processorInfo.OnFrame = [](Game::World* world, Game::Dataset data)
     {
         for (int v = 0; v < data.numViews; v++)
         {
@@ -200,7 +187,6 @@ PhysicsManager::Create()
     
     Singleton->pids.physicsActor = MemDb::TypeRegistry::Register("PhysicsActorId"_atm, Physics::ActorId(), Game::PropertyFlags::PROPERTYFLAG_MANAGED);
 
-    Singleton->InitCreateActorProcessor();
     Singleton->InitDestroyActorProcessor();
     Singleton->InitPollTransformProcessor();
 
@@ -224,7 +210,7 @@ PhysicsManager::Destroy()
 /**
 */
 void
-PhysicsManager::OnCleanup()
+PhysicsManager::OnCleanup(Game::World* world)
 {
     n_assert(PhysicsManager::HasInstance());
     Game::FilterCreateInfo filterInfo;
@@ -233,7 +219,7 @@ PhysicsManager::OnCleanup()
     filterInfo.numInclusive = 1;
 
     Game::Filter filter = Game::CreateFilter(filterInfo);
-    Game::Dataset data = Game::Query(filter);
+    Game::Dataset data = Game::Query(world, filter);
     for (int v = 0; v < data.numViews; v++)
     {
         Game::Dataset::CategoryTableView const& view = data.views[v];

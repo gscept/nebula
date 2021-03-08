@@ -39,7 +39,7 @@ private:
     void InitDestroyActorProcessor();
     void InitPollTransformProcessor();
 
-    static void OnCleanup();
+    static void OnCleanup(Game::World* world);
 };
 
 } // namespace PhysicsFeature

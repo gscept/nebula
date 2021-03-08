@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
 #include "graphicsmanager.h"
-#include "basegamefeature/managers/entitymanager.h"
 #include "graphics/graphicsentity.h"
 #include "graphics/graphicsserver.h"
 #include "models/modelcontext.h"
@@ -72,9 +71,9 @@ void GraphicsManager::InitCreateModelProcessor()
     processorInfo.async = false;
     processorInfo.filter = filter;
     processorInfo.name = "GraphicsManager.CreateModels"_atm;
-    processorInfo.OnBeginFrame = [](Game::Dataset data)
+    processorInfo.OnBeginFrame = [](Game::World* world, Game::Dataset data)
     {
-        Game::OpBuffer opBuffer = Game::CreateOpBuffer();
+        Game::OpBuffer opBuffer = Game::CreateOpBuffer(world);
 
         for (int v = 0; v < data.numViews; v++)
         {
@@ -89,9 +88,7 @@ void GraphicsManager::InitCreateModelProcessor()
                 Math::mat4 const& t = transforms[i];
                 Resources::ResourceName const& res = resources[i];
                 Graphics::GraphicsEntityId gid = Graphics::CreateEntity();
-
                 RegisterModelEntity(gid, res, t);
-
                 ModelEntityData mdlData;
                 mdlData.gid = gid;
 
@@ -129,7 +126,7 @@ void GraphicsManager::InitDestroyModelProcessor()
     processorInfo.async = false;
     processorInfo.filter = filter;
     processorInfo.name = "GraphicsManager.DestroyModels"_atm;
-    processorInfo.OnBeginFrame = [](Game::Dataset data)
+    processorInfo.OnBeginFrame = [](Game::World*, Game::Dataset data)
     {
         for (int v = 0; v < data.numViews; v++)
         {
@@ -171,7 +168,7 @@ void GraphicsManager::InitUpdateModelTransformProcessor()
     processorInfo.async = false;
     processorInfo.filter = filter;
     processorInfo.name = "GraphicsManager.UpdateModelTransforms"_atm;
-    processorInfo.OnBeginFrame = [](Game::Dataset data)
+    processorInfo.OnBeginFrame = [](Game::World*, Game::Dataset data)
     {
         for (int v = 0; v < data.numViews; v++)
         {
@@ -228,7 +225,7 @@ GraphicsManager::Destroy()
     Cleanup all graphics entities
 */
 void
-GraphicsManager::OnCleanup()
+GraphicsManager::OnCleanup(Game::World* world)
 {
     n_assert(GraphicsManager::HasInstance());
     
@@ -238,7 +235,7 @@ GraphicsManager::OnCleanup()
     filterInfo.numInclusive = 1;
 
     Game::Filter filter = Game::CreateFilter(filterInfo);
-    Game::Dataset data = Game::Query(filter);
+    Game::Dataset data = Game::Query(world, filter);
 
     for (int v = 0; v < data.numViews; v++)
     {

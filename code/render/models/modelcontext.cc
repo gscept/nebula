@@ -11,6 +11,7 @@
 #include "visibility/visibilitycontext.h"
 #include "profiling/profiling.h"
 #include "graphics/cameracontext.h"
+#include "threading/lockfreequeue.h"
 
 #ifndef PUBLIC_BUILD
 #include "dynui/im3d/im3dcontext.h"
@@ -23,6 +24,8 @@ namespace Models
 
 ModelContext::ModelContextAllocator ModelContext::modelContextAllocator;
 __ImplementContext(ModelContext, ModelContext::modelContextAllocator);
+
+Threading::LockFreeQueue<std::function<void()>> setupCompleteQueue;
 
 //------------------------------------------------------------------------------
 /**
@@ -47,6 +50,8 @@ void
 ModelContext::Create()
 {
     __CreateContext();
+
+    setupCompleteQueue.Resize(1024);
 
     __bundle.OnBegin = ModelContext::UpdateTransforms;
     __bundle.StageBits = &ModelContext::__state.currentStage;
@@ -78,8 +83,10 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
         const Math::mat4& pending = modelContextAllocator.Get<Model_Transform>(cid.id);
         Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::InstanceTransform>(mdl.instance) = pending;
         Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(mdl.instance) = gfxId.id;
+
+        // add the callbacks to a lockfree queue, and dequeue and call them when it's safe
         if (finishedCallback != nullptr)
-            finishedCallback();
+            setupCompleteQueue.Enqueue(finishedCallback);
     };
     info.failCallback = info.successCallback;
 
@@ -115,7 +122,9 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId gfxId, const Resource
         const Math::mat4& pending = modelContextAllocator.Get<Model_Transform>(cid.id);
         Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::InstanceTransform>(mdl.instance) = pending;
         Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(mdl.instance) = gfxId.id;
-        finishedCallback();
+        
+        if (finishedCallback != nullptr)
+            setupCompleteQueue.Enqueue(finishedCallback);
     };
     info.failCallback = info.successCallback;
 
@@ -253,6 +262,11 @@ ModelContext::GetModelNodeTypes(const Graphics::ContextEntityId id)
 void
 ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 {
+    // dequeue and call all setup complete callbacks
+    std::function<void()> callback;
+    while (setupCompleteQueue.Dequeue(callback))
+        callback();
+
     N_SCOPE(UpdateTransforms, Models);
     const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<Model_InstanceId>();
     const Util::Array<Math::mat4>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
@@ -371,21 +385,21 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 void
 ModelContext::OnRenderDebug(uint32_t flags)
 {
-    const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<Model_InstanceId>();    
-    Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceBoundingBox>();
-    const Util::Array<Math::mat4>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
-    const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<Model_Id>();
-    
-    Math::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
-    int i, n;
-    for (i = 0,n = instances.Size(); i<n ; i++)
-    {
-        const ModelInstanceId& instance = instances[i];
-        if (instance == ModelInstanceId::Invalid()) continue;
-        CoreGraphics::RenderShape shape;
-        shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), instanceBoxes[instance.instance].to_mat4(), white);
-        CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
-    }
+    //const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<Model_InstanceId>();    
+    //Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceBoundingBox>();
+    //const Util::Array<Math::mat4>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
+    //const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<Model_Id>();
+    //
+    //Math::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);
+    //int i, n;
+    //for (i = 0,n = instances.Size(); i<n ; i++)
+    //{
+    //    const ModelInstanceId& instance = instances[i];
+    //    if (instance == ModelInstanceId::Invalid()) continue;
+    //    CoreGraphics::RenderShape shape;
+    //    shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), transforms[instance.instance] * instanceBoxes[instance.instance].to_mat4(), white);
+    //    CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
+    //}
 }
 
 } // namespace Models

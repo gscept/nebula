@@ -10,9 +10,17 @@
 */
 //------------------------------------------------------------------------------
 #include "category.h"
+#include "memdb/tablesignature.h"
 
 namespace Game
 {
+
+//------------------------------------------------------------------------------
+//      Forward declarations
+//------------------------------------------------------------------------------
+class World;
+
+#define WORLD_DEFAULT uint32_t('DWLD')
 
 //------------------------------------------------------------------------------
 //      Types
@@ -24,8 +32,8 @@ namespace Game
 */
 struct EntityMapping
 {
-    CategoryId category;
-    InstanceId instance;
+    MemDb::TableId category;
+    MemDb::Row instance;
 };
 
 //------------------------------------------------------------------------------
@@ -41,7 +49,7 @@ struct Dataset
     struct CategoryTableView
     {
         /// category identifier
-        CategoryId cid;
+        MemDb::TableId cid;
         /// number of instances in view
         uint32_t numInstances = 0;
         /// property buffers. @note Can be NULL if a queried property is a flag
@@ -53,7 +61,6 @@ struct Dataset
     /// views into the tables
     CategoryTableView* views = nullptr;
 };
-
 
 /// Opaque entity operations buffer
 typedef uint32_t OpBuffer;
@@ -79,6 +86,14 @@ struct EntityCreateInfo
     TemplateId templateId = TemplateId::Invalid();
     /// set if the entity should be instantiated immediately or deferred until end of frame.
     bool immediate = false;
+};
+
+//------------------------------------------------------------------------------
+/**
+*/
+struct WorldCreateInfo
+{
+    uint32_t hash;
 };
 
 //------------------------------------------------------------------------------
@@ -145,7 +160,7 @@ struct PropertyCreateInfo
 };
 
 /// per frame callback for processors
-typedef void(*ProcessorFrameCallback)(Dataset);
+typedef void(*ProcessorFrameCallback)(World*, Dataset);
 
 //------------------------------------------------------------------------------
 /**
@@ -161,12 +176,12 @@ struct ProcessorCreateInfo
     /// filter used for creating the dataset
     Filter filter;
 
-    /// called when attached to game server
-    void(*OnActivate)() = nullptr;
-    /// called when removed from game server
-    void(*OnDeactivate)() = nullptr;
-    /// called by Game::Server::Start()
-    void(*OnStart)() = nullptr;
+    /// called when attached to world
+    //void(*OnActivate)() = nullptr;
+    ///// called when removed from world
+    //void(*OnDeactivate)() = nullptr;
+    ///// called by Game::Server::Start()
+    //void(*OnStart)() = nullptr;
 
     /// called before frame by the game server
     ProcessorFrameCallback OnBeginFrame = nullptr;
@@ -181,6 +196,9 @@ struct ProcessorCreateInfo
     /// render a debug visualization 
     ProcessorFrameCallback OnRenderDebug = nullptr;
 };
+
+typedef MemDb::TableSignature InclusiveTableMask;
+typedef MemDb::TableSignature ExclusiveTableMask;
 
 //------------------------------------------------------------------------------
 //      Entity Operations
@@ -212,73 +230,137 @@ struct DeregisterProperty
 } // namespace Op
 //------------------------------------------------------------------------------
 
+//------------------------------------------------------------------------------
+//      Functions
+//------------------------------------------------------------------------------
+
+World* CreateWorld(WorldCreateInfo const& info);
+/// returns a world by hash
+World* GetWorld(uint32_t worldHash);
+/// Returns the world db
+Ptr<MemDb::Database>        GetWorldDatabase(World*);
+/// Create a new entity
+Game::Entity                CreateEntity(World*, EntityCreateInfo const& info);
+/// delete entity
+void                        DeleteEntity(World*, Game::Entity entity);
+/// typed set a property method.
+template<typename TYPE>
+void                        SetProperty(World*, Game::Entity const entity, PropertyId const pid, TYPE value);
+/// typed get property method
+template<typename TYPE>
+TYPE                        GetProperty(World*, Game::Entity const entity, PropertyId const pid);
 /// Create an operations buffer
-OpBuffer CreateOpBuffer();
-
+OpBuffer                    CreateOpBuffer(World*);
 /// Runs all operations in an operations buffer and clears it. This will invalidate category table views.
-void Dispatch(OpBuffer& buffer);
-
+void                        Dispatch(OpBuffer& buffer);
 /// Register a property <-> entity association. Moves entity to a different category table.
-void AddOp(OpBuffer buffer, Op::RegisterProperty op);
-
+void                        AddOp(OpBuffer buffer, Op::RegisterProperty op);
 /// Deregister a property <-> entity association. Moves entity to a different category table.
-void AddOp(OpBuffer buffer, Op::DeregisterProperty const& op);
-
+void                        AddOp(OpBuffer buffer, Op::DeregisterProperty const& op);
 /// Execute an operation directly
-void Execute(Op::RegisterProperty const& op);
-
+void                        Execute(World*, Op::RegisterProperty const& op);
 /// Execute an operation directly
-void Execute(Op::DeregisterProperty const& op);
-
+void                        Execute(World*, Op::DeregisterProperty const& op);
 /// Release all memory allocated by operation buffers
-void ReleaseAllOps();
-
+void                        ReleaseAllOps();
 /// Create a filter
-Filter CreateFilter(FilterCreateInfo const& info);
-
+Filter                      CreateFilter(FilterCreateInfo const& info);
 /// Destroy a filter
-void DestroyFilter(Filter);
-
+void                        DestroyFilter(Filter);
 /// Create a processor
-ProcessorHandle CreateProcessor(ProcessorCreateInfo const& info);
-
+ProcessorHandle             CreateProcessor(ProcessorCreateInfo const& info);
 /// Recycles all current datasets allocated memory to be reused
-void ReleaseDatasets();
-
+void                        ReleaseDatasets();
 /// Query the entity database using specified filter set. This does NOT wait for resources to be available.
-Dataset Query(Filter filter);
-
-/// Get instanceid of entity
-InstanceId GetInstanceId(Entity entity);
-
+Dataset                     Query(World*, Filter filter);
+/// Query a subset of tables using a specified filter set. Modifies the tables array so that it only contains valid tables. This does NOT wait for resources to be available.
+Dataset                     Query(World*, Util::Array<MemDb::TableId>& tables, Filter filter);
+/// Query a subset of tables in a specific db using a specified filter set. Modifies the tables array so that it only contains valid tables. This does NOT wait for resources to be available.
+Dataset                     Query(Ptr<MemDb::Database> const& db, Util::Array<MemDb::TableId>& tables, Filter filter);
+/// Get instance of entity
+MemDb::Row                  GetInstance(World*, Entity entity);
 /// Check if an entity ID is still valid.
-bool IsValid(Entity e);
-
+bool                        IsValid(World*, Entity e);
 /// Check if an entity is active (has an instance). It might be valid, but inactive just after it has been created.
-bool IsActive(Entity e);
-
-/// Returns number of active entities
-uint GetNumEntities();
-
+bool                        IsActive(World*, Entity e);
 /// Returns the entity mapping of an entity
-EntityMapping GetEntityMapping(Entity entity);
-
+EntityMapping               GetEntityMapping(World*, Entity entity);
 /// Create a property
-PropertyId CreateProperty(PropertyCreateInfo const& info);
-
+PropertyId                  CreateProperty(PropertyCreateInfo const& info);
 /// Returns a property id
-PropertyId GetPropertyId(Util::StringAtom name);
-
+PropertyId                  GetPropertyId(Util::StringAtom name);
 /// Check if entity has a specific property. (SLOW!)
-bool HasProperty(Entity const entity, PropertyId const pid);
-
+bool                        HasProperty(World*, Entity const entity, PropertyId const pid);
 /// Returns a blueprint id by name
-BlueprintId GetBlueprintId(Util::StringAtom name);
-
+BlueprintId                 GetBlueprintId(Util::StringAtom name);
 /// Returns a template id by name
-TemplateId GetTemplateId(Util::StringAtom name);
-
+TemplateId                  GetTemplateId(Util::StringAtom name);
 /// Get number of instances in a specific category
-SizeT GetNumInstances(CategoryId category);
+SizeT                       GetNumInstances(World*, MemDb::TableId table);
+/// retrieve the instance buffer for a specific property in a category
+void*                       GetInstanceBuffer(World*, MemDb::TableId const, PropertyId const);
+/// retrieve the inclusive table mask
+InclusiveTableMask const&   GetInclusiveTableMask(Filter);
+/// retrieve the exclusive table mask
+ExclusiveTableMask const&   GetExclusiveTableMask(Filter);
+/// allocate an entity id
+Entity                      AllocateEntity(World*);
+/// deallocate an entity id. Make sure to deallocate the entity db entry first.
+void                        DeallocateEntity(World*, Entity);
+/// allocate an instance in the table and associate it with the entity
+MemDb::Row                  AllocateInstance(World*, Entity, MemDb::TableId);
+/// allocate an instance from a blueprint in the table and associate it with the entity
+MemDb::Row                  AllocateInstance(World*, Entity, BlueprintId);
+/// allocate an instance from a template in the table and associate it with the entity
+MemDb::Row                  AllocateInstance(World*, Entity, TemplateId);
+/// deallocate an entitys entry from the worlds database
+void                        DeallocateInstance(World*, Entity);
+/// deallocate an entry from the worlds database. @note this does not disassociate it with any entity, which might lead to subtle bugs if not handled correctly.
+void                        DeallocateInstance(World*, MemDb::TableId, MemDb::Row);
+/// migrate an entity to a different table
+MemDb::Row                  Migrate(World*, Entity, MemDb::TableId toTable);
+/// migrate an array of entities from one table to another. Fills the newInstances array with the new row ids for each entity. @note assumes all entities are associated with the fromTable.
+void                        Migrate(World*, Util::Array<Entity> const& entities, MemDb::TableId fromTable, MemDb::TableId toTable, Util::FixedArray<IndexT>& newInstances);
+/// register processors to a world
+void                        RegisterProcessors(World*, std::initializer_list<ProcessorHandle>);
+/// prefilter the database for all processors
+void                        PrefilterProcessors(World*);
+/// defragment an entity table
+void                        Defragment(World*, MemDb::TableId);
+/// create an entity table
+MemDb::TableId              CreateEntityTable(World* world, CategoryCreateInfo const& info);
+/// set the value of an entity
+void                        SetProperty(World*, Game::Entity entity, Game::PropertyId pid, void* value, uint64_t size);
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename TYPE>
+inline void
+SetProperty(World* world, Game::Entity const entity, PropertyId const pid, TYPE value)
+{
+#if NEBULA_DEBUG
+    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(pid), "SetProperty: Provided value's type is not the correct size for the given PropertyId.");
+#endif
+    EntityMapping mapping = GetEntityMapping(world, entity);
+    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.category, pid);
+    *(ptr + mapping.instance) = value;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename TYPE>
+inline TYPE
+GetProperty(World* world, Game::Entity const entity, PropertyId const pid)
+{
+#if NEBULA_DEBUG
+    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(pid), "GetProperty: Provided value's type is not the correct size for the given PropertyId.");
+#endif
+    EntityMapping mapping = GetEntityMapping(world, entity);
+    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.category, pid);
+    return *(ptr + mapping.instance);
+}
 
 } // namespace Game

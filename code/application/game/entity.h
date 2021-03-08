@@ -6,8 +6,8 @@
     An entity is essentially just an Id with some utility functions attached.
     What actually makes up the entities are their properties.
 
-    The id is split into two parts: the 8 upper bits are used as a generation
-    counter, so that we can easily reuse the lower 24 bits as an index.
+    The id is split into two parts: the upper 10 bits are used as a generation
+    counter, so that we can easily reuse the lower 22 bits as an index.
     
     @see    Game::IsValid
     @see    api.h
@@ -19,17 +19,40 @@
 */
 //------------------------------------------------------------------------------
 #include "ids/id.h"
+#include "memdb/table.h"
 
 namespace Game
 {
-    /// category id
-    ID_32_TYPE(CategoryId);
+    struct Entity
+    {
+        uint32_t index     : 22; // 4M concurrent entities
+        uint32_t generation : 10; // 1024 generations per index
+    
+        static Entity FromId(Ids::Id32 id)
+        {
+            Entity ret;
+            ret.index = id & 0x003FFFFF;
+            ret.generation = (id & 0xFFC0000) >> 22;
+            return ret;
+        }
+        explicit constexpr operator Ids::Id32() const
+        {
+            return ((generation << 22) & 0xFFC0000) + (index & 0x003FFFFF);
+        }
+        static constexpr Entity Invalid()
+        {
+            return { 0xFFFFFFFF, 0xFFFFFFFF };
+        }
+        constexpr uint32_t HashCode() const
+        {
+            return index;
+        }
+        const bool operator==(const Entity& rhs) const { return Ids::Id32(*this) == Ids::Id32(rhs); }
+        const bool operator!=(const Entity& rhs) const { return Ids::Id32(*this) != Ids::Id32(rhs); }
+        const bool operator<(const Entity& rhs) const { return index < rhs.index; }
+        const bool operator>(const Entity& rhs) const { return index > rhs.index; }
+    };
 
-    /// instance id point into a category table. Entities are mapped to instanceids
-    ID_32_TYPE(InstanceId);
-
-    /// 8+24 bits entity id (generation+index)
-    ID_32_TYPE(Entity);
 } // namespace Game
 
 

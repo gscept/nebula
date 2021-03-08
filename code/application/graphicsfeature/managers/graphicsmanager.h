@@ -48,7 +48,7 @@ private:
     void InitDestroyModelProcessor();
     void InitUpdateModelTransformProcessor();
 
-    static void OnCleanup();
+    static void OnCleanup(Game::World* world);
 };
 
 } // namespace GraphicsFeature

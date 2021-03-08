@@ -41,40 +41,11 @@ public:
     void OnRenderDebug() override;
     /// called at the beginning of a frame
     void OnFrame() override;
-
-    /// set optional world dimensions
-    void SetWorldDimensions(const Math::bbox& box);
-    /// get world dimensions
-    const Math::bbox& GetWorldDimensions() const;
-    /// setup an empty game world
-    virtual void SetupEmptyWorld();
-    /// cleanup the game world
-    virtual void CleanupWorld();
     
 protected:
-    Game::ManagerHandle entityManager;
     Game::ManagerHandle blueprintManager;
     Game::ManagerHandle timeManager;
-    Math::bbox worldBox;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-BaseGameFeatureUnit::SetWorldDimensions(const Math::bbox& box)
-{
-    this->worldBox = box;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Math::bbox&
-BaseGameFeatureUnit::GetWorldDimensions() const
-{
-    return this->worldBox;
-}
 
 } // namespace BaseGameFeature
 //------------------------------------------------------------------------------

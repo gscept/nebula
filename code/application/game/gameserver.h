@@ -27,13 +27,20 @@
 #include "core/singleton.h"
 #include "game/featureunit.h"
 #include "debug/debugtimer.h"
-#include "api.h"
 #include "ids/idgenerationpool.h"
+#include "basegamefeature/properties/owner.h"
+#include "api.h"
+#include "entitypool.h"
 
 //------------------------------------------------------------------------------
 namespace Game
 {
 
+typedef ProcessorCreateInfo ProcessorInfo;
+
+//------------------------------------------------------------------------------
+/**
+*/
 class GameServer : public Core::RefCounted
 {
     __DeclareClass(GameServer)
@@ -79,44 +86,53 @@ public:
     void RemoveGameFeature(const Ptr<FeatureUnit>& feature);
     /// is feature attached
     bool IsFeatureAttached(const Util::String& stringName) const;
-
+    /// access to all attached features units
     Util::Array<Ptr<FeatureUnit>> const& GetGameFeatures() const;
 
     /// create a processor
     ProcessorHandle CreateProcessor(ProcessorCreateInfo const& info);
+
+    /// get info about a processor
+    ProcessorInfo const& GetProcessorInfo(ProcessorHandle handle);
 
     /// set command line args
     void SetCmdLineArgs(const Util::CommandLineArgs& a);
     /// get command line args
     const Util::CommandLineArgs& GetCmdLineArgs() const;
 
+    /// setup an empty game world
+    virtual void SetupEmptyWorld(World*);
+    /// cleanup the game world
+    virtual void CleanupWorld(World*);
+    
+    /// create a world. The game server handles all worlds
+    World* CreateWorld(WorldCreateInfo const& info);
+    /// get a world by hash
+    World* GetWorld(uint32_t worldHash);
+    /// destroy a world
+    void DestroyWorld(uint32_t worldHash);
+
+    /// contains internal state and world management
+    struct State
+    {
+        World* worlds[32];
+        uint numWorlds = 0;
+
+        Util::HashTable<uint32_t, uint32_t, 32, 1> worldTable;
+
+        /// Contains all templates
+        Ptr<MemDb::Database> templateDatabase;
+        /// quick access to the Owner property id
+        PropertyId ownerId;
+    } state;
+
 protected:
     bool isOpen;
     bool isStarted;
     Util::CommandLineArgs args;
     Util::Array<Ptr<FeatureUnit> > gameFeatures;
-
-    struct CallbackInfo
-    {
-        ProcessorHandle handle;
-        Filter filter;
-        ProcessorFrameCallback func;
-    };
-
-    struct ProcessorInfo
-    {
-        Util::StringAtom name;
-        /// set if this processor should run as a job
-        bool async = false;
-        /// called when removed from game server
-        void(*OnDeactivate)() = nullptr;
-    };
-
-    Util::Array<CallbackInfo> onBeginFrameCallbacks;
-    Util::Array<CallbackInfo> onFrameCallbacks;
-    Util::Array<CallbackInfo> onEndFrameCallbacks;
-    Util::Array<CallbackInfo> onLoadCallbacks;
-    Util::Array<CallbackInfo> onSaveCallbacks;
+    friend class World;
+    
     Util::Array<ProcessorInfo> processors;
     Ids::IdGenerationPool processorHandlePool;
 
@@ -124,6 +140,7 @@ protected:
     _declare_timer(GameServerOnBeginFrame);
     _declare_timer(GameServerOnFrame);
     _declare_timer(GameServerOnEndFrame);
+    _declare_timer(GameServerManageEntities);
     Util::Array<Ptr<Debug::DebugTimer>> onBeginFrameTimers;
     Util::Array<Ptr<Debug::DebugTimer>> onFrameTimers;
     Util::Array<Ptr<Debug::DebugTimer>> onEndFrameTimers;
@@ -146,6 +163,16 @@ inline const Util::CommandLineArgs&
 GameServer::GetCmdLineArgs() const
 {
     return this->args;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline ProcessorInfo const&
+GameServer::GetProcessorInfo(ProcessorHandle handle)
+{
+    n_assert(this->processorHandlePool.IsValid(handle));
+    return this->processors[Ids::Index(handle)];
 }
 
 }; // namespace Game

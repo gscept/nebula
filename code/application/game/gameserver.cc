@@ -7,6 +7,8 @@
 #include "game/gameserver.h"
 #include "core/factory.h"
 #include "profiling/profiling.h"
+#include "basegamefeature/managers/blueprintmanager.h"
+#include "basegamefeature/basegamefeatureunit.h"
 
 namespace Game
 {
@@ -24,6 +26,14 @@ GameServer::GameServer() :
     _setup_grouped_timer(GameServerOnBeginFrame, "Game Subsystem");
     _setup_grouped_timer(GameServerOnFrame, "Game Subsystem");
     _setup_grouped_timer(GameServerOnEndFrame, "Game Subsystem");
+    _setup_grouped_timer(GameServerManageEntities, "Game Subsystem");
+    this->state.templateDatabase = MemDb::Database::Create();
+    this->state.ownerId = MemDb::TypeRegistry::GetPropertyId("Owner"_atm);
+    WorldCreateInfo info;
+    info.hash = WORLD_DEFAULT;
+    this->CreateWorld(info);
+    // always attach the base game feature
+    this->AttachGameFeature(BaseGameFeature::BaseGameFeatureUnit::Create());
 }
 
 //------------------------------------------------------------------------------
@@ -35,6 +45,18 @@ GameServer::~GameServer()
     _discard_timer(GameServerOnBeginFrame);
     _discard_timer(GameServerOnFrame);
     _discard_timer(GameServerOnEndFrame);
+    _discard_timer(GameServerManageEntities);
+
+    this->state.templateDatabase = nullptr;
+
+    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+    {
+        if (this->state.worlds[worldIndex] != nullptr)
+        {
+            n_delete(this->state.worlds[worldIndex]);
+            this->state.worlds[worldIndex] = nullptr;
+        }
+    }
 
     __DestructSingleton;
 }
@@ -117,7 +139,13 @@ GameServer::Start()
     int num = this->gameFeatures.Size();
     for (i = 0; i < num; i++)
     {
-        this->gameFeatures[i]->OnStart();
+        for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+        {
+            if (this->state.worlds[worldIndex] != nullptr)
+            {
+                this->gameFeatures[i]->OnStart(this->state.worlds[worldIndex]);
+            }
+        }
     }
 
     this->isStarted = true;
@@ -147,7 +175,13 @@ GameServer::Stop()
     int num = this->gameFeatures.Size();
     for (i = 0; i < num; i++)
     {
-        this->gameFeatures[i]->OnStop();
+        for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+        {
+            if (this->state.worlds[worldIndex] != nullptr)
+            {
+                this->gameFeatures[i]->OnStop(this->state.worlds[worldIndex]);
+            }
+        }
     }
 
     this->isStarted = false;
@@ -172,17 +206,18 @@ GameServer::OnBeginFrame()
         this->gameFeatures[i]->OnBeginFrame();
     }
 
-    num = this->onBeginFrameCallbacks.Size();
-    for (i = 0; i < num; i++)
+    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {
-#if NEBULA_ENABLE_PROFILING
-        this->onBeginFrameTimers[i]->Start();
-#endif
-        Dataset data = Game::Query(this->onBeginFrameCallbacks[i].filter);
-        this->onBeginFrameCallbacks[i].func(data);
-#if NEBULA_ENABLE_PROFILING
-        this->onBeginFrameTimers[i]->Stop();
-#endif
+        if (this->state.worlds[worldIndex] != nullptr)
+        {
+            num = this->state.worlds[worldIndex]->onBeginFrameCallbacks.Size();
+            for (i = 0; i < num; i++)
+            {
+                World* w = this->state.worlds[worldIndex];
+                Dataset data = Game::Query(w, w->onBeginFrameCallbacks[i].cache, w->onBeginFrameCallbacks[i].filter);
+                w->onBeginFrameCallbacks[i].func(w, data);
+            }
+        }
     }
 
     Game::ReleaseDatasets();
@@ -212,17 +247,18 @@ GameServer::OnFrame()
         this->gameFeatures[i]->OnFrame();
     }
 
-    num = this->onFrameCallbacks.Size();
-    for (i = 0; i < num; i++)
+    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {
-#if NEBULA_ENABLE_PROFILING
-        this->onFrameTimers[i]->Start();
-#endif
-        Dataset data = Game::Query(this->onFrameCallbacks[i].filter);
-        this->onFrameCallbacks[i].func(data);
-#if NEBULA_ENABLE_PROFILING
-        this->onFrameTimers[i]->Stop();
-#endif
+        if (this->state.worlds[worldIndex] != nullptr)
+        {
+            num = this->state.worlds[worldIndex]->onFrameCallbacks.Size();
+            for (i = 0; i < num; i++)
+            {
+                World* w = this->state.worlds[worldIndex];
+                Dataset data = Game::Query(w, w->onBeginFrameCallbacks[i].cache, w->onFrameCallbacks[i].filter);
+                w->onFrameCallbacks[i].func(w, data);
+            }
+        }
     }
 
     Game::ReleaseDatasets();
@@ -248,20 +284,78 @@ GameServer::OnEndFrame()
         this->gameFeatures[i]->OnEndFrame();
     }
 
-    num = this->onEndFrameCallbacks.Size();
-    for (i = 0; i < num; i++)
+    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {
-#if NEBULA_ENABLE_PROFILING
-        this->onEndFrameTimers[i]->Start();
-#endif
-        Dataset data = Game::Query(this->onEndFrameCallbacks[i].filter);
-        this->onEndFrameCallbacks[i].func(data);
-#if NEBULA_ENABLE_PROFILING
-        this->onEndFrameTimers[i]->Stop();
-#endif
+        if (this->state.worlds[worldIndex] != nullptr)
+        {
+            num = this->state.worlds[worldIndex]->onEndFrameCallbacks.Size();
+            for (i = 0; i < num; i++)
+            {
+                World* w = this->state.worlds[worldIndex];
+                Dataset data = Game::Query(w, w->onBeginFrameCallbacks[i].cache, w->onEndFrameCallbacks[i].filter);
+                w->onEndFrameCallbacks[i].func(w, data);
+            }
+        }
     }
 
     Game::ReleaseDatasets();
+
+    _start_timer(GameServerManageEntities);
+
+    n_assert(GameServer::HasInstance());
+    
+    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+    {
+        if (this->state.worlds[worldIndex] != nullptr)
+        {
+            World* world = this->state.worlds[worldIndex];
+            // NOTE: The order of the following loops are important!
+
+            // Clean up any managed property instances.
+            for (auto c = world->categoryDecayMap.Begin(); c != world->categoryDecayMap.End(); c++)
+            {
+                MemDb::TableId tid = *c.val;
+                world->db->Clean(tid);
+            }
+
+            // Clean up entities
+            while (!world->deallocQueue.IsEmpty())
+            {
+                auto const cmd = world->deallocQueue.Dequeue();
+                DeallocateInstance(world, cmd.table, cmd.row);
+            }
+
+            // Allocate instances for new entities, reuse invalid instances if possible
+            while (!world->allocQueue.IsEmpty())
+            {
+                auto const cmd = world->allocQueue.Dequeue();
+                n_assert(IsValid(world, cmd.entity));
+
+                if (cmd.tid.templateId != Ids::InvalidId16)
+                {
+                    AllocateInstance(world, cmd.entity, cmd.tid);
+                }
+                else
+                {
+                    AllocateInstance(world, cmd.entity, (BlueprintId)cmd.tid.blueprintId);
+                }
+            }
+
+            // Delete all remaining invalid instances
+            Ptr<MemDb::Database> const& db = world->db;
+
+            if (db.isvalid())
+            {
+                db->ForEachTable([world](MemDb::TableId tid)
+                {
+                    Defragment(world, tid);
+                });
+            }
+        }
+    }
+    _stop_timer(GameServerManageEntities);
+
+    Game::ReleaseAllOps();
 
     _stop_timer(GameServerOnEndFrame);
 }
@@ -277,7 +371,13 @@ GameServer::NotifyBeforeLoad()
     int num = this->gameFeatures.Size();
     for (i = 0; i < num; i++)
     {
-        this->gameFeatures[i]->OnBeforeLoad();
+        for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+        {
+            if (this->state.worlds[worldIndex] != nullptr)
+            {
+                this->gameFeatures[i]->OnBeforeLoad(this->state.worlds[worldIndex]);
+            }
+        }
     }
 }
 
@@ -292,7 +392,13 @@ GameServer::NotifyBeforeCleanup()
     int num = this->gameFeatures.Size();
     for (i = 0; i < num; i++)
     {
-        this->gameFeatures[i]->OnBeforeCleanup();
+        for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+        {
+            if (this->state.worlds[worldIndex] != nullptr)
+            {
+                this->gameFeatures[i]->OnBeforeCleanup(this->state.worlds[worldIndex]);
+            }
+        }
     }
 }
 
@@ -307,14 +413,27 @@ GameServer::NotifyGameLoad()
     int num = this->gameFeatures.Size();
     for (i = 0; i < num; i++)
     {
-        this->gameFeatures[i]->OnLoad();
+        for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+        {
+            if (this->state.worlds[worldIndex] != nullptr)
+            {
+                this->gameFeatures[i]->OnLoad(this->state.worlds[worldIndex]);
+            }
+        }
     }
 
-    num = this->onLoadCallbacks.Size();
-    for (i = 0; i < num; i++)
+    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {
-        Dataset data = Game::Query(this->onLoadCallbacks[i].filter);
-        this->onLoadCallbacks[i].func(data);
+        if (this->state.worlds[worldIndex] != nullptr)
+        {
+            num = this->state.worlds[worldIndex]->onLoadCallbacks.Size();
+            for (i = 0; i < num; i++)
+            {
+                World* w = this->state.worlds[worldIndex];
+                Dataset data = Game::Query(w, w->onBeginFrameCallbacks[i].cache, w->onLoadCallbacks[i].filter);
+                w->onLoadCallbacks[i].func(w, data);
+            }
+        }
     }
 
     Game::ReleaseDatasets();
@@ -331,14 +450,27 @@ GameServer::NotifyGameSave()
     int num = this->gameFeatures.Size();
     for (i = 0; i < num; i++)
     {
-        this->gameFeatures[i]->OnSave();
+        for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+        {
+            if (this->state.worlds[worldIndex] != nullptr)
+            {
+                this->gameFeatures[i]->OnSave(this->state.worlds[worldIndex]);
+            }
+        }
     }
 
-    num = this->onSaveCallbacks.Size();
-    for (i = 0; i < num; i++)
+    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {
-        Dataset data = Game::Query(this->onSaveCallbacks[i].filter);
-        this->onSaveCallbacks[i].func(data);
+        if (this->state.worlds[worldIndex] != nullptr)
+        {
+            num = this->state.worlds[worldIndex]->onSaveCallbacks.Size();
+            for (i = 0; i < num; i++)
+            {
+                World* w = this->state.worlds[worldIndex];
+                Dataset data = Game::Query(w, w->onBeginFrameCallbacks[i].cache, w->onSaveCallbacks[i].filter);
+                w->onSaveCallbacks[i].func(w, data);
+            }
+        }
     }
 
     Game::ReleaseDatasets();
@@ -373,66 +505,87 @@ GameServer::GetGameFeatures() const
 
 //------------------------------------------------------------------------------
 /**
+    @todo   we should handle the registering of the world processors manually
 */
 ProcessorHandle
 GameServer::CreateProcessor(ProcessorCreateInfo const& info)
 {
-    ProcessorInfo processor;
-    processor.async = info.async;
-    processor.name = info.name;
-    processor.OnDeactivate = info.OnDeactivate;
-
+    ProcessorInfo processor = info;
+    
     ProcessorHandle handle;
-    this->processorHandlePool.Allocate(handle);
-
-    if (this->processors.Size() <= Ids::Index(handle))
+    if (!this->processorHandlePool.Allocate(handle))
         this->processors.Append(std::move(processor));
     else
         this->processors[Ids::Index(handle)] = std::move(processor);
 
-    // Setup frame callbacks
-    if (info.OnBeginFrame != nullptr)
+    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {
-        this->onBeginFrameCallbacks.Append({ handle, info.filter, info.OnBeginFrame });
-#if NEBULA_ENABLE_PROFILING
-        Ptr<Debug::DebugTimer> timer = Debug::DebugTimer::Create();
-        timer->Setup(info.name, "Processors - OnBeginFrame");
-        this->onBeginFrameTimers.Append(timer);
-#endif
+        if (this->state.worlds[worldIndex] != nullptr)
+        {
+            RegisterProcessors(this->state.worlds[worldIndex], { handle });
+        }
     }
-
-    if (info.OnFrame != nullptr)
-    {
-        this->onFrameCallbacks.Append({ handle, info.filter, info.OnFrame });
-#if NEBULA_ENABLE_PROFILING
-        Ptr<Debug::DebugTimer> timer = Debug::DebugTimer::Create();
-        timer->Setup(info.name, "Processors - OnFrame");
-        this->onFrameTimers.Append(timer);
-#endif
-    }
-
-    if (info.OnEndFrame != nullptr)
-    {
-        this->onEndFrameCallbacks.Append({ handle, info.filter, info.OnEndFrame });
-#if NEBULA_ENABLE_PROFILING
-        Ptr<Debug::DebugTimer> timer = Debug::DebugTimer::Create();
-        timer->Setup(info.name, "Processors - OnEndFrame");
-        this->onEndFrameTimers.Append(timer);
-#endif
-    }
-
-    if (info.OnLoad != nullptr)
-        this->onLoadCallbacks.Append({ handle, info.filter, info.OnLoad });
-
-    if (info.OnSave != nullptr)
-        this->onSaveCallbacks.Append({ handle, info.filter, info.OnSave });
-    
-    if (info.OnActivate != nullptr)
-    {
-        info.OnActivate();
-    }
-
     return handle;
+}
+
+//------------------------------------------------------------------------------
+/**
+    Setup a new, empty world.
+*/
+void
+GameServer::SetupEmptyWorld(World* world)
+{
+    Game::GameServer::Instance()->NotifyBeforeLoad();
+}
+
+//------------------------------------------------------------------------------
+/**
+    Cleanup the game world. This should undo the stuff in SetupWorld().
+    Override this method in a subclass if your app needs different
+    behaviour.
+*/
+void
+GameServer::CleanupWorld(World* world)
+{
+    Game::GameServer::Instance()->NotifyBeforeCleanup();
+    world->db->Reset();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+World*
+GameServer::CreateWorld(WorldCreateInfo const& info)
+{
+    this->state.worldTable.Add(info.hash, this->state.numWorlds);
+    n_assert(this->state.numWorlds + 1 < 32);
+    World*& world = this->state.worlds[this->state.numWorlds++];
+    world = n_new(World);
+    world->hash = info.hash;
+    return world;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+World*
+GameServer::GetWorld(uint32_t worldHash)
+{
+    return this->state.worlds[this->state.worldTable[worldHash]];
+}
+
+//------------------------------------------------------------------------------
+/**
+    @note   The world index does not get recycled.
+    @todo   The world index should be recycled.
+*/
+void
+GameServer::DestroyWorld(uint32_t worldHash)
+{
+    uint32_t index = this->state.worldTable[worldHash];
+    n_delete(this->state.worlds[index]);
+    this->state.worlds[index] = nullptr;
+    this->state.worldTable.Erase(worldHash);
 }
 
 } // namespace Game

@@ -4,6 +4,9 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "database.h"
+#include "io/binaryreader.h"
+#include "io/binarywriter.h"
+#include "io/memorystream.h"
 
 namespace MemDb
 {
@@ -43,7 +46,7 @@ Database::Database()
 */
 Database::~Database()
 {
-    for (IndexT tableIndex = 0; tableIndex < this->numTables; ++tableIndex)
+    for (IndexT tableIndex = 0; tableIndex < this->MAX_NUM_TABLES; ++tableIndex)
     {
         if (this->IsValid(this->tables[tableIndex].tid))
             this->DeleteTable(this->tables[tableIndex].tid);
@@ -94,9 +97,13 @@ Database::DeleteTable(TableId tid)
     {
         PropertyId descriptor = table.columns.Get<0>(i);
         void*& buf = table.columns.Get<1>(i);
-        Memory::Free(Table::HEAP_MEMORY_TYPE, buf);
-        buf = nullptr;
+        if (buf != nullptr)
+        {
+            Memory::Free(Table::HEAP_MEMORY_TYPE, buf);
+            buf = nullptr;
+        }
     }
+    this->tableIdPool.Deallocate(tid.id);
 }
 
 //------------------------------------------------------------------------------
@@ -869,6 +876,82 @@ Database::Copy(Ptr<MemDb::Database> const& dst) const
 
             Memory::Copy(srcBuffer, dstBuffer, (size_t)byteSize * (size_t)srcTable.numRows);
         }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Blob
+Database::SerializeInstance(TableId table, IndexT row)
+{
+    Util::Blob blob;
+    Table const& tbl = this->GetTable(table);
+    
+    // initial size adds room for n amount of pids
+    uint32_t instanceSize = tbl.columns.Size() * sizeof(PropertyId);
+    for (uint32_t i = 0; i < tbl.columns.Size(); i++)
+    {
+        PropertyId const pid = tbl.columns.Get<0>(i);
+        SizeT const typeSize = TypeRegistry::TypeSize(pid);
+        instanceSize += typeSize;
+    }
+    blob.Reserve(instanceSize);
+
+    uint32_t offset = 0;
+    for (uint32_t i = 0; i < tbl.columns.Size(); i++)
+    {
+        PropertyId const pid = tbl.columns.Get<0>(i);
+        blob.SetChunk(&pid, sizeof(PropertyId), offset);
+        offset += sizeof(PropertyId);
+        SizeT const typeSize = TypeRegistry::TypeSize(pid);
+        byte const* const valuePtr = (byte*)tbl.columns.Get<1>(i) + (row * (size_t)typeSize);
+        blob.SetChunk(valuePtr, typeSize, offset);
+        offset += typeSize;
+    }
+
+    return blob;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Database::DeserializeInstance(Util::Blob const& data, TableId table, IndexT row)
+{
+    n_assert(this->IsValid(table));
+    Table& tbl = this->GetTable(table);
+    n_assert(tbl.numRows > row && row != InvalidIndex);
+    
+    size_t bytesRead = 0;
+    byte const* const basePtr = (byte*)data.GetPtr();
+    byte const* ptr = basePtr;
+    size_t const numBytes = data.Size();
+    while ((size_t)(ptr - basePtr) < numBytes)
+    {
+        PropertyId const pid = *reinterpret_cast<PropertyId const*>(ptr);
+        ptr += sizeof(PropertyId);
+        SizeT const typeSize = TypeRegistry::TypeSize(pid);
+        IndexT const bucket = tbl.columnRegistry.FindIndex(pid);
+        if (bucket != InvalidIndex)
+        {
+            byte* valuePtr = (byte*)tbl.columns.Get<1>(tbl.columnRegistry.ValueAtIndex(pid, bucket)) + (row * (size_t)typeSize);
+            Memory::Copy(ptr, valuePtr, typeSize);
+        }
+        ptr += typeSize;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Database::ForEachTable(std::function<void(TableId)> const& callback)
+{
+    for (IndexT tableIndex = 0; tableIndex < this->numTables; tableIndex++)
+    {
+        if (this->IsValid(this->tables[tableIndex].tid))
+            callback(this->tables[tableIndex].tid);
     }
 }
 

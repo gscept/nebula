@@ -22,6 +22,8 @@ nebula_begin_module(application)
             category.cc
             entity.h
             entity.cc
+            entitypool.h
+            entitypool.cc
             featureunit.h
             featureunit.cc
             gameserver.h
@@ -43,8 +45,6 @@ nebula_begin_module(application)
         )
         fips_dir(basegamefeature/managers)
             fips_files(
-                entitymanager.h
-                entitymanager.cc
                 blueprintmanager.h
                 blueprintmanager.cc
                 timemanager.h

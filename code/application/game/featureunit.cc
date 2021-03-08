@@ -6,6 +6,7 @@
 #include "application/stdneb.h"
 #include "game/featureunit.h"
 #include "game/gameserver.h"
+#include "gameserver.h"
 
 namespace Game
 {
@@ -66,7 +67,7 @@ FeatureUnit::OnDeactivate()
     This method is called from within Game::GameServer::Load().
 */
 void
-FeatureUnit::OnLoad()
+FeatureUnit::OnLoad(World* world)
 {
     // now call the OnLoad() method on all managers
     int managerIndex;
@@ -75,7 +76,7 @@ FeatureUnit::OnLoad()
     {
         // invoke OnLoad() on manager
         if (this->managers.Get<1>(managerIndex).OnLoad != nullptr)
-            this->managers.Get<1>(managerIndex).OnLoad();
+            this->managers.Get<1>(managerIndex).OnLoad(world);
     }
 }
 
@@ -85,7 +86,7 @@ FeatureUnit::OnLoad()
     Its called after all game features are activated and have initialized their subsystems.
 */
 void
-FeatureUnit::OnStart()
+FeatureUnit::OnStart(World* world)
 {
     // call the OnStart method on all managers
     int i;
@@ -93,7 +94,7 @@ FeatureUnit::OnStart()
     for (i = 0; i < num; i++)
     {
         if (this->managers.Get<1>(i).OnStart != nullptr)
-            this->managers.Get<1>(i).OnStart();
+            this->managers.Get<1>(i).OnStart(world);
     }
 }
 
@@ -102,14 +103,14 @@ FeatureUnit::OnStart()
     This method is called from within Game::GameServer::NotifyGameSave().
 */
 void
-FeatureUnit::OnSave()
+FeatureUnit::OnSave(World* world)
 {
     int managerIndex;
     int numManagers = this->managers.Size();
     for (managerIndex = 0; managerIndex < numManagers; managerIndex++)
     {
         if (this->managers.Get<1>(managerIndex).OnSave != nullptr)
-            this->managers.Get<1>(managerIndex).OnSave();
+            this->managers.Get<1>(managerIndex).OnSave(world);
     }
 }
 
@@ -239,7 +240,7 @@ FeatureUnit::RemoveManager(ManagerHandle handle)
 /**
 */
 void
-FeatureUnit::OnBeforeLoad()
+FeatureUnit::OnBeforeLoad(World* world)
 {
     // override in subclass if needed
 }
@@ -248,12 +249,12 @@ FeatureUnit::OnBeforeLoad()
 /**
 */
 void
-FeatureUnit::OnBeforeCleanup()
+FeatureUnit::OnBeforeCleanup(World* world)
 {
     for (IndexT i = 0; i < this->managers.Size(); ++i)
     {
         if (this->managers.Get<1>(i).OnCleanup != nullptr)
-            this->managers.Get<1>(i).OnCleanup();
+            this->managers.Get<1>(i).OnCleanup(world);
     }
 }
 
@@ -261,7 +262,7 @@ FeatureUnit::OnBeforeCleanup()
 /**
 */
 void
-FeatureUnit::OnStop()
+FeatureUnit::OnStop(World* world)
 {
     
 }
