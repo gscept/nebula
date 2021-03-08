@@ -11,13 +11,14 @@
 #include "downsample_cs_min.h"
 #include "histogram_cs.h"
 #include "shared.h"
+#include "core/cvar.h"
+
 namespace PostEffects
 {
 
 __ImplementPluginContext(PostEffects::HistogramContext);
 struct
 {
-
     CoreGraphics::ShaderId histogramShader;
     CoreGraphics::ShaderProgramId histogramCategorizeProgram;
     CoreGraphics::BufferId histogramCounters;
@@ -35,8 +36,10 @@ struct
     Util::FixedArray<CoreGraphics::TextureViewId> downsampledColorBufferViews;
 
     Math::float2 offset, size;
+    int mip;
 
     float logLuminanceRange;
+    Core::CVar* minLuminance;
     float logMinLuminance;
 
     float previousLum;
@@ -67,6 +70,8 @@ HistogramContext::Create()
     __bundle.OnUpdateViewResources = HistogramContext::UpdateViewResources;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
+    histogramState.minLuminance = Core::CVarCreate(Core::CVar_Float, "minLuminance", "0.1");
+    
     histogramState.histogramShader = CoreGraphics::ShaderGet("shd:histogram_cs.fxb");
     histogramState.histogramCategorizeProgram = CoreGraphics::ShaderGetProgram(histogramState.histogramShader, CoreGraphics::ShaderFeatureFromString("HistogramCategorize"));
 
@@ -252,16 +257,9 @@ HistogramContext::SetWindow(const Math::float2 offset, Math::float2 size, int mi
     SizeT mippedHeight = histogramState.sourceTextureDimensions.height >> mip;
     histogramState.offset = { mippedWidth * offset.x, mippedHeight * offset.y };
     histogramState.size = { mippedWidth * size.x, mippedHeight * size.y };
+    histogramState.mip = mip;
 
-    HistogramCs::HistogramConstants constants;
-    constants.Mip = mip;
-    constants.WindowOffset[0] = histogramState.offset.x;
-    constants.WindowOffset[1] = histogramState.offset.y;
-    constants.TextureSize[0] = histogramState.size.x;
-    constants.TextureSize[1] = histogramState.size.y;
-    constants.InvLogLuminanceRange = 1 / histogramState.logLuminanceRange;
-    constants.MinLogLuminance = histogramState.logMinLuminance;
-    CoreGraphics::BufferUpdate(histogramState.histogramConstants, constants, 0);
+    HistogramContext::UpdateConstants();
 }
 
 //------------------------------------------------------------------------------
@@ -324,7 +322,7 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
     uint dispatchY = (dims.height - 1) / 64;
 
     histogramState.logLuminanceRange = Math::log2(65000.0f); // R11G11B10 maxes out around 65k (https://www.khronos.org/opengl/wiki/Small_Float_Formats)
-    histogramState.logMinLuminance = Math::log2(10.0f);
+    //histogramState.logMinLuminance = Math::log2(10.0f);
 
     DownsampleCsMin::DownsampleUniforms constants;
     constants.Mips = numMips;
@@ -346,6 +344,9 @@ HistogramContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Gra
 {
     CoreGraphics::BufferInvalidate(histogramState.histogramReadback[ctx.bufferIndex], 0, NEBULA_WHOLE_BUFFER_SIZE);
     int* buf = CoreGraphics::BufferMap<int>(histogramState.histogramReadback[ctx.bufferIndex]);
+
+    if (Core::CVarModified(histogramState.minLuminance))
+        HistogramContext::UpdateConstants();
 
     int numPixels = histogramState.size.x * histogramState.size.y;
     int numBlackPixels = buf[0];
@@ -371,6 +372,27 @@ HistogramContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Gra
 
     Shared::FrameBlock& frameParams = CoreGraphics::TransformDevice::Instance()->GetFrameParams();
     frameParams.Time_Random_Luminance_X[2] = lum;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+HistogramContext::UpdateConstants()
+{
+    float minLuminance = Core::CVarReadFloat(histogramState.minLuminance);
+    Core::CVarSetModified(histogramState.minLuminance, false);
+
+    histogramState.logMinLuminance = Math::log2(minLuminance);
+    HistogramCs::HistogramConstants constants;
+    constants.Mip = histogramState.mip;
+    constants.WindowOffset[0] = histogramState.offset.x;
+    constants.WindowOffset[1] = histogramState.offset.y;
+    constants.TextureSize[0] = histogramState.size.x;
+    constants.TextureSize[1] = histogramState.size.y;
+    constants.InvLogLuminanceRange = 1 / histogramState.logLuminanceRange;
+    constants.MinLogLuminance = histogramState.logMinLuminance;
+    CoreGraphics::BufferUpdate(histogramState.histogramConstants, constants, 0);
 }
 
 } // namespace PostEffects

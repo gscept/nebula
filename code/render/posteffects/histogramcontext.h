@@ -34,6 +34,8 @@ public:
     /// update view resources
     static void UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
 
+    static void UpdateConstants();
+
 private:
 
     /// implement an empty alloc
