@@ -84,27 +84,27 @@ MemoryPool::GetMappedMemory(const Alloc& alloc)
 Alloc
 MemoryPool::AllocateExclusiveBlock(DeviceSize alignment, DeviceSize size)
 {
-	 // store old block size and reset it after block allocation
+     // store old block size and reset it after block allocation
     uint oldSize = this->blockSize;
     this->blockSize = size;
 
     uint id = this->blockPool.Alloc();
-	if (id >= (uint)this->blockMappedPointers.Size())
-	{
-		this->blockMappedPointers.Append(nullptr);
-		DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
+    if (id >= (uint)this->blockMappedPointers.Size())
+    {
+        this->blockMappedPointers.Append(nullptr);
+        DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
 
-		this->blocks.Append(mem);
-		this->blockRanges.Append({ AllocRange{0, size} });
-	}
-	else
-	{
-		this->blockMappedPointers[id] = nullptr;
-		DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
+        this->blocks.Append(mem);
+        this->blockRanges.Append({ AllocRange{0, size} });
+    }
+    else
+    {
+        this->blockMappedPointers[id] = nullptr;
+        DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
 
-		this->blocks[id] = mem;
-		this->blockRanges[id] = { AllocRange{ 0, size } };
-	}
+        this->blocks[id] = mem;
+        this->blockRanges[id] = { AllocRange{ 0, size } };
+    }
     this->blockSize = oldSize;
 
     n_warning("Allocation of size %d would not fit into block size %d\n", size, this->blockSize);
@@ -120,7 +120,7 @@ MemoryPool::AllocateConservative(DeviceSize alignment, DeviceSize size)
 {
     // if size is too big, allocate a unique block for it
     if (size > this->blockSize)
-		return this->AllocateExclusiveBlock(alignment, size);
+        return this->AllocateExclusiveBlock(alignment, size);
 
     for (IndexT blockIndex = 0; blockIndex < this->blocks.Size(); blockIndex++)
     {
@@ -199,8 +199,8 @@ MemoryPool::AllocateConservative(DeviceSize alignment, DeviceSize size)
 Alloc
 MemoryPool::AllocateLinear(DeviceSize alignment, DeviceSize size)
 {
-	if (size > this->blockSize)
-		return this->AllocateExclusiveBlock(alignment, size);
+    if (size > this->blockSize)
+        return this->AllocateExclusiveBlock(alignment, size);
 
     for (IndexT blockIndex = 0; blockIndex < this->blocks.Size(); blockIndex++)
     {
