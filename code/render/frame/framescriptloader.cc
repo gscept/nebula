@@ -436,31 +436,24 @@ FrameScriptLoader::ParsePlugin(const Ptr<Frame::FrameScript>& script, JzonValue*
     // get function and name
     JzonValue* name = jzon_get(node, "name");
     n_assert(name != nullptr);
-    auto callback = Frame::GetCallback(name->string_value);
-    if (callback != nullptr)
+
+    FramePlugin* op = script->GetAllocator().Alloc<FramePlugin>();
+    op->SetName(name->string_value);
+
+    JzonValue* queue = jzon_get(node, "queue");
+    if (queue == nullptr)
+        op->queue = CoreGraphics::QueueType::GraphicsQueueType;
+    else
+        op->queue = CoreGraphics::QueueTypeFromString(queue->string_value);
+
+    JzonValue* inputs = jzon_get(node, "resource_dependencies");
+    if (inputs != nullptr)
     {
-        FramePlugin* op = script->GetAllocator().Alloc<FramePlugin>();
-        op->SetName(name->string_value);
-
-        JzonValue* queue = jzon_get(node, "queue");
-        if (queue == nullptr)
-            op->queue = CoreGraphics::QueueType::GraphicsQueueType;
-        else
-            op->queue = CoreGraphics::QueueTypeFromString(queue->string_value);
-
-        JzonValue* inputs = jzon_get(node, "resource_dependencies");
-        if (inputs != nullptr)
-        {
-            ParseResourceDependencies(script, op, inputs);
-        }
-
-        // get algorithm
-        op->func = callback;
-
-        // add to script
-        return op;
+        ParseResourceDependencies(script, op, inputs);
     }
-	return nullptr;
+
+    // add to script
+    return op;
 }
 
 //------------------------------------------------------------------------------
