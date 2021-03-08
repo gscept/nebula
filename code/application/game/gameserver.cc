@@ -322,7 +322,12 @@ GameServer::OnEndFrame()
             while (!world->deallocQueue.IsEmpty())
             {
                 auto const cmd = world->deallocQueue.Dequeue();
-                DeallocateInstance(world, cmd.table, cmd.row);
+                MemDb::TableId const table = world->entityMap[cmd.entity.index].category;
+                MemDb::Row const row = world->entityMap[cmd.entity.index].instance;
+                DeallocateInstance(world, table, row);
+                world->entityMap[cmd.entity.index].category = MemDb::InvalidTableId;
+                world->entityMap[cmd.entity.index].instance = MemDb::InvalidRow;
+                DeallocateEntity(world, cmd.entity);
             }
 
             // Allocate instances for new entities, reuse invalid instances if possible

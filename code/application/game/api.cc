@@ -115,16 +115,15 @@ DeleteEntity(World* world, Game::Entity entity)
     if (IsActive(world, entity))
     {
         World::DeallocInstanceCommand cmd;
-        cmd.table = world->entityMap[entity.index].category;
-        cmd.row = world->entityMap[entity.index].instance;
-
+        cmd.entity = entity;
+        
         world->deallocQueue.Enqueue(std::move(cmd));
-
-        world->entityMap[entity.index].category = MemDb::InvalidTableId;
-        world->entityMap[entity.index].instance = MemDb::InvalidRow;
     }
-
-    DeallocateEntity(world, entity);
+    else
+    {
+        // entity hasn't been instantiated, can just delete the id straight away.
+        DeallocateEntity(world, entity);
+    }
 }
 
 //------------------------------------------------------------------------------

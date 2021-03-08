@@ -55,8 +55,7 @@ public:
     };
     struct DeallocInstanceCommand
     {
-        MemDb::TableId table;
-        MemDb::Row row;
+        Game::Entity entity;
     };
 
     /// used to allocate entity ids for this world
