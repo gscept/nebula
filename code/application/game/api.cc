@@ -899,10 +899,18 @@ Defragment(World* world, MemDb::TableId cat)
             // and it will automatically be defragged
             table.freeIds.Append(to);
         }
-        else
+        else if (world->entityMap[fromEntity.index].category == world->entityMap[toEntity.index].category)
         {
+            // just swap the instances
             world->entityMap[fromEntity.index].instance = to;
             world->entityMap[toEntity.index].instance = from;
+        }
+        else
+        {
+            // if the entities does not belong to the same category, only update the
+            // instance of the one that has been moved.
+            // This is most likely due to an entity migration
+            world->entityMap[fromEntity.index].instance = to;
         }
     });
 }
