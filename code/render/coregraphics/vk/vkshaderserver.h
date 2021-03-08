@@ -22,7 +22,7 @@ namespace Vulkan
 
 struct BindlessTexturesContext
 {
-    IndexT texture2DTextureVar;
+    IndexT textureTextureVar;
     SizeT numBoundTextures2D;
     IndexT texture2DMSTextureVar;
     SizeT numBoundTextures2DMS;
@@ -65,8 +65,6 @@ public:
     /// unregister texture
     void UnregisterTexture(const uint32_t id, const CoreGraphics::TextureType type);
 
-    /// get resource table based on frame buffer
-    BindlessTexturesContext GetBindlessTextureContext();
     /// get tick parameter context
     TickParametersContext GetTickParametersContext();
 
@@ -98,7 +96,7 @@ private:
 
     Util::FixedPool<uint32_t> texture1DPool;
     Util::FixedPool<uint32_t> texture1DArrayPool;
-    Util::FixedPool<uint32_t> texture2DPool;
+    Util::FixedPool<uint32_t> texturePool;
     Util::FixedPool<uint32_t> texture2DMSPool;
     Util::FixedPool<uint32_t> texture2DArrayPool;
     Util::FixedPool<uint32_t> texture3DPool;
@@ -107,7 +105,7 @@ private:
 
     Util::FixedArray<CoreGraphics::ResourceTableId> resourceTables;
     CoreGraphics::ResourcePipelineId tableLayout;
-    IndexT texture2DTextureVar;
+    IndexT textureTextureVar;
     IndexT texture2DMSTextureVar;
     IndexT texture2DArrayTextureVar;
     IndexT texture3DTextureVar;
