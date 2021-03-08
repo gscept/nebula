@@ -132,9 +132,9 @@ protected:
         const CoreGraphics::ImageSubresourceInfo& subres,
         IndexT fromIndex,
         CoreGraphics::QueueType fromQueue,
-        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
-        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
-        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
+        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
+        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
+        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
         Util::Array<FrameOp::TextureDependency>& renderTextureDependencies);
 
     static void AnalyzeAndSetupBufferBarriers(
@@ -148,9 +148,9 @@ protected:
         const CoreGraphics::BufferSubresourceInfo& subres,
         IndexT fromIndex,
         CoreGraphics::QueueType fromQueue,
-        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
-        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
-        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
+        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
+        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
+        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
         Util::Array<FrameOp::BufferDependency>& bufferDependencies);
 
     /// allocate instance of compiled
