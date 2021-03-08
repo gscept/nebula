@@ -15,6 +15,7 @@
 #include "coregraphics/shaderfeature.h"
 #include "coregraphics/resourcetable.h"
 #include "coregraphics/shader.h"
+#include "util/arraystack.h"
 
 namespace Vulkan
 {
@@ -34,6 +35,7 @@ struct VkShaderProgramRuntimeInfo
     VkPipelineMultisampleStateCreateInfo multisampleInfo;
     VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
     VkPipelineColorBlendStateCreateInfo colorBlendInfo;
+    VkPipelineColorBlendAttachmentState colorBlendAttachments[8];
     VkPipelineDynamicStateCreateInfo dynamicInfo;
     VkPipelineTessellationStateCreateInfo tessInfo;
     VkPipelineShaderStageCreateInfo shaderInfos[5];
@@ -47,16 +49,22 @@ struct VkShaderProgramRuntimeInfo
 
 extern uint32_t UniqueIdCounter;
 
+struct VkProgramReflectionInfo
+{
+    Util::ArrayStack<uint32_t, 8> vsInputSlots;
+    Util::StringAtom name;
+};
+
 enum
 {
     ShaderProgram_SetupInfo,
-    ShaderProgram_AnyFXPtr,
+    ShaderProgram_ReflectionInfo,
     ShaderProgram_RuntimeInfo
 };
 typedef Ids::IdAllocator<
-    VkShaderProgramSetupInfo,       //0 used for setup
-    AnyFX::VkProgram*,              //1 program object
-    VkShaderProgramRuntimeInfo      //2 used for runtime
+    VkShaderProgramSetupInfo,       // used for setup
+    VkProgramReflectionInfo,        // program reflection
+    VkShaderProgramRuntimeInfo      // used for runtime
 > VkShaderProgramAllocator;
 
 

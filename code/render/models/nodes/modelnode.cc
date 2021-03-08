@@ -124,26 +124,6 @@ ModelNode::ApplyNodeResources()
 //------------------------------------------------------------------------------
 /**
 */
-SizeT
-ModelNode::Instance::GetDrawPacketSize() const
-{
-    // implement in sublcass
-    return 0;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Models::ModelNode::DrawPacket*
-ModelNode::Instance::UpdateDrawPacket(void* mem)
-{
-    // implement in sublcass
-    return nullptr;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 ModelNode::Instance::Update()
 {
@@ -158,25 +138,6 @@ ModelNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Ins
 {
     this->node = node;
     this->parent = parent;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-ModelNode::DrawPacket::Apply(Materials::MaterialType* type)
-{
-    // apply surface
-    if (*this->surfaceInstance != Materials::SurfaceInstanceId::Invalid())
-        Materials::MaterialApplySurfaceInstance(type, *this->surfaceInstance);
-
-    // set resource tables
-    IndexT prevOffset = 0;
-    for (IndexT i = 0; i < *this->numTables; i++)
-    {
-        CoreGraphics::SetResourceTable(this->tables[i], this->slots[i], CoreGraphics::GraphicsPipeline, this->numOffsets[i], &this->offsets[prevOffset]);
-        prevOffset = this->numOffsets[i];
-    }
 }
 
 } // namespace Models

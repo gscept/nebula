@@ -106,12 +106,12 @@ MaterialType::CreateSurface()
 		const CoreGraphics::ShaderId shd = prog.As<const CoreGraphics::ShaderId>();
 
 		// create resource tables
-		CoreGraphics::ResourceTableId surfaceTable = CoreGraphics::ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP);
+		CoreGraphics::ResourceTableId surfaceTable = CoreGraphics::ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP, 256);
 		if (surfaceTable != CoreGraphics::InvalidResourceTableId)
 			CoreGraphics::ObjectSetName(surfaceTable, Util::String::Sprintf("Material '%s' batch table", this->name.AsCharPtr()).AsCharPtr());
 		this->surfaceAllocator.Get<SurfaceTable>(sur)[*batchIt.val] = surfaceTable;
 
-		CoreGraphics::ResourceTableId instanceTable = CoreGraphics::ShaderCreateResourceTable(shd, NEBULA_INSTANCE_GROUP);
+		CoreGraphics::ResourceTableId instanceTable = CoreGraphics::ShaderCreateResourceTable(shd, NEBULA_INSTANCE_GROUP, 256);
 		if (instanceTable != CoreGraphics::InvalidResourceTableId)
 			CoreGraphics::ObjectSetName(instanceTable, Util::String::Sprintf("Material '%s' instance table", this->name.AsCharPtr()).AsCharPtr());
 		this->surfaceAllocator.Get<InstanceTable>(sur)[*batchIt.val] = instanceTable;

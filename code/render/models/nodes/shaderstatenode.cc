@@ -150,7 +150,7 @@ ShaderStateNode::OnFinishedLoading()
     this->instancingTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "InstancingBlock");
     this->skinningTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "JointBlock");
 
-    this->resourceTable = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP);
+    this->resourceTable = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
     CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->objectTransformsIndex, 0, false, true, sizeof(ObjectsShared::ObjectBlock), 0 });
     CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
 }
@@ -158,31 +158,32 @@ ShaderStateNode::OnFinishedLoading()
 //------------------------------------------------------------------------------
 /**
 */
-SizeT
-ShaderStateNode::Instance::GetDrawPacketSize() const
-{
-    // the size of the data field should be multiplied by the amount of resource tables we use
-    return sizeof(DrawPacket)                               // header size
-        + sizeof(Materials::SurfaceInstanceId)              // surface instance
-        + this->offsets.Size() * sizeof(uint32)             // offsets are just one big list, with the numOffsets denoting how many offsets per table should be consumed
-        + sizeof(SizeT)                                     // number of resource tables
-        + sizeof(CoreGraphics::ResourceTableId) * NumTables // tables
-        + sizeof(uint32) * NumTables                        // number of offset lists
-        + sizeof(IndexT) * NumTables                        // one slot for resource tables (NEBULA_DYNAMIC_OFFSET_GROUP)
-        ;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Models::ModelNode::DrawPacket*
+ShaderStateNode::DrawPacket*
 ShaderStateNode::Instance::UpdateDrawPacket(void* mem)
 {
     char* buf = (char*) mem;
 
     // first write header
-    Models::ModelNode::DrawPacket* ret = (Models::ModelNode::DrawPacket*)buf;
-    buf += sizeof(Models::ModelNode::DrawPacket);
+    ShaderStateNode::DrawPacket* ret = (ShaderStateNode::DrawPacket*)buf;
+    n_assert(this->offsets.Size() <= 4);
+
+    ret->node = this;
+    ret->surfaceInstance = this->surfaceInstance;
+    ret->numTables = NumTables;
+    ret->tables[0] = this->resourceTable;
+    ret->numOffsets[0] = this->offsets.Size();
+    memcpy(&ret->offsets[0][0], this->offsets.Begin(), this->offsets.ByteSize());
+    ret->slots[0] = NEBULA_DYNAMIC_OFFSET_GROUP;
+
+    /*
+    ret->nodeOffset = offsetof(Payload, node);
+    ret->surfaceInstanceOffset = offsetof(Payload, surfaceInstance);
+    ret->numTablesOffset = offsetof(Payload, numTables);
+    ret->tablesOffset = offsetof(Payload, tables);
+    ret->numOffsetsOffset = offsetof(Payload, numOffsets);
+    ret->offsetsOffset = offsetof(Payload, offsets);
+    ret->slotsOffset = offsetof(Payload, slots);
+
     ret->node = this;
 
     // setup struct offsets
@@ -207,6 +208,7 @@ ShaderStateNode::Instance::UpdateDrawPacket(void* mem)
 
     ret->slots[0] = NEBULA_DYNAMIC_OFFSET_GROUP;
     ret->tables[0] = this->resourceTable;
+    */
 
     return ret;
 }
@@ -230,6 +232,26 @@ ShaderStateNode::Instance::Update()
     this->dirty = false;
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ShaderStateNode::DrawPacket::Apply(Materials::MaterialType* type)
+{
+    // apply surface
+    if (this->surfaceInstance != Materials::SurfaceInstanceId::Invalid())
+        Materials::MaterialApplySurfaceInstance(type, this->surfaceInstance);
+
+    // set resource tables
+    IndexT prevOffset = 0;
+    for (IndexT i = 0; i < this->numTables; i++)
+    {
+        CoreGraphics::SetResourceTable(this->tables[i], this->slots[i], CoreGraphics::GraphicsPipeline, this->numOffsets[i], this->offsets[prevOffset]);
+        prevOffset = this->numOffsets[i];
+    }
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -243,7 +265,7 @@ ShaderStateNode::Instance::SetDirty(bool b)
 /**
 */
 void
-ShaderStateNode::Instance::Draw(const SizeT numInstances, const IndexT baseInstance, Models::ModelNode::DrawPacket* packet)
+ShaderStateNode::Instance::Draw(const SizeT numInstances, const IndexT baseInstance, Models::ShaderStateNode::DrawPacket* packet)
 {
     CoreGraphics::DrawInstanced(numInstances, baseInstance);
 }

@@ -241,66 +241,66 @@ LightContext::Create()
 	clusterState.debugProgram = ShaderGetProgram(clusterState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Debug"));
 #endif
 
-	BufferCreateInfo rwbInfo;
-	rwbInfo.name = "LightIndexListsBuffer";
-	rwbInfo.size = 1;
-	rwbInfo.elementSize = sizeof(LightsCluster::LightIndexLists);
-	rwbInfo.mode = BufferAccessMode::DeviceLocal;
-	rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
-	rwbInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
-	clusterState.clusterLightIndexLists = CreateBuffer(rwbInfo);
+    BufferCreateInfo rwbInfo;
+    rwbInfo.name = "LightIndexListsBuffer";
+    rwbInfo.size = 1;
+    rwbInfo.elementSize = sizeof(LightsCluster::LightIndexLists);
+    rwbInfo.mode = BufferAccessMode::DeviceLocal;
+    rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
+    rwbInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
+    clusterState.clusterLightIndexLists = CreateBuffer(rwbInfo);
 
-	rwbInfo.name = "LightLists";
-	rwbInfo.elementSize = sizeof(LightsCluster::LightLists);
-	clusterState.clusterLightsList = CreateBuffer(rwbInfo);
+    rwbInfo.name = "LightLists";
+    rwbInfo.elementSize = sizeof(LightsCluster::LightLists);
+    clusterState.clusterLightsList = CreateBuffer(rwbInfo);
 
-	rwbInfo.name = "LightListsStagingBuffer";
-	rwbInfo.mode = BufferAccessMode::HostLocal;
-	rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
+    rwbInfo.name = "LightListsStagingBuffer";
+    rwbInfo.mode = BufferAccessMode::HostLocal;
+    rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
 
-	clusterState.resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
-	for (IndexT i = 0; i < clusterState.resourceTables.Size(); i++)
-	{
-		clusterState.resourceTables[i] = ShaderCreateResourceTable(clusterState.classificationShader, NEBULA_BATCH_GROUP);
-	}
+    clusterState.resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
+    for (IndexT i = 0; i < clusterState.resourceTables.Size(); i++)
+    {
+        clusterState.resourceTables[i] = ShaderCreateResourceTable(clusterState.classificationShader, NEBULA_BATCH_GROUP, clusterState.resourceTables.Size());
+    }
 
-	// get per-view resource tables
-	const Util::FixedArray<CoreGraphics::ResourceTableId>& viewTables = TransformDevice::Instance()->GetViewResourceTables();
-	for (IndexT i = 0; i < viewTables.Size(); i++)
-	{
-		CoreGraphics::ResourceTableId table = viewTables[i];
-		ResourceTableSetRWBuffer(table, { clusterState.clusterLightIndexLists, lightIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-		ResourceTableSetRWBuffer(table, { clusterState.clusterLightsList, lightsListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-		ResourceTableSetConstantBuffer(table, { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsCluster::LightUniforms), 0 });
-	}
+    // get per-view resource tables
+    const Util::FixedArray<CoreGraphics::ResourceTableId>& viewTables = TransformDevice::Instance()->GetViewResourceTables();
+    for (IndexT i = 0; i < viewTables.Size(); i++)
+    {
+        CoreGraphics::ResourceTableId table = viewTables[i];
+        ResourceTableSetRWBuffer(table, { clusterState.clusterLightIndexLists, lightIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(table, { clusterState.clusterLightsList, lightsListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(table, { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsCluster::LightUniforms), 0 });
+    }
 
-	clusterState.stagingClusterLightsList.Resize(CoreGraphics::GetNumBufferedFrames());
+    clusterState.stagingClusterLightsList.Resize(CoreGraphics::GetNumBufferedFrames());
 
-	for (IndexT i = 0; i < clusterState.stagingClusterLightsList.Size(); i++)
-	{
-		clusterState.stagingClusterLightsList[i] = CreateBuffer(rwbInfo);
-	}
+    for (IndexT i = 0; i < clusterState.stagingClusterLightsList.Size(); i++)
+    {
+        clusterState.stagingClusterLightsList[i] = CreateBuffer(rwbInfo);
+    }
 
-	// setup combine
-	combineState.combineShader = ShaderServer::Instance()->GetShader("shd:combine.fxb");
-	combineState.combineProgram = ShaderGetProgram(combineState.combineShader, ShaderServer::Instance()->FeatureStringToMask("Combine"));
-	combineState.resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
+    // setup combine
+    combineState.combineShader = ShaderServer::Instance()->GetShader("shd:combine.fxb");
+    combineState.combineProgram = ShaderGetProgram(combineState.combineShader, ShaderServer::Instance()->FeatureStringToMask("Combine"));
+    combineState.resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
 
-	combineState.fogTextureSlot = ShaderGetResourceSlot(combineState.combineShader, "Fog");
-	combineState.reflectionsTextureSlot = ShaderGetResourceSlot(combineState.combineShader, "Reflections");
-	combineState.lightingTextureSlot = ShaderGetResourceSlot(combineState.combineShader, "Lighting");
-	combineState.aoTextureSlot = ShaderGetResourceSlot(combineState.combineShader, "AO");
-	combineState.combineUniforms = ShaderGetResourceSlot(combineState.combineShader, "CombineUniforms");
+    combineState.fogTextureSlot = ShaderGetResourceSlot(combineState.combineShader, "Fog");
+    combineState.reflectionsTextureSlot = ShaderGetResourceSlot(combineState.combineShader, "Reflections");
+    combineState.lightingTextureSlot = ShaderGetResourceSlot(combineState.combineShader, "Lighting");
+    combineState.aoTextureSlot = ShaderGetResourceSlot(combineState.combineShader, "AO");
+    combineState.combineUniforms = ShaderGetResourceSlot(combineState.combineShader, "CombineUniforms");
 
-	for (IndexT i = 0; i < combineState.resourceTables.Size(); i++)
-	{
-		combineState.resourceTables[i] = ShaderCreateResourceTable(combineState.combineShader, NEBULA_BATCH_GROUP);
-		ResourceTableSetConstantBuffer(combineState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), combineState.combineUniforms, 0, false, false, sizeof(Combine::CombineUniforms), 0 });
-		ResourceTableCommitChanges(combineState.resourceTables[i]);
-	}
+    for (IndexT i = 0; i < combineState.resourceTables.Size(); i++)
+    {
+        combineState.resourceTables[i] = ShaderCreateResourceTable(combineState.combineShader, NEBULA_BATCH_GROUP, combineState.resourceTables.Size());
+        ResourceTableSetConstantBuffer(combineState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), combineState.combineUniforms, 0, false, false, sizeof(Combine::CombineUniforms), 0 });
+        ResourceTableCommitChanges(combineState.resourceTables[i]);
+    }
 
-	// allow 16 shadow casting local lights
-	lightServerState.shadowcastingLocalLights.SetCapacity(16);
+    // allow 16 shadow casting local lights
+    lightServerState.shadowcastingLocalLights.SetCapacity(16);
 }
 
 //------------------------------------------------------------------------------

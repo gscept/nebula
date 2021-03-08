@@ -140,7 +140,7 @@ VkPipelineVertexInputStateCreateInfo*
 VkVertexSignaturePool::GetDerivativeLayout(const CoreGraphics::VertexLayoutId layout, const CoreGraphics::ShaderProgramId shader)
 {
     Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<0>(layout.resourceId);
-    AnyFX::VkProgram* program = CoreGraphics::shaderPool->GetProgram(shader);
+    const VkProgramReflectionInfo& program = CoreGraphics::shaderPool->GetProgram(shader);
     const BindInfo& bindInfo = this->Get<2>(layout.resourceId);
     const VkPipelineVertexInputStateCreateInfo& baseInfo = this->Get<1>(layout.resourceId);
     const Ids::Id64 shaderHash = shader.HashCode64();
@@ -153,14 +153,13 @@ VkVertexSignaturePool::GetDerivativeLayout(const CoreGraphics::VertexLayoutId la
     {
         IndexT index = hashTable.Add(shaderHash, {});
         DerivativeLayout& layout = hashTable.ValueAtIndex(shaderHash, index);
-        AnyFX::VkProgram* program = CoreGraphics::shaderPool->GetProgram(shader);
         layout.info = baseInfo;
 
         uint32_t i;
         IndexT j;
-        for (i = 0; i < program->vsInputSlots.size(); i++)
+        for (i = 0; i < program.vsInputSlots.Size(); i++)
         {
-            uint32_t slot = program->vsInputSlots[i];
+            uint32_t slot = program.vsInputSlots[i];
             for (j = 0; j < bindInfo.attrs.Size(); j++)
             {
                 VkVertexInputAttributeDescription attr = bindInfo.attrs[j];
@@ -172,8 +171,8 @@ VkVertexSignaturePool::GetDerivativeLayout(const CoreGraphics::VertexLayoutId la
             }
         }
 
-        if (program->vsInputSlots.size() != (uint32_t)layout.attrs.Size())
-            n_warning("Warning: Vertex shader (%s) and vertex layout mismatch!\n", program->name.c_str());
+        if (program.vsInputSlots.Size() != (uint32_t)layout.attrs.Size())
+            n_warning("Warning: Vertex shader (%s) and vertex layout mismatch!\n", program.name.Value());
 
         layout.info.vertexAttributeDescriptionCount = layout.attrs.Size();
         layout.info.pVertexAttributeDescriptions = layout.attrs.Begin();

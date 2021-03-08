@@ -94,7 +94,7 @@ ParticleSystemNode::OnFinishedLoading()
     this->instancingTransformsIndex = ShaderGetResourceSlot(shader, "InstancingBlock");
     this->skinningTransformsIndex = ShaderGetResourceSlot(shader, "JointBlock");
     this->particleConstantsIndex = ShaderGetResourceSlot(shader, "ParticleObjectBlock");
-    this->resourceTable = ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP);
+    this->resourceTable = ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
     ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->particleConstantsIndex, 0, false, true, sizeof(::Particle::ParticleObjectBlock), 0 });
     ResourceTableCommitChanges(this->resourceTable);
 }
@@ -350,7 +350,7 @@ ParticleSystemNode::Instance::Update()
 /**
 */
 void
-ParticleSystemNode::Instance::Draw(const SizeT numInstances, const IndexT baseInstance, Models::ModelNode::DrawPacket* packet)
+ParticleSystemNode::Instance::Draw(const SizeT numInstances, const IndexT baseInstance, Models::ShaderStateNode::DrawPacket* packet)
 {
     if (this->particleVbo == CoreGraphics::InvalidBufferId)
         return;

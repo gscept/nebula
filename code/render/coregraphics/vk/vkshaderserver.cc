@@ -81,7 +81,7 @@ VkShaderServer::Open()
     IndexT i;
     for (i = 0; i < this->resourceTables.Size(); i++)
     {
-        this->resourceTables[i] = ShaderCreateResourceTable(shader, NEBULA_TICK_GROUP);
+        this->resourceTables[i] = ShaderCreateResourceTable(shader, NEBULA_TICK_GROUP, this->resourceTables.Size());
         CoreGraphics::ObjectSetName(this->resourceTables[i], "Main Tick Group Descriptor");
 
         /*

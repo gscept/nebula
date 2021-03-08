@@ -31,7 +31,7 @@ enum
 {
     ResourceTable_Device,
     ResourceTable_DescriptorSet,
-    ResourceTable_DescriptorPool,
+    ResourceTable_DescriptorPoolIndex,
     ResourceTable_Layout,
     ResourceTable_Writes,
     ResourceTable_WriteInfos,
@@ -41,7 +41,7 @@ enum
 typedef Ids::IdAllocator<
     VkDevice,
     VkDescriptorSet,
-    VkDescriptorPool,
+    IndexT,
     CoreGraphics::ResourceTableLayoutId,
     Util::Array<VkWriteDescriptorSet>,
     Util::Array<WriteInfo>,
@@ -61,14 +61,13 @@ const VkDescriptorSetLayout& ResourceTableGetVkLayout(CoreGraphics::ResourceTabl
 //------------------------------------------------------------------------------
 enum
 {
-    ResourceTableLayoutDevice,
-    ResourceTableLayoutSetLayout,
-    ResourceTableLayoutPoolSizes,
-    ResourceTableLayoutSamplers,
-    ResourceTableLayoutImmutableSamplerFlags,
-    ResourceTableLayoutDescriptorPools,
-    ResourceTableLayoutCurrentPool,
-    ResourceTableLayoutPoolGrow
+    ResourceTableLayout_Device,
+    ResourceTableLayout_SetLayout,
+    ResourceTableLayout_PoolSizes,
+    ResourceTableLayout_Samplers,
+    ResourceTableLayout_ImmutableSamplerFlags,
+    ResourceTableLayout_DescriptorPools,
+    ResourceTableLayout_DescriptorPoolFreeItems,
 };
 typedef Ids::IdAllocator<
     VkDevice,
@@ -77,8 +76,7 @@ typedef Ids::IdAllocator<
     Util::Array<Util::Pair<CoreGraphics::SamplerId, uint32_t>>,
     Util::HashTable<uint32_t, bool>,
     Util::Array<VkDescriptorPool>,
-    VkDescriptorPool,
-    uint32_t
+    Util::Array<uint32_t>
 > VkResourceTableLayoutAllocator;
 extern VkResourceTableLayoutAllocator resourceTableLayoutAllocator;
 extern VkDescriptorSetLayout emptySetLayout;
@@ -88,10 +86,10 @@ void SetupEmptyDescriptorSetLayout();
 
 /// get table layout
 const VkDescriptorSetLayout& ResourceTableLayoutGetVk(const CoreGraphics::ResourceTableLayoutId& id);
-/// get current layout pool
-const VkDescriptorPool& ResourceTableLayoutGetPool(const CoreGraphics::ResourceTableLayoutId& id);
-/// request new layout pool for this layout
-const VkDescriptorPool& ResourceTableLayoutNewPool(const CoreGraphics::ResourceTableLayoutId& id);
+/// allocate new descriptor set from pool
+void ResourceTableLayoutAllocTable(const CoreGraphics::ResourceTableLayoutId& id, const VkDevice dev, uint overallocationSize, IndexT& outIndex, VkDescriptorSet& outSet);
+/// deallocate descriptor set from pool
+void ResourceTableLayoutDeallocTable(const CoreGraphics::ResourceTableLayoutId& id, const VkDevice dev, const VkDescriptorSet& set, const IndexT index);
 
 
 //------------------------------------------------------------------------------

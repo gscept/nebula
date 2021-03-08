@@ -89,7 +89,7 @@ void DestroyShader(const ShaderId id);
 const ShaderId ShaderGet(const Resources::ResourceName& name);
 
 /// create resource table from shader
-const ResourceTableId ShaderCreateResourceTable(const ShaderId id, const IndexT group);
+const ResourceTableId ShaderCreateResourceTable(const ShaderId id, const IndexT group, const uint overallocationSize = 1);
 /// create constant buffer from shader using name (don't use too frequently)
 const BufferId ShaderCreateConstantBuffer(const ShaderId id, const Util::StringAtom& name, BufferAccessMode mode = BufferAccessMode::HostToDevice);
 /// create constant buffer from index

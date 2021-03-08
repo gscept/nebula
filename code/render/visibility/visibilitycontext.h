@@ -12,7 +12,7 @@
 #include "jobs/jobs.h"
 #include "visibility/systems/visibilitysystem.h"
 #include "models/model.h"
-#include "models/nodes/modelnode.h"
+#include "models/nodes/shaderstatenode.h"
 #include "materials/surfacepool.h"
 #include "materials/materialtype.h"
 #include "memory/arenaallocator.h"
@@ -110,7 +110,7 @@ public:
     struct VisibilityDrawList
     {
         Util::HashTable<Materials::MaterialType*, VisibilityDrawCommand> visibilityTable;
-        Util::Array<Models::ModelNode::DrawPacket*> drawPackets;
+        Util::Array<Models::ShaderStateNode::DrawPacket*> drawPackets;
     };
 
     /// get visibility draw list

@@ -25,7 +25,8 @@ VisibilityDrawListUpdateJob(const Jobs::JobFuncContext& ctx)
 
         for (auto& packet : drawList->drawPackets)
         {
-            packet->node->Update();
+            Models::ModelNode::Instance* nodeInst = packet->ToNode<Models::ModelNode::Instance>();
+            nodeInst->Update();
         }
     }
 }

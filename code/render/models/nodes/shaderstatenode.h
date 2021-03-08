@@ -32,6 +32,7 @@ public:
     /// destructor
     virtual ~ShaderStateNode();
 
+    struct DrawPacket;
     struct Instance : public TransformNode::Instance
     {
         enum DynamicOffsetType
@@ -53,15 +54,12 @@ public:
         IndexT skinningTransformsIndex;
         bool dirty;
 
-        static const uint NumTables = 1;
 
         /// setup instance
         void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
 
-        /// return size of draw packet for allocation
-        virtual SizeT GetDrawPacketSize() const override;
         /// fill draw packet
-        virtual Models::ModelNode::DrawPacket* UpdateDrawPacket(void* mem) override;
+        virtual DrawPacket* UpdateDrawPacket(void* mem);
 
         /// update prior to drawing
         void Update() override;
@@ -69,7 +67,31 @@ public:
         void SetDirty(bool b);
 
         /// another draw function
-        void Draw(const SizeT numInstances, const IndexT baseInstance, Models::ModelNode::DrawPacket* packet);
+        void Draw(const SizeT numInstances, const IndexT baseInstance, ShaderStateNode::DrawPacket* packet);
+    };
+
+
+    static const uint NumTables = 1;
+
+    struct DrawPacket
+    {
+        Models::ModelNode::Instance* node = nullptr;
+        Materials::SurfaceInstanceId surfaceInstance;
+        SizeT numTables;
+        CoreGraphics::ResourceTableId tables[NumTables];
+        uint32 numOffsets[NumTables];
+        uint32 offsets[NumTables][4];
+        IndexT slots[NumTables];
+
+        /// apply the resource tables and offsets
+        void Apply(Materials::MaterialType* type);
+
+        /// cast to node of type
+        template <class T> T* ToNode()
+        {
+            static_assert(std::is_base_of<Models::ModelNode::Instance, T>::value, "T has to be of ModelNode::Instance type");
+            return reinterpret_cast<T*>(this->node);
+        };
     };
 
     /// create instance
@@ -99,9 +121,9 @@ protected:
     Materials::SurfaceResourceId surRes;
     Resources::ResourceName materialName;
 
-    IndexT objectTransformsIndex;
-    IndexT instancingTransformsIndex;
-    IndexT skinningTransformsIndex;
+    uint8_t objectTransformsIndex;
+    uint8_t instancingTransformsIndex;
+    uint8_t skinningTransformsIndex;
 
     CoreGraphics::ResourceTableId resourceTable;
 };

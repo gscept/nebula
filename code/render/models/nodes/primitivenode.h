@@ -49,8 +49,8 @@ protected:
     void ApplyNodeState() override;
 
     CoreGraphics::MeshId res;
-    uint32_t primitiveGroupIndex;
-    uint32_t primitiveGroupIndexLoaded;
+    uint16_t primitiveGroupIndex;
+    uint16_t primitiveGroupIndexLoaded;
 };
 
 ModelNodeInstanceCreator(PrimitiveNode)
