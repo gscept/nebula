@@ -78,7 +78,7 @@ ResourceTableLayoutGetPool(const CoreGraphics::ResourceTableLayoutId& id)
 /**
 */
 const VkDescriptorPool& 
-ResourceTableLayoutNewPool(const CoreGraphics::ResourceTableLayoutId& id)
+ResourceTableLayoutNewPool(const CoreGraphics::ResourceTableLayoutId& id, uint overallocationSize)
 {
     // orphan old pool
     Util::Array<VkDescriptorPoolSize>& poolSizes = resourceTableLayoutAllocator.Get<ResourceTableLayoutPoolSizes>(id.id24);
@@ -91,13 +91,13 @@ ResourceTableLayoutNewPool(const CoreGraphics::ResourceTableLayoutId& id)
         VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         nullptr,
         VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-        grow,
+        overallocationSize,
         (uint32_t)poolSizes.Size(),
         poolSizes.Size() > 0 ? poolSizes.Begin() : nullptr
     };
 
     // grow, but also clamp to 65535 so as to not grow too much
-    grow = Math::min(grow << 2, 65535u);
+    //grow = Math::min(grow << 2, 65535u);
 
     VkDescriptorPool pool;
     VkResult res = vkCreateDescriptorPool(dev, &poolInfo, nullptr, &pool);
@@ -154,12 +154,17 @@ CreateResourceTable(const ResourceTableCreateInfo& info)
         1,
         &ResourceTableLayoutGetVk(layout)
     };
-    VkResult res = vkAllocateDescriptorSets(dev, &dsetAlloc, &set);
+
+    VkResult res;
+    if (pool != VK_NULL_HANDLE)
+        res = vkAllocateDescriptorSets(dev, &dsetAlloc, &set);
+    else
+        res = VK_ERROR_OUT_OF_POOL_MEMORY;
 
     // if we are full, request new pool
     if (res == VK_ERROR_OUT_OF_POOL_MEMORY)
     {
-        pool = ResourceTableLayoutNewPool(layout);
+        pool = ResourceTableLayoutNewPool(layout, info.overallocationSize);
         dsetAlloc.descriptorPool = pool;
         VkResult res = vkAllocateDescriptorSets(dev, &dsetAlloc, &set);
         n_assert(res == VK_SUCCESS);
@@ -656,6 +661,8 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
     Util::Array<Util::Pair<CoreGraphics::SamplerId, uint32_t>>& samplers = resourceTableLayoutAllocator.Get<ResourceTableLayoutSamplers>(id);
     Util::HashTable<uint32_t, bool>& immutable = resourceTableLayoutAllocator.Get<ResourceTableLayoutImmutableSamplerFlags>(id);
     Util::Array<VkDescriptorPoolSize>& poolSizes = resourceTableLayoutAllocator.Get<ResourceTableLayoutPoolSizes>(id);
+    VkDescriptorPool& pool = resourceTableLayoutAllocator.Get<ResourceTableLayoutCurrentPool>(id);
+    pool = VK_NULL_HANDLE;
 
     dev = Vulkan::GetCurrentDevice();
     Util::Array<VkDescriptorSetLayoutBinding> bindings;
@@ -672,6 +679,15 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
     combinedImageSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     combinedImageSize.descriptorCount = 0;
 
+    Util::HashTable<uint32_t, uint32_t> textureCount;
+    Util::HashTable<uint32_t, uint32_t> sampledTextureCount;
+    Util::HashTable<uint32_t, uint32_t> imageCount;
+    Util::HashTable<uint32_t, uint32_t> uniformCount;
+    Util::HashTable<uint32_t, uint32_t> dynamicUniformCount;
+    Util::HashTable<uint32_t, uint32_t> bufferCount;
+    Util::HashTable<uint32_t, uint32_t> dynamicBufferCount;
+
+
     // setup textures, or texture-sampler pairs
     for (IndexT i = 0; i < info.textures.Size(); i++)
     {
@@ -684,18 +700,53 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         {
             binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
             binding.pImmutableSamplers = nullptr;
-            immutable.Add(tex.slot, false);
-            sampledImageSize.descriptorCount += tex.num;
+            if (!immutable.Contains(tex.slot))
+                immutable.Add(tex.slot, false);
+
+            // accumulate textures for same bind point
+            IndexT countIndex = textureCount.FindIndex(binding.binding);
+            if (countIndex == InvalidIndex)
+                textureCount.Add(binding.binding, tex.num);
+            else
+            {
+                uint32_t& count = textureCount.ValueAtIndex(binding.binding, countIndex);
+                count = Math::max(count, (uint32_t)tex.num);
+            }
         }
         else
         {
             binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             binding.pImmutableSamplers = &SamplerGetVk(tex.immutableSampler);
-            immutable.Add(tex.slot, true);
-            combinedImageSize.descriptorCount += tex.num;
+            if (!immutable.Contains(tex.slot))
+                immutable.Add(tex.slot, true);
+
+            // accumulate textures for same bind point
+            IndexT countIndex = sampledTextureCount.FindIndex(binding.binding);
+            if (countIndex == InvalidIndex)
+                sampledTextureCount.Add(binding.binding, tex.num);
+            else
+            {
+                uint32_t& count = sampledTextureCount.ValueAtIndex(binding.binding, countIndex);
+                count = Math::max(count, (uint32_t)tex.num);
+            }
         }
         binding.stageFlags = VkTypes::AsVkShaderVisibility(tex.visibility);
         bindings.Append(binding);
+    }
+
+    // update pool sizes
+    auto textureCountIt = textureCount.Begin();
+    while (textureCountIt != textureCount.End())
+    {
+        sampledImageSize.descriptorCount += *textureCountIt.val;
+        textureCountIt++;
+    }
+
+    auto sampledTextureCountIt = sampledTextureCount.Begin();
+    while (sampledTextureCountIt != sampledTextureCount.End())
+    {
+        combinedImageSize.descriptorCount += *sampledTextureCountIt.val;
+        sampledTextureCountIt++;
     }
 
     // add to list of sizes
@@ -727,7 +778,23 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         binding.pImmutableSamplers = nullptr;
         binding.stageFlags = VkTypes::AsVkShaderVisibility(tex.visibility);
         bindings.Append(binding);
-        rwImageSize.descriptorCount += tex.num;
+
+        // accumulate textures for same bind point
+        IndexT countIndex = imageCount.FindIndex(binding.binding);
+        if (countIndex == InvalidIndex)
+            imageCount.Add(binding.binding, tex.num);
+        else
+        {
+            uint32_t& count = imageCount.ValueAtIndex(binding.binding, countIndex);
+            count = Math::max(count, (uint32_t)tex.num);
+        }
+    }
+
+    auto imageCountIt = imageCount.Begin();
+    while (imageCountIt != imageCount.End())
+    {
+        rwImageSize.descriptorCount += *imageCountIt.val;
+        imageCountIt++;
     }
 
     // add to list of sizes
@@ -759,7 +826,46 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         binding.pImmutableSamplers = nullptr;
         binding.stageFlags = VkTypes::AsVkShaderVisibility(buf.visibility);
         bindings.Append(binding);
-        buf.dynamicOffset ? cbDynamicSize.descriptorCount += buf.num : cbSize.descriptorCount += buf.num;
+
+        if (buf.dynamicOffset)
+        {
+            // accumulate textures for same bind point
+            IndexT countIndex = dynamicUniformCount.FindIndex(binding.binding);
+            if (countIndex == InvalidIndex)
+                dynamicUniformCount.Add(binding.binding, buf.num);
+            else
+            {
+                uint32_t& count = dynamicUniformCount.ValueAtIndex(binding.binding, countIndex);
+                count = Math::max(count, (uint32_t)buf.num);
+            }
+        }
+        else
+        {
+            // accumulate textures for same bind point
+            IndexT countIndex = uniformCount.FindIndex(binding.binding);
+            if (countIndex == InvalidIndex)
+                uniformCount.Add(binding.binding, buf.num);
+            else
+            {
+                uint32_t& count = uniformCount.ValueAtIndex(binding.binding, countIndex);
+                count = Math::max(count, (uint32_t)buf.num);
+            }
+        }
+    }
+
+    // update pool sizes
+    auto dynamicUniformCountIt = dynamicUniformCount.Begin();
+    while (dynamicUniformCountIt != dynamicUniformCount.End())
+    {
+        cbDynamicSize.descriptorCount += *dynamicUniformCountIt.val;
+        dynamicUniformCountIt++;
+    }
+
+    auto uniformCountIt = uniformCount.Begin();
+    while (uniformCountIt != uniformCount.End())
+    {
+        cbSize.descriptorCount += *uniformCountIt.val;
+        uniformCountIt++;
     }
 
     // add to list of sizes
@@ -793,7 +899,46 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         binding.pImmutableSamplers = nullptr;
         binding.stageFlags = VkTypes::AsVkShaderVisibility(buf.visibility);
         bindings.Append(binding);
-        buf.dynamicOffset ? rwDynamicBufferSize.descriptorCount += buf.num : rwBufferSize.descriptorCount += buf.num;
+
+        if (buf.dynamicOffset)
+        {
+            // accumulate textures for same bind point
+            IndexT countIndex = dynamicBufferCount.FindIndex(binding.binding);
+            if (countIndex == InvalidIndex)
+                dynamicBufferCount.Add(binding.binding, buf.num);
+            else
+            {
+                uint32_t& count = dynamicBufferCount.ValueAtIndex(binding.binding, countIndex);
+                count = Math::max(count, (uint32_t)buf.num);
+            }
+        }
+        else
+        {
+            // accumulate textures for same bind point
+            IndexT countIndex = bufferCount.FindIndex(binding.binding);
+            if (countIndex == InvalidIndex)
+                bufferCount.Add(binding.binding, buf.num);
+            else
+            {
+                uint32_t& count = bufferCount.ValueAtIndex(binding.binding, countIndex);
+                count = Math::max(count, (uint32_t)buf.num);
+            }
+        }
+    }
+
+        // update pool sizes
+    auto dynamicBufferCountIt = dynamicBufferCount.Begin();
+    while (dynamicBufferCountIt != dynamicBufferCount.End())
+    {
+        rwDynamicBufferSize.descriptorCount += *dynamicBufferCountIt.val;
+        dynamicBufferCountIt++;
+    }
+
+    auto bufferCountIt = bufferCount.Begin();
+    while (bufferCountIt != bufferCount.End())
+    {
+        rwBufferSize.descriptorCount += *bufferCountIt.val;
+        bufferCountIt++;
     }
 
     // add to list of sizes
@@ -891,7 +1036,6 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
 
     // set initial grow and create an initial resource pool
     resourceTableLayoutAllocator.Get<ResourceTableLayoutPoolGrow>(id) = info.descriptorPoolInitialGrow;
-    ResourceTableLayoutNewPool(ret);
 
     return ret;
 }

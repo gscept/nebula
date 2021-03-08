@@ -142,7 +142,7 @@ VkTextRenderer::Open()
     // create shader instance
     const ShaderId shd = ShaderServer::Instance()->GetShader("shd:text.fxb");
     this->program = ShaderGetProgram(shd, ShaderServer::Instance()->FeatureStringToMask("Static"));
-    this->textTable = ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP);
+    this->textTable = ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP, 1);
     // get variable
 
     this->texVar = ShaderGetResourceSlot(shd, "Texture");

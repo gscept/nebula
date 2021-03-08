@@ -124,9 +124,9 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
             }
 
             // allocate memory for draw packet
-            void* mem = packetAllocator->Alloc(shdNodeInst->GetDrawPacketSize());
+            void* mem = packetAllocator->Alloc(sizeof(Models::ShaderStateNode::DrawPacket));
             // update packet and add to list
-            Models::ModelNode::DrawPacket* packet = shdNodeInst->UpdateDrawPacket(mem);
+            Models::ShaderStateNode::DrawPacket* packet = shdNodeInst->UpdateDrawPacket(mem);
             drawList->drawPackets.Append(packet);
             numDraws++;
         }

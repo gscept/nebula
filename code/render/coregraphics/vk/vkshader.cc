@@ -314,7 +314,7 @@ VkShaderSetup(
             }
 
             if (remainingTextures < (uint32_t)variable->arraySizes[0])
-				n_error("Too many textures in shader!");
+                n_error("Too many textures in shader!");
             else
             {
                 remainingTextures -= variable->arraySizes[0];

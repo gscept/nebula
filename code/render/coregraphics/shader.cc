@@ -43,9 +43,9 @@ ShaderGet(const Resources::ResourceName& name)
 /**
 */
 const ResourceTableId
-ShaderCreateResourceTable(const ShaderId id, const IndexT group)
+ShaderCreateResourceTable(const ShaderId id, const IndexT group, const uint overallocationSize)
 {
-	return shaderPool->CreateResourceTable(id, group);
+	return shaderPool->CreateResourceTable(id, group, overallocationSize);
 }
 
 //------------------------------------------------------------------------------

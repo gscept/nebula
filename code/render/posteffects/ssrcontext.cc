@@ -143,7 +143,7 @@ SSRContext::Setup(const Ptr<Frame::FrameScript>& script)
     ssrState.ssrTraceTables.SetSize(numFrames);
     for (IndexT i = 0; i < numFrames; ++i)
     {
-        ssrState.ssrTraceTables[i] = ShaderCreateResourceTable(ssrState.traceShader, NEBULA_BATCH_GROUP);
+        ssrState.ssrTraceTables[i] = ShaderCreateResourceTable(ssrState.traceShader, NEBULA_BATCH_GROUP, numFrames);
         ResourceTableSetRWTexture(ssrState.ssrTraceTables[i], { ssrState.traceBuffer, ssrState.traceBufferSlot, 0, InvalidSamplerId });
         ResourceTableCommitChanges(ssrState.ssrTraceTables[i]);
     }
@@ -157,7 +157,7 @@ SSRContext::Setup(const Ptr<Frame::FrameScript>& script)
     ssrState.ssrResolveTables.SetSize(numFrames);
     for (IndexT i = 0; i < numFrames; ++i)
     {
-        ssrState.ssrResolveTables[i] = ShaderCreateResourceTable(ssrState.resolveShader, NEBULA_BATCH_GROUP);
+        ssrState.ssrResolveTables[i] = ShaderCreateResourceTable(ssrState.resolveShader, NEBULA_BATCH_GROUP, numFrames);
         ResourceTableSetRWTexture(ssrState.ssrResolveTables[i], { ssrState.reflectionBuffer, ssrState.reflectionBufferSlot, 0, InvalidSamplerId });
         ResourceTableSetTexture(ssrState.ssrResolveTables[i], { ssrState.traceBuffer, ssrState.resolveTraceBufferSlot, 0, InvalidSamplerId });
         ResourceTableCommitChanges(ssrState.ssrResolveTables[i]);

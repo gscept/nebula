@@ -483,11 +483,11 @@ ObserverContext::OnRenderDebug(uint32_t flags)
             atomIndex = Math::clamp(atomIndex, 0, foo[visIndex].drawPackets.Size() - 1);
             auto const& a = foo[visIndex].drawPackets[atomIndex];
             CoreGraphics::RenderShape shape;
-            Models::ShaderStateNode::Instance* sinst = reinterpret_cast<Models::ShaderStateNode::Instance*>(a->node);
+            Models::ShaderStateNode::Instance* sinst = a->ToNode<Models::ShaderStateNode::Instance>();
             Math::vec4 color = {
-                    Util::RandomNumberTable::Rand(a->node->node->HashCode()),
-                    Util::RandomNumberTable::Rand(a->node->node->HashCode() + 1),
-                    Util::RandomNumberTable::Rand(a->node->node->HashCode() + 2),
+                    Util::RandomNumberTable::Rand(sinst->node->HashCode()),
+                    Util::RandomNumberTable::Rand(sinst->node->HashCode() + 1),
+                    Util::RandomNumberTable::Rand(sinst->node->HashCode() + 2),
                     1
             };
             shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), sinst->boundingBox.to_mat4(), color);
@@ -499,11 +499,11 @@ ObserverContext::OnRenderDebug(uint32_t flags)
         for (auto const& a : foo[visIndex].drawPackets)
         {
             CoreGraphics::RenderShape shape;
-            Models::ShaderStateNode::Instance* sinst = reinterpret_cast<Models::ShaderStateNode::Instance*>(a->node);
+            Models::ShaderStateNode::Instance* sinst = a->ToNode<Models::ShaderStateNode::Instance>();
             Math::vec4 color = { 
-                Util::RandomNumberTable::Rand(a->node->node->HashCode()),
-                Util::RandomNumberTable::Rand(a->node->node->HashCode() + 1),
-                Util::RandomNumberTable::Rand(a->node->node->HashCode() + 2),
+                Util::RandomNumberTable::Rand(sinst->node->HashCode()),
+                Util::RandomNumberTable::Rand(sinst->node->HashCode() + 1),
+                Util::RandomNumberTable::Rand(sinst->node->HashCode() + 2),
                 1 
             };
             Math::mat4 t = sinst->boundingBox.to_mat4();

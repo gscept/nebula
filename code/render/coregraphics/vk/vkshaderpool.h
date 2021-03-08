@@ -53,7 +53,7 @@ public:
     CoreGraphics::ShaderProgramId GetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask);
 
     /// create resource table 
-    CoreGraphics::ResourceTableId CreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group);
+    CoreGraphics::ResourceTableId CreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group, const uint overallocationSize);
     /// create constant buffer from name
     CoreGraphics::BufferId CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAtom& name, CoreGraphics::BufferAccessMode mode);
     /// create constant buffer from id
@@ -114,7 +114,7 @@ private:
     friend void ::CoreGraphics::SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::QueueType queue);
 
     /// get shader program
-    AnyFX::VkProgram* GetProgram(const CoreGraphics::ShaderProgramId shaderProgramId);
+    const VkProgramReflectionInfo& GetProgram(const CoreGraphics::ShaderProgramId shaderProgramId);
     /// load shader
     LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
     /// reload shader
@@ -157,9 +157,33 @@ private:
         Util::Dictionary<uint32_t, uint32_t> descriptorSetLayoutMap;
     };
 
+    struct VkReflectionInfo
+    {
+        struct UniformBuffer
+        {
+            uint32_t set;
+            uint32_t binding;
+            uint32_t byteSize;
+            Util::StringAtom name;
+        };
+        Util::Dictionary<Util::StringAtom, UniformBuffer> uniformBuffersByName;
+        Util::Array<UniformBuffer> uniformBuffers;
+
+        struct Variable
+        {
+            AnyFX::VariableType type;
+            Util::StringAtom name;
+            Util::StringAtom blockName;
+            uint32_t blockSet;
+            uint32_t blockBinding;
+        };
+        Util::Dictionary<Util::StringAtom, Variable> variablesByName;
+        Util::Array<Variable> variables;
+    };
+
     enum
     {
-        Shader_Effect,
+        Shader_ReflectionInfo,
         Shader_SetupInfo,
         Shader_RuntimeInfo,
         Shader_ProgramAllocator
@@ -167,7 +191,7 @@ private:
 
     /// this member allocates shaders
     Ids::IdAllocator<
-        AnyFX::ShaderEffect*,                       //0 effect
+        VkReflectionInfo,
         VkShaderSetupInfo,                          //1 setup immutable values
         VkShaderRuntimeInfo,                        //2 runtime values
         VkShaderProgramAllocator                    //3 variations

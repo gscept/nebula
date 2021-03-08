@@ -975,7 +975,7 @@ FrameScriptLoader::ParseShaderState(
     n_assert(shader != nullptr);
     Util::String shaderRes = "shd:" + Util::String(shader->string_value) + ".fxb";
     shd = ShaderGet(shaderRes);
-    table = ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP);
+    table = ShaderCreateResourceTable(shd, NEBULA_BATCH_GROUP, 1);
 
     JzonValue* vars = jzon_get(node, "variables");
     if (vars != nullptr)

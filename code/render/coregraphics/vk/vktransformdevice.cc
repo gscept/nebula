@@ -66,7 +66,7 @@ VkTransformDevice::Open()
     IndexT i;
     for (i = 0; i < this->viewTables.Size(); i++)
     {
-        this->viewTables[i] = ShaderCreateResourceTable(shader, NEBULA_FRAME_GROUP);
+        this->viewTables[i] = ShaderCreateResourceTable(shader, NEBULA_FRAME_GROUP, this->viewTables.Size());
         CoreGraphics::ObjectSetName(this->viewTables[i], "Main Frame Group Descriptor");
     }
 

@@ -31,7 +31,7 @@ enum BufferAccessMode
 
 enum BufferUsageFlag
 {
-    InvalidBufferType           = 0x0,
+    InvalidBufferUsage          = 0x0,
     TransferBufferSource        = 0x1,
     TransferBufferDestination   = 0x2,
     ConstantBuffer              = 0x4,
@@ -61,7 +61,7 @@ struct BufferCreateInfo
         , elementSize(1)
         , byteSize(0)
         , mode(DeviceLocal)
-        , usageFlags(InvalidBufferType)
+        , usageFlags(InvalidBufferUsage)
         , queueSupport(AutomaticQueueSupport)
         , data(nullptr)
         , dataSize(0)

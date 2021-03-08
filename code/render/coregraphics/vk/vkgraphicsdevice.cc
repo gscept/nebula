@@ -2423,7 +2423,8 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
 {
     n_assert(pro != CoreGraphics::InvalidShaderProgramId);
 
-    const VkShaderProgramRuntimeInfo& info = CoreGraphics::shaderPool->shaderAlloc.Get<VkShaderPool::Shader_ProgramAllocator>(pro.shaderId).Get<ShaderProgram_RuntimeInfo>(pro.programId);
+    VkShaderProgramRuntimeInfo& info = CoreGraphics::shaderPool->shaderAlloc.Get<VkShaderPool::Shader_ProgramAllocator>(pro.shaderId).Get<ShaderProgram_RuntimeInfo>(pro.programId);
+    info.colorBlendInfo.pAttachments = info.colorBlendAttachments;
     state.currentStencilFrontRef = info.stencilFrontRef;
     state.currentStencilBackRef = info.stencilBackRef;
     state.currentStencilReadMask = info.stencilReadMask;

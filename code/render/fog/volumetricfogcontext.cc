@@ -132,7 +132,7 @@ VolumetricFogContext::Create()
 	fogState.resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
 	for (IndexT i = 0; i < fogState.resourceTables.Size(); i++)
 	{
-		fogState.resourceTables[i] = ShaderCreateResourceTable(fogState.classificationShader, NEBULA_BATCH_GROUP);
+		fogState.resourceTables[i] = ShaderCreateResourceTable(fogState.classificationShader, NEBULA_BATCH_GROUP, fogState.resourceTables.Size());
 	}
 
 	// get per-view resource tables
@@ -155,8 +155,8 @@ VolumetricFogContext::Create()
 
 	for (IndexT i = 0; i < blurState.blurXTable.Size(); i++)
 	{
-		blurState.blurXTable[i] = ShaderCreateResourceTable(blurState.blurShader, NEBULA_BATCH_GROUP);
-		blurState.blurYTable[i] = ShaderCreateResourceTable(blurState.blurShader, NEBULA_BATCH_GROUP);
+		blurState.blurXTable[i] = ShaderCreateResourceTable(blurState.blurShader, NEBULA_BATCH_GROUP, blurState.blurXTable.Size());
+		blurState.blurYTable[i] = ShaderCreateResourceTable(blurState.blurShader, NEBULA_BATCH_GROUP, blurState.blurXTable.Size());
 	}
 
 	blurState.blurInputXSlot = ShaderGetResourceSlot(blurState.blurShader, "InputImageX");

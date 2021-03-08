@@ -99,10 +99,11 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
                     Models::ModelNode* currentNode = nullptr;
                     for (uint packetIndex = start; packetIndex < end; ++packetIndex)
                     {
-                        Models::ModelNode::DrawPacket* instance = drawList->drawPackets[packetIndex];
-                        Models::ModelNode* node = instance->node->node;
+                        Models::ShaderStateNode::DrawPacket* instance = drawList->drawPackets[packetIndex];
+                        Models::ModelNode::Instance* nodeInst = instance->ToNode<Models::ModelNode::Instance>();
+                        Models::ModelNode* node = nodeInst->node;
                         Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
-                        if (currentNode != drawList->drawPackets[packetIndex]->node->node)
+                        if (currentNode != nodeInst->node)
                         {
 #if NEBULA_GRAPHICS_DEBUG
                             CommandBufferInsertMarker(GraphicsQueueType, NEBULA_MARKER_DARK_DARK_GREEN, node->GetName().Value());
@@ -125,12 +126,12 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
                         instance->Apply(materialType);
                         if (type != ParticleSystemNodeType)
                         {
-                            Models::PrimitiveNode::Instance* pinst = reinterpret_cast<Models::PrimitiveNode::Instance*>(instance->node);
+                            Models::PrimitiveNode::Instance* pinst = reinterpret_cast<Models::PrimitiveNode::Instance*>(nodeInst);
                             pinst->Draw(1, 0, instance);
                         }
                         else
                         {
-                            Models::ParticleSystemNode::Instance* pinst = reinterpret_cast<Models::ParticleSystemNode::Instance*>(instance->node);
+                            Models::ParticleSystemNode::Instance* pinst = reinterpret_cast<Models::ParticleSystemNode::Instance*>(nodeInst);
                             pinst->Draw(1, 0, instance);
                         }
                     }
@@ -188,10 +189,11 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
                     Models::ModelNode* currentNode = nullptr;
                     for (uint packetIndex = start; packetIndex < end; ++packetIndex)
                     {
-                        Models::ModelNode::DrawPacket* instance = drawList->drawPackets[packetIndex];
-                        Models::ModelNode* node = instance->node->node;
+                        Models::ShaderStateNode::DrawPacket* instance = drawList->drawPackets[packetIndex];
+                        Models::ModelNode::Instance* nodeInst = instance->ToNode<Models::ModelNode::Instance>();
+                        Models::ModelNode* node = nodeInst->node;
                         Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
-                        if (currentNode != drawList->drawPackets[packetIndex]->node->node)
+                        if (currentNode != nodeInst->node)
                         {
 #if NEBULA_GRAPHICS_DEBUG
                             CommandBufferInsertMarker(GraphicsQueueType, NEBULA_MARKER_DARK_DARK_GREEN, node->GetName().Value());
@@ -214,12 +216,12 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
                         instance->Apply(materialType);
                         if (type != ParticleSystemNodeType)
                         {
-                            Models::PrimitiveNode::Instance* pinst = reinterpret_cast<Models::PrimitiveNode::Instance*>(instance->node);
+                            Models::PrimitiveNode::Instance* pinst = reinterpret_cast<Models::PrimitiveNode::Instance*>(nodeInst);
                             pinst->Draw(1, baseInstance, instance);
                         }
                         else
                         {
-                            Models::ParticleSystemNode::Instance* pinst = reinterpret_cast<Models::ParticleSystemNode::Instance*>(instance->node);
+                            Models::ParticleSystemNode::Instance* pinst = reinterpret_cast<Models::ParticleSystemNode::Instance*>(nodeInst);
                             pinst->Draw(1, baseInstance, instance);
                         }
                     }

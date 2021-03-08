@@ -61,7 +61,6 @@ class ModelNode
 {
 public:
 
-    struct DrawPacket;
     struct Instance
     {
         const ModelNode::Instance* parent;          // pointer to parent
@@ -72,27 +71,10 @@ public:
         /// setup new instance
         virtual void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent);
 
-        /// return size of draw packet for allocation
-        virtual SizeT GetDrawPacketSize() const;
-        /// fill draw packet
-        virtual Models::ModelNode::DrawPacket* UpdateDrawPacket(void* mem);
+
 
         /// update prior to drawing
         virtual void Update();
-    };
-
-    struct DrawPacket
-    {
-        Models::ModelNode::Instance* node = nullptr;
-        Materials::SurfaceInstanceId* surfaceInstance;
-        SizeT* numTables = nullptr;
-        CoreGraphics::ResourceTableId* tables = nullptr;
-        uint32* numOffsets = nullptr;
-        uint32* offsets = nullptr;
-        IndexT* slots = nullptr;
-
-        /// apply the resource tables and offsets
-        void Apply(Materials::MaterialType* type);
     };
 
     /// constructor

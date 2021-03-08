@@ -50,7 +50,6 @@ struct VkPassRuntimeInfo
     CoreGraphics::ResourceTableId passDescriptorSet;
     CoreGraphics::ResourcePipelineId passPipelineLayout;
 
-    Util::FixedArray<CoreGraphics::ResourceTableId> passTextureDescriptorSet;
     CoreGraphics::ResourceTableId previousPassTextureDescriptorSet;
 
     Util::FixedArray<Util::FixedArray<VkRect2D>> subpassRects;

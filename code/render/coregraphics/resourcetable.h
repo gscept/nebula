@@ -140,6 +140,7 @@ struct ResourceTableSampler
 struct ResourceTableCreateInfo
 {
     ResourceTableLayoutId layout;
+    uint overallocationSize = 256;
 };
 
 /// create resource table
