@@ -32,7 +32,11 @@ uint16_t cVarOffset = 0;
 CVar cVars[MAX_CVARS];
 Util::HashTable<Util::String, uint16_t> cVarTable;
 
-CVar* CVarCreate(CVarCreateInfo const& info)
+//------------------------------------------------------------------------------
+/**
+*/
+CVar*
+CVarCreate(CVarCreateInfo const& info)
 {
     CVar* ptr = CVarGet(info.name);
     if (ptr) return ptr;
@@ -50,7 +54,11 @@ CVar* CVarCreate(CVarCreateInfo const& info)
     return ptr;
 }
 
-CVar* CVarCreate(CVarType type, const char* name, const char* defaultValue)
+//------------------------------------------------------------------------------
+/**
+*/
+CVar*
+CVarCreate(CVarType type, const char* name, const char* defaultValue)
 {
     CVarCreateInfo info;
     info.name = name;
@@ -59,7 +67,11 @@ CVar* CVarCreate(CVarType type, const char* name, const char* defaultValue)
     return CVarCreate(info);
 }
 
-CVar* CVarGet(const char* name)
+//------------------------------------------------------------------------------
+/**
+*/
+CVar*
+CVarGet(const char* name)
 {
     Util::String const str = name;
     IndexT const index = cVarTable.FindIndex(str);
@@ -71,7 +83,11 @@ CVar* CVarGet(const char* name)
     return nullptr;
 }
 
-void CVarParseWrite(CVar* cVar, const char* value)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CVarParseWrite(CVar* cVar, const char* value)
 {
     switch (cVar->value.type)
     {
@@ -89,7 +105,11 @@ void CVarParseWrite(CVar* cVar, const char* value)
     }
 }
 
-void CVarWriteFloat(CVar* cVar, float value)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CVarWriteFloat(CVar* cVar, float value)
 {
     if (cVar->value.type == CVar_Float)
     {
@@ -102,7 +122,11 @@ void CVarWriteFloat(CVar* cVar, float value)
     return;
 }
 
-void CVarWriteInt(CVar* cVar, int value)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CVarWriteInt(CVar* cVar, int value)
 {
     if (cVar->value.type == CVar_Int)
     {
@@ -115,7 +139,11 @@ void CVarWriteInt(CVar* cVar, int value)
     return;
 }
 
-void CVarWriteString(CVar* cVar, const char* value)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CVarWriteString(CVar* cVar, const char* value)
 {
     if (cVar->value.type == CVar_String)
     {
@@ -131,7 +159,11 @@ void CVarWriteString(CVar* cVar, const char* value)
     return;
 }
 
-int const CVarReadInt(CVar* cVar)
+//------------------------------------------------------------------------------
+/**
+*/
+int const
+CVarReadInt(CVar* cVar)
 {
     if (cVar->value.type == CVar_Int)
     {
@@ -142,7 +174,11 @@ int const CVarReadInt(CVar* cVar)
     return 0;
 }
 
-float const CVarReadFloat(CVar* cVar)
+//------------------------------------------------------------------------------
+/**
+*/
+float const
+CVarReadFloat(CVar* cVar)
 {
     if (cVar->value.type == CVar_Float)
     {
@@ -153,7 +189,11 @@ float const CVarReadFloat(CVar* cVar)
     return 0.0f;
 }
 
-const char* CVarReadString(CVar* cVar)
+//------------------------------------------------------------------------------
+/**
+*/
+const char*
+CVarReadString(CVar* cVar)
 {
     if (cVar->value.type == CVar_String)
     {
@@ -164,42 +204,74 @@ const char* CVarReadString(CVar* cVar)
     return nullptr;
 }
 
-bool CVarModified(CVar* cVar)
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+CVarModified(CVar* cVar)
 {
     return cVar->modified;
 }
 
-void CVarSetModified(CVar* cVar, bool value)
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CVarSetModified(CVar* cVar, bool value)
 {
     cVar->modified = value;
 }
 
-CVarType CVarGetType(CVar* cVar)
+//------------------------------------------------------------------------------
+/**
+*/
+CVarType
+CVarGetType(CVar* cVar)
 {
     return cVar->value.type;
 }
 
-const char* CVarGetName(CVar* cVar)
+//------------------------------------------------------------------------------
+/**
+*/
+const char*
+CVarGetName(CVar* cVar)
 {
     return cVar->name.AsCharPtr();
 }
 
-int CVarNum()
+//------------------------------------------------------------------------------
+/**
+*/
+int
+CVarNum()
 {
     return cVarOffset;
 }
 
-CVar* CVarsBegin()
+//------------------------------------------------------------------------------
+/**
+*/
+CVar*
+CVarsBegin()
 {
     return cVars;
 }
 
-CVar* CVarsEnd()
+//------------------------------------------------------------------------------
+/**
+*/
+CVar*
+CVarsEnd()
 {
     return cVars + cVarOffset;
 }
 
-CVar* CVarNext(CVar* cVar)
+//------------------------------------------------------------------------------
+/**
+*/
+CVar*
+CVarNext(CVar* cVar)
 {
     return cVar + 1;
 }
