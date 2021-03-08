@@ -87,8 +87,6 @@ DeleteEntity(Game::Entity entity)
     // make sure we're not trying to dealloc an instance that does not exist
     n_assert2(IsActive(entity), "Cannot delete and entity before it has been instantiated!\n");
 
-    state->pool.Deallocate(entity.id);
-
     EntityManager::State::DeallocInstanceCommand cmd;
     cmd.entity = entity;
 
@@ -172,9 +170,13 @@ OnEndFrame()
     while (!state->deallocQueue.IsEmpty())
     {
         auto const cmd = state->deallocQueue.Dequeue();
-        EntityMapping mapping = state->entityMap[Ids::Index(cmd.entity.id)];
-        Category const& category = EntityManager::Singleton->GetCategory(mapping.category);
-        EntityManager::Singleton->DeallocateInstance(cmd.entity);
+        if (Game::IsValid(cmd.entity))
+        {
+            state->pool.Deallocate(cmd.entity.id);
+            EntityMapping mapping = state->entityMap[Ids::Index(cmd.entity.id)];
+            Category const& category = EntityManager::Singleton->GetCategory(mapping.category);
+            EntityManager::Singleton->DeallocateInstance(cmd.entity);
+        }
     }
 
     // Allocate instances for new entities, reuse invalid instances if possible
