@@ -7,7 +7,7 @@
 #include "lib/shared.fxh"
 #include "lib/clustering.fxh"
 #include "lib/lights_clustered.fxh"
-#include "lib/preetham.fxh"
+#include "lib/mie-rayleigh.fxh"
 
 const uint VOLUME_FOG_STEPS = 32;
 
@@ -215,21 +215,10 @@ GlobalLightFog(vec3 viewPos)
     }
 
     // calculate 'global' fog
-    vec3 atmo = Preetham(normalize(viewPos), GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z);
-    return atmo * GlobalLightColor.rgb * shadowFactor;
+    //vec3 atmo = Preetham(normalize(viewPos), GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z);
+    vec3 atmo = CalculateAtmosphericScattering(normalize(viewPos), GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
+    return atmo * shadowFactor;
 }
-
-//------------------------------------------------------------------------------
-/**
-    Compute fogging given a sampled fog intensity value from the depth
-    pass and a fog color.
-*/
-float
-Fog(float fogDepth)
-{
-    return (FogDistances.y - fogDepth) / (FogDistances.y - FogDistances.x);
-}
-
 
 //------------------------------------------------------------------------------
 /**
@@ -244,7 +233,7 @@ void csRender()
     vec2 seed = coord * (InvFramebufferDimensions);
 
     if (depth == 1)
-        depth = 0.9999f;
+        depth = 0.999998f;
 
     // find last point to march
     vec4 viewPos = PixelToView(seed, depth);
@@ -254,6 +243,8 @@ void csRender()
     vec3 rayStart = eye;
     vec3 viewVec = eye - viewPos.xyz;
     vec3 rayDirection = normalize(viewVec);
+
+    //light.rgb = lerp(fogColor, light.rgb, fogIntensity);
 
     const float oneDivFogSteps = 1 / float(VOLUME_FOG_STEPS);
 
