@@ -441,12 +441,6 @@
                                 "access": "ShaderRead",
                                 "layout": "ShaderRead",
                                 "stage": "PixelShader"
-                            },
-                            {
-                                "name": "AverageLumBuffer",
-                                "access": "ShaderRead",
-                                "layout": "ShaderRead",
-                                "stage": "PixelShader"
                             }
                         ],
                         "call": {
@@ -472,44 +466,6 @@
                             "stage": "ComputeShader"
                         }
                     ]
-                },
-
-
-                "call": {
-                    "name": "Tonemap-Downsample",
-                    "resource_dependencies": [
-                        {
-                            "name": "LightBuffer",
-                            "access": "TransferRead",
-                            "layout": "TransferSource",
-                            "stage": "Transfer"
-                        }
-                    ]
-                },
-
-                "_comment": "------------ EYE ADAPTATION ------------",
-                "pass": {
-                    "name": "Luminance",
-                    "attachments": [
-                        {
-                            "name": "AverageLumBuffer",
-                            "load": false,
-                            "store": true
-                        }
-                    ],
-
-                    "subpass": {
-                        "name": "Tonemapping",
-                        "subpass_dependencies": [],
-                        "depth": false,
-                        "attachments": [
-                            "AverageLumBuffer"
-                        ],
-
-                        "call": {
-                            "name": "Tonemap-AverageLum"
-                        }
-                    }
                 },
 
                 "_comment": "------------ POST EFFECTS ------------",
@@ -623,19 +579,6 @@
                             "name": "ImGUI"
                         }
                     }
-                },
-
-                "_comment": "------------ LUMINANCE COPY ------------",
-                "call": {
-                    "name": "Tonemap-Copy",
-                    "resource_dependencies": [
-                        {
-                            "name": "AverageLumBuffer",
-                            "access": "TransferRead",
-                            "layout": "TransferSource",
-                            "stage": "Transfer"
-                        }
-                    ]
                 },
 
                 "_comment": "------------ COPY TO BACKBUFFER ------------",

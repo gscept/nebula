@@ -618,8 +618,6 @@ ENDIF()
                 ssaocontext.h
                 ssrcontext.cc
                 ssrcontext.h
-                tonemapcontext.cc
-                tonemapcontext.h
             )
 
         fips_dir(terrain)

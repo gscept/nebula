@@ -18,7 +18,6 @@
 #include "posteffects/bloomcontext.h"
 #include "posteffects/ssaocontext.h"
 #include "posteffects/ssrcontext.h"
-#include "posteffects/tonemapcontext.h"
 #include "decals/decalcontext.h"
 #include "debug/framescriptinspector.h"
 #include "terrain/terraincontext.h"
