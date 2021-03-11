@@ -16,10 +16,10 @@
 
 #if ARRAY_TEXTURE
 read FORMAT image2DArray Source;
-readwrite FORMAT image2DArray Output[13];
+atomic FORMAT image2DArray Output[13];
 #else
 read FORMAT image2D Source;
-readwrite FORMAT image2D Output[13];
+atomic FORMAT image2D Output[13];
 #endif
 
 group_shared IMAGE_DATA_TYPE SharedMemory[SHARED_MEMORY_SIZE][SHARED_MEMORY_SIZE];
@@ -32,7 +32,7 @@ constant DownsampleUniforms
     uint NumGroups;
 };
 
-rw_buffer AtomicCounter [string Visibility = "CS";]
+atomic rw_buffer AtomicCounter [string Visibility = "CS";]
 {
     uint Counters[];     // one counter per slice
 };
