@@ -425,54 +425,44 @@ ImguiContext::Create()
     style.PopupBorderSize = 1.0f;
     style.ChildBorderSize = 0.0f;
 
-    ImVec4 nebulaOrange(1.0f, 0.30f, 0.0f, 1.0f);
+    ImVec4 baseColor(0.24f, 0.24f, 0.24f, 1.0f);
     ImVec4 nebulaOrangeActive(0.9f, 0.20f, 0.05f, 1.0f);
-    nebulaOrange.w = 0.3f;
-    style.Colors[ImGuiCol_TitleBg] = nebulaOrange;
-    nebulaOrange.w = 0.6f;
-    style.Colors[ImGuiCol_TitleBgCollapsed] = nebulaOrange;
-    nebulaOrange.w = 0.9f;
-    style.Colors[ImGuiCol_TitleBgActive] = nebulaOrange;
-    nebulaOrange.w = 0.2f;
-    style.Colors[ImGuiCol_ScrollbarBg] = nebulaOrange;
-    nebulaOrange.w = 0.7f;
-    style.Colors[ImGuiCol_ScrollbarGrab] = nebulaOrange;
-    style.Colors[ImGuiCol_SliderGrab] = nebulaOrange;
-    nebulaOrange.w = 0.9f;
-    style.Colors[ImGuiCol_ScrollbarGrabHovered] = nebulaOrange;
-    style.Colors[ImGuiCol_ScrollbarGrabActive] = nebulaOrange;
-    nebulaOrange.w = 0.6f;
-    style.Colors[ImGuiCol_Header] = nebulaOrange;
-    style.Colors[ImGuiCol_FrameBg] = nebulaOrange;
-    nebulaOrange.w = 0.7f;
-    style.Colors[ImGuiCol_HeaderHovered] = nebulaOrange;
-    style.Colors[ImGuiCol_FrameBgHovered] = nebulaOrange;
-    nebulaOrange.w = 0.9f;
-    style.Colors[ImGuiCol_HeaderActive] = nebulaOrange;
-    style.Colors[ImGuiCol_FrameBgActive] = nebulaOrange;
-    nebulaOrange.w = 0.7f;  
-    nebulaOrange.w = 0.5f;
-    style.Colors[ImGuiCol_Button] = nebulaOrange;
-    nebulaOrange.w = 0.9f;
-    style.Colors[ImGuiCol_ButtonActive] = nebulaOrange;
-    nebulaOrange.w = 0.7f;
-    style.Colors[ImGuiCol_ButtonHovered] = nebulaOrange;    
-    style.Colors[ImGuiCol_Border] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
-    style.Colors[ImGuiCol_CheckMark] = nebulaOrange;
+    style.Colors[ImGuiCol_TitleBg] = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);;
+    style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);;
+    style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);;
+    style.Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);
+    style.Colors[ImGuiCol_ScrollbarGrab] = baseColor;
+    style.Colors[ImGuiCol_SliderGrab] = baseColor;
+    style.Colors[ImGuiCol_ScrollbarGrabHovered] = baseColor;
+    style.Colors[ImGuiCol_ScrollbarGrabActive] = baseColor;
+    style.Colors[ImGuiCol_Header] = baseColor;
+    style.Colors[ImGuiCol_FrameBg] = baseColor;
+    style.Colors[ImGuiCol_HeaderHovered] = baseColor;
+    style.Colors[ImGuiCol_FrameBgHovered] = baseColor;
+    style.Colors[ImGuiCol_HeaderActive] = baseColor;
+    style.Colors[ImGuiCol_FrameBgActive] = baseColor;
+    style.Colors[ImGuiCol_Button] = baseColor;
+    style.Colors[ImGuiCol_ButtonActive] = baseColor;
+    style.Colors[ImGuiCol_ButtonHovered] = baseColor;    
+    style.Colors[ImGuiCol_Border] = ImVec4(0.20f, 0.20f, 0.20f, 1.0f);
+    style.Colors[ImGuiCol_CheckMark] = baseColor;
     style.Colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.95f);
 
     style.Colors[ImGuiCol_Button] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
-    style.Colors[ImGuiCol_WindowBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.85f);
-    style.Colors[ImGuiCol_FrameBg] = ImVec4(1.0f, 1.0f, 1.0f, 0.25f);
+    style.Colors[ImGuiCol_WindowBg] = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);
+    style.Colors[ImGuiCol_FrameBg] = ImVec4(0.22f, 0.22f, 0.22f, 1.0f);
     style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.3f, 0.33f, 0.33f, 1.0f);
     style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.3f, 0.33f, 0.33f, 1.0f);
-    style.Colors[ImGuiCol_Text] = ImVec4(0.73f, 0.73f, 0.73f, 1.0f);
+    style.Colors[ImGuiCol_Text] = ImVec4(0.80f, 0.80f, 0.80f, 1.0f);
     style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.13f, 0.13f, 0.13f, 1.0f);
     style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.3f, 0.33f, 0.33f, 1.0f);
-    style.Colors[ImGuiCol_CheckMark] = ImVec4(1.0f, 0.47f, 0.0f, 1.0f);
+    style.Colors[ImGuiCol_CheckMark] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+    style.Colors[ImGuiCol_ResizeGrip] = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);
+    style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
+    style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
 
     style.Colors[ImGuiCol_Separator] = ImVec4(0.33f, 0.33f, 0.33f, 0.3f);
-    style.Colors[ImGuiCol_SeparatorHovered] = nebulaOrange;
+    style.Colors[ImGuiCol_SeparatorHovered] = baseColor;
     style.Colors[ImGuiCol_SeparatorActive] = nebulaOrangeActive;
 
     // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
@@ -506,7 +496,7 @@ ImguiContext::Create()
     config.OversampleH = 3;
     config.OversampleV = 1;
 #if __WIN32__
-    ImFont* font = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/segoeui.ttf", 17, &config);
+    ImFont* font = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibri.ttf", 14, &config);
 #else
     ImFont* font = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 18, &config);
 #endif
