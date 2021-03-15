@@ -93,9 +93,9 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
     const CoreGraphics::ImageSubresourceInfo& subres,
     IndexT toIndex,
     CoreGraphics::QueueType toQueue,
-    Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
-    Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
-    Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
+    Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
+    Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
+    Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
     Util::Array<FrameOp::TextureDependency>& textureDependencies)
 {
     Util::Array<CoreGraphics::ImageSubresourceInfo> subresources{ subres };
@@ -121,6 +121,7 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
                 && dep.queue == toQueue)                        // we are on the same queue
             {
                 // do nothing
+                int i = 5;
             }
             else
             {
@@ -132,7 +133,7 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
                 else
                 {
                     // construct pair between ops
-                    const Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage> tuple = Util::MakeTuple(toIndex, dep.index, dep.stage);
+                    const Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage> tuple = Util::MakeTuple(toIndex, dep.index, stage, dep.stage);
                     CoreGraphics::TextureBarrier barrier{ tex, subres, dep.layout, layout, dep.access, access };
 
                     const bool enableEvent = false;
@@ -235,9 +236,9 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
     const CoreGraphics::BufferSubresourceInfo& subres,
     IndexT toIndex,
     CoreGraphics::QueueType toQueue,
-    Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
-    Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
-    Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
+    Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
+    Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
+    Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
     Util::Array<FrameOp::BufferDependency>& bufferDependencies)
 {
     Util::Array<CoreGraphics::BufferSubresourceInfo> subresources{ subres };
@@ -270,7 +271,7 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
                 else
                 {
                     // construct pair between ops
-                    const Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage> tuple = Util::MakeTuple(toIndex, dep.index, dep.stage);
+                    const Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage> tuple = Util::MakeTuple(toIndex, dep.index, stage, dep.stage);
                     CoreGraphics::BufferBarrier barrier{ buf, dep.access, access, (IndexT)subres.offset, (IndexT)subres.size };
 
                     const bool enableEvent = false;
@@ -349,9 +350,9 @@ FrameOp::SetupSynchronization(
 
     if (!this->textureDeps.IsEmpty() || !this->rwBufferDeps.IsEmpty())
     {
-        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo> waitEvents;
-        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo> barriers;
-        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage>, FrameOp::Compiled*> signalEvents;
+        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo> waitEvents;
+        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo> barriers;
+        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, FrameOp::Compiled*> signalEvents;
         uint numOutputs = 0;
 
         // go through texture dependencies

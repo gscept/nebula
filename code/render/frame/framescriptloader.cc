@@ -629,6 +629,23 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
         }
     }
 
+    ImageSubresourceInfo subres;
+    subres.aspect = CoreGraphics::ImageAspect::ColorBits;
+    subres.layer = 0;
+    subres.layerCount = 1;
+    subres.mip = 0;
+    subres.mipCount = 1;
+    for (SizeT i = 0; i < info.colorAttachments.Size(); i++)
+    {
+        op->textureDeps.Add(TextureViewGetTexture(info.colorAttachments[i]), Util::MakeTuple(info.name, CoreGraphics::BarrierAccess::ColorAttachmentRead, CoreGraphics::BarrierStage::PassOutput, subres, CoreGraphics::ImageLayout::ShaderRead));
+    }
+
+    subres.aspect = CoreGraphics::ImageAspect::StencilBits | CoreGraphics::ImageAspect::DepthBits;
+    if (info.depthStencilAttachment != InvalidTextureViewId)
+    {
+        op->textureDeps.Add(TextureViewGetTexture(info.depthStencilAttachment), Util::MakeTuple(info.name, CoreGraphics::BarrierAccess::DepthAttachmentRead, CoreGraphics::BarrierStage::EarlyDepth, subres, CoreGraphics::ImageLayout::DepthStencilRead));
+    }
+
     // setup framebuffer and bind to pass
     op->pass = CreatePass(info);
     return op;

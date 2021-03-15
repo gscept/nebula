@@ -769,15 +769,15 @@ VkTypes::AsVkImageLayout(const CoreGraphics::ImageLayout layout)
     switch (layout)
     {
         case CoreGraphics::ImageLayout::Undefined:                  return VK_IMAGE_LAYOUT_UNDEFINED;
-        case CoreGraphics::ImageLayout::General:                        return VK_IMAGE_LAYOUT_GENERAL;
+        case CoreGraphics::ImageLayout::General:                    return VK_IMAGE_LAYOUT_GENERAL;
         case CoreGraphics::ImageLayout::ColorRenderTexture:         return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         case CoreGraphics::ImageLayout::DepthStencilRenderTexture:  return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        case CoreGraphics::ImageLayout::DepthStencilRead:               return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+        case CoreGraphics::ImageLayout::DepthStencilRead:           return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
         case CoreGraphics::ImageLayout::ShaderRead:                 return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         case CoreGraphics::ImageLayout::TransferSource:             return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        case CoreGraphics::ImageLayout::TransferDestination:            return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        case CoreGraphics::ImageLayout::TransferDestination:        return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         case CoreGraphics::ImageLayout::Preinitialized:             return VK_IMAGE_LAYOUT_PREINITIALIZED;
-        case CoreGraphics::ImageLayout::Present:                        return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        case CoreGraphics::ImageLayout::Present:                    return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     }
     return VK_IMAGE_LAYOUT_UNDEFINED;
 }

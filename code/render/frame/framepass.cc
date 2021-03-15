@@ -205,56 +205,6 @@ FramePass::Build(
     myCompiled->subpasses = subpassOps;
     this->compiled = myCompiled;
     this->SetupSynchronization(allocator, events, barriers, rwBuffers, textures);
-
-    // first add dependency for color attachments
-    const Util::Array<CoreGraphics::TextureViewId>& attachments = CoreGraphics::PassGetAttachments(this->pass);
-    for (IndexT i = 0; i < attachments.Size(); i++)
-    {
-        TextureId tex = TextureViewGetTexture(attachments[i]);
-        IndexT idx = textures.FindIndex(tex);
-        n_assert(idx != InvalidIndex);
-        Util::Array<TextureDependency>& deps = textures.ValueAtIndex(idx);
-        uint layers = CoreGraphics::TextureGetNumLayers(tex);
-        uint mips = CoreGraphics::TextureGetNumMips(tex);
-        CoreGraphics::ImageSubresourceInfo subres{ 
-            CoreGraphics::ImageAspect::ColorBits,
-            0, mips, 0, layers };
-        TextureDependency dep{
-            this->compiled, 
-            this->queue, 
-            CoreGraphics::ImageLayout::ShaderRead,
-            CoreGraphics::BarrierStage::PassOutput,
-            CoreGraphics::BarrierAccess::ColorAttachmentWrite,
-            DependencyIntent::Write, 
-            this->index,
-            subres};
-        deps.Append(dep);
-    }
-
-    // then add potential dependency for depth-stencil attachment
-    CoreGraphics::TextureViewId depthStencilAttachment = CoreGraphics::PassGetDepthStencilAttachment(this->pass);
-    if (depthStencilAttachment != CoreGraphics::InvalidTextureViewId)
-    {
-        TextureId tex = TextureViewGetTexture(depthStencilAttachment);
-        IndexT idx = textures.FindIndex(tex);
-        n_assert(idx != InvalidIndex);
-        Util::Array<TextureDependency>& deps = textures.ValueAtIndex(idx);
-        uint layers = CoreGraphics::TextureGetNumLayers(tex);
-        uint mips = CoreGraphics::TextureGetNumMips(tex);
-        CoreGraphics::ImageSubresourceInfo subres{
-            CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits,
-            0, mips, 0, layers };
-        TextureDependency dep{
-            this->compiled,
-            this->queue,
-            CoreGraphics::ImageLayout::DepthStencilRead,
-            CoreGraphics::BarrierStage::LateDepth,
-            CoreGraphics::BarrierAccess::DepthAttachmentWrite,
-            DependencyIntent::Write,
-            this->index,
-            subres };
-        deps.Append(dep);
-    }
     compiledOps.Append(myCompiled);
 
 #if NEBULA_ENABLE_MT_DRAW
