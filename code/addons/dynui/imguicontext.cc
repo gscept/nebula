@@ -14,6 +14,8 @@
 #include "input/inputserver.h"
 #include "io/ioserver.h"
 #include "frame/frameplugin.h"
+#include "core/cvar.h"
+
 using namespace Math;
 using namespace CoreGraphics;
 using namespace Base;
@@ -23,6 +25,7 @@ namespace Dynui
 {
 
 ImguiContext::ImguiState ImguiContext::state;
+static Core::CVar* ui_opacity;
 
 //------------------------------------------------------------------------------
 /**
@@ -310,6 +313,8 @@ ImguiContext::~ImguiContext()
 void
 ImguiContext::Create()
 {
+    ui_opacity = Core::CVarCreate(Core::CVar_Float, "ui_opacity", "1.0");
+
     __bundle.OnBegin = ImguiContext::OnBeforeFrame;
     __bundle.OnWindowResized = ImguiContext::OnWindowResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
@@ -404,76 +409,83 @@ ImguiContext::Create()
 
     ImGuiStyle& style = ImGui::GetStyle();
     
-    style.FrameRounding = 4.0f;
-    style.GrabRounding = 8.0f;
+    style.FrameRounding = 2.0f;
+    style.GrabRounding = 0.0f;
     style.ChildRounding = 0.0f;
-    style.WindowRounding = 6.0f;
+    style.WindowRounding = 2.0f;
     style.PopupRounding = 0.0f;
-    style.ScrollbarRounding = 32.0f;
+    style.ScrollbarRounding = 2.0f;
+    style.TabRounding = 3.0f;
 
-    style.WindowTitleAlign = { 0.01f, 0.38f };
+    style.WindowTitleAlign = { 0.5f, 0.38f };
+    style.WindowMenuButtonPosition = ImGuiDir_Right;
 
     style.WindowPadding = { 8.0f, 8.0f };
-    style.FramePadding = { 4, 3 };
+    style.FramePadding = { 16, 3 };
     style.ItemInnerSpacing = { 4, 2 };
-    style.ItemSpacing = { 10, 5 };
+    style.ItemSpacing = { 4, 5 };
     style.IndentSpacing = 8.0f;
     style.GrabMinSize = 8.0f;
 
     style.FrameBorderSize = 0.0f;
-    style.WindowBorderSize = 1.5f;
-    style.PopupBorderSize = 1.0f;
+    style.WindowBorderSize = 1.0f;
+    style.PopupBorderSize = 0.0f;
     style.ChildBorderSize = 0.0f;
 
     ImVec4 nebulaOrange(1.0f, 0.30f, 0.0f, 1.0f);
     ImVec4 nebulaOrangeActive(0.9f, 0.20f, 0.05f, 1.0f);
-    nebulaOrange.w = 0.3f;
-    style.Colors[ImGuiCol_TitleBg] = nebulaOrange;
-    nebulaOrange.w = 0.6f;
-    style.Colors[ImGuiCol_TitleBgCollapsed] = nebulaOrange;
-    nebulaOrange.w = 0.9f;
-    style.Colors[ImGuiCol_TitleBgActive] = nebulaOrange;
-    nebulaOrange.w = 0.2f;
-    style.Colors[ImGuiCol_ScrollbarBg] = nebulaOrange;
-    nebulaOrange.w = 0.7f;
-    style.Colors[ImGuiCol_ScrollbarGrab] = nebulaOrange;
-    style.Colors[ImGuiCol_SliderGrab] = nebulaOrange;
-    nebulaOrange.w = 0.9f;
-    style.Colors[ImGuiCol_ScrollbarGrabHovered] = nebulaOrange;
-    style.Colors[ImGuiCol_ScrollbarGrabActive] = nebulaOrange;
-    nebulaOrange.w = 0.6f;
-    style.Colors[ImGuiCol_Header] = nebulaOrange;
-    style.Colors[ImGuiCol_FrameBg] = nebulaOrange;
-    nebulaOrange.w = 0.7f;
-    style.Colors[ImGuiCol_HeaderHovered] = nebulaOrange;
-    style.Colors[ImGuiCol_FrameBgHovered] = nebulaOrange;
-    nebulaOrange.w = 0.9f;
-    style.Colors[ImGuiCol_HeaderActive] = nebulaOrange;
-    style.Colors[ImGuiCol_FrameBgActive] = nebulaOrange;
-    nebulaOrange.w = 0.7f;  
-    nebulaOrange.w = 0.5f;
-    style.Colors[ImGuiCol_Button] = nebulaOrange;
-    nebulaOrange.w = 0.9f;
-    style.Colors[ImGuiCol_ButtonActive] = nebulaOrange;
-    nebulaOrange.w = 0.7f;
-    style.Colors[ImGuiCol_ButtonHovered] = nebulaOrange;    
-    style.Colors[ImGuiCol_Border] = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
-    style.Colors[ImGuiCol_CheckMark] = nebulaOrange;
-    style.Colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.95f);
-
-    style.Colors[ImGuiCol_Button] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
-    style.Colors[ImGuiCol_WindowBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.85f);
-    style.Colors[ImGuiCol_FrameBg] = ImVec4(1.0f, 1.0f, 1.0f, 0.25f);
-    style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.3f, 0.33f, 0.33f, 1.0f);
-    style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.3f, 0.33f, 0.33f, 1.0f);
-    style.Colors[ImGuiCol_Text] = ImVec4(0.73f, 0.73f, 0.73f, 1.0f);
-    style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.13f, 0.13f, 0.13f, 1.0f);
-    style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.3f, 0.33f, 0.33f, 1.0f);
-    style.Colors[ImGuiCol_CheckMark] = ImVec4(1.0f, 0.47f, 0.0f, 1.0f);
-
-    style.Colors[ImGuiCol_Separator] = ImVec4(0.33f, 0.33f, 0.33f, 0.3f);
-    style.Colors[ImGuiCol_SeparatorHovered] = nebulaOrange;
-    style.Colors[ImGuiCol_SeparatorActive] = nebulaOrangeActive;
+    ImVec4* colors = ImGui::GetStyle().Colors;
+    ImGui::GetStyle().Alpha = Core::CVarReadFloat(ui_opacity);
+    colors[ImGuiCol_Text]                   = ImVec4(0.73f, 0.73f, 0.73f, 1.00f);
+    colors[ImGuiCol_TextDisabled]           = ImVec4(0.27f, 0.27f, 0.27f, 0.50f);
+    colors[ImGuiCol_WindowBg]               = ImVec4(0.06f, 0.06f, 0.06f, 1.00f);
+    colors[ImGuiCol_ChildBg]                = ImVec4(0.09f, 0.09f, 0.09f, 0.59f);
+    colors[ImGuiCol_PopupBg]                = ImVec4(0.05f, 0.05f, 0.05f, 0.95f);
+    colors[ImGuiCol_Border]                 = ImVec4(0.05f, 0.05f, 0.05f, 1.00f);
+    colors[ImGuiCol_BorderShadow]           = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
+    colors[ImGuiCol_FrameBg]                = ImVec4(0.18f, 0.18f, 0.18f, 0.25f);
+    colors[ImGuiCol_FrameBgHovered]         = ImVec4(0.11f, 0.11f, 0.11f, 1.00f);
+    colors[ImGuiCol_FrameBgActive]          = ImVec4(0.40f, 0.40f, 0.40f, 1.00f);
+    colors[ImGuiCol_TitleBg]                = ImVec4(0.09f, 0.09f, 0.09f, 1.00f);
+    colors[ImGuiCol_TitleBgActive]          = ImVec4(0.04f, 0.04f, 0.04f, 1.00f);
+    colors[ImGuiCol_TitleBgCollapsed]       = ImVec4(0.11f, 0.11f, 0.11f, 0.89f);
+    colors[ImGuiCol_MenuBarBg]              = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+    colors[ImGuiCol_ScrollbarBg]            = ImVec4(1.00f, 0.30f, 0.00f, 0.07f);
+    colors[ImGuiCol_ScrollbarGrab]          = ImVec4(1.00f, 0.40f, 0.00f, 0.38f);
+    colors[ImGuiCol_ScrollbarGrabHovered]   = ImVec4(1.00f, 0.30f, 0.00f, 0.90f);
+    colors[ImGuiCol_ScrollbarGrabActive]    = ImVec4(1.00f, 0.30f, 0.00f, 1.00f);
+    colors[ImGuiCol_CheckMark]              = ImVec4(1.00f, 0.47f, 0.00f, 1.00f);
+    colors[ImGuiCol_SliderGrab]             = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+    colors[ImGuiCol_SliderGrabActive]       = ImVec4(0.30f, 0.33f, 0.33f, 1.00f);
+    colors[ImGuiCol_Button]                 = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+    colors[ImGuiCol_ButtonHovered]          = ImVec4(1.00f, 0.30f, 0.00f, 0.70f);
+    colors[ImGuiCol_ButtonActive]           = ImVec4(1.00f, 0.30f, 0.00f, 0.90f);
+    colors[ImGuiCol_Header]                 = ImVec4(1.00f, 0.30f, 0.00f, 0.60f);
+    colors[ImGuiCol_HeaderHovered]          = ImVec4(1.00f, 0.30f, 0.00f, 0.70f);
+    colors[ImGuiCol_HeaderActive]           = ImVec4(1.00f, 0.30f, 0.00f, 0.90f);
+    colors[ImGuiCol_Separator]              = ImVec4(0.02f, 0.02f, 0.02f, 1.00f);
+    colors[ImGuiCol_SeparatorHovered]       = ImVec4(1.00f, 0.30f, 0.00f, 0.70f);
+    colors[ImGuiCol_SeparatorActive]        = ImVec4(0.90f, 0.20f, 0.05f, 1.00f);
+    colors[ImGuiCol_ResizeGrip]             = ImVec4(1.00f, 0.30f, 0.00f, 0.11f);
+    colors[ImGuiCol_ResizeGripHovered]      = ImVec4(1.00f, 0.30f, 0.00f, 0.67f);
+    colors[ImGuiCol_ResizeGripActive]       = ImVec4(1.00f, 0.30f, 0.00f, 1.00f);
+    colors[ImGuiCol_Tab]                    = ImVec4(0.04f, 0.04f, 0.04f, 0.86f);
+    colors[ImGuiCol_TabHovered]             = ImVec4(0.03f, 0.03f, 0.03f, 0.80f);
+    colors[ImGuiCol_TabActive]              = ImVec4(0.02f, 0.02f, 0.02f, 1.00f);
+    colors[ImGuiCol_TabUnfocused]           = ImVec4(0.16f, 0.16f, 0.16f, 0.97f);
+    colors[ImGuiCol_TabUnfocusedActive]     = ImVec4(0.08f, 0.08f, 0.08f, 1.00f);
+    colors[ImGuiCol_DockingPreview]         = ImVec4(1.00f, 0.30f, 0.00f, 0.23f);
+    colors[ImGuiCol_DockingEmptyBg]         = ImVec4(0.06f, 0.06f, 0.06f, 1.00f);
+    colors[ImGuiCol_PlotLines]              = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
+    colors[ImGuiCol_PlotLinesHovered]       = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
+    colors[ImGuiCol_PlotHistogram]          = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+    colors[ImGuiCol_PlotHistogramHovered]   = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
+    colors[ImGuiCol_TextSelectedBg]         = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
+    colors[ImGuiCol_DragDropTarget]         = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
+    colors[ImGuiCol_NavHighlight]           = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+    colors[ImGuiCol_NavWindowingHighlight]  = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
+    colors[ImGuiCol_NavWindowingDimBg]      = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
+    colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
 
     // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
     io.KeyMap[ImGuiKey_Tab] = Key::Tab;             
@@ -639,6 +651,7 @@ ImguiContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
     ImGuiIO& io = ImGui::GetIO();
     io.DeltaTime = ctx.frameTime;
     ImGui::NewFrame();
+    ImGui::GetStyle().Alpha = Core::CVarReadFloat(ui_opacity);
 }
 
 } // namespace Dynui
