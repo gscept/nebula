@@ -64,6 +64,35 @@ FrameScript::AddOp(Frame::FrameOp* op)
     op->index = this->frameOpCounter;
     this->frameOpCounter++;
     this->ops.Append(op);
+    this->opsByName.Add(op->name, op);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Frame::FrameOp*
+FrameScript::GetOp(const Util::String& search)
+{
+    Util::Array<Util::String> paths = search.Tokenize("/");
+    Util::Dictionary<Util::StringAtom, FrameOp*>* list = &this->opsByName;
+    Frame::FrameOp* op = nullptr;
+    while (!paths.IsEmpty())
+    {
+        IndexT i = list->FindIndex(paths.Front());
+        if (i == InvalidIndex)
+        {
+            n_warning("Could not find operation using path '%s'", search.AsCharPtr());
+            return nullptr;
+        }
+
+        // get operation for next iteration of loop
+        op = list->ValueAtIndex(i);
+        list = &op->childrenByName;
+
+        // remove element we just used
+        paths.EraseFront();
+    }
+    return op;
 }
 
 //------------------------------------------------------------------------------
@@ -190,6 +219,9 @@ FrameScript::Build()
     Util::Dictionary<CoreGraphics::BufferId, Util::Array<FrameOp::BufferDependency>> rwBuffers;
     Util::Dictionary<CoreGraphics::TextureId, Util::Array<FrameOp::TextureDependency>> textures;
 
+    // get window texture
+    CoreGraphics::TextureId window = FrameServer::Instance()->GetWindowTexture();
+
     // give every resource an initial dependency
     for (i = 0; i < this->textures.Size(); i++)
     {
@@ -207,7 +239,10 @@ FrameScript::Build()
         subres.layerCount = layers;
         subres.mip = 0;
         subres.mipCount = mips;
-        arr.Append(FrameOp::TextureDependency{ nullptr, CoreGraphics::QueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::AllGraphicsShaders | CoreGraphics::BarrierStage::ComputeShader, CoreGraphics::BarrierAccess::ShaderRead, DependencyIntent::Read, InvalidIndex, subres });
+        if (tex == window)
+            arr.Append(FrameOp::TextureDependency{ nullptr, CoreGraphics::QueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierAccess::TransferRead, DependencyIntent::Read, InvalidIndex, subres });
+        else
+            arr.Append(FrameOp::TextureDependency{ nullptr, CoreGraphics::QueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::AllGraphicsShaders | CoreGraphics::BarrierStage::ComputeShader, CoreGraphics::BarrierAccess::ShaderRead, DependencyIntent::Read, InvalidIndex, subres });
     }
 
     // build ops

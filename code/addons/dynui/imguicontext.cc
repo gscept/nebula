@@ -14,6 +14,8 @@
 #include "input/inputserver.h"
 #include "io/ioserver.h"
 #include "frame/frameplugin.h"
+#include "core/cvar.h"
+
 using namespace Math;
 using namespace CoreGraphics;
 using namespace Base;
@@ -23,6 +25,7 @@ namespace Dynui
 {
 
 ImguiContext::ImguiState ImguiContext::state;
+static Core::CVar* ui_opacity;
 
 //------------------------------------------------------------------------------
 /**
@@ -46,6 +49,8 @@ ImguiContext::ImguiDrawFunction()
     BufferId ibo = state.ibos[currentBuffer];
     const ImguiRendererParams& params = state.params;
 
+    CoreGraphics::CommandBufferBeginMarker(CoreGraphics::GraphicsQueueType, NEBULA_MARKER_GRAPHICS, "ImGUI");
+
     // apply shader
     CoreGraphics::SetShaderProgram(state.prog);
 
@@ -56,39 +61,39 @@ ImguiContext::ImguiDrawFunction()
     mat4 proj = orthooffcenterrh(0.0f, io.DisplaySize.x, io.DisplaySize.y, 0.0f, -1.0f, +1.0f);
 #endif
 
-	// if buffers are too small, create new buffers
+    // if buffers are too small, create new buffers
     if (data->TotalVtxCount > CoreGraphics::BufferGetSize(state.vbos[currentBuffer]))
     {
-		CoreGraphics::BufferUnmap(state.vbos[currentBuffer]);
-		CoreGraphics::DestroyBuffer(state.vbos[currentBuffer]);
+        CoreGraphics::BufferUnmap(state.vbos[currentBuffer]);
+        CoreGraphics::DestroyBuffer(state.vbos[currentBuffer]);
 
-		CoreGraphics::BufferCreateInfo vboInfo;
-		vboInfo.name = "ImGUI VBO"_atm;
-		vboInfo.size = Math::roundtopow2(data->TotalVtxCount);
-		vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.vlo);
-		vboInfo.mode = CoreGraphics::HostToDevice;
-		vboInfo.usageFlags = CoreGraphics::VertexBuffer;
-		vboInfo.data = nullptr;
-		vboInfo.dataSize = 0;
-		state.vbos[currentBuffer] = CoreGraphics::CreateBuffer(vboInfo);
-		state.vertexPtrs[currentBuffer] = (byte*)CoreGraphics::BufferMap(state.vbos[currentBuffer]);
+        CoreGraphics::BufferCreateInfo vboInfo;
+        vboInfo.name = "ImGUI VBO"_atm;
+        vboInfo.size = Math::roundtopow2(data->TotalVtxCount);
+        vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.vlo);
+        vboInfo.mode = CoreGraphics::HostToDevice;
+        vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+        vboInfo.data = nullptr;
+        vboInfo.dataSize = 0;
+        state.vbos[currentBuffer] = CoreGraphics::CreateBuffer(vboInfo);
+        state.vertexPtrs[currentBuffer] = (byte*)CoreGraphics::BufferMap(state.vbos[currentBuffer]);
     }
 
-	if (data->TotalIdxCount > CoreGraphics::BufferGetSize(state.ibos[currentBuffer]))
+    if (data->TotalIdxCount > CoreGraphics::BufferGetSize(state.ibos[currentBuffer]))
     {
-		CoreGraphics::BufferUnmap(state.ibos[currentBuffer]);
-		CoreGraphics::DestroyBuffer(state.ibos[currentBuffer]);
+        CoreGraphics::BufferUnmap(state.ibos[currentBuffer]);
+        CoreGraphics::DestroyBuffer(state.ibos[currentBuffer]);
 
-		CoreGraphics::BufferCreateInfo iboInfo;
-		iboInfo.name = "ImGUI IBO"_atm;
-		iboInfo.size = Math::roundtopow2(data->TotalIdxCount);
-		iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(IndexType::Index16);
-		iboInfo.mode = CoreGraphics::HostToDevice;
-		iboInfo.usageFlags = CoreGraphics::IndexBuffer;
-		iboInfo.data = nullptr;
-		iboInfo.dataSize = 0;
-		state.ibos[currentBuffer] = CoreGraphics::CreateBuffer(iboInfo);
-		state.indexPtrs[currentBuffer] = (byte*)CoreGraphics::BufferMap(state.ibos[currentBuffer]);
+        CoreGraphics::BufferCreateInfo iboInfo;
+        iboInfo.name = "ImGUI IBO"_atm;
+        iboInfo.size = Math::roundtopow2(data->TotalIdxCount);
+        iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(IndexType::Index16);
+        iboInfo.mode = CoreGraphics::HostToDevice;
+        iboInfo.usageFlags = CoreGraphics::IndexBuffer;
+        iboInfo.data = nullptr;
+        iboInfo.dataSize = 0;
+        state.ibos[currentBuffer] = CoreGraphics::CreateBuffer(iboInfo);
+        state.indexPtrs[currentBuffer] = (byte*)CoreGraphics::BufferMap(state.ibos[currentBuffer]);
     }
 
     // setup device
@@ -133,8 +138,8 @@ ImguiContext::ImguiDrawFunction()
         n_assert(indexBufferOffset + (IndexT)commandList->IdxBuffer.size() < CoreGraphics::BufferGetByteSize(state.ibos[currentBuffer]));
 
         // wait for previous draws to finish...
-		Memory::Copy(vertexBuffer, state.vertexPtrs[currentBuffer] + vertexBufferOffset, vertexBufferSize);
-		Memory::Copy(indexBuffer, state.indexPtrs[currentBuffer] + indexBufferOffset, indexBufferSize);
+        Memory::Copy(vertexBuffer, state.vertexPtrs[currentBuffer] + vertexBufferOffset, vertexBufferSize);
+        Memory::Copy(indexBuffer, state.indexPtrs[currentBuffer] + indexBufferOffset, indexBufferSize);
         IndexT j;
         IndexT primitiveIndexOffset = 0;
         for (j = 0; j < commandList->CmdBuffer.size(); j++)
@@ -208,6 +213,8 @@ ImguiContext::ImguiDrawFunction()
 
     // reset clip settings
     CoreGraphics::ResetClipSettings();
+
+    CoreGraphics::CommandBufferEndMarker(CoreGraphics::GraphicsQueueType);
 }
 
 //------------------------------------------------------------------------------
@@ -310,7 +317,10 @@ ImguiContext::~ImguiContext()
 void
 ImguiContext::Create()
 {
+    ui_opacity = Core::CVarCreate(Core::CVar_Float, "ui_opacity", "1.0");
+
     __bundle.OnBegin = ImguiContext::OnBeforeFrame;
+    __bundle.OnWorkFinished = ImguiContext::OnWorkFinished; // this is basically OnBeforeViews (plural)
     __bundle.OnWindowResized = ImguiContext::OnWindowResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
@@ -343,7 +353,6 @@ ImguiContext::Create()
 #endif
 
             CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
-            ImGui::Render();
             ImguiContext::ImguiDrawFunction();
             CoreGraphics::EndBatch();
         });
@@ -404,73 +413,84 @@ ImguiContext::Create()
 
     ImGuiStyle& style = ImGui::GetStyle();
     
-    style.FrameRounding = 4.0f;
-    style.GrabRounding = 8.0f;
+    style.FrameRounding = 2.0f;
+    style.GrabRounding = 0.0f;
     style.ChildRounding = 0.0f;
-    style.WindowRounding = 6.0f;
+    style.WindowRounding = 2.0f;
     style.PopupRounding = 0.0f;
-    style.ScrollbarRounding = 32.0f;
+    style.ScrollbarRounding = 2.0f;
+    style.TabRounding = 3.0f;
 
-    style.WindowTitleAlign = { 0.01f, 0.38f };
+    style.WindowTitleAlign = { 0.5f, 0.38f };
+    style.WindowMenuButtonPosition = ImGuiDir_Right;
 
     style.WindowPadding = { 8.0f, 8.0f };
-    style.FramePadding = { 4, 3 };
+    style.FramePadding = { 16, 3 };
     style.ItemInnerSpacing = { 4, 2 };
-    style.ItemSpacing = { 10, 5 };
+    style.ItemSpacing = { 4, 5 };
     style.IndentSpacing = 8.0f;
     style.GrabMinSize = 8.0f;
 
     style.FrameBorderSize = 0.0f;
-    style.WindowBorderSize = 1.5f;
-    style.PopupBorderSize = 1.0f;
+    style.WindowBorderSize = 1.0f;
+    style.PopupBorderSize = 0.0f;
     style.ChildBorderSize = 0.0f;
-
-    ImVec4 baseColor(0.26f, 0.24f, 0.22f, 1.0f);
-    ImVec4 bg(0.15f, 0.15f, 0.15f, 1.0f);
-    style.Colors[ImGuiCol_TitleBg] = bg;
-    style.Colors[ImGuiCol_TitleBgCollapsed] = bg;
-    style.Colors[ImGuiCol_TitleBgActive] = bg;
-    style.Colors[ImGuiCol_ScrollbarBg] = bg;
-    style.Colors[ImGuiCol_ScrollbarGrab] = baseColor;
-    style.Colors[ImGuiCol_SliderGrab] = baseColor;
-    style.Colors[ImGuiCol_ScrollbarGrabHovered] = baseColor;
-    style.Colors[ImGuiCol_ScrollbarGrabActive] = baseColor;
-    style.Colors[ImGuiCol_Header] = baseColor;
-    style.Colors[ImGuiCol_FrameBg] = baseColor;
-    style.Colors[ImGuiCol_HeaderHovered] = baseColor;
-    style.Colors[ImGuiCol_FrameBgHovered] = baseColor;
-    style.Colors[ImGuiCol_HeaderActive] = baseColor;
-    style.Colors[ImGuiCol_FrameBgActive] = baseColor;
-    style.Colors[ImGuiCol_Button] = baseColor;
-    style.Colors[ImGuiCol_ButtonActive] = baseColor;
-    style.Colors[ImGuiCol_ButtonHovered] = baseColor;    
-    style.Colors[ImGuiCol_Border] = ImVec4(0.20f, 0.20f, 0.20f, 1.0f);
-    style.Colors[ImGuiCol_CheckMark] = baseColor;
-    style.Colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.95f);
-
-    style.Colors[ImGuiCol_Button] = ImVec4(0.2f, 0.2f, 0.2f, 1.0f);
-    style.Colors[ImGuiCol_WindowBg] = bg;
-    style.Colors[ImGuiCol_FrameBg] = ImVec4(0.22f, 0.22f, 0.22f, 1.0f);
-    style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.33f, 0.33f, 0.33f, 1.0f);
-    style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.33f, 0.33f, 0.33f, 1.0f);
-    style.Colors[ImGuiCol_Text] = ImVec4(0.80f, 0.80f, 0.80f, 1.0f);
-    style.Colors[ImGuiCol_SliderGrab] = bg;
-    style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.33f, 0.33f, 0.33f, 1.0f);
-    style.Colors[ImGuiCol_CheckMark] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-    style.Colors[ImGuiCol_ResizeGrip] = bg;
-    style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
-    style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
-
-    style.Colors[ImGuiCol_Tab] = bg;
-    style.Colors[ImGuiCol_TabActive] = baseColor;
-    style.Colors[ImGuiCol_TabUnfocused] = bg;
-    style.Colors[ImGuiCol_TabUnfocusedActive] = baseColor;
-    style.Colors[ImGuiCol_TabHovered] = baseColor;
-
-    style.Colors[ImGuiCol_Separator] = ImVec4(0.33f, 0.33f, 0.33f, 1.0f);
-    style.Colors[ImGuiCol_SeparatorHovered] = baseColor;
-    style.Colors[ImGuiCol_SeparatorActive] = bg;
-
+  
+    ImVec4 nebulaOrange(1.0f, 0.30f, 0.0f, 1.0f);
+    ImVec4 nebulaOrangeActive(0.9f, 0.20f, 0.05f, 1.0f);
+    ImVec4* colors = ImGui::GetStyle().Colors;
+    ImGui::GetStyle().Alpha = Core::CVarReadFloat(ui_opacity);
+    colors[ImGuiCol_Text]                   = ImVec4(0.73f, 0.73f, 0.73f, 1.00f);
+    colors[ImGuiCol_TextDisabled]           = ImVec4(0.27f, 0.27f, 0.27f, 0.50f);
+    colors[ImGuiCol_WindowBg]               = ImVec4(0.06f, 0.06f, 0.06f, 1.00f);
+    colors[ImGuiCol_ChildBg]                = ImVec4(0.09f, 0.09f, 0.09f, 0.59f);
+    colors[ImGuiCol_PopupBg]                = ImVec4(0.05f, 0.05f, 0.05f, 0.95f);
+    colors[ImGuiCol_Border]                 = ImVec4(0.05f, 0.05f, 0.05f, 1.00f);
+    colors[ImGuiCol_BorderShadow]           = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
+    colors[ImGuiCol_FrameBg]                = ImVec4(0.18f, 0.18f, 0.18f, 0.25f);
+    colors[ImGuiCol_FrameBgHovered]         = ImVec4(0.11f, 0.11f, 0.11f, 1.00f);
+    colors[ImGuiCol_FrameBgActive]          = ImVec4(0.40f, 0.40f, 0.40f, 1.00f);
+    colors[ImGuiCol_TitleBg]                = ImVec4(0.09f, 0.09f, 0.09f, 1.00f);
+    colors[ImGuiCol_TitleBgActive]          = ImVec4(0.04f, 0.04f, 0.04f, 1.00f);
+    colors[ImGuiCol_TitleBgCollapsed]       = ImVec4(0.11f, 0.11f, 0.11f, 0.89f);
+    colors[ImGuiCol_MenuBarBg]              = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+    colors[ImGuiCol_ScrollbarBg]            = ImVec4(1.00f, 0.30f, 0.00f, 0.07f);
+    colors[ImGuiCol_ScrollbarGrab]          = ImVec4(1.00f, 0.40f, 0.00f, 0.38f);
+    colors[ImGuiCol_ScrollbarGrabHovered]   = ImVec4(1.00f, 0.30f, 0.00f, 0.90f);
+    colors[ImGuiCol_ScrollbarGrabActive]    = ImVec4(1.00f, 0.30f, 0.00f, 1.00f);
+    colors[ImGuiCol_CheckMark]              = ImVec4(1.00f, 0.47f, 0.00f, 1.00f);
+    colors[ImGuiCol_SliderGrab]             = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+    colors[ImGuiCol_SliderGrabActive]       = ImVec4(0.30f, 0.33f, 0.33f, 1.00f);
+    colors[ImGuiCol_Button]                 = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+    colors[ImGuiCol_ButtonHovered]          = ImVec4(1.00f, 0.30f, 0.00f, 0.70f);
+    colors[ImGuiCol_ButtonActive]           = ImVec4(1.00f, 0.30f, 0.00f, 0.90f);
+    colors[ImGuiCol_Header]                 = ImVec4(1.00f, 0.30f, 0.00f, 0.60f);
+    colors[ImGuiCol_HeaderHovered]          = ImVec4(1.00f, 0.30f, 0.00f, 0.70f);
+    colors[ImGuiCol_HeaderActive]           = ImVec4(1.00f, 0.30f, 0.00f, 0.90f);
+    colors[ImGuiCol_Separator]              = ImVec4(0.02f, 0.02f, 0.02f, 1.00f);
+    colors[ImGuiCol_SeparatorHovered]       = ImVec4(1.00f, 0.30f, 0.00f, 0.70f);
+    colors[ImGuiCol_SeparatorActive]        = ImVec4(0.90f, 0.20f, 0.05f, 1.00f);
+    colors[ImGuiCol_ResizeGrip]             = ImVec4(1.00f, 0.30f, 0.00f, 0.11f);
+    colors[ImGuiCol_ResizeGripHovered]      = ImVec4(1.00f, 0.30f, 0.00f, 0.67f);
+    colors[ImGuiCol_ResizeGripActive]       = ImVec4(1.00f, 0.30f, 0.00f, 1.00f);
+    colors[ImGuiCol_Tab]                    = ImVec4(0.04f, 0.04f, 0.04f, 0.86f);
+    colors[ImGuiCol_TabHovered]             = ImVec4(0.03f, 0.03f, 0.03f, 0.80f);
+    colors[ImGuiCol_TabActive]              = ImVec4(0.02f, 0.02f, 0.02f, 1.00f);
+    colors[ImGuiCol_TabUnfocused]           = ImVec4(0.16f, 0.16f, 0.16f, 0.97f);
+    colors[ImGuiCol_TabUnfocusedActive]     = ImVec4(0.08f, 0.08f, 0.08f, 1.00f);
+    colors[ImGuiCol_DockingPreview]         = ImVec4(1.00f, 0.30f, 0.00f, 0.23f);
+    colors[ImGuiCol_DockingEmptyBg]         = ImVec4(0.06f, 0.06f, 0.06f, 1.00f);
+    colors[ImGuiCol_PlotLines]              = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
+    colors[ImGuiCol_PlotLinesHovered]       = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
+    colors[ImGuiCol_PlotHistogram]          = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+    colors[ImGuiCol_PlotHistogramHovered]   = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
+    colors[ImGuiCol_TextSelectedBg]         = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
+    colors[ImGuiCol_DragDropTarget]         = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
+    colors[ImGuiCol_NavHighlight]           = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+    colors[ImGuiCol_NavWindowingHighlight]  = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
+    colors[ImGuiCol_NavWindowingDimBg]      = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
+    colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
+  
     // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
     io.KeyMap[ImGuiKey_Tab] = Key::Tab;             
     io.KeyMap[ImGuiKey_LeftArrow] = Key::Left;
@@ -635,6 +655,16 @@ ImguiContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
     ImGuiIO& io = ImGui::GetIO();
     io.DeltaTime = ctx.frameTime;
     ImGui::NewFrame();
+    ImGui::GetStyle().Alpha = Core::CVarReadFloat(ui_opacity);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ImguiContext::OnWorkFinished(const Graphics::FrameContext& ctx)
+{
+    ImGui::Render();
 }
 
 } // namespace Dynui

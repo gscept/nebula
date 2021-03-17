@@ -55,6 +55,8 @@ public:
 
     /// add frame operation
     void AddOp(Frame::FrameOp* op);
+    /// get frame operation, searches hierarchies using /
+    Frame::FrameOp* GetOp(const Util::String& search);
     /// add texture
     void AddTexture(const Util::StringAtom& name, const CoreGraphics::TextureId tex);
     /// get texture
@@ -103,6 +105,7 @@ private:
     Util::Dictionary<Util::StringAtom, CoreGraphics::TextureId> texturesByName;
 
     Util::Array<Frame::FrameOp*> ops;
+    Util::Dictionary<Util::StringAtom, Frame::FrameOp*> opsByName;
     Util::Array<Frame::FrameOp::Compiled*> compiled;
     Util::Array<CoreGraphics::BarrierId> resourceResetBarriers;
     IndexT frameOpCounter;

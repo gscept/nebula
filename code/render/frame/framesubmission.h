@@ -49,8 +49,6 @@ public:
     CoreGraphics::QueueType queue;
     CoreGraphics::QueueType waitQueue;
     Util::Array<CoreGraphics::BarrierId>* resourceResetBarriers;
-
-    Util::Array<FrameOp*> ops;
 };
 
 } // namespace Frame

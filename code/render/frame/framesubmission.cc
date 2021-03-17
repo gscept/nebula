@@ -93,12 +93,16 @@ FrameSubmission::Build(
     Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
     CoreGraphics::CommandBufferPoolId commandBufferPool)
 {
+    // if not enable, abort early
+    if (!this->enabled)
+        return;
+
     CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
 
     // build ops
-    for (IndexT i = 0; i < this->ops.Size(); i++)
+    for (IndexT i = 0; i < this->children.Size(); i++)
     {
-        this->ops[i]->Build(allocator, myCompiled->compiled, events, barriers, rwBuffers, textures, commandBufferPool);
+        this->children[i]->Build(allocator, myCompiled->compiled, events, barriers, rwBuffers, textures, commandBufferPool);
     }
 
     this->compiled = myCompiled;

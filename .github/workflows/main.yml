@@ -66,7 +66,7 @@ jobs:
         
       - name: Cache PhysX
         id: cache-physx
-        uses: actions/cache@v1.1.2
+        uses: actions/cache@v2
         with:
           path: ../fips-deploy/physx
           key: ${{ runner.os }}-physx-deploy-${{ matrix.physxkey }}
@@ -85,10 +85,10 @@ jobs:
                     
       - name: Check for Anyfx cached build
         id: cache-anyfx
-        uses: actions/cache@v1.1.2
+        uses: actions/cache@v2
         with:
           path: ../fips-deploy/fips-anyfx
-          key: ${{ runner.os }}-anyfx-${{ env.anyfx-rev }}
+          key: ${{ runner.os }}-anyfx-${{ hashfiles('../fips-anyfx/.git/ORIG_HEAD') }}
 
       - name: Build AnyfxCompiler
         if: steps.cache-anyfx.outputs.cache-hit != 'true'

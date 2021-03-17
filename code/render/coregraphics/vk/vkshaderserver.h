@@ -17,6 +17,11 @@
 #include "coregraphics/graphicsdevice.h"
 #include "shared.h"
 
+namespace Graphics
+{
+class FrameScript;
+}
+
 namespace Vulkan
 {
 
@@ -87,7 +92,7 @@ public:
     void AddPendingImageView(CoreGraphics::TextureId tex, VkImageViewCreateInfo viewCreate, uint32_t bind);
 
     /// setup gbuffer bindings
-    void SetupBufferConstants();
+    void SetupBufferConstants(const Ptr<Frame::FrameScript>& frameScript);
 
     /// begin frame
     void UpdateResources();

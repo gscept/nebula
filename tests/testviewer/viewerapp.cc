@@ -182,6 +182,8 @@ SimpleViewerApplication::Open()
 
         // setup post effects
         Ptr<Frame::FrameScript> frameScript = this->view->GetFrameScript();
+        // setup gbuffer bindings after frame script is loaded
+        CoreGraphics::ShaderServer::Instance()->SetupBufferConstants(frameScript);
         PostEffects::BloomContext::Setup(frameScript);
         PostEffects::SSAOContext::Setup(frameScript);
         //PostEffects::SSRContext::Setup(frameScript);

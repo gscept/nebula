@@ -30,23 +30,14 @@ FrameSubpass::~FrameSubpass()
 /**
 */
 void
-FrameSubpass::AddOp(Frame::FrameOp* op)
-{
-    this->ops.Append(op);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 FrameSubpass::Discard()
 {
     FrameOp::Discard();
 
     IndexT i;
-    for (i = 0; i < this->ops.Size(); i++)
+    for (i = 0; i < this->children.Size(); i++)
     {
-        this->ops[i]->Discard();
+        this->children[i]->Discard();
     }
 }
 
@@ -58,9 +49,9 @@ FrameSubpass::OnWindowResized()
 {
 
     IndexT i;
-    for (i = 0; i < this->ops.Size(); i++)
+    for (i = 0; i < this->children.Size(); i++)
     {
-        this->ops[i]->OnWindowResized();
+        this->children[i]->OnWindowResized();
     }
 }
 
@@ -124,12 +115,16 @@ FrameSubpass::Build(
     Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
     CoreGraphics::CommandBufferPoolId commandBufferPool)
 {
+    // if not enable, abort early
+    if (!this->enabled)
+        return;
+
     CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
     
     Util::Array<FrameOp::Compiled*> subpassOps;
-    for (IndexT i = 0; i < this->ops.Size(); i++)
+    for (IndexT i = 0; i < this->children.Size(); i++)
     {
-        this->ops[i]->Build(allocator, subpassOps, events, barriers, rwBuffers, textures, commandBufferPool);
+        this->children[i]->Build(allocator, subpassOps, events, barriers, rwBuffers, textures, commandBufferPool);
     }
     myCompiled->ops = subpassOps;
     this->compiled = myCompiled;
