@@ -96,7 +96,6 @@ Fog(float fogDepth)
     return clamp((FogDistances.y - fogDepth) / (FogDistances.y - FogDistances.x), FogColor.a, 1.0);
 }
 
-
 //------------------------------------------------------------------------------
 /**
     Get a depth-of-field blurred sample. Set all values to 0 in order to disable DoF
@@ -140,15 +139,8 @@ psMain(in vec2 UV,
     vec4 worldPos = ViewToWorld(viewPos);
     vec3 viewVec = EyePos.xyz - worldPos.xyz;
     vec3 viewNormal = (View * vec4(normal, 0)).xyz;
-
-    vec3 fogColor = FogColor.rgb;
-    //fogColor *= Preetham(-normalize(viewVec), GlobalLightDirWorldspace.xyz, A, B, C, D, E, Z) * GlobalLightColor.rgb;
-    fogColor *= CalculateAtmosphericScattering(-normalize(viewVec), GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
-
-    float fogIntensity = Fog(length(viewVec)); 
     
     vec4 c = vec4(sample2DLod(ColorTexture, DefaultSampler, UV, 0).rgb, 1.0f);
-    c = vec4(lerp(fogColor, c.rgb, fogIntensity), c.a);
     
     vec4 bloom = sample2DLod(BloomTexture, UpscaleSampler, UV, 0);
     //vec4 godray = subpassLoad(InputAttachment1);

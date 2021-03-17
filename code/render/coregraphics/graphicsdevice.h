@@ -92,7 +92,6 @@ struct DrawThreadResult
 struct GraphicsDeviceState
 {
     Util::Array<CoreGraphics::TextureId> backBuffers;
-    Util::Dictionary<Util::StringAtom, CoreGraphics::TextureId> textures;
 
     CoreGraphics::CommandBufferPoolId submissionGraphicsCmdPool;
     CoreGraphics::CommandBufferPoolId submissionComputeCmdPool;
@@ -423,11 +422,6 @@ void SetStencilWriteMask(const uint writeMask);
 
 /// update buffer in command buffer
 void UpdateBuffer(const CoreGraphics::BufferId buffer, uint offset, uint size, const void* data, CoreGraphics::QueueType queue);
-
-/// register texture globally
-void RegisterTexture(const Util::StringAtom& name, const CoreGraphics::TextureId id);
-/// get globally registered texture
-const CoreGraphics::TextureId GetTexture(const Util::StringAtom& name);
 
 #if NEBULA_GRAPHICS_DEBUG
 /// set debug name for object

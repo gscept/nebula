@@ -55,7 +55,6 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
     bloomState.blurTable = ShaderCreateResourceTable(bloomState.blurShader, NEBULA_BATCH_GROUP);
 
     bloomState.colorSourceSlot = ShaderGetResourceSlot(bloomState.brightPassShader, "ColorSource");
-    bloomState.luminanceTextureSlot = ShaderGetResourceSlot(bloomState.brightPassShader, "LuminanceTexture");
     bloomState.inputImageXSlot = ShaderGetResourceSlot(bloomState.blurShader, "InputImageX");
     bloomState.inputImageYSlot = ShaderGetResourceSlot(bloomState.blurShader, "InputImageY");
     bloomState.blurImageXSlot = ShaderGetResourceSlot(bloomState.blurShader, "BlurImageX");
@@ -75,7 +74,6 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
     bloomState.internalTargets[0] = CreateTexture(tinfo);
 
     ResourceTableSetTexture(bloomState.brightPassTable, { script->GetTexture("LightBuffer"), bloomState.colorSourceSlot, 0, CoreGraphics::InvalidSamplerId });
-    ResourceTableSetTexture(bloomState.brightPassTable, { script->GetTexture("AverageLumBuffer"), bloomState.luminanceTextureSlot, 0, CoreGraphics::InvalidSamplerId , false });
     ResourceTableCommitChanges(bloomState.brightPassTable);
 
     // bloom buffer goes in, internal target goes out

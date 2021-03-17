@@ -14,7 +14,8 @@ namespace Frame
 */
 FrameOp::FrameOp() :
     queue(CoreGraphics::QueueType::GraphicsQueueType),
-    domain(CoreGraphics::BarrierDomain::Global)
+    domain(CoreGraphics::BarrierDomain::Global),
+    enabled(true)
 {
     // empty
 }
@@ -57,6 +58,10 @@ FrameOp::Build(
     Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
     CoreGraphics::CommandBufferPoolId commandBufferPool)
 {
+    // if not enable, abort early
+    if (!this->enabled)
+        return;
+
     // create compiled version of this op, FramePass and FrameSubpass implement this differently than ordinary ops
     this->compiled = this->AllocCompiled(allocator);
     compiledOps.Append(this->compiled);

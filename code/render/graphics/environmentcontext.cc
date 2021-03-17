@@ -8,6 +8,7 @@
 #include "coregraphics/shaderserver.h"
 #include "graphicsserver.h"
 #include "lighting/lightcontext.h"
+#include "graphics/cameracontext.h"
 #include "models/modelcontext.h"
 #include "visibility/visibilitycontext.h"
 #include "resources/resourceserver.h"
@@ -157,6 +158,12 @@ EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
     tickParams.SunDiscSize = 0.00758f;
     tickParams.TonemapWeight = 9.0f;
     tickParams.Lum = 1.0f;
+
+    Math::mat4 cameraTransform = Graphics::CameraContext::GetTransform(Graphics::CameraContext::GetLODCamera());
+    Math::mat4 temp;
+    temp.position = cameraTransform.position;
+    temp.position.w = 1.0f;
+    Models::ModelContext::SetTransform(envState.skyBoxEntity, temp);
     
     // update perez distribution coefficients to the shared constants
     Math::vec4 A, B, C, D, E, Z;

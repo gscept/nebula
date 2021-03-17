@@ -49,6 +49,8 @@ ImguiContext::ImguiDrawFunction()
     BufferId ibo = state.ibos[currentBuffer];
     const ImguiRendererParams& params = state.params;
 
+    CoreGraphics::CommandBufferBeginMarker(CoreGraphics::GraphicsQueueType, NEBULA_MARKER_GRAPHICS, "ImGUI");
+
     // apply shader
     CoreGraphics::SetShaderProgram(state.prog);
 
@@ -59,39 +61,39 @@ ImguiContext::ImguiDrawFunction()
     mat4 proj = orthooffcenterrh(0.0f, io.DisplaySize.x, io.DisplaySize.y, 0.0f, -1.0f, +1.0f);
 #endif
 
-	// if buffers are too small, create new buffers
+    // if buffers are too small, create new buffers
     if (data->TotalVtxCount > CoreGraphics::BufferGetSize(state.vbos[currentBuffer]))
     {
-		CoreGraphics::BufferUnmap(state.vbos[currentBuffer]);
-		CoreGraphics::DestroyBuffer(state.vbos[currentBuffer]);
+        CoreGraphics::BufferUnmap(state.vbos[currentBuffer]);
+        CoreGraphics::DestroyBuffer(state.vbos[currentBuffer]);
 
-		CoreGraphics::BufferCreateInfo vboInfo;
-		vboInfo.name = "ImGUI VBO"_atm;
-		vboInfo.size = Math::roundtopow2(data->TotalVtxCount);
-		vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.vlo);
-		vboInfo.mode = CoreGraphics::HostToDevice;
-		vboInfo.usageFlags = CoreGraphics::VertexBuffer;
-		vboInfo.data = nullptr;
-		vboInfo.dataSize = 0;
-		state.vbos[currentBuffer] = CoreGraphics::CreateBuffer(vboInfo);
-		state.vertexPtrs[currentBuffer] = (byte*)CoreGraphics::BufferMap(state.vbos[currentBuffer]);
+        CoreGraphics::BufferCreateInfo vboInfo;
+        vboInfo.name = "ImGUI VBO"_atm;
+        vboInfo.size = Math::roundtopow2(data->TotalVtxCount);
+        vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.vlo);
+        vboInfo.mode = CoreGraphics::HostToDevice;
+        vboInfo.usageFlags = CoreGraphics::VertexBuffer;
+        vboInfo.data = nullptr;
+        vboInfo.dataSize = 0;
+        state.vbos[currentBuffer] = CoreGraphics::CreateBuffer(vboInfo);
+        state.vertexPtrs[currentBuffer] = (byte*)CoreGraphics::BufferMap(state.vbos[currentBuffer]);
     }
 
-	if (data->TotalIdxCount > CoreGraphics::BufferGetSize(state.ibos[currentBuffer]))
+    if (data->TotalIdxCount > CoreGraphics::BufferGetSize(state.ibos[currentBuffer]))
     {
-		CoreGraphics::BufferUnmap(state.ibos[currentBuffer]);
-		CoreGraphics::DestroyBuffer(state.ibos[currentBuffer]);
+        CoreGraphics::BufferUnmap(state.ibos[currentBuffer]);
+        CoreGraphics::DestroyBuffer(state.ibos[currentBuffer]);
 
-		CoreGraphics::BufferCreateInfo iboInfo;
-		iboInfo.name = "ImGUI IBO"_atm;
-		iboInfo.size = Math::roundtopow2(data->TotalIdxCount);
-		iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(IndexType::Index16);
-		iboInfo.mode = CoreGraphics::HostToDevice;
-		iboInfo.usageFlags = CoreGraphics::IndexBuffer;
-		iboInfo.data = nullptr;
-		iboInfo.dataSize = 0;
-		state.ibos[currentBuffer] = CoreGraphics::CreateBuffer(iboInfo);
-		state.indexPtrs[currentBuffer] = (byte*)CoreGraphics::BufferMap(state.ibos[currentBuffer]);
+        CoreGraphics::BufferCreateInfo iboInfo;
+        iboInfo.name = "ImGUI IBO"_atm;
+        iboInfo.size = Math::roundtopow2(data->TotalIdxCount);
+        iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(IndexType::Index16);
+        iboInfo.mode = CoreGraphics::HostToDevice;
+        iboInfo.usageFlags = CoreGraphics::IndexBuffer;
+        iboInfo.data = nullptr;
+        iboInfo.dataSize = 0;
+        state.ibos[currentBuffer] = CoreGraphics::CreateBuffer(iboInfo);
+        state.indexPtrs[currentBuffer] = (byte*)CoreGraphics::BufferMap(state.ibos[currentBuffer]);
     }
 
     // setup device
@@ -136,8 +138,8 @@ ImguiContext::ImguiDrawFunction()
         n_assert(indexBufferOffset + (IndexT)commandList->IdxBuffer.size() < CoreGraphics::BufferGetByteSize(state.ibos[currentBuffer]));
 
         // wait for previous draws to finish...
-		Memory::Copy(vertexBuffer, state.vertexPtrs[currentBuffer] + vertexBufferOffset, vertexBufferSize);
-		Memory::Copy(indexBuffer, state.indexPtrs[currentBuffer] + indexBufferOffset, indexBufferSize);
+        Memory::Copy(vertexBuffer, state.vertexPtrs[currentBuffer] + vertexBufferOffset, vertexBufferSize);
+        Memory::Copy(indexBuffer, state.indexPtrs[currentBuffer] + indexBufferOffset, indexBufferSize);
         IndexT j;
         IndexT primitiveIndexOffset = 0;
         for (j = 0; j < commandList->CmdBuffer.size(); j++)
@@ -211,6 +213,8 @@ ImguiContext::ImguiDrawFunction()
 
     // reset clip settings
     CoreGraphics::ResetClipSettings();
+
+    CoreGraphics::CommandBufferEndMarker(CoreGraphics::GraphicsQueueType);
 }
 
 //------------------------------------------------------------------------------
@@ -316,6 +320,7 @@ ImguiContext::Create()
     ui_opacity = Core::CVarCreate(Core::CVar_Float, "ui_opacity", "1.0");
 
     __bundle.OnBegin = ImguiContext::OnBeforeFrame;
+    __bundle.OnWorkFinished = ImguiContext::OnWorkFinished; // this is basically OnBeforeViews (plural)
     __bundle.OnWindowResized = ImguiContext::OnWindowResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
@@ -348,7 +353,6 @@ ImguiContext::Create()
 #endif
 
             CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
-            ImGui::Render();
             ImguiContext::ImguiDrawFunction();
             CoreGraphics::EndBatch();
         });
@@ -431,7 +435,7 @@ ImguiContext::Create()
     style.WindowBorderSize = 1.0f;
     style.PopupBorderSize = 0.0f;
     style.ChildBorderSize = 0.0f;
-
+  
     ImVec4 nebulaOrange(1.0f, 0.30f, 0.0f, 1.0f);
     ImVec4 nebulaOrangeActive(0.9f, 0.20f, 0.05f, 1.0f);
     ImVec4* colors = ImGui::GetStyle().Colors;
@@ -486,7 +490,7 @@ ImguiContext::Create()
     colors[ImGuiCol_NavWindowingHighlight]  = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
     colors[ImGuiCol_NavWindowingDimBg]      = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
     colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
-
+  
     // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
     io.KeyMap[ImGuiKey_Tab] = Key::Tab;             
     io.KeyMap[ImGuiKey_LeftArrow] = Key::Left;
@@ -518,7 +522,7 @@ ImguiContext::Create()
     config.OversampleH = 3;
     config.OversampleV = 1;
 #if __WIN32__
-    ImFont* font = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/segoeui.ttf", 17, &config);
+    ImFont* font = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibri.ttf", 14, &config);
 #else
     ImFont* font = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 18, &config);
 #endif
@@ -652,6 +656,15 @@ ImguiContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
     io.DeltaTime = ctx.frameTime;
     ImGui::NewFrame();
     ImGui::GetStyle().Alpha = Core::CVarReadFloat(ui_opacity);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ImguiContext::OnWorkFinished(const Graphics::FrameContext& ctx)
+{
+    ImGui::Render();
 }
 
 } // namespace Dynui

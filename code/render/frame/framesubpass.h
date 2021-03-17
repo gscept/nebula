@@ -22,9 +22,6 @@ public:
     /// destructor
     virtual ~FrameSubpass();
 
-    /// add frame operation
-    void AddOp(Frame::FrameOp* op);
-
     /// discard operation
     void Discard();
 
@@ -65,8 +62,6 @@ protected:
 
 private:
     friend class FrameScriptLoader;
-
-    Util::Array<Frame::FrameOp*> ops;
 };
 
 } // namespace Frame2

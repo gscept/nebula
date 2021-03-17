@@ -11,7 +11,6 @@
 
 /// Declaring used textures
 texture2D ColorSource;
-texture2D LuminanceTexture;
 
 sampler_state BrightPassSampler
 {

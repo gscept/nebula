@@ -76,18 +76,18 @@ psMain(in vec3 UV,
 {
     vec3 lightDir = normalize(GlobalLightDirWorldspace.xyz);
     vec3 dir = normalize(Direction);
-    //vec3 atmo = Preetham(dir, lightDir, A, B, C, D, E, Z) * GlobalLightColor.rgb;
-    //vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
+    vec3 atmo = CalculateAtmosphericScattering(dir, GlobalLightDirWorldspace.xyz) * GlobalLightColor.rgb;
     
     // rotate uvs around center with constant speed
+    /*
     vec3 baseColor = sampleCubeLod(EnvironmentMap, SkySampler, UV, 0).rgb;
     vec3 blendColor = sampleCubeLod(SkyLayer2, SkySampler, UV, 0).rgb;
     vec3 color = mix(baseColor, blendColor, SkyBlendFactor);
     color = ((color - 0.5f) * Contrast) + 0.5f;
     color *= Brightness;
-    //color = atmo;
+    */
 
-    Color = vec4(color, 1);
+    Color = vec4(atmo, 1);
     gl_FragDepth = 1.0f;
 }
 

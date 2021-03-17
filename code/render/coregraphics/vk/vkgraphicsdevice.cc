@@ -499,7 +499,7 @@ Blit(const VkImage from, Math::rectangle<SizeT> fromRegion, IndexT fromMip, cons
     blit.dstOffsets[0] = { toRegion.left, toRegion.top, 0 };
     blit.dstOffsets[1] = { toRegion.right, toRegion.bottom, 1 };
     blit.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, (uint32_t)toMip, 0, 1 };
-    vkCmdBlitImage(GetMainBuffer(CoreGraphics::GraphicsQueueType), from, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, to, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
+    vkCmdBlitImage(GetMainBuffer(CoreGraphics::GraphicsQueueType), from, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, to, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_NEAREST);
 }
 
 //------------------------------------------------------------------------------
@@ -4039,26 +4039,6 @@ UpdateBuffer(const CoreGraphics::BufferId buffer, uint offset, uint size, const 
     {
         vkCmdUpdateBuffer(GetMainBuffer(queue), Vulkan::BufferGetVk(buffer), offset, size, data);
     }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-RegisterTexture(const Util::StringAtom& name, const CoreGraphics::TextureId id)
-{
-    state.textures.Add(name, id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const CoreGraphics::TextureId 
-GetTexture(const Util::StringAtom& name)
-{
-    IndexT i = state.textures.FindIndex(name);
-    if (i == InvalidIndex)      return CoreGraphics::InvalidTextureId;
-    else                        return state.textures[name];
 }
 
 #if NEBULA_GRAPHICS_DEBUG
