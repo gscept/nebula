@@ -54,7 +54,6 @@ FramePlugin::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
     ret->name = this->name;
 #endif
 
-    ret->func = this->func;
     return ret;
 }
 
@@ -74,12 +73,22 @@ FramePlugin::Build(
     // if not enable, abort early
     if (!this->enabled)
         return;
+        
+    auto callback = Frame::GetCallback(this->name);
+    if (callback != nullptr)
+    {
+        CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
 
-    CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
+        myCompiled->func = callback;
+        this->compiled = myCompiled;
 
-    this->compiled = myCompiled;
-    this->SetupSynchronization(allocator, events, barriers, rwBuffers, textures);
-    compiledOps.Append(myCompiled);
+        // only setup sync if the function could be found
+        if (myCompiled->func != nullptr)
+            this->SetupSynchronization(allocator, events, barriers, rwBuffers, textures);
+        compiledOps.Append(myCompiled);
+    }
+
+
 }
 
 Util::Dictionary<Util::StringAtom, std::function<void(IndexT, IndexT)>> nameToFunction;
