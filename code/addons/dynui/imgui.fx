@@ -78,7 +78,7 @@ psMain(
     uint id, type, layer, mip, useAlpha;
     UnpackTexture(ImGUI.PackedTextureInfo, id, type, mip, layer, useAlpha);
     if (type == 0)
-        texColor = sample2DLod(id, TextureSampler, UV, mip);
+        texColor = sample2DLod(id, TextureSampler, UV, 0); // FIXME: mip seems to be incorrect on some images
     else if (type == 1)
         texColor = sample2DArrayLod(id, TextureSampler, vec3(UV, layer), mip);
     else if (type == 2)
