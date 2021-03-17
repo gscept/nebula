@@ -41,6 +41,16 @@ public:
     /// get name
     const Util::StringAtom& GetName() const;
 
+    /// set if operation should be enabled
+    void SetEnabled(bool b);
+    /// get if operation is enabled
+    const bool GetEnabled() const;
+
+    /// add child operation
+    void AddChild(FrameOp* op);
+    /// get children
+    const Util::Array<Frame::FrameOp*>& GetChildren();
+
     /// handle display resizing
     virtual void OnWindowResized();
 
@@ -182,9 +192,12 @@ protected:
     Util::Dictionary<CoreGraphics::TextureId, Util::Tuple<Util::StringAtom, CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::ImageSubresourceInfo, CoreGraphics::ImageLayout>> textureDeps;
     Util::Dictionary<CoreGraphics::BufferId, Util::Tuple<Util::StringAtom, CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::BufferSubresourceInfo>> rwBufferDeps;
 
+    Util::Array<FrameOp*> children;
+    Util::Dictionary<Util::StringAtom, FrameOp*> childrenByName;
     Compiled* compiled;
     Util::StringAtom name;
     IndexT index;
+    bool enabled;
 };
 
 //------------------------------------------------------------------------------
@@ -203,6 +216,43 @@ inline const Util::StringAtom&
 FrameOp::GetName() const
 {
     return this->name;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+FrameOp::SetEnabled(bool b)
+{
+    this->enabled = b;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const bool 
+FrameOp::GetEnabled() const
+{
+    return this->enabled;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+FrameOp::AddChild(FrameOp* op)
+{
+    this->children.Append(op);
+    this->childrenByName.Add(op->GetName(), op);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Util::Array<Frame::FrameOp*>& 
+FrameOp::GetChildren()
+{
+    return this->children;
 }
 
 } // namespace Frame2

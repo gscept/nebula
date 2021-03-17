@@ -26,12 +26,6 @@ public:
     /// destructor
     virtual ~FramePass();
 
-    /// add subpass
-    void AddSubpass(FrameSubpass* subpass);
-
-    /// get list of subpasses
-    const Util::Array<FrameSubpass*>& GetSubpasses() const;
-
     /// discard operation
     void Discard();
     /// handle display resizing
@@ -67,17 +61,6 @@ private:
         Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
         Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
         CoreGraphics::CommandBufferPoolId commandBufferPool) override;
-
-    Util::Array<FrameSubpass*> subpasses;
 };
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Util::Array<Frame::FrameSubpass*>&
-FramePass::GetSubpasses() const
-{
-    return this->subpasses;
-}
 
 } // namespace Frame2

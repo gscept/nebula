@@ -32,15 +32,6 @@ FramePass::~FramePass()
 /**
 */
 void
-FramePass::AddSubpass(FrameSubpass* subpass)
-{
-    this->subpasses.Append(subpass);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 FramePass::Discard()
 {
     FrameOp::Discard();
@@ -49,8 +40,8 @@ FramePass::Discard()
     this->pass = InvalidPassId;
 
     IndexT i;
-    for (i = 0; i < this->subpasses.Size(); i++) this->subpasses[i]->Discard();
-    this->subpasses.Clear();
+    for (i = 0; i < this->children.Size(); i++) this->children[i]->Discard();
+    this->children.Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -161,9 +152,9 @@ FramePass::OnWindowResized()
     PassWindowResizeCallback(this->pass);
 
     IndexT i;
-    for (i = 0; i < this->subpasses.Size(); i++)
+    for (i = 0; i < this->children.Size(); i++)
     {
-        this->subpasses[i]->OnWindowResized();
+        this->children[i]->OnWindowResized();
     }
 }
 
@@ -191,6 +182,10 @@ FramePass::Build(
     Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
     CoreGraphics::CommandBufferPoolId commandBufferPool)
 {
+    // if not enable, abort early
+    if (!this->enabled)
+        return;
+
     CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -198,9 +193,9 @@ FramePass::Build(
 #endif
 
     Util::Array<FrameOp::Compiled*> subpassOps;
-    for (IndexT i = 0; i < this->subpasses.Size(); i++)
+    for (IndexT i = 0; i < this->children.Size(); i++)
     {
-        this->subpasses[i]->Build(allocator, subpassOps, events, barriers, rwBuffers, textures, commandBufferPool);
+        this->children[i]->Build(allocator, subpassOps, events, barriers, rwBuffers, textures, commandBufferPool);
     }
     myCompiled->subpasses = subpassOps;
     this->compiled = myCompiled;

@@ -71,6 +71,10 @@ FramePlugin::Build(
     Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
 	CoreGraphics::CommandBufferPoolId commandBufferPool)
 {
+    // if not enable, abort early
+    if (!this->enabled)
+        return;
+
     CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
 
     this->compiled = myCompiled;

@@ -494,11 +494,16 @@ FrameScriptLoader::ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, J
 {
     FrameSubmission* submission = script->GetAllocator().Alloc<FrameSubmission>();
 
+    JzonValue* name = jzon_get(node, "name");
+    n_assert(name != nullptr);
+    submission->SetName(name->string_value);
+
     JzonValue* queue = jzon_get(node, "queue");
     submission->queue = CoreGraphics::QueueTypeFromString(queue->string_value);
 	JzonValue* waitQueue = jzon_get(node, "wait_for_queue");
 	if (waitQueue != nullptr)
 		submission->waitQueue = CoreGraphics::QueueTypeFromString(waitQueue->string_value);
+    
 
     JzonValue* ops = jzon_get(node, "ops");
 	if (ops != nullptr)
@@ -507,17 +512,17 @@ FrameScriptLoader::ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, J
 		{
 			JzonValue* op = ops->array_values[i];
 			Util::String name(op->key);
-			if (name == "blit")								submission->ops.Append(ParseBlit(script, op));
-			else if (name == "copy")                        submission->ops.Append(ParseCopy(script, op));
-			else if (name == "mipmap")                      submission->ops.Append(ParseMipmap(script, op));
-			else if (name == "compute")                     submission->ops.Append(ParseCompute(script, op));
-			else if (name == "pass")                        submission->ops.Append(ParsePass(script, op));
-			else if (name == "barrier")                     submission->ops.Append(ParseBarrier(script, op));
+			if (name == "blit")								submission->AddChild(ParseBlit(script, op));
+			else if (name == "copy")                        submission->AddChild(ParseCopy(script, op));
+			else if (name == "mipmap")                      submission->AddChild(ParseMipmap(script, op));
+			else if (name == "compute")                     submission->AddChild(ParseCompute(script, op));
+			else if (name == "pass")                        submission->AddChild(ParsePass(script, op));
+			else if (name == "barrier")                     submission->AddChild(ParseBarrier(script, op));
 			else if (name == "plugin" || name == "call")
 			{
 				FrameOp* plugin = ParsePlugin(script, op);
 				if (plugin != nullptr)
-					submission->ops.Append(plugin);
+					submission->AddChild(plugin);
 			}
 			else if (name == "comment" || name == "_comment") continue; // just skip comments
 			else
@@ -637,13 +642,13 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
     subres.mipCount = 1;
     for (SizeT i = 0; i < info.colorAttachments.Size(); i++)
     {
-        op->textureDeps.Add(TextureViewGetTexture(info.colorAttachments[i]), Util::MakeTuple(info.name, CoreGraphics::BarrierAccess::ColorAttachmentRead, CoreGraphics::BarrierStage::PassOutput, subres, CoreGraphics::ImageLayout::ShaderRead));
+        op->textureDeps.Add(TextureViewGetTexture(info.colorAttachments[i]), Util::MakeTuple(info.name, CoreGraphics::BarrierAccess::ColorAttachmentWrite, CoreGraphics::BarrierStage::PassOutput, subres, CoreGraphics::ImageLayout::ShaderRead));
     }
 
     subres.aspect = CoreGraphics::ImageAspect::StencilBits | CoreGraphics::ImageAspect::DepthBits;
     if (info.depthStencilAttachment != InvalidTextureViewId)
     {
-        op->textureDeps.Add(TextureViewGetTexture(info.depthStencilAttachment), Util::MakeTuple(info.name, CoreGraphics::BarrierAccess::DepthAttachmentRead, CoreGraphics::BarrierStage::EarlyDepth, subres, CoreGraphics::ImageLayout::DepthStencilRead));
+        op->textureDeps.Add(TextureViewGetTexture(info.depthStencilAttachment), Util::MakeTuple(info.name, CoreGraphics::BarrierAccess::DepthAttachmentWrite, CoreGraphics::BarrierStage::EarlyDepth, subres, CoreGraphics::ImageLayout::DepthStencilRead));
     }
 
     // setup framebuffer and bind to pass
@@ -757,7 +762,7 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraph
 
     // link together frame operations
     pass.subpasses.Append(subpass);
-    framePass->AddSubpass(frameSubpass);
+    framePass->AddChild(frameSubpass);
 }
 
 //------------------------------------------------------------------------------
@@ -775,7 +780,7 @@ FrameScriptLoader::ParseSubpassDependencies(Frame::FramePass* pass, CoreGraphics
         else if (cur->is_string)
         {
             Util::String id(cur->string_value);
-            const Util::Array<FrameSubpass*>& subpasses = pass->GetSubpasses();
+            const Util::Array<FrameOp*>& subpasses = pass->GetChildren();
 
             // setup subpass self-dependency
             if (id == "this")
@@ -894,7 +899,7 @@ FrameScriptLoader::ParseSubpassPlugin(const Ptr<Frame::FrameScript>& script, Fra
         op->func = callback;
 
         // add to script
-        subpass->AddOp(op);
+        subpass->AddChild(op);
     }
 }
 
@@ -915,7 +920,7 @@ FrameScriptLoader::ParseSubpassBatch(const Ptr<Frame::FrameScript>& script, Fram
     }
 
     op->batch = CoreGraphics::BatchGroup::FromName(node->string_value);
-    subpass->AddOp(op);
+    subpass->AddChild(op);
 }
 
 //------------------------------------------------------------------------------
@@ -935,7 +940,7 @@ FrameScriptLoader::ParseSubpassSortedBatch(const Ptr<Frame::FrameScript>& script
     }
 
     op->batch = CoreGraphics::BatchGroup::FromName(node->string_value);
-    subpass->AddOp(op);
+    subpass->AddChild(op);
 }
 
 //------------------------------------------------------------------------------
@@ -972,7 +977,7 @@ FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& s
     
     // add op to subpass
     op->Setup();
-    subpass->AddOp(op);
+    subpass->AddChild(op);
 }
 
 //------------------------------------------------------------------------------
