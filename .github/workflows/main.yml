@@ -66,7 +66,7 @@ jobs:
         
       - name: Cache PhysX
         id: cache-physx
-        uses: actions/cache@v2
+        uses: actions/cache@v1.1.2
         with:
           path: ../fips-deploy/physx
           key: ${{ runner.os }}-physx-deploy-${{ matrix.physxkey }}
@@ -77,18 +77,18 @@ jobs:
           python fips physx build ${{ matrix.physx }}
 
       - name: Check Anyfx version
+        id: anyfx-rev
         run: |
           pushd ../fips-anyfx
-          #echo "::set-env name=anyfx-rev::$(git rev-parse HEAD)"
-          echo "anyfx-rev=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "::set-output name=gitrev::$(git rev-parse HEAD)"
           popd
                     
       - name: Check for Anyfx cached build
         id: cache-anyfx
-        uses: actions/cache@v2
+        uses: actions/cache@v1.1.2
         with:
           path: ../fips-deploy/fips-anyfx
-          key: ${{ runner.os }}-anyfx-${{ hashfiles('../fips-anyfx/.git/ORIG_HEAD') }}
+          key: ${{ runner.os }}-anyfx-${{ steps.anyfx-rev.outputs.gitrev }}
 
       - name: Build AnyfxCompiler
         if: steps.cache-anyfx.outputs.cache-hit != 'true'
