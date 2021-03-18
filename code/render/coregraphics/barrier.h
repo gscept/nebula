@@ -76,17 +76,7 @@ __ImplementEnumComparisonOperators(BarrierStage);
 __ImplementEnumBitOperators(BarrierAccess);
 __ImplementEnumComparisonOperators(BarrierAccess);
 
-
-#define __BeginEnumString(clazz) inline clazz clazz##FromString(const Util::String& str) {
-#define __EnumString(clazz, x) if (str == #x) return clazz::x;
-#define __EndEnumString(clazz) return (clazz)0; }
-
-#define __BeginStringEnum(clazz) inline Util::String clazz##ToString(const clazz val) { switch (val) {
-#define __StringEnum(clazz, x) case clazz##x: return #x;
-#define __EndStringEnum() default: n_error("No enum value for %d\n", val); return ""; } }
-
 ID_24_8_TYPE(BarrierId);
-
 
 struct ImageSubresourceInfo
 {

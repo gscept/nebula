@@ -57,6 +57,8 @@ public:
     static void OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
     /// called before frame
     static void OnBeforeFrame(const Graphics::FrameContext& ctx);
+    /// called before frame
+    static void OnWorkFinished(const Graphics::FrameContext& ctx);
 
     struct ImguiState
     {

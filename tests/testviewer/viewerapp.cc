@@ -33,7 +33,6 @@
 #include "posteffects/ssaocontext.h"
 #include "posteffects/ssrcontext.h"
 #include "posteffects/histogramcontext.h"
-#include "posteffects/tonemapcontext.h"
 
 #include "physicsinterface.h"
 #include "physics/debugui.h"
@@ -175,7 +174,6 @@ SimpleViewerApplication::Open()
         PostEffects::SSAOContext::Create();
         PostEffects::HistogramContext::Create();
         //PostEffects::SSRContext::Create();
-        PostEffects::TonemapContext::Create();
 
 
         this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
@@ -184,12 +182,13 @@ SimpleViewerApplication::Open()
 
         // setup post effects
         Ptr<Frame::FrameScript> frameScript = this->view->GetFrameScript();
+        // setup gbuffer bindings after frame script is loaded
+        CoreGraphics::ShaderServer::Instance()->SetupBufferConstants(frameScript);
         PostEffects::BloomContext::Setup(frameScript);
         PostEffects::SSAOContext::Setup(frameScript);
         //PostEffects::SSRContext::Setup(frameScript);
         PostEffects::HistogramContext::Setup(frameScript);
         PostEffects::HistogramContext::SetWindow({ 0.0f, 0.0f }, { 1.0f, 1.0f }, 1);
-        PostEffects::TonemapContext::Setup(frameScript);
 
         Im3d::Im3dContext::SetGridStatus(this->showGrid);
         Im3d::Im3dContext::SetGridSize(1.0f, 25);

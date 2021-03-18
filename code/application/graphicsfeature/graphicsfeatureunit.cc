@@ -18,7 +18,6 @@
 #include "posteffects/bloomcontext.h"
 #include "posteffects/ssaocontext.h"
 #include "posteffects/ssrcontext.h"
-#include "posteffects/tonemapcontext.h"
 #include "decals/decalcontext.h"
 #include "debug/framescriptinspector.h"
 #include "terrain/terraincontext.h"
@@ -97,7 +96,6 @@ GraphicsFeatureUnit::OnActivate()
     Fog::VolumetricFogContext::Create();
     PostEffects::BloomContext::Create();
     PostEffects::SSAOContext::Create();
-    PostEffects::TonemapContext::Create();
     PostEffects::HistogramContext::Create();
     //Terrain::TerrainSetupSettings settings{
     //    0, 1024.0f,      // min/max height 
@@ -115,7 +113,6 @@ GraphicsFeatureUnit::OnActivate()
     Ptr<Frame::FrameScript> frameScript = this->defaultView->GetFrameScript();
     PostEffects::BloomContext::Setup(frameScript);
     PostEffects::SSAOContext::Setup(frameScript);
-    PostEffects::TonemapContext::Setup(frameScript);
     PostEffects::HistogramContext::Setup(frameScript);
     PostEffects::HistogramContext::SetWindow({ 0.0f, 0.0f }, { 1.0f, 1.0f }, 1);
 

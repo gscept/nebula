@@ -84,8 +84,6 @@ VkMemoryTexturePool::LoadFromMemory(const Resources::ResourceId id, const void* 
 
     if (this->Setup(id))
     {
-        CoreGraphics::RegisterTexture(adjustedInfo.name, id);
-
         n_assert(this->GetState(id) == Resource::Pending);
         n_assert(loadInfo.img != VK_NULL_HANDLE);
 

@@ -302,12 +302,12 @@ VkShaderServer::SetGlobalEnvironmentTextures(const CoreGraphics::TextureId& env,
 /**
 */
 void
-VkShaderServer::SetupBufferConstants()
+VkShaderServer::SetupBufferConstants(const Ptr<Frame::FrameScript>& frameScript)
 {   
-    this->tickParams.NormalBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("NormalBuffer"));
-    this->tickParams.SpecularBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("SpecularBuffer"));
-    this->tickParams.DepthBuffer = TextureGetBindlessHandle(CoreGraphics::GetTexture("ZBuffer"));
-    this->tickParams.DepthBufferCopy = TextureGetBindlessHandle(CoreGraphics::GetTexture("ZBufferCopy"));
+    this->tickParams.NormalBuffer = TextureGetBindlessHandle(frameScript->GetTexture("NormalBuffer"));
+    this->tickParams.SpecularBuffer = TextureGetBindlessHandle(frameScript->GetTexture("SpecularBuffer"));
+    this->tickParams.DepthBuffer = TextureGetBindlessHandle(frameScript->GetTexture("ZBuffer"));
+    this->tickParams.DepthBufferCopy = TextureGetBindlessHandle(frameScript->GetTexture("ZBufferCopy"));
 }
 
 //------------------------------------------------------------------------------

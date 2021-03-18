@@ -48,6 +48,11 @@ namespace CoreGraphics
 class Shader;
 }
 
+namespace Frame
+{
+class FrameScript;
+};
+
 namespace Base
 {
 class ShaderServerBase : public Core::RefCounted
@@ -93,6 +98,9 @@ public:
     CoreGraphics::ShaderFeature::Mask FeatureStringToMask(const Util::String& str);
     /// convert shader feature bit mask into string
     Util::String FeatureMaskToString(CoreGraphics::ShaderFeature::Mask mask);
+
+    /// setup gbuffer bindings
+    void SetupBufferConstants(const Ptr<Frame::FrameScript>& frameScript);
 
     /// apply an object id
     void ApplyObjectId(IndexT i);
@@ -184,6 +192,15 @@ inline Util::String
 ShaderServerBase::FeatureMaskToString(CoreGraphics::ShaderFeature::Mask mask)
 {
     return this->shaderFeature.MaskToString(mask);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+ShaderServerBase::SetupBufferConstants(const Ptr<Frame::FrameScript>& frameScript)
+{
+    // override in subclass
 }
 
 //------------------------------------------------------------------------------

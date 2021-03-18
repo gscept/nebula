@@ -23,6 +23,7 @@ struct
     CoreGraphics::ShaderProgramId histogramCategorizeProgram;
     CoreGraphics::BufferId histogramCounters;
     CoreGraphics::BufferId histogramConstants;
+    CoreGraphics::BufferId histogramClearCountersBuffer;
     CoreGraphics::ResourceTableId histogramResourceTable;
     Util::FixedArray<CoreGraphics::BufferId> histogramReadback;
 
@@ -85,6 +86,10 @@ HistogramContext::Create()
     bufInfo.data = initDatas;
     bufInfo.dataSize = sizeof(initDatas);
     histogramState.histogramCounters = CoreGraphics::CreateBuffer(bufInfo);
+
+    // create clear buffer
+    bufInfo.usageFlags = CoreGraphics::TransferBufferSource;
+    histogramState.histogramClearCountersBuffer = CoreGraphics::CreateBuffer(bufInfo);
 
     // setup readback buffers
     bufInfo.mode = CoreGraphics::HostLocal;
@@ -231,9 +236,34 @@ HistogramContext::Create()
         CoreGraphics::BarrierPop(CoreGraphics::GraphicsQueueType);
         CoreGraphics::BarrierPop(CoreGraphics::GraphicsQueueType);
 
+        CoreGraphics::BarrierPush(
+            CoreGraphics::GraphicsQueueType,
+            CoreGraphics::BarrierStage::Transfer,
+            CoreGraphics::BarrierStage::Transfer,
+            CoreGraphics::BarrierDomain::Global,
+            {
+                CoreGraphics::BufferBarrier
+                {
+                    histogramState.histogramCounters,
+                    CoreGraphics::BarrierAccess::TransferRead,
+                    CoreGraphics::BarrierAccess::TransferWrite,
+                    0, NEBULA_WHOLE_BUFFER_SIZE
+                },
+            });
+
+        /*
+        // clear histogram counters buffer
+        CoreGraphics::Copy(
+            CoreGraphics::GraphicsQueueType,
+            histogramState.histogramCounters, { from },
+            histogramState.histogramClearCountersBuffer, { to }, CoreGraphics::BufferGetByteSize(histogramState.histogramCounters));
+            */
+
         // clear histogram counters
         uint initDatas[255] = { 0 };
         CoreGraphics::BufferUpload(histogramState.histogramCounters, initDatas, 255, 0);
+
+        CoreGraphics::BarrierPop(CoreGraphics::GraphicsQueueType);
 
         CoreGraphics::CommandBufferEndMarker(CoreGraphics::GraphicsQueueType);
     });
