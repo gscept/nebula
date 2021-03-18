@@ -66,6 +66,8 @@ public:
     Iterator Begin() const;
     /// get iterator past the last element
     Iterator End() const;
+    /// get iterator to last element
+    Iterator Last() const;
     /// find element in array (slow)
     Iterator Find(const TYPE& e, Iterator start) const;
 
@@ -316,7 +318,7 @@ List<TYPE>::Iterator::operator--()
     #if NEBULA_BOUNDSCHECKS
     n_assert(0 != this->node);
     #endif
-    this->node = this->node->GetPred();
+    this->node = this->node->GetPrev();
     return *this;
 }
 
@@ -331,7 +333,7 @@ List<TYPE>::Iterator::operator--(int)
     n_assert(0 != this->node);
     #endif
     Iterator temp(this->node);    
-    this->node = this->node->GetPred();
+    this->node = this->node->GetPrev();
     return temp;
 }
 
@@ -677,6 +679,16 @@ typename List<TYPE>::Iterator
 List<TYPE>::End() const
 {
     return 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+typename List<TYPE>::Iterator
+List<TYPE>::Last() const
+{
+    return Iterator(this->back);
 }
 
 //------------------------------------------------------------------------------
