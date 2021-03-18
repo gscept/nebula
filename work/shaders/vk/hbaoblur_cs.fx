@@ -66,7 +66,7 @@ csMainX()
     // calculate offsets
     const uint         tileStart = int(gl_WorkGroupID.x) * HBAO_TILE_WIDTH;
     const uint           tileEnd = tileStart + HBAO_TILE_WIDTH;
-    const uint        apronStart = tileStart - KERNEL_RADIUS;
+    const uint        apronStart = max(0, int(tileStart) - KERNEL_RADIUS);
     const uint          apronEnd = tileEnd   + KERNEL_RADIUS;
     
     const uint x = apronStart + gl_LocalInvocationID.x;
@@ -131,7 +131,7 @@ csMainY()
     // calculate offsets
     const uint         tileStart = int(gl_WorkGroupID.x) * HBAO_TILE_WIDTH;
     const uint           tileEnd = tileStart + HBAO_TILE_WIDTH;
-    const uint        apronStart = tileStart - KERNEL_RADIUS;
+    const uint        apronStart = max(0, int(tileStart) - KERNEL_RADIUS);
     const uint          apronEnd = tileEnd   + KERNEL_RADIUS;
     
     const uint x = gl_WorkGroupID.y;

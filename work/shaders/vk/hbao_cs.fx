@@ -175,7 +175,7 @@ csMainX()
 {
     const uint         tileStart = uint(gl_WorkGroupID.x) * HBAO_TILE_WIDTH;
     const uint           tileEnd = tileStart + HBAO_TILE_WIDTH;
-    const uint        apronStart = tileStart - KERNEL_RADIUS;
+    const uint        apronStart = max(0, int(tileStart) - KERNEL_RADIUS);
     const uint          apronEnd = tileEnd   + KERNEL_RADIUS;
 
     const uint x = apronStart + uint(gl_LocalInvocationID.x);
@@ -219,7 +219,7 @@ csMainY()
 {
     const uint         tileStart = uint(gl_WorkGroupID.x) * HBAO_TILE_WIDTH;
     const uint           tileEnd = tileStart + HBAO_TILE_WIDTH;
-    const uint        apronStart = tileStart - KERNEL_RADIUS;
+    const uint        apronStart = max(0, int(tileStart) - KERNEL_RADIUS);
     const uint          apronEnd = tileEnd   + KERNEL_RADIUS;
 
     const uint x = uint(gl_WorkGroupID.y);
