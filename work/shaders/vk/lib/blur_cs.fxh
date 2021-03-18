@@ -37,9 +37,8 @@
 sampler_state InputSampler
 {
 	Filter = Point;
-	AddressU = Border;
-	AddressV = Border;
-	BorderColor = Transparent;
+	AddressU = Clamp;
+	AddressV = Clamp;
 };
 
 #if !(BLUR_KERNEL_8 || BLUR_KERNEL_16 || BLUR_KERNEL_32 || BLUR_KERNEL_64)
@@ -102,7 +101,7 @@ csMainX()
 	// calculate offsets
 	const uint         tileStart = int(gl_WorkGroupID.x) * BLUR_TILE_WIDTH;
 	const uint           tileEnd = tileStart + BLUR_TILE_WIDTH;
-	const uint        apronStart = tileStart - KERNEL_RADIUS;
+	const uint        apronStart = max(0, int(tileStart) - KERNEL_RADIUS);
 	const uint          apronEnd = tileEnd   + KERNEL_RADIUS;
 
 	const uint x = apronStart + gl_LocalInvocationID.x;
@@ -127,12 +126,20 @@ csMainX()
 		IMAGE_LOAD_VEC blurTotal = IMAGE_LOAD_VEC(0);
 
 		int i;
-		#pragma unroll
+        uint max;
+#pragma unroll
 		for (i = 0; i < KERNEL_RADIUS * 2 + 1; ++i)
 		{
 			// Sample the pre-filtered data with step size = 2 pixels
 			uint j = uint(i) + gl_LocalInvocationID.x;
-			IMAGE_LOAD_VEC samp = SharedMemory[j];
+            IMAGE_LOAD_VEC samp;
+            if (j >= tileEndClamped)
+                samp = SharedMemory[max];
+            else
+            {
+                samp = SharedMemory[j];
+                max = j;
+            }
 			float weight = weights[i];
 			blurTotal += weight * samp;
 		}
@@ -160,7 +167,7 @@ csMainY()
 	// calculate offsets
 	const uint         tileStart = int(gl_WorkGroupID.x) * BLUR_TILE_WIDTH;
 	const uint           tileEnd = tileStart + BLUR_TILE_WIDTH;
-	const uint        apronStart = tileStart - KERNEL_RADIUS;
+	const uint        apronStart = max(0, int(tileStart) - KERNEL_RADIUS);
 	const uint          apronEnd = tileEnd   + KERNEL_RADIUS;
 
 	const uint x = gl_WorkGroupID.y;
@@ -185,12 +192,20 @@ csMainY()
 		IMAGE_LOAD_VEC blurTotal = IMAGE_LOAD_VEC(0);
 
 		int i;
+        uint max;
 #pragma unroll
 		for (i = 0; i < KERNEL_RADIUS * 2 + 1; ++i)
 		{
 			// Sample the pre-filtered data with step size = 2 pixels
 			uint j = uint(i) + gl_LocalInvocationID.x;
-			IMAGE_LOAD_VEC samp = SharedMemory[j];
+            IMAGE_LOAD_VEC samp;
+            if (j >= tileEndClamped)
+                samp = SharedMemory[max];
+            else
+            {
+                samp = SharedMemory[j];
+                max = j;
+            }
 			float weight = weights[i];
 			blurTotal += weight * samp;
 		}
