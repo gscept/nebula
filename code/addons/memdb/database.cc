@@ -541,7 +541,8 @@ Database::Defragment(TableId tid, std::function<void(IndexT, IndexT)> const& mov
         }
 
         lastIndex = table.numRows - 1;
-        moveCallback(lastIndex, index);
+        if (index != lastIndex)
+            moveCallback(lastIndex, index);
         this->EraseSwapIndex(table, index);
         ++numErased;
     }
