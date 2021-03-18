@@ -58,7 +58,6 @@ public:
     /// called before frame
     static void OnBeforeFrame(const Graphics::FrameContext& ctx);
 
-private:
     struct ImguiState
     {
         ImguiRendererParams params;
@@ -82,8 +81,11 @@ private:
         Util::FixedArray<byte*> indexPtrs;
 
         Ptr<ImguiInputHandler> inputHandler;
+        bool dockOverViewport;
     };
     static ImguiState state;
+
+private:
     static void ImguiDrawFunction();
     static void RecoverImGuiContextErrors();
 };
