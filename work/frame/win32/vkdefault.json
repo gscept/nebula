@@ -25,6 +25,15 @@
                 "type": "Texture2D"
             },
             {
+                "name": "ColorBufferNoGUI",
+                "format": "SRGBA8",
+                "usage": "Render|TransferSource",
+                "relative": true,
+                "width": 1.0,
+                "height": 1.0,
+                "type": "Texture2D"
+            },
+            {
                 "name": "ShapeBuffer",
                 "format": "R8G8B8A8",
                 "relative": true,
@@ -182,9 +191,9 @@
                 },
                 "call": {
                     "name": "VolumetricFogContext - Cull and Classify"
-                },
+                }
             }
-        }
+        },
 
         "submission": {
             "name": "Shadow maps and Prepass",
@@ -267,7 +276,7 @@
                     "name": "Copy Depth",
                     "from": "ZBuffer",
                     "to": "ZBufferCopy"
-                },
+                }
             }
         },
 
@@ -417,7 +426,7 @@
 
                 "call": {
                     "name": "HistogramContext - Bucket",
-                }
+                },
 
                 "_comment": "------------ BLOOM ------------",
                 "pass": {
@@ -574,7 +583,47 @@
                         },
                         "call": {
                             "name": "Im3D"
-                        },
+                        }
+                    }
+                },
+
+                "blit": {
+                    "name": "ColorBuffer Copy",
+                    "from": "ColorBuffer",
+                    "to": "ColorBufferNoGUI"
+                },
+
+                "pass": {
+                    "name": "GUI",
+                    "attachments": [
+                        {
+                            "name": "ColorBuffer",
+                            "load": true,
+                            "store": true
+                        }
+                    ],
+
+                    "depth_stencil": {
+                        "name": "ZBuffer",
+                        "store": false,
+                        "load": true
+                    },
+
+                    "subpass": {
+                        "name": "DynUI",
+                        "depth": true,
+                        "attachments": [
+                            "ColorBuffer"
+                        ],
+
+                        "resource_dependencies": [
+                            {
+                                "name": "ZBufferCopy",
+                                "access": "ShaderRead",
+                                "layout": "DepthStencilRead",
+                                "stage": "PixelShader"
+                            }
+                        ],
                         "call": {
                             "name": "ImGUI"
                         }
