@@ -15,6 +15,7 @@
 #include "graphics/stage.h"
 #include "input/inputserver.h"
 #include "managers/cameramanager.h"
+#include "core/cvar.h"
 
 //------------------------------------------------------------------------------
 namespace GraphicsFeature
@@ -83,7 +84,8 @@ private:
 
     ViewHandle defaultViewHandle;
 
-    bool renderDebug = false;
+    Core::CVar* r_debug;
+    Core::CVar* r_show_frame_inspector;
 };
 
 //------------------------------------------------------------------------------
@@ -92,7 +94,7 @@ private:
 inline void
 GraphicsFeature::GraphicsFeatureUnit::SetGraphicsDebugging(bool value)
 {
-    this->renderDebug = value;
+    Core::CVarWriteInt(this->r_debug, 2);
 }
 
 //------------------------------------------------------------------------------

@@ -61,6 +61,9 @@ GraphicsFeatureUnit::OnActivate()
 {
     FeatureUnit::OnActivate();
 
+    this->r_debug = Core::CVarCreate(Core::CVar_Int, "r_debug", "0");
+    this->r_show_frame_inspector = Core::CVarCreate(Core::CVar_Int, "r_show_frame_inspector", "0");
+
     this->gfxServer = Graphics::GraphicsServer::Create();
     this->inputServer = Input::InputServer::Create();
     this->gfxServer->Open();
@@ -171,13 +174,20 @@ GraphicsFeatureUnit::OnBeginFrame()
         uiFunc();
     }
 
-    if (this->renderDebug)
+    switch (Core::CVarReadInt(this->r_debug))
     {
+    case 2:
         this->gfxServer->RenderDebug(0);
-        Debug::FrameScriptInspector::Run(this->defaultView->GetFrameScript());
+    case 1:
+        Game::GameServer::Instance()->RenderDebug();
+    default:
+        break;
     }
 
-    //FIXME
+    if (Core::CVarReadInt(this->r_show_frame_inspector) > 0)
+        Debug::FrameScriptInspector::Run(this->defaultView->GetFrameScript());
+
+
     this->gfxServer->BeforeViews();
 }
 

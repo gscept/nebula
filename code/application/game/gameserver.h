@@ -79,6 +79,9 @@ public:
     virtual void NotifyGameLoad();
     /// call OnSave on all game features
     virtual void NotifyGameSave();
+
+    /// call when debug gui and primitives are up for rendering
+    void RenderDebug();
         
     /// add game feature
     void AttachGameFeature(const Ptr<FeatureUnit>& feature);
@@ -111,7 +114,7 @@ public:
     World* GetWorld(uint32_t worldHash);
     /// destroy a world
     void DestroyWorld(uint32_t worldHash);
-
+    
     /// contains internal state and world management
     struct State
     {

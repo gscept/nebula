@@ -487,6 +487,20 @@ GameServer::NotifyGameSave()
 //------------------------------------------------------------------------------
 /**
 */
+void
+GameServer::RenderDebug()
+{
+    int i;
+    int num = this->gameFeatures.Size();
+    for (i = 0; i < num; i++)
+    {
+        this->gameFeatures[i]->OnRenderDebug();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 bool
 GameServer::IsFeatureAttached(const Util::String& stringName) const
 {

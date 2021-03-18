@@ -13,6 +13,7 @@
 */
 #include "game/featureunit.h"
 #include "math/bbox.h"
+#include "core/cvar.h"
 
 //------------------------------------------------------------------------------
 namespace BaseGameFeature
@@ -45,6 +46,7 @@ public:
 protected:
     Game::ManagerHandle blueprintManager;
     Game::ManagerHandle timeManager;
+    Core::CVar* cl_debug_worlds;
 };
 
 } // namespace BaseGameFeature
