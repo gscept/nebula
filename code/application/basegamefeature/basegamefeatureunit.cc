@@ -13,6 +13,7 @@
 #include "managers/blueprintmanager.h"
 #include "managers/timemanager.h"
 #include "imgui.h"
+#include "game/propertyinspection.h"
 
 namespace BaseGameFeature
 {
@@ -100,15 +101,39 @@ BaseGameFeatureUnit::OnRenderDebug()
                     if (!listInactive && (entity.category == MemDb::InvalidTableId || entity.instance == MemDb::InvalidRow))
                         continue;
 
+                    ImGui::BeginGroup();
                     ImGui::Text("[%i] ", entityIndex);
                     ImGui::SameLine();
                     ImGui::TextColored({1,0.3f,0,1}, "tid:%i, row:%i", entity.category, entity.instance);
                     if (entity.category != MemDb::TableId::Invalid())
-                        ImGui::TextDisabled("- %s", Game::GetWorldDatabase(world)->GetTable(entity.category).name.AsString().AsCharPtr());
+                    {
+                        ImGui::TextDisabled("- %s", Game::GetWorldDatabase(world)->GetTable(entity.category).name.Value());
+                        ImGui::EndGroup();
+                        if (ImGui::IsItemHovered())
+                        {
+                            ImGui::BeginTooltip();
+                            ImGui::TextDisabled("- %s", Game::GetWorldDatabase(world)->GetTable(entity.category).name.Value());
+                            MemDb::TableId const category = entity.category;
+                            MemDb::Row const row = entity.instance;
+
+                            auto const& properties = Game::GetWorldDatabase(world)->GetTable(category).properties;
+                            for (auto property : properties)
+                            {
+                                SizeT const typeSize = MemDb::TypeRegistry::TypeSize(property);
+                                void* data = Game::GetInstanceBuffer(world, category, property);
+                                data = (byte*)data + (row * typeSize);
+                                bool commitChange = false;
+                                Game::PropertyInspection::DrawInspector(property, data, &commitChange);
+                                ImGui::Separator();
+                            }
+                            ImGui::EndTooltip();
+                        }
+                    }
                     else
+                    {
+                        ImGui::EndGroup();
                         ImGui::TextDisabled("- ");
-
-
+                    }
                     ImGui::Separator();
                 }
             }

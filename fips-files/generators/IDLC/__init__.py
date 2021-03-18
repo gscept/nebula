@@ -120,6 +120,7 @@ class IDLCodeGenerator:
         IDLDocument.AddInclude(f, "util/stringatom.h")
         IDLDocument.AddInclude(f, "memdb/typeregistry.h")
         IDLDocument.AddInclude(f, "game/propertyserialization.h")
+        IDLDocument.AddInclude(f, "game/propertyinspection.h")
         
         hasMessages = "messages" in self.document
 

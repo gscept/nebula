@@ -95,7 +95,7 @@ PropertySerialization::Register(PropertyId pid)
     Serializer s;
     s.deserializeJson = read;
     s.serializeJson = write;
-    if (reg->serializers.Size() <= pid.id)
+    while (reg->serializers.Size() <= pid.id)
     {
         reg->serializers.Grow();
         reg->serializers.Resize(reg->serializers.Capacity());

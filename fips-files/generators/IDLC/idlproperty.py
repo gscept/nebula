@@ -172,6 +172,7 @@ def WritePropertySourceDefinitions(f, document):
         if prop.isFlag is False:
             f.WriteLine('MemDb::PropertyId const pid = MemDb::TypeRegistry::Register<{type}>(name, {defval});'.format(type=prop.propertyName, defval=defval))
             f.WriteLine('Game::PropertySerialization::Register<{type}>(pid);'.format(type=prop.propertyName))
+            f.WriteLine('Game::PropertyInspection::Register(pid, &Game::PropertyDrawFuncT<{type}>);'.format(type=prop.propertyName))
         else:
             f.WriteLine('MemDb::TypeRegistry::Register(name, 0, nullptr);')
         f.WriteLine('}')
