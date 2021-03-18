@@ -319,6 +319,8 @@ ImguiContext::Create()
     __bundle.OnWindowResized = ImguiContext::OnWindowResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
+    state.dockOverViewport = false;
+
     // allocate imgui shader
     state.uiShader = ShaderServer::Instance()->GetShader("shd:imgui.fxb");
     state.params.projVar = CoreGraphics::ShaderGetConstantBinding(state.uiShader,"TextProjectionModel");
@@ -343,6 +345,7 @@ ImguiContext::Create()
 
     Frame::AddCallback("ImGUI", [](const IndexT frame, const IndexT bufferIndex)
         {
+            //ImGui::End();
 #ifdef NEBULA_NO_DYNUI_ASSERTS
             ImguiContext::RecoverImGuiContextErrors();
 #endif
@@ -652,6 +655,11 @@ ImguiContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
     io.DeltaTime = ctx.frameTime;
     ImGui::NewFrame();
     ImGui::GetStyle().Alpha = Core::CVarReadFloat(ui_opacity);
+#ifdef IMGUI_HAS_DOCK
+    if (state.dockOverViewport)
+        ImGui::DockSpaceOverViewport();
+#endif
+
 }
 
 } // namespace Dynui
