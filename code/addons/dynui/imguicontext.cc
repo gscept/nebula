@@ -423,12 +423,13 @@ ImguiContext::Create()
     style.PopupRounding = 0.0f;
     style.ScrollbarRounding = 2.0f;
     style.TabRounding = 3.0f;
-
+    style.TabMinWidthForCloseButton = FLT_MAX;
     style.WindowTitleAlign = { 0.5f, 0.38f };
     style.WindowMenuButtonPosition = ImGuiDir_Right;
 
     style.WindowPadding = { 8.0f, 8.0f };
-    style.FramePadding = { 16, 3 };
+    // FIXME: ImGui seems to have problems with the "X" (close window) button when setting framepadding to anything higher than ~4. Could be the docking branch which is currently in beta.
+    style.FramePadding = { 4, 3 };//{ 16, 3 }; 
     style.ItemInnerSpacing = { 4, 2 };
     style.ItemSpacing = { 4, 5 };
     style.IndentSpacing = 8.0f;
@@ -477,7 +478,7 @@ ImguiContext::Create()
     colors[ImGuiCol_ResizeGripHovered]      = ImVec4(1.00f, 0.30f, 0.00f, 0.67f);
     colors[ImGuiCol_ResizeGripActive]       = ImVec4(1.00f, 0.30f, 0.00f, 1.00f);
     colors[ImGuiCol_Tab]                    = ImVec4(0.04f, 0.04f, 0.04f, 0.86f);
-    colors[ImGuiCol_TabHovered]             = ImVec4(0.03f, 0.03f, 0.03f, 0.80f);
+    colors[ImGuiCol_TabHovered]             = ImVec4(0.06f, 0.06f, 0.06f, 0.80f);
     colors[ImGuiCol_TabActive]              = ImVec4(0.02f, 0.02f, 0.02f, 1.00f);
     colors[ImGuiCol_TabUnfocused]           = ImVec4(0.16f, 0.16f, 0.16f, 0.97f);
     colors[ImGuiCol_TabUnfocusedActive]     = ImVec4(0.08f, 0.08f, 0.08f, 1.00f);
