@@ -116,6 +116,8 @@ GraphicsFeatureUnit::OnActivate()
     PostEffects::HistogramContext::Setup(frameScript);
     PostEffects::HistogramContext::SetWindow({ 0.0f, 0.0f }, { 1.0f, 1.0f }, 1);
 
+    CoreGraphics::ShaderServer::Instance()->SetupBufferConstants(frameScript);
+
     this->globalLight = Graphics::CreateEntity();
     Lighting::LightContext::RegisterEntity(this->globalLight);
     Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(0.734, 0.583, 0.377), 50.000f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0, Math::vector(1, -1, 1), true);
