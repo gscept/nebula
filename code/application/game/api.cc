@@ -732,7 +732,7 @@ AllocateInstance(World* world, Entity entity, TemplateId templateId)
 void
 DeallocateInstance(World* world, Entity entity)
 {
-    MemDb::TableId const category = world->entityMap[entity.index].category;
+    MemDb::TableId& category = world->entityMap[entity.index].category;
     MemDb::Row& instance = world->entityMap[entity.index].instance;
 
     n_assert(instance != MemDb::InvalidRow);
@@ -747,6 +747,7 @@ DeallocateInstance(World* world, Entity entity)
         world->db->MigrateInstance(category, instance, world->categoryDecayMap.ValueAtIndex(category, decayIndex), false);
     }
 
+    category = MemDb::InvalidTableId;
     instance = MemDb::InvalidRow;
 }
 
@@ -888,7 +889,7 @@ Defragment(World* world, MemDb::TableId cat)
     // defragment the table. Any instances that has been deleted will be swap'n'popped,
     // which means we need to update the entity mapping.
     // The move callback is signaled BEFORE the swap has happened.
-    SizeT numErased = db->Defragment(cat, [world, &ownerColumnId, &table](MemDb::Row from, MemDb::Row to)
+    SizeT numErased = db->Defragment(cat, [world, ownerColumnId, &table](MemDb::Row from, MemDb::Row to)
     {
         Game::Entity fromEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[from];
         Game::Entity toEntity = ((Game::Entity*)(table.columns.Get<1>(ownerColumnId.id)))[to];
