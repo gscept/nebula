@@ -355,7 +355,7 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
     //histogramState.logMinLuminance = Math::log2(10.0f);
 
     DownsampleCsMin::DownsampleUniforms constants;
-    constants.Mips = numMips;
+    constants.Mips = numMips-1;
     constants.NumGroups = (dispatchX + 1) * (dispatchY + 1);
     BufferUpdate(histogramState.downsampleConstants, constants, 0);
 
