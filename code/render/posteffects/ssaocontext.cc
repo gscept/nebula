@@ -122,13 +122,13 @@ SSAOContext::Create()
             CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
 
             // blur in X
-            CoreGraphics::SetShaderProgram(ssaoState.xDirectionBlur);
+            CoreGraphics::SetShaderProgram(ssaoState.xDirectionBlur, CoreGraphics::GraphicsQueueType, false);
             CoreGraphics::SetResourceTable(ssaoState.blurTableX[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
             CoreGraphics::BarrierInsert(ssaoState.barriers[2], GraphicsQueueType); // transition from shader read to general
             CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
 
             // blur in Y
-            CoreGraphics::SetShaderProgram(ssaoState.yDirectionBlur);
+            CoreGraphics::SetShaderProgram(ssaoState.yDirectionBlur, CoreGraphics::GraphicsQueueType, false);
             CoreGraphics::SetResourceTable(ssaoState.blurTableY[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
             CoreGraphics::BarrierInsert(ssaoState.barriers[3], GraphicsQueueType);
             CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);

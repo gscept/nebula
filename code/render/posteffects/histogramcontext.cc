@@ -136,11 +136,11 @@ HistogramContext::Create()
 
     // create counter for downsample shader
     bufInfo.elementSize = sizeof(uint);
-    bufInfo.size = 1;
+    bufInfo.size = 6;
     bufInfo.usageFlags = CoreGraphics::ReadWriteBuffer;
     bufInfo.mode = CoreGraphics::DeviceLocal;
     bufInfo.queueSupport = CoreGraphics::GraphicsQueueSupport;
-    uint initData = 0;
+    uint initData[6] = { 0 };
     bufInfo.data = &initData;
     bufInfo.dataSize = sizeof(initData);
     histogramState.downsampleCounter = CoreGraphics::CreateBuffer(bufInfo);
@@ -177,7 +177,7 @@ HistogramContext::Create()
     Frame::AddCallback("HistogramContext - Downsample", [](const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::CommandBufferBeginMarker(CoreGraphics::GraphicsQueueType, NEBULA_MARKER_COMPUTE, "Histogram Downsample");
-        CoreGraphics::SetShaderProgram(histogramState.downsampleProgram);
+        CoreGraphics::SetShaderProgram(histogramState.downsampleProgram, CoreGraphics::GraphicsQueueType, false);
         CoreGraphics::SetResourceTable(histogramState.downsampleResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
         uint dispatchX = (histogramState.sourceTextureDimensions.width - 1) / 64;
         uint dispatchY = (histogramState.sourceTextureDimensions.height - 1) / 64;
@@ -188,7 +188,7 @@ HistogramContext::Create()
     Frame::AddCallback("HistogramContext - Bucket", [](const IndexT frame, const IndexT bufferIndex)
     {
         CoreGraphics::CommandBufferBeginMarker(CoreGraphics::GraphicsQueueType, NEBULA_MARKER_COMPUTE, "Histogram Categorize");
-        CoreGraphics::SetShaderProgram(histogramState.histogramCategorizeProgram);
+        CoreGraphics::SetShaderProgram(histogramState.histogramCategorizeProgram, CoreGraphics::GraphicsQueueType, false);
         CoreGraphics::SetResourceTable(histogramState.histogramResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
         int groupsX = (histogramState.size.x - histogramState.offset.x) / 256;
         int groupsY = (histogramState.size.y - histogramState.offset.y);
@@ -249,7 +249,8 @@ HistogramContext::Create()
                     CoreGraphics::BarrierAccess::TransferWrite,
                     0, NEBULA_WHOLE_BUFFER_SIZE
                 },
-            });
+            }
+        );
 
         /*
         // clear histogram counters buffer
@@ -262,7 +263,6 @@ HistogramContext::Create()
         // clear histogram counters
         uint initDatas[255] = { 0 };
         CoreGraphics::BufferUpload(histogramState.histogramCounters, initDatas, 255, 0);
-
         CoreGraphics::BarrierPop(CoreGraphics::GraphicsQueueType);
 
         CoreGraphics::CommandBufferEndMarker(CoreGraphics::GraphicsQueueType);
@@ -301,16 +301,6 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
     CoreGraphics::TextureId colorBuffer = script->GetTexture("LightBuffer");
     CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(colorBuffer);
 
-    // update table with source texture
-    CoreGraphics::ResourceTableSetRWTexture(histogramState.downsampleResourceTable, {
-        colorBuffer,
-        CoreGraphics::ShaderGetResourceSlot(histogramState.downsampleShader, "Source"),
-        0,
-        CoreGraphics::InvalidSamplerId,
-        false,
-        false
-    });
-
     // setup views for output and bind
     SizeT numMips = CoreGraphics::TextureGetNumMips(colorBuffer);
     histogramState.downsampledColorBufferViews.Resize(numMips);
@@ -325,15 +315,30 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
         info.format = CoreGraphics::TextureGetPixelFormat(colorBuffer);
         histogramState.downsampledColorBufferViews[i] = CoreGraphics::CreateTextureView(info);
 
-        CoreGraphics::ResourceTableSetRWTexture(histogramState.downsampleResourceTable,
+        if (i == 5)
         {
-            histogramState.downsampledColorBufferViews[i],
-            CoreGraphics::ShaderGetResourceSlot(histogramState.downsampleShader, "Output"),
-            i,
-            CoreGraphics::InvalidSamplerId,
-            false,
-            false
-        });
+            CoreGraphics::ResourceTableSetRWTexture(histogramState.downsampleResourceTable,
+            {
+                histogramState.downsampledColorBufferViews[i],
+                CoreGraphics::ShaderGetResourceSlot(histogramState.downsampleShader, "Output6"),
+                0,
+                CoreGraphics::InvalidSamplerId,
+                false,
+                false
+            });
+        }
+        else
+        {
+            CoreGraphics::ResourceTableSetRWTexture(histogramState.downsampleResourceTable,
+            {
+                histogramState.downsampledColorBufferViews[i],
+                CoreGraphics::ShaderGetResourceSlot(histogramState.downsampleShader, "Output"),
+                i,
+                CoreGraphics::InvalidSamplerId,
+                false,
+                false
+            });
+        }
     }
     CoreGraphics::ResourceTableCommitChanges(histogramState.downsampleResourceTable);
 

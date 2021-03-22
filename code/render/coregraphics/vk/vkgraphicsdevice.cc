@@ -2419,7 +2419,7 @@ GetPrimitiveGroup()
 /**
 */
 void
-SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::QueueType queue)
+SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::QueueType queue, const bool bindSharedResources)
 {
     n_assert(pro != CoreGraphics::InvalidShaderProgramId);
 
@@ -2482,7 +2482,7 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
     // bind descriptors
     if (info.type == CoreGraphics::ComputePipeline)
     {
-        if (layoutChanged)
+        if (layoutChanged && bindSharedResources)
         {
             CoreGraphics::SetResourceTable(state.tickResourceTable, NEBULA_TICK_GROUP, CoreGraphics::ComputePipeline, nullptr, queue);
             CoreGraphics::SetResourceTable(state.frameResourceTable, NEBULA_FRAME_GROUP, CoreGraphics::ComputePipeline, nullptr, queue);
@@ -2490,7 +2490,7 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
     }
     else // graphics queue
     {
-        if (!state.drawThread && layoutChanged)
+        if (!state.drawThread && layoutChanged && bindSharedResources)
         {
             CoreGraphics::SetResourceTable(state.tickResourceTable, NEBULA_TICK_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
             CoreGraphics::SetResourceTable(state.frameResourceTable, NEBULA_FRAME_GROUP, CoreGraphics::GraphicsPipeline, nullptr);

@@ -24,7 +24,7 @@
 
 namespace CoreGraphics
 {
-    void SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::QueueType queue);
+    void SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::QueueType queue, const bool bindSharedResources);
 }
 
 namespace Vulkan
@@ -111,7 +111,7 @@ public:
 private:
     friend class VkVertexSignaturePool;
     friend class VkPipelineDatabase;
-    friend void ::CoreGraphics::SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::QueueType queue);
+    friend void ::CoreGraphics::SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::QueueType queue, const bool bindSharedResources);
 
     /// get shader program
     const VkProgramReflectionInfo& GetProgram(const CoreGraphics::ShaderProgramId shaderProgramId);

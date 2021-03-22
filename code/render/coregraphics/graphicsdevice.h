@@ -226,7 +226,7 @@ void SetPrimitiveGroup(const CoreGraphics::PrimitiveGroup& pg);
 /// get current primitive group
 const CoreGraphics::PrimitiveGroup& GetPrimitiveGroup();
 /// set shader program
-void SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::QueueType queue = GraphicsQueueType);
+void SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::QueueType queue = GraphicsQueueType, const bool bindSharedResources = true);
 /// set resource table
 void SetResourceTable(const CoreGraphics::ResourceTableId table, const IndexT slot, ShaderPipeline pipeline, const Util::FixedArray<uint>& offsets, const CoreGraphics::QueueType queue = GraphicsQueueType);
 /// set resource table using raw offsets
