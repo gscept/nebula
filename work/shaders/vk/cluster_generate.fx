@@ -25,8 +25,8 @@ void csClusterAABB()
     vec4 farPlane   = vec4(0, 0, 1.0f, -FocalLengthNearFar.z * pow(ZDistribution, (index3D.z + 1) / float(NumCells.z)));
 
     // Transform the corners to view space
-    vec4 minCorner = PixelToView(index3D.xy * vec2(BlockSize) * InvFramebufferDimensions, 1);
-    vec4 maxCorner = PixelToView((index3D.xy + ivec2(1.0f)) * vec2(BlockSize) * InvFramebufferDimensions, 1);
+    vec4 minCorner = PixelToView(index3D.xy * vec2(BlockSize) * InvFramebufferDimensions, 1, InvProjection);
+    vec4 maxCorner = PixelToView((index3D.xy + ivec2(1.0f)) * vec2(BlockSize) * InvFramebufferDimensions, 1, InvProjection);
 
     // Trace a ray from the eye (origin) towards the four corner points
     vec3 nearMin, nearMax, farMin, farMax;

@@ -133,10 +133,10 @@ psMain(in vec2 UV,
 {
     // get an averaged depth value        
     float depth = sample2DLod(DepthTexture, DefaultSampler, UV, 0).r;
-    vec4 viewPos = PixelToView(UV, depth);
+    vec4 viewPos = PixelToView(UV, depth, InvProjection);
     vec3 normal = sample2DLod(NormalBuffer, DefaultSampler, UV, 0).xyz;
 
-    vec4 worldPos = ViewToWorld(viewPos);
+    vec4 worldPos = ViewToWorld(viewPos, InvView);
     vec3 viewVec = EyePos.xyz - worldPos.xyz;
     vec3 viewNormal = (View * vec4(normal, 0)).xyz;
     

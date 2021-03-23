@@ -175,7 +175,7 @@ bool TraceScreenSpaceRay(in vec3 rayOrigin,
         hitTexCoord = permute ? PQk.yx : PQk.xy;
 
         float pixelDepth = fetch2D(DepthBuffer, Basic2DSampler, ivec2(hitTexCoord), 0).r;
-        depth = -LinearizeDepth(pixelDepth);
+        depth = -LinearizeDepth(pixelDepth, FocalLengthNearFar.zw);
     }
 
     // viewspace hitpoint
@@ -220,7 +220,7 @@ bool RaymarchScreenSpace(in vec3 rayOrigin,
         clip = Projection * vec4(reflection, 1);
         clip /= clip.w;
         projCoord = (clip.xy + 1.0) / 2.0;
-        bufferDepth = LinearizeDepth(fetch2D(DepthBuffer, Basic2DSampler, ivec2(projCoord * ScreenSize), 0).r);
+        bufferDepth = LinearizeDepth(fetch2D(DepthBuffer, Basic2DSampler, ivec2(projCoord * ScreenSize), 0).r, FocalLengthNearFar.zw);
         reflectionDepth = -reflection.z;
 
 
@@ -261,7 +261,7 @@ csMain()
     vec3 viewSpaceNormal = normalize((transpose(inverse(mat3(View))) * normalize(N.xyz)).xyz);
     float pixelDepth = fetch2D(DepthBuffer, Basic2DSampler, location * 2, 0).r;
     
-    vec3 rayOrigin = PixelToView(UV, pixelDepth).xyz;
+    vec3 rayOrigin = PixelToView(UV, pixelDepth, InvProjection).xyz;
 
     vec3 viewDir = normalize(rayOrigin);
     vec3 reflectionDir = (reflect(viewDir, viewSpaceNormal));

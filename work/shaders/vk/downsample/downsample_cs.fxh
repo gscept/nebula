@@ -15,16 +15,15 @@
 #endif
 
 #if ARRAY_TEXTURE
-read FORMAT image2DArray Source;
-atomic FORMAT image2DArray Output[13];
+readwrite FORMAT image2DArray Output[13];
+atomic FORMAT image2DArray Output6;
 #else
-read FORMAT image2D Source;
-atomic FORMAT image2D Output[13];
+readwrite FORMAT image2D Output[13];
+atomic FORMAT image2D Output6;
 #endif
 
 group_shared IMAGE_DATA_TYPE SharedMemory[SHARED_MEMORY_SIZE][SHARED_MEMORY_SIZE];
 group_shared uint Counter;
-
 
 constant DownsampleUniforms
 {
@@ -65,15 +64,15 @@ Sample2x2(ivec2 texel, uint slice)
 {
     IMAGE_DATA_TYPE samples[4];
 #if ARRAY_TEXTURE    
-    samples[0] = imageLoad(Source, ivec3(texel, slice));
-    samples[1] = imageLoad(Source, ivec3(texel, slice) + ivec3(1, 0, 0));
-    samples[2] = imageLoad(Source, ivec3(texel, slice) + ivec3(0, 1, 0));
-    samples[3] = imageLoad(Source, ivec3(texel, slice) + ivec3(1, 1, 0));
+    samples[0] = imageLoad(Output[0], ivec3(texel, slice));
+    samples[1] = imageLoad(Output[0], ivec3(texel, slice) + ivec3(1, 0, 0));
+    samples[2] = imageLoad(Output[0], ivec3(texel, slice) + ivec3(0, 1, 0));
+    samples[3] = imageLoad(Output[0], ivec3(texel, slice) + ivec3(1, 1, 0));
 #else
-    samples[0] = imageLoad(Source, texel);
-    samples[1] = imageLoad(Source, texel + ivec2(1, 0));
-    samples[2] = imageLoad(Source, texel + ivec2(0, 1));
-    samples[3] = imageLoad(Source, texel + ivec2(1, 1));
+    samples[0] = imageLoad(Output[0], texel);
+    samples[1] = imageLoad(Output[0], texel + ivec2(1, 0));
+    samples[2] = imageLoad(Output[0], texel + ivec2(0, 1));
+    samples[3] = imageLoad(Output[0], texel + ivec2(1, 1));
 #endif
     return Reduce(samples[0], samples[1], samples[2], samples[3]);   
 }
@@ -87,15 +86,15 @@ Sample2x2Output(ivec2 texel, uint slice)
 {
     IMAGE_DATA_TYPE samples[4];
 #if ARRAY_TEXTURE    
-    samples[0] = imageLoad(Output[6], ivec3(texel, slice));
-    samples[1] = imageLoad(Output[6], ivec3(texel, slice) + ivec3(1, 0, 0));
-    samples[2] = imageLoad(Output[6], ivec3(texel, slice) + ivec3(0, 1, 0));
-    samples[3] = imageLoad(Output[6], ivec3(texel, slice) + ivec3(1, 1, 0));
+    samples[0] = imageLoad(Output6, ivec3(texel, slice));
+    samples[1] = imageLoad(Output6, ivec3(texel, slice) + ivec3(1, 0, 0));
+    samples[2] = imageLoad(Output6, ivec3(texel, slice) + ivec3(0, 1, 0));
+    samples[3] = imageLoad(Output6, ivec3(texel, slice) + ivec3(1, 1, 0));
 #else
-    samples[0] = imageLoad(Output[6], texel);
-    samples[1] = imageLoad(Output[6], texel + ivec2(1, 0));
-    samples[2] = imageLoad(Output[6], texel + ivec2(0, 1));
-    samples[3] = imageLoad(Output[6], texel + ivec2(1, 1));
+    samples[0] = imageLoad(Output6, texel);
+    samples[1] = imageLoad(Output6, texel + ivec2(1, 0));
+    samples[2] = imageLoad(Output6, texel + ivec2(0, 1));
+    samples[3] = imageLoad(Output6, texel + ivec2(1, 1));
 #endif
     return Reduce(samples[0], samples[1], samples[2], samples[3]);
 }
@@ -107,9 +106,15 @@ void
 Save(ivec2 texel, IMAGE_DATA_TYPE value, uint mip, uint slice)
 {
 #if ARRAY_TEXTURE
-    imageStore(Output[mip + 1], ivec3(texel, slice), value);
+    if (mip == 5)
+        imageStore(Output6, ivec3(texel, slice), value);
+    else
+        imageStore(Output[mip + 1], ivec3(texel, slice), value);
 #else
-    imageStore(Output[mip + 1], texel, value);
+    if (mip == 5)
+        imageStore(Output6, texel, value);
+    else
+        imageStore(Output[mip + 1], texel, value);
 #endif
 }
 
@@ -388,7 +393,7 @@ csMain()
     // when that is done, we have the pixels in LDS and can sample from there efficiently
     Mips2_5_and_8_11(x, y, groupId, localIndex, 2, Mips, sliceIndex);
 
-    if (Mips <= 6)
+    if (Mips < 7)
         return;
 
     // filter out the last work group by incrementing an atomic counter 

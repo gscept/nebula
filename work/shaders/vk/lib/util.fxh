@@ -6,7 +6,7 @@
 #ifndef UTIL_FXH
 #define UTIL_FXH
 #include "lib/std.fxh"
-#include "lib/shared.fxh"
+//#include "lib/shared.fxh"
 
 const float depthScale = 100.0f;
 
@@ -475,18 +475,18 @@ FlipY(vec2 uv)
 /**
 */
 float
-LinearizeDepth(float depth)
+LinearizeDepth(float depth, vec2 focalLength)
 {
-    return (FocalLengthNearFar.z * FocalLengthNearFar.w) / (depth * (FocalLengthNearFar.z - FocalLengthNearFar.w) + FocalLengthNearFar.w);
+    return (focalLength.x * focalLength.y) / (depth * (focalLength.x - focalLength.y) + focalLength.y);
 }
 
 //-------------------------------------------------------------------------------------------------------------
 /**
 */
 float
-DelinearizeDepth(float depth)
+DelinearizeDepth(float depth, vec2 focalLength)
 {
-    return -((FocalLengthNearFar.z + FocalLengthNearFar.w) * depth - (2 * FocalLengthNearFar.z)) / ((FocalLengthNearFar.z - FocalLengthNearFar.w) * depth);
+    return -((focalLength.x + focalLength.y) * depth - (2 * focalLength.x)) / ((focalLength.x - focalLength.y) * depth);
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -515,10 +515,10 @@ PixelToProjection(vec2 screenCoord, float depth)
     Convert pixel to view space
 */
 vec4
-PixelToView(vec2 screenCoord, float depth)
+PixelToView(vec2 screenCoord, float depth, mat4 invProjection)
 {
     vec4 projectionSpace = PixelToProjection(screenCoord, depth);
-    vec4 viewSpace = InvProjection * projectionSpace;
+    vec4 viewSpace = invProjection * projectionSpace;
     viewSpace /= viewSpace.w;
     return viewSpace;
 }
@@ -528,10 +528,10 @@ PixelToView(vec2 screenCoord, float depth)
     Convert pixel to view space
 */
 vec4
-PixelToWorld(vec2 screenCoord, float depth)
+PixelToWorld(vec2 screenCoord, float depth, mat4 invView, mat4 invProjection)
 {
-    vec4 viewSpace = PixelToView(screenCoord, depth);
-    return InvView * viewSpace;
+    vec4 viewSpace = PixelToView(screenCoord, depth, invProjection);
+    return invView * viewSpace;
 }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -539,9 +539,9 @@ PixelToWorld(vec2 screenCoord, float depth)
     Convert view space to world space
 */
 vec4
-ViewToWorld(const vec4 viewSpace)
+ViewToWorld(const vec4 viewSpace, mat4 invView)
 {
-    return InvView * viewSpace;
+    return invView * viewSpace;
 }
 
 //------------------------------------------------------------------------------

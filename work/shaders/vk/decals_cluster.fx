@@ -109,7 +109,7 @@ void csDebug()
     float depth = fetch2D(DepthBuffer, PosteffectSampler, coord, 0).r;
 
     // convert screen coord to view-space position
-    vec4 viewPos = PixelToView(coord * InvFramebufferDimensions, depth);
+    vec4 viewPos = PixelToView(coord * InvFramebufferDimensions, depth, InvProjection);
 
     uint3 index3D = CalculateClusterIndex(coord / BlockSize, viewPos.z, InvZScale, InvZBias);
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);
@@ -164,8 +164,8 @@ void psRenderPBR(
         discard;
 
     // convert screen coord to view-space position
-    vec4 viewPos = PixelToView(coord * InvFramebufferDimensions, depth);
-    vec4 worldPos = ViewToWorld(viewPos);
+    vec4 viewPos = PixelToView(coord * InvFramebufferDimensions, depth, InvProjection);
+    vec4 worldPos = ViewToWorld(viewPos, InvView);
     vec3 worldViewVec = normalize(EyePos.xyz - worldPos.xyz);
     vec3 viewVec = -normalize(viewPos.xyz);
     vec3 viewNormal = (View * vec4(normal, 0)).xyz;
@@ -270,8 +270,8 @@ void psRenderEmissive(
     vec4 material = fetch2D(SpecularBuffer, PosteffectSampler, coord, 0).rgba;
 
     // convert screen coord to view-space position
-    vec4 viewPos = PixelToView(coord * InvFramebufferDimensions, depth);
-    vec4 worldPos = ViewToWorld(viewPos);
+    vec4 viewPos = PixelToView(coord * InvFramebufferDimensions, depth, InvProjection);
+    vec4 worldPos = ViewToWorld(viewPos, InvView);
     vec3 worldViewVec = normalize(EyePos.xyz - worldPos.xyz);
     vec3 viewVec = -normalize(viewPos.xyz);
 

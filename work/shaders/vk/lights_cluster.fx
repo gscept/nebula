@@ -82,7 +82,7 @@ void csDebug()
     float depth = fetch2D(DepthBuffer, PosteffectSampler, coord, 0).r;
 
     // convert screen coord to view-space position
-    vec4 viewPos = PixelToView(coord * InvFramebufferDimensions, depth);
+    vec4 viewPos = PixelToView(coord * InvFramebufferDimensions, depth, InvProjection);
 
     uint3 index3D = CalculateClusterIndex(coord / BlockSize, viewPos.z, InvZScale, InvZBias);
     uint idx = Pack3DTo1D(index3D, NumCells.x, NumCells.y);

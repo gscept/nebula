@@ -98,7 +98,7 @@ vec2 LoadXZFromTexture(uint x, uint y)
 { 
     vec2 uv = (vec2(x, y) + 0.5f) * InvAOResolution;
     float z_eye = fetch2D(DepthBuffer, ClampSampler, ivec2(x, y), 0).r;
-    vec4 viewSpace = PixelToView(uv, z_eye);
+    vec4 viewSpace = PixelToView(uv, z_eye, InvProjection);
     return vec2(viewSpace.x, viewSpace.z);
 }
 
@@ -109,7 +109,7 @@ vec2 LoadYZFromTexture(uint x, uint y)
 {
     vec2 uv = (vec2(x, y) + 0.5f) * InvAOResolution;
     float z_eye = fetch2D(DepthBuffer, ClampSampler, ivec2(x, y), 0).r;
-    vec4 viewSpace = PixelToView(uv, z_eye);
+    vec4 viewSpace = PixelToView(uv, z_eye, InvProjection);
     return vec2(viewSpace.y, viewSpace.z);
 }
 
@@ -175,7 +175,7 @@ csMainX()
 {
     const uint         tileStart = uint(gl_WorkGroupID.x) * HBAO_TILE_WIDTH;
     const uint           tileEnd = tileStart + HBAO_TILE_WIDTH;
-    const uint        apronStart = max(0, int(tileStart) - KERNEL_RADIUS);
+    const uint        apronStart = tileStart - KERNEL_RADIUS;
     const uint          apronEnd = tileEnd   + KERNEL_RADIUS;
 
     const uint x = apronStart + uint(gl_LocalInvocationID.x);
@@ -219,7 +219,7 @@ csMainY()
 {
     const uint         tileStart = uint(gl_WorkGroupID.x) * HBAO_TILE_WIDTH;
     const uint           tileEnd = tileStart + HBAO_TILE_WIDTH;
-    const uint        apronStart = max(0, int(tileStart) - KERNEL_RADIUS);
+    const uint        apronStart = tileStart - KERNEL_RADIUS;
     const uint          apronEnd = tileEnd   + KERNEL_RADIUS;
 
     const uint x = uint(gl_WorkGroupID.y);

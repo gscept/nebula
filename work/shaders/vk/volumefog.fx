@@ -236,7 +236,7 @@ void csRender()
         depth = 0.999998f;
 
     // find last point to march
-    vec4 viewPos = PixelToView(seed, depth);
+    vec4 viewPos = PixelToView(seed, depth, InvProjection);
     vec3 eye = vec3(0, 0, 0);
 
     // construct a ray, beginning at eye and going from eye through worldPoint
