@@ -403,7 +403,6 @@ csMain()
         Counter = atomicAdd(Counters[sliceIndex], 1);
 
     groupMemoryBarrier();
-    barrier();
     if (Counter != (NumGroups - 1))
         return;
     Counters[sliceIndex] = 0;
