@@ -255,7 +255,7 @@ GameServer::OnFrame()
             for (i = 0; i < num; i++)
             {
                 World* w = this->state.worlds[worldIndex];
-                Dataset data = Game::Query(w, w->onBeginFrameCallbacks[i].cache, w->onFrameCallbacks[i].filter);
+                Dataset data = Game::Query(w, w->onFrameCallbacks[i].cache, w->onFrameCallbacks[i].filter);
                 w->onFrameCallbacks[i].func(w, data);
             }
         }
@@ -292,7 +292,7 @@ GameServer::OnEndFrame()
             for (i = 0; i < num; i++)
             {
                 World* w = this->state.worlds[worldIndex];
-                Dataset data = Game::Query(w, w->onBeginFrameCallbacks[i].cache, w->onEndFrameCallbacks[i].filter);
+                Dataset data = Game::Query(w, w->onEndFrameCallbacks[i].cache, w->onEndFrameCallbacks[i].filter);
                 w->onEndFrameCallbacks[i].func(w, data);
             }
         }
@@ -438,7 +438,7 @@ GameServer::NotifyGameLoad()
             for (i = 0; i < num; i++)
             {
                 World* w = this->state.worlds[worldIndex];
-                Dataset data = Game::Query(w, w->onBeginFrameCallbacks[i].cache, w->onLoadCallbacks[i].filter);
+                Dataset data = Game::Query(w, w->onLoadCallbacks[i].cache, w->onLoadCallbacks[i].filter);
                 w->onLoadCallbacks[i].func(w, data);
             }
         }
@@ -475,7 +475,7 @@ GameServer::NotifyGameSave()
             for (i = 0; i < num; i++)
             {
                 World* w = this->state.worlds[worldIndex];
-                Dataset data = Game::Query(w, w->onBeginFrameCallbacks[i].cache, w->onSaveCallbacks[i].filter);
+                Dataset data = Game::Query(w, w->onSaveCallbacks[i].cache, w->onSaveCallbacks[i].filter);
                 w->onSaveCallbacks[i].func(w, data);
             }
         }

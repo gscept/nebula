@@ -307,11 +307,11 @@ ExclusiveTableMask const&   GetExclusiveTableMask(Filter);
 Entity                      AllocateEntity(World*);
 /// deallocate an entity id. Make sure to deallocate the entity db entry first.
 void                        DeallocateEntity(World*, Entity);
-/// allocate an instance in the table and associate it with the entity
+/// allocate an instance in the table and map it to the entity
 MemDb::Row                  AllocateInstance(World*, Entity, MemDb::TableId);
-/// allocate an instance from a blueprint in the table and associate it with the entity
+/// allocate an instance from a blueprint in the table and map it to the entity
 MemDb::Row                  AllocateInstance(World*, Entity, BlueprintId);
-/// allocate an instance from a template in the table and associate it with the entity
+/// allocate an instance from a template in the table and map it to the entity
 MemDb::Row                  AllocateInstance(World*, Entity, TemplateId);
 /// deallocate an entitys entry from the worlds database
 void                        DeallocateInstance(World*, Entity);

@@ -41,7 +41,7 @@ public:
 
     /// ptr points to the location where the value should be stored. Make sure you have room for it!
     static void Deserialize(Ptr<IO::JsonReader> const& reader, PropertyId pid, void* ptr);
-    /// ptr points to the value that should be stored. Make sure you have room for it!
+    /// ptr points to the value that should be stored
     static void Serialize(Ptr<IO::JsonWriter> const& writer, PropertyId pid, void* ptr);
 
 private:

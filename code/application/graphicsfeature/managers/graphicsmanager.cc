@@ -71,7 +71,7 @@ void GraphicsManager::InitCreateModelProcessor()
     processorInfo.async = false;
     processorInfo.filter = filter;
     processorInfo.name = "GraphicsManager.CreateModels"_atm;
-    processorInfo.OnBeginFrame = [](Game::World* world, Game::Dataset data)
+    processorInfo.OnEndFrame = [](Game::World* world, Game::Dataset data)
     {
         Game::OpBuffer opBuffer = Game::CreateOpBuffer(world);
 
