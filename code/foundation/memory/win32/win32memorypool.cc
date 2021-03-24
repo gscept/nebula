@@ -20,12 +20,12 @@ Win32MemoryPool::Win32MemoryPool() :
     alignedBlockSize(0),
     poolSize(0),
     numBlocks(0),
-    #if NEBULA_MEMORY_STATS
-    allocCount(0),
-    #endif
     poolStart(0),
     poolEnd(0)
 {
+    #if NEBULA_MEMORY_STATS
+    this->allocCount = 0;
+    #endif
     Memory::Clear(&this->listHead, sizeof(this->listHead));
 }
 

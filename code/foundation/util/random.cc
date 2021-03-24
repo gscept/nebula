@@ -8,6 +8,12 @@
 namespace Util
 {
 
+union RandomUnion
+{
+    unsigned int i;
+    float f;
+};
+
 //------------------------------------------------------------------------------
 /**
     XorShift128 implementation.
@@ -36,11 +42,7 @@ FastRandom()
 float
 RandomFloat()
 {
-    static union
-    {
-        unsigned int i;
-        float f;
-    } r;
+    static RandomUnion r;
     r.i = FastRandom() & 0x007fffff | 0x3f800000;
     return r.f - 1.0f;
 }
@@ -51,11 +53,7 @@ RandomFloat()
 float
 RandomFloatNTP()
 {
-    static union
-    {
-        unsigned int i;
-        float f;
-    } r;
+    static RandomUnion r;
     r.i = FastRandom() & 0x007fffff | 0x40000000;
     return r.f - 3.0f;
 }

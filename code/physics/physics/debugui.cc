@@ -196,19 +196,17 @@ void RenderUI(Graphics::GraphicsEntityId camera)
 void RenderMaterialsUI()
 {
     ImGui::Begin("Physics Materials");
-    struct getname
-    {
-        static bool getter(void* data, int n, const char** ret)
-        {
-            *ret = GetMaterial(n).name.Value();
-            return true;
-        }
-    }; 
     static bool hasSelection = false;
     static int selected = 0;
     static MaterialDefinitionT original;
     static MaterialDefinitionT current;
-    if (!hasSelection || ImGui::Combo("Selected", &selected, &getname::getter, nullptr, GetNrMaterials()))
+    if (!hasSelection || ImGui::Combo("Selected", &selected,
+        [](void* data, int n, const char** ret)
+        {
+            *ret = GetMaterial(n).name.Value();
+            return true;
+        },
+        nullptr, GetNrMaterials()))
     {
         hasSelection = true;
         const Material& mat = GetMaterial(selected);
