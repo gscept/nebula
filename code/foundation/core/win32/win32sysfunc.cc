@@ -120,12 +120,6 @@ SysFunc::Exit(int exitCode)
     // shutdown global factory object
     Core::Factory::Destroy();
 
-    // delete the memory pools
-    #if NEBULA_OBJECTS_USE_MEMORYPOOL        
-    n_delete(Memory::ObjectPoolAllocator);
-    Memory::ObjectPoolAllocator = 0;
-    #endif
-
     // report mem leaks
     #if NEBULA_MEMORY_ADVANCED_DEBUGGING
     Memory::DumpMemoryLeaks();

@@ -75,11 +75,7 @@ inline
 void*
 PosixGuid::operator new(size_t size)
 {
-    #if NEBULA_OBJECTS_USE_MEMORYPOOL
-        return Memory::ObjectPoolAllocator->Alloc(size);
-    #else
-        return Memory::Alloc(Memory::ObjectHeap, size);
-    #endif
+    return Memory::Alloc(Memory::ObjectHeap, size);
 }
 
 //------------------------------------------------------------------------------
@@ -89,11 +85,7 @@ inline
 void
 PosixGuid::operator delete(void* p)
 {
-    #if NEBULA_OBJECTS_USE_MEMORYPOOL
-        return Memory::ObjectPoolAllocator->Free(p, sizeof(Win32Guid));
-    #else
-        return Memory::Free(Memory::ObjectHeap, p);
-    #endif
+    return Memory::Free(Memory::ObjectHeap, p);
 }
 
 //------------------------------------------------------------------------------

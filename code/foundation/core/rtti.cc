@@ -188,11 +188,7 @@ Rtti::IsDerivedFrom(const Util::FourCC& otherClassFourCC) const
 void*
 Rtti::AllocInstanceMemory()
 {
- #if NEBULA_OBJECTS_USE_MEMORYPOOL    
-    void* ptr = Memory::ObjectPoolAllocator->Alloc(this->instanceSize);
- #else
     void* ptr = Memory::Alloc(Memory::ObjectHeap, this->instanceSize);
- #endif
     return ptr;
 }
 
@@ -202,11 +198,7 @@ Rtti::AllocInstanceMemory()
 void*
 Rtti::AllocInstanceMemoryArray(size_t num)
 {
-#if NEBULA_OBJECTS_USE_MEMORYPOOL    
-    void* ptr = Memory::ObjectPoolAllocator->Alloc(this->instanceSize * num);
-#else
     void* ptr = Memory::Alloc(Memory::ObjectHeap, this->instanceSize * (num / this->instanceSize));
-#endif
     return ptr;
 }
 
@@ -216,11 +208,7 @@ Rtti::AllocInstanceMemoryArray(size_t num)
 void
 Rtti::FreeInstanceMemory(void* ptr)
 {
-    #if NEBULA_OBJECTS_USE_MEMORYPOOL
-    Memory::ObjectPoolAllocator->Free(ptr, this->instanceSize);
-    #else
     Memory::Free(Memory::ObjectHeap, ptr);
-    #endif
 }
 
 } // namespace Core

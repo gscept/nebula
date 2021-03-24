@@ -78,12 +78,7 @@ Win32Guid::operator new(size_t size)
     #if NEBULA_DEBUG
     n_assert(size == sizeof(Win32Guid));
     #endif
-
-    #if NEBULA_OBJECTS_USE_MEMORYPOOL
-        return Memory::ObjectPoolAllocator->Alloc(size);
-    #else
-        return Memory::Alloc(Memory::ObjectHeap, size);
-    #endif
+    return Memory::Alloc(Memory::ObjectHeap, size);
 }
 
 //------------------------------------------------------------------------------
@@ -92,11 +87,7 @@ Win32Guid::operator new(size_t size)
 __forceinline void
 Win32Guid::operator delete(void* ptr)
 {
-    #if NEBULA_OBJECTS_USE_MEMORYPOOL
-        return Memory::ObjectPoolAllocator->Free(ptr, sizeof(Win32Guid));
-    #else
-        return Memory::Free(Memory::ObjectHeap, ptr);
-    #endif
+    return Memory::Free(Memory::ObjectHeap, ptr);
 }
 
 //------------------------------------------------------------------------------

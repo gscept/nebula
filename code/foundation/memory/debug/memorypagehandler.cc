@@ -166,56 +166,6 @@ MemoryPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
             }
         htmlWriter->End(HtmlElement::Table);
 
-        // dump RefCounted pool allocator stats
-        #if NEBULA_OBJECTS_USE_MEMORYPOOL
-        
-        htmlWriter->Element(HtmlElement::Heading3, "Object PoolArrayAllocator Stats");
-        htmlWriter->AddAttr("border", "1");
-        htmlWriter->AddAttr("rules", "cols");
-        htmlWriter->Begin(HtmlElement::Table);
-            htmlWriter->AddAttr("bgcolor", "lightsteelblue");
-            htmlWriter->Begin(HtmlElement::TableRow);
-                htmlWriter->Element(HtmlElement::TableHeader, " Block Size ");
-                htmlWriter->Element(HtmlElement::TableHeader, " Max Blocks ");
-                htmlWriter->Element(HtmlElement::TableHeader, " Num Blocks ");
-                htmlWriter->Element(HtmlElement::TableHeader, " Percent Full ");
-            htmlWriter->End(HtmlElement::TableRow);
-
-            for (i = 0; i < PoolArrayAllocator::NumPools; i++)
-            {
-                const MemoryPool& pool = ObjectPoolAllocator->GetMemoryPool(i);
-                long blockSize = pool.GetBlockSize();
-                long numBlocks = pool.GetNumBlocks();
-                long allocCount = pool.GetAllocCount();
-                uint percent = (allocCount * 100) / numBlocks;
-                if (percent < 50)
-                {
-                    // orange if too few allocations
-                    htmlWriter->AddAttr("bgcolor", "orange");
-                }
-                else if (percent < 75)
-                {
-                    // green if just right
-                    htmlWriter->AddAttr("bgcolor", "green");
-                }
-                else
-                {
-                    // red if almost full
-                    htmlWriter->AddAttr("bgcolor", "red");
-                }
-                htmlWriter->Begin(HtmlElement::TableRow);
-                    htmlWriter->Element(HtmlElement::TableData, String::FromInt(blockSize));
-                    htmlWriter->Element(HtmlElement::TableData, String::FromInt(numBlocks));
-                    htmlWriter->Element(HtmlElement::TableData, String::FromLong(allocCount));
-                    String percentStr;
-                    percentStr.Format("%d %%", percent);
-                    htmlWriter->Element(HtmlElement::TableData, String::FromInt(percent));
-                htmlWriter->End(HtmlElement::TableRow);
-            }
-        htmlWriter->End(HtmlElement::Table);
-
-
-        #endif // NEBULA_OBJECTS_USE_MEMORYPOOL
         #endif // NEBULA_MEMORY_STATS
         htmlWriter->Close();
         request->SetStatus(HttpStatus::OK);

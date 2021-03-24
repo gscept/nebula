@@ -60,14 +60,6 @@ static const int JobMaxSliceSize = 0xFFFF;
 #define NEBULA_MEMORY_ADVANCED_DEBUGGING (0)
 #endif
 
-// enable/disable memory pool allocation for refcounted object
-// FIXME -> memory pool is disabled for all platforms, cause it causes crashes
-#if (__MAYA__ || __WIN32__ )
-#define NEBULA_OBJECTS_USE_MEMORYPOOL (0)
-#else
-#define NEBULA_OBJECTS_USE_MEMORYPOOL (0)
-#endif
-
 // enable/disable thread-local StringAtom tables
 #if (__LINUX__)
 #define NEBULA_ENABLE_THREADLOCAL_STRINGATOM_TABLES (0)

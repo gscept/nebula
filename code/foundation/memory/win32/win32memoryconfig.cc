@@ -7,17 +7,9 @@
 #include "memory/win32/win32memoryconfig.h"
 #include "core/sysfunc.h"
 
-#if NEBULA_OBJECTS_USE_MEMORYPOOL
-#include "memory/poolarrayallocator.h"
-#endif
-
 namespace Memory
 {
 HANDLE volatile Heaps[NumHeapTypes] = { NULL };
-
-#if NEBULA_OBJECTS_USE_MEMORYPOOL
-PoolArrayAllocator* ObjectPoolAllocator = 0;
-#endif
 
 //------------------------------------------------------------------------------
 /**
@@ -88,36 +80,6 @@ SetupHeaps()
             Heaps[i] = 0;
         }
     }
-
-    #if NEBULA_OBJECTS_USE_MEMORYPOOL        
-    // setup the RefCounted pool allocator
-    // HMM THESE NUMBERS ARE SO HIGH BECAUSE OF GODSEND...
-    #if NEBULA_DEBUG
-    uint objectPoolSizes[PoolArrayAllocator::NumPools] = {
-        128 * kiloByte,     // 28 byte blocks
-        4196 * kiloByte,    // 60 byte blocks
-        512 * kiloByte,     // 92 byte blocks
-        1024 * kiloByte,    // 124 byte blocks
-        128 * kiloByte,     // 156 byte blocks
-        128 * kiloByte,     // 188 byte blocks
-        128 * kiloByte,     // 220 byte blocks
-        2048 * kiloByte     // 252 byte blocks
-    };
-    #else
-    uint objectPoolSizes[PoolArrayAllocator::NumPools] = {
-        2048 * kiloByte,    // 28 byte blocks
-        2048 * kiloByte,    // 60 byte blocks
-        1024 * kiloByte,    // 92 byte blocks
-        1024 * kiloByte,    // 124 byte blocks
-        128 * kiloByte,     // 156 byte blocks
-        128 * kiloByte,     // 188 byte blocks
-        2048 * kiloByte,    // 220 byte blocks
-        2048 * kiloByte     // 252 byte blocks
-    };
-    #endif   
-    ObjectPoolAllocator = n_new(PoolArrayAllocator);
-    ObjectPoolAllocator->Setup("ObjectPoolAllocator", ObjectHeap, objectPoolSizes);
-    #endif
 }
 
 //------------------------------------------------------------------------------
