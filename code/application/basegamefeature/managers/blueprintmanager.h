@@ -17,11 +17,8 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "core/singleton.h"
-#include "game/entity.h"
 #include "game/manager.h"
 #include "util/stringatom.h"
-#include "memdb/table.h"
-#include "game/category.h"
 #include "game/api.h"
 
 namespace Game

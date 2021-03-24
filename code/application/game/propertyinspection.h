@@ -13,6 +13,7 @@
 //------------------------------------------------------------------------------
 #include "util/delegate.h"
 #include "category.h"
+#include "util/stringatom.h"
 
 namespace Game
 {

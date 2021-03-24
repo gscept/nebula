@@ -9,15 +9,10 @@
 //------------------------------------------------------------------------------
 #include "pybind11/cast.h"
 #include "util/variant.h"
-#include "math/quat.h"
-#include "math/transform44.h"
 #include "pybind11/embed.h"
 #include "pybind11/detail/class.h"
 #include "pybind11/stl.h"
 #include "pybind11/numpy.h"
-#include "math/mat4.h"
-#include "math/vector.h"
-#include "math/point.h"
 
 #pragma warning(push)
 #pragma warning(disable: 4267)

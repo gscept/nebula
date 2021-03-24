@@ -13,7 +13,6 @@
     @copyright
     (C) 2020 Individual contributors, see AUTHORS file
 */
-#include "core/refcounted.h"
 #include "ids/id.h"
 
 //------------------------------------------------------------------------------

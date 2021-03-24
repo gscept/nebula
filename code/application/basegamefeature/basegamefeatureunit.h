@@ -12,7 +12,6 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "game/featureunit.h"
-#include "math/bbox.h"
 #include "core/cvar.h"
 
 //------------------------------------------------------------------------------

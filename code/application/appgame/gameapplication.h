@@ -14,8 +14,6 @@
 #include "app/application.h"
 #include "game/gameserver.h"
 #include "core/singleton.h"
-#include "util/dictionary.h"
-#include "util/stringatom.h"
 #include "core/coreserver.h"
 #include "debug/debuginterface.h"
 #include "io/ioserver.h"

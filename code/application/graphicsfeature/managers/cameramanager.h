@@ -12,8 +12,9 @@
 #include "core/refcounted.h"
 #include "core/singleton.h"
 #include "game/manager.h"
-#include "graphicsfeature/properties/graphics.h"
 #include "ids/idgenerationpool.h"
+#include "graphics/graphicsentity.h"
+#include "graphicsfeature/properties/graphics.h"
 
 namespace Graphics
 {

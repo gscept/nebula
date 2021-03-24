@@ -11,7 +11,6 @@
 
     @todo   Add quaternions and additional types that are missing
 */
-#include "core/types.h"
 #include "util/variant.h"
 
 //------------------------------------------------------------------------------

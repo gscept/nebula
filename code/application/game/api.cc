@@ -242,6 +242,16 @@ Execute(World* world, Op::RegisterProperty const& op)
 /**
     @bug   If you deregister a managed property, the property will just disappear
            without letting the manager clean up any resources, leading to memleaks.
+
+            Possible fix: We can change the "decay system" to have a decay buffer
+            for each property that is managed. That way, when an entity is deleted,
+            or a property is deregistered, we copy the managed properties into their
+            respective decay buffer. We can create a separate frame event for decay
+            handling as well. This means each table won't have their own decay tables,
+            but each property will have a decay buffer instead that is not a fully fledged
+            table. The buffers won't care about which entities owned the instances.
+            The decay buffers should be cleaned at the specific decay cleaup event each
+            frame.
 */
 void
 Execute(World* world, Op::DeregisterProperty const& op)

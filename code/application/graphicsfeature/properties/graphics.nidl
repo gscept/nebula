@@ -1,7 +1,6 @@
 {
     "namespace": "GraphicsFeature",
     "includes": [
-        "graphics/graphicsentity.h",
         "math/mat4.h"
     ],
     "enums": {

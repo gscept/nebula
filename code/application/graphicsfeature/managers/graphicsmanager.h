@@ -13,8 +13,8 @@
 #include "core/refcounted.h"
 #include "core/singleton.h"
 #include "game/manager.h"
-#include "graphicsfeature/properties/graphics.h"
 #include "game/category.h"
+#include "graphics/graphicsentity.h"
 
 namespace GraphicsFeature
 {

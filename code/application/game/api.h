@@ -9,8 +9,17 @@
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
+#include "core/ptr.h"
 #include "category.h"
+#include "entity.h"
+#include "memdb/table.h"
 #include "memdb/tablesignature.h"
+#include "memdb/typeregistry.h"
+
+namespace MemDb
+{
+class Database;
+}
 
 namespace Game
 {

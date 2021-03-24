@@ -7,11 +7,9 @@
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "entity.h"
-#include "core/refcounted.h"
 #include "memdb/propertyid.h"
-#include "memdb/table.h"
-#include "memdb/database.h"
+#include "util/string.h"
+#include "util/fixedarray.h"
 
 namespace Game
 {
