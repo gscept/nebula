@@ -11,6 +11,12 @@
     Always handle as a opaque object. Pass the CVar* to the various functions to
     perform operations on the variable.
 
+    Prefix should reflect which subsystem it affects. Ex.
+        `r_`  - Render subsystem
+        `ui_` - UI specific
+        `cl_` - General client/application
+        `sv_` - Server only (networking)
+    
     @copyright
     (C) 2021 Individual contributors, see AUTHORS file
 */
