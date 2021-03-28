@@ -45,8 +45,8 @@ private:
     ~GraphicsManager();
 
     void InitCreateModelProcessor();
-    void InitDestroyModelProcessor();
     void InitUpdateModelTransformProcessor();
+    static void OnDecay();
 
     static void OnCleanup(Game::World* world);
 };

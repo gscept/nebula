@@ -278,8 +278,8 @@ GameServer::OnEndFrame()
     _start_timer(GameServerOnEndFrame);
 
     IndexT i;
-    SizeT num = this->gameFeatures.Size();
-    for (i = 0; i < num; i++)
+    SizeT numFeatureUnits = this->gameFeatures.Size();
+    for (i = 0; i < numFeatureUnits; i++)
     {
         this->gameFeatures[i]->OnEndFrame();
     }
@@ -288,7 +288,7 @@ GameServer::OnEndFrame()
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
-            num = this->state.worlds[worldIndex]->onEndFrameCallbacks.Size();
+            SizeT num = this->state.worlds[worldIndex]->onEndFrameCallbacks.Size();
             for (i = 0; i < num; i++)
             {
                 World* w = this->state.worlds[worldIndex];
@@ -310,13 +310,6 @@ GameServer::OnEndFrame()
         {
             World* world = this->state.worlds[worldIndex];
             // NOTE: The order of the following loops are important!
-
-            // Clean up any managed property instances.
-            for (auto c = world->categoryDecayMap.Begin(); c != world->categoryDecayMap.End(); c++)
-            {
-                MemDb::TableId tid = *c.val;
-                world->db->Clean(tid);
-            }
 
             // Clean up entities
             while (!world->deallocQueue.IsEmpty())
@@ -364,6 +357,13 @@ GameServer::OnEndFrame()
     _stop_timer(GameServerManageEntities);
 
     Game::ReleaseAllOps();
+
+    for (i = 0; i < numFeatureUnits; i++)
+    {
+        this->gameFeatures[i]->OnDecay();
+    }
+
+    Game::ClearDecayBuffers();
 
     _stop_timer(GameServerOnEndFrame);
 }
@@ -580,7 +580,7 @@ World*
 GameServer::CreateWorld(WorldCreateInfo const& info)
 {
     this->state.worldTable.Add(info.hash, this->state.numWorlds);
-    n_assert(this->state.numWorlds + 1 < 32);
+    n_assert(this->state.numWorlds < 32);
     World*& world = this->state.worlds[this->state.numWorlds++];
     world = n_new(World);
     world->hash = info.hash;

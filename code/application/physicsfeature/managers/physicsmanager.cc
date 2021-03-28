@@ -101,38 +101,15 @@ void PhysicsManager::InitCreateActorProcessor()
 //------------------------------------------------------------------------------
 /**
 */
-void PhysicsManager::InitDestroyActorProcessor()
+void
+PhysicsManager::OnDecay()
 {
-    Game::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = this->pids.physicsActor;
-    filterInfo.access[0] = Game::AccessMode::WRITE;
-    filterInfo.numInclusive = 1;
-
-    filterInfo.exclusive[0] = Game::GetPropertyId("PhysicsResource");
-    filterInfo.numExclusive = 1;
-
-    Game::Filter filter = Game::CreateFilter(filterInfo);
-
-    Game::ProcessorCreateInfo processorInfo;
-    processorInfo.async = false;
-    processorInfo.filter = filter;
-    processorInfo.name = "PhysicsManager.DestroyActors"_atm;
-    processorInfo.OnBeginFrame = [](Game::World* world, Game::Dataset data)
+    Game::PropertyDecayBuffer const decayBuffer = Game::GetDecayBuffer(Singleton->pids.physicsActor);
+    Physics::ActorId* data = (Physics::ActorId*)decayBuffer.buffer;
+    for (int i = 0; i < decayBuffer.size; i++)
     {
-        for (int v = 0; v < data.numViews; v++)
-        {
-            Game::Dataset::CategoryTableView const& view = data.views[v];
-            Physics::ActorId* const actors = (Physics::ActorId*)view.buffers[0];
-
-            for (IndexT i = 0; i < view.numInstances; ++i)
-            {
-                Physics::ActorId const& actorid = actors[i];
-                Physics::DestroyActorInstance(actorid);
-            }
-        }
-    };
-
-    Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
+        Physics::DestroyActorInstance(data[i]);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -185,14 +162,21 @@ PhysicsManager::Create()
     n_assert(!PhysicsManager::HasInstance());
     PhysicsManager::Singleton = n_new(PhysicsManager);
     
-    Singleton->pids.physicsActor = MemDb::TypeRegistry::Register("PhysicsActorId"_atm, Physics::ActorId(), Game::PropertyFlags::PROPERTYFLAG_MANAGED);
+    Game::PropertyCreateInfo info;
+    info.name = "PhysicsActorId";
+    Physics::ActorId defaultValue;
+    info.defaultValue = &defaultValue;
+    info.flags = Game::PropertyFlags::PROPERTYFLAG_MANAGED;
+    info.byteSize = sizeof(Physics::ActorId);
+    Singleton->pids.physicsActor = Game::CreateProperty(info);
 
-    Singleton->InitDestroyActorProcessor();
+    Singleton->InitCreateActorProcessor();
     Singleton->InitPollTransformProcessor();
 
     Game::ManagerAPI api;
     api.OnCleanup    = &OnCleanup;
     api.OnDeactivate = &Destroy;
+    api.OnDecay      = &OnDecay;
     return api;
 }
 

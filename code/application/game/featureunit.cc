@@ -174,6 +174,21 @@ FeatureUnit::OnEndFrame()
 
 //------------------------------------------------------------------------------
 /**
+*/
+void
+FeatureUnit::OnDecay()
+{
+    IndexT i;
+    SizeT num = this->managers.Size();
+    for (i = 0; i < num; i++)
+    {
+        if (this->managers.Get<1>(i).OnDecay != nullptr)
+            this->managers.Get<1>(i).OnDecay();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
     This method is called from Game::GameServer::OnRenderDebug() on all
     game features attached to an GameServer in the order of attachment. It's meant for debug
     issues. It will be called when debug mode is enabled.

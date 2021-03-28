@@ -41,6 +41,8 @@ struct ManagerAPI
     void(*OnFrame)() = nullptr;
     /// called after frame by the game server
     void(*OnEndFrame)() = nullptr;
+    /// called before cleaning up managed properties decay buffers
+    void(*OnDecay)() = nullptr;
     /// called after loading game state
     void(*OnLoad)(World*) = nullptr;
     /// called before saving game state

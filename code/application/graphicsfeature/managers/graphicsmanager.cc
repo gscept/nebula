@@ -52,7 +52,8 @@ RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceNam
 //------------------------------------------------------------------------------
 /**
 */
-void GraphicsManager::InitCreateModelProcessor()
+void
+GraphicsManager::InitCreateModelProcessor()
 {
     Game::FilterCreateInfo filterInfo;
     filterInfo.inclusive[0] = Game::GetPropertyId("Owner");
@@ -111,47 +112,24 @@ void GraphicsManager::InitCreateModelProcessor()
 //------------------------------------------------------------------------------
 /**
 */
-void GraphicsManager::InitDestroyModelProcessor()
+void
+GraphicsManager::OnDecay()
 {
-    Game::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = this->pids.modelEntityData;
-    filterInfo.access[0] = Game::AccessMode::WRITE;
-    filterInfo.numInclusive = 1;
-
-    filterInfo.exclusive[0] = Game::GetPropertyId("ModelResource");
-    filterInfo.numExclusive = 1;
-
-    Game::Filter filter = Game::CreateFilter(filterInfo);
-
-    Game::ProcessorCreateInfo processorInfo;
-    processorInfo.async = false;
-    processorInfo.filter = filter;
-    processorInfo.name = "GraphicsManager.DestroyModels"_atm;
-    processorInfo.OnBeginFrame = [](Game::World*, Game::Dataset data)
+    Game::PropertyDecayBuffer const decayBuffer = Game::GetDecayBuffer(Singleton->pids.modelEntityData);
+    ModelEntityData* data = (ModelEntityData*)decayBuffer.buffer;
+    for (int i = 0; i < decayBuffer.size; i++)
     {
-        for (int v = 0; v < data.numViews; v++)
-        {
-            Game::Dataset::CategoryTableView const& view = data.views[v];
-            ModelEntityData const* const modelEntityDatas = (ModelEntityData*)view.buffers[0];
-
-            for (IndexT i = 0; i < view.numInstances; ++i)
-            {
-                ModelEntityData const& modelEntityData = modelEntityDatas[i];
-
-                Visibility::ObservableContext::DeregisterEntity(modelEntityData.gid);
-                Models::ModelContext::DeregisterEntity(modelEntityData.gid);
-                Graphics::DestroyEntity(modelEntityData.gid);
-            }
-        }
-    };
-
-    Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
+        Visibility::ObservableContext::DeregisterEntity(data[i].gid);
+        Models::ModelContext::DeregisterEntity(data[i].gid);
+        Graphics::DestroyEntity(data[i].gid);
+    }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void GraphicsManager::InitUpdateModelTransformProcessor()
+void
+GraphicsManager::InitUpdateModelTransformProcessor()
 {
     Game::FilterCreateInfo filterInfo;
     filterInfo.inclusive[0] = this->pids.modelEntityData;
@@ -199,15 +177,21 @@ GraphicsManager::Create()
     n_assert(!GraphicsManager::HasInstance());
     GraphicsManager::Singleton = n_new(GraphicsManager);
     
-    Singleton->pids.modelEntityData = MemDb::TypeRegistry::Register("ModelEntityData"_atm, ModelEntityData(), Game::PropertyFlags::PROPERTYFLAG_MANAGED);
+    Game::PropertyCreateInfo info;
+    info.name = "ModelEntityData";
+    ModelEntityData defaultValue;
+    info.defaultValue = &defaultValue;
+    info.flags = Game::PropertyFlags::PROPERTYFLAG_MANAGED;
+    info.byteSize = sizeof(ModelEntityData);
+    Singleton->pids.modelEntityData = Game::CreateProperty(info);
 
     Singleton->InitCreateModelProcessor();
-    Singleton->InitDestroyModelProcessor();
     Singleton->InitUpdateModelTransformProcessor();
 
     Game::ManagerAPI api;
     api.OnCleanup    = &OnCleanup;
     api.OnDeactivate = &Destroy;
+    api.OnDecay = &OnDecay;
     return api;
 }
 

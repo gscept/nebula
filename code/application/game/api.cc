@@ -11,6 +11,7 @@
 #include "memory/arenaallocator.h"
 #include "basegamefeature/managers/blueprintmanager.h"
 #include "profiling/profiling.h"
+#include "util/fixedarray.h"
 
 namespace Game
 {
@@ -31,6 +32,10 @@ using DeregPidQueue = Util::Queue<Op::DeregisterProperty>;
 
 static Ids::IdAllocator<World*, RegPidQueue, DeregPidQueue> opBufferAllocator;
 static Memory::ArenaAllocator<1024> opAllocator;
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+Util::FixedArray<PropertyDecayBuffer> propertyDecayTable;
 //------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
@@ -487,7 +492,17 @@ GetEntityMapping(World* world, Game::Entity entity)
 PropertyId
 CreateProperty(PropertyCreateInfo const& info)
 {
-    return MemDb::TypeRegistry::Register(info.name, info.byteSize, info.defaultValue, info.flags);
+    PropertyId const pid = MemDb::TypeRegistry::Register(info.name, info.byteSize, info.defaultValue, info.flags);
+    if (info.flags & PropertyFlags::PROPERTYFLAG_MANAGED)
+    {
+        if (pid.id >= propertyDecayTable.Size())
+            propertyDecayTable.Resize(pid.id + 16); // increment with a couple of extra elements, instead of doubling size, just to avoid extreme overallocation
+        PropertyDecayBuffer& pdb = propertyDecayTable[pid.id];
+        pdb.size = 0;
+        pdb.capacity = 64;
+        pdb.buffer = Memory::Alloc(Memory::HeapType::AppHeap, pdb.capacity);
+    }
+    return pid;
 }
 
 //------------------------------------------------------------------------------
@@ -626,31 +641,6 @@ CreateEntityTable(World* world, CategoryCreateInfo const& info)
     // "Prefilter" the processors with the new table (insert the table in the cache that accepts it)
     world->CacheTable(categoryId, world->db->GetTableSignature(categoryId));
 
-    // Find all managed properties
-    int numManaged = 0;
-    for (int i = 0; i < info.properties.Size(); i++)
-    {
-        if ((MemDb::TypeRegistry::Flags(info.properties[i]) & PropertyFlags::PROPERTYFLAG_MANAGED) == PropertyFlags::PROPERTYFLAG_MANAGED)
-        {
-            properties[numManaged] = info.properties[i];
-            numManaged++;
-            n_assert(numManaged < NUM_PROPS);
-        }
-    }
-
-    // Managed properties table
-    if (numManaged > 0)
-    {
-        // Create a decay table
-        MemDb::TableCreateInfo managedTableInfo;
-        managedTableInfo.name = "<MNGD>:" + info.name;
-        managedTableInfo.properties = properties;
-        managedTableInfo.numProperties = numManaged;
-        MemDb::TableId decayId = world->db->CreateTable(managedTableInfo);
-        world->CacheTable(decayId, world->db->GetTableSignature(decayId));
-        world->categoryDecayMap.Add(categoryId, decayId);
-    }
-
     return categoryId;
 }
 
@@ -747,15 +737,33 @@ DeallocateInstance(World* world, Entity entity)
 
     n_assert(instance != MemDb::InvalidRow);
 
-    IndexT decayIndex = world->categoryDecayMap.FindIndex(category);
-    if (decayIndex == InvalidIndex)
-        world->db->DeallocateRow(category, instance);
-    else
+    // migrate managed properies to decay buffers so that we can allow the managers
+    // to clean up any externally allocated resources.
+    Util::Array<PropertyId> const& pids = world->db->GetTable(category).properties;
+    const uint32_t numColumns = pids.Size();
+    for (uint32_t column = 0; column < numColumns; column++)
     {
-        // migrate to managed property table so that we can allow the managers
-        // to clean up any externally allocated resources.
-        world->db->MigrateInstance(category, instance, world->categoryDecayMap.ValueAtIndex(category, decayIndex), false);
+        Game::PropertyId pid = pids[column];
+        if (MemDb::TypeRegistry::Flags(pid) & PropertyFlags::PROPERTYFLAG_MANAGED)
+        {
+            PropertyDecayBuffer& pdb = propertyDecayTable[pid.id];
+            SizeT const typeSize = MemDb::TypeRegistry::TypeSize(pid);
+
+            if (pdb.capacity == pdb.size)
+            {
+                void* oldBuffer = pdb.buffer;
+                pdb.capacity *= 2;
+                pdb.buffer = Memory::Alloc(Memory::HeapType::AppHeap, pdb.capacity);
+                Memory::Copy(oldBuffer, pdb.buffer, typeSize * pdb.size);
+            }
+
+            void* dst = ((byte*)pdb.buffer) + (typeSize * pdb.size);
+            pdb.size++;
+            Memory::Copy(world->db->GetValuePointer(category, column, instance), dst, typeSize);
+        }
     }
+
+    world->db->DeallocateRow(category, instance);
 
     category = MemDb::InvalidTableId;
     instance = MemDb::InvalidRow;
@@ -769,15 +777,35 @@ DeallocateInstance(World* world, MemDb::TableId category, MemDb::Row instance)
 {
     n_assert(instance != MemDb::InvalidRow);
 
-    IndexT decayIndex = world->categoryDecayMap.FindIndex(category);
-    if (decayIndex == InvalidIndex)
-        world->db->DeallocateRow(category, instance);
-    else
+    // migrate managed properies to decay buffers so that we can allow the managers
+    // to clean up any externally allocated resources.
+    Util::Array<PropertyId> const& pids = world->db->GetTable(category).properties;
+    const uint32_t numColumns = pids.Size();
+    for (uint32_t column = 0; column < numColumns; column++)
     {
-        // migrate to managed property table so that we can allow the managers
-        // to clean up any externally allocated resources.
-        world->db->MigrateInstance(category, instance, world->categoryDecayMap.ValueAtIndex(category, decayIndex), false);
+        Game::PropertyId pid = pids[column];
+        uint32_t const flags = MemDb::TypeRegistry::Flags(pid);
+        auto foo = MemDb::TypeRegistry::GetDescription(pid)->name;
+        if (flags & PropertyFlags::PROPERTYFLAG_MANAGED)
+        {
+            PropertyDecayBuffer& pdb = propertyDecayTable[pid.id];
+            SizeT const typeSize = MemDb::TypeRegistry::TypeSize(pid);
+
+            if (pdb.capacity == pdb.size)
+            {
+                void* oldBuffer = pdb.buffer;
+                pdb.capacity *= 2;
+                pdb.buffer = Memory::Alloc(Memory::HeapType::AppHeap, pdb.capacity);
+                Memory::Copy(oldBuffer, pdb.buffer, typeSize * pdb.size);
+            }
+
+            void* dst = ((byte*)pdb.buffer) + (typeSize * pdb.size);
+            pdb.size++;
+            Memory::Copy(world->db->GetValuePointer(category, column, instance), dst, typeSize);
+        }
     }
+
+    world->db->DeallocateRow(category, instance);
 }
 
 //------------------------------------------------------------------------------
@@ -965,6 +993,31 @@ SetProperty(World* world, Game::Entity entity, Game::PropertyId pid, void* value
     byte* const ptr = (byte*)GetInstanceBuffer(world, mapping.category, pid);
     byte* valuePtr = ptr + (mapping.instance * size);
     Memory::Copy(value, valuePtr, size);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+PropertyDecayBuffer const
+GetDecayBuffer(Game::PropertyId pid)
+{
+    if (pid < propertyDecayTable.Size())
+        return propertyDecayTable[pid.id];
+    else
+        return PropertyDecayBuffer();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ClearDecayBuffers()
+{
+    for (auto& pdb : propertyDecayTable)
+    {
+        // TODO: shrink buffers if they're unreasonably big.
+        pdb.size = 0;
+    }
 }
 
 } // namespace Game

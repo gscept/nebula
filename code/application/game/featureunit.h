@@ -66,6 +66,8 @@ public:
     virtual void OnFrame();
     /// called at the end of the feature trigger cycle
     virtual void OnEndFrame();
+    /// called after entities has been destroyed and before releasing their memory
+    virtual void OnDecay();
 
     /// called when game debug visualization is on
     virtual void OnRenderDebug();

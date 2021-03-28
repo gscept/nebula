@@ -68,8 +68,6 @@ public:
     Ptr<MemDb::Database> db;
     /// world hash
     uint32_t hash;
-    /// when an entity in a category within this table is destroyed, it is moved to the decay table.
-    Util::HashTable<MemDb::TableId, MemDb::TableId> categoryDecayMap;
     /// maps from blueprint to a category that has the same signature
     Util::HashTable<BlueprintId, MemDb::TableId> blueprintCatMap;
     ///

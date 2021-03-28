@@ -36,8 +36,9 @@ private:
     ~PhysicsManager();
 
     void InitCreateActorProcessor();
-    void InitDestroyActorProcessor();
     void InitPollTransformProcessor();
+
+    static void OnDecay();
 
     static void OnCleanup(Game::World* world);
 };

@@ -210,6 +210,16 @@ typedef MemDb::TableSignature InclusiveTableMask;
 typedef MemDb::TableSignature ExclusiveTableMask;
 
 //------------------------------------------------------------------------------
+/**
+*/
+struct PropertyDecayBuffer
+{
+    uint32_t size = 0;
+    uint32_t capacity = 0;
+    void* buffer = nullptr;
+};
+
+//------------------------------------------------------------------------------
 //      Entity Operations
 //------------------------------------------------------------------------------
 
@@ -340,6 +350,10 @@ void                        Defragment(World*, MemDb::TableId);
 MemDb::TableId              CreateEntityTable(World* world, CategoryCreateInfo const& info);
 /// set the value of an entity
 void                        SetProperty(World*, Game::Entity entity, Game::PropertyId pid, void* value, uint64_t size);
+/// get the decay buffer for a specific property
+PropertyDecayBuffer const   GetDecayBuffer(Game::PropertyId pid);
+/// clear the property decay buffers
+void                        ClearDecayBuffers();
 
 
 //------------------------------------------------------------------------------

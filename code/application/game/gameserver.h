@@ -134,7 +134,6 @@ protected:
     bool isStarted;
     Util::CommandLineArgs args;
     Util::Array<Ptr<FeatureUnit> > gameFeatures;
-    friend class World;
     
     Util::Array<ProcessorInfo> processors;
     Ids::IdGenerationPool processorHandlePool;
