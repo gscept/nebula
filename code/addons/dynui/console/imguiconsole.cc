@@ -345,7 +345,7 @@ ImguiConsole::RenderContent()
     ImGui::PopStyleVar();
     ImGui::Separator();
 
-    ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false, ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing() - 5), false, ImGuiWindowFlags_HorizontalScrollbar);
     if (ImGui::BeginPopupContextWindow())
     {
         if (ImGui::Selectable("Clear"))
@@ -406,8 +406,12 @@ ImguiConsole::RenderContent()
     }
     ImGui::PopTextWrapPos();
 
-    if (this->scrollToBottom)
+    static SizeT lastConsoleBufferSize = 0;
+    if (this->scrollToBottom && consoleBuffer.Size() != lastConsoleBufferSize)
+    {
         ImGui::SetScrollHereY();
+    }
+    lastConsoleBufferSize = consoleBuffer.Size();
 
     ImGui::PopStyleVar();
     ImGui::EndChild();
@@ -450,11 +454,9 @@ ImguiConsole::RenderContent()
 
     ImGui::SameLine();
     ImGui::PushItemWidth(-140);
-    if (ImGui::SmallButton("Auto Scroll"))
-        this->scrollToBottom = !this->scrollToBottom;
+    ImGui::Checkbox("Auto Scroll", &this->scrollToBottom);
 
     ImGui::PopItemWidth();
-    ImGui::Separator();
 
     if (completions.size() > 0 && completions.size() < 10)
     {
