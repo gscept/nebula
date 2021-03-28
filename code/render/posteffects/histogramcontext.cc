@@ -71,7 +71,7 @@ HistogramContext::Create()
     __bundle.OnUpdateViewResources = HistogramContext::UpdateViewResources;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-    histogramState.minLuminance = Core::CVarCreate(Core::CVar_Float, "minLuminance", "0.1");
+    histogramState.minLuminance = Core::CVarCreate(Core::CVar_Float, "r_min_luminance", "0.1", "Minimum luminance, used for auto exposure");
     
     histogramState.histogramShader = CoreGraphics::ShaderGet("shd:histogram_cs.fxb");
     histogramState.histogramCategorizeProgram = CoreGraphics::ShaderGetProgram(histogramState.histogramShader, CoreGraphics::ShaderFeatureFromString("HistogramCategorize"));

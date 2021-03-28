@@ -317,7 +317,7 @@ ImguiContext::~ImguiContext()
 void
 ImguiContext::Create()
 {
-    ui_opacity = Core::CVarCreate(Core::CVar_Float, "ui_opacity", "1.0");
+    ui_opacity = Core::CVarCreate(Core::CVar_Float, "ui_opacity", "1.0", "Global UI opacity (0..1)");
 
     __bundle.OnBegin = ImguiContext::OnBeforeFrame;
     __bundle.OnWorkFinished = ImguiContext::OnWorkFinished; // this is basically OnBeforeViews (plural)

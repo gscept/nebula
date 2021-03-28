@@ -60,8 +60,8 @@ GraphicsFeatureUnit::OnActivate()
 {
     FeatureUnit::OnActivate();
 
-    this->r_debug = Core::CVarCreate(Core::CVar_Int, "r_debug", "0");
-    this->r_show_frame_inspector = Core::CVarCreate(Core::CVar_Int, "r_show_frame_inspector", "0");
+    this->r_debug = Core::CVarCreate(Core::CVar_Int, "r_debug", "0", "Enable debugging rendering [0,2]");
+    this->r_show_frame_inspector = Core::CVarCreate(Core::CVar_Int, "r_show_frame_inspector", "0", "Show the frame script inspector [0,1]");
 
     this->gfxServer = Graphics::GraphicsServer::Create();
     this->inputServer = Input::InputServer::Create();

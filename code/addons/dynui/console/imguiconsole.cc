@@ -87,6 +87,7 @@ TextEditCVars(ImGuiInputTextCallbackData* data)
             break;
 
         Util::Array<Util::String> commands;
+        Util::Array<const char*> descriptions;
         
         for (Core::CVar* cVarIter = Core::CVarsBegin(); cVarIter != Core::CVarsEnd();)
         {
@@ -94,9 +95,9 @@ TextEditCVars(ImGuiInputTextCallbackData* data)
             if (name.FindStringIndex(command) == 0 && name != command)
             {
                 commands.Append(name);
+                descriptions.Append(Core::CVarGetDescription(cVarIter));
             }
             cVarIter = Core::CVarNext(cVarIter);
-
         }
         
         if (commands.Size() == 1)
@@ -130,7 +131,7 @@ TextEditCVars(ImGuiInputTextCallbackData* data)
             {
                 //n_printf("- %s\n", commands[i].AsCharPtr());
                 Util::String complete = commands[i].AsCharPtr() + command.Length();
-                Util::String doc; // FIXME
+                Util::String doc = descriptions[i] != nullptr ? descriptions[i] : "";
                 completions.Append({ commands[i], complete, doc });
             }
         }

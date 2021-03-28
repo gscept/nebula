@@ -23,6 +23,7 @@ struct CVarValue
 struct CVar
 {
     Util::String name;
+    Util::String description;
     CVarValue value;
     bool modified;
 };
@@ -49,6 +50,8 @@ CVarCreate(CVarCreateInfo const& info)
     ptr->name = info.name;
     ptr->value.type = info.type;
     ptr->modified = false;
+    if (info.description != nullptr)
+        ptr->description = info.description;
     CVarParseWrite(ptr, info.defaultValue);
     cVarTable.Add(info.name, varIndex);
     return ptr;
@@ -58,12 +61,13 @@ CVarCreate(CVarCreateInfo const& info)
 /**
 */
 CVar*
-CVarCreate(CVarType type, const char* name, const char* defaultValue)
+CVarCreate(CVarType type, const char* name, const char* defaultValue, const char* description)
 {
     CVarCreateInfo info;
     info.name = name;
     info.defaultValue = defaultValue;
     info.type = type;
+    info.description = description;
     return CVarCreate(info);
 }
 
@@ -238,6 +242,15 @@ const char*
 CVarGetName(CVar* cVar)
 {
     return cVar->name.AsCharPtr();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const char*
+CVarGetDescription(CVar* cVar)
+{
+    return cVar->description.AsCharPtr();
 }
 
 //------------------------------------------------------------------------------

@@ -35,12 +35,13 @@ struct CVarCreateInfo
     const char* name;
     const char* defaultValue;
     CVarType type;
+    const char* description;
 };
 
 /// Create or get a console variable
 CVar* CVarCreate(CVarCreateInfo const&);
 /// Create or get a console variable
-CVar* CVarCreate(CVarType type, const char* name, const char* defaultValue);
+CVar* CVarCreate(CVarType type, const char* name, const char* defaultValue, const char* description = nullptr);
 /// Get a console variable
 CVar* CVarGet(const char* name);
 /// Parse value from c string and assign to cvar
@@ -65,6 +66,8 @@ void CVarSetModified(CVar*, bool);
 CVarType CVarGetType(CVar*);
 /// Get the cvars name
 const char* CVarGetName(CVar*);
+/// Get the cvars description
+const char* CVarGetDescription(CVar*);
 /// Get the number of vars created
 int CVarNum();
 /// Get a pointer to the first cvar in the array
