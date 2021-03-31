@@ -231,7 +231,6 @@ EntitySystemTest::Run()
         Game::Execute(world, regOp);
 
         {
-            VERIFY(world->categoryDecayMap.Contains(Game::GetEntityMapping(world, enemies[0]).category));
             VERIFY(Game::GetWorldDatabase(world)->GetNumRows(Game::GetEntityMapping(world, enemies[0]).category) == 3);
         }
 
@@ -245,7 +244,6 @@ EntitySystemTest::Run()
         {
             
             MemDb::TableId cid = Game::GetEntityMapping(world, enemies[0]).category;
-            VERIFY(Game::GetWorldDatabase(world)->GetNumRows(world->categoryDecayMap[cid]) == 1);
             VERIFY(Game::GetWorldDatabase(world)->GetNumRows(cid) == 2);
         }
 
@@ -253,7 +251,6 @@ EntitySystemTest::Run()
 
         {
             MemDb::TableId cid = Game::GetEntityMapping(world, enemies[0]).category;
-            VERIFY(Game::GetWorldDatabase(world)->GetNumRows(world->categoryDecayMap[cid]) == 0);
             VERIFY(Game::GetWorldDatabase(world)->GetNumRows(cid) == 2);
         }
     }
