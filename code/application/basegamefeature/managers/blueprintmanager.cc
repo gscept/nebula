@@ -72,9 +72,25 @@ BlueprintManager::~BlueprintManager()
 void
 BlueprintManager::OnActivate()
 {
+    // first, setup an "empty" blueprint
+    Blueprint bluePrint;
+    bluePrint.name = "Empty";
+    BlueprintId const emptyId = Singleton->blueprints.Size();
+    Singleton->blueprints.Append(bluePrint);
+    
+    // Setup all blueprint tables
     Singleton->SetupBlueprints();
     
-    // parse all templates.
+    // Instantiate Empty/empty template
+    Ptr<MemDb::Database> templateDatabase = GameServer::Instance()->state.templateDatabase;
+    MemDb::TableId templateTid = Singleton->blueprints[emptyId.id].tableId;
+    IndexT instance = templateDatabase->AllocateRow(templateTid);
+    TemplateId templateId;
+    templateId.blueprintId = emptyId.id;
+    templateId.templateId = instance;
+    Singleton->templateMap.Add(Util::StringAtom("Empty/empty"), templateId);
+
+    // parse all templates from folders.
     if (IO::IoServer::Instance()->DirectoryExists(Singleton->templatesFolder))
     {
         Singleton->LoadTemplateFolder(Singleton->templatesFolder);
