@@ -120,6 +120,13 @@ BaseGameFeatureUnit::OnRenderDebug()
                             for (auto property : properties)
                             {
                                 SizeT const typeSize = MemDb::TypeRegistry::TypeSize(property);
+                                if (typeSize == 0)
+                                {
+                                    // Type is flag type, just print the name, and then continue
+                                    ImGui::Text("_flag_: %s", MemDb::TypeRegistry::GetDescription(property)->name.Value());
+                                    ImGui::Separator();
+                                    continue;
+                                }
                                 void* data = Game::GetInstanceBuffer(world, category, property);
                                 data = (byte*)data + (row * typeSize);
                                 bool commitChange = false;

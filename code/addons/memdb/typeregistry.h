@@ -33,6 +33,8 @@ public:
     static uint32_t Flags(PropertyId descriptor);
     /// get property default value pointer
     static void const* const DefaultValue(PropertyId descriptor);
+    /// get an array of all property descriptions
+    static Util::Array<PropertyDescription*> const& GetAllProperties();
 
 private:
     static TypeRegistry* Instance();
@@ -171,6 +173,16 @@ TypeRegistry::DefaultValue(PropertyId descriptor)
     auto* reg = Instance();
     n_assert(descriptor.id >= 0 && descriptor.id < reg->propertyDescriptions.Size());
     return reg->propertyDescriptions[descriptor.id]->defVal;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Util::Array<PropertyDescription*> const&
+TypeRegistry::GetAllProperties()
+{
+    auto* reg = Instance();
+    return reg->propertyDescriptions;
 }
 
 } // namespace MemDb
