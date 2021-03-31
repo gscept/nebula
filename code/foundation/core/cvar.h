@@ -38,10 +38,10 @@ enum CVarType
 /// Used to create a Core::CVar
 struct CVarCreateInfo
 {
-    const char* name;
-    const char* defaultValue;
-    CVarType type;
-    const char* description;
+    const char* name = nullptr;
+    const char* defaultValue = nullptr;
+    CVarType type = CVar_Int;
+    const char* description = nullptr;
 };
 
 /// Create or get a console variable
