@@ -17,7 +17,7 @@ namespace Game
 typedef MemDb::PropertyId PropertyId;
 
 ID_16_TYPE(BlueprintId);
-ID_16_16_NAMED_TYPE(TemplateId, blueprintId, templateId);
+ID_32_TYPE(TemplateId);
 
 struct CategoryCreateInfo
 {

@@ -89,9 +89,7 @@ static const uint32_t MAX_NUM_CATEGORIES = 512;
 */
 struct EntityCreateInfo
 {
-    /// blueprint to instantiate from
-    BlueprintId blueprint = BlueprintId::Invalid();
-    /// template to instantiate. If this is set, the blueprint does not have to be set.
+    /// template to instantiate.
     TemplateId templateId = TemplateId::Invalid();
     /// set if the entity should be instantiated immediately or deferred until end of frame.
     bool immediate = false;

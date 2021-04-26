@@ -75,19 +75,18 @@ CreateEntity(World* world, EntityCreateInfo const& info)
     n_assert(GameServer::HasInstance());
     GameServer::State* const state = &GameServer::Singleton->state;
 
-    Entity const entity = AllocateEntity(world);
-
     World::AllocateInstanceCommand cmd;
-    cmd.entity = entity;
     if (info.templateId != TemplateId::Invalid())
     {
         cmd.tid = info.templateId;
     }
     else
     {
-        cmd.tid.blueprintId = info.blueprint.id;
-        cmd.tid.templateId = Ids::InvalidId16;
+        n_warning("Trying to instantiate an invalid template!");
+        return Game::Entity::Invalid();
     }
+    Entity const entity = AllocateEntity(world);
+    cmd.entity = entity;
 
     if (!info.immediate)
     {
@@ -95,14 +94,7 @@ CreateEntity(World* world, EntityCreateInfo const& info)
     }
     else
     {
-        if (cmd.tid.templateId != Ids::InvalidId16)
-        {
-            AllocateInstance(world, cmd.entity, cmd.tid);
-        }
-        else
-        {
-            AllocateInstance(world, cmd.entity, (BlueprintId)cmd.tid.blueprintId);
-        }
+        AllocateInstance(world, cmd.entity, cmd.tid);
     }
 
     return entity;

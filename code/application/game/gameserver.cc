@@ -331,15 +331,7 @@ GameServer::OnEndFrame()
             {
                 auto const cmd = world->allocQueue.Dequeue();
                 n_assert(IsValid(world, cmd.entity));
-
-                if (cmd.tid.templateId != Ids::InvalidId16)
-                {
-                    AllocateInstance(world, cmd.entity, cmd.tid);
-                }
-                else
-                {
-                    AllocateInstance(world, cmd.entity, (BlueprintId)cmd.tid.blueprintId);
-                }
+                AllocateInstance(world, cmd.entity, cmd.tid);
             }
 
             // Delete all remaining invalid instances
@@ -535,7 +527,7 @@ GameServer::CreateProcessor(ProcessorCreateInfo const& info)
     ProcessorInfo processor = info;
     
     ProcessorHandle handle;
-    if (!this->processorHandlePool.Allocate(handle))
+    if (this->processorHandlePool.Allocate(handle))
         this->processors.Append(std::move(processor));
     else
         this->processors[Ids::Index(handle)] = std::move(processor);

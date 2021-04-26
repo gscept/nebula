@@ -81,15 +81,6 @@ BlueprintManager::OnActivate()
     // Setup all blueprint tables
     Singleton->SetupBlueprints();
     
-    // Instantiate Empty/empty template
-    Ptr<MemDb::Database> templateDatabase = GameServer::Instance()->state.templateDatabase;
-    MemDb::TableId templateTid = Singleton->blueprints[emptyId.id].tableId;
-    IndexT instance = templateDatabase->AllocateRow(templateTid);
-    TemplateId templateId;
-    templateId.blueprintId = emptyId.id;
-    templateId.templateId = instance;
-    Singleton->templateMap.Add(Util::StringAtom("Empty/empty"), templateId);
-
     // parse all templates from folders.
     if (IO::IoServer::Instance()->DirectoryExists(Singleton->templatesFolder))
     {
@@ -203,7 +194,6 @@ BlueprintManager::ParseTemplate(Util::String const& templatePath)
                 BlueprintId blueprint = this->blueprintMap[blueprintName];
                 MemDb::TableId templateTid = this->blueprints[blueprint.id].tableId;
                 IndexT instance = templateDatabase->AllocateRow(templateTid);
-
                 n_assert2(instance < 0xFFFF, "Maximum number of templates per blueprint reached! You win!");
 
                 // Create template name
@@ -213,12 +203,22 @@ BlueprintManager::ParseTemplate(Util::String const& templatePath)
                 templateName.Append(blueprintName.Value());
                 templateName += "/" + fileName;
 
-                TemplateId templateId;
-                templateId.blueprintId = blueprint.id;
-                templateId.templateId = instance;
+                Util::StringAtom const nameAtom = Util::StringAtom(templateName);
 
+                TemplateId templateId;
+                if (this->templateIdPool.Allocate(templateId.id))
+                {
+                    this->templates.Append({});
+                }
+
+                Template& tmpl = this->templates[Ids::Index(templateId.id)];
+                tmpl = Template();
+                tmpl.bid = blueprint;
+                tmpl.name = nameAtom;
+                tmpl.row = instance;
+                
                 // Add to map
-                this->templateMap.Add(Util::StringAtom(templateName), templateId);
+                this->templateMap.Add(nameAtom, templateId);
 
                 // Override properties if necessary
                 if (jsonReader->SetToFirstChild("properties"))
@@ -304,7 +304,6 @@ BlueprintManager::GetTemplateId(Util::StringAtom name)
     if (index != InvalidIndex)
     {
         TemplateId tid = Singleton->templateMap.ValueAtIndex(name, index);
-        n_assert(Singleton->blueprints.Size() > tid.blueprintId);
         return tid;
     }
     else
@@ -344,21 +343,23 @@ BlueprintManager::Instantiate(World* const world, BlueprintId blueprint)
 EntityMapping
 BlueprintManager::Instantiate(World* const world, TemplateId templateId)
 {
+    n_assert(Singleton->templateIdPool.IsValid(templateId.id));
     GameServer::State& gsState = GameServer::Instance()->state;
     Ptr<MemDb::Database> const& tdb = gsState.templateDatabase;
-    IndexT const categoryIndex = world->blueprintCatMap.FindIndex(templateId.blueprintId);
+    Template& tmpl = Singleton->templates[Ids::Index(templateId.id)];
+    IndexT const categoryIndex = world->blueprintCatMap.FindIndex(tmpl.bid);
     
     if (categoryIndex != InvalidIndex)
     {
-        MemDb::TableId const cid = world->blueprintCatMap.ValueAtIndex(templateId.blueprintId, categoryIndex);
-        MemDb::Row const instance = tdb->DuplicateInstance(Singleton->blueprints[templateId.blueprintId].tableId, templateId.templateId, world->db, cid);
+        MemDb::TableId const cid = world->blueprintCatMap.ValueAtIndex(tmpl.bid, categoryIndex);
+        MemDb::Row const instance = tdb->DuplicateInstance(Singleton->blueprints[tmpl.bid.id].tableId, tmpl.row, world->db, cid);
         return { cid, instance };
     }
     else
     {
         // Create the category, and then create the instance
-        MemDb::TableId const cid = this->CreateCategory(world, templateId.blueprintId);
-        MemDb::Row const instance = tdb->DuplicateInstance(Singleton->blueprints[templateId.blueprintId].tableId, templateId.templateId, world->db, cid);
+        MemDb::TableId const cid = this->CreateCategory(world, tmpl.bid);
+        MemDb::Row const instance = tdb->DuplicateInstance(Singleton->blueprints[tmpl.bid.id].tableId, tmpl.row, world->db, cid);
         return { cid, instance };
     }
 }
@@ -420,10 +421,23 @@ BlueprintManager::SetupBlueprints()
             tableInfo.name = "blueprint:" + info.name;
             tableInfo.numProperties = info.properties.Size();
             tableInfo.properties = info.properties.Begin();
-            MemDb::TableId tid = GameServer::Instance()->state.templateDatabase->CreateTable(tableInfo);
+            Ptr<MemDb::Database> templateDatabase = GameServer::Instance()->state.templateDatabase;
+            MemDb::TableId tid = templateDatabase->CreateTable(tableInfo);
 
             blueprint.tableId = tid;
             this->blueprintMap.Add(blueprint.name, idxBluePrint);
+
+            // Create a template for this blueprints default values
+            IndexT instance = templateDatabase->AllocateRow(tid);
+            TemplateId templateId;
+            if (this->templateIdPool.Allocate(templateId.id))
+                this->templates.Append({});
+            Template& tmpl = this->templates[Ids::Index(templateId.id)];
+            tmpl = Template();
+            tmpl.bid = idxBluePrint;
+            tmpl.name = blueprint.name;
+            tmpl.row = instance;
+            this->templateMap.Add(blueprint.name, templateId);
         }
     }
 
@@ -454,6 +468,24 @@ BlueprintManager::CreateCategory(World* const world, BlueprintId bid)
     return CreateEntityTable(world, info);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+Util::StringAtom const
+BlueprintManager::GetTemplateName(TemplateId const templateId)
+{
+    n_assert(Singleton->templateIdPool.IsValid(templateId.id));
+    return Singleton->templates[Ids::Index(templateId.id)].name;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Util::Array<BlueprintManager::Template> const&
+BlueprintManager::ListTemplates()
+{
+    return Singleton->templates;
+}
 
 } // namespace Game
 
