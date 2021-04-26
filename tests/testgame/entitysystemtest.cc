@@ -56,8 +56,8 @@ EntitySystemTest::Run()
     Ptr<FrameSync::FrameSyncTimer> t = FrameSync::FrameSyncTimer::Create();
     t->Setup();
 
-    BlueprintId const playerBlueprint = Game::GetBlueprintId("Player"_atm);
-    BlueprintId const enemyBlueprint = Game::GetBlueprintId("Enemy"_atm);
+    TemplateId const playerBlueprint = Game::GetTemplateId("Player"_atm);
+    TemplateId const enemyBlueprint = Game::GetTemplateId("Enemy"_atm);
 
     World* world = Game::GetWorld(WORLD_DEFAULT);
 
@@ -208,11 +208,11 @@ EntitySystemTest::Run()
         }
 
         Game::Entity enemies[] = {
-            Game::CreateEntity(world, { enemyBlueprint, TemplateId::Invalid(), true }),
-            Game::CreateEntity(world, { enemyBlueprint, TemplateId::Invalid(), true }),
-            Game::CreateEntity(world, { enemyBlueprint, TemplateId::Invalid(), true }),
-            Game::CreateEntity(world, { enemyBlueprint, TemplateId::Invalid(), true }),
-            Game::CreateEntity(world, { enemyBlueprint, TemplateId::Invalid(), true })
+            Game::CreateEntity(world, { enemyBlueprint, true }),
+            Game::CreateEntity(world, { enemyBlueprint, true }),
+            Game::CreateEntity(world, { enemyBlueprint, true }),
+            Game::CreateEntity(world, { enemyBlueprint, true }),
+            Game::CreateEntity(world, { enemyBlueprint, true })
         };
 
         {
