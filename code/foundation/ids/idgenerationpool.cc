@@ -36,14 +36,14 @@ IdGenerationPool::Allocate(Id32& id)
     {
         this->generations.Append(0);
         id = CreateId(this->generations.Size() - 1, 0);
-        return false;
+        return true;
     }
     else
     {
         this->freeIdsSize--;        
         id = this->freeIds.Dequeue();
         id = CreateId(id, this->generations[id]);
-        return true;
+        return false;
     }
 }
 

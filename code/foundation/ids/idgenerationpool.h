@@ -48,7 +48,7 @@ public:
     /// destructor
     ~IdGenerationPool();
 
-    /// allocate a new id, returns whether or not the id was reused or new
+    /// allocate a new id, returns true if a new id was created, and false if an id was reused but with new generation
     bool Allocate(Id32& id);
     /// remove an id
     void Deallocate(Id32 id);

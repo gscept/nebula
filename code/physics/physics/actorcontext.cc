@@ -34,9 +34,9 @@ ActorId
 ActorContext::AllocateActorId(PxRigidActor* pxActor, ActorResourceId res)
 {
     ActorId id;
-    bool reused = ActorContext::actorPool.Allocate(id.id);
+    bool const allocated = ActorContext::actorPool.Allocate(id.id);
     Ids::Id24 idx = Ids::Index(id.id);
-    if (!reused)
+    if (allocated)
     {
         ActorContext::actors.Append(Physics::Actor());
         n_assert(idx == ActorContext::actors.Size() - 1);
