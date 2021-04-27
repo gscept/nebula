@@ -260,7 +260,7 @@ bbox::transform(const mat4& m)
 inline void
 bbox::affine_transform(const mat4& m)
 {
-    n_assert2(m.r[0].w == 0 && m.r[1].w == 0 && m.r[2].w == 0 && m.r[3].w == 1, "Matrix is not affine");
+    n_warn2(m.r[0].w == 0 && m.r[1].w == 0 && m.r[2].w == 0 && m.r[3].w == 1, "Matrix is not affine");
 
     vec4 xa = m.x_axis * this->pmin.x;
     vec4 xb = m.x_axis * this->pmax.x;
