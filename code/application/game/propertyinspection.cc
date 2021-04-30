@@ -145,7 +145,17 @@ void
 PropertyDrawFuncT<Util::StringAtom>(PropertyId pid, void* data, bool* commit)
 {
     MemDb::PropertyDescription* desc = MemDb::TypeRegistry::GetDescription(pid);
-    ImGui::TextDisabled("%s: %s", desc->name.Value(), ((Util::StringAtom*)data)->Value());
+    ImGui::Text("%s: %s", desc->name.Value(), ((Util::StringAtom*)data)->Value());
+    if (ImGui::BeginDragDropTarget())
+    {
+        auto payload = ImGui::AcceptDragDropPayload("resource");
+        if (payload)
+        {
+            Util::String resourceName = (const char*)payload->Data;
+            *(Util::StringAtom*)data = resourceName;
+        }
+        ImGui::EndDragDropTarget();
+    }
 }
 
 //------------------------------------------------------------------------------
