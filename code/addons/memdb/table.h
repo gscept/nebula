@@ -17,6 +17,7 @@
 #include "util/hashtable.h"
 #include "propertyid.h"
 #include "tablesignature.h"
+#include "util/bitfield.h"
 
 namespace MemDb
 {
@@ -68,9 +69,20 @@ struct Table
     Util::Array<IndexT> freeIds;
     /// all properties that this table has
     Util::Array<PropertyId> properties;
-    /// holds all the column buffers. This excludes non-typed properties
-    Util::ArrayAllocator<PropertyId, ColumnBuffer> columns;
-    /// maps propertyid -> index in columns array
+	
+	// TODO:
+	//struct Partition
+	//{
+	//	static constexpr int	 capacity = 4096;  // total capacity (in elements) that the partition can contain
+	//	uint64_t				 version = 0;	   // bump the version if you change anything about the partition
+	//	void* buffer = nullptr;					   // contains the data
+	//	Util::BitField<capacity> modified;		   // check a bit if the value in the buffer has been modified, and you need to track it
+	//	uint32_t			     size = 0;		   // current number of elements in the buffer;
+	//};
+	
+	/// holds all the column buffers. This excludes non-typed properties
+	Util::ArrayAllocator<PropertyId, ColumnBuffer> columns;
+	/// maps propertyid -> index in columns array
     Util::HashTable<PropertyId, IndexT, 32, 1> columnRegistry;
     /// allocation heap used for the column buffers
     static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::DefaultHeap;
