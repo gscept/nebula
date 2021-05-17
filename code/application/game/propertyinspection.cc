@@ -153,6 +153,7 @@ PropertyDrawFuncT<Util::StringAtom>(PropertyId pid, void* data, bool* commit)
         {
             Util::String resourceName = (const char*)payload->Data;
             *(Util::StringAtom*)data = resourceName;
+			*commit = true;
         }
         ImGui::EndDragDropTarget();
     }
