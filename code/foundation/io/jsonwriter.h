@@ -11,6 +11,7 @@
 #include "io/streamwriter.h"
 #include "util/string.h"
 #include "util/stack.h"
+#include "util/bitfield.h"
 
 namespace pjson
 {
@@ -44,6 +45,8 @@ public:
     
     /// add a value to the current array node
     template <typename T> void Add(const T & value, const Util::String & name = "");
+	/// add bitfield of N size
+	template<unsigned int N> void Add(Util::BitField<N> const& value, const Util::String& name = "");
     /// special handling for const strings
     void Add(const char * value, const Util::String & name = "");
     /// add a value to current object node
@@ -93,6 +96,25 @@ private:
     Util::Stack<pjson::value_variant*> hierarchy;
     Util::Stack<Util::String> nameHierarchy;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<unsigned int N>
+inline void
+JsonWriter::Add(Util::BitField<N> const& value, const Util::String& name)
+{
+	Util::Array<int> tempArr;
+	for (uint i = 0; i < N; i++)
+	{
+		if (value.IsSet(i))
+		{
+			tempArr.Append(i);
+		}
+	}
+	this->Add(tempArr, name);
+}
+
 
 } // namespace IO
 //------------------------------------------------------------------------------

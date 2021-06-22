@@ -190,6 +190,23 @@ template<> void JsonWriter::Add(const Util::StringAtom& value, const Util::Strin
 //------------------------------------------------------------------------------
 /**
 */
+template<> void JsonWriter::Add(const Util::FourCC& value, const Util::String& name)
+{
+	auto& alloc = this->document->get_allocator();
+	pjson::value_variant val(value.AsString().AsCharPtr(), alloc);
+	if (name.IsEmpty())
+	{
+		this->hierarchy.Peek()->add_value(val, alloc);
+	}
+	else
+	{
+		this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
+	}
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<> void JsonWriter::Add(const bool & value, const Util::String & name)
 {
     auto & alloc = this->document->get_allocator();
@@ -508,4 +525,6 @@ template<> void JsonWriter::Add(const Util::Array<Util::String> & value, const U
         this->hierarchy.Peek()->add_key_value(name.AsCharPtr(), val, alloc);
     }
 }
+
+
 } // namespace IO
