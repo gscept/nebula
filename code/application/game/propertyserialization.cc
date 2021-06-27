@@ -6,7 +6,6 @@
 #include "propertyserialization.h"
 #include "memdb/typeregistry.h"
 #include "game/entity.h"
-#include "graphics/graphicsentity.h"
 #include "memdb/propertyid.h"
 
 namespace Game
@@ -116,20 +115,3 @@ IO::JsonWriter::Add<Game::Entity>(Game::Entity const& entity, Util::String const
     this->Add<uint>((uint)entity, key);
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-template<> void
-IO::JsonReader::Get<Graphics::GraphicsEntityId>(Graphics::GraphicsEntityId& entity, const char* key)
-{
-    this->Get(entity.id, key);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<> void
-IO::JsonWriter::Add<Graphics::GraphicsEntityId>(Graphics::GraphicsEntityId const& entity, Util::String const& key)
-{
-    this->Add(entity.id, key);
-}

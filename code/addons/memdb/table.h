@@ -70,10 +70,10 @@ struct Table
     /// all properties that this table has
     Util::Array<PropertyId> properties;
 	
-	// TODO:
+	// TODO: partition the tables into chunks
 	//struct Partition
 	//{
-	//	static constexpr int	 capacity = 4096;  // total capacity (in elements) that the partition can contain
+	//	static constexpr uint	 capacity = 4096;  // total capacity (in elements) that the partition can contain
 	//	uint64_t				 version = 0;	   // bump the version if you change anything about the partition
 	//	void* buffer = nullptr;					   // contains the data
 	//	Util::BitField<capacity> modified;		   // check a bit if the value in the buffer has been modified, and you need to track it

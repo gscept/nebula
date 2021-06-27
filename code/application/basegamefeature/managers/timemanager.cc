@@ -43,6 +43,8 @@ namespace TimeManager
         uint numTimeSources = 0;
 
         Util::HashTable<uint32_t, uint32_t, 32, 1> timeSourceTable;
+
+		Ptr<FrameSync::FrameSyncTimer> frameSyncTimer;
     };
 
     static State* state = nullptr;
@@ -128,6 +130,15 @@ TimeManager::Destroy()
 void
 TimeManager::OnActivate()
 {
+	if (!FrameSync::FrameSyncTimer::HasInstance())
+	{
+		state->frameSyncTimer = FrameSync::FrameSyncTimer::Create();
+	}
+	else
+	{
+		state->frameSyncTimer = FrameSync::FrameSyncTimer::Instance();
+	}
+
     //state->time = FrameSync::FrameSyncTimer::Instance()->GetTicks();
 
     // register default time sources

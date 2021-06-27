@@ -53,7 +53,7 @@ EntitySystemTest::Run()
     Profiling::ProfilingRegisterThread();
 #endif
 
-    Ptr<FrameSync::FrameSyncTimer> t = FrameSync::FrameSyncTimer::Create();
+    Ptr<FrameSync::FrameSyncTimer> t = FrameSync::FrameSyncTimer::HasInstance() ? FrameSync::FrameSyncTimer::Instance() : FrameSync::FrameSyncTimer::Create();
     t->Setup();
 
     TemplateId const playerBlueprint = Game::GetTemplateId("Player"_atm);

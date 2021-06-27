@@ -50,7 +50,7 @@ void
 GraphicsServer::Open()
 {
     n_assert(!this->isOpen);
-    this->timer = FrameSync::FrameSyncTimer::Create();
+    this->timer = FrameSync::FrameSyncTimer::HasInstance() ? FrameSync::FrameSyncTimer::Instance() : FrameSync::FrameSyncTimer::Create();
     this->isOpen = true;
 
     this->displayDevice = CoreGraphics::DisplayDevice::Create();

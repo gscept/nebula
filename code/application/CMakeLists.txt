@@ -5,7 +5,7 @@
 nebula_begin_module(application)
     add_nebula_blueprints()
     fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/audio)
-    fips_deps(foundation render audio resource physics scripting dynui memdb)
+    fips_deps(foundation audio resource scripting memdb imgui)
     fips_dir(.)
     if (FIPS_WINDOWS)
         fips_files(application.natvis)
@@ -56,36 +56,6 @@ nebula_begin_module(application)
             nebula_add_nidl(
                 owner.nidl
                 transform.nidl
-            )
-    fips_dir(graphicsfeature)
-        fips_files(
-            graphicsfeatureunit.h
-            graphicsfeatureunit.cc
-        )
-        fips_dir(graphicsfeature/managers)
-            fips_files(
-                graphicsmanager.h
-                graphicsmanager.cc
-                cameramanager.h
-                cameramanager.cc
-            )
-        fips_dir(graphicsfeature/properties)
-            nebula_add_nidl(
-                graphics.nidl
-            )
-    fips_dir(physicsfeature)
-        fips_files(
-            physicsfeatureunit.h
-            physicsfeatureunit.cc
-        )
-        fips_dir(physicsfeature/managers)
-            fips_files(
-                physicsmanager.h
-                physicsmanager.cc
-            )
-        fips_dir(physicsfeature/properties)
-            nebula_add_nidl(
-                physics.nidl
             )
     fips_dir(appgame)
         fips_files(

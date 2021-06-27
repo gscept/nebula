@@ -40,7 +40,7 @@ GraphicsManager::~GraphicsManager()
 void
 RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceName const res, Math::mat4 const& t)
 {
-    Models::ModelContext::RegisterEntity(gid);
+Models::ModelContext::RegisterEntity(gid);
     Visibility::ObservableContext::RegisterEntity(gid);
     Models::ModelContext::Setup(gid, res, "NONE", [gid, t]()
     {
@@ -174,8 +174,10 @@ GraphicsManager::InitUpdateModelTransformProcessor()
 Game::ManagerAPI
 GraphicsManager::Create()
 {
+	n_assert(GraphicsFeature::Details::graphics_registered);
     n_assert(!GraphicsManager::HasInstance());
     GraphicsManager::Singleton = n_new(GraphicsManager);
+
     
     Game::PropertyCreateInfo info;
     info.name = "ModelEntityData";
