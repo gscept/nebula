@@ -13,9 +13,6 @@
 #include "io/ioserver.h"
 #include "io/filestream.h"
 
-// "forward" all current specialization for the json reader, so that we don't get collisions
-#include "io/jsonreader.cc"
-
 #ifdef min
 #undef min
 #endif

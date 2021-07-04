@@ -18,7 +18,7 @@
 #include "util/array.h"
 #include "util/stringatom.h"
 #include "util/bitfield.h"
-
+#include "util/variant.h"
 
 namespace pjson
 {
@@ -121,7 +121,7 @@ public:
     template<typename T> bool GetOpt(T& target, const char* attr = 0);
     /// generic getter for optional items
     template<typename T> bool GetOpt(T& target, const char* attr, const T& _default);
-    
+
 private:  
     ///
     const pjson::value_variant* GetChild(const char * key = 0) const;
@@ -134,6 +134,44 @@ private:
     // 0 terminated buffer containing the raw json file
     char * buffer = nullptr;
 };
+
+template<> void JsonReader::Get<bool>(bool& ret, const char* attr);
+template<> void JsonReader::Get<Util::Array<uint32_t>>(Util::Array<uint32_t>& ret, const char* attr);
+template<> void JsonReader::Get<Util::Array<int>>(Util::Array<int>& ret, const char* attr);
+template<> void JsonReader::Get<int64_t>(int64_t& ret, const char* attr);
+template<> void JsonReader::Get<int32_t>(int32_t& ret, const char* attr);
+template<> void JsonReader::Get<int16_t>(int16_t& ret, const char* attr);
+template<> void JsonReader::Get<int8_t>(int8_t& ret, const char* attr);
+template<> void JsonReader::Get<char>(char& ret, const char* attr);
+template<> void JsonReader::Get<Math::mat4>(Math::mat4& ret, const char* attr);
+template<> void JsonReader::Get<Math::int2>(Math::int2& ret, const char* attr);
+template<> void JsonReader::Get<Math::vector>(Math::vector& ret, const char* attr);
+template<> void JsonReader::Get<Math::vec4>(Math::vec4& ret, const char* attr);
+template<> void JsonReader::Get<Math::vec3>(Math::vec3& ret, const char* attr);
+template<> void JsonReader::Get<Math::vec2>(Math::vec2& ret, const char* attr);
+template<> void JsonReader::Get<uint32_t>(uint32_t& ret, const char* attr);
+template<> void JsonReader::Get<uint16_t>(uint16_t& ret, const char* attr);
+template<> void JsonReader::Get<uint8_t>(uint8_t& ret, const char* attr);
+template<> void JsonReader::Get<float>(float& ret, const char* attr);
+template<> void JsonReader::Get<Util::Variant>(Util::Variant& ret, const char* attr);
+template<> void JsonReader::Get<Util::String>(Util::String& ret, const char* attr);
+template<> void JsonReader::Get<Util::FourCC>(Util::FourCC& ret, const char* attr);
+template<> void JsonReader::Get<Util::StringAtom>(Util::StringAtom& ret, const char* attr);
+template<> void JsonReader::Get<Util::Array<float>>(Util::Array<float>& ret, const char* attr);
+template<> void JsonReader::Get<Util::Array<Util::String>>(Util::Array<Util::String>& ret, const char* attr);
+template<> bool JsonReader::GetOpt<bool>(bool& ret, const char* attr);
+template<> bool JsonReader::GetOpt<int>(int& ret, const char* attr);
+template<> bool JsonReader::GetOpt<uint16_t>(uint16_t& ret, const char* attr);
+template<> bool JsonReader::GetOpt<uint32_t>(uint32_t& ret, const char* attr);
+template<> bool JsonReader::GetOpt<float>(float& ret, const char* attr);
+template<> bool JsonReader::GetOpt<Math::vec4>(Math::vec4& ret, const char* attr);
+template<> bool JsonReader::GetOpt<Math::quat>(Math::quat& ret, const char* attr);
+template<> bool JsonReader::GetOpt<Math::mat4>(Math::mat4& ret, const char* attr);
+template<> bool JsonReader::GetOpt<Util::String>(Util::String& ret, const char* attr);
+template<> bool JsonReader::GetOpt<Util::Array<int>>(Util::Array<int>& target, const char* attr);
+template<> bool JsonReader::GetOpt<Util::Array<uint32_t>>(Util::Array<uint32_t>& target, const char* attr);
+template<> bool JsonReader::GetOpt<Util::Array<float>>(Util::Array<float>& target, const char* attr);
+template<> bool JsonReader::GetOpt<Util::Array<Util::String>>(Util::Array<Util::String>& target, const char* attr);
 
 //------------------------------------------------------------------------------
 /**
@@ -182,6 +220,8 @@ JsonReader::Get(Util::BitField<N>& ret, const char* attr)
         ret.SetBit(arr[i]);
     }
 }
+
+
 
 } // namespace IO
 //------------------------------------------------------------------------------
