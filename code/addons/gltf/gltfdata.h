@@ -168,9 +168,9 @@ struct BufferView : GltfBase
     Util::String name;
 
     int32_t buffer{ -1 };
-    uint32_t byteOffset;
-    uint32_t byteLength;
-    uint32_t byteStride;
+	uint32_t byteOffset{ 0 };
+	uint32_t byteLength{ 0 };
+	uint32_t byteStride{ 0 };
 
     TargetType target{ TargetType::None };    
 };
