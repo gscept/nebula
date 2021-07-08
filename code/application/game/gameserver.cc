@@ -134,6 +134,15 @@ GameServer::Start()
     n_assert(this->isOpen);
     n_assert(!this->isStarted);
 
+	// prefilter all worlds
+	for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+	{
+		if (this->state.worlds[worldIndex] != nullptr)
+		{
+			Game::PrefilterProcessors(this->state.worlds[worldIndex]);
+		}
+	}
+
     // call the OnStart method on all gameFeatures
     int i;
     int num = this->gameFeatures.Size();
