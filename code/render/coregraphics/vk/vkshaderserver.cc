@@ -19,7 +19,7 @@ namespace Vulkan
 
 __ImplementClass(Vulkan::VkShaderServer, 'VKSS', Base::ShaderServerBase);
 __ImplementInterfaceSingleton(Vulkan::VkShaderServer);
-//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------ 
 /**
 */
 VkShaderServer::VkShaderServer()
@@ -53,25 +53,13 @@ VkShaderServer::Open()
 
     this->pendingViews.SetSignalOnEnqueueEnabled(false);
 
-    this->texture2DPool.SetSetupFunc(func);
-    this->texture2DPool.Resize(Shared::MAX_2D_TEXTURES);
-    this->texture2DMSPool.SetSetupFunc(func);
-    this->texture2DMSPool.Resize(Shared::MAX_2D_MS_TEXTURES);
-    this->texture3DPool.SetSetupFunc(func);
-    this->texture3DPool.Resize(Shared::MAX_3D_TEXTURES);
-    this->textureCubePool.SetSetupFunc(func);
-    this->textureCubePool.Resize(Shared::MAX_CUBE_TEXTURES);
-    this->texture2DArrayPool.SetSetupFunc(func);
-    this->texture2DArrayPool.Resize(Shared::MAX_2D_ARRAY_TEXTURES);
+    this->texturePool.SetSetupFunc(func);
+    this->texturePool.Resize(Shared::MAX_TEXTURES);
 
     // create shader state for textures, and fetch variables
     ShaderId shader = VkShaderServer::Instance()->GetShader("shd:shared.fxb"_atm);
 
-    this->texture2DTextureVar = ShaderGetResourceSlot(shader, "Textures2D");
-    this->texture2DMSTextureVar = ShaderGetResourceSlot(shader, "Textures2DMS");
-    this->texture2DArrayTextureVar = ShaderGetResourceSlot(shader, "Textures2DArray");
-    this->textureCubeTextureVar = ShaderGetResourceSlot(shader, "TexturesCube");
-    this->texture3DTextureVar = ShaderGetResourceSlot(shader, "Textures3D");
+    this->textureTextureVar = ShaderGetResourceSlot(shader, "Textures2D");
     this->tableLayout = ShaderGetResourcePipeline(shader);
 
     this->ticksCbo = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
@@ -83,27 +71,6 @@ VkShaderServer::Open()
     {
         this->resourceTables[i] = ShaderCreateResourceTable(shader, NEBULA_TICK_GROUP, this->resourceTables.Size());
         CoreGraphics::ObjectSetName(this->resourceTables[i], "Main Tick Group Descriptor");
-
-        /*
-        // fill up all slots with placeholders
-        IndexT j;
-        for (j = 0; j < Shared::MAX_2D_TEXTURES; j++)
-            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2D, this->texture2DTextureVar, j, CoreGraphics::InvalidSamplerId, false });
-
-        for (j = 0; j < Shared::MAX_2D_ARRAY_TEXTURES; j++)
-            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2DArray, this->texture2DArrayTextureVar, j, CoreGraphics::InvalidSamplerId, false });
-
-        for (j = 0; j < Shared::MAX_2D_MS_TEXTURES; j++)
-            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2D, this->texture2DMSTextureVar, j, CoreGraphics::InvalidSamplerId, false });
-
-        for (j = 0; j < Shared::MAX_3D_TEXTURES; j++)
-            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White3D, this->texture3DTextureVar, j, CoreGraphics::InvalidSamplerId, false });
-
-        for (j = 0; j < Shared::MAX_CUBE_TEXTURES; j++)
-            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::WhiteCube, this->textureCubeTextureVar, j, CoreGraphics::InvalidSamplerId, false });
-
-        ResourceTableCommitChanges(this->resourceTables[i]);
-        */
     }
 
     this->normalBufferTextureVar = ShaderGetConstantBinding(shader, "NormalBuffer");
@@ -139,35 +106,8 @@ VkShaderServer::Close()
 uint32_t
 VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, bool depth, bool stencil)
 {
-    uint32_t idx;
-    IndexT var;
-    switch (type)
-    {
-    case Texture2D:
-        n_assert(!this->texture2DPool.IsFull());
-        idx = this->texture2DPool.Alloc();
-        var = this->texture2DTextureVar;
-        break;
-    case Texture2DArray:
-        n_assert(!this->texture2DArrayPool.IsFull());
-        idx = this->texture2DArrayPool.Alloc();
-        var = this->texture2DArrayTextureVar;
-        break;
-    case Texture3D:
-        n_assert(!this->texture3DPool.IsFull());
-        idx = this->texture3DPool.Alloc();
-        var = this->texture3DTextureVar;
-        break;
-    case TextureCube:
-        n_assert(!this->textureCubePool.IsFull());
-        idx = this->textureCubePool.Alloc();
-        var = this->textureCubeTextureVar;
-        break;
-    default:
-        n_error("Should not happen");
-        idx = UINT_MAX;
-        var = InvalidIndex;
-    }
+    uint32_t idx = this->texturePool.Alloc();
+    IndexT var = this->textureTextureVar;
 
     ResourceTableTexture info;
     info.tex = tex;
@@ -175,7 +115,7 @@ VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics
     info.sampler = InvalidSamplerId;
     info.isDepth = depth;
     info.isStencil = stencil;
-    info.slot = var;
+    info.slot = this->textureTextureVar;
 
     // update textures for all tables
     this->bindResourceCriticalSection.Enter();
@@ -195,30 +135,13 @@ VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics
 void
 VkShaderServer::ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, uint32_t slot, bool depth, bool stencil)
 {
-    IndexT var;
-    switch (type)
-    {
-    case Texture2D:
-        var = this->texture2DTextureVar;
-        break;
-    case Texture2DArray:
-        var = this->texture2DArrayTextureVar;
-        break;
-    case Texture3D:
-        var = this->texture3DTextureVar;
-        break;
-    case TextureCube:
-        var = this->textureCubeTextureVar;
-        break;
-    }
-
     ResourceTableTexture info;
     info.tex = tex;
     info.index = slot;
     info.sampler = InvalidSamplerId;
     info.isDepth = depth;
     info.isStencil = stencil;
-    info.slot = var;
+    info.slot = this->textureTextureVar;
 
     // update textures for all tables
     this->bindResourceCriticalSection.Enter();
@@ -236,43 +159,7 @@ VkShaderServer::ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphi
 void
 VkShaderServer::UnregisterTexture(const uint32_t id, const CoreGraphics::TextureType type)
 {
-    switch (type)
-    {
-    case Texture2D:
-        this->texture2DPool.Free(id);
-        break;
-    case Texture2DArray:
-        this->texture2DArrayPool.Free(id);
-        break;
-    case Texture3D:
-        this->texture3DPool.Free(id);
-        break;
-    case TextureCube:
-        this->textureCubePool.Free(id);
-        break;
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-BindlessTexturesContext
-VkShaderServer::GetBindlessTextureContext()
-{
-    BindlessTexturesContext ret;
-    ret.resourceTables = this->resourceTables;
-    ret.numBoundTextures2D = this->texture2DPool.NumUsed();
-    ret.texture2DTextureVar = this->texture2DTextureVar;
-    ret.numBoundTextures2DArray = this->texture2DArrayPool.NumUsed();
-    ret.texture2DArrayTextureVar = this->texture2DArrayTextureVar;
-    ret.numBoundTextures2DMS = this->texture2DMSPool.NumUsed();
-    ret.texture2DMSTextureVar = this->texture2DMSTextureVar;
-    ret.numBoundTextures3D = this->texture3DPool.NumUsed();
-    ret.texture3DTextureVar = this->texture3DTextureVar;
-    ret.textureCubeTextureVar = this->textureCubeTextureVar;
-    ret.numBoundTexturesCube = this->textureCubePool.NumUsed();
-
-    return ret;
+    this->texturePool.Free(id);
 }
 
 //------------------------------------------------------------------------------
