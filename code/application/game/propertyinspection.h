@@ -14,6 +14,7 @@
 #include "util/delegate.h"
 #include "category.h"
 #include "util/stringatom.h"
+#include "game/entity.h"
 
 namespace Game
 {
@@ -49,6 +50,7 @@ PropertyDrawFuncT(PropertyId, void*, bool*)
     return;
 }
 
+template<> void PropertyDrawFuncT<Game::Entity>(PropertyId, void*, bool*);
 template<> void PropertyDrawFuncT<int>(PropertyId, void*, bool*);
 template<> void PropertyDrawFuncT<uint>(PropertyId, void*, bool*);
 template<> void PropertyDrawFuncT<float>(PropertyId, void*, bool*);

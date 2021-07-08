@@ -103,6 +103,22 @@ PropertyInspection::~PropertyInspection()
 */
 template<>
 void
+PropertyDrawFuncT<Game::Entity>(PropertyId pid, void* data, bool* commit)
+{
+	MemDb::PropertyDescription* desc = MemDb::TypeRegistry::GetDescription(pid);
+
+	Game::Entity* entity = (Game::Entity*)data;
+	Ids::Id32 id = (Ids::Id32)*entity;
+	ImGui::Text("%s: %u", desc->name.Value(), id);
+	ImGui::SameLine();
+	ImGui::TextDisabled("| gen: %i | index: %i", entity->generation, entity->index);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
 PropertyDrawFuncT<int>(PropertyId pid, void* data, bool* commit)
 {
     MemDb::PropertyDescription* desc = MemDb::TypeRegistry::GetDescription(pid);
