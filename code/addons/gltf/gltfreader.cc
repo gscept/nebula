@@ -666,6 +666,7 @@ AttributeToNebula(Gltf::Primitive::Attribute attr)
         case Gltf::Primitive::Attribute::TexCoord3: return Base::VertexComponentBase::TexCoord4;
         case Gltf::Primitive::Attribute::Color0: return Base::VertexComponentBase::Color;
         case Gltf::Primitive::Attribute::Weights0: return Base::VertexComponentBase::SkinWeights;
+		case Gltf::Primitive::Attribute::Joints0: return Base::VertexComponentBase::SkinJIndices;
         default:
             n_warning("Warning: Unhandled primitive attribute type\n");
         
