@@ -3,19 +3,17 @@
 //  (C) 2007 Radon Labs GmbH
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+#include "foundation/stdneb.h"
 #include "input/base/inputserverbase.h"
 #include "input/inputhandler.h"
 #include "input/keyboard.h"
 #include "input/mouse.h"
 #include "input/gamepad.h"
-#include "coregraphics/displaydevice.h"
 
 namespace Base
 {
 __ImplementClass(Base::InputServerBase, 'IPSB', Core::RefCounted);
 
-using namespace CoreGraphics;
 using namespace Input;
 using namespace Util;
 
@@ -186,9 +184,6 @@ InputServerBase::BeginFrame()
         this->inputHandlers[i].Value()->OnBeginFrame();
     }
     this->inputHandlersLockCount--;
-
-    // update events
-    DisplayDevice::Instance()->ProcessWindowMessages();
 }
 
 //------------------------------------------------------------------------------

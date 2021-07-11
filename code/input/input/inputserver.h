@@ -12,7 +12,6 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/singleton.h"
-#if __VULKAN__
 #include "input/glfw/glfwinputserver.h"
 namespace Input
 {
@@ -27,24 +26,6 @@ public:
     virtual ~InputServer();
 };
 }
-#elif __WIN32__
-#include "input/win32/win32inputserver.h"
-namespace Input
-{
-class InputServer : public Win32::Win32InputServer
-{
-    __DeclareClass(InputServer);
-    __DeclareInterfaceSingleton(InputServer);
-public:
-    /// constructor
-    InputServer();
-    /// destructor
-    virtual ~InputServer();
-};
-}
-#else
-#error "InputServer class not implemented on this platform!"
-#endif
 //------------------------------------------------------------------------------
 
 

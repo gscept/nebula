@@ -2,9 +2,8 @@
 //  glfwinputserver.cc
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
+#include "foundation/stdneb.h"
 #include "input/glfw/glfwinputserver.h"
-#include "coregraphics/displaydevice.h"
 #include "input/keyboard.h"
 #include "input/mouse.h"
 #include "input/gamepad.h"
@@ -15,7 +14,6 @@ __ImplementClass(GLFW::GLFWInputServer, 'GLIS', Base::InputServerBase);
 __ImplementSingleton(GLFW::GLFWInputServer);
 
 using namespace Input;
-using namespace CoreGraphics;
 
 //------------------------------------------------------------------------------
 /**

@@ -1,20 +1,20 @@
 //------------------------------------------------------------------------------
-//  mouse.cc
+//  gamepad.cc
 //  (C) 2007 Radon Labs GmbH
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
-#include "render/stdneb.h"
-#include "input/mouse.h"
+#include "foundation/stdneb.h"
+#include "input/gamepad.h"
 #if __VULKAN__
 namespace Input
 {
-__ImplementClass(Input::Mouse, 'MOUS', Base::MouseBase);
+__ImplementClass(Input::GamePad, 'GMPD', Base::GamePadBase);
 }
 #elif __WIN32__
 namespace Input
 {
-__ImplementClass(Input::Mouse, 'MOUS', Win32::Win32Mouse);
+__ImplementClass(Input::GamePad, 'GMPD', XInput::XInputGamePad);
 }
 #else
-#error "Mouse class not implemented on this platform!"
+#error "GamePad class not implemented on this platform!"
 #endif

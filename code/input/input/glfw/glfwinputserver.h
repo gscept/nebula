@@ -10,7 +10,6 @@
 */
 #include "core/singleton.h"
 #include "input/base/inputserverbase.h"
-#include "input/glfw/glfwinputdisplayeventhandler.h"
 
 //------------------------------------------------------------------------------
 namespace GLFW

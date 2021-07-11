@@ -55,6 +55,7 @@ exports:
         - code/physics
         - code/addons
         - code/audio
+        - code/input
     modules:
         foundation: code/foundation
         render: code/render
@@ -63,3 +64,4 @@ exports:
         application: code/application
         addons: code/addons
         audio: code/audio
+        input: code/input
