@@ -453,7 +453,7 @@ struct Document : public GltfBase
     void SerializeText(const IO::URI & uri) const;
     void SerializeBinary(const IO::URI & uri) const;
     bool Deserialize(const IO::URI & uri);
-    bool Deserialize(Ptr<IO::Stream> const & stream);
+    bool Deserialize(Ptr<IO::Stream> const & stream, bool binary);
 };
 
 }

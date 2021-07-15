@@ -12,6 +12,7 @@
 #include "io/jsonreader.h"
 #include "io/ioserver.h"
 #include "io/filestream.h"
+#include "io/memorystream.h"
 
 #ifdef min
 #undef min
@@ -349,10 +350,14 @@ IO::JsonReader::GetOpt<Util::Array<Gltf::Buffer>>(Util::Array<Gltf::Buffer> & it
         // set to first array item
         this->SetToFirstChild();
         do {
-            auto & item = items[i++];
-            this->GetOpt(item.name, "name");
-            this->GetOpt(item.uri, "uri");
-            this->GetOpt(item.name, "name");
+			auto & item = items[i++];
+			if (!this->GetOpt(item.uri, "uri"))
+			{
+				// this means the buffer is from a BIN chunk in a GLB file. Just ignore this since we load it directly from Document::Deserialize
+				continue;
+			}
+			this->GetOpt(item.name, "name");
+			this->GetOpt(item.mimeType, "mimeType");
             SizeT byteLength = this->GetInt("byteLength");
             item.data.Reserve(byteLength);
             Util::String folder = this->stream->GetURI().AsString().ExtractDirName();            
@@ -1058,22 +1063,94 @@ bool
 Document::Deserialize(const IO::URI & uri)
 {
     Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(uri);
-    return this->Deserialize(stream);    
+	bool const binary = uri.GetTail().GetFileExtension() == "glb";
+    return this->Deserialize(stream, binary);
 }
+
 //------------------------------------------------------------------------------
 /**
 */
 bool 
-Document::Deserialize(Ptr<IO::Stream> const& stream)
+Document::Deserialize(Ptr<IO::Stream> const& stream, bool binary)
 {
-    Ptr<IO::JsonReader> reader = IO::JsonReader::Create();    
-    reader->SetStream(stream);
-    if (reader->Open())
-    {
-        reader->Get(*this);
-        reader->Close();
-        return true;
-    }
-    return false;
+	if (!binary)
+	{
+		// regular gltf. Just parse it like a normal json file
+		Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
+		reader->SetStream(stream);
+		if (reader->Open())
+		{
+			reader->Get(*this);
+			reader->Close();
+			return true;
+		}
+		return false;
+	}
+
+	// binary file, must splice the input buffer into two separate streams because of how pjson works
+	Ptr<IO::StreamReader> streamReader = IO::StreamReader::Create();
+	streamReader->SetStream(stream);
+
+	if (streamReader->Open())
+	{
+		IO::Stream::Size fileSize = stream->GetSize();
+
+		char* buf = (char*)Memory::Alloc(Memory::StreamDataHeap, fileSize + 1);
+		stream->Read(buf, fileSize);
+
+		// we need to extract the gltf part into a separate, null-terminated buffer
+		static constexpr uint32_t GLTF_MAGIC = 0x46546C67; // ASCII: glTF
+		static constexpr uint32_t CHUNK_JSON = 0x4E4F534A; // ASCII: JSON
+		static constexpr uint32_t CHUNK_BIN  = 0x004E4942; // ASCII: BIN
+		struct GLBHeader
+		{
+			uint32_t magic;
+			uint32_t version;
+			uint32_t length;
+		};
+		struct GLBChunkHeader
+		{
+			uint32_t chunkLength;
+			uint32_t chunkType;
+		};
+		static_assert(sizeof(GLBHeader) == 12ui64);
+		GLBHeader const* const header = (GLBHeader*)buf;
+		n_assert(header->magic == GLTF_MAGIC);
+		// read the json gltf, and then save the glb buffer into our gltf document
+		Ptr<IO::MemoryStream> memStream = IO::MemoryStream::Create();
+		memStream->SetAccessMode(IO::Stream::AccessMode::WriteAccess);
+		memStream->Open();
+		GLBChunkHeader const* const jsonChunkHeader = (GLBChunkHeader*)((char*)header + sizeof(GLBHeader));
+		n_assert(jsonChunkHeader->chunkType == CHUNK_JSON);
+		// First, find where the json actually starts...
+		char* jsonBuf = (char*)jsonChunkHeader + sizeof(GLBChunkHeader);
+		memStream->Write(jsonBuf, jsonChunkHeader->chunkLength);
+		char const terminator = '\0';
+		memStream->Write(&terminator, sizeof(char));
+		memStream->Close();
+
+		Gltf::Buffer buffer;
+		GLBChunkHeader const* const binChunkHeader = (GLBChunkHeader*)((char*)jsonChunkHeader + sizeof(GLBChunkHeader) + jsonChunkHeader->chunkLength);
+		n_assert(binChunkHeader->chunkType == CHUNK_BIN);
+		buffer.data.Set((char*)binChunkHeader + sizeof(GLBChunkHeader), binChunkHeader->chunkLength);
+		buffer.embedded = true;
+		this->buffers.Append(std::move(buffer));
+		// delete temporary buffer.
+		Memory::Free(Memory::HeapType::StreamDataHeap, buf);
+
+		Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
+		reader->SetStream(memStream);
+		bool ret = false;
+		if (reader->Open())
+		{
+			reader->Get(*this);
+			reader->Close();
+			ret = true;
+		}
+		streamReader->Close();
+		return ret;
+	}
+	
+	return false;
 }
 }

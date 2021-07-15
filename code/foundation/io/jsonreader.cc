@@ -72,10 +72,10 @@ JsonReader::Open()
             if(error.m_ofs<(size_t)this->stream->GetSize())
             {
                 position.Set(((const char *)this->buffer) + error.m_ofs, 40);
-            }            
-            n_error("JsonReader::Open(): failed to parse json file: %s\n%s\nat: %s\n", uri.AsString().AsCharPtr(), error.m_pError_message, position.AsCharPtr());
-            
-            return false;
+            }
+			Util::String const fileName = uri.IsEmpty() ? "" : uri.AsString();
+			n_error("JsonReader::Open(): failed to parse json file: %s\n%s\nat: %s\n", fileName.AsCharPtr(), error.m_pError_message, position.AsCharPtr());
+			return false;
         }        
 
         // set the current node to the root node
