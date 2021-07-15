@@ -45,6 +45,7 @@ namespace TimeManager
         Util::HashTable<uint32_t, uint32_t, 32, 1> timeSourceTable;
 
 		Ptr<FrameSync::FrameSyncTimer> frameSyncTimer;
+		bool frameSyncTimerOwner = false;
     };
 
     static State* state = nullptr;
@@ -133,6 +134,8 @@ TimeManager::OnActivate()
 	if (!FrameSync::FrameSyncTimer::HasInstance())
 	{
 		state->frameSyncTimer = FrameSync::FrameSyncTimer::Create();
+		state->frameSyncTimerOwner = true;
+		state->frameSyncTimer->StartTime();
 	}
 	else
 	{
@@ -162,6 +165,9 @@ TimeManager::OnActivate()
 void
 TimeManager::OnBeginFrame()
 {
+	if (state->frameSyncTimerOwner)
+		state->frameSyncTimer->UpdateTimePolling();
+
     // compute the current frame time
     Tick const realTimeFrameTicks = FrameSync::FrameSyncTimer::Instance()->GetFrameTicks();
     state->frameTime = (Timing::Tick)((float)realTimeFrameTicks * state->timeFactor);
