@@ -359,6 +359,16 @@ vec2::minimize(const vec2& v0, const vec2& v1)
     return vec2(Math::min(v0.x, v1.x), Math::min(v0.y, v1.y));
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vec2
+lerp(const vec2& v0, const vec2& v1, scalar s)
+{
+	return v0 + ((v1 - v0) * s);
+}
+
+
 } // namespace Math
 //------------------------------------------------------------------------------
 #endif
