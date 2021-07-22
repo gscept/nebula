@@ -1113,7 +1113,7 @@ Document::Deserialize(Ptr<IO::Stream> const& stream, bool binary)
 			uint32_t chunkLength;
 			uint32_t chunkType;
 		};
-		static_assert(sizeof(GLBHeader) == 12ui64);
+		static_assert(sizeof(GLBHeader) == 12ULL);
 		GLBHeader const* const header = (GLBHeader*)buf;
 		n_assert(header->magic == GLTF_MAGIC);
 		// read the json gltf, and then save the glb buffer into our gltf document
