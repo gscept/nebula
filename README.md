@@ -21,8 +21,15 @@ Check out the documentation (WIP) here: https://gscept.github.io/nebula-doc/
 
 #### Setup config
 
-1. `./fips set config vulkan-win64-vstudio-debug` in your project directory
+1. `./fips set config vulkan-win64-vs2019-debug` in your project directory
 
+#### Set environment variables
+
+Run `fips nebula` verb to set work and toolkit directory registry variables:
+
+  * `fips nebula set work {PATH}`
+  * `fips nebula set toolkit {PATH}`
+  
 #### Build project
 
 In your project directory:
@@ -32,13 +39,6 @@ In your project directory:
   2. `fips anyfx setup`
   3. `fips build`
   4. `fips physx deploy`
-
-#### Set environment variables
-
-Remember to run `fips nebula` verb to set work and toolkit directory registry variables:
-
-  * `fips nebula set work {PATH}`
-  * `fips nebula set toolkit {PATH}`
 
 ## Features
 Nebula is being developed continuously, which means that features keep getting added all the time. Currently, we support this:
