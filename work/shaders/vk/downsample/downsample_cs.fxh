@@ -302,7 +302,6 @@ Mips2_5_and_8_11(uint x, uint y, ivec2 workGroupId, uint localIndex, uint mip, u
 {
     if (mips <= mip)
         return;
-    groupMemoryBarrier();
     barrier();
     Mip2_8(x, y, workGroupId, localIndex, mip, slice);
 
@@ -310,7 +309,6 @@ Mips2_5_and_8_11(uint x, uint y, ivec2 workGroupId, uint localIndex, uint mip, u
     {
         if (mips <= mip + 1)
             return;
-        groupMemoryBarrier();
         barrier();
         Mip3_9(x, y, workGroupId, localIndex, mip + 1, slice);
 
@@ -318,7 +316,6 @@ Mips2_5_and_8_11(uint x, uint y, ivec2 workGroupId, uint localIndex, uint mip, u
         {
             if (mips <= mip + 2)
                 return;
-            groupMemoryBarrier();
             barrier();
             Mip4_10(x, y, workGroupId, localIndex, mip + 2, slice);
 
@@ -326,7 +323,6 @@ Mips2_5_and_8_11(uint x, uint y, ivec2 workGroupId, uint localIndex, uint mip, u
             {
                 if (mips <= mip + 3)
                     return;
-                groupMemoryBarrier();
                 barrier();
                 Mip5_11(workGroupId, localIndex, mip + 3, slice);
             }

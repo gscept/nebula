@@ -355,6 +355,9 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
     static const float YPad = 20.0f;
     static const float TextPad = 5.0f;
 
+    const uint32 numColors = sizeof(colors) / sizeof(ImU32);
+    uint32 colorIndex = scope.category.HashCode() % numColors;
+
     // convert to milliseconds
     float startX = pos.x + scope.start / frameTime * canvas.x;
     float stopX = startX + Math::max(scope.duration / frameTime * canvas.x, 1.0);
@@ -366,7 +369,7 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
 
     // draw a filled rect for background, and normal rect for outline
     drawList->PushClipRect(bbMin, bbMax, true);
-    drawList->AddRectFilled(bbMin, bbMax, colors[level % 6], 0.0f);
+    drawList->AddRectFilled(bbMin, bbMax, colors[colorIndex], 0.0f);
     drawList->AddRect(bbMin, bbMax, IM_COL32(128, 128, 128, 128), 0.0f);
 
     // make sure text appears inside the box
@@ -550,7 +553,7 @@ SimpleViewerApplication::RenderUI()
 
     if (this->showFrameProfiler)
     {
-        Debug::FrameScriptInspector::Run(this->view->GetFrameScript());
+        //Debug::FrameScriptInspector::Run(this->view->GetFrameScript());
         if (ImGui::Begin("Performance Profiler", &this->showFrameProfiler))
         {
             ImGui::Text("ms - %.2f\nFPS - %.2f", this->prevAverageFrameTime * 1000, 1 / this->prevAverageFrameTime);
@@ -711,13 +714,11 @@ SimpleViewerApplication::UpdateCamera()
         }
     }
 
-
     this->mayaCameraUtil.SetPanning(panning);
     this->mayaCameraUtil.SetOrbiting(orbiting);
     this->mayaCameraUtil.SetZoomIn(zoomIn);
     this->mayaCameraUtil.SetZoomOut(zoomOut);
     this->mayaCameraUtil.Update();
-
     
     this->freeCamUtil.SetForwardsKey(keyboard->KeyPressed(Input::Key::W));
     this->freeCamUtil.SetBackwardsKey(keyboard->KeyPressed(Input::Key::S));
