@@ -87,7 +87,7 @@ CameraContext::SetupOrthographic(const Graphics::GraphicsEntityId id, float widt
 /**
 */
 void
-CameraContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4& mat)
+CameraContext::SetView(const Graphics::GraphicsEntityId id, const Math::mat4& mat)
 {
     const ContextEntityId cid = GetContextId(id);
     cameraAllocator.Set<Camera_View>(cid.id, mat);
@@ -97,10 +97,20 @@ CameraContext::SetTransform(const Graphics::GraphicsEntityId id, const Math::mat
 /**
 */
 const Math::mat4&
-CameraContext::GetTransform(const Graphics::GraphicsEntityId id)
+CameraContext::GetView(const Graphics::GraphicsEntityId id)
 {
     const ContextEntityId cid = GetContextId(id);
     return cameraAllocator.Get<Camera_View>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Math::mat4
+CameraContext::GetTransform(const Graphics::GraphicsEntityId id)
+{
+    const ContextEntityId cid = GetContextId(id);
+    return inverse(cameraAllocator.Get<Camera_View>(cid.id));
 }
 
 //------------------------------------------------------------------------------

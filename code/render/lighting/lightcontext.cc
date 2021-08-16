@@ -783,19 +783,9 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
         Math::vec4 cascadeScales[CSMUtil::NumCascades];
         Math::vec4 cascadeOffsets[CSMUtil::NumCascades];
 
-        for (IndexT splitIndex = 0; splitIndex < CSMUtil::NumCascades; ++splitIndex)
-        {
-            Math::mat4 shadowTexture = transforms[splitIndex] * (textureScale * textureTranslation);
-            Math::vec4 scale = Math::vec4(
-                shadowTexture.row0.x,
-                shadowTexture.row1.y,
-                shadowTexture.row2.z,
-                1);
-            Math::vec4 offset = shadowTexture.row3;
-            offset.w = 0;
-            cascadeOffsets[splitIndex] = offset;
-            cascadeScales[splitIndex] = scale;
-        }
+	// get camera view
+	Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
+	Math::mat4 invViewTransform = inverse(viewTransform);
 
         memcpy(params.CascadeOffset, cascadeOffsets, sizeof(Math::vec4) * CSMUtil::NumCascades);
         memcpy(params.CascadeScale, cascadeScales, sizeof(Math::vec4) * CSMUtil::NumCascades);

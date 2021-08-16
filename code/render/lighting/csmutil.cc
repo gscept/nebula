@@ -336,7 +336,7 @@ CSMUtil::Compute(const Graphics::GraphicsEntityId camera, const Graphics::Graphi
     n_assert(this->cameraEntity != Graphics::GraphicsEntityId::Invalid());
     const CameraSettings& camSettings = Graphics::CameraContext::GetSettings(camera);
     mat4 cameraProjection = Graphics::CameraContext::GetProjection(camera);
-    mat4 cameraView = inverse(Graphics::CameraContext::GetTransform(camera));
+    mat4 cameraView = Graphics::CameraContext::GetTransform(camera);
 
     // Get inversed shadow matrix, this is basically the global light transform, normalized and inversed
     mat4 lightView = inverse(Lighting::LightContext::GetTransform(light));
