@@ -479,6 +479,7 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const voi
             pending.tag = tag;
             pending.inflight = false;
             pending.immediate = immediate;
+            this->states[ret.poolId] = Resource::Pending;
             this->loads[ret.poolId] = pending;
 
             if (immediate)
@@ -495,7 +496,7 @@ Resources::ResourceStreamPool::CreateResource(const ResourceName& res, const voi
                 this->pendingLoads.Append(ret.poolId);
                 if (success != nullptr || failed != nullptr)
                 {
-                    // we need not worry about the thread, since this resource is new
+                    // if unloaded, the callbacks array can safetly be assumed to be empty
                     this->callbacks[ret.poolId].Append({ ret, success, failed });
                 }
 
