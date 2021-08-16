@@ -30,6 +30,9 @@ TextureViewId CreateTextureView(const TextureViewCreateInfo& info);
 /// destroy texture view
 void DestroyTextureView(const TextureViewId id);
 
+/// reload texture view by creating a new backend view with the old texture (assuming it's changed)
+void TextureViewReload(const TextureViewId id);
+
 /// get texture
 TextureId TextureViewGetTexture(const TextureViewId id);
 

@@ -25,7 +25,7 @@ VkPassAllocator passAllocator(0x00FFFFFF);
 const VkRenderPassBeginInfo&
 PassGetVkRenderPassBeginInfo(const CoreGraphics::PassId& id)
 {
-    return passAllocator.Get<2>(id.id24);
+    return passAllocator.Get<Pass_BeginInfo>(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -34,7 +34,7 @@ PassGetVkRenderPassBeginInfo(const CoreGraphics::PassId& id)
 const VkGraphicsPipelineCreateInfo&
 PassGetVkFramebufferInfo(const CoreGraphics::PassId& id)
 {
-    return passAllocator.Get<1>(id.id24).framebufferPipelineInfo;
+    return passAllocator.Get<Pass_RuntimeInfo>(id.id24).framebufferPipelineInfo;
 }
 
 //------------------------------------------------------------------------------
@@ -43,7 +43,7 @@ PassGetVkFramebufferInfo(const CoreGraphics::PassId& id)
 const SizeT 
 PassGetVkNumAttachments(const CoreGraphics::PassId& id)
 {
-    return passAllocator.Get<0>(id.id24).colorAttachments.Size();
+    return passAllocator.Get<Pass_LoadInfo>(id.id24).colorAttachments.Size();
 }
 
 //------------------------------------------------------------------------------
@@ -52,7 +52,7 @@ PassGetVkNumAttachments(const CoreGraphics::PassId& id)
 const Util::FixedArray<VkRect2D>&
 PassGetVkRects(const CoreGraphics::PassId& id)
 {
-    const VkPassRuntimeInfo& info = passAllocator.Get<1>(id.id24);
+    const VkPassRuntimeInfo& info = passAllocator.Get<Pass_RuntimeInfo>(id.id24);
     return info.subpassRects[info.currentSubpassIndex];
 }
 
@@ -62,7 +62,7 @@ PassGetVkRects(const CoreGraphics::PassId& id)
 const Util::FixedArray<VkViewport>&
 PassGetVkViewports(const CoreGraphics::PassId& id)
 {
-    const VkPassRuntimeInfo& info = passAllocator.Get<1>(id.id24);
+    const VkPassRuntimeInfo& info = passAllocator.Get<Pass_RuntimeInfo>(id.id24);
     return info.subpassViewports[info.currentSubpassIndex];
 }
 
@@ -77,13 +77,259 @@ using namespace Vulkan;
 /**
 */
 void
+GetSubpassInfo(
+    const VkPassLoadInfo& loadInfo
+    , Util::FixedArray<VkSubpassDescription>& outDescs
+    , Util::Array<VkSubpassDependency>& outDeps
+    , Util::FixedArray<VkAttachmentDescription>& outAttachments
+    , Util::Array<uint32>& usedAttachmentCounts
+    , Util::FixedArray<Util::FixedArray<VkViewport>>& outViewports
+    , Util::FixedArray<Util::FixedArray<VkRect2D>>& outScissorRects
+    , Util::FixedArray<VkPipelineViewportStateCreateInfo>& outPipelineInfos
+    , uint32& numUsedAttachmentsTotal)
+{
+    Util::FixedArray<Util::FixedArray<VkAttachmentReference>> subpassReferences;
+    Util::FixedArray<Util::FixedArray<VkAttachmentReference>> subpassInputs;
+    Util::FixedArray<Util::FixedArray<uint32_t>> subpassPreserves;
+    Util::FixedArray<Util::FixedArray<VkAttachmentReference>> subpassResolves;
+    Util::FixedArray<VkAttachmentReference> subpassDepthStencils;
+
+    subpassReferences.Resize(loadInfo.subpasses.Size());
+    subpassInputs.Resize(loadInfo.subpasses.Size());
+    subpassPreserves.Resize(loadInfo.subpasses.Size());
+    subpassResolves.Resize(loadInfo.subpasses.Size());
+    subpassDepthStencils.Resize(loadInfo.subpasses.Size());
+
+    IndexT i;
+    for (i = 0; i < loadInfo.subpasses.Size(); i++)
+    {
+        const CoreGraphics::Subpass& subpass = loadInfo.subpasses[i];
+
+        VkSubpassDescription& vksubpass = outDescs[i];
+        vksubpass.flags = 0;
+        vksubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        vksubpass.pColorAttachments = nullptr;
+        vksubpass.pDepthStencilAttachment = nullptr;
+        vksubpass.pPreserveAttachments = nullptr;
+        vksubpass.pResolveAttachments = nullptr;
+        vksubpass.pInputAttachments = nullptr;
+
+        // resize rects
+        n_assert(subpass.numViewports >= subpass.attachments.Size());
+        n_assert(subpass.numScissors >= subpass.attachments.Size());
+        outViewports[i].Resize(subpass.numViewports);
+        outScissorRects[i].Resize(subpass.numScissors);
+        outPipelineInfos[i] =
+        {
+            VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+            nullptr,
+            0,
+            (uint32_t)subpass.numViewports, // use the actual amount of viewports we will use (might be changed dynamically later)
+            nullptr,
+            (uint32_t)subpass.numScissors, // do the same for the scissors
+            nullptr
+        };
+
+        // get references to fixed arrays
+        Util::FixedArray<VkAttachmentReference>& references = subpassReferences[i];
+        Util::FixedArray<VkAttachmentReference>& inputs = subpassInputs[i];
+        Util::FixedArray<uint32_t>& preserves = subpassPreserves[i];
+        Util::FixedArray<VkAttachmentReference>& resolves = subpassResolves[i];
+
+        // resize arrays straight away since we already know the size
+        references.Resize(loadInfo.colorAttachments.Size());
+        inputs.Resize(subpass.inputs.Size());
+        preserves.Resize(loadInfo.colorAttachments.Size() - subpass.attachments.Size());
+        if (subpass.resolve)
+            resolves.Resize(subpass.attachments.Size());
+
+        // if subpass binds depth, the slot for the depth-stencil buffer is color attachments + 1
+        if (subpass.bindDepth)
+        {
+            n_assert(loadInfo.depthStencilAttachment != InvalidTextureViewId);
+            VkAttachmentReference& ds = subpassDepthStencils[i];
+            ds.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            ds.attachment = loadInfo.colorAttachments.Size();
+            vksubpass.pDepthStencilAttachment = &ds;
+
+            // if we have no attachments in the subpass, use the depth stencil viewports
+            if (subpass.attachments.Size() == 0)
+            {
+                outViewports[i][0] = loadInfo.viewports[ds.attachment];
+                outScissorRects[i][0] = loadInfo.rects[ds.attachment];
+            }
+        }
+        else
+        {
+            // we are not allowed to have a subpass that doesn't use any attachments
+            n_assert(subpass.attachments.Size() != 0);
+            VkAttachmentReference& ds = subpassDepthStencils[i];
+            ds.layout = VK_IMAGE_LAYOUT_UNDEFINED;
+            ds.attachment = VK_ATTACHMENT_UNUSED;
+            vksubpass.pDepthStencilAttachment = &ds;
+        }
+
+        // fill list of all attachments, will be removed per subpass attachment
+        IndexT j;
+        Util::Array<IndexT> allAttachments;
+        for (j = 0; j < loadInfo.colorAttachments.Size(); j++)
+        {
+            allAttachments.Append(j);
+        }
+
+        IndexT idx = 0;
+        SizeT preserveAttachments = 0;
+        SizeT usedAttachments = 0;
+
+        for (j = 0; j < subpass.attachments.Size(); j++)
+        {
+            VkAttachmentReference& ref = references[j];
+            ref.attachment = subpass.attachments[j];
+            ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            usedAttachments++;
+
+            outViewports[i][j] = loadInfo.viewports[ref.attachment];
+            outScissorRects[i][j] = loadInfo.rects[ref.attachment];
+
+            // remove from all attachments list
+            IndexT idx = allAttachments.FindIndex(ref.attachment);
+            allAttachments.EraseIndex(idx);
+            if (subpass.resolve) resolves[j] = ref;
+        }
+
+        for (j = 0; j < subpass.inputs.Size(); j++)
+        {
+            VkAttachmentReference& ref = inputs[j];
+            ref.attachment = subpass.inputs[j];
+            ref.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+            IndexT index = allAttachments.FindIndex(ref.attachment);
+            n_assert_fmt(index != InvalidIndex, "Input attachment %d is already being used as an output attachment", ref.attachment);
+            allAttachments.EraseIndex(index);
+        }
+
+        for (j = 0; j < allAttachments.Size(); j++)
+        {
+            VkAttachmentReference& ref = references[usedAttachments + j];
+            ref.attachment = allAttachments[j];
+            ref.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            preserves[preserveAttachments] = allAttachments[j];
+            preserveAttachments++;
+        }
+
+        for (j = 0; j < subpass.dependencies.Size(); j++)
+        {
+            VkSubpassDependency dep;
+            dep.srcSubpass = subpass.dependencies[j];
+            dep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            dep.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            dep.dstSubpass = i;
+            dep.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+            dep.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+            outDeps.Append(dep);
+        }
+
+        // set color attachments
+        vksubpass.colorAttachmentCount = usedAttachments;
+        vksubpass.pColorAttachments = references.Begin();
+
+        // if we have subpass inputs, use them
+        if (inputs.Size() > 0)
+        {
+            vksubpass.inputAttachmentCount = inputs.Size();
+            vksubpass.pInputAttachments = inputs.IsEmpty() ? nullptr : inputs.Begin();
+        }
+        else
+        {
+            vksubpass.inputAttachmentCount = 0;
+        }
+
+        // the rest are automatically preserve
+        if (preserves.Size() > 0)
+        {
+            vksubpass.preserveAttachmentCount = preserveAttachments;
+            vksubpass.pPreserveAttachments = preserves.IsEmpty() ? nullptr : preserves.Begin();
+        }
+        else
+        {
+            vksubpass.preserveAttachmentCount = 0;
+        }
+
+        usedAttachmentCounts.Append(vksubpass.colorAttachmentCount);
+    }
+
+    VkAttachmentLoadOp loadOps[] =
+    {
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        VK_ATTACHMENT_LOAD_OP_CLEAR,
+        VK_ATTACHMENT_LOAD_OP_LOAD,
+    };
+
+    VkAttachmentStoreOp storeOps[] =
+    {
+        VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        VK_ATTACHMENT_STORE_OP_STORE,
+    };
+
+    numUsedAttachmentsTotal = (uint32)loadInfo.colorAttachments.Size();
+    for (i = 0; i < loadInfo.colorAttachments.Size(); i++)
+    {
+        TextureId tex = TextureViewGetTexture(loadInfo.colorAttachments[i]);
+        TextureUsage usage = TextureGetUsage(tex);
+        n_assert(CheckBits(usage, RenderTexture));
+
+        VkFormat fmt = VkTypes::AsVkFormat(TextureGetPixelFormat(tex));
+        VkAttachmentDescription& attachment = outAttachments[i];
+        IndexT loadIdx = CheckBits(loadInfo.colorAttachmentFlags[i], AttachmentFlagBits::Load) ? 2 : CheckBits(loadInfo.colorAttachmentFlags[i], AttachmentFlagBits::Clear) ? 1 : 0;
+        IndexT storeIdx = CheckBits(loadInfo.colorAttachmentFlags[i], AttachmentFlagBits::Store) ? 1 : 0;
+        attachment.flags = 0;
+        attachment.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        attachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        attachment.format = fmt;
+        attachment.loadOp = loadOps[loadIdx];
+        attachment.storeOp = storeOps[storeIdx];
+        attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachment.samples = VkTypes::AsVkSampleFlags(TextureGetNumSamples(tex));
+    }
+
+    // use depth stencil attachments if pointer is not null
+    if (loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId)
+    {
+        TextureId tex = TextureViewGetTexture(loadInfo.depthStencilAttachment);
+        TextureUsage usage = TextureGetUsage(tex);
+        n_assert(CheckBits(usage, RenderTexture));
+
+        VkAttachmentDescription& attachment = outAttachments[i];
+        IndexT loadIdx = CheckBits(loadInfo.depthStencilFlags, AttachmentFlagBits::Load) ? 2 : CheckBits(loadInfo.depthStencilFlags, AttachmentFlagBits::Clear) ? 1 : 0;
+        IndexT storeIdx = CheckBits(loadInfo.depthStencilFlags, AttachmentFlagBits::Store) ? 1 : 0;
+        IndexT stencilLoadIdx = CheckBits(loadInfo.depthStencilFlags, AttachmentFlagBits::LoadStencil) ? 2 : CheckBits(loadInfo.depthStencilFlags, AttachmentFlagBits::ClearStencil) ? 1 : 0;
+        IndexT stencilStoreIdx = CheckBits(loadInfo.depthStencilFlags, AttachmentFlagBits::StoreStencil) ? 1 : 0;
+        attachment.flags = 0;
+        attachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+        attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+        attachment.format = VkTypes::AsVkFormat(TextureGetPixelFormat(tex));
+        attachment.loadOp = loadOps[loadIdx];
+        attachment.storeOp = storeOps[storeIdx];
+        attachment.stencilLoadOp = loadOps[stencilLoadIdx];
+        attachment.stencilStoreOp = storeOps[stencilStoreIdx];
+        attachment.samples = VkTypes::AsVkSampleFlags(TextureGetNumSamples(tex));
+        numUsedAttachmentsTotal++;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 SetupPass(const PassId pid)
 {
     Ids::Id32 id = pid.id24;
-    VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id);
-    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id);
-    VkRenderPassBeginInfo& beginInfo = passAllocator.Get<2>(id);
-    Util::Array<uint32_t>& subpassAttachmentCounts = passAllocator.Get<3>(id);
+    VkPassLoadInfo& loadInfo = passAllocator.Get<Pass_LoadInfo>(id);
+    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_RuntimeInfo>(id);
+    VkRenderPassBeginInfo& beginInfo = passAllocator.Get<Pass_BeginInfo>(id);
+    Util::Array<uint32_t>& subpassAttachmentCounts = passAllocator.Get<Pass_SubpassAttachments>(id);
 
     Util::FixedArray<VkImageView> images;
     images.Resize(loadInfo.colorAttachments.Size() + (loadInfo.depthStencilAttachment != InvalidTextureViewId ? 1 : 0));
@@ -92,7 +338,7 @@ SetupPass(const PassId pid)
     uint32_t height = 0;
     uint32_t layers = 0;
 
-    IndexT i;
+    IndexT i = 0;
 
     // if we have no attachments, use the depth attachment to setup the viewport
     if (loadInfo.colorAttachments.Size() == 0)
@@ -141,244 +387,28 @@ SetupPass(const PassId pid)
     }
 
     Util::FixedArray<VkSubpassDescription> subpassDescs;
-    Util::FixedArray<Util::FixedArray<VkAttachmentReference>> subpassReferences;
-    Util::FixedArray<Util::FixedArray<VkAttachmentReference>> subpassInputs;
-    Util::FixedArray<Util::FixedArray<uint32_t>> subpassPreserves;
-    Util::FixedArray<Util::FixedArray<VkAttachmentReference>> subpassResolves;
-    Util::FixedArray<VkAttachmentReference> subpassDepthStencils;
     Util::Array<VkSubpassDependency> subpassDeps;
+    Util::FixedArray<VkAttachmentDescription> attachments;
 
     // resize subpass contents
     subpassDescs.Resize(loadInfo.subpasses.Size());
-    subpassReferences.Resize(loadInfo.subpasses.Size());
-    subpassInputs.Resize(loadInfo.subpasses.Size());
-    subpassPreserves.Resize(loadInfo.subpasses.Size());
-    subpassResolves.Resize(loadInfo.subpasses.Size());
-    subpassDepthStencils.Resize(loadInfo.subpasses.Size());
+    attachments.Resize(loadInfo.colorAttachments.Size() + 1);
     runtimeInfo.subpassViewports.Resize(loadInfo.subpasses.Size());
     runtimeInfo.subpassRects.Resize(loadInfo.subpasses.Size());
     runtimeInfo.subpassPipelineInfo.Resize(loadInfo.subpasses.Size());
+    uint32 numUsedAttachmentsTotal = 0;
 
-    Util::FixedArray<bool> subpassIsDependendedOn(loadInfo.subpasses.Size());
-    subpassIsDependendedOn.Fill(false);
-    for (i = 0; i < loadInfo.subpasses.Size(); i++)
-    {
-        const CoreGraphics::Subpass& subpass = loadInfo.subpasses[i];
-
-        VkSubpassDescription& vksubpass = subpassDescs[i];
-        vksubpass.flags = 0;
-        vksubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        vksubpass.pColorAttachments = nullptr;
-        vksubpass.pDepthStencilAttachment = nullptr;
-        vksubpass.pPreserveAttachments = nullptr;
-        vksubpass.pResolveAttachments = nullptr;
-        vksubpass.pInputAttachments = nullptr;
-
-        // resize rects
-        n_assert(subpass.numViewports >= subpass.attachments.Size());
-        n_assert(subpass.numScissors >= subpass.attachments.Size());
-        runtimeInfo.subpassViewports[i].Resize(subpass.numViewports);
-        runtimeInfo.subpassRects[i].Resize(subpass.numScissors);
-        runtimeInfo.subpassPipelineInfo[i] =
-        {
-            VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-            nullptr,
-            0,
-            (uint32_t)subpass.numViewports, // use the actual amount of viewports we will use (might be changed dynamically later)
-            nullptr,
-            (uint32_t)subpass.numScissors, // do the same for the scissors
-            nullptr
-        };
-
-        // get references to fixed arrays
-        Util::FixedArray<VkAttachmentReference>& references = subpassReferences[i];
-        Util::FixedArray<VkAttachmentReference>& inputs = subpassInputs[i];
-        Util::FixedArray<uint32_t>& preserves = subpassPreserves[i];
-        Util::FixedArray<VkAttachmentReference>& resolves = subpassResolves[i];
-
-        // resize arrays straight away since we already know the size
-        references.Resize(loadInfo.colorAttachments.Size());
-        inputs.Resize(subpass.inputs.Size());
-        preserves.Resize(loadInfo.colorAttachments.Size() - subpass.attachments.Size());
-        if (subpass.resolve) resolves.Resize(subpass.attachments.Size());
-
-        // if subpass binds depth, the slot for the depth-stencil buffer is color attachments + 1
-        if (subpass.bindDepth)
-        {
-            n_assert(loadInfo.depthStencilAttachment != InvalidTextureViewId);
-            VkAttachmentReference& ds = subpassDepthStencils[i];
-            ds.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-            ds.attachment = loadInfo.colorAttachments.Size();
-            vksubpass.pDepthStencilAttachment = &ds;
-
-            // if we have no attachments in the subpass, use the depth stencil viewports
-            if (subpass.attachments.Size() == 0)
-            {
-                runtimeInfo.subpassViewports[i][0] = loadInfo.viewports[ds.attachment];
-                runtimeInfo.subpassRects[i][0] = loadInfo.rects[ds.attachment];
-            }
-        }
-        else
-        {
-            // we are not allowed to have a subpass that doesn't use any attachments
-            n_assert(subpass.attachments.Size() != 0);
-            VkAttachmentReference& ds = subpassDepthStencils[i];
-            ds.layout = VK_IMAGE_LAYOUT_UNDEFINED;
-            ds.attachment = VK_ATTACHMENT_UNUSED;
-            vksubpass.pDepthStencilAttachment = &ds;
-        }
-
-        // fill list of all attachments, will be removed per subpass attachment
-        IndexT j;
-        Util::Array<IndexT> allAttachments;
-        for (j = 0; j < loadInfo.colorAttachments.Size(); j++)
-        {
-            allAttachments.Append(j);
-        }
-
-        IndexT idx = 0;
-        SizeT preserveAttachments = 0;
-        SizeT usedAttachments = 0;
-
-        for (j = 0; j < subpass.attachments.Size(); j++)
-        {
-            VkAttachmentReference& ref = references[j];
-            ref.attachment = subpass.attachments[j];
-            ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            runtimeInfo.subpassViewports[i][j] = loadInfo.viewports[ref.attachment];
-            runtimeInfo.subpassRects[i][j] = loadInfo.rects[ref.attachment];
-            usedAttachments++;
-
-            // remove from all attachments list
-            IndexT idx = allAttachments.FindIndex(ref.attachment);
-            allAttachments.EraseIndex(idx);
-            if (subpass.resolve) resolves[j] = ref;
-        }
-
-        for (j = 0; j < subpass.inputs.Size(); j++)
-        {
-            VkAttachmentReference& ref = inputs[j];
-            ref.attachment = subpass.inputs[j];
-            ref.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-            IndexT index = allAttachments.FindIndex(ref.attachment);
-            n_assert_fmt(index != InvalidIndex, "Input attachment %d is already being used as an output attachment", ref.attachment);
-            allAttachments.EraseIndex(index);
-        }
-
-        for (j = 0; j < allAttachments.Size(); j++)
-        {
-            VkAttachmentReference& ref = references[usedAttachments + j];
-            ref.attachment = allAttachments[j];
-            ref.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            preserves[preserveAttachments] = allAttachments[j];
-            preserveAttachments++;
-        }
-
-        for (j = 0; j < subpass.dependencies.Size(); j++)
-        {
-            VkSubpassDependency dep;
-            dep.srcSubpass = subpass.dependencies[j];
-            dep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-            dep.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            dep.dstSubpass = i;
-            dep.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-            dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-            dep.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-            subpassDeps.Append(dep);
-
-            subpassIsDependendedOn[dep.srcSubpass] = true;
-        }
-
-        // set color attachments
-        vksubpass.colorAttachmentCount = usedAttachments;
-        vksubpass.pColorAttachments = references.Begin();
-
-        // if we have subpass inputs, use them
-        if (inputs.Size() > 0)
-        {
-            vksubpass.inputAttachmentCount = inputs.Size();
-            vksubpass.pInputAttachments = inputs.IsEmpty() ? nullptr : inputs.Begin();
-        }
-        else
-        {
-            vksubpass.inputAttachmentCount = 0;
-        }
-
-        // the rest are automatically preserve
-        if (preserves.Size() > 0)
-        {
-            vksubpass.preserveAttachmentCount = preserveAttachments;
-            vksubpass.pPreserveAttachments = preserves.IsEmpty() ? nullptr : preserves.Begin();
-        }
-        else
-        {
-            vksubpass.preserveAttachmentCount = 0;
-        }
-
-        subpassAttachmentCounts.Append(vksubpass.colorAttachmentCount);
-    }
-
-    VkAttachmentLoadOp loadOps[] =
-    {
-        VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-        VK_ATTACHMENT_LOAD_OP_CLEAR,
-        VK_ATTACHMENT_LOAD_OP_LOAD,
-    };
-
-    VkAttachmentStoreOp storeOps[] =
-    {
-        VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        VK_ATTACHMENT_STORE_OP_STORE,
-    };
-
-    uint32_t numUsedAttachments = (uint32_t)loadInfo.colorAttachments.Size();
-    Util::FixedArray<VkAttachmentDescription> attachments;
-    attachments.Resize(loadInfo.colorAttachments.Size() + 1);
-    for (i = 0; i < loadInfo.colorAttachments.Size(); i++)
-    {
-        TextureId tex = TextureViewGetTexture(loadInfo.colorAttachments[i]);
-        TextureUsage usage = TextureGetUsage(tex);
-        n_assert(AllBits(usage, RenderTexture));
-
-        VkFormat fmt = VkTypes::AsVkFormat(TextureGetPixelFormat(tex));
-        VkAttachmentDescription& attachment = attachments[i];
-        IndexT loadIdx = AllBits(loadInfo.colorAttachmentFlags[i], AttachmentFlagBits::Load) ? 2 : AllBits(loadInfo.colorAttachmentFlags[i], AttachmentFlagBits::Clear) ? 1 : 0;
-        IndexT storeIdx = AllBits(loadInfo.colorAttachmentFlags[i], AttachmentFlagBits::Store) ? 1 : 0;
-        attachment.flags = 0;
-        attachment.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        attachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        attachment.format = fmt;
-        attachment.loadOp = loadOps[loadIdx];
-        attachment.storeOp = storeOps[storeIdx];
-        attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachment.samples = VkTypes::AsVkSampleFlags(TextureGetNumSamples(tex));
-    }
-
-    // use depth stencil attachments if pointer is not null
-    if (loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId)
-    {
-        TextureId tex = TextureViewGetTexture(loadInfo.depthStencilAttachment);
-        TextureUsage usage = TextureGetUsage(tex);
-        n_assert(AllBits(usage, RenderTexture));
-
-        VkAttachmentDescription& attachment = attachments[i];
-        IndexT loadIdx = AllBits(loadInfo.depthStencilFlags, AttachmentFlagBits::Load) ? 2 : AllBits(loadInfo.depthStencilFlags, AttachmentFlagBits::Clear) ? 1 : 0;
-        IndexT storeIdx = AllBits(loadInfo.depthStencilFlags, AttachmentFlagBits::Store) ? 1 : 0;
-        IndexT stencilLoadIdx = AllBits(loadInfo.depthStencilFlags, AttachmentFlagBits::LoadStencil) ? 2 : AllBits(loadInfo.depthStencilFlags, AttachmentFlagBits::ClearStencil) ? 1 : 0;
-        IndexT stencilStoreIdx = AllBits(loadInfo.depthStencilFlags, AttachmentFlagBits::StoreStencil) ? 1 : 0;
-        attachment.flags = 0;
-        attachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-        attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-        attachment.format = VkTypes::AsVkFormat(TextureGetPixelFormat(tex));
-        attachment.loadOp = loadOps[loadIdx];
-        attachment.storeOp = storeOps[storeIdx];
-        attachment.stencilLoadOp = loadOps[stencilLoadIdx];
-        attachment.stencilStoreOp = storeOps[stencilStoreIdx];
-        attachment.samples = VkTypes::AsVkSampleFlags(TextureGetNumSamples(tex));
-        numUsedAttachments++;
-    }
+    // run subpass info fetcher
+    GetSubpassInfo(
+        loadInfo
+        , subpassDescs
+        , subpassDeps
+        , attachments
+        , subpassAttachmentCounts
+        , runtimeInfo.subpassViewports
+        , runtimeInfo.subpassRects
+        , runtimeInfo.subpassPipelineInfo
+        , numUsedAttachmentsTotal);
 
     // create render pass
     VkRenderPassCreateInfo rpinfo =
@@ -386,8 +416,8 @@ SetupPass(const PassId pid)
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         nullptr,
         0,
-        numUsedAttachments,
-        numUsedAttachments == 0 ? nullptr : attachments.Begin(),
+        numUsedAttachmentsTotal,
+        numUsedAttachmentsTotal == 0 ? nullptr : attachments.Begin(),
         (uint32_t)subpassDescs.Size(),
         subpassDescs.IsEmpty() ? nullptr : subpassDescs.Begin(),
         (uint32_t)subpassDeps.Size(),
@@ -407,20 +437,27 @@ SetupPass(const PassId pid)
         layers = Math::max(layers, (uint32_t)TextureGetNumLayers(tex));
     }
 
+    // create framebuffer
+    VkFramebufferCreateInfo fbInfo =
+    {
+        VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+        nullptr,
+        0,
+        loadInfo.pass,
+        (uint32_t)images.Size(),
+        images.Begin(),
+        width,
+        height,
+        layers
+    };
+    res = vkCreateFramebuffer(loadInfo.dev, &fbInfo, nullptr, &loadInfo.framebuffer);
+    n_assert(res == VK_SUCCESS);
+
     // setup render area
     loadInfo.renderArea.offset.x = 0;
     loadInfo.renderArea.offset.y = 0;
     loadInfo.renderArea.extent.width = width;
     loadInfo.renderArea.extent.height = height;
-
-    // setup viewport info
-    runtimeInfo.viewportInfo.pNext = nullptr;
-    runtimeInfo.viewportInfo.flags = 0;
-    runtimeInfo.viewportInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    runtimeInfo.viewportInfo.scissorCount = loadInfo.rects.Size();
-    runtimeInfo.viewportInfo.pScissors = loadInfo.rects.Size() > 0 ? loadInfo.rects.Begin() : 0;
-    runtimeInfo.viewportInfo.viewportCount = loadInfo.viewports.Size();
-    runtimeInfo.viewportInfo.pViewports = loadInfo.viewports.Size() > 0 ? loadInfo.viewports.Begin() : 0;
 
     // setup uniform buffer for render target information
     ShaderId sid = ShaderServer::Instance()->GetShader("shd:shared.fxb"_atm);
@@ -434,7 +471,7 @@ SetupPass(const PassId pid)
     CoreGraphics::ResourceTableBuffer write;
     write.buf = loadInfo.passBlockBuffer;
     write.offset = 0;
-    write.size = -1;
+    write.size = NEBULA_WHOLE_BUFFER_SIZE;
     write.index = 0;
     write.dynamicOffset = false;
     write.texelBuffer = false;
@@ -481,26 +518,10 @@ SetupPass(const PassId pid)
     BufferUpdateArray(loadInfo.passBlockBuffer, dimensions.Begin(), dimensions.Size(), loadInfo.renderTargetDimensionsVar);
     ResourceTableCommitChanges(runtimeInfo.passDescriptorSet);
 
-    // create framebuffer
-    VkFramebufferCreateInfo fbInfo =
-    {
-        VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-        nullptr,
-        0,
-        loadInfo.pass,
-        (uint32_t)images.Size(),
-        images.Begin(),
-        width,
-        height,
-        layers
-    };
-    res = vkCreateFramebuffer(loadInfo.dev, &fbInfo, nullptr, &loadInfo.framebuffer);
-    n_assert(res == VK_SUCCESS);
-
     // setup info
     runtimeInfo.framebufferPipelineInfo.renderPass = loadInfo.pass;
     runtimeInfo.framebufferPipelineInfo.subpass = 0;
-    runtimeInfo.framebufferPipelineInfo.pViewportState = &runtimeInfo.viewportInfo;
+    runtimeInfo.framebufferPipelineInfo.pViewportState = &runtimeInfo.subpassPipelineInfo[0];
 
     beginInfo =
     {
@@ -523,8 +544,7 @@ CreatePass(const PassCreateInfo& info)
 {
     n_assert(info.subpasses.Size() > 0);
     Ids::Id32 id = passAllocator.Alloc();
-    VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id);
-    Util::Array<uint32_t>& subpassAttachmentCounts = passAllocator.Get<3>(id);
+    VkPassLoadInfo& loadInfo = passAllocator.Get<Pass_LoadInfo>(id);
 
     loadInfo.colorAttachments = info.colorAttachments;
     loadInfo.colorAttachmentClears = info.colorAttachmentClears;
@@ -574,15 +594,20 @@ CreatePass(const PassCreateInfo& info)
 void
 DestroyPass(const PassId id)
 {
-    VkPassLoadInfo& loadInfo = passAllocator.Get<0>(id.id24);
-    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
-    VkRenderPassBeginInfo& beginInfo = passAllocator.Get<2>(id.id24);
+    VkPassLoadInfo& loadInfo = passAllocator.Get<Pass_LoadInfo>(id.id24);
+    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_RuntimeInfo>(id.id24);
+    VkRenderPassBeginInfo& beginInfo = passAllocator.Get<Pass_BeginInfo>(id.id24);
+
+    for (IndexT i = 0; i < loadInfo.colorAttachments.Size(); i++)
+        CoreGraphics::DestroyTextureView(loadInfo.colorAttachments[i]);
+    if (loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId)
+        CoreGraphics::DestroyTextureView(loadInfo.depthStencilAttachment);
 
     // destroy pass and our descriptor set
     DestroyResourceTable(runtimeInfo.passDescriptorSet);
     DestroyBuffer(loadInfo.passBlockBuffer);
-    vkDestroyRenderPass(loadInfo.dev, loadInfo.pass, NULL);
-    vkDestroyFramebuffer(loadInfo.dev, loadInfo.framebuffer, NULL);
+    vkDestroyRenderPass(loadInfo.dev, loadInfo.pass, nullptr);
+    vkDestroyFramebuffer(loadInfo.dev, loadInfo.framebuffer, nullptr);
 }
 
 //------------------------------------------------------------------------------
@@ -591,7 +616,7 @@ DestroyPass(const PassId id)
 void
 PassBegin(const PassId id, PassRecordMode recordMode)
 {
-    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
+    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_RuntimeInfo>(id.id24);
 
     // bind descriptor set for pass resources
     CoreGraphics::SetResourceTable(runtimeInfo.passDescriptorSet, NEBULA_PASS_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
@@ -611,7 +636,7 @@ PassBegin(const PassId id, PassRecordMode recordMode)
 void
 PassNextSubpass(const PassId id)
 {
-    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
+    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_RuntimeInfo>(id.id24);
     runtimeInfo.currentSubpassIndex++;
     runtimeInfo.framebufferPipelineInfo.subpass = runtimeInfo.currentSubpassIndex;
     runtimeInfo.framebufferPipelineInfo.pViewportState = &runtimeInfo.subpassPipelineInfo[runtimeInfo.currentSubpassIndex];
@@ -625,7 +650,7 @@ PassNextSubpass(const PassId id)
 void
 PassEnd(const PassId id)
 {
-    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
+    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_RuntimeInfo>(id.id24);
     CoreGraphics::EndPass(runtimeInfo.recordMode);
 }
 
@@ -635,7 +660,7 @@ PassEnd(const PassId id)
 void 
 PassApplyClipSettings(const PassId id)
 {
-    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<1>(id.id24);
+    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_RuntimeInfo>(id.id24);
     const Util::FixedArray<VkViewport>& viewports = runtimeInfo.subpassViewports[runtimeInfo.currentSubpassIndex];
     CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
 
@@ -649,7 +674,26 @@ PassApplyClipSettings(const PassId id)
 void
 PassWindowResizeCallback(const PassId id)
 {
-    DestroyPass(id);
+    VkPassLoadInfo& loadInfo = passAllocator.Get<Pass_LoadInfo>(id.id24);
+    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_RuntimeInfo>(id.id24);
+
+    // destroy pass and our descriptor set
+    DestroyResourceTable(runtimeInfo.passDescriptorSet);
+    DestroyBuffer(loadInfo.passBlockBuffer);
+    vkDestroyRenderPass(loadInfo.dev, loadInfo.pass, nullptr);
+    vkDestroyFramebuffer(loadInfo.dev, loadInfo.framebuffer, nullptr);
+
+    // update attachments because their underlying textures might have changed
+    for (IndexT i = 0; i < loadInfo.colorAttachments.Size(); i++)
+    {
+        CoreGraphics::TextureViewReload(loadInfo.colorAttachments[i]);
+    }
+    if (loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId)
+    {
+        CoreGraphics::TextureViewReload(loadInfo.depthStencilAttachment);
+    }
+
+    // setup pass again
     SetupPass(id);
 }
 
@@ -659,7 +703,7 @@ PassWindowResizeCallback(const PassId id)
 const Util::Array<CoreGraphics::TextureViewId>&
 PassGetAttachments(const CoreGraphics::PassId id)
 {
-    return passAllocator.Get<0>(id.id24).colorAttachments;
+    return passAllocator.Get<Pass_LoadInfo>(id.id24).colorAttachments;
 }
 
 //------------------------------------------------------------------------------
@@ -668,7 +712,7 @@ PassGetAttachments(const CoreGraphics::PassId id)
 const CoreGraphics::TextureViewId 
 PassGetDepthStencilAttachment(const CoreGraphics::PassId id)
 {
-    return passAllocator.Get<0>(id.id24).depthStencilAttachment;
+    return passAllocator.Get<Pass_LoadInfo>(id.id24).depthStencilAttachment;
 }
 
 //------------------------------------------------------------------------------
@@ -677,7 +721,7 @@ PassGetDepthStencilAttachment(const CoreGraphics::PassId id)
 const uint32_t
 PassGetNumSubpassAttachments(const CoreGraphics::PassId id, const IndexT subpass)
 {
-    return passAllocator.Get<3>(id.id24)[subpass];
+    return passAllocator.Get<Pass_SubpassAttachments>(id.id24)[subpass];
 }
 
 //------------------------------------------------------------------------------
@@ -686,7 +730,7 @@ PassGetNumSubpassAttachments(const CoreGraphics::PassId id, const IndexT subpass
 const Util::StringAtom 
 PassGetName(const CoreGraphics::PassId id)
 {
-    return passAllocator.Get<0>(id.id24).name;
+    return passAllocator.Get<Pass_LoadInfo>(id.id24).name;
 }
 
 } // namespace Vulkan

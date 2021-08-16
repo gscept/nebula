@@ -95,6 +95,46 @@ DestroyTextureView(const TextureViewId id)
     textureViewAllocator.Dealloc(id.id24);
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TextureViewReload(const TextureViewId id)
+{
+    VkTextureViewRuntimeInfo& runtimeInfo = textureViewAllocator.Get<TextureView_RuntimeInfo>(id.id24);
+    VkTextureViewLoadInfo& loadInfo = textureViewAllocator.Get<TextureView_LoadInfo>(id.id24);
+
+    // first destroy the old view
+    vkDestroyImageView(loadInfo.dev, runtimeInfo.view, nullptr);
+
+    bool isDepthFormat = VkTypes::IsDepthFormat(loadInfo.format);
+    VkImageSubresourceRange viewRange;
+    viewRange.aspectMask = isDepthFormat ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT; // view only supports reading depth in shader
+    viewRange.baseMipLevel = loadInfo.mip;
+    viewRange.levelCount = loadInfo.numMips;
+    viewRange.baseArrayLayer = loadInfo.layer;
+    viewRange.layerCount = loadInfo.numLayers;
+
+    VkImage img = TextureGetVkImage(loadInfo.tex);
+    VkImageViewType type = VkTypes::AsVkImageViewType(TextureGetType(loadInfo.tex));
+    VkFormat format = VkTypes::AsVkFormat(loadInfo.format);
+
+    VkImageViewCreateInfo viewCreate =
+    {
+        VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        nullptr,
+        0,
+        img,
+        type,
+        format,
+        VkTypes::AsVkMapping(loadInfo.format),
+        viewRange
+    };
+    VkResult stat = vkCreateImageView(loadInfo.dev, &viewCreate, nullptr, &runtimeInfo.view);
+    n_assert(stat == VK_SUCCESS);
+}
+
 //------------------------------------------------------------------------------
 /**
 */
