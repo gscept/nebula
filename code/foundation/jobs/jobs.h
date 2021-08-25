@@ -100,9 +100,11 @@ public:
 
     enum JobThreadCommandType
     {
-        RunJob,
-        Signal,
-        Wait
+        RunJob
+        , Signal
+        , Wait
+        , WaitAndReset
+        
     };
 
     struct JobThreadCommand
@@ -182,14 +184,12 @@ enum
     JobPort_Name,
     JobPort_Threads,
     JobPort_NextThreadIndex,
-    JobPort_LastJobId
 };
 
 typedef Ids::IdAllocator<
     Util::StringAtom,                       // 0 - name
     Util::FixedArray<Ptr<JobThread>>,       // 1 - threads
-    uint,                                   // 2 - next thread index
-    JobId                                   // 3 - last pushed job
+    uint                                    // 2 - next thread index
 > JobPortAllocator;
 extern JobPortAllocator jobPortAllocator;
 
@@ -211,6 +211,8 @@ void JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx,
 void JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, const std::function<void()>& callback, const bool cycleThreads = true);
 /// schedule job without a context
 void JobSchedule(const JobId& job, const JobPortId& port);
+/// schedule a job with a poiunter as context and a work group size and item count
+void JobSchedule(const JobId& job, const JobPortId& port, void* ctx, SizeT count, SizeT groupSize, const bool cycleThreads = true);
 /// schedule a sequence of jobs
 void JobScheduleSequence(const Util::Array<JobId>& jobs, const JobPortId& port, const Util::Array<JobContext>& contexts);
 /// schedule a sequence of jobs
@@ -260,12 +262,12 @@ JobSyncId CreateJobSync(const CreateJobSyncInfo& info);
 /// destroy job sync
 void DestroyJobSync(const JobSyncId id);
 
-/// put job sync on port
-void JobSyncSignal(const JobSyncId id, const JobPortId port);
-/// wait for job on host side
-void JobSyncHostWait(const JobSyncId id);
-/// wait for job on thread side
-void JobSyncThreadWait(const JobSyncId id, const JobPortId port);
+/// put job sync on port, if reset is true, reset prior to signaling
+void JobSyncSignal(const JobSyncId id, const JobPortId port, bool reset = true);
+/// wait for job on host side, if reset is true, resets after waiting
+void JobSyncHostWait(const JobSyncId id, bool reset = false);
+/// wait for job on thread side, if reset is true, reset after waiting
+void JobSyncThreadWait(const JobSyncId id, const JobPortId port, bool reset = false);
 
 /// returns true if sync object has been signaled
 bool JobSyncSignaled(const JobSyncId id);

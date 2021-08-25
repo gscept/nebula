@@ -184,12 +184,12 @@ ValidateBarrier(
     case BarrierAccess::ShaderRead:
     case BarrierAccess::ShaderWrite:
         n_assert(
-            CheckBits(stage, BarrierStage::VertexShader)
-            || CheckBits(stage, BarrierStage::HullShader)
-            || CheckBits(stage, BarrierStage::DomainShader)
-            || CheckBits(stage, BarrierStage::GeometryShader)
-            || CheckBits(stage, BarrierStage::PixelShader)
-            || CheckBits(stage, BarrierStage::ComputeShader)
+            AllBits(stage, BarrierStage::VertexShader)
+            || AllBits(stage, BarrierStage::HullShader)
+            || AllBits(stage, BarrierStage::DomainShader)
+            || AllBits(stage, BarrierStage::GeometryShader)
+            || AllBits(stage, BarrierStage::PixelShader)
+            || AllBits(stage, BarrierStage::ComputeShader)
         );
         break;
     case BarrierAccess::InputAttachmentRead:
@@ -202,8 +202,8 @@ ValidateBarrier(
     case BarrierAccess::DepthAttachmentRead:
     case BarrierAccess::DepthAttachmentWrite:
         n_assert(
-            CheckBits(stage, BarrierStage::EarlyDepth)
-            || CheckBits(stage, BarrierStage::LateDepth)
+            AllBits(stage, BarrierStage::EarlyDepth)
+            || AllBits(stage, BarrierStage::LateDepth)
         );
         break;
     case BarrierAccess::TransferRead:

@@ -588,7 +588,7 @@ UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layou
 void 
 BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const CoreGraphics::ShaderProgramId programId)
 {
-    if (state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != programId || !CheckBits(state.currentPipelineBits, PipelineBuildBits::ShaderInfoSet))
+    if (state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != programId || !AllBits(state.currentPipelineBits, PipelineBuildBits::ShaderInfoSet))
     {
         state.database.SetShader(programId, shader);
         state.currentPipelineBits |= PipelineBuildBits::ShaderInfoSet;
@@ -617,7 +617,7 @@ BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const CoreG
 void 
 SetVertexLayoutPipelineInfo(VkPipelineVertexInputStateCreateInfo* vertexLayout)
 {
-    if (state.currentPipelineInfo.pVertexInputState != vertexLayout || !CheckBits(state.currentPipelineBits, PipelineBuildBits::VertexLayoutInfoSet))
+    if (state.currentPipelineInfo.pVertexInputState != vertexLayout || !AllBits(state.currentPipelineBits, PipelineBuildBits::VertexLayoutInfoSet))
     {
         state.database.SetVertexLayout(vertexLayout);
         state.currentPipelineBits |= PipelineBuildBits::VertexLayoutInfoSet;
@@ -646,7 +646,7 @@ SetFramebufferLayoutInfo(const VkGraphicsPipelineCreateInfo& framebufferLayout)
 void 
 SetInputLayoutInfo(VkPipelineInputAssemblyStateCreateInfo* inputLayout)
 {
-    if (state.currentPipelineInfo.pInputAssemblyState != inputLayout || !CheckBits(state.currentPipelineBits, PipelineBuildBits::InputLayoutInfoSet))
+    if (state.currentPipelineInfo.pInputAssemblyState != inputLayout || !AllBits(state.currentPipelineBits, PipelineBuildBits::InputLayoutInfoSet))
     {
         state.database.SetInputLayout(inputLayout);
         state.currentPipelineBits |= PipelineBuildBits::InputLayoutInfoSet;
@@ -1277,7 +1277,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         for (uint32_t j = 0; j < queuesProps[i].queueCount; j++)
         {
             // just pick whichever queue supports graphics, it will most likely only be 1
-            if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_GRAPHICS_BIT)
+            if (AllBits(queuesProps[i].queueFlags, VK_QUEUE_GRAPHICS_BIT)
                 && state.drawQueueIdx == UINT32_MAX)
             {
                 state.drawQueueFamily = i;
@@ -1287,7 +1287,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
             }
 
             // find a compute queue which is not for graphics
-            if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_COMPUTE_BIT)
+            if (AllBits(queuesProps[i].queueFlags, VK_QUEUE_COMPUTE_BIT)
                 && state.computeQueueIdx == UINT32_MAX)
             {
                 state.computeQueueFamily = i;
@@ -1297,7 +1297,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
             }
 
             // find a transfer queue that is purely for transfers
-            if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_TRANSFER_BIT)
+            if (AllBits(queuesProps[i].queueFlags, VK_QUEUE_TRANSFER_BIT)
                 && state.transferQueueIdx == UINT32_MAX)
             {
                 state.transferQueueFamily = i;
@@ -1307,7 +1307,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
             }
 
             // find a sparse or transfer queue that supports sparse binding
-            if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_SPARSE_BINDING_BIT)
+            if (AllBits(queuesProps[i].queueFlags, VK_QUEUE_SPARSE_BINDING_BIT)
                 && state.sparseQueueIdx == UINT32_MAX)
             {
                 state.sparseQueueFamily = i;
@@ -2863,7 +2863,7 @@ SetGraphicsPipeline()
 {
     n_assert((state.currentPipelineBits & PipelineBuildBits::AllInfoSet) != 0);
     state.currentBindPoint = CoreGraphics::GraphicsPipeline;
-    if (!CheckBits(state.currentPipelineBits, PipelineBuildBits::PipelineBuilt))
+    if (!AllBits(state.currentPipelineBits, PipelineBuildBits::PipelineBuilt))
     {
         CreateAndBindGraphicsPipeline();
         state.currentPipelineBits |= PipelineBuildBits::PipelineBuilt;

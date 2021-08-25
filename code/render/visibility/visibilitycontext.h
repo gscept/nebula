@@ -41,9 +41,8 @@ enum
 
 enum
 {
+    ObservableAtom_NodeInstanceRange,
     ObservableAtom_GraphicsEntityId,
-    ObservableAtom_Transform,
-    ObservableAtom_Node,
     ObservableAtom_VisibilityEntityType,
     ObservableAtom_Active
 };
@@ -116,7 +115,6 @@ public:
     /// get visibility draw list
     static const VisibilityDrawList* GetVisibilityDrawList(const Graphics::GraphicsEntityId id);
 
-    static Jobs::JobPortId jobPort;
     static Jobs::JobSyncId jobInternalSync;
     static Jobs::JobSyncId jobInternalSync2;
     static Jobs::JobSyncId jobInternalSync3;
@@ -171,11 +169,12 @@ private:
     using AtomIsActive = bool;
     // atom corresponds to a single visibility entry
     typedef Ids::IdAllocator<
-        Graphics::GraphicsEntityId,  // the entity id that this atom is bound to.
-        AtomTransform,               // atoms transform
-        Models::ModelNode::Instance*,// atoms model node instance
-        VisibilityEntityType,        // the observables visibility type
-        AtomIsActive                 // is the atom active
+        Models::ModelContext::NodeInstanceRange,    // The range of node instances for an entity
+        Graphics::GraphicsEntityId,                 // the entity id that this atom is bound to.
+        AtomTransform,                              // atoms transform
+        Models::ModelNode::Instance*,               // atoms model node instance
+        VisibilityEntityType,                       // the observables visibility type
+        AtomIsActive                                // is the atom active
     > ObservableAtomAllocator;
     static ObservableAtomAllocator observableAtomAllocator;
 

@@ -72,6 +72,19 @@ operator"" _MB(const unsigned long long val)
 }
 
 #define N_BIT(x) (1 << x)
+template <class MASK, class BITS>
+constexpr MASK
+SetBits(const MASK mask, const BITS bit)
+{
+    return mask & bit;
+}
+
+template <class MASK, class BITS>
+constexpr MASK
+UnsetBits(const MASK mask, const BITS bit)
+{
+    return mask & !bit;
+}
 
 #define N_ARGB(a,r,g,b) ((uint)((((a)&0xff)<<24)|(((r)&0xff)<<16)|(((g)&0xff)<<8)|((b)&0xff)))
 #define N_RGBA(r,g,b,a) N_ARGB(a,r,g,b)
@@ -80,9 +93,16 @@ operator"" _MB(const unsigned long long val)
 
 template <class FLAGS, class BITS>
 constexpr bool
-CheckBits(const FLAGS flags, const BITS bits)
+AllBits(const FLAGS flags, const BITS bits)
 {
     return (flags & bits) == bits;
+}
+
+template <class FLAGS, class BITS>
+constexpr bool
+AnyBits(const FLAGS flags, const BITS bits)
+{
+    return (flags & ~bits) != 0;
 }
 
 // byte bit calc

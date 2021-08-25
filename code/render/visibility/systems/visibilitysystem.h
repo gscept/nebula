@@ -83,7 +83,7 @@ public:
     /// setup observers
     virtual void PrepareObservers(const Math::mat4* transforms, Math::ClipStatus::Type* const* vis, const SizeT count);
     /// prepare system with entities to insert into the structure
-    virtual void PrepareEntities(const Math::mat4* transforms, const Graphics::GraphicsEntityId* entities, const bool* activeFlags, const SizeT count);
+    virtual void PrepareEntities(const Math::bbox* transforms, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count);
     /// run system
     virtual void Run();
 
@@ -101,9 +101,9 @@ protected:
 
     struct Entity
     {
-        const Math::mat4* transforms;
+        const Math::bbox* boxes;
         const Graphics::GraphicsEntityId* entities;
-        const bool* activeFlags;
+        const uint32_t* entityFlags;
         SizeT count;
     } ent;
 };

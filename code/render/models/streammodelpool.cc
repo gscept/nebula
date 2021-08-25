@@ -355,7 +355,7 @@ StreamModelPool::Unload(const Resources::ResourceId id)
 {
     const SizeT& instances = this->Get<InstanceCount>(id);
     if (instances > 0)
-        n_error("Model '%s' still has active instances!", this->names[id.poolId].Value());
+        n_error("Model '%s' still has active nodeInstances!", this->names[id.poolId].Value());
     Util::Dictionary<Util::StringAtom, Models::ModelNode*>& nodes = this->Get<ModelNodes>(id);
 
     // unload nodes

@@ -5,6 +5,7 @@
 #include "render/stdneb.h"
 #include "bruteforcesystem.h"
 #include "visibility/visibilitycontext.h"
+#include "graphics/graphicsserver.h"
 #include "math/mat4.h"
 namespace Visibility
 {
@@ -36,13 +37,13 @@ BruteforceSystem::Run()
 
         // just one input buffer of all the transforms
         ctx.input.numBuffers = 2;
-        ctx.input.data[0] = (unsigned char*)this->ent.transforms;
-        ctx.input.dataSize[0] = sizeof(Math::mat4) * this->ent.count;
-        ctx.input.sliceSize[0] = sizeof(Math::mat4);
+        ctx.input.data[0] = (unsigned char*)this->ent.boxes;
+        ctx.input.dataSize[0] = sizeof(Math::bbox) * this->ent.count;
+        ctx.input.sliceSize[0] = sizeof(Math::bbox);
 
-        ctx.input.data[1] = (unsigned char*)this->ent.activeFlags;
-        ctx.input.dataSize[1] = sizeof(bool) * this->ent.count;
-        ctx.input.sliceSize[1] = sizeof(bool);
+        ctx.input.data[1] = (unsigned char*)this->ent.entityFlags;
+        ctx.input.dataSize[1] = sizeof(uint32_t) * this->ent.count;
+        ctx.input.sliceSize[1] = sizeof(uint32_t);
 
         // the output is the visibility result
         ctx.output.numBuffers = 1;
@@ -52,7 +53,7 @@ BruteforceSystem::Run()
 
         // create and run job
         Jobs::JobId job = Jobs::CreateJob({ BruteforceSystemJobFunc });
-        Jobs::JobSchedule(job, ObserverContext::jobPort, ctx);
+        Jobs::JobSchedule(job, Graphics::GraphicsServer::renderSystemsJobPort, ctx);
 
         // enqueue here, but don't dequeue as VisibilityContext will do it for us
         ObserverContext::runningJobs.Enqueue(job);

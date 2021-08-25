@@ -22,9 +22,9 @@ VisibilitySystem::PrepareObservers(const Math::mat4* transforms, Math::ClipStatu
 /**
 */
 void
-VisibilitySystem::PrepareEntities(const Math::mat4* transforms, const Graphics::GraphicsEntityId* entities, const bool* activeFlags, const SizeT count)
+VisibilitySystem::PrepareEntities(const Math::bbox* boxes, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count)
 {
-    this->ent.transforms = transforms;
+    this->ent.boxes = boxes;
     this->ent.entities = entities;
     this->ent.activeFlags = activeFlags;
     this->ent.count = count;

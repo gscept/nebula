@@ -75,7 +75,7 @@ public:
 
     struct DrawPacket
     {
-        Models::ModelNode::Instance* node = nullptr;
+        Models::ModelNode* node = nullptr;
         Materials::SurfaceInstanceId surfaceInstance;
         SizeT numTables;
         CoreGraphics::ResourceTableId tables[NumTables];
@@ -89,7 +89,7 @@ public:
         /// cast to node of type
         template <class T> T* ToNode()
         {
-            static_assert(std::is_base_of<Models::ModelNode::Instance, T>::value, "T has to be of ModelNode::Instance type");
+            static_assert(std::is_base_of<Models::ModelNode, T>::value, "T has to be of ModelNode type");
             return reinterpret_cast<T*>(this->node);
         };
     };
@@ -105,6 +105,7 @@ public:
     void SetMaxLOD(const float lod);
 
 protected:
+    friend class ModelContext;
     friend class StreamModelPool;
 
     friend void Visibility::VisibilitySortJob(const Jobs::JobFuncContext& ctx);

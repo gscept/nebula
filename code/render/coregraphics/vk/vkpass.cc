@@ -339,12 +339,12 @@ SetupPass(const PassId pid)
     {
         TextureId tex = TextureViewGetTexture(loadInfo.colorAttachments[i]);
         TextureUsage usage = TextureGetUsage(tex);
-        n_assert(CheckBits(usage, RenderTexture));
+        n_assert(AllBits(usage, RenderTexture));
 
         VkFormat fmt = VkTypes::AsVkFormat(TextureGetPixelFormat(tex));
         VkAttachmentDescription& attachment = attachments[i];
-        IndexT loadIdx = CheckBits(loadInfo.colorAttachmentFlags[i], AttachmentFlagBits::Load) ? 2 : CheckBits(loadInfo.colorAttachmentFlags[i], AttachmentFlagBits::Clear) ? 1 : 0;
-        IndexT storeIdx = CheckBits(loadInfo.colorAttachmentFlags[i], AttachmentFlagBits::Store) ? 1 : 0;
+        IndexT loadIdx = AllBits(loadInfo.colorAttachmentFlags[i], AttachmentFlagBits::Load) ? 2 : AllBits(loadInfo.colorAttachmentFlags[i], AttachmentFlagBits::Clear) ? 1 : 0;
+        IndexT storeIdx = AllBits(loadInfo.colorAttachmentFlags[i], AttachmentFlagBits::Store) ? 1 : 0;
         attachment.flags = 0;
         attachment.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         attachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -361,13 +361,13 @@ SetupPass(const PassId pid)
     {
         TextureId tex = TextureViewGetTexture(loadInfo.depthStencilAttachment);
         TextureUsage usage = TextureGetUsage(tex);
-        n_assert(CheckBits(usage, RenderTexture));
+        n_assert(AllBits(usage, RenderTexture));
 
         VkAttachmentDescription& attachment = attachments[i];
-        IndexT loadIdx = CheckBits(loadInfo.depthStencilFlags, AttachmentFlagBits::Load) ? 2 : CheckBits(loadInfo.depthStencilFlags, AttachmentFlagBits::Clear) ? 1 : 0;
-        IndexT storeIdx = CheckBits(loadInfo.depthStencilFlags, AttachmentFlagBits::Store) ? 1 : 0;
-        IndexT stencilLoadIdx = CheckBits(loadInfo.depthStencilFlags, AttachmentFlagBits::LoadStencil) ? 2 : CheckBits(loadInfo.depthStencilFlags, AttachmentFlagBits::ClearStencil) ? 1 : 0;
-        IndexT stencilStoreIdx = CheckBits(loadInfo.depthStencilFlags, AttachmentFlagBits::StoreStencil) ? 1 : 0;
+        IndexT loadIdx = AllBits(loadInfo.depthStencilFlags, AttachmentFlagBits::Load) ? 2 : AllBits(loadInfo.depthStencilFlags, AttachmentFlagBits::Clear) ? 1 : 0;
+        IndexT storeIdx = AllBits(loadInfo.depthStencilFlags, AttachmentFlagBits::Store) ? 1 : 0;
+        IndexT stencilLoadIdx = AllBits(loadInfo.depthStencilFlags, AttachmentFlagBits::LoadStencil) ? 2 : AllBits(loadInfo.depthStencilFlags, AttachmentFlagBits::ClearStencil) ? 1 : 0;
+        IndexT stencilStoreIdx = AllBits(loadInfo.depthStencilFlags, AttachmentFlagBits::StoreStencil) ? 1 : 0;
         attachment.flags = 0;
         attachment.initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
         attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;

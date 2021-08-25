@@ -531,8 +531,10 @@ ENDIF()
             fips_files(
                 model.cc
                 model.h
+                modelboundingboxupdatejob.cc
                 modelcontext.cc
                 modelcontext.h
+                modeltransformupdatejob.cc
                 streammodelpool.cc
                 streammodelpool.h
             )

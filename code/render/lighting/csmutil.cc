@@ -25,7 +25,7 @@ namespace Lighting
 */
 CSMUtil::CSMUtil() :
     cascadeMaxDistance(300),
-    fittingMethod(Scene),
+    fittingMethod(Cascade),
     clampingMethod(AABB),
     blurSize(1),
     floorTexels(true),
@@ -53,23 +53,24 @@ CSMUtil::~CSMUtil()
 void 
 CSMUtil::ComputeFrustumPoints( float cascadeBegin, float cascadeEnd, const Math::mat4& projection, Math::vec4* frustumCorners )
 {
+    // projection[0][0] and [1][1] contains our fov for x and y
+    // which we use to determine the x/y coordinates of the near and far planes
+    float xNear, xFar, yNear, yFar;
+    xNear = cascadeBegin * projection.row0[0];
+    xFar = cascadeEnd * projection.row0[0];
+    yNear = cascadeBegin * projection.row1[1];
+    yFar = cascadeEnd * projection.row1[1];
+
     // frustum corners in projection space
-    frustumCorners[0].set(1.0f, 1.0f, cascadeBegin, 1.0f);
-    frustumCorners[1].set(1.0f, -1.0f, cascadeBegin, 1.0f);
-    frustumCorners[2].set(-1.0f, -1.0f, cascadeBegin, 1.0f);
-    frustumCorners[3].set(-1.0f, 1.0f, cascadeBegin, 1.0f);
+    frustumCorners[0].set(xNear, yNear, -cascadeBegin, 1.0f);
+    frustumCorners[1].set(xNear, -yNear, -cascadeBegin, 1.0f);
+    frustumCorners[2].set(-xNear, -yNear, -cascadeBegin, 1.0f);
+    frustumCorners[3].set(-xNear, yNear, -cascadeBegin, 1.0f);
 
-    frustumCorners[4].set(1.0f, 1.0f, cascadeEnd, 1.0f);
-    frustumCorners[5].set(-1.0f, 1.0f, cascadeEnd, 1.0f);
-    frustumCorners[6].set(-1.0f, -1.0f, cascadeEnd, 1.0f);
-    frustumCorners[7].set(1.0f, -1.0f, cascadeEnd, 1.0f);
-
-    // compute frustum corners in world space
-    IndexT i;
-    for (i = 0; i < 8; i++)
-    {
-        frustumCorners[i] = Math::point(projection * frustumCorners[i]);
-    }
+    frustumCorners[4].set(xFar, yFar, -cascadeEnd, 1.0f);
+    frustumCorners[5].set(-xFar, yFar, -cascadeEnd, 1.0f);
+    frustumCorners[6].set(-xFar, -yFar, -cascadeEnd, 1.0f);
+    frustumCorners[7].set(xFar, -yFar, -cascadeEnd, 1.0f);    
 }
 
 //------------------------------------------------------------------------------
@@ -337,10 +338,10 @@ CSMUtil::Compute(const Graphics::GraphicsEntityId camera, const Graphics::Graphi
     mat4 cameraProjection = Graphics::CameraContext::GetProjection(camera);
     mat4 cameraView = inverse(Graphics::CameraContext::GetTransform(camera));
 
-    // get inversed shadow matrix, this is basically the global light transform, normalized and inversed
+    // Get inversed shadow matrix, this is basically the global light transform, normalized and inversed
     mat4 lightView = inverse(Lighting::LightContext::GetTransform(light));
     
-    // calculate light AABB based on the AABB of the scene
+    // Calculate light AABB based on the AABB of the scene
     vec4 sceneCenter = this->shadowBox.center();
     vec4 sceneExtents = this->shadowBox.extents();
     vec4 sceneAABBLightPoints[8];
@@ -354,8 +355,7 @@ CSMUtil::Compute(const Graphics::GraphicsEntityId camera, const Graphics::Graphi
     vec4 lightCameraOrthographicMin;
     vec4 lightCameraOrthographicMax;
 
-    // calculate near and far range based on scene bounding box
-    //float nearFarRange = camSettings.GetZFar() - camSettings.GetZNear();
+    // Calculate near and far range based on scene bounding box
     float nearFarRange = Math::min(this->shadowBox.diagonal_size() / 2, 300.0f);
     vec4 unitsPerTexel = vec4(0,0,0,0);
 
@@ -371,13 +371,14 @@ CSMUtil::Compute(const Graphics::GraphicsEntityId camera, const Graphics::Graphi
             intervalStart = 0;
         }
 
-        intervalStart /= cascadeMaxDistance;
-        intervalStart *= nearFarRange;
+        //intervalStart /= cascadeMaxDistance;
+        //intervalStart *= nearFarRange;
 
         intervalEnd = cascadeDistances[cascadeIndex];
-        intervalEnd /= cascadeMaxDistance;
-        intervalEnd *= nearFarRange;
+        //intervalEnd /= cascadeMaxDistance;
+        //intervalEnd *= nearFarRange;
 
+        // Calculate frustum points, it will end up in a frustum in view space
         vec4 frustumPoints[8];
         this->ComputeFrustumPoints(intervalStart, intervalEnd, cameraProjection, frustumPoints);
         lightCameraOrthographicMin = vec4(FLT_MAX);
@@ -386,9 +387,13 @@ CSMUtil::Compute(const Graphics::GraphicsEntityId camera, const Graphics::Graphi
         vec4 tempCornerPoint;
         for (int icpIndex = 0; icpIndex < 8; ++icpIndex)
         {
+            // Transform view point to world position
             frustumPoints[icpIndex] = cameraView * frustumPoints[icpIndex];
+
+            // Then transform to put the frustum points in light view
             tempCornerPoint = lightView * frustumPoints[icpIndex];
-            
+
+            // Find AABB corners
             lightCameraOrthographicMin = minimize(tempCornerPoint, lightCameraOrthographicMin);
             lightCameraOrthographicMax = maximize(tempCornerPoint, lightCameraOrthographicMax);
         }

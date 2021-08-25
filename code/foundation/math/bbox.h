@@ -552,8 +552,6 @@ bbox::clipstatus(const vec4* x_columns, const vec4* y_columns, const vec4* z_col
     IndexT i;
     for (i = 0; i < 2; ++i)
     {
-        int clip = 0;
-
         // transform the x component of 4 points simultaneously 
         xs[i] = multiplyadd(x_columns[2], pz[i],
             multiplyadd(x_columns[1], py[i],

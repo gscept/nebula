@@ -29,7 +29,7 @@ ReadWriteLock::~ReadWriteLock()
 void
 ReadWriteLock::Acquire(const RWAccessFlags accessFlags)
 {
-	if (CheckBits(accessFlags, ReadAccess))
+	if (AllBits(accessFlags, ReadAccess))
 	{
 		// wait here for any writes to finish
 		this->readerSection.Enter();
@@ -44,7 +44,7 @@ ReadWriteLock::Acquire(const RWAccessFlags accessFlags)
 		this->readerSection.Leave();
 	}
 
-	if (CheckBits(accessFlags, WriteAccess))
+	if (AllBits(accessFlags, WriteAccess))
 	{
 		this->writerSection.Enter();
 		while (this->numReaders > 0)
@@ -61,7 +61,7 @@ ReadWriteLock::Acquire(const RWAccessFlags accessFlags)
 void
 ReadWriteLock::Release(const RWAccessFlags accessFlags)
 {
-	if (CheckBits(accessFlags, ReadAccess))
+	if (AllBits(accessFlags, ReadAccess))
 	{
 		this->readerSection.Enter();
 		n_assert(this->numReaders != 0);
@@ -69,7 +69,7 @@ ReadWriteLock::Release(const RWAccessFlags accessFlags)
 		this->readerSection.Leave();
 	}
 
-	if (CheckBits(accessFlags, WriteAccess))
+	if (AllBits(accessFlags, WriteAccess))
 	{
 		ThreadId myThread = Threading::Thread::GetMyThreadId();
 		n_assert(this->writerThread == myThread);
