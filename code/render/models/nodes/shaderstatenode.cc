@@ -244,7 +244,7 @@ ShaderStateNode::DrawPacket::Apply(Materials::MaterialType* type)
         Materials::MaterialApplySurfaceInstance(type, this->surfaceInstance);
 
     // set resource tables
-    IndexT prevOffset = 0;
+    IndexT prevOffset = 0;  
     for (IndexT i = 0; i < this->numTables; i++)
     {
         CoreGraphics::SetResourceTable(this->tables[i], this->slots[i], CoreGraphics::GraphicsPipeline, this->numOffsets[i], this->offsets[prevOffset]);

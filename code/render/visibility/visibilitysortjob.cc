@@ -101,7 +101,7 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
             packet->numOffsets[0] = nodes->nodeStates[index].resourceTableOffsets.Size();
             packet->numTables = 1;
             packet->tables[0] = nodes->nodeStates[index].resourceTable;
-            packet->offsets[0][0] = nodes->nodeStates[index].resourceTableOffsets.Begin();
+            packet->offsets[0] = nodes->nodeStates[index].resourceTableOffsets.Begin();
             memcpy(&packet->offsets[0][0], nodes->nodeStates[index].resourceTableOffsets.Begin(), nodes->nodeStates[index].resourceTableOffsets.ByteSize());
             packet->slots[0] = NEBULA_DYNAMIC_OFFSET_GROUP;
             drawList->drawPackets.Append(packet);
