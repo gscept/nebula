@@ -13,6 +13,8 @@
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
 
+#include <particle.h>
+
 using namespace Graphics;
 using namespace Models;
 namespace Particles
@@ -42,6 +44,7 @@ struct
 
     Util::Array<CoreGraphics::VertexComponent> particleComponents;
     CoreGraphics::VertexLayoutId layout;
+    CoreGraphics::PrimitiveGroup primGroup;
 } state;
 
 Jobs::JobPortId ParticleContext::jobPort;
@@ -210,6 +213,11 @@ ParticleContext::Create()
     state.layout = CoreGraphics::CreateVertexLayout(vloInfo);
     state.vertexSize = sizeof(Math::vec4) * 5; // 5 vertex attributes using vec4
 
+    state.primGroup.SetBaseIndex(0);
+    state.primGroup.SetNumIndices(6);
+    state.primGroup.SetBaseVertex(0);
+    state.primGroup.SetNumVertices(4);
+
     __CreateContext();
 }
 
@@ -224,27 +232,30 @@ ParticleContext::Setup(const Graphics::GraphicsEntityId id)
 
     // get model context
     const ContextEntityId mdlId = Models::ModelContext::GetContextId(id);
-    n_assert_fmt(mdlId != InvalidContextEntityId, "Entity %d needs to be setup as a model before character!", id.HashCode());
+    n_assert_fmt(mdlId != InvalidContextEntityId, "Entity %d needs to be setup as a model before particle!", id.HashCode());
     particleContextAllocator.Get<ModelId>(cid.id) = mdlId;
 
     // get node map
     Util::Array<ParticleSystemRuntime>& systems = particleContextAllocator.Get<ParticleSystems>(cid.id);
 
+    // get ranges
+    const Models::NodeInstanceRange& range = ModelContext::GetModelRenderableRange(id);
+    const Models::ModelContext::ModelInstance::Renderable& renderables = ModelContext::GetModelRenderables();
+    
     // setup nodes
-    const Util::Array<Models::ModelNode::Instance*>& nodes = Models::ModelContext::GetModelNodeInstances(mdlId);
     IndexT i;
-    for (i = 0; i < nodes.Size(); i++)
+    for (i = range.begin; i < range.end; i++)
     {
-        Models::ModelNode* node = nodes[i]->node;
+        Models::ModelNode* node = renderables.nodes[i];
         if (node->type == ParticleSystemNodeType)
         {
-            Models::ParticleSystemNode* pNode = reinterpret_cast<Models::ParticleSystemNode*>(nodes[i]->node);
+            Models::ParticleSystemNode* pNode = reinterpret_cast<Models::ParticleSystemNode*>(node);
             const Particles::EmitterAttrs& attrs = pNode->GetEmitterAttrs();
             float maxFreq = attrs.GetEnvelope(EmitterAttrs::EmissionFrequency).GetMaxValue();
             float maxLifeTime = attrs.GetEnvelope(EmitterAttrs::LifeTime).GetMaxValue();
 
             ParticleSystemRuntime system;
-            system.node = reinterpret_cast<Models::ParticleSystemNode::Instance*>(nodes[i]);
+            system.renderableIndex = i;
             system.emissionCounter = 0;
             system.particles.SetCapacity(1 + SizeT(maxFreq * maxLifeTime));
             system.outputCapacity = 0;
@@ -255,14 +266,7 @@ ParticleContext::Setup(const Graphics::GraphicsEntityId id)
             system.uniformData.stretchTime = attrs.GetBool(EmitterAttrs::StretchToStart);
             system.uniformData.windVector = xyz(attrs.GetVec4(EmitterAttrs::WindDirection));
 
-            // update primitive group
-            CoreGraphics::PrimitiveGroup group;
-            group.SetBaseIndex(0);
-            group.SetNumIndices(6);
-            group.SetBaseVertex(0);
-            group.SetNumVertices(4);
-            group.SetVertexLayout(state.layout);
-            system.node->group = group;
+            // append system
             systems.Append(system);
         }
     }
@@ -275,12 +279,13 @@ void
 ParticleContext::ShowParticle(const Graphics::GraphicsEntityId id)
 {
     const ContextEntityId cid = GetContextId(id);
+    const Models::ModelContext::ModelInstance::Renderable& renderables = ModelContext::GetModelRenderables();
 
     // use node map to set active flag
     Util::Array<ParticleSystemRuntime>& systems = particleContextAllocator.Get<ParticleSystems>(cid.id);
     for (IndexT i = 0; i < systems.Size(); i++)
     {
-        systems[i].node->active = true;
+        SetBits(renderables.nodeFlags[systems[i].renderableIndex], Models::NodeInstance_Active);
     }
 }
 
@@ -291,12 +296,13 @@ void
 ParticleContext::HideParticle(const Graphics::GraphicsEntityId id)
 {
     const ContextEntityId cid = GetContextId(id);
+    const Models::ModelContext::ModelInstance::Renderable& renderables = ModelContext::GetModelRenderables();
 
     // use node map to set active flag
     Util::Array<ParticleSystemRuntime>& systems = particleContextAllocator.Get<ParticleSystems>(cid.id);
     for (IndexT i = 0; i < systems.Size(); i++)
     {
-        systems[i].node->active = false;
+        UnsetBits(renderables.nodeFlags[systems[i].renderableIndex], Models::NodeInstance_Active);
     }
 }
 
@@ -323,7 +329,6 @@ ParticleContext::Play(const Graphics::GraphicsEntityId id, const PlayMode mode)
     
     for (IndexT i = 0; i < systems.Size(); i++)
     {
-        auto node = systems[i].node;
         if ((runtime.playing && mode == RestartIfPlaying) || !runtime.playing)
         {
             systems[i].particles.Reset();
@@ -352,6 +357,8 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
     N_SCOPE(UpdateParticles, Particles);
     const Util::Array<ParticleRuntime>& runtimes = particleContextAllocator.GetArray<Runtime>();
     const Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
+    const Models::ModelContext::ModelInstance::Renderable& renderables = ModelContext::GetModelRenderables();
+    const Models::ModelContext::ModelInstance::Transformable& transformables = ModelContext::GetModelTransformables();
 
     IndexT i;
     for (i = 0; i < runtimes.Size(); i++)
@@ -373,7 +380,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
             for (j = 0; j < systems.Size(); j++)
             {
                 ParticleSystemRuntime& system = systems[j];
-                system.transform = system.node->modelTransform;
+                system.transform = transformables.nodeTransforms[renderables.nodeTransformIndex[system.renderableIndex]];
 
 #if NEBULA_USED_FIXED_PARTICLE_UPDATE_TIME
                 IndexT curStep = 0;
@@ -394,12 +401,15 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
                 runtime.stepTime += timeDiff;
 #endif
             }
-        }       
+        }
+
+
     }
 
     // issue sync
     if (runtimes.Size() > 0)
         Jobs::JobSyncSignal(jobSync, ParticleContext::jobPort);
+
 }
 
 //------------------------------------------------------------------------------
@@ -410,6 +420,7 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
 {
     N_SCOPE(PrepareView, Particles);
     const Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
+    const Models::ModelContext::ModelInstance::Renderable& renderables = ModelContext::GetModelRenderables();
 
     Math::mat4 invViewMatrix = inverse(Graphics::CameraContext::GetTransform(view->GetCamera()));
     IndexT i, j;
@@ -421,12 +432,10 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
         for (j = 0; j < systems.Size(); j++)
         {
             ParticleSystemRuntime& system = systems[j];
-            ParticleSystemNode* pnode = reinterpret_cast<ParticleSystemNode*>(system.node->node);
+            ParticleSystemNode* pnode = reinterpret_cast<ParticleSystemNode*>(renderables.nodes[system.renderableIndex]);
             Math::mat4 particleTransform = system.transform;
             if (pnode->GetEmitterAttrs().GetBool(Particles::EmitterAttrs::Billboard))
-                system.node->particleTransform = particleTransform * invViewMatrix;
-            else
-                system.node->particleTransform = particleTransform;
+                system.transform = invViewMatrix * system.transform;
         }
     }
 }
@@ -450,6 +459,9 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
 
     // get node map
     Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
+    const Util::Array<Graphics::GraphicsEntityId>& models = particleContextAllocator.GetArray<ModelContextId>();
+    const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
+
     SizeT numParticlesThisFrame = 0;
 
     // get frame to modify
@@ -461,9 +473,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
     {
         const Util::Array<ParticleSystemRuntime>& systems = allSystems[i];
 
-        // generate bounding box covering all particle systems (ineffective, but this is how the visibility is done)
-        Math::bbox box;
-        box.begin_extend();
+        // TODO: Can't we make this a part of the particle chain system job chain? Run one job per particle system, and also update constants and whatnot there?
         IndexT j;
         for (j = 0; j < systems.Size(); j++)
         {
@@ -472,18 +482,29 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
             n_assert(system.outputData != nullptr);
             if (system.outputData->numLivingParticles > 0)
             {
-                box.extend(system.outputData->bbox);
-                system.node->boundingBox = system.outputData->bbox; // update bounding box for system
+                renderables.nodeBoundingBoxes[system.renderableIndex] = system.outputData->bbox;
+                SetBits(renderables.nodeFlags[system.renderableIndex], NodeInstance_Active);
                 numParticlesThisFrame += system.outputData->numLivingParticles;
-                system.node->active = true;
+
+                ParticleSystemNode* pnode = reinterpret_cast<ParticleSystemNode*>(renderables.nodes[system.renderableIndex]);
+
+                ::Particle::ParticleObjectBlock block;
+
+                // update system transform
+                system.transform.store(block.EmitterTransform);
+
+                // update parameters
+                block.Billboard = pnode->emitterAttrs.GetBool(EmitterAttrs::Billboard);
+                block.NumAnimPhases = pnode->emitterAttrs.GetInt(EmitterAttrs::AnimPhases);
+                block.AnimFramesPerSecond = pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond);
+
+                // allocate block
+                uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
+                renderables.nodeStates[j].resourceTableOffsets[renderables.nodeStates[j].particleConstantsIndex] = offset;
             }
             else
-                system.node->active = false; // disable the node if it has no particles
+                UnsetBits(renderables.nodeFlags[system.renderableIndex], NodeInstance_Active);
         }
-        box.end_extend();
-
-        // update bounding boxes
-        particleContextAllocator.Get<BoundingBox>(i) = box;
     }
 
     // check if we need to realloc buffers
@@ -522,7 +543,6 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
         for (j = 0; j < systems.Size(); j++)
         {
             const ParticleSystemRuntime& system = systems[j];
-            system.node->particleVboOffset = baseVertex;
             SizeT numParticles = 0;
 
             // stream update vertex buffer region
@@ -540,14 +560,25 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
                     float cosRot = Math::cos(particle.rotation);
                     tmp.set(sinRot, cosRot, particle.size, particle.particleId);
                     tmp.stream(buf); buf += 4;
-                    baseVertex++;
                     numParticles++;
                 }
             }
 
-            // update node
-            system.node->numParticles = numParticles;
-            system.node->particleVbo = state.vbos[frame];
+            // Setup model callback (actually identical for ALL particles...)
+            renderables.nodeModelCallbacks[system.renderableIndex] = [=]()
+            {
+                CoreGraphics::SetVertexLayout(ParticleContext::GetParticleVertexLayout());
+                CoreGraphics::SetIndexBuffer(ParticleContext::GetParticleIndexBuffer(), 0);
+                CoreGraphics::SetPrimitiveGroup(ParticleContext::ParticleContext::GetParticlePrimitiveGroup());
+                CoreGraphics::SetStreamVertexBuffer(0, ParticleContext::GetParticleVertexBuffer(), 0);
+                CoreGraphics::SetStreamVertexBuffer(1, state.vbos[frame], baseVertex);
+            };
+
+            // Setup draw modifiers
+            renderables.nodeDrawModifiers[system.renderableIndex] = Util::MakeTuple(numParticles, baseVertex);
+
+            // Bump base vertex with number of particles from this system
+            baseVertex += numParticles;
 
             if (numParticles > 0)
                 flushBuffer = true;
@@ -589,11 +620,10 @@ ParticleContext::GetParticleVertexLayout()
 //------------------------------------------------------------------------------
 /**
 */
-Math::bbox 
-ParticleContext::GetBoundingBox(const Graphics::GraphicsEntityId id)
+CoreGraphics::PrimitiveGroup
+ParticleContext::GetParticlePrimitiveGroup()
 {
-    const ContextEntityId cid = GetContextId(id);
-    return particleContextAllocator.Get<BoundingBox>(cid.id);
+    return state.primGroup;
 }
 
 #ifndef PUBLIC_DEBUG    
@@ -605,7 +635,6 @@ ParticleContext::OnRenderDebug(uint32_t flags)
 {
     CoreGraphics::ShapeRenderer* shapeRenderer = CoreGraphics::ShapeRenderer::Instance();
     Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
-    Util::Array<Math::bbox>& boxes = particleContextAllocator.GetArray<BoundingBox>();
     for (IndexT i = 0; i < allSystems.Size(); i++)
     {
         Util::Array<ParticleSystemRuntime> runtimes = allSystems[i];
@@ -614,9 +643,6 @@ ParticleContext::OnRenderDebug(uint32_t flags)
             // for each system, make a white box
             shapeRenderer->AddWireFrameBox(runtimes[j].boundingBox, Math::vec4(1));
         }
-
-        // for the whole particle effect, draw a red box
-        shapeRenderer->AddWireFrameBox(boxes[i], Math::vec4(1, 0, 0, 1));
     }
 }
 #endif
@@ -628,8 +654,10 @@ void
 ParticleContext::EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, float stepTime)
 {
     N_SCOPE(EmitParticles, Particles);
+
     // get the (wrapped around if looping) time since emission has started
-    Models::ParticleSystemNode* node = reinterpret_cast<Models::ParticleSystemNode*>(srt.node->node);
+    const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
+    Models::ParticleSystemNode* node = reinterpret_cast<Models::ParticleSystemNode*>(renderables.nodes[srt.renderableIndex]);
     const Particles::EmitterAttrs& attrs = node->GetEmitterAttrs();
     const Particles::EmitterMesh& mesh = node->GetEmitterMesh();
     const Particles::EnvelopeSampleBuffer& buffer = node->GetSampleBuffer();

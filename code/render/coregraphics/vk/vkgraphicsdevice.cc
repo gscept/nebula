@@ -24,7 +24,7 @@
 #include "vkfence.h"
 #include "vktypes.h"
 #include "vkutilities.h"
-#include "coregraphics/vertexsignaturepool.h"
+#include "coregraphics/vertexsignaturecache.h"
 #include "coregraphics/glfw/glfwwindow.h"
 #include "coregraphics/displaydevice.h"
 #include "coregraphics/vk/vksemaphore.h"
@@ -2423,7 +2423,7 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
 {
     n_assert(pro != CoreGraphics::InvalidShaderProgramId);
 
-    VkShaderProgramRuntimeInfo& info = CoreGraphics::shaderPool->shaderAlloc.Get<VkShaderPool::Shader_ProgramAllocator>(pro.shaderId).Get<ShaderProgram_RuntimeInfo>(pro.programId);
+    VkShaderProgramRuntimeInfo& info = CoreGraphics::shaderPool->shaderAlloc.Get<VkShaderCache::Shader_ProgramAllocator>(pro.shaderId).Get<ShaderProgram_RuntimeInfo>(pro.programId);
     info.colorBlendInfo.pAttachments = info.colorBlendAttachments;
     state.currentStencilFrontRef = info.stencilFrontRef;
     state.currentStencilBackRef = info.stencilBackRef;
@@ -3079,14 +3079,14 @@ Draw()
 //------------------------------------------------------------------------------
 /**
 */
-void 
-DrawInstanced(SizeT numInstances, IndexT baseInstance)
+void
+Draw(SizeT numInstances, IndexT baseInstance)
 {
     n_assert(state.inBeginPass);
 
     if (state.drawThread)
     {
-        n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
+        n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId);
         VkCommandBufferThread::VkDrawCommand cmd;
         cmd.baseIndex = state.primitiveGroup.GetBaseIndex();
         cmd.baseVertex = state.primitiveGroup.GetBaseVertex();

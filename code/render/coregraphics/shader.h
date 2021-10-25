@@ -149,7 +149,7 @@ const ShaderFeature::Mask ShaderFeatureFromString(const Util::String& str);
 /// get shader program id from masks, this allows us to apply a shader program directly in the future
 const CoreGraphics::ShaderProgramId ShaderGetProgram(const ShaderId id, const CoreGraphics::ShaderFeature::Mask program);
 
-class ShaderPool;
-extern ShaderPool* shaderPool;
+class ShaderCache;
+extern ShaderCache* shaderPool;
 
 } // namespace CoreGraphics

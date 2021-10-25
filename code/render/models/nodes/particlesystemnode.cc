@@ -7,7 +7,7 @@
 #include "particlesystemnode.h"
 #include "resources/resourceserver.h"
 #include "models/model.h"
-#include "models/streammodelpool.h"
+#include "models/streammodelcache.h"
 #include "coregraphics/mesh.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/transformdevice.h"
@@ -97,6 +97,19 @@ ParticleSystemNode::OnFinishedLoading()
     this->resourceTable = ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
     ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->particleConstantsIndex, 0, false, true, sizeof(::Particle::ParticleObjectBlock), 0 });
     ResourceTableCommitChanges(this->resourceTable);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+std::function<void()>
+ParticleSystemNode::GetApplyNodeFunction()
+{
+    return []()
+    {
+        n_error("Invalid function '%s' called, it should be set in ParticleContext", __FUNCTION__);
+        // This function is provided in ParticleContext
+    };
 }
 
 //------------------------------------------------------------------------------
@@ -295,68 +308,4 @@ ParticleSystemNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag
     return retval;    
 }
 
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ParticleSystemNode::ApplyNodeState()
-{
-    TransformNode::ApplyNodeState();
-
-    SetStreamVertexBuffer(0, ParticleContext::GetParticleVertexBuffer(), 0);
-    SetVertexLayout(ParticleContext::GetParticleVertexLayout());
-    SetIndexBuffer(ParticleContext::GetParticleIndexBuffer(), 0);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-ParticleSystemNode::ApplyNodeResources()
-{
-    // do nothing
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ParticleSystemNode::Instance::Update()
-{
-    if (!this->dirty)
-        return;
-
-    ShaderStateNode::Instance::Update();
-    ParticleSystemNode* pnode = reinterpret_cast<ParticleSystemNode*>(this->node);
-
-    ::Particle::ParticleObjectBlock block;
-    block.Billboard = pnode->emitterAttrs.GetBool(EmitterAttrs::Billboard);
-
-    this->particleTransform.store(block.EmitterTransform);
-
-    // update parameters
-    this->boundingBox.center().store(block.BBoxCenter);
-    this->boundingBox.extents().store(block.BBoxSize);
-    block.NumAnimPhases = pnode->emitterAttrs.GetInt(EmitterAttrs::AnimPhases);
-    block.AnimFramesPerSecond = pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond);
-
-    // allocate block
-    uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
-    this->offsets[this->particleConstantsIndex] = offset;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ParticleSystemNode::Instance::Draw(const SizeT numInstances, const IndexT baseInstance, Models::ShaderStateNode::DrawPacket* packet)
-{
-    if (this->particleVbo == CoreGraphics::InvalidBufferId)
-        return;
-
-    CoreGraphics::SetStreamVertexBuffer(1, this->particleVbo, this->particleVboOffset);
-    CoreGraphics::SetPrimitiveGroup(this->group);
-    CoreGraphics::DrawInstanced(this->numParticles, baseInstance);
-}
 } // namespace Particles

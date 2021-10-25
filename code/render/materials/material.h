@@ -29,6 +29,6 @@ void MaterialApplySurfaceInstance(MaterialType* type, const SurfaceInstanceId id
 /// end a material batch
 void MaterialEndBatch(MaterialType* type);
 
-class SurfacePool;
-extern SurfacePool* surfacePool;
+class SurfaceCache;
+extern SurfaceCache* surfacePool;
 } // namespace Materials

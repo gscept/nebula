@@ -44,7 +44,7 @@ const Util::Array<VertexComponent>& VertexLayoutGetComponents(const VertexLayout
 /// either create or returned a cached version of a vertex layout baesd on shader
 const VertexLayoutId CreateCachedVertexLayout(const VertexLayoutId id, const ShaderProgramId shader);
 
-class VertexSignaturePool;
-extern VertexSignaturePool* layoutPool;
+class VertexSignatureCache;
+extern VertexSignatureCache* layoutPool;
 
 } // CoreGraphics

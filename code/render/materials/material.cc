@@ -5,11 +5,11 @@
 #include "render/stdneb.h"
 #include "material.h"
 #include "materialtype.h"
-#include "surfacepool.h"
+#include "surfacecache.h"
 namespace Materials
 {
 
-SurfacePool* surfacePool = nullptr;
+SurfaceCache* surfacePool = nullptr;
 
 //------------------------------------------------------------------------------
 /**

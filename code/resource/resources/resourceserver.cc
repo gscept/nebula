@@ -68,7 +68,7 @@ ResourceServer::Close()
     Core::SysFunc::DebugOut("\n\n******** NEBULA RESOURCE MANAGER ********\n Beginning of resource leak report:");
     for (IndexT i = 0; i < this->pools.Size(); i++)
     {
-        ResourcePool* pool = this->pools[i];
+        ResourceCache* pool = this->pools[i];
         for (auto & kvp : pool->ids)
         {
             if (pool->GetUsage(kvp.Value()) != 0)
@@ -100,9 +100,9 @@ void
 ResourceServer::RegisterStreamPool(const Util::StringAtom& ext, const Core::Rtti& loaderClass)
 {
     n_assert(this->open);
-    n_assert(loaderClass.IsDerivedFrom(ResourceStreamPool::RTTI));
+    n_assert(loaderClass.IsDerivedFrom(ResourceStreamCache::RTTI));
     void* obj = loaderClass.Create();
-    Ptr<ResourceStreamPool> loader((ResourceStreamPool*)obj);
+    Ptr<ResourceStreamCache> loader((ResourceStreamCache*)obj);
     loader->uniqueId = UniquePoolCounter++;
     loader->Setup();
     this->pools.Append(loader);
@@ -117,9 +117,9 @@ void
 ResourceServer::RegisterMemoryPool(const Core::Rtti& loaderClass)
 {
     n_assert(this->open);
-    n_assert(loaderClass.IsDerivedFrom(ResourceMemoryPool::RTTI));
+    n_assert(loaderClass.IsDerivedFrom(ResourceMemoryCache::RTTI));
     void* obj = loaderClass.Create();
-    Ptr<ResourceMemoryPool> loader((ResourceMemoryPool*)obj);
+    Ptr<ResourceMemoryCache> loader((ResourceMemoryCache*)obj);
     loader->uniqueId = UniquePoolCounter++;
     loader->Setup();
     this->pools.Append(loader);
@@ -150,7 +150,7 @@ ResourceServer::Update(IndexT frameIndex)
     IndexT i;
     for (i = 0; i < this->pools.Size(); i++)
     {
-        const Ptr<ResourcePool>& loader = this->pools[i];
+        const Ptr<ResourceCache>& loader = this->pools[i];
         loader->Update(frameIndex);
     }
 }
@@ -164,7 +164,7 @@ ResourceServer::DiscardResources(const Util::StringAtom& tag)
     IndexT i;
     for (i = 0; i < this->pools.Size(); i++)
     {
-        const Ptr<ResourcePool>& loader = this->pools[i];
+        const Ptr<ResourceCache>& loader = this->pools[i];
         loader->DiscardByTag(tag);
     }
 }
@@ -178,10 +178,10 @@ ResourceServer::HasPendingResources()
     IndexT i;
     for (i = 0; i < this->pools.Size(); i++)
     {
-        const Ptr<ResourcePool>& loader = this->pools[i];
-        if (loader->IsA(ResourceStreamPool::RTTI))
+        const Ptr<ResourceCache>& loader = this->pools[i];
+        if (loader->IsA(ResourceStreamCache::RTTI))
         {
-            const Ptr<ResourceStreamPool>& pool = loader.cast<ResourceStreamPool>();
+            const Ptr<ResourceStreamCache>& pool = loader.cast<ResourceStreamCache>();
             if (!pool->pendingLoads.IsEmpty())
                 return true;
         }
@@ -200,7 +200,7 @@ ResourceServer::GetType(const Resources::ResourceId id)
 
     // get resource loader by extension
     n_assert(this->pools.Size() > loaderid);
-    const Ptr<ResourcePool>& loader = this->pools[loaderid];
+    const Ptr<ResourceCache>& loader = this->pools[loaderid];
     return loader->GetRtti();
 }
 

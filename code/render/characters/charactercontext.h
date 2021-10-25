@@ -90,7 +90,7 @@ public:
         const float timeOffset = 0.0f,
         const float timeFactor = 1.0f);
     /// stops all animations queued on track (and resets their time)
-    void StopTrack(const Graphics::GraphicsEntityId id, const IndexT track);
+    static void StopTrack(const Graphics::GraphicsEntityId id, const IndexT track);
     /// stops all animations on all tracks
     static void StopAllTracks(const Graphics::GraphicsEntityId id);
     /// pause animation on track, which doesn't reset time
@@ -135,21 +135,7 @@ public:
 
 private:
 
-    enum
-    {
-        SkeletonId,
-        AnimationId,
-        Loaded,
-        TrackController,
-        AnimTime,
-        JointPalette,
-        JointPaletteScaled,
-        UserControlledJoint,
-        JobJoints,
-        SampleBuffer,
-        VisibilityContextId,
-        ModelContextId
-    };
+
 
     struct AnimationRuntime
     {
@@ -181,6 +167,23 @@ private:
         AnimationRuntime                        playingAnimations[MaxNumTracks]; // max 16 tracks
     };
 
+    enum
+    {
+        SkeletonId,
+        AnimationId,
+        Loaded,
+        TrackController,
+        AnimTime,
+        JointPalette,
+        JointPaletteScaled,
+        UserControlledJoint,
+        JobJoints,
+        SampleBuffer,
+        VisibilityContextId,
+        ModelContextId,
+        CharacterSkinNodeIndex
+    };
+
     typedef Ids::IdAllocator<
         Characters::SkeletonId,
         CoreAnimation::AnimResourceId,
@@ -193,7 +196,8 @@ private:
         Util::FixedArray<SkeletonJobJoint>,
         CoreAnimation::AnimSampleBuffer,
         Graphics::GraphicsEntityId,
-        Graphics::GraphicsEntityId
+        Graphics::GraphicsEntityId,
+        IndexT
     > CharacterContextAllocator;
     static CharacterContextAllocator characterContextAllocator;
 

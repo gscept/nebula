@@ -10,16 +10,15 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #if __VULKAN__
-#include "coregraphics/vk/vkshaderpool.h"
+#include "coregraphics/vk/VkShaderCache.h"
 namespace CoreGraphics
 {
-class ShaderPool : public Vulkan::VkShaderPool
+class ShaderCache : public Vulkan::VkShaderCache
 {
-    __DeclareClass(ShaderPool);
+    __DeclareClass(ShaderCache);
 };
 }
 #else
 #error "StreamShaderLoader class not implemented on this platform!"
 #endif
 
-    

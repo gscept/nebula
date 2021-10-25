@@ -19,10 +19,8 @@ namespace Models
 class ModelNode;
 
 RESOURCE_ID_TYPE(ModelId);
-ID_32_32_NAMED_TYPE(ModelInstanceId, model, instance);
 
 #define MODEL_MEMORY_CHUNK_SIZE 0x1000
-#define MODEL_INSTANCE_MEMORY_CHUNK_SIZE 0x4000
 
 enum NodeType
 {
@@ -44,17 +42,16 @@ enum NodeBits
 };
 __ImplementEnumBitOperators(NodeBits);
 
+struct NodeInstanceRange
+{
+    SizeT begin, end;
+};
+
 /// create model (resource)
 const ModelId CreateModel(const ResourceCreateInfo& info);
 /// discard model (resource)
 void DestroyModel(const ModelId id);
 
-/// create model instance
-const ModelInstanceId CreateModelInstance(const ModelId mdl);
-/// destroy model instance
-void DestroyModelInstance(const ModelInstanceId id);
-
-
-class StreamModelPool;
-extern StreamModelPool* modelPool;
+class StreamModelCache;
+extern StreamModelCache* modelPool;
 } // namespace Models

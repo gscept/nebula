@@ -5,9 +5,9 @@
 #include "render/stdneb.h"
 #include "charactercontext.h"
 #include "skeleton.h"
-#include "characters/streamskeletonpool.h"
+#include "characters/streamskeletoncache.h"
 #include "coreanimation/animresource.h"
-#include "coreanimation/streamanimationpool.h"
+#include "coreanimation/streamanimationcache.h"
 #include "graphics/graphicsserver.h"
 #include "visibility/visibilitycontext.h"
 #include "models/modelcontext.h"
@@ -16,6 +16,7 @@
 #include "util/round.h"
 #include "dynui/im3d/im3dcontext.h"
 #include "models/nodes/characternode.h"
+#include "models/nodes/characterskinnode.h"
 #include "profiling/profiling.h"
 #include "resources/resourceserver.h"
 
@@ -84,17 +85,29 @@ CharacterContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Re
 {
     const ContextEntityId cid = GetContextId(id);
     n_assert_fmt(cid != InvalidContextEntityId, "Entity %d is not registered in CharacterContext", id.HashCode());
-    characterContextAllocator.Get<Loaded>(cid.id) = NoneLoaded;
+    characterContextAllocator.Set<Loaded>(cid.id, NoneLoaded);
 
     // check to make sure we registered this entity for observation, then get the visibility context
     const ContextEntityId visId = Visibility::ObservableContext::GetContextId(id);
     n_assert_fmt(visId != InvalidContextEntityId, "Entity %d needs to be setup as observerable before character!", id.HashCode());
-    characterContextAllocator.Get<VisibilityContextId>(cid.id) = id;
+    characterContextAllocator.Set<VisibilityContextId>(cid.id, id);
 
     // get model context
     const ContextEntityId mdlId = Models::ModelContext::GetContextId(id);
     n_assert_fmt(mdlId != InvalidContextEntityId, "Entity %d needs to be setup as a model before character!", id.HashCode());
-    characterContextAllocator.Get<ModelContextId>(cid.id) = id;
+    characterContextAllocator.Set<ModelContextId>(cid.id, id);
+
+    const Models::NodeInstanceRange& nodeRange = Models::ModelContext::GetModelRenderableRange(id);
+    const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
+
+    for (SizeT i = nodeRange.begin; i < nodeRange.end; i++)
+    {
+        if (renderables.nodes[i]->GetType() == Models::CharacterSkinNodeType)
+        {
+            characterContextAllocator.Set<CharacterSkinNodeIndex>(cid.id, i);
+            break;
+        }
+    }
 
     characterContextAllocator.Get<SkeletonId>(cid.id) = Resources::CreateResource(skeleton, tag, [cid, id](Resources::ResourceId rid)
         {
@@ -458,6 +471,7 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
     const Util::Array<CoreAnimation::AnimSampleBuffer>& sampleBuffers = characterContextAllocator.GetArray<SampleBuffer>();
     const Util::Array<Util::FixedArray<SkeletonJobJoint>>& jobJoints = characterContextAllocator.GetArray<JobJoints>();
     const Util::Array<Characters::SkeletonId>& skeletons = characterContextAllocator.GetArray<SkeletonId>();
+    const Util::Array<IndexT>& characterSkinNodeIndices = characterContextAllocator.GetArray<CharacterSkinNodeIndex>();
     const Util::Array<Util::FixedArray<Math::mat4>>& jointPalettes = characterContextAllocator.GetArray<JointPalette>();
     const Util::Array<Util::FixedArray<Math::mat4>>& scaledJointPalettes = characterContextAllocator.GetArray<JointPaletteScaled>();
     const Util::Array<Util::FixedArray<Math::mat4>>& userJoints = characterContextAllocator.GetArray<UserControlledJoint>();
@@ -696,18 +710,38 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
             }
         }
 
-        // get all character node instances, so we can set their skeleton
-        const Util::Array<Models::ModelNode::Instance*>& nodeInstances = Models::ModelContext::GetModelNodeInstances(model);
-        for (j = 0; j < nodeInstances.Size(); j++)
+        // Update skeleton constants
+        // Move the skin fragment extraction to a job and have that output the list of actually used matrices.
+        const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
+        IndexT node = characterSkinNodeIndices[i];
+        n_assert(renderables.nodes[node]->type == Models::NodeType::CharacterNodeType);
+        Models::CharacterSkinNode* sparent = reinterpret_cast<Models::CharacterSkinNode*>(renderables.nodes[node]);
+        const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;
+        Util::FixedArray<Math::mat4> usedMatrices(usedIndices.Size());
+
+        // update joints, which is stored in character context
+        if (!jointPalette.IsEmpty())
         {
-            // if type is character node, set the joint palette pointer to this instance of the characater
-            // this bridges the gap between the model node and this character instance
-            if (nodeInstances[j]->node->type == Models::NodeType::CharacterNodeType)
+            // copy active matrix palette, or set identity
+            IndexT j;
+            for (j = 0; j < usedIndices.Size(); j++)
             {
-                Models::CharacterNode::Instance* cinst = static_cast<Models::CharacterNode::Instance*>(nodeInstances[j]);
-                cinst->joints = &jointPalette;
+                usedMatrices[j] = jointPalette[usedIndices[j]];
             }
         }
+        else
+        {
+            // copy active matrix palette, or set identity
+            IndexT j;
+            for (j = 0; j < usedIndices.Size(); j++)
+            {
+                usedMatrices[j] = Math::mat4();
+            }
+        }
+
+        // update skinning palette
+        uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, usedMatrices.Begin(), usedMatrices.Size());
+        renderables.nodeStates[node].resourceTableOffsets[renderables.nodeStates[node].skinningConstantsIndex] = offset;
     }
 
     // put sync object

@@ -19,14 +19,14 @@ void
 VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 {
     N_SCOPE(VisibilitySortJob, Visibility);
-    Memory::ArenaAllocator<1024>* packetAllocator = (Memory::ArenaAllocator<1024>*)ctx.uniforms[0];
+    auto packetAllocator = (Memory::ArenaAllocator<1024>* const)ctx.uniforms[0];
+    auto nodes = (Models::ModelContext::ModelInstance::Renderable* const)ctx.uniforms[1];
     packetAllocator->Release();
 
     for (ptrdiff sliceIdx = 0; sliceIdx < ctx.numSlices; sliceIdx++)
-    { 
-        Math::ClipStatus::Type* results = (Math::ClipStatus::Type*)N_JOB_INPUT(ctx, sliceIdx, 0);
-        Models::ModelContext::ModelInstance::Renderable* const nodes = (Models::ModelContext::ModelInstance::Renderable*)N_JOB_INPUT(ctx, sliceIdx, 1);
-        ObserverContext::VisibilityDrawList* drawList = (ObserverContext::VisibilityDrawList*)N_JOB_OUTPUT(ctx, sliceIdx, 0);
+    {
+        auto visibilityResults = (Math::ClipStatus::Type*)N_JOB_INPUT(ctx, sliceIdx, 0);
+        auto drawList = (ObserverContext::VisibilityDrawList*)N_JOB_OUTPUT(ctx, sliceIdx, 0);
 
         // calculate amount of models
         uint32 numNodeInstances = ctx.inputSizes[0] / sizeof(Math::ClipStatus::Type);
@@ -34,6 +34,7 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
         if (numNodeInstances == 0)
             break;
 
+        // Make sure we're not exceeding the number of bits in the index buffer reserved for the actual node instance
         n_assert(numNodeInstances < 0xFFFFFFFF)
         
         Util::Array<uint64> indexBuffer;
@@ -48,10 +49,14 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
             uint64 index = indexBuffer[i] & 0x00000000FFFFFFFF;
 
             // If not visible nor active, erase item from index list
-            if (!AllBits(nodes->nodeFlags, Models::NodeInstanceFlags::NodeInstance_Active | Models::NodeInstanceFlags::NodeInstance_Visible))
+            if (!AllBits(nodes->nodeFlags[i], Models::NodeInstanceFlags::NodeInstance_Active) || visibilityResults[index] == Math::ClipStatus::Outside)
             {
                 indexBuffer.EraseIndexSwap(i);
                 continue;
+            }
+            else
+            {
+                nodes->nodeFlags[i] = SetBits(nodes->nodeFlags[i], Models::NodeInstance_Visible);
             }
 
             // Get sort id and combine with index to get full sort id
@@ -75,21 +80,64 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
         uint32 numDraws = 0;
         const uint32 numPackets = indexBuffer.Size();
         drawList->drawPackets.Reserve(numPackets);
-        
-        Materials::MaterialType* currentMaterialType = nodes->nodeMaterialTypes[indexBuffer[0] & 0x00000000FFFFFFFF];
+
+        // Allocate single command which we can 
+        ObserverContext::VisibilityBatchCommand* cmd = nullptr;
+        Models::ModelNode* node = nullptr;
+        static auto NullDrawModifiers = Util::MakeTuple(UINT32_MAX, UINT32_MAX);
+        Util::Tuple<uint32, uint32> drawModifiers = NullDrawModifiers;
+        Materials::MaterialType* currentMaterialType = nullptr;
 
         for (uint32 i = 0; i < numPackets; i++)
         {
             uint32 index = indexBuffer[i] & 0x00000000FFFFFFFF;
-            Materials::MaterialType* otherMaterialType = nodes->nodeMaterialTypes[index];
+
+            // If new material, add a new entry into the lookup table
+            auto otherMaterialType = nodes->nodeMaterialTypes[index];
             if (currentMaterialType != otherMaterialType)
             {
-                ObserverContext::VisibilityDrawCommand cmd;
-                cmd.packetOffset = drawList->drawPackets.Size() - numDraws;
-                cmd.numDrawPackets = numDraws;
-                drawList->visibilityTable.Add(currentMaterialType, cmd);
+                // Add new draw command and get reference to it
+                IndexT entry = drawList->visibilityTable.Add(otherMaterialType, ObserverContext::VisibilityBatchCommand());
+                cmd = &drawList->visibilityTable.ValueAtIndex(otherMaterialType, entry);
+
+                // Setup initial state for command
+                cmd->packetOffset = numDraws;
+                cmd->numDrawPackets = 0;
+
+                node = nullptr;
+                drawModifiers = NullDrawModifiers;
                 currentMaterialType = otherMaterialType;
-                numDraws = 0;
+            }
+            n_assert(cmd != nullptr);
+
+            // If a new node (resource), add a model apply command
+            auto otherNode = nodes->nodes[index];
+            if (node != otherNode)
+            {
+                cmd->models.Append(ObserverContext::VisibilityModelCommand());
+                auto batchCmd = &cmd->models.Back();
+
+                // The offset of the command corresponds to where in the VisibilityBatchCommand batch the model should be applied
+                batchCmd->offset = cmd->packetOffset;
+                batchCmd->modelCallback = nodes->nodeModelCallbacks[index];
+                batchCmd->surface = nodes->nodeSurfaces[index];
+
+#if NEBULA_GRAPHICS_DEBUG
+                batchCmd->nodeName = nodes->nodeNames[index];
+#endif
+                node = otherNode;
+            }
+
+            auto otherDrawModifiers = nodes->nodeDrawModifiers[index];
+            if (drawModifiers != otherDrawModifiers)
+            {
+                cmd->draws.Append(ObserverContext::VisibilityDrawCommand());
+                auto drawCmd = &cmd->draws.Back();
+                drawCmd->offset = cmd->packetOffset;
+                drawCmd->numInstances = Util::Get<0>(otherDrawModifiers);
+                drawCmd->baseInstance = Util::Get<1>(otherDrawModifiers);
+
+                drawModifiers = otherDrawModifiers;
             }
 
             // allocate memory for draw packet
@@ -97,24 +145,19 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 
             // update packet and add to list
             Models::ShaderStateNode::DrawPacket* packet = reinterpret_cast<Models::ShaderStateNode::DrawPacket*>(mem);
-            packet->node = nodes->nodes[index];
             packet->numOffsets[0] = nodes->nodeStates[index].resourceTableOffsets.Size();
             packet->numTables = 1;
             packet->tables[0] = nodes->nodeStates[index].resourceTable;
-            packet->offsets[0] = nodes->nodeStates[index].resourceTableOffsets.Begin();
-            memcpy(&packet->offsets[0][0], nodes->nodeStates[index].resourceTableOffsets.Begin(), nodes->nodeStates[index].resourceTableOffsets.ByteSize());
+            packet->surfaceInstance = nodes->nodeStates[index].surfaceInstance;
+#ifndef PUBLIC_BUILD
+            packet->boundingBox = nodes->nodeBoundingBoxes[index];
+            packet->nodeInstanceHash = nodes->nodes[index]->HashCode();
+#endif
+            memcpy(packet->offsets[0], nodes->nodeStates[index].resourceTableOffsets.Begin(), nodes->nodeStates[index].resourceTableOffsets.ByteSize());
             packet->slots[0] = NEBULA_DYNAMIC_OFFSET_GROUP;
             drawList->drawPackets.Append(packet);
+            cmd->numDrawPackets++;
             numDraws++;
-        }
-
-        // make sure to not miss the last couple of draw packets material
-        if (numDraws) 
-        {
-            ObserverContext::VisibilityDrawCommand cmd;
-            cmd.packetOffset = drawList->drawPackets.Size() - numDraws;
-            cmd.numDrawPackets = numDraws;
-            drawList->visibilityTable.Add(currentMaterialType, cmd);
         }
     }
 }

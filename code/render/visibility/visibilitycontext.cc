@@ -81,15 +81,13 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 {
     N_SCOPE(RunVisibilityTests, Visibility);
 
-    Util::Array<VisibilityEntityType>& observableAtomTypes = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_VisibilityEntityType>();
     Util::Array<Graphics::GraphicsEntityId>& observableAtomEntities = ObservableContext::observableAtomAllocator.GetArray<ObservableAtom_GraphicsEntityId>();
-    Models::ModelContext::ModelInstance::Renderable& nodeInstances = Models::ModelContext::GetModelNodeInstanceRenderables();
+    const Models::ModelContext::ModelInstance::Renderable& nodeInstances = Models::ModelContext::GetModelRenderables();
 
     // go through all transforms and update
     IndexT i;
     for (i = 0; i < observableAtomEntities.Size(); i++)
     {
-        const VisibilityEntityType type = observableAtomTypes[i];
         const Graphics::GraphicsEntityId id = observableAtomEntities[i];
 
         if (id == Graphics::GraphicsEntityId::Invalid())
@@ -100,8 +98,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     Util::Array<Math::mat4>& observerTransforms = observerAllocator.GetArray<Observer_Matrix>();
     const Util::Array<Graphics::GraphicsEntityId>& observerIds = observerAllocator.GetArray<Observer_EntityId>();
     const Util::Array<VisibilityEntityType>& observerTypes = observerAllocator.GetArray<Observer_EntityType>();
-    Util::Array<VisibilityResultArray>& vis = observerAllocator.GetArray<Observer_ResultArray>();
-    Util::Array<Math::ClipStatus::Type*>& observerResults = observerAllocator.GetArray<Observer_Results>();
+    Util::Array<VisibilityResultArray>& observerResults = observerAllocator.GetArray<Observer_ResultArray>();
 
     for (i = 0; i < observerIds.Size(); i++)
     {
@@ -126,11 +123,8 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     }
 
     // reset all lists to that all entities are visible
-    for (i = 0; i < vis.Size(); i++)
+    for (i = 0; i < observerResults.Size(); i++)
     {
-        Util::Array<Math::ClipStatus::Type>& flags = vis[i];
-        observerResults[i] = flags.Begin();
-
         VisibilityDrawList& visibilities = observerAllocator.Get<Observer_DrawList>(i);
         visibilities.visibilityTable.Clear();
         visibilities.drawPackets.Clear();
@@ -173,9 +167,9 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 
     // handle dependencies
     bool dependencyNeeded = false;
-    for (i = 0; i < vis.Size(); i++)
+    for (i = 0; i < observerResults.Size(); i++)
     {
-        const Util::Array<Math::ClipStatus::Type>& flags = vis[i];
+        const VisibilityResultArray& results = observerResults[i];
         Graphics::GraphicsEntityId& dependency = observerAllocator.Get<Observer_Dependency>(i);
 
         // run dependency resolve job
@@ -194,15 +188,15 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
             ctx.uniform.data[1] = &ctxId;
             ctx.uniform.dataSize[1] = sizeof(uint32);
 
-            const Util::Array<Math::ClipStatus::Type>& otherFlags = vis[ctxId.id];
+            const Util::Array<Math::ClipStatus::Type>& otherFlags = observerResults[ctxId.id];
 
             ctx.input.data[0] = otherFlags.Begin();
-            ctx.input.dataSize[0] = sizeof(Math::ClipStatus::Type) * otherFlags.Size();
-            ctx.input.sliceSize[0] = sizeof(Math::ClipStatus::Type) * otherFlags.Size();
+            ctx.input.dataSize[0] = otherFlags.ByteSize();
+            ctx.input.sliceSize[0] = otherFlags.ByteSize();
 
-            ctx.output.data[0] = flags.Begin();
-            ctx.output.dataSize[0] = sizeof(Math::ClipStatus::Type) * flags.Size();
-            ctx.output.sliceSize[0] = sizeof(Math::ClipStatus::Type) * flags.Size();
+            ctx.output.data[0] = results.Begin();
+            ctx.output.dataSize[0] = results.ByteSize();
+            ctx.output.sliceSize[0] = results.ByteSize();
 
             // schedule job
             Jobs::JobId job = Jobs::CreateJob({ VisibilityDependencyJob });
@@ -221,7 +215,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         Jobs::JobSyncThreadWait(ObserverContext::jobInternalSync2, Graphics::GraphicsServer::renderSystemsJobPort);
     }
 
-    for (i = 0; i < vis.Size(); i++)
+    for (i = 0; i < observerResults.Size(); i++)
     {
         // early abort empty visibility queries
         if (nodeInstances.nodeStates.Size() == 0)
@@ -229,24 +223,20 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
             continue;
         }
 
-        const Util::Array<Math::ClipStatus::Type>& flags = vis[i];
+        const VisibilityResultArray& results = observerResults[i];
         VisibilityDrawList& visibilities = observerAllocator.Get<Observer_DrawList>(i);
         Memory::ArenaAllocator<1024>& allocator = observerAllocator.Get<Observer_DrawListAllocator>(i);
 
         // then execute sort job, which only runs the function once
         Jobs::JobContext ctx;
         ctx.uniform.scratchSize = 0;
-        ctx.uniform.numBuffers = 1;
-        ctx.input.numBuffers = 2;
+        ctx.uniform.numBuffers = 2;
+        ctx.input.numBuffers = 1;
         ctx.output.numBuffers = 1;
 
-        ctx.input.data[0] = flags.Begin();
-        ctx.input.dataSize[0] = sizeof(Math::ClipStatus::Type) * flags.Size();
-        ctx.input.sliceSize[0] = sizeof(Math::ClipStatus::Type) * flags.Size();
-
-        ctx.input.data[1] = &nodeInstances;
-        ctx.input.dataSize[1] = sizeof(Models::ModelContext::ModelInstance::Renderable*);
-        ctx.input.sliceSize[1] = sizeof(Models::ModelContext::ModelInstance::Renderable*);
+        ctx.input.data[0] = results.Begin();
+        ctx.input.dataSize[0] = results.ByteSize();
+        ctx.input.sliceSize[0] = results.ByteSize();
 
         ctx.output.data[0] = &visibilities;
         ctx.output.dataSize[0] = sizeof(VisibilityDrawList);
@@ -254,6 +244,9 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 
         ctx.uniform.data[0] = &allocator;
         ctx.uniform.dataSize[0] = sizeof(allocator);
+
+        ctx.uniform.data[1] = &nodeInstances;
+        ctx.uniform.dataSize[1] = sizeof(Models::ModelContext::ModelInstance::Renderable*);
 
         // schedule job
         Jobs::JobId job = Jobs::CreateJob({ VisibilitySortJob });
@@ -274,6 +267,7 @@ void
 ObserverContext::GenerateDrawLists(const Graphics::FrameContext& ctx)
 {
     N_SCOPE(GenerateDrawLists, Visibility);
+    /*
 
     Jobs::JobSyncThreadWait(ObserverContext::jobInternalSync3, Graphics::GraphicsServer::renderSystemsJobPort);
     IndexT i;
@@ -306,6 +300,9 @@ ObserverContext::GenerateDrawLists(const Graphics::FrameContext& ctx)
 
     // insert sync after all visibility systems are done
     Jobs::JobSyncSignal(ObserverContext::jobHostSync, Graphics::GraphicsServer::renderSystemsJobPort);
+    */
+    Jobs::JobSyncSignal(ObserverContext::jobHostSync, Graphics::GraphicsServer::renderSystemsJobPort);
+
 }
 
 //------------------------------------------------------------------------------
@@ -457,14 +454,15 @@ ObserverContext::OnRenderDebug(uint32_t flags)
             atomIndex = Math::clamp(atomIndex, 0, foo[visIndex].drawPackets.Size() - 1);
             auto const& a = foo[visIndex].drawPackets[atomIndex];
             CoreGraphics::RenderShape shape;
-            Models::ShaderStateNode* sinst = a->ToNode<Models::ShaderStateNode>();
             Math::vec4 color = {
-                    Util::RandomNumberTable::Rand(sinst->HashCode()),
-                    Util::RandomNumberTable::Rand(sinst->HashCode() + 1),
-                    Util::RandomNumberTable::Rand(sinst->HashCode() + 2),
+#ifndef PUBLIC_BUILD
+                    Util::RandomNumberTable::Rand(a->nodeInstanceHash),
+                    Util::RandomNumberTable::Rand(a->nodeInstanceHash + 1),
+                    Util::RandomNumberTable::Rand(a->nodeInstanceHash + 2),
+#endif
                     1
             };
-            shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), sinst->boundingBox.to_mat4(), color);
+            shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), a->boundingBox.to_mat4(), color);
             CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
         }
     }
@@ -473,15 +471,16 @@ ObserverContext::OnRenderDebug(uint32_t flags)
         for (auto const& a : foo[visIndex].drawPackets)
         {
             CoreGraphics::RenderShape shape;
-            Models::ShaderStateNode* sinst = a->ToNode<Models::ShaderStateNode>();
-            Math::vec4 color = { 
-                Util::RandomNumberTable::Rand(sinst->HashCode()),
-                Util::RandomNumberTable::Rand(sinst->HashCode() + 1),
-                Util::RandomNumberTable::Rand(sinst->HashCode() + 2),
+            Math::vec4 color = {
+#ifndef PUBLIC_BUILD
+                Util::RandomNumberTable::Rand(a->nodeInstanceHash),
+                Util::RandomNumberTable::Rand(a->nodeInstanceHash + 1),
+                Util::RandomNumberTable::Rand(a->nodeInstanceHash + 2),
+#endif
                 1 
             };
-            Math::mat4 t = sinst->boundingBox.to_mat4();
-            shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), sinst->boundingBox.to_mat4(), color);
+            Math::mat4 t = a->boundingBox.to_mat4();
+            shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), a->boundingBox.to_mat4(), color);
             CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
         }
     }
@@ -573,8 +572,8 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
     if (entityType == Model || entityType == Particle)
     {
         // Get node instance ranges
-        const Models::ModelContext::NodeInstanceRange& nodeInstanceRange = Models::ModelContext::GetModelNodeInstanceStateRange(id);
-        SizeT numAtoms = nodeInstanceRange.size;
+        const Models::NodeInstanceRange& nodeInstanceRange = Models::ModelContext::GetModelRenderableRange(id);
+        SizeT numAtoms = nodeInstanceRange.end - nodeInstanceRange.begin;
 
         Ids::Id32 obj = ObservableContext::observableAtomAllocator.Alloc();
         ObservableContext::observableAtomAllocator.Set<ObservableAtom_GraphicsEntityId>(obj, id);
@@ -614,7 +613,7 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
             ObserverContext::VisibilityResultArray& alloc = visAllocators[i];
             for (IndexT j = 0; j < numAtoms; j++)
             {
-                alloc.Append(Math::ClipStatus::Inside);
+                alloc.Append(Math::ClipStatus::Outside);
             }
         }
     }

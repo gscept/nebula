@@ -11,10 +11,10 @@ namespace Visibility
 /**
 */
 void
-VisibilitySystem::PrepareObservers(const Math::mat4* transforms, Math::ClipStatus::Type* const* vis, const SizeT count)
+VisibilitySystem::PrepareObservers(const Math::mat4* transforms, Util::Array<Math::ClipStatus::Type>* results, const SizeT count)
 {
     this->obs.transforms = transforms;
-    this->obs.vis = vis;
+    this->obs.results = results;
     this->obs.count = count;
 }
 
@@ -26,7 +26,7 @@ VisibilitySystem::PrepareEntities(const Math::bbox* boxes, const Graphics::Graph
 {
     this->ent.boxes = boxes;
     this->ent.entities = entities;
-    this->ent.activeFlags = activeFlags;
+    this->ent.entityFlags = entityFlags;
     this->ent.count = count;
 }
 

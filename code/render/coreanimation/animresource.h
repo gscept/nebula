@@ -22,8 +22,8 @@ namespace CoreAnimation
 
 RESOURCE_ID_TYPE(AnimResourceId)
 
-class StreamAnimationPool;
-extern StreamAnimationPool* animPool;
+class StreamAnimationCache;
+extern StreamAnimationCache* animPool;
 
 /// create animation resource
 const AnimResourceId CreateAnimation(const ResourceCreateInfo& info);

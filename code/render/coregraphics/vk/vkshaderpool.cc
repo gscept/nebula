@@ -3,7 +3,7 @@
 // (C) 2016-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "vkshaderpool.h"
+#include "VkShaderCache.h"
 #include "vkshader.h"
 #include "effectfactory.h"
 #include "coregraphics/config.h"
@@ -15,13 +15,13 @@ using namespace IO;
 namespace Vulkan
 {
 
-__ImplementClass(Vulkan::VkShaderPool, 'VKSL', Resources::ResourceStreamPool);
+__ImplementClass(Vulkan::VkShaderCache, 'VKSL', Resources::ResourceStreamCache);
 
 //------------------------------------------------------------------------------
 /**
 */
 
-VkShaderPool::VkShaderPool() :
+VkShaderCache::VkShaderCache() :
     shaderAlloc(0x00FFFFFF),
     activeShaderProgram(Ids::InvalidId64),
     activeMask(0) 
@@ -33,7 +33,7 @@ VkShaderPool::VkShaderPool() :
 /**
 */
 
-VkShaderPool::~VkShaderPool()
+VkShaderCache::~VkShaderCache()
 {
 
 }
@@ -41,8 +41,8 @@ VkShaderPool::~VkShaderPool()
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourcePool::LoadStatus
-VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+Resources::ResourceCache::LoadStatus
+VkShaderCache::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
     n_assert(stream.isvalid());
     n_assert(stream->CanBeMapped());
@@ -57,9 +57,9 @@ VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
     // catch any potential error coming from AnyFX
     if (!effect)
     {
-        n_error("VkShaderPool::LoadFromStream(): failed to load shader '%s'!",
+        n_error("VkShaderCache::LoadFromStream(): failed to load shader '%s'!",
             this->GetName(id).Value());
-        return ResourcePool::Failed;
+        return ResourceCache::Failed;
     }
 
     VkReflectionInfo& reflectionInfo = this->shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId);
@@ -151,14 +151,14 @@ VkShaderPool::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 #if __NEBULA_HTTP__
     //res->debugState = res->CreateState();
 #endif
-    return ResourcePool::Success;
+    return ResourceCache::Success;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourceStreamPool::LoadStatus 
-VkShaderPool::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream)
+Resources::ResourceStreamCache::LoadStatus 
+VkShaderCache::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream)
 {
     void* srcData = stream->Map();
     uint srcDataSize = stream->GetSize();
@@ -171,7 +171,7 @@ VkShaderPool::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Str
     {
         n_error("VkStreamShaderLoader::ReloadFromStream(): failed to load shader '%s'!",
             this->GetName(id).Value());
-        return ResourcePool::Failed;
+        return ResourceCache::Failed;
     }
 
     VkReflectionInfo& reflectionInfo = this->shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId);
@@ -233,14 +233,14 @@ VkShaderPool::ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Str
         CoreGraphics::ReloadShaderProgram(shaderProgramId);
     }
 
-    return ResourcePool::Success;
+    return ResourceCache::Success;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShaderPool::Unload(const Resources::ResourceId res)
+VkShaderCache::Unload(const Resources::ResourceId res)
 {
     VkShaderSetupInfo& setup = this->shaderAlloc.Get<Shader_SetupInfo>(res.resourceId);
     VkShaderProgramAllocator& programs = this->shaderAlloc.Get<Shader_ProgramAllocator>(res.resourceId);
@@ -262,7 +262,7 @@ VkShaderPool::Unload(const Resources::ResourceId res)
 /**
 */
 CoreGraphics::ShaderProgramId
-VkShaderPool::GetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask)
+VkShaderCache::GetShaderProgram(const CoreGraphics::ShaderId shaderId, const CoreGraphics::ShaderFeature::Mask mask)
 {
     VkShaderRuntimeInfo& runtime = this->shaderAlloc.Get<Shader_RuntimeInfo>(shaderId.resourceId);
     IndexT i = runtime.programMap.FindIndex(mask);
@@ -274,7 +274,7 @@ VkShaderPool::GetShaderProgram(const CoreGraphics::ShaderId shaderId, const Core
 /**
 */
 CoreGraphics::ResourceTableId 
-VkShaderPool::CreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group, const uint overallocationSize)
+VkShaderCache::CreateResourceTable(const CoreGraphics::ShaderId id, const IndexT group, const uint overallocationSize)
 {
     const VkShaderSetupInfo& info = this->shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
     IndexT idx = info.descriptorSetLayoutMap.FindIndex(group);
@@ -294,7 +294,7 @@ VkShaderPool::CreateResourceTable(const CoreGraphics::ShaderId id, const IndexT 
 /**
 */
 CoreGraphics::BufferId 
-VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAtom& name, CoreGraphics::BufferAccessMode mode)
+VkShaderCache::CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::StringAtom& name, CoreGraphics::BufferAccessMode mode)
 {
     const auto& uniformBuffers = this->shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffersByName;
     IndexT i = uniformBuffers.FindIndex(name);
@@ -319,7 +319,7 @@ VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util::
 /**
 */
 CoreGraphics::BufferId
-VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT cbIndex, CoreGraphics::BufferAccessMode mode)
+VkShaderCache::CreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT cbIndex, CoreGraphics::BufferAccessMode mode)
 {
     const auto& uniformBuffers = this->shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffers;
     const VkReflectionInfo::UniformBuffer& buffer = uniformBuffers[cbIndex];
@@ -340,7 +340,7 @@ VkShaderPool::CreateConstantBuffer(const CoreGraphics::ShaderId id, const IndexT
 /**
 */
 const IndexT
-VkShaderPool::GetConstantBinding(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const
+VkShaderCache::GetConstantBinding(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const
 {
     const VkShaderSetupInfo& info = this->shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
     IndexT index = info.constantBindings.FindIndex(name.Value());
@@ -352,7 +352,7 @@ VkShaderPool::GetConstantBinding(const CoreGraphics::ShaderId id, const Util::St
 /**
 */
 const IndexT
-VkShaderPool::GetConstantBinding(const CoreGraphics::ShaderId id, const IndexT cIndex) const
+VkShaderCache::GetConstantBinding(const CoreGraphics::ShaderId id, const IndexT cIndex) const
 {
     const VkShaderSetupInfo& info = this->shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
     return info.constantBindings.ValueAtIndex(cIndex);
@@ -362,7 +362,7 @@ VkShaderPool::GetConstantBinding(const CoreGraphics::ShaderId id, const IndexT c
 /**
 */
 const SizeT
-VkShaderPool::GetConstantBindingsCount(const CoreGraphics::ShaderId id) const
+VkShaderCache::GetConstantBindingsCount(const CoreGraphics::ShaderId id) const
 {
     const VkShaderSetupInfo& info = this->shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
     return info.constantBindings.Size();
@@ -372,7 +372,7 @@ VkShaderPool::GetConstantBindingsCount(const CoreGraphics::ShaderId id) const
 /**
 */
 CoreGraphics::ResourceTableLayoutId
-VkShaderPool::GetResourceTableLayout(const CoreGraphics::ShaderId id, const IndexT group)
+VkShaderCache::GetResourceTableLayout(const CoreGraphics::ShaderId id, const IndexT group)
 {
     return Util::Get<1>(this->shaderAlloc.Get<Shader_SetupInfo>(id.resourceId).descriptorSetLayouts[group]);
 }
@@ -381,7 +381,7 @@ VkShaderPool::GetResourceTableLayout(const CoreGraphics::ShaderId id, const Inde
 /**
 */
 CoreGraphics::ResourcePipelineId
-VkShaderPool::GetResourcePipeline(const CoreGraphics::ShaderId id)
+VkShaderCache::GetResourcePipeline(const CoreGraphics::ShaderId id)
 {
     return this->shaderAlloc.Get<Shader_SetupInfo>(id.resourceId).pipelineLayout;
 }
@@ -391,7 +391,7 @@ VkShaderPool::GetResourcePipeline(const CoreGraphics::ShaderId id)
     Use direct resource ids, not the State, Shader or Variable type ids
 */
 const VkProgramReflectionInfo&
-VkShaderPool::GetProgram(const CoreGraphics::ShaderProgramId shaderProgramId)
+VkShaderCache::GetProgram(const CoreGraphics::ShaderProgramId shaderProgramId)
 {
     return this->shaderAlloc.Get<Shader_ProgramAllocator>(shaderProgramId.shaderId).Get<ShaderProgram_ReflectionInfo>(shaderProgramId.programId);
 }
@@ -400,7 +400,7 @@ VkShaderPool::GetProgram(const CoreGraphics::ShaderProgramId shaderProgramId)
 /**
 */
 const SizeT
-VkShaderPool::GetConstantCount(const CoreGraphics::ShaderId id) const
+VkShaderCache::GetConstantCount(const CoreGraphics::ShaderId id) const
 {
     return this->shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).variables.Size();
 }
@@ -409,7 +409,7 @@ VkShaderPool::GetConstantCount(const CoreGraphics::ShaderId id) const
 /**
 */
 const CoreGraphics::ShaderConstantType
-VkShaderPool::GetConstantType(const CoreGraphics::ShaderId id, const IndexT i) const
+VkShaderCache::GetConstantType(const CoreGraphics::ShaderId id, const IndexT i) const
 {
     const VkReflectionInfo::Variable& var = this->shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).variables[i];
     switch (var.type)
@@ -500,7 +500,7 @@ VkShaderPool::GetConstantType(const CoreGraphics::ShaderId id, const IndexT i) c
 /**
 */
 const CoreGraphics::ShaderConstantType
-VkShaderPool::GetConstantType(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const
+VkShaderCache::GetConstantType(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const
 {
     const VkReflectionInfo::Variable& var = this->shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).variablesByName[name];
     switch (var.type)
@@ -591,7 +591,7 @@ VkShaderPool::GetConstantType(const CoreGraphics::ShaderId id, const Util::Strin
 /**
 */
 const Util::StringAtom
-VkShaderPool::GetConstantBlockName(const CoreGraphics::ShaderId id, const Util::StringAtom& name)
+VkShaderCache::GetConstantBlockName(const CoreGraphics::ShaderId id, const Util::StringAtom& name)
 {
     const VkReflectionInfo::Variable& var = this->shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).variablesByName[name];
     return var.blockName;
@@ -601,7 +601,7 @@ VkShaderPool::GetConstantBlockName(const CoreGraphics::ShaderId id, const Util::
 /**
 */
 const Util::StringAtom
-VkShaderPool::GetConstantBlockName(const CoreGraphics::ShaderId id, const IndexT cIndex)
+VkShaderCache::GetConstantBlockName(const CoreGraphics::ShaderId id, const IndexT cIndex)
 {
     const VkReflectionInfo::Variable& var = this->shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).variables[cIndex];
     return var.blockName;
@@ -611,7 +611,7 @@ VkShaderPool::GetConstantBlockName(const CoreGraphics::ShaderId id, const IndexT
 /**
 */
 const Util::StringAtom
-VkShaderPool::GetConstantName(const CoreGraphics::ShaderId id, const IndexT i) const
+VkShaderCache::GetConstantName(const CoreGraphics::ShaderId id, const IndexT i) const
 {
     const VkReflectionInfo::Variable& var = this->shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).variables[i];
     return var.name;
@@ -621,7 +621,7 @@ VkShaderPool::GetConstantName(const CoreGraphics::ShaderId id, const IndexT i) c
 /**
 */
 const IndexT 
-VkShaderPool::GetConstantGroup(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const
+VkShaderCache::GetConstantGroup(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const
 {
     IndexT idx = this->shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).variablesByName.FindIndex(name);
     if (idx != InvalidIndex)
@@ -637,7 +637,7 @@ VkShaderPool::GetConstantGroup(const CoreGraphics::ShaderId id, const Util::Stri
 /**
 */
 const IndexT 
-VkShaderPool::GetConstantSlot(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const
+VkShaderCache::GetConstantSlot(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const
 {
     IndexT idx = this->shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).variablesByName.FindIndex(name);
     if (idx != InvalidIndex)
@@ -653,7 +653,7 @@ VkShaderPool::GetConstantSlot(const CoreGraphics::ShaderId id, const Util::Strin
 /**
 */
 const SizeT
-VkShaderPool::GetConstantBufferCount(const CoreGraphics::ShaderId id) const
+VkShaderCache::GetConstantBufferCount(const CoreGraphics::ShaderId id) const
 {
     return this->shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffers.Size();
 }
@@ -662,7 +662,7 @@ VkShaderPool::GetConstantBufferCount(const CoreGraphics::ShaderId id) const
 /**
 */
 const SizeT
-VkShaderPool::GetConstantBufferSize(const CoreGraphics::ShaderId id, const IndexT i) const
+VkShaderCache::GetConstantBufferSize(const CoreGraphics::ShaderId id, const IndexT i) const
 {
     const VkReflectionInfo::UniformBuffer& var = this->shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffers[i];
     return var.byteSize;
@@ -672,7 +672,7 @@ VkShaderPool::GetConstantBufferSize(const CoreGraphics::ShaderId id, const Index
 /**
 */
 const Util::StringAtom
-VkShaderPool::GetConstantBufferName(const CoreGraphics::ShaderId id, const IndexT i) const
+VkShaderCache::GetConstantBufferName(const CoreGraphics::ShaderId id, const IndexT i) const
 {
     const VkReflectionInfo::UniformBuffer& var = this->shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffers[i];
     return var.name;
@@ -682,7 +682,7 @@ VkShaderPool::GetConstantBufferName(const CoreGraphics::ShaderId id, const Index
 /**
 */
 const IndexT 
-VkShaderPool::GetConstantBufferResourceSlot(const CoreGraphics::ShaderId id, const IndexT i) const
+VkShaderCache::GetConstantBufferResourceSlot(const CoreGraphics::ShaderId id, const IndexT i) const
 {
     const VkReflectionInfo::UniformBuffer& var = this->shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffers[i];
     return var.binding;
@@ -692,7 +692,7 @@ VkShaderPool::GetConstantBufferResourceSlot(const CoreGraphics::ShaderId id, con
 /**
 */
 const IndexT 
-VkShaderPool::GetConstantBufferResourceGroup(const CoreGraphics::ShaderId id, const IndexT i) const
+VkShaderCache::GetConstantBufferResourceGroup(const CoreGraphics::ShaderId id, const IndexT i) const
 {
     const VkReflectionInfo::UniformBuffer& var = this->shaderAlloc.Get<Shader_ReflectionInfo>(id.resourceId).uniformBuffers[i];
     return var.set;
@@ -702,7 +702,7 @@ VkShaderPool::GetConstantBufferResourceGroup(const CoreGraphics::ShaderId id, co
 /**
 */
 const IndexT
-VkShaderPool::GetResourceSlot(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const
+VkShaderCache::GetResourceSlot(const CoreGraphics::ShaderId id, const Util::StringAtom& name) const
 {
     const VkShaderSetupInfo& info = this->shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
     IndexT index = info.resourceIndexMap.FindIndex(name);
@@ -714,7 +714,7 @@ VkShaderPool::GetResourceSlot(const CoreGraphics::ShaderId id, const Util::Strin
 /**
 */
 const Util::Dictionary<CoreGraphics::ShaderFeature::Mask, CoreGraphics::ShaderProgramId>&
-VkShaderPool::GetPrograms(const CoreGraphics::ShaderId id)
+VkShaderCache::GetPrograms(const CoreGraphics::ShaderId id)
 {
     return this->shaderAlloc.Get<Shader_RuntimeInfo>(id.resourceId).programMap;
 }
@@ -723,7 +723,7 @@ VkShaderPool::GetPrograms(const CoreGraphics::ShaderId id)
 /**
 */
 Util::String 
-VkShaderPool::GetProgramName(CoreGraphics::ShaderProgramId id)
+VkShaderCache::GetProgramName(CoreGraphics::ShaderProgramId id)
 {
     return this->shaderAlloc.Get<Shader_ProgramAllocator>(id.shaderId).Get<0>(id.programId).name;
 }

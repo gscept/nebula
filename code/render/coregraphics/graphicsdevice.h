@@ -307,10 +307,10 @@ void WaitEvent(
 /// signals an event
 void ResetEvent(const CoreGraphics::EventId ev, const CoreGraphics::BarrierStage stage, const CoreGraphics::QueueType queue);
 
-/// draw current primitives
+/// draw primitives
 void Draw();
-/// draw indexed, instanced primitives
-void DrawInstanced(SizeT numInstances, IndexT baseInstance);
+/// draw primitives instanced
+void Draw(SizeT numInstances, IndexT baseInstance);
 /// draw indirect, draws is the amount of draws in the buffer, and stride is the byte offset between each call
 void DrawIndirect(const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT draws, IndexT stride);
 /// draw indirect, draws is the amount of draws in the buffer, and stride is the byte offset between each call

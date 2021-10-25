@@ -48,45 +48,10 @@ BruteforceSystemJobFunc(const Jobs::JobFuncContext& ctx)
     for (ptrdiff sliceIdx = 0; sliceIdx < ctx.numSlices; sliceIdx++)
     {
         const Math::bbox* bbox = (const Math::bbox*)N_JOB_INPUT(ctx, sliceIdx, 0);
-        uint32_t& entityFlags = *(uint32_t*)N_JOB_INPUT(ctx, sliceIdx, 1);
-
-        // If not active, skip
-        if (!AnyBits(entityFlags, Models::NodeInstanceFlags::NodeInstance_Active | Models::NodeInstanceFlags::NodeInstance_LodActive))
-        {
-            entityFlags = UnsetBits(entityFlags, Models::NodeInstance_Visible);
-            continue;
-        }
-
-        // If already visible, skip
-        if (AllBits(entityFlags, Models::NodeInstanceFlags::NodeInstance_Visible))
-        {
-            continue;
-        }
-
-        // If always visible, just set flag and continue
-        if (AllBits(entityFlags, Models::NodeInstanceFlags::NodeInstance_AlwaysVisible))
-        {
-            entityFlags = SetBits(entityFlags, Models::NodeInstance_Visible);
-            continue;
-        }
+        auto clipStatus = (Math::ClipStatus::Type*)N_JOB_OUTPUT(ctx, sliceIdx, 0);
 
         // If we want to check visibility, run clip check
-        Math::ClipStatus::Type clipStatus = bbox->clipstatus(m_col_x, m_col_y, m_col_z, m_col_w);
-        switch (clipStatus)
-        {
-            case Math::ClipStatus::Clipped:
-            case Math::ClipStatus::Inside:
-                entityFlags = SetBits(entityFlags, Models::NodeInstance_Visible);
-                break;
-            case Math::ClipStatus::Outside:
-                entityFlags = UnsetBits(entityFlags, Models::NodeInstance_Visible);
-                break;
-        }
-        /*
-        Math::ClipStatus::Type* flag = (Math::ClipStatus::Type*)N_JOB_OUTPUT(ctx, sliceIdx, 0);
-
-        *flag = bbox->clipstatus(m_col_x, m_col_y, m_col_z, m_col_w);
-        */
+        *clipStatus = bbox->clipstatus(m_col_x, m_col_y, m_col_z, m_col_w);
     }
 }
 

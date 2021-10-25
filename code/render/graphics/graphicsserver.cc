@@ -8,15 +8,15 @@
 #include "view.h"
 #include "stage.h"
 #include "resources/resourceserver.h"
-#include "coregraphics/vertexsignaturepool.h"
-#include "coregraphics/streamtexturepool.h"
-#include "coregraphics/memorytexturepool.h"
-#include "coregraphics/memorymeshpool.h"
+#include "coregraphics/vertexsignaturecache.h"
+#include "coregraphics/streamtexturecache.h"
+#include "coregraphics/memorytexturecache.h"
+#include "coregraphics/memorymeshcache.h"
 #include "coregraphics/shaderpool.h"
-#include "coregraphics/streammeshpool.h"
-#include "coreanimation/streamanimationpool.h"
-#include "characters/streamskeletonpool.h"
-#include "models/streammodelpool.h"
+#include "coregraphics/streammeshcache.h"
+#include "coreanimation/streamanimationcache.h"
+#include "characters/streamskeletoncache.h"
+#include "models/streammodelcache.h"
 #include "renderutil/drawfullscreenquad.h"
 
 namespace Graphics
@@ -82,29 +82,29 @@ GraphicsServer::Open()
     {
 
         // register graphics context pools
-        Resources::ResourceServer::Instance()->RegisterMemoryPool(CoreGraphics::VertexSignaturePool::RTTI);
-        Resources::ResourceServer::Instance()->RegisterMemoryPool(CoreGraphics::MemoryTexturePool::RTTI);
-        Resources::ResourceServer::Instance()->RegisterMemoryPool(CoreGraphics::MemoryMeshPool::RTTI);
+        Resources::ResourceServer::Instance()->RegisterMemoryPool(CoreGraphics::VertexSignatureCache::RTTI);
+        Resources::ResourceServer::Instance()->RegisterMemoryPool(CoreGraphics::MemoryTextureCache::RTTI);
+        Resources::ResourceServer::Instance()->RegisterMemoryPool(CoreGraphics::MemoryMeshCache::RTTI);
 
-        Resources::ResourceServer::Instance()->RegisterStreamPool("dds", CoreGraphics::StreamTexturePool::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("fxb", CoreGraphics::ShaderPool::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("nax3", CoreAnimation::StreamAnimationPool::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("nsk3", Characters::StreamSkeletonPool::RTTI); 
-        Resources::ResourceServer::Instance()->RegisterStreamPool("nvx2", CoreGraphics::StreamMeshPool::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("sur", Materials::SurfacePool::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("n3", Models::StreamModelPool::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("dds", CoreGraphics::StreamTextureCache::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("fxb", CoreGraphics::ShaderCache::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("nax3", CoreAnimation::StreamAnimationCache::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("nsk3", Characters::StreamSkeletonCache::RTTI); 
+        Resources::ResourceServer::Instance()->RegisterStreamPool("nvx2", CoreGraphics::StreamMeshCache::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("sur", Materials::SurfaceCache::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("n3", Models::StreamModelCache::RTTI);
 
         // setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
-        CoreGraphics::layoutPool = Resources::GetMemoryPool<CoreGraphics::VertexSignaturePool>();
-        CoreGraphics::texturePool = Resources::GetMemoryPool<CoreGraphics::MemoryTexturePool>();
-        CoreGraphics::meshPool = Resources::GetMemoryPool<CoreGraphics::MemoryMeshPool>();
+        CoreGraphics::layoutPool = Resources::GetMemoryPool<CoreGraphics::VertexSignatureCache>();
+        CoreGraphics::texturePool = Resources::GetMemoryPool<CoreGraphics::MemoryTextureCache>();
+        CoreGraphics::meshPool = Resources::GetMemoryPool<CoreGraphics::MemoryMeshCache>();
 
-        CoreGraphics::shaderPool = Resources::GetStreamPool<CoreGraphics::ShaderPool>();
-        Models::modelPool = Resources::GetStreamPool<Models::StreamModelPool>();
-        Materials::surfacePool = Resources::GetStreamPool<Materials::SurfacePool>();
+        CoreGraphics::shaderPool = Resources::GetStreamPool<CoreGraphics::ShaderCache>();
+        Models::modelPool = Resources::GetStreamPool<Models::StreamModelCache>();
+        Materials::surfacePool = Resources::GetStreamPool<Materials::SurfaceCache>();
 
-        CoreAnimation::animPool = Resources::GetStreamPool<CoreAnimation::StreamAnimationPool>();
-        Characters::skeletonPool = Resources::GetStreamPool<Characters::StreamSkeletonPool>();
+        CoreAnimation::animPool = Resources::GetStreamPool<CoreAnimation::StreamAnimationCache>();
+        Characters::skeletonPool = Resources::GetStreamPool<Characters::StreamSkeletonCache>();
 
         RenderUtil::DrawFullScreenQuad::Setup();
 

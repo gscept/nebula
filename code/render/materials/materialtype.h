@@ -92,7 +92,7 @@ public:
 
 private:
     friend class MaterialServer;
-    friend class SurfacePool;
+    friend class SurfaceCache;
     friend bool MaterialBeginBatch(MaterialType*, CoreGraphics::BatchGroup::Code);
     friend void MaterialApplySurface(MaterialType*, const SurfaceId);
     friend void MaterialApplySurfaceInstance(MaterialType*, const SurfaceInstanceId);

@@ -17,7 +17,7 @@
 #include "coregraphics/legacy/nvx2streamreader.h"
 #include "coregraphics/primitivegroup.h"
 
-__ImplementClass(Physics::StreamColliderPool, 'PCRP', Resources::ResourceStreamPool);
+__ImplementClass(Physics::StreamColliderPool, 'PCRP', Resources::ResourceStreamCache);
 
 using namespace physx;
 
@@ -68,7 +68,7 @@ StreamColliderPool::~StreamColliderPool()
 void
 StreamColliderPool::Setup()
 {
-    ResourceStreamPool::Setup();
+    ResourceStreamCache::Setup();
     this->placeholderResourceName = "phys:system/box.collider";
     this->failResourceName = "phys:system/box.collider";
 }
@@ -158,7 +158,7 @@ CreateMeshFromResource(MeshTopology type, Util::StringAtom resource, int primGro
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourcePool::LoadStatus
+Resources::ResourceCache::LoadStatus
 StreamColliderPool::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
     n_assert(stream.isvalid());
@@ -215,7 +215,7 @@ StreamColliderPool::LoadFromStream(const Resources::ResourceId res, const Util::
             n_assert("unknown collider type");
     }
     stream->Close();
-    return Resources::ResourcePool::Success;
+    return Resources::ResourceCache::Success;
 }
 
 //------------------------------------------------------------------------------

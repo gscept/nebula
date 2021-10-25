@@ -44,24 +44,6 @@ public:
     /// get the character's animation resource
     const Resources::ResourceId GetAnimationResourceId() const;
 
-    struct Instance : public TransformNode::Instance
-    {
-        Ids::Id32 characterId;
-        IndexT updateFrame;
-        bool updateThisFrame;
-        Util::HashTable<Util::StringAtom, Models::ModelNode::Instance*, 8> activeSkinInstances;
-        const Util::FixedArray<Math::mat4>* joints;
-
-        void ApplySkin(const Util::StringAtom& skinName);
-        void RemoveSkin(const Util::StringAtom& skinName);
-    };
-
-    /// create instance
-    virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent) override;
-
-    /// get size of instance
-    virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
-
     /// character nodes should not create the hierarchy implicitly
     bool GetImplicitHierarchyActivation() const override;
 
@@ -121,7 +103,6 @@ CharacterNode::GetImplicitHierarchyActivation() const
     return true;
 }
 
-ModelNodeInstanceCreator(CharacterNode)
 
 } // namespace Characters
 //------------------------------------------------------------------------------

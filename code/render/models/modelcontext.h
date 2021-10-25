@@ -10,6 +10,7 @@
 #include "graphics/graphicscontext.h"
 #include "core/singleton.h"
 #include "resources/resourceid.h"
+#include "coregraphics/resourcetable.h"
 #include "materials/materialserver.h"
 #include "model.h"
 #include "nodes/modelnode.h"
@@ -17,6 +18,7 @@
 namespace Jobs
 {
 struct JobFuncContext;
+struct JobSyncId;
 };
 
 namespace Visibility
@@ -31,8 +33,8 @@ enum NodeInstanceFlags
 {
     NodeInstance_Active = N_BIT(1)              // If set, node is active to render
     , NodeInstance_LodActive = N_BIT(2)         // If set, the node's LOD is active
-    , NodeInstance_Visible = N_BIT(3)           // Updated by visibility
-    , NodeInstance_AlwaysVisible = N_BIT(4)     // Should always resolve to being visible by visibility
+    , NodeInstance_AlwaysVisible = N_BIT(3)     // Should always resolve to being visible by visibility
+    , NodeInstance_Visible = N_BIT(4)           // Set to true if any observer sees it
 };
 
 class ModelContext : public Graphics::GraphicsContext
@@ -54,8 +56,6 @@ public:
     static void ChangeModel(const Graphics::GraphicsEntityId id, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback);
     /// get model
     static const Models::ModelId GetModel(const Graphics::GraphicsEntityId id);
-    /// get model instance
-    static const Models::ModelInstanceId GetModelInstance(const Graphics::GraphicsEntityId id);
 
     /// set the transform for a model
     static void SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4& transform);
@@ -63,16 +63,11 @@ public:
     static Math::mat4 GetTransform(const Graphics::GraphicsEntityId id);
     /// get the transform for a model
     static Math::mat4 GetTransform(const Graphics::ContextEntityId id);
-    /// get the bounding box
-    static Math::bbox GetBoundingBox(const Graphics::GraphicsEntityId id);
-
-    /// get model node instances
-    static const Util::Array<Models::ModelNode::Instance*>& GetModelNodeInstances(const Graphics::GraphicsEntityId id);
-    /// get model node types
-    static const Util::Array<Models::NodeType>& GetModelNodeTypes(const Graphics::GraphicsEntityId id);
 
     /// runs before frame is updated
     static void UpdateTransforms(const Graphics::FrameContext& ctx);
+    /// runs after BeginFrame
+    static void UpdateConstants(const Graphics::FrameContext& ctx);
 #ifndef PUBLIC_DEBUG    
     /// debug rendering
     static void OnRenderDebug(uint32_t flags);
@@ -80,10 +75,6 @@ public:
 
     /// get model
     static const Models::ModelId GetModel(const Graphics::ContextEntityId id);
-    /// get model instance
-    static const Models::ModelInstanceId GetModelInstance(const Graphics::ContextEntityId id);
-    /// get model node instances
-    static const Util::Array<Models::ModelNode::Instance*>& GetModelNodeInstances(const Graphics::ContextEntityId id);
     /// get model node instances
     static const Util::Array<Models::NodeType>& GetModelNodeTypes(const Graphics::ContextEntityId id);
 
@@ -95,11 +86,7 @@ public:
         IndexT objectConstantsIndex;
         IndexT instancingConstantsIndex;
         IndexT skinningConstantsIndex;
-    };
-
-    struct NodeInstanceRange
-    {
-        SizeT offset, size;
+        IndexT particleConstantsIndex;
     };
 
     struct ModelInstance
@@ -123,26 +110,37 @@ public:
             Util::Array<uint64> nodeSortId;
             Util::Array<NodeInstanceFlags> nodeFlags;
             Util::Array<Materials::SurfaceResourceId> nodeSurfaceResources;
+            Util::Array<Materials::SurfaceId> nodeSurfaces;
             Util::Array<NodeInstanceState> nodeStates;
             Util::Array<Materials::MaterialType*> nodeMaterialTypes;
             Util::Array<Models::ModelNode*> nodes;
+            Util::Array<std::function<void()>> nodeModelCallbacks;
+            Util::Array<Util::Tuple<uint32, uint32>> nodeDrawModifiers;
+
+            Util::Array<void*> nodeSpecialData;
+#if NEBULA_GRAPHICS_DEBUG
+            Util::Array<Util::StringAtom> nodeNames;
+#endif
         } renderable;
+
     };
 
     /// Get model node instance states
-    static const NodeInstanceRange& GetModelNodeInstanceStateRange(const Graphics::GraphicsEntityId id);
+    static const NodeInstanceRange& GetModelRenderableRange(const Graphics::GraphicsEntityId id);
     /// Get array to all model node states
-    static const Util::Array<NodeInstanceState>& GetModelNodeInstanceStates();
+    static const Util::Array<NodeInstanceState>& GetModelRenderableStates();
     /// Get array to all model node instace bounding boxes
-    static const Util::Array<Math::bbox>& GetModelNodeInstanceBoundingBoxes();
+    static const Util::Array<Math::bbox>& GetModelRenderableBoundingBoxes();
     /// Get array to all model node instance flags
-    static const Util::Array<NodeInstanceFlags>& GetModelNodeInstanceFlags();
+    static const Util::Array<NodeInstanceFlags>& GetModelRenderableFlags();
     /// Get node renderable context
-    static ModelInstance::Renderable& GetModelNodeInstanceRenderables();
+    static const ModelInstance::Renderable& GetModelRenderables();
+    /// Get node transformable context
+    static const ModelInstance::Transformable& GetModelTransformables();
 
 private:
     friend class VisibilityContext;
-    friend void ModelBoundingBoxUpdateJob(const Jobs::JobFuncContext& ctx);
+    friend void ModelRenderableUpdateJob(const Jobs::JobFuncContext& ctx);
     friend void ModelTransformUpdateJob(const Jobs::JobFuncContext& ctx);
 
     static ModelInstance nodeInstances;
@@ -152,7 +150,6 @@ private:
         Model_Id,
         Model_NodeInstanceTransform,
         Model_NodeInstanceStates,
-        Model_InstanceId,
         Model_Transform,
         Model_Dirty
     };
@@ -160,7 +157,6 @@ private:
         ModelId,
         NodeInstanceRange,
         NodeInstanceRange,
-        ModelInstanceId,
         Math::mat4,         // pending transforms
         bool                // transform is dirty
     > ModelContextAllocator;
@@ -194,13 +190,9 @@ ModelContext::Dealloc(Graphics::ContextEntityId id)
 {
     // clean up old stuff, but don't deallocate entity
     ModelId& rid = modelContextAllocator.Get<Model_Id>(id.id);
-    ModelInstanceId& mdl = modelContextAllocator.Get<Model_InstanceId>(id.id);
 
-    if (mdl != ModelInstanceId::Invalid()) // actually deallocate current instance
-        Models::DestroyModelInstance(mdl);
     if (rid != ModelId::Invalid()) // decrement model resource
         Models::DestroyModel(rid);
-    mdl = ModelInstanceId::Invalid();
     rid = ModelId::Invalid();
 
     modelContextAllocator.Dealloc(id.id);

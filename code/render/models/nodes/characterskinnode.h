@@ -34,17 +34,8 @@ public:
     /// get joint palette of a fragment
     const Util::Array<IndexT>& GetFragmentJointPalette(IndexT fragmentIndex) const;
 
-    struct Instance : public PrimitiveNode::Instance
-    {
-        /// apply skinning palette
-        void Update() override;
-    };
-
-    /// create instance
-    virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent) override;
-
-    /// get size of instance
-    virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
+    /// get function for applying node state
+    std::function<void()> GetApplyNodeFunction() override;
 private:
     /// a skin fragment
     class Fragment
@@ -58,13 +49,12 @@ private:
     };
 
 protected:
+    friend class Characters::CharacterContext;
 
     /// parse data tag (called by loader code)
     virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
     /// called when loading finished
     virtual void OnFinishedLoading();
-    /// apply state
-    void ApplyNodeState() override;
 
     CoreGraphics::ShaderFeature::Mask skinnedShaderFeatureBits;
     Util::Array<Fragment> skinFragments;
@@ -96,8 +86,6 @@ CharacterSkinNode::GetFragmentJointPalette(IndexT fragmentIndex) const
 {
     return this->skinFragments[fragmentIndex].jointPalette;
 }
-
-ModelNodeInstanceCreator(CharacterSkinNode)
 
 } // namespace Characters
 //------------------------------------------------------------------------------

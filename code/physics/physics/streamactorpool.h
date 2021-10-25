@@ -8,7 +8,7 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
-#include "resources/resourcestreampool.h"
+#include "resources/resourcestreamcache.h"
 #include "util/stack.h"
 #include "physics/actorcontext.h"
 #include "flat/physics/collider.h"
@@ -35,7 +35,7 @@ struct ActorInfo
 };
 
     
-class StreamActorPool : public Resources::ResourceStreamPool
+class StreamActorPool : public Resources::ResourceStreamCache
 {
     __DeclareClass(StreamActorPool);
 public:

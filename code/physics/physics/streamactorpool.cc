@@ -15,7 +15,7 @@
 #include "flat/physics/actor.h"
 
 
-__ImplementClass(Physics::StreamActorPool, 'PSAP', Resources::ResourceStreamPool);
+__ImplementClass(Physics::StreamActorPool, 'PSAP', Resources::ResourceStreamCache);
 
 namespace Physics
 {
@@ -43,7 +43,7 @@ StreamActorPool::~StreamActorPool()
 void 
 StreamActorPool::Setup()
 {
-    ResourceStreamPool::Setup();
+    ResourceStreamCache::Setup();
     this->placeholderResourceName = "phys:system/box.actor";
     this->failResourceName = "phys:system/box.actor";
 }
@@ -94,7 +94,7 @@ StreamActorPool::DiscardActorInstance(ActorId id)
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourcePool::LoadStatus 
+Resources::ResourceCache::LoadStatus 
 StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom & tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
     n_assert(stream.isvalid());    
@@ -125,12 +125,12 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
             colliderid = Resources::CreateResource(collider, "", nullptr, nullptr, true);
             if (colliderPool->GetState(colliderid) == Resources::Resource::Failed)
             {
-                return Resources::ResourcePool::Failed;
+                return Resources::ResourceCache::Failed;
             }
         }
         else
         {
-            return Resources::ResourcePool::Failed;
+            return Resources::ResourceCache::Failed;
         }
         actorInfo.colliders.Append(colliderid);
         physx::PxGeometryHolder& geom = colliderPool->GetGeometry(colliderid);
@@ -139,7 +139,7 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
         actorInfo.shapes.Append(newShape);
         actorInfo.densities.Append(GetMaterial(material).density);
     }
-    return Resources::ResourcePool::Success;                                    
+    return Resources::ResourceCache::Success;                                    
 }
 
 //------------------------------------------------------------------------------

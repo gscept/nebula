@@ -23,47 +23,25 @@ public:
     /// destructor
     virtual ~PrimitiveNode();
 
-    struct Instance : public ShaderStateNode::Instance
-    {
-        /// setup instance
-        void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
-    };
-
-    /// create instance
-    virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent) override;
-    /// get size of instance
-    virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
     /// get the nodes primitive group index
     uint32_t GetPrimitiveGroupIndex() const { return this->primitiveGroupIndex; }
     /// get primitives mesh id
     CoreGraphics::MeshId GetMeshId() const { return this->res; }
 
+    /// get function for applying node state
+    std::function<void()> GetApplyNodeFunction();
+
 protected:
-    friend class StreamModelPool;
+    friend class StreamModelCache;
 
     /// load primitive
     virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
     /// unload data
     virtual void Unload() override;
-    /// apply state
-    void ApplyNodeState() override;
 
     CoreGraphics::MeshId res;
     uint16_t primitiveGroupIndex;
     uint16_t primitiveGroupIndexLoaded;
 };
-
-ModelNodeInstanceCreator(PrimitiveNode)
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-PrimitiveNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
-{
-    ShaderStateNode::Instance::Setup(node, parent);
-}
-
-
 
 } // namespace Models

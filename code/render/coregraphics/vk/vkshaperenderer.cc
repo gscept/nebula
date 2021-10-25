@@ -8,7 +8,7 @@
 #include "coregraphics/graphicsdevice.h"
 #include "coregraphics/transformdevice.h"
 #include "coregraphics/mesh.h"
-#include "coregraphics/vertexsignaturepool.h"
+#include "coregraphics/vertexsignaturecache.h"
 #include "coregraphics/vertexcomponent.h"
 #include "threading/thread.h"
 #include "coregraphics/shaderserver.h"

@@ -5,7 +5,7 @@
 #include "render/stdneb.h"
 #include "materialserver.h"
 #include "resources/resourceserver.h"
-#include "surfacepool.h"
+#include "surfacecache.h"
 #include "materialtype.h"
 #include "io/ioserver.h"
 #include "io/jsonreader.h"

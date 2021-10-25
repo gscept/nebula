@@ -40,54 +40,22 @@ public:
     /// get emitter sample buffer
     const Particles::EnvelopeSampleBuffer& GetSampleBuffer() const;
 
-    struct Instance : public ShaderStateNode::Instance
-    {
-        enum DynamicOffsetType
-        {
-            ObjectTransforms,
-            InstancingTransforms,
-            Skinning,
-            Particle
-        };
+    /// get function for applying node state
+    std::function<void()> GetApplyNodeFunction() override;
 
-        Math::mat4 particleTransform;
-        uint particleVboOffset;
-        CoreGraphics::BufferId particleVbo;
-        CoreGraphics::PrimitiveGroup group;
-        uint numParticles;
-
-        IndexT particleConstantsIndex;
-
-        Math::bbox boundingBox;
-
-        /// update prior to drawing
-        void Update() override;
-        /// setup instance
-        void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
-
-        /// another draw function
-        void Draw(const SizeT numInstances, const IndexT baseInstance, Models::ShaderStateNode::DrawPacket* packet);
-    };
-
-    /// create instance
-    virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent) override;
-    /// get size of instance
-    virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
 private:
     /// helper function to parse an EnvelopeCurve from a data stream
     Particles::EnvelopeCurve ParseEnvelopeCurveData(const Ptr<IO::BinaryReader>& reader) const;
 
 protected:    
+    friend class Particles::ParticleContext;
+    friend class Models::ModelContext;
+
     /// called once when all pending resource have been loaded
     virtual void OnFinishedLoading();
     /// parse data tag (called by loader code)
     virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
 
-    /// apply state
-    void ApplyNodeState() override;
-    /// apply node-level resources
-    void ApplyNodeResources() override;
-    
     Particles::EnvelopeSampleBuffer sampleBuffer;
     Particles::EmitterAttrs emitterAttrs;
     Particles::EmitterMesh emitterMesh;
@@ -143,37 +111,6 @@ inline const Particles::EmitterAttrs&
 ParticleSystemNode::GetEmitterAttrs() const
 {
     return this->emitterAttrs;
-}
-
-ModelNodeInstanceCreator(ParticleSystemNode)
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-ParticleSystemNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
-{
-    TransformNode::Instance::Setup(node, parent);
-    this->dirty = true;
-    ParticleSystemNode* pparent = static_cast<ParticleSystemNode*>(node);
-    this->resourceTable = pparent->resourceTable;
-
-    this->particleConstantsIndex = pparent->particleConstantsIndex;
-    this->objectTransformsIndex = pparent->objectTransformsIndex;
-    this->instancingTransformsIndex = pparent->instancingTransformsIndex;
-    this->skinningTransformsIndex = pparent->skinningTransformsIndex;
-
-    this->offsets.Resize(4);
-    this->offsets[this->particleConstantsIndex] = 0;
-    this->offsets[this->objectTransformsIndex] = 0;
-    this->offsets[this->skinningTransformsIndex] = 0;
-    this->offsets[this->instancingTransformsIndex] = 0;
-
-    // create surface instance
-    this->surfaceInstance = pparent->materialType->CreateSurfaceInstance(pparent->surface);
-
-    this->particleVboOffset = 0;
-    this->particleVbo = CoreGraphics::InvalidBufferId;
 }
 
 } // namespace Particles

@@ -4,13 +4,13 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "model.h"
-#include "streammodelpool.h"
+#include "streammodelcache.h"
 #include "coregraphics/config.h"
 
 namespace Models
 {
 
-StreamModelPool* modelPool;
+StreamModelCache* modelPool;
 
 //------------------------------------------------------------------------------
 /**
@@ -28,24 +28,6 @@ void
 DestroyModel(const ModelId id)
 {
 	modelPool->DiscardResource(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const ModelInstanceId
-CreateModelInstance(const ModelId mdl)
-{
-	return modelPool->CreateModelInstance(mdl);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-DestroyModelInstance(const ModelInstanceId id)
-{
-	modelPool->DestroyModelInstance(id);
 }
 
 } // namespace Models

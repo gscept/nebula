@@ -36,18 +36,14 @@ BruteforceSystem::Run()
         ctx.uniform.scratchSize = 0;
 
         // just one input buffer of all the transforms
-        ctx.input.numBuffers = 2;
+        ctx.input.numBuffers = 1;
         ctx.input.data[0] = (unsigned char*)this->ent.boxes;
         ctx.input.dataSize[0] = sizeof(Math::bbox) * this->ent.count;
         ctx.input.sliceSize[0] = sizeof(Math::bbox);
 
-        ctx.input.data[1] = (unsigned char*)this->ent.entityFlags;
-        ctx.input.dataSize[1] = sizeof(uint32_t) * this->ent.count;
-        ctx.input.sliceSize[1] = sizeof(uint32_t);
-
         // the output is the visibility result
         ctx.output.numBuffers = 1;
-        ctx.output.data[0] = (unsigned char*)this->obs.vis[i];
+        ctx.output.data[0] = (unsigned char*)this->obs.results[i].Begin();
         ctx.output.dataSize[0] = sizeof(Math::ClipStatus::Type) * this->ent.count;
         ctx.output.sliceSize[0] = sizeof(Math::ClipStatus::Type);
 

@@ -76,14 +76,14 @@ template <class MASK, class BITS>
 constexpr MASK
 SetBits(const MASK mask, const BITS bit)
 {
-    return mask & bit;
+    return MASK(uint(mask) | uint(bit));
 }
 
 template <class MASK, class BITS>
 constexpr MASK
 UnsetBits(const MASK mask, const BITS bit)
 {
-    return mask & !bit;
+    return MASK(uint(mask) & ~uint(bit));
 }
 
 #define N_ARGB(a,r,g,b) ((uint)((((a)&0xff)<<24)|(((r)&0xff)<<16)|(((g)&0xff)<<8)|((b)&0xff)))
@@ -91,6 +91,10 @@ UnsetBits(const MASK mask, const BITS bit)
 #define N_XRGB(r,g,b)   N_ARGB(0xff,r,g,b)
 #define N_COLORVALUE(r,g,b,a) N_RGBA((uint)((r)*255.f),(uint)((g)*255.f),(uint)((b)*255.f),(uint)((a)*255.f))
 
+//------------------------------------------------------------------------------
+/**
+    Check if all bits are set in flags
+*/
 template <class FLAGS, class BITS>
 constexpr bool
 AllBits(const FLAGS flags, const BITS bits)
@@ -98,11 +102,15 @@ AllBits(const FLAGS flags, const BITS bits)
     return (flags & bits) == bits;
 }
 
+//------------------------------------------------------------------------------
+/**
+    Check if any bits are set in flags
+*/
 template <class FLAGS, class BITS>
 constexpr bool
 AnyBits(const FLAGS flags, const BITS bits)
 {
-    return (flags & ~bits) != 0;
+    return (flags & bits) != 0;
 }
 
 // byte bit calc

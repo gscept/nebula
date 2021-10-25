@@ -6,12 +6,14 @@
 #include "modelcontext.h"
 #include "resources/resourceserver.h"
 #include "nodes/modelnode.h"
-#include "streammodelpool.h"
+#include "streammodelcache.h"
 #include "graphics/graphicsserver.h"
 #include "visibility/visibilitycontext.h"
 #include "profiling/profiling.h"
 #include "graphics/cameracontext.h"
 #include "threading/lockfreequeue.h"
+
+#include "objects_shared.h"
 
 #ifndef PUBLIC_BUILD
 #include "dynui/im3d/im3dcontext.h"
@@ -30,7 +32,7 @@ __ImplementContext(ModelContext, ModelContext::modelContextAllocator);
 
 Threading::LockFreeQueue<std::function<void()>> setupCompleteQueue;
 
-extern void ModelBoundingBoxUpdateJob(const Jobs::JobFuncContext& ctx);
+extern void ModelRenderableUpdateJob(const Jobs::JobFuncContext& ctx);
 extern void ModelTransformUpdateJob(const Jobs::JobFuncContext& ctx);
 
 //------------------------------------------------------------------------------
@@ -60,6 +62,7 @@ ModelContext::Create()
     setupCompleteQueue.Resize(65535);
 
     __bundle.OnBegin = ModelContext::UpdateTransforms;
+    __bundle.OnBeforeFrame = ModelContext::UpdateConstants;
     __bundle.StageBits = &ModelContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = ModelContext::OnRenderDebug;
@@ -77,7 +80,6 @@ void
 ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::ResourceName& name, const Util::StringAtom& tag, std::function<void()> finishedCallback)
 {
     const ContextEntityId cid = GetContextId(gfxId);
-    modelContextAllocator.Get<Model_InstanceId>(cid.id) = ModelInstanceId::Invalid();
     
     ResourceCreateInfo info;
     info.resource = name;
@@ -115,10 +117,8 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
         }
 
         // Setup transforms
-        transformRange.offset = nodeInstances.transformable.nodeTransforms.Size();
-        transformRange.size = transformNodes.Size();
-        nodeInstances.transformable.nodeTransforms.Reserve(transformNodes.Size());
-        nodeInstances.transformable.nodeParents.Reserve(transformNodes.Size());
+        transformRange.begin = nodeInstances.transformable.nodeTransforms.Size();
+        transformRange.end = nodeInstances.transformable.nodeTransforms.Size() + transformNodes.Size();
         for (SizeT i = 0; i < transformNodes.Size(); i++)
         {
             Models::TransformNode* tNode = reinterpret_cast<Models::TransformNode*>(transformNodes[i]);
@@ -130,16 +130,15 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             trans.setscalepivot(tNode->scalePivot);
             nodeInstances.transformable.origTransforms.Append(trans.getmatrix());
             nodeInstances.transformable.nodeTransforms.Append(trans.getmatrix());
-            nodeInstances.transformable.nodeParents.Append(nodeLookup[tNode->parent]);
+            if (tNode->parent != nullptr)
+                nodeInstances.transformable.nodeParents.Append(nodeLookup[tNode->parent]);
+            else
+                nodeInstances.transformable.nodeParents.Append(UINT32_MAX);
         }
 
         // Setup node states
-        stateRange.offset = nodeInstances.renderable.nodeStates.Size();
-        stateRange.size = renderNodes.Size();
-        nodeInstances.renderable.nodeStates.Reserve(renderNodes.Size());
-        nodeInstances.renderable.nodeBoundingBoxes.Reserve(renderNodes.Size());
-        nodeInstances.renderable.nodeFlags.Reserve(renderNodes.Size());
-        nodeInstances.renderable.nodeTransformIndex = nodeIds;
+        stateRange.begin = nodeInstances.renderable.nodeStates.Size();
+        stateRange.end = nodeInstances.renderable.nodeStates.Size() + renderNodes.Size();
         for (SizeT i = 0; i < renderNodes.Size(); i++)
         {
             Models::ShaderStateNode* sNode = reinterpret_cast<Models::ShaderStateNode*>(renderNodes[i]);
@@ -148,34 +147,59 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             state.instancingConstantsIndex = sNode->instancingTransformsIndex;
             state.objectConstantsIndex = sNode->objectTransformsIndex;
             state.skinningConstantsIndex = sNode->skinningTransformsIndex;
+            state.particleConstantsIndex = InvalidIndex;
             state.resourceTable = sNode->resourceTable;
-            state.resourceTableOffsets.Resize(3);
-            state.resourceTableOffsets[state.objectConstantsIndex] = 0;
-            state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
-            state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
+
+            // Okay, so how this basically has to work is that there are 4 different dynamic offset constant indices in the entire engine.
+            // Any change of this will break this code, so consider improving this in the future by providing a way to overload the binding point
+            // for dynamic offset instead of providing several, and then simply just allocate the right type of GPU buffer for that type of node
+            if (sNode->GetType() == Models::ParticleSystemNodeType)
+            {
+                state.particleConstantsIndex = reinterpret_cast<Models::ParticleSystemNode*>(sNode)->particleConstantsIndex;
+
+                state.resourceTableOffsets.Resize(4);
+                state.resourceTableOffsets[state.objectConstantsIndex] = 0;
+                state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
+                state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
+                state.resourceTableOffsets[state.particleConstantsIndex] = 0;
+
+            }
+            else
+            {
+                state.resourceTableOffsets.Resize(3);
+                state.resourceTableOffsets[state.objectConstantsIndex] = 0;
+                state.resourceTableOffsets[state.instancingConstantsIndex] = 0;
+                state.resourceTableOffsets[state.skinningConstantsIndex] = 0;
+            }
             nodeInstances.renderable.nodeStates.Append(state);
 
+            nodeInstances.renderable.nodeTransformIndex.Append(transformRange.begin + nodeLookup[renderNodes[i]]);
             nodeInstances.renderable.nodeBoundingBoxes.Append(Math::bbox());
             nodeInstances.renderable.origBoundingBoxes.Append(sNode->boundingBox);
             nodeInstances.renderable.nodeLodDistances.Append(sNode->useLodDistances ? Util::MakeTuple(sNode->minDistance, sNode->maxDistance) : Util::MakeTuple(FLT_MAX, FLT_MAX));
             nodeInstances.renderable.nodeLods.Append(0.0f);
             nodeInstances.renderable.nodeFlags.Append(Models::NodeInstance_Active);
             nodeInstances.renderable.nodeSurfaceResources.Append(sNode->surRes);
+            nodeInstances.renderable.nodeSurfaces.Append(sNode->surface);
             nodeInstances.renderable.nodeMaterialTypes.Append(sNode->materialType);
             nodeInstances.renderable.nodes.Append(sNode);
+            nodeInstances.renderable.nodeModelCallbacks.Append(sNode->GetApplyNodeFunction());
+            nodeInstances.renderable.nodeDrawModifiers.Append(Util::MakeTuple(1, 0)); // Base 1 instance 0 offset
 
+#if NEBULA_GRAPHICS_DEBUG
+            nodeInstances.renderable.nodeNames.Append(sNode->GetName());
+#endif
+
+            // The sort id is combined together with an index in the VisibilitySortJob to sort the node based on material, model and instance
             assert(sNode->materialType->HashCode() < 0xFFF0000000000000);
             assert(sNode->HashCode() < 0x000FFFFF00000000);
             uint64 sortId = ((uint64)sNode->materialType->HashCode() << 52) | ((uint64)sNode->HashCode() << 32);
+            nodeInstances.renderable.nodeSortId.Append(sortId);
         }
         
 
         modelContextAllocator.Get<Model_Id>(cid.id) = mid;
-        ModelInstanceId& mdl = modelContextAllocator.Get<Model_InstanceId>(cid.id);
-        mdl = Models::CreateModelInstance(mid);
         const Math::mat4& pending = modelContextAllocator.Get<Model_Transform>(cid.id);
-        Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::InstanceTransform>(mdl.instance) = pending;
-        Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(mdl.instance) = gfxId.id;
 
         // add the callbacks to a lockfree queue, and dequeue and call them when it's safe
         if (finishedCallback != nullptr)
@@ -196,25 +220,18 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId gfxId, const Resource
 
     // clean up old stuff, but don't deallocate entity
     ModelId& rid = modelContextAllocator.Get<Model_Id>(cid.id);
-    ModelInstanceId& mdl = modelContextAllocator.Get<Model_InstanceId>(cid.id);
 
-    if (mdl != ModelInstanceId::Invalid()) // actually deallocate current instance
-        Models::DestroyModelInstance(mdl);
     if (rid != ModelId::Invalid()) // decrement model resource
         Models::DestroyModel(rid);
-    mdl = ModelInstanceId::Invalid();
 
     ResourceCreateInfo info;
     info.resource = name;
     info.tag = tag;
     info.async = false;
-    info.successCallback = [&mdl, cid, gfxId, finishedCallback](Resources::ResourceId mid)
+    info.successCallback = [cid, gfxId, finishedCallback](Resources::ResourceId mid)
     {
         modelContextAllocator.Get<Model_Id>(cid.id) = mid;
-        ModelInstanceId& mdl = modelContextAllocator.Get<Model_InstanceId>(cid.id);
         const Math::mat4& pending = modelContextAllocator.Get<Model_Transform>(cid.id);
-        Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::InstanceTransform>(mdl.instance) = pending;
-        Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(mdl.instance) = gfxId.id;
         
         if (finishedCallback != nullptr)
             setupCompleteQueue.Enqueue(finishedCallback);
@@ -237,29 +254,10 @@ ModelContext::GetModel(const Graphics::GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
-const Models::ModelInstanceId
-ModelContext::GetModelInstance(const Graphics::GraphicsEntityId id)
-{
-    const ContextEntityId cid = GetContextId(id);
-    return modelContextAllocator.Get<Model_InstanceId>(cid.id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 const Models::ModelId 
 ModelContext::GetModel(const Graphics::ContextEntityId id)
 {
     return modelContextAllocator.Get<Model_Id>(id.id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Models::ModelInstanceId
-ModelContext::GetModelInstance(const Graphics::ContextEntityId id)
-{
-    return modelContextAllocator.Get<Model_InstanceId>(id.id);
 }
 
 //------------------------------------------------------------------------------
@@ -291,48 +289,14 @@ ModelContext::GetTransform(const Graphics::GraphicsEntityId id)
 Math::mat4
 ModelContext::GetTransform(const Graphics::ContextEntityId id)
 {
-    ModelInstanceId& inst = modelContextAllocator.Get<Model_InstanceId>(id.id);
     return modelContextAllocator.Get<Model_Transform>(id.id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-Math::bbox 
-ModelContext::GetBoundingBox(const Graphics::GraphicsEntityId id)
-{
-    const ContextEntityId cid = GetContextId(id);
-    ModelInstanceId& inst = modelContextAllocator.Get<Model_InstanceId>(cid.id);
-    return Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::InstanceBoundingBox>(inst.instance);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Util::Array<Models::ModelNode::Instance*>& 
-ModelContext::GetModelNodeInstances(const Graphics::GraphicsEntityId id)
-{
-    const ContextEntityId cid = GetContextId(id);
-    ModelInstanceId& inst = modelContextAllocator.Get<Model_InstanceId>(cid.id);
-    return Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ModelNodeInstances>(inst.instance);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Util::Array<Models::NodeType>& 
-ModelContext::GetModelNodeTypes(const Graphics::GraphicsEntityId id)
-{
-    const ContextEntityId cid = GetContextId(id);
-    ModelInstanceId& inst = modelContextAllocator.Get<Model_InstanceId>(cid.id);
-    return Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ModelNodeTypes>(inst.instance);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const ModelContext::NodeInstanceRange&
-ModelContext::GetModelNodeInstanceStateRange(const Graphics::GraphicsEntityId id)
+const Models::NodeInstanceRange&
+ModelContext::GetModelRenderableRange(const Graphics::GraphicsEntityId id)
 {
     const ContextEntityId cid = GetContextId(id);
     return modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
@@ -342,7 +306,7 @@ ModelContext::GetModelNodeInstanceStateRange(const Graphics::GraphicsEntityId id
 /**
 */
 const Util::Array<ModelContext::NodeInstanceState>&
-ModelContext::GetModelNodeInstanceStates()
+ModelContext::GetModelRenderableStates()
 {
     return ModelContext::nodeInstances.renderable.nodeStates;
 }
@@ -351,7 +315,7 @@ ModelContext::GetModelNodeInstanceStates()
 /**
 */
 const Util::Array<Math::bbox>&
-ModelContext::GetModelNodeInstanceBoundingBoxes()
+ModelContext::GetModelRenderableBoundingBoxes()
 {
     return ModelContext::nodeInstances.renderable.nodeBoundingBoxes;
 }
@@ -360,7 +324,7 @@ ModelContext::GetModelNodeInstanceBoundingBoxes()
 /**
 */
 const Util::Array<NodeInstanceFlags>&
-ModelContext::GetModelNodeInstanceFlags()
+ModelContext::GetModelRenderableFlags()
 {
     return ModelContext::nodeInstances.renderable.nodeFlags;
 }
@@ -369,7 +333,7 @@ ModelContext::GetModelNodeInstanceFlags()
 /**
 */
 const ModelContext::ModelInstance::Renderable&
-ModelContext::GetModelNodeInstanceRenderables()
+ModelContext::GetModelRenderables()
 {
     return ModelContext::nodeInstances.renderable;
 }
@@ -377,21 +341,10 @@ ModelContext::GetModelNodeInstanceRenderables()
 //------------------------------------------------------------------------------
 /**
 */
-const Util::Array<Models::ModelNode::Instance*>&
-ModelContext::GetModelNodeInstances(const Graphics::ContextEntityId id)
+const ModelContext::ModelInstance::Transformable&
+ModelContext::GetModelTransformables()
 {
-    ModelInstanceId& inst = modelContextAllocator.Get<Model_InstanceId>(id.id);
-    return Models::modelPool->modelInstanceAllocator.Get<Model_Id>(inst.instance);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Util::Array<Models::NodeType>&
-ModelContext::GetModelNodeTypes(const Graphics::ContextEntityId id)
-{
-    ModelInstanceId& inst = modelContextAllocator.Get<Model_InstanceId>(id.id);
-    return Models::modelPool->modelInstanceAllocator.Get<Models::StreamModelPool::ModelNodeTypes>(inst.instance);
+    return ModelContext::nodeInstances.transformable;
 }
 
 //------------------------------------------------------------------------------
@@ -407,10 +360,9 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
         callback();
 
     N_SCOPE(UpdateTransforms, Models);
-    const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<Model_InstanceId>();
     const Util::Array<NodeInstanceRange>& nodeInstanceTransformRanges = modelContextAllocator.GetArray<Model_NodeInstanceTransform>();
     const Util::Array<NodeInstanceRange>& nodeInstanceStateRanges = modelContextAllocator.GetArray<Model_NodeInstanceStates>();
-    const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<Models::StreamModelPool::ModelBoundingBox>();
+    const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<Models::StreamModelCache::ModelBoundingBox>();
     Util::Array<Math::bbox>& instanceBoxes = nodeInstances.renderable.nodeBoundingBoxes;
     Util::Array<Math::mat4>& pending = modelContextAllocator.GetArray<Model_Transform>();
     Util::Array<bool>& hasPending = modelContextAllocator.GetArray<Model_Dirty>();
@@ -434,16 +386,17 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
             hasPending[i] = false;
 
             // Set root transform
-            nodeInstances.transformable.nodeTransforms[transformRange.offset] = transform;
+            nodeInstances.transformable.nodeTransforms[transformRange.begin] = transform;
 
             // Update transforms
             SizeT j;
-            for (j = 1; j < transformRange.size; j++)
+            for (j = transformRange.begin + 1; j < transformRange.end; j++)
             {
-                uint32_t parent = nodeInstances.transformable.nodeParents[transformRange.offset + j];
-                Math::mat4 parentTransform = nodeInstances.transformable.nodeTransforms[parent];
-                Math::mat4 orig = nodeInstances.transformable.origTransforms[transformRange.offset + j];
-                nodeInstances.transformable.nodeTransforms[transformRange.offset + j] = orig * parentTransform;
+                uint32 parent = nodeInstances.transformable.nodeParents[j];
+                n_assert(parent != UINT32_MAX);
+                Math::mat4 parentTransform = nodeInstances.transformable.nodeTransforms[transformRange.begin + parent];
+                Math::mat4 orig = nodeInstances.transformable.origTransforms[j];
+                nodeInstances.transformable.nodeTransforms[j] = orig * parentTransform;
             }
         }
     }
@@ -461,7 +414,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
     jctx.output.numBuffers = 1;
     jctx.output.data[0] = jctx.input.data[0];
     jctx.output.sliceSize[0] = jctx.input.dataSize[0];
-    Jobs::JobId job = Jobs::CreateJob({ ModelBoundingBoxUpdateJob });
+    Jobs::JobId job = Jobs::CreateJob({ ModelRenderableUpdateJob });
     Jobs::JobSchedule(job, Graphics::GraphicsServer::renderSystemsJobPort, jctx);
 
     // Issue sync and wait on the threads
@@ -474,134 +427,70 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
     {
         const NodeInstanceRange& stateRange = nodeInstanceStateRanges[i];
         SizeT j;
-        for (j = 0; j < stateRange.size; j++)
+        for (j = stateRange.begin; j < stateRange.end; j++)
         {
-            Math::mat4 transform = nodeInstances.transformable.nodeTransforms[nodeInstances.renderable.nodeTransformIndex[stateRange.offset + j]];
-            Math::bbox box = nodeInstances.renderable.origBoundingBoxes[stateRange.offset + j];
+            Math::mat4 transform = nodeInstances.transformable.nodeTransforms[nodeInstances.renderable.nodeTransformIndex[j]];
+            Math::bbox box = nodeInstances.renderable.origBoundingBoxes[j];
             box.affine_transform(transform);
-            nodeInstances.renderable.nodeBoundingBoxes[stateRange.offset + j] = box;
+            nodeInstances.renderable.nodeBoundingBoxes[j] = box;
 
             // calculate view vector to calculate LOD
             Math::vec4 viewVector = cameraTransform.position - transform.position;
             float viewDistance = length(viewVector);
             float textureLod = viewDistance - 38.5f;
 
-            Models::NodeInstanceFlags& nodeFlag = nodeInstances.renderable.nodeFlags[stateRange.offset + j];
+            Models::NodeInstanceFlags& nodeFlag = nodeInstances.renderable.nodeFlags[j];
 
             // Calculate if object should be culled due to LOD
-            const Util::Tuple<float, float>& lodDistances = nodeInstances.renderable.nodeLodDistances[stateRange.offset + j];
-            if (viewDistance >= Util::Get<0>(lodDistances) && viewDistance < Util::Get<1>(lodDistances))
-                nodeFlag = SetBits(nodeFlag, Models::NodeInstance_LodActive);
-            else
-                nodeFlag = UnsetBits(nodeFlag, Models::NodeInstance_LodActive);
-
-            // Set LOD factor
-            nodeInstances.renderable.nodeLods[stateRange.offset + j] = (viewDistance - (Util::Get<0>(lodDistances) + 1.5f)) / (Util::Get<1>(lodDistances) - (Util::Get<0>(lodDistances) + 1.5f));
-
-            // Notify materials system this LOD might be used
-            Materials::surfacePool->SetMaxLOD(nodeInstances.renderable.nodeSurfaceResources[stateRange.offset + j], textureLod);
-        }
-    }
-    /*
-    SizeT i;
-    for (i = 0; i < instances.Size(); i++)
-    {
-        const ModelInstanceId& instance = instances[i];
-        if (instance == ModelInstanceId::Invalid()) 
-            continue; // hmm, bad, should reorder and keep a 'last valid index'
-
-        Util::Array<Models::ModelNode::Instance*>& nodes = Models::modelPool->modelInstanceAllocator.Get<Models::StreamModelPool::ModelNodeInstances>(instance.instance);
-        Util::Array<Models::NodeBits>& bits = Models::modelPool->modelInstanceAllocator.Get<Models::StreamModelPool::ModelNodeBits>(instance.instance);
-        if (hasPending[i])
-        {
-            uint objectId = Models::modelPool->modelInstanceAllocator.Get<StreamModelPool::ObjectId>(instance.instance);
-
-            // copy matrix pending matrix
-            Math::mat4 transform = pending[i];
-            hasPending[i] = false;
-
-            // transform the box
-            instanceBoxes[instance.instance] = modelBoxes[instance.model];
-            instanceBoxes[instance.instance].affine_transform(transform);
-
-            // update the actual transform
-            transforms[instance.instance] = transform;
-
-            // nodes are allocated breadth first, so just going through the list will guarantee the hierarchy is traversed in proper order
-            SizeT j;
-            for (j = 0; j < nodes.Size(); j++)
+            const Util::Tuple<float, float>& lodDistances = nodeInstances.renderable.nodeLodDistances[j];
+            float lodFactor = 0.0f;
+            if (Util::Get<0>(lodDistances) < FLT_MAX && Util::Get<1>(lodDistances) < FLT_MAX)
             {
-                Models::ModelNode::Instance* node = nodes[j];
-
-                //if (!node->active)
-                //  continue;
-
-                Math::mat4 parentTransform = transform;
-                if (node->parent != nullptr && (node->parent->node->bits & HasTransformBit) == HasTransformBit)
-                    parentTransform = reinterpret_cast<const TransformNode::Instance*>(node->parent)->modelTransform;
-
-                if ((bits[j] & HasTransformBit) == HasTransformBit)
-                {
-                    TransformNode::Instance* tnode = reinterpret_cast<TransformNode::Instance*>(node);
-                    tnode->modelTransform = tnode->transform.getmatrix() * parentTransform;
-                    tnode->invModelTransform = inverse(tnode->modelTransform);
-                    parentTransform = tnode->modelTransform;
-                    tnode->objectId = objectId;
-
-                }
-                if ((bits[j] & HasStateBit) == HasStateBit)
-                {
-                    ShaderStateNode::Instance* snode = reinterpret_cast<ShaderStateNode::Instance*>(node);
-
-                    // copy bounding box from parent, then transform
-                    snode->boundingBox = node->node->boundingBox;
-                    snode->boundingBox.affine_transform(snode->modelTransform);
-                }
-                transform = parentTransform;
-            }
-        }
-
-        // calculate view vector to calculate LOD
-        Math::vec4 viewVector = cameraTransform.position - transforms[instance.instance].position;
-        float viewDistance = length(viewVector);
-        float textureLod = viewDistance - 38.5f;
-
-        // nodes are allocated breadth first, so just going through the list will guarantee the hierarchy is traversed in proper order
-        SizeT j;
-        for (j = 0; j < nodes.Size(); j++)
-        {
-            Models::ModelNode::Instance* node = nodes[j];
-            if ((bits[j] & HasTransformBit) == HasTransformBit)
-            {
-                TransformNode::Instance* tnode = reinterpret_cast<TransformNode::Instance*>(node);
-                TransformNode* pnode = reinterpret_cast<TransformNode*>(tnode->node);
-
-                // perform LOD testing
-                if (pnode->useLodDistances)
-                {
-                    if (viewDistance >= pnode->minDistance && viewDistance < pnode->maxDistance)
-                        tnode->active = true;
-                    else
-                        tnode->active = false;
-                    tnode->lodFactor = (viewDistance - (pnode->minDistance + 1.5f)) / (pnode->maxDistance - (pnode->minDistance + 1.5f));
-                }
+                lodFactor = (viewDistance - (Util::Get<0>(lodDistances) + 1.5f)) / (Util::Get<1>(lodDistances) - (Util::Get<0>(lodDistances) + 1.5f));
+                if (viewDistance >= Util::Get<0>(lodDistances) && viewDistance < Util::Get<1>(lodDistances))
+                    nodeFlag = SetBits(nodeFlag, Models::NodeInstance_LodActive);
                 else
-                    tnode->lodFactor = 0.0f;
+                    nodeFlag = UnsetBits(nodeFlag, Models::NodeInstance_LodActive);
             }
+            else
+                // If not, make the lod active by default
+                nodeFlag = SetBits(nodeFlag, Models::NodeInstance_LodActive);
 
-            if ((bits[j] & HasStateBit) == HasStateBit)
-            {
-                ShaderStateNode::Instance* snode = reinterpret_cast<ShaderStateNode::Instance*>(node);
-                ShaderStateNode* pnode = reinterpret_cast<ShaderStateNode*>(node->node);
-                if (!snode->active)
-                    continue;
+            // Set LOD factor for dithering and other shader effects
+            nodeInstances.renderable.nodeLods[j] = lodFactor;
 
-                snode->SetDirty(true);
-                pnode->SetMaxLOD(textureLod);
-            }
+            // Notify materials system this LOD might be used (this is a bit shitty in comparison to actually using texture sampling feedback)
+            Materials::surfacePool->SetMaxLOD(nodeInstances.renderable.nodeSurfaceResources[j], textureLod);
         }
     }
-    */
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ModelContext::UpdateConstants(const Graphics::FrameContext& ctx)
+{
+    const Util::Array<NodeInstanceRange>& nodeInstanceStateRanges = modelContextAllocator.GetArray<Model_NodeInstanceStates>();
+    for (SizeT i = 0; i < nodeInstanceStateRanges.Size(); i++)
+    {
+        const NodeInstanceRange& stateRange = nodeInstanceStateRanges[i];
+        SizeT j;
+        for (j = stateRange.begin; j < stateRange.end; j++)
+        {
+            Math::mat4 transform = nodeInstances.transformable.nodeTransforms[nodeInstances.renderable.nodeTransformIndex[j]];
+
+            // Allocate object constants
+            ObjectsShared::ObjectBlock block;
+            transform.store(block.Model);
+            inverse(transform).store(block.InvModel);
+            block.DitherFactor = nodeInstances.renderable.nodeLods[j];
+            block.ObjectId = j;
+
+            uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
+            nodeInstances.renderable.nodeStates[j].resourceTableOffsets[nodeInstances.renderable.nodeStates[j].objectConstantsIndex] = offset;
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -611,8 +500,8 @@ void
 ModelContext::OnRenderDebug(uint32_t flags)
 {
     //const Util::Array<ModelInstanceId>& instances = modelContextAllocator.GetArray<Model_InstanceId>();    
-    //Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceBoundingBox>();
-    //const Util::Array<Math::mat4>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelPool::InstanceTransform>();
+    //Util::Array<Math::bbox>& instanceBoxes = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelCache::InstanceBoundingBox>();
+    //const Util::Array<Math::mat4>& transforms = Models::modelPool->modelInstanceAllocator.GetArray<StreamModelCache::InstanceTransform>();
     //const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<Model_Id>();
     //
     //Math::vec4 white(1.0f, 1.0f, 1.0f, 1.0f);

@@ -1,9 +1,9 @@
 //------------------------------------------------------------------------------
-// vkstreamtexturepool.cc
+// vkstreamtexturecache.cc
 // (C) 2016-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "vkstreamtexturepool.h"
+#include "vkstreamtexturecache.h"
 #include "coregraphics/texture.h"
 #include "io/ioserver.h"
 #include "coregraphics/vk/vktypes.h"
@@ -15,14 +15,14 @@
 #include "vkutilities.h"
 #include "math/scalar.h"
 #include "vkshaderserver.h"
-#include "coregraphics/memorytexturepool.h"
+#include "coregraphics/memorytexturecache.h"
 #include "vksubmissioncontext.h"
 #include "profiling/profiling.h"
 #include "threading/interlocked.h"
 namespace Vulkan
 {
 
-__ImplementClass(Vulkan::VkStreamTexturePool, 'VKTL', Resources::ResourceStreamPool);
+__ImplementClass(Vulkan::VkStreamTextureCache, 'VKTL', Resources::ResourceStreamCache);
 
 using namespace CoreGraphics;
 using namespace Resources;
@@ -30,7 +30,7 @@ using namespace IO;
 //------------------------------------------------------------------------------
 /**
 */
-VkStreamTexturePool::VkStreamTexturePool()
+VkStreamTextureCache::VkStreamTextureCache()
 {
     this->async = true;
     this->placeholderResourceName = "tex:system/white.dds";
@@ -42,7 +42,7 @@ VkStreamTexturePool::VkStreamTexturePool()
 //------------------------------------------------------------------------------
 /**
 */
-VkStreamTexturePool::~VkStreamTexturePool()
+VkStreamTextureCache::~VkStreamTextureCache()
 {
     // empty
 }
@@ -51,7 +51,7 @@ VkStreamTexturePool::~VkStreamTexturePool()
 /**
 */
 inline Resources::ResourceUnknownId
-VkStreamTexturePool::AllocObject()
+VkStreamTextureCache::AllocObject()
 {
     return texturePool->AllocObject();
 }
@@ -60,7 +60,7 @@ VkStreamTexturePool::AllocObject()
 /**
 */
 inline void
-VkStreamTexturePool::DeallocObject(const Resources::ResourceUnknownId id)
+VkStreamTextureCache::DeallocObject(const Resources::ResourceUnknownId id)
 {
     texturePool->DeallocObject(id);
 }
@@ -68,8 +68,8 @@ VkStreamTexturePool::DeallocObject(const Resources::ResourceUnknownId id)
 //------------------------------------------------------------------------------
 /**
 */
-ResourcePool::LoadStatus
-VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+ResourceCache::LoadStatus
+VkStreamTextureCache::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
     N_SCOPE_ACCUM(CreateAndLoad, TextureStream);
     n_assert(stream.isvalid());
@@ -255,17 +255,17 @@ VkStreamTexturePool::LoadFromStream(const Resources::ResourceId res, const Util:
 #if NEBULA_GRAPHICS_DEBUG
         ObjectSetName((TextureId)res, stream->GetURI().LocalPath().AsCharPtr());
 #endif
-        return ResourcePool::Success;
+        return ResourceCache::Success;
     }
     stream->MemoryUnmap();
-    return ResourcePool::Failed;
+    return ResourceCache::Failed;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void
-VkStreamTexturePool::Unload(const Resources::ResourceId id)
+VkStreamTextureCache::Unload(const Resources::ResourceId id)
 {
     __LockName(texturePool->Allocator(), lock);
     VkTextureStreamInfo& streamInfo = texturePool->Get<Texture_StreamInfo>(id.resourceId);
@@ -278,7 +278,7 @@ VkStreamTexturePool::Unload(const Resources::ResourceId id)
 /**
 */
 void 
-VkStreamTexturePool::StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate)
+VkStreamTextureCache::StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate)
 {
     N_SCOPE_ACCUM(StreamMaxLOD, TextureStream);
 

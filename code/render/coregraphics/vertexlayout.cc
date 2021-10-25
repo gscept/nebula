@@ -5,10 +5,10 @@
 #include "render/stdneb.h"
 #include "coregraphics/config.h"
 #include "vertexlayout.h"
-#include "vertexsignaturepool.h"
+#include "vertexsignaturecache.h"
 namespace CoreGraphics
 {
-VertexSignaturePool* layoutPool = nullptr;
+VertexSignatureCache* layoutPool = nullptr;
 
 //------------------------------------------------------------------------------
 /**

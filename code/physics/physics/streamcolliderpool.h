@@ -9,7 +9,7 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
-#include "resources/resourcestreampool.h"
+#include "resources/resourcestreamcache.h"
 #include "util/stack.h"
 #include "physics/actorcontext.h"
 #include "physics/streamactorpool.h"
@@ -26,7 +26,7 @@ struct ColliderInfo
 };
 
 
-class StreamColliderPool : public Resources::ResourceStreamPool
+class StreamColliderPool : public Resources::ResourceStreamCache
 {
     __DeclareClass(StreamColliderPool);
 public:
