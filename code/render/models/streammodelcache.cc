@@ -58,7 +58,7 @@ StreamModelCache::Setup()
 //------------------------------------------------------------------------------
 /**
 */
-const Util::Dictionary<Util::StringAtom, Models::ModelNode*>&
+const Util::Array<Models::ModelNode*>&
 StreamModelCache::GetModelNodes(const ModelId id)
 {
     return this->modelAllocator.Get<ModelNodes>(id.resourceId);
@@ -92,7 +92,7 @@ StreamModelCache::LoadFromStream(const Resources::ResourceId id, const Util::Str
     Math::bbox& boundingBox = this->Get<ModelBoundingBox>(id);
     boundingBox.set(Math::vec3(0), Math::vec3(0));
     Memory::ArenaAllocator<MODEL_MEMORY_CHUNK_SIZE>& allocator = this->Get<ModelNodeAllocator>(id);
-    Util::Dictionary<Util::StringAtom, Models::ModelNode*>& nodes = this->Get<ModelNodes>(id);
+    Util::Array<Models::ModelNode*>& nodes = this->Get<ModelNodes>(id);
     Models::ModelNode*& root = this->Get<RootNode>(id);
     Ptr<BinaryReader> reader = BinaryReader::Create();
 
@@ -140,7 +140,7 @@ StreamModelCache::LoadFromStream(const Resources::ResourceId id, const Util::Str
                 IndexT i;
                 for (i = 0; i < nodes.Size(); i++)
                 {
-                    const ModelNode* node = nodes.ValueAtIndex(i);
+                    const ModelNode* node = nodes[i];
                     box.extend(node->boundingBox);
                 }
                 box.end_extend();
@@ -166,7 +166,7 @@ StreamModelCache::LoadFromStream(const Resources::ResourceId id, const Util::Str
                     node->parent = parent;
                 }
                 nodeStack.Push(node);
-                nodes.Add(name, node);
+                nodes.Append(node);
             }
             else if (fourCC == FourCC('<MND'))
             {
@@ -197,12 +197,12 @@ StreamModelCache::LoadFromStream(const Resources::ResourceId id, const Util::Str
 void
 StreamModelCache::Unload(const Resources::ResourceId id)
 {
-    Util::Dictionary<Util::StringAtom, Models::ModelNode*>& nodes = this->Get<ModelNodes>(id);
+    Util::Array<Models::ModelNode*>& nodes = this->Get<ModelNodes>(id);
 
     // unload nodes
     for (IndexT i = 0; i < nodes.Size(); i++)
     {
-        nodes.ValueAtIndex(i)->Unload();
+        nodes[i]->Unload();
     }
     nodes.Clear();
 
@@ -215,7 +215,7 @@ StreamModelCache::Unload(const Resources::ResourceId id)
 //------------------------------------------------------------------------------
 /**
 */
-const Util::Dictionary<Util::StringAtom, Models::ModelNode*>&
+const Util::Array<Models::ModelNode*>&
 ModelGetNodes(const ModelId id)
 {
     return modelPool->GetModelNodes(id);

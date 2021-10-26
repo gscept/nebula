@@ -175,7 +175,7 @@ SurfaceCache::Unload(const Resources::ResourceId id)
 void
 SurfaceCache::SetMaxLOD(const SurfaceResourceId id, const float lod)
 {
-    this->textureLoadSection.Enter();
+    Threading::CriticalScope scope(&this->textureLoadSection);
     Util::Array<CoreGraphics::TextureId>& textures = this->Get<Surface_Textures>(id.resourceId);
     float& minLod = this->Get<Surface_MinLOD>(id.resourceId);
     if (minLod <= lod)
@@ -186,7 +186,6 @@ SurfaceCache::SetMaxLOD(const SurfaceResourceId id, const float lod)
     {
         Resources::SetMaxLOD(textures[i], lod, false);
     }
-    this->textureLoadSection.Leave();
 }
 
 } // namespace Materials

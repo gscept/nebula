@@ -44,7 +44,7 @@ public:
     void Setup() override;
 
     /// get node instances
-    const Util::Dictionary<Util::StringAtom, Models::ModelNode*>& GetModelNodes(const ModelId id);
+    const Util::Array<Models::ModelNode*>& GetModelNodes(const ModelId id);
 
     /// get bounding box of model
     const Math::bbox& GetModelBoundingBox(const ModelId id) const;
@@ -78,7 +78,7 @@ private:
     Ids::IdAllocator<
         Math::bbox,                                                 // 0 - total bounding box
         Memory::ArenaAllocator<MODEL_MEMORY_CHUNK_SIZE>,            // 1 - memory allocator
-        Util::Dictionary<Util::StringAtom, Models::ModelNode*>,     // 2 - nodes
+        Util::Array<Models::ModelNode*>,     // 2 - nodes
         Models::ModelNode*                                         // 3 - root
     > modelAllocator;
     __ImplementResourceAllocator(modelAllocator);
@@ -92,7 +92,7 @@ private:
     this->nodeFourCCMapping.Add(FourCC, NodeMappingCounter++);
 };
 
-/// get node instances
-const Util::Dictionary<Util::StringAtom, Models::ModelNode*>& ModelGetNodes(const ModelId id);
+/// Get nodes
+const Util::Array<Models::ModelNode*>& ModelGetNodes(const ModelId id);
 
 } // namespace Models

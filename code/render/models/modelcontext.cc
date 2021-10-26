@@ -88,11 +88,12 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
     info.successCallback = [cid, gfxId, finishedCallback](Resources::ResourceId mid)
     {
         // Go through model nodes and setup instance data
-        const Util::Dictionary<Util::StringAtom, Models::ModelNode*>& nodes = Models::ModelGetNodes(mid);
+        const Util::Array<Models::ModelNode*>& nodes = Models::ModelGetNodes(mid);
 
         // Run through nodes and collect transform and renderable nodes
         NodeInstanceRange& transformRange = modelContextAllocator.Get<Model_NodeInstanceTransform>(cid.id);
         NodeInstanceRange& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
+        uint32& root = modelContextAllocator.Get<Model_NodeInstanceRoot>(cid.id);
         Util::Array<Models::ModelNode*> transformNodes;
         Util::Array<Models::ModelNode*> renderNodes;
         Util::Array<uint32_t> nodeIds;
@@ -101,7 +102,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
         SizeT numRenderNodes = 0;
         for (SizeT i = 0; i < nodes.Size(); i++)
         {
-            Models::ModelNode* node = nodes.ValueAtIndex(i);
+            Models::ModelNode* node = nodes[i];
             if (node->GetBits() & Models::NodeBits::HasStateBit)
             {
                 renderNodes.Append(node);
@@ -133,7 +134,10 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             if (tNode->parent != nullptr)
                 nodeInstances.transformable.nodeParents.Append(nodeLookup[tNode->parent]);
             else
+            {
                 nodeInstances.transformable.nodeParents.Append(UINT32_MAX);
+                root = i;
+            }
         }
 
         // Setup node states
@@ -360,8 +364,10 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
         callback();
 
     N_SCOPE(UpdateTransforms, Models);
+    const Util::Array<uint32>& nodeInstanceRoot = modelContextAllocator.GetArray<Model_NodeInstanceRoot>();
     const Util::Array<NodeInstanceRange>& nodeInstanceTransformRanges = modelContextAllocator.GetArray<Model_NodeInstanceTransform>();
     const Util::Array<NodeInstanceRange>& nodeInstanceStateRanges = modelContextAllocator.GetArray<Model_NodeInstanceStates>();
+    const Util::Array<uint32>& nodeInstanceRoots = modelContextAllocator.GetArray<Model_NodeInstanceRoot>();
     const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<Models::StreamModelCache::ModelBoundingBox>();
     Util::Array<Math::bbox>& instanceBoxes = nodeInstances.renderable.nodeBoundingBoxes;
     Util::Array<Math::mat4>& pending = modelContextAllocator.GetArray<Model_Transform>();
@@ -386,7 +392,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
             hasPending[i] = false;
 
             // Set root transform
-            nodeInstances.transformable.nodeTransforms[transformRange.begin] = transform;
+            nodeInstances.transformable.nodeTransforms[transformRange.begin + nodeInstanceRoots[i]] = transform;
 
             // Update transforms
             SizeT j;

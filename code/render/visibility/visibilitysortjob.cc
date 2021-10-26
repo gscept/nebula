@@ -56,6 +56,7 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
             }
             else
             {
+                // Set the node visible flag (use this to figure out if a node is seen by __any__ observer)
                 nodes->nodeFlags[i] = SetBits(nodes->nodeFlags[i], Models::NodeInstance_Visible);
             }
 
@@ -128,6 +129,7 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
                 node = otherNode;
             }
 
+            // If a new set of draw modifiers (instance count and base instance) are used, insert a new draw command
             auto otherDrawModifiers = nodes->nodeDrawModifiers[index];
             if (drawModifiers != otherDrawModifiers)
             {

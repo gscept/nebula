@@ -59,7 +59,7 @@ CharacterContext::Create()
     __CreateContext();
 
     __bundle.OnBegin = CharacterContext::UpdateAnimations;
-    __bundle.OnBeforeFrame = CharacterContext::OnAfterFrame;
+    __bundle.OnBeforeFrame = CharacterContext::WaitForCharacterJobs;
     __bundle.StageBits = &CharacterContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = CharacterContext::OnRenderDebug;
@@ -471,7 +471,6 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
     const Util::Array<CoreAnimation::AnimSampleBuffer>& sampleBuffers = characterContextAllocator.GetArray<SampleBuffer>();
     const Util::Array<Util::FixedArray<SkeletonJobJoint>>& jobJoints = characterContextAllocator.GetArray<JobJoints>();
     const Util::Array<Characters::SkeletonId>& skeletons = characterContextAllocator.GetArray<SkeletonId>();
-    const Util::Array<IndexT>& characterSkinNodeIndices = characterContextAllocator.GetArray<CharacterSkinNodeIndex>();
     const Util::Array<Util::FixedArray<Math::mat4>>& jointPalettes = characterContextAllocator.GetArray<JointPalette>();
     const Util::Array<Util::FixedArray<Math::mat4>>& scaledJointPalettes = characterContextAllocator.GetArray<JointPaletteScaled>();
     const Util::Array<Util::FixedArray<Math::mat4>>& userJoints = characterContextAllocator.GetArray<UserControlledJoint>();
@@ -709,12 +708,48 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
                 firstAnimTrack = false;
             }
         }
+    }
 
+    // put sync object
+    Jobs::JobSyncSignal(CharacterContext::jobSync, CharacterContext::jobPort);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+CharacterContext::WaitForCharacterJobs(const Graphics::FrameContext& ctx)
+{
+    if (CharacterContext::runningJobs.Size() > 0)
+    {
+        Util::Array<Jobs::JobId> jobs;
+        jobs.Reserve(CharacterContext::runningJobs.Size());
+        CharacterContext::runningJobs.DequeueAll(jobs);
+
+        // wait for all jobs to finish
+        Jobs::JobSyncHostWait(CharacterContext::jobSync);
+
+        // destroy jobs
+        IndexT i;
+        for (i = 0; i < jobs.Size(); i++)
+        {
+            Jobs::DestroyJob(jobs[i]);
+        }
+    }
+
+    const Util::Array<Util::FixedArray<Math::mat4>>& jointPalettes = characterContextAllocator.GetArray<JointPalette>();
+    const Util::Array<Util::FixedArray<Math::mat4>>& scaledJointPalettes = characterContextAllocator.GetArray<JointPaletteScaled>();
+    const Util::Array<IndexT>& characterSkinNodeIndices = characterContextAllocator.GetArray<CharacterSkinNodeIndex>();
+    for (IndexT i = 0; i < characterSkinNodeIndices.Size(); i++)
+    {
         // Update skeleton constants
         // Move the skin fragment extraction to a job and have that output the list of actually used matrices.
         const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
+
+        const Util::FixedArray<Math::mat4>& jointPalette = jointPalettes[i];
+        const Util::FixedArray<Math::mat4>& scaledJointPalette = scaledJointPalettes[i];
         IndexT node = characterSkinNodeIndices[i];
-        n_assert(renderables.nodes[node]->type == Models::NodeType::CharacterNodeType);
+        n_assert(renderables.nodes[node]->type == Models::NodeType::CharacterSkinNodeType);
         Models::CharacterSkinNode* sparent = reinterpret_cast<Models::CharacterSkinNode*>(renderables.nodes[node]);
         const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;
         Util::FixedArray<Math::mat4> usedMatrices(usedIndices.Size());
@@ -742,33 +777,6 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
         // update skinning palette
         uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, usedMatrices.Begin(), usedMatrices.Size());
         renderables.nodeStates[node].resourceTableOffsets[renderables.nodeStates[node].skinningConstantsIndex] = offset;
-    }
-
-    // put sync object
-    Jobs::JobSyncSignal(CharacterContext::jobSync, CharacterContext::jobPort);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-CharacterContext::OnAfterFrame(const Graphics::FrameContext& ctx)
-{
-    if (CharacterContext::runningJobs.Size() > 0)
-    {
-        Util::Array<Jobs::JobId> jobs;
-        jobs.Reserve(CharacterContext::runningJobs.Size());
-        CharacterContext::runningJobs.DequeueAll(jobs);
-
-        // wait for all jobs to finish
-        Jobs::JobSyncHostWait(CharacterContext::jobSync);
-
-        // destroy jobs
-        IndexT i;
-        for (i = 0; i < jobs.Size(); i++)
-        {
-            Jobs::DestroyJob(jobs[i]);
-        }
     }
 }
 
