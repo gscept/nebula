@@ -262,8 +262,12 @@ JobSyncId CreateJobSync(const CreateJobSyncInfo& info);
 /// destroy job sync
 void DestroyJobSync(const JobSyncId id);
 
+/// reset job sync on host
+void JobSyncHostReset(const JobSyncId id);
+/// signal job sync on host
+void JobSyncHostSignal(const JobSyncId id, bool reset = true);
 /// put job sync on port, if reset is true, reset prior to signaling
-void JobSyncSignal(const JobSyncId id, const JobPortId port, bool reset = true);
+void JobSyncThreadSignal(const JobSyncId id, const JobPortId port, bool reset = true);
 /// wait for job on host side, if reset is true, resets after waiting
 void JobSyncHostWait(const JobSyncId id, bool reset = false);
 /// wait for job on thread side, if reset is true, reset after waiting

@@ -148,7 +148,7 @@ private:
     enum
     {
         Model_Id,
-        Model_NodeInstanceRoot,
+        Model_NodeInstanceRoots,
         Model_NodeInstanceTransform,
         Model_NodeInstanceStates,
         Model_Transform,
@@ -156,7 +156,7 @@ private:
     };
     typedef Ids::IdAllocator<
         ModelId,
-        uint32,
+        Util::Array<uint32>,
         NodeInstanceRange,
         NodeInstanceRange,
         Math::mat4,         // pending transforms

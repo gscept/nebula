@@ -94,7 +94,7 @@ JobsTest::Run()
     // run job
     JobSchedule(job, port, ctx);
 
-    JobSyncSignal(jobSync, port);
+    JobSyncThreadSignal(jobSync, port);
 
     // wait for job to finish
     JobSyncHostWait(jobSync);

@@ -281,8 +281,30 @@ DestroyJobSync(const JobSyncId id)
 //------------------------------------------------------------------------------
 /**
 */
+void
+JobSyncHostReset(const JobSyncId id)
+{
+    Threading::Event* event = jobSyncAllocator.Get<SyncCompletionEvent>(id.id);
+    event->Reset();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+JobSyncHostSignal(const JobSyncId id, bool reset)
+{
+    Threading::Event* event = jobSyncAllocator.Get<SyncCompletionEvent>(id.id);
+    if (reset)
+        event->Reset();
+    event->Signal();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
-JobSyncSignal(const JobSyncId id, const JobPortId port, bool reset)
+JobSyncThreadSignal(const JobSyncId id, const JobPortId port, bool reset)
 {
     Util::FixedArray<Ptr<JobThread>>& threads = jobPortAllocator.Get<JobPort_Threads>((Ids::Id32)port.id);
     Threading::Event* event = jobSyncAllocator.Get<SyncCompletionEvent>(id.id);

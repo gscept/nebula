@@ -91,6 +91,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
         AtomicCounter cboGfxEndAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
         AtomicCounter cboComputeStartAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
         AtomicCounter cboComputeEndAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
+        bool allowConstantAllocation;
     };
     Util::FixedArray<ConstantsRingBuffer> constantBufferRings;
 
@@ -108,7 +109,6 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 
     uint32_t usedExtensions;
     const char* extensions[64];
-
 
     uint32_t drawQueueFamily;
     uint32_t computeQueueFamily;
@@ -2602,10 +2602,31 @@ PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data)
 //------------------------------------------------------------------------------
 /**
 */
+void
+UnlockConstantUpdates()
+{
+    Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+    sub.allowConstantAllocation = true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+LockConstantUpdates()
+{
+    Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+    sub.allowConstantAllocation = false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 int
 SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const void* data, SizeT size)
 {
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+    n_assert(sub.allowConstantAllocation);
 
     // no matter how we spin it
     int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
@@ -2632,6 +2653,7 @@ int
 SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const void* data, SizeT size)
 {
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+    n_assert(sub.allowConstantAllocation);
 
     // no matter how we spin it
     int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
@@ -2677,6 +2699,7 @@ AllocateGraphicsConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type
 {
     n_assert(!state.inBeginGraphicsSubmission);
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+    n_assert(sub.allowConstantAllocation);
 
     // no matter how we spin it
     uint ret = sub.cboGfxEndAddress[type];
@@ -2715,6 +2738,7 @@ AllocateComputeConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type,
 {
     n_assert(!state.inBeginComputeSubmission);
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+    n_assert(sub.allowConstantAllocation);
 
     // no matter how we spin it
     uint ret = sub.cboComputeEndAddress[type];

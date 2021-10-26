@@ -241,6 +241,8 @@ CoreGraphics::ResourceTableId SetFrameResourceTable(const CoreGraphics::Resource
 /// push constants
 void PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data);
 
+/// Unlock constants
+void UnlockConstantUpdates();
 /// allocate range of graphics memory and set data, return offset
 template<class TYPE> uint SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType type, const TYPE& data);
 /// allocate range of graphics memory and set data as an array of elements, return offset
@@ -253,6 +255,8 @@ template<class TYPE> uint SetComputeConstants(CoreGraphics::GlobalConstantBuffer
 template<class TYPE> uint SetComputeConstants(CoreGraphics::GlobalConstantBufferType type, const TYPE* data, SizeT elements);
 /// set graphics constants based on pre-allocated memory
 template<class TYPE> void SetComputeConstants(CoreGraphics::GlobalConstantBufferType type, uint offset, const TYPE& data);
+/// Lock constant updates
+void LockConstantUpdates();
 
 /// allocate range of graphics memory and set data, return offset
 int SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const void* data, SizeT size);

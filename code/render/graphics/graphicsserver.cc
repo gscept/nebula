@@ -395,6 +395,9 @@ GraphicsServer::BeginFrame()
     // begin frame
     CoreGraphics::BeginFrame(this->frameContext.frameIndex);
 
+    // Open up for constant updates
+    CoreGraphics::UnlockConstantUpdates();
+
     // update frame context after begin frame
     this->frameContext.bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
@@ -513,6 +516,9 @@ GraphicsServer::RenderViews()
 {
     N_SCOPE(RenderViews, Graphics);
     IndexT i;
+
+    // No more constant updates from this point
+    CoreGraphics::LockConstantUpdates();
 
     // go through views and call before view
     for (i = 0; i < this->views.Size(); i++)

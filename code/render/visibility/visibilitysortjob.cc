@@ -115,16 +115,15 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
             auto otherNode = nodes->nodes[index];
             if (node != otherNode)
             {
-                cmd->models.Append(ObserverContext::VisibilityModelCommand());
-                auto batchCmd = &cmd->models.Back();
+                ObserverContext::VisibilityModelCommand& batchCmd = cmd->models.Emplace();
 
                 // The offset of the command corresponds to where in the VisibilityBatchCommand batch the model should be applied
-                batchCmd->offset = cmd->packetOffset;
-                batchCmd->modelCallback = nodes->nodeModelCallbacks[index];
-                batchCmd->surface = nodes->nodeSurfaces[index];
+                batchCmd.offset = cmd->packetOffset + cmd->numDrawPackets;
+                batchCmd.modelCallback = nodes->nodeModelCallbacks[index];
+                batchCmd.surface = nodes->nodeSurfaces[index];
 
 #if NEBULA_GRAPHICS_DEBUG
-                batchCmd->nodeName = nodes->nodeNames[index];
+                batchCmd.nodeName = nodes->nodeNames[index];
 #endif
                 node = otherNode;
             }
@@ -133,11 +132,10 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
             auto otherDrawModifiers = nodes->nodeDrawModifiers[index];
             if (drawModifiers != otherDrawModifiers)
             {
-                cmd->draws.Append(ObserverContext::VisibilityDrawCommand());
-                auto drawCmd = &cmd->draws.Back();
-                drawCmd->offset = cmd->packetOffset;
-                drawCmd->numInstances = Util::Get<0>(otherDrawModifiers);
-                drawCmd->baseInstance = Util::Get<1>(otherDrawModifiers);
+                ObserverContext::VisibilityDrawCommand& drawCmd = cmd->draws.Emplace();
+                drawCmd.offset = cmd->packetOffset + cmd->numDrawPackets;
+                drawCmd.numInstances = Util::Get<0>(otherDrawModifiers);
+                drawCmd.baseInstance = Util::Get<1>(otherDrawModifiers);
 
                 drawModifiers = otherDrawModifiers;
             }

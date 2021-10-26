@@ -1847,7 +1847,7 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
     }
 
     // signal sync event
-    Jobs::JobSyncSignal(TerrainContext::jobHostSync, Graphics::GraphicsServer::renderSystemsJobPort);
+    Jobs::JobSyncThreadSignal(TerrainContext::jobHostSync, Graphics::GraphicsServer::renderSystemsJobPort);
 }
 
 

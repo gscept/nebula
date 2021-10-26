@@ -47,8 +47,8 @@ struct
     CoreGraphics::PrimitiveGroup primGroup;
 } state;
 
-Jobs::JobPortId ParticleContext::jobPort;
 Jobs::JobSyncId ParticleContext::jobSync;
+Jobs::JobSyncId ParticleContext::particleSync;
 Util::Queue<Jobs::JobId> ParticleContext::runningJobs;
 //------------------------------------------------------------------------------
 /**
@@ -82,13 +82,13 @@ ParticleContext::Create()
 
     ParticleContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
-    ParticleContext::jobPort = Graphics::GraphicsServer::renderSystemsJobPort;
 
     Jobs::CreateJobSyncInfo sinfo =
     {
         nullptr
     };
     ParticleContext::jobSync = Jobs::CreateJobSync(sinfo);
+    ParticleContext::particleSync = Jobs::CreateJobSync(sinfo);
 
     struct VectorB4N
     {
@@ -124,7 +124,7 @@ ParticleContext::Create()
     vboInfo.name = "Single Point Particle Emitter VBO";
     vboInfo.size = 1;
     vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(emitterLayout);
-    vboInfo.mode = CoreGraphics::DeviceLocal;
+    vboInfo.mode = CoreGraphics::DeviceToHost;
     vboInfo.usageFlags = CoreGraphics::VertexBuffer;
     vboInfo.data = vertex;
     vboInfo.dataSize = sizeof(vertex);
@@ -135,7 +135,7 @@ ParticleContext::Create()
     iboInfo.name = "Single Point Particle Emitter IBO";
     iboInfo.size = 1;
     iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index32);
-    iboInfo.mode = CoreGraphics::DeviceLocal;
+    iboInfo.mode = CoreGraphics::DeviceToHost;
     iboInfo.usageFlags = CoreGraphics::IndexBuffer;
     iboInfo.data = indices;
     iboInfo.dataSize = sizeof(indices);
@@ -254,7 +254,7 @@ ParticleContext::Setup(const Graphics::GraphicsEntityId id)
             float maxFreq = attrs.GetEnvelope(EmitterAttrs::EmissionFrequency).GetMaxValue();
             float maxLifeTime = attrs.GetEnvelope(EmitterAttrs::LifeTime).GetMaxValue();
 
-            ParticleSystemRuntime system;
+            ParticleSystemRuntime& system = systems.Emplace();
             system.renderableIndex = i;
             system.emissionCounter = 0;
             system.particles.SetCapacity(1 + SizeT(maxFreq * maxLifeTime));
@@ -266,8 +266,15 @@ ParticleContext::Setup(const Graphics::GraphicsEntityId id)
             system.uniformData.stretchTime = attrs.GetBool(EmitterAttrs::StretchToStart);
             system.uniformData.windVector = xyz(attrs.GetVec4(EmitterAttrs::WindDirection));
 
-            // append system
-            systems.Append(system);
+            // Setup model callback (actually identical for ALL particles...)
+            renderables.nodeModelCallbacks[system.renderableIndex] = [&system]()
+            {
+                CoreGraphics::SetVertexLayout(ParticleContext::GetParticleVertexLayout());
+                CoreGraphics::SetIndexBuffer(ParticleContext::GetParticleIndexBuffer(), 0);
+                CoreGraphics::SetPrimitiveGroup(ParticleContext::ParticleContext::GetParticlePrimitiveGroup());
+                CoreGraphics::SetStreamVertexBuffer(0, ParticleContext::GetParticleVertexBuffer(), 0);
+                CoreGraphics::SetStreamVertexBuffer(1, state.vbos[CoreGraphics::GetBufferedFrameIndex()], 0);
+            };
         }
     }
 }
@@ -355,6 +362,10 @@ void
 ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
 {
     N_SCOPE(UpdateParticles, Particles);
+
+    // Reset job sync
+    Jobs::JobSyncHostReset(ParticleContext::particleSync);
+
     const Util::Array<ParticleRuntime>& runtimes = particleContextAllocator.GetArray<Runtime>();
     const Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
     const Models::ModelContext::ModelInstance::Renderable& renderables = ModelContext::GetModelRenderables();
@@ -408,7 +419,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
 
     // issue sync
     if (runtimes.Size() > 0)
-        Jobs::JobSyncSignal(jobSync, ParticleContext::jobPort);
+        Jobs::JobSyncThreadSignal(jobSync, Graphics::GraphicsServer::renderSystemsJobPort);
 
 }
 
@@ -500,7 +511,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
 
                 // allocate block
                 uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
-                renderables.nodeStates[j].resourceTableOffsets[renderables.nodeStates[j].particleConstantsIndex] = offset;
+                renderables.nodeStates[system.renderableIndex].resourceTableOffsets[renderables.nodeStates[system.renderableIndex].particleConstantsIndex] = offset;
             }
             else
                 UnsetBits(renderables.nodeFlags[system.renderableIndex], NodeInstance_Active);
@@ -542,7 +553,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
         IndexT j;
         for (j = 0; j < systems.Size(); j++)
         {
-            const ParticleSystemRuntime& system = systems[j];
+            ParticleSystemRuntime& system = systems[j];
             SizeT numParticles = 0;
 
             // stream update vertex buffer region
@@ -564,18 +575,9 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
                 }
             }
 
-            // Setup model callback (actually identical for ALL particles...)
-            renderables.nodeModelCallbacks[system.renderableIndex] = [=]()
-            {
-                CoreGraphics::SetVertexLayout(ParticleContext::GetParticleVertexLayout());
-                CoreGraphics::SetIndexBuffer(ParticleContext::GetParticleIndexBuffer(), 0);
-                CoreGraphics::SetPrimitiveGroup(ParticleContext::ParticleContext::GetParticlePrimitiveGroup());
-                CoreGraphics::SetStreamVertexBuffer(0, ParticleContext::GetParticleVertexBuffer(), 0);
-                CoreGraphics::SetStreamVertexBuffer(1, state.vbos[frame], baseVertex);
-            };
-
             // Setup draw modifiers
             renderables.nodeDrawModifiers[system.renderableIndex] = Util::MakeTuple(numParticles, baseVertex);
+            system.baseVertex = baseVertex;
 
             // Bump base vertex with number of particles from this system
             baseVertex += numParticles;
@@ -584,6 +586,9 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
                 flushBuffer = true;
         }
     }
+
+    // Signal particle done
+    Jobs::JobSyncHostSignal(ParticleContext::particleSync, false);
 
     // flush changes
     if (flushBuffer)
@@ -923,7 +928,7 @@ ParticleContext::RunParticleStep(ParticleRuntime& rt, ParticleSystemRuntime& srt
     ctx.uniform.numBuffers = 2;
 
     // schedule job
-    Jobs::JobSchedule(job, ParticleContext::jobPort, ctx);
+    Jobs::JobSchedule(job, Graphics::GraphicsServer::renderSystemsJobPort, ctx);
 
     // add to list of running jobs
     ParticleContext::runningJobs.Enqueue(job);

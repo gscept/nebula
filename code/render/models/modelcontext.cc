@@ -93,7 +93,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
         // Run through nodes and collect transform and renderable nodes
         NodeInstanceRange& transformRange = modelContextAllocator.Get<Model_NodeInstanceTransform>(cid.id);
         NodeInstanceRange& stateRange = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
-        uint32& root = modelContextAllocator.Get<Model_NodeInstanceRoot>(cid.id);
+        Util::Array<uint32>& roots = modelContextAllocator.Get<Model_NodeInstanceRoots>(cid.id);
         Util::Array<Models::ModelNode*> transformNodes;
         Util::Array<Models::ModelNode*> renderNodes;
         Util::Array<uint32_t> nodeIds;
@@ -132,11 +132,11 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             nodeInstances.transformable.origTransforms.Append(trans.getmatrix());
             nodeInstances.transformable.nodeTransforms.Append(trans.getmatrix());
             if (tNode->parent != nullptr)
-                nodeInstances.transformable.nodeParents.Append(nodeLookup[tNode->parent]);
+                nodeInstances.transformable.nodeParents.Append(transformRange.begin + nodeLookup[tNode->parent]);
             else
             {
                 nodeInstances.transformable.nodeParents.Append(UINT32_MAX);
-                root = i;
+                roots.Append(transformRange.begin + i);
             }
         }
 
@@ -364,10 +364,9 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
         callback();
 
     N_SCOPE(UpdateTransforms, Models);
-    const Util::Array<uint32>& nodeInstanceRoot = modelContextAllocator.GetArray<Model_NodeInstanceRoot>();
     const Util::Array<NodeInstanceRange>& nodeInstanceTransformRanges = modelContextAllocator.GetArray<Model_NodeInstanceTransform>();
     const Util::Array<NodeInstanceRange>& nodeInstanceStateRanges = modelContextAllocator.GetArray<Model_NodeInstanceStates>();
-    const Util::Array<uint32>& nodeInstanceRoots = modelContextAllocator.GetArray<Model_NodeInstanceRoot>();
+    const Util::Array<Util::Array<uint32>>& nodeInstanceRoots = modelContextAllocator.GetArray<Model_NodeInstanceRoots>();
     const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<Models::StreamModelCache::ModelBoundingBox>();
     Util::Array<Math::bbox>& instanceBoxes = nodeInstances.renderable.nodeBoundingBoxes;
     Util::Array<Math::mat4>& pending = modelContextAllocator.GetArray<Model_Transform>();
@@ -385,6 +384,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
     for (i = 0; i < nodeInstanceTransformRanges.Size(); i++)
     {
         const NodeInstanceRange& transformRange = nodeInstanceTransformRanges[i];
+        const Util::Array<uint32>& roots = nodeInstanceRoots[i];
         if (hasPending[i])
         {
             // The pending transform is the root of the model
@@ -392,15 +392,16 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
             hasPending[i] = false;
 
             // Set root transform
-            nodeInstances.transformable.nodeTransforms[transformRange.begin + nodeInstanceRoots[i]] = transform;
+            SizeT j;
+            for (j = 0; j < roots.Size(); j++)
+                nodeInstances.transformable.nodeTransforms[roots[j]] = transform;
 
             // Update transforms
-            SizeT j;
             for (j = transformRange.begin + 1; j < transformRange.end; j++)
             {
                 uint32 parent = nodeInstances.transformable.nodeParents[j];
                 n_assert(parent != UINT32_MAX);
-                Math::mat4 parentTransform = nodeInstances.transformable.nodeTransforms[transformRange.begin + parent];
+                Math::mat4 parentTransform = nodeInstances.transformable.nodeTransforms[parent];
                 Math::mat4 orig = nodeInstances.transformable.origTransforms[j];
                 nodeInstances.transformable.nodeTransforms[j] = orig * parentTransform;
             }

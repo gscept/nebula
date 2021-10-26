@@ -711,7 +711,7 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
     }
 
     // put sync object
-    Jobs::JobSyncSignal(CharacterContext::jobSync, CharacterContext::jobPort);
+    Jobs::JobSyncThreadSignal(CharacterContext::jobSync, CharacterContext::jobPort);
 }
 
 //------------------------------------------------------------------------------

@@ -125,7 +125,6 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
 
                             if (visModelCmd == visBatchCmd.models.End())
                                 visModelCmd = nullptr;
-
                         }
 
                         // If new draw setup, progress to the next one
@@ -204,7 +203,7 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
                         Models::ShaderStateNode::DrawPacket* instance = drawList->drawPackets[packetIndex];
 
                         // If new model node, update model callback and 
-                        if (visModelCmd->offset == packetIndex)
+                        if (visModelCmd && visModelCmd->offset == packetIndex)
                         {
 #if NEBULA_GRAPHICS_DEBUG
                             CommandBufferInsertMarker(GraphicsQueueType, NEBULA_MARKER_DARK_DARK_GREEN, visModelCmd->nodeName.Value());
@@ -219,14 +218,20 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
                             Materials::MaterialApplySurface(materialType, visModelCmd->surface);
 
                             visModelCmd++;
+
+                            if (visModelCmd == visBatchCmd.models.End())
+                                visModelCmd = nullptr;
                         }
 
                         // If new draw setup, progress to the next one
-                        if (visDrawCmd->offset == packetIndex)
+                        if (visDrawCmd && visDrawCmd->offset == packetIndex)
                         {
                             baseNumInstances = visDrawCmd->numInstances;
                             baseBaseInstance = visDrawCmd->baseInstance;
                             visDrawCmd++;
+
+                            if (visDrawCmd == visBatchCmd.draws.End())
+                                visDrawCmd = nullptr;
                         }
 
                         // Apply draw packet constants and draw

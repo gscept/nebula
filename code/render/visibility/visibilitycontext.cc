@@ -7,6 +7,7 @@
 #include "graphics/graphicsserver.h"
 
 #include "graphics/cameracontext.h"
+#include "particles/particlecontext.h"
 #include "lighting/lightcontext.h"
 #include "lighting/lightprobecontext.h"
 #include "models/modelcontext.h"
@@ -162,7 +163,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     }
 
     // Put a sync point for the jobs so all results are done when doing the sorting
-    Jobs::JobSyncSignal(ObserverContext::jobInternalSync, Graphics::GraphicsServer::renderSystemsJobPort);
+    Jobs::JobSyncThreadSignal(ObserverContext::jobInternalSync, Graphics::GraphicsServer::renderSystemsJobPort);
     Jobs::JobSyncThreadWait(ObserverContext::jobInternalSync, Graphics::GraphicsServer::renderSystemsJobPort);
 
     // handle dependencies
@@ -211,9 +212,12 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     // again, put sync if we needed to resolve dependency
     if (dependencyNeeded)
     {
-        Jobs::JobSyncSignal(ObserverContext::jobInternalSync2, Graphics::GraphicsServer::renderSystemsJobPort);
+        Jobs::JobSyncThreadSignal(ObserverContext::jobInternalSync2, Graphics::GraphicsServer::renderSystemsJobPort);
         Jobs::JobSyncThreadWait(ObserverContext::jobInternalSync2, Graphics::GraphicsServer::renderSystemsJobPort);
     }
+
+    // Wait for particles to finish updating their constants before running the final pass
+    Jobs::JobSyncThreadWait(Particles::ParticleContext::particleSync, Graphics::GraphicsServer::renderSystemsJobPort);
 
     for (i = 0; i < observerResults.Size(); i++)
     {
@@ -257,7 +261,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     }
 
     // insert sync after all visibility systems are done
-    Jobs::JobSyncSignal(ObserverContext::jobInternalSync3, Graphics::GraphicsServer::renderSystemsJobPort);
+    Jobs::JobSyncThreadSignal(ObserverContext::jobHostSync, Graphics::GraphicsServer::renderSystemsJobPort);
 }
 
 //------------------------------------------------------------------------------
@@ -299,9 +303,9 @@ ObserverContext::GenerateDrawLists(const Graphics::FrameContext& ctx)
     }
 
     // insert sync after all visibility systems are done
-    Jobs::JobSyncSignal(ObserverContext::jobHostSync, Graphics::GraphicsServer::renderSystemsJobPort);
+    Jobs::JobSyncThreadSignal(ObserverContext::jobHostSync, Graphics::GraphicsServer::renderSystemsJobPort);
     */
-    Jobs::JobSyncSignal(ObserverContext::jobHostSync, Graphics::GraphicsServer::renderSystemsJobPort);
+    //Jobs::JobSyncThreadSignal(ObserverContext::jobHostSync, Graphics::GraphicsServer::renderSystemsJobPort);
 
 }
 

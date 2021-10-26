@@ -75,7 +75,7 @@ public:
 #endif
 
     static CoreGraphics::MeshId DefaultEmitterMesh;
-
+    static Jobs::JobSyncId particleSync;
 private:
 
     struct ParticleRuntime
@@ -110,6 +110,8 @@ private:
         ParticleJobUniformData uniformData;
         SizeT outputCapacity;
         ParticleJobOutput* outputData;
+
+        uint32 baseVertex, numParticles;
     };
 
     enum
@@ -139,7 +141,6 @@ private:
     /// deallocate a slice
     static void Dealloc(Graphics::ContextEntityId id);
 
-    static Jobs::JobPortId jobPort;
     static Jobs::JobSyncId jobSync;
     static Util::Queue<Jobs::JobId> runningJobs;
 };
