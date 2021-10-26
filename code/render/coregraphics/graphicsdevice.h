@@ -67,7 +67,7 @@ struct FrameProfilingMarker
 {
     CoreGraphics::QueueType queue;
     Math::vec4 color;
-    const char* name;
+    Util::String name;
     IndexT gpuBegin;
     IndexT gpuEnd;
     uint64_t start;

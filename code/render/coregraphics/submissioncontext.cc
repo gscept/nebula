@@ -15,4 +15,3 @@ namespace CoreGraphics
 
 } // namespace CoreGraphics
 
-#pragma pop_macro("CreateSemaphore")

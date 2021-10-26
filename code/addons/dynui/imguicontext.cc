@@ -526,9 +526,11 @@ ImguiContext::Create()
     config.OversampleH = 3;
     config.OversampleV = 1;
 #if __WIN32__
-    ImFont* font = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibri.ttf", 14, &config);
+    state.normalFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibri.ttf", 14, &config);
+    state.smallFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibri.ttf", 10, &config);
 #else
-    ImFont* font = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 18, &config);
+    state.normalFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 14, &config);
+    state.smallFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 10, &config);
 #endif
     
     unsigned char* buffer;

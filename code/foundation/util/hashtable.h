@@ -407,9 +407,9 @@ template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 IndexT
 HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp)
 {
-    #if NEBULA_BOUNDSCHECKS
+#if NEBULA_BOUNDSCHECKS
     n_assert(!this->Contains(kvp.Key()));
-    #endif
+#endif
     uint32_t hashIndex = GetHashCode<KEYTYPE>(kvp.Key());
     IndexT ret;
     if (this->inBulkAdd)
