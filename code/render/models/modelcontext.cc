@@ -132,11 +132,11 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             nodeInstances.transformable.origTransforms.Append(trans.getmatrix());
             nodeInstances.transformable.nodeTransforms.Append(trans.getmatrix());
             if (tNode->parent != nullptr)
-                nodeInstances.transformable.nodeParents.Append(transformRange.begin + nodeLookup[tNode->parent]);
+                nodeInstances.transformable.nodeParents.Append(nodeLookup[tNode->parent]);
             else
             {
                 nodeInstances.transformable.nodeParents.Append(UINT32_MAX);
-                roots.Append(transformRange.begin + i);
+                roots.Append(i);
             }
         }
 
@@ -177,7 +177,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             }
             nodeInstances.renderable.nodeStates.Append(state);
 
-            nodeInstances.renderable.nodeTransformIndex.Append(transformRange.begin + nodeLookup[renderNodes[i]]);
+            nodeInstances.renderable.nodeTransformIndex.Append(nodeLookup[renderNodes[i]]);
             nodeInstances.renderable.nodeBoundingBoxes.Append(Math::bbox());
             nodeInstances.renderable.origBoundingBoxes.Append(sNode->boundingBox);
             nodeInstances.renderable.nodeLodDistances.Append(sNode->useLodDistances ? Util::MakeTuple(sNode->minDistance, sNode->maxDistance) : Util::MakeTuple(FLT_MAX, FLT_MAX));
@@ -309,6 +309,16 @@ ModelContext::GetModelRenderableRange(const Graphics::GraphicsEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
+const NodeInstanceRange&
+ModelContext::GetModelTransformableRange(const Graphics::GraphicsEntityId id)
+{
+    const ContextEntityId cid = GetContextId(id);
+    return modelContextAllocator.Get<Model_NodeInstanceTransform>(cid.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const Util::Array<ModelContext::NodeInstanceState>&
 ModelContext::GetModelRenderableStates()
 {
@@ -394,14 +404,14 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
             // Set root transform
             SizeT j;
             for (j = 0; j < roots.Size(); j++)
-                nodeInstances.transformable.nodeTransforms[roots[j]] = transform;
+                nodeInstances.transformable.nodeTransforms[transformRange.begin + roots[j]] = transform;
 
             // Update transforms
             for (j = transformRange.begin + 1; j < transformRange.end; j++)
             {
                 uint32 parent = nodeInstances.transformable.nodeParents[j];
                 n_assert(parent != UINT32_MAX);
-                Math::mat4 parentTransform = nodeInstances.transformable.nodeTransforms[parent];
+                Math::mat4 parentTransform = nodeInstances.transformable.nodeTransforms[transformRange.begin + parent];
                 Math::mat4 orig = nodeInstances.transformable.origTransforms[j];
                 nodeInstances.transformable.nodeTransforms[j] = orig * parentTransform;
             }
@@ -433,10 +443,11 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
     for (i = 0; i < nodeInstanceStateRanges.Size(); i++)
     {
         const NodeInstanceRange& stateRange = nodeInstanceStateRanges[i];
+        const NodeInstanceRange& transformRange = nodeInstanceTransformRanges[i];
         SizeT j;
         for (j = stateRange.begin; j < stateRange.end; j++)
         {
-            Math::mat4 transform = nodeInstances.transformable.nodeTransforms[nodeInstances.renderable.nodeTransformIndex[j]];
+            Math::mat4 transform = nodeInstances.transformable.nodeTransforms[transformRange.begin + nodeInstances.renderable.nodeTransformIndex[j]];
             Math::bbox box = nodeInstances.renderable.origBoundingBoxes[j];
             box.affine_transform(transform);
             nodeInstances.renderable.nodeBoundingBoxes[j] = box;
@@ -479,13 +490,16 @@ void
 ModelContext::UpdateConstants(const Graphics::FrameContext& ctx)
 {
     const Util::Array<NodeInstanceRange>& nodeInstanceStateRanges = modelContextAllocator.GetArray<Model_NodeInstanceStates>();
+    const Util::Array<NodeInstanceRange>& nodeInstanceTransformRanges = modelContextAllocator.GetArray<Model_NodeInstanceTransform>();
+
     for (SizeT i = 0; i < nodeInstanceStateRanges.Size(); i++)
     {
         const NodeInstanceRange& stateRange = nodeInstanceStateRanges[i];
+        const NodeInstanceRange& transformRange = nodeInstanceTransformRanges[i];
         SizeT j;
         for (j = stateRange.begin; j < stateRange.end; j++)
         {
-            Math::mat4 transform = nodeInstances.transformable.nodeTransforms[nodeInstances.renderable.nodeTransformIndex[j]];
+            Math::mat4 transform = nodeInstances.transformable.nodeTransforms[transformRange.begin + nodeInstances.renderable.nodeTransformIndex[j]];
 
             // Allocate object constants
             ObjectsShared::ObjectBlock block;

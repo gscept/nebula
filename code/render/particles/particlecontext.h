@@ -130,7 +130,7 @@ private:
     static ParticleContextAllocator particleContextAllocator;
 
     /// internal function for emitting new particles
-    static void EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, float stepTime);
+    static void EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, Models::ParticleSystemNode* node, float stepTime);
     /// internal function for emitting single particle
     static void EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, const Particles::EmitterAttrs& attrs, const Particles::EmitterMesh& mesh, const Particles::EnvelopeSampleBuffer& buffer, IndexT sampleIndex, float initialAge);
     /// internal function to emit a job for updating particles

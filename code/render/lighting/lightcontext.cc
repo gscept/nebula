@@ -148,7 +148,7 @@ LightContext::Create()
     Frame::AddCallback("LightContext - Update Shadowmaps", [](const IndexT frame, const IndexT bufferIndex) // trigger update
         {
             // run the script
-            N_SCOPE(ShadowMapExecute, Render);
+            N_SCOPE(ShadowMapExecute, Graphics);
             lightServerState.shadowMappingFrameScript->Run(frame, bufferIndex);
         });
 
@@ -982,7 +982,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 void 
 LightContext::RunFrameScriptJobs(const Graphics::FrameContext& ctx)
 {
-    N_SCOPE(ShadowMapRecord, Render);
+    N_SCOPE(ShadowMapRecord, Lighting);
 
     // run jobs for shadow frame script after all constants are updated
     lightServerState.shadowMappingFrameScript->RunJobs(ctx.frameIndex, ctx.bufferIndex);

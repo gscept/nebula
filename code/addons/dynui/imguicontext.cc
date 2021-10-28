@@ -527,10 +527,10 @@ ImguiContext::Create()
     config.OversampleV = 1;
 #if __WIN32__
     state.normalFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibri.ttf", 14, &config);
-    state.smallFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibri.ttf", 10, &config);
+    state.smallFont = io.Fonts->AddFontFromFileTTF("c:/windows/fonts/calibri.ttf", 12, &config);
 #else
     state.normalFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 14, &config);
-    state.smallFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 10, &config);
+    state.smallFont = io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 12, &config);
 #endif
     
     unsigned char* buffer;

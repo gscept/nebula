@@ -170,7 +170,7 @@ void
 FrameScript::Run(const IndexT frameIndex, const IndexT bufferIndex)
 {
 #if NEBULA_ENABLE_MT_DRAW
-    N_MARKER_BEGIN(WaitForRecord, Render);
+    N_MARKER_BEGIN(WaitForRecord, Graphics);
 
     // wait for draw thread to finish before executing buffers
     this->drawThreadEvent.Wait();

@@ -60,7 +60,7 @@ VkCommandBufferThread::DoWork()
     while (!this->ThreadStopRequested())
     {
         // lock our resources, which hinders the main thread from pushing more data
-        N_MARKER_BEGIN(RecordCopyData, Render);
+        N_MARKER_BEGIN(RecordCopyData, Graphics);
         this->lock.Enter();
 
         if (this->commands.Size() > 0)
@@ -84,7 +84,7 @@ VkCommandBufferThread::DoWork()
         this->lock.Leave();
         N_MARKER_END();
 
-        N_MARKER_BEGIN(Record, Render);
+        N_MARKER_BEGIN(Record, Graphics);
 
         byte* commandBuf = curCommandBuffer;
         IndexT i;
@@ -350,7 +350,7 @@ VkCommandBufferThread::DoWork()
         if (!curCommands.IsEmpty())
             curCommands.Reset();
 
-        N_SCOPE(RecordIdle, Render);
+        N_SCOPE(RecordIdle, Graphics);
 
         // wait for more data
         this->signalEvent.Wait();

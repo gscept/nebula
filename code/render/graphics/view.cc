@@ -78,7 +78,7 @@ View::BeginFrame(const IndexT frameIndex, const Timing::Time time, const IndexT 
     // run script asynchronous jobs
     if (this->script != nullptr)
     {
-        N_SCOPE(ViewRecord, Render);
+        N_SCOPE(ViewRecord, Graphics);
         this->script->RunJobs(frameIndex, bufferIndex);
     }
 }
@@ -94,7 +94,7 @@ View::Render(const IndexT frameIndex, const Timing::Time time, const IndexT buff
     // run the actual script
     if (this->script != nullptr)
     {
-        N_SCOPE(ViewExecute, Render);
+        N_SCOPE(ViewExecute, Graphics);
         this->script->Run(frameIndex, bufferIndex);
     }
 }

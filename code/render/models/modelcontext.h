@@ -127,6 +127,8 @@ public:
 
     /// Get model node instance states
     static const NodeInstanceRange& GetModelRenderableRange(const Graphics::GraphicsEntityId id);
+    /// Get model node instance transformables
+    static const NodeInstanceRange& GetModelTransformableRange(const Graphics::GraphicsEntityId id);
     /// Get array to all model node states
     static const Util::Array<NodeInstanceState>& GetModelRenderableStates();
     /// Get array to all model node instace bounding boxes

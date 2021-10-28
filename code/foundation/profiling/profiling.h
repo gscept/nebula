@@ -19,6 +19,14 @@
 #include "threading/assertingmutex.h"
 #include <atomic>
 
+//------------------------------------------------------------------------------
+/**
+    Listing a bunch of marker names here for consistency:
+    Graphics - All generic graphics/compute stuff
+    Wait - When the engine is just waiting for a sync, GPU or CPU (these 
+*/
+//------------------------------------------------------------------------------
+
 // use these macros to insert markers
 #if NEBULA_ENABLE_PROFILING
 #define N_SCOPE(name, cat)              Profiling::ProfilingScopeLock __##name##cat##scope__(#name, #cat, __FILE__, __LINE__);

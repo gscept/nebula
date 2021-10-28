@@ -58,7 +58,7 @@ FramePass::CompiledImpl::RunJobs(const IndexT frameIndex, const IndexT bufferInd
     IndexT i;
     for (i = 0; i < this->subpasses.Size(); i++)
     {
-        N_SCOPE(RunSubpassRecord, Render);
+        N_SCOPE(RunSubpassRecord, Graphics);
 
         // start subpass commands
         CoreGraphics::BeginSubpassCommands(this->subpassBuffers[i][bufferIndex]);

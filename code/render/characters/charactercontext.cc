@@ -104,7 +104,8 @@ CharacterContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Re
     {
         if (renderables.nodes[i]->GetType() == Models::CharacterSkinNodeType)
         {
-            characterContextAllocator.Set<CharacterSkinNodeIndex>(cid.id, i);
+            // Save relative id
+            characterContextAllocator.Set<CharacterSkinNodeIndex>(cid.id, i - nodeRange.begin);
             break;
         }
     }
@@ -740,15 +741,17 @@ CharacterContext::WaitForCharacterJobs(const Graphics::FrameContext& ctx)
     const Util::Array<Util::FixedArray<Math::mat4>>& jointPalettes = characterContextAllocator.GetArray<JointPalette>();
     const Util::Array<Util::FixedArray<Math::mat4>>& scaledJointPalettes = characterContextAllocator.GetArray<JointPaletteScaled>();
     const Util::Array<IndexT>& characterSkinNodeIndices = characterContextAllocator.GetArray<CharacterSkinNodeIndex>();
+    const Util::Array<Graphics::GraphicsEntityId> graphicsEntities = characterContextAllocator.GetArray<ModelContextId>();
     for (IndexT i = 0; i < characterSkinNodeIndices.Size(); i++)
     {
         // Update skeleton constants
         // Move the skin fragment extraction to a job and have that output the list of actually used matrices.
+        const Models::NodeInstanceRange& range = Models::ModelContext::GetModelRenderableRange(graphicsEntities[i]);
         const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
 
         const Util::FixedArray<Math::mat4>& jointPalette = jointPalettes[i];
         const Util::FixedArray<Math::mat4>& scaledJointPalette = scaledJointPalettes[i];
-        IndexT node = characterSkinNodeIndices[i];
+        IndexT node = range.begin + characterSkinNodeIndices[i];
         n_assert(renderables.nodes[node]->type == Models::NodeType::CharacterSkinNodeType);
         Models::CharacterSkinNode* sparent = reinterpret_cast<Models::CharacterSkinNode*>(renderables.nodes[node]);
         const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;

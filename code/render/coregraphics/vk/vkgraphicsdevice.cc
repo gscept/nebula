@@ -887,7 +887,7 @@ DelayedFreeMemory(const CoreGraphics::Alloc alloc)
 void 
 _ProcessQueriesBeginFrame()
 {
-    N_SCOPE(ProcessQueries, Render);
+    N_SCOPE(ProcessQueries, Graphics);
     using namespace CoreGraphics;
 
     SubmissionContextNextCycle(state.queryGraphicsSubmissionContext, nullptr);
@@ -1986,7 +1986,7 @@ BeginFrame(IndexT frameIndex)
         vkDestroyImageView(state.devices[state.currentDevice], state.delayedDeleteImageViews[state.currentBufferedFrameIndex][i], nullptr);
     state.delayedDeleteImageViews[state.currentBufferedFrameIndex].Clear();
 
-    N_MARKER_BEGIN(WaitForPresent, Render);
+    N_MARKER_BEGIN(WaitForPresent, Wait);
 
     // slight limitation to only using one back buffer, so really we should do one begin and end frame per window...
     n_assert(state.backBuffers.Size() == 1);
@@ -1996,7 +1996,7 @@ BeginFrame(IndexT frameIndex)
 
     N_MARKER_END();
 
-    N_MARKER_BEGIN(WaitForLastFrame, Render);
+    N_MARKER_BEGIN(WaitForLastFrame, Wait);
 
     // cycle submissions, will wait for the fence to finish
     CoreGraphics::SubmissionContextNextCycle(state.gfxSubmission, [](uint64 index)
@@ -3453,7 +3453,7 @@ EndFrame(IndexT frameIndex)
     CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_ORANGE, "Compute");
 #endif
 
-    N_MARKER_BEGIN(ComputeSubmit, Render);
+    N_MARKER_BEGIN(ComputeSubmit, Graphics);
 
     // submit compute, wait for this frames resource submissions
     state.subcontextHandler.FlushSubmissionsTimeline(ComputeQueueType, nullptr);
@@ -3471,7 +3471,7 @@ EndFrame(IndexT frameIndex)
         SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex])
     );
 
-    N_MARKER_BEGIN(GraphicsSubmit, Render);
+    N_MARKER_BEGIN(GraphicsSubmit, Graphics);
 
     // submit graphics, since this is our main queue, we use this submission to get the semaphore wait index
     state.subcontextHandler.FlushSubmissionsTimeline(GraphicsQueueType, nullptr);

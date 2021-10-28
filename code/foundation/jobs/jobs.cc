@@ -344,7 +344,7 @@ JobSyncThreadSignal(const JobSyncId id, const JobPortId port, bool reset)
 void 
 JobSyncHostWait(const JobSyncId id, bool reset)
 {
-    N_SCOPE(Wait, Jobs);
+    N_SCOPE(Wait, Wait);
     Threading::Event* event = jobSyncAllocator.Get<SyncCompletionEvent>(id.id);
     event->Wait();
     if (reset)
@@ -461,13 +461,13 @@ JobThread::DoWork()
             }
             case JobThread::Wait:
             {
-                N_SCOPE(Wait, Jobs);
+                N_SCOPE(Wait, Wait);
                 cmd.sync.ev->Wait();
                 break;
             }
             case JobThread::WaitAndReset:
             {
-                N_SCOPE(WaitAndReset, Jobs);
+                N_SCOPE(WaitAndReset, Wait);
                 cmd.sync.ev->Wait();
                 cmd.sync.ev->Reset();
                 break;
