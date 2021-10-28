@@ -75,12 +75,12 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
     // start batch
     CoreGraphics::BeginBatch(FrameBatchType::Geometry);
 
-    const Util::Array<ShaderConfig*>* types = matServer->GetShaderConfigsByBatch(batch);
-    if ((types != nullptr) && (drawList != nullptr))
+    const Util::Array<ShaderConfig*>& types = matServer->GetShaderConfigsByBatch(batch);
+    if (types.Size() != 0 && (drawList != nullptr))
     {
-        for (IndexT typeIdx = 0; typeIdx < types->Size(); typeIdx++)
+        for (IndexT typeIdx = 0; typeIdx < types.Size(); typeIdx++)
         {
-            ShaderConfig* materialType = (*types)[typeIdx];
+            ShaderConfig* materialType = types[typeIdx];
             IndexT idx = drawList->visibilityTable.FindIndex(materialType);
             if (idx != InvalidIndex)
             {
@@ -172,12 +172,12 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
     // start batch
     CoreGraphics::BeginBatch(FrameBatchType::Geometry);
 
-    const Util::Array<ShaderConfig*>* types = matServer->GetShaderConfigsByBatch(batch);
-    if ((types != nullptr) && (drawList != nullptr))
+    const Util::Array<ShaderConfig*>& types = matServer->GetShaderConfigsByBatch(batch);
+    if (types.Size() != 0 && (drawList != nullptr))
     {
-        for (IndexT typeIdx = 0; typeIdx < types->Size(); typeIdx++)
+        for (IndexT typeIdx = 0; typeIdx < types.Size(); typeIdx++)
         {
-            ShaderConfig* materialType = (*types)[typeIdx];
+            ShaderConfig* materialType = types[typeIdx];
             IndexT idx = drawList->visibilityTable.FindIndex(materialType);
             if (idx != InvalidIndex)
             {

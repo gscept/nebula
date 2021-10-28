@@ -13,6 +13,7 @@
 #include "imgui.h"
 
 #include "volumefog.h"
+#include "blur_2d_rgba16f_cs.h"
 namespace Fog
 {
 
@@ -597,8 +598,7 @@ VolumetricFogContext::Render()
 	SetResourceTable(blurState.blurXTable[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr, GraphicsQueueType);
 
 	// fog0 -> read, fog1 -> write
-#define TILE_WIDTH 320
-	Compute(Math::divandroundup(dims.width, TILE_WIDTH), dims.height, 1, GraphicsQueueType);
+	Compute(Math::divandroundup(dims.width, Blur2dRgba16fCs::BlurTileWidth), dims.height, 1, GraphicsQueueType);
 
 	BarrierInsert(GraphicsQueueType,
 		BarrierStage::ComputeShader,
@@ -631,7 +631,7 @@ VolumetricFogContext::Render()
 	SetResourceTable(blurState.blurYTable[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr, GraphicsQueueType);
 
 	// fog0 -> write, fog1 -> read
-	Compute(Math::divandroundup(dims.height, TILE_WIDTH), dims.width, 1, GraphicsQueueType);
+	Compute(Math::divandroundup(dims.height, Blur2dRgba16fCs::BlurTileWidth), dims.width, 1, GraphicsQueueType);
 
 	// no need for an explicit barrier here, because the framescript will assume fog0 is write/general and will sync automatically
 

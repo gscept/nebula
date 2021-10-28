@@ -320,12 +320,13 @@ ShaderConfigServer::GetShaderConfig(const Resources::ResourceName& type)
 //------------------------------------------------------------------------------
 /**
 */
-const Util::Array<ShaderConfig*>*
+const Util::Array<ShaderConfig*>&
 ShaderConfigServer::GetShaderConfigsByBatch(CoreGraphics::BatchGroup::Code code)
 {
+    static Util::Array<ShaderConfig*> empty;
     IndexT i = this->shaderConfigsByBatch.FindIndex(code);
-    if (i == InvalidIndex)  return nullptr;
-    else                    return &this->shaderConfigsByBatch.ValueAtIndex(code, i);
+    if (i == InvalidIndex)  return empty;
+    else                    return this->shaderConfigsByBatch.ValueAtIndex(code, i);
 }
 
 } // namespace Base

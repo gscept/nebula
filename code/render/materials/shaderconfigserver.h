@@ -34,12 +34,12 @@ public:
     void Close();
 
     /// load material types from file
-    bool LoadMaterialTypes(const IO::URI& file);
+    bool LoadShaderConfigs(const IO::URI& file);
 
     /// get material
     ShaderConfig* GetShaderConfig(const Resources::ResourceName& type);
     /// get material types by batch code
-    const Util::Array<ShaderConfig*>* GetShaderConfigsByBatch(CoreGraphics::BatchGroup::Code code);
+    const Util::Array<ShaderConfig*>& GetShaderConfigsByBatch(CoreGraphics::BatchGroup::Code code);
 
 private:
     friend class MaterialCache;

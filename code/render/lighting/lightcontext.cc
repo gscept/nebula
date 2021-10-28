@@ -22,6 +22,7 @@
 
 #include "lights_cluster.h"
 #include "combine.h"
+#include "csmblur.h"
 
 #define CLUSTERED_LIGHTING_DEBUG 0
 
@@ -1138,7 +1139,7 @@ LightContext::BlurGlobalShadowMap()
         TextureDimensions dims = TextureGetDimensions(lightServerState.globalLightShadowMapBlurred0);
         SetShaderProgram(lightServerState.csmBlurXProgram);
         SetResourceTable(lightServerState.csmBlurXTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-        Compute(Math::divandroundup(dims.width, 320), dims.height, 4);
+        Compute(Math::divandroundup(dims.width, Csmblur::BlurTileWidth), dims.height, 4);
 
         BarrierInsert(GraphicsQueueType,
             BarrierStage::ComputeShader,
@@ -1159,7 +1160,7 @@ LightContext::BlurGlobalShadowMap()
             "CSM Blur X Finish");
         SetShaderProgram(lightServerState.csmBlurYProgram);
         SetResourceTable(lightServerState.csmBlurYTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-        Compute(Math::divandroundup(dims.height, 320), dims.width, 4);
+        Compute(Math::divandroundup(dims.height, Csmblur::BlurTileWidth), dims.width, 4);
 
         BarrierInsert(GraphicsQueueType,
             BarrierStage::ComputeShader,

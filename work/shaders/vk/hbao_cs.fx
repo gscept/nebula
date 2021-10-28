@@ -48,7 +48,8 @@ sampler_state ClampSampler
 #define KERNEL_FALLOFF 3.0f
 
 // Must match the HBAO_TILE_WIDTH value from AOAlgorithm
-#define HBAO_TILE_WIDTH 320
+#define HBAO_TILE_WIDTH 256
+const uint HBAOTileWidth = HBAO_TILE_WIDTH;
 
 #define SHARED_MEM_SIZE (KERNEL_RADIUS + HBAO_TILE_WIDTH + KERNEL_RADIUS)
 groupshared vec2 SharedMemory[SHARED_MEM_SIZE]; 
