@@ -3,21 +3,21 @@
 //  (C) 2017-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "surfacecache.h"
+#include "materialcache.h"
 #include "io/bxmlreader.h"
 #include "resources/resourceserver.h"
-#include "materialserver.h"
+#include "shaderconfigserver.h"
 
 namespace Materials
 {
 
-__ImplementClass(Materials::SurfaceCache, 'MAPO', Resources::ResourceStreamCache);
+__ImplementClass(Materials::MaterialCache, 'MAPO', Resources::ResourceStreamCache);
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-SurfaceCache::Setup()
+MaterialCache::Setup()
 {
     this->placeholderResourceName = "sur:system/placeholder.sur";
     this->failResourceName = "sur:system/error.sur";
@@ -30,7 +30,7 @@ SurfaceCache::Setup()
 /**
 */
 Resources::ResourceCache::LoadStatus
-SurfaceCache::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+MaterialCache::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
     Ptr<IO::BXmlReader> reader = IO::BXmlReader::Create();
     reader->SetStream(stream);
@@ -46,8 +46,8 @@ SurfaceCache::LoadFromStream(const Resources::ResourceId id, const Util::StringA
         // send to first node
         reader->SetToNode("/Nebula/Surface");
 
-        SurfaceId& sid = this->Get<Surface_SurfaceId>(id.resourceId);
-        MaterialType*& type = this->Get<Surface_MaterialType>(id.resourceId);
+        MaterialId& sid = this->Get<Surface_MaterialId>(id.resourceId);
+        ShaderConfig*& type = this->Get<Surface_MaterialType>(id.resourceId);
 
         // get min lod reference
         float& minLod = this->Get<Surface_MinLOD>(id.resourceId);
@@ -55,13 +55,13 @@ SurfaceCache::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 
         // load surface
         Resources::ResourceName materialType = reader->GetString("template");
-        Materials::MaterialServer* server = Materials::MaterialServer::Instance();
+        Materials::ShaderConfigServer* server = Materials::ShaderConfigServer::Instance();
 
-        if (!server->materialTypesByName.Contains(materialType))
+        if (!server->shaderConfigsByName.Contains(materialType))
         {
             n_error("Material '%s', referenced in '%s' could not be found!", materialType.AsString().AsCharPtr(), stream->GetURI().AsString().AsCharPtr());
         }
-        type = server->materialTypesByName[materialType];
+        type = server->shaderConfigsByName[materialType];
 
         // add to internal table
         sid = type->CreateSurface();
@@ -160,10 +160,10 @@ SurfaceCache::LoadFromStream(const Resources::ResourceId id, const Util::StringA
 /**
 */
 void
-SurfaceCache::Unload(const Resources::ResourceId id)
+MaterialCache::Unload(const Resources::ResourceId id)
 {
-    const SurfaceId mid = this->Get<Surface_SurfaceId>(id.resourceId);
-    MaterialType* type = this->Get<Surface_MaterialType>(id.resourceId);
+    const MaterialId mid = this->Get<Surface_MaterialId>(id.resourceId);
+    ShaderConfig* type = this->Get<Surface_MaterialType>(id.resourceId);
     type->DestroySurface(mid);
 
     this->states[id.poolId] = Resources::Resource::State::Unloaded;
@@ -173,7 +173,7 @@ SurfaceCache::Unload(const Resources::ResourceId id)
 /**
 */
 void
-SurfaceCache::SetMaxLOD(const SurfaceResourceId id, const float lod)
+MaterialCache::SetMaxLOD(const MaterialResourceId id, const float lod)
 {
     Threading::CriticalScope scope(&this->textureLoadSection);
     Util::Array<CoreGraphics::TextureId>& textures = this->Get<Surface_Textures>(id.resourceId);

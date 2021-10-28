@@ -3,7 +3,7 @@
 //  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "materialtype.h"
+#include "shaderconfig.h"
 #include "coregraphics/graphicsdevice.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/config.h"
@@ -11,23 +11,23 @@
 namespace Materials
 {
 
-IndexT MaterialType::MaterialTypeUniqueIdCounter = 0;
+IndexT ShaderConfig::ShaderConfigUniqueIdCounter = 0;
 //------------------------------------------------------------------------------
 /**
 */
-MaterialType::MaterialType() 
+ShaderConfig::ShaderConfig() 
 	: currentBatch(CoreGraphics::BatchGroup::InvalidBatchGroup)
 	, currentBatchIndex(InvalidIndex)
 	, vertexType(-1)
 	, isVirtual(false)
-	, uniqueId(MaterialTypeUniqueIdCounter++)
+	, uniqueId(ShaderConfigUniqueIdCounter++)
 {
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-MaterialType::~MaterialType()
+ShaderConfig::~ShaderConfig()
 {
 }
 
@@ -35,7 +35,7 @@ MaterialType::~MaterialType()
 /**
 */
 void 
-MaterialType::Setup()
+ShaderConfig::Setup()
 {
 	// setup binding in each program (should be identical)
 	auto it = this->batchToIndexMap.Begin();
@@ -45,7 +45,7 @@ MaterialType::Setup()
 		IndexT i;
 		for (i = 0; i < this->textures.Size(); i++)
 		{
-			MaterialTexture tex = this->textures.ValueAtIndex(i);
+            ShaderConfigTexture tex = this->textures.ValueAtIndex(i);
 			tex.slot = CoreGraphics::ShaderGetResourceSlot(shd, tex.name.AsCharPtr());
 			if (tex.slot != InvalidIndex)
 			{
@@ -59,7 +59,7 @@ MaterialType::Setup()
 
 		for (i = 0; i < this->constants.Size(); i++)
 		{
-			MaterialConstant constant = this->constants.ValueAtIndex(i);
+            ShaderConfigConstant constant = this->constants.ValueAtIndex(i);
 			constant.slot = CoreGraphics::ShaderGetConstantSlot(shd, constant.name);
 			
 			// only bind if there is a binding
@@ -82,8 +82,8 @@ MaterialType::Setup()
 //------------------------------------------------------------------------------
 /**
 */
-SurfaceId
-MaterialType::CreateSurface()
+MaterialId
+ShaderConfig::CreateSurface()
 {
 	Ids::Id32 sur = this->surfaceAllocator.Alloc();
 
@@ -158,11 +158,11 @@ MaterialType::CreateSurface()
 		}
 
 		// setup textures
-		const Util::Dictionary<Util::StringAtom, MaterialTexture>& textures = this->texturesByBatch[*batchIt.val];
+		const Util::Dictionary<Util::StringAtom, ShaderConfigTexture>& textures = this->texturesByBatch[*batchIt.val];
 		if (surfaceTable != CoreGraphics::InvalidResourceTableId) 
 			for (j = 0; j < textures.Size(); j++)
 			{
-				const MaterialTexture& tex = textures.ValueAtIndex(j);
+				const ShaderConfigTexture& tex = textures.ValueAtIndex(j);
 				SurfaceTexture surTex;
 				surTex.slot = tex.slot;
 				surTex.defaultValue = tex.defaultValue;
@@ -182,10 +182,10 @@ MaterialType::CreateSurface()
 		if (instanceTable != CoreGraphics::InvalidResourceTableId)
 			CoreGraphics::ResourceTableCommitChanges(instanceTable);
 
-		const Util::Dictionary<Util::StringAtom, MaterialConstant>& constants = this->constantsByBatch[*batchIt.val];
+		const Util::Dictionary<Util::StringAtom, ShaderConfigConstant>& constants = this->constantsByBatch[*batchIt.val];
 		for (j = 0; j < constants.Size(); j++)
 		{
-			const MaterialConstant& constant = constants.ValueAtIndex(j);
+			const ShaderConfigConstant& constant = constants.ValueAtIndex(j);
 			SurfaceConstant surConst;
 			surConst.defaultValue = constant.defaultValue;
 			surConst.binding = constant.offset;
@@ -239,7 +239,7 @@ MaterialType::CreateSurface()
 /**
 */
 void
-MaterialType::DestroySurface(SurfaceId sur)
+ShaderConfig::DestroySurface(MaterialId sur)
 {
 	this->surfaceAllocator.Dealloc(sur.id);
 }
@@ -247,8 +247,8 @@ MaterialType::DestroySurface(SurfaceId sur)
 //------------------------------------------------------------------------------
 /**
 */
-SurfaceInstanceId 
-MaterialType::CreateSurfaceInstance(const SurfaceId id)
+MaterialInstanceId 
+ShaderConfig::CreateSurfaceInstance(const MaterialId id)
 {
 	Ids::Id32 inst = this->surfaceInstanceAllocator.Alloc();
 
@@ -277,7 +277,7 @@ MaterialType::CreateSurfaceInstance(const SurfaceId id)
 	}
 	
 	// create id
-	SurfaceInstanceId ret;
+	MaterialInstanceId ret;
 	ret.instance = inst;
 	ret.surface = id.id;
 	return ret;
@@ -287,7 +287,7 @@ MaterialType::CreateSurfaceInstance(const SurfaceId id)
 /**
 */
 void 
-MaterialType::DestroySurfaceInstance(const SurfaceInstanceId id)
+ShaderConfig::DestroySurfaceInstance(const MaterialInstanceId id)
 {
 	this->surfaceInstanceAllocator.Dealloc(id.instance);
 }
@@ -296,7 +296,7 @@ MaterialType::DestroySurfaceInstance(const SurfaceInstanceId id)
 /**
 */
 IndexT 
-MaterialType::GetSurfaceConstantIndex(const SurfaceId sur, const Util::StringAtom& name)
+ShaderConfig::GetSurfaceConstantIndex(const MaterialId sur, const Util::StringAtom& name)
 {
 	IndexT idx = this->surfaceAllocator.Get<ConstantMap>(sur.id).FindIndex(name);
 	if (idx != InvalidIndex)	return this->surfaceAllocator.Get<ConstantMap>(sur.id).ValueAtIndex(idx);
@@ -307,7 +307,7 @@ MaterialType::GetSurfaceConstantIndex(const SurfaceId sur, const Util::StringAto
 /**
 */
 IndexT 
-MaterialType::GetSurfaceTextureIndex(const SurfaceId sur, const Util::StringAtom& name)
+ShaderConfig::GetSurfaceTextureIndex(const MaterialId sur, const Util::StringAtom& name)
 {
 	IndexT idx = this->surfaceAllocator.Get<TextureMap>(sur.id).FindIndex(name);
 	if (idx != InvalidIndex)	return this->surfaceAllocator.Get<TextureMap>(sur.id).ValueAtIndex(idx);
@@ -318,7 +318,7 @@ MaterialType::GetSurfaceTextureIndex(const SurfaceId sur, const Util::StringAtom
 /**
 */
 IndexT 
-MaterialType::GetSurfaceConstantInstanceIndex(const SurfaceInstanceId sur, const Util::StringAtom& name)
+ShaderConfig::GetSurfaceConstantInstanceIndex(const MaterialInstanceId sur, const Util::StringAtom& name)
 {
 	IndexT idx = this->surfaceAllocator.Get<ConstantMap>(sur.surface).FindIndex(name);
 	if (idx != InvalidIndex)	return this->surfaceAllocator.Get<ConstantMap>(sur.surface).ValueAtIndex(idx);
@@ -329,7 +329,7 @@ MaterialType::GetSurfaceConstantInstanceIndex(const SurfaceInstanceId sur, const
 /**
 */
 const Util::Variant 
-MaterialType::GetSurfaceConstantDefault(const SurfaceId sur, IndexT idx)
+ShaderConfig::GetSurfaceConstantDefault(const MaterialId sur, IndexT idx)
 {
 	return (*this->surfaceAllocator.Get<Constants>(sur.id).Begin())[idx].defaultValue;
 }
@@ -338,7 +338,7 @@ MaterialType::GetSurfaceConstantDefault(const SurfaceId sur, IndexT idx)
 /**
 */
 const CoreGraphics::TextureId
-MaterialType::GetSurfaceTextureDefault(const SurfaceId sur, IndexT idx)
+ShaderConfig::GetSurfaceTextureDefault(const MaterialId sur, IndexT idx)
 {
 	return (*this->surfaceAllocator.Get<Textures>(sur.id).Begin())[idx].defaultValue;
 }
@@ -347,7 +347,7 @@ MaterialType::GetSurfaceTextureDefault(const SurfaceId sur, IndexT idx)
 /**
 */
 void
-MaterialType::SetSurfaceConstant(const SurfaceId sur, IndexT name, const Util::Variant& value)
+ShaderConfig::SetSurfaceConstant(const MaterialId sur, IndexT name, const Util::Variant& value)
 {
 	auto it = this->batchToIndexMap.Begin();
 	while (it != this->batchToIndexMap.End())
@@ -366,7 +366,7 @@ MaterialType::SetSurfaceConstant(const SurfaceId sur, IndexT name, const Util::V
 /**
 */
 void
-MaterialType::SetSurfaceTexture(const SurfaceId sur, IndexT name, const CoreGraphics::TextureId tex)
+ShaderConfig::SetSurfaceTexture(const MaterialId sur, IndexT name, const CoreGraphics::TextureId tex)
 {
 	auto it = this->batchToIndexMap.Begin();
 	while (it != this->batchToIndexMap.End())
@@ -382,7 +382,7 @@ MaterialType::SetSurfaceTexture(const SurfaceId sur, IndexT name, const CoreGrap
 /**
 */
 void 
-MaterialType::SetSurfaceInstanceConstant(const SurfaceInstanceId sur, const IndexT idx, const Util::Variant& value)
+ShaderConfig::SetSurfaceInstanceConstant(const MaterialInstanceId sur, const IndexT idx, const Util::Variant& value)
 {
 	auto it = this->batchToIndexMap.Begin();
 	while (it != this->batchToIndexMap.End())
@@ -398,7 +398,7 @@ MaterialType::SetSurfaceInstanceConstant(const SurfaceInstanceId sur, const Inde
 /**
 */
 bool
-MaterialType::BeginBatch(CoreGraphics::BatchGroup::Code batch)
+ShaderConfig::BeginBatch(CoreGraphics::BatchGroup::Code batch)
 {
 	n_assert(this->currentBatch == CoreGraphics::BatchGroup::InvalidBatchGroup);
 	n_assert(this->currentBatchIndex == InvalidIndex);
@@ -417,7 +417,7 @@ MaterialType::BeginBatch(CoreGraphics::BatchGroup::Code batch)
 /**
 */
 void
-MaterialType::ApplySurface(const SurfaceId id)
+ShaderConfig::ApplySurface(const MaterialId id)
 {
 	n_assert(this->currentBatch != CoreGraphics::BatchGroup::InvalidBatchGroup);
 	n_assert(this->currentBatchIndex != InvalidIndex);
@@ -428,7 +428,7 @@ MaterialType::ApplySurface(const SurfaceId id)
 /**
 */
 void
-MaterialType::ApplyInstance(const SurfaceInstanceId id)
+ShaderConfig::ApplyInstance(const MaterialInstanceId id)
 {
 	n_assert(this->currentBatch != CoreGraphics::BatchGroup::InvalidBatchGroup);
 	n_assert(this->currentBatchIndex != InvalidIndex);
@@ -450,7 +450,7 @@ MaterialType::ApplyInstance(const SurfaceInstanceId id)
 /**
 */
 void
-MaterialType::EndBatch()
+ShaderConfig::EndBatch()
 {
 	this->currentBatchIndex = InvalidIndex;
 	this->currentBatch = CoreGraphics::BatchGroup::InvalidBatchGroup;

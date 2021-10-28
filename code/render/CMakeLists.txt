@@ -503,12 +503,12 @@ ENDIF()
             fips_files(
                 material.cc
                 material.h
-                materialserver.cc
-                materialserver.h
-                materialtype.cc
-                materialtype.h
-                surfacecache.cc
-                surfacecache.h
+                shaderconfigserver.cc
+                shaderconfigserver.h
+                shaderconfig.cc
+                shaderconfig.h
+                materialcache.cc
+                materialcache.h
             )
         fips_dir(models/nodes GROUP "models/nodes")
             fips_files(

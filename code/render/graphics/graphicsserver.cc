@@ -91,7 +91,7 @@ GraphicsServer::Open()
         Resources::ResourceServer::Instance()->RegisterStreamPool("nax3", CoreAnimation::StreamAnimationCache::RTTI);
         Resources::ResourceServer::Instance()->RegisterStreamPool("nsk3", Characters::StreamSkeletonCache::RTTI); 
         Resources::ResourceServer::Instance()->RegisterStreamPool("nvx2", CoreGraphics::StreamMeshCache::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("sur", Materials::SurfaceCache::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("sur", Materials::MaterialCache::RTTI);
         Resources::ResourceServer::Instance()->RegisterStreamPool("n3", Models::StreamModelCache::RTTI);
 
         // setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
@@ -101,7 +101,7 @@ GraphicsServer::Open()
 
         CoreGraphics::shaderPool = Resources::GetStreamPool<CoreGraphics::ShaderCache>();
         Models::modelPool = Resources::GetStreamPool<Models::StreamModelCache>();
-        Materials::surfacePool = Resources::GetStreamPool<Materials::SurfaceCache>();
+        Materials::surfacePool = Resources::GetStreamPool<Materials::MaterialCache>();
 
         CoreAnimation::animPool = Resources::GetStreamPool<CoreAnimation::StreamAnimationCache>();
         Characters::skeletonPool = Resources::GetStreamPool<Characters::StreamSkeletonCache>();
@@ -182,7 +182,7 @@ GraphicsServer::Open()
         this->frameServer = Frame::FrameServer::Create();
         this->frameServer->Open();
 
-        this->materialServer = Materials::MaterialServer::Create();
+        this->materialServer = Materials::ShaderConfigServer::Create();
         this->materialServer->Open();
 
         this->transformDevice = CoreGraphics::TransformDevice::Create();

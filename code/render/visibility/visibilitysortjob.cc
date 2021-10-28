@@ -87,7 +87,7 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
         Models::ModelNode* node = nullptr;
         static auto NullDrawModifiers = Util::MakeTuple(UINT32_MAX, UINT32_MAX);
         Util::Tuple<uint32, uint32> drawModifiers = NullDrawModifiers;
-        Materials::MaterialType* currentMaterialType = nullptr;
+        Materials::ShaderConfig* currentMaterialType = nullptr;
 
         for (uint32 i = 0; i < numPackets; i++)
         {

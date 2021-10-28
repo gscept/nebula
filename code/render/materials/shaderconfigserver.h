@@ -10,23 +10,23 @@
 #include "core/refcounted.h"
 #include "core/singleton.h"
 #include "resources/resourceid.h"
-#include "materialtype.h"
-#include "surfacecache.h"
+#include "shaderconfig.h"
+#include "materialcache.h"
 #include "ids/id.h"
 #include "io/uri.h"
 namespace Materials
 {
 
-class MaterialServer : public Core::RefCounted
+class ShaderConfigServer : public Core::RefCounted
 {
-    __DeclareClass(MaterialServer);
-    __DeclareInterfaceSingleton(MaterialServer);
+    __DeclareClass(ShaderConfigServer);
+    __DeclareInterfaceSingleton(ShaderConfigServer);
 public:
 
     /// constructor
-    MaterialServer();
+    ShaderConfigServer();
     /// destructor
-    ~MaterialServer();
+    ~ShaderConfigServer();
 
     /// open server
     void Open();
@@ -37,19 +37,19 @@ public:
     bool LoadMaterialTypes(const IO::URI& file);
 
     /// get material
-    MaterialType* GetMaterialType(const Resources::ResourceName& type);
+    ShaderConfig* GetShaderConfig(const Resources::ResourceName& type);
     /// get material types by batch code
-    const Util::Array<MaterialType*>* GetMaterialTypesByBatch(CoreGraphics::BatchGroup::Code code);
+    const Util::Array<ShaderConfig*>* GetShaderConfigsByBatch(CoreGraphics::BatchGroup::Code code);
 
 private:
-    friend class SurfaceCache;
+    friend class MaterialCache;
 
     Memory::ArenaAllocator<0x400> surfaceAllocator;
-    Util::Dictionary<Resources::ResourceName, MaterialType*> materialTypesByName;
-    Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<MaterialType*>> materialTypesByBatch;
-    Util::Array<MaterialType*> materialTypes;
-    Ptr<SurfaceCache> surfacePool;
-    MaterialType* currentType;
+    Util::Dictionary<Resources::ResourceName, ShaderConfig*> shaderConfigsByName;
+    Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<ShaderConfig*>> shaderConfigsByBatch;
+    Util::Array<ShaderConfig*> shaderConfigs;
+    Ptr<MaterialCache> surfacePool;
+    ShaderConfig* currentType;
     bool isOpen;
 };
 

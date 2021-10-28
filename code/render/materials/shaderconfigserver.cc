@@ -3,10 +3,10 @@
 //  (C)2017-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "materialserver.h"
+#include "shaderconfigserver.h"
 #include "resources/resourceserver.h"
-#include "surfacecache.h"
-#include "materialtype.h"
+#include "materialcache.h"
+#include "shaderconfig.h"
 #include "io/ioserver.h"
 #include "io/jsonreader.h"
 #include "coregraphics/batchgroup.h"
@@ -14,12 +14,12 @@
 
 namespace Materials
 {
-__ImplementClass(Materials::MaterialServer, 'MASV', Core::RefCounted)
-__ImplementInterfaceSingleton(Materials::MaterialServer)
+__ImplementClass(Materials::ShaderConfigServer, 'MASV', Core::RefCounted)
+__ImplementInterfaceSingleton(Materials::ShaderConfigServer)
 //------------------------------------------------------------------------------
 /**
 */
-MaterialServer::MaterialServer() :
+ShaderConfigServer::ShaderConfigServer() :
     isOpen(false),
     currentType(nullptr)
 {
@@ -29,7 +29,7 @@ MaterialServer::MaterialServer() :
 //------------------------------------------------------------------------------
 /**
 */
-MaterialServer::~MaterialServer()
+ShaderConfigServer::~ShaderConfigServer()
 {
     __DestructSingleton;
 }
@@ -38,20 +38,20 @@ MaterialServer::~MaterialServer()
 /**
 */
 void
-MaterialServer::Open()
+ShaderConfigServer::Open()
 {
     n_assert(!this->isOpen);
     this->isOpen = true;
 
     // load base materials first
-    this->LoadMaterialTypes("mat:base.json");
+    this->LoadShaderConfigs("mat:base.json");
 
     // okay, now load the rest of the materials
     Util::Array<Util::String> materialTables = IO::IoServer::Instance()->ListFiles("mat:", "*.json");
     for (IndexT i = 0; i < materialTables.Size(); i++)
     {
         if (materialTables[i] == "base.json") continue;
-        this->LoadMaterialTypes("mat:" + materialTables[i]);
+        this->LoadShaderConfigs("mat:" + materialTables[i]);
     }
 }
 
@@ -59,7 +59,7 @@ MaterialServer::Open()
 /**
 */
 void
-MaterialServer::Close()
+ShaderConfigServer::Close()
 {
     this->surfaceAllocator.Release();
 }
@@ -68,7 +68,7 @@ MaterialServer::Close()
 /**
 */
 bool
-MaterialServer::LoadMaterialTypes(const IO::URI& file)
+ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
 {
     Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(file);
     Ptr<IO::JsonReader> reader = IO::JsonReader::Create();
@@ -87,14 +87,13 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
         // parse materials
         if (reader->SetToFirstChild()) do
         {
-            MaterialType* type = this->surfaceAllocator.Alloc<MaterialType>();
-            this->materialTypes.Append(type);
+            ShaderConfig* type = this->surfaceAllocator.Alloc<ShaderConfig>();
+            this->shaderConfigs.Append(type);
 
             type->name = reader->GetString("name");
             type->description = reader->GetOptString("desc", "");
             type->group = reader->GetOptString("group", "Ungrouped");
-            type->id = this->materialTypes.Size() - 1; // they are load-time, so we can safetly use this as the id
-            materialTypesByName.Add(type->name, type);
+            shaderConfigsByName.Add(type->name, type);
 
             n_assert2(!type->name.ContainsCharFromSet("|"), "Name of material may not contain character '|' since it's used to denote multiple inheritance");
 
@@ -123,12 +122,12 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
                 for (i = 0; i < inheritances.Size(); i++)
                 {
                     Util::String otherMat = inheritances[i];
-                    IndexT index = this->materialTypesByName.FindIndex(otherMat);
+                    IndexT index = this->shaderConfigsByName.FindIndex(otherMat);
                     if (index == InvalidIndex)
                         n_error("Material '%s' is not defined or loaded yet.", otherMat.AsCharPtr());
                     else
                     {
-                        MaterialType* mat = this->materialTypesByName.ValueAtIndex(index);
+                        ShaderConfig* mat = this->shaderConfigsByName.ValueAtIndex(index);
 
                         type->textures.Merge(mat->textures);
                         type->constants.Merge(mat->constants);
@@ -193,7 +192,7 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
                         type->constantsByBatch.Append({});
 
                         // add material to server
-                        Util::Array<Materials::MaterialType*>& mats = this->materialTypesByBatch.AddUnique(code);
+                        Util::Array<Materials::ShaderConfig*>& mats = this->shaderConfigsByBatch.AddUnique(code);
                         mats.Append(type);
                     }
                 } while (reader->SetToNextChild());
@@ -214,7 +213,7 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 
                     if (ptype.BeginsWithString("textureHandle"))
                     {
-                        MaterialConstant constant;
+                        ShaderConfigConstant constant;
                         constant.type = Util::Variant::UInt64;
                         auto res = Resources::CreateResource(reader->GetString("defaultValue") + NEBULA_TEXTURE_EXTENSION, "material types", nullptr, nullptr, true);
                         constant.defaultValue = res.HashCode64();
@@ -230,7 +229,7 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
                     }
                     else if (ptype.BeginsWithString("texture"))
                     {
-                        MaterialTexture texture;
+                        ShaderConfigTexture texture;
                         if (ptype == "texture1d") texture.type = CoreGraphics::Texture1D;
                         else if (ptype == "texture2d") texture.type = CoreGraphics::Texture2D;
                         else if (ptype == "texture3d") texture.type = CoreGraphics::Texture3D;
@@ -251,7 +250,7 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
                     }
                     else
                     {
-                        MaterialConstant constant;
+                        ShaderConfigConstant constant;
                         constant.type = Util::Variant::StringToType(ptype);
                         switch (constant.type)
                         {
@@ -311,22 +310,22 @@ MaterialServer::LoadMaterialTypes(const IO::URI& file)
 //------------------------------------------------------------------------------
 /**
 */
-MaterialType* 
-MaterialServer::GetMaterialType(const Resources::ResourceName& type)
+ShaderConfig* 
+ShaderConfigServer::GetShaderConfig(const Resources::ResourceName& type)
 {
-    MaterialType* mat = this->materialTypesByName[type];
+    ShaderConfig* mat = this->shaderConfigsByName[type];
     return mat;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-const Util::Array<MaterialType*>*
-MaterialServer::GetMaterialTypesByBatch(CoreGraphics::BatchGroup::Code code)
+const Util::Array<ShaderConfig*>*
+ShaderConfigServer::GetShaderConfigsByBatch(CoreGraphics::BatchGroup::Code code)
 {
-    IndexT i = this->materialTypesByBatch.FindIndex(code);
+    IndexT i = this->shaderConfigsByBatch.FindIndex(code);
     if (i == InvalidIndex)  return nullptr;
-    else                    return &this->materialTypesByBatch.ValueAtIndex(code, i);
+    else                    return &this->shaderConfigsByBatch.ValueAtIndex(code, i);
 }
 
 } // namespace Base

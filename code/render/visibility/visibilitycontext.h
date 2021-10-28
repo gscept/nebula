@@ -13,8 +13,8 @@
 #include "visibility/systems/visibilitysystem.h"
 #include "models/model.h"
 #include "models/nodes/shaderstatenode.h"
-#include "materials/surfacecache.h"
-#include "materials/materialtype.h"
+#include "materials/materialcache.h"
+#include "materials/shaderconfig.h"
 #include "memory/arenaallocator.h"
 #include "math/clipstatus.h"
 
@@ -105,7 +105,7 @@ public:
     {
         uint32 offset;
         std::function<void()> modelCallback;
-        Materials::SurfaceId surface;
+        Materials::MaterialId surface;
 
 #if NEBULA_GRAPHICS_DEBUG
         Util::StringAtom nodeName;
@@ -129,7 +129,7 @@ public:
 
     struct VisibilityDrawList
     {
-        Util::HashTable<Materials::MaterialType*, VisibilityBatchCommand> visibilityTable;
+        Util::HashTable<Materials::ShaderConfig*, VisibilityBatchCommand> visibilityTable;
         Util::Array<Models::ShaderStateNode::DrawPacket*> drawPackets;
     };
 

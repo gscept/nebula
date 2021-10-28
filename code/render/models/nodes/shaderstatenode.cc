@@ -159,11 +159,11 @@ ShaderStateNode::OnFinishedLoading()
 /**
 */
 void
-ShaderStateNode::DrawPacket::Apply(Materials::MaterialType* type)
+ShaderStateNode::DrawPacket::Apply(Materials::ShaderConfig* type)
 {
     // Apply per-draw surface parameters
-    if (this->surfaceInstance != Materials::SurfaceInstanceId::Invalid())
-        Materials::MaterialApplySurfaceInstance(type, this->surfaceInstance);
+    if (this->surfaceInstance != Materials::MaterialInstanceId::Invalid())
+        Materials::MaterialInstanceApply(type, this->surfaceInstance);
 
     // Set per-draw resource tables
     IndexT prevOffset = 0;  

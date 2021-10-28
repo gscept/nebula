@@ -11,7 +11,7 @@
 #include "modelnode.h"
 #include "resources/resourceid.h"
 #include "coregraphics/shader.h"
-#include "materials/materialserver.h"
+#include "materials/shaderconfigserver.h"
 #include "transformnode.h"
 #include "jobs/jobs.h"
 #include "coregraphics/buffer.h"
@@ -38,7 +38,7 @@ public:
 
     struct DrawPacket
     {
-        Materials::SurfaceInstanceId surfaceInstance;
+        Materials::MaterialInstanceId surfaceInstance;
         SizeT numTables;
         CoreGraphics::ResourceTableId tables[NumTables];
         uint32 numOffsets[NumTables];
@@ -52,11 +52,11 @@ public:
 
 
         /// apply the resource tables and offsets
-        void Apply(Materials::MaterialType* type);
+        void Apply(Materials::ShaderConfig* type);
     };
 
     /// get surface
-    const Materials::SurfaceId GetSurface() const { return this->surface; };
+    const Materials::MaterialId GetSurface() const { return this->surface; };
     /// trigger an LOD update
     void SetMaxLOD(const float lod);
 
@@ -73,9 +73,9 @@ protected:
     /// called when loading finished
     virtual void OnFinishedLoading();
     
-    Materials::MaterialType* materialType;
-    Materials::SurfaceId surface;
-    Materials::SurfaceResourceId surRes;
+    Materials::ShaderConfig* materialType;
+    Materials::MaterialId surface;
+    Materials::MaterialResourceId surRes;
     Resources::ResourceName materialName;
 
     uint8_t objectTransformsIndex;

@@ -11,7 +11,7 @@
 #include "core/singleton.h"
 #include "resources/resourceid.h"
 #include "coregraphics/resourcetable.h"
-#include "materials/materialserver.h"
+#include "materials/shaderconfigserver.h"
 #include "model.h"
 #include "nodes/modelnode.h"
 
@@ -81,7 +81,7 @@ public:
     struct NodeInstanceState
     {
         CoreGraphics::ResourceTableId resourceTable;
-        Materials::SurfaceInstanceId surfaceInstance;
+        Materials::MaterialInstanceId surfaceInstance;
         Util::FixedArray<uint32_t> resourceTableOffsets;
         IndexT objectConstantsIndex;
         IndexT instancingConstantsIndex;
@@ -109,10 +109,10 @@ public:
             Util::Array<uint32> nodeTransformIndex;
             Util::Array<uint64> nodeSortId;
             Util::Array<NodeInstanceFlags> nodeFlags;
-            Util::Array<Materials::SurfaceResourceId> nodeSurfaceResources;
-            Util::Array<Materials::SurfaceId> nodeSurfaces;
+            Util::Array<Materials::MaterialResourceId> nodeSurfaceResources;
+            Util::Array<Materials::MaterialId> nodeSurfaces;
             Util::Array<NodeInstanceState> nodeStates;
-            Util::Array<Materials::MaterialType*> nodeMaterialTypes;
+            Util::Array<Materials::ShaderConfig*> nodeMaterialTypes;
             Util::Array<Models::ModelNode*> nodes;
             Util::Array<std::function<void()>> nodeModelCallbacks;
             Util::Array<Util::Tuple<uint32, uint32>> nodeDrawModifiers;

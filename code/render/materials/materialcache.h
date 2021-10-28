@@ -8,7 +8,7 @@
 */
 //------------------------------------------------------------------------------
 #include "resources/resourcestreamcache.h"
-#include "materialtype.h"
+#include "shaderconfig.h"
 #include "coregraphics/config.h"
 #include "threading/criticalsection.h"
 
@@ -20,19 +20,12 @@ struct MaterialInfo
     Resources::ResourceName materialType;
 };
 
-struct SurfaceRuntime // consider splitting into runtime and setup
+struct MaterialResourceId;
+RESOURCE_ID_TYPE(MaterialResourceId);
+
+class MaterialCache : public Resources::ResourceStreamCache
 {
-    SurfaceId id;
-    MaterialType* type;
-};
-
-
-struct SurfaceResourceId;
-RESOURCE_ID_TYPE(SurfaceResourceId);
-
-class SurfaceCache : public Resources::ResourceStreamCache
-{
-    __DeclareClass(SurfaceCache);
+    __DeclareClass(MaterialCache);
 public:
 
     /// setup resource loader, initiates the placeholder and error resources if valid, so don't forget to run!
@@ -42,11 +35,11 @@ public:
     Resources::ResourceCache::LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) override;
 
     /// get material id
-    const SurfaceId GetId(const SurfaceResourceId id);
+    const MaterialId GetId(const MaterialResourceId id);
     /// get material type
-    MaterialType* const GetType(const SurfaceResourceId id);
+    ShaderConfig* const GetType(const MaterialResourceId id);
     /// update lod for textures in surface 
-    void SetMaxLOD(const SurfaceResourceId id, const float lod);
+    void SetMaxLOD(const MaterialResourceId id, const float lod);
 private:
 
     /// unload resource (overload to implement resource deallocation)
@@ -54,15 +47,15 @@ private:
 
     enum
     {
-        Surface_SurfaceId,
+        Surface_MaterialId,
         Surface_MaterialType,
         Surface_Textures,
         Surface_MinLOD
     };
 
     Ids::IdAllocator<
-        SurfaceId,
-        MaterialType*,
+        MaterialId,
+        ShaderConfig*,
         Util::Array<CoreGraphics::TextureId>,
         float
     > allocator;
@@ -74,20 +67,20 @@ private:
 //------------------------------------------------------------------------------
 /**
 */
-inline const SurfaceId
-SurfaceCache::GetId(const SurfaceResourceId id)
+inline const MaterialId
+MaterialCache::GetId(const MaterialResourceId id)
 {
-    const SurfaceId ret = allocator.Get<Surface_SurfaceId>(id.resourceId);
+    const MaterialId ret = allocator.Get<Surface_MaterialId>(id.resourceId);
     return ret;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline MaterialType* const
-SurfaceCache::GetType(const SurfaceResourceId id)
+inline ShaderConfig* const
+MaterialCache::GetType(const MaterialResourceId id)
 {
-    MaterialType* const ret = allocator.Get<Surface_MaterialType>(id.resourceId);
+    ShaderConfig* const ret = allocator.Get<Surface_MaterialType>(id.resourceId);
     return ret;
 }
 
