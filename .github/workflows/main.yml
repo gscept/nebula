@@ -62,7 +62,9 @@ jobs:
 
       - name: Setup missing software
         if: startsWith(matrix.os, 'ubuntu')
-        run: sudo apt-get install libgl1-mesa-dev libglu1-mesa-dev ninja-build libxcursor-dev libxrandr-dev libxrandr-dev libxinerama-dev libxi-dev uuid-dev libcurl4-gnutls-dev libbsd-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install libgl1-mesa-dev libglu1-mesa-dev ninja-build libxcursor-dev libxrandr-dev libxrandr-dev libxinerama-dev libxi-dev uuid-dev libcurl4-gnutls-dev libbsd-dev
         
       - name: Cache PhysX
         id: cache-physx
@@ -117,7 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     name: Notify
-    if: cancelled() == false && github.event.pull_request.head.repo.full_name == github.repository
+    # if: cancelled() == false && github.event.pull_request.head.repo.full_name == github.repository
     steps:
      - name: Notification       
        uses: xinthink/action-telegram@v1.1
