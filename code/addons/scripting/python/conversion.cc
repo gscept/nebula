@@ -28,13 +28,13 @@ PYBIND11_EMBEDDED_MODULE(nmath, m)
             f.loadu((float*)info.ptr);
             return f;
         }))
-        .def("__getitem__", [](Math::vec4&f, ssize_t i)
+        .def("__getitem__", [](Math::vec4&f, size_t i)
         {
             if (i > 3 || i < 0)
                 throw pybind11::index_error("Index out of range!");
             return f[i];
         })
-        .def("__setitem__", [](Math::vec4&f, ssize_t i, float v)
+        .def("__setitem__", [](Math::vec4&f, size_t i, float v)
         {
             if (i > 3 || i < 0)
                 throw pybind11::index_error("Index out of range!");
@@ -157,7 +157,7 @@ PYBIND11_EMBEDDED_MODULE(nmath, m)
             Math::mat4 mat({a,b,c,d},{e,f,g,h},{i,j,k,l},{m,n,o,p});
             return mat;
         }))
-        .def("__getitem__", [](Math::mat4& m, ssize_t i)
+        .def("__getitem__", [](Math::mat4& m, size_t i)
         {
             switch (i)
             {
@@ -173,7 +173,7 @@ PYBIND11_EMBEDDED_MODULE(nmath, m)
                 throw pybind11::index_error("Index out of range!");
             }
         })
-        .def("__setitem__", [](Math::mat4& m, ssize_t i, Math::vec4 const& v)
+        .def("__setitem__", [](Math::mat4& m, size_t i, Math::vec4 const& v)
         {
             switch (i)
             {
