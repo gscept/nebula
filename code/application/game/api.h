@@ -435,6 +435,7 @@ inline Game::ProcessorHandle
 RegisterUpdateFunction(World* world, Util::StringAtom name, std::function<void(TYPES...)> func, std::initializer_list<PropertyId> additionalInclusive, std::initializer_list<PropertyId> exclusive)
 {
     n_assert(exclusive.size() < 0xFF);
+    n_assert(additionalInclusive.size() < 0xFF);
 
     ProcessorFrameCallback processor = [func](World* world, Game::Dataset data) {
         for (int v = 0; v < data.numViews; v++)
@@ -450,9 +451,9 @@ RegisterUpdateFunction(World* world, Util::StringAtom name, std::function<void(T
 
     Game::FilterCreateInfo filterInfo;
     Internal::UnrollInclusiveProperties<TYPES...>(filterInfo, std::make_index_sequence<sizeof...(TYPES)>());
-    for (int i = 0; i < additionalInclusive.size(); i++)
+    for (int i = 0; i < (int)additionalInclusive.size(); i++)
         filterInfo.inclusive[filterInfo.numInclusive + i] = *(additionalInclusive.begin() + i);
-    filterInfo.numInclusive = filterInfo.numInclusive + additionalInclusive.size();
+    filterInfo.numInclusive = filterInfo.numInclusive + (uint8_t)additionalInclusive.size();
     for (int i = 0; i < exclusive.size(); i++)
         filterInfo.exclusive[i] = *(exclusive.begin() + i);
     filterInfo.numExclusive = (uint8_t)exclusive.size();
