@@ -856,6 +856,8 @@ RegisterProcessors(World* world, std::initializer_list<ProcessorHandle> handles)
         if (info.OnSave != nullptr)
             world->onSaveCallbacks.Append({ handle, info.filter, info.OnSave });
     }
+
+    world->cacheValid = false;
 }
 
 //------------------------------------------------------------------------------
@@ -881,6 +883,8 @@ PrefilterProcessors(World* world)
             cbinfo.cache = world->db->Query(GetInclusiveTableMask(cbinfo.filter), GetExclusiveTableMask(cbinfo.filter));
         }
     }
+
+    world->cacheValid = true;
 }
 
 
