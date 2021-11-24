@@ -190,9 +190,10 @@ def WritePropertySourceDefinitions(f, document):
             f.WriteLine('MemDb::PropertyId const pid = MemDb::TypeRegistry::Register<{type}>(name, {defval});'.format(type=prop.propertyName, defval=defval))
             if prop.isStruct:
                 f.WriteLine('Game::PropertySerialization::Register<{type}>(pid);'.format(type=prop.propertyName))
+                f.WriteLine('Game::PropertyInspection::Register(pid, &Game::PropertyDrawFuncT<{type}>);'.format(type=prop.propertyName))
             else:
                 f.WriteLine('Game::PropertySerialization::Register<{type}>(pid);'.format(type=prop.variables[0].type))
-            f.WriteLine('Game::PropertyInspection::Register(pid, &Game::PropertyDrawFuncT<{type}>);'.format(type=prop.propertyName))
+                f.WriteLine('Game::PropertyInspection::Register(pid, &Game::PropertyDrawFuncT<{type}>);'.format(type=prop.variables[0].type))
         else:
             f.WriteLine('MemDb::TypeRegistry::Register(name, 0, nullptr);')
         f.WriteLine('}')

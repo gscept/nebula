@@ -287,7 +287,7 @@ EntitySystemTest::Run()
             TestHealth& h = healths[i];
             TestStruct& s = strs[i];
 
-            VERIFY(s.foo == 0);
+            VERIFY(s.foo == 1);
             s.foo = h.value;
         }
     }
@@ -314,7 +314,7 @@ EntitySystemTest::Run()
             Test::TestStruct& testStruct
         )
     {
-        VERIFY(testStruct.foo == 1);
+        VERIFY(testStruct.foo == 100);
         testStruct.foo = testHealth.value * testHealth.value;
     };
 
