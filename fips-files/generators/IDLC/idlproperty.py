@@ -34,8 +34,11 @@ class PropertyDefinition:
         self.variables = list()
         self.isFlag = False
         self.isStruct = False
+        self.isManaged = False
         self.isResource = False
         if isinstance(prop, dict):
+            if "_managed_" in prop:
+                self.isManaged = prop["_managed_"]
             if not "_type_" in prop:
                 for varName, var in prop.items():
                     self.variables.append(GetVariableFromEntry(varName, var))
@@ -187,7 +190,8 @@ def WritePropertySourceDefinitions(f, document):
         f.WriteLine('{')
         f.WriteLine('Util::StringAtom const name = "{}"_atm;'.format(prop.propertyName))
         if prop.isFlag is False:
-            f.WriteLine('MemDb::PropertyId const pid = MemDb::TypeRegistry::Register<{type}>(name, {defval});'.format(type=prop.propertyName, defval=defval))
+            flags = 0 if not prop.isManaged else 1 # this must be equal to managed property flag in Game::PropertyFlags
+            f.WriteLine('MemDb::PropertyId const pid = MemDb::TypeRegistry::Register<{type}>(name, {defval}, {flags});'.format(type=prop.propertyName, defval=defval, flags=flags))
             if prop.isStruct:
                 f.WriteLine('Game::PropertySerialization::Register<{type}>(pid);'.format(type=prop.propertyName))
                 f.WriteLine('Game::PropertyInspection::Register(pid, &Game::PropertyDrawFuncT<{type}>);'.format(type=prop.propertyName))

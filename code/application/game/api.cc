@@ -131,7 +131,16 @@ DecayProperty(Game::World* world, Game::PropertyId pid, MemDb::TableId tableId, 
 {
     if (MemDb::TypeRegistry::Flags(pid) & PropertyFlags::PROPERTYFLAG_MANAGED)
     {
+        if (pid.id >= propertyDecayTable.Size())
+            propertyDecayTable.Resize(pid.id + 16); // increment with a couple of extra elements, instead of doubling size, just to avoid extreme overallocation
         PropertyDecayBuffer& pdb = propertyDecayTable[pid.id];
+        if (pdb.capacity == 0)
+        {
+            pdb.size = 0;
+            pdb.capacity = 64;
+            pdb.buffer = Memory::Alloc(Memory::HeapType::AppHeap, pdb.capacity);
+        }
+
         SizeT const typeSize = MemDb::TypeRegistry::TypeSize(pid);
 
         if (pdb.capacity == pdb.size)
@@ -513,15 +522,6 @@ PropertyId
 CreateProperty(PropertyCreateInfo const& info)
 {
     PropertyId const pid = MemDb::TypeRegistry::Register(info.name, info.byteSize, info.defaultValue, info.flags);
-    if (info.flags & PropertyFlags::PROPERTYFLAG_MANAGED)
-    {
-        if (pid.id >= propertyDecayTable.Size())
-            propertyDecayTable.Resize(pid.id + 16); // increment with a couple of extra elements, instead of doubling size, just to avoid extreme overallocation
-        PropertyDecayBuffer& pdb = propertyDecayTable[pid.id];
-        pdb.size = 0;
-        pdb.capacity = 64;
-        pdb.buffer = Memory::Alloc(Memory::HeapType::AppHeap, pdb.capacity);
-    }
     return pid;
 }
 
