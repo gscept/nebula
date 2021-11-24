@@ -28,13 +28,13 @@ PYBIND11_EMBEDDED_MODULE(nmath, m)
             f.loadu((float*)info.ptr);
             return f;
         }))
-        .def("__getitem__", [](Math::vec4&f, size_t i)
+        .def("__getitem__", [](Math::vec4&f, const int i)
         {
             if (i > 3 || i < 0)
                 throw pybind11::index_error("Index out of range!");
             return f[i];
         })
-        .def("__setitem__", [](Math::vec4&f, size_t i, float v)
+        .def("__setitem__", [](Math::vec4&f, const int i, float v)
         {
             if (i > 3 || i < 0)
                 throw pybind11::index_error("Index out of range!");
