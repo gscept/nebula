@@ -318,7 +318,7 @@ EntitySystemTest::Run()
         testStruct.foo = testHealth.value * testHealth.value;
     };
 
-    Game::RegisterUpdateFunction(world, "TestUpdateFunc"_atm, updateFunc);
+    Game::RegisterUpdateFunction(world, "TestUpdateFunc"_atm, updateFunc, { TestVec4::ID() });
     
     StepFrame();
     

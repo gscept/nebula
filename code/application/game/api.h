@@ -353,9 +353,9 @@ void                        SetProperty(World*, Game::Entity entity, Game::Prope
 PropertyDecayBuffer const   GetDecayBuffer(Game::PropertyId pid);
 /// clear the property decay buffers
 void                        ClearDecayBuffers();
-/// register an update function that runs for each entity that fulfill the requirements of the function, and does not have any properties contained in the exclusive set.
+/// register an update function that runs for each entity that fulfill the requirements of the function, contains any of the additional inclusive propertoes, and does not have any properties contained in the exclusive set.
 template<typename ... TYPES>
-Game::ProcessorHandle       RegisterUpdateFunction(World*, Util::StringAtom name, std::function<void(TYPES...)> func, std::initializer_list<PropertyId> exclusive = {});
+Game::ProcessorHandle       RegisterUpdateFunction(World*, Util::StringAtom name, std::function<void(TYPES...)> func, std::initializer_list<PropertyId> additionalInclusive = {}, std::initializer_list<PropertyId> exclusive = {});
 
 
 
@@ -432,7 +432,7 @@ namespace Internal
 */
 template<typename ...TYPES>
 inline Game::ProcessorHandle
-RegisterUpdateFunction(World* world, Util::StringAtom name, std::function<void(TYPES...)> func, std::initializer_list<PropertyId> exclusive)
+RegisterUpdateFunction(World* world, Util::StringAtom name, std::function<void(TYPES...)> func, std::initializer_list<PropertyId> additionalInclusive, std::initializer_list<PropertyId> exclusive)
 {
     n_assert(exclusive.size() < 0xFF);
 
@@ -450,6 +450,9 @@ RegisterUpdateFunction(World* world, Util::StringAtom name, std::function<void(T
 
     Game::FilterCreateInfo filterInfo;
     Internal::UnrollInclusiveProperties<TYPES...>(filterInfo, std::make_index_sequence<sizeof...(TYPES)>());
+    for (int i = 0; i < additionalInclusive.size(); i++)
+        filterInfo.inclusive[filterInfo.numInclusive + i] = *(additionalInclusive.begin() + i);
+    filterInfo.numInclusive = filterInfo.numInclusive + additionalInclusive.size();
     for (int i = 0; i < exclusive.size(); i++)
         filterInfo.exclusive[i] = *(exclusive.begin() + i);
     filterInfo.numExclusive = (uint8_t)exclusive.size();
