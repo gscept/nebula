@@ -53,8 +53,17 @@ EntitySystemTest::Run()
     Profiling::ProfilingRegisterThread();
 #endif
 
-    Ptr<FrameSync::FrameSyncTimer> t = FrameSync::FrameSyncTimer::HasInstance() ? FrameSync::FrameSyncTimer::Instance() : FrameSync::FrameSyncTimer::Create();
-    t->Setup();
+    bool setupFrameSync = !FrameSync::FrameSyncTimer::HasInstance();
+    Ptr<FrameSync::FrameSyncTimer> t;
+    if (setupFrameSync)
+    {
+        t = FrameSync::FrameSyncTimer::Create();
+        t->Setup();
+    }
+    else
+    {
+        t = FrameSync::FrameSyncTimer::Instance();
+    }
 
     TemplateId const playerBlueprint = Game::GetTemplateId("Player"_atm);
     TemplateId const enemyBlueprint = Game::GetTemplateId("Enemy"_atm);
@@ -255,6 +264,8 @@ EntitySystemTest::Run()
         }
     }
 
+    StepFrame();
+
     Game::FilterCreateInfo filterInfo;
     filterInfo.inclusive[0] = Game::GetPropertyId("TestHealth");
     filterInfo.access[0] = Game::AccessMode::READ;
@@ -264,6 +275,22 @@ EntitySystemTest::Run()
     Game::Filter filter = Game::CreateFilter(filterInfo);
 
     Game::Dataset set = Game::Query(world, filter);
+    
+    for (int v = 0; v < set.numViews; v++)
+    {
+        Game::Dataset::CategoryTableView const& view = set.views[v];
+        TestHealth* healths = (TestHealth*)view.buffers[0];
+        TestStruct* strs = (TestStruct*)view.buffers[1];
+
+        for (IndexT i = 0; i < view.numInstances; ++i)
+        {
+            TestHealth& h = healths[i];
+            TestStruct& s = strs[i];
+
+            VERIFY(s.foo == 0);
+            s.foo = h.value;
+        }
+    }
     
     VERIFY(set.numViews == 3);
 
@@ -279,6 +306,22 @@ EntitySystemTest::Run()
     registerOp.value = nullptr;
     Game::Execute(world, registerOp);
 
+    Game::DestroyFilter(filter);
+    Game::ReleaseDatasets();
+
+    std::function updateFunc = [&](
+            Test::TestHealth const& testHealth,
+            Test::TestStruct& testStruct
+        )
+    {
+        VERIFY(testStruct.foo == 1);
+        testStruct.foo = testHealth.value * testHealth.value;
+    };
+
+    Game::RegisterUpdateFunction(world, "TestUpdateFunc"_atm, updateFunc);
+    
+    StepFrame();
+    
     t->StopTime();
 }
 

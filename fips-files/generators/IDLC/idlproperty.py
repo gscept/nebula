@@ -63,13 +63,20 @@ class PropertyDefinition:
         numVars = len(self.variables)
         if numVars == 0:
             util.fmtError("PropertyDefinition does not contain a single variable!")
-        elif numVars == 1 and not self.isStruct:
-            return 'typedef {} {};\n'.format(self.variables[0].type, self.variables[0].name)
+        elif numVars == 1 and not self.isStruct: # special case: only one variable. This sets the default name of the structs inner variable to "value".
+            retVal = 'struct {}\n{{\n'.format(self.propertyName)
+            if self.variables[0].defaultValue is None:
+                retVal += '    {} {};\n'.format(self.variables[0].type, "value")
+            else:
+                retVal += '    {} {} = {};\n'.format(self.variables[0].type, "value", self.variables[0].defaultValue)
+            retVal += "    DECLARE_PROPERTY;\n"
+            retVal += "};\n"
+            return retVal
         else:
-            varDefs = ""
             retVal = 'struct {}\n{{\n'.format(self.propertyName)
             for v in self.variables:
                 retVal += '    {}\n'.format(v.AsString())
+            retVal += "    DECLARE_PROPERTY;\n"
             retVal += "};\n"
             return retVal
     pass
@@ -132,6 +139,12 @@ def ContainsEntityTypes():
 #------------------------------------------------------------------------------
 ##
 #
+def WritePropertyForwardDeclarations(f, document):
+    f.WriteLine("namespace MemDb { class TypeRegistry; }")
+
+#------------------------------------------------------------------------------
+##
+#
 def WritePropertyHeaderDeclarations(f, document):
     for p in properties:
         if not p.isFlag:
@@ -157,6 +170,10 @@ def HasStructProperties():
 ##
 #
 def WritePropertySourceDefinitions(f, document):
+    for prop in properties:
+        if prop.isFlag is False:
+            f.WriteLine('DEFINE_PROPERTY({});'.format(prop.propertyName))
+    IDLDocument.BeginNamespaceOverride(f, document, "Details")
     f.WriteLine('const bool RegisterPropertyLibrary_{filename}()'.format(filename=f.fileName))
     f.WriteLine('{')
     f.IncreaseIndent()
@@ -164,14 +181,17 @@ def WritePropertySourceDefinitions(f, document):
     f.WriteLine('Core::SysFunc::Setup();')
     for prop in properties:
         defval = prop.propertyName + "()"
-        if not prop.isStruct :
-            if prop.variables[0].defaultValue is not None:
-                defval = prop.variables[0].defaultValue
+        #if not prop.isStruct :
+        #    if prop.variables[0].defaultValue is not None:
+        #        defval = prop.variables[0].defaultValue
         f.WriteLine('{')
         f.WriteLine('Util::StringAtom const name = "{}"_atm;'.format(prop.propertyName))
         if prop.isFlag is False:
             f.WriteLine('MemDb::PropertyId const pid = MemDb::TypeRegistry::Register<{type}>(name, {defval});'.format(type=prop.propertyName, defval=defval))
-            f.WriteLine('Game::PropertySerialization::Register<{type}>(pid);'.format(type=prop.propertyName))
+            if prop.isStruct:
+                f.WriteLine('Game::PropertySerialization::Register<{type}>(pid);'.format(type=prop.propertyName))
+            else:
+                f.WriteLine('Game::PropertySerialization::Register<{type}>(pid);'.format(type=prop.variables[0].type))
             f.WriteLine('Game::PropertyInspection::Register(pid, &Game::PropertyDrawFuncT<{type}>);'.format(type=prop.propertyName))
         else:
             f.WriteLine('MemDb::TypeRegistry::Register(name, 0, nullptr);')
@@ -180,6 +200,7 @@ def WritePropertySourceDefinitions(f, document):
     f.DecreaseIndent()
     f.WriteLine("}")
     f.WriteLine('const bool {filename}_registered = RegisterPropertyLibrary_{filename}();'.format(filename=f.fileName))
+    IDLDocument.EndNamespaceOverride(f, document, "Details")
 
 #------------------------------------------------------------------------------
 ##

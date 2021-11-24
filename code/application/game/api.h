@@ -167,7 +167,8 @@ struct PropertyCreateInfo
 };
 
 /// per frame callback for processors
-typedef void(*ProcessorFrameCallback)(World*, Dataset);
+//typedef void(*ProcessorFrameCallback)(World*, Dataset);
+using ProcessorFrameCallback = std::function<void(World*, Dataset)>;
 
 //------------------------------------------------------------------------------
 /**
@@ -352,7 +353,16 @@ void                        SetProperty(World*, Game::Entity entity, Game::Prope
 PropertyDecayBuffer const   GetDecayBuffer(Game::PropertyId pid);
 /// clear the property decay buffers
 void                        ClearDecayBuffers();
+/// register an update function that runs for each entity that fulfill the requirements of the function, and does not have any properties contained in the exclusive set.
+template<typename ... TYPES>
+Game::ProcessorHandle       RegisterUpdateFunction(World*, Util::StringAtom name, std::function<void(TYPES...)> func, std::initializer_list<PropertyId> exclusive = {});
 
+
+
+//------------------------------------------------------------------------------
+/**
+    -- Beginning of template implementations --
+*/
 
 //------------------------------------------------------------------------------
 /**
@@ -382,6 +392,76 @@ GetProperty(World* world, Game::Entity const entity, PropertyId const pid)
     EntityMapping mapping = GetEntityMapping(world, entity);
     TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.category, pid);
     return *(ptr + mapping.instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Internally used template functions
+*/
+namespace Internal
+{
+    template<class TYPE>
+    void SetInclusive(Game::FilterCreateInfo& filterInfo, size_t const i)
+    {
+        using UnqualifiedType = typename std::remove_const<typename std::remove_reference<TYPE>::type>::type;
+
+        filterInfo.inclusive[i] = UnqualifiedType::ID();
+        filterInfo.access[i] = std::is_const<std::remove_reference<TYPE>::type>() ? Game::AccessMode::READ : Game::AccessMode::WRITE;
+        filterInfo.numInclusive++;
+    }
+
+    template<typename...TYPES, std::size_t...Is>
+    void UnrollInclusiveProperties(Game::FilterCreateInfo& filterInfo, std::index_sequence<Is...>)
+    {
+        (SetInclusive<std::tuple_element<Is, std::tuple<TYPES...>>::type>(filterInfo, Is), ...);
+    }
+
+    template<typename...TYPES, std::size_t...Is>
+    void update_expander(std::function<void(TYPES...)> const& func, Game::Dataset::CategoryTableView const& view, const IndexT instance, std::index_sequence<Is...>)
+    {
+        // this is a terribly unreadable line. Here's what it does:
+        // it unpacks the the index sequence and TYPES into individual parameters for func
+        // because we need to cast void pointers (the view buffers), we need to remove any const and reference qualifiers from the type.
+        func((*(((typename std::remove_const<typename std::remove_reference<TYPES>::type>::type*)view.buffers[Is]) + instance))...);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+    @todo   ability to register different event types
+*/
+template<typename ...TYPES>
+inline Game::ProcessorHandle
+RegisterUpdateFunction(World* world, Util::StringAtom name, std::function<void(TYPES...)> func, std::initializer_list<PropertyId> exclusive)
+{
+    n_assert(exclusive.size() < 0xFF);
+
+    ProcessorFrameCallback processor = [func](World* world, Game::Dataset data) {
+        for (int v = 0; v < data.numViews; v++)
+        {
+            Game::Dataset::CategoryTableView const& view = data.views[v];
+
+            for (IndexT i = 0; i < view.numInstances; ++i)
+            {
+                Internal::update_expander<TYPES...>(func, view, i, std::make_index_sequence<sizeof...(TYPES)>());
+            }
+        }
+    };
+
+    Game::FilterCreateInfo filterInfo;
+    Internal::UnrollInclusiveProperties<TYPES...>(filterInfo, std::make_index_sequence<sizeof...(TYPES)>());
+    for (int i = 0; i < exclusive.size(); i++)
+        filterInfo.exclusive[i] = *(exclusive.begin() + i);
+    filterInfo.numExclusive = (uint8_t)exclusive.size();
+    Game::Filter filter = Game::CreateFilter(filterInfo);
+    Game::ProcessorCreateInfo processorInfo;
+    processorInfo.async = false;
+    processorInfo.filter = filter;
+    processorInfo.name = name;
+    processorInfo.OnBeginFrame = processor;
+
+    Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
+    return pHandle;
 }
 
 } // namespace Game
