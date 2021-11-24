@@ -756,7 +756,7 @@ DeallocateInstance(World* world, MemDb::TableId category, MemDb::Row instance)
 
     // migrate managed properies to decay buffers so that we can allow the managers
     // to clean up any externally allocated resources.
-    Util::Array<PropertyId> const& pids = world->db->GetTable(category).properties;
+    Util::Array<PropertyId> const& pids = world->db->GetTable(category).columns.GetArray<0>();
     const MemDb::ColumnIndex numColumns = pids.Size();
     for (MemDb::ColumnIndex column = 0; column < numColumns.id; column.id++)
     {
