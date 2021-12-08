@@ -58,7 +58,7 @@ struct Dataset
     struct CategoryTableView
     {
         /// category identifier
-        MemDb::TableId cid;
+        MemDb::TableId cid = MemDb::TableId::Invalid();
         /// number of instances in view
         uint32_t numInstances = 0;
         /// property buffers. @note Can be NULL if a queried property is a flag

@@ -134,25 +134,26 @@ DecayProperty(Game::World* world, Game::PropertyId pid, MemDb::TableId tableId, 
         if (pid.id >= propertyDecayTable.Size())
             propertyDecayTable.Resize(pid.id + 16); // increment with a couple of extra elements, instead of doubling size, just to avoid extreme overallocation
         PropertyDecayBuffer& pdb = propertyDecayTable[pid.id];
+
+        uint64_t const typeSize = (uint64_t)MemDb::TypeRegistry::TypeSize(pid);
+
         if (pdb.capacity == 0)
         {
             pdb.size = 0;
             pdb.capacity = 64;
-            pdb.buffer = Memory::Alloc(Memory::HeapType::AppHeap, pdb.capacity);
+            pdb.buffer = Memory::Alloc(Memory::HeapType::DefaultHeap, pdb.capacity * typeSize);
         }
-
-        SizeT const typeSize = MemDb::TypeRegistry::TypeSize(pid);
 
         if (pdb.capacity == pdb.size)
         {
             void* oldBuffer = pdb.buffer;
             pdb.capacity *= 2;
-            pdb.buffer = Memory::Alloc(Memory::HeapType::AppHeap, pdb.capacity);
-            Memory::Copy(oldBuffer, pdb.buffer, typeSize * pdb.size);
-            Memory::Free(Memory::HeapType::AppHeap, oldBuffer);
+            pdb.buffer = Memory::Alloc(Memory::HeapType::DefaultHeap, pdb.capacity * typeSize);
+            Memory::Copy(oldBuffer, pdb.buffer, typeSize * (uint64_t)pdb.size);
+            Memory::Free(Memory::HeapType::DefaultHeap, oldBuffer);
         }
 
-        void* dst = ((byte*)pdb.buffer) + (typeSize * pdb.size);
+        void* dst = ((byte*)pdb.buffer) + (typeSize * (uint64_t)pdb.size);
         pdb.size++;
         Memory::Copy(world->db->GetValuePointer(tableId, column, instance), dst, typeSize);
     }
