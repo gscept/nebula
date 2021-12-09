@@ -16,7 +16,7 @@
 #include "physics/actorcontext.h"
 #include "physics/streamactorpool.h"
 #include "visibility/visibilitycontext.h"
-#include "models/streammodelpool.h"
+#include "models/streammodelcache.h"
 #include "models/modelcontext.h"
 #include "physics/utils.h"
 #include "input/inputserver.h"
