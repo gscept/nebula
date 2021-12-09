@@ -425,7 +425,7 @@
                 },
 
                 "call": {
-                    "name": "HistogramContext - Bucket",
+                    "name": "HistogramContext - Bucket"
                 },
 
                 "_comment": "------------ BLOOM ------------",
@@ -630,6 +630,11 @@
                     }
                 },
 
+                "_comment": "Swap just before we need the backbuffer",
+                "swap": {
+                    "name": "Swap"
+                },
+
                 "_comment": "------------ COPY TO BACKBUFFER ------------",
                 "blit": {
                     "name": "Copy To Backbuffer",
@@ -646,9 +651,8 @@
                             "stage": "Transfer"
                         }
                     ]
-                },
+                }
             }
-
         }
     }
 }

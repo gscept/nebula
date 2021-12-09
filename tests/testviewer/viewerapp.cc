@@ -320,6 +320,8 @@ SimpleViewerApplication::Run()
         WindowPresent(wnd, frameIndex);
         N_MARKER_END();
 
+        this->gfxServer->NewFrame();
+
         if (keyboard->KeyPressed(Input::Key::Escape)) run = false;
                 
         if (keyboard->KeyPressed(Input::Key::LeftMenu) && this->cameraMode == 0

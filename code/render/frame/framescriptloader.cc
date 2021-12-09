@@ -14,6 +14,7 @@
 #include "framecompute.h"
 #include "frameplugin.h"
 #include "framesubpass.h"
+#include "frameswap.h"
 #include "frameevent.h"
 #include "framesubpassplugin.h"
 #include "framesubpassbatch.h"
@@ -108,16 +109,17 @@ FrameScriptLoader::ParseFrameScript(const Ptr<Frame::FrameScript>& script, JzonV
         else if (name == "copy")                        script->AddOp(ParseCopy(script, cur));
         else if (name == "mipmap")                      script->AddOp(ParseMipmap(script, cur));
         else if (name == "compute")                     script->AddOp(ParseCompute(script, cur));
-		else if (name == "plugin" || name == "call")
-		{
-			FrameOp* plugin = ParsePlugin(script, cur);
-			if (plugin != nullptr)
-				script->AddOp(plugin);
-		}
+        else if (name == "plugin" || name == "call")
+        {
+            FrameOp* plugin = ParsePlugin(script, cur);
+            if (plugin != nullptr)
+                script->AddOp(plugin);
+        }
 
         else if (name == "pass")                        script->AddOp(ParsePass(script, cur));
         else if (name == "barrier")                     script->AddOp(ParseBarrier(script, cur));
         else if (name == "submission")					script->AddOp(ParseFrameSubmission(script, cur));
+        else if (name == "swap")                        script->AddOp(ParseSwap(script, cur));
         else if (name == "comment" || name == "_comment") continue; // just skip comments
         else
         {
@@ -483,6 +485,21 @@ FrameScriptLoader::ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue
 /**
 */
 FrameOp*
+FrameScriptLoader::ParseSwap(const Ptr<Frame::FrameScript>& script, JzonValue* node)
+{
+    FrameSwap* op = script->GetAllocator().Alloc<FrameSwap>();
+
+    JzonValue* name = jzon_get(node, "name");
+    n_assert(name != nullptr);
+    op->SetName(name->string_value);
+
+    return op;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+FrameOp*
 FrameScriptLoader::ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
     FrameSubmission* submission = script->GetAllocator().Alloc<FrameSubmission>();
@@ -511,6 +528,7 @@ FrameScriptLoader::ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, J
 			else if (name == "compute")                     submission->AddChild(ParseCompute(script, op));
 			else if (name == "pass")                        submission->AddChild(ParsePass(script, op));
 			else if (name == "barrier")                     submission->AddChild(ParseBarrier(script, op));
+            else if (name == "swap")                        submission->AddChild(ParseSwap(script, op));
 			else if (name == "plugin" || name == "call")
 			{
 				FrameOp* plugin = ParsePlugin(script, op);

@@ -28,6 +28,22 @@
 namespace CoreGraphics
 {
 
+enum class PipelineBuildBits : uint
+{
+    NoInfoSet = 0,
+    ShaderInfoSet = N_BIT(0),
+    VertexLayoutInfoSet = N_BIT(1),
+    FramebufferLayoutInfoSet = N_BIT(2),
+    InputLayoutInfoSet = N_BIT(3),
+
+    AllInfoSet = ShaderInfoSet | VertexLayoutInfoSet | FramebufferLayoutInfoSet | InputLayoutInfoSet,
+
+    PipelineBuilt = N_BIT(4)
+};
+
+__ImplementEnumBitOperators(PipelineBuildBits);
+__ImplementEnumComparisonOperators(PipelineBuildBits);
+
 /// struct for texture copies
 struct TextureCopy
 {
@@ -144,6 +160,8 @@ struct GraphicsDeviceState
     CoreGraphics::ResourceTableId frameResourceTable;
 
     Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
+
+    PipelineBuildBits currentPipelineBits;
     CoreGraphics::PrimitiveTopology::Code primitiveTopology;
     CoreGraphics::PrimitiveGroup primitiveGroup;
     CoreGraphics::PassId pass;
@@ -174,6 +192,29 @@ struct GraphicsDeviceState
     Util::FixedArray<Util::Array<FrameProfilingMarker>> profilingMarkersPerFrame;
     Util::Array<FrameProfilingMarker> frameProfilingMarkers;
 #endif NEBULA_ENABLE_PROFILING
+};
+
+struct GraphicsDeviceThreadState
+{
+    CoreGraphics::CommandBufferId graphicsCommandBuffer, computeCommandBuffer;
+
+    PipelineBuildBits currentPipelineBits;
+    CoreGraphics::PrimitiveTopology::Code primitiveTopology;
+    CoreGraphics::PrimitiveGroup primitiveGroup;
+    CoreGraphics::PassId pass;
+    bool isOpen : 1;
+    bool inNotifyEventHandlers : 1;
+    bool inBeginFrame : 1;
+    bool inBeginPass : 1;
+    bool inBeginBatch : 1;
+    bool inBeginCompute : 1;
+    bool inBeginAsyncCompute : 1;
+    bool inBeginGraphicsSubmission : 1;
+    bool inBeginComputeSubmission : 1;
+    bool renderWireframe : 1;
+    bool visualizeMipMaps : 1;
+    bool usePatches : 1;
+    bool enableValidation : 1;
 };
 
 /// retrieve the current graphics device state
@@ -340,6 +381,11 @@ bool IsInBeginFrame();
 void WaitForQueue(CoreGraphics::QueueType queue);
 /// wait for all queues to finish
 void WaitForAllQueues();
+
+/// Swap
+void Swap(IndexT i);
+/// Progress to next frame
+void NewFrame();
 
 /// save a screenshot to the provided stream
 CoreGraphics::ImageFileFormat::Code SaveScreenshot(CoreGraphics::ImageFileFormat::Code fmt, const Ptr<IO::Stream>& outStream);

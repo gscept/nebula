@@ -22,6 +22,8 @@
 #include "core/singleton.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/pass.h"
+#include "memory/arenaallocator.h"
+
 
 namespace Vulkan
 {
@@ -60,11 +62,17 @@ public:
     /// set shader
     void SetShader(const CoreGraphics::ShaderProgramId program, const VkGraphicsPipelineCreateInfo& gfxPipe);
     /// set vertex layout
-    void SetVertexLayout(VkPipelineVertexInputStateCreateInfo* layout);
+    void SetVertexLayout(const VkPipelineVertexInputStateCreateInfo* layout);
     /// set input layout
-    void SetInputLayout(VkPipelineInputAssemblyStateCreateInfo* input);
+    void SetInputLayout(const VkPipelineInputAssemblyStateCreateInfo* input);
     /// gets pipeline if it already exists, or creates if exists
     VkPipeline GetCompiledPipeline();
+    /// Gets the pipeline associated with a set of state, or returns a previously created one
+    VkPipeline GetCompiledPipeline(
+        const CoreGraphics::PassId pass
+        , const uint32_t subpass
+        , const CoreGraphics::ShaderProgramId program
+        , const VkGraphicsPipelineCreateInfo& gfxPipe);
     /// resets all iterators
     void Reset();
 
@@ -80,8 +88,8 @@ private:
     uint32_t currentSubpass;
     CoreGraphics::ShaderProgramId currentShaderProgram;
     VkGraphicsPipelineCreateInfo currentShaderInfo;
-    VkPipelineVertexInputStateCreateInfo* currentVertexLayout;
-    VkPipelineInputAssemblyStateCreateInfo* currentInputAssemblyInfo;
+    const VkPipelineVertexInputStateCreateInfo* currentVertexLayout;
+    const VkPipelineInputAssemblyStateCreateInfo* currentInputAssemblyInfo;
     StateLevel currentLevel;
 
     struct Tier1Node;
@@ -107,11 +115,11 @@ private:
     };
     struct Tier3Node : public BaseNode
     {
-        Util::Dictionary<VkPipelineVertexInputStateCreateInfo*, Tier4Node*> children;
+        Util::Dictionary<const VkPipelineVertexInputStateCreateInfo*, Tier4Node*> children;
     };
     struct Tier4Node : public BaseNode
     {
-        Util::Dictionary<VkPipelineInputAssemblyStateCreateInfo*, Tier5Node*> children;
+        Util::Dictionary<const VkPipelineInputAssemblyStateCreateInfo*, Tier5Node*> children;
     };
     struct Tier5Node : public BaseNode
     {
@@ -120,6 +128,8 @@ private:
 
     Util::Dictionary<CoreGraphics::PassId, Tier1Node*> tier1;
     IndexT tier1Iterator;
+
+    Memory::ArenaAllocator<BIG_CHUNK> tierNodeAllocator;
 
     Tier1Node* ct1;
     Tier2Node* ct2;
