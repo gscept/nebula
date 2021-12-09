@@ -61,11 +61,11 @@ inline PropertyId
 TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags)
 {
     // Special case for string atoms since they actually are trivial to copy and destroy
-    if constexpr (!std::is_same<TYPE, Util::StringAtom>())
-    {
-        static_assert(std::is_trivially_copyable<TYPE>(), "TYPE must be trivially copyable.");
-        static_assert(std::is_trivially_destructible<TYPE>(), "TYPE must be trivially destructible.");
-    }
+    //if constexpr (!std::is_same<TYPE, Util::StringAtom>())
+    //{
+    //    static_assert(std::is_trivially_copyable<TYPE>(), "TYPE must be trivially copyable.");
+    //    static_assert(std::is_trivially_destructible<TYPE>(), "TYPE must be trivially destructible.");
+    //}
     
     static_assert(std::is_standard_layout<TYPE>(), "TYPE must be standard layout.");
     
@@ -78,6 +78,9 @@ TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags)
         PropertyId descriptor = reg->propertyDescriptions.Size();
         reg->propertyDescriptions.Append(desc);
         reg->registry.Add(name, descriptor);
+
+        TYPE::id = descriptor;
+
         return descriptor;
     }
     else

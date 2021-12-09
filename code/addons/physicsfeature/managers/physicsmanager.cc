@@ -70,7 +70,7 @@ void PhysicsManager::InitCreateActorProcessor()
 
             for (IndexT i = 0; i < view.numInstances; ++i)
             {
-                Game::Owner const& entity = owners[i];
+                Game::Entity const& entity = owners[i];
                 Math::mat4 const& trans = transforms[i];
                 Resources::ResourceName const& res = resources[i];
 

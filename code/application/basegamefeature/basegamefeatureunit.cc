@@ -81,14 +81,60 @@ BaseGameFeatureUnit::OnRenderDebug()
         uint const numWorlds = Game::GameServer::Instance()->state.numWorlds;
         static int selectedWorld = 0;
 
-        ImGui::InputInt("World index", &selectedWorld);
-        selectedWorld = Math::clamp(selectedWorld, 0, 31);
+		ImGui::InputInt("World index", &selectedWorld);
 
-        Game::World* world = Game::GameServer::Instance()->state.worlds[selectedWorld];
-        if (world != nullptr)
+		selectedWorld = Math::clamp(selectedWorld, 0, 31);
+
+		Game::World* world = Game::GameServer::Instance()->state.worlds[selectedWorld];
+
+		if (world != nullptr)
         {
-            ImGui::Text("World Hash: %s", Util::FourCC(world->hash).AsString().AsCharPtr());
-            ImGui::Separator();
+			ImGui::Text("World Hash: %s", Util::FourCC(world->hash).AsString().AsCharPtr());
+			ImGui::Separator();
+			static bool showProcessors = true;
+			ImGui::Checkbox("Show processors", &showProcessors);
+			if (showProcessors)
+			{
+				ImGui::Text("Processors (?):");
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("Processors are executed _after_ feature units for each event.");
+				}
+
+
+				auto PrintCallbackInfo = [](Game::World::CallbackInfo const& callback)
+				{
+					Game::ProcessorInfo const& info = Game::GameServer::Instance()->GetProcessorInfo(callback.handle);
+					ImGui::Text(info.name.Value());
+					ImGui::SameLine();
+					ImGui::Text(" | Async: %s", info.async ? "true" : "false");
+					ImGui::SameLine();
+					ImGui::Text(" | Filter : %i", info.filter);
+				};
+
+				ImGui::TextDisabled("-- OnBeginFrame --");
+				for (auto const& callback : world->onBeginFrameCallbacks)
+					PrintCallbackInfo(callback);
+
+				ImGui::TextDisabled("-- OnFrame --");
+				for (auto const& callback : world->onFrameCallbacks)
+					PrintCallbackInfo(callback);
+
+				ImGui::TextDisabled("-- OnEndFrame --");
+				for (auto const& callback : world->onEndFrameCallbacks)
+					PrintCallbackInfo(callback);
+
+				ImGui::TextDisabled("-- OnSave --");
+				for (auto const& callback : world->onSaveCallbacks)
+					PrintCallbackInfo(callback);
+
+				ImGui::TextDisabled("-- OnLoad --");
+				for (auto const& callback : world->onLoadCallbacks)
+					PrintCallbackInfo(callback);
+
+				ImGui::Separator();
+			}
+
             static bool listInactive = false;
             ImGui::Checkbox("List inactive instances", &listInactive);
             ImGui::Text("Entity map:");

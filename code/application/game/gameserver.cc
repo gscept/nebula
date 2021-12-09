@@ -215,6 +215,17 @@ GameServer::OnBeginFrame()
         this->gameFeatures[i]->OnBeginFrame();
     }
 
+    // check if caches are valid
+    for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
+    {
+        if (this->state.worlds[worldIndex] != nullptr &&
+            !this->state.worlds[worldIndex]->cacheValid)
+        {
+            PrefilterProcessors(this->state.worlds[worldIndex]);
+        }
+    }
+
+
     for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {
         if (this->state.worlds[worldIndex] != nullptr)

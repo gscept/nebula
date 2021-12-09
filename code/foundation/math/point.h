@@ -60,6 +60,10 @@ struct point
     bool operator==(const point& rhs) const;
     /// inequality operator
     bool operator!=(const point& rhs) const;
+	///
+	float operator[](int index) const;
+	///
+	float& operator[](int index);
     /// convert to vec4
     operator vec4() const;
 
@@ -290,6 +294,26 @@ point::operator!=(const point& rhs) const
 {
     __m128 vTemp = _mm_cmpeq_ps(this->vec, rhs.vec);
     return ((_mm_movemask_ps(vTemp) == 0x0f) == 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline float
+point::operator[](int index) const
+{
+	n_assert(index >= 0 && index < 4);
+	return *((&this->x) + index);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline float&
+point::operator[](int index)
+{
+	n_assert(index >= 0 && index < 4);
+	return *((&this->x) + index);
 }
 
 //------------------------------------------------------------------------------

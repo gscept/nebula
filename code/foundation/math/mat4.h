@@ -39,6 +39,7 @@ mat4 affinetransformation(scalar scale, const vec3& rotationCenter, const quat& 
 mat4 rotationquat(const quat& q);
 mat4 transformation(const vec3& scalingCenter, const quat& scalingRotation, const vec3& scale, const vec3& rotationCenter, const quat& rotation, const vec3& trans);
 bool ispointinside(const vec4& p, const mat4& m);
+mat4 skewsymmetric(const vec3& v);
 
 struct NEBULA_ALIGN16 mat4
 {
@@ -1109,6 +1110,17 @@ transpose(const mat4& m)
     ret.r[2] = _mm_movelh_ps(tmp1, tmp3);
     ret.r[3] = _mm_movehl_ps(tmp3, tmp1);
     return ret;
+}
+
+__forceinline mat4
+skewsymmetric(const vec3& v)
+{
+	return {
+		0,   -v.z,   v.y,   0,
+		v.z,  0,    -v.x,   0,
+	   -v.y,  v.x,   0,     0,
+		0,    0,     0,     0,
+	};
 }
 
 } // namespace Math

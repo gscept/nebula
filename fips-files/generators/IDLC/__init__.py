@@ -57,6 +57,7 @@ class IDLCodeGenerator:
             
         IDLProperty.ParseProperties(self.document)
 
+        IDLDocument.AddInclude(f, "game/category.h")
         if (IDLProperty.ContainsResourceTypes()):
             IDLDocument.AddInclude(f, "resources/resource.h")
         if (IDLProperty.ContainsEntityTypes()):
@@ -66,6 +67,8 @@ class IDLCodeGenerator:
         IDLDocument.WriteIncludes(f, self.document)
         IDLDocument.WriteIncludes(f, propertyLibraries)
         
+        IDLProperty.WritePropertyForwardDeclarations(f, self.document)
+
         hasMessages = "messages" in self.document
         hasProperties = "properties" in self.document
         hasEnums = "enums" in self.document
@@ -158,9 +161,7 @@ class IDLCodeGenerator:
                 IDLProtocol.WriteMessageImplementation(f, self.document)
 
             if "properties" in self.document:
-                IDLDocument.BeginNamespaceOverride(f, self.document, "Details")
                 IDLProperty.WritePropertySourceDefinitions(f, self.document)
-                IDLDocument.EndNamespaceOverride(f, self.document, "Details")
                 f.WriteLine("")
 
             IDLDocument.EndNamespace(f, self.document)
