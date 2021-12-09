@@ -214,11 +214,10 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
                     if (ptype.BeginsWithString("textureHandle"))
                     {
                         ShaderConfigConstant constant;
-                        constant.def.type = ShaderConfigVariant::Type::Handle;
+                        constant.def.type = ShaderConfigVariant::Type::TextureHandle;
+                        constant.def = this->AllocateVariantMemory(constant.def.type);
                         auto res = Resources::CreateResource(reader->GetString("defaultValue") + NEBULA_TEXTURE_EXTENSION, "material types", nullptr, nullptr, true);
                         constant.def.Set(res.HashCode64());
-                        constant.min.Set(-1);
-                        constant.max.Set(-1);
 
                         constant.system = system;
                         constant.name = name;
@@ -321,6 +320,7 @@ ShaderConfigServer::AllocateVariantMemory(const ShaderConfigVariant::Type type)
 
     // Type is defined as the allocation size, so safe to just convert it like this:
     uint32_t allocationSize = (uint32_t)ShaderConfigVariant::TypeToSize(type);
+    n_assert(allocationSize != 0xFFFFFFFF);
 
     this->variantAllocatorLock.Enter();
     ret.mem = this->shaderConfigVariantAllocator.Alloc(allocationSize);

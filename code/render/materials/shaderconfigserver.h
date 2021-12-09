@@ -17,7 +17,6 @@
 namespace Materials
 {
 
-
 class ShaderConfigServer : public Core::RefCounted
 {
     __DeclareClass(ShaderConfigServer);

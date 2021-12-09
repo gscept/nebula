@@ -356,7 +356,10 @@ ShaderConfig::SetSurfaceConstant(const MaterialId sur, IndexT name, const Shader
 		if (constant.buffer != CoreGraphics::InvalidBufferId && constant.binding != UINT_MAX)
 		{
 			n_assert(!constant.instanceConstant);
-			CoreGraphics::BufferUpdate(constant.buffer, value, constant.binding);
+            if (value.type == ShaderConfigVariant::Type::TextureHandle)
+                CoreGraphics::BufferUpdate(constant.buffer, value.Get<ShaderConfigVariant::TextureHandleTuple>().handle, constant.binding);
+            else
+                CoreGraphics::BufferUpdate(constant.buffer, value.mem, ShaderConfigVariant::TypeToSize(value.type), constant.binding);
 		}
 		it++;
 	}

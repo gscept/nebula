@@ -37,47 +37,53 @@ struct ShaderConfigVariant
     enum class Type
     {
         Invalid
-        , Handle
+        , TextureHandle
         , Float
-        , Float2
-        , Float4
+        , Vec2
+        , Vec4
         , Int
         , UInt
         , Bool
-        , Float4x4
+        , Mat4
     };
     ShaderConfigVariant::Type type;
     void* mem;
 
     static ShaderConfigVariant::Type StringToType(const Util::String& str)
     {
-        if ("handle" == str)           return Type::Handle;
+        if ("textureHandle" == str)    return Type::TextureHandle;
         else if ("float" == str)       return Type::Float;
-        else if ("vec2" == str)        return Type::Float2;
-        else if ("vec4" == str)        return Type::Float4;
-        else if ("color" == str)       return Type::Float4; // NOT A BUG!else if ("int" == str)         return Type::Int;
+        else if ("vec2" == str)        return Type::Vec2;
+        else if ("vec4" == str)        return Type::Vec4;
+        else if ("color" == str)       return Type::Vec4; // NOT A BUG!else if ("int" == str)         return Type::Int;
         else if ("int" == str)         return Type::Int;
         else if ("uint" == str)        return Type::UInt;
         else if ("bool" == str)        return Type::Bool;
-        else if ("mat4" == str)        return Type::Float4x4;
+        else if ("mat4" == str)        return Type::Mat4;
 
         return Type::Invalid;
     }
+
+    struct TextureHandleTuple
+    {
+        uint64 resource;
+        uint32 handle;
+    };
 
     static uint32_t TypeToSize(const Type type)
     {
         switch (type)
         {
-            case Type::Handle:
-                return sizeof(uint64_t);
+            case Type::TextureHandle:
+                return sizeof(TextureHandleTuple);
                 break;
             case Type::Float:
                 return sizeof(float);
                 break;
-            case Type::Float2:
+            case Type::Vec2:
                 return sizeof(Math::vec2);
                 break;
-            case Type::Float4:
+            case Type::Vec4:
                 return sizeof(Math::vec4);
                 break;
             case Type::Int:
@@ -89,16 +95,18 @@ struct ShaderConfigVariant
             case Type::Bool:
                 return sizeof(bool);
                 break;
-            case Type::Float4x4:
+            case Type::Mat4:
                 return sizeof(Math::mat4);
                 break;
         }
+        return 0xFFFFFFFF;
     }
 
+
     /// Get
-    template <typename T> T& Get() { return *reinterpret_cast<T*>(mem); }
+    template <typename T> const T& Get() const { return *reinterpret_cast<T*>(mem); }
     /// Set
-    template <typename T> void Set(const T& data) { memcpy(this->mem, &data, TypeToSize(this->size)); }
+    template <typename T> void Set(const T& data) const { memcpy(this->mem, &data, TypeToSize(this->type)); }
 };
 
 struct ShaderConfigTexture
