@@ -148,6 +148,16 @@ BufferUpdate(const BufferId id, const Util::Variant& data, const uint offset)
 //------------------------------------------------------------------------------
 /**
 */
+template<>
+inline void
+BufferUpdate(const BufferId id, const Materials::ShaderConfigVariant& data, const uint offset)
+{
+    BufferUpdate(id, data.mem, Materials::ShaderConfigVariant::TypeToSize(data.type), offset);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<class TYPE>
 inline void
 BufferUpdate(const BufferId id, const TYPE& data, const uint offset)

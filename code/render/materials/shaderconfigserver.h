@@ -17,6 +17,7 @@
 namespace Materials
 {
 
+
 class ShaderConfigServer : public Core::RefCounted
 {
     __DeclareClass(ShaderConfigServer);
@@ -36,6 +37,9 @@ public:
     /// load material types from file
     bool LoadShaderConfigs(const IO::URI& file);
 
+    /// Allocate some variant memory
+    ShaderConfigVariant AllocateVariantMemory(const ShaderConfigVariant::Type type);
+
     /// get material
     ShaderConfig* GetShaderConfig(const Resources::ResourceName& type);
     /// get material types by batch code
@@ -43,6 +47,9 @@ public:
 
 private:
     friend class MaterialCache;
+
+    Threading::CriticalSection variantAllocatorLock;
+    Memory::ArenaAllocator<0x10000> shaderConfigVariantAllocator;
 
     Memory::ArenaAllocator<0x400> surfaceAllocator;
     Util::Dictionary<Resources::ResourceName, ShaderConfig*> shaderConfigsByName;

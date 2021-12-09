@@ -75,59 +75,62 @@ MaterialCache::LoadFromStream(const Resources::ResourceId id, const Util::String
             IndexT slot = type->GetSurfaceTextureIndex(sid, paramName);
             if (binding != InvalidIndex)
             {
-                Util::Variant defaultVal = type->GetSurfaceConstantDefault(sid, binding);
-                switch (defaultVal.GetType())
+                ShaderConfigVariant defaultVal = type->GetSurfaceConstantDefault(sid, binding);
+                ShaderConfigVariant materialVal = ShaderConfigServer::Instance()->AllocateVariantMemory(defaultVal.type);
+                switch (defaultVal.type)
                 {
-                case Util::Variant::Float:
-                    defaultVal.SetFloat(reader->GetOptFloat("value", defaultVal.GetFloat()));
-                    type->SetSurfaceConstant(sid, binding, defaultVal);
+                case ShaderConfigVariant::Type::Float:
+                    materialVal.Set(reader->GetOptFloat("value", defaultVal.Get<float>()));
+                    type->SetSurfaceConstant(sid, binding, materialVal);
                     break;
-                case Util::Variant::Int:
-                    defaultVal.SetInt(reader->GetOptInt("value", defaultVal.GetInt()));
-                    type->SetSurfaceConstant(sid, binding, defaultVal);
+                case ShaderConfigVariant::Type::Int:
+                    materialVal.Set(reader->GetOptInt("value", defaultVal.Get<int32>()));
+                    type->SetSurfaceConstant(sid, binding, materialVal);
                     break;
-                case Util::Variant::Bool:
-                    defaultVal.SetBool(reader->GetOptBool("value", defaultVal.GetBool()));
-                    type->SetSurfaceConstant(sid, binding, defaultVal);
+                case ShaderConfigVariant::Type::Bool:
+                    materialVal.Set(reader->GetOptBool("value", defaultVal.Get<bool>()));
+                    type->SetSurfaceConstant(sid, binding, materialVal);
                     break;
-                case Util::Variant::Vec4:
-                    defaultVal.SetVec4(reader->GetOptVec4("value", defaultVal.GetVec4()));
-                    type->SetSurfaceConstant(sid, binding, defaultVal);
+                case ShaderConfigVariant::Type::Float4:
+                    materialVal.Set(reader->GetOptVec4("value", defaultVal.Get<Math::vec4>()));
+                    type->SetSurfaceConstant(sid, binding, materialVal);
                     break;
-                case Util::Variant::Vec2:
-                    defaultVal.SetVec2(reader->GetOptVec2("value", defaultVal.GetVec2()));
-                    type->SetSurfaceConstant(sid, binding, defaultVal);
+                case ShaderConfigVariant::Type::Float2:
+                    materialVal.Set(reader->GetOptVec2("value", defaultVal.Get<Math::vec2>()));
+                    type->SetSurfaceConstant(sid, binding, materialVal);
                     break;
-                case Util::Variant::Mat4:
-                    defaultVal.SetMat4(reader->GetOptMat4("value", defaultVal.GetMat4()));
-                    type->SetSurfaceConstant(sid, binding, defaultVal);
+                case ShaderConfigVariant::Type::Float4x4:
+                    materialVal.Set(reader->GetOptMat4("value", defaultVal.Get<Math::mat4>()));
+                    type->SetSurfaceConstant(sid, binding, materialVal);
                     break;
-                case Util::Variant::UInt64: // texture handle
+                case ShaderConfigVariant::Type::Handle: // texture handle
                 {
                     const Util::String path = reader->GetOptString("value", "");
                     CoreGraphics::TextureId tex;
                     if (!path.IsEmpty())
                     {
                         tex = Resources::CreateResource(path + NEBULA_TEXTURE_EXTENSION, tag, 
-                            [type, sid, binding, id, &minLod, this](Resources::ResourceId rid)
+                            [type, sid, binding, id, &minLod, &materialVal, this](Resources::ResourceId rid)
                             {
-                                type->SetSurfaceConstant(sid, binding, CoreGraphics::TextureGetBindlessHandle(rid));
+                                materialVal.Set(rid);
+                                type->SetSurfaceConstant(sid, binding, materialVal);
                                 this->textureLoadSection.Enter();
                                 this->Get<Surface_Textures>(id.resourceId).Append(rid);
                                 this->Get<Surface_MinLOD>(id.resourceId) = 1.0f;
                                 this->textureLoadSection.Leave();
                             }, 
-                            [type, sid, binding](Resources::ResourceId rid)
+                            [type, sid, binding, &materialVal](Resources::ResourceId rid)
                             {
-                                type->SetSurfaceConstant(sid, binding, CoreGraphics::TextureGetBindlessHandle(rid));
+                                materialVal.Set(rid);
+                                type->SetSurfaceConstant(sid, binding, materialVal);
                             });
-                        defaultVal = tex.HashCode64();
+                        materialVal.Set(tex.HashCode64());
                     }
                     else
-                        tex = CoreGraphics::TextureId(defaultVal.GetUInt64());
-                    
-                    defaultVal.SetUInt64(tex.HashCode64());
-                    type->SetSurfaceConstant(sid, binding, CoreGraphics::TextureGetBindlessHandle(tex));
+                        tex = CoreGraphics::TextureId(defaultVal.Get<uint64>());
+
+                    materialVal.Set(tex.HashCode64());
+                    type->SetSurfaceConstant(sid, binding, materialVal);
 
                     break;
                 }

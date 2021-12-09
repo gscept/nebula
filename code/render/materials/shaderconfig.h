@@ -20,6 +20,87 @@
 
 namespace Materials
 {
+
+struct ShaderConfigVariant
+{
+    /// Nullptr constructor
+    ShaderConfigVariant()
+        : type(Type::Invalid)
+        , mem(nullptr)
+    {};
+    /// Nullptr constructor
+    ShaderConfigVariant(nullptr_t)
+        : type(Type::Invalid)
+        , mem(nullptr)
+    {}
+
+    enum class Type
+    {
+        Invalid
+        , Handle
+        , Float
+        , Float2
+        , Float4
+        , Int
+        , UInt
+        , Bool
+        , Float4x4
+    };
+    ShaderConfigVariant::Type type;
+    void* mem;
+
+    static ShaderConfigVariant::Type StringToType(const Util::String& str)
+    {
+        if ("handle" == str)           return Type::Handle;
+        else if ("float" == str)       return Type::Float;
+        else if ("vec2" == str)        return Type::Float2;
+        else if ("vec4" == str)        return Type::Float4;
+        else if ("color" == str)       return Type::Float4; // NOT A BUG!else if ("int" == str)         return Type::Int;
+        else if ("int" == str)         return Type::Int;
+        else if ("uint" == str)        return Type::UInt;
+        else if ("bool" == str)        return Type::Bool;
+        else if ("mat4" == str)        return Type::Float4x4;
+
+        return Type::Invalid;
+    }
+
+    static uint32_t TypeToSize(const Type type)
+    {
+        switch (type)
+        {
+            case Type::Handle:
+                return sizeof(uint64_t);
+                break;
+            case Type::Float:
+                return sizeof(float);
+                break;
+            case Type::Float2:
+                return sizeof(Math::vec2);
+                break;
+            case Type::Float4:
+                return sizeof(Math::vec4);
+                break;
+            case Type::Int:
+                return sizeof(int32);
+                break;
+            case Type::UInt:
+                return sizeof(uint32);
+                break;
+            case Type::Bool:
+                return sizeof(bool);
+                break;
+            case Type::Float4x4:
+                return sizeof(Math::mat4);
+                break;
+        }
+    }
+
+    /// Get
+    template <typename T> T& Get() { return *reinterpret_cast<T*>(mem); }
+    /// Set
+    template <typename T> void Set(const T& data) { memcpy(this->mem, &data, TypeToSize(this->size)); }
+};
+
 struct ShaderConfigTexture
 {
     Util::String name;
@@ -29,13 +110,17 @@ struct ShaderConfigTexture
 
     IndexT slot;
 };
+
 struct ShaderConfigConstant
 {
     Util::String name;
+    ShaderConfigVariant def, min, max;
+    /*
     Util::Variant defaultValue;
     Util::Variant min;
     Util::Variant max;
     Util::Variant::Type type;
+    */
     bool system : 1;
 
     IndexT offset;
@@ -73,12 +158,12 @@ public:
     IndexT GetSurfaceConstantInstanceIndex(const MaterialInstanceId sur, const Util::StringAtom& name);
 
     /// get default value for constant
-    const Util::Variant GetSurfaceConstantDefault(const MaterialId sur, IndexT idx);
+    const ShaderConfigVariant GetSurfaceConstantDefault(const MaterialId sur, IndexT idx);
     /// get default value for texture
     const CoreGraphics::TextureId GetSurfaceTextureDefault(const MaterialId sur, IndexT idx);
 
     /// set constant in surface (applies to all instances)
-    void SetSurfaceConstant(const MaterialId sur, const IndexT idx, const Util::Variant& value);
+    void SetSurfaceConstant(const MaterialId sur, const IndexT idx, const ShaderConfigVariant& value);
     /// set texture in surface (applies to all instances)
     void SetSurfaceTexture(const MaterialId sur, const IndexT idx, const CoreGraphics::TextureId tex);
 
@@ -137,14 +222,14 @@ private:
 
     struct SurfaceConstant
     {
-        Util::Variant defaultValue;
+        ShaderConfigVariant defaultValue;
         IndexT bufferIndex;
         bool instanceConstant : 1;
         IndexT binding;
         union
         {
             CoreGraphics::BufferId buffer;
-            void*                          mem;
+            void*                  mem;
         };
         
         SurfaceConstant()
