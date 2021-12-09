@@ -51,7 +51,7 @@ ModelContext::Create()
 {
     __CreateContext();
 
-    setupCompleteQueue.Resize(1024);
+    setupCompleteQueue.Resize(2048);
 
     __bundle.OnBegin = ModelContext::UpdateTransforms;
     __bundle.StageBits = &ModelContext::__state.currentStage;
