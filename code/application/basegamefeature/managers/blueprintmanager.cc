@@ -464,8 +464,10 @@ BlueprintManager::CreateCategory(World* const world, BlueprintId bid)
         PropertyId p = properties[i];
         info.properties[i] = p;
     }
-     
-    return CreateEntityTable(world, info);
+
+    MemDb::TableId tid = CreateEntityTable(world, info);
+    world->blueprintCatMap.Add(bid, tid);
+    return tid;
 }
 
 //------------------------------------------------------------------------------

@@ -34,14 +34,14 @@ PlaneTest::Run()
     {       
         const point triangle[3] = {point(1.0f,0.0f,1.0f), point(-5.0f,-2.0f,-1.0f), point(0.0f,0.0f,-1.0f)};
         const plane p(triangle[0], triangle[1], triangle[2]);
-        VERIFY(planeequal(p, plane(0.365148f, -0.912871f, -0.182574f, -0.182574f)));
+        VERIFY(planeequal(p, plane(0.365148f, -0.912871f, -0.182574f, 0.182574f)));
     }
     /// construct from point and normal
     {
         const point p(1.0f,0.0f,1.0f);
         const vector n = normalize(vec3(1.0f,-7.0f,2.0f));
         const plane pl(p, n);
-        VERIFY(planeequal(pl, plane(0.136083f, -0.952579f, 0.272166f, -0.408248f)));
+        VERIFY(planeequal(pl, plane(0.136083f, -0.952579f, 0.272166f, 0.408248f)));
         /// copy constructor
         const plane copy(pl);
         VERIFY(planeequal(pl, copy));
@@ -89,7 +89,7 @@ PlaneTest::Run()
         startPoint.set(-2.0f,  1.0f, 1.0f);
         endPoint.set(  -2.0f,  5.0f, 1.0f);
         intersection = intersectline(pl, startPoint, endPoint, interPoint);
-        VERIFY(intersection);
+        VERIFY(!intersection);
         VERIFY(vec4equal(interPoint, vec4(-2.0f, 0.0f, 1.0f, 1.0f)));
         // line parallel to plane, no intersection
         startPoint.set(1.0f,  1.0f, 1.0f);

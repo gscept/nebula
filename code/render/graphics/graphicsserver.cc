@@ -195,7 +195,8 @@ GraphicsServer::Open()
         this->textRenderer->Open();
 
         // start timer
-        this->timer->StartTime();
+        if (!this->timer->IsTimeRunning())
+            this->timer->StartTime();
 
         // tell the resource manager to load default resources once we are done setting everything up
         Resources::ResourceServer::Instance()->LoadDefaultResources();

@@ -61,6 +61,23 @@ ListHistory(ImGuiInputTextCallbackData* data)
     }
 }
 
+const char*
+ListAllCVars()
+{
+    const char* ret = nullptr;
+    for (Core::CVar* cVarIter = Core::CVarsBegin(); cVarIter != Core::CVarsEnd();)
+    {
+        const char* name = Core::CVarGetName(cVarIter);
+        const char* desc = Core::CVarGetDescription(cVarIter);
+        if (ImGui::Selectable(name))
+            ret = name;
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip(desc);
+        cVarIter = Core::CVarNext(cVarIter);
+    }
+    return ret;
+}
+
 int
 TextEditCVars(ImGuiInputTextCallbackData* data)
 {
@@ -425,7 +442,21 @@ ImguiConsole::RenderContent()
     if (!this->scriptServer.isvalid() || this->command[0] == '>')
     {
         this->cmdMode = CommandMode::CVar;
-        ImGui::Text("CVar");
+        if (ImGui::Button("CVar"))
+        {
+            ImGui::OpenPopup("list_cvar_popup");
+        }
+        if (ImGui::BeginPopup("list_cvar_popup"))
+        {
+            const char* selected = ListAllCVars();
+            if (selected)
+            {
+                int strLen = Util::String::StrLen(selected);
+                Memory::Copy(selected, this->command + 1, strLen);
+                this->command[strLen + 1] = '\0';
+            }
+            ImGui::EndPopup();
+        }
     }
     else
     {

@@ -74,7 +74,7 @@ public:
     Util::Queue<AllocateInstanceCommand> allocQueue;
     ///
     Util::Queue<DeallocInstanceCommand> deallocQueue;
-
+    
     /// add the table to any callback-caches that accepts it
     void CacheTable(MemDb::TableId tid, MemDb::TableSignature signature);
 
@@ -92,6 +92,9 @@ public:
     Util::Array<CallbackInfo> onEndFrameCallbacks;
     Util::Array<CallbackInfo> onLoadCallbacks;
     Util::Array<CallbackInfo> onSaveCallbacks;
+
+    /// set to true if the caches for the callbacks are invalid
+    bool cacheValid = false;
 };
 
 } // namespace Game

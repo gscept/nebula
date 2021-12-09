@@ -131,19 +131,29 @@ DecayProperty(Game::World* world, Game::PropertyId pid, MemDb::TableId tableId, 
 {
     if (MemDb::TypeRegistry::Flags(pid) & PropertyFlags::PROPERTYFLAG_MANAGED)
     {
+        if (pid.id >= propertyDecayTable.Size())
+            propertyDecayTable.Resize(pid.id + 16); // increment with a couple of extra elements, instead of doubling size, just to avoid extreme overallocation
         PropertyDecayBuffer& pdb = propertyDecayTable[pid.id];
-        SizeT const typeSize = MemDb::TypeRegistry::TypeSize(pid);
+
+        uint64_t const typeSize = (uint64_t)MemDb::TypeRegistry::TypeSize(pid);
+
+        if (pdb.capacity == 0)
+        {
+            pdb.size = 0;
+            pdb.capacity = 64;
+            pdb.buffer = Memory::Alloc(Memory::HeapType::DefaultHeap, pdb.capacity * typeSize);
+        }
 
         if (pdb.capacity == pdb.size)
         {
             void* oldBuffer = pdb.buffer;
             pdb.capacity *= 2;
-            pdb.buffer = Memory::Alloc(Memory::HeapType::AppHeap, pdb.capacity);
-            Memory::Copy(oldBuffer, pdb.buffer, typeSize * pdb.size);
-            Memory::Free(Memory::HeapType::AppHeap, oldBuffer);
+            pdb.buffer = Memory::Alloc(Memory::HeapType::DefaultHeap, pdb.capacity * typeSize);
+            Memory::Copy(oldBuffer, pdb.buffer, typeSize * (uint64_t)pdb.size);
+            Memory::Free(Memory::HeapType::DefaultHeap, oldBuffer);
         }
 
-        void* dst = ((byte*)pdb.buffer) + (typeSize * pdb.size);
+        void* dst = ((byte*)pdb.buffer) + (typeSize * (uint64_t)pdb.size);
         pdb.size++;
         Memory::Copy(world->db->GetValuePointer(tableId, column, instance), dst, typeSize);
     }
@@ -513,15 +523,6 @@ PropertyId
 CreateProperty(PropertyCreateInfo const& info)
 {
     PropertyId const pid = MemDb::TypeRegistry::Register(info.name, info.byteSize, info.defaultValue, info.flags);
-    if (info.flags & PropertyFlags::PROPERTYFLAG_MANAGED)
-    {
-        if (pid.id >= propertyDecayTable.Size())
-            propertyDecayTable.Resize(pid.id + 16); // increment with a couple of extra elements, instead of doubling size, just to avoid extreme overallocation
-        PropertyDecayBuffer& pdb = propertyDecayTable[pid.id];
-        pdb.size = 0;
-        pdb.capacity = 64;
-        pdb.buffer = Memory::Alloc(Memory::HeapType::AppHeap, pdb.capacity);
-    }
     return pid;
 }
 
@@ -756,7 +757,7 @@ DeallocateInstance(World* world, MemDb::TableId category, MemDb::Row instance)
 
     // migrate managed properies to decay buffers so that we can allow the managers
     // to clean up any externally allocated resources.
-    Util::Array<PropertyId> const& pids = world->db->GetTable(category).properties;
+    Util::Array<PropertyId> const& pids = world->db->GetTable(category).columns.GetArray<0>();
     const MemDb::ColumnIndex numColumns = pids.Size();
     for (MemDb::ColumnIndex column = 0; column < numColumns.id; column.id++)
     {
@@ -856,6 +857,8 @@ RegisterProcessors(World* world, std::initializer_list<ProcessorHandle> handles)
         if (info.OnSave != nullptr)
             world->onSaveCallbacks.Append({ handle, info.filter, info.OnSave });
     }
+
+    world->cacheValid = false;
 }
 
 //------------------------------------------------------------------------------
@@ -881,6 +884,8 @@ PrefilterProcessors(World* world)
             cbinfo.cache = world->db->Query(GetInclusiveTableMask(cbinfo.filter), GetExclusiveTableMask(cbinfo.filter));
         }
     }
+
+    world->cacheValid = true;
 }
 
 

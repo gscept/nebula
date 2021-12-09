@@ -19,6 +19,15 @@ typedef MemDb::PropertyId PropertyId;
 ID_16_TYPE(BlueprintId);
 ID_32_TYPE(TemplateId);
 
+#define DECLARE_PROPERTY public:\
+static Game::PropertyId ID() { return id; }\
+private:\
+    friend class MemDb::TypeRegistry;\
+    static Game::PropertyId id;\
+public:
+
+#define DEFINE_PROPERTY(TYPE) Game::PropertyId TYPE::id = Game::PropertyId::Invalid();
+
 struct CategoryCreateInfo
 {
     /// name to be given to the category

@@ -97,14 +97,14 @@ GraphicsFeatureUnit::OnActivate()
     PostEffects::BloomContext::Create();
     PostEffects::SSAOContext::Create();
     PostEffects::HistogramContext::Create();
-    //Terrain::TerrainSetupSettings settings{
-    //    0, 1024.0f,      // min/max height 
-    //    //0, 0,
-    //    8192, 8192,   // world size in meters
-    //    256, 256,     // tile size in meters
-    //    16, 16        // 1 vertex every X meters
-    //};
-    //Terrain::TerrainContext::Create(settings);
+    Terrain::TerrainSetupSettings settings{
+        0, 1024.0f,      // min/max height 
+        //0, 0,
+        8192, 8192,   // world size in meters
+        256, 256,     // tile size in meters
+        16, 16        // 1 vertex every X meters
+    };
+    Terrain::TerrainContext::Create(settings);
 
     this->defaultView = gfxServer->CreateView("mainview", this->defaultFrameScript);
     this->defaultStage = gfxServer->CreateStage("defaultStage", true);

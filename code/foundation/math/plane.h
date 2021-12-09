@@ -61,7 +61,7 @@ __forceinline
 plane::plane(const point& p, const vector& n)
 {
     float d = dot(p, n);
-    this->vec = _mm_setr_ps(n.x, n.y, n.z, -d);
+    this->vec = _mm_setr_ps(n.x, n.y, n.z, d);
 }
 
 //------------------------------------------------------------------------------
@@ -77,7 +77,7 @@ plane::plane(const point& p0, const point& p1, const point& p2)
     cr = normalize(cr);
     float d = dot(cr, p0);
 
-    this->vec = _mm_setr_ps(cr.x, cr.y, cr.z, -d);
+    this->vec = _mm_setr_ps(cr.x, cr.y, cr.z, d);
 }
 
 //------------------------------------------------------------------------------
@@ -115,7 +115,7 @@ get_normal(const plane& plane)
 inline point
 get_point(const plane& plane)
 {
-    return _mm_mul_ps(get_normal(plane).vec, _mm_set1_ps(-plane.d));
+    return _mm_mul_ps(get_normal(plane).vec, _mm_set1_ps(plane.d));
 }
 
 //------------------------------------------------------------------------------
@@ -124,29 +124,22 @@ get_point(const plane& plane)
 inline bool 
 intersectline(const plane& plane, const point& startPoint, const point& endPoint, point& outIntersectPoint)
 {
-    scalar v1 = dot(get_normal(plane), startPoint);
-    scalar v2 = dot(get_normal(plane), endPoint);
-    scalar d = (v1 - v2);
-    if (Math::abs(d) < N_TINY)
-    {
-        return false;
-    }
+	Math::vector dv = endPoint - startPoint;
+	Math::vector n = Math::get_normal(plane);
+	float d = (plane.d - Math::dot(n, startPoint)) / Math::dot(n, dv);
 
-    d = 1.0f / d;
+	if (d >= 0.0f && d <= 1.0f)
+	{
+		outIntersectPoint = startPoint + d * dv;
+		return true;
+	}
 
-    scalar pd = dot(get_normal(plane), startPoint);
-    pd *= d;
-
-    vec4 p = (endPoint - startPoint) * pd;
-
-    p += startPoint;
-    outIntersectPoint = p;
-
-    return true;
+	return false;
 }
 
 //------------------------------------------------------------------------------
 /**
+	TODO: Test and make sure it produces correct intersection line
 */
 inline bool 
 intersectplane(const plane& p1, const plane& p2, line& outLine)

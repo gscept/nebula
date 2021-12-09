@@ -21,7 +21,7 @@ def run(fips_dir, proj_dir, args) :
                 # FIXME all of this only works on windows at the moment and is super hacky
                 
                 if len(args) != 2 :
-                    log.error("expected compiler target (win-vs15, win-vs16)")
+                    log.error("expected compiler target (win-vs15, win-vs16, win-vs17)")
                     
                     
                 preset = util.fix_path(os.path.dirname(os.path.abspath(__file__))) + "/physx-presets/" +"fips" + args[1] + ".xml"
@@ -120,7 +120,7 @@ def run(fips_dir, proj_dir, args) :
 def help():
     """print 'physx' help"""
     log.info(log.YELLOW +
-             "fips physx build [win-vs15, win-vs16]\n"
+             "fips physx build [win-vs15, win-vs16, win-vs17]\n"
              "  builds PhysX dlls with the given toolchain\n"
              "fips physx deploy [config]\n"
              "  copies PhysX dlls to the project's deploy dir")
