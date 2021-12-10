@@ -22,6 +22,7 @@
 #include "debug/framescriptinspector.h"
 #include "terrain/terraincontext.h"
 #include "posteffects/histogramcontext.h"
+#include "particles/particlecontext.h"
 
 #include "graphicsfeature/managers/graphicsmanager.h"
 #include "graphicsfeature/managers/cameramanager.h"
@@ -29,6 +30,7 @@
 using namespace Graphics;
 using namespace Visibility;
 using namespace Models;
+using namespace Particles;
 
 namespace GraphicsFeature
 {
@@ -87,6 +89,7 @@ GraphicsFeatureUnit::OnActivate()
     ModelContext::Create();
     ObserverContext::Create();
     ObservableContext::Create();
+    ParticleContext::Create();
     Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
     Lighting::LightContext::Create();
     Decals::DecalContext::Create();
