@@ -208,7 +208,7 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     __CreateContext();
     using namespace CoreGraphics;
 
-    Core::CVarCreate(Core::CVarType::CVar_Int, "r_terrain_debug", "1", "Show debug interface for the terrain system [0,1]");
+    Core::CVarCreate(Core::CVarType::CVar_Int, "r_terrain_debug", "0", "Show debug interface for the terrain system [0,1]");
 
     __bundle.OnPrepareView = TerrainContext::CullPatches;
     __bundle.OnUpdateViewResources = TerrainContext::UpdateLOD;
@@ -2275,7 +2275,7 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
 void 
 TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
 {
-    if (Core::CVarReadInt(Core::CVarGet("r_terrain_debug")) > 1)
+    if (Core::CVarReadInt(Core::CVarGet("r_terrain_debug")) > 0)
     {
         if (ImGui::Begin("Terrain Debug 2"))
         {

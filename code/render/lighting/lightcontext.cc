@@ -600,7 +600,7 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
     const Graphics::ContextEntityId cid = GetContextId(lightServerState.globalLightEntity);
 
 #ifndef PUBLIC_BUILD
-    if (Core::CVarReadInt(Core::CVarGet("r_shadow_debug")) > 1)
+    if (Core::CVarReadInt(Core::CVarGet("r_shadow_debug")) > 0)
         Debug::FrameScriptInspector::Run(lightServerState.shadowMappingFrameScript);
 #endif
 
