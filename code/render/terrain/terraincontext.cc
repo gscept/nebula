@@ -12,6 +12,7 @@
 #include "dynui/imguicontext.h"
 #include "imgui.h"
 #include "renderutil/drawfullscreenquad.h"
+#include "core/cvar.h"
 
 #include "occupancyquadtree.h"
 #include "texturetilecache.h"
@@ -206,6 +207,8 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 {
     __CreateContext();
     using namespace CoreGraphics;
+
+    Core::CVarCreate(Core::CVarType::CVar_Int, "r_terrain_debug", "1", "Show debug interface for the terrain system [0,1]");
 
     __bundle.OnPrepareView = TerrainContext::CullPatches;
     __bundle.OnUpdateViewResources = TerrainContext::UpdateLOD;
@@ -2272,91 +2275,94 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
 void 
 TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
 {
-    if (ImGui::Begin("Terrain Debug 2"))
+    if (Core::CVarReadInt(Core::CVarGet("r_terrain_debug")) > 1)
     {
-        ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
-        ImGui::Checkbox("Debug Render", &terrainState.debugRender);
-        ImGui::Checkbox("Render", &terrainState.renderToggle);
-        ImGui::LabelText("Updates", "Number of updates %d", terrainVirtualTileState.numPixels);
-
+        if (ImGui::Begin("Terrain Debug 2"))
         {
-            ImGui::Text("Indirection texture occupancy quadtree");
-            ImDrawList* drawList = ImGui::GetWindowDrawList();
-            ImVec2 start = ImGui::GetCursorScreenPos();
-            ImVec2 fullSize = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y);
-            drawList->PushClipRect(
-                ImVec2{ start.x, start.y },
-                ImVec2{ Math::max(start.x + fullSize.x, start.x + 512.0f), Math::min(start.y + fullSize.y, start.y + 512.0f) }, true);
+            ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
+            ImGui::Checkbox("Debug Render", &terrainState.debugRender);
+            ImGui::Checkbox("Render", &terrainState.renderToggle);
+            ImGui::LabelText("Updates", "Number of updates %d", terrainVirtualTileState.numPixels);
 
-            terrainVirtualTileState.indirectionOccupancy.DebugRender(drawList, start, 0.25f);
-            drawList->PopClipRect();
+            {
+                ImGui::Text("Indirection texture occupancy quadtree");
+                ImDrawList* drawList = ImGui::GetWindowDrawList();
+                ImVec2 start = ImGui::GetCursorScreenPos();
+                ImVec2 fullSize = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y);
+                drawList->PushClipRect(
+                    ImVec2{ start.x, start.y },
+                    ImVec2{ Math::max(start.x + fullSize.x, start.x + 512.0f), Math::min(start.y + fullSize.y, start.y + 512.0f) }, true);
 
-            // set back cursor so we can draw our box
-            ImGui::SetCursorScreenPos(start);
-            ImGui::InvisibleButton("Indirection texture occupancy quadtree", ImVec2(512.0f, 512.0f));
+                terrainVirtualTileState.indirectionOccupancy.DebugRender(drawList, start, 0.25f);
+                drawList->PopClipRect();
+
+                // set back cursor so we can draw our box
+                ImGui::SetCursorScreenPos(start);
+                ImGui::InvisibleButton("Indirection texture occupancy quadtree", ImVec2(512.0f, 512.0f));
+            }
+
+            {
+                /*
+                ImGui::Text("Physical texture occupancy quadtree");
+                ImDrawList* drawList = ImGui::GetWindowDrawList();
+                ImVec2 start = ImGui::GetCursorScreenPos();
+                ImVec2 fullSize = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y);
+                drawList->PushClipRect(
+                    ImVec2{ start.x, start.y },
+                    ImVec2{ Math::max(start.x + fullSize.x, start.x + 512.0f), Math::min(start.y + fullSize.y, start.y + 512.0f) }, true);
+
+                terrainVirtualTileState.physicalTextureTileOccupancy.DebugRender(drawList, start, 0.0625f);
+                drawList->PopClipRect();
+
+                // set back cursor so we can draw our box
+                ImGui::SetCursorScreenPos(start);
+                ImGui::InvisibleButton("Physical texture occupancy quadtree", ImVec2(512.0f, 512.0f));
+                */
+            }
+
+            {
+                CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(terrainVirtualTileState.physicalNormalCache);
+
+                ImVec2 imageSize = { (float)dims.width, (float)dims.height };
+
+                static Dynui::ImguiTextureId textureInfo;
+                textureInfo.nebulaHandle = terrainVirtualTileState.physicalNormalCache.HashCode64();
+                textureInfo.mip = 0;
+                textureInfo.layer = 0;
+
+                ImGui::NewLine();
+                ImGui::Separator();
+
+                imageSize.x = ImGui::GetWindowContentRegionWidth();
+                float ratio = (float)dims.height / (float)dims.width;
+                imageSize.y = imageSize.x * ratio;
+
+                ImGui::Image((void*)&textureInfo, imageSize);
+            }
+
+            {
+                CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(terrainVirtualTileState.indirectionTexture);
+
+                ImVec2 imageSize = { (float)dims.width, (float)dims.height };
+
+                static Dynui::ImguiTextureId textureInfo;
+                textureInfo.nebulaHandle = terrainVirtualTileState.indirectionTexture.HashCode64();
+                textureInfo.mip = 0;
+                textureInfo.layer = 0;
+
+                ImGui::NewLine();
+                ImGui::Separator();
+
+                imageSize.x = ImGui::GetWindowContentRegionWidth();
+                float ratio = (float)dims.height / (float)dims.width;
+                imageSize.y = imageSize.x * ratio;
+
+                ImGui::Image((void*)&textureInfo, imageSize);
+            }
         }
 
-        {
-            /*
-            ImGui::Text("Physical texture occupancy quadtree");
-            ImDrawList* drawList = ImGui::GetWindowDrawList();
-            ImVec2 start = ImGui::GetCursorScreenPos();
-            ImVec2 fullSize = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y);
-            drawList->PushClipRect(
-                ImVec2{ start.x, start.y },
-                ImVec2{ Math::max(start.x + fullSize.x, start.x + 512.0f), Math::min(start.y + fullSize.y, start.y + 512.0f) }, true);
-
-            terrainVirtualTileState.physicalTextureTileOccupancy.DebugRender(drawList, start, 0.0625f);
-            drawList->PopClipRect();
-
-            // set back cursor so we can draw our box
-            ImGui::SetCursorScreenPos(start);
-            ImGui::InvisibleButton("Physical texture occupancy quadtree", ImVec2(512.0f, 512.0f));
-            */
-        }
-
-        {
-            CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(terrainVirtualTileState.physicalNormalCache);
-
-            ImVec2 imageSize = { (float)dims.width, (float)dims.height };
-
-            static Dynui::ImguiTextureId textureInfo;
-            textureInfo.nebulaHandle = terrainVirtualTileState.physicalNormalCache.HashCode64();
-            textureInfo.mip = 0;
-            textureInfo.layer = 0;
-
-            ImGui::NewLine();
-            ImGui::Separator();
-
-            imageSize.x = ImGui::GetWindowContentRegionWidth();
-            float ratio = (float)dims.height / (float)dims.width;
-            imageSize.y = imageSize.x * ratio;
-
-            ImGui::Image((void*)&textureInfo, imageSize);
-        }
-
-        {
-            CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(terrainVirtualTileState.indirectionTexture);
-
-            ImVec2 imageSize = { (float)dims.width, (float)dims.height };
-
-            static Dynui::ImguiTextureId textureInfo;
-            textureInfo.nebulaHandle = terrainVirtualTileState.indirectionTexture.HashCode64();
-            textureInfo.mip = 0;
-            textureInfo.layer = 0;
-
-            ImGui::NewLine();
-            ImGui::Separator();
-
-            imageSize.x = ImGui::GetWindowContentRegionWidth();
-            float ratio = (float)dims.height / (float)dims.width;
-            imageSize.y = imageSize.x * ratio;
-
-            ImGui::Image((void*)&textureInfo, imageSize);
-        }
+        ImGui::End();
     }
-
-    ImGui::End();
 }
 
 //------------------------------------------------------------------------------

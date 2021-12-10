@@ -15,6 +15,7 @@
 #include "resources/resourceserver.h"
 #include "visibility/visibilitycontext.h"
 #include "clustering/clustercontext.h"
+#include "core/cvar.h"
 #ifndef PUBLIC_BUILD
 #include "dynui/im3d/im3dcontext.h"
 #include "debug/framescriptinspector.h"
@@ -131,6 +132,10 @@ void
 LightContext::Create()
 {
     __CreateContext();
+
+#ifndef PUBLIC_BUILD
+    Core::CVarCreate(Core::CVarType::CVar_Int, "r_shadow_debug", "0", "Show shadowmap framescript inspector [0,1]");
+#endif
 
     __bundle.OnPrepareView = LightContext::OnPrepareView;
     __bundle.OnUpdateViewResources = LightContext::UpdateViewDependentResources;
@@ -595,7 +600,8 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
     const Graphics::ContextEntityId cid = GetContextId(lightServerState.globalLightEntity);
 
 #ifndef PUBLIC_BUILD
-    Debug::FrameScriptInspector::Run(lightServerState.shadowMappingFrameScript);
+    if (Core::CVarReadInt(Core::CVarGet("r_shadow_debug")) > 1)
+        Debug::FrameScriptInspector::Run(lightServerState.shadowMappingFrameScript);
 #endif
 
     /// setup global light visibility
