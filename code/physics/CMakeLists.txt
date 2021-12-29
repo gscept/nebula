@@ -14,8 +14,6 @@ fips_files(
             actorcontext.h
             streamactorpool.cc
             streamactorpool.h
-            streamcolliderpool.cc
-            streamcolliderpool.h
             callbacks.cc
             callbacks.h
             debugui.cc
@@ -26,7 +24,7 @@ fips_files(
             physxstate.cc
             physxstate.h
             )
-nebula_flatc(SYSTEM physics/collider.fbs physics/actor.fbs physics/material.fbs)
+nebula_flatc(SYSTEM physics/actor.fbs physics/material.fbs)
 fips_deps(nflatbuffer)
 nebula_end_module()
 target_link_libraries(physics PxLibs) 

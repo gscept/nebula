@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "physics/streamactorpool.h"
-#include "physics/streamcolliderpool.h"
 #include "physics/physxstate.h"
 #include "physics/actorcontext.h"
 #include "physics/utils.h"
@@ -13,9 +12,13 @@
 #include "nflatbuffer/nebula_flat.h"
 #include "flat/physics/material.h"
 #include "flat/physics/actor.h"
+#include "coregraphics/legacy/nvx2streamreader.h"
+#include "coregraphics/primitivegroup.h"
 
 
 __ImplementClass(Physics::StreamActorPool, 'PSAP', Resources::ResourceStreamPool);
+
+using namespace physx;
 
 namespace Physics
 {
@@ -51,8 +54,8 @@ StreamActorPool::Setup()
 //------------------------------------------------------------------------------
 /**
 */
-ActorId 
-StreamActorPool::CreateActorInstance(ActorResourceId id, Math::mat4 const & trans, bool dynamic, IndexT scene)
+ActorId
+StreamActorPool::CreateActorInstance(ActorResourceId id, Math::mat4 const& trans, bool dynamic, uint64_t userData, IndexT scene)
 {
     this->allocator.EnterGet();
     ActorInfo& info = this->allocator.Get<0>(id.resourceId);
@@ -68,9 +71,13 @@ StreamActorPool::CreateActorInstance(ActorResourceId id, Math::mat4 const & tran
     {
         physx::PxRigidBodyExt::updateMassAndInertia(*static_cast<physx::PxRigidDynamic*>(newActor), info.densities.Begin(), info.densities.Size());
     }
+    
     GetScene(scene).scene->addActor(*newActor);
     
-    return ActorContext::AllocateActorId(newActor, id);
+    ActorId newId = ActorContext::AllocateActorId(newActor, id);
+    ActorContext::GetActor(newId).userData = userData;
+
+    return newId;
 }
 
 //------------------------------------------------------------------------------
@@ -91,6 +98,95 @@ StreamActorPool::DiscardActorInstance(ActorId id)
     ActorContext::DiscardActor(id);
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+Ptr<Legacy::Nvx2StreamReader>
+OpenNvx2(Util::StringAtom res)
+{
+    Ptr<IO::Stream> stream = IO::IoServer::Instance()->CreateStream(IO::URI(res.AsString()));
+    Ptr<Legacy::Nvx2StreamReader> nvx2Reader = Legacy::Nvx2StreamReader::Create();
+    nvx2Reader->SetStream(stream);
+    nvx2Reader->SetUsage(CoreGraphics::GpuBufferTypes::UsageImmutable);
+    nvx2Reader->SetAccess(CoreGraphics::GpuBufferTypes::AccessNone);
+    nvx2Reader->SetRawMode(true);
+
+    if (nvx2Reader->Open(nullptr))
+    {
+        return nvx2Reader;
+    }
+    return nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+static physx::PxGeometryHolder
+CreateMeshFromResource(MeshTopology type, Util::StringAtom resource, int primGroup)
+{
+    physx::PxGeometryHolder holder;
+
+    Ptr<Legacy::Nvx2StreamReader> nvx = OpenNvx2(resource);
+
+    if (nvx.isvalid())
+    {
+
+        switch (type)
+        {
+            // FIXME, cooking doesnt seem to like our meshes,
+            // always create convex hull, even if already convex
+        case MeshTopology_Convex:
+        case MeshTopology_ConvexHull:
+        {
+            const CoreGraphics::PrimitiveGroup& group = nvx->GetPrimitiveGroups()[primGroup];
+
+            PxConvexMeshDesc convexDesc;
+            convexDesc.points.count = nvx->GetNumVertices();
+            convexDesc.points.stride = nvx->GetVertexWidth() * sizeof(float);
+            convexDesc.points.data = nvx->GetVertexData();
+            convexDesc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
+
+            PxDefaultMemoryOutputStream buf;
+            PxConvexMeshCookingResult::Enum result;
+            state.cooking->cookConvexMesh(convexDesc, buf, &result);
+            PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
+            holder = PxConvexMeshGeometry(state.physics->createConvexMesh(input));
+        }
+        break;
+        case MeshTopology_Triangles:
+        {
+            PxTolerancesScale scale;
+            PxCookingParams params(scale);
+            // disable mesh cleaning - perform mesh validation on development configurations
+            //params.meshPreprocessParams |= PxMeshPreprocessingFlag::eDISABLE_CLEAN_MESH;
+            // disable edge precompute, edges are set for each triangle, slows contact generation
+            params.meshPreprocessParams |= PxMeshPreprocessingFlag::eDISABLE_ACTIVE_EDGES_PRECOMPUTE;
+
+            state.cooking->setParams(params);
+
+            const CoreGraphics::PrimitiveGroup& group = nvx->GetPrimitiveGroups()[primGroup];
+
+            PxTriangleMeshDesc meshDesc;
+            meshDesc.points.count = nvx->GetNumVertices();
+            meshDesc.points.stride = nvx->GetVertexWidth() * sizeof(float);
+            meshDesc.points.data = nvx->GetVertexData();
+
+            meshDesc.triangles.count = group.GetNumPrimitives(CoreGraphics::PrimitiveTopology::TriangleList);
+            meshDesc.triangles.stride = 3 * sizeof(unsigned int);
+            meshDesc.triangles.data = (void*)&(nvx->GetIndexData()[group.GetBaseIndex()]);
+#if NEBULA_DEBUG
+            state.cooking->validateTriangleMesh(meshDesc);
+#endif
+            PxTriangleMesh* aTriangleMesh = state.cooking->createTriangleMesh(meshDesc, state.physics->getPhysicsInsertionCallback());
+            holder = PxTriangleMeshGeometry(aTriangleMesh);
+        }
+        break;
+        }
+        nvx->Close();
+    }
+    return holder;
+}
 //------------------------------------------------------------------------------
 /**
 */
@@ -112,29 +208,56 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
 
     for (auto const& shape : actor.shapes)
     {
-        Util::String name = shape->collider;
+        auto const & collider = shape->collider;
         Util::StringAtom matAtom = shape->material;
         IndexT material = LookupMaterial(matAtom);
+        physx::PxGeometryHolder geometry;
 
-        Resources::ResourceName collider = name;
         Math::mat4 trans = shape->transform;
 
-        ColliderId colliderid;
-        if (collider.IsValid())
+        switch (collider->type)
         {
-            colliderid = Resources::CreateResource(collider, "", nullptr, nullptr, true);
-            if (colliderPool->GetState(colliderid) == Resources::Resource::Failed)
+            case ColliderType_Sphere:
             {
-                return Resources::ResourcePool::Failed;
+                float radius = collider->data.AsSphereCollider()->radius;
+                geometry = PxSphereGeometry(radius);
             }
+            break;
+            case ColliderType_Cube:
+            {
+                Math::vector extents = collider->data.AsBoxCollider()->extents;
+                geometry = PxBoxGeometry(Neb2PxVec(extents));
+            }
+            break;
+            case ColliderType_Plane:
+            {
+                // plane is defined via transform of the actor
+                geometry = PxPlaneGeometry();
+            }
+            break;
+            case ColliderType_Capsule:
+            {
+                auto capsule = collider->data.AsCapsuleCollider();
+                float radius = capsule->radius;
+                float halfHeight = capsule->halfheight;
+                geometry = PxCapsuleGeometry(radius, halfHeight);
+            }
+            break;
+            case ColliderType_Mesh:
+            {
+                auto mesh = collider->data.AsMeshCollider();
+                MeshTopology type = mesh->type;
+                int primgroup = mesh->primGroup;
+
+                Util::StringAtom resource = mesh->file;
+                geometry = CreateMeshFromResource(type, resource, primgroup);
+            }
+            break;
+            default:
+                n_assert("unknown collider type")
         }
-        else
-        {
-            return Resources::ResourcePool::Failed;
-        }
-        actorInfo.colliders.Append(colliderid);
-        physx::PxGeometryHolder& geom = colliderPool->GetGeometry(colliderid);
-        physx::PxShape* newShape = state.physics->createShape(geom.any(), *state.materials[material].material);
+        actorInfo.colliders.Append(collider->name);
+        physx::PxShape* newShape = state.physics->createShape(geometry.any(), *state.materials[material].material);
         newShape->setLocalPose(Neb2PxTrans(trans));
         actorInfo.shapes.Append(newShape);
         actorInfo.densities.Append(GetMaterial(material).density);
@@ -154,9 +277,9 @@ StreamActorPool::Unload(const Resources::ResourceId id)
     n_assert2(info.instanceCount == 0, "Actor has active Instances");
     const Util::StringAtom tag = this->GetTag(id);
     
-    for (auto i : info.colliders)
+    for (auto i : info.shapes)
     {
-            colliderPool->DiscardResource(i);
+        i->release();
     }
     for (auto s : info.shapes)
     {

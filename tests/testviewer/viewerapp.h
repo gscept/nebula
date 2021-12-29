@@ -33,6 +33,7 @@ namespace Tests
 
 class SimpleViewerApplication : public App::Application
 {
+    __DeclareSingleton(SimpleViewerApplication);
 public:
     /// Constructor
     SimpleViewerApplication();
@@ -45,6 +46,9 @@ public:
     void Close();
     /// Run
     void Run();
+
+    ///
+    Graphics::GraphicsEntityId GetDefaultCamera() const;
 
 protected:
     void RenderUI();
@@ -111,6 +115,17 @@ protected:
 #endif
 
 };
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline Graphics::GraphicsEntityId 
+SimpleViewerApplication::GetDefaultCamera() const
+{
+    n_assert(this->cam != Graphics::InvalidGraphicsEntityId);
+    return this->cam;
+}
 
 }
 
