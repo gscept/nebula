@@ -47,9 +47,12 @@ using namespace Graphics;
 using namespace Visibility;
 using namespace Models;
 
+int currentScene = PhysicsSceneId;
+
 namespace Tests
 {
 
+__ImplementSingleton(Tests::SimpleViewerApplication);
 //------------------------------------------------------------------------------
 /**
 */
@@ -73,6 +76,7 @@ SimpleViewerApplication::SimpleViewerApplication()
     , profileFixedFps(false)
     , fixedFps(60)
 {
+    __ConstructSingleton;
     this->SetAppTitle("Viewer App");
     this->SetCompanyName("Nebula");
 }

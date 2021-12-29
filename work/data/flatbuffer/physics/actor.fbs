@@ -9,9 +9,51 @@ include "physics/material.fbs";
 
 namespace PhysicsResource;
 
+table MeshCollider
+{
+    primGroup : ushort;
+    type : Physics.MeshTopology;
+    file : string;
+}
+
+table SphereCollider
+{
+    radius : float;
+}
+
+table CapsuleCollider
+{
+    radius : float;
+    halfheight: float;
+}
+
+// fugly workaround for unions not being able contain structs
+struct Box
+{
+     extents : Flat.Vec3 (native_inline);
+}
+
+table BoxCollider
+{
+     extents : Flat.Vec3 (native_inline);
+}
+
+union ColliderData
+{
+    BoxCollider,SphereCollider, CapsuleCollider, MeshCollider
+}
+
+table Collider
+{
+    name : string;
+    type : Physics.ColliderType;
+    data : PhysicsResource.ColliderData;
+}
+
+
 table Shape
 {
-    collider : string;
+    collider : Collider;
     material : string;
     transform : Flat.Mat4 (native_inline);
 }

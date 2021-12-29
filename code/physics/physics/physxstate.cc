@@ -174,8 +174,9 @@ PhysxState::Update(Timing::Time delta)
     this->time = Math::max(this->time, -5.0 * PHYSICS_RATE);
     while (this->time < 0.0)
     {
-        for (auto & scene : this->activeScenes)
+        for (IndexT Id : this->activeSceneIds)
         {
+            auto& scene = this->activeScenes[Id];
             // simulate synchronously
             scene.scene->simulate(PHYSICS_RATE);
             scene.scene->fetchResults(true);
