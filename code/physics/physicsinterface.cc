@@ -134,8 +134,8 @@ DestroyScene(IndexT sceneId)
     if (actorCount > 0)
     {
         n_warn("Destroying non-empty physics scene");
-        PxU32 bufferSize;
-        PxActor** actorBuffer = (PxActor**)Memory::Alloc(Memory::PhysicsHeap, bufferSize * sizeof(PxActor*));
+        PxU32 bufferSize = actorCount * sizeof(PxActor*);
+        PxActor** actorBuffer = (PxActor**)Memory::Alloc(Memory::PhysicsHeap, bufferSize);
         scene.scene->getActors(PxActorTypeFlag::eRIGID_STATIC | PxActorTypeFlag::eRIGID_DYNAMIC, actorBuffer, bufferSize);
         for (int i = 0; i < actorCount; i++)
         {
