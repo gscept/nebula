@@ -406,14 +406,14 @@ namespace Internal
         using UnqualifiedType = typename std::remove_const<typename std::remove_reference<TYPE>::type>::type;
 
         filterInfo.inclusive[i] = UnqualifiedType::ID();
-        filterInfo.access[i] = std::is_const<std::remove_reference<TYPE>::type>() ? Game::AccessMode::READ : Game::AccessMode::WRITE;
+        filterInfo.access[i] = std::is_const<typename std::remove_reference<TYPE>::type>() ? Game::AccessMode::READ : Game::AccessMode::WRITE;
         filterInfo.numInclusive++;
     }
 
     template<typename...TYPES, std::size_t...Is>
     void UnrollInclusiveProperties(Game::FilterCreateInfo& filterInfo, std::index_sequence<Is...>)
     {
-        (SetInclusive<std::tuple_element<Is, std::tuple<TYPES...>>::type>(filterInfo, Is), ...);
+        (SetInclusive<typename std::tuple_element<Is, std::tuple<TYPES...>>::type>(filterInfo, Is), ...);
     }
 
     template<typename...TYPES, std::size_t...Is>
