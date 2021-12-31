@@ -42,6 +42,8 @@
 #include "math/bbox.h"
 #include "resources/resourceid.h"
 #include "graphics/graphicsentity.h"
+#include "models/modelcontext.h"
+#include "threading/event.h"
 namespace Visibility
 {
 
@@ -83,9 +85,11 @@ public:
     /// setup observers
     virtual void PrepareObservers(const Math::mat4* transforms, Util::Array<Math::ClipStatus::Type>* results, const SizeT count);
     /// prepare system with entities to insert into the structure
-    virtual void PrepareEntities(const Math::bbox* transforms, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count);
+    virtual void PrepareEntities(const Math::bbox* transforms, const uint32* ranges, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count);
     /// run system
-    virtual void Run();
+    virtual void Run(Threading::Event* previousSystemEvent);
+
+    Threading::Event* GetFinishedEvent();
 
 protected:
 
@@ -103,9 +107,12 @@ protected:
     {
         const Math::bbox* boxes;
         const Graphics::GraphicsEntityId* entities;
+        const uint32* ids;
         const uint32_t* entityFlags;
         SizeT count;
     } ent;
+
+    Threading::EventWithManualReset systemDoneEvent;
 };
 
 } // namespace Visibility

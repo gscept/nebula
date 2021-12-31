@@ -22,10 +22,11 @@ VisibilitySystem::PrepareObservers(const Math::mat4* transforms, Util::Array<Mat
 /**
 */
 void
-VisibilitySystem::PrepareEntities(const Math::bbox* boxes, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count)
+VisibilitySystem::PrepareEntities(const Math::bbox* boxes, const uint32* ids, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count)
 {
     this->ent.boxes = boxes;
     this->ent.entities = entities;
+    this->ent.ids = ids;
     this->ent.entityFlags = entityFlags;
     this->ent.count = count;
 }
@@ -34,9 +35,18 @@ VisibilitySystem::PrepareEntities(const Math::bbox* boxes, const Graphics::Graph
 /**
 */
 void
-VisibilitySystem::Run()
+VisibilitySystem::Run(Threading::Event* previousSystemEvent)
 {
     // do nothing
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Threading::Event*
+VisibilitySystem::GetFinishedEvent()
+{
+    return &this->systemDoneEvent;
 }
 
 } // namespace Visibility

@@ -23,7 +23,7 @@ private:
     void Setup(const BruteforceSystemLoadInfo& info);
 
     /// run system
-    void Run();
+    void Run(Threading::Event* previousSystemEvent) override;
 };
 
 } // namespace Visibility

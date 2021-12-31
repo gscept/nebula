@@ -19,6 +19,7 @@ BruteforceSystemJobFunc(const Jobs::JobFuncContext& ctx)
 {
     N_SCOPE(BruteforceViewFrustumCulling, Visibility);
     const Math::mat4* camera = (const Math::mat4*)ctx.uniforms[0];
+    const Math::bbox* boxes = (const Math::bbox*)ctx.uniforms[1];
 
     // splat the matrix such that all _x, _y, ... will contain the column values of x, y, ...
     Math::vec4 m_col_x[4];
@@ -47,11 +48,11 @@ BruteforceSystemJobFunc(const Jobs::JobFuncContext& ctx)
 
     for (ptrdiff sliceIdx = 0; sliceIdx < ctx.numSlices; sliceIdx++)
     {
-        const Math::bbox* bbox = (const Math::bbox*)N_JOB_INPUT(ctx, sliceIdx, 0);
+        const uint32 id = *(const uint32*)N_JOB_INPUT(ctx, sliceIdx, 0);
         auto clipStatus = (Math::ClipStatus::Type*)N_JOB_OUTPUT(ctx, sliceIdx, 0);
 
         // If we want to check visibility, run clip check
-        *clipStatus = bbox->clipstatus(m_col_x, m_col_y, m_col_z, m_col_w);
+        *clipStatus = boxes[id].clipstatus(m_col_x, m_col_y, m_col_z, m_col_w);
     }
 }
 

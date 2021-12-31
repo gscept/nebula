@@ -43,4 +43,13 @@ public:
 #else
 #error "Threading::Event not implemented on this platform!"
 #endif
+
+namespace Threading
+{
+class EventWithManualReset : public Event
+{
+public:
+    EventWithManualReset() : Event(true) {};
+};
+}
 //------------------------------------------------------------------------------

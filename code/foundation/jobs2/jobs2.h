@@ -19,7 +19,7 @@ class Event;
 
 namespace Jobs2 
 {
-using JobFunc = void(*)(SizeT totalJobs, SizeT groupSize, IndexT invocationIndex, void* ctx);
+using JobFunc = void(*)(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx);
 
 class JobThread : public Threading::Thread
 {
@@ -32,7 +32,8 @@ public:
     virtual ~JobThread();
 
 protected:
-    friend void JobPortDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSize, void* context, Threading::Event* waitEvent, Threading::Event* signalEvent);
+    friend void JobDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSize, void* context, Threading::Event* waitEvent, Threading::Event* signalEvent);
+    friend void JobDispatch(const JobFunc& func, const SizeT numInvocations, void* context, Threading::Event* waitEvent, Threading::Event* signalEvent);
 
     /// override this method if your thread loop needs a wakeup call before stopping
     virtual void EmitWakeupSignal() override;
@@ -43,20 +44,28 @@ private:
     Threading::Event wakeupEvent;
 };
 
-struct CreateJobSystemInfo
+struct JobSystemInitInfo
 {
     Util::StringAtom name;
     SizeT numThreads;
     uint affinity;
     uint priority;
+
+    JobSystemInitInfo()
+        : numThreads(1)
+        , affinity(0xFFFFFFFF)
+        , priority(UINT_MAX)
+    {};
 };
 
 /// Create a new job port
-void CreateJobSystem(const CreateJobSystemInfo& info);
+void JobSystemInit(const JobSystemInitInfo& info);
 /// Destroy job port
-void DestroyJobSystem();
+void JobSystemUninit();
 
 /// Dispatch job
-void JobPortDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSize, void* ctx, Threading::Event* waitEvent = nullptr, Threading::Event* signalEvent = nullptr);
+void JobDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSize, void* context, Threading::Event* waitEvent = nullptr, Threading::Event* signalEvent = nullptr);
+/// Dispatch job as a single group (to be run on a single thread)
+void JobDispatch(const JobFunc& func, const SizeT numInvocations, void* context, Threading::Event* waitEvent = nullptr, Threading::Event* signalEvent = nullptr);
 
 } // namespace Jobs2

@@ -5,6 +5,7 @@
 #include "foundation/stdneb.h"
 #include "threading/criticalsection.h"
 #include "threading/interlocked.h"
+#include "memory/arenaallocator.h"
 #include "jobs2.h"
 namespace Jobs2
 {
@@ -12,7 +13,7 @@ namespace Jobs2
 struct JobContext
 {
     JobFunc func;
-    SizeT remainingGroups;
+    int remainingGroups;
     SizeT numInvocations;
     SizeT groupSize;
     volatile long groupCompletionCounter;
@@ -21,13 +22,23 @@ struct JobContext
     Threading::Event* signalEvent;
 };
 
+struct JobNode
+{
+    JobNode* next;
+    JobContext job;
+};
+
 struct
 {
     Threading::CriticalSection jobLock;
     Util::Array<JobContext> jobs;
+    Memory::ArenaAllocator<0x100> nodeAllocator;
+    JobNode* head;
     Util::FixedArray<Ptr<JobThread>> threads;
+
 } ctx;
 
+__ImplementClass(Jobs2::JobThread, 'J2TH', Threading::Thread);
 //------------------------------------------------------------------------------
 /**
 */
@@ -65,51 +76,89 @@ JobThread::DoWork()
 {
     while (!this->ThreadStopRequested())
     {
-start:
+wait:
         // Wait for jobs to come
         this->wakeupEvent.Wait();
 
-        // Enter critical section for picking a job
+next:
         ctx.jobLock.Enter();
-        auto it = ctx.jobs.Begin();
+        auto node = ctx.head;
+        auto dragging = ctx.head;
+
+        //auto it = ctx.jobs.Begin();
         int64_t jobIndex = -1;
         while (true)
         {
-            // If there are no more jobs, go back to waiting for more jobs
-            if (it == ctx.jobs.End())
-                goto start;
-
-            bool dependencyDone = true;
-            if (it->waitEvent != nullptr)
-                dependencyDone = it->waitEvent->Peek();
-
-            // If there are no remaining groups or the dependency is not done, go to next job
-            if (it->remainingGroups == 0 || !dependencyDone)
+            // If there are no more jobs, it means this thread lost
+            // the race to find more work, so go back to waiting for work again
+            if (ctx.head == nullptr)
             {
-                auto next = it + 1;
-
-                // In the event there are no more groups left to execute, remove this job
-                if (it->remainingGroups == 0)
-                    ctx.jobs.Erase(it);
-                it = next;
-                continue;
+                ctx.jobLock.Leave();
+                goto wait;
             }
 
-            jobIndex = --it->remainingGroups;
+            // We traversed the whole list, so let's go back to where we began
+            if (node == nullptr)
+            {
+                ctx.jobLock.Leave();
+                goto next;
+            }
+
+            bool dependencyDone = true;
+            if (node->job.waitEvent != nullptr)
+                dependencyDone = node->job.waitEvent->Peek();
+
+            if (!dependencyDone)
+            {
+                dragging = node;
+                node = node->next;
+                continue;
+            }
+            n_assert(node->job.remainingGroups > 0);
+
+            // If we are consuming the last job packet in this run, disconnect the node
+            jobIndex = --node->job.remainingGroups;
+            if (node->job.remainingGroups == 0)
+            {
+                // Update node pointers
+                auto next = node->next;
+
+                // If node is not head, unlink the node between dragging and the current
+                if (node != ctx.head)
+                {
+                    dragging->next = next;
+                }
+                else
+                {
+                    // If head, then just unlink the head node
+                    ctx.head = next;
+                }
+            }
+
+            // If we fall through it means we found a job
             break;
         }
         ctx.jobLock.Leave();
 
         // If jobIndex is -1 it means this thread didn't win the race
-        assert(jobIndex != -1);
+        n_assert(jobIndex != -1);
 
         // Run function
-        it->func(it->numInvocations, it->groupSize, jobIndex, it->data);
+        node->job.func(node->job.numInvocations, node->job.groupSize, jobIndex, jobIndex * node->job.groupSize, node->job.data);
 
         // Decrement number of finished jobs, and if this was the last one, signal the finished event
-        long numJobsLeft = Threading::Interlocked::Decrement(&it->groupCompletionCounter);
+        long numJobsLeft = Threading::Interlocked::Decrement(&node->job.groupCompletionCounter);
         if (numJobsLeft == 0)
-            it->signalEvent->Signal();
+        {
+            if (node->job.signalEvent != nullptr)
+                node->job.signalEvent->Signal();
+
+            // Delete node
+            delete node;
+        }
+
+        // Do another 
+        goto next;
     }
 }
 
@@ -117,7 +166,7 @@ start:
 /**
 */
 void
-CreateJobSystem(const CreateJobSystemInfo& info)
+JobSystemInit(const JobSystemInitInfo& info)
 {
     // Setup job system threads
     ctx.threads.Resize(info.numThreads);
@@ -127,14 +176,16 @@ CreateJobSystem(const CreateJobSystemInfo& info)
         thread->SetName(Util::String::Sprintf("%s #%d", info.name.Value(), i));
         thread->SetThreadAffinity(info.affinity);
         thread->Start();
+        ctx.threads[i] = thread;
     }
+    ctx.head = nullptr;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-DestroyJobSystem()
+JobSystemUninit()
 {
     for (Ptr<JobThread>& thread : ctx.threads)
     {
@@ -147,9 +198,11 @@ DestroyJobSystem()
 /**
 */
 void
-JobPortDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSize, void* context, Threading::Event* waitEvent, Threading::Event* signalEvent)
+JobDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSize, void* context, Threading::Event* waitEvent, Threading::Event* signalEvent)
 {
     // Calculate the number of actual jobs based on invocations and group size
+    if (waitEvent != nullptr)
+        n_assert_fmt(waitEvent->IsManual(), "Wait event must be manual reset because job system needs to peek without changing it's state");
     SizeT numJobs = Math::ceil(numInvocations / float(groupSize));
 
     // Setup job context
@@ -161,11 +214,63 @@ JobPortDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT gro
     jctx.groupSize = groupSize;
     jctx.waitEvent = waitEvent;
     jctx.signalEvent = signalEvent;
+    jctx.data = context;
 
+    JobNode* node = new JobNode;
+    node->job = jctx;
+
+    ctx.jobLock.Enter();
+    node->next = ctx.head;
+    ctx.head = node;
+    ctx.jobLock.Leave();
+
+    /*
     // Push job to job list
     ctx.jobLock.Enter();
     ctx.jobs.Append(jctx);
     ctx.jobLock.Leave();
+    */
+
+    // Trigger threads to wake up and compete for jobs
+    for (Ptr<JobThread>& thread : ctx.threads)
+    {
+        thread->EmitWakeupSignal();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+JobDispatch(const JobFunc& func, const SizeT numInvocations, void* context, Threading::Event* waitEvent, Threading::Event* signalEvent)
+{
+    // Setup job context
+    if (waitEvent != nullptr)
+        n_assert_fmt(waitEvent->IsManual(), "Wait event must be manual reset because job system needs to peek without changing it's state");
+    JobContext jctx;
+    jctx.func = func;
+    jctx.remainingGroups = 1;
+    jctx.groupCompletionCounter = 1;
+    jctx.numInvocations = numInvocations;
+    jctx.groupSize = numInvocations;
+    jctx.waitEvent = waitEvent;
+    jctx.signalEvent = signalEvent;
+    jctx.data = context;
+
+    JobNode* node = new JobNode;
+    node->job = jctx;
+
+    ctx.jobLock.Enter();
+    node->next = ctx.head;
+    ctx.head = node;
+    ctx.jobLock.Leave();
+
+    // Push job to job list
+    /*
+    ctx.jobLock.Enter();
+    ctx.jobs.Append(jctx);
+    ctx.jobLock.Leave();
+    */
 
     // Trigger threads to wake up and compete for jobs
     for (Ptr<JobThread>& thread : ctx.threads)

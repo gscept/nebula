@@ -29,7 +29,7 @@ public:
         Core9  =      0x200,
         Core10 =      0x400,
         Core11 =      0x800,
-        Core12 =     0x1000,
+        Core12 =     0x1000, // << Zen 3
         Core13 =     0x2000,
         Core14 =     0x4000,
         Core15 =     0x8000,

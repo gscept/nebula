@@ -21,6 +21,8 @@ class PosixEvent
 public:
     /// constructor
     PosixEvent(bool manualReset=false);
+    /// Move constructor
+    PosixEvent(PosixEvent&& ev);
     /// destructor
     ~PosixEvent();
     /// signal the event
@@ -33,7 +35,11 @@ public:
     bool WaitTimeout(int ms) const;
     /// check if event is signalled
     bool Peek() const;
+    /// Returns true if event is manually reset
+    bool IsManual() const;
+
 private:
+    bool manual;
     sem_t* semaphore;
 };
 
@@ -42,11 +48,23 @@ private:
     manual reset is not used, since it's only used for win32events
 */
 inline
-PosixEvent::PosixEvent(bool manualReset) : 
-    semaphore(0)
+PosixEvent::PosixEvent(bool manualReset) 
+    : semaphore(0)
+    , manual(manualReset)
 {
     this->semaphore = new sem_t;
     sem_init(this->semaphore, 0, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline 
+PosixEvent::PosixEvent(PosixEvent&& ev)
+{
+    this->semaphore = ev.semaphore;
+    this->manual = ev.semaphore;
+    ev.semaphore = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -117,6 +135,15 @@ inline bool
 PosixEvent::Peek() const
 {
     return 0 == sem_trywait(this->semaphore);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool 
+PosixEvent::IsManual() const
+{
+    return this->manual;
 }
 
 }; // namespace Posix

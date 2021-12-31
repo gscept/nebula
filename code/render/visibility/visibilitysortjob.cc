@@ -26,6 +26,7 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
     for (ptrdiff sliceIdx = 0; sliceIdx < ctx.numSlices; sliceIdx++)
     {
         auto visibilityResults = (Math::ClipStatus::Type*)N_JOB_INPUT(ctx, sliceIdx, 0);
+        auto indices = (uint*)N_JOB_INPUT(ctx, sliceIdx, 1);
         auto drawList = (ObserverContext::VisibilityDrawList*)N_JOB_OUTPUT(ctx, sliceIdx, 0);
 
         // calculate amount of models
@@ -34,12 +35,13 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
         if (numNodeInstances == 0)
             break;
 
-        // Make sure we're not exceeding the number of bits in the index buffer reserved for the actual node instance
-        n_assert(numNodeInstances < 0xFFFFFFFF)
-        
         Util::Array<uint64> indexBuffer;
         for (uint32 i = 0; i < numNodeInstances; i++)
-            indexBuffer.Append(i);
+        {
+            // Make sure we're not exceeding the number of bits in the index buffer reserved for the actual node instance
+            n_assert(indices[i] < 0xFFFFFFFF);
+            indexBuffer.Append(indices[i]);
+        }
 
         // loop over each node and give them the appropriate weight
         uint32 i = 0;
@@ -49,7 +51,7 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
             uint64 index = indexBuffer[i] & 0x00000000FFFFFFFF;
 
             // If not visible nor active, erase item from index list
-            if (!AllBits(nodes->nodeFlags[i], Models::NodeInstanceFlags::NodeInstance_Active) || visibilityResults[index] == Math::ClipStatus::Outside)
+            if (!AllBits(nodes->nodeFlags[index], Models::NodeInstanceFlags::NodeInstance_Active) || visibilityResults[index] == Math::ClipStatus::Outside)
             {
                 indexBuffer.EraseIndexSwap(i);
                 continue;
@@ -57,7 +59,7 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
             else
             {
                 // Set the node visible flag (use this to figure out if a node is seen by __any__ observer)
-                nodes->nodeFlags[i] = SetBits(nodes->nodeFlags[i], Models::NodeInstance_Visible);
+                nodes->nodeFlags[index] = SetBits(nodes->nodeFlags[index], Models::NodeInstance_Visible);
             }
 
             // Get sort id and combine with index to get full sort id
