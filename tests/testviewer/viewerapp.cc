@@ -6,6 +6,7 @@
 #include "viewerapp.h"
 
 #include "core/refcounted.h"
+#include "system/systeminfo.h"
 #include "timing/timer.h"
 #include "io/console.h"
 #include "io/logfileconsolehandler.h"
@@ -22,6 +23,8 @@
 #include "lighting/lightcontext.h"
 #include "characters/charactercontext.h"
 #include "decals/decalcontext.h"
+
+#include "jobs2/jobs2.h"
 
 #include "graphics/environmentcontext.h"
 #include "fog/volumetricfogcontext.h"
@@ -119,6 +122,13 @@ SimpleViewerApplication::Open()
         this->resMgr->Open();
         this->inputServer->Open();
         this->gfxServer->Open();
+
+        auto systemInfo = Core::SysFunc::GetSystemInfo();
+
+        Jobs2::JobSystemInitInfo jobSystemInfo;
+        jobSystemInfo.numThreads = systemInfo->GetNumCpuCores() - 4;
+        jobSystemInfo.name = "JobSystem";
+        Jobs2::JobSystemInit(jobSystemInfo);
 
         SizeT width = this->GetCmdLineArgs().GetInt("-w", 1280);
         SizeT height = this->GetCmdLineArgs().GetInt("-h", 1024);
