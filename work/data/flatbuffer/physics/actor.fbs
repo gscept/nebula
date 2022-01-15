@@ -11,7 +11,7 @@ namespace PhysicsResource;
 
 table MeshCollider
 {
-    primGroup : ushort;
+    prim_group : ushort;
     type : Physics.MeshTopology;
     file : string;
 }
@@ -61,6 +61,7 @@ table Shape
 table Actor
 {
     feedback : Physics.CollisionFeedback;
+    collision : string;
     shapes : [Shape];
 }
 

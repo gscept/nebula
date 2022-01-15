@@ -181,7 +181,7 @@ LoadMaterialTable()
         Flat::FlatbufferInterface::DeserializeFlatbuffer<Physics::Materials>(materials, (uint8_t*)materialsString.AsCharPtr());
         for (auto const& material : materials.entries)
         {
-            CreateMaterial(material->name, material->staticFriction, material->dynamicFriction, material->restitution, material->density);
+            CreateMaterial(material->name, material->static_friction, material->dynamic_friction, material->restitution, material->density);
         }
     }
 }

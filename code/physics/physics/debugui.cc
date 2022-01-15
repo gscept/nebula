@@ -211,8 +211,8 @@ void RenderMaterialsUI()
         hasSelection = true;
         const Material& mat = GetMaterial(selected);
         original.density = mat.density;
-        original.dynamicFriction = mat.material->getDynamicFriction();
-        original.staticFriction = mat.material->getStaticFriction();
+        original.dynamic_friction = mat.material->getDynamicFriction();
+        original.static_friction = mat.material->getStaticFriction();
         original.restitution = mat.material->getRestitution();
         current = original;
     }
@@ -221,13 +221,13 @@ void RenderMaterialsUI()
     {
         GetMaterial(selected).density = current.density;
     }
-    if (dirty || ImGui::DragFloat("Dynamic Friction", &current.dynamicFriction, 0.05f, 0.0f, 2.0f))
+    if (dirty || ImGui::DragFloat("Dynamic Friction", &current.dynamic_friction, 0.05f, 0.0f, 2.0f))
     {
-        GetMaterial(selected).material->setDynamicFriction(current.dynamicFriction);
+        GetMaterial(selected).material->setDynamicFriction(current.dynamic_friction);
     }
-    if (dirty || ImGui::DragFloat("Static Friction", &current.staticFriction, 0.05f, 0.0f, 2.0f))
+    if (dirty || ImGui::DragFloat("Static Friction", &current.static_friction, 0.05f, 0.0f, 2.0f))
     {
-        GetMaterial(selected).material->setStaticFriction(current.staticFriction);
+        GetMaterial(selected).material->setStaticFriction(current.static_friction);
     }
     if (dirty || ImGui::DragFloat("Restitution", &current.restitution, 0.05f, 0.0f, 2.0f))
     {
@@ -276,8 +276,8 @@ void RenderMaterialsUI()
             std::unique_ptr<MaterialDefinitionT> def = std::make_unique<MaterialDefinitionT>();
             Material const& mat = GetMaterial(i);
             def->density = mat.density;
-            def->dynamicFriction = mat.material->getDynamicFriction();
-            def->staticFriction = mat.material->getStaticFriction();
+            def->dynamic_friction = mat.material->getDynamicFriction();
+            def->static_friction = mat.material->getStaticFriction();
             def->restitution = mat.material->getRestitution();
             def->name = mat.name.AsString();
             mtable.entries.push_back(std::move(def));

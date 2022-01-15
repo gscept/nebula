@@ -1,0 +1,23 @@
+enum Response : byte
+{
+	Ignore = 0,
+	Block = 1
+}
+
+table FiltersResponses
+{
+	default_collision : Response;
+	default_query : Response;
+	collision : [Response];
+	query : [Response];
+}
+
+table FilterBehaviour
+{
+	names : [string];
+	responses : FiltersResponses;
+}
+
+root_type FilterBehaviour;
+file_identifier "FILT";
+file_extension "filter";

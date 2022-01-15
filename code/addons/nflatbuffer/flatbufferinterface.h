@@ -62,7 +62,7 @@ FlatbufferInterface::SerializeHelper(ItemT const& item, const char* ident)
 {
     Util::StringAtom sIdent(ident);
     n_assert(FlatbufferInterface::HasSchema(sIdent));
-    flatbuffers::FlatBufferBuilder builder;
+    flatbuffers::FlatBufferBuilder builder(65536);
     builder.Finish(BaseT::Pack(builder, &item));
     return FlatbufferInterface::BufferToText(builder.GetBufferPointer(), sIdent);
 }
@@ -73,7 +73,7 @@ FlatbufferInterface::SerializeHelper(ItemT const& item, const char* ident)
 template <typename BaseT, typename ItemT> Util::Blob
 FlatbufferInterface::SerializeFlatbuffer(ItemT const& item)
 {
-    flatbuffers::FlatBufferBuilder builder;
+    flatbuffers::FlatBufferBuilder builder(65536);
     builder.Finish(BaseT::Pack(builder, &item));
     return Util::Blob(builder.GetBufferPointer(), builder.GetSize());
 }
