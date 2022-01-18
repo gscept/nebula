@@ -6,37 +6,12 @@
 #include "threading/criticalsection.h"
 #include "threading/interlocked.h"
 #include "memory/arenaallocator.h"
+#include "profiling/profiling.h"
 #include "jobs2.h"
 namespace Jobs2
 {
 
-struct JobContext
-{
-    JobFunc func;
-    int remainingGroups;
-    SizeT numInvocations;
-    SizeT groupSize;
-    volatile long groupCompletionCounter;
-    void* data;
-    Threading::Event* waitEvent;
-    Threading::Event* signalEvent;
-};
-
-struct JobNode
-{
-    JobNode* next;
-    JobContext job;
-};
-
-struct
-{
-    Threading::CriticalSection jobLock;
-    Util::Array<JobContext> jobs;
-    Memory::ArenaAllocator<0x100> nodeAllocator;
-    JobNode* head;
-    Util::FixedArray<Ptr<JobThread>> threads;
-
-} ctx;
+Jobs2Context ctx;
 
 __ImplementClass(Jobs2::JobThread, 'J2TH', Threading::Thread);
 //------------------------------------------------------------------------------
@@ -74,6 +49,7 @@ JobThread::EmitWakeupSignal()
 void
 JobThread::DoWork()
 {
+    Profiling::ProfilingRegisterThread();
     while (!this->ThreadStopRequested())
     {
 wait:
@@ -89,24 +65,18 @@ next:
         int64_t jobIndex = -1;
         while (true)
         {
-            // If there are no more jobs, it means this thread lost
-            // the race to find more work, so go back to waiting for work again
-            if (ctx.head == nullptr)
+            // If head is nullptr, we either lost the race to grab a job
+            // or we traversed the whole list but found no job which has it's dependency satisfied,
+            // so let's wait 
+            if (ctx.head == nullptr || node == nullptr)
             {
                 ctx.jobLock.Leave();
                 goto wait;
             }
 
-            // We traversed the whole list, so let's go back to where we began
-            if (node == nullptr)
-            {
-                ctx.jobLock.Leave();
-                goto next;
-            }
-
             bool dependencyDone = true;
-            if (node->job.waitEvent != nullptr)
-                dependencyDone = node->job.waitEvent->Peek();
+            for (IndexT i = 0; i < node->job.numWaitCounters; i++)
+                dependencyDone &= *node->job.waitCounters[i] == 0;
 
             if (!dependencyDone)
             {
@@ -150,11 +120,29 @@ next:
         long numJobsLeft = Threading::Interlocked::Decrement(&node->job.groupCompletionCounter);
         if (numJobsLeft == 0)
         {
-            if (node->job.signalEvent != nullptr)
-                node->job.signalEvent->Signal();
+            // If we have a job counter, only signal the event when the counter reaches 0
+            if (node->job.doneCounter != nullptr)
+            {
+                long numDispatchesLeft = Threading::Interlocked::Decrement(node->job.doneCounter);
 
-            // Delete node
-            delete node;
+                if (node->job.signalEvent != nullptr && numDispatchesLeft == 0)
+                    node->job.signalEvent->Signal();
+            }
+            else
+            {
+                // If we don't have a counter, just signal it when we're done with this dispatch
+                if (node->job.signalEvent != nullptr)
+                    node->job.signalEvent->Signal();
+            }
+
+            // Since other threads might be waiting for this job to finish, trigger other threads to wake up
+            for (Ptr<JobThread>& thread : ctx.threads)
+            {
+                thread->EmitWakeupSignal();
+            }
+
+            // Delete job data and node
+            Memory::Free(Memory::ScratchHeap, node);
         }
 
         // Do another 
@@ -192,91 +180,6 @@ JobSystemUninit()
         thread->Stop();
     }
     ctx.threads.Clear();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-JobDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSize, void* context, Threading::Event* waitEvent, Threading::Event* signalEvent)
-{
-    // Calculate the number of actual jobs based on invocations and group size
-    if (waitEvent != nullptr)
-        n_assert_fmt(waitEvent->IsManual(), "Wait event must be manual reset because job system needs to peek without changing it's state");
-    SizeT numJobs = Math::ceil(numInvocations / float(groupSize));
-
-    // Setup job context
-    JobContext jctx;
-    jctx.func = func;
-    jctx.remainingGroups = numJobs;
-    jctx.groupCompletionCounter = numJobs;
-    jctx.numInvocations = numInvocations;
-    jctx.groupSize = groupSize;
-    jctx.waitEvent = waitEvent;
-    jctx.signalEvent = signalEvent;
-    jctx.data = context;
-
-    JobNode* node = new JobNode;
-    node->job = jctx;
-
-    ctx.jobLock.Enter();
-    node->next = ctx.head;
-    ctx.head = node;
-    ctx.jobLock.Leave();
-
-    /*
-    // Push job to job list
-    ctx.jobLock.Enter();
-    ctx.jobs.Append(jctx);
-    ctx.jobLock.Leave();
-    */
-
-    // Trigger threads to wake up and compete for jobs
-    for (Ptr<JobThread>& thread : ctx.threads)
-    {
-        thread->EmitWakeupSignal();
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-JobDispatch(const JobFunc& func, const SizeT numInvocations, void* context, Threading::Event* waitEvent, Threading::Event* signalEvent)
-{
-    // Setup job context
-    if (waitEvent != nullptr)
-        n_assert_fmt(waitEvent->IsManual(), "Wait event must be manual reset because job system needs to peek without changing it's state");
-    JobContext jctx;
-    jctx.func = func;
-    jctx.remainingGroups = 1;
-    jctx.groupCompletionCounter = 1;
-    jctx.numInvocations = numInvocations;
-    jctx.groupSize = numInvocations;
-    jctx.waitEvent = waitEvent;
-    jctx.signalEvent = signalEvent;
-    jctx.data = context;
-
-    JobNode* node = new JobNode;
-    node->job = jctx;
-
-    ctx.jobLock.Enter();
-    node->next = ctx.head;
-    ctx.head = node;
-    ctx.jobLock.Leave();
-
-    // Push job to job list
-    /*
-    ctx.jobLock.Enter();
-    ctx.jobs.Append(jctx);
-    ctx.jobLock.Leave();
-    */
-
-    // Trigger threads to wake up and compete for jobs
-    for (Ptr<JobThread>& thread : ctx.threads)
-    {
-        thread->EmitWakeupSignal();
-    }
 }
 
 } // namespace Jobs2
