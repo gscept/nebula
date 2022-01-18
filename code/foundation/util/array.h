@@ -119,6 +119,10 @@ public:
     void EraseBack();
     /// erase front
     void EraseFront();
+    /// Pop front
+    TYPE PopFront();
+    /// Pop back
+    TYPE PopBack();
     /// insert element before element at index
     void Insert(IndexT index, const TYPE& elm);
     /// insert element into sorted array, return index where element was included
@@ -592,7 +596,7 @@ Array<TYPE>::DestroyRange(IndexT fromIndex, IndexT toIndex)
 #if NEBULA_DEBUG
     else
     {
-        Memory::Clear(&this->elements[fromIndex], sizeof(TYPE) * (toIndex - fromIndex));        
+        Memory::Clear((void*)&this->elements[fromIndex], sizeof(TYPE) * (toIndex - fromIndex));        
     }
 #endif
 }
@@ -615,7 +619,7 @@ Array<TYPE>::CopyRange(TYPE* to, TYPE* from, SizeT num)
     }
     else
     {
-        Memory::Copy(from, to, num * sizeof(TYPE));
+        Memory::CopyElements(from, to, num);
     }       
 }
 
@@ -637,7 +641,7 @@ Array<TYPE>::MoveRange(TYPE* to, TYPE* from, SizeT num)
     }
     else
     {
-        Memory::Move(from, to, num * sizeof(TYPE));
+        Memory::MoveElements(from, to, num);
     }
 }
 
@@ -1029,6 +1033,18 @@ Array<TYPE>::EraseFront()
 //------------------------------------------------------------------------------
 /**
 */
+template<class TYPE>
+inline TYPE 
+Array<TYPE>::PopFront()
+{
+    TYPE ret = std::forward<TYPE>(this->elements[0]);
+    this->EraseIndex(0);
+    return std::move(ret);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<class TYPE> void
 Array<TYPE>::Insert(IndexT index, const TYPE& elm)
 {
@@ -1192,6 +1208,8 @@ Array<TYPE>::Fill(IndexT first, SizeT num, const TYPE& elm)
     {
         this->GrowTo(first + num);
     }
+    this->count = num;
+ 
     IndexT i;
     for (i = first; i < (first + num); i++)
     {
