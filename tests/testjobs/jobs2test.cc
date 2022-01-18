@@ -43,24 +43,23 @@ Jobs2Test::Run()
     portInfo.priority = UINT_MAX;
     JobSystemInit(portInfo);
 
+    volatile long waitCounters[3] = { 1,1,1 };
     EventManual finishedEvent[3];
     Threading::Event hostEvent;
     struct Context
     {
-        Math::vec4* input1;
+        Math::vec4* inout;
         Math::vec4* input2;
-        Math::vec4* output;
     } ctx;
 
     // Setup thread context
     const uint NumInputs = 100000;
-    ctx.input1 = n_new_array(Math::vec4, NumInputs);
+    ctx.inout = n_new_array(Math::vec4, NumInputs);
     ctx.input2 = n_new_array(Math::vec4, NumInputs);
-    ctx.output = n_new_array(Math::vec4, NumInputs);
 
     for (uint i = 0; i < NumInputs; i++)
     {
-        ctx.input1[i] = Math::vec4(1, 2, 3, 4);
+        ctx.inout[i] = Math::vec4(1, 2, 3, 4);
         ctx.input2[i] = Math::vec4(5, 6, 7, 8);
     }
 
@@ -73,15 +72,15 @@ Jobs2Test::Run()
             IndexT index = i + invocationOffset;
             if (index >= totalJobs)
                 break;
-            context->output[index] = Math::cross3(context->input1[index], context->input2[index]);
+            context->inout[index] = Math::cross3(context->inout[index], context->input2[index]);
         }
     };
     
-    // Run function
-    JobDispatch(fun, NumInputs, 1024, &ctx, nullptr, &finishedEvent[0]);
-    JobDispatch(fun, NumInputs, 1024, &ctx, &finishedEvent[0], &finishedEvent[1]);
-    JobDispatch(fun, NumInputs, 1024, &ctx, &finishedEvent[1], &finishedEvent[2]);
-    JobDispatch(fun, NumInputs, 1024, &ctx, &finishedEvent[2], &hostEvent);
+    // Run functions in lockstep
+    JobDispatch(fun, NumInputs, 1024, &ctx, nullptr, &waitCounters[0]);
+    JobDispatch(fun, NumInputs, 1024, &ctx, &waitCounters[0], &waitCounters[1]);
+    JobDispatch(fun, NumInputs, 1024, &ctx, &waitCounters[1], &waitCounters[2]);
+    JobDispatch(fun, NumInputs, 1024, &ctx, &waitCounters[2], nullptr, &hostEvent); // Last dispatch triggers a waitable event
 
     // Wait for jobs to finish
     bool didFinish = hostEvent.WaitTimeout(10000000);
@@ -90,13 +89,13 @@ Jobs2Test::Run()
     bool result = true;
     for (uint i = 0; i < NumInputs; i++)
     {
-        result &= (ctx.output[i] == Math::vec4(-4, 8, -4, 0));
+        // Result is calculated using https://crossproductcalculator.org/
+        result &= (ctx.inout[i] == Math::vec4(-8800, -880, 7040, 0));
     }
     VERIFY(result);
 
-    delete[] ctx.input1;
+    delete[] ctx.inout;
     delete[] ctx.input2;
-    delete[] ctx.output;
 }
 
 } // namespace Test
