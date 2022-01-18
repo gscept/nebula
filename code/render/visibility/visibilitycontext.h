@@ -36,7 +36,6 @@ enum
     Observer_DependencyMode,
     Observer_DrawList,
     Observer_DrawListAllocator,
-    Observer_SortJobEvent
 };
 
 enum
@@ -142,7 +141,6 @@ public:
     static Jobs::JobSyncId jobInternalSync3;
     static Jobs::JobSyncId jobHostSync;
     static Util::Queue<Jobs::JobId> runningJobs;
-    static Util::Queue<Threading::Event> waitEvents;
 
 private:
 
@@ -159,7 +157,6 @@ private:
         , DependencyMode                           // dependency mode
         , VisibilityDrawList                       // draw list
         , Memory::ArenaAllocator<1024>             // memory allocator for draw commands
-        , Threading::Event
     > ObserverAllocator;
     static ObserverAllocator observerAllocator;
 

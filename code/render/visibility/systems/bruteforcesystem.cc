@@ -12,8 +12,6 @@
 namespace Visibility
 {
 
-
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -26,7 +24,7 @@ BruteforceSystem::Setup(const BruteforceSystemLoadInfo& info)
 /**
 */
 void
-BruteforceSystem::Run(Threading::Event* previousSystemEvent)
+BruteforceSystem::Run(const Jobs2::CompletionCounter* previousSystemCompletionCounters, const Util::FixedArray<const Jobs2::CompletionCounter*>& extraCounters)
 {
     // This is the context used to provide the job with
     struct Context
@@ -36,16 +34,33 @@ BruteforceSystem::Run(Threading::Event* previousSystemEvent)
         const uint32* ids;
         const Math::bbox* boundingBoxes;
         Math::ClipStatus::Type* clipStatuses;
-    } static ctx;
-
-    ctx.ids = this->ent.ids;
-    ctx.boundingBoxes = this->ent.boxes;
-    ctx.objectCount = this->ent.count;
+    };
 
     IndexT i;
     for (i = 0; i < this->obs.count; i++)
     {
         Math::mat4 camera = this->obs.transforms[i];
+
+        n_assert(this->obs.completionCounters[i] == 0);
+        this->obs.completionCounters[i] = 1;
+
+        Context ctx;
+        ctx.ids = this->ent.ids;
+        ctx.boundingBoxes = this->ent.boxes;
+
+        // Setup counters
+        Util::FixedArray<const Jobs2::CompletionCounter*> counters(extraCounters.Size() + previousSystemCompletionCounters != nullptr ? 1 : 0);
+        if (previousSystemCompletionCounters != nullptr)
+        {
+            counters[0] = &previousSystemCompletionCounters[i];
+            for (int i = 0; i < extraCounters.Size(); i++)
+                counters[i + 1] = extraCounters[i];
+        }
+        else
+        {
+            for (int i = 0; i < extraCounters.Size(); i++)
+                counters[i] = extraCounters[i];
+        }
 
         // Splat the matrix such that all _x, _y, ... will contain the column values of x, y, ...
         // This provides a way to rearrange the camera transform into a more SSE friendly matrix transform in the job
@@ -71,23 +86,19 @@ BruteforceSystem::Run(Threading::Event* previousSystemEvent)
 
         ctx.clipStatuses = this->obs.results[i].Begin();
 
-        // Make sure we're done with the previous execution, and that the event is reset
-        this->systemDoneEvent.Wait();
-        this->systemDoneEvent.Reset();
-
         // All set, run the job
         Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
         {
             N_SCOPE(BruteforceViewFrustumCulling, Visibility);
-            Context* context = static_cast<Context*>(ctx);
+            auto context = static_cast<Context*>(ctx);
 
             // Iterate over work group
             for (IndexT i = 0; i < groupSize; i++)
             {
                 // Get item index
                 IndexT index = i + invocationOffset;
-                if (index >= context->objectCount)
-                    break;
+                if (index >= totalJobs)
+                    return;
 
                 uint32 objectId = context->ids[index];
 
@@ -95,7 +106,13 @@ BruteforceSystem::Run(Threading::Event* previousSystemEvent)
                 if (context->clipStatuses[index] == Math::ClipStatus::Outside)
                     context->clipStatuses[index] = context->boundingBoxes[objectId].clipstatus(context->colX, context->colY, context->colZ, context->colW);
             }
-        }, ctx.objectCount, 1024, &ctx, previousSystemEvent, &this->systemDoneEvent);
+        }
+        , this->ent.count
+        , 1024
+        , ctx
+        , counters
+        , &this->obs.completionCounters[i]
+        , nullptr);
 
         /*
         Jobs::JobContext ctx;

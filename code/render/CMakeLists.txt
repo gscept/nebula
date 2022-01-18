@@ -406,8 +406,6 @@ ENDIF()
                 framesubpassorderedbatch.h
                 framesubpassplugin.cc
                 framesubpassplugin.h
-                frameswap.cc
-                frameswap.h
             )
 
         fips_dir(graphics)

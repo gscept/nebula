@@ -23,7 +23,7 @@ private:
     void Setup(const BruteforceSystemLoadInfo& info);
 
     /// run system
-    void Run(Threading::Event* previousSystemEvent) override;
+    void Run(const Jobs2::CompletionCounter* previousSystemCompletionCounters, const Util::FixedArray<const Jobs2::CompletionCounter*>& extraCounters) override;
 };
 
 } // namespace Visibility

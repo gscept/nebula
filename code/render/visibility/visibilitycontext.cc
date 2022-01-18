@@ -45,7 +45,7 @@ Jobs::JobSyncId ObserverContext::jobInternalSync2;
 Jobs::JobSyncId ObserverContext::jobInternalSync3;
 Jobs::JobSyncId ObserverContext::jobHostSync;
 Util::Queue<Jobs::JobId> ObserverContext::runningJobs;
-Util::Queue<Threading::Event> ObserverContext::waitEvents;
+static Util::Queue<Threading::Event*> waitEvents;
 
 extern void VisibilitySortJob(const Jobs::JobFuncContext& ctx);
 extern void VisibilityDependencyJob(const Jobs::JobFuncContext& ctx);
@@ -90,14 +90,10 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     const Util::Array<VisibilityEntityType>& observerTypes = observerAllocator.GetArray<Observer_EntityType>();
     Util::Array<VisibilityResultArray>& observerResults = observerAllocator.GetArray<Observer_ResultArray>();
 
-    static Util::Array<uint32> nodes;
-    nodes.Clear();
-
     IndexT i;
     for (i = 0; i < observerIds.Size(); i++)
     {
         const Graphics::GraphicsEntityId id = observerIds[i];
-
         const VisibilityEntityType type = observerTypes[i];
 
         if (id == Graphics::GraphicsEntityId::Invalid())
@@ -121,6 +117,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     for (i = 0; i < observerResults.Size(); i++)
     {
         VisibilityDrawList& visibilities = observerAllocator.Get<Observer_DrawList>(i);
+        observerResults[i].Fill(0, observerResults[i].Size(), Math::ClipStatus::Type::Outside);
         visibilities.visibilityTable.Clear();
         visibilities.drawPackets.Clear();
     }
@@ -137,17 +134,43 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 
     // setup observerable entities
     const Util::Array<Graphics::GraphicsEntityId>& ids = ObservableContext::observableAllocator.GetArray<Observable_EntityId>();
+    static Util::Array<uint32> nodes;
+    nodes.Clear();
+    nodes.Resize(observerResults[0].Size());
+
+    static Jobs2::CompletionCounter idCounter;
+    idCounter = 1;
     if (nodeInstances.nodeBoundingBoxes.Size() > 0)
     {
-        // Update IDs list
-        for (Graphics::GraphicsEntityId id : ids)
+        struct IdUpdateContext
         {
-            // Update list of renderables
-            const Models::NodeInstanceRange& nodeInstances = Models::ModelContext::GetModelRenderableRange(id);
-            for (IndexT i = nodeInstances.begin; i < nodeInstances.end; i++)
-                nodes.Append(i);
-        }
+            Graphics::GraphicsEntityId* ids;
+            Util::Array<uint32>* nodes;
+        } idCtx;
 
+        idCtx.ids = ids.Begin();
+        idCtx.nodes = &nodes;
+
+        // Run job to collect model node ids
+        Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+        {
+            N_SCOPE(VisibilityIdCollectJob, Visibility);
+
+            auto context = static_cast<IdUpdateContext*>(ctx);
+            IndexT offset = 0;
+            for (IndexT i = 0; i < groupSize; i++)
+            {
+                IndexT index = i + invocationOffset;
+                if (index >= totalJobs)
+                    return;
+
+                // Get node range and update ids buffer
+                const Models::NodeInstanceRange& nodeInstances = Models::ModelContext::GetModelRenderableRange(context->ids[index]);
+                for (IndexT j = nodeInstances.begin; j < nodeInstances.end; j++)
+                    context->nodes->Begin()[invocationOffset + offset++] = j;
+            }
+        }, ids.Size(), 1024, idCtx, {}, &idCounter, nullptr);
+        
         for (i = 0; i < ObserverContext::systems.Size(); i++)
         {
             VisibilitySystem* sys = ObserverContext::systems[i];
@@ -156,14 +179,14 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     }
 
     // run all visibility systems
-    Threading::Event* prevSystemEvent = nullptr;
+    const Jobs2::CompletionCounter* prevSystemCounters = nullptr;
     if ((observerTransforms.Size() > 0) && (nodeInstances.nodeBoundingBoxes.Size() > 0))
     {
         for (i = 0; i < ObserverContext::systems.Size(); i++)
         {
             VisibilitySystem* sys = ObserverContext::systems[i];
-            sys->Run(prevSystemEvent);
-            prevSystemEvent = sys->GetFinishedEvent();
+            sys->Run(prevSystemCounters, {&idCounter});
+            prevSystemCounters = sys->GetCompletionCounters();
         }
     }
 
@@ -226,14 +249,9 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     // Wait for particles to finish updating their constants before running the final pass
     //Jobs::JobSyncThreadWait(Particles::ParticleContext::particleSync, Graphics::GraphicsServer::renderSystemsJobPort);
 
-    struct Context
-    {
-        Math::ClipStatus::Type* clipStatuses;
-        uint32* ids;
-        Visibility::ObserverContext::VisibilityDrawList* drawList;
-        Memory::ArenaAllocator<1024>* allocator;
-        const Models::ModelContext::ModelInstance::Renderable* renderables;
-    } static jobCtx;
+    static Jobs2::CompletionCounter completionCounter;
+    completionCounter = observerResults.Size();
+    Threading::Event* finishedEvent = new Threading::Event;
 
     for (i = 0; i < observerResults.Size(); i++)
     {
@@ -246,10 +264,15 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         const VisibilityResultArray& results = observerResults[i];
         VisibilityDrawList& visibilities = observerAllocator.Get<Observer_DrawList>(i);
         Memory::ArenaAllocator<1024>& allocator = observerAllocator.Get<Observer_DrawListAllocator>(i);
-        Threading::Event& finishedEvent = observerAllocator.Get<Observer_SortJobEvent>(i);
 
-        finishedEvent.Wait();
-        finishedEvent.Reset();
+        struct Context
+        {
+            Math::ClipStatus::Type* clipStatuses;
+            uint32* ids;
+            Visibility::ObserverContext::VisibilityDrawList* drawList;
+            Memory::ArenaAllocator<1024>* allocator;
+            const Models::ModelContext::ModelInstance::Renderable* renderables;
+        } jobCtx;
 
         jobCtx.clipStatuses = results.Begin();
         jobCtx.ids = nodes.Begin();
@@ -260,148 +283,146 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
         {
             N_SCOPE(VisibilitySortJob, Visibility);
-            Context* context = static_cast<Context*>(ctx);
+            auto context = static_cast<Context*>(ctx);
             context->allocator->Release();
 
-            for (ptrdiff sliceIdx = 0; sliceIdx < groupSize; sliceIdx++)
+            // calculate amount of models
+            uint32 numNodeInstances = totalJobs;
+
+            if (numNodeInstances == 0)
+                return;
+
+            Util::Array<uint64> indexBuffer(numNodeInstances, 0);
+            Util::Array<Math::ClipStatus::Type> clipStatuses(context->clipStatuses, numNodeInstances);
+            for (uint32 i = 0; i < numNodeInstances; i++)
             {
-                // calculate amount of models
-                uint32 numNodeInstances = totalJobs;
+                // Make sure we're not exceeding the number of bits in the index buffer reserved for the actual node instance
+                n_assert(context->ids[i] < 0xFFFFFFFF);
+                indexBuffer.Append(context->ids[i]);
+            }
 
-                if (numNodeInstances == 0)
-                    break;
+            // loop over each node and give them the appropriate weight
+            uint32 i = 0;
+            while (i < indexBuffer.Size())
+            {
+                n_assert(indexBuffer[i] < 0x00000000FFFFFFFF);
+                uint64 index = indexBuffer[i] & 0x00000000FFFFFFFF;
+                Math::ClipStatus::Type clipStatus = clipStatuses[i];
 
-                Util::Array<uint64> indexBuffer;
-                for (uint32 i = 0; i < numNodeInstances; i++)
+                // If not visible nor active, erase item from index list
+                if (!AllBits(context->renderables->nodeFlags[index], Models::NodeInstanceFlags::NodeInstance_Active) || clipStatus == Math::ClipStatus::Outside)
                 {
-                    // Make sure we're not exceeding the number of bits in the index buffer reserved for the actual node instance
-                    n_assert(context->ids[i] < 0xFFFFFFFF);
-                    indexBuffer.Append(context->ids[i]);
+                    indexBuffer.EraseIndexSwap(i);
+                    clipStatuses.EraseIndexSwap(i);
+                    continue;
+                }
+                else
+                {
+                    // Set the node visible flag (use this to figure out if a node is seen by __any__ observer)
+                    context->renderables->nodeFlags[index] = SetBits(context->renderables->nodeFlags[index], Models::NodeInstance_Visible);
                 }
 
-                // loop over each node and give them the appropriate weight
-                uint32 i = 0;
-                while (i < indexBuffer.Size())
+                // Get sort id and combine with index to get full sort id
+                uint64 sortId = context->renderables->nodeSortId[index];
+                indexBuffer[i] = sortId | index;
+                i++;
+            }
+
+            if (indexBuffer.IsEmpty())
+                return; // early out
+
+            // sort the index buffer
+            std::qsort(indexBuffer.Begin(), indexBuffer.Size(), sizeof(uint64), [](const void* a, const void* b)
+            {
+                uint64 arg1 = *static_cast<const uint64*>(a);
+                uint64 arg2 = *static_cast<const uint64*>(b);
+                return (arg1 > arg2) - (arg1 < arg2);
+            });
+
+            // Now resolve the indexbuffer into draw commands
+            uint32 numDraws = 0;
+            const uint32 numPackets = indexBuffer.Size();
+            context->drawList->drawPackets.Reserve(numPackets);
+
+            // Allocate single command which we can 
+            ObserverContext::VisibilityBatchCommand* cmd = nullptr;
+            Models::ModelNode* node = nullptr;
+            static auto NullDrawModifiers = Util::MakeTuple(UINT32_MAX, UINT32_MAX);
+            Util::Tuple<uint32, uint32> drawModifiers = NullDrawModifiers;
+            Materials::ShaderConfig* currentMaterialType = nullptr;
+
+            for (uint32 i = 0; i < numPackets; i++)
+            {
+                uint32 index = indexBuffer[i] & 0x00000000FFFFFFFF;
+
+                // If new material, add a new entry into the lookup table
+                auto otherMaterialType = context->renderables->nodeMaterialTypes[index];
+                if (currentMaterialType != otherMaterialType)
                 {
-                    n_assert(indexBuffer[i] < 0x00000000FFFFFFFF);
-                    uint64 index = indexBuffer[i] & 0x00000000FFFFFFFF;
+                    // Add new draw command and get reference to it
+                    cmd = &context->drawList->visibilityTable.AddUnique(otherMaterialType);
 
-                    // If not visible nor active, erase item from index list
-                    if (!AllBits(context->renderables->nodeFlags[index], Models::NodeInstanceFlags::NodeInstance_Active) || context->clipStatuses[index] == Math::ClipStatus::Outside)
-                    {
-                        indexBuffer.EraseIndexSwap(i);
-                        continue;
-                    }
-                    else
-                    {
-                        // Set the node visible flag (use this to figure out if a node is seen by __any__ observer)
-                        context->renderables->nodeFlags[index] = SetBits(context->renderables->nodeFlags[index], Models::NodeInstance_Visible);
-                    }
+                    // Setup initial state for command
+                    cmd->packetOffset = numDraws;
+                    cmd->numDrawPackets = 0;
 
-                    // Get sort id and combine with index to get full sort id
-                    uint64 sortId = context->renderables->nodeSortId[index];
-                    indexBuffer[i] = sortId | index;
-                    i++;
+                    node = nullptr;
+                    drawModifiers = NullDrawModifiers;
+                    currentMaterialType = otherMaterialType;
                 }
+                n_assert(cmd != nullptr);
 
-                if (indexBuffer.IsEmpty())
-                    return; // early out
-
-                // sort the index buffer
-                std::qsort(indexBuffer.Begin(), indexBuffer.Size(), sizeof(uint64), [](const void* a, const void* b)
+                // If a new node (resource), add a model apply command
+                auto otherNode = context->renderables->nodes[index];
+                if (node != otherNode)
                 {
-                    uint64 arg1 = *static_cast<const uint64*>(a);
-                    uint64 arg2 = *static_cast<const uint64*>(b);
-                    return (arg1 > arg2) - (arg1 < arg2);
-                });
+                    ObserverContext::VisibilityModelCommand& batchCmd = cmd->models.Emplace();
 
-                // Now resolve the indexbuffer into draw commands
-                uint32 numDraws = 0;
-                const uint32 numPackets = indexBuffer.Size();
-                context->drawList->drawPackets.Reserve(numPackets);
-
-                // Allocate single command which we can 
-                ObserverContext::VisibilityBatchCommand* cmd = nullptr;
-                Models::ModelNode* node = nullptr;
-                static auto NullDrawModifiers = Util::MakeTuple(UINT32_MAX, UINT32_MAX);
-                Util::Tuple<uint32, uint32> drawModifiers = NullDrawModifiers;
-                Materials::ShaderConfig* currentMaterialType = nullptr;
-
-                for (uint32 i = 0; i < numPackets; i++)
-                {
-                    uint32 index = indexBuffer[i] & 0x00000000FFFFFFFF;
-
-                    // If new material, add a new entry into the lookup table
-                    auto otherMaterialType = context->renderables->nodeMaterialTypes[index];
-                    if (currentMaterialType != otherMaterialType)
-                    {
-                        // Add new draw command and get reference to it
-                        IndexT entry = context->drawList->visibilityTable.Add(otherMaterialType, ObserverContext::VisibilityBatchCommand());
-                        cmd = &context->drawList->visibilityTable.ValueAtIndex(otherMaterialType, entry);
-
-                        // Setup initial state for command
-                        cmd->packetOffset = numDraws;
-                        cmd->numDrawPackets = 0;
-
-                        node = nullptr;
-                        drawModifiers = NullDrawModifiers;
-                        currentMaterialType = otherMaterialType;
-                    }
-                    n_assert(cmd != nullptr);
-
-                    // If a new node (resource), add a model apply command
-                    auto otherNode = context->renderables->nodes[index];
-                    if (node != otherNode)
-                    {
-                        ObserverContext::VisibilityModelCommand& batchCmd = cmd->models.Emplace();
-
-                        // The offset of the command corresponds to where in the VisibilityBatchCommand batch the model should be applied
-                        batchCmd.offset = cmd->packetOffset + cmd->numDrawPackets;
-                        batchCmd.modelCallback = context->renderables->nodeModelCallbacks[index];
-                        batchCmd.surface = context->renderables->nodeSurfaces[index];
+                    // The offset of the command corresponds to where in the VisibilityBatchCommand batch the model should be applied
+                    batchCmd.offset = cmd->packetOffset + cmd->numDrawPackets;
+                    batchCmd.modelCallback = context->renderables->nodeModelCallbacks[index];
+                    batchCmd.surface = context->renderables->nodeSurfaces[index];
 
 #if NEBULA_GRAPHICS_DEBUG
-                        batchCmd.nodeName = context->renderables->nodeNames[index];
+                    batchCmd.nodeName = context->renderables->nodeNames[index];
 #endif
-                        node = otherNode;
-                    }
-
-                    // If a new set of draw modifiers (instance count and base instance) are used, insert a new draw command
-                    auto otherDrawModifiers = context->renderables->nodeDrawModifiers[index];
-                    if (drawModifiers != otherDrawModifiers)
-                    {
-                        ObserverContext::VisibilityDrawCommand& drawCmd = cmd->draws.Emplace();
-                        drawCmd.offset = cmd->packetOffset + cmd->numDrawPackets;
-                        drawCmd.numInstances = Util::Get<0>(otherDrawModifiers);
-                        drawCmd.baseInstance = Util::Get<1>(otherDrawModifiers);
-
-                        drawModifiers = otherDrawModifiers;
-                    }
-
-                    // allocate memory for draw packet
-                    void* mem = context->allocator->Alloc(sizeof(Models::ShaderStateNode::DrawPacket));
-
-                    // update packet and add to list
-                    Models::ShaderStateNode::DrawPacket* packet = reinterpret_cast<Models::ShaderStateNode::DrawPacket*>(mem);
-                    packet->numOffsets[0] = context->renderables->nodeStates[index].resourceTableOffsets.Size();
-                    packet->numTables = 1;
-                    packet->tables[0] = context->renderables->nodeStates[index].resourceTable;
-                    packet->surfaceInstance = context->renderables->nodeStates[index].surfaceInstance;
-#ifndef PUBLIC_BUILD
-                    packet->boundingBox = context->renderables->nodeBoundingBoxes[index];
-                    packet->nodeInstanceHash = context->renderables->nodes[index]->HashCode();
-#endif
-                    memcpy(packet->offsets[0], context->renderables->nodeStates[index].resourceTableOffsets.Begin(), context->renderables->nodeStates[index].resourceTableOffsets.ByteSize());
-                    packet->slots[0] = NEBULA_DYNAMIC_OFFSET_GROUP;
-                    context->drawList->drawPackets.Append(packet);
-                    cmd->numDrawPackets++;
-                    numDraws++;
+                    node = otherNode;
                 }
+
+                // If a new set of draw modifiers (instance count and base instance) are used, insert a new draw command
+                auto otherDrawModifiers = context->renderables->nodeDrawModifiers[index];
+                if (drawModifiers != otherDrawModifiers)
+                {
+                    ObserverContext::VisibilityDrawCommand& drawCmd = cmd->draws.Emplace();
+                    drawCmd.offset = cmd->packetOffset + cmd->numDrawPackets;
+                    drawCmd.numInstances = Util::Get<0>(otherDrawModifiers);
+                    drawCmd.baseInstance = Util::Get<1>(otherDrawModifiers);
+
+                    drawModifiers = otherDrawModifiers;
+                }
+
+                // allocate memory for draw packet
+                void* mem = context->allocator->Alloc(sizeof(Models::ShaderStateNode::DrawPacket));
+
+                // update packet and add to list
+                Models::ShaderStateNode::DrawPacket* packet = reinterpret_cast<Models::ShaderStateNode::DrawPacket*>(mem);
+                packet->numOffsets[0] = context->renderables->nodeStates[index].resourceTableOffsets.Size();
+                packet->numTables = 1;
+                packet->tables[0] = context->renderables->nodeStates[index].resourceTable;
+                packet->surfaceInstance = context->renderables->nodeStates[index].surfaceInstance;
+#ifndef PUBLIC_BUILD
+                packet->boundingBox = context->renderables->nodeBoundingBoxes[index];
+                packet->nodeInstanceHash = context->renderables->nodes[index]->HashCode();
+#endif
+                memcpy(packet->offsets[0], context->renderables->nodeStates[index].resourceTableOffsets.Begin(), context->renderables->nodeStates[index].resourceTableOffsets.ByteSize());
+                packet->slots[0] = NEBULA_DYNAMIC_OFFSET_GROUP;
+                context->drawList->drawPackets.Append(packet);
+                cmd->numDrawPackets++;
+                numDraws++;
             }
         },
-        nodes.Size(), &jobCtx, prevSystemEvent, &finishedEvent);
+        nodes.Size(), jobCtx, { &prevSystemCounters[i] }, &completionCounter, finishedEvent);
 
-        ObserverContext::waitEvents.Enqueue(finishedEvent);
 
         // then execute sort job, which only runs the function once
         /*
@@ -439,6 +460,8 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         ObserverContext::runningJobs.Enqueue(job);
         */
     }
+
+    waitEvents.Enqueue(finishedEvent);
 
     // insert sync after all visibility systems are done
     //Jobs::JobSyncThreadSignal(ObserverContext::jobHostSync, Graphics::GraphicsServer::renderSystemsJobPort);
@@ -605,11 +628,11 @@ ObserverContext::CreateBruteforceSystem(const BruteforceSystemLoadInfo& info)
 void
 ObserverContext::WaitForVisibility(const Graphics::FrameContext& ctx)
 {
-    while (ObserverContext::waitEvents.Size() > 0)
+    while (waitEvents.Size() > 0)
     {
-        auto ev = ObserverContext::waitEvents.Dequeue();
-        ev.Wait();
-        ev.Reset();
+        auto ev = waitEvents.Dequeue();
+        ev->Wait();
+        delete ev;
     }
 
     /*
@@ -632,11 +655,11 @@ ObserverContext::WaitForVisibility(const Graphics::FrameContext& ctx)
 void 
 ObserverContext::OnRenderDebug(uint32_t flags)
 {
-    while (ObserverContext::waitEvents.Size() > 0)
+    while (waitEvents.Size() > 0)
     {
-        auto ev = ObserverContext::waitEvents.Dequeue();
-        ev.Wait();
-        ev.Reset();
+        auto ev = waitEvents.Dequeue();
+        ev->Wait();
+        delete ev;
     }
 
     // wait for all jobs to finish
@@ -685,7 +708,7 @@ ObserverContext::OnRenderDebug(uint32_t flags)
         }
     }
 
-    Util::Array<VisibilityResultArray>& vis = observerAllocator.GetArray<3>();
+    Util::Array<VisibilityResultArray>& vis = observerAllocator.GetArray<Observer_ResultArray>();
     Util::FixedArray<SizeT> insideCounters(vis.Size(), 0);
     Util::FixedArray<SizeT> clippedCounters(vis.Size(), 0);
     Util::FixedArray<SizeT> totalCounters(vis.Size(), 0);
@@ -775,15 +798,18 @@ ObservableContext::Setup(const Graphics::GraphicsEntityId id, VisibilityEntityTy
         const Models::NodeInstanceRange& nodeInstanceRange = Models::ModelContext::GetModelRenderableRange(id);
 
         // Create new node range to remember where in the visibility context this model belongs
-        observableAllocator.Set<Observable_NumNodes>(cid.id, nodeInstanceRange.end - nodeInstanceRange.begin);
+        SizeT numNodes = nodeInstanceRange.end - nodeInstanceRange.begin;
+        observableAllocator.Set<Observable_NumNodes>(cid.id, numNodes);
 
-        // add as many atoms to each visibility result allocator
+        // All we need is to have as many clip statuses as we have nodes,
+        // the ids and how they relate to a visibility value is resolved at runtime
         const Util::Array<ObserverContext::VisibilityResultArray>& visAllocators = ObserverContext::observerAllocator.GetArray<Observer_ResultArray>();
         for (IndexT i = 0; i < visAllocators.Size(); i++)
         {
             ObserverContext::VisibilityResultArray& alloc = visAllocators[i];
-            alloc.Reserve(nodeInstanceRange.end - nodeInstanceRange.begin);
-            alloc.Fill(nodeInstanceRange.begin, nodeInstanceRange.end, Math::ClipStatus::Outside);
+            alloc.Reserve(numNodes);
+            for (IndexT j = 0; j < numNodes; j++)
+                alloc.Append(Math::ClipStatus::Outside);
         }
     }
 }
