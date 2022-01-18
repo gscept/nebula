@@ -11,7 +11,6 @@ namespace Visibility
 /**
 */
 VisibilitySystem::VisibilitySystem()
-    : event(nullptr)
 {
 }
 
@@ -48,15 +47,6 @@ void
 VisibilitySystem::Run(const Jobs2::CompletionCounter* previousSystemCompletionCounters, const Util::FixedArray<const Jobs2::CompletionCounter*>& extraCounters)
 {
     // do nothing
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Threading::Event*
-VisibilitySystem::GetFinishedEvent() const
-{
-    return this->event;
 }
 
 //------------------------------------------------------------------------------
