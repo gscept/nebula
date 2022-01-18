@@ -1037,9 +1037,20 @@ template<class TYPE>
 inline TYPE 
 Array<TYPE>::PopFront()
 {
-    TYPE ret = std::forward<TYPE>(this->elements[0]);
+    TYPE ret = std::move(this->elements[0]);
     this->EraseIndex(0);
-    return std::move(ret);
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline TYPE 
+Array<TYPE>::PopBack()
+{
+    this->count--;
+    return std::move(this->elements[this->count - 1]);
 }
 
 //------------------------------------------------------------------------------

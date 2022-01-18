@@ -147,8 +147,7 @@ inline TYPE&
 Util::FixedPool<TYPE>::Alloc()
 {
     n_assert(!this->freeValues.IsEmpty());
-    TYPE elem = this->freeValues.Front();
-    this->freeValues.EraseIndex(0);
+    TYPE elem = this->freeValues.PopFront();
     this->usedValues.Append(elem);
     return this->usedValues.Back();
 }
