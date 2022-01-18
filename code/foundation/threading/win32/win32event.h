@@ -19,10 +19,11 @@ class Win32Event
 public:
     /// constructor
     Win32Event(bool manualReset=false);
-    /// Move constructor
-    Win32Event(Win32Event&& ev);
+    /// move constructor
+    Win32Event(Win32Event&& rhs);
     /// destructor
     ~Win32Event();
+
     /// signal the event
     void Signal();
     /// reset the event (only if manual reset)
@@ -56,11 +57,11 @@ Win32Event::Win32Event(bool manualReset)
 /**
 */
 inline 
-Win32Event::Win32Event(Win32Event&& ev)
+Win32Event::Win32Event(Win32Event&& rhs)
 {
-    this->event = ev.event;
-    this->manual = ev.manual;
-    ev.event = nullptr;
+    this->event = rhs.event;
+    this->manual = rhs.manual;
+    rhs.event = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -69,8 +70,11 @@ Win32Event::Win32Event(Win32Event&& ev)
 inline
 Win32Event::~Win32Event()
 {
-    CloseHandle(this->event);
-    this->event = nullptr;
+    if (this->event != nullptr)
+    {
+        CloseHandle(this->event);
+        this->event = nullptr;
+    }
 }
 
 //------------------------------------------------------------------------------
