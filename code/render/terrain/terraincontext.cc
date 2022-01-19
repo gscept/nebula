@@ -2080,8 +2080,8 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
     }
     if (i > 0)
     {
-        terrainVirtualTileState.pageUniforms.EraseRange(0, numPagesThisFrame - 1);
-        terrainVirtualTileState.tileOffsets.EraseRange(0, numPagesThisFrame - 1);
+        terrainVirtualTileState.pageUniforms.EraseRange(0, numPagesThisFrame);
+        terrainVirtualTileState.tileOffsets.EraseRange(0, numPagesThisFrame);
     }
 
     // run through indirection updates and set them up
@@ -2096,8 +2096,8 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
     }
     if (i > 0)
     {
-        terrainVirtualTileState.indirectionEntryUpdates.EraseRange(0, numPagesThisFrame - 1);
-        terrainVirtualTileState.indirectionTextureCopies.EraseRange(0, numPagesThisFrame - 1);
+        terrainVirtualTileState.indirectionEntryUpdates.EraseRange(0, numPagesThisFrame);
+        terrainVirtualTileState.indirectionTextureCopies.EraseRange(0, numPagesThisFrame);
     }
 
     // wait for cull and subtexture update jobs
