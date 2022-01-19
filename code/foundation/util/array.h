@@ -113,8 +113,8 @@ public:
     void EraseIndexSwap(IndexT index);
     /// erase element at iterator, fill gap by swapping in last element, destroys sorting!
     Iterator EraseSwap(Iterator iter);
-    /// erase range
-    void EraseRange(IndexT start, SizeT end);
+    /// erase range, excluding the element at end
+    void EraseRange(IndexT start, IndexT end);
     /// erase back
     void EraseBack();
     /// erase front
@@ -992,7 +992,7 @@ Array<TYPE>::EraseSwap(typename Array<TYPE>::Iterator iter)
 /**
 */
 template<class TYPE> void 
-Array<TYPE>::EraseRange(IndexT start, SizeT end)
+Array<TYPE>::EraseRange(IndexT start, IndexT end)
 {
     n_assert(end >= start);
     n_assert(end < this->count);
@@ -1001,7 +1001,6 @@ Array<TYPE>::EraseRange(IndexT start, SizeT end)
     else
     {
         // add 1 to end to remove and move including that element
-        end += 1;
         this->DestroyRange(start, end);
         SizeT numMove = this->count - end;
         this->MoveRange(&this->elements[start], &this->elements[end], numMove);
