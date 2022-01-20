@@ -286,6 +286,7 @@ SimpleViewerApplication::Run()
             this->profilingContexts = Profiling::ProfilingGetContexts();
         Profiling::ProfilingNewFrame();
 #endif
+        Jobs2::JobNewFrame();
         
         N_MARKER_BEGIN(Input, App);
         this->inputServer->BeginFrame();
