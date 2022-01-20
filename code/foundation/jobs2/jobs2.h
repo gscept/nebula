@@ -44,15 +44,22 @@ struct JobNode
 {
     JobNode* next;
     JobContext job;
+    long sequenceWaitValue; // set to 0 for ordinary nodes
 };
 
 struct Jobs2Context
 {
     Threading::CriticalSection jobLock;
-    Memory::ArenaAllocator<0x100> nodeAllocator;
     JobNode* head;
+    JobNode* tail;
     Util::FixedArray<Ptr<JobThread>> threads;
+    Util::Array<JobNode*> queuedJobs;
 
+    SizeT numBuffers;
+    IndexT iterator;
+    IndexT activeBuffer;
+    SizeT scratchMemorySize;
+    void** scratchMemory;
 };
 
 extern Jobs2Context ctx;
@@ -70,6 +77,7 @@ public:
 protected:
     template <typename CTX> friend void JobDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSize, const CTX& context, const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters, Threading::AtomicCounter* doneCounter, Threading::Event* signalEvent);
     template <typename CTX> friend void JobDispatch(const JobFunc& func, const SizeT numInvocations, const CTX& context, const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters, Threading::AtomicCounter* doneCounter, Threading::Event* signalEvent);
+    friend void JobEndSequence(Threading::Event* signalEvent);
 
     /// override this method if your thread loop needs a wakeup call before stopping
     virtual void EmitWakeupSignal() override;
@@ -87,10 +95,15 @@ struct JobSystemInitInfo
     uint affinity;
     uint priority;
 
+    SizeT scratchMemorySize;
+    SizeT numBuffers;
+
     JobSystemInitInfo()
         : numThreads(1)
         , affinity(0xFFFFFFFF)
         , priority(UINT_MAX)
+        , scratchMemorySize(1_MB)
+        , numBuffers(1)
     {};
 };
 
@@ -99,7 +112,12 @@ void JobSystemInit(const JobSystemInitInfo& info);
 /// Destroy job port
 void JobSystemUninit();
 
-/// Dispatch job, job system takes ownership of the context and deletes it
+/// Allocate memory and progress memory iterator
+char* __Alloc(SizeT size);
+/// Progress to new buffer
+void JobNewFrame();
+
+/// Dispatch job
 template <typename CTX> void JobDispatch(
     const JobFunc& func
     , const SizeT numInvocations
@@ -119,6 +137,41 @@ template <typename CTX> void JobDispatch(
     , Threading::Event* signalEvent = nullptr
 );
 
+extern Util::FixedArray<const Threading::AtomicCounter*> sequenceWaitCounters;
+
+/// Begin a sequence of jobs
+void JobBeginSequence(const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr);
+
+/// Append job to sequence with an automatic dependency on the previous job
+template <typename CTX> void JobAppendSequence(
+    const JobFunc& func
+    , const SizeT numInvocations
+    , const SizeT groupSize
+    , const CTX& context
+);
+
+/// Append job to sequence with an automatic dependency on the previous job, to run on a single thread
+template <typename CTX> void JobAppendSequence(
+    const JobFunc& func
+    , const SizeT numInvocations
+    , const CTX& context
+);
+
+/// Flush queued jobs
+void JobEndSequence(Threading::Event* signalEvent = nullptr);
+
+//------------------------------------------------------------------------------
+/**
+*/
+template <typename T> T*
+__Alloc(SizeT size)
+{
+    n_assert(ctx.iterator + size < ctx.scratchMemorySize);
+    T* ret = (T*)ctx.scratchMemory[ctx.activeBuffer] + ctx.iterator;
+    ctx.iterator += size;
+    return ret;
+}
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -132,20 +185,21 @@ JobDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSi
     SizeT numJobs = Math::ceil(numInvocations / float(groupSize));
 
     // Calculate allocation size which is node + counters + data context
-    auto dynamicAllocSize = sizeof(JobNode) + waitCounters.Size() * sizeof(const Jobs2::CompletionCounter*) + sizeof(CTX);
-    JobNode* node = (JobNode*)Memory::Alloc(Memory::ScratchHeap, dynamicAllocSize);
+    auto dynamicAllocSize = sizeof(JobNode) + sizeof(CTX) + waitCounters.Size() * sizeof(const Threading::AtomicCounter*);
+    auto mem = __Alloc<char>(dynamicAllocSize);
+    auto node = (JobNode*)mem;
 
     // Copy over wait counters
     node->job.waitCounters = nullptr;
     if (waitCounters.Size() > 0)
     {
-        node->job.waitCounters = (const Jobs2::CompletionCounter**)(((char*)node) + sizeof(JobNode));
-        memcpy(node->job.waitCounters, waitCounters.Begin(), waitCounters.Size() * sizeof(const Jobs2::CompletionCounter*));
+        node->job.waitCounters = (const Threading::AtomicCounter**)(mem + sizeof(JobNode) + sizeof(CTX));
+        memcpy(node->job.waitCounters, waitCounters.Begin(), waitCounters.Size() * sizeof(const Threading::AtomicCounter*));
     }
 
     // Move context
-    node->job.data = (void*)(((char*)node) + sizeof(JobNode) + waitCounters.Size() * sizeof(const Jobs2::CompletionCounter*));
-    CTX* data = reinterpret_cast<CTX*>(node->job.data);
+    node->job.data = (void*)(mem + sizeof(JobNode));
+    auto data = reinterpret_cast<CTX*>(node->job.data);
     *data = context;
 
     node->job.func = func;
@@ -156,10 +210,21 @@ JobDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSi
     node->job.numWaitCounters = (SizeT)waitCounters.Size();
     node->job.doneCounter = doneCounter;
     node->job.signalEvent = signalEvent;
+    node->sequenceWaitValue = 0;
 
+    // Add to end of linked list
     ctx.jobLock.Enter();
-    node->next = ctx.head;
-    ctx.head = node;
+
+    // First, set head node if nullptr
+    if (ctx.head == nullptr)
+        ctx.head = node;
+
+    // Then add node to end of list
+    node->next = nullptr;
+    if (ctx.tail != nullptr)
+        ctx.tail->next = node;
+    ctx.tail = node;
+
     ctx.jobLock.Leave();
 
     // Trigger threads to wake up and compete for jobs
@@ -173,47 +238,77 @@ JobDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSi
 /**
 */
 template <typename CTX> void
-JobDispatch(const JobFunc& func, const SizeT numInvocations, const CTX& context, Util::FixedArray<const Jobs2::CompletionCounter*> waitCounters, Jobs2::CompletionCounter* doneCounter, Threading::Event* signalEvent)
+JobDispatch(const JobFunc& func, const SizeT numInvocations, const CTX& context, const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters, Threading::AtomicCounter* doneCounter, Threading::Event* signalEvent)
+{
+    JobDispatch(func, numInvocations, numInvocations, context, waitCounters, doneCounter, signalEvent);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename CTX> void 
+JobAppendSequence(const JobFunc& func, const SizeT numInvocations, const SizeT groupSize, const CTX& context)
 {
     static_assert(std::is_trivially_destructible<CTX>::value, "Job context has to be trivially destructible");
-    n_assert(doneCounter != nullptr ? *doneCounter > 0 : true);
+
+    // Calculate the number of actual jobs based on invocations and group size
+    SizeT numJobs = Math::ceil(numInvocations / float(groupSize));
 
     // Calculate allocation size which is node + counters + data context
-    auto dynamicAllocSize = sizeof(JobNode) + waitCounters.Size() * sizeof(const Jobs2::CompletionCounter*) + sizeof(CTX);
-    JobNode* node = (JobNode*)Memory::Alloc(Memory::ScratchHeap, dynamicAllocSize);
+    auto dynamicAllocSize = sizeof(JobNode) + sizeof(CTX);
+    if (sequenceWaitCounters.IsEmpty())
+        dynamicAllocSize += sizeof(Threading::AtomicCounter);
+    else
+        dynamicAllocSize += sequenceWaitCounters.ByteSize();
 
-    // Copy over wait counters
-    node->job.waitCounters = nullptr;
-    if (waitCounters.Size() > 0)
+    auto mem = __Alloc<char>(dynamicAllocSize);
+    auto node = (JobNode*)mem;
+
+    // Setup pointer to wait counters
+    node->job.waitCounters = (const Threading::AtomicCounter**)(mem + sizeof(JobNode) + sizeof(CTX));
+
+    // If we have sequence wait counters, add them
+    if (!sequenceWaitCounters.IsEmpty())
     {
-        node->job.waitCounters = (const Jobs2::CompletionCounter**)(((char*)node) + sizeof(JobNode));
-        memcpy(node->job.waitCounters, waitCounters.Begin(), waitCounters.Size() * sizeof(const Jobs2::CompletionCounter*));
+        node->job.numWaitCounters = sequenceWaitCounters.Size();
+        memcpy(node->job.waitCounters, sequenceWaitCounters.Begin(), sequenceWaitCounters.ByteSize());
+
+        // Then clear them, we only allow wait counters for the first job in the sequence
+        sequenceWaitCounters.Clear();
     }
 
     // Move context
-    node->job.data = (void*)(((char*)node) + sizeof(JobNode) + waitCounters.Size() * sizeof(const Jobs2::CompletionCounter*));
-    CTX* data = reinterpret_cast<CTX*>(node->job.data);
+    node->job.data = (void*)(mem + sizeof(JobNode));
+    auto data = reinterpret_cast<CTX*>(node->job.data);
     *data = context;
 
     node->job.func = func;
-    node->job.remainingGroups = 1;
-    node->job.groupCompletionCounter = 1;
+    node->job.remainingGroups = numJobs;
+    node->job.groupCompletionCounter = numJobs;
     node->job.numInvocations = numInvocations;
-    node->job.groupSize = numInvocations;
-    node->job.numWaitCounters = (SizeT)waitCounters.Size();
-    node->job.doneCounter = doneCounter;
-    node->job.signalEvent = signalEvent;
+    node->job.groupSize = groupSize;
+    node->job.numWaitCounters = sequenceWaitCounters.IsEmpty() ? 0 : sequenceWaitCounters.Size();
+    node->job.waitCounters = nullptr;
+    node->job.doneCounter = nullptr;
+    node->job.signalEvent = nullptr;
 
-    ctx.jobLock.Enter();
-    node->next = ctx.head;
-    ctx.head = node;
-    ctx.jobLock.Leave();
-
-    // Trigger threads to wake up and compete for jobs
-    for (Ptr<JobThread>& thread : ctx.threads)
+    if (!ctx.queuedJobs.IsEmpty())
     {
-        thread->EmitWakeupSignal();
+        node->job.numWaitCounters++;
+        node->job.waitCounters = (const Threading::AtomicCounter**)&ctx.queuedJobs.Back()->job.doneCounter;
     }
+
+    // Queue job
+    ctx.queuedJobs.Append(node);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename CTX> void 
+JobAppendSequence(const JobFunc& func, const SizeT numInvocations, const CTX& context)
+{
+    JobAppendSequence(func, numInvocations, numInvocations, context);
 }
 
 } // namespace Jobs2
