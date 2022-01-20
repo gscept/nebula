@@ -23,13 +23,17 @@ namespace Particles
 ParticleContext::ParticleContextAllocator ParticleContext::particleContextAllocator;
 __ImplementContext(ParticleContext, ParticleContext::particleContextAllocator);
 
-extern void ParticleStepJob(const Jobs::JobFuncContext& ctx);
+extern void JobStep(const ParticleJobUniformData* perSystemUniforms, const float stepTime, unsigned int numParticles,
+             const Particle* particles_input, Particle* particles_output,
+             ParticleJobSliceOutputData* sliceOutput);
 
 CoreGraphics::MeshId ParticleContext::DefaultEmitterMesh;
 const Timing::Time DefaultStepTime = 1.0f / 60.0f;
 Timing::Time StepTime = 1.0f / 60.0f;
 
 const SizeT ParticleContextNumEnvelopeSamples = 192;
+Threading::AtomicCounter ParticleContext::particleCompletionCounter = 0;
+Threading::Event ParticleContext::particleCompletionEvent;
 
 struct
 {
@@ -47,9 +51,6 @@ struct
     CoreGraphics::PrimitiveGroup primGroup;
 } state;
 
-Jobs::JobSyncId ParticleContext::jobSync;
-Jobs::JobSyncId ParticleContext::particleSync;
-Util::Queue<Jobs::JobId> ParticleContext::runningJobs;
 //------------------------------------------------------------------------------
 /**
 */
@@ -82,13 +83,6 @@ ParticleContext::Create()
 
     ParticleContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
-
-    Jobs::CreateJobSyncInfo sinfo =
-    {
-        nullptr
-    };
-    ParticleContext::jobSync = Jobs::CreateJobSync(sinfo);
-    ParticleContext::particleSync = Jobs::CreateJobSync(sinfo);
 
     struct VectorB4N
     {
@@ -366,14 +360,14 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
 {
     N_SCOPE(UpdateParticles, Particles);
 
-    // Reset job sync
-    Jobs::JobSyncHostReset(ParticleContext::particleSync);
-
     const Util::Array<ParticleRuntime>& runtimes = particleContextAllocator.GetArray<Runtime>();
     const Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
     const Models::ModelContext::ModelInstance::Renderable& renderables = ModelContext::GetModelRenderables();
     const Models::ModelContext::ModelInstance::Transformable& transformables = ModelContext::GetModelTransformables();
     const Util::Array<Graphics::GraphicsEntityId>& graphicsEntities = particleContextAllocator.GetArray<ModelContextId>();
+
+    n_assert(ParticleContext::particleCompletionCounter == 0);
+
 
     IndexT i;
     for (i = 0; i < runtimes.Size(); i++)
@@ -391,6 +385,8 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
 
         const Models::NodeInstanceRange& stateRange = Models::ModelContext::GetModelRenderableRange(graphicsEntities[i]);
         const Models::NodeInstanceRange& transformRange = Models::ModelContext::GetModelTransformableRange(graphicsEntities[i]);
+
+        Jobs2::JobBeginSequence({});
 
         if (runtime.playing)
         {
@@ -423,13 +419,13 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
             }
         }
 
-
+        // Flush queued work
+        Jobs2::JobEndSequence();
     }
 
-    // issue sync
-    if (runtimes.Size() > 0)
-        Jobs::JobSyncThreadSignal(jobSync, Graphics::GraphicsServer::renderSystemsJobPort);
-
+    // In case we have 0 systems but have the context running, just signal the event directly
+    if (ParticleContext::particleCompletionCounter == 0)
+        ParticleContext::particleCompletionEvent.Signal();
 }
 
 //------------------------------------------------------------------------------
@@ -470,15 +466,7 @@ void
 ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
 {
     N_SCOPE(WaitForParticleJobs, Particles);
-    if (ParticleContext::runningJobs.Size() > 0)
-    {
-        // wait for all jobs to finish
-        Jobs::JobSyncHostWait(ParticleContext::jobSync);
-
-        // destroy jobs
-        while (!ParticleContext::runningJobs.IsEmpty())
-            Jobs::DestroyJob(ParticleContext::runningJobs.Dequeue());
-    }
+    ParticleContext::particleCompletionEvent.Wait();
 
     // get node map
     Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
@@ -601,9 +589,6 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
                 flushBuffer = true;
         }
     }
-
-    // Signal particle done
-    Jobs::JobSyncHostSignal(ParticleContext::particleSync, false);
 
     // flush changes
     if (flushBuffer)
@@ -890,20 +875,14 @@ void
 ParticleContext::RunParticleStep(ParticleRuntime& rt, ParticleSystemRuntime& srt, float stepTime, bool generateVtxList)
 {
     N_SCOPE(RunParticleStep, Particles);
+
     // if no particles, no need to run the step update
     if (srt.particles.Size() == 0)
         return;
 
-    Jobs::JobContext ctx;
-
     n_assert(srt.particles.GetBuffer());
     const SizeT inputBufferSize = srt.particles.Size() * ParticleJobInputElementSize;
     const SizeT inputSliceSize = inputBufferSize;
-
-    ctx.input.data[0] = srt.particles.GetBuffer();
-    ctx.input.dataSize[0] = inputBufferSize;
-    ctx.input.sliceSize[0] = inputSliceSize;
-    ctx.input.numBuffers = 1;
 
     const SizeT outputSliceCount = (inputBufferSize + inputSliceSize - 1) / inputSliceSize;
     n_assert(outputSliceCount > 0);
@@ -912,40 +891,48 @@ ParticleContext::RunParticleStep(ParticleRuntime& rt, ParticleSystemRuntime& srt
         if (srt.outputData)
             n_delete_array(srt.outputData);
 
-        srt.outputData = n_new_array(ParticleJobOutput, outputSliceCount);
+        srt.outputData = n_new_array(ParticleJobSliceOutputData, outputSliceCount);
         srt.outputCapacity = outputSliceCount;
     }
 
-    ctx.output.data[0] = srt.particles.GetBuffer();
-    ctx.output.dataSize[0] = inputBufferSize;
-    ctx.output.sliceSize[0] = inputSliceSize;
-
-    ctx.output.data[1] = srt.outputData;
-    ctx.output.dataSize[1] = outputSliceCount * sizeof(ParticleJobOutput);
-    ctx.output.sliceSize[1] = sizeof(ParticleJobOutput);
-    ctx.output.numBuffers = 2;
-
-    // issue job
-    Jobs::JobId job = Jobs::CreateJob({ Particles::ParticleStepJob });
-
-    // pass in uniforms from system which is not step-dependent
-    ctx.uniform.data[0] = &srt.uniformData;
-    ctx.uniform.dataSize[0] = sizeof(srt.uniformData);
+    ParticleJobContext jobContext;
+    jobContext.inputParticles = srt.particles.GetBuffer();
+    jobContext.outputParticles = srt.particles.GetBuffer();
+    jobContext.output = srt.outputData;
+    jobContext.uniformData = &srt.uniformData;
+    jobContext.stepTime = stepTime;
+    jobContext.numParticles = srt.particles.Size();
+    jobContext.totalCompletionCounter = &ParticleContext::particleCompletionCounter;
+    jobContext.totalCompletionEvent = &ParticleContext::particleCompletionEvent;
 
     // create a copy of the uniforms, because the step size may change between every step,
     // which causes bugs if we do precalculation while we are changing the value
     srt.perJobUniformData.stepTime = stepTime;
-    void* uniformCopy = Jobs::JobAllocateScratchMemory(job, Memory::HeapType::ScratchHeap, sizeof(ParticleJobUniformPerJobData));
-    memcpy(uniformCopy, &srt.perJobUniformData, sizeof(ParticleJobUniformPerJobData));
-    ctx.uniform.data[1] = uniformCopy;
-    ctx.uniform.dataSize[1] = sizeof(ParticleJobUniformPerJobData);
-    ctx.uniform.numBuffers = 2;
 
-    // schedule job
-    Jobs::JobSchedule(job, Graphics::GraphicsServer::renderSystemsJobPort, ctx);
+    // Sequence job
+    Jobs2::JobAppendSequence([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+    {
+        N_SCOPE(ParticleStepJob, Graphics);
+        ParticleJobContext* context = static_cast<ParticleJobContext*>(ctx);
+        n_assert(totalJobs == 1); // Assert we only have one particle system per job execution
 
-    // add to list of running jobs
-    ParticleContext::runningJobs.Enqueue(job);
+        context->output->numLivingParticles = 0;
+        context->output->bbox = Math::bbox();
+
+        // Take a job step
+        JobStep(context->uniformData, context->stepTime, context->numParticles, context->inputParticles, context->outputParticles, context->output);
+
+        // A bit of a trick for the particle context since we might have N jobs per particle system,
+        // and we can have M systems, so we need to keep track of a global counter and event.
+        // Decrement total counter, and if last job, signal event
+        if (Threading::Interlocked::Decrement(context->totalCompletionCounter) == 0)
+        {
+            context->totalCompletionEvent->Signal();
+        }
+    }, 1, jobContext);
+
+    // Increment total counter
+    ParticleContext::particleCompletionCounter++;
 }
 
 } // namespace Particles

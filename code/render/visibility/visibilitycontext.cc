@@ -154,7 +154,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         // Run job to collect model node ids
         Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
         {
-            N_SCOPE(VisibilityIdCollectJob, Visibility);
+            N_SCOPE(VisibilityIdCollectJob, Graphics);
 
             auto context = static_cast<IdUpdateContext*>(ctx);
             IndexT offset = 0;
@@ -185,7 +185,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         for (i = 0; i < ObserverContext::systems.Size(); i++)
         {
             VisibilitySystem* sys = ObserverContext::systems[i];
-            sys->Run(prevSystemCounters, {&idCounter});
+            sys->Run(prevSystemCounters, {&idCounter, &Particles::ParticleContext::particleCompletionCounter});
             prevSystemCounters = sys->GetCompletionCounters();
         }
     }
@@ -283,7 +283,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 
         Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
         {
-            N_SCOPE(VisibilitySortJob, Visibility);
+            N_SCOPE(VisibilitySortJob, Graphics);
             auto context = static_cast<Context*>(ctx);
             context->allocator->Release();
 

@@ -13,6 +13,7 @@
 #include "models/nodes/modelnode.h"
 #include "models/nodes/particlesystemnode.h"
 #include "jobs/jobs.h"
+#include "jobs2/jobs2.h"
 #include "util/ringbuffer.h"
 #include "particle.h"
 namespace Particles
@@ -75,7 +76,9 @@ public:
 #endif
 
     static CoreGraphics::MeshId DefaultEmitterMesh;
-    static Jobs::JobSyncId particleSync;
+
+    static Threading::AtomicCounter particleCompletionCounter;
+    static Threading::Event particleCompletionEvent;
 private:
 
     struct ParticleRuntime
@@ -109,7 +112,7 @@ private:
         ParticleJobUniformPerJobData perJobUniformData;
         ParticleJobUniformData uniformData;
         SizeT outputCapacity;
-        ParticleJobOutput* outputData;
+        ParticleJobSliceOutputData* outputData;
 
         uint32 baseVertex, numParticles;
     };

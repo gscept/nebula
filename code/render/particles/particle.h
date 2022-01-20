@@ -17,6 +17,7 @@
 #include "math/mat4.h"
 #include "math/bbox.h"
 #include "particles/emitterattrs.h"
+#include "threading/interlocked.h"
 
 //------------------------------------------------------------------------------
 namespace Particles
@@ -78,6 +79,18 @@ namespace Particles
     {
         Math::bbox bbox;
         unsigned int numLivingParticles;
+    };
+
+    struct ParticleJobContext
+    {
+        const Particle* inputParticles;
+        Particle* outputParticles;
+        const ParticleJobUniformData* uniformData;
+        float stepTime;
+        uint numParticles;
+        ParticleJobSliceOutputData* output;
+        Threading::AtomicCounter* totalCompletionCounter;
+        Threading::Event* totalCompletionEvent;
     };
 
     static const SizeT ParticleJobInputElementSize = sizeof(Particle);
