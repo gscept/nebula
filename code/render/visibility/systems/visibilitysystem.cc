@@ -20,7 +20,7 @@ VisibilitySystem::VisibilitySystem()
 void
 VisibilitySystem::PrepareObservers(const Math::mat4* transforms, Util::Array<Math::ClipStatus::Type>* results, const SizeT count)
 {
-    const Jobs2::CompletionCounter c = 0;
+    const Threading::AtomicCounter c = 0;
     this->obs.completionCounters.Fill(0, count, c);
     this->obs.transforms = transforms;
     this->obs.results = results;
@@ -44,7 +44,7 @@ VisibilitySystem::PrepareEntities(const Math::bbox* boxes, const uint32* ids, co
 /**
 */
 void
-VisibilitySystem::Run(const Jobs2::CompletionCounter* previousSystemCompletionCounters, const Util::FixedArray<const Jobs2::CompletionCounter*>& extraCounters)
+VisibilitySystem::Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters)
 {
     // do nothing
 }
@@ -52,7 +52,7 @@ VisibilitySystem::Run(const Jobs2::CompletionCounter* previousSystemCompletionCo
 //------------------------------------------------------------------------------
 /**
 */
-Jobs2::CompletionCounter*
+Threading::AtomicCounter*
 VisibilitySystem::GetCompletionCounter(IndexT i)
 {
     return &this->obs.completionCounters[i];
@@ -61,7 +61,7 @@ VisibilitySystem::GetCompletionCounter(IndexT i)
 //------------------------------------------------------------------------------
 /**
 */
-const Jobs2::CompletionCounter*
+const Threading::AtomicCounter*
 VisibilitySystem::GetCompletionCounters() const
 {
     return this->obs.completionCounters.Begin();

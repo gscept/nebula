@@ -138,7 +138,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     nodes.Clear();
     nodes.Resize(observerResults[0].Size());
 
-    static Jobs2::CompletionCounter idCounter;
+    static Threading::AtomicCounter idCounter;
     idCounter = 1;
     if (nodeInstances.nodeBoundingBoxes.Size() > 0)
     {
@@ -179,7 +179,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     }
 
     // run all visibility systems
-    const Jobs2::CompletionCounter* prevSystemCounters = nullptr;
+    const Threading::AtomicCounter* prevSystemCounters = nullptr;
     if ((observerTransforms.Size() > 0) && (nodeInstances.nodeBoundingBoxes.Size() > 0))
     {
         for (i = 0; i < ObserverContext::systems.Size(); i++)
@@ -249,7 +249,8 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     // Wait for particles to finish updating their constants before running the final pass
     //Jobs::JobSyncThreadWait(Particles::ParticleContext::particleSync, Graphics::GraphicsServer::renderSystemsJobPort);
 
-    static Jobs2::CompletionCounter completionCounter;
+
+    static Threading::AtomicCounter completionCounter;
     completionCounter = observerResults.Size();
     Threading::Event* finishedEvent = new Threading::Event;
 

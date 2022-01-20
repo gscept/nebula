@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "threading/criticalsection.h"
-#include "threading/interlocked.h"
 #include "memory/arenaallocator.h"
 #include "profiling/profiling.h"
 #include "jobs2.h"

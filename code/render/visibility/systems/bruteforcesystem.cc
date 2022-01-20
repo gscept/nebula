@@ -24,7 +24,7 @@ BruteforceSystem::Setup(const BruteforceSystemLoadInfo& info)
 /**
 */
 void
-BruteforceSystem::Run(const Jobs2::CompletionCounter* previousSystemCompletionCounters, const Util::FixedArray<const Jobs2::CompletionCounter*>& extraCounters)
+BruteforceSystem::Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters)
 {
     // This is the context used to provide the job with
     struct Context
@@ -49,7 +49,7 @@ BruteforceSystem::Run(const Jobs2::CompletionCounter* previousSystemCompletionCo
         ctx.boundingBoxes = this->ent.boxes;
 
         // Setup counters
-        Util::FixedArray<const Jobs2::CompletionCounter*> counters(extraCounters.Size() + previousSystemCompletionCounters != nullptr ? 1 : 0);
+        Util::FixedArray<const Threading::AtomicCounter*> counters(extraCounters.Size() + (previousSystemCompletionCounters != nullptr ? 1 : 0));
         if (previousSystemCompletionCounters != nullptr)
         {
             counters[0] = &previousSystemCompletionCounters[i];

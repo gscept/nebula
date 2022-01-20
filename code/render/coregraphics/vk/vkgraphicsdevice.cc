@@ -87,10 +87,10 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     struct ConstantsRingBuffer
     {
         // handle global constant memory
-        AtomicCounter cboGfxStartAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
-        AtomicCounter cboGfxEndAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
-        AtomicCounter cboComputeStartAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
-        AtomicCounter cboComputeEndAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
+        Threading::AtomicCounter cboGfxStartAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
+        Threading::AtomicCounter cboGfxEndAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
+        Threading::AtomicCounter cboComputeStartAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
+        Threading::AtomicCounter cboComputeEndAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
         bool allowConstantAllocation;
     };
     Util::FixedArray<ConstantsRingBuffer> constantBufferRings;
@@ -2097,8 +2097,8 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
     }
 #endif
 
-    AtomicCounter* cboStartAddress = queue == GraphicsQueueType ? sub.cboGfxStartAddress : sub.cboComputeStartAddress;
-    AtomicCounter* cboEndAddress = queue == GraphicsQueueType ? sub.cboGfxEndAddress : sub.cboComputeEndAddress;
+    Threading::AtomicCounter* cboStartAddress = queue == GraphicsQueueType ? sub.cboGfxStartAddress : sub.cboComputeStartAddress;
+    Threading::AtomicCounter* cboEndAddress = queue == GraphicsQueueType ? sub.cboGfxEndAddress : sub.cboComputeEndAddress;
     CoreGraphics::BufferId* stagingCbo = queue == GraphicsQueueType ? state.globalGraphicsConstantStagingBuffer : state.globalComputeConstantStagingBuffer;
     CoreGraphics::BufferId* cbo = queue == GraphicsQueueType ? state.globalGraphicsConstantBuffer : state.globalComputeConstantBuffer;
 

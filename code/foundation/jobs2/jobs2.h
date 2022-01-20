@@ -1,9 +1,9 @@
 #pragma once
-#include "ids/id.h"
-#include "ids/idallocator.h"
 #include "threading/thread.h"
 #include "threading/event.h"
 #include "util/stringatom.h"
+#include "threading/interlocked.h"
+
 //------------------------------------------------------------------------------
 /**
     The Jobs2 system provides a set of threads and a pool of jobs from which 
@@ -34,9 +34,9 @@ struct JobContext
     SizeT groupSize;
     volatile long groupCompletionCounter;
     void* data;
-    const volatile long** waitCounters;
+    const Threading::AtomicCounter** waitCounters;
     SizeT numWaitCounters;
-    volatile long* doneCounter;
+    Threading::AtomicCounter* doneCounter;
     Threading::Event* signalEvent;
 };
 
@@ -68,8 +68,8 @@ public:
     virtual ~JobThread();
 
 protected:
-    template <typename CTX> friend void JobDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSize, const CTX& context, Util::FixedArray<const Jobs2::CompletionCounter*> waitCounters, Jobs2::CompletionCounter* doneCounter, Threading::Event* signalEvent);
-    template <typename CTX> friend void JobDispatch(const JobFunc& func, const SizeT numInvocations, const CTX& context, Util::FixedArray<const Jobs2::CompletionCounter*> waitCounters, Jobs2::CompletionCounter* doneCounter, Threading::Event* signalEvent);
+    template <typename CTX> friend void JobDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSize, const CTX& context, const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters, Threading::AtomicCounter* doneCounter, Threading::Event* signalEvent);
+    template <typename CTX> friend void JobDispatch(const JobFunc& func, const SizeT numInvocations, const CTX& context, const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters, Threading::AtomicCounter* doneCounter, Threading::Event* signalEvent);
 
     /// override this method if your thread loop needs a wakeup call before stopping
     virtual void EmitWakeupSignal() override;
@@ -105,8 +105,8 @@ template <typename CTX> void JobDispatch(
     , const SizeT numInvocations
     , const SizeT groupSize
     , const CTX& context
-    , Util::FixedArray<const volatile long*> waitCounters = nullptr
-    , volatile long* doneCounter = nullptr
+    , const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr
+    , Threading::AtomicCounter* doneCounter = nullptr
     , Threading::Event* signalEvent = nullptr
 );
 /// Dispatch job as a single group (to be run on a single thread)
@@ -114,8 +114,8 @@ template <typename CTX> void JobDispatch(
     const JobFunc& func
     , const SizeT numInvocations
     , const CTX& context
-    , Util::FixedArray<const volatile long*> waitCounters = nullptr
-    , volatile long* doneCounter = nullptr
+    , const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr
+    , Threading::AtomicCounter* doneCounter = nullptr
     , Threading::Event* signalEvent = nullptr
 );
 
@@ -123,7 +123,7 @@ template <typename CTX> void JobDispatch(
 /**
 */
 template <typename CTX> void
-JobDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSize, const CTX& context, Util::FixedArray<const Jobs2::CompletionCounter*> waitCounters, Jobs2::CompletionCounter* doneCounter, Threading::Event* signalEvent)
+JobDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSize, const CTX& context, const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters, Threading::AtomicCounter* doneCounter, Threading::Event* signalEvent)
 {
     static_assert(std::is_trivially_destructible<CTX>::value, "Job context has to be trivially destructible");
     n_assert(doneCounter != nullptr ? *doneCounter > 0 : true);
