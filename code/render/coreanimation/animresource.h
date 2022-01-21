@@ -15,6 +15,7 @@
 #include "resources/resource.h"
 #include "coreanimation/animclip.h"
 #include "coreanimation/animkeybuffer.h"
+#include "coreanimation/animsamplemask.h"
 
 //------------------------------------------------------------------------------
 namespace CoreAnimation
@@ -24,6 +25,42 @@ RESOURCE_ID_TYPE(AnimResourceId)
 
 class StreamAnimationCache;
 extern StreamAnimationCache* animPool;
+
+//------------------------------------------------------------------------------
+/**
+*/
+extern void AnimSampleStep(const AnimCurve* curves,
+    int numCurves,
+    const Math::vec4& velocityScale,
+    const Math::vec4* src0SamplePtr,
+    Math::vec4* outSamplePtr,
+    uchar* outSampleCounts);
+
+//------------------------------------------------------------------------------
+/**
+*/
+extern void AnimSampleLinear(const AnimCurve* curves,
+    int numCurves,
+    float sampleWeight,
+    const Math::vec4& velocityScale,
+    const Math::vec4* src0SamplePtr,
+    const Math::vec4* src1SamplePtr,
+    Math::vec4* outSamplePtr,
+    uchar* outSampleCounts);
+
+//------------------------------------------------------------------------------
+/**
+*/
+extern void AnimMix(const AnimCurve* curves,
+    int numCurves,
+    const AnimSampleMask* mask,
+    float mixWeight,
+    const Math::vec4* src0SamplePtr,
+    const Math::vec4* src1SamplePtr,
+    const uchar* src0SampleCounts,
+    const uchar* src1SampleCounts,
+    Math::vec4* outSamplePtr,
+    uchar* outSampleCounts);
 
 /// create animation resource
 const AnimResourceId CreateAnimation(const ResourceCreateInfo& info);

@@ -39,16 +39,14 @@
 namespace CoreAnimation
 {
 
-extern void AnimSampleJob(const Jobs::JobFuncContext& ctx);
-extern void AnimSampleJobWithMix(const Jobs::JobFuncContext& ctx);
+extern void AnimSampleJob(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx);
+extern void AnimSampleJobWithMix(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx);
 
 }
 
 namespace Characters
 {
 
-extern void SkeletonEvalJob(const Jobs::JobFuncContext& ctx);
-extern void SkeletonEvalJobWithVariation(const Jobs::JobFuncContext& ctx);
 enum EnqueueMode
 {
     Append,             // adds clip to the queue to play after current on the track
@@ -179,8 +177,7 @@ private:
         UserControlledJoint,
         JobJoints,
         SampleBuffer,
-        VisibilityContextId,
-        ModelContextId,
+        EntityId,
         CharacterSkinNodeIndex
     };
 
@@ -196,7 +193,6 @@ private:
         Util::FixedArray<SkeletonJobJoint>,
         CoreAnimation::AnimSampleBuffer,
         Graphics::GraphicsEntityId,
-        Graphics::GraphicsEntityId,
         IndexT
     > CharacterContextAllocator;
     static CharacterContextAllocator characterContextAllocator;
@@ -206,10 +202,9 @@ private:
     /// deallocate a slice
     static void Dealloc(Graphics::ContextEntityId id);
 
-    static Jobs::JobPortId jobPort;
-    static Jobs::JobSyncId jobSync;
-    static Threading::SafeQueue<Jobs::JobId> runningJobs;
     static Util::HashTable<Util::StringAtom, CoreAnimation::AnimSampleMask> masks;
+    static Threading::AtomicCounter totalCompletionCounter;
+    static Threading::Event totalCompletionEvent;
 };
 
 __ImplementEnumBitOperators(CharacterContext::LoadState);
