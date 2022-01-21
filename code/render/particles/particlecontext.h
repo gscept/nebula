@@ -77,8 +77,8 @@ public:
 
     static CoreGraphics::MeshId DefaultEmitterMesh;
 
-    static Threading::AtomicCounter particleCompletionCounter;
-    static Threading::Event particleCompletionEvent;
+    static Threading::AtomicCounter totalCompletionCounter;
+    static Threading::Event totalCompletionEvent;
 private:
 
     struct ParticleRuntime
@@ -109,10 +109,9 @@ private:
         Math::bbox boundingBox;
         SizeT emissionCounter;
 
-        ParticleJobUniformPerJobData perJobUniformData;
         ParticleJobUniformData uniformData;
         SizeT outputCapacity;
-        ParticleJobSliceOutputData* outputData;
+        ParticleJobSliceOutputData outputData;
 
         uint32 baseVertex, numParticles;
     };

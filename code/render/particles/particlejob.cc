@@ -9,7 +9,6 @@
 #include "math/mat4.h"
 #include "particles/particle.h"
 #include "profiling/profiling.h"
-#include "jobs2/jobs2.h"
 
 #if __NEBULA_NO_ASSERT__
 #define ASSERT_POINT(p)
@@ -35,18 +34,16 @@ using namespace Math;
 */
 
 
-/// entry point of the job
-void ParticleStepJob(const Jobs::JobFuncContext& ctx);
 /// lookup samples at index "sampleIndex" in sample-table
 const float* LookupEnvelopeSamples(const float sampleBuffer[ParticleSystemNumEnvelopeSamples*EmitterAttrs::NumEnvelopeAttrs], IndexT sampleIndex);
 /// update bounding box (min, max) with vector v
 void UpdateBbox(const vec4& v, vec4& min, vec4& max);
 /// update the age of one particle
-void ParticleUpdateAge(const ParticleJobUniformPerJobData* perJobUniforms, const Particle& in, Particle& out);
+void ParticleUpdateAge(const float stepTime, const Particle& in, Particle& out);
 /// integrate the particle state with a given time-step
-void ParticleStep(const ParticleJobUniformData* perSystemUniforms, const ParticleJobUniformPerJobData* perJobUniforms, const Particle& in, Particle& out, ParticleJobSliceOutputData* sliceOutput);
+void ParticleStep(const ParticleJobUniformData* perSystemUniforms, const float stepTime, const Particle& in, Particle& out, ParticleJobSliceOutputData* sliceOutput);
 /// update particle system step
-void JobStep(const ParticleJobUniformData* perSystemUniforms, const ParticleJobUniformPerJobData* perJobUniforms, unsigned int numParticles, const Particle* particles_input, Particle* particles_output, ParticleJobSliceOutputData* sliceOutput);
+void JobStep(const ParticleJobUniformData* perSystemUniforms, const float stepTime, unsigned int numParticles, const Particle* particles_input, Particle* particles_output, ParticleJobSliceOutputData* sliceOutput);
 
 //------------------------------------------------------------------------------
 /**

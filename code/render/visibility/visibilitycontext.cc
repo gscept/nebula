@@ -185,7 +185,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         for (i = 0; i < ObserverContext::systems.Size(); i++)
         {
             VisibilitySystem* sys = ObserverContext::systems[i];
-            sys->Run(prevSystemCounters, {&idCounter, &Particles::ParticleContext::particleCompletionCounter});
+            sys->Run(prevSystemCounters, {&idCounter, &Particles::ParticleContext::totalCompletionCounter});
             prevSystemCounters = sys->GetCompletionCounters();
         }
     }
