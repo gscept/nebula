@@ -113,7 +113,7 @@ void JobSystemInit(const JobSystemInitInfo& info);
 void JobSystemUninit();
 
 /// Allocate memory and progress memory iterator
-char* __Alloc(SizeT size);
+template <typename T> T* JobAlloc(SizeT count);
 /// Progress to new buffer
 void JobNewFrame();
 
@@ -164,11 +164,11 @@ void JobEndSequence(Threading::Event* signalEvent = nullptr);
 /**
 */
 template <typename T> T*
-__Alloc(SizeT size)
+JobAlloc(SizeT count)
 {
-    n_assert(ctx.iterator + size < ctx.scratchMemorySize);
+    n_assert(ctx.iterator + count * sizeof(T) < ctx.scratchMemorySize);
     T* ret = (T*)ctx.scratchMemory[ctx.activeBuffer] + ctx.iterator;
-    ctx.iterator += size;
+    ctx.iterator += count * sizeof(T);
     return ret;
 }
 
@@ -186,7 +186,7 @@ JobDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSi
 
     // Calculate allocation size which is node + counters + data context
     auto dynamicAllocSize = sizeof(JobNode) + sizeof(CTX) + waitCounters.Size() * sizeof(const Threading::AtomicCounter*);
-    auto mem = __Alloc<char>(dynamicAllocSize);
+    auto mem = JobAlloc<char>(dynamicAllocSize);
     auto node = (JobNode*)mem;
 
     // Copy over wait counters
@@ -261,7 +261,7 @@ JobAppendSequence(const JobFunc& func, const SizeT numInvocations, const SizeT g
     else
         dynamicAllocSize += sequenceWaitCounters.ByteSize();
 
-    auto mem = __Alloc<char>(dynamicAllocSize);
+    auto mem = JobAlloc<char>(dynamicAllocSize);
     auto node = (JobNode*)mem;
 
     // Setup pointer to wait counters

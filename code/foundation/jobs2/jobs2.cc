@@ -218,7 +218,8 @@ JobBeginSequence(const Util::FixedArray<const Threading::AtomicCounter*>& waitCo
 {
     n_assert_fmt(sequenceWaitCounters.IsEmpty(), "JobBeginSequence called twice, missing JobEndSequence");
     sequenceWaitCounters = waitCounters;
-    sequenceCompletionCounter = __Alloc<Threading::AtomicCounter>(sizeof(Threading::AtomicCounter));
+    sequenceCompletionCounter = JobAlloc<Threading::AtomicCounter>(1);
+    *sequenceCompletionCounter = 0;
 }
 
 //------------------------------------------------------------------------------
