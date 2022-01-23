@@ -82,8 +82,8 @@ LinuxEvent::LinuxEvent(LinuxEvent&& ev)
     this->manualReset = ev.manualReset;
     this->status = ev.status;
     this->status2 = ev.status2;
-    ev.mutex = nullptr;
-    ev.cond = nullptr;
+    ev.mutex = 0;
+    ev.cond = 0;
     ev.status = SIGNAL_NONE;
     ev.status2 = SIGNAL_NONE;
 }
