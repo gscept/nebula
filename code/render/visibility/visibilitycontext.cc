@@ -169,7 +169,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 for (IndexT j = nodeInstances.begin; j < nodeInstances.end; j++)
                     context->nodes->Begin()[invocationOffset + offset++] = j;
             }
-        }, ids.Size(), 1024, idCtx, {}, &idCounter, nullptr);
+        }, ids.Size(), idCtx, {}, &idCounter, nullptr);
         
         for (i = 0; i < ObserverContext::systems.Size(); i++)
         {
