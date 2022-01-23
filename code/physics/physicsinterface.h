@@ -71,6 +71,8 @@ void Update(Timing::Time delta);
 
 ///
 IndexT CreateScene();
+///
+void DestroyScene(IndexT scene);
 
 ///
 Physics::Scene& GetScene(IndexT idx = 0);
@@ -95,7 +97,7 @@ IndexT LookupMaterial(Util::StringAtom name);
 SizeT GetNrMaterials();
 
 ///
-ActorId CreateActorInstance(Physics::ActorResourceId id, Math::mat4 const & trans, bool dynamic, IndexT scene = 0);
+ActorId CreateActorInstance(Physics::ActorResourceId id, Math::mat4 const & trans, bool dynamic, uint64_t userData, IndexT scene = 0);
 ///
 void DestroyActorInstance(Physics::ActorId id);
 }

@@ -11,7 +11,6 @@
 #include "timing/time.h"
 #include "physics/physxstate.h"
 #include "physics/streamactorpool.h"
-#include "physics/streamcolliderpool.h"
 #include "resources/resourceserver.h"
 #include "io/assignregistry.h"
 #include "io/ioserver.h"
@@ -63,11 +62,9 @@ Setup()
 {
     state.Setup();
     Resources::ResourceServer::Instance()->RegisterStreamPool("actor", Physics::StreamActorPool::RTTI);
-    Resources::ResourceServer::Instance()->RegisterStreamPool("collider", Physics::StreamColliderPool::RTTI);
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("phys","export:physics"));
 
     Physics::actorPool = Resources::GetStreamPool<Physics::StreamActorPool>();
-    Physics::colliderPool = Resources::GetStreamPool<Physics::StreamColliderPool>();
     LoadMaterialTable();
 
     //FIXME this should be somewhere in a toolkit component instead
@@ -92,7 +89,17 @@ IndexT
 CreateScene()
 {
     n_assert(state.foundation);
-    IndexT idx = state.activeScenes.Size();
+    IndexT idx = -1;
+    if (!state.deadSceneIds.IsEmpty())
+    {
+        idx = state.deadSceneIds.Back();
+        state.deadSceneIds.EraseBack();
+    }
+    else
+    {
+        idx = state.activeScenes.Size();
+    }
+    state.activeSceneIds.Append(idx);
     state.activeScenes.Append(Scene());
     Scene & scene = state.activeScenes[idx];
     scene.dispatcher = PxDefaultCpuDispatcherCreate(PHYSX_THREADS);
@@ -115,10 +122,40 @@ CreateScene()
 //------------------------------------------------------------------------------
 /**
 */
+void
+DestroyScene(IndexT sceneId)
+{
+    n_assert(state.foundation);
+    n_assert(sceneId < state.activeScenes.Size() && state.activeSceneIds.FindIndex(sceneId) != InvalidIndex);
+
+    Scene& scene = state.activeScenes[sceneId];
+
+    auto actorCount = scene.scene->getNbActors(PxActorTypeFlag::eRIGID_STATIC | PxActorTypeFlag::eRIGID_DYNAMIC);
+    if (actorCount > 0)
+    {
+        n_warn("Destroying non-empty physics scene");
+        PxU32 bufferSize = actorCount * sizeof(PxActor*);
+        PxActor** actorBuffer = (PxActor**)Memory::Alloc(Memory::PhysicsHeap, bufferSize);
+        scene.scene->getActors(PxActorTypeFlag::eRIGID_STATIC | PxActorTypeFlag::eRIGID_DYNAMIC, actorBuffer, bufferSize);
+        for (int i = 0; i < actorCount; i++)
+        {
+            actorBuffer[i]->release();
+        }
+        Memory::Free(Memory::PhysicsHeap, actorBuffer);
+    }
+    scene.controllerManager->release();
+    scene.scene->release();
+    scene.dispatcher->release();
+    state.deadSceneIds.Append(sceneId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 Physics::Scene &
 GetScene(IndexT idx)
 {
-    n_assert(idx < state.activeScenes.Size());
+    n_assert(idx < state.activeScenes.Size() && state.activeSceneIds.FindIndex(idx) != InvalidIndex);
     return state.activeScenes[idx];
 }
 
@@ -229,9 +266,9 @@ Update(Timing::Time delta)
 /**
 */
 ActorId
-CreateActorInstance(Physics::ActorResourceId id, Math::mat4 const & trans, bool dynamic, IndexT scene)
+CreateActorInstance(Physics::ActorResourceId id, Math::mat4 const & trans, bool dynamic, uint64_t userData, IndexT scene)
 {
-    return Physics::actorPool->CreateActorInstance(id, trans, dynamic, scene);
+    return Physics::actorPool->CreateActorInstance(id, trans, dynamic, userData, scene);
 }
 
 //------------------------------------------------------------------------------

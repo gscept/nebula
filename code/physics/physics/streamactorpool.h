@@ -11,8 +11,8 @@
 #include "resources/resourcestreamcache.h"
 #include "util/stack.h"
 #include "physics/actorcontext.h"
-#include "flat/physics/collider.h"
 #include "physicsinterface.h"
+#include "flat/physics/material.h"
 
 namespace Physics
 {
@@ -20,7 +20,6 @@ namespace Physics
 enum PhysicsIdType
 {
     ActorIdType,
-    ColliderIdType,
     MeshIdType,
 };
 
@@ -28,7 +27,7 @@ struct ActorInfo
 {
     Util::Array<physx::PxShape*> shapes;
     Util::Array<float> densities;
-    Util::Array<ColliderId> colliders;
+    Util::Array<Util::String> colliders;
     SizeT instanceCount;
     CollisionFeedback feedbackFlag;
     uint16_t collisionGroup;
@@ -48,7 +47,7 @@ public:
     void Setup();
 
     ///
-    ActorId CreateActorInstance(ActorResourceId id, Math::mat4 const & trans, bool dynamic, IndexT scene = 0);
+    ActorId CreateActorInstance(ActorResourceId id, Math::mat4 const & trans, bool dynamic, uint64_t userData, IndexT scene = 0);
     /// destroys an actor, if the actor was created from a resource it also
     /// reduces use count of resource
     void DiscardActorInstance(ActorId id);

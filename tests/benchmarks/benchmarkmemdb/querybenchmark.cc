@@ -7,6 +7,7 @@
 #include "memdb/table.h"
 #include "memdb/typeregistry.h"
 #include "memdb/database.h"
+#include "game/category.h"
 
 namespace Benchmarking
 {
@@ -30,6 +31,12 @@ uint PsuedoRand()
     return w = w ^ (w >> 19) ^ (t ^ (t >> 8));
 }
 
+struct IntTest
+{
+    int value = 1;
+    DECLARE_PROPERTY;
+};
+DEFINE_PROPERTY(IntTest);
 //------------------------------------------------------------------------------
 /**
 */
@@ -45,7 +52,7 @@ QueryBenchmark::Run(Timer& timer)
     for (int i = 0; i < numDescs; i++)
     {
         Util::String name = "BenchType_" + Util::String::FromInt(i);
-        d.Append(TypeRegistry::Register<int>(name, 0));
+        d.Append(TypeRegistry::Register<IntTest>(name, IntTest()));
     }
 
     using DA = Util::FixedArray<PropertyId>;

@@ -32,6 +32,8 @@ public:
     Util::ArrayStack<Physics::Scene, 8> activeScenes;
     Util::ArrayStack<Physics::Material, 16> materials;
     Util::Dictionary<Util::StringAtom, IndexT> materialNameTable;
+    Util::ArrayStack<IndexT, 8> activeSceneIds;
+    Util::ArrayStack<IndexT, 8> deadSceneIds;
 
     Util::Set<Ids::Id32> awakeActors;
 
