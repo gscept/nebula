@@ -106,6 +106,7 @@ SimpleViewerApplication::Open()
         this->resMgr = Resources::ResourceServer::Create();
         this->inputServer = Input::InputServer::Create();
         this->ioServer = IO::IoServer::Create();
+
 #ifdef USE_GITHUB_DEMO        
         this->ioServer->MountArchive("root:export");
 #endif
@@ -126,8 +127,9 @@ SimpleViewerApplication::Open()
         auto systemInfo = Core::SysFunc::GetSystemInfo();
 
         Jobs2::JobSystemInitInfo jobSystemInfo;
-        jobSystemInfo.numThreads = systemInfo->GetNumCpuCores() - 4;
+        jobSystemInfo.numThreads = 8;
         jobSystemInfo.name = "JobSystem";
+        jobSystemInfo.scratchMemorySize = 16_MB;
         Jobs2::JobSystemInit(jobSystemInfo);
 
         SizeT width = this->GetCmdLineArgs().GetInt("-w", 1280);
@@ -286,6 +288,7 @@ SimpleViewerApplication::Run()
             this->profilingContexts = Profiling::ProfilingGetContexts();
         Profiling::ProfilingNewFrame();
 #endif
+
         Jobs2::JobNewFrame();
         
         N_MARKER_BEGIN(Input, App);
@@ -381,8 +384,8 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
 
     // draw a filled rect for background, and normal rect for outline
     drawList->PushClipRect(bbMin, bbMax, true);
-    drawList->AddRectFilled(bbMin, bbMax, colors[colorIndex], 0.0f);
-    drawList->AddRect(bbMin, bbMax, IM_COL32(128, 128, 128, 128), 0.0f);
+    drawList->AddRectFilled(bbMin, bbMax, colors[colorIndex]);
+    drawList->AddRect(bbMin, bbMax, IM_COL32(128, 128, 128, 128));
 
     // make sure text appears inside the box
     Util::String text = Util::String::Sprintf("%s (%4.4f ms)", scope.name, scope.duration * 1000);
@@ -597,11 +600,20 @@ SimpleViewerApplication::RenderUI()
                             ImVec2 canvasSize = ImGui::GetContentRegionAvail();
                             ImVec2 pos = ImGui::GetCursorScreenPos();
                             int levels = 0;
-                            for (IndexT i = 0; i < ctx.topLevelScopes.Size(); i++)
+                            if (ctx.topLevelScopes.Size() > 0) for (IndexT i = 0; i < ctx.topLevelScopes.Size(); i++)
                             {
                                 const Profiling::ProfilingScope& scope = ctx.topLevelScopes[i];
                                 int level = RecursiveDrawScope(scope, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, 0);
                                 levels = Math::max(levels, level);
+                            }
+                            else
+                            {
+                                ImVec2 bbMin = ImVec2(pos.x, pos.y);
+                                ImVec2 bbMax = ImVec2(pos.x, pos.y + ImGui::GetTextLineHeight());
+                                drawList->PushClipRect(bbMin, bbMax);
+                                drawList->AddRectFilled(bbMin, bbMax, IM_COL32(200, 50, 50, 0));
+                                drawList->PopClipRect();
+                                pos.y += ImGui::GetTextLineHeight();
                             }
 
                             // set back cursor so we can draw our box
