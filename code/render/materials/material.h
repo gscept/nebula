@@ -15,20 +15,19 @@
 namespace Materials
 {
 
-class MaterialType;
-ID_32_TYPE(MaterialTypeId);
-ID_32_TYPE(SurfaceId);
-ID_32_32_NAMED_TYPE(SurfaceInstanceId, surface, instance); // 32 bits instance, 32 bits surface
+class ShaderConfig;
+ID_32_TYPE(MaterialId);
+ID_32_32_NAMED_TYPE(MaterialInstanceId, surface, instance); // 32 bits instance, 32 bits surface
 
 /// begin a material batch
-bool MaterialBeginBatch(MaterialType* type, CoreGraphics::BatchGroup::Code batch);
+bool ShaderConfigBeginBatch(ShaderConfig* config, CoreGraphics::BatchGroup::Code batch);
 /// begin surface
-void MaterialApplySurface(MaterialType* type, const SurfaceId id);
+void MaterialApply(ShaderConfig* config, const MaterialId id);
 /// apply instance of surface
-void MaterialApplySurfaceInstance(MaterialType* type, const SurfaceInstanceId id);
+void MaterialInstanceApply(ShaderConfig* config, const MaterialInstanceId id);
 /// end a material batch
-void MaterialEndBatch(MaterialType* type);
+void ShaderConfigEndBatch(ShaderConfig* config);
 
-class SurfacePool;
-extern SurfacePool* surfacePool;
+class MaterialCache;
+extern MaterialCache* surfacePool;
 } // namespace Materials

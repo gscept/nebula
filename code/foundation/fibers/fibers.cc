@@ -71,7 +71,7 @@ FiberThread::HasWork()
 /**
 */
 void
-FiberThread::SleepFiber(AtomicCounter* counter, int value)
+FiberThread::SleepFiber(Threading::AtomicCounter* counter, int value)
 {
     FiberQueue::Sleep(FiberWaitContext{ this->currentFiber.fiber, counter, value });
 

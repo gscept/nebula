@@ -25,14 +25,6 @@ __ImplementClass(JobsTest, 'RETE', Core::RefCounted);
 void
 JobsTest::Run()
 {
-    App::Application app;
-
-    Ptr<IO::IoServer> ioServer = IO::IoServer::Create();
-
-    app.SetAppTitle("Jobs test!");
-    app.SetCompanyName("gscept");
-    app.Open();
-
     // create a job port
     CreateJobPortInfo portInfo;
     portInfo.name = "TestJobPort";
@@ -94,7 +86,7 @@ JobsTest::Run()
     // run job
     JobSchedule(job, port, ctx);
 
-    JobSyncSignal(jobSync, port);
+    JobSyncThreadSignal(jobSync, port);
 
     // wait for job to finish
     JobSyncHostWait(jobSync);
@@ -108,8 +100,6 @@ JobsTest::Run()
     DestroyJob(job);
     DestroyJobPort(port);
     DestroyJobSync(jobSync);
-
-    app.Close();
 }
 
 } // namespace Test

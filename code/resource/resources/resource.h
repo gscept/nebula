@@ -14,9 +14,9 @@
 #include "resourceid.h"
 namespace Resources
 {
-class ResourceStreamPool;
-class ResourceMemoryPool;
-class ResourcePool;
+class ResourceStreamCache;
+class ResourceMemoryCache;
+class ResourceCache;
 class ResourceServer;
 class ResourceContainer;
 class Resource
@@ -36,9 +36,9 @@ public:
     virtual ~Resource();
 
 protected:
-    friend class ResourceStreamPool;
-    friend class ResourceMemoryPool;
-    friend class ResourcePool;
+    friend class ResourceStreamCache;
+    friend class ResourceMemoryCache;
+    friend class ResourceCache;
     friend class ResourceServer;
     friend class ResourceContainer;
 };

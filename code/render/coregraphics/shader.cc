@@ -9,7 +9,7 @@
 namespace CoreGraphics
 {
 
-ShaderPool* shaderPool;
+ShaderCache* shaderPool;
 //------------------------------------------------------------------------------
 /**
 */

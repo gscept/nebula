@@ -186,8 +186,8 @@ struct TextureSparsePage
 };
 
 
-class MemoryTexturePool;
-extern MemoryTexturePool* texturePool;
+class MemoryTextureCache;
+extern MemoryTextureCache* texturePool;
 
 /// create new vertex buffer with intended usage, access and CPU syncing parameters, together with size of buffer
 const TextureId CreateTexture(const TextureCreateInfo& info);

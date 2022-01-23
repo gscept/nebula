@@ -11,7 +11,7 @@
 #include "modelnode.h"
 #include "resources/resourceid.h"
 #include "coregraphics/shader.h"
-#include "materials/materialserver.h"
+#include "materials/shaderconfigserver.h"
 #include "transformnode.h"
 #include "jobs/jobs.h"
 #include "coregraphics/buffer.h"
@@ -33,79 +33,36 @@ public:
     virtual ~ShaderStateNode();
 
     struct DrawPacket;
-    struct Instance : public TransformNode::Instance
-    {
-        enum DynamicOffsetType
-        {
-            ObjectTransforms,           // always included from shared.fxh
-            InstancingTransforms,       // always included from shared.fxh
-            Skinning,                   // always included from shared.fxh
-            Optional
-        };
-        Math::bbox boundingBox;
-        CoreGraphics::ResourceTableId resourceTable;
-
-        uint32 instance;
-        Materials::SurfaceInstanceId surfaceInstance;
-        Util::FixedArray<uint32> offsets;
-
-        IndexT objectTransformsIndex;
-        IndexT instancingTransformsIndex;
-        IndexT skinningTransformsIndex;
-        bool dirty;
-
-
-        /// setup instance
-        void Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent) override;
-
-        /// fill draw packet
-        virtual DrawPacket* UpdateDrawPacket(void* mem);
-
-        /// update prior to drawing
-        void Update() override;
-        /// set node to be dirty this frame
-        void SetDirty(bool b);
-
-        /// another draw function
-        void Draw(const SizeT numInstances, const IndexT baseInstance, ShaderStateNode::DrawPacket* packet);
-    };
-
-
     static const uint NumTables = 1;
+    static const uint NumMaxOffsets = 4; // object, instancing, skeleton, particles
 
     struct DrawPacket
     {
-        Models::ModelNode::Instance* node = nullptr;
-        Materials::SurfaceInstanceId surfaceInstance;
+        Materials::MaterialInstanceId surfaceInstance;
         SizeT numTables;
         CoreGraphics::ResourceTableId tables[NumTables];
         uint32 numOffsets[NumTables];
-        uint32 offsets[NumTables][4];
+        uint32 offsets[NumTables][NumMaxOffsets];
         IndexT slots[NumTables];
 
-        /// apply the resource tables and offsets
-        void Apply(Materials::MaterialType* type);
+#ifndef PUBLIC_BUILD
+        uint32_t nodeInstanceHash;
+        Math::bbox boundingBox;
+#endif
 
-        /// cast to node of type
-        template <class T> T* ToNode()
-        {
-            static_assert(std::is_base_of<Models::ModelNode::Instance, T>::value, "T has to be of ModelNode::Instance type");
-            return reinterpret_cast<T*>(this->node);
-        };
+
+        /// apply the resource tables and offsets
+        void Apply(Materials::ShaderConfig* type);
     };
 
-    /// create instance
-    virtual ModelNode::Instance* CreateInstance(byte** memory, const Models::ModelNode::Instance* parent) override;
-    /// get size of instance
-    virtual const SizeT GetInstanceSize() const { return sizeof(Instance); }
-
     /// get surface
-    const Materials::SurfaceId GetSurface() const { return this->surface; };
+    const Materials::MaterialId GetSurface() const { return this->surface; };
     /// trigger an LOD update
     void SetMaxLOD(const float lod);
 
 protected:
-    friend class StreamModelPool;
+    friend class ModelContext;
+    friend class StreamModelCache;
 
     friend void Visibility::VisibilitySortJob(const Jobs::JobFuncContext& ctx);
 
@@ -116,9 +73,9 @@ protected:
     /// called when loading finished
     virtual void OnFinishedLoading();
     
-    Materials::MaterialType* materialType;
-    Materials::SurfaceId surface;
-    Materials::SurfaceResourceId surRes;
+    Materials::ShaderConfig* materialType;
+    Materials::MaterialId surface;
+    Materials::MaterialResourceId surRes;
     Resources::ResourceName materialName;
 
     uint8_t objectTransformsIndex;
@@ -128,29 +85,4 @@ protected:
     CoreGraphics::ResourceTableId resourceTable;
 };
 
-ModelNodeInstanceCreator(ShaderStateNode)
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-ShaderStateNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
-{
-    TransformNode::Instance::Setup(node, parent);
-    this->dirty = true;
-    ShaderStateNode* sparent = reinterpret_cast<ShaderStateNode*>(node);
-    this->resourceTable = sparent->resourceTable;
-
-    this->objectTransformsIndex = sparent->objectTransformsIndex;
-    this->instancingTransformsIndex = sparent->instancingTransformsIndex;
-    this->skinningTransformsIndex = sparent->skinningTransformsIndex;
-
-    this->offsets.Resize(3); // object data, instance data, skinning data
-    this->offsets[this->objectTransformsIndex] = 0;
-    this->offsets[this->instancingTransformsIndex] = 0; // instancing offset
-    this->offsets[this->skinningTransformsIndex] = 0; // skinning offset
-
-    // create surface instance
-    this->surfaceInstance = sparent->materialType->CreateSurfaceInstance(sparent->surface);
-}
 } // namespace Models

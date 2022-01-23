@@ -103,41 +103,4 @@ ModelNode::GetImplicitHierarchyActivation() const
     return true;
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ModelNode::ApplyNodeState()
-{
-    // empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-ModelNode::ApplyNodeResources()
-{
-    // empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ModelNode::Instance::Update()
-{
-    // empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ModelNode::Instance::Setup(Models::ModelNode* node, const Models::ModelNode::Instance* parent)
-{
-    this->node = node;
-    this->parent = parent;
-}
-
 } // namespace Models

@@ -47,6 +47,7 @@ private:
 */
 inline 
 RangeAllocator::RangeAllocator()
+    : size(0)
 {
 }
 

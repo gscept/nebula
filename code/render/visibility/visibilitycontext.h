@@ -13,8 +13,8 @@
 #include "visibility/systems/visibilitysystem.h"
 #include "models/model.h"
 #include "models/nodes/shaderstatenode.h"
-#include "materials/surfacepool.h"
-#include "materials/materialtype.h"
+#include "materials/materialcache.h"
+#include "materials/shaderconfig.h"
 #include "memory/arenaallocator.h"
 #include "math/clipstatus.h"
 
@@ -32,18 +32,18 @@ enum
     Observer_EntityId,
     Observer_EntityType,
     Observer_ResultArray,
-    Observer_Results,
     Observer_Dependency,
     Observer_DependencyMode,
     Observer_DrawList,
-    Observer_DrawListAllocator
+    Observer_DrawListAllocator,
 };
 
 enum
 {
+    ObservableAtom_NodeInstanceRange,
     ObservableAtom_GraphicsEntityId,
     ObservableAtom_Transform,
-    ObservableAtom_Node,
+    ObservableAtom_Instance,
     ObservableAtom_VisibilityEntityType,
     ObservableAtom_Active
 };
@@ -51,7 +51,7 @@ enum
 enum
 {
     Observable_EntityId,
-    Observable_Atoms
+    Observable_NumNodes
 };
 
 enum DependencyMode
@@ -100,23 +100,42 @@ public:
 #endif
 
     typedef Ids::Id32 ModelAllocId;
-    
+
+    struct VisibilityModelCommand
+    {
+        uint32 offset;
+        std::function<void()> modelCallback;
+        Materials::MaterialId surface;
+
+#if NEBULA_GRAPHICS_DEBUG
+        Util::StringAtom nodeName;
+#endif
+    };
+
     struct VisibilityDrawCommand
+    {
+        uint32 offset;
+        uint32 numInstances;
+        uint32 baseInstance;
+    };
+
+    struct VisibilityBatchCommand
     {
         uint32 packetOffset;
         uint32 numDrawPackets;
+        Util::Array<VisibilityModelCommand> models;
+        Util::Array<VisibilityDrawCommand> draws;
     };
 
     struct VisibilityDrawList
     {
-        Util::HashTable<Materials::MaterialType*, VisibilityDrawCommand> visibilityTable;
+        Util::HashTable<Materials::ShaderConfig*, VisibilityBatchCommand> visibilityTable;
         Util::Array<Models::ShaderStateNode::DrawPacket*> drawPackets;
     };
 
     /// get visibility draw list
     static const VisibilityDrawList* GetVisibilityDrawList(const Graphics::GraphicsEntityId id);
 
-    static Jobs::JobPortId jobPort;
     static Jobs::JobSyncId jobInternalSync;
     static Jobs::JobSyncId jobInternalSync2;
     static Jobs::JobSyncId jobInternalSync3;
@@ -130,15 +149,14 @@ private:
     typedef Util::Array<Math::ClipStatus::Type> VisibilityResultArray;
 
     typedef Ids::IdAllocator<
-        Math::mat4,                                 // transform of observer camera
-        Graphics::GraphicsEntityId,                 // entity id
-        VisibilityEntityType,                       // type of object so we know how to get the transform
-        VisibilityResultArray,                      // visibility lookup table
-        Math::ClipStatus::Type*,                    // array holding the visibility results array
-        Graphics::GraphicsEntityId,                 // dependency
-        DependencyMode,                             // dependency mode
-        VisibilityDrawList,                         // draw list
-        Memory::ArenaAllocator<1024>                // memory allocator for draw commands
+        Math::mat4                                 // transform of observer camera
+        , Graphics::GraphicsEntityId               // entity id
+        , VisibilityEntityType                     // type of object so we know how to get the transform
+        , VisibilityResultArray                    // visibility lookup table
+        , Graphics::GraphicsEntityId               // dependency
+        , DependencyMode                           // dependency mode
+        , VisibilityDrawList                       // draw list
+        , Memory::ArenaAllocator<1024>             // memory allocator for draw commands
     > ObserverAllocator;
     static ObserverAllocator observerAllocator;
 
@@ -167,23 +185,12 @@ private:
     friend class Models::ModelContext;
 
     using AtomTransform = Math::mat4;
-    using AtomModelNodeInstance = Models::ModelNode::Instance;
     using AtomIsActive = bool;
-    // atom corresponds to a single visibility entry
-    typedef Ids::IdAllocator<
-        Graphics::GraphicsEntityId,  // the entity id that this atom is bound to.
-        AtomTransform,               // atoms transform
-        Models::ModelNode::Instance*,// atoms model node instance
-        VisibilityEntityType,        // the observables visibility type
-        AtomIsActive                 // is the atom active
-    > ObservableAtomAllocator;
-    static ObservableAtomAllocator observableAtomAllocator;
 
-    using ObservableAtoms = Util::ArrayStack<Ids::Id32, 1>;
     // observable corresponds to a single entity
     typedef Ids::IdAllocator<
-        Graphics::GraphicsEntityId, // the entity id that this component is bound to
-        ObservableAtoms             // keeps track of all atoms for this entity
+        Graphics::GraphicsEntityId, // The entity id that this component is bound to
+        uint32                      // Node instance range
     > ObservableAllocator;
 
     static ObservableAllocator observableAllocator;

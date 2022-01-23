@@ -17,6 +17,8 @@
 #include "math/mat4.h"
 #include "math/bbox.h"
 #include "particles/emitterattrs.h"
+#include "threading/interlocked.h"
+#include "threading/event.h"
 
 //------------------------------------------------------------------------------
 namespace Particles
@@ -65,19 +67,21 @@ namespace Particles
         const float* sampleBuffer;
     };
 
-    struct ParticleJobUniformPerJobData
-    {
-        ParticleJobUniformPerJobData()
-            : stepTime(0.0f)
-        {}
-        float stepTime;
-    };
-
     // each job-slice generates this output
     struct ParticleJobSliceOutputData
     {
         Math::bbox bbox;
         unsigned int numLivingParticles;
+    };
+
+    struct ParticleJobContext
+    {
+        const Particle* inputParticles;
+        Particle* outputParticles;
+        const ParticleJobUniformData* uniformData;
+        float stepTime;
+        uint numParticles;
+        ParticleJobSliceOutputData* output;
     };
 
     static const SizeT ParticleJobInputElementSize = sizeof(Particle);

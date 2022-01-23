@@ -158,116 +158,20 @@ ShaderStateNode::OnFinishedLoading()
 //------------------------------------------------------------------------------
 /**
 */
-ShaderStateNode::DrawPacket*
-ShaderStateNode::Instance::UpdateDrawPacket(void* mem)
-{
-    char* buf = (char*) mem;
-
-    // first write header
-    ShaderStateNode::DrawPacket* ret = (ShaderStateNode::DrawPacket*)buf;
-    n_assert(this->offsets.Size() <= 4);
-
-    ret->node = this;
-    ret->surfaceInstance = this->surfaceInstance;
-    ret->numTables = NumTables;
-    ret->tables[0] = this->resourceTable;
-    ret->numOffsets[0] = this->offsets.Size();
-    memcpy(&ret->offsets[0][0], this->offsets.Begin(), this->offsets.ByteSize());
-    ret->slots[0] = NEBULA_DYNAMIC_OFFSET_GROUP;
-
-    /*
-    ret->nodeOffset = offsetof(Payload, node);
-    ret->surfaceInstanceOffset = offsetof(Payload, surfaceInstance);
-    ret->numTablesOffset = offsetof(Payload, numTables);
-    ret->tablesOffset = offsetof(Payload, tables);
-    ret->numOffsetsOffset = offsetof(Payload, numOffsets);
-    ret->offsetsOffset = offsetof(Payload, offsets);
-    ret->slotsOffset = offsetof(Payload, slots);
-
-    ret->node = this;
-
-    // setup struct offsets
-    ret->surfaceInstance = (Materials::SurfaceInstanceId*)buf;
-    buf += sizeof(Materials::SurfaceInstanceId);
-    ret->offsets = (uint32*)buf;
-    buf += sizeof(uint32) * this->offsets.Size();
-    ret->numTables = (SizeT*) buf;
-    buf += sizeof(SizeT);
-    ret->tables = (CoreGraphics::ResourceTableId*)buf;
-    buf += sizeof(CoreGraphics::ResourceTableId) * NumTables;
-    ret->numOffsets = (uint32*) buf;
-    buf += sizeof(uint32) * NumTables;
-    ret->slots = (IndexT*) buf;
-    buf += sizeof(IndexT) * NumTables;
-
-    *ret->surfaceInstance = this->surfaceInstance;
-    *ret->numTables = NumTables;
-
-    ret->offsets = this->offsets.Begin();
-    ret->numOffsets[0] = this->offsets.Size();
-
-    ret->slots[0] = NEBULA_DYNAMIC_OFFSET_GROUP;
-    ret->tables[0] = this->resourceTable;
-    */
-
-    return ret;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
-ShaderStateNode::Instance::Update()
+ShaderStateNode::DrawPacket::Apply(Materials::ShaderConfig* type)
 {
-    if (!this->dirty)
-        return;
+    // Apply per-draw surface parameters
+    if (this->surfaceInstance != Materials::MaterialInstanceId::Invalid())
+        Materials::MaterialInstanceApply(type, this->surfaceInstance);
 
-    ObjectsShared::ObjectBlock block;
-    this->modelTransform.store(block.Model);
-    this->invModelTransform.store(block.InvModel);
-    block.DitherFactor = this->lodFactor;
-
-    uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
-    this->offsets[this->objectTransformsIndex] = offset;
-    this->dirty = false;
-}
-
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ShaderStateNode::DrawPacket::Apply(Materials::MaterialType* type)
-{
-    // apply surface
-    if (this->surfaceInstance != Materials::SurfaceInstanceId::Invalid())
-        Materials::MaterialApplySurfaceInstance(type, this->surfaceInstance);
-
-    // set resource tables
-    IndexT prevOffset = 0;
+    // Set per-draw resource tables
+    IndexT prevOffset = 0;  
     for (IndexT i = 0; i < this->numTables; i++)
     {
         CoreGraphics::SetResourceTable(this->tables[i], this->slots[i], CoreGraphics::GraphicsPipeline, this->numOffsets[i], this->offsets[prevOffset]);
         prevOffset = this->numOffsets[i];
     }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-ShaderStateNode::Instance::SetDirty(bool b)
-{
-    this->dirty = b;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ShaderStateNode::Instance::Draw(const SizeT numInstances, const IndexT baseInstance, Models::ShaderStateNode::DrawPacket* packet)
-{
-    CoreGraphics::DrawInstanced(numInstances, baseInstance);
 }
 
 } // namespace Models

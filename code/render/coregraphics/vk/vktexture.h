@@ -11,7 +11,7 @@
 //------------------------------------------------------------------------------
 #include "coregraphics/texture.h"
 #include "coregraphics/pixelformat.h"
-#include "resources/resourcepool.h"
+#include "resources/resourcecache.h"
 #include "ids/idallocator.h"
 #include "vkmemory.h"
 #include "coregraphics/load/glimltypes.h"

@@ -5,7 +5,10 @@
 #include "render/stdneb.h"
 #include "bruteforcesystem.h"
 #include "visibility/visibilitycontext.h"
+#include "graphics/graphicsserver.h"
+#include "jobs2/jobs2.h"
 #include "math/mat4.h"
+#include "math/clipstatus.h"
 namespace Visibility
 {
 
@@ -21,41 +24,129 @@ BruteforceSystem::Setup(const BruteforceSystemLoadInfo& info)
 /**
 */
 void
-BruteforceSystem::Run()
+BruteforceSystem::Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters)
 {
+    // This is the context used to provide the job with
+    struct Context
+    {
+        Math::vec4 colX[4], colY[4], colZ[4], colW[4];
+        uint32 objectCount;
+        const uint32* ids;
+        const Math::bbox* boundingBoxes;
+        Math::ClipStatus::Type* clipStatuses;
+    };
+
     IndexT i;
     for (i = 0; i < this->obs.count; i++)
     {
+        Math::mat4 camera = this->obs.transforms[i];
+
+        n_assert(this->obs.completionCounters[i] == 0);
+        this->obs.completionCounters[i] = 1;
+
+        Context ctx;
+        ctx.ids = this->ent.ids;
+        ctx.boundingBoxes = this->ent.boxes;
+
+        // Setup counters
+        Util::FixedArray<const Threading::AtomicCounter*> counters(extraCounters.Size() + (previousSystemCompletionCounters != nullptr ? 1 : 0));
+        if (previousSystemCompletionCounters != nullptr)
+        {
+            counters[0] = &previousSystemCompletionCounters[i];
+            for (int i = 0; i < extraCounters.Size(); i++)
+                counters[i + 1] = extraCounters[i];
+        }
+        else
+        {
+            for (int i = 0; i < extraCounters.Size(); i++)
+                counters[i] = extraCounters[i];
+        }
+
+        // Splat the matrix such that all _x, _y, ... will contain the column values of x, y, ...
+        // This provides a way to rearrange the camera transform into a more SSE friendly matrix transform in the job
+        ctx.colX[0] = Math::splat_x((camera).r[0]);
+        ctx.colX[1] = Math::splat_x((camera).r[1]);
+        ctx.colX[2] = Math::splat_x((camera).r[2]);
+        ctx.colX[3] = Math::splat_x((camera).r[3]);
+
+        ctx.colY[0] = Math::splat_y((camera).r[0]);
+        ctx.colY[1] = Math::splat_y((camera).r[1]);
+        ctx.colY[2] = Math::splat_y((camera).r[2]);
+        ctx.colY[3] = Math::splat_y((camera).r[3]);
+
+        ctx.colZ[0] = Math::splat_z((camera).r[0]);
+        ctx.colZ[1] = Math::splat_z((camera).r[1]);
+        ctx.colZ[2] = Math::splat_z((camera).r[2]);
+        ctx.colZ[3] = Math::splat_z((camera).r[3]);
+
+        ctx.colW[0] = Math::splat_w((camera).r[0]);
+        ctx.colW[1] = Math::splat_w((camera).r[1]);
+        ctx.colW[2] = Math::splat_w((camera).r[2]);
+        ctx.colW[3] = Math::splat_w((camera).r[3]);
+
+        ctx.clipStatuses = this->obs.results[i].Begin();
+
+        // All set, run the job
+        Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+        {
+            N_SCOPE(BruteforceViewFrustumCulling, Visibility);
+            auto context = static_cast<Context*>(ctx);
+
+            // Iterate over work group
+            for (IndexT i = 0; i < groupSize; i++)
+            {
+                // Get item index
+                IndexT index = i + invocationOffset;
+                if (index >= totalJobs)
+                    return;
+
+                uint32 objectId = context->ids[index];
+
+                // Run bounding box check and store output in clip statuses, if clip status is still outside
+                if (context->clipStatuses[index] == Math::ClipStatus::Outside)
+                    context->clipStatuses[index] = context->boundingBoxes[objectId].clipstatus(context->colX, context->colY, context->colZ, context->colW);
+            }
+        }
+        , this->ent.count
+        , 1024
+        , ctx
+        , counters
+        , &this->obs.completionCounters[i]
+        , nullptr);
+
+        /*
         Jobs::JobContext ctx;
 
         // uniform data is the observer transform
-        ctx.uniform.numBuffers = 1;
-        ctx.uniform.data[0] = (unsigned char*)&this->obs.transforms[i];
-        ctx.uniform.dataSize[0] = sizeof(Math::mat4);
+        ctx.uniform.numBuffers = 2;
         ctx.uniform.scratchSize = 0;
 
-        // just one input buffer of all the transforms
-        ctx.input.numBuffers = 2;
-        ctx.input.data[0] = (unsigned char*)this->ent.transforms;
-        ctx.input.dataSize[0] = sizeof(Math::mat4) * this->ent.count;
-        ctx.input.sliceSize[0] = sizeof(Math::mat4);
+        // Observer transforms
+        ctx.uniform.data[0] = (unsigned char*)&this->obs.transforms[i];
+        ctx.uniform.dataSize[0] = sizeof(Math::mat4);
 
-        ctx.input.data[1] = (unsigned char*)this->ent.activeFlags;
-        ctx.input.dataSize[1] = sizeof(bool) * this->ent.count;
-        ctx.input.sliceSize[1] = sizeof(bool);
+        // Entity boxes (this is from the global array from ModelContext)
+        ctx.uniform.data[1] = (unsigned char*)this->ent.boxes;
+        ctx.uniform.dataSize[1] = sizeof(Math::bbox);
+
+        ctx.input.numBuffers = 1;
+        ctx.input.data[0] = (unsigned char*)this->ent.ids;
+        ctx.input.dataSize[0] = sizeof(uint32) * this->ent.count;
+        ctx.input.sliceSize[0] = sizeof(uint32);
 
         // the output is the visibility result
         ctx.output.numBuffers = 1;
-        ctx.output.data[0] = (unsigned char*)this->obs.vis[i];
+        ctx.output.data[0] = (unsigned char*)this->obs.results[i].Begin();
         ctx.output.dataSize[0] = sizeof(Math::ClipStatus::Type) * this->ent.count;
         ctx.output.sliceSize[0] = sizeof(Math::ClipStatus::Type);
 
         // create and run job
         Jobs::JobId job = Jobs::CreateJob({ BruteforceSystemJobFunc });
-        Jobs::JobSchedule(job, ObserverContext::jobPort, ctx);
+        Jobs::JobSchedule(job, Graphics::GraphicsServer::renderSystemsJobPort, ctx);
 
         // enqueue here, but don't dequeue as VisibilityContext will do it for us
         ObserverContext::runningJobs.Enqueue(job);
+        */
     }
 }
 } // namespace Visibility

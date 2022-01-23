@@ -94,15 +94,4 @@ TransformNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
     return retval;
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TransformNode::Instance::Update()
-{
-    CoreGraphics::TransformDevice* transformDevice = CoreGraphics::TransformDevice::Instance();
-    transformDevice->SetModelTransform(this->modelTransform);
-    transformDevice->SetObjectId(this->objectId);
-}
-
 } // namespace Models

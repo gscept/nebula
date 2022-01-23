@@ -54,6 +54,6 @@ const BufferId MeshGetIndexBuffer(const MeshId id);
 /// get topology
 const CoreGraphics::PrimitiveTopology::Code MeshGetTopology(const MeshId id);
 
-class MemoryMeshPool;
-extern MemoryMeshPool* meshPool;
+class MemoryMeshCache;
+extern MemoryMeshCache* meshPool;
 } // CoreGraphics

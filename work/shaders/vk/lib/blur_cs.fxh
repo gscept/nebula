@@ -59,7 +59,8 @@ sampler_state InputSampler
 #define GAUSSIAN_KERNEL_SIZE_65 1
 #endif
 
-#define BLUR_TILE_WIDTH 320
+#define BLUR_TILE_WIDTH 256
+const uint BlurTileWidth = BLUR_TILE_WIDTH;
 #define SHARED_MEM_SIZE (KERNEL_RADIUS + BLUR_TILE_WIDTH + KERNEL_RADIUS)
 
 const float weights[] = {

@@ -143,7 +143,7 @@ MemoryPool::AllocateConservative(DeviceSize alignment, DeviceSize size)
             DeviceSize curSize = ranges[i].size;
 
             if (prevOffset > curOffset)
-                goto next;
+                goto next;  // this can happen if another allocation was aligned differently
             else if (curOffset - prevOffset >= size)
             {
                 // break, this will insert a new range after the previous but before this one
@@ -183,7 +183,6 @@ MemoryPool::AllocateConservative(DeviceSize alignment, DeviceSize size)
     }
     else
     {
-        this->blockMappedPointers[id] = nullptr;
         DeviceMemory mem = this->CreateBlock(&this->blockMappedPointers[id]);
 
         this->blocks[id] = mem;

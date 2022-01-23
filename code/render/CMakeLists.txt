@@ -55,8 +55,8 @@ ENDIF()
                 skeleton.h
                 skeletonevaljob.cc
                 skeletonjoint.h
-                streamskeletonpool.cc
-                streamskeletonpool.h
+                streamskeletoncache.cc
+                streamskeletoncache.h
             )
 
         fips_dir(clustering)
@@ -92,8 +92,8 @@ ENDIF()
                 naxfileformatstructs.h
                 sampletype.cc
                 sampletype.h
-                streamanimationpool.cc
-                streamanimationpool.h
+                streamanimationcache.cc
+                streamanimationcache.h
             )
         fips_dir(coregraphics/base GROUP "coregraphics/base")
             fips_files(
@@ -143,10 +143,10 @@ ENDIF()
                 indextype.h
                 memory.cc
                 memory.h
-                memorymeshpool.cc
-                memorymeshpool.h
-                memorytexturepool.cc
-                memorytexturepool.h
+                memorymeshcache.cc
+                memorymeshcache.h
+                memorytexturecache.cc
+                memorytexturecache.h
                 mesh.cc
                 mesh.h
                 pass.h
@@ -175,12 +175,12 @@ ENDIF()
                 shaperenderer.cc
                 shaperenderer.h
                 sparsebuffer.h
-                streammeshpool.cc
-                streammeshpool.h
-                shaderpool.cc
-                shaderpool.h
-                streamtexturepool.cc
-                streamtexturepool.h
+                streammeshcache.cc
+                streammeshcache.h
+                shadercache.cc
+                shadercache.h
+                streamtexturecache.cc
+                streamtexturecache.h
                 streamtexturesaver.h
                 submissioncontext.h
                 textelement.cc
@@ -195,8 +195,8 @@ ENDIF()
                 vertexcomponent.h
                 vertexlayout.cc
                 vertexlayout.h
-                vertexsignaturepool.cc
-                vertexsignaturepool.h
+                vertexsignaturecache.cc
+                vertexsignaturecache.h
                 window.h
             )
         fips_dir(coregraphics/debug GROUP "coregraphics/debug")
@@ -302,8 +302,8 @@ ENDIF()
                 vkloader.h
                 vkmemory.cc
                 vkmemory.h
-                vkmemorytexturepool.cc
-                vkmemorytexturepool.h
+                vkmemorytexturecache.cc
+                vkmemorytexturecache.h
                 vkpass.cc
                 vkpass.h
                 vkpipelinedatabase.cc
@@ -322,12 +322,12 @@ ENDIF()
                 vkshaderserver.h
                 vkshaperenderer.cc
                 vkshaperenderer.h
-                vkshaderpool.cc
-                vkshaderpool.h
+                vkshadercache.cc
+                vkshadercache.h
                 vksubmissioncontext.cc
                 vksubmissioncontext.h
-                vkstreamtexturepool.cc
-                vkstreamtexturepool.h
+                vkstreamtexturecache.cc
+                vkstreamtexturecache.h
                 vkstreamtexturesaver.cc
                 vkstreamtexturesaver.h
                 vksubcontexthandler.cc
@@ -344,8 +344,8 @@ ENDIF()
                 vktypes.h
                 vkutilities.cc
                 vkutilities.h
-                vkvertexsignaturepool.cc
-                vkvertexsignaturepool.h
+                vkvertexsignaturecache.cc
+                vkvertexsignaturecache.h
             )
     endif()
         fips_dir(debug)
@@ -503,12 +503,12 @@ ENDIF()
             fips_files(
                 material.cc
                 material.h
-                materialserver.cc
-                materialserver.h
-                materialtype.cc
-                materialtype.h
-                surfacepool.cc
-                surfacepool.h
+                shaderconfigserver.cc
+                shaderconfigserver.h
+                shaderconfig.cc
+                shaderconfig.h
+                materialcache.cc
+                materialcache.h
             )
         fips_dir(models/nodes GROUP "models/nodes")
             fips_files(
@@ -531,10 +531,12 @@ ENDIF()
             fips_files(
                 model.cc
                 model.h
+                modelrenderableupdatejob.cc
                 modelcontext.cc
                 modelcontext.h
-                streammodelpool.cc
-                streammodelpool.h
+                modeltransformupdatejob.cc
+                streammodelcache.cc
+                streammodelcache.h
             )
 
         fips_dir(renderutil)
@@ -609,7 +611,7 @@ ENDIF()
 				visibilitycontext.cc
 				visibilitycontext.h
                 visibilitydependencyjob.cc
-                visibilitydrawlistupdatejob.cc
+                #visibilitydrawlistupdatejob.cc
                 visibilitysortjob.cc
             )
         fips_dir(visibility/systems)

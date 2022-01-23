@@ -12,8 +12,8 @@
 #include "io/ioserver.h"
 #include "coregraphics/imagefileformat.h"
 
-#include "coregraphics/streamtexturepool.h"
-#include "coregraphics/memorytexturepool.h"
+#include "coregraphics/streamtexturecache.h"
+#include "coregraphics/memorytexturecache.h"
 
 namespace Debug
 {
@@ -68,7 +68,7 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         htmlWriter->LineBreak();
         htmlWriter->LineBreak();
 
-        const StreamTexturePool* streamPool = ResourceServer::Instance()->GetStreamPool<StreamTexturePool>();
+        const StreamTextureCache* streamPool = ResourceServer::Instance()->GetStreamPool<StreamTextureCache>();
         const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>& streamResources = streamPool->GetResources();
 
         // create a table of all existing textures
@@ -150,7 +150,7 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         }
         htmlWriter->End(HtmlElement::Table);
 
-        const MemoryTexturePool* memPool = ResourceServer::Instance()->GetMemoryPool<MemoryTexturePool>();
+        const MemoryTextureCache* memPool = ResourceServer::Instance()->GetMemoryPool<MemoryTextureCache>();
         const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>& memResources = memPool->GetResources();
 
         htmlWriter->Element(HtmlElement::Heading1, "Texture Resources (memory loaded)");

@@ -379,7 +379,7 @@ Queue<TYPE>::Reserve(SizeT num)
                 }
                 if (this->data != nullptr)
                 {
-                n_delete_array(this->data);
+                    n_delete_array(this->data);
                 }
             }
         }

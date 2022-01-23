@@ -166,39 +166,4 @@ CharacterNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
     return retval;
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-CharacterNode::Instance::ApplySkin(const Util::StringAtom& skinName)
-{
-    IndexT skinIndex = this->activeSkinInstances.FindIndex(skinName);
-
-    // avoid adding the same skin again
-    if (skinIndex == InvalidIndex)
-    {
-        CharacterNode* cnode = (CharacterNode*)this->node;
-        IndexT idx = cnode->skinNodes[skinName];
-
-        // activate node and add to the active skin dictionary
-        CharacterSkinNode::Instance* snode = (CharacterSkinNode::Instance*)this->children[idx];
-        snode->active = true;
-        this->activeSkinInstances.Add(skinName, snode);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-CharacterNode::Instance::RemoveSkin(const Util::StringAtom& skinName)
-{
-    IndexT skinIndex = this->activeSkinInstances.FindIndex(skinName);
-    n_assert(skinIndex != InvalidIndex);
-
-    // deactivate node
-    this->activeSkinInstances.ValueAtIndex(skinName, skinIndex)->active = false;
-    this->activeSkinInstances.EraseIndex(skinName, skinIndex);
-}
-
 } // namespace Characters

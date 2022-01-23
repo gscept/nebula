@@ -19,6 +19,10 @@ public:
     static int Increment(int volatile* var);
     /// interlocked decrement
     static int Decrement(int volatile* var);
+    /// interlocked increment, return result
+    static long Increment(long volatile* var);
+    /// interlocked decrement, return result
+    static long Decrement(long volatile* var);
     /// interlocked add
     static int Add(int volatile* var, int add);
     /// interlocked or
@@ -51,6 +55,24 @@ PosixInterlocked::Increment(int volatile* var)
 */
 inline int
 PosixInterlocked::Decrement(int volatile* var)
+{
+    return __sync_sub_and_fetch(var, 1);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline long
+PosixInterlocked::Increment(long volatile* var)
+{
+    return __sync_add_and_fetch(var, 1);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline long
+PosixInterlocked::Decrement(long volatile* var)
 {
     return __sync_sub_and_fetch(var, 1);
 }

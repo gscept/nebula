@@ -67,7 +67,7 @@ struct FrameProfilingMarker
 {
     CoreGraphics::QueueType queue;
     Math::vec4 color;
-    const char* name;
+    Util::String name;
     IndexT gpuBegin;
     IndexT gpuEnd;
     uint64_t start;
@@ -241,6 +241,8 @@ CoreGraphics::ResourceTableId SetFrameResourceTable(const CoreGraphics::Resource
 /// push constants
 void PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data);
 
+/// Unlock constants
+void UnlockConstantUpdates();
 /// allocate range of graphics memory and set data, return offset
 template<class TYPE> uint SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType type, const TYPE& data);
 /// allocate range of graphics memory and set data as an array of elements, return offset
@@ -253,6 +255,8 @@ template<class TYPE> uint SetComputeConstants(CoreGraphics::GlobalConstantBuffer
 template<class TYPE> uint SetComputeConstants(CoreGraphics::GlobalConstantBufferType type, const TYPE* data, SizeT elements);
 /// set graphics constants based on pre-allocated memory
 template<class TYPE> void SetComputeConstants(CoreGraphics::GlobalConstantBufferType type, uint offset, const TYPE& data);
+/// Lock constant updates
+void LockConstantUpdates();
 
 /// allocate range of graphics memory and set data, return offset
 int SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const void* data, SizeT size);
@@ -307,10 +311,10 @@ void WaitEvent(
 /// signals an event
 void ResetEvent(const CoreGraphics::EventId ev, const CoreGraphics::BarrierStage stage, const CoreGraphics::QueueType queue);
 
-/// draw current primitives
+/// draw primitives
 void Draw();
-/// draw indexed, instanced primitives
-void DrawInstanced(SizeT numInstances, IndexT baseInstance);
+/// draw primitives instanced
+void Draw(SizeT numInstances, IndexT baseInstance);
 /// draw indirect, draws is the amount of draws in the buffer, and stride is the byte offset between each call
 void DrawIndirect(const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT draws, IndexT stride);
 /// draw indirect, draws is the amount of draws in the buffer, and stride is the byte offset between each call

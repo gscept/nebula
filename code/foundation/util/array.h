@@ -76,6 +76,8 @@ public:
     /// convert to "anything"
     template<typename T> T As() const;
 
+    /// Get element (same as operator[] but as a function)
+    TYPE& Get(IndexT index) const;
     /// append element to end of array
     void Append(const TYPE& elm);
     /// append an element which is being forwarded
@@ -84,6 +86,10 @@ public:
     void AppendArray(const Array<TYPE>& rhs);
     /// append from C array
     void AppendArray(const TYPE* arr, const SizeT count);
+    /// Emplace item (create new item and return reference)
+    TYPE& Emplace();
+    /// Emplace range of items and return pointer to first
+    TYPE* EmplaceArray(const SizeT count);
     /// increase capacity to fit N more elements into the array.
     void Reserve(SizeT num);
     
@@ -109,12 +115,16 @@ public:
     void EraseIndexSwap(IndexT index);
     /// erase element at iterator, fill gap by swapping in last element, destroys sorting!
     Iterator EraseSwap(Iterator iter);
-    /// erase range
-    void EraseRange(IndexT start, SizeT end);
+    /// erase range, excluding the element at end
+    void EraseRange(IndexT start, IndexT end);
     /// erase back
     void EraseBack();
     /// erase front
     void EraseFront();
+    /// Pop front
+    TYPE PopFront();
+    /// Pop back
+    TYPE PopBack();
     /// insert element before element at index
     void Insert(IndexT index, const TYPE& elm);
     /// insert element into sorted array, return index where element was included
@@ -137,8 +147,8 @@ public:
     Iterator Find(const TYPE& elm, const IndexT start = 0) const;
     /// find identical element in array, return index, InvalidIndex if not found
     IndexT FindIndex(const TYPE& elm, const IndexT start = 0) const;
-	/// find identical element using a specific key type
-	template <typename KEYTYPE> IndexT FindIndex(typename std::enable_if<true, const KEYTYPE&>::type elm, const IndexT start = 0) const;
+    /// find identical element using a specific key type
+    template <typename KEYTYPE> IndexT FindIndex(typename std::enable_if<true, const KEYTYPE&>::type elm, const IndexT start = 0) const;
     /// fill array range with element
     void Fill(IndexT first, SizeT num, const TYPE& elm);
     /// clear contents and preallocate with new attributes
@@ -368,7 +378,7 @@ Array<TYPE>::Copy(const Array<TYPE>& src)
 template<class TYPE> void
 Array<TYPE>::Delete()
 {
-    this->grow = 0;
+    this->grow = 16;
     this->count = 0;
     
     if (this->elements)
@@ -588,7 +598,7 @@ Array<TYPE>::DestroyRange(IndexT fromIndex, IndexT toIndex)
 #if NEBULA_DEBUG
     else
     {
-        Memory::Clear(&this->elements[fromIndex], sizeof(TYPE) * (toIndex - fromIndex));        
+        Memory::Clear((void*)&this->elements[fromIndex], sizeof(TYPE) * (toIndex - fromIndex));        
     }
 #endif
 }
@@ -611,7 +621,7 @@ Array<TYPE>::CopyRange(TYPE* to, TYPE* from, SizeT num)
     }
     else
     {
-        Memory::Copy(from, to, num * sizeof(TYPE));
+        Memory::CopyElements(from, to, num);
     }       
 }
 
@@ -633,14 +643,28 @@ Array<TYPE>::MoveRange(TYPE* to, TYPE* from, SizeT num)
     }
     else
     {
-        Memory::Move(from, to, num * sizeof(TYPE));
+        Memory::MoveElements(from, to, num);
     }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
+template<class TYPE>
+inline TYPE& Array<TYPE>::Get(IndexT index) const
+{
+#if NEBULA_BOUNDSCHECKS
+    n_assert(this->elements != nullptr);
+    n_assert(this->capacity > index);
+#endif
+    return this->elements[index];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> 
+void
 Array<TYPE>::Append(const TYPE& elm)
 {
     // grow allocated space if exhausted
@@ -657,7 +681,8 @@ Array<TYPE>::Append(const TYPE& elm)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> inline void 
+template<class TYPE> 
+void 
 Array<TYPE>::Append(TYPE&& elm)
 {
     // grow allocated space if exhausted
@@ -674,7 +699,8 @@ Array<TYPE>::Append(TYPE&& elm)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
+template<class TYPE> 
+void
 Array<TYPE>::AppendArray(const Array<TYPE>& rhs)
 {
     SizeT neededCapacity = this->count + rhs.count;
@@ -695,7 +721,8 @@ Array<TYPE>::AppendArray(const Array<TYPE>& rhs)
 //------------------------------------------------------------------------------
 /**
 */
-template<class TYPE> void
+template<class TYPE> 
+void
 Array<TYPE>::AppendArray(const TYPE* arr, const SizeT count)
 {
     SizeT neededCapacity = this->count + count;
@@ -711,6 +738,49 @@ Array<TYPE>::AppendArray(const TYPE* arr, const SizeT count)
         this->elements[this->count + i] = std::forward<const TYPE>(arr[i]);
     }
     this->count += count;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+TYPE& 
+Array<TYPE>::Emplace()
+{
+// grow allocated space if exhausted
+    if (this->count == this->capacity)
+    {
+        this->Grow();
+    }
+#if NEBULA_BOUNDSCHECKS
+    n_assert(this->elements);
+#endif
+    this->elements[count] = TYPE();
+    return this->elements[this->count++];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+TYPE* 
+Array<TYPE>::EmplaceArray(const SizeT count)
+{
+    SizeT neededCapacity = this->count + count;
+    if (neededCapacity > this->capacity)
+    {
+        this->GrowTo(neededCapacity);
+    }
+
+    // forward elements from array
+    IndexT i;
+    for (i = 0; i < count; i++)
+    {
+        this->elements[this->count + i] = TYPE();
+    }
+    TYPE* first = this->elements[this->count];
+    this->count += count;
+    return first;
 }
 
 //------------------------------------------------------------------------------
@@ -937,7 +1007,7 @@ Array<TYPE>::EraseSwap(typename Array<TYPE>::Iterator iter)
 /**
 */
 template<class TYPE> void 
-Array<TYPE>::EraseRange(IndexT start, SizeT end)
+Array<TYPE>::EraseRange(IndexT start, IndexT end)
 {
     n_assert(end >= start);
     n_assert(end < this->count);
@@ -946,7 +1016,6 @@ Array<TYPE>::EraseRange(IndexT start, SizeT end)
     else
     {
         // add 1 to end to remove and move including that element
-        end += 1;
         this->DestroyRange(start, end);
         SizeT numMove = this->count - end;
         this->MoveRange(&this->elements[start], &this->elements[end], numMove);
@@ -973,6 +1042,29 @@ template<class TYPE> void
 Array<TYPE>::EraseFront()
 {
     this->EraseIndex(0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline TYPE 
+Array<TYPE>::PopFront()
+{
+    TYPE ret = std::move(this->elements[0]);
+    this->EraseIndex(0);
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline TYPE 
+Array<TYPE>::PopBack()
+{
+    this->count--;
+    return std::move(this->elements[this->count - 1]);
 }
 
 //------------------------------------------------------------------------------
@@ -1114,15 +1206,15 @@ template<typename KEYTYPE> inline IndexT
 Array<TYPE>::FindIndex(typename std::enable_if<true, const KEYTYPE&>::type elm, const IndexT start) const
 {
     n_assert(start <= this->count);
-	IndexT index;
-	for (index = start; index < this->count; index++)
-	{
-		if (this->elements[index] == elm)
-		{
-			return index;
-		}
-	}
-	return InvalidIndex;
+    IndexT index;
+    for (index = start; index < this->count; index++)
+    {
+        if (this->elements[index] == elm)
+        {
+            return index;
+        }
+    }
+    return InvalidIndex;
 }
 
 //------------------------------------------------------------------------------
@@ -1141,6 +1233,8 @@ Array<TYPE>::Fill(IndexT first, SizeT num, const TYPE& elm)
     {
         this->GrowTo(first + num);
     }
+    this->count = num;
+ 
     IndexT i;
     for (i = first; i < (first + num); i++)
     {

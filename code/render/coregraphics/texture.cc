@@ -6,7 +6,7 @@
 #include "render/stdneb.h"
 #include "coregraphics/config.h"
 #include "coregraphics/texture.h"
-#include "coregraphics/memorytexturepool.h"
+#include "coregraphics/memorytexturecache.h"
 #include "coregraphics/displaydevice.h"
 
 namespace CoreGraphics
@@ -24,7 +24,7 @@ TextureId Red2D;
 TextureId Green2D;
 TextureId Blue2D;
 
-MemoryTexturePool* texturePool = nullptr;
+MemoryTextureCache* texturePool = nullptr;
 
 //------------------------------------------------------------------------------
 /**

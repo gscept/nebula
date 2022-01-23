@@ -11,7 +11,7 @@
 #include "graphics/cameracontext.h"
 #include "frame/frameplugin.h"
 #include "memory/rangeallocator.h"
-#include "coregraphics/streammeshpool.h"
+#include "coregraphics/streammeshcache.h"
 
 #include "vegetation.h"
 namespace Vegetation
@@ -680,7 +680,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
 	normal = Resources::CreateResource(setup.normals, "Vegetation", nullptr, nullptr, true);
 	material = Resources::CreateResource(setup.material, "Vegetation", nullptr, nullptr, true);
 
-	CoreGraphics::StreamMeshPool::StreamMeshLoadMetaData metaData;
+	CoreGraphics::StreamMeshCache::StreamMeshLoadMetaData metaData;
 	metaData.copySource = true;
 	mesh = Resources::CreateResource(setup.mesh, metaData, "Vegetation", nullptr, nullptr, true);
 

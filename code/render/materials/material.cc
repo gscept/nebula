@@ -4,53 +4,53 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "material.h"
-#include "materialtype.h"
-#include "surfacepool.h"
+#include "shaderconfig.h"
+#include "materialcache.h"
 namespace Materials
 {
 
-SurfacePool* surfacePool = nullptr;
+MaterialCache* surfacePool = nullptr;
 
 //------------------------------------------------------------------------------
 /**
 */
 bool
-MaterialBeginBatch(MaterialType* type, CoreGraphics::BatchGroup::Code batch)
+ShaderConfigBeginBatch(ShaderConfig* config, CoreGraphics::BatchGroup::Code batch)
 {
-    n_assert(type != nullptr);
-    return type->BeginBatch(batch);
+    n_assert(config != nullptr);
+    return config->BeginBatch(batch);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-MaterialApplySurface(MaterialType* type, const SurfaceId id)
+MaterialApply(ShaderConfig* config, const MaterialId id)
 {
-    n_assert(type != nullptr);
-    n_assert(id != SurfaceId::Invalid());   
-    type->ApplySurface(id);
+    n_assert(config != nullptr);
+    n_assert(id != MaterialId::Invalid());   
+    config->ApplySurface(id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-MaterialApplySurfaceInstance(MaterialType* type, const SurfaceInstanceId id)
+MaterialInstanceApply(ShaderConfig* config, const MaterialInstanceId id)
 {
-    n_assert(type != nullptr);
-    n_assert(id != SurfaceInstanceId::Invalid());
-    type->ApplyInstance(id);
+    n_assert(config != nullptr);
+    n_assert(id != MaterialInstanceId::Invalid());
+    config->ApplyInstance(id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-MaterialEndBatch(MaterialType* type)
+ShaderConfigEndBatch(ShaderConfig* config)
 {
-    n_assert(type != nullptr);
-    type->EndBatch();
+    n_assert(config != nullptr);
+    config->EndBatch();
 }
 
 } // namespace Material

@@ -11,18 +11,18 @@ nebula_begin_module(resource)
                 resource.cc
                 resource.h
                 resourceid.h
-                resourcepool.cc
-                resourcepool.h
+                resourcecache.cc
+                resourcecache.h
                 resourceloaderthread.cc
                 resourceloaderthread.h
-                resourcememorypool.cc
-                resourcememorypool.h
+                resourcememorycache.cc
+                resourcememorycache.h
                 resourcesaver.cc
                 resourcesaver.h
                 resourceserver.cc
                 resourceserver.h
-                resourcestreampool.cc
-                resourcestreampool.h
+                resourcestreamcache.cc
+                resourcestreamcache.h
             )
 nebula_end_module()
 target_include_directories(resource PUBLIC ${CODE_ROOT}/resource)

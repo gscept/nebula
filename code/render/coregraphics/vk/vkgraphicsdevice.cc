@@ -24,7 +24,7 @@
 #include "vkfence.h"
 #include "vktypes.h"
 #include "vkutilities.h"
-#include "coregraphics/vertexsignaturepool.h"
+#include "coregraphics/vertexsignaturecache.h"
 #include "coregraphics/glfw/glfwwindow.h"
 #include "coregraphics/displaydevice.h"
 #include "coregraphics/vk/vksemaphore.h"
@@ -87,10 +87,11 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     struct ConstantsRingBuffer
     {
         // handle global constant memory
-        AtomicCounter cboGfxStartAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
-        AtomicCounter cboGfxEndAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
-        AtomicCounter cboComputeStartAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
-        AtomicCounter cboComputeEndAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
+        Threading::AtomicCounter cboGfxStartAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
+        Threading::AtomicCounter cboGfxEndAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
+        Threading::AtomicCounter cboComputeStartAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
+        Threading::AtomicCounter cboComputeEndAddress[CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes];
+        bool allowConstantAllocation;
     };
     Util::FixedArray<ConstantsRingBuffer> constantBufferRings;
 
@@ -108,7 +109,6 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 
     uint32_t usedExtensions;
     const char* extensions[64];
-
 
     uint32_t drawQueueFamily;
     uint32_t computeQueueFamily;
@@ -588,7 +588,7 @@ UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layou
 void 
 BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const CoreGraphics::ShaderProgramId programId)
 {
-    if (state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != programId || !CheckBits(state.currentPipelineBits, PipelineBuildBits::ShaderInfoSet))
+    if (state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != programId || !AllBits(state.currentPipelineBits, PipelineBuildBits::ShaderInfoSet))
     {
         state.database.SetShader(programId, shader);
         state.currentPipelineBits |= PipelineBuildBits::ShaderInfoSet;
@@ -617,7 +617,7 @@ BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const CoreG
 void 
 SetVertexLayoutPipelineInfo(VkPipelineVertexInputStateCreateInfo* vertexLayout)
 {
-    if (state.currentPipelineInfo.pVertexInputState != vertexLayout || !CheckBits(state.currentPipelineBits, PipelineBuildBits::VertexLayoutInfoSet))
+    if (state.currentPipelineInfo.pVertexInputState != vertexLayout || !AllBits(state.currentPipelineBits, PipelineBuildBits::VertexLayoutInfoSet))
     {
         state.database.SetVertexLayout(vertexLayout);
         state.currentPipelineBits |= PipelineBuildBits::VertexLayoutInfoSet;
@@ -646,7 +646,7 @@ SetFramebufferLayoutInfo(const VkGraphicsPipelineCreateInfo& framebufferLayout)
 void 
 SetInputLayoutInfo(VkPipelineInputAssemblyStateCreateInfo* inputLayout)
 {
-    if (state.currentPipelineInfo.pInputAssemblyState != inputLayout || !CheckBits(state.currentPipelineBits, PipelineBuildBits::InputLayoutInfoSet))
+    if (state.currentPipelineInfo.pInputAssemblyState != inputLayout || !AllBits(state.currentPipelineBits, PipelineBuildBits::InputLayoutInfoSet))
     {
         state.database.SetInputLayout(inputLayout);
         state.currentPipelineBits |= PipelineBuildBits::InputLayoutInfoSet;
@@ -887,7 +887,7 @@ DelayedFreeMemory(const CoreGraphics::Alloc alloc)
 void 
 _ProcessQueriesBeginFrame()
 {
-    N_SCOPE(ProcessQueries, Render);
+    N_SCOPE(ProcessQueries, Graphics);
     using namespace CoreGraphics;
 
     SubmissionContextNextCycle(state.queryGraphicsSubmissionContext, nullptr);
@@ -1277,7 +1277,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
         for (uint32_t j = 0; j < queuesProps[i].queueCount; j++)
         {
             // just pick whichever queue supports graphics, it will most likely only be 1
-            if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_GRAPHICS_BIT)
+            if (AllBits(queuesProps[i].queueFlags, VK_QUEUE_GRAPHICS_BIT)
                 && state.drawQueueIdx == UINT32_MAX)
             {
                 state.drawQueueFamily = i;
@@ -1287,7 +1287,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
             }
 
             // find a compute queue which is not for graphics
-            if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_COMPUTE_BIT)
+            if (AllBits(queuesProps[i].queueFlags, VK_QUEUE_COMPUTE_BIT)
                 && state.computeQueueIdx == UINT32_MAX)
             {
                 state.computeQueueFamily = i;
@@ -1297,7 +1297,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
             }
 
             // find a transfer queue that is purely for transfers
-            if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_TRANSFER_BIT)
+            if (AllBits(queuesProps[i].queueFlags, VK_QUEUE_TRANSFER_BIT)
                 && state.transferQueueIdx == UINT32_MAX)
             {
                 state.transferQueueFamily = i;
@@ -1307,7 +1307,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
             }
 
             // find a sparse or transfer queue that supports sparse binding
-            if (CheckBits(queuesProps[i].queueFlags, VK_QUEUE_SPARSE_BINDING_BIT)
+            if (AllBits(queuesProps[i].queueFlags, VK_QUEUE_SPARSE_BINDING_BIT)
                 && state.sparseQueueIdx == UINT32_MAX)
             {
                 state.sparseQueueFamily = i;
@@ -1986,7 +1986,7 @@ BeginFrame(IndexT frameIndex)
         vkDestroyImageView(state.devices[state.currentDevice], state.delayedDeleteImageViews[state.currentBufferedFrameIndex][i], nullptr);
     state.delayedDeleteImageViews[state.currentBufferedFrameIndex].Clear();
 
-    N_MARKER_BEGIN(WaitForPresent, Render);
+    N_MARKER_BEGIN(WaitForPresent, Wait);
 
     // slight limitation to only using one back buffer, so really we should do one begin and end frame per window...
     n_assert(state.backBuffers.Size() == 1);
@@ -1996,7 +1996,7 @@ BeginFrame(IndexT frameIndex)
 
     N_MARKER_END();
 
-    N_MARKER_BEGIN(WaitForLastFrame, Render);
+    N_MARKER_BEGIN(WaitForLastFrame, Wait);
 
     // cycle submissions, will wait for the fence to finish
     CoreGraphics::SubmissionContextNextCycle(state.gfxSubmission, [](uint64 index)
@@ -2097,8 +2097,8 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
     }
 #endif
 
-    AtomicCounter* cboStartAddress = queue == GraphicsQueueType ? sub.cboGfxStartAddress : sub.cboComputeStartAddress;
-    AtomicCounter* cboEndAddress = queue == GraphicsQueueType ? sub.cboGfxEndAddress : sub.cboComputeEndAddress;
+    Threading::AtomicCounter* cboStartAddress = queue == GraphicsQueueType ? sub.cboGfxStartAddress : sub.cboComputeStartAddress;
+    Threading::AtomicCounter* cboEndAddress = queue == GraphicsQueueType ? sub.cboGfxEndAddress : sub.cboComputeEndAddress;
     CoreGraphics::BufferId* stagingCbo = queue == GraphicsQueueType ? state.globalGraphicsConstantStagingBuffer : state.globalComputeConstantStagingBuffer;
     CoreGraphics::BufferId* cbo = queue == GraphicsQueueType ? state.globalGraphicsConstantBuffer : state.globalComputeConstantBuffer;
 
@@ -2423,7 +2423,7 @@ SetShaderProgram(const CoreGraphics::ShaderProgramId pro, const CoreGraphics::Qu
 {
     n_assert(pro != CoreGraphics::InvalidShaderProgramId);
 
-    VkShaderProgramRuntimeInfo& info = CoreGraphics::shaderPool->shaderAlloc.Get<VkShaderPool::Shader_ProgramAllocator>(pro.shaderId).Get<ShaderProgram_RuntimeInfo>(pro.programId);
+    VkShaderProgramRuntimeInfo& info = CoreGraphics::shaderPool->shaderAlloc.Get<VkShaderCache::Shader_ProgramAllocator>(pro.shaderId).Get<ShaderProgram_RuntimeInfo>(pro.programId);
     info.colorBlendInfo.pAttachments = info.colorBlendAttachments;
     state.currentStencilFrontRef = info.stencilFrontRef;
     state.currentStencilBackRef = info.stencilBackRef;
@@ -2602,10 +2602,31 @@ PushConstants(ShaderPipeline pipeline, uint offset, uint size, byte* data)
 //------------------------------------------------------------------------------
 /**
 */
+void
+UnlockConstantUpdates()
+{
+    Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+    sub.allowConstantAllocation = true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+LockConstantUpdates()
+{
+    Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+    sub.allowConstantAllocation = false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 int
 SetGraphicsConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const void* data, SizeT size)
 {
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+    n_assert(sub.allowConstantAllocation);
 
     // no matter how we spin it
     int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
@@ -2632,6 +2653,7 @@ int
 SetComputeConstantsInternal(CoreGraphics::GlobalConstantBufferType type, const void* data, SizeT size)
 {
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+    n_assert(sub.allowConstantAllocation);
 
     // no matter how we spin it
     int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
@@ -2677,6 +2699,7 @@ AllocateGraphicsConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type
 {
     n_assert(!state.inBeginGraphicsSubmission);
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+    n_assert(sub.allowConstantAllocation);
 
     // no matter how we spin it
     uint ret = sub.cboGfxEndAddress[type];
@@ -2715,6 +2738,7 @@ AllocateComputeConstantBufferMemory(CoreGraphics::GlobalConstantBufferType type,
 {
     n_assert(!state.inBeginComputeSubmission);
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
+    n_assert(sub.allowConstantAllocation);
 
     // no matter how we spin it
     uint ret = sub.cboComputeEndAddress[type];
@@ -2863,7 +2887,7 @@ SetGraphicsPipeline()
 {
     n_assert((state.currentPipelineBits & PipelineBuildBits::AllInfoSet) != 0);
     state.currentBindPoint = CoreGraphics::GraphicsPipeline;
-    if (!CheckBits(state.currentPipelineBits, PipelineBuildBits::PipelineBuilt))
+    if (!AllBits(state.currentPipelineBits, PipelineBuildBits::PipelineBuilt))
     {
         CreateAndBindGraphicsPipeline();
         state.currentPipelineBits |= PipelineBuildBits::PipelineBuilt;
@@ -3079,14 +3103,14 @@ Draw()
 //------------------------------------------------------------------------------
 /**
 */
-void 
-DrawInstanced(SizeT numInstances, IndexT baseInstance)
+void
+Draw(SizeT numInstances, IndexT baseInstance)
 {
     n_assert(state.inBeginPass);
 
     if (state.drawThread)
     {
-        n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId)
+        n_assert(state.drawThreadCommands != CoreGraphics::InvalidCommandBufferId);
         VkCommandBufferThread::VkDrawCommand cmd;
         cmd.baseIndex = state.primitiveGroup.GetBaseIndex();
         cmd.baseVertex = state.primitiveGroup.GetBaseVertex();
@@ -3429,7 +3453,7 @@ EndFrame(IndexT frameIndex)
     CoreGraphics::QueueBeginMarker(ComputeQueueType, NEBULA_MARKER_ORANGE, "Compute");
 #endif
 
-    N_MARKER_BEGIN(ComputeSubmit, Render);
+    N_MARKER_BEGIN(ComputeSubmit, Graphics);
 
     // submit compute, wait for this frames resource submissions
     state.subcontextHandler.FlushSubmissionsTimeline(ComputeQueueType, nullptr);
@@ -3447,7 +3471,7 @@ EndFrame(IndexT frameIndex)
         SemaphoreGetVk(state.renderingFinishedSemaphores[state.currentBufferedFrameIndex])
     );
 
-    N_MARKER_BEGIN(GraphicsSubmit, Render);
+    N_MARKER_BEGIN(GraphicsSubmit, Graphics);
 
     // submit graphics, since this is our main queue, we use this submission to get the semaphore wait index
     state.subcontextHandler.FlushSubmissionsTimeline(GraphicsQueueType, nullptr);

@@ -4,11 +4,11 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "skeleton.h"
-#include "streamskeletonpool.h"
+#include "streamskeletoncache.h"
 namespace Characters
 {
 
-StreamSkeletonPool* skeletonPool;
+StreamSkeletonCache* skeletonPool;
 
 //------------------------------------------------------------------------------
 /**

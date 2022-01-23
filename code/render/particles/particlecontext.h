@@ -13,6 +13,7 @@
 #include "models/nodes/modelnode.h"
 #include "models/nodes/particlesystemnode.h"
 #include "jobs/jobs.h"
+#include "jobs2/jobs2.h"
 #include "util/ringbuffer.h"
 #include "particle.h"
 namespace Particles
@@ -66,9 +67,8 @@ public:
     static CoreGraphics::BufferId GetParticleVertexBuffer();
     /// get the shared vertex layout
     static CoreGraphics::VertexLayoutId GetParticleVertexLayout();
-
-    /// get particle bounding box
-    static Math::bbox GetBoundingBox(const Graphics::GraphicsEntityId id);
+    /// get the shared primitive group
+    static CoreGraphics::PrimitiveGroup GetParticlePrimitiveGroup();
 
 #ifndef PUBLIC_DEBUG    
     /// debug rendering
@@ -77,6 +77,8 @@ public:
 
     static CoreGraphics::MeshId DefaultEmitterMesh;
 
+    static Threading::AtomicCounter totalCompletionCounter;
+    static Threading::Event totalCompletionEvent;
 private:
 
     struct ParticleRuntime
@@ -101,16 +103,17 @@ private:
 
     struct ParticleSystemRuntime
     {
-        Models::ParticleSystemNode::Instance* node;
+        uint32 renderableIndex;
         Util::RingBuffer<Particle> particles;
         Math::mat4 transform;
         Math::bbox boundingBox;
         SizeT emissionCounter;
 
-        ParticleJobUniformPerJobData perJobUniformData;
         ParticleJobUniformData uniformData;
         SizeT outputCapacity;
-        ParticleJobOutput* outputData;
+        ParticleJobSliceOutputData outputData;
+
+        uint32 baseVertex, numParticles;
     };
 
     enum
@@ -118,18 +121,18 @@ private:
         ParticleSystems,
         ModelId,
         Runtime,
-        BoundingBox
+        ModelContextId
     };
     typedef Ids::IdAllocator<
         Util::Array<ParticleSystemRuntime>,
         Graphics::ContextEntityId,
         ParticleRuntime,
-        Math::bbox
+        Graphics::GraphicsEntityId
     > ParticleContextAllocator;
     static ParticleContextAllocator particleContextAllocator;
 
     /// internal function for emitting new particles
-    static void EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, float stepTime);
+    static void EmitParticles(ParticleRuntime& rt, ParticleSystemRuntime& srt, Models::ParticleSystemNode* node, float stepTime);
     /// internal function for emitting single particle
     static void EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, const Particles::EmitterAttrs& attrs, const Particles::EmitterMesh& mesh, const Particles::EnvelopeSampleBuffer& buffer, IndexT sampleIndex, float initialAge);
     /// internal function to emit a job for updating particles
@@ -140,7 +143,6 @@ private:
     /// deallocate a slice
     static void Dealloc(Graphics::ContextEntityId id);
 
-    static Jobs::JobPortId jobPort;
     static Jobs::JobSyncId jobSync;
     static Util::Queue<Jobs::JobId> runningJobs;
 };

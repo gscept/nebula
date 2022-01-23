@@ -16,8 +16,8 @@ namespace Characters
 
 RESOURCE_ID_TYPE(SkeletonId);
 
-class StreamSkeletonPool;
-extern StreamSkeletonPool* skeletonPool;
+class StreamSkeletonCache;
+extern StreamSkeletonCache* skeletonPool;
 
 struct CharacterJoint
 {

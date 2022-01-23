@@ -26,7 +26,7 @@ VkDescriptorSetLayout emptySetLayout;
 const VkDescriptorSet&
 ResourceTableGetVkDescriptorSet(CoreGraphics::ResourceTableId id)
 {
-    return resourceTableAllocator.Get<1>(id.id24);
+    return resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -207,6 +207,10 @@ ResourceTableCopy(const ResourceTableId from, IndexT fromSlot, IndexT fromIndex,
 {
     VkDescriptorSet& fromSet = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(from.id24);
     VkDescriptorSet& toSet = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(to.id24);
+
+    Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(to.id24);
+    Threading::AssertingScope scope(&mutex);
+
     Util::Array<VkCopyDescriptorSet>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(to.id24);
 
     VkCopyDescriptorSet copy =
@@ -232,6 +236,9 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& te
 {
     VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+
+    Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
+    Threading::AssertingScope scope(&mutex);
     Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
@@ -289,6 +296,9 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView
 {
     VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+
+    Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
+    Threading::AssertingScope scope(&mutex);
     Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
@@ -344,6 +354,9 @@ ResourceTableSetInputAttachment(const ResourceTableId id, const ResourceTableInp
 {
     VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+
+    Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
+    Threading::AssertingScope scope(&mutex);
     Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
@@ -385,6 +398,9 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& 
 {
     VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+
+    Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
+    Threading::AssertingScope scope(&mutex);
     Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
@@ -426,6 +442,9 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTextureVi
 {
     VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+
+    Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
+    Threading::AssertingScope scope(&mutex);
     Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
@@ -468,6 +487,9 @@ ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuff
     n_assert(!buf.texelBuffer);
     VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+
+    Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
+    Threading::AssertingScope scope(&mutex);
     Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
@@ -516,6 +538,9 @@ ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& bu
 {
     VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+
+    Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
+    Threading::AssertingScope scope(&mutex);
     Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
@@ -563,6 +588,9 @@ ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& sa
 {
     VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
+
+    Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
+    Threading::AssertingScope scope(&mutex);
     Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
@@ -632,6 +660,9 @@ ResourceTableCommitChanges(const ResourceTableId id)
     }
     else
     {
+        Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
+        Threading::AssertingScope scope(&mutex);
+
         Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
         Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
         Util::Array<VkCopyDescriptorSet>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(id.id24);

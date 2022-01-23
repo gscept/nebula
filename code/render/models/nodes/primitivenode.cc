@@ -12,6 +12,7 @@ using namespace Util;
 namespace Models
 {
 
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -29,6 +30,18 @@ PrimitiveNode::PrimitiveNode() :
 PrimitiveNode::~PrimitiveNode()
 {
     // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+std::function<void()>
+PrimitiveNode::GetApplyNodeFunction()
+{
+    return [this]()
+    {
+        CoreGraphics::MeshBind(this->res, this->primitiveGroupIndex);
+    };
 }
 
 //------------------------------------------------------------------------------
@@ -70,16 +83,6 @@ void
 PrimitiveNode::Unload()
 {
     Resources::DiscardResource(this->res);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-PrimitiveNode::ApplyNodeState()
-{
-    ShaderStateNode::ApplyNodeState();
-    CoreGraphics::MeshBind(this->res, this->primitiveGroupIndex);
 }
 
 } // namespace Models

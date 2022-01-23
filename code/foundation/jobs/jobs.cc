@@ -64,7 +64,6 @@ CreateJob(const CreateJobInfo& info)
     Ids::Id32 job = jobAllocator.Alloc();
     jobAllocator.Get<0>(job) = info;
 
-    // ugh, so ugly, would rather have these in the allocator, but atomic_uint is not copyable, and events don't implement copy constructors or moves yet
     jobAllocator.Get<Job_ScratchMemory>(job) = { Memory::HeapType::ScratchHeap, 0, nullptr };
 
     JobId id;
@@ -102,9 +101,6 @@ JobSchedule(const JobId& job, const JobPortId& port, const JobContext& ctx, cons
 {
     n_assert(ctx.input.numBuffers > 0);
     n_assert(ctx.output.numBuffers > 0);
-
-    // set this job to be the last pushed one
-    jobPortAllocator.Get<JobPort_LastJobId>((Ids::Id32)port.id) = job;
 
     // port related stuff
     Util::FixedArray<Ptr<JobThread>>& threads = jobPortAllocator.Get<JobPort_Threads>((Ids::Id32)port.id);
@@ -192,6 +188,7 @@ JobSchedule(const JobId& job, const JobPortId& port)
     cmd.run.callback = nullptr;
     threads[threadIndex]->PushCommand(cmd);
 }
+
 
 //------------------------------------------------------------------------------
 /**
@@ -284,8 +281,30 @@ DestroyJobSync(const JobSyncId id)
 //------------------------------------------------------------------------------
 /**
 */
+void
+JobSyncHostReset(const JobSyncId id)
+{
+    Threading::Event* event = jobSyncAllocator.Get<SyncCompletionEvent>(id.id);
+    event->Reset();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+JobSyncHostSignal(const JobSyncId id, bool reset)
+{
+    Threading::Event* event = jobSyncAllocator.Get<SyncCompletionEvent>(id.id);
+    if (reset)
+        event->Reset();
+    event->Signal();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
-JobSyncSignal(const JobSyncId id, const JobPortId port)
+JobSyncThreadSignal(const JobSyncId id, const JobPortId port, bool reset)
 {
     Util::FixedArray<Ptr<JobThread>>& threads = jobPortAllocator.Get<JobPort_Threads>((Ids::Id32)port.id);
     Threading::Event* event = jobSyncAllocator.Get<SyncCompletionEvent>(id.id);
@@ -297,8 +316,8 @@ JobSyncSignal(const JobSyncId id, const JobPortId port)
     // set counter and issue sync points if the jobs haven't finished yet
     if (completionCount > 0)
     {
-        N_SCOPE(ResetAndSignal, Jobs);
-        event->Reset();
+        if (reset)
+            event->Reset();
         n_assert(counter->load() == 0);
 
         // set the counter to finish all threads, and reset the event
@@ -323,18 +342,20 @@ JobSyncSignal(const JobSyncId id, const JobPortId port)
 /**
 */
 void 
-JobSyncHostWait(const JobSyncId id)
+JobSyncHostWait(const JobSyncId id, bool reset)
 {
-    N_SCOPE(Wait, Jobs);
+    N_SCOPE(Wait, Wait);
     Threading::Event* event = jobSyncAllocator.Get<SyncCompletionEvent>(id.id);
     event->Wait();
+    if (reset)
+        event->Reset();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-JobSyncThreadWait(const JobSyncId id, const JobPortId port)
+JobSyncThreadWait(const JobSyncId id, const JobPortId port, bool reset)
 {
     Util::FixedArray<Ptr<JobThread>>& threads = jobPortAllocator.Get<JobPort_Threads>((Ids::Id32)port.id);
     Threading::Event* event = jobSyncAllocator.Get<SyncCompletionEvent>(id.id);
@@ -345,7 +366,7 @@ JobSyncThreadWait(const JobSyncId id, const JobPortId port)
         // setup job
         auto thread = threads[i];
         JobThread::JobThreadCommand cmd;
-        cmd.ev = JobThread::Wait;
+        cmd.ev = reset ? JobThread::WaitAndReset : JobThread::Wait;
         cmd.sync.completionCounter = nullptr;
         cmd.sync.ev = event;
         cmd.sync.callback = nullptr;
@@ -423,10 +444,10 @@ JobThread::DoWork()
 
             switch (cmd.ev)
             {
-            case RunJob:
+            case JobThread::RunJob:
                 this->RunJobSlices(cmd.run.slice, cmd.run.numSlices, cmd.run.context, cmd.run.JobFunc, cmd.run.callback);
                 break;
-            case Signal:
+            case JobThread::Signal:
             {
                 // subtract 1 from completion counter
                 uint prev = cmd.sync.completionCounter->fetch_sub(1);
@@ -438,12 +459,19 @@ JobThread::DoWork()
                 }
                 break;
             }
-            case Wait:
+            case JobThread::Wait:
             {
-                N_SCOPE(Wait, Jobs);
+                N_SCOPE(Wait, Wait);
                 cmd.sync.ev->Wait();
                 break;
-            }               
+            }
+            case JobThread::WaitAndReset:
+            {
+                N_SCOPE(WaitAndReset, Wait);
+                cmd.sync.ev->Wait();
+                cmd.sync.ev->Reset();
+                break;
+            }
             }
         }
 

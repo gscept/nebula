@@ -8,7 +8,7 @@
 #include "coregraphics/mesh.h"
 #include "http/html/htmlpagewriter.h"
 #include "resources/resourceserver.h"
-#include "coregraphics/streammeshpool.h"
+#include "coregraphics/streammeshcache.h"
 #include "coregraphics/indextype.h"
 #include "io/ioserver.h"
 
@@ -69,7 +69,7 @@ MeshPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         htmlWriter->LineBreak();
 
         // get all stream-loaded mesh resources
-        const StreamMeshPool* meshPool = ResourceServer::Instance()->GetStreamPool<StreamMeshPool>();
+        const StreamMeshCache* meshPool = ResourceServer::Instance()->GetStreamPool<StreamMeshCache>();
         const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>& meshes = meshPool->GetResources();
     
         // create a table of all existing meshes

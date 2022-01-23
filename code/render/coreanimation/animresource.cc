@@ -5,12 +5,12 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coreanimation/animresource.h"
-#include "streamanimationpool.h"
+#include "streamanimationcache.h"
 
 namespace CoreAnimation
 {
 
-StreamAnimationPool* animPool = nullptr;
+StreamAnimationCache* animPool = nullptr;
 
 //------------------------------------------------------------------------------
 /**

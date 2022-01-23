@@ -6,7 +6,7 @@
 #include "framesubpassbatch.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/graphicsdevice.h"
-#include "materials/materialserver.h"
+#include "materials/shaderconfigserver.h"
 #include "models/model.h"
 #include "models/nodes/shaderstatenode.h"
 #include "graphics/graphicsserver.h"
@@ -67,7 +67,7 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
 {
     // now do usual render stuff
     ShaderServer* shaderServer = ShaderServer::Instance();
-    MaterialServer* matServer = MaterialServer::Instance();
+    ShaderConfigServer* matServer = ShaderConfigServer::Instance();
 
     // get current view and visibility draw list
     const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(id);
@@ -75,12 +75,12 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
     // start batch
     CoreGraphics::BeginBatch(FrameBatchType::Geometry);
 
-    const Util::Array<MaterialType*>* types = matServer->GetMaterialTypesByBatch(batch);
-    if ((types != nullptr) && (drawList != nullptr))
+    const Util::Array<ShaderConfig*>& types = matServer->GetShaderConfigsByBatch(batch);
+    if (types.Size() != 0 && (drawList != nullptr))
     {
-        for (IndexT typeIdx = 0; typeIdx < types->Size(); typeIdx++)
+        for (IndexT typeIdx = 0; typeIdx < types.Size(); typeIdx++)
         {
-            MaterialType* materialType = (*types)[typeIdx];
+            ShaderConfig* materialType = types[typeIdx];
             IndexT idx = drawList->visibilityTable.FindIndex(materialType);
             if (idx != InvalidIndex)
             {
@@ -90,53 +90,60 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
 #endif
 
                 // if BeginBatch returns true if this material type has a shader for this batch
-                if (Materials::MaterialBeginBatch(materialType, batch))
+                if (Materials::ShaderConfigBeginBatch(materialType, batch))
                 {
-                    Visibility::ObserverContext::VisibilityDrawCommand visDrawCmd = drawList->visibilityTable.ValueAtIndex(materialType, idx);
-                    uint const start = visDrawCmd.packetOffset;
-                    uint const end = visDrawCmd.packetOffset + visDrawCmd.numDrawPackets;
-                    
-                    Models::ModelNode* currentNode = nullptr;
+                    Visibility::ObserverContext::VisibilityBatchCommand visBatchCmd = drawList->visibilityTable.ValueAtIndex(materialType, idx);
+                    uint const start = visBatchCmd.packetOffset;
+                    uint const end = visBatchCmd.packetOffset + visBatchCmd.numDrawPackets;
+                    Visibility::ObserverContext::VisibilityModelCommand* visModelCmd = visBatchCmd.models.Begin();
+                    Visibility::ObserverContext::VisibilityDrawCommand* visDrawCmd = visBatchCmd.draws.Begin();
+                    uint32 numInstances = 0;
+                    uint32 baseInstance = 0;
+
+                    Models::ShaderStateNode::DrawPacket* currentInstance = nullptr;
                     for (uint packetIndex = start; packetIndex < end; ++packetIndex)
                     {
                         Models::ShaderStateNode::DrawPacket* instance = drawList->drawPackets[packetIndex];
-                        Models::ModelNode::Instance* nodeInst = instance->ToNode<Models::ModelNode::Instance>();
-                        Models::ModelNode* node = nodeInst->node;
-                        Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
-                        if (currentNode != nodeInst->node)
+
+                        // If new model node, bind model resources (vertex buffer, index buffer, vertex layout, primitive group)
+                        if (visModelCmd && visModelCmd->offset == packetIndex)
                         {
 #if NEBULA_GRAPHICS_DEBUG
-                            CommandBufferInsertMarker(GraphicsQueueType, NEBULA_MARKER_DARK_DARK_GREEN, node->GetName().Value());
+                            CommandBufferInsertMarker(GraphicsQueueType, NEBULA_MARKER_DARK_DARK_GREEN, visModelCmd->nodeName.Value());
 #endif
-                            // apply node-wide state
-                            node->ApplyNodeState();
+                            // Run model setup (applies vertex/index buffer and vertex layout)
+                            visModelCmd->modelCallback();
 
-                            // bind graphics pipeline
+                            // Bind graphics pipeline
                             CoreGraphics::SetGraphicsPipeline();
 
-                            // apply node-wide resources
-                            node->ApplyNodeResources();
+                            // Apply surface
+                            Materials::MaterialApply(materialType, visModelCmd->surface);
 
-                            // apply surface
-                            Materials::MaterialApplySurface(materialType, stateNode->GetSurface());
+                            // Progress to next model command
+                            visModelCmd++;
+
+                            if (visModelCmd == visBatchCmd.models.End())
+                                visModelCmd = nullptr;
                         }
-                        
-                        Models::NodeType type = node->GetType();
 
+                        // If new draw setup, progress to the next one
+                        if (visDrawCmd && visDrawCmd->offset == packetIndex)
+                        {
+                            numInstances = visDrawCmd->numInstances;
+                            baseInstance = visDrawCmd->baseInstance;
+                            visDrawCmd++;
+
+                            if (visDrawCmd == visBatchCmd.draws.End())
+                                visDrawCmd = nullptr;
+                        }
+
+                        // Apply draw packet constants and draw
                         instance->Apply(materialType);
-                        if (type != ParticleSystemNodeType)
-                        {
-                            Models::PrimitiveNode::Instance* pinst = reinterpret_cast<Models::PrimitiveNode::Instance*>(nodeInst);
-                            pinst->Draw(1, 0, instance);
-                        }
-                        else
-                        {
-                            Models::ParticleSystemNode::Instance* pinst = reinterpret_cast<Models::ParticleSystemNode::Instance*>(nodeInst);
-                            pinst->Draw(1, 0, instance);
-                        }
+                        CoreGraphics::Draw(numInstances, baseInstance);
                     }
                 }
-                Materials::MaterialEndBatch(materialType);
+                Materials::ShaderConfigEndBatch(materialType);
 
 #if NEBULA_GRAPHICS_DEBUG
                 CommandBufferEndMarker(GraphicsQueueType);
@@ -157,7 +164,7 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
 {
     // now do usual render stuff
     ShaderServer* shaderServer = ShaderServer::Instance();
-    MaterialServer* matServer = MaterialServer::Instance();
+    ShaderConfigServer* matServer = ShaderConfigServer::Instance();
 
     // get current view and visibility draw list
     const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(id);
@@ -165,12 +172,12 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
     // start batch
     CoreGraphics::BeginBatch(FrameBatchType::Geometry);
 
-    const Util::Array<MaterialType*>* types = matServer->GetMaterialTypesByBatch(batch);
-    if ((types != nullptr) && (drawList != nullptr))
+    const Util::Array<ShaderConfig*>& types = matServer->GetShaderConfigsByBatch(batch);
+    if (types.Size() != 0 && (drawList != nullptr))
     {
-        for (IndexT typeIdx = 0; typeIdx < types->Size(); typeIdx++)
+        for (IndexT typeIdx = 0; typeIdx < types.Size(); typeIdx++)
         {
-            MaterialType* materialType = (*types)[typeIdx];
+            ShaderConfig* materialType = types[typeIdx];
             IndexT idx = drawList->visibilityTable.FindIndex(materialType);
             if (idx != InvalidIndex)
             {
@@ -180,53 +187,59 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
 #endif
 
                 // if BeginBatch returns true if this material type has a shader for this batch
-                if (Materials::MaterialBeginBatch(materialType, batch))
+                if (Materials::ShaderConfigBeginBatch(materialType, batch))
                 {
-                    Visibility::ObserverContext::VisibilityDrawCommand visDrawCmd = drawList->visibilityTable.ValueAtIndex(materialType, idx);
-                    uint const start = visDrawCmd.packetOffset;
-                    uint const end = visDrawCmd.packetOffset + visDrawCmd.numDrawPackets;
+                    Visibility::ObserverContext::VisibilityBatchCommand visBatchCmd = drawList->visibilityTable.ValueAtIndex(materialType, idx);
+                    uint const start = visBatchCmd.packetOffset;
+                    uint const end = visBatchCmd.packetOffset + visBatchCmd.numDrawPackets;
+                    Visibility::ObserverContext::VisibilityModelCommand* visModelCmd = visBatchCmd.models.Begin();
+                    Visibility::ObserverContext::VisibilityDrawCommand* visDrawCmd = visBatchCmd.draws.Begin();
+                    uint32 baseNumInstances = 0;
+                    uint32 baseBaseInstance = 0;
 
-                    Models::ModelNode* currentNode = nullptr;
+                    Models::ShaderStateNode::DrawPacket* currentInstance = nullptr;
                     for (uint packetIndex = start; packetIndex < end; ++packetIndex)
                     {
                         Models::ShaderStateNode::DrawPacket* instance = drawList->drawPackets[packetIndex];
-                        Models::ModelNode::Instance* nodeInst = instance->ToNode<Models::ModelNode::Instance>();
-                        Models::ModelNode* node = nodeInst->node;
-                        Models::ShaderStateNode* stateNode = reinterpret_cast<Models::ShaderStateNode*>(node);
-                        if (currentNode != nodeInst->node)
+
+                        // If new model node, update model callback and 
+                        if (visModelCmd && visModelCmd->offset == packetIndex)
                         {
 #if NEBULA_GRAPHICS_DEBUG
-                            CommandBufferInsertMarker(GraphicsQueueType, NEBULA_MARKER_DARK_DARK_GREEN, node->GetName().Value());
+                            CommandBufferInsertMarker(GraphicsQueueType, NEBULA_MARKER_DARK_DARK_GREEN, visModelCmd->nodeName.Value());
 #endif
-                            // apply node-wide state
-                            node->ApplyNodeState();
+                            // Run model setup (applies vertex/index buffer and vertex layout)
+                            visModelCmd->modelCallback();
 
                             // bind graphics pipeline
                             CoreGraphics::SetGraphicsPipeline();
 
-                            // apply node-wide resources
-                            node->ApplyNodeResources();
-
                             // apply surface
-                            Materials::MaterialApplySurface(materialType, stateNode->GetSurface());
+                            Materials::MaterialApply(materialType, visModelCmd->surface);
+
+                            visModelCmd++;
+
+                            if (visModelCmd == visBatchCmd.models.End())
+                                visModelCmd = nullptr;
                         }
 
-                        Models::NodeType type = node->GetType();
+                        // If new draw setup, progress to the next one
+                        if (visDrawCmd && visDrawCmd->offset == packetIndex)
+                        {
+                            baseNumInstances = visDrawCmd->numInstances;
+                            baseBaseInstance = visDrawCmd->baseInstance;
+                            visDrawCmd++;
 
+                            if (visDrawCmd == visBatchCmd.draws.End())
+                                visDrawCmd = nullptr;
+                        }
+
+                        // Apply draw packet constants and draw
                         instance->Apply(materialType);
-                        if (type != ParticleSystemNodeType)
-                        {
-                            Models::PrimitiveNode::Instance* pinst = reinterpret_cast<Models::PrimitiveNode::Instance*>(nodeInst);
-                            pinst->Draw(1, baseInstance, instance);
-                        }
-                        else
-                        {
-                            Models::ParticleSystemNode::Instance* pinst = reinterpret_cast<Models::ParticleSystemNode::Instance*>(nodeInst);
-                            pinst->Draw(1, baseInstance, instance);
-                        }
+                        CoreGraphics::Draw(baseNumInstances * numInstances, baseBaseInstance + baseInstance);
                     }
                 }
-                Materials::MaterialEndBatch(materialType);
+                Materials::ShaderConfigEndBatch(materialType);
 
 #if NEBULA_GRAPHICS_DEBUG
                 CommandBufferEndMarker(GraphicsQueueType);

@@ -26,7 +26,7 @@
 #include "coregraphics/textrenderer.h"
 #include "frame/frameserver.h"
 #include "debug/debughandler.h"
-#include "materials/materialserver.h"
+#include "materials/shaderconfigserver.h"
 #include "jobs/jobs.h"
 
 namespace Graphics
@@ -83,15 +83,15 @@ public:
     /// discard stage
     void DiscardStage(const Ptr<Stage>& stage); 
 
-    /// call to prepare for the frame
+    /// Cycles a new frame and waits for the previous execution of the frame id
     void BeginFrame();
-    /// call before rendering to a view
+    /// Run updates not related to views
     void BeforeViews();
-    /// go through and render views
+    /// Goes through each view and executes their framescript
     void RenderViews();
-    /// end views
+    /// Finish up the view rendering
     void EndViews();
-    /// call when ending the frame
+    /// End the frame and submit
     void EndFrame();
 
     /// get total time in seconds
@@ -133,7 +133,7 @@ private:
     Ptr<CoreGraphics::DisplayDevice> displayDevice;
     bool graphicsDevice;
     Ptr<CoreGraphics::ShaderServer> shaderServer;
-    Ptr<Materials::MaterialServer> materialServer;
+    Ptr<Materials::ShaderConfigServer> materialServer;
     Ptr<CoreGraphics::TransformDevice> transformDevice;
     Ptr<CoreGraphics::ShapeRenderer> shapeRenderer;
     Ptr<CoreGraphics::TextRenderer> textRenderer;

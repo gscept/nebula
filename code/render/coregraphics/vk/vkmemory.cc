@@ -34,7 +34,7 @@ SetupMemoryPools(
         pool.blockSize = 0;
         pool.size = 0;
 
-        if (CheckBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) && !deviceLocalFound)
+        if (AllBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) && !deviceLocalFound)
         {
             // device memory is persistent, allocate conservatively
             pool.mapMemory = false;
@@ -42,7 +42,7 @@ SetupMemoryPools(
             pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
             deviceLocalFound = true;
         }
-        else if (CheckBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) && !hostLocalFound)
+        else if (AllBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) && !hostLocalFound)
         {
             // host memory is used for transient transfer buffers, make it allocate and deallocate fast
             pool.mapMemory = true;
@@ -50,7 +50,7 @@ SetupMemoryPools(
             pool.allocMethod = MemoryPool::MemoryPool_AllocLinear;
             hostLocalFound = true;
         }
-        else if (CheckBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT) && !deviceToHostFound)
+        else if (AllBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT) && !deviceToHostFound)
         {
             // memory used to read from the GPU should also be conservative
             pool.mapMemory = true;
@@ -58,7 +58,7 @@ SetupMemoryPools(
             pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
             deviceToHostFound = true;
         }
-        else if (CheckBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) && !hostToDeviceFound)
+        else if (AllBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) && !hostToDeviceFound)
         {
             // memory used to directly write to the device with a flush should be allocated conservatively
             pool.mapMemory = true;
@@ -125,7 +125,7 @@ MemoryPool::CreateBlock(void** outMappedPtr)
     VkDeviceMemory mem;
     VkResult res = vkAllocateMemory(dev, &allocInfo, nullptr, &mem);
     n_assert(res == VK_SUCCESS);
-	n_assert(mem != nullptr);
+    n_assert(mem != nullptr);
 
     if (this->mapMemory)
     {
@@ -142,7 +142,7 @@ MemoryPool::CreateBlock(void** outMappedPtr)
 void 
 MemoryPool::DestroyBlock(DeviceMemory mem)
 {
-	n_assert(mem != nullptr);
+    n_assert(mem != nullptr);
     VkDevice dev = GetCurrentDevice();
     if (this->mapMemory)
     {
@@ -318,7 +318,7 @@ GetMemoryType(uint32_t bits, VkMemoryPropertyFlags flags, uint32_t& index)
     {
         if ((bits & 1) == 1)
         {
-            if (CheckBits(props.memoryTypes[i].propertyFlags, flags))
+            if (AllBits(props.memoryTypes[i].propertyFlags, flags))
             {
                 index = i;
                 return VK_SUCCESS;

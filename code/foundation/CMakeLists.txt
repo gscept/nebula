@@ -492,6 +492,11 @@ nebula_begin_module(foundation)
 			jobs.cc
 			jobs.h
 		)
+		fips_dir(jobs2)
+		fips_files(
+			jobs2.cc
+			jobs2.h
+		)
 		fips_dir(fibers)
 		fips_files(
 			fiber.h

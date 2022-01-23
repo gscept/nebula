@@ -18,6 +18,7 @@
 #include "imguiinputhandler.h"
 
 struct ImDrawData;
+struct ImFont;
 namespace Dynui
 {
 
@@ -81,6 +82,9 @@ public:
         //Ptr<CoreGraphics::BufferLock> iboBufferLock;
         Util::FixedArray<byte*> vertexPtrs;
         Util::FixedArray<byte*> indexPtrs;
+
+        ImFont* normalFont;
+        ImFont* smallFont;
 
         Ptr<ImguiInputHandler> inputHandler;
         bool dockOverViewport;

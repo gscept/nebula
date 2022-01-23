@@ -4,12 +4,12 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "mesh.h"
-#include "memorymeshpool.h"
+#include "memorymeshcache.h"
 
 namespace CoreGraphics
 {
 
-MemoryMeshPool* meshPool = nullptr;
+MemoryMeshCache* meshPool = nullptr;
 
 using namespace Ids;
 //------------------------------------------------------------------------------

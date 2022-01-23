@@ -10,6 +10,7 @@
 #include "ids/idallocator.h"
 #include "coregraphics/resourcetable.h"
 #include "vkloader.h"
+#include "threading/assertingmutex.h"
 #include <array>
 namespace Vulkan
 {
@@ -32,6 +33,7 @@ enum
     ResourceTable_Device,
     ResourceTable_DescriptorSet,
     ResourceTable_DescriptorPoolIndex,
+    ResourceTable_AssertingMutex,
     ResourceTable_Layout,
     ResourceTable_Writes,
     ResourceTable_WriteInfos,
@@ -42,6 +44,7 @@ typedef Ids::IdAllocator<
     VkDevice,
     VkDescriptorSet,
     IndexT,
+    Threading::AssertingMutex,
     CoreGraphics::ResourceTableLayoutId,
     Util::Array<VkWriteDescriptorSet>,
     Util::Array<WriteInfo>,

@@ -16,7 +16,7 @@
 #include "coregraphics/primitivegroup.h"
 
 
-__ImplementClass(Physics::StreamActorPool, 'PSAP', Resources::ResourceStreamPool);
+__ImplementClass(Physics::StreamActorPool, 'PSAP', Resources::ResourceStreamCache);
 
 using namespace physx;
 
@@ -46,7 +46,7 @@ StreamActorPool::~StreamActorPool()
 void 
 StreamActorPool::Setup()
 {
-    ResourceStreamPool::Setup();
+    ResourceStreamCache::Setup();
     this->placeholderResourceName = "phys:system/box.actor";
     this->failResourceName = "phys:system/box.actor";
 }
@@ -190,7 +190,7 @@ CreateMeshFromResource(MeshTopology type, Util::StringAtom resource, int primGro
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourcePool::LoadStatus 
+Resources::ResourceCache::LoadStatus 
 StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom & tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
     n_assert(stream.isvalid());    
@@ -262,7 +262,7 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
         actorInfo.shapes.Append(newShape);
         actorInfo.densities.Append(GetMaterial(material).density);
     }
-    return Resources::ResourcePool::Success;                                    
+    return Resources::ResourceCache::Success;                                    
 }
 
 //------------------------------------------------------------------------------

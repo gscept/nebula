@@ -37,7 +37,6 @@ TYPE* n_new_array_alloc(size_t size)
 template<typename TYPE>
 void n_new_array_free(size_t size, TYPE* buffer)
 {
-
     if constexpr (!std::is_trivially_destructible<TYPE>::value)
     {
         for (size_t i = 0; i < size; ++i)

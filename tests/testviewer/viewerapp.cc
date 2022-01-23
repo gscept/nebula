@@ -6,6 +6,7 @@
 #include "viewerapp.h"
 
 #include "core/refcounted.h"
+#include "system/systeminfo.h"
 #include "timing/timer.h"
 #include "io/console.h"
 #include "io/logfileconsolehandler.h"
@@ -15,13 +16,15 @@
 #include "dynui/im3d/im3d.h"
 
 #include "visibility/visibilitycontext.h"
-#include "models/streammodelpool.h"
+#include "models/streammodelcache.h"
 #include "models/modelcontext.h"
 #include "input/keyboard.h"
 #include "input/mouse.h"
 #include "lighting/lightcontext.h"
 #include "characters/charactercontext.h"
 #include "decals/decalcontext.h"
+
+#include "jobs2/jobs2.h"
 
 #include "graphics/environmentcontext.h"
 #include "fog/volumetricfogcontext.h"
@@ -107,6 +110,7 @@ SimpleViewerApplication::Open()
         this->resMgr = Resources::ResourceServer::Create();
         this->inputServer = Input::InputServer::Create();
         this->ioServer = IO::IoServer::Create();
+
 #ifdef USE_GITHUB_DEMO        
         this->ioServer->MountArchive("root:export");
 #endif
@@ -124,6 +128,14 @@ SimpleViewerApplication::Open()
         this->inputServer->Open();
         this->gfxServer->Open();
 
+        auto systemInfo = Core::SysFunc::GetSystemInfo();
+
+        Jobs2::JobSystemInitInfo jobSystemInfo;
+        jobSystemInfo.numThreads = 8;
+        jobSystemInfo.name = "JobSystem";
+        jobSystemInfo.scratchMemorySize = 16_MB;
+        Jobs2::JobSystemInit(jobSystemInfo);
+
         SizeT width = this->GetCmdLineArgs().GetInt("-w", 1280);
         SizeT height = this->GetCmdLineArgs().GetInt("-h", 1024);
 
@@ -135,14 +147,14 @@ SimpleViewerApplication::Open()
         this->wnd = CreateWindow(wndInfo);
         this->cam = Graphics::CreateEntity();
 
-        // create contexts, this could and should be bundled together
+        // Create contexts, this could and should be bundled together
         CameraContext::Create();
         ModelContext::Create();
         Characters::CharacterContext::Create();
-
         Particles::ParticleContext::Create();
 
-        // make sure all bounding box modifying contexts are created before the observer contexts
+        // Setup visibility related contexts
+        // The order is important, ObserverContext is dependent on any bounding box and renderable modifying code
         ObserverContext::Create();
         ObservableContext::Create();
 
@@ -280,6 +292,8 @@ SimpleViewerApplication::Run()
             this->profilingContexts = Profiling::ProfilingGetContexts();
         Profiling::ProfilingNewFrame();
 #endif
+
+        Jobs2::JobNewFrame();
         
         N_MARKER_BEGIN(Input, App);
         this->inputServer->BeginFrame();
@@ -295,6 +309,7 @@ SimpleViewerApplication::Run()
             this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers();
 #endif NEBULA_ENABLE_PROFILING
 
+        // Begin the next frame, waits for the previous frame with the same buffer index
         this->gfxServer->BeginFrame();
         
         this->RenderUI();
@@ -356,8 +371,11 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
         IM_COL32(50, 200, 200, 255),
         IM_COL32(200, 200, 50, 255),
     };
-    static const float YPad = 20.0f;
+    static const float YPad = ImGui::GetTextLineHeight();
     static const float TextPad = 5.0f;
+
+    const uint32 numColors = sizeof(colors) / sizeof(ImU32);
+    uint32 colorIndex = scope.category.HashCode() % numColors;
 
     // convert to milliseconds
     float startX = pos.x + scope.start / frameTime * canvas.x;
@@ -370,8 +388,8 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
 
     // draw a filled rect for background, and normal rect for outline
     drawList->PushClipRect(bbMin, bbMax, true);
-    drawList->AddRectFilled(bbMin, bbMax, colors[level % 6], 0.0f);
-    drawList->AddRect(bbMin, bbMax, IM_COL32(128, 128, 128, 128), 0.0f);
+    drawList->AddRectFilled(bbMin, bbMax, colors[colorIndex]);
+    drawList->AddRect(bbMin, bbMax, IM_COL32(128, 128, 128, 128));
 
     // make sure text appears inside the box
     Util::String text = Util::String::Sprintf("%s (%4.4f ms)", scope.name, scope.duration * 1000);
@@ -419,7 +437,7 @@ RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, ImDrawL
         IM_COL32(50, 200, 200, 255),
         IM_COL32(200, 200, 50, 255),
     };
-    static const float YPad = 20.0f;
+    static const float YPad = ImGui::GetTextLineHeight();
     static const float TextPad = 5.0f;
 
     // convert to milliseconds
@@ -439,14 +457,15 @@ RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, ImDrawL
     drawList->AddRect(bbMin, bbMax, IM_COL32(128, 128, 128, 128), 0.0f);
 
     // make sure text appears inside the box
-    Util::String text = Util::String::Sprintf("%s (%4.4f ms)", marker.name, duration * 1000);
+    Util::String text = Util::String::Sprintf("%s (%4.4f ms)", marker.name.AsCharPtr(), duration * 1000);
     drawList->AddText(ImVec2(startX + TextPad, startY), IM_COL32_BLACK, text.AsCharPtr());
     drawList->PopClipRect();
+
 
     if (ImGui::IsMouseHoveringRect(bbMin, bbMax))
     {
         ImGui::BeginTooltip();
-        Util::String text = Util::String::Sprintf("%s (%4.4f ms)", marker.name, duration * 1000);
+        Util::String text = Util::String::Sprintf("%s (%4.4f ms)", marker.name.AsCharPtr(), duration * 1000);
         ImGui::Text(text.AsCharPtr());
         ImGui::EndTooltip();
     }
@@ -554,7 +573,7 @@ SimpleViewerApplication::RenderUI()
 
     if (this->showFrameProfiler)
     {
-        Debug::FrameScriptInspector::Run(this->view->GetFrameScript());
+        //Debug::FrameScriptInspector::Run(this->view->GetFrameScript());
         if (ImGui::Begin("Performance Profiler", &this->showFrameProfiler))
         {
             ImGui::Text("ms - %.2f\nFPS - %.2f", this->prevAverageFrameTime * 1000, 1 / this->prevAverageFrameTime);
@@ -580,23 +599,37 @@ SimpleViewerApplication::RenderUI()
                     {
                         if (ImGui::CollapsingHeader(ctx.threadName.Value()))
                         {
+                            ImGui::PushFont(Dynui::ImguiContext::state.smallFont);
+
                             ImVec2 canvasSize = ImGui::GetContentRegionAvail();
                             ImVec2 pos = ImGui::GetCursorScreenPos();
                             int levels = 0;
-                            for (IndexT i = 0; i < ctx.topLevelScopes.Size(); i++)
+                            if (ctx.topLevelScopes.Size() > 0) for (IndexT i = 0; i < ctx.topLevelScopes.Size(); i++)
                             {
                                 const Profiling::ProfilingScope& scope = ctx.topLevelScopes[i];
                                 int level = RecursiveDrawScope(scope, drawList, start, fullSize, pos, canvasSize, this->currentFrameTime, 0);
                                 levels = Math::max(levels, level);
                             }
+                            else
+                            {
+                                ImVec2 bbMin = ImVec2(pos.x, pos.y);
+                                ImVec2 bbMax = ImVec2(pos.x, pos.y + ImGui::GetTextLineHeight());
+                                drawList->PushClipRect(bbMin, bbMax);
+                                drawList->AddRectFilled(bbMin, bbMax, IM_COL32(200, 50, 50, 0));
+                                drawList->PopClipRect();
+                                pos.y += ImGui::GetTextLineHeight();
+                            }
 
                             // set back cursor so we can draw our box
                             ImGui::SetCursorScreenPos(pos);
                             ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, Math::max(1.0f, levels * 20.0f)));
+                            ImGui::PopFont();
                         }
                     }
                     if (ImGui::CollapsingHeader("GPU"))
                     {
+                        ImGui::PushFont(Dynui::ImguiContext::state.smallFont);
+
                         ImVec2 canvasSize = ImGui::GetContentRegionAvail();
                         ImVec2 pos = ImGui::GetCursorScreenPos();
                         const Util::Array<CoreGraphics::FrameProfilingMarker>& frameMarkers = this->frameProfilingMarkers;
@@ -634,10 +667,13 @@ SimpleViewerApplication::RenderUI()
                         // set back cursor so we can draw our box
                         ImGui::SetCursorScreenPos(pos);
                         ImGui::InvisibleButton("canvas", ImVec2(canvasSize.x, Math::max(1.0f, levels * 20.0f)));
+                        ImGui::PopFont();
                     }
                 }
                 if (ImGui::CollapsingHeader("Memory"))
                 {
+                    ImGui::PushFont(Dynui::ImguiContext::state.smallFont);
+
                     Util::Dictionary<const char*, uint64> counters = Profiling::ProfilingGetCounters();
                     for (IndexT i = 0; i < counters.Size(); i++)
                     {
@@ -650,6 +686,8 @@ SimpleViewerApplication::RenderUI()
                         else
                             ImGui::LabelText(name, "%llu B allocated", val);
                     }
+
+                    ImGui::PopFont();
                 }
             }
 #endif NEBULA_ENABLE_PROFILING
@@ -715,13 +753,11 @@ SimpleViewerApplication::UpdateCamera()
         }
     }
 
-
     this->mayaCameraUtil.SetPanning(panning);
     this->mayaCameraUtil.SetOrbiting(orbiting);
     this->mayaCameraUtil.SetZoomIn(zoomIn);
     this->mayaCameraUtil.SetZoomOut(zoomOut);
     this->mayaCameraUtil.Update();
-
     
     this->freeCamUtil.SetForwardsKey(keyboard->KeyPressed(Input::Key::W));
     this->freeCamUtil.SetBackwardsKey(keyboard->KeyPressed(Input::Key::S));

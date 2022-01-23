@@ -183,10 +183,10 @@ FixedTable<TYPE>::FixedTable(SizeT w, SizeT h, const TYPE& val) :
 /**
 */
 template<class TYPE>
-FixedTable<TYPE>::FixedTable(const FixedTable<TYPE>& rhs) :
-    width(0),
-    height(0),
-    elements(0)
+FixedTable<TYPE>::FixedTable(const FixedTable<TYPE>& rhs) 
+    : width(0)
+    , height(0)
+    , elements(0)
 {
     this->Copy(rhs);
 }
@@ -195,10 +195,10 @@ FixedTable<TYPE>::FixedTable(const FixedTable<TYPE>& rhs) :
 /**
 */
 template<class TYPE>
-FixedTable<TYPE>::FixedTable(FixedTable<TYPE>&& rhs) noexcept:
-    width(rhs.width),
-    height(rhs.height),
-    elements(rhs.height)
+FixedTable<TYPE>::FixedTable(FixedTable<TYPE>&& rhs) noexcept
+    : width(rhs.width)
+    , height(rhs.height)
+    , elements(rhs.height)
 {
     rhs.elements = nullptr;
     rhs.width = 0;

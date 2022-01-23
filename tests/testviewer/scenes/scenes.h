@@ -12,7 +12,7 @@
 #include "io/ioserver.h"
 #include "graphics/graphicsentity.h"
 #include "visibility/visibilitycontext.h"
-#include "models/streammodelpool.h"
+#include "models/streammodelcache.h"
 #include "models/modelcontext.h"
 #include "input/keyboard.h"
 #include "input/mouse.h"
@@ -76,4 +76,4 @@ enum
 
 // Which is the currently active scene?
 // This is used to determine which scenes callbacks to call and is normally changed via imgui
-extern int currentScene;
+static int currentScene = ClusteredSceneId;

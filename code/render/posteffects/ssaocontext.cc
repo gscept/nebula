@@ -92,16 +92,14 @@ SSAOContext::Create()
         {
             ShaderServer* shaderServer = ShaderServer::Instance();
 
-#define TILE_WIDTH 320
-
             // get final dimensions
             SizeT width = ssaoState.vars.width;
             SizeT height = ssaoState.vars.height;
 
             // calculate execution dimensions
-            uint numGroupsX1 = Math::divandroundup(width, TILE_WIDTH);
+            uint numGroupsX1 = Math::divandroundup(width, HbaoCs::HBAOTileWidth);
             uint numGroupsX2 = width;
-            uint numGroupsY1 = Math::divandroundup(height, TILE_WIDTH);
+            uint numGroupsY1 = Math::divandroundup(height, HbaoCs::HBAOTileWidth);
             uint numGroupsY2 = height;
 
             // we are running the SSAO on the graphics queue
