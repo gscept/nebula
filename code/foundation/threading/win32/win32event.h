@@ -59,6 +59,8 @@ Win32Event::Win32Event(bool manualReset)
 inline 
 Win32Event::Win32Event(Win32Event&& rhs)
 {
+    if (this->event)
+        CloseHandle(this->event);
     this->event = rhs.event;
     this->manual = rhs.manual;
     rhs.event = nullptr;

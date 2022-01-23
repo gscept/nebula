@@ -76,6 +76,8 @@ public:
     /// convert to "anything"
     template<typename T> T As() const;
 
+    /// Get element (same as operator[] but as a function)
+    TYPE& Get(IndexT index) const;
     /// append element to end of array
     void Append(const TYPE& elm);
     /// append an element which is being forwarded
@@ -643,6 +645,19 @@ Array<TYPE>::MoveRange(TYPE* to, TYPE* from, SizeT num)
     {
         Memory::MoveElements(from, to, num);
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline TYPE& Array<TYPE>::Get(IndexT index) const
+{
+#if NEBULA_BOUNDSCHECKS
+    n_assert(this->elements != nullptr);
+    n_assert(this->capacity > index);
+#endif
+    return this->elements[index];
 }
 
 //------------------------------------------------------------------------------
