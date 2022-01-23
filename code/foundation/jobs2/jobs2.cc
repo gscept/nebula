@@ -217,6 +217,7 @@ void
 JobBeginSequence(const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters)
 {
     n_assert_fmt(sequenceWaitCounters.IsEmpty(), "JobBeginSequence called twice, missing JobEndSequence");
+    n_assert(sequenceCompletionCounter == nullptr);
     sequenceWaitCounters = waitCounters;
     sequenceCompletionCounter = JobAlloc<Threading::AtomicCounter>(1);
     *sequenceCompletionCounter = 0;
@@ -237,36 +238,49 @@ JobEndSequence(Threading::Event* signalEvent)
         n_assert(*sequenceCompletionCounter == 0);
         *sequenceCompletionCounter = ctx.queuedJobs.Size();
 
-        ctx.jobLock.Enter();
-        JobNode* node = nullptr;
+        JobNode* prev = nullptr;
+        JobNode* cur = nullptr;
 
         for (IndexT i = 0; i < ctx.queuedJobs.Size(); i++)
         {
-            node = ctx.queuedJobs[i];
-            node->job.doneCounter = sequenceCompletionCounter;
+            cur = ctx.queuedJobs[i];
+            if (prev != nullptr)
+            {
+                prev->next = cur;
+            }
+            cur->job.doneCounter = sequenceCompletionCounter;
 
             // Add wait value for the sequence
             if (i > 0)
             {
-                node->job.waitCounters[0] = sequenceCompletionCounter;
+                cur->job.waitCounters[0] = sequenceCompletionCounter;
+                cur->job.numWaitCounters = 1;
+
                 // We want to wait for the nth minus i job to finish to progress this job
-                node->sequenceWaitValue = *sequenceCompletionCounter - i; 
+                cur->sequenceWaitValue = *sequenceCompletionCounter - i;
             }
 
-            // First, set head node if nullptr
-            if (ctx.head == nullptr)
-                ctx.head = node;
-
-            // Then add node to end of list
-            node->next = nullptr;
-            if (ctx.tail != nullptr)
-                ctx.tail->next = node;
-            ctx.tail = node;
+            prev = cur;
         }
-        ctx.queuedJobs.Clear();
 
         // Move head pointer to last element in the list
+        ctx.jobLock.Enter();
+
+        // When sequence is chained, set the head pointer
+        if (ctx.head == nullptr)
+            ctx.head = ctx.queuedJobs.Front();
+
+        // Then add sequence to the end of the current list
+        if (ctx.tail != nullptr)
+            ctx.tail->next = ctx.queuedJobs.Front();
+
+        // Finally repoint tail
+        ctx.tail = cur;
+
         ctx.jobLock.Leave();
+
+        // Clear queued jobs
+        ctx.queuedJobs.Clear();
 
         // Trigger threads to wake up and compete for jobs
         for (Ptr<JobThread>& thread : ctx.threads)
@@ -274,6 +288,7 @@ JobEndSequence(Threading::Event* signalEvent)
             thread->EmitWakeupSignal();
         }
     }
+    sequenceCompletionCounter = nullptr;
 }
 
 } // namespace Jobs2

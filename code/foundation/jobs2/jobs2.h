@@ -166,8 +166,8 @@ void JobEndSequence(Threading::Event* signalEvent = nullptr);
 template <typename T> T*
 JobAlloc(SizeT count)
 {
-    n_assert(ctx.iterator + count * sizeof(T) < ctx.scratchMemorySize);
-    T* ret = (T*)ctx.scratchMemory[ctx.activeBuffer] + ctx.iterator;
+    n_assert((ctx.iterator + count * sizeof(T)) < ctx.scratchMemorySize);
+    T* ret = (T*)((byte*)ctx.scratchMemory[ctx.activeBuffer] + ctx.iterator);
     ctx.iterator += count * sizeof(T);
     return ret;
 }
@@ -257,7 +257,7 @@ JobAppendSequence(const JobFunc& func, const SizeT numInvocations, const SizeT g
     // Calculate allocation size which is node + counters + data context
     auto dynamicAllocSize = sizeof(JobNode) + sizeof(CTX);
     if (sequenceWaitCounters.IsEmpty())
-        dynamicAllocSize += sizeof(Threading::AtomicCounter);
+        dynamicAllocSize += sizeof(Threading::AtomicCounter*);
     else
         dynamicAllocSize += sequenceWaitCounters.ByteSize();
 
@@ -276,6 +276,10 @@ JobAppendSequence(const JobFunc& func, const SizeT numInvocations, const SizeT g
         // Then clear them, we only allow wait counters for the first job in the sequence
         sequenceWaitCounters.Clear();
     }
+    else
+    {
+        node->job.waitCounters[0] = nullptr;
+    }
 
     // Move context
     node->job.data = (void*)(mem + sizeof(JobNode));
@@ -287,16 +291,10 @@ JobAppendSequence(const JobFunc& func, const SizeT numInvocations, const SizeT g
     node->job.groupCompletionCounter = numJobs;
     node->job.numInvocations = numInvocations;
     node->job.groupSize = groupSize;
-    node->job.numWaitCounters = sequenceWaitCounters.IsEmpty() ? 0 : sequenceWaitCounters.Size();
-    node->job.waitCounters = nullptr;
+    node->job.numWaitCounters = sequenceWaitCounters.Size();
     node->job.doneCounter = nullptr;
     node->job.signalEvent = nullptr;
-
-    if (!ctx.queuedJobs.IsEmpty())
-    {
-        node->job.numWaitCounters++;
-        node->job.waitCounters = (const Threading::AtomicCounter**)&ctx.queuedJobs.Back()->job.doneCounter;
-    }
+    node->next = nullptr;
 
     // Queue job
     ctx.queuedJobs.Append(node);
