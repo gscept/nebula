@@ -858,7 +858,7 @@ CharacterContext::WaitForCharacterJobs(const Graphics::FrameContext& ctx)
     const Util::Array<Util::FixedArray<Math::mat4>>& jointPalettes = characterContextAllocator.GetArray<JointPalette>();
     const Util::Array<Util::FixedArray<Math::mat4>>& scaledJointPalettes = characterContextAllocator.GetArray<JointPaletteScaled>();
     const Util::Array<IndexT>& characterSkinNodeIndices = characterContextAllocator.GetArray<CharacterSkinNodeIndex>();
-    const Util::Array<Graphics::GraphicsEntityId> graphicsEntities = characterContextAllocator.GetArray<ModelContextId>();
+    const Util::Array<Graphics::GraphicsEntityId> graphicsEntities = characterContextAllocator.GetArray<EntityId>();
 
     for (IndexT i = 0; i < characterSkinNodeIndices.Size(); i++)
     {
@@ -929,7 +929,7 @@ void
 CharacterContext::OnRenderDebug(uint32 flags)
 {
     const Util::Array<Util::FixedArray<Math::mat4>>& jointPalettes = characterContextAllocator.GetArray<JointPaletteScaled>();
-    const Util::Array<Graphics::GraphicsEntityId>& modelContexts = characterContextAllocator.GetArray<ModelContextId>();
+    const Util::Array<Graphics::GraphicsEntityId>& modelContexts = characterContextAllocator.GetArray<EntityId>();
     const Math::mat4 scale = Math::scaling(0.1f, 0.1f, 0.1f);
     IndexT i;
     for (i = 0; i < jointPalettes.Size(); i++)
