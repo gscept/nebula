@@ -68,7 +68,7 @@ public:
     static void Create();
 
     /// setup character context, assumes there is already a model attached, by loading a skeleton and animation resource
-    static void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& skeleton, const Resources::ResourceName& animation, const Util::StringAtom& tag);
+    static void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& skeleton, const Resources::ResourceName& animation, const Util::StringAtom& tag, bool supportBlending = true);
 
     /// perform a clip name lookup
     static IndexT GetClipIndex(const Graphics::GraphicsEntityId id, const Util::StringAtom& name);
@@ -132,8 +132,7 @@ public:
     };
 
 private:
-
-
+    friend struct CharacterJobContext;
 
     struct AnimationRuntime
     {
@@ -157,6 +156,7 @@ private:
     friend const bool IsExpired(const CharacterContext::AnimationRuntime& runtime, const Timing::Time time);
     friend const bool IsInfinite(const CharacterContext::AnimationRuntime& runtime);
     friend Timing::Tick GetAbsoluteStopTime(const CharacterContext::AnimationRuntime& runtime);
+    friend void EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx);
 
     static const SizeT MaxNumTracks = 16;
     struct AnimationTracks
@@ -177,8 +177,9 @@ private:
         UserControlledJoint,
         JobJoints,
         SampleBuffer,
+        SupportMix,
         EntityId,
-        CharacterSkinNodeIndex
+        CharacterSkinNodeIndexOffset
     };
 
     typedef Ids::IdAllocator<
@@ -192,6 +193,7 @@ private:
         Util::FixedArray<Math::mat4>,
         Util::FixedArray<SkeletonJobJoint>,
         CoreAnimation::AnimSampleBuffer,
+        bool,
         Graphics::GraphicsEntityId,
         IndexT
     > CharacterContextAllocator;
