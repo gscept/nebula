@@ -216,7 +216,7 @@ Threading::AtomicCounter* sequenceCompletionCounter;
 void
 JobBeginSequence(const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters)
 {
-    n_assert_fmt(sequenceWaitCounters.IsEmpty(), "JobBeginSequence called twice, missing JobEndSequence");
+    n_assert2(sequenceWaitCounters.IsEmpty(), "JobBeginSequence called twice, missing JobEndSequence");
     n_assert(sequenceCompletionCounter == nullptr);
     sequenceWaitCounters = waitCounters;
     sequenceCompletionCounter = JobAlloc<Threading::AtomicCounter>(1);

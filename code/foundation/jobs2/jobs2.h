@@ -75,8 +75,23 @@ public:
     virtual ~JobThread();
 
 protected:
-    template <typename CTX> friend void JobDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSize, const CTX& context, const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters, Threading::AtomicCounter* doneCounter, Threading::Event* signalEvent);
-    template <typename CTX> friend void JobDispatch(const JobFunc& func, const SizeT numInvocations, const CTX& context, const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters, Threading::AtomicCounter* doneCounter, Threading::Event* signalEvent);
+    template <typename CTX> friend void JobDispatch(
+        const JobFunc& func
+        , const SizeT numInvocations
+        , const SizeT groupSize
+        , const CTX& context
+        , const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr
+        , Threading::AtomicCounter* doneCounter = nullptr
+        , Threading::Event* signalEvent = nullptr
+    );
+    template <typename CTX> friend void JobDispatch(
+        const JobFunc& func
+        , const SizeT numInvocations
+        , const CTX& context
+        , const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr
+        , Threading::AtomicCounter* doneCounter = nullptr
+        , Threading::Event* signalEvent = nullptr
+    );
     friend void JobEndSequence(Threading::Event* signalEvent);
 
     /// override this method if your thread loop needs a wakeup call before stopping
