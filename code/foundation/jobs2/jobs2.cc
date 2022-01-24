@@ -37,6 +37,15 @@ JobThread::~JobThread()
 /**
 */
 void
+JobThread::SignalWorkAvailable()
+{
+    this->wakeupEvent.Signal();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 JobThread::EmitWakeupSignal()
 {
     this->wakeupEvent.Signal();
@@ -285,7 +294,7 @@ JobEndSequence(Threading::Event* signalEvent)
         // Trigger threads to wake up and compete for jobs
         for (Ptr<JobThread>& thread : ctx.threads)
         {
-            thread->EmitWakeupSignal();
+            thread->SignalWorkAvailable();
         }
     }
     sequenceCompletionCounter = nullptr;
