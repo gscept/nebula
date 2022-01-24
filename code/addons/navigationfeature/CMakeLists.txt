@@ -1,0 +1,32 @@
+nebula_begin_module(navigationfeature)
+fips_deps(Detour DetourCrowd Recast DetourTileCache DetourUtils application render)
+fips_include_directories(${CODE_ROOT}/foundation)
+fips_files(
+		navigationfeatureunit.h
+		navigationfeatureunit.cc
+		streamnavmeshpool.h
+		streamnavmeshpool.cc
+		navagentcontext.h
+		navagentcontext.cc
+	)
+	fips_dir(managers)
+		fips_files(
+			navigationmanager.h
+			navigationmanager.cc
+		)
+	fips_dir(properties)
+		nebula_add_nidl(
+			navigation.nidl
+		)
+    fips_dir(recast)
+        fips_files(recastutil.h
+                    recastutil.cc
+        )
+    fips_dir(debug)
+        fips_files(detourdebug.h
+                   detourdebug.cc
+                   #navigationpagehandler.h
+                   #navigationpagehandler.cc
+        )
+nebula_flatc(SYSTEM navigation/navmesh.fbs navigation/navmeshsettings.fbs navigation/agentkinds.fbs)
+nebula_end_module()

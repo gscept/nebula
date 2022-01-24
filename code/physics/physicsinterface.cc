@@ -16,6 +16,7 @@
 #include "io/assignregistry.h"
 #include "io/ioserver.h"
 #include "nflatbuffer/flatbufferinterface.h"
+#include "flat/physics/collisions.h"
 
 #define PHYSX_MEMORY_ALLOCATION_DEBUG false
 #define PHYSX_THREADS 4
@@ -34,8 +35,7 @@ PxFilterFlags Simulationfilter(PxFilterObjectAttributes attributes0,
                                const void* constantBlock,
                                PxU32                       constantBlockSize)
 {
-    PxFilterFlags filterFlags = PxDefaultSimulationFilterShader(attributes0,
-                                                                filterData0, attributes1, filterData1, pairFlags, constantBlock, constantBlockSize);
+    PxFilterFlags filterFlags = PxDefaultSimulationFilterShader(attributes0, filterData0, attributes1, filterData1, pairFlags, constantBlock, constantBlockSize);
     if (pairFlags & PxPairFlag::eSOLVE_CONTACT)
     {
         if (filterData0.word1 & CollisionFeedback_Full || filterData1.word1 & CollisionFeedback_Full)
@@ -199,6 +199,27 @@ void SetActiveActorCallback(UpdateFunctionType callback, IndexT sceneId)
 */
 void RenderDebug()
 {
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+LoadCollisionFilters()
+{
+    const IO::URI collisionTable("phys:CollisionFilters.filt");
+    Util::String collisionsString;
+
+    if (IO::IoServer::Instance()->ReadFile(collisionTable, collisionsString))
+    {
+        Physics::FilterBehavioursT behaviours;
+        Flat::FlatbufferInterface::DeserializeFlatbuffer<Physics::FilterBehaviours>(behaviours, (uint8_t*)collisionsString.AsCharPtr());
+        for (auto const& respone : behaviours.responses)
+        {
+
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

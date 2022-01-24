@@ -1,0 +1,18 @@
+namespace Navigation;
+
+table NavMeshSettings
+{
+	max_edge_error : float;
+	detail_sample_dist : float;
+	max_slope : float;
+	cell_height : float;
+	cell_size : float;
+	detail_sample_max_error : float;
+	max_edge_length : int;
+	region_min_size : int;
+	region_merge_size : int;
+}
+
+root_type NavMeshSettings;
+file_identifier "NAVS";
+file_extension "navsetting";

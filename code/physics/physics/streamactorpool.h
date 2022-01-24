@@ -33,6 +33,7 @@ struct BodyInfo
     Util::Array<physx::PxShape*> shapes;
     Util::Array<Util::String> colliders;
     Util::Array<float> densities;
+    uint8_t collisionId;
 #ifdef NEBULA_DEBUG
     Util::Array<Util::String> shapeDebugNames;
 #endif

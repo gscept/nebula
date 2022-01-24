@@ -1,0 +1,8 @@
+{
+  "namespace": "NavigationFeature",
+  "properties": {
+    "AgentKind": "string",
+    "MaxSpeed": "float",
+    "MaxTurnSpeed": "float"
+  }
+}

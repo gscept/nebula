@@ -1,23 +1,33 @@
-enum Response : byte
+namespace Physics;
+
+enum ResponseType : byte
 {
 	Ignore = 0,
 	Block = 1
 }
 
+table Response
+{
+	name : string;
+	collision : ResponseType;
+	query : ResponseType;
+}
+
 table FiltersResponses
 {
-	default_collision : Response;
-	default_query : Response;
-	collision : [Response];
-	query : [Response];
+	name : string;
+	comment : string;
+	default_collision : ResponseType;
+	default_query : ResponseType;
+	custom_responses : [Response];
 }
 
-table FilterBehaviour
+table FilterBehaviours
 {
 	names : [string];
-	responses : FiltersResponses;
+	responses : [FiltersResponses];
 }
 
-root_type FilterBehaviour;
+root_type FilterBehaviours;
 file_identifier "FILT";
 file_extension "filter";
