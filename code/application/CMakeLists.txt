@@ -34,6 +34,8 @@ nebula_begin_module(application)
             propertyserialization.cc
             propertyinspection.h
             propertyinspection.cc
+            world.h
+            world.cc
         )
     fips_dir(game/messaging)
         fips_files(

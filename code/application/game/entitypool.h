@@ -10,8 +10,6 @@
 #include "api.h"
 #include "category.h"
 #include "util/queue.h"
-#include "memdb/database.h"
-#include "memdb/table.h"
 
 namespace Game
 {
@@ -37,64 +35,6 @@ public:
     Util::Array<uint16_t> generations;
     /// stores freed indices
     Util::Queue<uint32_t> freeIds;
-};
-
-//------------------------------------------------------------------------------
-/**
-*/
-class World
-{
-public:
-    World();
-    ~World();
-
-    struct AllocateInstanceCommand
-    {
-        Game::Entity entity;
-        TemplateId tid;
-    };
-    struct DeallocInstanceCommand
-    {
-        Game::Entity entity;
-    };
-
-    /// used to allocate entity ids for this world
-    EntityPool pool;
-    /// Number of entities alive
-    SizeT numEntities;
-    /// maps entity index to category+instanceid pair
-    Util::Array<Game::EntityMapping> entityMap;
-    /// contains all entity instances
-    Ptr<MemDb::Database> db;
-    /// world hash
-    uint32_t hash;
-    /// maps from blueprint to a category that has the same signature
-    Util::HashTable<BlueprintId, MemDb::TableId> blueprintCatMap;
-    ///
-    Util::Queue<AllocateInstanceCommand> allocQueue;
-    ///
-    Util::Queue<DeallocInstanceCommand> deallocQueue;
-    
-    /// add the table to any callback-caches that accepts it
-    void CacheTable(MemDb::TableId tid, MemDb::TableSignature signature);
-
-    struct CallbackInfo
-    {
-        ProcessorHandle handle;
-        Filter filter;
-        ProcessorFrameCallback func;
-        /// cached tables that we've filtered out.
-        Util::Array<MemDb::TableId> cache;
-    };
-
-    Util::Array<CallbackInfo> onBeginFrameCallbacks;
-    Util::Array<CallbackInfo> onFrameCallbacks;
-    Util::Array<CallbackInfo> onEndFrameCallbacks;
-    Util::Array<CallbackInfo> onLoadCallbacks;
-    Util::Array<CallbackInfo> onSaveCallbacks;
-
-    /// set to true if the caches for the callbacks are invalid
-    bool cacheValid = false;
 };
 
 } // namespace Game

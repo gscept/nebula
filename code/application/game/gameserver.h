@@ -31,6 +31,8 @@
 #include "basegamefeature/properties/owner.h"
 #include "api.h"
 #include "entitypool.h"
+#include "memdb/database.h"
+#include "world.h"
 
 //------------------------------------------------------------------------------
 namespace Game
@@ -109,7 +111,7 @@ public:
     virtual void CleanupWorld(World*);
     
     /// create a world. The game server handles all worlds
-    World* CreateWorld(WorldCreateInfo const& info);
+    World* CreateWorld(uint32_t hash);
     /// get a world by hash
     World* GetWorld(uint32_t worldHash);
     /// destroy a world

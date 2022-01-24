@@ -315,58 +315,6 @@ BlueprintManager::GetTemplateId(Util::StringAtom name)
 //------------------------------------------------------------------------------
 /**
 */
-EntityMapping
-BlueprintManager::Instantiate(World* const world, BlueprintId blueprint)
-{
-    GameServer::State& gsState = GameServer::Instance()->state;
-    Ptr<MemDb::Database> const& tdb = gsState.templateDatabase;
-    IndexT const categoryIndex = world->blueprintCatMap.FindIndex(blueprint);
-
-    if (categoryIndex != InvalidIndex)
-    {
-        MemDb::TableId const cid = world->blueprintCatMap.ValueAtIndex(blueprint, categoryIndex);
-        MemDb::Row const instance = world->db->AllocateRow(cid);
-        return { cid, instance };
-    }
-    else
-    {
-        // Create the category, and then create the instance
-        MemDb::TableId const cid = this->CreateCategory(world, blueprint);
-        MemDb::Row const instance = world->db->AllocateRow(cid);
-        return { cid, instance };
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-EntityMapping
-BlueprintManager::Instantiate(World* const world, TemplateId templateId)
-{
-    n_assert(Singleton->templateIdPool.IsValid(templateId.id));
-    GameServer::State& gsState = GameServer::Instance()->state;
-    Ptr<MemDb::Database> const& tdb = gsState.templateDatabase;
-    Template& tmpl = Singleton->templates[Ids::Index(templateId.id)];
-    IndexT const categoryIndex = world->blueprintCatMap.FindIndex(tmpl.bid);
-    
-    if (categoryIndex != InvalidIndex)
-    {
-        MemDb::TableId const cid = world->blueprintCatMap.ValueAtIndex(tmpl.bid, categoryIndex);
-        MemDb::Row const instance = tdb->DuplicateInstance(Singleton->blueprints[tmpl.bid.id].tableId, tmpl.row, world->db, cid);
-        return { cid, instance };
-    }
-    else
-    {
-        // Create the category, and then create the instance
-        MemDb::TableId const cid = this->CreateCategory(world, tmpl.bid);
-        MemDb::Row const instance = tdb->DuplicateInstance(Singleton->blueprints[tmpl.bid.id].tableId, tmpl.row, world->db, cid);
-        return { cid, instance };
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 BlueprintManager::SetupBlueprints()
 {
@@ -445,29 +393,6 @@ BlueprintManager::SetupBlueprints()
     {
         n_error("Aborting due to unrecoverable error(s)!\n");
     }
-}
-
-//------------------------------------------------------------------------------
-/**
-    @todo   this can be optimized
-*/
-MemDb::TableId
-BlueprintManager::CreateCategory(World* const world, BlueprintId bid)
-{
-    CategoryCreateInfo info;
-    info.name = blueprints[bid.id].name.Value();
-    
-    auto const& properties = GameServer::Singleton->state.templateDatabase->GetTable(blueprints[bid.id].tableId).properties;
-    info.properties.Resize(properties.Size());
-    for (int i = 0; i < properties.Size(); i++)
-    {
-        PropertyId p = properties[i];
-        info.properties[i] = p;
-    }
-
-    MemDb::TableId tid = CreateEntityTable(world, info);
-    world->blueprintCatMap.Add(bid, tid);
-    return tid;
 }
 
 //------------------------------------------------------------------------------
