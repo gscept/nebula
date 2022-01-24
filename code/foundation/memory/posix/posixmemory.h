@@ -140,6 +140,23 @@ Move(const void* from, void* to, size_t numBytes)
 
 //------------------------------------------------------------------------------
 /**
+    Move a chunk of memory, can handle overlapping regions
+*/
+template <typename T>
+__forceinline void
+MoveElements(const T* from, T* to, size_t numElements)
+{
+    if (numElements > 0)
+    {
+        n_assert(0 != from);
+        n_assert(0 != to);
+        n_assert(from != to);
+        memmove((void*)to, (const void*)from, numElements * sizeof(T));
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
     Copy a chunk of memory (note the argument order is different from memcpy()!!!)
 */
 template <typename T>

@@ -35,7 +35,7 @@ enum
     Observer_Dependency,
     Observer_DependencyMode,
     Observer_DrawList,
-    Observer_DrawListAllocator
+    Observer_DrawListAllocator,
 };
 
 enum
@@ -51,7 +51,7 @@ enum
 enum
 {
     Observable_EntityId,
-    Observable_Atoms
+    Observable_NumNodes
 };
 
 enum DependencyMode
@@ -149,14 +149,14 @@ private:
     typedef Util::Array<Math::ClipStatus::Type> VisibilityResultArray;
 
     typedef Ids::IdAllocator<
-        Math::mat4,                                 // transform of observer camera
-        Graphics::GraphicsEntityId,                 // entity id
-        VisibilityEntityType,                       // type of object so we know how to get the transform
-        VisibilityResultArray,                      // visibility lookup table
-        Graphics::GraphicsEntityId,                 // dependency
-        DependencyMode,                             // dependency mode
-        VisibilityDrawList,                         // draw list
-        Memory::ArenaAllocator<1024>                // memory allocator for draw commands
+        Math::mat4                                 // transform of observer camera
+        , Graphics::GraphicsEntityId               // entity id
+        , VisibilityEntityType                     // type of object so we know how to get the transform
+        , VisibilityResultArray                    // visibility lookup table
+        , Graphics::GraphicsEntityId               // dependency
+        , DependencyMode                           // dependency mode
+        , VisibilityDrawList                       // draw list
+        , Memory::ArenaAllocator<1024>             // memory allocator for draw commands
     > ObserverAllocator;
     static ObserverAllocator observerAllocator;
 
@@ -186,21 +186,11 @@ private:
 
     using AtomTransform = Math::mat4;
     using AtomIsActive = bool;
-    // atom corresponds to a single visibility entry
-    typedef Ids::IdAllocator<
-        Models::NodeInstanceRange,    // The range of node instances for an entity
-        Graphics::GraphicsEntityId,                 // the entity id that this atom is bound to.
-        AtomTransform,                              // atoms transform
-        VisibilityEntityType,                       // the observables visibility type
-        AtomIsActive                                // is the atom active
-    > ObservableAtomAllocator;
-    static ObservableAtomAllocator observableAtomAllocator;
 
-    using ObservableAtoms = Util::ArrayStack<Ids::Id32, 1>;
     // observable corresponds to a single entity
     typedef Ids::IdAllocator<
-        Graphics::GraphicsEntityId, // the entity id that this component is bound to
-        ObservableAtoms             // keeps track of all atoms for this entity
+        Graphics::GraphicsEntityId, // The entity id that this component is bound to
+        uint32                      // Node instance range
     > ObservableAllocator;
 
     static ObservableAllocator observableAllocator;

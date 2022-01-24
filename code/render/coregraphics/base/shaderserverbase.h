@@ -29,7 +29,7 @@
 #include "coregraphics/shaderfeature.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/shaderidentifier.h"
-#include "coregraphics/shaderpool.h"
+#include "coregraphics/shadercache.h"
 #include "threading/safequeue.h"
 
 namespace Threading

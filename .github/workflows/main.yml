@@ -119,7 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     name: Notify
-    # if: cancelled() == false && github.event.pull_request.head.repo.full_name == github.repository
+    if: cancelled() == false
     steps:
      - name: Notification       
        uses: xinthink/action-telegram@v1.1

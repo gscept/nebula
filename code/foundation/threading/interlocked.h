@@ -11,7 +11,10 @@
 */
 #include "core/config.h"
 
+namespace Threading
+{
 typedef volatile int AtomicCounter;
+}
 
 #if (__WIN32__)
 #include "threading/win32/win32interlocked.h"

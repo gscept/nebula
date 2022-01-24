@@ -43,7 +43,7 @@ CopyElements(const T* from, T* to, size_t numElements)
         n_assert(0 != from);
         n_assert(0 != to);
         n_assert(from != to);
-        CopyMemory(to, from, numElements * sizeof(T));
+        CopyMemory((void*)to, (const void*)from, numElements * sizeof(T));
     }
 }
 
@@ -76,7 +76,7 @@ MoveElements(const T* from, T* to, size_t numElements)
         n_assert(0 != from);
         n_assert(0 != to);
         n_assert(from != to);
-        MoveMemory(to, from, numElements * sizeof(T));
+        MoveMemory((void*)to, (const void*)from, numElements * sizeof(T));
     }
 }
 

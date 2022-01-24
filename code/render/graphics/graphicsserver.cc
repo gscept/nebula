@@ -12,7 +12,7 @@
 #include "coregraphics/streamtexturecache.h"
 #include "coregraphics/memorytexturecache.h"
 #include "coregraphics/memorymeshcache.h"
-#include "coregraphics/shaderpool.h"
+#include "coregraphics/shadercache.h"
 #include "coregraphics/streammeshcache.h"
 #include "coreanimation/streamanimationcache.h"
 #include "characters/streamskeletoncache.h"
@@ -195,7 +195,8 @@ GraphicsServer::Open()
         this->textRenderer->Open();
 
         // start timer
-        this->timer->StartTime();
+        if (!this->timer->IsTimeRunning())
+            this->timer->StartTime();
 
         // tell the resource manager to load default resources once we are done setting everything up
         Resources::ResourceServer::Instance()->LoadDefaultResources();

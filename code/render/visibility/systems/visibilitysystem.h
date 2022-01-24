@@ -42,6 +42,10 @@
 #include "math/bbox.h"
 #include "resources/resourceid.h"
 #include "graphics/graphicsentity.h"
+#include "models/modelcontext.h"
+#include "threading/event.h"
+#include "jobs2/jobs2.h"
+
 namespace Visibility
 {
 
@@ -80,12 +84,20 @@ class VisibilitySystem
 {
 public:
 
+    /// Constructor
+    VisibilitySystem();
+
     /// setup observers
     virtual void PrepareObservers(const Math::mat4* transforms, Util::Array<Math::ClipStatus::Type>* results, const SizeT count);
     /// prepare system with entities to insert into the structure
-    virtual void PrepareEntities(const Math::bbox* transforms, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count);
+    virtual void PrepareEntities(const Math::bbox* transforms, const uint32* ranges, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count);
     /// run system
-    virtual void Run();
+    virtual void Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters);
+
+    /// Return completion counter for an observer
+    Threading::AtomicCounter* GetCompletionCounter(IndexT i);
+    /// Return completion counter for all observers
+    const Threading::AtomicCounter* GetCompletionCounters() const;
 
 protected:
 
@@ -97,12 +109,14 @@ protected:
         const Math::mat4* transforms;
         Util::Array<Math::ClipStatus::Type>* results;
         SizeT count;
+        Util::Array<Threading::AtomicCounter> completionCounters;
     } obs;
 
     struct Entity
     {
         const Math::bbox* boxes;
         const Graphics::GraphicsEntityId* entities;
+        const uint32* ids;
         const uint32_t* entityFlags;
         SizeT count;
     } ent;

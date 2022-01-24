@@ -18,6 +18,7 @@ if(FIPS_WINDOWS)
     SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /RTC1 /JMC")
     SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Qpar")
     set(CMAKE_EXE_LINKER_FLAGS_DEBUG "/DEBUG:full")
+    add_definitions(-D_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING)
     if(N_DEBUG_SYMBOLS)
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zi")
         SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Zi")
@@ -149,7 +150,7 @@ macro(nebula_flatc root)
         set(output ${abs_output_folder}/${out_header})
 
         add_custom_command(OUTPUT ${output}
-                PRE_BUILD COMMAND ${FLATC} -c --gen-object-api --gen-compare  --gen-mutable --include-prefix flat --keep-prefix --cpp-str-flex-ctor --cpp-str-type Util::String -I "${datadir}" -I "${NROOT}/work/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${fbs}"
+                PRE_BUILD COMMAND ${FLATC} -c --gen-object-api --gen-mutable --include-prefix flat --keep-prefix --cpp-str-flex-ctor --cpp-str-type Util::String -I "${datadir}" -I "${NROOT}/work/data/flatbuffer/" --filename-suffix "" -o "${abs_output_folder}" "${fbs}"
                 PRE_BUILD COMMAND ${FLATC} -b -o "${EXPORT_DIR}/data/flatbuffer/${foldername}/" -I "${datadir}" -I "${NROOT}/work/data/flatbuffer/" --schema ${fbs}
                 MAIN_DEPENDENCY "${fbs}"
                 DEPENDS ${FLATC}

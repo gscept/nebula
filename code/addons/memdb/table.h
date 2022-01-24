@@ -56,7 +56,7 @@ struct Table
 {
     using ColumnBuffer = void*;
     /// table identifier
-    TableId tid;
+    TableId tid = TableId::Invalid();
     /// name of the table
     Util::StringAtom name;
     /// number of rows

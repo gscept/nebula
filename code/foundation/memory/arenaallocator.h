@@ -21,6 +21,7 @@
 */
 //------------------------------------------------------------------------------
 #include "core/config.h"
+#include "math/scalar.h"
 #include "util/array.h"
 
 #define SMALL_CHUNK 0x100

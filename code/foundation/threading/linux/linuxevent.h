@@ -19,6 +19,8 @@ class LinuxEvent
 public:
     /// constructor
     LinuxEvent(bool manualReset=false);
+    /// Move constructor
+    LinuxEvent(LinuxEvent&& ev);
     /// destructor
     ~LinuxEvent();
     /// signal the event
@@ -31,6 +33,8 @@ public:
     bool Peek() const;
     /// manually reset the event
     void Reset();
+    /// Returns true if event is manually reset
+    bool IsManual() const;
 
 private:
     // emulate windows event behaviour (*sigh*)
@@ -44,7 +48,6 @@ private:
     mutable pthread_mutex_t mutex;
     mutable pthread_cond_t cond;
     
-    volatile mutable int foo;
     bool manualReset;
     volatile mutable EventStatus status;
     volatile mutable EventStatus status2;
@@ -54,10 +57,10 @@ private:
 /**
 */
 inline
-LinuxEvent::LinuxEvent(bool manual) :
-    status(SIGNAL_NONE),
-    status2(SIGNAL_NONE),
-    manualReset(manual),foo(16)
+LinuxEvent::LinuxEvent(bool manual)
+    : status(SIGNAL_NONE)
+    , status2(SIGNAL_NONE)
+    , manualReset(manual)
 {
     // setup the mutex    
     int res = pthread_mutex_init(&this->mutex, nullptr);
@@ -66,6 +69,28 @@ LinuxEvent::LinuxEvent(bool manual) :
     // setup the condition variable
     res = pthread_cond_init(&this->cond, nullptr);
     n_assert(0 == res);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline 
+LinuxEvent::LinuxEvent(LinuxEvent&& ev)
+{
+    int res = pthread_cond_destroy(&this->cond);
+    n_assert(0 == res);
+    res = pthread_mutex_destroy(&this->mutex);
+    n_assert(0 == res);
+
+    this->mutex = ev.mutex;
+    this->cond = ev.cond;
+    this->manualReset = ev.manualReset;
+    this->status = ev.status;
+    this->status2 = ev.status2;
+    ev.mutex = pthread_mutex_t{};
+    ev.cond = pthread_cond_t{};
+    ev.status = SIGNAL_NONE;
+    ev.status2 = SIGNAL_NONE;
 }
 
 //------------------------------------------------------------------------------
@@ -191,6 +216,15 @@ LinuxEvent::Reset()
     pthread_mutex_lock(&this->mutex);
     this->status = SIGNAL_NONE;
     pthread_mutex_unlock(&this->mutex);    
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool 
+LinuxEvent::IsManual() const
+{
+    return this->manualReset;
 }
 
 } // namespace Linux

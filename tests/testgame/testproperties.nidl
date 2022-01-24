@@ -22,13 +22,19 @@
                 "_type_": "vec2",
                 "_default_": [ 10, 20.2 ]
             },
-            "foo": "int",
+          "foo": {
+            "_type_": "int",
+            "_default_":  1
+          },
             "bar": "float",
-            "gnyrf" {
-                "_type_": "bool"
+            "gnyrf": {
+              "_type_": "bool"
             },
             "enumerable": "Test::TestEnumType"
-        },
-        "TestHealth": "uint"
+          },
+        "TestHealth": {
+          "_type_": "uint",
+          "_default_": 100
+        }
     }
 }

@@ -4,7 +4,7 @@
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "coregraphics/shaderpool.h"
+#include "coregraphics/shadercache.h"
 
 #if __VULKAN__
 namespace CoreGraphics

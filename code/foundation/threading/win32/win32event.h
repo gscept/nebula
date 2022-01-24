@@ -19,8 +19,11 @@ class Win32Event
 public:
     /// constructor
     Win32Event(bool manualReset=false);
+    /// move constructor
+    Win32Event(Win32Event&& rhs);
     /// destructor
     ~Win32Event();
+
     /// signal the event
     void Signal();
     /// reset the event (only if manual reset)
@@ -31,7 +34,11 @@ public:
     bool WaitTimeout(int ms) const;
     /// check if event is signalled
     bool Peek() const;
+    /// Returns true if event is manually reset
+    bool IsManual() const;
+
 private:
+    bool manual;
     HANDLE event;
 };
 
@@ -42,7 +49,21 @@ inline
 Win32Event::Win32Event(bool manualReset)
 {
     this->event = CreateEvent(NULL, manualReset, FALSE, NULL);
+    this->manual = manualReset;
     n_assert(0 != this->event);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline 
+Win32Event::Win32Event(Win32Event&& rhs)
+{
+    if (this->event)
+        CloseHandle(this->event);
+    this->event = rhs.event;
+    this->manual = rhs.manual;
+    rhs.event = nullptr;
 }
 
 //------------------------------------------------------------------------------
@@ -51,8 +72,11 @@ Win32Event::Win32Event(bool manualReset)
 inline
 Win32Event::~Win32Event()
 {
-    CloseHandle(this->event);
-    this->event = 0;
+    if (this->event != nullptr)
+    {
+        CloseHandle(this->event);
+        this->event = nullptr;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -105,6 +129,15 @@ Win32Event::Peek() const
 {
     DWORD res = WaitForSingleObject(this->event, 0);
     return (WAIT_TIMEOUT == res) ? false : true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline bool 
+Win32Event::IsManual() const
+{
+    return this->manual;
 }
 
 } // namespace Win32

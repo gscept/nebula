@@ -76,6 +76,8 @@ public:
     /// convert to "anything"
     template<typename T> T As() const;
 
+    /// Get element (same as operator[] but as a function)
+    TYPE& Get(IndexT index) const;
     /// append element to end of array
     void Append(const TYPE& elm);
     /// append an element which is being forwarded
@@ -113,12 +115,16 @@ public:
     void EraseIndexSwap(IndexT index);
     /// erase element at iterator, fill gap by swapping in last element, destroys sorting!
     Iterator EraseSwap(Iterator iter);
-    /// erase range
-    void EraseRange(IndexT start, SizeT end);
+    /// erase range, excluding the element at end
+    void EraseRange(IndexT start, IndexT end);
     /// erase back
     void EraseBack();
     /// erase front
     void EraseFront();
+    /// Pop front
+    TYPE PopFront();
+    /// Pop back
+    TYPE PopBack();
     /// insert element before element at index
     void Insert(IndexT index, const TYPE& elm);
     /// insert element into sorted array, return index where element was included
@@ -592,7 +598,7 @@ Array<TYPE>::DestroyRange(IndexT fromIndex, IndexT toIndex)
 #if NEBULA_DEBUG
     else
     {
-        Memory::Clear(&this->elements[fromIndex], sizeof(TYPE) * (toIndex - fromIndex));        
+        Memory::Clear((void*)&this->elements[fromIndex], sizeof(TYPE) * (toIndex - fromIndex));        
     }
 #endif
 }
@@ -615,7 +621,7 @@ Array<TYPE>::CopyRange(TYPE* to, TYPE* from, SizeT num)
     }
     else
     {
-        Memory::Copy(from, to, num * sizeof(TYPE));
+        Memory::CopyElements(from, to, num);
     }       
 }
 
@@ -637,8 +643,21 @@ Array<TYPE>::MoveRange(TYPE* to, TYPE* from, SizeT num)
     }
     else
     {
-        Memory::Move(from, to, num * sizeof(TYPE));
+        Memory::MoveElements(from, to, num);
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline TYPE& Array<TYPE>::Get(IndexT index) const
+{
+#if NEBULA_BOUNDSCHECKS
+    n_assert(this->elements != nullptr);
+    n_assert(this->capacity > index);
+#endif
+    return this->elements[index];
 }
 
 //------------------------------------------------------------------------------
@@ -988,7 +1007,7 @@ Array<TYPE>::EraseSwap(typename Array<TYPE>::Iterator iter)
 /**
 */
 template<class TYPE> void 
-Array<TYPE>::EraseRange(IndexT start, SizeT end)
+Array<TYPE>::EraseRange(IndexT start, IndexT end)
 {
     n_assert(end >= start);
     n_assert(end < this->count);
@@ -997,7 +1016,6 @@ Array<TYPE>::EraseRange(IndexT start, SizeT end)
     else
     {
         // add 1 to end to remove and move including that element
-        end += 1;
         this->DestroyRange(start, end);
         SizeT numMove = this->count - end;
         this->MoveRange(&this->elements[start], &this->elements[end], numMove);
@@ -1024,6 +1042,29 @@ template<class TYPE> void
 Array<TYPE>::EraseFront()
 {
     this->EraseIndex(0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline TYPE 
+Array<TYPE>::PopFront()
+{
+    TYPE ret = std::move(this->elements[0]);
+    this->EraseIndex(0);
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline TYPE 
+Array<TYPE>::PopBack()
+{
+    this->count--;
+    return std::move(this->elements[this->count - 1]);
 }
 
 //------------------------------------------------------------------------------
@@ -1191,7 +1232,9 @@ Array<TYPE>::Fill(IndexT first, SizeT num, const TYPE& elm)
     if ((first + num) > this->count)
     {
         this->GrowTo(first + num);
+        this->count = first + num;
     }
+ 
     IndexT i;
     for (i = first; i < (first + num); i++)
     {

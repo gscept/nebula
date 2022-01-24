@@ -70,7 +70,7 @@ void PhysicsManager::InitCreateActorProcessor()
 
             for (IndexT i = 0; i < view.numInstances; ++i)
             {
-                Game::Owner const& entity = owners[i];
+                Game::Entity const& entity = owners[i];
                 Math::mat4 const& trans = transforms[i];
                 Resources::ResourceName const& res = resources[i];
 
@@ -78,9 +78,7 @@ void PhysicsManager::InitCreateActorProcessor()
                     [world, trans, &opBuffer, entity, staticPID](Resources::ResourceId id)
                     {
                         bool const dynamic = !Game::HasProperty(world, entity, staticPID);
-                        Physics::ActorId actorid = Physics::CreateActorInstance(id, trans, dynamic);
-                        Physics::Actor& actor = Physics::ActorContext::GetActor(actorid);
-                        actor.userData = Ids::Id32(entity);
+                        Physics::ActorId actorid = Physics::CreateActorInstance(id, trans, dynamic, Ids::Id32(entity));
                         
                         Game::Op::RegisterProperty regOp;
                         regOp.entity = entity;

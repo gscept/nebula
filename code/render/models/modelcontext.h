@@ -35,6 +35,7 @@ enum NodeInstanceFlags
     , NodeInstance_LodActive = N_BIT(2)         // If set, the node's LOD is active
     , NodeInstance_AlwaysVisible = N_BIT(3)     // Should always resolve to being visible by visibility
     , NodeInstance_Visible = N_BIT(4)           // Set to true if any observer sees it
+    , NodeInstance_Moved = N_BIT(5)
 };
 
 class ModelContext : public Graphics::GraphicsContext

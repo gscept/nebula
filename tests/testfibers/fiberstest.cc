@@ -26,7 +26,7 @@ F2(void* context)
     int* ctx = (int*)context;
 
     TestQueue.Enqueue(*ctx);
-    AtomicCounter counter;
+    Threading::AtomicCounter counter;
     Util::FixedArray<int*> contexts(100);
     contexts.Fill(ctx);
     Enqueue([](void* ctx) 
@@ -48,7 +48,7 @@ F2(void* context)
 void 
 F1(void* context)
 {
-    AtomicCounter counter;
+    Threading::AtomicCounter counter;
 
     int* ctx = (int*)context;
     Util::FixedArray<int*> contexts(1);
@@ -87,7 +87,7 @@ FibersTest::Run()
     int context = 0;
     Util::FixedArray<int*> contexts(100);
     contexts.Fill(&context);
-    AtomicCounter counter;
+    Threading::AtomicCounter counter;
     timer.Start();
     Enqueue(F1, contexts, &counter);
 

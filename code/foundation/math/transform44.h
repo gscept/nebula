@@ -29,6 +29,8 @@ public:
     void storeu(scalar* ptr) const;
     /// set position
     void setposition(const vec3& p);
+    /// set position
+    void setposition(const point& p);
     /// get position
     const vec3& getposition() const;
     /// set rotate
@@ -129,6 +131,16 @@ inline void
 transform44::setposition(const vec3& p)
 {
     this->position = p;
+    this->isDirty = true;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+transform44::setposition(const point& p)
+{
+    this->position = xyz(Math::vec4(p));
     this->isDirty = true;
 }
 
@@ -268,5 +280,4 @@ transform44::isdirty() const
 } // namespace Math
 //------------------------------------------------------------------------------
 
-    
     

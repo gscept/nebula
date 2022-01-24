@@ -39,16 +39,14 @@
 namespace CoreAnimation
 {
 
-extern void AnimSampleJob(const Jobs::JobFuncContext& ctx);
-extern void AnimSampleJobWithMix(const Jobs::JobFuncContext& ctx);
+extern void AnimSampleJob(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx);
+extern void AnimSampleJobWithMix(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx);
 
 }
 
 namespace Characters
 {
 
-extern void SkeletonEvalJob(const Jobs::JobFuncContext& ctx);
-extern void SkeletonEvalJobWithVariation(const Jobs::JobFuncContext& ctx);
 enum EnqueueMode
 {
     Append,             // adds clip to the queue to play after current on the track
@@ -70,7 +68,7 @@ public:
     static void Create();
 
     /// setup character context, assumes there is already a model attached, by loading a skeleton and animation resource
-    static void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& skeleton, const Resources::ResourceName& animation, const Util::StringAtom& tag);
+    static void Setup(const Graphics::GraphicsEntityId id, const Resources::ResourceName& skeleton, const Resources::ResourceName& animation, const Util::StringAtom& tag, bool supportBlending = true);
 
     /// perform a clip name lookup
     static IndexT GetClipIndex(const Graphics::GraphicsEntityId id, const Util::StringAtom& name);
@@ -134,8 +132,7 @@ public:
     };
 
 private:
-
-
+    friend struct CharacterJobContext;
 
     struct AnimationRuntime
     {
@@ -159,6 +156,7 @@ private:
     friend const bool IsExpired(const CharacterContext::AnimationRuntime& runtime, const Timing::Time time);
     friend const bool IsInfinite(const CharacterContext::AnimationRuntime& runtime);
     friend Timing::Tick GetAbsoluteStopTime(const CharacterContext::AnimationRuntime& runtime);
+    friend void EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx);
 
     static const SizeT MaxNumTracks = 16;
     struct AnimationTracks
@@ -179,9 +177,9 @@ private:
         UserControlledJoint,
         JobJoints,
         SampleBuffer,
-        VisibilityContextId,
-        ModelContextId,
-        CharacterSkinNodeIndex
+        SupportMix,
+        EntityId,
+        CharacterSkinNodeIndexOffset
     };
 
     typedef Ids::IdAllocator<
@@ -195,7 +193,7 @@ private:
         Util::FixedArray<Math::mat4>,
         Util::FixedArray<SkeletonJobJoint>,
         CoreAnimation::AnimSampleBuffer,
-        Graphics::GraphicsEntityId,
+        bool,
         Graphics::GraphicsEntityId,
         IndexT
     > CharacterContextAllocator;
@@ -206,10 +204,9 @@ private:
     /// deallocate a slice
     static void Dealloc(Graphics::ContextEntityId id);
 
-    static Jobs::JobPortId jobPort;
-    static Jobs::JobSyncId jobSync;
-    static Threading::SafeQueue<Jobs::JobId> runningJobs;
     static Util::HashTable<Util::StringAtom, CoreAnimation::AnimSampleMask> masks;
+    static Threading::AtomicCounter totalCompletionCounter;
+    static Threading::Event totalCompletionEvent;
 };
 
 __ImplementEnumBitOperators(CharacterContext::LoadState);

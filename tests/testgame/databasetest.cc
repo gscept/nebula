@@ -11,6 +11,7 @@
 #include "timing/timer.h"
 #include "memdb/database.h"
 #include "util/bitfield.h"
+#include "game/category.h"
 
 using namespace Math;
 using namespace Util;
@@ -20,12 +21,29 @@ namespace Test
 {
 __ImplementClass(Test::DatabaseTest, 'MDBT', Test::TestCase);
 
+struct IntTest
+{
+    int value = 1;
+    DECLARE_PROPERTY;
+};
+
+struct FloatTest
+{
+    float value = 20.0f;
+    DECLARE_PROPERTY;
+};
+
 struct StructTest
 {
     int foo = 10;
     bool boo = true;
     Math::float4 f4 = {1,2,3,4};
+    DECLARE_PROPERTY;
 };
+
+DEFINE_PROPERTY(IntTest);
+DEFINE_PROPERTY(FloatTest);
+DEFINE_PROPERTY(StructTest);
 
 //------------------------------------------------------------------------------
 /**
@@ -39,8 +57,8 @@ DatabaseTest::Run()
     TableId table2;
     TableId table3;
 
-    PropertyId TestIntId = TypeRegistry::Register<int>("TestIntId", int(1));
-    PropertyId TestFloatId = TypeRegistry::Register<float>("TestFloatId", float(20.0f));
+    PropertyId TestIntId = TypeRegistry::Register<IntTest>("TestIntId", IntTest());
+    PropertyId TestFloatId = TypeRegistry::Register<FloatTest>("TestFloatId", FloatTest());
     PropertyId TestStructId = TypeRegistry::Register<StructTest>("TestStructId", StructTest());
     PropertyId TestNonTypedProperty = TypeRegistry::Register("TestNonTypedProperty", 0, nullptr);
 

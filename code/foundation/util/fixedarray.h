@@ -80,7 +80,7 @@ public:
     /// return content as Array (slow!)
     Array<TYPE> AsArray() const;
 
-    /// for range-based iteration
+    /// for range-based iteration (C++11)
     Iterator begin() const;
     Iterator end() const;
     size_t size() const;
@@ -117,7 +117,7 @@ FixedArray<TYPE>::Delete()
     if (this->elements)
     {
         n_delete_array(this->elements);
-        this->elements = 0;
+        this->elements = nullptr;
     }
     this->count = 0;
 }
@@ -257,7 +257,6 @@ FixedArray<TYPE>::operator=(const FixedArray<TYPE>& rhs)
     {
         this->Delete();
         this->Copy(rhs);
-
     }
 }
 
@@ -275,7 +274,6 @@ FixedArray<TYPE>::operator=(FixedArray<TYPE>&& rhs) noexcept
         rhs.elements = nullptr;
         rhs.count = 0;
     }
-   
 }
 
 //------------------------------------------------------------------------------
@@ -353,17 +351,17 @@ FixedArray<TYPE>::Resize(SizeT newSize)
         {
             if (numCopy > newSize)
                 numCopy = newSize;
-            if constexpr (!std::is_trivially_copyable<TYPE>::value)
+            if constexpr (!std::is_trivially_move_assignable<TYPE>::value && std::is_move_assignable<TYPE>::value)
             {
                 IndexT i;
                 for (i = 0; i < numCopy; i++)
                 {
-                    newElements[i] = this->elements[i];
+                    newElements[i] = std::move(this->elements[i]);
                 }
             }
             else
             {
-                memcpy(newElements, this->elements, numCopy * sizeof(TYPE));
+                Memory::MoveElements(this->elements, newElements, numCopy);
             }
         }
     }

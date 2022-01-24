@@ -10,9 +10,18 @@ namespace Visibility
 //------------------------------------------------------------------------------
 /**
 */
+VisibilitySystem::VisibilitySystem()
+{
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 VisibilitySystem::PrepareObservers(const Math::mat4* transforms, Util::Array<Math::ClipStatus::Type>* results, const SizeT count)
 {
+    const Threading::AtomicCounter c = 0;
+    this->obs.completionCounters.Fill(0, count, c);
     this->obs.transforms = transforms;
     this->obs.results = results;
     this->obs.count = count;
@@ -22,10 +31,11 @@ VisibilitySystem::PrepareObservers(const Math::mat4* transforms, Util::Array<Mat
 /**
 */
 void
-VisibilitySystem::PrepareEntities(const Math::bbox* boxes, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count)
+VisibilitySystem::PrepareEntities(const Math::bbox* boxes, const uint32* ids, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count)
 {
     this->ent.boxes = boxes;
     this->ent.entities = entities;
+    this->ent.ids = ids;
     this->ent.entityFlags = entityFlags;
     this->ent.count = count;
 }
@@ -34,9 +44,27 @@ VisibilitySystem::PrepareEntities(const Math::bbox* boxes, const Graphics::Graph
 /**
 */
 void
-VisibilitySystem::Run()
+VisibilitySystem::Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters)
 {
     // do nothing
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+Threading::AtomicCounter*
+VisibilitySystem::GetCompletionCounter(IndexT i)
+{
+    return &this->obs.completionCounters[i];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Threading::AtomicCounter*
+VisibilitySystem::GetCompletionCounters() const
+{
+    return this->obs.completionCounters.Begin();
 }
 
 } // namespace Visibility
