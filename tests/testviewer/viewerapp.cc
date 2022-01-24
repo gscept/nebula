@@ -50,8 +50,6 @@ using namespace Graphics;
 using namespace Visibility;
 using namespace Models;
 
-int currentScene = PhysicsSceneId;
-
 namespace Tests
 {
 
