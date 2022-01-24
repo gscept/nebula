@@ -9,7 +9,7 @@
 #include "coregraphics/shader.h"
 #include "vktypes.h"
 #include "shader.h"
-#include "coregraphics/shaderpool.h"
+#include "coregraphics/shadercache.h"
 
 namespace Vulkan
 {

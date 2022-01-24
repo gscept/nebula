@@ -12,7 +12,7 @@
 #include "coregraphics/streamtexturecache.h"
 #include "coregraphics/memorytexturecache.h"
 #include "coregraphics/memorymeshcache.h"
-#include "coregraphics/shaderpool.h"
+#include "coregraphics/shadercache.h"
 #include "coregraphics/streammeshcache.h"
 #include "coreanimation/streamanimationcache.h"
 #include "characters/streamskeletoncache.h"

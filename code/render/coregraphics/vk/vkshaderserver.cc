@@ -5,7 +5,7 @@
 #include "render/stdneb.h"
 #include "vkshaderserver.h"
 #include "effectfactory.h"
-#include "coregraphics/shaderpool.h"
+#include "coregraphics/shadercache.h"
 #include "vkgraphicsdevice.h"
 #include "VkShaderCache.h"
 #include "vkshader.h"

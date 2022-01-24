@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "shader.h"
-#include "shaderpool.h"
+#include "shadercache.h"
 #include "shaderserver.h"
 namespace CoreGraphics
 {
