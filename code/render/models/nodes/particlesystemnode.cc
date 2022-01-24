@@ -14,7 +14,6 @@
 #include "particles/particlecontext.h"
 #include "clustering/clustercontext.h"
 #include "lighting/lightcontext.h"
-#include "models/modelcontext.h"
 
 #include "particle.h"
 

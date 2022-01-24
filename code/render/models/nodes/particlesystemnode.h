@@ -19,6 +19,7 @@
 //------------------------------------------------------------------------------
 namespace Models
 {
+class ModelContext;
 class ParticleSystemNode : public ShaderStateNode
 {
 public:
