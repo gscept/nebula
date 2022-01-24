@@ -7,7 +7,6 @@
 #include "effectfactory.h"
 #include "coregraphics/shadercache.h"
 #include "vkgraphicsdevice.h"
-#include "VkShaderCache.h"
 #include "vkshader.h"
 
 #include "shared.h"
