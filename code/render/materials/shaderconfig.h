@@ -29,7 +29,7 @@ struct ShaderConfigVariant
         , mem(nullptr)
     {};
     /// Nullptr constructor
-    ShaderConfigVariant(nullptr_t)
+    ShaderConfigVariant(std::nullptr_t)
         : type(Type::Invalid)
         , mem(nullptr)
     {}
