@@ -1,0 +1,19 @@
+namespace Navigation;
+
+table Agent
+{
+	name : string;
+	comment : string;
+	agent_radius : float;
+	agent_height : float;
+	agent_max_climb : float;
+}
+
+table AgentKinds
+{
+	agents : [Agent];
+}
+
+root_type AgentKinds;
+file_identifier "NAVA";
+file_extension "navagents";
