@@ -396,9 +396,6 @@ GraphicsServer::BeginFrame()
     // begin frame
     CoreGraphics::BeginFrame(this->frameContext.frameIndex);
 
-    // Open up for constant updates
-    CoreGraphics::UnlockConstantUpdates();
-
     // update frame context after begin frame
     this->frameContext.bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
@@ -590,6 +587,19 @@ GraphicsServer::EndFrame()
             this->contexts[i]->OnAfterFrame(this->frameContext);
     }
     N_MARKER_END();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::NewFrame()
+{
+    // Wait and get new frame
+    CoreGraphics::NewFrame();
+
+    // Open up for constant updates after waiting
+    CoreGraphics::UnlockConstantUpdates();
 }
 
 //------------------------------------------------------------------------------

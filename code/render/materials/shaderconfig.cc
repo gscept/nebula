@@ -71,7 +71,7 @@ ShaderConfig::Setup()
 			}
 			else
 			{
-				this->constantsByBatch[*it.val].Add(constant.name, { constant.name, constant.defaultValue, nullptr, nullptr, constant.defaultValue.GetType(), false, InvalidIndex, InvalidIndex, InvalidIndex });
+				this->constantsByBatch[*it.val].Add(constant.name, { constant.name, constant.def, nullptr, nullptr, false, InvalidIndex, InvalidIndex, InvalidIndex });
 			}
 		}
 
@@ -187,7 +187,7 @@ ShaderConfig::CreateSurface()
 		{
 			const ShaderConfigConstant& constant = constants.ValueAtIndex(j);
 			SurfaceConstant surConst;
-			surConst.defaultValue = constant.defaultValue;
+			surConst.defaultValue = constant.def;
 			surConst.binding = constant.offset;
 			surConst.bufferIndex = InvalidIndex;
 			surConst.instanceConstant = false;
@@ -328,7 +328,7 @@ ShaderConfig::GetSurfaceConstantInstanceIndex(const MaterialInstanceId sur, cons
 //------------------------------------------------------------------------------
 /**
 */
-const Util::Variant 
+const ShaderConfigVariant
 ShaderConfig::GetSurfaceConstantDefault(const MaterialId sur, IndexT idx)
 {
 	return (*this->surfaceAllocator.Get<Constants>(sur.id).Begin())[idx].defaultValue;
@@ -347,7 +347,7 @@ ShaderConfig::GetSurfaceTextureDefault(const MaterialId sur, IndexT idx)
 /**
 */
 void
-ShaderConfig::SetSurfaceConstant(const MaterialId sur, IndexT name, const Util::Variant& value)
+ShaderConfig::SetSurfaceConstant(const MaterialId sur, IndexT name, const ShaderConfigVariant& value)
 {
 	auto it = this->batchToIndexMap.Begin();
 	while (it != this->batchToIndexMap.End())
@@ -356,7 +356,10 @@ ShaderConfig::SetSurfaceConstant(const MaterialId sur, IndexT name, const Util::
 		if (constant.buffer != CoreGraphics::InvalidBufferId && constant.binding != UINT_MAX)
 		{
 			n_assert(!constant.instanceConstant);
-			CoreGraphics::BufferUpdate(constant.buffer, value, constant.binding);
+            if (value.type == ShaderConfigVariant::Type::TextureHandle)
+                CoreGraphics::BufferUpdate(constant.buffer, value.Get<ShaderConfigVariant::TextureHandleTuple>().handle, constant.binding);
+            else
+                CoreGraphics::BufferUpdate(constant.buffer, value.mem, ShaderConfigVariant::TypeToSize(value.type), constant.binding);
 		}
 		it++;
 	}

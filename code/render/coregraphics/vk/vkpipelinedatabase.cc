@@ -64,7 +64,7 @@ VkPipelineDatabase::SetPass(const CoreGraphics::PassId pass)
     }
     else
     {
-        this->ct1 = n_new(Tier1Node);
+        this->ct1 = tierNodeAllocator.Alloc<Tier1Node>();
         this->tier1.Add(pass, this->ct1);
     }
 }
@@ -84,7 +84,7 @@ VkPipelineDatabase::SetSubpass(uint32_t subpass)
     }
     else
     {
-        this->ct2 = n_new(Tier2Node);
+        this->ct2 = tierNodeAllocator.Alloc<Tier2Node>();
         this->ct1->children.Add(subpass, this->ct2);
     }
 }
@@ -105,7 +105,7 @@ VkPipelineDatabase::SetShader(const CoreGraphics::ShaderProgramId program, const
     }
     else
     {
-        this->ct3 = n_new(Tier3Node);
+        this->ct3 = tierNodeAllocator.Alloc<Tier3Node>();
         this->ct2->children.Add(program, this->ct3);
         this->SetVertexLayout(this->currentVertexLayout);
     }
@@ -115,7 +115,7 @@ VkPipelineDatabase::SetShader(const CoreGraphics::ShaderProgramId program, const
 /**
 */
 void
-VkPipelineDatabase::SetVertexLayout(VkPipelineVertexInputStateCreateInfo* layout)
+VkPipelineDatabase::SetVertexLayout(const VkPipelineVertexInputStateCreateInfo* layout)
 {
     this->currentVertexLayout = layout;
     IndexT index = this->ct3->children.FindIndex(layout);
@@ -126,7 +126,7 @@ VkPipelineDatabase::SetVertexLayout(VkPipelineVertexInputStateCreateInfo* layout
     }
     else
     {
-        this->ct4 = n_new(Tier4Node);
+        this->ct4 = tierNodeAllocator.Alloc<Tier4Node>();
         this->ct3->children.Add(layout, this->ct4);
         this->SetInputLayout(this->currentInputAssemblyInfo);
     }
@@ -136,7 +136,7 @@ VkPipelineDatabase::SetVertexLayout(VkPipelineVertexInputStateCreateInfo* layout
 /**
 */
 void
-VkPipelineDatabase::SetInputLayout(VkPipelineInputAssemblyStateCreateInfo* input)
+VkPipelineDatabase::SetInputLayout(const VkPipelineInputAssemblyStateCreateInfo* input)
 {
     this->currentInputAssemblyInfo = input;
     IndexT index = this->ct4->children.FindIndex(input);
@@ -146,7 +146,7 @@ VkPipelineDatabase::SetInputLayout(VkPipelineInputAssemblyStateCreateInfo* input
     }
     else
     {
-        this->ct5 = n_new(Tier5Node);
+        this->ct5 = tierNodeAllocator.Alloc<Tier5Node>();
         this->ct4->children.Add(input, this->ct5);
     }
 }
@@ -209,6 +209,24 @@ VkPipelineDatabase::GetCompiledPipeline()
     }
 
     return this->currentPipeline;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkPipeline
+VkPipelineDatabase::GetCompiledPipeline(
+    const CoreGraphics::PassId pass
+    , const uint32_t subpass
+    , const CoreGraphics::ShaderProgramId program
+    , const VkGraphicsPipelineCreateInfo& gfxPipe)
+{
+    this->SetPass(pass);
+    this->SetSubpass(subpass);
+    this->SetShader(program, gfxPipe);
+    this->SetVertexLayout(gfxPipe.pVertexInputState);
+    this->SetInputLayout(gfxPipe.pInputAssemblyState);
+    return this->GetCompiledPipeline();
 }
 
 //------------------------------------------------------------------------------

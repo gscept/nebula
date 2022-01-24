@@ -11,7 +11,6 @@
 #include "ids/id.h"
 #include "ids/idpool.h"
 #include "util/stringatom.h"
-#include "util/variant.h"
 #include "coregraphics/config.h"
 #include "coregraphics/submissioncontext.h"
 #include "gpubuffertypes.h"
@@ -104,6 +103,7 @@ void BufferUnmap(const BufferId id);
 
 /// update buffer data
 void BufferUpdate(const BufferId id, const void* data, const uint size, const uint offset = 0);
+
 /// update buffer directly on command buffer during frame update, asserts if size is too big
 void BufferUpload(const BufferId id, const void* data, const uint size, const uint offset, const CoreGraphics::QueueType queue = GraphicsQueueType);
 /// update buffer on command buffer in submission context, splits the size into chunks if necessary
@@ -133,16 +133,6 @@ inline T*
 BufferMap(const BufferId id)
 {
     return reinterpret_cast<T*>(BufferMap(id));
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<>
-inline void 
-BufferUpdate(const BufferId id, const Util::Variant& data, const uint offset)
-{
-    BufferUpdate(id, data.AsVoidPtr(), data.Size(), offset);
 }
 
 //------------------------------------------------------------------------------

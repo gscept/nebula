@@ -93,6 +93,8 @@ public:
     void EndViews();
     /// End the frame and submit
     void EndFrame();
+    /// Progress to next frame
+    void NewFrame();
 
     /// get total time in seconds
     const Timing::Time GetTime() const;

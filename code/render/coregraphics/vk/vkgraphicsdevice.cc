@@ -39,20 +39,7 @@
 namespace Vulkan
 {
 
-enum class PipelineBuildBits : uint
-{
-    NoInfoSet                       = 0,
-    ShaderInfoSet                   = N_BIT(0),
-    VertexLayoutInfoSet             = N_BIT(1),
-    FramebufferLayoutInfoSet        = N_BIT(2),
-    InputLayoutInfoSet              = N_BIT(3),
 
-    AllInfoSet                      = ShaderInfoSet | VertexLayoutInfoSet | FramebufferLayoutInfoSet | InputLayoutInfoSet,
-
-    PipelineBuilt                   = N_BIT(4)
-};
-__ImplementEnumBitOperators(PipelineBuildBits);
-__ImplementEnumComparisonOperators(PipelineBuildBits);
 
 struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 {
@@ -145,7 +132,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     VkPipelineLayout currentGraphicsPipelineLayout;
     VkPipelineLayout currentComputePipelineLayout;
     VkPipeline currentPipeline;
-    PipelineBuildBits currentPipelineBits;
+    
     uint currentStencilFrontRef, currentStencilBackRef, currentStencilReadMask, currentStencilWriteMask;
 
     Util::FixedArray<Util::Array<VkBuffer>> delayedDeleteBuffers;
@@ -169,6 +156,24 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     _declare_timer(DebugTimer);
 
 } state;
+
+struct GraphicsDeviceThreadState : CoreGraphics::GraphicsDeviceThreadState
+{
+    IndexT currentDevice;
+
+    Util::FixedArray<CoreGraphics::ShaderProgramId> currentShaderPrograms;
+    CoreGraphics::ShaderFeature::Mask currentShaderMask;
+
+    CoreGraphics::VertexLayoutId currentVertexLayout;
+    CoreGraphics::ShaderProgramId currentVertexLayoutShader;
+
+    VkGraphicsPipelineCreateInfo currentPipelineInfo;
+    VkPipelineLayout currentGraphicsPipelineLayout;
+    VkPipelineLayout currentComputePipelineLayout;
+    VkPipeline currentPipeline;
+
+    uint currentStencilFrontRef, currentStencilBackRef, currentStencilReadMask, currentStencilWriteMask;
+} thread_local threadState;
 
 VkDebugUtilsMessengerEXT VkErrorDebugMessageHandle = nullptr;
 PFN_vkCreateDebugUtilsMessengerEXT VkCreateDebugMessenger = nullptr;
@@ -588,10 +593,9 @@ UpdatePushRanges(const VkShaderStageFlags& stages, const VkPipelineLayout& layou
 void 
 BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const CoreGraphics::ShaderProgramId programId)
 {
-    if (state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != programId || !AllBits(state.currentPipelineBits, PipelineBuildBits::ShaderInfoSet))
+    if (state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] != programId || !AllBits(state.currentPipelineBits, CoreGraphics::PipelineBuildBits::ShaderInfoSet))
     {
-        state.database.SetShader(programId, shader);
-        state.currentPipelineBits |= PipelineBuildBits::ShaderInfoSet;
+        state.currentPipelineBits |= CoreGraphics::PipelineBuildBits::ShaderInfoSet;
 
         state.blendInfo.pAttachments = shader.pColorBlendState->pAttachments;
         memcpy(state.blendInfo.blendConstants, shader.pColorBlendState->blendConstants, sizeof(float) * 4);
@@ -606,7 +610,7 @@ BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const CoreG
         state.currentPipelineInfo.stageCount = shader.stageCount;
         state.currentPipelineInfo.pStages = shader.pStages;
         state.currentPipelineInfo.layout = shader.layout;
-        state.currentPipelineBits &= ~PipelineBuildBits::PipelineBuilt;
+        state.currentPipelineBits &= ~CoreGraphics::PipelineBuildBits::PipelineBuilt;
         state.currentShaderPrograms[CoreGraphics::GraphicsQueueType] = programId;
     }
 }
@@ -617,13 +621,11 @@ BindGraphicsPipelineInfo(const VkGraphicsPipelineCreateInfo& shader, const CoreG
 void 
 SetVertexLayoutPipelineInfo(VkPipelineVertexInputStateCreateInfo* vertexLayout)
 {
-    if (state.currentPipelineInfo.pVertexInputState != vertexLayout || !AllBits(state.currentPipelineBits, PipelineBuildBits::VertexLayoutInfoSet))
+    if (state.currentPipelineInfo.pVertexInputState != vertexLayout || !AllBits(state.currentPipelineBits, CoreGraphics::PipelineBuildBits::VertexLayoutInfoSet))
     {
-        state.database.SetVertexLayout(vertexLayout);
-        state.currentPipelineBits |= PipelineBuildBits::VertexLayoutInfoSet;
+        state.currentPipelineBits |= CoreGraphics::PipelineBuildBits::VertexLayoutInfoSet;
         state.currentPipelineInfo.pVertexInputState = vertexLayout;
-
-        state.currentPipelineBits &= ~PipelineBuildBits::PipelineBuilt;
+        state.currentPipelineBits &= ~CoreGraphics::PipelineBuildBits::PipelineBuilt;
     }
 }
 
@@ -633,11 +635,11 @@ SetVertexLayoutPipelineInfo(VkPipelineVertexInputStateCreateInfo* vertexLayout)
 void 
 SetFramebufferLayoutInfo(const VkGraphicsPipelineCreateInfo& framebufferLayout)
 {
-    state.currentPipelineBits |= PipelineBuildBits::FramebufferLayoutInfoSet;
+    state.currentPipelineBits |= CoreGraphics::PipelineBuildBits::FramebufferLayoutInfoSet;
     state.currentPipelineInfo.renderPass = framebufferLayout.renderPass;
     state.currentPipelineInfo.subpass = framebufferLayout.subpass;
     state.currentPipelineInfo.pViewportState = framebufferLayout.pViewportState;
-    state.currentPipelineBits &= ~PipelineBuildBits::PipelineBuilt;
+    state.currentPipelineBits &= ~CoreGraphics::PipelineBuildBits::PipelineBuilt;
 }
 
 //------------------------------------------------------------------------------
@@ -646,12 +648,11 @@ SetFramebufferLayoutInfo(const VkGraphicsPipelineCreateInfo& framebufferLayout)
 void 
 SetInputLayoutInfo(VkPipelineInputAssemblyStateCreateInfo* inputLayout)
 {
-    if (state.currentPipelineInfo.pInputAssemblyState != inputLayout || !AllBits(state.currentPipelineBits, PipelineBuildBits::InputLayoutInfoSet))
+    if (state.currentPipelineInfo.pInputAssemblyState != inputLayout || !AllBits(state.currentPipelineBits, CoreGraphics::PipelineBuildBits::InputLayoutInfoSet))
     {
-        state.database.SetInputLayout(inputLayout);
-        state.currentPipelineBits |= PipelineBuildBits::InputLayoutInfoSet;
+        state.currentPipelineBits |= CoreGraphics::PipelineBuildBits::InputLayoutInfoSet;
         state.currentPipelineInfo.pInputAssemblyState = inputLayout;
-        state.currentPipelineBits &= ~PipelineBuildBits::PipelineBuilt;
+        state.currentPipelineBits &= ~CoreGraphics::PipelineBuildBits::PipelineBuilt;
     }
 }
 
@@ -661,8 +662,12 @@ SetInputLayoutInfo(VkPipelineInputAssemblyStateCreateInfo* inputLayout)
 void 
 CreateAndBindGraphicsPipeline()
 {
-    VkPipeline pipeline = state.database.GetCompiledPipeline();
+    N_MARKER_BEGIN(GetOrCreateGraphicsPipeline, Graphics);
+
+    VkPipeline pipeline = state.database.GetCompiledPipeline(state.pass, state.passInfo.subpass, state.currentShaderPrograms[CoreGraphics::GraphicsQueueType], state.currentPipelineInfo);
     _incr_counter(state.NumPipelinesBuilt, 1);
+
+    N_MARKER_END();
 
     if (state.drawThread)
     { 
@@ -747,7 +752,7 @@ void
 UnbindPipeline()
 {
     state.currentBindPoint = CoreGraphics::InvalidPipeline;
-    state.currentPipelineBits &= ~PipelineBuildBits::ShaderInfoSet;
+    state.currentPipelineBits &= ~CoreGraphics::PipelineBuildBits::ShaderInfoSet;
 }
 
 //------------------------------------------------------------------------------
@@ -1484,6 +1489,7 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     for (i = 0; i < info.numBufferedFrames; i++)
     {
         Vulkan::GraphicsDeviceState::ConstantsRingBuffer& cboRing = state.constantBufferRings[i];
+        cboRing.allowConstantAllocation = true;
 
         IndexT j;
         for (j = 0; j < NumConstantBufferTypes; j++)
@@ -1974,57 +1980,7 @@ BeginFrame(IndexT frameIndex)
     }
     state.inBeginFrame = true;
 
-    // clean up delayed delete objects
-    IndexT i;
-    for (i = 0; i < state.delayedDeleteBuffers[state.currentBufferedFrameIndex].Size(); i++)
-        vkDestroyBuffer(state.devices[state.currentDevice], state.delayedDeleteBuffers[state.currentBufferedFrameIndex][i], nullptr);
-    state.delayedDeleteBuffers[state.currentBufferedFrameIndex].Clear();
-    for (i = 0; i < state.delayedDeleteImages[state.currentBufferedFrameIndex].Size(); i++)
-        vkDestroyImage(state.devices[state.currentDevice], state.delayedDeleteImages[state.currentBufferedFrameIndex][i], nullptr);
-    state.delayedDeleteImages[state.currentBufferedFrameIndex].Clear();
-    for (i = 0; i < state.delayedDeleteImageViews[state.currentBufferedFrameIndex].Size(); i++)
-        vkDestroyImageView(state.devices[state.currentDevice], state.delayedDeleteImageViews[state.currentBufferedFrameIndex][i], nullptr);
-    state.delayedDeleteImageViews[state.currentBufferedFrameIndex].Clear();
-
-    N_MARKER_BEGIN(WaitForPresent, Wait);
-
-    // slight limitation to only using one back buffer, so really we should do one begin and end frame per window...
-    n_assert(state.backBuffers.Size() == 1);
-    CoreGraphics::TextureSwapBuffers(state.backBuffers[0]);
-    state.currentBufferedFrameIndex = (state.currentBufferedFrameIndex + 1) % state.maxNumBufferedFrames;
-    state.queriesRingOffset = state.MaxQueriesPerFrame * state.currentBufferedFrameIndex;
-
-    N_MARKER_END();
-
-    N_MARKER_BEGIN(WaitForLastFrame, Wait);
-
-    // cycle submissions, will wait for the fence to finish
-    CoreGraphics::SubmissionContextNextCycle(state.gfxSubmission, [](uint64 index)
-        {
-            state.subcontextHandler.Wait(GraphicsQueueType, index);
-        }); 
-
-    CoreGraphics::SubmissionContextNextCycle(state.computeSubmission, [](uint64 index)
-        {
-            state.subcontextHandler.Wait(ComputeQueueType, index);
-        });
-
-    CoreGraphics::SubmissionContextPoll(state.resourceSubmissionContext);
-    CoreGraphics::SubmissionContextPoll(state.handoverSubmissionContext);
-
-    N_MARKER_END();
-
     _ProcessQueriesBeginFrame();
-
-    // update constant buffer offsets
-    Vulkan::GraphicsDeviceState::ConstantsRingBuffer& nextCboRing = state.constantBufferRings[state.currentBufferedFrameIndex];
-    for (IndexT i = 0; i < CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes; i++)
-    {
-        nextCboRing.cboGfxStartAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
-        nextCboRing.cboGfxEndAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
-        nextCboRing.cboComputeStartAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
-        nextCboRing.cboComputeEndAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
-    }
 
     // reset current thread
     state.currentPipelineBits = PipelineBuildBits::NoInfoSet;
@@ -2108,6 +2064,7 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
         int size = cboEndAddress[i] - cboStartAddress[i];
         if (size > 0)
         {
+            // Flush mapped memory for the previous submission
             VkMappedMemoryRange range;
             range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
             range.pNext = nullptr;
@@ -2118,6 +2075,7 @@ BeginSubmission(CoreGraphics::QueueType queue, CoreGraphics::QueueType waitQueue
             n_assert(res == VK_SUCCESS);
             cboEndAddress[i] = Math::align(cboEndAddress[i], state.deviceProps[state.currentDevice].limits.nonCoherentAtomSize);
 
+            // And then copy from staging buffer to GPU buffer
             VkBufferCopy copy;
             copy.srcOffset = copy.dstOffset = cboStartAddress[i];
             copy.size = range.size;
@@ -2172,8 +2130,6 @@ BeginPass(const CoreGraphics::PassId pass, PassRecordMode mode)
 
     // set info
     SetFramebufferLayoutInfo(PassGetVkFramebufferInfo(pass));
-    state.database.SetPass(pass);
-    state.database.SetSubpass(0);
 
 #if NEBULA_ENABLE_MT_DRAW
     const Util::FixedArray<VkViewport>& viewports = PassGetVkViewports(state.pass);
@@ -2248,7 +2204,6 @@ SetToNextSubpass(PassRecordMode mode)
     n_assert(!state.inBeginBatch);
     n_assert(state.pass != InvalidPassId);
     SetFramebufferLayoutInfo(PassGetVkFramebufferInfo(state.pass));
-    state.database.SetSubpass(state.currentPipelineInfo.subpass);
     state.passInfo.subpass = state.currentPipelineInfo.subpass;
 
 #if NEBULA_ENABLE_MT_DRAW
@@ -3517,6 +3472,70 @@ WaitForAllQueues()
     state.subcontextHandler.WaitIdle(ComputeQueueType);
     state.subcontextHandler.WaitIdle(TransferQueueType);
     state.subcontextHandler.WaitIdle(SparseQueueType);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+Swap(IndexT i)
+{
+    N_MARKER_BEGIN(WaitForPresent, Wait);
+    n_assert(state.backBuffers.Size() == 1);
+    CoreGraphics::TextureSwapBuffers(state.backBuffers[i]);
+    N_MARKER_END();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+NewFrame()
+{
+    // Progress to next frame and wait for that buffer
+    state.currentBufferedFrameIndex = (state.currentBufferedFrameIndex + 1) % state.maxNumBufferedFrames;
+    state.queriesRingOffset = state.MaxQueriesPerFrame * state.currentBufferedFrameIndex;
+
+    N_MARKER_BEGIN(WaitForBuffer, Wait);
+
+    // cycle submissions, will wait for the fence to finish
+    CoreGraphics::SubmissionContextNextCycle(state.gfxSubmission, [](uint64 index)
+    {
+        state.subcontextHandler.Wait(GraphicsQueueType, index);
+    });
+
+    CoreGraphics::SubmissionContextNextCycle(state.computeSubmission, [](uint64 index)
+    {
+        state.subcontextHandler.Wait(ComputeQueueType, index);
+    });
+
+    // Shouldn't be necessary
+    CoreGraphics::SubmissionContextPoll(state.resourceSubmissionContext);
+    CoreGraphics::SubmissionContextPoll(state.handoverSubmissionContext);
+
+    // update constant buffer offsets
+    Vulkan::GraphicsDeviceState::ConstantsRingBuffer& nextCboRing = state.constantBufferRings[state.currentBufferedFrameIndex];
+    for (IndexT i = 0; i < CoreGraphics::GlobalConstantBufferType::NumConstantBufferTypes; i++)
+    {
+        nextCboRing.cboGfxStartAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
+        nextCboRing.cboGfxEndAddress[i] = state.globalGraphicsConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
+        nextCboRing.cboComputeStartAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
+        nextCboRing.cboComputeEndAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
+    }
+
+    // clean up delayed delete objects
+    IndexT i;
+    for (i = 0; i < state.delayedDeleteBuffers[state.currentBufferedFrameIndex].Size(); i++)
+        vkDestroyBuffer(state.devices[state.currentDevice], state.delayedDeleteBuffers[state.currentBufferedFrameIndex][i], nullptr);
+    state.delayedDeleteBuffers[state.currentBufferedFrameIndex].Clear();
+    for (i = 0; i < state.delayedDeleteImages[state.currentBufferedFrameIndex].Size(); i++)
+        vkDestroyImage(state.devices[state.currentDevice], state.delayedDeleteImages[state.currentBufferedFrameIndex][i], nullptr);
+    state.delayedDeleteImages[state.currentBufferedFrameIndex].Clear();
+    for (i = 0; i < state.delayedDeleteImageViews[state.currentBufferedFrameIndex].Size(); i++)
+        vkDestroyImageView(state.devices[state.currentDevice], state.delayedDeleteImageViews[state.currentBufferedFrameIndex][i], nullptr);
+    state.delayedDeleteImageViews[state.currentBufferedFrameIndex].Clear();
+
+    N_MARKER_END();
 }
 
 //------------------------------------------------------------------------------

@@ -43,6 +43,8 @@ private:
     static FrameOp* ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, JzonValue* node);
     /// parse barrier
     static FrameOp* ParseBarrier(const Ptr<Frame::FrameScript>& script, JzonValue* node);
+    /// Parse swap
+    static FrameOp* ParseSwap(const Ptr<Frame::FrameScript>& script, JzonValue* node);
 
     /// parse pass
     static FrameOp* ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* node);

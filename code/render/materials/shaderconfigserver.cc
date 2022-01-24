@@ -214,11 +214,10 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
                     if (ptype.BeginsWithString("textureHandle"))
                     {
                         ShaderConfigConstant constant;
-                        constant.type = Util::Variant::UInt64;
+                        constant.def.type = ShaderConfigVariant::Type::TextureHandle;
+                        constant.def = this->AllocateVariantMemory(constant.def.type);
                         auto res = Resources::CreateResource(reader->GetString("defaultValue") + NEBULA_TEXTURE_EXTENSION, "material types", nullptr, nullptr, true);
-                        constant.defaultValue = res.HashCode64();
-                        constant.min = -1;
-                        constant.max = -1;
+                        constant.def.Set(res.HashCode64());
 
                         constant.system = system;
                         constant.name = name;
@@ -251,36 +250,40 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
                     else
                     {
                         ShaderConfigConstant constant;
-                        constant.type = Util::Variant::StringToType(ptype);
-                        switch (constant.type)
+                        constant.def.type = constant.min.type = constant.max.type = ShaderConfigVariant::StringToType(ptype);
+                        constant.def = this->AllocateVariantMemory(constant.def.type);
+                        constant.min = this->AllocateVariantMemory(constant.min.type);
+                        constant.max = this->AllocateVariantMemory(constant.max.type);
+
+                        switch (constant.def.type)
                         {
-                        case Util::Variant::Float:
-                            constant.defaultValue.SetFloat(reader->GetOptFloat("defaultValue", 0.0f));
-                            constant.min.SetFloat(reader->GetOptFloat("min", 0.0f));
-                            constant.max.SetFloat(reader->GetOptFloat("max", 1.0f));
+                        case ShaderConfigVariant::Type::Float:
+                            constant.def.Set(reader->GetOptFloat("defaultValue", 0.0f));
+                            constant.min.Set(reader->GetOptFloat("min", 0.0f));
+                            constant.max.Set(reader->GetOptFloat("max", 1.0f));
                             break;
-                        case Util::Variant::Int:
-                            constant.defaultValue.SetInt(reader->GetOptInt("defaultValue", 0));
-                            constant.min.SetInt(reader->GetOptInt("min", 0));
-                            constant.max.SetInt(reader->GetOptInt("max", 1));
+                        case ShaderConfigVariant::Type::Int:
+                            constant.def.Set(reader->GetOptInt("defaultValue", 0));
+                            constant.min.Set(reader->GetOptInt("min", 0));
+                            constant.max.Set(reader->GetOptInt("max", 1));
                             break;
-                        case Util::Variant::Bool:
-                            constant.defaultValue.SetBool(reader->GetOptBool("defaultValue", false));
-                            constant.min.SetBool(false);
-                            constant.max.SetBool(true);
+                        case ShaderConfigVariant::Type::Bool:
+                            constant.def.Set(reader->GetOptBool("defaultValue", false));
+                            constant.min.Set(false);
+                            constant.max.Set(true);
                             break;
-                        case Util::Variant::Vec4:
-                            constant.defaultValue.SetVec4(reader->GetOptVec4("defaultValue", Math::vec4(0, 0, 0, 0)));
-                            constant.min.SetVec4(reader->GetOptVec4("min", Math::vec4(0, 0, 0, 0)));
-                            constant.max.SetVec4(reader->GetOptVec4("max", Math::vec4(1, 1, 1, 1)));
+                        case ShaderConfigVariant::Type::Vec4:
+                            constant.def.Set(reader->GetOptVec4("defaultValue", Math::vec4(0, 0, 0, 0)));
+                            constant.min.Set(reader->GetOptVec4("min", Math::vec4(0, 0, 0, 0)));
+                            constant.max.Set(reader->GetOptVec4("max", Math::vec4(1, 1, 1, 1)));
                             break;
-                        case Util::Variant::Vec2:
-                            constant.defaultValue.SetVec2(reader->GetOptVec2("defaultValue", Math::vec2(0, 0)));
-                            constant.min.SetVec2(reader->GetOptVec2("min", Math::vec2(0, 0)));
-                            constant.max.SetVec2(reader->GetOptVec2("max", Math::vec2(1, 1)));
+                        case ShaderConfigVariant::Type::Vec2:
+                            constant.def.Set(reader->GetOptVec2("defaultValue", Math::vec2(0, 0)));
+                            constant.min.Set(reader->GetOptVec2("min", Math::vec2(0, 0)));
+                            constant.max.Set(reader->GetOptVec2("max", Math::vec2(1, 1)));
                             break;
-                        case Util::Variant::Mat4:
-                            constant.defaultValue.SetMat4(reader->GetOptMat4("defaultValue", Math::mat4()));
+                        case ShaderConfigVariant::Type::Mat4:
+                            constant.def.Set(reader->GetOptMat4("defaultValue", Math::mat4()));
                             break;
                         default:
                             n_error("Unknown material parameter type %s\n", ptype.AsCharPtr());
@@ -305,6 +308,26 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
         return true;
     }
     return false;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ShaderConfigVariant
+ShaderConfigServer::AllocateVariantMemory(const ShaderConfigVariant::Type type)
+{
+    ShaderConfigVariant ret;
+
+    // Type is defined as the allocation size, so safe to just convert it like this:
+    uint32_t allocationSize = (uint32_t)ShaderConfigVariant::TypeToSize(type);
+    n_assert(allocationSize != 0xFFFFFFFF);
+
+    this->variantAllocatorLock.Enter();
+    ret.mem = this->shaderConfigVariantAllocator.Alloc(allocationSize);
+    this->variantAllocatorLock.Leave();
+
+    ret.type = type;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
