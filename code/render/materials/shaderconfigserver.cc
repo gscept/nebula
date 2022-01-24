@@ -214,7 +214,7 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
                     if (ptype.BeginsWithString("textureHandle"))
                     {
                         ShaderConfigConstant constant;
-                        constant.def.type = ShaderConfigVariant::Type::TextureHandle;
+                        constant.def.SetType(ShaderConfigVariant::Type::TextureHandle);
                         constant.def = this->AllocateVariantMemory(constant.def.type);
                         auto res = Resources::CreateResource(reader->GetString("defaultValue") + NEBULA_TEXTURE_EXTENSION, "material types", nullptr, nullptr, true);
                         constant.def.Set(res.HashCode64());
@@ -250,12 +250,15 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
                     else
                     {
                         ShaderConfigConstant constant;
-                        constant.def.type = constant.min.type = constant.max.type = ShaderConfigVariant::StringToType(ptype);
+                        auto ty = ShaderConfigVariant::StringToType(ptype);
+                        constant.def.SetType(ty);
+                        constant.min.SetType(ty);
+                        constant.max.SetType(ty);
                         constant.def = this->AllocateVariantMemory(constant.def.type);
                         constant.min = this->AllocateVariantMemory(constant.min.type);
                         constant.max = this->AllocateVariantMemory(constant.max.type);
 
-                        switch (constant.def.type)
+                        switch (constant.def.GetType())
                         {
                         case ShaderConfigVariant::Type::Float:
                             constant.def.Set(reader->GetOptFloat("defaultValue", 0.0f));
@@ -314,7 +317,7 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
 /**
 */
 ShaderConfigVariant
-ShaderConfigServer::AllocateVariantMemory(const ShaderConfigVariant::Type type)
+ShaderConfigServer::AllocateVariantMemory(const ShaderConfigVariant::InternalType type)
 {
     ShaderConfigVariant ret;
 
@@ -322,9 +325,13 @@ ShaderConfigServer::AllocateVariantMemory(const ShaderConfigVariant::Type type)
     uint32_t allocationSize = (uint32_t)ShaderConfigVariant::TypeToSize(type);
     n_assert(allocationSize != 0xFFFFFFFF);
 
-    this->variantAllocatorLock.Enter();
-    ret.mem = this->shaderConfigVariantAllocator.Alloc(allocationSize);
-    this->variantAllocatorLock.Leave();
+    // Only allocate memory if we can't store the data in the void pointer
+    if (allocationSize > sizeof(void*))
+    {
+        this->variantAllocatorLock.Enter();
+        ret.mem = this->shaderConfigVariantAllocator.Alloc(allocationSize);
+        this->variantAllocatorLock.Leave();
+    }
 
     ret.type = type;
     return ret;

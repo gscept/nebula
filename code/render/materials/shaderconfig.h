@@ -25,16 +25,16 @@ struct ShaderConfigVariant
 {
     /// Nullptr constructor
     ShaderConfigVariant()
-        : type(Type::Invalid)
+        : type({ Type::Invalid })
         , mem(nullptr)
     {};
     /// Nullptr constructor
     ShaderConfigVariant(std::nullptr_t)
-        : type(Type::Invalid)
+        : type({ Type::Invalid })
         , mem(nullptr)
     {}
 
-    enum class Type
+    enum class Type : byte
     {
         Invalid
         , TextureHandle
@@ -46,7 +46,11 @@ struct ShaderConfigVariant
         , Bool
         , Mat4
     };
-    ShaderConfigVariant::Type type;
+    struct InternalType
+    {
+        ShaderConfigVariant::Type type : 8;
+        bool needsDeref : 8;
+    } type;
     void* mem;
 
     static ShaderConfigVariant::Type StringToType(const Util::String& str)
@@ -70,9 +74,9 @@ struct ShaderConfigVariant
         uint32 handle;
     };
 
-    static uint32_t TypeToSize(const Type type)
+    static uint32_t TypeToSize(const InternalType type)
     {
-        switch (type)
+        switch (type.type)
         {
             case Type::TextureHandle:
                 return sizeof(TextureHandleTuple);
@@ -102,11 +106,58 @@ struct ShaderConfigVariant
         return 0xFFFFFFFF;
     }
 
+    /// Set type
+    void SetType(const Type& type)
+    {
+        this->type.type = type;
+        switch (type)
+        {
+#if __X86__
+            // If building on 32 bit, make sure that vec2 is also 
+            case Type::Vec2:
+#endif
+            case Type::TextureHandle:
+            case Type::Mat4:
+            case Type::Vec4:
+                this->type.needsDeref = true;
+                break;
+            default:
+                this->type.needsDeref = false;
+                break;
+        }
+    }
+
+    /// Get type
+    const Type GetType() const
+    {
+        return this->type.type;
+    }
+
+    /// Get pointer
+    const void* Get() const
+    {
+        return this->type.needsDeref ? this->mem : reinterpret_cast<const void*>(&this->mem);
+    }
 
     /// Get
-    template <typename T> const T& Get() const { return *reinterpret_cast<T*>(mem); }
+    template <typename T> const T& Get() const 
+    {
+        return this->type.needsDeref ? *reinterpret_cast<T*>(this->mem) : reinterpret_cast<const T&>(this->mem);
+    }
     /// Set
-    template <typename T> void Set(const T& data) const { memcpy(this->mem, &data, TypeToSize(this->type)); }
+    template <typename T> void Set(const T& data)
+    { 
+        auto size = TypeToSize(this->type);
+        switch (this->type.needsDeref)
+        {
+            case true:
+                memcpy(this->mem, &data, size);
+                return;
+            case false:
+                memcpy(reinterpret_cast<void*>(&this->mem), &data, size);
+                return;
+        }
+    }
 };
 
 struct ShaderConfigTexture

@@ -77,7 +77,7 @@ MaterialCache::LoadFromStream(const Resources::ResourceId id, const Util::String
             {
                 ShaderConfigVariant defaultVal = type->GetSurfaceConstantDefault(sid, binding);
                 ShaderConfigVariant materialVal = ShaderConfigServer::Instance()->AllocateVariantMemory(defaultVal.type);
-                switch (defaultVal.type)
+                switch (defaultVal.GetType())
                 {
                 case ShaderConfigVariant::Type::Float:
                     materialVal.Set(reader->GetOptFloat("value", defaultVal.Get<float>()));
@@ -113,7 +113,8 @@ MaterialCache::LoadFromStream(const Resources::ResourceId id, const Util::String
                             [type, sid, binding, id, &minLod, materialVal, this](Resources::ResourceId rid)
                             {
                                 ShaderConfigVariant::TextureHandleTuple tuple{rid.HashCode64(), CoreGraphics::TextureGetBindlessHandle(rid)};
-                                materialVal.Set(tuple);
+                                ShaderConfigVariant tmp = materialVal;
+                                tmp.Set(tuple);
                                 type->SetSurfaceConstant(sid, binding, materialVal);
                                 this->textureLoadSection.Enter();
                                 this->Get<Surface_Textures>(id.resourceId).Append(rid);
@@ -123,7 +124,8 @@ MaterialCache::LoadFromStream(const Resources::ResourceId id, const Util::String
                             [type, sid, binding, materialVal](Resources::ResourceId rid)
                             {
                                 ShaderConfigVariant::TextureHandleTuple tuple{ rid.HashCode64(), CoreGraphics::TextureGetBindlessHandle(rid) };
-                                materialVal.Set(tuple);
+                                ShaderConfigVariant tmp = materialVal;
+                                tmp.Set(tuple);
                                 type->SetSurfaceConstant(sid, binding, materialVal);
                             });
                         ShaderConfigVariant::TextureHandleTuple tuple{ tex.HashCode64(), CoreGraphics::TextureGetBindlessHandle(tex) };

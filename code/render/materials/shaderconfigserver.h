@@ -37,7 +37,7 @@ public:
     bool LoadShaderConfigs(const IO::URI& file);
 
     /// Allocate some variant memory
-    ShaderConfigVariant AllocateVariantMemory(const ShaderConfigVariant::Type type);
+    ShaderConfigVariant AllocateVariantMemory(const ShaderConfigVariant::InternalType type);
 
     /// get material
     ShaderConfig* GetShaderConfig(const Resources::ResourceName& type);
