@@ -77,13 +77,18 @@ LinuxEvent::LinuxEvent(bool manual)
 inline 
 LinuxEvent::LinuxEvent(LinuxEvent&& ev)
 {
+    int res = pthread_cond_destroy(&this->cond);
+    n_assert(0 == res);
+    res = pthread_mutex_destroy(&this->mutex);
+    n_assert(0 == res);
+
     this->mutex = ev.mutex;
     this->cond = ev.cond;
     this->manualReset = ev.manualReset;
     this->status = ev.status;
     this->status2 = ev.status2;
-    ev.mutex = nullptr;
-    ev.cond = nullptr;
+    ev.mutex = pthread_mutex_t{};
+    ev.cond = pthread_cond_t{};
     ev.status = SIGNAL_NONE;
     ev.status2 = SIGNAL_NONE;
 }

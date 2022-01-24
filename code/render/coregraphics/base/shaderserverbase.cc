@@ -5,7 +5,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coregraphics/base/shaderserverbase.h"
-#include "coregraphics/shaderpool.h"
+#include "coregraphics/shadercache.h"
 #include "coregraphics/graphicsdevice.h"
 #include "io/ioserver.h"
 #include "io/textreader.h"

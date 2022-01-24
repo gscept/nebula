@@ -6,7 +6,7 @@
 #include "vkpipelinedatabase.h"
 #include "vkshaderprogram.h"
 #include "vkpass.h"
-#include "coregraphics/shaderpool.h"
+#include "coregraphics/shadercache.h"
 
 namespace Vulkan
 {

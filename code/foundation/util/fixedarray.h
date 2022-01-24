@@ -351,17 +351,17 @@ FixedArray<TYPE>::Resize(SizeT newSize)
         {
             if (numCopy > newSize)
                 numCopy = newSize;
-            if constexpr (!std::is_trivially_copyable<TYPE>::value)
+            if constexpr (!std::is_trivially_move_assignable<TYPE>::value && std::is_move_assignable<TYPE>::value)
             {
                 IndexT i;
                 for (i = 0; i < numCopy; i++)
                 {
-                    newElements[i] = this->elements[i];
+                    newElements[i] = std::move(this->elements[i]);
                 }
             }
             else
             {
-                memcpy(newElements, this->elements, numCopy * sizeof(TYPE));
+                Memory::MoveElements(this->elements, newElements, numCopy);
             }
         }
     }

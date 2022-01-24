@@ -43,7 +43,7 @@ Jobs2Test::Run()
     portInfo.priority = UINT_MAX;
     JobSystemInit(portInfo);
 
-    volatile long waitCounters[3] = { 1,1,1 };
+    Threading::AtomicCounter waitCounters[3] = { 1,1,1 };
     EventManual finishedEvent[3];
     Threading::Event hostEvent;
     struct Context
@@ -77,10 +77,10 @@ Jobs2Test::Run()
     };
     
     // Run functions in lockstep
-    JobDispatch(fun, NumInputs, 1024, &ctx, nullptr, &waitCounters[0]);
-    JobDispatch(fun, NumInputs, 1024, &ctx, &waitCounters[0], &waitCounters[1]);
-    JobDispatch(fun, NumInputs, 1024, &ctx, &waitCounters[1], &waitCounters[2]);
-    JobDispatch(fun, NumInputs, 1024, &ctx, &waitCounters[2], nullptr, &hostEvent); // Last dispatch triggers a waitable event
+    JobDispatch(fun, NumInputs, 1024, ctx, nullptr, &waitCounters[0]);
+    JobDispatch(fun, NumInputs, 1024, ctx, { &waitCounters[0] }, &waitCounters[1]);
+    JobDispatch(fun, NumInputs, 1024, ctx, { &waitCounters[1] }, &waitCounters[2]);
+    JobDispatch(fun, NumInputs, 1024, ctx, { &waitCounters[2] }, nullptr, & hostEvent); // Last dispatch triggers a waitable event
 
     // Wait for jobs to finish
     bool didFinish = hostEvent.WaitTimeout(10000000);

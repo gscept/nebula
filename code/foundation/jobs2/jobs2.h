@@ -74,10 +74,9 @@ public:
     /// destructor
     virtual ~JobThread();
 
+    /// Signal new work available
+    void SignalWorkAvailable();
 protected:
-    template <typename CTX> friend void JobDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSize, const CTX& context, const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters, Threading::AtomicCounter* doneCounter, Threading::Event* signalEvent);
-    template <typename CTX> friend void JobDispatch(const JobFunc& func, const SizeT numInvocations, const CTX& context, const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters, Threading::AtomicCounter* doneCounter, Threading::Event* signalEvent);
-    friend void JobEndSequence(Threading::Event* signalEvent);
 
     /// override this method if your thread loop needs a wakeup call before stopping
     virtual void EmitWakeupSignal() override;
@@ -116,26 +115,6 @@ void JobSystemUninit();
 template <typename T> T* JobAlloc(SizeT count);
 /// Progress to new buffer
 void JobNewFrame();
-
-/// Dispatch job
-template <typename CTX> void JobDispatch(
-    const JobFunc& func
-    , const SizeT numInvocations
-    , const SizeT groupSize
-    , const CTX& context
-    , const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr
-    , Threading::AtomicCounter* doneCounter = nullptr
-    , Threading::Event* signalEvent = nullptr
-);
-/// Dispatch job as a single group (to be run on a single thread)
-template <typename CTX> void JobDispatch(
-    const JobFunc& func
-    , const SizeT numInvocations
-    , const CTX& context
-    , const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr
-    , Threading::AtomicCounter* doneCounter = nullptr
-    , Threading::Event* signalEvent = nullptr
-);
 
 extern Util::FixedArray<const Threading::AtomicCounter*> sequenceWaitCounters;
 
@@ -176,7 +155,15 @@ JobAlloc(SizeT count)
 /**
 */
 template <typename CTX> void
-JobDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSize, const CTX& context, const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters, Threading::AtomicCounter* doneCounter, Threading::Event* signalEvent)
+JobDispatch(
+    const JobFunc& func
+    , const SizeT numInvocations
+    , const SizeT groupSize
+    , const CTX& context
+    , const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr
+    , Threading::AtomicCounter* doneCounter = nullptr
+    , Threading::Event* signalEvent = nullptr
+)
 {
     static_assert(std::is_trivially_destructible<CTX>::value, "Job context has to be trivially destructible");
     n_assert(doneCounter != nullptr ? *doneCounter > 0 : true);
@@ -230,7 +217,7 @@ JobDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSi
     // Trigger threads to wake up and compete for jobs
     for (Ptr<JobThread>& thread : ctx.threads)
     {
-        thread->EmitWakeupSignal();
+        thread->SignalWorkAvailable();
     }
 }
 
@@ -238,7 +225,14 @@ JobDispatch(const JobFunc& func, const SizeT numInvocations, const SizeT groupSi
 /**
 */
 template <typename CTX> void
-JobDispatch(const JobFunc& func, const SizeT numInvocations, const CTX& context, const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters, Threading::AtomicCounter* doneCounter, Threading::Event* signalEvent)
+JobDispatch(
+    const JobFunc& func
+    , const SizeT numInvocations
+    , const CTX& context
+    , const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr
+    , Threading::AtomicCounter* doneCounter = nullptr
+    , Threading::Event* signalEvent = nullptr
+)
 {
     JobDispatch(func, numInvocations, numInvocations, context, waitCounters, doneCounter, signalEvent);
 }

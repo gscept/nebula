@@ -13,7 +13,7 @@
 #include "coregraphics/config.h"
 #include "coregraphics/texture.h"
 #include "effectfactory.h"
-#include "VkShaderCache.h"
+#include "vkshadercache.h"
 #include "coregraphics/graphicsdevice.h"
 #include "shared.h"
 
