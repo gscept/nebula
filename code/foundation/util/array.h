@@ -1232,8 +1232,8 @@ Array<TYPE>::Fill(IndexT first, SizeT num, const TYPE& elm)
     if ((first + num) > this->count)
     {
         this->GrowTo(first + num);
+        this->count = first + num;
     }
-    this->count = num;
  
     IndexT i;
     for (i = first; i < (first + num); i++)
