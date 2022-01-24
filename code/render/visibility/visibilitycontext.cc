@@ -413,7 +413,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 packet->surfaceInstance = context->renderables->nodeStates[index].surfaceInstance;
 #ifndef PUBLIC_BUILD
                 packet->boundingBox = context->renderables->nodeBoundingBoxes[index];
-                packet->nodeInstanceHash = context->renderables->nodes[index]->HashCode();
+                packet->nodeInstanceHash = index;
 #endif
                 memcpy(packet->offsets[0], context->renderables->nodeStates[index].resourceTableOffsets.Begin(), context->renderables->nodeStates[index].resourceTableOffsets.ByteSize());
                 packet->slots[0] = NEBULA_DYNAMIC_OFFSET_GROUP;
