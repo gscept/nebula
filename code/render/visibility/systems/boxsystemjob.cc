@@ -7,13 +7,6 @@
 namespace Visibility
 {
 
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-BoxSystemJobFunc(const Jobs::JobFuncContext& ctx)
-{
 
-}
 
 } // namespace Visibility

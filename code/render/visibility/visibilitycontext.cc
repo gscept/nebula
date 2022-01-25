@@ -40,16 +40,7 @@ ObservableContext::ObservableAllocator ObservableContext::observableAllocator;
 
 Util::Array<VisibilitySystem*> ObserverContext::systems;
 
-Jobs::JobSyncId ObserverContext::jobInternalSync;
-Jobs::JobSyncId ObserverContext::jobInternalSync2;
-Jobs::JobSyncId ObserverContext::jobInternalSync3;
-Jobs::JobSyncId ObserverContext::jobHostSync;
-Util::Queue<Jobs::JobId> ObserverContext::runningJobs;
 static Util::Queue<Threading::Event*> waitEvents;
-
-extern void VisibilitySortJob(const Jobs::JobFuncContext& ctx);
-extern void VisibilityDependencyJob(const Jobs::JobFuncContext& ctx);
-extern void VisibilityDrawListUpdateJob(const Jobs::JobFuncContext& ctx);
 
 __ImplementContext(ObserverContext, ObserverContext::observerAllocator);
 
@@ -189,66 +180,6 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
             prevSystemCounters = sys->GetCompletionCounters();
         }
     }
-
-    // Put a sync point for the jobs so all results are done when doing the sorting
-    //Jobs::JobSyncThreadSignal(ObserverContext::jobInternalSync, Graphics::GraphicsServer::renderSystemsJobPort);
-    //Jobs::JobSyncThreadWait(ObserverContext::jobInternalSync, Graphics::GraphicsServer::renderSystemsJobPort);
-
-    // handle dependencies
-    /*
-    bool dependencyNeeded = false;
-    for (i = 0; i < observerResults.Size(); i++)
-    {
-        const VisibilityResultArray& results = observerResults[i];
-        Graphics::GraphicsEntityId& dependency = observerAllocator.Get<Observer_Dependency>(i);
-
-        // run dependency resolve job
-        if (dependency != Graphics::GraphicsEntityId::Invalid())
-        {
-            Jobs::JobContext ctx;
-            ctx.uniform.scratchSize = 0;
-            ctx.uniform.numBuffers = 2;
-            ctx.input.numBuffers = 1;
-            ctx.output.numBuffers = 1;
-
-            const Graphics::ContextEntityId& ctxId = GetContextIdRef(dependency);
-
-            ctx.uniform.data[0] = &observerAllocator.Get<Observer_DependencyMode>(i);
-            ctx.uniform.dataSize[0] = sizeof(DependencyMode);
-            ctx.uniform.data[1] = &ctxId;
-            ctx.uniform.dataSize[1] = sizeof(uint32);
-
-            const Util::Array<Math::ClipStatus::Type>& otherFlags = observerResults[ctxId.id];
-
-            ctx.input.data[0] = otherFlags.Begin();
-            ctx.input.dataSize[0] = otherFlags.ByteSize();
-            ctx.input.sliceSize[0] = otherFlags.ByteSize();
-
-            ctx.output.data[0] = results.Begin();
-            ctx.output.dataSize[0] = results.ByteSize();
-            ctx.output.sliceSize[0] = results.ByteSize();
-
-            // schedule job
-            Jobs::JobId job = Jobs::CreateJob({ VisibilityDependencyJob });
-            Jobs::JobSchedule(job, Graphics::GraphicsServer::renderSystemsJobPort, ctx, false);
-
-            // add to delete list
-            ObserverContext::runningJobs.Enqueue(job);
-            dependencyNeeded = true;
-        }
-    }
-
-    // again, put sync if we needed to resolve dependency
-    if (dependencyNeeded)
-    {
-        Jobs::JobSyncThreadSignal(ObserverContext::jobInternalSync2, Graphics::GraphicsServer::renderSystemsJobPort);
-        Jobs::JobSyncThreadWait(ObserverContext::jobInternalSync2, Graphics::GraphicsServer::renderSystemsJobPort);
-    }
-    */
-
-    // Wait for particles to finish updating their constants before running the final pass
-    //Jobs::JobSyncThreadWait(Particles::ParticleContext::particleSync, Graphics::GraphicsServer::renderSystemsJobPort);
-
 
     static Threading::AtomicCounter completionCounter;
     completionCounter = observerResults.Size();
@@ -423,49 +354,9 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
             }
         },
         nodes.Size(), jobCtx, { &prevSystemCounters[i] }, &completionCounter, finishedEvent);
-
-
-        // then execute sort job, which only runs the function once
-        /*
-        Jobs::JobContext ctx;
-        ctx.uniform.scratchSize = 0;
-        ctx.uniform.numBuffers = 2;
-        ctx.input.numBuffers = 2;
-        ctx.output.numBuffers = 1;
-
-        
-
-        ctx.input.data[0] = results.Begin();
-        ctx.input.dataSize[0] = results.ByteSize();
-        ctx.input.sliceSize[0] = results.ByteSize();
-
-        ctx.input.data[1] = nodes.Begin();
-        ctx.input.dataSize[1] = nodes.ByteSize();
-        ctx.input.sliceSize[1] = nodes.ByteSize();
-
-        ctx.output.data[0] = &visibilities;
-        ctx.output.dataSize[0] = sizeof(VisibilityDrawList);
-        ctx.output.sliceSize[0] = sizeof(VisibilityDrawList);
-
-        ctx.uniform.data[0] = &allocator;
-        ctx.uniform.dataSize[0] = sizeof(allocator);
-
-        ctx.uniform.data[1] = &nodeInstances;
-        ctx.uniform.dataSize[1] = sizeof(Models::ModelContext::ModelInstance::Renderable*);
-
-        // schedule job
-        Jobs::JobId job = Jobs::CreateJob({ VisibilitySortJob });
-        Jobs::JobSchedule(job, Graphics::GraphicsServer::renderSystemsJobPort, ctx);
-
-        // add to delete list
-        ObserverContext::runningJobs.Enqueue(job);
-        */
     }
 
     waitEvents.Enqueue(finishedEvent);
-
-    // insert sync after all visibility systems are done
-    //Jobs::JobSyncThreadSignal(ObserverContext::jobHostSync, Graphics::GraphicsServer::renderSystemsJobPort);
 }
 
 //------------------------------------------------------------------------------
@@ -475,42 +366,6 @@ void
 ObserverContext::GenerateDrawLists(const Graphics::FrameContext& ctx)
 {
     N_SCOPE(GenerateDrawLists, Visibility);
-    /*
-
-    Jobs::JobSyncThreadWait(ObserverContext::jobInternalSync3, Graphics::GraphicsServer::renderSystemsJobPort);
-    IndexT i;
-    Util::Array<VisibilityResultArray>& vis = observerAllocator.GetArray<Observer_ResultArray>();
-    for (i = 0; i < vis.Size(); i++)
-    {
-        VisibilityDrawList& visibilities = observerAllocator.Get<Observer_DrawList>(i);
-
-        Jobs::JobContext ctx;
-        ctx.uniform.scratchSize = 0;
-        ctx.uniform.numBuffers = 0;
-        ctx.input.numBuffers = 1;
-        ctx.output.numBuffers = 1;
-
-        ctx.input.data[0] = &visibilities;
-        ctx.input.dataSize[0] = sizeof(VisibilityDrawList);
-        ctx.input.sliceSize[0] = sizeof(VisibilityDrawList);
-
-        ctx.output.data[0] = &visibilities;
-        ctx.output.dataSize[0] = sizeof(VisibilityDrawList);
-        ctx.output.sliceSize[0] = sizeof(VisibilityDrawList);
-
-        // schedule job
-        Jobs::JobId job = Jobs::CreateJob({ VisibilityDrawListUpdateJob });
-        Jobs::JobSchedule(job, Graphics::GraphicsServer::renderSystemsJobPort, ctx, false);
-
-        // add to delete list
-        ObserverContext::runningJobs.Enqueue(job);
-    }
-
-    // insert sync after all visibility systems are done
-    Jobs::JobSyncThreadSignal(ObserverContext::jobHostSync, Graphics::GraphicsServer::renderSystemsJobPort);
-    */
-    //Jobs::JobSyncThreadSignal(ObserverContext::jobHostSync, Graphics::GraphicsServer::renderSystemsJobPort);
-
 }
 
 //------------------------------------------------------------------------------
@@ -531,16 +386,6 @@ ObserverContext::Create()
 
     ObserverContext::__state.allowedRemoveStages = Graphics::OnBeginStage;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
-
-    Jobs::CreateJobSyncInfo sinfo =
-    {
-        nullptr
-    };
-    ObserverContext::jobInternalSync = Jobs::CreateJobSync(sinfo);
-    ObserverContext::jobInternalSync2 = Jobs::CreateJobSync(sinfo);
-    ObserverContext::jobInternalSync3 = Jobs::CreateJobSync(sinfo);
-    ObserverContext::jobHostSync = Jobs::CreateJobSync(sinfo);
-
     __CreateContext();
 }
 
@@ -550,16 +395,12 @@ ObserverContext::Create()
 void 
 ObserverContext::Discard()
 {
-    Jobs::DestroyJobSync(ObserverContext::jobInternalSync);
-    Jobs::DestroyJobSync(ObserverContext::jobHostSync);
-
     for (int i = 0; i < ObserverContext::systems.Size(); i++)
     {
         n_delete(ObserverContext::systems[i]);
     }
 
     ObserverContext::systems.Clear();
-
     Graphics::GraphicsServer::Instance()->UnregisterGraphicsContext(&__bundle);
 }
 
@@ -635,18 +476,6 @@ ObserverContext::WaitForVisibility(const Graphics::FrameContext& ctx)
         ev->Wait();
         delete ev;
     }
-
-    /*
-    if (ObserverContext::runningJobs.Size() > 0)
-    {
-        // wait for all jobs to finish
-        Jobs::JobSyncHostWait(ObserverContext::jobHostSync);
-
-        // destroy jobs
-        while (!ObserverContext::runningJobs.IsEmpty())
-            Jobs::DestroyJob(ObserverContext::runningJobs.Dequeue());
-    }
-    */
 }
 
 #ifndef PUBLIC_BUILD
@@ -662,9 +491,6 @@ ObserverContext::OnRenderDebug(uint32_t flags)
         ev->Wait();
         delete ev;
     }
-
-    // wait for all jobs to finish
-    //Jobs::JobSyncHostWait(ObserverContext::jobHostSync);
 
     static int visIndex = 0;
     static int atomIndex = 0;

@@ -10,6 +10,7 @@
 #include "graphics/cameracontext.h"
 #include "graphics/view.h"
 #include "dynui/imguicontext.h"
+#include "jobs2/jobs2.h"
 #include "imgui.h"
 #include "renderutil/drawfullscreenquad.h"
 #include "core/cvar.h"
@@ -29,11 +30,8 @@ namespace Terrain
 TerrainContext::TerrainAllocator TerrainContext::terrainAllocator;
 TerrainContext::TerrainBiomeAllocator TerrainContext::terrainBiomeAllocator;
 
-extern void TerrainCullJob(const Jobs::JobFuncContext& ctx);
-extern void TerrainSubTextureUpdateJob(const Jobs::JobFuncContext& ctx);
-Util::Queue<Jobs::JobId> TerrainContext::runningJobs;
-Jobs::JobSyncId TerrainContext::jobHostSync;
-
+Threading::Event subtexturesFinishedEvent, sectionCullFinishedEvent;
+Threading::AtomicCounter subtexturesDoneCounter, sectionCullDoneCounter;
 
 const uint IndirectionTextureSize = 2048;
 const uint SubTextureWorldSize = 64;
@@ -54,7 +52,6 @@ const uint PhysicalTexturePaddedSize = (PhysicalTextureTilePaddedSize) * Physica
 const uint IndirectionUpdateBufferSize = 1024 * 1024 * sizeof(Terrain::IndirectionEntry);
 
 __ImplementContext(TerrainContext, TerrainContext::terrainAllocator);
-
 
 struct
 {
@@ -213,12 +210,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     __bundle.OnPrepareView = TerrainContext::CullPatches;
     __bundle.OnUpdateViewResources = TerrainContext::UpdateLOD;
     __bundle.OnBegin = TerrainContext::RenderUI;
-
-    Jobs::CreateJobSyncInfo sinfo =
-    {
-        nullptr
-    };
-    TerrainContext::jobHostSync = Jobs::CreateJobSync(sinfo);
 
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = TerrainContext::OnRenderDebug;
@@ -1779,80 +1770,165 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
     static Math::mat4 cameraTransform;
     cameraTransform = Math::inverse(Graphics::CameraContext::GetTransform(view->GetCamera()));
 
+    struct SubTextureUpdateCtx
     {
-        Jobs::JobContext jctx;
+        SubTextureUpdateJobUniforms uniforms;
+        Math::mat4 camera;
+        Terrain::TerrainSubTexture* subtextures;
+        Terrain::SubTextureUpdateJobOutput* outputs;
+    };
+    SubTextureUpdateCtx subtexCtx;
+    subtexCtx.uniforms.maxMip = IndirectionNumMips - 1;
+    subtexCtx.uniforms.physicalTileSize = PhysicalTextureTileSize;
+    subtexCtx.uniforms.subTextureWorldSize = SubTextureWorldSize;
+    subtexCtx.uniforms.maxMip = IndirectionNumMips - 1;
+    terrainVirtualTileState.subTextureJobOutputs.Fill({});
 
-        static SubTextureUpdateJobUniforms uniforms;
-        uniforms.maxMip = IndirectionNumMips - 1;
-        uniforms.physicalTileSize = PhysicalTextureTileSize;
-        uniforms.subTextureWorldSize = SubTextureWorldSize;
-        terrainVirtualTileState.subTextureJobOutputs.Fill({});
+    subtexCtx.camera = cameraTransform;
+    subtexCtx.subtextures = terrainVirtualTileState.subTextures.Begin();
+    subtexCtx.outputs = terrainVirtualTileState.subTextureJobOutputs.Begin();
+    Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+    {
+        N_SCOPE(TerrainSubTextureUpdateJob, Terrain);
 
-        // uniform data is the observer transform
-        jctx.uniform.numBuffers = 2;
-        jctx.uniform.scratchSize = 0;
+        auto context = static_cast<SubTextureUpdateCtx*>(ctx);
 
-        jctx.uniform.data[0] = (unsigned char*)&cameraTransform;
-        jctx.uniform.dataSize[0] = sizeof(Math::mat4);
+        // Iterate over work group
+        for (IndexT i = 0; i < groupSize; i++)
+        {
+            // Get item index
+            IndexT index = i + invocationOffset;
+            if (index >= totalJobs)
+                return;
 
-        jctx.uniform.data[1] = (unsigned char*)&uniforms;
-        jctx.uniform.dataSize[1] = sizeof(SubTextureUpdateJobUniforms);
+            const Terrain::TerrainSubTexture& subTexture = context->subtextures[index];
 
-        // just one input buffer of all the transforms
-        jctx.input.numBuffers = 1;
-        jctx.input.data[0] = (unsigned char*)terrainVirtualTileState.subTextures.Begin();
-        jctx.input.dataSize[0] = sizeof(Terrain::TerrainSubTexture) * terrainVirtualTileState.subTextures.Size();
-        jctx.input.sliceSize[0] = sizeof(Terrain::TerrainSubTexture);
+            // control the maximum resolution as such, to get 10.24 texels/cm, we need to have 65536 pixels (theoretical) for a 64 meter region
+            const uint maxResolution = context->uniforms.subTextureWorldSize * 1024;
 
-        jctx.output.numBuffers = 1;
-        jctx.output.data[0] = (unsigned char*)terrainVirtualTileState.subTextureJobOutputs.Begin();
-        jctx.output.dataSize[0] = sizeof(Terrain::SubTextureUpdateJobOutput) * terrainVirtualTileState.subTextureJobOutputs.Size();
-        jctx.output.sliceSize[0] = sizeof(Terrain::SubTextureUpdateJobOutput);
+            // distance in meters where we should switch lods
+            const float switchDistance = 10.0f;
 
-        Jobs::JobId job = Jobs::CreateJob({ TerrainSubTextureUpdateJob });
-        Jobs::JobSchedule(job, Graphics::GraphicsServer::renderSystemsJobPort, jctx);
+            // mask out y coordinate by multiplying result with, 1, 0 ,1
+            Math::vec4 min = Math::vec4(subTexture.worldCoordinate[0], 0, subTexture.worldCoordinate[1], 0);
+            Math::vec4 max = min + Math::vec4(context->uniforms.subTextureWorldSize, 0.0f, context->uniforms.subTextureWorldSize, 0.0f);
+            Math::vec4 cameraXZ = context->camera.position * Math::vec4(1, 0, 1, 0);
+            Math::vec4 nearestPoint = Math::minimize(Math::maximize(cameraXZ, min), max);
+            float distance = length(nearestPoint - cameraXZ);
 
-        TerrainContext::runningJobs.Enqueue(job);
-    }
+            // if we are outside the virtual area, just default the resolution to 0
+            uint resolution = 0;
+            uint lod = 0;
+            uint t = 0;
+            if (distance > 300)
+                goto skipResolution;
+
+            // at every regular distance interval, increase t
+            t = Math::max(1.0f, (distance / switchDistance));
+
+            // calculate lod logarithmically, such that it goes geometrically slower to progress to higher lods
+            lod = Math::min((uint)Math::log2(t), context->uniforms.maxMip);
+
+            // calculate the resolution by offseting the max resolution with the lod
+            resolution = maxResolution >> lod;
+
+skipResolution:
+
+    // calculate the amount of tiles, which is the final lodded resolution divided by the size of a tile
+    // the max being maxResolution and the smallest being 1
+            uint tiles = resolution / context->uniforms.physicalTileSize;
+
+            // only care about subtextures with at least 4 tiles
+            tiles = tiles >= 4 ? tiles : 0;
+
+            // produce output
+            SubTextureUpdateJobOutput& output = context->outputs[index];
+            output.oldMaxMip = subTexture.maxMip;
+            output.oldTiles = subTexture.tiles;
+            output.oldCoord = Math::uint2{ subTexture.indirectionOffset[0], subTexture.indirectionOffset[1] };
+
+            output.newMaxMip = tiles > 0 ? Math::log2(tiles) : 0;
+            output.newTiles = tiles;
+            output.newCoord = Math::uint2{ 0xFFFFFFFF, 0xFFFFFFFF };
+
+            // default is that the subtexture did not change
+            output.updateState = SubTextureUpdateState::NoChange;
+
+            // set state
+            if (tiles >= 4)
+            {
+                if (subTexture.tiles == 0)
+                    output.updateState = SubTextureUpdateState::Created;
+                else if (tiles > subTexture.tiles)
+                    output.updateState = SubTextureUpdateState::Grew;
+                else if (tiles < subTexture.tiles)
+                    output.updateState = SubTextureUpdateState::Shrank;
+            }
+            else
+            {
+                // if tiles is now below the limit but it used to be bigger, delete 
+                if (subTexture.tiles > 0)
+                    output.updateState = SubTextureUpdateState::Deleted;
+            }
+        }
+    }, terrainVirtualTileState.subTextures.Size(), subtexCtx, {}, & subtexturesDoneCounter, & subtexturesFinishedEvent);
 
     const Math::mat4& viewProj = Graphics::CameraContext::GetViewProjection(view->GetCamera());
     Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
+    struct TileCullCtx
+    {
+        Math::vec4 m_col_x[4];
+        Math::vec4 m_col_y[4];
+        Math::vec4 m_col_z[4];
+        Math::vec4 m_col_w[4];
+        Math::bbox* boundingBoxes;
+        bool* visibilities;
+    };
+    TileCullCtx cullCtx;
+    cullCtx.m_col_x[0] = Math::splat_x(viewProj.r[0]);
+    cullCtx.m_col_x[1] = Math::splat_x(viewProj.r[1]);
+    cullCtx.m_col_x[2] = Math::splat_x(viewProj.r[2]);
+    cullCtx.m_col_x[3] = Math::splat_x(viewProj.r[3]);
+
+    cullCtx.m_col_y[0] = Math::splat_y(viewProj.r[0]);
+    cullCtx.m_col_y[1] = Math::splat_y(viewProj.r[1]);
+    cullCtx.m_col_y[2] = Math::splat_y(viewProj.r[2]);
+    cullCtx.m_col_y[3] = Math::splat_y(viewProj.r[3]);
+
+    cullCtx.m_col_z[0] = Math::splat_z(viewProj.r[0]);
+    cullCtx.m_col_z[1] = Math::splat_z(viewProj.r[1]);
+    cullCtx.m_col_z[2] = Math::splat_z(viewProj.r[2]);
+    cullCtx.m_col_z[3] = Math::splat_z(viewProj.r[3]);
+
+    cullCtx.m_col_w[0] = Math::splat_w(viewProj.r[0]);
+    cullCtx.m_col_w[1] = Math::splat_w(viewProj.r[1]);
+    cullCtx.m_col_w[2] = Math::splat_w(viewProj.r[2]);
+    cullCtx.m_col_w[3] = Math::splat_w(viewProj.r[3]);
+    sectionCullDoneCounter = runtimes.Size();
     for (IndexT i = 0; i < runtimes.Size(); i++)
     {
         TerrainRuntimeInfo& rt = runtimes[i];
 
-        // start job for sections
-        Jobs::JobContext jctx;
+        cullCtx.boundingBoxes = rt.sectionBoxes.Begin();
+        cullCtx.visibilities = rt.sectorVisible.Begin();
+        Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+        {
+            N_SCOPE(BruteforceViewFrustumCulling, Visibility);
+            auto context = static_cast<TileCullCtx*>(ctx);
 
-        // uniform data is the observer transform
-        jctx.uniform.numBuffers = 1;
-        jctx.uniform.data[0] = (unsigned char*)&viewProj;
-        jctx.uniform.dataSize[0] = sizeof(Math::mat4);
-        jctx.uniform.scratchSize = 0;
+            // Iterate over work group
+            for (IndexT i = 0; i < groupSize; i++)
+            {
+                // Get item index
+                IndexT index = i + invocationOffset;
+                if (index >= totalJobs)
+                    return;
 
-        // just one input buffer of all the transforms
-        jctx.input.numBuffers = 1;
-        jctx.input.data[0] = (unsigned char*)rt.sectionBoxes.Begin();
-        jctx.input.dataSize[0] = sizeof(Math::bbox) * rt.sectionBoxes.Size();
-        jctx.input.sliceSize[0] = sizeof(Math::bbox);
-
-        // the output is the visibility result
-        jctx.output.numBuffers = 1;
-        jctx.output.data[0] = (unsigned char*)rt.sectorVisible.Begin();
-        jctx.output.dataSize[0] = sizeof(bool) * rt.sectorVisible.Size();
-        jctx.output.sliceSize[0] = sizeof(bool);
-
-        // create and run job
-        Jobs::JobId job = Jobs::CreateJob({ TerrainCullJob });
-        Jobs::JobSchedule(job, Graphics::GraphicsServer::renderSystemsJobPort, jctx);
-
-        TerrainContext::runningJobs.Enqueue(job);
+                context->visibilities[index] = context->boundingBoxes[index].clipstatus(context->m_col_x, context->m_col_y, context->m_col_z, context->m_col_w) != Math::ClipStatus::Outside;
+            }
+        }, rt.sectionBoxes.Size(), 256, {}, & sectionCullDoneCounter, & sectionCullFinishedEvent);
     }
-
-    // signal sync event
-    Jobs::JobSyncThreadSignal(TerrainContext::jobHostSync, Graphics::GraphicsServer::renderSystemsJobPort);
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -2100,16 +2176,9 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
         terrainVirtualTileState.indirectionTextureCopies.EraseRange(0, numPagesThisFrame);
     }
 
-    // wait for cull and subtexture update jobs
-    if (TerrainContext::runningJobs.Size() > 0)
-    {
-        // wait for all jobs to finish
-        Jobs::JobSyncHostWait(TerrainContext::jobHostSync);
-
-        // destroy jobs
-        while (!TerrainContext::runningJobs.IsEmpty())
-            Jobs::DestroyJob(TerrainContext::runningJobs.Dequeue());
-    }
+    // Wait for jobs to finish
+    subtexturesFinishedEvent.Wait();
+    sectionCullFinishedEvent.Wait();
 
     Util::FixedArray<TerrainSubTexture>& subTextures = terrainVirtualTileState.subTextures;
     for (IndexT i = 0; i < terrainVirtualTileState.subTextureJobOutputs.Size(); i++)

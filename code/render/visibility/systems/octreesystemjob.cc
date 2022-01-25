@@ -7,13 +7,4 @@
 namespace Visibility
 {
 
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-OctreeSystemJobFunc(const Jobs::JobFuncContext& ctx)
-{
-
-}
-
 } // namespace Visibility

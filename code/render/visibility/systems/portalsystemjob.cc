@@ -7,13 +7,5 @@
 namespace Visibility
 {
 
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-PortalSystemJobFunc(const Jobs::JobFuncContext& ctx)
-{
-
-}
 
 } // namespace Visibility
