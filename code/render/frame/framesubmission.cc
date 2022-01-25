@@ -31,6 +31,18 @@ FrameSubmission::~FrameSubmission()
 /**
 */
 void
+FrameSubmission::OnWindowResized()
+{
+    for (IndexT i = 0; i < this->children.Size(); i++)
+    {
+        this->children[i]->OnWindowResized();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 FrameSubmission::CompiledImpl::RunJobs(const IndexT frameIndex, const IndexT bufferIndex)
 {
     for (IndexT i = 0; i < this->compiled.Size(); i++)
@@ -65,6 +77,18 @@ FrameSubmission::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferI
         }
     }
     CoreGraphics::EndSubmission(this->queue, this->waitQueue);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FrameSubmission::CompiledImpl::Discard()
+{
+    for (IndexT i = 0; i < this->compiled.Size(); i++)
+    {
+        this->compiled[i]->Discard();
+    }
 }
 
 //------------------------------------------------------------------------------

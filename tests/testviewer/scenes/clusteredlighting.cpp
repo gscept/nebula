@@ -154,7 +154,6 @@ void OpenScene()
     entities.Append(ground);
     entityNames.Append("Ground");
 
-    /*
     particle = Graphics::CreateEntity();
     Graphics::RegisterEntity<ModelContext, ObservableContext, Particles::ParticleContext>(particle);
     ModelContext::Setup(particle, "mdl:Particles/Build_dust.n3", "Viewer", []()
@@ -165,25 +164,24 @@ void OpenScene()
         }); 
     entities.Append(particle);
     entityNames.Append("Particle");
-    */
 
     // setup visibility
 
     const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3", "mdl:Units/Unit_Rifleman.n3" };
-    //const Util::StringAtom modelRes[] = { "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3" };
+    //const Util::StringAtom modelRes[] = { "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3" };
     const Util::StringAtom skeletonRes[] = { "ske:Units/Unit_Archer.nsk3",  "ske:Units/Unit_Footman.nsk3",  "ske:Units/Unit_Spearman.nsk3", "ske:Units/Unit_Rifleman.nsk3" };
     const Util::StringAtom animationRes[] = { "ani:Units/Unit_Archer.nax3",  "ani:Units/Unit_Footman.nax3",  "ani:Units/Unit_Spearman.nax3", "ani:Units/Unit_Rifleman.nax3" };
 
     ModelContext::BeginBulkRegister();
     ObservableContext::BeginBulkRegister();
-    static const int NumModels = 1;
+    static const int NumModels = 20;
     int modelIndex = 0;
     for (IndexT i = -NumModels; i < NumModels; i++)
     {
         for (IndexT j = -NumModels; j < NumModels; j++)
         {
             Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
-            Graphics::RegisterEntity<ModelContext, ObservableContext>(ent);
+            Graphics::RegisterEntity<ModelContext, Characters::CharacterContext, ObservableContext>(ent);
             entities.Append(ent);
             Util::String sid;
             sid.Format("%s: %d", GraphicsEntityToName(ent), ent);
@@ -196,8 +194,8 @@ void OpenScene()
                 {
                     ModelContext::SetTransform(ent, Math::translation(i * 16, 0, j * 16));
                     ObservableContext::Setup(ent, VisibilityEntityType::Model);
-                    //Characters::CharacterContext::Setup(ent, skeletonRes[modelIndex], animationRes[modelIndex], "Viewer");
-                    //Characters::CharacterContext::PlayClip(ent, nullptr, 1, 0, Characters::Append, 1.0f, 1, Math::rand() * 100.0f, 0.0f, 0.0f, Math::rand() * 100.0f);
+                    Characters::CharacterContext::Setup(ent, skeletonRes[modelIndex], animationRes[modelIndex], "Viewer");
+                    Characters::CharacterContext::PlayClip(ent, nullptr, 1, 0, Characters::Append, 1.0f, 1, Math::rand() * 100.0f, 0.0f, 0.0f, Math::rand() * 100.0f);
                 });
             
             modelIndex = (modelIndex + 1) % 4;
@@ -260,7 +258,7 @@ void StepFrame()
 void RenderUI()
 {
     //Models::ModelId model = ModelContext::GetModel(this->entity);
-    //auto modelPool = Resources::GetStreamPool<Models::StreamModelPool>();
+    //auto modelPool = Resources::GetStreamPool<Models::StreamModelCache>();
     //auto resource = modelPool->GetName(model);    
     //ImGui::Separator();
     //ImGui::Text("Resource: %s", resource.AsString().AsCharPtr());
@@ -320,7 +318,7 @@ void RenderUI()
     ImGui::EndChild();
     if (ImGui::Button("Delete"))
     {
-        ModelContext::DeregisterEntity(entities[selected]);
+        //ModelContext::DeregisterEntity(entities[selected]);
         ObservableContext::DeregisterEntity(entities[selected]);
         //Characters::CharacterContext::DeregisterEntity(entities[selected]);
         DestroyEntity(entities[selected]);

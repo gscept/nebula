@@ -382,6 +382,7 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
     }
     else
     {
+        //FIXME resize is broken currently, forcibly disabling it
         glfwWindowHint(GLFW_RESIZABLE, info.resizable ? GL_TRUE : GL_FALSE);
         glfwWindowHint(GLFW_DECORATED, info.decorated ? GL_TRUE : GL_FALSE);
 
@@ -918,7 +919,6 @@ void
 RecreateVulkanSwapchain(const CoreGraphics::WindowId & id, const CoreGraphics::DisplayMode& mode, const Util::StringAtom& title)
 {
     VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFW_WindowSwapInfo>(id.id24);
-
     // wait until GPU is idle
     CoreGraphics::WaitForAllQueues();
     vkDeviceWaitIdle(wndInfo.dev);

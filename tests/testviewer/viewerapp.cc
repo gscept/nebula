@@ -126,7 +126,7 @@ SimpleViewerApplication::Open()
         this->inputServer->Open();
         this->gfxServer->Open();
 
-        auto systemInfo = Core::SysFunc::GetSystemInfo();
+        const System::SystemInfo* systemInfo = Core::SysFunc::GetSystemInfo();
 
         Jobs2::JobSystemInitInfo jobSystemInfo;
         jobSystemInfo.numThreads = 8;
@@ -213,7 +213,7 @@ SimpleViewerApplication::Open()
         Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1, 1, 1), 1000.0f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(0.1, 0.1, 0.1), true);
 
         this->ResetCamera();
-        CameraContext::SetView(this->cam, this->mayaCameraUtil.GetCameraTransform());
+        CameraContext::SetTransform(this->cam, this->mayaCameraUtil.GetCameraTransform());
 
         this->view->SetCamera(this->cam);
         this->view->SetStage(this->stage);
@@ -589,7 +589,6 @@ SimpleViewerApplication::RenderUI()
 #if NEBULA_ENABLE_PROFILING
             if (ImGui::CollapsingHeader("Profiler"))
             {
-
                 ImDrawList* drawList = ImGui::GetWindowDrawList();
                 ImVec2 start = ImGui::GetCursorScreenPos();
                 ImVec2 fullSize = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y);
@@ -597,7 +596,7 @@ SimpleViewerApplication::RenderUI()
                 {
                     for (const Profiling::ProfilingContext& ctx : this->profilingContexts)
                     {
-                        if (ImGui::CollapsingHeader(ctx.threadName.Value()))
+                        if (ImGui::CollapsingHeader(ctx.threadName.Value(), ImGuiTreeNodeFlags_DefaultOpen))
                         {
                             ImGui::PushFont(Dynui::ImguiContext::state.smallFont);
 
@@ -775,10 +774,10 @@ SimpleViewerApplication::UpdateCamera()
     switch (this->cameraMode)
     {
     case 0:
-        CameraContext::SetView(this->cam, Math::inverse(this->mayaCameraUtil.GetCameraTransform()));
+        CameraContext::SetTransform(this->cam, Math::inverse(this->mayaCameraUtil.GetCameraTransform()));
         break;
     case 1:
-        CameraContext::SetView(this->cam, Math::inverse(this->freeCamUtil.GetTransform()));
+        CameraContext::SetTransform(this->cam, Math::inverse(this->freeCamUtil.GetTransform()));
         break;
     default:
         break;

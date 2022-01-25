@@ -44,12 +44,11 @@ struct VkPassLoadInfo
 struct VkPassRuntimeInfo
 {
     VkGraphicsPipelineCreateInfo framebufferPipelineInfo;
+    VkPipelineViewportStateCreateInfo viewportInfo;
 
     uint32_t currentSubpassIndex;
     CoreGraphics::ResourceTableId passDescriptorSet;
     CoreGraphics::ResourcePipelineId passPipelineLayout;
-
-    CoreGraphics::ResourceTableId previousPassTextureDescriptorSet;
 
     Util::FixedArray<Util::FixedArray<VkRect2D>> subpassRects;
     Util::FixedArray<Util::FixedArray<VkViewport>> subpassViewports;
@@ -59,10 +58,10 @@ struct VkPassRuntimeInfo
 
 enum
 {
-    Pass_LoadInfo,
-    Pass_RuntimeInfo,
-    Pass_BeginInfo,
-    Pass_SubpassAttachments
+    Pass_VkLoadInfo
+    , Pass_VkRuntimeInfo
+    , Pass_VkRenderPassBeginInfo
+    , Pass_SubpassAttachments
 };
 
 typedef Ids::IdAllocator<

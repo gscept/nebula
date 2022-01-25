@@ -19,10 +19,14 @@ public:
     /// destructor
     ~FrameSubmission();
 
+    /// Handle display resizing
+    void OnWindowResized();
+
     struct CompiledImpl : public FrameOp::Compiled
     {
         void RunJobs(const IndexT frameIndex, const IndexT bufferIndex) override;
         void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
+        void Discard() override;
 
         CoreGraphics::QueueType queue;
         CoreGraphics::QueueType waitQueue;

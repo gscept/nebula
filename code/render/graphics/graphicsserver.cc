@@ -65,7 +65,7 @@ GraphicsServer::Open()
             128_MB,         // manually flushed memory block size, constant buffers, storage buffers
         },
         3,                  // number of simultaneous frames (3 = triple buffering, 2 = ... you get the idea)
-        false               // validation
+        true               // validation
     };
     this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 
@@ -267,6 +267,7 @@ void
 GraphicsServer::OnWindowResized(CoreGraphics::WindowId wndId)
 {
     CoreGraphics::DisplayMode const mode = CoreGraphics::WindowGetDisplayMode(wndId);
+    this->frameServer->OnWindowResized(wndId);
     for (IndexT i = 0; i < this->contexts.Size(); ++i)
     {
         if (this->contexts[i]->OnWindowResized != nullptr)
