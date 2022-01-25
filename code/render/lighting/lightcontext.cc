@@ -751,7 +751,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     using namespace CoreGraphics;
 
     // get camera view
-    Math::mat4 viewTransform = Graphics::CameraContext::GetTransform(view->GetCamera());
+    Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
     Math::mat4 invViewTransform = inverse(viewTransform);
 
     // update constant buffer
