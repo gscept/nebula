@@ -130,10 +130,12 @@ VkMemoryTextureCache::Unload(const Resources::ResourceId id)
     if (loadInfo.sparse)
     {
         __Lock(textureSparseExtensionAllocator);
+
         // dealloc all opaque bindings
         Util::Array<CoreGraphics::Alloc>& allocs = textureSparseExtensionAllocator.Get<TextureExtension_SparseOpaqueAllocs>(loadInfo.sparseExtension);
         for (IndexT i = 0; i < allocs.Size(); i++)
             Vulkan::DelayedFreeMemory(allocs[i]);
+        allocs.Clear();
 
         // clear all pages
         TextureSparsePageTable& table = textureSparseExtensionAllocator.Get<TextureExtension_SparsePageTable>(loadInfo.sparseExtension);
@@ -159,7 +161,10 @@ VkMemoryTextureCache::Unload(const Resources::ResourceId id)
         textureSparseExtensionAllocator.Dealloc(loadInfo.sparseExtension);
     }
     else if (loadInfo.alias == CoreGraphics::InvalidTextureId && loadInfo.mem.mem != VK_NULL_HANDLE)
+    {
         Vulkan::DelayedFreeMemory(loadInfo.mem);
+        loadInfo.mem = CoreGraphics::Alloc{};
+    }
 
     // only unload a texture which isn't a window texture, since their textures come from the swap chain
     if (!loadInfo.windowTexture)
@@ -167,6 +172,8 @@ VkMemoryTextureCache::Unload(const Resources::ResourceId id)
         Vulkan::DelayedDeleteImageView(runtimeInfo.view);
         VkShaderServer::Instance()->UnregisterTexture(runtimeInfo.bind, runtimeInfo.type); 
         Vulkan::DelayedDeleteImage(loadInfo.img);
+        runtimeInfo.view = VK_NULL_HANDLE;
+        loadInfo.img = VK_NULL_HANDLE;
     }
 
     this->states[id.poolId] = Resources::Resource::State::Unloaded;

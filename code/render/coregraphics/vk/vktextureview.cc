@@ -95,7 +95,6 @@ DestroyTextureView(const TextureViewId id)
     textureViewAllocator.Dealloc(id.id24);
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
