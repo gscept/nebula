@@ -1231,4 +1231,21 @@ WorldRenderDebug(World* world)
     ImGui::EndChild();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+WorldOverride(World* src, World* dst)
+{
+    dst->blueprintCatMap = src->blueprintCatMap;
+    dst->entityMap = src->entityMap;
+    dst->numEntities = src->numEntities;
+    dst->pool = src->pool;
+    dst->db = nullptr;
+    dst->db = MemDb::Database::Create();
+    src->db->Copy(dst->db);
+
+    WorldPrefilterProcessors(dst);
+}
+
 } // namespace Game

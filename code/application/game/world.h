@@ -47,7 +47,8 @@ OpBuffer WorldGetScratchOpBuffer(World*);
 
 Ptr<MemDb::Database> GetWorldDatabase(World*);
 
-
+/// copies and overrides dst with src. This is extremely destructive - make sure you understand the implications!
+void WorldOverride(World* src, World* dst);
 
 
 } // namespace Game
