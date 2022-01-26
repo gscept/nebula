@@ -77,7 +77,7 @@ StreamMeshCache::Unload(const Resources::ResourceId id)
 {
     n_assert(id.resourceId != Ids::InvalidId24);
     __LockName(meshPool->Allocator(), lock);
-    const MeshCreateInfo& msh = meshPool->Get<0>(id.resourceId);
+    MeshCreateInfo& msh = meshPool->Get<0>(id.resourceId);
 
     if (msh.indexBuffer != InvalidBufferId)
         DestroyBuffer(msh.indexBuffer);
@@ -85,6 +85,8 @@ StreamMeshCache::Unload(const Resources::ResourceId id)
     IndexT i;
     for (i = 0; i < msh.streams.Size(); i++)
         DestroyBuffer(msh.streams[i].vertexBuffer);
+    msh.streams.Clear();
+    msh.primitiveGroups.Clear();
 
     this->states[id.poolId] = Resources::Resource::State::Unloaded;
 }
