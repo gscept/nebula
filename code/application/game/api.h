@@ -15,6 +15,7 @@
 #include "memdb/table.h"
 #include "memdb/tablesignature.h"
 #include "memdb/typeregistry.h"
+#include "world.h"
 
 namespace MemDb
 {
@@ -25,9 +26,6 @@ namespace Game
 {
 
 //------------------------------------------------------------------------------
-//      Forward declarations
-//------------------------------------------------------------------------------
-class World;
 
 #define WORLD_DEFAULT uint32_t('DWLD')
 
@@ -93,14 +91,6 @@ struct EntityCreateInfo
     TemplateId templateId = TemplateId::Invalid();
     /// set if the entity should be instantiated immediately or deferred until end of frame.
     bool immediate = false;
-};
-
-//------------------------------------------------------------------------------
-/**
-*/
-struct WorldCreateInfo
-{
-    uint32_t hash;
 };
 
 //------------------------------------------------------------------------------
@@ -228,6 +218,14 @@ namespace Op
 
 //------------------------------------------------------------------------------
 /**
+    TODO: We should add a simpler way of registering and deregistering properties from within processors and update funcs
+        We could do this by keeping a "global" op buffer and providing a template function for adding/removing properties, which just converts into ops.
+        We could have one opbuffer that is used for Sync processors, and one that is a lockfree queue that is available for the async properties.
+        
+        We should probably rewrite the entire op system, since it's a mess at the moment.
+        Also, try to clean up the world system, so that it makes more sense, and is less dependant on other systems and callsites to set things up...
+            Trying to setup a world manually right now is almost impossible.
+        
 */
 struct RegisterProperty
 {
@@ -252,25 +250,42 @@ struct DeregisterProperty
 //      Functions
 //------------------------------------------------------------------------------
 
-World* CreateWorld(WorldCreateInfo const& info);
 /// returns a world by hash
 World* GetWorld(uint32_t worldHash);
-/// Returns the world db
-Ptr<MemDb::Database>        GetWorldDatabase(World*);
 /// Create a new entity
 Game::Entity                CreateEntity(World*, EntityCreateInfo const& info);
 /// delete entity
 void                        DeleteEntity(World*, Game::Entity entity);
+/// Check if an entity ID is still valid.
+bool                        IsValid(World*, Entity e);
+/// Check if an entity is active (has an instance). It might be valid, but inactive just after it has been created.
+bool                        IsActive(World*, Entity e);
+/// Returns the entity mapping of an entity
+EntityMapping               GetEntityMapping(World*, Entity entity);
+/// Get instance of entity
+MemDb::Row                  GetInstance(World*, Entity entity);
+/// add a property to an entity.
+template<typename TYPE>
+void                        AddProperty(World*, Entity, TYPE* prop);
+/// remove a property from an entity
+template<typename TYPE>
+void                        RemoveProperty(World*, Entity);
 /// typed set a property method.
 template<typename TYPE>
 void                        SetProperty(World*, Game::Entity const entity, PropertyId const pid, TYPE value);
 /// typed get property method
 template<typename TYPE>
 TYPE                        GetProperty(World*, Game::Entity const entity, PropertyId const pid);
+/// Check if entity has a specific property. (SLOW!)
+bool                        HasProperty(World*, Entity const entity, PropertyId const pid);
+
+
 /// Create an operations buffer
 OpBuffer                    CreateOpBuffer(World*);
 /// Runs all operations in an operations buffer and clears it. This will invalidate category table views.
-void                        Dispatch(OpBuffer& buffer);
+void                        Dispatch(OpBuffer buffer);
+/// Destroys an operations buffer
+void                        DestroyOpBuffer(OpBuffer&);
 /// Register a property <-> entity association. Moves entity to a different category table.
 void                        AddOp(OpBuffer buffer, Op::RegisterProperty op);
 /// Deregister a property <-> entity association. Moves entity to a different category table.
@@ -281,34 +296,29 @@ void                        Execute(World*, Op::RegisterProperty const& op);
 void                        Execute(World*, Op::DeregisterProperty const& op);
 /// Release all memory allocated by operation buffers
 void                        ReleaseAllOps();
+
+
 /// Create a filter
 Filter                      CreateFilter(FilterCreateInfo const& info);
 /// Destroy a filter
 void                        DestroyFilter(Filter);
+
 /// Create a processor
 ProcessorHandle             CreateProcessor(ProcessorCreateInfo const& info);
-/// Recycles all current datasets allocated memory to be reused
-void                        ReleaseDatasets();
+
 /// Query the entity database using specified filter set. This does NOT wait for resources to be available.
 Dataset                     Query(World*, Filter filter);
 /// Query a subset of tables using a specified filter set. Modifies the tables array so that it only contains valid tables. This does NOT wait for resources to be available.
 Dataset                     Query(World*, Util::Array<MemDb::TableId>& tables, Filter filter);
 /// Query a subset of tables in a specific db using a specified filter set. Modifies the tables array so that it only contains valid tables. This does NOT wait for resources to be available.
 Dataset                     Query(Ptr<MemDb::Database> const& db, Util::Array<MemDb::TableId>& tables, Filter filter);
-/// Get instance of entity
-MemDb::Row                  GetInstance(World*, Entity entity);
-/// Check if an entity ID is still valid.
-bool                        IsValid(World*, Entity e);
-/// Check if an entity is active (has an instance). It might be valid, but inactive just after it has been created.
-bool                        IsActive(World*, Entity e);
-/// Returns the entity mapping of an entity
-EntityMapping               GetEntityMapping(World*, Entity entity);
+/// Recycles all current datasets allocated memory to be reused
+void                        ReleaseDatasets();
+
 /// Create a property
 PropertyId                  CreateProperty(PropertyCreateInfo const& info);
 /// Returns a property id
 PropertyId                  GetPropertyId(Util::StringAtom name);
-/// Check if entity has a specific property. (SLOW!)
-bool                        HasProperty(World*, Entity const entity, PropertyId const pid);
 /// Returns a blueprint id by name
 BlueprintId                 GetBlueprintId(Util::StringAtom name);
 /// Returns a template id by name
@@ -321,6 +331,7 @@ void*                       GetInstanceBuffer(World*, MemDb::TableId const, Prop
 InclusiveTableMask const&   GetInclusiveTableMask(Filter);
 /// retrieve the exclusive table mask
 ExclusiveTableMask const&   GetExclusiveTableMask(Filter);
+
 /// allocate an entity id
 Entity                      AllocateEntity(World*);
 /// deallocate an entity id. Make sure to deallocate the entity db entry first.
@@ -341,8 +352,6 @@ MemDb::Row                  Migrate(World*, Entity, MemDb::TableId toTable);
 void                        Migrate(World*, Util::Array<Entity> const& entities, MemDb::TableId fromTable, MemDb::TableId toTable, Util::FixedArray<IndexT>& newInstances);
 /// register processors to a world
 void                        RegisterProcessors(World*, std::initializer_list<ProcessorHandle>);
-/// prefilter the database for all processors
-void                        PrefilterProcessors(World*);
 /// defragment an entity table
 void                        Defragment(World*, MemDb::TableId);
 /// create an entity table
@@ -356,7 +365,6 @@ void                        ClearDecayBuffers();
 /// register an update function that runs for each entity that fulfill the requirements of the function, contains any of the additional inclusive propertoes, and does not have any properties contained in the exclusive set.
 template<typename ... TYPES>
 Game::ProcessorHandle       RegisterUpdateFunction(World*, Util::StringAtom name, std::function<void(TYPES...)> func, std::initializer_list<PropertyId> additionalInclusive = {}, std::initializer_list<PropertyId> exclusive = {});
-
 
 
 //------------------------------------------------------------------------------
@@ -466,6 +474,35 @@ RegisterUpdateFunction(World* world, Util::StringAtom name, std::function<void(T
 
     Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
     return pHandle;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename TYPE>
+inline void
+AddProperty(World* world, Entity entity, TYPE* prop)
+{
+    //n_assert(!state.asyncProcessing);
+    Op::RegisterProperty op;
+    op.entity = entity;
+    op.pid = TYPE::ID();
+    op.value = (void*)prop;
+    AddOp(WorldGetScratchOpBuffer(world), op);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename TYPE>
+inline void
+RemoveProperty(World* world, Entity entity)
+{
+    //n_assert(!state.asyncProcessing);
+    Op::DeregisterProperty op;
+    op.entity = entity;
+    op.pid = TYPE::ID();
+    AddOp(WorldGetScratchOpBuffer(world), op);
 }
 
 } // namespace Game

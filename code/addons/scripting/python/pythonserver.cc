@@ -6,7 +6,6 @@
 #include "foundation/stdneb.h"
 #include "scripting/python/pythonserver.h"
 #include "pybind11/embed.h"
-#include "Python.h"
 #include "PyLogHook.h"
 #include "io/ioserver.h"
 #include "io/textreader.h"

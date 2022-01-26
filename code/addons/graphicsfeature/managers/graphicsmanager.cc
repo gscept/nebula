@@ -104,6 +104,7 @@ GraphicsManager::InitCreateModelProcessor()
 
         // execute ops
         Game::Dispatch(opBuffer);
+        Game::DestroyOpBuffer(opBuffer);
     };
     
     Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);

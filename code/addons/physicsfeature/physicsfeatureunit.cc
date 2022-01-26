@@ -66,6 +66,7 @@ PhysicsFeatureUnit::OnActivate()
             Game::AddOp(buffer, registerOp);
         }
         Game::Dispatch(buffer);
+        Game::DestroyOpBuffer(buffer);
     });
     Physics::SetOnWakeCallback([](Physics::ActorId* actors, SizeT num)
     {
@@ -87,6 +88,7 @@ PhysicsFeatureUnit::OnActivate()
             }
         }
         Game::Dispatch(buffer);
+        Game::DestroyOpBuffer(buffer);
     });
     Physics::CreateScene();
     //FIXME

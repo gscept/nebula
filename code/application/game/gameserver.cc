@@ -29,9 +29,7 @@ GameServer::GameServer() :
     _setup_grouped_timer(GameServerManageEntities, "Game Subsystem");
     this->state.templateDatabase = MemDb::Database::Create();
     this->state.ownerId = MemDb::TypeRegistry::GetPropertyId("Owner"_atm);
-    WorldCreateInfo info;
-    info.hash = WORLD_DEFAULT;
-    this->CreateWorld(info);
+    this->CreateWorld(WORLD_DEFAULT);
     // always attach the base game feature
     this->AttachGameFeature(BaseGameFeature::BaseGameFeatureUnit::Create());
 }
@@ -53,7 +51,7 @@ GameServer::~GameServer()
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
-            n_delete(this->state.worlds[worldIndex]);
+            Game::DeallocateWorld(this->state.worlds[worldIndex]);
             this->state.worlds[worldIndex] = nullptr;
         }
     }
@@ -139,7 +137,7 @@ GameServer::Start()
 	{
 		if (this->state.worlds[worldIndex] != nullptr)
 		{
-			Game::PrefilterProcessors(this->state.worlds[worldIndex]);
+			WorldPrefilterProcessors(this->state.worlds[worldIndex]);
 		}
 	}
 
@@ -218,10 +216,11 @@ GameServer::OnBeginFrame()
     // check if caches are valid
     for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {
+
         if (this->state.worlds[worldIndex] != nullptr &&
-            !this->state.worlds[worldIndex]->cacheValid)
+            !WorldPrefiltered(this->state.worlds[worldIndex]))
         {
-            PrefilterProcessors(this->state.worlds[worldIndex]);
+            WorldPrefilterProcessors(this->state.worlds[worldIndex]);
         }
     }
 
@@ -230,13 +229,8 @@ GameServer::OnBeginFrame()
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
-            num = this->state.worlds[worldIndex]->onBeginFrameCallbacks.Size();
-            for (i = 0; i < num; i++)
-            {
-                World* w = this->state.worlds[worldIndex];
-                Dataset data = Game::Query(w, w->onBeginFrameCallbacks[i].cache, w->onBeginFrameCallbacks[i].filter);
-                w->onBeginFrameCallbacks[i].func(w, data);
-            }
+            World* w = this->state.worlds[worldIndex];
+            WorldBeginFrame(w);
         }
     }
 
@@ -271,13 +265,8 @@ GameServer::OnFrame()
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
-            num = this->state.worlds[worldIndex]->onFrameCallbacks.Size();
-            for (i = 0; i < num; i++)
-            {
-                World* w = this->state.worlds[worldIndex];
-                Dataset data = Game::Query(w, w->onFrameCallbacks[i].cache, w->onFrameCallbacks[i].filter);
-                w->onFrameCallbacks[i].func(w, data);
-            }
+            World* w = this->state.worlds[worldIndex];
+            WorldSimFrame(w);
         }
     }
 
@@ -308,13 +297,8 @@ GameServer::OnEndFrame()
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
-            SizeT num = this->state.worlds[worldIndex]->onEndFrameCallbacks.Size();
-            for (i = 0; i < num; i++)
-            {
-                World* w = this->state.worlds[worldIndex];
-                Dataset data = Game::Query(w, w->onEndFrameCallbacks[i].cache, w->onEndFrameCallbacks[i].filter);
-                w->onEndFrameCallbacks[i].func(w, data);
-            }
+            World* w = this->state.worlds[worldIndex];
+            WorldEndFrame(w);
         }
     }
 
@@ -329,41 +313,7 @@ GameServer::OnEndFrame()
         if (this->state.worlds[worldIndex] != nullptr)
         {
             World* world = this->state.worlds[worldIndex];
-            // NOTE: The order of the following loops are important!
-
-            // Clean up entities
-            while (!world->deallocQueue.IsEmpty())
-            {
-                auto const cmd = world->deallocQueue.Dequeue();
-                if (Game::IsValid(world, cmd.entity))
-                {
-                    MemDb::TableId const table = world->entityMap[cmd.entity.index].category;
-                    MemDb::Row const row = world->entityMap[cmd.entity.index].instance;
-                    DeallocateInstance(world, table, row);
-                    world->entityMap[cmd.entity.index].category = MemDb::InvalidTableId;
-                    world->entityMap[cmd.entity.index].instance = MemDb::InvalidRow;
-                    DeallocateEntity(world, cmd.entity);
-                }
-            }
-
-            // Allocate instances for new entities, reuse invalid instances if possible
-            while (!world->allocQueue.IsEmpty())
-            {
-                auto const cmd = world->allocQueue.Dequeue();
-                n_assert(IsValid(world, cmd.entity));
-                AllocateInstance(world, cmd.entity, cmd.tid);
-            }
-
-            // Delete all remaining invalid instances
-            Ptr<MemDb::Database> const& db = world->db;
-
-            if (db.isvalid())
-            {
-                db->ForEachTable([world](MemDb::TableId tid)
-                {
-                    Defragment(world, tid);
-                });
-            }
+            WorldManageEntities(world);
         }
     }
     _stop_timer(GameServerManageEntities);
@@ -446,13 +396,8 @@ GameServer::NotifyGameLoad()
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
-            num = this->state.worlds[worldIndex]->onLoadCallbacks.Size();
-            for (i = 0; i < num; i++)
-            {
-                World* w = this->state.worlds[worldIndex];
-                Dataset data = Game::Query(w, w->onLoadCallbacks[i].cache, w->onLoadCallbacks[i].filter);
-                w->onLoadCallbacks[i].func(w, data);
-            }
+            World* w = this->state.worlds[worldIndex];
+            WorldOnLoad(w);
         }
     }
 
@@ -483,13 +428,8 @@ GameServer::NotifyGameSave()
     {
         if (this->state.worlds[worldIndex] != nullptr)
         {
-            num = this->state.worlds[worldIndex]->onSaveCallbacks.Size();
-            for (i = 0; i < num; i++)
-            {
-                World* w = this->state.worlds[worldIndex];
-                Dataset data = Game::Query(w, w->onSaveCallbacks[i].cache, w->onSaveCallbacks[i].filter);
-                w->onSaveCallbacks[i].func(w, data);
-            }
+            World* w = this->state.worlds[worldIndex];
+            WorldOnSave(w);
         }
     }
 
@@ -582,20 +522,21 @@ void
 GameServer::CleanupWorld(World* world)
 {
     Game::GameServer::Instance()->NotifyBeforeCleanup();
-    world->db->Reset();
+    WorldReset(world);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 World*
-GameServer::CreateWorld(WorldCreateInfo const& info)
+GameServer::CreateWorld(uint32_t hash)
 {
-    this->state.worldTable.Add(info.hash, this->state.numWorlds);
+    this->state.worldTable.Add(hash, this->state.numWorlds);
     n_assert(this->state.numWorlds < 32);
     World*& world = this->state.worlds[this->state.numWorlds++];
-    world = n_new(World);
-    world->hash = info.hash;
+    WorldCreateInfo info;
+    info.hash = hash;
+    world = Game::AllocateWorld(info);
     return world;
 }
 
@@ -617,7 +558,7 @@ void
 GameServer::DestroyWorld(uint32_t worldHash)
 {
     uint32_t index = this->state.worldTable[worldHash];
-    n_delete(this->state.worlds[index]);
+    Game::DeallocateWorld(this->state.worlds[index]);
     this->state.worlds[index] = nullptr;
     this->state.worldTable.Erase(worldHash);
 }

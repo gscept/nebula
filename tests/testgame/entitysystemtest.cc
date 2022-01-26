@@ -300,15 +300,14 @@ EntitySystemTest::Run()
     // add a property to an entity that does not already have it. This should
     // move the entity from one category to another, and in this case
     // creating a new category that contains only one instance (this one)
-    Game::Op::RegisterProperty registerOp;
-    registerOp.entity = entities[1];
-    registerOp.pid = Game::GetPropertyId("TestVec4"_atm);
-    registerOp.value = nullptr;
-    Game::Execute(world, registerOp);
+    Game::AddProperty<TestVec4>(world, entities[1], nullptr);
 
     Game::DestroyFilter(filter);
     Game::ReleaseDatasets();
 
+    StepFrame();
+
+    bool hasExecutedUpdateFunc = false;
     std::function updateFunc = [&](
             Test::TestHealth const& testHealth,
             Test::TestStruct& testStruct
@@ -316,12 +315,15 @@ EntitySystemTest::Run()
     {
         VERIFY(testStruct.foo == 100);
         testStruct.foo = testHealth.value * testHealth.value;
+        hasExecutedUpdateFunc = true;
     };
 
     Game::RegisterUpdateFunction(world, "TestUpdateFunc"_atm, updateFunc, { TestVec4::ID() });
     
     StepFrame();
     
+    VERIFY(hasExecutedUpdateFunc);
+
     t->StopTime();
 }
 

@@ -13,7 +13,6 @@
 #include "managers/blueprintmanager.h"
 #include "managers/timemanager.h"
 #include "imgui.h"
-#include "game/propertyinspection.h"
 
 namespace BaseGameFeature
 {
@@ -89,108 +88,7 @@ BaseGameFeatureUnit::OnRenderDebug()
 
 		if (world != nullptr)
         {
-			ImGui::Text("World Hash: %s", Util::FourCC(world->hash).AsString().AsCharPtr());
-			ImGui::Separator();
-			static bool showProcessors = true;
-			ImGui::Checkbox("Show processors", &showProcessors);
-			if (showProcessors)
-			{
-				ImGui::Text("Processors (?):");
-				if (ImGui::IsItemHovered())
-				{
-					ImGui::SetTooltip("Processors are executed _after_ feature units for each event.");
-				}
-
-
-				auto PrintCallbackInfo = [](Game::World::CallbackInfo const& callback)
-				{
-					Game::ProcessorInfo const& info = Game::GameServer::Instance()->GetProcessorInfo(callback.handle);
-					ImGui::Text(info.name.Value());
-					ImGui::SameLine();
-					ImGui::Text(" | Async: %s", info.async ? "true" : "false");
-					ImGui::SameLine();
-					ImGui::Text(" | Filter : %i", info.filter);
-				};
-
-				ImGui::TextDisabled("-- OnBeginFrame --");
-				for (auto const& callback : world->onBeginFrameCallbacks)
-					PrintCallbackInfo(callback);
-
-				ImGui::TextDisabled("-- OnFrame --");
-				for (auto const& callback : world->onFrameCallbacks)
-					PrintCallbackInfo(callback);
-
-				ImGui::TextDisabled("-- OnEndFrame --");
-				for (auto const& callback : world->onEndFrameCallbacks)
-					PrintCallbackInfo(callback);
-
-				ImGui::TextDisabled("-- OnSave --");
-				for (auto const& callback : world->onSaveCallbacks)
-					PrintCallbackInfo(callback);
-
-				ImGui::TextDisabled("-- OnLoad --");
-				for (auto const& callback : world->onLoadCallbacks)
-					PrintCallbackInfo(callback);
-
-				ImGui::Separator();
-			}
-
-            static bool listInactive = false;
-            ImGui::Checkbox("List inactive instances", &listInactive);
-            ImGui::Text("Entity map:");
-            ImGui::BeginChild("ScrollingRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), false, ImGuiWindowFlags_HorizontalScrollbar);
-            {
-                for (uint entityIndex = 0; entityIndex < world->entityMap.Size(); entityIndex++)
-                {
-                    Game::EntityMapping entity = world->entityMap[entityIndex];
-                    
-                    if (!listInactive && (entity.category == MemDb::InvalidTableId || entity.instance == MemDb::InvalidRow))
-                        continue;
-
-                    ImGui::BeginGroup();
-                    ImGui::Text("[%i] ", entityIndex);
-                    ImGui::SameLine();
-                    ImGui::TextColored({1,0.3f,0,1}, "tid:%i, row:%i", entity.category, entity.instance);
-                    if (entity.category != MemDb::TableId::Invalid())
-                    {
-                        ImGui::TextDisabled("- %s", Game::GetWorldDatabase(world)->GetTable(entity.category).name.Value());
-                        ImGui::EndGroup();
-                        if (ImGui::IsItemHovered())
-                        {
-                            ImGui::BeginTooltip();
-                            ImGui::TextDisabled("- %s", Game::GetWorldDatabase(world)->GetTable(entity.category).name.Value());
-                            MemDb::TableId const category = entity.category;
-                            MemDb::Row const row = entity.instance;
-
-                            auto const& properties = Game::GetWorldDatabase(world)->GetTable(category).properties;
-                            for (auto property : properties)
-                            {
-                                SizeT const typeSize = MemDb::TypeRegistry::TypeSize(property);
-                                if (typeSize == 0)
-                                {
-                                    // Type is flag type, just print the name, and then continue
-                                    ImGui::Text("_flag_: %s", MemDb::TypeRegistry::GetDescription(property)->name.Value());
-                                    ImGui::Separator();
-                                    continue;
-                                }
-                                void* data = Game::GetInstanceBuffer(world, category, property);
-                                data = (byte*)data + (row * typeSize);
-                                bool commitChange = false;
-                                Game::PropertyInspection::DrawInspector(property, data, &commitChange);
-                                ImGui::Separator();
-                            }
-                            ImGui::EndTooltip();
-                        }
-                    }
-                    else
-                    {
-                        ImGui::EndGroup();
-                        ImGui::TextDisabled("- ");
-                    }
-                    ImGui::Separator();
-                }
-            }
-            ImGui::EndChild();
+            WorldRenderDebug(world);
         }
         else
         {

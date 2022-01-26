@@ -247,7 +247,7 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
             {
                 auto mesh = collider->data.AsMeshCollider();
                 MeshTopology type = mesh->type;
-                int primgroup = mesh->primGroup;
+                int primgroup = mesh->prim_group;
 
                 Util::StringAtom resource = mesh->file;
                 geometry = CreateMeshFromResource(type, resource, primgroup);

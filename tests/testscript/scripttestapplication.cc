@@ -10,7 +10,7 @@
 #include "io/fswrapper.h"
 #include "math/vector.h"
 
-#include "Python.h"
+
 
 #ifdef min
 #undef min

@@ -3,13 +3,6 @@
     {
       name: "default",
       restitution: 0.25
-    },
-    {
-      name: "test",
-      density: 1.75,
-      restitution: 0.05,
-      staticFriction: 0.8,
-      dynamicFriction: 0.75
     }
   ]
 }
