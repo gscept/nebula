@@ -209,9 +209,11 @@ FrameScript::Build()
 
     for (i = 0; i < this->events.Size(); i++)
         DestroyEvent(this->events[i]);
+    this->events.Clear();
 
     for (i = 0; i < this->barriers.Size(); i++)
         DestroyBarrier(this->barriers[i]);
+    this->barriers.Clear();
 
     // clear old compiled result
     this->buildAllocator.Release();

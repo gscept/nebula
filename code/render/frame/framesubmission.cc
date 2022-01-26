@@ -37,6 +37,14 @@ FrameSubmission::OnWindowResized()
     {
         this->children[i]->OnWindowResized();
     }
+    if (this->resourceResetBarriers != nullptr)
+    {
+        IndexT i;
+        for (i = 0; i < this->resourceResetBarriers->Size(); i++)
+        {
+            CoreGraphics::BarrierReset(this->resourceResetBarriers->Get(i));
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
