@@ -510,7 +510,8 @@ DestroyWindow(const WindowId id)
 void
 WindowResize(const WindowId id, SizeT newWidth, SizeT newHeight)
 {
-    GLFW::ResizeFunc(id, newWidth, newHeight);
+    GLFWwindow* wnd = glfwWindowAllocator.Get<GLFW_Window>(id.id24);
+    glfwSetWindowSize(wnd, newWidth, newHeight);
 }
 
 //------------------------------------------------------------------------------
