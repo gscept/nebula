@@ -460,64 +460,72 @@ SetupPass(const PassId pid)
     loadInfo.renderArea.extent.width = width;
     loadInfo.renderArea.extent.height = height;
 
-    // setup uniform buffer for render target information
-    ShaderId sid = ShaderServer::Instance()->GetShader("shd:shared.fxb"_atm);
-    loadInfo.passBlockBuffer = CoreGraphics::ShaderCreateConstantBuffer(sid, "PassBlock");
-    loadInfo.renderTargetDimensionsVar = ShaderGetConstantBinding(sid, "RenderTargetDimensions");
+    // If the pass descriptor is invalid (which it is when the pass is first created) create a new resource table and constant buffer
+    if (runtimeInfo.passDescriptorSet == ResourceTableId::Invalid())
+    {
+        // setup uniform buffer for render target information
+        ShaderId sid = ShaderServer::Instance()->GetShader("shd:shared.fxb"_atm);
+        loadInfo.passBlockBuffer = CoreGraphics::ShaderCreateConstantBuffer(sid, "PassBlock");
+        loadInfo.renderTargetDimensionsVar = ShaderGetConstantBinding(sid, "RenderTargetDimensions");
 
-    CoreGraphics::ResourceTableLayoutId tableLayout = ShaderGetResourceTableLayout(sid, NEBULA_PASS_GROUP);
-    runtimeInfo.passDescriptorSet = CreateResourceTable(ResourceTableCreateInfo{ tableLayout });
-    runtimeInfo.passPipelineLayout = ShaderGetResourcePipeline(sid);
+        CoreGraphics::ResourceTableLayoutId tableLayout = ShaderGetResourceTableLayout(sid, NEBULA_PASS_GROUP);
+        runtimeInfo.passDescriptorSet = CreateResourceTable(ResourceTableCreateInfo{ tableLayout, 8 });
+        runtimeInfo.passPipelineLayout = ShaderGetResourcePipeline(sid);
 
-    CoreGraphics::ResourceTableBuffer write;
-    write.buf = loadInfo.passBlockBuffer;
-    write.offset = 0;
-    write.size = NEBULA_WHOLE_BUFFER_SIZE;
-    write.index = 0;
-    write.dynamicOffset = false;
-    write.texelBuffer = false;
-    write.slot = ShaderGetResourceSlot(sid, "PassBlock");
-    ResourceTableSetConstantBuffer(runtimeInfo.passDescriptorSet, write);
+        CoreGraphics::ResourceTableBuffer write;
+        write.buf = loadInfo.passBlockBuffer;
+        write.offset = 0;
+        write.size = NEBULA_WHOLE_BUFFER_SIZE;
+        write.index = 0;
+        write.dynamicOffset = false;
+        write.texelBuffer = false;
+        write.slot = ShaderGetResourceSlot(sid, "PassBlock");
+        ResourceTableSetConstantBuffer(runtimeInfo.passDescriptorSet, write);
 
-    // setup input attachments
+        // setup input attachments
+        for (i = 0; i < loadInfo.colorAttachments.Size(); i++)
+        {
+            // update descriptor set based on images attachments
+            IndexT inputAttachmentLocation = ShaderGetResourceSlot(sid, Util::String::Sprintf("InputAttachment%d", i));
+            n_assert(inputAttachmentLocation != InvalidIndex);
+
+            n_assert(loadInfo.colorAttachments.Size() < 16); // only allow 8 input attachments in the shader, so we must limit it
+            CoreGraphics::ResourceTableInputAttachment write;
+            write.tex = loadInfo.colorAttachments[i];
+            write.isDepth = false;
+            write.sampler = InvalidSamplerId;
+            write.slot = inputAttachmentLocation;
+            write.index = 0;
+            ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
+        }
+        if (loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId)
+        {
+            // update descriptor set based on images attachments
+            IndexT inputAttachmentLocation = ShaderGetResourceSlot(sid, Util::String::Sprintf("DepthAttachment", i));
+            n_assert(inputAttachmentLocation != InvalidIndex);
+
+            CoreGraphics::ResourceTableInputAttachment write;
+            write.tex = loadInfo.depthStencilAttachment;
+            write.isDepth = true;
+            write.sampler = InvalidSamplerId;
+            write.slot = inputAttachmentLocation;
+            write.index = 0;
+            ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
+        }
+        ResourceTableCommitChanges(runtimeInfo.passDescriptorSet);
+    }
+
+    // Calculate texture dimensions
     Util::FixedArray<Math::vec4> dimensions(loadInfo.colorAttachments.Size());
     for (i = 0; i < loadInfo.colorAttachments.Size(); i++)
     {
         // update descriptor set based on images attachments
-        IndexT inputAttachmentLocation = ShaderGetResourceSlot(sid, Util::String::Sprintf("InputAttachment%d", i));
-        n_assert(inputAttachmentLocation != InvalidIndex);
-
-        n_assert(loadInfo.colorAttachments.Size() < 16); // only allow 8 input attachments in the shader, so we must limit it
-        CoreGraphics::ResourceTableInputAttachment write;
-        write.tex = loadInfo.colorAttachments[i];
-        write.isDepth = false;
-        write.sampler = InvalidSamplerId;
-        write.slot = inputAttachmentLocation;
-        write.index = 0;
-        ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
-
-        // create dimensions vec4
         TextureId tex = TextureViewGetTexture(loadInfo.colorAttachments[i]);
         const CoreGraphics::TextureDimensions rtdims = TextureGetDimensions(tex);
         Math::vec4& dims = dimensions[i];
         dims = Math::vec4((Math::scalar)rtdims.width, (Math::scalar)rtdims.height, 1 / (Math::scalar)rtdims.width, 1 / (Math::scalar)rtdims.height);
     }
-    if (loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId)
-    {
-        // update descriptor set based on images attachments
-        IndexT inputAttachmentLocation = ShaderGetResourceSlot(sid, Util::String::Sprintf("DepthAttachment", i));
-        n_assert(inputAttachmentLocation != InvalidIndex);
-        
-        CoreGraphics::ResourceTableInputAttachment write;
-        write.tex = loadInfo.depthStencilAttachment;
-        write.isDepth = true;
-        write.sampler = InvalidSamplerId;
-        write.slot = inputAttachmentLocation;
-        write.index = 0;
-        ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
-    }
     BufferUpdateArray(loadInfo.passBlockBuffer, dimensions.Begin(), dimensions.Size(), loadInfo.renderTargetDimensionsVar);
-    ResourceTableCommitChanges(runtimeInfo.passDescriptorSet);
 
     // setup info
     runtimeInfo.framebufferPipelineInfo.renderPass = loadInfo.pass;
@@ -606,6 +614,9 @@ DestroyPass(const PassId id)
     // destroy pass and our descriptor set
     DestroyResourceTable(runtimeInfo.passDescriptorSet);
     DestroyBuffer(loadInfo.passBlockBuffer);
+    runtimeInfo.passDescriptorSet = ResourceTableId::Invalid();
+    loadInfo.passBlockBuffer = BufferId::Invalid();
+
     vkDestroyRenderPass(loadInfo.dev, loadInfo.pass, nullptr);
     vkDestroyFramebuffer(loadInfo.dev, loadInfo.framebuffer, nullptr);
 }
@@ -678,8 +689,6 @@ PassWindowResizeCallback(const PassId id)
     VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_VkRuntimeInfo>(id.id24);
 
     // destroy pass and our descriptor set
-    DestroyResourceTable(runtimeInfo.passDescriptorSet);
-    DestroyBuffer(loadInfo.passBlockBuffer);
     vkDestroyRenderPass(loadInfo.dev, loadInfo.pass, nullptr);
     vkDestroyFramebuffer(loadInfo.dev, loadInfo.framebuffer, nullptr);
 

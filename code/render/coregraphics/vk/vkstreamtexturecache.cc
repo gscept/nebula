@@ -53,7 +53,7 @@ VkStreamTextureCache::~VkStreamTextureCache()
 inline Resources::ResourceUnknownId
 VkStreamTextureCache::AllocObject()
 {
-    return texturePool->AllocObject();
+    return textureCache->AllocObject();
 }
 
 //------------------------------------------------------------------------------
@@ -62,7 +62,7 @@ VkStreamTextureCache::AllocObject()
 inline void
 VkStreamTextureCache::DeallocObject(const Resources::ResourceUnknownId id)
 {
-    texturePool->DeallocObject(id);
+    textureCache->DeallocObject(id);
 }
 
 //------------------------------------------------------------------------------
@@ -86,10 +86,10 @@ VkStreamTextureCache::LoadFromStream(const Resources::ResourceId res, const Util
     if (ctx.load_dds(srcData, srcDataSize))
     {
         // during the load-phase, we can safetly get the structs
-        __LockName(texturePool->Allocator(), lock);
-        VkTextureRuntimeInfo& runtimeInfo = texturePool->Get<Texture_RuntimeInfo>(res.resourceId);
-        VkTextureLoadInfo& loadInfo = texturePool->Get<Texture_LoadInfo>(res.resourceId);
-        VkTextureStreamInfo& streamInfo = texturePool->Get<Texture_StreamInfo>(res.resourceId);
+        __LockName(textureCache->Allocator(), lock);
+        VkTextureRuntimeInfo& runtimeInfo = textureCache->Get<Texture_RuntimeInfo>(res.resourceId);
+        VkTextureLoadInfo& loadInfo = textureCache->Get<Texture_LoadInfo>(res.resourceId);
+        VkTextureStreamInfo& streamInfo = textureCache->Get<Texture_StreamInfo>(res.resourceId);
 
         streamInfo.mappedBuffer = srcData;
         streamInfo.bufferSize = srcDataSize;
@@ -267,11 +267,11 @@ VkStreamTextureCache::LoadFromStream(const Resources::ResourceId res, const Util
 inline void
 VkStreamTextureCache::Unload(const Resources::ResourceId id)
 {
-    __LockName(texturePool->Allocator(), lock);
-    VkTextureStreamInfo& streamInfo = texturePool->Get<Texture_StreamInfo>(id.resourceId);
+    __LockName(textureCache->Allocator(), lock);
+    VkTextureStreamInfo& streamInfo = textureCache->Get<Texture_StreamInfo>(id.resourceId);
 
     streamInfo.stream->MemoryUnmap();
-    texturePool->Unload(id);
+    textureCache->Unload(id);
 }
 
 //------------------------------------------------------------------------------
@@ -282,10 +282,10 @@ VkStreamTextureCache::StreamMaxLOD(const Resources::ResourceId& id, const float 
 {
     N_SCOPE_ACCUM(StreamMaxLOD, TextureStream);
 
-    __LockName(texturePool->Allocator(), lock);
-    VkTextureStreamInfo& streamInfo = texturePool->Get<Texture_StreamInfo>(id.resourceId);
-    const VkTextureLoadInfo& loadInfo = texturePool->Get<Texture_LoadInfo>(id.resourceId);
-    VkTextureRuntimeInfo& runtimeInfo = texturePool->Get<Texture_RuntimeInfo>(id.resourceId);
+    __LockName(textureCache->Allocator(), lock);
+    VkTextureStreamInfo& streamInfo = textureCache->Get<Texture_StreamInfo>(id.resourceId);
+    const VkTextureLoadInfo& loadInfo = textureCache->Get<Texture_LoadInfo>(id.resourceId);
+    VkTextureRuntimeInfo& runtimeInfo = textureCache->Get<Texture_RuntimeInfo>(id.resourceId);
 
     // if the lod is undefined, just add 1 mip
     IndexT adjustedLod = Math::max(0.0f, Math::ceil(loadInfo.mips * lod));
