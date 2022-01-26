@@ -87,7 +87,7 @@ GraphicsServer::Open()
 
         // setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
         CoreGraphics::layoutPool = Resources::GetMemoryPool<CoreGraphics::VertexSignatureCache>();
-        CoreGraphics::texturePool = Resources::GetMemoryPool<CoreGraphics::MemoryTextureCache>();
+        CoreGraphics::textureCache = Resources::GetMemoryPool<CoreGraphics::MemoryTextureCache>();
         CoreGraphics::meshPool = Resources::GetMemoryPool<CoreGraphics::MemoryMeshCache>();
 
         CoreGraphics::shaderPool = Resources::GetStreamPool<CoreGraphics::ShaderCache>();
@@ -267,7 +267,6 @@ void
 GraphicsServer::OnWindowResized(CoreGraphics::WindowId wndId)
 {
     CoreGraphics::DisplayMode const mode = CoreGraphics::WindowGetDisplayMode(wndId);
-    this->frameServer->OnWindowResized(wndId);
     for (IndexT i = 0; i < this->contexts.Size(); ++i)
     {
         if (this->contexts[i]->OnWindowResized != nullptr)

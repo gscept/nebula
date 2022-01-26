@@ -11,5 +11,5 @@ namespace CoreGraphics
 __ImplementClass(CoreGraphics::StreamTextureCache, 'STXP', Vulkan::VkStreamTextureCache);
 }
 #else
-#error "StreamTextureLoader class not implemented on this platform!"
+#error "StreamTextureCache class not implemented on this platform!"
 #endif
