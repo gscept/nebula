@@ -106,6 +106,10 @@ public:
     template <int MEMBER>
     const tuple_array_t<MEMBER, TYPES...>& Get(const uint32_t index) const;
 
+    /// set single item
+    template <int MEMBER>
+    void Set(const uint32_t index, const tuple_array_t<MEMBER, TYPES...>& type);
+
     /// get array const reference
     template <int MEMBER>
     const Util::Array<tuple_array_t<MEMBER, TYPES...>>& GetArray() const;
@@ -319,6 +323,18 @@ ArrayAllocatorSafe<TYPES...>::Get(const uint32_t index) const
 {
     n_assert(this->locked > 0);
     return std::get<MEMBER>(this->objects)[index];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class ...TYPES>
+template<int MEMBER>
+inline void 
+ArrayAllocatorSafe<TYPES...>::Set(const uint32_t index, const tuple_array_t<MEMBER, TYPES...>& type)
+{
+    n_assert(this->locked > 0);
+    std::get<MEMBER>(this->objects)[index] = type;
 }
 
 //------------------------------------------------------------------------------
