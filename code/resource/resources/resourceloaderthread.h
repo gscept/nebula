@@ -37,8 +37,8 @@ private:
     /// perform work
     void DoWork();
     /// emit wakeup signal
-    void EmitWakeupSignal();
-
+    virtual void EmitWakeupSignal() override;
+    
     Threading::SafeQueue<std::function<void()>> jobs;
     Threading::Event completeEvent;
     Ptr<IO::IoServer> ioServer;
