@@ -36,6 +36,7 @@ struct
 
     // read-write textures
     CoreGraphics::TextureId internalTargets[2];
+    CoreGraphics::TextureId ssaoOutput;
 
     CoreGraphics::BarrierId barriers[4];
 
@@ -84,6 +85,7 @@ SSAOContext::Create()
     __CreatePluginContext();
 
     __bundle.OnUpdateViewResources = SSAOContext::UpdateViewDependentResources;
+    __bundle.OnWindowResized = SSAOContext::WindowResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     // calculate HBAO and blur
@@ -228,6 +230,7 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
     ssaoState.hbaoConstants = CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer);
     ssaoState.blurConstants = CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer);
 
+    ssaoState.ssaoOutput = script->GetTexture("SSAOBuffer");
     SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
     ssaoState.hbaoTable.Resize(numBuffers);
     ssaoState.blurTableX.Resize(numBuffers);
@@ -250,11 +253,11 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
         ResourceTableCommitChanges(ssaoState.blurTableX[i]);
 
         ResourceTableSetTexture(ssaoState.blurTableY[i], { ssaoState.internalTargets[0], ssaoState.hbaoY, 0, CoreGraphics::InvalidSamplerId });
-        ResourceTableSetRWTexture(ssaoState.blurTableY[i], { script->GetTexture("SSAOBuffer"), ssaoState.hbaoBlurR, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetRWTexture(ssaoState.blurTableY[i], { ssaoState.ssaoOutput, ssaoState.hbaoBlurR, 0, CoreGraphics::InvalidSamplerId });
         ResourceTableCommitChanges(ssaoState.blurTableY[i]);
     }
 
-    TextureDimensions dims = TextureGetDimensions(script->GetTexture("SSAOBuffer"));
+    TextureDimensions dims = TextureGetDimensions(ssaoState.ssaoOutput);
     ssaoState.vars.fullWidth = (float)dims.width;
     ssaoState.vars.fullHeight = (float)dims.height;
     ssaoState.vars.radius = 12.0f;
@@ -364,6 +367,91 @@ SSAOContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const
     ResourceTableSetConstantBuffer(ssaoState.blurTableY[bufferIndex], { ssaoState.blurConstants, ssaoState.blurC, 0, false, false, sizeof(HbaoblurCs::HBAOBlur), (SizeT)blurOffset });
     ResourceTableCommitChanges(ssaoState.blurTableX[bufferIndex]);
     ResourceTableCommitChanges(ssaoState.blurTableY[bufferIndex]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SSAOContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, SizeT height)
+{
+    using namespace CoreGraphics;
+    DestroyTexture(ssaoState.internalTargets[0]);
+    DestroyTexture(ssaoState.internalTargets[1]);
+
+    TextureCreateInfo tinfo;
+    tinfo.name = "HBAO-Internal0"_atm;
+    tinfo.tag = "system"_atm;
+    tinfo.type = CoreGraphics::Texture2D;
+    tinfo.format = CoreGraphics::PixelFormat::R16G16F;
+    tinfo.windowRelative = true;
+    tinfo.usage = CoreGraphics::TextureUsage::ReadWriteTexture;
+
+    ssaoState.internalTargets[0] = CreateTexture(tinfo);
+    tinfo.name = "HBAO-Internal1";
+    ssaoState.internalTargets[1] = CreateTexture(tinfo);
+
+    IndexT i;
+    for (i = 0; i < ssaoState.hbaoTable.Size(); i++)
+    {
+        // setup hbao table
+        ResourceTableSetRWTexture(ssaoState.hbaoTable[i], { ssaoState.internalTargets[0], ssaoState.hbao0, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetRWTexture(ssaoState.hbaoTable[i], { ssaoState.internalTargets[1], ssaoState.hbao1, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableCommitChanges(ssaoState.hbaoTable[i]);
+
+        // setup blur table
+        ResourceTableSetTexture(ssaoState.blurTableX[i], { ssaoState.internalTargets[1], ssaoState.hbaoX, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetRWTexture(ssaoState.blurTableX[i], { ssaoState.internalTargets[0], ssaoState.hbaoBlurRG, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableCommitChanges(ssaoState.blurTableX[i]);
+
+        ResourceTableSetTexture(ssaoState.blurTableY[i], { ssaoState.internalTargets[0], ssaoState.hbaoY, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetRWTexture(ssaoState.blurTableY[i], { ssaoState.ssaoOutput, ssaoState.hbaoBlurR, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableCommitChanges(ssaoState.blurTableY[i]);
+    }
+
+    TextureDimensions dims = TextureGetDimensions(ssaoState.ssaoOutput);
+    ssaoState.vars.fullWidth = (float)dims.width;
+    ssaoState.vars.fullHeight = (float)dims.height;
+    ssaoState.vars.radius = 12.0f;
+    ssaoState.vars.downsample = 1.0f;
+    ssaoState.vars.sceneScale = 1.0f;
+
+    ssaoState.vars.maxRadiusPixels = MAX_RADIUS_PIXELS * Math::min(ssaoState.vars.fullWidth, ssaoState.vars.fullHeight);
+
+    BarrierCreateInfo binfo =
+    {
+        ""_atm,
+        BarrierDomain::Global,
+        BarrierStage::ComputeShader,
+        BarrierStage::ComputeShader
+    };
+    ImageSubresourceInfo subres = ImageSubresourceInfo::ColorNoMipNoLayer();
+
+    // hbao generation barriers
+    binfo.name = "HBAO Initial transition";
+    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[0], subres, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
+    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[1], subres, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
+    ssaoState.barriers[0] = CreateBarrier(binfo);
+    binfo.textures.Clear();
+
+    binfo.name = "HBAO Transition Pass 0 -> 1";
+    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[0], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead });
+    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[1], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
+    ssaoState.barriers[1] = CreateBarrier(binfo);
+    binfo.textures.Clear();
+
+    // hbao blur barriers
+    binfo.name = "HBAO Transition to Blur";
+    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[1], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead });
+    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[0], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
+    ssaoState.barriers[2] = CreateBarrier(binfo);
+    binfo.textures.Clear();
+
+    binfo.name = "HBAO Transition to Blur Pass 0 -> 1";
+    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[0], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead });
+    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[1], subres, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::ShaderRead, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
+    ssaoState.barriers[3] = CreateBarrier(binfo);
+    binfo.textures.Clear();
 }
 
 } // namespace PostEffects
