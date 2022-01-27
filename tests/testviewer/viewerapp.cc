@@ -249,6 +249,7 @@ void
 SimpleViewerApplication::Close()
 {
     Physics::ShutDown();
+    Jobs2::JobSystemUninit();
     App::Application::Close();
     DestroyWindow(this->wnd);
     this->gfxServer->DiscardStage(this->stage);
