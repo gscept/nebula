@@ -316,6 +316,7 @@ DisableCallbacks(const CoreGraphics::WindowId & id)
     glfwSetWindowSizeCallback(window, nullptr);
     glfwSetScrollCallback(window, nullptr);
     glfwSetCharCallback(window, nullptr);
+    glfwSetDropCallback(window, nullptr);
 }
 
 //------------------------------------------------------------------------------
