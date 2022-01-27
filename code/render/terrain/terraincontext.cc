@@ -1523,7 +1523,7 @@ TerrainContext::CreateBiome(
                 nullptr);
 
             // destroy the texture
-            CoreGraphics::SubmissionContextFreeResource(sub, albedo);
+            Resources::DiscardResource(albedo);
         }
 
         {
@@ -1598,7 +1598,7 @@ TerrainContext::CreateBiome(
                 nullptr);
 
             // destroy the texture
-            CoreGraphics::SubmissionContextFreeResource(sub, normal);
+            Resources::DiscardResource(normal);
         }
 
         {
@@ -1670,7 +1670,7 @@ TerrainContext::CreateBiome(
                 nullptr);
 
             // destroy the texture
-            CoreGraphics::SubmissionContextFreeResource(sub, material);
+            Resources::DiscardResource(material);
         }
     }
 
