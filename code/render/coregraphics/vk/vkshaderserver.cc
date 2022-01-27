@@ -129,7 +129,11 @@ VkShaderServer::Close()
     {
         DestroyResourceTable(this->resourceTables[i]);
     }
+
+    // We need to wait for the GPU to finish here since we are
+    // actually unloading shaders and resource table pools after this point
     CoreGraphics::WaitAndClearPendingCommands();
+
     ShaderServerBase::Close();
 }
 

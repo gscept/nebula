@@ -126,7 +126,10 @@ FileStream::Close()
     n_assert(0 != this->handle);
     if (this->IsMapped())
     {
-        this->Unmap();
+        if (this->mapHandle == nullptr)
+            this->Unmap();
+        else
+            this->MemoryUnmap();
     }
     FSWrapper::CloseFile(this->handle);
     this->handle = 0;

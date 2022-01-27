@@ -160,7 +160,6 @@ BloomContext::Create()
 #if NEBULA_GRAPHICS_DEBUG
             CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "BloomBlur");
 #endif
-
             TextureDimensions dims = TextureGetDimensions(bloomState.internalTargets[0]);
 
             // calculate execution dimensions
