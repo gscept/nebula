@@ -245,8 +245,8 @@ DestroyBuffer(const BufferId id)
     VkBufferMapInfo& mapInfo = bufferAllocator.GetUnsafe<Buffer_MapInfo>(id.id24);
 
     n_assert(mapInfo.mapCount == 0);
-    Vulkan::DelayedFreeMemory(loadInfo.mem);
-    Vulkan::DelayedDeleteBuffer(runtimeInfo.buf, loadInfo.dev);
+    CoreGraphics::DelayedFreeMemory(loadInfo.mem);
+    CoreGraphics::DelayedDeleteBuffer(id);
     bufferAllocator.Dealloc(id.id24);
 }
 

@@ -40,7 +40,9 @@ typedef Ids::IdAllocator<
 > VkTextureViewAllocator;
 extern VkTextureViewAllocator textureViewAllocator;
 
-/// get vk image view
+/// Get vk image view
 const VkImageView TextureViewGetVk(const CoreGraphics::TextureViewId id);
+/// Get device used to create view
+const VkDevice TextureViewGetVkDevice(const CoreGraphics::TextureViewId id);
 
 } // namespace Vulkan

@@ -32,10 +32,28 @@ ResourceTableGetVkDescriptorSet(CoreGraphics::ResourceTableId id)
 //------------------------------------------------------------------------------
 /**
 */
-const VkDescriptorSetLayout&
+const IndexT
+ResourceTableGetVkPoolIndex(CoreGraphics::ResourceTableId id)
+{
+    return resourceTableAllocator.Get<ResourceTable_DescriptorPoolIndex>(id.id24);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::ResourceTableLayoutId&
 ResourceTableGetVkLayout(CoreGraphics::ResourceTableId id)
 {
-    return ResourceTableLayoutGetVk(resourceTableAllocator.Get<ResourceTable_Layout>(id.id24));
+    return resourceTableAllocator.Get<ResourceTable_Layout>(id.id24);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const VkDevice&
+ResourceTableGetVkDevice(CoreGraphics::ResourceTableId id)
+{
+    return resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -144,6 +162,25 @@ ResourceTableLayoutDeallocTable(const CoreGraphics::ResourceTableLayoutId& id, c
 //------------------------------------------------------------------------------
 /**
 */
+const VkDescriptorPool&
+ResourceTableLayoutGetVkDescriptorPool(const CoreGraphics::ResourceTableLayoutId& id, const IndexT index)
+{
+    return resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPools>(id.id24)[index];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ResourceTableLayoutVkDecrementCounter(const CoreGraphics::ResourceTableLayoutId& id, const IndexT index)
+{
+    Util::Array<uint32_t>& freeItems = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPoolFreeItems>(id.id24);
+    freeItems[index]++;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const VkPipelineLayout&
 ResourcePipelineGetVk(const CoreGraphics::ResourcePipelineId& id)
 {
@@ -158,7 +195,6 @@ namespace CoreGraphics
 using namespace Vulkan;
 
 Util::Array<CoreGraphics::ResourceTableId> PendingTableCommits;
-Util::Array<Util::Tuple<CoreGraphics::ResourceTableLayoutId, VkDevice, VkDescriptorSet, IndexT>> PendingTableDeletes;
 bool ResourceTableBlocked = true;
 Threading::CriticalSection PendingTableCommitsLock;
 
@@ -196,14 +232,8 @@ DestroyResourceTable(const ResourceTableId id)
     const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<ResourceTable_Layout>(id.id24);
     const IndexT& poolIndex = resourceTableAllocator.Get<ResourceTable_DescriptorPoolIndex>(id.id24);
     const VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
-    //ResourceTableLayoutDeallocTable(layout, dev, set, poolIndex);
-
-    if (ResourceTableBlocked)
-    {
-        PendingTableCommitsLock.Enter();
-        PendingTableDeletes.Append(Util::MakeTuple(layout, dev, set, poolIndex));
-        PendingTableCommitsLock.Leave();
-    }
+    const VkDescriptorPool& pool = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPools>(layout.id24)[poolIndex];
+    CoreGraphics::DelayedDeleteDescriptorSet(id);
 
     resourceTableAllocator.Dealloc(id.id24);
 }
@@ -641,11 +671,6 @@ ResourceTableBlock(bool b)
         for (ResourceTableId& table : PendingTableCommits)
             ResourceTableCommitChanges(table);
         PendingTableCommits.Clear();
-
-        for (auto set : PendingTableDeletes)
-        {
-            ResourceTableLayoutDeallocTable(Util::Get<0>(set), Util::Get<1>(set), Util::Get<2>(set), Util::Get<3>(set));
-        }
         PendingTableCommitsLock.Leave();
     }
 }

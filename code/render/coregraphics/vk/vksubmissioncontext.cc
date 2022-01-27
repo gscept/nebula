@@ -3,14 +3,16 @@
 //  (C) 2019-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "vksubmissioncontext.h"
 #include "coregraphics/commandbuffer.h"
 #include "coregraphics/semaphore.h"
 #include "coregraphics/fence.h"
 #include "coregraphics/graphicsdevice.h"
 #include "vktexture.h"
 #include "vkbuffer.h"
+#include "vktextureview.h"
+#include "vkresourcetable.h"
 #include "resources/resourceserver.h"
+#include "vksubmissioncontext.h"
 
 #ifdef CreateSemaphore
 #pragma push_macro("CreateSemaphore")
@@ -105,10 +107,10 @@ CreateSubmissionContext(const SubmissionContextCreateInfo& info)
 #endif
 
     submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id) = 0;
-    submissionContextAllocator.Get<SubmissionContext_FreeResources>(id).Resize(info.numBuffers);
     submissionContextAllocator.Get<SubmissionContext_FreeBuffers>(id).Resize(info.numBuffers);
     submissionContextAllocator.Get<SubmissionContext_FreeImages>(id).Resize(info.numBuffers);
     submissionContextAllocator.Get<SubmissionContext_FreeImageViews>(id).Resize(info.numBuffers);
+    submissionContextAllocator.Get<SubmissionContext_FreeResourceTables>(id).Resize(info.numBuffers);
     submissionContextAllocator.Get<SubmissionContext_FreeCommandBuffers>(id).Resize(info.numBuffers);
     submissionContextAllocator.Get<SubmissionContext_ClearCommandBuffers>(id).Resize(info.numBuffers);
     submissionContextAllocator.Get<SubmissionContext_FreeMemories>(id).Resize(info.numBuffers);
@@ -186,16 +188,6 @@ SubmissionContextGetCmdBuffer(const SubmissionContextId id)
     return submissionContextAllocator.Get<SubmissionContext_CmdBuffer>(id.id24)[currentIndex];
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void
-SubmissionContextFreeResource(const CoreGraphics::SubmissionContextId id, const Resources::ResourceId res)
-{
-    const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
-    Util::Array<Resources::ResourceId>& resources = submissionContextAllocator.Get<SubmissionContext_FreeResources>(id.id24)[currentIndex];
-    resources.Append(res);
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -208,6 +200,34 @@ SubmissionContextFreeTexture(const CoreGraphics::SubmissionContextId id, CoreGra
     VkImage img = Vulkan::TextureGetVkImage(tex);
     VkDevice dev = Vulkan::TextureGetVkDevice(tex);
     images.Append(Util::MakeTuple(dev, img));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SubmissionContextFreeTextureView(const CoreGraphics::SubmissionContextId id, CoreGraphics::TextureViewId view)
+{
+    const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
+    Util::Array<Util::Tuple<VkDevice, VkImageView>>& views = submissionContextAllocator.Get<SubmissionContext_FreeImageViews>(id.id24)[currentIndex];
+    VkImageView img = Vulkan::TextureViewGetVk(view);
+    VkDevice dev = Vulkan::TextureViewGetVkDevice(view);
+    views.Append(Util::MakeTuple(dev, img));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+SubmissionContextFreeResourceTable(const CoreGraphics::SubmissionContextId id, CoreGraphics::ResourceTableId table)
+{
+    const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
+    Util::Array<Util::Tuple<VkDevice, CoreGraphics::ResourceTableLayoutId, VkDescriptorSet, IndexT>>& sets = submissionContextAllocator.Get<SubmissionContext_FreeResourceTables>(id.id24)[currentIndex];
+    VkDevice dev = Vulkan::ResourceTableGetVkDevice(table);
+    VkDescriptorSet set = Vulkan::ResourceTableGetVkDescriptorSet(table);
+    CoreGraphics::ResourceTableLayoutId layout = Vulkan::ResourceTableGetVkLayout(table);
+    IndexT index = Vulkan::ResourceTableGetVkPoolIndex(table);
+    sets.Append(Util::MakeTuple(dev, layout, set, index));
 }
 
 //------------------------------------------------------------------------------
@@ -361,31 +381,10 @@ SubmissionContextPoll(const SubmissionContextId id)
 void
 CleanupPendingDeletes(const SubmissionContextId id, IndexT currentIndex)
 {
-    Util::Array<CoreGraphics::Alloc>& mem = submissionContextAllocator.Get<SubmissionContext_FreeMemories>(id.id24)[currentIndex];
-    for (IndexT i = 0; i < mem.Size(); i++)
-        FreeMemory(mem[i]);
-    mem.Clear();
-
-    // delete any pending resources this context has allocated
-    Util::Array<Resources::ResourceId>& resources = submissionContextAllocator.Get<SubmissionContext_FreeResources>(id.id24)[currentIndex];
-    for (IndexT i = 0; i < resources.Size(); i++)
-        //Resources::DiscardResource(resources[i]);
-    resources.Clear();
-
-    Util::Array<Util::Tuple<VkDevice, VkBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContext_FreeBuffers>(id.id24)[currentIndex];
-    for (IndexT i = 0; i < buffers.Size(); i++)
-        vkDestroyBuffer(Util::Get<0>(buffers[i]), Util::Get<1>(buffers[i]), nullptr);
-    buffers.Clear();
-
-    Util::Array<Util::Tuple<VkDevice, VkImageView>>& imageViews = submissionContextAllocator.Get<SubmissionContext_FreeImageViews>(id.id24)[currentIndex];
-    for (IndexT i = 0; i < imageViews.Size(); i++)
-        vkDestroyImageView(Util::Get<0>(imageViews[i]), Util::Get<1>(imageViews[i]), nullptr);
-    imageViews.Clear();
-
-    Util::Array<Util::Tuple<VkDevice, VkImage>>& images = submissionContextAllocator.Get<SubmissionContext_FreeImages>(id.id24)[currentIndex];
-    for (IndexT i = 0; i < images.Size(); i++)
-        vkDestroyImage(Util::Get<0>(images[i]), Util::Get<1>(images[i]), nullptr);
-    images.Clear();
+    Util::Array<void*>& hostMemories = submissionContextAllocator.Get<SubmissionContext_FreeHostMemories>(id.id24)[currentIndex];
+    for (IndexT i = 0; i < hostMemories.Size(); i++)
+        Memory::Free(Memory::ScratchHeap, hostMemories[i]);
+    hostMemories.Clear();
 
     Util::Array<CoreGraphics::CommandBufferId>& freeCommandBuffers = submissionContextAllocator.Get<SubmissionContext_FreeCommandBuffers>(id.id24)[currentIndex];
     for (IndexT i = 0; i < freeCommandBuffers.Size(); i++)
@@ -397,10 +396,30 @@ CleanupPendingDeletes(const SubmissionContextId id, IndexT currentIndex)
         CoreGraphics::CommandBufferClear(clearCommandBuffers[i], CommandBufferClearInfo{ false });
     clearCommandBuffers.Clear();
 
-    Util::Array<void*>& hostMemories = submissionContextAllocator.Get<SubmissionContext_FreeHostMemories>(id.id24)[currentIndex];
-    for (IndexT i = 0; i < hostMemories.Size(); i++)
-        Memory::Free(Memory::ScratchHeap, hostMemories[i]);
-    hostMemories.Clear();
+    Util::Array<Util::Tuple<VkDevice, CoreGraphics::ResourceTableLayoutId, VkDescriptorSet, IndexT>>& sets = submissionContextAllocator.Get<SubmissionContext_FreeResourceTables>(id.id24)[currentIndex];
+    for (IndexT i = 0; i < sets.Size(); i++)
+        CoreGraphics::ResourceTableLayoutDeallocTable(Util::Get<1>(sets[i]), Util::Get<0>(sets[i]), Util::Get<2>(sets[i]), Util::Get<3>(sets[i]));
+    sets.Clear();
+
+    Util::Array<Util::Tuple<VkDevice, VkImageView>>& imageViews = submissionContextAllocator.Get<SubmissionContext_FreeImageViews>(id.id24)[currentIndex];
+    for (IndexT i = 0; i < imageViews.Size(); i++)
+        vkDestroyImageView(Util::Get<0>(imageViews[i]), Util::Get<1>(imageViews[i]), nullptr);
+    imageViews.Clear();
+
+    Util::Array<Util::Tuple<VkDevice, VkBuffer>>& buffers = submissionContextAllocator.Get<SubmissionContext_FreeBuffers>(id.id24)[currentIndex];
+    for (IndexT i = 0; i < buffers.Size(); i++)
+        vkDestroyBuffer(Util::Get<0>(buffers[i]), Util::Get<1>(buffers[i]), nullptr);
+    buffers.Clear();
+
+    Util::Array<Util::Tuple<VkDevice, VkImage>>& images = submissionContextAllocator.Get<SubmissionContext_FreeImages>(id.id24)[currentIndex];
+    for (IndexT i = 0; i < images.Size(); i++)
+        vkDestroyImage(Util::Get<0>(images[i]), Util::Get<1>(images[i]), nullptr);
+    images.Clear();
+
+    Util::Array<CoreGraphics::Alloc>& mem = submissionContextAllocator.Get<SubmissionContext_FreeMemories>(id.id24)[currentIndex];
+    for (IndexT i = 0; i < mem.Size(); i++)
+        FreeMemory(mem[i]);
+    mem.Clear();
 }
 
 } // namespace CoreGraphics

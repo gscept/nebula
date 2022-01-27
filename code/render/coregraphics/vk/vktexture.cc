@@ -4,6 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "vktexture.h"
+#include "vktextureview.h"
 #include "vkloader.h"
 #include "io/stream.h"
 
@@ -41,7 +42,7 @@ TextureGetVkStencilImageView(const CoreGraphics::TextureId id)
 {
     Ids::Id32 stencil = textureAllocator.GetUnsafe<Texture_LoadInfo>(id.resourceId).stencilExtension;
     n_assert(stencil != Ids::InvalidId32);
-    return textureStencilExtensionAllocator.GetUnsafe<TextureExtension_StencilInfo>(stencil).view;
+    return TextureViewGetVk(textureStencilExtensionAllocator.GetUnsafe<TextureExtension_StencilInfo>(stencil));
 }
 
 //------------------------------------------------------------------------------

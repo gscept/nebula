@@ -31,6 +31,8 @@
 #include "coregraphics/vk/vkfence.h"
 #include "coregraphics/vk/vksubmissioncontext.h"
 #include "coregraphics/submissioncontext.h"
+#include "coregraphics/memorytexturecache.h"
+#include "coregraphics/vk/vktextureview.h"
 #include "resources/resourceserver.h"
 #include "coregraphics/graphicsdevice.h"
 #include "coregraphics/drawthread.h"
@@ -843,42 +845,6 @@ void
 CommandBufferEndMarker(VkCommandBuffer buf)
 {
     VkCmdDebugMarkerEnd(buf);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-DelayedDeleteBuffer(const VkBuffer buf, const VkDevice dev)
-{
-    SubmissionContextFreeVkBuffer(state.gfxSubmission, dev, buf);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-DelayedDeleteImage(const VkImage img, const VkDevice dev)
-{
-    SubmissionContextFreeVkImage(state.gfxSubmission, dev, img);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-DelayedDeleteImageView(const VkImageView view, const VkDevice dev)
-{
-    SubmissionContextFreeVkImageView(state.gfxSubmission, dev, view);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-DelayedFreeMemory(const CoreGraphics::Alloc alloc)
-{
-    CoreGraphics::SubmissionContextFreeMemory(state.gfxSubmission, alloc);
 }
 
 //------------------------------------------------------------------------------
@@ -3451,6 +3417,51 @@ WaitAndClearPendingCommands()
     CoreGraphics::SubmissionContextCleanupPendingDeletes(state.queryGraphicsSubmissionContext);
     CoreGraphics::SubmissionContextCleanupPendingDeletes(state.resourceSubmissionContext);
     CoreGraphics::SubmissionContextCleanupPendingDeletes(state.setupSubmissionContext);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DelayedDeleteBuffer(const BufferId id)
+{
+    SubmissionContextFreeBuffer(state.gfxSubmission, id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DelayedDeleteTexture(const TextureId id)
+{
+    SubmissionContextFreeTexture(state.gfxSubmission, id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DelayedDeleteTextureView(const TextureViewId id)
+{
+    SubmissionContextFreeTextureView(state.gfxSubmission, id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DelayedFreeMemory(const CoreGraphics::Alloc alloc)
+{
+    SubmissionContextFreeMemory(state.gfxSubmission, alloc);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DelayedDeleteDescriptorSet(const ResourceTableId id)
+{
+    SubmissionContextFreeResourceTable(state.gfxSubmission, id);
 }
 
 //------------------------------------------------------------------------------

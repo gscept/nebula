@@ -116,9 +116,11 @@ VkMemoryTextureCache::Unload(const Resources::ResourceId id)
     if (loadInfo.stencilExtension != Ids::InvalidId32)
     {
         __Lock(textureStencilExtensionAllocator);
-        VkTextureRuntimeInfo& stencil = textureStencilExtensionAllocator.Get<TextureExtension_StencilInfo>(loadInfo.stencilExtension);
-        Vulkan::DelayedDeleteImageView(stencil.view, loadInfo.dev);
-        VkShaderServer::Instance()->UnregisterTexture(stencil.bind, stencil.type);
+        TextureViewId stencil = textureStencilExtensionAllocator.Get<TextureExtension_StencilInfo>(loadInfo.stencilExtension);
+        IndexT bind = textureStencilExtensionAllocator.Get<TextureExtension_StencilBind>(loadInfo.stencilExtension);
+        CoreGraphics::DelayedDeleteTextureView(stencil);
+        if (runtimeInfo.type != 0xFFFFFFFF)
+            VkShaderServer::Instance()->UnregisterTexture(bind, runtimeInfo.type);
         textureStencilExtensionAllocator.Dealloc(loadInfo.stencilExtension);
     }
 
@@ -135,7 +137,7 @@ VkMemoryTextureCache::Unload(const Resources::ResourceId id)
         // dealloc all opaque bindings
         Util::Array<CoreGraphics::Alloc>& allocs = textureSparseExtensionAllocator.Get<TextureExtension_SparseOpaqueAllocs>(loadInfo.sparseExtension);
         for (IndexT i = 0; i < allocs.Size(); i++)
-            Vulkan::DelayedFreeMemory(allocs[i]);
+            CoreGraphics::DelayedFreeMemory(allocs[i]);
         allocs.Clear();
 
         // clear all pages
@@ -149,7 +151,7 @@ VkMemoryTextureCache::Unload(const Resources::ResourceId id)
                 {
                     if (pages[pageIdx].alloc.mem != VK_NULL_HANDLE)
                     {
-                        Vulkan::DelayedFreeMemory(pages[pageIdx].alloc);
+                        CoreGraphics::DelayedFreeMemory(pages[pageIdx].alloc);
                         pages[pageIdx].alloc.mem = VK_NULL_HANDLE;
                         pages[pageIdx].alloc.offset = 0;
                     }
@@ -163,7 +165,7 @@ VkMemoryTextureCache::Unload(const Resources::ResourceId id)
     }
     else if (loadInfo.alias == CoreGraphics::InvalidTextureId && loadInfo.mem.mem != VK_NULL_HANDLE)
     {
-        Vulkan::DelayedFreeMemory(loadInfo.mem);
+        CoreGraphics::DelayedFreeMemory(loadInfo.mem);
         loadInfo.mem = CoreGraphics::Alloc{};
     }
 
@@ -172,8 +174,7 @@ VkMemoryTextureCache::Unload(const Resources::ResourceId id)
     {
         if (runtimeInfo.bind != 0xFFFFFFFF)
             VkShaderServer::Instance()->UnregisterTexture(runtimeInfo.bind, runtimeInfo.type);
-        Vulkan::DelayedDeleteImageView(runtimeInfo.view, loadInfo.dev);
-        Vulkan::DelayedDeleteImage(loadInfo.img, loadInfo.dev);
+        CoreGraphics::DelayedDeleteTexture(id);
         runtimeInfo.view = VK_NULL_HANDLE;
         loadInfo.img = VK_NULL_HANDLE;
     }
@@ -772,7 +773,7 @@ VkMemoryTextureCache::GetStencilBindlessHandle(const CoreGraphics::TextureId id)
 {
     Ids::Id32 stencil = this->GetUnsafe<Texture_LoadInfo>(id.resourceId).stencilExtension;
     n_assert(stencil != Ids::InvalidId32);
-    return textureStencilExtensionAllocator.GetUnsafe<TextureExtension_StencilInfo>(stencil).bind;
+    return textureStencilExtensionAllocator.GetUnsafe<TextureExtension_StencilBind>(stencil);
 }
 
 //------------------------------------------------------------------------------
@@ -1494,12 +1495,18 @@ VkMemoryTextureCache::Setup(const Resources::ResourceId id)
             __Lock(textureStencilExtensionAllocator);
 
             // setup stencil extension
+            TextureViewCreateInfo viewCreate;
+            viewCreate.format = loadInfo.format;
+            viewCreate.numLayers = loadInfo.layers;
+            viewCreate.numMips = loadInfo.mips;
+            viewCreate.startLayer = 0;
+            viewCreate.startMip = 0;
+            viewCreate.tex = id;
+            TextureViewId stencilView = CreateTextureView(viewCreate);
+
             loadInfo.stencilExtension = textureStencilExtensionAllocator.Alloc();
-            VkTextureRuntimeInfo& stencilRuntimeInfo = textureStencilExtensionAllocator.Get<TextureExtension_StencilInfo>(loadInfo.stencilExtension);
-            stencilRuntimeInfo.type = runtimeInfo.type;
-            viewRange.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
-            viewCreate.subresourceRange = viewRange;
-            stat = vkCreateImageView(loadInfo.dev, &viewCreate, nullptr, &stencilRuntimeInfo.view);
+            textureStencilExtensionAllocator.Set<TextureExtension_StencilInfo>(loadInfo.stencilExtension, stencilView);
+            textureStencilExtensionAllocator.Set<TextureExtension_StencilBind>(loadInfo.stencilExtension, 0xFFFFFFFF);
         }
 
         // use setup submission
@@ -1548,8 +1555,8 @@ VkMemoryTextureCache::Setup(const Resources::ResourceId id)
             if (isDepthFormat)
             {
                 __Lock(textureStencilExtensionAllocator);
-                VkTextureRuntimeInfo& stencilRuntimeInfo = textureStencilExtensionAllocator.Get<TextureExtension_StencilInfo>(loadInfo.stencilExtension);
-                stencilRuntimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(id), runtimeInfo.type, true, true);
+                IndexT& bind = textureStencilExtensionAllocator.Get<TextureExtension_StencilBind>(loadInfo.stencilExtension);
+                bind = VkShaderServer::Instance()->RegisterTexture(TextureId(id), runtimeInfo.type, true, true);
             }
         }
         else

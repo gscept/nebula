@@ -382,6 +382,17 @@ void WaitForQueue(CoreGraphics::QueueType queue);
 /// wait for all queues to finish
 void WaitAndClearPendingCommands();
 
+/// Add buffer to delete queue
+void DelayedDeleteBuffer(const BufferId id);
+/// Add texture to delete queue
+void DelayedDeleteTexture(const TextureId id);
+/// Add texture view to delete queue
+void DelayedDeleteTextureView(const TextureViewId id);
+/// Add memory allocation to delete queue
+void DelayedFreeMemory(const CoreGraphics::Alloc alloc);
+/// Add a descriptor set to delete queue
+void DelayedDeleteDescriptorSet(const ResourceTableId id);
+
 /// Swap
 void Swap(IndexT i);
 /// Progress to next frame

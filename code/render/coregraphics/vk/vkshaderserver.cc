@@ -129,6 +129,7 @@ VkShaderServer::Close()
     {
         DestroyResourceTable(this->resourceTables[i]);
     }
+    CoreGraphics::WaitAndClearPendingCommands();
     ShaderServerBase::Close();
 }
 

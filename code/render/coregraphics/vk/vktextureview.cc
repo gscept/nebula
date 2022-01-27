@@ -26,6 +26,15 @@ TextureViewGetVk(const TextureViewId id)
     return textureViewAllocator.Get<TextureView_RuntimeInfo>(id.id24).view;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+const VkDevice
+TextureViewGetVkDevice(const CoreGraphics::TextureViewId id)
+{
+    return textureViewAllocator.Get<TextureView_LoadInfo>(id.id24).dev;
+}
+
 } // namespace Vulkan
 
 
@@ -91,7 +100,7 @@ DestroyTextureView(const TextureViewId id)
 {
     VkTextureViewLoadInfo& loadInfo = textureViewAllocator.Get<TextureView_LoadInfo>(id.id24);
     VkTextureViewRuntimeInfo& runtimeInfo = textureViewAllocator.Get<TextureView_RuntimeInfo>(id.id24);
-    vkDestroyImageView(loadInfo.dev, runtimeInfo.view, nullptr);
+    CoreGraphics::DelayedDeleteTextureView(id);
     textureViewAllocator.Dealloc(id.id24);
 }
 
@@ -104,8 +113,8 @@ TextureViewReload(const TextureViewId id)
     VkTextureViewRuntimeInfo& runtimeInfo = textureViewAllocator.Get<TextureView_RuntimeInfo>(id.id24);
     VkTextureViewLoadInfo& loadInfo = textureViewAllocator.Get<TextureView_LoadInfo>(id.id24);
 
-    // first destroy the old view
-    vkDestroyImageView(loadInfo.dev, runtimeInfo.view, nullptr);
+    // First destroy the old view
+    CoreGraphics::DelayedDeleteTextureView(id);
 
     bool isDepthFormat = VkTypes::IsDepthFormat(loadInfo.format);
     VkImageSubresourceRange viewRange;
