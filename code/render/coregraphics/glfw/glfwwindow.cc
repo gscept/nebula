@@ -11,6 +11,7 @@
 #include "coregraphics/displaydevice.h"
 #include "math/scalar.h"
 #include "frame/frameserver.h"
+#include "graphics/graphicsserver.h"
 
 #if __VULKAN__
 #include "coregraphics/vk/vkgraphicsdevice.h"
@@ -495,7 +496,7 @@ DestroyWindow(const WindowId id)
     Vulkan::DiscardVulkanSwapchain(id);
     // wait for queues to empty
     VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFW_WindowSwapInfo>(id.id24);
-    CoreGraphics::WaitForAllQueues();
+    CoreGraphics::WaitAndClearPendingCommands();
     vkDeviceWaitIdle(wndInfo.dev);
 #endif
 
@@ -918,23 +919,19 @@ DiscardVulkanSwapchain(const CoreGraphics::WindowId& id)
 /**
 */
 void
-RecreateVulkanSwapchain(const CoreGraphics::WindowId & id, const CoreGraphics::DisplayMode& mode, const Util::StringAtom& title)
+RecreateVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, const Util::StringAtom& title)
 {
     VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFW_WindowSwapInfo>(id.id24);
-    // wait until GPU is idle
-    CoreGraphics::WaitForAllQueues();
-    vkDeviceWaitIdle(wndInfo.dev);
+
+    // Wait until GPU is idle
+    CoreGraphics::WaitAndClearPendingCommands();
 
     DiscardVulkanSwapchain(id);
 
     // TODO: We could pass the old swapchain when creating the new one, allowing any pending drawing to be finished before changing
     SetupVulkanSwapchain(id, mode, title);
-
     Frame::FrameServer::Instance()->OnWindowResize();
     Vulkan::VkPipelineDatabase::Instance()->RecreatePipelines();
-
-    CoreGraphics::WaitForAllQueues();
-    vkDeviceWaitIdle(wndInfo.dev);
 }
 
 //------------------------------------------------------------------------------

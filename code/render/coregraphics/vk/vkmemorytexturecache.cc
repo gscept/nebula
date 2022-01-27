@@ -117,7 +117,7 @@ VkMemoryTextureCache::Unload(const Resources::ResourceId id)
     {
         __Lock(textureStencilExtensionAllocator);
         VkTextureRuntimeInfo& stencil = textureStencilExtensionAllocator.Get<TextureExtension_StencilInfo>(loadInfo.stencilExtension);
-        Vulkan::DelayedDeleteImageView(stencil.view);
+        Vulkan::DelayedDeleteImageView(stencil.view, loadInfo.dev);
         VkShaderServer::Instance()->UnregisterTexture(stencil.bind, stencil.type);
         textureStencilExtensionAllocator.Dealloc(loadInfo.stencilExtension);
     }
@@ -172,8 +172,8 @@ VkMemoryTextureCache::Unload(const Resources::ResourceId id)
     {
         if (runtimeInfo.bind != 0xFFFFFFFF)
             VkShaderServer::Instance()->UnregisterTexture(runtimeInfo.bind, runtimeInfo.type);
-        Vulkan::DelayedDeleteImageView(runtimeInfo.view);
-        Vulkan::DelayedDeleteImage(loadInfo.img);
+        Vulkan::DelayedDeleteImageView(runtimeInfo.view, loadInfo.dev);
+        Vulkan::DelayedDeleteImage(loadInfo.img, loadInfo.dev);
         runtimeInfo.view = VK_NULL_HANDLE;
         loadInfo.img = VK_NULL_HANDLE;
     }

@@ -71,6 +71,9 @@ void SubmissionContextClearCommandBuffer(const CoreGraphics::SubmissionContextId
 void SubmissionContextFreeMemory(const CoreGraphics::SubmissionContextId id, const CoreGraphics::Alloc& alloc);
 /// add void* to memory free upon completion
 void SubmissionContextFreeHostMemory(const SubmissionContextId id, void* buf);
+/// Clear up all pending deletes
+void SubmissionContextCleanupPendingDeletes(const CoreGraphics::SubmissionContextId id);
+
 
 /// get current fence object
 const FenceId SubmissionContextGetFence(const SubmissionContextId id);

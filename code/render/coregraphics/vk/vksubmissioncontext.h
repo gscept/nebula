@@ -28,6 +28,7 @@ enum
     SubmissionContext_FreeResources,
     SubmissionContext_FreeBuffers,
     SubmissionContext_FreeImages,
+    SubmissionContext_FreeImageViews,
     SubmissionContext_FreeCommandBuffers,
     SubmissionContext_ClearCommandBuffers,
     SubmissionContext_FreeHostMemories,
@@ -46,6 +47,7 @@ typedef Ids::IdAllocator<
     Util::FixedArray<Util::Array<Resources::ResourceId>>,
     Util::FixedArray<Util::Array<Util::Tuple<VkDevice, VkBuffer>>>,
     Util::FixedArray<Util::Array<Util::Tuple<VkDevice, VkImage>>>,
+    Util::FixedArray<Util::Array<Util::Tuple<VkDevice, VkImageView>>>,
     Util::FixedArray<Util::Array<CoreGraphics::CommandBufferId>>,
     Util::FixedArray<Util::Array<CoreGraphics::CommandBufferId>>,
     Util::FixedArray<Util::Array<void*>>,
@@ -61,6 +63,8 @@ extern SubmissionContextAllocator submissionContextAllocator;
 void SubmissionContextFreeVkBuffer(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkBuffer buf);
 /// add image for deletion
 void SubmissionContextFreeVkImage(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkImage img);
+/// add image view for deletion
+void SubmissionContextFreeVkImageView(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkImageView img);
 
 /// set the submission timeline index for this cycle
 void SubmissionContextSetTimelineIndex(const CoreGraphics::SubmissionContextId id, uint64 index);

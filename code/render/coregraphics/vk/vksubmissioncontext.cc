@@ -48,6 +48,18 @@ SubmissionContextFreeVkImage(const CoreGraphics::SubmissionContextId id, VkDevic
 //------------------------------------------------------------------------------
 /**
 */
+void
+SubmissionContextFreeVkImageView(const CoreGraphics::SubmissionContextId id, VkDevice dev, VkImageView img)
+{
+    // get fence so we can wait for it
+    const IndexT currentIndex = submissionContextAllocator.Get<SubmissionContext_CurrentIndex>(id.id24);
+    Util::Array<Util::Tuple<VkDevice, VkImageView>>& images = submissionContextAllocator.Get<SubmissionContext_FreeImageViews>(id.id24)[currentIndex];
+    images.Append(Util::MakeTuple(dev, img));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void 
 SubmissionContextSetTimelineIndex(const CoreGraphics::SubmissionContextId id, uint64 index)
 {
@@ -96,6 +108,7 @@ CreateSubmissionContext(const SubmissionContextCreateInfo& info)
     submissionContextAllocator.Get<SubmissionContext_FreeResources>(id).Resize(info.numBuffers);
     submissionContextAllocator.Get<SubmissionContext_FreeBuffers>(id).Resize(info.numBuffers);
     submissionContextAllocator.Get<SubmissionContext_FreeImages>(id).Resize(info.numBuffers);
+    submissionContextAllocator.Get<SubmissionContext_FreeImageViews>(id).Resize(info.numBuffers);
     submissionContextAllocator.Get<SubmissionContext_FreeCommandBuffers>(id).Resize(info.numBuffers);
     submissionContextAllocator.Get<SubmissionContext_ClearCommandBuffers>(id).Resize(info.numBuffers);
     submissionContextAllocator.Get<SubmissionContext_FreeMemories>(id).Resize(info.numBuffers);
@@ -257,6 +270,17 @@ SubmissionContextFreeHostMemory(const SubmissionContextId id, void* buf)
 //------------------------------------------------------------------------------
 /**
 */
+void
+SubmissionContextCleanupPendingDeletes(const CoreGraphics::SubmissionContextId id)
+{
+    SizeT numCycles = submissionContextAllocator.Get<SubmissionContext_NumCycles>(id.id24);
+    for (IndexT i = 0; i < numCycles; i++)
+        CleanupPendingDeletes(id, i);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const FenceId 
 SubmissionContextGetFence(const SubmissionContextId id)
 {
@@ -352,6 +376,11 @@ CleanupPendingDeletes(const SubmissionContextId id, IndexT currentIndex)
     for (IndexT i = 0; i < buffers.Size(); i++)
         vkDestroyBuffer(Util::Get<0>(buffers[i]), Util::Get<1>(buffers[i]), nullptr);
     buffers.Clear();
+
+    Util::Array<Util::Tuple<VkDevice, VkImageView>>& imageViews = submissionContextAllocator.Get<SubmissionContext_FreeImageViews>(id.id24)[currentIndex];
+    for (IndexT i = 0; i < imageViews.Size(); i++)
+        vkDestroyImageView(Util::Get<0>(imageViews[i]), Util::Get<1>(imageViews[i]), nullptr);
+    imageViews.Clear();
 
     Util::Array<Util::Tuple<VkDevice, VkImage>>& images = submissionContextAllocator.Get<SubmissionContext_FreeImages>(id.id24)[currentIndex];
     for (IndexT i = 0; i < images.Size(); i++)

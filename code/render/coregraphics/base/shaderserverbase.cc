@@ -262,7 +262,7 @@ ShaderServerBase::BeforeFrame()
     if (this->pendingShaderReloads.Size() > 0)
     {
         // wait for all graphics commands to finish first
-        CoreGraphics::WaitForAllQueues();
+        CoreGraphics::WaitAndClearPendingCommands();
 
         Util::Array<Resources::ResourceName> shaders;
         shaders.Reserve(4);

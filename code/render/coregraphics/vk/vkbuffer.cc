@@ -246,7 +246,7 @@ DestroyBuffer(const BufferId id)
 
     n_assert(mapInfo.mapCount == 0);
     Vulkan::DelayedFreeMemory(loadInfo.mem);
-    Vulkan::DelayedDeleteBuffer(runtimeInfo.buf);
+    Vulkan::DelayedDeleteBuffer(runtimeInfo.buf, loadInfo.dev);
     bufferAllocator.Dealloc(id.id24);
 }
 

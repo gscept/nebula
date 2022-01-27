@@ -135,11 +135,6 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     
     uint currentStencilFrontRef, currentStencilBackRef, currentStencilReadMask, currentStencilWriteMask;
 
-    Util::FixedArray<Util::Array<VkBuffer>> delayedDeleteBuffers;
-    Util::FixedArray<Util::Array<VkImage>> delayedDeleteImages;
-    Util::FixedArray<Util::Array<VkImageView>> delayedDeleteImageViews;
-    Util::FixedArray<Util::Array<CoreGraphics::Alloc>> delayedFreeMemories;
-
     static const SizeT MaxQueriesPerFrame = 1024;
     VkQueryPool queryPoolsByType[CoreGraphics::NumQueryTypes];
     CoreGraphics::BufferId queryResultBuffers[CoreGraphics::NumQueryTypes];
@@ -854,27 +849,27 @@ CommandBufferEndMarker(VkCommandBuffer buf)
 /**
 */
 void 
-DelayedDeleteBuffer(const VkBuffer buf)
+DelayedDeleteBuffer(const VkBuffer buf, const VkDevice dev)
 {
-    state.delayedDeleteBuffers[state.currentBufferedFrameIndex].Append(buf);
+    SubmissionContextFreeVkBuffer(state.gfxSubmission, dev, buf);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-DelayedDeleteImage(const VkImage img)
+DelayedDeleteImage(const VkImage img, const VkDevice dev)
 {
-    state.delayedDeleteImages[state.currentBufferedFrameIndex].Append(img);
+    SubmissionContextFreeVkImage(state.gfxSubmission, dev, img);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-DelayedDeleteImageView(const VkImageView view)
+DelayedDeleteImageView(const VkImageView view, const VkDevice dev)
 {
-    state.delayedDeleteImageViews[state.currentBufferedFrameIndex].Append(view);
+    SubmissionContextFreeVkImageView(state.gfxSubmission, dev, view);
 }
 
 //------------------------------------------------------------------------------
@@ -883,7 +878,7 @@ DelayedDeleteImageView(const VkImageView view)
 void 
 DelayedFreeMemory(const CoreGraphics::Alloc alloc)
 {
-    state.delayedFreeMemories[state.currentBufferedFrameIndex].Append(alloc);
+    CoreGraphics::SubmissionContextFreeMemory(state.gfxSubmission, alloc);
 }
 
 //------------------------------------------------------------------------------
@@ -1595,11 +1590,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
     state.maxNumBufferedFrames = info.numBufferedFrames;
 
-    state.delayedDeleteBuffers.Resize(state.maxNumBufferedFrames);
-    state.delayedDeleteImages.Resize(state.maxNumBufferedFrames);
-    state.delayedDeleteImageViews.Resize(state.maxNumBufferedFrames);
-    state.delayedFreeMemories.Resize(state.maxNumBufferedFrames);
-
 #ifdef CreateSemaphore
 #pragma push_macro("CreateSemaphore")
 #undef CreateSemaphore
@@ -1781,25 +1771,6 @@ DestroyGraphicsDevice()
 
     // wait for queues and run all pending commands
     state.subcontextHandler.Discard();
-
-    // clean up delayed delete objects
-    uint j;
-    for (j = 0; j < state.maxNumBufferedFrames; j++)
-    {
-        IndexT i;
-        for (i = 0; i < state.delayedDeleteBuffers[j].Size(); i++)
-            vkDestroyBuffer(state.devices[state.currentDevice], state.delayedDeleteBuffers[j][i], nullptr);
-        state.delayedDeleteBuffers[j].Clear();
-        for (i = 0; i < state.delayedDeleteImages[j].Size(); i++)
-            vkDestroyImage(state.devices[state.currentDevice], state.delayedDeleteImages[j][i], nullptr);
-        state.delayedDeleteImages[j].Clear();
-        for (i = 0; i < state.delayedDeleteImageViews[j].Size(); i++)
-            vkDestroyImageView(state.devices[state.currentDevice], state.delayedDeleteImageViews[j][i], nullptr);
-        state.delayedDeleteImageViews[j].Clear();
-        for (i = 0; i < state.delayedFreeMemories[j].Size(); i++)
-            FreeMemory(state.delayedFreeMemories[j][i]);
-        state.delayedFreeMemories[j].Clear();
-    }
 
     DestroySubmissionContext(state.gfxSubmission);
     DestroySubmissionContext(state.computeSubmission);
@@ -3466,12 +3437,20 @@ WaitForQueue(CoreGraphics::QueueType queue)
 /**
 */
 void 
-WaitForAllQueues()
+WaitAndClearPendingCommands()
 {
     state.subcontextHandler.WaitIdle(GraphicsQueueType);
     state.subcontextHandler.WaitIdle(ComputeQueueType);
     state.subcontextHandler.WaitIdle(TransferQueueType);
     state.subcontextHandler.WaitIdle(SparseQueueType);
+    vkDeviceWaitIdle(state.devices[state.currentDevice]);
+    CoreGraphics::SubmissionContextCleanupPendingDeletes(state.gfxSubmission);
+    CoreGraphics::SubmissionContextCleanupPendingDeletes(state.computeSubmission);
+    CoreGraphics::SubmissionContextCleanupPendingDeletes(state.handoverSubmissionContext);
+    CoreGraphics::SubmissionContextCleanupPendingDeletes(state.queryComputeSubmissionContext);
+    CoreGraphics::SubmissionContextCleanupPendingDeletes(state.queryGraphicsSubmissionContext);
+    CoreGraphics::SubmissionContextCleanupPendingDeletes(state.resourceSubmissionContext);
+    CoreGraphics::SubmissionContextCleanupPendingDeletes(state.setupSubmissionContext);
 }
 
 //------------------------------------------------------------------------------
@@ -3522,18 +3501,6 @@ NewFrame()
         nextCboRing.cboComputeStartAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
         nextCboRing.cboComputeEndAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
     }
-
-    // clean up delayed delete objects
-    IndexT i;
-    for (i = 0; i < state.delayedDeleteBuffers[state.currentBufferedFrameIndex].Size(); i++)
-        vkDestroyBuffer(state.devices[state.currentDevice], state.delayedDeleteBuffers[state.currentBufferedFrameIndex][i], nullptr);
-    state.delayedDeleteBuffers[state.currentBufferedFrameIndex].Clear();
-    for (i = 0; i < state.delayedDeleteImages[state.currentBufferedFrameIndex].Size(); i++)
-        vkDestroyImage(state.devices[state.currentDevice], state.delayedDeleteImages[state.currentBufferedFrameIndex][i], nullptr);
-    state.delayedDeleteImages[state.currentBufferedFrameIndex].Clear();
-    for (i = 0; i < state.delayedDeleteImageViews[state.currentBufferedFrameIndex].Size(); i++)
-        vkDestroyImageView(state.devices[state.currentDevice], state.delayedDeleteImageViews[state.currentBufferedFrameIndex][i], nullptr);
-    state.delayedDeleteImageViews[state.currentBufferedFrameIndex].Clear();
 
     N_MARKER_END();
 }

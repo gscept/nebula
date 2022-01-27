@@ -380,7 +380,7 @@ bool IsInBeginFrame();
 /// wait for an individual queue to finish
 void WaitForQueue(CoreGraphics::QueueType queue);
 /// wait for all queues to finish
-void WaitForAllQueues();
+void WaitAndClearPendingCommands();
 
 /// Swap
 void Swap(IndexT i);
