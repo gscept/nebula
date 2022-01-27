@@ -383,15 +383,15 @@ void WaitForQueue(CoreGraphics::QueueType queue);
 void WaitAndClearPendingCommands();
 
 /// Add buffer to delete queue
-void DelayedDeleteBuffer(const BufferId id);
+void DelayedDeleteBuffer(const CoreGraphics::BufferId id);
 /// Add texture to delete queue
-void DelayedDeleteTexture(const TextureId id);
+void DelayedDeleteTexture(const CoreGraphics::TextureId id);
 /// Add texture view to delete queue
-void DelayedDeleteTextureView(const TextureViewId id);
+void DelayedDeleteTextureView(const CoreGraphics::TextureViewId id);
 /// Add memory allocation to delete queue
 void DelayedFreeMemory(const CoreGraphics::Alloc alloc);
 /// Add a descriptor set to delete queue
-void DelayedDeleteDescriptorSet(const ResourceTableId id);
+void DelayedDeleteDescriptorSet(const CoreGraphics::ResourceTableId id);
 
 /// Swap
 void Swap(IndexT i);
