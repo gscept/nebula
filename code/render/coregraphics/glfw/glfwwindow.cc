@@ -930,8 +930,6 @@ RecreateVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Di
 
     // TODO: We could pass the old swapchain when creating the new one, allowing any pending drawing to be finished before changing
     SetupVulkanSwapchain(id, mode, title);
-    Frame::FrameServer::Instance()->OnWindowResize();
-    Vulkan::VkPipelineDatabase::Instance()->RecreatePipelines();
 }
 
 //------------------------------------------------------------------------------

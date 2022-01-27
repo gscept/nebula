@@ -34,7 +34,11 @@ public:
     /// update view resources
     static void UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
 
+    /// update constants
     static void UpdateConstants();
+
+    /// Handle window resize
+    static void WindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
 
 private:
 

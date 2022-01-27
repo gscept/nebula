@@ -6,6 +6,10 @@
 #include "graphics/glfw/glfwgraphicsdisplayeventhandler.h"
 #include "graphics/graphicsserver.h"
 
+#if __VULKAN__
+#include "coregraphics/vk/vkpipelinedatabase.h"
+#endif
+
 namespace GLFW
 {
 __ImplementClass(GLFW::GLFWGraphicsDisplayEventHandler, 'WGEH', CoreGraphics::DisplayEventHandler);
@@ -20,11 +24,20 @@ bool
 GLFWGraphicsDisplayEventHandler::HandleEvent(const DisplayEvent& displayEvent)
 {
     Ptr<Graphics::GraphicsServer> graphicsServer = Graphics::GraphicsServer::Instance();
+    Ptr<Frame::FrameServer> frameServer = Frame::FrameServer::Instance();
+#if __VULKAN__
+    Vulkan::VkPipelineDatabase* pipelineDatabase = Vulkan::VkPipelineDatabase::Instance();
+#endif
     switch (displayEvent.GetEventCode())
     {
         case DisplayEvent::WindowResized:
+        {
+            // Run subsystems that require some reaction to the window resize event
+            frameServer->OnWindowResize();
             graphicsServer->OnWindowResized(displayEvent.GetWindowId());
+            pipelineDatabase->RecreatePipelines();
             return true;
+        }
         default:
             return false;
     }

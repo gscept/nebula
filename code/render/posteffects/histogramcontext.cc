@@ -34,6 +34,8 @@ struct
     CoreGraphics::ResourceTableId downsampleResourceTable;
 
     CoreGraphics::TextureDimensions sourceTextureDimensions;
+    CoreGraphics::TextureId sourceTexture;
+    IndexT sourceTextureBinding;
     Util::FixedArray<CoreGraphics::TextureViewId> downsampledColorBufferViews;
 
     Math::float2 offset, size;
@@ -69,6 +71,7 @@ HistogramContext::Create()
 {
     __CreatePluginContext();
     __bundle.OnUpdateViewResources = HistogramContext::UpdateViewResources;
+    __bundle.OnWindowResized = HistogramContext::WindowResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     histogramState.minLuminance = Core::CVarCreate(Core::CVar_Float, "r_min_luminance", "0.1", "Minimum luminance, used for auto exposure");
@@ -129,7 +132,6 @@ HistogramContext::Create()
         0
     });
     CoreGraphics::ResourceTableCommitChanges(histogramState.histogramResourceTable);
-
 
     histogramState.downsampleShader = CoreGraphics::ShaderGet("shd:downsample_cs_avg.fxb");
     histogramState.downsampleProgram = CoreGraphics::ShaderGetProgram(histogramState.downsampleShader, CoreGraphics::ShaderFeatureFromString("Downsample"));
@@ -298,58 +300,60 @@ HistogramContext::SetWindow(const Math::float2 offset, Math::float2 size, int mi
 void
 HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
 {
-    CoreGraphics::TextureId colorBuffer = script->GetTexture("LightBuffer");
-    CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(colorBuffer);
+    histogramState.sourceTexture = script->GetTexture("LightBuffer");
+    CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(histogramState.sourceTexture);
 
     // setup views for output and bind
-    SizeT numMips = CoreGraphics::TextureGetNumMips(colorBuffer);
+    SizeT numMips = CoreGraphics::TextureGetNumMips(histogramState.sourceTexture);
     histogramState.downsampledColorBufferViews.Resize(numMips);
     for (IndexT i = 0; i < numMips; i++)
     {
         CoreGraphics::TextureViewCreateInfo info;
-        info.tex = colorBuffer;
+        info.tex = histogramState.sourceTexture;
         info.startMip = i;
         info.numMips = 1;
         info.startLayer = 0;
         info.numLayers = 1;
-        info.format = CoreGraphics::TextureGetPixelFormat(colorBuffer);
+        info.format = CoreGraphics::TextureGetPixelFormat(histogramState.sourceTexture);
         histogramState.downsampledColorBufferViews[i] = CoreGraphics::CreateTextureView(info);
 
         if (i == 5)
         {
             CoreGraphics::ResourceTableSetRWTexture(histogramState.downsampleResourceTable,
             {
-                histogramState.downsampledColorBufferViews[i],
-                CoreGraphics::ShaderGetResourceSlot(histogramState.downsampleShader, "Output6"),
-                0,
-                CoreGraphics::InvalidSamplerId,
-                false,
-                false
+                    histogramState.downsampledColorBufferViews[i],
+                    CoreGraphics::ShaderGetResourceSlot(histogramState.downsampleShader, "Output6"),
+                    0,
+                    CoreGraphics::InvalidSamplerId,
+                    false,
+                    false
             });
         }
         else
         {
             CoreGraphics::ResourceTableSetRWTexture(histogramState.downsampleResourceTable,
             {
-                histogramState.downsampledColorBufferViews[i],
-                CoreGraphics::ShaderGetResourceSlot(histogramState.downsampleShader, "Output"),
-                i,
-                CoreGraphics::InvalidSamplerId,
-                false,
-                false
+                    histogramState.downsampledColorBufferViews[i],
+                    CoreGraphics::ShaderGetResourceSlot(histogramState.downsampleShader, "Output"),
+                    i,
+                    CoreGraphics::InvalidSamplerId,
+                    false,
+                    false
             });
         }
     }
     CoreGraphics::ResourceTableCommitChanges(histogramState.downsampleResourceTable);
 
+    histogramState.sourceTextureBinding = CoreGraphics::ShaderGetResourceSlot(histogramState.histogramShader, "ColorSource");
+    histogramState.sourceTextureDimensions = dims;
     CoreGraphics::ResourceTableSetTexture(histogramState.histogramResourceTable,
     {
-        colorBuffer,
-        CoreGraphics::ShaderGetResourceSlot(histogramState.histogramShader, "ColorSource"),
-        0,
-        CoreGraphics::InvalidSamplerId,
-        false,
-        false
+            histogramState.sourceTexture,
+            histogramState.sourceTextureBinding,
+            0,
+            CoreGraphics::InvalidSamplerId,
+            false,
+            false
     });
     CoreGraphics::ResourceTableCommitChanges(histogramState.histogramResourceTable);
 
@@ -364,7 +368,6 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
     constants.NumGroups = (dispatchX + 1) * (dispatchY + 1);
     BufferUpdate(histogramState.downsampleConstants, constants, 0);
 
-    histogramState.sourceTextureDimensions = dims;
     histogramState.offset.x = 0;
     histogramState.offset.y = 0;
     histogramState.size.x = 1.0f;
@@ -428,6 +431,58 @@ HistogramContext::UpdateConstants()
     constants.InvLogLuminanceRange = 1 / histogramState.logLuminanceRange;
     constants.MinLogLuminance = histogramState.logMinLuminance;
     CoreGraphics::BufferUpdate(histogramState.histogramConstants, constants, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+HistogramContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
+{
+    histogramState.sourceTextureDimensions = CoreGraphics::TextureGetDimensions(histogramState.sourceTexture);
+
+    // setup views for output and bind
+    SizeT numMips = CoreGraphics::TextureGetNumMips(histogramState.sourceTexture);
+    for (IndexT i = 0; i < numMips; i++)
+    {
+        CoreGraphics::TextureViewReload(histogramState.downsampledColorBufferViews[i]);
+        if (i == 5)
+        {
+            CoreGraphics::ResourceTableSetRWTexture(histogramState.downsampleResourceTable,
+            {
+                histogramState.downsampledColorBufferViews[i],
+                CoreGraphics::ShaderGetResourceSlot(histogramState.downsampleShader, "Output6"),
+                0,
+                CoreGraphics::InvalidSamplerId,
+                false,
+                false
+            });
+        }
+        else
+        {
+            CoreGraphics::ResourceTableSetRWTexture(histogramState.downsampleResourceTable,
+            {
+                histogramState.downsampledColorBufferViews[i],
+                CoreGraphics::ShaderGetResourceSlot(histogramState.downsampleShader, "Output"),
+                i,
+                CoreGraphics::InvalidSamplerId,
+                false,
+                false
+            });
+        }
+    }
+    CoreGraphics::ResourceTableCommitChanges(histogramState.downsampleResourceTable);
+
+    CoreGraphics::ResourceTableSetTexture(histogramState.histogramResourceTable,
+    {
+        histogramState.sourceTexture,
+        histogramState.sourceTextureBinding,
+        0,
+        CoreGraphics::InvalidSamplerId,
+        false,
+        false
+    });
+    CoreGraphics::ResourceTableCommitChanges(histogramState.histogramResourceTable);
 }
 
 } // namespace PostEffects
