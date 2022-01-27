@@ -166,6 +166,8 @@ FrameOp::Compiled*
 FramePass::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
     CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+    ret->subpasses = {};
+    ret->subpassBuffers = {};
     ret->pass = this->pass;
     return ret;
 }
@@ -193,12 +195,10 @@ FramePass::Build(
     myCompiled->name = this->name;
 #endif
 
-    Util::Array<FrameOp::Compiled*> subpassOps;
     for (IndexT i = 0; i < this->children.Size(); i++)
     {
-        this->children[i]->Build(allocator, subpassOps, events, barriers, rwBuffers, textures, commandBufferPool);
+        this->children[i]->Build(allocator, myCompiled->subpasses, events, barriers, rwBuffers, textures, commandBufferPool);
     }
-    myCompiled->subpasses = subpassOps;
     this->compiled = myCompiled;
     this->SetupSynchronization(allocator, events, barriers, rwBuffers, textures);
     compiledOps.Append(myCompiled);

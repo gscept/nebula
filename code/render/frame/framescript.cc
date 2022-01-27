@@ -320,8 +320,10 @@ FrameScript::OnWindowResized()
         WindowMakeCurrent(this->window);
 
         IndexT i;
-        for (i = 0; i < this->textures.Size(); i++)         TextureWindowResized(this->textures[i]);
-        for (i = 0; i < this->ops.Size(); i++)              this->ops[i]->OnWindowResized();
+        for (i = 0; i < this->textures.Size(); i++)
+            TextureWindowResized(this->textures[i]);
+        for (i = 0; i < this->ops.Size(); i++)
+            this->ops[i]->OnWindowResized();
 
         Build();
 

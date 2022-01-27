@@ -33,7 +33,6 @@ FrameOp::Compiled*
 FrameSwap::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
     CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
-
 #if NEBULA_GRAPHICS_DEBUG
     ret->name = this->name;
 #endif

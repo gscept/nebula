@@ -95,6 +95,9 @@ FrameOp::Compiled*
 FrameSubpass::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
     CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+    ret->ops = {};
+    ret->viewports = {};
+    ret->scissors = {};
 #if NEBULA_GRAPHICS_DEBUG
     ret->name = this->name;
 #endif
@@ -121,12 +124,10 @@ FrameSubpass::Build(
 
     CompiledImpl* myCompiled = (CompiledImpl*)this->AllocCompiled(allocator);
     
-    Util::Array<FrameOp::Compiled*> subpassOps;
     for (IndexT i = 0; i < this->children.Size(); i++)
     {
-        this->children[i]->Build(allocator, subpassOps, events, barriers, rwBuffers, textures, commandBufferPool);
+        this->children[i]->Build(allocator, myCompiled->ops, events, barriers, rwBuffers, textures, commandBufferPool);
     }
-    myCompiled->ops = subpassOps;
     this->compiled = myCompiled;
     compiledOps.Append(myCompiled);
 }

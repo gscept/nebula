@@ -278,7 +278,7 @@ GetSubpassInfo(
     {
         TextureId tex = TextureViewGetTexture(loadInfo.colorAttachments[i]);
         TextureUsage usage = TextureGetUsage(tex);
-        n_assert(CheckBits(usage, RenderTexture));
+        n_assert(AllBits(usage, RenderTexture));
 
         VkFormat fmt = VkTypes::AsVkFormat(TextureGetPixelFormat(tex));
         VkAttachmentDescription& attachment = outAttachments[i];
@@ -300,7 +300,7 @@ GetSubpassInfo(
     {
         TextureId tex = TextureViewGetTexture(loadInfo.depthStencilAttachment);
         TextureUsage usage = TextureGetUsage(tex);
-        n_assert(CheckBits(usage, RenderTexture));
+        n_assert(AllBits(usage, RenderTexture));
 
         VkAttachmentDescription& attachment = outAttachments[i];
         IndexT loadIdx = AllBits(loadInfo.depthStencilFlags, AttachmentFlagBits::Load) ? 2 : AllBits(loadInfo.depthStencilFlags, AttachmentFlagBits::Clear) ? 1 : 0;
