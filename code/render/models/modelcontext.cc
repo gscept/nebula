@@ -26,14 +26,9 @@ namespace Models
 
 ModelContext::ModelContextAllocator ModelContext::modelContextAllocator;
 ModelContext::ModelInstance ModelContext::nodeInstances;
-Jobs::JobSyncId ModelContext::jobInternalSync;
-Jobs::JobSyncId ModelContext::jobHostSync;
 __ImplementContext(ModelContext, ModelContext::modelContextAllocator);
 
 Threading::LockFreeQueue<std::function<void()>> setupCompleteQueue;
-
-extern void ModelRenderableUpdateJob(const Jobs::JobFuncContext& ctx);
-extern void ModelTransformUpdateJob(const Jobs::JobFuncContext& ctx);
 
 //------------------------------------------------------------------------------
 /**
@@ -69,8 +64,6 @@ ModelContext::Create()
 #endif
     ModelContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
-
-    ModelContext::jobInternalSync = Jobs::CreateJobSync({ nullptr });
 }
 
 //------------------------------------------------------------------------------
@@ -417,27 +410,6 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
             }
         }
     }
-
-    /* Setup model node state bounding box update
-    Jobs::JobContext jctx;
-    jctx.uniform.scratchSize = 0;
-    jctx.uniform.numBuffers = 1;
-    jctx.uniform.data[0] = &nodeInstances.renderable;
-    jctx.uniform.dataSize[0] = sizeof(&nodeInstances.renderable);
-    jctx.input.numBuffers = 1;
-    jctx.input.data[0] = nodeInstanceStateRanges.Begin();
-    jctx.input.dataSize[0] = nodeInstanceStateRanges.Size() * sizeof(NodeInstanceRange);
-    jctx.input.sliceSize[0] = nodeInstanceStateRanges.Size() * sizeof(NodeInstanceRange);
-    jctx.output.numBuffers = 1;
-    jctx.output.data[0] = jctx.input.data[0];
-    jctx.output.sliceSize[0] = jctx.input.dataSize[0];
-    Jobs::JobId job = Jobs::CreateJob({ ModelRenderableUpdateJob });
-    Jobs::JobSchedule(job, Graphics::GraphicsServer::renderSystemsJobPort, jctx);
-
-    // Issue sync and wait on the threads
-    Jobs::JobSyncSignal(ModelContext::jobInternalSync, Graphics::GraphicsServer::renderSystemsJobPort, false);
-    Jobs::JobSyncThreadWait(ModelContext::jobInternalSync, Graphics::GraphicsServer::renderSystemsJobPort, true);
-    */
 
     // Now go through state nodes and update their bounding boxes
     for (i = 0; i < nodeInstanceStateRanges.Size(); i++)

@@ -17,11 +17,6 @@
 #include "coregraphics/buffer.h"
 #include "coregraphics/resourcetable.h"
 
-namespace Visibility
-{
-void VisibilitySortJob(const Jobs::JobFuncContext& ctx);
-}
-
 namespace Models
 {
 class ShaderStateNode : public TransformNode
@@ -63,8 +58,6 @@ public:
 protected:
     friend class ModelContext;
     friend class StreamModelCache;
-
-    friend void Visibility::VisibilitySortJob(const Jobs::JobFuncContext& ctx);
 
     /// load shader state
     bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;

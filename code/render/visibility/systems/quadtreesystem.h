@@ -12,9 +12,6 @@
 namespace Visibility
 {
     
-extern void QuadtreeInjectFunction(const Jobs::JobFuncContext& ctx);
-extern void QuadtreeResolveFunction(const Jobs::JobFuncContext& ctx);
-
 class QuadtreeSystem : public VisibilitySystem
 {
 public:

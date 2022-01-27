@@ -113,40 +113,6 @@ BruteforceSystem::Run(const Threading::AtomicCounter* previousSystemCompletionCo
         , counters
         , &this->obs.completionCounters[i]
         , nullptr);
-
-        /*
-        Jobs::JobContext ctx;
-
-        // uniform data is the observer transform
-        ctx.uniform.numBuffers = 2;
-        ctx.uniform.scratchSize = 0;
-
-        // Observer transforms
-        ctx.uniform.data[0] = (unsigned char*)&this->obs.transforms[i];
-        ctx.uniform.dataSize[0] = sizeof(Math::mat4);
-
-        // Entity boxes (this is from the global array from ModelContext)
-        ctx.uniform.data[1] = (unsigned char*)this->ent.boxes;
-        ctx.uniform.dataSize[1] = sizeof(Math::bbox);
-
-        ctx.input.numBuffers = 1;
-        ctx.input.data[0] = (unsigned char*)this->ent.ids;
-        ctx.input.dataSize[0] = sizeof(uint32) * this->ent.count;
-        ctx.input.sliceSize[0] = sizeof(uint32);
-
-        // the output is the visibility result
-        ctx.output.numBuffers = 1;
-        ctx.output.data[0] = (unsigned char*)this->obs.results[i].Begin();
-        ctx.output.dataSize[0] = sizeof(Math::ClipStatus::Type) * this->ent.count;
-        ctx.output.sliceSize[0] = sizeof(Math::ClipStatus::Type);
-
-        // create and run job
-        Jobs::JobId job = Jobs::CreateJob({ BruteforceSystemJobFunc });
-        Jobs::JobSchedule(job, Graphics::GraphicsServer::renderSystemsJobPort, ctx);
-
-        // enqueue here, but don't dequeue as VisibilityContext will do it for us
-        ObserverContext::runningJobs.Enqueue(job);
-        */
     }
 }
 } // namespace Visibility

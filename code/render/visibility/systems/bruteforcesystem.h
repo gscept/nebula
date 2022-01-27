@@ -12,8 +12,6 @@
 namespace Visibility
 {
 
-extern void BruteforceSystemJobFunc(const Jobs::JobFuncContext& ctx);
-
 class BruteforceSystem : public VisibilitySystem
 {
 private:

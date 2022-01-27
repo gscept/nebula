@@ -25,7 +25,6 @@ namespace Graphics
 __ImplementClass(Graphics::GraphicsServer, 'GFXS', Core::RefCounted);
 __ImplementSingleton(Graphics::GraphicsServer);
 
-Jobs::JobPortId GraphicsServer::renderSystemsJobPort;
 //------------------------------------------------------------------------------
 /**
 */
@@ -70,14 +69,6 @@ GraphicsServer::Open()
     };
     this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 
-    Jobs::CreateJobPortInfo info =
-    {
-        "RenderJobPort",
-        4,
-        System::Cpu::Core1 | System::Cpu::Core2 | System::Cpu::Core3 | System::Cpu::Core4,
-        UINT_MAX
-    };
-    renderSystemsJobPort = CreateJobPort(info);
     if (this->graphicsDevice)
     {
 
