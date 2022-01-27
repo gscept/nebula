@@ -155,7 +155,7 @@ CameraContext::OnWindowResized(const CoreGraphics::WindowId windowId, SizeT widt
     {
         CameraSettings& setting = settings[i];
 
-        setting.SetupPerspectiveFov(setting.GetFov(), height / float(width), setting.GetZNear(), setting.GetZFar());
+        setting.SetupPerspectiveFov(setting.GetFov(), width / float(height), setting.GetZNear(), setting.GetZFar());
         cameraAllocator.GetArray<Camera_Projection>()[i] = setting.GetProjTransform();
     }
 
