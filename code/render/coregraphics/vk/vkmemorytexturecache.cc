@@ -68,6 +68,7 @@ VkMemoryTextureCache::LoadFromMemory(const Resources::ResourceId id, const void*
     loadInfo.windowRelative = adjustedInfo.windowRelative;
     loadInfo.bindless = adjustedInfo.bindless;
     loadInfo.sparse = adjustedInfo.sparse;
+    runtimeInfo.bind = 0xFFFFFFFF;
 
     // borrow buffer pointer
     loadInfo.texBuffer = adjustedInfo.buffer;
@@ -169,8 +170,9 @@ VkMemoryTextureCache::Unload(const Resources::ResourceId id)
     // only unload a texture which isn't a window texture, since their textures come from the swap chain
     if (!loadInfo.windowTexture)
     {
+        if (runtimeInfo.bind != 0xFFFFFFFF)
+            VkShaderServer::Instance()->UnregisterTexture(runtimeInfo.bind, runtimeInfo.type);
         Vulkan::DelayedDeleteImageView(runtimeInfo.view);
-        VkShaderServer::Instance()->UnregisterTexture(runtimeInfo.bind, runtimeInfo.type); 
         Vulkan::DelayedDeleteImage(loadInfo.img);
         runtimeInfo.view = VK_NULL_HANDLE;
         loadInfo.img = VK_NULL_HANDLE;
@@ -187,10 +189,13 @@ VkMemoryTextureCache::Reload(const Resources::ResourceId id)
 {
     __Lock(textureAllocator);
     VkTextureLoadInfo& loadInfo = this->Get<Texture_LoadInfo>(id.resourceId);
+    VkTextureRuntimeInfo& runtimeInfo = this->Get<Texture_RuntimeInfo>(id.resourceId);
     VkTextureWindowInfo& windowInfo = this->Get<Texture_WindowInfo>(id.resourceId);
 
-    if (!loadInfo.windowTexture && loadInfo.windowRelative)
+    if (loadInfo.windowTexture || loadInfo.windowRelative)
     {
+        uint tmp = runtimeInfo.bind;
+        runtimeInfo.bind = 0xFFFFFFFF;
         this->Unload(id);
 
         // if the window has been resized, we need to update our dimensions based on relative size
@@ -199,6 +204,7 @@ VkMemoryTextureCache::Reload(const Resources::ResourceId id)
         loadInfo.dims.height = SizeT(mode.GetHeight() * loadInfo.relativeDims.height);
         loadInfo.dims.depth = 1;
 
+        runtimeInfo.bind = tmp;
         this->Setup(id);
     }
 }
@@ -1534,7 +1540,10 @@ VkMemoryTextureCache::Setup(const Resources::ResourceId id)
         // register image with shader server
         if (loadInfo.bindless)
         {
-            runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(id), runtimeInfo.type, isDepthFormat);
+            if (runtimeInfo.bind == 0xFFFFFFFF)
+                runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(id), runtimeInfo.type, isDepthFormat);
+            else
+                VkShaderServer::Instance()->ReregisterTexture(TextureId(id), runtimeInfo.type, runtimeInfo.bind, isDepthFormat);
 
             // if this is a depth-stencil texture, also register the stencil
             if (isDepthFormat)
@@ -1545,7 +1554,7 @@ VkMemoryTextureCache::Setup(const Resources::ResourceId id)
             }
         }
         else
-            runtimeInfo.bind = 0;
+            runtimeInfo.bind = 0xFFFFFFFF;
 
     }
     else // setup as window texture
