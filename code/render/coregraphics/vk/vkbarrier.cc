@@ -35,6 +35,7 @@ CreateBarrier(const BarrierCreateInfo& info)
     VkBarrierInfo& vkInfo = barrierAllocator.Get<0>(id);
     Util::Array<CoreGraphics::TextureId>& rts = barrierAllocator.Get<1>(id);
 
+    rts.Clear();
     vkInfo.name = info.name;
     vkInfo.numImageBarriers = 0;
     vkInfo.numBufferBarriers = 0;
