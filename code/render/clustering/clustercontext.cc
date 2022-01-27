@@ -13,6 +13,10 @@
 namespace Clustering
 {
 
+static const SizeT ClusterSubdivsX = 64;
+static const SizeT ClusterSubdivsY = 64;
+static const SizeT ClusterSubdivsZ = 24;
+
 struct
 {
     CoreGraphics::ShaderId clusterShader;
@@ -34,9 +38,6 @@ struct
 
     SizeT numThreads;
 
-    static const SizeT ClusterSubdivsX = 64;
-    static const SizeT ClusterSubdivsY = 64;
-    static const SizeT ClusterSubdivsZ = 24;
 } state;
 
 __ImplementPluginContext(ClusterContext);
@@ -84,9 +85,9 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     state.zFar = ZFar;
     CoreGraphics::DisplayMode displayMode = CoreGraphics::WindowGetDisplayMode(state.window);
 
-    state.clusterDimensions[0] = Math::divandroundup(displayMode.GetWidth(), state.ClusterSubdivsX);
-    state.clusterDimensions[1] = Math::divandroundup(displayMode.GetHeight(), state.ClusterSubdivsY);
-    state.clusterDimensions[2] = state.ClusterSubdivsZ;
+    state.clusterDimensions[0] = Math::divandroundup(displayMode.GetWidth(), ClusterSubdivsX);
+    state.clusterDimensions[1] = Math::divandroundup(displayMode.GetHeight(), ClusterSubdivsY);
+    state.clusterDimensions[2] = ClusterSubdivsZ;
 
     state.zDistribution = ZFar / ZNear;
     state.zInvScale = float(state.clusterDimensions[2]) / Math::log2(state.zDistribution);
@@ -159,8 +160,8 @@ ClusterContext::UpdateResources(const Graphics::FrameContext& ctx)
     state.uniforms.NumCells[0] = state.clusterDimensions[0];
     state.uniforms.NumCells[1] = state.clusterDimensions[1];
     state.uniforms.NumCells[2] = state.clusterDimensions[2];
-    state.uniforms.BlockSize[0] = state.ClusterSubdivsX;
-    state.uniforms.BlockSize[1] = state.ClusterSubdivsY;
+    state.uniforms.BlockSize[0] = ClusterSubdivsX;
+    state.uniforms.BlockSize[1] = ClusterSubdivsY;
 
     // update constant buffer, probably super unnecessary since these values never change
     BufferUpdate(state.constantBuffer, state.uniforms, 0);
@@ -184,9 +185,9 @@ ClusterContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, Size
     {
         CoreGraphics::DisplayMode displayMode = CoreGraphics::WindowGetDisplayMode(id);
 
-        state.clusterDimensions[0] = Math::divandroundup(displayMode.GetWidth(), state.ClusterSubdivsX);
-        state.clusterDimensions[1] = Math::divandroundup(displayMode.GetHeight(), state.ClusterSubdivsY);
-        state.clusterDimensions[2] = state.ClusterSubdivsZ;
+        state.clusterDimensions[0] = Math::divandroundup(displayMode.GetWidth(), ClusterSubdivsX);
+        state.clusterDimensions[1] = Math::divandroundup(displayMode.GetHeight(), ClusterSubdivsY);
+        state.clusterDimensions[2] = ClusterSubdivsZ;
 
         state.zDistribution = state.zFar / state.zNear;
         state.zInvScale = float(state.clusterDimensions[2]) / Math::log2(state.zDistribution);
