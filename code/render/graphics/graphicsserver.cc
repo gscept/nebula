@@ -208,6 +208,7 @@ GraphicsServer::Close()
     
     this->isOpen = false;
 
+    // Make sure to flush the graphics commands before shutting down
     RenderUtil::DrawFullScreenQuad::Discard();
 
     this->textRenderer->Close();
