@@ -28,6 +28,9 @@ public:
     /// setup bloom context
     static void Setup(const Ptr<Frame::FrameScript>& script);
 
+    /// Handle window resize
+    static void WindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
+
 private:
 
     /// implement an empty alloc
