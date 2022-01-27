@@ -69,6 +69,7 @@ protected:
     friend void CloseFunc(const CoreGraphics::WindowId& id);
     friend void FocusFunc(const CoreGraphics::WindowId& id, int focus);
     friend void ResizeFunc(const CoreGraphics::WindowId& id, int width, int height);
+    friend void CoreGraphics::WindowPresent(const WindowId id, const IndexT frameIndex);
     friend const CoreGraphics::WindowId InternalSetupFunction(const CoreGraphics::WindowCreateInfo& info, const Util::Blob& windowData, bool embed);
 
     /// retrieve monitor from adapter. can be NULL

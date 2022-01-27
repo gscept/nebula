@@ -158,6 +158,7 @@ namespace CoreGraphics
 using namespace Vulkan;
 
 Util::Array<CoreGraphics::ResourceTableId> PendingTableCommits;
+Util::Array<Util::Tuple<CoreGraphics::ResourceTableLayoutId, VkDevice, VkDescriptorSet, IndexT>> PendingTableDeletes;
 bool ResourceTableBlocked = true;
 Threading::CriticalSection PendingTableCommitsLock;
 
@@ -195,14 +196,12 @@ DestroyResourceTable(const ResourceTableId id)
     const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<ResourceTable_Layout>(id.id24);
     const IndexT& poolIndex = resourceTableAllocator.Get<ResourceTable_DescriptorPoolIndex>(id.id24);
     const VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
-    ResourceTableLayoutDeallocTable(layout, dev, set, poolIndex);
+    //ResourceTableLayoutDeallocTable(layout, dev, set, poolIndex);
 
     if (ResourceTableBlocked)
     {
         PendingTableCommitsLock.Enter();
-        IndexT i = PendingTableCommits.FindIndex(id);
-        if (i != InvalidIndex)
-            PendingTableCommits.EraseIndex(i);
+        PendingTableDeletes.Append(Util::MakeTuple(layout, dev, set, poolIndex));
         PendingTableCommitsLock.Leave();
     }
 
@@ -641,8 +640,12 @@ ResourceTableBlock(bool b)
         PendingTableCommitsLock.Enter();
         for (ResourceTableId& table : PendingTableCommits)
             ResourceTableCommitChanges(table);
-
         PendingTableCommits.Clear();
+
+        for (auto set : PendingTableDeletes)
+        {
+            ResourceTableLayoutDeallocTable(Util::Get<0>(set), Util::Get<1>(set), Util::Get<2>(set), Util::Get<3>(set));
+        }
         PendingTableCommitsLock.Leave();
     }
 }

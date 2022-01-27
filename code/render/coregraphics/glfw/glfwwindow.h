@@ -41,6 +41,8 @@ struct VkBackbufferInfo
     uint32_t numBackbuffers;
 };
 
+
+
 /// get surface
 const VkSurfaceKHR& GetSurface(const CoreGraphics::WindowId& id);
 /// setup Vulkan swapchain
@@ -58,6 +60,12 @@ void Present(const CoreGraphics::WindowId& id);
 namespace CoreGraphics
 {
 
+struct ResizeInfo
+{
+    uint newWidth, newHeight;
+    bool done;
+};
+
 enum
 {
     GLFW_Window,
@@ -65,6 +73,7 @@ enum
     GLFW_SwapFrame,
     GLFW_SetupInfo,
     GLFW_Texture,
+    GLFW_ResizeInfo,
 #if __VULKAN__
     GLFW_WindowSwapInfo,
     GLFW_SwapChain,
@@ -79,6 +88,7 @@ typedef Ids::IdAllocator<
     , IndexT                        
     , WindowCreateInfo
     , TextureId
+    , ResizeInfo
 #if __VULKAN__
     , Vulkan::VkWindowSwapInfo      
     , Vulkan::VkSwapchainInfo       

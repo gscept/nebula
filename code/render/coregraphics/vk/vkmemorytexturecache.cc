@@ -1269,7 +1269,7 @@ VkMemoryTextureCache::SwapBuffers(const CoreGraphics::TextureId id)
     VkTextureWindowInfo& wnd = this->Get<Texture_WindowInfo>(id.resourceId);
     VkTextureSwapInfo& swap = textureSwapExtensionAllocator.Get<TextureExtension_SwapInfo>(loadInfo.swapExtension);
     n_assert(wnd.window != CoreGraphics::InvalidWindowId);
-    VkWindowSwapInfo& swapInfo = CoreGraphics::glfwWindowAllocator.Get<5>(wnd.window.id24);
+    VkWindowSwapInfo& swapInfo = CoreGraphics::glfwWindowAllocator.Get<GLFW_WindowSwapInfo>(wnd.window.id24);
 
     // get present fence and be sure it is finished before getting the next image
     VkDevice dev = Vulkan::GetCurrentDevice();
@@ -1281,15 +1281,14 @@ VkMemoryTextureCache::SwapBuffers(const CoreGraphics::TextureId id)
 
     // get the next image
     res = vkAcquireNextImageKHR(dev, swapInfo.swapchain, UINT64_MAX, VK_NULL_HANDLE, fence, &swapInfo.currentBackbuffer);
-
-    //Vulkan::WaitForPresent(sem);
-    if (res == VK_ERROR_OUT_OF_DATE_KHR)
+    switch (res)
     {
-        // this means our swapchain needs a resize!
-    }
-    else
-    {
-        n_assert(res == VK_SUCCESS);
+        case VK_SUCCESS:
+        case VK_ERROR_OUT_OF_DATE_KHR:
+        case VK_SUBOPTIMAL_KHR:
+            break;
+        default:
+            n_error("Present failed");
     }
 
     // set image and update texture
