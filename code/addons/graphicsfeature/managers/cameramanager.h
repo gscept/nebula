@@ -45,6 +45,8 @@ public:
     /// getter for projection matrix
     static Math::mat4 GetProjection(ViewHandle handle);
 
+    static Math::mat4 GetLocalTransform(ViewHandle handle);
+
 private:
     /// constructor
     CameraManager();

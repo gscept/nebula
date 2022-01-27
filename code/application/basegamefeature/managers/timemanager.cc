@@ -29,6 +29,9 @@ namespace TimeManager
         float timeFactor = 1.0f;
     };
 
+    static_assert(sizeof(TimeSource) == sizeof(TimeSourceState));
+    static_assert(alignof(TimeSource) == alignof(TimeSourceState));
+
     /// timemanager singleton state
     struct State
     {

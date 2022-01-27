@@ -9,6 +9,7 @@
 #include "profiling/profiling.h"
 #include "basegamefeature/managers/blueprintmanager.h"
 #include "basegamefeature/basegamefeatureunit.h"
+#include "jobs2/jobs2.h"
 
 namespace Game
 {
@@ -202,6 +203,8 @@ GameServer::OnBeginFrame()
 {
     if (!this->isStarted)
         return;
+
+    Jobs2::JobNewFrame();
 
     _start_timer(GameServerOnBeginFrame);
 

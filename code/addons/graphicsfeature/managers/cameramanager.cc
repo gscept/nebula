@@ -216,4 +216,15 @@ CameraManager::GetProjection(ViewHandle handle)
     return Graphics::CameraContext::GetProjection(gid);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+Math::mat4
+CameraManager::GetLocalTransform(ViewHandle handle)
+{
+    n_assert(CameraManager::HasInstance());
+    auto gid = Singleton->viewHandleMap[Ids::Index(handle)].gid;
+    return Graphics::CameraContext::GetTransform(gid);
+}
+
 } // namespace Game
