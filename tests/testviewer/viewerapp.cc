@@ -213,7 +213,7 @@ SimpleViewerApplication::Open()
         Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1, 1, 1), 1000.0f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(0.1, 0.1, 0.1), true);
 
         this->ResetCamera();
-        CameraContext::SetTransform(this->cam, this->mayaCameraUtil.GetCameraTransform());
+        CameraContext::SetView(this->cam, this->mayaCameraUtil.GetCameraTransform());
 
         this->view->SetCamera(this->cam);
         this->view->SetStage(this->stage);
@@ -774,10 +774,10 @@ SimpleViewerApplication::UpdateCamera()
     switch (this->cameraMode)
     {
     case 0:
-        CameraContext::SetTransform(this->cam, Math::inverse(this->mayaCameraUtil.GetCameraTransform()));
+        CameraContext::SetView(this->cam, Math::inverse(this->mayaCameraUtil.GetCameraTransform()));
         break;
     case 1:
-        CameraContext::SetTransform(this->cam, Math::inverse(this->freeCamUtil.GetTransform()));
+        CameraContext::SetView(this->cam, Math::inverse(this->freeCamUtil.GetTransform()));
         break;
     default:
         break;
