@@ -80,14 +80,9 @@ struct
     IndexT lightListSlot;
     IndexT lightShadingTextureSlot;
     IndexT lightShadingDebugTextureSlot;
-    Util::FixedArray<CoreGraphics::ResourceTableId> resourceTables;
+    CoreGraphics::ResourceTableId resourceTable;
 
     uint numThreadsThisFrame;
-
-#ifdef CLUSTERED_LIGHTING_DEBUG
-    CoreGraphics::TextureId clusterDebugTexture;
-#endif
-    CoreGraphics::TextureId lightingTexture;
 
     // these are used to update the light clustering
     LightsCluster::PointLight pointLights[1024];
@@ -108,6 +103,18 @@ struct
     IndexT lightingTextureSlot;
     IndexT aoTextureSlot;
 } combineState;
+
+struct
+{
+    CoreGraphics::TextureId lightingTexture;
+    CoreGraphics::TextureId fogTexture;
+    CoreGraphics::TextureId reflectionTexture;
+    CoreGraphics::TextureId aoTexture;
+#ifdef CLUSTERED_LIGHTING_DEBUG
+    CoreGraphics::TextureId clusterDebugTexture;
+#endif
+
+} textureState;
 
 //------------------------------------------------------------------------------
 /**
@@ -139,6 +146,7 @@ LightContext::Create()
 
     __bundle.OnPrepareView = LightContext::OnPrepareView;
     __bundle.OnUpdateViewResources = LightContext::UpdateViewDependentResources;
+    __bundle.OnWindowResized = LightContext::WindowResized;
 
 #if NEBULA_ENABLE_MT_DRAW
     __bundle.OnWorkFinished = LightContext::RunFrameScriptJobs;
@@ -261,11 +269,7 @@ LightContext::Create()
     rwbInfo.mode = BufferAccessMode::HostLocal;
     rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
 
-    clusterState.resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
-    for (IndexT i = 0; i < clusterState.resourceTables.Size(); i++)
-    {
-        clusterState.resourceTables[i] = ShaderCreateResourceTable(clusterState.classificationShader, NEBULA_BATCH_GROUP, clusterState.resourceTables.Size());
-    }
+    clusterState.resourceTable = ShaderCreateResourceTable(clusterState.classificationShader, NEBULA_BATCH_GROUP);
 
     // get per-view resource tables
     const Util::FixedArray<CoreGraphics::ResourceTableId>& viewTables = TransformDevice::Instance()->GetViewResourceTables();
@@ -298,9 +302,20 @@ LightContext::Create()
     for (IndexT i = 0; i < combineState.resourceTables.Size(); i++)
     {
         combineState.resourceTables[i] = ShaderCreateResourceTable(combineState.combineShader, NEBULA_BATCH_GROUP, combineState.resourceTables.Size());
-        ResourceTableSetConstantBuffer(combineState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), combineState.combineUniforms, 0, false, false, sizeof(Combine::CombineUniforms), 0 });
+        //ResourceTableSetConstantBuffer(combineState.resourceTables[i], { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), combineState.combineUniforms, 0, false, false, sizeof(Combine::CombineUniforms), 0 });
+        ResourceTableSetRWTexture(combineState.resourceTables[i], { textureState.lightingTexture, combineState.lightingTextureSlot, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetTexture(combineState.resourceTables[i], { textureState.aoTexture, combineState.aoTextureSlot, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetTexture(combineState.resourceTables[i], { textureState.fogTexture, combineState.fogTextureSlot, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetTexture(combineState.resourceTables[i], { textureState.reflectionTexture, combineState.reflectionsTextureSlot, 0, CoreGraphics::InvalidSamplerId });
         ResourceTableCommitChanges(combineState.resourceTables[i]);
     }
+
+    // Update main resource table
+    ResourceTableSetRWTexture(clusterState.resourceTable, { textureState.lightingTexture, clusterState.lightShadingTextureSlot, 0, CoreGraphics::InvalidSamplerId });
+#ifdef CLUSTERED_LIGHTING_DEBUG
+    ResourceTableSetRWTexture(clusterState.resourceTable, { textureState.clusterDebugTexture, clusterState.lightShadingDebugTextureSlot, 0, CoreGraphics::InvalidSamplerId });
+#endif
+    ResourceTableCommitChanges(clusterState.resourceTable);
 
     // allow 16 shadow casting local lights
     lightServerState.shadowcastingLocalLights.SetCapacity(16);
@@ -675,9 +690,10 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphics::TextureId LightContext::GetLightingTexture()
+const CoreGraphics::TextureId
+LightContext::GetLightingTexture()
 {
-    return clusterState.lightingTexture;
+    return textureState.lightingTexture;
 }
 
 //------------------------------------------------------------------------------
@@ -751,7 +767,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     using namespace CoreGraphics;
 
     // get camera view
-    Math::mat4 viewTransform = Graphics::CameraContext::GetTransform(view->GetCamera());
+    Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
     Math::mat4 invViewTransform = inverse(viewTransform);
 
     // update constant buffer
@@ -828,7 +844,6 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     IndexT i;
     for (i = 0; i < types.Size(); i++)
     {
-
         switch (types[i])
         {
             case PointLightType:
@@ -945,41 +960,28 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     // get per-view resource tables
     const Util::FixedArray<CoreGraphics::ResourceTableId>& viewTables = TransformDevice::Instance()->GetViewResourceTables();
 
-    // a little ugly, but since the view can change the script, this has to adopt
-    const CoreGraphics::TextureId lightingTex = view->GetFrameScript()->GetTexture("LightBuffer");
-    clusterState.lightingTexture = lightingTex;
-    ResourceTableSetRWTexture(clusterState.resourceTables[bufferIndex], { lightingTex, clusterState.lightShadingTextureSlot, 0, CoreGraphics::InvalidSamplerId });
-
+    textureState.fogTexture = view->GetFrameScript()->GetTexture("VolumetricFogBuffer0");
+    textureState.reflectionTexture = view->GetFrameScript()->GetTexture("ReflectionBuffer");
+    textureState.aoTexture = view->GetFrameScript()->GetTexture("SSAOBuffer");
+    textureState.lightingTexture = view->GetFrameScript()->GetTexture("LightBuffer");
 #ifdef CLUSTERED_LIGHTING_DEBUG
-    const CoreGraphics::TextureId debugTex = view->GetFrameScript()->GetTexture("LightDebugBuffer");
-    clusterState.clusterDebugTexture = debugTex;
-    ResourceTableSetRWTexture(clusterState.resourceTables[bufferIndex], { clusterState.clusterDebugTexture, clusterState.lightShadingDebugTextureSlot, 0, CoreGraphics::InvalidSamplerId });
+    textureState.clusterDebugTexture = view->GetFrameScript()->GetTexture("LightDebugBuffer");
 #endif
-    ResourceTableCommitChanges(clusterState.resourceTables[bufferIndex]);
 
-    const CoreGraphics::TextureId ssaoTex = view->GetFrameScript()->GetTexture("SSAOBuffer");
     LightsCluster::LightUniforms consts;
     consts.NumSpotLights = numSpotLights;
     consts.NumPointLights = numPointLights;
     consts.NumLightClusters = Clustering::ClusterContext::GetNumClusters();
-    consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(ssaoTex);
+    consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(textureState.aoTexture);
     IndexT offset = SetComputeConstants(MainThreadConstantBuffer, consts);
     ResourceTableSetConstantBuffer(viewTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsCluster::LightUniforms), (SizeT)offset });
 
-    const CoreGraphics::TextureId fogTex = view->GetFrameScript()->GetTexture("VolumetricFogBuffer0");
-    const CoreGraphics::TextureId reflectionTex = view->GetFrameScript()->GetTexture("ReflectionBuffer");
-    const CoreGraphics::TextureId aoTex = view->GetFrameScript()->GetTexture("SSAOBuffer");
-
-    TextureDimensions dims = TextureGetDimensions(lightingTex);
+    TextureDimensions dims = TextureGetDimensions(textureState.lightingTexture);
     Combine::CombineUniforms combineConsts;
     combineConsts.LowresResolution[0] = 1.0f / dims.width;
     combineConsts.LowresResolution[1] = 1.0f / dims.height;
     offset = SetComputeConstants(MainThreadConstantBuffer, combineConsts);
     ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), combineState.combineUniforms, 0, false, false, sizeof(Combine::CombineUniforms), (SizeT)offset });
-    ResourceTableSetRWTexture(combineState.resourceTables[bufferIndex], { lightingTex, combineState.lightingTextureSlot, 0, CoreGraphics::InvalidSamplerId });
-    ResourceTableSetTexture(combineState.resourceTables[bufferIndex], { aoTex, combineState.aoTextureSlot, 0, CoreGraphics::InvalidSamplerId });
-    ResourceTableSetTexture(combineState.resourceTables[bufferIndex], { fogTex, combineState.fogTextureSlot, 0, CoreGraphics::InvalidSamplerId });
-    ResourceTableSetTexture(combineState.resourceTables[bufferIndex], { reflectionTex, combineState.reflectionsTextureSlot, 0, CoreGraphics::InvalidSamplerId });
     ResourceTableCommitChanges(combineState.resourceTables[bufferIndex]);
 }
 
@@ -993,6 +995,30 @@ LightContext::RunFrameScriptJobs(const Graphics::FrameContext& ctx)
 
     // run jobs for shadow frame script after all constants are updated
     lightServerState.shadowMappingFrameScript->RunJobs(ctx.frameIndex, ctx.bufferIndex);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+LightContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, SizeT height)
+{
+    // If window has resized, we need to update the resource table
+    ResourceTableSetRWTexture(clusterState.resourceTable, { textureState.lightingTexture, clusterState.lightShadingTextureSlot, 0, CoreGraphics::InvalidSamplerId });
+
+#ifdef CLUSTERED_LIGHTING_DEBUG
+    ResourceTableSetRWTexture(clusterState.resourceTable, { textureState.clusterDebugTexture, clusterState.lightShadingDebugTextureSlot, 0, CoreGraphics::InvalidSamplerId });
+#endif
+    ResourceTableCommitChanges(clusterState.resourceTable);
+
+    for (IndexT i = 0; i < combineState.resourceTables.Size(); i++)
+    {
+        ResourceTableSetRWTexture(combineState.resourceTables[i], { textureState.lightingTexture, combineState.lightingTextureSlot, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetTexture(combineState.resourceTables[i], { textureState.aoTexture, combineState.aoTextureSlot, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetTexture(combineState.resourceTables[i], { textureState.fogTexture, combineState.fogTextureSlot, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableSetTexture(combineState.resourceTables[i], { textureState.reflectionTexture, combineState.reflectionsTextureSlot, 0, CoreGraphics::InvalidSamplerId });
+        ResourceTableCommitChanges(combineState.resourceTables[i]);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1099,7 +1125,7 @@ LightContext::CombineLighting()
     SetResourceTable(combineState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr, GraphicsQueueType);
 
     // perform debug output
-    TextureDimensions dims = TextureGetDimensions(clusterState.lightingTexture);
+    TextureDimensions dims = TextureGetDimensions(textureState.lightingTexture);
     Compute(Math::divandroundup(dims.width, 64), dims.height, 1, GraphicsQueueType);
 
     CommandBufferEndMarker(GraphicsQueueType);

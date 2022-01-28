@@ -25,7 +25,6 @@ namespace Graphics
 __ImplementClass(Graphics::GraphicsServer, 'GFXS', Core::RefCounted);
 __ImplementSingleton(Graphics::GraphicsServer);
 
-Jobs::JobPortId GraphicsServer::renderSystemsJobPort;
 //------------------------------------------------------------------------------
 /**
 */
@@ -66,18 +65,10 @@ GraphicsServer::Open()
             128_MB,         // manually flushed memory block size, constant buffers, storage buffers
         },
         3,                  // number of simultaneous frames (3 = triple buffering, 2 = ... you get the idea)
-        false               // validation
+        true               // validation
     };
     this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 
-    Jobs::CreateJobPortInfo info =
-    {
-        "RenderJobPort",
-        4,
-        System::Cpu::Core1 | System::Cpu::Core2 | System::Cpu::Core3 | System::Cpu::Core4,
-        UINT_MAX
-    };
-    renderSystemsJobPort = CreateJobPort(info);
     if (this->graphicsDevice)
     {
 
@@ -96,7 +87,7 @@ GraphicsServer::Open()
 
         // setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
         CoreGraphics::layoutPool = Resources::GetMemoryPool<CoreGraphics::VertexSignatureCache>();
-        CoreGraphics::texturePool = Resources::GetMemoryPool<CoreGraphics::MemoryTextureCache>();
+        CoreGraphics::textureCache = Resources::GetMemoryPool<CoreGraphics::MemoryTextureCache>();
         CoreGraphics::meshPool = Resources::GetMemoryPool<CoreGraphics::MemoryMeshCache>();
 
         CoreGraphics::shaderPool = Resources::GetStreamPool<CoreGraphics::ShaderCache>();
@@ -217,6 +208,7 @@ GraphicsServer::Close()
     
     this->isOpen = false;
 
+    // Make sure to flush the graphics commands before shutting down
     RenderUtil::DrawFullScreenQuad::Discard();
 
     this->textRenderer->Close();

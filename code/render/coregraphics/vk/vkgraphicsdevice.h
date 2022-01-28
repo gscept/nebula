@@ -90,15 +90,6 @@ void CommandBufferBeginMarker(VkCommandBuffer buf, const Math::vec4& color, cons
 /// end command buffer marker (directly on vkcommandbuffer)
 void CommandBufferEndMarker(VkCommandBuffer buf);
 
-/// add buffer for delayed delete
-void DelayedDeleteBuffer(const VkBuffer buf);
-/// add image for delayed delete
-void DelayedDeleteImage(const VkImage img);
-/// add image view for delayed delete
-void DelayedDeleteImageView(const VkImageView view);
-/// add memory for delayed delete
-void DelayedFreeMemory(const CoreGraphics::Alloc alloc);
-
 /// handle queries at beginning of frame
 void _ProcessQueriesBeginFrame();
 /// handle queries on ending the frame

@@ -20,7 +20,7 @@ class StreamTextureCache : public Vulkan::VkStreamTextureCache
 };
 }
 #else
-#error "StreamTextureLoader class not implemented on this platform!"
+#error "StreamTextureCache class not implemented on this platform!"
 #endif
 //------------------------------------------------------------------------------
 

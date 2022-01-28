@@ -12,8 +12,6 @@
 namespace Visibility
 {
 
-extern void OctreeSystemJobFunc(const Jobs::JobFuncContext& ctx);
-
 class OctreeSystem : public VisibilitySystem
 {
 public:

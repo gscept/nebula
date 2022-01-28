@@ -812,7 +812,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
 void
 VegetationContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
-	Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetTransform(view->GetCamera()));
+	Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(view->GetCamera()));
 	VegetationGenerateUniforms uniforms;
 	cameraTransform.position.store(uniforms.CameraPosition);
 	uniforms.HeightMap = CoreGraphics::TextureGetBindlessHandle(vegetationState.heightMap);

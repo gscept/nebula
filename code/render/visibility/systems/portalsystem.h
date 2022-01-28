@@ -12,8 +12,6 @@
 namespace Visibility
 {
     
-extern void PortalSystemJobFunc(const Jobs::JobFuncContext& ctx);
-
 class PortalSystem : public VisibilitySystem
 {
 public:

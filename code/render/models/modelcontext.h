@@ -21,11 +21,6 @@ struct JobFuncContext;
 struct JobSyncId;
 };
 
-namespace Visibility
-{
-void VisibilitySortJob(const Jobs::JobFuncContext& ctx);
-};
-
 namespace Models
 {
 
@@ -143,8 +138,6 @@ public:
 
 private:
     friend class VisibilityContext;
-    friend void ModelRenderableUpdateJob(const Jobs::JobFuncContext& ctx);
-    friend void ModelTransformUpdateJob(const Jobs::JobFuncContext& ctx);
 
     static ModelInstance nodeInstances;
 
@@ -171,11 +164,6 @@ private:
     static Graphics::ContextEntityId Alloc();
     /// deallocate a slice
     static void Dealloc(Graphics::ContextEntityId id);
-    
-    //friend void Visibility::VisibilitySortJob(const Jobs::JobFuncContext& ctx);
-
-    static Jobs::JobSyncId jobInternalSync;
-    static Jobs::JobSyncId jobHostSync;
 };
 
 //------------------------------------------------------------------------------

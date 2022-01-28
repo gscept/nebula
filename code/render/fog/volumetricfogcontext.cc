@@ -288,7 +288,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
 {
 	using namespace CoreGraphics;
 	IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
-	Math::mat4 viewTransform = Graphics::CameraContext::GetTransform(view->GetCamera());
+	Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
 
 	SizeT numFogBoxVolumes = 0;
 	SizeT numFogSphereVolumes = 0;

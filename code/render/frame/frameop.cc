@@ -42,7 +42,8 @@ FrameOp::Discard()
 void
 FrameOp::OnWindowResized()
 {
-    // implement in subclass
+    for (IndexT i = 0; i < this->children.Size(); i++)
+        this->children[i]->OnWindowResized();
 }
 
 //------------------------------------------------------------------------------

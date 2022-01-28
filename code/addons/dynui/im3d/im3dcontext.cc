@@ -355,7 +355,7 @@ Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fram
     ad.m_viewportSize = Vec2((float)mode.GetWidth(), (float)mode.GetHeight());
     
     Graphics::GraphicsEntityId cam = view->GetCamera();
-    Math::mat4 transform = inverse(CameraContext::GetTransform(cam));
+    Math::mat4 transform = inverse(CameraContext::GetView(cam));
     ad.m_viewOrigin = xyz(transform.position);
     ad.m_viewDirection = -xyz(transform.z_axis);
     ad.m_worldUp = Vec3(0.0f, 1.0f, 0.0f);

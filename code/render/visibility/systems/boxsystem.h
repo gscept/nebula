@@ -12,8 +12,6 @@
 namespace Visibility
 {
 
-extern void BoxSystemJobFunc(const Jobs::JobFuncContext& ctx);
-
 class BoxSystem : public VisibilitySystem
 {
 public:

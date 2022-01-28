@@ -179,8 +179,8 @@ void
 VkMemoryTextureCache::Reload(const Resources::ResourceId id)
 {
     __Lock(textureAllocator);
-    VkTextureLoadInfo loadInfo = this->Get<Texture_LoadInfo>(id.resourceId);
-    VkTextureWindowInfo windowInfo = this->Get<Texture_WindowInfo>(id.resourceId);
+    VkTextureLoadInfo& loadInfo = this->Get<Texture_LoadInfo>(id.resourceId);
+    const VkTextureWindowInfo& windowInfo = this->Get<Texture_WindowInfo>(id.resourceId);
 
     if (!loadInfo.windowTexture && loadInfo.windowRelative)
     {

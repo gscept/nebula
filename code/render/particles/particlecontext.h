@@ -142,9 +142,6 @@ private:
     static Graphics::ContextEntityId Alloc();
     /// deallocate a slice
     static void Dealloc(Graphics::ContextEntityId id);
-
-    static Jobs::JobSyncId jobSync;
-    static Util::Queue<Jobs::JobId> runningJobs;
 };
 
 //------------------------------------------------------------------------------

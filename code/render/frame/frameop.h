@@ -64,10 +64,13 @@ protected:
     // inherit this class to implement the compiled runtime for the frame operation
     struct Compiled
     {
-        Compiled() :
-            numWaitEvents(0),
-            numSignalEvents(0),
-            numBarriers(0)
+        Compiled() 
+            : numWaitEvents(0)
+            , waitEvents(nullptr)
+            , numSignalEvents(0)
+            , signalEvents(nullptr)
+            , numBarriers(0)
+            , barriers(nullptr)
         {
         }
 

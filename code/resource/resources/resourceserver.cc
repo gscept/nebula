@@ -58,8 +58,6 @@ void
 ResourceServer::Close()
 {
     n_assert(this->open);
-
-    this->loaderThread->Stop();
     this->loaderThread = nullptr;
 
 #if NEBULA_DEBUG

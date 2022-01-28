@@ -129,7 +129,7 @@ CameraManager::InitUpdateCameraProcessor()
                         Graphics::GraphicsEntityId gid = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].gid;
                         Camera& settings = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].currentSettings;
                         UpdateCameraSettings(gid, settings, camera);
-                        Graphics::CameraContext::SetTransform(gid, parentTransform * settings.localTransform);
+                        Graphics::CameraContext::SetView(gid, parentTransform * settings.localTransform);
                     }
                 }
             }
@@ -168,7 +168,7 @@ CameraManager::InitUpdateCameraProcessor()
                         Graphics::GraphicsEntityId gid = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].gid;
                         Camera& settings = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].currentSettings;
                         UpdateCameraSettings(gid, settings, camera);
-                        Graphics::CameraContext::SetTransform(gid, settings.localTransform);
+                        Graphics::CameraContext::SetView(gid, settings.localTransform);
                     }
                 }
             }

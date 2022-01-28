@@ -25,7 +25,10 @@ ResourceLoaderThread::ResourceLoaderThread() :
 */
 ResourceLoaderThread::~ResourceLoaderThread()
 {
-    // empty
+    if (this->IsRunning())
+    {
+        this->Stop();
+    }
 }
 
 //------------------------------------------------------------------------------

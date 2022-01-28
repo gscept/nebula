@@ -191,9 +191,6 @@ private:
     static Graphics::ContextEntityId Alloc();
     /// deallocate a slice
     static void Dealloc(Graphics::ContextEntityId id);
-
-    static Util::Queue<Jobs::JobId> runningJobs;
-    static Jobs::JobSyncId jobHostSync;
 };
 
 } // namespace Terrain

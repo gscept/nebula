@@ -27,7 +27,6 @@
 #include "frame/frameserver.h"
 #include "debug/debughandler.h"
 #include "materials/shaderconfigserver.h"
-#include "jobs/jobs.h"
 
 namespace Graphics
 {
@@ -113,8 +112,6 @@ public:
     
     /// call when the window has been resized
     void OnWindowResized(CoreGraphics::WindowId wndId);
-
-    static Jobs::JobPortId renderSystemsJobPort;
 
 private:
     friend class CoreGraphics::BatchGroup;

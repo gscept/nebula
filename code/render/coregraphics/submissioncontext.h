@@ -33,6 +33,8 @@ namespace CoreGraphics
 
 struct TextureId;
 struct BufferId;
+struct TextureViewId;
+struct ResourceTableId;
 struct SemaphoreId;
 struct FenceId;
 ID_24_8_TYPE(SubmissionContextId);
@@ -57,20 +59,25 @@ void SubmissionContextNewBuffer(const SubmissionContextId id, CommandBufferId& o
 /// get current buffer
 CommandBufferId SubmissionContextGetCmdBuffer(const SubmissionContextId id);
 
-/// add resource for release
-void SubmissionContextFreeResource(const CoreGraphics::SubmissionContextId id, const Resources::ResourceId res);
-/// add image for deletion
+/// Add texture for deletion
 void SubmissionContextFreeTexture(const CoreGraphics::SubmissionContextId id, CoreGraphics::TextureId tex);
-/// add a buffer deletion
+/// Add texture view for deletion
+void SubmissionContextFreeTextureView(const CoreGraphics::SubmissionContextId id, CoreGraphics::TextureViewId view);
+/// Add resource table for deletion
+void SubmissionContextFreeResourceTable(const CoreGraphics::SubmissionContextId id, CoreGraphics::ResourceTableId table);
+/// Add a buffer deletion
 void SubmissionContextFreeBuffer(const CoreGraphics::SubmissionContextId id, CoreGraphics::BufferId buf);
-/// add command buffer for deletion
+/// Add command buffer for deletion
 void SubmissionContextFreeCommandBuffer(const CoreGraphics::SubmissionContextId id, const CoreGraphics::CommandBufferId cmd);
-/// add command buffer for reset
+/// Add command buffer for reset
 void SubmissionContextClearCommandBuffer(const CoreGraphics::SubmissionContextId id, const CoreGraphics::CommandBufferId cmd);
-/// add a memory alloc for freeing
+/// Add a memory alloc for freeing
 void SubmissionContextFreeMemory(const CoreGraphics::SubmissionContextId id, const CoreGraphics::Alloc& alloc);
-/// add void* to memory free upon completion
+/// Add void* to memory free upon completion
 void SubmissionContextFreeHostMemory(const SubmissionContextId id, void* buf);
+/// Clear up all pending deletes
+void SubmissionContextCleanupPendingDeletes(const CoreGraphics::SubmissionContextId id);
+
 
 /// get current fence object
 const FenceId SubmissionContextGetFence(const SubmissionContextId id);

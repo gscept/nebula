@@ -259,7 +259,7 @@ void
 DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
     using namespace CoreGraphics;
-    Math::mat4 viewTransform = Graphics::CameraContext::GetTransform(view->GetCamera());
+    Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
     const Util::Array<DecalType>& types = genericDecalAllocator.GetArray<Decal_Type>();
     const Util::Array<Ids::Id32>& typeIds = genericDecalAllocator.GetArray<Decal_TypedId>();
     const Util::Array<Math::mat4>& transforms = genericDecalAllocator.GetArray<Decal_Transform>();

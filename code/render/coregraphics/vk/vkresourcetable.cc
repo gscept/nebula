@@ -32,10 +32,28 @@ ResourceTableGetVkDescriptorSet(CoreGraphics::ResourceTableId id)
 //------------------------------------------------------------------------------
 /**
 */
-const VkDescriptorSetLayout&
+const IndexT
+ResourceTableGetVkPoolIndex(CoreGraphics::ResourceTableId id)
+{
+    return resourceTableAllocator.Get<ResourceTable_DescriptorPoolIndex>(id.id24);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::ResourceTableLayoutId&
 ResourceTableGetVkLayout(CoreGraphics::ResourceTableId id)
 {
-    return ResourceTableLayoutGetVk(resourceTableAllocator.Get<ResourceTable_Layout>(id.id24));
+    return resourceTableAllocator.Get<ResourceTable_Layout>(id.id24);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const VkDevice&
+ResourceTableGetVkDevice(CoreGraphics::ResourceTableId id)
+{
+    return resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
 }
 
 //------------------------------------------------------------------------------
@@ -136,8 +154,28 @@ void
 ResourceTableLayoutDeallocTable(const CoreGraphics::ResourceTableLayoutId& id, const VkDevice dev, const VkDescriptorSet& set, const IndexT index)
 {
     VkDescriptorPool& pool = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPools>(id.id24)[index];
-    vkFreeDescriptorSets(dev, pool, 1, &set);
+    VkResult res = vkFreeDescriptorSets(dev, pool, 1, &set);
+    n_assert(res == VK_SUCCESS);
     resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPoolFreeItems>(id.id24)[index]++;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const VkDescriptorPool&
+ResourceTableLayoutGetVkDescriptorPool(const CoreGraphics::ResourceTableLayoutId& id, const IndexT index)
+{
+    return resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPools>(id.id24)[index];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ResourceTableLayoutVkDecrementCounter(const CoreGraphics::ResourceTableLayoutId& id, const IndexT index)
+{
+    Util::Array<uint32_t>& freeItems = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPoolFreeItems>(id.id24);
+    freeItems[index]++;
 }
 
 //------------------------------------------------------------------------------
@@ -194,7 +232,8 @@ DestroyResourceTable(const ResourceTableId id)
     const CoreGraphics::ResourceTableLayoutId& layout = resourceTableAllocator.Get<ResourceTable_Layout>(id.id24);
     const IndexT& poolIndex = resourceTableAllocator.Get<ResourceTable_DescriptorPoolIndex>(id.id24);
     const VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
-    ResourceTableLayoutDeallocTable(layout, dev, set, poolIndex);
+    const VkDescriptorPool& pool = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPools>(layout.id24)[poolIndex];
+    CoreGraphics::DelayedDeleteDescriptorSet(id);
 
     resourceTableAllocator.Dealloc(id.id24);
 }
@@ -234,7 +273,6 @@ ResourceTableCopy(const ResourceTableId from, IndexT fromSlot, IndexT fromIndex,
 void
 ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& tex)
 {
-    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
     Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
@@ -294,7 +332,6 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& te
 void 
 ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView& tex)
 {
-    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
     Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
@@ -352,7 +389,6 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView
 void
 ResourceTableSetInputAttachment(const ResourceTableId id, const ResourceTableInputAttachment& tex)
 {
-    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
     Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
@@ -396,7 +432,6 @@ ResourceTableSetInputAttachment(const ResourceTableId id, const ResourceTableInp
 void
 ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& tex)
 {
-    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
     Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
@@ -440,7 +475,6 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& 
 void 
 ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTextureView& tex)
 {
-    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
     Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
@@ -485,7 +519,6 @@ void
 ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuffer& buf)
 {
     n_assert(!buf.texelBuffer);
-    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
     Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
@@ -536,7 +569,6 @@ ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuff
 void 
 ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& buf)
 {
-    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
     Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
@@ -586,7 +618,6 @@ ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& bu
 void
 ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& samp)
 {
-    VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
     Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
@@ -639,7 +670,6 @@ ResourceTableBlock(bool b)
         PendingTableCommitsLock.Enter();
         for (ResourceTableId& table : PendingTableCommits)
             ResourceTableCommitChanges(table);
-
         PendingTableCommits.Clear();
         PendingTableCommitsLock.Leave();
     }

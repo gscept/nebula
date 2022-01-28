@@ -380,7 +380,18 @@ bool IsInBeginFrame();
 /// wait for an individual queue to finish
 void WaitForQueue(CoreGraphics::QueueType queue);
 /// wait for all queues to finish
-void WaitForAllQueues();
+void WaitAndClearPendingCommands();
+
+/// Add buffer to delete queue
+void DelayedDeleteBuffer(const CoreGraphics::BufferId id);
+/// Add texture to delete queue
+void DelayedDeleteTexture(const CoreGraphics::TextureId id);
+/// Add texture view to delete queue
+void DelayedDeleteTextureView(const CoreGraphics::TextureViewId id);
+/// Add memory allocation to delete queue
+void DelayedFreeMemory(const CoreGraphics::Alloc alloc);
+/// Add a descriptor set to delete queue
+void DelayedDeleteDescriptorSet(const CoreGraphics::ResourceTableId id);
 
 /// Swap
 void Swap(IndexT i);

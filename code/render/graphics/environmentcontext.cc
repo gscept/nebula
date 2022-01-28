@@ -159,7 +159,7 @@ EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
     tickParams.TonemapWeight = 9.0f;
     tickParams.Lum = 1.0f;
 
-    Math::mat4 cameraTransform = Graphics::CameraContext::GetTransform(Graphics::CameraContext::GetLODCamera());
+    Math::mat4 cameraTransform = Graphics::CameraContext::GetView(Graphics::CameraContext::GetLODCamera());
     Math::mat4 temp;
     temp.position = cameraTransform.position;
     temp.position.w = 1.0f;

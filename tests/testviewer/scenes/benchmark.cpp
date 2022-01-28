@@ -43,14 +43,14 @@ void OpenScene()
     entities.Append(ground);
     entityNames.Append("Ground");
 
-    const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3" };
-    //const Util::StringAtom modelRes[] = { "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3" };
+    //const Util::StringAtom modelRes[] = { "mdl:Units/Unit_Archer.n3",  "mdl:Units/Unit_Footman.n3",  "mdl:Units/Unit_Spearman.n3" };
+    const Util::StringAtom modelRes[] = { "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3",  "mdl:system/placeholder.n3" };
     const Util::StringAtom skeletonRes[] = { "ske:Units/Unit_Archer.nsk3",  "ske:Units/Unit_Footman.nsk3",  "ske:Units/Unit_Spearman.nsk3" };
     const Util::StringAtom animationRes[] = { "ani:Units/Unit_Archer.nax3",  "ani:Units/Unit_Footman.nax3",  "ani:Units/Unit_Spearman.nax3" };
 
     ModelContext::BeginBulkRegister();
     ObservableContext::BeginBulkRegister();
-    static const int NumModels = 40;
+    static const int NumModels = 80;
     for (IndexT i = -NumModels; i < NumModels; i++)
     {
         for (IndexT j = -NumModels; j < NumModels; j++)
@@ -66,13 +66,15 @@ void OpenScene()
             const float timeOffset = Math::rand();// (((i + NumModels)* NumModels + (j + NumModels)) % 4) / 3.0f;
 
             // create model and move it to the front
-            ModelContext::Setup(ent, modelRes[resourceIndex], "NotA", [ent]()
+            ModelContext::Setup(ent, modelRes[resourceIndex], "NotA", [=]()
                 {
                     ObservableContext::Setup(ent, VisibilityEntityType::Model);
+
+                    //Characters::CharacterContext::Setup(ent, skeletonRes[resourceIndex], animationRes[resourceIndex], "Viewer");
                 });
             ModelContext::SetTransform(ent, Math::translation(i * 16, 0, j * 16));
 
-            //Characters::CharacterContext::Setup(ent, skeletonRes[resourceIndex], animationRes[resourceIndex], "Viewer");
+            
             //Characters::CharacterContext::PlayClip(ent, nullptr, 0, 0, Characters::Append, 1.0f, 1, Math::rand() * 100.0f, 0.0f, 0.0f, Math::rand() * 100.0f);
         }
     }
@@ -120,7 +122,7 @@ void StepFrame()
 void RenderUI()
 {
     //Models::ModelId model = ModelContext::GetModel(this->entity);
-    //auto modelPool = Resources::GetStreamPool<Models::StreamModelPool>();
+    //auto modelPool = Resources::GetStreamPool<Models::StreamModelCache>();
     //auto resource = modelPool->GetName(model);    
     //ImGui::Separator();
     //ImGui::Text("Resource: %s", resource.AsString().AsCharPtr());

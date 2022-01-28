@@ -11,6 +11,7 @@
 //------------------------------------------------------------------------------
 #include "coregraphics/texture.h"
 #include "coregraphics/pixelformat.h"
+#include "coregraphics/textureview.h"
 #include "resources/resourcecache.h"
 #include "ids/idallocator.h"
 #include "vkmemory.h"
@@ -111,9 +112,11 @@ extern VkTextureAllocator textureAllocator;
 enum
 {
     TextureExtension_StencilInfo
+    , TextureExtension_StencilBind
 };
 typedef Ids::IdAllocatorSafe<
-    VkTextureRuntimeInfo
+    CoreGraphics::TextureViewId
+    , IndexT
 > VkTextureStencilExtensionAllocator;
 extern VkTextureStencilExtensionAllocator textureStencilExtensionAllocator;
 

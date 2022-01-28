@@ -92,7 +92,7 @@ Shoot(int count)
     {
         last = now;
 
-        Math::mat4 trans = Math::inverse(CameraContext::GetTransform(camera));
+        Math::mat4 trans = Math::inverse(CameraContext::GetView(camera));
         Math::point cameraPos = trans.position;
         while (count--)
         {
