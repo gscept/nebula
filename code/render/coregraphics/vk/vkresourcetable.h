@@ -52,10 +52,14 @@ typedef Ids::IdAllocator<
 > VkResourceTableAllocator;
 extern VkResourceTableAllocator resourceTableAllocator;
 
-/// get descriptor set
+/// Get descriptor set
 const VkDescriptorSet& ResourceTableGetVkDescriptorSet(CoreGraphics::ResourceTableId id);
-/// get set layout 
-const VkDescriptorSetLayout& ResourceTableGetVkLayout(CoreGraphics::ResourceTableId id);
+/// Get descriptor pool index
+const IndexT ResourceTableGetVkPoolIndex(CoreGraphics::ResourceTableId id);
+/// Get set layout 
+const CoreGraphics::ResourceTableLayoutId& ResourceTableGetVkLayout(CoreGraphics::ResourceTableId id);
+/// Get device used to create resource table
+const VkDevice& ResourceTableGetVkDevice(CoreGraphics::ResourceTableId id);
 
 //------------------------------------------------------------------------------
 /**
@@ -93,7 +97,10 @@ const VkDescriptorSetLayout& ResourceTableLayoutGetVk(const CoreGraphics::Resour
 void ResourceTableLayoutAllocTable(const CoreGraphics::ResourceTableLayoutId& id, const VkDevice dev, uint overallocationSize, IndexT& outIndex, VkDescriptorSet& outSet);
 /// deallocate descriptor set from pool
 void ResourceTableLayoutDeallocTable(const CoreGraphics::ResourceTableLayoutId& id, const VkDevice dev, const VkDescriptorSet& set, const IndexT index);
-
+/// Get descriptor pool
+const VkDescriptorPool& ResourceTableLayoutGetVkDescriptorPool(const CoreGraphics::ResourceTableLayoutId& id, const IndexT index);
+/// Decrement usage counter
+void ResourceTableLayoutVkDecrementCounter(const CoreGraphics::ResourceTableLayoutId& id, const IndexT index);
 
 //------------------------------------------------------------------------------
 /**

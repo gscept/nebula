@@ -53,7 +53,6 @@ FrameBarrier::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferInde
 #endif
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */

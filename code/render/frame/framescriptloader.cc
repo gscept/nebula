@@ -1025,7 +1025,8 @@ FrameScriptLoader::ParseShaderVariables(
     const CoreGraphics::ShaderId& shd, 
     CoreGraphics::ResourceTableId& table, 
     Util::Dictionary<Util::StringAtom, CoreGraphics::BufferId>& constantBuffers, 
-    Util::Array<Util::Tuple<IndexT, CoreGraphics::BufferId, CoreGraphics::TextureId>>& textures, JzonValue* node)
+    Util::Array<Util::Tuple<IndexT, CoreGraphics::BufferId, CoreGraphics::TextureId>>& textures,
+    JzonValue* node)
 {
     uint i;
     for (i = 0; i < node->size; i++)

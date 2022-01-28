@@ -17,9 +17,9 @@ using namespace Core;
 /**
 */
 FileStream::FileStream() :
-    handle(0),
-    mappedContent(0),
-    mapHandle(0)
+    handle(nullptr),
+    mappedContent(nullptr),
+    mapHandle(nullptr)
 {
     // empty
 }
@@ -126,9 +126,13 @@ FileStream::Close()
     n_assert(0 != this->handle);
     if (this->IsMapped())
     {
-        this->Unmap();
+        if (this->mapHandle == nullptr)
+            this->Unmap();
+        else
+            this->MemoryUnmap();
     }
     FSWrapper::CloseFile(this->handle);
+    this->mapHandle = nullptr;
     this->handle = 0;
     Stream::Close();
 }

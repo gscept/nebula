@@ -1523,7 +1523,7 @@ TerrainContext::CreateBiome(
                 nullptr);
 
             // destroy the texture
-            CoreGraphics::SubmissionContextFreeResource(sub, albedo);
+            Resources::DiscardResource(albedo);
         }
 
         {
@@ -1598,7 +1598,7 @@ TerrainContext::CreateBiome(
                 nullptr);
 
             // destroy the texture
-            CoreGraphics::SubmissionContextFreeResource(sub, normal);
+            Resources::DiscardResource(normal);
         }
 
         {
@@ -1670,7 +1670,7 @@ TerrainContext::CreateBiome(
                 nullptr);
 
             // destroy the texture
-            CoreGraphics::SubmissionContextFreeResource(sub, material);
+            Resources::DiscardResource(material);
         }
     }
 
@@ -1768,7 +1768,7 @@ TerrainContext::CullPatches(const Ptr<Graphics::View>& view, const Graphics::Fra
 {
     N_SCOPE(CullPatches, Terrain);
     static Math::mat4 cameraTransform;
-    cameraTransform = Math::inverse(Graphics::CameraContext::GetTransform(view->GetCamera()));
+    cameraTransform = Math::inverse(Graphics::CameraContext::GetView(view->GetCamera()));
 
     struct SubTextureUpdateCtx
     {
@@ -2036,7 +2036,7 @@ void
 TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
     N_SCOPE(UpdateLOD, Terrain);
-    Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetTransform(view->GetCamera()));
+    Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(view->GetCamera()));
     const Math::mat4& viewProj = Graphics::CameraContext::GetViewProjection(view->GetCamera());
     Util::Array<TerrainRuntimeInfo>& runtimes = terrainAllocator.GetArray<Terrain_RuntimeInfo>();
 

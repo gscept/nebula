@@ -36,10 +36,12 @@ public:
     /// setup as ortographic
     static void SetupOrthographic(const Graphics::GraphicsEntityId id, float width, float height, float znear, float zfar);
 
-    /// set transform
-    static void SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4& mat);
+    /// set view
+    static void SetView(const Graphics::GraphicsEntityId id, const Math::mat4& mat);
+    /// get view
+    static const Math::mat4& GetView(const Graphics::GraphicsEntityId id);
     /// get transform
-    static const Math::mat4& GetTransform(const Graphics::GraphicsEntityId id);
+    static const Math::mat4 GetTransform(const Graphics::GraphicsEntityId id);
 
     /// get projection
     static const Math::mat4& GetProjection(const Graphics::GraphicsEntityId id);

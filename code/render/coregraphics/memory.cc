@@ -63,7 +63,8 @@ void
 MemoryPool::Clear()
 {
     for (IndexT i = 0; i < this->blocks.Size(); i++)
-        this->DestroyBlock(this->blocks[i]);
+        if (this->blocks[i] != DeviceMemory(0))
+            this->DestroyBlock(this->blocks[i]);
 
     this->blocks.Clear();
     this->blockRanges.Clear();

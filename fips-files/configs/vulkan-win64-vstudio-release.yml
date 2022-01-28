@@ -6,4 +6,4 @@ build_type: Release
 defines:
     N_USE_VULKAN: ON
     __X64__: ON
-    PX_TARGET: win.x86_64.vc141.mt
+    PX_TARGET: win.x86_64.vc142.mt

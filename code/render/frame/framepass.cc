@@ -60,11 +60,12 @@ FramePass::CompiledImpl::RunJobs(const IndexT frameIndex, const IndexT bufferInd
     {
         N_SCOPE(RunSubpassRecord, Graphics);
 
-        // start subpass commands
-        CoreGraphics::BeginSubpassCommands(this->subpassBuffers[i][bufferIndex]);
         // progress to next subpass if not on first iteration
         if (i > 0)
             PassNextSubpass(this->pass);
+
+        // start subpass commands
+        CoreGraphics::BeginSubpassCommands(this->subpassBuffers[i][bufferIndex]);
 
         // execute contents of this subpass and synchronize
         // note that we overload the cross queue sync so we do it outside the render pass
@@ -165,6 +166,8 @@ FrameOp::Compiled*
 FramePass::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
     CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+    ret->subpasses = {};
+    ret->subpassBuffers = {};
     ret->pass = this->pass;
     return ret;
 }
@@ -192,12 +195,10 @@ FramePass::Build(
     myCompiled->name = this->name;
 #endif
 
-    Util::Array<FrameOp::Compiled*> subpassOps;
     for (IndexT i = 0; i < this->children.Size(); i++)
     {
-        this->children[i]->Build(allocator, subpassOps, events, barriers, rwBuffers, textures, commandBufferPool);
+        this->children[i]->Build(allocator, myCompiled->subpasses, events, barriers, rwBuffers, textures, commandBufferPool);
     }
-    myCompiled->subpasses = subpassOps;
     this->compiled = myCompiled;
     this->SetupSynchronization(allocator, events, barriers, rwBuffers, textures);
     compiledOps.Append(myCompiled);

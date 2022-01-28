@@ -31,6 +31,27 @@ FrameSubmission::~FrameSubmission()
 /**
 */
 void
+FrameSubmission::OnWindowResized()
+{
+    FrameOp::OnWindowResized();
+    for (IndexT i = 0; i < this->children.Size(); i++)
+    {
+        this->children[i]->OnWindowResized();
+    }
+    if (this->resourceResetBarriers != nullptr)
+    {
+        IndexT i;
+        for (i = 0; i < this->resourceResetBarriers->Size(); i++)
+        {
+            CoreGraphics::BarrierReset(this->resourceResetBarriers->Get(i));
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 FrameSubmission::CompiledImpl::RunJobs(const IndexT frameIndex, const IndexT bufferIndex)
 {
     for (IndexT i = 0; i < this->compiled.Size(); i++)
@@ -48,10 +69,10 @@ FrameSubmission::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferI
     CoreGraphics::BeginSubmission(this->queue, this->waitQueue);
     for (IndexT i = 0; i < this->compiled.Size(); i++)
     {
-		this->compiled[i]->QueuePreSync();
-		this->compiled[i]->Run(frameIndex, bufferIndex);
-		this->compiled[i]->QueuePostSync();
-	}
+        this->compiled[i]->QueuePreSync();
+        this->compiled[i]->Run(frameIndex, bufferIndex);
+        this->compiled[i]->QueuePostSync();
+    }
 
     // I will admit, this is a little hacky, and in the future we might put this in its own command...
     if (this->resourceResetBarriers && this->resourceResetBarriers->Size() > 0)
@@ -70,10 +91,23 @@ FrameSubmission::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferI
 //------------------------------------------------------------------------------
 /**
 */
+void
+FrameSubmission::CompiledImpl::Discard()
+{
+    for (IndexT i = 0; i < this->compiled.Size(); i++)
+    {
+        this->compiled[i]->Discard();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 FrameOp::Compiled* 
 FrameSubmission::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
     CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
+    ret->compiled = {};
     ret->queue = this->queue;
     ret->waitQueue = this->waitQueue;
     ret->resourceResetBarriers = this->resourceResetBarriers;

@@ -24,7 +24,7 @@ TextureId Red2D;
 TextureId Green2D;
 TextureId Blue2D;
 
-MemoryTextureCache* texturePool = nullptr;
+MemoryTextureCache* textureCache = nullptr;
 
 //------------------------------------------------------------------------------
 /**
@@ -32,9 +32,9 @@ MemoryTextureCache* texturePool = nullptr;
 const TextureId
 CreateTexture(const TextureCreateInfo& info)
 {
-    TextureId id = texturePool->ReserveResource(info.name, info.tag);
+    TextureId id = textureCache->ReserveResource(info.name, info.tag);
     n_assert(id.resourceType == TextureIdType);
-    texturePool->LoadFromMemory(id, &info);
+    textureCache->LoadFromMemory(id, &info);
     return id;
 }
 
@@ -44,7 +44,7 @@ CreateTexture(const TextureCreateInfo& info)
 void
 DestroyTexture(const TextureId id)
 {
-    texturePool->DiscardResource(id);
+    textureCache->DiscardResource(id);
 }
 
 //------------------------------------------------------------------------------
@@ -53,7 +53,7 @@ DestroyTexture(const TextureId id)
 TextureDimensions
 TextureGetDimensions(const TextureId id)
 {
-    return texturePool->GetDimensions(id);
+    return textureCache->GetDimensions(id);
 }
 
 //------------------------------------------------------------------------------
@@ -62,7 +62,7 @@ TextureGetDimensions(const TextureId id)
 TextureRelativeDimensions 
 TextureGetRelativeDimensions(const TextureId id)
 {
-    return texturePool->GetRelativeDimensions(id);
+    return textureCache->GetRelativeDimensions(id);
 }
 
 //------------------------------------------------------------------------------
@@ -71,7 +71,7 @@ TextureGetRelativeDimensions(const TextureId id)
 CoreGraphics::PixelFormat::Code
 TextureGetPixelFormat(const TextureId id)
 {
-    return texturePool->GetPixelFormat(id);
+    return textureCache->GetPixelFormat(id);
 }
 
 //------------------------------------------------------------------------------
@@ -80,7 +80,7 @@ TextureGetPixelFormat(const TextureId id)
 TextureType
 TextureGetType(const TextureId id)
 {
-    return texturePool->GetType(id);
+    return textureCache->GetType(id);
 }
 
 //------------------------------------------------------------------------------
@@ -89,7 +89,7 @@ TextureGetType(const TextureId id)
 SizeT
 TextureGetNumMips(const TextureId id)
 {
-    return texturePool->GetNumMips(id);
+    return textureCache->GetNumMips(id);
 }
 
 //------------------------------------------------------------------------------
@@ -98,7 +98,7 @@ TextureGetNumMips(const TextureId id)
 SizeT 
 TextureGetNumLayers(const TextureId id)
 {
-    return texturePool->GetNumLayers(id);
+    return textureCache->GetNumLayers(id);
 }
 
 //------------------------------------------------------------------------------
@@ -107,7 +107,7 @@ TextureGetNumLayers(const TextureId id)
 SizeT 
 TextureGetNumSamples(const TextureId id)
 {
-    return texturePool->GetNumSamples(id);
+    return textureCache->GetNumSamples(id);
 }
 
 //------------------------------------------------------------------------------
@@ -116,7 +116,7 @@ TextureGetNumSamples(const TextureId id)
 const CoreGraphics::TextureId 
 TextureGetAlias(const TextureId id)
 {
-    return texturePool->GetAlias(id);
+    return textureCache->GetAlias(id);
 }
 
 //------------------------------------------------------------------------------
@@ -125,7 +125,7 @@ TextureGetAlias(const TextureId id)
 const CoreGraphics::TextureUsage 
 TextureGetUsage(const TextureId id)
 {
-    return texturePool->GetUsageBits(id);
+    return textureCache->GetUsageBits(id);
 }
 
 //------------------------------------------------------------------------------
@@ -134,7 +134,7 @@ TextureGetUsage(const TextureId id)
 const CoreGraphics::ImageLayout 
 TextureGetDefaultLayout(const TextureId id)
 {
-    return texturePool->GetDefaultLayout(id);
+    return textureCache->GetDefaultLayout(id);
 }
 
 //------------------------------------------------------------------------------
@@ -143,7 +143,7 @@ TextureGetDefaultLayout(const TextureId id)
 uint 
 TextureGetBindlessHandle(const TextureId id)
 {
-    return texturePool->GetBindlessHandle(id);
+    return textureCache->GetBindlessHandle(id);
 }
 
 //------------------------------------------------------------------------------
@@ -152,7 +152,7 @@ TextureGetBindlessHandle(const TextureId id)
 uint 
 TextureGetStencilBindlessHandle(const TextureId id)
 {
-    return texturePool->GetStencilBindlessHandle(id);
+    return textureCache->GetStencilBindlessHandle(id);
 }
 
 //------------------------------------------------------------------------------
@@ -161,7 +161,7 @@ TextureGetStencilBindlessHandle(const TextureId id)
 IndexT 
 TextureSwapBuffers(const TextureId id)
 {
-    return texturePool->SwapBuffers(id);
+    return textureCache->SwapBuffers(id);
 }
 
 //------------------------------------------------------------------------------
@@ -170,7 +170,7 @@ TextureSwapBuffers(const TextureId id)
 void 
 TextureWindowResized(const TextureId id)
 {
-    texturePool->Reload(id);
+    textureCache->Reload(id);
 }
 
 //------------------------------------------------------------------------------
@@ -180,7 +180,7 @@ TextureMapInfo
 TextureMap(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::MapType type)
 {
     TextureMapInfo info;
-    n_assert(texturePool->Map(id, mip, type, info));
+    n_assert(textureCache->Map(id, mip, type, info));
     return info;
 }
 
@@ -190,7 +190,7 @@ TextureMap(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::M
 void
 TextureUnmap(const TextureId id, IndexT mip)
 {
-    texturePool->Unmap(id, mip);
+    textureCache->Unmap(id, mip);
 }
 
 //------------------------------------------------------------------------------
@@ -200,7 +200,7 @@ TextureMapInfo
 TextureMapFace(const TextureId id, IndexT mip, TextureCubeFace face, const CoreGraphics::GpuBufferTypes::MapType type)
 {
     TextureMapInfo info;
-    n_assert(texturePool->MapCubeFace(id, face, mip, type, info));
+    n_assert(textureCache->MapCubeFace(id, face, mip, type, info));
     return info;
 }
 
@@ -210,7 +210,7 @@ TextureMapFace(const TextureId id, IndexT mip, TextureCubeFace face, const CoreG
 void
 TextureUnmapFace(const TextureId id, IndexT mip, TextureCubeFace face)
 {
-    texturePool->UnmapCubeFace(id, face, mip);
+    textureCache->UnmapCubeFace(id, face, mip);
 }
 
 //------------------------------------------------------------------------------
@@ -219,7 +219,7 @@ TextureUnmapFace(const TextureId id, IndexT mip, TextureCubeFace face)
 void 
 TextureGenerateMipmaps(const TextureId id)
 {
-    texturePool->GenerateMipmaps(id);
+    textureCache->GenerateMipmaps(id);
 }
 
 //------------------------------------------------------------------------------
@@ -228,7 +228,7 @@ TextureGenerateMipmaps(const TextureId id)
 TextureSparsePageSize 
 TextureSparseGetPageSize(const CoreGraphics::TextureId id)
 {
-    return texturePool->SparseGetPageSize(id);
+    return textureCache->SparseGetPageSize(id);
 }
 
 //------------------------------------------------------------------------------
@@ -237,7 +237,7 @@ TextureSparseGetPageSize(const CoreGraphics::TextureId id)
 IndexT 
 TextureSparseGetPageIndex(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT x, IndexT y, IndexT z)
 {
-    return texturePool->SparseGetPageIndex(id, layer, mip, x, y, z);
+    return textureCache->SparseGetPageIndex(id, layer, mip, x, y, z);
 }
 
 //------------------------------------------------------------------------------
@@ -246,7 +246,7 @@ TextureSparseGetPageIndex(const CoreGraphics::TextureId id, IndexT layer, IndexT
 const TextureSparsePage& 
 TextureSparseGetPage(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex)
 {
-    return texturePool->SparseGetPage(id, layer, mip, pageIndex);
+    return textureCache->SparseGetPage(id, layer, mip, pageIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -255,7 +255,7 @@ TextureSparseGetPage(const CoreGraphics::TextureId id, IndexT layer, IndexT mip,
 SizeT 
 TextureSparseGetNumPages(const CoreGraphics::TextureId id, IndexT layer, IndexT mip)
 {
-    return texturePool->SparseGetNumPages(id, layer, mip);
+    return textureCache->SparseGetNumPages(id, layer, mip);
 }
 
 //------------------------------------------------------------------------------
@@ -264,7 +264,7 @@ TextureSparseGetNumPages(const CoreGraphics::TextureId id, IndexT layer, IndexT 
 IndexT 
 TextureSparseGetMaxMip(const CoreGraphics::TextureId id)
 {
-    return texturePool->SparseGetMaxMip(id);
+    return textureCache->SparseGetMaxMip(id);
 }
 
 //------------------------------------------------------------------------------
@@ -273,7 +273,7 @@ TextureSparseGetMaxMip(const CoreGraphics::TextureId id)
 void 
 TextureSparseEvict(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex)
 {
-    texturePool->SparseEvict(id, layer, mip, pageIndex);
+    textureCache->SparseEvict(id, layer, mip, pageIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -282,7 +282,7 @@ TextureSparseEvict(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, I
 void 
 TextureSparseMakeResident(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex)
 {
-    texturePool->SparseMakeResident(id, layer, mip, pageIndex);
+    textureCache->SparseMakeResident(id, layer, mip, pageIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -291,7 +291,7 @@ TextureSparseMakeResident(const CoreGraphics::TextureId id, IndexT layer, IndexT
 void 
 TextureSparseEvictMip(const CoreGraphics::TextureId id, IndexT layer, IndexT mip)
 {
-    texturePool->SparseEvictMip(id, layer, mip);
+    textureCache->SparseEvictMip(id, layer, mip);
 }
 
 //------------------------------------------------------------------------------
@@ -300,7 +300,7 @@ TextureSparseEvictMip(const CoreGraphics::TextureId id, IndexT layer, IndexT mip
 void 
 TextureSparseMakeMipResident(const CoreGraphics::TextureId id, IndexT layer, IndexT mip)
 {
-    texturePool->SparseMakeMipResident(id, layer, mip);
+    textureCache->SparseMakeMipResident(id, layer, mip);
 }
 
 //------------------------------------------------------------------------------
@@ -309,7 +309,7 @@ TextureSparseMakeMipResident(const CoreGraphics::TextureId id, IndexT layer, Ind
 void 
 TextureSparseCommitChanges(const CoreGraphics::TextureId id)
 {
-    texturePool->SparseCommitChanges(id);
+    textureCache->SparseCommitChanges(id);
 }
 
 //------------------------------------------------------------------------------
@@ -318,7 +318,7 @@ TextureSparseCommitChanges(const CoreGraphics::TextureId id)
 void 
 TextureUpdate(const CoreGraphics::TextureId id, const Math::rectangle<int>& region, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub)
 {
-    texturePool->Update(id, region, mip, layer, buf, sub);
+    textureCache->Update(id, region, mip, layer, buf, sub);
 }
 
 //------------------------------------------------------------------------------
@@ -333,7 +333,7 @@ TextureUpdate(const CoreGraphics::TextureId id, IndexT mip, IndexT layer, char* 
     region.top = 0;
     region.right = dims.width;
     region.bottom = dims.height;
-    texturePool->Update(id, region, mip, layer, buf, sub);
+    textureCache->Update(id, region, mip, layer, buf, sub);
 }
 
 //------------------------------------------------------------------------------
@@ -342,7 +342,7 @@ TextureUpdate(const CoreGraphics::TextureId id, IndexT mip, IndexT layer, char* 
 void 
 TextureClearColor(const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres, const CoreGraphics::SubmissionContextId sub)
 {
-    texturePool->ClearColor(id, color, layout, subres, sub);
+    textureCache->ClearColor(id, color, layout, subres, sub);
 }
 
 //------------------------------------------------------------------------------
@@ -351,7 +351,7 @@ TextureClearColor(const CoreGraphics::TextureId id, Math::vec4 color, const Core
 void 
 TextureClearDepthStencil(const CoreGraphics::TextureId id, float depth, uint stencil, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres, const CoreGraphics::SubmissionContextId sub)
 {
-    texturePool->ClearDepthStencil(id, depth, stencil, layout, subres, sub);
+    textureCache->ClearDepthStencil(id, depth, stencil, layout, subres, sub);
 }
 
 //------------------------------------------------------------------------------

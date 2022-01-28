@@ -437,7 +437,7 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
     const Models::ModelContext::ModelInstance::Renderable& renderables = ModelContext::GetModelRenderables();
     const Util::Array<Graphics::GraphicsEntityId>& graphicsEntities = particleContextAllocator.GetArray<ModelContextId>();
 
-    Math::mat4 invViewMatrix = inverse(Graphics::CameraContext::GetTransform(view->GetCamera()));
+    Math::mat4 invViewMatrix = inverse(Graphics::CameraContext::GetView(view->GetCamera()));
     IndexT i, j;
 
     // update billboard particles

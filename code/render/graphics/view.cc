@@ -51,7 +51,7 @@ View::UpdateResources(const IndexT frameIndex, const IndexT bufferIndex)
         // update camera
         TransformDevice* transDev = TransformDevice::Instance();
         auto settings = CameraContext::GetSettings(this->camera);
-        transDev->SetViewTransform(CameraContext::GetTransform(this->camera));
+        transDev->SetViewTransform(CameraContext::GetView(this->camera));
         transDev->SetProjTransform(CameraContext::GetProjection(this->camera));
         transDev->SetFocalLength(settings.GetFocalLength());
         transDev->SetNearFarPlane(Math::vec2(settings.GetZNear(), settings.GetZFar()));

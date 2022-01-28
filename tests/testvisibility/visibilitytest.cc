@@ -175,7 +175,7 @@ VisibilityTest::Run()
         timer.Start();
 
         resMgr->Update(frameIndex);
-        CameraContext::SetTransform(cam, Math::inverse(mayaCamera.GetCameraTransform()));
+        CameraContext::SetView(cam, Math::inverse(mayaCamera.GetCameraTransform()));
 
         inputServer->BeginFrame();
         inputServer->OnFrame();

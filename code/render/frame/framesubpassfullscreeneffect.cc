@@ -61,6 +61,16 @@ void
 FrameSubpassFullscreenEffect::OnWindowResized()
 {
     FrameOp::OnWindowResized();
+    for (int i = 0; i < this->textures.Size(); i++)
+    {
+        const Util::Tuple<IndexT, CoreGraphics::BufferId, CoreGraphics::TextureId>& texture = this->textures[i];
+        if (Util::Get<1>(texture) == CoreGraphics::InvalidBufferId)
+        {
+            ResourceTableSetTexture(this->resourceTable, { Util::Get<2>(texture), Util::Get<0>(texture), 0, CoreGraphics::InvalidSamplerId, false });
+        }
+    }
+    ResourceTableCommitChanges(this->resourceTable);
+    /*
     TextureWindowResized(this->tex);
 
     IndexT i;
@@ -76,6 +86,7 @@ FrameSubpassFullscreenEffect::OnWindowResized()
             ResourceTableSetTexture(this->resourceTable, { Util::Get<2>(tuple), Util::Get<0>(tuple), 0, CoreGraphics::InvalidSamplerId, false });
         }
     }
+    */
 }
 
 //------------------------------------------------------------------------------

@@ -209,9 +209,11 @@ FrameScript::Build()
 
     for (i = 0; i < this->events.Size(); i++)
         DestroyEvent(this->events[i]);
+    this->events.Clear();
 
     for (i = 0; i < this->barriers.Size(); i++)
         DestroyBarrier(this->barriers[i]);
+    this->barriers.Clear();
 
     // clear old compiled result
     this->buildAllocator.Release();
@@ -318,8 +320,10 @@ FrameScript::OnWindowResized()
         WindowMakeCurrent(this->window);
 
         IndexT i;
-        for (i = 0; i < this->textures.Size(); i++)         TextureWindowResized(this->textures[i]);
-        for (i = 0; i < this->ops.Size(); i++)              this->ops[i]->OnWindowResized();
+        for (i = 0; i < this->textures.Size(); i++)
+            TextureWindowResized(this->textures[i]);
+        for (i = 0; i < this->ops.Size(); i++)
+            this->ops[i]->OnWindowResized();
 
         Build();
 

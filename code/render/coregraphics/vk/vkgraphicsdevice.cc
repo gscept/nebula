@@ -31,6 +31,8 @@
 #include "coregraphics/vk/vkfence.h"
 #include "coregraphics/vk/vksubmissioncontext.h"
 #include "coregraphics/submissioncontext.h"
+#include "coregraphics/memorytexturecache.h"
+#include "coregraphics/vk/vktextureview.h"
 #include "resources/resourceserver.h"
 #include "coregraphics/graphicsdevice.h"
 #include "coregraphics/drawthread.h"
@@ -134,11 +136,6 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     VkPipeline currentPipeline;
     
     uint currentStencilFrontRef, currentStencilBackRef, currentStencilReadMask, currentStencilWriteMask;
-
-    Util::FixedArray<Util::Array<VkBuffer>> delayedDeleteBuffers;
-    Util::FixedArray<Util::Array<VkImage>> delayedDeleteImages;
-    Util::FixedArray<Util::Array<VkImageView>> delayedDeleteImageViews;
-    Util::FixedArray<Util::Array<CoreGraphics::Alloc>> delayedFreeMemories;
 
     static const SizeT MaxQueriesPerFrame = 1024;
     VkQueryPool queryPoolsByType[CoreGraphics::NumQueryTypes];
@@ -854,42 +851,6 @@ CommandBufferEndMarker(VkCommandBuffer buf)
 /**
 */
 void 
-DelayedDeleteBuffer(const VkBuffer buf)
-{
-    state.delayedDeleteBuffers[state.currentBufferedFrameIndex].Append(buf);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-DelayedDeleteImage(const VkImage img)
-{
-    state.delayedDeleteImages[state.currentBufferedFrameIndex].Append(img);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-DelayedDeleteImageView(const VkImageView view)
-{
-    state.delayedDeleteImageViews[state.currentBufferedFrameIndex].Append(view);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-DelayedFreeMemory(const CoreGraphics::Alloc alloc)
-{
-    state.delayedFreeMemories[state.currentBufferedFrameIndex].Append(alloc);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
 _ProcessQueriesBeginFrame()
 {
     N_SCOPE(ProcessQueries, Graphics);
@@ -1595,11 +1556,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
     state.maxNumBufferedFrames = info.numBufferedFrames;
 
-    state.delayedDeleteBuffers.Resize(state.maxNumBufferedFrames);
-    state.delayedDeleteImages.Resize(state.maxNumBufferedFrames);
-    state.delayedDeleteImageViews.Resize(state.maxNumBufferedFrames);
-    state.delayedFreeMemories.Resize(state.maxNumBufferedFrames);
-
 #ifdef CreateSemaphore
 #pragma push_macro("CreateSemaphore")
 #undef CreateSemaphore
@@ -1781,25 +1737,6 @@ DestroyGraphicsDevice()
 
     // wait for queues and run all pending commands
     state.subcontextHandler.Discard();
-
-    // clean up delayed delete objects
-    uint j;
-    for (j = 0; j < state.maxNumBufferedFrames; j++)
-    {
-        IndexT i;
-        for (i = 0; i < state.delayedDeleteBuffers[j].Size(); i++)
-            vkDestroyBuffer(state.devices[state.currentDevice], state.delayedDeleteBuffers[j][i], nullptr);
-        state.delayedDeleteBuffers[j].Clear();
-        for (i = 0; i < state.delayedDeleteImages[j].Size(); i++)
-            vkDestroyImage(state.devices[state.currentDevice], state.delayedDeleteImages[j][i], nullptr);
-        state.delayedDeleteImages[j].Clear();
-        for (i = 0; i < state.delayedDeleteImageViews[j].Size(); i++)
-            vkDestroyImageView(state.devices[state.currentDevice], state.delayedDeleteImageViews[j][i], nullptr);
-        state.delayedDeleteImageViews[j].Clear();
-        for (i = 0; i < state.delayedFreeMemories[j].Size(); i++)
-            FreeMemory(state.delayedFreeMemories[j][i]);
-        state.delayedFreeMemories[j].Clear();
-    }
 
     DestroySubmissionContext(state.gfxSubmission);
     DestroySubmissionContext(state.computeSubmission);
@@ -3466,12 +3403,65 @@ WaitForQueue(CoreGraphics::QueueType queue)
 /**
 */
 void 
-WaitForAllQueues()
+WaitAndClearPendingCommands()
 {
     state.subcontextHandler.WaitIdle(GraphicsQueueType);
     state.subcontextHandler.WaitIdle(ComputeQueueType);
     state.subcontextHandler.WaitIdle(TransferQueueType);
     state.subcontextHandler.WaitIdle(SparseQueueType);
+    vkDeviceWaitIdle(state.devices[state.currentDevice]);
+    CoreGraphics::SubmissionContextCleanupPendingDeletes(state.gfxSubmission);
+    CoreGraphics::SubmissionContextCleanupPendingDeletes(state.computeSubmission);
+    CoreGraphics::SubmissionContextCleanupPendingDeletes(state.handoverSubmissionContext);
+    CoreGraphics::SubmissionContextCleanupPendingDeletes(state.queryComputeSubmissionContext);
+    CoreGraphics::SubmissionContextCleanupPendingDeletes(state.queryGraphicsSubmissionContext);
+    CoreGraphics::SubmissionContextCleanupPendingDeletes(state.resourceSubmissionContext);
+    CoreGraphics::SubmissionContextCleanupPendingDeletes(state.setupSubmissionContext);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DelayedDeleteBuffer(const BufferId id)
+{
+    SubmissionContextFreeBuffer(state.gfxSubmission, id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DelayedDeleteTexture(const TextureId id)
+{
+    SubmissionContextFreeTexture(state.gfxSubmission, id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DelayedDeleteTextureView(const TextureViewId id)
+{
+    SubmissionContextFreeTextureView(state.gfxSubmission, id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DelayedFreeMemory(const CoreGraphics::Alloc alloc)
+{
+    SubmissionContextFreeMemory(state.gfxSubmission, alloc);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+DelayedDeleteDescriptorSet(const ResourceTableId id)
+{
+    SubmissionContextFreeResourceTable(state.gfxSubmission, id);
 }
 
 //------------------------------------------------------------------------------
@@ -3522,18 +3512,6 @@ NewFrame()
         nextCboRing.cboComputeStartAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
         nextCboRing.cboComputeEndAddress[i] = state.globalComputeConstantBufferMaxValue[i] * state.currentBufferedFrameIndex;
     }
-
-    // clean up delayed delete objects
-    IndexT i;
-    for (i = 0; i < state.delayedDeleteBuffers[state.currentBufferedFrameIndex].Size(); i++)
-        vkDestroyBuffer(state.devices[state.currentDevice], state.delayedDeleteBuffers[state.currentBufferedFrameIndex][i], nullptr);
-    state.delayedDeleteBuffers[state.currentBufferedFrameIndex].Clear();
-    for (i = 0; i < state.delayedDeleteImages[state.currentBufferedFrameIndex].Size(); i++)
-        vkDestroyImage(state.devices[state.currentDevice], state.delayedDeleteImages[state.currentBufferedFrameIndex][i], nullptr);
-    state.delayedDeleteImages[state.currentBufferedFrameIndex].Clear();
-    for (i = 0; i < state.delayedDeleteImageViews[state.currentBufferedFrameIndex].Size(); i++)
-        vkDestroyImageView(state.devices[state.currentDevice], state.delayedDeleteImageViews[state.currentBufferedFrameIndex][i], nullptr);
-    state.delayedDeleteImageViews[state.currentBufferedFrameIndex].Clear();
 
     N_MARKER_END();
 }

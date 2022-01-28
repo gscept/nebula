@@ -29,16 +29,10 @@ public:
     /// setup light context using CameraSettings
     static void Create(float ZNear, float ZFar, const CoreGraphics::WindowId window);
 
-    /// get cluster buffer
-    static const CoreGraphics::BufferId GetClusterBuffer();
     /// get number of clusters 
     static const SizeT GetNumClusters();
     /// get cluster dimensions
     static const std::array<SizeT, 3> GetClusterDimensions();
-    /// get cluster uniforms
-    static const ClusterGenerate::ClusterUniforms& GetUniforms();
-    /// get cluster constant buffer
-    static const CoreGraphics::BufferId GetConstantBuffer();
 
     /// update constants
     static void UpdateResources(const Graphics::FrameContext& ctx);
@@ -46,6 +40,9 @@ public:
     /// implement me
     static void OnRenderDebug(uint32_t flags);
 #endif
+
+    /// Update when window resized
+    static void WindowResized(const CoreGraphics::WindowId id, SizeT width, SizeT height);
 private:
 
     /// run light classification compute

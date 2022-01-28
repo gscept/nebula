@@ -166,7 +166,7 @@ void RenderUI(Graphics::GraphicsEntityId camera)
         ImGui::PushItemWidth(100.0f);
         ImGui::DragFloat("Viewing Distance", &viewRange, 1.0f, 1.0f, 100.0f);
         ImGui::PopItemWidth();
-        Math::mat4 trans =  Math::inverse(Graphics::CameraContext::GetTransform(camera));
+        Math::mat4 trans =  Math::inverse(Graphics::CameraContext::GetView(camera));
 
         Math::point center = trans.get_w() - trans.get_z() * viewRange;
         PxBounds3 bound = PxBounds3::centerExtents(Neb2PxPnt(center), PxVec3(viewRange));

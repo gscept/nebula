@@ -58,11 +58,13 @@ void
 JobThread::DoWork()
 {
     Profiling::ProfilingRegisterThread();
-    while (!this->ThreadStopRequested())
+    while (true)
     {
 wait:
         // Wait for jobs to come
         this->wakeupEvent.Wait();
+        if (this->ThreadStopRequested())
+            return;
 
 next:
         ctx.jobLock.Enter();
@@ -159,7 +161,7 @@ next:
             }
         }
 
-        // Do another 
+        // Do another
         goto next;
     }
 }

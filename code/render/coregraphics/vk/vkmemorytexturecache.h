@@ -144,6 +144,8 @@ private:
     /// setup textures from load info
     bool Setup(const Resources::ResourceId id);
 
+    friend void CoreGraphics::DelayedDeleteTexture(const CoreGraphics::TextureId id);
+
     friend class VkStreamTextureCache;
     __ImplementResourceAllocatorTypedSafe(textureAllocator, CoreGraphics::TextureIdType);
 };
