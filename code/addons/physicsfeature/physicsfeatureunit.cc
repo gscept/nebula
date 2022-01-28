@@ -53,15 +53,15 @@ PhysicsFeatureUnit::OnActivate()
         // FIXME: This assumes all actors are in the default world.
         //        This might not be true and we should allow multiple physics stages as well.
         Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-        Game::PropertyId staticPid = Game::GetPropertyId("Static"_atm);
+        Game::ComponentId staticPid = Game::GetComponentId("Static"_atm);
         Game::OpBuffer buffer = Game::CreateOpBuffer(world);
         for (IndexT i = 0; i < num; i++)
         {
             Physics::Actor& actor = Physics::ActorContext::GetActor(actors[i]);
             Game::Entity entity = Game::Entity::FromId((Ids::Id32)actor.userData);
-            Game::Op::RegisterProperty registerOp;
+            Game::Op::RegisterComponent registerOp;
             registerOp.entity = entity;
-            registerOp.pid = staticPid;
+            registerOp.component = staticPid;
             registerOp.value = nullptr; // no value since it's a flag property
             Game::AddOp(buffer, registerOp);
         }
@@ -73,17 +73,17 @@ PhysicsFeatureUnit::OnActivate()
         // FIXME: This assumes all actors are in the default world.
         //        This might not be true and we should allow multiple physics stages as well.
         Game::World* world = Game::GetWorld(WORLD_DEFAULT);
-        Game::PropertyId staticPid = Game::GetPropertyId("Static"_atm);
+        Game::ComponentId staticPid = Game::GetComponentId("Static"_atm);
         Game::OpBuffer buffer = Game::CreateOpBuffer(world);
         for (IndexT i = 0; i < num; i++)
         {
             Physics::Actor& actor = Physics::ActorContext::GetActor(actors[i]);
             Game::Entity entity = Game::Entity::FromId((Ids::Id32)actor.userData);
-            if (Game::HasProperty(world, entity, staticPid))
+            if (Game::HasComponent(world, entity, staticPid))
             {
-                Game::Op::DeregisterProperty deregisterOp;
+                Game::Op::DeregisterComponent deregisterOp;
                 deregisterOp.entity = entity;
-                deregisterOp.pid = staticPid;
+                deregisterOp.component = staticPid;
                 Game::AddOp(buffer, deregisterOp);
             }
         }

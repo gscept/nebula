@@ -65,12 +65,6 @@ GraphicsFeatureUnit::OnActivate()
     this->r_debug = Core::CVarCreate(Core::CVar_Int, "r_debug", "0", "Enable debugging rendering [0,2]");
     this->r_show_frame_inspector = Core::CVarCreate(Core::CVar_Int, "r_show_frame_inspector", "0", "Show the frame script inspector [0,1]");
 
-    Jobs2::JobSystemInitInfo jobSystemInfo;
-    jobSystemInfo.numThreads = 8;
-    jobSystemInfo.name = "JobSystem";
-    jobSystemInfo.scratchMemorySize = 16_MB;
-    Jobs2::JobSystemInit(jobSystemInfo);
-
     this->gfxServer = Graphics::GraphicsServer::Create();
     this->inputServer = Input::InputServer::Create();
     this->gfxServer->Open();

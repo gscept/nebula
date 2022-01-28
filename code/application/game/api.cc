@@ -19,11 +19,11 @@ namespace Game
 //------------------------------------------------------------------------------
 using InclusiveTableMask = MemDb::TableSignature;
 using ExclusiveTableMask = MemDb::TableSignature;
-using PropertyArray = Util::FixedArray<PropertyId>;
+using ComponentArray = Util::FixedArray<ComponentId>;
 using AccessModeArray = Util::FixedArray<AccessMode>;
 
-Ids::IdAllocator<InclusiveTableMask, ExclusiveTableMask, PropertyArray, AccessModeArray>  filterAllocator;
-static Memory::ArenaAllocator<sizeof(Dataset::CategoryTableView) * 256> viewAllocator;
+Ids::IdAllocator<InclusiveTableMask, ExclusiveTableMask, ComponentArray, AccessModeArray>  filterAllocator;
+static Memory::ArenaAllocator<sizeof(Dataset::EntityTableView) * 256> viewAllocator;
 
 //------------------------------------------------------------------------------
 
@@ -47,14 +47,14 @@ CreateFilter(FilterCreateInfo const& info)
     n_assert(info.numInclusive > 0);
     uint32_t filter = filterAllocator.Alloc();
 
-    PropertyArray inclusiveArray;
+    ComponentArray inclusiveArray;
     inclusiveArray.Resize(info.numInclusive);
     for (uint8_t i = 0; i < info.numInclusive; i++)
     {
         inclusiveArray[i] = info.inclusive[i];
     }
 
-    PropertyArray exclusiveArray;
+    ComponentArray exclusiveArray;
     exclusiveArray.Resize(info.numExclusive);
     for (uint8_t i = 0; i < info.numExclusive; i++)
     {
@@ -110,7 +110,7 @@ ReleaseDatasets()
     @returns    Dataset with category table views.
 
     @note       The category table view buffer can be NULL if the filter contains
-                a non-typed/flag property.
+                a non-typed/flag component.
 */
 Dataset Query(World* world, Filter filter)
 {
@@ -150,9 +150,9 @@ Query(Ptr<MemDb::Database> const& db, Util::Array<MemDb::TableId>& tids, Filter 
         return data;
     }
 
-    data.views = (Dataset::CategoryTableView*)viewAllocator.Alloc(sizeof(Dataset::CategoryTableView) * tids.Size());
+    data.views = (Dataset::EntityTableView*)viewAllocator.Alloc(sizeof(Dataset::EntityTableView) * tids.Size());
 
-    PropertyArray const& properties = filterAllocator.Get<2>(filter);
+    ComponentArray const& components = filterAllocator.Get<2>(filter);
 
     for (IndexT tableIndex = 0; tableIndex < tids.Size(); tableIndex++)
     {
@@ -161,16 +161,16 @@ Query(Ptr<MemDb::Database> const& db, Util::Array<MemDb::TableId>& tids, Filter 
             SizeT const numRows = db->GetNumRows(tids[tableIndex]);
             if (numRows > 0)
             {
-                Dataset::CategoryTableView* view = data.views + data.numViews;
-                view->cid = tids[tableIndex];
+                Dataset::EntityTableView* view = data.views + data.numViews;
+                view->tableId = tids[tableIndex];
 
                 MemDb::Table const& tbl = db->GetTable(tids[tableIndex]);
 
                 IndexT i = 0;
-                for (auto pid : properties)
+                for (auto component : components)
                 {
-                    MemDb::ColumnIndex colId = db->GetColumnId(tbl.tid, pid);
-                    // Check if the property is a flag, and return a nullptr in that case.
+                    MemDb::ColumnIndex colId = db->GetColumnId(tbl.tid, component);
+                    // Check if the component is a flag, and return a nullptr in that case.
                     if (colId != InvalidIndex)
                         view->buffers[i] = db->GetBuffer(tbl.tid, colId);
                     else
@@ -196,20 +196,20 @@ Query(Ptr<MemDb::Database> const& db, Util::Array<MemDb::TableId>& tids, Filter 
 //------------------------------------------------------------------------------
 /**
 */
-PropertyId
-CreateProperty(PropertyCreateInfo const& info)
+ComponentId
+CreateComponent(ComponentCreateInfo const& info)
 {
-    PropertyId const pid = MemDb::TypeRegistry::Register(info.name, info.byteSize, info.defaultValue, info.flags);
-    return pid;
+    ComponentId const component = MemDb::TypeRegistry::Register(info.name, info.byteSize, info.defaultValue, info.flags);
+    return component;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-PropertyId
-GetPropertyId(Util::StringAtom name)
+ComponentId
+GetComponentId(Util::StringAtom name)
 {
-    return MemDb::TypeRegistry::GetPropertyId(name);
+    return MemDb::TypeRegistry::GetComponentId(name);
 }
 
 //------------------------------------------------------------------------------

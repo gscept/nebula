@@ -29,7 +29,7 @@ GameServer::GameServer() :
     _setup_grouped_timer(GameServerOnEndFrame, "Game Subsystem");
     _setup_grouped_timer(GameServerManageEntities, "Game Subsystem");
     this->state.templateDatabase = MemDb::Database::Create();
-    this->state.ownerId = MemDb::TypeRegistry::GetPropertyId("Owner"_atm);
+    this->state.ownerId = MemDb::TypeRegistry::GetComponentId("Owner"_atm);
     this->CreateWorld(WORLD_DEFAULT);
     // always attach the base game feature
     this->AttachGameFeature(BaseGameFeature::BaseGameFeatureUnit::Create());
@@ -203,8 +203,6 @@ GameServer::OnBeginFrame()
 {
     if (!this->isStarted)
         return;
-
-    Jobs2::JobNewFrame();
 
     _start_timer(GameServerOnBeginFrame);
 

@@ -113,15 +113,15 @@ BlueprintManager::ParseBlueprint(Util::String const& blueprintsPath)
                 Blueprint bluePrint;
                 bluePrint.name = jsonReader->GetCurrentNodeName();
 
-                if (jsonReader->SetToFirstChild("properties"))
+                if (jsonReader->SetToFirstChild("components"))
                 {
                     jsonReader->SetToFirstChild();
                     do
                     {
-                        PropertyEntry newProp;
-                        newProp.propertyName = jsonReader->GetString();
+                        ComponentEntry newComp;
+                        newComp.name = jsonReader->GetString();
 
-                        bluePrint.properties.Append(newProp);
+                        bluePrint.components.Append(newComp);
                     } while (jsonReader->SetToNextChild());
 
                     jsonReader->SetToParent();
@@ -220,29 +220,29 @@ BlueprintManager::ParseTemplate(Util::String const& templatePath)
                 // Add to map
                 this->templateMap.Add(nameAtom, templateId);
 
-                // Override properties if necessary
-                if (jsonReader->SetToFirstChild("properties"))
+                // Override components if necessary
+                if (jsonReader->SetToFirstChild("components"))
                 {
                     jsonReader->SetToFirstChild();
                     do
                     {
-                        Util::StringAtom propertyName = jsonReader->GetCurrentNodeName();
-                        MemDb::PropertyId descriptor = MemDb::TypeRegistry::GetPropertyId(propertyName);
-                        if (descriptor == MemDb::PropertyId::Invalid())
+                        Util::StringAtom componentName = jsonReader->GetCurrentNodeName();
+                        MemDb::ComponentId descriptor = MemDb::TypeRegistry::GetComponentId(componentName);
+                        if (descriptor == MemDb::ComponentId::Invalid())
                         {
-                            n_warning("Warning: Template contains invalid property named '%s'. (%s)\n", propertyName.Value(), templatePath.AsCharPtr());
+                            n_warning("Warning: Template contains invalid component named '%s'. (%s)\n", componentName.Value(), templatePath.AsCharPtr());
                             continue;
                         }
 
                         MemDb::ColumnIndex column = templateDatabase->GetColumnId(templateTid, descriptor);
                         if (column == MemDb::ColumnIndex::Invalid())
                         {
-                            n_warning("Warning: Template contains property named '%s' that does not exist in blueprint. (%s)\n", propertyName.Value(), templatePath.AsCharPtr());
+                            n_warning("Warning: Template contains component named '%s' that does not exist in blueprint. (%s)\n", componentName.Value(), templatePath.AsCharPtr());
                             continue;
                         }
 
-                        void* propertyValue = templateDatabase->GetValuePointer(templateTid, column, instance);
-                        PropertySerialization::Deserialize(jsonReader, descriptor, propertyValue);
+                        void* componentValue = templateDatabase->GetValuePointer(templateTid, column, instance);
+                        ComponentSerialization::Deserialize(jsonReader, descriptor, componentValue);
                     } while (jsonReader->SetToNextChild());
 
                     jsonReader->SetToParent();
@@ -253,7 +253,7 @@ BlueprintManager::ParseTemplate(Util::String const& templatePath)
                     jsonReader->SetToFirstChild();
                     do
                     {
-                        Util::StringAtom propertyName = jsonReader->GetCurrentNodeName();
+                        Util::StringAtom componentName = jsonReader->GetCurrentNodeName();
                         // TODO: GetValue!
                     } while (jsonReader->SetToNextChild());
 
@@ -318,7 +318,7 @@ BlueprintManager::GetTemplateId(Util::StringAtom name)
 void
 BlueprintManager::SetupBlueprints()
 {
-    // create a instance of every property and call SetupDefaultAttributes()
+    // create a instance of every component and call SetupDefaultAttributes()
     IndexT idxBluePrint;
     bool failed = false;
     for (idxBluePrint = 0; idxBluePrint < this->blueprints.Size(); idxBluePrint++)
@@ -333,33 +333,33 @@ BlueprintManager::SetupBlueprints()
         CategoryCreateInfo info;
         info.name = blueprint.name.AsString();
 
-        const SizeT numBlueprintProperties = blueprint.properties.Size();
-        Util::ArrayStack<PropertyId, 32> columns;
+        const SizeT numBlueprintComponents = blueprint.components.Size();
+        Util::ArrayStack<ComponentId, 32> columns;
 
         // append owner, makes it a bit faster than letting entitymanager sort it out...
         columns.Append(GameServer::Instance()->state.ownerId);
 
-        // filter out invalid properties
-        for (int i = 0; i < numBlueprintProperties; i++)
+        // filter out invalid components
+        for (int i = 0; i < numBlueprintComponents; i++)
         {
-            auto descriptor = MemDb::TypeRegistry::GetPropertyId(blueprint.properties[i].propertyName);
-            if (descriptor != PropertyId::Invalid())
+            auto descriptor = MemDb::TypeRegistry::GetComponentId(blueprint.components[i].name);
+            if (descriptor != ComponentId::Invalid())
             {
                 // append to dynamically resizable array
                 columns.Append(descriptor);
             }
             else
             {
-                n_warning("Warning: Unrecognized property '%s' in blueprint '%s'\n", blueprint.properties[i].propertyName.AsString().AsCharPtr(), blueprint.name.Value());
+                n_warning("Warning: Unrecognized component '%s' in blueprint '%s'\n", blueprint.components[i].name.AsString().AsCharPtr(), blueprint.name.Value());
             }
         }
 
-        // move properties from dynamically sized array to fixed array.
-        // this is kinda wonky, but then we don't need to do anything special with invalid properties...
-        info.properties.SetSize(columns.Size());
+        // move components from dynamically sized array to fixed array.
+        // this is kinda wonky, but then we don't need to do anything special with invalid components...
+        info.components.SetSize(columns.Size());
         for (int i = 0; i < columns.Size(); i++)
         {
-            info.properties[i] = columns[i];
+            info.components[i] = columns[i];
         }
 
         if (!failed)
@@ -367,8 +367,8 @@ BlueprintManager::SetupBlueprints()
             // Create the blueprint's template table
             MemDb::TableCreateInfo tableInfo;
             tableInfo.name = "blueprint:" + info.name;
-            tableInfo.numProperties = info.properties.Size();
-            tableInfo.properties = info.properties.Begin();
+            tableInfo.numComponents = info.components.Size();
+            tableInfo.components = info.components.Begin();
             Ptr<MemDb::Database> templateDatabase = GameServer::Instance()->state.templateDatabase;
             MemDb::TableId tid = templateDatabase->CreateTable(tableInfo);
 

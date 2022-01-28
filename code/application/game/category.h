@@ -14,26 +14,26 @@
 namespace Game
 {
 
-typedef MemDb::PropertyId PropertyId;
+typedef MemDb::ComponentId ComponentId;
 
 ID_16_TYPE(BlueprintId);
 ID_32_TYPE(TemplateId);
 
-#define DECLARE_PROPERTY public:\
-static Game::PropertyId ID() { return id; }\
+#define DECLARE_COMPONENT public:\
+static Game::ComponentId ID() { return id; }\
 private:\
     friend class MemDb::TypeRegistry;\
-    static Game::PropertyId id;\
+    static Game::ComponentId id;\
 public:
 
-#define DEFINE_PROPERTY(TYPE) Game::PropertyId TYPE::id = Game::PropertyId::Invalid();
+#define DEFINE_COMPONENT(TYPE) Game::ComponentId TYPE::id = Game::ComponentId::Invalid();
 
 struct CategoryCreateInfo
 {
-    /// name to be given to the category
+    /// name to be given to the table
     Util::String name;
-    /// which properties the category should have
-    Util::FixedArray<PropertyId> properties;
+    /// which properties the table should have
+    Util::FixedArray<ComponentId> components;
 };
 
 } // namespace Game

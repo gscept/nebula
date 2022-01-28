@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//  propertyserialization.cc
+//  componentserialization.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
@@ -11,19 +11,19 @@
 namespace Game
 {
 
-PropertySerialization* PropertySerialization::Singleton = nullptr;
+ComponentSerialization* ComponentSerialization::Singleton = nullptr;
 
 //------------------------------------------------------------------------------
 /**
     The registry's constructor is called by the Instance() method, and
     nobody else.
 */
-PropertySerialization*
-PropertySerialization::Instance()
+ComponentSerialization*
+ComponentSerialization::Instance()
 {
     if (nullptr == Singleton)
     {
-        Singleton = n_new(PropertySerialization);
+        Singleton = n_new(ComponentSerialization);
         n_assert(nullptr != Singleton);
     }
     return Singleton;
@@ -36,7 +36,7 @@ PropertySerialization::Instance()
     no accidential memory leaks are reported by the debug heap.
 */
 void
-PropertySerialization::Destroy()
+ComponentSerialization::Destroy()
 {
     if (nullptr != Singleton)
     {
@@ -49,27 +49,27 @@ PropertySerialization::Destroy()
 /**
 */
 void
-PropertySerialization::Deserialize(Ptr<IO::JsonReader> const& reader, PropertyId pid, void* ptr)
+ComponentSerialization::Deserialize(Ptr<IO::JsonReader> const& reader, ComponentId component, void* ptr)
 {
     n_assert(Singleton != nullptr);
-    Singleton->serializers[pid.id].deserializeJson(reader, 0, ptr);
+    Singleton->serializers[component.id].deserializeJson(reader, 0, ptr);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-PropertySerialization::Serialize(Ptr<IO::JsonWriter> const& writer, PropertyId pid, void* ptr)
+ComponentSerialization::Serialize(Ptr<IO::JsonWriter> const& writer, ComponentId component, void* ptr)
 {
     n_assert(Singleton != nullptr);
-    const char* name = MemDb::TypeRegistry::GetDescription(pid)->name.Value();
-    Singleton->serializers[pid.id].serializeJson(writer, name, ptr);
+    const char* name = MemDb::TypeRegistry::GetDescription(component)->name.Value();
+    Singleton->serializers[component.id].serializeJson(writer, name, ptr);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-PropertySerialization::PropertySerialization()
+ComponentSerialization::ComponentSerialization()
 {
     // empty
 }
@@ -77,7 +77,7 @@ PropertySerialization::PropertySerialization()
 //------------------------------------------------------------------------------
 /**
 */
-PropertySerialization::~PropertySerialization()
+ComponentSerialization::~ComponentSerialization()
 {
     // empty
 }
@@ -86,9 +86,9 @@ PropertySerialization::~PropertySerialization()
 /**
 */
 bool
-PropertySerialization::ValidateTypeSize(MemDb::PropertyId pid, uint32_t size)
+ComponentSerialization::ValidateTypeSize(MemDb::ComponentId component, uint32_t size)
 {
-    if (!MemDb::TypeRegistry::TypeSize(pid) == size)
+    if (!MemDb::TypeRegistry::TypeSize(component) == size)
     {
         return false;
     }

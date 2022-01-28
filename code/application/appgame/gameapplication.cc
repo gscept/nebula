@@ -14,6 +14,7 @@
 #include "messaging/messagecallbackhandler.h"
 #include "system/nebulasettings.h"
 #include "io/fswrapper.h"
+#include "jobs2/jobs2.h"
 
 namespace App
 {
@@ -57,7 +58,13 @@ GameApplication::Open()
     {
         // setup from cmd line args
         this->SetupAppFromCmdLineArgs();
-               
+
+        Jobs2::JobSystemInitInfo jobSystemInfo;
+        jobSystemInfo.numThreads = 8;
+        jobSystemInfo.name = "JobSystem";
+        jobSystemInfo.scratchMemorySize = 16_MB;
+        Jobs2::JobSystemInit(jobSystemInfo);
+
         // setup basic Nebula runtime system
         this->coreServer = CoreServer::Create();
         this->coreServer->SetCompanyName(Application::Instance()->GetCompanyName());
@@ -185,6 +192,8 @@ GameApplication::Close()
     this->coreServer->Close();
     this->coreServer = nullptr;
 
+    Jobs2::JobSystemUninit();
+
     Application::Close();
 }
 
@@ -213,6 +222,8 @@ GameApplication::StepFrame()
 #if __NEBULA_HTTP__
     this->httpServerProxy->HandlePendingRequests();
 #endif
+
+    Jobs2::JobNewFrame();
 
     // trigger core server
     this->coreServer->Trigger();

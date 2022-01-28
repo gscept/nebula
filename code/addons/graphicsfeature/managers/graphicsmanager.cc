@@ -56,11 +56,11 @@ void
 GraphicsManager::InitCreateModelProcessor()
 {
     Game::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = Game::GetPropertyId("Owner");
+    filterInfo.inclusive[0] = Game::GetComponentId("Owner");
     filterInfo.access[0] = Game::AccessMode::READ;
-    filterInfo.inclusive[1] = Game::GetPropertyId("WorldTransform");
+    filterInfo.inclusive[1] = Game::GetComponentId("WorldTransform");
     filterInfo.access[1] = Game::AccessMode::READ;
-    filterInfo.inclusive[2] = Game::GetPropertyId("ModelResource");
+    filterInfo.inclusive[2] = Game::GetComponentId("ModelResource");
     filterInfo.access[2] = Game::AccessMode::READ;
     filterInfo.numInclusive = 3;
 
@@ -79,7 +79,7 @@ GraphicsManager::InitCreateModelProcessor()
 
         for (int v = 0; v < data.numViews; v++)
         {
-            Game::Dataset::CategoryTableView const& view = data.views[v];
+            Game::Dataset::EntityTableView const& view = data.views[v];
             Game::Entity const* const owners = (Game::Entity*)view.buffers[0];
             Math::mat4 const* const transforms = (Math::mat4*)view.buffers[1];
             Resources::ResourceName const* const resources = (Resources::ResourceName*)view.buffers[2];
@@ -94,9 +94,9 @@ GraphicsManager::InitCreateModelProcessor()
                 ModelEntityData mdlData;
                 mdlData.gid = gid;
 
-                Game::Op::RegisterProperty regOp;
+                Game::Op::RegisterComponent regOp;
                 regOp.entity = entity;
-                regOp.pid = GraphicsManager::Singleton->pids.modelEntityData;
+                regOp.component = GraphicsManager::Singleton->pids.modelEntityData;
                 regOp.value = &mdlData;
                 Game::AddOp(opBuffer, regOp);
             }
@@ -116,7 +116,7 @@ GraphicsManager::InitCreateModelProcessor()
 void
 GraphicsManager::OnDecay()
 {
-    Game::PropertyDecayBuffer const decayBuffer = Game::GetDecayBuffer(Singleton->pids.modelEntityData);
+    Game::ComponentDecayBuffer const decayBuffer = Game::GetDecayBuffer(Singleton->pids.modelEntityData);
     ModelEntityData* data = (ModelEntityData*)decayBuffer.buffer;
     for (int i = 0; i < decayBuffer.size; i++)
     {
@@ -135,11 +135,11 @@ GraphicsManager::InitUpdateModelTransformProcessor()
     Game::FilterCreateInfo filterInfo;
     filterInfo.inclusive[0] = this->pids.modelEntityData;
     filterInfo.access[0] = Game::AccessMode::READ;
-    filterInfo.inclusive[1] = Game::GetPropertyId("WorldTransform"_atm);
+    filterInfo.inclusive[1] = Game::GetComponentId("WorldTransform"_atm);
     filterInfo.access[1] = Game::AccessMode::READ;
     filterInfo.numInclusive = 2;
 
-    filterInfo.exclusive[0] = Game::GetPropertyId("Static");
+    filterInfo.exclusive[0] = Game::GetComponentId("Static");
     filterInfo.numExclusive = 1;
 
     Game::Filter filter = Game::CreateFilter(filterInfo);
@@ -152,7 +152,7 @@ GraphicsManager::InitUpdateModelTransformProcessor()
     {
         for (int v = 0; v < data.numViews; v++)
         {
-            Game::Dataset::CategoryTableView const& view = data.views[v];
+            Game::Dataset::EntityTableView const& view = data.views[v];
             ModelEntityData const* const modelEntityDatas = (ModelEntityData*)view.buffers[0];
             Math::mat4 const* const transforms = (Math::mat4*)view.buffers[1];
 
@@ -180,13 +180,13 @@ GraphicsManager::Create()
     GraphicsManager::Singleton = n_new(GraphicsManager);
 
     
-    Game::PropertyCreateInfo info;
+    Game::ComponentCreateInfo info;
     info.name = "ModelEntityData";
     ModelEntityData defaultValue;
     info.defaultValue = &defaultValue;
-    info.flags = Game::PropertyFlags::PROPERTYFLAG_MANAGED;
+    info.flags = Game::ComponentFlags::COMPONENTFLAG_MANAGED;
     info.byteSize = sizeof(ModelEntityData);
-    Singleton->pids.modelEntityData = Game::CreateProperty(info);
+    Singleton->pids.modelEntityData = Game::CreateComponent(info);
 
     Singleton->InitCreateModelProcessor();
     Singleton->InitUpdateModelTransformProcessor();
@@ -227,7 +227,7 @@ GraphicsManager::OnCleanup(Game::World* world)
 
     for (int v = 0; v < data.numViews; v++)
     {
-        Game::Dataset::CategoryTableView const& view = data.views[v];
+        Game::Dataset::EntityTableView const& view = data.views[v];
         ModelEntityData const* const modelEntityDatas = (ModelEntityData*)view.buffers[0];
         
         for (IndexT i = 0; i < view.numInstances; ++i)

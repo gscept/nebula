@@ -7,7 +7,7 @@
             "TWO": 2
         }
     },
-    "properties": {
+    "components": {
         "TestResource": "resource",
         "TestVec4": {
             "_type_": "vec4",
@@ -22,19 +22,19 @@
                 "_type_": "vec2",
                 "_default_": [ 10, 20.2 ]
             },
-          "foo": {
-            "_type_": "int",
-            "_default_":  1
-          },
+            "foo": {
+                "_type_": "int",
+                "_default_":  1
+            },
             "bar": "float",
             "gnyrf": {
-              "_type_": "bool"
+                "_type_": "bool"
             },
             "enumerable": "Test::TestEnumType"
-          },
+        },
         "TestHealth": {
-          "_type_": "uint",
-          "_default_": 100
+            "_type_": "uint",
+            "_default_": 100
         }
     }
 }

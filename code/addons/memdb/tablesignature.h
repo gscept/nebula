@@ -3,10 +3,10 @@
 /**
     @class  MemDb::TableSignature
 
-    Basically a bitfield with packed PropertyIds.
+    Basically a bitfield with packed ComponentIds.
 
     Can be used to identify tables, or be used as a mask to query the database for tables that
-    contain a certain set of properties.
+    contain a certain set of components.
 
     @note   This class runs on the assumption that we never create a bitfield that contains more bits than necessary.
     i.e, a field that is 256 bits large but is zero in left most 128 bits is forbidden.
@@ -29,12 +29,12 @@ public:
     TableSignature() : mask(nullptr), size(0) {};
     /// copy constructor
     TableSignature(TableSignature const& rhs);
-    /// construct from fixed array of property ids
-    TableSignature(Util::FixedArray<PropertyId> const& descriptors);
-    /// construct from property id initializer list, for convenience
-    TableSignature(std::initializer_list<PropertyId> descriptors);
-    /// construct from property id pointer array
-    TableSignature(PropertyId const* descriptors, SizeT num);
+    /// construct from fixed array of component ids
+    TableSignature(Util::FixedArray<ComponentId> const& descriptors);
+    /// construct from component id initializer list, for convenience
+    TableSignature(std::initializer_list<ComponentId> descriptors);
+    /// construct from component id pointer array
+    TableSignature(ComponentId const* descriptors, SizeT num);
     /// destructor
     ~TableSignature();
     /// assignment operator
@@ -44,9 +44,9 @@ public:
     /// check if signature is valid
     bool const IsValid() const { return size > 0; }
     /// check if a single bit is set
-    bool const IsSet(PropertyId pid) const;
+    bool const IsSet(ComponentId component) const;
     /// flip a bit.
-    void FlipBit(PropertyId pid);
+    void FlipBit(ComponentId component);
 
     /// (src & mask) == mask
     static bool const CheckBits(TableSignature const& src, TableSignature const& mask);
@@ -55,7 +55,7 @@ public:
 
 protected:
     /// create bitfield from fixed array.
-    void Setup(PropertyId const* descriptors, SizeT num);
+    void Setup(ComponentId const* descriptors, SizeT num);
 
     /// large bit field, using SSE registers
     __m128i* mask;
@@ -67,7 +67,7 @@ protected:
 /**
 */
 inline
-TableSignature::TableSignature(Util::FixedArray<PropertyId> const& descriptors)
+TableSignature::TableSignature(Util::FixedArray<ComponentId> const& descriptors)
 {
     this->Setup(descriptors.Begin(), descriptors.Size());
 }
@@ -76,7 +76,7 @@ TableSignature::TableSignature(Util::FixedArray<PropertyId> const& descriptors)
 /**
 */
 inline
-TableSignature::TableSignature(std::initializer_list<PropertyId> descriptors)
+TableSignature::TableSignature(std::initializer_list<ComponentId> descriptors)
 {
     this->Setup(descriptors.begin(), (SizeT)descriptors.size());
 }
@@ -85,7 +85,7 @@ TableSignature::TableSignature(std::initializer_list<PropertyId> descriptors)
 /**
 */
 inline
-TableSignature::TableSignature(PropertyId const* descriptors, SizeT num)
+TableSignature::TableSignature(ComponentId const* descriptors, SizeT num)
 {
     this->Setup(descriptors, num);
 }
@@ -95,14 +95,14 @@ TableSignature::TableSignature(PropertyId const* descriptors, SizeT num)
 */
 inline
 void
-TableSignature::Setup(PropertyId const* propertyBuffer, SizeT num)
+TableSignature::Setup(ComponentId const* componentBuffer, SizeT num)
 {
     if (num > 0)
     {
-        Util::Array<PropertyId> descriptors(propertyBuffer, num);
+        Util::Array<ComponentId> descriptors(componentBuffer, num);
         descriptors.Sort();
-        PropertyId const last = *(descriptors.End() - 1);
-        n_assert(last != PropertyId::Invalid());
+        ComponentId const last = *(descriptors.End() - 1);
+        n_assert(last != ComponentId::Invalid());
         uint const largestBit = last.id;
         this->size = (largestBit / 128) + 1;
         this->mask = (__m128i*)Memory::Alloc(Memory::HeapType::ObjectHeap, this->size * 16);
@@ -114,9 +114,9 @@ TableSignature::Setup(PropertyId const* propertyBuffer, SizeT num)
         // offsets start at first values offset
         uint64_t offset = descriptors[0].id / 128;
         uint64_t prevOffset = offset;
-        for (PropertyId i : descriptors)
+        for (ComponentId i : descriptors)
         {
-            n_assert(i != PropertyId::Invalid());
+            n_assert(i != ComponentId::Invalid());
             offset = i.id / 128;
             if (offset != prevOffset)
             {
@@ -193,13 +193,13 @@ TableSignature::operator==(TableSignature const& rhs) const
 /**
 */
 inline bool const
-TableSignature::IsSet(PropertyId pid) const
+TableSignature::IsSet(ComponentId component) const
 {
-    int offset = pid.id / 128;
+    int offset = component.id / 128;
     if (offset < this->size)
     {
         alignas(16) uint64_t partialMask[2] = { 0, 0 };
-        uint64_t const bit = pid.id % 128;
+        uint64_t const bit = component.id % 128;
         partialMask[bit / 64] |= 1ull << bit;
         __m128i temp = _mm_set_epi64x(partialMask[0], partialMask[1]);
         int const isSet = !_mm_testz_si128(temp, this->mask[offset]);
@@ -213,12 +213,12 @@ TableSignature::IsSet(PropertyId pid) const
 /**
 */
 inline void
-TableSignature::FlipBit(PropertyId pid)
+TableSignature::FlipBit(ComponentId component)
 {
-    int offset = pid.id / 128;
+    int offset = component.id / 128;
     n_assert(offset < this->size); // currently, we can't flip a bit that is outside the signatures size.
     alignas(16) uint64_t partialMask[2] = { 0, 0 };
-    uint64_t bit = pid.id % 128;
+    uint64_t bit = component.id % 128;
     partialMask[bit / 64] |= 1ull << bit;
     __m128i temp = _mm_set_epi64x(partialMask[0], partialMask[1]);
     this->mask[offset] = _mm_and_si128(this->mask[offset], temp);

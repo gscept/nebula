@@ -1,9 +1,9 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    MemDb::PropertyId
+    MemDb::ComponentId
 
-    A property descriptor.
+    A component descriptor.
     
     @see    memdb/typeregistry.h
 
@@ -16,6 +16,6 @@
 namespace MemDb
 {
 
-ID_16_TYPE(PropertyId);
+ID_16_TYPE(ComponentId);
 
 } // namespace MemDb

@@ -2,8 +2,8 @@ import IDLC.idltypes as IDLTypes
 import genutil as util
 import IDLC.idldocument as IDLDocument
 
-# Global property list
-properties = list()
+# Global component list
+components = list()
 
 #------------------------------------------------------------------------------
 ##
@@ -28,31 +28,31 @@ class VariableDefinition:
 #------------------------------------------------------------------------------
 ##
 #
-class PropertyDefinition:
-    def __init__(self, propertyName, prop):
-        self.propertyName = propertyName
+class ComponentDefinition:
+    def __init__(self, componentName, comp):
+        self.componentName = componentName
         self.variables = list()
         self.isFlag = False
         self.isStruct = False
         self.isManaged = False
         self.isResource = False
-        if isinstance(prop, dict):
-            if "_managed_" in prop:
-                self.isManaged = prop["_managed_"]
-            if not "_type_" in prop:
-                for varName, var in prop.items():
+        if isinstance(comp, dict):
+            if "_managed_" in comp:
+                self.isManaged = comp["_managed_"]
+            if not "_type_" in comp:
+                for varName, var in comp.items():
                     self.variables.append(GetVariableFromEntry(varName, var))
                 self.isStruct = True
             else:
-                var = GetVariableFromEntry(propertyName, prop)
+                var = GetVariableFromEntry(componentName, comp)
                 if var.type is None:
                     self.isFlag = True
                 self.variables.append(var)
         else:
-            var = GetVariableFromEntry(propertyName, prop)
+            var = GetVariableFromEntry(componentName, comp)
             if var.type is None:
                     self.isFlag = True
-            self.variables.append(GetVariableFromEntry(propertyName, prop))
+            self.variables.append(GetVariableFromEntry(componentName, comp))
         # Check to see if any of the types within the struct are resource.
         for var in self.variables:
             if var.type == IDLTypes.GetTypeString("resource"):
@@ -65,21 +65,21 @@ class PropertyDefinition:
             return ""
         numVars = len(self.variables)
         if numVars == 0:
-            util.fmtError("PropertyDefinition does not contain a single variable!")
+            util.fmtError("ComponentDefinition does not contain a single variable!")
         elif numVars == 1 and not self.isStruct: # special case: only one variable. This sets the default name of the structs inner variable to "value".
-            retVal = 'struct {}\n{{\n'.format(self.propertyName)
+            retVal = 'struct {}\n{{\n'.format(self.componentName)
             if self.variables[0].defaultValue is None:
                 retVal += '    {} {};\n'.format(self.variables[0].type, "value")
             else:
                 retVal += '    {} {} = {};\n'.format(self.variables[0].type, "value", self.variables[0].defaultValue)
-            retVal += "    DECLARE_PROPERTY;\n"
+            retVal += "    DECLARE_COMPONENT;\n"
             retVal += "};\n"
             return retVal
         else:
-            retVal = 'struct {}\n{{\n'.format(self.propertyName)
+            retVal = 'struct {}\n{{\n'.format(self.componentName)
             for v in self.variables:
                 retVal += '    {}\n'.format(v.AsString())
-            retVal += "    DECLARE_PROPERTY;\n"
+            retVal += "    DECLARE_COMPONENT;\n"
             retVal += "};\n"
             return retVal
     pass
@@ -115,17 +115,17 @@ def GetVariableFromEntry(name, var):
 #------------------------------------------------------------------------------
 ##
 #
-def ParseProperties(document):
-    if "properties" in document:
-        for propertyName, prop in document["properties"].items():
-            properties.append(PropertyDefinition(propertyName, prop))
+def ParseComponents(document):
+    if "components" in document:
+        for componentName, comp in document["components"].items():
+            components.append(ComponentDefinition(componentName, comp))
 
 #------------------------------------------------------------------------------
 ##
 #
 def ContainsResourceTypes():
-    for prop in properties:
-        if prop.isResource:
+    for comp in components:
+        if comp.isResource:
             return True
     return False
 
@@ -133,8 +133,8 @@ def ContainsResourceTypes():
 ##
 #
 def ContainsEntityTypes():
-    for prop in properties:
-        for var in prop.variables:
+    for comp in components:
+        for var in comp.variables:
             if var.type == IDLTypes.GetTypeString("entity"):
                 return True
     return False
@@ -142,69 +142,69 @@ def ContainsEntityTypes():
 #------------------------------------------------------------------------------
 ##
 #
-def WritePropertyForwardDeclarations(f, document):
+def WriteComponentForwardDeclarations(f, document):
     f.WriteLine("namespace MemDb { class TypeRegistry; }")
 
 #------------------------------------------------------------------------------
 ##
 #
-def WritePropertyHeaderDeclarations(f, document):
-    for p in properties:
+def WriteComponentHeaderDeclarations(f, document):
+    for p in components:
         if not p.isFlag:
             f.WriteLine(p.AsTypeDefString())
 
 #------------------------------------------------------------------------------
 ##
 #
-def WritePropertyHeaderDetails(f, document):
+def WriteComponentHeaderDetails(f, document):
     f.WriteLine('extern const bool {}_registered;'.format(f.fileName))
     pass
 
 #------------------------------------------------------------------------------
 ##
 #
-def HasStructProperties():
-    for prop in properties:
-        if prop.isStruct:
+def HasStructComponents():
+    for comp in components:
+        if comp.isStruct:
             return True
     return False
 
 #------------------------------------------------------------------------------
 ##
 #
-def WritePropertySourceDefinitions(f, document):
-    for prop in properties:
-        if prop.isFlag is False:
-            f.WriteLine('DEFINE_PROPERTY({});'.format(prop.propertyName))
+def WriteComponentSourceDefinitions(f, document):
+    for comp in components:
+        if comp.isFlag is False:
+            f.WriteLine('DEFINE_COMPONENT({});'.format(comp.componentName))
     IDLDocument.BeginNamespaceOverride(f, document, "Details")
-    f.WriteLine('const bool RegisterPropertyLibrary_{filename}()'.format(filename=f.fileName))
+    f.WriteLine('const bool RegisterComponentLibrary_{filename}()'.format(filename=f.fileName))
     f.WriteLine('{')
     f.IncreaseIndent()
     f.WriteLine('// Make sure string atom tables have been set up.')
     f.WriteLine('Core::SysFunc::Setup();')
-    for prop in properties:
-        defval = prop.propertyName + "()"
-        #if not prop.isStruct :
-        #    if prop.variables[0].defaultValue is not None:
-        #        defval = prop.variables[0].defaultValue
+    for comp in components:
+        defval = comp.componentName + "()"
+        #if not comp.isStruct :
+        #    if comp.variables[0].defaultValue is not None:
+        #        defval = comp.variables[0].defaultValue
         f.WriteLine('{')
-        f.WriteLine('Util::StringAtom const name = "{}"_atm;'.format(prop.propertyName))
-        if prop.isFlag is False:
-            flags = 0 if not prop.isManaged else 1 # this must be equal to managed property flag in Game::PropertyFlags
-            f.WriteLine('MemDb::PropertyId const pid = MemDb::TypeRegistry::Register<{type}>(name, {defval}, {flags});'.format(type=prop.propertyName, defval=defval, flags=flags))
-            if prop.isStruct:
-                f.WriteLine('Game::PropertySerialization::Register<{type}>(pid);'.format(type=prop.propertyName))
-                f.WriteLine('Game::PropertyInspection::Register(pid, &Game::PropertyDrawFuncT<{type}>);'.format(type=prop.propertyName))
+        f.WriteLine('Util::StringAtom const name = "{}"_atm;'.format(comp.componentName))
+        if comp.isFlag is False:
+            flags = 0 if not comp.isManaged else 1 # this must be equal to managed component flag in Game::ComponentFlags
+            f.WriteLine('MemDb::ComponentId const cid = MemDb::TypeRegistry::Register<{type}>(name, {defval}, {flags});'.format(type=comp.componentName, defval=defval, flags=flags))
+            if comp.isStruct:
+                f.WriteLine('Game::ComponentSerialization::Register<{type}>(cid);'.format(type=comp.componentName))
+                f.WriteLine('Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<{type}>);'.format(type=comp.componentName))
             else:
-                f.WriteLine('Game::PropertySerialization::Register<{type}>(pid);'.format(type=prop.variables[0].type))
-                f.WriteLine('Game::PropertyInspection::Register(pid, &Game::PropertyDrawFuncT<{type}>);'.format(type=prop.variables[0].type))
+                f.WriteLine('Game::ComponentSerialization::Register<{type}>(cid);'.format(type=comp.variables[0].type))
+                f.WriteLine('Game::ComponentInspection::Register(cid, &Game::ComponentDrawFuncT<{type}>);'.format(type=comp.variables[0].type))
         else:
             f.WriteLine('MemDb::TypeRegistry::Register(name, 0, nullptr);')
         f.WriteLine('}')
     f.WriteLine("return true;")
     f.DecreaseIndent()
     f.WriteLine("}")
-    f.WriteLine('const bool {filename}_registered = RegisterPropertyLibrary_{filename}();'.format(filename=f.fileName))
+    f.WriteLine('const bool {filename}_registered = RegisterComponentLibrary_{filename}();'.format(filename=f.fileName))
     IDLDocument.EndNamespaceOverride(f, document, "Details")
 
 #------------------------------------------------------------------------------
@@ -250,19 +250,19 @@ def WriteEnumJsonSerializers(f, document):
 #
 def WriteStructJsonSerializers(f, document):
     namespace = IDLDocument.GetNamespace(document)
-    for prop in properties:
-        if not prop.isStruct:
+    for comp in components:
+        if not comp.isStruct:
             continue
 
-        f.WriteLine('template<> void JsonReader::Get<{namespace}::{name}>({namespace}::{name}& ret, const char* attr)'.format(namespace=namespace, name=prop.propertyName))
+        f.WriteLine('template<> void JsonReader::Get<{namespace}::{name}>({namespace}::{name}& ret, const char* attr)'.format(namespace=namespace, name=comp.componentName))
         f.WriteLine('{')
         f.IncreaseIndent()
-        f.WriteLine('ret = {namespace}::{name}();'.format(namespace=namespace, name=prop.propertyName))
+        f.WriteLine('ret = {namespace}::{name}();'.format(namespace=namespace, name=comp.componentName))
         f.WriteLine("const pjson::value_variant* node = this->GetChild(attr);")
         f.WriteLine("if (node->is_object())")
         f.WriteLine("{")
         f.IncreaseIndent()
-        for var in prop.variables:
+        for var in comp.variables:
             f.WriteLine('if (this->HasAttr("{fieldName}")) this->Get<{type}>(ret.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=var.type))
         f.DecreaseIndent()
         f.WriteLine("}")
@@ -270,11 +270,11 @@ def WriteStructJsonSerializers(f, document):
         f.WriteLine("}")
         f.WriteLine("")
 
-        f.WriteLine('template<> void JsonWriter::Add<{namespace}::{name}>({namespace}::{name} const& value, Util::String const& attr)'.format(namespace=namespace, name=prop.propertyName))
+        f.WriteLine('template<> void JsonWriter::Add<{namespace}::{name}>({namespace}::{name} const& value, Util::String const& attr)'.format(namespace=namespace, name=comp.componentName))
         f.WriteLine('{')
         f.IncreaseIndent()
         f.WriteLine("this->BeginObject(attr.AsCharPtr());")
-        for var in prop.variables:
+        for var in comp.variables:
             f.WriteLine('this->Add<{type}>(value.{fieldName}, "{fieldName}");'.format(fieldName=var.name, type=var.type))
         f.WriteLine("this->End();")
         f.DecreaseIndent()

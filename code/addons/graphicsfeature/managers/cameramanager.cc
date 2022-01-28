@@ -99,9 +99,9 @@ CameraManager::InitUpdateCameraProcessor()
 {
     { // Setup processor that handles both worldtransform and camera (heirarchy)
         Game::FilterCreateInfo filterInfo;
-        filterInfo.inclusive[0] = Game::GetPropertyId("Camera"_atm);
+        filterInfo.inclusive[0] = Game::GetComponentId("Camera"_atm);
         filterInfo.access   [0] = Game::AccessMode::READ;
-        filterInfo.inclusive[1] = Game::GetPropertyId("WorldTransform"_atm);
+        filterInfo.inclusive[1] = Game::GetComponentId("WorldTransform"_atm);
         filterInfo.access   [1] = Game::AccessMode::READ;
         filterInfo.numInclusive = 2;
 
@@ -115,7 +115,7 @@ CameraManager::InitUpdateCameraProcessor()
         {
             for (int v = 0; v < data.numViews; v++)
             {
-                Game::Dataset::CategoryTableView const& view = data.views[v];
+                Game::Dataset::EntityTableView const& view = data.views[v];
                 Camera const* const cameras = (Camera*)view.buffers[0];
                 Math::mat4 const* const transforms = (Math::mat4*)view.buffers[1];
 
@@ -139,11 +139,11 @@ CameraManager::InitUpdateCameraProcessor()
     }
     { // Setup processor that handles just a regular old camera
         Game::FilterCreateInfo filterInfo;
-        filterInfo.inclusive[0] = Game::GetPropertyId("Camera"_atm);
+        filterInfo.inclusive[0] = Game::GetComponentId("Camera"_atm);
         filterInfo.access   [0] = Game::AccessMode::READ;
         filterInfo.numInclusive = 1;
 
-        filterInfo.exclusive[0] = Game::GetPropertyId("WorldTransform"_atm);
+        filterInfo.exclusive[0] = Game::GetComponentId("WorldTransform"_atm);
         filterInfo.numExclusive = 1;
 
         Game::Filter filter = Game::CreateFilter(filterInfo);
@@ -156,7 +156,7 @@ CameraManager::InitUpdateCameraProcessor()
         {
             for (int v = 0; v < data.numViews; v++)
             {
-                Game::Dataset::CategoryTableView const& view = data.views[v];
+                Game::Dataset::EntityTableView const& view = data.views[v];
                 Camera const* const cameras = (Camera*)view.buffers[0];
                 
                 for (IndexT i = 0; i < view.numInstances; ++i)

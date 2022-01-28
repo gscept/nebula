@@ -39,11 +39,11 @@ PhysicsManager::~PhysicsManager()
 void PhysicsManager::InitCreateActorProcessor()
 {
     Game::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = Game::GetPropertyId("Owner");
+    filterInfo.inclusive[0] = Game::GetComponentId("Owner");
     filterInfo.access[0] = Game::AccessMode::READ;
-    filterInfo.inclusive[1] = Game::GetPropertyId("WorldTransform");
+    filterInfo.inclusive[1] = Game::GetComponentId("WorldTransform");
     filterInfo.access[1] = Game::AccessMode::READ;
-    filterInfo.inclusive[2] = Game::GetPropertyId("PhysicsResource");
+    filterInfo.inclusive[2] = Game::GetComponentId("PhysicsResource");
     filterInfo.access[2] = Game::AccessMode::READ;
     filterInfo.numInclusive = 3;
 
@@ -59,11 +59,11 @@ void PhysicsManager::InitCreateActorProcessor()
     processorInfo.OnBeginFrame = [](Game::World* world, Game::Dataset data)
     {
         Game::OpBuffer opBuffer = Game::CreateOpBuffer(world);
-        Game::PropertyId const staticPID = Game::GetPropertyId("Static"_atm);
+        Game::ComponentId const staticPID = Game::GetComponentId("Static"_atm);
 
         for (int v = 0; v < data.numViews; v++)
         {
-            Game::Dataset::CategoryTableView const& view = data.views[v];
+            Game::Dataset::EntityTableView const& view = data.views[v];
             Game::Entity const* const owners = (Game::Entity*)view.buffers[0];
             Math::mat4 const* const transforms = (Math::mat4*)view.buffers[1];
             Resources::ResourceName const* const resources = (Resources::ResourceName*)view.buffers[2];
@@ -77,12 +77,12 @@ void PhysicsManager::InitCreateActorProcessor()
                 Resources::CreateResource(res, "PHYS",
                     [world, trans, &opBuffer, entity, staticPID](Resources::ResourceId id)
                     {
-                        bool const dynamic = !Game::HasProperty(world, entity, staticPID);
+                        bool const dynamic = !Game::HasComponent(world, entity, staticPID);
                         Physics::ActorId actorid = Physics::CreateActorInstance(id, trans, dynamic, Ids::Id32(entity));
                         
-                        Game::Op::RegisterProperty regOp;
+                        Game::Op::RegisterComponent regOp;
                         regOp.entity = entity;
-                        regOp.pid = PhysicsManager::Singleton->pids.physicsActor;
+                        regOp.component = PhysicsManager::Singleton->pids.physicsActor;
                         regOp.value = &actorid;
                         Game::AddOp(opBuffer, regOp);
 
@@ -104,7 +104,7 @@ void PhysicsManager::InitCreateActorProcessor()
 void
 PhysicsManager::OnDecay()
 {
-    Game::PropertyDecayBuffer const decayBuffer = Game::GetDecayBuffer(Singleton->pids.physicsActor);
+    Game::ComponentDecayBuffer const decayBuffer = Game::GetDecayBuffer(Singleton->pids.physicsActor);
     Physics::ActorId* data = (Physics::ActorId*)decayBuffer.buffer;
     for (int i = 0; i < decayBuffer.size; i++)
     {
@@ -120,11 +120,11 @@ void PhysicsManager::InitPollTransformProcessor()
     Game::FilterCreateInfo filterInfo;
     filterInfo.inclusive[0] = this->pids.physicsActor;
     filterInfo.access[0] = Game::AccessMode::READ;
-    filterInfo.inclusive[1] = Game::GetPropertyId("WorldTransform"_atm);
+    filterInfo.inclusive[1] = Game::GetComponentId("WorldTransform"_atm);
     filterInfo.access[1] = Game::AccessMode::WRITE;
     filterInfo.numInclusive = 2;
 
-    filterInfo.exclusive[0] = Game::GetPropertyId("Static");
+    filterInfo.exclusive[0] = Game::GetComponentId("Static");
     filterInfo.numExclusive = 1;
 
     Game::Filter filter = Game::CreateFilter(filterInfo);
@@ -137,7 +137,7 @@ void PhysicsManager::InitPollTransformProcessor()
     {
         for (int v = 0; v < data.numViews; v++)
         {
-            Game::Dataset::CategoryTableView const& view = data.views[v];
+            Game::Dataset::EntityTableView const& view = data.views[v];
             Physics::ActorId const* const actorIdBuffer = (Physics::ActorId*)view.buffers[0];
             Math::mat4* const transforms = (Math::mat4*)view.buffers[1];
 
@@ -163,13 +163,13 @@ PhysicsManager::Create()
 	n_assert(!PhysicsManager::HasInstance());
     PhysicsManager::Singleton = n_new(PhysicsManager);
     
-    Game::PropertyCreateInfo info;
+    Game::ComponentCreateInfo info;
     info.name = "PhysicsActorId";
     Physics::ActorId defaultValue;
     info.defaultValue = &defaultValue;
-    info.flags = Game::PropertyFlags::PROPERTYFLAG_MANAGED;
+    info.flags = Game::ComponentFlags::COMPONENTFLAG_MANAGED;
     info.byteSize = sizeof(Physics::ActorId);
-    Singleton->pids.physicsActor = Game::CreateProperty(info);
+    Singleton->pids.physicsActor = Game::CreateComponent(info);
 
     Singleton->InitCreateActorProcessor();
     Singleton->InitPollTransformProcessor();
@@ -207,7 +207,7 @@ PhysicsManager::OnCleanup(Game::World* world)
     Game::Dataset data = Game::Query(world, filter);
     for (int v = 0; v < data.numViews; v++)
     {
-        Game::Dataset::CategoryTableView const& view = data.views[v];
+        Game::Dataset::EntityTableView const& view = data.views[v];
         Physics::ActorId* const actors = (Physics::ActorId*)view.buffers[0];
 
         for (IndexT i = 0; i < view.numInstances; ++i)

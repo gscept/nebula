@@ -25,7 +25,6 @@
 namespace Game
 {
 
-class Property;
 class World;
 
 class BlueprintManager
@@ -76,12 +75,12 @@ private:
     bool ParseTemplate(Util::String const& templatePath);
     /// setup blueprint database
     void SetupBlueprints();
-    /// create a category in the world db
+    /// create a table in the world db
     MemDb::TableId CreateCategory(World* const world, BlueprintId bid);
 
-    struct PropertyEntry
+    struct ComponentEntry
     {
-        Util::StringAtom propertyName;
+        Util::StringAtom name;
     };
 
     /// an entity blueprint
@@ -92,8 +91,8 @@ private:
         MemDb::TableId tableId;
         // these are created by ParseBlueprints()
         Util::StringAtom name;
-        /// contains all the properties for this blueprint
-        Util::Array<PropertyEntry> properties;
+        /// contains all the components for this blueprint
+        Util::Array<ComponentEntry> components;
     };
 
     Util::Array<Template> templates;

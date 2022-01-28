@@ -25,6 +25,38 @@ class Database;
 namespace Game
 {
 
+//class ProcessorBuilder
+//{
+//public:
+//    ProcessorBuilder() = delete;
+//    ProcessorBuilder(Util::StringAtom processorName);
+//
+//    /// which function to run with the processor
+//    ProcessorBuilder& Func(std::function<void> func);
+//    
+//    /// entities must have these components
+//    template<typename ... COMPONENTS>
+//    ProcessorBuilder& With();
+//
+//    /// entities must not have any of these components
+//    template<typename ... COMPONENTS>
+//    ProcessorBuilder& Excluding();
+//
+//    /// select on which event the processor is executed
+//    ProcessorBuilder& On(Util::StringAtom eventName);
+//    
+//    /// processor should run async
+//    ProcessorBuilder& Async();
+//    
+//    /// create and register the processor
+//    ProcessorHandle Create();
+//
+//private:
+//    Util::StringAtom name;
+//    bool async = false;
+//    ProcessorFrameCallback func = nullptr;
+//};
+
 //------------------------------------------------------------------------------
 
 #define WORLD_DEFAULT uint32_t('DWLD')
@@ -35,11 +67,11 @@ namespace Game
 
 //------------------------------------------------------------------------------
 /**
-    Maps an entity to a category and instance id
+    Maps an entity to a table and instance id
 */
 struct EntityMapping
 {
-    MemDb::TableId category;
+    MemDb::TableId table;
     MemDb::Row instance;
 };
 
@@ -50,23 +82,23 @@ struct EntityMapping
 */
 struct Dataset
 {
-    static const uint32_t MAX_PROPERTY_BUFFERS = 64;
+    static const uint32_t MAX_COMPONENT_BUFFERS = 64;
 
     /// a view into a category table
-    struct CategoryTableView
+    struct EntityTableView
     {
-        /// category identifier
-        MemDb::TableId cid = MemDb::TableId::Invalid();
+        /// table identifier
+        MemDb::TableId tableId = MemDb::TableId::Invalid();
         /// number of instances in view
         uint32_t numInstances = 0;
-        /// property buffers. @note Can be NULL if a queried property is a flag
-        void* buffers[MAX_PROPERTY_BUFFERS];
+        /// component buffers. @note Can be NULL if a queried component is a flag
+        void* buffers[MAX_COMPONENT_BUFFERS];
     };
 
     /// number of views in views array
     uint32_t numViews = 0;
     /// views into the tables
-    CategoryTableView* views = nullptr;
+    EntityTableView* views = nullptr;
 };
 
 /// Opaque entity operations buffer
@@ -110,54 +142,53 @@ typedef uint32_t Filter;
 */
 struct FilterCreateInfo
 {
-    static const uint32_t MAX_EXCLUSIVE_PROPERTIES = 32;
+    static const uint32_t MAX_EXCLUSIVE_COMPONENTS = 32;
 
-    /// number of properties in the inclusive set
+    /// number of components in the inclusive set
     uint8_t numInclusive = 0;
     /// inclusive set
-    PropertyId inclusive[Dataset::MAX_PROPERTY_BUFFERS];
-    /// how we indend to access the properties
-    AccessMode access[Dataset::MAX_PROPERTY_BUFFERS];
-    /// number of properties in the exclusive set
+    ComponentId inclusive[Dataset::MAX_COMPONENT_BUFFERS];
+    /// how we intend to access the components
+    AccessMode access[Dataset::MAX_COMPONENT_BUFFERS];
+    /// number of components in the exclusive set
     uint8_t numExclusive = 0;
     /// exclusive set
-    PropertyId exclusive[MAX_EXCLUSIVE_PROPERTIES];
+    ComponentId exclusive[MAX_EXCLUSIVE_COMPONENTS];
 };
 
 //------------------------------------------------------------------------------
 /**
-   Specifies special behaviour for a property
+   Specifies special behaviour for a components
 */
-enum PropertyFlags : uint32_t
+enum ComponentFlags : uint32_t
 {
-    /// regular property
-    PROPERTYFLAG_NONE = 0,
-    /// managed property. This will delay the deletion of this property by
+    /// regular component
+    COMPONENTFLAG_NONE = 0,
+    /// managed component. This will delay the deletion of this component by
     /// one frame, allowing managers to clean up externally allocated resources
-    PROPERTYFLAG_MANAGED = 1 << 0
+    COMPONENTFLAG_MANAGED = 1 << 0
 };
 
 //------------------------------------------------------------------------------
 /**
-    Used to create a property.
+    Used to create a component.
     
     @note   types must be mem- copyable, and trivially destructible and should
             preferably not define a constructor.
 */
-struct PropertyCreateInfo
+struct ComponentCreateInfo
 {
-    /// name of the property
+    /// name of the component
     const char* name;
-    /// size of the property type in bytes.
+    /// size of the component type in bytes.
     uint32_t byteSize;
-    /// a default value for the property type, or NULL if we always want to initialize to 0's
+    /// a default value for the component type, or NULL if we always want to initialize to 0's
     void const* defaultValue;
-    /// property flags
-    PropertyFlags flags = PropertyFlags::PROPERTYFLAG_NONE;
+    /// component flags
+    ComponentFlags flags = ComponentFlags::COMPONENTFLAG_NONE;
 };
 
 /// per frame callback for processors
-//typedef void(*ProcessorFrameCallback)(World*, Dataset);
 using ProcessorFrameCallback = std::function<void(World*, Dataset)>;
 
 //------------------------------------------------------------------------------
@@ -201,7 +232,7 @@ typedef MemDb::TableSignature ExclusiveTableMask;
 //------------------------------------------------------------------------------
 /**
 */
-struct PropertyDecayBuffer
+struct ComponentDecayBuffer
 {
     uint32_t size = 0;
     uint32_t capacity = 0;
@@ -218,29 +249,24 @@ namespace Op
 
 //------------------------------------------------------------------------------
 /**
-    TODO: We should add a simpler way of registering and deregistering properties from within processors and update funcs
-        We could do this by keeping a "global" op buffer and providing a template function for adding/removing properties, which just converts into ops.
-        We could have one opbuffer that is used for Sync processors, and one that is a lockfree queue that is available for the async properties.
-        
-        We should probably rewrite the entire op system, since it's a mess at the moment.
-        Also, try to clean up the world system, so that it makes more sense, and is less dependant on other systems and callsites to set things up...
+    TODO: We should probably rewrite the entire op system, since it's a mess at the moment.
+          Also, try to clean up the world system, so that it makes more sense, and is less dependant on other systems and callsites to set things up...
             Trying to setup a world manually right now is almost impossible.
-        
 */
-struct RegisterProperty
+struct RegisterComponent
 {
     Entity entity;
-    PropertyId pid;
+    ComponentId component;
     void const* value = nullptr;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
-struct DeregisterProperty
+struct DeregisterComponent
 {
     Entity entity;
-    PropertyId pid;
+    ComponentId component;
 };
 
 } // namespace Op
@@ -264,20 +290,20 @@ bool                        IsActive(World*, Entity e);
 EntityMapping               GetEntityMapping(World*, Entity entity);
 /// Get instance of entity
 MemDb::Row                  GetInstance(World*, Entity entity);
-/// add a property to an entity.
+/// add a component to an entity.
 template<typename TYPE>
-void                        AddProperty(World*, Entity, TYPE* prop);
-/// remove a property from an entity
+void                        AddComponent(World*, Entity, TYPE* prop);
+/// remove a component from an entity
 template<typename TYPE>
-void                        RemoveProperty(World*, Entity);
-/// typed set a property method.
+void                        RemoveComponent(World*, Entity);
+/// typed set component
 template<typename TYPE>
-void                        SetProperty(World*, Game::Entity const entity, PropertyId const pid, TYPE value);
-/// typed get property method
+void                        SetComponent(World*, Game::Entity const entity, ComponentId const component, TYPE value);
+/// typed get component
 template<typename TYPE>
-TYPE                        GetProperty(World*, Game::Entity const entity, PropertyId const pid);
-/// Check if entity has a specific property. (SLOW!)
-bool                        HasProperty(World*, Entity const entity, PropertyId const pid);
+TYPE                        GetComponent(World*, Game::Entity const entity, ComponentId const component);
+/// Check if entity has a specific component. (SLOW!)
+bool                        HasComponent(World*, Entity const entity, ComponentId const component);
 
 
 /// Create an operations buffer
@@ -286,14 +312,14 @@ OpBuffer                    CreateOpBuffer(World*);
 void                        Dispatch(OpBuffer buffer);
 /// Destroys an operations buffer
 void                        DestroyOpBuffer(OpBuffer&);
-/// Register a property <-> entity association. Moves entity to a different category table.
-void                        AddOp(OpBuffer buffer, Op::RegisterProperty op);
-/// Deregister a property <-> entity association. Moves entity to a different category table.
-void                        AddOp(OpBuffer buffer, Op::DeregisterProperty const& op);
+/// Register a component <-> entity association. Moves entity to a different entity table.
+void                        AddOp(OpBuffer buffer, Op::RegisterComponent op);
+/// Deregister a component <-> entity association. Moves entity to a different entity table.
+void                        AddOp(OpBuffer buffer, Op::DeregisterComponent const& op);
 /// Execute an operation directly
-void                        Execute(World*, Op::RegisterProperty const& op);
+void                        Execute(World*, Op::RegisterComponent const& op);
 /// Execute an operation directly
-void                        Execute(World*, Op::DeregisterProperty const& op);
+void                        Execute(World*, Op::DeregisterComponent const& op);
 /// Release all memory allocated by operation buffers
 void                        ReleaseAllOps();
 
@@ -315,22 +341,24 @@ Dataset                     Query(Ptr<MemDb::Database> const& db, Util::Array<Me
 /// Recycles all current datasets allocated memory to be reused
 void                        ReleaseDatasets();
 
-/// Create a property
-PropertyId                  CreateProperty(PropertyCreateInfo const& info);
-/// Returns a property id
-PropertyId                  GetPropertyId(Util::StringAtom name);
+/// Create a component
+ComponentId                  CreateComponent(ComponentCreateInfo const& info);
+/// Returns a component id
+ComponentId                  GetComponentId(Util::StringAtom name);
 /// Returns a blueprint id by name
 BlueprintId                 GetBlueprintId(Util::StringAtom name);
 /// Returns a template id by name
 TemplateId                  GetTemplateId(Util::StringAtom name);
-/// Get number of instances in a specific category
+/// Get number of instances in a specific table
 SizeT                       GetNumInstances(World*, MemDb::TableId table);
-/// retrieve the instance buffer for a specific property in a category
-void*                       GetInstanceBuffer(World*, MemDb::TableId const, PropertyId const);
+/// retrieve the instance buffer for a specific component in a table
+void*                       GetInstanceBuffer(World*, MemDb::TableId const, ComponentId const);
 /// retrieve the inclusive table mask
 InclusiveTableMask const&   GetInclusiveTableMask(Filter);
 /// retrieve the exclusive table mask
 ExclusiveTableMask const&   GetExclusiveTableMask(Filter);
+
+// Following functions are unsafe to use in general scenarios
 
 /// allocate an entity id
 Entity                      AllocateEntity(World*);
@@ -357,14 +385,15 @@ void                        Defragment(World*, MemDb::TableId);
 /// create an entity table
 MemDb::TableId              CreateEntityTable(World* world, CategoryCreateInfo const& info);
 /// set the value of an entity
-void                        SetProperty(World*, Game::Entity entity, Game::PropertyId pid, void* value, uint64_t size);
-/// get the decay buffer for a specific property
-PropertyDecayBuffer const   GetDecayBuffer(Game::PropertyId pid);
-/// clear the property decay buffers
+void                        SetComponent(World*, Game::Entity entity, Game::ComponentId component, void* value, uint64_t size);
+/// get the decay buffer for a specific component
+ComponentDecayBuffer const   GetDecayBuffer(Game::ComponentId component);
+/// clear the component decay buffers
 void                        ClearDecayBuffers();
 /// register an update function that runs for each entity that fulfill the requirements of the function, contains any of the additional inclusive propertoes, and does not have any properties contained in the exclusive set.
+/// @deprecated     Will be removed when the new ProcessorBuilder is implemented.
 template<typename ... TYPES>
-Game::ProcessorHandle       RegisterUpdateFunction(World*, Util::StringAtom name, std::function<void(TYPES...)> func, std::initializer_list<PropertyId> additionalInclusive = {}, std::initializer_list<PropertyId> exclusive = {});
+Game::ProcessorHandle       RegisterUpdateFunction(World*, Util::StringAtom name, std::function<void(TYPES...)> func, std::initializer_list<ComponentId> additionalInclusive = {}, std::initializer_list<ComponentId> exclusive = {});
 
 
 //------------------------------------------------------------------------------
@@ -377,13 +406,13 @@ Game::ProcessorHandle       RegisterUpdateFunction(World*, Util::StringAtom name
 */
 template<typename TYPE>
 inline void
-SetProperty(World* world, Game::Entity const entity, PropertyId const pid, TYPE value)
+SetComponent(World* world, Game::Entity const entity, ComponentId const component, TYPE value)
 {
 #if NEBULA_DEBUG
-    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(pid), "SetProperty: Provided value's type is not the correct size for the given PropertyId.");
+    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(component), "SetComponent: Provided value's type is not the correct size for the given ComponentId.");
 #endif
     EntityMapping mapping = GetEntityMapping(world, entity);
-    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.category, pid);
+    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, component);
     *(ptr + mapping.instance) = value;
 }
 
@@ -392,13 +421,13 @@ SetProperty(World* world, Game::Entity const entity, PropertyId const pid, TYPE 
 */
 template<typename TYPE>
 inline TYPE
-GetProperty(World* world, Game::Entity const entity, PropertyId const pid)
+GetComponent(World* world, Game::Entity const entity, ComponentId const component)
 {
 #if NEBULA_DEBUG
-    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(pid), "GetProperty: Provided value's type is not the correct size for the given PropertyId.");
+    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(component), "GetComponent: Provided value's type is not the correct size for the given ComponentId.");
 #endif
     EntityMapping mapping = GetEntityMapping(world, entity);
-    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.category, pid);
+    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, component);
     return *(ptr + mapping.instance);
 }
 
@@ -419,13 +448,13 @@ namespace Internal
     }
 
     template<typename...TYPES, std::size_t...Is>
-    void UnrollInclusiveProperties(Game::FilterCreateInfo& filterInfo, std::index_sequence<Is...>)
+    void UnrollInclusiveComponents(Game::FilterCreateInfo& filterInfo, std::index_sequence<Is...>)
     {
         (SetInclusive<typename std::tuple_element<Is, std::tuple<TYPES...>>::type>(filterInfo, Is), ...);
     }
 
     template<typename...TYPES, std::size_t...Is>
-    void update_expander(std::function<void(TYPES...)> const& func, Game::Dataset::CategoryTableView const& view, const IndexT instance, std::index_sequence<Is...>)
+    void update_expander(std::function<void(TYPES...)> const& func, Game::Dataset::EntityTableView const& view, const IndexT instance, std::index_sequence<Is...>)
     {
         // this is a terribly unreadable line. Here's what it does:
         // it unpacks the the index sequence and TYPES into individual parameters for func
@@ -440,7 +469,7 @@ namespace Internal
 */
 template<typename ...TYPES>
 inline Game::ProcessorHandle
-RegisterUpdateFunction(World* world, Util::StringAtom name, std::function<void(TYPES...)> func, std::initializer_list<PropertyId> additionalInclusive, std::initializer_list<PropertyId> exclusive)
+RegisterUpdateFunction(World* world, Util::StringAtom name, std::function<void(TYPES...)> func, std::initializer_list<ComponentId> additionalInclusive, std::initializer_list<ComponentId> exclusive)
 {
     n_assert(exclusive.size() < 0xFF);
     n_assert(additionalInclusive.size() < 0xFF);
@@ -448,7 +477,7 @@ RegisterUpdateFunction(World* world, Util::StringAtom name, std::function<void(T
     ProcessorFrameCallback processor = [func](World* world, Game::Dataset data) {
         for (int v = 0; v < data.numViews; v++)
         {
-            Game::Dataset::CategoryTableView const& view = data.views[v];
+            Game::Dataset::EntityTableView const& view = data.views[v];
 
             for (IndexT i = 0; i < view.numInstances; ++i)
             {
@@ -458,7 +487,7 @@ RegisterUpdateFunction(World* world, Util::StringAtom name, std::function<void(T
     };
 
     Game::FilterCreateInfo filterInfo;
-    Internal::UnrollInclusiveProperties<TYPES...>(filterInfo, std::make_index_sequence<sizeof...(TYPES)>());
+    Internal::UnrollInclusiveComponents<TYPES...>(filterInfo, std::make_index_sequence<sizeof...(TYPES)>());
     for (int i = 0; i < (int)additionalInclusive.size(); i++)
         filterInfo.inclusive[filterInfo.numInclusive + i] = *(additionalInclusive.begin() + i);
     filterInfo.numInclusive = filterInfo.numInclusive + (uint8_t)additionalInclusive.size();
@@ -481,13 +510,13 @@ RegisterUpdateFunction(World* world, Util::StringAtom name, std::function<void(T
 */
 template<typename TYPE>
 inline void
-AddProperty(World* world, Entity entity, TYPE* prop)
+AddComponent(World* world, Entity entity, TYPE* value)
 {
     //n_assert(!state.asyncProcessing);
-    Op::RegisterProperty op;
+    Op::RegisterComponent op;
     op.entity = entity;
-    op.pid = TYPE::ID();
-    op.value = (void*)prop;
+    op.component = TYPE::ID();
+    op.value = (void*)value;
     AddOp(WorldGetScratchOpBuffer(world), op);
 }
 
@@ -496,12 +525,12 @@ AddProperty(World* world, Entity entity, TYPE* prop)
 */
 template<typename TYPE>
 inline void
-RemoveProperty(World* world, Entity entity)
+RemoveComponent(World* world, Entity entity)
 {
     //n_assert(!state.asyncProcessing);
-    Op::DeregisterProperty op;
+    Op::DeregisterComponent op;
     op.entity = entity;
-    op.pid = TYPE::ID();
+    op.component = TYPE::ID();
     AddOp(WorldGetScratchOpBuffer(world), op);
 }
 

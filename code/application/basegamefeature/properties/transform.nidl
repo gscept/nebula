@@ -2,7 +2,7 @@
     "includes": [
         "math/mat4.h"
     ],
-    "properties": {
+    "components": {
         "WorldTransform": "mat4",
         "Static": {
             "_type_": "_flag_",

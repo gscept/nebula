@@ -205,15 +205,15 @@ EntitySystemTest::Run()
 
     // Test managed properties
     {
-        PropertyId managedPropertyDescriptor;
+        ComponentId managedComponentDescriptor;
         {
             ManagedTestProperty defVal;
-            Game::PropertyCreateInfo propertyInfo;
-            propertyInfo.name = "ManagedTestProperty";
-            propertyInfo.byteSize = sizeof(ManagedTestProperty);
-            propertyInfo.defaultValue = &defVal;
-            propertyInfo.flags = PropertyFlags::PROPERTYFLAG_MANAGED;
-            managedPropertyDescriptor = Game::CreateProperty(propertyInfo);
+            Game::ComponentCreateInfo componentInfo;
+            componentInfo.name = "ManagedTestProperty";
+            componentInfo.byteSize = sizeof(ManagedTestProperty);
+            componentInfo.defaultValue = &defVal;
+            componentInfo.flags = ComponentFlags::COMPONENTFLAG_MANAGED;
+            managedComponentDescriptor = Game::CreateComponent(componentInfo);
         }
 
         Game::Entity enemies[] = {
@@ -225,22 +225,22 @@ EntitySystemTest::Run()
         };
 
         {
-            VERIFY(Game::GetWorldDatabase(world)->GetNumRows(Game::GetEntityMapping(world, enemies[0]).category) == 5);
+            VERIFY(Game::GetWorldDatabase(world)->GetNumRows(Game::GetEntityMapping(world, enemies[0]).table) == 5);
         }
 
-        Game::Op::RegisterProperty regOp;
+        Game::Op::RegisterComponent regOp;
         regOp.entity = enemies[0];
-        regOp.pid = managedPropertyDescriptor;
+        regOp.component = managedComponentDescriptor;
         Game::Execute(world, regOp);
         regOp.entity = enemies[1];
-        regOp.pid = managedPropertyDescriptor;
+        regOp.component = managedComponentDescriptor;
         Game::Execute(world, regOp);
         regOp.entity = enemies[2];
-        regOp.pid = managedPropertyDescriptor;
+        regOp.component = managedComponentDescriptor;
         Game::Execute(world, regOp);
 
         {
-            VERIFY(Game::GetWorldDatabase(world)->GetNumRows(Game::GetEntityMapping(world, enemies[0]).category) == 3);
+            VERIFY(Game::GetWorldDatabase(world)->GetNumRows(Game::GetEntityMapping(world, enemies[0]).table) == 3);
         }
 
         StepFrame();
@@ -252,14 +252,14 @@ EntitySystemTest::Run()
 
         {
             
-            MemDb::TableId cid = Game::GetEntityMapping(world, enemies[0]).category;
+            MemDb::TableId cid = Game::GetEntityMapping(world, enemies[0]).table;
             VERIFY(Game::GetWorldDatabase(world)->GetNumRows(cid) == 2);
         }
 
         StepFrame();
 
         {
-            MemDb::TableId cid = Game::GetEntityMapping(world, enemies[0]).category;
+            MemDb::TableId cid = Game::GetEntityMapping(world, enemies[0]).table;
             VERIFY(Game::GetWorldDatabase(world)->GetNumRows(cid) == 2);
         }
     }
@@ -267,9 +267,9 @@ EntitySystemTest::Run()
     StepFrame();
 
     Game::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = Game::GetPropertyId("TestHealth");
+    filterInfo.inclusive[0] = Game::GetComponentId("TestHealth");
     filterInfo.access[0] = Game::AccessMode::READ;
-    filterInfo.inclusive[1] = Game::GetPropertyId("TestStruct");
+    filterInfo.inclusive[1] = Game::GetComponentId("TestStruct");
     filterInfo.access[1] = Game::AccessMode::WRITE;
     filterInfo.numInclusive = 2;
     Game::Filter filter = Game::CreateFilter(filterInfo);
@@ -278,7 +278,7 @@ EntitySystemTest::Run()
     
     for (int v = 0; v < set.numViews; v++)
     {
-        Game::Dataset::CategoryTableView const& view = set.views[v];
+        Game::Dataset::EntityTableView const& view = set.views[v];
         TestHealth* healths = (TestHealth*)view.buffers[0];
         TestStruct* strs = (TestStruct*)view.buffers[1];
 
@@ -297,10 +297,10 @@ EntitySystemTest::Run()
     Test::TestHealth* healths = (Test::TestHealth*)set.views[0].buffers[0];
     Test::TestStruct* structs = (Test::TestStruct*)set.views[0].buffers[1];
 
-    // add a property to an entity that does not already have it. This should
-    // move the entity from one category to another, and in this case
-    // creating a new category that contains only one instance (this one)
-    Game::AddProperty<TestVec4>(world, entities[1], nullptr);
+    // add a component to an entity that does not already have it. This should
+    // move the entity from one table to another, and in this case
+    // creating a new table that contains only one instance (this one)
+    Game::AddComponent<TestVec4>(world, entities[1], nullptr);
 
     Game::DestroyFilter(filter);
     Game::ReleaseDatasets();

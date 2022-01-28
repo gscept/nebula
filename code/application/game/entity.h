@@ -4,14 +4,14 @@
     @struct Game::Entity
 
     An entity is essentially just an Id with some utility functions attached.
-    What actually makes up the entities are their properties.
+    What actually makes up the entities are their components.
 
     The id is split into two parts: the upper 10 bits are used as a generation
     counter, so that we can easily reuse the lower 22 bits as an index.
     
     @see    Game::IsValid
     @see    api.h
-    @see    propertyid.h
+    @see    component.h
     @see    memdb/typeregistry.h
 
     @copyright

@@ -128,7 +128,7 @@ public:
         /// Contains all templates
         Ptr<MemDb::Database> templateDatabase;
         /// quick access to the Owner property id
-        PropertyId ownerId;
+        ComponentId ownerId;
     } state;
 
 protected:

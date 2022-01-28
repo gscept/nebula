@@ -1,7 +1,7 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    @class Game::PropertyInspection
+    @class Game::ComponentInspection
     
     Property serialization functions.
 
@@ -19,23 +19,23 @@
 namespace Game
 {
 
-class PropertyInspection
+class ComponentInspection
 {
 public:
-    using DrawFunc = void(*)(PropertyId, void*, bool*);
+    using DrawFunc = void(*)(ComponentId, void*, bool*);
     
-    static PropertyInspection* Instance();
+    static ComponentInspection* Instance();
     static void Destroy();
 
-    static void Register(PropertyId pid, DrawFunc);
+    static void Register(ComponentId component, DrawFunc);
 
-    static void DrawInspector(PropertyId pid, void* data, bool* commit);
+    static void DrawInspector(ComponentId component, void* data, bool* commit);
 
 private:
-    PropertyInspection();
-    ~PropertyInspection();
+    ComponentInspection();
+    ~ComponentInspection();
 
-    static PropertyInspection* Singleton;
+    static ComponentInspection* Singleton;
 
     Util::Array<DrawFunc> inspectors;
 };
@@ -45,16 +45,16 @@ private:
 */
 template<typename TYPE>
 void
-PropertyDrawFuncT(PropertyId, void*, bool*)
+ComponentDrawFuncT(ComponentId, void*, bool*)
 {
     return;
 }
 
-template<> void PropertyDrawFuncT<Game::Entity>(PropertyId, void*, bool*);
-template<> void PropertyDrawFuncT<int>(PropertyId, void*, bool*);
-template<> void PropertyDrawFuncT<uint>(PropertyId, void*, bool*);
-template<> void PropertyDrawFuncT<float>(PropertyId, void*, bool*);
-template<> void PropertyDrawFuncT<Util::StringAtom>(PropertyId, void*, bool*);
-template<> void PropertyDrawFuncT<Math::mat4>(PropertyId, void*, bool*);
+template<> void ComponentDrawFuncT<Game::Entity>(ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<int>(ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<uint>(ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<float>(ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<Util::StringAtom>(ComponentId, void*, bool*);
+template<> void ComponentDrawFuncT<Math::mat4>(ComponentId, void*, bool*);
 
 } // namespace Game

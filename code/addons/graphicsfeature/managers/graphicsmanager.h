@@ -36,7 +36,7 @@ public:
 
     struct Pids
     {
-        Game::PropertyId modelEntityData;
+        Game::ComponentId modelEntityData;
     } pids;
 private:
     /// constructor

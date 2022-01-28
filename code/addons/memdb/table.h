@@ -38,15 +38,15 @@ struct TableCreateInfo
 {
     /// name to be given to the table
     Util::String name;
-    /// array of properties the table should initially have
-    PropertyId const* properties;
+    /// array of components the table should initially have
+    ComponentId const* components;
     /// number of columns
-    SizeT numProperties;
+    SizeT numComponents;
 };
 
 //------------------------------------------------------------------------------
 /**
-    A table hold properties as columns, and buffers for those columns.
+    A table hold components as columns, and buffers for those columns.
     Property descriptions are retrieved from the MemDb::TypeRegistry
 
     @see    memdb/typeregistry.h
@@ -67,8 +67,8 @@ struct Table
     uint32_t grow = 128;
     // holds freed indices/rows to be reused in the table.
     Util::Array<IndexT> freeIds;
-    /// all properties that this table has
-    Util::Array<PropertyId> properties;
+    /// all components that this table has
+    Util::Array<ComponentId> components;
 	
 	// TODO: partition the tables into chunks
 	//struct Partition
@@ -80,10 +80,10 @@ struct Table
 	//	uint32_t			     size = 0;		   // current number of elements in the buffer;
 	//};
 	
-	/// holds all the column buffers. This excludes non-typed properties
-	Util::ArrayAllocator<PropertyId, ColumnBuffer> columns;
-	/// maps propertyid -> index in columns array
-    Util::HashTable<PropertyId, IndexT, 32, 1> columnRegistry;
+	/// holds all the column buffers. This excludes non-typed components
+	Util::ArrayAllocator<ComponentId, ColumnBuffer> columns;
+	/// maps componentid -> index in columns array
+    Util::HashTable<ComponentId, IndexT, 32, 1> columnRegistry;
     /// allocation heap used for the column buffers
     static constexpr Memory::HeapType HEAP_MEMORY_TYPE = Memory::HeapType::DefaultHeap;
 };

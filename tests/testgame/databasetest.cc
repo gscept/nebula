@@ -24,13 +24,13 @@ __ImplementClass(Test::DatabaseTest, 'MDBT', Test::TestCase);
 struct IntTest
 {
     int value = 1;
-    DECLARE_PROPERTY;
+    DECLARE_COMPONENT;
 };
 
 struct FloatTest
 {
     float value = 20.0f;
-    DECLARE_PROPERTY;
+    DECLARE_COMPONENT;
 };
 
 struct StructTest
@@ -38,12 +38,12 @@ struct StructTest
     int foo = 10;
     bool boo = true;
     Math::float4 f4 = {1,2,3,4};
-    DECLARE_PROPERTY;
+    DECLARE_COMPONENT;
 };
 
-DEFINE_PROPERTY(IntTest);
-DEFINE_PROPERTY(FloatTest);
-DEFINE_PROPERTY(StructTest);
+DEFINE_COMPONENT(IntTest);
+DEFINE_COMPONENT(FloatTest);
+DEFINE_COMPONENT(StructTest);
 
 //------------------------------------------------------------------------------
 /**
@@ -57,10 +57,10 @@ DatabaseTest::Run()
     TableId table2;
     TableId table3;
 
-    PropertyId TestIntId = TypeRegistry::Register<IntTest>("TestIntId", IntTest());
-    PropertyId TestFloatId = TypeRegistry::Register<FloatTest>("TestFloatId", FloatTest());
-    PropertyId TestStructId = TypeRegistry::Register<StructTest>("TestStructId", StructTest());
-    PropertyId TestNonTypedProperty = TypeRegistry::Register("TestNonTypedProperty", 0, nullptr);
+    ComponentId TestIntId = TypeRegistry::Register<IntTest>("TestIntId", IntTest());
+    ComponentId TestFloatId = TypeRegistry::Register<FloatTest>("TestFloatId", FloatTest());
+    ComponentId TestStructId = TypeRegistry::Register<StructTest>("TestStructId", StructTest());
+    ComponentId TestNonTypedComponent = TypeRegistry::Register("TestNonTypedComponent", 0, nullptr);
 
     for (int i = 0; i < 2; i++)
     {
@@ -69,49 +69,49 @@ DatabaseTest::Run()
         {
             TableCreateInfo info;
             info.name = "Table0";
-            PropertyId const pids[] = {
+            ComponentId const cids[] = {
                     TestIntId,
                     TestFloatId,
                     TestStructId
             };
-            info.properties = pids;
-            info.numProperties = sizeof(pids) / sizeof(PropertyId);
+            info.components = cids;
+            info.numComponents = sizeof(cids) / sizeof(ComponentId);
             table0 = db->CreateTable(info);
         }
 
         {
             TableCreateInfo info;
             info.name = "Table1";
-            PropertyId const pids[] = {
+            ComponentId const cids[] = {
                 TestIntId,
                 TestFloatId
             };
-            info.properties = pids;
-            info.numProperties = sizeof(pids) / sizeof(PropertyId);
+            info.components = cids;
+            info.numComponents = sizeof(cids) / sizeof(ComponentId);
             table1 = db->CreateTable(info);
         };
 
         {
             TableCreateInfo info;
             info.name = "Table2";
-            PropertyId const pids[] = {
+            ComponentId const cids[] = {
                 TestStructId,
                 TestIntId,
-                TestNonTypedProperty
+                TestNonTypedComponent
             };
-            info.properties = pids;
-            info.numProperties = sizeof(pids) / sizeof(PropertyId);
+            info.components = cids;
+            info.numComponents = sizeof(cids) / sizeof(ComponentId);
             table2 = db->CreateTable(info);
         };
 
         {
             TableCreateInfo info;
             info.name = "Table3";
-            PropertyId const pids[] = {
-                TestNonTypedProperty
+            ComponentId const cids[] = {
+                TestNonTypedComponent
             };
-            info.properties = pids;
-            info.numProperties = sizeof(pids) / sizeof(PropertyId);
+            info.components = cids;
+            info.numComponents = sizeof(cids) / sizeof(ComponentId);
             table3 = db->CreateTable(info);
         };
 
@@ -198,9 +198,9 @@ DatabaseTest::Run()
 
         VERIFY(db->GetNumRows(table2) == 10);
 
-        const auto tbl2cid = db->GetColumnId(table2, TestNonTypedProperty);
+        const auto tbl2cid = db->GetColumnId(table2, TestNonTypedComponent);
         VERIFY(tbl2cid == InvalidIndex);
-        VERIFY(db->HasProperty(table2, TestNonTypedProperty));
+        VERIFY(db->HasComponent(table2, TestNonTypedComponent));
 
         db->Clean(table2);
         instances.Clear();
@@ -212,9 +212,9 @@ DatabaseTest::Run()
 
         VERIFY(db->GetNumRows(table3) == 10);
 
-        const auto tbl3cid = db->GetColumnId(table3, TestNonTypedProperty);
+        const auto tbl3cid = db->GetColumnId(table3, TestNonTypedComponent);
         VERIFY(tbl3cid == InvalidIndex);
-        VERIFY(db->HasProperty(table3, TestNonTypedProperty));
+        VERIFY(db->HasComponent(table3, TestNonTypedComponent));
 
         for (auto i : instances)
         {
@@ -236,14 +236,14 @@ DatabaseTest::Run()
 
         {
             FilterSet filter = FilterSet({ TestIntId,
-                                           TestNonTypedProperty
+                                           TestNonTypedComponent
                                          });
             Dataset data = db->Query(filter);
             VERIFY(data.tables.Size() == 1);
         }
 
         {
-            FilterSet filter = FilterSet({ TestNonTypedProperty });
+            FilterSet filter = FilterSet({ TestNonTypedComponent });
             Dataset data = db->Query(filter);
             VERIFY(data.tables.Size() == 2);
         }
@@ -251,7 +251,7 @@ DatabaseTest::Run()
         {
             FilterSet filter = FilterSet(
                 { // inclusive
-                    TestNonTypedProperty
+                    TestNonTypedComponent
                 },
             { // exclusive
                 TestIntId
@@ -330,7 +330,7 @@ DatabaseTest::Run()
 
     {
         const ushort num = 8096;
-        Util::FixedArray<PropertyId> da(num);
+        Util::FixedArray<ComponentId> da(num);
         for (ushort i = 0; i < num; i++)
         {
             da[i] = i;
@@ -351,7 +351,7 @@ DatabaseTest::Run()
     {
         for (ushort i = 2; i < 10000; i += 7)
         {
-            TableSignature s = { (PropertyId)i };
+            TableSignature s = { (ComponentId)i };
             VERIFY(!TableSignature::CheckBits(s, { 1 }));
         }
     }

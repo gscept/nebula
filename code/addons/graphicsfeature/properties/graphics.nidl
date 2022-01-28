@@ -9,7 +9,7 @@
             "ORTHOGRAPHIC": 1
         }
     },
-    "properties": {
+    "components": {
         "ModelResource": {
             "_type_": "resource",
             "_default_": "mdl:system/placeholder.n3"

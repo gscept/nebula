@@ -2,7 +2,7 @@
 	"blueprints": {
 		"Enemy": {
             "desc": "A test enemy blueprint",
-            "properties": [
+            "components": [
                 "TestVec4",
                 "TestHealth",
                 "TestStruct"
@@ -10,10 +10,10 @@
         },
 		"Player": {
             "desc": "A test player blueprint",
-            "properties": [
+            "components": [
                 "TestHealth",
                 "TestStruct"
             ]
-        },
+        }
 	}
 }

@@ -21,13 +21,13 @@ namespace Game
 {
 
 //------------------------------------------------------------------------------
-using RegPidQueue = Util::Queue<Op::RegisterProperty>;
-using DeregPidQueue = Util::Queue<Op::DeregisterProperty>;
+using RegCidQueue = Util::Queue<Op::RegisterComponent>;
+using DeregCidQueue = Util::Queue<Op::DeregisterComponent>;
 
-static Ids::IdAllocator<World*, RegPidQueue, DeregPidQueue> opBufferAllocator;
+static Ids::IdAllocator<World*, RegCidQueue, DeregCidQueue> opBufferAllocator;
 static Memory::ArenaAllocator<1024> opAllocator;
 
-static Util::FixedArray<PropertyDecayBuffer> propertyDecayTable;
+static Util::FixedArray<ComponentDecayBuffer> componentDecayTable;
 
 //------------------------------------------------------------------------------
 /**
@@ -52,13 +52,13 @@ public:
     EntityPool pool;
     /// Number of entities alive
     SizeT numEntities;
-    /// maps entity index to category+instanceid pair
+    /// maps entity index to table+instanceid pair
     Util::Array<Game::EntityMapping> entityMap;
     /// contains all entity instances
     Ptr<MemDb::Database> db;
     /// world hash
     uint32_t hash;
-    /// maps from blueprint to a category that has the same signature
+    /// maps from blueprint to a table that has the same signature
     Util::HashTable<BlueprintId, MemDb::TableId> blueprintCatMap;
     ///
     Util::Queue<AllocateInstanceCommand> allocQueue;
@@ -289,10 +289,10 @@ WorldManageEntities(World* world)
         auto const cmd = world->deallocQueue.Dequeue();
         if (Game::IsValid(world, cmd.entity))
         {
-            MemDb::TableId const table = world->entityMap[cmd.entity.index].category;
+            MemDb::TableId const table = world->entityMap[cmd.entity.index].table;
             MemDb::Row const row = world->entityMap[cmd.entity.index].instance;
             DeallocateInstance(world, table, row);
-            world->entityMap[cmd.entity.index].category = MemDb::InvalidTableId;
+            world->entityMap[cmd.entity.index].table = MemDb::InvalidTableId;
             world->entityMap[cmd.entity.index].instance = MemDb::InvalidRow;
             DeallocateEntity(world, cmd.entity);
         }
@@ -406,15 +406,15 @@ DeleteEntity(World* world, Game::Entity entity)
 /**
 */
 void
-DecayProperty(Game::World* world, Game::PropertyId pid, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::Row instance)
+DecayComponent(Game::World* world, Game::ComponentId component, MemDb::TableId tableId, MemDb::ColumnIndex column, MemDb::Row instance)
 {
-    if (MemDb::TypeRegistry::Flags(pid) & PropertyFlags::PROPERTYFLAG_MANAGED)
+    if (MemDb::TypeRegistry::Flags(component) & ComponentFlags::COMPONENTFLAG_MANAGED)
     {
-        if (pid.id >= propertyDecayTable.Size())
-            propertyDecayTable.Resize(pid.id + 16); // increment with a couple of extra elements, instead of doubling size, just to avoid extreme overallocation
-        PropertyDecayBuffer& pdb = propertyDecayTable[pid.id];
+        if (component.id >= componentDecayTable.Size())
+            componentDecayTable.Resize(component.id + 16); // increment with a couple of extra elements, instead of doubling size, just to avoid extreme overallocation
+        ComponentDecayBuffer& pdb = componentDecayTable[component.id];
 
-        uint64_t const typeSize = (uint64_t)MemDb::TypeRegistry::TypeSize(pid);
+        uint64_t const typeSize = (uint64_t)MemDb::TypeRegistry::TypeSize(component);
 
         if (pdb.capacity == 0)
         {
@@ -442,13 +442,13 @@ DecayProperty(Game::World* world, Game::PropertyId pid, MemDb::TableId tableId, 
 //------------------------------------------------------------------------------
 /**
 */
-PropertyDecayBuffer const
-GetDecayBuffer(Game::PropertyId pid)
+ComponentDecayBuffer const
+GetDecayBuffer(Game::ComponentId component)
 {
-    if (pid < propertyDecayTable.Size())
-        return propertyDecayTable[pid.id];
+    if (component < componentDecayTable.Size())
+        return componentDecayTable[component.id];
     else
-        return PropertyDecayBuffer();
+        return ComponentDecayBuffer();
 }
 
 //------------------------------------------------------------------------------
@@ -457,7 +457,7 @@ GetDecayBuffer(Game::PropertyId pid)
 void
 ClearDecayBuffers()
 {
-    for (auto& pdb : propertyDecayTable)
+    for (auto& pdb : componentDecayTable)
     {
         // TODO: shrink buffers if they're unreasonably big.
         pdb.size = 0;
@@ -479,9 +479,9 @@ CreateOpBuffer(World* world)
 
 //------------------------------------------------------------------------------
 /**
-    @todo   We can bundle all add and remove property for each entity into one
+    @todo   We can bundle all add and remove components for each entity into one
             migration.
-            We can also batch them based on their new category, so we won't
+            We can also batch them based on their new table, so we won't
             need to do as many column id lookups.
     @note   This is not thread safe. We cannot make it sync since it might read/write from arbitrary tables.
 */
@@ -489,18 +489,18 @@ void
 Dispatch(OpBuffer buffer)
 {
     World* world = opBufferAllocator.Get<0>(buffer);
-    RegPidQueue& registerPropertyQueue = opBufferAllocator.Get<1>(buffer);
-    DeregPidQueue& deregisterPropertyQueue = opBufferAllocator.Get<2>(buffer);
+    RegCidQueue& registerComponentQueue = opBufferAllocator.Get<1>(buffer);
+    DeregCidQueue& deregisterComponentQueue = opBufferAllocator.Get<2>(buffer);
 
-    while (!registerPropertyQueue.IsEmpty())
+    while (!registerComponentQueue.IsEmpty())
     {
-        auto op = registerPropertyQueue.Dequeue();
+        auto op = registerComponentQueue.Dequeue();
         Game::Execute(world, op);
     }
 
-    while (!deregisterPropertyQueue.IsEmpty())
+    while (!deregisterComponentQueue.IsEmpty())
     {
-        auto op = deregisterPropertyQueue.Dequeue();
+        auto op = deregisterComponentQueue.Dequeue();
         Game::Execute(world, op);
     }
 }
@@ -520,11 +520,11 @@ DestroyOpBuffer(OpBuffer& buffer)
     @todo   optimize
 */
 void
-AddOp(OpBuffer buffer, Op::RegisterProperty op)
+AddOp(OpBuffer buffer, Op::RegisterComponent op)
 {
     if (op.value != nullptr)
     {
-        SizeT const typeSize = MemDb::TypeRegistry::TypeSize(op.pid);
+        SizeT const typeSize = MemDb::TypeRegistry::TypeSize(op.component);
         void* value = opAllocator.Alloc(typeSize);
         Memory::Copy(op.value, value, typeSize);
         op.value = value;
@@ -536,7 +536,7 @@ AddOp(OpBuffer buffer, Op::RegisterProperty op)
 /**
 */
 void
-AddOp(OpBuffer buffer, Op::DeregisterProperty const& op)
+AddOp(OpBuffer buffer, Op::DeregisterComponent const& op)
 {
     opBufferAllocator.Get<2>(buffer).Enqueue(op);
 }
@@ -546,28 +546,28 @@ AddOp(OpBuffer buffer, Op::DeregisterProperty const& op)
     @todo   Optimize me
 */
 void
-Execute(World* world, Op::RegisterProperty const& op)
+Execute(World* world, Op::RegisterComponent const& op)
 {
     EntityMapping const mapping = GetEntityMapping(world, op.entity);
 
-    MemDb::TableSignature signature = world->db->GetTableSignature(mapping.category);
-    if (signature.IsSet(op.pid))
+    MemDb::TableSignature signature = world->db->GetTableSignature(mapping.table);
+    if (signature.IsSet(op.component))
         return;
 
-    signature.FlipBit(op.pid);
+    signature.FlipBit(op.component);
 
     MemDb::TableId newCategoryId = world->db->FindTable(signature);
     if (newCategoryId == MemDb::InvalidTableId)
     {
         CategoryCreateInfo info;
-        auto const& cols = world->db->GetTable(mapping.category).properties;
-        info.properties.SetSize(cols.Size() + 1);
+        auto const& cols = world->db->GetTable(mapping.table).components;
+        info.components.SetSize(cols.Size() + 1);
         IndexT i;
         for (i = 0; i < cols.Size(); ++i)
         {
-            info.properties[i] = cols[i];
+            info.components[i] = cols[i];
         }
-        info.properties[i] = op.pid;
+        info.components[i] = op.component;
 
         newCategoryId = CreateEntityTable(world, info);
     }
@@ -577,59 +577,59 @@ Execute(World* world, Op::RegisterProperty const& op)
     if (op.value == nullptr)
         return; // default value should already be set
 
-    auto cid = world->db->GetColumnId(newCategoryId, op.pid);
+    auto cid = world->db->GetColumnId(newCategoryId, op.component);
     void* ptr = world->db->GetValuePointer(newCategoryId, cid, newInstance);
-    Memory::Copy(op.value, ptr, MemDb::TypeRegistry::TypeSize(op.pid));
+    Memory::Copy(op.value, ptr, MemDb::TypeRegistry::TypeSize(op.component));
 }
 
 //------------------------------------------------------------------------------
 /**
-    @bug   If you deregister a managed property, the property will just disappear
+    @bug   If you deregister a managed component, the component will just disappear
            without letting the manager clean up any resources, leading to memleaks.
 
             Possible fix: We can change the "decay system" to have a decay buffer
-            for each property that is managed. That way, when an entity is deleted,
-            or a property is deregistered, we copy the managed properties into their
+            for each component that is managed. That way, when an entity is deleted,
+            or a component is deregistered, we copy the managed components into their
             respective decay buffer. We can create a separate frame event for decay
             handling as well. This means each table won't have their own decay tables,
-            but each property will have a decay buffer instead that is not a fully fledged
+            but each component will have a decay buffer instead that is not a fully fledged
             table. The buffers won't care about which entities owned the instances.
             The decay buffers should be cleaned at the specific decay cleaup event each
             frame.
 */
 void
-Execute(World* world, Op::DeregisterProperty const& op)
+Execute(World* world, Op::DeregisterComponent const& op)
 {
 #if NEBULA_DEBUG
-    n_assert(Game::HasProperty(world, op.entity, op.pid));
+    n_assert(Game::HasComponent(world, op.entity, op.component));
 #endif
     EntityMapping const mapping = GetEntityMapping(world, op.entity);
-    MemDb::TableSignature signature = world->db->GetTableSignature(mapping.category);
-    if (!signature.IsSet(op.pid))
+    MemDb::TableSignature signature = world->db->GetTableSignature(mapping.table);
+    if (!signature.IsSet(op.component))
         return;
 
-    signature.FlipBit(op.pid);
+    signature.FlipBit(op.component);
 
     MemDb::TableId newCategoryId = world->db->FindTable(signature);
     if (newCategoryId == MemDb::InvalidTableId)
     {
         CategoryCreateInfo info;
-        auto const& cols = world->db->GetTable(mapping.category).properties;
+        auto const& cols = world->db->GetTable(mapping.table).components;
         SizeT const num = cols.Size();
-        info.properties.SetSize(num - 1);
+        info.components.SetSize(num - 1);
         int col = 0;
         for (int i = 0; i < num; ++i)
         {
-            if (cols[i] == op.pid)
+            if (cols[i] == op.component)
                 continue;
 
-            info.properties[col++] = cols[i];
+            info.components[col++] = cols[i];
         }
 
         newCategoryId = CreateEntityTable(world, info);
     }
 
-    DecayProperty(world, op.pid, mapping.category, world->db->GetColumnId(mapping.category, op.pid), mapping.instance);
+    DecayComponent(world, op.component, mapping.table, world->db->GetColumnId(mapping.table, op.component), mapping.instance);
 
     Migrate(world, op.entity, newCategoryId);
 }
@@ -677,10 +677,10 @@ GetEntityMapping(World* world, Game::Entity entity)
    TODO: This is not thread safe!
 */
 bool
-HasProperty(World* world, Game::Entity const entity, PropertyId const pid)
+HasComponent(World* world, Game::Entity const entity, ComponentId const component)
 {
     EntityMapping mapping = GetEntityMapping(world, entity);
-    return world->db->HasProperty(mapping.category, pid);
+    return world->db->HasComponent(mapping.table, component);
 }
 
 //------------------------------------------------------------------------------
@@ -696,12 +696,12 @@ GetNumInstances(World* world, MemDb::TableId tid)
 /**
 */
 void*
-GetInstanceBuffer(World* world, MemDb::TableId const tid, PropertyId const pid)
+GetInstanceBuffer(World* world, MemDb::TableId const tid, ComponentId const component)
 {
     Ptr<MemDb::Database> db = world->db;
-    auto cid = db->GetColumnId(tid, pid);
+    auto cid = db->GetColumnId(tid, component);
 #if NEBULA_DEBUG
-    n_assert_fmt(cid != MemDb::ColumnIndex::Invalid(), "GetInstanceBuffer: Category does not have property with id '%i'!\n", pid.id);
+    n_assert_fmt(cid != MemDb::ColumnIndex::Invalid(), "GetInstanceBuffer: Entity table does not have component with id '%i'!\n", component.id);
 #endif
     return db->GetBuffer(tid, cid);
 }
@@ -721,7 +721,7 @@ GetInstance(World* world, Entity entity)
 MemDb::TableId
 CreateEntityTable(World* world, CategoryCreateInfo const& info)
 {
-    MemDb::TableSignature signature(info.properties);
+    MemDb::TableSignature signature(info.components);
 
     MemDb::TableId categoryId = world->db->FindTable(signature);
     if (categoryId != MemDb::TableId::Invalid())
@@ -730,30 +730,30 @@ CreateEntityTable(World* world, CategoryCreateInfo const& info)
     }
 
     constexpr ushort NUM_PROPS = 256;
-    PropertyId properties[NUM_PROPS];
+    ComponentId components[NUM_PROPS];
 
     MemDb::TableCreateInfo tableInfo;
     tableInfo.name = info.name;
-    if (info.properties[0] != GameServer::Singleton->state.ownerId)
+    if (info.components[0] != GameServer::Singleton->state.ownerId)
     {
-        // push owner id into the property array
-        const SizeT tableSize = 1 + info.properties.Size();
+        // push owner id into the component array
+        const SizeT tableSize = 1 + info.components.Size();
         n_assert(tableSize < NUM_PROPS);
-        tableInfo.numProperties = tableSize;
-        tableInfo.properties = properties;
+        tableInfo.numComponents = tableSize;
+        tableInfo.components = components;
 
         // always add owner as first column
-        properties[0] = GameServer::Singleton->state.ownerId;
+        components[0] = GameServer::Singleton->state.ownerId;
         for (int i = 1; i < tableSize; i++)
         {
-            properties[i] = info.properties[i - 1];
+            components[i] = info.components[i - 1];
         }
     }
     else
     {
-        const SizeT tableSize = info.properties.Size();
-        tableInfo.numProperties = tableSize;
-        tableInfo.properties = info.properties.begin();
+        const SizeT tableSize = info.components.Size();
+        tableInfo.numComponents = tableSize;
+        tableInfo.components = info.components.begin();
     }
 
     // Create an instance table
@@ -769,7 +769,7 @@ CreateEntityTable(World* world, CategoryCreateInfo const& info)
 /**
 */
 MemDb::Row
-AllocateInstance(World* world, Entity entity, MemDb::TableId category)
+AllocateInstance(World* world, Entity entity, MemDb::TableId table)
 {
     n_assert(world->pool.IsValid(entity));
     n_assert(world->entityMap[entity.index].instance == MemDb::InvalidRow);
@@ -780,15 +780,15 @@ AllocateInstance(World* world, Entity entity, MemDb::TableId category)
         return InvalidIndex;
     }
 
-    MemDb::Row instance = world->db->AllocateRow(category);
+    MemDb::Row instance = world->db->AllocateRow(table);
 
-    world->entityMap[entity.index] = { category, instance };
+    world->entityMap[entity.index] = { table, instance };
 
     // Just make sure the first column in always owner!
-    n_assert(world->db->GetColumnId(category, GameServer::Singleton->state.ownerId) == 0);
+    n_assert(world->db->GetColumnId(table, GameServer::Singleton->state.ownerId) == 0);
 
     // Set the owner of this instance
-    Game::Entity* owners = (Game::Entity*)world->db->GetBuffer(category, 0);
+    Game::Entity* owners = (Game::Entity*)world->db->GetBuffer(table, 0);
     owners[instance] = entity;
 
     return instance;
@@ -813,10 +813,10 @@ AllocateInstance(World* world, Entity entity, BlueprintId blueprint)
     world->entityMap[entity.index] = mapping;
 
     // Just make sure the first column in always owner!
-    n_assert(world->db->GetColumnId(mapping.category, GameServer::Singleton->state.ownerId) == 0);
+    n_assert(world->db->GetColumnId(mapping.table, GameServer::Singleton->state.ownerId) == 0);
 
     // Set the owner of this instance
-    Game::Entity* owners = (Game::Entity*)world->db->GetBuffer(mapping.category, 0);
+    Game::Entity* owners = (Game::Entity*)world->db->GetBuffer(mapping.table, 0);
     owners[mapping.instance] = entity;
 
     return mapping.instance;
@@ -841,7 +841,7 @@ AllocateInstance(World* world, Entity entity, TemplateId templateId)
     world->entityMap[entity.index] = mapping;
 
     // Set the owner of this instance
-    Game::Entity* owners = (Game::Entity*)world->db->GetBuffer(mapping.category, 0);
+    Game::Entity* owners = (Game::Entity*)world->db->GetBuffer(mapping.table, 0);
     owners[mapping.instance] = entity;
 
     return mapping.instance;
@@ -851,21 +851,21 @@ AllocateInstance(World* world, Entity entity, TemplateId templateId)
 /**
 */
 void
-DeallocateInstance(World* world, MemDb::TableId category, MemDb::Row instance)
+DeallocateInstance(World* world, MemDb::TableId table, MemDb::Row instance)
 {
     n_assert(instance != MemDb::InvalidRow);
 
     // migrate managed properies to decay buffers so that we can allow the managers
     // to clean up any externally allocated resources.
-    Util::Array<PropertyId> const& pids = world->db->GetTable(category).columns.GetArray<0>();
+    Util::Array<ComponentId> const& pids = world->db->GetTable(table).columns.GetArray<0>();
     const MemDb::ColumnIndex numColumns = pids.Size();
     for (MemDb::ColumnIndex column = 0; column < numColumns.id; column.id++)
     {
-        Game::PropertyId pid = pids[column.id];
-        DecayProperty(world, pid, category, column, instance);
+        Game::ComponentId component = pids[column.id];
+        DecayComponent(world, component, table, column, instance);
     }
 
-    world->db->DeallocateRow(category, instance);
+    world->db->DeallocateRow(table, instance);
 }
 
 //------------------------------------------------------------------------------
@@ -874,12 +874,12 @@ DeallocateInstance(World* world, MemDb::TableId category, MemDb::Row instance)
 void
 DeallocateInstance(World* world, Entity entity)
 {
-    MemDb::TableId& category = world->entityMap[entity.index].category;
+    MemDb::TableId& table = world->entityMap[entity.index].table;
     MemDb::Row& instance = world->entityMap[entity.index].instance;
 
-    DeallocateInstance(world, category, instance);
+    DeallocateInstance(world, table, instance);
 
-    category = MemDb::InvalidTableId;
+    table = MemDb::InvalidTableId;
     instance = MemDb::InvalidRow;
 }
 
@@ -891,16 +891,16 @@ Migrate(World* world, Entity entity, MemDb::TableId newCategory)
 {
     n_assert(IsActive(world, entity));
     EntityMapping mapping = GetEntityMapping(world, entity);
-    MemDb::Row newInstance = world->db->MigrateInstance(mapping.category, mapping.instance, newCategory, false);
-    Defragment(world, mapping.category);
+    MemDb::Row newInstance = world->db->MigrateInstance(mapping.table, mapping.instance, newCategory, false);
+    Defragment(world, mapping.table);
     world->entityMap[entity.index] = { newCategory, newInstance };
     return newInstance;
 }
 
 //------------------------------------------------------------------------------
 /**
-    @param newInstances     Will be filled with the new instance ids in the destination category.
-    @note   This assumes ALL entities in the entity array is of same category!
+    @param newInstances     Will be filled with the new instance ids in the destination table.
+    @note   This assumes ALL entities in the entity array is of same table!
 */
 void
 Migrate(World* world, Util::Array<Entity> const& entities, MemDb::TableId fromCategory, MemDb::TableId newCategory, Util::FixedArray<IndexT>& newInstances)
@@ -918,7 +918,7 @@ Migrate(World* world, Util::Array<Entity> const& entities, MemDb::TableId fromCa
     {
         EntityMapping mapping = GetEntityMapping(world, entity);
 #ifdef NEBULA_DEBUG
-        n_assert(mapping.category == fromCategory);
+        n_assert(mapping.table == fromCategory);
 #endif // NEBULA_DEBUG
         instances.Append(mapping.instance);
     }
@@ -989,7 +989,7 @@ Defragment(World* world, MemDb::TableId cat)
                 // and it will automatically be defragged
                 table.freeIds.Append(to);
             }
-            else if (world->entityMap[fromEntity.index].category == world->entityMap[toEntity.index].category)
+            else if (world->entityMap[fromEntity.index].table == world->entityMap[toEntity.index].table)
             {
                 // just swap the instances
                 world->entityMap[fromEntity.index].instance = to;
@@ -997,7 +997,7 @@ Defragment(World* world, MemDb::TableId cat)
             }
             else
             {
-                // if the entities does not belong to the same category, only update the
+                // if the entities does not belong to the same table, only update the
                 // instance of the one that has been moved.
                 // This is most likely due to an entity migration
                 world->entityMap[fromEntity.index].instance = to;
@@ -1035,13 +1035,13 @@ DeallocateEntity(World* world, Entity entity)
 /**
 */
 void
-SetProperty(World* world, Game::Entity entity, Game::PropertyId pid, void* value, uint64_t size)
+SetComponent(World* world, Game::Entity entity, Game::ComponentId component, void* value, uint64_t size)
 {
 #if NEBULA_DEBUG
-    n_assert2(size == MemDb::TypeRegistry::TypeSize(pid), "SetProperty: Provided value's type is not the correct size for the given PropertyId.");
+    n_assert2(size == MemDb::TypeRegistry::TypeSize(component), "SetComponent: Provided value's type is not the correct size for the given ComponentId.");
 #endif
     EntityMapping mapping = GetEntityMapping(world, entity);
-    byte* const ptr = (byte*)GetInstanceBuffer(world, mapping.category, pid);
+    byte* const ptr = (byte*)GetInstanceBuffer(world, mapping.table, component);
     byte* valuePtr = ptr + (mapping.instance * size);
     Memory::Copy(value, valuePtr, size);
 }
@@ -1064,7 +1064,7 @@ BlueprintManager::Instantiate(World* const world, BlueprintId blueprint)
     }
     else
     {
-        // Create the category, and then create the instance
+        // Create the table, and then create the instance
         MemDb::TableId const cid = this->CreateCategory(world, blueprint);
         MemDb::Row const instance = world->db->AllocateRow(cid);
         return { cid, instance };
@@ -1085,16 +1085,16 @@ BlueprintManager::Instantiate(World* const world, TemplateId templateId)
 
     if (categoryIndex != InvalidIndex)
     {
-        MemDb::TableId const cid = world->blueprintCatMap.ValueAtIndex(tmpl.bid, categoryIndex);
-        MemDb::Row const instance = tdb->DuplicateInstance(Singleton->blueprints[tmpl.bid.id].tableId, tmpl.row, world->db, cid);
-        return { cid, instance };
+        MemDb::TableId const tid = world->blueprintCatMap.ValueAtIndex(tmpl.bid, categoryIndex);
+        MemDb::Row const instance = tdb->DuplicateInstance(Singleton->blueprints[tmpl.bid.id].tableId, tmpl.row, world->db, tid);
+        return { tid, instance };
     }
     else
     {
-        // Create the category, and then create the instance
-        MemDb::TableId const cid = this->CreateCategory(world, tmpl.bid);
-        MemDb::Row const instance = tdb->DuplicateInstance(Singleton->blueprints[tmpl.bid.id].tableId, tmpl.row, world->db, cid);
-        return { cid, instance };
+        // Create the table, and then create the instance
+        MemDb::TableId const tid = this->CreateCategory(world, tmpl.bid);
+        MemDb::Row const instance = tdb->DuplicateInstance(Singleton->blueprints[tmpl.bid.id].tableId, tmpl.row, world->db, tid);
+        return { tid, instance };
     }
 }
 
@@ -1108,12 +1108,11 @@ BlueprintManager::CreateCategory(World* const world, BlueprintId bid)
     CategoryCreateInfo info;
     info.name = blueprints[bid.id].name.Value();
 
-    auto const& properties = GameServer::Singleton->state.templateDatabase->GetTable(blueprints[bid.id].tableId).properties;
-    info.properties.Resize(properties.Size());
-    for (int i = 0; i < properties.Size(); i++)
+    auto const& components = GameServer::Singleton->state.templateDatabase->GetTable(blueprints[bid.id].tableId).components;
+    info.components.Resize(components.Size());
+    for (int i = 0; i < components.Size(); i++)
     {
-        PropertyId p = properties[i];
-        info.properties[i] = p;
+        info.components[i] = components[i];
     }
 
     MemDb::TableId tid = CreateEntityTable(world, info);
@@ -1182,39 +1181,39 @@ WorldRenderDebug(World* world)
         {
             Game::EntityMapping entity = world->entityMap[entityIndex];
 
-            if (!listInactive && (entity.category == MemDb::InvalidTableId || entity.instance == MemDb::InvalidRow))
+            if (!listInactive && (entity.table == MemDb::InvalidTableId || entity.instance == MemDb::InvalidRow))
                 continue;
 
             ImGui::BeginGroup();
             ImGui::Text("[%i] ", entityIndex);
             ImGui::SameLine();
-            ImGui::TextColored({ 1,0.3f,0,1 }, "tid:%i, row:%i", entity.category, entity.instance);
-            if (entity.category != MemDb::TableId::Invalid())
+            ImGui::TextColored({ 1,0.3f,0,1 }, "tid:%i, row:%i", entity.table, entity.instance);
+            if (entity.table != MemDb::TableId::Invalid())
             {
-                ImGui::TextDisabled("- %s", Game::GetWorldDatabase(world)->GetTable(entity.category).name.Value());
+                ImGui::TextDisabled("- %s", Game::GetWorldDatabase(world)->GetTable(entity.table).name.Value());
                 ImGui::EndGroup();
                 if (ImGui::IsItemHovered())
                 {
                     ImGui::BeginTooltip();
-                    ImGui::TextDisabled("- %s", Game::GetWorldDatabase(world)->GetTable(entity.category).name.Value());
-                    MemDb::TableId const category = entity.category;
+                    ImGui::TextDisabled("- %s", Game::GetWorldDatabase(world)->GetTable(entity.table).name.Value());
+                    MemDb::TableId const table = entity.table;
                     MemDb::Row const row = entity.instance;
 
-                    auto const& properties = Game::GetWorldDatabase(world)->GetTable(category).properties;
-                    for (auto property : properties)
+                    auto const& components = Game::GetWorldDatabase(world)->GetTable(table).components;
+                    for (auto component : components)
                     {
-                        SizeT const typeSize = MemDb::TypeRegistry::TypeSize(property);
+                        SizeT const typeSize = MemDb::TypeRegistry::TypeSize(component);
                         if (typeSize == 0)
                         {
                             // Type is flag type, just print the name, and then continue
-                            ImGui::Text("_flag_: %s", MemDb::TypeRegistry::GetDescription(property)->name.Value());
+                            ImGui::Text("_flag_: %s", MemDb::TypeRegistry::GetDescription(component)->name.Value());
                             ImGui::Separator();
                             continue;
                         }
-                        void* data = Game::GetInstanceBuffer(world, category, property);
+                        void* data = Game::GetInstanceBuffer(world, table, component);
                         data = (byte*)data + (row * typeSize);
                         bool commitChange = false;
-                        Game::PropertyInspection::DrawInspector(property, data, &commitChange);
+                        Game::ComponentInspection::DrawInspector(component, data, &commitChange);
                         ImGui::Separator();
                     }
                     ImGui::EndTooltip();

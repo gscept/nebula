@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//  propertyinspection.cc
+//  componentinspection.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
@@ -14,19 +14,19 @@
 namespace Game
 {
 
-PropertyInspection* PropertyInspection::Singleton = nullptr;
+ComponentInspection* ComponentInspection::Singleton = nullptr;
 
 //------------------------------------------------------------------------------
 /**
     The registry's constructor is called by the Instance() method, and
     nobody else.
 */
-PropertyInspection*
-PropertyInspection::Instance()
+ComponentInspection*
+ComponentInspection::Instance()
 {
     if (nullptr == Singleton)
     {
-        Singleton = n_new(PropertyInspection);
+        Singleton = n_new(ComponentInspection);
         n_assert(nullptr != Singleton);
     }
     return Singleton;
@@ -39,7 +39,7 @@ PropertyInspection::Instance()
     no accidential memory leaks are reported by the debug heap.
 */
 void
-PropertyInspection::Destroy()
+ComponentInspection::Destroy()
 {
     if (nullptr != Singleton)
     {
@@ -52,10 +52,10 @@ PropertyInspection::Destroy()
 /**
 */
 void
-PropertyInspection::Register(PropertyId pid, DrawFunc func)
+ComponentInspection::Register(ComponentId component, DrawFunc func)
 {
-    PropertyInspection* reg = Instance();
-    while (reg->inspectors.Size() <= pid.id)
+    ComponentInspection* reg = Instance();
+    while (reg->inspectors.Size() <= component.id)
     {
         IndexT first = reg->inspectors.Size();
         reg->inspectors.Grow();
@@ -63,29 +63,29 @@ PropertyInspection::Register(PropertyId pid, DrawFunc func)
         reg->inspectors.Fill(first, reg->inspectors.Size() - first, nullptr);
     }
 
-    n_assert(reg->inspectors[pid.id] == nullptr);
-    reg->inspectors[pid.id] = func;
+    n_assert(reg->inspectors[component.id] == nullptr);
+    reg->inspectors[component.id] = func;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-PropertyInspection::DrawInspector(PropertyId pid, void* data, bool* commit)
+ComponentInspection::DrawInspector(ComponentId component, void* data, bool* commit)
 {
-    PropertyInspection* reg = Instance();
+    ComponentInspection* reg = Instance();
 
-    if (reg->inspectors.Size() > pid.id)
+    if (reg->inspectors.Size() > component.id)
     {
-        if (reg->inspectors[pid.id] != nullptr)
-            reg->inspectors[pid.id](pid, data, commit);
+        if (reg->inspectors[component.id] != nullptr)
+            reg->inspectors[component.id](component, data, commit);
     }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-PropertyInspection::PropertyInspection()
+ComponentInspection::ComponentInspection()
 {
     // empty
 }
@@ -93,7 +93,7 @@ PropertyInspection::PropertyInspection()
 //------------------------------------------------------------------------------
 /**
 */
-PropertyInspection::~PropertyInspection()
+ComponentInspection::~ComponentInspection()
 {
     // empty
 }
@@ -103,9 +103,9 @@ PropertyInspection::~PropertyInspection()
 */
 template<>
 void
-PropertyDrawFuncT<Game::Entity>(PropertyId pid, void* data, bool* commit)
+ComponentDrawFuncT<Game::Entity>(ComponentId component, void* data, bool* commit)
 {
-	MemDb::PropertyDescription* desc = MemDb::TypeRegistry::GetDescription(pid);
+	MemDb::ComponentDescription* desc = MemDb::TypeRegistry::GetDescription(component);
 
 	Game::Entity* entity = (Game::Entity*)data;
 	Ids::Id32 id = (Ids::Id32)*entity;
@@ -119,9 +119,9 @@ PropertyDrawFuncT<Game::Entity>(PropertyId pid, void* data, bool* commit)
 */
 template<>
 void
-PropertyDrawFuncT<int>(PropertyId pid, void* data, bool* commit)
+ComponentDrawFuncT<int>(ComponentId component, void* data, bool* commit)
 {
-    MemDb::PropertyDescription* desc = MemDb::TypeRegistry::GetDescription(pid);
+    MemDb::ComponentDescription* desc = MemDb::TypeRegistry::GetDescription(component);
     
     if (ImGui::InputInt(desc->name.Value(), (int*)data))
         *commit = true;
@@ -132,9 +132,9 @@ PropertyDrawFuncT<int>(PropertyId pid, void* data, bool* commit)
 */
 template<>
 void
-PropertyDrawFuncT<uint>(PropertyId pid, void* data, bool* commit)
+ComponentDrawFuncT<uint>(ComponentId component, void* data, bool* commit)
 {
-    MemDb::PropertyDescription* desc = MemDb::TypeRegistry::GetDescription(pid);
+    MemDb::ComponentDescription* desc = MemDb::TypeRegistry::GetDescription(component);
     
     if (ImGui::InputInt(desc->name.Value(), (int*)data))
         *commit = true;
@@ -145,9 +145,9 @@ PropertyDrawFuncT<uint>(PropertyId pid, void* data, bool* commit)
 */
 template<>
 void
-PropertyDrawFuncT<float>(PropertyId pid, void* data, bool* commit)
+ComponentDrawFuncT<float>(ComponentId component, void* data, bool* commit)
 {
-    MemDb::PropertyDescription* desc = MemDb::TypeRegistry::GetDescription(pid);
+    MemDb::ComponentDescription* desc = MemDb::TypeRegistry::GetDescription(component);
     
     if (ImGui::InputFloat(desc->name.Value(), (float*)data))
         *commit = true;
@@ -158,9 +158,9 @@ PropertyDrawFuncT<float>(PropertyId pid, void* data, bool* commit)
 */
 template<>
 void
-PropertyDrawFuncT<Util::StringAtom>(PropertyId pid, void* data, bool* commit)
+ComponentDrawFuncT<Util::StringAtom>(ComponentId component, void* data, bool* commit)
 {
-    MemDb::PropertyDescription* desc = MemDb::TypeRegistry::GetDescription(pid);
+    MemDb::ComponentDescription* desc = MemDb::TypeRegistry::GetDescription(component);
     ImGui::Text("%s: %s", desc->name.Value(), ((Util::StringAtom*)data)->Value());
     if (ImGui::BeginDragDropTarget())
     {
@@ -180,9 +180,9 @@ PropertyDrawFuncT<Util::StringAtom>(PropertyId pid, void* data, bool* commit)
 */
 template<>
 void
-PropertyDrawFuncT<Math::mat4>(PropertyId pid, void* data, bool* commit)
+ComponentDrawFuncT<Math::mat4>(ComponentId component, void* data, bool* commit)
 {
-    MemDb::PropertyDescription* desc = MemDb::TypeRegistry::GetDescription(pid);
+    MemDb::ComponentDescription* desc = MemDb::TypeRegistry::GetDescription(component);
     
     ImGui::Text(desc->name.Value());
     if (ImGui::InputFloat4("##row0", (float*)data))

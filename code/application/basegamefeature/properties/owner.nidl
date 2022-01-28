@@ -1,7 +1,7 @@
 {
-	"properties": {
-		"Owner": {
-			"_type_": "entity"
-		}
-	}
+    "components": {
+        "Owner": {
+            "_type_": "entity"
+        }
+    }
 }

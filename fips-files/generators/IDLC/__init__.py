@@ -1,6 +1,6 @@
 import os, platform, sys
 import IDLC.idldocument as IDLDocument
-import IDLC.idlproperty as IDLProperty
+import IDLC.idlproperty as IDLComponent
 import IDLC.idlprotocol as IDLProtocol
 import sjson
 import IDLC.filewriter
@@ -44,47 +44,47 @@ class IDLCodeGenerator:
 
         f.WriteLine("// NIDL #version:{}#".format(self.version))
 
-        propertyLibraries = []
+        componentLibraries = []
 
         # Add additional dependencies to document.
         if "dependencies" in self.document:
             for dependency in self.document["dependencies"]:
                 fileName = '{}.h'.format(os.path.splitext(dependency)[0]).lower()
-                propertyLibraries.append(fileName)
+                componentLibraries.append(fileName)
 
         if "messages" in self.document:
             IDLDocument.AddInclude(f, "game/messaging/message.h")
             
-        IDLProperty.ParseProperties(self.document)
+        IDLComponent.ParseComponents(self.document)
 
         IDLDocument.AddInclude(f, "game/category.h")
-        if (IDLProperty.ContainsResourceTypes()):
+        if (IDLComponent.ContainsResourceTypes()):
             IDLDocument.AddInclude(f, "resources/resource.h")
-        if (IDLProperty.ContainsEntityTypes()):
+        if (IDLComponent.ContainsEntityTypes()):
             IDLDocument.AddInclude(f, "game/entity.h")
 
         IDLDocument.WriteIncludeHeader(f)
         IDLDocument.WriteIncludes(f, self.document)
-        IDLDocument.WriteIncludes(f, propertyLibraries)
+        IDLDocument.WriteIncludes(f, componentLibraries)
         
-        IDLProperty.WritePropertyForwardDeclarations(f, self.document)
+        IDLComponent.WriteComponentForwardDeclarations(f, self.document)
 
         hasMessages = "messages" in self.document
-        hasProperties = "properties" in self.document
+        hasComponents = "components" in self.document
         hasEnums = "enums" in self.document
-        if hasProperties or hasMessages or hasEnums:
+        if hasComponents or hasMessages or hasEnums:
             IDLDocument.BeginNamespace(f, self.document)
             
             if hasEnums:
-                IDLProperty.WriteEnumeratedTypes(f, self.document)
+                IDLComponent.WriteEnumeratedTypes(f, self.document)
 
             if hasMessages:
                 IDLProtocol.WriteMessageDeclarations(f, self.document)
 
-            if hasProperties:
-                IDLProperty.WritePropertyHeaderDeclarations(f, self.document)
+            if hasComponents:
+                IDLComponent.WriteComponentHeaderDeclarations(f, self.document)
                 IDLDocument.BeginNamespaceOverride(f, self.document, "Details")
-                IDLProperty.WritePropertyHeaderDetails(f, self.document)
+                IDLComponent.WriteComponentHeaderDetails(f, self.document)
                 IDLDocument.EndNamespaceOverride(f, self.document, "Details")
                 f.WriteLine("")
 
@@ -93,9 +93,9 @@ class IDLCodeGenerator:
                 for dependency in self.document["dependencies"]:
                     fstream = open(dependency, 'r')
                     depDocument = sjson.loads(fstream.read())
-                    deps = depDocument["properties"]
-                    # Add all properties to this document
-                    self.document["properties"].update(deps)
+                    deps = depDocument["components"]
+                    # Add all components to this document
+                    self.document["components"].update(deps)
                     fstream.close()
 
             IDLDocument.EndNamespace(f, self.document)
@@ -135,33 +135,33 @@ class IDLCodeGenerator:
             for dependency in self.document["dependencies"]:
                 fstream = open(dependency, 'r')
                 depDocument = sjson.loads(fstream.read())
-                deps = depDocument["properties"]
-                # Add all properties to this document
-                self.document["properties"].update(deps)
+                deps = depDocument["components"]
+                # Add all components to this document
+                self.document["components"].update(deps)
                 fstream.close()
 
-        hasStructs = IDLProperty.HasStructProperties()
+        hasStructs = IDLComponent.HasStructComponents()
         hasEnums = "enums" in self.document
 
         if hasEnums or hasStructs:
             IDLDocument.AddInclude(f, "pjson/pjson.h");
             IDLDocument.BeginNamespaceOverride(f, self.document, "IO")
             if hasEnums:
-                IDLProperty.WriteEnumJsonSerializers(f, self.document);
+                IDLComponent.WriteEnumJsonSerializers(f, self.document);
             if hasStructs:
-                IDLProperty.WriteStructJsonSerializers(f, self.document);
+                IDLComponent.WriteStructJsonSerializers(f, self.document);
                 
             IDLDocument.EndNamespaceOverride(f, self.document, "IO")
 
-        hasProperties = "properties" in self.document
-        if hasProperties or hasMessages:
+        hasComponents = "components" in self.document
+        if hasComponents or hasMessages:
             IDLDocument.BeginNamespace(f, self.document)
 
             if hasMessages:
                 IDLProtocol.WriteMessageImplementation(f, self.document)
 
-            if "properties" in self.document:
-                IDLProperty.WritePropertySourceDefinitions(f, self.document)
+            if "components" in self.document:
+                IDLComponent.WriteComponentSourceDefinitions(f, self.document)
                 f.WriteLine("")
 
             IDLDocument.EndNamespace(f, self.document)

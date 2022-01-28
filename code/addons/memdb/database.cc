@@ -70,14 +70,14 @@ Database::CreateTable(TableCreateInfo const& info)
     table.tid = id;
     table.name = info.name;
 
-    const SizeT numColumns = info.numProperties;
+    const SizeT numColumns = info.numComponents;
     for (IndexT i = 0; i < numColumns; i++)
     {
-        this->AddColumn(id, info.properties[i], false);
+        this->AddColumn(id, info.components[i], false);
     }
 
     TableSignature& signature = this->tableSignatures[Ids::Index(id.id)];
-    signature = TableSignature(info.properties, info.numProperties);
+    signature = TableSignature(info.components, info.numComponents);
 
     this->numTables = (Ids::Index(id.id) + 1 > this->numTables ? Ids::Index(id.id) + 1 : this->numTables);
 
@@ -95,7 +95,7 @@ Database::DeleteTable(TableId tid)
     const SizeT numColumns = table.columns.Size();
     for (IndexT i = 0; i < numColumns; ++i)
     {
-        PropertyId descriptor = table.columns.Get<0>(i);
+        ComponentId descriptor = table.columns.Get<0>(i);
         void*& buf = table.columns.Get<1>(i);
         if (buf != nullptr)
         {
@@ -119,7 +119,7 @@ Database::IsValid(TableId table) const
 /**
 */
 bool
-Database::HasProperty(TableId table, PropertyId col)
+Database::HasComponent(TableId table, ComponentId col)
 {
     n_assert(this->IsValid(table));
     return this->tableSignatures[Ids::Index(table.id)].IsSet(col);
@@ -128,8 +128,8 @@ Database::HasProperty(TableId table, PropertyId col)
 //------------------------------------------------------------------------------
 /**
 */
-PropertyId
-Database::GetPropertyId(TableId table, ColumnIndex columnId)
+ComponentId
+Database::GetComponentId(TableId table, ColumnIndex columnId)
 {
     n_assert(this->IsValid(table));
     return this->tables[Ids::Index(table.id)].columns.Get<0>(columnId.id);
@@ -139,10 +139,10 @@ Database::GetPropertyId(TableId table, ColumnIndex columnId)
 /**
 */
 ColumnIndex
-Database::GetColumnId(TableId table, PropertyId descriptor)
+Database::GetColumnId(TableId table, ComponentId descriptor)
 {
     n_assert(this->IsValid(table));
-    n_assert(descriptor != PropertyId::Invalid());
+    n_assert(descriptor != ComponentId::Invalid());
     auto& reg = this->tables[Ids::Index(table.id)].columnRegistry;
     IndexT index = reg.FindIndex(descriptor);
     if (index != InvalidIndex)
@@ -164,8 +164,8 @@ Database::AllocateRow(TableId tid)
     const SizeT numColumns = table.columns.Size();
     for (IndexT i = 0; i < numColumns; ++i)
     {
-        PropertyId descriptor = table.columns.Get<0>(i);
-        PropertyDescription* desc = TypeRegistry::GetDescription(descriptor.id);
+        ComponentId descriptor = table.columns.Get<0>(i);
+        ComponentDescription* desc = TypeRegistry::GetDescription(descriptor.id);
 
         void*& buf = table.columns.Get<1>(i);
         void* val = (char*)buf + ((size_t)index * desc->typeSize);
@@ -199,8 +199,8 @@ Database::SetToDefault(TableId tid, IndexT row)
     const SizeT numColumns = table.columns.Size();
     for (IndexT i = 0; i < numColumns; ++i)
     {
-        PropertyId descriptor = table.columns.Get<0>(i);
-        PropertyDescription* desc = TypeRegistry::GetDescription(descriptor.id);
+        ComponentId descriptor = table.columns.Get<0>(i);
+        ComponentDescription* desc = TypeRegistry::GetDescription(descriptor.id);
         void*& buf = table.columns.Get<1>(i);
         void* val = (char*)buf + ((size_t)row * desc->typeSize);
         Memory::Copy(desc->defVal, val, desc->typeSize);
@@ -220,7 +220,7 @@ Database::GetNumRows(TableId table) const
 //------------------------------------------------------------------------------
 /**
 */
-Util::Array<PropertyId> const&
+Util::Array<ComponentId> const&
 Database::GetColumns(TableId tid)
 {
     n_assert(this->IsValid(tid));
@@ -304,8 +304,8 @@ Database::DuplicateInstance(TableId srcTid, IndexT srcRow, TableId dstTid)
 
     for (IndexT i = 0; i < numDstCols; ++i)
     {
-        PropertyId descriptor = dstCols[i];
-        PropertyDescription const* const desc = TypeRegistry::GetDescription(descriptor.id);
+        ComponentId descriptor = dstCols[i];
+        ComponentDescription const* const desc = TypeRegistry::GetDescription(descriptor.id);
         void*& dstBuf = dstBuffers[i];
         SizeT const byteSize = desc->typeSize;
 
@@ -351,8 +351,8 @@ Database::DuplicateInstance(TableId srcTid, IndexT srcRow, Ptr<Database> const& 
 
     for (IndexT i = 0; i < numDstCols; ++i)
     {
-        PropertyId descriptor = dstCols[i];
-        PropertyDescription const* const desc = TypeRegistry::GetDescription(descriptor.id);
+        ComponentId descriptor = dstCols[i];
+        ComponentDescription const* const desc = TypeRegistry::GetDescription(descriptor.id);
         void*& dstBuf = dstBuffers[i];
         SizeT const byteSize = desc->typeSize;
 
@@ -446,8 +446,8 @@ Database::DuplicateInstances(TableId srcTid, Util::Array<IndexT> const& srcRows,
 
     for (IndexT i = 0; i < numDstCols; ++i)
     {
-        PropertyId descriptor = dstCols[i];
-        PropertyDescription const* const desc = TypeRegistry::GetDescription(descriptor.id);
+        ComponentId descriptor = dstCols[i];
+        ComponentDescription const* const desc = TypeRegistry::GetDescription(descriptor.id);
         void*& dstBuf = dstBuffers[i];
         SizeT const byteSize = desc->typeSize;
 
@@ -624,8 +624,8 @@ Database::EraseSwapIndex(Table& table, IndexT instance)
         const SizeT numColumns = table.columns.Size();
         for (IndexT i = 0; i < numColumns; ++i)
         {
-            PropertyId descriptor = cols[i];
-            PropertyDescription* desc = TypeRegistry::GetDescription(descriptor.id);
+            ComponentId descriptor = cols[i];
+            ComponentDescription* desc = TypeRegistry::GetDescription(descriptor.id);
             void*& buf = buffers[i];
             const SizeT byteSize = desc->typeSize;
             Memory::Copy((char*)buf + ((size_t)byteSize * end), (char*)buf + ((size_t)byteSize * instance), byteSize);
@@ -652,8 +652,8 @@ Database::GrowTable(TableId tid)
     const SizeT numColumns = table.columns.Size();
     for (int i = 0; i < numColumns; ++i)
     {
-        PropertyId descriptor = table.columns.Get<0>(i);
-        PropertyDescription* desc = TypeRegistry::GetDescription(descriptor);
+        ComponentId descriptor = table.columns.Get<0>(i);
+        ComponentDescription* desc = TypeRegistry::GetDescription(descriptor);
         void*& buf = table.columns.Get<1>(i);
 
         const SizeT byteSize = desc->typeSize;
@@ -671,7 +671,7 @@ Database::GrowTable(TableId tid)
 /**
 */
 void*
-Database::AllocateBuffer(TableId tid, PropertyDescription* desc)
+Database::AllocateBuffer(TableId tid, ComponentDescription* desc)
 {
     n_assert(this->IsValid(tid));
     n_assert(desc->defVal != nullptr);
@@ -698,10 +698,10 @@ Database::AllocateBuffer(TableId tid, PropertyDescription* desc)
     @returns    Index of column in table, or InvalidIndex if it was not added
 */
 ColumnIndex
-Database::AddColumn(TableId tid, PropertyId descriptor, bool updateSignature)
+Database::AddColumn(TableId tid, ComponentId descriptor, bool updateSignature)
 {
     n_assert(this->IsValid(tid));
-    n_assert(descriptor != PropertyId::Invalid());
+    n_assert(descriptor != ComponentId::Invalid());
     Table& table = this->tables[Ids::Index(tid.id)];
 
     IndexT found = table.columns.GetArray<0>().FindIndex(descriptor);
@@ -711,19 +711,19 @@ Database::AddColumn(TableId tid, PropertyId descriptor, bool updateSignature)
         return found;
     }
 
-    table.properties.Append(descriptor);
+    table.components.Append(descriptor);
 
     if (updateSignature)
     {
         TableSignature& signature = this->tableSignatures[Ids::Index(tid.id)];
 #if NEBULA_DEBUG
-        // Bit should not be set if the property has not already been registered
+        // Bit should not be set if the component has not already been registered
         n_assert(!signature.IsSet(descriptor));
 #endif
         signature.FlipBit(descriptor);
     }
 
-    PropertyDescription const* const desc = TypeRegistry::GetDescription(descriptor);
+    ComponentDescription const* const desc = TypeRegistry::GetDescription(descriptor);
     if (desc->typeSize > 0)
     {
         uint32_t col = table.columns.Alloc();
@@ -782,7 +782,7 @@ Database::Query(FilterSet const& filterset)
             for (auto attrid : filterset.PropertyIds())
             {
                 ColumnIndex colId = this->GetColumnId(tbl.tid, attrid);
-                if (colId != InvalidIndex) // There might be some non-typed properties
+                if (colId != InvalidIndex) // There might be some non-typed components
                     buffers.Append(tbl.columns.Get<1>(colId.id));
             }
 
@@ -849,8 +849,8 @@ Database::Copy(Ptr<MemDb::Database> const& dst) const
         {
             TableCreateInfo info;
             info.name = srcTable.name.Value();
-            info.numProperties = srcTable.properties.Size();
-            info.properties = srcTable.properties.Begin();
+            info.numComponents = srcTable.components.Size();
+            info.components = srcTable.components.Begin();
             dstTid = dst->CreateTable(info);
         }
         
@@ -865,8 +865,8 @@ Database::Copy(Ptr<MemDb::Database> const& dst) const
             void const* const srcBuffer = srcTable.columns.Get<1>(p);
             void*& dstBuffer = dstTable.columns.Get<1>(p);
             
-            PropertyId const descriptor = srcTable.columns.Get<0>(p);
-            PropertyDescription const* const desc = TypeRegistry::GetDescription(descriptor);
+            ComponentId const descriptor = srcTable.columns.Get<0>(p);
+            ComponentDescription const* const desc = TypeRegistry::GetDescription(descriptor);
             uint32_t const byteSize = desc->typeSize;
             uint32_t const numBytes = byteSize * srcTable.capacity;
             
@@ -890,11 +890,11 @@ Database::SerializeInstance(TableId table, IndexT row)
     Table const& tbl = this->GetTable(table);
     
     // initial size adds room for n amount of pids
-    uint32_t instanceSize = tbl.columns.Size() * sizeof(PropertyId);
+    uint32_t instanceSize = tbl.columns.Size() * sizeof(ComponentId);
     for (uint32_t i = 0; i < tbl.columns.Size(); i++)
     {
-        PropertyId const pid = tbl.columns.Get<0>(i);
-        SizeT const typeSize = TypeRegistry::TypeSize(pid);
+        ComponentId const component = tbl.columns.Get<0>(i);
+        SizeT const typeSize = TypeRegistry::TypeSize(component);
         instanceSize += typeSize;
     }
     blob.Reserve(instanceSize);
@@ -902,10 +902,10 @@ Database::SerializeInstance(TableId table, IndexT row)
     uint32_t offset = 0;
     for (uint32_t i = 0; i < tbl.columns.Size(); i++)
     {
-        PropertyId const pid = tbl.columns.Get<0>(i);
-        blob.SetChunk(&pid, sizeof(PropertyId), offset);
-        offset += sizeof(PropertyId);
-        SizeT const typeSize = TypeRegistry::TypeSize(pid);
+        ComponentId const component = tbl.columns.Get<0>(i);
+        blob.SetChunk(&component, sizeof(ComponentId), offset);
+        offset += sizeof(ComponentId);
+        SizeT const typeSize = TypeRegistry::TypeSize(component);
         byte const* const valuePtr = (byte*)tbl.columns.Get<1>(i) + (row * (size_t)typeSize);
         blob.SetChunk(valuePtr, typeSize, offset);
         offset += typeSize;
@@ -930,13 +930,13 @@ Database::DeserializeInstance(Util::Blob const& data, TableId table, IndexT row)
     size_t const numBytes = data.Size();
     while ((size_t)(ptr - basePtr) < numBytes)
     {
-        PropertyId const pid = *reinterpret_cast<PropertyId const*>(ptr);
-        ptr += sizeof(PropertyId);
-        SizeT const typeSize = TypeRegistry::TypeSize(pid);
-        IndexT const bucket = tbl.columnRegistry.FindIndex(pid);
+        ComponentId const component = *reinterpret_cast<ComponentId const*>(ptr);
+        ptr += sizeof(ComponentId);
+        SizeT const typeSize = TypeRegistry::TypeSize(component);
+        IndexT const bucket = tbl.columnRegistry.FindIndex(component);
         if (bucket != InvalidIndex)
         {
-            byte* valuePtr = (byte*)tbl.columns.Get<1>(tbl.columnRegistry.ValueAtIndex(pid, bucket)) + (row * (size_t)typeSize);
+            byte* valuePtr = (byte*)tbl.columns.Get<1>(tbl.columnRegistry.ValueAtIndex(component, bucket)) + (row * (size_t)typeSize);
             Memory::Copy(ptr, valuePtr, typeSize);
         }
         ptr += typeSize;

@@ -22,38 +22,38 @@ public:
     /// default constructor
     FilterSet() = default;
     /// construct from initializer lists
-    FilterSet(const std::initializer_list<PropertyId> inclusive, const std::initializer_list<PropertyId> exclusive);
+    FilterSet(const std::initializer_list<ComponentId> inclusive, const std::initializer_list<ComponentId> exclusive);
     /// construct from single inclusive array
-    explicit FilterSet(const Util::FixedArray<PropertyId>& inclusive);
+    explicit FilterSet(const Util::FixedArray<ComponentId>& inclusive);
     /// construct from inclusive and exclusive arrays
-    explicit FilterSet(const Util::FixedArray<PropertyId>& inclusive, const Util::FixedArray<PropertyId>& exclusive);
+    explicit FilterSet(const Util::FixedArray<ComponentId>& inclusive, const Util::FixedArray<ComponentId>& exclusive);
     /// construct from table signatures
-    explicit FilterSet(const TableSignature& inclusive, const TableSignature& exclusive, const Util::FixedArray<PropertyId>& inclusiveProperties);
+    explicit FilterSet(const TableSignature& inclusive, const TableSignature& exclusive, const Util::FixedArray<ComponentId>& inclusiveComponents);
 
     /// get the inclusive signature mask
     TableSignature const& Inclusive() const;
     /// get the exclusive signature mask
     TableSignature const& Exclusive() const;
-    /// get a fixed array of all the properties contained in the inclusive set
-    Util::FixedArray<PropertyId> const& PropertyIds() const;
+    /// get a fixed array of all the components contained in the inclusive set
+    Util::FixedArray<ComponentId> const& PropertyIds() const;
 
 private:
-    /// categories must include all properties in this signature
+    /// categories must include all components in this signature
     TableSignature inclusive;
-    /// categories must NOT contain any attributes in this array
+    /// categories must NOT contain any components in this array
     TableSignature exclusive;
-    /// properties that are in the inclusive set
-    Util::FixedArray<PropertyId> inclusiveProperties;
+    /// components that are in the inclusive set
+    Util::FixedArray<ComponentId> inclusiveComponents;
 };
 
 //------------------------------------------------------------------------------
 /**
 */
 inline
-FilterSet::FilterSet(const std::initializer_list<PropertyId> inclusive, const std::initializer_list<PropertyId> exclusive) :
+FilterSet::FilterSet(const std::initializer_list<ComponentId> inclusive, const std::initializer_list<ComponentId> exclusive) :
     inclusive(inclusive),
     exclusive(exclusive),
-    inclusiveProperties(inclusive)
+    inclusiveComponents(inclusive)
 {
     // empty
 }
@@ -62,10 +62,10 @@ FilterSet::FilterSet(const std::initializer_list<PropertyId> inclusive, const st
 /**
 */
 inline
-FilterSet::FilterSet(const Util::FixedArray<PropertyId>& inclusive) :
+FilterSet::FilterSet(const Util::FixedArray<ComponentId>& inclusive) :
     inclusive(inclusive),
     exclusive(),
-    inclusiveProperties(inclusive)
+    inclusiveComponents(inclusive)
 {
     // empty
 };
@@ -74,10 +74,10 @@ FilterSet::FilterSet(const Util::FixedArray<PropertyId>& inclusive) :
 /**
 */
 inline
-FilterSet::FilterSet(const Util::FixedArray<PropertyId>& inclusive, const Util::FixedArray<PropertyId>& exclusive) :
+FilterSet::FilterSet(const Util::FixedArray<ComponentId>& inclusive, const Util::FixedArray<ComponentId>& exclusive) :
     inclusive(inclusive),
     exclusive(exclusive),
-    inclusiveProperties(inclusive)
+    inclusiveComponents(inclusive)
 {
     // empty
 }
@@ -85,10 +85,10 @@ FilterSet::FilterSet(const Util::FixedArray<PropertyId>& inclusive, const Util::
 /**
 */
 inline
-FilterSet::FilterSet(const TableSignature& inclusive, const TableSignature& exclusive, const Util::FixedArray<PropertyId>& inclusiveProperties) :
+FilterSet::FilterSet(const TableSignature& inclusive, const TableSignature& exclusive, const Util::FixedArray<ComponentId>& inclusiveComponents) :
     inclusive(inclusive),
     exclusive(exclusive),
-    inclusiveProperties(inclusiveProperties)
+    inclusiveComponents(inclusiveComponents)
 {
 }
 ;
@@ -114,10 +114,10 @@ FilterSet::Exclusive() const
 //------------------------------------------------------------------------------
 /**
 */
-inline Util::FixedArray<PropertyId> const&
+inline Util::FixedArray<ComponentId> const&
 FilterSet::PropertyIds() const
 {
-    return this->inclusiveProperties;
+    return this->inclusiveComponents;
 }
 
 } // namespace MemDb

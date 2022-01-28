@@ -52,15 +52,15 @@ public:
     void ForEachTable(std::function<void(TableId)> const& callback);
 
     /// check if table has a certain column
-    bool HasProperty(TableId table, PropertyId col);
+    bool HasComponent(TableId table, ComponentId col);
     /// returns a descriptor for a given column id
-    PropertyId GetPropertyId(TableId table, ColumnIndex columnId);
+    ComponentId GetComponentId(TableId table, ColumnIndex columnId);
     /// returns a column id or invalid if column is missing from table
-    ColumnIndex GetColumnId(TableId table, PropertyId column);
+    ColumnIndex GetColumnId(TableId table, ComponentId column);
     /// add a column to a table
-    ColumnIndex AddColumn(TableId table, PropertyId column, bool updateSignature = true);
+    ColumnIndex AddColumn(TableId table, ComponentId column, bool updateSignature = true);
     /// get the all descriptors for a table
-    Util::Array<PropertyId> const& GetColumns(TableId table);
+    Util::Array<ComponentId> const& GetColumns(TableId table);
 
     /// allocate a row within a table
     IndexT AllocateRow(TableId table);
@@ -120,7 +120,7 @@ private:
     /// grow each column within table
     void GrowTable(TableId tid);
     /// allocate a buffer for a column. Sets all values to default
-    void* AllocateBuffer(TableId tid, PropertyDescription* desc);
+    void* AllocateBuffer(TableId tid, ComponentDescription* desc);
 
     /// id pool for table ids
     Ids::IdGenerationPool tableIdPool;
@@ -143,8 +143,8 @@ Database::GetValuePointer(TableId table, ColumnIndex cid, IndexT row)
     n_assert(cid != ColumnIndex::Invalid());
     n_assert(this->IsValid(table));
     Table& tbl = this->tables[Ids::Index(table.id)];
-    PropertyId descriptor = tbl.columns.Get<0>(cid.id);
-    PropertyDescription* desc = MemDb::TypeRegistry::GetDescription(descriptor);
+    ComponentId descriptor = tbl.columns.Get<0>(cid.id);
+    ComponentDescription* desc = MemDb::TypeRegistry::GetDescription(descriptor);
     if (desc->typeSize > 0)
         return ((byte*)tbl.columns.Get<1>(cid.id)) + (desc->typeSize * row);
 

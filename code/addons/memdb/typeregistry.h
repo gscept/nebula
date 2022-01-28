@@ -18,23 +18,23 @@ class TypeRegistry
 public:
     /// register a type (templated)
     template<typename TYPE>
-    static PropertyId Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags = 0);
+    static ComponentId Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags = 0);
 
     /// register a POD, mem-copyable type
-    static PropertyId Register(Util::StringAtom name, SizeT typeSize, void const* defaultValue, uint32_t flags = 0);
+    static ComponentId Register(Util::StringAtom name, SizeT typeSize, void const* defaultValue, uint32_t flags = 0);
 
-    /// get property id from name
-    static PropertyId GetPropertyId(Util::StringAtom name);
-    /// get property description by id
-    static PropertyDescription* GetDescription(PropertyId descriptor);
-    /// get type size by property id
-    static SizeT TypeSize(PropertyId descriptor);
-    /// get flags by property id
-    static uint32_t Flags(PropertyId descriptor);
-    /// get property default value pointer
-    static void const* const DefaultValue(PropertyId descriptor);
-    /// get an array of all property descriptions
-    static Util::Array<PropertyDescription*> const& GetAllProperties();
+    /// get component id from name
+    static ComponentId GetComponentId(Util::StringAtom name);
+    /// get component description by id
+    static ComponentDescription* GetDescription(ComponentId descriptor);
+    /// get type size by component id
+    static SizeT TypeSize(ComponentId descriptor);
+    /// get flags by component id
+    static uint32_t Flags(ComponentId descriptor);
+    /// get component default value pointer
+    static void const* const DefaultValue(ComponentId descriptor);
+    /// get an array of all component descriptions
+    static Util::Array<ComponentDescription*> const& GetAllComponents();
 
 private:
     static TypeRegistry* Instance();
@@ -45,19 +45,19 @@ private:
 
     static TypeRegistry* Singleton;
 
-    Util::Array<PropertyDescription*> propertyDescriptions;
-    Util::Dictionary<Util::StringAtom, PropertyId> registry;
+    Util::Array<ComponentDescription*> componentDescriptions;
+    Util::Dictionary<Util::StringAtom, ComponentId> registry;
 };
 
 //------------------------------------------------------------------------------
 /**
     TYPE must be trivially copyable and destructible, and also standard layout.
     Essentially a POD type, but we do allow non-trivially-constructible types since
-    properties are created by copying the default value, not with constructors.
+    components are created by copying the default value, not with constructors.
     The reason for this is because it allows us to do value initialization in declarations.
 */
 template<typename TYPE>
-inline PropertyId
+inline ComponentId
 TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags)
 {
     // Special case for string atoms since they actually are trivial to copy and destroy
@@ -73,10 +73,10 @@ TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags)
     if (!reg->registry.Contains(name))
     {
         // setup a state description with the default values from the type
-        PropertyDescription* desc = n_new(PropertyDescription(name, defaultValue, flags));
+        ComponentDescription* desc = n_new(ComponentDescription(name, defaultValue, flags));
 
-        PropertyId descriptor = reg->propertyDescriptions.Size();
-        reg->propertyDescriptions.Append(desc);
+        ComponentId descriptor = reg->componentDescriptions.Size();
+        reg->componentDescriptions.Append(desc);
         reg->registry.Add(name, descriptor);
 
         TYPE::id = descriptor;
@@ -85,42 +85,42 @@ TypeRegistry::Register(Util::StringAtom name, TYPE defaultValue, uint32_t flags)
     }
     else
     {
-        n_error("Tried to register property named %s: Cannot register two properties with same name!", name.Value());
+        n_error("Tried to register component named %s: Cannot register two components with same name!", name.Value());
     }
 
-    return PropertyId::Invalid();
+    return ComponentId::Invalid();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline PropertyId
+inline ComponentId
 TypeRegistry::Register(Util::StringAtom name, SizeT typeSize, void const* defaultValue, uint32_t flags)
 {
     auto* reg = Instance();
     if (!reg->registry.Contains(name))
     {
         // setup a state description with the default values from the type
-        PropertyDescription* desc = n_new(PropertyDescription(name, typeSize, defaultValue, flags));
+        ComponentDescription* desc = n_new(ComponentDescription(name, typeSize, defaultValue, flags));
 
-        PropertyId descriptor = reg->propertyDescriptions.Size();
-        reg->propertyDescriptions.Append(desc);
+        ComponentId descriptor = reg->componentDescriptions.Size();
+        reg->componentDescriptions.Append(desc);
         reg->registry.Add(name, descriptor);
         return descriptor;
     }
     else
     {
-        n_error("Tried to register property named %s: Cannot register two properties with same name!", name.Value());
+        n_error("Tried to register component named %s: Cannot register two components with same name!", name.Value());
     }
 
-    return PropertyId::Invalid();
+    return ComponentId::Invalid();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline PropertyId
-TypeRegistry::GetPropertyId(Util::StringAtom name)
+inline ComponentId
+TypeRegistry::GetComponentId(Util::StringAtom name)
 {
     auto* reg = Instance();
     IndexT index = reg->registry.FindIndex(name);
@@ -129,18 +129,18 @@ TypeRegistry::GetPropertyId(Util::StringAtom name)
         return reg->registry.ValueAtIndex(index);
     }
 
-    return PropertyId::Invalid();
+    return ComponentId::Invalid();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline PropertyDescription*
-TypeRegistry::GetDescription(PropertyId descriptor)
+inline ComponentDescription*
+TypeRegistry::GetDescription(ComponentId descriptor)
 {
     auto* reg = Instance();
-    if (descriptor.id >= 0 && descriptor.id < reg->propertyDescriptions.Size())
-        return reg->propertyDescriptions[descriptor.id];
+    if (descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size())
+        return reg->componentDescriptions[descriptor.id];
     
     return nullptr;
 }
@@ -149,43 +149,43 @@ TypeRegistry::GetDescription(PropertyId descriptor)
 /**
 */
 inline SizeT
-TypeRegistry::TypeSize(PropertyId descriptor)
+TypeRegistry::TypeSize(ComponentId descriptor)
 {
     auto* reg = Instance();
-    n_assert(descriptor.id >= 0 && descriptor.id < reg->propertyDescriptions.Size());
-    return reg->propertyDescriptions[descriptor.id]->typeSize;
+    n_assert(descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size());
+    return reg->componentDescriptions[descriptor.id]->typeSize;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline uint32_t
-TypeRegistry::Flags(PropertyId descriptor)
+TypeRegistry::Flags(ComponentId descriptor)
 {
     auto* reg = Instance();
-    n_assert(descriptor.id >= 0 && descriptor.id < reg->propertyDescriptions.Size());
-    return reg->propertyDescriptions[descriptor.id]->externalFlags;
+    n_assert(descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size());
+    return reg->componentDescriptions[descriptor.id]->externalFlags;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 inline void const* const
-TypeRegistry::DefaultValue(PropertyId descriptor)
+TypeRegistry::DefaultValue(ComponentId descriptor)
 {
     auto* reg = Instance();
-    n_assert(descriptor.id >= 0 && descriptor.id < reg->propertyDescriptions.Size());
-    return reg->propertyDescriptions[descriptor.id]->defVal;
+    n_assert(descriptor.id >= 0 && descriptor.id < reg->componentDescriptions.Size());
+    return reg->componentDescriptions[descriptor.id]->defVal;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline Util::Array<PropertyDescription*> const&
-TypeRegistry::GetAllProperties()
+inline Util::Array<ComponentDescription*> const&
+TypeRegistry::GetAllComponents()
 {
     auto* reg = Instance();
-    return reg->propertyDescriptions;
+    return reg->componentDescriptions;
 }
 
 } // namespace MemDb

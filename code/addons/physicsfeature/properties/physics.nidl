@@ -1,6 +1,6 @@
 {
     "namespace": "PhysicsFeature",
-    "properties": {
+    "components": {
         "PhysicsResource": {
             "_type_": "resource",
             "_default_": "phys:placeholder.actor"
