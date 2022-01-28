@@ -3,10 +3,10 @@
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "propertyserialization.h"
+#include "componentserialization.h"
 #include "memdb/typeregistry.h"
 #include "game/entity.h"
-#include "memdb/propertyid.h"
+#include "memdb/componentid.h"
 
 namespace Game
 {

@@ -7,7 +7,7 @@
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "memdb/propertyid.h"
+#include "memdb/componentid.h"
 #include "util/string.h"
 #include "util/fixedarray.h"
 

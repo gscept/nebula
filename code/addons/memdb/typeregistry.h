@@ -7,7 +7,7 @@
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "propertydescription.h"
+#include "componentdescription.h"
 #include "util/stringatom.h"
 
 namespace MemDb

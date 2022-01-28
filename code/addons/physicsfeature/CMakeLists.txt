@@ -10,7 +10,7 @@ fips_files(
 			physicsmanager.h
 			physicsmanager.cc
 		)
-	fips_dir(properties)
+	fips_dir(components)
 		nebula_add_nidl(
 			physics.nidl
 		)

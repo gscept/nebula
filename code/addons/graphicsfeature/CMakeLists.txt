@@ -12,7 +12,7 @@ fips_dir(managers)
 		cameramanager.h
 		cameramanager.cc
 	)
-fips_dir(properties)
+fips_dir(components)
 	nebula_add_nidl(
 		graphics.nidl
 	)

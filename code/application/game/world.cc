@@ -15,7 +15,7 @@
 #include "ids/idallocator.h"
 #include "basegamefeature/managers/blueprintmanager.h"
 #include "imgui.h"
-#include "game/propertyinspection.h"
+#include "game/componentinspection.h"
 
 namespace Game
 {

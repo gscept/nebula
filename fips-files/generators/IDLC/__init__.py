@@ -1,6 +1,6 @@
 import os, platform, sys
 import IDLC.idldocument as IDLDocument
-import IDLC.idlproperty as IDLComponent
+import IDLC.idlcomponent as IDLComponent
 import IDLC.idlprotocol as IDLProtocol
 import sjson
 import IDLC.filewriter
@@ -68,7 +68,7 @@ class IDLCodeGenerator:
         IDLDocument.WriteIncludes(f, componentLibraries)
         
         IDLComponent.WriteComponentForwardDeclarations(f, self.document)
-
+        
         hasMessages = "messages" in self.document
         hasComponents = "components" in self.document
         hasEnums = "enums" in self.document
@@ -122,8 +122,8 @@ class IDLCodeGenerator:
         IDLDocument.AddInclude(f, "core/sysfunc.h")
         IDLDocument.AddInclude(f, "util/stringatom.h")
         IDLDocument.AddInclude(f, "memdb/typeregistry.h")
-        IDLDocument.AddInclude(f, "game/propertyserialization.h")
-        IDLDocument.AddInclude(f, "game/propertyinspection.h")
+        IDLDocument.AddInclude(f, "game/componentserialization.h")
+        IDLDocument.AddInclude(f, "game/componentinspection.h")
         
         hasMessages = "messages" in self.document
 

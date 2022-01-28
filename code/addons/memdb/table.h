@@ -15,7 +15,7 @@
 #include "util/string.h"
 #include "util/stringatom.h"
 #include "util/hashtable.h"
-#include "propertyid.h"
+#include "componentid.h"
 #include "tablesignature.h"
 #include "util/bitfield.h"
 

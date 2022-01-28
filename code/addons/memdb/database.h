@@ -14,7 +14,7 @@
 #include "table.h"
 #include "util/stringatom.h"
 #include "ids/idgenerationpool.h"
-#include "propertyid.h"
+#include "componentid.h"
 #include "typeregistry.h"
 #include "dataset.h"
 #include "filterset.h"

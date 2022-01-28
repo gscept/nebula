@@ -3,10 +3,10 @@
 //  (C) 2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "propertyinspection.h"
+#include "componentinspection.h"
 #include "memdb/typeregistry.h"
 #include "game/entity.h"
-#include "memdb/propertyid.h"
+#include "memdb/componentid.h"
 #include "imgui.h"
 #include "math/mat4.h"
 #include "util/stringatom.h"

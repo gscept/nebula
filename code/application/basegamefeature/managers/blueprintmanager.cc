@@ -6,7 +6,7 @@
 #include "blueprintmanager.h"
 #include "io/jsonreader.h"
 #include "io/ioserver.h"
-#include "game/propertyserialization.h"
+#include "game/componentserialization.h"
 #include "util/arraystack.h"
 #include "game/gameserver.h"
 

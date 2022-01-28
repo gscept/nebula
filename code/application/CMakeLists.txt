@@ -30,10 +30,10 @@ nebula_begin_module(application)
             gameserver.cc
             manager.h
             manager.cc
-            propertyserialization.h
-            propertyserialization.cc
-            propertyinspection.h
-            propertyinspection.cc
+            componentserialization.h
+            componentserialization.cc
+            componentinspection.h
+            componentinspection.cc
             world.h
             world.cc
         )
@@ -54,7 +54,7 @@ nebula_begin_module(application)
                 timemanager.h
                 timemanager.cc
             )
-        fips_dir(basegamefeature/properties)
+        fips_dir(basegamefeature/components)
             nebula_add_nidl(
                 owner.nidl
                 transform.nidl

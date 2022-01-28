@@ -20,7 +20,7 @@
 #include "util/stringatom.h"
 #include "util/hashtable.h"
 #include "table.h"
-#include "propertyid.h"
+#include "componentid.h"
 
 namespace MemDb
 {

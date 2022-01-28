@@ -5,8 +5,8 @@ fips_files(
     database.cc
     dataset.h
     filterset.h
-    propertydescription.h
-    propertyid.h
+    componentdescription.h
+    componentid.h
     table.h
     tablesignature.h
     typeregistry.h
