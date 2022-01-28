@@ -11,7 +11,7 @@
 #include "graphics/cameracontext.h"
 #include "game/gameserver.h"
 #include "graphicsfeature/graphicsfeatureunit.h"
-#include "graphicsfeature/properties/graphics.h"
+#include "graphicsfeature/components/graphics.h"
 
 namespace GraphicsFeature
 {

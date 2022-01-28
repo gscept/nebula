@@ -28,7 +28,7 @@
 #include "game/featureunit.h"
 #include "debug/debugtimer.h"
 #include "ids/idgenerationpool.h"
-#include "basegamefeature/properties/owner.h"
+#include "basegamefeature/components/owner.h"
 #include "api.h"
 #include "entitypool.h"
 #include "memdb/database.h"

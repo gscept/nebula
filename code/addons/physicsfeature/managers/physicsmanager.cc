@@ -10,7 +10,7 @@
 #include "physics/actorcontext.h"
 #include "resources/resourceserver.h"
 #include "physics/utils.h"
-#include "properties/physics.h"
+#include "components/physics.h"
 
 namespace PhysicsFeature
 {
