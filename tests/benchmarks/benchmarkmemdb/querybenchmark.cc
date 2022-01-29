@@ -34,9 +34,9 @@ uint PsuedoRand()
 struct IntTest
 {
     int value = 1;
-    DECLARE_PROPERTY;
+    DECLARE_COMPONENT;
 };
-DEFINE_PROPERTY(IntTest);
+DEFINE_COMPONENT(IntTest);
 //------------------------------------------------------------------------------
 /**
 */
@@ -47,7 +47,7 @@ QueryBenchmark::Run(Timer& timer)
     Ptr<Database> db = Database::Create();
     
     // Setup a multitude of descriptors
-    Util::Array<PropertyId> d;
+    Util::Array<ComponentId> d;
     const SizeT numDescs = 1024;
     for (int i = 0; i < numDescs; i++)
     {
@@ -55,7 +55,7 @@ QueryBenchmark::Run(Timer& timer)
         d.Append(TypeRegistry::Register<IntTest>(name, IntTest()));
     }
 
-    using DA = Util::FixedArray<PropertyId>;
+    using DA = Util::FixedArray<ComponentId>;
 
     // Create a couple of tables
     for (int i = 0; i < Database::MAX_NUM_TABLES; i++)
@@ -76,8 +76,8 @@ QueryBenchmark::Run(Timer& timer)
             da[a] = d[descriptorIndex];
         }
 
-        info.properties = da.Begin();
-        info.numProperties = da.Size();
+        info.components = da.Begin();
+        info.numComponents = da.Size();
         db->CreateTable(info);
     }
 
