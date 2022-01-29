@@ -670,5 +670,5 @@ target_include_directories(foundation PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 #FIXME cant add python include dir globally as it clashes with antlr4
 target_include_directories(foundation PUBLIC ${PYTHON_INCLUDE_DIRS})
 if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.16.0")
-    target_precompile_headers(foundation PRIVATE "foundation/stdneb.h")
+    target_precompile_headers(foundation PRIVATE "foundation/stdneb.h" "core/ptr.h" "core/rtti.h" "core/refcounted.h")
 endif()
