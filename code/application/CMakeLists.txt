@@ -18,6 +18,10 @@ nebula_begin_module(application)
         fips_files(
             api.h
             api.cc
+			filter.cc
+			filter.h
+			dataset.cc
+			dataset.h
             category.h
             category.cc
             entity.h

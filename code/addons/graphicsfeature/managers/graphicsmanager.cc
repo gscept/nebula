@@ -12,6 +12,7 @@
 #include "game/gameserver.h"
 #include "graphicsfeature/graphicsfeatureunit.h"
 #include "graphicsfeature/components/graphics.h"
+#include "basegamefeature/components/transform.h"
 
 namespace GraphicsFeature
 {
@@ -55,7 +56,7 @@ RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceNam
 void
 GraphicsManager::InitCreateModelProcessor()
 {
-    Game::FilterCreateInfo filterInfo;
+    Game::FilterBuilder::FilterCreateInfo filterInfo;
     filterInfo.inclusive[0] = Game::GetComponentId("Owner");
     filterInfo.access[0] = Game::AccessMode::READ;
     filterInfo.inclusive[1] = Game::GetComponentId("WorldTransform");
@@ -67,7 +68,7 @@ GraphicsManager::InitCreateModelProcessor()
     filterInfo.exclusive[0] = this->pids.modelEntityData;
     filterInfo.numExclusive = 1;
 
-    Game::Filter filter = Game::CreateFilter(filterInfo);
+    Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
 
     Game::ProcessorCreateInfo processorInfo;
     processorInfo.async = false;
@@ -132,17 +133,12 @@ GraphicsManager::OnDecay()
 void
 GraphicsManager::InitUpdateModelTransformProcessor()
 {
-    Game::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = this->pids.modelEntityData;
-    filterInfo.access[0] = Game::AccessMode::READ;
-    filterInfo.inclusive[1] = Game::GetComponentId("WorldTransform"_atm);
-    filterInfo.access[1] = Game::AccessMode::READ;
-    filterInfo.numInclusive = 2;
 
-    filterInfo.exclusive[0] = Game::GetComponentId("Static");
-    filterInfo.numExclusive = 1;
-
-    Game::Filter filter = Game::CreateFilter(filterInfo);
+    Game::Filter filter = Game::FilterBuilder()
+        .Including({ {Game::AccessMode::READ, this->pids.modelEntityData} })
+        .Including<Game::WorldTransform>()
+        .Excluding({ Game::GetComponentId("Static") })
+        .Build();
 
     Game::ProcessorCreateInfo processorInfo;
     processorInfo.async = false;
@@ -217,12 +213,12 @@ GraphicsManager::OnCleanup(Game::World* world)
 {
     n_assert(GraphicsManager::HasInstance());
     
-    Game::FilterCreateInfo filterInfo;
+    Game::FilterBuilder::FilterCreateInfo filterInfo;
     filterInfo.inclusive[0] = Singleton->pids.modelEntityData;
     filterInfo.access[0] = Game::AccessMode::WRITE;
     filterInfo.numInclusive = 1;
 
-    Game::Filter filter = Game::CreateFilter(filterInfo);
+    Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
     Game::Dataset data = Game::Query(world, filter);
 
     for (int v = 0; v < data.numViews; v++)

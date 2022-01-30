@@ -17,12 +17,6 @@ namespace Game
 {
 
 //------------------------------------------------------------------------------
-using InclusiveTableMask = MemDb::TableSignature;
-using ExclusiveTableMask = MemDb::TableSignature;
-using ComponentArray = Util::FixedArray<ComponentId>;
-using AccessModeArray = Util::FixedArray<AccessMode>;
-
-Ids::IdAllocator<InclusiveTableMask, ExclusiveTableMask, ComponentArray, AccessModeArray>  filterAllocator;
 static Memory::ArenaAllocator<sizeof(Dataset::EntityTableView) * 256> viewAllocator;
 
 //------------------------------------------------------------------------------
@@ -36,55 +30,6 @@ World*
 GetWorld(uint32_t hash)
 {
     return GameServer::Instance()->GetWorld(hash);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Filter
-CreateFilter(FilterCreateInfo const& info)
-{
-    n_assert(info.numInclusive > 0);
-    uint32_t filter = filterAllocator.Alloc();
-
-    ComponentArray inclusiveArray;
-    inclusiveArray.Resize(info.numInclusive);
-    for (uint8_t i = 0; i < info.numInclusive; i++)
-    {
-        inclusiveArray[i] = info.inclusive[i];
-    }
-
-    ComponentArray exclusiveArray;
-    exclusiveArray.Resize(info.numExclusive);
-    for (uint8_t i = 0; i < info.numExclusive; i++)
-    {
-        exclusiveArray[i] = info.exclusive[i];
-    }
-
-    AccessModeArray accessArray;
-    accessArray.Resize(info.numInclusive);
-    for (uint8_t i = 0; i < info.numInclusive; i++)
-    {
-        accessArray[i] = info.access[i];
-    }
-
-    filterAllocator.Set(filter,
-        InclusiveTableMask(inclusiveArray),
-        ExclusiveTableMask(exclusiveArray),
-        inclusiveArray,
-        accessArray
-    );
-
-    return filter;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-DestroyFilter(Filter filter)
-{
-    filterAllocator.Dealloc(filter);
 }
 
 //------------------------------------------------------------------------------
@@ -120,7 +65,7 @@ Dataset Query(World* world, Filter filter)
 #endif
     Ptr<MemDb::Database> db = Game::GetWorldDatabase(world);
 
-    Util::Array<MemDb::TableId> tids = db->Query(filterAllocator.Get<0>(filter), filterAllocator.Get<1>(filter));
+    Util::Array<MemDb::TableId> tids = db->Query(GetInclusiveTableMask(filter), GetExclusiveTableMask(filter));
 
     return Query(world, tids, filter);
 }
@@ -152,7 +97,7 @@ Query(Ptr<MemDb::Database> const& db, Util::Array<MemDb::TableId>& tids, Filter 
 
     data.views = (Dataset::EntityTableView*)viewAllocator.Alloc(sizeof(Dataset::EntityTableView) * tids.Size());
 
-    ComponentArray const& components = filterAllocator.Get<2>(filter);
+    Util::FixedArray<ComponentId> const& components = ComponentsInFilter(filter);
 
     for (IndexT tableIndex = 0; tableIndex < tids.Size(); tableIndex++)
     {
@@ -228,24 +173,6 @@ TemplateId
 GetTemplateId(Util::StringAtom name)
 {
     return BlueprintManager::GetTemplateId(name);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-InclusiveTableMask const&
-GetInclusiveTableMask(Filter filter)
-{
-    return filterAllocator.Get<0>(filter);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-ExclusiveTableMask const&
-GetExclusiveTableMask(Filter filter)
-{
-    return filterAllocator.Get<1>(filter);
 }
 
 } // namespace Game

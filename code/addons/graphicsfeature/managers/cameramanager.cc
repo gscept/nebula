@@ -98,14 +98,14 @@ void
 CameraManager::InitUpdateCameraProcessor()
 {
     { // Setup processor that handles both worldtransform and camera (heirarchy)
-        Game::FilterCreateInfo filterInfo;
+        Game::FilterBuilder::FilterCreateInfo filterInfo;
         filterInfo.inclusive[0] = Game::GetComponentId("Camera"_atm);
         filterInfo.access   [0] = Game::AccessMode::READ;
         filterInfo.inclusive[1] = Game::GetComponentId("WorldTransform"_atm);
         filterInfo.access   [1] = Game::AccessMode::READ;
         filterInfo.numInclusive = 2;
 
-        Game::Filter filter = Game::CreateFilter(filterInfo);
+        Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
 
         Game::ProcessorCreateInfo processorInfo;
         processorInfo.async = false;
@@ -138,7 +138,7 @@ CameraManager::InitUpdateCameraProcessor()
         Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
     }
     { // Setup processor that handles just a regular old camera
-        Game::FilterCreateInfo filterInfo;
+        Game::FilterBuilder::FilterCreateInfo filterInfo;
         filterInfo.inclusive[0] = Game::GetComponentId("Camera"_atm);
         filterInfo.access   [0] = Game::AccessMode::READ;
         filterInfo.numInclusive = 1;
@@ -146,7 +146,7 @@ CameraManager::InitUpdateCameraProcessor()
         filterInfo.exclusive[0] = Game::GetComponentId("WorldTransform"_atm);
         filterInfo.numExclusive = 1;
 
-        Game::Filter filter = Game::CreateFilter(filterInfo);
+        Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
 
         Game::ProcessorCreateInfo processorInfo;
         processorInfo.async = false;

@@ -16,6 +16,8 @@
 #include "memdb/tablesignature.h"
 #include "memdb/typeregistry.h"
 #include "world.h"
+#include "filter.h"
+#include "dataset.h"
 
 namespace MemDb
 {
@@ -75,32 +77,6 @@ struct EntityMapping
     MemDb::Row instance;
 };
 
-//------------------------------------------------------------------------------
-/**
-    A dataset that contains views into category tables. These are created by
-    querying the world database.
-*/
-struct Dataset
-{
-    static const uint32_t MAX_COMPONENT_BUFFERS = 64;
-
-    /// a view into a category table
-    struct EntityTableView
-    {
-        /// table identifier
-        MemDb::TableId tableId = MemDb::TableId::Invalid();
-        /// number of instances in view
-        uint32_t numInstances = 0;
-        /// component buffers. @note Can be NULL if a queried component is a flag
-        void* buffers[MAX_COMPONENT_BUFFERS];
-    };
-
-    /// number of views in views array
-    uint32_t numViews = 0;
-    /// views into the tables
-    EntityTableView* views = nullptr;
-};
-
 /// Opaque entity operations buffer
 typedef uint32_t OpBuffer;
 
@@ -123,37 +99,6 @@ struct EntityCreateInfo
     TemplateId templateId = TemplateId::Invalid();
     /// set if the entity should be instantiated immediately or deferred until end of frame.
     bool immediate = false;
-};
-
-//------------------------------------------------------------------------------
-/**
-*/
-enum AccessMode
-{
-    READ,
-    WRITE
-};
-
-/// Opaque filter identifier.
-typedef uint32_t Filter;
-
-//------------------------------------------------------------------------------
-/**
-*/
-struct FilterCreateInfo
-{
-    static const uint32_t MAX_EXCLUSIVE_COMPONENTS = 32;
-
-    /// number of components in the inclusive set
-    uint8_t numInclusive = 0;
-    /// inclusive set
-    ComponentId inclusive[Dataset::MAX_COMPONENT_BUFFERS];
-    /// how we intend to access the components
-    AccessMode access[Dataset::MAX_COMPONENT_BUFFERS];
-    /// number of components in the exclusive set
-    uint8_t numExclusive = 0;
-    /// exclusive set
-    ComponentId exclusive[MAX_EXCLUSIVE_COMPONENTS];
 };
 
 //------------------------------------------------------------------------------
@@ -225,9 +170,6 @@ struct ProcessorCreateInfo
     /// render a debug visualization 
     ProcessorFrameCallback OnRenderDebug = nullptr;
 };
-
-typedef MemDb::TableSignature InclusiveTableMask;
-typedef MemDb::TableSignature ExclusiveTableMask;
 
 //------------------------------------------------------------------------------
 /**
@@ -324,8 +266,6 @@ void                        Execute(World*, Op::DeregisterComponent const& op);
 void                        ReleaseAllOps();
 
 
-/// Create a filter
-Filter                      CreateFilter(FilterCreateInfo const& info);
 /// Destroy a filter
 void                        DestroyFilter(Filter);
 
@@ -353,10 +293,6 @@ TemplateId                  GetTemplateId(Util::StringAtom name);
 SizeT                       GetNumInstances(World*, MemDb::TableId table);
 /// retrieve the instance buffer for a specific component in a table
 void*                       GetInstanceBuffer(World*, MemDb::TableId const, ComponentId const);
-/// retrieve the inclusive table mask
-InclusiveTableMask const&   GetInclusiveTableMask(Filter);
-/// retrieve the exclusive table mask
-ExclusiveTableMask const&   GetExclusiveTableMask(Filter);
 
 // Following functions are unsafe to use in general scenarios
 
@@ -438,7 +374,7 @@ GetComponent(World* world, Game::Entity const entity, ComponentId const componen
 namespace Internal
 {
     template<class TYPE>
-    void SetInclusive(Game::FilterCreateInfo& filterInfo, size_t const i)
+    void SetInclusive(Game::FilterBuilder::FilterCreateInfo& filterInfo, size_t const i)
     {
         using UnqualifiedType = typename std::remove_const<typename std::remove_reference<TYPE>::type>::type;
 
@@ -448,7 +384,7 @@ namespace Internal
     }
 
     template<typename...TYPES, std::size_t...Is>
-    void UnrollInclusiveComponents(Game::FilterCreateInfo& filterInfo, std::index_sequence<Is...>)
+    void UnrollInclusiveComponents(Game::FilterBuilder::FilterCreateInfo& filterInfo, std::index_sequence<Is...>)
     {
         (SetInclusive<typename std::tuple_element<Is, std::tuple<TYPES...>>::type>(filterInfo, Is), ...);
     }
@@ -486,7 +422,7 @@ RegisterUpdateFunction(World* world, Util::StringAtom name, std::function<void(T
         }
     };
 
-    Game::FilterCreateInfo filterInfo;
+    Game::FilterBuilder::FilterCreateInfo filterInfo;
     Internal::UnrollInclusiveComponents<TYPES...>(filterInfo, std::make_index_sequence<sizeof...(TYPES)>());
     for (int i = 0; i < (int)additionalInclusive.size(); i++)
         filterInfo.inclusive[filterInfo.numInclusive + i] = *(additionalInclusive.begin() + i);
@@ -494,7 +430,7 @@ RegisterUpdateFunction(World* world, Util::StringAtom name, std::function<void(T
     for (int i = 0; i < exclusive.size(); i++)
         filterInfo.exclusive[i] = *(exclusive.begin() + i);
     filterInfo.numExclusive = (uint8_t)exclusive.size();
-    Game::Filter filter = Game::CreateFilter(filterInfo);
+    Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
     Game::ProcessorCreateInfo processorInfo;
     processorInfo.async = false;
     processorInfo.filter = filter;

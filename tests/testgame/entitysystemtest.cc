@@ -266,16 +266,42 @@ EntitySystemTest::Run()
 
     StepFrame();
 
-    Game::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = Game::GetComponentId("TestHealth");
-    filterInfo.access[0] = Game::AccessMode::READ;
-    filterInfo.inclusive[1] = Game::GetComponentId("TestStruct");
-    filterInfo.access[1] = Game::AccessMode::WRITE;
-    filterInfo.numInclusive = 2;
-    Game::Filter filter = Game::CreateFilter(filterInfo);
+    {
+        Game::FilterBuilder::FilterCreateInfo filterInfo;
+        filterInfo.inclusive[0] = Game::GetComponentId("TestHealth");
+        filterInfo.access[0] = Game::AccessMode::READ;
+        filterInfo.inclusive[1] = Game::GetComponentId("TestStruct");
+        filterInfo.access[1] = Game::AccessMode::WRITE;
+        filterInfo.numInclusive = 2;
+        Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
+
+        Game::Dataset set = Game::Query(world, filter);
+
+        for (int v = 0; v < set.numViews; v++)
+        {
+            Game::Dataset::EntityTableView const& view = set.views[v];
+            TestHealth* healths = (TestHealth*)view.buffers[0];
+            TestStruct* strs = (TestStruct*)view.buffers[1];
+
+            for (IndexT i = 0; i < view.numInstances; ++i)
+            {
+                TestHealth& h = healths[i];
+                TestStruct& s = strs[i];
+
+                VERIFY(s.foo == 1);
+                s.foo = h.value;
+            }
+        }
+
+        Game::DestroyFilter(filter);
+    }
+
+    Game::Filter filter = Game::FilterBuilder()
+        .Including<const TestHealth, const TestStruct>()
+        .Build();
 
     Game::Dataset set = Game::Query(world, filter);
-    
+
     for (int v = 0; v < set.numViews; v++)
     {
         Game::Dataset::EntityTableView const& view = set.views[v];
@@ -287,8 +313,7 @@ EntitySystemTest::Run()
             TestHealth& h = healths[i];
             TestStruct& s = strs[i];
 
-            VERIFY(s.foo == 1);
-            s.foo = h.value;
+            VERIFY(s.foo == h.value);
         }
     }
     

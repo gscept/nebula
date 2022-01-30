@@ -38,7 +38,7 @@ PhysicsManager::~PhysicsManager()
 */
 void PhysicsManager::InitCreateActorProcessor()
 {
-    Game::FilterCreateInfo filterInfo;
+    Game::FilterBuilder::FilterCreateInfo filterInfo;
     filterInfo.inclusive[0] = Game::GetComponentId("Owner");
     filterInfo.access[0] = Game::AccessMode::READ;
     filterInfo.inclusive[1] = Game::GetComponentId("WorldTransform");
@@ -50,7 +50,7 @@ void PhysicsManager::InitCreateActorProcessor()
     filterInfo.exclusive[0] = this->pids.physicsActor;
     filterInfo.numExclusive = 1;
 
-    Game::Filter filter = Game::CreateFilter(filterInfo);
+    Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
 
     Game::ProcessorCreateInfo processorInfo;
     processorInfo.async = false;
@@ -117,7 +117,7 @@ PhysicsManager::OnDecay()
 */
 void PhysicsManager::InitPollTransformProcessor()
 {
-    Game::FilterCreateInfo filterInfo;
+    Game::FilterBuilder::FilterCreateInfo filterInfo;
     filterInfo.inclusive[0] = this->pids.physicsActor;
     filterInfo.access[0] = Game::AccessMode::READ;
     filterInfo.inclusive[1] = Game::GetComponentId("WorldTransform"_atm);
@@ -127,7 +127,7 @@ void PhysicsManager::InitPollTransformProcessor()
     filterInfo.exclusive[0] = Game::GetComponentId("Static");
     filterInfo.numExclusive = 1;
 
-    Game::Filter filter = Game::CreateFilter(filterInfo);
+    Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
 
     Game::ProcessorCreateInfo processorInfo;
     processorInfo.async = false;
@@ -198,12 +198,13 @@ void
 PhysicsManager::OnCleanup(Game::World* world)
 {
     n_assert(PhysicsManager::HasInstance());
-    Game::FilterCreateInfo filterInfo;
+
+    Game::FilterBuilder::FilterCreateInfo filterInfo;
     filterInfo.inclusive[0] = Singleton->pids.physicsActor;
     filterInfo.access[0] = Game::AccessMode::WRITE;
     filterInfo.numInclusive = 1;
 
-    Game::Filter filter = Game::CreateFilter(filterInfo);
+    Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
     Game::Dataset data = Game::Query(world, filter);
     for (int v = 0; v < data.numViews; v++)
     {
