@@ -334,6 +334,7 @@ EntitySystemTest::Run()
 
     bool hasExecutedUpdateFunc = false;
     std::function updateFunc = [&](
+            World* world,
             Test::TestHealth const& testHealth,
             Test::TestStruct& testStruct
         )
@@ -343,8 +344,11 @@ EntitySystemTest::Run()
         hasExecutedUpdateFunc = true;
     };
 
-    Game::RegisterUpdateFunction(world, "TestUpdateFunc"_atm, updateFunc, { TestVec4::ID() });
-    
+    Game::ProcessorBuilder("TestUpdateFunc")
+        .Func(updateFunc)
+        .Including<TestVec4>()
+        .Build();
+
     StepFrame();
     
     VERIFY(hasExecutedUpdateFunc);

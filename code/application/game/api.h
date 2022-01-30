@@ -18,6 +18,7 @@
 #include "world.h"
 #include "filter.h"
 #include "dataset.h"
+#include "processor.h"
 
 namespace MemDb
 {
@@ -26,38 +27,6 @@ class Database;
 
 namespace Game
 {
-
-//class ProcessorBuilder
-//{
-//public:
-//    ProcessorBuilder() = delete;
-//    ProcessorBuilder(Util::StringAtom processorName);
-//
-//    /// which function to run with the processor
-//    ProcessorBuilder& Func(std::function<void> func);
-//    
-//    /// entities must have these components
-//    template<typename ... COMPONENTS>
-//    ProcessorBuilder& With();
-//
-//    /// entities must not have any of these components
-//    template<typename ... COMPONENTS>
-//    ProcessorBuilder& Excluding();
-//
-//    /// select on which event the processor is executed
-//    ProcessorBuilder& On(Util::StringAtom eventName);
-//    
-//    /// processor should run async
-//    ProcessorBuilder& Async();
-//    
-//    /// create and register the processor
-//    ProcessorHandle Create();
-//
-//private:
-//    Util::StringAtom name;
-//    bool async = false;
-//    ProcessorFrameCallback func = nullptr;
-//};
 
 //------------------------------------------------------------------------------
 
@@ -79,10 +48,6 @@ struct EntityMapping
 
 /// Opaque entity operations buffer
 typedef uint32_t OpBuffer;
-
-/// Opaque processor handle
-typedef uint32_t ProcessorHandle;
-
 
 //------------------------------------------------------------------------------
 //      Create, Setup and Registration
@@ -131,44 +96,6 @@ struct ComponentCreateInfo
     void const* defaultValue;
     /// component flags
     ComponentFlags flags = ComponentFlags::COMPONENTFLAG_NONE;
-};
-
-/// per frame callback for processors
-using ProcessorFrameCallback = std::function<void(World*, Dataset)>;
-
-//------------------------------------------------------------------------------
-/**
-*/
-struct ProcessorCreateInfo
-{
-    /// name of the processor
-    Util::StringAtom name;
-
-    /// set if this processor should run as a job.
-    /// TODO: this is currently not used
-    bool async = false;
-    /// filter used for creating the dataset
-    Filter filter;
-
-    /// called when attached to world
-    //void(*OnActivate)() = nullptr;
-    ///// called when removed from world
-    //void(*OnDeactivate)() = nullptr;
-    ///// called by Game::Server::Start()
-    //void(*OnStart)() = nullptr;
-
-    /// called before frame by the game server
-    ProcessorFrameCallback OnBeginFrame = nullptr;
-    /// called per-frame by the game server
-    ProcessorFrameCallback OnFrame = nullptr;
-    /// called after frame by the game server
-    ProcessorFrameCallback OnEndFrame = nullptr;
-    /// called after loading game state
-    ProcessorFrameCallback OnLoad = nullptr;
-    /// called before saving game state
-    ProcessorFrameCallback OnSave = nullptr;
-    /// render a debug visualization 
-    ProcessorFrameCallback OnRenderDebug = nullptr;
 };
 
 //------------------------------------------------------------------------------
@@ -269,9 +196,6 @@ void                        ReleaseAllOps();
 /// Destroy a filter
 void                        DestroyFilter(Filter);
 
-/// Create a processor
-ProcessorHandle             CreateProcessor(ProcessorCreateInfo const& info);
-
 /// Query the entity database using specified filter set. This does NOT wait for resources to be available.
 Dataset                     Query(World*, Filter filter);
 /// Query a subset of tables using a specified filter set. Modifies the tables array so that it only contains valid tables. This does NOT wait for resources to be available.
@@ -314,8 +238,6 @@ void                        DeallocateInstance(World*, MemDb::TableId, MemDb::Ro
 MemDb::Row                  Migrate(World*, Entity, MemDb::TableId toTable);
 /// migrate an array of entities from one table to another. Fills the newInstances array with the new row ids for each entity. @note assumes all entities are associated with the fromTable.
 void                        Migrate(World*, Util::Array<Entity> const& entities, MemDb::TableId fromTable, MemDb::TableId toTable, Util::FixedArray<IndexT>& newInstances);
-/// register processors to a world
-void                        RegisterProcessors(World*, std::initializer_list<ProcessorHandle>);
 /// defragment an entity table
 void                        Defragment(World*, MemDb::TableId);
 /// create an entity table
@@ -326,10 +248,6 @@ void                        SetComponent(World*, Game::Entity entity, Game::Comp
 ComponentDecayBuffer const   GetDecayBuffer(Game::ComponentId component);
 /// clear the component decay buffers
 void                        ClearDecayBuffers();
-/// register an update function that runs for each entity that fulfill the requirements of the function, contains any of the additional inclusive propertoes, and does not have any properties contained in the exclusive set.
-/// @deprecated     Will be removed when the new ProcessorBuilder is implemented.
-template<typename ... TYPES>
-Game::ProcessorHandle       RegisterUpdateFunction(World*, Util::StringAtom name, std::function<void(TYPES...)> func, std::initializer_list<ComponentId> additionalInclusive = {}, std::initializer_list<ComponentId> exclusive = {});
 
 
 //------------------------------------------------------------------------------
@@ -365,80 +283,6 @@ GetComponent(World* world, Game::Entity const entity, ComponentId const componen
     EntityMapping mapping = GetEntityMapping(world, entity);
     TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, component);
     return *(ptr + mapping.instance);
-}
-
-//------------------------------------------------------------------------------
-/**
-    Internally used template functions
-*/
-namespace Internal
-{
-    template<class TYPE>
-    void SetInclusive(Game::FilterBuilder::FilterCreateInfo& filterInfo, size_t const i)
-    {
-        using UnqualifiedType = typename std::remove_const<typename std::remove_reference<TYPE>::type>::type;
-
-        filterInfo.inclusive[i] = UnqualifiedType::ID();
-        filterInfo.access[i] = std::is_const<typename std::remove_reference<TYPE>::type>() ? Game::AccessMode::READ : Game::AccessMode::WRITE;
-        filterInfo.numInclusive++;
-    }
-
-    template<typename...TYPES, std::size_t...Is>
-    void UnrollInclusiveComponents(Game::FilterBuilder::FilterCreateInfo& filterInfo, std::index_sequence<Is...>)
-    {
-        (SetInclusive<typename std::tuple_element<Is, std::tuple<TYPES...>>::type>(filterInfo, Is), ...);
-    }
-
-    template<typename...TYPES, std::size_t...Is>
-    void update_expander(std::function<void(TYPES...)> const& func, Game::Dataset::EntityTableView const& view, const IndexT instance, std::index_sequence<Is...>)
-    {
-        // this is a terribly unreadable line. Here's what it does:
-        // it unpacks the the index sequence and TYPES into individual parameters for func
-        // because we need to cast void pointers (the view buffers), we need to remove any const and reference qualifiers from the type.
-        func((*(((typename std::remove_const<typename std::remove_reference<TYPES>::type>::type*)view.buffers[Is]) + instance))...);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-    @todo   ability to register different event types
-*/
-template<typename ...TYPES>
-inline Game::ProcessorHandle
-RegisterUpdateFunction(World* world, Util::StringAtom name, std::function<void(TYPES...)> func, std::initializer_list<ComponentId> additionalInclusive, std::initializer_list<ComponentId> exclusive)
-{
-    n_assert(exclusive.size() < 0xFF);
-    n_assert(additionalInclusive.size() < 0xFF);
-
-    ProcessorFrameCallback processor = [func](World* world, Game::Dataset data) {
-        for (int v = 0; v < data.numViews; v++)
-        {
-            Game::Dataset::EntityTableView const& view = data.views[v];
-
-            for (IndexT i = 0; i < view.numInstances; ++i)
-            {
-                Internal::update_expander<TYPES...>(func, view, i, std::make_index_sequence<sizeof...(TYPES)>());
-            }
-        }
-    };
-
-    Game::FilterBuilder::FilterCreateInfo filterInfo;
-    Internal::UnrollInclusiveComponents<TYPES...>(filterInfo, std::make_index_sequence<sizeof...(TYPES)>());
-    for (int i = 0; i < (int)additionalInclusive.size(); i++)
-        filterInfo.inclusive[filterInfo.numInclusive + i] = *(additionalInclusive.begin() + i);
-    filterInfo.numInclusive = filterInfo.numInclusive + (uint8_t)additionalInclusive.size();
-    for (int i = 0; i < exclusive.size(); i++)
-        filterInfo.exclusive[i] = *(exclusive.begin() + i);
-    filterInfo.numExclusive = (uint8_t)exclusive.size();
-    Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
-    Game::ProcessorCreateInfo processorInfo;
-    processorInfo.async = false;
-    processorInfo.filter = filter;
-    processorInfo.name = name;
-    processorInfo.OnBeginFrame = processor;
-
-    Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
-    return pHandle;
 }
 
 //------------------------------------------------------------------------------

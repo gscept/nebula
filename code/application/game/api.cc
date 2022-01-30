@@ -35,15 +35,6 @@ GetWorld(uint32_t hash)
 //------------------------------------------------------------------------------
 /**
 */
-ProcessorHandle
-CreateProcessor(ProcessorCreateInfo const& info)
-{
-    return Game::GameServer::Instance()->CreateProcessor(info);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 ReleaseDatasets()
 {
