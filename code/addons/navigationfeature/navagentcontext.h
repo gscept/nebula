@@ -9,7 +9,7 @@
 #include "resources/resourceid.h"
 #include "ids/id.h"
 #include "ids/idallocator.h"
-#include "streamnavmeshpool.h"
+#include "streamnavmeshcache.h"
 
 namespace Navigation
 {

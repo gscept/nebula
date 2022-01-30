@@ -1,11 +1,11 @@
 nebula_begin_module(navigationfeature)
-fips_deps(Detour DetourCrowd Recast DetourTileCache DetourUtils application render)
+fips_deps(Detour DetourCrowd Recast DetourTileCache DebugUtils application render)
 fips_include_directories(${CODE_ROOT}/foundation)
 fips_files(
 		navigationfeatureunit.h
 		navigationfeatureunit.cc
-		streamnavmeshpool.h
-		streamnavmeshpool.cc
+		streamnavmeshcache.h
+		streamnavmeshcache.cc
 		navagentcontext.h
 		navagentcontext.cc
 	)

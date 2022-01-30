@@ -2,15 +2,15 @@ namespace Navigation;
 
 table NavMeshSettings
 {
-	max_edge_error : float;
-	detail_sample_dist : float;
-	max_slope : float;
-	cell_height : float;
-	cell_size : float;
-	detail_sample_max_error : float;
-	max_edge_length : int;
-	region_min_size : int;
-	region_merge_size : int;
+	max_edge_error : float = 0.5;
+	detail_sample_dist : float = 6.0;
+	max_slope : float = 45.0;
+	cell_height : float = 0.2;
+	cell_size : float = 0.5;
+	detail_sample_max_error : float = 1.0;
+	max_edge_length : int = 12;
+	region_min_size : int = 8;
+	region_merge_size : int = 20;
 }
 
 root_type NavMeshSettings;

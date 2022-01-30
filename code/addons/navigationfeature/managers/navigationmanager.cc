@@ -33,12 +33,13 @@ NavigationManager::~NavigationManager()
 */
 void NavigationManager::InitCreateAgentProcessor()
 {
+#if 0
     Game::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = Game::GetPropertyId("Owner");
+    filterInfo.inclusive[0] = Game::GetComponentId("Owner");
     filterInfo.access[0] = Game::AccessMode::READ;
-    filterInfo.inclusive[1] = Game::GetPropertyId("WorldTransform");
+    filterInfo.inclusive[1] = Game::GetComponentId("WorldTransform");
     filterInfo.access[1] = Game::AccessMode::READ;
-    filterInfo.inclusive[2] = Game::GetPropertyId("AgentKind");
+    filterInfo.inclusive[2] = Game::GetComponentId("AgentKind");
     filterInfo.access[2] = Game::AccessMode::READ;
     filterInfo.numInclusive = 3;
 
@@ -57,7 +58,7 @@ void NavigationManager::InitCreateAgentProcessor()
         
         for (int v = 0; v < data.numViews; v++)
         {
-            Game::Dataset::CategoryTableView const& view = data.views[v];
+            Game::Dataset::EntityTableView const& view = data.views[v];
             Game::Entity const* const owners = (Game::Entity*)view.buffers[0];
             Math::mat4 const* const transforms = (Math::mat4*)view.buffers[1];
             Util::String const* const kinds = (Util::String*)view.buffers[2];
@@ -92,6 +93,7 @@ void NavigationManager::InitCreateAgentProcessor()
     };
     
     Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -115,14 +117,15 @@ NavigationManager::OnDecay()
 */
 void NavigationManager::InitUpdateAgentTransformProcessor()
 {
+#if 0
     Game::FilterCreateInfo filterInfo;
     filterInfo.inclusive[0] = this->pids.navigationActor;
     filterInfo.access[0] = Game::AccessMode::READ;
-    filterInfo.inclusive[1] = Game::GetPropertyId("WorldTransform"_atm);
+    filterInfo.inclusive[1] = Game::GetComponentId("WorldTransform"_atm);
     filterInfo.access[1] = Game::AccessMode::WRITE;
     filterInfo.numInclusive = 2;
 
-    filterInfo.exclusive[0] = Game::GetPropertyId("Static");
+    filterInfo.exclusive[0] = Game::GetComponentId("Static");
     filterInfo.numExclusive = 1;
 
     Game::Filter filter = Game::CreateFilter(filterInfo);
@@ -151,6 +154,7 @@ void NavigationManager::InitUpdateAgentTransformProcessor()
     };
 
     Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -198,6 +202,7 @@ NavigationManager::Destroy()
 void
 NavigationManager::OnCleanup(Game::World* world)
 {
+#if 0
     n_assert(NavigationManager::HasInstance());
     Game::FilterCreateInfo filterInfo;
     filterInfo.inclusive[0] = Singleton->pids.navigationActor;
@@ -221,6 +226,7 @@ NavigationManager::OnCleanup(Game::World* world)
     }
 
     Game::DestroyFilter(filter);
+#endif
 }
 
 } // namespace PhysicsFeature

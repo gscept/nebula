@@ -120,9 +120,8 @@ GenerateNavMesh(NavMeshT const& data, Util::Blob& meshData)
 			const Util::Array<CoreGraphics::PrimitiveGroup>& groups = nvx2Reader->GetPrimitiveGroups();		
 
 			float *vertexData = nvx2Reader->GetVertexData();
-			ushort *indexData = nvx2Reader->GetIndexData(); 
+			unsigned int *indexData = (unsigned int*)nvx2Reader->GetIndexData();
             float* transformedData = (float*)Memory::Alloc(Memory::ScratchHeap, nvx2Reader->GetNumVertices() * 3 * sizeof(float));
-            int* intIndexData = (int*)Memory::Alloc(Memory::ScratchHeap, nvx2Reader->GetNumIndices() * sizeof(int));
 			IndexT count = 0;
  			for(int i = 0, k = nvx2Reader->GetNumVertices(); i < k ; ++i)
  			{
@@ -134,19 +133,13 @@ GenerateNavMesh(NavMeshT const& data, Util::Blob& meshData)
                     transformedData[i * 3 + j] = trans[j];
  				}
  			}
-            for (int i = 0, k = nvx2Reader->GetNumIndices(); i < k; ++i)
-            {
-                intIndexData[i] = indexData[i];
-            }
-
-
-			for(int i=0;i < groups.Size();i++)
+  			for(int i=0;i < groups.Size();i++)
 			{
 				int ntris = groups[i].GetNumPrimitives(CoreGraphics::PrimitiveTopology::TriangleList);
                 int startingVertex = groups[i].GetBaseVertex() / nvx2Reader->GetVertexWidth();
                 float* verts = &(transformedData[startingVertex]);
 				int nverts = groups[i].GetNumVertices();
-				int* tris = &(intIndexData[groups[i].GetBaseIndex()]);
+				int* tris = (int*) & (indexData[groups[i].GetBaseIndex()]);
 				
 				//n_assert2(groups[i].GetPrimitiveTopology() == CoreGraphics::PrimitiveTopology::TriangleList,"Only triangle lists are supported");
 				
@@ -160,7 +153,6 @@ GenerateNavMesh(NavMeshT const& data, Util::Blob& meshData)
 			nvx2Reader->Close();
 
             Memory::Free(Memory::ScratchHeap, (void*)transformedData);
-            Memory::Free(Memory::ScratchHeap, (void*)intIndexData);
 		}				
 	}
 	
