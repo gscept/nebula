@@ -25,7 +25,7 @@ namespace Recast
 //------------------------------------------------------------------------------
 /**
 */
-Util::Blob GenerateNavMesh(NavMeshT const& data);
+bool GenerateNavMesh(NavMeshT const& data, Util::Blob& generated);
 
 }
 }

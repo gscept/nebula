@@ -27,7 +27,7 @@ public:
 
     struct Pids
     {
-        Game::PropertyId navigationActor;
+        Game::ComponentId navigationActor;
     } pids;
 private:
     /// constructor

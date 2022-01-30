@@ -9,7 +9,7 @@
 //------------------------------------------------------------------------------
 
 #include "core/refcounted.h"
-#include "resources/resourcestreampool.h"
+#include "resources/resourcestreamcache.h"
 #include "nflatbuffer/flatbufferinterface.h"
 #include "flat/navigation/navmesh.h"
 
@@ -28,16 +28,16 @@ enum NavigationIdType
 
 RESOURCE_ID_TYPE(NavMeshId);
 
-class StreamNavMeshPool : public Resources::ResourceStreamPool
+class StreamNavMeshCache : public Resources::ResourceStreamCache
 {
-    __DeclareClass(StreamNavMeshPool);
+    __DeclareClass(StreamNavMeshCache);
 
 public:
     
     /// constructor
-    StreamNavMeshPool();
+    StreamNavMeshCache();
     /// destructor
-    virtual ~StreamNavMeshPool();
+    virtual ~StreamNavMeshCache();
 
     ///
     dtNavMesh* GetDetourMesh(NavMeshId id);

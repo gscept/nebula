@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "application/stdneb.h"
 #include "navigationfeatureunit.h"
-#include "streamnavmeshpool.h"
+#include "streamnavmeshcache.h"
 #include "debug/detourdebug.h"
 #include "game/api.h"
 #include "resources/resourceserver.h"
@@ -13,7 +13,7 @@
 
 namespace Navigation
 {
-StreamNavMeshPool* navMeshPool;
+StreamNavMeshCache* navMeshCache;
 }
 
 
@@ -46,10 +46,10 @@ NavigationFeatureUnit::OnActivate()
 {
     FeatureUnit::OnActivate();
 
-    Resources::ResourceServer::Instance()->RegisterStreamPool("navmesh", Navigation::StreamNavMeshPool::RTTI);
+    Resources::ResourceServer::Instance()->RegisterStreamPool("navmesh", Navigation::StreamNavMeshCache::RTTI);
     IO::AssignRegistry::Instance()->SetAssign(IO::Assign("nav", "export:navigation"));
 
-    Navigation::navMeshPool = Resources::GetStreamPool<Navigation::StreamNavMeshPool>();
+    Navigation::navMeshCache = Resources::GetStreamPool<Navigation::StreamNavMeshCache>();
 }
 
 //------------------------------------------------------------------------------
@@ -75,10 +75,10 @@ NavigationFeatureUnit::OnBeginFrame()
 void 
 NavigationFeatureUnit::OnRenderDebug()
 {
-    Util::Array<Navigation::NavMeshId> meshes = Navigation::navMeshPool->GetLoadedMeshes();
+    Util::Array<Navigation::NavMeshId> meshes = Navigation::navMeshCache->GetLoadedMeshes();
     for (Navigation::NavMeshId id : meshes)
     {
-        dtNavMesh* mesh = Navigation::navMeshPool->GetDetourMesh(id);
+        dtNavMesh* mesh = Navigation::navMeshCache->GetDetourMesh(id);
         Navigation::DebugDraw dd;
         duDebugDrawNavMesh(&dd, *mesh, 0);
     }

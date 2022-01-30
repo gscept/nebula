@@ -1,22 +1,22 @@
 //------------------------------------------------------------------------------
-//  streamnavmeshpool.cc
+//  streamnavmeshcache.cc
 //  (C) 2022 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "streamnavmeshpool.h"
+#include "streamnavmeshcache.h"
 #include "DetourNavMesh.h"
 #include "DetourNavMeshQuery.h"
 
 namespace Navigation
 {
 
-__ImplementClass(Navigation::StreamNavMeshPool, 'NVMP', Resources::ResourceStreamPool);
+__ImplementClass(Navigation::StreamNavMeshCache, 'NVMC', Resources::ResourceStreamCache);
 
 
 //------------------------------------------------------------------------------
 /**
 */
-StreamNavMeshPool::StreamNavMeshPool()
+StreamNavMeshCache::StreamNavMeshCache()
 {
     // empty
 }
@@ -24,7 +24,7 @@ StreamNavMeshPool::StreamNavMeshPool()
 //------------------------------------------------------------------------------
 /**
 */
-StreamNavMeshPool::~StreamNavMeshPool()
+StreamNavMeshCache::~StreamNavMeshCache()
 {
     // empty
 }
@@ -33,7 +33,7 @@ StreamNavMeshPool::~StreamNavMeshPool()
 /**
 */
 dtNavMesh*
-StreamNavMeshPool::GetDetourMesh(NavMeshId id)
+StreamNavMeshCache::GetDetourMesh(NavMeshId id)
 {
     return this->allocator.Get<1>(id.resourceId);
 }
@@ -44,7 +44,7 @@ StreamNavMeshPool::GetDetourMesh(NavMeshId id)
 /**
 */
 Util::Array<NavMeshId>
-StreamNavMeshPool::GetLoadedMeshes()
+StreamNavMeshCache::GetLoadedMeshes()
 {
     Util::Array<NavMeshId> meshes;
     meshes.Reserve(this->ids.Size());
@@ -58,8 +58,8 @@ StreamNavMeshPool::GetLoadedMeshes()
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourcePool::LoadStatus
-StreamNavMeshPool::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+Resources::ResourceCache::LoadStatus
+StreamNavMeshCache::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
     n_assert(stream.isvalid());
     n_assert(this->GetState(res) == Resources::Resource::Pending);
@@ -107,7 +107,7 @@ StreamNavMeshPool::LoadFromStream(const Resources::ResourceId res, const Util::S
 /**
 */
 void
-StreamNavMeshPool::Unload(const Resources::ResourceId res)
+StreamNavMeshCache::Unload(const Resources::ResourceId res)
 {
     this->EnterGet();
     NavMeshT& meshInfo = this->allocator.Get<3>(res.resourceId);
