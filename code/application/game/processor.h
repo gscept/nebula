@@ -66,6 +66,9 @@ public:
     ProcessorBuilder() = delete;
     ProcessorBuilder(Util::StringAtom processorName);
 
+    template<typename LAMBDA>
+    ProcessorBuilder& Func(LAMBDA);
+
     /// which function to run with the processor
     template<typename ...COMPONENTS>
     ProcessorBuilder& Func(std::function<void(World*, COMPONENTS...)> func);
@@ -103,6 +106,16 @@ private:
     FilterBuilder filterBuilder;
     bool async = false;
 };
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename LAMBDA> 
+ProcessorBuilder& ProcessorBuilder::Func(LAMBDA lambda)
+{
+    static_assert(std::is_invocable<LAMBDA()>());
+    return this->Func(std::function(lambda));
+}
 
 //------------------------------------------------------------------------------
 /**

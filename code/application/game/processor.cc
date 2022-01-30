@@ -26,7 +26,6 @@ ProcessorBuilder::ProcessorBuilder(Util::StringAtom processorName) :
     onEvent("OnBeginFrame")
 {
     this->filterBuilder = FilterBuilder();
-    // empty
 }
 
 //------------------------------------------------------------------------------
