@@ -3,6 +3,7 @@
 #-------------------------------------------------------------------------------
 
 nebula_begin_lib(nflatbuffer)
+fips_ide_group(addons)
 fips_include_directories(${CODE_ROOT}/foundation )
 fips_dir(.)
     fips_files(

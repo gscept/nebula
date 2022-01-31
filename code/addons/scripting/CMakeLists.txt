@@ -3,6 +3,7 @@
 #-------------------------------------------------------------------------------
 
 nebula_begin_module(scripting)
+fips_ide_group(addons)
 fips_libs(foundation)
 
 fips_files(

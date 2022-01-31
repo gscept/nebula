@@ -4,7 +4,7 @@
 
 nebula_begin_module(application)
     add_nebula_blueprints()
-    fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/audio)
+    fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
     fips_deps(foundation audio resource scripting memdb imgui)
     fips_dir(.)
     if (FIPS_WINDOWS)

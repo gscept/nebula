@@ -1,4 +1,5 @@
 fips_begin_lib(memdb)
+fips_ide_group(addons)
 fips_include_directories(${CODE_ROOT}/foundation)
 fips_files(
     database.h

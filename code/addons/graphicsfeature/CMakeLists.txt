@@ -1,5 +1,6 @@
 nebula_begin_module(graphicsfeature)
 fips_deps(render application dynui)
+fips_ide_group(features)
 fips_include_directories(${CODE_ROOT}/foundation)
 fips_files(
 	graphicsfeatureunit.h
