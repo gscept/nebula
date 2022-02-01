@@ -69,6 +69,8 @@ struct Table
     Util::Array<IndexT> freeIds;
     /// all components that this table has
     Util::Array<ComponentId> components;
+    /// can be used to keep track if the columns has been reallocated
+    uint32_t version = 0;
 	
 	// TODO: partition the tables into chunks
 	//struct Partition

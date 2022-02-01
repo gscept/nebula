@@ -16,26 +16,6 @@ __ImplementClass(MemDb::Database, 'MmDb', Core::RefCounted);
 //------------------------------------------------------------------------------
 /**
 */
-void
-Dataset::Validate()
-{
-    for (IndexT i = 0; i < this->tables.Size();)
-    {
-        auto& view = this->tables[i];
-        if (!db->IsValid(view.tid))
-        {
-            this->tables.EraseIndexSwap(i);
-            continue;
-        }
-
-        view.numInstances = db->GetNumRows(view.tid);
-        i++;
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 Database::Database()
 {
     // empty
@@ -171,6 +151,7 @@ Database::AllocateRow(TableId tid)
         void* val = (char*)buf + ((size_t)index * desc->typeSize);
         Memory::Copy(desc->defVal, val, desc->typeSize);
     }
+
     return index;
 }
 
@@ -665,6 +646,8 @@ Database::GrowTable(TableId tid)
         Memory::Free(Table::HEAP_MEMORY_TYPE, buf);
         buf = newData;
     }
+
+    table.version++;
 }
 
 //------------------------------------------------------------------------------
@@ -736,6 +719,8 @@ Database::AddColumn(TableId tid, ComponentId descriptor, bool updateSignature)
 
         return col;
     }
+
+    table.version++;
 
     return InvalidIndex;
 }

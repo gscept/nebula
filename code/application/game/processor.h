@@ -66,13 +66,14 @@ public:
     ProcessorBuilder() = delete;
     ProcessorBuilder(Util::StringAtom processorName);
 
+    /// which function to run with the processor
     template<typename LAMBDA>
     ProcessorBuilder& Func(LAMBDA);
 
     /// which function to run with the processor
     template<typename ...COMPONENTS>
     ProcessorBuilder& Func(std::function<void(World*, COMPONENTS...)> func);
-    
+
     /// entities must have these components
     template<typename ... COMPONENTS>
     ProcessorBuilder& Including();
@@ -83,7 +84,7 @@ public:
 
     /// select on which event the processor is executed
     ProcessorBuilder& On(Util::StringAtom eventName);
-    
+
     /// processor should run async
     ProcessorBuilder& Async();
     
@@ -94,9 +95,6 @@ private:
     template<typename...TYPES, std::size_t...Is>
     static void UpdateExpander(World* world, std::function<void(World*, TYPES...)> const& func, Game::Dataset::EntityTableView const& view, const IndexT instance, std::index_sequence<Is...>)
     {
-        // this is a terribly unreadable line. Here's what it does:
-        // it unpacks the the index sequence and TYPES into individual parameters for func
-        // because we need to cast void pointers (the view buffers), we need to remove any const and reference qualifiers from the type.
         func(world, *((typename std::remove_const<typename std::remove_reference<TYPES>::type>::type*)view.buffers[Is] + instance)...);
     }
 
@@ -139,6 +137,9 @@ ProcessorBuilder::Func(std::function<void(World*, COMPONENTS...)> func)
     return *this;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 template<typename ...COMPONENTS>
 inline ProcessorBuilder& ProcessorBuilder::Including()
 {
@@ -146,6 +147,9 @@ inline ProcessorBuilder& ProcessorBuilder::Including()
     return *this;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 template<typename ...COMPONENTS>
 inline ProcessorBuilder& ProcessorBuilder::Excluding()
 {
