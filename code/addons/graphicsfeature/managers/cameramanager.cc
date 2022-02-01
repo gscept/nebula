@@ -11,6 +11,7 @@
 #include "game/gameserver.h"
 #include "graphicsfeature/graphicsfeatureunit.h"
 #include "graphics/view.h"
+#include "basegamefeature/components/transform.h"
 
 namespace GraphicsFeature
 {
@@ -97,85 +98,34 @@ UpdateCameraSettings(Graphics::GraphicsEntityId gid, Camera& settings, Camera co
 void
 CameraManager::InitUpdateCameraProcessor()
 {
-    { // Setup processor that handles both worldtransform and camera (heirarchy)
-        Game::FilterBuilder::FilterCreateInfo filterInfo;
-        filterInfo.inclusive[0] = Game::GetComponentId("Camera"_atm);
-        filterInfo.access   [0] = Game::AccessMode::READ;
-        filterInfo.inclusive[1] = Game::GetComponentId("WorldTransform"_atm);
-        filterInfo.access   [1] = Game::AccessMode::READ;
-        filterInfo.numInclusive = 2;
-
-        Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
-
-        Game::ProcessorCreateInfo processorInfo;
-        processorInfo.async = false;
-        processorInfo.filter = filter;
-        processorInfo.name = "CameraManager.UpdateCameraWorldTransformed"_atm;
-        processorInfo.OnBeginFrame = [](Game::World*, Game::Dataset data)
+    // Setup processor that handles both worldtransform and camera (heirarchy)
+    Game::ProcessorBuilder("CameraManager.UpdateCameraWorldTransform").Func(
+        [](Game::World*, Camera const& camera, Game::WorldTransform const& parentTransform)
         {
-            for (int v = 0; v < data.numViews; v++)
+            if (IsViewHandleValid(camera.viewHandle))
             {
-                Game::Dataset::EntityTableView const& view = data.views[v];
-                Camera const* const cameras = (Camera*)view.buffers[0];
-                Math::mat4 const* const transforms = (Math::mat4*)view.buffers[1];
-
-                for (IndexT i = 0; i < view.numInstances; ++i)
-                {
-                    Camera const& camera = cameras[i];
-                    Math::mat4 const& parentTransform = transforms[i];
-
-                    if (IsViewHandleValid(camera.viewHandle))
-                    {
-                        Graphics::GraphicsEntityId gid = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].gid;
-                        Camera& settings = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].currentSettings;
-                        UpdateCameraSettings(gid, settings, camera);
-                        Graphics::CameraContext::SetView(gid, parentTransform * settings.localTransform);
-                    }
-                }
+                Graphics::GraphicsEntityId gid = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].gid;
+                Camera& settings = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].currentSettings;
+                UpdateCameraSettings(gid, settings, camera);
+                Graphics::CameraContext::SetView(gid, parentTransform.value * settings.localTransform);
             }
-        };
+        }
+    ).Build();
 
-        Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
-    }
-    { // Setup processor that handles just a regular old camera
-        Game::FilterBuilder::FilterCreateInfo filterInfo;
-        filterInfo.inclusive[0] = Game::GetComponentId("Camera"_atm);
-        filterInfo.access   [0] = Game::AccessMode::READ;
-        filterInfo.numInclusive = 1;
-
-        filterInfo.exclusive[0] = Game::GetComponentId("WorldTransform"_atm);
-        filterInfo.numExclusive = 1;
-
-        Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
-
-        Game::ProcessorCreateInfo processorInfo;
-        processorInfo.async = false;
-        processorInfo.filter = filter;
-        processorInfo.name = "CameraManager.UpdateCamera"_atm;
-        processorInfo.OnBeginFrame = [](Game::World*, Game::Dataset data)
+    // Setup processor that handles just a regular old camera
+    Game::ProcessorBuilder("CameraManager.UpdateCamera")
+        .Func([](Game::World* world, Camera const& camera)
         {
-            for (int v = 0; v < data.numViews; v++)
+            if (IsViewHandleValid(camera.viewHandle))
             {
-                Game::Dataset::EntityTableView const& view = data.views[v];
-                Camera const* const cameras = (Camera*)view.buffers[0];
-                
-                for (IndexT i = 0; i < view.numInstances; ++i)
-                {
-                    Camera const& camera = cameras[i];
-                    
-                    if (IsViewHandleValid(camera.viewHandle))
-                    {
-                        Graphics::GraphicsEntityId gid = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].gid;
-                        Camera& settings = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].currentSettings;
-                        UpdateCameraSettings(gid, settings, camera);
-                        Graphics::CameraContext::SetView(gid, settings.localTransform);
-                    }
-                }
+                Graphics::GraphicsEntityId gid = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].gid;
+                Camera& settings = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].currentSettings;
+                UpdateCameraSettings(gid, settings, camera);
+                Graphics::CameraContext::SetView(gid, settings.localTransform);
             }
-        };
-
-        Game::ProcessorHandle pHandle = Game::CreateProcessor(processorInfo);
-    }
+        })
+        .Excluding<Game::WorldTransform>()
+        .Build();
 }
 
 //------------------------------------------------------------------------------
