@@ -1,0 +1,15 @@
+{
+  "namespace": "AudioFeature",
+  "components": {
+    "AudioEmitter": {
+      "emitterId": "uint",
+      "autoplay": "bool",
+      "loop": "bool"
+    },
+    "AudioListener": {
+      "_type_": "_flag_",
+      "_desc_": "Spatial audio will be recieved via this listener"
+    }
+  }
+}
+-
