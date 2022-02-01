@@ -4,6 +4,7 @@ fips_include_directories(${CODE_ROOT}/foundation)
 fips_files(
     database.h
     database.cc
+    dataset.cc
     dataset.h
     filterset.h
     componentdescription.h

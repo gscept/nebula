@@ -7,7 +7,9 @@
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
+#include "core/refcounted.h"
 #include "componentid.h"
+#include "memdb/table.h"
 
 namespace MemDb
 {
@@ -31,21 +33,7 @@ struct Dataset
     Util::Array<View> tables;
 
     /// Validate tables and num instances. This ensures valid data, but does not re-query for new tables.
-    void Validate()
-    {
-        for (IndexT i = 0; i < this->tables.Size();)
-        {
-            auto& view = this->tables[i];
-            if (!db->IsValid(view.tid))
-            {
-                this->tables.EraseIndexSwap(i);
-                continue;
-            }
-
-            view.numInstances = db->GetNumRows(view.tid);
-            i++;
-        }
-    }
+    void Validate();
 private:
     friend class Database;
     /// pointer to the database used to construct this set
