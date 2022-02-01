@@ -56,19 +56,13 @@ RegisterModelEntity(Graphics::GraphicsEntityId const gid, Resources::ResourceNam
 void
 GraphicsManager::InitCreateModelProcessor()
 {
-    Game::FilterBuilder::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = Game::GetComponentId("Owner");
-    filterInfo.access[0] = Game::AccessMode::READ;
-    filterInfo.inclusive[1] = Game::GetComponentId("WorldTransform");
-    filterInfo.access[1] = Game::AccessMode::READ;
-    filterInfo.inclusive[2] = Game::GetComponentId("ModelResource");
-    filterInfo.access[2] = Game::AccessMode::READ;
-    filterInfo.numInclusive = 3;
-
-    filterInfo.exclusive[0] = this->pids.modelEntityData;
-    filterInfo.numExclusive = 1;
-
-    Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
+    Game::Filter filter = Game::FilterBuilder()
+        .Including<
+            const Game::Owner,
+            const Game::WorldTransform,
+            const ModelResource>()
+        .Excluding({ this->pids.modelEntityData })
+        .Build();
 
     Game::ProcessorCreateInfo processorInfo;
     processorInfo.async = false;
@@ -102,8 +96,6 @@ GraphicsManager::InitCreateModelProcessor()
                 Game::AddOp(opBuffer, regOp);
             }
         }
-
-        // execute ops
         Game::Dispatch(opBuffer);
         Game::DestroyOpBuffer(opBuffer);
     };
