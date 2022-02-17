@@ -392,17 +392,33 @@ private:
 #define __ImplementEnumComparisonOperators(type) \
     inline bool operator>(type a, unsigned b) { return static_cast<unsigned>(a) > b; }\
     inline bool operator>(unsigned a, type b) { return a > static_cast<unsigned>(b); }\
+    inline bool operator>(type a, int b) { return static_cast<int>(a) > b; }\
+    inline bool operator>(int a, type b) { return a > static_cast<int>(b); }\
     inline bool operator<(type a, unsigned b) { return static_cast<unsigned>(a) < b; }\
     inline bool operator<(unsigned a, type b) { return a < static_cast<unsigned>(b); }\
+    inline bool operator<(type a, int b) { return static_cast<unsigned>(a) < b; }\
+    inline bool operator<(int a, type b) { return a < static_cast<unsigned>(b); }\
     inline bool operator>=(type a, unsigned b) { return static_cast<unsigned>(a) >= b; }\
     inline bool operator>=(unsigned a, type b) { return a >= static_cast<unsigned>(b); }\
+    inline bool operator>=(type a, int b) { return static_cast<unsigned>(a) >= b; }\
+    inline bool operator>=(int a, type b) { return a >= static_cast<unsigned>(b); }\
     inline bool operator<=(type a, unsigned b) { return static_cast<unsigned>(a) <= b; }\
     inline bool operator<=(unsigned a, type b) { return a <= static_cast<unsigned>(b); }\
+    inline bool operator<=(type a, int b) { return static_cast<unsigned>(a) <= b; }\
+    inline bool operator<=(int a, type b) { return a <= static_cast<unsigned>(b); }\
     inline bool operator==(type a, unsigned b) { return static_cast<unsigned>(a) == b; }\
     inline bool operator==(unsigned a, type b) { return a == static_cast<unsigned>(b); }\
+    inline bool operator==(type a, int b) { return static_cast<unsigned>(a) == b; }\
+    inline bool operator==(int a, type b) { return a == static_cast<unsigned>(b); }\
     inline bool operator!=(type a, unsigned b) { return static_cast<unsigned>(a) != b; }\
-    inline bool operator!=(unsigned a, type b) { return a != static_cast<unsigned>(b); }
+    inline bool operator!=(unsigned a, type b) { return a != static_cast<unsigned>(b); }\
+    inline bool operator!=(type a, int b) { return static_cast<unsigned>(a) != b; }\
+    inline bool operator!=(int a, type b) { return a != static_cast<unsigned>(b); }
 
+#define __ImplementEnumMutableOperators(type) \
+    inline type operator++(type a) { return static_cast<type>(static_cast<unsigned>(a)++); }\
+    inline type operator--(type a) { return static_cast<type>(static_cast<unsigned>(a)--); }
+ 
     /*
 namespace TYPE {\
     inline bool HasFlags(const TYPE& a, TYPE flags) { return (a & flags) == flags; }\
