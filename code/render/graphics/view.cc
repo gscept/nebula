@@ -74,13 +74,6 @@ View::BeginFrame(const IndexT frameIndex, const Timing::Time time, const IndexT 
         //n_assert(this->stage.isvalid()); // hmm, we never use stages
         inBeginFrame = true;
     }
-
-    // run script asynchronous jobs
-    if (this->script != nullptr)
-    {
-        N_SCOPE(ViewRecord, Graphics);
-        this->script->RunJobs(frameIndex, bufferIndex);
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -108,4 +101,15 @@ View::EndFrame(const IndexT frameIndex, const Timing::Time time, const IndexT bu
     n_assert(inBeginFrame);
     inBeginFrame = false;
 }
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+View::BuildFrameScript()
+{
+    this->script->Build();
+}
+
 } // namespace Graphics

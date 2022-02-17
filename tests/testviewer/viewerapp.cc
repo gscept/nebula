@@ -237,6 +237,9 @@ SimpleViewerApplication::Open()
         this->console->Setup();
         this->consoleHandler->Setup();
 
+        // Before starting the frame, build the frame script
+        this->view->BuildFrameScript();
+
         return true;
     }
     return false;
