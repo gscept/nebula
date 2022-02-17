@@ -577,138 +577,6 @@ VkTypes::AsVkMapping(ILenum p)
 //------------------------------------------------------------------------------
 /**
 */
-VkPipelineStageFlags
-VkTypes::AsVkPipelineFlags(const CoreGraphics::BarrierStage dep)
-{
-    VkPipelineStageFlags flags = 0;
-    uint32_t bit;
-    for (bit = 1; dep >= bit; bit *= 2)
-    {
-        if ((dep & bit) == bit) switch ((CoreGraphics::BarrierStage)bit)
-        {
-        case CoreGraphics::BarrierStage::Indirect:
-            flags |= VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
-            break;
-        case CoreGraphics::BarrierStage::VertexShader:
-            flags |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
-            break;
-        case CoreGraphics::BarrierStage::HullShader:
-            flags |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
-            break;
-        case CoreGraphics::BarrierStage::DomainShader:
-            flags |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
-            break;
-        case CoreGraphics::BarrierStage::GeometryShader:
-            flags |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
-            break;
-        case CoreGraphics::BarrierStage::PixelShader:
-            flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-            break;
-        case CoreGraphics::BarrierStage::PassOutput:
-            flags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-            break;
-        case CoreGraphics::BarrierStage::ComputeShader:
-            flags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-            break;
-        case CoreGraphics::BarrierStage::VertexInput:
-            flags |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
-            break;
-        case CoreGraphics::BarrierStage::EarlyDepth:
-            flags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-            break;
-        case CoreGraphics::BarrierStage::LateDepth:
-            flags |= VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-            break;
-        case CoreGraphics::BarrierStage::Transfer:
-            flags |= VK_PIPELINE_STAGE_TRANSFER_BIT;
-            break;
-        case CoreGraphics::BarrierStage::Host:
-            flags |= VK_PIPELINE_STAGE_HOST_BIT;
-            break;
-
-        case CoreGraphics::BarrierStage::Top:
-            flags |= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-            break;
-        case CoreGraphics::BarrierStage::Bottom:
-            flags |= VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-            break;
-        }
-    }
-    return flags;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-VkAccessFlags
-VkTypes::AsVkResourceAccessFlags(const CoreGraphics::BarrierAccess access)
-{
-    VkAccessFlags flags = 0;
-    uint32_t bit;
-    for (bit = 1; access >= bit; bit *= 2)
-    {
-        if ((access & bit) == bit) switch ((CoreGraphics::BarrierAccess)bit)
-        {
-        case CoreGraphics::BarrierAccess::IndirectRead:
-            flags |= VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
-            break;
-        case CoreGraphics::BarrierAccess::IndexRead:
-            flags |= VK_ACCESS_INDEX_READ_BIT;
-            break;
-        case CoreGraphics::BarrierAccess::VertexRead:
-            flags |= VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
-            break;
-        case CoreGraphics::BarrierAccess::UniformRead:
-            flags |= VK_ACCESS_UNIFORM_READ_BIT;
-            break;
-        case CoreGraphics::BarrierAccess::InputAttachmentRead:
-            flags |= VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
-            break;
-        case CoreGraphics::BarrierAccess::ShaderRead:
-            flags |= VK_ACCESS_SHADER_READ_BIT;
-            break;
-        case CoreGraphics::BarrierAccess::ShaderWrite:
-            flags |= VK_ACCESS_SHADER_WRITE_BIT;
-            break;
-        case CoreGraphics::BarrierAccess::ColorAttachmentRead:
-            flags |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-            break;
-        case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
-            flags |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            break;
-        case CoreGraphics::BarrierAccess::DepthAttachmentRead:
-            flags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
-            break;
-        case CoreGraphics::BarrierAccess::DepthAttachmentWrite:
-            flags |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-            break;
-        case CoreGraphics::BarrierAccess::TransferRead:
-            flags |= VK_ACCESS_TRANSFER_READ_BIT;
-            break;
-        case CoreGraphics::BarrierAccess::TransferWrite:
-            flags |= VK_ACCESS_TRANSFER_WRITE_BIT;
-            break;
-        case CoreGraphics::BarrierAccess::HostRead:
-            flags |= VK_ACCESS_HOST_READ_BIT;
-            break;
-        case CoreGraphics::BarrierAccess::HostWrite:
-            flags |= VK_ACCESS_HOST_WRITE_BIT;
-            break;
-        case CoreGraphics::BarrierAccess::MemoryRead:
-            flags |= VK_ACCESS_MEMORY_READ_BIT;
-            break;
-        case CoreGraphics::BarrierAccess::MemoryWrite:
-            flags |= VK_ACCESS_MEMORY_WRITE_BIT;
-            break;
-        }
-    }
-    return flags;
-}
-
-
-//------------------------------------------------------------------------------
-/**
-*/
 VkImageAspectFlags
 VkTypes::AsVkImageAspectFlags(const CoreGraphics::ImageAspect aspect)
 {
@@ -778,6 +646,205 @@ VkTypes::AsVkImageLayout(const CoreGraphics::ImageLayout layout)
         case CoreGraphics::ImageLayout::TransferDestination:        return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         case CoreGraphics::ImageLayout::Preinitialized:             return VK_IMAGE_LAYOUT_PREINITIALIZED;
         case CoreGraphics::ImageLayout::Present:                    return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    }
+    return VK_IMAGE_LAYOUT_UNDEFINED;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkPipelineStageFlags
+VkTypes::AsVkPipelineStage(const CoreGraphics::PipelineStage stage)
+{
+    switch (stage)
+    {
+        case CoreGraphics::PipelineStage::Top:
+            return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        case CoreGraphics::PipelineStage::Bottom:
+            return VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        case CoreGraphics::PipelineStage::Indirect:
+            return VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+        case CoreGraphics::PipelineStage::Index:
+            return VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+        case CoreGraphics::PipelineStage::Vertex:
+            return VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+        case CoreGraphics::PipelineStage::InputAttachment:
+            return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        case CoreGraphics::PipelineStage::GraphicsShadersRead:
+        case CoreGraphics::PipelineStage::GraphicsShadersWrite:
+            return VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+        case CoreGraphics::PipelineStage::AllShadersRead:
+        case CoreGraphics::PipelineStage::AllShadersWrite:
+        case CoreGraphics::PipelineStage::Uniform:
+            return VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        case CoreGraphics::PipelineStage::VertexShaderRead:
+        case CoreGraphics::PipelineStage::VertexShaderWrite:
+            return VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+        case CoreGraphics::PipelineStage::HullShaderRead:
+        case CoreGraphics::PipelineStage::HullShaderWrite:
+            return VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
+        case CoreGraphics::PipelineStage::DomainShaderRead:
+        case CoreGraphics::PipelineStage::DomainShaderWrite:
+            return VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
+        case CoreGraphics::PipelineStage::GeometryShaderRead:
+        case CoreGraphics::PipelineStage::GeometryShaderWrite:
+            return VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
+        case CoreGraphics::PipelineStage::PixelShaderRead:
+        case CoreGraphics::PipelineStage::PixelShaderWrite:
+            return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        case CoreGraphics::PipelineStage::ComputeShaderRead:
+        case CoreGraphics::PipelineStage::ComputeShaderWrite:
+            return VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        case CoreGraphics::PipelineStage::ColorRead:
+        case CoreGraphics::PipelineStage::ColorWrite:
+            return VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        case CoreGraphics::PipelineStage::DepthStencilRead:
+            return VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        case CoreGraphics::PipelineStage::DepthStencilWrite:
+            return VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+        case CoreGraphics::PipelineStage::TransferRead:
+        case CoreGraphics::PipelineStage::TransferWrite:
+            return VK_PIPELINE_STAGE_TRANSFER_BIT;
+        case CoreGraphics::PipelineStage::HostRead:
+        case CoreGraphics::PipelineStage::HostWrite:
+            return VK_PIPELINE_STAGE_HOST_BIT;
+        case CoreGraphics::PipelineStage::MemoryRead:
+        case CoreGraphics::PipelineStage::MemoryWrite:
+            return VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        case CoreGraphics::PipelineStage::ImageInitial:
+            return VK_PIPELINE_STAGE_HOST_BIT;
+        case CoreGraphics::PipelineStage::Present:
+            return VK_PIPELINE_STAGE_TRANSFER_BIT;
+    }
+    return VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkAccessFlags
+VkTypes::AsVkAccessFlags(const CoreGraphics::PipelineStage stage)
+{
+    switch (stage)
+    {
+        case CoreGraphics::PipelineStage::Top:
+            return VK_ACCESS_MEMORY_READ_BIT;
+        case CoreGraphics::PipelineStage::Bottom:
+            return VK_ACCESS_MEMORY_WRITE_BIT;
+        case CoreGraphics::PipelineStage::Indirect:
+            return VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+        case CoreGraphics::PipelineStage::Index:
+            return VK_ACCESS_INDEX_READ_BIT;
+        case CoreGraphics::PipelineStage::Vertex:
+            return VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+        case CoreGraphics::PipelineStage::InputAttachment:
+            return VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+        case CoreGraphics::PipelineStage::Uniform:
+            return VK_ACCESS_UNIFORM_READ_BIT;
+        case CoreGraphics::PipelineStage::VertexShaderRead:
+        case CoreGraphics::PipelineStage::HullShaderRead:
+        case CoreGraphics::PipelineStage::DomainShaderRead:
+        case CoreGraphics::PipelineStage::GeometryShaderRead:
+        case CoreGraphics::PipelineStage::PixelShaderRead:
+        case CoreGraphics::PipelineStage::GraphicsShadersRead:
+        case CoreGraphics::PipelineStage::ComputeShaderRead:
+        case CoreGraphics::PipelineStage::AllShadersRead:
+            return VK_ACCESS_SHADER_READ_BIT;
+        case CoreGraphics::PipelineStage::VertexShaderWrite:
+        case CoreGraphics::PipelineStage::HullShaderWrite:
+        case CoreGraphics::PipelineStage::DomainShaderWrite:
+        case CoreGraphics::PipelineStage::GeometryShaderWrite:
+        case CoreGraphics::PipelineStage::PixelShaderWrite:
+        case CoreGraphics::PipelineStage::GraphicsShadersWrite:
+        case CoreGraphics::PipelineStage::ComputeShaderWrite:
+        case CoreGraphics::PipelineStage::AllShadersWrite:
+            return VK_ACCESS_SHADER_WRITE_BIT;
+        case CoreGraphics::PipelineStage::ColorRead:
+            return VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        case CoreGraphics::PipelineStage::ColorWrite:
+            return VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        case CoreGraphics::PipelineStage::DepthStencilRead:
+            return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+        case CoreGraphics::PipelineStage::DepthStencilWrite:
+            return VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        case CoreGraphics::PipelineStage::TransferRead:
+            return VK_ACCESS_TRANSFER_READ_BIT;
+        case CoreGraphics::PipelineStage::TransferWrite:
+            return VK_ACCESS_TRANSFER_WRITE_BIT;
+        case CoreGraphics::PipelineStage::HostRead:
+            return VK_ACCESS_HOST_READ_BIT;
+        case CoreGraphics::PipelineStage::HostWrite:
+            return VK_ACCESS_HOST_WRITE_BIT;
+        case CoreGraphics::PipelineStage::MemoryRead:
+            return VK_ACCESS_MEMORY_READ_BIT;
+        case CoreGraphics::PipelineStage::MemoryWrite:
+            return VK_ACCESS_MEMORY_WRITE_BIT;
+        case CoreGraphics::PipelineStage::ImageInitial:
+            return VK_ACCESS_HOST_WRITE_BIT;
+        case CoreGraphics::PipelineStage::Present:
+            return VK_ACCESS_TRANSFER_READ_BIT;
+    }
+    return VK_ACCESS_MEMORY_WRITE_BIT;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+VkImageLayout
+VkTypes::AsVkImageLayout(const CoreGraphics::PipelineStage stage, bool depthStencil)
+{
+    switch (stage)
+    {
+        case CoreGraphics::PipelineStage::Top:
+        case CoreGraphics::PipelineStage::Bottom:
+        case CoreGraphics::PipelineStage::Indirect:
+        case CoreGraphics::PipelineStage::Index:
+        case CoreGraphics::PipelineStage::Vertex:
+        case CoreGraphics::PipelineStage::InputAttachment:
+        case CoreGraphics::PipelineStage::Uniform:
+        case CoreGraphics::PipelineStage::VertexShaderRead:
+        case CoreGraphics::PipelineStage::HullShaderRead:
+        case CoreGraphics::PipelineStage::DomainShaderRead:
+        case CoreGraphics::PipelineStage::GeometryShaderRead:
+        case CoreGraphics::PipelineStage::PixelShaderRead:
+        case CoreGraphics::PipelineStage::GraphicsShadersRead:
+        case CoreGraphics::PipelineStage::ComputeShaderRead:
+        case CoreGraphics::PipelineStage::AllShadersRead:
+        case CoreGraphics::PipelineStage::ColorWrite:           // The image layout from a pass is read on finished
+        case CoreGraphics::PipelineStage::DepthStencilWrite:    // The image layout from a pass is read on finished
+            if (depthStencil)
+                return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+            else
+                return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        case CoreGraphics::PipelineStage::VertexShaderWrite:
+        case CoreGraphics::PipelineStage::HullShaderWrite:
+        case CoreGraphics::PipelineStage::DomainShaderWrite:
+        case CoreGraphics::PipelineStage::GeometryShaderWrite:
+        case CoreGraphics::PipelineStage::PixelShaderWrite:
+        case CoreGraphics::PipelineStage::GraphicsShadersWrite:
+        case CoreGraphics::PipelineStage::ComputeShaderWrite:
+        case CoreGraphics::PipelineStage::AllShadersWrite:
+            return VK_IMAGE_LAYOUT_GENERAL;
+        case CoreGraphics::PipelineStage::ColorRead:
+            return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        case CoreGraphics::PipelineStage::DepthStencilRead:
+            return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+        case CoreGraphics::PipelineStage::TransferRead:
+            return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        case CoreGraphics::PipelineStage::TransferWrite:
+            return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        case CoreGraphics::PipelineStage::HostRead:
+            return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        case CoreGraphics::PipelineStage::HostWrite:
+            return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        case CoreGraphics::PipelineStage::MemoryRead:
+            return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        case CoreGraphics::PipelineStage::MemoryWrite:
+            return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        case CoreGraphics::PipelineStage::ImageInitial:
+            return VK_IMAGE_LAYOUT_UNDEFINED;
+        case CoreGraphics::PipelineStage::Present:
+            return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     }
     return VK_IMAGE_LAYOUT_UNDEFINED;
 }

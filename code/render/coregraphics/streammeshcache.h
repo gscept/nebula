@@ -22,11 +22,6 @@ public:
     /// destructor
     virtual ~StreamMeshCache();
 
-    /// bind mesh
-    void MeshBind(const Resources::ResourceId id);
-    /// bind primitive group for currently bound mesh
-    void BindPrimitiveGroup(const IndexT primgroup);
-
 	struct StreamMeshLoadMetaData
 	{
 		bool copySource;

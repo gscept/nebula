@@ -12,6 +12,7 @@
 #include "vkshader.h"
 #include "vkresourcetable.h"
 #include "vktextureview.h"
+#include "..\pass.h"
 
 using namespace CoreGraphics;
 namespace Vulkan
@@ -46,32 +47,41 @@ PassGetVkNumAttachments(const CoreGraphics::PassId& id)
     return passAllocator.Get<Pass_VkLoadInfo>(id.id24).colorAttachments.Size();
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-const Util::FixedArray<VkRect2D>&
-PassGetVkRects(const CoreGraphics::PassId& id)
-{
-    const VkPassRuntimeInfo& info = passAllocator.Get<Pass_VkRuntimeInfo>(id.id24);
-    return info.subpassRects[info.currentSubpassIndex];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Util::FixedArray<VkViewport>&
-PassGetVkViewports(const CoreGraphics::PassId& id)
-{
-    const VkPassRuntimeInfo& info = passAllocator.Get<Pass_VkRuntimeInfo>(id.id24);
-    return info.subpassViewports[info.currentSubpassIndex];
-}
-
 } // namespace Vulkan
 
 namespace CoreGraphics
 {
 
 using namespace Vulkan;
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::rectangle<int>
+VkViewportToRect(const VkViewport& vp)
+{
+    Math::rectangle<int> ret;
+    ret.left = vp.x;
+    ret.top = vp.y;
+    ret.right = ret.left + vp.width;
+    ret.bottom = ret.top + vp.height;
+    return ret;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+Math::rectangle<int>
+VkScissorToRect(const VkRect2D& sc)
+{
+    Math::rectangle<int> ret;
+    ret.left = sc.offset.x;
+    ret.top = sc.offset.y;
+    ret.right = ret.left + sc.extent.width;
+    ret.bottom = ret.top + sc.extent.height;
+    return ret;
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -83,8 +93,8 @@ GetSubpassInfo(
     , Util::Array<VkSubpassDependency>& outDeps
     , Util::FixedArray<VkAttachmentDescription>& outAttachments
     , Util::Array<uint32>& usedAttachmentCounts
-    , Util::FixedArray<Util::FixedArray<VkViewport>>& outViewports
-    , Util::FixedArray<Util::FixedArray<VkRect2D>>& outScissorRects
+    , Util::FixedArray<Util::FixedArray<Math::rectangle<int>>>& outViewports
+    , Util::FixedArray<Util::FixedArray<Math::rectangle<int>>>& outScissorRects
     , Util::FixedArray<VkPipelineViewportStateCreateInfo>& outPipelineInfos
     , uint32& numUsedAttachmentsTotal)
 {
@@ -155,8 +165,8 @@ GetSubpassInfo(
             // if we have no attachments in the subpass, use the depth stencil viewports
             if (subpass.attachments.Size() == 0)
             {
-                outViewports[i][0] = loadInfo.viewports[ds.attachment];
-                outScissorRects[i][0] = loadInfo.rects[ds.attachment];
+                outViewports[i][0] = VkViewportToRect(loadInfo.viewports[ds.attachment]);
+                outScissorRects[i][0] = VkScissorToRect(loadInfo.rects[ds.attachment]);
             }
         }
         else
@@ -188,8 +198,8 @@ GetSubpassInfo(
             ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
             usedAttachments++;
 
-            outViewports[i][j] = loadInfo.viewports[ref.attachment];
-            outScissorRects[i][j] = loadInfo.rects[ref.attachment];
+            outViewports[i][j] = VkViewportToRect(loadInfo.viewports[ref.attachment]);
+            outScissorRects[i][j] = VkScissorToRect(loadInfo.rects[ref.attachment]);
 
             // remove from all attachments list
             IndexT idx = allAttachments.FindIndex(ref.attachment);
@@ -426,6 +436,7 @@ SetupPass(const PassId pid)
     };
     VkResult res = vkCreateRenderPass(loadInfo.dev, &rpinfo, nullptr, &loadInfo.pass);
     n_assert(res == VK_SUCCESS);
+    CoreGraphics::ObjectSetName(loadInfo.pass, loadInfo.name.Value());
 
     if (loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId)
     {
@@ -625,64 +636,6 @@ DestroyPass(const PassId id)
 /**
 */
 void
-PassBegin(const PassId id, PassRecordMode recordMode)
-{
-    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_VkRuntimeInfo>(id.id24);
-
-    // bind descriptor set for pass resources
-    CoreGraphics::SetResourceTable(runtimeInfo.passDescriptorSet, NEBULA_PASS_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
-
-    // update framebuffer pipeline info to next subpass
-    runtimeInfo.currentSubpassIndex = 0;
-    runtimeInfo.framebufferPipelineInfo.subpass = 0;
-    runtimeInfo.framebufferPipelineInfo.pViewportState = &runtimeInfo.subpassPipelineInfo[0];
-    runtimeInfo.recordMode = recordMode;
-
-    CoreGraphics::BeginPass(id, recordMode);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-PassNextSubpass(const PassId id)
-{
-    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_VkRuntimeInfo>(id.id24);
-    runtimeInfo.currentSubpassIndex++;
-    runtimeInfo.framebufferPipelineInfo.subpass = runtimeInfo.currentSubpassIndex;
-    runtimeInfo.framebufferPipelineInfo.pViewportState = &runtimeInfo.subpassPipelineInfo[runtimeInfo.currentSubpassIndex];
-
-    CoreGraphics::SetToNextSubpass(runtimeInfo.recordMode);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-PassEnd(const PassId id)
-{
-    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_VkRuntimeInfo>(id.id24);
-    CoreGraphics::EndPass(runtimeInfo.recordMode);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-PassApplyClipSettings(const PassId id)
-{
-    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_VkRuntimeInfo>(id.id24);
-    const Util::FixedArray<VkViewport>& viewports = runtimeInfo.subpassViewports[runtimeInfo.currentSubpassIndex];
-    CoreGraphics::SetVkViewports(viewports.Begin(), viewports.Size());
-
-    const Util::FixedArray<VkRect2D>& scissors = runtimeInfo.subpassRects[runtimeInfo.currentSubpassIndex];
-    CoreGraphics::SetVkScissorRects(scissors.Begin(), scissors.Size());
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
 PassWindowResizeCallback(const PassId id)
 {
     VkPassLoadInfo& loadInfo = passAllocator.Get<Pass_VkLoadInfo>(id.id24);
@@ -736,10 +689,40 @@ PassGetNumSubpassAttachments(const CoreGraphics::PassId id, const IndexT subpass
 //------------------------------------------------------------------------------
 /**
 */
+const CoreGraphics::ResourceTableId
+PassGetResourceTable(const CoreGraphics::PassId id)
+{
+    VkPassRuntimeInfo& runtimeInfo = passAllocator.Get<Pass_VkRuntimeInfo>(id.id24);
+    return runtimeInfo.passDescriptorSet;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const Util::StringAtom 
 PassGetName(const CoreGraphics::PassId id)
 {
     return passAllocator.Get<Pass_VkLoadInfo>(id.id24).name;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::FixedArray<Math::rectangle<int>>&
+PassGetRects(const CoreGraphics::PassId& id)
+{
+    const VkPassRuntimeInfo& info = passAllocator.Get<Pass_VkRuntimeInfo>(id.id24);
+    return info.subpassRects[info.currentSubpassIndex];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::FixedArray<Math::rectangle<int>>&
+PassGetViewports(const CoreGraphics::PassId& id)
+{
+    const VkPassRuntimeInfo& info = passAllocator.Get<Pass_VkRuntimeInfo>(id.id24);
+    return info.subpassViewports[info.currentSubpassIndex];
 }
 
 } // namespace Vulkan

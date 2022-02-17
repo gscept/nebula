@@ -27,9 +27,9 @@ struct EventCreateInfo
 {
     Util::StringAtom name;
     bool createSignaled : 1;
-    Util::Array<TextureBarrier> textures;
-    Util::Array<BufferBarrier> rwBuffers;
-    Util::Array<ExecutionBarrier> barriers;
+    CoreGraphics::PipelineStage fromStage, toStage;
+    Util::Array<TextureBarrierInfo> textures;
+    Util::Array<BufferBarrierInfo> buffers;
 };
 
 /// create new event
@@ -37,32 +37,26 @@ EventId CreateEvent(const EventCreateInfo& info);
 /// destroy even
 void DestroyEvent(const EventId id);
 
-/// insert event in queue to be signaled
-void EventSignal(const EventId id, const CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage stage);
 /// insert event in command buffer to be signaled
-void EventSignal(const EventId id, const CoreGraphics::CommandBufferId buf, const CoreGraphics::BarrierStage stage);
+void EventSignal(const EventId id, const CoreGraphics::CmdBufferId buf, const CoreGraphics::PipelineStage stage);
 /// insert event in queue to wait for
 void EventWait(
     const EventId id, 
     const CoreGraphics::QueueType queue,
-    const CoreGraphics::BarrierStage waitStage,
-    const CoreGraphics::BarrierStage signalStage
+    const CoreGraphics::PipelineStage waitStage,
+    const CoreGraphics::PipelineStage signalStage
     );
 /// insert event in command buffer to wait for
 void EventWait(
     const EventId id,
-    const CoreGraphics::CommandBufferId buf,
-    const CoreGraphics::BarrierStage waitStage,
-    const CoreGraphics::BarrierStage signalStage
+    const CoreGraphics::CmdBufferId buf,
+    const CoreGraphics::PipelineStage waitStage,
+    const CoreGraphics::PipelineStage signalStage
 );
 /// insert reset event
-void EventReset(const EventId id, const CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage stage);
-/// insert reset event
-void EventReset(const EventId id, const CoreGraphics::CommandBufferId buf, const CoreGraphics::BarrierStage stage);
+void EventReset(const EventId id, const CoreGraphics::CmdBufferId buf, const CoreGraphics::PipelineStage stage);
 /// insert both a wait and reset
-void EventWaitAndReset(const EventId id, const CoreGraphics::QueueType queue, const CoreGraphics::BarrierStage waitStage, const CoreGraphics::BarrierStage signalStage);
-/// insert both a wait and reset
-void EventWaitAndReset(const EventId id, const CoreGraphics::CommandBufferId buf, const CoreGraphics::BarrierStage waitStage, const CoreGraphics::BarrierStage signalStage);
+void EventWaitAndReset(const EventId id, const CoreGraphics::CmdBufferId buf, const CoreGraphics::PipelineStage waitStage, const CoreGraphics::PipelineStage signalStage);
 
 /// get event status on host
 bool EventPoll(const EventId id);

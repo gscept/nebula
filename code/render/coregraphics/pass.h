@@ -18,6 +18,8 @@
 namespace CoreGraphics
 {
 
+struct ResourceTableId;
+struct TextureView;
 ID_24_8_TYPE(PassId);
 
 enum class AttachmentFlagBits : uint8
@@ -56,11 +58,17 @@ struct PassCreateInfo
     CoreGraphics::TextureViewId depthStencilAttachment;
     
     Util::Array<Subpass> subpasses;
-    Frame::FrameBatchType::Code batchType;
 
     float clearDepth;
     uint clearStencil;
     AttachmentFlagBits depthStencilFlags;
+
+    PassCreateInfo()
+        : depthStencilAttachment(CoreGraphics::InvalidTextureViewId)
+        , clearDepth(1.0f)
+        , clearStencil(0)
+        , depthStencilFlags(AttachmentFlagBits::NoFlags)
+    {};
 };
 
 enum class PassRecordMode : uint8
@@ -75,18 +83,6 @@ const PassId CreatePass(const PassCreateInfo& info);
 /// discard pass
 void DestroyPass(const PassId id);
 
-/// begin using a pass
-void PassBegin(const PassId id, PassRecordMode recordMode);
-/// set currently bound pass to next subpass (asserts a valid pass is bound)
-void PassNextSubpass(const PassId id);
-/// end using a pass, this will set the pass id to be invalid
-void PassEnd(const PassId id);
-
-/// apply clip settings (viewport and scissor rect)
-void PassApplyClipSettings(const PassId id);
-/// update pass resources
-void PassUpdateResources(const PassId id, const IndexT bufferIndex);
-
 /// called when window is resized
 void PassWindowResizeCallback(const PassId id);
 
@@ -97,6 +93,14 @@ const CoreGraphics::TextureViewId PassGetDepthStencilAttachment(const CoreGraphi
 
 /// get number of color attachments for a subpass
 const uint32_t PassGetNumSubpassAttachments(const CoreGraphics::PassId id, const IndexT subpass);
+/// Get pass resource table
+const CoreGraphics::ResourceTableId PassGetResourceTable(const CoreGraphics::PassId id);
+
+/// get scissor rects for current subpass
+const Util::FixedArray<Math::rectangle<int>>& PassGetRects(const CoreGraphics::PassId& id);
+/// get viewports for current subpass
+const Util::FixedArray<Math::rectangle<int>>& PassGetViewports(const CoreGraphics::PassId& id);
+
 
 /// get name
 const Util::StringAtom PassGetName(const CoreGraphics::PassId id);

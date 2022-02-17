@@ -50,8 +50,8 @@ struct VkPassRuntimeInfo
     CoreGraphics::ResourceTableId passDescriptorSet;
     CoreGraphics::ResourcePipelineId passPipelineLayout;
 
-    Util::FixedArray<Util::FixedArray<VkRect2D>> subpassRects;
-    Util::FixedArray<Util::FixedArray<VkViewport>> subpassViewports;
+    Util::FixedArray<Util::FixedArray<Math::rectangle<int>>> subpassRects;
+    Util::FixedArray<Util::FixedArray<Math::rectangle<int>>> subpassViewports;
     Util::FixedArray<VkPipelineViewportStateCreateInfo> subpassPipelineInfo;
     CoreGraphics::PassRecordMode recordMode;
 };
@@ -78,11 +78,6 @@ const VkRenderPassBeginInfo& PassGetVkRenderPassBeginInfo(const CoreGraphics::Pa
 const VkGraphicsPipelineCreateInfo& PassGetVkFramebufferInfo(const CoreGraphics::PassId& id);
 /// get number of pass attachments
 const SizeT PassGetVkNumAttachments(const CoreGraphics::PassId& id);
-/// get scissor rects for current subpass
-const Util::FixedArray<VkRect2D>& PassGetVkRects(const CoreGraphics::PassId& id);
-/// get viewports for current subpass
-const Util::FixedArray<VkViewport>& PassGetVkViewports(const CoreGraphics::PassId& id);
-
 
 
 } // namespace Vulkan

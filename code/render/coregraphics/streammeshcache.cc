@@ -76,8 +76,8 @@ void
 StreamMeshCache::Unload(const Resources::ResourceId id)
 {
     n_assert(id.resourceId != Ids::InvalidId24);
-    __LockName(meshPool->Allocator(), lock);
-    MeshCreateInfo& msh = meshPool->Get<0>(id.resourceId);
+    __LockName(meshCache->Allocator(), lock, Util::ArrayAllocatorAccess::Write);
+    MeshCreateInfo& msh = meshCache->Get<0>(id.resourceId);
 
     if (msh.indexBuffer != InvalidBufferId)
         DestroyBuffer(msh.indexBuffer);
@@ -97,7 +97,7 @@ StreamMeshCache::Unload(const Resources::ResourceId id)
 Resources::ResourceUnknownId
 StreamMeshCache::AllocObject()
 {
-    return meshPool->AllocObject();
+    return meshCache->AllocObject();
 }
 
 //------------------------------------------------------------------------------
@@ -106,7 +106,7 @@ StreamMeshCache::AllocObject()
 void
 StreamMeshCache::DeallocObject(const Resources::ResourceUnknownId id)
 {
-    meshPool->DeallocObject(id);
+    meshCache->DeallocObject(id);
 }
 
 //------------------------------------------------------------------------------
@@ -136,14 +136,15 @@ StreamMeshCache::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Resources::R
     // opening the reader also loads the file
     if (nvx2Reader->Open(name))
     {
-        __LockName(meshPool->Allocator(), lock);
-        MeshCreateInfo& msh = meshPool->Get<0>(res);
+        __LockName(meshCache->Allocator(), lock, Util::ArrayAllocatorAccess::Write);
+        MeshCreateInfo& msh = meshCache->Get<0>(res);
         n_assert(this->GetState(res) == Resources::Resource::Pending);
         auto vertexLayout = CreateVertexLayout({ nvx2Reader->GetVertexComponents() });
         msh.streams.Append({ nvx2Reader->GetVertexBuffer(), 0 });
         msh.indexBuffer = nvx2Reader->GetIndexBuffer();
         msh.topology = PrimitiveTopology::TriangleList;
         msh.primitiveGroups = nvx2Reader->GetPrimitiveGroups();
+        msh.vertexLayout = vertexLayout;
         // nvx2 does not have per primitive layouts, we apply them to all
         for (auto & i : msh.primitiveGroups)
         {
@@ -181,41 +182,6 @@ StreamMeshCache::SetupMeshFromN3d3(const Ptr<Stream>& stream, const Resources::R
     // FIXME!
     n_error("StreamMeshCache::SetupMeshFromN3d3() not yet implemented");
     return Resources::ResourceCache::Failed;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-StreamMeshCache::MeshBind(const Resources::ResourceId id)
-{
-    __LockName(meshPool->Allocator(), lock);
-    const MeshCreateInfo& msh = meshPool->Get<0>(id);
-
-    // bind vbo, and optional ibo
-    CoreGraphics::SetPrimitiveTopology(msh.topology);	
-
-    IndexT i;
-    for (i = 0; i < msh.streams.Size(); i++)
-        CoreGraphics::SetStreamVertexBuffer(msh.streams[i].index, msh.streams[i].vertexBuffer, 0);
-
-    if (msh.indexBuffer != InvalidBufferId)
-        CoreGraphics::SetIndexBuffer(msh.indexBuffer, 0);
-
-    this->activeMesh = id;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-StreamMeshCache::BindPrimitiveGroup(const IndexT primgroup)
-{
-    n_assert(this->activeMesh != InvalidMeshId);
-    __LockName(meshPool->Allocator(), lock);
-    const MeshCreateInfo& msh = meshPool->Get<0>(this->activeMesh);
-    CoreGraphics::SetPrimitiveGroup(msh.primitiveGroups[primgroup]);
-    CoreGraphics::SetVertexLayout(msh.primitiveGroups[primgroup].GetVertexLayout());
 }
 
 } // namespace Vulkan

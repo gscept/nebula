@@ -5,11 +5,12 @@
 #include "render/stdneb.h"
 #include "mesh.h"
 #include "memorymeshcache.h"
+#include "coregraphics/commandbuffer.h"
 
 namespace CoreGraphics
 {
 
-MemoryMeshCache* meshPool = nullptr;
+MemoryMeshCache* meshCache = nullptr;
 
 using namespace Ids;
 //------------------------------------------------------------------------------
@@ -18,9 +19,9 @@ using namespace Ids;
 const MeshId
 CreateMesh(const MeshCreateInfo& info)
 {
-    MeshId id = meshPool->ReserveResource(info.name, info.tag);
+    MeshId id = meshCache->ReserveResource(info.name, info.tag);
     n_assert(id.resourceType == MeshIdType);
-    meshPool->LoadFromMemory(id, &info);
+    meshCache->LoadFromMemory(id, &info);
     return id;
 }
 
@@ -30,16 +31,16 @@ CreateMesh(const MeshCreateInfo& info)
 void
 DestroyMesh(const MeshId id)
 {
-    meshPool->DiscardResource(id);
+    meshCache->DiscardResource(id);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-MeshBind(const MeshId id, const IndexT prim)
+MeshBind(const CoreGraphics::CmdBufferId cmdBuf, IndexT prim, const MeshId id)
 {
-    meshPool->BindMesh(id, prim);
+    meshCache->BindMesh(id, prim, cmdBuf);
 }
 
 //------------------------------------------------------------------------------
@@ -48,7 +49,7 @@ MeshBind(const MeshId id, const IndexT prim)
 const Util::Array<CoreGraphics::PrimitiveGroup>&
 MeshGetPrimitiveGroups(const MeshId id)
 {
-    return meshPool->GetPrimitiveGroups(id);
+    return meshCache->GetPrimitiveGroups(id);
 }
 
 //------------------------------------------------------------------------------
@@ -57,7 +58,7 @@ MeshGetPrimitiveGroups(const MeshId id)
 const BufferId
 MeshGetVertexBuffer(const MeshId id, const IndexT stream)
 {
-    return meshPool->GetVertexBuffer(id, stream);
+    return meshCache->GetVertexBuffer(id, stream);
 }
 
 //------------------------------------------------------------------------------
@@ -66,7 +67,7 @@ MeshGetVertexBuffer(const MeshId id, const IndexT stream)
 const BufferId
 MeshGetIndexBuffer(const MeshId id)
 {
-    return meshPool->GetIndexBuffer(id);
+    return meshCache->GetIndexBuffer(id);
 }
 
 //------------------------------------------------------------------------------
@@ -75,7 +76,7 @@ MeshGetIndexBuffer(const MeshId id)
 const CoreGraphics::PrimitiveTopology::Code
 MeshGetTopology(const MeshId id)
 {
-    return meshPool->GetPrimitiveTopology(id);
+    return meshCache->GetPrimitiveTopology(id);
 }
 
 } // Base

@@ -35,7 +35,7 @@ struct VkBufferRuntimeInfo
 struct VkBufferMapInfo
 {
     void* mappedMemory;
-    uint32_t mapCount;
+    uint mapCount;
 };
 
 enum

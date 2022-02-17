@@ -8,11 +8,16 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
-#include "lowlevel/afxapi.h"
 #include "util/set.h"
+#include "util/tupleutility.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/sampler.h"
 #include "coregraphics/resourcetable.h"
+
+namespace AnyFX
+{
+class ShaderEffect;
+}
 
 namespace Vulkan
 {

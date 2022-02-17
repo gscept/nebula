@@ -19,6 +19,8 @@
 namespace CoreGraphics
 {
 
+struct CmdBufferId;
+
 RESOURCE_ID_TYPE(MeshId);
 
 struct MeshCreateInfo
@@ -43,8 +45,8 @@ const MeshId CreateMesh(const MeshCreateInfo& info);
 /// destroy mesh
 void DestroyMesh(const MeshId id);
 
-/// bind mesh and primitive group
-void MeshBind(const MeshId id, const IndexT prim);
+/// Bind mesh
+void MeshBind(const CoreGraphics::CmdBufferId cmdBuf, IndexT prim, const MeshId id);
 /// get number of primitive groups
 const Util::Array<CoreGraphics::PrimitiveGroup>& MeshGetPrimitiveGroups(const MeshId id);
 /// get vertex buffer
@@ -55,5 +57,5 @@ const BufferId MeshGetIndexBuffer(const MeshId id);
 const CoreGraphics::PrimitiveTopology::Code MeshGetTopology(const MeshId id);
 
 class MemoryMeshCache;
-extern MemoryMeshCache* meshPool;
+extern MemoryMeshCache* meshCache;
 } // CoreGraphics

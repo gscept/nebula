@@ -12,12 +12,12 @@
 #include "ids/idpool.h"
 #include "util/stringatom.h"
 #include "coregraphics/config.h"
-#include "coregraphics/submissioncontext.h"
 #include "gpubuffertypes.h"
 
 namespace CoreGraphics
 {
 
+struct CmdBufferId;
 ID_24_8_TYPE(BufferId);
 
 enum BufferAccessMode
@@ -105,20 +105,16 @@ void BufferUnmap(const BufferId id);
 void BufferUpdate(const BufferId id, const void* data, const uint size, const uint offset = 0);
 
 /// update buffer directly on command buffer during frame update, asserts if size is too big
-void BufferUpload(const BufferId id, const void* data, const uint size, const uint offset, const CoreGraphics::QueueType queue = GraphicsQueueType);
-/// update buffer on command buffer in submission context, splits the size into chunks if necessary
-void BufferUpload(const BufferId id, const void* data, const uint size, const uint offset, const CoreGraphics::SubmissionContextId sub);
+void BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const void* data, const uint size, const uint offset);
 /// update buffer data
 template<class TYPE> void BufferUpdate(const BufferId id, const TYPE& data, const uint offset = 0);
 /// update buffer data as array
 template<class TYPE> void BufferUpdateArray(const BufferId id, const TYPE* data, const uint count, const uint offset = 0);
-/// upload data from pointer directly to buffer through command buffer
-template<class TYPE> void BufferUpload(const BufferId id, const TYPE* data, const uint count, const uint offset, const CoreGraphics::QueueType queue = GraphicsQueueType);
 /// upload data from pointer directly to buffer through submission context
-template<class TYPE> void BufferUpload(const BufferId id, const TYPE* data, const uint count, const uint offset, const CoreGraphics::SubmissionContextId sub);
+template<class TYPE> void BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const TYPE* data, const uint count, const uint offset);
 
 /// fill buffer with data much like memset
-void BufferFill(const BufferId id, char pattern, const CoreGraphics::SubmissionContextId sub);
+void BufferFill(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, char pattern);
 
 /// flush any changes done to the buffer CPU side so they are visible on the GPU
 void BufferFlush(const BufferId id, IndexT offset = 0, SizeT size = NEBULA_WHOLE_BUFFER_SIZE);
@@ -160,19 +156,9 @@ BufferUpdateArray(const BufferId id, const TYPE* data, const uint count, const u
 */
 template<class TYPE>
 inline void
-BufferUpload(const BufferId id, const TYPE* data, const uint count, const uint offset, const CoreGraphics::QueueType queue)
+BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const TYPE* data, const uint count, const uint offset)
 {
-    BufferUpload(id, (const void*)data, sizeof(TYPE) * count, offset, queue);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class TYPE>
-inline void
-BufferUpload(const BufferId id, const TYPE* data, const uint count, const uint offset, const CoreGraphics::SubmissionContextId sub)
-{
-    BufferUpload(id, (const void*)data, sizeof(TYPE) * count, offset, sub);
+    BufferUpload(cmdBuf, id, (const void*)data, sizeof(TYPE) * count, offset);
 }
 
 } // namespace CoreGraphics

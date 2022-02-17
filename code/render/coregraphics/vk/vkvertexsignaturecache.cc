@@ -37,7 +37,7 @@ VkVertexSignatureCache::~VkVertexSignatureCache()
 const SizeT
 VkVertexSignatureCache::GetVertexLayoutSize(const CoreGraphics::VertexLayoutId id)
 {
-    return this->Get<3>(id.resourceId).vertexByteSize;
+    return this->Get<VertexSignature_LayoutInfo>(id.resourceId).vertexByteSize;
 }
 
 //------------------------------------------------------------------------------
@@ -46,7 +46,7 @@ VkVertexSignatureCache::GetVertexLayoutSize(const CoreGraphics::VertexLayoutId i
 const Util::Array<CoreGraphics::VertexComponent>&
 VkVertexSignatureCache::GetVertexComponents(const CoreGraphics::VertexLayoutId id)
 {
-    return this->Get<3>(id.resourceId).comps;
+    return this->Get<VertexSignature_LayoutInfo>(id.resourceId).comps;
 }
 
 //------------------------------------------------------------------------------
@@ -56,9 +56,9 @@ Resources::ResourceCache::LoadStatus
 VkVertexSignatureCache::LoadFromMemory(const Resources::ResourceId id, const void* info)
 {
     const CoreGraphics::VertexLayoutInfo* vertexLayoutInfo = reinterpret_cast<const CoreGraphics::VertexLayoutInfo*>(info);
-    Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<0>(id.resourceId);
-    VkPipelineVertexInputStateCreateInfo& vertexInfo = this->Get<1>(id.resourceId);
-    BindInfo& bindInfo = this->Get<2>(id.resourceId);
+    Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<VertexSignature_ProgramLayoutMapping>(id.resourceId);
+    VkPipelineVertexInputStateCreateInfo& vertexInfo = this->Get<VertexSignature_VkPipelineInfo>(id.resourceId);
+    BindInfo& bindInfo = this->Get<VertexSignature_BindInfo>(id.resourceId);
     this->Get<3>(id.resourceId) = *vertexLayoutInfo;
 
     // create binds
@@ -122,7 +122,7 @@ void
 VkVertexSignatureCache::Unload(const Resources::ResourceId id)
 {
     // clear the table as it may not be reused by the next layout
-    Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<0>(id.resourceId);
+    Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<VertexSignature_ProgramLayoutMapping>(id.resourceId);
     hashTable.Clear();
 
     // also clear bind info
@@ -131,6 +131,7 @@ VkVertexSignatureCache::Unload(const Resources::ResourceId id)
     bindInfo.attrs.Clear();
 }
 
+static Threading::CriticalSection vertexSignatureMutex;
 //------------------------------------------------------------------------------
 /**
     The default constructor for HashTable takes 128 entries, and it should be sufficient...
@@ -139,11 +140,10 @@ VkVertexSignatureCache::Unload(const Resources::ResourceId id)
 VkPipelineVertexInputStateCreateInfo*
 VkVertexSignatureCache::GetDerivativeLayout(const CoreGraphics::VertexLayoutId layout, const CoreGraphics::ShaderProgramId shader)
 {
-    Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<0>(layout.resourceId);
-    const VkProgramReflectionInfo& program = CoreGraphics::shaderPool->GetProgram(shader);
-    const BindInfo& bindInfo = this->Get<2>(layout.resourceId);
-    const VkPipelineVertexInputStateCreateInfo& baseInfo = this->Get<1>(layout.resourceId);
+    Threading::CriticalScope scope(&vertexSignatureMutex);
+    Util::HashTable<uint64_t, DerivativeLayout>& hashTable = this->Get<VertexSignature_ProgramLayoutMapping>(layout.resourceId);
     const Ids::Id64 shaderHash = shader.HashCode64();
+
     IndexT i = hashTable.FindIndex(shaderHash);
     if (i != InvalidIndex)
     {
@@ -151,6 +151,10 @@ VkVertexSignatureCache::GetDerivativeLayout(const CoreGraphics::VertexLayoutId l
     }
     else
     {
+        const VkProgramReflectionInfo& program = CoreGraphics::shaderPool->GetProgram(shader);
+        const BindInfo& bindInfo = this->Get<VertexSignature_BindInfo>(layout.resourceId);
+        const VkPipelineVertexInputStateCreateInfo& baseInfo = this->Get<VertexSignature_VkPipelineInfo>(layout.resourceId);
+
         IndexT index = hashTable.Add(shaderHash, {});
         DerivativeLayout& layout = hashTable.ValueAtIndex(shaderHash, index);
         layout.info = baseInfo;
