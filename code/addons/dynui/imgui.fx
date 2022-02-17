@@ -89,7 +89,9 @@ psMain(
 
     if (useAlpha == 0)
         texColor.a = 1;
-    FinalColor = Color * texColor;
+
+    // Since we are using sRGB output, remember to degamma
+    FinalColor = pow(Color * texColor, float4(2.2f, 2.2f, 2.2f, 1.0f));
 }
 
 

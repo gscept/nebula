@@ -368,12 +368,12 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
 {
     static const ImU32 colors[] =
     {
-        IM_COL32(200, 50, 50, 255),
-        IM_COL32(50, 200, 50, 255),
-        IM_COL32(50, 50, 200, 255),
-        IM_COL32(200, 50, 200, 255),
-        IM_COL32(50, 200, 200, 255),
-        IM_COL32(200, 200, 50, 255),
+        IM_COL32(255, 200, 200, 255),
+        IM_COL32(200, 255, 200, 255),
+        IM_COL32(200, 200, 255, 255),
+        IM_COL32(200, 200, 255, 255),
+        IM_COL32(200, 255, 255, 255),
+        IM_COL32(255, 255, 200, 255),
     };
     static const float YPad = ImGui::GetTextLineHeight();
     static const float TextPad = 5.0f;
@@ -432,15 +432,6 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
 int
 RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, ImDrawList* drawList, const ImVec2 start, const ImVec2 fullSize, ImVec2 pos, const ImVec2 canvas, const float frameTime, const int level)
 {
-    static const ImU32 colors[] =
-    {
-        IM_COL32(200, 50, 50, 255),
-        IM_COL32(50, 200, 50, 255),
-        IM_COL32(50, 50, 200, 255),
-        IM_COL32(200, 50, 200, 255),
-        IM_COL32(50, 200, 200, 255),
-        IM_COL32(200, 200, 50, 255),
-    };
     static const float YPad = ImGui::GetTextLineHeight();
     static const float TextPad = 5.0f;
 
@@ -457,14 +448,14 @@ RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, ImDrawL
 
     // draw a filled rect for background, and normal rect for outline
     drawList->PushClipRect(bbMin, bbMax, true);
-    drawList->AddRectFilled(bbMin, bbMax, colors[level % 6], 0.0f);
+    ImU32 color = IM_COL32(marker.color.x * 255.0f, marker.color.y * 255.0f, marker.color.z * 255.0f, marker.color.w * 255.0f);
+    drawList->AddRectFilled(bbMin, bbMax, color, 0.0f);
     drawList->AddRect(bbMin, bbMax, IM_COL32(128, 128, 128, 128), 0.0f);
 
     // make sure text appears inside the box
     Util::String text = Util::String::Sprintf("%s (%4.4f ms)", marker.name.AsCharPtr(), duration * 1000);
     drawList->AddText(ImVec2(startX + TextPad, startY), IM_COL32_BLACK, text.AsCharPtr());
     drawList->PopClipRect();
-
 
     if (ImGui::IsMouseHoveringRect(bbMin, bbMax))
     {
