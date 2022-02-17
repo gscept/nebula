@@ -68,7 +68,7 @@ public:
     /// get the shared vertex layout
     static CoreGraphics::VertexLayoutId GetParticleVertexLayout();
     /// get the shared primitive group
-    static CoreGraphics::PrimitiveGroup GetParticlePrimitiveGroup();
+    static CoreGraphics::PrimitiveGroup& GetParticlePrimitiveGroup();
 
 #ifndef PUBLIC_DEBUG    
     /// debug rendering

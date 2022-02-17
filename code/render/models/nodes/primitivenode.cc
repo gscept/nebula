@@ -35,12 +35,24 @@ PrimitiveNode::~PrimitiveNode()
 //------------------------------------------------------------------------------
 /**
 */
-std::function<void()>
-PrimitiveNode::GetApplyNodeFunction()
+std::function<void(const CoreGraphics::CmdBufferId)>
+PrimitiveNode::GetApplyFunction()
+{
+    return [this](const CoreGraphics::CmdBufferId id)
+    {
+        CoreGraphics::MeshBind(id, this->primitiveGroupIndex, this->res);
+    };
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+std::function<const CoreGraphics::PrimitiveGroup()>
+PrimitiveNode::GetPrimitiveGroupFunction()
 {
     return [this]()
     {
-        CoreGraphics::MeshBind(this->res, this->primitiveGroupIndex);
+        return CoreGraphics::MeshGetPrimitiveGroups(this->res)[this->primitiveGroupIndex];
     };
 }
 

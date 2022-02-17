@@ -866,7 +866,7 @@ CharacterContext::WaitForCharacterJobs(const Graphics::FrameContext& ctx)
         }
 
         // update skinning palette
-        uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, usedMatrices.Begin(), usedMatrices.Size());
+        uint offset = CoreGraphics::SetGraphicsConstants(usedMatrices.Begin(), usedMatrices.Size());
         renderables.nodeStates[node].resourceTableOffsets[renderables.nodeStates[node].skinningConstantsIndex] = offset;
     }
 }

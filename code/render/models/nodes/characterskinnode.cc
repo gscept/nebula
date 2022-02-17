@@ -74,7 +74,7 @@ CharacterSkinNode::OnFinishedLoading()
 {
     PrimitiveNode::OnFinishedLoading();
     CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
-    CoreGraphics::BufferId cbo = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer);
+    CoreGraphics::BufferId cbo = CoreGraphics::GetGraphicsConstantBuffer();
     IndexT index = CoreGraphics::ShaderGetResourceSlot(shader, "JointBlock");
     CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { cbo, index, 0, false, true, (SizeT)(sizeof(Math::mat4) * this->skinFragments[0].jointPalette.Size()), 0 });
     CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
@@ -83,12 +83,24 @@ CharacterSkinNode::OnFinishedLoading()
 //------------------------------------------------------------------------------
 /**
 */
-std::function<void()>
-CharacterSkinNode::GetApplyNodeFunction()
+std::function<void(const CoreGraphics::CmdBufferId)>
+CharacterSkinNode::GetApplyFunction()
+{
+    return [this](const CoreGraphics::CmdBufferId id)
+    {
+        CoreGraphics::MeshBind(id, this->skinFragments[0].primGroupIndex, this->res);
+    };
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+std::function<const CoreGraphics::PrimitiveGroup()>
+CharacterSkinNode::GetPrimitiveGroupFunction()
 {
     return [this]()
     {
-        CoreGraphics::MeshBind(this->res, this->skinFragments[0].primGroupIndex);
+        return CoreGraphics::MeshGetPrimitiveGroups(this->res)[this->skinFragments[0].primGroupIndex];
     };
 }
 

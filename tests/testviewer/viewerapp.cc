@@ -145,6 +145,13 @@ SimpleViewerApplication::Open()
         this->wnd = CreateWindow(wndInfo);
         this->cam = Graphics::CreateEntity();
 
+        this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
+        gfxServer->SetCurrentView(this->view);
+        this->stage = gfxServer->CreateStage("stage1", true);
+
+        // setup post effects
+        Ptr<Frame::FrameScript> frameScript = this->view->GetFrameScript();
+
         // Create contexts, this could and should be bundled together
         CameraContext::Create();
         ModelContext::Create();
@@ -180,22 +187,15 @@ SimpleViewerApplication::Open()
         Vegetation::VegetationContext::Create(vegSettings);
 
         Clustering::ClusterContext::Create(0.1f, 1000.0f, this->wnd);
-        Lighting::LightContext::Create();
+        Lighting::LightContext::Create(frameScript);
         Decals::DecalContext::Create();
         Im3d::Im3dContext::Create();
-        Fog::VolumetricFogContext::Create();
+        Fog::VolumetricFogContext::Create(frameScript);
         PostEffects::BloomContext::Create();
         PostEffects::SSAOContext::Create();
         PostEffects::HistogramContext::Create();
         //PostEffects::SSRContext::Create();
 
-
-        this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
-        gfxServer->SetCurrentView(this->view);
-        this->stage = gfxServer->CreateStage("stage1", true);
-
-        // setup post effects
-        Ptr<Frame::FrameScript> frameScript = this->view->GetFrameScript();
         // setup gbuffer bindings after frame script is loaded
         CoreGraphics::ShaderServer::Instance()->SetupBufferConstants(frameScript);
         PostEffects::BloomContext::Setup(frameScript);

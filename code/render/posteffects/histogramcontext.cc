@@ -6,7 +6,8 @@
 #include "frame/framescript.h"
 #include "graphics/graphicsserver.h"
 #include "histogramcontext.h"
-#include "frame/frameplugin.h"
+#include "frame/framesubgraph.h"
+#include "frame/framecode.h"
 
 #include "downsample_cs_min.h"
 #include "histogram_cs.h"
@@ -37,6 +38,8 @@ struct
     CoreGraphics::TextureId sourceTexture;
     IndexT sourceTextureBinding;
     Util::FixedArray<CoreGraphics::TextureViewId> downsampledColorBufferViews;
+
+    Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 4> frameOpAllocator;
 
     Math::float2 offset, size;
     int mip;
@@ -175,100 +178,6 @@ HistogramContext::Create()
         0
     });
     CoreGraphics::ResourceTableCommitChanges(histogramState.downsampleResourceTable);
-
-    Frame::AddCallback("HistogramContext - Downsample", [](const IndexT frame, const IndexT bufferIndex)
-    {
-        CoreGraphics::CommandBufferBeginMarker(CoreGraphics::GraphicsQueueType, NEBULA_MARKER_COMPUTE, "Histogram Downsample");
-        CoreGraphics::SetShaderProgram(histogramState.downsampleProgram, CoreGraphics::GraphicsQueueType, false);
-        CoreGraphics::SetResourceTable(histogramState.downsampleResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-        uint dispatchX = (histogramState.sourceTextureDimensions.width - 1) / 64;
-        uint dispatchY = (histogramState.sourceTextureDimensions.height - 1) / 64;
-        CoreGraphics::Compute(dispatchX + 1, dispatchY + 1, 1);
-        CoreGraphics::CommandBufferEndMarker(CoreGraphics::GraphicsQueueType);
-    });
-
-    Frame::AddCallback("HistogramContext - Bucket", [](const IndexT frame, const IndexT bufferIndex)
-    {
-        CoreGraphics::CommandBufferBeginMarker(CoreGraphics::GraphicsQueueType, NEBULA_MARKER_COMPUTE, "Histogram Categorize");
-        CoreGraphics::SetShaderProgram(histogramState.histogramCategorizeProgram, CoreGraphics::GraphicsQueueType, false);
-        CoreGraphics::SetResourceTable(histogramState.histogramResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-        int groupsX = (histogramState.size.x - histogramState.offset.x) / 256;
-        int groupsY = (histogramState.size.y - histogramState.offset.y);
-        CoreGraphics::Compute(groupsX, groupsY, 1);
-
-        CoreGraphics::BarrierPush(
-            CoreGraphics::GraphicsQueueType,
-            CoreGraphics::BarrierStage::ComputeShader,
-            CoreGraphics::BarrierStage::Transfer,
-            CoreGraphics::BarrierDomain::Global,
-            {
-                CoreGraphics::BufferBarrier
-                {
-                    histogramState.histogramCounters,
-                    CoreGraphics::BarrierAccess::ShaderWrite,
-                    CoreGraphics::BarrierAccess::TransferRead,
-                    0, NEBULA_WHOLE_BUFFER_SIZE
-                },
-            });
-
-        CoreGraphics::BarrierPush(
-            CoreGraphics::GraphicsQueueType,
-            CoreGraphics::BarrierStage::Host,
-            CoreGraphics::BarrierStage::Transfer,
-            CoreGraphics::BarrierDomain::Global,
-            {
-                CoreGraphics::BufferBarrier
-                {
-                    histogramState.histogramReadback[bufferIndex],
-                    CoreGraphics::BarrierAccess::HostRead,
-                    CoreGraphics::BarrierAccess::TransferWrite,
-                    0, NEBULA_WHOLE_BUFFER_SIZE
-                },
-            });
-
-        // copy from GPU side buffer to CPU for readback
-        CoreGraphics::BufferCopy from, to;
-        from.offset = 0;
-        to.offset = 0;
-        CoreGraphics::Copy(
-            CoreGraphics::GraphicsQueueType,
-            histogramState.histogramCounters, { from },
-            histogramState.histogramReadback[bufferIndex], { to }, CoreGraphics::BufferGetByteSize(histogramState.histogramCounters));
-
-        CoreGraphics::BarrierPop(CoreGraphics::GraphicsQueueType);
-        CoreGraphics::BarrierPop(CoreGraphics::GraphicsQueueType);
-
-        CoreGraphics::BarrierPush(
-            CoreGraphics::GraphicsQueueType,
-            CoreGraphics::BarrierStage::Transfer,
-            CoreGraphics::BarrierStage::Transfer,
-            CoreGraphics::BarrierDomain::Global,
-            {
-                CoreGraphics::BufferBarrier
-                {
-                    histogramState.histogramCounters,
-                    CoreGraphics::BarrierAccess::TransferRead,
-                    CoreGraphics::BarrierAccess::TransferWrite,
-                    0, NEBULA_WHOLE_BUFFER_SIZE
-                },
-            }
-        );
-
-        /*
-        // clear histogram counters buffer
-        CoreGraphics::Copy(
-            CoreGraphics::GraphicsQueueType,
-            histogramState.histogramCounters, { from },
-            histogramState.histogramClearCountersBuffer, { to }, CoreGraphics::BufferGetByteSize(histogramState.histogramCounters));
-            */
-
-        // clear histogram counters
-        uint initDatas[255] = { 0 };
-        CoreGraphics::BufferUpload(histogramState.histogramCounters, initDatas, 255, 0);
-        CoreGraphics::BarrierPop(CoreGraphics::GraphicsQueueType);
-
-        CoreGraphics::CommandBufferEndMarker(CoreGraphics::GraphicsQueueType);
-    });
 }
 
 //------------------------------------------------------------------------------
@@ -277,6 +186,7 @@ HistogramContext::Create()
 void
 HistogramContext::Discard()
 {
+    histogramState.frameOpAllocator.Release();
 }
 
 //------------------------------------------------------------------------------
@@ -372,6 +282,94 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
     histogramState.offset.y = 0;
     histogramState.size.x = 1.0f;
     histogramState.size.y = 1.0f;
+
+    // Construct subgraph
+    Frame::FrameCode* downsample = histogramState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    downsample->SetName("Histogram Downsample");
+    downsample->textureDeps.Add(histogramState.sourceTexture,
+                                {
+                                    "Histogram Downsample"
+                                    , CoreGraphics::PipelineStage::ComputeShaderWrite
+                                    , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                });
+
+    downsample->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        CoreGraphics::CmdSetShaderProgram(cmdBuf, histogramState.downsampleProgram, false);
+        CoreGraphics::CmdSetResourceTable(cmdBuf, histogramState.downsampleResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        uint dispatchX = (histogramState.sourceTextureDimensions.width - 1) / 64;
+        uint dispatchY = (histogramState.sourceTextureDimensions.height - 1) / 64;
+        CoreGraphics::CmdDispatch(cmdBuf, dispatchX + 1, dispatchY + 1, 1);
+    };
+
+    Frame::FrameCode* bucket = histogramState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    bucket->SetName("Histogram Bucket");
+    bucket->bufferDeps.Add(histogramState.histogramCounters,
+                            {
+                                "Histogram Downsample"
+                                , CoreGraphics::PipelineStage::ComputeShaderWrite
+                                , CoreGraphics::BufferSubresourceInfo()
+                            });
+    bucket->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        CoreGraphics::CmdSetShaderProgram(cmdBuf, histogramState.histogramCategorizeProgram, false);
+        CoreGraphics::CmdSetResourceTable(cmdBuf, histogramState.histogramResourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        int groupsX = (histogramState.size.x - histogramState.offset.x) / 256;
+        int groupsY = (histogramState.size.y - histogramState.offset.y);
+        CoreGraphics::CmdDispatch(cmdBuf, groupsX, groupsY, 1);
+    };
+
+    Frame::FrameCode* copy = histogramState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    copy->SetName("Histogram Copy To Readback");
+    copy->bufferDeps.Add(histogramState.histogramCounters,
+                            {
+                                "Histogram Downsample"
+                                , CoreGraphics::PipelineStage::TransferRead
+                                , CoreGraphics::BufferSubresourceInfo()
+                            });
+    copy->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        CoreGraphics::BarrierPush(
+        cmdBuf,
+        CoreGraphics::PipelineStage::HostRead,
+        CoreGraphics::PipelineStage::TransferWrite,
+        CoreGraphics::BarrierDomain::Global,
+        {
+            CoreGraphics::BufferBarrierInfo
+            {
+                histogramState.histogramReadback[bufferIndex],
+                0, NEBULA_WHOLE_BUFFER_SIZE
+            },
+        });
+
+        CoreGraphics::BufferCopy from, to;
+        from.offset = 0;
+        to.offset = 0;
+        CoreGraphics::CmdCopy(
+            cmdBuf,
+            histogramState.histogramCounters, { from },
+            histogramState.histogramReadback[bufferIndex], { to }, CoreGraphics::BufferGetByteSize(histogramState.histogramCounters));
+
+        CoreGraphics::BarrierPop(cmdBuf);
+    };
+
+    Frame::FrameCode* clear = histogramState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    clear->SetName("Histogram Clear");
+    clear->bufferDeps.Add(histogramState.histogramCounters,
+                            {
+                                "Histogram Clear"
+                                , CoreGraphics::PipelineStage::TransferWrite
+                                , CoreGraphics::BufferSubresourceInfo()
+                            });
+    clear->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        // Clear histogram counters
+        uint initDatas[255] = { 0 };
+        CoreGraphics::BufferUpload(cmdBuf, histogramState.histogramCounters, initDatas, 255, 0);
+    };
+
+    // Add subgraph
+    Frame::AddSubgraph("Histogram", { downsample, bucket, copy, clear });
 }
 
 //------------------------------------------------------------------------------

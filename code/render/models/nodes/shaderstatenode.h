@@ -45,9 +45,8 @@ public:
         Math::bbox boundingBox;
 #endif
 
-
-        /// apply the resource tables and offsets
-        void Apply(Materials::ShaderConfig* type);
+        /// Apply the resource table
+        void Apply(const CoreGraphics::CmdBufferId cmdBuf, IndexT batchIndex, Materials::ShaderConfig* type);
     };
 
     /// get surface

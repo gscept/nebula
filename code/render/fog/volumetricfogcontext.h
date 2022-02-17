@@ -13,6 +13,11 @@
 */
 //------------------------------------------------------------------------------
 #include "graphics/graphicscontext.h"
+namespace Frame
+{
+class FrameScript;
+};
+
 namespace Fog
 {
 
@@ -27,7 +32,7 @@ public:
     virtual ~VolumetricFogContext();
 
     /// setup volumetric fog context
-    static void Create();
+    static void Create(const Ptr<Frame::FrameScript>& frameScript);
     /// discard volumetric fog context
     static void Discard();
 
@@ -74,11 +79,6 @@ public:
     static void SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4& mat);
 
 private:
-
-    /// cull local volumes
-    static void CullAndClassify();
-    /// run ray marching algorithm
-    static void Render();
 
     enum FogVolumeType
     {

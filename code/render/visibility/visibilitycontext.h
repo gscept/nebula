@@ -104,7 +104,8 @@ public:
     struct VisibilityModelCommand
     {
         uint32 offset;
-        std::function<void()> modelCallback;
+        std::function<void(const CoreGraphics::CmdBufferId)> modelApplyCallback;
+        std::function<const CoreGraphics::PrimitiveGroup()> primitiveNodeApplyCallback;
         Materials::MaterialId surface;
 
 #if NEBULA_GRAPHICS_DEBUG

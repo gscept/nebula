@@ -54,7 +54,6 @@ private:
     Util::Dictionary<Resources::ResourceName, ShaderConfig*> shaderConfigsByName;
     Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<ShaderConfig*>> shaderConfigsByBatch;
     Util::Array<ShaderConfig*> shaderConfigs;
-    Ptr<MaterialCache> surfacePool;
     ShaderConfig* currentType;
     bool isOpen;
 };

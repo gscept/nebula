@@ -28,8 +28,10 @@ public:
     /// get primitives mesh id
     CoreGraphics::MeshId GetMeshId() const { return this->res; }
 
-    /// get function for applying node state
-    std::function<void()> GetApplyNodeFunction();
+    /// Get function to apply node 
+    std::function<void(const CoreGraphics::CmdBufferId)> GetApplyFunction() override;
+    /// Get function to fetch primitive group
+    std::function<const CoreGraphics::PrimitiveGroup()> GetPrimitiveGroupFunction() override;
 
 protected:
     friend class StreamModelCache;

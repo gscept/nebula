@@ -13,7 +13,7 @@
 #include "coregraphics/displaydevice.h"
 #include "input/inputserver.h"
 #include "io/ioserver.h"
-#include "frame/frameplugin.h"
+#include "frame/framesubgraph.h"
 #include "core/cvar.h"
 
 using namespace Math;
@@ -32,7 +32,7 @@ static Core::CVar* ui_opacity;
     Imgui rendering function
 */
 void
-ImguiContext::ImguiDrawFunction()
+ImguiContext::ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf)
 {
     ImDrawData* data = ImGui::GetDrawData();
     // get Imgui context
@@ -49,10 +49,10 @@ ImguiContext::ImguiDrawFunction()
     BufferId ibo = state.ibos[currentBuffer];
     const ImguiRendererParams& params = state.params;
 
-    CoreGraphics::CommandBufferBeginMarker(CoreGraphics::GraphicsQueueType, NEBULA_MARKER_GRAPHICS, "ImGUI");
+    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_GRAPHICS, "ImGUI");
 
     // apply shader
-    CoreGraphics::SetShaderProgram(state.prog);
+    CoreGraphics::CmdSetShaderProgram(cmdBuf, state.prog);
 
     // create orthogonal matrix
 #if __VULKAN__
@@ -97,17 +97,17 @@ ImguiContext::ImguiDrawFunction()
     }
 
     // setup device
-    CoreGraphics::SetVertexLayout(state.vlo);
-    CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
-    CoreGraphics::SetGraphicsPipeline();
+    CoreGraphics::CmdSetVertexLayout(cmdBuf, state.vlo);
+    CoreGraphics::CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
+    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
 
     // setup input buffers
-    CoreGraphics::SetResourceTable(state.resourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
-    CoreGraphics::SetStreamVertexBuffer(0, state.vbos[currentBuffer], 0);
-    CoreGraphics::SetIndexBuffer(state.ibos[currentBuffer], 0);
+    CoreGraphics::CmdSetResourceTable(cmdBuf, state.resourceTable, NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
+    CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, state.vbos[currentBuffer], 0);
+    CoreGraphics::CmdSetIndexBuffer(cmdBuf, state.ibos[currentBuffer], 0);
 
     // set projection
-    CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.textProjectionConstant, sizeof(proj), (byte*)&proj);
+    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, state.textProjectionConstant, sizeof(proj), (byte*)&proj);
 
     struct TextureInfo
     {
@@ -153,7 +153,7 @@ ImguiContext::ImguiDrawFunction()
             {
                 // setup scissor rect
                 Math::rectangle<int> scissorRect((int)command->ClipRect.x, (int)command->ClipRect.y, (int)command->ClipRect.z, (int)command->ClipRect.w);
-                CoreGraphics::SetScissorRect(scissorRect, 0);
+                CoreGraphics::CmdSetScissorRect(cmdBuf, scissorRect, 0);
                 ImguiTextureId tex = *(ImguiTextureId*)command->TextureId;
 
                 TextureInfo texInfo;
@@ -181,7 +181,7 @@ ImguiContext::ImguiDrawFunction()
                 texInfo.mip = tex.mip;
                 texInfo.id = CoreGraphics::TextureGetBindlessHandle(texture);
                 
-                CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, state.packedTextureInfo, sizeof(TextureInfo), (byte*)& texInfo);
+                CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, state.packedTextureInfo, sizeof(TextureInfo), (byte*)& texInfo);
 
                 // setup primitive
                 CoreGraphics::PrimitiveGroup primitive;
@@ -189,10 +189,8 @@ ImguiContext::ImguiDrawFunction()
                 primitive.SetBaseIndex(primitiveIndexOffset + indexOffset);
                 primitive.SetBaseVertex(vertexOffset);
 
-                CoreGraphics::SetPrimitiveGroup(primitive);
-
                 // prepare render device and draw
-                CoreGraphics::Draw();
+                CoreGraphics::CmdDraw(cmdBuf, primitive);
             }
 
             // increment vertex offset
@@ -212,9 +210,9 @@ ImguiContext::ImguiDrawFunction()
     CoreGraphics::BufferFlush(state.ibos[currentBuffer]);
 
     // reset clip settings
-    CoreGraphics::ResetClipSettings();
+    CoreGraphics::CmdResetClipToPass(cmdBuf);
 
-    CoreGraphics::CommandBufferEndMarker(CoreGraphics::GraphicsQueueType);
+    CoreGraphics::CmdEndMarker(cmdBuf);
 }
 
 //------------------------------------------------------------------------------
@@ -348,17 +346,16 @@ ImguiContext::Create()
     components.Append(VertexComponent((VertexComponent::SemanticName)2, 0, VertexComponentBase::UByte4N, 0));
     state.vlo = CoreGraphics::CreateVertexLayout({ components });
 
-    Frame::AddCallback("ImGUI", [](const IndexT frame, const IndexT bufferIndex)
-        {
-            //ImGui::End();
+    Frame::FrameCode* op = state.frameOpAllocator.Alloc<Frame::FrameCode>();
+    op->domain = CoreGraphics::BarrierDomain::Pass;
+    op->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
 #ifdef NEBULA_NO_DYNUI_ASSERTS
-            ImguiContext::RecoverImGuiContextErrors();
+        ImguiContext::RecoverImGuiContextErrors();
 #endif
-
-            CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
-            ImguiContext::ImguiDrawFunction();
-            CoreGraphics::EndBatch();
-        });
+        ImguiContext::ImguiDrawFunction(cmdBuf);
+    };
+    Frame::AddSubgraph("ImGUI", { op });
 
     SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
 
@@ -444,42 +441,42 @@ ImguiContext::Create()
     ImVec4 nebulaOrangeActive(0.9f, 0.20f, 0.05f, 1.0f);
     ImVec4* colors = ImGui::GetStyle().Colors;
     ImGui::GetStyle().Alpha = Core::CVarReadFloat(ui_opacity);
-    colors[ImGuiCol_Text]                   = ImVec4(0.73f, 0.73f, 0.73f, 1.00f);
+    colors[ImGuiCol_Text]                   = ImVec4(0.85f, 0.85f, 0.85f, 1.00f);
     colors[ImGuiCol_TextDisabled]           = ImVec4(0.27f, 0.27f, 0.27f, 0.50f);
-    colors[ImGuiCol_WindowBg]               = ImVec4(0.06f, 0.06f, 0.06f, 1.00f);
-    colors[ImGuiCol_ChildBg]                = ImVec4(0.09f, 0.09f, 0.09f, 0.59f);
-    colors[ImGuiCol_PopupBg]                = ImVec4(0.05f, 0.05f, 0.05f, 0.95f);
-    colors[ImGuiCol_Border]                 = ImVec4(0.05f, 0.05f, 0.05f, 1.00f);
+    colors[ImGuiCol_WindowBg]               = ImVec4(0.33f, 0.33f, 0.33f, 1.00f);
+    colors[ImGuiCol_ChildBg]                = ImVec4(0.36f, 0.36f, 0.36f, 0.59f);
+    colors[ImGuiCol_PopupBg]                = ImVec4(0.25f, 0.25f, 0.25f, 0.95f);
+    colors[ImGuiCol_Border]                 = ImVec4(0.15f, 0.15f, 0.15f, 1.00f);
     colors[ImGuiCol_BorderShadow]           = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
-    colors[ImGuiCol_FrameBg]                = ImVec4(0.18f, 0.18f, 0.18f, 0.25f);
-    colors[ImGuiCol_FrameBgHovered]         = ImVec4(0.11f, 0.11f, 0.11f, 1.00f);
+    colors[ImGuiCol_FrameBg]                = ImVec4(0.28f, 0.28f, 0.28f, 0.25f);
+    colors[ImGuiCol_FrameBgHovered]         = ImVec4(0.21f, 0.21f, 0.21f, 1.00f);
     colors[ImGuiCol_FrameBgActive]          = ImVec4(0.40f, 0.40f, 0.40f, 1.00f);
-    colors[ImGuiCol_TitleBg]                = ImVec4(0.09f, 0.09f, 0.09f, 1.00f);
-    colors[ImGuiCol_TitleBgActive]          = ImVec4(0.04f, 0.04f, 0.04f, 1.00f);
-    colors[ImGuiCol_TitleBgCollapsed]       = ImVec4(0.11f, 0.11f, 0.11f, 0.89f);
+    colors[ImGuiCol_TitleBg]                = ImVec4(0.18f, 0.18f, 0.18f, 1.00f);
+    colors[ImGuiCol_TitleBgActive]          = ImVec4(0.12f, 0.12f, 0.12f, 1.00f);
+    colors[ImGuiCol_TitleBgCollapsed]       = ImVec4(0.22f, 0.22f, 0.22f, 0.89f);
     colors[ImGuiCol_MenuBarBg]              = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
-    colors[ImGuiCol_ScrollbarBg]            = ImVec4(1.00f, 0.30f, 0.00f, 0.07f);
-    colors[ImGuiCol_ScrollbarGrab]          = ImVec4(1.00f, 0.40f, 0.00f, 0.38f);
-    colors[ImGuiCol_ScrollbarGrabHovered]   = ImVec4(1.00f, 0.30f, 0.00f, 0.90f);
+    colors[ImGuiCol_ScrollbarBg]            = ImVec4(1.00f, 0.55f, 0.10f, 0.07f);
+    colors[ImGuiCol_ScrollbarGrab]          = ImVec4(1.00f, 0.65f, 0.10f, 0.38f);
+    colors[ImGuiCol_ScrollbarGrabHovered]   = ImVec4(1.00f, 0.75f, 0.10f, 0.90f);
     colors[ImGuiCol_ScrollbarGrabActive]    = ImVec4(1.00f, 0.30f, 0.00f, 1.00f);
-    colors[ImGuiCol_CheckMark]              = ImVec4(1.00f, 0.47f, 0.00f, 1.00f);
+    colors[ImGuiCol_CheckMark]              = ImVec4(1.00f, 0.55f, 0.35f, 1.00f);
     colors[ImGuiCol_SliderGrab]             = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
     colors[ImGuiCol_SliderGrabActive]       = ImVec4(0.30f, 0.33f, 0.33f, 1.00f);
-    colors[ImGuiCol_Button]                 = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
-    colors[ImGuiCol_ButtonHovered]          = ImVec4(1.00f, 0.30f, 0.00f, 0.70f);
-    colors[ImGuiCol_ButtonActive]           = ImVec4(1.00f, 0.30f, 0.00f, 0.90f);
-    colors[ImGuiCol_Header]                 = ImVec4(1.00f, 0.30f, 0.00f, 0.60f);
-    colors[ImGuiCol_HeaderHovered]          = ImVec4(1.00f, 0.30f, 0.00f, 0.70f);
-    colors[ImGuiCol_HeaderActive]           = ImVec4(1.00f, 0.30f, 0.00f, 0.90f);
+    colors[ImGuiCol_Button]                 = ImVec4(0.40f, 0.40f, 0.40f, 1.00f);
+    colors[ImGuiCol_ButtonHovered]          = ImVec4(1.00f, 0.50f, 0.00f, 0.70f);
+    colors[ImGuiCol_ButtonActive]           = ImVec4(1.00f, 0.50f, 0.00f, 0.90f);
+    colors[ImGuiCol_Header]                 = ImVec4(1.00f, 0.55f, 0.10f, 0.60f);
+    colors[ImGuiCol_HeaderHovered]          = ImVec4(1.00f, 0.55f, 0.10f, 0.70f);
+    colors[ImGuiCol_HeaderActive]           = ImVec4(1.00f, 0.55f, 0.10f, 0.90f);
     colors[ImGuiCol_Separator]              = ImVec4(0.02f, 0.02f, 0.02f, 1.00f);
     colors[ImGuiCol_SeparatorHovered]       = ImVec4(1.00f, 0.30f, 0.00f, 0.70f);
     colors[ImGuiCol_SeparatorActive]        = ImVec4(0.90f, 0.20f, 0.05f, 1.00f);
-    colors[ImGuiCol_ResizeGrip]             = ImVec4(1.00f, 0.30f, 0.00f, 0.11f);
-    colors[ImGuiCol_ResizeGripHovered]      = ImVec4(1.00f, 0.30f, 0.00f, 0.67f);
-    colors[ImGuiCol_ResizeGripActive]       = ImVec4(1.00f, 0.30f, 0.00f, 1.00f);
-    colors[ImGuiCol_Tab]                    = ImVec4(0.04f, 0.04f, 0.04f, 0.86f);
-    colors[ImGuiCol_TabHovered]             = ImVec4(0.06f, 0.06f, 0.06f, 0.80f);
-    colors[ImGuiCol_TabActive]              = ImVec4(0.02f, 0.02f, 0.02f, 1.00f);
+    colors[ImGuiCol_ResizeGrip]             = ImVec4(1.00f, 0.50f, 0.30f, 0.11f);
+    colors[ImGuiCol_ResizeGripHovered]      = ImVec4(1.00f, 0.50f, 0.40f, 0.67f);
+    colors[ImGuiCol_ResizeGripActive]       = ImVec4(1.00f, 0.50f, 0.40f, 1.00f);
+    colors[ImGuiCol_Tab]                    = ImVec4(0.12f, 0.12f, 0.12f, 0.86f);
+    colors[ImGuiCol_TabHovered]             = ImVec4(0.16f, 0.16f, 0.16f, 0.80f);
+    colors[ImGuiCol_TabActive]              = ImVec4(0.08f, 0.08f, 0.08f, 1.00f);
     colors[ImGuiCol_TabUnfocused]           = ImVec4(0.16f, 0.16f, 0.16f, 0.97f);
     colors[ImGuiCol_TabUnfocusedActive]     = ImVec4(0.08f, 0.08f, 0.08f, 1.00f);
     colors[ImGuiCol_DockingPreview]         = ImVec4(1.00f, 0.30f, 0.00f, 0.23f);
@@ -586,6 +583,8 @@ ImguiContext::Discard()
 
     Input::InputServer::Instance()->RemoveInputHandler(state.inputHandler.upcast<InputHandler>());
     state.inputHandler = nullptr;
+
+    state.frameOpAllocator.Release();
 
     CoreGraphics::DestroyTexture((CoreGraphics::TextureId)state.fontTexture.nebulaHandle);
     ImGui::DestroyContext();

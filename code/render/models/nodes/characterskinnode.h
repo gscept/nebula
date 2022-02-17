@@ -34,8 +34,11 @@ public:
     /// get joint palette of a fragment
     const Util::Array<IndexT>& GetFragmentJointPalette(IndexT fragmentIndex) const;
 
-    /// get function for applying node state
-    std::function<void()> GetApplyNodeFunction() override;
+        /// Get function to apply node 
+    std::function<void(const CoreGraphics::CmdBufferId)> GetApplyFunction() override;
+    /// Get function to fetch primitive group
+    std::function<const CoreGraphics::PrimitiveGroup()> GetPrimitiveGroupFunction() override;
+
 private:
     /// a skin fragment
     class Fragment

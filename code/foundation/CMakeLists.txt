@@ -343,7 +343,6 @@ nebula_begin_module(foundation)
 			lockfreequeue.h
 			objectref.cc
 			objectref.h
-            readwritelock.cc
             readwritelock.h
 			safeflag.h
 			safepriorityqueue.h
@@ -352,7 +351,6 @@ nebula_begin_module(foundation)
 			thread.h
 			threadbarrier.h
 			threadid.h
-			rendezvous.h
 			debug/threadpagehandler.cc
 			debug/threadpagehandler.h
 		)
@@ -638,7 +636,8 @@ nebula_begin_module(foundation)
             win32criticalsection.h
             win32event.h
 			win32interlocked.h
-            win32rendezvous.h
+            win32readwritelock.cc
+            win32readwritelock.h
             win32thread.cc
             win32thread.h
             win32threadbarrier.h

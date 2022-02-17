@@ -121,7 +121,7 @@ VisibilitySortJob(const Jobs::JobFuncContext& ctx)
 
                 // The offset of the command corresponds to where in the VisibilityBatchCommand batch the model should be applied
                 batchCmd.offset = cmd->packetOffset + cmd->numDrawPackets;
-                batchCmd.modelCallback = nodes->nodeModelCallbacks[index];
+                batchCmd.modelApplyCallback = nodes->nodeModelApplyCallbacks[index];
                 batchCmd.surface = nodes->nodeSurfaces[index];
 
 #if NEBULA_GRAPHICS_DEBUG

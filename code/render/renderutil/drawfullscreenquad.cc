@@ -97,16 +97,22 @@ DrawFullScreenQuad::Discard()
 /**
 */
 void
-DrawFullScreenQuad::ApplyMesh()
+DrawFullScreenQuad::ApplyMesh(const CoreGraphics::CmdBufferId id)
 {
-    // setup pipeline
-    CoreGraphics::SetVertexLayout(DrawFullScreenQuad::vertexLayout);
-    CoreGraphics::SetPrimitiveTopology(PrimitiveTopology::TriangleList);
-    CoreGraphics::SetGraphicsPipeline();
+    CoreGraphics::CmdSetVertexLayout(id, DrawFullScreenQuad::vertexLayout);
+    CoreGraphics::CmdSetPrimitiveTopology(id, PrimitiveTopology::TriangleList);
+    CoreGraphics::CmdSetGraphicsPipeline(id);
 
-    // setup input data
-    CoreGraphics::SetStreamVertexBuffer(0, DrawFullScreenQuad::vertexBuffer, 0);
-    CoreGraphics::SetPrimitiveGroup(DrawFullScreenQuad::primGroup);
+    CoreGraphics::CmdSetVertexBuffer(id, 0, DrawFullScreenQuad::vertexBuffer, 0);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const CoreGraphics::PrimitiveGroup&
+DrawFullScreenQuad::GetPrimitiveGroup()
+{
+    return DrawFullScreenQuad::primGroup;
 }
 
 } // namespace RenderUtil

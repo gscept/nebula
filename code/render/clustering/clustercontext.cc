@@ -6,7 +6,8 @@
 #include "clustercontext.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/graphicsdevice.h"
-#include "frame/frameplugin.h"
+#include "frame/framesubgraph.h"
+#include "frame/framecode.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/cameracontext.h"
 
@@ -35,6 +36,8 @@ struct
     float zInvScale, zInvBias;
     float xResolution, yResolution;
     float invXResolution, invYResolution;
+
+    Memory::ArenaAllocator<sizeof(Frame::FrameCode)> frameOpAllocator;
 
     SizeT numThreads;
 
@@ -117,11 +120,23 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
         ResourceTableSetConstantBuffer(table, { state.constantBuffer, state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
     }
 
-    // called from main script
-    Frame::AddCallback("ClusterContext - Update Clusters", [](const IndexT frame, const IndexT bufferIndex) // trigger update
-        {
-            UpdateClusters();
-        });
+    Frame::FrameCode* op = state.frameOpAllocator.Alloc<Frame::FrameCode>();
+    op->domain = CoreGraphics::BarrierDomain::Global;
+    op->queue = CoreGraphics::QueueType::ComputeQueueType;
+    op->bufferDeps.Add(state.clusterBuffer,
+                         {
+                             "ClusterBuffer"
+                             , CoreGraphics::PipelineStage::ComputeShaderWrite
+                             , CoreGraphics::BufferSubresourceInfo()
+                         });
+    op->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        CmdSetShaderProgram(cmdBuf, state.clusterGenerateProgram);
+
+        // Run the job as series of 1024 clusters at a time
+        CmdDispatch(cmdBuf, Math::ceil((state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2]) / 64.0f), 1, 1);
+    };
+    Frame::AddSubgraph("Cluster AABB Generation", { op });
 }
 
 //------------------------------------------------------------------------------
@@ -223,56 +238,10 @@ ClusterContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, Size
 //------------------------------------------------------------------------------
 /**
 */
-void 
-ClusterContext::UpdateClusters()
+const CoreGraphics::BufferId
+ClusterContext::GetClusterBuffer()
 {
-    // update constants
-    using namespace CoreGraphics;
-
-    const IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
-
-
-    // begin command buffer work
-    CommandBufferBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Cluster AABB Generation");
-
-    // make sure to sync so we don't read from data that is being written...
-    BarrierInsert(ComputeQueueType,
-        BarrierStage::ComputeShader,
-        BarrierStage::ComputeShader,
-        BarrierDomain::Global,
-        nullptr,
-        {
-            BufferBarrier
-            {
-                state.clusterBuffer,
-                BarrierAccess::ShaderRead,
-                BarrierAccess::ShaderWrite,
-                0, -1
-            }
-        }, "AABB begin barrier");
-
-    SetShaderProgram(state.clusterGenerateProgram, ComputeQueueType);
-
-    // run the job as series of 1024 clusters at a time
-    Compute(Math::ceil((state.clusterDimensions[0] * state.clusterDimensions[1] * state.clusterDimensions[2]) / 64.0f), 1, 1, ComputeQueueType);
-
-    // make sure to sync so we don't read from data that is being written...
-    BarrierInsert(ComputeQueueType,
-        BarrierStage::ComputeShader,
-        BarrierStage::ComputeShader,
-        BarrierDomain::Global,
-        nullptr,
-        {
-            BufferBarrier
-            {
-                state.clusterBuffer,
-                BarrierAccess::ShaderWrite,
-                BarrierAccess::ShaderRead,
-                0, -1
-            }
-        }
-        , "AABB finish barrier");
-
-    CommandBufferEndMarker(ComputeQueueType);
+    return state.clusterBuffer;
 }
+
 } // namespace Clustering

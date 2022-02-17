@@ -10,7 +10,13 @@
 #include "graphics/graphicscontext.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/buffer.h"
+#include "coregraphics/texture.h"
 #include <array>
+
+namespace Frame
+{
+class FrameScript;
+};
 
 namespace Lighting
 {
@@ -33,7 +39,7 @@ public:
     virtual ~LightContext();
 
     /// setup light context
-    static void Create();
+    static void Create(const Ptr<Frame::FrameScript>& frameScript);
     /// discard light context
     static void Discard();
 
@@ -111,13 +117,6 @@ private:
     static void SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
     /// set global light shadow transform
     static void SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
-
-    /// run light classification compute
-    static void CullAndClassify();
-    /// run lighting combination pass
-    static void CombineLighting();
-    /// run shadow map blurring
-    static void BlurGlobalShadowMap();
 
     /// update global shadows
     static void UpdateGlobalShadowMap();

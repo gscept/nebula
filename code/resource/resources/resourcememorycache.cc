@@ -67,7 +67,7 @@ ResourceMemoryCache::ReserveResource(const ResourceName& res, const Util::String
     }
     else
     {
-        // get id of resource
+        // If unloaded, reset to pending
         ret = this->ids.ValueAtIndex(i);
         if (this->states[ret.poolId] == Resource::Unloaded)
             this->states[ret.poolId] = Resource::Pending;

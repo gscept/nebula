@@ -63,48 +63,49 @@ SSRContext::Create()
     __bundle.OnUpdateViewResources = SSRContext::UpdateViewDependentResources;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
+    // TODO: Convert to subgraph
     using namespace CoreGraphics;
-    Frame::AddCallback("SSR-Trace", [](const IndexT frame, const IndexT bufferIndex)
+    Frame::AddCallback("SSR-Trace", [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
         {
 #if NEBULA_GRAPHICS_DEBUG
-            CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Screen Space Reflections");
+            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_BLUE, "Screen Space Reflections");
 #endif
             TextureDimensions dims = TextureGetDimensions(ssrState.traceBuffer);
 
-            CoreGraphics::SetShaderProgram(ssrState.traceProgram);
-            CoreGraphics::SetResourceTable(ssrState.ssrTraceTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, ssrState.traceProgram);
+            CoreGraphics::CmdSetResourceTable(cmdBuf, ssrState.ssrTraceTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
             const int TILE_SIZE = 32;
             int workGroups[2] = {
                 (dims.width + (dims.width % TILE_SIZE)) / TILE_SIZE,
                 (dims.height + (dims.height % TILE_SIZE)) / TILE_SIZE
             };
-            CoreGraphics::Compute(workGroups[0], workGroups[1], 1);
+            CoreGraphics::CmdDispatch(cmdBuf, workGroups[0], workGroups[1], 1);
 
 #if NEBULA_GRAPHICS_DEBUG
-            CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
+            CoreGraphics::CmdEndMarker(cmdBuf);
 #endif
         });
 
-    Frame::AddCallback("SSR-Resolve", [](const IndexT frame, const IndexT bufferIndex)
+    Frame::AddCallback("SSR-Resolve", [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
         {
 #if NEBULA_GRAPHICS_DEBUG
-            CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Screen Space Reflections");
+            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_BLUE, "Screen Space Reflections");
 #endif
             TextureDimensions dims = TextureGetDimensions(ssrState.reflectionBuffer);
 
-            CoreGraphics::SetShaderProgram(ssrState.resolveProgram);
-            CoreGraphics::SetResourceTable(ssrState.ssrResolveTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, ssrState.resolveProgram);
+            CoreGraphics::CmdSetResourceTable(cmdBuf, ssrState.ssrResolveTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
 
             const int TILE_SIZE = 32;
             int workGroups[2] = {
                 (dims.width + (dims.width % TILE_SIZE)) / TILE_SIZE,
                 (dims.height + (dims.height % TILE_SIZE)) / TILE_SIZE
             };
-            CoreGraphics::Compute(workGroups[0], workGroups[1], 1);
+            CoreGraphics::CmdDispatch(cmdBuf, workGroups[0], workGroups[1], 1);
 
 #if NEBULA_GRAPHICS_DEBUG
-            CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
+            CoreGraphics::CmdEndMarker(cmdBuf);
 #endif
         });
 }
@@ -136,7 +137,7 @@ SSRContext::Setup(const Ptr<Frame::FrameScript>& script)
 
     // create trace shader
     ssrState.traceShader = ShaderGet("shd:ssr_cs.fxb");
-    ssrState.constants = CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer);
+    ssrState.constants = CoreGraphics::GetComputeConstantBuffer();
     ssrState.constantsSlot = ShaderGetResourceSlot(ssrState.traceShader, "SSRBlock");
     ssrState.traceBufferSlot = ShaderGetResourceSlot(ssrState.traceShader, "TraceBuffer");
 
@@ -196,7 +197,7 @@ SSRContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const 
 
     SsrCs::SSRBlock ssrBlock;
     viewToTextureSpaceMatrix.store(ssrBlock.ViewToTextureSpace);
-    uint ssrOffset = CoreGraphics::SetComputeConstants(MainThreadConstantBuffer, ssrBlock);
+    uint ssrOffset = CoreGraphics::SetComputeConstants(ssrBlock);
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 

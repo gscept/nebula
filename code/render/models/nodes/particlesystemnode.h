@@ -42,7 +42,9 @@ public:
     const Particles::EnvelopeSampleBuffer& GetSampleBuffer() const;
 
     /// get function for applying node state
-    std::function<void()> GetApplyNodeFunction() override;
+    std::function<void(const CoreGraphics::CmdBufferId)> GetApplyFunction() override;
+    /// Get function to fetch primitive group
+    std::function<const CoreGraphics::PrimitiveGroup()> GetPrimitiveGroupFunction() override;
 
 private:
     /// helper function to parse an EnvelopeCurve from a data stream

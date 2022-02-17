@@ -29,8 +29,10 @@ public:
     /// return true if object is valid
     static bool IsValid();
 
-    /// apply mesh
-    static void ApplyMesh();
+    /// Apply mesh
+    static void ApplyMesh(const CoreGraphics::CmdBufferId id);
+    /// Get primitive group
+    static const CoreGraphics::PrimitiveGroup& GetPrimitiveGroup();
 
 private:
     static CoreGraphics::BufferId vertexBuffer;
