@@ -46,15 +46,15 @@ FrameMipmap::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void
-FrameMipmap::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
+FrameMipmap::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex)
 {
 #if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, this->name.Value());
+    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_RED, this->name.Value());
 #endif
 
-    CoreGraphics::TextureGenerateMipmaps(this->tex);
+    CoreGraphics::TextureGenerateMipmaps(cmdBuf, this->tex);
 #if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
+    CoreGraphics::CmdEndMarker(cmdBuf);
 #endif
 }
 

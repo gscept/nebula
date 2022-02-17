@@ -25,7 +25,8 @@ public:
         Util::StringAtom name;
 #endif
         /// running does nothing
-        void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
+        void Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex) override;
+
         void Discard();
     };
 

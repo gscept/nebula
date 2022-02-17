@@ -59,15 +59,15 @@ FrameCompute::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void
-FrameCompute::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
+FrameCompute::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex)
 {
     n_assert(this->program != InvalidShaderProgramId);
 
-    CoreGraphics::SetShaderProgram(this->program);
+    CoreGraphics::CmdSetShaderProgram(cmdBuf, this->program);
 
     // compute
-    CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-    CoreGraphics::Compute(this->x, this->y, this->z);
+    CoreGraphics::CmdSetResourceTable(cmdBuf, this->resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+    CoreGraphics::CmdDispatch(cmdBuf, this->x, this->y, this->z);
 }
 
 } // namespace Frame2

@@ -4,7 +4,7 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "framesubmission.h"
-#include "coregraphics/graphicsdevice.h"
+#include "coregraphics/shaderserver.h"
 namespace Frame
 {
 
@@ -13,8 +13,8 @@ namespace Frame
 */
 FrameSubmission::FrameSubmission() :
     queue(CoreGraphics::InvalidQueueType),
-    waitQueue(CoreGraphics::InvalidQueueType),
-    resourceResetBarriers(nullptr)
+    resourceResetBarriers(nullptr),
+    waitSubmission(nullptr)
 {
     // empty
 }
@@ -52,29 +52,30 @@ FrameSubmission::OnWindowResized()
 /**
 */
 void
-FrameSubmission::CompiledImpl::RunJobs(const IndexT frameIndex, const IndexT bufferIndex)
+FrameSubmission::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex)
 {
+    n_assert(cmdBuf == CoreGraphics::InvalidCmdBufferId);
+    CoreGraphics::CmdBufferCreateInfo cmdBufInfo;
+    cmdBufInfo.pool = this->commandBufferPool;
+    cmdBufInfo.usage = this->queue;
+    cmdBufInfo.queryTypes = CoreGraphics::CmdBufferQueryBits::Timestamps;
+    CoreGraphics::CmdBufferId submissionBuffer = CoreGraphics::CreateCmdBuffer(cmdBufInfo);
+
+    // Begin recording command buffer
+    CoreGraphics::CmdBufferBeginInfo beginInfo = { true, false, false };
+    CoreGraphics::CmdBeginRecord(submissionBuffer, beginInfo);
+    CoreGraphics::CmdBeginMarker(submissionBuffer, NEBULA_MARKER_PURPLE, this->name.Value());
+
+    // First thing, flush all constant updates
+    CoreGraphics::FlushConstants(submissionBuffer, this->queue);
+
     for (IndexT i = 0; i < this->compiled.Size(); i++)
     {
-        this->compiled[i]->RunJobs(frameIndex, bufferIndex);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameSubmission::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
-{
-    CoreGraphics::BeginSubmission(this->queue, this->waitQueue);
-    for (IndexT i = 0; i < this->compiled.Size(); i++)
-    {
-        this->compiled[i]->QueuePreSync();
-        this->compiled[i]->Run(frameIndex, bufferIndex);
-        this->compiled[i]->QueuePostSync();
+        this->compiled[i]->QueuePreSync(submissionBuffer);
+        this->compiled[i]->Run(submissionBuffer, frameIndex, bufferIndex);
     }
 
-    // I will admit, this is a little hacky, and in the future we might put this in its own command...
+    // Before we start the new frame, we need to reset all the image layouts to their original state
     if (this->resourceResetBarriers && this->resourceResetBarriers->Size() > 0)
     {
         IndexT i;
@@ -82,10 +83,26 @@ FrameSubmission::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferI
         {
             // make sure to transition resources back to their original state in preparation for the next frame
             CoreGraphics::BarrierReset((*this->resourceResetBarriers)[i]);
-            CoreGraphics::BarrierInsert((*this->resourceResetBarriers)[i], this->queue);
+            CoreGraphics::CmdBarrier(submissionBuffer, (*this->resourceResetBarriers)[i]);
         }
     }
-    CoreGraphics::EndSubmission(this->queue, this->waitQueue);
+
+    // Put the last frame marker
+    CoreGraphics::CmdEndMarker(submissionBuffer);
+
+    // Last thing, finish up the queries
+    CoreGraphics::CmdFinishQueries(submissionBuffer);
+
+    // End the recording and submit
+    CoreGraphics::CmdEndRecord(submissionBuffer);
+    this->submissionId = CoreGraphics::SubmitCommandBuffer(submissionBuffer, this->queue);
+
+    // If a wait submission is present, append a wait for the subission we just did 
+    if (this->waitSubmission != nullptr)
+        CoreGraphics::WaitForSubmission(this->waitSubmission->submissionId, this->queue, this->waitSubmission->queue);
+
+    // Delete command buffer
+    CoreGraphics::DestroyCmdBuffer(submissionBuffer);
 }
 
 //------------------------------------------------------------------------------
@@ -108,9 +125,10 @@ FrameSubmission::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 {
     CompiledImpl* ret = allocator.Alloc<CompiledImpl>();
     ret->compiled = {};
+    ret->name = this->name;
     ret->queue = this->queue;
-    ret->waitQueue = this->waitQueue;
     ret->resourceResetBarriers = this->resourceResetBarriers;
+    ret->waitSubmission = nullptr;
     return ret;
 }
 
@@ -124,8 +142,7 @@ FrameSubmission::Build(
     Util::Array<CoreGraphics::EventId>& events,
     Util::Array<CoreGraphics::BarrierId>& barriers,
     Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
-    CoreGraphics::CommandBufferPoolId commandBufferPool)
+    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
 {
     // if not enable, abort early
     if (!this->enabled)
@@ -136,10 +153,13 @@ FrameSubmission::Build(
     // build ops
     for (IndexT i = 0; i < this->children.Size(); i++)
     {
-        this->children[i]->Build(allocator, myCompiled->compiled, events, barriers, rwBuffers, textures, commandBufferPool);
+        this->children[i]->Build(allocator, myCompiled->compiled, events, barriers, rwBuffers, textures);
     }
 
     this->compiled = myCompiled;
+    if (this->waitSubmission != nullptr)
+        myCompiled->waitSubmission = static_cast<FrameSubmission::CompiledImpl*>(this->waitSubmission->compiled);
+    myCompiled->commandBufferPool = this->commandBufferPool;
     compiledOps.Append(this->compiled);
 }
 

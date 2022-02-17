@@ -26,13 +26,26 @@ public:
 
     struct CompiledImpl : public FrameOp::Compiled
     {
-        void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
+        void Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex) override;
 
-        std::function<void(IndexT, IndexT)> func;
+        std::function<void(const CoreGraphics::CmdBufferId cmdBuf, IndexT, IndexT)> func;
     };
 
     FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
-    std::function<void(IndexT, IndexT)> func;
+    std::function<void(const CoreGraphics::CmdBufferId cmdBuf, IndexT, IndexT)> func;
+
+private:
+
+        /// build operation
+    virtual void Build(
+        Memory::ArenaAllocator<BIG_CHUNK>& allocator,
+        Util::Array<FrameOp::Compiled*>& compiledOps,
+        Util::Array<CoreGraphics::EventId>& events,
+        Util::Array<CoreGraphics::BarrierId>& barriers,
+        Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
+        Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures
+    );
+
 };
 
 } // namespace Frame2

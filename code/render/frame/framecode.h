@@ -1,62 +1,46 @@
 #pragma once
 //------------------------------------------------------------------------------
 /**
-    A frame pass prepares a rendering sequence, draws and subpasses must reside
-    within one of these objects.
-    
+    Runs code from frame operation created in code
+
     @copyright
-    (C) 2016-2020 Individual contributors, see AUTHORS file
+    (C) 2021 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
-#include "framesubpass.h"
-#include "coregraphics/pass.h"
-namespace Threading
-{
-class Event;
-}
-
+#include "util/stringatom.h"
 namespace Frame
 {
-class FramePass : public FrameOp
+class FrameCode : public FrameOp
 {
 public:
     /// constructor
-    FramePass();
+    FrameCode();
     /// destructor
-    virtual ~FramePass();
+    virtual ~FrameCode();
 
-    /// discard operation
-    void Discard();
-    /// handle display resizing
-    void OnWindowResized() override;
-
+    using FrameCodeFunc = void(*)(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex);
     struct CompiledImpl : public FrameOp::Compiled
     {
         void Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex) override;
-        void Discard();
 
 #if NEBULA_GRAPHICS_DEBUG
         Util::StringAtom name;
 #endif
-        Util::Array<FrameOp::Compiled*> subpasses;
-        CoreGraphics::PassId pass;
+        FrameCodeFunc func;
     };
 
-    /// allocate new instance
     FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 
-    CoreGraphics::PassId pass;
-
+    FrameCodeFunc func;
 private:
-    friend class FrameScript;
 
     void Build(
         Memory::ArenaAllocator<BIG_CHUNK>& allocator,
         Util::Array<FrameOp::Compiled*>& compiledOps,
         Util::Array<CoreGraphics::EventId>& events,
         Util::Array<CoreGraphics::BarrierId>& barriers,
-        Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& buffers,
+        Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
         Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures) override;
 };
 

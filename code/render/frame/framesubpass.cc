@@ -59,22 +59,21 @@ FrameSubpass::OnWindowResized()
 /**
 */
 void
-FrameSubpass::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
+FrameSubpass::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex)
 {
-    IndexT i;
-
 #if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_GREEN, this->name.Value());
+    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_GREEN, this->name.Value());
 #endif
 
-    // run ops
+    // Run ops
+    IndexT i;
     for (i = 0; i < this->ops.Size(); i++)
     {
-        this->ops[i]->Run(frameIndex, bufferIndex);
+        this->ops[i]->Run(cmdBuf, frameIndex, bufferIndex);
     }
 
 #if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
+    CoreGraphics::CmdEndMarker(cmdBuf);
 #endif
 }
 
@@ -114,9 +113,8 @@ FrameSubpass::Build(
     Util::Array<FrameOp::Compiled*>& compiledOps, 
     Util::Array<CoreGraphics::EventId>& events,
     Util::Array<CoreGraphics::BarrierId>& barriers,
-    Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
-    CoreGraphics::CommandBufferPoolId commandBufferPool)
+    Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& buffers,
+    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
 {
     // if not enable, abort early
     if (!this->enabled)
@@ -126,7 +124,14 @@ FrameSubpass::Build(
     
     for (IndexT i = 0; i < this->children.Size(); i++)
     {
-        this->children[i]->Build(allocator, myCompiled->ops, events, barriers, rwBuffers, textures, commandBufferPool);
+        this->children[i]->Build(allocator, myCompiled->ops, events, barriers, buffers, textures);
+    }
+
+    // Take the barriers from the children
+    for (Frame::FrameOp::Compiled* child : myCompiled->ops)
+    {
+        myCompiled->barriers.AppendArray(child->barriers);
+        child->barriers.Clear();
     }
     this->compiled = myCompiled;
     compiledOps.Append(myCompiled);

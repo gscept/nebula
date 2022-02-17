@@ -10,10 +10,13 @@
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
 #include "util/stringatom.h"
+#include "util/tupleutility.h"
+#include "coregraphics/config.h"
 #include "coregraphics/barrier.h"
 #include "coregraphics/event.h"
 #include "coregraphics/semaphore.h"
 #include "memory/arenaallocator.h"
+#include "coregraphics/commandbuffer.h"
 namespace Frame
 {
 
@@ -22,7 +25,6 @@ enum class DependencyIntent
     Read,   // reading means we must wait if we are writing
     Write   // writing always means we must wait for previous writes and reads to finish
 };
-
 
 class FrameOp
 {
@@ -54,81 +56,49 @@ public:
     /// handle display resizing
     virtual void OnWindowResized();
 
+    CoreGraphics::BarrierDomain domain;
+    CoreGraphics::QueueType queue;
+    Util::Dictionary<CoreGraphics::TextureId, Util::Tuple<Util::StringAtom, CoreGraphics::PipelineStage, CoreGraphics::ImageSubresourceInfo>> textureDeps;
+    Util::Dictionary<CoreGraphics::BufferId, Util::Tuple<Util::StringAtom, CoreGraphics::PipelineStage, CoreGraphics::BufferSubresourceInfo>> bufferDeps;
+
 protected:
     friend class FrameScriptLoader;
     friend class FrameScript;
     friend class FramePass;
     friend class FrameSubpass;
     friend class FrameSubmission;
+    friend class FrameSubgraph;
 
     // inherit this class to implement the compiled runtime for the frame operation
     struct Compiled
     {
         Compiled() 
-            : numWaitEvents(0)
-            , waitEvents(nullptr)
-            , numSignalEvents(0)
-            , signalEvents(nullptr)
-            , numBarriers(0)
-            , barriers(nullptr)
         {
         }
 
-        virtual void UpdateResources(const IndexT frameIndex, const IndexT bufferIndex);
-        virtual void RunJobs(const IndexT frameIndex, const IndexT bufferIndex);
-        virtual void Run(const IndexT frameIndex, const IndexT bufferIndex) = 0;
+        /// Run operation on a specific command buffer
+        virtual void Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex) = 0;
+        /// Discard operation
         virtual void Discard();
 
-        virtual void QueuePreSync();
-        virtual void QueuePostSync();
+        /// Perform synchronization prior to execution of operation
+        virtual void QueuePreSync(const CoreGraphics::CmdBufferId cmdBuf);
 
-        SizeT numWaitEvents;
-        struct
-        {
-            CoreGraphics::EventId event;
-            CoreGraphics::BarrierStage waitStage;
-            CoreGraphics::BarrierStage signalStage;
-            CoreGraphics::QueueType queue;
-        } *waitEvents;
-
-        SizeT numSignalEvents;
-        struct
-        {
-            CoreGraphics::EventId event;
-            CoreGraphics::BarrierStage stage;
-            CoreGraphics::QueueType queue;
-        } *signalEvents;
-
-        SizeT numBarriers;
-        struct
-        {
-            CoreGraphics::BarrierId barrier;
-            CoreGraphics::QueueType queue;
-        } *barriers;
-
+        Util::Array<CoreGraphics::BarrierId> barriers;
         CoreGraphics::QueueType queue;
     };
 
     struct TextureDependency
     {
-        FrameOp::Compiled* op;
-        CoreGraphics::QueueType queue;
-        CoreGraphics::ImageLayout layout;
-        CoreGraphics::BarrierStage stage;
-        CoreGraphics::BarrierAccess access;
+        CoreGraphics::PipelineStage stage;
         DependencyIntent intent;
-        IndexT index;
         CoreGraphics::ImageSubresourceInfo subres;
     };
 
     struct BufferDependency
     {
-        FrameOp::Compiled* op;
-        CoreGraphics::QueueType queue;
-        CoreGraphics::BarrierStage stage;
-        CoreGraphics::BarrierAccess access;
+        CoreGraphics::PipelineStage stage;
         DependencyIntent intent;
-        IndexT index;
 
         CoreGraphics::BufferSubresourceInfo subres;
     };
@@ -138,16 +108,14 @@ protected:
         CoreGraphics::TextureId tex,
         const Util::StringAtom& textureName,
         DependencyIntent readOrWrite,
-        CoreGraphics::BarrierAccess access,
-        CoreGraphics::BarrierStage stage,
-        CoreGraphics::ImageLayout layout,
+        CoreGraphics::PipelineStage stage,
         CoreGraphics::BarrierDomain domain,
         const CoreGraphics::ImageSubresourceInfo& subres,
         IndexT fromIndex,
         CoreGraphics::QueueType fromQueue,
-        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
-        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
-        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
+        Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::BarrierCreateInfo>& barriers,
+        Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::EventCreateInfo>& waitEvents,
+        Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, struct FrameOp::Compiled*>& signalEvents,
         Util::Array<FrameOp::TextureDependency>& renderTextureDependencies);
 
     static void AnalyzeAndSetupBufferBarriers(
@@ -155,15 +123,14 @@ protected:
         CoreGraphics::BufferId buf,
         const Util::StringAtom& bufferName,
         DependencyIntent readOrWrite,
-        CoreGraphics::BarrierAccess access,
-        CoreGraphics::BarrierStage stage,
+        CoreGraphics::PipelineStage stage,
         CoreGraphics::BarrierDomain domain,
         const CoreGraphics::BufferSubresourceInfo& subres,
         IndexT fromIndex,
         CoreGraphics::QueueType fromQueue,
-        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
-        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
-        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
+        Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::BarrierCreateInfo>& barriers,
+        Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::EventCreateInfo>& waitEvents,
+        Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, struct FrameOp::Compiled*>& signalEvents,
         Util::Array<FrameOp::BufferDependency>& bufferDependencies);
 
     /// allocate instance of compiled
@@ -175,11 +142,8 @@ protected:
         Util::Array<FrameOp::Compiled*>& compiledOps,
         Util::Array<CoreGraphics::EventId>& events,
         Util::Array<CoreGraphics::BarrierId>& barriers,
-        Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-        Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
-#if NEBULA_ENABLE_MT_DRAW
-        CoreGraphics::CommandBufferPoolId commandBufferPool = CoreGraphics::InvalidCommandBufferPoolId
-#endif
+        Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& buffers,
+        Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures
         );
 
     /// setup synchronization
@@ -187,13 +151,8 @@ protected:
         Memory::ArenaAllocator<BIG_CHUNK>& allocator,
         Util::Array<CoreGraphics::EventId>& events,
         Util::Array<CoreGraphics::BarrierId>& barriers,
-        Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
+        Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& buffers,
         Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures);
-
-    CoreGraphics::BarrierDomain domain;
-    CoreGraphics::QueueType queue;
-    Util::Dictionary<CoreGraphics::TextureId, Util::Tuple<Util::StringAtom, CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::ImageSubresourceInfo, CoreGraphics::ImageLayout>> textureDeps;
-    Util::Dictionary<CoreGraphics::BufferId, Util::Tuple<Util::StringAtom, CoreGraphics::BarrierAccess, CoreGraphics::BarrierStage, CoreGraphics::BufferSubresourceInfo>> rwBufferDeps;
 
     Util::Array<FrameOp*> children;
     Util::Dictionary<Util::StringAtom, FrameOp*> childrenByName;
