@@ -105,6 +105,12 @@
       </ArrayItems>
     </Expand>
   </Type>
+  <Type Name="Resources::ResourceId">
+      <DisplayString>Instance={poolId}, Pool={poolIndex}, Resource={resourceId}, Type={resourceType}</DisplayString>
+  </Type>
+  <Type Name="CoreGraphics::BufferId">
+      <DisplayString>Id={id24}, Type={id8}</DisplayString>
+  </Type>
   <Type Name="Util::HashTable&lt;*,*&gt;">
     <DisplayString>Size={size}</DisplayString>
     <Expand>
