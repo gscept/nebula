@@ -98,8 +98,7 @@ public:
     uint32_t Alloc()
     {
         /// @note   This purposefully hides the default allocation method and should definetly not be virtual!
-        
-        this->sect.Enter();
+        this->Lock(Util::ArrayAllocatorAccess::Write);
         uint32_t index;
         if (this->freeIds.Size() > 0)
         {
@@ -112,7 +111,7 @@ public:
             index = this->size++;
             n_assert2(this->maxId > index, "max amount of allocations exceeded!\n");
         }
-        this->sect.Leave();
+        this->Unlock(Util::ArrayAllocatorAccess::Write);
 
         return index;
     }
@@ -121,9 +120,9 @@ public:
     void Dealloc(uint32_t index)
     {
         // TODO: We could possibly get better performance when defragging if we insert it in reverse order (high to low)
-        this->sect.Enter();
+        this->Lock(Util::ArrayAllocatorAccess::Write);
         this->freeIds.Append(index);
-        this->sect.Leave();
+        this->Unlock(Util::ArrayAllocatorAccess::Write);
     }
 
     /// Returns the list of free ids.

@@ -57,9 +57,8 @@ StreamActorPool::Setup()
 ActorId
 StreamActorPool::CreateActorInstance(ActorResourceId id, Math::mat4 const& trans, bool dynamic, uint64_t userData, IndexT scene)
 {
-    this->allocator.EnterGet();
+    __LockName(&this->allocator, lock, Util::ArrayAllocatorAccess::Write);
     ActorInfo& info = this->allocator.Get<0>(id.resourceId);
-    this->allocator.LeaveGet();
 
     physx::PxRigidActor * newActor = state.CreateActor(dynamic, trans);
     info.instanceCount++;
@@ -90,9 +89,8 @@ StreamActorPool::DiscardActorInstance(ActorId id)
     Actor& actor = ActorContext::GetActor(id);
     if (actor.res != ActorResourceId::Invalid())
     {
-        this->allocator.EnterGet();
+        __LockName(&this->allocator, lock, Util::ArrayAllocatorAccess::Write);
         ActorInfo& info = this->allocator.Get<0>(actor.res.resourceId);
-        this->allocator.LeaveGet();
         info.instanceCount--;
     }
     ActorContext::DiscardActor(id);
@@ -197,10 +195,9 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
     n_assert(this->GetState(res) == Resources::Resource::Pending);
     
     /// during the load-phase, we can safetly get the structs
-    this->EnterGet();    
+    __LockName(&this->allocator, lock, Util::ArrayAllocatorAccess::Write);
     ActorInfo &actorInfo = this->allocator.Get<0>(res.resourceId);
     actorInfo.instanceCount = 0;
-    this->LeaveGet();
     PhysicsResource::ActorT actor;
     Flat::FlatbufferInterface::DeserializeFlatbuffer<PhysicsResource::Actor>(actor, (uint8_t*)stream->Map());
     
@@ -271,9 +268,8 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
 void
 StreamActorPool::Unload(const Resources::ResourceId id)
 {
-    this->EnterGet();
+    __LockName(&this->allocator, lock, Util::ArrayAllocatorAccess::Write);
     ActorInfo& info = this->allocator.Get<0>(id.resourceId);
-    this->LeaveGet();
     n_assert2(info.instanceCount == 0, "Actor has active Instances");
     const Util::StringAtom tag = this->GetTag(id);
     

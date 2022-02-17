@@ -17,39 +17,25 @@
     (C) 2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "thread.h"
-
+#include "core/config.h"
+#if (__WIN32__)
+#include "threading/win32/win32readwritelock.h"
 namespace Threading
 {
-
-enum RWAccessFlagBits
-{
-    NoAccess = 0x0,
-    ReadAccess = 0x1,
-    WriteAccess = 0x2,
-    ReadWriteAccess = ReadAccess | WriteAccess
-};
-typedef int RWAccessFlags;
-
-class ReadWriteLock
+class ReadWriteLock : public Win32::Win32ReadWriteLock
 {
 public:
-
-    /// constructor
-    ReadWriteLock();
-    /// destructor
-    ~ReadWriteLock();
-
-    /// acquire lock
-    void Acquire(const RWAccessFlags accessFlags);
-    /// release lock
-    void Release(const RWAccessFlags accessFlags);
-private:
-    volatile int numReaders;
-    volatile ThreadId writerThread;
-
-    Threading::CriticalSection writerSection;
-    Threading::CriticalSection readerSection;
-};  
-
-} // namespace Threading
+    ReadWriteLock() : Win32::Win32ReadWriteLock()
+    {};
+};
+}
+#elif ( __linux__ || __OSX__ || __APPLE__ )
+#include "threading/posix/posixreadwritelock.h"
+namespace Threading
+{
+class ReadWriteLock : public Posix::PosixReadWriteLock
+{ };
+}
+#else
+#error "Threading::ReadWriteLock not implemented on this platform!"
+#endif

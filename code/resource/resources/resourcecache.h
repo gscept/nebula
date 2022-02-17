@@ -49,8 +49,8 @@
 #define __ImplementResourceAllocatorSafe(name) \
     inline Resources::ResourceUnknownId AllocObject() { return Ids::Id::MakeId24_8(name.AllocObject(), 0xFF); } \
     inline void DeallocObject(const Resources::ResourceUnknownId id) { name.DeallocObject(id.id24); } \
-    inline void EnterGet() { name.EnterGet(); } \
-    inline void LeaveGet() { name.LeaveGet(); } \
+    inline void Lock(Util::ArrayAllocatorAccess access) { name.Lock(access); } \
+    inline void Unlock(Util::ArrayAllocatorAccess access) { name.Unlock(access); } \
     template<int MEMBER> inline auto& Get(const Ids::Id24 id) { return name.Get<MEMBER>(id); } \
     template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.resourceId); } \
     template<int MEMBER> inline auto& GetUnsafe(const Ids::Id24 id) { return name.GetUnsafe<MEMBER>(id); } \
@@ -67,8 +67,8 @@
 #define __ImplementResourceAllocatorTypedSafe(name, idtype) \
     inline Resources::ResourceUnknownId AllocObject() { return Ids::Id::MakeId24_8(name.Alloc(), idtype); } \
     inline void DeallocObject(const Resources::ResourceUnknownId id) { name.Dealloc(id.id24); } \
-    inline void EnterGet() { name.EnterGet(); } \
-    inline void LeaveGet() { name.LeaveGet(); } \
+    inline void Lock(Util::ArrayAllocatorAccess access) { name.Lock(access); } \
+    inline void Unlock(Util::ArrayAllocatorAccess access) { name.Unlock(access); } \
     inline auto* Allocator() { return &name; } \
     template<int MEMBER> inline auto& Get(const Ids::Id24 id) { return name.Get<MEMBER>(id); } \
     template<int MEMBER> inline auto& Get(const Resources::ResourceId id) { return name.Get<MEMBER>(id.resourceId); } \
