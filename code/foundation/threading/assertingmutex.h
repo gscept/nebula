@@ -18,12 +18,6 @@ public:
     AssertingMutex();
     /// destructor
     ~AssertingMutex();
-    /// move constructor
-    AssertingMutex(AssertingMutex&& rhs);
-    /// copy constructor
-    /// AssertingMutex(const AssertingMutex& rhs);
-    /// move operator
-    void operator=(AssertingMutex&& rhs);
 
     /// lock mutex
     void Lock();
