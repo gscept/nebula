@@ -614,6 +614,8 @@ nebula_begin_module(foundation)
             timing/posix/posixtimer.h
             timing/posix/posixcalendartime.cc
             timing/posix/posixcalendartime.h
+            threading/posix/posixreadwritelock.cc
+            threading/posix/posixreadwritelock.h
             net/posix/posixipaddress.cc
             net/posix/posixipaddress.h
             net/posix/posixsocket.cc
@@ -661,8 +663,7 @@ nebula_begin_module(foundation)
             posixcriticalsection.h
             posixevent.h
             posixinterlocked.h
-            posixreadwritelock.cc
-            posixreadwritelock.h
+
             posixthread.cc
             posixthread.h
         )

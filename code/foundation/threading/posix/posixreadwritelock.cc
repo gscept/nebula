@@ -3,6 +3,7 @@
 //  @copyright (C) 2021 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
+#include "core/debug.h"
 #include "posixreadwritelock.h"
 namespace Posix
 {

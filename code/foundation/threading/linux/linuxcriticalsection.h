@@ -24,8 +24,6 @@ public:
     LinuxCriticalSection();
     /// destructor
     ~LinuxCriticalSection();
-    /// move assignment
-    void operator=(LinuxCriticalSection&& rhs);
     /// enter the critical section
     void Enter() const;
     /// leave the critical section
@@ -59,16 +57,6 @@ LinuxCriticalSection::~LinuxCriticalSection()
 {
     //int res = pthread_mutex_destroy(&this->mutex);
     //n_assert(0 == res);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-LinuxCriticalSection::operator=(LinuxCriticalSection&& rhs)
-{
-    this->mutex = std::move(rhs.mutex);
-    rhs.mutex = nullptr;
 }
 
 //------------------------------------------------------------------------------

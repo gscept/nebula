@@ -34,7 +34,11 @@ public:
 namespace Threading
 {
 class ReadWriteLock : public Posix::PosixReadWriteLock
-{ };
+{
+public:
+    ReadWriteLock() : Posix::PosixReadWriteLock()
+    {};
+};
 }
 #else
 #error "Threading::ReadWriteLock not implemented on this platform!"
