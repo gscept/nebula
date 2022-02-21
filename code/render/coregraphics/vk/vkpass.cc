@@ -12,7 +12,7 @@
 #include "vkshader.h"
 #include "vkresourcetable.h"
 #include "vktextureview.h"
-#include "..\pass.h"
+#include "coregraphics/pass.h"
 
 using namespace CoreGraphics;
 namespace Vulkan
