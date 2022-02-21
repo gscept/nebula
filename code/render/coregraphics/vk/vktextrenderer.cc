@@ -177,7 +177,7 @@ VkTextRenderer::Close()
 /**
 */
 void
-VkTextRenderer::DrawTextElements()
+VkTextRenderer::DrawTextElements(const CoreGraphics::CmdBufferId cmdBuf)
 {
     n_assert(this->IsOpen());
 
@@ -189,13 +189,13 @@ VkTextRenderer::DrawTextElements()
     mat4 proj = orthooffcenterrh(0, (float)displayMode.GetWidth(), (float)displayMode.GetHeight(), 0, -1.0f, +1.0f);
 
     // apply shader and apply state
-    CoreGraphics::SetShaderProgram(this->program);
-    CoreGraphics::PushConstants(CoreGraphics::GraphicsPipeline, this->modelVar, sizeof(proj), (byte*)&proj);
-    CoreGraphics::SetResourceTable(this->textTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+    CoreGraphics::CmdSetShaderProgram(cmdBuf, this->program);
+    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->modelVar, sizeof(proj), (byte*)&proj);
+    CoreGraphics::CmdSetResourceTable(cmdBuf, this->textTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
 
-    CoreGraphics::SetVertexLayout(this->layout);
-    CoreGraphics::SetPrimitiveTopology(CoreGraphics::PrimitiveTopology::TriangleList);
-    CoreGraphics::SetGraphicsPipeline();
+    CoreGraphics::CmdSetVertexLayout(cmdBuf, this->layout);
+    CoreGraphics::CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
+    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
 
     uint screenWidth, screenHeight;
     screenWidth = displayMode.GetWidth();
@@ -310,7 +310,7 @@ VkTextRenderer::DrawTextElements()
     // if we have vertices left, draw them
     if (vert > 0)
     {
-        this->Draw(vertices, vert / 6);
+        this->Draw(cmdBuf, vertices, vert / 6);
     }
 
     // delete the text elements of my own thread id, all other text elements
@@ -322,7 +322,7 @@ VkTextRenderer::DrawTextElements()
 /**
 */
 void
-VkTextRenderer::Draw(TextElementVertex* buffer, SizeT numChars)
+VkTextRenderer::Draw(const CoreGraphics::CmdBufferId cmdBuf, TextElementVertex* buffer, SizeT numChars)
 {
     // copy to buffer
     memcpy(this->vertexPtr, buffer, sizeof(TextElementVertex) * numChars * 6);
@@ -331,8 +331,7 @@ VkTextRenderer::Draw(TextElementVertex* buffer, SizeT numChars)
     this->group.SetNumVertices(numChars * 6);
 
     // get render device and set it up
-    CoreGraphics::SetStreamVertexBuffer(0, this->vbo, 0);
-    CoreGraphics::SetPrimitiveGroup(this->group);
+    CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, this->vbo, 0);
 
     // set viewport
     CoreGraphics::WindowId wnd = DisplayDevice::Instance()->GetCurrentWindow();
@@ -346,7 +345,7 @@ VkTextRenderer::Draw(TextElementVertex* buffer, SizeT numChars)
     //dev->SetScissorRect(Math::rectangle<int>(0, 0, screenWidth, screenHeight), 0);
 
     // setup device
-    CoreGraphics::Draw();
+    CoreGraphics::CmdDraw(cmdBuf, this->group);
 }
 
 //------------------------------------------------------------------------------

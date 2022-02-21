@@ -53,7 +53,7 @@ public:
     void Reload(const Resources::ResourceId id);
 
     /// generates mipmaps
-    void GenerateMipmaps(const CoreGraphics::TextureId id);
+    void GenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::TextureId id);
 
     /// map a texture mip level for CPU access
     bool Map(const CoreGraphics::TextureId id, IndexT mipLevel, CoreGraphics::GpuBufferTypes::MapType mapType, CoreGraphics::TextureMapInfo& outMapInfo);
@@ -64,25 +64,13 @@ public:
     /// unmap cube map face after CPU access
     void UnmapCubeFace(const CoreGraphics::TextureId id, CoreGraphics::TextureCubeFace face, IndexT mipLevel);
 
-    /// updates texture region
-    void Update(const CoreGraphics::TextureId id, void* data, SizeT dataSize, SizeT width, SizeT height, IndexT left, IndexT top, IndexT mip);
-    /// updates entire texture
-    void Update(const CoreGraphics::TextureId id, CoreGraphics::TextureDimensions dims, void* data, SizeT dataSize, IndexT mip);
-    /// updates texture cube face region
-    void UpdateArray(const CoreGraphics::TextureId id, void* data, SizeT dataSize, SizeT width, SizeT height, IndexT left, IndexT top, IndexT mip, IndexT layer);
-    /// updates texture cube face region
-    void UpdateArray(const CoreGraphics::TextureId id, CoreGraphics::TextureDimensions dims, void* data, SizeT dataSize, IndexT mip, IndexT layer);
-
     /// calculate the size of a texture given a certain mip, use face 0 when not accessing a cube or array texture
     void MipDimensions(IndexT mip, IndexT face, SizeT& width, SizeT& height, SizeT& depth);
 
-    /// update texture from data stream
-    void Update(const CoreGraphics::TextureId id, const Math::rectangle<int>& region, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub);
-
-    /// clear texture with color
-    void ClearColor(const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres, const CoreGraphics::SubmissionContextId sub);
-    /// clear texture with depth-stencil
-    void ClearDepthStencil(const CoreGraphics::TextureId id, float depth, uint stencil, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres, const CoreGraphics::SubmissionContextId sub);
+    /// Clear texture with color
+    void ClearColor(const CoreGraphics::CmdBufferId cmd, const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres);
+    /// Clear texture with depth-stencil
+    void ClearDepthStencil(const CoreGraphics::CmdBufferId cmd, const CoreGraphics::TextureId id, float depth, uint stencil, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres);
 
     /// get texture dimensions
     CoreGraphics::TextureDimensions GetDimensions(const CoreGraphics::TextureId id);
@@ -132,11 +120,11 @@ public:
     void SparseCommitChanges(const CoreGraphics::TextureId id);
 
     /// update a region of the sparse texture, make sure to insert barriers before doing this though
-    void SparseUpdate(const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, IndexT layer, const CoreGraphics::TextureId source, const CoreGraphics::SubmissionContextId sub);
+    void SparseUpdate(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, IndexT layer, const CoreGraphics::TextureId source);
     /// update a region of the sparse texture, make sure to insert barriers before doing this though
-    void SparseUpdate(const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub);
+    void SparseUpdate(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::TextureId id, const Math::rectangle<uint>& region, IndexT mip, IndexT layer, char* buf);
     /// update a whole mip
-    void SparseUpdate(const CoreGraphics::TextureId id, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub);
+    void SparseUpdate(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::TextureId id, IndexT mip, IndexT layer, char* buf);
 
     /// swap buffers for texture
     IndexT SwapBuffers(const CoreGraphics::TextureId id);

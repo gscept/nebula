@@ -72,8 +72,6 @@ public:
     void Setup();
     /// discard script
     void Discard();
-    /// run through script and generate thread jobs where applicable
-    void RunJobs(const IndexT frameIndex, const IndexT bufferIndex);
     /// run script
     void Run(const IndexT frameIndex, const IndexT bufferIndex);
 
@@ -109,10 +107,6 @@ private:
     Util::Array<Frame::FrameOp::Compiled*> compiled;
     Util::Array<CoreGraphics::BarrierId> resourceResetBarriers;
     IndexT frameOpCounter;
-
-    Ptr<CoreGraphics::DrawThread> drawThread;
-    Threading::Event drawThreadEvent;
-    CoreGraphics::CommandBufferPoolId drawThreadCommandPool;
 
     bool subScript; // if subscript, it means it can only be ran from within another script
 };

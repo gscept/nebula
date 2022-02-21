@@ -20,7 +20,7 @@ public:
 
     struct CompiledImpl : public FrameOp::Compiled
     {
-        void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
+        void Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex) override;
         void Discard();
 
 #if NEBULA_GRAPHICS_DEBUG

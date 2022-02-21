@@ -180,7 +180,8 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             nodeInstances.renderable.nodeSurfaces.Append(sNode->surface);
             nodeInstances.renderable.nodeMaterialTypes.Append(sNode->materialType);
             nodeInstances.renderable.nodes.Append(sNode);
-            nodeInstances.renderable.nodeModelCallbacks.Append(sNode->GetApplyNodeFunction());
+            nodeInstances.renderable.nodeModelApplyCallbacks.Append(sNode->GetApplyFunction());
+            nodeInstances.renderable.modelNodeGetPrimitiveGroup.Append(sNode->GetPrimitiveGroupFunction());
             nodeInstances.renderable.nodeDrawModifiers.Append(Util::MakeTuple(1, 0)); // Base 1 instance 0 offset
 
 #if NEBULA_GRAPHICS_DEBUG
@@ -450,7 +451,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
             nodeInstances.renderable.nodeLods[j] = lodFactor;
 
             // Notify materials system this LOD might be used (this is a bit shitty in comparison to actually using texture sampling feedback)
-            Materials::surfacePool->SetMaxLOD(nodeInstances.renderable.nodeSurfaceResources[j], textureLod);
+            Materials::materialCache->SetMaxLOD(nodeInstances.renderable.nodeSurfaceResources[j], textureLod);
         }
     }
 }
@@ -480,7 +481,7 @@ ModelContext::UpdateConstants(const Graphics::FrameContext& ctx)
             block.DitherFactor = nodeInstances.renderable.nodeLods[j];
             block.ObjectId = j;
 
-            uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
+            uint offset = CoreGraphics::SetGraphicsConstants(block);
             nodeInstances.renderable.nodeStates[j].resourceTableOffsets[nodeInstances.renderable.nodeStates[j].objectConstantsIndex] = offset;
         }
     }

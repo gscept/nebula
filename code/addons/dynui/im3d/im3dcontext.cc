@@ -16,7 +16,8 @@
 #include "input/inputserver.h"
 #include "input/mouse.h"
 #include "input/keyboard.h"
-#include "frame/frameplugin.h"
+#include "frame/framesubgraph.h"
+#include "frame/framecode.h"
 #include "imgui.h"
 
 using namespace Math;
@@ -96,6 +97,8 @@ struct Im3dState
     Ptr<Im3dInputHandler> inputHandler;
     Im3d::Id depthLayerId;
     byte* vertexPtr;
+
+    Memory::ArenaAllocator<sizeof(Frame::FrameCode)> frameOpAllocator;
 };
 static Im3dState imState;
 
@@ -157,10 +160,13 @@ Im3dContext::Create()
     // map buffer
     imState.vertexPtr = (byte*)CoreGraphics::BufferMap(imState.vbo);
 
-    Frame::AddCallback("Im3D", [](const IndexT frame, const IndexT bufferIndex)
+    Frame::FrameCode* op = imState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    op->domain = CoreGraphics::BarrierDomain::Pass;
+    op->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
-        Render(frame);
-    });
+        Render(cmdBuf, frame);
+    };
+    Frame::AddSubgraph("Im3D", { op });
 }
 
 //------------------------------------------------------------------------------
@@ -169,6 +175,7 @@ Im3dContext::Create()
 void
 Im3dContext::Discard()
 {
+    imState.frameOpAllocator.Release();
     Input::InputServer::Instance()->RemoveInputHandler(imState.inputHandler.upcast<InputHandler>());
     imState.inputHandler = nullptr;
     CoreGraphics::BufferUnmap(imState.vbo);
@@ -416,15 +423,15 @@ Im3dContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fram
 */
 template<typename filterFunc>
 static inline void
-CollectByFilter(ShaderProgramId const & shader, PrimitiveTopology::Code topology, IndexT &vertexBufferOffset, IndexT & vertexCount, filterFunc && filter)
+CollectByFilter(const CoreGraphics::CmdBufferId cmdBuf, const ShaderProgramId shader, PrimitiveTopology::Code topology, IndexT &vertexBufferOffset, IndexT & vertexCount, filterFunc && filter)
 {
-    CoreGraphics::SetShaderProgram(shader);
-    CoreGraphics::SetPrimitiveTopology(topology);
-    CoreGraphics::SetVertexLayout(imState.vlo);
+    CoreGraphics::CmdSetShaderProgram(cmdBuf, shader);
+    CoreGraphics::CmdSetPrimitiveTopology(cmdBuf, topology);
+    CoreGraphics::CmdSetVertexLayout(cmdBuf, imState.vlo);
 
-    CoreGraphics::SetGraphicsPipeline();
+    CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
     // setup input buffers
-    CoreGraphics::SetStreamVertexBuffer(0, imState.vbo, 0);
+    CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, imState.vbo, 0);
 
     for (uint32_t i = 0, n = Im3d::GetDrawListCount(); i < n; ++i)
     {
@@ -441,8 +448,7 @@ CollectByFilter(ShaderProgramId const & shader, PrimitiveTopology::Code topology
             primitive.SetBaseIndex(0);
             primitive.SetNumVertices(drawList.m_vertexCount);
             primitive.SetBaseVertex(vertexCount);
-            CoreGraphics::SetPrimitiveGroup(primitive);
-            CoreGraphics::Draw();
+            CoreGraphics::CmdDraw(cmdBuf, primitive);
 
             vertexBufferOffset += vertexBufferSize;
             vertexCount += drawList.m_vertexCount;
@@ -454,9 +460,8 @@ CollectByFilter(ShaderProgramId const & shader, PrimitiveTopology::Code topology
 /**
 */
 void
-Im3dContext::Render(const IndexT frameIndex)
+Im3dContext::Render(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex)
 {
-    CoreGraphics::BeginBatch(Frame::FrameBatchType::System);
     if (imState.renderGrid)
     {
         int gridSize = imState.gridSize;            
@@ -484,26 +489,25 @@ Im3dContext::Render(const IndexT frameIndex)
     // collect draws and loop a couple of times instead
 
 
-    CoreGraphics::CommandBufferBeginMarker(CoreGraphics::GraphicsQueueType, NEBULA_MARKER_GRAPHICS, "Im3d");
+    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_GRAPHICS, "Im3d");
 
-    CollectByFilter(imState.points, CoreGraphics::PrimitiveTopology::PointList, vertexBufferOffset, vertexCount,
+    CollectByFilter(cmdBuf, imState.points, CoreGraphics::PrimitiveTopology::PointList, vertexBufferOffset, vertexCount,
         [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Points; });
         
-    CollectByFilter(imState.triangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
+    CollectByFilter(cmdBuf, imState.triangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
         [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Triangles && l.m_layerId != imState.depthLayerId; });
         
-    CollectByFilter(imState.lines, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
+    CollectByFilter(cmdBuf, imState.lines, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
         [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Lines && l.m_layerId != imState.depthLayerId; });     
 
-    CollectByFilter(imState.depthLines, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
+    CollectByFilter(cmdBuf, imState.depthLines, CoreGraphics::PrimitiveTopology::LineList, vertexBufferOffset, vertexCount,
         [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Lines && l.m_layerId == imState.depthLayerId; });
         
     //CollectByFilter(imState.depthTriangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
-    CollectByFilter(imState.depthTriangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
+    CollectByFilter(cmdBuf, imState.depthTriangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
         [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Triangles && l.m_layerId == imState.depthLayerId; });
 
-    CoreGraphics::CommandBufferEndMarker(CoreGraphics::GraphicsQueueType);
-    CoreGraphics::EndBatch();
+    CoreGraphics::CmdEndMarker(cmdBuf);
     CoreGraphics::BufferFlush(imState.vbo);
 }
 

@@ -24,47 +24,43 @@
 //------------------------------------------------------------------------------
 #include "types.h"
 #include "util/array.h"
+#include "threading/readwritelock.h"
 #include <tuple>
 #include "tupleutility.h"
 #include "ids/id.h"
 
 // use this macro to safetly access an array allocator from within a scope
-#define __Lock(name) auto __allocator_lock_##name##__ = Util::AllocatorLock(&name);
+#define __Lock(name, access) auto __allocator_lock_##name##__ = Util::AllocatorLock(&name, access);
 
 // use this macro when we need to retrieve an allocator and lock it with an explicit name
-#define __LockName(allocator, name) auto __allocator_lock_##name##__ = Util::AllocatorLock(allocator);
+#define __LockName(allocator, name, access) auto __allocator_lock_##name##__ = Util::AllocatorLock(allocator, access);
 
 namespace Util
 {
 
-
-enum ArrayAllocatorAccessBits
+enum class ArrayAllocatorAccess
 {
-    NoBits = 0x0,
-    ReadBit = 0x1,
-    WriteBit = 0x2,
-    ReadWriteBits = ReadBit | WriteBit
+    Read,
+    Write
 };
 
-template <class T>
+template<class T>
 struct AllocatorLock
 {
-    T* locker;
-    ArrayAllocatorAccessBits bits;
-    AllocatorLock(T* locker, ArrayAllocatorAccessBits bits = ReadWriteBits)
+    AllocatorLock(T* allocator, ArrayAllocatorAccess access)
+        : allocator(allocator)
+        , access(access)
     {
-        this->bits = bits;
-        this->locker = locker;
-        this->locker->EnterGet(this->bits);
-    }
+        this->allocator->Lock(this->access);
+    };
+
     ~AllocatorLock()
     {
-        if (this->locker)
-        {
-            this->locker->LeaveGet(this->bits);
-            this->locker = nullptr;
-        }
+        this->allocator->Unlock(this->access);
     }
+
+    ArrayAllocatorAccess access;
+    T* allocator;
 };
 
 template <class ... TYPES>
@@ -134,20 +130,19 @@ public:
     /// This will update the size to reflect the first member array size in objects.
     void UpdateSize();
 
-    /// enter thread safe get-mode
-    void EnterGet(const ArrayAllocatorAccessBits bits = ReadWriteBits);
-    /// leave thread safe get-mode
-    void LeaveGet(const ArrayAllocatorAccessBits bits = ReadWriteBits);
+    /// Lock allocator
+    void Lock(const ArrayAllocatorAccess access = ArrayAllocatorAccess::Write);
+    /// Unlock allocator
+    void Unlock(const ArrayAllocatorAccess access = ArrayAllocatorAccess::Write);
 
     /// get single item unsafe (use with extreme caution)
-    template<int MEMBER> Util::tuple_array_t<MEMBER, TYPES...>& GetUnsafe(const Ids::Id32 index);
+    template<int MEMBER> Util::tuple_array_t<MEMBER, TYPES...>& GetUnsafe(const uint32_t index);
     /// get single item unsafe (use with extreme caution)
-    template<int MEMBER> Util::tuple_array_t<MEMBER, TYPES...>& GetUnsafe(const Ids::Id64 index);
+    template<int MEMBER> void SetUnsafe(const uint32_t index, const tuple_array_t<MEMBER, TYPES...>& type);
 
 protected:
 
-    volatile int locked;
-    Threading::CriticalSection sect;
+    Threading::ReadWriteLock lock;
     volatile int numReaders;
     volatile int writer;
     uint32_t size;
@@ -159,8 +154,7 @@ protected:
 */
 template<class ... TYPES>
 inline ArrayAllocatorSafe<TYPES...>::ArrayAllocatorSafe() :
-    size(0),
-    locked(0)
+    size(0)
 {
     // empty
 }
@@ -171,11 +165,16 @@ inline ArrayAllocatorSafe<TYPES...>::ArrayAllocatorSafe() :
 template<class ...TYPES>
 inline ArrayAllocatorSafe<TYPES...>::ArrayAllocatorSafe(ArrayAllocatorSafe<TYPES...>&& rhs)
 {
-    n_assert(rhs.locked == 0);
+    this->lock.LockWrite();
+    rhs.lock.LockRead();
     this->objects = rhs.objects;
     this->size = rhs.size;
-    this->locked = 0;
+    this->lock.UnlockWrite();
+    rhs.lock.UnlockRead();
+    
+    rhs.lock.LockWrite();
     rhs.Clear();
+    rhs.lock.UnlockWrite();
 }
 
 //------------------------------------------------------------------------------
@@ -184,10 +183,10 @@ inline ArrayAllocatorSafe<TYPES...>::ArrayAllocatorSafe(ArrayAllocatorSafe<TYPES
 template<class ...TYPES>
 inline ArrayAllocatorSafe<TYPES...>::ArrayAllocatorSafe(const ArrayAllocatorSafe<TYPES...>& rhs)
 {
-    n_assert(rhs.locked == 0);
+    this->lock.LockWrite();
     this->objects = rhs.objects;
     this->size = rhs.size;
-    this->locked = 0;
+    this->lock.UnlockWrite();
 }
 
 //------------------------------------------------------------------------------
@@ -206,10 +205,10 @@ template<class ...TYPES>
 inline void
 ArrayAllocatorSafe<TYPES...>::operator=(const ArrayAllocatorSafe<TYPES...>& rhs)
 {
-    n_assert(rhs.locked == 0);
+    this->lock.LockWrite();
     this->objects = rhs.objects;
     this->size = rhs.size;
-    this->locked = 0;
+    this->lock.UnlockWrite();
 }
 
 //------------------------------------------------------------------------------
@@ -219,11 +218,16 @@ template<class ...TYPES>
 inline void
 ArrayAllocatorSafe<TYPES...>::operator=(ArrayAllocatorSafe<TYPES...>&& rhs)
 {
-    n_assert(rhs.locked == 0);
+    this->lock.LockWrite();
+    rhs.lock.LockRead();
     this->objects = rhs.objects;
     this->size = rhs.size;
-    this->locked = 0;
+    this->lock.UnlockWrite();
+    rhs.lock.UnlockRead();
+
+    rhs.lock.LockWrite();
     rhs.Clear();
+    rhs.lock.UnlockWrite();
 }
 
 //------------------------------------------------------------------------------
@@ -232,10 +236,10 @@ ArrayAllocatorSafe<TYPES...>::operator=(ArrayAllocatorSafe<TYPES...>&& rhs)
 template<class ...TYPES>
 inline uint32_t ArrayAllocatorSafe<TYPES...>::Alloc()
 {
-    this->sect.Enter();
+    this->lock.LockWrite();
     alloc_for_each_in_tuple(this->objects);
     auto i = this->size++;
-    this->sect.Leave();
+    this->lock.UnlockWrite();
     return i;
 }
 
@@ -245,10 +249,10 @@ inline uint32_t ArrayAllocatorSafe<TYPES...>::Alloc()
 template<class ...TYPES>
 inline void ArrayAllocatorSafe<TYPES...>::EraseIndex(const uint32_t id)
 {
-    this->sect.Enter();
+    this->lock.LockWrite();
     erase_index_for_each_in_tuple(this->objects, id);
     this->size--;
-    this->sect.Leave();
+    this->lock.UnlockWrite();
 }
 
 //------------------------------------------------------------------------------
@@ -257,10 +261,10 @@ inline void ArrayAllocatorSafe<TYPES...>::EraseIndex(const uint32_t id)
 template<class ...TYPES>
 inline void ArrayAllocatorSafe<TYPES...>::EraseIndexSwap(const uint32_t id)
 {
-    this->sect.Enter();
+    this->lock.LockWrite();
     erase_index_swap_for_each_in_tuple(this->objects, id);
     this->size--;
-    this->sect.Leave();
+    this->lock.UnlockWrite();
 }
 
 //------------------------------------------------------------------------------
@@ -270,9 +274,9 @@ template<class ...TYPES>
 inline const uint32_t
 ArrayAllocatorSafe<TYPES...>::Size() const
 {
-    this->sect.Enter();
+    this->lock.LockRead();
     return this->size;
-    this->sect.Leave();
+    this->lock.UnlockRead();
 }
 
 //------------------------------------------------------------------------------
@@ -282,9 +286,9 @@ template<class ...TYPES>
 inline void
 ArrayAllocatorSafe<TYPES...>::Reserve(uint32_t num)
 {
-    this->sect.Enter();
+    this->lock.LockWrite();
     reserve_for_each_in_tuple(this->objects, num);
-    this->sect.Leave();
+    this->lock.UnlockWrite();
     // Size is still the same.
 }
 
@@ -295,10 +299,10 @@ template<class ...TYPES>
 inline void
 ArrayAllocatorSafe<TYPES...>::Clear()
 {
-    this->sect.Enter();
+    this->lock.LockWrite();
     clear_for_each_in_tuple(this->objects);
     this->size = 0;
-    this->sect.Leave();
+    this->lock.UnlockWrite();
 }
 
 //------------------------------------------------------------------------------
@@ -309,7 +313,7 @@ template<int MEMBER>
 inline tuple_array_t<MEMBER, TYPES...>&
 ArrayAllocatorSafe<TYPES...>::Get(const uint32_t index)
 {
-    n_assert(this->locked > 0);
+    n_assert2(this->writer == 1, "Non-const Get requires a write lock");
     return std::get<MEMBER>(this->objects)[index];
 }
 
@@ -321,7 +325,7 @@ template<int MEMBER>
 inline const tuple_array_t<MEMBER, TYPES...>&
 ArrayAllocatorSafe<TYPES...>::Get(const uint32_t index) const
 {
-    n_assert(this->locked > 0);
+    n_assert2(this->numReaders > 0, "Const Get requires a read lock");
     return std::get<MEMBER>(this->objects)[index];
 }
 
@@ -333,7 +337,7 @@ template<int MEMBER>
 inline void 
 ArrayAllocatorSafe<TYPES...>::Set(const uint32_t index, const tuple_array_t<MEMBER, TYPES...>& type)
 {
-    n_assert(this->locked > 0);
+    n_assert2(this->writer == 1, "Set requires a write lock");
     std::get<MEMBER>(this->objects)[index] = type;
 }
 
@@ -345,7 +349,7 @@ template<int MEMBER>
 inline const Util::Array<tuple_array_t<MEMBER, TYPES...>>&
 ArrayAllocatorSafe<TYPES...>::GetArray() const
 {
-    n_assert(this->locked > 0);
+    n_assert2(this->numReaders > 0, "const GetArray requires a read lock");
     return std::get<MEMBER>(this->objects);
 }
 
@@ -357,7 +361,7 @@ template<int MEMBER>
 inline Util::Array<tuple_array_t<MEMBER, TYPES...>>&
 ArrayAllocatorSafe<TYPES...>::GetArray()
 {
-    n_assert(this->locked > 0);
+    n_assert2(this->writer == 1, "Non-const GetArray requires a write lock");
     return std::get<MEMBER>(this->objects);
 }
 
@@ -367,7 +371,7 @@ ArrayAllocatorSafe<TYPES...>::GetArray()
 template<class ...TYPES> void
 ArrayAllocatorSafe<TYPES...>::Set(const uint32_t index, TYPES... values)
 {
-    n_assert(this->locked > 0);
+    n_assert(this->writer == 1);
     set_for_each_in_tuple(this->objects, index, values...);
 }
 
@@ -377,28 +381,46 @@ ArrayAllocatorSafe<TYPES...>::Set(const uint32_t index, TYPES... values)
 template<class ...TYPES> void
 ArrayAllocatorSafe<TYPES...>::UpdateSize()
 {
+    n_assert(this->writer == 1);
     this->size = this->GetArray<0>().Size();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class ... TYPES> void
-ArrayAllocatorSafe<TYPES...>::EnterGet(const ArrayAllocatorAccessBits bits)
+template<class ...TYPES>
+inline void 
+ArrayAllocatorSafe<TYPES...>::Lock(const ArrayAllocatorAccess access)
 {
-    this->sect.Enter();
-    Threading::Interlocked::Increment(&this->locked);
+    if (access == ArrayAllocatorAccess::Read)
+    {
+        this->lock.LockRead();
+        Threading::Interlocked::Increment(&this->numReaders);
+    }
+    else
+    {
+        this->lock.LockWrite();
+        Threading::Interlocked::Exchange(&this->writer, 1);
+    }
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-template<class ... TYPES> void
-ArrayAllocatorSafe<TYPES...>::LeaveGet(const ArrayAllocatorAccessBits bits)
+template<class ...TYPES>
+inline void 
+ArrayAllocatorSafe<TYPES...>::Unlock(const ArrayAllocatorAccess access)
 {
-    n_assert(this->locked > 0);
-    this->sect.Leave();
-    Threading::Interlocked::Decrement(&this->locked);
+    if (access == ArrayAllocatorAccess::Read)
+    {
+        this->lock.UnlockRead();
+        Threading::Interlocked::Decrement(&this->numReaders);
+    }
+    else
+    {
+        this->lock.UnlockWrite();
+        Threading::Interlocked::Exchange(&this->writer, 1);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -408,7 +430,7 @@ ArrayAllocatorSafe<TYPES...>::LeaveGet(const ArrayAllocatorAccessBits bits)
 template<class ... TYPES>
 template<int MEMBER>
 Util::tuple_array_t<MEMBER, TYPES...>&
-ArrayAllocatorSafe<TYPES...>::GetUnsafe(const Ids::Id32 index)
+ArrayAllocatorSafe<TYPES...>::GetUnsafe(const uint32_t index)
 {
     return std::get<MEMBER>(this->objects)[index];
 }
@@ -419,11 +441,10 @@ ArrayAllocatorSafe<TYPES...>::GetUnsafe(const Ids::Id32 index)
 */
 template<class ... TYPES>
 template<int MEMBER>
-Util::tuple_array_t<MEMBER, TYPES...>&
-ArrayAllocatorSafe<TYPES...>::GetUnsafe(const Ids::Id64 index)
+void
+ArrayAllocatorSafe<TYPES...>::SetUnsafe(const uint32_t index, const tuple_array_t<MEMBER, TYPES...>& type)
 {
-    Ids::Id24 resId = Ids::Id::GetBig(Ids::Id::GetLow(index));
-    return std::get<MEMBER>(this->objects)[resId];
+    std::get<MEMBER>(this->objects)[index] = type;
 }
 
 } // namespace Util

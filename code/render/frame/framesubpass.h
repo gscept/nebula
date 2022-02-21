@@ -35,7 +35,7 @@ public:
 
     struct CompiledImpl : public FrameOp::Compiled
     {
-        void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
+        void Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex) override;
         void Discard();
 
         Util::Array<Frame::FrameOp::Compiled*> ops;
@@ -56,9 +56,8 @@ protected:
         Util::Array<FrameOp::Compiled*>& compiledOps,
         Util::Array<CoreGraphics::EventId>& events,
         Util::Array<CoreGraphics::BarrierId>& barriers,
-        Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-        Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
-        CoreGraphics::CommandBufferPoolId commandBufferPool) override;
+        Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& buffers,
+        Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures) override;
 
 private:
     friend class FrameScriptLoader;

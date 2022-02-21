@@ -62,13 +62,6 @@ public:
 
 private:
 
-    /// cull decals towards camera cluster and classify
-    static void CullAndClassify();
-    /// render PBR decals
-    static void RenderPBR();
-    /// render emissive decals
-    static void RenderEmissive();
-
     enum DecalType
     {
         PBRDecal,

@@ -19,15 +19,6 @@ class ShaderConfig;
 ID_32_TYPE(MaterialId);
 ID_32_32_NAMED_TYPE(MaterialInstanceId, surface, instance); // 32 bits instance, 32 bits surface
 
-/// begin a material batch
-bool ShaderConfigBeginBatch(ShaderConfig* config, CoreGraphics::BatchGroup::Code batch);
-/// begin surface
-void MaterialApply(ShaderConfig* config, const MaterialId id);
-/// apply instance of surface
-void MaterialInstanceApply(ShaderConfig* config, const MaterialInstanceId id);
-/// end a material batch
-void ShaderConfigEndBatch(ShaderConfig* config);
-
 class MaterialCache;
-extern MaterialCache* surfacePool;
+extern MaterialCache* materialCache;
 } // namespace Materials

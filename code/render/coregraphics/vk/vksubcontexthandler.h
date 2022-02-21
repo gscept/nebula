@@ -74,18 +74,14 @@ public:
 
     /// append submission to context to execute later, supports waiting for a queue
     uint64 AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCommandBuffer cmds, bool semaphore = true);
-    /// append a wait on the current submission of a specific queue
-    void AppendWaitTimeline(CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, CoreGraphics::QueueType waitQueue);
+    /// Append a wait for a submission timeline index
+    void AppendWaitTimeline(uint64 index, CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, CoreGraphics::QueueType waitType);
     /// append a sparse bind timeline operation
     uint64 AppendSparseBind(CoreGraphics::QueueType type, const VkImage img, const Util::Array<VkSparseMemoryBind>& opaqueBinds, const Util::Array<VkSparseImageMemoryBind>& pageBinds);
-    /// append a wait on a binary semaphore
-    void AppendWaitTimeline(CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, VkSemaphore waitSemaphore);
-    /// append a binary semaphore to signal when done
-    void AppendSignalTimeline(CoreGraphics::QueueType type, VkSemaphore signalSemaphore);
+    /// Append present signal
+    void AppendPresentSignal(CoreGraphics::QueueType type, VkSemaphore sem);
     /// flush submissions
-    uint64 FlushSubmissionsTimeline(CoreGraphics::QueueType type, VkFence fence);
-    /// get timeline index
-    uint64 GetTimelineIndex(CoreGraphics::QueueType type);
+    void FlushSubmissionsTimeline(CoreGraphics::QueueType type, VkFence fence);
     /// wait for timeline index
     void Wait(CoreGraphics::QueueType type, uint64 index);
     /// check to see if timeline index has passed

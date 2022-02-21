@@ -29,9 +29,20 @@ struct VkBarrierInfo
     VkImageMemoryBarrier imageBarriers[MaxNumBarriers];
 };
 
+enum
+{
+    Barrier_Info
+    , Barrier_Textures  // This is for reloading textures
+};
+
 typedef Ids::IdAllocator<
-    VkBarrierInfo,
-    Util::Array<CoreGraphics::TextureId>
+    VkBarrierInfo
+    , Util::Array<CoreGraphics::TextureId>
 > VkBarrierAllocator;
 extern VkBarrierAllocator barrierAllocator;
+
+/// Get Vulkan info
+const VkBarrierInfo& BarrierGetVk(const CoreGraphics::BarrierId id);
+
+
 } // namespace Vulkan

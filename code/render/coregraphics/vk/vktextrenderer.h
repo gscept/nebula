@@ -38,14 +38,14 @@ public:
     /// close the device
     void Close();
     /// draw the accumulated text
-    void DrawTextElements();
+    void DrawTextElements(const CoreGraphics::CmdBufferId cmdBuf);
 
     static const int MaxNumChars = 65535;
 private:
 
 
     /// draws text buffer
-    void Draw(TextElementVertex* buffer, SizeT numChars);
+    void Draw(const CoreGraphics::CmdBufferId cmdBuf, TextElementVertex* buffer, SizeT numChars);
 
     /// helper function which moves vertex into proper position
     Math::vec2 TransformTextVertex(const Math::vec2& pos, const Math::vec2& offset, const Math::vec2& scale);

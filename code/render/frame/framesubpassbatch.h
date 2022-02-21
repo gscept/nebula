@@ -22,7 +22,7 @@ public:
 
     struct CompiledImpl : public FrameOp::Compiled
     {
-        void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
+        void Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex) override;
 
         CoreGraphics::BatchGroup::Code batch;
     };
@@ -30,10 +30,10 @@ public:
     FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
     CoreGraphics::BatchGroup::Code batch;
 
-    /// do the actual drawing
-    static void DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id);
-    /// do the actual drawing, but with duplicate instances
-    static void DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance);
+    /// Do the actual drawing
+    static void DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id);
+    /// Do the actual drawing, but with duplicate instances
+    static void DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance);
 };
 
 } // namespace Frame2

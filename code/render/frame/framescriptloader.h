@@ -37,8 +37,10 @@ private:
     static FrameOp* ParseMipmap(const Ptr<Frame::FrameScript>& script, JzonValue* node);
     /// parse compute
     static FrameOp* ParseCompute(const Ptr<Frame::FrameScript>& script, JzonValue* node);
-    /// parse compute algorithm
+    /// parse plugin (custom code execution)
     static FrameOp* ParsePlugin(const Ptr<Frame::FrameScript>& script, JzonValue* node);
+    /// parse subgraph
+    static FrameOp* ParseSubgraph(const Ptr<Frame::FrameScript>& script, JzonValue* node);
     /// parse frame submission phase
     static FrameOp* ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, JzonValue* node);
     /// parse barrier
@@ -60,6 +62,8 @@ private:
     static void ParseSubpassInputs(Frame::FramePass* pass, CoreGraphics::Subpass& subpass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node);
     /// parse subpass algorithm
     static void ParseSubpassPlugin(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node);
+    /// Parse subpass subgraph
+    static void ParseSubpassSubgraph(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node);
     /// parse subpass batch
     static void ParseSubpassBatch(const Ptr<Frame::FrameScript>& script, Frame::FrameSubpass* subpass, JzonValue* node);
     /// parse subpass sorted batch
@@ -74,6 +78,6 @@ private:
     /// helper to parse resources
     static void ParseResourceDependencies(const Ptr<Frame::FrameScript>& script, Frame::FrameOp* op, JzonValue* node);
     
-    static Frame::FrameSubmission* LastSubmission[CoreGraphics::NumQueryTypes];
+    static Frame::FrameSubmission* LastSubmission[2];
 };
 } // namespace Frame2

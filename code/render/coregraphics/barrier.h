@@ -12,72 +12,14 @@
 #include "util/array.h"
 #include "coregraphics/texture.h"
 #include "coregraphics/buffer.h"
-#include "coregraphics/commandbuffer.h"
 #include "coregraphics/config.h"
 #include <tuple>
 namespace CoreGraphics
 {
 
-enum class BarrierDomain
-{
-    Global,
-    Pass
-};
-
-enum class BarrierStage : uint16
-{
-    NoDependencies = (1 << 0),
-    Indirect = (1 << 1),                // blocks indirect draw commands
-    VertexInput = (1 << 2),             // blocks vertex input
-    VertexShader = (1 << 3),            // blocks vertex shader
-    HullShader = (1 << 4),              // blocks hull (tessellation control) shader
-    DomainShader = (1 << 5),            // blocks domain (tessellation evaluation) shader
-    GeometryShader = (1 << 6),          // blocks geometry shader
-    EarlyDepth = (1 << 7),              // blocks early fragment test
-    PixelShader = (1 << 8),             // blocks pixel shader
-    LateDepth = (1 << 9),               // blocks late fragment test
-    PassOutput = (1 << 10),             // blocks outputs from render texture attachments       
-    AllGraphicsShaders = VertexShader | HullShader | DomainShader | GeometryShader | PixelShader,
-
-    ComputeShader = (1 << 11),          // blocks compute shaders to complete
-
-    Transfer = (1 << 12),               // blocks transfers
-    Host = (1 << 13),                   // blocks host operations
-
-    Top = (1 << 14),                    // blocks start of pipeline 
-    Bottom = (1 << 15)                  // blocks end of pipeline
-};
-
-enum class BarrierAccess : uint32
-{
-    NoAccess = (1 << 0),
-    IndirectRead = (1 << 1),            // indirect buffers are read
-    IndexRead = (1 << 2),               // index buffers are read
-    VertexRead = (1 << 3),              // vertex buffers are read
-    UniformRead = (1 << 4),             // uniforms are read
-    InputAttachmentRead = (1 << 5),     // input attachments (cross-pass attachments) are read
-    ShaderRead = (1 << 6),              // shader reads  (compute?)
-    ShaderWrite = (1 << 7),             // shader writes (compute?)
-    ColorAttachmentRead = (1 << 8),     // color attachments (render textures) are read
-    ColorAttachmentWrite = (1 << 9),    // color attachments (render textures) are written
-    DepthAttachmentRead = (1 << 10),    // depth-stencil attachments are read
-    DepthAttachmentWrite = (1 << 11),   // depth-stencil attachments are written
-    TransferRead = (1 << 12),           // transfers are read
-    TransferWrite = (1 << 13),          // transfers are written
-    HostRead = (1 << 14),               // host reads
-    HostWrite = (1 << 15),              // host writes
-    MemoryRead = (1 << 16),             // memory is read locally
-    MemoryWrite = (1 << 17)             // memory is written locally
-};
-
-
-__ImplementEnumBitOperators(BarrierStage);
-__ImplementEnumComparisonOperators(BarrierStage);
-__ImplementEnumBitOperators(BarrierAccess);
-__ImplementEnumComparisonOperators(BarrierAccess);
-
 ID_24_8_TYPE(BarrierId);
 
+struct CmdBufferId;
 struct ImageSubresourceInfo
 {
     CoreGraphics::ImageAspect aspect;
@@ -154,36 +96,40 @@ struct TextureBarrier
 {
     TextureId tex;
     ImageSubresourceInfo subres;
-    ImageLayout fromLayout;
-    ImageLayout toLayout;
-    BarrierAccess fromAccess;
-    BarrierAccess toAccess;
+    CoreGraphics::PipelineStage fromStage;
+    CoreGraphics::PipelineStage toStage;
 };
 
 struct BufferBarrier
 {
     BufferId buf;
-    BarrierAccess fromAccess;
-    BarrierAccess toAccess;
+    CoreGraphics::PipelineStage fromStage;
+    CoreGraphics::PipelineStage toStage;
     IndexT offset;
     SizeT size; // set to -1 to use whole buffer
 };
 
-struct ExecutionBarrier
+struct TextureBarrierInfo
 {
-    BarrierAccess fromAccess;
-    BarrierAccess toAccess;
+    TextureId tex;
+    ImageSubresourceInfo subres;
+};
+
+struct BufferBarrierInfo
+{
+    BufferId buf;
+    IndexT offset;
+    SizeT size; // set to -1 to use whole buffer
 };
 
 struct BarrierCreateInfo
 {
     Util::StringAtom name;
     BarrierDomain domain;
-    BarrierStage leftDependency;
-    BarrierStage rightDependency;
-    Util::Array<TextureBarrier> textures;
-    Util::Array<BufferBarrier> rwBuffers;
-    Util::Array<ExecutionBarrier> barriers;
+    CoreGraphics::PipelineStage fromStage;
+    CoreGraphics::PipelineStage toStage;
+    Util::Array<TextureBarrierInfo> textures;
+    Util::Array<BufferBarrierInfo> buffers;
 };
 
 /// create barrier object
@@ -191,128 +137,36 @@ BarrierId CreateBarrier(const BarrierCreateInfo& info);
 /// destroy barrier object
 void DestroyBarrier(const BarrierId id);
 
-/// insert barrier into command buffer
-void BarrierInsert(const BarrierId id, const CoreGraphics::QueueType queue);
 /// reset resources previously set in barrier
 void BarrierReset(const BarrierId id);
-/// create and insert a barrier immediately, without allocating an object
-void BarrierInsert(
-    const CoreGraphics::QueueType queue, 
-    CoreGraphics::BarrierStage fromStage, 
-    CoreGraphics::BarrierStage toStage, 
-    CoreGraphics::BarrierDomain domain,
-    const Util::FixedArray<TextureBarrier>& textures, 
-    const Util::FixedArray<BufferBarrier>& rwBuffers, 
-    const char* name = nullptr);
-/// create and insert a barrier into a command buffer
-void BarrierInsert(
-    const CoreGraphics::CommandBufferId buf,
-    CoreGraphics::BarrierStage fromStage,
-    CoreGraphics::BarrierStage toStage,
-    CoreGraphics::BarrierDomain domain,
-    const Util::FixedArray<TextureBarrier>& textures,
-    const Util::FixedArray<BufferBarrier>& rwBuffers,
-    const char* name = nullptr);
-/// insert an execution barrier onto the queue
-void BarrierInsert(
-    const CoreGraphics::QueueType queue,
-    CoreGraphics::BarrierStage fromStage,
-    CoreGraphics::BarrierStage toStage,
-    CoreGraphics::BarrierDomain domain,
-    const Util::FixedArray<ExecutionBarrier>& barriers,
-    const char* name = nullptr);
-/// insert an execution barrier into a command buffer
-void BarrierInsert(
-    const CoreGraphics::CommandBufferId buf,
-    CoreGraphics::BarrierStage fromStage,
-    CoreGraphics::BarrierStage toStage,
-    CoreGraphics::BarrierDomain domain,
-    const Util::FixedArray<ExecutionBarrier>& barriers,
-    const char* name = nullptr);
 
-/// push barrier to stack
+/// Push barrier to stack
 void BarrierPush(
-    const CoreGraphics::QueueType queue,
-    CoreGraphics::BarrierStage fromStage,
-    CoreGraphics::BarrierStage toStage,
+    const CoreGraphics::CmdBufferId buf,
+    CoreGraphics::PipelineStage fromStage,
+    CoreGraphics::PipelineStage toStage,
     CoreGraphics::BarrierDomain domain,
-    const Util::FixedArray<TextureBarrier>& textures,
-    const Util::FixedArray<BufferBarrier>& buffers);
-/// push barrier to stack
+    const Util::FixedArray<TextureBarrierInfo>& textures,
+    const Util::FixedArray<BufferBarrierInfo>& buffers);
+/// Push barrier to stack
 void BarrierPush(
-    const CoreGraphics::QueueType queue,
-    CoreGraphics::BarrierStage fromStage,
-    CoreGraphics::BarrierStage toStage,
+    const CoreGraphics::CmdBufferId buf,
+    CoreGraphics::PipelineStage fromStage,
+    CoreGraphics::PipelineStage toStage,
     CoreGraphics::BarrierDomain domain,
-    const Util::FixedArray<TextureBarrier>& textures);
-/// push barrier to stack
+    const Util::FixedArray<TextureBarrierInfo>& textures);
+/// Push barrier to stack
 void BarrierPush(
-    const CoreGraphics::QueueType queue,
-    CoreGraphics::BarrierStage fromStage,
-    CoreGraphics::BarrierStage toStage,
+    const CoreGraphics::CmdBufferId buf,
+    CoreGraphics::PipelineStage fromStage,
+    CoreGraphics::PipelineStage toStage,
     CoreGraphics::BarrierDomain domain,
-    const Util::FixedArray<BufferBarrier>& buffers);
+    const Util::FixedArray<BufferBarrierInfo>& buffers);
 /// pop barrier, reverses the from-to stages and any access flags in the buffers and texture barriers
-void BarrierPop(const CoreGraphics::QueueType queue);
+void BarrierPop(const CoreGraphics::CmdBufferId buf);
 /// repeat barrier in queue
-void BarrierRepeat(const CoreGraphics::QueueType queue);
+void BarrierRepeat(const CoreGraphics::CmdBufferId buf);
 
-//------------------------------------------------------------------------------
-/**
-*/
-inline BarrierStage
-BarrierStageFromString(const Util::String& str)
-{
-    if (str == "VertexShader")          return BarrierStage::VertexShader;
-    else if (str == "HullShader")       return BarrierStage::HullShader;
-    else if (str == "DomainShader")     return BarrierStage::DomainShader;
-    else if (str == "GeometryShader")   return BarrierStage::GeometryShader;
-    else if (str == "PixelShader")      return BarrierStage::PixelShader;
-    else if (str == "ComputeShader")    return BarrierStage::ComputeShader;
-    else if (str == "VertexInput")      return BarrierStage::VertexInput;
-    else if (str == "EarlyDepth")       return BarrierStage::EarlyDepth;
-    else if (str == "LateDepth")        return BarrierStage::LateDepth;
-    else if (str == "Transfer")         return BarrierStage::Transfer;
-    else if (str == "Host")             return BarrierStage::Host;
-    else if (str == "PassOutput")       return BarrierStage::PassOutput;
-    else if (str == "Top")              return BarrierStage::Top;
-    else if (str == "Bottom")           return BarrierStage::Bottom;
-    else
-    {
-        n_error("Invalid dependency string '%s'\n", str.AsCharPtr());
-        return BarrierStage::NoDependencies;
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline BarrierAccess
-BarrierAccessFromString(const Util::String& str)
-{
-    if (str == "IndirectRead")                  return BarrierAccess::IndirectRead;
-    else if (str == "IndexRead")                return BarrierAccess::IndexRead;
-    else if (str == "VertexRead")               return BarrierAccess::VertexRead;
-    else if (str == "UniformRead")              return BarrierAccess::UniformRead;
-    else if (str == "InputAttachmentRead")      return BarrierAccess::InputAttachmentRead;
-    else if (str == "ShaderRead")               return BarrierAccess::ShaderRead;
-    else if (str == "ShaderWrite")              return BarrierAccess::ShaderWrite;
-    else if (str == "ColorAttachmentRead")      return BarrierAccess::ColorAttachmentRead;
-    else if (str == "ColorAttachmentWrite")     return BarrierAccess::ColorAttachmentWrite;
-    else if (str == "DepthAttachmentRead")      return BarrierAccess::DepthAttachmentRead;
-    else if (str == "DepthAttachmentWrite")     return BarrierAccess::DepthAttachmentWrite;
-    else if (str == "TransferRead")             return BarrierAccess::TransferRead;
-    else if (str == "TransferWrite")            return BarrierAccess::TransferWrite;
-    else if (str == "HostRead")                 return BarrierAccess::HostRead;
-    else if (str == "HostWrite")                return BarrierAccess::HostWrite;
-    else if (str == "MemoryRead")               return BarrierAccess::MemoryRead;
-    else if (str == "MemoryWrite")              return BarrierAccess::MemoryWrite;
-    else
-    {
-        n_error("Invalid access string '%s'\n", str.AsCharPtr());
-        return BarrierAccess::NoAccess;
-    }
-}
 
 //------------------------------------------------------------------------------
 /**

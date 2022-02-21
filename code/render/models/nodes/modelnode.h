@@ -23,6 +23,7 @@
 #include "memory/arenaallocator.h"
 #include "models/model.h"
 #include "materials/material.h"
+#include "coregraphics/primitivegroup.h"
 
 #include "util/delegate.h"
 
@@ -40,6 +41,7 @@ class ParticleContext;
 namespace CoreGraphics
 {
 struct ResourceTableId;
+struct CmdBufferId;
 //enum ShaderPipeline;
 }
 
@@ -72,8 +74,10 @@ public:
     /// get hash
     const uint32_t HashCode() const;
 
-    /// get function for applying node state
-    virtual std::function<void()> GetApplyNodeFunction();
+    /// Get function to apply node 
+    virtual std::function<void(const CoreGraphics::CmdBufferId)> GetApplyFunction();
+    /// Get function to fetch primitive group
+    virtual std::function<const CoreGraphics::PrimitiveGroup()> GetPrimitiveGroupFunction();
 
 protected:
     friend class StreamModelCache;
@@ -157,8 +161,17 @@ ModelNode::HashCode() const
 //------------------------------------------------------------------------------
 /**
 */
-inline std::function<void()> 
-ModelNode::GetApplyNodeFunction()
+inline std::function<void(const CoreGraphics::CmdBufferId)> 
+ModelNode::GetApplyFunction()
+{
+    return nullptr;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline std::function<const CoreGraphics::PrimitiveGroup()> 
+ModelNode::GetPrimitiveGroupFunction()
 {
     return nullptr;
 }

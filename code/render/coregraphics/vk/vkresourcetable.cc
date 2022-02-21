@@ -41,15 +41,6 @@ ResourceTableGetVkPoolIndex(CoreGraphics::ResourceTableId id)
 //------------------------------------------------------------------------------
 /**
 */
-const CoreGraphics::ResourceTableLayoutId&
-ResourceTableGetVkLayout(CoreGraphics::ResourceTableId id)
-{
-    return resourceTableAllocator.Get<ResourceTable_Layout>(id.id24);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 const VkDevice&
 ResourceTableGetVkDevice(CoreGraphics::ResourceTableId id)
 {
@@ -171,11 +162,11 @@ ResourceTableLayoutGetVkDescriptorPool(const CoreGraphics::ResourceTableLayoutId
 //------------------------------------------------------------------------------
 /**
 */
-void
-ResourceTableLayoutVkDecrementCounter(const CoreGraphics::ResourceTableLayoutId& id, const IndexT index)
+uint*
+ResourceTableLayoutGetFreeItemsCounter(const CoreGraphics::ResourceTableLayoutId& id, const IndexT index)
 {
-    Util::Array<uint32_t>& freeItems = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPoolFreeItems>(id.id24);
-    freeItems[index]++;
+    Util::Array<uint>& freeItems = resourceTableLayoutAllocator.Get<ResourceTableLayout_DescriptorPoolFreeItems>(id.id24);
+    return &freeItems[index];
 }
 
 //------------------------------------------------------------------------------
@@ -241,15 +232,23 @@ DestroyResourceTable(const ResourceTableId id)
 //------------------------------------------------------------------------------
 /**
 */
+const ResourceTableLayoutId&
+ResourceTableGetLayout(ResourceTableId id)
+{
+    return resourceTableAllocator.Get<ResourceTable_Layout>(id.id24);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 ResourceTableCopy(const ResourceTableId from, IndexT fromSlot, IndexT fromIndex, const ResourceTableId to, IndexT toSlot, IndexT toIndex, const SizeT numResources)
 {
     VkDescriptorSet& fromSet = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(from.id24);
     VkDescriptorSet& toSet = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(to.id24);
 
-    Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(to.id24);
-    Threading::AssertingScope scope(&mutex);
-
+    Threading::SpinlockScope scope1(&resourceTableAllocator.Get<ResourceTable_Lock>(from.id24));
+    Threading::SpinlockScope scope2(&resourceTableAllocator.Get<ResourceTable_Lock>(to.id24));
     Util::Array<VkCopyDescriptorSet>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(to.id24);
 
     VkCopyDescriptorSet copy =
@@ -275,9 +274,7 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& te
 {
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
-    Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
-    Threading::AssertingScope scope(&mutex);
-    Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
     n_assert(tex.slot != InvalidIndex);
@@ -306,6 +303,10 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& te
     write.dstArrayElement = tex.index;
     write.dstBinding = tex.slot;
     write.dstSet = set;
+    write.pBufferInfo = nullptr;
+    write.pImageInfo = nullptr;
+    write.pTexelBufferView = nullptr;
+
     img.imageLayout = tex.isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     if (tex.tex == InvalidTextureId)
@@ -317,13 +318,9 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& te
 
     WriteInfo inf;
     inf.img = img;
+    inf.write = write;
+    inf.type = WriteType::Image;
     infoList.Append(inf);
-
-    write.pImageInfo = &img;            // this is just provisionary, it will go out of scope immediately, but it wont be null!
-    write.pTexelBufferView = nullptr;
-    write.pBufferInfo = nullptr;
-
-    writeList.Append(write);
 }
 
 //------------------------------------------------------------------------------
@@ -334,9 +331,7 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView
 {
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
-    Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
-    Threading::AssertingScope scope(&mutex);
-    Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
     n_assert(tex.slot != InvalidIndex);
@@ -365,6 +360,10 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView
     write.dstArrayElement = tex.index;
     write.dstBinding = tex.slot;
     write.dstSet = set;
+    write.pBufferInfo = nullptr;
+    write.pImageInfo = nullptr;
+    write.pTexelBufferView = nullptr;
+
     img.imageLayout = tex.isDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     if (tex.tex == InvalidTextureViewId)
@@ -374,13 +373,9 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView
 
     WriteInfo inf;
     inf.img = img;
+    inf.write = write;
+    inf.type = WriteType::Image;
     infoList.Append(inf);
-
-    write.pImageInfo = &img;            // this is just provisionary, it will go out of scope immediately, but it wont be null!
-    write.pTexelBufferView = nullptr;
-    write.pBufferInfo = nullptr;
-
-    writeList.Append(write);
 }
 
 //------------------------------------------------------------------------------
@@ -391,9 +386,7 @@ ResourceTableSetInputAttachment(const ResourceTableId id, const ResourceTableInp
 {
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
-    Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
-    Threading::AssertingScope scope(&mutex);
-    Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
     n_assert(tex.slot != InvalidIndex);
@@ -406,6 +399,9 @@ ResourceTableSetInputAttachment(const ResourceTableId id, const ResourceTableInp
     write.dstArrayElement = tex.index;
     write.dstBinding = tex.slot;
     write.dstSet = set;
+    write.pBufferInfo = nullptr;
+    write.pImageInfo = nullptr;
+    write.pTexelBufferView = nullptr;
 
     VkDescriptorImageInfo img;
     img.sampler = VK_NULL_HANDLE;
@@ -417,13 +413,9 @@ ResourceTableSetInputAttachment(const ResourceTableId id, const ResourceTableInp
 
     WriteInfo inf;
     inf.img = img;
+    inf.write = write;
+    inf.type = WriteType::Image;
     infoList.Append(inf);
-
-    write.pImageInfo = &img;            // this is just provisionary, it will go out of scope immediately, but it wont be null!
-    write.pTexelBufferView = nullptr;
-    write.pBufferInfo = nullptr;
-
-    writeList.Append(write);
 }
 
 //------------------------------------------------------------------------------
@@ -434,9 +426,7 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& 
 {
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
-    Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
-    Threading::AssertingScope scope(&mutex);
-    Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
     n_assert(tex.slot != InvalidIndex);
@@ -449,6 +439,9 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& 
     write.dstArrayElement = tex.index;
     write.dstBinding = tex.slot;
     write.dstSet = set;
+    write.pBufferInfo = nullptr;
+    write.pImageInfo = nullptr;
+    write.pTexelBufferView = nullptr;
 
     VkDescriptorImageInfo img;
     img.sampler = VK_NULL_HANDLE;
@@ -460,13 +453,9 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& 
 
     WriteInfo inf;
     inf.img = img;
+    inf.write = write;
+    inf.type = WriteType::Image;
     infoList.Append(inf);
-
-    write.pImageInfo = &img;            // this is just provisionary, it will go out of scope immediately, but it wont be null!
-    write.pTexelBufferView = nullptr;
-    write.pBufferInfo = nullptr;
-
-    writeList.Append(write);
 }
 
 //------------------------------------------------------------------------------
@@ -477,9 +466,7 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTextureVi
 {
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
-    Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
-    Threading::AssertingScope scope(&mutex);
-    Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
     n_assert(tex.slot != InvalidIndex);
@@ -492,6 +479,9 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTextureVi
     write.dstArrayElement = tex.index;
     write.dstBinding = tex.slot;
     write.dstSet = set;
+    write.pBufferInfo = nullptr;
+    write.pImageInfo = nullptr;
+    write.pTexelBufferView = nullptr;
 
     VkDescriptorImageInfo img;
     img.sampler = VK_NULL_HANDLE;
@@ -503,13 +493,9 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTextureVi
 
     WriteInfo inf;
     inf.img = img;
+    inf.write = write;
+    inf.type = WriteType::Image;
     infoList.Append(inf);
-
-    write.pImageInfo = &img;            // this is just provisionary, it will go out of scope immediately, but it wont be null!
-    write.pTexelBufferView = nullptr;
-    write.pBufferInfo = nullptr;
-
-    writeList.Append(write);
 }
 
 //------------------------------------------------------------------------------
@@ -521,9 +507,7 @@ ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuff
     n_assert(!buf.texelBuffer);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
-    Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
-    Threading::AssertingScope scope(&mutex);
-    Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
     n_assert(buf.slot != InvalidIndex);
@@ -541,6 +525,9 @@ ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuff
     write.dstArrayElement = buf.index;
     write.dstBinding = buf.slot;
     write.dstSet = set;
+    write.pBufferInfo = nullptr;
+    write.pImageInfo = nullptr;
+    write.pTexelBufferView = nullptr;
 
     n_assert2(write.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, "Texel buffers are not implemented");
 
@@ -554,13 +541,9 @@ ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuff
 
     WriteInfo inf;
     inf.buf = buff;
+    inf.write = write;
+    inf.type = WriteType::Buffer;
     infoList.Append(inf);
-
-    write.pImageInfo = nullptr;
-    write.pTexelBufferView = nullptr;
-    write.pBufferInfo = &buff;          // this is just provisionary, it will go out of scope immediately, but it wont be null!
-
-    writeList.Append(write);
 }
 
 //------------------------------------------------------------------------------
@@ -571,9 +554,7 @@ ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& bu
 {
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
-    Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
-    Threading::AssertingScope scope(&mutex);
-    Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
     n_assert(buf.slot != InvalidIndex);
@@ -591,6 +572,9 @@ ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& bu
     write.dstArrayElement = buf.index;
     write.dstBinding = buf.slot;
     write.dstSet = set;
+    write.pBufferInfo = nullptr;
+    write.pImageInfo = nullptr;
+    write.pTexelBufferView = nullptr;
 
     n_assert2(write.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, "Texel buffers are not implemented");
 
@@ -603,13 +587,9 @@ ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& bu
     buff.range = buf.size == NEBULA_WHOLE_BUFFER_SIZE ? VK_WHOLE_SIZE : buf.size;
     WriteInfo inf;
     inf.buf = buff;
+    inf.write = write;
+    inf.type = WriteType::Buffer;
     infoList.Append(inf);
-
-    write.pImageInfo = nullptr;
-    write.pTexelBufferView = nullptr;
-    write.pBufferInfo = &buff;          // this is just provisionary, it will go out of scope immediately, but it wont be null!
-
-    writeList.Append(write);
 }
 
 //------------------------------------------------------------------------------
@@ -620,9 +600,7 @@ ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& sa
 {
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
-    Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
-    Threading::AssertingScope scope(&mutex);
-    Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
     n_assert(samp.slot != InvalidIndex);
@@ -635,6 +613,9 @@ ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& sa
     write.dstArrayElement = 0;
     write.dstBinding = samp.slot;
     write.dstSet = set;
+    write.pBufferInfo = nullptr;
+    write.pImageInfo = nullptr;
+    write.pTexelBufferView = nullptr;
 
     VkDescriptorImageInfo img;
     if (samp.samp == InvalidSamplerId)
@@ -646,13 +627,9 @@ ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& sa
     img.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     WriteInfo inf;
     inf.img = img;
+    inf.write = write;
+    inf.type = WriteType::Image;
     infoList.Append(inf);
-
-    write.pImageInfo = &img; // this is just provisionary, it will go out of scope immediately, but it wont be null!
-    write.pBufferInfo = nullptr;
-    write.pTexelBufferView = nullptr;
-
-    writeList.Append(write);
 }
 
 //------------------------------------------------------------------------------
@@ -690,10 +667,7 @@ ResourceTableCommitChanges(const ResourceTableId id)
     }
     else
     {
-        Threading::AssertingMutex& mutex = resourceTableAllocator.Get<ResourceTable_AssertingMutex>(id.id24);
-        Threading::AssertingScope scope(&mutex);
-
-        Util::Array<VkWriteDescriptorSet>& writeList = resourceTableAllocator.Get<ResourceTable_Writes>(id.id24);
+        Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
         Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
         Util::Array<VkCopyDescriptorSet>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(id.id24);
         VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
@@ -701,17 +675,28 @@ ResourceTableCommitChanges(const ResourceTableId id)
         // because we store the write-infos in the other list, and the VkWriteDescriptorSet wants a pointer to the structure
         // we need to re-assign the pointers, but thankfully they have values from before
         IndexT i;
-        for (i = 0; i < writeList.Size(); i++)
+        for (i = 0; i < infoList.Size(); i++)
         {
-            if (writeList[i].pBufferInfo != nullptr) writeList[i].pBufferInfo = &infoList[i].buf;
-            if (writeList[i].pImageInfo != nullptr) writeList[i].pImageInfo = &infoList[i].img;
-            if (writeList[i].pTexelBufferView != nullptr) writeList[i].pTexelBufferView = &infoList[i].tex;
+            switch (infoList[i].type)
+            {
+                case WriteType::Image:
+                    infoList[i].write.pImageInfo = &infoList[i].img;
+                    break;
+                case WriteType::Buffer:
+                    infoList[i].write.pBufferInfo = &infoList[i].buf;
+                    break;
+                case WriteType::TexelBuffer:
+                    infoList[i].write.pTexelBufferView = &infoList[i].tex;
+                    break;
+            }
+            vkUpdateDescriptorSets(dev, 1, &infoList[i].write, 0, nullptr);
         }
-        if (writeList.Size() > 0 || copies.Size() > 0)
+        infoList.Free();
+
+        // Do copies
+        if (copies.Size() > 0)
         {
-            vkUpdateDescriptorSets(dev, writeList.Size(), writeList.Begin(), copies.Size(), copies.Begin());
-            writeList.Free();
-            infoList.Free();
+            vkUpdateDescriptorSets(dev, 0, nullptr, copies.Size(), copies.Begin());
             copies.Free();
         }
     }

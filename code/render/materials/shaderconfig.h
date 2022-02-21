@@ -234,6 +234,14 @@ public:
     /// get hash code 
     const uint32_t HashCode() const;
 
+    /// Bind shader for a batch and return the batch index
+    IndexT BindShader(const CoreGraphics::CmdBufferId buf, CoreGraphics::BatchGroup::Code batch);
+    /// Apply a material
+    void ApplyMaterial(const CoreGraphics::CmdBufferId buf, IndexT index, const MaterialId id);
+    /// Apply a material instance
+    void ApplyMaterialInstance(const CoreGraphics::CmdBufferId buf, IndexT index, const MaterialInstanceId id);
+
+
 private:
     friend class ShaderConfigServer;
     friend class MaterialCache;
@@ -241,17 +249,6 @@ private:
     friend void MaterialApply(ShaderConfig*, const MaterialId);
     friend void MaterialInstanceApply(ShaderConfig*, const MaterialInstanceId);
     friend void ShaderConfigEndBatch(ShaderConfig*);
-
-    /// apply type-specific material state
-    bool BeginBatch(CoreGraphics::BatchGroup::Code batch);
-    /// apply surface-level material state
-    void ApplySurface(const MaterialId id);
-    /// apply specific material instance, using the same batch as 
-    void ApplyInstance(const MaterialInstanceId mat);
-    /// end surface-level material state
-    void EndSurface();
-    /// end batch
-    void EndBatch();
 
     Util::HashTable<CoreGraphics::BatchGroup::Code, IndexT> batchToIndexMap;
 

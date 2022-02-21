@@ -7,6 +7,7 @@
     (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
+#include "coregraphics/event.h"
 #include "ids/idallocator.h"
 #include "vkloader.h"
 #include "util/stringatom.h"
@@ -29,6 +30,20 @@ struct VkEventInfo
     uint32_t numMemoryBarriers;
     
 };
-typedef Ids::IdAllocator<VkDevice, VkEventInfo> VkEventAllocator;
+
+enum
+{
+    Event_Device
+    , Event_Info
+};
+
+typedef Ids::IdAllocator<
+    VkDevice
+    , VkEventInfo
+> VkEventAllocator;
 extern VkEventAllocator eventAllocator;
+
+/// Get vk event info
+const VkEventInfo& EventGetVk(const CoreGraphics::EventId id);
+
 } // namespace Vulkan

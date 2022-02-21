@@ -40,6 +40,8 @@ public:
 
     /// get frame script
     const Ptr<Frame::FrameScript> GetFrameScript() const;
+    /// Build frame script
+    void BuildFrameScript();
 
     /// set camera
     void SetCamera(const GraphicsEntityId& camera);
@@ -140,5 +142,6 @@ View::GetFrameScript() const
 {
     return this->script;
 }
+
 
 } // namespace Graphics

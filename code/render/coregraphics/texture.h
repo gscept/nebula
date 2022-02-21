@@ -12,12 +12,12 @@
 #include "coregraphics/config.h"
 #include "coregraphics/window.h"
 #include "coregraphics/memory.h"
-#include "coregraphics/submissioncontext.h"
 #include "math/rectangle.h"
 
 namespace CoreGraphics
 {
 
+struct CmdBufferId;
 struct ImageSubresourceInfo;
 
 /// texture type
@@ -234,7 +234,7 @@ TextureMapInfo TextureMapFace(const TextureId id, IndexT mip, TextureCubeFace fa
 /// unmap texture face
 void TextureUnmapFace(const TextureId id, IndexT mip, TextureCubeFace face);
 /// generate mipmaps for texture
-void TextureGenerateMipmaps(const TextureId id);
+void TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId id);
 
 /// get the texture page size, which is constant for the whole texture
 TextureSparsePageSize TextureSparseGetPageSize(const CoreGraphics::TextureId id);
@@ -258,15 +258,13 @@ void TextureSparseMakeMipResident(const CoreGraphics::TextureId id, IndexT layer
 /// commit texture sparse page updates
 void TextureSparseCommitChanges(const CoreGraphics::TextureId id);
 
-/// update texture from data stream
-void TextureUpdate(const CoreGraphics::TextureId id, const Math::rectangle<int>& region, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub);
-/// update texture with unspecified region
-void TextureUpdate(const CoreGraphics::TextureId id, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub);
+/// Update texture from data buffer
+void TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::QueueType queue, CoreGraphics::TextureId tex, const SizeT width, SizeT height, SizeT mip, SizeT layer, SizeT size, const void* data);
 
 /// clear texture with color
-void TextureClearColor(const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres, const CoreGraphics::SubmissionContextId sub = CoreGraphics::InvalidSubmissionContextId);
+void TextureClearColor(const CoreGraphics::CmdBufferId cmd, const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres);
 /// clear texture with depth-stencil
-void TextureClearDepthStencil(const CoreGraphics::TextureId id, float depth, uint stencil, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres, const CoreGraphics::SubmissionContextId sub = CoreGraphics::InvalidSubmissionContextId);
+void TextureClearDepthStencil(const CoreGraphics::CmdBufferId cmd, const CoreGraphics::TextureId id, float depth, uint stencil, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres);
 
 /// helper function to setup RenderTextureInfo, already implemented
 TextureCreateInfoAdjusted TextureGetAdjustedInfo(const TextureCreateInfo& info);

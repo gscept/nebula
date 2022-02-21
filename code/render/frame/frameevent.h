@@ -34,9 +34,8 @@ public:
 
     Util::Array<Action> actions;
     CoreGraphics::EventId event;
-    CoreGraphics::BarrierStage dependency;
+    CoreGraphics::PipelineStage dependency;
     CoreGraphics::QueueType queueType; 
-    CoreGraphics::CommandBufferUsage commandBufferType;
 };
 
 } // namespace Frame2

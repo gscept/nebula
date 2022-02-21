@@ -148,6 +148,9 @@ ResourceTableId CreateResourceTable(const ResourceTableCreateInfo& info);
 /// destroy resource table
 void DestroyResourceTable(const ResourceTableId id);
 
+/// Get resource table layout 
+const ResourceTableLayoutId& ResourceTableGetLayout(CoreGraphics::ResourceTableId id);
+
 /// set resource table texture
 void ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& tex);
 /// set resource table texture

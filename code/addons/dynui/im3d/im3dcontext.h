@@ -66,7 +66,7 @@ public:
     /// called before frame
     static void OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
     /// called when rendering a frame batch
-    static void Render(const IndexT frameIndex);
+    static void Render(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex);
            
     /// handle event
     static bool HandleInput(const Input::InputEvent& event);

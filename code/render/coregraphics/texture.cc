@@ -217,9 +217,9 @@ TextureUnmapFace(const TextureId id, IndexT mip, TextureCubeFace face)
 /**
 */
 void 
-TextureGenerateMipmaps(const TextureId id)
+TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId id)
 {
-    textureCache->GenerateMipmaps(id);
+    textureCache->GenerateMipmaps(cmdBuf, id);
 }
 
 //------------------------------------------------------------------------------
@@ -315,43 +315,51 @@ TextureSparseCommitChanges(const CoreGraphics::TextureId id)
 //------------------------------------------------------------------------------
 /**
 */
-void 
-TextureUpdate(const CoreGraphics::TextureId id, const Math::rectangle<int>& region, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub)
+void
+TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::QueueType queue, CoreGraphics::TextureId tex, const SizeT width, SizeT height, SizeT mip, SizeT layer, SizeT size, const void* data)
 {
-    textureCache->Update(id, region, mip, layer, buf, sub);
+    CoreGraphics::BufferCreateInfo bufInfo;
+    bufInfo.size = size;
+    bufInfo.mode = CoreGraphics::HostToDevice;
+    bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource | CoreGraphics::BufferUsageFlag::TransferBufferDestination;
+    bufInfo.queueSupport = queue;
+    CoreGraphics::BufferId buf = CoreGraphics::CreateBuffer(bufInfo);
+
+    // Copy over data to buffer
+    char* mapped = (char*)CoreGraphics::BufferMap(buf);
+    memcpy(mapped, data, size);
+
+    // Then run a copy on the command buffer
+    CoreGraphics::BufferCopy bufCopy;
+    bufCopy.offset = 0;
+    bufCopy.imageHeight = 0;
+    bufCopy.rowLength = 0;
+    CoreGraphics::TextureCopy texCopy;
+    texCopy.layer = layer;
+    texCopy.mip = mip;
+    texCopy.region.set(0, 0, width, height);
+    CoreGraphics::CmdCopy(cmd, buf, { bufCopy }, tex, { texCopy });
+
+    CoreGraphics::BufferUnmap(buf);
+    CoreGraphics::DestroyBuffer(buf);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-TextureUpdate(const CoreGraphics::TextureId id, IndexT mip, IndexT layer, char* buf, const CoreGraphics::SubmissionContextId sub)
+TextureClearColor(const CoreGraphics::CmdBufferId cmd, const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres)
 {
-    TextureDimensions dims = TextureGetDimensions(id);
-    Math::rectangle<int> region;
-    region.left = 0;
-    region.top = 0;
-    region.right = dims.width;
-    region.bottom = dims.height;
-    textureCache->Update(id, region, mip, layer, buf, sub);
+    textureCache->ClearColor(cmd, id, color, layout, subres);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-TextureClearColor(const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres, const CoreGraphics::SubmissionContextId sub)
+TextureClearDepthStencil(const CoreGraphics::CmdBufferId cmd, const CoreGraphics::TextureId id, float depth, uint stencil, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres)
 {
-    textureCache->ClearColor(id, color, layout, subres, sub);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-TextureClearDepthStencil(const CoreGraphics::TextureId id, float depth, uint stencil, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres, const CoreGraphics::SubmissionContextId sub)
-{
-    textureCache->ClearDepthStencil(id, depth, stencil, layout, subres, sub);
+    textureCache->ClearDepthStencil(cmd, id, depth, stencil, layout, subres);
 }
 
 //------------------------------------------------------------------------------
@@ -445,8 +453,8 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
             SizeT width = rt.width;
             SizeT height = rt.height;
 
-			// calculate the second logarithm of height and width and pick the smallest value to guarantee no 0xN or Nx0 sizes
-			// add 1 because we always have one mip
+            // calculate the second logarithm of height and width and pick the smallest value to guarantee no 0xN or Nx0 sizes
+            // add 1 because we always have one mip
             rt.mips = Math::min(Math::log2(rt.width), Math::log2(rt.height)) + 1;
         }
     }

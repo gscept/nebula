@@ -28,9 +28,9 @@ FramePlugin::~FramePlugin()
 /**
 */
 void
-FramePlugin::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
+FramePlugin::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex)
 {
-    this->func(frameIndex, bufferIndex);
+    this->func(cmdBuf, frameIndex, bufferIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -67,8 +67,7 @@ FramePlugin::Build(
     Util::Array<CoreGraphics::EventId>& events,
     Util::Array<CoreGraphics::BarrierId>& barriers,
     Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
-	CoreGraphics::CommandBufferPoolId commandBufferPool)
+    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
 {
     // if not enable, abort early
     if (!this->enabled)
@@ -87,16 +86,14 @@ FramePlugin::Build(
             this->SetupSynchronization(allocator, events, barriers, rwBuffers, textures);
         compiledOps.Append(myCompiled);
     }
-
-
 }
 
-Util::Dictionary<Util::StringAtom, std::function<void(IndexT, IndexT)>> nameToFunction;
+Util::Dictionary<Util::StringAtom, std::function<void(const CoreGraphics::CmdBufferId, IndexT, IndexT)>> nameToFunction;
 
 //------------------------------------------------------------------------------
 /**
 */
-const std::function<void(IndexT, IndexT)>&
+const std::function<void(const CoreGraphics::CmdBufferId, IndexT, IndexT)>&
 GetCallback(const Util::StringAtom& str)
 {
     if (nameToFunction.Contains(str))
@@ -112,7 +109,7 @@ GetCallback(const Util::StringAtom& str)
 /**
 */
 void
-AddCallback(const Util::StringAtom name, std::function<void(IndexT, IndexT)> func)
+AddCallback(const Util::StringAtom name, std::function<void(const CoreGraphics::CmdBufferId, IndexT, IndexT)> func)
 {
     nameToFunction.Add(name, func);
 }

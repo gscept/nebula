@@ -22,7 +22,7 @@ public:
 
     struct CompiledImpl : public FrameOp::Compiled
     {
-        void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
+        void Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex) override;
 
         CoreGraphics::BatchGroup::Code batch;
     };

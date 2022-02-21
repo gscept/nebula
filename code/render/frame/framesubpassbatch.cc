@@ -62,18 +62,15 @@ FrameSubpassBatch::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 //------------------------------------------------------------------------------
 /**
 */
-void 
-FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id)
+void
+FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id)
 {
-    // now do usual render stuff
+        // now do usual render stuff
     ShaderServer* shaderServer = ShaderServer::Instance();
     ShaderConfigServer* matServer = ShaderConfigServer::Instance();
 
     // get current view and visibility draw list
     const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(id);
-
-    // start batch
-    CoreGraphics::BeginBatch(FrameBatchType::Geometry);
 
     const Util::Array<ShaderConfig*>& types = matServer->GetShaderConfigsByBatch(batch);
     if (types.Size() != 0 && (drawList != nullptr))
@@ -86,11 +83,12 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
             {
 
 #if NEBULA_GRAPHICS_DEBUG
-                CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_DARK_GREEN, materialType->GetName().AsCharPtr());
+                CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_DARK_GREEN, materialType->GetName().AsCharPtr());
 #endif
 
                 // if BeginBatch returns true if this material type has a shader for this batch
-                if (Materials::ShaderConfigBeginBatch(materialType, batch))
+                IndexT batchIndex = materialType->BindShader(cmdBuf, batch);
+                if (batchIndex != InvalidIndex)
                 {
                     Visibility::ObserverContext::VisibilityBatchCommand visBatchCmd = drawList->visibilityTable.ValueAtIndex(materialType, idx);
                     uint const start = visBatchCmd.packetOffset;
@@ -99,6 +97,7 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
                     Visibility::ObserverContext::VisibilityDrawCommand* visDrawCmd = visBatchCmd.draws.Begin();
                     uint32 numInstances = 0;
                     uint32 baseInstance = 0;
+                    CoreGraphics::PrimitiveGroup primGroup;
 
                     Models::ShaderStateNode::DrawPacket* currentInstance = nullptr;
                     for (uint packetIndex = start; packetIndex < end; ++packetIndex)
@@ -109,16 +108,17 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
                         if (visModelCmd && visModelCmd->offset == packetIndex)
                         {
 #if NEBULA_GRAPHICS_DEBUG
-                            CommandBufferInsertMarker(GraphicsQueueType, NEBULA_MARKER_DARK_DARK_GREEN, visModelCmd->nodeName.Value());
+                            CoreGraphics::CmdInsertMarker(cmdBuf, NEBULA_MARKER_DARK_DARK_GREEN, visModelCmd->nodeName.Value());
 #endif
                             // Run model setup (applies vertex/index buffer and vertex layout)
-                            visModelCmd->modelCallback();
+                            visModelCmd->modelApplyCallback(cmdBuf);
+                            primGroup = visModelCmd->primitiveNodeApplyCallback();
 
                             // Bind graphics pipeline
-                            CoreGraphics::SetGraphicsPipeline();
+                            CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
 
                             // Apply surface
-                            Materials::MaterialApply(materialType, visModelCmd->surface);
+                            materialType->ApplyMaterial(cmdBuf, batchIndex, visModelCmd->surface);
 
                             // Progress to next model command
                             visModelCmd++;
@@ -139,28 +139,24 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
                         }
 
                         // Apply draw packet constants and draw
-                        instance->Apply(materialType);
-                        CoreGraphics::Draw(numInstances, baseInstance);
+                        instance->Apply(cmdBuf, batchIndex, materialType);
+                        CoreGraphics::CmdDraw(cmdBuf, numInstances, baseInstance, primGroup);
                     }
                 }
-                Materials::ShaderConfigEndBatch(materialType);
 
 #if NEBULA_GRAPHICS_DEBUG
-                CommandBufferEndMarker(GraphicsQueueType);
+                CoreGraphics::CmdEndMarker(cmdBuf);
 #endif
             }
         }
     }
-
-    // end batch
-    CoreGraphics::EndBatch();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-void 
-FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance)
+void
+FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::BatchGroup::Code batch, const Graphics::GraphicsEntityId id, const SizeT numInstances, const IndexT baseInstance)
 {
     // now do usual render stuff
     ShaderServer* shaderServer = ShaderServer::Instance();
@@ -168,9 +164,6 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
 
     // get current view and visibility draw list
     const Visibility::ObserverContext::VisibilityDrawList* drawList = Visibility::ObserverContext::GetVisibilityDrawList(id);
-
-    // start batch
-    CoreGraphics::BeginBatch(FrameBatchType::Geometry);
 
     const Util::Array<ShaderConfig*>& types = matServer->GetShaderConfigsByBatch(batch);
     if (types.Size() != 0 && (drawList != nullptr))
@@ -183,11 +176,12 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
             {
 
 #if NEBULA_GRAPHICS_DEBUG
-                CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_DARK_GREEN, materialType->GetName().AsCharPtr());
+                CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_DARK_GREEN, materialType->GetName().AsCharPtr());
 #endif
 
                 // if BeginBatch returns true if this material type has a shader for this batch
-                if (Materials::ShaderConfigBeginBatch(materialType, batch))
+                IndexT batchIndex = materialType->BindShader(cmdBuf, batch);
+                if (batchIndex != InvalidIndex)
                 {
                     Visibility::ObserverContext::VisibilityBatchCommand visBatchCmd = drawList->visibilityTable.ValueAtIndex(materialType, idx);
                     uint const start = visBatchCmd.packetOffset;
@@ -196,27 +190,30 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
                     Visibility::ObserverContext::VisibilityDrawCommand* visDrawCmd = visBatchCmd.draws.Begin();
                     uint32 baseNumInstances = 0;
                     uint32 baseBaseInstance = 0;
+                    CoreGraphics::PrimitiveGroup primGroup;
 
                     Models::ShaderStateNode::DrawPacket* currentInstance = nullptr;
                     for (uint packetIndex = start; packetIndex < end; ++packetIndex)
                     {
                         Models::ShaderStateNode::DrawPacket* instance = drawList->drawPackets[packetIndex];
 
-                        // If new model node, update model callback and 
+                        // If new model node, bind model resources (vertex buffer, index buffer, vertex layout, primitive group)
                         if (visModelCmd && visModelCmd->offset == packetIndex)
                         {
 #if NEBULA_GRAPHICS_DEBUG
-                            CommandBufferInsertMarker(GraphicsQueueType, NEBULA_MARKER_DARK_DARK_GREEN, visModelCmd->nodeName.Value());
+                            CoreGraphics::CmdInsertMarker(cmdBuf, NEBULA_MARKER_DARK_DARK_GREEN, visModelCmd->nodeName.Value());
 #endif
                             // Run model setup (applies vertex/index buffer and vertex layout)
-                            visModelCmd->modelCallback();
+                            visModelCmd->modelApplyCallback(cmdBuf);
+                            primGroup = visModelCmd->primitiveNodeApplyCallback();
 
-                            // bind graphics pipeline
-                            CoreGraphics::SetGraphicsPipeline();
+                            // Bind graphics pipeline
+                            CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
 
-                            // apply surface
-                            Materials::MaterialApply(materialType, visModelCmd->surface);
+                            // Apply surface
+                            materialType->ApplyMaterial(cmdBuf, batchIndex, visModelCmd->surface);
 
+                            // Progress to next model command
                             visModelCmd++;
 
                             if (visModelCmd == visBatchCmd.models.End())
@@ -235,31 +232,27 @@ FrameSubpassBatch::DrawBatch(CoreGraphics::BatchGroup::Code batch, const Graphic
                         }
 
                         // Apply draw packet constants and draw
-                        instance->Apply(materialType);
-                        CoreGraphics::Draw(baseNumInstances * numInstances, baseBaseInstance + baseInstance);
+                        instance->Apply(cmdBuf, batchIndex, materialType);
+                        CoreGraphics::CmdDraw(cmdBuf, baseNumInstances * numInstances, baseBaseInstance + baseInstance, primGroup);
                     }
                 }
-                Materials::ShaderConfigEndBatch(materialType);
 
 #if NEBULA_GRAPHICS_DEBUG
-                CommandBufferEndMarker(GraphicsQueueType);
+                CoreGraphics::CmdEndMarker(cmdBuf);
 #endif
             }
         }
     }
-
-    // end batch
-    CoreGraphics::EndBatch();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameSubpassBatch::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
+FrameSubpassBatch::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex)
 {
     const Ptr<View>& view = Graphics::GraphicsServer::Instance()->GetCurrentView();
-    FrameSubpassBatch::DrawBatch(this->batch, view->GetCamera());
+    FrameSubpassBatch::DrawBatch(cmdBuf, this->batch, view->GetCamera());
 }
 
 } // namespace Frame2

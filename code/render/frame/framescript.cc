@@ -109,13 +109,13 @@ FrameScript::Setup()
     this->drawThread->SetName(threadName);
     this->drawThread->SetThreadAffinity(System::Cpu::Core5);
     this->drawThread->Start();
-    CoreGraphics::CommandBufferPoolCreateInfo poolInfo =
+    CoreGraphics::CmdBufferPoolCreateInfo poolInfo =
     {
         CoreGraphics::GraphicsQueueType,
         true,
         true
     };
-    this->drawThreadCommandPool = CoreGraphics::CreateCommandBufferPool(poolInfo);
+    this->drawThreadCommandPool = CoreGraphics::CreateCmdBufferPool(poolInfo);
 #endif
 }
 
@@ -130,37 +130,11 @@ FrameScript::Discard()
 
 #if NEBULA_ENABLE_MT_DRAW
     this->drawThread->Stop();
-    CoreGraphics::DestroyCommandBufferPool(this->drawThreadCommandPool);
+    CoreGraphics::DestroyCmdBufferPool(this->drawThreadCommandPool);
 #endif
 
     this->buildAllocator.Release();
     this->allocator.Release();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-FrameScript::RunJobs(const IndexT frameIndex, const IndexT bufferIndex)
-{
-#if NEBULA_ENABLE_MT_DRAW
-    // tell graphics to start using our draw thread
-    CoreGraphics::SetDrawThread(this->drawThread);
-    //this->drawThread->Lock();
-
-    IndexT i;
-    for (i = 0; i < this->compiled.Size(); i++)
-    {
-        this->compiled[i]->RunJobs(frameIndex, bufferIndex);
-    }
-
-    // tell graphics to stop using our thread
-    CoreGraphics::SetDrawThread(nullptr);
-
-    // make sure to add a sync at the end
-    this->drawThread->Signal(&this->drawThreadEvent);
-    //this->drawThread->Unlock();
-#endif
 }
 
 //------------------------------------------------------------------------------
@@ -181,7 +155,8 @@ FrameScript::Run(const IndexT frameIndex, const IndexT bufferIndex)
     IndexT i;
     for (i = 0; i < this->compiled.Size(); i++)
     {
-        this->compiled[i]->Run(frameIndex, bufferIndex);
+        // Top level calls won't have a command buffer, that's handled by the submissions
+        this->compiled[i]->Run(CoreGraphics::InvalidCmdBufferId, frameIndex, bufferIndex);
     }
 }
 
@@ -218,7 +193,7 @@ FrameScript::Build()
     // clear old compiled result
     this->buildAllocator.Release();
      
-    Util::Dictionary<CoreGraphics::BufferId, Util::Array<FrameOp::BufferDependency>> rwBuffers;
+    Util::Dictionary<CoreGraphics::BufferId, Util::Array<FrameOp::BufferDependency>> buffers;
     Util::Dictionary<CoreGraphics::TextureId, Util::Array<FrameOp::TextureDependency>> textures;
 
     // get window texture
@@ -242,15 +217,15 @@ FrameScript::Build()
         subres.mip = 0;
         subres.mipCount = mips;
         if (tex == window)
-            arr.Append(FrameOp::TextureDependency{ nullptr, CoreGraphics::QueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::Transfer, CoreGraphics::BarrierAccess::TransferRead, DependencyIntent::Read, InvalidIndex, subres });
+            arr.Append(FrameOp::TextureDependency{ CoreGraphics::PipelineStage::Present, DependencyIntent::Read, subres });
         else
-            arr.Append(FrameOp::TextureDependency{ nullptr, CoreGraphics::QueueType::GraphicsQueueType, layout, CoreGraphics::BarrierStage::AllGraphicsShaders | CoreGraphics::BarrierStage::ComputeShader, CoreGraphics::BarrierAccess::ShaderRead, DependencyIntent::Read, InvalidIndex, subres });
+            arr.Append(FrameOp::TextureDependency{ CoreGraphics::PipelineStage::AllShadersRead, DependencyIntent::Read, subres });
     }
 
     // build ops
     for (i = 0; i < this->ops.Size(); i++)
     {
-        this->ops[i]->Build(this->buildAllocator, this->compiled, this->events, this->barriers, rwBuffers, textures, this->drawThreadCommandPool);
+        this->ops[i]->Build(this->buildAllocator, this->compiled, this->events, this->barriers, buffers, textures);
     }
 
     // setup a post-frame barrier to reset the resource state of all resources back to their created original (ShaderRead for RenderTexture, General for RWTexture
@@ -259,24 +234,37 @@ FrameScript::Build()
     for (i = 0; i < textures.Size(); i++)
     {
         const CoreGraphics::TextureId& res = textures.KeyAtIndex(i);
-        CoreGraphics::ImageLayout layout = CoreGraphics::TextureGetDefaultLayout(res);
         const Util::Array<FrameOp::TextureDependency>& deps = textures.ValueAtIndex(i);
 
         const FrameOp::TextureDependency& dep = deps.Back();
         const CoreGraphics::ImageSubresourceInfo& info = dep.subres;
-        CoreGraphics::BarrierAccess outAccess = dep.layout == CoreGraphics::ImageLayout::Present ? CoreGraphics::BarrierAccess::TransferRead : CoreGraphics::BarrierAccess::ShaderRead;
-        CoreGraphics::BarrierStage outStage = outAccess == CoreGraphics::BarrierAccess::TransferRead ? CoreGraphics::BarrierStage::Transfer : CoreGraphics::BarrierStage::AllGraphicsShaders;
+
+        // The last thing we do with present is to 
+        CoreGraphics::PipelineStage fromStage, toStage;
+        if (res == window)
+        {
+            fromStage = dep.stage;
+            toStage = CoreGraphics::PipelineStage::Present;
+        }
+        else
+        {
+            fromStage = dep.stage;
+            toStage = CoreGraphics::PipelineStage::AllShadersRead;
+        };
 
         // render textures are created as shader read
-        if (dep.layout != layout)
+        if (fromStage != toStage)
         {
             CoreGraphics::BarrierCreateInfo inf =
             {
                 Util::String::Sprintf("End of Frame Texture Reset Transition %d", res.resourceId),
                 CoreGraphics::BarrierDomain::Global,
-                dep.stage,
-                outStage,
-                { CoreGraphics::TextureBarrier{ res, info, dep.layout, layout, dep.access, outAccess } }, nullptr
+                fromStage,
+                toStage,
+                {
+                    CoreGraphics::TextureBarrierInfo{ res, info }
+                },
+                nullptr
             };
             this->resourceResetBarriers.Append(CoreGraphics::CreateBarrier(inf));
         }

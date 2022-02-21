@@ -158,26 +158,6 @@ private:
 //------------------------------------------------------------------------------
 /**
 */
-inline void
-VkShaderServer::BindTextureDescriptorSetsGraphics()
-{
-    IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
-    CoreGraphics::SetResourceTable(this->resourceTables[bufferedFrameIndex], NEBULA_TICK_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-VkShaderServer::BindTextureDescriptorSetsCompute(const CoreGraphics::QueueType queue)
-{
-    IndexT bufferedFrameIndex = CoreGraphics::GetBufferedFrameIndex();
-    CoreGraphics::SetResourceTable(this->resourceTables[bufferedFrameIndex], NEBULA_TICK_GROUP, CoreGraphics::ComputePipeline, nullptr, queue);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 inline Shared::PerTickParams&
 VkShaderServer::GetTickParams()
 {

@@ -70,7 +70,7 @@ VkTransformDevice::Open()
         CoreGraphics::ObjectSetName(this->viewTables[i], "Main Frame Group Descriptor");
     }
 
-    this->viewConstants = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
+    this->viewConstants = CoreGraphics::GetGraphicsConstantBuffer();
     this->viewConstantsSlot = ShaderGetResourceSlot(shader, "FrameBlock");
     this->shadowConstantsSlot = ShaderGetResourceSlot(shader, "ShadowMatrixBlock");
     this->tableLayout = ShaderGetResourcePipeline(shader);
@@ -133,7 +133,7 @@ VkTransformDevice::ApplyViewSettings()
     this->frameBlock.FocalLengthNearFar[3] = this->GetNearFarPlane().y;
     this->frameBlock.Time_Random_Luminance_X[0] = (float)FrameSync::FrameSyncTimer::Instance()->GetTime();
     this->frameBlock.Time_Random_Luminance_X[1] = Math::rand(0, 1);
-    uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, this->frameBlock);
+    uint offset = CoreGraphics::SetGraphicsConstants(this->frameBlock);
 
     // update resource table
     IndexT bufferedFrameIndex = GetBufferedFrameIndex();
@@ -149,7 +149,7 @@ VkTransformDevice::ApplyViewSettings()
 void 
 VkTransformDevice::ApplyShadowSettings(const Shared::ShadowMatrixBlock& block)
 {
-    uint offset = CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, block);
+    uint offset = CoreGraphics::SetGraphicsConstants(block);
 
     IndexT bufferedFrameIndex = GetBufferedFrameIndex();
     ResourceTableSetConstantBuffer(this->viewTables[bufferedFrameIndex], { this->viewConstants, this->shadowConstantsSlot, 0, false, false, sizeof(Shared::ShadowMatrixBlock), (SizeT)offset });

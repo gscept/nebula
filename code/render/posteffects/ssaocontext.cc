@@ -3,7 +3,8 @@
 //  (C) 2018 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "frame/frameplugin.h"
+#include "frame/framesubgraph.h"
+#include "frame/framecode.h"
 #include "coregraphics/graphicsdevice.h"
 #include "coregraphics/resourcetable.h"
 #include "coregraphics/sampler.h"
@@ -37,8 +38,9 @@ struct
     // read-write textures
     CoreGraphics::TextureId internalTargets[2];
     CoreGraphics::TextureId ssaoOutput;
+    CoreGraphics::TextureId zBuffer;
 
-    CoreGraphics::BarrierId barriers[4];
+    Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 4> frameOpAllocator;
 
     struct AOVariables
     {
@@ -87,56 +89,6 @@ SSAOContext::Create()
     __bundle.OnUpdateViewResources = SSAOContext::UpdateViewDependentResources;
     __bundle.OnWindowResized = SSAOContext::WindowResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
-
-    // calculate HBAO and blur
-    using namespace CoreGraphics;
-    Frame::AddCallback("HBAO-Run", [](const IndexT frame, const IndexT bufferIndex)
-        {
-            ShaderServer* shaderServer = ShaderServer::Instance();
-
-            // get final dimensions
-            SizeT width = ssaoState.vars.width;
-            SizeT height = ssaoState.vars.height;
-
-            // calculate execution dimensions
-            uint numGroupsX1 = Math::divandroundup(width, HbaoCs::HBAOTileWidth);
-            uint numGroupsX2 = width;
-            uint numGroupsY1 = Math::divandroundup(height, HbaoCs::HBAOTileWidth);
-            uint numGroupsY2 = height;
-
-            // we are running the SSAO on the graphics queue
-#if NEBULA_GRAPHICS_DEBUG
-            CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "HBAO");
-#endif
-
-            // render AO in X
-            CoreGraphics::SetShaderProgram(ssaoState.xDirectionHBAO);
-            CoreGraphics::SetResourceTable(ssaoState.hbaoTable[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-            CoreGraphics::BarrierInsert(ssaoState.barriers[0], GraphicsQueueType); // transition from shader read to general
-            CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
-
-            // now do it in Y
-            CoreGraphics::SetShaderProgram(ssaoState.yDirectionHBAO);
-            CoreGraphics::SetResourceTable(ssaoState.hbaoTable[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-            CoreGraphics::BarrierInsert(ssaoState.barriers[1], GraphicsQueueType); // transition from shader read to general
-            CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
-
-            // blur in X
-            CoreGraphics::SetShaderProgram(ssaoState.xDirectionBlur, CoreGraphics::GraphicsQueueType, false);
-            CoreGraphics::SetResourceTable(ssaoState.blurTableX[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-            CoreGraphics::BarrierInsert(ssaoState.barriers[2], GraphicsQueueType); // transition from shader read to general
-            CoreGraphics::Compute(numGroupsX1, numGroupsY2, 1);
-
-            // blur in Y
-            CoreGraphics::SetShaderProgram(ssaoState.yDirectionBlur, CoreGraphics::GraphicsQueueType, false);
-            CoreGraphics::SetResourceTable(ssaoState.blurTableY[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-            CoreGraphics::BarrierInsert(ssaoState.barriers[3], GraphicsQueueType);
-            CoreGraphics::Compute(numGroupsY1, numGroupsX2, 1);
-
-#if NEBULA_GRAPHICS_DEBUG
-            CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
-#endif
-        });
 }
 
 //------------------------------------------------------------------------------
@@ -174,41 +126,7 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
     ssaoState.internalTargets[0] = CreateTexture(tinfo);
     tinfo.name = "HBAO-Internal1";
     ssaoState.internalTargets[1] = CreateTexture(tinfo);
-
-    CoreGraphics::BarrierCreateInfo binfo =
-    {
-        ""_atm,
-        BarrierDomain::Global,
-        BarrierStage::ComputeShader,
-        BarrierStage::ComputeShader
-    };
     ImageSubresourceInfo subres = ImageSubresourceInfo::ColorNoMipNoLayer();
-
-    // hbao generation barriers
-    binfo.name = "HBAO Initial transition";
-    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[0], subres, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
-    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[1], subres, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
-    ssaoState.barriers[0] = CreateBarrier(binfo);
-    binfo.textures.Clear();
-
-    binfo.name = "HBAO Transition Pass 0 -> 1";
-    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[0], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead });
-    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[1], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
-    ssaoState.barriers[1] = CreateBarrier(binfo);
-    binfo.textures.Clear();
-
-    // hbao blur barriers
-    binfo.name = "HBAO Transition to Blur";
-    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[1], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead });
-    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[0], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
-    ssaoState.barriers[2] = CreateBarrier(binfo);
-    binfo.textures.Clear();
-
-    binfo.name = "HBAO Transition to Blur Pass 0 -> 1";
-    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[0], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead });
-    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[1], subres, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::ShaderRead, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
-    ssaoState.barriers[3] = CreateBarrier(binfo);
-    binfo.textures.Clear();
 
     // setup shaders
     ssaoState.hbaoShader = ShaderGet("shd:hbao_cs.fxb");
@@ -227,10 +145,11 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
     ssaoState.xDirectionBlur = ShaderGetProgram(ssaoState.blurShader, ShaderFeatureFromString("Alt0"));
     ssaoState.yDirectionBlur = ShaderGetProgram(ssaoState.blurShader, ShaderFeatureFromString("Alt1"));
 
-    ssaoState.hbaoConstants = CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer);
-    ssaoState.blurConstants = CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer);
+    ssaoState.hbaoConstants = CoreGraphics::GetComputeConstantBuffer();
+    ssaoState.blurConstants = CoreGraphics::GetComputeConstantBuffer();
 
     ssaoState.ssaoOutput = script->GetTexture("SSAOBuffer");
+    ssaoState.zBuffer = script->GetTexture("ZBuffer");
     SizeT numBuffers = CoreGraphics::GetNumBufferedFrames();
     ssaoState.hbaoTable.Resize(numBuffers);
     ssaoState.blurTableX.Resize(numBuffers);
@@ -282,6 +201,113 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
     ssaoState.powerExponentVar = ShaderGetConstantBinding(ssaoState.blurShader, NEBULA_SEMANTIC_POWEREXPONENT);
     ssaoState.blurFalloff = ShaderGetConstantBinding(ssaoState.blurShader, NEBULA_SEMANTIC_FALLOFF);
     ssaoState.blurDepthThreshold = ShaderGetConstantBinding(ssaoState.blurShader, NEBULA_SEMANTIC_DEPTHTHRESHOLD);
+
+    // Construct subgraph
+    auto aoX = ssaoState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    aoX->SetName("HBAO X");
+    aoX->domain = CoreGraphics::BarrierDomain::Global;
+    aoX->textureDeps.Add(ssaoState.zBuffer,
+                         {
+                            "ZBuffer"
+                            , CoreGraphics::PipelineStage::ComputeShaderRead
+                            , CoreGraphics::ImageSubresourceInfo::DepthStencilNoMipNoLayer()
+                         });
+    aoX->textureDeps.Add(ssaoState.internalTargets[0],
+                         {
+                            "SSAOBuffer0"
+                            , CoreGraphics::PipelineStage::ComputeShaderWrite
+                            , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                         });
+    aoX->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        uint numGroupsX1 = Math::divandroundup(ssaoState.vars.width, HbaoCs::HBAOTileWidth);
+        uint numGroupsY2 = ssaoState.vars.height;
+
+        // Compute AO in X
+        CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.xDirectionHBAO);
+        CoreGraphics::CmdSetResourceTable(cmdBuf, ssaoState.hbaoTable[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        CoreGraphics::CmdDispatch(cmdBuf, numGroupsX1, numGroupsY2, 1);
+    };
+
+    auto aoY = ssaoState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    aoY->SetName("HBAO Y");
+    aoY->domain = CoreGraphics::BarrierDomain::Global;
+    aoY->textureDeps.Add(ssaoState.internalTargets[0],
+                         {
+                            "SSAOBuffer0"
+                            , CoreGraphics::PipelineStage::ComputeShaderRead
+                            , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                         });
+    aoY->textureDeps.Add(ssaoState.internalTargets[1],
+                         {
+                            "SSAOBuffer1"
+                            , CoreGraphics::PipelineStage::ComputeShaderWrite
+                            , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                         });
+    aoY->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        uint numGroupsX2 = ssaoState.vars.width;
+        uint numGroupsY1 = Math::divandroundup(ssaoState.vars.height, HbaoCs::HBAOTileWidth);
+
+        // Compute AO in X
+        CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.xDirectionHBAO);
+        CoreGraphics::CmdSetResourceTable(cmdBuf, ssaoState.hbaoTable[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        CoreGraphics::CmdDispatch(cmdBuf, numGroupsY1, numGroupsX2, 1);
+    };
+
+    auto blurX = ssaoState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    blurX->SetName("HBAO Blur X");
+    blurX->domain = CoreGraphics::BarrierDomain::Global;
+    blurX->textureDeps.Add(ssaoState.internalTargets[1],
+                         {
+                            "SSAOBuffer1"
+                            , CoreGraphics::PipelineStage::ComputeShaderRead
+                            , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                         });
+    blurX->textureDeps.Add(ssaoState.internalTargets[0],
+                         {
+                            "SSAOBuffer0"
+                            , CoreGraphics::PipelineStage::ComputeShaderWrite
+                            , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                         });
+    blurX->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        uint numGroupsX1 = Math::divandroundup(ssaoState.vars.width, HbaoCs::HBAOTileWidth);
+        uint numGroupsY2 = ssaoState.vars.height;
+
+        // Compute AO in X
+        CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.xDirectionBlur, false);
+        CoreGraphics::CmdSetResourceTable(cmdBuf, ssaoState.blurTableX[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        CoreGraphics::CmdDispatch(cmdBuf, numGroupsX1, numGroupsY2, 1);
+    };
+
+    auto blurY = ssaoState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    blurY->SetName("HBAO Blur X");
+    blurY->domain = CoreGraphics::BarrierDomain::Global;
+    blurY->textureDeps.Add(ssaoState.internalTargets[0],
+                         {
+                            "SSAOBuffer1"
+                            , CoreGraphics::PipelineStage::ComputeShaderRead
+                            , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                         });
+    blurY->textureDeps.Add(ssaoState.ssaoOutput,
+                         {
+                            "SSAOOutput"
+                            , CoreGraphics::PipelineStage::ComputeShaderWrite
+                            , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                         });
+    blurY->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        uint numGroupsX2 = ssaoState.vars.width;
+        uint numGroupsY1 = Math::divandroundup(ssaoState.vars.height, HbaoCs::HBAOTileWidth);
+
+        // Compute AO in X
+        CoreGraphics::CmdSetShaderProgram(cmdBuf, ssaoState.yDirectionBlur, false);
+        CoreGraphics::CmdSetResourceTable(cmdBuf, ssaoState.blurTableY[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        CoreGraphics::CmdDispatch(cmdBuf, numGroupsY1, numGroupsX2, 1);
+    };
+
+    Frame::AddSubgraph("HBAO", { aoX, aoY, blurX, blurY });
 }
 
 //------------------------------------------------------------------------------
@@ -350,7 +376,7 @@ SSAOContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const
     hbaoBlock.UVToViewA[1] = ssaoState.vars.uvToViewA.y;
     hbaoBlock.UVToViewB[0] = ssaoState.vars.uvToViewB.x;
     hbaoBlock.UVToViewB[1] = ssaoState.vars.uvToViewB.y;
-    uint hbaoOffset = CoreGraphics::SetComputeConstants(MainThreadConstantBuffer, hbaoBlock);
+    uint hbaoOffset = CoreGraphics::SetComputeConstants(hbaoBlock);
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
@@ -361,7 +387,7 @@ SSAOContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const
     blurBlock.BlurFalloff = ssaoState.vars.blurFalloff;
     blurBlock.BlurDepthThreshold = ssaoState.vars.blurThreshold;
     blurBlock.PowerExponent = 1.5f;
-    uint blurOffset = CoreGraphics::SetComputeConstants(MainThreadConstantBuffer, blurBlock);
+    uint blurOffset = CoreGraphics::SetComputeConstants(blurBlock);
 
     ResourceTableSetConstantBuffer(ssaoState.blurTableX[bufferIndex], { ssaoState.blurConstants, ssaoState.blurC, 0, false, false, sizeof(HbaoblurCs::HBAOBlur), (SizeT)blurOffset });
     ResourceTableSetConstantBuffer(ssaoState.blurTableY[bufferIndex], { ssaoState.blurConstants, ssaoState.blurC, 0, false, false, sizeof(HbaoblurCs::HBAOBlur), (SizeT)blurOffset });
@@ -417,41 +443,6 @@ SSAOContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, SizeT h
     ssaoState.vars.sceneScale = 1.0f;
 
     ssaoState.vars.maxRadiusPixels = MAX_RADIUS_PIXELS * Math::min(ssaoState.vars.fullWidth, ssaoState.vars.fullHeight);
-
-    BarrierCreateInfo binfo =
-    {
-        ""_atm,
-        BarrierDomain::Global,
-        BarrierStage::ComputeShader,
-        BarrierStage::ComputeShader
-    };
-    ImageSubresourceInfo subres = ImageSubresourceInfo::ColorNoMipNoLayer();
-
-    // hbao generation barriers
-    binfo.name = "HBAO Initial transition";
-    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[0], subres, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
-    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[1], subres, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
-    ssaoState.barriers[0] = CreateBarrier(binfo);
-    binfo.textures.Clear();
-
-    binfo.name = "HBAO Transition Pass 0 -> 1";
-    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[0], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead });
-    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[1], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
-    ssaoState.barriers[1] = CreateBarrier(binfo);
-    binfo.textures.Clear();
-
-    // hbao blur barriers
-    binfo.name = "HBAO Transition to Blur";
-    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[1], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead });
-    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[0], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::General, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
-    ssaoState.barriers[2] = CreateBarrier(binfo);
-    binfo.textures.Clear();
-
-    binfo.name = "HBAO Transition to Blur Pass 0 -> 1";
-    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[0], subres, CoreGraphics::ImageLayout::General, CoreGraphics::ImageLayout::ShaderRead, BarrierAccess::ShaderWrite, BarrierAccess::ShaderRead });
-    binfo.textures.Append(TextureBarrier{ ssaoState.internalTargets[1], subres, CoreGraphics::ImageLayout::ShaderRead, CoreGraphics::ImageLayout::ShaderRead, BarrierAccess::ShaderRead, BarrierAccess::ShaderWrite });
-    ssaoState.barriers[3] = CreateBarrier(binfo);
-    binfo.textures.Clear();
 }
 
 } // namespace PostEffects

@@ -55,9 +55,8 @@ FrameOp::Build(
     Util::Array<FrameOp::Compiled*>& compiledOps,
     Util::Array<CoreGraphics::EventId>& events,
     Util::Array<CoreGraphics::BarrierId>& barriers,
-    Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
-    CoreGraphics::CommandBufferPoolId commandBufferPool)
+    Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& buffers,
+    Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
 {
     // if not enable, abort early
     if (!this->enabled)
@@ -67,7 +66,7 @@ FrameOp::Build(
     this->compiled = this->AllocCompiled(allocator);
     compiledOps.Append(this->compiled);
 
-    this->SetupSynchronization(allocator, events, barriers, rwBuffers, textures);
+    this->SetupSynchronization(allocator, events, barriers, buffers, textures);
 }
 
 //------------------------------------------------------------------------------
@@ -92,16 +91,14 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
     CoreGraphics::TextureId tex,
     const Util::StringAtom& textureName,
     DependencyIntent readOrWrite,
-    CoreGraphics::BarrierAccess access,
-    CoreGraphics::BarrierStage stage,
-    CoreGraphics::ImageLayout layout,
+    CoreGraphics::PipelineStage stage,
     CoreGraphics::BarrierDomain domain,
     const CoreGraphics::ImageSubresourceInfo& subres,
     IndexT toIndex,
     CoreGraphics::QueueType toQueue,
-    Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
-    Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
-    Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
+    Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::BarrierCreateInfo>& barriers,
+    Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::EventCreateInfo>& waitEvents,
+    Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, struct FrameOp::Compiled*>& signalEvents,
     Util::Array<FrameOp::TextureDependency>& textureDependencies)
 {
     Util::Array<CoreGraphics::ImageSubresourceInfo> subresources{ subres };
@@ -122,48 +119,22 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
             // if these criteria are met, we need no barrier
             if (dep.intent == DependencyIntent::Read            // previous invocation was just reading
                 && readOrWrite == DependencyIntent::Read        // we are just reading
-                && dep.layout == layout                         // layouts are similar
-                && dep.stage == stage                           // previous stage was conservative
-                && dep.queue == toQueue)                        // we are on the same queue
+                && dep.stage == stage)                          // previous stage was conservative
             {
-                // do nothing
-                int i = 5;
+                continue;
             }
             else
             {
-                // create semaphore
-                if (dep.queue != toQueue)
-                {
-                    n_warning("Synchronization happens between queues, and should be handled with submissions explicitly!");
-                }
-                else
-                {
-                    // construct pair between ops
-                    const Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage> tuple = Util::MakeTuple(toIndex, dep.index, stage, dep.stage);
-                    CoreGraphics::TextureBarrier barrier{ tex, subres, dep.layout, layout, dep.access, access };
+                // construct pair between ops
+                const Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage> tuple = Util::MakeTuple(stage, dep.stage);
+                CoreGraphics::TextureBarrierInfo barrier{ tex, subres };
 
-                    const bool enableEvent = false;
-
-                    // create event if gap between operations is bigger than 1
-                    if (dep.index != InvalidIndex && toIndex - dep.index > 1 && enableEvent)
-                    {
-                        n_assert(dep.op != nullptr);
-                        CoreGraphics::EventCreateInfo& info = waitEvents.AddUnique(tuple);
-                        info.name = info.name.IsValid() ? info.name.AsString() + " + " + textureName.AsString() : textureName.AsString();
-                        info.createSignaled = false;
-                        info.textures.Append(barrier);
-                        signalEvents.AddUnique(tuple) = dep.op;
-                    }
-                    else // create barrier
-                    {
-                        CoreGraphics::BarrierCreateInfo& info = barriers.AddUnique(tuple);
-                        info.name = info.name.IsValid() ? info.name.AsString() + " + " + textureName.AsString() : textureName.AsString();
-                        info.domain = domain;
-                        info.leftDependency = dep.stage;
-                        info.rightDependency = stage;
-                        info.textures.Append(barrier);
-                    }
-                }
+                CoreGraphics::BarrierCreateInfo& info = barriers.AddUnique(tuple);
+                info.name = info.name.IsValid() ? info.name.AsString() + " + " + textureName.AsString() : textureName.AsString();
+                info.domain = domain;
+                info.fromStage = dep.stage;
+                info.toStage = stage;
+                info.textures.Append(barrier);
 
                 // split barriers if we have a partially overlapping subresource on the mips
                 if (currentSubres.mip < depSubres.mip || currentSubres.mipCount > depSubres.mipCount)
@@ -213,13 +184,8 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
 
                 // add new dependency to list
                 FrameOp::TextureDependency newDep;
-                newDep.op = op;
-                newDep.queue = toQueue;
-                newDep.layout = layout;
                 newDep.stage = stage;
-                newDep.access = access;
                 newDep.intent = readOrWrite;
-                newDep.index = toIndex;
                 newDep.subres = subres;
                 textureDependencies.Append(newDep);
             }
@@ -236,15 +202,14 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
     CoreGraphics::BufferId buf,
     const Util::StringAtom& bufferName,
     DependencyIntent readOrWrite,
-    CoreGraphics::BarrierAccess access,
-    CoreGraphics::BarrierStage stage,
+    CoreGraphics::PipelineStage stage,
     CoreGraphics::BarrierDomain domain,
     const CoreGraphics::BufferSubresourceInfo& subres,
     IndexT toIndex,
     CoreGraphics::QueueType toQueue,
-    Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo>& barriers,
-    Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo>& waitEvents,
-    Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, struct FrameOp::Compiled*>& signalEvents,
+    Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::BarrierCreateInfo>& barriers,
+    Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::EventCreateInfo>& waitEvents,
+    Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, FrameOp::Compiled*>& signalEvents,
     Util::Array<FrameOp::BufferDependency>& bufferDependencies)
 {
     Util::Array<CoreGraphics::BufferSubresourceInfo> subresources{ subres };
@@ -264,44 +229,22 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
             // if these criteria are met, we need no barrier
             if (dep.intent == DependencyIntent::Read
                 && readOrWrite == DependencyIntent::Read
-                && dep.stage == stage                       // check if previous stage was conservative enough
-                && dep.queue == toQueue)
-                return; // we found a previous synch which satisfied our needs, so return
+                && dep.stage == stage)                       // check if previous stage was conservative enough
+            {
+                continue;
+            }
             else
             {
-                // create semaphore
-                if (dep.queue != toQueue)
-                {
-                    n_warning("Synchronization happens between queues, and should be handled with submissions explicitly!");
-                }
-                else
-                {
-                    // construct pair between ops
-                    const Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage> tuple = Util::MakeTuple(toIndex, dep.index, stage, dep.stage);
-                    CoreGraphics::BufferBarrier barrier{ buf, dep.access, access, (IndexT)subres.offset, (IndexT)subres.size };
+                // construct pair between ops
+                const Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage> tuple = Util::MakeTuple(stage, dep.stage);
+                CoreGraphics::BufferBarrierInfo barrier{ buf, (IndexT)subres.offset, (IndexT)subres.size };
 
-                    const bool enableEvent = false;
-
-                    // create event
-                    if (dep.index != InvalidIndex && toIndex - dep.index > 1 && enableEvent)
-                    {
-                        n_assert(dep.op != nullptr);
-                        CoreGraphics::EventCreateInfo& info = waitEvents.AddUnique(tuple);
-                        info.name = info.name.IsValid() ? info.name.AsString() + " + " + bufferName.AsString() : bufferName.AsString();
-                        info.createSignaled = false;
-                        info.rwBuffers.Append(barrier);
-                        signalEvents.AddUnique(tuple) = dep.op;
-                    }
-                    else // create barrier
-                    {
-                        CoreGraphics::BarrierCreateInfo& info = barriers.AddUnique(tuple);
-                        info.name = info.name.IsValid() ? info.name.AsString() + " + " + bufferName.AsString() : bufferName.AsString();
-                        info.domain = domain;
-                        info.leftDependency = dep.stage;
-                        info.rightDependency = stage;
-                        info.rwBuffers.Append(barrier);
-                    }
-                }
+                CoreGraphics::BarrierCreateInfo& info = barriers.AddUnique(tuple);
+                info.name = info.name.IsValid() ? info.name.AsString() + " + " + bufferName.AsString() : bufferName.AsString();
+                info.domain = domain;
+                info.fromStage = dep.stage;
+                info.toStage = stage;
+                info.buffers.Append(barrier);
             }
 
             // split barriers if we have partially overlapping subresources on the layers
@@ -328,12 +271,8 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
 
             // add new buffer dependency
             FrameOp::BufferDependency newDep;
-            newDep.op = op;
-            newDep.queue = toQueue;
             newDep.stage = stage;
-            newDep.access = access;
             newDep.intent = readOrWrite;
-            newDep.index = toIndex;
             newDep.subres = subres;
             bufferDependencies.Append(newDep);
         }
@@ -348,17 +287,17 @@ FrameOp::SetupSynchronization(
     Memory::ArenaAllocator<BIG_CHUNK>& allocator,
     Util::Array<CoreGraphics::EventId>& events,
     Util::Array<CoreGraphics::BarrierId>& barriers,
-    Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
+    Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& buffers,
     Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures)
 {
     n_assert(this->compiled != nullptr);
     IndexT i;
 
-    if (!this->textureDeps.IsEmpty() || !this->rwBufferDeps.IsEmpty())
+    if (!this->textureDeps.IsEmpty() || !this->bufferDeps.IsEmpty())
     {
-        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::EventCreateInfo> waitEvents;
-        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, CoreGraphics::BarrierCreateInfo> barriers;
-        Util::Dictionary<Util::Tuple<IndexT, IndexT, CoreGraphics::BarrierStage, CoreGraphics::BarrierStage>, FrameOp::Compiled*> signalEvents;
+        Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::EventCreateInfo> waitEvents;
+        Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::BarrierCreateInfo> barriers;
+        Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, FrameOp::Compiled*> signalEvents;
         uint numOutputs = 0;
 
         // go through texture dependencies
@@ -369,32 +308,42 @@ FrameOp::SetupSynchronization(
 
             // right dependency set
             const Util::StringAtom& name = Util::Get<0>(this->textureDeps.ValueAtIndex(i));
-            const CoreGraphics::BarrierAccess& access = Util::Get<1>(this->textureDeps.ValueAtIndex(i));
-            const CoreGraphics::BarrierStage& stage = Util::Get<2>(this->textureDeps.ValueAtIndex(i));
-            const CoreGraphics::ImageSubresourceInfo& subres = Util::Get<3>(this->textureDeps.ValueAtIndex(i));
-            const CoreGraphics::ImageLayout& layout = Util::Get<4>(this->textureDeps.ValueAtIndex(i));
+            const CoreGraphics::PipelineStage& stage = Util::Get<1>(this->textureDeps.ValueAtIndex(i));
+            const CoreGraphics::ImageSubresourceInfo& subres = Util::Get<2>(this->textureDeps.ValueAtIndex(i));
 
             DependencyIntent readOrWrite = DependencyIntent::Read;
-            switch (access)
+            switch (stage)
             {
-            case CoreGraphics::BarrierAccess::ShaderWrite:
-            case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
-            case CoreGraphics::BarrierAccess::DepthAttachmentWrite:
-            case CoreGraphics::BarrierAccess::HostWrite:
-            case CoreGraphics::BarrierAccess::MemoryWrite:
-            case CoreGraphics::BarrierAccess::TransferWrite:
-                readOrWrite = DependencyIntent::Write;
-                numOutputs++;
-                break;
+                case CoreGraphics::PipelineStage::VertexShaderWrite:
+                case CoreGraphics::PipelineStage::HullShaderWrite:
+                case CoreGraphics::PipelineStage::DomainShaderWrite:
+                case CoreGraphics::PipelineStage::GeometryShaderWrite:
+                case CoreGraphics::PipelineStage::PixelShaderWrite:
+                case CoreGraphics::PipelineStage::ComputeShaderWrite:
+                case CoreGraphics::PipelineStage::ColorWrite:
+                case CoreGraphics::PipelineStage::DepthStencilWrite:
+                case CoreGraphics::PipelineStage::HostWrite:
+                case CoreGraphics::PipelineStage::MemoryWrite:
+                case CoreGraphics::PipelineStage::TransferWrite:
+                    readOrWrite = DependencyIntent::Write;
+                    numOutputs++;
+                    break;
             }
 
             // dependencies currently on the texture
-            IndexT idx = textures.FindIndex(this->textureDeps.KeyAtIndex(i));
+            IndexT idx = textures.FindIndex(tex);
+
+            // If this is the first encounter of this texture, add an implicit shader read dependency
+            if (idx == InvalidIndex)
+            {
+                CoreGraphics::PipelineStage stage = this->queue == CoreGraphics::QueueType::ComputeQueueType ? CoreGraphics::PipelineStage::ComputeShaderRead : CoreGraphics::PipelineStage::AllShadersRead;
+                idx = textures.Add(tex, { FrameOp::TextureDependency{ stage, DependencyIntent::Read, subres } });
+            }
             Util::Array<TextureDependency>& deps = textures.ValueAtIndex(idx);
 
             // analyze if synchronization is required and setup appropriate barriers and/or events
             AnalyzeAndSetupTextureBarriers(
-                this->compiled, tex, name, readOrWrite, access, stage, layout, this->domain, subres, this->index, this->queue, barriers, waitEvents, signalEvents, deps);
+                this->compiled, tex, name, readOrWrite, stage, this->domain, subres, this->index, this->queue, barriers, waitEvents, signalEvents, deps);
 
             // if alias, also make sure to visit the alias
             if (alias != CoreGraphics::InvalidTextureId)
@@ -402,99 +351,77 @@ FrameOp::SetupSynchronization(
                 IndexT idx = textures.FindIndex(alias);
                 Util::Array<TextureDependency>& deps = textures.ValueAtIndex(idx);
                 AnalyzeAndSetupTextureBarriers(
-                    this->compiled, alias, name, readOrWrite, access, stage, layout, this->domain, subres, this->index, this->queue, barriers, waitEvents, signalEvents, deps);
+                    this->compiled, alias, name, readOrWrite, stage, this->domain, subres, this->index, this->queue, barriers, waitEvents, signalEvents, deps);
             }
 
         }
 
         // go through buffer dependencies
-        for (i = 0; i < this->rwBufferDeps.Size(); i++)
+        for (i = 0; i < this->bufferDeps.Size(); i++)
         {
-            const CoreGraphics::BufferId& buf = this->rwBufferDeps.KeyAtIndex(i);
-            IndexT idx = rwBuffers.FindIndex(this->rwBufferDeps.KeyAtIndex(i));
+            const CoreGraphics::BufferId& buf = this->bufferDeps.KeyAtIndex(i);
 
             // right dependency set
-            const Util::StringAtom& name = Util::Get<0>(this->rwBufferDeps.ValueAtIndex(i));
-            const CoreGraphics::BarrierAccess& access = Util::Get<1>(this->rwBufferDeps.ValueAtIndex(i));
-            const CoreGraphics::BarrierStage& stage = Util::Get<2>(this->rwBufferDeps.ValueAtIndex(i));
-            const CoreGraphics::BufferSubresourceInfo& subres = Util::Get<3>(this->rwBufferDeps.ValueAtIndex(i));
+            const Util::StringAtom& name = Util::Get<0>(this->bufferDeps.ValueAtIndex(i));
+            const CoreGraphics::PipelineStage& stage = Util::Get<1>(this->bufferDeps.ValueAtIndex(i));
+            const CoreGraphics::BufferSubresourceInfo& subres = Util::Get<2>(this->bufferDeps.ValueAtIndex(i));
 
             DependencyIntent readOrWrite = DependencyIntent::Read;
-            switch (access)
+            switch (stage)
             {
-            case CoreGraphics::BarrierAccess::ShaderWrite:
-            case CoreGraphics::BarrierAccess::ColorAttachmentWrite:
-            case CoreGraphics::BarrierAccess::DepthAttachmentWrite:
-            case CoreGraphics::BarrierAccess::HostWrite:
-            case CoreGraphics::BarrierAccess::MemoryWrite:
-            case CoreGraphics::BarrierAccess::TransferWrite:
-                readOrWrite = DependencyIntent::Write;
-                numOutputs++;
-                break;
+                case CoreGraphics::PipelineStage::VertexShaderWrite:
+                case CoreGraphics::PipelineStage::HullShaderWrite:
+                case CoreGraphics::PipelineStage::DomainShaderWrite:
+                case CoreGraphics::PipelineStage::GeometryShaderWrite:
+                case CoreGraphics::PipelineStage::PixelShaderWrite:
+                case CoreGraphics::PipelineStage::ComputeShaderWrite:
+                case CoreGraphics::PipelineStage::ColorWrite:
+                case CoreGraphics::PipelineStage::DepthStencilWrite:
+                case CoreGraphics::PipelineStage::HostWrite:
+                case CoreGraphics::PipelineStage::MemoryWrite:
+                case CoreGraphics::PipelineStage::TransferWrite:
+                    readOrWrite = DependencyIntent::Write;
+                    numOutputs++;
+                    break;
             }
 
             // dependencies currently on the texture
-            Util::Array<BufferDependency>& deps = rwBuffers.ValueAtIndex(idx);
+            IndexT idx = buffers.FindIndex(buf);
+            if (idx == InvalidIndex)
+            {
+                CoreGraphics::PipelineStage stage = this->queue == CoreGraphics::QueueType::ComputeQueueType ? CoreGraphics::PipelineStage::ComputeShaderRead : CoreGraphics::PipelineStage::AllShadersRead;
+                idx = buffers.Add(buf, { BufferDependency{ stage, DependencyIntent::Read } });
+            }
+            Util::Array<BufferDependency>& deps = buffers.ValueAtIndex(idx);
 
             AnalyzeAndSetupBufferBarriers(
-                this->compiled, buf, name, readOrWrite, access, stage, this->domain, subres, this->index, this->queue, barriers, waitEvents, signalEvents, deps);
+                this->compiled, buf, name, readOrWrite, stage, this->domain, subres, this->index, this->queue, barriers, waitEvents, signalEvents, deps);
         }
 
 #pragma push_macro("CreateEvent")
 #undef CreateEvent
 
         // allocate inputs, which is what we wait for or if we immediately trigger a barrier _before_ we execute the command
-        this->compiled->waitEvents = waitEvents.Size() > 0 ? (decltype(this->compiled->waitEvents))allocator.Alloc(sizeof(*this->compiled->waitEvents) * waitEvents.Size()) : nullptr;
-        this->compiled->barriers = barriers.Size() > 0 ? (decltype(this->compiled->barriers))allocator.Alloc(sizeof(*this->compiled->barriers) * barriers.Size()) : nullptr;
-
-        // allocate for possible output (this will allocate a signal event slot for each output, which can only be signaled once)
-        this->compiled->signalEvents = numOutputs > 0 ? (decltype(this->compiled->signalEvents))allocator.Alloc(sizeof(*this->compiled->signalEvents) * numOutputs) : nullptr;
-
-        // create pre-execution events and barriers
-        for (i = 0; i < waitEvents.Size(); i++)
-        {
-            waitEvents.ValueAtIndex(i).name = waitEvents.ValueAtIndex(i).name.AsString() + " <Frame Event>";
-            CoreGraphics::EventId ev = CreateEvent(waitEvents.ValueAtIndex(i));
-            events.Append(ev);
-            this->compiled->waitEvents[i].event = ev;
-            this->compiled->waitEvents[i].queue = this->queue;
-
-            // get parent and add signaling event to it
-            FrameOp::Compiled* parent = signalEvents.ValueAtIndex(i);
-            parent->signalEvents[parent->numSignalEvents++].event = ev;
-        }
-        this->compiled->numWaitEvents = waitEvents.Size();
+        this->compiled->barriers.Resize(barriers.Size());
 
         for (i = 0; i < barriers.Size(); i++)
         {
             barriers.ValueAtIndex(i).name = barriers.ValueAtIndex(i).name.AsString() + " <Frame Barrier>";
             CoreGraphics::BarrierId bar = CreateBarrier(barriers.ValueAtIndex(i));
-            this->compiled->barriers[i].barrier = bar;
-            this->compiled->barriers[i].queue = this->queue;
+            this->compiled->barriers[i] = bar;
         }
-        this->compiled->numBarriers = barriers.Size();
 
 #pragma pop_macro("CreateEvent")
     }
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
 void
-FrameOp::Compiled::UpdateResources(const IndexT frameIndex, const IndexT bufferIndex)
+FrameOp::Compiled::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex)
 {
-    // implement in subclass
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameOp::Compiled::RunJobs(const IndexT frameIndex, const IndexT bufferIndex)
-{
-    // implement in subclass
+    n_assert(cmdBuf != CoreGraphics::InvalidCmdBufferId);
 }
 
 //------------------------------------------------------------------------------
@@ -510,30 +437,12 @@ FrameOp::Compiled::Discard()
 /**
 */
 void
-FrameOp::Compiled::QueuePreSync()
+FrameOp::Compiled::QueuePreSync(const CoreGraphics::CmdBufferId cmdBuf)
 {
-    IndexT i;
-    for (i = 0; i < this->numWaitEvents; i++)
+    for (const CoreGraphics::BarrierId barrier : this->barriers)
     {
-        CoreGraphics::EventWaitAndReset(this->waitEvents[i].event, this->waitEvents[i].queue, this->waitEvents[i].waitStage, this->waitEvents[i].signalStage);
-    }
-    for (i = 0; i < this->numBarriers; i++)
-    {
-        CoreGraphics::BarrierReset(this->barriers[i].barrier);
-        CoreGraphics::BarrierInsert(this->barriers[i].barrier, this->barriers[i].queue);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-FrameOp::Compiled::QueuePostSync()
-{
-    IndexT i;
-    for (i = 0; i < this->numSignalEvents; i++)
-    {
-        CoreGraphics::EventSignal(this->signalEvents[i].event, this->signalEvents[i].queue, this->signalEvents[i].stage);
+        CoreGraphics::BarrierReset(barrier);
+        CoreGraphics::CmdBarrier(cmdBuf, barrier);
     }
 }
 

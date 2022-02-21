@@ -47,7 +47,7 @@ FrameBlit::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void
-FrameBlit::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
+FrameBlit::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex)
 {
     // get dimensions
     CoreGraphics::TextureDimensions fromDims = TextureGetDimensions(this->from);
@@ -66,13 +66,13 @@ FrameBlit::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
     toRegion.bottom = toDims.height;
 
 #if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_RED, this->name.Value());
+    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, this->name.Value());
 #endif
 
-    CoreGraphics::Blit(this->from, fromRegion, 0, 0, this->to, toRegion, 0, 0);
+    CoreGraphics::CmdBlit(cmdBuf, this->from, fromRegion, 0, 0, this->to, toRegion, 0, 0);
 
 #if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
+    CoreGraphics::CmdEndMarker(cmdBuf);
 #endif
 }
 

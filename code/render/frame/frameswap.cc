@@ -43,7 +43,7 @@ FrameSwap::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 /**
 */
 void
-FrameSwap::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
+FrameSwap::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex)
 {
     CoreGraphics::QueueBeginMarker(GraphicsQueueType, NEBULA_MARKER_GRAPHICS, "Swap");
     CoreGraphics::Swap(0);

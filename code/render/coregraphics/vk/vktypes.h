@@ -62,16 +62,18 @@ public:
     static CoreGraphics::PixelFormat::Code AsNebulaPixelFormat(VkFormat f);
     /// convert pixel format to Vulkan component mapping
     static VkComponentMapping AsVkMapping(CoreGraphics::PixelFormat::Code p);
-    /// convert dependency flags to vulkan
-    static VkPipelineStageFlags AsVkPipelineFlags(const CoreGraphics::BarrierStage dep);
-    /// convert dependency flags to vulkan
-    static VkPipelineStageFlags AsVkResourceAccessFlags(const CoreGraphics::BarrierAccess access);
     /// convert image aspects to Vulkan
     static VkImageAspectFlags AsVkImageAspectFlags(const CoreGraphics::ImageAspect aspect);
     /// convert shader visibility to vulkan
     static VkShaderStageFlags AsVkShaderVisibility(const CoreGraphics::ShaderVisibility vis);
     /// convert image layout to vulkan
     static VkImageLayout AsVkImageLayout(const CoreGraphics::ImageLayout layout);
+    /// Convert pipeline stage to Vk pipeline stage
+    static VkPipelineStageFlags AsVkPipelineStage(const CoreGraphics::PipelineStage stage);
+    /// Convert pipeline stage and pipeline access to Vk access flags
+    static VkAccessFlags AsVkAccessFlags(const CoreGraphics::PipelineStage stage);
+    /// Convert pipeline stage to image layout
+    static VkImageLayout AsVkImageLayout(const CoreGraphics::PipelineStage stage, bool depthStencil = false);
 
 #pragma endregion
 

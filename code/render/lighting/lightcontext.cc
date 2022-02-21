@@ -3,15 +3,16 @@
 // (C) 2017-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "frame/frameplugin.h"
 #include "lightcontext.h"
 #include "graphics/graphicsserver.h"
 #include "graphics/view.h"
 #include "graphics/cameracontext.h"
 #include "csmutil.h"
 #include "math/polar.h"
+#include "frame/framesubgraph.h"
 #include "frame/framebatchtype.h"
 #include "frame/framesubpassbatch.h"
+#include "frame/framecode.h"
 #include "resources/resourceserver.h"
 #include "visibility/visibilitycontext.h"
 #include "clustering/clustercontext.h"
@@ -62,6 +63,9 @@ struct
     CoreGraphics::ResourceTableId csmBlurXTable, csmBlurYTable;
 
     CSMUtil csmUtil;
+
+    Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 9> frameOpAllocator;
+
 } lightServerState;
 
 struct
@@ -136,7 +140,7 @@ LightContext::~LightContext()
 /**
 */
 void 
-LightContext::Create()
+LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
 {
     __CreateContext();
 
@@ -148,71 +152,22 @@ LightContext::Create()
     __bundle.OnUpdateViewResources = LightContext::UpdateViewDependentResources;
     __bundle.OnWindowResized = LightContext::WindowResized;
 
-#if NEBULA_ENABLE_MT_DRAW
-    __bundle.OnWorkFinished = LightContext::RunFrameScriptJobs;
-#endif
-
     __bundle.StageBits = &LightContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = LightContext::OnRenderDebug;
 #endif
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-    // called from main script
-    Frame::AddCallback("LightContext - Update Shadowmaps", [](const IndexT frame, const IndexT bufferIndex) // trigger update
-        {
-            // run the script
-            N_SCOPE(ShadowMapExecute, Graphics);
-            lightServerState.shadowMappingFrameScript->Run(frame, bufferIndex);
-        });
-
-    // register shadow mapping algorithms
-    Frame::AddCallback("LightContext - Spotlight Shadows", [](const IndexT frame, const IndexT bufferIndex) // graphics
-        {
-            IndexT i;
-            for (i = 0; i < lightServerState.shadowcastingLocalLights.Size(); i++)
-            {
-                // draw it!
-                Frame::FrameSubpassBatch::DrawBatch(lightServerState.spotlightsBatchCode, lightServerState.shadowcastingLocalLights[i], 1, i);
-            }
-        });
-    Frame::AddCallback("LightContext - Spotlight Blur", [](const IndexT frame, const IndexT bufferIndex) // compute
-        {
-        });
-
-    Frame::AddCallback("LightContext - Sun Shadows", [](const IndexT frame, const IndexT bufferIndex) // graphics
-        {
-            if (lightServerState.globalLightEntity != Graphics::GraphicsEntityId::Invalid())
-            {
-                // get cameras associated with sun
-                Graphics::ContextEntityId ctxId = GetContextId(lightServerState.globalLightEntity);
-                Ids::Id32 typedId = genericLightAllocator.Get<TypedLightId>(ctxId.id);
-                const Util::Array<Graphics::GraphicsEntityId>& observers = globalLightAllocator.Get<GlobalLight_CascadeObservers>(typedId);
-                for (IndexT i = 0; i < observers.Size(); i++)
-                {
-                    // draw it!
-                    Frame::FrameSubpassBatch::DrawBatch(lightServerState.globalLightsBatchCode, observers[i], 1, i);
-                }				
-            }
-        });
-    Frame::AddCallback("LightContext - Sun Blur", [](const IndexT frame, const IndexT bufferIndex) // compute
-        {
-            LightContext::BlurGlobalShadowMap();
-        });
-
-    Frame::AddCallback("LightContext - Cull and Classify", [](const IndexT frame, const IndexT bufferIndex)
-        {
-            LightContext::CullAndClassify();
-        });
-
-    Frame::AddCallback("LightContext - Combine", [](const IndexT frame, const IndexT bufferIndex)
-        {
-            LightContext::CombineLighting();
-        });
+    textureState.fogTexture = frameScript->GetTexture("VolumetricFogBuffer0");
+    textureState.reflectionTexture = frameScript->GetTexture("ReflectionBuffer");
+    textureState.aoTexture = frameScript->GetTexture("SSAOBuffer");
+    textureState.lightingTexture = frameScript->GetTexture("LightBuffer");
+#ifdef CLUSTERED_LIGHTING_DEBUG
+    textureState.clusterDebugTexture = frameScript->GetTexture("LightDebugBuffer");
+#endif
 
     // create shadow mapping frame script
     lightServerState.shadowMappingFrameScript = Frame::FrameServer::Instance()->LoadFrameScript("shadowmap_framescript", "frame:vkshadowmap.json"_uri);
-    lightServerState.shadowMappingFrameScript->Build();
     lightServerState.spotlightsBatchCode = CoreGraphics::BatchGroup::FromName("SpotLightShadow");
     lightServerState.globalLightsBatchCode = CoreGraphics::BatchGroup::FromName("GlobalShadow");
     lightServerState.globalLightShadowMap = lightServerState.shadowMappingFrameScript->GetTexture("SunShadow");
@@ -278,7 +233,7 @@ LightContext::Create()
         CoreGraphics::ResourceTableId table = viewTables[i];
         ResourceTableSetRWBuffer(table, { clusterState.clusterLightIndexLists, lightIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetRWBuffer(table, { clusterState.clusterLightsList, lightsListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(table, { CoreGraphics::GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsCluster::LightUniforms), 0 });
+        ResourceTableSetConstantBuffer(table, { CoreGraphics::GetComputeConstantBuffer(), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsCluster::LightUniforms), 0 });
     }
 
     clusterState.stagingClusterLightsList.Resize(CoreGraphics::GetNumBufferedFrames());
@@ -319,6 +274,205 @@ LightContext::Create()
 
     // allow 16 shadow casting local lights
     lightServerState.shadowcastingLocalLights.SetCapacity(16);
+
+    // Main entry point to run shadowing frame script
+    auto shadowMapsRender = lightServerState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    shadowMapsRender->domain = CoreGraphics::BarrierDomain::Global;
+    shadowMapsRender->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        N_SCOPE(ShadowMapsRender, Graphics);
+        lightServerState.shadowMappingFrameScript->Run(frame, bufferIndex);
+    };
+    Frame::AddSubgraph("Shadows (subgraph)", { shadowMapsRender });
+
+    // Pass is defined in the frame script, but this is just to take control over the batch rendering
+    auto spotlightShadowsRender = lightServerState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    spotlightShadowsRender->domain = CoreGraphics::BarrierDomain::Pass;
+    spotlightShadowsRender->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        IndexT i;
+        for (i = 0; i < lightServerState.shadowcastingLocalLights.Size(); i++)
+        {
+            // draw it!
+            Frame::FrameSubpassBatch::DrawBatch(cmdBuf, lightServerState.spotlightsBatchCode, lightServerState.shadowcastingLocalLights[i], 1, i);
+        }
+    };
+    Frame::AddSubgraph("Spotlight Shadows", { spotlightShadowsRender });
+
+    // Run blur pass for spot lights, which is disabled at the moment
+    auto spotlightShadowsBlur = lightServerState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    spotlightShadowsBlur->domain = CoreGraphics::BarrierDomain::Pass;
+    spotlightShadowsBlur->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+    };
+    spotlightShadowsBlur->SetEnabled(false);
+    Frame::AddSubgraph("Spotlight Blur", { spotlightShadowsBlur });
+
+    // Run sun render pass, going over observers and feeding a cascade per each
+    auto sunShadowsRender = lightServerState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    sunShadowsRender->domain = CoreGraphics::BarrierDomain::Pass;
+    sunShadowsRender->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        if (lightServerState.globalLightEntity != Graphics::GraphicsEntityId::Invalid())
+        {
+            // get cameras associated with sun
+            Graphics::ContextEntityId ctxId = GetContextId(lightServerState.globalLightEntity);
+            Ids::Id32 typedId = genericLightAllocator.Get<TypedLightId>(ctxId.id);
+            const Util::Array<Graphics::GraphicsEntityId>& observers = globalLightAllocator.Get<GlobalLight_CascadeObservers>(typedId);
+            for (IndexT i = 0; i < observers.Size(); i++)
+            {
+                // draw it!
+                Frame::FrameSubpassBatch::DrawBatch(cmdBuf, lightServerState.globalLightsBatchCode, observers[i], 1, i);
+            }
+        }
+    };
+    Frame::AddSubgraph("Sun Shadows", { sunShadowsRender });
+
+    // Run sun shadows blur passes, first pass is in X
+    auto sunShadowsBlurX = lightServerState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    sunShadowsBlurX->domain = CoreGraphics::BarrierDomain::Global;
+    sunShadowsBlurX->textureDeps.Add(lightServerState.globalLightShadowMapBlurred1,
+                                    {
+                                        "SunShadowsBlurred1"
+                                        , CoreGraphics::PipelineStage::ComputeShaderRead
+                                        , CoreGraphics::ImageSubresourceInfo::ColorNoMip(4)
+                                    });
+    sunShadowsBlurX->textureDeps.Add(lightServerState.globalLightShadowMapBlurred0,
+                                    {
+                                        "SunShadowsBlurred0"
+                                        , CoreGraphics::PipelineStage::ComputeShaderWrite
+                                        , CoreGraphics::ImageSubresourceInfo::ColorNoMip(4)
+                                    });
+    sunShadowsBlurX->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        CoreGraphics::TextureDimensions dims = TextureGetDimensions(lightServerState.globalLightShadowMapBlurred0);
+        CmdSetShaderProgram(cmdBuf, lightServerState.csmBlurXProgram);
+        CmdSetResourceTable(cmdBuf, lightServerState.csmBlurXTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        CmdDispatch(cmdBuf, Math::divandroundup(dims.width, Csmblur::BlurTileWidth), dims.height, 4);
+    };
+
+    // Run blur pass in Y
+    auto sunShadowsBlurY = lightServerState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    sunShadowsBlurY->domain = CoreGraphics::BarrierDomain::Global;
+    sunShadowsBlurY->textureDeps.Add(lightServerState.globalLightShadowMapBlurred0,
+                                    {
+                                        "SunShadowsBlurred0"
+                                        , CoreGraphics::PipelineStage::ComputeShaderRead
+                                        , CoreGraphics::ImageSubresourceInfo::ColorNoMip(4)
+                                    });
+    sunShadowsBlurY->textureDeps.Add(lightServerState.globalLightShadowMapBlurred1,
+                                    {
+                                        "SunShadowsBlurred1"
+                                        , CoreGraphics::PipelineStage::ComputeShaderWrite
+                                        , CoreGraphics::ImageSubresourceInfo::ColorNoMip(4)
+                                    });
+    sunShadowsBlurY->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        CoreGraphics::TextureDimensions dims = TextureGetDimensions(lightServerState.globalLightShadowMapBlurred0);
+        CmdSetShaderProgram(cmdBuf, lightServerState.csmBlurYProgram);
+        CmdSetResourceTable(cmdBuf, lightServerState.csmBlurYTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+        CmdDispatch(cmdBuf, Math::divandroundup(dims.height, Csmblur::BlurTileWidth), dims.width, 4);
+
+        CmdBarrier(cmdBuf, CoreGraphics::PipelineStage::ComputeShaderWrite, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global,
+                    {
+                        {
+                            lightServerState.globalLightShadowMapBlurred1,
+                            CoreGraphics::ImageSubresourceInfo::ColorNoMip(4)
+                        }
+                    });
+    };
+    Frame::AddSubgraph("Sun Blur", { sunShadowsBlurX, sunShadowsBlurY });
+
+    // Copy lights from CPU buffer to GPU buffer
+    auto lightsCopy = lightServerState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    lightsCopy->domain = CoreGraphics::BarrierDomain::Global;
+    lightsCopy->queue = CoreGraphics::QueueType::ComputeQueueType;
+    lightsCopy->bufferDeps.Add(clusterState.clusterLightsList,
+                                 {
+                                     "ClusterLightsList"
+                                     , CoreGraphics::PipelineStage::ComputeShaderWrite
+                                     , CoreGraphics::BufferSubresourceInfo()
+                                 });
+    lightsCopy->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        CoreGraphics::BufferCopy from, to;
+        from.offset = 0;
+        to.offset = 0;
+        CmdCopy(cmdBuf, clusterState.stagingClusterLightsList[bufferIndex], { from }, clusterState.clusterLightsList, { to }, sizeof(LightsCluster::LightLists));
+    };
+
+    // Classify and cull is dependent on the light index lists and the AABB buffer being ready
+    auto lightsClassifyAndCull = lightServerState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    lightsClassifyAndCull->domain = CoreGraphics::BarrierDomain::Global;
+    lightsClassifyAndCull->queue = CoreGraphics::QueueType::ComputeQueueType;
+    lightsClassifyAndCull->bufferDeps.Add(clusterState.clusterLightIndexLists,
+                                 {
+                                     "ClusterLightIndexLists"
+                                     , CoreGraphics::PipelineStage::ComputeShaderWrite
+                                     , CoreGraphics::BufferSubresourceInfo()
+                                 });
+    lightsClassifyAndCull->bufferDeps.Add(clusterState.clusterLightsList,
+                                 {
+                                     "ClusterLightsList"
+                                     , CoreGraphics::PipelineStage::ComputeShaderRead
+                                     , CoreGraphics::BufferSubresourceInfo()
+                                 });
+    lightsClassifyAndCull->bufferDeps.Add(Clustering::ClusterContext::GetClusterBuffer(),
+                                 {
+                                     "Cluster AABB"
+                                     , CoreGraphics::PipelineStage::ComputeShaderRead
+                                     , CoreGraphics::BufferSubresourceInfo()
+                                 });
+    lightsClassifyAndCull->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        CmdSetShaderProgram(cmdBuf, clusterState.cullProgram);
+
+        // run chunks of 1024 threads at a time
+        std::array<SizeT, 3> dimensions = Clustering::ClusterContext::GetClusterDimensions();
+        CmdDispatch(cmdBuf, Math::ceil((dimensions[0] * dimensions[1] * dimensions[2]) / 64.0f), 1, 1);
+    };
+    Frame::AddSubgraph("Lights Cull", { lightsCopy, lightsClassifyAndCull });
+
+    // Final pass combines all the lighting buffers together, later in the frame
+    auto lightsCombine = lightServerState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    lightsCombine->domain = CoreGraphics::BarrierDomain::Global;
+    lightsCombine->textureDeps.Add(textureState.lightingTexture,
+                                {
+                                    "LightBuffer"
+                                    , CoreGraphics::PipelineStage::ComputeShaderWrite
+                                    , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                });
+    lightsCombine->textureDeps.Add(textureState.aoTexture,
+                               {
+                                   "SSAOBuffer"
+                                   , CoreGraphics::PipelineStage::ComputeShaderRead
+                                   , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                               });
+    lightsCombine->textureDeps.Add(textureState.fogTexture,
+                                {
+                                    "VolumeFogBuffer"
+                                    , CoreGraphics::PipelineStage::ComputeShaderRead
+                                    , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                });
+    lightsCombine->textureDeps.Add(textureState.reflectionTexture,
+                                {
+                                    "ReflectionBuffer"
+                                    , CoreGraphics::PipelineStage::ComputeShaderRead
+                                    , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                });
+    lightsCombine->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        CmdSetShaderProgram(cmdBuf, combineState.combineProgram);
+        CmdSetResourceTable(cmdBuf, combineState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
+
+        // perform debug output
+        CoreGraphics::TextureDimensions dims = TextureGetDimensions(textureState.lightingTexture);
+        CmdDispatch(cmdBuf, Math::divandroundup(dims.width, 64), dims.height, 1);
+    };
+    Frame::AddSubgraph("Lights Combine", { lightsCombine });
+
+    // Build shadow frame script after we have setup all the subgraphs
+    lightServerState.shadowMappingFrameScript->Build();
 }
 
 //------------------------------------------------------------------------------
@@ -327,6 +481,7 @@ LightContext::Create()
 void
 LightContext::Discard()
 {
+    lightServerState.frameOpAllocator.Release();
     lightServerState.shadowMappingFrameScript->Discard();
     Graphics::GraphicsServer::Instance()->UnregisterGraphicsContext(&__bundle);
 }
@@ -960,41 +1115,21 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     // get per-view resource tables
     const Util::FixedArray<CoreGraphics::ResourceTableId>& viewTables = TransformDevice::Instance()->GetViewResourceTables();
 
-    textureState.fogTexture = view->GetFrameScript()->GetTexture("VolumetricFogBuffer0");
-    textureState.reflectionTexture = view->GetFrameScript()->GetTexture("ReflectionBuffer");
-    textureState.aoTexture = view->GetFrameScript()->GetTexture("SSAOBuffer");
-    textureState.lightingTexture = view->GetFrameScript()->GetTexture("LightBuffer");
-#ifdef CLUSTERED_LIGHTING_DEBUG
-    textureState.clusterDebugTexture = view->GetFrameScript()->GetTexture("LightDebugBuffer");
-#endif
-
     LightsCluster::LightUniforms consts;
     consts.NumSpotLights = numSpotLights;
     consts.NumPointLights = numPointLights;
     consts.NumLightClusters = Clustering::ClusterContext::GetNumClusters();
     consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(textureState.aoTexture);
-    IndexT offset = SetComputeConstants(MainThreadConstantBuffer, consts);
-    ResourceTableSetConstantBuffer(viewTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsCluster::LightUniforms), (SizeT)offset });
+    IndexT offset = SetComputeConstants(consts);
+    ResourceTableSetConstantBuffer(viewTables[bufferIndex], { GetComputeConstantBuffer(), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsCluster::LightUniforms), (SizeT)offset });
 
     TextureDimensions dims = TextureGetDimensions(textureState.lightingTexture);
     Combine::CombineUniforms combineConsts;
     combineConsts.LowresResolution[0] = 1.0f / dims.width;
     combineConsts.LowresResolution[1] = 1.0f / dims.height;
-    offset = SetComputeConstants(MainThreadConstantBuffer, combineConsts);
-    ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetComputeConstantBuffer(MainThreadConstantBuffer), combineState.combineUniforms, 0, false, false, sizeof(Combine::CombineUniforms), (SizeT)offset });
+    offset = SetComputeConstants(combineConsts);
+    ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetComputeConstantBuffer(), combineState.combineUniforms, 0, false, false, sizeof(Combine::CombineUniforms), (SizeT)offset });
     ResourceTableCommitChanges(combineState.resourceTables[bufferIndex]);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-LightContext::RunFrameScriptJobs(const Graphics::FrameContext& ctx)
-{
-    N_SCOPE(ShadowMapRecord, Lighting);
-
-    // run jobs for shadow frame script after all constants are updated
-    lightServerState.shadowMappingFrameScript->RunJobs(ctx.frameIndex, ctx.bufferIndex);
 }
 
 //------------------------------------------------------------------------------
@@ -1018,201 +1153,6 @@ LightContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT width, 
         ResourceTableSetTexture(combineState.resourceTables[i], { textureState.fogTexture, combineState.fogTextureSlot, 0, CoreGraphics::InvalidSamplerId });
         ResourceTableSetTexture(combineState.resourceTables[i], { textureState.reflectionTexture, combineState.reflectionsTextureSlot, 0, CoreGraphics::InvalidSamplerId });
         ResourceTableCommitChanges(combineState.resourceTables[i]);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-LightContext::CullAndClassify()
-{
-    // update constants
-    using namespace CoreGraphics;
-
-    const IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
-
-    // copy data from staging buffer to shader buffer
-    BarrierInsert(ComputeQueueType,
-        BarrierStage::ComputeShader,
-        BarrierStage::Transfer,
-        BarrierDomain::Global,
-        nullptr,
-        {
-            BufferBarrier
-            {
-                clusterState.clusterLightsList,
-                BarrierAccess::ShaderRead,
-                BarrierAccess::TransferWrite,
-                0, NEBULA_WHOLE_BUFFER_SIZE
-            },
-        }, "Lights data upload");
-
-    CoreGraphics::BufferCopy from, to;
-    from.offset = 0;
-    to.offset = 0;
-    Copy(ComputeQueueType, clusterState.stagingClusterLightsList[bufferIndex], { from }, clusterState.clusterLightsList, { to }, sizeof(LightsCluster::LightLists));
-    BarrierInsert(ComputeQueueType,
-        BarrierStage::Transfer,
-        BarrierStage::ComputeShader,
-        BarrierDomain::Global,
-        nullptr,
-        {
-            BufferBarrier
-            {
-                clusterState.clusterLightsList,
-                BarrierAccess::TransferWrite,
-                BarrierAccess::ShaderRead,
-                0, NEBULA_WHOLE_BUFFER_SIZE
-            },
-        }, "Lights data upload");
-
-    // begin command buffer work
-    CommandBufferBeginMarker(ComputeQueueType, NEBULA_MARKER_BLUE, "Light cluster culling");
-
-    // make sure to sync so we don't read from data that is being written...
-    BarrierInsert(ComputeQueueType,
-        BarrierStage::ComputeShader,
-        BarrierStage::ComputeShader,
-        BarrierDomain::Global,
-        nullptr,
-        {
-            BufferBarrier
-            {
-                clusterState.clusterLightIndexLists,
-                BarrierAccess::ShaderRead,
-                BarrierAccess::ShaderWrite,
-                0, NEBULA_WHOLE_BUFFER_SIZE
-            },
-        }, "Light cluster culling begin");
-
-    SetShaderProgram(clusterState.cullProgram, ComputeQueueType);
-
-    // run chunks of 1024 threads at a time
-    std::array<SizeT, 3> dimensions = Clustering::ClusterContext::GetClusterDimensions();
-    Compute(Math::ceil((dimensions[0] * dimensions[1] * dimensions[2]) / 64.0f), 1, 1, ComputeQueueType);
-
-    // make sure to sync so we don't read from data that is being written...
-    BarrierInsert(ComputeQueueType,
-        BarrierStage::ComputeShader,
-        BarrierStage::ComputeShader,
-        BarrierDomain::Global,
-        nullptr,
-        {
-            BufferBarrier
-            {
-                clusterState.clusterLightIndexLists,
-                BarrierAccess::ShaderWrite,
-                BarrierAccess::ShaderRead,
-                0, NEBULA_WHOLE_BUFFER_SIZE
-            },
-        }, "Light cluster culling end");
-
-    CommandBufferEndMarker(ComputeQueueType);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-LightContext::CombineLighting()
-{
-    using namespace CoreGraphics;
-    const IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
-    CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "Combine Lighting");
-
-    SetShaderProgram(combineState.combineProgram, GraphicsQueueType);
-    SetResourceTable(combineState.resourceTables[bufferIndex], NEBULA_BATCH_GROUP, ComputePipeline, nullptr, GraphicsQueueType);
-
-    // perform debug output
-    TextureDimensions dims = TextureGetDimensions(textureState.lightingTexture);
-    Compute(Math::divandroundup(dims.width, 64), dims.height, 1, GraphicsQueueType);
-
-    CommandBufferEndMarker(GraphicsQueueType);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-LightContext::BlurGlobalShadowMap()
-{
-    using namespace CoreGraphics;
-    if (lightServerState.globalLightEntity != Graphics::GraphicsEntityId::Invalid())
-    {
-        CoreGraphics::CommandBufferBeginMarker(GraphicsQueueType, NEBULA_MARKER_BLUE, "CSM Blur");
-        BarrierInsert(GraphicsQueueType,
-            BarrierStage::PixelShader,
-            BarrierStage::ComputeShader,
-            BarrierDomain::Global,
-            {
-                TextureBarrier
-                {
-                    lightServerState.globalLightShadowMapBlurred0,
-                    ImageSubresourceInfo::ColorNoMip(4),
-                    CoreGraphics::ImageLayout::ShaderRead,
-                    CoreGraphics::ImageLayout::General,
-                    BarrierAccess::ShaderRead,
-                    BarrierAccess::ShaderWrite
-                },
-                TextureBarrier
-                {
-                    lightServerState.globalLightShadowMapBlurred1,
-                    ImageSubresourceInfo::ColorNoMip(4),
-                    CoreGraphics::ImageLayout::ShaderRead,
-                    CoreGraphics::ImageLayout::General,
-                    BarrierAccess::ShaderRead,
-                    BarrierAccess::ShaderWrite
-                }
-            },
-            nullptr,
-            "CSM Blur Init");
-
-        TextureDimensions dims = TextureGetDimensions(lightServerState.globalLightShadowMapBlurred0);
-        SetShaderProgram(lightServerState.csmBlurXProgram);
-        SetResourceTable(lightServerState.csmBlurXTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-        Compute(Math::divandroundup(dims.width, Csmblur::BlurTileWidth), dims.height, 4);
-
-        BarrierInsert(GraphicsQueueType,
-            BarrierStage::ComputeShader,
-            BarrierStage::ComputeShader,
-            BarrierDomain::Global,
-            {
-                TextureBarrier
-                {
-                    lightServerState.globalLightShadowMapBlurred0,
-                    ImageSubresourceInfo::ColorNoMip(4),
-                    CoreGraphics::ImageLayout::General,
-                    CoreGraphics::ImageLayout::ShaderRead,
-                    BarrierAccess::ShaderWrite,
-                    BarrierAccess::ShaderRead
-                },
-            }, 
-            nullptr,
-            "CSM Blur X Finish");
-        SetShaderProgram(lightServerState.csmBlurYProgram);
-        SetResourceTable(lightServerState.csmBlurYTable, NEBULA_BATCH_GROUP, CoreGraphics::ComputePipeline, nullptr);
-        Compute(Math::divandroundup(dims.height, Csmblur::BlurTileWidth), dims.width, 4);
-
-        BarrierInsert(GraphicsQueueType,
-            BarrierStage::ComputeShader,
-            BarrierStage::PixelShader,
-            BarrierDomain::Global,
-            {
-                TextureBarrier
-                {
-                    lightServerState.globalLightShadowMapBlurred1,
-                    ImageSubresourceInfo::ColorNoMip(4),
-                    CoreGraphics::ImageLayout::General,
-                    CoreGraphics::ImageLayout::ShaderRead,
-                    BarrierAccess::ShaderWrite,
-                    BarrierAccess::ShaderRead
-                },
-            },
-            nullptr,
-            "CSM Blur Y Finish");
-
-        CoreGraphics::CommandBufferEndMarker(GraphicsQueueType);
     }
 }
 

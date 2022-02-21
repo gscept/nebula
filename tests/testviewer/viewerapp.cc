@@ -145,6 +145,13 @@ SimpleViewerApplication::Open()
         this->wnd = CreateWindow(wndInfo);
         this->cam = Graphics::CreateEntity();
 
+        this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
+        gfxServer->SetCurrentView(this->view);
+        this->stage = gfxServer->CreateStage("stage1", true);
+
+        // setup post effects
+        Ptr<Frame::FrameScript> frameScript = this->view->GetFrameScript();
+
         // Create contexts, this could and should be bundled together
         CameraContext::Create();
         ModelContext::Create();
@@ -180,22 +187,15 @@ SimpleViewerApplication::Open()
         Vegetation::VegetationContext::Create(vegSettings);
 
         Clustering::ClusterContext::Create(0.1f, 1000.0f, this->wnd);
-        Lighting::LightContext::Create();
+        Lighting::LightContext::Create(frameScript);
         Decals::DecalContext::Create();
         Im3d::Im3dContext::Create();
-        Fog::VolumetricFogContext::Create();
+        Fog::VolumetricFogContext::Create(frameScript);
         PostEffects::BloomContext::Create();
         PostEffects::SSAOContext::Create();
         PostEffects::HistogramContext::Create();
         //PostEffects::SSRContext::Create();
 
-
-        this->view = gfxServer->CreateView("mainview", "frame:vkdefault.json"_uri);
-        gfxServer->SetCurrentView(this->view);
-        this->stage = gfxServer->CreateStage("stage1", true);
-
-        // setup post effects
-        Ptr<Frame::FrameScript> frameScript = this->view->GetFrameScript();
         // setup gbuffer bindings after frame script is loaded
         CoreGraphics::ShaderServer::Instance()->SetupBufferConstants(frameScript);
         PostEffects::BloomContext::Setup(frameScript);
@@ -236,6 +236,9 @@ SimpleViewerApplication::Open()
         this->consoleHandler = Dynui::ImguiConsoleHandler::Create();
         this->console->Setup();
         this->consoleHandler->Setup();
+
+        // Before starting the frame, build the frame script
+        this->view->BuildFrameScript();
 
         return true;
     }
@@ -365,12 +368,12 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
 {
     static const ImU32 colors[] =
     {
-        IM_COL32(200, 50, 50, 255),
-        IM_COL32(50, 200, 50, 255),
-        IM_COL32(50, 50, 200, 255),
-        IM_COL32(200, 50, 200, 255),
-        IM_COL32(50, 200, 200, 255),
-        IM_COL32(200, 200, 50, 255),
+        IM_COL32(255, 200, 200, 255),
+        IM_COL32(200, 255, 200, 255),
+        IM_COL32(200, 200, 255, 255),
+        IM_COL32(200, 200, 255, 255),
+        IM_COL32(200, 255, 255, 255),
+        IM_COL32(255, 255, 200, 255),
     };
     static const float YPad = ImGui::GetTextLineHeight();
     static const float TextPad = 5.0f;
@@ -429,15 +432,6 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
 int
 RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, ImDrawList* drawList, const ImVec2 start, const ImVec2 fullSize, ImVec2 pos, const ImVec2 canvas, const float frameTime, const int level)
 {
-    static const ImU32 colors[] =
-    {
-        IM_COL32(200, 50, 50, 255),
-        IM_COL32(50, 200, 50, 255),
-        IM_COL32(50, 50, 200, 255),
-        IM_COL32(200, 50, 200, 255),
-        IM_COL32(50, 200, 200, 255),
-        IM_COL32(200, 200, 50, 255),
-    };
     static const float YPad = ImGui::GetTextLineHeight();
     static const float TextPad = 5.0f;
 
@@ -454,14 +448,14 @@ RecursiveDrawGpuMarker(const CoreGraphics::FrameProfilingMarker& marker, ImDrawL
 
     // draw a filled rect for background, and normal rect for outline
     drawList->PushClipRect(bbMin, bbMax, true);
-    drawList->AddRectFilled(bbMin, bbMax, colors[level % 6], 0.0f);
+    ImU32 color = IM_COL32(marker.color.x * 255.0f, marker.color.y * 255.0f, marker.color.z * 255.0f, marker.color.w * 255.0f);
+    drawList->AddRectFilled(bbMin, bbMax, color, 0.0f);
     drawList->AddRect(bbMin, bbMax, IM_COL32(128, 128, 128, 128), 0.0f);
 
     // make sure text appears inside the box
     Util::String text = Util::String::Sprintf("%s (%4.4f ms)", marker.name.AsCharPtr(), duration * 1000);
     drawList->AddText(ImVec2(startX + TextPad, startY), IM_COL32_BLACK, text.AsCharPtr());
     drawList->PopClipRect();
-
 
     if (ImGui::IsMouseHoveringRect(bbMin, bbMax))
     {

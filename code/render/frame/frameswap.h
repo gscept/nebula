@@ -20,7 +20,7 @@ public:
 
     struct CompiledImpl : public FrameSwap::Compiled
     {
-        void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
+        void Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex) override;
 
 #if NEBULA_GRAPHICS_DEBUG
         Util::StringAtom name;

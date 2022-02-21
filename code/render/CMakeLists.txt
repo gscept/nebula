@@ -182,7 +182,6 @@ ENDIF()
                 streamtexturecache.cc
                 streamtexturecache.h
                 streamtexturesaver.h
-                submissioncontext.h
                 textelement.cc
                 textelement.h
                 textrenderer.cc
@@ -324,8 +323,6 @@ ENDIF()
                 vkshaperenderer.h
                 vkshadercache.cc
                 vkshadercache.h
-                vksubmissioncontext.cc
-                vksubmissioncontext.h
                 vkstreamtexturecache.cc
                 vkstreamtexturecache.h
                 vkstreamtexturesaver.cc
@@ -342,8 +339,6 @@ ENDIF()
                 vktransformdevice.h
                 vktypes.cc
                 vktypes.h
-                vkutilities.cc
-                vkutilities.h
                 vkvertexsignaturecache.cc
                 vkvertexsignaturecache.h
             )
@@ -370,6 +365,8 @@ ENDIF()
                 framebatchtype.h
                 frameblit.cc
                 frameblit.h
+                framecode.cc
+                framecode.h
                 framecompute.cc
                 framecompute.h
                 frameplugin.cc
@@ -378,8 +375,6 @@ ENDIF()
                 framecopy.h
                 #frameevent.cc
                 #frameevent.h
-                frameglobalstate.cc
-                frameglobalstate.h
                 framemipmap.cc
                 framemipmap.h
                 frameop.cc
@@ -390,6 +385,8 @@ ENDIF()
                 framescript.h
                 framescriptloader.cc
                 framescriptloader.h
+                framesubgraph.cc
+                framesubgraph.h
                 frameserver.cc
                 frameserver.h
                 framesubmission.cc
@@ -607,11 +604,11 @@ ENDIF()
                 vegetationcontext.cc
             )
                 
-		fips_dir(visibility)
-			fips_files(
-				visibility.h
-				visibilitycontext.cc
-				visibilitycontext.h
+        fips_dir(visibility)
+            fips_files(
+                visibility.h
+                visibilitycontext.cc
+                visibilitycontext.h
                 visibilitydependencyjob.cc
                 #visibilitydrawlistupdatejob.cc
                 visibilitysortjob.cc

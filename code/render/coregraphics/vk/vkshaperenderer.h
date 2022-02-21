@@ -11,6 +11,8 @@
 #include "coregraphics/vertexlayout.h"
 #include "coregraphics/resourcetable.h"
 #include "util/fixedarray.h"
+#include "frame/framecode.h"
+
 namespace Vulkan
 {
 class VkShapeRenderer : public Base::ShapeRendererBase
@@ -28,7 +30,7 @@ public:
     void Close();
 
     /// draw attached shapes and clear deferred stack, must be called inside render loop
-    void DrawShapes();
+    void DrawShapes(const CoreGraphics::CmdBufferId cmdBuf);
 
     /// maximum amount of vertices to be rendered by drawprimitives and drawindexedprimitives
     static const int MaxNumVertices = 262140;
@@ -42,9 +44,9 @@ public:
 private:
 
     /// draw buffered primitives
-    void DrawBufferedPrimitives();
+    void DrawBufferedPrimitives(const CoreGraphics::CmdBufferId cmdBuf);
     /// draw buffered indexed primtives
-    void DrawBufferedIndexedPrimitives();
+    void DrawBufferedIndexedPrimitives(const CoreGraphics::CmdBufferId cmdBuf);
 
     /// grow index buffer
     void GrowIndexBuffer();
@@ -52,9 +54,9 @@ private:
     void GrowVertexBuffer();
 
     /// draw a shape
-    void DrawSimpleShape(const Math::mat4& modelTransform, CoreGraphics::RenderShape::Type shapeType, const Math::vec4& color);
+    void DrawSimpleShape(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, CoreGraphics::RenderShape::Type shapeType, const Math::vec4& color);
     /// draw debug mesh
-    void DrawMesh(const Math::mat4& modelTransform, const CoreGraphics::MeshId mesh, const Math::vec4& color);
+    void DrawMesh(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, const CoreGraphics::MeshId mesh, const Math::vec4& color);
     /// draw primitives
     void DrawPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numPrimitives, const void* vertices, SizeT vertexWidth, const Math::vec4& color);
     /// draw indexed primitives
@@ -91,14 +93,18 @@ private:
     IndexT model;
     IndexT diffuseColor;
 
-    SizeT numPrimitives;
-    SizeT numIndices;
+    SizeT vertexBufferOffset;
+    SizeT indexBufferOffset;
+
+    Memory::ArenaAllocator<sizeof(Frame::FrameCode)> frameOpAllocator;
 
     struct IndexedDraws
     {
         Util::Array<CoreGraphics::PrimitiveGroup> primitives;
         Util::Array<Math::vec4> colors;
         Util::Array<Math::mat4> transforms;
+        Util::Array<uint64> firstVertexOffset;
+        Util::Array<uint64> firstIndexOffset;
     } indexed[CoreGraphics::PrimitiveTopology::NumTopologies];
 
     struct UnindexedDraws
@@ -106,6 +112,7 @@ private:
         Util::Array<CoreGraphics::PrimitiveGroup> primitives;
         Util::Array<Math::vec4> colors;
         Util::Array<Math::mat4> transforms;
+        Util::Array<uint64> firstVertexOffset;
     } unindexed[CoreGraphics::PrimitiveTopology::NumTopologies];
 };
 } // namespace Vulkan

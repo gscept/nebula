@@ -6,7 +6,6 @@
 #include "vkgraphicsdevice.h"
 #include "vkcommandbuffer.h"
 #include "vkbuffer.h"
-#include "vksubmissioncontext.h"
 namespace Vulkan
 {
 VkBufferAllocator bufferAllocator(0x00FFFFFF);
@@ -17,7 +16,7 @@ VkBufferAllocator bufferAllocator(0x00FFFFFF);
 VkBuffer 
 BufferGetVk(const CoreGraphics::BufferId id)
 {
-    return bufferAllocator.GetUnsafe<Buffer_RuntimeInfo>(id.id24).buf;
+    return bufferAllocator.Get<Buffer_RuntimeInfo>(id.id24).buf;
 }
 
 //------------------------------------------------------------------------------
@@ -26,7 +25,7 @@ BufferGetVk(const CoreGraphics::BufferId id)
 VkDeviceMemory 
 BufferGetVkMemory(const CoreGraphics::BufferId id)
 {
-    return bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id.id24).mem.mem;
+    return bufferAllocator.Get<Buffer_LoadInfo>(id.id24).mem.mem;
 }
 
 //------------------------------------------------------------------------------
@@ -35,7 +34,7 @@ BufferGetVkMemory(const CoreGraphics::BufferId id)
 VkDevice 
 BufferGetVkDevice(const CoreGraphics::BufferId id)
 {
-    return bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id.id24).dev;
+    return bufferAllocator.Get<Buffer_LoadInfo>(id.id24).dev;
 }
 
 } // namespace Vulkan
@@ -199,21 +198,19 @@ CreateBuffer(const BufferCreateInfo& info)
         char* buf = (char*)GetMappedMemory(tempAlloc);
         memcpy(buf, info.data, info.dataSize);
 
-        CoreGraphics::LockResourceSubmission();
-        CoreGraphics::SubmissionContextId sub = CoreGraphics::GetResourceSubmissionContext();
-        CoreGraphics::CommandBufferId cmd = SubmissionContextGetCmdBuffer(sub);
+        CoreGraphics::CmdBufferId cmd = CoreGraphics::LockTransferSetupCommandBuffer();
         VkBufferCopy copy;
         copy.dstOffset = 0;
         copy.srcOffset = 0;
         copy.size = info.dataSize;
 
         // copy from temp buffer to source buffer in the resource submission context
-        vkCmdCopyBuffer(Vulkan::CommandBufferGetVk(cmd), tempBuffer, runtimeInfo.buf, 1, &copy);
+        vkCmdCopyBuffer(Vulkan::CmdBufferGetVk(cmd), tempBuffer, runtimeInfo.buf, 1, &copy);
 
         // add delayed delete for this temporary buffer
-        SubmissionContextFreeVkBuffer(sub, loadInfo.dev, tempBuffer);
-        SubmissionContextFreeMemory(sub, tempAlloc);
-        CoreGraphics::UnlockResourceSubmission();
+        Vulkan::DelayedDeleteVkBuffer(loadInfo.dev, tempBuffer);
+        CoreGraphics::DelayedFreeMemory(tempAlloc);
+        CoreGraphics::UnlockTransferSetupCommandBuffer();
     }
 
     // setup resource
@@ -245,8 +242,9 @@ DestroyBuffer(const BufferId id)
     VkBufferMapInfo& mapInfo = bufferAllocator.GetUnsafe<Buffer_MapInfo>(id.id24);
 
     n_assert(mapInfo.mapCount == 0);
-    CoreGraphics::DelayedFreeMemory(loadInfo.mem);
     CoreGraphics::DelayedDeleteBuffer(id);
+    CoreGraphics::DelayedFreeMemory(loadInfo.mem);
+    loadInfo.mem = CoreGraphics::Alloc{};
     bufferAllocator.Dealloc(id.id24);
 }
 
@@ -317,6 +315,7 @@ void
 BufferUnmap(const BufferId id)
 {
     VkBufferMapInfo& mapInfo = bufferAllocator.GetUnsafe<Buffer_MapInfo>(id.id24);
+    n_assert(mapInfo.mapCount > 0);
     mapInfo.mapCount--;
 }
 
@@ -340,30 +339,18 @@ BufferUpdate(const BufferId id, const void* data, const uint size, const uint of
 /**
 */
 void
-BufferUpload(const BufferId id, const void* data, const uint size, const uint offset, const CoreGraphics::QueueType queue)
+BufferUpload(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, const void* data, const uint size, const uint offset)
 {
     n_assert(size <= (uint)BufferGetUploadMaxSize());
-    CoreGraphics::UpdateBuffer(id, offset, size, data, queue);
+    CoreGraphics::CmdUpdateBuffer(cmdBuf, id, offset, size, data);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-BufferUpload(const BufferId id, const void* data, const uint size, const uint offset, const CoreGraphics::SubmissionContextId sub)
+BufferFill(const CoreGraphics::CmdBufferId cmdBuf, const BufferId id, char pattern)
 {
-    n_assert(size <= (uint)BufferGetUploadMaxSize());
-    CoreGraphics::CommandBufferId cmd = SubmissionContextGetCmdBuffer(sub);
-    vkCmdUpdateBuffer(Vulkan::CommandBufferGetVk(cmd), Vulkan::BufferGetVk(id), offset, size, data);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-BufferFill(const BufferId id, char pattern, const CoreGraphics::SubmissionContextId sub)
-{
-    CoreGraphics::CommandBufferId cmd = SubmissionContextGetCmdBuffer(sub);
     VkBufferLoadInfo& setup = bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id.id24);
     
     int remainingBytes = setup.byteSize;
@@ -374,7 +361,7 @@ BufferFill(const BufferId id, char pattern, const CoreGraphics::SubmissionContex
         int chunkSize = Math::min(remainingBytes, BufferGetUploadMaxSize());
         char* buf = n_new_array(char, chunkSize);
         memset(buf, pattern, chunkSize);
-        vkCmdUpdateBuffer(Vulkan::CommandBufferGetVk(cmd), Vulkan::BufferGetVk(id), chunkOffset, chunkSize, buf);
+        vkCmdUpdateBuffer(Vulkan::CmdBufferGetVk(cmdBuf), Vulkan::BufferGetVk(id), chunkOffset, chunkSize, buf);
         chunkOffset += chunkSize;
         remainingBytes -= chunkSize;
         n_delete_array(buf);

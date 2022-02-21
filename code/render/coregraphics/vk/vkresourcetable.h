@@ -11,6 +11,7 @@
 #include "coregraphics/resourcetable.h"
 #include "vkloader.h"
 #include "threading/assertingmutex.h"
+#include "threading/spinlock.h"
 #include <array>
 namespace Vulkan
 {
@@ -20,12 +21,23 @@ namespace Vulkan
     Resource table
 */
 //------------------------------------------------------------------------------
-
-union WriteInfo
+enum class WriteType
 {
-    VkDescriptorImageInfo img;
-    VkDescriptorBufferInfo buf;
-    VkBufferView tex;
+    Image,
+    Buffer,
+    TexelBuffer
+};
+
+struct WriteInfo
+{
+    union
+    {
+        VkDescriptorImageInfo img;
+        VkDescriptorBufferInfo buf;
+        VkBufferView tex;
+    };
+    VkWriteDescriptorSet write;
+    WriteType type;
 };
 
 enum
@@ -33,9 +45,8 @@ enum
     ResourceTable_Device,
     ResourceTable_DescriptorSet,
     ResourceTable_DescriptorPoolIndex,
-    ResourceTable_AssertingMutex,
+    ResourceTable_Lock,
     ResourceTable_Layout,
-    ResourceTable_Writes,
     ResourceTable_WriteInfos,
     ResourceTable_Copies
 };
@@ -44,9 +55,8 @@ typedef Ids::IdAllocator<
     VkDevice,
     VkDescriptorSet,
     IndexT,
-    Threading::AssertingMutex,
+    Threading::Spinlock,
     CoreGraphics::ResourceTableLayoutId,
-    Util::Array<VkWriteDescriptorSet>,
     Util::Array<WriteInfo>,
     Util::Array<VkCopyDescriptorSet>
 > VkResourceTableAllocator;
@@ -56,8 +66,6 @@ extern VkResourceTableAllocator resourceTableAllocator;
 const VkDescriptorSet& ResourceTableGetVkDescriptorSet(CoreGraphics::ResourceTableId id);
 /// Get descriptor pool index
 const IndexT ResourceTableGetVkPoolIndex(CoreGraphics::ResourceTableId id);
-/// Get set layout 
-const CoreGraphics::ResourceTableLayoutId& ResourceTableGetVkLayout(CoreGraphics::ResourceTableId id);
 /// Get device used to create resource table
 const VkDevice& ResourceTableGetVkDevice(CoreGraphics::ResourceTableId id);
 
@@ -83,7 +91,7 @@ typedef Ids::IdAllocator<
     Util::Array<Util::Pair<CoreGraphics::SamplerId, uint32_t>>,
     Util::HashTable<uint32_t, bool>,
     Util::Array<VkDescriptorPool>,
-    Util::Array<uint32_t>
+    Util::Array<uint>
 > VkResourceTableLayoutAllocator;
 extern VkResourceTableLayoutAllocator resourceTableLayoutAllocator;
 extern VkDescriptorSetLayout emptySetLayout;
@@ -99,8 +107,8 @@ void ResourceTableLayoutAllocTable(const CoreGraphics::ResourceTableLayoutId& id
 void ResourceTableLayoutDeallocTable(const CoreGraphics::ResourceTableLayoutId& id, const VkDevice dev, const VkDescriptorSet& set, const IndexT index);
 /// Get descriptor pool
 const VkDescriptorPool& ResourceTableLayoutGetVkDescriptorPool(const CoreGraphics::ResourceTableLayoutId& id, const IndexT index);
-/// Decrement usage counter
-void ResourceTableLayoutVkDecrementCounter(const CoreGraphics::ResourceTableLayoutId& id, const IndexT index);
+/// Get descriptor pool free items counter
+uint* ResourceTableLayoutGetFreeItemsCounter(const CoreGraphics::ResourceTableLayoutId& id, const IndexT index);
 
 //------------------------------------------------------------------------------
 /**

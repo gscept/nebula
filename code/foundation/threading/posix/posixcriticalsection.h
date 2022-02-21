@@ -27,6 +27,8 @@ public:
     PosixCriticalSection();
     /// destructor
     ~PosixCriticalSection();
+    /// copy assignment
+    void operator=(PosixCritialSection&& rhs);
     /// enter the critical section
     void Enter() const;
     /// leave the critical section
@@ -59,6 +61,21 @@ PosixCriticalSection::~PosixCriticalSection()
     pthread_mutex_destroy(this->mutex);
     delete this->mutex;
     this->mutex = 0;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline
+PosixCritialSection::operator=(PosixCritialSection&& rhs)
+{
+    if (this->mutex)
+    {
+        pthread_mutex_destroy(this->mutex);
+        delete this->mutex;
+    }
+    this->mutex = rhs.mutex;
+    rhs.mutex = nullptr;
 }
 
 //------------------------------------------------------------------------------

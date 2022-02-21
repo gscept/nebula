@@ -75,8 +75,8 @@ ParticleSystemNode::OnFinishedLoading()
 
     // load surface ourselves since state node does the resource table setup too, but we need it explicit
     this->surRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
-    this->materialType = Materials::surfacePool->GetType(this->surRes);
-    this->surface = Materials::surfacePool->GetId(this->surRes);
+    this->materialType = Materials::materialCache->GetType(this->surRes);
+    this->surface = Materials::materialCache->GetId(this->surRes);
 
     float activityDist = this->emitterAttrs.GetFloat(EmitterAttrs::ActivityDistance) * 0.5f;
 
@@ -89,7 +89,7 @@ ParticleSystemNode::OnFinishedLoading()
     this->emitterMesh.Setup(this->mesh, this->primGroupIndex);
 
     ShaderId shader = ShaderServer::Instance()->GetShader("shd:particle.fxb"_atm);
-    BufferId cbo = GetGraphicsConstantBuffer(GlobalConstantBufferType::VisibilityThreadConstantBuffer);
+    BufferId cbo = GetGraphicsConstantBuffer();
     this->objectTransformsIndex = ShaderGetResourceSlot(shader, "ObjectBlock");
     this->instancingTransformsIndex = ShaderGetResourceSlot(shader, "InstancingBlock");
     this->skinningTransformsIndex = ShaderGetResourceSlot(shader, "JointBlock");
@@ -102,13 +102,25 @@ ParticleSystemNode::OnFinishedLoading()
 //------------------------------------------------------------------------------
 /**
 */
-std::function<void()>
-ParticleSystemNode::GetApplyNodeFunction()
+std::function<void(const CoreGraphics::CmdBufferId)>
+ParticleSystemNode::GetApplyFunction()
 {
-    return []()
+    return [](const CoreGraphics::CmdBufferId)
     {
         n_error("Invalid function '%s' called, it should be set in ParticleContext", __FUNCTION__);
         // This function is provided in ParticleContext
+    };
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+std::function<const CoreGraphics::PrimitiveGroup()>
+ParticleSystemNode::GetPrimitiveGroupFunction()
+{
+    return []()
+    {
+        return ParticleContext::ParticleContext::GetParticlePrimitiveGroup();
     };
 }
 

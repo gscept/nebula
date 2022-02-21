@@ -106,17 +106,15 @@ FrameSubpassFullscreenEffect::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& a
 /**
 */
 void
-FrameSubpassFullscreenEffect::CompiledImpl::Run(const IndexT frameIndex, const IndexT bufferIndex)
+FrameSubpassFullscreenEffect::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex)
 {
     // activate shader
-    CoreGraphics::SetShaderProgram(this->program);
+    CoreGraphics::CmdSetShaderProgram(cmdBuf, this->program);
 
     // draw
-    CoreGraphics::BeginBatch(FrameBatchType::System);
-    RenderUtil::DrawFullScreenQuad::ApplyMesh();
-    CoreGraphics::SetResourceTable(this->resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
-    CoreGraphics::Draw();
-    CoreGraphics::EndBatch();
+    RenderUtil::DrawFullScreenQuad::ApplyMesh(cmdBuf);
+    CoreGraphics::CmdSetResourceTable(cmdBuf, this->resourceTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
+    CoreGraphics::CmdDraw(cmdBuf, RenderUtil::DrawFullScreenQuad::GetPrimitiveGroup());
 }
 
-} // namespace Frame2
+} // namespace Frame

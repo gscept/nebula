@@ -13,7 +13,6 @@
 #include "util/string.h"
 #include "core/rttimacros.h"
 
-#define NEBULA_ENABLE_MT_DRAW 1
 #define NEBULA_WHOLE_BUFFER_SIZE (-1)
 namespace CoreGraphics
 {
@@ -60,6 +59,14 @@ enum QueueType
     InvalidQueueType
 };
 
+enum QueryType
+{
+    OcclusionQueryType,
+    StatisticsQueryType,
+    TimestampsQueryType,
+    NumQueryTypes
+};
+
 enum ShaderVisibility
 {
     InvalidVisibility           = 0,
@@ -101,28 +108,12 @@ enum class ImageLayout
     Present
 };
 
-enum GlobalConstantBufferType
+enum ShaderPipeline
 {
-    MainThreadConstantBuffer,
-    VisibilityThreadConstantBuffer, // perform constant updates from the visibility thread (shader state node instance update for example...)
-
-    NumConstantBufferTypes
+    InvalidPipeline,
+    GraphicsPipeline,
+    ComputePipeline     // Compute pipeline is not the compute queue, it's just resources available for compute shaders
 };
-
-enum QueryType
-{
-    OcclusionQuery,
-    GraphicsTimestampQuery,
-    PipelineStatisticsGraphicsQuery,
-    QueryGraphicsMax = PipelineStatisticsGraphicsQuery,
-
-    ComputeTimestampQuery,
-    PipelineStatisticsComputeQuery,
-    QueryComputeMax = PipelineStatisticsComputeQuery,
-    
-    NumQueryTypes
-};
-
 
 //------------------------------------------------------------------------------
 /**
@@ -178,6 +169,99 @@ QueueNameFromQueueType(const QueueType type)
         return "Sparse";
     default:
         return "Graphics";
+    }
+}
+
+
+enum class BarrierDomain
+{
+    Global,
+    Pass
+};
+
+enum class PipelineStage
+{
+    InvalidStage,
+    Top,                // Top of pipe
+    Bottom,             // Bottom of pipe
+    Indirect,           // Indirect dispatch/draw fetching stage
+    Index,              // Index fetch (automatically vertex shader)
+    Vertex,             // Vertex fetch stage (automatically vertex shader)
+    Uniform,            // Uniform read
+    InputAttachment,    // Input attachment read (automatically pixel shader)
+    ReadOnlyAccess = InputAttachment, // All of the above enums are read-only
+    VertexShaderRead,       
+    VertexShaderWrite,
+    HullShaderRead,
+    HullShaderWrite,
+    DomainShaderRead,
+    DomainShaderWrite,
+    GeometryShaderRead,
+    GeometryShaderWrite,
+    PixelShaderRead,
+    PixelShaderWrite,
+    GraphicsShadersRead,
+    GraphicsShadersWrite,
+    ComputeShaderRead,
+    ComputeShaderWrite,
+    AllShadersRead = GraphicsShadersRead | ComputeShaderRead,
+    AllShadersWrite = GraphicsShadersWrite | ComputeShaderWrite,
+    ColorRead,              // Color output read
+    ColorWrite,             // Color output write
+    DepthStencilRead,       // Depth-Stencil output read
+    DepthStencilWrite,      // Depth-Stencil output write
+    TransferRead,           // Memory transfering read
+    TransferWrite,          // Memory transfering write
+    HostRead,               // Host operations read
+    HostWrite,              // Host operations write
+    MemoryRead,             // Memory operations read
+    MemoryWrite,            // Memory operations write
+    ImageInitial,           // Special pipeline stage for initial images
+    Present                 // Special pipeline stage for present images
+};
+
+__ImplementEnumBitOperators(PipelineStage);
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline PipelineStage
+PipelineStageFromString(const Util::String& str)
+{
+    if (str == "Top")                           return PipelineStage::Top;
+    else if (str == "Bottom")                   return PipelineStage::Bottom;
+    else if (str == "IndirectRead")             return PipelineStage::Indirect;
+    else if (str == "IndexRead")                return PipelineStage::Index;
+    else if (str == "VertexRead")               return PipelineStage::Vertex;
+    else if (str == "UniformRead")              return PipelineStage::Uniform;
+    else if (str == "InputAttachmentRead")      return PipelineStage::InputAttachment;
+    else if (str == "VertexShaderRead")         return PipelineStage::VertexShaderRead;
+    else if (str == "VertexShaderWrite")        return PipelineStage::VertexShaderWrite;
+    else if (str == "HullShaderRead")           return PipelineStage::HullShaderRead;
+    else if (str == "HullShaderWrite")          return PipelineStage::HullShaderWrite;
+    else if (str == "DomainShaderRead")         return PipelineStage::DomainShaderRead;
+    else if (str == "DomainShaderWrite")        return PipelineStage::DomainShaderWrite;
+    else if (str == "GeometryShaderRead")       return PipelineStage::GeometryShaderRead;
+    else if (str == "GeometryShaderWrite")      return PipelineStage::GeometryShaderWrite;
+    else if (str == "PixelShaderRead")          return PipelineStage::PixelShaderRead;
+    else if (str == "PixelShaderWrite")         return PipelineStage::PixelShaderWrite;
+    else if (str == "ComputeShaderRead")        return PipelineStage::ComputeShaderRead;
+    else if (str == "ComputeShaderWrite")       return PipelineStage::ComputeShaderWrite;
+    else if (str == "ColorAttachmentRead")      return PipelineStage::ColorRead;
+    else if (str == "ColorAttachmentWrite")     return PipelineStage::ColorWrite;
+    else if (str == "DepthAttachmentRead")      return PipelineStage::DepthStencilRead;
+    else if (str == "DepthAttachmentWrite")     return PipelineStage::DepthStencilWrite;
+    else if (str == "TransferRead")             return PipelineStage::TransferRead;
+    else if (str == "TransferWrite")            return PipelineStage::TransferWrite;
+    else if (str == "HostRead")                 return PipelineStage::HostRead;
+    else if (str == "HostWrite")                return PipelineStage::HostWrite;
+    else if (str == "MemoryRead")               return PipelineStage::MemoryRead;
+    else if (str == "MemoryWrite")              return PipelineStage::MemoryWrite;
+    else if (str == "Present")                  return PipelineStage::Present;
+    else
+    {
+        n_error("Invalid pipeline stage '%s'\n", str.AsCharPtr());
+        return PipelineStage::InvalidStage;
     }
 }
 

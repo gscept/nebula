@@ -312,7 +312,8 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
 
                     // The offset of the command corresponds to where in the VisibilityBatchCommand batch the model should be applied
                     batchCmd.offset = cmd->packetOffset + cmd->numDrawPackets;
-                    batchCmd.modelCallback = context->renderables->nodeModelCallbacks[index];
+                    batchCmd.modelApplyCallback = context->renderables->nodeModelApplyCallbacks[index];
+                    batchCmd.primitiveNodeApplyCallback = context->renderables->modelNodeGetPrimitiveGroup[index];
                     batchCmd.surface = context->renderables->nodeSurfaces[index];
 
 #if NEBULA_GRAPHICS_DEBUG

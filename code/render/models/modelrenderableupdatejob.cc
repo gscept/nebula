@@ -55,7 +55,7 @@ ModelRenderableUpdateJob(const Jobs::JobFuncContext& ctx)
             nodeStates->nodeLods[j] = lodFactor;
 
             // Notify materials system this LOD might be used
-            Materials::surfacePool->SetMaxLOD(nodeStates->nodeSurfaceResources[j], textureLod);
+            Materials::materialCache->SetMaxLOD(nodeStates->nodeSurfaceResources[j], textureLod);
 
             // Allocate object constants
             ObjectsShared::ObjectBlock block;
@@ -64,7 +64,7 @@ ModelRenderableUpdateJob(const Jobs::JobFuncContext& ctx)
             block.DitherFactor = lodFactor;
             block.ObjectId = j;
 
-            uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
+            uint offset = CoreGraphics::SetGraphicsConstants(block);
             nodeStates->nodeStates[j].resourceTableOffsets[nodeStates->nodeStates[j].objectConstantsIndex] = offset;
         }
     }

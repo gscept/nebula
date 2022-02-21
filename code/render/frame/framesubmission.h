@@ -8,6 +8,8 @@
 */
 //------------------------------------------------------------------------------
 #include "frameop.h"
+#include "coregraphics/graphicsdevice.h"
+
 namespace Frame
 {
 
@@ -24,14 +26,15 @@ public:
 
     struct CompiledImpl : public FrameOp::Compiled
     {
-        void RunJobs(const IndexT frameIndex, const IndexT bufferIndex) override;
-        void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
+        void Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex) override;
         void Discard() override;
 
+        FrameSubmission::CompiledImpl* waitSubmission;
+        CoreGraphics::CmdBufferPoolId commandBufferPool;
         CoreGraphics::QueueType queue;
-        CoreGraphics::QueueType waitQueue;
         Util::Array<CoreGraphics::BarrierId>* resourceResetBarriers;
         Util::Array<FrameOp::Compiled*> compiled;
+        CoreGraphics::SubmissionWaitEvent submissionId;
 #if NEBULA_GRAPHICS_DEBUG
         Util::StringAtom name;
 #endif
@@ -47,11 +50,11 @@ public:
         Util::Array<CoreGraphics::EventId>& events,
         Util::Array<CoreGraphics::BarrierId>& barriers,
         Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-        Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
-        CoreGraphics::CommandBufferPoolId commandBufferPool);
+        Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures);
 
+    FrameSubmission* waitSubmission;
+    CoreGraphics::CmdBufferPoolId commandBufferPool;
     CoreGraphics::QueueType queue;
-    CoreGraphics::QueueType waitQueue;
     Util::Array<CoreGraphics::BarrierId>* resourceResetBarriers;
 };
 

@@ -16,6 +16,8 @@
 #include "graphics/graphicscontext.h"
 #include "coregraphics/vertexlayout.h"
 #include "imguiinputhandler.h"
+#include "memory/arenaallocator.h"
+#include "frame/framecode.h"
 
 struct ImDrawData;
 struct ImFont;
@@ -86,13 +88,15 @@ public:
         ImFont* normalFont;
         ImFont* smallFont;
 
+        Memory::ArenaAllocator<sizeof(Frame::FrameCode)> frameOpAllocator;
+
         Ptr<ImguiInputHandler> inputHandler;
         bool dockOverViewport;
     };
     static ImguiState state;
 
 private:
-    static void ImguiDrawFunction();
+    static void ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf);
     static void RecoverImGuiContextErrors();
 };
 

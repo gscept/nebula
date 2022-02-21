@@ -13,10 +13,8 @@
 
 #include "vkloader.h"
 #include "vkgraphicsdevice.h"
-#include "vkutilities.h"
 #include "math/scalar.h"
 #include "vkshaderserver.h"
-#include "vksubmissioncontext.h"
 #include "profiling/profiling.h"
 #include "threading/interlocked.h"
 namespace Vulkan
@@ -76,6 +74,7 @@ VkStreamTextureCache::LoadFromStream(const Resources::ResourceId res, const Util
     n_assert(stream->CanBeMapped());
     n_assert(this->GetState(res) == Resources::Resource::Pending);
 
+    // Map memory, we will keep the memory mapping so we can stream in LODs later
     void* srcData = stream->MemoryMap();
     uint srcDataSize = stream->GetSize();
 
@@ -86,7 +85,7 @@ VkStreamTextureCache::LoadFromStream(const Resources::ResourceId res, const Util
     if (ctx.load_dds(srcData, srcDataSize))
     {
         // during the load-phase, we can safetly get the structs
-        __LockName(textureCache->Allocator(), lock);
+        __LockName(textureCache->Allocator(), lock, Util::ArrayAllocatorAccess::Write);
         VkTextureRuntimeInfo& runtimeInfo = textureCache->Get<Texture_RuntimeInfo>(res.resourceId);
         VkTextureLoadInfo& loadInfo = textureCache->Get<Texture_LoadInfo>(res.resourceId);
         VkTextureStreamInfo& streamInfo = textureCache->Get<Texture_StreamInfo>(res.resourceId);
@@ -179,64 +178,95 @@ VkStreamTextureCache::LoadFromStream(const Resources::ResourceId res, const Util
         n_assert(stat == VK_SUCCESS);
 
         // use resource submission
-        CoreGraphics::LockResourceSubmission();
-        CoreGraphics::SubmissionContextId sub = CoreGraphics::GetResourceSubmissionContext();
+        CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockTransferSetupCommandBuffer();
 
-        // transition to transfer
-        VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-            CoreGraphics::BarrierStage::Top,
-            CoreGraphics::BarrierStage::Transfer,
-            VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, VK_ACCESS_MEMORY_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+        // Transition to transfer
+        CoreGraphics::CmdBarrier(cmdBuf,
+            CoreGraphics::PipelineStage::ImageInitial,
+            CoreGraphics::PipelineStage::TransferWrite,
+            CoreGraphics::BarrierDomain::Global,
+            {
+                TextureBarrierInfo
+                {
+                    res,
+                    CoreGraphics::ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, subres.baseMipLevel, subres.levelCount, subres.baseArrayLayer, subres.layerCount)
+                }
+            },
+            nullptr);
 
         // now load texture by walking through all images and mips
         for (int i = 0; i < ctx.num_faces(); i++)
         {
             for (int j = subres.baseMipLevel; j < ctx.num_mipmaps(i); j++)
             {
-                extents.width = ctx.image_width(i, j);
-                extents.height = ctx.image_height(i, j);
-                extents.depth = ctx.image_depth(i, j);
-
-                VkImageSubresourceRange res = subres;
-                res.layerCount = 1;
-                res.levelCount = 1;
-                res.baseMipLevel = j;
-                res.baseArrayLayer = subres.baseArrayLayer + i;
-
-                VkBuffer outBuf;
-                CoreGraphics::Alloc outMem;
-                VkUtilities::ImageUpdate(
-                    dev,
-                    CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-                    TransferQueueType,
-                    loadInfo.img,
-                    extents,
-                    res.baseMipLevel,
-                    res.baseArrayLayer,
-                    ctx.image_size(i, j),
-                    (uint32_t*)ctx.image_data(i, j),
-                    outBuf,
-                    outMem);
-
-                // add host memory buffer, intermediate device memory, and intermediate device buffer to delete queue
-                SubmissionContextFreeMemory(sub, outMem);
-                SubmissionContextFreeVkBuffer(sub, dev, outBuf);
+                // Perform a texture update
+                CoreGraphics::TextureUpdate(
+                    cmdBuf
+                    , QueueType::TransferQueueType
+                    , res
+                    , ctx.image_width(i, j)
+                    , ctx.image_height(i, j)
+                    , j
+                    , subres.baseArrayLayer + i
+                    , ctx.image_size(i, j)
+                    , (byte*)ctx.image_data(i, j));
             }
         }
 
-        // transition image to be used for rendering
-        VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-            CoreGraphics::BarrierStage::Transfer,
-            CoreGraphics::BarrierStage::AllGraphicsShaders,
-            VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+        // Transition back to read, and exchange queue ownership with the graphics queue
+        CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, stream->GetURI().LocalPath().AsCharPtr());
+        CoreGraphics::CmdBarrier(cmdBuf,
+            CoreGraphics::PipelineStage::TransferWrite,
+            CoreGraphics::PipelineStage::TransferWrite,
+            CoreGraphics::BarrierDomain::Global,
+            {
+                TextureBarrierInfo
+                {
+                    res,
+                    CoreGraphics::ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, subres.baseMipLevel, subres.levelCount, subres.baseArrayLayer, subres.layerCount)
+                }
+            },
+            nullptr,
+            Vulkan::GetQueueFamily(QueueType::TransferQueueType),
+            Vulkan::GetQueueFamily(QueueType::GraphicsQueueType));
+        CoreGraphics::CmdEndMarker(cmdBuf);
+        CoreGraphics::UnlockTransferSetupCommandBuffer();
 
-        // perform final transition on graphics queue
-        CoreGraphics::SubmissionContextId gfxSub = CoreGraphics::GetHandoverSubmissionContext();
-        VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(gfxSub),
-            CoreGraphics::BarrierStage::Transfer,
-            CoreGraphics::BarrierStage::AllGraphicsShaders,
-            VkUtilities::ImageMemoryBarrier(loadInfo.img, subres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-        CoreGraphics::UnlockResourceSubmission();
+        // Do the same barrier on the handover buffer, and exchange queue ownership with the graphics queue
+        CoreGraphics::CmdBufferId handoverCmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+
+        CoreGraphics::CmdBeginMarker(handoverCmdBuf, NEBULA_MARKER_TRANSFER, stream->GetURI().LocalPath().AsCharPtr());
+
+        // First duplicate the transfer queue barrier
+        CoreGraphics::CmdBarrier(handoverCmdBuf,
+            CoreGraphics::PipelineStage::TransferWrite,
+            CoreGraphics::PipelineStage::TransferWrite,
+            CoreGraphics::BarrierDomain::Global,
+            {
+                TextureBarrierInfo
+                {
+                    res,
+                    CoreGraphics::ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, subres.baseMipLevel, subres.levelCount, subres.baseArrayLayer, subres.layerCount)
+                }
+            },
+            nullptr,
+            Vulkan::GetQueueFamily(QueueType::TransferQueueType),
+            Vulkan::GetQueueFamily(QueueType::GraphicsQueueType));
+
+        // Then perform the actual image layout change
+        CoreGraphics::CmdBarrier(handoverCmdBuf,
+            CoreGraphics::PipelineStage::TransferWrite,
+            CoreGraphics::PipelineStage::AllShadersRead,
+            CoreGraphics::BarrierDomain::Global,
+            {
+                TextureBarrierInfo
+                {
+                    res,
+                    CoreGraphics::ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, subres.baseMipLevel, subres.levelCount, subres.baseArrayLayer, subres.layerCount)
+                }
+            });
+        CoreGraphics::CmdEndMarker(handoverCmdBuf);
+        CoreGraphics::UnlockGraphicsSetupCommandBuffer();
 
         loadInfo.dims.width = width;
         loadInfo.dims.height = height;
@@ -249,8 +279,6 @@ VkStreamTextureCache::LoadFromStream(const Resources::ResourceId res, const Util
         loadInfo.stencilExtension = Ids::InvalidId32;
         loadInfo.sparseExtension = Ids::InvalidId32;
         runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(res), runtimeInfo.type);
-
-        //stream->MemoryUnmap();
 
 #if NEBULA_GRAPHICS_DEBUG
         ObjectSetName((TextureId)res, stream->GetURI().LocalPath().AsCharPtr());
@@ -267,7 +295,7 @@ VkStreamTextureCache::LoadFromStream(const Resources::ResourceId res, const Util
 inline void
 VkStreamTextureCache::Unload(const Resources::ResourceId id)
 {
-    __LockName(textureCache->Allocator(), lock);
+    __LockName(textureCache->Allocator(), lock, Util::ArrayAllocatorAccess::Write);
     VkTextureStreamInfo& streamInfo = textureCache->Get<Texture_StreamInfo>(id.resourceId);
 
     streamInfo.stream->MemoryUnmap();
@@ -282,7 +310,7 @@ VkStreamTextureCache::StreamMaxLOD(const Resources::ResourceId& id, const float 
 {
     N_SCOPE_ACCUM(StreamMaxLOD, TextureStream);
 
-    __LockName(textureCache->Allocator(), lock);
+    __LockName(textureCache->Allocator(), lock, Util::ArrayAllocatorAccess::Write);
     VkTextureStreamInfo& streamInfo = textureCache->Get<Texture_StreamInfo>(id.resourceId);
     const VkTextureLoadInfo& loadInfo = textureCache->Get<Texture_LoadInfo>(id.resourceId);
     VkTextureRuntimeInfo& runtimeInfo = textureCache->Get<Texture_RuntimeInfo>(id.resourceId);
@@ -335,65 +363,69 @@ VkStreamTextureCache::StreamMaxLOD(const Resources::ResourceId& id, const float 
     };
 
     // use resource submission
-    CoreGraphics::LockResourceSubmission();
-    CoreGraphics::SubmissionContextId sub = CoreGraphics::GetResourceSubmissionContext();
-    CoreGraphics::SubmissionContextId gfxSub = CoreGraphics::GetHandoverSubmissionContext();
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockTransferSetupCommandBuffer();
 
     // transition to transfer
-    VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(gfxSub),
-        CoreGraphics::BarrierStage::AllGraphicsShaders,
-        CoreGraphics::BarrierStage::Transfer,
-        VkUtilities::ImageMemoryBarrier(loadInfo.img, viewSubres, GraphicsQueueType, TransferQueueType, VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
+    CoreGraphics::CmdBarrier(cmdBuf,
+        CoreGraphics::PipelineStage::ImageInitial,
+        CoreGraphics::PipelineStage::TransferWrite,
+        CoreGraphics::BarrierDomain::Global,
+        {
+            TextureBarrierInfo
+            {
+                id,
+                CoreGraphics::ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, viewSubres.baseMipLevel, viewSubres.levelCount, viewSubres.baseArrayLayer, viewSubres.layerCount)
+            }
+        });
 
     // now load texture by walking through all images and mips
     for (int i = 0; i < ctx.num_faces(); i++)
     {
         for (int j = adjustedLod; j < (IndexT)streamInfo.lowestLod; j++)
         {
-            extents.width = ctx.image_width(i, j);
-            extents.height = ctx.image_height(i, j);
-            extents.depth = ctx.image_depth(i, j);
-
-            VkImageSubresourceRange res = subres;
-            res.layerCount = 1;
-            res.levelCount = 1;
-            res.baseMipLevel = j;
-            res.baseArrayLayer = subres.baseArrayLayer + i;
-
-            VkBuffer outBuf;
-            CoreGraphics::Alloc outMem;
-            VkUtilities::ImageUpdate(
-                dev,
-                CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-                TransferQueueType,
-                loadInfo.img,
-                extents,
-                res.baseMipLevel,
-                res.baseArrayLayer,
-                ctx.image_size(i, j),
-                (uint32_t*)ctx.image_data(i, j),
-                outBuf,
-                outMem);
-
-            // add host memory buffer, intermediate device memory, and intermediate device buffer to delete queue
-            SubmissionContextFreeMemory(sub, outMem);
-            SubmissionContextFreeVkBuffer(sub, dev, outBuf);
+            // Perform a texture update
+            CoreGraphics::TextureUpdate(
+                cmdBuf
+                , QueueType::TransferQueueType
+                , id
+                , ctx.image_width(i, j)
+                , ctx.image_height(i, j)
+                , j
+                , subres.baseArrayLayer + i
+                , ctx.image_size(i, j)
+                , (byte*)ctx.image_data(i, j));
         }
     }
 
-    // transition image to be used for rendering
-    VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(sub),
-        CoreGraphics::BarrierStage::Transfer,
-        CoreGraphics::BarrierStage::AllGraphicsShaders,
-        VkUtilities::ImageMemoryBarrier(loadInfo.img, viewSubres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+    // Transition image to read
+    CoreGraphics::CmdBarrier(cmdBuf,
+        CoreGraphics::PipelineStage::TransferWrite,
+        CoreGraphics::PipelineStage::TransferRead,
+        CoreGraphics::BarrierDomain::Global,
+        {
+            TextureBarrierInfo
+            {
+                id,
+                CoreGraphics::ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, viewSubres.baseMipLevel, viewSubres.levelCount, viewSubres.baseArrayLayer, viewSubres.layerCount)
+            }
+        });
+    CoreGraphics::UnlockTransferSetupCommandBuffer();
 
     // perform final transition on graphics queue
-    VkUtilities::ImageBarrier(CoreGraphics::SubmissionContextGetCmdBuffer(gfxSub),
-        CoreGraphics::BarrierStage::Transfer,
-        CoreGraphics::BarrierStage::AllGraphicsShaders,
-        VkUtilities::ImageMemoryBarrier(loadInfo.img, viewSubres, TransferQueueType, GraphicsQueueType, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+    CoreGraphics::CmdBufferId handoverCmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
 
-    CoreGraphics::UnlockResourceSubmission();
+    CoreGraphics::CmdBarrier(handoverCmdBuf,
+        CoreGraphics::PipelineStage::TransferRead,
+        CoreGraphics::PipelineStage::GraphicsShadersRead,
+        CoreGraphics::BarrierDomain::Global,
+        {
+            TextureBarrierInfo
+            {
+                id,
+                CoreGraphics::ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, viewSubres.baseMipLevel, viewSubres.levelCount, viewSubres.baseArrayLayer, viewSubres.layerCount)
+            }
+        });
+    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
 
     // update lod info and add image view for recreation
     streamInfo.lowestLod = adjustedLod;

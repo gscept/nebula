@@ -38,7 +38,7 @@ ShaderStateNode::~ShaderStateNode()
 void 
 ShaderStateNode::SetMaxLOD(const float lod)
 {
-    Materials::surfacePool->SetMaxLOD(this->surRes, lod);
+    Materials::materialCache->SetMaxLOD(this->surRes, lod);
 }
 
 //------------------------------------------------------------------------------
@@ -142,10 +142,10 @@ ShaderStateNode::OnFinishedLoading()
 
     // load surface immediately, however it will load textures async
     this->surRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
-    this->materialType = Materials::surfacePool->GetType(this->surRes);
-    this->surface = Materials::surfacePool->GetId(this->surRes);
+    this->materialType = Materials::materialCache->GetType(this->surRes);
+    this->surface = Materials::materialCache->GetId(this->surRes);
     CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
-    CoreGraphics::BufferId cbo = CoreGraphics::GetGraphicsConstantBuffer(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer);
+    CoreGraphics::BufferId cbo = CoreGraphics::GetGraphicsConstantBuffer();
     this->objectTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "ObjectBlock");
     this->instancingTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "InstancingBlock");
     this->skinningTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "JointBlock");
@@ -159,17 +159,17 @@ ShaderStateNode::OnFinishedLoading()
 /**
 */
 void
-ShaderStateNode::DrawPacket::Apply(Materials::ShaderConfig* type)
+ShaderStateNode::DrawPacket::Apply(const CoreGraphics::CmdBufferId cmdBuf, IndexT batchIndex, Materials::ShaderConfig* type)
 {
     // Apply per-draw surface parameters
     if (this->surfaceInstance != Materials::MaterialInstanceId::Invalid())
-        Materials::MaterialInstanceApply(type, this->surfaceInstance);
+        type->ApplyMaterialInstance(cmdBuf, batchIndex, this->surfaceInstance);
 
     // Set per-draw resource tables
-    IndexT prevOffset = 0;  
+    IndexT prevOffset = 0;
     for (IndexT i = 0; i < this->numTables; i++)
     {
-        CoreGraphics::SetResourceTable(this->tables[i], this->slots[i], CoreGraphics::GraphicsPipeline, this->numOffsets[i], this->offsets[prevOffset]);
+        CoreGraphics::CmdSetResourceTable(cmdBuf, this->tables[i], this->slots[i], CoreGraphics::GraphicsPipeline, this->numOffsets[i], this->offsets[prevOffset]);
         prevOffset = this->numOffsets[i];
     }
 }

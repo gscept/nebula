@@ -110,7 +110,8 @@ public:
             Util::Array<NodeInstanceState> nodeStates;
             Util::Array<Materials::ShaderConfig*> nodeMaterialTypes;
             Util::Array<Models::ModelNode*> nodes;
-            Util::Array<std::function<void()>> nodeModelCallbacks;
+            Util::Array<std::function<void(const CoreGraphics::CmdBufferId)>> nodeModelApplyCallbacks;
+            Util::Array<std::function<const CoreGraphics::PrimitiveGroup()>> modelNodeGetPrimitiveGroup;
             Util::Array<Util::Tuple<uint32, uint32>> nodeDrawModifiers;
 
             Util::Array<void*> nodeSpecialData;

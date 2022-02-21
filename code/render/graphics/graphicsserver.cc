@@ -56,16 +56,17 @@ GraphicsServer::Open()
     this->displayDevice->Open();
 
     CoreGraphics::GraphicsDeviceCreateInfo gfxInfo { 
-        { 1_MB, 30_MB },    // Graphics - main threads get 1 MB of constant memory, visibility thread (objects) gets 50
-        { 1_MB, 0_MB },     // Compute - main threads get 1 MB of constant memory, visibility thread (objects) gets 0
+        30_MB,                      // Graphics queue constant memory size
+        1_MB,                       // Compute queue constant memory size
         {
-            128_MB,         // device local memory block size, textures and vertex/index buffers
-            32_MB,          // memory to use for temporary host buffers which are copied to the GPU
-            32_MB,          // memory used to read back from the GPU
-            128_MB,         // manually flushed memory block size, constant buffers, storage buffers
+            128_MB,                 // Device local memory block size, textures and vertex/index buffers
+            32_MB,                  // Memory to use for temporary host buffers which are copied to the GPU
+            32_MB,                  // Memory used to read back from the GPU
+            128_MB,                 // Manually flushed memory block size, constant buffers, storage buffers
         },
-        3,                  // number of simultaneous frames (3 = triple buffering, 2 = ... you get the idea)
-        true               // validation
+        0x10000, 0x100000, 0x100,   // Number of queries
+        3,                          // Number of simultaneous frames (3 = triple buffering, 2 = ... you get the idea)
+        false                       // Validation
     };
     this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 
@@ -88,11 +89,11 @@ GraphicsServer::Open()
         // setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
         CoreGraphics::layoutPool = Resources::GetMemoryPool<CoreGraphics::VertexSignatureCache>();
         CoreGraphics::textureCache = Resources::GetMemoryPool<CoreGraphics::MemoryTextureCache>();
-        CoreGraphics::meshPool = Resources::GetMemoryPool<CoreGraphics::MemoryMeshCache>();
+        CoreGraphics::meshCache = Resources::GetMemoryPool<CoreGraphics::MemoryMeshCache>();
 
         CoreGraphics::shaderPool = Resources::GetStreamPool<CoreGraphics::ShaderCache>();
         Models::modelPool = Resources::GetStreamPool<Models::StreamModelCache>();
-        Materials::surfacePool = Resources::GetStreamPool<Materials::MaterialCache>();
+        Materials::materialCache = Resources::GetStreamPool<Materials::MaterialCache>();
 
         CoreAnimation::animPool = Resources::GetStreamPool<CoreAnimation::StreamAnimationCache>();
         Characters::skeletonPool = Resources::GetStreamPool<Characters::StreamSkeletonCache>();
@@ -385,9 +386,6 @@ GraphicsServer::BeginFrame()
     }
     N_MARKER_END();
 
-    // begin frame
-    CoreGraphics::BeginFrame(this->frameContext.frameIndex);
-
     // update frame context after begin frame
     this->frameContext.bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
@@ -565,8 +563,7 @@ GraphicsServer::EndFrame()
 {
     N_SCOPE(EndFrame, Graphics);
 
-    // stop the graphics side frame
-    CoreGraphics::EndFrame(this->frameContext.frameIndex);
+    CoreGraphics::FinishFrame(this->frameContext.frameIndex);
 
     // finish frame and prepare for the next one
     N_MARKER_BEGIN(ContextAfterFrame, Graphics);
@@ -602,7 +599,6 @@ GraphicsServer::CreateView(const Util::StringAtom& name, const IO::URI& framescr
 {
     Ptr<View> view = View::Create();
     Ptr<Frame::FrameScript> frameScript = Frame::FrameServer::Instance()->LoadFrameScript(name.AsString() + "_framescript", framescript);
-    frameScript->Build();
 
     view->script = frameScript;
     this->views.Append(view);

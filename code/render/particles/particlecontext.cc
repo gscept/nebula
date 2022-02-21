@@ -261,13 +261,12 @@ ParticleContext::Setup(const Graphics::GraphicsEntityId id)
             system.uniformData.windVector = xyz(attrs.GetVec4(EmitterAttrs::WindDirection));
 
             // Setup model callback (actually identical for ALL particles...)
-            renderables.nodeModelCallbacks[i] = [&system]()
+            renderables.nodeModelApplyCallbacks[i] = [](const CoreGraphics::CmdBufferId id)
             {
-                CoreGraphics::SetVertexLayout(ParticleContext::GetParticleVertexLayout());
-                CoreGraphics::SetIndexBuffer(ParticleContext::GetParticleIndexBuffer(), 0);
-                CoreGraphics::SetPrimitiveGroup(ParticleContext::ParticleContext::GetParticlePrimitiveGroup());
-                CoreGraphics::SetStreamVertexBuffer(0, ParticleContext::GetParticleVertexBuffer(), 0);
-                CoreGraphics::SetStreamVertexBuffer(1, state.vbos[CoreGraphics::GetBufferedFrameIndex()], 0);
+                CoreGraphics::CmdSetVertexLayout(id, ParticleContext::GetParticleVertexLayout());
+                CoreGraphics::CmdSetIndexBuffer(id, ParticleContext::GetParticleIndexBuffer(), 0);
+                CoreGraphics::CmdSetVertexBuffer(id, 0, ParticleContext::GetParticleVertexBuffer(), 0);
+                CoreGraphics::CmdSetVertexBuffer(id, 1, state.vbos[CoreGraphics::GetBufferedFrameIndex()], 0);
             };
         }
     }
@@ -508,7 +507,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
                 block.AnimFramesPerSecond = pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond);
 
                 // allocate block
-                uint offset = CoreGraphics::SetGraphicsConstants(CoreGraphics::GlobalConstantBufferType::VisibilityThreadConstantBuffer, block);
+                uint offset = CoreGraphics::SetGraphicsConstants(block);
                 renderables.nodeStates[stateRange.begin + system.renderableIndex].resourceTableOffsets[renderables.nodeStates[stateRange.begin + system.renderableIndex].particleConstantsIndex] = offset;
             }
             else
@@ -618,7 +617,7 @@ ParticleContext::GetParticleVertexLayout()
 //------------------------------------------------------------------------------
 /**
 */
-CoreGraphics::PrimitiveGroup
+CoreGraphics::PrimitiveGroup&
 ParticleContext::GetParticlePrimitiveGroup()
 {
     return state.primGroup;

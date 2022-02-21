@@ -22,20 +22,19 @@ public:
 
     struct CompiledImpl : public FrameOp::Compiled
     {
-        void Run(const IndexT frameIndex, const IndexT bufferIndex) override;
+        void Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex) override;
         void Discard();
 
 #if NEBULA_GRAPHICS_DEBUG
         Util::StringAtom name;
 #endif
 
-        std::function<void(IndexT, IndexT)> func;
+        std::function<void(const CoreGraphics::CmdBufferId, IndexT, IndexT)> func;
     };
 
     FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 
 private:
-
 
     void Build(
         Memory::ArenaAllocator<BIG_CHUNK>& allocator,
@@ -43,19 +42,18 @@ private:
         Util::Array<CoreGraphics::EventId>& events,
         Util::Array<CoreGraphics::BarrierId>& barriers,
         Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
-        Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures,
-        CoreGraphics::CommandBufferPoolId commandBufferPool) override;
+        Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures) override;
 };
 
 
 /// add function callback to global dictionary
-extern void AddCallback(const Util::StringAtom name, std::function<void(IndexT, IndexT)> func);
+extern void AddCallback(const Util::StringAtom name, std::function<void(const CoreGraphics::CmdBufferId, IndexT, IndexT)> func);
 /// get algorithm function call
-extern const std::function<void(IndexT, IndexT)>& GetCallback(const Util::StringAtom& str);
+extern const std::function<void(const CoreGraphics::CmdBufferId, IndexT, IndexT)>& GetCallback(const Util::StringAtom& str);
 /// initialize the plugin table
 extern void InitPluginTable();
 
-extern Util::Dictionary<Util::StringAtom, std::function<void(IndexT, IndexT)>> nameToFunction;
+extern Util::Dictionary<Util::StringAtom, std::function<void(const CoreGraphics::CmdBufferId, IndexT, IndexT)>> nameToFunction;
 
 
 } // namespace Frame2

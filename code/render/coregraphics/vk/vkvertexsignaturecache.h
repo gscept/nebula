@@ -95,6 +95,14 @@ private:
 
     friend void CoreGraphics::SetVertexLayout(const CoreGraphics::VertexLayoutId& vl);
 
+    enum
+    {
+        VertexSignature_ProgramLayoutMapping
+        , VertexSignature_VkPipelineInfo
+        , VertexSignature_BindInfo
+        , VertexSignature_LayoutInfo
+    };
+
     Ids::IdAllocator<
         Util::HashTable<uint64_t, DerivativeLayout>,        //0 program-to-derivative layout binding
         VkPipelineVertexInputStateCreateInfo,               //1 base vertex input state

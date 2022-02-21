@@ -73,7 +73,7 @@ VkShaderServer::Open()
     this->texture3DTextureVar = ShaderGetResourceSlot(shader, "Textures3D");
     this->tableLayout = ShaderGetResourcePipeline(shader);
 
-    this->ticksCbo = CoreGraphics::GetGraphicsConstantBuffer(MainThreadConstantBuffer);
+    this->ticksCbo = CoreGraphics::GetGraphicsConstantBuffer();
     this->cboSlot = ShaderGetResourceSlot(shader, "PerTickParams");
 
     this->resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
@@ -321,7 +321,7 @@ void
 VkShaderServer::UpdateResources()
 {
     // just allocate the memory
-    this->cboOffset = CoreGraphics::AllocateGraphicsConstantBufferMemory(MainThreadConstantBuffer, sizeof(Shared::PerTickParams));
+    this->cboOffset = CoreGraphics::AllocateGraphicsConstantBufferMemory(sizeof(Shared::PerTickParams));
     IndexT bufferedFrameIndex = GetBufferedFrameIndex();
 
     VkDevice dev = GetCurrentDevice();
@@ -334,12 +334,12 @@ VkShaderServer::UpdateResources()
     {
         const _PendingView& pend = pendingViewsThisFrame[i];
 
-        textureAllocator.EnterGet();
+        textureAllocator.Lock(Util::ArrayAllocatorAccess::Write);
         VkTextureRuntimeInfo& info = textureAllocator.Get<Texture_RuntimeInfo>(pend.tex.resourceId);
         VkImageView oldView = info.view;
         VkResult res = vkCreateImageView(GetCurrentDevice(), &pend.createInfo, nullptr, &info.view);
         n_assert(res == VK_SUCCESS);
-        textureAllocator.LeaveGet();
+        textureAllocator.Unlock(Util::ArrayAllocatorAccess::Write);
 
         _PendingViewDelete pendingDelete;
         pendingDelete.view = oldView;
@@ -378,7 +378,7 @@ void
 VkShaderServer::AfterView()
 {
     // update the constant buffer with the data accumulated in this frame
-    CoreGraphics::SetGraphicsConstants(MainThreadConstantBuffer, this->cboOffset, this->tickParams);
+    CoreGraphics::SetGraphicsConstants(this->cboOffset, this->tickParams);
 }
 
 //------------------------------------------------------------------------------
