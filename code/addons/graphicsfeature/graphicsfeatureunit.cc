@@ -91,18 +91,24 @@ GraphicsFeatureUnit::OnActivate()
             false};
     this->wnd = CreateWindow(wndInfo);
 
+    this->defaultView = gfxServer->CreateView("mainview", this->defaultFrameScript);
+    this->defaultStage = gfxServer->CreateStage("defaultStage", true);
+    this->defaultView->SetStage(this->defaultStage);
+
+    Ptr<Frame::FrameScript> frameScript = this->defaultView->GetFrameScript();
+
     CameraContext::Create();
     ModelContext::Create();
     ObserverContext::Create();
     ObservableContext::Create();
     ParticleContext::Create();
     Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
-    Lighting::LightContext::Create();
+    Lighting::LightContext::Create(frameScript);
     Decals::DecalContext::Create();
     Characters::CharacterContext::Create();
     Im3d::Im3dContext::Create();
     Dynui::ImguiContext::Create();
-    Fog::VolumetricFogContext::Create();
+    Fog::VolumetricFogContext::Create(frameScript);
     PostEffects::BloomContext::Create();
     PostEffects::SSAOContext::Create();
     PostEffects::HistogramContext::Create();
@@ -115,11 +121,7 @@ GraphicsFeatureUnit::OnActivate()
     };
     Terrain::TerrainContext::Create(settings);
 
-    this->defaultView = gfxServer->CreateView("mainview", this->defaultFrameScript);
-    this->defaultStage = gfxServer->CreateStage("defaultStage", true);
-    this->defaultView->SetStage(this->defaultStage);
 
-    Ptr<Frame::FrameScript> frameScript = this->defaultView->GetFrameScript();
     PostEffects::BloomContext::Setup(frameScript);
     PostEffects::SSAOContext::Setup(frameScript);
     PostEffects::HistogramContext::Setup(frameScript);
@@ -141,6 +143,8 @@ GraphicsFeatureUnit::OnActivate()
     this->cameraManagerHandle = this->AttachManager(CameraManager::Create());
 
     this->defaultViewHandle = CameraManager::RegisterView(this->defaultView);
+
+    this->defaultView->BuildFrameScript();
 }
 
 //------------------------------------------------------------------------------
