@@ -10,7 +10,6 @@
 #include "ids/id.h"
 #include "util/stack.h"
 #include "coregraphics/config.h"
-#include "coregraphics/barrier.h"
 #include "coregraphics/primitivetopology.h"
 #include "util/fixedarray.h"
 #include "coregraphics/config.h"
@@ -27,7 +26,9 @@ struct ShaderProgramId;
 struct BarrierId;
 struct EventId;
 struct PassId;
-enum ShaderPipeline;
+
+struct TextureBarrierInfo;
+struct BufferBarrierInfo;
 
 enum CmdBufferQueryBits
 {

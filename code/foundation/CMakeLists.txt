@@ -649,7 +649,7 @@ nebula_begin_module(foundation)
             linuxbarrier.h
             linuxcriticalsection.h
             linuxevent.h
-			linuxinterlocked.h
+	    linuxinterlocked.h
             linuxthread.cc
             linuxthread.h
         )
@@ -659,7 +659,9 @@ nebula_begin_module(foundation)
             posixbarrier.h
             posixcriticalsection.h
             posixevent.h
-			posixinterlocked.h
+	    posixinterlocked.h
+	    posixreadwritelock.cc
+	    posixreadwritelock.h
             posixthread.cc
             posixthread.h
         )

@@ -70,12 +70,6 @@ enum ShaderConstantType
     SamplerHandleType       // just a uint
 };
 
-enum ShaderPipeline
-{
-    InvalidPipeline,
-    GraphicsPipeline,
-    ComputePipeline     // Compute pipeline is not the compute queue, it's just resources available for compute shaders
-};
 
 /// get constant type as string
 const Util::String ConstantTypeToString(const ShaderConstantType& type);

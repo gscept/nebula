@@ -12,6 +12,7 @@
 #include "ids/idpool.h"
 #include "util/stringatom.h"
 #include "coregraphics/config.h"
+#include "coregraphics/commandbuffer.h"
 #include "gpubuffertypes.h"
 
 namespace CoreGraphics

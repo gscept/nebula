@@ -24,7 +24,7 @@
 
 namespace CoreGraphics
 {
-    void CmdSetShaderProgram(const CmdBufferId, const CoreGraphics::ShaderProgramId, bool);
+    void CmdSetShaderProgram(const CoreGraphics::CmdBufferId, const CoreGraphics::ShaderProgramId, bool);
 }
 
 namespace Vulkan
@@ -111,7 +111,7 @@ public:
 private:
     friend class VkVertexSignatureCache;
     friend class VkPipelineDatabase;
-    friend void CoreGraphics::CmdSetShaderProgram(const CmdBufferId, const CoreGraphics::ShaderProgramId, bool);
+    friend void CoreGraphics::CmdSetShaderProgram(const CoreGraphics::CmdBufferId, const CoreGraphics::ShaderProgramId, bool);
 
     /// get shader program
     const VkProgramReflectionInfo& GetProgram(const CoreGraphics::ShaderProgramId shaderProgramId);
