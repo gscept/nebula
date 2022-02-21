@@ -11,6 +11,7 @@
 #include "coregraphics/resourcetable.h"
 #include "vkloader.h"
 #include "threading/assertingmutex.h"
+#include "threading/spinlock.h"
 #include <array>
 namespace Vulkan
 {
@@ -44,7 +45,7 @@ enum
     ResourceTable_Device,
     ResourceTable_DescriptorSet,
     ResourceTable_DescriptorPoolIndex,
-    ResourceTable_Mutex,
+    ResourceTable_Lock,
     ResourceTable_Layout,
     ResourceTable_WriteInfos,
     ResourceTable_Copies
@@ -54,7 +55,7 @@ typedef Ids::IdAllocator<
     VkDevice,
     VkDescriptorSet,
     IndexT,
-    Threading::CriticalSection,
+    Threading::Spinlock,
     CoreGraphics::ResourceTableLayoutId,
     Util::Array<WriteInfo>,
     Util::Array<VkCopyDescriptorSet>

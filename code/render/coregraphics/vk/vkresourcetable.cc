@@ -247,8 +247,8 @@ ResourceTableCopy(const ResourceTableId from, IndexT fromSlot, IndexT fromIndex,
     VkDescriptorSet& fromSet = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(from.id24);
     VkDescriptorSet& toSet = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(to.id24);
 
-    Threading::CriticalScope scope1(&resourceTableAllocator.Get<ResourceTable_Mutex>(from.id24));
-    Threading::CriticalScope scope2(&resourceTableAllocator.Get<ResourceTable_Mutex>(to.id24));
+    Threading::SpinlockScope scope1(&resourceTableAllocator.Get<ResourceTable_Lock>(from.id24));
+    Threading::SpinlockScope scope2(&resourceTableAllocator.Get<ResourceTable_Lock>(to.id24));
     Util::Array<VkCopyDescriptorSet>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(to.id24);
 
     VkCopyDescriptorSet copy =
@@ -274,7 +274,7 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTexture& te
 {
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
-    Threading::CriticalScope scope(&resourceTableAllocator.Get<ResourceTable_Mutex>(id.id24));
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
     n_assert(tex.slot != InvalidIndex);
@@ -331,7 +331,7 @@ ResourceTableSetTexture(const ResourceTableId id, const ResourceTableTextureView
 {
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
-    Threading::CriticalScope scope(&resourceTableAllocator.Get<ResourceTable_Mutex>(id.id24));
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
     n_assert(tex.slot != InvalidIndex);
@@ -386,7 +386,7 @@ ResourceTableSetInputAttachment(const ResourceTableId id, const ResourceTableInp
 {
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
-    Threading::CriticalScope scope(&resourceTableAllocator.Get<ResourceTable_Mutex>(id.id24));
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
     n_assert(tex.slot != InvalidIndex);
@@ -426,7 +426,7 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTexture& 
 {
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
-    Threading::CriticalScope scope(&resourceTableAllocator.Get<ResourceTable_Mutex>(id.id24));
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
     n_assert(tex.slot != InvalidIndex);
@@ -466,7 +466,7 @@ ResourceTableSetRWTexture(const ResourceTableId id, const ResourceTableTextureVi
 {
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
-    Threading::CriticalScope scope(&resourceTableAllocator.Get<ResourceTable_Mutex>(id.id24));
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
     n_assert(tex.slot != InvalidIndex);
@@ -507,7 +507,7 @@ ResourceTableSetConstantBuffer(const ResourceTableId id, const ResourceTableBuff
     n_assert(!buf.texelBuffer);
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
-    Threading::CriticalScope scope(&resourceTableAllocator.Get<ResourceTable_Mutex>(id.id24));
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
     n_assert(buf.slot != InvalidIndex);
@@ -554,7 +554,7 @@ ResourceTableSetRWBuffer(const ResourceTableId id, const ResourceTableBuffer& bu
 {
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
-    Threading::CriticalScope scope(&resourceTableAllocator.Get<ResourceTable_Mutex>(id.id24));
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
     n_assert(buf.slot != InvalidIndex);
@@ -600,7 +600,7 @@ ResourceTableSetSampler(const ResourceTableId id, const ResourceTableSampler& sa
 {
     VkDescriptorSet& set = resourceTableAllocator.Get<ResourceTable_DescriptorSet>(id.id24);
 
-    Threading::CriticalScope scope(&resourceTableAllocator.Get<ResourceTable_Mutex>(id.id24));
+    Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
     Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
 
     n_assert(samp.slot != InvalidIndex);
@@ -667,7 +667,7 @@ ResourceTableCommitChanges(const ResourceTableId id)
     }
     else
     {
-        Threading::CriticalScope scope(&resourceTableAllocator.Get<ResourceTable_Mutex>(id.id24));
+        Threading::SpinlockScope scope(&resourceTableAllocator.Get<ResourceTable_Lock>(id.id24));
         Util::Array<WriteInfo>& infoList = resourceTableAllocator.Get<ResourceTable_WriteInfos>(id.id24);
         Util::Array<VkCopyDescriptorSet>& copies = resourceTableAllocator.Get<ResourceTable_Copies>(id.id24);
         VkDevice& dev = resourceTableAllocator.Get<ResourceTable_Device>(id.id24);
