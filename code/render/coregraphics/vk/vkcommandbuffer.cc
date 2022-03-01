@@ -301,7 +301,7 @@ CmdReset(const CmdBufferId id, const CmdBufferClearInfo& info)
 /**
 */
 void
-CmdSetVertexBuffer(const CmdBufferId id, IndexT streamIndex, const CoreGraphics::BufferId& buffer, SizeT bufferOffset)
+CmdSetVertexBuffer(const CmdBufferId id, IndexT streamIndex, const CoreGraphics::BufferId& buffer, IndexT offsetVertexIndex)
 {
 #if _DEBUG
     CoreGraphics::QueueType usage = commandBuffers.GetUnsafe<CmdBuffer_Usage>(id.id24);
@@ -309,7 +309,7 @@ CmdSetVertexBuffer(const CmdBufferId id, IndexT streamIndex, const CoreGraphics:
 #endif
     VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
     VkBuffer buf = Vulkan::BufferGetVk(buffer);
-    VkDeviceSize offset = bufferOffset;
+    VkDeviceSize offset = offsetVertexIndex;
     vkCmdBindVertexBuffers(cmdBuf, streamIndex, 1, &buf, &offset);
 }   
 
@@ -336,7 +336,7 @@ CmdSetVertexLayout(const CmdBufferId id, const CoreGraphics::VertexLayoutId& vl)
 /**
 */
 void
-CmdSetIndexBuffer(const CmdBufferId id, const CoreGraphics::BufferId& buffer, SizeT bufferOffset)
+CmdSetIndexBuffer(const CmdBufferId id, const CoreGraphics::BufferId& buffer, IndexT offsetIndex)
 {
 #if _DEBUG
     CoreGraphics::QueueType usage = commandBuffers.GetUnsafe<CmdBuffer_Usage>(id.id24);
@@ -344,7 +344,7 @@ CmdSetIndexBuffer(const CmdBufferId id, const CoreGraphics::BufferId& buffer, Si
 #endif
     VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
     VkBuffer buf = Vulkan::BufferGetVk(buffer);
-    VkDeviceSize offset = bufferOffset;
+    VkDeviceSize offset = offsetIndex;
     IndexType::Code idxType = IndexType::ToIndexType(BufferGetElementSize(buffer));
     VkIndexType vkIdxType = idxType == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
     vkCmdBindIndexBuffer(cmdBuf, buf, offset, vkIdxType);

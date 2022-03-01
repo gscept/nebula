@@ -1030,18 +1030,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
     state.waitForPresentSemaphore = VK_NULL_HANDLE;
 
-    CoreGraphics::BufferCreateInfo vboInfo;
-    vboInfo.name = "Global Vertex Cache";
-    vboInfo.byteSize = info.globalVertexBufferMemorySize;
-    vboInfo.mode = CoreGraphics::BufferAccessMode::DeviceLocal;
-    vboInfo.queueSupport = CoreGraphics::BufferQueueSupport::GraphicsQueueSupport | CoreGraphics::BufferQueueSupport::ComputeQueueSupport;
-    vboInfo.usageFlags =
-        CoreGraphics::BufferUsageFlag::VertexBuffer
-        | CoreGraphics::BufferUsageFlag::TransferBufferDestination
-        | CoreGraphics::BufferUsageFlag::ReadWriteBuffer;
-    state.vertexBuffer = CoreGraphics::CreateBuffer(vboInfo);
-    state.vertexAllocator.Resize(info.globalVertexBufferMemorySize);
-
     _setup_grouped_timer(state.DebugTimer, "GraphicsDevice");
     _setup_grouped_counter(state.NumImageBytesAllocated, "GraphicsDevice");
     _begin_counter(state.NumImageBytesAllocated);
@@ -1813,35 +1801,6 @@ FinishQueries(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueryT
 
     // Finally reset the query pool
     vkCmdResetQueryPool(vkCmd, state.queries[state.currentBufferedFrameIndex].queryPools[type], start, count);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-uint
-AllocateVertices(const SizeT numVertices, const SizeT vertexSize)
-{
-    IndexT ret;
-    state.vertexAllocator.Alloc(numVertices * vertexSize, 1, ret);
-    return ret;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-DeallocateVertices(uint offset)
-{
-    state.vertexAllocator.Dealloc(offset);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const CoreGraphics::BufferId
-GetVertexBuffer()
-{
-    return state.vertexBuffer;
 }
 
 //------------------------------------------------------------------------------

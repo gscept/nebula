@@ -152,11 +152,11 @@ void CmdEndRecord(const CmdBufferId id);
 void CmdReset(const CmdBufferId id, const CmdBufferClearInfo& info);
 
 /// Set vertex buffer
-void CmdSetVertexBuffer(const CmdBufferId id, IndexT streamIndex, const CoreGraphics::BufferId& buffer, SizeT bufferOffset);
+void CmdSetVertexBuffer(const CmdBufferId id, IndexT streamIndex, const CoreGraphics::BufferId& buffer, IndexT offsetVertexIndex);
 /// Set vertex layout
 void CmdSetVertexLayout(const CmdBufferId id, const CoreGraphics::VertexLayoutId& vl);
 /// Set index buffer
-void CmdSetIndexBuffer(const CmdBufferId id, const CoreGraphics::BufferId& buffer, SizeT bufferOffset);
+void CmdSetIndexBuffer(const CmdBufferId id, const CoreGraphics::BufferId& buffer, IndexT offsetIndex);
 /// Set the type of topology used
 void CmdSetPrimitiveTopology(const CmdBufferId id, const CoreGraphics::PrimitiveTopology::Code topo);
 
