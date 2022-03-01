@@ -72,10 +72,10 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
     bool retval = true;
     if (FourCC('MESH') == fourcc)
     {
-        // get mesh resource
+        // Get mesh resource
         Resources::ResourceName meshName = reader->ReadString();
 
-        // add as pending resource in loader
+        // Load directly, since the model is already loaded on a thread, this is fine
         this->primitiveGroupIndex = 0;
         this->res = Resources::CreateResource(meshName, tag, nullptr, nullptr, true);
 

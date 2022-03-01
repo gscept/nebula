@@ -48,7 +48,7 @@ CharacterSkinNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag,
     else if (FourCC('SFRG') == fourcc)
     {
         // SkinFragment
-        this->primitiveGroupIndexLoaded = reader->ReadInt();
+        this->primitiveGroupIndex = reader->ReadInt();
         Array<IndexT> jointPalette;
         SizeT numJoints = reader->ReadInt();
         jointPalette.Reserve(numJoints);
@@ -57,7 +57,7 @@ CharacterSkinNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag,
         {
             jointPalette.Append(reader->ReadInt());
         }
-        this->AddFragment(this->primitiveGroupIndexLoaded, jointPalette);
+        this->AddFragment(this->primitiveGroupIndex, jointPalette);
     }
     else
     {
