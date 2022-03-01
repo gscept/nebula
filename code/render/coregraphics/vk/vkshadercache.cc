@@ -374,9 +374,7 @@ VkShaderCache::GetConstantBindingsCount(const CoreGraphics::ShaderId id) const
 CoreGraphics::ResourceTableLayoutId
 VkShaderCache::GetResourceTableLayout(const CoreGraphics::ShaderId id, const IndexT group)
 {
-    const VkShaderSetupInfo& setupInfo = this->shaderAlloc.Get<Shader_SetupInfo>(id.resourceId);
-    uint layout = setupInfo.descriptorSetLayoutMap[group];
-    return Util::Get<1>(setupInfo.descriptorSetLayouts[layout]);
+    return Util::Get<1>(this->shaderAlloc.Get<Shader_SetupInfo>(id.resourceId).descriptorSetLayouts[group]);
 }
 
 //------------------------------------------------------------------------------
