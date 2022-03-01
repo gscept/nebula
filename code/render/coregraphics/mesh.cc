@@ -64,6 +64,15 @@ MeshGetVertexBuffer(const MeshId id, const IndexT stream)
 //------------------------------------------------------------------------------
 /**
 */
+const uint
+MeshGetVertexOffset(const MeshId id, const IndexT stream)
+{
+    return meshCache->GetVertexOffset(id, stream);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const BufferId
 MeshGetIndexBuffer(const MeshId id)
 {

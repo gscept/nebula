@@ -28,6 +28,7 @@ struct MeshCreateInfo
     struct Stream
     {
         BufferId vertexBuffer;
+        SizeT offset;
         IndexT index;
     };
 
@@ -51,6 +52,8 @@ void MeshBind(const CoreGraphics::CmdBufferId cmdBuf, IndexT prim, const MeshId 
 const Util::Array<CoreGraphics::PrimitiveGroup>& MeshGetPrimitiveGroups(const MeshId id);
 /// get vertex buffer
 const BufferId MeshGetVertexBuffer(const MeshId id, const IndexT stream);
+/// Get mesh vertex offset
+const uint MeshGetVertexOffset(const MeshId id, const IndexT stream);
 /// get index buffer
 const BufferId MeshGetIndexBuffer(const MeshId id);
 /// get topology

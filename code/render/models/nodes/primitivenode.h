@@ -43,7 +43,12 @@ protected:
 
     CoreGraphics::MeshId res;
     uint16_t primitiveGroupIndex;
-    uint16_t primitiveGroupIndexLoaded;
+
+    CoreGraphics::BufferId vbo, ibo;
+    IndexT vboOffset, iboOffset;
+    CoreGraphics::PrimitiveTopology::Code topology;
+    CoreGraphics::PrimitiveGroup primGroup;
+    CoreGraphics::VertexLayoutId vertexLayout;
 };
 
 } // namespace Models
