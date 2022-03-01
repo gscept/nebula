@@ -38,7 +38,7 @@ private:
         IndexT start;
         SizeT length;
     };
-    Util::Dictionary<IndexT, Range> ranges;
+    Util::Array<Range> ranges;
     SizeT size;
 };
 
@@ -79,7 +79,7 @@ RangeAllocator::Alloc(SizeT numElements, SizeT alignment, IndexT& outIndex)
     IndexT i;
     for (i = 0; i < this->ranges.Size(); i++)
     {
-        const Range& range = this->ranges.ValueAtIndex(i);
+        const Range& range = this->ranges[i];
 
         if (currentOffset > range.start)
             goto next;
@@ -99,7 +99,7 @@ RangeAllocator::Alloc(SizeT numElements, SizeT alignment, IndexT& outIndex)
         ret = true;
         outIndex = currentOffset;
 
-        this->ranges.Add(currentOffset, Range{ currentOffset, numElements });
+        this->ranges.Insert(i, Range{ currentOffset, numElements });
     }
 
     return ret;
@@ -111,11 +111,13 @@ RangeAllocator::Alloc(SizeT numElements, SizeT alignment, IndexT& outIndex)
 inline void 
 RangeAllocator::Dealloc(IndexT startIndex)
 {
-    IndexT index = this->ranges.FindIndex(startIndex);
-    if (index != InvalidIndex)
+    for (IndexT i = 0; i < this->ranges.Size(); i++)
     {
-        this->ranges.EraseAtIndex(index);
-        return;
+        if (this->ranges[i].start == startIndex)
+        {
+            this->ranges.EraseIndex(i);
+            return;
+        }
     }
     n_error("Tried to dealloc non-existant range");
 }
