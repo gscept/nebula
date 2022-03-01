@@ -24,9 +24,9 @@ jobs:
         include:
           - name: windows-latest
             os: windows-latest
-            config: vulkan-win64-vs2019-debug
-            physx: win-vs16
-            physxkey: vs16
+            config: vulkan-win64-vs2022-debug
+            physx: win-vs17
+            physxkey: vs17
             anyfx: anyfxcompiler-windows
           - name: ubuntu-18.04
             os: ubuntu-18.04
