@@ -59,7 +59,7 @@ PrimitiveNode::GetPrimitiveGroupFunction()
 {
     return [this]()
     {
-        return CoreGraphics::MeshGetPrimitiveGroups(this->res)[this->primitiveGroupIndex];
+        return this->primGroup;
     };
 }
 
