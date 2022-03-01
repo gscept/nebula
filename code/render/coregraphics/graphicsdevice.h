@@ -20,6 +20,7 @@
 #include "debug/debugcounter.h"
 #include "coregraphics/rendereventhandler.h"
 #include "coregraphics/resourcetable.h"
+#include "memory/rangeallocator.h"
 #include "timing/timer.h"
 #include "util/stack.h"
 #include "memory.h"
@@ -31,6 +32,7 @@ struct GraphicsDeviceCreateInfo
 {
     uint64 globalGraphicsConstantBufferMemorySize;
     uint64 globalComputeConstantBufferMemorySize;
+    uint64 globalVertexBufferMemorySize;
     uint64 memoryHeaps[NumMemoryPoolTypes];
     uint64 maxOcclusionQueries, maxTimestampQueries, maxStatisticsQueries;
     byte numBufferedFrames : 3;
@@ -93,6 +95,9 @@ struct GraphicsDeviceState
     CoreGraphics::ResourceTableId frameResourceTable;
 
     Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
+
+    Memory::RangeAllocator vertexAllocator;
+    CoreGraphics::BufferId vertexBuffer;
 
     bool isOpen : 1;
     bool inNotifyEventHandlers : 1;
@@ -228,6 +233,13 @@ void DelayedDeleteDescriptorSet(const CoreGraphics::ResourceTableId id);
 uint AllocateQueries(const CoreGraphics::QueryType type, uint numQueries);
 /// Copy query results to buffer
 void FinishQueries(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueryType type, IndexT start, SizeT count);
+
+/// Allocate vertices from the global vertex pool
+uint AllocateVertices(const SizeT numVertices, const SizeT vertexSize);
+/// Deallocate vertices
+void DeallocateVertices(uint offset);
+/// Get vertex buffer 
+const CoreGraphics::BufferId GetVertexBuffer();
 
 /// Swap
 void Swap(IndexT i);
