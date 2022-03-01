@@ -46,8 +46,6 @@ const MeshId CreateMesh(const MeshCreateInfo& info);
 /// destroy mesh
 void DestroyMesh(const MeshId id);
 
-/// Bind mesh
-void MeshBind(const CoreGraphics::CmdBufferId cmdBuf, IndexT prim, const MeshId id);
 /// get number of primitive groups
 const Util::Array<CoreGraphics::PrimitiveGroup>& MeshGetPrimitiveGroups(const MeshId id);
 /// get vertex buffer
