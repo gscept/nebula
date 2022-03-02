@@ -205,6 +205,7 @@ private:
     static void Dealloc(Graphics::ContextEntityId id);
 
     static Util::HashTable<Util::StringAtom, CoreAnimation::AnimSampleMask> masks;
+    static Threading::AtomicCounter animationCounter;
     static Threading::AtomicCounter totalCompletionCounter;
     static Threading::Event totalCompletionEvent;
 };

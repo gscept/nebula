@@ -29,6 +29,7 @@ CharacterContext::CharacterContextAllocator CharacterContext::characterContextAl
 __ImplementContext(CharacterContext, CharacterContext::characterContextAllocator);
 
 Util::HashTable<Util::StringAtom, CoreAnimation::AnimSampleMask> CharacterContext::masks;
+Threading::AtomicCounter CharacterContext::animationCounter;
 Threading::AtomicCounter CharacterContext::totalCompletionCounter;
 Threading::Event CharacterContext::totalCompletionEvent;
 
@@ -57,7 +58,7 @@ CharacterContext::Create()
     __CreateContext();
 
     __bundle.OnBegin = CharacterContext::UpdateAnimations;
-    __bundle.OnBeforeFrame = CharacterContext::WaitForCharacterJobs;
+    __bundle.OnWaitForWork = CharacterContext::WaitForCharacterJobs;
     __bundle.StageBits = &CharacterContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = CharacterContext::OnRenderDebug;
@@ -772,12 +773,13 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
     const Util::Array<Util::FixedArray<Math::mat4>>& userJoints = characterContextAllocator.GetArray<UserControlledJoint>();
     const Util::Array<Graphics::GraphicsEntityId>& models = characterContextAllocator.GetArray<EntityId>();
     const Util::Array<bool>& supportsBlending = characterContextAllocator.GetArray<SupportMix>();
+    const Util::Array<IndexT>& characterSkinNodeIndices = characterContextAllocator.GetArray<CharacterSkinNodeIndexOffset>();
 
     if (!models.IsEmpty())
     {
         // Set total counter
-        n_assert(CharacterContext::totalCompletionCounter == 0);
-        CharacterContext::totalCompletionCounter = 1;
+        n_assert(CharacterContext::animationCounter == 0);
+        CharacterContext::animationCounter = 1;
 
         CharacterJobContext charCtx;
         charCtx.times = &times;
@@ -813,7 +815,67 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
         }
 
         // Run job
-        Jobs2::JobDispatch(EvalCharacter, models.Size(), 128, charCtx, nullptr, &CharacterContext::totalCompletionCounter, &CharacterContext::totalCompletionEvent);
+        Jobs2::JobDispatch(EvalCharacter, models.Size(), 64, charCtx, nullptr, &CharacterContext::animationCounter, nullptr);
+
+        n_assert(CharacterContext::totalCompletionCounter == 0);
+        CharacterContext::totalCompletionCounter = 1;
+
+        struct UpdateJointsContext
+        {
+            const Util::Array<IndexT>* characterNodeIndices;
+            const Util::Array<Util::FixedArray<Math::mat4>>* jointPalettes;
+            const Util::Array<Graphics::GraphicsEntityId>* entities;
+        } jobCtx;
+        jobCtx.characterNodeIndices = &characterSkinNodeIndices;
+        jobCtx.entities = &models;
+        jobCtx.jointPalettes = &jointPalettes;
+
+        // Run job to update constants
+        Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+        {
+            N_SCOPE(JointConstantsUpdate, Graphics);
+            auto jobCtx = static_cast<UpdateJointsContext*>(ctx);
+            for (IndexT i = 0; i < groupSize; i++)
+            {
+                IndexT index = invocationOffset + i;
+                if (index >= totalJobs)
+                    return;
+
+                const Models::NodeInstanceRange& range = Models::ModelContext::GetModelRenderableRange(jobCtx->entities->Get(index));
+                const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
+
+                const Util::FixedArray<Math::mat4>& jointPalette = jobCtx->jointPalettes->Get(index);
+                IndexT node = range.begin + jobCtx->characterNodeIndices->Get(index);
+                n_assert(renderables.nodes[node]->type == Models::NodeType::CharacterSkinNodeType);
+                Models::CharacterSkinNode* sparent = reinterpret_cast<Models::CharacterSkinNode*>(renderables.nodes[node]);
+                const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;
+                Util::FixedArray<Math::mat4> usedMatrices(usedIndices.Size());
+
+                // update joints, which is stored in character context
+                if (!jointPalette.IsEmpty())
+                {
+                    // copy active matrix palette, or set identity
+                    IndexT j;
+                    for (j = 0; j < usedIndices.Size(); j++)
+                    {
+                        usedMatrices[j] = jointPalette[usedIndices[j]];
+                    }
+                }
+                else
+                {
+                    // copy active matrix palette, or set identity
+                    IndexT j;
+                    for (j = 0; j < usedIndices.Size(); j++)
+                    {
+                        usedMatrices[j] = Math::mat4();
+                    }
+                }
+                // update skinning palette
+                uint offset = CoreGraphics::SetGraphicsConstants(usedMatrices.Begin(), usedMatrices.Size());
+                renderables.nodeStates[node].resourceTableOffsets[renderables.nodeStates[node].skinningConstantsIndex] = offset;
+            }
+
+        }, characterSkinNodeIndices.Size(), 64, jobCtx, { &CharacterContext::animationCounter }, &CharacterContext::totalCompletionCounter, &CharacterContext::totalCompletionEvent);
     }
     else // If we have no jobs, just signal completion event
         CharacterContext::totalCompletionEvent.Signal();
@@ -825,50 +887,9 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
 void 
 CharacterContext::WaitForCharacterJobs(const Graphics::FrameContext& ctx)
 {
+    N_MARKER_BEGIN(WaitForCharacter, Graphics);
     CharacterContext::totalCompletionEvent.Wait();
-    const Util::Array<Util::FixedArray<Math::mat4>>& jointPalettes = characterContextAllocator.GetArray<JointPalette>();
-    const Util::Array<Util::FixedArray<Math::mat4>>& scaledJointPalettes = characterContextAllocator.GetArray<JointPaletteScaled>();
-    const Util::Array<IndexT>& characterSkinNodeIndices = characterContextAllocator.GetArray<CharacterSkinNodeIndexOffset>();
-    const Util::Array<Graphics::GraphicsEntityId> graphicsEntities = characterContextAllocator.GetArray<EntityId>();
-
-    for (IndexT i = 0; i < characterSkinNodeIndices.Size(); i++)
-    {
-        // Update skeleton constants
-        // Move the skin fragment extraction to a job and have that output the list of actually used matrices.
-        const Models::NodeInstanceRange& range = Models::ModelContext::GetModelRenderableRange(graphicsEntities[i]);
-        const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
-
-        const Util::FixedArray<Math::mat4>& jointPalette = jointPalettes[i];
-        IndexT node = range.begin + characterSkinNodeIndices[i];
-        n_assert(renderables.nodes[node]->type == Models::NodeType::CharacterSkinNodeType);
-        Models::CharacterSkinNode* sparent = reinterpret_cast<Models::CharacterSkinNode*>(renderables.nodes[node]);
-        const Util::Array<IndexT>& usedIndices = sparent->skinFragments[0].jointPalette;
-        Util::FixedArray<Math::mat4> usedMatrices(usedIndices.Size());
-
-        // update joints, which is stored in character context
-        if (!jointPalette.IsEmpty())
-        {
-            // copy active matrix palette, or set identity
-            IndexT j;
-            for (j = 0; j < usedIndices.Size(); j++)
-            {
-                usedMatrices[j] = jointPalette[usedIndices[j]];
-            }
-        }
-        else
-        {
-            // copy active matrix palette, or set identity
-            IndexT j;
-            for (j = 0; j < usedIndices.Size(); j++)
-            {
-                usedMatrices[j] = Math::mat4();
-            }
-        }
-
-        // update skinning palette
-        uint offset = CoreGraphics::SetGraphicsConstants(usedMatrices.Begin(), usedMatrices.Size());
-        renderables.nodeStates[node].resourceTableOffsets[renderables.nodeStates[node].skinningConstantsIndex] = offset;
-    }
+    N_MARKER_END();
 }
 
 //------------------------------------------------------------------------------
