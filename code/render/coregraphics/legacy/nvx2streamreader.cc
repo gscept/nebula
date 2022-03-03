@@ -9,6 +9,7 @@
 #include "resources/resourceserver.h"
 #include "coregraphics/config.h"
 #include "coregraphics/indextype.h"
+#include "coregraphics/graphicsdevice.h"
 
 #if NEBULA_LEGACY_SUPPORT
 namespace Legacy
@@ -28,10 +29,10 @@ Nvx2StreamReader::Nvx2StreamReader() :
     access(CoreGraphics::GpuBufferTypes::AccessNone),
     rawMode(false),
     mapPtr(0),
-	ibo(InvalidBufferId),
-	vbo(InvalidBufferId),
-	layout(InvalidVertexLayoutId),
-	copySourceFlag(false),
+    ibo(InvalidBufferId),
+    vbo(InvalidBufferId),
+    layout(InvalidVertexLayoutId),
+    copySourceFlag(false),
     groupDataPtr(nullptr),
     vertexDataPtr(nullptr),
     indexDataPtr(nullptr),
@@ -92,8 +93,8 @@ Nvx2StreamReader::Open(const Resources::ResourceName& name)
             this->SetupVertexBuffer(name);
             this->SetupIndexBuffer(name);
             this->UpdateGroupBoundingBoxes();
+            stream->MemoryUnmap();
         }
-        if (!this->rawMode) stream->MemoryUnmap();
         return true;
     }
     return false;
@@ -172,7 +173,7 @@ Nvx2StreamReader::ReadPrimitiveGroups()
     {
         // setup a primitive group object
         PrimitiveGroup primGroup;
-        //primGroup.SetBaseVertex(group->firstVertex);
+        primGroup.SetBaseVertex(group->firstVertex);
         primGroup.SetNumVertices(group->numVertices);
         primGroup.SetBaseIndex(group->firstTriangle * 3);
         primGroup.SetNumIndices(group->numTriangles * 3);
@@ -197,7 +198,7 @@ Nvx2StreamReader::SetupVertexComponents()
         VertexComponent::SemanticName sem;
         VertexComponent::Format fmt;
         IndexT index = 0;
-        if (vertexComponentMask & (1<<i))
+        if (this->vertexComponentMask & (1<<i))
         {
             switch (1<<i)
             {
@@ -223,7 +224,7 @@ Nvx2StreamReader::SetupVertexComponents()
                 case N2JIndices:     sem = VertexComponent::SkinJIndices; fmt = VertexComponent::Float4; break;
                 case N2JIndicesUB4:  sem = VertexComponent::SkinJIndices; fmt = VertexComponent::UByte4; break;
                 default:
-                    n_error("Invalid Nebula2 VertexComponent in Nvx2StreamReader::SetupVertexComponents");
+                    n_error("Invalid Nebula VertexComponent in Nvx2StreamReader::SetupVertexComponents");
                     sem = VertexComponent::Position;
                     fmt = VertexComponent::Float3;
                     break;
@@ -282,16 +283,33 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
     n_assert(this->numVertices > 0);    
     n_assert(this->vertexComponents.Size() > 0);
 
-    // create vertex buffer
-    BufferCreateInfo vboInfo;
-    vboInfo.name = name;
-    vboInfo.size = this->numVertices;
-    vboInfo.elementSize = VertexLayoutGetSize(this->layout); 
-    vboInfo.mode = CoreGraphics::DeviceLocal;
-    vboInfo.usageFlags = CoreGraphics::VertexBuffer | (this->copySourceFlag ? CoreGraphics::TransferBufferSource : 0);
-	vboInfo.data = this->vertexDataPtr;
-	vboInfo.dataSize = this->vertexDataSize;
-	this->vbo = CreateBuffer(vboInfo);
+    // Create temporary host-to-device buffer to copy from Host memory to GPU
+    BufferCreateInfo tempBufInfo;
+    tempBufInfo.size = this->numVertices;
+    tempBufInfo.elementSize = VertexLayoutGetSize(this->layout);
+    tempBufInfo.usageFlags = CoreGraphics::TransferBufferSource;
+    tempBufInfo.mode = CoreGraphics::HostToDevice;
+    CoreGraphics::BufferId tempBuf = CoreGraphics::CreateBuffer(tempBufInfo);
+    this->vbo = CoreGraphics::GetVertexBuffer();
+
+    // Do the actual copy
+    void* mem = CoreGraphics::BufferMap(tempBuf);
+    memcpy(mem, this->vertexDataPtr, this->vertexDataSize);
+
+    // Allocate vertices from global repository 
+    this->baseOffset = CoreGraphics::AllocateVertices(this->numVertices, tempBufInfo.elementSize);
+    CoreGraphics::BufferFlush(tempBuf, 0, this->vertexDataSize);
+
+    // Copy from host mappable buffer to device local buffer
+    CoreGraphics::BufferCopy from, to;
+    from.offset = 0;
+    to.offset = this->baseOffset;
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+    CoreGraphics::CmdCopy(cmdBuf, tempBuf, { from }, this->vbo, { to }, this->vertexDataSize);
+    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+
+    // Delete temporary buffer
+    CoreGraphics::DelayedDeleteBuffer(tempBuf);
 }
 
 //------------------------------------------------------------------------------
@@ -313,9 +331,9 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
     iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index32);
     iboInfo.mode = CoreGraphics::DeviceLocal;
     iboInfo.usageFlags = CoreGraphics::IndexBuffer | (this->copySourceFlag ? CoreGraphics::TransferBufferSource : 0);
-	iboInfo.data = this->indexDataPtr;
-	iboInfo.dataSize = this->indexDataSize;
-	this->ibo = CreateBuffer(iboInfo);
+    iboInfo.data = this->indexDataPtr;
+    iboInfo.dataSize = this->indexDataSize;
+    this->ibo = CreateBuffer(iboInfo);
 }
 
 } // namespace Legacy

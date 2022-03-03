@@ -48,7 +48,7 @@ CharacterSkinNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag,
     else if (FourCC('SFRG') == fourcc)
     {
         // SkinFragment
-        IndexT primGroupIndex = reader->ReadInt();
+        this->primitiveGroupIndex = reader->ReadInt();
         Array<IndexT> jointPalette;
         SizeT numJoints = reader->ReadInt();
         jointPalette.Reserve(numJoints);
@@ -57,7 +57,7 @@ CharacterSkinNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag,
         {
             jointPalette.Append(reader->ReadInt());
         }
-        this->AddFragment(primGroupIndex, jointPalette);
+        this->AddFragment(this->primitiveGroupIndex, jointPalette);
     }
     else
     {
@@ -83,24 +83,12 @@ CharacterSkinNode::OnFinishedLoading()
 //------------------------------------------------------------------------------
 /**
 */
-std::function<void(const CoreGraphics::CmdBufferId)>
-CharacterSkinNode::GetApplyFunction()
-{
-    return [this](const CoreGraphics::CmdBufferId id)
-    {
-        CoreGraphics::MeshBind(id, this->skinFragments[0].primGroupIndex, this->res);
-    };
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 std::function<const CoreGraphics::PrimitiveGroup()>
 CharacterSkinNode::GetPrimitiveGroupFunction()
 {
     return [this]()
     {
-        return CoreGraphics::MeshGetPrimitiveGroups(this->res)[this->skinFragments[0].primGroupIndex];
+        return this->primGroup;
     };
 }
 

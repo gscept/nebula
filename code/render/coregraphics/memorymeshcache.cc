@@ -59,31 +59,6 @@ MemoryMeshCache::Unload(const Resources::ResourceId id)
 //------------------------------------------------------------------------------
 /**
 */
-void
-MemoryMeshCache::BindMesh(const MeshId id, IndexT prim, const CoreGraphics::CmdBufferId cmdBuf)
-{
-#if _DEBUG
-    n_assert(id.resourceType == MeshIdType);
-#endif
-    __LockName(this->Allocator(), lock, Util::ArrayAllocatorAccess::Read);
-    MeshCreateInfo& inf = this->allocator.Get<0>(id.resourceId);
-
-    // setup pipeline (a bit ugly)
-    CoreGraphics::CmdSetPrimitiveTopology(cmdBuf, inf.topology);
-    CoreGraphics::CmdSetVertexLayout(cmdBuf, inf.primitiveGroups[prim].GetVertexLayout());
-
-    // bind vertex buffers
-    IndexT i;
-    for (i = 0; i < inf.streams.Size(); i++)
-        CoreGraphics::CmdSetVertexBuffer(cmdBuf, inf.streams[i].index, inf.streams[i].vertexBuffer, 0);
-
-    if (inf.indexBuffer != CoreGraphics::InvalidBufferId)
-        CoreGraphics::CmdSetIndexBuffer(cmdBuf, inf.indexBuffer, 0);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 const Util::Array<CoreGraphics::PrimitiveGroup>&
 MemoryMeshCache::GetPrimitiveGroups(const MeshId id)
 {
@@ -101,6 +76,17 @@ MemoryMeshCache::GetVertexBuffer(const MeshId id, const IndexT stream)
     __LockName(this->Allocator(), lock, Util::ArrayAllocatorAccess::Read);
     const MeshCreateInfo& inf = this->allocator.Get<0>(id.resourceId);
     return inf.streams[stream].vertexBuffer;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const uint
+MemoryMeshCache::GetVertexOffset(const MeshId id, const IndexT stream)
+{
+    __LockName(this->Allocator(), lock, Util::ArrayAllocatorAccess::Read);
+    const MeshCreateInfo& inf = this->allocator.Get<0>(id.resourceId);
+    return inf.streams[stream].offset;
 }
 
 //------------------------------------------------------------------------------

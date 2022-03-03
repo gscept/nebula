@@ -274,9 +274,8 @@ template<class ...TYPES>
 inline const uint32_t
 ArrayAllocatorSafe<TYPES...>::Size() const
 {
-    this->lock.LockRead();
+    n_assert2(this->numReaders > 0, "Size requires a read lock");
     return this->size;
-    this->lock.UnlockRead();
 }
 
 //------------------------------------------------------------------------------

@@ -34,8 +34,6 @@ public:
     /// get joint palette of a fragment
     const Util::Array<IndexT>& GetFragmentJointPalette(IndexT fragmentIndex) const;
 
-        /// Get function to apply node 
-    std::function<void(const CoreGraphics::CmdBufferId)> GetApplyFunction() override;
     /// Get function to fetch primitive group
     std::function<const CoreGraphics::PrimitiveGroup()> GetPrimitiveGroupFunction() override;
 

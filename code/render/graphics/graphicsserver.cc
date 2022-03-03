@@ -56,8 +56,9 @@ GraphicsServer::Open()
     this->displayDevice->Open();
 
     CoreGraphics::GraphicsDeviceCreateInfo gfxInfo { 
-        30_MB,                      // Graphics queue constant memory size
+        32_MB,                      // Graphics queue constant memory size
         1_MB,                       // Compute queue constant memory size
+        32_MB,                      // Vertex memory size
         {
             128_MB,                 // Device local memory block size, textures and vertex/index buffers
             32_MB,                  // Memory to use for temporary host buffers which are copied to the GPU
