@@ -71,9 +71,7 @@ public:
 
     /// get model
     static const Models::ModelId GetModel(const Graphics::ContextEntityId id);
-    /// get model node instances
-    static const Util::Array<Models::NodeType>& GetModelNodeTypes(const Graphics::ContextEntityId id);
-
+     
     struct NodeInstanceState
     {
         CoreGraphics::ResourceTableId resourceTable;

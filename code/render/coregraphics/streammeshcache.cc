@@ -140,7 +140,7 @@ StreamMeshCache::SetupMeshFromNvx2(const Ptr<Stream>& stream, const Resources::R
         MeshCreateInfo& msh = meshCache->Get<0>(res);
         n_assert(this->GetState(res) == Resources::Resource::Pending);
         auto vertexLayout = CreateVertexLayout({ nvx2Reader->GetVertexComponents() });
-        msh.streams.Append({ nvx2Reader->GetVertexBuffer(), 0 });
+        msh.streams.Append({ nvx2Reader->GetVertexBuffer(), nvx2Reader->GetBaseOffset(), 0 });
         msh.indexBuffer = nvx2Reader->GetIndexBuffer();
         msh.topology = PrimitiveTopology::TriangleList;
         msh.primitiveGroups = nvx2Reader->GetPrimitiveGroups();

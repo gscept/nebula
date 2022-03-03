@@ -433,10 +433,12 @@ Resources::ResourceStreamCache::CreateResource(const ResourceName& res, const vo
             // if loaded, run callback, otherwise just return id
             success(ret);
         }
-        else if (state == Resource::Failed && failed != nullptr)
+        else if (state == Resource::Failed)
         {
             // if failed, run callback, otherwise just return id
-            failed(ret);
+            if (failed != nullptr)
+                failed(ret);
+            ret.resourceId = this->failResourceId.resourceId;
         }
         else if (state == Resource::Pending)
         {
