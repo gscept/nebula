@@ -29,8 +29,6 @@ CharacterContext::CharacterContextAllocator CharacterContext::characterContextAl
 __ImplementContext(CharacterContext, CharacterContext::characterContextAllocator);
 
 Util::HashTable<Util::StringAtom, CoreAnimation::AnimSampleMask> CharacterContext::masks;
-Threading::AtomicCounter CharacterContext::animationCounter;
-Threading::AtomicCounter CharacterContext::totalCompletionCounter;
 Threading::Event CharacterContext::totalCompletionEvent;
 
 //------------------------------------------------------------------------------
@@ -777,9 +775,11 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
 
     if (!models.IsEmpty())
     {
+        static Threading::AtomicCounter animationCounter = 0;
+
         // Set total counter
-        n_assert(CharacterContext::animationCounter == 0);
-        CharacterContext::animationCounter = 1;
+        n_assert(animationCounter == 0);
+        animationCounter = 1;
 
         CharacterJobContext charCtx;
         charCtx.times = &times;
@@ -815,10 +815,11 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
         }
 
         // Run job
-        Jobs2::JobDispatch(EvalCharacter, models.Size(), 64, charCtx, nullptr, &CharacterContext::animationCounter, nullptr);
+        Jobs2::JobDispatch(EvalCharacter, models.Size(), 64, charCtx, nullptr, &animationCounter, nullptr);
 
-        n_assert(CharacterContext::totalCompletionCounter == 0);
-        CharacterContext::totalCompletionCounter = 1;
+        static Threading::AtomicCounter constantUpdateCounter = 0;
+        n_assert(constantUpdateCounter == 0);
+        constantUpdateCounter = 1;
 
         struct UpdateJointsContext
         {
@@ -861,21 +862,13 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
                         usedMatrices[j] = jointPalette[usedIndices[j]];
                     }
                 }
-                else
-                {
-                    // copy active matrix palette, or set identity
-                    IndexT j;
-                    for (j = 0; j < usedIndices.Size(); j++)
-                    {
-                        usedMatrices[j] = Math::mat4();
-                    }
-                }
+
                 // update skinning palette
                 uint offset = CoreGraphics::SetGraphicsConstants(usedMatrices.Begin(), usedMatrices.Size());
                 renderables.nodeStates[node].resourceTableOffsets[renderables.nodeStates[node].skinningConstantsIndex] = offset;
             }
 
-        }, characterSkinNodeIndices.Size(), 64, jobCtx, { &CharacterContext::animationCounter }, &CharacterContext::totalCompletionCounter, &CharacterContext::totalCompletionEvent);
+        }, characterSkinNodeIndices.Size(), 64, jobCtx, { &animationCounter }, &constantUpdateCounter, &CharacterContext::totalCompletionEvent);
     }
     else // If we have no jobs, just signal completion event
         CharacterContext::totalCompletionEvent.Signal();
