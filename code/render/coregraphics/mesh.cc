@@ -37,15 +37,6 @@ DestroyMesh(const MeshId id)
 //------------------------------------------------------------------------------
 /**
 */
-void
-MeshBind(const CoreGraphics::CmdBufferId cmdBuf, IndexT prim, const MeshId id)
-{
-    meshCache->BindMesh(id, prim, cmdBuf);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 const Util::Array<CoreGraphics::PrimitiveGroup>&
 MeshGetPrimitiveGroups(const MeshId id)
 {
@@ -59,6 +50,15 @@ const BufferId
 MeshGetVertexBuffer(const MeshId id, const IndexT stream)
 {
     return meshCache->GetVertexBuffer(id, stream);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const uint
+MeshGetVertexOffset(const MeshId id, const IndexT stream)
+{
+    return meshCache->GetVertexOffset(id, stream);
 }
 
 //------------------------------------------------------------------------------

@@ -78,6 +78,7 @@ CharacterContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Re
     characterContextAllocator.Set<Loaded>(cid.id, NoneLoaded);
     characterContextAllocator.Set<EntityId>(cid.id, id);
 
+
     // check to make sure we registered this entity for observation, then get the visibility context
     const ContextEntityId visId = Visibility::ObservableContext::GetContextId(id);
     n_assert_fmt(visId != InvalidContextEntityId, "Entity %d needs to be setup as observerable before character!", id.HashCode());
@@ -99,9 +100,9 @@ CharacterContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Re
         }
     }
 
-    characterContextAllocator.Get<SkeletonId>(cid.id) = Resources::CreateResource(skeleton, tag, [cid, id](Resources::ResourceId rid)
+    characterContextAllocator.Get<SkeletonId>(cid.id) = Resources::CreateResource(skeleton, tag, [cid, id, skeleton](Resources::ResourceId rid)
         {
-            characterContextAllocator.Get<SkeletonId>(cid.id) = rid.As<Characters::SkeletonId>();
+            characterContextAllocator.Set<SkeletonId>(cid.id, rid.As<Characters::SkeletonId>());
             characterContextAllocator.Get<Loaded>(cid.id) |= SkeletonLoaded;
 
             const Util::FixedArray<CharacterJoint>& joints = Characters::SkeletonGetJoints(rid.As<Characters::SkeletonId>());
@@ -120,6 +121,7 @@ CharacterContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Re
                 SkeletonJobJoint& jobJoint = characterContextAllocator.Get<JobJoints>(cid.id)[i];
                 jobJoint.parentJointIndex = joint.parentJointIndex;
             }
+
         }, nullptr, true);
 
     characterContextAllocator.Get<AnimationId>(cid.id) = Resources::CreateResource(animation, tag, [cid, id, supportBlending](Resources::ResourceId rid)

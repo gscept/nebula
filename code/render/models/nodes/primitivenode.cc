@@ -17,8 +17,7 @@ namespace Models
 /**
 */
 PrimitiveNode::PrimitiveNode() :
-    primitiveGroupIndex(InvalidIndex),
-    primitiveGroupIndexLoaded(0)
+    primitiveGroupIndex(InvalidIndex)
 {
     this->type = PrimitiveNodeType;
     this->bits = HasTransformBit | HasStateBit;
@@ -40,7 +39,15 @@ PrimitiveNode::GetApplyFunction()
 {
     return [this](const CoreGraphics::CmdBufferId id)
     {
-        CoreGraphics::MeshBind(id, this->primitiveGroupIndex, this->res);
+        // setup pipeline (a bit ugly)
+        CoreGraphics::CmdSetPrimitiveTopology(id, this->topology);
+        CoreGraphics::CmdSetVertexLayout(id, this->vertexLayout);
+
+        // bind vertex buffers
+        CoreGraphics::CmdSetVertexBuffer(id, 0, this->vbo, this->vboOffset);
+
+        if (this->ibo != CoreGraphics::InvalidBufferId)
+            CoreGraphics::CmdSetIndexBuffer(id, this->ibo, this->iboOffset);
     };
 }
 
@@ -52,7 +59,7 @@ PrimitiveNode::GetPrimitiveGroupFunction()
 {
     return [this]()
     {
-        return CoreGraphics::MeshGetPrimitiveGroups(this->res)[this->primitiveGroupIndex];
+        return this->primGroup;
     };
 }
 
@@ -61,25 +68,29 @@ PrimitiveNode::GetPrimitiveGroupFunction()
 */
 bool
 PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate)
-{
+{         
     bool retval = true;
     if (FourCC('MESH') == fourcc)
     {
-        // get mesh resource
+        // Get mesh resource
         Resources::ResourceName meshName = reader->ReadString();
 
-        // add as pending resource in loader
+        // Load directly, since the model is already loaded on a thread, this is fine
         this->primitiveGroupIndex = 0;
-        this->res = Resources::CreateResource(meshName, tag, [this](Resources::ResourceId id)
-            {
-                this->res = id;
-                this->primitiveGroupIndex = this->primitiveGroupIndexLoaded;
-            }, nullptr, immediate);
+        this->res = Resources::CreateResource(meshName, tag, nullptr, nullptr, true);
+
+        this->vbo = CoreGraphics::MeshGetVertexBuffer(this->res, 0);
+        this->ibo = CoreGraphics::MeshGetIndexBuffer(this->res);
+        this->topology = CoreGraphics::MeshGetTopology(this->res);
+        this->primGroup = CoreGraphics::MeshGetPrimitiveGroups(this->res)[this->primitiveGroupIndex];
+        this->vertexLayout = this->primGroup.GetVertexLayout();
+        this->vboOffset = CoreGraphics::MeshGetVertexOffset(this->res, 0);
+        this->iboOffset = 0;
     }
     else if (FourCC('PGRI') == fourcc)
     {
         // primitive group index
-        this->primitiveGroupIndexLoaded = reader->ReadUInt();
+        this->primitiveGroupIndex = reader->ReadUInt();
     }
     else
     {

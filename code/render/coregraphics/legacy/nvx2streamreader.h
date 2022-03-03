@@ -66,6 +66,8 @@ public:
     SizeT GetVertexWidth() const;
     /// get number of edges
     SizeT GetNumEdges() const;
+    /// Get base offset
+    SizeT GetBaseOffset() const;
     /// get vertex components
     const Util::Array<CoreGraphics::VertexComponent>& GetVertexComponents() const;
 
@@ -142,6 +144,7 @@ private:
     uint numIndices;
     uint numEdges;
     uint vertexComponentMask;
+    uint baseOffset;
     Util::Array<CoreGraphics::VertexComponent> vertexComponents;   
 };
 
@@ -242,6 +245,15 @@ inline SizeT
 Nvx2StreamReader::GetNumEdges() const
 {
     return this->numEdges;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline SizeT 
+Nvx2StreamReader::GetBaseOffset() const
+{
+    return this->baseOffset;
 }
 
 //------------------------------------------------------------------------------

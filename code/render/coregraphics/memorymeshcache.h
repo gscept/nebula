@@ -30,12 +30,12 @@ public:
     /// unload resource
     void Unload(const Resources::ResourceId id);
 
-    /// bind mesh
-    void BindMesh(const MeshId id, IndexT prim, const CoreGraphics::CmdBufferId cmdBuf);
     /// get primitive groups from mesh
     const Util::Array<CoreGraphics::PrimitiveGroup>& GetPrimitiveGroups(const MeshId id);
     /// get vertex buffer
     const BufferId GetVertexBuffer(const MeshId id, const IndexT stream);
+    /// Get vertex offset
+    const uint GetVertexOffset(const MeshId id, const IndexT stream);
     /// get index buffer
     const BufferId GetIndexBuffer(const MeshId id);
     /// get topology
