@@ -1439,20 +1439,20 @@ SetGraphicsConstantsInternal(const void* data, SizeT size)
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
     n_assert(sub.allowConstantAllocation);
 
-    // no matter how we spin it
+    // Align new end and allocate memory range
     int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
     int ret = Threading::Interlocked::Add(&sub.cboGfxEndAddress, alignedSize);
 
-    // if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
+    // Check if we are over allocating
     if (ret + alignedSize >= state.globalGraphicsConstantBufferMaxValue * int(state.currentBufferedFrameIndex + 1))
     {
         n_error("Over allocation of graphics constant memory! Memory will be overwritten!\n");
 
-        // return the beginning of the buffer, will definitely stomp the memory!
+        // Return dummy value
         return ret;
     }
 
-    // just bump the current frame submission pointer
+    // Update buffer and return the offset
     BufferUpdate(state.globalGraphicsConstantStagingBuffer, data, size, ret);
     return ret;
 }
@@ -1466,26 +1466,27 @@ SetComputeConstantsInternal(const void* data, SizeT size)
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
     n_assert(sub.allowConstantAllocation);
 
-    // no matter how we spin it
+    // Align new end and allocate memory range
     int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
     int ret = Threading::Interlocked::Add(&sub.cboComputeEndAddress, alignedSize);
 
-    // if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
+    // Check if we are over allocating
     if (ret + alignedSize >= state.globalComputeConstantBufferMaxValue * int(state.currentBufferedFrameIndex + 1))
     {
         n_error("Over allocation of compute constant memory! Memory will be overwritten!\n");
 
-        // return the beginning of the buffer, will definitely stomp the memory!
+        // Return dummy value
         return ret;
     }
 
-    // just bump the current frame submission pointer
+    // Update buffer
     BufferUpdate(state.globalComputeConstantStagingBuffer, data, size, ret);
     return ret;
 }
 
 //------------------------------------------------------------------------------
 /**
+    Set constants for preallocated memory
 */
 void
 SetGraphicsConstantsInternal(uint offset, const void* data, SizeT size)
@@ -1495,6 +1496,7 @@ SetGraphicsConstantsInternal(uint offset, const void* data, SizeT size)
 
 //------------------------------------------------------------------------------
 /**
+    Set constants for preallocated memory
 */
 void 
 SetComputeConstantsInternal(uint offset, const void* data, SizeT size)
@@ -1511,22 +1513,20 @@ AllocateGraphicsConstantBufferMemory(uint size)
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
     n_assert(sub.allowConstantAllocation);
 
-    // no matter how we spin it
-    uint ret = sub.cboGfxEndAddress;
-    uint newEnd = Math::align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+    // Calculate aligned upper bound
+    int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
 
-    // if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
-    if (newEnd >= state.globalGraphicsConstantBufferMaxValue * (state.currentBufferedFrameIndex + 1))
+    // Allocate the memory range
+    int ret = Threading::Interlocked::Add(&sub.cboGfxEndAddress, alignedSize);
+
+    // If we have to wrap around, or we are fingering on the range of the next frame submission buffer...
+    if (ret + alignedSize >= state.globalGraphicsConstantBufferMaxValue * int(state.currentBufferedFrameIndex + 1))
     {
-        n_error("Over allocation of graphics constant memory! Memory will be overwritten!\n");
+        n_error("Over allocation of compute constant memory! Memory will be overwritten!\n");
 
-        // return the beginning of the buffer, will definitely stomp the memory!
-        ret = state.globalGraphicsConstantBufferMaxValue * state.currentBufferedFrameIndex;
-        newEnd = Math::align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+        // Return dummy value
+        return ret;
     }
-
-    // just bump the current frame submission pointer
-    sub.cboGfxEndAddress = newEnd;
 
     return ret;
 }
@@ -1549,22 +1549,20 @@ AllocateComputeConstantBufferMemory(uint size)
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
     n_assert(sub.allowConstantAllocation);
 
-    // no matter how we spin it
-    uint ret = sub.cboComputeEndAddress;
-    uint newEnd = Math::align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+    // Calculate aligned upper bound
+    int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
 
-    // if we have to wrap around, or we are fingering on the range of the next frame submission buffer...
-    if (newEnd >= state.globalComputeConstantBufferMaxValue * (state.currentBufferedFrameIndex + 1))
+    // Allocate the memory range
+    int ret = Threading::Interlocked::Add(&sub.cboComputeEndAddress, alignedSize);
+
+    // If we have to wrap around, or we are fingering on the range of the next frame submission buffer...
+    if (ret + alignedSize >= state.globalComputeConstantBufferMaxValue * int(state.currentBufferedFrameIndex + 1))
     {
         n_error("Over allocation of compute constant memory! Memory will be overwritten!\n");
 
-        // return the beginning of the buffer, will definitely stomp the memory!
-        ret = state.globalComputeConstantBufferMaxValue * state.currentBufferedFrameIndex;
-        newEnd = Math::align(ret + size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+        // Return dummy value
+        return ret;
     }
-
-    // just bump the current frame submission pointer
-    sub.cboComputeEndAddress = newEnd;
 
     return ret;
 }
