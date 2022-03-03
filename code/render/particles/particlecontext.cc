@@ -49,6 +49,8 @@ struct
     Util::Array<CoreGraphics::VertexComponent> particleComponents;
     CoreGraphics::VertexLayoutId layout;
     CoreGraphics::PrimitiveGroup primGroup;
+
+    SizeT numParticlesThisFrame;
 } state;
 
 //------------------------------------------------------------------------------
@@ -418,6 +420,72 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
 
         // Flush queued work
         Jobs2::JobEndSequence();
+
+        Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
+        const Util::Array<Graphics::GraphicsEntityId>& models = particleContextAllocator.GetArray<ModelContextId>();
+        state.numParticlesThisFrame = 0;
+
+        struct ParticleConstantContext
+        {
+            Util::Array<Util::Array<ParticleSystemRuntime>>* allSystems;
+            const Util::Array<Graphics::GraphicsEntityId>* models;
+        } jobCtx;
+        jobCtx.allSystems = &allSystems;
+        jobCtx.models = &models;
+
+        static Threading::AtomicCounter particleConstantUpdateCounter = 0;
+        n_assert(particleConstantUpdateCounter == 0);
+        particleConstantUpdateCounter = 1;
+
+        Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+        {
+            N_SCOPE(ParticleConstantUpdate, Graphics);
+            auto context = static_cast<ParticleConstantContext*>(ctx);
+            const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
+
+            for (IndexT i = 0; i < groupSize; i++)
+            {
+                IndexT index = i + invocationOffset;
+                if (index >= totalJobs)
+                    return;
+
+                const Util::Array<ParticleSystemRuntime>& systems = context->allSystems->Get(index);
+                const NodeInstanceRange& stateRange = Models::ModelContext::GetModelRenderableRange(context->models->Get(index));
+
+                // TODO: Can't we make this a part of the particle chain system job chain? Run one job per particle system, and also update constants and whatnot there?
+                IndexT j;
+                for (j = 0; j < systems.Size(); j++)
+                {
+                    ParticleSystemRuntime& system = systems[j];
+                    system.boundingBox = system.outputData.bbox;
+                    if (system.outputData.numLivingParticles > 0)
+                    {
+                        renderables.nodeBoundingBoxes[stateRange.begin + system.renderableIndex] = system.outputData.bbox;
+                        SetBits(renderables.nodeFlags[stateRange.begin + system.renderableIndex], NodeInstance_Active);
+                        Threading::Interlocked::Add(&state.numParticlesThisFrame, system.outputData.numLivingParticles);
+
+                        ParticleSystemNode* pnode = reinterpret_cast<ParticleSystemNode*>(renderables.nodes[stateRange.begin + system.renderableIndex]);
+
+                        ::Particle::ParticleObjectBlock block;
+
+                        // update system transform
+                        system.transform.store(block.EmitterTransform);
+
+                        // update parameters
+                        block.Billboard = pnode->emitterAttrs.GetBool(EmitterAttrs::Billboard);
+                        block.NumAnimPhases = pnode->emitterAttrs.GetInt(EmitterAttrs::AnimPhases);
+                        block.AnimFramesPerSecond = pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond);
+
+                        // allocate block
+                        uint offset = CoreGraphics::SetGraphicsConstants(block);
+                        renderables.nodeStates[stateRange.begin + system.renderableIndex].resourceTableOffsets[renderables.nodeStates[stateRange.begin + system.renderableIndex].particleConstantsIndex] = offset;
+                    }
+                    else
+                        UnsetBits(renderables.nodeFlags[stateRange.begin + system.renderableIndex], NodeInstance_Active);
+                }
+            }
+
+        }, allSystems.Size(), 128, jobCtx, { &ParticleContext::totalCompletionCounter }, &particleConstantUpdateCounter, &ParticleContext::totalCompletionEvent);
     }
 
     // In case we have 0 systems but have the context running, just signal the event immediately 
@@ -470,57 +538,15 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
     const Util::Array<Graphics::GraphicsEntityId>& models = particleContextAllocator.GetArray<ModelContextId>();
     const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
 
-    SizeT numParticlesThisFrame = 0;
-
     // get frame to modify
     IndexT frame = CoreGraphics::GetBufferedFrameIndex();
 
-    // walk through all particles and update their bounding boxes 
-    IndexT i;
-    for (i = 0; i < allSystems.Size(); i++)
-    {
-        const Util::Array<ParticleSystemRuntime>& systems = allSystems[i];
-        const NodeInstanceRange& stateRange = Models::ModelContext::GetModelRenderableRange(models[i]);
-
-        // TODO: Can't we make this a part of the particle chain system job chain? Run one job per particle system, and also update constants and whatnot there?
-        IndexT j;
-        for (j = 0; j < systems.Size(); j++)
-        {
-            ParticleSystemRuntime& system = systems[j];
-            system.boundingBox = system.outputData.bbox;
-            if (system.outputData.numLivingParticles > 0)
-            {
-                renderables.nodeBoundingBoxes[stateRange.begin + system.renderableIndex] = system.outputData.bbox;
-                SetBits(renderables.nodeFlags[stateRange.begin + system.renderableIndex], NodeInstance_Active);
-                numParticlesThisFrame += system.outputData.numLivingParticles;
-
-                ParticleSystemNode* pnode = reinterpret_cast<ParticleSystemNode*>(renderables.nodes[stateRange.begin + system.renderableIndex]);
-
-                ::Particle::ParticleObjectBlock block;
-
-                // update system transform
-                system.transform.store(block.EmitterTransform);
-
-                // update parameters
-                block.Billboard = pnode->emitterAttrs.GetBool(EmitterAttrs::Billboard);
-                block.NumAnimPhases = pnode->emitterAttrs.GetInt(EmitterAttrs::AnimPhases);
-                block.AnimFramesPerSecond = pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond);
-
-                // allocate block
-                uint offset = CoreGraphics::SetGraphicsConstants(block);
-                renderables.nodeStates[stateRange.begin + system.renderableIndex].resourceTableOffsets[renderables.nodeStates[stateRange.begin + system.renderableIndex].particleConstantsIndex] = offset;
-            }
-            else
-                UnsetBits(renderables.nodeFlags[stateRange.begin + system.renderableIndex], NodeInstance_Active);
-        }
-    }
-
     // Check if we need to realloc buffers
-    if (numParticlesThisFrame * state.vertexSize > state.vboSizes[frame])
+    if (state.numParticlesThisFrame * state.vertexSize > state.vboSizes[frame])
     {
         CoreGraphics::BufferCreateInfo vboInfo;
         vboInfo.name = "Particle Vertex Buffer";
-        vboInfo.size = numParticlesThisFrame;
+        vboInfo.size = state.numParticlesThisFrame;
         vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.layout);
         vboInfo.mode = CoreGraphics::HostToDevice;
         vboInfo.usageFlags = CoreGraphics::VertexBuffer;
@@ -535,7 +561,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
         }
         state.vbos[frame] = CoreGraphics::CreateBuffer(vboInfo);
         state.mappedVertices[frame] = (byte*)CoreGraphics::BufferMap(state.vbos[frame]);
-        state.vboSizes[frame] = numParticlesThisFrame * state.vertexSize;
+        state.vboSizes[frame] = state.numParticlesThisFrame * state.vertexSize;
     }
 
     IndexT baseVertex = 0;
@@ -543,6 +569,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
     // Walk through systems again and update index and vertex buffers
     float* buf = (float*)state.mappedVertices[frame];
     Math::vec4 tmp;
+    IndexT i;
     for (i = 0; i < allSystems.Size(); i++)
     {
         const Util::Array<ParticleSystemRuntime>& systems = allSystems[i];
@@ -583,7 +610,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
     }
 
     // flush changes
-    if (numParticlesThisFrame > 0)
+    if (state.numParticlesThisFrame > 0)
         CoreGraphics::BufferFlush(state.vbos[frame]);
 }
 
@@ -900,10 +927,7 @@ ParticleContext::RunParticleStep(ParticleRuntime& rt, ParticleSystemRuntime& srt
         // A bit of a trick for the particle context since we might have N jobs per particle system,
         // and we can have M systems, so we need to keep track of a global counter and event.
         // Decrement total counter, and if last job, signal event
-        if (Threading::Interlocked::Decrement(&ParticleContext::totalCompletionCounter) == 0)
-        {
-            ParticleContext::totalCompletionEvent.Signal();
-        }
+        Threading::Interlocked::Decrement(&ParticleContext::totalCompletionCounter);
     }, 1, jobContext);
 
     // Increment total counter
