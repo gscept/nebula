@@ -862,7 +862,15 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
                         usedMatrices[j] = jointPalette[usedIndices[j]];
                     }
                 }
-
+                else
+                {
+                    // copy active matrix palette, or set identity
+                    IndexT j;
+                    for (j = 0; j < usedIndices.Size(); j++)
+                    {
+                        usedMatrices[j] = Math::mat4();
+                    }
+                }
                 // update skinning palette
                 uint offset = CoreGraphics::SetGraphicsConstants(usedMatrices.Begin(), usedMatrices.Size());
                 renderables.nodeStates[node].resourceTableOffsets[renderables.nodeStates[node].skinningConstantsIndex] = offset;
