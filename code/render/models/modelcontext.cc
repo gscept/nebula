@@ -28,6 +28,8 @@ ModelContext::ModelContextAllocator ModelContext::modelContextAllocator;
 ModelContext::ModelInstance ModelContext::nodeInstances;
 __ImplementContext(ModelContext, ModelContext::modelContextAllocator);
 
+Threading::Event ModelContext::completionEvent;
+
 Threading::LockFreeQueue<std::function<void()>> setupCompleteQueue;
 
 //------------------------------------------------------------------------------
@@ -57,7 +59,7 @@ ModelContext::Create()
     setupCompleteQueue.Resize(65535);
 
     __bundle.OnBegin = ModelContext::UpdateTransforms;
-    __bundle.OnBeforeFrame = ModelContext::UpdateConstants;
+    __bundle.OnWaitForWork = ModelContext::WaitForWork;
     __bundle.StageBits = &ModelContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = ModelContext::OnRenderDebug;
@@ -380,111 +382,176 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
     Graphics::GraphicsEntityId lodCamera = Graphics::CameraContext::GetLODCamera();
     const Math::mat4& cameraTransform = inverse(Graphics::CameraContext::GetTransform(lodCamera));
 
-    // TODO: Make each of these loops into a job and put them all in a job chain
+    static Threading::AtomicCounter transformUpdateCounter = 0;
+    n_assert(transformUpdateCounter == 0);
+    transformUpdateCounter = 1;
 
-
-    // Go through transforms and perform hierarchical multiplication
-    SizeT i;
-    for (i = 0; i < nodeInstanceTransformRanges.Size(); i++)
+    struct TransformUpdateContext
     {
-        const NodeInstanceRange& transformRange = nodeInstanceTransformRanges[i];
-        const Util::Array<uint32>& roots = nodeInstanceRoots[i];
-        if (hasPending[i])
-        {
-            // The pending transform is the root of the model
-            const Math::mat4 transform = pending[i];
-            hasPending[i] = false;
+        const Util::Array<NodeInstanceRange>* nodeInstanceTransformRanges;
+        const Util::Array<Util::Array<uint32>>* nodeInstanceRoots;
+        Util::Array<Math::mat4>* pending;
+        Util::Array<bool>* hasPending;
+    } transCtx;
+    transCtx.nodeInstanceTransformRanges = &nodeInstanceTransformRanges;
+    transCtx.nodeInstanceRoots = &nodeInstanceRoots;
+    transCtx.pending = &pending;
+    transCtx.hasPending = &hasPending;
 
-            // Set root transform
+    Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+    {
+        N_SCOPE(ModelTransformUpdate, Graphics);
+        auto context = static_cast<TransformUpdateContext*>(ctx);
+        for (IndexT i = 0; i < groupSize; i++)
+        {
+            IndexT index = i + invocationOffset;
+            if (index >= totalJobs)
+                return;
+
+            const NodeInstanceRange& transformRange = context->nodeInstanceTransformRanges->Get(index);
+            const Util::Array<uint32>& roots = context->nodeInstanceRoots->Get(index);
+            if (context->hasPending->Get(index))
+            {
+                // The pending transform is the root of the model
+                const Math::mat4 transform = context->pending->Get(index);
+                context->hasPending->Get(index) = false;
+
+                // Set root transform
+                SizeT j;
+                for (j = 0; j < roots.Size(); j++)
+                    nodeInstances.transformable.nodeTransforms[transformRange.begin + roots[j]] = transform;
+
+                // Update transforms
+                for (j = transformRange.begin + 1; j < transformRange.end; j++)
+                {
+                    uint32 parent = nodeInstances.transformable.nodeParents[j];
+                    n_assert(parent != UINT32_MAX);
+                    Math::mat4 parentTransform = nodeInstances.transformable.nodeTransforms[transformRange.begin + parent];
+                    Math::mat4 orig = nodeInstances.transformable.origTransforms[j];
+                    nodeInstances.transformable.nodeTransforms[j] = orig * parentTransform;
+                }
+            }
+        }
+    }, nodeInstanceTransformRanges.Size(), 256, transCtx, nullptr, &transformUpdateCounter, nullptr);
+
+    static Threading::AtomicCounter lodUpdateCounter = 0;
+    n_assert(lodUpdateCounter == 0);
+    lodUpdateCounter = 1;
+
+    struct LodUpdateContext
+    {
+        const Util::Array<NodeInstanceRange>* nodeInstanceTransformRanges;
+        const Util::Array<NodeInstanceRange>* nodeInstanceStateRanges;
+        Util::Array<Math::bbox>* instanceBoxes;
+        Math::mat4 cameraTransform;
+    } renderCtx;
+    renderCtx.nodeInstanceTransformRanges = &nodeInstanceTransformRanges;
+    renderCtx.nodeInstanceStateRanges = &nodeInstanceStateRanges;
+    renderCtx.instanceBoxes = &instanceBoxes;
+    renderCtx.cameraTransform = cameraTransform;
+
+    Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+    {
+        N_SCOPE(ModelLodUpdate, Graphics);
+        auto context = static_cast<LodUpdateContext*>(ctx);
+        for (IndexT i = 0; i < groupSize; i++)
+        {
+            IndexT index = i + invocationOffset;
+            if (index >= totalJobs)
+                return;
+
+            const NodeInstanceRange& stateRange = context->nodeInstanceStateRanges->Get(index);
+            const NodeInstanceRange& transformRange = context->nodeInstanceTransformRanges->Get(index);
             SizeT j;
-            for (j = 0; j < roots.Size(); j++)
-                nodeInstances.transformable.nodeTransforms[transformRange.begin + roots[j]] = transform;
-
-            // Update transforms
-            for (j = transformRange.begin + 1; j < transformRange.end; j++)
+            for (j = stateRange.begin; j < stateRange.end; j++)
             {
-                uint32 parent = nodeInstances.transformable.nodeParents[j];
-                n_assert(parent != UINT32_MAX);
-                Math::mat4 parentTransform = nodeInstances.transformable.nodeTransforms[transformRange.begin + parent];
-                Math::mat4 orig = nodeInstances.transformable.origTransforms[j];
-                nodeInstances.transformable.nodeTransforms[j] = orig * parentTransform;
-            }
-        }
-    }
+                Math::mat4 transform = nodeInstances.transformable.nodeTransforms[transformRange.begin + nodeInstances.renderable.nodeTransformIndex[j]];
+                Math::bbox box = nodeInstances.renderable.origBoundingBoxes[j];
+                box.affine_transform(transform);
+                nodeInstances.renderable.nodeBoundingBoxes[j] = box;
 
-    // Now go through state nodes and update their bounding boxes
-    for (i = 0; i < nodeInstanceStateRanges.Size(); i++)
-    {
-        const NodeInstanceRange& stateRange = nodeInstanceStateRanges[i];
-        const NodeInstanceRange& transformRange = nodeInstanceTransformRanges[i];
-        SizeT j;
-        for (j = stateRange.begin; j < stateRange.end; j++)
-        {
-            Math::mat4 transform = nodeInstances.transformable.nodeTransforms[transformRange.begin + nodeInstances.renderable.nodeTransformIndex[j]];
-            Math::bbox box = nodeInstances.renderable.origBoundingBoxes[j];
-            box.affine_transform(transform);
-            nodeInstances.renderable.nodeBoundingBoxes[j] = box;
+                // calculate view vector to calculate LOD
+                Math::vec4 viewVector = context->cameraTransform.position - transform.position;
+                float viewDistance = length(viewVector);
+                float textureLod = viewDistance - 38.5f;
 
-            // calculate view vector to calculate LOD
-            Math::vec4 viewVector = cameraTransform.position - transform.position;
-            float viewDistance = length(viewVector);
-            float textureLod = viewDistance - 38.5f;
+                Models::NodeInstanceFlags& nodeFlag = nodeInstances.renderable.nodeFlags[j];
 
-            Models::NodeInstanceFlags& nodeFlag = nodeInstances.renderable.nodeFlags[j];
-
-            // Calculate if object should be culled due to LOD
-            const Util::Tuple<float, float>& lodDistances = nodeInstances.renderable.nodeLodDistances[j];
-            float lodFactor = 0.0f;
-            if (Util::Get<0>(lodDistances) < FLT_MAX && Util::Get<1>(lodDistances) < FLT_MAX)
-            {
-                lodFactor = (viewDistance - (Util::Get<0>(lodDistances) + 1.5f)) / (Util::Get<1>(lodDistances) - (Util::Get<0>(lodDistances) + 1.5f));
-                if (viewDistance >= Util::Get<0>(lodDistances) && viewDistance < Util::Get<1>(lodDistances))
-                    nodeFlag = SetBits(nodeFlag, Models::NodeInstance_LodActive);
+                // Calculate if object should be culled due to LOD
+                const Util::Tuple<float, float>& lodDistances = nodeInstances.renderable.nodeLodDistances[j];
+                float lodFactor = 0.0f;
+                if (Util::Get<0>(lodDistances) < FLT_MAX && Util::Get<1>(lodDistances) < FLT_MAX)
+                {
+                    lodFactor = (viewDistance - (Util::Get<0>(lodDistances) + 1.5f)) / (Util::Get<1>(lodDistances) - (Util::Get<0>(lodDistances) + 1.5f));
+                    if (viewDistance >= Util::Get<0>(lodDistances) && viewDistance < Util::Get<1>(lodDistances))
+                        nodeFlag = SetBits(nodeFlag, Models::NodeInstance_LodActive);
+                    else
+                        nodeFlag = UnsetBits(nodeFlag, Models::NodeInstance_LodActive);
+                }
                 else
-                    nodeFlag = UnsetBits(nodeFlag, Models::NodeInstance_LodActive);
+                    // If not, make the lod active by default
+                    nodeFlag = SetBits(nodeFlag, Models::NodeInstance_LodActive);
+
+                // Set LOD factor for dithering and other shader effects
+                nodeInstances.renderable.nodeLods[j] = lodFactor;
+
+                // Notify materials system this LOD might be used (this is a bit shitty in comparison to actually using texture sampling feedback)
+                Materials::materialCache->SetMaxLOD(nodeInstances.renderable.nodeSurfaceResources[j], textureLod);
             }
-            else
-                // If not, make the lod active by default
-                nodeFlag = SetBits(nodeFlag, Models::NodeInstance_LodActive);
-
-            // Set LOD factor for dithering and other shader effects
-            nodeInstances.renderable.nodeLods[j] = lodFactor;
-
-            // Notify materials system this LOD might be used (this is a bit shitty in comparison to actually using texture sampling feedback)
-            Materials::materialCache->SetMaxLOD(nodeInstances.renderable.nodeSurfaceResources[j], textureLod);
         }
-    }
+    }, nodeInstanceStateRanges.Size(), 256, renderCtx, { &transformUpdateCounter }, &lodUpdateCounter, nullptr);
+
+    static Threading::AtomicCounter constantsUpdateCounter = 0;
+    n_assert(constantsUpdateCounter == 0);
+    constantsUpdateCounter = 1;
+
+    struct ConstantUpdateContext
+    {
+        const Util::Array<NodeInstanceRange>* nodeInstanceTransformRanges;
+        const Util::Array<NodeInstanceRange>* nodeInstanceStateRanges;
+    };
+
+    Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+    {
+        N_SCOPE(ModelConstantUpdate, Graphics);
+        auto context = static_cast<ConstantUpdateContext*>(ctx);
+        for (IndexT i = 0; i < groupSize; i++)
+        {
+            IndexT index = i + invocationOffset;
+            if (index >= totalJobs)
+                return;
+
+            const NodeInstanceRange& stateRange = context->nodeInstanceStateRanges->Get(index);
+            const NodeInstanceRange& transformRange = context->nodeInstanceTransformRanges->Get(index);
+            SizeT j;
+            for (j = stateRange.begin; j < stateRange.end; j++)
+            {
+                Math::mat4 transform = nodeInstances.transformable.nodeTransforms[transformRange.begin + nodeInstances.renderable.nodeTransformIndex[j]];
+
+                // Allocate object constants
+                ObjectsShared::ObjectBlock block;
+                transform.store(block.Model);
+                inverse(transform).store(block.InvModel);
+                block.DitherFactor = nodeInstances.renderable.nodeLods[j];
+                block.ObjectId = j;
+
+                uint offset = CoreGraphics::SetGraphicsConstants(block);
+                nodeInstances.renderable.nodeStates[j].resourceTableOffsets[nodeInstances.renderable.nodeStates[j].objectConstantsIndex] = offset;
+            }
+        }
+    }, nodeInstanceStateRanges.Size(), 256, renderCtx, { &lodUpdateCounter }, & constantsUpdateCounter, &ModelContext::completionEvent);
 }
+
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-ModelContext::UpdateConstants(const Graphics::FrameContext& ctx)
+ModelContext::WaitForWork(const Graphics::FrameContext& ctx)
 {
-    const Util::Array<NodeInstanceRange>& nodeInstanceStateRanges = modelContextAllocator.GetArray<Model_NodeInstanceStates>();
-    const Util::Array<NodeInstanceRange>& nodeInstanceTransformRanges = modelContextAllocator.GetArray<Model_NodeInstanceTransform>();
-
-    for (SizeT i = 0; i < nodeInstanceStateRanges.Size(); i++)
-    {
-        const NodeInstanceRange& stateRange = nodeInstanceStateRanges[i];
-        const NodeInstanceRange& transformRange = nodeInstanceTransformRanges[i];
-        SizeT j;
-        for (j = stateRange.begin; j < stateRange.end; j++)
-        {
-            Math::mat4 transform = nodeInstances.transformable.nodeTransforms[transformRange.begin + nodeInstances.renderable.nodeTransformIndex[j]];
-
-            // Allocate object constants
-            ObjectsShared::ObjectBlock block;
-            transform.store(block.Model);
-            inverse(transform).store(block.InvModel);
-            block.DitherFactor = nodeInstances.renderable.nodeLods[j];
-            block.ObjectId = j;
-
-            uint offset = CoreGraphics::SetGraphicsConstants(block);
-            nodeInstances.renderable.nodeStates[j].resourceTableOffsets[nodeInstances.renderable.nodeStates[j].objectConstantsIndex] = offset;
-        }
-    }
+    N_MARKER_BEGIN(WaitForModels, Graphics);
+    ModelContext::completionEvent.Wait();
+    N_MARKER_END();
 }
 
 //------------------------------------------------------------------------------
