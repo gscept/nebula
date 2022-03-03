@@ -62,8 +62,8 @@ public:
 
     /// runs before frame is updated
     static void UpdateTransforms(const Graphics::FrameContext& ctx);
-    /// runs after BeginFrame
-    static void UpdateConstants(const Graphics::FrameContext& ctx);
+    /// Wait for thread work to finish
+    static void WaitForWork(const Graphics::FrameContext& ctx);
 #ifndef PUBLIC_DEBUG    
     /// debug rendering
     static void OnRenderDebug(uint32_t flags);
@@ -160,6 +160,8 @@ private:
         bool                // transform is dirty
     > ModelContextAllocator;
     static ModelContextAllocator modelContextAllocator;
+
+    static Threading::Event completionEvent;
 
     /// allocate a new slice for this context
     static Graphics::ContextEntityId Alloc();
