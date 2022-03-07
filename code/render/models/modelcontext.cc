@@ -177,7 +177,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             nodeInstances.renderable.origBoundingBoxes.Append(sNode->boundingBox);
             nodeInstances.renderable.nodeLodDistances.Append(sNode->useLodDistances ? Util::MakeTuple(sNode->minDistance, sNode->maxDistance) : Util::MakeTuple(FLT_MAX, FLT_MAX));
             nodeInstances.renderable.nodeLods.Append(0.0f);
-            nodeInstances.renderable.nodeFlags.Append(Models::NodeInstance_Active);
+            nodeInstances.renderable.nodeFlags.Append(Models::NodeInstanceFlags::NodeInstance_Active);
             nodeInstances.renderable.nodeSurfaceResources.Append(sNode->surRes);
             nodeInstances.renderable.nodeSurfaces.Append(sNode->surface);
             nodeInstances.renderable.nodeMaterialTypes.Append(sNode->materialType);
@@ -380,7 +380,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 
     // get the lod camera
     Graphics::GraphicsEntityId lodCamera = Graphics::CameraContext::GetLODCamera();
-    const Math::mat4& cameraTransform = inverse(Graphics::CameraContext::GetTransform(lodCamera));
+    const Math::mat4& cameraTransform = Graphics::CameraContext::GetTransform(lodCamera);
 
     static Threading::AtomicCounter transformUpdateCounter = 0;
     n_assert(transformUpdateCounter == 0);
@@ -475,22 +475,25 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 float viewDistance = length(viewVector);
                 float textureLod = viewDistance - 38.5f;
 
-                Models::NodeInstanceFlags& nodeFlag = nodeInstances.renderable.nodeFlags[j];
+                Models::NodeInstanceFlags nodeFlag = nodeInstances.renderable.nodeFlags[j];
 
                 // Calculate if object should be culled due to LOD
                 const Util::Tuple<float, float>& lodDistances = nodeInstances.renderable.nodeLodDistances[j];
                 float lodFactor = 0.0f;
-                if (Util::Get<0>(lodDistances) < FLT_MAX && Util::Get<1>(lodDistances) < FLT_MAX)
+                if (Util::Get<0>(lodDistances) < FLT_MAX || Util::Get<1>(lodDistances) < FLT_MAX)
                 {
                     lodFactor = (viewDistance - (Util::Get<0>(lodDistances) + 1.5f)) / (Util::Get<1>(lodDistances) - (Util::Get<0>(lodDistances) + 1.5f));
                     if (viewDistance >= Util::Get<0>(lodDistances) && viewDistance < Util::Get<1>(lodDistances))
-                        nodeFlag = SetBits(nodeFlag, Models::NodeInstance_LodActive);
+                        nodeFlag = SetBits(nodeFlag, Models::NodeInstanceFlags::NodeInstance_LodActive);
                     else
-                        nodeFlag = UnsetBits(nodeFlag, Models::NodeInstance_LodActive);
+                        nodeFlag = UnsetBits(nodeFlag, Models::NodeInstanceFlags::NodeInstance_LodActive);
                 }
                 else
                     // If not, make the lod active by default
-                    nodeFlag = SetBits(nodeFlag, Models::NodeInstance_LodActive);
+                    nodeFlag = SetBits(nodeFlag, Models::NodeInstanceFlags::NodeInstance_LodActive);
+
+                // Set the flags back
+                nodeInstances.renderable.nodeFlags[j] = nodeFlag;
 
                 // Set LOD factor for dithering and other shader effects
                 nodeInstances.renderable.nodeLods[j] = lodFactor;

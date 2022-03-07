@@ -24,7 +24,7 @@ struct JobSyncId;
 namespace Models
 {
 
-enum NodeInstanceFlags
+enum class NodeInstanceFlags
 {
     NodeInstance_Active = N_BIT(1)              // If set, node is active to render
     , NodeInstance_LodActive = N_BIT(2)         // If set, the node's LOD is active
@@ -32,6 +32,7 @@ enum NodeInstanceFlags
     , NodeInstance_Visible = N_BIT(4)           // Set to true if any observer sees it
     , NodeInstance_Moved = N_BIT(5)
 };
+__ImplementEnumBitOperators(NodeInstanceFlags);
 
 class ModelContext : public Graphics::GraphicsContext
 {
