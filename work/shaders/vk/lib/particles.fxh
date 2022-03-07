@@ -11,22 +11,19 @@
 
 struct CornerVertex
 {
-	vec4 worldPos;
-	vec3 worldNormal;
-	vec3 worldTangent;
-	vec3 worldBinormal;
-	vec2 UV;
+    vec4 worldPos;
+    vec3 worldNormal;
+    vec3 worldTangent;
+    vec3 worldBinormal;
+    vec2 UV;
 };
 
 group(DYNAMIC_OFFSET_GROUP) shared constant ParticleObjectBlock [ string Visibility = "VS"; ]
 {
-	mat4	EmitterTransform;
-	vec4	BBoxCenter;
-	vec4	BBoxSize;
+    mat4	EmitterTransform;
 
-	int		NumAnimPhases;
-	float	AnimFramesPerSecond;
-	bool 	Billboard;
+    int		NumAnimPhases;
+    float	AnimFramesPerSecond;
 };
 
 /**
@@ -44,7 +41,7 @@ ComputeCornerVertex(
                     in float size)
 {
 
-	CornerVertex outputVert;
+    CornerVertex outputVert;
 
     // compute 2d extruded corner position
     vec2 extrude = ((corner * 2.0) - 1.0) * size;
@@ -64,32 +61,32 @@ ComputeCornerVertex(
     float du = frac(floor(Time_Random_Luminance_X.x * AnimFramesPerSecond) / NumAnimPhases);
     if (corner.x != 0)
     {
-		outputVert.UV.x = (uvMinMax.z / NumAnimPhases) + du;
+        outputVert.UV.x = (uvMinMax.z / NumAnimPhases) + du;
     }
     else
     {
-		outputVert.UV.x = (uvMinMax.x / NumAnimPhases) + du;
+        outputVert.UV.x = (uvMinMax.x / NumAnimPhases) + du;
     }
 
     if (corner.y != 0)
     {
-		outputVert.worldPos = position + worldExtrude;
-		outputVert.UV.y = uvMinMax.w;
+        outputVert.worldPos = position + worldExtrude;
+        outputVert.UV.y = uvMinMax.w;
     }
     else
     {
-		outputVert.worldPos = stretchPos + worldExtrude;
-		outputVert.UV.y = uvMinMax.y;
+        outputVert.worldPos = stretchPos + worldExtrude;
+        outputVert.UV.y = uvMinMax.y;
     }
 
     // setup normal, tangent, binormal in world space
-	vec2 viewTangent  = mul(rotMatrix, vec2(-1.0, 0.0));
-	vec2 viewBinormal = mul(rotMatrix, vec2(0.0, 1.0));
+    vec2 viewTangent  = mul(rotMatrix, vec2(-1.0, 0.0));
+    vec2 viewBinormal = mul(rotMatrix, vec2(0.0, 1.0));
 
-	outputVert.worldNormal   = EmitterTransform[2].xyz;
-	outputVert.worldTangent  = mat3(EmitterTransform) * vec3(viewTangent, 0);
-	outputVert.worldBinormal = mat3(EmitterTransform) * vec3(viewBinormal, 0);
-	return outputVert;
+    outputVert.worldNormal   = EmitterTransform[2].xyz;
+    outputVert.worldTangent  = mat3(EmitterTransform) * vec3(viewTangent, 0);
+    outputVert.worldBinormal = mat3(EmitterTransform) * vec3(viewBinormal, 0);
+    return outputVert;
 }
 
 #endif
