@@ -530,10 +530,8 @@ ENDIF()
             fips_files(
                 model.cc
                 model.h
-                modelrenderableupdatejob.cc
                 modelcontext.cc
                 modelcontext.h
-                modeltransformupdatejob.cc
                 streammodelcache.cc
                 streammodelcache.h
             )
@@ -610,8 +608,6 @@ ENDIF()
                 visibilitycontext.cc
                 visibilitycontext.h
                 visibilitydependencyjob.cc
-                #visibilitydrawlistupdatejob.cc
-                visibilitysortjob.cc
             )
         fips_dir(visibility/systems)
             fips_files(
@@ -620,7 +616,6 @@ ENDIF()
                 boxsystemjob.cc
                 bruteforcesystem.h
                 bruteforcesystem.cc
-                bruteforcesystemjob.cc
                 octreesystem.h
                 octreesystem.cc
                 octreesystemjob.cc
