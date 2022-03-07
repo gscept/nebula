@@ -173,10 +173,11 @@ Nvx2StreamReader::ReadPrimitiveGroups()
     {
         // setup a primitive group object
         PrimitiveGroup primGroup;
-        primGroup.SetBaseVertex(group->firstVertex);
+        //primGroup.SetBaseVertex(group->firstVertex);
         primGroup.SetNumVertices(group->numVertices);
         primGroup.SetBaseIndex(group->firstTriangle * 3);
         primGroup.SetNumIndices(group->numTriangles * 3);
+        primGroup.SetVertexLayout(this->layout);
         this->primGroups.Append(primGroup);
 
         // set top next group
@@ -217,8 +218,8 @@ Nvx2StreamReader::SetupVertexComponents()
                 case N2TangentB4N:   sem = VertexComponent::Tangent;      fmt = VertexComponent::Byte4N; break;
                 case N2Binormal:     sem = VertexComponent::Binormal;     fmt = VertexComponent::Float3; break;
                 case N2BinormalB4N:  sem = VertexComponent::Binormal;     fmt = VertexComponent::Byte4N; break;
-				case N2Color:        sem = VertexComponent::Color;        fmt = VertexComponent::Float4; break;
-				case N2ColorUB4N:    sem = VertexComponent::Color;        fmt = VertexComponent::UByte4N; break;
+                case N2Color:        sem = VertexComponent::Color;        fmt = VertexComponent::Float4; break;
+                case N2ColorUB4N:    sem = VertexComponent::Color;        fmt = VertexComponent::UByte4N; break;
                 case N2Weights:      sem = VertexComponent::SkinWeights;  fmt = VertexComponent::Float4; break;
                 case N2WeightsUB4N:  sem = VertexComponent::SkinWeights;  fmt = VertexComponent::UByte4N; break;
                 case N2JIndices:     sem = VertexComponent::SkinJIndices; fmt = VertexComponent::Float4; break;
