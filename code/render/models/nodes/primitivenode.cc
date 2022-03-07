@@ -76,14 +76,12 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
         Resources::ResourceName meshName = reader->ReadString();
 
         // Load directly, since the model is already loaded on a thread, this is fine
-        this->primitiveGroupIndex = 0;
+        //this->primitiveGroupIndex = 0;
         this->res = Resources::CreateResource(meshName, tag, nullptr, nullptr, true);
 
         this->vbo = CoreGraphics::MeshGetVertexBuffer(this->res, 0);
         this->ibo = CoreGraphics::MeshGetIndexBuffer(this->res);
         this->topology = CoreGraphics::MeshGetTopology(this->res);
-        this->primGroup = CoreGraphics::MeshGetPrimitiveGroups(this->res)[this->primitiveGroupIndex];
-        this->vertexLayout = this->primGroup.GetVertexLayout();
         this->vboOffset = CoreGraphics::MeshGetVertexOffset(this->res, 0);
         this->iboOffset = 0;
     }
@@ -91,6 +89,8 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
     {
         // primitive group index
         this->primitiveGroupIndex = reader->ReadUInt();
+        this->primGroup = CoreGraphics::MeshGetPrimitiveGroups(this->res)[this->primitiveGroupIndex];
+        this->vertexLayout = this->primGroup.GetVertexLayout();
     }
     else
     {
