@@ -242,7 +242,8 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 Math::ClipStatus::Type clipStatus = clipStatuses[i];
 
                 // If not visible nor active, erase item from index list
-                if (!AllBits(context->renderables->nodeFlags[index], Models::NodeInstanceFlags::NodeInstance_Active) || clipStatus == Math::ClipStatus::Outside)
+                if (!AllBits(context->renderables->nodeFlags[index], Models::NodeInstanceFlags::NodeInstance_Active | Models::NodeInstanceFlags::NodeInstance_LodActive)
+                    || clipStatus == Math::ClipStatus::Outside)
                 {
                     indexBuffer.EraseIndexSwap(i);
                     clipStatuses.EraseIndexSwap(i);
@@ -251,7 +252,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 else
                 {
                     // Set the node visible flag (use this to figure out if a node is seen by __any__ observer)
-                    context->renderables->nodeFlags[index] = SetBits(context->renderables->nodeFlags[index], Models::NodeInstance_Visible);
+                    context->renderables->nodeFlags[index] = SetBits(context->renderables->nodeFlags[index], Models::NodeInstanceFlags::NodeInstance_Visible);
                 }
 
                 // Get sort id and combine with index to get full sort id
