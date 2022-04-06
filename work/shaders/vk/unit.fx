@@ -11,6 +11,10 @@ group(BATCH_GROUP) shared constant UnitBlock
     textureHandle TeamColorMask;
     textureHandle SpecularMap;
     textureHandle RoughnessMap;
+};
+
+group(INSTANCE_GROUP) shared constant UnitInstanceBlock
+{
     vec4 TeamColor;
 };
 
