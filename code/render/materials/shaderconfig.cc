@@ -286,8 +286,7 @@ ShaderConfig::GetMaterialTextureIndex(const Util::StringAtom& name)
 const ShaderConfigVariant
 ShaderConfig::GetMaterialConstantDefault(const MaterialId sur, IndexT idx)
 {
-    auto constant = this->constants[idx];
-    return constant.def;
+    return this->constants[idx].def;
 }
 
 //------------------------------------------------------------------------------
@@ -296,7 +295,7 @@ ShaderConfig::GetMaterialConstantDefault(const MaterialId sur, IndexT idx)
 const CoreGraphics::TextureId
 ShaderConfig::GetMaterialTextureDefault(const MaterialId sur, IndexT idx)
 {
-    return (*this->materialAllocator.Get<Textures>(sur.id).Begin())[idx].defaultValue;
+    return this->textures[idx].defaultValue;
 }
 
 //------------------------------------------------------------------------------
