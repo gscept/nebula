@@ -693,7 +693,7 @@ Array<TYPE>::Append(TYPE&& elm)
 #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements);
 #endif
-    this->elements[this->count++] = std::forward<TYPE>(elm);
+    this->elements[this->count++] = std::move(elm);
 }
 
 //------------------------------------------------------------------------------

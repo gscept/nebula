@@ -38,6 +38,8 @@ class ModelContext : public Graphics::GraphicsContext
 {
     __DeclareContext();
 public:
+    struct MaterialInstanceContext;
+
     /// constructor
     ModelContext();
     /// destructor
@@ -61,6 +63,11 @@ public:
     /// get the transform for a model
     static Math::mat4 GetTransform(const Graphics::ContextEntityId id);
 
+    /// Setup material instance context
+    static MaterialInstanceContext& SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const CoreGraphics::BatchGroup::Code batch);
+    /// Allocate constant memory for instance constants in this frame
+    static CoreGraphics::ConstantBufferOffset AllocateInstanceConstants(const Graphics::GraphicsEntityId id, const Materials::BatchIndex batch);
+
     /// runs before frame is updated
     static void UpdateTransforms(const Graphics::FrameContext& ctx);
     /// Wait for thread work to finish
@@ -76,7 +83,7 @@ public:
     struct NodeInstanceState
     {
         CoreGraphics::ResourceTableId resourceTable;
-        Materials::MaterialInstanceId surfaceInstance;
+        Materials::MaterialInstanceId materialInstance;
         Util::FixedArray<uint32_t> resourceTableOffsets;
         IndexT objectConstantsIndex;
         IndexT instancingConstantsIndex;
@@ -104,10 +111,10 @@ public:
             Util::Array<uint32> nodeTransformIndex;
             Util::Array<uint64> nodeSortId;
             Util::Array<NodeInstanceFlags> nodeFlags;
-            Util::Array<Materials::MaterialResourceId> nodeSurfaceResources;
-            Util::Array<Materials::MaterialId> nodeSurfaces;
+            Util::Array<Materials::MaterialResourceId> nodeMaterialResources;
+            Util::Array<Materials::MaterialId> nodeMaterials;
             Util::Array<NodeInstanceState> nodeStates;
-            Util::Array<Materials::ShaderConfig*> nodeMaterialTypes;
+            Util::Array<Materials::ShaderConfig*> nodeShaderConfigs;
             Util::Array<Models::ModelNode*> nodes;
             Util::Array<std::function<void(const CoreGraphics::CmdBufferId)>> nodeModelApplyCallbacks;
             Util::Array<std::function<const CoreGraphics::PrimitiveGroup()>> modelNodeGetPrimitiveGroup;
@@ -119,6 +126,12 @@ public:
 #endif
         } renderable;
 
+    };
+
+    struct MaterialInstanceContext
+    {
+        Materials::BatchIndex batch;
+        SizeT constantBufferSize;
     };
 
     /// Get model node instance states
@@ -159,6 +172,8 @@ private:
         bool                // transform is dirty
     > ModelContextAllocator;
     static ModelContextAllocator modelContextAllocator;
+
+    static Util::Dictionary<Models::ModelNode*, MaterialInstanceContext> materialInstanceContexts;
 
     static Threading::Event completionEvent;
 

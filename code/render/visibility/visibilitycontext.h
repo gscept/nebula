@@ -106,7 +106,7 @@ public:
         uint32 offset;
         std::function<void(const CoreGraphics::CmdBufferId)> modelApplyCallback;
         std::function<const CoreGraphics::PrimitiveGroup()> primitiveNodeApplyCallback;
-        Materials::MaterialId surface;
+        Materials::MaterialId material;
 
 #if NEBULA_GRAPHICS_DEBUG
         Util::StringAtom nodeName;

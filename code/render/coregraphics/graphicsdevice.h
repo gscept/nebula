@@ -172,6 +172,8 @@ void SetFrameResourceTable(const CoreGraphics::ResourceTableId table);
 /// Get frame resoure table
 CoreGraphics::ResourceTableId GetFrameResourceTable();
 
+typedef uint ConstantBufferOffset;
+
 /// Unlock constants
 void UnlockConstantUpdates();
 /// Allocate range of graphics memory and set data, return offset (thread safe)
@@ -179,30 +181,34 @@ template<class TYPE> uint SetGraphicsConstants(const TYPE& data);
 /// Allocate range of graphics memory and set data as an array of elements, return offset  (thread safe)
 template<class TYPE> uint SetGraphicsConstants(const TYPE* data, SizeT elements);
 /// Set graphics constants based on pre-allocated memory  (thread safe)
-template<class TYPE> void SetGraphicsConstants(uint offset, const TYPE& data);
+template<class TYPE> void SetGraphicsConstants(ConstantBufferOffset offset, const TYPE& data);
+/// Set graphics constants based on pre-allocated memory  (thread safe)
+void SetGraphicsConstants(uint offset, const void* data, SizeT bytes);
 /// Allocate range of compute memory and set data, return offset  (thread safe)
 template<class TYPE> uint SetComputeConstants(const TYPE& data);
 /// Allocate range of graphics memory and set data as an array of elements, return offset (thread safe)
 template<class TYPE> uint SetComputeConstants(const TYPE* data, SizeT elements);
 /// Set graphics constants based on pre-allocated memory (thread safe)
-template<class TYPE> void SetComputeConstants(uint offset, const TYPE& data);
+template<class TYPE> void SetComputeConstants(ConstantBufferOffset offset, const TYPE& data);
+/// Set graphics constants based on pre-allocated memory  (thread safe)
+void SetComputeConstants(uint offset, const void* data, SizeT bytes);
 /// Lock constant updates
 void LockConstantUpdates();
 
 /// allocate range of graphics memory and set data, return offset
 int SetGraphicsConstantsInternal(const void* data, SizeT size);
 /// use pre-allocated range of memory to update graphics constants
-void SetGraphicsConstantsInternal(uint offset, const void* data, SizeT size);
+void SetGraphicsConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size);
 /// allocate range of compute memory and set data, return offset
 int SetComputeConstantsInternal(const void* data, SizeT size);
 /// use pre-allocated range of memory to update compute constants
-void SetComputeConstantsInternal(uint offset, const void* data, SizeT size);
+void SetComputeConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size);
 /// reserve range of graphics constant buffer memory and return offset
-uint AllocateGraphicsConstantBufferMemory(uint size);
+ConstantBufferOffset AllocateGraphicsConstantBufferMemory(uint size);
 /// return id to global graphics constant buffer
 CoreGraphics::BufferId GetGraphicsConstantBuffer();
 /// reserve range of compute constant buffer memory and return offset
-uint AllocateComputeConstantBufferMemory(uint size);
+ConstantBufferOffset AllocateComputeConstantBufferMemory(uint size);
 /// return id to global compute constant buffer
 CoreGraphics::BufferId GetComputeConstantBuffer();
 /// Flush constants for queue type, do this before recording any commands doing draw or dispatch
@@ -290,7 +296,7 @@ void QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::vec4& co
 /**
 */
 template<class TYPE>
-inline uint
+inline ConstantBufferOffset
 SetGraphicsConstants(const TYPE& data)
 {
     return SetGraphicsConstantsInternal(&data, sizeof(TYPE));
@@ -300,7 +306,7 @@ SetGraphicsConstants(const TYPE& data)
 /**
 */
 template<class TYPE>
-inline uint
+inline ConstantBufferOffset
 SetGraphicsConstants(const TYPE* data, SizeT elements)
 {
     return SetGraphicsConstantsInternal(data, sizeof(TYPE) * elements);
@@ -311,16 +317,25 @@ SetGraphicsConstants(const TYPE* data, SizeT elements)
 */
 template<class TYPE>
 inline void
-SetGraphicsConstants(uint offset, const TYPE& data)
+SetGraphicsConstants(ConstantBufferOffset offset, const TYPE& data)
 {
-    return SetGraphicsConstantsInternal(offset, &data, sizeof(TYPE));
+    SetGraphicsConstantsInternal(offset, &data, sizeof(TYPE));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+SetGraphicsConstants(ConstantBufferOffset offset, const void* data, SizeT bytes)
+{
+    SetGraphicsConstantsInternal(offset, data, bytes);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template<class TYPE>
-inline uint
+inline ConstantBufferOffset
 SetComputeConstants(const TYPE& data)
 {
     return SetComputeConstantsInternal(&data, sizeof(TYPE));
@@ -330,21 +345,29 @@ SetComputeConstants(const TYPE& data)
 /**
 */
 template<class TYPE> 
-inline uint 
+inline ConstantBufferOffset
 SetComputeConstants(const TYPE* data, SizeT elements)
 {
     return SetComputeConstantsInternal(data, sizeof(TYPE) * elements);
 }
-
 
 //------------------------------------------------------------------------------
 /**
 */
 template<class TYPE>
 inline void 
-SetComputeConstants(uint offset, const TYPE& data)
+SetComputeConstants(ConstantBufferOffset offset, const TYPE& data)
 {
-    return SetComputeConstantsInternal(offset, &data, sizeof(TYPE));
+    SetComputeConstantsInternal(offset, &data, sizeof(TYPE));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+SetComputeConstants(ConstantBufferOffset offset, const void* data, SizeT bytes)
+{
+    SetComputeConstantsInternal(offset, data, bytes);
 }
 
 } // namespace CoreGraphics

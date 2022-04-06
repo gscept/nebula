@@ -33,7 +33,7 @@ public:
 
     struct DrawPacket
     {
-        Materials::MaterialInstanceId surfaceInstance;
+        Materials::MaterialInstanceId materialInstance;
         SizeT numTables;
         CoreGraphics::ResourceTableId tables[NumTables];
         uint32 numOffsets[NumTables];
@@ -50,7 +50,7 @@ public:
     };
 
     /// get surface
-    const Materials::MaterialId GetSurface() const { return this->surface; };
+    const Materials::MaterialId GetSurface() const { return this->material; };
     /// trigger an LOD update
     void SetMaxLOD(const float lod);
 
@@ -65,9 +65,9 @@ protected:
     /// called when loading finished
     virtual void OnFinishedLoading();
     
-    Materials::ShaderConfig* materialType;
-    Materials::MaterialId surface;
-    Materials::MaterialResourceId surRes;
+    Materials::ShaderConfig* shaderConfig;
+    Materials::MaterialId material;
+    Materials::MaterialResourceId materialRes;
     Resources::ResourceName materialName;
 
     uint8_t objectTransformsIndex;

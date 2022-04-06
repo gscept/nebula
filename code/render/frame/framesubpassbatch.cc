@@ -77,20 +77,20 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
     {
         for (IndexT typeIdx = 0; typeIdx < types.Size(); typeIdx++)
         {
-            ShaderConfig* materialType = types[typeIdx];
-            IndexT idx = drawList->visibilityTable.FindIndex(materialType);
+            ShaderConfig* shaderConfig = types[typeIdx];
+            IndexT idx = drawList->visibilityTable.FindIndex(shaderConfig);
             if (idx != InvalidIndex)
             {
 
 #if NEBULA_GRAPHICS_DEBUG
-                CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_DARK_GREEN, materialType->GetName().AsCharPtr());
+                CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_DARK_GREEN, shaderConfig->GetName().AsCharPtr());
 #endif
 
                 // if BeginBatch returns true if this material type has a shader for this batch
-                IndexT batchIndex = materialType->BindShader(cmdBuf, batch);
+                IndexT batchIndex = shaderConfig->BindShader(cmdBuf, batch);
                 if (batchIndex != InvalidIndex)
                 {
-                    Visibility::ObserverContext::VisibilityBatchCommand visBatchCmd = drawList->visibilityTable.ValueAtIndex(materialType, idx);
+                    Visibility::ObserverContext::VisibilityBatchCommand visBatchCmd = drawList->visibilityTable.ValueAtIndex(shaderConfig, idx);
                     uint const start = visBatchCmd.packetOffset;
                     uint const end = visBatchCmd.packetOffset + visBatchCmd.numDrawPackets;
                     Visibility::ObserverContext::VisibilityModelCommand* visModelCmd = visBatchCmd.models.Begin();
@@ -111,14 +111,18 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                             CoreGraphics::CmdInsertMarker(cmdBuf, NEBULA_MARKER_DARK_DARK_GREEN, visModelCmd->nodeName.Value());
 #endif
                             // Run model setup (applies vertex/index buffer and vertex layout)
-                            visModelCmd->modelApplyCallback(cmdBuf);
                             primGroup = visModelCmd->primitiveNodeApplyCallback();
 
-                            // Bind graphics pipeline
-                            CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
+                            if (primGroup.GetNumIndices() > 0 || primGroup.GetNumVertices() > 0)
+                            {
+                                visModelCmd->modelApplyCallback(cmdBuf);
 
-                            // Apply surface
-                            materialType->ApplyMaterial(cmdBuf, batchIndex, visModelCmd->surface);
+                                // Bind graphics pipeline
+                                CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
+
+                                // Apply surface
+                                shaderConfig->ApplyMaterial(cmdBuf, batchIndex, visModelCmd->material);
+                            }
 
                             // Progress to next model command
                             visModelCmd++;
@@ -139,8 +143,11 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                         }
 
                         // Apply draw packet constants and draw
-                        instance->Apply(cmdBuf, batchIndex, materialType);
-                        CoreGraphics::CmdDraw(cmdBuf, numInstances, baseInstance, primGroup);
+                        if (primGroup.GetNumIndices() > 0 || primGroup.GetNumVertices() > 0)
+                        {
+                            instance->Apply(cmdBuf, batchIndex, shaderConfig);
+                            CoreGraphics::CmdDraw(cmdBuf, numInstances, baseInstance, primGroup);
+                        }
                     }
                 }
 
@@ -170,20 +177,20 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
     {
         for (IndexT typeIdx = 0; typeIdx < types.Size(); typeIdx++)
         {
-            ShaderConfig* materialType = types[typeIdx];
-            IndexT idx = drawList->visibilityTable.FindIndex(materialType);
+            ShaderConfig* shaderConfig = types[typeIdx];
+            IndexT idx = drawList->visibilityTable.FindIndex(shaderConfig);
             if (idx != InvalidIndex)
             {
 
 #if NEBULA_GRAPHICS_DEBUG
-                CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_DARK_GREEN, materialType->GetName().AsCharPtr());
+                CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_DARK_GREEN, shaderConfig->GetName().AsCharPtr());
 #endif
 
                 // if BeginBatch returns true if this material type has a shader for this batch
-                IndexT batchIndex = materialType->BindShader(cmdBuf, batch);
+                IndexT batchIndex = shaderConfig->BindShader(cmdBuf, batch);
                 if (batchIndex != InvalidIndex)
                 {
-                    Visibility::ObserverContext::VisibilityBatchCommand visBatchCmd = drawList->visibilityTable.ValueAtIndex(materialType, idx);
+                    Visibility::ObserverContext::VisibilityBatchCommand visBatchCmd = drawList->visibilityTable.ValueAtIndex(shaderConfig, idx);
                     uint const start = visBatchCmd.packetOffset;
                     uint const end = visBatchCmd.packetOffset + visBatchCmd.numDrawPackets;
                     Visibility::ObserverContext::VisibilityModelCommand* visModelCmd = visBatchCmd.models.Begin();
@@ -211,7 +218,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                             CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
 
                             // Apply surface
-                            materialType->ApplyMaterial(cmdBuf, batchIndex, visModelCmd->surface);
+                            shaderConfig->ApplyMaterial(cmdBuf, batchIndex, visModelCmd->material);
 
                             // Progress to next model command
                             visModelCmd++;
@@ -232,7 +239,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                         }
 
                         // Apply draw packet constants and draw
-                        instance->Apply(cmdBuf, batchIndex, materialType);
+                        instance->Apply(cmdBuf, batchIndex, shaderConfig);
                         CoreGraphics::CmdDraw(cmdBuf, baseNumInstances * numInstances, baseBaseInstance + baseInstance, primGroup);
                     }
                 }
