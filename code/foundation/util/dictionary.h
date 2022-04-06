@@ -61,8 +61,8 @@ public:
     IndexT Add(const KeyValuePair<KEYTYPE, VALUETYPE>& kvp);
     /// add a key and associated value
     IndexT Add(const KEYTYPE& key, const VALUETYPE& value);
-    /// creates a new entry of VALUETYPE if key does not exist, 
-    VALUETYPE& AddUnique(const KEYTYPE& key);
+    /// creates a new entry of VALUETYPE if key does not exist, or returns the existing element
+    VALUETYPE& Emplace(const KEYTYPE& key);
     /// end a bulk insert (this will sort the internal array)
     void EndBulkAdd();
     /// merge two dictionaries
@@ -302,7 +302,7 @@ Dictionary<KEYTYPE, VALUETYPE>::Add(const KEYTYPE& key, const VALUETYPE& value)
 */
 template<class KEYTYPE, class VALUETYPE>
 inline VALUETYPE&
-Dictionary<KEYTYPE, VALUETYPE>::AddUnique(const KEYTYPE& key)
+Dictionary<KEYTYPE, VALUETYPE>::Emplace(const KEYTYPE& key)
 {
     IndexT i = this->FindIndex(key);
     if (i == InvalidIndex)

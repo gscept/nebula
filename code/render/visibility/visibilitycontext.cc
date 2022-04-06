@@ -293,7 +293,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 if (currentMaterialType != otherMaterialType)
                 {
                     // Add new draw command and get reference to it
-                    cmd = &context->drawList->visibilityTable.AddUnique(otherMaterialType);
+                    cmd = &context->drawList->visibilityTable.Emplace(otherMaterialType);
 
                     // Setup initial state for command
                     cmd->packetOffset = numDraws;

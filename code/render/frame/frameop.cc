@@ -129,7 +129,7 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
                 const Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage> tuple = Util::MakeTuple(stage, dep.stage);
                 CoreGraphics::TextureBarrierInfo barrier{ tex, subres };
 
-                CoreGraphics::BarrierCreateInfo& info = barriers.AddUnique(tuple);
+                CoreGraphics::BarrierCreateInfo& info = barriers.Emplace(tuple);
                 info.name = info.name.IsValid() ? info.name.AsString() + " + " + textureName.AsString() : textureName.AsString();
                 info.domain = domain;
                 info.fromStage = dep.stage;
@@ -239,7 +239,7 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
                 const Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage> tuple = Util::MakeTuple(stage, dep.stage);
                 CoreGraphics::BufferBarrierInfo barrier{ buf, (IndexT)subres.offset, (IndexT)subres.size };
 
-                CoreGraphics::BarrierCreateInfo& info = barriers.AddUnique(tuple);
+                CoreGraphics::BarrierCreateInfo& info = barriers.Emplace(tuple);
                 info.name = info.name.IsValid() ? info.name.AsString() + " + " + bufferName.AsString() : bufferName.AsString();
                 info.domain = domain;
                 info.fromStage = dep.stage;

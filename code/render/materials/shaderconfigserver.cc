@@ -207,7 +207,7 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
                         type->constantsByBatch.Append({});
 
                         // add material to server
-                        Util::Array<Materials::ShaderConfig*>& mats = this->shaderConfigsByBatch.AddUnique(code);
+                        Util::Array<Materials::ShaderConfig*>& mats = this->shaderConfigsByBatch.Emplace(code);
                         mats.Append(type);
                     }
                 } while (reader->SetToNextChild());

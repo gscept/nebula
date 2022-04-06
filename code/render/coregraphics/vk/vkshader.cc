@@ -128,7 +128,7 @@ VkShaderSetup(
         {
         // add to resource map
         resourceSlotMapping.Add(block->name.c_str(), block->binding);
-        ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.AddUnique(block->set);
+        ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(block->set);
         numsets = uint_max(numsets, block->set + 1);
 
         if (block->set == NEBULA_DYNAMIC_OFFSET_GROUP || block->set == NEBULA_INSTANCE_GROUP) { cbo.dynamicOffset = true; numUniformDyn += slotsUsed; }
@@ -171,7 +171,7 @@ VkShaderSetup(
         uint32_t slotsUsed = 0;
 
         if (buffer->alignedSize == 0) continue;
-        ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.AddUnique(buffer->set);
+        ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(buffer->set);
         numsets = uint_max(numsets, buffer->set + 1);
 
         if (buffer->HasAnnotation("Visibility"))
@@ -253,7 +253,7 @@ VkShaderSetup(
             smla.slot = sampler->bindingLayout.binding;
             smla.sampler = samp;
 
-            ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.AddUnique(sampler->set);
+            ResourceTableLayoutCreateInfo& rinfo = layoutCreateInfos.Emplace(sampler->set);
             rinfo.samplers.Append(smla);
 
             numsets = uint_max(numsets, sampler->set + 1);
@@ -330,7 +330,7 @@ VkShaderSetup(
                     tex.immutableSampler = placeholderSampler;
             }
 
-            ResourceTableLayoutCreateInfo& info = layoutCreateInfos.AddUnique(variable->set);
+            ResourceTableLayoutCreateInfo& info = layoutCreateInfos.Emplace(variable->set);
 
             // if storage, store in rwTextures, otherwise use ordinary textures and figure out if we are to use sampler
             if (storageImage) info.rwTextures.Append(tex);
@@ -347,7 +347,7 @@ VkShaderSetup(
             numInputAttachments += variable->bindingLayout.descriptorCount;
             ia.visibility = PixelShaderVisibility;              // only visible from pixel shaders anyways...
 
-            ResourceTableLayoutCreateInfo& info = layoutCreateInfos.AddUnique(variable->set);
+            ResourceTableLayoutCreateInfo& info = layoutCreateInfos.Emplace(variable->set);
             info.inputAttachments.Append(ia);
 
             numsets = uint_max(numsets, variable->set + 1);
