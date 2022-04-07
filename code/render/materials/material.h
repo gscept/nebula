@@ -17,7 +17,7 @@ namespace Materials
 
 class ShaderConfig;
 ID_32_TYPE(MaterialId);
-ID_32_32_NAMED_TYPE(MaterialInstanceId, surface, instance); // 32 bits instance, 32 bits surface
+ID_32_32_NAMED_TYPE(MaterialInstanceId, material, instance); // 32 bits instance, 32 bits surface
 
 class MaterialCache;
 extern MaterialCache* materialCache;

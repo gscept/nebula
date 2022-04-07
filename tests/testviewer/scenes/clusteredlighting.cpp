@@ -1,6 +1,8 @@
 #include "stdneb.h"
 #include "scenes.h"
 
+#include "unit.h"
+
 using namespace Timing;
 using namespace Graphics;
 using namespace Visibility;
@@ -14,8 +16,16 @@ Graphics::GraphicsEntityId tower;
 Graphics::GraphicsEntityId ground;
 Graphics::GraphicsEntityId terrain;
 Graphics::GraphicsEntityId particle;
-Util::Array<Graphics::GraphicsEntityId> entities;
+
+struct Entity
+{
+    Graphics::GraphicsEntityId entity;
+    Models::ModelContext::MaterialInstanceContext* materialInstanceContext;
+};
+Util::Array<Entity> entities;
+//Util::Array<Graphics::GraphicsEntityId> entities;
 Util::Array<Util::String> entityNames;
+Util::Array<Models::ModelContext::MaterialInstanceContext*> materialContexts;
 Util::Array<Graphics::GraphicsEntityId> pointLights;
 Util::Array<Graphics::GraphicsEntityId> spotLights;
 Util::Array<Graphics::GraphicsEntityId> decals;
@@ -45,7 +55,7 @@ void OpenScene()
         for (int j = -NumPointLights; j < NumPointLights; j++)
         {
             auto id = Graphics::CreateEntity();
-            entities.Append(id);
+            entities.Append({ id, nullptr });
             int index = (j + NumPointLights) + (i + NumPointLights) * NumPointLights * 2;
             entityNames.Append(Util::String::Sprintf("PointLight%d", index));
             const float red = Math::rand();
@@ -63,7 +73,7 @@ void OpenScene()
         for (int j = -NumSpotLights; j < NumSpotLights; j++)
         {
             auto id = Graphics::CreateEntity();
-            entities.Append(id);
+            entities.Append({ id, nullptr });
             int index = (j + NumSpotLights) + (i + NumSpotLights) * NumSpotLights * 2;
             entityNames.Append(Util::String::Sprintf("SpotLight%d", index));
             const float red = Math::rand();
@@ -85,7 +95,7 @@ void OpenScene()
         for (int j = -NumDecals; j < NumDecals; j++)
         {
             auto id = Graphics::CreateEntity();
-            entities.Append(id);
+            entities.Append({ id, nullptr });
             int index = (j + NumDecals) + (i + NumDecals) * NumDecals * 2;
             entityNames.Append(Util::String::Sprintf("Decal%d", index));
             Math::mat4 transform = Math::scaling(Math::vec3(10, 10, 50));
@@ -114,7 +124,7 @@ void OpenScene()
         for (int j = -NumFogVolumes; j < NumFogVolumes; j++)
         {
             auto id = Graphics::CreateEntity();
-            entities.Append(id);
+            entities.Append({ id, nullptr });
             int index = (j + NumFogVolumes) + (i + NumFogVolumes) * NumFogVolumes * 2;
             entityNames.Append(Util::String::Sprintf("Fog%d", index));
             Math::mat4 transform = Math::scaling(10);
@@ -136,12 +146,12 @@ void OpenScene()
 
     tower = Graphics::CreateEntity();
     Graphics::RegisterEntity<ModelContext, ObservableContext>(tower);
-    ModelContext::Setup(tower, "mdl:test/test.n3", "Viewer", []()
+    ModelContext::Setup(tower, "mdl:test/test_2.n3", "Viewer", []()
         {
             ObservableContext::Setup(tower, VisibilityEntityType::Model);
         });
     ModelContext::SetTransform(tower, Math::translation(4, 0, -7));
-    entities.Append(tower);
+    entities.Append({ tower, nullptr });
     entityNames.Append("Tower");
 
     ground = Graphics::CreateEntity();
@@ -151,7 +161,7 @@ void OpenScene()
             ObservableContext::Setup(ground, VisibilityEntityType::Model);
         });
     ModelContext::SetTransform(ground, Math::scaling(4) * Math::translation(0,0,0));
-    entities.Append(ground);
+    entities.Append({ ground, nullptr });
     entityNames.Append("Ground");
 
     particle = Graphics::CreateEntity();
@@ -162,8 +172,9 @@ void OpenScene()
             Particles::ParticleContext::Setup(particle);
             Particles::ParticleContext::Play(particle, Particles::ParticleContext::RestartIfPlaying);
         }); 
-    entities.Append(particle);
+    entities.Append({ particle, nullptr });
     entityNames.Append("Particle");
+
 
     // setup visibility
 
@@ -176,13 +187,17 @@ void OpenScene()
     ObservableContext::BeginBulkRegister();
     static const int NumModels = 20;
     int modelIndex = 0;
+    materialContexts.Resize((NumModels * 2) * (NumModels * 2));
+    CoreGraphics::BatchGroup::Code code = CoreGraphics::BatchGroup::FromName("FlatGeometryLit");
+
     for (IndexT i = -NumModels; i < NumModels; i++)
     {
         for (IndexT j = -NumModels; j < NumModels; j++)
         {
             Graphics::GraphicsEntityId ent = Graphics::CreateEntity();
             Graphics::RegisterEntity<ModelContext, Characters::CharacterContext, ObservableContext>(ent);
-            entities.Append(ent);
+            IndexT entityIndex = entities.Size();
+            entities.Append({ ent, nullptr });
             Util::String sid;
             sid.Format("%s: %d", GraphicsEntityToName(ent), ent);
             entityNames.Append(sid);
@@ -190,9 +205,12 @@ void OpenScene()
             const float timeOffset = Math::rand();// (((i + NumModels)* NumModels + (j + NumModels)) % 4) / 3.0f;
 
             // create model and move it to the front
-            ModelContext::Setup(ent, modelRes[modelIndex], "NotA", [ent, modelIndex, i, j, skeletonRes, animationRes]()
+            ModelContext::Setup(ent, modelRes[modelIndex], "NotA", [ent, entityIndex, modelIndex, i, j, skeletonRes, animationRes, code]()
                 {
                     ModelContext::SetTransform(ent, Math::translation(i * 16, 0, j * 16));
+
+                    uint materialIndex = i + (j + NumModels) * (NumModels * 2);
+                    entities[entityIndex].materialInstanceContext = &ModelContext::SetupMaterialInstanceContext(ent, code);
                     ObservableContext::Setup(ent, VisibilityEntityType::Model);
                     Characters::CharacterContext::Setup(ent, skeletonRes[modelIndex], animationRes[modelIndex], "Viewer");
                     Characters::CharacterContext::PlayClip(ent, nullptr, 1, 0, Characters::Append, 1.0f, 1, Math::rand() * 100.0f, 0.0f, 0.0f, Math::rand() * 100.0f);
@@ -242,6 +260,24 @@ void StepFrame()
     for (i = 0; i < fogVolumes.Size(); i++)
     {
         Fog::VolumetricFogContext::SetTurbidity(fogVolumes[i], (1.0f + Math::sin(Graphics::GraphicsServer::Instance()->GetTime() * 0.1f + i) * 0.5f) * 100);
+    }
+
+    // Allocate instance constants for entities
+    IndexT j = 0;
+    for (auto entity : entities)
+    {
+        if (entity.materialInstanceContext != nullptr)
+        {
+            CoreGraphics::ConstantBufferOffset offset = ModelContext::AllocateInstanceConstants(entity.entity, entity.materialInstanceContext->batch);
+            Unit::UnitInstanceBlock perInstanceBlock;
+            if (j % 2 == 0)
+                Math::vec4{ 1.0f, 0.0f, 0.0f, 1.0f }.store(perInstanceBlock.TeamColor);
+            else
+                Math::vec4{ 0.0f, 0.0f, 1.0f, 1.0f }.store(perInstanceBlock.TeamColor);
+            CoreGraphics::SetGraphicsConstants(offset, perInstanceBlock);
+
+        }
+        j++;
     }
     /*
         Math::mat4 globalLightTransform = Lighting::LightContext::GetTransform(globalLight);
@@ -319,15 +355,15 @@ void RenderUI()
     if (ImGui::Button("Delete"))
     {
         //ModelContext::DeregisterEntity(entities[selected]);
-        ObservableContext::DeregisterEntity(entities[selected]);
+        ObservableContext::DeregisterEntity(entities[selected].entity);
         //Characters::CharacterContext::DeregisterEntity(entities[selected]);
-        DestroyEntity(entities[selected]);
+        DestroyEntity(entities[selected].entity);
         entities.EraseIndex(selected);
         entityNames.EraseIndex(selected);
         selected = Math::max(selected-1, 0);
     }
     ImGui::End();
-    auto id = entities[selected];
+    auto id = entities[selected].entity;
     if (ModelContext::IsEntityRegistered(id))
     {
         Im3d::Mat4 trans = ModelContext::GetTransform(id);

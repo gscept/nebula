@@ -693,7 +693,7 @@ Array<TYPE>::Append(TYPE&& elm)
 #if NEBULA_BOUNDSCHECKS
     n_assert(this->elements);
 #endif
-    this->elements[this->count++] = std::forward<TYPE>(elm);
+    this->elements[this->count++] = std::move(elm);
 }
 
 //------------------------------------------------------------------------------
@@ -713,7 +713,7 @@ Array<TYPE>::AppendArray(const Array<TYPE>& rhs)
     IndexT i;
     for (i = 0; i < rhs.count; i++)
     {
-        this->elements[this->count + i] = std::forward<TYPE>(rhs.elements[i]);
+        this->elements[this->count + i] = rhs.elements[i];
     }
     this->count += rhs.count;
 }
@@ -735,7 +735,7 @@ Array<TYPE>::AppendArray(const TYPE* arr, const SizeT count)
     IndexT i;
     for (i = 0; i < count; i++)
     {
-        this->elements[this->count + i] = std::forward<const TYPE>(arr[i]);
+        this->elements[this->count + i] = arr[i];
     }
     this->count += count;
 }

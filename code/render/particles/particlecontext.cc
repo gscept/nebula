@@ -368,6 +368,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
     const Util::Array<Graphics::GraphicsEntityId>& graphicsEntities = particleContextAllocator.GetArray<ModelContextId>();
 
     n_assert(allSystemsCompleteCounter == 0);
+    Jobs2::JobBeginSequence({});
 
     IndexT i;
     for (i = 0; i < runtimes.Size(); i++)
@@ -386,7 +387,6 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
         const Models::NodeInstanceRange& stateRange = Models::ModelContext::GetModelRenderableRange(graphicsEntities[i]);
         const Models::NodeInstanceRange& transformRange = Models::ModelContext::GetModelTransformableRange(graphicsEntities[i]);
 
-        Jobs2::JobBeginSequence({});
 
         if (runtime.playing)
         {
@@ -418,14 +418,10 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
 #endif
             }
         }
-
-        // Flush queued work
-        Jobs2::JobEndSequence();
     }
 
-    // In case we have 0 systems but have the context running, just signal the event immediately 
-    if (ParticleContext::totalCompletionCounter == 0)
-        ParticleContext::totalCompletionEvent.Signal();
+    // Flush queued work
+    Jobs2::JobEndSequence();
 }
 
 //------------------------------------------------------------------------------
@@ -496,7 +492,7 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
                     block.AnimFramesPerSecond = pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond);
 
                     // allocate block
-                    uint offset = CoreGraphics::SetGraphicsConstants(block);
+                    CoreGraphics::ConstantBufferOffset offset = CoreGraphics::SetGraphicsConstants(block);
                     renderables.nodeStates[stateRange.begin + system.renderableIndex].resourceTableOffsets[renderables.nodeStates[stateRange.begin + system.renderableIndex].particleConstantsIndex] = offset;
                 }
                 else
@@ -505,6 +501,9 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
         }
 
     }, allSystems.Size(), 128, jobCtx, { &allSystemsCompleteCounter }, &ParticleContext::totalCompletionCounter, &ParticleContext::totalCompletionEvent);
+
+    if (ParticleContext::totalCompletionCounter == 0)
+        ParticleContext::totalCompletionEvent.Signal();
 }
 
 //------------------------------------------------------------------------------
@@ -515,6 +514,9 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
 {
     N_SCOPE(WaitForParticleJobs, Particles);
     ParticleContext::totalCompletionEvent.Wait();
+
+    if (state.numParticlesThisFrame == 0)
+        return;
 
     // get node map
     Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
@@ -593,8 +595,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
     }
 
     // flush changes
-    if (state.numParticlesThisFrame > 0)
-        CoreGraphics::BufferFlush(state.vbos[frame]);
+    CoreGraphics::BufferFlush(state.vbos[frame]);
 }
 
 //------------------------------------------------------------------------------

@@ -74,9 +74,9 @@ ParticleSystemNode::OnFinishedLoading()
     TransformNode::OnFinishedLoading();
 
     // load surface ourselves since state node does the resource table setup too, but we need it explicit
-    this->surRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
-    this->materialType = Materials::materialCache->GetType(this->surRes);
-    this->surface = Materials::materialCache->GetId(this->surRes);
+    this->materialRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
+    this->shaderConfig = Materials::materialCache->GetType(this->materialRes);
+    this->material = Materials::materialCache->GetId(this->materialRes);
 
     float activityDist = this->emitterAttrs.GetFloat(EmitterAttrs::ActivityDistance) * 0.5f;
 

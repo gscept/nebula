@@ -61,7 +61,7 @@ ShaderConfigServer::Open()
 void
 ShaderConfigServer::Close()
 {
-    this->surfaceAllocator.Release();
+    this->materialAllocator.Release();
 }
 
 //------------------------------------------------------------------------------
@@ -87,7 +87,7 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
         // parse materials
         if (reader->SetToFirstChild()) do
         {
-            ShaderConfig* type = this->surfaceAllocator.Alloc<ShaderConfig>();
+            ShaderConfig* type = this->materialAllocator.Alloc<ShaderConfig>();
             this->shaderConfigs.Append(type);
 
             type->name = reader->GetString("name");
@@ -114,7 +114,7 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
 
             Util::String inherits = reader->GetOptString("inherits", "");
 
-            // load inherited materialx
+            // Insert inherited materials
             if (!inherits.IsEmpty())
             {
                 Util::Array<Util::String> inheritances = inherits.Tokenize("|");
@@ -129,8 +129,23 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
                     {
                         ShaderConfig* mat = this->shaderConfigsByName.ValueAtIndex(index);
 
-                        type->textures.Merge(mat->textures);
-                        type->constants.Merge(mat->constants);
+                        // Update the lookup tables, offset the lookup value from the inherited table
+                        // by the size of the base table, as the lookup values will be offset by the ones from the lookup
+                        for (IndexT j = 0; j < mat->textureLookup.Size(); j++)
+                        {
+                            n_assert(type->textureLookup.FindIndex(mat->textureLookup.KeyAtIndex(j)) == InvalidIndex);
+                            type->textureLookup.Add(mat->textureLookup.KeyAtIndex(j), mat->textureLookup.ValueAtIndex(j) + type->textures.Size());
+                        }
+
+                        for (IndexT j = 0; j < mat->constantLookup.Size(); j++)
+                        {
+                            n_assert(type->constantLookup.FindIndex(mat->constantLookup.KeyAtIndex(j)) == InvalidIndex);
+                            type->constantLookup.Add(mat->constantLookup.KeyAtIndex(j), mat->constantLookup.ValueAtIndex(j) + type->constants.Size());
+                        }
+
+                        // First merge the type level constants and textures
+                        type->textures.AppendArray(mat->textures);
+                        type->constants.AppendArray(mat->constants);
 
                         // merge materials by adding new entry
                         auto it = mat->batchToIndexMap.Begin();
@@ -150,8 +165,8 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
                                 // if entry exists, merge constants and texture dictionaries
                                 idx = type->batchToIndexMap.FindIndex(idx);
                                 type->programs[idx] = mat->programs[*it.val]; // this actually replaces the program, perhaps we want this to overload shaders
-                                type->texturesByBatch[idx].Merge(mat->texturesByBatch[*it.val]);
-                                type->constantsByBatch[idx].Merge(mat->constantsByBatch[*it.val]);
+                                type->texturesByBatch[idx].AppendArray(mat->texturesByBatch[*it.val]);
+                                type->constantsByBatch[idx].AppendArray(mat->constantsByBatch[*it.val]);
                             }
                             it++;
                         }
@@ -192,7 +207,7 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
                         type->constantsByBatch.Append({});
 
                         // add material to server
-                        Util::Array<Materials::ShaderConfig*>& mats = this->shaderConfigsByBatch.AddUnique(code);
+                        Util::Array<Materials::ShaderConfig*>& mats = this->shaderConfigsByBatch.Emplace(code);
                         mats.Append(type);
                     }
                 } while (reader->SetToNextChild());
@@ -221,10 +236,8 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
 
                         constant.system = system;
                         constant.name = name;
-                        constant.offset = InvalidIndex;
-                        constant.slot = InvalidIndex;
-                        constant.group = InvalidIndex;
-                        type->constants.Add(name, constant);
+                        type->constantLookup.Add(name, type->constants.Size());
+                        type->constants.Append(constant);
                     }
                     else if (ptype.BeginsWithString("texture"))
                     {
@@ -244,8 +257,8 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
                         texture.defaultValue = res.As<CoreGraphics::TextureId>();
                         texture.system = system;
                         texture.name = name;
-                        texture.slot = InvalidIndex;
-                        type->textures.Add(name, texture);
+                        type->textureLookup.Add(name, type->textures.Size());
+                        type->textures.Append(texture);
                     }
                     else
                     {
@@ -294,10 +307,8 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
 
                         constant.system = system;
                         constant.name = name;
-                        constant.offset = InvalidIndex;
-                        constant.slot = InvalidIndex;
-                        constant.group = InvalidIndex;
-                        type->constants.Add(name, constant);
+                        type->constantLookup.Add(name, type->constants.Size());
+                        type->constants.Append(constant);
                     }
                 } while (reader->SetToNextChild());
                 reader->SetToParent();

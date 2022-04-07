@@ -56,12 +56,9 @@
           },
           {
             "name": "TeamColor",
-            "type": "vec4",
-            "defaultValue": [ 0.0, 0.0, 0.0, 0.0 ],
-            "max": [ 10.0, 10.0, 10.0, 10.0 ],
-            "desc": "Color of the unit"
+            "type": "vec4"
           }
-        ],
+        ]
       },
       {
         "name": "NotACastleChar",
@@ -118,12 +115,9 @@
           },
           {
             "name": "TeamColor",
-            "type": "vec4",
-            "defaultValue": [ 0.0, 0.0, 0.0, 0.0 ],
-            "max": [ 10.0, 10.0, 10.0, 10.0 ],
-            "desc": "Color of the unit"
+            "type": "vec4"
           }
-        ],
+        ]
       }
     ]
 

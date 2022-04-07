@@ -66,7 +66,7 @@ StreamCache::OpenStream(IO::URI const& uri, Core::Rtti const& rtti)
     stream->SetAccessMode(Stream::ReadAccess);
     if (stream->Open())
     {
-        CacheEntry & entry = this->streams.AddUnique(uriString);
+        CacheEntry & entry = this->streams.Emplace(uriString);
         entry.stream = stream;
         entry.useCount = 0;
         entry.buffer = stream->Map();

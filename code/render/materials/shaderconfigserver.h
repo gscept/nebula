@@ -50,7 +50,7 @@ private:
     Threading::CriticalSection variantAllocatorLock;
     Memory::ArenaAllocator<0x10000> shaderConfigVariantAllocator;
 
-    Memory::ArenaAllocator<0x400> surfaceAllocator;
+    Memory::ArenaAllocator<0x400> materialAllocator;
     Util::Dictionary<Resources::ResourceName, ShaderConfig*> shaderConfigsByName;
     Util::HashTable<CoreGraphics::BatchGroup::Code, Util::Array<ShaderConfig*>> shaderConfigsByBatch;
     Util::Array<ShaderConfig*> shaderConfigs;

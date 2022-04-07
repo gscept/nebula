@@ -23,16 +23,68 @@ namespace Materials
 
 struct ShaderConfigVariant
 {
+    struct TextureHandleTuple;
+
     /// Nullptr constructor
     ShaderConfigVariant()
         : type({ Type::Invalid })
         , mem(nullptr)
     {};
+
     /// Nullptr constructor
     ShaderConfigVariant(std::nullptr_t)
         : type({ Type::Invalid })
         , mem(nullptr)
     {}
+
+    /// Construct from float
+    ShaderConfigVariant(const TextureHandleTuple& tex)
+    {
+        this->SetType(Type::TextureHandle);
+        this->Set(tex);
+    };
+    /// Construct from float
+    ShaderConfigVariant(const float f)
+    {
+        this->SetType(Type::Float);
+        this->Set(f);
+    };
+    /// Construct from float2
+    ShaderConfigVariant(const Math::vec2 v2)
+    {
+        this->SetType(Type::Vec2);
+        this->Set(v2);
+    };
+    /// Construct from float4
+    ShaderConfigVariant(const Math::vec4 v4)
+    {
+        this->SetType(Type::Vec4);
+        this->Set(v4);
+    };
+    /// Construct from int
+    ShaderConfigVariant(const int i)
+    {
+        this->SetType(Type::Int);
+        this->Set(i);
+    };
+    /// Construct from uint
+    ShaderConfigVariant(const uint ui)
+    {
+        this->SetType(Type::UInt);
+        this->Set(ui);
+    };
+    /// Construct from bool
+    ShaderConfigVariant(const bool b)
+    {
+        this->SetType(Type::Bool);
+        this->Set(b);
+    };
+    /// Construct from bool
+    ShaderConfigVariant(const Math::mat4 mat)
+    {
+        this->SetType(Type::Mat4);
+        this->Set(mat);
+    };
 
     enum class Type : byte
     {
@@ -136,6 +188,7 @@ struct ShaderConfigVariant
     /// Get pointer
     const void* Get() const
     {
+        // If the data is stored in a pointer, and not the pointer value it self, we need to deref the pointer
         return this->type.needsDeref ? this->mem : reinterpret_cast<const void*>(&this->mem);
     }
 
@@ -166,7 +219,10 @@ struct ShaderConfigTexture
     CoreGraphics::TextureId defaultValue;
     CoreGraphics::TextureType type;
     bool system : 1;
+};
 
+struct ShaderConfigBatchTexture
+{
     IndexT slot;
 };
 
@@ -174,18 +230,16 @@ struct ShaderConfigConstant
 {
     Util::String name;
     ShaderConfigVariant def, min, max;
-    /*
-    Util::Variant defaultValue;
-    Util::Variant min;
-    Util::Variant max;
-    Util::Variant::Type type;
-    */
     bool system : 1;
-
-    IndexT offset;
-    IndexT slot;
-    IndexT group;
 };
+
+struct ShaderConfigBatchConstant
+{
+    IndexT offset, slot, group;
+};
+
+typedef IndexT BatchIndex;
+
 
 class ShaderConfig
 {
@@ -200,34 +254,36 @@ public:
     void Setup();
 
     /// create a surface from type
-    MaterialId CreateSurface();
+    MaterialId CreateMaterial();
     /// destroy surface
-    void DestroySurface(MaterialId mat);
+    void DestroyMaterial(MaterialId mat);
 
     /// create an instance of a surface
-    MaterialInstanceId CreateSurfaceInstance(const MaterialId id);
+    MaterialInstanceId CreateMaterialInstance(const MaterialId id);
     /// destroy instance of a surface
-    void DestroySurfaceInstance(const MaterialInstanceId id);
+    void DestroyMaterialInstance(const MaterialInstanceId id);
 
     /// get constant index
-    IndexT GetSurfaceConstantIndex(const MaterialId sur, const Util::StringAtom& name);
+    IndexT GetMaterialConstantIndex(const Util::StringAtom& name);
     /// get texture index
-    IndexT GetSurfaceTextureIndex(const MaterialId sur, const Util::StringAtom& name);
-    /// get surface constant instance index
-    IndexT GetSurfaceConstantInstanceIndex(const MaterialInstanceId sur, const Util::StringAtom& name);
+    IndexT GetMaterialTextureIndex(const Util::StringAtom& name);
 
     /// get default value for constant
-    const ShaderConfigVariant GetSurfaceConstantDefault(const MaterialId sur, IndexT idx);
+    const ShaderConfigVariant GetMaterialConstantDefault(const MaterialId sur, IndexT idx);
     /// get default value for texture
-    const CoreGraphics::TextureId GetSurfaceTextureDefault(const MaterialId sur, IndexT idx);
+    const CoreGraphics::TextureId GetMaterialTextureDefault(const MaterialId sur, IndexT idx);
 
     /// set constant in surface (applies to all instances)
-    void SetSurfaceConstant(const MaterialId sur, const IndexT idx, const ShaderConfigVariant& value);
+    void SetMaterialConstant(const MaterialId sur, const IndexT idx, const ShaderConfigVariant& value);
     /// set texture in surface (applies to all instances)
-    void SetSurfaceTexture(const MaterialId sur, const IndexT idx, const CoreGraphics::TextureId tex);
+    void SetMaterialTexture(const MaterialId sur, const IndexT idx, const CoreGraphics::TextureId tex);
 
-    /// set instance constant
-    void SetSurfaceInstanceConstant(const MaterialInstanceId sur, const IndexT idx, const Util::Variant& value);
+    /// Get batch index from surface config
+    BatchIndex GetBatchIndex(const CoreGraphics::BatchGroup::Code batch);
+    /// Get the size of the per-instance contant buffer
+    SizeT GetInstanceBufferSize(const MaterialInstanceId sur, const BatchIndex batch);
+    /// Allocate constant memory this frame
+    CoreGraphics::ConstantBufferOffset AllocateInstanceConstants(const MaterialInstanceId sur, const BatchIndex batch);
 
     /// get name
     const Util::String& GetName();
@@ -250,13 +306,15 @@ private:
     friend void MaterialInstanceApply(ShaderConfig*, const MaterialInstanceId);
     friend void ShaderConfigEndBatch(ShaderConfig*);
 
-    Util::HashTable<CoreGraphics::BatchGroup::Code, IndexT> batchToIndexMap;
+    Util::HashTable<CoreGraphics::BatchGroup::Code, BatchIndex> batchToIndexMap;
 
+    Util::Dictionary<Util::StringAtom, IndexT> textureLookup;
+    Util::Dictionary<Util::StringAtom, IndexT> constantLookup;
     Util::Array<CoreGraphics::ShaderProgramId> programs;
-    Util::Dictionary<Util::StringAtom, ShaderConfigTexture> textures;
-    Util::Dictionary<Util::StringAtom, ShaderConfigConstant> constants;
-    Util::Array<Util::Dictionary<Util::StringAtom, ShaderConfigTexture>> texturesByBatch;
-    Util::Array<Util::Dictionary<Util::StringAtom, ShaderConfigConstant>> constantsByBatch;
+    Util::Array<ShaderConfigTexture> textures;
+    Util::Array<ShaderConfigConstant> constants;
+    Util::Array<Util::Array<ShaderConfigBatchTexture>> texturesByBatch;
+    Util::Array<Util::Array<ShaderConfigBatchConstant>> constantsByBatch;
     bool isVirtual;
     Util::String name;
     Util::String description;
@@ -270,46 +328,39 @@ private:
     IndexT currentBatchIndex;
 
     // the reason whe have an instance type is because it doesn't need the default value
-    struct SurfaceInstanceConstant
+    struct MaterialInstanceConstant
     {
         IndexT binding;
-        void* mem;
     };
 
-    struct SurfaceConstant
+    struct MaterialConstant
     {
         ShaderConfigVariant defaultValue;
         IndexT bufferIndex;
         bool instanceConstant : 1;
         IndexT binding;
-        union
-        {
-            CoreGraphics::BufferId buffer;
-            void*                  mem;
-        };
+        CoreGraphics::BufferId buffer;
         
-        SurfaceConstant()
+        MaterialConstant()
             : buffer(CoreGraphics::InvalidBufferId)
             //, mem(nullptr)
         {}
     };
 
-    struct SurfaceTexture
+    struct MaterialTexture
     {
         CoreGraphics::TextureId defaultValue;
         IndexT slot;
     };
 
-    enum SurfaceMembers
+    enum MaterialMembers
     {
-        SurfaceTable,
+        MaterialTable,
         InstanceTable,
-        SurfaceBuffers,
+        MaterialBuffers,
         InstanceBuffers,
         Textures,
         Constants,
-        TextureMap,
-        ConstantMap
     };
 
     /// this will cause somewhat bad cache coherency, since the states across all passes are stored tightly/
@@ -318,23 +369,18 @@ private:
         Util::FixedArray<CoreGraphics::ResourceTableId>,                                // surface level resource table, mapped batch -> table
         Util::FixedArray<CoreGraphics::ResourceTableId>,                                // instance level resource table, mapped batch -> table
         Util::FixedArray<Util::Array<Util::Tuple<IndexT, CoreGraphics::BufferId>>>,     // surface level constant buffers, mapped batch -> buffers
-        Util::FixedArray<Util::Array<Util::Tuple<IndexT, void*, SizeT>>>,               // instance level instance buffers, mapped batch -> memory + size
-        Util::FixedArray<Util::Array<SurfaceTexture>>,                                  // textures
-        Util::FixedArray<Util::Array<SurfaceConstant>>,                                 // constants
-        Util::Dictionary<Util::StringAtom, IndexT>,                                     // name to resource map
-        Util::Dictionary<Util::StringAtom, IndexT>                                      // name to constant map
-    > surfaceAllocator;
+        Util::FixedArray<Util::Tuple<IndexT, SizeT>>,                                   // instance level instance buffer, mapped batch -> memory + size
+        Util::FixedArray<Util::Array<MaterialTexture>>,                                 // textures
+        Util::FixedArray<Util::Array<MaterialConstant>>                                 // constants
+    > materialAllocator;
 
-
-    enum SurfaceInstanceMembers
+    enum MaterialInstanceMembers
     {
-        SurfaceInstanceConstants,
-        SurfaceInstanceOffsets,
+        MaterialInstanceOffsets
     };
     Ids::IdAllocator<
-        Util::FixedArray<Util::FixedArray<SurfaceInstanceConstant>>, // copy of surface constants
-        Util::FixedArray<uint>
-    > surfaceInstanceAllocator;
+        uint
+    > materialInstanceAllocator;
 };
 
 

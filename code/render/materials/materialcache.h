@@ -17,7 +17,7 @@ namespace Materials
 
 struct MaterialInfo
 {
-    Resources::ResourceName materialType;
+    Resources::ResourceName shaderConfig;
 };
 
 struct MaterialResourceId;

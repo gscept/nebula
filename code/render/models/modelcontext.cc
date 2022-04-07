@@ -28,6 +28,8 @@ ModelContext::ModelContextAllocator ModelContext::modelContextAllocator;
 ModelContext::ModelInstance ModelContext::nodeInstances;
 __ImplementContext(ModelContext, ModelContext::modelContextAllocator);
 
+Util::Dictionary<Models::ModelNode*, ModelContext::MaterialInstanceContext> ModelContext::materialInstanceContexts;
+
 Threading::Event ModelContext::completionEvent;
 
 Threading::LockFreeQueue<std::function<void()>> setupCompleteQueue;
@@ -142,7 +144,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
         {
             Models::ShaderStateNode* sNode = reinterpret_cast<Models::ShaderStateNode*>(renderNodes[i]);
             NodeInstanceState state;
-            state.surfaceInstance = sNode->materialType->CreateSurfaceInstance(sNode->surface);
+            state.materialInstance = sNode->shaderConfig->CreateMaterialInstance(sNode->material);
             state.instancingConstantsIndex = sNode->instancingTransformsIndex;
             state.objectConstantsIndex = sNode->objectTransformsIndex;
             state.skinningConstantsIndex = sNode->skinningTransformsIndex;
@@ -178,9 +180,9 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             nodeInstances.renderable.nodeLodDistances.Append(sNode->useLodDistances ? Util::MakeTuple(sNode->minDistance, sNode->maxDistance) : Util::MakeTuple(FLT_MAX, FLT_MAX));
             nodeInstances.renderable.nodeLods.Append(0.0f);
             nodeInstances.renderable.nodeFlags.Append(Models::NodeInstanceFlags::NodeInstance_Active);
-            nodeInstances.renderable.nodeSurfaceResources.Append(sNode->surRes);
-            nodeInstances.renderable.nodeSurfaces.Append(sNode->surface);
-            nodeInstances.renderable.nodeMaterialTypes.Append(sNode->materialType);
+            nodeInstances.renderable.nodeMaterialResources.Append(sNode->materialRes);
+            nodeInstances.renderable.nodeMaterials.Append(sNode->material);
+            nodeInstances.renderable.nodeShaderConfigs.Append(sNode->shaderConfig);
             nodeInstances.renderable.nodes.Append(sNode);
             nodeInstances.renderable.nodeModelApplyCallbacks.Append(sNode->GetApplyFunction());
             nodeInstances.renderable.modelNodeGetPrimitiveGroup.Append(sNode->GetPrimitiveGroupFunction());
@@ -191,12 +193,11 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 #endif
 
             // The sort id is combined together with an index in the VisibilitySortJob to sort the node based on material, model and instance
-            assert(sNode->materialType->HashCode() < 0xFFF0000000000000);
+            assert(sNode->shaderConfig->HashCode() < 0xFFF0000000000000);
             assert(sNode->HashCode() < 0x000FFFFF00000000);
-            uint64 sortId = ((uint64)sNode->materialType->HashCode() << 52) | ((uint64)sNode->HashCode() << 32);
+            uint64 sortId = ((uint64)sNode->shaderConfig->HashCode() << 52) | ((uint64)sNode->HashCode() << 32);
             nodeInstances.renderable.nodeSortId.Append(sortId);
         }
-        
 
         modelContextAllocator.Get<Model_Id>(cid.id) = mid;
         const Math::mat4& pending = modelContextAllocator.Get<Model_Transform>(cid.id);
@@ -290,6 +291,46 @@ Math::mat4
 ModelContext::GetTransform(const Graphics::ContextEntityId id)
 {
     return modelContextAllocator.Get<Model_Transform>(id.id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+ModelContext::MaterialInstanceContext&
+ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const CoreGraphics::BatchGroup::Code batch)
+{
+    // This is a bit hacky, but we really need to only do this once per node and batch.
+    // What we do is that we get the batch index from the batch lookup map, and the variable indexes
+    const ContextEntityId cid = GetContextId(id);
+    const Models::NodeInstanceRange& nodes = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
+    const IndexT index = materialInstanceContexts.FindIndex(nodeInstances.renderable.nodes[nodes.begin]);
+    if (index == InvalidIndex)
+    {
+        // Lookup the batch index once
+        Materials::BatchIndex batchIndex = nodeInstances.renderable.nodeShaderConfigs[nodes.begin]->GetBatchIndex(batch);
+
+        // Emplace element
+        MaterialInstanceContext& ret = materialInstanceContexts.Emplace(nodeInstances.renderable.nodes[nodes.begin]);
+        Materials::MaterialInstanceId materialInstance = nodeInstances.renderable.nodeStates[nodes.begin].materialInstance;
+        ret.batch = batchIndex;
+        ret.constantBufferSize = nodeInstances.renderable.nodeShaderConfigs[nodes.begin]->GetInstanceBufferSize(materialInstance, batchIndex);
+        return ret;
+    }
+    else
+    {
+        return materialInstanceContexts.ValueAtIndex(index);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::ConstantBufferOffset
+ModelContext::AllocateInstanceConstants(const Graphics::GraphicsEntityId id, const Materials::BatchIndex batch)
+{
+    const ContextEntityId cid = GetContextId(id);
+    const Models::NodeInstanceRange& nodes = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
+    return nodeInstances.renderable.nodeShaderConfigs[nodes.begin]->AllocateInstanceConstants(nodeInstances.renderable.nodeStates[nodes.begin].materialInstance, batch);
 }
 
 //------------------------------------------------------------------------------
@@ -499,7 +540,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 nodeInstances.renderable.nodeLods[j] = lodFactor;
 
                 // Notify materials system this LOD might be used (this is a bit shitty in comparison to actually using texture sampling feedback)
-                Materials::materialCache->SetMaxLOD(nodeInstances.renderable.nodeSurfaceResources[j], textureLod);
+                Materials::materialCache->SetMaxLOD(nodeInstances.renderable.nodeMaterialResources[j], textureLod);
             }
         }
     }, nodeInstanceStateRanges.Size(), 256, renderCtx, { &transformUpdateCounter }, &lodUpdateCounter, nullptr);

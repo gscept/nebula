@@ -38,7 +38,7 @@ ShaderStateNode::~ShaderStateNode()
 void 
 ShaderStateNode::SetMaxLOD(const float lod)
 {
-    Materials::materialCache->SetMaxLOD(this->surRes, lod);
+    Materials::materialCache->SetMaxLOD(this->materialRes, lod);
 }
 
 //------------------------------------------------------------------------------
@@ -126,7 +126,7 @@ void
 ShaderStateNode::Unload()
 {
     // free material
-    Resources::DiscardResource(this->surRes);
+    Resources::DiscardResource(this->materialRes);
 
     // destroy table and constant buffer
     CoreGraphics::DestroyResourceTable(this->resourceTable);
@@ -141,9 +141,9 @@ ShaderStateNode::OnFinishedLoading()
     TransformNode::OnFinishedLoading();
 
     // load surface immediately, however it will load textures async
-    this->surRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
-    this->materialType = Materials::materialCache->GetType(this->surRes);
-    this->surface = Materials::materialCache->GetId(this->surRes);
+    this->materialRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
+    this->shaderConfig = Materials::materialCache->GetType(this->materialRes);
+    this->material = Materials::materialCache->GetId(this->materialRes);
     CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
     CoreGraphics::BufferId cbo = CoreGraphics::GetGraphicsConstantBuffer();
     this->objectTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "ObjectBlock");
@@ -162,8 +162,8 @@ void
 ShaderStateNode::DrawPacket::Apply(const CoreGraphics::CmdBufferId cmdBuf, IndexT batchIndex, Materials::ShaderConfig* type)
 {
     // Apply per-draw surface parameters
-    if (this->surfaceInstance != Materials::MaterialInstanceId::Invalid())
-        type->ApplyMaterialInstance(cmdBuf, batchIndex, this->surfaceInstance);
+    if (this->materialInstance != Materials::MaterialInstanceId::Invalid())
+        type->ApplyMaterialInstance(cmdBuf, batchIndex, this->materialInstance);
 
     // Set per-draw resource tables
     IndexT prevOffset = 0;

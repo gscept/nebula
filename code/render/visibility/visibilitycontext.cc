@@ -289,11 +289,11 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 uint32 index = indexBuffer[i] & 0x00000000FFFFFFFF;
 
                 // If new material, add a new entry into the lookup table
-                auto otherMaterialType = context->renderables->nodeMaterialTypes[index];
+                auto otherMaterialType = context->renderables->nodeShaderConfigs[index];
                 if (currentMaterialType != otherMaterialType)
                 {
                     // Add new draw command and get reference to it
-                    cmd = &context->drawList->visibilityTable.AddUnique(otherMaterialType);
+                    cmd = &context->drawList->visibilityTable.Emplace(otherMaterialType);
 
                     // Setup initial state for command
                     cmd->packetOffset = numDraws;
@@ -315,7 +315,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                     batchCmd.offset = cmd->packetOffset + cmd->numDrawPackets;
                     batchCmd.modelApplyCallback = context->renderables->nodeModelApplyCallbacks[index];
                     batchCmd.primitiveNodeApplyCallback = context->renderables->modelNodeGetPrimitiveGroup[index];
-                    batchCmd.surface = context->renderables->nodeSurfaces[index];
+                    batchCmd.material = context->renderables->nodeMaterials[index];
 
 #if NEBULA_GRAPHICS_DEBUG
                     batchCmd.nodeName = context->renderables->nodeNames[index];
@@ -343,7 +343,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 packet->numOffsets[0] = context->renderables->nodeStates[index].resourceTableOffsets.Size();
                 packet->numTables = 1;
                 packet->tables[0] = context->renderables->nodeStates[index].resourceTable;
-                packet->surfaceInstance = context->renderables->nodeStates[index].surfaceInstance;
+                packet->materialInstance = context->renderables->nodeStates[index].materialInstance;
 #ifndef PUBLIC_BUILD
                 packet->boundingBox = context->renderables->nodeBoundingBoxes[index];
                 packet->nodeInstanceHash = index;

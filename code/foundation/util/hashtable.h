@@ -72,7 +72,7 @@ public:
     /// add a key and associated value
     IndexT Add(const KEYTYPE& key, const VALUETYPE& value);
     /// adds element only if it doesn't exist, and return reference to it
-    VALUETYPE& AddUnique(const KEYTYPE& key);
+    VALUETYPE& Emplace(const KEYTYPE& key);
     /// end bulk adding, which sorts all affected tables
     void EndBulkAdd();
     /// merge two dictionaries
@@ -441,7 +441,7 @@ HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Add(const KEYTYPE& key, c
 */
 template<class KEYTYPE, class VALUETYPE, int TABLE_SIZE, int STACK_SIZE>
 VALUETYPE&
-HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::AddUnique(const KEYTYPE& key)
+HashTable<KEYTYPE, VALUETYPE, TABLE_SIZE, STACK_SIZE>::Emplace(const KEYTYPE& key)
 {
     // get hash code from key, trim to capacity
     uint32_t hashIndex = GetHashCode<KEYTYPE>(key);
