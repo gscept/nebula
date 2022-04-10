@@ -434,73 +434,77 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
 
     state.numParticlesThisFrame = 0;
     const Util::Array<Util::Array<ParticleSystemRuntime>>& allSystems = particleContextAllocator.GetArray<ParticleSystems>();
-    const Util::Array<Graphics::GraphicsEntityId>& graphicsEntities = particleContextAllocator.GetArray<ModelContextId>();
-    Math::mat4 invViewMatrix = inverse(Graphics::CameraContext::GetView(view->GetCamera()));
 
-    struct ParticleConstantContext
+    if (allSystems.Size() > 0)
     {
-        const Util::Array<Util::Array<ParticleSystemRuntime>>* allSystems;
-        const Util::Array<Graphics::GraphicsEntityId>* models;
-        Math::mat4 invViewMatrix;
-    } jobCtx;
-    jobCtx.allSystems = &allSystems;
-    jobCtx.models = &graphicsEntities;
-    jobCtx.invViewMatrix = Graphics::CameraContext::GetTransform(view->GetCamera());
+        const Util::Array<Graphics::GraphicsEntityId>& graphicsEntities = particleContextAllocator.GetArray<ModelContextId>();
+        Math::mat4 invViewMatrix = inverse(Graphics::CameraContext::GetView(view->GetCamera()));
 
-    n_assert(ParticleContext::totalCompletionCounter == 0);
-    ParticleContext::totalCompletionCounter = 1;
-
-    // Run job to update constants, can be per-view because of the billboard flag
-    Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
-    {
-        N_SCOPE(ParticleConstantUpdate, Graphics);
-        auto context = static_cast<ParticleConstantContext*>(ctx);
-        const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
-
-        for (IndexT i = 0; i < groupSize; i++)
+        struct ParticleConstantContext
         {
-            IndexT index = i + invocationOffset;
-            if (index >= totalJobs)
-                return;
+            const Util::Array<Util::Array<ParticleSystemRuntime>>* allSystems;
+            const Util::Array<Graphics::GraphicsEntityId>* models;
+            Math::mat4 invViewMatrix;
+        } jobCtx;
+        jobCtx.allSystems = &allSystems;
+        jobCtx.models = &graphicsEntities;
+        jobCtx.invViewMatrix = Graphics::CameraContext::GetTransform(view->GetCamera());
 
-            const Util::Array<ParticleSystemRuntime>& systems = context->allSystems->Get(index);
-            const NodeInstanceRange& stateRange = Models::ModelContext::GetModelRenderableRange(context->models->Get(index));
+        n_assert(ParticleContext::totalCompletionCounter == 0);
+        ParticleContext::totalCompletionCounter = 1;
 
-            // TODO: Can't we make this a part of the particle chain system job chain? Run one job per particle system, and also update constants and whatnot there?
-            IndexT j;
-            for (j = 0; j < systems.Size(); j++)
+        // Run job to update constants, can be per-view because of the billboard flag
+        Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
+        {
+            N_SCOPE(ParticleConstantUpdate, Graphics);
+            auto context = static_cast<ParticleConstantContext*>(ctx);
+            const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
+
+            for (IndexT i = 0; i < groupSize; i++)
             {
-                ParticleSystemRuntime& system = systems[j];
-                system.boundingBox = system.outputData.bbox;
-                if (system.outputData.numLivingParticles > 0)
+                IndexT index = i + invocationOffset;
+                if (index >= totalJobs)
+                    return;
+
+                const Util::Array<ParticleSystemRuntime>& systems = context->allSystems->Get(index);
+                const NodeInstanceRange& stateRange = Models::ModelContext::GetModelRenderableRange(context->models->Get(index));
+
+                // TODO: Can't we make this a part of the particle chain system job chain? Run one job per particle system, and also update constants and whatnot there?
+                IndexT j;
+                for (j = 0; j < systems.Size(); j++)
                 {
-                    renderables.nodeBoundingBoxes[stateRange.begin + system.renderableIndex] = system.outputData.bbox;
-                    SetBits(renderables.nodeFlags[stateRange.begin + system.renderableIndex], NodeInstanceFlags::NodeInstance_Active);
-                    Threading::Interlocked::Add(&state.numParticlesThisFrame, system.outputData.numLivingParticles);
+                    ParticleSystemRuntime& system = systems[j];
+                    system.boundingBox = system.outputData.bbox;
+                    if (system.outputData.numLivingParticles > 0)
+                    {
+                        renderables.nodeBoundingBoxes[stateRange.begin + system.renderableIndex] = system.outputData.bbox;
+                        SetBits(renderables.nodeFlags[stateRange.begin + system.renderableIndex], NodeInstanceFlags::NodeInstance_Active);
+                        Threading::Interlocked::Add(&state.numParticlesThisFrame, system.outputData.numLivingParticles);
 
-                    ParticleSystemNode* pnode = reinterpret_cast<ParticleSystemNode*>(renderables.nodes[stateRange.begin + system.renderableIndex]);
+                        ParticleSystemNode* pnode = reinterpret_cast<ParticleSystemNode*>(renderables.nodes[stateRange.begin + system.renderableIndex]);
 
-                    ::Particle::ParticleObjectBlock block;
+                        ::Particle::ParticleObjectBlock block;
 
-                    // update system transform
-                    if (pnode->GetEmitterAttrs().GetBool(Particles::EmitterAttrs::Billboard))
-                        system.transform = context->invViewMatrix * system.transform;
-                    system.transform.store(block.EmitterTransform);
+                        // update system transform
+                        if (pnode->GetEmitterAttrs().GetBool(Particles::EmitterAttrs::Billboard))
+                            system.transform = context->invViewMatrix * system.transform;
+                        system.transform.store(block.EmitterTransform);
 
-                    // update parameters
-                    block.NumAnimPhases = pnode->emitterAttrs.GetInt(EmitterAttrs::AnimPhases);
-                    block.AnimFramesPerSecond = pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond);
+                        // update parameters
+                        block.NumAnimPhases = pnode->emitterAttrs.GetInt(EmitterAttrs::AnimPhases);
+                        block.AnimFramesPerSecond = pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond);
 
-                    // allocate block
-                    CoreGraphics::ConstantBufferOffset offset = CoreGraphics::SetGraphicsConstants(block);
-                    renderables.nodeStates[stateRange.begin + system.renderableIndex].resourceTableOffsets[renderables.nodeStates[stateRange.begin + system.renderableIndex].particleConstantsIndex] = offset;
+                        // allocate block
+                        CoreGraphics::ConstantBufferOffset offset = CoreGraphics::SetGraphicsConstants(block);
+                        renderables.nodeStates[stateRange.begin + system.renderableIndex].resourceTableOffsets[renderables.nodeStates[stateRange.begin + system.renderableIndex].particleConstantsIndex] = offset;
+                    }
+                    else
+                        UnsetBits(renderables.nodeFlags[stateRange.begin + system.renderableIndex], NodeInstanceFlags::NodeInstance_Active);
                 }
-                else
-                    UnsetBits(renderables.nodeFlags[stateRange.begin + system.renderableIndex], NodeInstanceFlags::NodeInstance_Active);
             }
-        }
 
-    }, allSystems.Size(), 128, jobCtx, { &allSystemsCompleteCounter }, &ParticleContext::totalCompletionCounter, &ParticleContext::totalCompletionEvent);
+        }, allSystems.Size(), 128, jobCtx, { &allSystemsCompleteCounter }, &ParticleContext::totalCompletionCounter, &ParticleContext::totalCompletionEvent);
+    }
 
     if (ParticleContext::totalCompletionCounter == 0)
         ParticleContext::totalCompletionEvent.Signal();
