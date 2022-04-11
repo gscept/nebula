@@ -70,6 +70,7 @@ next:
         ctx.jobLock.Enter();
         auto node = ctx.head;
         auto dragging = ctx.head;
+        Jobs2::JobContext* job = nullptr;
 
         //auto it = ctx.jobs.Begin();
         int64_t jobIndex = -1;
@@ -88,7 +89,7 @@ next:
 
             // Check dependencies
             for (IndexT i = 0; i < node->job.numWaitCounters; i++)
-                dependencyDone &= *node->job.waitCounters[i] == node->sequenceWaitValue;
+                dependencyDone &= *node->job.waitCounters[i] == 0;
 
             if (!dependencyDone)
             {
@@ -96,31 +97,56 @@ next:
                 node = node->next;
                 continue;
             }
-            n_assert(node->job.remainingGroups > 0);
 
-            // If we are consuming the last job packet in this run, disconnect the node
-            jobIndex = --node->job.remainingGroups;
-            if (node->job.remainingGroups == 0)
+            if (node->sequence != nullptr)
             {
-                // Update node pointers
-                auto next = node->next;
+                job = &node->sequence->job;
+                n_assert(job->remainingGroups > 0);
 
-                // If node is not head, unlink the node between dragging and the current
-                if (node != ctx.head)
+                // If wait hasn't been met, continue to next node in the main list
+                if (job->numWaitCounters == 1 && *job->waitCounters[0] != 0)
                 {
-                    // If node is the last one in the list, update tail
-                    if (node == ctx.tail)
-                        ctx.tail = dragging;
-                    dragging->next = next;
+                    dragging = node;
+                    node = node->next;
+                    continue;
                 }
-                else
-                {
-                    // If head, then just unlink the head node
-                    ctx.head = next;
 
-                    // If tail and node point to the same node, unlink tail
-                    if (node == ctx.tail)
-                        ctx.tail = nullptr;
+                // If we are consuming the last packet in the sequence, simply point the sequence to the next node
+                jobIndex = --job->remainingGroups;
+                if (job->remainingGroups == 0)
+                {
+                    node->sequence = node->sequence->next;
+                }
+            }
+            else
+            {
+                job = &node->job;
+                n_assert(job->remainingGroups > 0);
+
+                // If we are consuming the last job packet in this run, disconnect the node
+                jobIndex = --job->remainingGroups;
+                if (job->remainingGroups == 0)
+                {
+                    // Update node pointers
+                    auto next = node->next;
+
+                    // If node is not head, unlink the node between dragging and the current
+                    if (node != ctx.head)
+                    {
+                        // If node is the last one in the list, update tail
+                        if (node == ctx.tail)
+                            ctx.tail = dragging;
+                        dragging->next = next;
+                    }
+                    else
+                    {
+                        // If head, then just unlink the head node
+                        ctx.head = next;
+
+                        // If tail and node point to the same node, unlink tail
+                        if (node == ctx.tail)
+                            ctx.tail = nullptr;
+                    }
                 }
             }
 
@@ -129,29 +155,28 @@ next:
         }
         ctx.jobLock.Leave();
 
-        // If jobIndex is -1 it means this thread didn't win the race
+        // If jobIndex is -1, it means we're trying to run a function on a finished job
         n_assert(jobIndex != -1);
 
         // Run function
-        node->job.func(node->job.numInvocations, node->job.groupSize, jobIndex, jobIndex * node->job.groupSize, node->job.data);
+        job->func(job->numInvocations, job->groupSize, jobIndex, jobIndex * job->groupSize, job->data);
 
         // Decrement number of finished jobs, and if this was the last one, signal the finished event
-        long numJobsLeft = Threading::Interlocked::Decrement(&node->job.groupCompletionCounter);
-        if (numJobsLeft == 0)
+        if (Threading::Interlocked::Decrement(&job->groupCompletionCounter) == 0)
         {
             // If we have a job counter, only signal the event when the counter reaches 0
-            if (node->job.doneCounter != nullptr)
+            if (job->doneCounter != nullptr)
             {
-                long numDispatchesLeft = Threading::Interlocked::Decrement(node->job.doneCounter);
+                long numDispatchesLeft = Threading::Interlocked::Decrement(job->doneCounter);
 
-                if (node->job.signalEvent != nullptr && numDispatchesLeft == 0)
-                    node->job.signalEvent->Signal();
+                if (job->signalEvent != nullptr && numDispatchesLeft == 0)
+                    job->signalEvent->Signal();
             }
             else
             {
                 // If we don't have a counter, just signal it when we're done with this dispatch
-                if (node->job.signalEvent != nullptr)
-                    node->job.signalEvent->Signal();
+                if (job->signalEvent != nullptr)
+                    job->signalEvent->Signal();
             }
 
             // Since other threads might be waiting for this job to finish, trigger other threads to wake up
@@ -186,11 +211,11 @@ JobSystemInit(const JobSystemInitInfo& info)
     ctx.numBuffers = info.numBuffers;
     ctx.iterator = 0;
     ctx.activeBuffer = 0;
-    ctx.scratchMemory = (void**)Memory::Alloc(Memory::ObjectHeap, info.numBuffers * sizeof(void*));
+    ctx.scratchMemory.Resize(info.numBuffers);
     ctx.scratchMemorySize = info.scratchMemorySize;
     for (IndexT i = 0; i < info.numBuffers; i++)
     {
-        ctx.scratchMemory[i] = Memory::Alloc(Memory::ObjectHeap, info.scratchMemorySize);
+        ctx.scratchMemory[i] = (byte*)Memory::Alloc(Memory::ObjectHeap, info.scratchMemorySize);
     }
     ctx.tail = nullptr;
     ctx.head = nullptr;
@@ -219,19 +244,59 @@ JobNewFrame()
     ctx.activeBuffer = (ctx.activeBuffer + 1) % ctx.numBuffers;
 }
 
-Util::FixedArray<const Threading::AtomicCounter*> sequenceWaitCounters;
-Threading::AtomicCounter* sequenceCompletionCounter;
 //------------------------------------------------------------------------------
 /**
 */
 void
-JobBeginSequence(const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters)
+JobSequencePlaceholder(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
 {
-    n_assert2(sequenceWaitCounters.IsEmpty(), "JobBeginSequence called twice, missing JobEndSequence");
-    n_assert(sequenceCompletionCounter == nullptr);
-    sequenceWaitCounters = waitCounters;
-    sequenceCompletionCounter = JobAlloc<Threading::AtomicCounter>(1);
-    *sequenceCompletionCounter = 0;
+    // Do nothing, this is just held by a sequence node to provide validity
+}
+
+Jobs2::JobNode* sequenceNode = nullptr;
+Jobs2::JobNode* sequenceTail = nullptr;
+const Threading::AtomicCounter* prevDoneCounter = nullptr;
+Threading::ThreadId sequenceThread;
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+JobBeginSequence(
+    const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters
+    , Threading::AtomicCounter* doneCounter
+    , Threading::Event* signalEvent)
+{
+    n_assert(sequenceNode == nullptr);
+    n_assert(sequenceTail == nullptr);
+    sequenceThread = Threading::Thread::GetMyThreadId();
+    prevDoneCounter = nullptr;
+
+    // Calculate allocation size which is node + counters
+    SizeT dynamicAllocSize = sizeof(JobNode) + waitCounters.Size() * sizeof(const Threading::AtomicCounter*);
+    auto mem = JobAlloc<char>(dynamicAllocSize);
+    sequenceNode = (JobNode*)mem;
+    sequenceNode->next = nullptr;
+    sequenceNode->sequence = nullptr;
+    sequenceTail = nullptr;
+
+    // Copy over wait counters
+    sequenceNode->job.waitCounters = nullptr;
+    if (waitCounters.Size() > 0)
+    {
+        sequenceNode->job.waitCounters = (const Threading::AtomicCounter**)(mem + sizeof(JobNode));
+        memcpy(sequenceNode->job.waitCounters, waitCounters.Begin(), waitCounters.Size() * sizeof(const Threading::AtomicCounter*));
+    }
+
+    // Setup sequence node with a dummy function
+    sequenceNode->job.func = JobSequencePlaceholder;
+    sequenceNode->job.remainingGroups = 1;
+    sequenceNode->job.numInvocations = 0;
+    sequenceNode->job.groupSize = 0;
+    sequenceNode->job.data = (void*)(mem + sizeof(JobNode));
+    sequenceNode->job.numWaitCounters = (SizeT)waitCounters.Size();
+    sequenceNode->job.doneCounter = doneCounter;
+    sequenceNode->job.signalEvent = signalEvent;
 }
 
 //------------------------------------------------------------------------------
@@ -240,66 +305,33 @@ JobBeginSequence(const Util::FixedArray<const Threading::AtomicCounter*>& waitCo
 void
 JobEndSequence(Threading::Event* signalEvent)
 {
-    if (!ctx.queuedJobs.IsEmpty())
+    n_assert(sequenceNode != nullptr);
+    n_assert(sequenceThread == Threading::Thread::GetMyThreadId());
+    if (sequenceNode->sequence != nullptr)
     {
-        // Set signaling event on the first job, which will end up being the last in the chain
-        ctx.queuedJobs.Back()->job.signalEvent = signalEvent;
-
-        // Setup sequence completion counter
-        n_assert(*sequenceCompletionCounter == 0);
-        *sequenceCompletionCounter = ctx.queuedJobs.Size();
-
-        JobNode* prev = nullptr;
-        JobNode* cur = nullptr;
-
-        for (IndexT i = 0; i < ctx.queuedJobs.Size(); i++)
-        {
-            cur = ctx.queuedJobs[i];
-            if (prev != nullptr)
-            {
-                prev->next = cur;
-            }
-            cur->job.doneCounter = sequenceCompletionCounter;
-
-            // Add wait value for the sequence
-            if (i > 0)
-            {
-                cur->job.waitCounters[0] = sequenceCompletionCounter;
-                cur->job.numWaitCounters = 1;
-
-                // We want to wait for the nth minus i job to finish to progress this job
-                cur->sequenceWaitValue = *sequenceCompletionCounter - i;
-            }
-
-            prev = cur;
-        }
-
         // Move head pointer to last element in the list
         ctx.jobLock.Enter();
 
+        sequenceTail->job.doneCounter = sequenceNode->job.doneCounter;
+        sequenceNode->job.doneCounter = nullptr;
+        sequenceTail->job.signalEvent = sequenceNode->job.signalEvent;
+        sequenceNode->job.signalEvent = nullptr;
+
         // When sequence is chained, set the head pointer
         if (ctx.head == nullptr)
-            ctx.head = ctx.queuedJobs.Front();
+            ctx.head = sequenceNode;
 
         // Then add sequence to the end of the current list
         if (ctx.tail != nullptr)
-            ctx.tail->next = ctx.queuedJobs.Front();
+            ctx.tail->next = sequenceNode;
 
         // Finally repoint tail
-        ctx.tail = cur;
+        ctx.tail = sequenceNode;
 
         ctx.jobLock.Leave();
-
-        // Clear queued jobs
-        ctx.queuedJobs.Clear();
-
-        // Trigger threads to wake up and compete for jobs
-        for (Ptr<JobThread>& thread : ctx.threads)
-        {
-            thread->SignalWorkAvailable();
-        }
     }
-    sequenceCompletionCounter = nullptr;
+    sequenceNode = nullptr;
+    sequenceTail = nullptr;
 }
 
 } // namespace Jobs2
