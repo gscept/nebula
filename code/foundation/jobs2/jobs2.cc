@@ -192,6 +192,7 @@ next:
 }
 
 N_DECLARE_COUNTER(N_JOBS2_MEMORY_COUNTER, Jobs2RingBufferMemory)
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -250,6 +251,19 @@ JobNewFrame()
 //------------------------------------------------------------------------------
 /**
 */
+void*
+JobAlloc(SizeT bytes)
+{
+    n_assert((ctx.iterator + bytes) < ctx.scratchMemorySize);
+    void* ret = (ctx.scratchMemory[ctx.activeBuffer] + ctx.iterator);
+    ctx.iterator += bytes;
+    N_BUDGET_COUNTER_DECR(N_JOBS2_MEMORY_COUNTER, bytes);
+    return ret;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 void
 JobSequencePlaceholder(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
 {
@@ -273,7 +287,6 @@ JobBeginSequence(
     n_assert(sequenceNode == nullptr);
     n_assert(sequenceTail == nullptr);
     sequenceThread = Threading::Thread::GetMyThreadId();
-    prevDoneCounter = nullptr;
 
     // Calculate allocation size which is node + counters
     SizeT dynamicAllocSize = sizeof(JobNode) + waitCounters.Size() * sizeof(const Threading::AtomicCounter*);
@@ -333,6 +346,7 @@ JobEndSequence(Threading::Event* signalEvent)
 
         ctx.jobLock.Leave();
     }
+    prevDoneCounter = nullptr;
     sequenceNode = nullptr;
     sequenceTail = nullptr;
 }

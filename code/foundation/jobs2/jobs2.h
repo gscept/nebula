@@ -113,6 +113,8 @@ void JobSystemUninit();
 
 /// Allocate memory and progress memory iterator
 template <typename T> T* JobAlloc(SizeT count);
+/// Allocate memory
+void* JobAlloc(SizeT bytes);
 /// Progress to new buffer
 void JobNewFrame();
 
@@ -150,10 +152,7 @@ void JobEndSequence(Threading::Event* signalEvent = nullptr);
 template <typename T> T*
 JobAlloc(SizeT count)
 {
-    n_assert((ctx.iterator + count * sizeof(T)) < ctx.scratchMemorySize);
-    T* ret = (T*)(ctx.scratchMemory[ctx.activeBuffer] + ctx.iterator);
-    ctx.iterator += count * sizeof(T);
-    return ret;
+    return (T*)JobAlloc(count * sizeof(T));
 }
 
 //------------------------------------------------------------------------------
