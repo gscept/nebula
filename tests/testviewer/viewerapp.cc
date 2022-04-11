@@ -681,6 +681,20 @@ SimpleViewerApplication::RenderUI()
                             ImGui::LabelText(name, "%llu B allocated", val);
                     }
 
+                    const Util::Dictionary<const char*, Util::Pair<uint64, uint64>>& budgetCounters = Profiling::ProfilingGetBudgetCounters();
+                    for (IndexT i = 0; i < budgetCounters.Size(); i++)
+                    {
+                        const char* name = budgetCounters.KeyAtIndex(i);
+                        const Util::Pair<uint64, uint64>& val = budgetCounters.ValueAtIndex(i);
+                        if (val.second > 1_MB)
+                            ImGui::LabelText(name, "%llu MB allocated, %f MB left", val.first / 1_MB, val.second / float(1_MB));
+                        else if (val.second > 1_KB)
+                            ImGui::LabelText(name, "%llu KB allocated, %f KB left", val.first / 1_KB, val.second / float(1_KB));
+                        else
+                            ImGui::LabelText(name, "%llu B allocated, %llu B left", val.first, val.second);
+                        ImGui::ProgressBar((val.first - val.second) / double(val.first));
+                    }
+
                     ImGui::PopFont();
                 }
             }

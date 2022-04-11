@@ -13,6 +13,7 @@
 #include "util/dictionary.h"
 #include "util/stringatom.h"
 #include "util/ringbuffer.h"
+#include "util/tupleutility.h"
 #include "threading/threadid.h"
 #include "threading/thread.h"
 #include "threading/criticalsection.h"
@@ -38,6 +39,10 @@
 #define N_MARKER_END()                  { Profiling::ProfilingPopScope(); }
 #define N_COUNTER_INCR(name, value)     Profiling::ProfilingIncreaseCounter(name, value);
 #define N_COUNTER_DECR(name, value)     Profiling::ProfilingDecreaseCounter(name, value);
+#define N_BUDGET_COUNTER_SETUP(name, budget) Profiling::ProfilingSetupBudgetCounter(name, budget);
+#define N_BUDGET_COUNTER_INCR(name, value) Profiling::ProfilingBudgetIncreaseCounter(name, value);
+#define N_BUDGET_COUNTER_DECR(name, value) Profiling::ProfilingBudgetDecreaseCounter(name, value);
+#define N_BUDGET_COUNTER_RESET(name) Profiling::ProfilingBudgetResetCounter(name);
 #define N_DECLARE_COUNTER(name, label)  static const char* name = #label;
 #else
 #define N_SCOPE(name, cat)
@@ -85,7 +90,7 @@ extern Util::Dictionary<Util::StringAtom, Util::Array<ProfilingScope>> scopesByC
 extern Threading::CriticalSection categoryLock;
 
 /// atomic counter used to give each thread a unique id
-extern std::atomic_uint ProfilingContextCounter;
+extern Threading::AtomicCounter ProfilingContextCounter;
 
 /// increment profiling counter
 void ProfilingIncreaseCounter(const char* id, uint64 value);
@@ -94,7 +99,19 @@ void ProfilingDecreaseCounter(const char* id, uint64 value);
 /// return table of counters
 const Util::Dictionary<const char*, uint64>& ProfilingGetCounters();
 
+/// Setup a profiling budget counter
+void ProfilingSetupBudgetCounter(const char* id, uint64 budget);
+/// Increment budget counter
+void ProfilingBudgetIncreaseCounter(const char* id, uint64 value);
+/// Decrement budget counter
+void ProfilingBudgetDecreaseCounter(const char* id, uint64 value);
+/// Reset budget counter
+void ProfilingBudgetResetCounter(const char* id);
+/// Return set of budget counters
+const Util::Dictionary<const char*, Util::Pair<uint64, uint64>>& ProfilingGetBudgetCounters();
+
 extern Threading::CriticalSection counterLock;
+extern Util::Dictionary<const char*, Util::Pair<uint64, uint64>> budgetCounters;
 extern Util::Dictionary<const char*, uint64> counters;
 
 struct ProfilingScope

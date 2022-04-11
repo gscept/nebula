@@ -534,6 +534,10 @@ using namespace Vulkan;
 template<> void ObjectSetName(const CoreGraphics::CmdBufferId id, const char* name);
 #endif
 
+N_DECLARE_COUNTER(N_GRAPHICS_CONSTANT_MEMORY, Graphics Constant Memory);
+N_DECLARE_COUNTER(N_COMPUTE_CONSTANT_MEMORY, Compute Constant Memory);
+N_DECLARE_COUNTER(N_VERTEX_MEMORY, Vertex Memory);
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -890,6 +894,10 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 #undef CreateSemaphore
 #endif
 
+    N_BUDGET_COUNTER_SETUP(N_GRAPHICS_CONSTANT_MEMORY, info.globalGraphicsConstantBufferMemorySize);
+    N_BUDGET_COUNTER_SETUP(N_COMPUTE_CONSTANT_MEMORY, info.globalComputeConstantBufferMemorySize);
+    N_BUDGET_COUNTER_SETUP(N_VERTEX_MEMORY, info.globalVertexBufferMemorySize);
+
     for (i = 0; i < info.numBufferedFrames; i++)
     {
         Vulkan::GraphicsDeviceState::ConstantsRingBuffer& cboRing = state.constantBufferRings[i];
@@ -967,6 +975,11 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     state.pendingDeletes.Resize(info.numBufferedFrames);
     state.waitEvents.Resize(info.numBufferedFrames);
     state.pendingMarkers.Resize(info.numBufferedFrames);
+
+    for (IndexT i = 0; i < state.pendingMarkers.Size(); i++)
+    {
+        state.pendingMarkers[i].baseOffset = 0;
+    }
     state.queries.Resize(info.numBufferedFrames);
 
     VkQueryPoolCreateInfo queryPoolInfo =
@@ -1454,6 +1467,7 @@ SetGraphicsConstantsInternal(const void* data, SizeT size)
     // Align new end and allocate memory range
     int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
     int ret = Threading::Interlocked::Add(&sub.cboGfxEndAddress, alignedSize);
+    N_BUDGET_COUNTER_DECR(N_GRAPHICS_CONSTANT_MEMORY, alignedSize);
 
     // Check if we are over allocating
     if (ret + alignedSize >= state.globalGraphicsConstantBufferMaxValue * int(state.currentBufferedFrameIndex + 1))
@@ -1481,6 +1495,7 @@ SetComputeConstantsInternal(const void* data, SizeT size)
     // Align new end and allocate memory range
     int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
     int ret = Threading::Interlocked::Add(&sub.cboComputeEndAddress, alignedSize);
+    N_BUDGET_COUNTER_DECR(N_COMPUTE_CONSTANT_MEMORY, alignedSize);
 
     // Check if we are over allocating
     if (ret + alignedSize >= state.globalComputeConstantBufferMaxValue * int(state.currentBufferedFrameIndex + 1))
@@ -1527,6 +1542,7 @@ AllocateGraphicsConstantBufferMemory(uint size)
 
     // Calculate aligned upper bound
     int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+    N_BUDGET_COUNTER_DECR(N_GRAPHICS_CONSTANT_MEMORY, alignedSize);
 
     // Allocate the memory range
     int ret = Threading::Interlocked::Add(&sub.cboGfxEndAddress, alignedSize);
@@ -1563,6 +1579,7 @@ AllocateComputeConstantBufferMemory(uint size)
 
     // Calculate aligned upper bound
     int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
+    N_BUDGET_COUNTER_DECR(N_COMPUTE_CONSTANT_MEMORY, alignedSize);
 
     // Allocate the memory range
     int ret = Threading::Interlocked::Add(&sub.cboComputeEndAddress, alignedSize);
@@ -1645,7 +1662,6 @@ FlushConstants(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueType typ
             0, nullptr
         );
     }
-    cboStartAddress = cboEndAddress;
 }
 
 //------------------------------------------------------------------------------
@@ -1821,6 +1837,7 @@ AllocateVertices(const SizeT numVertices, const SizeT vertexSize)
 {
     IndexT ret;
     state.vertexAllocator.Alloc(numVertices * vertexSize, 1, ret);
+    N_BUDGET_COUNTER_DECR(N_VERTEX_MEMORY, numVertices * vertexSize);
     return ret;
 }
 
@@ -1830,7 +1847,8 @@ AllocateVertices(const SizeT numVertices, const SizeT vertexSize)
 void
 DeallocateVertices(uint offset)
 {
-    state.vertexAllocator.Dealloc(offset);
+    SizeT length = state.vertexAllocator.Dealloc(offset);
+    N_BUDGET_COUNTER_INCR(N_VERTEX_MEMORY, length);
 }
 
 //------------------------------------------------------------------------------
@@ -1905,22 +1923,25 @@ NewFrame()
 
     // Go through the query timestamp results and set the time in the markers
     state.frameProfilingMarkers.Clear();
-    CoreGraphics::BufferId buf = state.queries[state.currentBufferedFrameIndex].queryBuffer[CoreGraphics::QueryType::TimestampsQueryType];
-    CoreGraphics::BufferFlush(buf);
-    uint64* data = (uint64*)CoreGraphics::BufferMap(buf);
-    uint64 offset = data[state.pendingMarkers[state.currentBufferedFrameIndex].baseOffset];
-    const auto& markersPerBuffer = state.pendingMarkers[state.currentBufferedFrameIndex].markers;
-    for (const auto& markers : markersPerBuffer)
+    if (!state.pendingMarkers[state.currentBufferedFrameIndex].markers.IsEmpty())
     {
-        for (auto& marker : markers)
+        CoreGraphics::BufferId buf = state.queries[state.currentBufferedFrameIndex].queryBuffer[CoreGraphics::QueryType::TimestampsQueryType];
+        CoreGraphics::BufferInvalidate(buf);
+        uint64* data = (uint64*)CoreGraphics::BufferMap(buf);
+        uint64 offset = data[state.pendingMarkers[state.currentBufferedFrameIndex].baseOffset];
+        const auto& markersPerBuffer = state.pendingMarkers[state.currentBufferedFrameIndex].markers;
+        for (const auto& markers : markersPerBuffer)
         {
-            ParseMarkersAndTime(marker, data, offset);
+            for (auto& marker : markers)
+            {
+                ParseMarkersAndTime(marker, data, offset);
 
-            // Add to combined markers to graphics device for this frame
-            state.frameProfilingMarkers.Append(marker);
+                // Add to combined markers to graphics device for this frame
+                state.frameProfilingMarkers.Append(marker);
+            }
         }
+        CoreGraphics::BufferUnmap(buf);
     }
-    CoreGraphics::BufferUnmap(buf);
 
     // Cleanup resources
     Vulkan::ClearPending();
@@ -1943,6 +1964,9 @@ NewFrame()
     nextCboRing.cboGfxEndAddress = state.globalGraphicsConstantBufferMaxValue * state.currentBufferedFrameIndex;
     nextCboRing.cboComputeStartAddress = state.globalComputeConstantBufferMaxValue * state.currentBufferedFrameIndex;
     nextCboRing.cboComputeEndAddress = state.globalComputeConstantBufferMaxValue * state.currentBufferedFrameIndex;
+
+    N_BUDGET_COUNTER_RESET(N_GRAPHICS_CONSTANT_MEMORY);
+    N_BUDGET_COUNTER_RESET(N_COMPUTE_CONSTANT_MEMORY);
 
     N_MARKER_END();
 }

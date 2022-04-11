@@ -31,7 +31,7 @@ public:
     /// allocate a range of memory and return the index, returns false if failed because range could not be found
     bool Alloc(SizeT numElements, SizeT alignment, IndexT& outIndex);
     /// deallocate a range of memory
-    void Dealloc(IndexT startIndex);
+    SizeT Dealloc(IndexT startIndex);
 private:
     struct Range
     {
@@ -108,16 +108,18 @@ RangeAllocator::Alloc(SizeT numElements, SizeT alignment, IndexT& outIndex)
 //------------------------------------------------------------------------------
 /**
 */
-inline void 
+inline SizeT 
 RangeAllocator::Dealloc(IndexT startIndex)
 {
     IndexT index = this->ranges.FindIndex(startIndex);
     if (index != InvalidIndex)
     {
+        SizeT ret = this->ranges.ValueAtIndex(index).length;
         this->ranges.EraseAtIndex(index);
-        return;
+        return ret;
     }
     n_error("Tried to dealloc non-existant range");
+    return 0;
 }
 
 } // namespace Memory

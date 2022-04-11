@@ -191,6 +191,7 @@ next:
     }
 }
 
+N_DECLARE_COUNTER(N_JOBS2_MEMORY_COUNTER, Jobs2RingBufferMemory)
 //------------------------------------------------------------------------------
 /**
 */
@@ -217,6 +218,7 @@ JobSystemInit(const JobSystemInitInfo& info)
     {
         ctx.scratchMemory[i] = (byte*)Memory::Alloc(Memory::ObjectHeap, info.scratchMemorySize);
     }
+    N_BUDGET_COUNTER_SETUP(N_JOBS2_MEMORY_COUNTER, info.scratchMemorySize);
     ctx.tail = nullptr;
     ctx.head = nullptr;
 }
@@ -242,6 +244,7 @@ JobNewFrame()
 {
     ctx.iterator = 0;
     ctx.activeBuffer = (ctx.activeBuffer + 1) % ctx.numBuffers;
+    N_BUDGET_COUNTER_RESET(N_JOBS2_MEMORY_COUNTER);
 }
 
 //------------------------------------------------------------------------------
