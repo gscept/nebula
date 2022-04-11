@@ -12,7 +12,7 @@ Util::Array<ProfilingContext> profilingContexts;
 Util::Array<Threading::AssertingMutex> contextMutexes;
 Util::Dictionary<Util::StringAtom, Util::Array<ProfilingScope>> scopesByCategory;
 Threading::CriticalSection categoryLock;
-std::atomic_uint ProfilingContextCounter = 0;
+Threading::AtomicCounter ProfilingContextCounter = 0;
 thread_local IndexT ProfilingContextIndex = InvalidIndex;
 
 //------------------------------------------------------------------------------
@@ -119,7 +119,7 @@ ProfilingRegisterThread()
     // make sure we don't add contexts simulatenously
     Threading::CriticalScope lock(&categoryLock);
     Threading::ThreadId thread = Threading::Thread::GetMyThreadId();
-    ProfilingContextIndex = ProfilingContextCounter.fetch_add(1);
+    ProfilingContextIndex = Threading::Interlocked::Add(&ProfilingContextCounter, 1);
     profilingContexts.Append(ProfilingContext());
     profilingContexts.Back().timer.Start();
     contextMutexes.Append(Threading::AssertingMutex());
@@ -162,6 +162,7 @@ ProfilingClear()
 
 Threading::CriticalSection counterLock;
 Util::Dictionary<const char*, uint64> counters;
+Util::Dictionary<const char*, Util::Pair<uint64, uint64>> budgetCounters;
 
 //------------------------------------------------------------------------------
 /**
@@ -200,6 +201,66 @@ const Util::Dictionary<const char*, uint64>&
 ProfilingGetCounters()
 {
     return counters;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ProfilingSetupBudgetCounter(const char* id, uint64 budget)
+{
+    counterLock.Enter();
+
+    // Add budget
+    IndexT idx = budgetCounters.FindIndex(id);
+    n_assert(idx == InvalidIndex);
+    budgetCounters.Add(id, { budget, budget });
+
+    counterLock.Leave();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ProfilingBudgetIncreaseCounter(const char* id, uint64 value)
+{
+    IndexT idx = budgetCounters.FindIndex(id);
+    n_assert(idx != InvalidIndex);
+    budgetCounters.ValueAtIndex(idx).second += value;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ProfilingBudgetDecreaseCounter(const char* id, uint64 value)
+{
+    IndexT idx = budgetCounters.FindIndex(id);
+    n_assert(idx != InvalidIndex);
+    budgetCounters.ValueAtIndex(idx).second -= value;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ProfilingBudgetResetCounter(const char* id)
+{
+    IndexT idx = budgetCounters.FindIndex(id);
+    n_assert(idx != InvalidIndex);
+
+    // Just reset the counter to budget
+    budgetCounters.ValueAtIndex(idx).second = budgetCounters.ValueAtIndex(idx).first;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Dictionary<const char*, Util::Pair<uint64, uint64>>&
+ProfilingGetBudgetCounters()
+{
+    return budgetCounters;
 }
 
 } // namespace Profiling

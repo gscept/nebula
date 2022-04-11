@@ -30,9 +30,9 @@ struct JobContext
 {
     JobFunc func;
     int remainingGroups;
+    Threading::AtomicCounter groupCompletionCounter;
     SizeT numInvocations;
     SizeT groupSize;
-    volatile long groupCompletionCounter;
     void* data;
     const Threading::AtomicCounter** waitCounters;
     SizeT numWaitCounters;
@@ -44,7 +44,7 @@ struct JobNode
 {
     JobNode* next;
     JobContext job;
-    long sequenceWaitValue; // set to 0 for ordinary nodes
+    JobNode* sequence; // set to nullptr for ordinary nodes
 };
 
 struct Jobs2Context
@@ -58,8 +58,8 @@ struct Jobs2Context
     SizeT numBuffers;
     IndexT iterator;
     IndexT activeBuffer;
+    Util::FixedArray<byte*> scratchMemory;
     SizeT scratchMemorySize;
-    void** scratchMemory;
 };
 
 extern Jobs2Context ctx;
@@ -116,10 +116,15 @@ template <typename T> T* JobAlloc(SizeT count);
 /// Progress to new buffer
 void JobNewFrame();
 
-extern Util::FixedArray<const Threading::AtomicCounter*> sequenceWaitCounters;
+extern JobNode* sequenceNode;
+extern JobNode* sequenceTail;
+extern const Threading::AtomicCounter* prevDoneCounter;
+extern Threading::ThreadId sequenceThread;
 
 /// Begin a sequence of jobs
-void JobBeginSequence(const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr);
+void JobBeginSequence(const Util::FixedArray<const Threading::AtomicCounter*>& waitCounters = nullptr
+    , Threading::AtomicCounter* doneCounter = nullptr
+    , Threading::Event* signalEvent = nullptr);
 
 /// Append job to sequence with an automatic dependency on the previous job
 template <typename CTX> void JobAppendSequence(
@@ -146,7 +151,7 @@ template <typename T> T*
 JobAlloc(SizeT count)
 {
     n_assert((ctx.iterator + count * sizeof(T)) < ctx.scratchMemorySize);
-    T* ret = (T*)((byte*)ctx.scratchMemory[ctx.activeBuffer] + ctx.iterator);
+    T* ret = (T*)(ctx.scratchMemory[ctx.activeBuffer] + ctx.iterator);
     ctx.iterator += count * sizeof(T);
     return ret;
 }
@@ -166,6 +171,7 @@ JobDispatch(
 )
 {
     static_assert(std::is_trivially_destructible<CTX>::value, "Job context has to be trivially destructible");
+    n_assert(numInvocations > 0);
     n_assert(doneCounter != nullptr ? *doneCounter > 0 : true);
 
     // Calculate the number of actual jobs based on invocations and group size
@@ -197,7 +203,7 @@ JobDispatch(
     node->job.numWaitCounters = (SizeT)waitCounters.Size();
     node->job.doneCounter = doneCounter;
     node->job.signalEvent = signalEvent;
-    node->sequenceWaitValue = 0;
+    node->sequence = nullptr;
 
     // Add to end of linked list
     ctx.jobLock.Enter();
@@ -244,35 +250,30 @@ template<typename CTX> void
 JobAppendSequence(const JobFunc& func, const SizeT numInvocations, const SizeT groupSize, const CTX& context)
 {
     static_assert(std::is_trivially_destructible<CTX>::value, "Job context has to be trivially destructible");
+    n_assert(numInvocations > 0);
+    n_assert(sequenceThread == Threading::Thread::GetMyThreadId());
+    n_assert(sequenceNode != nullptr);
 
     // Calculate the number of actual jobs based on invocations and group size
     SizeT numJobs = Math::ceil(numInvocations / float(groupSize));
 
     // Calculate allocation size which is node + counters + data context
-    auto dynamicAllocSize = sizeof(JobNode) + sizeof(CTX);
-    if (sequenceWaitCounters.IsEmpty())
+    SizeT dynamicAllocSize = sizeof(JobNode) + sizeof(CTX) + sizeof(Threading::AtomicCounter);
+    if (prevDoneCounter != nullptr)
         dynamicAllocSize += sizeof(Threading::AtomicCounter*);
-    else
-        dynamicAllocSize += sequenceWaitCounters.ByteSize();
-
     auto mem = JobAlloc<char>(dynamicAllocSize);
     auto node = (JobNode*)mem;
 
-    // Setup pointer to wait counters
-    node->job.waitCounters = (const Threading::AtomicCounter**)(mem + sizeof(JobNode) + sizeof(CTX));
-
-    // If we have sequence wait counters, add them
-    if (!sequenceWaitCounters.IsEmpty())
+    if (prevDoneCounter != nullptr)
     {
-        node->job.numWaitCounters = sequenceWaitCounters.Size();
-        memcpy(node->job.waitCounters, sequenceWaitCounters.Begin(), sequenceWaitCounters.ByteSize());
-
-        // Then clear them, we only allow wait counters for the first job in the sequence
-        sequenceWaitCounters.Clear();
+        node->job.numWaitCounters = 1;
+        node->job.waitCounters = (const Threading::AtomicCounter**)(mem + sizeof(JobNode) + sizeof(CTX) + sizeof(Threading::AtomicCounter));
+        memcpy(node->job.waitCounters, &prevDoneCounter, sizeof(Threading::AtomicCounter*));
     }
     else
     {
-        node->job.waitCounters[0] = nullptr;
+        node->job.numWaitCounters = 0;
+        node->job.waitCounters = nullptr;
     }
 
     // Move context
@@ -285,13 +286,23 @@ JobAppendSequence(const JobFunc& func, const SizeT numInvocations, const SizeT g
     node->job.groupCompletionCounter = numJobs;
     node->job.numInvocations = numInvocations;
     node->job.groupSize = groupSize;
-    node->job.numWaitCounters = sequenceWaitCounters.Size();
-    node->job.doneCounter = nullptr;
+    
+    node->job.doneCounter = (Threading::AtomicCounter*)(mem + sizeof(JobNode) + sizeof(CTX));
+    *node->job.doneCounter = 1;
+    prevDoneCounter = node->job.doneCounter;
     node->job.signalEvent = nullptr;
     node->next = nullptr;
 
+    // The remainingGroups counter for the sequence node is the length of the sequence chain
+    if (sequenceTail == nullptr)
+        sequenceNode->sequence = node;
+    else
+        sequenceTail->next = node;
+
+    sequenceTail = node;
+
     // Queue job
-    ctx.queuedJobs.Append(node);
+    //ctx.queuedJobs.Append(node);
 }
 
 //------------------------------------------------------------------------------

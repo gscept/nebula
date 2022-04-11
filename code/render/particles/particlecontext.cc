@@ -368,7 +368,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
     const Util::Array<Graphics::GraphicsEntityId>& graphicsEntities = particleContextAllocator.GetArray<ModelContextId>();
 
     n_assert(allSystemsCompleteCounter == 0);
-    Jobs2::JobBeginSequence({});
+    allSystemsCompleteCounter = runtimes.Size();
 
     IndexT i;
     for (i = 0; i < runtimes.Size(); i++)
@@ -387,9 +387,10 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
         const Models::NodeInstanceRange& stateRange = Models::ModelContext::GetModelRenderableRange(graphicsEntities[i]);
         const Models::NodeInstanceRange& transformRange = Models::ModelContext::GetModelTransformableRange(graphicsEntities[i]);
 
-
         if (runtime.playing)
         {
+            Jobs2::JobBeginSequence(nullptr, &allSystemsCompleteCounter);
+
             IndexT j;
             for (j = 0; j < systems.Size(); j++)
             {
@@ -417,11 +418,17 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
                 runtime.stepTime += timeDiff;
 #endif
             }
+
+            // Flush queued work
+            Jobs2::JobEndSequence();
+        }
+        else
+        {
+            allSystemsCompleteCounter--;
         }
     }
 
-    // Flush queued work
-    Jobs2::JobEndSequence();
+
 }
 
 //------------------------------------------------------------------------------
@@ -911,15 +918,7 @@ ParticleContext::RunParticleStep(ParticleRuntime& rt, ParticleSystemRuntime& srt
 
         // Take a job step
         JobStep(context->uniformData, context->stepTime, context->numParticles, context->inputParticles, context->outputParticles, context->output);
-
-        // A bit of a trick for the particle context since we might have N jobs per particle system,
-        // and we can have M systems, so we need to keep track of a global counter and event.
-        // Decrement total counter, and if last job, signal event
-        Threading::Interlocked::Decrement(&allSystemsCompleteCounter);
     }, 1, jobContext);
-
-    // Increment total counter
-    allSystemsCompleteCounter++;
 }
 
 } // namespace Particles
