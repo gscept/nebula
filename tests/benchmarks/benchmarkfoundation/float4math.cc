@@ -53,7 +53,7 @@ Float4Math::Run(Timer& timer)
             tmp0 = f0[j] + f1[j];
             tmp1 = tmp0 * dot3(f0[j], f1[j]);
             tmp2 = cross3(tmp0, tmp1);
-            tmp1 = vecLerp(tmp0, tmp2, 0.5f);
+            tmp1 = lerp(tmp0, tmp2, 0.5f);
             tmp0 = normalize(tmp1);
             tmp1 = maximize(tmp0, tmp1);
             tmp2 = minimize(tmp0, tmp1);

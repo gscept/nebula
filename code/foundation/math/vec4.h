@@ -640,7 +640,7 @@ minimize(const vec4& v0, const vec4& v1)
 /**
 */
 __forceinline vec4
-vecClamp(const vec4& clamp, const vec4& min, const vec4& max)
+clamp(const vec4& clamp, const vec4& min, const vec4& max)
 {
     __m128 temp = _mm_max_ps(min.vec, clamp.vec);
     temp = _mm_min_ps(temp, max.vec);
