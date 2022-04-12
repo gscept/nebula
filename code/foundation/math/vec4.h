@@ -613,7 +613,7 @@ angle(const vec4& v0, const vec4& v1)
 /**
 */
 __forceinline vec4
-vecLerp(const vec4& v0, const vec4& v1, scalar s)
+lerp(const vec4& v0, const vec4& v1, scalar s)
 {
     return v0 + ((v1 - v0) * s);
 }
