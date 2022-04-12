@@ -10,6 +10,11 @@ namespace CoreGraphics
 
 using namespace Vulkan;
 
+N_DECLARE_COUNTER(N_DEVICE_ONLY_GPU_MEMORY, Device Only GPU Memory);
+N_DECLARE_COUNTER(N_HOST_ONLY_GPU_MEMORY, Host Only GPU Memory);
+N_DECLARE_COUNTER(N_DEVICE_TO_HOST_GPU_MEMORY, Device To Host GPU Memory);
+N_DECLARE_COUNTER(N_HOST_TO_DEVICE_GPU_MEMORY, Host To Device GPU Memory);
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -41,6 +46,8 @@ SetupMemoryPools(
             pool.blockSize = deviceLocalMemory;
             pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
             deviceLocalFound = true;
+            pool.budgetCounter = N_DEVICE_ONLY_GPU_MEMORY;
+            N_BUDGET_COUNTER_SETUP(N_DEVICE_ONLY_GPU_MEMORY, pool.maxSize);
         }
         else if (AllBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) && !hostLocalFound)
         {
@@ -49,6 +56,8 @@ SetupMemoryPools(
             pool.blockSize = hostLocalMemory;
             pool.allocMethod = MemoryPool::MemoryPool_AllocLinear;
             hostLocalFound = true;
+            pool.budgetCounter = N_HOST_ONLY_GPU_MEMORY;
+            N_BUDGET_COUNTER_SETUP(N_HOST_ONLY_GPU_MEMORY, pool.maxSize);
         }
         else if (AllBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT) && !deviceToHostFound)
         {
@@ -57,6 +66,8 @@ SetupMemoryPools(
             pool.blockSize = deviceToHostMemory;
             pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
             deviceToHostFound = true;
+            pool.budgetCounter = N_DEVICE_TO_HOST_GPU_MEMORY;
+            N_BUDGET_COUNTER_SETUP(N_DEVICE_TO_HOST_GPU_MEMORY, pool.maxSize);
         }
         else if (AllBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) && !hostToDeviceFound)
         {
@@ -65,6 +76,8 @@ SetupMemoryPools(
             pool.blockSize = hostToDeviceMemory;
             pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
             hostToDeviceFound = true;
+            pool.budgetCounter = N_HOST_TO_DEVICE_GPU_MEMORY;
+            N_BUDGET_COUNTER_SETUP(N_HOST_TO_DEVICE_GPU_MEMORY, pool.maxSize);
         }
     }
 }
@@ -91,9 +104,8 @@ FreeMemory(const Alloc& alloc)
     CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[alloc.poolIndex];
     AllocationLock.Enter();
     bool res = pool.DeallocateMemory(alloc);
-    AllocationLock.Leave();
-
-    N_COUNTER_DECR(N_GPU_MEMORY_COUNTER, alloc.size);
+    N_BUDGET_COUNTER_DECR(pool.budgetCounter, alloc.size);
+    AllocationLock.Leave();    
 
     // assert result
     n_assert(res);
@@ -187,9 +199,8 @@ AllocateMemory(const VkDevice dev, const VkImage& img, MemoryPoolType type)
     // allocate
     AllocationLock.Enter();
     Alloc ret = pool.AllocateMemory(req.alignment, req.size);
+    N_BUDGET_COUNTER_INCR(pool.budgetCounter, ret.size);
     AllocationLock.Leave();
-
-    N_COUNTER_INCR(N_GPU_MEMORY_COUNTER, ret.size);
 
     // make sure we are not over-allocating, and return
     n_assert(ret.offset + ret.size < pool.maxSize);
@@ -233,9 +244,8 @@ AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type)
     // allocate
     AllocationLock.Enter();
     Alloc ret = pool.AllocateMemory(req.alignment, req.size);
+    N_BUDGET_COUNTER_INCR(pool.budgetCounter, ret.size);
     AllocationLock.Leave();
-
-    N_COUNTER_INCR(N_GPU_MEMORY_COUNTER, ret.size);
 
     // make sure we are not over-allocating, and return
     n_assert(ret.offset + ret.size < pool.maxSize);
@@ -256,9 +266,8 @@ AllocateMemory(const VkDevice dev, VkMemoryRequirements reqs, VkDeviceSize alloc
     // allocate
     AllocationLock.Enter();
     Alloc ret = pool.AllocateMemory(reqs.alignment, allocSize);
+    N_BUDGET_COUNTER_INCR(pool.budgetCounter, ret.size);
     AllocationLock.Leave();
-
-    N_COUNTER_INCR(N_GPU_MEMORY_COUNTER, ret.size);
 
     // make sure we are not over-allocating, and return
     n_assert(ret.offset + ret.size < pool.maxSize);

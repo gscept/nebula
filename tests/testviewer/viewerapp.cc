@@ -131,7 +131,7 @@ SimpleViewerApplication::Open()
         Jobs2::JobSystemInitInfo jobSystemInfo;
         jobSystemInfo.numThreads = 8;
         jobSystemInfo.name = "JobSystem";
-        jobSystemInfo.scratchMemorySize = 16_MB;
+        jobSystemInfo.scratchMemorySize = 8_MB;
         Jobs2::JobSystemInit(jobSystemInfo);
 
         SizeT width = this->GetCmdLineArgs().GetInt("-w", 1280);
@@ -673,10 +673,12 @@ SimpleViewerApplication::RenderUI()
                     {
                         const char* name = counters.KeyAtIndex(i);
                         uint64 val = counters.ValueAtIndex(i);
-                        if (val >= 1_MB)
-                            ImGui::LabelText(name, "%llu MB allocated", val / 1_MB);
+                        if (val >= 1_GB)
+                            ImGui::LabelText(name, "%.2f GB allocated", val / float(1_GB));
+                        else if (val >= 1_MB)
+                            ImGui::LabelText(name, "%.2f MB allocated", val / float(1_MB));
                         else if (val >= 1_KB)
-                            ImGui::LabelText(name, "%llu KB allocated", val / 1_KB);
+                            ImGui::LabelText(name, "%.2f KB allocated", val / float(1_KB));
                         else
                             ImGui::LabelText(name, "%llu B allocated", val);
                     }
@@ -686,13 +688,22 @@ SimpleViewerApplication::RenderUI()
                     {
                         const char* name = budgetCounters.KeyAtIndex(i);
                         const Util::Pair<uint64, uint64>& val = budgetCounters.ValueAtIndex(i);
-                        if (val.first >= 1_MB)
-                            ImGui::LabelText(name, "%llu MB allocated, %f MB left", val.first / 1_MB, (val.first - val.second) / float(1_MB));
+                        if (val.first >= 1_GB)
+                            ImGui::LabelText(name, "%.2f GB allocated, %.2f GB left", val.first / float(1_GB), (val.first - val.second) / float(1_GB));
+                        else if (val.first >= 1_MB)
+                            ImGui::LabelText(name, "%.2f MB allocated, %.2f MB left", val.first / float(1_MB), (val.first - val.second) / float(1_MB));
                         else if (val.first >= 1_KB)
-                            ImGui::LabelText(name, "%llu KB allocated, %f KB left", val.first / 1_KB, (val.first - val.second) / float(1_KB));
+                            ImGui::LabelText(name, "%.2f KB allocated, %.2f KB left", val.first / float(1_KB), (val.first - val.second) / float(1_KB));
                         else
                             ImGui::LabelText(name, "%llu B allocated, %llu B left", val.first, val.first - val.second);
-                        ImGui::ProgressBar(val.second / double(val.first));
+
+                        float weight = val.second / double(val.first);
+                        Math::vec4 green(0, 1, 0, 1);
+                        Math::vec4 red(1, 0, 0, 1);
+                        Math::vec4 color = Math::lerp(green, red, sqrt(weight));
+                        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(color.x, color.y, color.z, color.w));
+                        ImGui::ProgressBar(weight);
+                        ImGui::PopStyleColor();
                     }
 
                     ImGui::PopFont();

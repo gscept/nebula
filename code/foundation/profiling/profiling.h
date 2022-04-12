@@ -56,9 +56,6 @@
 #define N_DECLARE_COUNTER(name, label)
 #endif
 
-N_DECLARE_COUNTER(N_GPU_MEMORY_COUNTER, GPU Allocated Memory);
-
-
 namespace Profiling
 {
 
