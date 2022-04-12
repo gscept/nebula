@@ -251,7 +251,7 @@ ProfilingBudgetResetCounter(const char* id)
     n_assert(idx != InvalidIndex);
 
     // Just reset the counter to budget
-    budgetCounters.ValueAtIndex(idx).second = budgetCounters.ValueAtIndex(idx).first;
+    budgetCounters.ValueAtIndex(idx).second = 0;
 }
 
 //------------------------------------------------------------------------------

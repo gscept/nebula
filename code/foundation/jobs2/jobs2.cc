@@ -257,7 +257,7 @@ JobAlloc(SizeT bytes)
     n_assert((ctx.iterator + bytes) < ctx.scratchMemorySize);
     void* ret = (ctx.scratchMemory[ctx.activeBuffer] + ctx.iterator);
     ctx.iterator += bytes;
-    N_BUDGET_COUNTER_DECR(N_JOBS2_MEMORY_COUNTER, bytes);
+    N_BUDGET_COUNTER_INCR(N_JOBS2_MEMORY_COUNTER, bytes);
     return ret;
 }
 

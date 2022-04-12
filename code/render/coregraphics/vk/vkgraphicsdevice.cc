@@ -1467,7 +1467,7 @@ SetGraphicsConstantsInternal(const void* data, SizeT size)
     // Align new end and allocate memory range
     int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
     int ret = Threading::Interlocked::Add(&sub.cboGfxEndAddress, alignedSize);
-    N_BUDGET_COUNTER_DECR(N_GRAPHICS_CONSTANT_MEMORY, alignedSize);
+    N_BUDGET_COUNTER_INCR(N_GRAPHICS_CONSTANT_MEMORY, alignedSize);
 
     // Check if we are over allocating
     if (ret + alignedSize >= state.globalGraphicsConstantBufferMaxValue * int(state.currentBufferedFrameIndex + 1))
@@ -1495,7 +1495,7 @@ SetComputeConstantsInternal(const void* data, SizeT size)
     // Align new end and allocate memory range
     int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
     int ret = Threading::Interlocked::Add(&sub.cboComputeEndAddress, alignedSize);
-    N_BUDGET_COUNTER_DECR(N_COMPUTE_CONSTANT_MEMORY, alignedSize);
+    N_BUDGET_COUNTER_INCR(N_COMPUTE_CONSTANT_MEMORY, alignedSize);
 
     // Check if we are over allocating
     if (ret + alignedSize >= state.globalComputeConstantBufferMaxValue * int(state.currentBufferedFrameIndex + 1))
@@ -1542,7 +1542,7 @@ AllocateGraphicsConstantBufferMemory(uint size)
 
     // Calculate aligned upper bound
     int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
-    N_BUDGET_COUNTER_DECR(N_GRAPHICS_CONSTANT_MEMORY, alignedSize);
+    N_BUDGET_COUNTER_INCR(N_GRAPHICS_CONSTANT_MEMORY, alignedSize);
 
     // Allocate the memory range
     int ret = Threading::Interlocked::Add(&sub.cboGfxEndAddress, alignedSize);
@@ -1579,7 +1579,7 @@ AllocateComputeConstantBufferMemory(uint size)
 
     // Calculate aligned upper bound
     int alignedSize = Math::align(size, state.deviceProps[state.currentDevice].limits.minUniformBufferOffsetAlignment);
-    N_BUDGET_COUNTER_DECR(N_COMPUTE_CONSTANT_MEMORY, alignedSize);
+    N_BUDGET_COUNTER_INCR(N_COMPUTE_CONSTANT_MEMORY, alignedSize);
 
     // Allocate the memory range
     int ret = Threading::Interlocked::Add(&sub.cboComputeEndAddress, alignedSize);
@@ -1837,7 +1837,7 @@ AllocateVertices(const SizeT numVertices, const SizeT vertexSize)
 {
     IndexT ret;
     state.vertexAllocator.Alloc(numVertices * vertexSize, 1, ret);
-    N_BUDGET_COUNTER_DECR(N_VERTEX_MEMORY, numVertices * vertexSize);
+    N_BUDGET_COUNTER_INCR(N_VERTEX_MEMORY, numVertices * vertexSize);
     return ret;
 }
 
@@ -1848,7 +1848,7 @@ void
 DeallocateVertices(uint offset)
 {
     SizeT length = state.vertexAllocator.Dealloc(offset);
-    N_BUDGET_COUNTER_INCR(N_VERTEX_MEMORY, length);
+    N_BUDGET_COUNTER_DECR(N_VERTEX_MEMORY, length);
 }
 
 //------------------------------------------------------------------------------

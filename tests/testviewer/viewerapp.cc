@@ -673,9 +673,9 @@ SimpleViewerApplication::RenderUI()
                     {
                         const char* name = counters.KeyAtIndex(i);
                         uint64 val = counters.ValueAtIndex(i);
-                        if (val > 1_MB)
+                        if (val >= 1_MB)
                             ImGui::LabelText(name, "%llu MB allocated", val / 1_MB);
-                        else if (val > 1_KB)
+                        else if (val >= 1_KB)
                             ImGui::LabelText(name, "%llu KB allocated", val / 1_KB);
                         else
                             ImGui::LabelText(name, "%llu B allocated", val);
@@ -686,13 +686,13 @@ SimpleViewerApplication::RenderUI()
                     {
                         const char* name = budgetCounters.KeyAtIndex(i);
                         const Util::Pair<uint64, uint64>& val = budgetCounters.ValueAtIndex(i);
-                        if (val.second > 1_MB)
-                            ImGui::LabelText(name, "%llu MB allocated, %f MB left", val.first / 1_MB, val.second / float(1_MB));
-                        else if (val.second > 1_KB)
-                            ImGui::LabelText(name, "%llu KB allocated, %f KB left", val.first / 1_KB, val.second / float(1_KB));
+                        if (val.first >= 1_MB)
+                            ImGui::LabelText(name, "%llu MB allocated, %f MB left", val.first / 1_MB, (val.first - val.second) / float(1_MB));
+                        else if (val.first >= 1_KB)
+                            ImGui::LabelText(name, "%llu KB allocated, %f KB left", val.first / 1_KB, (val.first - val.second) / float(1_KB));
                         else
-                            ImGui::LabelText(name, "%llu B allocated, %llu B left", val.first, val.second);
-                        ImGui::ProgressBar((val.first - val.second) / double(val.first));
+                            ImGui::LabelText(name, "%llu B allocated, %llu B left", val.first, val.first - val.second);
+                        ImGui::ProgressBar(val.second / double(val.first));
                     }
 
                     ImGui::PopFont();
