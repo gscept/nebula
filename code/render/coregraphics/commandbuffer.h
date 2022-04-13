@@ -14,6 +14,7 @@
 #include "util/fixedarray.h"
 #include "coregraphics/config.h"
 #include "math/rectangle.h"
+#include "coregraphics/indextype.h"
 namespace CoreGraphics
 {
 
@@ -157,6 +158,8 @@ void CmdSetVertexBuffer(const CmdBufferId id, IndexT streamIndex, const CoreGrap
 void CmdSetVertexLayout(const CmdBufferId id, const CoreGraphics::VertexLayoutId& vl);
 /// Set index buffer
 void CmdSetIndexBuffer(const CmdBufferId id, const CoreGraphics::BufferId& buffer, SizeT bufferOffset);
+/// Set index buffer with explicit index size
+void CmdSetIndexBuffer(const CmdBufferId id, const CoreGraphics::BufferId& buffer, CoreGraphics::IndexType::Code indexSize, SizeT bufferOffset);
 /// Set the type of topology used
 void CmdSetPrimitiveTopology(const CmdBufferId id, const CoreGraphics::PrimitiveTopology::Code topo);
 

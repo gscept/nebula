@@ -19,7 +19,6 @@
 #include "vkevent.h"
 #include "vkpass.h"
 
-
 namespace Vulkan
 {
 
@@ -354,6 +353,23 @@ CmdSetIndexBuffer(const CmdBufferId id, const CoreGraphics::BufferId& buffer, Si
 /**
 */
 void
+CmdSetIndexBuffer(const CmdBufferId id, const CoreGraphics::BufferId& buffer, CoreGraphics::IndexType::Code indexSize, SizeT bufferOffset)
+{
+#if _DEBUG
+    CoreGraphics::QueueType usage = commandBuffers.GetUnsafe<CmdBuffer_Usage>(id.id24);
+    n_assert(usage == QueueType::GraphicsQueueType);
+#endif
+    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkBuffer buf = Vulkan::BufferGetVk(buffer);
+    VkDeviceSize offset = bufferOffset;
+    VkIndexType vkIdxType = indexSize == IndexType::Index16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+    vkCmdBindIndexBuffer(cmdBuf, buf, offset, vkIdxType);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 CmdSetPrimitiveTopology(const CmdBufferId id, const CoreGraphics::PrimitiveTopology::Code topo)
 {
 #if _DEBUG
@@ -367,8 +383,8 @@ CmdSetPrimitiveTopology(const CmdBufferId id, const CoreGraphics::PrimitiveTopol
     VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
     VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
     VkPrimitiveTopology comp = VkTypes::AsVkPrimitiveType(topo);
-    pipelineBundle.inputAssemblyInfo.topology = comp;
-    pipelineBundle.inputAssemblyInfo.primitiveRestartEnable = false;
+    pipelineBundle.inputAssembly.topo = comp;
+    pipelineBundle.inputAssembly.primRestart = false;
 }
 
 //------------------------------------------------------------------------------
@@ -507,7 +523,7 @@ CmdSetGraphicsPipeline(const CmdBufferId id)
     if (!AllBits(bits, CmdPipelineBuildBits::PipelineBuilt))
     {
         const VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
-        pipeline = CoreGraphics::GetOrCreatePipeline(pipelineBundle.pass, pipelineBundle.pipelineInfo.subpass, pipelineBundle.program, pipelineBundle.pipelineInfo);
+        pipeline = CoreGraphics::GetOrCreatePipeline(pipelineBundle.pass, pipelineBundle.pipelineInfo.subpass, pipelineBundle.program, pipelineBundle.inputAssembly, pipelineBundle.pipelineInfo);
         bits |= CmdPipelineBuildBits::PipelineBuilt;
     }
     vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);

@@ -20,6 +20,7 @@
 namespace Vulkan
 {
 
+
 /// setup graphics adapter
 void SetupAdapter();
 
@@ -60,7 +61,7 @@ const VkQueue GetQueue(const CoreGraphics::QueueType type, const IndexT index);
 const VkQueue GetCurrentQueue(const CoreGraphics::QueueType type);
 
 /// Generate or return cached VkPipeline
-VkPipeline GetOrCreatePipeline(CoreGraphics::PassId pass, uint subpass, CoreGraphics::ShaderProgramId program, const VkGraphicsPipelineCreateInfo& info);
+VkPipeline GetOrCreatePipeline(CoreGraphics::PassId pass, uint subpass, CoreGraphics::ShaderProgramId program, CoreGraphics::InputAssemblyKey inputAssembly, const VkGraphicsPipelineCreateInfo& info);
 
 /// perform a set of sparse bind operations
 void SparseTextureBind(const VkImage img, const Util::Array<VkSparseMemoryBind>& opaqueBinds, const Util::Array<VkSparseImageMemoryBind>& pageBinds);

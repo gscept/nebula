@@ -172,10 +172,10 @@ VkPipelineDatabase::SetVertexLayout(const VkPipelineVertexInputStateCreateInfo* 
 /**
 */
 void
-VkPipelineDatabase::SetInputLayout(const VkPipelineInputAssemblyStateCreateInfo* input)
+VkPipelineDatabase::SetInputLayout(const CoreGraphics::InputAssemblyKey key)
 {
-    this->currentInputAssemblyInfo = input;
-    IndexT index = this->ct4->children.FindIndex(input);
+    this->currentInputAssemblyInfo = key;
+    IndexT index = this->ct4->children.FindIndex(key);
     if (index != InvalidIndex)
     {
         this->ct5 = this->ct4->children.ValueAtIndex(index);
@@ -183,7 +183,7 @@ VkPipelineDatabase::SetInputLayout(const VkPipelineInputAssemblyStateCreateInfo*
     else
     {
         this->ct5 = tierNodeAllocator.Alloc<Tier5Node>();
-        this->ct4->children.Add(input, this->ct5);
+        this->ct4->children.Add(key, this->ct5);
     }
 }
 
@@ -209,6 +209,10 @@ VkPipelineDatabase::GetCompiledPipeline()
         VkPipelineColorBlendStateCreateInfo colorBlendInfo = *shaderInfo.pColorBlendState;
         colorBlendInfo.attachmentCount = PassGetNumSubpassAttachments(this->currentPass, this->currentSubpass);
 
+        VkPipelineInputAssemblyStateCreateInfo inputInfo;
+        inputInfo.topology = (VkPrimitiveTopology)this->currentInputAssemblyInfo.topo;
+        inputInfo.primitiveRestartEnable = this->currentInputAssemblyInfo.primRestart;
+
         // use shader, framebuffer, vertex input and layout, input assembly and pass info to construct a complete pipeline
         VkGraphicsPipelineCreateInfo info =
         {
@@ -218,7 +222,7 @@ VkPipelineDatabase::GetCompiledPipeline()
             shaderInfo.stageCount,
             shaderInfo.pStages,
             this->currentVertexLayout,
-            this->currentInputAssemblyInfo,
+            &inputInfo,
             shaderInfo.pTessellationState,
             passInfo.pViewportState,
             shaderInfo.pRasterizationState,
@@ -255,13 +259,14 @@ VkPipelineDatabase::GetCompiledPipeline(
     const CoreGraphics::PassId pass
     , const uint32_t subpass
     , const CoreGraphics::ShaderProgramId program
+    , CoreGraphics::InputAssemblyKey inputAssembly
     , const VkGraphicsPipelineCreateInfo& gfxPipe)
 {
     this->SetPass(pass);
     this->SetSubpass(subpass);
     this->SetShader(program, gfxPipe);
     this->SetVertexLayout(gfxPipe.pVertexInputState);
-    this->SetInputLayout(gfxPipe.pInputAssemblyState);
+    this->SetInputLayout(inputAssembly);
     return this->GetCompiledPipeline();
 }
 
@@ -275,7 +280,7 @@ VkPipelineDatabase::Reset()
     this->currentSubpass = -1;
     this->currentShaderProgram = CoreGraphics::InvalidShaderProgramId;
     this->currentVertexLayout = 0;
-    this->currentInputAssemblyInfo = 0;
+    this->currentInputAssemblyInfo.key = 0;
     this->currentPipeline = VK_NULL_HANDLE;
     this->ct1 = NULL;
     this->ct2 = NULL;

@@ -24,12 +24,12 @@
 #include "coregraphics/pass.h"
 #include "memory/arenaallocator.h"
 
-
 namespace Vulkan
 {
 class VkVertexLayout;
 class VkShaderProgram;
 class VkPass;
+
 class VkPipelineDatabase
 {
     __DeclareSingleton(VkPipelineDatabase);
@@ -64,7 +64,7 @@ public:
     /// set vertex layout
     void SetVertexLayout(const VkPipelineVertexInputStateCreateInfo* layout);
     /// set input layout
-    void SetInputLayout(const VkPipelineInputAssemblyStateCreateInfo* input);
+    void SetInputLayout(const CoreGraphics::InputAssemblyKey input);
     /// gets pipeline if it already exists, or creates if exists
     VkPipeline GetCompiledPipeline();
     /// Gets the pipeline associated with a set of state, or returns a previously created one
@@ -72,6 +72,7 @@ public:
         const CoreGraphics::PassId pass
         , const uint32_t subpass
         , const CoreGraphics::ShaderProgramId program
+        , CoreGraphics::InputAssemblyKey inputAssembly
         , const VkGraphicsPipelineCreateInfo& gfxPipe);
     /// resets all iterators
     void Reset();
@@ -81,7 +82,8 @@ public:
     /// re-creates all pipelines for all shader programs
     void RecreatePipelines();
 private:
-    
+
+
     VkDevice dev;
     VkPipelineCache cache;
     CoreGraphics::PassId currentPass;
@@ -89,7 +91,8 @@ private:
     CoreGraphics::ShaderProgramId currentShaderProgram;
     VkGraphicsPipelineCreateInfo currentShaderInfo;
     const VkPipelineVertexInputStateCreateInfo* currentVertexLayout;
-    const VkPipelineInputAssemblyStateCreateInfo* currentInputAssemblyInfo;
+
+    CoreGraphics::InputAssemblyKey currentInputAssemblyInfo;
     StateLevel currentLevel;
 
     struct Tier1Node;
@@ -119,7 +122,8 @@ private:
     };
     struct Tier4Node : public BaseNode
     {
-        Util::Dictionary<const VkPipelineInputAssemblyStateCreateInfo*, Tier5Node*> children;
+
+        Util::Dictionary<CoreGraphics::InputAssemblyKey, Tier5Node*> children;
     };
     struct Tier5Node : public BaseNode
     {

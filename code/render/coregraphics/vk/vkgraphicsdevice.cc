@@ -413,12 +413,12 @@ static Threading::CriticalSection pipelineMutex;
 /**
 */
 VkPipeline
-GetOrCreatePipeline(CoreGraphics::PassId pass, uint subpass, CoreGraphics::ShaderProgramId program, const VkGraphicsPipelineCreateInfo& info)
+GetOrCreatePipeline(CoreGraphics::PassId pass, uint subpass, CoreGraphics::ShaderProgramId program, CoreGraphics::InputAssemblyKey inputAssembly, const VkGraphicsPipelineCreateInfo& info)
 {
     Threading::CriticalScope scope(&pipelineMutex);
     N_MARKER_BEGIN(GetOrCreateGraphicsPipeline, Graphics);
 
-    VkPipeline pipeline = state.database.GetCompiledPipeline(pass, subpass, program, info);
+    VkPipeline pipeline = state.database.GetCompiledPipeline(pass, subpass, program, inputAssembly, info);
     _incr_counter(state.NumPipelinesBuilt, 1);
 
     N_MARKER_END();

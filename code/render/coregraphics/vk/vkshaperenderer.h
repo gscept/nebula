@@ -105,6 +105,7 @@ private:
         Util::Array<Math::mat4> transforms;
         Util::Array<uint64> firstVertexOffset;
         Util::Array<uint64> firstIndexOffset;
+        Util::Array<CoreGraphics::IndexType::Code> indexType;
     } indexed[CoreGraphics::PrimitiveTopology::NumTopologies];
 
     struct UnindexedDraws
