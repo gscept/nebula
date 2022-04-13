@@ -435,9 +435,8 @@ rad2deg(scalar r)
 /**
     Integer clamping.
 */
-template<typename TYPE>
-__forceinline TYPE
-clamp(TYPE val, TYPE minVal, TYPE maxVal)
+__forceinline float
+clamp(float val, float minVal, float maxVal)
 {
     if (val < minVal)      return minVal;
     else if (val > maxVal) return maxVal;
@@ -522,9 +521,8 @@ saturate(double val)
 /**
     Linearly interpolate between 2 values: ret = x + l * (y - x)
 */
-template <typename TYPE>
-__forceinline TYPE
-lerp(TYPE x, TYPE y, TYPE l)
+__forceinline float
+lerp(float x, float y, float l)
 {
     return x + l * (y - x);
 }

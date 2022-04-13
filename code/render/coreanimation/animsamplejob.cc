@@ -115,7 +115,7 @@ AnimSampleLinear(const AnimCurve* curves,
                 {
                     f0.load((scalar*)src0SamplePtr);
                     f1.load((scalar*)src1SamplePtr);
-                    fDst = vecLerp(f0, f1, sampleWeight);
+                    fDst = lerp(f0, f1, sampleWeight);
                     if (CurveType::Velocity == curveType)
                     {
                         fDst = fDst * velocityScale;
@@ -176,7 +176,7 @@ AnimMix(const AnimCurve* curves,
             {
                 f0.load((scalar*)src0SamplePtr);
                 f1.load((scalar*)src1SamplePtr);
-                fDst = vecLerp(f0, f1, mixWeight * maskWeight);
+                fDst = lerp(f0, f1, mixWeight * maskWeight);
                 fDst.store((scalar*)outSamplePtr);
             }
         }
