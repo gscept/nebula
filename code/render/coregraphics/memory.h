@@ -80,6 +80,7 @@ struct MemoryPool
 
     AllocationMethod allocMethod;
 
+    const char* budgetCounter;
     DeviceSize maxSize;
     bool mapMemory;
 

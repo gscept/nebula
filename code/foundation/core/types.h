@@ -71,6 +71,15 @@ operator"" _MB(const unsigned long long val)
     return val * 1024 * 1024;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+constexpr uint64
+operator"" _GB(const unsigned long long val)
+{
+    return val * 1024 * 1024 * 1024;
+}
+
 #define N_BIT(x) (1 << x)
 template <class MASK, class BITS>
 constexpr MASK

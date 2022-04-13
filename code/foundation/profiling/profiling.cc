@@ -214,7 +214,7 @@ ProfilingSetupBudgetCounter(const char* id, uint64 budget)
     // Add budget
     IndexT idx = budgetCounters.FindIndex(id);
     n_assert(idx == InvalidIndex);
-    budgetCounters.Add(id, { budget, budget });
+    budgetCounters.Add(id, { budget, 0 });
 
     counterLock.Leave();
 }
