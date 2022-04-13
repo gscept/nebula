@@ -17,6 +17,22 @@
 namespace CoreGraphics
 {
 
+union InputAssemblyKey
+{
+    struct
+    {
+        uint topo : 4;
+        bool primRestart : 1;
+    };
+    byte key;
+
+    void operator=(const InputAssemblyKey& rhs) { this->key = rhs.key; }
+    bool operator==(const InputAssemblyKey& rhs) const { return this->key == rhs.key; }
+    bool operator!=(const InputAssemblyKey& rhs) const { return this->key != rhs.key; }
+    bool operator>(const InputAssemblyKey& rhs) const { return this->key > rhs.key; }
+    bool operator<(const InputAssemblyKey& rhs) const { return this->key < rhs.key; }
+};
+
 enum IdType
 {
     BufferIdType,

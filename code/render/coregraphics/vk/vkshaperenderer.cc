@@ -341,6 +341,7 @@ VkShapeRenderer::DrawIndexedPrimitives(const Math::mat4& modelTransform, CoreGra
     this->indexed[topology].primitives.Append(group);
     this->indexed[topology].transforms.Append(modelTransform);
     this->indexed[topology].colors.Append(color);
+    this->indexed[topology].indexType.Append(indexType);
     this->vertexBufferOffset += numVertices * vertexWidth;
     this->indexBufferOffset += indexCount * indexSize;
 }
@@ -352,7 +353,7 @@ void
 VkShapeRenderer::DrawBufferedPrimitives(const CoreGraphics::CmdBufferId cmdBuf)
 {
     IndexT j;
-    for (j = 0; j < CoreGraphics::PrimitiveTopology::NumTopologies; j++)
+    for (j = 1; j < CoreGraphics::PrimitiveTopology::NumTopologies; j++)
     {
         CoreGraphics::CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::Code(j));
         CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
@@ -384,7 +385,7 @@ void
 VkShapeRenderer::DrawBufferedIndexedPrimitives(const CoreGraphics::CmdBufferId cmdBuf)
 {
     IndexT j;
-    for (j = 0; j < CoreGraphics::PrimitiveTopology::NumTopologies; j++)
+    for (j = 1; j < CoreGraphics::PrimitiveTopology::NumTopologies; j++)
     {
         CoreGraphics::CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::Code(j));
         CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
@@ -401,7 +402,7 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives(const CoreGraphics::CmdBufferId c
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
 
-            CoreGraphics::CmdSetIndexBuffer(cmdBuf, this->ibos[this->indexBufferActiveIndex], indexOffset);
+            CoreGraphics::CmdSetIndexBuffer(cmdBuf, this->ibos[this->indexBufferActiveIndex], this->indexed[j].indexType[i], indexOffset);
             CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, this->vbos[this->vertexBufferActiveIndex], vertexOffset);
 
             CoreGraphics::CmdDraw(cmdBuf, group);
