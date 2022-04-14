@@ -185,15 +185,12 @@ CreateCmdBuffer(const CmdBufferCreateInfo& info)
     }
 
     VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id);
-    pipelineBundle.inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    pipelineBundle.inputAssemblyInfo.pNext = nullptr;
-    pipelineBundle.inputAssemblyInfo.flags = 0;
-    pipelineBundle.inputAssemblyInfo.primitiveRestartEnable = false;
     pipelineBundle.blendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     pipelineBundle.blendInfo.pNext = nullptr;
     pipelineBundle.blendInfo.flags = 0;
 
-    pipelineBundle.pipelineInfo.pInputAssemblyState = &pipelineBundle.inputAssemblyInfo;
+    pipelineBundle.inputAssembly.topo = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    pipelineBundle.inputAssembly.primRestart = false;
     pipelineBundle.pipelineInfo.pColorBlendState = &pipelineBundle.blendInfo;
     pipelineBundle.pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineBundle.pipelineInfo.basePipelineIndex = 0;
