@@ -91,44 +91,23 @@ DebugDraw::end()
 	{
 		case DU_DRAW_POINTS:
 		{
-            //CoreGraphics::RenderShape shape;
-            //shape.SetupPrimitives(Math::mat4::identity, CoreGraphics::PrimitiveTopology::PointList, (SizeT)points.size(), points.begin(), vec4(1.0f), this->flag);
-            //CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
-            for (auto const& point : points)
-            {
-                Im3d::Im3dContext::DrawPoint(point.pos.vec, 10.0f, point.color);
-            }
+            CoreGraphics::RenderShape shape;
+            shape.SetupPrimitives(Math::mat4::identity, CoreGraphics::PrimitiveTopology::PointList, (SizeT)points.size(), points.begin(), vec4(1.0f), this->flag);
+            CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
 		}
 		break;
 		case DU_DRAW_LINES:
 		{
-            //CoreGraphics::RenderShape shape;
-            //shape.SetupPrimitives(Math::mat4::identity, CoreGraphics::PrimitiveTopology::LineList, (SizeT)points.size() / 2, points.begin(), vec4(1.0f), this->flag);
-            //CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
-            for (int i = 0, k = points.Size()/2;i<k;++i)
-            {
-                Im3d::Im3dContext::DrawLine(Math::line(points[2 * i].pos, points[2 * i + 1].pos), 1.0f, points[2 * i].color);
-            }
+            CoreGraphics::RenderShape shape;
+            shape.SetupPrimitives(Math::mat4::identity, CoreGraphics::PrimitiveTopology::LineList, (SizeT)points.size() / 2, points.begin(), vec4(1.0f), this->flag);
+            CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
 		}
 		break;
 		case DU_DRAW_TRIS:
         {
-            static bool foo = true;
-            if (foo)
-            {
-                CoreGraphics::RenderShape shape;
-                shape.SetupPrimitives(Math::mat4::identity, CoreGraphics::PrimitiveTopology::TriangleList, (SizeT)points.Size() / 3, &points[0], vec4(1.0f), CoreGraphics::RenderShape::Wireframe);// this->flag);
-                CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
-            }
-            else
-            {
-            for (int i = 0, k = points.Size() / 3; i < k; ++i)
-            {
-                Im3d::Im3dContext::DrawLine(Math::line(points[3 * i].pos, points[3 * i + 1].pos), 5.0f, points[3 * i].color);
-                Im3d::Im3dContext::DrawLine(Math::line(points[3 * i + 1].pos, points[3 * i + 2].pos), 5.0f, points[3 * i + 1].color);
-                Im3d::Im3dContext::DrawLine(Math::line(points[3 * i + 2].pos, points[3 * i].pos), 5.0f, points[3 * i + 2].color);
-            }
-            }
+            CoreGraphics::RenderShape shape;
+            shape.SetupPrimitives(Math::mat4::identity, CoreGraphics::PrimitiveTopology::TriangleList, (SizeT)points.Size() / 3, &points[0], vec4(1.0f), CoreGraphics::RenderShape::Wireframe);// this->flag);
+            CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
 		}
 		break;
 		case DU_DRAW_QUADS:

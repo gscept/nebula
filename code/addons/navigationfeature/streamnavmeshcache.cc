@@ -65,12 +65,12 @@ StreamNavMeshCache::LoadFromStream(const Resources::ResourceId res, const Util::
     n_assert(this->GetState(res) == Resources::Resource::Pending);
 
     /// during the load-phase, we can safetly get the structs
-    this->EnterGet();
+    this->Lock(Util::ArrayAllocatorAccess::Read);
     NavMeshT& meshInfo = this->allocator.Get<3>(res.resourceId);
     Util::String& name = this->allocator.Get<0>(res.resourceId);
     dtNavMesh*& navMesh = this->allocator.Get<1>(res.resourceId);
     dtNavMeshQuery*& navMeshQuery = this->allocator.Get<2>(res.resourceId);
-    this->LeaveGet();
+    this->Unlock(Util::ArrayAllocatorAccess::Read);
 
     if (stream->Open())
     {
@@ -109,14 +109,14 @@ StreamNavMeshCache::LoadFromStream(const Resources::ResourceId res, const Util::
 void
 StreamNavMeshCache::Unload(const Resources::ResourceId res)
 {
-    this->EnterGet();
+    this->Lock(Util::ArrayAllocatorAccess::Read);
     NavMeshT& meshInfo = this->allocator.Get<3>(res.resourceId);
     Util::String& name = this->allocator.Get<0>(res.resourceId);
     dtNavMesh*& navMesh = this->allocator.Get<1>(res.resourceId);
     dtNavMeshQuery*& navMeshQuery = this->allocator.Get<2>(res.resourceId);
     dtFreeNavMesh(navMesh);
     dtFreeNavMeshQuery(navMeshQuery);
-    this->LeaveGet();
+    this->Unlock(Util::ArrayAllocatorAccess::Read);
     this->states[res.poolId] = Resources::Resource::State::Unloaded;
 }
 
