@@ -13,8 +13,7 @@ namespace Frame
 */
 FrameSubmission::FrameSubmission() :
     queue(CoreGraphics::InvalidQueueType),
-    resourceResetBarriers(nullptr),
-    waitSubmission(nullptr)
+    resourceResetBarriers(nullptr)
 {
     // empty
 }
