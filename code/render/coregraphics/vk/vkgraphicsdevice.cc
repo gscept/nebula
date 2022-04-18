@@ -1392,7 +1392,7 @@ SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueTyp
 void
 WaitForSubmission(SubmissionWaitEvent index, CoreGraphics::QueueType type, CoreGraphics::QueueType waitType)
 {
-    state.queueHandler.AppendWaitTimeline(index.timelineIndex, type, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, waitType);
+    state.queueHandler.AppendWaitTimeline(index.timelineIndex, type, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, waitType);
 }
 
 //------------------------------------------------------------------------------

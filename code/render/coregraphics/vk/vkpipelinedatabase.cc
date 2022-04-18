@@ -210,6 +210,9 @@ VkPipelineDatabase::GetCompiledPipeline()
         colorBlendInfo.attachmentCount = PassGetNumSubpassAttachments(this->currentPass, this->currentSubpass);
 
         VkPipelineInputAssemblyStateCreateInfo inputInfo;
+        inputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+        inputInfo.pNext = nullptr;
+        inputInfo.flags = 0;
         inputInfo.topology = (VkPrimitiveTopology)this->currentInputAssemblyInfo.topo;
         inputInfo.primitiveRestartEnable = this->currentInputAssemblyInfo.primRestart;
 

@@ -826,9 +826,9 @@ VkTypes::AsVkImageLayout(const CoreGraphics::PipelineStage stage, bool depthSten
         case CoreGraphics::PipelineStage::AllShadersWrite:
             return VK_IMAGE_LAYOUT_GENERAL;
         case CoreGraphics::PipelineStage::ColorRead:
-            return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         case CoreGraphics::PipelineStage::DepthStencilRead:
-            return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+            return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
         case CoreGraphics::PipelineStage::TransferRead:
             return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         case CoreGraphics::PipelineStage::TransferWrite:

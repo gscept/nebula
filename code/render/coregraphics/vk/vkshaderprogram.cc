@@ -237,7 +237,15 @@ VkShaderProgramSetupAsGraphics(AnyFX::VkProgram* program, const Resources::Resou
     };
 
     // setup dynamic state, we only support dynamic viewports and scissor rects
-    static const VkDynamicState dynamicStates[] = { VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK, VK_DYNAMIC_STATE_STENCIL_WRITE_MASK, VK_DYNAMIC_STATE_STENCIL_REFERENCE };
+    static const VkDynamicState dynamicStates[] =
+    {
+        VK_DYNAMIC_STATE_SCISSOR
+        , VK_DYNAMIC_STATE_VIEWPORT
+        , VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK
+        , VK_DYNAMIC_STATE_STENCIL_WRITE_MASK
+        , VK_DYNAMIC_STATE_STENCIL_REFERENCE
+
+    };
     runtime.dynamicInfo =
     {
         VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,

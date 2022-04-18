@@ -29,7 +29,7 @@ public:
         void Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex) override;
         void Discard() override;
 
-        FrameSubmission::CompiledImpl* waitSubmission;
+        Util::Array<FrameSubmission::CompiledImpl*> waitSubmissions;
         CoreGraphics::CmdBufferPoolId commandBufferPool;
         CoreGraphics::QueueType queue;
         Util::Array<CoreGraphics::BarrierId>* resourceResetBarriers;
@@ -52,7 +52,7 @@ public:
         Util::Dictionary<CoreGraphics::BufferId, Util::Array<BufferDependency>>& rwBuffers,
         Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures);
 
-    FrameSubmission* waitSubmission;
+    Util::Array<FrameSubmission*> waitSubmissions;
     CoreGraphics::CmdBufferPoolId commandBufferPool;
     CoreGraphics::QueueType queue;
     Util::Array<CoreGraphics::BarrierId>* resourceResetBarriers;
