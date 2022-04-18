@@ -1,0 +1,86 @@
+#-------------------------------------------------------------------------------
+# Toolkit-common
+#-------------------------------------------------------------------------------
+
+fips_begin_module(toolkit-common)
+    fips_vs_warning_level(3)
+    fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+    fips_deps(foundation)
+        fips_files(
+            applauncher.cc
+            applauncher.h       
+            logger.cc
+            logger.h
+            platform.cc
+            platform.h
+            projectinfo.cc
+            projectinfo.h
+            rcswrapper.cc
+            rcswrapper.h            
+            toolkitapp.cc
+            toolkitapp.h
+            toolkitconsolehandler.cc
+            toolkitconsolehandler.h
+            toolkitversion.cc
+            toolkitversion.h            
+        )       
+        fips_dir(base)
+            fips_files(
+                applauncherbase.h
+                exporterbase.cc
+                exporterbase.h
+                exporttypes.h
+            )
+        fips_dir(converters)
+            fips_files(
+                binaryxmlconverter.cc
+                binaryxmlconverter.h
+                #n2batchconverter.cc
+                #n2batchconverter.h
+                #n2converter.cc
+                #n2converter.h
+            )
+        IF (MSVC)
+            fips_dir(win32)
+                fips_files(
+                    win32applauncher.cc
+                    win32applauncher.h
+                )
+        ELSE()
+            fips_dir(posix)
+            fips_files(
+                posixapplauncher.cc
+                posixapplauncher.h
+            )
+        ENDIF()
+
+        fips_dir(distributedtools)
+            fips_files(
+                distributedjobscheduler.cc
+                distributedjobscheduler.h
+                distributedtoolkitapp.cc
+                distributedtoolkitapp.h
+                remotejobservice.cc
+                remotejobservice.h
+                shareddircontrol.cc
+                shareddircontrol.h
+                shareddircreator.cc
+                shareddircreator.h
+                shareddirfilesystem.cc
+                shareddirfilesystem.h
+                shareddirftp.cc
+                shareddirftp.h
+            )
+            fips_dir(distributedtools/distributedjobs)
+                fips_files(
+                    distributedappjob.cc
+                    distributedappjob.h
+                    distributedcreateemptyfilejob.cc
+                    distributedcreateemptyfilejob.h
+                    distributeddeletedirectorycontentjob.cc
+                    distributeddeletedirectorycontentjob.h
+                    distributedjob.cc
+                    distributedjob.h
+                )
+fips_end_module()
+target_include_directories(toolkit-common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

@@ -521,7 +521,15 @@ IoServer::ListFiles(const URI& uri, const String& pattern, bool asFullPath) cons
         listFile.AppendLocalPath("/_files.lst");
         if (IoServer::ReadFile(listFile, fileList))
         {
-            return fileList.Tokenize("\n");
+            Util::Array<Util::String> files = fileList.Tokenize("\n");
+            for(auto const& fileName : files)
+            {
+                if (String::MatchPattern(fileName, pattern))
+                {
+                    result.Append(fileName);
+                }
+            }
+            return result;
         }
     }
 
