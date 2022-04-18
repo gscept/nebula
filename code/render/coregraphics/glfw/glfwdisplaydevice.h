@@ -35,9 +35,6 @@ public:
     /// process window system messages, call this method once per frame
     static void ProcessWindowMessages();
 
-    /// set if vertical sync should be used
-    void SetVerticalSyncEnabled(bool b);
-
     /// return true if adapter exists
     bool AdapterExists(CoreGraphics::Adapter::Code adapter);
     /// get available display modes on given adapter

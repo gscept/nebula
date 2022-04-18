@@ -93,16 +93,6 @@ GLFWDisplayDevice::ProcessWindowMessages()
 //------------------------------------------------------------------------------
 /**
 */
-void
-GLFWDisplayDevice::SetVerticalSyncEnabled(bool b)
-{
-    DisplayDeviceBase::SetVerticalSyncEnabled(b);
-    glfwSwapInterval(b ? 1 : 0);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 bool
 MatchPixelFormat(PixelFormat::Code format, const GLFWvidmode & mode)
 {

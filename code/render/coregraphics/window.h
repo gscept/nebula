@@ -34,6 +34,7 @@ struct WindowCreateInfo
     bool resizable : 1;
     bool decorated : 1;
     bool fullscreen : 1;
+    bool vsync : 1;
 };
 
 /// create new window
