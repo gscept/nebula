@@ -513,9 +513,14 @@ FrameScriptLoader::ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, J
     JzonValue* queue = jzon_get(node, "queue");
     submission->queue = CoreGraphics::QueueTypeFromString(queue->string_value);
 
-    JzonValue* waitSubmission = jzon_get(node, "wait_for_submission");
-    if (waitSubmission != nullptr)
-        submission->waitSubmission = static_cast<Frame::FrameSubmission*>(script->GetOp(waitSubmission->string_value));
+    JzonValue* waitSubmissions = jzon_get(node, "wait_for_submissions");
+    if (waitSubmissions != nullptr)
+    {
+        for (int i = 0; i < waitSubmissions->size; i++)
+        {
+            submission->waitSubmissions.Append(static_cast<Frame::FrameSubmission*>(script->GetOp(waitSubmissions->array_values[i]->string_value)));
+        }
+    }
 
     JzonValue* ops = jzon_get(node, "ops");
     if (ops != nullptr)

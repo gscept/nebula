@@ -97,9 +97,9 @@ FrameSubmission::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const
     CoreGraphics::CmdEndRecord(submissionBuffer);
     this->submissionId = CoreGraphics::SubmitCommandBuffer(submissionBuffer, this->queue);
 
-    // If a wait submission is present, append a wait for the subission we just did 
-    if (this->waitSubmission != nullptr)
-        CoreGraphics::WaitForSubmission(this->waitSubmission->submissionId, this->queue, this->waitSubmission->queue);
+    // If a wait submission is present, append a wait for the subission we just did
+    for (IndexT i = 0; i < this->waitSubmissions.Size(); i++)
+        CoreGraphics::WaitForSubmission(this->waitSubmissions[i]->submissionId, this->queue, this->waitSubmissions[i]->queue);
 
     // Delete command buffer
     CoreGraphics::DestroyCmdBuffer(submissionBuffer);
@@ -157,8 +157,8 @@ FrameSubmission::Build(
     }
 
     this->compiled = myCompiled;
-    if (this->waitSubmission != nullptr)
-        myCompiled->waitSubmission = static_cast<FrameSubmission::CompiledImpl*>(this->waitSubmission->compiled);
+    for (IndexT i = 0; i < this->waitSubmissions.Size(); i++)
+        myCompiled->waitSubmissions.Append(static_cast<FrameSubmission::CompiledImpl*>(this->waitSubmissions[i]->compiled));
     myCompiled->commandBufferPool = this->commandBufferPool;
     compiledOps.Append(this->compiled);
 }

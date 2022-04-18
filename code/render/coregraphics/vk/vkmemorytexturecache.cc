@@ -1393,7 +1393,7 @@ VkMemoryTextureCache::Setup(const Resources::ResourceId id)
                 // Transition to depth read
                 CoreGraphics::CmdBarrier(cmdBuf,
                     CoreGraphics::PipelineStage::TransferWrite,
-                    CoreGraphics::PipelineStage::AllShadersRead,
+                    CoreGraphics::PipelineStage::DepthStencilRead,
                     CoreGraphics::BarrierDomain::Global,
                     {
                         TextureBarrierInfo

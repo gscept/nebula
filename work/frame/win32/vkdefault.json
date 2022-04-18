@@ -272,7 +272,7 @@
 
         "submission": {
             "name": "Forward shading and post effects",
-            "wait_for_submission": "Clustering",
+            "wait_for_submissions": [ "Clustering", "Shadow maps and Prepass" ],
             "queue": "Graphics",
             "_comment": "Main graphics submission",
             "ops": {
