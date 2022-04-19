@@ -46,11 +46,11 @@ struct VkBackbufferInfo
 /// get surface
 const VkSurfaceKHR& GetSurface(const CoreGraphics::WindowId& id);
 /// setup Vulkan swapchain
-void SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, const Util::StringAtom& title);
+void SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, bool vsync, const Util::StringAtom& title);
 /// destroy Vulkan swapchain
 void DiscardVulkanSwapchain(const CoreGraphics::WindowId& id);
 /// recreate Vulkan swapchain (used when swapchain is no longer valid due to resize of window or similar)
-void RecreateVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, const Util::StringAtom& title);
+void RecreateVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, bool vsync, const Util::StringAtom& title);
 /// perform a present
 void Present(const CoreGraphics::WindowId& id);
 
@@ -62,8 +62,9 @@ namespace CoreGraphics
 
 struct ResizeInfo
 {
-    uint newWidth, newHeight;
-    bool done;
+    uint newWidth : 16, newHeight : 16;
+    bool done : 1;
+    bool vsync : 1;
 };
 
 enum

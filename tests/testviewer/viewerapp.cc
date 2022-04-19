@@ -140,7 +140,7 @@ SimpleViewerApplication::Open()
         CoreGraphics::WindowCreateInfo wndInfo =
         {
             CoreGraphics::DisplayMode{ 100, 100, width, height },
-            this->GetAppTitle(), "", CoreGraphics::AntiAliasQuality::None, true, true, false
+            this->GetAppTitle(), "", CoreGraphics::AntiAliasQuality::None, true, true, false, true
         };
         this->wnd = CreateWindow(wndInfo);
         this->cam = Graphics::CreateEntity();

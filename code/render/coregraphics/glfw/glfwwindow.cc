@@ -340,7 +340,7 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
     id.id24 = windowId;
     id.id8 = WindowIdType;
     glfwWindowAllocator.Set<GLFW_SetupInfo>(windowId, info);
-    glfwWindowAllocator.Set<GLFW_ResizeInfo>(windowId, { 0, 0, true });
+    glfwWindowAllocator.Set<GLFW_ResizeInfo>(windowId, { 0, 0, true, info.vsync });
 
     GLFWmonitor* monitor = GLFWDisplayDevice::Instance()->GetMonitor(Adapter::Code::Primary);
     n_assert(monitor);
@@ -400,6 +400,8 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
         glfwSetWindowTitle(wnd, info.title.Value());
     }
 
+    glfwSwapInterval(info.vsync ? 1 : 0);
+
 #if __VULKAN__
     Vulkan::VkSwapchainInfo& swapInfo = glfwWindowAllocator.Get<GLFW_SwapChain>(id.id24);
     VkResult res = glfwCreateWindowSurface(Vulkan::GetInstance(), wnd, nullptr, &swapInfo.surface);
@@ -409,7 +411,7 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
     DisplayDevice::Instance()->MakeWindowCurrent(id);
 
     // setup swapchain
-    Vulkan::SetupVulkanSwapchain(id, info.mode, info.title);
+    Vulkan::SetupVulkanSwapchain(id, info.mode, info.vsync, info.title);
 #endif
 
     glfwWindowAllocator.Get<GLFW_Window>(windowId) = wnd;
@@ -424,7 +426,6 @@ InternalSetupFunction(const WindowCreateInfo& info, const Util::Blob& windowData
     DisplayDevice::Instance()->MakeWindowCurrent(id);
     return id;
 }
-
 
 //------------------------------------------------------------------------------
 /**
@@ -611,7 +612,7 @@ WindowPresent(const WindowId id, const IndexT frameIndex)
             // WindowResize(id, width, height);
 #if __VULKAN__
             // recreate swapchain
-            Vulkan::RecreateVulkanSwapchain(id, mode, "RESIZED"_atm);
+            Vulkan::RecreateVulkanSwapchain(id, mode, info.vsync, "RESIZED"_atm);
 #endif
 
             // notify event listeners we resized
@@ -721,7 +722,7 @@ GetSurface(const CoreGraphics::WindowId& id)
 /**
 */
 void
-SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, const Util::StringAtom& title)
+SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, bool vsync, const Util::StringAtom& title)
 {
     VkWindowSwapInfo& windowInfo = glfwWindowAllocator.Get<GLFW_WindowSwapInfo>(id.id24);
     VkSwapchainInfo& swapInfo = glfwWindowAllocator.Get<GLFW_SwapChain>(id.id24);
@@ -792,14 +793,14 @@ SetupVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Displ
             numPresentModes = 0;
             break;
         case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
-            if (!CoreGraphics::DisplayDevice::Instance()->IsVerticalSyncEnabled())
+            if (!vsync)
             {
                 swapchainPresentMode = presentModes[i];
                 numPresentModes = 0;
             }               
             break;
         case VK_PRESENT_MODE_IMMEDIATE_KHR:
-            if (!CoreGraphics::DisplayDevice::Instance()->IsVerticalSyncEnabled())
+            if (!vsync)
             {
                 swapchainPresentMode = presentModes[i];
                 numPresentModes = 0;
@@ -932,7 +933,7 @@ DiscardVulkanSwapchain(const CoreGraphics::WindowId& id)
 /**
 */
 void
-RecreateVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, const Util::StringAtom& title)
+RecreateVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::DisplayMode& mode, bool vsync, const Util::StringAtom& title)
 {
     VkWindowSwapInfo& wndInfo = glfwWindowAllocator.Get<GLFW_WindowSwapInfo>(id.id24);
 
@@ -942,7 +943,7 @@ RecreateVulkanSwapchain(const CoreGraphics::WindowId& id, const CoreGraphics::Di
     DiscardVulkanSwapchain(id);
 
     // TODO: We could pass the old swapchain when creating the new one, allowing any pending drawing to be finished before changing
-    SetupVulkanSwapchain(id, mode, title);
+    SetupVulkanSwapchain(id, mode, vsync, title);
 }
 
 //------------------------------------------------------------------------------
