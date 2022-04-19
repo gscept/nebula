@@ -92,11 +92,16 @@ void
 ShapeRendererBase::AddShape(const RenderShape& shape)
 {
     n_assert(this->IsOpen());
-    if (shape.GetShapeType() == RenderShape::Primitives || shape.GetShapeType() == RenderShape::IndexedPrimitives)
+    if (shape.GetShapeType() == RenderShape::Primitives)
     {
         this->primitives[shape.GetDepthFlag()].Append(shape);
-        this->numVerticesThisFrame += PrimitiveTopology::NumberOfVertices(shape.GetTopology(), shape.GetNumPrimitives());
-        this->numIndicesThisFrame += PrimitiveTopology::NumberOfVertices(shape.GetTopology(), shape.GetNumPrimitives());
+        this->numVerticesThisFrame += shape.GetNumVertices();
+    }
+    else if (shape.GetShapeType() == RenderShape::IndexedPrimitives)
+    {
+        this->primitives[shape.GetDepthFlag()].Append(shape);
+        this->numVerticesThisFrame += shape.GetNumVertices();
+        this->numIndicesThisFrame += shape.GetNumIndices();
     }
     else
         this->shapes[shape.GetDepthFlag()].Append(shape);
@@ -116,7 +121,7 @@ ShapeRendererBase::AddShapes(const Array<RenderShape>& shapeArray)
         {
             this->primitives[shape.GetDepthFlag()].Append(shape);
             this->numVerticesThisFrame += shape.GetNumVertices();
-            this->numIndicesThisFrame += PrimitiveTopology::NumberOfVertices(shape.GetTopology(), shape.GetNumPrimitives());
+            this->numIndicesThisFrame += shape.GetNumIndices();
         }
         else
             this->shapes[shape.GetDepthFlag()].Append(shape);
@@ -179,12 +184,11 @@ ShapeRendererBase::AddWireFrameBox(const Math::bbox& boundingBox, const Math::ve
         lineList.Append(vert);      
     }       
     RenderShape shape;
-    shape.SetupPrimitives(mat4(),
-        PrimitiveTopology::LineList,
-        lineList.Size() / 2,
-        &(lineList.Front()),
-        color,
-        CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe));
+    shape.SetupPrimitives(
+        lineList
+        , PrimitiveTopology::LineList
+        , CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe));
+
     this->AddShape(shape);    
 }
 

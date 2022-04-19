@@ -169,20 +169,16 @@ VkShapeRenderer::DrawShapes(const CoreGraphics::CmdBufferId cmdBuf)
                 if (curShape.GetShapeType() == RenderShape::Primitives)
                     this->DrawPrimitives(curShape.GetModelTransform(),
                         curShape.GetTopology(),
-                        curShape.GetNumPrimitives(),
-                        curShape.GetVertexData(),
-                        curShape.GetVertexWidth(),
-                        curShape.GetColor());
+                        curShape.GetNumVertices(),
+                        curShape.GetVertexData());
                 else if (curShape.GetShapeType() == RenderShape::IndexedPrimitives)
                     this->DrawIndexedPrimitives(curShape.GetModelTransform(),
                         curShape.GetTopology(),
-                        curShape.GetNumPrimitives(),
-                        curShape.GetVertexData(),
                         curShape.GetNumVertices(),
-                        curShape.GetVertexWidth(),
+                        curShape.GetVertexData(),
+                        curShape.GetNumIndices(),
                         curShape.GetIndexData(),
-                        curShape.GetIndexType(),
-                        curShape.GetColor());
+                        curShape.GetIndexType());
                 else n_error("Shape type %d is not a primitive!", curShape.GetShapeType());
             }
 
@@ -286,42 +282,50 @@ VkShapeRenderer::DrawMesh(const CoreGraphics::CmdBufferId cmdBuf, const Math::ma
 /**
 */
 void
-VkShapeRenderer::DrawPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numPrimitives, const void* vertices, SizeT vertexWidth, const Math::vec4& color)
+VkShapeRenderer::DrawPrimitives(
+    const Math::mat4& modelTransform
+    , CoreGraphics::PrimitiveTopology::Code topology
+    , SizeT numVertices
+    , const void* vertices)
 {
     n_assert(0 != vertices);
-    n_assert(vertexWidth <= MaxVertexWidth);
+    static const SizeT vertexWidth = sizeof(RenderShape::RenderShapeVertex);
 
     // calculate vertex count
-    SizeT vertexCount = PrimitiveTopology::NumberOfVertices(topology, numPrimitives);
     byte* verts = this->vertexBufferPtr;
 
     // unlock buffer to avoid stomping data
-    memcpy(verts + this->vertexBufferOffset, vertices, vertexCount * vertexWidth);
+    memcpy(verts + this->vertexBufferOffset, vertices, numVertices * vertexWidth);
 
     // set vertex offset in primitive group
     CoreGraphics::PrimitiveGroup group;
     group.SetBaseVertex(this->vertexBufferOffset);
-    group.SetNumVertices(vertexCount);
+    group.SetNumVertices(numVertices);
     group.SetNumIndices(0);
     this->unindexed[topology].firstVertexOffset.Append(this->vertexBufferOffset);
     this->unindexed[topology].primitives.Append(group);
     this->unindexed[topology].transforms.Append(modelTransform);
-    this->unindexed[topology].colors.Append(color);
-    this->vertexBufferOffset += vertexCount * vertexWidth;
+    this->vertexBufferOffset += numVertices * vertexWidth;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShapeRenderer::DrawIndexedPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numPrimitives, const void* vertices, SizeT numVertices, SizeT vertexWidth, const void* indices, CoreGraphics::IndexType::Code indexType, const Math::vec4& color)
+VkShapeRenderer::DrawIndexedPrimitives(
+    const Math::mat4& modelTransform
+    , CoreGraphics::PrimitiveTopology::Code topology
+    , SizeT numVertices
+    , const void* vertices
+    , SizeT numIndices
+    , const void* indices
+    , CoreGraphics::IndexType::Code indexType)
 {
     n_assert(0 != vertices);
     n_assert(0 != indices);
-    n_assert(vertexWidth <= MaxVertexWidth);
+    static const SizeT vertexWidth = sizeof(RenderShape::RenderShapeVertex);
 
     // calculate index count and size of index type
-    SizeT indexCount = PrimitiveTopology::NumberOfVertices(topology, numPrimitives);
     SizeT indexSize = CoreGraphics::IndexType::SizeOf(indexType);
 
     byte* verts = this->vertexBufferPtr;
@@ -329,21 +333,20 @@ VkShapeRenderer::DrawIndexedPrimitives(const Math::mat4& modelTransform, CoreGra
 
     // unlock buffer and copy data
     memcpy(verts + this->vertexBufferOffset, vertices, numVertices * vertexWidth);
-    memcpy(inds + this->indexBufferOffset, indices, indexCount * indexSize);
+    memcpy(inds + this->indexBufferOffset, indices, numIndices * indexSize);
 
     // set vertex offset in primitive group
     CoreGraphics::PrimitiveGroup group;
     group.SetBaseVertex(0);
     group.SetBaseIndex(0);
-    group.SetNumIndices(indexCount);
+    group.SetNumIndices(numIndices);
     this->indexed[topology].firstIndexOffset.Append(this->indexBufferOffset);
     this->indexed[topology].firstVertexOffset.Append(this->vertexBufferOffset);
     this->indexed[topology].primitives.Append(group);
     this->indexed[topology].transforms.Append(modelTransform);
-    this->indexed[topology].colors.Append(color);
     this->indexed[topology].indexType.Append(indexType);
     this->vertexBufferOffset += numVertices * vertexWidth;
-    this->indexBufferOffset += indexCount * indexSize;
+    this->indexBufferOffset += numIndices * indexSize;
 }
 
 //------------------------------------------------------------------------------
