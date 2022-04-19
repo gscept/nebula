@@ -83,6 +83,12 @@ VkScissorToRect(const VkRect2D& sc)
     return ret;
 }
 
+Util::FixedArray<Util::FixedArray<VkAttachmentReference>> subpassReferences;
+Util::FixedArray<Util::FixedArray<VkAttachmentReference>> subpassInputs;
+Util::FixedArray<Util::FixedArray<uint32_t>> subpassPreserves;
+Util::FixedArray<Util::FixedArray<VkAttachmentReference>> subpassResolves;
+Util::FixedArray<VkAttachmentReference> subpassDepthStencils;
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -98,12 +104,6 @@ GetSubpassInfo(
     , Util::FixedArray<VkPipelineViewportStateCreateInfo>& outPipelineInfos
     , uint32& numUsedAttachmentsTotal)
 {
-    Util::FixedArray<Util::FixedArray<VkAttachmentReference>> subpassReferences;
-    Util::FixedArray<Util::FixedArray<VkAttachmentReference>> subpassInputs;
-    Util::FixedArray<Util::FixedArray<uint32_t>> subpassPreserves;
-    Util::FixedArray<Util::FixedArray<VkAttachmentReference>> subpassResolves;
-    Util::FixedArray<VkAttachmentReference> subpassDepthStencils;
-
     subpassReferences.Resize(loadInfo.subpasses.Size());
     subpassInputs.Resize(loadInfo.subpasses.Size());
     subpassPreserves.Resize(loadInfo.subpasses.Size());
