@@ -484,26 +484,39 @@ CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId ta
 /**
 */
 void
-CmdPushConstants(const CmdBufferId id, ShaderPipeline pipeline, uint offset, uint size, byte* data)
+CmdPushConstants(const CmdBufferId id, ShaderPipeline pipeline, uint offset, uint size, const void* data)
 {
-    const VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
-    VkShaderStageFlags stageFlags;
-    VkPipelineLayout layout;
     switch (pipeline)
     {
         case ShaderPipeline::GraphicsPipeline:
-            stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
-            layout = pipelineBundle.graphicsLayout;
+            CmdPushGraphicsConstants(id, offset, size, data);
             break;
         case ShaderPipeline::ComputePipeline:
-            stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-            layout = pipelineBundle.computeLayout;
+            CmdPushComputeConstants(id, offset, size, data);
             break;
-        default:
-            return;
     }
-    vkCmdPushConstants(cmdBuf, layout, stageFlags, offset, size, data);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CmdPushGraphicsConstants(const CmdBufferId id, uint offset, uint size, const void* data)
+{
+    const VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    vkCmdPushConstants(cmdBuf, pipelineBundle.graphicsLayout, VK_SHADER_STAGE_ALL_GRAPHICS, offset, size, data);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+CmdPushComputeConstants(const CmdBufferId id, uint offset, uint size, const void* data)
+{
+    const VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
+    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    vkCmdPushConstants(cmdBuf, pipelineBundle.computeLayout, VK_SHADER_STAGE_COMPUTE_BIT, offset, size, data);
 }
 
 //------------------------------------------------------------------------------
