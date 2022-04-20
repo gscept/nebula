@@ -514,7 +514,7 @@ ObserverContext::OnRenderDebug(uint32_t flags)
 #endif
                     1
             };
-            shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), a->boundingBox.to_mat4(), color);
+            shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), color, a->boundingBox.to_mat4());
             CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
         }
     }
@@ -532,7 +532,7 @@ ObserverContext::OnRenderDebug(uint32_t flags)
                 1 
             };
             Math::mat4 t = a->boundingBox.to_mat4();
-            shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), a->boundingBox.to_mat4(), color);
+            shape.SetupSimpleShape(CoreGraphics::RenderShape::Box, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), color, a->boundingBox.to_mat4());
             CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
         }
     }

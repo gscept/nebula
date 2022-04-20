@@ -71,7 +71,12 @@ public:
     /// return true if object has been setup
     bool IsValid() const;
     /// setup simple shape
-    void SetupSimpleShape(Type shapeType, RenderFlag depthFlag, const Math::mat4& modelTransform, const Math::vec4& color);
+    void SetupSimpleShape(
+        Type shapeType
+        , RenderFlag depthFlag
+        , const Math::vec4& color
+        , const Math::mat4& modelTransform = Math::mat4::identity
+        , float lineThickness = 1.0f);
 
     /// Setup primitives draw
     void SetupPrimitives(
@@ -80,6 +85,7 @@ public:
         , PrimitiveTopology::Code topology
         , RenderFlag depthFlag
         , const Math::mat4 transform = Math::mat4::identity
+        , float lineThickness = 1.0f
     );
 
     /// Setup primitives draw
@@ -88,6 +94,7 @@ public:
         , PrimitiveTopology::Code topology
         , RenderFlag depthFlag
         , const Math::mat4 transform = Math::mat4::identity
+        , float lineThickness = 1.0f
     );
 
     /// Setup indexed primitives draw
@@ -100,6 +107,7 @@ public:
         , PrimitiveTopology::Code topology
         , RenderFlag depthFlag
         , const Math::mat4 transform = Math::mat4::identity
+        , float lineThickness = 1.0f
     );
 
     /// Setup indexed primitives draw
@@ -109,6 +117,7 @@ public:
         , PrimitiveTopology::Code topology
         , RenderFlag depthFlag
         , const Math::mat4 transform = Math::mat4::identity
+        , float lineThickness = 1.0f
     );
 
     /// Setup indexed primitives draw
@@ -118,15 +127,17 @@ public:
         , PrimitiveTopology::Code topology
         , RenderFlag depthFlag
         , const Math::mat4 transform = Math::mat4::identity
+        , float lineThickness = 1.0f
     );
 
     /// setup mesh
     void SetupMesh(
-        const Math::mat4& modelTransform
-        , const MeshId mesh
+        const MeshId mesh
         , const IndexT groupIndex
         , const Math::vec4& color
         , RenderFlag depthFlag
+        , const Math::mat4& modelTransform = Math::mat4::identity
+        , float lineThickness = 1.0f
     );
 
     /// get shape type
@@ -155,6 +166,8 @@ public:
     const MeshId GetMesh() const;
     /// get primitive group
     const IndexT& GetPrimitiveGroupIndex() const;
+    /// Get line thickness
+    const float GetLineThickness() const;
 
 private:
     Type shapeType;
@@ -165,6 +178,7 @@ private:
     SizeT vertexDataOffset;
     IndexType::Code indexType;
     Math::vec4 color;
+    float lineThickness;
 
     IndexT groupIndex;
     MeshId mesh;
@@ -304,6 +318,15 @@ inline const IndexT&
 RenderShape::GetPrimitiveGroupIndex() const
 {
     return this->groupIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const float 
+RenderShape::GetLineThickness() const
+{
+    return this->lineThickness;
 }
 
 } // namespace CoreGraphics

@@ -54,13 +54,13 @@ private:
     void GrowVertexBuffer();
 
     /// draw a shape
-    void DrawSimpleShape(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, CoreGraphics::RenderShape::Type shapeType, const Math::vec4& color);
+    void DrawSimpleShape(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, CoreGraphics::RenderShape::Type shapeType, const Math::vec4& color, const float lineThickness);
     /// draw debug mesh
-    void DrawMesh(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, const CoreGraphics::MeshId mesh, const Math::vec4& color);
+    void DrawMesh(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, const CoreGraphics::MeshId mesh, const Math::vec4& color, const float lineThickness);
     /// draw primitives
-    void DrawPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numVertices, const void* vertices);
+    void DrawPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numVertices, const void* vertices, const float lineThickness);
     /// draw indexed primitives
-    void DrawIndexedPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numVertices, const void* vertices, SizeT numIndices, const void* indices, CoreGraphics::IndexType::Code indexType);
+    void DrawIndexedPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numVertices, const void* vertices, SizeT numIndices, const void* indices, CoreGraphics::IndexType::Code indexType, const float lineThickness);
 
     /// create a box shape
     void CreateBoxShape();
@@ -104,6 +104,7 @@ private:
         Util::Array<uint64> firstVertexOffset;
         Util::Array<uint64> firstIndexOffset;
         Util::Array<CoreGraphics::IndexType::Code> indexType;
+        Util::Array<float> lineThicknesses;
     } indexed[CoreGraphics::PrimitiveTopology::NumTopologies];
 
     struct UnindexedDraws
@@ -111,6 +112,7 @@ private:
         Util::Array<CoreGraphics::PrimitiveGroup> primitives;
         Util::Array<Math::mat4> transforms;
         Util::Array<uint64> firstVertexOffset;
+        Util::Array<float> lineThicknesses;
     } unindexed[CoreGraphics::PrimitiveTopology::NumTopologies];
 };
 } // namespace Vulkan

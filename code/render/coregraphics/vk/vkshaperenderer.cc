@@ -170,18 +170,22 @@ VkShapeRenderer::DrawShapes(const CoreGraphics::CmdBufferId cmdBuf)
             {
                 const RenderShape& curShape = this->primitives[shaderType][i];
                 if (curShape.GetShapeType() == RenderShape::Primitives)
-                    this->DrawPrimitives(curShape.GetModelTransform(),
+                    this->DrawPrimitives(
+                        curShape.GetModelTransform(),
                         curShape.GetTopology(),
                         curShape.GetNumVertices(),
-                        curShape.GetVertexData());
+                        curShape.GetVertexData(),
+                        curShape.GetLineThickness());
                 else if (curShape.GetShapeType() == RenderShape::IndexedPrimitives)
-                    this->DrawIndexedPrimitives(curShape.GetModelTransform(),
+                    this->DrawIndexedPrimitives(
+                        curShape.GetModelTransform(),
                         curShape.GetTopology(),
                         curShape.GetNumVertices(),
                         curShape.GetVertexData(),
                         curShape.GetNumIndices(),
                         curShape.GetIndexData(),
-                        curShape.GetIndexType());
+                        curShape.GetIndexType(),
+                        curShape.GetLineThickness());
                 else n_error("Shape type %d is not a primitive!", curShape.GetShapeType());
             }
 
@@ -217,9 +221,9 @@ VkShapeRenderer::DrawShapes(const CoreGraphics::CmdBufferId cmdBuf)
             {
                 const RenderShape& curShape = this->shapes[shaderType][i];
                 if (curShape.GetShapeType() == RenderShape::RenderMesh)
-                    this->DrawMesh(cmdBuf, curShape.GetModelTransform(), curShape.GetMesh(), curShape.GetColor());
+                    this->DrawMesh(cmdBuf, curShape.GetModelTransform(), curShape.GetMesh(), curShape.GetColor(), curShape.GetLineThickness());
                 else
-                    this->DrawSimpleShape(cmdBuf, curShape.GetModelTransform(), curShape.GetShapeType(), curShape.GetColor());
+                    this->DrawSimpleShape(cmdBuf, curShape.GetModelTransform(), curShape.GetShapeType(), curShape.GetColor(), curShape.GetLineThickness());
             }
         }       
     }
@@ -232,16 +236,15 @@ VkShapeRenderer::DrawShapes(const CoreGraphics::CmdBufferId cmdBuf)
 /**
 */
 void
-VkShapeRenderer::DrawSimpleShape(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, CoreGraphics::RenderShape::Type shapeType, const Math::vec4& color)
+VkShapeRenderer::DrawSimpleShape(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, CoreGraphics::RenderShape::Type shapeType, const Math::vec4& color, float lineThickness)
 {
     n_assert(this->shapeMeshResources[shapeType] != ResourceId::Invalid());
     n_assert(shapeType < RenderShape::NumShapeTypes);
 
     // resolve model-view-projection matrix and update shader
-    static const float LineWidth = 1.0f;
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
-    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &lineWidth);
+    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &lineThickness);
     const Util::Array<CoreGraphics::PrimitiveGroup>& groups = MeshGetPrimitiveGroups(this->shapeMeshResources[shapeType]);
     IndexT i;
     for (i = 0; i < groups.Size(); i++)
@@ -259,7 +262,7 @@ VkShapeRenderer::DrawSimpleShape(const CoreGraphics::CmdBufferId cmdBuf, const M
 /**
 */
 void
-VkShapeRenderer::DrawMesh(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, const CoreGraphics::MeshId mesh, const Math::vec4& color)
+VkShapeRenderer::DrawMesh(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, const CoreGraphics::MeshId mesh, const Math::vec4& color, float lineThickness)
 {
     n_assert(mesh != InvalidMeshId);
 
@@ -267,10 +270,9 @@ VkShapeRenderer::DrawMesh(const CoreGraphics::CmdBufferId cmdBuf, const Math::ma
     TransformDevice* transDev = TransformDevice::Instance();
 
     // resolve model-view-projection matrix and update shader
-    static const float LineWidth = 1.0f;
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
-    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &lineWidth);
+    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &lineThickness);
 
     const Util::Array<CoreGraphics::PrimitiveGroup>& groups = MeshGetPrimitiveGroups(mesh);
     IndexT i;
@@ -293,7 +295,8 @@ VkShapeRenderer::DrawPrimitives(
     const Math::mat4& modelTransform
     , CoreGraphics::PrimitiveTopology::Code topology
     , SizeT numVertices
-    , const void* vertices)
+    , const void* vertices
+    , float lineThickness)
 {
     n_assert(0 != vertices);
     static const SizeT vertexWidth = sizeof(RenderShape::RenderShapeVertex);
@@ -312,6 +315,7 @@ VkShapeRenderer::DrawPrimitives(
     this->unindexed[topology].firstVertexOffset.Append(this->vertexBufferOffset);
     this->unindexed[topology].primitives.Append(group);
     this->unindexed[topology].transforms.Append(modelTransform);
+    this->unindexed[topology].lineThicknesses.Append(lineThickness);
     this->vertexBufferOffset += numVertices * vertexWidth;
 }
 
@@ -326,7 +330,8 @@ VkShapeRenderer::DrawIndexedPrimitives(
     , const void* vertices
     , SizeT numIndices
     , const void* indices
-    , CoreGraphics::IndexType::Code indexType)
+    , CoreGraphics::IndexType::Code indexType
+    , float lineThickness)
 {
     n_assert(0 != vertices);
     n_assert(0 != indices);
@@ -352,6 +357,7 @@ VkShapeRenderer::DrawIndexedPrimitives(
     this->indexed[topology].primitives.Append(group);
     this->indexed[topology].transforms.Append(modelTransform);
     this->indexed[topology].indexType.Append(indexType);
+    this->indexed[topology].lineThicknesses.Append(lineThickness);
     this->vertexBufferOffset += numVertices * vertexWidth;
     this->indexBufferOffset += numIndices * indexSize;
 }
@@ -374,12 +380,12 @@ VkShapeRenderer::DrawBufferedPrimitives(const CoreGraphics::CmdBufferId cmdBuf)
             const CoreGraphics::PrimitiveGroup& group = this->unindexed[j].primitives[i];
             const Math::mat4& modelTransform = this->unindexed[j].transforms[i];
             const Math::vec4 color(1);
+            const float lineThickness = this->unindexed[j].lineThicknesses[i];
             const uint64& vertexOffset = this->unindexed[j].firstVertexOffset[i];
 
-            static float LineWidth = 3.0f;
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
-            CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &LineWidth);
+            CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &lineThickness);
 
             CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, this->vbos[this->vertexBufferActiveIndex], vertexOffset);
             CoreGraphics::CmdDraw(cmdBuf, group);
@@ -408,13 +414,13 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives(const CoreGraphics::CmdBufferId c
             const CoreGraphics::PrimitiveGroup& group = this->indexed[j].primitives[i];
             const Math::mat4& modelTransform = this->indexed[j].transforms[i];
             const Math::vec4 color(1);
+            const float lineThickness = this->unindexed[j].lineThicknesses[i];
             const uint64& vertexOffset = this->indexed[j].firstVertexOffset[i];
             const uint64& indexOffset = this->indexed[j].firstIndexOffset[i];
 
-            static float LineWidth = 1.0f;
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
-            CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &LineWidth);
+            CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &lineThickness);
 
             CoreGraphics::CmdSetIndexBuffer(cmdBuf, this->ibos[this->indexBufferActiveIndex], this->indexed[j].indexType[i], indexOffset);
             CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, this->vbos[this->vertexBufferActiveIndex], vertexOffset);
