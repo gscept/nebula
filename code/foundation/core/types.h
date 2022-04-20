@@ -160,5 +160,7 @@ typedef unsigned char byte;
 #error "Unsupported platform!"
 #endif
 
+#define lengthof(x) (sizeof(x) / sizeof(*x))
+
 #define NEBULA_ALIGN16 alignas(16)
 //------------------------------------------------------------------------------

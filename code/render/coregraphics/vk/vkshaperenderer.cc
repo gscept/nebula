@@ -65,7 +65,8 @@ VkShapeRenderer::Open()
     ShapeRendererBase::Open();
 
     // create shape shader instance
-    this->shapeShader = ShaderServer::Instance()->GetShader("shd:simple.fxb"_atm);
+    CoreGraphics::ShaderId shapeShader = ShaderServer::Instance()->GetShader("shd:simple.fxb"_atm);
+    CoreGraphics::ShaderId wireframeShader = ShaderServer::Instance()->GetShader("shd:wireframe.fxb"_atm);
     this->shapeMeshResources.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
 
     // create default shapes (basically load them from the models)
@@ -75,15 +76,17 @@ VkShapeRenderer::Open()
     this->CreateConeShape();
 
     // lookup ModelViewProjection shader variable
-    this->model = ShaderGetConstantBinding(this->shapeShader, "ShapeModel");
-    this->diffuseColor = ShaderGetConstantBinding(this->shapeShader, "MatDiffuse");
+    this->model = ShaderGetConstantBinding(wireframeShader, "ShapeModel");
+    this->diffuseColor = ShaderGetConstantBinding(wireframeShader, "ShapeColor");
+    this->lineWidth = ShaderGetConstantBinding(wireframeShader, "LineWidth");
 
-    this->programs[RenderShape::AlwaysOnTop] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Colored"));
-    this->programs[RenderShape::CheckDepth] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Colored|Alt0"));
-    this->programs[RenderShape::Wireframe] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Colored|Alt1"));
-    this->programs[RenderShape::AlwaysOnTop + RenderShape::NumDepthFlags] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Static"));
-    this->programs[RenderShape::CheckDepth + RenderShape::NumDepthFlags] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Static|Alt0"));
-    this->programs[RenderShape::Wireframe + RenderShape::NumDepthFlags] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Static|Alt1"));
+    this->programs[ShaderTypes::Primitives] = ShaderGetProgram(wireframeShader, ShaderServer::Instance()->FeatureStringToMask("Primitives"));
+    this->programs[ShaderTypes::PrimitivesNoDepth] = ShaderGetProgram(wireframeShader, ShaderServer::Instance()->FeatureStringToMask("Primitives|NoDepth"));
+    this->programs[ShaderTypes::PrimitivesWireframeTriangles] = ShaderGetProgram(wireframeShader, ShaderServer::Instance()->FeatureStringToMask("Primitives|Wireframe|Triangles"));
+    this->programs[ShaderTypes::PrimitivesWireframeLines] = ShaderGetProgram(wireframeShader, ShaderServer::Instance()->FeatureStringToMask("Primitives|Wireframe|Lines"));
+    this->programs[ShaderTypes::Mesh] = ShaderGetProgram(wireframeShader, ShaderServer::Instance()->FeatureStringToMask("Mesh"));
+    this->programs[ShaderTypes::MeshNoDepth] = ShaderGetProgram(wireframeShader, ShaderServer::Instance()->FeatureStringToMask("Mesh|NoDepth"));
+    this->programs[ShaderTypes::MeshWireframe] = ShaderGetProgram(wireframeShader, ShaderServer::Instance()->FeatureStringToMask("Mesh|Wireframe|Triangles"));
 
     this->comps.Append(VertexComponent(VertexComponent::Position, 0, VertexComponent::Float4, 0));
     this->comps.Append(VertexComponent(VertexComponent::Color, 0, VertexComponent::Float4, 0));
@@ -158,14 +161,14 @@ VkShapeRenderer::DrawShapes(const CoreGraphics::CmdBufferId cmdBuf)
     if (this->numVerticesThisFrame > this->vertexBufferCapacity)
         this->GrowVertexBuffer();
 
-    for (int depthType = 0; depthType < RenderShape::NumDepthFlags; depthType++)
+    for (int shaderType = 0; shaderType < ShaderTypes::NumShaders; shaderType++)
     {
-        if (this->primitives[depthType].Size() > 0)
+        if (this->primitives[shaderType].Size() > 0)
         {
             IndexT i;
-            for (i = 0; i < this->primitives[depthType].Size(); i++)
+            for (i = 0; i < this->primitives[shaderType].Size(); i++)
             {
-                const RenderShape& curShape = this->primitives[depthType][i];
+                const RenderShape& curShape = this->primitives[shaderType][i];
                 if (curShape.GetShapeType() == RenderShape::Primitives)
                     this->DrawPrimitives(curShape.GetModelTransform(),
                         curShape.GetTopology(),
@@ -183,7 +186,7 @@ VkShapeRenderer::DrawShapes(const CoreGraphics::CmdBufferId cmdBuf)
             }
 
             // apply shader
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, this->programs[depthType]);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, this->programs[shaderType]);
             CoreGraphics::CmdSetVertexLayout(cmdBuf, this->vertexLayout);
 
             // flush any buffered primitives
@@ -201,18 +204,18 @@ VkShapeRenderer::DrawShapes(const CoreGraphics::CmdBufferId cmdBuf)
     this->indexBufferOffset = 0;
     this->vertexBufferOffset = 0;
 
-    for (int depthType = 0; depthType < RenderShape::NumDepthFlags; depthType++)
+    for (int shaderType = 0; shaderType < ShaderTypes::NumShaders; shaderType++)
     {
-        if (this->shapes[depthType].Size() > 0)
+        if (this->shapes[shaderType].Size() > 0)
         {
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, this->programs[depthType + RenderShape::NumDepthFlags]);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, this->programs[shaderType]);
             CoreGraphics::CmdSetVertexLayout(cmdBuf, this->vertexLayout);
             CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
 
             IndexT i;
-            for (i = 0; i < this->shapes[depthType].Size(); i++)
+            for (i = 0; i < this->shapes[shaderType].Size(); i++)
             {
-                const RenderShape& curShape = this->shapes[depthType][i];
+                const RenderShape& curShape = this->shapes[shaderType][i];
                 if (curShape.GetShapeType() == RenderShape::RenderMesh)
                     this->DrawMesh(cmdBuf, curShape.GetModelTransform(), curShape.GetMesh(), curShape.GetColor());
                 else
@@ -235,8 +238,10 @@ VkShapeRenderer::DrawSimpleShape(const CoreGraphics::CmdBufferId cmdBuf, const M
     n_assert(shapeType < RenderShape::NumShapeTypes);
 
     // resolve model-view-projection matrix and update shader
+    static const float LineWidth = 1.0f;
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
+    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &lineWidth);
     const Util::Array<CoreGraphics::PrimitiveGroup>& groups = MeshGetPrimitiveGroups(this->shapeMeshResources[shapeType]);
     IndexT i;
     for (i = 0; i < groups.Size(); i++)
@@ -262,9 +267,11 @@ VkShapeRenderer::DrawMesh(const CoreGraphics::CmdBufferId cmdBuf, const Math::ma
     TransformDevice* transDev = TransformDevice::Instance();
 
     // resolve model-view-projection matrix and update shader
+    static const float LineWidth = 1.0f;
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
-    
+    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &lineWidth);
+
     const Util::Array<CoreGraphics::PrimitiveGroup>& groups = MeshGetPrimitiveGroups(mesh);
     IndexT i;
     for (i = 0; i < groups.Size(); i++)
@@ -366,18 +373,19 @@ VkShapeRenderer::DrawBufferedPrimitives(const CoreGraphics::CmdBufferId cmdBuf)
         {
             const CoreGraphics::PrimitiveGroup& group = this->unindexed[j].primitives[i];
             const Math::mat4& modelTransform = this->unindexed[j].transforms[i];
-            const Math::vec4& color = this->unindexed[j].colors[i];
+            const Math::vec4 color(1);
             const uint64& vertexOffset = this->unindexed[j].firstVertexOffset[i];
 
+            static float LineWidth = 3.0f;
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
+            CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &LineWidth);
 
             CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, this->vbos[this->vertexBufferActiveIndex], vertexOffset);
             CoreGraphics::CmdDraw(cmdBuf, group);
         }
         this->unindexed[j].primitives.Clear();
         this->unindexed[j].transforms.Clear();
-        this->unindexed[j].colors.Clear();
     }
 }
 
@@ -390,7 +398,8 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives(const CoreGraphics::CmdBufferId c
     IndexT j;
     for (j = 1; j < CoreGraphics::PrimitiveTopology::NumTopologies; j++)
     {
-        CoreGraphics::CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::Code(j));
+        auto topology = CoreGraphics::PrimitiveTopology::Code(j);
+        CoreGraphics::CmdSetPrimitiveTopology(cmdBuf, topology);
         CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
 
         IndexT i;
@@ -398,12 +407,14 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives(const CoreGraphics::CmdBufferId c
         {
             const CoreGraphics::PrimitiveGroup& group = this->indexed[j].primitives[i];
             const Math::mat4& modelTransform = this->indexed[j].transforms[i];
-            const Math::vec4& color = this->indexed[j].colors[i];
+            const Math::vec4 color(1);
             const uint64& vertexOffset = this->indexed[j].firstVertexOffset[i];
             const uint64& indexOffset = this->indexed[j].firstIndexOffset[i];
 
+            static float LineWidth = 1.0f;
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
+            CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &LineWidth);
 
             CoreGraphics::CmdSetIndexBuffer(cmdBuf, this->ibos[this->indexBufferActiveIndex], this->indexed[j].indexType[i], indexOffset);
             CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, this->vbos[this->vertexBufferActiveIndex], vertexOffset);
@@ -412,7 +423,6 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives(const CoreGraphics::CmdBufferId c
         }
         this->indexed[j].primitives.Clear();
         this->indexed[j].transforms.Clear();
-        this->indexed[j].colors.Clear();
     }
 }
 

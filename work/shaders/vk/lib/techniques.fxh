@@ -37,7 +37,7 @@ program name [ string Mask = features; ] \
 	RenderState = renderState; \
 } 
 
-#define GeometryTechnique(name, features, vertexShader, pixelShader, geometryShader, renderState) \
+#define GeometryTechnique(name, features, vertexShader, geometryShader, pixelShader, renderState) \
 program name [ string Mask = features; ] \
 { \
 	VertexShader = vertexShader; \
@@ -47,7 +47,7 @@ program name [ string Mask = features; ] \
 } 
 
 
-#define TessellationTechnique(name, features, vertexShader, pixelShader, hullShader, domainShader, renderState) \
+#define TessellationTechnique(name, features, vertexShader, hullShader, domainShader, pixelShader, renderState) \
 program name [ string Mask = features; ] \
 { \
 	VertexShader = vertexShader; \
@@ -58,7 +58,7 @@ program name [ string Mask = features; ] \
 } 
 
 
-#define FullTechnique(name, features, vertexShader, pixelShader, hullShader, domainShader, geometryShader, renderState) \
+#define FullTechnique(name, features, vertexShader, hullShader, domainShader, geometryShader, pixelShader, renderState) \
 program name [ string Mask = features; ] \
 { \
 	VertexShader = vertexShader; \

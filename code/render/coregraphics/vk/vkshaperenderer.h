@@ -58,9 +58,9 @@ private:
     /// draw debug mesh
     void DrawMesh(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, const CoreGraphics::MeshId mesh, const Math::vec4& color);
     /// draw primitives
-    void DrawPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numPrimitives, const void* vertices, SizeT vertexWidth, const Math::vec4& color);
+    void DrawPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numVertices, const void* vertices);
     /// draw indexed primitives
-    void DrawIndexedPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numPrimitives, const void* vertices, SizeT numVertices, SizeT vertexWidth, const void* indices, CoreGraphics::IndexType::Code indexType, const Math::vec4& color);
+    void DrawIndexedPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numVertices, const void* vertices, SizeT numIndices, const void* indices, CoreGraphics::IndexType::Code indexType);
 
     /// create a box shape
     void CreateBoxShape();
@@ -73,10 +73,8 @@ private:
     /// create a cone shape
     void CreateConeShape();
 
-    CoreGraphics::ShaderProgramId programs[CoreGraphics::RenderShape::NumDepthFlags * 2];
 
     Util::FixedArray<Resources::ResourceId> shapeMeshResources;
-    CoreGraphics::ShaderId shapeShader;
 
     Util::Array<CoreGraphics::VertexComponent> comps;
     static const SizeT MaxVertexIndexBuffers = 2;
@@ -92,6 +90,7 @@ private:
     CoreGraphics::VertexLayoutId vertexLayout;
     IndexT model;
     IndexT diffuseColor;
+    IndexT lineWidth;
 
     SizeT vertexBufferOffset;
     SizeT indexBufferOffset;
@@ -101,7 +100,6 @@ private:
     struct IndexedDraws
     {
         Util::Array<CoreGraphics::PrimitiveGroup> primitives;
-        Util::Array<Math::vec4> colors;
         Util::Array<Math::mat4> transforms;
         Util::Array<uint64> firstVertexOffset;
         Util::Array<uint64> firstIndexOffset;
@@ -111,7 +109,6 @@ private:
     struct UnindexedDraws
     {
         Util::Array<CoreGraphics::PrimitiveGroup> primitives;
-        Util::Array<Math::vec4> colors;
         Util::Array<Math::mat4> transforms;
         Util::Array<uint64> firstVertexOffset;
     } unindexed[CoreGraphics::PrimitiveTopology::NumTopologies];

@@ -30,6 +30,8 @@ class ShapeRendererBase : public Core::RefCounted
 {
     __DeclareClass(ShapeRendererBase);
     __DeclareSingleton(ShapeRendererBase);
+
+
 public:
     /// constructor
     ShapeRendererBase();
@@ -54,10 +56,26 @@ public:
     /// draw deferred shapes and clear deferred stack, must be called inside render loop
     void DrawShapes();
 
+    enum ShaderTypes
+    {
+        Mesh,
+        MeshNoDepth,
+        MeshWireframe,
+
+        Primitives,
+        PrimitivesNoDepth,
+        PrimitivesWireframeTriangles,
+        PrimitivesWireframeLines,
+
+        NumShaders
+    };
+
 protected:
     bool isOpen;
-    Util::Array<CoreGraphics::RenderShape> shapes[CoreGraphics::RenderShape::NumDepthFlags];
-    Util::Array<CoreGraphics::RenderShape> primitives[CoreGraphics::RenderShape::NumDepthFlags];
+    Util::Array<CoreGraphics::RenderShape> shapes[ShaderTypes::NumShaders];
+    Util::Array<CoreGraphics::RenderShape> primitives[ShaderTypes::NumShaders];
+    CoreGraphics::ShaderProgramId programs[ShaderTypes::NumShaders];
+
 
     SizeT numIndicesThisFrame;
     SizeT numVerticesThisFrame;
@@ -76,4 +94,3 @@ ShapeRendererBase::IsOpen() const
 //------------------------------------------------------------------------------
 
 
-    

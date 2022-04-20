@@ -47,7 +47,7 @@ vsMainLines(
 {
     Color = color.abgr;
     Color.a *= smoothstep(0.0, 1.0, position_size.w / kAntialiasing);    
-    size = max(position_size.w, kAntialiasing); 
+    size = max(position_size.w, kAntialiasing);  
     gl_Position = ViewProjection * vec4(position_size.xyz, 1.0);    
 }
 
@@ -193,8 +193,8 @@ psMainPoints(
 //------------------------------------------------------------------------------
 /**
 */
-GeometryTechnique(Lines, "Static|Lines", vsMainLines(), psMainLines(), gsMain(), Im3dState);
-GeometryTechnique(LinesDepth, "StaticDepth|Lines", vsMainLines(), psMainLines(), gsMain(), Im3dDepthState);
+GeometryTechnique(Lines, "Static|Lines", vsMainLines(), gsMain(), psMainLines(), Im3dState);
+GeometryTechnique(LinesDepth, "StaticDepth|Lines", vsMainLines(), gsMain(), psMainLines(), Im3dDepthState);
 SimpleTechnique(Points, "Static|Points", vsMainPoints(), psMainPoints(), Im3dState);
 SimpleTechnique(Triangles, "Static|Triangles", vsMainTriangles(), psMainTriangles(), Im3dState);
 SimpleTechnique(TrianglesDepth, "StaticDepth|Triangles", vsMainTriangles(), psMainTriangles(), Im3dDepthState);
