@@ -65,7 +65,6 @@ VkShapeRenderer::Open()
     ShapeRendererBase::Open();
 
     // create shape shader instance
-    CoreGraphics::ShaderId shapeShader = ShaderServer::Instance()->GetShader("shd:simple.fxb"_atm);
     CoreGraphics::ShaderId wireframeShader = ShaderServer::Instance()->GetShader("shd:wireframe.fxb"_atm);
     this->shapeMeshResources.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
 
