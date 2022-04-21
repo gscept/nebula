@@ -39,6 +39,7 @@ public:
         Cylinder,
         Torus,
         Cone,
+        Arrow,
         Primitives,
         IndexedPrimitives,
         RenderMesh,

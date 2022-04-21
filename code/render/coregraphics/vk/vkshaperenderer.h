@@ -62,18 +62,6 @@ private:
     /// draw indexed primitives
     void DrawIndexedPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numVertices, const void* vertices, SizeT numIndices, const void* indices, CoreGraphics::IndexType::Code indexType, const float lineThickness);
 
-    /// create a box shape
-    void CreateBoxShape();
-    /// create a sphere shape
-    void CreateSphereShape();
-    /// create a cylinder shape
-    void CreateCylinderShape();
-    /// create a torus shape
-    void CreateTorusShape();
-    /// create a cone shape
-    void CreateConeShape();
-
-
     Util::FixedArray<Resources::ResourceId> shapeMeshResources;
 
     Util::Array<CoreGraphics::VertexComponent> comps;

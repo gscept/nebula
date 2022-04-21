@@ -69,10 +69,12 @@ VkShapeRenderer::Open()
     this->shapeMeshResources.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
 
     // create default shapes (basically load them from the models)
-    this->CreateBoxShape();
-    this->CreateCylinderShape();
-    this->CreateSphereShape();
-    this->CreateConeShape();
+    this->shapeMeshResources[RenderShape::Box] = CreateResource("msh:system/box.nvx2", "render_system", nullptr, nullptr, true);
+    this->shapeMeshResources[RenderShape::Sphere] = CreateResource("msh:system/sphere.nvx2", "render_system", nullptr, nullptr, true);
+    this->shapeMeshResources[RenderShape::Cylinder] = CreateResource("msh:system/cylinder.nvx2", "render_system", nullptr, nullptr, true);
+    this->shapeMeshResources[RenderShape::Torus] = CreateResource("msh:system/torus.nvx2", "render_system", nullptr, nullptr, true);
+    this->shapeMeshResources[RenderShape::Cone] = CreateResource("msh:system/cone.nvx2", "render_system", nullptr, nullptr, true);
+    this->shapeMeshResources[RenderShape::Arrow] = CreateResource("msh:system/arrow.nvx2", "render_system", nullptr, nullptr, true);
 
     // lookup ModelViewProjection shader variable
     this->model = ShaderGetConstantBinding(wireframeShader, "ShapeModel");
@@ -116,7 +118,10 @@ VkShapeRenderer::Close()
     // unload shape meshes
     DiscardResource(this->shapeMeshResources[RenderShape::Box]);
     DiscardResource(this->shapeMeshResources[RenderShape::Sphere]);
+    DiscardResource(this->shapeMeshResources[RenderShape::Cylinder]);
+    DiscardResource(this->shapeMeshResources[RenderShape::Torus]);
     DiscardResource(this->shapeMeshResources[RenderShape::Cone]);
+    DiscardResource(this->shapeMeshResources[RenderShape::Arrow]);
     this->shapeMeshResources.Clear();
 
     // unload dynamic buffers
@@ -493,51 +498,6 @@ VkShapeRenderer::GrowVertexBuffer()
     this->vbos[this->vertexBufferActiveIndex] = CreateBuffer(vboInfo);
     this->vertexBufferPtr = (byte*)BufferMap(this->vbos[this->vertexBufferActiveIndex]);
     n_assert(0 != this->vertexBufferPtr);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShapeRenderer::CreateBoxShape()
-{
-    this->shapeMeshResources[RenderShape::Box] = CreateResource("msh:system/box.nvx2", "render_system", nullptr, nullptr, true);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShapeRenderer::CreateSphereShape()
-{
-    this->shapeMeshResources[RenderShape::Sphere] = CreateResource("msh:system/sphere.nvx2", "render_system", nullptr, nullptr, true);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShapeRenderer::CreateCylinderShape()
-{
-    this->shapeMeshResources[RenderShape::Cylinder] = CreateResource("msh:system/cylinder.nvx2", "render_system", nullptr, nullptr, true);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShapeRenderer::CreateTorusShape()
-{
-    this->shapeMeshResources[RenderShape::Torus] = CreateResource("msh:system/torus.nvx2", "render_system", nullptr, nullptr, true);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShapeRenderer::CreateConeShape()
-{
-    this->shapeMeshResources[RenderShape::Cone] = CreateResource("msh:system/cone.nvx2", "render_system", nullptr, nullptr, true);
 }
 
 } // namespace Vulkan
