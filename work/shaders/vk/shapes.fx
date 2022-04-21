@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-//  wireframe.fx
+//  shapes.fx
 //  (C) 2022 Gustav Sterbrant
 //------------------------------------------------------------------------------
 
@@ -9,7 +9,7 @@
 #include "lib/techniques.fxh"
 
 // put variables in push-constant block
-push constant WireframeConstants [ string Visibility = "VS|GS|PS"; ]
+push constant ShapeConstants [ string Visibility = "VS|GS|PS"; ]
 {
     mat4 ShapeModel;
     vec4 ShapeColor;
@@ -59,8 +59,8 @@ vsMesh(
     [slot=4] in vec3 binormal,
     out vec4 Color) 
 {
-    gl_Position = ViewProjection * WireframeConstants.ShapeModel * vec4(position, 1);
-    Color = WireframeConstants.ShapeColor;
+    gl_Position = ViewProjection * ShapeConstants.ShapeModel * vec4(position, 1);
+    Color = ShapeConstants.ShapeColor;
 }
 
 //------------------------------------------------------------------------------
@@ -73,7 +73,7 @@ vsPrimitives(
     [slot=5] in vec4 color, 
     out vec4 Color) 
 {
-    gl_Position = ViewProjection * WireframeConstants.ShapeModel * vec4(position, 1);
+    gl_Position = ViewProjection * ShapeConstants.ShapeModel * vec4(position, 1);
     Color = color;
 }
 
@@ -101,26 +101,26 @@ gsLines(
     line0 = normalize(line0.yx * vec2(-RenderTargetDimensions[0].y * RenderTargetDimensions[0].z, 1));
 
     // Scale by line width and inversed resolution
-    line0 *= RenderTargetDimensions[0].zw * WireframeConstants.LineWidth;
+    line0 *= RenderTargetDimensions[0].zw * ShapeConstants.LineWidth;
 
     // Emit triangle strip 
     Color = colors[0];
-    EdgeDistance = -WireframeConstants.LineWidth;
+    EdgeDistance = -ShapeConstants.LineWidth;
     gl_Position = vec4((p0 - line0) * gl_in[0].gl_Position.w, gl_in[0].gl_Position.zw);
     EmitVertex();
 
     Color = colors[0];
-    EdgeDistance = WireframeConstants.LineWidth;
+    EdgeDistance = ShapeConstants.LineWidth;
     gl_Position = vec4((p0 + line0) * gl_in[0].gl_Position.w, gl_in[0].gl_Position.zw);
     EmitVertex();
 
     Color = colors[1];
-    EdgeDistance = -WireframeConstants.LineWidth;
+    EdgeDistance = -ShapeConstants.LineWidth;
     gl_Position = vec4((p1 - line0) * gl_in[1].gl_Position.w, gl_in[1].gl_Position.zw);
     EmitVertex();
 
     Color = colors[1];
-    EdgeDistance = WireframeConstants.LineWidth;
+    EdgeDistance = ShapeConstants.LineWidth;
     gl_Position = vec4((p1 + line0) * gl_in[1].gl_Position.w, gl_in[1].gl_Position.zw);
     EmitVertex();
     EndPrimitive();
@@ -186,7 +186,7 @@ psTriangles(
     [color0] out vec4 Color)
 {
     float dist = evalMinDistanceToEdges(distance);
-    float halfLineWidth = 0.5f * WireframeConstants.LineWidth;
+    float halfLineWidth = 0.5f * ShapeConstants.LineWidth;
     if (dist > halfLineWidth + 1.0f)
         discard;
 
@@ -206,8 +206,8 @@ psLines(
     in vec4 color,
     [color0] out vec4 Color)
 {
-    float d = abs(edgeDistance) / WireframeConstants.LineWidth;
-    d = smoothstep(1.0, 1.0 - (2.0f / WireframeConstants.LineWidth), d);
+    float d = abs(edgeDistance) / ShapeConstants.LineWidth;
+    d = smoothstep(1.0, 1.0 - (2.0f / ShapeConstants.LineWidth), d);
     Color = vec4(color.rgb, color.a * d);
 }
 
