@@ -65,25 +65,29 @@ VkShapeRenderer::Open()
     ShapeRendererBase::Open();
 
     // create shape shader instance
-    this->shapeShader = ShaderServer::Instance()->GetShader("shd:simple.fxb"_atm);
+    CoreGraphics::ShaderId wireframeShader = ShaderServer::Instance()->GetShader("shd:shapes.fxb"_atm);
     this->shapeMeshResources.SetSize(CoreGraphics::RenderShape::NumShapeTypes);
 
     // create default shapes (basically load them from the models)
-    this->CreateBoxShape();
-    this->CreateCylinderShape();
-    this->CreateSphereShape();
-    this->CreateConeShape();
+    this->shapeMeshResources[RenderShape::Box] = CreateResource("msh:system/box.nvx2", "render_system", nullptr, nullptr, true);
+    this->shapeMeshResources[RenderShape::Sphere] = CreateResource("msh:system/sphere.nvx2", "render_system", nullptr, nullptr, true);
+    this->shapeMeshResources[RenderShape::Cylinder] = CreateResource("msh:system/cylinder.nvx2", "render_system", nullptr, nullptr, true);
+    this->shapeMeshResources[RenderShape::Torus] = CreateResource("msh:system/torus.nvx2", "render_system", nullptr, nullptr, true);
+    this->shapeMeshResources[RenderShape::Cone] = CreateResource("msh:system/cone.nvx2", "render_system", nullptr, nullptr, true);
+    this->shapeMeshResources[RenderShape::Arrow] = CreateResource("msh:system/arrow.nvx2", "render_system", nullptr, nullptr, true);
 
     // lookup ModelViewProjection shader variable
-    this->model = ShaderGetConstantBinding(this->shapeShader, "ShapeModel");
-    this->diffuseColor = ShaderGetConstantBinding(this->shapeShader, "MatDiffuse");
+    this->model = ShaderGetConstantBinding(wireframeShader, "ShapeModel");
+    this->diffuseColor = ShaderGetConstantBinding(wireframeShader, "ShapeColor");
+    this->lineWidth = ShaderGetConstantBinding(wireframeShader, "LineWidth");
 
-    this->programs[RenderShape::AlwaysOnTop] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Colored"));
-    this->programs[RenderShape::CheckDepth] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Colored|Alt0"));
-    this->programs[RenderShape::Wireframe] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Colored|Alt1"));
-    this->programs[RenderShape::AlwaysOnTop + RenderShape::NumDepthFlags] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Static"));
-    this->programs[RenderShape::CheckDepth + RenderShape::NumDepthFlags] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Static|Alt0"));
-    this->programs[RenderShape::Wireframe + RenderShape::NumDepthFlags] = ShaderGetProgram(this->shapeShader, ShaderServer::Instance()->FeatureStringToMask("Static|Alt1"));
+    this->programs[ShaderTypes::Primitives] = ShaderGetProgram(wireframeShader, ShaderServer::Instance()->FeatureStringToMask("Primitives"));
+    this->programs[ShaderTypes::PrimitivesNoDepth] = ShaderGetProgram(wireframeShader, ShaderServer::Instance()->FeatureStringToMask("Primitives|NoDepth"));
+    this->programs[ShaderTypes::PrimitivesWireframeTriangles] = ShaderGetProgram(wireframeShader, ShaderServer::Instance()->FeatureStringToMask("Primitives|Wireframe|Triangles"));
+    this->programs[ShaderTypes::PrimitivesWireframeLines] = ShaderGetProgram(wireframeShader, ShaderServer::Instance()->FeatureStringToMask("Primitives|Wireframe|Lines"));
+    this->programs[ShaderTypes::Mesh] = ShaderGetProgram(wireframeShader, ShaderServer::Instance()->FeatureStringToMask("Mesh"));
+    this->programs[ShaderTypes::MeshNoDepth] = ShaderGetProgram(wireframeShader, ShaderServer::Instance()->FeatureStringToMask("Mesh|NoDepth"));
+    this->programs[ShaderTypes::MeshWireframe] = ShaderGetProgram(wireframeShader, ShaderServer::Instance()->FeatureStringToMask("Mesh|Wireframe|Triangles"));
 
     this->comps.Append(VertexComponent(VertexComponent::Position, 0, VertexComponent::Float4, 0));
     this->comps.Append(VertexComponent(VertexComponent::Color, 0, VertexComponent::Float4, 0));
@@ -114,7 +118,10 @@ VkShapeRenderer::Close()
     // unload shape meshes
     DiscardResource(this->shapeMeshResources[RenderShape::Box]);
     DiscardResource(this->shapeMeshResources[RenderShape::Sphere]);
+    DiscardResource(this->shapeMeshResources[RenderShape::Cylinder]);
+    DiscardResource(this->shapeMeshResources[RenderShape::Torus]);
     DiscardResource(this->shapeMeshResources[RenderShape::Cone]);
+    DiscardResource(this->shapeMeshResources[RenderShape::Arrow]);
     this->shapeMeshResources.Clear();
 
     // unload dynamic buffers
@@ -158,36 +165,36 @@ VkShapeRenderer::DrawShapes(const CoreGraphics::CmdBufferId cmdBuf)
     if (this->numVerticesThisFrame > this->vertexBufferCapacity)
         this->GrowVertexBuffer();
 
-    for (int depthType = 0; depthType < RenderShape::NumDepthFlags; depthType++)
+    for (int shaderType = 0; shaderType < ShaderTypes::NumShaders; shaderType++)
     {
-        if (this->primitives[depthType].Size() > 0)
+        if (this->primitives[shaderType].Size() > 0)
         {
             IndexT i;
-            for (i = 0; i < this->primitives[depthType].Size(); i++)
+            for (i = 0; i < this->primitives[shaderType].Size(); i++)
             {
-                const RenderShape& curShape = this->primitives[depthType][i];
+                const RenderShape& curShape = this->primitives[shaderType][i];
                 if (curShape.GetShapeType() == RenderShape::Primitives)
-                    this->DrawPrimitives(curShape.GetModelTransform(),
+                    this->DrawPrimitives(
+                        curShape.GetModelTransform(),
                         curShape.GetTopology(),
-                        curShape.GetNumPrimitives(),
-                        curShape.GetVertexData(),
-                        curShape.GetVertexWidth(),
-                        curShape.GetColor());
-                else if (curShape.GetShapeType() == RenderShape::IndexedPrimitives)
-                    this->DrawIndexedPrimitives(curShape.GetModelTransform(),
-                        curShape.GetTopology(),
-                        curShape.GetNumPrimitives(),
-                        curShape.GetVertexData(),
                         curShape.GetNumVertices(),
-                        curShape.GetVertexWidth(),
+                        curShape.GetVertexData(),
+                        curShape.GetLineThickness());
+                else if (curShape.GetShapeType() == RenderShape::IndexedPrimitives)
+                    this->DrawIndexedPrimitives(
+                        curShape.GetModelTransform(),
+                        curShape.GetTopology(),
+                        curShape.GetNumVertices(),
+                        curShape.GetVertexData(),
+                        curShape.GetNumIndices(),
                         curShape.GetIndexData(),
                         curShape.GetIndexType(),
-                        curShape.GetColor());
+                        curShape.GetLineThickness());
                 else n_error("Shape type %d is not a primitive!", curShape.GetShapeType());
             }
 
             // apply shader
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, this->programs[depthType]);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, this->programs[shaderType]);
             CoreGraphics::CmdSetVertexLayout(cmdBuf, this->vertexLayout);
 
             // flush any buffered primitives
@@ -205,22 +212,22 @@ VkShapeRenderer::DrawShapes(const CoreGraphics::CmdBufferId cmdBuf)
     this->indexBufferOffset = 0;
     this->vertexBufferOffset = 0;
 
-    for (int depthType = 0; depthType < RenderShape::NumDepthFlags; depthType++)
+    for (int shaderType = 0; shaderType < ShaderTypes::NumShaders; shaderType++)
     {
-        if (this->shapes[depthType].Size() > 0)
+        if (this->shapes[shaderType].Size() > 0)
         {
-            CoreGraphics::CmdSetShaderProgram(cmdBuf, this->programs[depthType + RenderShape::NumDepthFlags]);
+            CoreGraphics::CmdSetShaderProgram(cmdBuf, this->programs[shaderType]);
             CoreGraphics::CmdSetVertexLayout(cmdBuf, this->vertexLayout);
             CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
 
             IndexT i;
-            for (i = 0; i < this->shapes[depthType].Size(); i++)
+            for (i = 0; i < this->shapes[shaderType].Size(); i++)
             {
-                const RenderShape& curShape = this->shapes[depthType][i];
+                const RenderShape& curShape = this->shapes[shaderType][i];
                 if (curShape.GetShapeType() == RenderShape::RenderMesh)
-                    this->DrawMesh(cmdBuf, curShape.GetModelTransform(), curShape.GetMesh(), curShape.GetColor());
+                    this->DrawMesh(cmdBuf, curShape.GetModelTransform(), curShape.GetMesh(), curShape.GetColor(), curShape.GetLineThickness());
                 else
-                    this->DrawSimpleShape(cmdBuf, curShape.GetModelTransform(), curShape.GetShapeType(), curShape.GetColor());
+                    this->DrawSimpleShape(cmdBuf, curShape.GetModelTransform(), curShape.GetShapeType(), curShape.GetColor(), curShape.GetLineThickness());
             }
         }       
     }
@@ -233,7 +240,7 @@ VkShapeRenderer::DrawShapes(const CoreGraphics::CmdBufferId cmdBuf)
 /**
 */
 void
-VkShapeRenderer::DrawSimpleShape(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, CoreGraphics::RenderShape::Type shapeType, const Math::vec4& color)
+VkShapeRenderer::DrawSimpleShape(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, CoreGraphics::RenderShape::Type shapeType, const Math::vec4& color, float lineThickness)
 {
     n_assert(this->shapeMeshResources[shapeType] != ResourceId::Invalid());
     n_assert(shapeType < RenderShape::NumShapeTypes);
@@ -241,6 +248,7 @@ VkShapeRenderer::DrawSimpleShape(const CoreGraphics::CmdBufferId cmdBuf, const M
     // resolve model-view-projection matrix and update shader
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
+    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &lineThickness);
     const Util::Array<CoreGraphics::PrimitiveGroup>& groups = MeshGetPrimitiveGroups(this->shapeMeshResources[shapeType]);
     IndexT i;
     for (i = 0; i < groups.Size(); i++)
@@ -258,7 +266,7 @@ VkShapeRenderer::DrawSimpleShape(const CoreGraphics::CmdBufferId cmdBuf, const M
 /**
 */
 void
-VkShapeRenderer::DrawMesh(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, const CoreGraphics::MeshId mesh, const Math::vec4& color)
+VkShapeRenderer::DrawMesh(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, const CoreGraphics::MeshId mesh, const Math::vec4& color, float lineThickness)
 {
     n_assert(mesh != InvalidMeshId);
 
@@ -268,7 +276,8 @@ VkShapeRenderer::DrawMesh(const CoreGraphics::CmdBufferId cmdBuf, const Math::ma
     // resolve model-view-projection matrix and update shader
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
-    
+    CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &lineThickness);
+
     const Util::Array<CoreGraphics::PrimitiveGroup>& groups = MeshGetPrimitiveGroups(mesh);
     IndexT i;
     for (i = 0; i < groups.Size(); i++)
@@ -286,42 +295,53 @@ VkShapeRenderer::DrawMesh(const CoreGraphics::CmdBufferId cmdBuf, const Math::ma
 /**
 */
 void
-VkShapeRenderer::DrawPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numPrimitives, const void* vertices, SizeT vertexWidth, const Math::vec4& color)
+VkShapeRenderer::DrawPrimitives(
+    const Math::mat4& modelTransform
+    , CoreGraphics::PrimitiveTopology::Code topology
+    , SizeT numVertices
+    , const void* vertices
+    , float lineThickness)
 {
     n_assert(0 != vertices);
-    n_assert(vertexWidth <= MaxVertexWidth);
+    static const SizeT vertexWidth = sizeof(RenderShape::RenderShapeVertex);
 
     // calculate vertex count
-    SizeT vertexCount = PrimitiveTopology::NumberOfVertices(topology, numPrimitives);
     byte* verts = this->vertexBufferPtr;
 
     // unlock buffer to avoid stomping data
-    memcpy(verts + this->vertexBufferOffset, vertices, vertexCount * vertexWidth);
+    memcpy(verts + this->vertexBufferOffset, vertices, numVertices * vertexWidth);
 
     // set vertex offset in primitive group
     CoreGraphics::PrimitiveGroup group;
     group.SetBaseVertex(this->vertexBufferOffset);
-    group.SetNumVertices(vertexCount);
+    group.SetNumVertices(numVertices);
     group.SetNumIndices(0);
     this->unindexed[topology].firstVertexOffset.Append(this->vertexBufferOffset);
     this->unindexed[topology].primitives.Append(group);
     this->unindexed[topology].transforms.Append(modelTransform);
-    this->unindexed[topology].colors.Append(color);
-    this->vertexBufferOffset += vertexCount * vertexWidth;
+    this->unindexed[topology].lineThicknesses.Append(lineThickness);
+    this->vertexBufferOffset += numVertices * vertexWidth;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-VkShapeRenderer::DrawIndexedPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numPrimitives, const void* vertices, SizeT numVertices, SizeT vertexWidth, const void* indices, CoreGraphics::IndexType::Code indexType, const Math::vec4& color)
+VkShapeRenderer::DrawIndexedPrimitives(
+    const Math::mat4& modelTransform
+    , CoreGraphics::PrimitiveTopology::Code topology
+    , SizeT numVertices
+    , const void* vertices
+    , SizeT numIndices
+    , const void* indices
+    , CoreGraphics::IndexType::Code indexType
+    , float lineThickness)
 {
     n_assert(0 != vertices);
     n_assert(0 != indices);
-    n_assert(vertexWidth <= MaxVertexWidth);
+    static const SizeT vertexWidth = sizeof(RenderShape::RenderShapeVertex);
 
     // calculate index count and size of index type
-    SizeT indexCount = PrimitiveTopology::NumberOfVertices(topology, numPrimitives);
     SizeT indexSize = CoreGraphics::IndexType::SizeOf(indexType);
 
     byte* verts = this->vertexBufferPtr;
@@ -329,21 +349,21 @@ VkShapeRenderer::DrawIndexedPrimitives(const Math::mat4& modelTransform, CoreGra
 
     // unlock buffer and copy data
     memcpy(verts + this->vertexBufferOffset, vertices, numVertices * vertexWidth);
-    memcpy(inds + this->indexBufferOffset, indices, indexCount * indexSize);
+    memcpy(inds + this->indexBufferOffset, indices, numIndices * indexSize);
 
     // set vertex offset in primitive group
     CoreGraphics::PrimitiveGroup group;
     group.SetBaseVertex(0);
     group.SetBaseIndex(0);
-    group.SetNumIndices(indexCount);
+    group.SetNumIndices(numIndices);
     this->indexed[topology].firstIndexOffset.Append(this->indexBufferOffset);
     this->indexed[topology].firstVertexOffset.Append(this->vertexBufferOffset);
     this->indexed[topology].primitives.Append(group);
     this->indexed[topology].transforms.Append(modelTransform);
-    this->indexed[topology].colors.Append(color);
     this->indexed[topology].indexType.Append(indexType);
+    this->indexed[topology].lineThicknesses.Append(lineThickness);
     this->vertexBufferOffset += numVertices * vertexWidth;
-    this->indexBufferOffset += indexCount * indexSize;
+    this->indexBufferOffset += numIndices * indexSize;
 }
 
 //------------------------------------------------------------------------------
@@ -363,18 +383,19 @@ VkShapeRenderer::DrawBufferedPrimitives(const CoreGraphics::CmdBufferId cmdBuf)
         {
             const CoreGraphics::PrimitiveGroup& group = this->unindexed[j].primitives[i];
             const Math::mat4& modelTransform = this->unindexed[j].transforms[i];
-            const Math::vec4& color = this->unindexed[j].colors[i];
+            const Math::vec4 color(1);
+            const float lineThickness = this->unindexed[j].lineThicknesses[i];
             const uint64& vertexOffset = this->unindexed[j].firstVertexOffset[i];
 
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
+            CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &lineThickness);
 
             CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, this->vbos[this->vertexBufferActiveIndex], vertexOffset);
             CoreGraphics::CmdDraw(cmdBuf, group);
         }
         this->unindexed[j].primitives.Clear();
         this->unindexed[j].transforms.Clear();
-        this->unindexed[j].colors.Clear();
     }
 }
 
@@ -387,7 +408,8 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives(const CoreGraphics::CmdBufferId c
     IndexT j;
     for (j = 1; j < CoreGraphics::PrimitiveTopology::NumTopologies; j++)
     {
-        CoreGraphics::CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::Code(j));
+        auto topology = CoreGraphics::PrimitiveTopology::Code(j);
+        CoreGraphics::CmdSetPrimitiveTopology(cmdBuf, topology);
         CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
 
         IndexT i;
@@ -395,12 +417,14 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives(const CoreGraphics::CmdBufferId c
         {
             const CoreGraphics::PrimitiveGroup& group = this->indexed[j].primitives[i];
             const Math::mat4& modelTransform = this->indexed[j].transforms[i];
-            const Math::vec4& color = this->indexed[j].colors[i];
+            const Math::vec4 color(1);
+            const float lineThickness = this->unindexed[j].lineThicknesses[i];
             const uint64& vertexOffset = this->indexed[j].firstVertexOffset[i];
             const uint64& indexOffset = this->indexed[j].firstIndexOffset[i];
 
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
             CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
+            CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &lineThickness);
 
             CoreGraphics::CmdSetIndexBuffer(cmdBuf, this->ibos[this->indexBufferActiveIndex], this->indexed[j].indexType[i], indexOffset);
             CoreGraphics::CmdSetVertexBuffer(cmdBuf, 0, this->vbos[this->vertexBufferActiveIndex], vertexOffset);
@@ -409,7 +433,6 @@ VkShapeRenderer::DrawBufferedIndexedPrimitives(const CoreGraphics::CmdBufferId c
         }
         this->indexed[j].primitives.Clear();
         this->indexed[j].transforms.Clear();
-        this->indexed[j].colors.Clear();
     }
 }
 
@@ -475,51 +498,6 @@ VkShapeRenderer::GrowVertexBuffer()
     this->vbos[this->vertexBufferActiveIndex] = CreateBuffer(vboInfo);
     this->vertexBufferPtr = (byte*)BufferMap(this->vbos[this->vertexBufferActiveIndex]);
     n_assert(0 != this->vertexBufferPtr);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShapeRenderer::CreateBoxShape()
-{
-    this->shapeMeshResources[RenderShape::Box] = CreateResource("msh:system/box.nvx2", "render_system", nullptr, nullptr, true);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShapeRenderer::CreateSphereShape()
-{
-    this->shapeMeshResources[RenderShape::Sphere] = CreateResource("msh:system/sphere.nvx2", "render_system", nullptr, nullptr, true);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShapeRenderer::CreateCylinderShape()
-{
-    this->shapeMeshResources[RenderShape::Cylinder] = CreateResource("msh:system/cylinder.nvx2", "render_system", nullptr, nullptr, true);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShapeRenderer::CreateTorusShape()
-{
-    this->shapeMeshResources[RenderShape::Torus] = CreateResource("msh:system/torus.nvx2", "render_system", nullptr, nullptr, true);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShapeRenderer::CreateConeShape()
-{
-    this->shapeMeshResources[RenderShape::Cone] = CreateResource("msh:system/cone.nvx2", "render_system", nullptr, nullptr, true);
 }
 
 } // namespace Vulkan

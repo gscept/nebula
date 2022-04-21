@@ -45,12 +45,6 @@ void
 ShapeRendererBase::Open()
 {
     n_assert(!this->isOpen);
-    n_assert(this->shapes[RenderShape::AlwaysOnTop].IsEmpty());
-    n_assert(this->shapes[RenderShape::CheckDepth].IsEmpty());
-    n_assert(this->shapes[RenderShape::Wireframe].IsEmpty());
-    n_assert(this->primitives[RenderShape::AlwaysOnTop].IsEmpty());
-    n_assert(this->primitives[RenderShape::CheckDepth].IsEmpty());
-    n_assert(this->primitives[RenderShape::Wireframe].IsEmpty());
     this->isOpen = true;
 }
 
@@ -62,12 +56,11 @@ ShapeRendererBase::Close()
 {
     n_assert(this->isOpen);
     this->isOpen = false;
-    this->shapes[RenderShape::AlwaysOnTop].Clear();
-    this->shapes[RenderShape::CheckDepth].Clear();
-    this->shapes[RenderShape::Wireframe].Clear();
-    this->primitives[RenderShape::AlwaysOnTop].Clear();
-    this->primitives[RenderShape::CheckDepth].Clear();
-    this->primitives[RenderShape::Wireframe].Clear();
+    for (IndexT i = 0; i < ShaderTypes::NumShaders; i++)
+    {
+        this->shapes[i].Clear();
+        this->primitives[i].Clear();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -78,7 +71,7 @@ ShapeRendererBase::ClearShapes()
 {
     n_assert(this->IsOpen());
     IndexT t;   
-    for(t = 0; t<CoreGraphics::RenderShape::NumDepthFlags; t++)
+    for (t = 0; t < ShaderTypes::NumShaders; t++)
     {
         this->primitives[t].Clear();
         this->shapes[t].Clear();
@@ -92,14 +85,78 @@ void
 ShapeRendererBase::AddShape(const RenderShape& shape)
 {
     n_assert(this->IsOpen());
-    if (shape.GetShapeType() == RenderShape::Primitives || shape.GetShapeType() == RenderShape::IndexedPrimitives)
+    if (shape.GetShapeType() == RenderShape::Primitives)
     {
-        this->primitives[shape.GetDepthFlag()].Append(shape);
-        this->numVerticesThisFrame += PrimitiveTopology::NumberOfVertices(shape.GetTopology(), shape.GetNumPrimitives());
-        this->numIndicesThisFrame += PrimitiveTopology::NumberOfVertices(shape.GetTopology(), shape.GetNumPrimitives());
+        switch (shape.GetDepthFlag())
+        {
+            case RenderShape::CheckDepth:
+                this->primitives[ShaderTypes::Primitives].Append(shape);
+                break;
+            case RenderShape::AlwaysOnTop:
+                this->primitives[ShaderTypes::PrimitivesNoDepth].Append(shape);
+                break;
+            case RenderShape::Wireframe:
+                switch (shape.GetTopology())
+                {
+                    case PrimitiveTopology::LineList:
+                    case PrimitiveTopology::LineStrip:
+                        this->primitives[ShaderTypes::PrimitivesWireframeLines].Append(shape);
+                        break;
+                    case PrimitiveTopology::TriangleList:
+                    case PrimitiveTopology::TriangleStrip:
+                        this->primitives[ShaderTypes::PrimitivesWireframeTriangles].Append(shape);
+                        break;
+                }
+                break;
+        }
+
+        this->numVerticesThisFrame += shape.GetNumVertices();
+    }
+    else if (shape.GetShapeType() == RenderShape::IndexedPrimitives)
+    {
+        switch (shape.GetDepthFlag())
+        {
+            case RenderShape::CheckDepth:
+                this->primitives[ShaderTypes::Primitives].Append(shape);
+                break;
+            case RenderShape::AlwaysOnTop:
+                this->primitives[ShaderTypes::PrimitivesNoDepth].Append(shape);
+                break;
+            case RenderShape::Wireframe:
+                switch (shape.GetTopology())
+                {
+                    case PrimitiveTopology::LineList:
+                    case PrimitiveTopology::LineStrip:
+                        this->primitives[ShaderTypes::PrimitivesWireframeLines].Append(shape);
+                        break;
+                    case PrimitiveTopology::TriangleList:
+                    case PrimitiveTopology::TriangleStrip:
+                        this->primitives[ShaderTypes::PrimitivesWireframeTriangles].Append(shape);
+                        break;
+                    default:
+                        n_error("Topology not supported");
+                }
+                break;
+        }
+
+        this->numVerticesThisFrame += shape.GetNumVertices();
+        this->numIndicesThisFrame += shape.GetNumIndices();
     }
     else
-        this->shapes[shape.GetDepthFlag()].Append(shape);
+    {
+        switch (shape.GetDepthFlag())
+        {
+            case RenderShape::CheckDepth:
+                this->shapes[ShaderTypes::Mesh].Append(shape);
+                break;
+            case RenderShape::AlwaysOnTop:
+                this->shapes[ShaderTypes::MeshNoDepth].Append(shape);
+                break;
+            case RenderShape::Wireframe:
+                this->shapes[ShaderTypes::MeshWireframe].Append(shape);
+                break;
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -116,7 +173,7 @@ ShapeRendererBase::AddShapes(const Array<RenderShape>& shapeArray)
         {
             this->primitives[shape.GetDepthFlag()].Append(shape);
             this->numVerticesThisFrame += shape.GetNumVertices();
-            this->numIndicesThisFrame += PrimitiveTopology::NumberOfVertices(shape.GetTopology(), shape.GetNumPrimitives());
+            this->numIndicesThisFrame += shape.GetNumIndices();
         }
         else
             this->shapes[shape.GetDepthFlag()].Append(shape);
@@ -179,12 +236,11 @@ ShapeRendererBase::AddWireFrameBox(const Math::bbox& boundingBox, const Math::ve
         lineList.Append(vert);      
     }       
     RenderShape shape;
-    shape.SetupPrimitives(mat4(),
-        PrimitiveTopology::LineList,
-        lineList.Size() / 2,
-        &(lineList.Front()),
-        color,
-        CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe));
+    shape.SetupPrimitives(
+        lineList
+        , PrimitiveTopology::LineList
+        , CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe));
+
     this->AddShape(shape);    
 }
 

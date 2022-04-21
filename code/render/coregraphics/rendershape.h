@@ -39,6 +39,7 @@ public:
         Cylinder,
         Torus,
         Cone,
+        Arrow,
         Primitives,
         IndexedPrimitives,
         RenderMesh,
@@ -71,38 +72,73 @@ public:
     /// return true if object has been setup
     bool IsValid() const;
     /// setup simple shape
-    void SetupSimpleShape(Type shapeType, RenderFlag depthFlag, const Math::mat4& modelTransform, const Math::vec4& color);
-
-    /// setup primitive batch (SLOW!)
-    void SetupPrimitives(
-        const Math::mat4& modelTransform
-        , PrimitiveTopology::Code topology
-        , SizeT numPrimitives
-        , const RenderShape::RenderShapeVertex* vertices
-        , const Math::vec4& color
+    void SetupSimpleShape(
+        Type shapeType
         , RenderFlag depthFlag
+        , const Math::vec4& color
+        , const Math::mat4& modelTransform = Math::mat4::identity
+        , float lineThickness = 1.0f);
+
+    /// Setup primitives draw
+    void SetupPrimitives(
+        const RenderShape::RenderShapeVertex* vertices
+        , SizeT numVertices
+        , PrimitiveTopology::Code topology
+        , RenderFlag depthFlag
+        , const Math::mat4 transform = Math::mat4::identity
+        , float lineThickness = 1.0f
     );
 
-    /// setup indexed primitive batch (SLOW!)
-    void SetupIndexedPrimitives(
-        const Math::mat4& modelTransform
+    /// Setup primitives draw
+    void SetupPrimitives(
+        const Util::Array<RenderShape::RenderShapeVertex> vertices
         , PrimitiveTopology::Code topology
-        , SizeT numPrimitives
-        , const RenderShape::RenderShapeVertex* vertices
+        , RenderFlag depthFlag
+        , const Math::mat4 transform = Math::mat4::identity
+        , float lineThickness = 1.0f
+    );
+
+    /// Setup indexed primitives draw
+    void SetupIndexPrimitives(
+        const RenderShape::RenderShapeVertex* vertices
         , SizeT numVertices
         , const void* indices
+        , SizeT numIndices
         , IndexType::Code indexType
-        , const Math::vec4& color,
-        RenderFlag depthFlag
+        , PrimitiveTopology::Code topology
+        , RenderFlag depthFlag
+        , const Math::mat4 transform = Math::mat4::identity
+        , float lineThickness = 1.0f
+    );
+
+    /// Setup indexed primitives draw
+    void SetupIndexPrimitives(
+        const Util::Array<RenderShape::RenderShapeVertex> vertices
+        , const Util::Array<uint16> indices
+        , PrimitiveTopology::Code topology
+        , RenderFlag depthFlag
+        , const Math::mat4 transform = Math::mat4::identity
+        , float lineThickness = 1.0f
+    );
+
+    /// Setup indexed primitives draw
+    void SetupIndexPrimitives(
+        const Util::Array<RenderShape::RenderShapeVertex> vertices
+        , const Util::Array<uint32> indices
+        , PrimitiveTopology::Code topology
+        , RenderFlag depthFlag
+        , const Math::mat4 transform = Math::mat4::identity
+        , float lineThickness = 1.0f
     );
 
     /// setup mesh
     void SetupMesh(
-        const Math::mat4& modelTransform
-        , const MeshId mesh
+        const MeshId mesh
         , const IndexT groupIndex
         , const Math::vec4& color
         , RenderFlag depthFlag
+        , const Math::mat4& modelTransform = Math::mat4::identity
+        , float lineThickness = 1.0f
     );
 
     /// get shape type
@@ -113,14 +149,12 @@ public:
     const Math::mat4& GetModelTransform() const;
     /// get primitive topology
     PrimitiveTopology::Code GetTopology() const;
-    /// get number of primitives
-    SizeT GetNumPrimitives() const;
+    /// get number of vertices
+    SizeT GetNumVertices() const;
+    /// get number of indices
+    SizeT GetNumIndices() const;
     /// get pointer to vertex data (returns 0 if none exist)
     const void* GetVertexData() const;
-    /// get vertex width in number of floats
-    SizeT GetVertexWidth() const;
-    /// get number of vertices (only for indexed primitives)
-    SizeT GetNumVertices() const;
     /// get index data (returns 0 if none exists)
     const void* GetIndexData() const;
     /// get the index type (16 or 32 bit)
@@ -133,18 +167,19 @@ public:
     const MeshId GetMesh() const;
     /// get primitive group
     const IndexT& GetPrimitiveGroupIndex() const;
+    /// Get line thickness
+    const float GetLineThickness() const;
 
 private:
     Type shapeType;
     RenderFlag depthFlag;
     Math::mat4 modelTransform;
     PrimitiveTopology::Code topology;
-    SizeT numPrimitives;
-    SizeT vertexWidth;
-    SizeT numVertices;
+    SizeT numIndices, numVertices;
+    SizeT vertexDataOffset;
     IndexType::Code indexType;
     Math::vec4 color;
-    IndexT vertexDataOffset;
+    float lineThickness;
 
     IndexT groupIndex;
     MeshId mesh;
@@ -202,10 +237,20 @@ RenderShape::GetTopology() const
 /**
 */
 inline SizeT
-RenderShape::GetNumPrimitives() const
+RenderShape::GetNumVertices() const
 {
     n_assert((Primitives == this->shapeType) || (IndexedPrimitives == this->shapeType));
-    return this->numPrimitives;
+    return this->numVertices;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline SizeT
+RenderShape::GetNumIndices() const
+{
+    n_assert(IndexedPrimitives == this->shapeType);
+    return this->numIndices;
 }
 
 //------------------------------------------------------------------------------
@@ -217,26 +262,6 @@ RenderShape::GetVertexData() const
     n_assert((Primitives == this->shapeType) || (IndexedPrimitives == this->shapeType));
     const void* ptr = ((uchar*)this->dataStream->GetRawPointer()) + this->vertexDataOffset;
     return ptr;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline SizeT
-RenderShape::GetVertexWidth() const
-{
-    n_assert((Primitives == this->shapeType) || (IndexedPrimitives == this->shapeType));
-    return this->vertexWidth;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline SizeT
-RenderShape::GetNumVertices() const
-{
-    n_assert(IndexedPrimitives == this->shapeType);
-    return this->numVertices;
 }
 
 //------------------------------------------------------------------------------
@@ -294,6 +319,15 @@ inline const IndexT&
 RenderShape::GetPrimitiveGroupIndex() const
 {
     return this->groupIndex;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const float 
+RenderShape::GetLineThickness() const
+{
+    return this->lineThickness;
 }
 
 } // namespace CoreGraphics

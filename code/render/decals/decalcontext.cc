@@ -435,7 +435,7 @@ DecalContext::OnRenderDebug(uint32_t flags)
         {
             RenderShape shape;
             shape.SetupSimpleShape(
-                RenderShape::Box, RenderShape::RenderFlag(RenderShape::CheckDepth), transforms[i], Math::vec4(0.8, 0.1, 0.1, 0.2));
+                RenderShape::Box, RenderShape::RenderFlag(RenderShape::CheckDepth), Math::vec4(0.8, 0.1, 0.1, 0.2), transforms[i]);
 
             shapeRenderer->AddShape(shape);
             break;
@@ -444,7 +444,7 @@ DecalContext::OnRenderDebug(uint32_t flags)
         {
             RenderShape shape;
             shape.SetupSimpleShape(
-                RenderShape::Box, RenderShape::RenderFlag(RenderShape::CheckDepth), transforms[i], Math::vec4(0.1, 0.8, 0.1, 0.2));
+                RenderShape::Box, RenderShape::RenderFlag(RenderShape::CheckDepth), Math::vec4(0.1, 0.8, 0.1, 0.2), transforms[i]);
 
             shapeRenderer->AddShape(shape);
             break;

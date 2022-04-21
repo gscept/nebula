@@ -936,7 +936,7 @@ CharacterContext::OnRenderDebug(uint32 flags)
         {
             Math::mat4 joint = scale * jointsPalette[j] * transform;
             CoreGraphics::RenderShape shape;
-            shape.SetupSimpleShape(CoreGraphics::RenderShape::Sphere, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), joint, Math::vec4(1, 0, 0, 0.5f));
+            shape.SetupSimpleShape(CoreGraphics::RenderShape::Sphere, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), Math::vec4(1, 0, 0, 0.5f), joint);
             CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
             //Im3d::Im3dContext::DrawSphere(joint, Math::vec4(1,0,0,0.5f));
         }

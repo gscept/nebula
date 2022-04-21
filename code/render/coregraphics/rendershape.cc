@@ -20,10 +20,9 @@ RenderShape::RenderShape() :
     shapeType(InvalidShapeType),
     depthFlag(CheckDepth),
     topology(PrimitiveTopology::InvalidPrimitiveTopology),
-    numPrimitives(0),
-    vertexWidth(0),
-    numVertices(0),
     indexType(IndexType::None),
+    numVertices(0),
+    numIndices(0),
     color(1.0f, 1.0f, 1.0f, 1.0f),
     vertexDataOffset(0),
     vertexLayout(NULL),
@@ -40,11 +39,11 @@ RenderShape::RenderShape(Type shapeType_, RenderFlag depthFlag_, const mat4& mod
     depthFlag(depthFlag_),
     modelTransform(modelTransform_),
     topology(PrimitiveTopology::InvalidPrimitiveTopology),
-    numPrimitives(0),
-    vertexWidth(0),
-    numVertices(0),
     indexType(IndexType::None),
+    numVertices(0),
+    numIndices(0),
     color(color_),
+    lineThickness(1.0f),
     vertexDataOffset(0),
     vertexLayout(NULL),
     groupIndex(InvalidIndex)
@@ -56,41 +55,46 @@ RenderShape::RenderShape(Type shapeType_, RenderFlag depthFlag_, const mat4& mod
 /**
 */
 void
-RenderShape::SetupSimpleShape(Type shapeType_, RenderFlag depthFlag_, const mat4& modelTransform_, const vec4& color_)
+RenderShape::SetupSimpleShape(Type shapeType, RenderFlag depthFlag, const vec4& color, const mat4& modelTransform, float lineThickness)
 {
     n_assert(!this->IsValid());
     n_assert(!((Primitives == shapeType) || (IndexedPrimitives == shapeType)));
-    this->shapeType      = shapeType_;
-    this->depthFlag      = depthFlag_;
-    this->modelTransform = modelTransform_;
-    this->color          = color_;
+    this->shapeType      = shapeType;
+    this->depthFlag      = depthFlag;
+    this->modelTransform = modelTransform;
+    this->color          = color;
+    this->lineThickness = lineThickness;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-RenderShape::SetupPrimitives(const Math::mat4& modelTransform_, PrimitiveTopology::Code topology_, SizeT numPrimitives_, const RenderShape::RenderShapeVertex* vertices_, const Math::vec4& color_, RenderFlag depthFlag_)
+RenderShape::SetupPrimitives(
+    const RenderShape::RenderShapeVertex* vertices
+    , SizeT numVertices
+    , PrimitiveTopology::Code topology
+    , RenderFlag depthFlag
+    , const Math::mat4 transform
+    , float lineThickness)
 {
     n_assert(!this->IsValid());
-    
-    this->shapeType        = Primitives;
-    this->depthFlag        = depthFlag_;
-    this->modelTransform   = modelTransform_;
-    this->topology         = topology_;
-    this->numPrimitives    = numPrimitives_;
-    this->vertexWidth      = sizeof(RenderShape::RenderShapeVertex);
-    this->color            = color_;
+
+    this->shapeType = Primitives;
+    this->depthFlag = depthFlag;
+    this->modelTransform = transform;
+    this->topology = topology;
+    this->numVertices = numVertices;
     this->vertexDataOffset = 0;
+    this->lineThickness = lineThickness;
 
     // setup a memory stream and copy the vertex data
-    SizeT numVertices = PrimitiveTopology::NumberOfVertices(this->topology, this->numPrimitives);
-    SizeT bufferSize = numVertices * this->vertexWidth;
+    SizeT bufferSize = numVertices * sizeof(RenderShape::RenderShapeVertex);
     this->dataStream = MemoryStream::Create();
     this->dataStream->SetSize(bufferSize);
     this->dataStream->SetAccessMode(Stream::WriteAccess);
     this->dataStream->Open();
-    this->dataStream->Write(vertices_, bufferSize);
+    this->dataStream->Write(vertices, bufferSize);
     this->dataStream->Close();
 }
 
@@ -98,34 +102,137 @@ RenderShape::SetupPrimitives(const Math::mat4& modelTransform_, PrimitiveTopolog
 /**
 */
 void
-RenderShape::SetupIndexedPrimitives(const Math::mat4& modelTransform_, PrimitiveTopology::Code topology_, SizeT numPrimitives_, const RenderShape::RenderShapeVertex* vertices_, SizeT numVertices_, const void* indices_, IndexType::Code indexType_, const Math::vec4& color_, RenderFlag depthFlag_)
+RenderShape::SetupPrimitives(
+    const Util::Array<RenderShape::RenderShapeVertex> vertices
+    , PrimitiveTopology::Code topology
+    , RenderFlag depthFlag
+    , const Math::mat4 transform
+    , float lineThickness)
 {
     n_assert(!this->IsValid());
 
-    this->shapeType      = IndexedPrimitives;
-    this->depthFlag      = depthFlag_;
-    this->modelTransform = modelTransform_;
-    this->topology       = topology_;
-    this->numPrimitives  = numPrimitives_;
-    this->vertexWidth    = sizeof(RenderShape::RenderShapeVertex);
-    this->numVertices    = numVertices_;
-    this->indexType      = indexType_;
-    this->color          = color_;
+    this->shapeType = Primitives;
+    this->depthFlag = depthFlag;
+    this->modelTransform = transform;
+    this->topology = topology;
+    this->numVertices = vertices.Size();
+    this->vertexDataOffset = 0;
+    this->lineThickness = lineThickness;
 
-    // compute index buffer and vertex buffer sizes
-    SizeT numIndices = PrimitiveTopology::NumberOfVertices(topology, numPrimitives);
-    SizeT indexBufferSize = numIndices * IndexType::SizeOf(indexType);
-    SizeT vertexBufferSize = this->numVertices * vertexWidth;
-    SizeT bufferSize = indexBufferSize + vertexBufferSize;
-    this->vertexDataOffset = indexBufferSize;
-
-    // setup a memory stream and copy the vertex and index data there
+    // setup a memory stream and copy the vertex data
     this->dataStream = MemoryStream::Create();
-    this->dataStream->SetSize(bufferSize);
+    this->dataStream->SetSize(vertices.ByteSize());
     this->dataStream->SetAccessMode(Stream::WriteAccess);
     this->dataStream->Open();
-    this->dataStream->Write(indices_, indexBufferSize);
-    this->dataStream->Write(vertices_, vertexBufferSize);
+    this->dataStream->Write(vertices.Begin(), vertices.ByteSize());
+    this->dataStream->Close();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+RenderShape::SetupIndexPrimitives(
+    const RenderShape::RenderShapeVertex* vertices
+    , SizeT numVertices
+    , const void* indices
+    , SizeT numIndices
+    , IndexType::Code indexType
+    , PrimitiveTopology::Code topology
+    , RenderFlag depthFlag
+    , const Math::mat4 transform
+    , float lineThickness)
+{
+    n_assert(!this->IsValid());
+
+    this->shapeType = IndexedPrimitives;
+    this->depthFlag = depthFlag;
+    this->modelTransform = transform;
+    this->topology = topology;
+    this->numIndices = numIndices;
+    this->numVertices = numVertices;
+    this->vertexDataOffset = 0;
+    this->indexType = indexType;
+    this->lineThickness = lineThickness;
+
+    // setup a memory stream and copy the vertex data
+    SizeT vertexBufferSize = numVertices * sizeof(RenderShape::RenderShapeVertex);
+    SizeT indexBufferSize = numIndices * IndexType::SizeOf(indexType);
+    this->vertexDataOffset = vertexBufferSize;
+    this->dataStream = MemoryStream::Create();
+    this->dataStream->SetSize(vertexBufferSize + indexBufferSize);
+    this->dataStream->SetAccessMode(Stream::WriteAccess);
+    this->dataStream->Open();
+    this->dataStream->Write(vertices, vertexBufferSize);
+    this->dataStream->Write(indices, indexBufferSize);
+    this->dataStream->Close();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+RenderShape::SetupIndexPrimitives(
+    const Util::Array<RenderShape::RenderShapeVertex> vertices
+    , const Util::Array<uint16> indices
+    , PrimitiveTopology::Code topology
+    , RenderFlag depthFlag
+    , const Math::mat4 transform
+    , float lineThickness)
+{
+    n_assert(!this->IsValid());
+
+    this->shapeType = IndexedPrimitives;
+    this->depthFlag = depthFlag;
+    this->modelTransform = transform;
+    this->topology = topology;
+    this->numIndices = vertices.Size();
+    this->numVertices = indices.Size();
+    this->indexType = IndexType::Code::Index16;
+    this->lineThickness = lineThickness;
+
+    // setup a memory stream and copy the vertex data
+    this->vertexDataOffset = vertices.ByteSize();
+    this->dataStream = MemoryStream::Create();
+    this->dataStream->SetSize(vertices.ByteSize() + indices.ByteSize());
+    this->dataStream->SetAccessMode(Stream::WriteAccess);
+    this->dataStream->Open();
+    this->dataStream->Write(vertices.Begin(), vertices.ByteSize());
+    this->dataStream->Write(indices.Begin(), indices.ByteSize());
+    this->dataStream->Close();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+RenderShape::SetupIndexPrimitives(
+    const Util::Array<RenderShape::RenderShapeVertex> vertices
+    , const Util::Array<uint32> indices
+    , PrimitiveTopology::Code topology
+    , RenderFlag depthFlag
+    , const Math::mat4 transform
+    , float lineThickness)
+{
+    n_assert(!this->IsValid());
+
+    this->shapeType = IndexedPrimitives;
+    this->depthFlag = depthFlag;
+    this->modelTransform = transform;
+    this->topology = topology;
+    this->numIndices = vertices.Size();
+    this->numVertices = indices.Size();
+    this->indexType = IndexType::Code::Index32;
+    this->lineThickness = lineThickness;
+
+    // setup a memory stream and copy the vertex data
+    this->vertexDataOffset = vertices.ByteSize();
+    this->dataStream = MemoryStream::Create();
+    this->dataStream->SetSize(vertices.ByteSize() + indices.ByteSize());
+    this->dataStream->SetAccessMode(Stream::WriteAccess);
+    this->dataStream->Open();
+    this->dataStream->Write(vertices.Begin(), vertices.ByteSize());
+    this->dataStream->Write(indices.Begin(), indices.ByteSize());
     this->dataStream->Close();
 }
 
@@ -133,7 +240,7 @@ RenderShape::SetupIndexedPrimitives(const Math::mat4& modelTransform_, Primitive
 /**
 */
 void 
-RenderShape::SetupMesh(const Math::mat4& modelTransform, const MeshId mesh, const IndexT groupIndex, const Math::vec4& color, RenderFlag depthFlag)
+RenderShape::SetupMesh(const MeshId mesh, const IndexT groupIndex, const Math::vec4& color, RenderFlag depthFlag, const Math::mat4& modelTransform, float lineThickness)
 {
     n_assert(!this->IsValid());
     n_assert(mesh != InvalidMeshId);
@@ -144,6 +251,7 @@ RenderShape::SetupMesh(const Math::mat4& modelTransform, const MeshId mesh, cons
     this->color          = color;
     this->mesh           = mesh;
     this->groupIndex     = groupIndex;
+    this->lineThickness = lineThickness;
 }
 
 } // namespace CoreGraphics

@@ -1224,12 +1224,12 @@ LightContext::OnRenderDebug(uint32_t flags)
             Math::mat4 const& trans = pointTrans[ids[i]];
             Math::vec4 col = Math::vec4(colors[i], 1.0f);
             CoreGraphics::RenderShape shape;
-            shape.SetupSimpleShape(RenderShape::Sphere, RenderShape::RenderFlag(RenderShape::CheckDepth|RenderShape::Wireframe), trans, col);
+            shape.SetupSimpleShape(RenderShape::Sphere, RenderShape::RenderFlag(RenderShape::CheckDepth|RenderShape::Wireframe), col, trans);
             shapeRenderer->AddShape(shape);
             if (flags & Im3d::Solid)
             {
                 col.w = 0.5f;
-                shape.SetupSimpleShape(RenderShape::Sphere, RenderShape::RenderFlag(RenderShape::CheckDepth), trans, col);
+                shape.SetupSimpleShape(RenderShape::Sphere, RenderShape::RenderFlag(RenderShape::CheckDepth), col, trans);
                 shapeRenderer->AddShape(shape);
             }            
         }
@@ -1266,8 +1266,8 @@ LightContext::OnRenderDebug(uint32_t flags)
             shape.SetupSimpleShape(
                 RenderShape::Box, 
                 RenderShape::RenderFlag(RenderShape::CheckDepth | RenderShape::Wireframe), 
-                frustum, 
-                col);
+                col,
+                frustum);
             shapeRenderer->AddShape(shape);
         }
         break;

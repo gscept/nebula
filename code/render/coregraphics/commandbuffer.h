@@ -170,7 +170,11 @@ void CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTable
 /// Set resource table using raw offsets
 void CmdSetResourceTable(const CmdBufferId id, const CoreGraphics::ResourceTableId table, const IndexT slot, CoreGraphics::ShaderPipeline pipeline, uint32 numOffsets, uint32* offsets);
 /// Set push constants
-void CmdPushConstants(const CmdBufferId id, ShaderPipeline pipeline, uint offset, uint size, byte* data);
+void CmdPushConstants(const CmdBufferId id, ShaderPipeline pipeline, uint offset, uint size, const void* data);
+/// Set push constants on graphics
+void CmdPushGraphicsConstants(const CmdBufferId id, uint offset, uint size, const void* data);
+/// Set push constants on compute
+void CmdPushComputeConstants(const CmdBufferId id, uint offset, uint size, const void* data);
 /// Create (if necessary) and bind pipeline based on state thus far
 void CmdSetGraphicsPipeline(const CmdBufferId id);
 

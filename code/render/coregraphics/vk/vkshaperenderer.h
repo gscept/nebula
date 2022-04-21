@@ -54,29 +54,15 @@ private:
     void GrowVertexBuffer();
 
     /// draw a shape
-    void DrawSimpleShape(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, CoreGraphics::RenderShape::Type shapeType, const Math::vec4& color);
+    void DrawSimpleShape(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, CoreGraphics::RenderShape::Type shapeType, const Math::vec4& color, const float lineThickness);
     /// draw debug mesh
-    void DrawMesh(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, const CoreGraphics::MeshId mesh, const Math::vec4& color);
+    void DrawMesh(const CoreGraphics::CmdBufferId cmdBuf, const Math::mat4& modelTransform, const CoreGraphics::MeshId mesh, const Math::vec4& color, const float lineThickness);
     /// draw primitives
-    void DrawPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numPrimitives, const void* vertices, SizeT vertexWidth, const Math::vec4& color);
+    void DrawPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numVertices, const void* vertices, const float lineThickness);
     /// draw indexed primitives
-    void DrawIndexedPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numPrimitives, const void* vertices, SizeT numVertices, SizeT vertexWidth, const void* indices, CoreGraphics::IndexType::Code indexType, const Math::vec4& color);
-
-    /// create a box shape
-    void CreateBoxShape();
-    /// create a sphere shape
-    void CreateSphereShape();
-    /// create a cylinder shape
-    void CreateCylinderShape();
-    /// create a torus shape
-    void CreateTorusShape();
-    /// create a cone shape
-    void CreateConeShape();
-
-    CoreGraphics::ShaderProgramId programs[CoreGraphics::RenderShape::NumDepthFlags * 2];
+    void DrawIndexedPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numVertices, const void* vertices, SizeT numIndices, const void* indices, CoreGraphics::IndexType::Code indexType, const float lineThickness);
 
     Util::FixedArray<Resources::ResourceId> shapeMeshResources;
-    CoreGraphics::ShaderId shapeShader;
 
     Util::Array<CoreGraphics::VertexComponent> comps;
     static const SizeT MaxVertexIndexBuffers = 2;
@@ -92,6 +78,7 @@ private:
     CoreGraphics::VertexLayoutId vertexLayout;
     IndexT model;
     IndexT diffuseColor;
+    IndexT lineWidth;
 
     SizeT vertexBufferOffset;
     SizeT indexBufferOffset;
@@ -101,19 +88,19 @@ private:
     struct IndexedDraws
     {
         Util::Array<CoreGraphics::PrimitiveGroup> primitives;
-        Util::Array<Math::vec4> colors;
         Util::Array<Math::mat4> transforms;
         Util::Array<uint64> firstVertexOffset;
         Util::Array<uint64> firstIndexOffset;
         Util::Array<CoreGraphics::IndexType::Code> indexType;
+        Util::Array<float> lineThicknesses;
     } indexed[CoreGraphics::PrimitiveTopology::NumTopologies];
 
     struct UnindexedDraws
     {
         Util::Array<CoreGraphics::PrimitiveGroup> primitives;
-        Util::Array<Math::vec4> colors;
         Util::Array<Math::mat4> transforms;
         Util::Array<uint64> firstVertexOffset;
+        Util::Array<float> lineThicknesses;
     } unindexed[CoreGraphics::PrimitiveTopology::NumTopologies];
 };
 } // namespace Vulkan

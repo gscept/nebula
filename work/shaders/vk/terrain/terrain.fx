@@ -1064,7 +1064,7 @@ render_state TerrainShadowState
     BlendOp[0] = Min;
 };
 
-TessellationTechnique(TerrainPrepass, "TerrainPrepass", vsTerrain(), psTerrainPrepass(), hsTerrain(), dsTerrain(), TerrainState);
+TessellationTechnique(TerrainPrepass, "TerrainPrepass", vsTerrain(), hsTerrain(), dsTerrain(), psTerrainPrepass(), TerrainState);
 SimpleTechnique(TerrainVirtualScreenSpace, "TerrainVirtualScreenSpace", vsScreenSpace(), psScreenSpaceVirtual(), FinalState);
 SimpleTechnique(TerrainTileUpdate, "TerrainTileUpdate", vsScreenSpace(), psTerrainTileUpdate(), FinalState);
 SimpleTechnique(TerrainLowresFallback, "TerrainLowresFallback", vsScreenSpace(), psGenerateLowresFallback(), FinalState);

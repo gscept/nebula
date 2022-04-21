@@ -26,8 +26,12 @@ public:
         PointList,
         LineList,
         LineStrip,
+        LineListAdjacency,
+        LineStripAdjacency,
         TriangleList,
         TriangleStrip,
+        TriangleListAdjacency,
+        TriangleStripAdjacency,
         PatchList,
 
         NumTopologies = PatchList
