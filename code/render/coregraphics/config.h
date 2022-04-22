@@ -16,6 +16,7 @@
 #define NEBULA_WHOLE_BUFFER_SIZE (-1)
 namespace CoreGraphics
 {
+typedef uint ConstantBufferOffset;
 
 union InputAssemblyKey
 {

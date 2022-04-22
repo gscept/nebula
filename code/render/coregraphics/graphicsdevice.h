@@ -172,8 +172,6 @@ void SetFrameResourceTable(const CoreGraphics::ResourceTableId table);
 /// Get frame resoure table
 CoreGraphics::ResourceTableId GetFrameResourceTable();
 
-typedef uint ConstantBufferOffset;
-
 /// Unlock constants
 void UnlockConstantUpdates();
 /// Allocate range of graphics memory and set data, return offset (thread safe)
