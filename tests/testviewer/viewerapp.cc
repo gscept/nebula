@@ -156,7 +156,7 @@ SimpleViewerApplication::Open()
         CameraContext::Create();
         ModelContext::Create();
         Characters::CharacterContext::Create();
-        Particles::ParticleContext::Create();
+        //Particles::ParticleContext::Create();
 
         // Setup visibility related contexts
         // The order is important, ObserverContext is dependent on any bounding box and renderable modifying code

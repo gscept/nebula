@@ -99,17 +99,17 @@ StopGame()
     Game::WorldOverride(state.editorWorld, gameWorld);
 
     // update the editables so that they point to the correct game entities.
-    Game::FilterCreateInfo filterInfo;
-    filterInfo.inclusive[0] = Game::GetPropertyId("Owner"_atm);
+    Game::FilterBuilder::FilterCreateInfo filterInfo;
+    filterInfo.inclusive[0] = Game::GetComponentId("Owner"_atm);
     filterInfo.access[0] = Game::AccessMode::READ;
     filterInfo.numInclusive = 1;
 
-    Game::Filter filter = Game::CreateFilter(filterInfo);
+    Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
     Game::Dataset data = Game::Query(state.editorWorld, filter);
 
     for (int v = 0; v < data.numViews; v++)
     {
-        Game::Dataset::CategoryTableView const& view = data.views[v];
+        Game::Dataset::EntityTableView const& view = data.views[v];
         Editor::Entity const* const entities = (Editor::Entity*)view.buffers[0];
 
         for (IndexT i = 0; i < view.numInstances; ++i)

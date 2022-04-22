@@ -9,7 +9,7 @@
 #include "editor/ui/uimanager.h"
 #include "graphicsfeature/graphicsfeatureunit.h"
 #include "editor/tools/selectiontool.h"
-#include "game/propertyinspection.h"
+#include "game/componentinspection.h"
 #include "editor/cmds.h"
 #include "imgui_internal.h"
 
@@ -32,7 +32,7 @@ Inspector::Inspector()
 */
 Inspector::~Inspector()
 {
-	for (auto const& p : this->tempProperties)
+	for (auto const& p : this->tempComponents)
 	{
 		if (p.buffer != nullptr)
     		Memory::Free(Memory::HeapType::DefaultHeap, p.buffer);
@@ -72,8 +72,8 @@ Inspector::Run()
 	if (this->latestInspectedEntity != entity)
 	{
 		edit.name.CopyToBuffer(name, 128);
-		for (auto& p : this->tempProperties)
-			p.isDirty = false; // reset dirty status if we switch entity
+		for (auto& c : this->tempComponents)
+			c.isDirty = false; // reset dirty status if we switch entity
 		this->latestInspectedEntity = entity;
 	}
 	
@@ -84,49 +84,49 @@ Inspector::Run()
 
     ImGui::Separator();
 	ImGui::NewLine();
-	this->ShowAddPropertyMenu();
+	this->ShowAddComponentMenu();
 
-	MemDb::TableId const category = entityMapping.category;
+	MemDb::TableId const table = entityMapping.table;
 	MemDb::Row const row = entityMapping.instance;
 
-	auto const& properties = Game::GetWorldDatabase(Editor::state.editorWorld)->GetTable(category).properties;
-	while (this->tempProperties.Size() < properties.Size())
-		this->tempProperties.Append({}); // fill up with empty intermediates
+	auto const& components = Game::GetWorldDatabase(Editor::state.editorWorld)->GetTable(table).components;
+	while (this->tempComponents.Size() < components.Size())
+		this->tempComponents.Append({}); // fill up with empty intermediates
 
-	// We need to double check the entity again here, since the add property function will change the entitys signature
-	bool const entityChanged = (entityMapping.category != lastEntityMapping.category || entityMapping.instance != lastEntityMapping.instance);
+	// We need to double check the entity again here, since the add component function will change the entitys signature
+	bool const entityChanged = (entityMapping.table != lastEntityMapping.table || entityMapping.instance != lastEntityMapping.instance);
 	lastEntityMapping = Game::GetEntityMapping(Editor::state.editorWorld, entity);
 
 	Util::StringAtom const ownerAtom = "Owner"_atm;
-    for (int i = 0; i < properties.Size(); i++)
+    for (int i = 0; i < components.Size(); i++)
     {
-		auto property = properties[i];
+		auto component = components[i];
 		
-		if (MemDb::TypeRegistry::GetDescription(property)->name == ownerAtom)
+		if (MemDb::TypeRegistry::GetDescription(component)->name == ownerAtom)
 		{
 			continue;
 		}
-		ImGui::PushID(0xA3FC + (int)property.id); // offset the ids with some magic number
-		ImGui::Text(MemDb::TypeRegistry::GetDescription(property)->name.Value());
+		ImGui::PushID(0xA3FC + (int)component.id); // offset the ids with some magic number
+		ImGui::Text(MemDb::TypeRegistry::GetDescription(component)->name.Value());
 		ImGui::SameLine();
 		
 		if (ImGui::Button("Remove"))
 		{
-			Edit::RemoveProperty(entity, property);
+			Edit::RemoveComponent(entity, component);
 			ImGui::PopID();
 			return; // return, otherwise we're reading stale data.
 		}
 		
-		auto& tempProperty = this->tempProperties[i];
+		auto& tempComponent = this->tempComponents[i];
 		if (entityChanged)
 		{
 			// reload the entity data if we've changed the selected entity
-			tempProperty.isDirty = false;
+			tempComponent.isDirty = false;
 			ImGui::PopID();
 			continue;
 		}
 
-		SizeT const typeSize = MemDb::TypeRegistry::TypeSize(property);
+		SizeT const typeSize = MemDb::TypeRegistry::TypeSize(component);
 		if (typeSize == 0)
 		{
 			// Type is flag type, just continue to the next one
@@ -135,28 +135,28 @@ Inspector::Run()
 			continue;
 		}
 
-		void* data = Game::GetInstanceBuffer(Editor::state.editorWorld, category, property);
+		void* data = Game::GetInstanceBuffer(Editor::state.editorWorld, table, component);
 		data = (byte*)data + (row * typeSize);
-		if (typeSize > tempProperty.bufferSize)
+		if (typeSize > tempComponent.bufferSize)
 		{
-			if (tempProperty.buffer != nullptr)
-				Memory::Free(Memory::HeapType::DefaultHeap, tempProperty.buffer);
-			tempProperty.bufferSize = typeSize;
-			tempProperty.buffer = Memory::Alloc(Memory::HeapType::DefaultHeap, tempProperty.bufferSize);
+			if (tempComponent.buffer != nullptr)
+				Memory::Free(Memory::HeapType::DefaultHeap, tempComponent.buffer);
+			tempComponent.bufferSize = typeSize;
+			tempComponent.buffer = Memory::Alloc(Memory::HeapType::DefaultHeap, tempComponent.bufferSize);
 		}
-		if (!tempProperty.isDirty)
+		if (!tempComponent.isDirty)
 		{
-			Memory::Copy(data, tempProperty.buffer, typeSize);
-			tempProperty.isDirty = true;
+			Memory::Copy(data, tempComponent.buffer, typeSize);
+			tempComponent.isDirty = true;
 		}
 
 		bool commitChange = false;
-		Game::PropertyInspection::DrawInspector(property, tempProperty.buffer, &commitChange);
+		Game::ComponentInspection::DrawInspector(component, tempComponent.buffer, &commitChange);
 
 		if (commitChange)
 		{
-			Edit::SetProperty(entity, property, tempProperty.buffer);
-			tempProperty.isDirty = false;
+			Edit::SetComponent(entity, component, tempComponent.buffer);
+			tempComponent.isDirty = false;
 		}
 		ImGui::Separator();
 		ImGui::PopID();
@@ -168,7 +168,7 @@ Inspector::Run()
 /**
 */
 void
-Inspector::ShowAddPropertyMenu()
+Inspector::ShowAddComponentMenu()
 {
 	ImGui::SameLine(0.f, 0.f);
 
@@ -179,10 +179,10 @@ Inspector::ShowAddPropertyMenu()
 	float y = ImGui::GetCursorPosY();
 
 	auto buttonSize = ImVec2(-1, 28);
-	auto label = "Add Property...";
+	auto label = "Add Component...";
 
 	ImVec2 size(buttonSize.x, buttonSize.y);
-	bool pressed = ImGui::Button("Add Property", size);
+	bool pressed = ImGui::Button("Add Component", size);
 
 	// Popup
 
@@ -213,16 +213,16 @@ Inspector::ShowAddPropertyMenu()
 
 		Util::Array<const char *> cStrArray;
 
-		Util::Array<MemDb::PropertyDescription*> const& properties = MemDb::TypeRegistry::GetAllProperties();
-		SizeT const numProperties = properties.Size();
+		Util::Array<MemDb::ComponentDescription*> const& components = MemDb::TypeRegistry::GetAllComponents();
+		SizeT const numComponents = components.Size();
 		Util::StringAtom const ownerAtom = "Owner"_atm;
-		for (SizeT i = 0; i < numProperties; i++)
+		for (SizeT i = 0; i < numComponents; i++)
 		{
-			MemDb::PropertyDescription* property = properties[i];
-			if (property->name == ownerAtom || (property->externalFlags & Game::PROPERTYFLAG_MANAGED))
+			MemDb::ComponentDescription* component = components[i];
+			if (component->name == ownerAtom || (component->externalFlags & Game::COMPONENTFLAG_MANAGED))
 				continue;
 
-			const char* name = property->name.Value();
+			const char* name = component->name.Value();
 
 			if (!filter.PassFilter(name))
 				continue;
@@ -235,7 +235,7 @@ Inspector::ShowAddPropertyMenu()
 					return;
 				}
 
-				Edit::AddProperty(selectedEntity, i);
+				Edit::AddComponent(selectedEntity, i);
 				ImGui::CloseCurrentPopup();
 			}
 		}

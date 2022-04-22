@@ -25,16 +25,16 @@ public:
     void Update();
     void Run();
 
-    void ShowAddPropertyMenu();
+    void ShowAddComponentMenu();
 
 private:
-    struct IntermediateProperties
+    struct IntermediateComponents
     {
         bool isDirty = false;
         void* buffer = nullptr;
         SizeT bufferSize = 0;
     };
-    Util::Array<IntermediateProperties> tempProperties;
+    Util::Array<IntermediateComponents> tempComponents;
     Editor::Entity latestInspectedEntity;
 };
 __RegisterClass(Inspector)

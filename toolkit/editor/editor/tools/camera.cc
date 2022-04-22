@@ -13,7 +13,7 @@
 #include "input/keyboard.h"
 #include "input/mouse.h"
 
-#include "audiodevice.h"
+#include "audio/audiodevice.h"
 
 #include "imgui.h"
 
@@ -64,7 +64,7 @@ Camera::Setup(SizeT screenWidth, SizeT screenHeight)
     this->defaultViewPoint = Math::vec3(15.0f, 15.0f, -15.0f);
 
 	this->Reset();
-	CameraContext::SetTransform(this->cameraEntityId, this->mayaCameraUtil.GetCameraTransform());
+	CameraContext::SetView(this->cameraEntityId, this->mayaCameraUtil.GetCameraTransform());
 
     CameraContext::SetLODCamera(this->cameraEntityId);
     ObserverContext::RegisterEntity(this->cameraEntityId);
@@ -103,12 +103,12 @@ Camera::Update()
 	switch (this->cameraMode)
 	{
 	case 0:
-		CameraContext::SetTransform(this->cameraEntityId, Math::inverse(this->mayaCameraUtil.GetCameraTransform()));
+		CameraContext::SetView(this->cameraEntityId, Math::inverse(this->mayaCameraUtil.GetCameraTransform()));
         if (Audio::AudioDevice::HasInstance())
             Audio::AudioDevice::Instance()->SetListenerTransform(Math::inverse(this->mayaCameraUtil.GetCameraTransform()));
 		break;
 	case 1:
-		CameraContext::SetTransform(this->cameraEntityId, Math::inverse(this->freeCamUtil.GetTransform()));
+		CameraContext::SetView(this->cameraEntityId, Math::inverse(this->freeCamUtil.GetTransform()));
         if (Audio::AudioDevice::HasInstance())
             Audio::AudioDevice::Instance()->SetListenerTransform(Math::inverse(this->freeCamUtil.GetTransform()));
 		break;
@@ -181,7 +181,7 @@ Camera::SetProjectionMode(ProjectionMode mode)
 void
 Camera::SetTransform(Math::mat4 const& val)
 {
-    CameraContext::SetTransform(this->cameraEntityId, val);
+    CameraContext::SetView(this->cameraEntityId, val);
 }
 
 

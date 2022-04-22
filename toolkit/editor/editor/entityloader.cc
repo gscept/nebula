@@ -10,7 +10,7 @@
 #include "editor.h"
 #include "cmds.h"
 #include "commandmanager.h"
-#include "game/propertyserialization.h"
+#include "game/componentserialization.h"
 #include "basegamefeature/managers/blueprintmanager.h"
 
 namespace Editor
@@ -25,9 +25,9 @@ namespace Editor
             "[GUID]": {
                 "name": String,
                 "template": "TemplateName", // this should be changed to a GUID probably
-                "properties": { // only lists the overridden and additional properties
-                    "PropertyName1": VALUE,
-                    "PropertyName2": {
+                "components": { // only lists the overridden and additional components
+                    "ComponentName1": VALUE,
+                    "ComponentName2": {
                         "FieldName1": VALUE,
                         "FieldName2": VALUE
                     }
@@ -35,9 +35,9 @@ namespace Editor
                 "inactive_properties": {
                     ...
                 },
-                "removed_properties": { // lists properties that have been removed from the entity, that are part of the blueprint.
-                    "PropertyName3",
-                    "PropertyName4"
+                "removed_components": { // lists components that have been removed from the entity, that are part of the blueprint.
+                    "ComponentName3",
+                    "ComponentName4"
                 }
             },
             "[GUID]": {
@@ -79,39 +79,39 @@ LoadEntities(const char* filePath)
             Util::String const guid = reader->GetCurrentNodeName();
             Editor::state.editables[editorEntity.index].guid = Util::Guid::FromString(guid);
 
-            if (reader->SetToFirstChild("properties"))
+            if (reader->SetToFirstChild("components"))
             {
                 if (reader->HasChildren())
                 {
                     reader->SetToFirstChild();
                     do
                     {
-                        Util::StringAtom const propertyName = reader->GetCurrentNodeName();
-                        MemDb::PropertyId descriptor = MemDb::TypeRegistry::GetPropertyId(propertyName);
-                        if (descriptor == MemDb::PropertyId::Invalid())
+                        Util::StringAtom const componentName = reader->GetCurrentNodeName();
+                        MemDb::ComponentId descriptor = MemDb::TypeRegistry::GetComponentId(componentName);
+                        if (descriptor == MemDb::ComponentId::Invalid())
                         {
-                            n_warning("Warning: Entity '%s' contains invalid property named '%s'.\n", entityName.AsCharPtr(), propertyName.Value());
+                            n_warning("Warning: Entity '%s' contains invalid component named '%s'.\n", entityName.AsCharPtr(), componentName.Value());
                             continue;
                         }
 
 
-                        if (!Game::HasProperty(Editor::state.editorWorld, editorEntity, descriptor))
+                        if (!Game::HasComponent(Editor::state.editorWorld, editorEntity, descriptor))
                         {
-                            Edit::AddProperty(editorEntity, descriptor);
+                            Edit::AddComponent(editorEntity, descriptor);
                         }
 
                         if (MemDb::TypeRegistry::TypeSize(descriptor) > 0)
                         {
                             if (scratchBuffer.Size() < MemDb::TypeRegistry::TypeSize(descriptor))
                                 scratchBuffer.Reserve(MemDb::TypeRegistry::TypeSize(descriptor));
-                            Game::PropertySerialization::Deserialize(reader, descriptor, scratchBuffer.GetPtr());
-                            Edit::SetProperty(editorEntity, descriptor, scratchBuffer.GetPtr());
+                            Game::ComponentSerialization::Deserialize(reader, descriptor, scratchBuffer.GetPtr());
+                            Edit::SetComponent(editorEntity, descriptor, scratchBuffer.GetPtr());
                         }
                     } while (reader->SetToNextChild());
                 }
                 reader->SetToParent();
             }
-            if (reader->SetToFirstChild("removed_properties"))
+            if (reader->SetToFirstChild("removed_components"))
             {
                 n_assert(reader->IsArray());
                 
@@ -119,9 +119,9 @@ LoadEntities(const char* filePath)
                 reader->Get<Util::Array<Util::String>>(values);
                 for (auto s : values)
                 {
-                    Game::PropertyId const pid = MemDb::TypeRegistry::GetPropertyId(s);
-                    if (pid != Game::PropertyId::Invalid())
-                        Edit::RemoveProperty(editorEntity, pid);
+                    Game::ComponentId const component = MemDb::TypeRegistry::GetComponentId(s);
+                    if (component != Game::ComponentId::Invalid())
+                        Edit::RemoveComponent(editorEntity, component);
                 }
                 
                 reader->SetToParent();
@@ -147,18 +147,18 @@ SaveEntities(const char* filePath)
     {
         writer->BeginObject("entities");
 
-        Game::FilterCreateInfo filterInfo;
-        filterInfo.inclusive[0] = Game::GetPropertyId("Owner"_atm);
+        Game::FilterBuilder::FilterCreateInfo filterInfo;
+        filterInfo.inclusive[0] = Game::GetComponentId("Owner"_atm);
         filterInfo.access[0] = Game::AccessMode::READ;
         filterInfo.numInclusive = 1;
 
-        Game::Filter filter = Game::CreateFilter(filterInfo);
+        Game::Filter filter = Game::FilterBuilder::CreateFilter(filterInfo);
         Game::Dataset data = Game::Query(state.editorWorld, filter);
-        Game::PropertyId ownerPid = Game::GetPropertyId("Owner"_atm);
+        Game::ComponentId ownerPid = Game::GetComponentId("Owner"_atm);
 
         for (int v = 0; v < data.numViews; v++)
         {
-            Game::Dataset::CategoryTableView const& view = data.views[v];
+            Game::Dataset::EntityTableView const& view = data.views[v];
             Editor::Entity const* const entities = (Editor::Entity*)view.buffers[0];
 
             for (IndexT i = 0; i < view.numInstances; ++i)
@@ -172,26 +172,26 @@ SaveEntities(const char* filePath)
                 {
                     writer->Add(Game::BlueprintManager::GetTemplateName(edit.templateId).Value(), "template");
                 }
-                MemDb::Table const& table = Game::GetWorldDatabase(Editor::state.editorWorld)->GetTable(view.cid);
+                MemDb::Table const& table = Game::GetWorldDatabase(Editor::state.editorWorld)->GetTable(view.tableId);
                 IndexT col = 0;
-                if (table.properties.Size() > 1)
+                if (table.components.Size() > 1)
                 {
-                    writer->BeginObject("properties");
-                    for (auto pid : table.properties)
+                    writer->BeginObject("components");
+                    for (auto component : table.components)
                     {
-                        uint32_t const flags = MemDb::TypeRegistry::Flags(pid);
-                        if (pid != ownerPid && (flags & Game::PropertyFlags::PROPERTYFLAG_MANAGED) == 0)
+                        uint32_t const flags = MemDb::TypeRegistry::Flags(component);
+                        if (component != ownerPid && (flags & Game::ComponentFlags::COMPONENTFLAG_MANAGED) == 0)
                         {
-                            SizeT const typeSize = MemDb::TypeRegistry::TypeSize(pid);
+                            SizeT const typeSize = MemDb::TypeRegistry::TypeSize(component);
                             if (typeSize > 0)
                             {
-                                void* buffer = Game::GetInstanceBuffer(Editor::state.editorWorld, table.tid, pid);
+                                void* buffer = Game::GetInstanceBuffer(Editor::state.editorWorld, table.tid, component);
                                 n_assert(buffer != nullptr);
-                                Game::PropertySerialization::Serialize(writer, pid, ((byte*)buffer) + MemDb::TypeRegistry::TypeSize(pid) * mapping.instance);
+                                Game::ComponentSerialization::Serialize(writer, component, ((byte*)buffer) + MemDb::TypeRegistry::TypeSize(component) * mapping.instance);
                             }
                             else
                             {
-                                writer->Add("null", MemDb::TypeRegistry::GetDescription(pid)->name.Value());
+                                writer->Add("null", MemDb::TypeRegistry::GetDescription(component)->name.Value());
                             }
                         }
 

@@ -17,6 +17,7 @@
 #include "material.h"
 #include "coregraphics/texture.h"
 #include "coregraphics/buffer.h"
+#include "coregraphics/graphicsdevice.h"
 
 namespace Materials
 {
