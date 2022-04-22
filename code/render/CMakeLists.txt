@@ -14,7 +14,7 @@ nebula_begin_module(render)
     set(target_has_shaders 1)
     fips_vs_warning_level(3)
     fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CODE_ROOT}/addons)
-    fips_deps(foundation input resource anyfx DevIL)
+    fips_deps(foundation input resource anyfx DevIL imgui)
 
     if(N_USE_VULKAN)
         fips_deps(glfw3)
