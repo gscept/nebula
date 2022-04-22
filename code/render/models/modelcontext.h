@@ -63,8 +63,14 @@ public:
     /// get the transform for a model
     static Math::mat4 GetTransform(const Graphics::ContextEntityId id);
 
+    /// Get node index based on name
+    static IndexT GetNodeIndex(const Graphics::GraphicsEntityId id, const Util::StringAtom& name);
+    /// Setup material instance context
+    static MaterialInstanceContext& SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const CoreGraphics::BatchGroup::Code batch);
     /// Setup material instance context
     static MaterialInstanceContext& SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const CoreGraphics::BatchGroup::Code batch);
+    /// Allocate constant memory for instance constants in this frame
+    static CoreGraphics::ConstantBufferOffset AllocateInstanceConstants(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const Materials::BatchIndex batch);
     /// Allocate constant memory for instance constants in this frame
     static CoreGraphics::ConstantBufferOffset AllocateInstanceConstants(const Graphics::GraphicsEntityId id, const Materials::BatchIndex batch);
 
@@ -160,6 +166,7 @@ private:
         Model_NodeInstanceRoots,
         Model_NodeInstanceTransform,
         Model_NodeInstanceStates,
+        Model_NodeLookup,
         Model_Transform,
         Model_Dirty
     };
@@ -168,6 +175,7 @@ private:
         Util::Array<uint32>,
         NodeInstanceRange,
         NodeInstanceRange,
+        Util::Dictionary<Util::StringAtom, IndexT>,
         Math::mat4,         // pending transforms
         bool                // transform is dirty
     > ModelContextAllocator;

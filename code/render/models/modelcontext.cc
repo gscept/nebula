@@ -188,6 +188,8 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             nodeInstances.renderable.modelNodeGetPrimitiveGroup.Append(sNode->GetPrimitiveGroupFunction());
             nodeInstances.renderable.nodeDrawModifiers.Append(Util::MakeTuple(1, 0)); // Base 1 instance 0 offset
 
+            modelContextAllocator.Get<Model_NodeLookup>(cid.id).Add(sNode->GetName(), i);
+
 #if NEBULA_GRAPHICS_DEBUG
             nodeInstances.renderable.nodeNames.Append(sNode->GetName());
 #endif
@@ -296,24 +298,38 @@ ModelContext::GetTransform(const Graphics::ContextEntityId id)
 //------------------------------------------------------------------------------
 /**
 */
+IndexT
+ModelContext::GetNodeIndex(const Graphics::GraphicsEntityId id, const Util::StringAtom& name)
+{
+    const ContextEntityId cid = GetContextId(id);
+    const Util::Dictionary<Util::StringAtom, IndexT>& lookup = modelContextAllocator.Get<Model_NodeLookup>(cid.id);
+    IndexT idx = lookup.FindIndex(name);
+    n_assert(idx != InvalidIndex);
+    return lookup.ValueAtIndex(idx);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 ModelContext::MaterialInstanceContext&
-ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const CoreGraphics::BatchGroup::Code batch)
+ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const CoreGraphics::BatchGroup::Code batch)
 {
     // This is a bit hacky, but we really need to only do this once per node and batch.
     // What we do is that we get the batch index from the batch lookup map, and the variable indexes
     const ContextEntityId cid = GetContextId(id);
     const Models::NodeInstanceRange& nodes = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
-    const IndexT index = materialInstanceContexts.FindIndex(nodeInstances.renderable.nodes[nodes.begin]);
+    const IndexT node = nodes.begin + nodeIndex;
+    const IndexT index = materialInstanceContexts.FindIndex(nodeInstances.renderable.nodes[node]);
     if (index == InvalidIndex)
     {
         // Lookup the batch index once
-        Materials::BatchIndex batchIndex = nodeInstances.renderable.nodeShaderConfigs[nodes.begin]->GetBatchIndex(batch);
+        Materials::BatchIndex batchIndex = nodeInstances.renderable.nodeShaderConfigs[node]->GetBatchIndex(batch);
 
         // Emplace element
-        MaterialInstanceContext& ret = materialInstanceContexts.Emplace(nodeInstances.renderable.nodes[nodes.begin]);
-        Materials::MaterialInstanceId materialInstance = nodeInstances.renderable.nodeStates[nodes.begin].materialInstance;
+        MaterialInstanceContext& ret = materialInstanceContexts.Emplace(nodeInstances.renderable.nodes[node]);
+        Materials::MaterialInstanceId materialInstance = nodeInstances.renderable.nodeStates[node].materialInstance;
         ret.batch = batchIndex;
-        ret.constantBufferSize = nodeInstances.renderable.nodeShaderConfigs[nodes.begin]->GetInstanceBufferSize(materialInstance, batchIndex);
+        ret.constantBufferSize = nodeInstances.renderable.nodeShaderConfigs[node]->GetInstanceBufferSize(materialInstance, batchIndex);
         return ret;
     }
     else
@@ -325,12 +341,31 @@ ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, 
 //------------------------------------------------------------------------------
 /**
 */
+ModelContext::MaterialInstanceContext&
+ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, const CoreGraphics::BatchGroup::Code batch)
+{
+    return SetupMaterialInstanceContext(id, 0, batch);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 CoreGraphics::ConstantBufferOffset
-ModelContext::AllocateInstanceConstants(const Graphics::GraphicsEntityId id, const Materials::BatchIndex batch)
+ModelContext::AllocateInstanceConstants(const Graphics::GraphicsEntityId id, const IndexT nodeIndex, const Materials::BatchIndex batch)
 {
     const ContextEntityId cid = GetContextId(id);
     const Models::NodeInstanceRange& nodes = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
-    return nodeInstances.renderable.nodeShaderConfigs[nodes.begin]->AllocateInstanceConstants(nodeInstances.renderable.nodeStates[nodes.begin].materialInstance, batch);
+    const IndexT node = nodes.begin + nodeIndex;
+    return nodeInstances.renderable.nodeShaderConfigs[node]->AllocateInstanceConstants(nodeInstances.renderable.nodeStates[node].materialInstance, batch);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::ConstantBufferOffset
+ModelContext::AllocateInstanceConstants(const Graphics::GraphicsEntityId id, const Materials::BatchIndex batch)
+{
+    return AllocateInstanceConstants(id, 0, batch);
 }
 
 //------------------------------------------------------------------------------
