@@ -130,10 +130,10 @@ CreateBuffer(const BufferCreateInfo& info)
         pool = CoreGraphics::MemoryPool_DeviceLocal;
     else if (info.mode == HostLocal)
         pool = CoreGraphics::MemoryPool_HostLocal;
-    else if (info.mode == DeviceToHost)
-        pool = CoreGraphics::MemoryPool_DeviceToHost;
-    else if (info.mode == HostToDevice)
-        pool = CoreGraphics::MemoryPool_HostToDevice;
+    else if (info.mode == DeviceAndHost)
+        pool = CoreGraphics::MemoryPool_DeviceAndHost;
+    else if (info.mode == HostCached)
+        pool = CoreGraphics::MemoryPool_HostCached;
 
     // now bind memory to buffer
     CoreGraphics::Alloc alloc = AllocateMemory(loadInfo.dev, runtimeInfo.buf, pool);
@@ -142,7 +142,7 @@ CreateBuffer(const BufferCreateInfo& info)
 
     loadInfo.mem = alloc;
 
-    if (info.mode == HostLocal || info.mode == HostToDevice || info.mode == DeviceToHost)
+    if (info.mode == HostLocal || info.mode == HostCached || info.mode == DeviceAndHost)
     {
         // copy contents and flush memory
         char* data = (char*)GetMappedMemory(alloc);
@@ -155,7 +155,7 @@ CreateBuffer(const BufferCreateInfo& info)
             memcpy(data, info.data, info.dataSize);
 
             // if not host-local memory, we need to flush the initial update
-            if (info.mode == HostToDevice || info.mode == DeviceToHost)
+            if (info.mode == HostCached || info.mode == DeviceAndHost)
             {
                 VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
 
@@ -198,7 +198,7 @@ CreateBuffer(const BufferCreateInfo& info)
         char* buf = (char*)GetMappedMemory(tempAlloc);
         memcpy(buf, info.data, info.dataSize);
 
-        CoreGraphics::CmdBufferId cmd = CoreGraphics::LockTransferSetupCommandBuffer();
+        CoreGraphics::CmdBufferId cmd = CoreGraphics::LockGraphicsSetupCommandBuffer();
         VkBufferCopy copy;
         copy.dstOffset = 0;
         copy.srcOffset = 0;
@@ -210,7 +210,7 @@ CreateBuffer(const BufferCreateInfo& info)
         // add delayed delete for this temporary buffer
         Vulkan::DelayedDeleteVkBuffer(loadInfo.dev, tempBuffer);
         CoreGraphics::DelayedFreeMemory(tempAlloc);
-        CoreGraphics::UnlockTransferSetupCommandBuffer();
+        CoreGraphics::UnlockGraphicsSetupCommandBuffer();
     }
 
     // setup resource

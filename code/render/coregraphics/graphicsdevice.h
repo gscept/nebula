@@ -30,9 +30,10 @@ namespace CoreGraphics
 
 struct GraphicsDeviceCreateInfo
 {
-    uint64 globalGraphicsConstantBufferMemorySize;
-    uint64 globalComputeConstantBufferMemorySize;
+    uint64 globalConstantBufferMemorySize;
     uint64 globalVertexBufferMemorySize;
+    uint64 globalIndexBufferMemorySize;
+    uint64 globalUploadMemorySize;
     uint64 memoryHeaps[NumMemoryPoolTypes];
     uint64 maxOcclusionQueries, maxTimestampQueries, maxStatisticsQueries;
     byte numBufferedFrames : 3;
@@ -83,21 +84,26 @@ struct GraphicsDeviceState
     Util::FixedArray<CoreGraphics::FenceId> presentFences;
     Util::FixedArray<CoreGraphics::SemaphoreId> renderingFinishedSemaphores;
 
-    int globalGraphicsConstantBufferMaxValue;
-    CoreGraphics::BufferId globalGraphicsConstantStagingBuffer;
+    uint globalConstantBufferMaxValue;
+    Util::FixedArray<CoreGraphics::BufferId> globalConstantStagingBuffer;
     CoreGraphics::BufferId globalGraphicsConstantBuffer;
-
-    int globalComputeConstantBufferMaxValue;
-    CoreGraphics::BufferId globalComputeConstantStagingBuffer;
     CoreGraphics::BufferId globalComputeConstantBuffer;
 
-    CoreGraphics::ResourceTableId tickResourceTable;
-    CoreGraphics::ResourceTableId frameResourceTable;
+    CoreGraphics::ResourceTableId tickResourceTableGraphics;
+    CoreGraphics::ResourceTableId tickResourceTableCompute;
+    CoreGraphics::ResourceTableId frameResourceTableGraphics;
+    CoreGraphics::ResourceTableId frameResourceTableCompute;
 
     Util::Array<Ptr<CoreGraphics::RenderEventHandler> > eventHandlers;
 
     Memory::RangeAllocator vertexAllocator;
     CoreGraphics::BufferId vertexBuffer;
+
+    Memory::RangeAllocator indexAllocator;
+    CoreGraphics::BufferId indexBuffer;
+
+    int globalUploadBufferMaxValue;
+    CoreGraphics::BufferId uploadBuffer;
 
     bool isOpen : 1;
     bool inNotifyEventHandlers : 1;
@@ -164,53 +170,80 @@ SubmissionWaitEvent SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, Co
 void WaitForSubmission(SubmissionWaitEvent index, CoreGraphics::QueueType type, CoreGraphics::QueueType waitType);
 
 /// Set the resource table to be used for the NEBULA_TICK_GROUP, returns the currently used resource table
-void SetTickResourceTable(const CoreGraphics::ResourceTableId table);
+void SetTickResourceTableGraphics(const CoreGraphics::ResourceTableId table);
 /// Get tick resoure table
-CoreGraphics::ResourceTableId GetTickResourceTable();
+CoreGraphics::ResourceTableId GetTickResourceTableGraphics();
+/// Set the resource table to be used for the NEBULA_TICK_GROUP, returns the currently used resource table
+void SetTickResourceTableCompute(const CoreGraphics::ResourceTableId table);
+/// Get tick resoure table
+CoreGraphics::ResourceTableId GetTickResourceTableCompute();
+
+
 /// Set the resource table to be used for the NEBULA_FRAME_GROUP, returns the currently used resource table
-void SetFrameResourceTable(const CoreGraphics::ResourceTableId table);
+void SetFrameResourceTableGraphics(const CoreGraphics::ResourceTableId table);
 /// Get frame resoure table
-CoreGraphics::ResourceTableId GetFrameResourceTable();
+CoreGraphics::ResourceTableId GetFrameResourceTableGraphics();
+/// Set the resource table to be used for the NEBULA_FRAME_GROUP, returns the currently used resource table
+void SetFrameResourceTableCompute(const CoreGraphics::ResourceTableId table);
+/// Get frame resoure table
+CoreGraphics::ResourceTableId GetFrameResourceTableCompute();
 
 /// Unlock constants
 void UnlockConstantUpdates();
 /// Allocate range of graphics memory and set data, return offset (thread safe)
-template<class TYPE> uint SetGraphicsConstants(const TYPE& data);
+template<class TYPE> uint SetConstants(const TYPE& data);
 /// Allocate range of graphics memory and set data as an array of elements, return offset  (thread safe)
-template<class TYPE> uint SetGraphicsConstants(const TYPE* data, SizeT elements);
+template<class TYPE> uint SetConstants(const TYPE* data, SizeT elements);
 /// Set graphics constants based on pre-allocated memory  (thread safe)
-template<class TYPE> void SetGraphicsConstants(ConstantBufferOffset offset, const TYPE& data);
+template<class TYPE> void SetConstants(ConstantBufferOffset offset, const TYPE& data);
 /// Set graphics constants based on pre-allocated memory  (thread safe)
-void SetGraphicsConstants(uint offset, const void* data, SizeT bytes);
-/// Allocate range of compute memory and set data, return offset  (thread safe)
-template<class TYPE> uint SetComputeConstants(const TYPE& data);
-/// Allocate range of graphics memory and set data as an array of elements, return offset (thread safe)
-template<class TYPE> uint SetComputeConstants(const TYPE* data, SizeT elements);
-/// Set graphics constants based on pre-allocated memory (thread safe)
-template<class TYPE> void SetComputeConstants(ConstantBufferOffset offset, const TYPE& data);
-/// Set graphics constants based on pre-allocated memory  (thread safe)
-void SetComputeConstants(uint offset, const void* data, SizeT bytes);
+template<class TYPE> void SetConstants(ConstantBufferOffset offset, const TYPE* data, SizeT numElements);
 /// Lock constant updates
 void LockConstantUpdates();
 
-/// allocate range of graphics memory and set data, return offset
-int SetGraphicsConstantsInternal(const void* data, SizeT size);
 /// use pre-allocated range of memory to update graphics constants
-void SetGraphicsConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size);
-/// allocate range of compute memory and set data, return offset
-int SetComputeConstantsInternal(const void* data, SizeT size);
-/// use pre-allocated range of memory to update compute constants
-void SetComputeConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size);
+void SetConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size);
 /// reserve range of graphics constant buffer memory and return offset
-ConstantBufferOffset AllocateGraphicsConstantBufferMemory(uint size);
+ConstantBufferOffset AllocateConstantBufferMemory(uint size);
 /// return id to global graphics constant buffer
 CoreGraphics::BufferId GetGraphicsConstantBuffer();
-/// reserve range of compute constant buffer memory and return offset
-ConstantBufferOffset AllocateComputeConstantBufferMemory(uint size);
-/// return id to global compute constant buffer
+/// Return buffer used for compute constants
 CoreGraphics::BufferId GetComputeConstantBuffer();
 /// Flush constants for queue type, do this before recording any commands doing draw or dispatch
-void FlushConstants(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueType type);
+void FlushConstants(const CoreGraphics::CmdBufferId cmds, const CoreGraphics::QueueType queue);
+
+/// Allocate vertices from the global vertex pool
+uint AllocateVertices(const SizeT numVertices, const SizeT vertexSize);
+/// Deallocate vertices
+void DeallocateVertices(uint offset);
+/// Get vertex buffer 
+const CoreGraphics::BufferId GetVertexBuffer();
+
+/// Allocate indices from the global index pool
+uint AllocateIndices(const SizeT numIndices, const IndexType::Code indexType);
+/// Deallocate indices
+void DeallocateIndices(uint offset);
+/// Get index buffer
+const CoreGraphics::BufferId GetIndexBuffer();
+
+/// Allocate upload memory
+uint AllocateUpload(const SizeT numBytes);
+/// Upload single item to GPU source buffer
+template<class TYPE> uint Upload(const TYPE& data);
+/// Upload array of items to GPU source buffer
+template<class TYPE> uint Upload(const TYPE* data, SizeT elements);
+/// Upload item to GPU source buffer with preallocated memory
+template<class TYPE> void Upload(uint offset, const TYPE& data);
+/// Upload array of items GPU source buffer with preallocated memory
+template<class TYPE> void Upload(uint offset, const TYPE* data, SizeT elements);
+/// Upload memory to upload buffer, return offset
+uint Upload(const void* data, SizeT size);
+/// Upload memory to upload buffer with given offset, return offset
+void UploadInternal(uint offset, const void* data, SizeT size);
+/// Flush upload buffer
+void FlushUpload();
+/// Get upload buffer
+const CoreGraphics::BufferId GetUploadBuffer();
 
 /// trigger reloading a shader
 void ReloadShaderProgram(const CoreGraphics::ShaderProgramId& pro);
@@ -232,18 +265,14 @@ void DelayedDeleteCommandBuffer(const CoreGraphics::CmdBufferId id);
 void DelayedFreeMemory(const CoreGraphics::Alloc alloc);
 /// Add a descriptor set to delete queue
 void DelayedDeleteDescriptorSet(const CoreGraphics::ResourceTableId id);
+/// Add a pass to delayed delete
+void DelayedDeletePass(const CoreGraphics::PassId id);
 
 /// Allocate a range of queries
 uint AllocateQueries(const CoreGraphics::QueryType type, uint numQueries);
 /// Copy query results to buffer
 void FinishQueries(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueryType type, IndexT start, SizeT count);
 
-/// Allocate vertices from the global vertex pool
-uint AllocateVertices(const SizeT numVertices, const SizeT vertexSize);
-/// Deallocate vertices
-void DeallocateVertices(uint offset);
-/// Get vertex buffer 
-const CoreGraphics::BufferId GetVertexBuffer();
 
 /// Swap
 void Swap(IndexT i);
@@ -295,9 +324,12 @@ void QueueInsertMarker(const CoreGraphics::QueueType queue, const Math::vec4& co
 */
 template<class TYPE>
 inline ConstantBufferOffset
-SetGraphicsConstants(const TYPE& data)
+SetConstants(const TYPE& data)
 {
-    return SetGraphicsConstantsInternal(&data, sizeof(TYPE));
+    const uint uploadSize = sizeof(TYPE);
+    ConstantBufferOffset ret = AllocateConstantBufferMemory(uploadSize);
+    SetConstantsInternal(ret, &data, uploadSize);
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -305,9 +337,12 @@ SetGraphicsConstants(const TYPE& data)
 */
 template<class TYPE>
 inline ConstantBufferOffset
-SetGraphicsConstants(const TYPE* data, SizeT elements)
+SetConstants(const TYPE* data, SizeT elements)
 {
-    return SetGraphicsConstantsInternal(data, sizeof(TYPE) * elements);
+    const uint uploadSize = sizeof(TYPE) * elements;
+    ConstantBufferOffset ret = AllocateConstantBufferMemory(uploadSize);
+    SetConstantsInternal(ret, data, uploadSize);
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -315,57 +350,78 @@ SetGraphicsConstants(const TYPE* data, SizeT elements)
 */
 template<class TYPE>
 inline void
-SetGraphicsConstants(ConstantBufferOffset offset, const TYPE& data)
+SetConstants(ConstantBufferOffset offset, const TYPE& data)
 {
-    SetGraphicsConstantsInternal(offset, &data, sizeof(TYPE));
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-SetGraphicsConstants(ConstantBufferOffset offset, const void* data, SizeT bytes)
-{
-    SetGraphicsConstantsInternal(offset, data, bytes);
+    SetConstantsInternal(offset, &data, sizeof(TYPE));
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template<class TYPE>
-inline ConstantBufferOffset
-SetComputeConstants(const TYPE& data)
+inline void
+SetConstants(ConstantBufferOffset offset, const TYPE* data, SizeT numElements)
 {
-    return SetComputeConstantsInternal(&data, sizeof(TYPE));
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class TYPE> 
-inline ConstantBufferOffset
-SetComputeConstants(const TYPE* data, SizeT elements)
-{
-    return SetComputeConstantsInternal(data, sizeof(TYPE) * elements);
+    SetConstantsInternal(offset, data, sizeof(TYPE) * numElements);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 template<class TYPE>
-inline void 
-SetComputeConstants(ConstantBufferOffset offset, const TYPE& data)
+inline uint 
+Upload(const TYPE& data)
 {
-    SetComputeConstantsInternal(offset, &data, sizeof(TYPE));
+    const uint uploadSize = sizeof(TYPE);
+    uint offset = AllocateUpload(uploadSize);
+    UploadInternal(offset, &data, uploadSize);
+    return offset;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline void
-SetComputeConstants(ConstantBufferOffset offset, const void* data, SizeT bytes)
+template<class TYPE>
+inline uint
+Upload(const TYPE* data, SizeT elements)
 {
-    SetComputeConstantsInternal(offset, data, bytes);
+    const uint uploadSize = sizeof(TYPE) * elements;
+    uint offset = AllocateUpload(uploadSize);
+    UploadInternal(offset, data, uploadSize);
+    return offset;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline void
+Upload(const uint offset, const TYPE& data)
+{
+    const uint uploadSize = sizeof(TYPE);
+    UploadInternal(offset, &data, uploadSize);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+inline void
+Upload(const uint offset, const TYPE* data, SizeT elements)
+{
+    const uint uploadSize = sizeof(TYPE) * elements;
+    UploadInternal(offset, data, uploadSize);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint
+Upload(const void* data, SizeT numBytes)
+{
+    uint offset = AllocateUpload(numBytes);
+    UploadInternal(offset, data, numBytes);
+    return offset;
 }
 
 } // namespace CoreGraphics

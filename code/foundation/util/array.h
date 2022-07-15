@@ -312,7 +312,7 @@ Array<TYPE>::Array(std::initializer_list<TYPE> list) :
 */
 template<class TYPE>
 Array<TYPE>::Array(std::nullptr_t) :
-    grow(0),
+    grow(16),
     capacity(0),
     count(0),
     elements(0)
@@ -325,7 +325,7 @@ Array<TYPE>::Array(std::nullptr_t) :
 */
 template<class TYPE>
 Array<TYPE>::Array(const Array<TYPE>& rhs) :
-    grow(0),
+    grow(16),
     capacity(0),
     count(0),
     elements(0)
@@ -416,7 +416,7 @@ Array<TYPE>::Realloc(SizeT _capacity, SizeT _grow)
     this->Delete();
     this->grow = _grow;
     this->capacity = _capacity;
-    this->count = 0;
+    this->count = _capacity;
     if (this->capacity > 0)
     {
         this->elements = n_new_array_alloc<TYPE>(this->capacity);
@@ -1010,7 +1010,7 @@ template<class TYPE> void
 Array<TYPE>::EraseRange(IndexT start, IndexT end)
 {
     n_assert(end >= start);
-    n_assert(end < this->count);
+    n_assert(end <= this->count);
     if (start == end)
         this->EraseIndex(start);
     else
@@ -1096,8 +1096,11 @@ Array<TYPE>::Insert(IndexT index, const TYPE& elm)
 template<class TYPE> void
 Array<TYPE>::Clear()
 {
-    this->DestroyRange(0, this->count);
-    this->count = 0;
+    if (this->count > 0)
+    {
+        this->DestroyRange(0, this->count);
+        this->count = 0;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1423,7 +1426,8 @@ Array<TYPE>::Resize(SizeT num)
 template<class TYPE> void
 Array<TYPE>::SetSize(SizeT s)
 {
-    this->Realloc(s, 8);
+    if (this->count != s)
+        this->Realloc(s, 8);
 }
 
 //------------------------------------------------------------------------------

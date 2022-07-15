@@ -17,12 +17,9 @@ namespace Vegetation
 ID_32_TYPE(VegetationBiomeId);
 struct VegetationSetupSettings
 {
-    Resources::ResourceName heightMap;
     float minHeight, maxHeight;
 
-    Math::uint2 worldSize;
-    SizeT numGrassPlanes;
-    float grassPatchRadius;
+    Math::vec2 worldSize;
 };
 
 struct VegetationGrassSetup
@@ -60,6 +57,9 @@ public:
     static void Create(const VegetationSetupSettings& settings);
     /// discard vegetation context
     static void Discard();
+
+    /// Setup vegetation context
+    static void Setup(Resources::ResourceName heightMap, SizeT numGrassPlanesPerTuft, float grassPatchRadius);
 
     /// setup as grass
     static void SetupGrass(const Graphics::GraphicsEntityId id, const VegetationGrassSetup& setup);

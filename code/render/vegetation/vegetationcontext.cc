@@ -1,3 +1,4 @@
+
 //------------------------------------------------------------------------------
 //  vegetationcontext.cc
 //  (C) 2020 Individual contributors, see AUTHORS file
@@ -12,6 +13,10 @@
 #include "frame/framesubgraph.h"
 #include "memory/rangeallocator.h"
 #include "coregraphics/streammeshcache.h"
+#include "models/model.h"
+#include "models/nodes/modelnode.h"
+#include "models/nodes/transformnode.h"
+#include "models/nodes/primitivenode.h"
 
 #include "vegetation.h"
 namespace Vegetation
@@ -25,18 +30,14 @@ struct
 {
     CoreGraphics::TextureId heightMap;
     float minHeight, maxHeight;
-    Math::uint2 worldSize;
+    Math::vec2 worldSize;
     uint numGrassBlades;
 
     CoreGraphics::BufferId grassVbo;
     CoreGraphics::BufferId grassIbo;
     CoreGraphics::VertexLayoutId grassLayout;
-
-    CoreGraphics::BufferId combinedMeshVbo;
-    CoreGraphics::BufferId combinedMeshIbo;
+    CoreGraphics::VertexLayoutId combinedMeshLayoutWithColor;
     CoreGraphics::VertexLayoutId combinedMeshLayout;
-    Memory::RangeAllocator vboAllocator;
-    Memory::RangeAllocator iboAllocator;
 
     Vegetation::MeshInfo meshInfos[Vegetation::MAX_MESH_INFOS];
     Ids::IdPool meshInfoPool;
@@ -50,30 +51,50 @@ struct
     CoreGraphics::BufferId systemUniforms;
 
     CoreGraphics::ShaderId vegetationBaseShader;
+    CoreGraphics::ShaderProgramId vegetationClearShader;
     CoreGraphics::ShaderProgramId vegetationGenerateDrawsShader;
+    CoreGraphics::ShaderProgramId vegetationGrassZShader;
     CoreGraphics::ShaderProgramId vegetationGrassShader;
+    CoreGraphics::ShaderProgramId vegetationMeshZShader;
     CoreGraphics::ShaderProgramId vegetationMeshShader;
+    CoreGraphics::ShaderProgramId vegetationMeshVColorZShader;
+    CoreGraphics::ShaderProgramId vegetationMeshVColorShader;
 
-    CoreGraphics::BufferId indirectGrassDrawBuffer;
-    CoreGraphics::BufferId indirectGrassUniformBuffer;
-    CoreGraphics::BufferId indirectMeshDrawBuffer;
-    CoreGraphics::BufferId indirectMeshUniformBuffer;
+    CoreGraphics::BufferId grassDrawCallsBuffer;
+    Util::FixedArray<CoreGraphics::BufferId> indirectGrassDrawCallsBuffer;
+    CoreGraphics::BufferId grassArgumentsBuffer;
+    Util::FixedArray<CoreGraphics::BufferId> indirectGrassArgumentBuffer;
+    CoreGraphics::BufferId meshDrawCallsBuffer;
+    Util::FixedArray<CoreGraphics::BufferId> indirectMeshDrawCallsBuffer;
+    CoreGraphics::BufferId meshArgumentsBuffer;
+    Util::FixedArray<CoreGraphics::BufferId> indirectMeshArgumentsBuffer;
 
-    CoreGraphics::BufferId indirectCountBuffer;
-    Util::FixedArray<CoreGraphics::BufferId> indirectCountReadbackBuffer;
+    CoreGraphics::ResourceTableId argumentsTable;
+    Util::FixedArray<CoreGraphics::ResourceTableId> indirectArgumentsTable;
+
+    CoreGraphics::BufferId drawCountBuffer;
+    Util::FixedArray<CoreGraphics::BufferId> indirectDrawCountBuffer;
 
     IndexT grassMaskCount = 0;
     IndexT meshMaskCount = 0;
     Ids::IdPool texturePool;
 
     SizeT grassDrawsThisFrame = 0;
-    SizeT meshDrawsThisFrame = 0;
+    SizeT meshDrawsThisFrame[MAX_MESH_INFOS] = { 0 };
+    SizeT meshVertexOffsets[MAX_MESH_INFOS];
+    SizeT meshIndexOffsets[MAX_MESH_INFOS];
+    CoreGraphics::VertexLayoutId layouts[MAX_MESH_INFOS];
+    CoreGraphics::ShaderProgramId meshZPrograms[MAX_MESH_INFOS];
+    CoreGraphics::ShaderProgramId meshPrograms[MAX_MESH_INFOS];
+
+    Vegetation::VegetationMaterialUniforms materialUniforms;
+    CoreGraphics::BufferId materialUniformsBuffer;
 
     Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 3> frameOpAllocator;
 
 } vegetationState;
 
-static const uint VegetationDistributionRadius = 64;
+static const uint VegetationDistributionRadius = 128;
 static const uint MaxNumIndirectDraws = 8192;
 
 struct GrassVertex
@@ -126,21 +147,587 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
 
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-    vegetationState.heightMap = Resources::CreateResource(settings.heightMap, "Vegetation", nullptr, nullptr, true);
     vegetationState.minHeight = settings.minHeight;
     vegetationState.maxHeight = settings.maxHeight;
     vegetationState.worldSize = settings.worldSize;
-    vegetationState.numGrassBlades = settings.numGrassPlanes;
 
-    Util::FixedArray<GrassVertex> vertices(settings.numGrassPlanes * 4);
-    Util::FixedArray<ushort> indices(settings.numGrassPlanes * 6);
+    CoreGraphics::BufferCreateInfo meshInfo;
+    meshInfo.name = "Vegetation Mesh Info";
+    meshInfo.usageFlags = CoreGraphics::ConstantBuffer;
+    meshInfo.mode = CoreGraphics::HostCached;
+    meshInfo.elementSize = sizeof(Vegetation::MeshInfo);
+    meshInfo.size = Vegetation::MAX_MESH_INFOS;
+    meshInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
+    vegetationState.meshInfoBuffer = CoreGraphics::CreateBuffer(meshInfo);
+
+    CoreGraphics::BufferCreateInfo grassInfo;
+    grassInfo.name = "Vegetation Grass Info";
+    grassInfo.usageFlags = CoreGraphics::ConstantBuffer;
+    grassInfo.mode = CoreGraphics::HostCached;
+    grassInfo.elementSize = sizeof(Vegetation::GrassInfo);
+    grassInfo.size = Vegetation::MAX_GRASS_INFOS;
+    grassInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
+    vegetationState.grassInfoBuffer = CoreGraphics::CreateBuffer(grassInfo);
+
+    CoreGraphics::BufferCreateInfo cboInfo;
+    cboInfo.name = "Vegetation System Uniforms";
+    cboInfo.usageFlags = CoreGraphics::ConstantBuffer;
+    cboInfo.mode = CoreGraphics::HostCached;
+    cboInfo.byteSize = sizeof(VegetationGenerateUniforms);
+    cboInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
+    vegetationState.systemUniforms = CoreGraphics::CreateBuffer(cboInfo);
+
+    CoreGraphics::BufferCreateInfo grassDrawCallsBufferInfo;
+    grassDrawCallsBufferInfo.name = "Vegetation Grass Draw Calls Buffer";
+    grassDrawCallsBufferInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferSource;
+    grassDrawCallsBufferInfo.mode = CoreGraphics::DeviceLocal;
+    grassDrawCallsBufferInfo.byteSize = sizeof(DrawIndexedCommand);
+    grassDrawCallsBufferInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
+    vegetationState.grassDrawCallsBuffer = CoreGraphics::CreateBuffer(grassDrawCallsBufferInfo);
+
+    vegetationState.indirectGrassDrawCallsBuffer.Resize(CoreGraphics::GetNumBufferedFrames());
+    for (IndexT i = 0; i < vegetationState.indirectGrassDrawCallsBuffer.Size(); i++)
+    {
+        CoreGraphics::BufferCreateInfo indirectGrassDrawCallsBufferInfo;
+        indirectGrassDrawCallsBufferInfo.name = "Vegetation Indirect Grass Draw Calls Buffer";
+        indirectGrassDrawCallsBufferInfo.usageFlags = CoreGraphics::IndirectBuffer | CoreGraphics::TransferBufferDestination;
+        indirectGrassDrawCallsBufferInfo.mode = CoreGraphics::DeviceLocal;
+        indirectGrassDrawCallsBufferInfo.byteSize = sizeof(DrawIndexedCommand);
+        indirectGrassDrawCallsBufferInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
+        vegetationState.indirectGrassDrawCallsBuffer[i] = CoreGraphics::CreateBuffer(indirectGrassDrawCallsBufferInfo);
+    }
+
+    // per-instance uniforms (fed through vertex)
+    CoreGraphics::BufferCreateInfo grassArgumentsBufferInfo;
+    grassArgumentsBufferInfo.name = "Vegetation Grass Arguments Buffer";
+    grassArgumentsBufferInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferSource;
+    grassArgumentsBufferInfo.mode = CoreGraphics::DeviceLocal;
+    grassArgumentsBufferInfo.elementSize = sizeof(Vegetation::InstanceUniforms);
+    grassArgumentsBufferInfo.size = MaxNumIndirectDraws;
+    grassArgumentsBufferInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
+    vegetationState.grassArgumentsBuffer = CoreGraphics::CreateBuffer(grassArgumentsBufferInfo);
+
+    vegetationState.indirectGrassArgumentBuffer.Resize(CoreGraphics::GetNumBufferedFrames());
+    for (IndexT i = 0; i < vegetationState.indirectGrassArgumentBuffer.Size(); i++)
+    {
+        CoreGraphics::BufferCreateInfo indirectGrassArgumentsBufferInfo;
+        indirectGrassArgumentsBufferInfo.name = "Vegetation Indirect Grass Arguments Buffer";
+        indirectGrassArgumentsBufferInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
+        indirectGrassArgumentsBufferInfo.mode = CoreGraphics::DeviceLocal;
+        indirectGrassArgumentsBufferInfo.elementSize = sizeof(Vegetation::InstanceUniforms);
+        indirectGrassArgumentsBufferInfo.size = MaxNumIndirectDraws;
+        indirectGrassArgumentsBufferInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
+        vegetationState.indirectGrassArgumentBuffer[i] = CoreGraphics::CreateBuffer(indirectGrassArgumentsBufferInfo);
+    }
+
+    CoreGraphics::BufferCreateInfo meshArgumentsBufferInfo;
+    meshArgumentsBufferInfo.name = "Vegetation Mesh Draw Buffer";
+    meshArgumentsBufferInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferSource;
+    meshArgumentsBufferInfo.mode = CoreGraphics::DeviceLocal;
+    meshArgumentsBufferInfo.elementSize = sizeof(DrawIndexedCommand);
+    meshArgumentsBufferInfo.size = MaxNumIndirectDraws * MAX_MESH_INFOS;
+    meshArgumentsBufferInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
+    vegetationState.meshDrawCallsBuffer = CoreGraphics::CreateBuffer(meshArgumentsBufferInfo);
+
+    vegetationState.indirectMeshDrawCallsBuffer.Resize(CoreGraphics::GetNumBufferedFrames());
+    for (IndexT i = 0; i < vegetationState.indirectMeshDrawCallsBuffer.Size(); i++)
+    {
+        CoreGraphics::BufferCreateInfo indirectMeshArgumentsBufferInfo;
+        indirectMeshArgumentsBufferInfo.name = "Vegetation Indirect Mesh Draw Buffer";
+        indirectMeshArgumentsBufferInfo.usageFlags = CoreGraphics::IndirectBuffer | CoreGraphics::TransferBufferDestination;
+        indirectMeshArgumentsBufferInfo.mode = CoreGraphics::DeviceLocal;
+        indirectMeshArgumentsBufferInfo.elementSize = sizeof(DrawIndexedCommand);
+        indirectMeshArgumentsBufferInfo.size = MaxNumIndirectDraws * MAX_MESH_INFOS;
+        indirectMeshArgumentsBufferInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
+        vegetationState.indirectMeshDrawCallsBuffer[i] = CoreGraphics::CreateBuffer(indirectMeshArgumentsBufferInfo);
+    }
+
+    // per-instance uniforms (fed through vertex)
+    CoreGraphics::BufferCreateInfo meshDrawCallsBufferInfo;
+    meshDrawCallsBufferInfo.name = "Vegetation Mesh Arguments Buffer";
+    meshDrawCallsBufferInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferSource;
+    meshDrawCallsBufferInfo.mode = CoreGraphics::DeviceLocal;
+    meshDrawCallsBufferInfo.elementSize = sizeof(Vegetation::InstanceUniforms);
+    meshDrawCallsBufferInfo.size = MaxNumIndirectDraws;
+    meshDrawCallsBufferInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
+    vegetationState.meshArgumentsBuffer = CoreGraphics::CreateBuffer(meshDrawCallsBufferInfo);
+
+    vegetationState.indirectMeshArgumentsBuffer.Resize(CoreGraphics::GetNumBufferedFrames());
+    for (IndexT i = 0; i < vegetationState.indirectMeshArgumentsBuffer.Size(); i++)
+    {
+        CoreGraphics::BufferCreateInfo meshDrawCallsBufferInfo;
+        meshDrawCallsBufferInfo.name = "Vegetation Indirect Mesh Arguments Buffer";
+        meshDrawCallsBufferInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
+        meshDrawCallsBufferInfo.mode = CoreGraphics::DeviceLocal;
+        meshDrawCallsBufferInfo.elementSize = sizeof(Vegetation::InstanceUniforms);
+        meshDrawCallsBufferInfo.size = MaxNumIndirectDraws;
+        meshDrawCallsBufferInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
+        vegetationState.indirectMeshArgumentsBuffer[i] = CoreGraphics::CreateBuffer(meshDrawCallsBufferInfo);
+    }
+
+    CoreGraphics::BufferCreateInfo indirectCountBufferInfo;
+    indirectCountBufferInfo.name = "Vegetation Draw Count Buffer";
+    indirectCountBufferInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferSource;
+    indirectCountBufferInfo.elementSize = sizeof(Vegetation::DrawCount);
+    indirectCountBufferInfo.mode = CoreGraphics::DeviceLocal;
+    indirectCountBufferInfo.queueSupport = CoreGraphics::ComputeQueueSupport | CoreGraphics::GraphicsQueueSupport;
+    vegetationState.drawCountBuffer = CoreGraphics::CreateBuffer(indirectCountBufferInfo);
+
+    indirectCountBufferInfo.name = "Vegetation Indirect Count Buffer Readback";
+    indirectCountBufferInfo.usageFlags = CoreGraphics::TransferBufferDestination;
+    indirectCountBufferInfo.mode = CoreGraphics::HostLocal;
+    vegetationState.indirectDrawCountBuffer.Resize(CoreGraphics::GetNumBufferedFrames());
+    for (IndexT i = 0; i < vegetationState.indirectDrawCountBuffer.Size(); i++)
+    {
+        vegetationState.indirectDrawCountBuffer[i] = CoreGraphics::CreateBuffer(indirectCountBufferInfo);
+    }
+
+    CoreGraphics::BufferCreateInfo materialUniformInfo;
+    materialUniformInfo.name = "Vegetation Materials Buffer";
+    materialUniformInfo.elementSize = sizeof(Vegetation::VegetationMaterialUniforms);
+    materialUniformInfo.usageFlags = CoreGraphics::ConstantBuffer;
+    materialUniformInfo.mode = CoreGraphics::HostCached;
+    vegetationState.materialUniformsBuffer = CoreGraphics::CreateBuffer(materialUniformInfo);
+    memset(&vegetationState.materialUniforms, 0x0, sizeof(Vegetation::VegetationMaterialUniforms));
+
+    vegetationState.vegetationBaseShader = CoreGraphics::ShaderGet("shd:vegetation.fxb");
+    vegetationState.vegetationClearShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationClear"));
+    vegetationState.vegetationGenerateDrawsShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationGenerateDraws"));
+    vegetationState.vegetationGrassZShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationGrassDrawZ"));
+    vegetationState.vegetationGrassShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationGrassDraw"));
+    vegetationState.vegetationMeshZShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationMeshDrawZ"));
+    vegetationState.vegetationMeshShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationMeshDraw"));
+    vegetationState.vegetationMeshVColorZShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationMeshDrawVColorZ"));
+    vegetationState.vegetationMeshVColorShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationMeshDrawVColor"));
+    vegetationState.systemResourceTable = ShaderCreateResourceTable(vegetationState.vegetationBaseShader, NEBULA_SYSTEM_GROUP);
+
+    ResourceTableSetConstantBuffer(vegetationState.systemResourceTable,
+        {
+            vegetationState.systemUniforms,
+            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "VegetationGenerateUniforms"),
+            0,
+            false, false,
+            sizeof(Vegetation::VegetationGenerateUniforms),
+            0
+        });
+
+    ResourceTableSetConstantBuffer(vegetationState.systemResourceTable,
+        {
+            vegetationState.materialUniformsBuffer,
+            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "VegetationMaterialUniforms"),
+            0,
+            false, false,
+            sizeof(Vegetation::VegetationMaterialUniforms),
+            0
+        });
+
+
+    ResourceTableSetConstantBuffer(vegetationState.systemResourceTable,
+        {
+            vegetationState.meshInfoBuffer,
+            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "MeshInfoUniforms"),
+            0,
+            false, false,
+            sizeof(Vegetation::MeshInfo) * Vegetation::MAX_MESH_INFOS,
+            0
+        });
+
+    ResourceTableSetConstantBuffer(vegetationState.systemResourceTable,
+        {
+            vegetationState.grassInfoBuffer,
+            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "GrassInfoUniforms"),
+            0,
+            false, false,
+            sizeof(Vegetation::GrassInfo) * Vegetation::MAX_GRASS_INFOS,
+            0
+        });
+
+    ResourceTableSetRWBuffer(vegetationState.systemResourceTable,
+        {
+            vegetationState.grassDrawCallsBuffer,
+            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "IndirectGrassDrawBuffer"),
+            0,
+            false, false,
+            BufferGetByteSize(vegetationState.grassDrawCallsBuffer),
+            0
+        });
+
+    ResourceTableSetRWBuffer(vegetationState.systemResourceTable,
+        {
+            vegetationState.meshDrawCallsBuffer,
+            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "IndirectMeshDrawBuffer"),
+            0,
+            false, false,
+            BufferGetByteSize(vegetationState.meshDrawCallsBuffer),
+            0
+        });
+
+    ResourceTableSetRWBuffer(vegetationState.systemResourceTable,
+        {
+            vegetationState.drawCountBuffer,
+            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "DrawCount"),
+            0,
+            false, false,
+            BufferGetByteSize(vegetationState.drawCountBuffer),
+            0
+        });
+
+    ResourceTableCommitChanges(vegetationState.systemResourceTable);
+
+    vegetationState.argumentsTable = ShaderCreateResourceTable(vegetationState.vegetationBaseShader, NEBULA_BATCH_GROUP);
+    ResourceTableSetRWBuffer(vegetationState.argumentsTable,
+        {
+            vegetationState.grassArgumentsBuffer,
+            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "InstanceGrassArguments"),
+            0,
+            false, false,
+            BufferGetByteSize(vegetationState.grassArgumentsBuffer),
+            0
+        });
+
+    ResourceTableSetRWBuffer(vegetationState.argumentsTable,
+        {
+            vegetationState.meshArgumentsBuffer,
+            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "InstanceMeshArguments"),
+            0,
+            false, false,
+            BufferGetByteSize(vegetationState.meshArgumentsBuffer),
+            0
+        });
+
+    ResourceTableCommitChanges(vegetationState.argumentsTable);
+
+    vegetationState.indirectArgumentsTable.Resize(CoreGraphics::GetNumBufferedFrames());
+    for (IndexT i = 0; i < vegetationState.indirectArgumentsTable.Size(); i++)
+    {
+        vegetationState.indirectArgumentsTable[i] = ShaderCreateResourceTable(vegetationState.vegetationBaseShader, NEBULA_BATCH_GROUP);
+
+        ResourceTableSetRWBuffer(vegetationState.indirectArgumentsTable[i],
+            {
+                vegetationState.indirectGrassArgumentBuffer[i],
+                ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "InstanceGrassArguments"),
+                0,
+                false, false,
+                BufferGetByteSize(vegetationState.indirectGrassArgumentBuffer[i]),
+                0
+            });
+
+        ResourceTableSetRWBuffer(vegetationState.indirectArgumentsTable[i],
+            {
+                vegetationState.indirectMeshArgumentsBuffer[i],
+                ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "InstanceMeshArguments"),
+                0,
+                false, false,
+                BufferGetByteSize(vegetationState.indirectMeshArgumentsBuffer[i]),
+                0
+            });
+
+        ResourceTableCommitChanges(vegetationState.indirectArgumentsTable[i]);
+    }
+
+    Frame::FrameCode* clear = vegetationState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    clear->domain = CoreGraphics::BarrierDomain::Global;
+    clear->queue = CoreGraphics::ComputeQueueType;
+    clear->bufferDeps.Add(vegetationState.drawCountBuffer,
+                        {
+                            "Draw Count Buffer",
+                            CoreGraphics::PipelineStage::ComputeShaderWrite,
+                            CoreGraphics::BufferSubresourceInfo()
+                        });
+    clear->bufferDeps.Add(vegetationState.grassDrawCallsBuffer,
+                        {
+                            "Grass Draw Buffer",
+                            CoreGraphics::PipelineStage::ComputeShaderWrite,
+                            CoreGraphics::BufferSubresourceInfo()
+                        });
+    clear->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        CmdSetShaderProgram(cmdBuf, vegetationState.vegetationClearShader);
+        CmdSetResourceTable(cmdBuf, vegetationState.systemResourceTable, NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
+
+        CmdDispatch(cmdBuf, 1, 1, 1);
+    };
+
+    Frame::FrameCode* drawGeneration = vegetationState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    drawGeneration->domain = CoreGraphics::BarrierDomain::Global;
+    drawGeneration->queue = CoreGraphics::ComputeQueueType;
+    drawGeneration->bufferDeps.Add(vegetationState.grassDrawCallsBuffer,
+                            {
+                                "Grass Draw Buffer",
+                                CoreGraphics::PipelineStage::ComputeShaderWrite,
+                                CoreGraphics::BufferSubresourceInfo()
+                            });
+    drawGeneration->bufferDeps.Add(vegetationState.meshDrawCallsBuffer,
+                            {
+                                "Mesh Draw Buffer",
+                                CoreGraphics::PipelineStage::ComputeShaderWrite,
+                                CoreGraphics::BufferSubresourceInfo()
+                            });
+    drawGeneration->bufferDeps.Add(vegetationState.grassArgumentsBuffer,
+                            {
+                                "Grass Uniform Buffer",
+                                CoreGraphics::PipelineStage::ComputeShaderWrite,
+                                CoreGraphics::BufferSubresourceInfo()
+                            });
+    drawGeneration->bufferDeps.Add(vegetationState.meshArgumentsBuffer,
+                            {
+                                "Mesh Uniform Buffer",
+                                CoreGraphics::PipelineStage::ComputeShaderWrite,
+                                CoreGraphics::BufferSubresourceInfo()
+                            });
+    drawGeneration->bufferDeps.Add(vegetationState.drawCountBuffer,
+                            {
+                                "Draw Count Buffer",
+                                CoreGraphics::PipelineStage::ComputeShaderWrite,
+                                CoreGraphics::BufferSubresourceInfo()
+                            });
+
+    drawGeneration->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        CmdSetShaderProgram(cmdBuf, vegetationState.vegetationGenerateDrawsShader);
+        CmdSetResourceTable(cmdBuf, vegetationState.systemResourceTable, NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
+        CmdSetResourceTable(cmdBuf, vegetationState.argumentsTable, NEBULA_BATCH_GROUP, ComputePipeline, nullptr);
+
+        CmdDispatch(cmdBuf, VegetationDistributionRadius / 64, VegetationDistributionRadius, 1);
+    };
+
+    Frame::FrameCode* readBack = vegetationState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    readBack->domain = CoreGraphics::BarrierDomain::Global;
+    readBack->queue = CoreGraphics::ComputeQueueType;
+    readBack->bufferDeps.Add(vegetationState.drawCountBuffer,
+                        {
+                            "Mesh Draw Buffer",
+                            CoreGraphics::PipelineStage::TransferRead,
+                            CoreGraphics::BufferSubresourceInfo()
+                        });
+    readBack->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+         CmdBarrier(cmdBuf,
+            PipelineStage::HostRead,
+            PipelineStage::TransferWrite,
+            BarrierDomain::Global,
+            nullptr,
+            {
+                BufferBarrierInfo
+                {
+                    vegetationState.indirectDrawCountBuffer[bufferIndex],
+                    0, NEBULA_WHOLE_BUFFER_SIZE
+                },
+            });
+
+        BufferCopy from, to;
+        from.offset = 0;
+        to.offset = 0;
+        CmdCopy(cmdBuf, vegetationState.drawCountBuffer, { from }, vegetationState.indirectDrawCountBuffer[bufferIndex], { to }, BufferGetByteSize(vegetationState.drawCountBuffer));
+
+        CmdBarrier(cmdBuf,
+            PipelineStage::TransferWrite,
+            PipelineStage::HostRead,
+            BarrierDomain::Global,
+            nullptr,
+            {
+                BufferBarrierInfo
+                {
+                    vegetationState.indirectDrawCountBuffer[bufferIndex],
+                    0, NEBULA_WHOLE_BUFFER_SIZE
+                },
+            });
+    };
+    Frame::AddSubgraph("Vegetation Generate Draws", { clear, drawGeneration, readBack });
+
+    Frame::FrameCode* prepass = vegetationState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    prepass->domain = CoreGraphics::BarrierDomain::Pass;
+    prepass->bufferDeps.Add(vegetationState.grassDrawCallsBuffer,
+                            {
+                                "Grass Draw Buffer",
+                                CoreGraphics::PipelineStage::Indirect,
+                                CoreGraphics::BufferSubresourceInfo()
+                            });
+    prepass->bufferDeps.Add(vegetationState.meshDrawCallsBuffer,
+                            {
+                                "Mesh Draw Buffer",
+                                CoreGraphics::PipelineStage::Indirect,
+                                CoreGraphics::BufferSubresourceInfo()
+                            });
+    prepass->bufferDeps.Add(vegetationState.grassArgumentsBuffer,
+                            {
+                                "Grass Uniform Buffer",
+                                CoreGraphics::PipelineStage::UniformGraphics,
+                                CoreGraphics::BufferSubresourceInfo()
+                            });
+    prepass->bufferDeps.Add(vegetationState.meshArgumentsBuffer,
+                            {
+                                "Mesh Uniform Buffer",
+                                CoreGraphics::PipelineStage::UniformGraphics,
+                                CoreGraphics::BufferSubresourceInfo()
+                            });
+    prepass->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        if (vegetationState.grassDrawsThisFrame > 0)
+        {
+            CmdSetShaderProgram(cmdBuf, vegetationState.vegetationGrassZShader);
+
+            // setup mesh
+            CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
+            CmdSetVertexLayout(cmdBuf, vegetationState.grassLayout);
+            CmdSetVertexBuffer(cmdBuf, 0, vegetationState.grassVbo, 0);
+            CmdSetIndexBuffer(cmdBuf, vegetationState.grassIbo, 0);
+
+            // set graphics pipeline
+            CmdSetGraphicsPipeline(cmdBuf);
+
+            // bind resource table
+            CmdSetResourceTable(cmdBuf, vegetationState.systemResourceTable, NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
+            CmdSetResourceTable(cmdBuf, vegetationState.indirectArgumentsTable[bufferIndex], NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
+
+            // draw
+            CmdDrawIndirectIndexed(cmdBuf, vegetationState.indirectGrassDrawCallsBuffer[bufferIndex], 0, 1, sizeof(Vegetation::DrawIndexedCommand));
+        }
+
+        for (IndexT i = 0; i < MAX_MESH_INFOS; i++)
+        {
+            if (vegetationState.meshDrawsThisFrame[i] > 0)
+            {
+                CmdSetShaderProgram(cmdBuf, vegetationState.meshZPrograms[i]);
+
+                // setup mesh
+                CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
+                CmdSetVertexLayout(cmdBuf, vegetationState.layouts[i]);
+                CmdSetVertexBuffer(cmdBuf, 0, CoreGraphics::GetVertexBuffer(), vegetationState.meshVertexOffsets[i]);
+                CmdSetIndexBuffer(cmdBuf, CoreGraphics::GetIndexBuffer(), vegetationState.meshIndexOffsets[i]);
+
+                // set graphics pipeline
+                CmdSetGraphicsPipeline(cmdBuf);
+
+                // bind resources
+                CmdSetResourceTable(cmdBuf, vegetationState.systemResourceTable, NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
+                CmdSetResourceTable(cmdBuf, vegetationState.indirectArgumentsTable[bufferIndex], NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
+
+                // draw
+                CmdDrawIndirectIndexed(cmdBuf, vegetationState.indirectMeshDrawCallsBuffer[bufferIndex], i * MAX_MESH_INFOS, vegetationState.meshDrawsThisFrame[i], sizeof(Vegetation::DrawIndexedCommand));
+            }
+        }
+    };
+    Frame::AddSubgraph("Vegetation Prepass", { prepass });
+
+    Frame::FrameCode* render = vegetationState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    render->domain = CoreGraphics::BarrierDomain::Pass;
+    render->bufferDeps.Add(vegetationState.grassDrawCallsBuffer,
+                            {
+                                "Grass Draw Buffer",
+                                CoreGraphics::PipelineStage::Indirect,
+                                CoreGraphics::BufferSubresourceInfo()
+                            });
+    render->bufferDeps.Add(vegetationState.meshDrawCallsBuffer,
+                            {
+                                "Mesh Draw Buffer",
+                                CoreGraphics::PipelineStage::Indirect,
+                                CoreGraphics::BufferSubresourceInfo()
+                            });
+    render->bufferDeps.Add(vegetationState.grassArgumentsBuffer,
+                            {
+                                "Grass Uniform Buffer",
+                                CoreGraphics::PipelineStage::UniformGraphics,
+                                CoreGraphics::BufferSubresourceInfo()
+                            });
+    render->bufferDeps.Add(vegetationState.meshArgumentsBuffer,
+                            {
+                                "Mesh Uniform Buffer",
+                                CoreGraphics::PipelineStage::UniformGraphics,
+                                CoreGraphics::BufferSubresourceInfo()
+                            });
+    render->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        if (vegetationState.grassDrawsThisFrame > 0)
+        {
+            CmdSetShaderProgram(cmdBuf, vegetationState.vegetationGrassShader);
+
+            // setup mesh
+            CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
+            CmdSetVertexLayout(cmdBuf, vegetationState.grassLayout);
+            CmdSetVertexBuffer(cmdBuf, 0, vegetationState.grassVbo, 0);
+            CmdSetIndexBuffer(cmdBuf, vegetationState.grassIbo, 0);
+
+            // set graphics pipeline
+            CmdSetGraphicsPipeline(cmdBuf);
+
+            // bind resource table
+            CmdSetResourceTable(cmdBuf, vegetationState.systemResourceTable, NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
+            CmdSetResourceTable(cmdBuf, vegetationState.indirectArgumentsTable[bufferIndex], NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
+
+            // draw
+            CmdDrawIndirectIndexed(cmdBuf, vegetationState.indirectGrassDrawCallsBuffer[bufferIndex], 0, 1, sizeof(Vegetation::DrawIndexedCommand));
+        }
+
+        for (IndexT i = 0; i < MAX_MESH_INFOS; i++)
+        {
+            if (vegetationState.meshDrawsThisFrame[i] > 0)
+            {
+                CmdSetShaderProgram(cmdBuf, vegetationState.meshPrograms[i]);
+
+                // setup mesh
+                CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
+                CmdSetVertexLayout(cmdBuf, vegetationState.layouts[i]);
+                CmdSetVertexBuffer(cmdBuf, 0, CoreGraphics::GetVertexBuffer(), vegetationState.meshVertexOffsets[i]);
+                CmdSetIndexBuffer(cmdBuf, CoreGraphics::GetIndexBuffer(), vegetationState.meshIndexOffsets[i]);
+
+                // set graphics pipeline
+                CmdSetGraphicsPipeline(cmdBuf);
+
+                // bind resources
+                CmdSetResourceTable(cmdBuf, vegetationState.systemResourceTable, NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
+                CmdSetResourceTable(cmdBuf, vegetationState.indirectArgumentsTable[bufferIndex], NEBULA_BATCH_GROUP, GraphicsPipeline, nullptr);
+
+                // draw
+                CmdDrawIndirectIndexed(cmdBuf, vegetationState.indirectMeshDrawCallsBuffer[bufferIndex], i * MAX_MESH_INFOS, vegetationState.meshDrawsThisFrame[i], sizeof(Vegetation::DrawIndexedCommand));
+            }
+        }
+    };
+    Frame::AddSubgraph("Vegetation Render", { render });
+
+    // Gah, we need to copy from the GPU to the indirect buffers after we render
+    Frame::FrameCode* copy = vegetationState.frameOpAllocator.Alloc<Frame::FrameCode>();
+    copy->domain = CoreGraphics::BarrierDomain::Global;
+    copy->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
+    {
+        CoreGraphics::BufferCopy from, to;
+        from.offset = 0;
+        to.offset = 0;
+        CmdCopy(cmdBuf, vegetationState.grassArgumentsBuffer, { from }, vegetationState.indirectGrassArgumentBuffer[bufferIndex], { to }, BufferGetByteSize(vegetationState.grassArgumentsBuffer));
+        CmdCopy(cmdBuf, vegetationState.grassDrawCallsBuffer, { from }, vegetationState.indirectGrassDrawCallsBuffer[bufferIndex], { to }, BufferGetByteSize(vegetationState.grassDrawCallsBuffer));
+        CmdCopy(cmdBuf, vegetationState.meshArgumentsBuffer, { from }, vegetationState.indirectMeshArgumentsBuffer[bufferIndex], { to }, BufferGetByteSize(vegetationState.meshArgumentsBuffer));
+        CmdCopy(cmdBuf, vegetationState.meshDrawCallsBuffer, { from }, vegetationState.indirectMeshDrawCallsBuffer[bufferIndex], { to }, BufferGetByteSize(vegetationState.meshDrawCallsBuffer));
+
+    };
+    Frame::AddSubgraph("Vegetation Copy Indirect", { copy });
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VegetationContext::Discard()
+{
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+VegetationContext::Setup(Resources::ResourceName heightMap, SizeT numGrassPlanesPerTuft, float grassPatchRadius)
+{
+    using namespace CoreGraphics;
+    vegetationState.heightMap = Resources::CreateResource(heightMap, "Vegetation", nullptr, nullptr, true);
+    vegetationState.numGrassBlades = numGrassPlanesPerTuft;
+    Util::FixedArray<GrassVertex> vertices(numGrassPlanesPerTuft * 4);
+    Util::FixedArray<ushort> indices(numGrassPlanesPerTuft * 6);
 
     // calculate center points for grass patches by angle
     float angle = 0.0f;
-    float angleIncrement = 360.0f / settings.numGrassPlanes;
+    float angleIncrement = 360.0f / vegetationState.numGrassBlades;
     int index = 0;
     int vertex = 0;
-    for (SizeT i = 0; i < settings.numGrassPlanes; i++, index += 6, vertex += 4)
+    for (SizeT i = 0; i < vegetationState.numGrassBlades; i++, index += 6, vertex += 4)
     {
         float x = Math::cos(Math::deg2rad(angle));
         float z = Math::sin(Math::deg2rad(angle));
@@ -156,14 +743,14 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         Math::vector perp = Math::vector(normal.z, 0, -normal.x);
 
         // extrude vertex positions using perp
-        (center + -perp * settings.grassPatchRadius).storeu(vertices[vertex].position.v);
+        (center + -perp * grassPatchRadius).storeu(vertices[vertex].position.v);
         vertices[vertex].position.y = 0.0f;
-        (center + -perp * settings.grassPatchRadius).storeu(vertices[vertex + 1].position.v);
-        vertices[vertex + 1].position.y = settings.grassPatchRadius;
-        (center + perp * settings.grassPatchRadius).storeu(vertices[vertex + 2].position.v);
+        (center + -perp * grassPatchRadius).storeu(vertices[vertex + 1].position.v);
+        vertices[vertex + 1].position.y = grassPatchRadius;
+        (center + perp * grassPatchRadius).storeu(vertices[vertex + 2].position.v);
         vertices[vertex + 2].position.y = 0.0f;
-        (center + perp * settings.grassPatchRadius).storeu(vertices[vertex + 3].position.v);
-        vertices[vertex + 3].position.y = settings.grassPatchRadius;
+        (center + perp * grassPatchRadius).storeu(vertices[vertex + 3].position.v);
+        vertices[vertex + 3].position.y = grassPatchRadius;
 
         // store normals
         normal.storeu(vertices[vertex].normal.v);
@@ -197,15 +784,6 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         VertexComponent(VertexComponent::Position, 0, VertexComponent::Float3),
         VertexComponent(VertexComponent::Normal, 0, VertexComponent::Float3),
         VertexComponent(VertexComponent::TexCoord1, 0, VertexComponent::Float2),
-
-        // per instance data
-        /*
-        VertexComponent((VertexComponent::SemanticName)3, 1, VertexComponent::Float3, 1, VertexComponent::PerInstance),	// position
-        VertexComponent((VertexComponent::SemanticName)4, 1, VertexComponent::UInt, 1, VertexComponent::PerInstance),	// texture
-        VertexComponent((VertexComponent::SemanticName)5, 1, VertexComponent::Float3, 1, VertexComponent::PerInstance),	// normal
-        VertexComponent((VertexComponent::SemanticName)6, 1, VertexComponent::Float, 1, VertexComponent::PerInstance),	// random value
-        VertexComponent((VertexComponent::SemanticName)7, 1, VertexComponent::Float2, 1, VertexComponent::PerInstance),	// sin cos
-        */
     };
     vegetationState.grassLayout = CoreGraphics::CreateVertexLayout(vloInfo);
 
@@ -213,7 +791,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     vboInfo.name = "Grass VBO";
     vboInfo.usageFlags = CoreGraphics::VertexBuffer;
     vboInfo.elementSize = sizeof(GrassVertex);
-    vboInfo.size = settings.numGrassPlanes * 4;
+    vboInfo.size = numGrassPlanesPerTuft * 4;
     vboInfo.mode = CoreGraphics::DeviceLocal;
     vboInfo.data = vertices.Begin();
     vboInfo.dataSize = vertices.ByteSize();
@@ -223,7 +801,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     iboInfo.name = "Grass IBO";
     iboInfo.usageFlags = CoreGraphics::IndexBuffer;
     iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index16);
-    iboInfo.size = settings.numGrassPlanes * 6;
+    iboInfo.size = numGrassPlanesPerTuft * 6;
     iboInfo.mode = CoreGraphics::DeviceLocal;
     iboInfo.data = indices.Begin();
     iboInfo.dataSize = indices.ByteSize();
@@ -238,341 +816,19 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
         VertexComponent(VertexComponent::Binormal, 0, VertexComponent::Byte4N),
         VertexComponent(VertexComponent::Tangent, 0, VertexComponent::Byte4N),
         VertexComponent(VertexComponent::Color, 0, VertexComponent::UByte4N),
+    };
+    vegetationState.combinedMeshLayoutWithColor = CoreGraphics::CreateVertexLayout(vloInfo);
 
-        // per instance data
-        /*
-        VertexComponent((VertexComponent::SemanticName)5, 1, VertexComponent::Float3, 1, VertexComponent::PerInstance),	// position
-        VertexComponent((VertexComponent::SemanticName)6, 1, VertexComponent::UInt, 1, VertexComponent::PerInstance),	// texture
-        VertexComponent((VertexComponent::SemanticName)7, 1, VertexComponent::Float3, 1, VertexComponent::PerInstance),	// normal
-        VertexComponent((VertexComponent::SemanticName)8, 1, VertexComponent::Float, 1, VertexComponent::PerInstance),	// random value
-        VertexComponent((VertexComponent::SemanticName)9, 1, VertexComponent::Float2, 1, VertexComponent::PerInstance),	// sin cos
-        */
+    vloInfo.comps =
+    {
+        // per vertex geometry data
+        VertexComponent(VertexComponent::Position, 0, VertexComponent::Float3),
+        VertexComponent(VertexComponent::Normal, 0, VertexComponent::Byte4N),
+        VertexComponent(VertexComponent::TexCoord1, 0, VertexComponent::Float2),
+        VertexComponent(VertexComponent::Binormal, 0, VertexComponent::Byte4N),
+        VertexComponent(VertexComponent::Tangent, 0, VertexComponent::Byte4N),
     };
     vegetationState.combinedMeshLayout = CoreGraphics::CreateVertexLayout(vloInfo);
-
-    vboInfo.name = "Combined Mesh VBO";
-    vboInfo.elementSize = sizeof(CombinedMeshVertex);
-    vboInfo.size = 65535;	// start with 64k vertices
-    vboInfo.usageFlags = CoreGraphics::VertexBuffer | CoreGraphics::TransferBufferDestination;
-    vegetationState.combinedMeshVbo = CoreGraphics::CreateBuffer(vboInfo);
-    vegetationState.vboAllocator.Resize(BufferGetByteSize(vegetationState.combinedMeshVbo));
-
-    iboInfo.name = "Combined Mesh IBO";
-    iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index32);
-    iboInfo.size = 65535;	// start with 64k indices
-    iboInfo.usageFlags = CoreGraphics::IndexBuffer | CoreGraphics::TransferBufferDestination;
-    vegetationState.combinedMeshIbo = CoreGraphics::CreateBuffer(iboInfo);
-    vegetationState.iboAllocator.Resize(BufferGetByteSize(vegetationState.combinedMeshIbo));
-
-    CoreGraphics::BufferCreateInfo meshInfo;
-    meshInfo.elementSize = sizeof(Vegetation::MeshInfo);
-    meshInfo.size = Vegetation::MAX_MESH_INFOS;
-    meshInfo.mode = CoreGraphics::HostToDevice;
-    meshInfo.usageFlags = CoreGraphics::ConstantBuffer | CoreGraphics::TransferBufferDestination;
-    vegetationState.meshInfoBuffer = CoreGraphics::CreateBuffer(meshInfo);
-
-    CoreGraphics::BufferCreateInfo grassInfo;
-    grassInfo.elementSize = sizeof(Vegetation::GrassInfo);
-    grassInfo.size = Vegetation::MAX_GRASS_INFOS;
-    grassInfo.mode = CoreGraphics::HostToDevice;
-    grassInfo.usageFlags = CoreGraphics::ConstantBuffer | CoreGraphics::TransferBufferDestination;
-    vegetationState.grassInfoBuffer = CoreGraphics::CreateBuffer(grassInfo);
-
-    CoreGraphics::BufferCreateInfo cboInfo;
-    cboInfo.name = "System Uniforms";
-    cboInfo.usageFlags = CoreGraphics::ConstantBuffer | CoreGraphics::TransferBufferDestination;
-    cboInfo.elementSize = sizeof(VegetationGenerateUniforms);
-    cboInfo.size = 1;
-    cboInfo.mode = CoreGraphics::HostToDevice;
-    vegetationState.systemUniforms = CoreGraphics::CreateBuffer(cboInfo);
-
-    CoreGraphics::BufferCreateInfo idBufInfo;
-    idBufInfo.name = "Indirect Grass Draw Buffer";
-    idBufInfo.usageFlags = CoreGraphics::IndirectBuffer | CoreGraphics::ReadWriteBuffer;
-    idBufInfo.mode = CoreGraphics::DeviceLocal;
-    idBufInfo.elementSize = sizeof(DrawIndexedCommand);
-    idBufInfo.size = 1;			// will use instancing instead of multi-draw
-    vegetationState.indirectGrassDrawBuffer = CoreGraphics::CreateBuffer(idBufInfo);
-
-    // per-instance uniforms (fed through vertex)
-    idBufInfo.name = "Indirect Grass Uniform Buffer";
-    idBufInfo.usageFlags = CoreGraphics::ReadWriteBuffer;
-    idBufInfo.elementSize = sizeof(Vegetation::InstanceUniforms);
-    idBufInfo.mode = CoreGraphics::DeviceLocal;
-    idBufInfo.size = MaxNumIndirectDraws;
-    vegetationState.indirectGrassUniformBuffer = CoreGraphics::CreateBuffer(idBufInfo);
-
-    idBufInfo.name = "Indirect Mesh Draw Buffer";
-    idBufInfo.usageFlags = CoreGraphics::IndirectBuffer | CoreGraphics::ReadWriteBuffer;
-    idBufInfo.elementSize = sizeof(DrawIndexedCommand);
-    idBufInfo.mode = CoreGraphics::DeviceLocal;
-    idBufInfo.size = MaxNumIndirectDraws;
-    vegetationState.indirectMeshDrawBuffer = CoreGraphics::CreateBuffer(idBufInfo);
-
-    // per-instance uniforms (fed through vertex)
-    idBufInfo.name = "Indirect Mesh Uniform Buffer";
-    idBufInfo.usageFlags = CoreGraphics::ReadWriteBuffer;
-    idBufInfo.elementSize = sizeof(Vegetation::InstanceUniforms);
-    idBufInfo.mode = CoreGraphics::DeviceLocal;
-    idBufInfo.size = MaxNumIndirectDraws;
-    vegetationState.indirectMeshUniformBuffer = CoreGraphics::CreateBuffer(idBufInfo);
-
-    idBufInfo.name = "Indirect Count Buffer";
-    idBufInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferSource;
-    idBufInfo.elementSize = sizeof(uint);
-    idBufInfo.mode = CoreGraphics::DeviceLocal;
-    idBufInfo.size = 2;			// will use instancing instead of multi-draw
-    vegetationState.indirectCountBuffer = CoreGraphics::CreateBuffer(idBufInfo);
-
-    idBufInfo.usageFlags = CoreGraphics::TransferBufferDestination;
-    idBufInfo.mode = CoreGraphics::DeviceToHost;
-    vegetationState.indirectCountReadbackBuffer.Resize(CoreGraphics::GetNumBufferedFrames());
-    for (IndexT i = 0; i < vegetationState.indirectCountReadbackBuffer.Size(); i++)
-    {
-        vegetationState.indirectCountReadbackBuffer[i] = CoreGraphics::CreateBuffer(idBufInfo);
-    }
-
-    vegetationState.vegetationBaseShader = CoreGraphics::ShaderGet("shd:vegetation.fxb");
-    vegetationState.vegetationGenerateDrawsShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationGenerateDraws"));
-    vegetationState.vegetationGrassShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationGrassDraw"));
-    vegetationState.vegetationMeshShader = CoreGraphics::ShaderGetProgram(vegetationState.vegetationBaseShader, ShaderFeatureFromString("VegetationMeshDraw"));
-    vegetationState.systemResourceTable = ShaderCreateResourceTable(vegetationState.vegetationBaseShader, NEBULA_SYSTEM_GROUP);
-
-    ResourceTableSetConstantBuffer(vegetationState.systemResourceTable,
-        {
-            vegetationState.systemUniforms,
-            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "VegetationGenerateUniforms"),
-            0,
-            false, false,
-            sizeof(Vegetation::VegetationGenerateUniforms),
-            0
-        });
-
-    ResourceTableSetConstantBuffer(vegetationState.systemResourceTable,
-        {
-            vegetationState.meshInfoBuffer,
-            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "MeshInfoUniforms"),
-            0,
-            false, false,
-            sizeof(Vegetation::MeshInfo) * Vegetation::MAX_MESH_INFOS,
-            0
-        });
-
-    ResourceTableSetConstantBuffer(vegetationState.systemResourceTable,
-        {
-            vegetationState.grassInfoBuffer,
-            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "GrassInfoUniforms"),
-            0,
-            false, false,
-            sizeof(Vegetation::GrassInfo) * Vegetation::MAX_GRASS_INFOS,
-            0
-        });
-
-    ResourceTableSetRWBuffer(vegetationState.systemResourceTable,
-        {
-            vegetationState.indirectGrassDrawBuffer,
-            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "IndirectGrassDrawBuffer"),
-            0,
-            false, false,
-            BufferGetByteSize(vegetationState.indirectGrassDrawBuffer),
-            0
-        });
-
-    ResourceTableSetRWBuffer(vegetationState.systemResourceTable,
-        {
-            vegetationState.indirectGrassUniformBuffer,
-            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "InstanceGrassUniformBuffer"),
-            0,
-            false, false,
-            BufferGetByteSize(vegetationState.indirectGrassUniformBuffer),
-            0
-        });
-
-    ResourceTableSetRWBuffer(vegetationState.systemResourceTable,
-        {
-            vegetationState.indirectMeshDrawBuffer,
-            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "IndirectMeshDrawBuffer"),
-            0,
-            false, false,
-            BufferGetByteSize(vegetationState.indirectMeshDrawBuffer),
-            0
-        });
-
-    ResourceTableSetRWBuffer(vegetationState.systemResourceTable,
-        {
-            vegetationState.indirectMeshUniformBuffer,
-            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "InstanceMeshUniformBuffer"),
-            0,
-            false, false,
-            BufferGetByteSize(vegetationState.indirectMeshUniformBuffer),
-            0
-        });
-
-    ResourceTableSetRWBuffer(vegetationState.systemResourceTable,
-        {
-            vegetationState.indirectCountBuffer,
-            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "DrawCount"),
-            0,
-            false, false,
-            BufferGetByteSize(vegetationState.indirectCountBuffer),
-            0
-        });
-
-    ResourceTableCommitChanges(vegetationState.systemResourceTable);
-
-    Frame::FrameCode* drawGeneration = vegetationState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    drawGeneration->domain = CoreGraphics::BarrierDomain::Global;
-    drawGeneration->bufferDeps.Add(vegetationState.indirectGrassDrawBuffer,
-                            {
-                                "Grass Draw Buffer",
-                                CoreGraphics::PipelineStage::ComputeShaderWrite,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    drawGeneration->bufferDeps.Add(vegetationState.indirectMeshDrawBuffer,
-                            {
-                                "Mesh Draw Buffer",
-                                CoreGraphics::PipelineStage::ComputeShaderWrite,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    drawGeneration->bufferDeps.Add(vegetationState.indirectGrassUniformBuffer,
-                            {
-                                "Mesh Draw Buffer",
-                                CoreGraphics::PipelineStage::ComputeShaderWrite,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    drawGeneration->bufferDeps.Add(vegetationState.indirectMeshUniformBuffer,
-                            {
-                                "Mesh Draw Buffer",
-                                CoreGraphics::PipelineStage::ComputeShaderWrite,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-
-    drawGeneration->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
-    {
-        CmdSetShaderProgram(cmdBuf, vegetationState.vegetationGenerateDrawsShader);
-        CmdSetResourceTable(cmdBuf, vegetationState.systemResourceTable, NEBULA_SYSTEM_GROUP, ComputePipeline, nullptr);
-
-        CmdDispatch(cmdBuf, VegetationDistributionRadius / 64, VegetationDistributionRadius, 1);
-    };
-
-    Frame::FrameCode* readBack = vegetationState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    readBack->domain = CoreGraphics::BarrierDomain::Global;
-    readBack->bufferDeps.Add(vegetationState.indirectCountBuffer,
-                        {
-                            "Mesh Draw Buffer",
-                            CoreGraphics::PipelineStage::TransferRead,
-                            CoreGraphics::BufferSubresourceInfo()
-                        });
-    readBack->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
-    {
-        CmdBarrier(cmdBuf,
-            PipelineStage::HostRead,
-            PipelineStage::TransferWrite,
-            BarrierDomain::Global,
-            nullptr,
-            {
-                BufferBarrierInfo
-                {
-                    vegetationState.indirectCountReadbackBuffer[bufferIndex],
-                    0, NEBULA_WHOLE_BUFFER_SIZE
-                },
-            });
-
-        BufferCopy from, to;
-        from.offset = 0;
-        to.offset = 0;
-        CmdCopy(cmdBuf, vegetationState.indirectCountBuffer, { from }, vegetationState.indirectCountReadbackBuffer[bufferIndex], { to }, BufferGetByteSize(vegetationState.indirectCountBuffer));
-
-        CmdBarrier(cmdBuf,
-            PipelineStage::TransferWrite,
-            PipelineStage::HostRead,
-            BarrierDomain::Global,
-            nullptr,
-            {
-                BufferBarrierInfo
-                {
-                    vegetationState.indirectCountReadbackBuffer[bufferIndex],
-                    0, NEBULA_WHOLE_BUFFER_SIZE
-                },
-            });
-    };
-    Frame::AddSubgraph("Vegetation Generate Draws", { drawGeneration, readBack });
-
-    Frame::FrameCode* render = vegetationState.frameOpAllocator.Alloc<Frame::FrameCode>();
-    render->domain = CoreGraphics::BarrierDomain::Pass;
-    render->bufferDeps.Add(vegetationState.indirectGrassDrawBuffer,
-                            {
-                                "Grass Draw Buffer",
-                                CoreGraphics::PipelineStage::Indirect,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    render->bufferDeps.Add(vegetationState.indirectMeshDrawBuffer,
-                            {
-                                "Mesh Draw Buffer",
-                                CoreGraphics::PipelineStage::Indirect,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    render->bufferDeps.Add(vegetationState.indirectGrassUniformBuffer,
-                            {
-                                "Mesh Draw Buffer",
-                                CoreGraphics::PipelineStage::Uniform,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    render->bufferDeps.Add(vegetationState.indirectMeshUniformBuffer,
-                            {
-                                "Mesh Draw Buffer",
-                                CoreGraphics::PipelineStage::Uniform,
-                                CoreGraphics::BufferSubresourceInfo()
-                            });
-    render->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
-    {
-        if (vegetationState.grassDrawsThisFrame > 0)
-        {
-            CmdSetShaderProgram(cmdBuf, vegetationState.vegetationGrassShader);
-
-            // setup mesh
-            CmdSetVertexLayout(cmdBuf, vegetationState.grassLayout);
-            CmdSetVertexBuffer(cmdBuf, 0, vegetationState.grassVbo, 0);
-            CmdSetIndexBuffer(cmdBuf, vegetationState.grassIbo, 0);
-
-            // set graphics pipeline
-            CmdSetGraphicsPipeline(cmdBuf);
-
-            // bind resource table
-            CmdSetResourceTable(cmdBuf, vegetationState.systemResourceTable, NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
-
-            // draw
-            CmdDrawIndirectIndexed(cmdBuf, vegetationState.indirectGrassDrawBuffer, 0, 1, sizeof(Vegetation::DrawIndexedCommand));
-        }
-
-        if (vegetationState.meshDrawsThisFrame > 0)
-        {
-            CmdSetShaderProgram(cmdBuf, vegetationState.vegetationMeshShader);
-
-            // setup mesh
-            CmdSetVertexLayout(cmdBuf, vegetationState.combinedMeshLayout);
-            CmdSetVertexBuffer(cmdBuf, 0, vegetationState.combinedMeshVbo, 0);
-            CmdSetIndexBuffer(cmdBuf, vegetationState.combinedMeshIbo, 0);
-
-            // set graphics pipeline
-            CmdSetGraphicsPipeline(cmdBuf);
-
-            // bind resources
-            CmdSetResourceTable(cmdBuf, vegetationState.systemResourceTable, NEBULA_SYSTEM_GROUP, GraphicsPipeline, nullptr);
-
-            // draw
-            CmdDrawIndirectIndexed(cmdBuf, vegetationState.indirectMeshDrawBuffer, 0, vegetationState.meshDrawsThisFrame, sizeof(Vegetation::DrawIndexedCommand));
-        }
-    };
-    Frame::AddSubgraph("Vegetation Render", { render });
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VegetationContext::Discard()
-{
 }
 
 //------------------------------------------------------------------------------
@@ -599,6 +855,7 @@ VegetationContext::SetupGrass(const Graphics::GraphicsEntityId id, const Vegetat
     n_assert(infoIndex < Vegetation::MAX_MESH_INFOS);
     GrassInfo& info = vegetationState.grassInfos[infoIndex];
 
+    info.used = true;
     albedo = Resources::CreateResource(setup.albedo, "Vegetation", nullptr, nullptr, true);
     normal = Resources::CreateResource(setup.normals, "Vegetation", nullptr, nullptr, true);
     material = Resources::CreateResource(setup.material, "Vegetation", nullptr, nullptr, true);
@@ -613,41 +870,13 @@ VegetationContext::SetupGrass(const Graphics::GraphicsEntityId id, const Vegetat
     info.slopeThreshold = slopeThreshold;
     info.textureIndex = textureIndex;
 
-    ResourceTableSetTexture(vegetationState.systemResourceTable,
-        {
-            mask,
-            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "MaskTextureArray"),
-            textureIndex,
-            CoreGraphics::InvalidSamplerId,
-            false, false
-        });
+    vegetationState.materialUniforms.VegetationAlbedo[textureIndex / 4][textureIndex % 4]    = CoreGraphics::TextureGetBindlessHandle(albedo);
+    vegetationState.materialUniforms.VegetationNormal[textureIndex / 4][textureIndex % 4]    = CoreGraphics::TextureGetBindlessHandle(normal);
+    vegetationState.materialUniforms.VegetationMaterial[textureIndex / 4][textureIndex % 4]  = CoreGraphics::TextureGetBindlessHandle(material);
+    vegetationState.materialUniforms.VegetationMasks[textureIndex / 4][textureIndex % 4]     = CoreGraphics::TextureGetBindlessHandle(mask);
 
-    ResourceTableSetTexture(vegetationState.systemResourceTable,
-        {
-            albedo,
-            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "AlbedoTextureArray"),
-            textureIndex,
-            CoreGraphics::InvalidSamplerId,
-            false, false
-        });
-
-    ResourceTableSetTexture(vegetationState.systemResourceTable,
-        {
-            normal,
-            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "NormalTextureArray"),
-            textureIndex,
-            CoreGraphics::InvalidSamplerId,
-            false, false
-        });
-
-    ResourceTableSetTexture(vegetationState.systemResourceTable,
-        {
-            material,
-            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "MaterialTextureArray"),
-            textureIndex,
-            CoreGraphics::InvalidSamplerId,
-            false, false
-        });
+    CoreGraphics::BufferUpdate(vegetationState.materialUniformsBuffer, vegetationState.materialUniforms);
+    CoreGraphics::BufferFlush(vegetationState.materialUniformsBuffer);
 }
 
 //------------------------------------------------------------------------------
@@ -676,29 +905,34 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
 
     CoreGraphics::StreamMeshCache::StreamMeshLoadMetaData metaData;
     metaData.copySource = true;
-    mesh = Resources::CreateResource(setup.mesh, metaData, "Vegetation", nullptr, nullptr, true);
+    mesh = CoreGraphics::InvalidMeshId;
+
+    Models::ModelId model = Resources::CreateResource(setup.mesh, metaData, "Vegetation", nullptr, nullptr, true);
+    const Util::Array<Models::ModelNode*>& nodes = Models::ModelGetNodes(model);
+    Util::Array<float> lodDistances;
+    for (auto node : nodes)
+    {
+        if (node->GetType() == Models::NodeType::PrimitiveNodeType)
+        {
+            auto pnode = static_cast<Models::PrimitiveNode*>(node);
+            if (mesh == CoreGraphics::InvalidMeshId)
+                mesh = pnode->GetMeshId();
+
+            float minDist, maxDist;
+            pnode->GetLODDistances(minDist, maxDist);
+            lodDistances.Append(maxDist);
+        }
+    }
 
     infoIndex = vegetationState.meshInfoPool.Alloc();
     n_assert(infoIndex < Vegetation::MAX_MESH_INFOS);
     MeshInfo& info = vegetationState.meshInfos[infoIndex];
-
-    // merge mesh into global mesh
-    CoreGraphics::BufferId vbo = CoreGraphics::MeshGetVertexBuffer(mesh, 0);
-    CoreGraphics::BufferId ibo = CoreGraphics::MeshGetIndexBuffer(mesh);
-
-    SizeT vboSize = CoreGraphics::BufferGetByteSize(vbo);
-    SizeT iboSize = CoreGraphics::BufferGetByteSize(ibo);
-
-    IndexT vboIndex;
-    bool res = vegetationState.vboAllocator.Alloc(vboSize, 0, vboIndex);
-    n_assert2(res, "Not enough space for vertices");
-
-    IndexT iboIndex;
-    res = vegetationState.iboAllocator.Alloc(iboSize, 0, iboIndex);
-    n_assert2(res, "Not enough space for indices");
+    info.used = true;
 
     // get primitive groups so we can update the mesh info
     const Util::Array<CoreGraphics::PrimitiveGroup>& groups = CoreGraphics::MeshGetPrimitiveGroups(mesh);
+    uint baseVertexOffset = CoreGraphics::MeshGetVertexOffset(mesh, 0);
+    uint baseIndexOffset = CoreGraphics::MeshGetIndexOffset(mesh);
 
     // make sure the mesh is valid for vegetation rendering
     const Util::Array<CoreGraphics::VertexComponent>& components = CoreGraphics::VertexLayoutGetComponents(groups[0].GetVertexLayout());
@@ -711,6 +945,9 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
         n_assert(components[3].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
         n_assert(components[4].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
         n_assert(components[5].GetFormat() == CoreGraphics::VertexComponent::UByte4N);
+        vegetationState.layouts[infoIndex] = vegetationState.combinedMeshLayoutWithColor;
+        vegetationState.meshZPrograms[infoIndex] = vegetationState.vegetationMeshVColorZShader;
+        vegetationState.meshPrograms[infoIndex] = vegetationState.vegetationMeshVColorShader;
     }
     else // without
     {
@@ -719,19 +956,36 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
         n_assert(components[2].GetFormat() == CoreGraphics::VertexComponent::Float2);
         n_assert(components[3].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
         n_assert(components[4].GetFormat() == CoreGraphics::VertexComponent::Byte4N);
+        vegetationState.layouts[infoIndex] = vegetationState.combinedMeshLayout;
+        vegetationState.meshZPrograms[infoIndex] = vegetationState.vegetationMeshZShader;
+        vegetationState.meshPrograms[infoIndex] = vegetationState.vegetationMeshShader;
     }
 
     info.indexCount = 0;
     info.vertexCount = 0;
     info.numLods = groups.Size();
 
+    vegetationState.meshVertexOffsets[infoIndex] = baseVertexOffset;
+    vegetationState.meshIndexOffsets[infoIndex] = baseIndexOffset;
+
+    float distances[] =
+    {
+        10,
+        25,
+        50,
+        100,
+        500,
+        1000
+    };
     for (IndexT i = 0; i < groups.Size(); i++)
     {
         SizeT size = CoreGraphics::VertexLayoutGetSize(groups[i].GetVertexLayout());
-        uint lod = Math::log2(i + 1);
-        info.lodDistances[i] = 50 - (50 >> lod);
-        info.lodIndexOffsets[i] = iboIndex + groups[i].GetBaseIndex();
-        info.lodVertexOffsets[i] = vboIndex + groups[i].GetBaseVertex();
+        if (lodDistances[i] == FLT_MAX)
+            info.lodDistances[i] = distances[i] * distances[i];
+        else
+            info.lodDistances[i] = lodDistances[i] * lodDistances[i];
+        info.lodIndexOffsets[i] = groups[i].GetBaseIndex();
+        info.lodVertexOffsets[i] = groups[i].GetBaseVertex();
         info.lodIndexCount[i] = groups[i].GetNumIndices();
         info.lodVertexCount[i] = groups[i].GetNumVertices();
         info.indexCount += groups[i].GetNumIndices();
@@ -747,56 +1001,13 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
     info.textureIndex = textureIndex;
     info.distribution = 0.0f;
 
-    ResourceTableSetTexture(vegetationState.systemResourceTable,
-        {
-            mask,
-            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "MaskTextureArray"),
-            textureIndex,
-            CoreGraphics::InvalidSamplerId,
-            false, false
-        });
-    ResourceTableSetTexture(vegetationState.systemResourceTable,
-        {
-            albedo,
-            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "AlbedoTextureArray"),
-            textureIndex,
-            CoreGraphics::InvalidSamplerId,
-            false, false
-        });
+    vegetationState.materialUniforms.VegetationAlbedo[textureIndex / 4][textureIndex % 4] = CoreGraphics::TextureGetBindlessHandle(albedo);
+    vegetationState.materialUniforms.VegetationNormal[textureIndex / 4][textureIndex % 4] = CoreGraphics::TextureGetBindlessHandle(normal);
+    vegetationState.materialUniforms.VegetationMaterial[textureIndex / 4][textureIndex % 4] = CoreGraphics::TextureGetBindlessHandle(material);
+    vegetationState.materialUniforms.VegetationMasks[textureIndex / 4][textureIndex % 4] = CoreGraphics::TextureGetBindlessHandle(mask);
 
-    ResourceTableSetTexture(vegetationState.systemResourceTable,
-        {
-            normal,
-            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "NormalTextureArray"),
-            textureIndex,
-            CoreGraphics::InvalidSamplerId,
-            false, false
-        });
-
-    ResourceTableSetTexture(vegetationState.systemResourceTable,
-        {
-            material,
-            ShaderGetResourceSlot(vegetationState.vegetationBaseShader, "MaterialTextureArray"),
-            textureIndex,
-            CoreGraphics::InvalidSamplerId,
-            false, false
-        });
-
-    // grab resource submission context
-    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockTransferSetupCommandBuffer();
-
-    // copy vbo and ibo
-    CoreGraphics::BufferCopy from, to;
-    from.offset = 0;
-    to.offset = vboIndex;
-    CoreGraphics::CmdCopy(cmdBuf, vbo, { from }, vegetationState.combinedMeshVbo, { to }, vboSize);
-
-    from.offset = 0;
-    to.offset = iboIndex;
-    CoreGraphics::CmdCopy(cmdBuf, ibo, { from }, vegetationState.combinedMeshIbo, { to }, iboSize);
-
-    // unlock submission context
-    CoreGraphics::UnlockTransferSetupCommandBuffer();
+    CoreGraphics::BufferUpdate(vegetationState.materialUniformsBuffer, vegetationState.materialUniforms);
+    CoreGraphics::BufferFlush(vegetationState.materialUniformsBuffer);
 }
 
 //------------------------------------------------------------------------------
@@ -805,9 +1016,11 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
 void
 VegetationContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
+    Graphics::CameraSettings settings = Graphics::CameraContext::GetSettings(view->GetCamera());
     Math::mat4 cameraTransform = Math::inverse(Graphics::CameraContext::GetView(view->GetCamera()));
     VegetationGenerateUniforms uniforms;
     cameraTransform.position.store(uniforms.CameraPosition);
+    cameraTransform.z_axis.store(uniforms.CameraForward);
     uniforms.HeightMap = CoreGraphics::TextureGetBindlessHandle(vegetationState.heightMap);
     uniforms.WorldSize[0] = vegetationState.worldSize.x;
     uniforms.WorldSize[1] = vegetationState.worldSize.y;
@@ -815,11 +1028,19 @@ VegetationContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Gr
     uniforms.InvWorldSize[1] = 1.0f / vegetationState.worldSize.y;
     uniforms.GenerateQuadSize[0] = VegetationDistributionRadius;
     uniforms.GenerateQuadSize[1] = VegetationDistributionRadius;
+    Math::vec4 forwardxz = cameraTransform.z_axis;
+    forwardxz.y = 0.0f;
+    forwardxz = normalize(forwardxz);
+    uniforms.GenerateDirection[0] = forwardxz.x;
+    uniforms.GenerateDirection[1] = forwardxz.z;
+    uniforms.DensityFactor = 1.0f;
     uniforms.MinHeight = vegetationState.minHeight;
     uniforms.MaxHeight = vegetationState.maxHeight;
     uniforms.NumGrassBlades = vegetationState.numGrassBlades;
     uniforms.HeightMapSize[0] = CoreGraphics::TextureGetDimensions(vegetationState.heightMap).width;
     uniforms.HeightMapSize[1] = CoreGraphics::TextureGetDimensions(vegetationState.heightMap).height;
+    uniforms.MaxRange = 100.0f * 100.0f;
+    uniforms.Fov = Math::cos(settings.GetFov() + 5.0_rad);
 
     uniforms.NumGrassTypes = 0;
     uniforms.NumMeshTypes = 0;
@@ -843,29 +1064,24 @@ VegetationContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Gr
 
     // update uniform buffer
     CoreGraphics::BufferUpdate(vegetationState.systemUniforms, uniforms);
+    CoreGraphics::BufferFlush(vegetationState.systemUniforms);
 
     // update mesh and grass info buffer
     CoreGraphics::BufferUpdateArray(vegetationState.meshInfoBuffer, vegetationState.meshInfos, Vegetation::MAX_MESH_INFOS);
+    CoreGraphics::BufferFlush(vegetationState.meshInfoBuffer);
+
     CoreGraphics::BufferUpdateArray(vegetationState.grassInfoBuffer, vegetationState.grassInfos, Vegetation::MAX_GRASS_INFOS);
+    CoreGraphics::BufferFlush(vegetationState.grassInfoBuffer);
 
-    // readback draw counts
-    struct DrawCounts
-    {
-        uint meshDraws;
-        uint grassDraws;
-    };
-
-    CoreGraphics::BufferInvalidate(vegetationState.indirectCountReadbackBuffer[ctx.bufferIndex]);
-    DrawCounts* counts = (DrawCounts*)CoreGraphics::BufferMap(vegetationState.indirectCountReadbackBuffer[ctx.bufferIndex]);
+    CoreGraphics::BufferInvalidate(vegetationState.indirectDrawCountBuffer[ctx.bufferIndex]);
+    auto counts = (Vegetation::DrawCount*)CoreGraphics::BufferMap(vegetationState.indirectDrawCountBuffer[ctx.bufferIndex]);
 
     // update draw counts
-    vegetationState.grassDrawsThisFrame = counts->grassDraws;
-    vegetationState.meshDrawsThisFrame = counts->meshDraws;
+    vegetationState.grassDrawsThisFrame = counts->NumGrassDraws;
+    for (IndexT i = 0; i < MAX_MESH_INFOS; i++)
+        vegetationState.meshDrawsThisFrame[i] = counts->NumMeshDraws[i/4][i%4];
 
-    CoreGraphics::BufferUnmap(vegetationState.indirectCountReadbackBuffer[ctx.bufferIndex]);
-
-    // update any textures
-    CoreGraphics::ResourceTableCommitChanges(vegetationState.systemResourceTable);
+    CoreGraphics::BufferUnmap(vegetationState.indirectDrawCountBuffer[ctx.bufferIndex]);
 }
 
 //------------------------------------------------------------------------------

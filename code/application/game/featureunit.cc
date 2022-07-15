@@ -135,6 +135,25 @@ FeatureUnit::OnBeginFrame()
 
 //------------------------------------------------------------------------------
 /**
+    This method is called from Game::GameServer::OnBeforeViews() on all
+    game features attached to an GameServer in the order of attachment. Override this
+    method if your FeatureUnit has to do any work at the beginning of the frame.
+*/
+void
+FeatureUnit::OnBeforeViews()
+{
+    // call OnBeginFrame() on managers
+    IndexT i;
+    SizeT num = this->managers.Size();
+    for (i = 0; i < num; i++)
+    {
+        if (this->managers.Get<1>(i).OnBeforeViews != nullptr)
+            this->managers.Get<1>(i).OnBeforeViews();
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
     This method is called from Game::GameServer::OnMoveBefore() on all
     game features attached to an GameServer in the order of attachment. Override this
     method if your FeatureUnit has any work to do before the physics subsystem

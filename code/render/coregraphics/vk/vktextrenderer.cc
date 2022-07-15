@@ -72,7 +72,7 @@ VkTextRenderer::Open()
     vboInfo.name = "TextRenderer VBO"_atm;
     vboInfo.size = MaxNumChars * 6;
     vboInfo.elementSize = VertexLayoutGetSize(this->layout);
-    vboInfo.mode = CoreGraphics::HostToDevice;
+    vboInfo.mode = CoreGraphics::HostCached;
     vboInfo.usageFlags = CoreGraphics::VertexBuffer;
     vboInfo.data = nullptr;
     vboInfo.dataSize = 0;

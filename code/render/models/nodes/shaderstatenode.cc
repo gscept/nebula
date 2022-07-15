@@ -6,7 +6,6 @@
 #include "shaderstatenode.h"
 #include "transformnode.h"
 #include "coregraphics/shaderserver.h"
-#include "coregraphics/transformdevice.h"
 #include "resources/resourceserver.h"
 
 #include "objects_shared.h"

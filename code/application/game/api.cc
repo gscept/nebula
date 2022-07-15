@@ -16,12 +16,7 @@
 namespace Game
 {
 
-//------------------------------------------------------------------------------
 static Memory::ArenaAllocator<sizeof(Dataset::EntityTableView) * 256> viewAllocator;
-
-//------------------------------------------------------------------------------
-
-//------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
 /**
@@ -48,7 +43,8 @@ ReleaseDatasets()
     @note       The category table view buffer can be NULL if the filter contains
                 a non-typed/flag component.
 */
-Dataset Query(World* world, Filter filter)
+Dataset
+Query(World* world, Filter filter)
 {
 #if NEBULA_ENABLE_PROFILING
     //N_COUNTER_INCR("Calls to Game::Query", 1);

@@ -6,7 +6,6 @@
 #include "vkshaperenderer.h"
 #include "coregraphics/vk/vktypes.h"
 #include "coregraphics/graphicsdevice.h"
-#include "coregraphics/transformdevice.h"
 #include "coregraphics/mesh.h"
 #include "coregraphics/vertexsignaturecache.h"
 #include "coregraphics/vertexcomponent.h"
@@ -271,9 +270,6 @@ VkShapeRenderer::DrawMesh(const CoreGraphics::CmdBufferId cmdBuf, const Math::ma
     n_assert(mesh != InvalidMeshId);
 
     // resolve model-view-projection matrix and update shader
-    TransformDevice* transDev = TransformDevice::Instance();
-
-    // resolve model-view-projection matrix and update shader
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->model, sizeof(modelTransform), (byte*)&modelTransform);
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->diffuseColor, sizeof(color), (byte*)&color);
     CoreGraphics::CmdPushConstants(cmdBuf, CoreGraphics::GraphicsPipeline, this->lineWidth, sizeof(float), &lineThickness);
@@ -446,7 +442,7 @@ VkShapeRenderer::GrowIndexBuffer()
     iboInfo.name = "ShapeRenderer IBO"_atm;
     iboInfo.size = this->numIndicesThisFrame;
     iboInfo.elementSize = IndexType::SizeOf(IndexType::Index32);
-    iboInfo.mode = CoreGraphics::HostToDevice;
+    iboInfo.mode = CoreGraphics::HostCached;
     iboInfo.usageFlags = CoreGraphics::IndexBuffer;
     iboInfo.data = nullptr;
     iboInfo.dataSize = 0;
@@ -478,7 +474,7 @@ VkShapeRenderer::GrowVertexBuffer()
     vboInfo.name = "ShapeRenderer VBO"_atm;
     vboInfo.size = this->numVerticesThisFrame;
     vboInfo.elementSize = VertexLayoutGetSize(this->vertexLayout);
-    vboInfo.mode = CoreGraphics::HostToDevice;
+    vboInfo.mode = CoreGraphics::HostCached;
     vboInfo.usageFlags = CoreGraphics::VertexBuffer;
     vboInfo.data = nullptr;
     vboInfo.dataSize = 0;

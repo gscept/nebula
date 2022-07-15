@@ -15,7 +15,8 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 
-// common platform-agnostic definitions
+
+
 namespace Math
 {
 #ifndef PI
@@ -689,4 +690,42 @@ roundtopow2(unsigned int val)
 }
 
 } // namespace Math
+
+//------------------------------------------------------------------------------
+/**
+    Convert degrees to radians
+*/
+inline long double
+operator"" _rad(long double deg)
+{
+    return Math::deg2rad(deg);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline long double
+operator"" _rad(unsigned long long deg)
+{
+    return Math::deg2rad(deg);
+}
+
+//------------------------------------------------------------------------------
+/**
+    Convert radians to degrees
+*/
+inline long double
+operator"" _deg(long double rad)
+{
+    return Math::rad2deg(rad);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline long double
+operator"" _deg(unsigned long long deg)
+{
+    return Math::rad2deg(deg);
+}
 //------------------------------------------------------------------------------

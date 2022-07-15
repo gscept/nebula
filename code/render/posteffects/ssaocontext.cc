@@ -145,8 +145,8 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
     ssaoState.xDirectionBlur = ShaderGetProgram(ssaoState.blurShader, ShaderFeatureFromString("Alt0"));
     ssaoState.yDirectionBlur = ShaderGetProgram(ssaoState.blurShader, ShaderFeatureFromString("Alt1"));
 
-    ssaoState.hbaoConstants = CoreGraphics::GetComputeConstantBuffer();
-    ssaoState.blurConstants = CoreGraphics::GetComputeConstantBuffer();
+    ssaoState.hbaoConstants = CoreGraphics::GetGraphicsConstantBuffer();
+    ssaoState.blurConstants = CoreGraphics::GetGraphicsConstantBuffer();
 
     ssaoState.ssaoOutput = script->GetTexture("SSAOBuffer");
     ssaoState.zBuffer = script->GetTexture("ZBuffer");
@@ -376,7 +376,7 @@ SSAOContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const
     hbaoBlock.UVToViewA[1] = ssaoState.vars.uvToViewA.y;
     hbaoBlock.UVToViewB[0] = ssaoState.vars.uvToViewB.x;
     hbaoBlock.UVToViewB[1] = ssaoState.vars.uvToViewB.y;
-    uint hbaoOffset = CoreGraphics::SetComputeConstants(hbaoBlock);
+    uint hbaoOffset = CoreGraphics::SetConstants(hbaoBlock);
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
@@ -387,7 +387,7 @@ SSAOContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const
     blurBlock.BlurFalloff = ssaoState.vars.blurFalloff;
     blurBlock.BlurDepthThreshold = ssaoState.vars.blurThreshold;
     blurBlock.PowerExponent = 1.5f;
-    uint blurOffset = CoreGraphics::SetComputeConstants(blurBlock);
+    uint blurOffset = CoreGraphics::SetConstants(blurBlock);
 
     ResourceTableSetConstantBuffer(ssaoState.blurTableX[bufferIndex], { ssaoState.blurConstants, ssaoState.blurC, 0, false, false, sizeof(HbaoblurCs::HBAOBlur), (SizeT)blurOffset });
     ResourceTableSetConstantBuffer(ssaoState.blurTableY[bufferIndex], { ssaoState.blurConstants, ssaoState.blurC, 0, false, false, sizeof(HbaoblurCs::HBAOBlur), (SizeT)blurOffset });

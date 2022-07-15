@@ -17,12 +17,13 @@ ID_24_8_TYPE(TextureViewId);
 
 struct TextureViewCreateInfo
 {
-    TextureId tex;
-    IndexT startMip;
-    SizeT numMips;
-    IndexT startLayer;
-    SizeT numLayers;
-    PixelFormat::Code format;
+    TextureId tex = InvalidTextureId;
+    IndexT startMip = 0;
+    SizeT numMips = 1;
+    IndexT startLayer = 0;
+    SizeT numLayers = 1;
+    PixelFormat::Code format = PixelFormat::InvalidPixelFormat;
+    CoreGraphics::TextureSwizzle swizzle = { TextureChannelMapping::None, TextureChannelMapping::None, TextureChannelMapping::None, TextureChannelMapping::None };
 };
 
 /// create texture view

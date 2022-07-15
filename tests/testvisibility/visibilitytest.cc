@@ -125,7 +125,7 @@ VisibilityTest::Run()
 
     GraphicsEntityId globalLight = Graphics::CreateEntity();
     Lighting::LightContext::RegisterEntity(globalLight);
-    Lighting::LightContext::SetupGlobalLight(globalLight, Math::vec3(1, 1, 1), 1.0f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(1, 1, 1), true);
+    Lighting::LightContext::SetupGlobalLight(globalLight, Math::vec3(1, 1, 1), 1.0f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, 85_rad, 0_rad, true);
 
     // register visibility system
     ObserverContext::CreateBruteforceSystem({});

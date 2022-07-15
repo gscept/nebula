@@ -74,6 +74,9 @@ public:
     /// Allocate constant memory for instance constants in this frame
     static CoreGraphics::ConstantBufferOffset AllocateInstanceConstants(const Graphics::GraphicsEntityId id, const Materials::BatchIndex batch);
 
+    /// Set all nodes in the model to always be visible
+    static void SetAlwaysVisible(const Graphics::GraphicsEntityId id);
+
     /// runs before frame is updated
     static void UpdateTransforms(const Graphics::FrameContext& ctx);
     /// Wait for thread work to finish

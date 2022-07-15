@@ -30,6 +30,9 @@ Util::Array<completion_t> completions;
 static Util::String selectedCompletion;
 static bool open_autocomplete = false;
 
+//------------------------------------------------------------------------------
+/**
+*/
 void
 ListHistory(ImGuiInputTextCallbackData* data)
 {
@@ -61,6 +64,9 @@ ListHistory(ImGuiInputTextCallbackData* data)
     }
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 const char*
 ListAllCVars()
 {
@@ -78,6 +84,9 @@ ListAllCVars()
     return ret;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 int
 TextEditCVars(ImGuiInputTextCallbackData* data)
 {
@@ -173,6 +182,9 @@ TextEditCVars(ImGuiInputTextCallbackData* data)
     return 0;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 int
 TextEditPython(ImGuiInputTextCallbackData* data)
 {
@@ -242,6 +254,9 @@ TextEditPython(ImGuiInputTextCallbackData* data)
     return 0;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 static int
 TextEditCallback(ImGuiInputTextCallbackData* data)
 {

@@ -173,9 +173,9 @@
             }
         ],
 
-        "_comment": "------------ COMPUTE CLUSTERING ------------",
+        "_comment": "------------ COMPUTE PREPASS ------------",
         "submission": {
-            "name": "Clustering",
+            "name": "Compute Prepass",
             "queue": "Compute",
             "_comment": "Perform clustering AABB generation and run culling for clustering systems",
             "ops": {
@@ -190,18 +190,22 @@
                 },
                 "subgraph": {
                     "name": "Fog Cull"
+                },
+                "subgraph": {
+                    "name": "Sun Terrain Shadows"
                 }
             }
         },
 
         "submission": {
-            "name": "Shadow maps and Prepass",
+            "name": "Prepass",
             "queue": "Graphics",
             "_comment": "Calculate shadow maps and depth prepass",
             "ops": {
-                "_comment": "------------ SHADOWS ------------",
+
+                "_comment": "------------ UI ------------",
                 "subgraph": {
-                    "name": "Shadows (subgraph)"
+                    "name": "StaticUI"
                 },
 
                 "_comment": "------------ VEGETATION ------------",
@@ -218,7 +222,7 @@
                     "attachments": [
                         {
                             "name": "TerrainPosBuffer",
-                            "clear": [ 0, 0, 0, 2 ],
+                            "clear": [ 0, 0, 0, 255 ],
                             "store": true
                         }
                     ],
@@ -258,7 +262,10 @@
                         "subpass_dependencies": [],
                         "attachments": [],
                         "depth": true,
-                        "batch": "FlatGeometryDepth"
+                        "batch": "FlatGeometryDepth",
+                        "subgraph": {
+                            name: "Vegetation Prepass"
+                        }
                     }
                 },
 
@@ -272,7 +279,7 @@
 
         "submission": {
             "name": "Forward shading and post effects",
-            "wait_for_submissions": [ "Clustering", "Shadow maps and Prepass" ],
+            "wait_for_submissions": [ "Compute Prepass", "Prepass" ],
             "queue": "Graphics",
             "_comment": "Main graphics submission",
             "ops": {
@@ -306,7 +313,7 @@
                     "subpass": {
                         "name": "OpaquePass",
                         "subpass_dependencies": [],
-                        "attachments": [ "LightBuffer", "NormalBuffer", "SpecularBuffer" ],
+                        "attachments": [ "LightBuffer" ],
                         "depth": true,
                         "subgraph": {
                             "name": "Terrain Resolve"
@@ -333,6 +340,11 @@
                     }
                 },
 
+                "_comment": "------------ VEGETATION COPY ------------",
+                "subgraph": {
+                    "name": "Vegetation Copy Indirect"
+                },
+
                 "_comment": "------------ SSAO ------------",
                 "subgraph": {
                     "name": "HBAO"
@@ -347,7 +359,7 @@
                 "subgraph": {
                     "name": "Lights Combine"
                 },
-                
+
                 "_comment": "------------ HISTOGRAM ------------",
                 "subgraph": {
                     "name": "Histogram"
@@ -494,8 +506,11 @@
                             }
                         ],
                         "subgraph": {
-                           "name": "ImGUI"
-                        }
+                            "name": "ImGUI"
+                        },
+                        "subgraph": {
+                            "name": "StaticUI To Backbuffer"
+                        },
                     }
                 },
 

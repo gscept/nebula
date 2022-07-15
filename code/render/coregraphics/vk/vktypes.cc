@@ -42,9 +42,9 @@ VkTypes::AsVkFormat(CoreGraphics::PixelFormat::Code p)
     case PixelFormat::BC7sRGB:          return VK_FORMAT_BC7_SRGB_BLOCK;
     case PixelFormat::R8:               return VK_FORMAT_R8_UNORM;
     case PixelFormat::R16F:             return VK_FORMAT_R16_SFLOAT;
-    case PixelFormat::R16:              return VK_FORMAT_R16_UINT;
+    case PixelFormat::R16:              return VK_FORMAT_R16_UNORM;
     case PixelFormat::R16G16F:          return VK_FORMAT_R16G16_SFLOAT;
-    case PixelFormat::R16G16:           return VK_FORMAT_R16G16_UINT;
+    case PixelFormat::R16G16:           return VK_FORMAT_R16G16_UNORM;
     case PixelFormat::R16G16B16A16F:    return VK_FORMAT_R16G16B16A16_SFLOAT;
     case PixelFormat::R16G16B16A16:     return VK_FORMAT_R16G16B16A16_UINT;
     case PixelFormat::R11G11B10F:       return VK_FORMAT_B10G11R11_UFLOAT_PACK32;
@@ -82,76 +82,6 @@ VkTypes::IsDepthFormat(CoreGraphics::PixelFormat::Code p)
         return true;
     }
     return false;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-VkFormat
-VkTypes::AsVkFormat(ILenum p)
-{
-    switch (p)
-    {
-    case PF_RGBA:               return VK_FORMAT_R8G8B8A8_UNORM;
-    case PF_RGB:                return VK_FORMAT_R8G8B8_UNORM;
-    case PF_SRGB:               return VK_FORMAT_R8G8B8A8_SRGB;
-    case PF_BGRA:               return VK_FORMAT_B8G8R8A8_UNORM;
-    case PF_BGR:                return VK_FORMAT_B8G8R8_UNORM;
-    case PF_DXT1:               return VK_FORMAT_BC1_RGBA_UNORM_BLOCK;
-    case PF_DXT3:               return VK_FORMAT_BC2_UNORM_BLOCK;
-    case PF_DXT5:               return VK_FORMAT_BC3_UNORM_BLOCK;
-    case PF_BC7:                return VK_FORMAT_BC7_UNORM_BLOCK;
-    case PF_DXT1_sRGB:          return VK_FORMAT_BC1_RGBA_SRGB_BLOCK;
-    case PF_DXT3_sRGB:          return VK_FORMAT_BC2_SRGB_BLOCK;
-    case PF_DXT5_sRGB:          return VK_FORMAT_BC3_SRGB_BLOCK;
-    case PF_BC7_sRGB:           return VK_FORMAT_BC7_SRGB_BLOCK;
-    case PF_3DC:                return VK_FORMAT_BC5_UNORM_BLOCK;
-    case PF_R8:                 return VK_FORMAT_R8_UNORM;
-    case PF_R16F:               return VK_FORMAT_R16_SFLOAT;
-    case PF_R16:                return VK_FORMAT_R16_UINT;
-    case PF_R32F:               return VK_FORMAT_R32_SFLOAT;
-    case PF_R32:                return VK_FORMAT_R32_UINT;
-    case PF_R16G16F:            return VK_FORMAT_R16G16_SFLOAT;
-    case PF_R16G16:             return VK_FORMAT_R16G16_UINT;
-    case PF_R32G32F:            return VK_FORMAT_R32G32_SFLOAT;
-    case PF_R32G32:             return VK_FORMAT_R32G32_UINT;
-    case PF_R16G16B16A16:       return VK_FORMAT_R16G16B16A16_UINT;
-    case PF_R16G16B16A16F:      return VK_FORMAT_R16G16B16A16_SFLOAT;
-    case PF_R32G32B32:          return VK_FORMAT_R32G32B32_UINT;
-    case PF_R32G32B32F:         return VK_FORMAT_R32G32B32_SFLOAT;
-    case PF_R32G32B32A32:       return VK_FORMAT_R32G32B32A32_UINT;
-    case PF_R32G32B32A32F:      return VK_FORMAT_R32G32B32A32_SFLOAT;
-    default:
-        {
-            n_error("VkTypes::AsVkFormat(): invalid compression '%d'", p);
-            return VK_FORMAT_A8B8G8R8_UINT_PACK32;
-        }       
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-ILenum
-VkTypes::AsILDXTFormat(VkFormat p)
-{
-    switch (p)
-    {
-
-        case VK_FORMAT_BC1_RGBA_UNORM_BLOCK:    return IL_DXT1;
-        case VK_FORMAT_BC2_UNORM_BLOCK:         return IL_DXT3;
-        case VK_FORMAT_BC3_UNORM_BLOCK:         return IL_DXT5;
-        case VK_FORMAT_BC7_UNORM_BLOCK:         return IL_BPTC;
-        case VK_FORMAT_BC1_RGBA_SRGB_BLOCK:     return IL_DXT1A_sRGB;
-        case VK_FORMAT_BC2_SRGB_BLOCK:          return IL_DXT3_sRGB;
-        case VK_FORMAT_BC3_SRGB_BLOCK:          return IL_DXT5_sRGB;
-        case VK_FORMAT_BC7_SRGB_BLOCK:          return IL_BPTC_sRGB;
-        default:
-        {
-            n_error("VkTypes::AsVkFormat(): invalid compression '%d'", p);
-            return IL_NO_COMPRESSION;
-        }
-    }
 }
 
 //------------------------------------------------------------------------------
@@ -506,77 +436,6 @@ VkTypes::AsNebulaPixelFormat(VkFormat f)
 //------------------------------------------------------------------------------
 /**
 */
-VkComponentMapping
-VkTypes::AsVkMapping(CoreGraphics::PixelFormat::Code p)
-{
-    VkComponentMapping mapping;
-    mapping.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    mapping.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    mapping.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    mapping.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-    return mapping;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-VkComponentMapping
-VkTypes::AsVkMapping(ILenum p)
-{
-    VkComponentMapping mapping;
-    mapping.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    mapping.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    mapping.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    mapping.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-    switch (p)
-    {
-    case PF_RGBA:
-    case PF_RGB:
-    case PF_DXT1:               
-    case PF_DXT3:               
-    case PF_DXT5:               
-    case PF_BC7:                
-    case PF_DXT1_sRGB:          
-    case PF_DXT3_sRGB:          
-    case PF_DXT5_sRGB:          
-    case PF_BC7_sRGB:           
-    case PF_3DC:            
-    case PF_R8:
-    case PF_R16F:
-    case PF_R16:
-    case PF_R32F:
-    case PF_R32:
-    case PF_R16G16F:
-    case PF_R16G16:
-    case PF_R32G32F:
-    case PF_R32G32:
-    case PF_R16G16B16A16:
-    case PF_R16G16B16A16F:
-    case PF_R32G32B32:
-    case PF_R32G32B32F:
-    case PF_R32G32B32A32:
-    case PF_R32G32B32A32F:
-        break;
-
-    case PF_BGRA:
-    case PF_BGR:
-        mapping.r = VK_COMPONENT_SWIZZLE_B;
-        mapping.b = VK_COMPONENT_SWIZZLE_R;
-        break;
-    default:
-        {
-            n_error("VkTypes::AsVkMapping(): invalid pixel swizzle '%d'", p);
-        }
-    }
-
-    return mapping;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 VkImageAspectFlags
 VkTypes::AsVkImageAspectFlags(const CoreGraphics::ImageAspect aspect)
 {
@@ -675,8 +534,10 @@ VkTypes::AsVkPipelineStage(const CoreGraphics::PipelineStage stage)
             return VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
         case CoreGraphics::PipelineStage::AllShadersRead:
         case CoreGraphics::PipelineStage::AllShadersWrite:
-        case CoreGraphics::PipelineStage::Uniform:
+        case CoreGraphics::PipelineStage::UniformGraphics:
             return VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        case CoreGraphics::PipelineStage::UniformCompute:
+            return VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
         case CoreGraphics::PipelineStage::VertexShaderRead:
         case CoreGraphics::PipelineStage::VertexShaderWrite:
             return VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
@@ -739,7 +600,8 @@ VkTypes::AsVkAccessFlags(const CoreGraphics::PipelineStage stage)
             return VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
         case CoreGraphics::PipelineStage::InputAttachment:
             return VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
-        case CoreGraphics::PipelineStage::Uniform:
+        case CoreGraphics::PipelineStage::UniformGraphics:
+        case CoreGraphics::PipelineStage::UniformCompute:
             return VK_ACCESS_UNIFORM_READ_BIT;
         case CoreGraphics::PipelineStage::VertexShaderRead:
         case CoreGraphics::PipelineStage::HullShaderRead:
@@ -801,7 +663,8 @@ VkTypes::AsVkImageLayout(const CoreGraphics::PipelineStage stage, bool depthSten
         case CoreGraphics::PipelineStage::Index:
         case CoreGraphics::PipelineStage::Vertex:
         case CoreGraphics::PipelineStage::InputAttachment:
-        case CoreGraphics::PipelineStage::Uniform:
+        case CoreGraphics::PipelineStage::UniformGraphics:
+        case CoreGraphics::PipelineStage::UniformCompute:
         case CoreGraphics::PipelineStage::VertexShaderRead:
         case CoreGraphics::PipelineStage::HullShaderRead:
         case CoreGraphics::PipelineStage::DomainShaderRead:

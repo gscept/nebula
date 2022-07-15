@@ -518,7 +518,9 @@ FrameScriptLoader::ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, J
     {
         for (int i = 0; i < waitSubmissions->size; i++)
         {
-            submission->waitSubmissions.Append(static_cast<Frame::FrameSubmission*>(script->GetOp(waitSubmissions->array_values[i]->string_value)));
+            Frame::FrameOp* dependence = script->GetOp(waitSubmissions->array_values[i]->string_value);
+            n_assert(dependence != nullptr);
+            submission->waitSubmissions.Append(static_cast<Frame::FrameSubmission*>(dependence));
         }
     }
 

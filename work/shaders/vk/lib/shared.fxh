@@ -60,6 +60,8 @@ group(TICK_GROUP) sampler_state		PosteffectUpscaleSampler { Filter = Linear; };
 #define make_sampler2DArray(handle, sampler)				sampler2DArray(Textures2DArray[handle], sampler)
 #define make_sampler3D(handle, sampler)						sampler3D(Textures3D[handle], sampler)
 
+#define query_lod2D(handle, sampler, uv)                        textureQueryLod(sampler2D(Textures2D[handle], sampler), uv)
+
 // The number of CSM cascades
 #ifndef CASCADE_COUNT_FLAG
 #define CASCADE_COUNT_FLAG 4
@@ -101,8 +103,13 @@ group(TICK_GROUP) shared constant PerTickParams
 
     float GlobalBackLightOffset;
     textureHandle GlobalLightShadowBuffer;
+    textureHandle TerrainShadowBuffer;
     int NumEnvMips;
     textureHandle EnvironmentMap;
+
+    uvec2 TerrainShadowMapSize;
+    vec2 InvTerrainSize;
+    vec2 TerrainShadowMapPixelSize;
 
     // these params are for the Preetham sky model
     vec4 A;
@@ -147,7 +154,7 @@ group(TICK_GROUP) shared constant PerTickParams
 };
 
 // contains the render_state of the camera (and time)
-group(FRAME_GROUP) shared constant FrameBlock
+group(FRAME_GROUP) shared constant ViewConstants
 {
     mat4 View;
     mat4 InvView;
@@ -157,13 +164,32 @@ group(FRAME_GROUP) shared constant FrameBlock
     mat4 InvViewProjection;
     vec4 EyePos;
     vec4 FocalLengthNearFar; // x, y is focal length x/y, z, w is near/far planes
-    vec4 Time_Random_Luminance_X; // x is time, y is random, z is luminance
+    vec4 Time_Random_Luminance_X; // x is time, y is random, z is luminance, w is unused
 };
 
-group(FRAME_GROUP) shared constant ShadowMatrixBlock[string Visibility = "VS";]
+group(FRAME_GROUP) shared constant ShadowViewConstants[string Visibility = "VS";]
 {
     mat4 CSMViewMatrix[CASCADE_COUNT_FLAG];
     mat4 LightViewMatrix[SHADOW_CASTER_COUNT];
+};
+
+group(FRAME_GROUP) sampler_state ShadowSampler
+{
+    AddressU = Clamp;
+	AddressV = Clamp;
+};
+
+group(FRAME_GROUP) sampler_state PointLightTextureSampler
+{
+	Filter = MinMagLinearMipPoint;
+};
+
+group(FRAME_GROUP) sampler_state SpotlightTextureSampler
+{
+	Filter = MinMagLinearMipPoint;
+	AddressU = Border;
+	AddressV = Border;
+	BorderColor = Transparent;
 };
 
 //------------------------------------------------------------------------------
@@ -394,6 +420,8 @@ group(FRAME_GROUP) rw_buffer FogLists [ string Visibility = "CS|VS|PS"; ]
     FogSphere FogSpheres[128];
     FogBox FogBoxes[128];
 };
+
+
 
 const int SHADOW_CASTER_COUNT = 16;
 

@@ -402,8 +402,17 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
         vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, info.pipeline);
         if (bindGlobals && pipelineChange)
         {
-            CoreGraphics::CmdSetResourceTable(id, CoreGraphics::GetTickResourceTable(), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
-            CoreGraphics::CmdSetResourceTable(id, CoreGraphics::GetFrameResourceTable(), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
+            QueueType queue = commandBuffers.GetUnsafe<CmdBuffer_Usage>(id.id24);
+            if (queue == GraphicsQueueType)
+            {
+                CoreGraphics::CmdSetResourceTable(id, CoreGraphics::GetTickResourceTableGraphics(), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
+                CoreGraphics::CmdSetResourceTable(id, CoreGraphics::GetFrameResourceTableGraphics(), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
+            }
+            else
+            {
+                CoreGraphics::CmdSetResourceTable(id, CoreGraphics::GetTickResourceTableCompute(), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
+                CoreGraphics::CmdSetResourceTable(id, CoreGraphics::GetFrameResourceTableCompute(), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
+            }
         }
     }
     else
@@ -436,8 +445,8 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
         pipelineBundle.graphicsLayout = info.layout;
         if (bindGlobals && pipelineChange)
         {
-            CoreGraphics::CmdSetResourceTable(id, CoreGraphics::GetTickResourceTable(), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
-            CoreGraphics::CmdSetResourceTable(id, CoreGraphics::GetFrameResourceTable(), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+            CoreGraphics::CmdSetResourceTable(id, CoreGraphics::GetTickResourceTableGraphics(), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+            CoreGraphics::CmdSetResourceTable(id, CoreGraphics::GetFrameResourceTableGraphics(), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
             CoreGraphics::CmdSetResourceTable(id, PassGetResourceTable(pipelineBundle.pass), NEBULA_PASS_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
         }
     }
@@ -529,14 +538,13 @@ CmdSetGraphicsPipeline(const CmdBufferId id)
 
     CmdPipelineBuildBits& bits = commandBuffers.GetUnsafe<CmdBuffer_PipelineBuildBits>(id.id24);
     n_assert((bits & CmdPipelineBuildBits::AllInfoSet) != 0);
-    VkPipeline pipeline = VK_NULL_HANDLE;
     if (!AllBits(bits, CmdPipelineBuildBits::PipelineBuilt))
     {
         const VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
-        pipeline = CoreGraphics::GetOrCreatePipeline(pipelineBundle.pass, pipelineBundle.pipelineInfo.subpass, pipelineBundle.program, pipelineBundle.inputAssembly, pipelineBundle.pipelineInfo);
+        VkPipeline pipeline = CoreGraphics::GetOrCreatePipeline(pipelineBundle.pass, pipelineBundle.pipelineInfo.subpass, pipelineBundle.program, pipelineBundle.inputAssembly, pipelineBundle.pipelineInfo);
         bits |= CmdPipelineBuildBits::PipelineBuilt;
+        vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     }
-    vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
     // Set viewport and scissors since Vulkan requires them to be set after the pipeline
     ViewportBundle& viewports = commandBuffers.GetUnsafe<CmdBuffer_PendingViewports>(id.id24);
@@ -572,7 +580,8 @@ CmdBarrier(
     barrier.name = name;
     barrier.srcFlags = VkTypes::AsVkPipelineStage(fromStage);
     barrier.dstFlags = VkTypes::AsVkPipelineStage(toStage);
-    barrier.dep = domain == CoreGraphics::BarrierDomain::Pass ? VK_DEPENDENCY_BY_REGION_BIT : 0;
+    barrier.dep = 0;
+    //barrier.dep = domain == CoreGraphics::BarrierDomain::Pass ? VK_DEPENDENCY_BY_REGION_BIT : 0;
     barrier.numBufferBarriers = buffers.Size();
     for (uint32_t i = 0; i < barrier.numBufferBarriers; i++)
     {
@@ -798,20 +807,20 @@ CmdDraw(const CmdBufferId id, SizeT numInstances, IndexT baseInstance, const Cor
 /**
 */
 void
-CmdDrawIndirect(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT draws, IndexT stride)
+CmdDrawIndirect(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT numDraws, SizeT stride)
 {
     VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
-    vkCmdDrawIndirect(cmdBuf, BufferGetVk(buffer), bufferOffset, draws, stride);
+    vkCmdDrawIndirect(cmdBuf, BufferGetVk(buffer), bufferOffset, numDraws, stride);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-CmdDrawIndirectIndexed(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT draws, IndexT stride)
+CmdDrawIndirectIndexed(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT numDraws, SizeT stride)
 {
     VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
-    vkCmdDrawIndexedIndirect(cmdBuf, BufferGetVk(buffer), bufferOffset, draws, stride);
+    vkCmdDrawIndexedIndirect(cmdBuf, BufferGetVk(buffer), bufferOffset, numDraws, stride);
 }
 
 //------------------------------------------------------------------------------

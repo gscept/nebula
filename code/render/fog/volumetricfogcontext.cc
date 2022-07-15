@@ -12,6 +12,7 @@
 #include "frame/framesubgraph.h"
 #include "frame/framecode.h"
 #include "imgui.h"
+#include "graphics/globalconstants.h"
 
 #include "volumefog.h"
 #include "blur_2d_rgba16f_cs.h"
@@ -132,16 +133,20 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
         fogState.resourceTables[i] = ShaderCreateResourceTable(fogState.classificationShader, NEBULA_BATCH_GROUP, fogState.resourceTables.Size());
     }
 
-    // get per-view resource tables
-    const Util::FixedArray<CoreGraphics::ResourceTableId>& viewTables = TransformDevice::Instance()->GetViewResourceTables();
-
-    for (IndexT i = 0; i < viewTables.Size(); i++)
+    for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
         fogState.stagingClusterFogLists[i] = CreateBuffer(rwbInfo);
 
-        ResourceTableSetRWBuffer(viewTables[i], { fogState.clusterFogIndexLists, fogIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(viewTables[i], { fogState.clusterFogLists, fogListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(viewTables[i], { CoreGraphics::GetComputeConstantBuffer(), fogState.uniformsSlot, 0, false, false, sizeof(Volumefog::VolumeFogUniforms), 0 });
+        CoreGraphics::ResourceTableId computeTable = Graphics::GetFrameResourceTableCompute(i);
+        CoreGraphics::ResourceTableId graphicsTable = Graphics::GetFrameResourceTableGraphics(i);
+
+        ResourceTableSetRWBuffer(computeTable, { fogState.clusterFogIndexLists, fogIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(computeTable, { fogState.clusterFogLists, fogListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(computeTable, { CoreGraphics::GetComputeConstantBuffer(), fogState.uniformsSlot, 0, false, false, sizeof(Volumefog::VolumeFogUniforms), 0 });
+
+        ResourceTableSetRWBuffer(graphicsTable, { fogState.clusterFogIndexLists, fogIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(graphicsTable, { fogState.clusterFogLists, fogListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(graphicsTable, { CoreGraphics::GetGraphicsConstantBuffer(), fogState.uniformsSlot, 0, false, false, sizeof(Volumefog::VolumeFogUniforms), 0 });
     }
 
     blurState.blurShader = ShaderServer::Instance()->GetShader("shd:blur_2d_rgba16f_cs.fxb");
@@ -485,10 +490,14 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
     ResourceTableCommitChanges(fogState.resourceTables[bufferIndex]);
 
     // get per-view resource tables
-    const Util::FixedArray<CoreGraphics::ResourceTableId>& viewTables = TransformDevice::Instance()->GetViewResourceTables();
+    CoreGraphics::ResourceTableId viewTablesCompute = Graphics::GetFrameResourceTableCompute(bufferIndex);
+    CoreGraphics::ResourceTableId viewTablesGraphics = Graphics::GetFrameResourceTableGraphics(bufferIndex);
 
-    uint offset = SetComputeConstants(fogUniforms);
-    ResourceTableSetConstantBuffer(viewTables[bufferIndex], { GetComputeConstantBuffer(), fogState.uniformsSlot, 0, false, false, sizeof(Volumefog::VolumeFogUniforms), (SizeT)offset });
+    uint offset = SetConstants(fogUniforms);
+    ResourceTableSetConstantBuffer(viewTablesCompute, { GetComputeConstantBuffer(), fogState.uniformsSlot, 0, false, false, sizeof(Volumefog::VolumeFogUniforms), (SizeT)offset });
+    ResourceTableCommitChanges(viewTablesCompute);
+    ResourceTableSetConstantBuffer(viewTablesGraphics, { GetGraphicsConstantBuffer(), fogState.uniformsSlot, 0, false, false, sizeof(Volumefog::VolumeFogUniforms), (SizeT)offset });
+    ResourceTableCommitChanges(viewTablesGraphics);
 
     // setup blur tables
     ResourceTableSetTexture(blurState.blurXTable[bufferIndex], { fogState.fogVolumeTexture0, blurState.blurInputXSlot, 0, CoreGraphics::InvalidSamplerId, false }); // ping
@@ -509,7 +518,7 @@ VolumetricFogContext::RenderUI(const Graphics::FrameContext& ctx)
     {
         float col[3];
         fogState.color.storeu(col);
-        Shared::PerTickParams& tickParams = CoreGraphics::ShaderServer::Instance()->GetTickParams();
+        Shared::PerTickParams& tickParams = Graphics::GetTickParams();
         if (ImGui::Begin("Volumetric Fog Params"))
         {
             ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);

@@ -55,13 +55,13 @@ struct PassCreateInfo
     Util::Array<CoreGraphics::TextureViewId> colorAttachments;
     Util::Array<AttachmentFlagBits> colorAttachmentFlags; 
     Util::Array<Math::vec4> colorAttachmentClears;
-    CoreGraphics::TextureViewId depthStencilAttachment;
     
-    Util::Array<Subpass> subpasses;
-
+    CoreGraphics::TextureViewId depthStencilAttachment;
+    AttachmentFlagBits depthStencilFlags;
     float clearDepth;
     uint clearStencil;
-    AttachmentFlagBits depthStencilFlags;
+
+    Util::Array<Subpass> subpasses;
 
     PassCreateInfo()
         : depthStencilAttachment(CoreGraphics::InvalidTextureViewId)

@@ -71,7 +71,7 @@ ImguiContext::ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf)
         vboInfo.name = "ImGUI VBO"_atm;
         vboInfo.size = Math::roundtopow2(data->TotalVtxCount);
         vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.vlo);
-        vboInfo.mode = CoreGraphics::HostToDevice;
+        vboInfo.mode = CoreGraphics::HostCached;
         vboInfo.usageFlags = CoreGraphics::VertexBuffer;
         vboInfo.data = nullptr;
         vboInfo.dataSize = 0;
@@ -88,7 +88,7 @@ ImguiContext::ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf)
         iboInfo.name = "ImGUI IBO"_atm;
         iboInfo.size = Math::roundtopow2(data->TotalIdxCount);
         iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(IndexType::Index16);
-        iboInfo.mode = CoreGraphics::HostToDevice;
+        iboInfo.mode = CoreGraphics::HostCached;
         iboInfo.usageFlags = CoreGraphics::IndexBuffer;
         iboInfo.data = nullptr;
         iboInfo.dataSize = 0;
@@ -363,7 +363,7 @@ ImguiContext::Create()
     vboInfo.name = "ImGUI VBO"_atm;
     vboInfo.size = 1;
     vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.vlo);
-    vboInfo.mode = CoreGraphics::HostToDevice;
+    vboInfo.mode = CoreGraphics::HostCached;
     vboInfo.usageFlags = CoreGraphics::VertexBuffer;
     vboInfo.data = nullptr;
     vboInfo.dataSize = 0;
@@ -378,7 +378,7 @@ ImguiContext::Create()
     iboInfo.name = "ImGUI IBO"_atm;
     iboInfo.size = 1;
     iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(IndexType::Index16);
-    iboInfo.mode = CoreGraphics::HostToDevice;
+    iboInfo.mode = CoreGraphics::HostCached;
     iboInfo.usageFlags = CoreGraphics::IndexBuffer;
     iboInfo.data = nullptr;
     iboInfo.dataSize = 0;

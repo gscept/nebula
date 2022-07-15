@@ -874,7 +874,7 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
                     }
                 }
                 // update skinning palette
-                uint offset = CoreGraphics::SetGraphicsConstants(usedMatrices.Begin(), usedMatrices.Size());
+                uint offset = CoreGraphics::SetConstants(usedMatrices.Begin(), usedMatrices.Size());
                 renderables.nodeStates[node].resourceTableOffsets[renderables.nodeStates[node].skinningConstantsIndex] = offset;
             }
 

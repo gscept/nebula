@@ -159,8 +159,8 @@ void PhysicsManager::InitPollTransformProcessor()
 Game::ManagerAPI
 PhysicsManager::Create()
 {
-	n_assert(PhysicsFeature::Details::physics_registered);
-	n_assert(!PhysicsManager::HasInstance());
+    n_assert(PhysicsFeature::Details::physics_registered);
+    n_assert(!PhysicsManager::HasInstance());
     PhysicsManager::Singleton = n_new(PhysicsManager);
     
     Game::ComponentCreateInfo info;

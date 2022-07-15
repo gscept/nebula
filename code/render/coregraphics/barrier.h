@@ -128,6 +128,8 @@ struct BarrierCreateInfo
     BarrierDomain domain;
     CoreGraphics::PipelineStage fromStage;
     CoreGraphics::PipelineStage toStage;
+    CoreGraphics::QueueType fromQueue;
+    CoreGraphics::QueueType toQueue;
     Util::Array<TextureBarrierInfo> textures;
     Util::Array<BufferBarrierInfo> buffers;
 };

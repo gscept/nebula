@@ -188,7 +188,7 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
                     });
     blit->textureDeps.Add(bloomState.blurredBloom,
                     {
-                        "BloomBuffer",
+                        "BloomBufferBlurred",
                         CoreGraphics::PipelineStage::TransferWrite,
                         CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
                     });

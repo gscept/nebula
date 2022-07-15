@@ -726,6 +726,25 @@ operator*(const mat4& m, const point& p)
 //------------------------------------------------------------------------------
 /**
 */
+__forceinline vector
+operator*(const mat4& m, const vector& v)
+{
+    __m128 x = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(0, 0, 0, 0));
+    x = _mm_and_ps(x, _mask_xyz);
+    __m128 y = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(1, 1, 1, 1));
+    y = _mm_and_ps(y, _mask_xyz);
+    __m128 z = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(2, 2, 2, 2));
+    z = _mm_and_ps(z, _mask_xyz);
+
+    return
+        fmadd(x, m.r[0].vec,
+        fmadd(y, m.r[1].vec,
+              _mm_mul_ps(z, m.r[2].vec)));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 __forceinline mat4
 ortholh(scalar w, scalar h, scalar zn, scalar zf)
 {

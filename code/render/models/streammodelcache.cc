@@ -212,13 +212,4 @@ StreamModelCache::Unload(const Resources::ResourceId id)
     this->states[id.poolId] = Resources::Resource::State::Unloaded;
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-const Util::Array<Models::ModelNode*>&
-ModelGetNodes(const ModelId id)
-{
-    return modelPool->GetModelNodes(id);
-}
-
 } // namespace Models

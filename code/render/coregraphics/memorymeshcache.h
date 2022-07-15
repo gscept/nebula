@@ -38,6 +38,8 @@ public:
     const uint GetVertexOffset(const MeshId id, const IndexT stream);
     /// get index buffer
     const BufferId GetIndexBuffer(const MeshId id);
+    /// Get index offset
+    const uint GetIndexOffset(const MeshId id);
     /// get topology
     const CoreGraphics::PrimitiveTopology::Code GetPrimitiveTopology(const MeshId id);
 private:

@@ -44,6 +44,7 @@ struct VkTextureLoadInfo
     CoreGraphics::TextureUsage texUsage;
     CoreGraphics::TextureId alias;
     CoreGraphics::ImageLayout defaultLayout;
+    CoreGraphics::TextureSwizzle swizzle;
     bool windowTexture : 1;                     // texture is meant to be a window back buffer
     bool windowRelative : 1;                    // size is a window relative percentage if true, other wise size is an absolute size
     bool bindless : 1;

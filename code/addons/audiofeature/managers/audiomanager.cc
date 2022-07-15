@@ -43,12 +43,18 @@ AudioManager::OnDecay()
     //}
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 void
 ActivateAudioEmitter(Game::World* world, Game::Entity& entity, AudioEmitter& emitter)
 {
     //emitter.emitterId = Audio::AudioDevice::Instance()->CreateAudioEmitter(emitter.audioResource).id;
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
 void
 DeactivateAudioEmitter(Game::World* world, Game::Entity& entity, AudioEmitter& emitter)
 {

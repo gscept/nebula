@@ -21,6 +21,18 @@
 
 namespace Vulkan
 {
+
+static const VkComponentSwizzle VkSwizzle[] =
+{
+    VK_COMPONENT_SWIZZLE_IDENTITY,
+    VK_COMPONENT_SWIZZLE_R,
+    VK_COMPONENT_SWIZZLE_G,
+    VK_COMPONENT_SWIZZLE_B,
+    VK_COMPONENT_SWIZZLE_A,
+    VK_COMPONENT_SWIZZLE_ZERO,
+    VK_COMPONENT_SWIZZLE_ONE,
+};
+
 class VkTypes
 {
 public:
@@ -31,15 +43,13 @@ public:
         uint32_t height;
     };
 
+
+
 #pragma region Pixel stuff
     /// convert Nebula pixel format to Vulkan pixel format
     static VkFormat AsVkFormat(CoreGraphics::PixelFormat::Code p);
     /// check if format is depth or color
     static bool IsDepthFormat(CoreGraphics::PixelFormat::Code p);
-    /// convert DevIL pixel format to Vulkan format
-    static VkFormat AsVkFormat(ILenum p);
-    /// convert VkFormat pixel format to DevIL format
-    static ILenum AsILDXTFormat(VkFormat p);
     /// returns true if format is compressed
     static bool IsCompressedFormat(VkFormat p);
     /// convert pixel format to block size
@@ -56,12 +66,8 @@ public:
     static VkImageType AsVkImageType(CoreGraphics::TextureType type);
     /// convert texture type to vk view type
     static VkImageViewType AsVkImageViewType(CoreGraphics::TextureType type);
-    /// convert DevIL pixel format to Vulkan component mapping
-    static VkComponentMapping AsVkMapping(ILenum p);
     /// convert vulkan format back to nebula format
     static CoreGraphics::PixelFormat::Code AsNebulaPixelFormat(VkFormat f);
-    /// convert pixel format to Vulkan component mapping
-    static VkComponentMapping AsVkMapping(CoreGraphics::PixelFormat::Code p);
     /// convert image aspects to Vulkan
     static VkImageAspectFlags AsVkImageAspectFlags(const CoreGraphics::ImageAspect aspect);
     /// convert shader visibility to vulkan

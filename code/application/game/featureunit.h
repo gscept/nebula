@@ -62,6 +62,8 @@ public:
 
     /// called on begin of frame
     virtual void OnBeginFrame();
+    /// Called between beginning of frame and before the views are iterated
+    virtual void OnBeforeViews();
     /// called in the middle of the feature trigger cycle
     virtual void OnFrame();
     /// called at the end of the feature trigger cycle

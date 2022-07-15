@@ -19,6 +19,9 @@
 #include "models/streammodelcache.h"
 #include "renderutil/drawfullscreenquad.h"
 
+#include "bindlessregistry.h"
+#include "globalconstants.h"
+
 namespace Graphics
 {
 
@@ -57,13 +60,14 @@ GraphicsServer::Open()
 
     CoreGraphics::GraphicsDeviceCreateInfo gfxInfo { 
         32_MB,                      // Graphics queue constant memory size
-        1_MB,                       // Compute queue constant memory size
         32_MB,                      // Vertex memory size
+        8_MB,                       // Index memory size
+        32_MB,
         {
-            128_MB,                 // Device local memory block size, textures and vertex/index buffers
-            32_MB,                  // Memory to use for temporary host buffers which are copied to the GPU
-            32_MB,                  // Memory used to read back from the GPU
-            128_MB,                 // Manually flushed memory block size, constant buffers, storage buffers
+            128_MB,                 // Device local memory block size
+            32_MB,                  // Host coherent memory block size
+            128_MB,                 // Host cached memory block size
+            8_MB,                   // Device <-> host mirrored memory block size
         },
         0x10000, 0x100000, 0x100,   // Number of queries
         3,                          // Number of simultaneous frames (3 = triple buffering, 2 = ... you get the idea)
@@ -169,17 +173,22 @@ GraphicsServer::Open()
         texInfo.buffer = &blue;
         CoreGraphics::Blue2D = CoreGraphics::CreateTexture(texInfo);
 
+        // Setup shader server
         this->shaderServer = CoreGraphics::ShaderServer::Create();
         this->shaderServer->Open();
+
+        // Setup bindless registry and global constants hub
+        BindlessRegistryCreateInfo bindlessRegistryInfo;
+        CreateBindlessRegistry(bindlessRegistryInfo);
+
+        GlobalConstantsCreateInfo globalConstantsInfo;
+        CreateGlobalConstants(globalConstantsInfo);
 
         this->frameServer = Frame::FrameServer::Create();
         this->frameServer->Open();
 
         this->materialServer = Materials::ShaderConfigServer::Create();
         this->materialServer->Open();
-
-        this->transformDevice = CoreGraphics::TransformDevice::Create();
-        this->transformDevice->Open();
 
         this->shapeRenderer = CoreGraphics::ShapeRenderer::Create();
         this->shapeRenderer->Open();
@@ -218,9 +227,6 @@ GraphicsServer::Close()
 
     this->shapeRenderer->Close();
     this->shapeRenderer = nullptr;
-
-    this->transformDevice->Close();
-    this->transformDevice = nullptr;
 
     this->materialServer->Close();
     this->materialServer = nullptr;
@@ -344,6 +350,8 @@ GraphicsServer::BeginFrame()
     this->frameContext.time = this->timer->GetTime();
     this->frameContext.ticks = this->timer->GetTicks();
     this->frameContext.bufferIndex = CoreGraphics::GetBufferedFrameIndex();
+
+    Graphics::AllocateGlobalConstants();
 
     // update shader server
     this->shaderServer->BeforeFrame();
@@ -538,7 +546,6 @@ GraphicsServer::EndViews()
         if (!view->enabled)
             continue;
 
-        this->shaderServer->AfterView();
         this->currentView->EndFrame(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
         
         N_MARKER_BEGIN(ContextAfterView, Graphics);

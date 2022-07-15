@@ -31,11 +31,10 @@ struct ImguiRendererParams
 };
 
 struct ImguiTextureId
-
 {
     uint64 nebulaHandle;
-    uint8 layer;
-    uint8 mip;
+    uint8 layer = 0;
+    uint8 mip = 0;
 };
 
 class ImguiContext : public Graphics::GraphicsContext
@@ -47,7 +46,9 @@ public:
     /// destructor
     virtual ~ImguiContext();
 
+    /// Create context
     static void Create();
+    /// Discard context
     static void Discard();
 
     /// set the screen dimensions to use when rendering the UI (all vertices will be mapped to these values)

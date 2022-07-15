@@ -204,7 +204,8 @@ enum class PipelineStage
     Indirect,           // Indirect dispatch/draw fetching stage
     Index,              // Index fetch (automatically vertex shader)
     Vertex,             // Vertex fetch stage (automatically vertex shader)
-    Uniform,            // Uniform read
+    UniformGraphics,    // Uniform read on graphics queue
+    UniformCompute,     // Uniform read on compute queue
     InputAttachment,    // Input attachment read (automatically pixel shader)
     ReadOnlyAccess = InputAttachment, // All of the above enums are read-only
     VertexShaderRead,       
@@ -221,8 +222,8 @@ enum class PipelineStage
     GraphicsShadersWrite,
     ComputeShaderRead,
     ComputeShaderWrite,
-    AllShadersRead = GraphicsShadersRead | ComputeShaderRead,
-    AllShadersWrite = GraphicsShadersWrite | ComputeShaderWrite,
+    AllShadersRead,
+    AllShadersWrite,
     ColorRead,              // Color output read
     ColorWrite,             // Color output write
     DepthStencilRead,       // Depth-Stencil output read
@@ -250,7 +251,8 @@ PipelineStageFromString(const Util::String& str)
     else if (str == "IndirectRead")             return PipelineStage::Indirect;
     else if (str == "IndexRead")                return PipelineStage::Index;
     else if (str == "VertexRead")               return PipelineStage::Vertex;
-    else if (str == "UniformRead")              return PipelineStage::Uniform;
+    else if (str == "UniformGraphicsRead")      return PipelineStage::UniformGraphics;
+    else if (str == "UniformComputeRead")       return PipelineStage::UniformCompute;
     else if (str == "InputAttachmentRead")      return PipelineStage::InputAttachment;
     else if (str == "VertexShaderRead")         return PipelineStage::VertexShaderRead;
     else if (str == "VertexShaderWrite")        return PipelineStage::VertexShaderWrite;

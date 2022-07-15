@@ -52,6 +52,9 @@ const ModelId CreateModel(const ResourceCreateInfo& info);
 /// discard model (resource)
 void DestroyModel(const ModelId id);
 
+/// Get model nodes
+const Util::Array<Models::ModelNode*>& ModelGetNodes(const ModelId id);
+
 class StreamModelCache;
 extern StreamModelCache* modelPool;
 } // namespace Models

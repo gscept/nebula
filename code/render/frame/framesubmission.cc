@@ -5,6 +5,8 @@
 #include "render/stdneb.h"
 #include "framesubmission.h"
 #include "coregraphics/shaderserver.h"
+
+#include "graphics/globalconstants.h"
 namespace Frame
 {
 
@@ -67,6 +69,10 @@ FrameSubmission::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const
 
     // First thing, flush all constant updates
     CoreGraphics::FlushConstants(submissionBuffer, this->queue);
+    CoreGraphics::FlushUpload();
+
+    // Before starting the submission, flush per-view constants
+    Graphics::FlushConstants(submissionBuffer, this->queue);
 
     for (IndexT i = 0; i < this->compiled.Size(); i++)
     {

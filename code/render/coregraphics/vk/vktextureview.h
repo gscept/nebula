@@ -21,6 +21,7 @@ struct VkTextureViewLoadInfo
     IndexT layer;
     SizeT numLayers;
     CoreGraphics::PixelFormat::Code format;
+    CoreGraphics::TextureSwizzle swizzle;
 };
 
 struct VkTextureViewRuntimeInfo

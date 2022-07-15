@@ -308,6 +308,7 @@ VkShaderCache::CreateConstantBuffer(const CoreGraphics::ShaderId id, const Util:
         info.byteSize = buffer.byteSize;
         info.name = name;
         info.mode = mode;
+        info.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
         info.usageFlags = CoreGraphics::ConstantBuffer;
         return CoreGraphics::CreateBuffer(info);
     }

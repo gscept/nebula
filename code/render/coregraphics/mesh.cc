@@ -73,6 +73,15 @@ MeshGetIndexBuffer(const MeshId id)
 //------------------------------------------------------------------------------
 /**
 */
+const uint
+MeshGetIndexOffset(const MeshId id)
+{
+    return meshCache->GetIndexOffset(id);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const CoreGraphics::PrimitiveTopology::Code
 MeshGetTopology(const MeshId id)
 {

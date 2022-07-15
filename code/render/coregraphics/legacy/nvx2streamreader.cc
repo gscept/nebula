@@ -286,25 +286,25 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
 
     // Create temporary host-to-device buffer to copy from Host memory to GPU
     BufferCreateInfo tempBufInfo;
-    tempBufInfo.size = this->numVertices;
-    tempBufInfo.elementSize = VertexLayoutGetSize(this->layout);
+    tempBufInfo.byteSize = this->vertexDataSize;
     tempBufInfo.usageFlags = CoreGraphics::TransferBufferSource;
-    tempBufInfo.mode = CoreGraphics::HostToDevice;
+    tempBufInfo.mode = CoreGraphics::HostLocal;
     CoreGraphics::BufferId tempBuf = CoreGraphics::CreateBuffer(tempBufInfo);
     this->vbo = CoreGraphics::GetVertexBuffer();
+
+    uint elementSize = VertexLayoutGetSize(this->layout);
 
     // Do the actual copy
     void* mem = CoreGraphics::BufferMap(tempBuf);
     memcpy(mem, this->vertexDataPtr, this->vertexDataSize);
 
     // Allocate vertices from global repository 
-    this->baseOffset = CoreGraphics::AllocateVertices(this->numVertices, tempBufInfo.elementSize);
-    CoreGraphics::BufferFlush(tempBuf, 0, this->vertexDataSize);
+    this->baseVertexOffset = CoreGraphics::AllocateVertices(this->numVertices, elementSize);
 
     // Copy from host mappable buffer to device local buffer
     CoreGraphics::BufferCopy from, to;
     from.offset = 0;
-    to.offset = this->baseOffset;
+    to.offset = this->baseVertexOffset;
     CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
     CoreGraphics::CmdCopy(cmdBuf, tempBuf, { from }, this->vbo, { to }, this->vertexDataSize);
     CoreGraphics::UnlockGraphicsSetupCommandBuffer();
@@ -324,17 +324,32 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
     n_assert(0 != this->indexDataPtr);
     n_assert(this->indexDataSize > 0);
     n_assert(this->numIndices > 0);
-    
-    // create index buffer
-    BufferCreateInfo iboInfo;
-    iboInfo.name = name;
-    iboInfo.size = this->numIndices;
-    iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index32);
-    iboInfo.mode = CoreGraphics::DeviceLocal;
-    iboInfo.usageFlags = CoreGraphics::IndexBuffer | (this->copySourceFlag ? CoreGraphics::TransferBufferSource : 0);
-    iboInfo.data = this->indexDataPtr;
-    iboInfo.dataSize = this->indexDataSize;
-    this->ibo = CreateBuffer(iboInfo);
+
+    // Create temporary host-to-device buffer to copy from Host memory to GPU
+    BufferCreateInfo tempBufInfo;
+    tempBufInfo.byteSize = this->indexDataSize;
+    tempBufInfo.usageFlags = CoreGraphics::TransferBufferSource;
+    tempBufInfo.mode = CoreGraphics::HostLocal;
+    CoreGraphics::BufferId tempBuf = CoreGraphics::CreateBuffer(tempBufInfo);
+    this->ibo = CoreGraphics::GetIndexBuffer();
+
+    // Do the actual copy
+    void* mem = CoreGraphics::BufferMap(tempBuf);
+    memcpy(mem, this->indexDataPtr, this->indexDataSize);
+
+    // Allocate vertices from global repository 
+    this->baseIndexOffset = CoreGraphics::AllocateIndices(this->numIndices, CoreGraphics::IndexType::Index32);
+
+    // Copy from host mappable buffer to device local buffer
+    CoreGraphics::BufferCopy from, to;
+    from.offset = 0;
+    to.offset = this->baseIndexOffset;
+    CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
+    CoreGraphics::CmdCopy(cmdBuf, tempBuf, { from }, this->ibo, { to }, this->indexDataSize);
+    CoreGraphics::UnlockGraphicsSetupCommandBuffer();
+
+    // Delete temporary buffer
+    CoreGraphics::DelayedDeleteBuffer(tempBuf);
 }
 
 } // namespace Legacy

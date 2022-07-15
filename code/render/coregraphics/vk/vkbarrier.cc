@@ -51,9 +51,9 @@ CreateBarrier(const BarrierCreateInfo& info)
     vkInfo.numMemoryBarriers = 0;
     vkInfo.srcFlags = VkTypes::AsVkPipelineStage(info.fromStage);
     vkInfo.dstFlags = VkTypes::AsVkPipelineStage(info.toStage);
-
-    if (info.domain == BarrierDomain::Pass)
-        vkInfo.dep = VK_DEPENDENCY_BY_REGION_BIT;
+    vkInfo.dep = 0;
+    //if (info.domain == BarrierDomain::Pass)
+        //vkInfo.dep = VK_DEPENDENCY_BY_REGION_BIT;
 
     n_assert(info.textures.Size() < MaxNumBarriers);
     n_assert(info.buffers.Size() < MaxNumBarriers);
@@ -74,8 +74,15 @@ CreateBarrier(const BarrierCreateInfo& info)
         vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.baseArrayLayer = subres.layer;
         vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.layerCount = subres.layerCount;
         vkInfo.imageBarriers[vkInfo.numImageBarriers].image = TextureGetVkImage(info.textures[i].tex);
-        vkInfo.imageBarriers[vkInfo.numImageBarriers].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        vkInfo.imageBarriers[vkInfo.numImageBarriers].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        if (info.fromQueue == QueueType::InvalidQueueType)
+            vkInfo.imageBarriers[vkInfo.numImageBarriers].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        else
+            vkInfo.imageBarriers[vkInfo.numImageBarriers].srcQueueFamilyIndex = Vulkan::GetQueueFamily(info.fromQueue);
+
+        if (info.toQueue == QueueType::InvalidQueueType)
+            vkInfo.imageBarriers[vkInfo.numImageBarriers].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        else
+            vkInfo.imageBarriers[vkInfo.numImageBarriers].dstQueueFamilyIndex = Vulkan::GetQueueFamily(info.toQueue);
         vkInfo.imageBarriers[vkInfo.numImageBarriers].oldLayout = VkTypes::AsVkImageLayout(info.fromStage, isDepth);
         vkInfo.imageBarriers[vkInfo.numImageBarriers].newLayout = VkTypes::AsVkImageLayout(info.toStage, isDepth);
         vkInfo.numImageBarriers++;

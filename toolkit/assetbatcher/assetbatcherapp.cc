@@ -80,8 +80,9 @@ AssetBatcherApp::Open()
 void
 AssetBatcherApp::OnBeforeRunLocal()
 {
-    IO::IoServer::Instance()->CreateDirectory("phys:");
-    Flat::FlatbufferInterface::LoadSchema("file:///work:data/flatbuffer/physics/material.fbs");
+    IO::IoServer* ioServer = IO::IoServer::Instance();
+    ioServer->CreateDirectory("phys:");
+    auto files = ioServer->ListFiles("root:work/data/tables/", "*", true);
     IO::URI tablePath = "root:work/data/tables/physicsmaterials.json";
     CompileFlatbuffer(Physics::Materials, tablePath, "phys:");
 }
@@ -154,12 +155,28 @@ AssetBatcherApp::DoWork()
         force = this->args.GetBoolFlag("-force");
     }
 
+    AssetExporter::ExportModes mode = AssetExporter::All;
+    if (this->args.HasArg("-mode"))
+    {
+        mode = (AssetExporter::ExportModes)0;
+        Util::String exportMode = this->args.GetString("-mode");
+        Util::Array<Util::String> modeFlags = exportMode.Tokenize(",");
+        if (modeFlags.Find("fbx")) mode |= AssetExporter::FBX;
+        if (modeFlags.Find("model")) mode |= AssetExporter::Models;
+        if (modeFlags.Find("surface")) mode |= AssetExporter::Surfaces;
+        if (modeFlags.Find("texture")) mode |= AssetExporter::Textures;
+        if (modeFlags.Find("physics")) mode |= AssetExporter::Physics;
+        if (modeFlags.Find("gltf")) mode |= AssetExporter::GLTF;
+        if (modeFlags.Find("audio")) mode |= AssetExporter::Audio;
+    }
+
     AssignRegistry::Instance()->SetAssign(Assign("home","proj:"));
     exporter->Open();
+    exporter->SetExportMode(mode);
     exporter->SetForce(force);
     if (force)
     {
-        exporter->SetExportMode(AssetExporter::All | AssetExporter::ForceFBX | AssetExporter::ForceModels | AssetExporter::ForceSurfaces | AssetExporter::ForceGLTF);
+        exporter->SetExportMode(AssetExporter::All | AssetExporter::ForceFBX | AssetExporter::ForceModels | AssetExporter::ForceSurfaces | AssetExporter::ForceGLTF | AssetExporter::ForceAudio);
     }
     exporter->SetExportFlag(exportFlag);
     exporter->SetPlatform(this->platform);
@@ -263,6 +280,7 @@ AssetBatcherApp::ShowHelp()
              "-asset        --asset name, implies source argument\n"
              "-source       --select asset source from projectinfo, default all\n"
              "-work         --batch a non-registered work folder into the project\n"
+             "-mode         --batch only a type of resource, can be: fbx, model, surface, texture, physics, gltf, audio\n"
              "-project      --projectinfo override\n");
 }
 

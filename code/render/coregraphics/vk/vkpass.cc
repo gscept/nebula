@@ -47,6 +47,33 @@ PassGetVkNumAttachments(const CoreGraphics::PassId& id)
     return passAllocator.Get<Pass_VkLoadInfo>(id.id24).colorAttachments.Size();
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+const VkDevice
+PassGetVkDevice(const CoreGraphics::PassId& id)
+{
+    return passAllocator.Get<Pass_VkLoadInfo>(id.id24).dev;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const VkFramebuffer
+PassGetVkFramebuffer(const CoreGraphics::PassId& id)
+{
+    return passAllocator.Get<Pass_VkLoadInfo>(id.id24).framebuffer;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const VkRenderPass
+PassGetVkRenderPass(const CoreGraphics::PassId& id)
+{
+    return passAllocator.Get<Pass_VkLoadInfo>(id.id24).pass;
+}
+
 } // namespace Vulkan
 
 namespace CoreGraphics
@@ -628,8 +655,7 @@ DestroyPass(const PassId id)
     runtimeInfo.passDescriptorSet = ResourceTableId::Invalid();
     loadInfo.passBlockBuffer = BufferId::Invalid();
 
-    vkDestroyRenderPass(loadInfo.dev, loadInfo.pass, nullptr);
-    vkDestroyFramebuffer(loadInfo.dev, loadInfo.framebuffer, nullptr);
+    DelayedDeletePass(id);
 }
 
 //------------------------------------------------------------------------------

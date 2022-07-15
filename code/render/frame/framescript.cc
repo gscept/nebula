@@ -261,6 +261,8 @@ FrameScript::Build()
                 CoreGraphics::BarrierDomain::Global,
                 fromStage,
                 toStage,
+                CoreGraphics::QueueType::InvalidQueueType,
+                CoreGraphics::QueueType::InvalidQueueType,
                 {
                     CoreGraphics::TextureBarrierInfo{ res, info }
                 },

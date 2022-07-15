@@ -79,5 +79,12 @@ const VkGraphicsPipelineCreateInfo& PassGetVkFramebufferInfo(const CoreGraphics:
 /// get number of pass attachments
 const SizeT PassGetVkNumAttachments(const CoreGraphics::PassId& id);
 
+/// Get device creating this pass
+const VkDevice PassGetVkDevice(const CoreGraphics::PassId& id);
+/// Get framebuffer
+const VkFramebuffer PassGetVkFramebuffer(const CoreGraphics::PassId& id);
+/// Get pass
+const VkRenderPass PassGetVkRenderPass(const CoreGraphics::PassId& id);
+
 
 } // namespace Vulkan

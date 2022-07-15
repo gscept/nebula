@@ -214,6 +214,12 @@ GameServer::OnBeginFrame()
         this->gameFeatures[i]->OnBeginFrame();
     }
 
+    // trigger game features to at the beginning of a frame
+    for (i = 0; i < num; i++)
+    {
+        this->gameFeatures[i]->OnBeforeViews();
+    }
+
     // check if caches are valid
     for (uint32_t worldIndex = 0; worldIndex < this->state.numWorlds; worldIndex++)
     {

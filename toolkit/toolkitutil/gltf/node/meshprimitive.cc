@@ -107,7 +107,7 @@ AttributeToComponentIndex(Gltf::Primitive::Attribute attribute, bool normalized)
 template <typename TYPE, int n>
 void ReadVertexData(MeshBuilder const* meshBuilder, void const* buffer, uint const count, MeshBuilderVertex::ComponentIndex const vertexComponentIndex)
 {
-    
+    static_assert(n >= 1 && n <= 4, "You're doing it wrong!");
     TYPE const* const v = (TYPE*)(buffer);
     for (uint i = 0; i < count; i++)
     {
@@ -130,10 +130,6 @@ void ReadVertexData(MeshBuilder const* meshBuilder, void const* buffer, uint con
         {
             uint const offset = i * n;
             vertex.SetComponent(vertexComponentIndex, { (float)v[offset], (float)v[offset + 1], (float)v[offset + 2], (float)v[offset + 3] });
-        }
-        else
-        {
-            static_assert(false, "You're doing it wrong!");
         }
     }
 }

@@ -2,14 +2,21 @@
     "blueprints": {
         "TestEntity": {
             "desc": "A test blueprint",
-            "properties": [
+            "components": [
                 "WorldTransform"
             ]
         },
         "TestEntity2": {
             "desc": "A test blueprint 2",
-            "properties": [
+            "components": [
                 "WorldTransform"
+            ]
+        },
+        "Camera": {
+            "desc": "A camera",
+            "components": [
+                "WorldTransform",
+                "Camera"
             ]
         }
     }

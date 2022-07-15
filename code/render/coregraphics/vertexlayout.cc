@@ -16,7 +16,6 @@ VertexSignatureCache* layoutPool = nullptr;
 const VertexLayoutId
 CreateVertexLayout(const VertexLayoutCreateInfo& info)
 {
-    n_assert(info.comps.Size() > 0);
     VertexLayoutInfo loadInfo;
 
     Util::String sig;

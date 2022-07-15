@@ -13,11 +13,6 @@ const float DepthScaling = 5.0f;
 const float DarkeningFactor = 1.0f;
 const float ShadowConstant = 100.0f;
 
-sampler_state ShadowSampler
-{
-	//Samplers = { AlbedoMap, DisplacementMap };
-};
-
 render_state ShadowState
 {
 	CullMode = Back;
@@ -215,18 +210,9 @@ shader
 void
 psShadow(in vec2 UV,
 	in vec4 ProjPos,
-	[color0] out vec2 ShadowColor)
+	[color0] out float ShadowColor)
 {
-	float depth = ProjPos.z / ProjPos.w;
-	float moment1 = depth;
-	float moment2 = depth * depth;
-
-	// Adjusting moments (this is sort of bias per pixel) using derivative
-	float dx = dFdx(depth);
-	float dy = dFdy(depth);
-	moment2 += 0.25f*(dx*dx+dy*dy);
-
-	ShadowColor = vec2(moment1, moment2);
+	ShadowColor = ProjPos.z / ProjPos.w;
 }
 
 //------------------------------------------------------------------------------
@@ -236,21 +222,12 @@ shader
 void
 psShadowAlpha(in vec2 UV,
 	in vec4 ProjPos,
-	[color0] out vec2 ShadowColor)
+	[color0] out float ShadowColor)
 {
 	float alpha = sample2D(AlbedoMap, ShadowSampler, UV).a;
-	if (alpha < AlphaSensitivity) discard;
-
-	float depth = ProjPos.z / ProjPos.w;
-	float moment1 = depth;
-	float moment2 = depth * depth;
-
-	// Adjusting moments (this is sort of bias per pixel) using derivative
-	float dx = dFdx(depth);
-	float dy = dFdy(depth);
-	moment2 += 0.25f*(dx*dx+dy*dy);
-
-	ShadowColor = vec2(moment1, moment2);
+	if (alpha < AlphaSensitivity) 
+        discard;
+    ShadowColor = ProjPos.z / ProjPos.w;
 }
 
 //------------------------------------------------------------------------------
@@ -435,5 +412,22 @@ ExponentialShadowSample(float mapDepth, float depth, float bias)
 	float occlusion = saturate(exp(DarkeningFactor * occluderReceiverDistance));
     //float occlusion = saturate(exp(DarkeningFactor * occluderReceiverDistance));
     return occlusion;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+float
+PCFShadow(textureHandle shadowMap, vec2 uv, vec2 texelSize)
+{
+    float shadow = 0.0f;
+    vec3 offsets = vec3(-2, 2, 0) * texelSize.xyx;
+    
+    float samp0 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.xz, 0).r;
+    float samp1 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.yz, 0).r;
+    float samp2 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.zx, 0).r;
+    float samp3 = sample2DLod(shadowMap, ShadowSampler, uv + offsets.zy, 0).r;
+    float samp4 = sample2DLod(shadowMap, ShadowSampler, uv, 0).r;
+    return (samp0 + samp1 + samp2 + samp3 + samp4) * 0.2f;
 }
 #endif // SHADOWBASE_FXH

@@ -121,7 +121,7 @@ ParticleContext::Create()
     vboInfo.name = "Single Point Particle Emitter VBO";
     vboInfo.size = 1;
     vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(emitterLayout);
-    vboInfo.mode = CoreGraphics::DeviceToHost;
+    vboInfo.mode = CoreGraphics::DeviceAndHost;
     vboInfo.usageFlags = CoreGraphics::VertexBuffer;
     vboInfo.data = vertex;
     vboInfo.dataSize = sizeof(vertex);
@@ -132,7 +132,7 @@ ParticleContext::Create()
     iboInfo.name = "Single Point Particle Emitter IBO";
     iboInfo.size = 1;
     iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index32);
-    iboInfo.mode = CoreGraphics::DeviceToHost;
+    iboInfo.mode = CoreGraphics::DeviceAndHost;
     iboInfo.usageFlags = CoreGraphics::IndexBuffer;
     iboInfo.data = indices;
     iboInfo.dataSize = sizeof(indices);
@@ -502,7 +502,7 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
                         block.AnimFramesPerSecond = pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond);
 
                         // allocate block
-                        CoreGraphics::ConstantBufferOffset offset = CoreGraphics::SetGraphicsConstants(block);
+                        CoreGraphics::ConstantBufferOffset offset = CoreGraphics::SetConstants(block);
                         renderables.nodeStates[stateRange.begin + system.renderableIndex].resourceTableOffsets[renderables.nodeStates[stateRange.begin + system.renderableIndex].particleConstantsIndex] = offset;
                     }
                     else
@@ -544,7 +544,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
         vboInfo.name = "Particle Vertex Buffer";
         vboInfo.size = state.numParticlesThisFrame;
         vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.layout);
-        vboInfo.mode = CoreGraphics::HostToDevice;
+        vboInfo.mode = CoreGraphics::HostCached;
         vboInfo.usageFlags = CoreGraphics::VertexBuffer;
         vboInfo.data = nullptr;
         vboInfo.dataSize = 0;

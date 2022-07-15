@@ -35,6 +35,7 @@ struct MeshCreateInfo
     Resources::ResourceName name;
     Util::StringAtom tag;
     Util::ArrayStack<Stream, 16> streams;
+    SizeT indexBufferOffset;
     BufferId indexBuffer;
     VertexLayoutId vertexLayout;
     CoreGraphics::PrimitiveTopology::Code topology;
@@ -54,6 +55,8 @@ const BufferId MeshGetVertexBuffer(const MeshId id, const IndexT stream);
 const uint MeshGetVertexOffset(const MeshId id, const IndexT stream);
 /// get index buffer
 const BufferId MeshGetIndexBuffer(const MeshId id);
+/// Get index buffer base offset
+const uint MeshGetIndexOffset(const MeshId id);
 /// get topology
 const CoreGraphics::PrimitiveTopology::Code MeshGetTopology(const MeshId id);
 

@@ -44,7 +44,10 @@ imports:
     fips-curl:
         git: https://github.com/gscept/fips-curl.git
         cond: "FIPS_WINDOWS"
-
+    fips-compressonator:
+        git: https://github.com/gscept/fips-compressonator.git
+    fips-ultralight:
+        git: https://github.com/gscept/fips-ultralight.git
 exports:
     header-dirs :
         - .
@@ -66,4 +69,4 @@ exports:
         addons: code/addons
         audio: code/audio
         input: code/input
-        editor: toolkit/editor
+        toolkit: toolkit

@@ -125,7 +125,7 @@ psGLTF(
     vec3 viewNormal = (View * vec4(N.xyz, 0)).xyz;
     
     vec3 light = vec3(0, 0, 0);
-    light += CalculateGlobalLight(baseColor.rgb, material, F0, viewVec, N.xyz, ViewSpacePos);
+    light += CalculateGlobalLight(baseColor.rgb, material, F0, viewVec, N.xyz, ViewSpacePos, vec4(WorldSpacePos, 1));
     light += LocalLights(idx, baseColor.rgb, material, F0, ViewSpacePos, viewNormal, gl_FragCoord.z);
     light += calcEnv(baseColor, F0, N, viewVec, material);
     light += emissive.rgb;

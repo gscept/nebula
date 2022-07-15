@@ -84,6 +84,22 @@ struct TextureRelativeDimensions
     float width, height, depth;
 };
 
+enum class TextureChannelMapping
+{
+    None,       // No swizzle
+    Red,
+    Green,
+    Blue,
+    Alpha,
+    Zero,
+    One
+};
+
+struct TextureSwizzle
+{
+    TextureChannelMapping red, green, blue, alpha;
+};
+
 static const ubyte TextureAutoMips = 0xFF;
 struct DepthStencilClear
 {
@@ -114,6 +130,7 @@ struct TextureCreateInfo
         , sparse(false)
         , alias(CoreGraphics::InvalidTextureId)
         , defaultLayout(CoreGraphics::ImageLayout::ShaderRead)
+        , swizzle({ TextureChannelMapping::None, TextureChannelMapping::None, TextureChannelMapping::None, TextureChannelMapping::None })
     {};
 
     Resources::ResourceName name;
@@ -139,13 +156,12 @@ struct TextureCreateInfo
     bool sparse : 1;                            // use sparse memory
     CoreGraphics::TextureId alias;
     CoreGraphics::ImageLayout defaultLayout;
+    CoreGraphics::TextureSwizzle swizzle;
 };
 
 struct TextureCreateInfoAdjusted
 {
-    Resources::ResourceName name;
     CoreGraphics::TextureUsage usage;
-    Util::StringAtom tag;
     const void* buffer;
     CoreGraphics::TextureType type;
     CoreGraphics::PixelFormat::Code format;

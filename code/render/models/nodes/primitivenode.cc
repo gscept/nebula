@@ -83,7 +83,7 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
         this->ibo = CoreGraphics::MeshGetIndexBuffer(this->res);
         this->topology = CoreGraphics::MeshGetTopology(this->res);
         this->vboOffset = CoreGraphics::MeshGetVertexOffset(this->res, 0);
-        this->iboOffset = 0;
+        this->iboOffset = CoreGraphics::MeshGetIndexOffset(this->res);
     }
     else if (FourCC('PGRI') == fourcc)
     {

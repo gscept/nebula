@@ -37,6 +37,8 @@ struct ManagerAPI
     void(*OnDeactivate)() = nullptr;
     /// called before frame by the game server
     void(*OnBeginFrame)() = nullptr;
+    /// Called between begin frame and before views
+    void(*OnBeforeViews)() = nullptr;
     /// called per-frame by the game server
     void(*OnFrame)() = nullptr;
     /// called after frame by the game server

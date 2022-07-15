@@ -21,6 +21,9 @@ public:
     /// destructor
     virtual ~TransformNode();
 
+    /// Get LOD distances
+    void GetLODDistances(float& minDistance, float& maxDistance);
+
 protected:
     friend class StreamModelCache;
     friend class ModelContext;

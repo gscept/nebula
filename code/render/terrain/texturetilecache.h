@@ -28,12 +28,10 @@ struct TileCacheEntry
 {
     struct Entry
     {
-        uint64 mip : 4;                   // max value 15 (0xF)
         uint64 tiles : 10;                // must hold at least SubTextureMaxTiles from TerrainContext.h
-        uint64 tileX : 9;                 // must hold at least SubTextureMaxTiles
-        uint64 tileY : 9;                 // same as above
-        uint64 subTextureIndex : 24;      //
-        uint64 subTextureUpdateKey : 8;
+        uint64 tileX : 11;                // must hold at least SubTextureMaxTiles
+        uint64 tileY : 11;                // same as above
+        uint64 subTextureIndex : 32;      // the index of the subtexture
     };
     union
     {
@@ -59,20 +57,27 @@ struct TileCacheEntry
     }
 };
 
-static const TileCacheEntry InvalidEntry = TileCacheEntry{ UINT64_MAX };
+static const TileCacheEntry InvalidTileCacheEntry = TileCacheEntry{ UINT64_MAX };
 
 class TextureTileCache
 {
 public:
+
+    struct CacheResult
+    {
+        Math::uint2 cached;
+        bool didCache;
+        TileCacheEntry evicted;
+    };
     /// constructor
     TextureTileCache();
     /// destructor
     ~TextureTileCache();
     
     /// setup cache
-    void Setup(uint tileSize, uint textureSize, uint invalidValue);
+    void Setup(uint tileSize, uint textureSize);
     /// get tile, if invalid coord, gets the last used, otherwise, bumps the use of it
-    bool Cache(TileCacheEntry entry, Math::uint2& coords);
+    CacheResult Cache(TileCacheEntry entry);
     /// clear cache
     void Clear();
 private:
@@ -80,7 +85,6 @@ private:
     {
         TileCacheEntry entry;
         Math::uint2 offset;
-        uint id;
         Node* prev;
         Node* next;
     };
@@ -92,7 +96,7 @@ private:
     /// detach node and fix tail & head
     void Remove(Node* node);
 
-    Ids::IdPool nodePool;
+    uint usedNodes;
     Util::FixedArray<Node> nodes;
 
     Node* head;
@@ -101,7 +105,6 @@ private:
 
     uint tiles;
     uint tileSize;
-    uint invalidValue;
 };
 
 //------------------------------------------------------------------------------
@@ -113,7 +116,6 @@ TextureTileCache::TextureTileCache()
     , tail(nullptr)
     , tiles(0)
     , tileSize(0)
-    , invalidValue(0)
 {
 }
 
@@ -129,15 +131,14 @@ TextureTileCache::~TextureTileCache()
 /**
 */
 inline void 
-TextureTileCache::Setup(uint tileSize, uint textureSize, uint invalidValue)
+TextureTileCache::Setup(uint tileSize, uint textureSize)
 {
+    this->head = this->tail = nullptr;
     this->tiles = textureSize / tileSize;
     this->tileSize = tileSize;
-    this->invalidValue = invalidValue;
 
     // keep all nodes linearly in memory!
     this->nodes.Resize(this->tiles * this->tiles);
-    this->nodePool.Reserve(this->tiles * this->tiles);
 
     // setup storage
     for (uint x = 0; x < this->tiles; x++)
@@ -150,61 +151,57 @@ TextureTileCache::Setup(uint tileSize, uint textureSize, uint invalidValue)
             // set the data, this will be static
             Node* node = &this->nodes[index];
             node->offset = Math::uint2{ x * tileSize, y * tileSize };
-            node->entry = InvalidEntry;
+            node->entry = InvalidTileCacheEntry;
             node->prev = nullptr;
             node->next = nullptr;
-            node->id = -1;
+
+            // Add to linked list
+            this->InsertBeginning(node);
         }
     }
-
-    this->head = nullptr;
-    this->tail = nullptr;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline bool
-TextureTileCache::Cache(TileCacheEntry entry, Math::uint2& coords)
+inline TextureTileCache::CacheResult
+TextureTileCache::Cache(TileCacheEntry entry)
 {
-    n_assert(entry != InvalidEntry);
+    n_assert(entry != InvalidTileCacheEntry);
+
+    CacheResult result;
+    result.didCache = false;
+    result.evicted = InvalidTileCacheEntry;
+
     IndexT index = this->lookup.FindIndex(entry);
     if (index == InvalidIndex)
     {
-        // if we have no free ids, free up tail
-        if (this->nodePool.GetNumFree() == 0)
+        // Grab the tail
+        Node* node = this->tail;
+        this->Remove(node);
+        if (node->entry != InvalidTileCacheEntry)
         {
-            this->nodePool.Dealloc(this->tail->id);
-            n_assert(this->tail->entry != InvalidEntry);
-
-            // also erase from lookup
-            this->lookup.Erase(this->tail->entry);
-            this->tail->id = -1;
-            this->tail->entry = InvalidEntry;
-            this->Remove(this->tail);
+            this->lookup.Erase(node->entry);
+            result.evicted = node->entry;
         }
-
-        // allocate new node
-        uint nodeId = this->nodePool.Alloc();
-        Node* node = &this->nodes[nodeId];
 
         // make most recent
         this->InsertBeginning(node);
         node->entry = entry;
-        node->id = nodeId;
         this->lookup.Add(entry, node);
 
         // update entry
-        coords = node->offset;
-        return true;
+        result.cached = node->offset;
+        result.didCache = true;
     }
     else
     {
         Node* node = this->lookup.ValueAtIndex(index);
+        result.cached = node->offset;
         this->Remove(node);
         this->InsertBeginning(node);
-        return false;
     }
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -217,12 +214,12 @@ TextureTileCache::Clear()
     while (node != nullptr)
     {
         Node* next = node->next;
-        this->nodePool.Dealloc(node->id);
         this->Remove(node);
         node = next;
     }
     this->head = nullptr;
     this->tail = nullptr;
+    this->nodes.Clear();
     this->lookup.Clear();
 }
 

@@ -50,6 +50,8 @@ TextureAttrs::PixelFormatToString(PixelFormat f)
         case BC6H:      return "bc6h";
         case BC7:       return "bc7";
         case R8:        return "r8";
+        case R16F:      return "r16f";
+        case R16G16F:   return "r16g16f";
         case R16:       return "r16";
         case R16G16:    return "r16g16";
         case DXGI:      return "dxgi";
@@ -78,6 +80,8 @@ TextureAttrs::StringToPixelFormat(const String& str)
     else if (str == "bc6h")   return BC6H;
     else if (str == "bc7")    return BC7;
     else if (str == "r8")     return R8;
+    else if (str == "r16f")   return R16F;
+    else if (str == "r16g16f")return R16G16F;
     else if (str == "r16")    return R16;
     else if (str == "r16g16") return R16G16;
     else if (str == "dxgi")   return DXGI;

@@ -73,6 +73,7 @@ void
 AudioFeatureUnit::OnBeginFrame()
 {
     Game::TimeSource* const time = Game::TimeManager::GetTimeSource(TIMESOURCE_AUDIO);
+    this->audioServer->OnFrame();
 }
 
 //------------------------------------------------------------------------------

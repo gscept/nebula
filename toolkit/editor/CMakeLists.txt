@@ -1,4 +1,4 @@
-fips_begin_lib(editor)
+fips_begin_module(editor)
 fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 fips_include_directories(${CODE_ROOT}/foundation)
 fips_dir(.)
@@ -97,4 +97,4 @@ fips_dir(editor)
             selectiontool.h
         )
 fips_deps(foundation application graphicsfeature physicsfeature audio)
-fips_end_lib()
+fips_end_module()

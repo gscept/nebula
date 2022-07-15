@@ -473,22 +473,8 @@ inline Util::String
 VertexComponentBase::GetSignature() const
 {
     Util::String str;
-    switch (this->semName)
-    {
-        case Position:      str = "pos"; break;
-        case Normal:        str = "nrm"; break;
-        case Tangent:       str = "tan"; break;
-        case Binormal:      str = "bin"; break;
-        case TexCoord1:     str = "tex"; break;
-        case Color:         str = "clr"; break;
-        case TexCoord2:     str = "lgh"; break;
-        case SkinWeights:   str = "skw"; break;
-        case SkinJIndices:  str = "sji"; break;
-        default:
-            str = Util::String::Sprintf("cst%d", this->semName);
-            break;
-    }
-    str.AppendInt(this->semIndex);    
+    str.AppendInt(this->semName);    
+    str.AppendInt(this->streamIndex);
     str.Append(FormatToSignature(this->format));
     return str;
 }
