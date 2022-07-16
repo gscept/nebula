@@ -168,9 +168,15 @@ void                        RemoveComponent(World*, Entity);
 /// typed set component
 template<typename TYPE>
 void                        SetComponent(World*, Game::Entity const entity, ComponentId const component, TYPE value);
+/// typed set component
+template<typename TYPE>
+void                        SetComponent(World*, Game::Entity const entity, TYPE value);
 /// typed get component
 template<typename TYPE>
 TYPE                        GetComponent(World*, Game::Entity const entity, ComponentId const component);
+/// typed get component
+template<typename TYPE>
+TYPE                        GetComponent(World*, Game::Entity const entity);
 /// Check if entity has a specific component. (SLOW!)
 bool                        HasComponent(World*, Entity const entity, ComponentId const component);
 
@@ -274,6 +280,21 @@ SetComponent(World* world, Game::Entity const entity, ComponentId const componen
 /**
 */
 template<typename TYPE>
+inline void
+SetComponent(World* world, Game::Entity const entity, TYPE value)
+{
+#if NEBULA_DEBUG
+    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(TYPE::ID()), "SetComponent: Provided value's type is not the correct size for the given ComponentId.");
+#endif
+    EntityMapping mapping = GetEntityMapping(world, entity);
+    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, TYPE::ID());
+    *(ptr + mapping.instance) = value;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename TYPE>
 inline TYPE
 GetComponent(World* world, Game::Entity const entity, ComponentId const component)
 {
@@ -282,6 +303,21 @@ GetComponent(World* world, Game::Entity const entity, ComponentId const componen
 #endif
     EntityMapping mapping = GetEntityMapping(world, entity);
     TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, component);
+    return *(ptr + mapping.instance);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<typename TYPE>
+inline TYPE
+GetComponent(World* world, Game::Entity const entity)
+{
+#if NEBULA_DEBUG
+    n_assert2(sizeof(TYPE) == MemDb::TypeRegistry::TypeSize(TYPE::ID()), "GetComponent: Provided value's type is not the correct size for the given ComponentId.");
+#endif
+    EntityMapping mapping = GetEntityMapping(world, entity);
+    TYPE* ptr = (TYPE*)GetInstanceBuffer(world, mapping.table, TYPE::ID());
     return *(ptr + mapping.instance);
 }
 

@@ -45,8 +45,6 @@ AssetExporter::Open()
     this->textureExporter.Setup(this->logger);
 }
 
-
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -89,7 +87,7 @@ void
 AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& category)
 {
     n_printf("Exporting asset directory '%s'\n", category.AsCharPtr());
-
+    IoServer* ioServer = IoServer::Instance();
 
     IndexT fileIndex;
     ToolLog log(category);
@@ -100,8 +98,8 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
         console->Clear();
         // export GLTF sources
 
-        Array<String> files = IoServer::Instance()->ListFiles(assetPath, "*.gltf");
-        files.AppendArray(IoServer::Instance()->ListFiles(assetPath, "*.glb"));
+        Array<String> files = ioServer->ListFiles(assetPath, "*.gltf");
+        files.AppendArray(ioServer->ListFiles(assetPath, "*.glb"));
         this->gltfExporter = ToolkitUtil::NglTFExporter::Create();
         this->gltfExporter->SetTextureConverter(&this->textureExporter);
         this->gltfExporter->Open();
@@ -123,7 +121,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
     {
         console->Clear();
         // export FBX sources
-        Array<String> files = IoServer::Instance()->ListFiles(assetPath, "*.fbx");
+        Array<String> files = ioServer->ListFiles(assetPath, "*.fbx");
         this->fbxExporter = ToolkitUtil::NFbxExporter::Create();
         this->fbxExporter->Open();
         this->fbxExporter->SetForce(this->force || (this->mode & ExportModes::ForceFBX) != 0);
@@ -143,7 +141,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
     if (this->mode & ExportModes::Models)
     {
         // export models
-        Array<String> files = IoServer::Instance()->ListFiles(assetPath, "*.attributes");
+        Array<String> files = ioServer->ListFiles(assetPath, "*.attributes");
         for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
         {
             console->Clear();
@@ -173,13 +171,13 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
     {
         this->textureExporter.SetExternalTextureAttrTable(&this->textureAttrTable);
         // export textures
-        Array<String> files = IoServer::Instance()->ListFiles(assetPath, "*.tga");
-        files.AppendArray(IoServer::Instance()->ListFiles(assetPath, "*.bmp"));
-        files.AppendArray(IoServer::Instance()->ListFiles(assetPath, "*.dds"));
-        files.AppendArray(IoServer::Instance()->ListFiles(assetPath, "*.png"));
-        files.AppendArray(IoServer::Instance()->ListFiles(assetPath, "*.jpg"));
-        files.AppendArray(IoServer::Instance()->ListFiles(assetPath, "*.exr"));
-        files.AppendArray(IoServer::Instance()->ListFiles(assetPath, "*.tif"));
+        Array<String> files = ioServer->ListFiles(assetPath, "*.tga");
+        files.AppendArray(ioServer->ListFiles(assetPath, "*.bmp"));
+        files.AppendArray(ioServer->ListFiles(assetPath, "*.dds"));
+        files.AppendArray(ioServer->ListFiles(assetPath, "*.png"));
+        files.AppendArray(ioServer->ListFiles(assetPath, "*.jpg"));
+        files.AppendArray(ioServer->ListFiles(assetPath, "*.exr"));
+        files.AppendArray(ioServer->ListFiles(assetPath, "*.tif"));
         this->textureExporter.SetForceFlag(this->force || (this->mode & ExportModes::ForceTextures) != 0);
         for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
         {
@@ -189,7 +187,7 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
             log.AddEntry(console, "Texture", files[fileIndex]);
         }
         // export cubemaps
-        Array<String> Cubes = IoServer::Instance()->ListDirectories(assetPath, "*.cube");
+        Array<String> Cubes = ioServer->ListDirectories(assetPath, "*.cube");
         for (fileIndex = 0; fileIndex < Cubes.Size(); fileIndex++)
         {
             console->Clear();
@@ -201,13 +199,32 @@ AssetExporter::ExportFolder(const Util::String& assetPath, const Util::String& c
 
     if (this->mode & ExportModes::Surfaces)
     {
-        Array<String> files = IoServer::Instance()->ListFiles(assetPath, "*.sur");
+        Array<String> files = ioServer->ListFiles(assetPath, "*.sur");
         this->surfaceExporter->SetForce(this->force || (this->mode & ExportModes::ForceSurfaces) != 0);
         for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
         {
             console->Clear();
             this->surfaceExporter->ExportFile(assetPath + files[fileIndex]);
             log.AddEntry(console, "Surface", files[fileIndex]);
+        }
+    }
+
+    if (this->mode & ExportModes::Audio)
+    {
+        Array<String> files = ioServer->ListFiles(assetPath, "*.wav");
+        files.AppendArray(ioServer->ListFiles(assetPath, "*.mp3"));
+        if (!files.IsEmpty())
+        {
+            Util::String dstDir = Util::String::Sprintf("dst:audio/%s", category.AsCharPtr());
+            ioServer->CreateDirectory(dstDir);
+
+            for (fileIndex = 0; fileIndex < files.Size(); fileIndex++)
+            {
+                console->Clear();
+                Util::String dstFile = Util::String::Sprintf("%s/%s", dstDir.AsCharPtr(), files[fileIndex].AsCharPtr());
+                ioServer->CopyFile(assetPath + files[fileIndex], dstFile);
+                log.AddEntry(console, "Audio", files[fileIndex]);
+            }
         }
     }
     this->messages.Append(log);

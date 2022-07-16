@@ -121,7 +121,7 @@ ParticleContext::Create()
     vboInfo.name = "Single Point Particle Emitter VBO";
     vboInfo.size = 1;
     vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(emitterLayout);
-    vboInfo.mode = CoreGraphics::DeviceToHost;
+    vboInfo.mode = CoreGraphics::DeviceAndHost;
     vboInfo.usageFlags = CoreGraphics::VertexBuffer;
     vboInfo.data = vertex;
     vboInfo.dataSize = sizeof(vertex);
@@ -132,7 +132,7 @@ ParticleContext::Create()
     iboInfo.name = "Single Point Particle Emitter IBO";
     iboInfo.size = 1;
     iboInfo.elementSize = CoreGraphics::IndexType::SizeOf(CoreGraphics::IndexType::Index32);
-    iboInfo.mode = CoreGraphics::DeviceToHost;
+    iboInfo.mode = CoreGraphics::DeviceAndHost;
     iboInfo.usageFlags = CoreGraphics::IndexBuffer;
     iboInfo.data = indices;
     iboInfo.dataSize = sizeof(indices);
@@ -494,7 +494,7 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
 
                         // update system transform
                         if (pnode->GetEmitterAttrs().GetBool(Particles::EmitterAttrs::Billboard))
-                            system.transform = context->invViewMatrix * system.transform;
+                            system.transform = system.transform * context->invViewMatrix;
                         system.transform.store(block.EmitterTransform);
 
                         // update parameters
@@ -502,7 +502,7 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
                         block.AnimFramesPerSecond = pnode->emitterAttrs.GetFloat(EmitterAttrs::PhasesPerSecond);
 
                         // allocate block
-                        CoreGraphics::ConstantBufferOffset offset = CoreGraphics::SetGraphicsConstants(block);
+                        CoreGraphics::ConstantBufferOffset offset = CoreGraphics::SetConstants(block);
                         renderables.nodeStates[stateRange.begin + system.renderableIndex].resourceTableOffsets[renderables.nodeStates[stateRange.begin + system.renderableIndex].particleConstantsIndex] = offset;
                     }
                     else
@@ -544,7 +544,7 @@ ParticleContext::WaitForParticleUpdates(const Graphics::FrameContext& ctx)
         vboInfo.name = "Particle Vertex Buffer";
         vboInfo.size = state.numParticlesThisFrame;
         vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(state.layout);
-        vboInfo.mode = CoreGraphics::HostToDevice;
+        vboInfo.mode = CoreGraphics::HostCached;
         vboInfo.usageFlags = CoreGraphics::VertexBuffer;
         vboInfo.data = nullptr;
         vboInfo.dataSize = 0;
@@ -802,7 +802,7 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, c
     float maxSpread = emissionEnvSamples[EmitterAttrs::SpreadMax];
     float theta = Math::deg2rad(Math::lerp(minSpread, maxSpread, Math::rand()));
     float rho = N_PI_DOUBLE * Math::rand();
-    mat4 rot = rotationaxis(xyz(emPoint.tangent), theta) * rotationaxis(xyz(emPoint.normal), rho);
+    mat4 rot = rotationaxis(xyz(emPoint.normal), rho) * rotationaxis(xyz(emPoint.tangent), theta);
     vec4 emNormal = rot * emPoint.normal;
 
     vec3 dummy, dummy2;

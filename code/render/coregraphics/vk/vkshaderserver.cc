@@ -9,6 +9,8 @@
 #include "vkgraphicsdevice.h"
 #include "vkshader.h"
 
+#include "graphics/bindlessregistry.h"
+
 #include "shared.h"
 
 using namespace Resources;
@@ -46,73 +48,7 @@ VkShaderServer::Open()
     this->factory = n_new(AnyFX::EffectFactory);
     ShaderServerBase::Open();
 
-    auto func = [](uint32_t& val, IndexT i) -> void {
-        val = i;
-    };
-
     this->pendingViews.SetSignalOnEnqueueEnabled(false);
-
-    this->texture2DPool.SetSetupFunc(func);
-    this->texture2DPool.Resize(Shared::MAX_2D_TEXTURES);
-    this->texture2DMSPool.SetSetupFunc(func);
-    this->texture2DMSPool.Resize(Shared::MAX_2D_MS_TEXTURES);
-    this->texture3DPool.SetSetupFunc(func);
-    this->texture3DPool.Resize(Shared::MAX_3D_TEXTURES);
-    this->textureCubePool.SetSetupFunc(func);
-    this->textureCubePool.Resize(Shared::MAX_CUBE_TEXTURES);
-    this->texture2DArrayPool.SetSetupFunc(func);
-    this->texture2DArrayPool.Resize(Shared::MAX_2D_ARRAY_TEXTURES);
-
-    // create shader state for textures, and fetch variables
-    ShaderId shader = VkShaderServer::Instance()->GetShader("shd:shared.fxb"_atm);
-
-    this->texture2DTextureVar = ShaderGetResourceSlot(shader, "Textures2D");
-    this->texture2DMSTextureVar = ShaderGetResourceSlot(shader, "Textures2DMS");
-    this->texture2DArrayTextureVar = ShaderGetResourceSlot(shader, "Textures2DArray");
-    this->textureCubeTextureVar = ShaderGetResourceSlot(shader, "TexturesCube");
-    this->texture3DTextureVar = ShaderGetResourceSlot(shader, "Textures3D");
-    this->tableLayout = ShaderGetResourcePipeline(shader);
-
-    this->ticksCbo = CoreGraphics::GetGraphicsConstantBuffer();
-    this->cboSlot = ShaderGetResourceSlot(shader, "PerTickParams");
-
-    this->resourceTables.Resize(CoreGraphics::GetNumBufferedFrames());
-    IndexT i;
-    for (i = 0; i < this->resourceTables.Size(); i++)
-    {
-        this->resourceTables[i] = ShaderCreateResourceTable(shader, NEBULA_TICK_GROUP, this->resourceTables.Size());
-        CoreGraphics::ObjectSetName(this->resourceTables[i], "Main Tick Group Descriptor");
-
-        /*
-        // fill up all slots with placeholders
-        IndexT j;
-        for (j = 0; j < Shared::MAX_2D_TEXTURES; j++)
-            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2D, this->texture2DTextureVar, j, CoreGraphics::InvalidSamplerId, false });
-
-        for (j = 0; j < Shared::MAX_2D_ARRAY_TEXTURES; j++)
-            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2DArray, this->texture2DArrayTextureVar, j, CoreGraphics::InvalidSamplerId, false });
-
-        for (j = 0; j < Shared::MAX_2D_MS_TEXTURES; j++)
-            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White2D, this->texture2DMSTextureVar, j, CoreGraphics::InvalidSamplerId, false });
-
-        for (j = 0; j < Shared::MAX_3D_TEXTURES; j++)
-            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::White3D, this->texture3DTextureVar, j, CoreGraphics::InvalidSamplerId, false });
-
-        for (j = 0; j < Shared::MAX_CUBE_TEXTURES; j++)
-            ResourceTableSetTexture(this->resourceTables[i], { CoreGraphics::WhiteCube, this->textureCubeTextureVar, j, CoreGraphics::InvalidSamplerId, false });
-
-        ResourceTableCommitChanges(this->resourceTables[i]);
-        */
-    }
-
-    this->normalBufferTextureVar = ShaderGetConstantBinding(shader, "NormalBuffer");
-    this->depthBufferTextureVar = ShaderGetConstantBinding(shader, "DepthBuffer");
-    this->specularBufferTextureVar = ShaderGetConstantBinding(shader, "SpecularBuffer");
-    this->depthBufferCopyTextureVar = ShaderGetConstantBinding(shader, "DepthBufferCopy");
-
-    this->environmentMapVar = ShaderGetConstantBinding(shader, "EnvironmentMap");
-    this->irradianceMapVar = ShaderGetConstantBinding(shader, "IrradianceMap");
-    this->numEnvMipsVar = ShaderGetConstantBinding(shader, "NumEnvMips");
     return true;
 }
 
@@ -124,11 +60,6 @@ VkShaderServer::Close()
 {
     n_assert(this->IsOpen());
     n_delete(this->factory);
-    IndexT i;
-    for (i = 0; i < this->resourceTables.Size(); i++)
-    {
-        DestroyResourceTable(this->resourceTables[i]);
-    }
 
     // We need to wait for the GPU to finish here since we are
     // actually unloading shaders and resource table pools after this point
@@ -140,188 +71,10 @@ VkShaderServer::Close()
 //------------------------------------------------------------------------------
 /**
 */
-uint32_t
-VkShaderServer::RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, bool depth, bool stencil)
-{
-    uint32_t idx;
-    IndexT var;
-    switch (type)
-    {
-    case Texture2D:
-        n_assert(!this->texture2DPool.IsFull());
-        idx = this->texture2DPool.Alloc();
-        var = this->texture2DTextureVar;
-        break;
-    case Texture2DArray:
-        n_assert(!this->texture2DArrayPool.IsFull());
-        idx = this->texture2DArrayPool.Alloc();
-        var = this->texture2DArrayTextureVar;
-        break;
-    case Texture3D:
-        n_assert(!this->texture3DPool.IsFull());
-        idx = this->texture3DPool.Alloc();
-        var = this->texture3DTextureVar;
-        break;
-    case TextureCube:
-        n_assert(!this->textureCubePool.IsFull());
-        idx = this->textureCubePool.Alloc();
-        var = this->textureCubeTextureVar;
-        break;
-    default:
-        n_error("Should not happen");
-        idx = UINT_MAX;
-        var = InvalidIndex;
-    }
-
-    ResourceTableTexture info;
-    info.tex = tex;
-    info.index = idx;
-    info.sampler = InvalidSamplerId;
-    info.isDepth = depth;
-    info.isStencil = stencil;
-    info.slot = var;
-
-    // update textures for all tables
-    this->bindResourceCriticalSection.Enter();
-    IndexT i;
-    for (i = 0; i < this->resourceTables.Size(); i++)
-    {
-        ResourceTableSetTexture(this->resourceTables[i], info);
-    }
-    this->bindResourceCriticalSection.Leave();
-
-    return idx;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShaderServer::ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, uint32_t slot, bool depth, bool stencil)
-{
-    IndexT var;
-    switch (type)
-    {
-    case Texture2D:
-        var = this->texture2DTextureVar;
-        break;
-    case Texture2DArray:
-        var = this->texture2DArrayTextureVar;
-        break;
-    case Texture3D:
-        var = this->texture3DTextureVar;
-        break;
-    case TextureCube:
-        var = this->textureCubeTextureVar;
-        break;
-    }
-
-    ResourceTableTexture info;
-    info.tex = tex;
-    info.index = slot;
-    info.sampler = InvalidSamplerId;
-    info.isDepth = depth;
-    info.isStencil = stencil;
-    info.slot = var;
-
-    // update textures for all tables
-    this->bindResourceCriticalSection.Enter();
-    IndexT i;
-    for (i = 0; i < this->resourceTables.Size(); i++)
-    {
-        ResourceTableSetTexture(this->resourceTables[i], info);
-    }
-    this->bindResourceCriticalSection.Leave();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShaderServer::UnregisterTexture(const uint32_t id, const CoreGraphics::TextureType type)
-{
-    switch (type)
-    {
-    case Texture2D:
-        this->texture2DPool.Free(id);
-        break;
-    case Texture2DArray:
-        this->texture2DArrayPool.Free(id);
-        break;
-    case Texture3D:
-        this->texture3DPool.Free(id);
-        break;
-    case TextureCube:
-        this->textureCubePool.Free(id);
-        break;
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-BindlessTexturesContext
-VkShaderServer::GetBindlessTextureContext()
-{
-    BindlessTexturesContext ret;
-    ret.resourceTables = this->resourceTables;
-    ret.numBoundTextures2D = this->texture2DPool.NumUsed();
-    ret.texture2DTextureVar = this->texture2DTextureVar;
-    ret.numBoundTextures2DArray = this->texture2DArrayPool.NumUsed();
-    ret.texture2DArrayTextureVar = this->texture2DArrayTextureVar;
-    ret.numBoundTextures2DMS = this->texture2DMSPool.NumUsed();
-    ret.texture2DMSTextureVar = this->texture2DMSTextureVar;
-    ret.numBoundTextures3D = this->texture3DPool.NumUsed();
-    ret.texture3DTextureVar = this->texture3DTextureVar;
-    ret.textureCubeTextureVar = this->textureCubeTextureVar;
-    ret.numBoundTexturesCube = this->textureCubePool.NumUsed();
-
-    return ret;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-TickParametersContext VkShaderServer::GetTickParametersContext()
-{
-    TickParametersContext ret;
-    ret.cboSlot = this->cboSlot;
-    ret.cboOffset = this->cboOffset;
-    ret.cbo = this->ticksCbo;
-    return ret;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShaderServer::SetGlobalEnvironmentTextures(const CoreGraphics::TextureId& env, const CoreGraphics::TextureId& irr, const SizeT numMips)
-{
-    this->tickParams.EnvironmentMap = CoreGraphics::TextureGetBindlessHandle(env);
-    this->tickParams.IrradianceMap = CoreGraphics::TextureGetBindlessHandle(irr);
-    this->tickParams.NumEnvMips = numMips;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShaderServer::SetupBufferConstants(const Ptr<Frame::FrameScript>& frameScript)
-{   
-    this->tickParams.NormalBuffer = TextureGetBindlessHandle(frameScript->GetTexture("NormalBuffer"));
-    this->tickParams.SpecularBuffer = TextureGetBindlessHandle(frameScript->GetTexture("SpecularBuffer"));
-    this->tickParams.DepthBuffer = TextureGetBindlessHandle(frameScript->GetTexture("ZBuffer"));
-    this->tickParams.DepthBufferCopy = TextureGetBindlessHandle(frameScript->GetTexture("ZBufferCopy"));
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 VkShaderServer::UpdateResources()
 {
     // just allocate the memory
-    this->cboOffset = CoreGraphics::AllocateGraphicsConstantBufferMemory(sizeof(Shared::PerTickParams));
     IndexT bufferedFrameIndex = GetBufferedFrameIndex();
 
     VkDevice dev = GetCurrentDevice();
@@ -347,7 +100,7 @@ VkShaderServer::UpdateResources()
         pendingViewDeletes.Append(pendingDelete);
 
         // update texture entries for all tables
-        this->ReregisterTexture(pend.tex, info.type, info.bind);
+        Graphics::ReregisterTexture(pend.tex, info.type, info.bind);
     }
 
     // delete views which have been discarded due to LOD streaming
@@ -363,22 +116,6 @@ VkShaderServer::UpdateResources()
         this->pendingViewDeletes[i].replaceCounter++;
     }
 
-    // update resource table for this frame
-    ResourceTableSetConstantBuffer(this->resourceTables[bufferedFrameIndex], { this->ticksCbo, this->cboSlot, 0, false, false, sizeof(Shared::PerTickParams), (SizeT)this->cboOffset });
-    ResourceTableCommitChanges(this->resourceTables[bufferedFrameIndex]);
-
-    // set global tick group resources
-    CoreGraphics::SetTickResourceTable(this->resourceTables[bufferedFrameIndex]);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-VkShaderServer::AfterView()
-{
-    // update the constant buffer with the data accumulated in this frame
-    CoreGraphics::SetGraphicsConstants(this->cboOffset, this->tickParams);
 }
 
 //------------------------------------------------------------------------------

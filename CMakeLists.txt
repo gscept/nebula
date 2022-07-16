@@ -13,17 +13,22 @@ endif()
 
 SET(CODE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/code)
 
-option(N_MINIMAL_TOOLKIT "Only minimal toolkit" ON)
-
 fips_include_directories(code/addons)
 fips_include_directories(extlibs/scripts)
 set (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/extlibs/scripts)
 
 fips_ide_group(Core)
 fips_add_subdirectory(code)
+
+fips_ide_group(Tests)
 fips_add_subdirectory(tests)
+
+fips_ide_group(Toolkit)
 fips_add_subdirectory(toolkit)
-        
+
+fips_ide_group(Editor)
+fips_add_subdirectory(toolkit/editorbackend)
+fips_add_subdirectory(toolkit/editor)
 
 if(NOT FIPS_IMPORT)
     fips_finish()

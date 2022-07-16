@@ -85,9 +85,9 @@ const ShaderId ShaderGet(const Resources::ResourceName& name);
 /// create resource table from shader
 const ResourceTableId ShaderCreateResourceTable(const ShaderId id, const IndexT group, const uint overallocationSize = 1);
 /// create constant buffer from shader using name (don't use too frequently)
-const BufferId ShaderCreateConstantBuffer(const ShaderId id, const Util::StringAtom& name, BufferAccessMode mode = BufferAccessMode::HostToDevice);
+const BufferId ShaderCreateConstantBuffer(const ShaderId id, const Util::StringAtom& name, BufferAccessMode mode = BufferAccessMode::HostCached);
 /// create constant buffer from index
-const BufferId ShaderCreateConstantBuffer(const ShaderId id, const IndexT cbIndex, BufferAccessMode mode = BufferAccessMode::HostToDevice);
+const BufferId ShaderCreateConstantBuffer(const ShaderId id, const IndexT cbIndex, BufferAccessMode mode = BufferAccessMode::HostCached);
 
 /// get the number of constants from shader
 const SizeT ShaderGetConstantCount(const ShaderId id);

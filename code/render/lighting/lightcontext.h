@@ -44,7 +44,7 @@ public:
     static void Discard();
 
     /// setup entity as global light
-    static void SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::vec3& color, const float intensity, const Math::vec3& ambient, const Math::vec3& backlight, const float backlightFactor, const Math::vector& direction, bool castShadows = false);
+    static void SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::vec3& color, const float intensity, const Math::vec3& ambient, const Math::vec3& backlight, const float backlightFactor, const float zenith, const float azimuth, bool castShadows = false);
     /// setup entity as point light source
     static void SetupPointLight(const Graphics::GraphicsEntityId id, 
         const Math::vec3& color,
@@ -71,6 +71,8 @@ public:
     static void SetRange(const Graphics::GraphicsEntityId id, const float range);
     /// set intensity of light
     static void SetIntensity(const Graphics::GraphicsEntityId id, const float intensity);
+    /// Set transform as angles
+    static void SetTransform(const Graphics::GraphicsEntityId id, const float azimuth, const float zenith);
     /// get transform
     static const Math::mat4 GetTransform(const Graphics::GraphicsEntityId id);
     /// set transform depending on type
@@ -100,6 +102,8 @@ public:
     static void OnRenderDebug(uint32_t flags);
 #endif
 
+    /// Setup terrain shadows
+    static void SetupTerrainShadows(const CoreGraphics::TextureId terrainShadowMap, const uint worldSize);
 
     /// get lighting texture
     static const CoreGraphics::TextureId GetLightingTexture();
@@ -114,7 +118,7 @@ private:
     /// set transform, type must match the type the entity was created with
     static void SetPointLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
     /// set global light transform
-    static void SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
+    static void SetGlobalLightTransform(const Graphics::ContextEntityId id, const Math::mat4& transform, const Math::vector& direction);
     /// set global light shadow transform
     static void SetGlobalLightViewProjTransform(const Graphics::ContextEntityId id, const Math::mat4& transform);
 
@@ -224,7 +228,7 @@ private:
         Math::mat4
     > ShadowCasterAllocator;
     static ShadowCasterAllocator shadowCasterAllocator;
-    static Util::HashTable<Graphics::GraphicsEntityId, Graphics::ContextEntityId, 6, 1> shadowCasterSliceMap;
+    static Util::HashTable<Graphics::GraphicsEntityId, uint, 6, 1> shadowCasterSliceMap;
 
     /// allocate a new slice for this context
     static Graphics::ContextEntityId Alloc();

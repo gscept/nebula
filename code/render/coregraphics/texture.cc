@@ -320,7 +320,7 @@ TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::QueueType queue
 {
     CoreGraphics::BufferCreateInfo bufInfo;
     bufInfo.size = size;
-    bufInfo.mode = CoreGraphics::HostToDevice;
+    bufInfo.mode = CoreGraphics::HostCached;
     bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource | CoreGraphics::BufferUsageFlag::TransferBufferDestination;
     bufInfo.queueSupport = queue;
     CoreGraphics::BufferId buf = CoreGraphics::CreateBuffer(bufInfo);
@@ -377,9 +377,7 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
         
         rt.window = CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow();
         const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(rt.window);
-        rt.name = info.name;
         rt.usage = CoreGraphics::TextureUsage::RenderTexture | CoreGraphics::TextureUsage::TransferTextureDestination;
-        rt.tag = info.tag;
         rt.buffer = nullptr;
         rt.type = CoreGraphics::Texture2D;
         rt.format = mode.GetPixelFormat();
@@ -393,19 +391,15 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
         rt.samples = 1;
         rt.windowTexture = true;
         rt.windowRelative = true;
-        rt.bindless = info.bindless;
-        rt.sparse = info.sparse;
+        rt.bindless = false;
+        rt.sparse = false;
         rt.alias = CoreGraphics::InvalidTextureId;
         rt.defaultLayout = CoreGraphics::ImageLayout::Present;
     }
     else
     {
         n_assert(info.width > 0 && info.height > 0 && info.depth > 0);
-
-
-        rt.name = info.name;
         rt.usage = info.usage;
-        rt.tag = info.tag;
         rt.buffer = info.buffer;
         rt.type = info.type;
         rt.format = info.format;

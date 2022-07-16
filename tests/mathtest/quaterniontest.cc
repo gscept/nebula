@@ -156,7 +156,7 @@ QuaternionTest::Run()
 	VERIFY(quaternionequal(q0, quat(-0.105495f, -0.316485f, -0.527475f, 0.781331f)));
 
 	// rotationmatrix
-	mat4 rot = rotationx(1.0f) * rotationy(-2.0f);
+	mat4 rot = rotationy(-2.0f) * rotationx(1.0f);
 	q0 = rotationmatrix(rot);
 	VERIFY(quaternionequal(q0, quat(-0.259035f, 0.738460f, -0.403423f, -0.474160f)));
 

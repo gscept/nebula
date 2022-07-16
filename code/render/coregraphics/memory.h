@@ -28,10 +28,10 @@ namespace CoreGraphics
 
 enum MemoryPoolType
 {
-    MemoryPool_DeviceLocal,     /// memory which should reside solely on the GPU
-    MemoryPool_HostLocal,       /// memory which should reside solely on the CPU
-    MemoryPool_HostToDevice,    /// memory which should be used to directly write from CPU to GPU
-    MemoryPool_DeviceToHost,    /// memory which should be used to read feedback from the GPU to the CPU
+    MemoryPool_DeviceLocal,     /// Memory which should reside solely on the GPU
+    MemoryPool_HostLocal,       /// Memory which should reside solely on the CPU and is coherent, requires no flush/invalidate
+    MemoryPool_HostCached,      /// Memory which is cached on host, meaning memory is flushed with a call to Flush or Invalidate
+    MemoryPool_DeviceAndHost,   /// Memory which is visible on both device and host side
 
     NumMemoryPoolTypes
 };

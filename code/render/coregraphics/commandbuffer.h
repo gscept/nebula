@@ -218,9 +218,9 @@ void CmdDraw(const CmdBufferId id, const CoreGraphics::PrimitiveGroup& pg);
 /// Draw primitives instanced
 void CmdDraw(const CmdBufferId id, SizeT numInstances, IndexT baseInstance, const CoreGraphics::PrimitiveGroup& pg);
 /// Draw indirect, draws is the amount of draws in the buffer, and stride is the byte offset between each call
-void CmdDrawIndirect(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT draws, IndexT stride);
+void CmdDrawIndirect(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT numDraws, SizeT stride);
 /// Draw indirect, draws is the amount of draws in the buffer, and stride is the byte offset between each call
-void CmdDrawIndirectIndexed(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT draws, IndexT stride);
+void CmdDrawIndirectIndexed(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT numDraws, SizeT stride);
 /// Perform computation
 void CmdDispatch(const CmdBufferId id, int dimX, int dimY, int dimZ);
 

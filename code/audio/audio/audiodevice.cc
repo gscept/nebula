@@ -7,6 +7,8 @@
 #include "soloud.h"
 #include "soloud_wav.h"
 
+#include "io/uri.h"
+
 namespace Audio
 {
 
@@ -62,16 +64,20 @@ AudioDevice::Close()
     return true;
 }
 
-void AudioDevice::OnFrame()
+//------------------------------------------------------------------------------
+/**
+*/
+void
+AudioDevice::OnFrame()
 {
     _start_timer(AudioOnFrameTime);
 
     soloud->update3dAudio();
 
     _stop_timer(AudioOnFrameTime);
-    _begin_counter(AudioNumberOfSoundsPlaying);
-    _set_counter(AudioNumberOfSoundsPlaying, soloud->getActiveVoiceCount());
-    _end_counter(AudioNumberOfSoundsPlaying);
+    //_begin_counter(AudioNumberOfSoundsPlaying);
+    //_set_counter(AudioNumberOfSoundsPlaying, soloud->getActiveVoiceCount());
+    //_end_counter(AudioNumberOfSoundsPlaying);
 }
 
 //------------------------------------------------------------------------------
@@ -96,7 +102,8 @@ AudioDevice::CreateAudioEmitter(Resources::ResourceName const& name)
     else
     {
         clip = this->wavs.Alloc();
-        auto result = this->wavs.Get<WavAllocator::WAV>(clip.id).load(name.Value());
+        IO::URI uri(name.Value());
+        auto result = this->wavs.Get<WavAllocator::WAV>(clip.id).load(uri.LocalPath().AsCharPtr());
         if (result != SoLoud::SOLOUD_ERRORS::SO_NO_ERROR)
         {
             this->wavs.Dealloc(clip.id);
@@ -160,24 +167,24 @@ AudioDevice::Play(AudioEmitterId id, bool loop)
         
         if (clock > 0)
         {
-            instance = soloud->play3dClocked(clock, wav, pos.x, pos.y, pos.z, vel.x, vel.y, vel.z, vol);
+            instance.id = soloud->play3dClocked(clock, wav, pos.x, pos.y, pos.z, vel.x, vel.y, vel.z, vol);
         }
         else
         {
-            instance = soloud->play3d(wav, pos.x, pos.y, pos.z, vel.x, vel.y, vel.z, vol);
+            instance.id = soloud->play3d(wav, pos.x, pos.y, pos.z, vel.x, vel.y, vel.z, vol);
         }
         soloud->set3dSourceMinMaxDistance(instance.id, min, max);
     }
     else
     {
         auto& pan = this->emitterAllocator.Get<EmitterSlot::PAN>(id.id);
-        if (clock > 0)
+        if (clock == 0.0f)
         {
-            instance = soloud->play(wav, vol, pan);
+            instance.id = soloud->play(wav, vol, pan);
         }
         else
         {
-            instance = soloud->playClocked(clock, wav, vol, pan);
+            instance.id = soloud->playClocked(clock, wav, vol, pan);
         }
     }
     

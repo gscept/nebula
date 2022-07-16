@@ -67,11 +67,11 @@ NglTFScene::ExtractMeshNodes(const Gltf::Node* node, Math::mat4 parentTransform)
 {
     Math::mat4 localTransform;
     if (node->hasTRS)
-        localTransform = Math::translation(node->translation) * Math::rotationquat(node->rotation) * Math::scaling(node->scale);
+        localTransform = Math::scaling(node->scale) * Math::rotationquat(node->rotation) * Math::translation(node->translation);
     else
         localTransform = node->matrix;
 
-    Math::mat4 worldTransform = localTransform * parentTransform;
+    Math::mat4 worldTransform = parentTransform * localTransform;
 
     if (node->mesh != -1)
     {

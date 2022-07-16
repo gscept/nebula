@@ -20,6 +20,8 @@ public:
     VertexComponent() { };
     /// constructor
     VertexComponent(SemanticName semName, IndexT semIndex, Format format, IndexT streamIndex=0, StrideType strideType=PerVertex, SizeT stride=0) : VertexComponentBase(semName, semIndex, format, streamIndex, strideType, stride) { };
+    /// constructor with slot instead of semantic
+    VertexComponent(IndexT slot, IndexT semIndex, Format format, IndexT streamIndex = 0, StrideType strideType = PerVertex, SizeT stride = 0) : VertexComponentBase((SemanticName)slot, semIndex, format, streamIndex, strideType, stride) { };
 };
 }
 #else

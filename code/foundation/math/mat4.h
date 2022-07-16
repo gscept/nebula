@@ -573,16 +573,19 @@ operator*(const mat4& m0, const mat4& m1)
     mat4 out;
 
     _mm256_zeroupper();
-    __m256 A01 = _mm256_loadu_ps(&m0.m[0][0]);
-    __m256 A23 = _mm256_loadu_ps(&m0.m[2][0]);
+    __m256 A01 = _mm256_loadu_ps(&m1.m[0][0]);
+    __m256 A23 = _mm256_loadu_ps(&m1.m[2][0]);
 
-    __m256 out01x = twolincomb_AVX_8(A01, m1);
-    __m256 out23x = twolincomb_AVX_8(A23, m1);
+    __m256 out01x = twolincomb_AVX_8(A01, m0);
+    __m256 out23x = twolincomb_AVX_8(A23, m0);
 
     _mm256_storeu_ps(&out.m[0][0], out01x);
     _mm256_storeu_ps(&out.m[2][0], out23x);
     return out;
 }
+
+__forceinline mat4 operator%(const mat4& m1, const mat4& m0) = delete;
+
 #else
 //------------------------------------------------------------------------------
 /**
@@ -592,7 +595,7 @@ operator*(const mat4& m0, const mat4& m1)
 {
     mat4 ret;
 
-    vec4 mw = m0.r[0];
+    vec4 mw = m1.r[0];
 
     // Splat the all components of the first row
     vec4 mx = splat_x(mw);
@@ -600,10 +603,10 @@ operator*(const mat4& m0, const mat4& m1)
     vec4 mz = splat_z(mw);
     mw = splat_w(mw);
 
-    vec4 m1x = m1.r[0];
-    vec4 m1y = m1.r[1];
-    vec4 m1z = m1.r[2];
-    vec4 m1w = m1.r[3];
+    vec4 m1x = m0.r[0];
+    vec4 m1y = m0.r[1];
+    vec4 m1z = m0.r[2];
+    vec4 m1w = m0.r[3];
 
     //multiply first row
     mx = multiply(mx, m1x);
@@ -616,7 +619,7 @@ operator*(const mat4& m0, const mat4& m1)
     ret.r[0] = mx + mz;
 
     // rinse and repeat
-    mw = m0.row1;
+    mw = m1.row1;
 
     mx = splat_x(mw);
     my = splat_y(mw);
@@ -632,23 +635,23 @@ operator*(const mat4& m0, const mat4& m1)
     mz = mz + mw;
     ret.r[1] = mx + mz;
 
-    mw = m0.row2;
+    mw = m1.row2;
 
     mx = splat_x(mw);
     my = splat_y(mw);
     mz = splat_z(mw);
     mw = splat_w(mw);
 
-    mx = multiply(mx, m1.r[0]);
-    my = multiply(my, m1.r[1]);
-    mz = multiply(mz, m1.r[2]);
-    mw = multiply(mw, m1.r[3]);
+    mx = multiply(mx, m0.r[0]);
+    my = multiply(my, m0.r[1]);
+    mz = multiply(mz, m0.r[2]);
+    mw = multiply(mw, m0.r[3]);
 
     mx = mx + my;
     mz = mz + mw;
     ret.r[2] = mx + mz;
 
-    mw = m0.row3;
+    mw = m1.row3;
 
     mx = splat_x(mw);
     my = splat_y(mw);
@@ -721,6 +724,25 @@ operator*(const mat4& m, const point& p)
         fmadd(y, m.r[1].vec,
         fmadd(z, m.r[2].vec, 
         _mm_mul_ps(w, m.r[3].vec))));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+__forceinline vector
+operator*(const mat4& m, const vector& v)
+{
+    __m128 x = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(0, 0, 0, 0));
+    x = _mm_and_ps(x, _mask_xyz);
+    __m128 y = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(1, 1, 1, 1));
+    y = _mm_and_ps(y, _mask_xyz);
+    __m128 z = _mm_shuffle_ps(v.vec, v.vec, _MM_SHUFFLE(2, 2, 2, 2));
+    z = _mm_and_ps(z, _mask_xyz);
+
+    return
+        fmadd(x, m.r[0].vec,
+        fmadd(y, m.r[1].vec,
+              _mm_mul_ps(z, m.r[2].vec)));
 }
 
 //------------------------------------------------------------------------------

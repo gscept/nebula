@@ -119,7 +119,8 @@ SpecularLobe(vec4 material, vec3 F0, vec3 H, float NdotV, float NdotL, float Ndo
 //------------------------------------------------------------------------------
 /**
 */
-vec3 EvaluateBRDF(vec3 diffuseColor, vec4 material, vec3 F0, vec3 H, float NdotV, float NdotL, float NdotH, float LdotH)
+vec3 
+EvaluateBRDF(vec3 diffuseColor, vec4 material, vec3 F0, vec3 H, float NdotV, float NdotL, float NdotH, float LdotH)
 {
 	//material[MAT_ROUGHNESS] = max(0.07f, material[MAT_ROUGHNESS]);
 	vec3 diffuseContrib = (diffuseColor * (1.0f - material[MAT_METALLIC]));

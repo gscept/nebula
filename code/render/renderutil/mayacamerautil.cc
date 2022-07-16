@@ -129,9 +129,9 @@ MayaCameraUtil::Update()
 
     // get polar vector in cartesian space
     mat4 m = translation(0.0f, 0.0f, this->viewDistance);
-    m = m * rotationx(this->viewAngles.theta - (N_PI * 0.5f));
-    m = m * rotationy(this->viewAngles.rho);
-    m = m * translation(xyz(this->centerOfInterest));
+    m = rotationx(this->viewAngles.theta - (N_PI * 0.5f)) * m;
+    m = rotationy(this->viewAngles.rho) * m;
+    m = translation(xyz(this->centerOfInterest)) * m;
     this->cameraTransform = m;
 
     // reset input

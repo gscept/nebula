@@ -478,7 +478,7 @@ CSMUtil::Compute(const Graphics::GraphicsEntityId camera, const Graphics::Graphi
 
         this->intervalDistances[cascadeIndex] = intervalEnd;
         this->cascadeProjectionTransform[cascadeIndex] = cascadeProjectionMatrix;
-        this->cascadeViewProjectionTransform[cascadeIndex] = lightView * cascadeProjectionMatrix;
+        this->cascadeViewProjectionTransform[cascadeIndex] = cascadeProjectionMatrix * lightView;
     }
     this->shadowView = lightView;
 }

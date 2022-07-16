@@ -33,6 +33,7 @@ BruteforceSystem::Run(const Threading::AtomicCounter* previousSystemCompletionCo
         uint32 objectCount;
         const uint32* ids;
         const Math::bbox* boundingBoxes;
+        const uint32_t* flags;
         Math::ClipStatus::Type* clipStatuses;
     };
 
@@ -47,6 +48,7 @@ BruteforceSystem::Run(const Threading::AtomicCounter* previousSystemCompletionCo
         Context ctx;
         ctx.ids = this->ent.ids;
         ctx.boundingBoxes = this->ent.boxes;
+        ctx.flags = this->ent.entityFlags;
 
         // Setup counters
         Util::FixedArray<const Threading::AtomicCounter*> counters(extraCounters.Size() + (previousSystemCompletionCounters != nullptr ? 1 : 0));
@@ -101,6 +103,12 @@ BruteforceSystem::Run(const Threading::AtomicCounter* previousSystemCompletionCo
                     return;
 
                 uint32 objectId = context->ids[index];
+
+                if (AllBits(context->flags[index], (uint32_t)Models::NodeInstanceFlags::NodeInstance_AlwaysVisible))
+                {
+                    context->clipStatuses[index] = Math::ClipStatus::Inside;
+                    continue;
+                }
 
                 // Run bounding box check and store output in clip statuses, if clip status is still outside
                 if (context->clipStatuses[index] == Math::ClipStatus::Outside)

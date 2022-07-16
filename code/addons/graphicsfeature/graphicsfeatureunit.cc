@@ -9,6 +9,7 @@
 #include "graphics/cameracontext.h"
 #include "visibility/visibilitycontext.h"
 #include "dynui/imguicontext.h"
+#include "staticui/staticuicontext.h"
 #include "characters/charactercontext.h"
 #include "dynui/im3d/im3dcontext.h"
 #include "appgame/gameapplication.h"
@@ -21,11 +22,19 @@
 #include "decals/decalcontext.h"
 #include "debug/framescriptinspector.h"
 #include "terrain/terraincontext.h"
+#include "vegetation/vegetationcontext.h"
 #include "posteffects/histogramcontext.h"
 #include "particles/particlecontext.h"
 
+#include "graphics/globalconstants.h"
+
 #include "graphicsfeature/managers/graphicsmanager.h"
 #include "graphicsfeature/managers/cameramanager.h"
+
+#include "nflatbuffer/nebula_flat.h"
+#include "flat/graphicsfeature/graphicsfeatureschema.h"
+#include "nflatbuffer/flatbufferinterface.h"
+
 
 using namespace Graphics;
 using namespace Visibility;
@@ -42,6 +51,7 @@ __ImplementSingleton(GraphicsFeatureUnit);
 */
 GraphicsFeatureUnit::GraphicsFeatureUnit() :
     defaultFrameScript("frame:vkdefault.json"_uri)
+    , title("GraphicsFeatureUnit")
 {
     __ConstructSingleton;
 }
@@ -70,14 +80,23 @@ GraphicsFeatureUnit::OnActivate()
     this->gfxServer->Open();
     this->inputServer->Open();
 
+    const IO::URI graphicsFeaturePath("data:tables/graphicsfeature/graphicsfeature.json");
+    Util::String contents;
+
+    GraphicsFeature::TerrainSettingsT terrainSettings;
+    if (IO::IoServer::Instance()->ReadFile(graphicsFeaturePath, contents))
+    {
+        Flat::FlatbufferInterface::DeserializeFlatbuffer<GraphicsFeature::TerrainSettings>(terrainSettings, (byte*)contents.AsCharPtr());
+    }
+
     SizeT width = this->GetCmdLineArgs().GetInt("-w", 1280);
-    SizeT height = this->GetCmdLineArgs().GetInt("-h", 960);
+    SizeT height = this->GetCmdLineArgs().GetInt("-h", 1024);
 
     //FIXME
     CoreGraphics::WindowCreateInfo wndInfo =
         {
             CoreGraphics::DisplayMode {100, 100, width, height},
-            "GraphicsFeature",
+            this->title,
             "",
             CoreGraphics::AntiAliasQuality::None,
             true,
@@ -88,8 +107,13 @@ GraphicsFeatureUnit::OnActivate()
     this->defaultView = gfxServer->CreateView("mainview", this->defaultFrameScript);
     this->defaultStage = gfxServer->CreateStage("defaultStage", true);
     this->defaultView->SetStage(this->defaultStage);
+    this->globalLight = Graphics::CreateEntity();
 
     Ptr<Frame::FrameScript> frameScript = this->defaultView->GetFrameScript();
+
+    Im3d::Im3dContext::Create();
+    Dynui::ImguiContext::Create();
+    StaticUI::StaticUIContext::Create();
 
     CameraContext::Create();
     ModelContext::Create();
@@ -97,35 +121,39 @@ GraphicsFeatureUnit::OnActivate()
     ObservableContext::Create();
     ParticleContext::Create();
     Clustering::ClusterContext::Create(0.01f, 1000.0f, this->wnd);
+
+    Terrain::TerrainSetupSettings settings{
+        terrainSettings.min_height, terrainSettings.max_height,                         // Min/max height 
+        terrainSettings.world_size_width, terrainSettings.world_size_height,            // World size in meters
+        terrainSettings.tile_size_width, terrainSettings.tile_size_height,              // Tile size in meters
+        terrainSettings.quads_per_tile_width, terrainSettings.quads_per_tile_height,    // Amount of quads per tile
+        this->globalLight
+    };
+    Terrain::TerrainContext::Create(settings);
+
+    Vegetation::VegetationSetupSettings vegSettings{
+        terrainSettings.min_height, terrainSettings.max_height,      // min/max height 
+        Math::vec2{ terrainSettings.world_size_width, terrainSettings.world_size_height }
+    };
+    Vegetation::VegetationContext::Create(vegSettings);
+
     Lighting::LightContext::Create(frameScript);
     Decals::DecalContext::Create();
     Characters::CharacterContext::Create();
-    Im3d::Im3dContext::Create();
-    Dynui::ImguiContext::Create();
     Fog::VolumetricFogContext::Create(frameScript);
     PostEffects::BloomContext::Create();
     PostEffects::SSAOContext::Create();
     PostEffects::HistogramContext::Create();
-    //Terrain::TerrainSetupSettings settings{
-    //    0, 1024.0f,      // min/max height 
-    //    //0, 0,
-    //    8192, 8192,   // world size in meters
-    //    256, 256,     // tile size in meters
-    //    16, 16        // 1 vertex every X meters
-    //};
-    //Terrain::TerrainContext::Create(settings);
-
 
     PostEffects::BloomContext::Setup(frameScript);
     PostEffects::SSAOContext::Setup(frameScript);
     PostEffects::HistogramContext::Setup(frameScript);
     PostEffects::HistogramContext::SetWindow({ 0.0f, 0.0f }, { 1.0f, 1.0f }, 1);
 
-    CoreGraphics::ShaderServer::Instance()->SetupBufferConstants(frameScript);
+    Graphics::SetupBufferConstants(frameScript);
 
-    this->globalLight = Graphics::CreateEntity();
     Lighting::LightContext::RegisterEntity(this->globalLight);
-    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(0.734, 0.583, 0.377), 50.000f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0, Math::vector(1, -1, 1), true);
+    Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(0.734, 0.583, 0.377), 50.000f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0, 60_rad, 0_rad, true);
 
     ObserverContext::CreateBruteforceSystem({});
 
@@ -168,9 +196,9 @@ GraphicsFeatureUnit::OnBeginFrame()
 {
     FeatureUnit::OnBeginFrame();
 
-    CoreGraphics::WindowPollEvents();
-
     this->inputServer->BeginFrame();
+
+    CoreGraphics::WindowPollEvents();
     this->inputServer->OnFrame();
 
     this->gfxServer->BeginFrame();
@@ -193,7 +221,15 @@ GraphicsFeatureUnit::OnBeginFrame()
     if (Core::CVarReadInt(this->r_show_frame_inspector) > 0)
         Debug::FrameScriptInspector::Run(this->defaultView->GetFrameScript());
 
+}
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsFeatureUnit::OnBeforeViews()
+{
+    FeatureUnit::OnBeforeViews();
     this->gfxServer->BeforeViews();
 }
 

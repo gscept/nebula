@@ -22,14 +22,14 @@ void
 SetupMemoryPools(
     DeviceSize deviceLocalMemory,
     DeviceSize hostLocalMemory,
-    DeviceSize deviceToHostMemory,
-    DeviceSize hostToDeviceMemory)
+    DeviceSize hostCachedMemory,
+    DeviceSize deviceAndHostMemory)
 {
     VkPhysicalDeviceMemoryProperties props = Vulkan::GetMemoryProperties();
 
     // setup a pool for every memory type
     CoreGraphics::Pools.Resize(VK_MAX_MEMORY_TYPES);
-    bool deviceLocalFound = false, hostLocalFound = false, hostToDeviceFound = false, deviceToHostFound = false;
+    bool deviceLocalFound = false, hostLocalFound = false, hostAndDeviceFound = false, hostCachedFound = false;
     for (uint32_t i = 0; i < VK_MAX_MEMORY_TYPES; i++)
     {
         CoreGraphics::MemoryPool& pool = CoreGraphics::Pools[i];
@@ -54,28 +54,28 @@ SetupMemoryPools(
             // host memory is used for transient transfer buffers, make it allocate and deallocate fast
             pool.mapMemory = true;
             pool.blockSize = hostLocalMemory;
-            pool.allocMethod = MemoryPool::MemoryPool_AllocLinear;
+            pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
             hostLocalFound = true;
             pool.budgetCounter = N_HOST_ONLY_GPU_MEMORY;
             N_BUDGET_COUNTER_SETUP(N_HOST_ONLY_GPU_MEMORY, pool.maxSize);
         }
-        else if (AllBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT) && !deviceToHostFound)
+        else if (AllBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT) && !hostCachedFound)
         {
             // memory used to read from the GPU should also be conservative
             pool.mapMemory = true;
-            pool.blockSize = deviceToHostMemory;
+            pool.blockSize = hostCachedMemory;
             pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
-            deviceToHostFound = true;
+            hostCachedFound = true;
             pool.budgetCounter = N_DEVICE_TO_HOST_GPU_MEMORY;
             N_BUDGET_COUNTER_SETUP(N_DEVICE_TO_HOST_GPU_MEMORY, pool.maxSize);
         }
-        else if (AllBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) && !hostToDeviceFound)
+        else if (AllBits(props.memoryTypes[i].propertyFlags, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) && !hostAndDeviceFound)
         {
             // memory used to directly write to the device with a flush should be allocated conservatively
             pool.mapMemory = true;
-            pool.blockSize = hostToDeviceMemory;
+            pool.blockSize = deviceAndHostMemory;
             pool.allocMethod = MemoryPool::MemoryPool_AllocConservative;
-            hostToDeviceFound = true;
+            hostAndDeviceFound = true;
             pool.budgetCounter = N_HOST_TO_DEVICE_GPU_MEMORY;
             N_BUDGET_COUNTER_SETUP(N_HOST_TO_DEVICE_GPU_MEMORY, pool.maxSize);
         }
@@ -215,6 +215,7 @@ AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type)
 {
     VkMemoryRequirements req;
     vkGetBufferMemoryRequirements(dev, buf, &req);
+    VkPhysicalDeviceProperties props = Vulkan::GetCurrentProperties();
 
     VkMemoryPropertyFlags flags;
 
@@ -226,11 +227,14 @@ AllocateMemory(const VkDevice dev, const VkBuffer& buf, MemoryPoolType type)
     case MemoryPool_HostLocal:
         flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
         break;
-    case MemoryPool_DeviceToHost:
+    case MemoryPool_HostCached:
         flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
         break;
-    case MemoryPool_HostToDevice:
+    case MemoryPool_DeviceAndHost:
         flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        // Memory needs to be aligned to non coherent atom size for flushing
+        req.size = Math::align(req.size, props.limits.nonCoherentAtomSize);
+        req.alignment = Math::align(req.alignment, props.limits.nonCoherentAtomSize);
         break;
     default:
         n_crash("AllocateMemory(): Only buffer pool types are allowed for buffer memory");

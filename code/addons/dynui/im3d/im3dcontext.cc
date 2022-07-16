@@ -151,7 +151,7 @@ Im3dContext::Create()
     vboInfo.name = "Im3D VBO"_atm;
     vboInfo.size = 100000 * 3;
     vboInfo.elementSize = CoreGraphics::VertexLayoutGetSize(imState.vlo);
-    vboInfo.mode = CoreGraphics::HostToDevice;
+    vboInfo.mode = CoreGraphics::HostCached;
     vboInfo.usageFlags = CoreGraphics::VertexBuffer;
     vboInfo.data = nullptr;
     vboInfo.dataSize = 0;

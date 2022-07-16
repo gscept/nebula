@@ -9,6 +9,8 @@
 #include "frame/framesubgraph.h"
 #include "frame/framecode.h"
 
+#include "graphics/globalconstants.h"
+
 #include "downsample_cs_min.h"
 #include "histogram_cs.h"
 #include "shared.h"
@@ -109,7 +111,7 @@ HistogramContext::Create()
     }
 
     bufInfo.elementSize = sizeof(HistogramCs::HistogramConstants);
-    bufInfo.mode = CoreGraphics::HostToDevice; // lazy but meh
+    bufInfo.mode = CoreGraphics::HostCached; // lazy but meh
     bufInfo.usageFlags = CoreGraphics::ConstantBuffer;
     bufInfo.data = nullptr;
     bufInfo.dataSize = 0;
@@ -151,7 +153,7 @@ HistogramContext::Create()
     histogramState.downsampleCounter = CoreGraphics::CreateBuffer(bufInfo);
 
     bufInfo.elementSize = sizeof(DownsampleCsMin::DownsampleUniforms);
-    bufInfo.mode = CoreGraphics::HostToDevice;
+    bufInfo.mode = CoreGraphics::HostCached;
     bufInfo.usageFlags = CoreGraphics::ConstantBuffer;
     bufInfo.data = nullptr;
     bufInfo.dataSize = 0;
@@ -406,8 +408,9 @@ HistogramContext::UpdateViewResources(const Ptr<Graphics::View>& view, const Gra
     float lum = histogramState.previousLum + (averageLum - histogramState.previousLum) * time;
     histogramState.previousLum = lum;
 
-    Shared::FrameBlock& frameParams = CoreGraphics::TransformDevice::Instance()->GetFrameParams();
-    frameParams.Time_Random_Luminance_X[2] = lum;
+    Shared::ViewConstants viewConstants = Graphics::GetViewConstants();
+    viewConstants.Time_Random_Luminance_X[2] = lum;
+    Graphics::UpdateViewConstants(viewConstants);
 }
 
 //------------------------------------------------------------------------------
@@ -429,6 +432,7 @@ HistogramContext::UpdateConstants()
     constants.InvLogLuminanceRange = 1 / histogramState.logLuminanceRange;
     constants.MinLogLuminance = histogramState.logMinLuminance;
     CoreGraphics::BufferUpdate(histogramState.histogramConstants, constants, 0);
+    CoreGraphics::BufferFlush(histogramState.histogramConstants);
 }
 
 //------------------------------------------------------------------------------

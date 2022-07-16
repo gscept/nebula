@@ -23,10 +23,10 @@ ID_24_8_TYPE(BufferId);
 
 enum BufferAccessMode
 {
-    DeviceLocal,		// buffer can only be used by the GPU, typical use is for static geometry data that doesn't change
-    HostLocal,			// buffer can only be updated by the CPU and can be used for GPU transfer operations, typical use is transient copy buffers
-    HostToDevice,		// buffer can be updated on the CPU and sent to the GPU, typical use is for dynamic and frequent buffer updates
-    DeviceToHost		// buffer can be updated by the GPU and be read on the CPU, typical use is to map and read back memory
+    DeviceLocal,		// Buffer can only be used by the GPU
+    HostLocal,			// Buffer memory is coherent on the CPU
+    HostCached,		    // Buffer memory is cached on the CPU and requires flush to update CPU->GPU or invalidate to update GPU->CPU
+    DeviceAndHost		// Buffer memory lives on both CPU and GPU and requires a flush/invalidate like HostCached
 };
 
 enum BufferUsageFlag

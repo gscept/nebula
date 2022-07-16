@@ -34,8 +34,7 @@ using namespace Resources;
 */
 ShaderServerBase::ShaderServerBase() :
     objectIdShaderVar(Ids::InvalidId32),
-    curShaderFeatureBits(0),        
-    activeShader(NULL),
+    curShaderFeatureBits(0),
     isOpen(false)
 {
     __ConstructSingleton;
@@ -207,21 +206,6 @@ ShaderServerBase::Close()
 //------------------------------------------------------------------------------
 /**
 */
-void 
-ShaderServerBase::ApplyObjectId(IndexT i)
-{   
-    n_assert(i >= 0);
-    n_assert(i < 256);
-
-    if (this->objectIdShaderVar != Ids::InvalidId32)
-    {
-        //CoreGraphics::shaderPool->ShaderConstantSet(this->objectIdShaderVar, this->sharedVariableShaderState, ((float)i) / 255.0f);
-    }       
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void
 ShaderServerBase::LoadShader(const Resources::ResourceName& shdName)
 {
@@ -233,24 +217,6 @@ ShaderServerBase::LoadShader(const Resources::ResourceName& shdName)
 	}, true);
 	
 	this->shaders.Add(shdName, sid);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-ShaderServerBase::BeforeView()
-{
-    // implement in subclass
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ShaderServerBase::AfterView()
-{
-    // implement in subclass
 }
 
 //------------------------------------------------------------------------------

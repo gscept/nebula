@@ -107,8 +107,6 @@ ENDIF()
                 shaperendererbase.h
                 textrendererbase.cc
                 textrendererbase.h
-                transformdevicebase.cc
-                transformdevicebase.h
                 vertexcomponentbase.h
             )
         fips_dir(coregraphics)
@@ -189,8 +187,6 @@ ENDIF()
                 texture.cc
                 texture.h
                 textureview.h
-                transformdevice.cc
-                transformdevice.h
                 vertexcomponent.h
                 vertexlayout.cc
                 vertexlayout.h
@@ -270,8 +266,6 @@ ENDIF()
                 d3d11textrenderer.h
                 d3d11texture.cc
                 d3d11texture.h
-                d3d11transformdevice.cc
-                d3d11transformdevice.h
                 d3d11vertexcomponent.h
                 d3d11vertexlayout.cc
                 d3d11vertexlayout.h
@@ -335,8 +329,6 @@ ENDIF()
                 vktexture.h
                 vktextureview.cc
                 vktextureview.h
-                vktransformdevice.cc
-                vktransformdevice.h
                 vktypes.cc
                 vktypes.h
                 vkvertexsignaturecache.cc
@@ -409,12 +401,16 @@ ENDIF()
 
         fips_dir(graphics)
             fips_files(
+				bindlessregistry.cc
+				bindlessregistry.h
                 cameracontext.cc
                 cameracontext.h
                 camerasettings.cc
                 camerasettings.h
                 environmentcontext.cc
                 environmentcontext.h
+				globalconstants.cc
+				globalconstants.h
                 graphicscontext.cc
                 graphicscontext.h
                 graphicsentity.h
@@ -592,7 +588,6 @@ ENDIF()
                 terraincontext.h
                 terraincontext.cc
                 terrainculljob.cc
-                terrainsubtextureupdatejob.cc
                 texturetilecache.h
             )
 

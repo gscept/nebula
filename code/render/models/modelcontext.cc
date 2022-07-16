@@ -371,6 +371,20 @@ ModelContext::AllocateInstanceConstants(const Graphics::GraphicsEntityId id, con
 //------------------------------------------------------------------------------
 /**
 */
+void
+ModelContext::SetAlwaysVisible(const Graphics::GraphicsEntityId id)
+{
+    const ContextEntityId cid = GetContextId(id);
+    const NodeInstanceRange& nodes = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
+    for (IndexT i = nodes.begin; i < nodes.end; i++)
+    {
+        nodeInstances.renderable.nodeFlags[i] = SetBits(nodeInstances.renderable.nodeFlags[i], NodeInstanceFlags::NodeInstance_AlwaysVisible);
+    }    
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const Models::NodeInstanceRange&
 ModelContext::GetModelRenderableRange(const Graphics::GraphicsEntityId id)
 {
@@ -504,7 +518,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                     n_assert(parent != UINT32_MAX);
                     Math::mat4 parentTransform = nodeInstances.transformable.nodeTransforms[transformRange.begin + parent];
                     Math::mat4 orig = nodeInstances.transformable.origTransforms[j];
-                    nodeInstances.transformable.nodeTransforms[j] = orig * parentTransform;
+                    nodeInstances.transformable.nodeTransforms[j] = parentTransform * orig;
                 }
             }
         }
@@ -614,7 +628,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 block.DitherFactor = nodeInstances.renderable.nodeLods[j];
                 block.ObjectId = j;
 
-                uint offset = CoreGraphics::SetGraphicsConstants(block);
+                uint offset = CoreGraphics::SetConstants(block);
                 nodeInstances.renderable.nodeStates[j].resourceTableOffsets[nodeInstances.renderable.nodeStates[j].objectConstantsIndex] = offset;
             }
         }

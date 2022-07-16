@@ -15,6 +15,7 @@
 #include "dynui/im3d/im3dcontext.h"
 #include "dynui/im3d/im3d.h"
 
+#include "graphics/globalconstants.h"
 #include "visibility/visibilitycontext.h"
 #include "models/streammodelcache.h"
 #include "models/modelcontext.h"
@@ -179,12 +180,11 @@ SimpleViewerApplication::Open()
         //Terrain::TerrainContext::Create(terSettings);
 
         // setup vegetation
-        Vegetation::VegetationSetupSettings vegSettings{
-            "tex:terrain/everest Height Map (Merged)_PNG_BC4_1.dds",
-            0, 1024.0f,      // min/max height 
-            Math::uint2{8192, 8192}, 3, 0.5f
-        };
-        Vegetation::VegetationContext::Create(vegSettings);
+        //Vegetation::VegetationSetupSettings vegSettings{
+        //    0, 1024.0f,      // min/max height 
+        //    {8192, 8192}     // world size
+        //};
+        //Vegetation::VegetationContext::Create(vegSettings);
 
         Clustering::ClusterContext::Create(0.1f, 1000.0f, this->wnd);
         Lighting::LightContext::Create(frameScript);
@@ -197,7 +197,7 @@ SimpleViewerApplication::Open()
         //PostEffects::SSRContext::Create();
 
         // setup gbuffer bindings after frame script is loaded
-        CoreGraphics::ShaderServer::Instance()->SetupBufferConstants(frameScript);
+        Graphics::SetupBufferConstants(frameScript);
         PostEffects::BloomContext::Setup(frameScript);
         PostEffects::SSAOContext::Setup(frameScript);
         //PostEffects::SSRContext::Setup(frameScript);
@@ -210,7 +210,16 @@ SimpleViewerApplication::Open()
 
         this->globalLight = Graphics::CreateEntity();
         Lighting::LightContext::RegisterEntity(this->globalLight);
-        Lighting::LightContext::SetupGlobalLight(this->globalLight, Math::vec3(1, 1, 1), 1000.0f, Math::vec3(0, 0, 0), Math::vec3(0, 0, 0), 0.0f, -Math::vector(0.1, 0.1, 0.1), true);
+        Lighting::LightContext::SetupGlobalLight(
+            this->globalLight,
+            Math::vec3(1, 1, 1),
+            1000.0f,
+            Math::vec3(0, 0, 0),
+            Math::vec3(0, 0, 0),
+            0.0f,
+            1.0f,
+            true
+        );
 
         this->ResetCamera();
         CameraContext::SetView(this->cam, this->mayaCameraUtil.GetCameraTransform());

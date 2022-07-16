@@ -11,6 +11,8 @@
 #include "graphics/graphicsserver.h"
 #include "graphics/cameracontext.h"
 
+#include "graphics/globalconstants.h"
+
 namespace Clustering
 {
 
@@ -110,14 +112,16 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     state.clusterBuffer = CreateBuffer(rwb3Info);
     state.constantBuffer = ShaderCreateConstantBuffer(state.clusterShader, "ClusterUniforms");
 
-    // get per-view resource tables
-    const Util::FixedArray<CoreGraphics::ResourceTableId>& viewTables = TransformDevice::Instance()->GetViewResourceTables();
-
-    for (IndexT i = 0; i < viewTables.Size(); i++)
+    for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
-        CoreGraphics::ResourceTableId table = viewTables[i];
-        ResourceTableSetRWBuffer(table, { state.clusterBuffer, state.clusterAABBSlot, 0, false, false, -1, 0 });
-        ResourceTableSetConstantBuffer(table, { state.constantBuffer, state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
+        CoreGraphics::ResourceTableId computeTable = Graphics::GetFrameResourceTableCompute(i);
+        CoreGraphics::ResourceTableId graphicsTable = Graphics::GetFrameResourceTableGraphics(i);
+
+        ResourceTableSetRWBuffer(computeTable, { state.clusterBuffer, state.clusterAABBSlot, 0, false, false, -1, 0 });
+        ResourceTableSetConstantBuffer(computeTable, { state.constantBuffer, state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
+
+        ResourceTableSetRWBuffer(graphicsTable, { state.clusterBuffer, state.clusterAABBSlot, 0, false, false, -1, 0 });
+        ResourceTableSetConstantBuffer(graphicsTable, { state.constantBuffer, state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
     }
 
     Frame::FrameCode* op = state.frameOpAllocator.Alloc<Frame::FrameCode>();
@@ -180,6 +184,7 @@ ClusterContext::UpdateResources(const Graphics::FrameContext& ctx)
 
     // update constant buffer, probably super unnecessary since these values never change
     BufferUpdate(state.constantBuffer, state.uniforms, 0);
+    BufferFlush(state.constantBuffer);
 }
 
 //------------------------------------------------------------------------------
@@ -225,12 +230,16 @@ ClusterContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, Size
         state.clusterBuffer = CreateBuffer(rwb3Info);
         state.constantBuffer = ShaderCreateConstantBuffer(state.clusterShader, "ClusterUniforms");
 
-        const Util::FixedArray<CoreGraphics::ResourceTableId>& viewTables = CoreGraphics::TransformDevice::Instance()->GetViewResourceTables();
-        for (IndexT i = 0; i < viewTables.Size(); i++)
+        for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
         {
-            CoreGraphics::ResourceTableId table = viewTables[i];
-            ResourceTableSetRWBuffer(table, { state.clusterBuffer, state.clusterAABBSlot, 0, false, false, -1, 0 });
-            ResourceTableSetConstantBuffer(table, { state.constantBuffer, state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
+            CoreGraphics::ResourceTableId computeTable = Graphics::GetFrameResourceTableCompute(i);
+            CoreGraphics::ResourceTableId graphicsTable = Graphics::GetFrameResourceTableGraphics(i);
+
+            ResourceTableSetRWBuffer(computeTable, { state.clusterBuffer, state.clusterAABBSlot, 0, false, false, -1, 0 });
+            ResourceTableSetConstantBuffer(computeTable, { state.constantBuffer, state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
+
+            ResourceTableSetRWBuffer(graphicsTable, { state.clusterBuffer, state.clusterAABBSlot, 0, false, false, -1, 0 });
+            ResourceTableSetConstantBuffer(graphicsTable, { state.constantBuffer, state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
         }
     }
 }

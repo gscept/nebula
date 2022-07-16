@@ -21,7 +21,6 @@
 #include "coregraphics/graphicsdevice.h"
 #include "coregraphics/displaydevice.h"
 #include "coregraphics/shaderserver.h"
-#include "coregraphics/transformdevice.h"
 #include "coregraphics/shaperenderer.h"
 #include "coregraphics/textrenderer.h"
 #include "frame/frameserver.h"
@@ -133,7 +132,6 @@ private:
     bool graphicsDevice;
     Ptr<CoreGraphics::ShaderServer> shaderServer;
     Ptr<Materials::ShaderConfigServer> materialServer;
-    Ptr<CoreGraphics::TransformDevice> transformDevice;
     Ptr<CoreGraphics::ShapeRenderer> shapeRenderer;
     Ptr<CoreGraphics::TextRenderer> textRenderer;
     Ptr<Frame::FrameServer> frameServer;

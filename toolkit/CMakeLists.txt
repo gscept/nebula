@@ -2,7 +2,6 @@
 # Toolkit
 #-------------------------------------------------------------------------------
 
-fips_ide_group(toolkit)
 fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 #fips_add_subdirectory(archiver3)
@@ -16,8 +15,7 @@ fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 #fips_add_subdirectory(raytrace)
 #fips_add_subdirectory(shaderbatcher)
 
-fips_add_subdirectory(editorbackend)
-fips_add_subdirectory(editor)
+fips_ide_group(toolkit)
 fips_add_subdirectory(toolkit-common)
 
 # these need fbx

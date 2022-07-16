@@ -54,8 +54,12 @@ CameraManager::RegisterView(Ptr<Graphics::View> const& view)
     if (view->GetCamera() != Graphics::GraphicsEntityId::Invalid())
         n_warning("WARNING: View already has a camera entity assigned which is being overridden!\n");
 
+    auto wnd = CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow();
+    auto displayMode = CoreGraphics::WindowGetDisplayMode(wnd);
+
     Graphics::CameraContext::RegisterEntity(data.gid);
     Graphics::CameraContext::SetLODCamera(data.gid);
+    Graphics::CameraContext::SetupProjectionFov(data.gid, displayMode.GetAspectRatio(), Math::deg2rad(60.f), 0.1f, 10000.0f);
     Visibility::ObserverContext::RegisterEntity(data.gid);
     Visibility::ObserverContext::Setup(data.gid, Visibility::VisibilityEntityType::Camera);
     view->SetCamera(data.gid);
@@ -107,7 +111,7 @@ CameraManager::InitUpdateCameraProcessor()
                 Graphics::GraphicsEntityId gid = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].gid;
                 Camera& settings = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].currentSettings;
                 UpdateCameraSettings(gid, settings, camera);
-                Graphics::CameraContext::SetView(gid, parentTransform.value * settings.localTransform);
+                Graphics::CameraContext::SetView(gid, settings.localTransform * parentTransform.value);
             }
         }
     ).Build();

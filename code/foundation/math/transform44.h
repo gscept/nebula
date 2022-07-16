@@ -261,7 +261,7 @@ transform44::getmatrix()
         this->matrix = transformation(this->scalePivot, ident, this->scale, this->rotatePivot, this->rotate, this->position);
         if (this->offsetValid)
         {
-            this->matrix = this->matrix * this->offset;
+            this->matrix = this->offset * this->matrix;
         }
         this->isDirty = false;
     }

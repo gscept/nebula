@@ -107,7 +107,7 @@ VkStreamTextureSaver::SaveTexture2D(CoreGraphics::TextureId tex, const Ptr<IO::S
     
     if (VkTypes::IsCompressedFormat(fmt))
     {
-        result = ilTexImageDxtc(mapInfo.mipWidth, mapInfo.mipHeight, 1, VkTypes::AsILDXTFormat(fmt), (ILubyte*)mapInfo.data);
+        //result = ilTexImageDxtc(mapInfo.mipWidth, mapInfo.mipHeight, 1, VkTypes::AsILDXTFormat(fmt), (ILubyte*)mapInfo.data);
 
         // decompress
         ilSetInteger(IL_DXTC_NO_DECOMPRESS, IL_FALSE);

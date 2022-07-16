@@ -137,7 +137,7 @@ SSRContext::Setup(const Ptr<Frame::FrameScript>& script)
 
     // create trace shader
     ssrState.traceShader = ShaderGet("shd:ssr_cs.fxb");
-    ssrState.constants = CoreGraphics::GetComputeConstantBuffer();
+    ssrState.constants = CoreGraphics::GetGraphicsConstantBuffer();
     ssrState.constantsSlot = ShaderGetResourceSlot(ssrState.traceShader, "SSRBlock");
     ssrState.traceBufferSlot = ShaderGetResourceSlot(ssrState.traceShader, "TraceBuffer");
 
@@ -193,11 +193,11 @@ SSRContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const 
     Math::mat4 conv = cameraSettings.GetProjTransform();
     conv.r[1] = -conv.r[1];
 
-    Math::mat4 viewToTextureSpaceMatrix = conv * scrScale;
+    Math::mat4 viewToTextureSpaceMatrix = scrScale * conv;
 
     SsrCs::SSRBlock ssrBlock;
     viewToTextureSpaceMatrix.store(ssrBlock.ViewToTextureSpace);
-    uint ssrOffset = CoreGraphics::SetComputeConstants(ssrBlock);
+    uint ssrOffset = CoreGraphics::SetConstants(ssrBlock);
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 

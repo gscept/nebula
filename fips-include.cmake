@@ -6,6 +6,7 @@ set (CMAKE_MODULE_PATH "${NROOT}/extlibs/scripts")
 
 option(N_USE_PRECOMPILED_HEADERS "Use precompiled headers" OFF)
 option(N_ENABLE_SHADER_COMMAND_GENERATION "Generate shader compile file for live shader reload" ON)
+option(N_MINIMAL_TOOLKIT "Only minimal toolkit" OFF)
 
 if(FIPS_WINDOWS)
 	option(N_STATIC_BUILD "Use static runtime in windows builds" ON)
@@ -388,7 +389,7 @@ macro(add_nebula_shaders)
     endif()
 endmacro()
 
-macro(add_nebula_blueprints)
+macro(nebula_add_blueprints)
     set_nebula_export_dir()
     add_blueprint_intern("${NROOT}/work/data/tables/blueprints.json")
 endmacro()

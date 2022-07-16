@@ -94,7 +94,6 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
     CoreGraphics::PipelineStage stage,
     CoreGraphics::BarrierDomain domain,
     const CoreGraphics::ImageSubresourceInfo& subres,
-    IndexT toIndex,
     CoreGraphics::QueueType toQueue,
     Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::BarrierCreateInfo>& barriers,
     Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::EventCreateInfo>& waitEvents,
@@ -116,6 +115,20 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
             // remove subresource that is overlapped
             subresources.EraseFront();
 
+            // If queues don't match, add a new dependency on the new queue
+            if (dep.queue != toQueue)
+            {
+                // Todo, we should know about the other submissions and throw
+                // an assertion if we don't wait for that submission here
+                FrameOp::TextureDependency newDep;
+                newDep.stage = stage;
+                newDep.intent = readOrWrite;
+                newDep.subres = subres;
+                newDep.queue = toQueue;
+                textureDependencies.Append(newDep);
+                continue;
+            }
+
             // if these criteria are met, we need no barrier
             if (dep.intent == DependencyIntent::Read            // previous invocation was just reading
                 && readOrWrite == DependencyIntent::Read        // we are just reading
@@ -134,6 +147,8 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
                 info.domain = domain;
                 info.fromStage = dep.stage;
                 info.toStage = stage;
+                info.fromQueue = CoreGraphics::QueueType::InvalidQueueType;
+                info.toQueue = CoreGraphics::QueueType::InvalidQueueType;
                 info.textures.Append(barrier);
 
                 // split barriers if we have a partially overlapping subresource on the mips
@@ -187,6 +202,7 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
                 newDep.stage = stage;
                 newDep.intent = readOrWrite;
                 newDep.subres = subres;
+                newDep.queue = toQueue;
                 textureDependencies.Append(newDep);
             }
         }
@@ -205,7 +221,6 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
     CoreGraphics::PipelineStage stage,
     CoreGraphics::BarrierDomain domain,
     const CoreGraphics::BufferSubresourceInfo& subres,
-    IndexT toIndex,
     CoreGraphics::QueueType toQueue,
     Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::BarrierCreateInfo>& barriers,
     Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::EventCreateInfo>& waitEvents,
@@ -226,6 +241,20 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
         {
             subresources.EraseFront();
 
+            // If queues don't match, add a new dependency on the new queue
+            if (dep.queue != toQueue)
+            {
+                // Todo, we should know about the other submissions and throw
+                // an assertion if we don't wait for that submission here
+                FrameOp::BufferDependency newDep;
+                newDep.stage = stage;
+                newDep.intent = readOrWrite;
+                newDep.subres = subres;
+                newDep.queue = toQueue;
+                bufferDependencies.Append(newDep);
+                continue;
+            }
+
             // if these criteria are met, we need no barrier
             if (dep.intent == DependencyIntent::Read
                 && readOrWrite == DependencyIntent::Read
@@ -244,6 +273,8 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
                 info.domain = domain;
                 info.fromStage = dep.stage;
                 info.toStage = stage;
+                info.fromQueue = CoreGraphics::QueueType::InvalidQueueType;
+                info.toQueue = CoreGraphics::QueueType::InvalidQueueType;
                 info.buffers.Append(barrier);
             }
 
@@ -274,6 +305,7 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
             newDep.stage = stage;
             newDep.intent = readOrWrite;
             newDep.subres = subres;
+            newDep.queue = toQueue;
             bufferDependencies.Append(newDep);
         }
     }
@@ -343,7 +375,7 @@ FrameOp::SetupSynchronization(
 
             // analyze if synchronization is required and setup appropriate barriers and/or events
             AnalyzeAndSetupTextureBarriers(
-                this->compiled, tex, name, readOrWrite, stage, this->domain, subres, this->index, this->queue, barriers, waitEvents, signalEvents, deps);
+                this->compiled, tex, name, readOrWrite, stage, this->domain, subres, this->queue, barriers, waitEvents, signalEvents, deps);
 
             // if alias, also make sure to visit the alias
             if (alias != CoreGraphics::InvalidTextureId)
@@ -351,7 +383,7 @@ FrameOp::SetupSynchronization(
                 IndexT idx = textures.FindIndex(alias);
                 Util::Array<TextureDependency>& deps = textures.ValueAtIndex(idx);
                 AnalyzeAndSetupTextureBarriers(
-                    this->compiled, alias, name, readOrWrite, stage, this->domain, subres, this->index, this->queue, barriers, waitEvents, signalEvents, deps);
+                    this->compiled, alias, name, readOrWrite, stage, this->domain, subres, this->queue, barriers, waitEvents, signalEvents, deps);
             }
 
         }
@@ -395,7 +427,7 @@ FrameOp::SetupSynchronization(
             Util::Array<BufferDependency>& deps = buffers.ValueAtIndex(idx);
 
             AnalyzeAndSetupBufferBarriers(
-                this->compiled, buf, name, readOrWrite, stage, this->domain, subres, this->index, this->queue, barriers, waitEvents, signalEvents, deps);
+                this->compiled, buf, name, readOrWrite, stage, this->domain, subres, this->queue, barriers, waitEvents, signalEvents, deps);
         }
 
 #pragma push_macro("CreateEvent")

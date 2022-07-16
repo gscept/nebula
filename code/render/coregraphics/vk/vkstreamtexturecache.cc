@@ -17,6 +17,8 @@
 #include "vkshaderserver.h"
 #include "profiling/profiling.h"
 #include "threading/interlocked.h"
+
+#include "graphics/bindlessregistry.h"
 namespace Vulkan
 {
 
@@ -163,6 +165,13 @@ VkStreamTextureCache::LoadFromStream(const Resources::ResourceId res, const Util
         subres.baseMipLevel = Math::max(mips, 0);
         subres.layerCount = info.arrayLayers;
         subres.levelCount = Math::min(numMips, NumBasicLods);
+
+        VkComponentMapping mapping;
+        mapping.r = VkSwizzle[(uint)loadInfo.swizzle.red];
+        mapping.g = VkSwizzle[(uint)loadInfo.swizzle.green];
+        mapping.b = VkSwizzle[(uint)loadInfo.swizzle.blue];
+        mapping.a = VkSwizzle[(uint)loadInfo.swizzle.alpha];
+
         VkImageViewCreateInfo viewCreate =
         {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -171,7 +180,7 @@ VkStreamTextureCache::LoadFromStream(const Resources::ResourceId res, const Util
             loadInfo.img,
             VkTypes::AsVkImageViewType(runtimeInfo.type),
             vkformat,
-            VkTypes::AsVkMapping(nebulaFormat),
+            mapping,
             subres
         };
         stat = vkCreateImageView(dev, &viewCreate, NULL, &runtimeInfo.view);
@@ -278,7 +287,7 @@ VkStreamTextureCache::LoadFromStream(const Resources::ResourceId res, const Util
         loadInfo.swapExtension = Ids::InvalidId32;
         loadInfo.stencilExtension = Ids::InvalidId32;
         loadInfo.sparseExtension = Ids::InvalidId32;
-        runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(res), runtimeInfo.type);
+        runtimeInfo.bind = Graphics::RegisterTexture(TextureId(res), runtimeInfo.type);
 
 #if NEBULA_GRAPHICS_DEBUG
         ObjectSetName((TextureId)res, stream->GetURI().LocalPath().AsCharPtr());
@@ -350,6 +359,13 @@ VkStreamTextureCache::StreamMaxLOD(const Resources::ResourceId& id, const float 
     viewSubres.baseMipLevel = adjustedLod;
     viewSubres.layerCount = loadInfo.layers;
     viewSubres.levelCount = loadInfo.mips - viewSubres.baseMipLevel;
+
+    VkComponentMapping mapping;
+    mapping.r = VkSwizzle[(uint)loadInfo.swizzle.red];
+    mapping.g = VkSwizzle[(uint)loadInfo.swizzle.green];
+    mapping.b = VkSwizzle[(uint)loadInfo.swizzle.blue];
+    mapping.a = VkSwizzle[(uint)loadInfo.swizzle.alpha];
+
     VkImageViewCreateInfo viewCreate =
     {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -358,7 +374,7 @@ VkStreamTextureCache::StreamMaxLOD(const Resources::ResourceId& id, const float 
         loadInfo.img,
         VkTypes::AsVkImageViewType(runtimeInfo.type),
         VkTypes::AsVkFormat(loadInfo.format),
-        VkTypes::AsVkMapping(loadInfo.format),
+        mapping,
         viewSubres
     };
 

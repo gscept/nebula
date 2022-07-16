@@ -370,7 +370,7 @@ ShaderConfig::AllocateInstanceConstants(const MaterialInstanceId sur, const Batc
     const Util::Tuple<IndexT, SizeT>& buffer = this->materialAllocator.Get<InstanceBuffers>(sur.material)[batch];
 
     SizeT bufferSize = Util::Get<1>(buffer);
-    CoreGraphics::ConstantBufferOffset offset = CoreGraphics::AllocateGraphicsConstantBufferMemory(bufferSize);
+    CoreGraphics::ConstantBufferOffset offset = CoreGraphics::AllocateConstantBufferMemory(bufferSize);
     this->materialInstanceAllocator.Get<MaterialInstanceOffsets>(sur.instance) = offset;
     return offset;
 }

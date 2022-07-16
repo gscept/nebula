@@ -39,6 +39,8 @@ public:
         // rgb(a)
         BC7,
         R8,
+        R16F,
+        R16G16F,
         R16,
         R16G16,
         // raw dxgi string

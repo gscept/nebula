@@ -4,7 +4,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "transformnode.h"
-#include "coregraphics/transformdevice.h"
 
 using namespace Util;
 namespace Models
@@ -35,6 +34,23 @@ TransformNode::TransformNode() :
 TransformNode::~TransformNode()
 {
     // empty
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+TransformNode::GetLODDistances(float& minDistance, float& maxDistance)
+{
+    if (this->useLodDistances)
+    {
+        minDistance = this->minDistance;
+        maxDistance = this->maxDistance;
+    }
+    else
+    {
+        minDistance = maxDistance = FLT_MAX;
+    }
 }
 
 //------------------------------------------------------------------------------

@@ -30,15 +30,6 @@ const vec4 DebugColors[8] =
     vec4 ( 0.5f, 3.5f, 0.75f, 1.0f )
 };
 
-sampler_state CSMTextureSampler
-{
-	//Samplers = { ShadowProjMap };
-	//Filter = MinMagLinearMipPoint;
-	AddressU = Border;
-	AddressV = Border;
-	//MaxAnisotropic = 16;
-	//BorderColor = White;
-};
 
 const float CascadeBlendArea = 0.2f;
 //------------------------------------------------------------------------------
@@ -150,7 +141,7 @@ CSMPS(
 	vec2 texCoord = texCoordShadow.xy;
 	float depth = texCoordShadow.z;
 
-	vec2 mapDepth = sample2DArrayGrad(Texture, CSMTextureSampler, vec3(texCoord, cascadeIndex), shadowPosDDX.xy, shadowPosDDY.xy).rg;
+	vec2 mapDepth = sample2DArrayGrad(Texture, ShadowSampler, vec3(texCoord, cascadeIndex), shadowPosDDX.xy, shadowPosDDY.xy).rg;
 	float occlusion = ChebyshevUpperBound(mapDepth, depth, 0.0000001f);
 
 	int nextCascade = cascadeIndex + 1;
@@ -165,7 +156,7 @@ CSMPS(
 			texCoord = texCoordShadow.xy;
 			depth = texCoordShadow.z;
 
-			mapDepth = sample2DArrayGrad(Texture, CSMTextureSampler, vec3(texCoord, nextCascade), shadowPosDDX.xy, shadowPosDDY.xy).rg;
+			mapDepth = sample2DArrayGrad(Texture, ShadowSampler, vec3(texCoord, nextCascade), shadowPosDDX.xy, shadowPosDDY.xy).rg;
 			occlusionBlend = ChebyshevUpperBound(mapDepth, depth, 0.0000001f);
 		}
 
@@ -192,7 +183,7 @@ SampleShadowCascade(
 	float lightDepth = shadowPosition.z;
 	const float bias = GlobalLightShadowBias;
 	lightDepth -= bias;
-	vec2 samp = sample2DArrayLod(GlobalLightShadowBuffer, CSMTextureSampler, vec3(shadowPosition.xy, cascadeIndex), 0).rg;
+	vec2 samp = sample2DArrayLod(GlobalLightShadowBuffer, ShadowSampler, vec3(shadowPosition.xy, cascadeIndex), 0).rg;
 
 	return ChebyshevUpperBound(samp, lightDepth, 0.0001f);
 }

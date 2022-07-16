@@ -30,4 +30,13 @@ DestroyModel(const ModelId id)
 	modelPool->DiscardResource(id);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Array<Models::ModelNode*>&
+ModelGetNodes(const ModelId id)
+{
+    return modelPool->GetModelNodes(id);
+}
+
 } // namespace Models

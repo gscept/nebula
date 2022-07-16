@@ -93,14 +93,15 @@ protected:
         CoreGraphics::PipelineStage stage;
         DependencyIntent intent;
         CoreGraphics::ImageSubresourceInfo subres;
+        CoreGraphics::QueueType queue;
     };
 
     struct BufferDependency
     {
         CoreGraphics::PipelineStage stage;
         DependencyIntent intent;
-
         CoreGraphics::BufferSubresourceInfo subres;
+        CoreGraphics::QueueType queue;
     };
 
     static void AnalyzeAndSetupTextureBarriers(
@@ -111,7 +112,6 @@ protected:
         CoreGraphics::PipelineStage stage,
         CoreGraphics::BarrierDomain domain,
         const CoreGraphics::ImageSubresourceInfo& subres,
-        IndexT fromIndex,
         CoreGraphics::QueueType fromQueue,
         Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::BarrierCreateInfo>& barriers,
         Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::EventCreateInfo>& waitEvents,
@@ -126,7 +126,6 @@ protected:
         CoreGraphics::PipelineStage stage,
         CoreGraphics::BarrierDomain domain,
         const CoreGraphics::BufferSubresourceInfo& subres,
-        IndexT fromIndex,
         CoreGraphics::QueueType fromQueue,
         Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::BarrierCreateInfo>& barriers,
         Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::EventCreateInfo>& waitEvents,

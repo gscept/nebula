@@ -48,9 +48,11 @@ GetTexConvFormat(TextureAttrs const& attrs)
     case TextureAttrs::BC5: "BC5_UNORM";
     case TextureAttrs::BC6H: return "BC6H_UF16";
     case TextureAttrs::BC7: return "BC7_UNORM";
-    case TextureAttrs::R8: return "R8_UINT";
-    case TextureAttrs::R16: return "R16_UINT";
-    case TextureAttrs::R16G16: return "R16G16_UINT";
+    case TextureAttrs::R8: return "R8_UNORM";
+    case TextureAttrs::R16F: return "R16_FLOAT";
+    case TextureAttrs::R16G16F: return "R16G16_FLOAT";
+    case TextureAttrs::R16: return "R16_UNORM";
+    case TextureAttrs::R16G16: return "R16G16_UNORM";
     case TextureAttrs::DXGI: return attrs.GetDxgi().AsCharPtr();
     }
     return "BC7_UNORM";
@@ -67,7 +69,6 @@ DirectXTexConversionJob::Convert()
     n_assert(0 != this->logger);
     if (TextureConversionJob::Convert())
     {
-
         URI srcPathUri(this->srcPath);
         URI dstPathUri(this->dstPath);
         URI tmpDirUri(this->tmpDir);

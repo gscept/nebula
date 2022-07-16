@@ -34,20 +34,26 @@ public:
     ~GraphicsFeatureUnit();
 
     /// Called upon activation of feature unit
-    void OnActivate();
+    void OnActivate() override;
     /// Called upon deactivation of feature unit
-    void OnDeactivate();
+    void OnDeactivate() override;
 
     /// called on begin of frame
-    void OnBeginFrame();
+    void OnBeginFrame() override;
+    /// Called before views
+    void OnBeforeViews() override;
     /// called in the middle of the feature trigger cycle
-    void OnFrame();
+    void OnFrame() override;
     /// called at the end of the feature trigger cycle
-    void OnEndFrame();
+    void OnEndFrame() override;
 
     /// called when game debug visualization is on
-    void OnRenderDebug();
+    void OnRenderDebug() override;
 
+    /// Set window title
+    void SetWindowTitle(const Util::StringAtom& title);
+
+    /// Set Graphics Debugging on/off
     void SetGraphicsDebugging(bool value);
 
     /// retrieve the default view
@@ -68,6 +74,7 @@ public:
     Graphics::GraphicsEntityId globalLight;
 
 private:
+    Util::StringAtom title;
     IO::URI defaultFrameScript;
     Ptr<Graphics::View> defaultView;
     Ptr<Graphics::Stage> defaultStage;
@@ -95,6 +102,15 @@ inline void
 GraphicsFeature::GraphicsFeatureUnit::SetGraphicsDebugging(bool value)
 {
     Core::CVarWriteInt(this->r_debug, 2);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void 
+GraphicsFeatureUnit::SetWindowTitle(const Util::StringAtom& title)
+{
+    this->title = title;
 }
 
 //------------------------------------------------------------------------------

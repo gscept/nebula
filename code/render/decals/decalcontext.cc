@@ -13,6 +13,8 @@
 #include "frame/framesubgraph.h"
 #include "frame/framecode.h"
 
+#include "graphics/globalconstants.h"
+
 #include "decals_cluster.h"
 namespace Decals
 {
@@ -109,17 +111,21 @@ DecalContext::Create()
     rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
     decalState.stagingClusterDecalsList.Resize(CoreGraphics::GetNumBufferedFrames());
 
-    // get per-view resource tables
-    const Util::FixedArray<CoreGraphics::ResourceTableId>& viewTables = TransformDevice::Instance()->GetViewResourceTables();
-
-    for (IndexT i = 0; i < viewTables.Size(); i++)
+    for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
         decalState.stagingClusterDecalsList[i] = CreateBuffer(rwbInfo);
 
+        CoreGraphics::ResourceTableId computeTable = Graphics::GetFrameResourceTableCompute(i);
+        CoreGraphics::ResourceTableId graphicsTable = Graphics::GetFrameResourceTableGraphics(i);
+
         // update resource table
-        ResourceTableSetRWBuffer(viewTables[i], { decalState.clusterDecalIndexLists, decalIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(viewTables[i], { decalState.clusterDecalsList, decalListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(viewTables[i], { CoreGraphics::GetComputeConstantBuffer(), decalState.uniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalUniforms), 0 });
+        ResourceTableSetRWBuffer(computeTable, { decalState.clusterDecalIndexLists, decalIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(computeTable, { decalState.clusterDecalsList, decalListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(computeTable, { CoreGraphics::GetComputeConstantBuffer(), decalState.uniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalUniforms), 0 });
+
+        ResourceTableSetRWBuffer(graphicsTable, { decalState.clusterDecalIndexLists, decalIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(graphicsTable, { decalState.clusterDecalsList, decalListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(graphicsTable, { CoreGraphics::GetGraphicsConstantBuffer(), decalState.uniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalUniforms), 0 });
     }
 
     // The first pass is to copy decals over
@@ -353,7 +359,7 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
         case PBRDecal:
         {
             auto& pbrDecal = decalState.pbrDecals[numPbrDecals];
-            Math::mat4 viewSpace = transforms[i] * viewTransform;
+            Math::mat4 viewSpace = viewTransform * transforms[i];
             Math::bbox bbox(viewSpace);
             bbox.pmin.store(pbrDecal.bboxMin);
             bbox.pmax.store(pbrDecal.bboxMax);
@@ -372,7 +378,7 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
         case EmissiveDecal:
         {
             auto& emissiveDecal = decalState.emissiveDecals[numEmissiveDecals];
-            Math::mat4 viewSpace = transforms[i] * viewTransform;
+            Math::mat4 viewSpace = viewTransform * transforms[i];
             Math::bbox bbox(viewSpace);
             bbox.pmin.store(emissiveDecal.bboxMin);
             bbox.pmax.store(emissiveDecal.bboxMax);
@@ -396,11 +402,14 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-    // get per-view resource tables
-    const Util::FixedArray<CoreGraphics::ResourceTableId>& viewTables = TransformDevice::Instance()->GetViewResourceTables();
+    CoreGraphics::ResourceTableId computeTable = Graphics::GetFrameResourceTableCompute(bufferIndex);
+    CoreGraphics::ResourceTableId graphicsTable = Graphics::GetFrameResourceTableGraphics(bufferIndex);
 
-    uint offset = SetComputeConstants(decalUniforms);
-    ResourceTableSetConstantBuffer(viewTables[bufferIndex], { GetComputeConstantBuffer(), decalState.uniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalUniforms), (SizeT)offset });
+    uint offset = SetConstants(decalUniforms);
+    ResourceTableSetConstantBuffer(computeTable, { GetComputeConstantBuffer(), decalState.uniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalUniforms), (SizeT)offset });
+    ResourceTableCommitChanges(computeTable);
+    ResourceTableSetConstantBuffer(graphicsTable, { GetGraphicsConstantBuffer(), decalState.uniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalUniforms), (SizeT)offset });
+    ResourceTableCommitChanges(graphicsTable);
 
     // update list of point lights
     if (numPbrDecals > 0 || numEmissiveDecals > 0)

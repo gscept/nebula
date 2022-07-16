@@ -714,7 +714,7 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
 
             // add mix pose if the pointer is set
             if (mixPoseMatrixBase)
-                unscaledMatrix = unscaledMatrix * mixPoseMatrixBase[jointIndex];
+                unscaledMatrix = mixPoseMatrixBase[jointIndex] * unscaledMatrix;
 
             // update scaled matrix
             // scale after rotation
@@ -746,10 +746,10 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
 
                 // apply rotation and relative animation translation of parent 
                 const Math::mat4& parentUnscaledMatrix = unscaledMatrixBase[comps.parentJointIndex];
-                unscaledMatrix = unscaledMatrix * parentUnscaledMatrix;
-                scaledMatrix = scaledMatrix * parentUnscaledMatrix;
+                unscaledMatrix = parentUnscaledMatrix * unscaledMatrix;
+                scaledMatrix = parentUnscaledMatrix * scaledMatrix;
             }
-            skinMatrixBase[jointIndex] = invPoseMatrixBase[jointIndex] * scaledMatrix;
+            skinMatrixBase[jointIndex] = scaledMatrix * invPoseMatrixBase[jointIndex];
         }
     }
 }
@@ -874,7 +874,7 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
                     }
                 }
                 // update skinning palette
-                uint offset = CoreGraphics::SetGraphicsConstants(usedMatrices.Begin(), usedMatrices.Size());
+                uint offset = CoreGraphics::SetConstants(usedMatrices.Begin(), usedMatrices.Size());
                 renderables.nodeStates[node].resourceTableOffsets[renderables.nodeStates[node].skinningConstantsIndex] = offset;
             }
 
@@ -934,7 +934,7 @@ CharacterContext::OnRenderDebug(uint32 flags)
         IndexT j;
         for (j = 0; j < jointsPalette.Size(); j++)
         {
-            Math::mat4 joint = scale * jointsPalette[j] * transform;
+            Math::mat4 joint = transform * jointsPalette[j] * scale;
             CoreGraphics::RenderShape shape;
             shape.SetupSimpleShape(CoreGraphics::RenderShape::Sphere, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), Math::vec4(1, 0, 0, 0.5f), joint);
             CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);

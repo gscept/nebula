@@ -103,6 +103,17 @@ MemoryMeshCache::GetIndexBuffer(const MeshId id)
 //------------------------------------------------------------------------------
 /**
 */
+const uint
+MemoryMeshCache::GetIndexOffset(const MeshId id)
+{
+    __LockName(this->Allocator(), lock, Util::ArrayAllocatorAccess::Read);
+    const MeshCreateInfo& inf = this->allocator.Get<0>(id.resourceId);
+    return inf.indexBufferOffset;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 const CoreGraphics::PrimitiveTopology::Code
 MemoryMeshCache::GetPrimitiveTopology(const MeshId id)
 {

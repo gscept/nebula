@@ -81,10 +81,6 @@ public:
     const CoreGraphics::ShaderId GetShader(Resources::ResourceName resId) const;
     /// get name by shader id
     const Resources::ResourceName& GetName(const CoreGraphics::ShaderId& id) const;
-    /// set currently active shader instance
-    void SetActiveShader(const CoreGraphics::ShaderId shader);
-    /// get currently active shader instance
-    const CoreGraphics::ShaderId GetActiveShader() const;
 
     /// reset the current feature bits
     void ResetFeatureBits();
@@ -99,21 +95,11 @@ public:
     /// convert shader feature bit mask into string
     Util::String FeatureMaskToString(CoreGraphics::ShaderFeature::Mask mask);
 
-    /// setup gbuffer bindings
-    void SetupBufferConstants(const Ptr<Frame::FrameScript>& frameScript);
-
-    /// apply an object id
-    void ApplyObjectId(IndexT i);
-
     /// explicitly loads a shader by resource id
     void LoadShader(const Resources::ResourceName& shdName);
 
     /// update shader server outside of frame
     void BeforeFrame();
-    /// begin frame
-    void BeforeView();
-    /// end frame
-    void AfterView();
 
 protected:
     friend class CoreGraphics::ShaderIdentifier;
@@ -126,7 +112,7 @@ protected:
     Threading::SafeQueue<Resources::ResourceName> pendingShaderReloads;
     CoreGraphics::ShaderId sharedVariableShader;
     Ids::Id32 objectIdShaderVar;
-    CoreGraphics::ShaderId activeShader;
+
     bool isOpen;
 };
 
@@ -197,15 +183,6 @@ ShaderServerBase::FeatureMaskToString(CoreGraphics::ShaderFeature::Mask mask)
 //------------------------------------------------------------------------------
 /**
 */
-inline void 
-ShaderServerBase::SetupBufferConstants(const Ptr<Frame::FrameScript>& frameScript)
-{
-    // override in subclass
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 inline void
 ShaderServerBase::ResetFeatureBits()
 {
@@ -237,24 +214,6 @@ inline CoreGraphics::ShaderFeature::Mask
 ShaderServerBase::GetFeatureBits() const
 {
     return this->curShaderFeatureBits;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void
-ShaderServerBase::SetActiveShader(const CoreGraphics::ShaderId shader)
-{
-    this->activeShader = shader;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const CoreGraphics::ShaderId
-ShaderServerBase::GetActiveShader() const
-{
-    return this->activeShader;
 }
 
 } // namespace Base

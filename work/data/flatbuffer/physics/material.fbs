@@ -1,8 +1,8 @@
 //------------------------------------------------------------------------------
-//
 //    Physics types for flatbuffer
 //
 //    (C) 2020 Individual contributors, see AUTHORS file
+//------------------------------------------------------------------------------
 
 include "foundation/math.fbs";
 namespace Physics;

@@ -72,18 +72,21 @@ ResourceStreamCache::LoadFallbackResources()
     for (IndexT i = 0; i < this->placeholders.Size(); i++)
     {
         this->placeholders[i].placeholderId = this->CreateResource(this->placeholders[i].placeholderName, nullptr, 0, "system"_atm, nullptr, nullptr, true);
+        n_assert(this->placeholders[i].placeholderId != Resources::InvalidResourceId);
     }
 
     // load placeholder, don't load it async
     if (this->placeholderResourceName.IsValid())
     {
         this->placeholderResourceId = this->CreateResource(this->placeholderResourceName, nullptr, 0, "system"_atm, nullptr, nullptr, true);
+        n_assert(this->placeholderResourceId != Resources::InvalidResourceId);
     }
 
     // load error, don't load it async
     if (this->failResourceName.IsValid())
     {
         this->failResourceId = this->CreateResource(this->failResourceName, nullptr, 0, "system"_atm, nullptr, nullptr, true);
+        n_assert(this->failResourceId != Resources::InvalidResourceId);
     }
 }
 

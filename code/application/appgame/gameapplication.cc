@@ -15,6 +15,9 @@
 #include "system/nebulasettings.h"
 #include "io/fswrapper.h"
 #include "jobs2/jobs2.h"
+#include "input/inputserver.h"
+
+#include "profiling/profiling.h"
 
 namespace App
 {
@@ -107,7 +110,12 @@ GameApplication::Open()
         this->ioInterface->Open();
 
         this->resourceServer = Resources::ResourceServer::Create();
-        this->resourceServer->Open();        
+        this->resourceServer->Open();
+
+
+#if NEBULA_ENABLE_PROFILING
+        Profiling::ProfilingRegisterThread();
+#endif
 
         // attach a log file console handler
 #if __WIN32__
@@ -205,7 +213,8 @@ GameApplication::Close()
 void
 GameApplication::Run()
 {
-    while (true)
+    Input::InputServer* inputServer = Input::InputServer::Instance();
+    while (!inputServer->IsQuitRequested())
     {
         this->StepFrame();
     }
@@ -221,6 +230,10 @@ GameApplication::StepFrame()
 
 #if __NEBULA_HTTP__
     this->httpServerProxy->HandlePendingRequests();
+#endif
+
+#if NEBULA_ENABLE_PROFILING
+    Profiling::ProfilingNewFrame();
 #endif
 
     Jobs2::JobNewFrame();

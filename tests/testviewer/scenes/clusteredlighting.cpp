@@ -99,7 +99,7 @@ void OpenScene()
             int index = (j + NumDecals) + (i + NumDecals) * NumDecals * 2;
             entityNames.Append(Util::String::Sprintf("Decal%d", index));
             Math::mat4 transform = Math::scaling(Math::vec3(10, 10, 50));
-            transform = transform * Math::rotationyawpitchroll(0, Math::deg2rad(90), Math::deg2rad(Math::rand() * 90.0f));
+            transform = Math::rotationyawpitchroll(0, Math::deg2rad(90), Math::deg2rad(Math::rand() * 90.0f)) * transform;
             transform.position = Math::vec4(i * 16, 0, j * 16, 1);
 
             // load textures
@@ -128,7 +128,7 @@ void OpenScene()
             int index = (j + NumFogVolumes) + (i + NumFogVolumes) * NumFogVolumes * 2;
             entityNames.Append(Util::String::Sprintf("Fog%d", index));
             Math::mat4 transform = Math::scaling(10);
-            transform = transform * Math::rotationyawpitchroll(Math::deg2rad(Math::rand() * 90.0f), 0, 0);
+            transform = Math::rotationyawpitchroll(Math::deg2rad(Math::rand() * 90.0f), 0, 0) * transform;
             transform.position = Math::vec4(4 - i * 4, 0, 4 - j * 4, 1);
 
             const float red = Math::rand();
@@ -160,7 +160,7 @@ void OpenScene()
         {
             ObservableContext::Setup(ground, VisibilityEntityType::Model);
         });
-    ModelContext::SetTransform(ground, Math::scaling(4) * Math::translation(0,0,0));
+    ModelContext::SetTransform(ground, Math::translation(0,0,0) * Math::scaling(4));
     entities.Append({ ground, nullptr });
     entityNames.Append("Ground");
 
@@ -252,7 +252,7 @@ void StepFrame()
     for (i = 0; i < decals.Size(); i++)
     {
         Math::mat4 decalTransform = Math::scaling(Math::vec3(10, 10, 50));
-        decalTransform = decalTransform * Math::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 0.1f + i, Math::deg2rad(90), 0);
+        decalTransform = Math::rotationyawpitchroll(Graphics::GraphicsServer::Instance()->GetTime() * 0.1f + i, Math::deg2rad(90), 0) * decalTransform;
         decalTransform.position = Decals::DecalContext::GetTransform(decals[i]).position;
         //Decals::DecalContext::SetTransform(decals[i], decalTransform);
     }
@@ -274,7 +274,7 @@ void StepFrame()
                 Math::vec4{ 1.0f, 0.0f, 0.0f, 1.0f }.store(perInstanceBlock.TeamColor);
             else
                 Math::vec4{ 0.0f, 0.0f, 1.0f, 1.0f }.store(perInstanceBlock.TeamColor);
-            CoreGraphics::SetGraphicsConstants(offset, perInstanceBlock);
+            CoreGraphics::SetConstants(offset, perInstanceBlock);
 
         }
         j++;

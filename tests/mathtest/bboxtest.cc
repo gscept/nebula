@@ -33,7 +33,7 @@ BBoxTest::Run()
         for (IndexT j = -NumBoxes; j < NumBoxes; j+=10)
         {
             Math::bbox box;
-            box.set(Math::scaling(10, 10, 10) * Math::translation(j, 0, i));
+            box.set(Math::translation(j, 0, i) * Math::scaling(10, 10, 10));
         }
     }
 }

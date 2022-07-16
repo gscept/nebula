@@ -12,7 +12,12 @@
 #include "models/modelcontext.h"
 #include "visibility/visibilitycontext.h"
 #include "resources/resourceserver.h"
+
+#include "graphics/globalconstants.h"
+
 #include "imgui.h"
+
+
 namespace Graphics
 {
 
@@ -59,6 +64,7 @@ EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
     Models::ModelContext::Setup(envState.skyBoxEntity, "mdl:system/skybox.n3", "system", []()
         {
             Visibility::ObservableContext::Setup(envState.skyBoxEntity, Visibility::VisibilityEntityType::Model);
+            Models::ModelContext::SetAlwaysVisible(envState.skyBoxEntity);
         });
 
     envState.bloomColor = Math::vec4(1.0f);
@@ -133,7 +139,7 @@ CalculatePerezDistribution(float t, Math::vec4& A, Math::vec4& B, Math::vec4& C,
 void
 EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
-    Shared::PerTickParams& tickParams = CoreGraphics::ShaderServer::Instance()->GetTickParams();
+    Shared::PerTickParams& tickParams = Graphics::GetTickParams();
     Math::mat4 transform = Lighting::LightContext::GetTransform(envState.sunEntity);
     Math::vec4 sunDir = -transform.z_axis;
 
@@ -211,7 +217,7 @@ EnvironmentContext::RenderUI(const Graphics::FrameContext& ctx)
     {
         float col[4];
         envState.fogColor.storeu(col);
-        Shared::PerTickParams& tickParams = CoreGraphics::ShaderServer::Instance()->GetTickParams();
+        Shared::PerTickParams& tickParams = Graphics::GetTickParams();
         if (ImGui::Begin("Enviroment Params"))
         {
             ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);

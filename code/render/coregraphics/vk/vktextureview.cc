@@ -59,6 +59,7 @@ CreateTextureView(const TextureViewCreateInfo& info)
     loadInfo.numMips = info.numMips;
     loadInfo.layer = info.startLayer;
     loadInfo.numLayers = info.numLayers;
+    loadInfo.swizzle = info.swizzle;
 
     bool isDepthFormat = VkTypes::IsDepthFormat(info.format);
     VkImageSubresourceRange viewRange;
@@ -72,6 +73,12 @@ CreateTextureView(const TextureViewCreateInfo& info)
     VkImageViewType type = VkTypes::AsVkImageViewType(TextureGetType(info.tex));
     VkFormat format = VkTypes::AsVkFormat(info.format);
 
+    VkComponentMapping mapping;
+    mapping.r = VkSwizzle[(uint)info.swizzle.red];
+    mapping.g = VkSwizzle[(uint)info.swizzle.green];
+    mapping.b = VkSwizzle[(uint)info.swizzle.blue];
+    mapping.a = VkSwizzle[(uint)info.swizzle.alpha];
+
     VkImageViewCreateInfo viewCreate =
     {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -80,7 +87,7 @@ CreateTextureView(const TextureViewCreateInfo& info)
         img,
         type,
         format,
-        VkTypes::AsVkMapping(loadInfo.format),
+        mapping,
         viewRange
     };
     VkResult stat = vkCreateImageView(loadInfo.dev, &viewCreate, nullptr, &runtimeInfo.view);
@@ -128,6 +135,12 @@ TextureViewReload(const TextureViewId id)
     VkImageViewType type = VkTypes::AsVkImageViewType(TextureGetType(loadInfo.tex));
     VkFormat format = VkTypes::AsVkFormat(loadInfo.format);
 
+    VkComponentMapping mapping;
+    mapping.r = VkSwizzle[(uint)loadInfo.swizzle.red];
+    mapping.g = VkSwizzle[(uint)loadInfo.swizzle.green];
+    mapping.b = VkSwizzle[(uint)loadInfo.swizzle.blue];
+    mapping.a = VkSwizzle[(uint)loadInfo.swizzle.alpha];
+
     VkImageViewCreateInfo viewCreate =
     {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -136,7 +149,7 @@ TextureViewReload(const TextureViewId id)
         img,
         type,
         format,
-        VkTypes::AsVkMapping(loadInfo.format),
+        mapping,
         viewRange
     };
     VkResult stat = vkCreateImageView(loadInfo.dev, &viewCreate, nullptr, &runtimeInfo.view);

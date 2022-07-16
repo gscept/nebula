@@ -14,6 +14,8 @@
 #include "vkcommandbuffer.h"
 #include "coregraphics/glfw/glfwwindow.h"
 
+#include "graphics/bindlessregistry.h"
+
 N_DECLARE_COUNTER(N_SPARSE_PAGE_MEMORY_COUNTER, Sparse Texture Allocated Memory);
 
 using namespace CoreGraphics;
@@ -65,6 +67,7 @@ VkMemoryTextureCache::LoadFromMemory(const Resources::ResourceId id, const void*
     loadInfo.windowRelative = adjustedInfo.windowRelative;
     loadInfo.bindless = adjustedInfo.bindless;
     loadInfo.sparse = adjustedInfo.sparse;
+    loadInfo.swizzle = data->swizzle;
     runtimeInfo.bind = 0xFFFFFFFF;
 
     // borrow buffer pointer
@@ -89,7 +92,7 @@ VkMemoryTextureCache::LoadFromMemory(const Resources::ResourceId id, const void*
         this->states[id.poolId] = Resources::Resource::Loaded;
 
 #if NEBULA_GRAPHICS_DEBUG
-        ObjectSetName((TextureId)id, adjustedInfo.name.Value());
+        ObjectSetName((TextureId)id, data->name.Value());
 #endif
 
         return ResourceCache::Success;
@@ -117,7 +120,7 @@ VkMemoryTextureCache::Unload(const Resources::ResourceId id)
         IndexT bind = textureStencilExtensionAllocator.Get<TextureExtension_StencilBind>(loadInfo.stencilExtension);
         CoreGraphics::DelayedDeleteTextureView(stencil);
         if (runtimeInfo.type != 0xFFFFFFFF)
-            VkShaderServer::Instance()->UnregisterTexture(bind, runtimeInfo.type);
+            Graphics::UnregisterTexture(bind, runtimeInfo.type);
         textureStencilExtensionAllocator.Unlock(Util::ArrayAllocatorAccess::Read);
         textureStencilExtensionAllocator.Dealloc(loadInfo.stencilExtension);
     }
@@ -171,7 +174,7 @@ VkMemoryTextureCache::Unload(const Resources::ResourceId id)
     if (!loadInfo.windowTexture)
     {
         if (runtimeInfo.bind != 0xFFFFFFFF)
-            VkShaderServer::Instance()->UnregisterTexture(runtimeInfo.bind, runtimeInfo.type);
+            Graphics::UnregisterTexture(runtimeInfo.bind, runtimeInfo.type);
         CoreGraphics::DelayedDeleteTexture(id);
         runtimeInfo.view = VK_NULL_HANDLE;
         loadInfo.img = VK_NULL_HANDLE;
@@ -233,7 +236,7 @@ VkMemoryTextureCache::GenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, co
     TextureDimensions dims = GetDimensions(id);
 
     CoreGraphics::ImageLayout prevLayout = CoreGraphics::ImageLayout::TransferSource;
-    CoreGraphics::PipelineStage prevStageSrc = CoreGraphics::PipelineStage::AllShadersRead;
+    CoreGraphics::PipelineStage prevStageSrc = CoreGraphics::PipelineStage::TransferRead;
     IndexT mip;
     for (mip = 0; mip < numMips - 1; mip++)
     {
@@ -269,7 +272,7 @@ VkMemoryTextureCache::GenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, co
 
         CoreGraphics::CmdBarrier(
             cmdBuf,
-            CoreGraphics::PipelineStage::AllShadersRead,
+            CoreGraphics::PipelineStage::TransferRead,
             CoreGraphics::PipelineStage::TransferWrite,
             CoreGraphics::BarrierDomain::Global,
             {
@@ -295,7 +298,7 @@ VkMemoryTextureCache::GenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, co
             CoreGraphics::TextureBarrierInfo
             {
                 id,
-                CoreGraphics::ImageSubresourceInfo(ImageAspect::ColorBits, mip-1, 1, 0, 1),
+                CoreGraphics::ImageSubresourceInfo(ImageAspect::ColorBits, mip, 1, 0, 1),
             }
         },
         nullptr);
@@ -1306,6 +1309,12 @@ VkMemoryTextureCache::Setup(const Resources::ResourceId id)
             }
         }
 
+        VkComponentMapping mapping;
+        mapping.r = VkSwizzle[(uint)loadInfo.swizzle.red];
+        mapping.g = VkSwizzle[(uint)loadInfo.swizzle.green];
+        mapping.b = VkSwizzle[(uint)loadInfo.swizzle.blue];
+        mapping.a = VkSwizzle[(uint)loadInfo.swizzle.alpha];
+
         VkImageViewCreateInfo viewCreate =
         {
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -1314,7 +1323,7 @@ VkMemoryTextureCache::Setup(const Resources::ResourceId id)
             loadInfo.img,
             viewType,
             vkformat,
-            VkTypes::AsVkMapping(loadInfo.format),
+            mapping,
             viewRange
         };
         stat = vkCreateImageView(loadInfo.dev, &viewCreate, nullptr, &runtimeInfo.view);
@@ -1426,16 +1435,16 @@ VkMemoryTextureCache::Setup(const Resources::ResourceId id)
         if (loadInfo.bindless)
         {
             if (runtimeInfo.bind == 0xFFFFFFFF)
-                runtimeInfo.bind = VkShaderServer::Instance()->RegisterTexture(TextureId(id), runtimeInfo.type, isDepthFormat);
+                runtimeInfo.bind = Graphics::RegisterTexture(TextureId(id), runtimeInfo.type, isDepthFormat);
             else
-                VkShaderServer::Instance()->ReregisterTexture(TextureId(id), runtimeInfo.type, runtimeInfo.bind, isDepthFormat);
+                Graphics::ReregisterTexture(TextureId(id), runtimeInfo.type, runtimeInfo.bind, isDepthFormat);
 
             // if this is a depth-stencil texture, also register the stencil
             if (isDepthFormat)
             {
                 __Lock(textureStencilExtensionAllocator, Util::ArrayAllocatorAccess::Write);
                 IndexT& bind = textureStencilExtensionAllocator.Get<TextureExtension_StencilBind>(loadInfo.stencilExtension);
-                bind = VkShaderServer::Instance()->RegisterTexture(TextureId(id), runtimeInfo.type, true, true);
+                bind = Graphics::RegisterTexture(TextureId(id), runtimeInfo.type, true, true);
             }
         }
         else

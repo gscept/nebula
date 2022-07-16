@@ -30,7 +30,8 @@ struct TerrainSetupSettings
     float minHeight, maxHeight;
     float worldSizeX, worldSizeZ;
     SizeT tileWidth, tileHeight;
-    float vertexDensityX, vertexDensityY; // vertex density is vertices per meter
+    float quadsPerTileX, quadsPerTileY; // vertex density is vertices per meter
+    Graphics::GraphicsEntityId sun;
 };
 
 struct BiomeSetupSettings
@@ -38,6 +39,8 @@ struct BiomeSetupSettings
     float slopeThreshold;
     float heightThreshold;
     float uvScaleFactor;
+    bool useMaterialWeights;
+    Resources::ResourceName weights;
 };
 
 struct BiomeMaterial
@@ -65,10 +68,11 @@ enum class SubTextureUpdateState : uint8
 
 struct SubTextureUpdateJobOutput
 {
+    IndexT index;
     uint oldTiles, newTiles;
     uint oldMaxMip, newMaxMip;
+    float mipBias;
     Math::uint2 oldCoord;
-    Math::uint2 newCoord;
     SubTextureUpdateState updateState;
 };
 
@@ -91,8 +95,7 @@ public:
     static void SetupTerrain(
         const Graphics::GraphicsEntityId entity, 
         const Resources::ResourceName& heightMap, 
-        const Resources::ResourceName& decisionMap,
-        const Resources::ResourceName& albedoMap);
+        const Resources::ResourceName& decisionMap);
 
     /// setup a new biome
     static TerrainBiomeId CreateBiome(
@@ -151,11 +154,7 @@ private:
         CoreGraphics::TextureId heightMap;
         CoreGraphics::TextureId normalMap;
         CoreGraphics::TextureId decisionMap;
-        CoreGraphics::TextureId lowResAlbedoMap;
 
-        CoreGraphics::BufferId terrainConstants;
-        CoreGraphics::ResourceTableId terrainResourceTable;
-        
         CoreGraphics::ResourceTableId patchTable;
 
         CoreGraphics::BufferId vbo;

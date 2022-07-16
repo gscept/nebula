@@ -67,10 +67,10 @@ StreamSkeletonCache::LoadFromStream(const Resources::ResourceId id, const Util::
             // construct pose matrix
             joints[jointIndex].poseMatrix = Math::mat4();
             joints[jointIndex].poseMatrix.scale(joints[jointIndex].poseScale);
-            joints[jointIndex].poseMatrix = joints[jointIndex].poseMatrix * Math::rotationquat(joints[jointIndex].poseRotation);
+            joints[jointIndex].poseMatrix = Math::rotationquat(joints[jointIndex].poseRotation) * joints[jointIndex].poseMatrix;
             joints[jointIndex].poseMatrix.translate(joints[jointIndex].poseTranslation);
             if (joints[jointIndex].parentJoint != nullptr)
-                joints[jointIndex].poseMatrix = joints[jointIndex].poseMatrix * joints[jointIndex].parentJoint->poseMatrix;
+                joints[jointIndex].poseMatrix = joints[jointIndex].parentJoint->poseMatrix * joints[jointIndex].poseMatrix;
 
             // setup bind pose and mapping
             bindPoses[jointIndex] = Math::inverse(joints[jointIndex].poseMatrix);

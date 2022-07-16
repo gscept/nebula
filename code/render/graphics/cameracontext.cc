@@ -55,7 +55,7 @@ CameraContext::UpdateCameras(const Graphics::FrameContext& ctx)
     IndexT i;
     for (i = 0; i < viewproj.Size(); i++)
     {
-        viewproj[i] = views[i] * proj[i];
+        viewproj[i] = proj[i] * views[i];
     }
 }
 
