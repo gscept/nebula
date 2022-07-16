@@ -81,6 +81,7 @@ ImguiConsoleHandler::Error(const Util::String& msg)
 {
     ImguiConsole::Instance()->AppendToLog({ ImguiConsole::N_ERROR, msg });
 }
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -89,6 +90,7 @@ ImguiConsoleHandler::Warning(const Util::String& msg)
 {
     ImguiConsole::Instance()->AppendToLog({ ImguiConsole::N_WARNING, msg });
 }
+
 //------------------------------------------------------------------------------
 /**
 */
@@ -97,6 +99,5 @@ ImguiConsoleHandler::DebugOut(const Util::String& msg)
 {
     ImguiConsole::Instance()->AppendToLog({ImguiConsole::N_SYSTEM, msg});
 }
-
 
 } // namespace Dynui
