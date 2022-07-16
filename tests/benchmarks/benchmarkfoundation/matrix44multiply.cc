@@ -47,12 +47,12 @@ Matrix44Multiply::Run(Timer& timer)
         IndexT j;
         for (j = 0; j < num; j++)
         {
-            tmp0 = m0[j] * m1[j];
-            tmp1 = m1[j] * m0[j];
-            tmp2 = tmp0 * tmp1;
-            tmp0 = tmp1 * tmp2;
-            tmp1 = tmp0 * tmp2;
-            res[j] = tmp0 * tmp1;
+            tmp0 = m1[j] * m0[j];
+            tmp1 = m0[j] * m1[j];
+            tmp2 = tmp1 * tmp0;
+            tmp0 = tmp2 * tmp1;
+            tmp1 = tmp2 * tmp0;
+            res[j] = tmp1 * tmp0;
         }
     }
     timer.Stop();

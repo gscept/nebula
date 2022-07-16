@@ -34,8 +34,8 @@ void OpenScene()
     Math::mat4 r = Math::rotationx(Math::deg2rad(0.0f));
     Math::mat4 s = Math::scaling(Math::vec3(1, 1, 1));
     
-    Math::mat4 trs = s * r;
-    trs = trs * t;
+    Math::mat4 trs = r * s;
+    trs = t * trs;
     
     Models::ModelContext::SetTransform(entity, trs);
     

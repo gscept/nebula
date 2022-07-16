@@ -518,7 +518,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                     n_assert(parent != UINT32_MAX);
                     Math::mat4 parentTransform = nodeInstances.transformable.nodeTransforms[transformRange.begin + parent];
                     Math::mat4 orig = nodeInstances.transformable.origTransforms[j];
-                    nodeInstances.transformable.nodeTransforms[j] = orig * parentTransform;
+                    nodeInstances.transformable.nodeTransforms[j] = parentTransform * orig;
                 }
             }
         }

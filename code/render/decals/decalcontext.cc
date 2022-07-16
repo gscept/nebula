@@ -359,7 +359,7 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
         case PBRDecal:
         {
             auto& pbrDecal = decalState.pbrDecals[numPbrDecals];
-            Math::mat4 viewSpace = transforms[i] * viewTransform;
+            Math::mat4 viewSpace = viewTransform * transforms[i];
             Math::bbox bbox(viewSpace);
             bbox.pmin.store(pbrDecal.bboxMin);
             bbox.pmax.store(pbrDecal.bboxMax);
@@ -378,7 +378,7 @@ DecalContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
         case EmissiveDecal:
         {
             auto& emissiveDecal = decalState.emissiveDecals[numEmissiveDecals];
-            Math::mat4 viewSpace = transforms[i] * viewTransform;
+            Math::mat4 viewSpace = viewTransform * transforms[i];
             Math::bbox bbox(viewSpace);
             bbox.pmin.store(emissiveDecal.bboxMin);
             bbox.pmax.store(emissiveDecal.bboxMax);

@@ -111,7 +111,7 @@ CameraManager::InitUpdateCameraProcessor()
                 Graphics::GraphicsEntityId gid = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].gid;
                 Camera& settings = Singleton->viewHandleMap[Ids::Index(camera.viewHandle)].currentSettings;
                 UpdateCameraSettings(gid, settings, camera);
-                Graphics::CameraContext::SetView(gid, parentTransform.value * settings.localTransform);
+                Graphics::CameraContext::SetView(gid, settings.localTransform * parentTransform.value);
             }
         }
     ).Build();

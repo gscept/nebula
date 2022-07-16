@@ -39,7 +39,7 @@ void OpenScene()
             // setup visibility
             ObservableContext::Setup(ground, VisibilityEntityType::Model);
         });
-    ModelContext::SetTransform(ground, Math::scaling(1000, 1, 1000) * Math::translation(0,0,0));
+    ModelContext::SetTransform(ground, Math::translation(0,0,0) * Math::scaling(1000, 1, 1000));
     entities.Append(ground);
     entityNames.Append("Ground");
 

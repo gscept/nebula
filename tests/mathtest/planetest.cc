@@ -104,7 +104,7 @@ PlaneTest::Run()
     // transform
     pl.set(17.0f, -21.0f, 23.3425f, 13.2434f);
     pl = normalize(pl);
-    const mat4 mRotOneX_Trans123 = rotationx(1.0f) * translation(1.0f, 2.0f, 3.0f);
+    const mat4 mRotOneX_Trans123 = translation(1.0f, 2.0f, 3.0f) * rotationx(1.0f);
     pl = mRotOneX_Trans123 * pl;
     VERIFY(planeequal(pl, plane(0.847027f, -0.126076f, 0.971040f, 0.370908f)));
 

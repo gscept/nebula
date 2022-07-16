@@ -780,7 +780,7 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
                 // setup a perpsective transform with a fixed z near and far and aspect
                 Math::mat4 projection = spotLightAllocator.Get<SpotLight_ProjectionTransform>(typeIds[i]);
                 Math::mat4 view = spotLightAllocator.Get<SpotLight_Transform>(typeIds[i]);
-                Math::mat4 viewProjection = inverse(view) * projection;
+                Math::mat4 viewProjection = projection * inverse(view);
                 Graphics::GraphicsEntityId observer = spotLightAllocator.Get<SpotLight_Observer>(typeIds[i]);
                 Graphics::ContextEntityId ctxId = shadowCasterSliceMap[observer];
                 shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId.id) = viewProjection;
@@ -927,7 +927,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 
         for (IndexT splitIndex = 0; splitIndex < CSMUtil::NumCascades; ++splitIndex)
         {
-            Math::mat4 shadowTexture = transforms[splitIndex] * (textureScale * textureTranslation);
+            Math::mat4 shadowTexture = (textureTranslation * textureScale) * transforms[splitIndex];
             Math::vec4 scale = Math::vec4(
                 shadowTexture.row0.x,
                 shadowTexture.row1.y,
@@ -950,7 +950,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
         params.TerrainShadowMapSize[0] = params.TerrainShadowMapSize[1] = lightServerState.terrainShadowMapSize;
         params.InvTerrainSize[0] = params.InvTerrainSize[1] = 1.0f / lightServerState.terrainSize;
         params.TerrainShadowMapPixelSize[0] = params.TerrainShadowMapPixelSize[1] = 1.0f / lightServerState.terrainShadowMapSize;
-        (invViewTransform * lightServerState.csmUtil.GetShadowView()).store(params.CSMShadowMatrix);
+        (lightServerState.csmUtil.GetShadowView() * invViewTransform).store(params.CSMShadowMatrix);
 
         flags |= USE_SHADOW_BITFLAG;
     }
@@ -1016,7 +1016,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                 {
                     Graphics::GraphicsEntityId observer = spotLightAllocator.Get<SpotLight_Observer>(typeIds[i]);
                     Graphics::ContextEntityId ctxId = shadowCasterSliceMap[observer];
-                    shadowProj = invViewTransform * shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId.id);
+                    shadowProj = shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId.id) * invViewTransform;
                 }
                 spotLight.shadowExtension = -1;
                 spotLight.projectionExtension = -1;
@@ -1049,7 +1049,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                     numSpotLightsProjection++;
                 }
 
-                Math::mat4 viewSpace = trans * viewTransform;
+                Math::mat4 viewSpace = viewTransform * trans;
                 Math::vec4 posAndRange = viewSpace.position;
                 posAndRange.w = range[i];
 
@@ -1237,7 +1237,7 @@ LightContext::OnRenderDebug(uint32_t flags)
             proj.row3 = Math::vec4(0, 0, 0, 1);
 
             // we want the points to first get projected, then transformed v * Projection * Transform;
-            Math::mat4 frustum = proj * unscaledTransform;
+            Math::mat4 frustum = unscaledTransform * proj;
             
             Math::vec4 col = Math::vec4(colors[i], 1.0f);
 

@@ -494,7 +494,7 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
 
                         // update system transform
                         if (pnode->GetEmitterAttrs().GetBool(Particles::EmitterAttrs::Billboard))
-                            system.transform = context->invViewMatrix * system.transform;
+                            system.transform = system.transform * context->invViewMatrix;
                         system.transform.store(block.EmitterTransform);
 
                         // update parameters
@@ -802,7 +802,7 @@ ParticleContext::EmitParticle(ParticleRuntime& rt, ParticleSystemRuntime& srt, c
     float maxSpread = emissionEnvSamples[EmitterAttrs::SpreadMax];
     float theta = Math::deg2rad(Math::lerp(minSpread, maxSpread, Math::rand()));
     float rho = N_PI_DOUBLE * Math::rand();
-    mat4 rot = rotationaxis(xyz(emPoint.tangent), theta) * rotationaxis(xyz(emPoint.normal), rho);
+    mat4 rot = rotationaxis(xyz(emPoint.normal), rho) * rotationaxis(xyz(emPoint.tangent), theta);
     vec4 emNormal = rot * emPoint.normal;
 
     vec3 dummy, dummy2;

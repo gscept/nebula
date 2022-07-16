@@ -84,7 +84,7 @@ decompose(const mat4& mat, vec3& outScale, quat& outRotation, vec3& outTranslati
     outRotation = rotationmatrix(rotation);
 
     // The scale is simply the removal of the rotation from the non-translated matrix
-    mat4 scaleMatrix = mCopy * inverse(rotation);
+    mat4 scaleMatrix = inverse(rotation) * mCopy;
     vec4 tempScale;
     scaleMatrix.get_scale(tempScale);
     outScale = xyz(tempScale);
@@ -124,7 +124,7 @@ affinetransformation(scalar scale, const vec3& rotationCenter, const quat& rotat
 
     mat4 m = scalem;
     m.r[3] = _mm_sub_ps(m.r[3].vec, rotc.vec);
-    m = m * rot;
+    m = rot * m;
     m.r[3] = _mm_add_ps(_mm_add_ps(m.r[3].vec, rotc.vec), trans.vec);
     return m;
 }
@@ -167,11 +167,11 @@ transformation(const vec3& scalingCenter, const quat& scalingRotation, const vec
     mat4 mrotate = rotationquat(rotation);
     mat4 mscale = scaling(scale);
 
-    mat4 m = mscaletrans * mscalerotateinv;
-    m = m * mscale;
-    m = m * mscalerotate;
+    mat4 m = mscalerotateinv * mscaletrans;
+    m = mscale * m;
+    m = mscalerotate * m;
     m.r[3] = m.r[3] + vec4(scalingCenter, 0.0f) - rotc;
-    m = m * mrotate;
+    m = mrotate * m;
     m.r[3] = m.r[3] + rotc + translate;
     return m;
 }

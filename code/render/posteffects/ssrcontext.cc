@@ -193,7 +193,7 @@ SSRContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const 
     Math::mat4 conv = cameraSettings.GetProjTransform();
     conv.r[1] = -conv.r[1];
 
-    Math::mat4 viewToTextureSpaceMatrix = conv * scrScale;
+    Math::mat4 viewToTextureSpaceMatrix = scrScale * conv;
 
     SsrCs::SSRBlock ssrBlock;
     viewToTextureSpaceMatrix.store(ssrBlock.ViewToTextureSpace);

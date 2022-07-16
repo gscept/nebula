@@ -69,7 +69,7 @@ FreeCameraUtil::Update()
 
     mat4 xMat = rotationx(this->viewAngles.theta - (N_PI * 0.5f));
     mat4 yMat = rotationy(this->viewAngles.rho);
-    this->cameraTransform = xMat * yMat;
+    this->cameraTransform = yMat * xMat;
 
     float currentMoveSpeed = moveSpeed;
     if(this->accelerateButton)

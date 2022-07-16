@@ -81,7 +81,7 @@ SkeletonEvalJob(const Jobs::JobFuncContext& ctx)
 
             // add mix pose if the pointer is set
             if (mixPoseMatrixBase)
-                unscaledMatrix = unscaledMatrix * mixPoseMatrixBase[jointIndex];
+                unscaledMatrix = mixPoseMatrixBase[jointIndex] * unscaledMatrix;
 
             // update scaled matrix
             // scale after rotation
@@ -111,10 +111,10 @@ SkeletonEvalJob(const Jobs::JobFuncContext& ctx)
 
                 // apply rotation and relative animation translation of parent 
                 const mat4& parentUnscaledMatrix = unscaledMatrixBase[comps.parentJointIndex];
-                unscaledMatrix = unscaledMatrix * parentUnscaledMatrix;
-                scaledMatrix = scaledMatrix * parentUnscaledMatrix;
+                unscaledMatrix = parentUnscaledMatrix * unscaledMatrix;
+                scaledMatrix = parentUnscaledMatrix * scaledMatrix;
             }
-            skinMatrixBase[jointIndex] = invPoseMatrixBase[jointIndex] * scaledMatrix;
+            skinMatrixBase[jointIndex] = scaledMatrix * invPoseMatrixBase[jointIndex];
         }
     }
 }
@@ -187,7 +187,7 @@ SkeletonEvalJobWithVariation(const Jobs::JobFuncContext& ctx)
 
             // add mix pose if the pointer is set
             if (mixPoseMatrixBase)  
-                unscaledMatrix = unscaledMatrix * mixPoseMatrixBase[jointIndex];
+                unscaledMatrix = mixPoseMatrixBase[jointIndex] * unscaledMatrix;
 
             // update scaled matrix
             // scale after rotation
@@ -219,10 +219,10 @@ SkeletonEvalJobWithVariation(const Jobs::JobFuncContext& ctx)
 
                 // apply rotation and relative animation translation of parent 
                 const mat4& parentUnscaledMatrix = unscaledMatrixBase[comps.parentJointIndex];
-                unscaledMatrix = unscaledMatrix * parentUnscaledMatrix;
-                scaledMatrix = scaledMatrix * parentUnscaledMatrix;
+                unscaledMatrix = parentUnscaledMatrix * unscaledMatrix;
+                scaledMatrix = parentUnscaledMatrix * scaledMatrix;
             }
-            skinMatrixBase[jointIndex] = invPoseMatrixBase[jointIndex] * scaledMatrix;
+            skinMatrixBase[jointIndex] = scaledMatrix * invPoseMatrixBase[jointIndex];
         }
     }
 }

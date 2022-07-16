@@ -57,7 +57,7 @@ View::UpdateResources(const IndexT frameIndex, const IndexT bufferIndex)
         Math::mat4 view = CameraContext::GetView(this->camera);
         Math::mat4 proj = CameraContext::GetProjection(this->camera);
         proj.row1 = -proj.row1;
-        Math::mat4 viewProj = view * proj;
+        Math::mat4 viewProj = proj * view;
         Math::mat4 invView = Math::inverse(view);
         Math::mat4 invProj = Math::inverse(proj);
         Math::mat4 invViewProj = Math::inverse(viewProj);

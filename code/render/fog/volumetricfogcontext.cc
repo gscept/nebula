@@ -441,7 +441,7 @@ VolumetricFogContext::UpdateViewDependentResources(const Ptr<Graphics::View>& vi
             fogGenericVolumeAllocator.Get<FogVolume_Absorption>(i).store(fog.absorption);
             fog.turbidity = fogGenericVolumeAllocator.Get<FogVolume_Turbidity>(i);
             fog.falloff = 64.0f;
-            Math::mat4 transform = fogBoxVolumeAllocator.Get<FogBoxVolume_Transform>(typeIds[i]) * viewTransform;
+            Math::mat4 transform = viewTransform * fogBoxVolumeAllocator.Get<FogBoxVolume_Transform>(typeIds[i]);
             Math::bbox box(transform);
             box.pmin.store3(fog.bboxMin);
             box.pmax.store3(fog.bboxMax);
