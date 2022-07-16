@@ -413,7 +413,7 @@ NFbxExporter::NeedsConversion(const Util::String& path)
 
     // and if the .attributes is older than the n3 (attributes controls both model, and animation resource)
     bool attributesNewer = ExporterBase::NeedsConversion(attributes, model);
-    // ...and if the .physics is older than the n3
+    // ...and if the .physics is older than the np3
     bool physicsNewer = ExporterBase::NeedsConversion(physics, physModel);
 
     // ...if the mesh is newer
