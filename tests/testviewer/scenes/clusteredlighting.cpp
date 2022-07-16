@@ -274,7 +274,7 @@ void StepFrame()
                 Math::vec4{ 1.0f, 0.0f, 0.0f, 1.0f }.store(perInstanceBlock.TeamColor);
             else
                 Math::vec4{ 0.0f, 0.0f, 1.0f, 1.0f }.store(perInstanceBlock.TeamColor);
-            CoreGraphics::SetGraphicsConstants(offset, perInstanceBlock);
+            CoreGraphics::SetConstants(offset, perInstanceBlock);
 
         }
         j++;
