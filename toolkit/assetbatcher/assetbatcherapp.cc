@@ -121,15 +121,6 @@ AssetBatcherApp::DoWork()
     AssignRegistry::Instance()->SetAssign(Assign("tex", this->projectInfo.GetAttr("TextureDestDir")));
 
     bool force = false;
-    if (this->args.HasArg("-source"))
-    {
-        source = this->args.GetString("-source");
-        if (!sources.Contains(source))
-        {
-            this->logger.Error("Unknown source: %s\n", source.AsCharPtr());
-            return;
-        }
-    }
     if (this->args.HasArg("-work"))
     {
         String workOverride = this->args.GetString("-work");
@@ -139,6 +130,15 @@ AssetBatcherApp::DoWork()
     else
     {
         sources = this->projectInfo.GetListAttr("AssetSources");
+    }
+    if (this->args.HasArg("-source"))
+    {
+        source = this->args.GetString("-source");
+        if (!sources.Contains(source))
+        {
+            this->logger.Error("Unknown source: %s\n", source.AsCharPtr());
+            return;
+        }
     }
     if (this->args.HasArg("-asset"))
     {
