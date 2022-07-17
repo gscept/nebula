@@ -26,10 +26,6 @@ fips_add_subdirectory(tests)
 fips_ide_group(Toolkit)
 fips_add_subdirectory(toolkit)
 
-fips_ide_group(Editor)
-fips_add_subdirectory(toolkit/editorbackend)
-fips_add_subdirectory(toolkit/editor)
-
 if(NOT FIPS_IMPORT)
     fips_finish()
 endif()
