@@ -44,8 +44,9 @@ ProfilingPopScope()
     ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
 
     // we can safely assume the scope and timers won't be modified from different threads here
-    ProfilingScope scope = ctx.scopes.Pop();
 
+    ProfilingScope scope;
+    
     // add to category lookup
     scope.duration = ctx.timer.GetTime() - scope.start;
     //categoryLock.Enter();
@@ -55,6 +56,7 @@ ProfilingPopScope()
     // add to top level scopes if stack is empty
     if (ctx.scopes.IsEmpty())
     {
+        scope = ctx.scopes.Pop();
         if (scope.accum)
         {
             if (!ctx.topLevelScopes.IsEmpty())
