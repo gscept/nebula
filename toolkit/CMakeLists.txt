@@ -18,9 +18,6 @@ fips_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 fips_ide_group(toolkit)
 fips_add_subdirectory(toolkit-common)
 
-fips_ide_group(Editor)
-fips_add_subdirectory(editor)
-
 # these need fbx
 IF (NOT N_MINIMAL_TOOLKIT)
 	fips_add_subdirectory(shaderc)
@@ -28,3 +25,6 @@ IF (NOT N_MINIMAL_TOOLKIT)
 	fips_add_subdirectory(assetbatcher)
 	fips_add_subdirectory(assetc)
 ENDIF()
+
+fips_ide_group(Editor)
+fips_add_subdirectory(editor)
