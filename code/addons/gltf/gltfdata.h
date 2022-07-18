@@ -99,7 +99,7 @@ struct Accessor : GltfBase
     ComponentType componentType{ ComponentType::None };
     Type type{ Type::None };
 
-    Base::VertexComponentBase::Format format;
+    Base::VertexComponentBase::Format format{ Base::VertexComponentBase::Format::InvalidFormat };
     Sparse sparse;
 
     Util::String name;
@@ -149,7 +149,7 @@ struct Buffer : GltfBase
     Util::String uri;
     Util::Blob data;    
     Util::String mimeType;
-    bool embedded;
+    bool embedded{ false };
     // loads buffer into data blob, uses either file or embedded buffer
     void Load(Util::String const & folder);
     // encodes data blob into either uri string or saves as external file
@@ -236,7 +236,7 @@ struct Material : GltfBase
     struct Texture : GltfBase
     {
         int32_t index{ -1 };
-        int32_t texCoord;        
+        int32_t texCoord{ -1 };
 
         bool empty() const noexcept
         {
@@ -312,7 +312,7 @@ struct Primitive : GltfBase
     int32_t material{ -1 };
 
     Mode mode{ Mode::Triangles };
-    CoreGraphics::PrimitiveTopology::Code nebulaMode;
+    CoreGraphics::PrimitiveTopology::Code nebulaMode{ CoreGraphics::PrimitiveTopology::Code::InvalidPrimitiveTopology };
 
 
     // dictionary with attribute to accessor index mapping
@@ -338,9 +338,10 @@ struct Node : GltfBase
         Transform,
         Camera,
         Mesh,
-        Skin
+        Skin,
+        InvalidType
     };
-    Type type;
+    Type type{ Type::InvalidType };
     int32_t camera{ -1 };
     int32_t mesh{ -1 };
     int32_t skin{ -1 };
@@ -349,7 +350,7 @@ struct Node : GltfBase
     Math::mat4 matrix;
     Math::quat rotation;
     Math::vec3 scale{ Math::vector(1.0f) };
-    Math::vec3 translation;
+    Math::vec3 translation{ 0,0,0 };
 
     Util::Array<int32_t> children;
     Util::Array<float> weights;    
