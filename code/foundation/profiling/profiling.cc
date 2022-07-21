@@ -98,6 +98,7 @@ ProfilingNewFrame()
     {
         profilingContexts[i].topLevelScopes.Clear();
         profilingContexts[i].timer.Reset();
+        profilingContexts[i].scopes.Clear();
     }
 }
 

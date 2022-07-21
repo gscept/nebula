@@ -20,7 +20,7 @@ fips_add_subdirectory(toolkit-common)
 
 # these need fbx
 IF (NOT N_MINIMAL_TOOLKIT)
-	fips_add_subdirectory(shaderc)
+	#fips_add_subdirectory(shaderc)
 	fips_add_subdirectory(toolkitutil)
 	fips_add_subdirectory(assetbatcher)
 	fips_add_subdirectory(assetc)

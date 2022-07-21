@@ -46,6 +46,9 @@ Win32Heap::Win32Heap(const char* heapName, size_t initialSize, size_t maxSize)
     #if __WIN32__
     ULONG heapFragValue = 2;
     HeapSetInformation(this->heap, HeapCompatibilityInformation, &heapFragValue, sizeof(heapFragValue));
+    #if NEBULA_MEMORY_ADVANCED_DEBUGGING
+    HeapSetInformation(this->heap, HeapEnableTerminationOnCorruption, nullptr, 0);
+    #endif
     #endif
 
     // link into Heap list

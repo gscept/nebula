@@ -13,6 +13,7 @@
 #include "input/keyboard.h"
 #include "pvd/PxPvdTransport.h"
 #include "PxSimulationEventCallback.h"
+#include "profiling/profiling.h"
 
 using namespace physx;
 
@@ -164,6 +165,7 @@ PhysxState::DiscardActor(ActorId id)
 void
 PhysxState::Update(Timing::Time delta)
 {
+    N_MARKER_BEGIN(Update, Physics);
     if (Input::InputServer::Instance()->GetDefaultKeyboard()->KeyDown(Input::Key::F3))
     {
         if (!this->pvd->isConnected()) this->ConnectPVD();
@@ -183,6 +185,53 @@ PhysxState::Update(Timing::Time delta)
         }
         state.time += PHYSICS_RATE;
     }
+    N_MARKER_END();
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysxState::BeginFrame(Timing::Time delta)
+{
+    N_MARKER_BEGIN(BeginFrame, Physics);
+    this->time -= delta;
+    // we limit the simulation to 5 frames
+    this->time = Math::max(this->time, -5.0 * PHYSICS_RATE);
+    while (this->time < PHYSICS_RATE)
+    {
+        for (auto& scene : this->activeScenes)
+        {
+            // simulate synchronously until we are in sync again
+            scene.scene->simulate(PHYSICS_RATE);
+            scene.scene->fetchResults(true);
+        }
+        state.time += PHYSICS_RATE;
+    }
+    for (auto& scene : this->activeScenes)
+    {
+        // simulate synchronously until we are in sync again
+        scene.scene->simulate(PHYSICS_RATE);
+    }
+
+    N_MARKER_END();
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+PhysxState::EndFrame()
+{
+    N_MARKER_BEGIN(EndFrame, Physics);
+    for (auto& scene : this->activeScenes)
+    {
+        scene.scene->fetchResults(true);
+    }
+    state.time += PHYSICS_RATE;
+}
+
+
 PhysxState state;
 }

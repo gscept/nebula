@@ -51,8 +51,14 @@ public:
     void Setup();
     ///
     void Shutdown();
-    ///
+
+    /// do a sync full simulation step. Do not mix Update and Begin/EndFrame!
     void Update(Timing::Time delta);
+
+    /// explicit call to simulate, will process async in the background
+    void BeginFrame(Timing::Time delta);
+    // explicit call to fetch the results of the simulation
+    void EndFrame();
 
     /// create new empty actor
     physx::PxRigidActor* CreateActor(bool dynamic, Math::mat4 const & transform);

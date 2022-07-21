@@ -17,7 +17,7 @@
 #include "nflatbuffer/flatbufferinterface.h"
 
 #define PHYSX_MEMORY_ALLOCATION_DEBUG false
-#define PHYSX_THREADS 2
+#define PHYSX_THREADS 4
 
 using namespace physx;
 using namespace Physics;
@@ -253,14 +253,45 @@ GetNrMaterials()
 }
 
 
+#if NEBULA_DEBUG
+// used for detecting wrong api usage
+static bool updateCalled = false;
+#endif
+
 //------------------------------------------------------------------------------
 /**
 */
 void
 Update(Timing::Time delta)
 {
-    state.Update(delta);    
+#if NEBULA_DEBUG
+    updateCalled = true;
+#endif
+    state.Update(delta);
 }
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+BeginFrame(Timing::Time delta)
+{
+#if NEBULA_DEBUG
+    n_assert2(updateCalled == false, "Mixed sync Update in PhysicsInterface with Split Begin/EndFrame, this is most definitely wrong");
+#endif
+    state.BeginFrame(delta);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+EndFrame()
+{
+    state.EndFrame();
+}
+
 
 //------------------------------------------------------------------------------
 /**

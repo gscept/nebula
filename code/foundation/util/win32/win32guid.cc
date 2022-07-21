@@ -116,7 +116,8 @@ Win32Guid::IsValid() const
 void
 Win32Guid::Generate()
 {
-    UuidCreate(&this->uuid);
+    RPC_STATUS status = UuidCreate(&this->uuid);
+    n_assert(status == RPC_S_OK);
 }
 
 //------------------------------------------------------------------------------
@@ -126,7 +127,8 @@ String
 Win32Guid::AsString() const
 {
     const char* uuidStr;
-    UuidToString((UUID*) &this->uuid, (RPC_CSTR*) &uuidStr);
+    RPC_STATUS status = UuidToString((UUID*)&this->uuid, (RPC_CSTR*)&uuidStr);
+    n_assert(status == RPC_S_OK);
     String result = uuidStr;
     RpcStringFree((RPC_CSTR*)&uuidStr);
     return result;

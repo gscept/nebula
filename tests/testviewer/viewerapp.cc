@@ -261,6 +261,8 @@ void
 SimpleViewerApplication::Close()
 {
     Physics::ShutDown();
+    Dynui::ImguiContext::Discard();
+    Im3d::Im3dContext::Discard();
     Jobs2::JobSystemUninit();
     App::Application::Close();
     DestroyWindow(this->wnd);
