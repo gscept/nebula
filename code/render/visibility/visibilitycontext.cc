@@ -12,6 +12,7 @@
 #include "lighting/lightprobecontext.h"
 #include "models/modelcontext.h"
 #include "particles/particlecontext.h"
+#include "characters/charactercontext.h"
 
 #include "systems/boxsystem.h"
 #include "systems/octreesystem.h"
@@ -176,7 +177,9 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         for (i = 0; i < ObserverContext::systems.Size(); i++)
         {
             VisibilitySystem* sys = ObserverContext::systems[i];
-            sys->Run(prevSystemCounters, {&idCounter, &Particles::ParticleContext::totalCompletionCounter});
+
+            // We need to pass the particles constant update here as it calculates the bounding box for visibility
+            sys->Run(prevSystemCounters, { &idCounter, &Particles::ParticleContext::constantUpdateCounter });
             prevSystemCounters = sys->GetCompletionCounters();
         }
     }
@@ -211,6 +214,15 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         jobCtx.drawList = &visibilities;
         jobCtx.allocator = &allocator;
         jobCtx.renderables = &nodeInstances;
+
+        const Util::FixedArray<const Threading::AtomicCounter*> waitCounters =
+        {
+            prevSystemCounters,
+            &Models::ModelContext::constantsUpdateCounter,
+            &Characters::CharacterContext::constantUpdateCounter,
+            // We can skip the particle constant update counter as it's been depended on by the id job higher up
+            // &Particles::ParticleContext::constantUpdateCounter 
+        };
 
         Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
         {
@@ -355,7 +367,7 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
                 numDraws++;
             }
         },
-        nodes.Size(), jobCtx, { &prevSystemCounters[i] }, &completionCounter, finishedEvent);
+        nodes.Size(), jobCtx, waitCounters, &completionCounter, finishedEvent);
     }
 
     waitEvents.Enqueue(finishedEvent);

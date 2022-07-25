@@ -28,6 +28,8 @@ ModelContext::ModelContextAllocator ModelContext::modelContextAllocator;
 ModelContext::ModelInstance ModelContext::nodeInstances;
 __ImplementContext(ModelContext, ModelContext::modelContextAllocator);
 
+Threading::AtomicCounter ModelContext::constantsUpdateCounter = 0;
+
 Util::Dictionary<Models::ModelNode*, ModelContext::MaterialInstanceContext> ModelContext::materialInstanceContexts;
 
 Threading::Event ModelContext::completionEvent;
@@ -594,7 +596,6 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
         }
     }, nodeInstanceStateRanges.Size(), 256, renderCtx, { &transformUpdateCounter }, &lodUpdateCounter, nullptr);
 
-    static Threading::AtomicCounter constantsUpdateCounter = 0;
     n_assert(constantsUpdateCounter == 0);
     constantsUpdateCounter = 1;
 
@@ -622,7 +623,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 Math::mat4 transform = nodeInstances.transformable.nodeTransforms[transformRange.begin + nodeInstances.renderable.nodeTransformIndex[j]];
 
                 // Allocate object constants
-                ObjectsShared::ObjectBlock block;
+                alignas(16) ObjectsShared::ObjectBlock block;
                 transform.store(block.Model);
                 inverse(transform).store(block.InvModel);
                 block.DitherFactor = nodeInstances.renderable.nodeLods[j];
@@ -632,7 +633,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 nodeInstances.renderable.nodeStates[j].resourceTableOffsets[nodeInstances.renderable.nodeStates[j].objectConstantsIndex] = offset;
             }
         }
-    }, nodeInstanceStateRanges.Size(), 256, renderCtx, { &lodUpdateCounter }, & constantsUpdateCounter, &ModelContext::completionEvent);
+    }, nodeInstanceStateRanges.Size(), 256, renderCtx, { &lodUpdateCounter }, &constantsUpdateCounter, &ModelContext::completionEvent);
 }
 
 

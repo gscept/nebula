@@ -30,6 +30,7 @@ __ImplementContext(CharacterContext, CharacterContext::characterContextAllocator
 
 Util::HashTable<Util::StringAtom, CoreAnimation::AnimSampleMask> CharacterContext::masks;
 Threading::Event CharacterContext::totalCompletionEvent;
+Threading::AtomicCounter CharacterContext::constantUpdateCounter = 0;
 
 //------------------------------------------------------------------------------
 /**
@@ -54,7 +55,6 @@ void
 CharacterContext::Create()
 {
     __CreateContext();
-
     __bundle.OnBegin = CharacterContext::UpdateAnimations;
     __bundle.OnWaitForWork = CharacterContext::WaitForCharacterJobs;
     __bundle.StageBits = &CharacterContext::__state.currentStage;
@@ -64,7 +64,6 @@ CharacterContext::Create()
     CharacterContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
-    __CreateContext();
 }
 
 //------------------------------------------------------------------------------
@@ -819,7 +818,6 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
         // Run job
         Jobs2::JobDispatch(EvalCharacter, models.Size(), 64, charCtx, nullptr, &animationCounter, nullptr);
 
-        static Threading::AtomicCounter constantUpdateCounter = 0;
         n_assert(constantUpdateCounter == 0);
         constantUpdateCounter = 1;
 
@@ -873,7 +871,8 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
                         usedMatrices[j] = Math::mat4();
                     }
                 }
-                // update skinning palette
+
+                // Update skinning palette
                 uint offset = CoreGraphics::SetConstants(usedMatrices.Begin(), usedMatrices.Size());
                 renderables.nodeStates[node].resourceTableOffsets[renderables.nodeStates[node].skinningConstantsIndex] = offset;
             }

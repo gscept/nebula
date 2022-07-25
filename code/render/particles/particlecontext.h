@@ -77,7 +77,7 @@ public:
 
     static CoreGraphics::MeshId DefaultEmitterMesh;
 
-    static Threading::AtomicCounter totalCompletionCounter;
+    static Threading::AtomicCounter constantUpdateCounter;
     static Threading::Event totalCompletionEvent;
 private:
 

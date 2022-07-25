@@ -33,7 +33,7 @@ Timing::Time StepTime = 1.0f / 60.0f;
 
 const SizeT ParticleContextNumEnvelopeSamples = 192;
 Threading::AtomicCounter allSystemsCompleteCounter = 0;
-Threading::AtomicCounter ParticleContext::totalCompletionCounter = 0;
+Threading::AtomicCounter ParticleContext::constantUpdateCounter = 0;
 Threading::Event ParticleContext::totalCompletionEvent;
 
 struct
@@ -59,7 +59,6 @@ struct
 */
 ParticleContext::ParticleContext()
 {
-    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -76,6 +75,7 @@ ParticleContext::~ParticleContext()
 void 
 ParticleContext::Create()
 {
+    __CreateContext();
     __bundle.OnBegin = ParticleContext::UpdateParticles;
     __bundle.OnPrepareView = ParticleContext::OnPrepareView;
     __bundle.OnBeforeFrame = ParticleContext::WaitForParticleUpdates; // wait for jobs before we issue visibility
@@ -215,7 +215,6 @@ ParticleContext::Create()
     state.primGroup.SetBaseVertex(0);
     state.primGroup.SetNumVertices(4);
 
-    __CreateContext();
 }
 
 //------------------------------------------------------------------------------
@@ -457,8 +456,8 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
         jobCtx.models = &graphicsEntities;
         jobCtx.invViewMatrix = Graphics::CameraContext::GetTransform(view->GetCamera());
 
-        n_assert(ParticleContext::totalCompletionCounter == 0);
-        ParticleContext::totalCompletionCounter = 1;
+        n_assert(ParticleContext::constantUpdateCounter == 0);
+        ParticleContext::constantUpdateCounter = 1;
 
         // Run job to update constants, can be per-view because of the billboard flag
         Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
@@ -490,7 +489,7 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
 
                         ParticleSystemNode* pnode = reinterpret_cast<ParticleSystemNode*>(renderables.nodes[stateRange.begin + system.renderableIndex]);
 
-                        ::Particle::ParticleObjectBlock block;
+                        alignas (16) ::Particle::ParticleObjectBlock block;
 
                         // update system transform
                         if (pnode->GetEmitterAttrs().GetBool(Particles::EmitterAttrs::Billboard))
@@ -510,10 +509,10 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
                 }
             }
 
-        }, allSystems.Size(), 128, jobCtx, { &allSystemsCompleteCounter }, &ParticleContext::totalCompletionCounter, &ParticleContext::totalCompletionEvent);
+        }, allSystems.Size(), 128, jobCtx, { &allSystemsCompleteCounter }, &ParticleContext::constantUpdateCounter, &ParticleContext::totalCompletionEvent);
     }
 
-    if (ParticleContext::totalCompletionCounter == 0)
+    if (ParticleContext::constantUpdateCounter == 0)
         ParticleContext::totalCompletionEvent.Signal();
 }
 
