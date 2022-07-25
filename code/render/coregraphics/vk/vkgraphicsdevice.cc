@@ -60,10 +60,10 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
     struct ConstantsRingBuffer
     {
         // handle global constant memory
-        Threading::AtomicCounter startAddress, endAddress;
+        Threading::AtomicCounter endAddress;
         struct FlushedRanges
         {
-            Threading::AtomicCounter flushedStart, flushedEnd;
+            SizeT flushedStart;
         } gfx, cmp;
         bool allowConstantAllocation;
     };
@@ -922,11 +922,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
     state.constantBufferRings.Resize(info.numBufferedFrames);
 
-#ifdef CreateSemaphore
-#pragma push_macro("CreateSemaphore")
-#undef CreateSemaphore
-#endif
-
     N_BUDGET_COUNTER_SETUP(N_CONSTANT_MEMORY, info.globalConstantBufferMemorySize);
     N_BUDGET_COUNTER_SETUP(N_VERTEX_MEMORY, info.globalVertexBufferMemorySize);
     N_BUDGET_COUNTER_SETUP(N_INDEX_MEMORY, info.globalIndexBufferMemorySize);
@@ -936,9 +931,8 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     {
         Vulkan::GraphicsDeviceState::ConstantsRingBuffer& cboRing = state.constantBufferRings[i];
         cboRing.allowConstantAllocation = true;
-        cboRing.startAddress = cboRing.endAddress = 0;
+        cboRing.endAddress = 0;
         cboRing.gfx.flushedStart = cboRing.cmp.flushedStart = 0;
-        cboRing.gfx.flushedEnd = cboRing.cmp.flushedEnd = 0;
     }
 
     BufferCreateInfo cboInfo;
@@ -967,8 +961,6 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
     cboInfo.usageFlags = CoreGraphics::TransferBufferDestination | CoreGraphics::ConstantBuffer;
     cboInfo.queueSupport = CoreGraphics::ComputeQueueSupport;
     state.globalComputeConstantBuffer = CreateBuffer(cboInfo);
-
-#pragma pop_macro("CreateSemaphore")
 
     state.maxNumBufferedFrames = info.numBufferedFrames;
 
@@ -1552,7 +1544,7 @@ SetConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size)
 //------------------------------------------------------------------------------
 /**
 */
-uint 
+ConstantBufferOffset
 AllocateConstantBufferMemory(uint size)
 {
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& sub = state.constantBufferRings[state.currentBufferedFrameIndex];
@@ -1564,18 +1556,15 @@ AllocateConstantBufferMemory(uint size)
 
     // Allocate the memory range
     int ret = Threading::Interlocked::Add(&sub.endAddress, alignedSize);
-    Threading::Interlocked::Add(&sub.cmp.flushedEnd, alignedSize);
-    Threading::Interlocked::Add(&sub.gfx.flushedEnd, alignedSize);
 
     // If we have to wrap around, or we are fingering on the range of the next frame submission buffer...
     if (ret + alignedSize >= state.globalConstantBufferMaxValue)
     {
-        n_error("Over allocation of graphics constant memory! Memory will be overwritten!\n");
+        n_error("Over allocation of constant memory! Memory will be overwritten!\n");
 
         // Return dummy value
         return ret;
     }
-
     return ret;
 }
 
@@ -1609,7 +1598,7 @@ FlushConstants(const CoreGraphics::CmdBufferId cmds, const CoreGraphics::QueueTy
     VkDevice dev = state.devices[state.currentDevice];
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer::FlushedRanges& ranges = queue == CoreGraphics::GraphicsQueueType ? sub.gfx : sub.cmp;
 
-    int size = ranges.flushedEnd - ranges.flushedStart;
+    VkDeviceSize size = sub.endAddress - ranges.flushedStart;
     if (size > 0)
     {
         // And then copy from staging buffer to GPU buffer
@@ -1626,9 +1615,9 @@ FlushConstants(const CoreGraphics::CmdBufferId cmds, const CoreGraphics::QueueTy
         {
             VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
             nullptr,
-            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_UNIFORM_READ_BIT,
             VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
-            BufferGetVk(buf), copy.dstOffset, copy.size
+            BufferGetVk(buf), (VkDeviceSize)ranges.flushedStart, size
         };
 
         VkPipelineStageFlagBits bits = queue == CoreGraphics::GraphicsQueueType ? VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
@@ -1640,8 +1629,7 @@ FlushConstants(const CoreGraphics::CmdBufferId cmds, const CoreGraphics::QueueTy
             0, nullptr
         );
     }
-    ranges.flushedStart = ranges.flushedEnd;
-    //sub.startAddress = sub.endAddress;
+    ranges.flushedStart = sub.endAddress;
 }
 
 //------------------------------------------------------------------------------
@@ -2067,10 +2055,8 @@ NewFrame()
 
     // update constant buffer offsets
     Vulkan::GraphicsDeviceState::ConstantsRingBuffer& nextCboRing = state.constantBufferRings[state.currentBufferedFrameIndex];
-    nextCboRing.startAddress = 0;
     nextCboRing.endAddress = 0;
-    nextCboRing.gfx.flushedStart = nextCboRing.cmp.flushedStart = nextCboRing.startAddress;
-    nextCboRing.gfx.flushedEnd = nextCboRing.cmp.flushedEnd = nextCboRing.endAddress;
+    nextCboRing.gfx.flushedStart = nextCboRing.cmp.flushedStart = nextCboRing.endAddress;
 
     Vulkan::GraphicsDeviceState::UploadRingBuffer& nextUploadRing = state.uploadRingBuffers[state.currentBufferedFrameIndex];
     nextUploadRing.uploadStartAddress = state.globalUploadBufferMaxValue * state.currentBufferedFrameIndex;
