@@ -317,7 +317,7 @@ vec3::set(scalar x, scalar y, scalar z)
 __forceinline scalar&
 vec3::operator[]( const int index )
 {
-    n_assert(index < 4);
+    n_assert(index < 3);
     return this->v[index];
 }
 
@@ -327,7 +327,7 @@ vec3::operator[]( const int index )
 __forceinline scalar
 vec3::operator[](const int index) const
 {
-    n_assert(index < 4);
+    n_assert(index < 3);
     return this->v[index];
 }
 

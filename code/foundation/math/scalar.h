@@ -420,7 +420,7 @@ sgn(scalar a)
 __forceinline constexpr scalar
 deg2rad(scalar d)
 {
-    return (scalar)((d * PI) / 180.0f);
+    return (scalar)((d * N_PI) / 180.0f);
 }
 
 //------------------------------------------------------------------------------
@@ -429,7 +429,7 @@ deg2rad(scalar d)
 __forceinline constexpr scalar
 rad2deg(scalar r)
 {
-    return (scalar)((r * 180.0f) / PI);
+    return (scalar)((r * 180.0f) / N_PI);
 }
 
 //------------------------------------------------------------------------------
