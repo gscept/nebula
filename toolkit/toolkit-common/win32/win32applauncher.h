@@ -24,7 +24,7 @@ public:
     Win32AppLauncher();
    
     /// launch application and wait for its termination
-    bool LaunchWait() const;
+    bool LaunchWait();
     /// launch application (returns immediately)
     bool Launch();
     /// Gets the state of application. Call this per frame.

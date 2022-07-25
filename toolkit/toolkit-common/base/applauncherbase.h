@@ -39,7 +39,7 @@ public:
     const Ptr<IO::Stream>& GetStderrCaptureStream() const;
 
     /// launch application and wait for its termination
-    virtual bool LaunchWait() const = 0;
+    virtual bool LaunchWait() = 0;
     /// launch application (returns immediately)
     virtual bool Launch() = 0;
     /// Gets the state of application. Call this per frame.

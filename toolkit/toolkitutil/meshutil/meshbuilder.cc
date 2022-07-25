@@ -17,7 +17,7 @@ using namespace Math;
 MeshBuilder::MeshBuilder() :
     topology(CoreGraphics::PrimitiveTopology::TriangleList)
 {
-    this->Reserve(10000, 10000);
+    // empty
 }
 
 //------------------------------------------------------------------------------
@@ -73,16 +73,16 @@ MeshBuilder::CountGroupTriangles(IndexT groupId, IndexT startTriangleIndex) cons
     there are no triangles in the mesh builder of the given group id.
 */
 bool
-MeshBuilder::FindGroupVertexRange(IndexT groupId, IndexT& outMinVertexIndex, IndexT& outMaxVertexIndex) const
+MeshBuilder::FindGroupVertexRange(IndexT groupId, IndexT startTriangleIndex, IndexT& outMinVertexIndex, IndexT& outMaxVertexIndex) const
 {
     outMinVertexIndex = this->GetNumVertices();
     outMaxVertexIndex = 0;
     SizeT numCheckedTris = 0;
     IndexT triIndex;
     SizeT numTriangles = this->GetNumTriangles();
-    for (triIndex = 0; triIndex < numTriangles; triIndex++)
+    for (triIndex = startTriangleIndex; triIndex < numTriangles; triIndex++)
     {
-        const MeshBuilderTriangle& tri = this->TriangleAt(triIndex);
+        const MeshBuilderTriangle& tri = this->triangleArray[triIndex];
         if (tri.GetGroupId() == groupId)
         {
             numCheckedTris++;

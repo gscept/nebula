@@ -175,6 +175,9 @@ GraphicsFeatureUnit::OnActivate()
 void
 GraphicsFeatureUnit::OnDeactivate()
 {
+    Im3d::Im3dContext::Discard();
+    Dynui::ImguiContext::Discard();
+    StaticUI::StaticUIContext::Discard();
     FeatureUnit::OnDeactivate();
     DestroyWindow(this->wnd);
     this->gfxServer->DiscardStage(this->defaultStage);

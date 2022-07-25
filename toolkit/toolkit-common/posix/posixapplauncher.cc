@@ -141,7 +141,7 @@ PosixAppLauncher::Launch()
             
             // convert arg string to array of char*
             Array<String> strargs = this->args.Tokenize(" ",'\"');
-            char ** argv = new char*[strargs.Size() + 2];
+            const char ** argv = new const char*[strargs.Size() + 2];
             argv[0] = this->exePath.LocalPath().AsCharPtr();
             int i;
             for(i = 0 ; i<strargs.Size() ; i++)

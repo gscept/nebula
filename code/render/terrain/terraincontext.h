@@ -29,7 +29,7 @@ struct TerrainSetupSettings
 {
     float minHeight, maxHeight;
     float worldSizeX, worldSizeZ;
-    SizeT tileWidth, tileHeight;
+    float tileWidth, tileHeight;
     float quadsPerTileX, quadsPerTileY; // vertex density is vertices per meter
     Graphics::GraphicsEntityId sun;
 };

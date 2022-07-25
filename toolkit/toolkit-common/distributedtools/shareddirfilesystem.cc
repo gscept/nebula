@@ -21,7 +21,8 @@ namespace DistributedTools
 */
 SharedDirFileSystem::SharedDirFileSystem()
 {
-    SharedDirControl::SharedDirControl();
+// FIXME why are explicitly trying to call the constructor here?
+// SharedDirControl::SharedDirControl();
 }
 
 //------------------------------------------------------------------------------

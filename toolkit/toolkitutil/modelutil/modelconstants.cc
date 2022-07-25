@@ -77,8 +77,21 @@ ModelConstants::DeleteCharacterNode(const Util::String& name)
 void 
 ModelConstants::AddShapeNode( const Util::String& name, const ModelConstants::ShapeNode& node )
 {
-    n_assert(!this->shapeNodes.Contains(name));
-    this->shapeNodes.Add(name, node);
+    int unique = 0;
+    if (this->shapeNodes.Contains(name))
+    {
+        // generate a new unique name for this shape. This is mostly a workaround for problematic exporters
+        Util::String newName;
+        do
+        {
+            newName = name + Util::String::FromInt(unique++);
+        } while (this->shapeNodes.Contains(newName));
+        this->shapeNodes.Add(newName, node);
+    }
+    else
+    {
+        this->shapeNodes.Add(name, node);
+    }
 }
 
 //------------------------------------------------------------------------------

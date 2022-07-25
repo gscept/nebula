@@ -50,7 +50,7 @@ public:
     /// get number of triangles of given group id starting at triangle index
     SizeT CountGroupTriangles(IndexT groupId, IndexT startTriangleIndex) const;
     /// find the min/max vertex range for a given group id
-    bool FindGroupVertexRange(IndexT groupId, IndexT& outMinVertexIndex, IndexT& outMaxVertexIndex) const;
+    bool FindGroupVertexRange(IndexT groupId, IndexT startTriangleIndex, IndexT& outMinVertexIndex, IndexT& outMaxVertexIndex) const;
     /// copy triangle with its vertices, do not generate redundant vertices
     void CopyTriangle(const MeshBuilder& srcMesh, IndexT triIndex, Util::FixedArray<IndexT>& indexMap);
     /// compute bounding box for a given vertex group

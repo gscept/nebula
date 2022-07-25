@@ -23,7 +23,10 @@ __ImplementClass(ToolkitUtil::NglTFNode, 'ASNO', Core::RefCounted);
 /**
 */
 NglTFNode::NglTFNode() :
-    parent(nullptr)
+    parent(nullptr),
+    position(0,0,0,1),
+    rotation(),
+    scale(0,0,0,0)
 {
     // empty
 }

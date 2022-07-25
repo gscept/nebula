@@ -143,7 +143,7 @@ bool NglTFExporter::StartExport(const IO::URI & file)
 
 			TextureAttrTable texAttrTable;
 			texAttrTable.Setup("temp:texconverter");
-
+			
 			for (IndexT i = 0; i < gltfScene.materials.Size(); i++)
 			{
 				Gltf::Material const& material = gltfScene.materials[i];
@@ -247,6 +247,8 @@ bool NglTFExporter::StartExport(const IO::URI & file)
 
 	// Flatten hierarchy, and merge all meshes into one
 	this->scene->Flatten();
+
+	this->scene->GetMesh()->FlipUvs();
 
 	// format file destination
 	String destinationFile;

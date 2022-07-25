@@ -66,8 +66,12 @@ void Setup();
 /// close the physics subsystem
 void ShutDown();
 
-/// perform simulation step(s)
+/// perform sync simulation step(s)
 void Update(Timing::Time delta);
+
+// explicit calls to simulate and fetch results. Do not mix with Update!
+void BeginFrame(Timing::Time delta);
+void EndFrame();
 
 ///
 IndexT CreateScene();

@@ -42,10 +42,9 @@ MeshBuilderSaver::SaveNvx2(const URI& uri, MeshBuilder& meshBuilder, Platform::C
     if (stream->Open())
     {
         ByteOrder byteOrder(ByteOrder::Host, Platform::GetPlatformByteOrder(platform));
-
         MeshBuilderSaver::WriteHeaderNvx2(stream, meshBuilder, groupMap.Size(), byteOrder);
         MeshBuilderSaver::WriteGroupsNvx2(stream, meshBuilder, groupMap, byteOrder);
-        MeshBuilderSaver::WriteVertices(stream, meshBuilder, byteOrder);
+		MeshBuilderSaver::WriteVertices(stream, meshBuilder, byteOrder);
         MeshBuilderSaver::WriteTriangles(stream, meshBuilder, byteOrder);
 
         stream->Close();
@@ -138,7 +137,7 @@ MeshBuilderSaver::WriteGroupsNvx3( const Ptr<IO::Stream>& stream, MeshBuilder& m
         int firstTriangle = curGroup.GetFirstTriangleIndex();
         int numTriangles  = curGroup.GetNumTriangles();
         int minVertexIndex, maxVertexIndex;
-        meshBuilder.FindGroupVertexRange(curGroup.GetGroupId(), minVertexIndex, maxVertexIndex);
+        meshBuilder.FindGroupVertexRange(curGroup.GetGroupId(), firstTriangle, minVertexIndex, maxVertexIndex);
         
         Nvx3Group nvx3Group;
         nvx3Group.firstVertex = byteOrder.Convert<uint>(minVertexIndex);
@@ -185,14 +184,14 @@ void
 MeshBuilderSaver::WriteGroupsNvx2(const Ptr<Stream>& stream, MeshBuilder& meshBuilder, Util::Array<MeshBuilderGroup>& groupMap, const ByteOrder& byteOrder)
 {
     int curGroupIndex;
-    for (curGroupIndex = 0; curGroupIndex < groupMap.Size(); curGroupIndex++)
+	for (curGroupIndex = 0; curGroupIndex < groupMap.Size(); curGroupIndex++)
     {
         const MeshBuilderGroup& curGroup = groupMap[curGroupIndex];
         int firstTriangle = curGroup.GetFirstTriangleIndex();
         int numTriangles  = curGroup.GetNumTriangles();
         int minVertexIndex, maxVertexIndex;
-        meshBuilder.FindGroupVertexRange(curGroup.GetGroupId(), minVertexIndex, maxVertexIndex);
-        int minEdgeIndex, maxEdgeIndex;
+		meshBuilder.FindGroupVertexRange(curGroup.GetGroupId(), firstTriangle, minVertexIndex, maxVertexIndex);
+		int minEdgeIndex, maxEdgeIndex;
         minEdgeIndex = maxEdgeIndex = 0;
         
         Nvx2Group nvx2Group;
@@ -206,6 +205,7 @@ MeshBuilderSaver::WriteGroupsNvx2(const Ptr<Stream>& stream, MeshBuilder& meshBu
         // write group to stream
         stream->Write(&nvx2Group, sizeof(nvx2Group));
     }
+	
 }
 
 //------------------------------------------------------------------------------
