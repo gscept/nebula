@@ -100,7 +100,7 @@ HistogramContext::Create()
     histogramState.histogramClearCountersBuffer = CoreGraphics::CreateBuffer(bufInfo);
 
     // setup readback buffers
-    bufInfo.mode = CoreGraphics::HostLocal;
+    bufInfo.mode = CoreGraphics::HostCached;
     bufInfo.data = nullptr;
     bufInfo.dataSize = 0;
     bufInfo.usageFlags = CoreGraphics::TransferBufferDestination;
