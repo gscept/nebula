@@ -118,7 +118,6 @@ ProfilingRegisterThread()
 {
     // make sure we don't add contexts simulatenously
     Threading::CriticalScope lock(&categoryLock);
-    Threading::ThreadId thread = Threading::Thread::GetMyThreadId();
     ProfilingContextIndex = Threading::Interlocked::Add(&ProfilingContextCounter, 1);
     profilingContexts.Append(ProfilingContext());
     profilingContexts.Back().timer.Start();
