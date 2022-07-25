@@ -186,7 +186,11 @@ VkTextRenderer::DrawTextElements(const CoreGraphics::CmdBufferId cmdBuf)
     const DisplayMode& displayMode = WindowGetDisplayMode(wnd);
 
     // calculate projection matrix
+#if __VULKAN__
     mat4 proj = orthooffcenterrh(0, (float)displayMode.GetWidth(), (float)displayMode.GetHeight(), 0, -1.0f, +1.0f);
+#else
+    mat4 proj = orthooffcenterrh(0, (float)displayMode.GetWidth(), 0, (float)displayMode.GetHeight(), -1.0f, +1.0f);
+#endif
 
     // apply shader and apply state
     CoreGraphics::CmdSetShaderProgram(cmdBuf, this->program);
