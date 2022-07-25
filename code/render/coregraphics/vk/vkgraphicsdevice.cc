@@ -112,8 +112,8 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 
     VkSemaphore waitForPresentSemaphore;
 
-    uint maxNumBufferedFrames;
-    uint32_t currentBufferedFrameIndex;
+    uint maxNumBufferedFrames = 1;
+    uint32_t currentBufferedFrameIndex = 0;
 
     VkExtensionProperties physicalExtensions[64];
 
