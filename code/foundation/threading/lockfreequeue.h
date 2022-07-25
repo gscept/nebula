@@ -133,6 +133,7 @@ template<class TYPE>
 inline 
 LockFreeQueue<TYPE>::LockFreeQueue()
     : size(0)
+    , capacity(0)
 {
 }
 

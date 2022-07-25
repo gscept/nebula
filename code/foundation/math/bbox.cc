@@ -59,7 +59,7 @@ void
 bbox::get_clipplanes(const mat4& viewProj, Util::Array<vec4>& outPlanes) const
 {
     mat4 inverseTranspose = transpose(inverse(viewProj));
-    vec4 planes[6];
+    vec4 planes[6] = {};
     planes[0].set(-1, 0, 0, +this->pmax.x);
     planes[1].set(+1, 0, 0, -this->pmin.x);
     planes[2].set(0, -1, 0, +this->pmax.y);

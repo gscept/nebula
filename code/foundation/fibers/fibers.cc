@@ -16,6 +16,7 @@ __ImplementClass(Fibers::FiberThread, 'FITH', Threading::Thread);
 /**
 */
 FiberThread::FiberThread()
+    : currentFiber{ nullptr, nullptr }
 {
 }
 

@@ -50,8 +50,8 @@ struct JobNode
 struct Jobs2Context
 {
     Threading::CriticalSection jobLock;
-    JobNode* head;
-    JobNode* tail;
+    JobNode* head = nullptr;
+    JobNode* tail = nullptr;
     Util::FixedArray<Ptr<JobThread>> threads;
     Util::Array<JobNode*> queuedJobs;
 

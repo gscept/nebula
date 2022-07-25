@@ -110,7 +110,7 @@ struct GraphicsDeviceState
     bool renderWireframe : 1;
     bool visualizeMipMaps : 1;
     bool enableValidation : 1;
-    IndexT currentFrameIndex;
+    IndexT currentFrameIndex = 0;
 
     _declare_counter(NumImageBytesAllocated);
     _declare_counter(NumBufferBytesAllocated);
