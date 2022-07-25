@@ -190,21 +190,22 @@ CoreGraphics::ResourceTableId GetFrameResourceTableCompute();
 
 /// Unlock constants
 void UnlockConstantUpdates();
-/// Allocate range of graphics memory and set data, return offset (thread safe)
+/// Allocate range of memory and set data, return offset (thread safe)
 template<class TYPE> uint SetConstants(const TYPE& data);
-/// Allocate range of graphics memory and set data as an array of elements, return offset  (thread safe)
+/// Allocate range of memory and set data as an array of elements, return offset  (thread safe)
 template<class TYPE> uint SetConstants(const TYPE* data, SizeT elements);
-/// Set graphics constants based on pre-allocated memory  (thread safe)
+/// Set constants based on pre-allocated memory  (thread safe)
 template<class TYPE> void SetConstants(ConstantBufferOffset offset, const TYPE& data);
-/// Set graphics constants based on pre-allocated memory  (thread safe)
+/// Set constants based on pre-allocated memory  (thread safe)
 template<class TYPE> void SetConstants(ConstantBufferOffset offset, const TYPE* data, SizeT numElements);
 /// Lock constant updates
 void LockConstantUpdates();
 
-/// use pre-allocated range of memory to update graphics constants
+/// Use pre-allocated range of memory to update graphics constants
 void SetConstantsInternal(ConstantBufferOffset offset, const void* data, SizeT size);
-/// reserve range of graphics constant buffer memory and return offset
+/// Reserve range of constant buffer memory and return offset
 ConstantBufferOffset AllocateConstantBufferMemory(uint size);
+
 /// return id to global graphics constant buffer
 CoreGraphics::BufferId GetGraphicsConstantBuffer();
 /// Return buffer used for compute constants
@@ -337,9 +338,9 @@ SetConstants(const TYPE& data)
 */
 template<class TYPE>
 inline ConstantBufferOffset
-SetConstants(const TYPE* data, SizeT elements)
+SetConstants(const TYPE* data, SizeT numElements)
 {
-    const uint uploadSize = sizeof(TYPE) * elements;
+    const uint uploadSize = sizeof(TYPE) * numElements;
     ConstantBufferOffset ret = AllocateConstantBufferMemory(uploadSize);
     SetConstantsInternal(ret, data, uploadSize);
     return ret;
@@ -383,9 +384,9 @@ Upload(const TYPE& data)
 */
 template<class TYPE>
 inline uint
-Upload(const TYPE* data, SizeT elements)
+Upload(const TYPE* data, SizeT numElements)
 {
-    const uint uploadSize = sizeof(TYPE) * elements;
+    const uint uploadSize = sizeof(TYPE) * numElements;
     uint offset = AllocateUpload(uploadSize);
     UploadInternal(offset, data, uploadSize);
     return offset;
@@ -407,9 +408,9 @@ Upload(const uint offset, const TYPE& data)
 */
 template<class TYPE>
 inline void
-Upload(const uint offset, const TYPE* data, SizeT elements)
+Upload(const uint offset, const TYPE* data, SizeT numElements)
 {
-    const uint uploadSize = sizeof(TYPE) * elements;
+    const uint uploadSize = sizeof(TYPE) * numElements;
     UploadInternal(offset, data, uploadSize);
 }
 
