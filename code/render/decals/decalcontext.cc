@@ -122,10 +122,12 @@ DecalContext::Create()
         ResourceTableSetRWBuffer(computeTable, { decalState.clusterDecalIndexLists, decalIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetRWBuffer(computeTable, { decalState.clusterDecalsList, decalListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetConstantBuffer(computeTable, { CoreGraphics::GetComputeConstantBuffer(), decalState.uniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalUniforms), 0 });
+        ResourceTableCommitChanges(computeTable);
 
         ResourceTableSetRWBuffer(graphicsTable, { decalState.clusterDecalIndexLists, decalIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetRWBuffer(graphicsTable, { decalState.clusterDecalsList, decalListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetConstantBuffer(graphicsTable, { CoreGraphics::GetGraphicsConstantBuffer(), decalState.uniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalUniforms), 0 });
+        ResourceTableCommitChanges(graphicsTable);
     }
 
     // The first pass is to copy decals over

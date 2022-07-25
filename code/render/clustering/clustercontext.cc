@@ -237,9 +237,11 @@ ClusterContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, Size
 
             ResourceTableSetRWBuffer(computeTable, { state.clusterBuffer, state.clusterAABBSlot, 0, false, false, -1, 0 });
             ResourceTableSetConstantBuffer(computeTable, { state.constantBuffer, state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
+            ResourceTableCommitChanges(computeTable);
 
             ResourceTableSetRWBuffer(graphicsTable, { state.clusterBuffer, state.clusterAABBSlot, 0, false, false, -1, 0 });
             ResourceTableSetConstantBuffer(graphicsTable, { state.constantBuffer, state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
+            ResourceTableCommitChanges(graphicsTable);
         }
     }
 }

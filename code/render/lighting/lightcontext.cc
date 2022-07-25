@@ -223,10 +223,12 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
         ResourceTableSetRWBuffer(computeTable, { clusterState.clusterLightIndexLists, lightIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetRWBuffer(computeTable, { clusterState.clusterLightsList, lightsListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetConstantBuffer(computeTable, { CoreGraphics::GetComputeConstantBuffer(), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsCluster::LightUniforms), 0 });
+        ResourceTableCommitChanges(computeTable);
 
         ResourceTableSetRWBuffer(graphicsTable, { clusterState.clusterLightIndexLists, lightIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetRWBuffer(graphicsTable, { clusterState.clusterLightsList, lightsListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetConstantBuffer(graphicsTable, { CoreGraphics::GetGraphicsConstantBuffer(), clusterState.lightingUniformsSlot, 0, false, false, sizeof(LightsCluster::LightUniforms), 0 });
+        ResourceTableCommitChanges(graphicsTable);
     }
 
     clusterState.stagingClusterLightsList.Resize(CoreGraphics::GetNumBufferedFrames());

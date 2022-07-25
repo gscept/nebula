@@ -143,10 +143,12 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
         ResourceTableSetRWBuffer(computeTable, { fogState.clusterFogIndexLists, fogIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetRWBuffer(computeTable, { fogState.clusterFogLists, fogListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetConstantBuffer(computeTable, { CoreGraphics::GetComputeConstantBuffer(), fogState.uniformsSlot, 0, false, false, sizeof(Volumefog::VolumeFogUniforms), 0 });
+        ResourceTableCommitChanges(computeTable);
 
         ResourceTableSetRWBuffer(graphicsTable, { fogState.clusterFogIndexLists, fogIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetRWBuffer(graphicsTable, { fogState.clusterFogLists, fogListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
         ResourceTableSetConstantBuffer(graphicsTable, { CoreGraphics::GetGraphicsConstantBuffer(), fogState.uniformsSlot, 0, false, false, sizeof(Volumefog::VolumeFogUniforms), 0 });
+        ResourceTableCommitChanges(graphicsTable);
     }
 
     blurState.blurShader = ShaderServer::Instance()->GetShader("shd:blur_2d_rgba16f_cs.fxb");
