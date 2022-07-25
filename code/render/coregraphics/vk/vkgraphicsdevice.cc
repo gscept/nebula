@@ -462,7 +462,7 @@ ClearPending()
     Threading::CriticalScope scope(&delayedDeleteSection);
 
     // Clear up any pending deletes
-    for (auto tuple : state.pendingDeletes[state.currentBufferedFrameIndex].commandBuffers)
+    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].commandBuffers)
     {
         VkDevice dev = Util::Get<0>(tuple);
         VkCommandPool pool = Util::Get<1>(tuple);
@@ -471,7 +471,7 @@ ClearPending()
     }
     state.pendingDeletes[state.currentBufferedFrameIndex].commandBuffers.Clear();
 
-    for (auto tuple : state.pendingDeletes[state.currentBufferedFrameIndex].buffers)
+    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].buffers)
     {
         VkDevice dev = Util::Get<0>(tuple);
         VkBuffer buf = Util::Get<1>(tuple);
@@ -481,7 +481,7 @@ ClearPending()
     }
     state.pendingDeletes[state.currentBufferedFrameIndex].buffers.Clear();
 
-    for (auto tuple : state.pendingDeletes[state.currentBufferedFrameIndex].textures)
+    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].textures)
     {
         VkDevice dev = Util::Get<0>(tuple);
         VkImage img = Util::Get<2>(tuple);
@@ -491,7 +491,7 @@ ClearPending()
     }
     state.pendingDeletes[state.currentBufferedFrameIndex].textures.Clear();
 
-    for (auto tuple : state.pendingDeletes[state.currentBufferedFrameIndex].textureViews)
+    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].textureViews)
     {
         VkDevice dev = Util::Get<0>(tuple);
         VkImageView view = Util::Get<1>(tuple);
@@ -499,7 +499,7 @@ ClearPending()
     }
     state.pendingDeletes[state.currentBufferedFrameIndex].textureViews.Clear();
 
-    for (auto tuple : state.pendingDeletes[state.currentBufferedFrameIndex].resourceTables)
+    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].resourceTables)
     {
         VkDevice dev = Util::Get<0>(tuple);
         VkDescriptorPool pool = Util::Get<1>(tuple);
@@ -510,7 +510,7 @@ ClearPending()
     }
     state.pendingDeletes[state.currentBufferedFrameIndex].resourceTables.Clear();
 
-    for (auto tuple : state.pendingDeletes[state.currentBufferedFrameIndex].passes)
+    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].passes)
     {
         VkDevice dev = Util::Get<0>(tuple);
         VkFramebuffer fbo = Util::Get<1>(tuple);
@@ -520,7 +520,7 @@ ClearPending()
     }
     state.pendingDeletes[state.currentBufferedFrameIndex].passes.Clear();
 
-    for (auto tuple : state.pendingDeletes[state.currentBufferedFrameIndex].allocs)
+    for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].allocs)
     {
         CoreGraphics::FreeMemory(Util::Get<0>(tuple));
     }
