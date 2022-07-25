@@ -14,34 +14,7 @@
 				"type": "Texture2DArray"
 			},
 			{
-				"name": "SunShadow",
-				"format": "R32G32F",
-				"width": 1024,
-				"height": 1024,
-				"layers": 4,
-				"usage": "Render",
-				"type": "Texture2DArray"
-			},
-			{
-				"name": "SunShadowFiltered0",
-				"format": "R32G32F",
-				"width": 1024,
-				"height": 1024,
-				"layers": 4,
-				"usage": "ReadWrite",
-				"type": "Texture2DArray"
-			},
-			{
-				"name": "SunShadowFiltered1",
-				"format": "R32G32F",
-				"width": 1024,
-				"height": 1024,
-				"layers": 4,
-				"usage": "ReadWrite",
-				"type": "Texture2DArray"
-			},
-			{
-				"name": "GlobalLightDepth",
+				"name": "SunShadowDepth",
 				"format": "D32S8",
 				"width": 1024,
 				"height": 1024,
@@ -57,26 +30,23 @@
             "queue": "Graphics",
             "_comment": "Render and blur shadow maps",
 			"ops": {
-				"pass": {
-					"name": "Sun Shadows Pass",
-					"attachments": [
-						{
-							"name": "SunShadow",
-							"clear": [ 1000, 1000, 0, 0 ],
-							"store": true
-						}
-					],
-		
-					"subpass": {
-						"name": "Sun Shadows",
-						"subpass_dependencies": [],
-						"attachments": [ "SunShadow" ],
-						"depth": false,
-						"subgraph": {
-							"name": "Sun Shadows"
-						}
-					},
-				},
+                "pass": {
+                    "name": "Sun Shadows Pass",
+                    "depth_stencil": {
+                        "name": "SunShadowDepth",
+                        "clear": 1,
+                        "store": true
+                    },
+
+                    "subpass": {
+                        "name": "Sun Shadows",
+                        "subpass_dependencies": [],
+                        "depth": true,
+                        "subgraph": {
+                            "name": "Sun Shadows"
+                        }
+                    },
+                },
 		
 				"pass": {
 					"name": "Local Shadows Pass",

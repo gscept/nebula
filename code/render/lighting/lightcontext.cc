@@ -24,6 +24,7 @@
 
 #include "graphics/globalconstants.h"
 
+#include "shared.h"
 #include "lights_cluster.h"
 #include "combine.h"
 #include "csmblur.h"
@@ -62,7 +63,7 @@ struct
     CoreGraphics::BatchGroup::Code spotlightsBatchCode;
     CoreGraphics::BatchGroup::Code globalLightsBatchCode;
 
-    CSMUtil csmUtil;
+    CSMUtil csmUtil{ Shared::NumCascades };
 
     Memory::ArenaAllocator<sizeof(Frame::FrameCode) * 9> frameOpAllocator;
 
@@ -174,10 +175,10 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
     lightServerState.shadowMappingFrameScript = Frame::FrameServer::Instance()->LoadFrameScript("shadowmap_framescript", "frame:vkshadowmap.json"_uri);
     lightServerState.spotlightsBatchCode = CoreGraphics::BatchGroup::FromName("SpotLightShadow");
     lightServerState.globalLightsBatchCode = CoreGraphics::BatchGroup::FromName("GlobalShadow");
-    lightServerState.globalLightShadowMap = lightServerState.shadowMappingFrameScript->GetTexture("SunShadow");
+    lightServerState.globalLightShadowMap = lightServerState.shadowMappingFrameScript->GetTexture("SunShadowDepth");
     lightServerState.localLightShadows = lightServerState.shadowMappingFrameScript->GetTexture("LocalLightShadow");
     if (lightServerState.terrainShadowMap == CoreGraphics::InvalidTextureId)
-        lightServerState.terrainShadowMap = Resources::CreateResource("tex:system/black.dds", "system");
+        lightServerState.terrainShadowMap = Resources::CreateResource("tex:system/white.dds", "system");
 
     using namespace CoreGraphics;
 
@@ -421,7 +422,16 @@ LightContext::Discard()
 /**
 */
 void 
-LightContext::SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::vec3& color, const float intensity, const Math::vec3& ambient, const Math::vec3& backlight, const float backlightFactor, const float zenith, const float azimuth, bool castShadows)
+LightContext::SetupGlobalLight(
+        const Graphics::GraphicsEntityId id,
+        const Math::vec3& color,
+        const float intensity,
+        const Math::vec3& ambient,
+        const Math::vec3& backlight,
+        const float backlightFactor,
+        const float zenith,
+        const float azimuth,
+        bool castShadows)
 {
     n_assert(id != Graphics::GraphicsEntityId::Invalid());
     n_assert(lightServerState.globalLightEntity == Graphics::GraphicsEntityId::Invalid());
@@ -436,7 +446,7 @@ LightContext::SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::
     genericLightAllocator.Get<TypedLightId>(cid.id) = lid;
 
     Math::point sunPosition(Math::cos(azimuth) * Math::sin(zenith), Math::cos(zenith), Math::sin(azimuth) * Math::sin(zenith));
-    Math::mat4 mat = lookatrh(sunPosition, Math::point(0.0f), Math::vector::upvec());
+    Math::mat4 mat = lookatrh(Math::point(0.0f), sunPosition, Math::vector::upvec());
     
     SetGlobalLightTransform(cid, mat, Math::xyz(sunPosition));
     globalLightAllocator.Get<GlobalLight_Backlight>(lid) = backlight;
@@ -446,7 +456,7 @@ LightContext::SetupGlobalLight(const Graphics::GraphicsEntityId id, const Math::
     if (castShadows)
     {
         // create new graphics entity for each view
-        for (IndexT i = 0; i < CSMUtil::NumCascades; i++)
+        for (IndexT i = 0; i < Shared::NumCascades; i++)
         {
             Graphics::GraphicsEntityId shadowId = Graphics::CreateEntity();
             Visibility::ObserverContext::RegisterEntity(shadowId);
@@ -609,7 +619,7 @@ void
 LightContext::SetTransform(const Graphics::GraphicsEntityId id, const float azimuth, const float zenith)
 {
     Math::point position(Math::cos(azimuth) * Math::sin(zenith), Math::cos(zenith), Math::sin(azimuth) * Math::sin(zenith));
-    Math::mat4 mat = lookatrh(position, Math::point(0.0f), Math::vector::upvec());
+    Math::mat4 mat = lookatrh(Math::point(0.0f), position, Math::vector::upvec());
 
     const Graphics::ContextEntityId cid = GetContextId(id);
     LightType type = genericLightAllocator.Get<Type>(cid.id);
@@ -754,9 +764,10 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
         }
 
         IndexT i;
-        for (i = 0; i < CSMUtil::NumCascades; i++)
+        for (i = 0; i < Shared::NumCascades; i++)
         {
-            lightServerState.csmUtil.GetCascadeViewProjection(i).store(lightServerState.shadowMatrixUniforms.CSMViewMatrix[i]);
+            Math::mat4 cascadeProj = lightServerState.csmUtil.GetCascadeViewProjection(i);
+            cascadeProj.store(lightServerState.shadowMatrixUniforms.CSMViewMatrix[i]);
         }
     }
 
@@ -923,11 +934,11 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
         Math::mat4 textureScale = Math::scaling(0.5f, 0.5f, 1.0f);
 #endif
         Math::mat4 textureTranslation = Math::translation(0.5f, 0.5f, 0);
-        const Math::mat4* transforms = lightServerState.csmUtil.GetCascadeProjectionTransforms();
-        Math::vec4 cascadeScales[CSMUtil::NumCascades];
-        Math::vec4 cascadeOffsets[CSMUtil::NumCascades];
+        const Util::FixedArray<Math::mat4> transforms = lightServerState.csmUtil.GetCascadeProjectionTransforms();
+        Math::vec4 cascadeScales[Shared::NumCascades];
+        Math::vec4 cascadeOffsets[Shared::NumCascades];
 
-        for (IndexT splitIndex = 0; splitIndex < CSMUtil::NumCascades; ++splitIndex)
+        for (IndexT splitIndex = 0; splitIndex < Shared::NumCascades; ++splitIndex)
         {
             Math::mat4 shadowTexture = (textureTranslation * textureScale) * transforms[splitIndex];
             Math::vec4 scale = Math::vec4(
@@ -941,12 +952,9 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
             cascadeScales[splitIndex] = scale;
         }
 
-        memcpy(params.CascadeOffset, cascadeOffsets, sizeof(Math::vec4) * CSMUtil::NumCascades);
-        memcpy(params.CascadeScale, cascadeScales, sizeof(Math::vec4) * CSMUtil::NumCascades);
-        memcpy(params.CascadeDistances, lightServerState.csmUtil.GetCascadeDistances(), sizeof(float) * CSMUtil::NumCascades);
-        params.MinBorderPadding = 1.0f / 1024.0f;
-        params.MaxBorderPadding = (1024.0f - 1.0f) / 1024.0f;
-        params.ShadowPartitionSize = 1.0f;
+        memcpy(params.CascadeOffset, cascadeOffsets, sizeof(Math::vec4) * Shared::NumCascades);
+        memcpy(params.CascadeScale, cascadeScales, sizeof(Math::vec4) * Shared::NumCascades);
+        memcpy(params.CascadeDistances, lightServerState.csmUtil.GetCascadeDistances().Begin(), sizeof(float) * Shared::NumCascades);
         params.GlobalLightShadowBuffer = CoreGraphics::TextureGetBindlessHandle(lightServerState.globalLightShadowMap);
         params.TerrainShadowBuffer = CoreGraphics::TextureGetBindlessHandle(lightServerState.terrainShadowMap);
         params.TerrainShadowMapSize[0] = params.TerrainShadowMapSize[1] = lightServerState.terrainShadowMapSize;
@@ -957,8 +965,11 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
         flags |= USE_SHADOW_BITFLAG;
     }
     params.GlobalLightFlags = flags;
-    params.GlobalLightShadowBias = 0.000001f;																			 
+    params.GlobalLightShadowBias = 0.0001f;																			 
     params.GlobalLightShadowIntensity = 1.0f;
+    auto shadowDims = CoreGraphics::TextureGetDimensions(lightServerState.globalLightShadowMap);
+    params.GlobalLightShadowMapSize[0] = 1.0f / shadowDims.width;
+    params.GlobalLightShadowMapSize[1] = 1.0f / shadowDims.height;
     Graphics::UpdateTickParams(params);
 
     // go through and update local lights

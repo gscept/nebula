@@ -25,29 +25,31 @@ group(TICK_GROUP) sampler_state		Basic2DSampler {};
 group(TICK_GROUP) sampler_state		PosteffectSampler { Filter = Point; };
 group(TICK_GROUP) sampler_state		PosteffectUpscaleSampler { Filter = Linear; };
 
-#define sample2D(handle, sampler, uv)						texture(sampler2D(Textures2D[handle], sampler), uv)
-#define sample2DLod(handle, sampler, uv, lod)				textureLod(sampler2D(Textures2D[handle], sampler), uv, lod)
-#define sample2DGrad(handle, sampler, uv, ddx, ddy)			textureGrad(sampler2D(Textures2D[handle], sampler), uv, ddx, ddy)
+#define sample2D(handle, sampler, uv)						    texture(sampler2D(Textures2D[handle], sampler), uv)
+#define sample2DLod(handle, sampler, uv, lod)				    textureLod(sampler2D(Textures2D[handle], sampler), uv, lod)
+#define sample2DGrad(handle, sampler, uv, ddx, ddy)			    textureGrad(sampler2D(Textures2D[handle], sampler), uv, ddx, ddy)
 
-#define sample2DMS(handle, sampler, uv)						texture(sampler2DMS(Textures2DMS[handle], sampler), uv)
-#define sample2DMSLod(handle, sampler, uv, lod)				textureLod(sampler2DMS(Textures2DMS[handle], sampler), uv, lod)
-#define sample2DMSGrad(handle, sampler, uv, ddx, ddy)		textureGrad(sampler2DMS(Textures2D[handle], sampler), uv, ddx, ddy)
+#define sample2DMS(handle, sampler, uv)						    texture(sampler2DMS(Textures2DMS[handle], sampler), uv)
+#define sample2DMSLod(handle, sampler, uv, lod)				    textureLod(sampler2DMS(Textures2DMS[handle], sampler), uv, lod)
+#define sample2DMSGrad(handle, sampler, uv, ddx, ddy)		    textureGrad(sampler2DMS(Textures2D[handle], sampler), uv, ddx, ddy)
 
-#define sampleCube(handle, sampler, uvw)					texture(samplerCube(TexturesCube[handle], sampler), uvw)
-#define sampleCubeLod(handle, sampler, uvw, lod)			textureLod(samplerCube(TexturesCube[handle], sampler), uvw, lod)
+#define sampleCube(handle, sampler, uvw)					    texture(samplerCube(TexturesCube[handle], sampler), uvw)
+#define sampleCubeLod(handle, sampler, uvw, lod)			    textureLod(samplerCube(TexturesCube[handle], sampler), uvw, lod)
 
-#define sample2DArray(handle, sampler, uvw)					texture(sampler2DArray(Textures2DArray[handle], sampler), uvw)
-#define sample2DArrayGrad(handle, sampler, uvw, ddx, ddy)	textureGrad(sampler2DArray(Textures2DArray[handle], sampler), uvw, ddx, ddy)
-#define sample2DArrayLod(handle, sampler, uvw, lod)			textureLod(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
+#define sample2DArray(handle, sampler, uvw)					    texture(sampler2DArray(Textures2DArray[handle], sampler), uvw)
+#define sample2DArrayGrad(handle, sampler, uvw, ddx, ddy)	    textureGrad(sampler2DArray(Textures2DArray[handle], sampler), uvw, ddx, ddy)
+#define sample2DArrayLod(handle, sampler, uvw, lod)			    textureLod(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
 
-#define sample3D(handle, sampler, uvw)						texture(sampler3D(Textures3D[handle], sampler), uvw)
-#define sample3DLod(handle, sampler, uvw, lod)				textureLod(sampler3D(Textures3D[handle], sampler), uvw, lod)
+#define sample3D(handle, sampler, uvw)						    texture(sampler3D(Textures3D[handle], sampler), uvw)
+#define sample3DLod(handle, sampler, uvw, lod)				    textureLod(sampler3D(Textures3D[handle], sampler), uvw, lod)
 
-#define fetch2D(handle, sampler, uv, lod)					texelFetch(sampler2D(Textures2D[handle], sampler), uv, lod)
-#define fetch2DMS(handle, sampler, uv, lod)					texelFetch(sampler2DMS(Textures2DMS[handle], sampler), uv, lod)
-#define fetchCube(handle, sampler, uvw, lod)				texelFetch(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
-#define fetchArray(handle, sampler, uvw, lod)				texelFetch(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
-#define fetch3D(handle, sampler, uvw, lod)					texelFetch(sampler3D(Textures3D[handle], sampler), uvw, lod)
+#define sample2DArrayShadow(handle, sampler, uv, index, depth)	texture(sampler2DArrayShadow(Textures2DArray[handle], sampler), vec4(uv, depth, index))
+
+#define fetch2D(handle, sampler, uv, lod)					    texelFetch(sampler2D(Textures2D[handle], sampler), uv, lod)
+#define fetch2DMS(handle, sampler, uv, lod)					    texelFetch(sampler2DMS(Textures2DMS[handle], sampler), uv, lod)
+#define fetchCube(handle, sampler, uvw, lod)				    texelFetch(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
+#define fetchArray(handle, sampler, uvw, lod)				    texelFetch(sampler2DArray(Textures2DArray[handle], sampler), uvw, lod)
+#define fetch3D(handle, sampler, uvw, lod)					    texelFetch(sampler3D(Textures3D[handle], sampler), uvw, lod)
 #define fetchStencil(handle, sampler, uv, lod)				(floatBitsToUint(texelFetch(sampler2D(Textures2D[handle], sampler), uv, lod).r))
 
 #define basic2D(handle)										Textures2D[handle]
@@ -63,9 +65,7 @@ group(TICK_GROUP) sampler_state		PosteffectUpscaleSampler { Filter = Linear; };
 #define query_lod2D(handle, sampler, uv)                        textureQueryLod(sampler2D(Textures2D[handle], sampler), uv)
 
 // The number of CSM cascades
-#ifndef CASCADE_COUNT_FLAG
-#define CASCADE_COUNT_FLAG 4
-#endif
+const uint NumCascades = 4;
 
 // these parameters are updated once per application tick
 group(TICK_GROUP) shared constant PerTickParams
@@ -94,6 +94,7 @@ group(TICK_GROUP) shared constant PerTickParams
     // global light stuff
     uint GlobalLightFlags;
     float GlobalLightShadowIntensity;
+    vec2 GlobalLightShadowMapSize;
     vec4 GlobalLightDirWorldspace;
     vec4 GlobalLightDir;
     vec4 GlobalLightColor;
@@ -138,12 +139,9 @@ group(TICK_GROUP) shared constant PerTickParams
     float Lum;
 
     // CSM params
-    vec4 CascadeOffset[CASCADE_COUNT_FLAG];
-    vec4 CascadeScale[CASCADE_COUNT_FLAG];
+    vec4 CascadeOffset[NumCascades];
+    vec4 CascadeScale[NumCascades];
     vec4 CascadeDistances; 
-    float MinBorderPadding;
-    float MaxBorderPadding;
-    float ShadowPartitionSize;
     float GlobalLightShadowBias;
 
     textureHandle NormalBuffer;
@@ -169,27 +167,28 @@ group(FRAME_GROUP) shared constant ViewConstants
 
 group(FRAME_GROUP) shared constant ShadowViewConstants[string Visibility = "VS";]
 {
-    mat4 CSMViewMatrix[CASCADE_COUNT_FLAG];
+    mat4 CSMViewMatrix[NumCascades];
     mat4 LightViewMatrix[SHADOW_CASTER_COUNT];
 };
 
 group(FRAME_GROUP) sampler_state ShadowSampler
 {
+    Comparison = true;
     AddressU = Clamp;
-	AddressV = Clamp;
+    AddressV = Clamp;
 };
 
 group(FRAME_GROUP) sampler_state PointLightTextureSampler
 {
-	Filter = MinMagLinearMipPoint;
+    Filter = MinMagLinearMipPoint;
 };
 
 group(FRAME_GROUP) sampler_state SpotlightTextureSampler
 {
-	Filter = MinMagLinearMipPoint;
-	AddressU = Border;
-	AddressV = Border;
-	BorderColor = Transparent;
+    Filter = MinMagLinearMipPoint;
+    AddressU = Border;
+    AddressV = Border;
+    BorderColor = Transparent;
 };
 
 //------------------------------------------------------------------------------

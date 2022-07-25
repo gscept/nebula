@@ -23,18 +23,17 @@ render_state ShadowState
 	SrcBlend[0] = One;
 	DstBlend[0] = One;
 	BlendOp[0] = Min;
+
 };
 
 render_state ShadowStateCSM
 {
 	CullMode = Back;
 	DepthClamp = false;
-	DepthEnabled = false;
-	DepthWrite = false;
-	BlendEnabled[0] = true;
-	SrcBlend[0] = One;
-	DstBlend[0] = One;
-	BlendOp[0] = Min;
+	DepthEnabled = true;
+	DepthWrite = true;
+    PolygonOffsetEnabled = true;
+    PolygonOffsetFactor = 1.8;
 };
 
 //------------------------------------------------------------------------------
@@ -208,12 +207,7 @@ vsStaticInstPoint(
 [earlydepth]
 shader
 void
-psShadow(in vec2 UV,
-	in vec4 ProjPos,
-	[color0] out float ShadowColor)
-{
-	ShadowColor = ProjPos.z / ProjPos.w;
-}
+psShadow() {}
 
 //------------------------------------------------------------------------------
 /**
@@ -221,13 +215,11 @@ psShadow(in vec2 UV,
 shader
 void
 psShadowAlpha(in vec2 UV,
-	in vec4 ProjPos,
-	[color0] out float ShadowColor)
+	in vec4 ProjPos)
 {
 	float alpha = sample2D(AlbedoMap, ShadowSampler, UV).a;
 	if (alpha < AlphaSensitivity) 
         discard;
-    ShadowColor = ProjPos.z / ProjPos.w;
 }
 
 //------------------------------------------------------------------------------
@@ -430,4 +422,28 @@ PCFShadow(textureHandle shadowMap, vec2 uv, vec2 texelSize)
     float samp4 = sample2DLod(shadowMap, ShadowSampler, uv, 0).r;
     return (samp0 + samp1 + samp2 + samp3 + samp4) * 0.2f;
 }
+
+//------------------------------------------------------------------------------
+/**
+*/
+float
+PCFShadowArray(textureHandle shadowMap, float depth, vec2 uv, float idx, vec2 texelSize)
+{
+    float shadow = 0.0f;
+    vec3 offsets = vec3(-2.5f, 2.5f, 0) * texelSize.xyx;
+
+    const int NumSamples = 2;
+    const float Weight = 1 / float(pow(NumSamples*2, 2));
+    float totalShadow = 0.0f;
+    for (int i = -NumSamples; i < NumSamples; i++)
+    {
+        for (int j = -NumSamples; j < NumSamples; j++)
+        {
+            totalShadow += sample2DArrayShadow(shadowMap, ShadowSampler, uv + vec2(i, j) * texelSize.xy, depth - GlobalLightShadowBias * exp2(idx), idx).r;
+        }
+    }
+    totalShadow *= Weight;
+    return totalShadow;
+}
+
 #endif // SHADOWBASE_FXH

@@ -202,13 +202,21 @@ CalculateGlobalLight(vec3 diffuseColor, vec4 material, vec3 F0, vec3 viewVec, ve
     float NL = saturate(dot(GlobalLightDirWorldspace.xyz, worldSpaceNormal));
     if (NL <= 0) { return vec3(0); }
 
+#ifdef CSM_DEBUG
+    vec4 csmDebug;
+#endif
+
     float shadowFactor = 1.0f;
     if (FlagSet(GlobalLightFlags, USE_SHADOW_BITFLAG))
     {
         vec4 shadowPos = CSMShadowMatrix * viewSpacePos; // csm contains inversed view + csm transform
-        shadowFactor = CSMPS(shadowPos,	GlobalLightShadowBuffer);
+        shadowFactor = CSMPS(shadowPos,	GlobalLightShadowBuffer
+#ifdef CSM_DEBUG
+        , csmDebug  
+#endif
+        );
 
-        vec2 terrainUv = (worldSpacePosition.xz * InvTerrainSize) + vec2(0.5f);
+        vec2 terrainUv = mad(worldSpacePosition.xz, InvTerrainSize, vec2(0.5f));
         //shadowFactor *= sample2DLod(TerrainShadowBuffer, CSMTextureSampler, terrainUv, 0).r;
         shadowFactor *= PCFShadow(TerrainShadowBuffer, terrainUv, TerrainShadowMapPixelSize);
 
@@ -225,6 +233,10 @@ CalculateGlobalLight(vec3 diffuseColor, vec4 material, vec3 F0, vec3 viewVec, ve
 
     vec3 radiance = GlobalLightColor.xyz;
     vec3 irradiance = (brdf * radiance) * saturate(NL) + GlobalAmbientLightColor.xyz;
+
+#ifdef CSM_DEBUG
+    irradiance *= csmDebug.rgb;
+#endif
     return irradiance * shadowFactor;
 }
 
@@ -422,16 +434,28 @@ CalculateGlobalLightAmbientTransmission(vec4 viewPos, vec3 viewVec, vec3 normal,
 
     if ((NL + TNL) <= 0) { return vec3(0); }
 
+#ifdef CSM_DEBUG
+    vec4 csmDebug;
+#endif
+
     float shadowFactor = 1.0f;
     if (FlagSet(GlobalLightFlags, USE_SHADOW_BITFLAG))
     {
         vec4 shadowPos = CSMShadowMatrix * viewPos; // csm contains inversed view + csm transform
-        shadowFactor = CSMPS(shadowPos, GlobalLightShadowBuffer);
+        shadowFactor = CSMPS(shadowPos, GlobalLightShadowBuffer
+#ifdef CSM_DEBUG
+            , csmDebug
+#endif
+        
+        );
         shadowFactor = lerp(1.0f, shadowFactor, GlobalLightShadowIntensity);
     }
 
     vec3 radiance = GlobalLightColor.xyz * saturate(NL + TNL);
 
+#ifdef CSM_DEBUG
+    radiance *= csmDebug.rgb;
+#endif
     return radiance * shadowFactor * albedo.rgb;
 }
 

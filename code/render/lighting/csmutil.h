@@ -28,25 +28,8 @@ class CSMUtil
 {
 public:
 
-    enum FittingMethod
-    {
-        Cascade,
-        Scene,
-
-        NumFittingMethods
-    };
-
-    enum ClampingMethod
-    {
-        ZeroOne,
-        AABB,
-        SceneAABB,
-
-        NumClampingMethods
-    };
-
     /// constructor
-    CSMUtil();
+    CSMUtil(const uint numCascades);
     /// destructor
     virtual ~CSMUtil();
 
@@ -62,10 +45,6 @@ public:
     const Graphics::GraphicsEntityId GetGlobalLight() const;
     /// sets the texture width for the CSM texture buffer
     void SetTextureWidth(int width);
-    /// sets the CSM fitting method
-    void SetFittingMethod(FittingMethod method);
-    /// sets the CSM clamping method
-    void SetClampingMethod(ClampingMethod method);
     /// sets the CSM blur size
     void SetBlurSize(int size);
     /// sets whether or not the CSM should clamp the cascades to fit the size of the texels
@@ -76,17 +55,15 @@ public:
     /// gets the shadow view transform (valid after Compute)
     const Math::mat4& GetShadowView() const;
     /// returns raw pointer to array of cascade transforms
-    const Math::mat4* GetCascadeProjectionTransforms() const;
+    const Util::FixedArray<Math::mat4> GetCascadeProjectionTransforms() const;
     /// returns raw pointer to array of cascade distances
-    const float* GetCascadeDistances() const;
+    const Util::FixedArray<float> GetCascadeDistances() const;
 
     /// gets cascade debug camera (only valid after Compute, and if the debug flag is set)
     const Math::mat4& GetCascadeCamera(IndexT index)  const;
 
     /// computes the splits
     void Compute(const Graphics::GraphicsEntityId camera, const Graphics::GraphicsEntityId light);
-
-    static const SizeT NumCascades = 4;
 
 private:
 
@@ -99,37 +76,18 @@ private:
         float nearPlane, farPlane;  // Z of near and far plane
     };
 
-    struct Triangle
-    {
-        Math::vec4 pt[3];
-        bool culled;
-    };
-
-    /// computes frustum corners from cascade
-    void ComputeFrustumPoints(float cascadeBegin, float cascadeEnd, const Math::mat4& projection, Math::vec4* frustumCorners);
-    /// computes frustum from projection
-    void ComputeFrustum(CSMUtil::CascadeFrustum& frustum, const Math::mat4& projection);
-    /// computes near and far values
-    void ComputeNearAndFar(float& nearPlane, float& farPlane, const Math::vec4& lightCameraOrtoMin, const Math::vec4& lightCameraOrtoMax, const Math::vec4* lightAABBPoints);
-    /// computes light-space AABB points
-    void ComputeAABB(Math::vec4* lightAABBPoints, const Math::vec4& sceneCenter, const Math::vec4& sceneExtents);
 
     Math::bbox shadowBox;
     Math::vec4 frustumCenter;
     Graphics::GraphicsEntityId globalLight;
     Graphics::GraphicsEntityId cameraEntity;
-    Math::mat4 cascadeProjectionTransform[NumCascades];
-    Math::mat4 cascadeViewProjectionTransform[NumCascades];
+
+    uint numCascades;
+    Util::FixedArray<Math::mat4> cascadeProjectionTransform, cascadeViewProjectionTransform;
+    Util::FixedArray<float> cascadeDistances, intervalDistances;
     Math::mat4 shadowView;
-    float cascadeDistances[NumCascades];
-    float intervalDistances[NumCascades];
     float cascadeMaxDistance;
     
-    int fittingMethod;
-    int clampingMethod;
-    int blurSize;
-    int textureWidth;
-    bool floorTexels;
 }; 
 
 //------------------------------------------------------------------------------
@@ -198,7 +156,7 @@ CSMUtil::GetShadowView() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Math::mat4*
+inline const Util::FixedArray<Math::mat4>
 CSMUtil::GetCascadeProjectionTransforms() const
 {
     return this->cascadeProjectionTransform;
@@ -207,55 +165,10 @@ CSMUtil::GetCascadeProjectionTransforms() const
 //------------------------------------------------------------------------------
 /**
 */
-inline const float* 
+inline const Util::FixedArray<float>
 CSMUtil::GetCascadeDistances() const
 {
     return this->intervalDistances;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-CSMUtil::SetTextureWidth( int width )
-{
-    this->textureWidth = width;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-CSMUtil::SetFittingMethod( FittingMethod method )
-{
-    this->fittingMethod = method;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-CSMUtil::SetClampingMethod( ClampingMethod method )
-{
-    this->clampingMethod = method;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-CSMUtil::SetBlurSize( int size )
-{
-    this->blurSize = size;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline void 
-CSMUtil::SetFitTexels( bool state )
-{
-    this->floorTexels = state;
 }
 
 } // namespace Lighting
