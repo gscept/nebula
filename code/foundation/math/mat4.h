@@ -779,7 +779,7 @@ orthorh(scalar w, scalar h, scalar zn, scalar zf)
 /**
 */
 __forceinline mat4
-orthooffcenterlh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
+orthooffcenterlh(scalar l, scalar r, scalar t, scalar b, scalar zn, scalar zf)
 {
     mat4 m = mat4::identity;
     scalar divwidth = 1.0f / (r - l);
@@ -796,7 +796,7 @@ orthooffcenterlh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
 /**
 */
 __forceinline mat4
-orthooffcenterrh(scalar l, scalar r, scalar b, scalar t, scalar zn, scalar zf)
+orthooffcenterrh(scalar l, scalar r, scalar t, scalar b, scalar zn, scalar zf)
 {
     mat4 m = mat4::identity;
     scalar divwidth = 1.0f / (r - l);

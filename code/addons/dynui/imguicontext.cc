@@ -56,9 +56,9 @@ ImguiContext::ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf)
 
     // create orthogonal matrix
 #if __VULKAN__
-    mat4 proj = orthooffcenterrh(0.0f, io.DisplaySize.x, 0.0f, io.DisplaySize.y, -1.0f, +1.0f);
-#else
     mat4 proj = orthooffcenterrh(0.0f, io.DisplaySize.x, io.DisplaySize.y, 0.0f, -1.0f, +1.0f);
+#else
+    mat4 proj = orthooffcenterrh(0.0f, io.DisplaySize.x, 0.0f, io.DisplaySize.y, -1.0f, +1.0f);
 #endif
 
     // if buffers are too small, create new buffers

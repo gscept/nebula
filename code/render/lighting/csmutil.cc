@@ -469,12 +469,12 @@ CSMUtil::Compute(const Graphics::GraphicsEntityId camera, const Graphics::Graphi
             // fit zero-one
         }
 
-        // okay, so making this matrix an LH matrix apparently works, algorithm assumes a DX handed mode
-        mat4 cascadeProjectionMatrix = orthooffcenterlh(lightCameraOrthographicMin.x,
-                                                                      lightCameraOrthographicMax.x,
-                                                                      lightCameraOrthographicMin.y,
-                                                                      lightCameraOrthographicMax.y,
-                                                                      nearPlane, farPlane);         
+        mat4 cascadeProjectionMatrix = orthooffcenterrh(lightCameraOrthographicMin.x,
+                                                        lightCameraOrthographicMax.x,
+                                                        lightCameraOrthographicMax.y,
+                                                        lightCameraOrthographicMin.y,
+                                                        nearPlane,
+                                                        farPlane);
 
         this->intervalDistances[cascadeIndex] = intervalEnd;
         this->cascadeProjectionTransform[cascadeIndex] = cascadeProjectionMatrix;
