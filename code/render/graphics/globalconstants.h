@@ -26,15 +26,17 @@ void DestroyGlobalConstants();
 /// Run when starting frame
 void AllocateGlobalConstants();
 
+/// Set tick params
+void UpdateTickParams(const Shared::PerTickParams& tickParams);
 /// Set view params
 void UpdateViewConstants(const Shared::ViewConstants& viewConstants);
 /// Set camera params
 void UpdateShadowConstants(const Shared::ShadowViewConstants& shadowViewConstants);
 /// Flush constants by recording update command to command buffer
-void FlushConstants(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphics::QueueType queue);
+void FlushUpdates(const CoreGraphics::CmdBufferId buf, const CoreGraphics::QueueType queue);
 
 /// Get tick params constant buffer
-Shared::PerTickParams& GetTickParams();
+const Shared::PerTickParams& GetTickParams();
 /// Get current view constants
 const Shared::ViewConstants& GetViewConstants();
 /// Get current shadow view constnats

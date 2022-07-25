@@ -56,6 +56,7 @@ void
 FrameSubmission::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex)
 {
     n_assert(cmdBuf == CoreGraphics::InvalidCmdBufferId);
+    N_SCOPE_DYN(this->name.Value(), Graphics);
     CoreGraphics::CmdBufferCreateInfo cmdBufInfo;
     cmdBufInfo.pool = this->commandBufferPool;
     cmdBufInfo.usage = this->queue;
@@ -71,8 +72,8 @@ FrameSubmission::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const
     CoreGraphics::FlushConstants(submissionBuffer, this->queue);
     CoreGraphics::FlushUpload();
 
-    // Before starting the submission, flush per-view constants
-    Graphics::FlushConstants(submissionBuffer, this->queue);
+    // Before starting the submission, flush updates
+    Graphics::FlushUpdates(submissionBuffer, this->queue);
 
     for (IndexT i = 0; i < this->compiled.Size(); i++)
     {

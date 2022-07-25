@@ -139,7 +139,7 @@ CalculatePerezDistribution(float t, Math::vec4& A, Math::vec4& B, Math::vec4& C,
 void
 EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 {
-    Shared::PerTickParams& tickParams = Graphics::GetTickParams();
+    Shared::PerTickParams tickParams = Graphics::GetTickParams();
     Math::mat4 transform = Lighting::LightContext::GetTransform(envState.sunEntity);
     Math::vec4 sunDir = -transform.z_axis;
 
@@ -205,6 +205,8 @@ EnvironmentContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
     balance.store(tickParams.Balance);
     tickParams.Saturation = envState.saturation;
     tickParams.FadeValue = envState.fadeValue;
+
+    Graphics::UpdateTickParams(tickParams);
 }
 
 //------------------------------------------------------------------------------
@@ -217,7 +219,7 @@ EnvironmentContext::RenderUI(const Graphics::FrameContext& ctx)
     {
         float col[4];
         envState.fogColor.storeu(col);
-        Shared::PerTickParams& tickParams = Graphics::GetTickParams();
+        Shared::PerTickParams tickParams = Graphics::GetTickParams();
         if (ImGui::Begin("Enviroment Params"))
         {
             ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
@@ -231,6 +233,7 @@ EnvironmentContext::RenderUI(const Graphics::FrameContext& ctx)
             ImGui::SliderFloat("Fade Value", &envState.fadeValue, 0, 1.0f);
         }
         envState.fogColor.loadu(col);
+        Graphics::UpdateTickParams(tickParams);
 
         ImGui::End();
     }

@@ -59,7 +59,7 @@ GraphicsServer::Open()
     this->displayDevice->Open();
 
     CoreGraphics::GraphicsDeviceCreateInfo gfxInfo { 
-        32_MB,                      // Graphics queue constant memory size
+        32_MB,                      // Constant buffer memory
         32_MB,                      // Vertex memory size
         8_MB,                       // Index memory size
         32_MB,
@@ -351,9 +351,8 @@ GraphicsServer::BeginFrame()
     this->frameContext.ticks = this->timer->GetTicks();
     this->frameContext.bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-    Graphics::AllocateGlobalConstants();
-
     // update shader server
+    Graphics::AllocateGlobalConstants();
     this->shaderServer->BeforeFrame();
 
     // Collect garbage

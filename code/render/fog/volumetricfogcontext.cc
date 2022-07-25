@@ -520,7 +520,7 @@ VolumetricFogContext::RenderUI(const Graphics::FrameContext& ctx)
     {
         float col[3];
         fogState.color.storeu(col);
-        Shared::PerTickParams& tickParams = Graphics::GetTickParams();
+        Shared::PerTickParams tickParams = Graphics::GetTickParams();
         if (ImGui::Begin("Volumetric Fog Params"))
         {
             ImGui::SetWindowSize(ImVec2(240, 400), ImGuiCond_Once);
@@ -528,6 +528,7 @@ VolumetricFogContext::RenderUI(const Graphics::FrameContext& ctx)
             ImGui::ColorEdit3("Fog Color", col);
         }
         fogState.color.loadu(col);
+        Graphics::UpdateTickParams(tickParams);
 
         ImGui::End();
     }

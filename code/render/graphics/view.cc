@@ -53,7 +53,7 @@ View::UpdateResources(const IndexT frameIndex, const IndexT bufferIndex)
         ShaderServer* shaderServer = ShaderServer::Instance();
         auto settings = CameraContext::GetSettings(this->camera);
 
-        Shared::ViewConstants constants; 
+        alignas(16) Shared::ViewConstants constants;
         Math::mat4 view = CameraContext::GetView(this->camera);
         Math::mat4 proj = CameraContext::GetProjection(this->camera);
         proj.row1 = -proj.row1;

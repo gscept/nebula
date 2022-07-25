@@ -900,7 +900,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 
     // update constant buffer
     Ids::Id32 globalLightId = genericLightAllocator.Get<TypedLightId>(cid.id);
-    Shared::PerTickParams& params = Graphics::GetTickParams();
+    Shared::PerTickParams params = Graphics::GetTickParams();
     (genericLightAllocator.Get<Color>(cid.id) * genericLightAllocator.Get<Intensity>(cid.id)).store(params.GlobalLightColor);
     globalLightAllocator.Get<GlobalLight_Direction>(globalLightId).store(params.GlobalLightDirWorldspace);
     globalLightAllocator.Get<GlobalLight_Backlight>(globalLightId).store(params.GlobalBackLightColor);
@@ -959,6 +959,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     params.GlobalLightFlags = flags;
     params.GlobalLightShadowBias = 0.000001f;																			 
     params.GlobalLightShadowIntensity = 1.0f;
+    Graphics::UpdateTickParams(params);
 
     // go through and update local lights
     const Util::Array<LightType>& types		= genericLightAllocator.GetArray<Type>();
