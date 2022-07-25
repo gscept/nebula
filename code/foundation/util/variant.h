@@ -3271,14 +3271,14 @@ Util::Variant::SetParseString(const Util::String& string)
     switch (this->type)
     {
         case Int:
-        case UInt:              { if(string.IsValidInt())          { this->SetUInt(string.AsInt()); retval = true; break; } }
-        case Float:             { if(string.IsValidFloat())        { this->SetFloat(string.AsFloat()); retval = true; break; } }
-        case Bool:              { if(string.IsValidBool())         { this->SetBool(string.AsBool()); retval = true; break; } }
-        case Vec2:              { if(string.IsValidVec2())       { this->SetVec2(string.AsVec2()); retval = true; break; } }
-        case Vec4:              { if(string.IsValidVec4())         { this->SetVec4(string.AsVec4()); retval = true; break; } }
+        case UInt:              { if(string.IsValidInt())          { this->SetUInt(string.AsInt()); retval = true; } break; };
+        case Float:             { if(string.IsValidFloat())        { this->SetFloat(string.AsFloat()); retval = true; } break; }
+        case Bool:              { if(string.IsValidBool())         { this->SetBool(string.AsBool()); retval = true; } break; }
+        case Vec2:              { if(string.IsValidVec2())         { this->SetVec2(string.AsVec2()); retval = true; } break; }
+        case Vec4:              { if(string.IsValidVec4())         { this->SetVec4(string.AsVec4()); retval = true; } break; }
         case String:            {                                    this->SetString(string); retval = true; break; }
-        case Mat4:              { if(string.IsValidMat4())         { this->SetMat4(string.AsMat4()); retval = true; break; } }
-        case Transform44:       { if (string.IsValidTransform44()) { this->SetTransform44(string.AsTransform44()); retval = true; break; } }
+        case Mat4:              { if(string.IsValidMat4())         { this->SetMat4(string.AsMat4()); retval = true; } break; }
+        case Transform44:       { if (string.IsValidTransform44()) { this->SetTransform44(string.AsTransform44()); retval = true; } break; }
 
         case IntArray:          
             { 
