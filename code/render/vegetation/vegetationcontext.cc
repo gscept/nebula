@@ -143,8 +143,6 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
     __CreateContext();
     using namespace CoreGraphics;
 
-    __bundle.OnUpdateViewResources = VegetationContext::UpdateViewResources;
-
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     vegetationState.minHeight = settings.minHeight;

@@ -389,16 +389,10 @@ void
 ObserverContext::Create()
 {
     __CreateContext();
-    
-    __bundle.OnBegin = ObserverContext::RunVisibilityTests;
-    __bundle.OnBeforeFrame = ObserverContext::GenerateDrawLists;
-    __bundle.OnWaitForWork = ObserverContext::WaitForVisibility;
-    __bundle.StageBits = &ObservableContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = ObserverContext::OnRenderDebug;
 #endif 
 
-    ObserverContext::__state.allowedRemoveStages = Graphics::OnBeginStage;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
     __CreateContext();
 }
@@ -662,7 +656,6 @@ void
 ObservableContext::Create()
 {
     __CreateContext();
-    ObservableContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&ObservableContext::__bundle, &ObservableContext::__state);
 }
 

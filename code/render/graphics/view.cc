@@ -27,8 +27,7 @@ View::View() :
     script(nullptr),
     camera(GraphicsEntityId::Invalid()),
     stage(nullptr),
-    enabled(true),
-    inBeginFrame(false)
+    enabled(true)
 {
     // empty
 }
@@ -44,16 +43,17 @@ View::~View()
 //------------------------------------------------------------------------------
 /**
 */
-void 
-View::UpdateResources(const IndexT frameIndex, const IndexT bufferIndex)
+void
+View::Render(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex)
 {
-    if (this->camera != GraphicsEntityId::Invalid())
+    // run the actual script
+    if (this->camera != GraphicsEntityId::Invalid() && this->script != nullptr)
     {
         // update camera
         ShaderServer* shaderServer = ShaderServer::Instance();
         auto settings = CameraContext::GetSettings(this->camera);
 
-        alignas(16) Shared::ViewConstants constants;
+        Shared::ViewConstants constants = Graphics::GetViewConstants();
         Math::mat4 view = CameraContext::GetView(this->camera);
         Math::mat4 proj = CameraContext::GetProjection(this->camera);
         proj.row1 = -proj.row1;
@@ -80,50 +80,11 @@ View::UpdateResources(const IndexT frameIndex, const IndexT bufferIndex)
 
         // Apply view transforms
         Graphics::UpdateViewConstants(constants);
-    }   
-}
 
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-View::BeginFrame(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex)
-{
-    n_assert(!inBeginFrame);
-    DisplayDevice* displayDevice = DisplayDevice::Instance();
-    if (this->camera != GraphicsEntityId::Invalid())
-    {
-        //n_assert(this->stage.isvalid()); // hmm, we never use stages
-        inBeginFrame = true;
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-View::Render(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex)
-{
-    n_assert(inBeginFrame);
-
-    // run the actual script
-    if (this->script != nullptr)
-    {
         N_SCOPE(ViewExecute, Graphics);
         this->script->Run(frameIndex, bufferIndex);
     }
 }
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-View::EndFrame(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex)
-{
-    n_assert(inBeginFrame);
-    inBeginFrame = false;
-}
-
 
 //------------------------------------------------------------------------------
 /**

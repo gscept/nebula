@@ -39,6 +39,9 @@ struct FrameContext
     IndexT bufferIndex;
 };
 
+using ViewIndependentCall = void(*)(const Graphics::FrameContext& ctx);
+using ViewDependentCall = void(*)(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
+
 class GraphicsContext;
 struct GraphicsContextFunctionBundle;
 struct GraphicsContextState;
@@ -81,14 +84,22 @@ public:
     /// discard stage
     void DiscardStage(const Ptr<Stage>& stage); 
 
-    /// Cycles a new frame and waits for the previous execution of the frame id
-    void BeginFrame();
-    /// Run updates not related to views
-    void BeforeViews();
-    /// Goes through each view and executes their framescript
-    void RenderViews();
-    /// Finish up the view rendering
-    void EndViews();
+    /// Setup pre game logic graphics calls
+    void SetupPreLogicCalls(const Util::FixedArray<ViewIndependentCall>& calls);
+    /// Setup post game logic graphics calls
+    void SetupPostLogicCalls(const Util::FixedArray<ViewIndependentCall>& calls);
+    /// Setup per-view calls
+    void SetupPreLogicViewCalls(const Util::FixedArray<ViewDependentCall>& calls);
+    /// Setup per-view calls
+    void SetupPostLogicViewCalls(const Util::FixedArray<ViewDependentCall>& calls);
+
+    /// Run pre-logic calls
+    void RunPreLogic();
+    /// Run post-logic calls
+    void RunPostLogic();
+    /// Render views
+    void Render();
+
     /// End the frame and submit
     void EndFrame();
     /// Progress to next frame
@@ -136,6 +147,8 @@ private:
     Ptr<CoreGraphics::TextRenderer> textRenderer;
     Ptr<Frame::FrameServer> frameServer;
 
+    Util::FixedArray<ViewIndependentCall> preLogicCalls, postLogicCalls;
+    Util::FixedArray<ViewDependentCall> preLogicViewCalls, postLogicViewCalls;
 
     bool isOpen;
 };
@@ -190,6 +203,42 @@ GraphicsServer::GetCurrentView() const
 //------------------------------------------------------------------------------
 /**
 */
+inline void
+GraphicsServer::SetupPreLogicCalls(const Util::FixedArray<ViewIndependentCall>& calls)
+{
+    this->preLogicCalls = calls;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+GraphicsServer::SetupPostLogicCalls(const Util::FixedArray<ViewIndependentCall>& calls)
+{
+    this->postLogicCalls = calls;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+GraphicsServer::SetupPreLogicViewCalls(const Util::FixedArray<ViewDependentCall>& calls)
+{
+    this->preLogicViewCalls = calls;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline void
+GraphicsServer::SetupPostLogicViewCalls(const Util::FixedArray<ViewDependentCall>& calls)
+{
+    this->postLogicViewCalls = calls;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 inline const Timing::Time 
 GraphicsServer::GetTime() const
 {
@@ -213,5 +262,7 @@ GraphicsServer::GetFrameIndex() const
 {
     return this->frameContext.frameIndex;
 }
+
+
 
 } // namespace Graphics

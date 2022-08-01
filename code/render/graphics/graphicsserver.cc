@@ -339,268 +339,6 @@ GraphicsServer::DiscardStage(const Ptr<Stage>& stage)
 //------------------------------------------------------------------------------
 /**
 */
-void
-GraphicsServer::BeginFrame()
-{
-    N_SCOPE(BeginFrame, Graphics);
-    this->timer->UpdateTimePolling();
-
-    this->frameContext.frameIndex = this->timer->GetFrameIndex();
-    this->frameContext.frameTime = this->timer->GetFrameTime();
-    this->frameContext.time = this->timer->GetTime();
-    this->frameContext.ticks = this->timer->GetTicks();
-    this->frameContext.bufferIndex = CoreGraphics::GetBufferedFrameIndex();
-
-    // update shader server
-    Graphics::AllocateGlobalConstants();
-    this->shaderServer->BeforeFrame();
-
-    // Collect garbage
-    IndexT i;
-    for (i = 0; i < this->contexts.Size(); i++)
-    {
-        auto state = this->states[i];
-        state->CleanupDelayedRemoveQueue();
-
-        // give contexts a chance to defragment their data
-        if (state->Defragment != nullptr)
-            state->Defragment();
-    }
-
-    N_MARKER_BEGIN(ContextBegin, Graphics);
-    for (i = 0; i < this->contexts.Size(); i++)
-    {
-        if (this->contexts[i]->StageBits)
-            *this->contexts[i]->StageBits = Graphics::OnBeginStage;
-        if (this->contexts[i]->OnBegin != nullptr)
-            this->contexts[i]->OnBegin(this->frameContext);
-    }
-    N_MARKER_END();
-
-    // go through views and call prepare view
-    N_MARKER_BEGIN(ContextPrepareView, Graphics);
-    for (i = 0; i < this->views.Size(); i++)
-    {
-        const Ptr<View>& view = this->views[i];
-
-        IndexT j;
-        for (j = 0; j < this->contexts.Size(); j++)
-        {
-            if (this->contexts[j]->StageBits)
-                *this->contexts[j]->StageBits = Graphics::OnPrepareViewStage;
-            if (this->contexts[j]->OnPrepareView != nullptr)
-                this->contexts[j]->OnPrepareView(view, this->frameContext);
-        }       
-    }
-    N_MARKER_END();
-
-    // update frame context after begin frame
-    this->frameContext.bufferIndex = CoreGraphics::GetBufferedFrameIndex();
-
-    N_MARKER_BEGIN(ContextBeforeFrame, Graphics);
-    for (i = 0; i < this->contexts.Size(); i++)
-    {
-        if (this->contexts[i]->StageBits)
-            *this->contexts[i]->StageBits = Graphics::OnBeforeFrameStage;
-        if (this->contexts[i]->OnBeforeFrame != nullptr)
-            this->contexts[i]->OnBeforeFrame(this->frameContext);
-    }
-    N_MARKER_END();
-
-    // consider this whole block of code viable for updating resource tables
-    CoreGraphics::ResourceTableBlock(false);
-
-    N_MARKER_BEGIN(ContextUpdateResources, Graphics);
-    for (i = 0; i < this->contexts.Size(); i++)
-    {
-        if (this->contexts[i]->StageBits)
-            *this->contexts[i]->StageBits = Graphics::OnUpdateResourcesStage;
-        if (this->contexts[i]->OnUpdateResources != nullptr)
-            this->contexts[i]->OnUpdateResources(this->frameContext);
-    }
-    N_MARKER_END();
-
-    // update shader server resources (textures and tick params)
-    this->shaderServer->UpdateResources();
-
-    // go through views and call prepare view
-    N_MARKER_BEGIN(ContextUpdateViewResources, Graphics);
-    for (i = 0; i < this->views.Size(); i++)
-    {
-        const Ptr<View>& view = this->views[i];
-
-        // update view resources (camera)
-        view->UpdateResources(this->frameContext.frameIndex, this->frameContext.bufferIndex);
-
-        IndexT j;
-        for (j = 0; j < this->contexts.Size(); j++)
-        {
-            if (this->contexts[j]->StageBits)
-                *this->contexts[j]->StageBits = Graphics::OnUpdateViewResourcesStage;
-            if (this->contexts[j]->OnUpdateViewResources != nullptr)
-                this->contexts[j]->OnUpdateViewResources(view, this->frameContext);
-        }
-    }
-    N_MARKER_END();
-
-    this->currentView = nullptr;
-
-    // finish resource updates
-    CoreGraphics::ResourceTableBlock(true);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-GraphicsServer::BeforeViews()
-{
-    N_SCOPE(BeforeViews, Graphics);
-
-    // wait for visibility
-    N_MARKER_BEGIN(ContextWaitForWork, Graphics);
-    IndexT i;
-    for (i = 0; i < this->contexts.Size(); i++)
-    {
-        if (this->contexts[i]->StageBits)
-            *this->contexts[i]->StageBits = Graphics::OnWaitForWorkStage;
-        if (this->contexts[i]->OnWaitForWork != nullptr)
-            this->contexts[i]->OnWaitForWork(this->frameContext);
-    }
-    N_MARKER_END();
-
-    N_MARKER_BEGIN(ContextWorkFinished, Graphics);
-    for (i = 0; i < this->contexts.Size(); i++)
-    {
-        if (this->contexts[i]->StageBits)
-            *this->contexts[i]->StageBits = Graphics::OnWorkFinishedStage;
-        if (this->contexts[i]->OnWorkFinished != nullptr)
-            this->contexts[i]->OnWorkFinished(this->frameContext);
-    }
-    N_MARKER_END();
-
-    // go through views and call before view
-    for (i = 0; i < this->views.Size(); i++)
-    {
-        const Ptr<View>& view = this->views[i];
-        
-        if (!view->enabled)
-            continue;
-
-        // begin frame on view, this will construct view build jobs
-        this->currentView = view;
-        this->currentView->BeginFrame(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
-
-        N_MARKER_BEGIN(ContextBeforeView, Graphics);
-        IndexT j;
-        for (j = 0; j < this->contexts.Size(); j++)
-        {
-            if (this->contexts[i]->StageBits)
-                *this->contexts[i]->StageBits = Graphics::OnBeforeViewStage;
-            if (this->contexts[j]->OnBeforeView != nullptr)
-                this->contexts[j]->OnBeforeView(view, this->frameContext);
-        }
-        N_MARKER_END();
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-GraphicsServer::RenderViews()
-{
-    N_SCOPE(RenderViews, Graphics);
-    IndexT i;
-
-    // No more constant updates from this point
-    CoreGraphics::LockConstantUpdates();
-
-    // go through views and call before view
-    for (i = 0; i < this->views.Size(); i++)
-    {
-        const Ptr<View>& view = this->views[i];
-
-        if (!view->enabled)
-            continue;
-
-        view->Render(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-GraphicsServer::EndViews()
-{
-    N_SCOPE(EndViews, Graphics);
-
-    // go through views and call before view
-    IndexT i;
-    for (i = 0; i < this->views.Size(); i++)
-    {
-        const Ptr<View>& view = this->views[i];
-
-        if (!view->enabled)
-            continue;
-
-        this->currentView->EndFrame(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
-        
-        N_MARKER_BEGIN(ContextAfterView, Graphics);
-        IndexT j;
-        for (j = 0; j < this->contexts.Size(); j++)
-        {
-            if (this->contexts[i]->StageBits)
-                *this->contexts[i]->StageBits = Graphics::OnAfterViewStage;
-            if (this->contexts[j]->OnAfterView != nullptr)
-                this->contexts[j]->OnAfterView(view, this->frameContext);
-        }
-        N_MARKER_END();
-    }
-
-    this->currentView = nullptr;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-GraphicsServer::EndFrame()
-{
-    N_SCOPE(EndFrame, Graphics);
-
-    CoreGraphics::FinishFrame(this->frameContext.frameIndex);
-
-    // finish frame and prepare for the next one
-    N_MARKER_BEGIN(ContextAfterFrame, Graphics);
-    IndexT i;
-    for (i = 0; i < this->contexts.Size(); i++)
-    {
-        if (this->contexts[i]->StageBits) 
-            *this->contexts[i]->StageBits = Graphics::OnAfterFrameStage;
-        if (this->contexts[i]->OnAfterFrame != nullptr)
-            this->contexts[i]->OnAfterFrame(this->frameContext);
-    }
-    N_MARKER_END();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-GraphicsServer::NewFrame()
-{
-    // Wait and get new frame
-    CoreGraphics::NewFrame();
-
-    // Open up for constant updates after waiting
-    CoreGraphics::UnlockConstantUpdates();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 Ptr<Graphics::View>
 GraphicsServer::CreateView(const Util::StringAtom& name, const IO::URI& framescript)
 {
@@ -681,6 +419,157 @@ GraphicsServer::RenderDebug(uint32_t flags)
         if (this->contexts[i]->OnRenderDebug != nullptr)
             this->contexts[i]->OnRenderDebug(flags);
     }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::RunPreLogic()
+{
+    N_SCOPE(PreLogic, Graphics);
+    this->timer->UpdateTimePolling();
+
+    this->frameContext.frameIndex = this->timer->GetFrameIndex();
+    this->frameContext.frameTime = this->timer->GetFrameTime();
+    this->frameContext.time = this->timer->GetTime();
+    this->frameContext.ticks = this->timer->GetTicks();
+    this->frameContext.bufferIndex = CoreGraphics::GetBufferedFrameIndex();
+
+    // update shader server
+    Graphics::AllocateGlobalConstants();
+    this->shaderServer->BeforeFrame();
+
+    // Collect garbage
+    IndexT i;
+    for (i = 0; i < this->contexts.Size(); i++)
+    {
+        auto state = this->states[i];
+        state->CleanupDelayedRemoveQueue();
+
+        // give contexts a chance to defragment their data
+        if (state->Defragment != nullptr)
+            state->Defragment();
+    }
+
+    // Consider this whole block of code viable for updating resource tables
+    CoreGraphics::ResourceTableBlock(false);
+
+    N_MARKER_BEGIN(ContextPreLogic, Graphics);
+    for (auto& call : this->preLogicCalls)
+    {
+        call(this->frameContext);
+    }
+    N_MARKER_END();
+
+    // Go through views and call before view
+    for (IndexT i = 0; i < this->views.Size(); i++)
+    {
+        const Ptr<View>& view = this->views[i];
+
+        if (!view->enabled)
+            continue;
+
+        // begin frame on view, this will construct view build jobs
+        this->currentView = view;
+        N_MARKER_BEGIN(ContextPerView, Graphics);
+        for (auto& call : this->preLogicViewCalls)
+        {
+            call(view, this->frameContext);
+        }
+        N_MARKER_END();
+
+        this->currentView = nullptr;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+
+void GraphicsServer::RunPostLogic()
+{
+    N_MARKER_BEGIN(ContextPostLogic, Graphics);
+    for (auto& call : this->postLogicCalls)
+    {
+        call(this->frameContext);
+    }
+    N_MARKER_END();
+
+    // Go through views and call before view
+    for (IndexT i = 0; i < this->views.Size(); i++)
+    {
+        const Ptr<View>& view = this->views[i];
+
+        if (!view->enabled)
+            continue;
+
+        this->currentView = view;
+        N_MARKER_BEGIN(ContextPerView, Graphics);
+        for (auto& call : this->postLogicViewCalls)
+        {
+            call(view, this->frameContext);
+        }
+        N_MARKER_END();
+
+        this->currentView = nullptr;
+    }
+
+    // Update shader server resources (textures and tick params)
+    this->shaderServer->UpdateResources();
+
+    // Consider this whole block of code viable for updating resource tables
+    CoreGraphics::ResourceTableBlock(true);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::Render()
+{
+    N_SCOPE(RenderViews, Graphics);
+    IndexT i;
+
+    // No more constant updates from this point
+    CoreGraphics::LockConstantUpdates();
+
+    // Go through views and call before view
+    for (i = 0; i < this->views.Size(); i++)
+    {
+        const Ptr<View>& view = this->views[i];
+
+        if (!view->enabled)
+            continue;
+
+        this->currentView = view;
+        view->Render(this->frameContext.frameIndex, this->frameContext.time, this->frameContext.bufferIndex);
+        this->currentView = nullptr;
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::EndFrame()
+{
+    N_SCOPE(EndFrame, Graphics);
+    CoreGraphics::FinishFrame(this->frameContext.frameIndex);
+    N_MARKER_END();
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+GraphicsServer::NewFrame()
+{
+    // Wait and get new frame
+    CoreGraphics::NewFrame();
+
+    // Open up for constant updates after waiting
+    CoreGraphics::UnlockConstantUpdates();
 }
 
 } // namespace Graphics

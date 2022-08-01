@@ -86,7 +86,6 @@ SSAOContext::Create()
 {
     __CreatePluginContext();
 
-    __bundle.OnUpdateViewResources = SSAOContext::UpdateViewDependentResources;
     __bundle.OnWindowResized = SSAOContext::WindowResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 }

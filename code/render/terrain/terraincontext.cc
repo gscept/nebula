@@ -246,10 +246,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 
     Core::CVarCreate(Core::CVarType::CVar_Int, "r_terrain_debug", "0", "Show debug interface for the terrain system [0,1]");
 
-    __bundle.OnPrepareView = TerrainContext::CullPatches;
-    __bundle.OnUpdateViewResources = TerrainContext::UpdateLOD;
-    __bundle.OnBegin = TerrainContext::RenderUI;
-
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = TerrainContext::OnRenderDebug;
 #endif

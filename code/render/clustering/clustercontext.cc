@@ -67,8 +67,6 @@ ClusterContext::~ClusterContext()
 void 
 ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId window)
 {
-    __bundle.OnUpdateResources = ClusterContext::UpdateResources;
-    __bundle.StageBits = &ClusterContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = ClusterContext::OnRenderDebug;
 #endif

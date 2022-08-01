@@ -76,15 +76,10 @@ void
 ParticleContext::Create()
 {
     __CreateContext();
-    __bundle.OnBegin = ParticleContext::UpdateParticles;
-    __bundle.OnPrepareView = ParticleContext::OnPrepareView;
-    __bundle.OnBeforeFrame = ParticleContext::WaitForParticleUpdates; // wait for jobs before we issue visibility
-    __bundle.StageBits = &ParticleContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = ParticleContext::OnRenderDebug;
 #endif
 
-    ParticleContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     struct VectorB4N

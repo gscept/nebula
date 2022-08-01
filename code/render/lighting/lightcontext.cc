@@ -149,15 +149,7 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
     Core::CVarCreate(Core::CVarType::CVar_Int, "r_shadow_debug", "0", "Show shadowmap framescript inspector [0,1]");
 #endif
 
-    __bundle.OnPrepareView = LightContext::OnPrepareView;
-    __bundle.OnUpdateViewResources = LightContext::UpdateViewDependentResources;
     __bundle.OnWindowResized = LightContext::WindowResized;
-    __bundle.OnBeforeView = [](const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
-    {
-        lightServerState.shadowMappingFrameScript->Run(ctx.frameIndex, ctx.bufferIndex);
-    };
-
-    __bundle.StageBits = &LightContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = LightContext::OnRenderDebug;
 #endif
@@ -906,8 +898,8 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     using namespace CoreGraphics;
 
     // get camera view
-    Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
-    Math::mat4 invViewTransform = Graphics::CameraContext::GetTransform(view->GetCamera());
+    const Math::mat4 viewTransform = Graphics::CameraContext::GetView(view->GetCamera());
+    const Math::mat4 invViewTransform = Graphics::CameraContext::GetTransform(view->GetCamera());
 
     // update constant buffer
     Ids::Id32 globalLightId = genericLightAllocator.Get<TypedLightId>(cid.id);
@@ -1123,6 +1115,15 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     offset = SetConstants(combineConsts);
     ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetGraphicsConstantBuffer(), combineState.combineUniforms, 0, false, false, sizeof(Combine::CombineUniforms), (SizeT)offset });
     ResourceTableCommitChanges(combineState.resourceTables[bufferIndex]);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+LightContext::RenderShadows(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+{
+    lightServerState.shadowMappingFrameScript->Run(ctx.frameIndex, ctx.bufferIndex);
 }
 
 //------------------------------------------------------------------------------

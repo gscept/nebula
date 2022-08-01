@@ -60,7 +60,6 @@ void
 SSRContext::Create()
 {
     __CreatePluginContext();
-    __bundle.OnUpdateViewResources = SSRContext::UpdateViewDependentResources;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     // TODO: Convert to subgraph

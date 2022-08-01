@@ -50,10 +50,6 @@ __ImplementPluginContext(EnvironmentContext);
 void 
 EnvironmentContext::Create(const Graphics::GraphicsEntityId sun)
 {
-    __bundle.OnBeforeFrame = EnvironmentContext::OnBeforeFrame;
-    __bundle.OnBegin = EnvironmentContext::RenderUI;
-    __bundle.StageBits = &EnvironmentContext::__state.currentStage;
-
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
     envState.sunEntity = sun;
 

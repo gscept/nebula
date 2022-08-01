@@ -75,7 +75,6 @@ void
 HistogramContext::Create()
 {
     __CreatePluginContext();
-    __bundle.OnUpdateViewResources = HistogramContext::UpdateViewResources;
     __bundle.OnWindowResized = HistogramContext::WindowResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 

@@ -66,9 +66,6 @@ void
 DecalContext::Create()
 {
     __CreateContext();
-
-    __bundle.OnUpdateViewResources = DecalContext::UpdateViewDependentResources;
-
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = DecalContext::OnRenderDebug;
 #endif

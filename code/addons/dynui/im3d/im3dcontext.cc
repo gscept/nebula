@@ -125,8 +125,6 @@ Im3dContext::~Im3dContext()
 void
 Im3dContext::Create()
 {
-    __bundle.OnBeforeFrame = Im3dContext::OnBeforeFrame;
-    __bundle.OnPrepareView = Im3dContext::OnPrepareView;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     imState.inputHandler = Im3dInputHandler::Create();
@@ -343,7 +341,7 @@ Im3dContext::DrawSphere(const Math::point& pos, float radius, const Math::vec4& 
 /**
 */
 void
-Im3dContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
+Im3dContext::NewFrame(const Graphics::FrameContext& ctx)
 {
     Im3d::NewFrame();
 }

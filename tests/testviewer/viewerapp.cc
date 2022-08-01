@@ -141,7 +141,7 @@ SimpleViewerApplication::Open()
         CoreGraphics::WindowCreateInfo wndInfo =
         {
             CoreGraphics::DisplayMode{ 100, 100, width, height },
-            this->GetAppTitle(), "", CoreGraphics::AntiAliasQuality::None, true, true, false, true
+            this->GetAppTitle(), "", CoreGraphics::AntiAliasQuality::None, true, true, false, false
         };
         this->wnd = CreateWindow(wndInfo);
         this->cam = Graphics::CreateEntity();
@@ -157,7 +157,7 @@ SimpleViewerApplication::Open()
         CameraContext::Create();
         ModelContext::Create();
         Characters::CharacterContext::Create();
-        //Particles::ParticleContext::Create();
+        Particles::ParticleContext::Create();
 
         // Setup visibility related contexts
         // The order is important, ObserverContext is dependent on any bounding box and renderable modifying code
@@ -186,7 +186,7 @@ SimpleViewerApplication::Open()
         //};
         //Vegetation::VegetationContext::Create(vegSettings);
 
-        Clustering::ClusterContext::Create(0.1f, 1000.0f, this->wnd);
+        Clustering::ClusterContext::Create(0.1f, 10000.0f, this->wnd);
         Lighting::LightContext::Create(frameScript);
         Decals::DecalContext::Create();
         Im3d::Im3dContext::Create();
@@ -217,7 +217,8 @@ SimpleViewerApplication::Open()
             Math::vec3(0, 0, 0),
             Math::vec3(0, 0, 0),
             0.0f,
-            1.0f,
+            60_rad,
+            0_rad,
             true
         );
 
@@ -240,6 +241,60 @@ SimpleViewerApplication::Open()
         this->frametimeHistory.Fill(0, 120, 0.0f);
 
         Physics::Setup();
+
+        Util::FixedArray<Graphics::ViewIndependentCall> preLogicCalls = 
+        {
+            Im3d::Im3dContext::NewFrame,
+            Dynui::ImguiContext::OnBeforeFrame,
+            CameraContext::UpdateCameras,
+            ModelContext::UpdateTransforms,
+            Characters::CharacterContext::UpdateAnimations,
+            Particles::ParticleContext::UpdateParticles,
+            Fog::VolumetricFogContext::RenderUI,
+            EnvironmentContext::OnBeforeFrame,
+            EnvironmentContext::RenderUI,
+            //Terrain::TerrainContext::RenderUI
+        };
+
+        Util::FixedArray<Graphics::ViewDependentCall> preLogicViewCalls =
+        {
+            Lighting::LightContext::OnPrepareView,
+            Particles::ParticleContext::OnPrepareView,
+            Im3d::Im3dContext::OnPrepareView,
+            //Terrain::TerrainContext::CullPatches
+        };
+
+        Util::FixedArray<Graphics::ViewIndependentCall> postLogicCalls = 
+        {
+            Clustering::ClusterContext::UpdateResources,
+            ObserverContext::RunVisibilityTests,
+            ObserverContext::GenerateDrawLists,
+
+            // At the very latest point, wait for work to finish
+            Dynui::ImguiContext::OnWorkFinished,
+            ModelContext::WaitForWork,
+            Characters::CharacterContext::WaitForCharacterJobs,
+            Particles::ParticleContext::WaitForParticleUpdates,
+            ObserverContext::WaitForVisibility
+        };
+
+        Util::FixedArray<Graphics::ViewDependentCall> postLogicViewCalls = 
+        {
+            Lighting::LightContext::UpdateViewDependentResources,
+            Lighting::LightContext::RenderShadows,
+            PostEffects::SSAOContext::UpdateViewDependentResources,
+            PostEffects::HistogramContext::UpdateViewResources,
+            //PostEffects::SSRContext::UpdateViewDependentResources,
+            Decals::DecalContext::UpdateViewDependentResources,
+            Fog::VolumetricFogContext::UpdateViewDependentResources,
+            //Terrain::TerrainContext::UpdateLOD,
+            //Vegetation::VegetationContext::UpdateViewResources
+        };
+
+        this->gfxServer->SetupPreLogicCalls(preLogicCalls);
+        this->gfxServer->SetupPreLogicViewCalls(preLogicViewCalls);
+        this->gfxServer->SetupPostLogicCalls(postLogicCalls);
+        this->gfxServer->SetupPostLogicViewCalls(postLogicViewCalls);
 
         this->console = Dynui::ImguiConsole::Create();
         this->consoleHandler = Dynui::ImguiConsoleHandler::Create();
@@ -322,8 +377,8 @@ SimpleViewerApplication::Run()
             this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers();
 #endif NEBULA_ENABLE_PROFILING
 
-        // Begin the next frame, waits for the previous frame with the same buffer index
-        this->gfxServer->BeginFrame();
+        // Run pre-game logic render code
+        this->gfxServer->RunPreLogic();
         
         this->RenderUI();
 
@@ -334,16 +389,13 @@ SimpleViewerApplication::Run()
 
         scenes[currentScene]->Run();
 
-        // put game code which doesn't need visibility results or animation here
-        this->gfxServer->BeforeViews();
+        // Run post-logic render code
+        this->gfxServer->RunPostLogic();
 
-        // put game code which need visibility data here
-        this->gfxServer->RenderViews();
+        // Render views
+        this->gfxServer->Render();
 
-        // put game code which needs rendering to be done (animation etc) here
-        this->gfxServer->EndViews();
-
-        // do stuff after rendering is done
+        // Finish frame
         this->gfxServer->EndFrame();
 
         // force wait immediately
@@ -351,6 +403,7 @@ SimpleViewerApplication::Run()
         WindowPresent(wnd, frameIndex);
         N_MARKER_END();
 
+        // Begin a new frame
         this->gfxServer->NewFrame();
 
         if (keyboard->KeyPressed(Input::Key::Escape)) run = false;
