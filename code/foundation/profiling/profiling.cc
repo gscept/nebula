@@ -9,7 +9,7 @@ namespace Profiling
 {
 
 Util::Array<ProfilingContext> profilingContexts;
-Util::Array<Threading::CriticalSection> contextMutexes;
+Util::Array<Threading::CriticalSection*> contextMutexes;
 Util::Dictionary<Util::StringAtom, Util::Array<ProfilingScope>> scopesByCategory;
 Threading::CriticalSection categoryLock;
 Threading::AtomicCounter ProfilingContextCounter = 0;
@@ -22,7 +22,7 @@ void
 ProfilingPushScope(const ProfilingScope& scope)
 {   
     n_assert(ProfilingContextIndex != InvalidIndex);
-    contextMutexes[ProfilingContextIndex].Enter();
+    contextMutexes[ProfilingContextIndex]->Enter();
 
     // get thread context
     ProfilingContext& ctx = profilingContexts[ProfilingContextIndex];
@@ -74,7 +74,7 @@ ProfilingPopScope()
         else
             parent.children.Append(scope);
     }
-    contextMutexes[ProfilingContextIndex].Leave();
+    contextMutexes[ProfilingContextIndex]->Leave();
 }
 
 //------------------------------------------------------------------------------
@@ -89,7 +89,7 @@ ProfilingNewFrame()
 
     for (IndexT i = 0; i < profilingContexts.Size(); i++)
     {
-        Threading::CriticalScope lock(&contextMutexes[i]);
+        Threading::CriticalScope lock(contextMutexes[i]);
         n_assert(profilingContexts[i].scopes.IsEmpty());
         profilingContexts[i].topLevelScopes.Clear();
         profilingContexts[i].timer.Reset();
@@ -118,7 +118,7 @@ ProfilingRegisterThread()
     ProfilingContextIndex = Threading::Interlocked::Add(&ProfilingContextCounter, 1);
     profilingContexts.Append(ProfilingContext());
     profilingContexts.Back().timer.Start();
-    contextMutexes.Emplace();
+    contextMutexes.Append(new Threading::CriticalSection);
 }
 
 //------------------------------------------------------------------------------
