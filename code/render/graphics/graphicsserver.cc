@@ -478,7 +478,6 @@ GraphicsServer::RunPreLogic()
             call(view, this->frameContext);
         }
         N_MARKER_END();
-
         this->currentView = nullptr;
     }
 }
@@ -511,11 +510,10 @@ void GraphicsServer::RunPostLogic()
             call(view, this->frameContext);
         }
         N_MARKER_END();
-
         this->currentView = nullptr;
     }
 
-    // Update shader server resources (textures and tick params)
+    // Update pending texture views
     this->shaderServer->UpdateResources();
 
     // Consider this whole block of code viable for updating resource tables
@@ -556,7 +554,6 @@ GraphicsServer::EndFrame()
 {
     N_SCOPE(EndFrame, Graphics);
     CoreGraphics::FinishFrame(this->frameContext.frameIndex);
-    N_MARKER_END();
 }
 
 //------------------------------------------------------------------------------
