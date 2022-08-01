@@ -82,7 +82,7 @@ const Util::Array<ProfilingContext> ProfilingGetContexts();
 void ProfilingClear();
 
 extern Util::Array<ProfilingContext> profilingContexts;
-extern Util::Array<Threading::AssertingMutex> contextMutexes;
+extern Util::Array<Threading::CriticalSection*> contextMutexes;
 extern Util::Dictionary<Util::StringAtom, Util::Array<ProfilingScope>> scopesByCategory;
 extern Threading::CriticalSection categoryLock;
 
