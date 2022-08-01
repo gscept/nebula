@@ -653,7 +653,7 @@ ImguiContext::OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width
 /**
 */
 void 
-ImguiContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
+ImguiContext::NewFrame(const Graphics::FrameContext& ctx)
 {
     ImGuiIO& io = ImGui::GetIO();
     io.DeltaTime = ctx.frameTime;
@@ -670,7 +670,7 @@ ImguiContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 /**
 */
 void
-ImguiContext::OnWorkFinished(const Graphics::FrameContext& ctx)
+ImguiContext::Render(const Graphics::FrameContext& ctx)
 {
     ImGui::Render();
 }

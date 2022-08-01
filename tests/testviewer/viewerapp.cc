@@ -245,14 +245,14 @@ SimpleViewerApplication::Open()
         Util::FixedArray<Graphics::ViewIndependentCall> preLogicCalls = 
         {
             Im3d::Im3dContext::NewFrame,
-            Dynui::ImguiContext::OnBeforeFrame,
+            Dynui::ImguiContext::NewFrame,
             CameraContext::UpdateCameras,
             ModelContext::UpdateTransforms,
             Characters::CharacterContext::UpdateAnimations,
-            Particles::ParticleContext::UpdateParticles,
             Fog::VolumetricFogContext::RenderUI,
             EnvironmentContext::OnBeforeFrame,
             EnvironmentContext::RenderUI,
+            Particles::ParticleContext::UpdateParticles,
             //Terrain::TerrainContext::RenderUI
         };
 
@@ -261,6 +261,12 @@ SimpleViewerApplication::Open()
             Lighting::LightContext::OnPrepareView,
             Particles::ParticleContext::OnPrepareView,
             Im3d::Im3dContext::OnPrepareView,
+            PostEffects::SSAOContext::UpdateViewDependentResources,
+            PostEffects::HistogramContext::UpdateViewResources,
+            Decals::DecalContext::UpdateViewDependentResources,
+            Fog::VolumetricFogContext::UpdateViewDependentResources,
+            Lighting::LightContext::UpdateViewDependentResources,
+
             //Terrain::TerrainContext::CullPatches
         };
 
@@ -271,7 +277,7 @@ SimpleViewerApplication::Open()
             ObserverContext::GenerateDrawLists,
 
             // At the very latest point, wait for work to finish
-            Dynui::ImguiContext::OnWorkFinished,
+            Dynui::ImguiContext::Render,
             ModelContext::WaitForWork,
             Characters::CharacterContext::WaitForCharacterJobs,
             Particles::ParticleContext::WaitForParticleUpdates,
@@ -280,13 +286,8 @@ SimpleViewerApplication::Open()
 
         Util::FixedArray<Graphics::ViewDependentCall> postLogicViewCalls = 
         {
-            Lighting::LightContext::UpdateViewDependentResources,
             Lighting::LightContext::RenderShadows,
-            PostEffects::SSAOContext::UpdateViewDependentResources,
-            PostEffects::HistogramContext::UpdateViewResources,
-            //PostEffects::SSRContext::UpdateViewDependentResources,
-            Decals::DecalContext::UpdateViewDependentResources,
-            Fog::VolumetricFogContext::UpdateViewDependentResources,
+
             //Terrain::TerrainContext::UpdateLOD,
             //Vegetation::VegetationContext::UpdateViewResources
         };
