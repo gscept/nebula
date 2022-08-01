@@ -57,14 +57,6 @@ StaticUIContext::~StaticUIContext()
 void
 StaticUIContext::Create()
 {
-    __bundle.OnUpdateResources = [](const Graphics::FrameContext& ctx)
-    {
-        state.Renderer->Update();
-        state.Renderer->Render();
-
-        state.Backend->PreDraw(state.view->render_target());
-    };
-
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     ultralight::Config config;
@@ -127,6 +119,18 @@ StaticUIContext::Create()
 void
 StaticUIContext::Discard()
 {
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+StaticUIContext::Render()
+{
+    state.Renderer->Update();
+    state.Renderer->Render();
+
+    state.Backend->PreDraw(state.view->render_target());
 }
 
 //------------------------------------------------------------------------------
