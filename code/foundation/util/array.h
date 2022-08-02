@@ -41,6 +41,7 @@ template<class TYPE> class Array
 public:
     /// define iterator
     typedef TYPE* Iterator;
+    typedef const TYPE* ConstIterator;
 
     /// constructor with default parameters
     Array();
@@ -141,8 +142,12 @@ public:
     void Free();
     /// return iterator to beginning of array
     Iterator Begin() const;
+    /// return const iterator to beginning of array
+    ConstIterator ConstBegin() const;
     /// return iterator to end of array
     Iterator End() const;
+    /// return const iterator to end of array
+    ConstIterator ConstEnd() const;
     /// find identical element in array, return iterator
     Iterator Find(const TYPE& elm, const IndexT start = 0) const;
     /// find identical element in array, return index, InvalidIndex if not found
@@ -179,6 +184,7 @@ public:
     /// grow array
     void Grow();
 protected:
+
     /// destroy an element (call destructor without freeing memory)
     void Destroy(TYPE* elm);
     /// copy content
@@ -1137,10 +1143,28 @@ Array<TYPE>::Begin() const
 //------------------------------------------------------------------------------
 /**
 */
+template<class TYPE> typename Array<TYPE>::ConstIterator
+Array<TYPE>::ConstBegin() const
+{
+    return static_cast<Array<TYPE>::ConstIterator>(this->elements);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
 template<class TYPE> typename Array<TYPE>::Iterator
 Array<TYPE>::End() const
 {
     return this->elements + this->count;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE> typename Array<TYPE>::ConstIterator
+Array<TYPE>::ConstEnd() const
+{
+    return static_cast<Array<TYPE>::ConstIterator>(this->elements + this->count);
 }
 
 //------------------------------------------------------------------------------

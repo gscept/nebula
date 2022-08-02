@@ -30,6 +30,8 @@ public:
     FixedArray(const SizeT s, const TYPE& initialValue);
     /// copy constructor
     FixedArray(const FixedArray<TYPE>& rhs);
+    /// construct from array
+    FixedArray(const Array<TYPE>& rhs);
     /// move constructor
     FixedArray(FixedArray<TYPE>&& rhs);
     /// constructor from initializer list
@@ -193,6 +195,30 @@ FixedArray<TYPE>::FixedArray(const FixedArray<TYPE>& rhs) :
     elements(nullptr)
 {
     this->Copy(rhs);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<class TYPE>
+FixedArray<TYPE>::FixedArray(const Array<TYPE>& rhs) :
+    count(rhs.Size()),
+    elements(nullptr)
+{
+    if (this->count > 0)
+    {
+        this->Alloc(this->count);
+        if constexpr (!std::is_trivially_copyable<TYPE>::value)
+        {
+            IndexT i;
+            for (i = 0; i < this->count; i++)
+            {
+                this->elements[i] = rhs.Begin()[i];
+            }
+        }
+        else
+            memcpy(this->elements, rhs.Begin(), this->count * sizeof(TYPE));
+    }
 }
 
 //------------------------------------------------------------------------------
