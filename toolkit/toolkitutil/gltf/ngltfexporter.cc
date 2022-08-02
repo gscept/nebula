@@ -151,7 +151,7 @@ bool NglTFExporter::StartExport(const IO::URI & file)
 				{
 					// Set texture attrs for normal textures
 					TextureAttrs attrs;
-					attrs.SetPixelFormat(TextureAttrs::DXT5NM);
+					attrs.SetPixelFormat(TextureAttrs::BC5);
 					attrs.SetFlipNormalY(true);
 
 					Gltf::Image const& image = gltfScene.images[material.normalTexture.index];
@@ -167,10 +167,10 @@ bool NglTFExporter::StartExport(const IO::URI & file)
                     attrs.SetPixelFormat(TextureAttrs::BC7);
                     attrs.SetColorSpace(TextureAttrs::ColorSpace::sRGB);
                     
-                    Gltf::Image const& image = gltfScene.images[material.normalTexture.index];
+                    Gltf::Image const& image = gltfScene.images[material.baseColorTexture.index];
                     Util::String format = (image.type == Gltf::Image::Type::Jpg) ? ".jpg" : ".png";
                     Util::String intermediateDir = fileName + "_" + fileExtension;
-                    Util::String intermediateFile = intermediateDir + "/" + Util::String::FromInt(material.normalTexture.index);
+                    Util::String intermediateFile = intermediateDir + "/" + Util::String::FromInt(material.baseColorTexture.index);
                     texAttrTable.SetEntry(intermediateFile, attrs);
                 }
 			}
