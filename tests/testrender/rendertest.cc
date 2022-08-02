@@ -68,26 +68,23 @@ RenderTest::Run()
     {
         inputServer->OnFrame();
         resMgr->Update(frameIndex);
-        gfxServer->BeginFrame();
+        gfxServer->RunPreLogic();
 
-        // put game code which doesn't need visibility data or animation here
+        // Run game logic here
 
-        gfxServer->BeforeViews();
+        gfxServer->RunPostLogic();
 
-        // put game code which need visibility data here
+        // Run graphics independent updates here
 
-        gfxServer->RenderViews();
-
-        // put game code which needs rendering to be done (animation etc) here
-
-        gfxServer->EndViews();
-
-        // do stuff after rendering is done
+        gfxServer->Render();
 
         gfxServer->EndFrame();
         WindowPresent(wnd, frameIndex);
         if (inputServer->GetDefaultKeyboard()->KeyPressed(Input::Key::Escape)) run = false;
         frameIndex++;
+
+        // Progress to next frame
+        gfxServer->NewFrame();
     }
 
     DestroyWindow(wnd);
