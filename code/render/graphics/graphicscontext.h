@@ -97,8 +97,7 @@ void ctx::Defragment()\
 
 #define __CreatePluginContext() \
     __state.Alloc = Alloc; \
-    __state.Dealloc = Dealloc; \
-    __state.currentStage = Graphics::NoStage;
+    __state.Dealloc = Dealloc;
 
 #define __CreateContext() \
     __CreatePluginContext() \
@@ -111,38 +110,8 @@ class View;
 class Stage;
 struct FrameContext;
 
-enum StageBits
-{
-    NoStage                     = 1 << 0,
-    OnBeginStage                = 1 << 1,
-    OnPrepareViewStage          = 1 << 2,
-    OnUpdateViewResourcesStage  = 1 << 3,
-    OnUpdateResourcesStage      = 1 << 4,
-    OnBeforeFrameStage          = 1 << 5,
-    OnWaitForWorkStage          = 1 << 6,
-    OnWorkFinishedStage         = 1 << 7,
-    OnBeforeViewStage           = 1 << 8,
-    OnAfterViewStage            = 1 << 9,
-    OnAfterFrameStage           = 1 << 10,
-
-    AllStages = OnBeginStage | OnPrepareViewStage | OnBeforeFrameStage | OnWaitForWorkStage | OnBeforeViewStage | OnAfterViewStage | OnAfterFrameStage
-};
-__ImplementEnumBitOperators(StageBits);
-
 struct GraphicsContextFunctionBundle
 {
-    // frame stages
-    void(*OnBegin)(const Graphics::FrameContext& ctx);
-    void(*OnPrepareView)(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
-    void(*OnUpdateViewResources)(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
-    void(*OnUpdateResources)(const Graphics::FrameContext& ctx);
-    void(*OnBeforeFrame)(const Graphics::FrameContext& ctx);
-    void(*OnWaitForWork)(const Graphics::FrameContext& ctx);
-    void(*OnWorkFinished)(const Graphics::FrameContext& ctx);
-    void(*OnBeforeView)(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
-    void(*OnAfterView)(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
-    void(*OnAfterFrame)(const Graphics::FrameContext& ctx);
-
     // debug callbacks
     void(*OnRenderDebug)(uint32_t flags);
 
@@ -155,11 +124,8 @@ struct GraphicsContextFunctionBundle
     void(*OnRemoveEntity)(Graphics::GraphicsEntityId entity);
     void(*OnWindowResized)(const CoreGraphics::WindowId windowId, SizeT width, SizeT height);
 
-    StageBits* StageBits;
-    GraphicsContextFunctionBundle() : OnBegin(nullptr), OnPrepareView(nullptr), OnUpdateViewResources(nullptr), OnUpdateResources(nullptr),
-        OnBeforeFrame(nullptr), OnWaitForWork(nullptr), OnWorkFinished(nullptr), OnBeforeView(nullptr), OnAfterView(nullptr), OnAfterFrame(nullptr),
-        OnStageCreated(nullptr), OnDiscardStage(nullptr), OnViewCreated(nullptr), OnDiscardView(nullptr), OnAttachEntity(nullptr), OnRemoveEntity(nullptr), OnWindowResized(nullptr),
-        StageBits(nullptr), OnRenderDebug(nullptr)
+    GraphicsContextFunctionBundle() : OnStageCreated(nullptr), OnDiscardStage(nullptr), OnViewCreated(nullptr), OnDiscardView(nullptr), 
+        OnAttachEntity(nullptr), OnRemoveEntity(nullptr), OnWindowResized(nullptr), OnRenderDebug(nullptr)
     {
     };
 };
@@ -168,8 +134,6 @@ ID_32_TYPE(ContextEntityId)
 
 struct GraphicsContextState
 {
-    StageBits currentStage; // used by the GraphicsServer to set the state
-    StageBits allowedRemoveStages = StageBits::NoStage; // if a delete is done while not in one of these stages, it will be added as a deferred delete
     Util::ArrayStack<GraphicsEntityId, 8> delayedRemoveQueue;
 
     Util::Array<GraphicsEntityId> entities; // ContextEntityId -> GraphicsEntityId. kept adjacent to allocator data.

@@ -55,13 +55,9 @@ void
 CharacterContext::Create()
 {
     __CreateContext();
-    __bundle.OnBegin = CharacterContext::UpdateAnimations;
-    __bundle.OnWaitForWork = CharacterContext::WaitForCharacterJobs;
-    __bundle.StageBits = &CharacterContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = CharacterContext::OnRenderDebug;
 #endif
-    CharacterContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
 }

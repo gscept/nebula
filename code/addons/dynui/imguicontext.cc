@@ -317,8 +317,6 @@ ImguiContext::Create()
 {
     ui_opacity = Core::CVarCreate(Core::CVar_Float, "ui_opacity", "1.0", "Global UI opacity (0..1)");
 
-    __bundle.OnBegin = ImguiContext::OnBeforeFrame;
-    __bundle.OnWorkFinished = ImguiContext::OnWorkFinished; // this is basically OnBeforeViews (plural)
     __bundle.OnWindowResized = ImguiContext::OnWindowResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
@@ -655,7 +653,7 @@ ImguiContext::OnWindowResized(const CoreGraphics::WindowId windowId, SizeT width
 /**
 */
 void 
-ImguiContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
+ImguiContext::NewFrame(const Graphics::FrameContext& ctx)
 {
     ImGuiIO& io = ImGui::GetIO();
     io.DeltaTime = ctx.frameTime;
@@ -672,7 +670,7 @@ ImguiContext::OnBeforeFrame(const Graphics::FrameContext& ctx)
 /**
 */
 void
-ImguiContext::OnWorkFinished(const Graphics::FrameContext& ctx)
+ImguiContext::Render(const Graphics::FrameContext& ctx)
 {
     ImGui::Render();
 }

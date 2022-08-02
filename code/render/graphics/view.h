@@ -28,15 +28,8 @@ public:
     /// destructor
     virtual ~View();
 
-    /// apply view settings
-    void UpdateResources(const IndexT frameIndex, const IndexT bufferIndex);
-    
-    /// begin frame
-    void BeginFrame(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex);
     /// render through view
     void Render(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex);
-    /// end frame
-    void EndFrame(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex);
 
     /// get frame script
     const Ptr<Frame::FrameScript> GetFrameScript() const;
@@ -67,7 +60,6 @@ private:
     Ptr<Frame::FrameScript> script;
     GraphicsEntityId camera;
     Ptr<Stage> stage;
-    bool inBeginFrame;
     bool enabled;
 };
 

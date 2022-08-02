@@ -37,7 +37,6 @@ CameraContext::Create()
 {
     __CreateContext();
 
-    __bundle.OnBegin = CameraContext::UpdateCameras;
     __bundle.OnWindowResized = CameraContext::OnWindowResized;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 }

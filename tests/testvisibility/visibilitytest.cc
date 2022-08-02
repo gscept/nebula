@@ -187,22 +187,18 @@ VisibilityTest::Run()
         inputServer->BeginFrame();
         inputServer->OnFrame();
 
-        gfxServer->BeginFrame();
+        gfxServer->RunPreLogic();
         
         ImGui::Begin("VisibilityTest", NULL);
         ImGui::Text("FPS: %.2f", 1 / (previousTime /1000.0f));
         ImGui::End();
         // put game code which doesn't need visibility data or animation here
 
-        gfxServer->BeforeViews();
+        gfxServer->RunPostLogic();
 
         // put game code which need visibility data here
 
-        gfxServer->RenderViews();
-
-        // put game code which needs rendering to be done (animation etc) here
-
-        gfxServer->EndViews();
+        gfxServer->Render();
 
         // do stuff after rendering is done
 
@@ -211,6 +207,8 @@ VisibilityTest::Run()
         // force wait immediately
         WindowPresent(wnd, frameIndex);
         if (kdb->KeyPressed(Input::Key::Escape)) run = false;
+
+        gfxServer->NewFrame();
 
         // standard input handling: manipulate camera
         mayaCamera.SetOrbitButton(mouse->ButtonPressed(MouseButton::LeftButton));

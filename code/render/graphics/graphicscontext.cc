@@ -52,15 +52,7 @@ GraphicsContext::InternalDeregisterEntity(const Graphics::GraphicsEntityId id, G
 {
     IndexT i = state.entitySliceMap.FindIndex(id);
     n_assert(i != InvalidIndex);
-    if (state.allowedRemoveStages & state.currentStage)
-    {
-        state.Dealloc(state.entitySliceMap.ValueAtIndex(id, i));
-        state.entitySliceMap.EraseIndex(id, i);
-    }
-    else
-    {
-        state.delayedRemoveQueue.Append(id);
-    }
+    state.delayedRemoveQueue.Append(id);
 }
 
 } // namespace Graphics

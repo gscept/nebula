@@ -62,13 +62,9 @@ ModelContext::Create()
 
     setupCompleteQueue.Resize(65535);
 
-    __bundle.OnBegin = ModelContext::UpdateTransforms;
-    __bundle.OnWaitForWork = ModelContext::WaitForWork;
-    __bundle.StageBits = &ModelContext::__state.currentStage;
 #ifndef PUBLIC_BUILD
     __bundle.OnRenderDebug = ModelContext::OnRenderDebug;
 #endif
-    ModelContext::__state.allowedRemoveStages = Graphics::OnBeforeFrameStage;
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 }
 

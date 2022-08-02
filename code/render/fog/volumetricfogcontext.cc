@@ -89,9 +89,6 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
 {
     __CreateContext();
 
-    __bundle.OnUpdateViewResources = VolumetricFogContext::UpdateViewDependentResources;
-    __bundle.OnBegin = VolumetricFogContext::RenderUI;
-
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
 
     using namespace CoreGraphics;

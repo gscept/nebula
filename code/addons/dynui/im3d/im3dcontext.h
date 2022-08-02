@@ -61,7 +61,7 @@ public:
     static void DrawCone(const Math::mat4& modelTransform, const Math::vec4& color, uint32_t renderFlags = CheckDepth | Wireframe);
 
     /// Start a new Im3d frame
-    static void OnBeforeFrame(const Graphics::FrameContext& ctx);
+    static void NewFrame(const Graphics::FrameContext& ctx);
 
     /// called before frame
     static void OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);

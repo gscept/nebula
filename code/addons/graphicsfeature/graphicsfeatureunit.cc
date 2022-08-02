@@ -160,6 +160,61 @@ GraphicsFeatureUnit::OnActivate()
     // create environment context for the atmosphere effects
     EnvironmentContext::Create(this->globalLight);
 
+    Util::FixedArray<Graphics::ViewIndependentCall> preLogicCalls =
+    {
+        Im3d::Im3dContext::NewFrame,
+        Dynui::ImguiContext::NewFrame,
+        CameraContext::UpdateCameras,
+        ModelContext::UpdateTransforms,
+        Characters::CharacterContext::UpdateAnimations,
+        Fog::VolumetricFogContext::RenderUI,
+        EnvironmentContext::OnBeforeFrame,
+        EnvironmentContext::RenderUI,
+        Particles::ParticleContext::UpdateParticles,
+        //Terrain::TerrainContext::RenderUI
+    };
+
+    Util::FixedArray<Graphics::ViewDependentCall> preLogicViewCalls =
+    {
+        Lighting::LightContext::OnPrepareView,
+        Particles::ParticleContext::OnPrepareView,
+        Im3d::Im3dContext::OnPrepareView,
+        PostEffects::SSAOContext::UpdateViewDependentResources,
+        PostEffects::HistogramContext::UpdateViewResources,
+        Decals::DecalContext::UpdateViewDependentResources,
+        Fog::VolumetricFogContext::UpdateViewDependentResources,
+        Lighting::LightContext::UpdateViewDependentResources,
+
+        //Terrain::TerrainContext::CullPatches
+    };
+
+    Util::FixedArray<Graphics::ViewIndependentCall> postLogicCalls =
+    {
+        Clustering::ClusterContext::UpdateResources,
+        ObserverContext::RunVisibilityTests,
+        ObserverContext::GenerateDrawLists,
+
+        // At the very latest point, wait for work to finish
+        Dynui::ImguiContext::Render,
+        ModelContext::WaitForWork,
+        Characters::CharacterContext::WaitForCharacterJobs,
+        Particles::ParticleContext::WaitForParticleUpdates,
+        ObserverContext::WaitForVisibility
+    };
+
+    Util::FixedArray<Graphics::ViewDependentCall> postLogicViewCalls =
+    {
+        Lighting::LightContext::RenderShadows,
+
+        //Terrain::TerrainContext::UpdateLOD,
+        //Vegetation::VegetationContext::UpdateViewResources
+    };
+
+    this->gfxServer->SetupPreLogicCalls(preLogicCalls);
+    this->gfxServer->SetupPreLogicViewCalls(preLogicViewCalls);
+    this->gfxServer->SetupPostLogicCalls(postLogicCalls);
+    this->gfxServer->SetupPostLogicViewCalls(postLogicViewCalls);
+
     // Attach managers
     this->graphicsManagerHandle = this->AttachManager(GraphicsManager::Create());
     this->cameraManagerHandle = this->AttachManager(CameraManager::Create());
@@ -204,7 +259,7 @@ GraphicsFeatureUnit::OnBeginFrame()
     CoreGraphics::WindowPollEvents();
     this->inputServer->OnFrame();
 
-    this->gfxServer->BeginFrame();
+    this->gfxServer->RunPreLogic();
 
     for (auto const& uiFunc : this->uiCallbacks)
     {
@@ -233,7 +288,7 @@ void
 GraphicsFeatureUnit::OnBeforeViews()
 {
     FeatureUnit::OnBeforeViews();
-    this->gfxServer->BeforeViews();
+    this->gfxServer->RunPostLogic();
 }
 
 //------------------------------------------------------------------------------
@@ -243,8 +298,7 @@ void
 GraphicsFeatureUnit::OnFrame()
 {
     FeatureUnit::OnFrame();
-    this->gfxServer->RenderViews();
-    this->gfxServer->EndViews();
+    this->gfxServer->Render();
 }
 
 //------------------------------------------------------------------------------

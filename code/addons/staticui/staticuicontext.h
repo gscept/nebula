@@ -27,6 +27,9 @@ public:
     /// Discard context
     static void Discard();
 
+    /// Render
+    static void Render();
+
     /// Register function
     static void RegisterFunction(const char* name, std::function<void()> func);
 };
