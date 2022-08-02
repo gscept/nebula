@@ -281,14 +281,14 @@ Mat4Test::Run()
                                   vec4(      0.0f,      0.0f, -0.001001f, 1.0f))));
 
     // orthooffcenterlh
-    tmp = orthooffcenterlh(100.0f, 1380.0f, 200.0f, 1224.0f, 0.1f, 1000.0f);
+    tmp = orthooffcenterlh(100.0f, 1380.0f, 1224.0f, 200.0f, 0.1f, 1000.0f);
     VERIFY(matnearequal(tmp, mat4(vec4( 0.001563f,       0.0f,     0.0f, 0.0f),
                                   vec4(      0.0f,  0.001953f,     0.0f, 0.0f),
                                   vec4(      0.0f,       0.0f,   0.001f, 0.0f),
                                   vec4( -1.15625f, -1.390625f, -0.0001f, 1.0f))));
 
     // orthooffcenterrh
-    tmp = orthooffcenterrh(100.0f, 1380.0f, 200.0f, 1224.0f, 0.1f, 1000.0f);
+    tmp = orthooffcenterrh(100.0f, 1380.0f, 1224.0f, 200.0f, 0.1f, 1000.0f);
     VERIFY(matnearequal(tmp, mat4(vec4( 0.001563f,       0.0f,     0.0f, 0.0f),
                                   vec4(      0.0f,  0.001953f,     0.0f, 0.0f),
                                   vec4(      0.0f,       0.0f,  -0.001f, 0.0f),
