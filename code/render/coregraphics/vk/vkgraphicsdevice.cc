@@ -87,12 +87,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
         Util::Array<Util::Tuple<CoreGraphics::Alloc>> allocs;
     };
     Util::FixedArray<PendingDeletes> pendingDeletes;
-
-    struct SubmissionWaitEvents
-    {
-        CoreGraphics::SubmissionWaitEvent events[CoreGraphics::QueueType::NumQueueTypes];
-    };
-    Util::FixedArray<SubmissionWaitEvents> waitEvents;
+    Util::FixedArray<Util::Array<Util::Pair<CoreGraphics::QueueType, CoreGraphics::SubmissionWaitEvent>>> waitEvents;
 
     struct PendingMarkers
     {
@@ -1344,19 +1339,10 @@ UnlockGraphicsSetupCommandBuffer()
 //------------------------------------------------------------------------------
 /**
 */
-SubmissionWaitEvent&
-GetSubmissionEvent(const CoreGraphics::QueueType queue)
-{
-    return state.waitEvents[state.currentBufferedFrameIndex].events[queue];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 void 
 SetSubmissionEvent(const CoreGraphics::QueueType queue, const CoreGraphics::SubmissionWaitEvent& event)
 {
-    state.waitEvents[state.currentBufferedFrameIndex].events[queue] = event;
+    state.waitEvents[state.currentBufferedFrameIndex].Append(Util::MakePair(queue, event));
 }
 
 //------------------------------------------------------------------------------
@@ -1996,24 +1982,11 @@ NewFrame()
     N_MARKER_BEGIN(WaitForBuffer, Wait);
 
     auto& waitEventsThisFrame = state.waitEvents[state.currentBufferedFrameIndex];
-
-    if (waitEventsThisFrame.events[SparseQueueType] != nullptr)
-        state.queueHandler.Wait(SparseQueueType, waitEventsThisFrame.events[SparseQueueType].timelineIndex);
-    waitEventsThisFrame.events[SparseQueueType] = nullptr;
-
-    if (waitEventsThisFrame.events[TransferQueueType] != nullptr)
-        state.queueHandler.Wait(TransferQueueType, waitEventsThisFrame.events[TransferQueueType].timelineIndex);
-    waitEventsThisFrame.events[TransferQueueType] = nullptr;
-
-    // Wait for compute queue to finish previous cycle
-    if (waitEventsThisFrame.events[ComputeQueueType] != nullptr)
-        state.queueHandler.Wait(ComputeQueueType, waitEventsThisFrame.events[ComputeQueueType].timelineIndex);
-    waitEventsThisFrame.events[ComputeQueueType] = nullptr;
-
-    // Wait for graphics queue to finish previous cycle
-    if (waitEventsThisFrame.events[GraphicsQueueType] != nullptr)
-        state.queueHandler.Wait(GraphicsQueueType, waitEventsThisFrame.events[GraphicsQueueType].timelineIndex);
-    waitEventsThisFrame.events[GraphicsQueueType] = nullptr;
+    for (const auto& waitEvent : waitEventsThisFrame)
+    {
+        state.queueHandler.Wait(Util::Get<0>(waitEvent), Util::Get<1>(waitEvent).timelineIndex);
+    }
+    waitEventsThisFrame.Clear();
 
     // Go through the query timestamp results and set the time in the markers
     state.frameProfilingMarkers.Clear();
@@ -2040,12 +2013,6 @@ NewFrame()
 
     // Cleanup resources
     Vulkan::ClearPending();
-
-    // Reset wait events
-    for (IndexT i = 0; i < CoreGraphics::QueueType::NumQueueTypes; i++)
-    {
-        waitEventsThisFrame.events[i].timelineIndex = UINT64_MAX;
-    }
 
     // Reset queries
     for (IndexT i = 0; i < CoreGraphics::QueryType::NumQueryTypes; i++)
