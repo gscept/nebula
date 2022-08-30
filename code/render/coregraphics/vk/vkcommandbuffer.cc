@@ -1231,6 +1231,7 @@ CmdEndMarker(const CmdBufferId id)
     if (queryBundle.enabled[CoreGraphics::TimestampsQueryType])
     {
         CmdBufferMarkerBundle& markers = commandBuffers.GetUnsafe<CmdBuffer_ProfilingMarkers>(id.id24);
+        n_assert(!markers.markerStack.IsEmpty());
         FrameProfilingMarker marker = markers.markerStack.Pop();
         marker.gpuEnd = queryBundle.offset[CoreGraphics::TimestampsQueryType] + queryBundle.queryCount[CoreGraphics::TimestampsQueryType]++;
         vkCmdWriteTimestamp(cmdBuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, marker.gpuEnd);
