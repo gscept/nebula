@@ -289,14 +289,12 @@ Nvx2StreamReader::SetupVertexBuffer(const Resources::ResourceName& name)
     tempBufInfo.byteSize = this->vertexDataSize;
     tempBufInfo.usageFlags = CoreGraphics::TransferBufferSource;
     tempBufInfo.mode = CoreGraphics::HostLocal;
+    tempBufInfo.data = this->vertexDataPtr;
+    tempBufInfo.dataSize = this->vertexDataSize;
     CoreGraphics::BufferId tempBuf = CoreGraphics::CreateBuffer(tempBufInfo);
     this->vbo = CoreGraphics::GetVertexBuffer();
 
     uint elementSize = VertexLayoutGetSize(this->layout);
-
-    // Do the actual copy
-    void* mem = CoreGraphics::BufferMap(tempBuf);
-    memcpy(mem, this->vertexDataPtr, this->vertexDataSize);
 
     // Allocate vertices from global repository 
     this->baseVertexOffset = CoreGraphics::AllocateVertices(this->numVertices, elementSize);
@@ -330,12 +328,10 @@ Nvx2StreamReader::SetupIndexBuffer(const Resources::ResourceName& name)
     tempBufInfo.byteSize = this->indexDataSize;
     tempBufInfo.usageFlags = CoreGraphics::TransferBufferSource;
     tempBufInfo.mode = CoreGraphics::HostLocal;
+    tempBufInfo.data = this->indexDataPtr;
+    tempBufInfo.dataSize = this->indexDataSize;
     CoreGraphics::BufferId tempBuf = CoreGraphics::CreateBuffer(tempBufInfo);
     this->ibo = CoreGraphics::GetIndexBuffer();
-
-    // Do the actual copy
-    void* mem = CoreGraphics::BufferMap(tempBuf);
-    memcpy(mem, this->indexDataPtr, this->indexDataSize);
 
     // Allocate vertices from global repository 
     this->baseIndexOffset = CoreGraphics::AllocateIndices(this->numIndices, CoreGraphics::IndexType::Index32);
