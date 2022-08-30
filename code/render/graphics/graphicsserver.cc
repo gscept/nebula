@@ -472,6 +472,7 @@ GraphicsServer::RunPreLogic()
 
         // begin frame on view, this will construct view build jobs
         this->currentView = view;
+        view->UpdateConstants();
         N_MARKER_BEGIN(ContextPerView, Graphics);
         for (auto& call : this->preLogicViewCalls)
         {

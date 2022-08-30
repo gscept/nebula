@@ -263,7 +263,6 @@ SimpleViewerApplication::Open()
             Decals::DecalContext::UpdateViewDependentResources,
             Fog::VolumetricFogContext::UpdateViewDependentResources,
             Lighting::LightContext::UpdateViewDependentResources,
-
             //Terrain::TerrainContext::CullPatches
         };
 
@@ -278,12 +277,12 @@ SimpleViewerApplication::Open()
             ModelContext::WaitForWork,
             Characters::CharacterContext::WaitForCharacterJobs,
             Particles::ParticleContext::WaitForParticleUpdates,
-            ObserverContext::WaitForVisibility
+            ObserverContext::WaitForVisibility,
+            Lighting::LightContext::RenderShadows,
         };
 
         Util::FixedArray<Graphics::ViewDependentCall> postLogicViewCalls = 
         {
-            Lighting::LightContext::RenderShadows,
 
             //Terrain::TerrainContext::UpdateLOD,
             //Vegetation::VegetationContext::UpdateViewResources

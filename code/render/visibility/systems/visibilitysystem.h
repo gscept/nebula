@@ -92,12 +92,12 @@ public:
     /// prepare system with entities to insert into the structure
     virtual void PrepareEntities(const Math::bbox* transforms, const uint32* ranges, const Graphics::GraphicsEntityId* entities, const uint32_t* entityFlags, const SizeT count);
     /// run system
-    virtual void Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters);
+    virtual void Run(const Threading::AtomicCounter* const* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters);
 
     /// Return completion counter for an observer
-    Threading::AtomicCounter* GetCompletionCounter(IndexT i);
+    const Threading::AtomicCounter* GetCompletionCounter(IndexT i) const;
     /// Return completion counter for all observers
-    const Threading::AtomicCounter* GetCompletionCounters() const;
+    const Threading::AtomicCounter* const* GetCompletionCounters() const;
 
 protected:
 
@@ -109,7 +109,7 @@ protected:
         const Math::mat4* transforms;
         Util::Array<Math::ClipStatus::Type>* results;
         SizeT count;
-        Util::Array<Threading::AtomicCounter> completionCounters;
+        Util::Array<Threading::AtomicCounter*> completionCounters;
     } obs;
 
     struct Entity

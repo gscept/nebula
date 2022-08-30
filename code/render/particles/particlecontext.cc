@@ -33,7 +33,7 @@ Timing::Time StepTime = 1.0f / 60.0f;
 
 const SizeT ParticleContextNumEnvelopeSamples = 192;
 Threading::AtomicCounter allSystemsCompleteCounter = 0;
-Threading::AtomicCounter ParticleContext::constantUpdateCounter = 0;
+Threading::AtomicCounter ParticleContext::ConstantUpdateCounter = 0;
 Threading::Event ParticleContext::totalCompletionEvent;
 
 struct
@@ -451,8 +451,8 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
         jobCtx.models = &graphicsEntities;
         jobCtx.invViewMatrix = Graphics::CameraContext::GetTransform(view->GetCamera());
 
-        n_assert(ParticleContext::constantUpdateCounter == 0);
-        ParticleContext::constantUpdateCounter = 1;
+        n_assert(ParticleContext::ConstantUpdateCounter == 0);
+        ParticleContext::ConstantUpdateCounter = 1;
 
         // Run job to update constants, can be per-view because of the billboard flag
         Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)
@@ -504,10 +504,10 @@ ParticleContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::
                 }
             }
 
-        }, allSystems.Size(), 128, jobCtx, { &allSystemsCompleteCounter }, &ParticleContext::constantUpdateCounter, &ParticleContext::totalCompletionEvent);
+        }, allSystems.Size(), 128, jobCtx, { &allSystemsCompleteCounter }, &ParticleContext::ConstantUpdateCounter, &ParticleContext::totalCompletionEvent);
     }
 
-    if (ParticleContext::constantUpdateCounter == 0)
+    if (ParticleContext::ConstantUpdateCounter == 0)
         ParticleContext::totalCompletionEvent.Signal();
 }
 

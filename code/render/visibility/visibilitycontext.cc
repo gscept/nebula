@@ -171,15 +171,15 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
     }
 
     // run all visibility systems
-    const Threading::AtomicCounter* prevSystemCounters = nullptr;
+    const Threading::AtomicCounter* const* prevSystemCounters = nullptr;
     if ((observerTransforms.Size() > 0) && (nodeInstances.nodeBoundingBoxes.Size() > 0))
     {
         for (i = 0; i < ObserverContext::systems.Size(); i++)
         {
             VisibilitySystem* sys = ObserverContext::systems[i];
 
-            // We need to pass the particles constant update here as it calculates the bounding box for visibility
-            sys->Run(prevSystemCounters, { &idCounter, &Particles::ParticleContext::constantUpdateCounter });
+            // Wait for transforms and bounding box updates to finish before we do the visibility testing
+            sys->Run(prevSystemCounters, { &idCounter, &Particles::ParticleContext::ConstantUpdateCounter, &Models::ModelContext::TransformsUpdateCounter });
             prevSystemCounters = sys->GetCompletionCounters();
         }
     }
@@ -215,13 +215,13 @@ ObserverContext::RunVisibilityTests(const Graphics::FrameContext& ctx)
         jobCtx.allocator = &allocator;
         jobCtx.renderables = &nodeInstances;
 
-        const Util::FixedArray<const Threading::AtomicCounter*> waitCounters =
+        // Before we create our draws, we have to wait for the constants to be allocated first
+        // For particles, that's done before visibility so we can omit it here
+        Util::Array<const Threading::AtomicCounter*> waitCounters =
         {
-            prevSystemCounters,
-            &Models::ModelContext::constantsUpdateCounter,
-            &Characters::CharacterContext::constantUpdateCounter,
-            // We can skip the particle constant update counter as it's been depended on by the id job higher up
-            // &Particles::ParticleContext::constantUpdateCounter 
+            prevSystemCounters[i],
+            &Models::ModelContext::ConstantsUpdateCounter,
+            &Characters::CharacterContext::ConstantUpdateCounter,
         };
 
         Jobs2::JobDispatch([](SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocationOffset, void* ctx)

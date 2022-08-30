@@ -44,13 +44,11 @@ View::~View()
 /**
 */
 void
-View::Render(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex)
+View::UpdateConstants()
 {
-    // run the actual script
-    if (this->camera != GraphicsEntityId::Invalid() && this->script != nullptr)
+    if (this->camera != GraphicsEntityId::Invalid())
     {
         // update camera
-        ShaderServer* shaderServer = ShaderServer::Instance();
         auto settings = CameraContext::GetSettings(this->camera);
 
         Shared::ViewConstants constants = Graphics::GetViewConstants();
@@ -80,6 +78,19 @@ View::Render(const IndexT frameIndex, const Timing::Time time, const IndexT buff
 
         // Apply view transforms
         Graphics::UpdateViewConstants(constants);
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+View::Render(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex)
+{
+    // run the actual script
+    if (this->script != nullptr)
+    {
+        
 
         N_SCOPE(ViewExecute, Graphics);
         this->script->Run(frameIndex, bufferIndex);

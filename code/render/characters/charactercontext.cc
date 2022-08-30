@@ -30,7 +30,7 @@ __ImplementContext(CharacterContext, CharacterContext::characterContextAllocator
 
 Util::HashTable<Util::StringAtom, CoreAnimation::AnimSampleMask> CharacterContext::masks;
 Threading::Event CharacterContext::totalCompletionEvent;
-Threading::AtomicCounter CharacterContext::constantUpdateCounter = 0;
+Threading::AtomicCounter CharacterContext::ConstantUpdateCounter = 0;
 
 //------------------------------------------------------------------------------
 /**
@@ -59,7 +59,6 @@ CharacterContext::Create()
     __bundle.OnRenderDebug = CharacterContext::OnRenderDebug;
 #endif
     Graphics::GraphicsServer::Instance()->RegisterGraphicsContext(&__bundle, &__state);
-
 }
 
 //------------------------------------------------------------------------------
@@ -72,7 +71,6 @@ CharacterContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Re
     n_assert_fmt(cid != InvalidContextEntityId, "Entity %d is not registered in CharacterContext", id.HashCode());
     characterContextAllocator.Set<Loaded>(cid.id, NoneLoaded);
     characterContextAllocator.Set<EntityId>(cid.id, id);
-
 
     // check to make sure we registered this entity for observation, then get the visibility context
     const ContextEntityId visId = Visibility::ObservableContext::GetContextId(id);
@@ -814,8 +812,8 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
         // Run job
         Jobs2::JobDispatch(EvalCharacter, models.Size(), 64, charCtx, nullptr, &animationCounter, nullptr);
 
-        n_assert(constantUpdateCounter == 0);
-        constantUpdateCounter = 1;
+        n_assert(ConstantUpdateCounter == 0);
+        ConstantUpdateCounter = 1;
 
         struct UpdateJointsContext
         {
@@ -873,7 +871,7 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
                 renderables.nodeStates[node].resourceTableOffsets[renderables.nodeStates[node].skinningConstantsIndex] = offset;
             }
 
-        }, characterSkinNodeIndices.Size(), 64, jobCtx, { &animationCounter }, &constantUpdateCounter, &CharacterContext::totalCompletionEvent);
+        }, characterSkinNodeIndices.Size(), 64, jobCtx, { &animationCounter }, &ConstantUpdateCounter, &CharacterContext::totalCompletionEvent);
     }
     else // If we have no jobs, just signal completion event
         CharacterContext::totalCompletionEvent.Signal();
