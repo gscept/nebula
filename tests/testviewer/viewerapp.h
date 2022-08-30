@@ -21,7 +21,7 @@
 #include "dynui/console/imguiconsolehandler.h"
 
 #if NEBULA_ENABLE_PROFILING
-#include "profiling/profiling.h"
+#include "dynui/profiler/imguiprofiler.h"
 #endif
 
 // comment out to use local content
@@ -107,11 +107,7 @@ protected:
 #endif
 
 #ifdef NEBULA_ENABLE_PROFILING
-    Util::Array<CoreGraphics::FrameProfilingMarker> frameProfilingMarkers;
-    Util::Array<Profiling::ProfilingContext> profilingContexts;
-    bool pauseProfiling;
-    bool profileFixedFps;
-    int fixedFps;
+    Ptr<Dynui::ImguiProfiler> profiler;
 #endif
 
 };
