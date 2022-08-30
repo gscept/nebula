@@ -28,7 +28,8 @@ ModelContext::ModelContextAllocator ModelContext::modelContextAllocator;
 ModelContext::ModelInstance ModelContext::nodeInstances;
 __ImplementContext(ModelContext, ModelContext::modelContextAllocator);
 
-Threading::AtomicCounter ModelContext::constantsUpdateCounter = 0;
+Threading::AtomicCounter ModelContext::ConstantsUpdateCounter = 0;
+Threading::AtomicCounter ModelContext::TransformsUpdateCounter = 0;
 
 Util::Dictionary<Models::ModelNode*, ModelContext::MaterialInstanceContext> ModelContext::materialInstanceContexts;
 
@@ -470,9 +471,8 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
     Graphics::GraphicsEntityId lodCamera = Graphics::CameraContext::GetLODCamera();
     const Math::mat4& cameraTransform = Graphics::CameraContext::GetTransform(lodCamera);
 
-    static Threading::AtomicCounter transformUpdateCounter = 0;
-    n_assert(transformUpdateCounter == 0);
-    transformUpdateCounter = 1;
+    n_assert(TransformsUpdateCounter == 0);
+    TransformsUpdateCounter = 1;
 
     struct TransformUpdateContext
     {
@@ -520,7 +520,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 }
             }
         }
-    }, nodeInstanceTransformRanges.Size(), 256, transCtx, nullptr, &transformUpdateCounter, nullptr);
+    }, nodeInstanceTransformRanges.Size(), 256, transCtx, nullptr, &TransformsUpdateCounter, nullptr);
 
     static Threading::AtomicCounter lodUpdateCounter = 0;
     n_assert(lodUpdateCounter == 0);
@@ -590,10 +590,10 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 Materials::materialCache->SetMaxLOD(nodeInstances.renderable.nodeMaterialResources[j], textureLod);
             }
         }
-    }, nodeInstanceStateRanges.Size(), 256, renderCtx, { &transformUpdateCounter }, &lodUpdateCounter, nullptr);
+    }, nodeInstanceStateRanges.Size(), 256, renderCtx, { &TransformsUpdateCounter }, &lodUpdateCounter, nullptr);
 
-    n_assert(constantsUpdateCounter == 0);
-    constantsUpdateCounter = 1;
+    n_assert(ConstantsUpdateCounter == 0);
+    ConstantsUpdateCounter = 1;
 
     struct ConstantUpdateContext
     {
@@ -629,7 +629,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 nodeInstances.renderable.nodeStates[j].resourceTableOffsets[nodeInstances.renderable.nodeStates[j].objectConstantsIndex] = offset;
             }
         }
-    }, nodeInstanceStateRanges.Size(), 256, renderCtx, { &lodUpdateCounter }, &constantsUpdateCounter, &ModelContext::completionEvent);
+    }, nodeInstanceStateRanges.Size(), 256, renderCtx, { &lodUpdateCounter }, &ConstantsUpdateCounter, &ModelContext::completionEvent);
 }
 
 

@@ -158,7 +158,8 @@ public:
     /// Get node transformable context
     static const ModelInstance::Transformable& GetModelTransformables();
 
-    static Threading::AtomicCounter constantsUpdateCounter;
+    static Threading::AtomicCounter ConstantsUpdateCounter;
+    static Threading::AtomicCounter TransformsUpdateCounter;
 
 private:
     friend class VisibilityContext;

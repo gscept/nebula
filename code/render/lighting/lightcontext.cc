@@ -90,10 +90,7 @@ struct
     uint numThreadsThisFrame;
 
     // these are used to update the light clustering
-    LightsCluster::PointLight pointLights[1024];
-    LightsCluster::SpotLight spotLights[1024];
-    LightsCluster::SpotLightProjectionExtension spotLightProjection[256];
-    LightsCluster::SpotLightShadowExtension spotLightShadow[16];
+    LightsCluster::LightLists lightList;
 
 } clusterState;
 
@@ -191,15 +188,14 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
 
     BufferCreateInfo rwbInfo;
     rwbInfo.name = "LightIndexListsBuffer";
-    rwbInfo.size = 1;
-    rwbInfo.elementSize = sizeof(LightsCluster::LightIndexLists);
+    rwbInfo.byteSize = sizeof(LightsCluster::LightIndexLists);
     rwbInfo.mode = BufferAccessMode::DeviceLocal;
     rwbInfo.usageFlags = CoreGraphics::ReadWriteBuffer | CoreGraphics::TransferBufferDestination;
     rwbInfo.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
     clusterState.clusterLightIndexLists = CreateBuffer(rwbInfo);
 
     rwbInfo.name = "LightLists";
-    rwbInfo.elementSize = sizeof(LightsCluster::LightLists);
+    rwbInfo.byteSize = sizeof(LightsCluster::LightLists);
     clusterState.clusterLightsList = CreateBuffer(rwbInfo);
 
     rwbInfo.name = "LightListsStagingBuffer";
@@ -777,27 +773,28 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
         {
             switch (types[i])
             {
-            case SpotLightType:
-            {
-                Graphics::CameraSettings settings;
-                std::array<float, 2> angles = spotLightAllocator.Get<SpotLight_ConeAngles>(typeIds[i]);
+                case SpotLightType:
+                {
+                    std::array<float, 2> angles = spotLightAllocator.Get<SpotLight_ConeAngles>(typeIds[i]);
 
-                // setup a perpsective transform with a fixed z near and far and aspect
-                Math::mat4 projection = spotLightAllocator.Get<SpotLight_ProjectionTransform>(typeIds[i]);
-                Math::mat4 view = spotLightAllocator.Get<SpotLight_Transform>(typeIds[i]);
-                Math::mat4 viewProjection = projection * inverse(view);
-                Graphics::GraphicsEntityId observer = spotLightAllocator.Get<SpotLight_Observer>(typeIds[i]);
-                Graphics::ContextEntityId ctxId = shadowCasterSliceMap[observer];
-                shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId.id) = viewProjection;
+                    // setup a perpsective transform with a fixed z near and far and aspect
+                    Math::mat4 projection = spotLightAllocator.Get<SpotLight_ProjectionTransform>(typeIds[i]);
+                    Math::mat4 view = spotLightAllocator.Get<SpotLight_Transform>(typeIds[i]);
+                    Math::mat4 viewProjection = projection * inverse(view);
+                    Graphics::GraphicsEntityId observer = spotLightAllocator.Get<SpotLight_Observer>(typeIds[i]);
+                    Graphics::ContextEntityId ctxId = shadowCasterSliceMap[observer];
+                    shadowCasterAllocator.Get<ShadowCaster_Transform>(ctxId.id) = viewProjection;
 
-                lightServerState.shadowcastingLocalLights.Add(observer);
-                viewProjection.store(lightServerState.shadowMatrixUniforms.LightViewMatrix[shadowCasterCount++]);
-            }
+                    lightServerState.shadowcastingLocalLights.Add(observer);
+                    viewProjection.store(lightServerState.shadowMatrixUniforms.LightViewMatrix[shadowCasterCount++]);
+                    break;
+                }
 
-            case PointLightType:
-            {
-
-            }
+                case PointLightType:
+                {
+                    // TODO: IMPLEMENT!
+                    break;
+                }
             }
         }
 
@@ -805,6 +802,9 @@ LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::Fra
         if (shadowCasterCount == 16)
             break;
     }
+
+    // apply shadow uniforms
+    Graphics::UpdateShadowConstants(lightServerState.shadowMatrixUniforms);
 }
 
 //------------------------------------------------------------------------------
@@ -912,9 +912,6 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     normalize(viewSpaceLightDir).store3(params.GlobalLightDir);
     params.GlobalBackLightOffset = globalLightAllocator.Get<GlobalLight_BacklightOffset>(globalLightId);
 
-    // apply shadow uniforms
-    Graphics::UpdateShadowConstants(lightServerState.shadowMatrixUniforms);
-
     uint flags = 0;
 
     if (genericLightAllocator.Get<ShadowCaster>(cid.id))
@@ -986,7 +983,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
             {
                 Math::mat4 trans = pointLightAllocator.Get<PointLight_Transform>(typeIds[i]);
                 CoreGraphics::TextureId tex = pointLightAllocator.Get<PointLight_ProjectionTexture>(typeIds[i]);
-                auto& pointLight = clusterState.pointLights[numPointLights];
+                auto& pointLight = clusterState.lightList.PointLights[numPointLights];
 
                 uint flags = 0;
 
@@ -1016,7 +1013,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                 Math::mat4 trans = spotLightAllocator.Get<SpotLight_Transform>(typeIds[i]);
                 CoreGraphics::TextureId tex = spotLightAllocator.Get<SpotLight_ProjectionTexture>(typeIds[i]);
                 auto angles = spotLightAllocator.Get<SpotLight_ConeAngles>(typeIds[i]);
-                auto& spotLight = clusterState.spotLights[numSpotLights];
+                auto& spotLight = clusterState.lightList.SpotLights[numSpotLights];
                 Math::mat4 shadowProj;
                 if (tex != InvalidTextureId || castShadow[i])
                 {
@@ -1034,8 +1031,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                 {
                     flags |= USE_SHADOW_BITFLAG;
                     spotLight.shadowExtension = numSpotLightShadows;
-                    auto& shadow = clusterState.spotLightShadow[numSpotLightShadows];
-                    
+                    auto& shadow = clusterState.lightList.SpotLightShadow[numSpotLightShadows];
                     shadowProj.store(shadow.projection);
                     shadow.shadowMap = CoreGraphics::TextureGetBindlessHandle(lightServerState.localLightShadows);
                     shadow.shadowIntensity = 1.0f;
@@ -1049,7 +1045,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
                 {
                     flags |= USE_PROJECTION_TEX_BITFLAG;
                     spotLight.projectionExtension = numSpotLightsProjection;
-                    auto& projection = clusterState.spotLightProjection[numSpotLightsProjection];
+                    auto& projection = clusterState.lightList.SpotLightProjection[numSpotLightsProjection];
                     shadowProj.store(projection.projection);
                     projection.projectionTexture = CoreGraphics::TextureGetBindlessHandle(tex);
                     numSpotLightsProjection++;
@@ -1084,13 +1080,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     // update list of point lights
     if (numPointLights > 0 || numSpotLights > 0)
     {
-        LightsCluster::LightLists lightList;
-        Memory::CopyElements(clusterState.pointLights, lightList.PointLights, numPointLights);
-        Memory::CopyElements(clusterState.spotLights, lightList.SpotLights, numSpotLights);
-        Memory::CopyElements(clusterState.spotLightProjection, lightList.SpotLightProjection, numSpotLightsProjection);
-        Memory::CopyElements(clusterState.spotLightShadow, lightList.SpotLightShadow, numSpotLightShadows);
-        CoreGraphics::BufferUpdate(clusterState.stagingClusterLightsList[bufferIndex], lightList);
-        CoreGraphics::BufferFlush(clusterState.stagingClusterLightsList[bufferIndex]);
+        CoreGraphics::BufferUpdate(clusterState.stagingClusterLightsList[bufferIndex], clusterState.lightList);
     }
 
     // get per-view resource tables
@@ -1121,7 +1111,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
 /**
 */
 void
-LightContext::RenderShadows(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
+LightContext::RenderShadows(const Graphics::FrameContext& ctx)
 {
     lightServerState.shadowMappingFrameScript->Run(ctx.frameIndex, ctx.bufferIndex);
 }

@@ -20,8 +20,9 @@ VisibilitySystem::VisibilitySystem()
 void
 VisibilitySystem::PrepareObservers(const Math::mat4* transforms, Util::Array<Math::ClipStatus::Type>* results, const SizeT count)
 {
-    const Threading::AtomicCounter c = 0;
-    this->obs.completionCounters.Fill(0, count, c);
+    this->obs.completionCounters.Reserve(count);
+    for (IndexT i = 0; i < count; i++)
+        this->obs.completionCounters.Append(new Threading::AtomicCounter(0));
     this->obs.transforms = transforms;
     this->obs.results = results;
     this->obs.count = count;
@@ -44,7 +45,7 @@ VisibilitySystem::PrepareEntities(const Math::bbox* boxes, const uint32* ids, co
 /**
 */
 void
-VisibilitySystem::Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters)
+VisibilitySystem::Run(const Threading::AtomicCounter* const* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters)
 {
     // do nothing
 }
@@ -52,19 +53,19 @@ VisibilitySystem::Run(const Threading::AtomicCounter* previousSystemCompletionCo
 //------------------------------------------------------------------------------
 /**
 */
-Threading::AtomicCounter*
-VisibilitySystem::GetCompletionCounter(IndexT i)
+const Threading::AtomicCounter*
+VisibilitySystem::GetCompletionCounter(IndexT i) const
 {
-    return &this->obs.completionCounters[i];
+    return this->obs.completionCounters[i];
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-const Threading::AtomicCounter*
+const Threading::AtomicCounter* const*
 VisibilitySystem::GetCompletionCounters() const
 {
-    return this->obs.completionCounters.Begin();
+    return this->obs.completionCounters.ConstBegin();
 }
 
 } // namespace Visibility

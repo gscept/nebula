@@ -24,7 +24,7 @@ BruteforceSystem::Setup(const BruteforceSystemLoadInfo& info)
 /**
 */
 void
-BruteforceSystem::Run(const Threading::AtomicCounter* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters)
+BruteforceSystem::Run(const Threading::AtomicCounter* const* previousSystemCompletionCounters, const Util::FixedArray<const Threading::AtomicCounter*>& extraCounters)
 {
     // This is the context used to provide the job with
     struct Context
@@ -42,8 +42,8 @@ BruteforceSystem::Run(const Threading::AtomicCounter* previousSystemCompletionCo
     {
         Math::mat4 camera = this->obs.transforms[i];
 
-        n_assert(this->obs.completionCounters[i] == 0);
-        this->obs.completionCounters[i] = 1;
+        n_assert(*this->obs.completionCounters[i] == 0);
+        (*this->obs.completionCounters[i]) = 1;
 
         Context ctx;
         ctx.ids = this->ent.ids;
@@ -51,18 +51,11 @@ BruteforceSystem::Run(const Threading::AtomicCounter* previousSystemCompletionCo
         ctx.flags = this->ent.entityFlags;
 
         // Setup counters
-        Util::FixedArray<const Threading::AtomicCounter*> counters(extraCounters.Size() + (previousSystemCompletionCounters != nullptr ? 1 : 0));
+        Util::FixedArray<const Threading::AtomicCounter*> counters(extraCounters.Size() + (previousSystemCompletionCounters == nullptr ? 0 : 1));
+        if (!extraCounters.IsEmpty())
+            Memory::CopyElements(extraCounters.Begin(), counters.Begin(), extraCounters.Size());
         if (previousSystemCompletionCounters != nullptr)
-        {
-            counters[0] = &previousSystemCompletionCounters[i];
-            for (int i = 0; i < extraCounters.Size(); i++)
-                counters[i + 1] = extraCounters[i];
-        }
-        else
-        {
-            for (int i = 0; i < extraCounters.Size(); i++)
-                counters[i] = extraCounters[i];
-        }
+            counters[extraCounters.Size()] = previousSystemCompletionCounters[i];
 
         // Splat the matrix such that all _x, _y, ... will contain the column values of x, y, ...
         // This provides a way to rearrange the camera transform into a more SSE friendly matrix transform in the job
@@ -119,7 +112,7 @@ BruteforceSystem::Run(const Threading::AtomicCounter* previousSystemCompletionCo
         , 1024
         , ctx
         , counters
-        , &this->obs.completionCounters[i]
+        , this->obs.completionCounters[i]
         , nullptr);
     }
 }

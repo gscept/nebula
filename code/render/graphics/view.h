@@ -28,6 +28,8 @@ public:
     /// destructor
     virtual ~View();
 
+    /// Update constants
+    void UpdateConstants();
     /// render through view
     void Render(const IndexT frameIndex, const Timing::Time time, const IndexT bufferIndex);
 
