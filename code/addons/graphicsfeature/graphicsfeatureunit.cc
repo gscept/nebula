@@ -199,12 +199,12 @@ GraphicsFeatureUnit::OnActivate()
         ModelContext::WaitForWork,
         Characters::CharacterContext::WaitForCharacterJobs,
         Particles::ParticleContext::WaitForParticleUpdates,
-        ObserverContext::WaitForVisibility
+        ObserverContext::WaitForVisibility,
+        Lighting::LightContext::RenderShadows,
     };
 
     Util::FixedArray<Graphics::ViewDependentCall> postLogicViewCalls =
     {
-        Lighting::LightContext::RenderShadows,
 
         //Terrain::TerrainContext::UpdateLOD,
         //Vegetation::VegetationContext::UpdateViewResources
