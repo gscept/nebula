@@ -201,8 +201,28 @@ SingleShaderCompiler::CompileGLSL(const Util::String& srcf)
     target.Format("gl%d%d", major, minor);
     Util::String escapedSrc = src.LocalPath();
     Util::String escapedDst = dst.LocalPath();
+    std::vector<std::pair<unsigned, std::string>> resourceTableNames = {
+        std::make_pair(NEBULA_TICK_GROUP, "Tick")
+        , std::make_pair(NEBULA_FRAME_GROUP, "Frame")
+        , std::make_pair(NEBULA_PASS_GROUP, "Pass")
+        , std::make_pair(NEBULA_BATCH_GROUP, "Batch")
+        , std::make_pair(NEBULA_INSTANCE_GROUP, "Instance")
+        , std::make_pair(NEBULA_SYSTEM_GROUP, "System")
+        , std::make_pair(NEBULA_DYNAMIC_OFFSET_GROUP, "DynamicOffset")
+    };
 
-    bool res = AnyFXCompile(escapedSrc.AsCharPtr(), escapedDst.AsCharPtr(), target.AsCharPtr(), nullptr, "Khronos", defines, flags, &errors);
+    bool res = AnyFXCompile(
+        escapedSrc.AsCharPtr()
+        , escapedDst.AsCharPtr()
+        , target.AsCharPtr()
+        , nullptr
+        , "Khronos"
+        , defines
+        , flags
+        , resourceTableNames
+        , &errors
+    );
+
     if (!res)
     {
         if (errors)
@@ -302,8 +322,27 @@ SingleShaderCompiler::CompileSPIRV(const Util::String& srcf)
     Util::String escapedSrc = src.LocalPath();
     Util::String escapedDst = dst.LocalPath();
     Util::String escapedHeader = dstH.LocalPath();
+    std::vector<std::pair<unsigned, std::string>> resourceTableNames = {
+        std::make_pair(NEBULA_TICK_GROUP, "Tick")
+        , std::make_pair(NEBULA_FRAME_GROUP, "Frame")
+        , std::make_pair(NEBULA_PASS_GROUP, "Pass")
+        , std::make_pair(NEBULA_BATCH_GROUP, "Batch")
+        , std::make_pair(NEBULA_INSTANCE_GROUP, "Instance")
+        , std::make_pair(NEBULA_SYSTEM_GROUP, "System")
+        , std::make_pair(NEBULA_DYNAMIC_OFFSET_GROUP, "DynamicOffset")
+    };
 
-    bool res = AnyFXCompile(escapedSrc.AsCharPtr(), escapedDst.AsCharPtr(), escapedHeader.AsCharPtr(), target.AsCharPtr(), "Khronos", defines, flags, &errors);
+    bool res = AnyFXCompile(
+        escapedSrc.AsCharPtr()
+        , escapedDst.AsCharPtr()
+        , escapedHeader.AsCharPtr()
+        , target.AsCharPtr()
+        , "Khronos"
+        , defines
+        , flags
+        , resourceTableNames
+        , &errors
+    );
     if (!res)
     {
         if (errors)

@@ -145,9 +145,9 @@ ShaderStateNode::OnFinishedLoading()
     this->material = Materials::materialCache->GetId(this->materialRes);
     CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
     CoreGraphics::BufferId cbo = CoreGraphics::GetGraphicsConstantBuffer();
-    this->objectTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "ObjectBlock");
-    this->instancingTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "InstancingBlock");
-    this->skinningTransformsIndex = CoreGraphics::ShaderGetResourceSlot(shader, "JointBlock");
+    this->objectTransformsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock::SLOT;
+    this->instancingTransformsIndex = ObjectsShared::Table_DynamicOffset::InstancingBlock::SLOT;
+    this->skinningTransformsIndex = ObjectsShared::Table_DynamicOffset::JointBlock::SLOT;
 
     this->resourceTable = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
     CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->objectTransformsIndex, 0, false, true, sizeof(ObjectsShared::ObjectBlock), 0 });

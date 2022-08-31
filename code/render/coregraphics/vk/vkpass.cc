@@ -523,30 +523,22 @@ SetupPass(const PassId pid)
         // setup input attachments
         for (i = 0; i < loadInfo.colorAttachments.Size(); i++)
         {
-            // update descriptor set based on images attachments
-            IndexT inputAttachmentLocation = ShaderGetResourceSlot(sid, Util::String::Sprintf("InputAttachment%d", i));
-            n_assert(inputAttachmentLocation != InvalidIndex);
-
             n_assert(loadInfo.colorAttachments.Size() < 16); // only allow 8 input attachments in the shader, so we must limit it
             CoreGraphics::ResourceTableInputAttachment write;
             write.tex = loadInfo.colorAttachments[i];
             write.isDepth = false;
             write.sampler = InvalidSamplerId;
-            write.slot = inputAttachmentLocation;
+            write.slot = Shared::Table_Pass::InputAttachment0_SLOT + i;
             write.index = 0;
             ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
         }
         if (loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId)
         {
-            // update descriptor set based on images attachments
-            IndexT inputAttachmentLocation = ShaderGetResourceSlot(sid, Util::String::Sprintf("DepthAttachment", i));
-            n_assert(inputAttachmentLocation != InvalidIndex);
-
             CoreGraphics::ResourceTableInputAttachment write;
             write.tex = loadInfo.depthStencilAttachment;
             write.isDepth = true;
             write.sampler = InvalidSamplerId;
-            write.slot = inputAttachmentLocation;
+            write.slot = Shared::Table_Pass::DepthAttachment_SLOT;
             write.index = 0;
             ResourceTableSetInputAttachment(runtimeInfo.passDescriptorSet, write);
         }

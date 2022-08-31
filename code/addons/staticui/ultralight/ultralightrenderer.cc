@@ -43,11 +43,10 @@ UltralightRenderer::UltralightRenderer()
     CoreGraphics::ResourceTableSetConstantBuffer(ultralightState.resourceTable,
         {
             CoreGraphics::GetGraphicsConstantBuffer(),
-            CoreGraphics::ShaderGetResourceSlot(shader, "PerDrawState"),
+            Staticui::Table_DynamicOffset::PerDrawState::SLOT,
             0,
-
             false, true,
-            sizeof(Staticui::PerDrawState), 0
+            Staticui::Table_DynamicOffset::PerDrawState::SIZE, 0
         });
     CoreGraphics::ResourceTableCommitChanges(ultralightState.resourceTable);
 

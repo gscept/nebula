@@ -28,7 +28,6 @@ struct
 
     ClusterGenerate::ClusterUniforms uniforms;
     CoreGraphics::BufferId constantBuffer;
-    IndexT uniformsSlot, clusterAABBSlot;
 
     CoreGraphics::WindowId window;
 
@@ -80,8 +79,6 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
 
     uint numBuffers = CoreGraphics::GetNumBufferedFrames();
 
-    state.uniformsSlot = ShaderGetResourceSlot(state.clusterShader, "ClusterUniforms");
-    state.clusterAABBSlot = ShaderGetResourceSlot(state.clusterShader, "ClusterAABBs");
 
     state.window = window;
     state.zNear = ZNear;
@@ -108,18 +105,18 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
     rwb3Info.usageFlags = CoreGraphics::ReadWriteBuffer;
     rwb3Info.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
     state.clusterBuffer = CreateBuffer(rwb3Info);
-    state.constantBuffer = ShaderCreateConstantBuffer(state.clusterShader, "ClusterUniforms");
+    state.constantBuffer = ShaderCreateConstantBuffer(state.clusterShader, "ClusterUniforms", CoreGraphics::DeviceAndHost);
 
     for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
     {
         CoreGraphics::ResourceTableId computeTable = Graphics::GetFrameResourceTableCompute(i);
         CoreGraphics::ResourceTableId graphicsTable = Graphics::GetFrameResourceTableGraphics(i);
 
-        ResourceTableSetRWBuffer(computeTable, { state.clusterBuffer, state.clusterAABBSlot, 0, false, false, -1, 0 });
-        ResourceTableSetConstantBuffer(computeTable, { state.constantBuffer, state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
+        ResourceTableSetRWBuffer(computeTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs::SLOT, 0, false, false, -1, 0 });
+        ResourceTableSetConstantBuffer(computeTable, { state.constantBuffer, Shared::Table_Frame::ClusterUniforms::SLOT, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
 
-        ResourceTableSetRWBuffer(graphicsTable, { state.clusterBuffer, state.clusterAABBSlot, 0, false, false, -1, 0 });
-        ResourceTableSetConstantBuffer(graphicsTable, { state.constantBuffer, state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
+        ResourceTableSetRWBuffer(graphicsTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs::SLOT, 0, false, false, -1, 0 });
+        ResourceTableSetConstantBuffer(graphicsTable, { state.constantBuffer, Shared::Table_Frame::ClusterUniforms::SLOT, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
     }
 
     Frame::FrameCode* op = state.frameOpAllocator.Alloc<Frame::FrameCode>();
@@ -181,7 +178,7 @@ ClusterContext::UpdateResources(const Graphics::FrameContext& ctx)
     state.uniforms.BlockSize[1] = ClusterSubdivsY;
 
     // update constant buffer, probably super unnecessary since these values never change
-    BufferUpdate(state.constantBuffer, state.uniforms, 0);
+    BufferUpdate(state.constantBuffer, state.uniforms);
     BufferFlush(state.constantBuffer);
 }
 
@@ -233,12 +230,12 @@ ClusterContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, Size
             CoreGraphics::ResourceTableId computeTable = Graphics::GetFrameResourceTableCompute(i);
             CoreGraphics::ResourceTableId graphicsTable = Graphics::GetFrameResourceTableGraphics(i);
 
-            ResourceTableSetRWBuffer(computeTable, { state.clusterBuffer, state.clusterAABBSlot, 0, false, false, -1, 0 });
-            ResourceTableSetConstantBuffer(computeTable, { state.constantBuffer, state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
+            ResourceTableSetRWBuffer(computeTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs::SLOT, 0, false, false, -1, 0 });
+            ResourceTableSetConstantBuffer(computeTable, { state.constantBuffer, Shared::Table_Frame::ClusterUniforms::SLOT, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
             ResourceTableCommitChanges(computeTable);
 
-            ResourceTableSetRWBuffer(graphicsTable, { state.clusterBuffer, state.clusterAABBSlot, 0, false, false, -1, 0 });
-            ResourceTableSetConstantBuffer(graphicsTable, { state.constantBuffer, state.uniformsSlot, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
+            ResourceTableSetRWBuffer(graphicsTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs::SLOT, 0, false, false, -1, 0 });
+            ResourceTableSetConstantBuffer(graphicsTable, { state.constantBuffer, Shared::Table_Frame::ClusterUniforms::SLOT, 0, false, false, sizeof(ClusterGenerate::ClusterUniforms), 0 });
             ResourceTableCommitChanges(graphicsTable);
         }
     }
