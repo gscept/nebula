@@ -139,7 +139,7 @@ ShaderConfig::CreateMaterial()
                 CoreGraphics::BufferId buf = CoreGraphics::ShaderCreateConstantBuffer(shd, j);
                 if (buf != CoreGraphics::InvalidBufferId)
                 {
-                    CoreGraphics::ResourceTableSetConstantBuffer(surfaceTable, { buf, slot, 0, false, false, -1, 0 });
+                    CoreGraphics::ResourceTableSetConstantBuffer(surfaceTable, { buf, slot, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
 
                     // add to surface
                     surfaceBuffers.Append(Util::MakeTuple(slot, buf));
@@ -152,7 +152,7 @@ ShaderConfig::CreateMaterial()
                 if (buf != CoreGraphics::InvalidBufferId)
                 {
                     SizeT bufSize = CoreGraphics::ShaderGetConstantBufferSize(shd, j);
-                    CoreGraphics::ResourceTableSetConstantBuffer(instanceTable, { buf, slot, 0, false, true, bufSize, 0 });
+                    CoreGraphics::ResourceTableSetConstantBuffer(instanceTable, { buf, slot, 0, bufSize, 0, false, true });
 
                     // add to surface
                     instanceBuffer = Util::MakeTuple(slot, bufSize);

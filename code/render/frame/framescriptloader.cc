@@ -1097,7 +1097,7 @@ FrameScriptLoader::ParseShaderVariables(
             if (bufferIndex == InvalidIndex)
             {
                 cbo = ShaderCreateConstantBuffer(shd, block);
-                ResourceTableSetConstantBuffer(table, { cbo, slot, 0, false, false, -1, 0 });
+                ResourceTableSetConstantBuffer(table, { cbo, slot, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
                 constantBuffers.Add(block, cbo);
             }
             else

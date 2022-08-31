@@ -91,6 +91,42 @@ extern Threading::CriticalSection PendingTableCommitsLock;
 
 struct ResourceTableTexture
 {
+    ResourceTableTexture()
+        : tex(InvalidTextureId)
+        , slot(0)
+        , index(0)
+        , sampler(CoreGraphics::InvalidSamplerId)
+        , isDepth(false)
+        , isStencil(false)
+    {};
+
+    ResourceTableTexture(const CoreGraphics::TextureId tex, IndexT slot)
+        : tex(tex)
+        , slot(slot)
+        , index(0)
+        , sampler(CoreGraphics::InvalidSamplerId)
+        , isDepth(false)
+        , isStencil(false)
+    {};
+
+    ResourceTableTexture(const CoreGraphics::TextureId tex, IndexT slot, bool isDepth, bool isStencil)
+        : tex(tex)
+        , slot(slot)
+        , index(0)
+        , sampler(CoreGraphics::InvalidSamplerId)
+        , isDepth(isDepth)
+        , isStencil(isStencil)
+    {};
+
+    ResourceTableTexture(const CoreGraphics::TextureId tex, IndexT slot, IndexT index, CoreGraphics::SamplerId sampler, bool isDepth = false, bool isStencil = false)
+        : tex(tex)
+        , slot(slot)
+        , index(index)
+        , sampler(sampler)
+        , isDepth(isDepth)
+        , isStencil(isStencil)
+    {};
+
     CoreGraphics::TextureId tex;
     IndexT slot;
     IndexT index;
@@ -101,6 +137,42 @@ struct ResourceTableTexture
 
 struct ResourceTableTextureView
 {
+    ResourceTableTextureView()
+        : tex(InvalidTextureViewId)
+        , slot(0)
+        , index(0)
+        , sampler(CoreGraphics::InvalidSamplerId)
+        , isDepth(false)
+        , isStencil(false)
+    {};
+
+    ResourceTableTextureView(const CoreGraphics::TextureViewId tex, IndexT slot)
+        : tex(tex)
+        , slot(slot)
+        , index(0)
+        , sampler(CoreGraphics::InvalidSamplerId)
+        , isDepth(false)
+        , isStencil(false)
+    {};
+
+    ResourceTableTextureView(const CoreGraphics::TextureViewId tex, IndexT slot, bool isDepth = false, bool isStencil = false)
+        : tex(tex)
+        , slot(slot)
+        , index(0)
+        , sampler(CoreGraphics::InvalidSamplerId)
+        , isDepth(isDepth)
+        , isStencil(isStencil)
+    {};
+
+    ResourceTableTextureView(const CoreGraphics::TextureViewId tex, IndexT slot, IndexT index, CoreGraphics::SamplerId sampler, bool isDepth = false, bool isStencil = false)
+        : tex(tex)
+        , slot(slot)
+        , index(index)
+        , sampler(sampler)
+        , isDepth(isDepth)
+        , isStencil(isStencil)
+    {};
+
     CoreGraphics::TextureViewId tex;
     IndexT slot;
     IndexT index;
@@ -109,26 +181,98 @@ struct ResourceTableTextureView
     bool isStencil : 1;
 };
 
-struct ResourceTableBuffer
-{
-    CoreGraphics::BufferId buf;
-    IndexT slot;
-    IndexT index;
-
-    bool texelBuffer;
-    bool dynamicOffset;
-
-    SizeT size;
-    SizeT offset;
-};
-
 struct ResourceTableInputAttachment
 {
+    ResourceTableInputAttachment()
+        : tex(InvalidTextureViewId)
+        , slot(0)
+        , index(0)
+        , sampler(CoreGraphics::InvalidSamplerId)
+        , isDepth(false)
+    {};
+
+    ResourceTableInputAttachment(const CoreGraphics::TextureViewId tex, IndexT slot)
+        : tex(tex)
+        , slot(slot)
+        , index(0)
+        , sampler(CoreGraphics::InvalidSamplerId)
+        , isDepth(false)
+    {};
+
+    ResourceTableInputAttachment(const CoreGraphics::TextureViewId tex, IndexT slot, bool isDepth = false)
+        : tex(tex)
+        , slot(slot)
+        , index(0)
+        , sampler(CoreGraphics::InvalidSamplerId)
+        , isDepth(isDepth)
+    {};
+
+    ResourceTableInputAttachment(const CoreGraphics::TextureViewId tex, IndexT slot, IndexT index, CoreGraphics::SamplerId sampler, bool isDepth = false)
+        : tex(tex)
+        , slot(slot)
+        , index(index)
+        , sampler(sampler)
+        , isDepth(isDepth)
+    {};
+
     CoreGraphics::TextureViewId tex;
     IndexT slot;
     IndexT index;
     CoreGraphics::SamplerId sampler;
     bool isDepth : 1;
+};
+
+struct ResourceTableBuffer
+{
+    ResourceTableBuffer()
+        : buf(InvalidBufferId)
+        , slot(0)
+        , index(0)
+        , texelBuffer(false)
+        , dynamicOffset(false)
+        , size(NEBULA_WHOLE_BUFFER_SIZE)
+        , offset(0)
+    {};
+
+    ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot)
+        : buf(buf)
+        , slot(slot)
+        , index(0)
+        , texelBuffer(false)
+        , dynamicOffset(false)
+        , size(NEBULA_WHOLE_BUFFER_SIZE)
+        , offset(0)
+    {};
+
+    ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot, SizeT size)
+        : buf(buf)
+        , slot(slot)
+        , index(0)
+        , texelBuffer(false)
+        , dynamicOffset(false)
+        , size(size)
+        , offset(0)
+    {};
+
+    ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot, SizeT index, SizeT size, SizeT offset, bool texelBuffer = false, bool dynamicOffset = false)
+        : buf(buf)
+        , slot(slot)
+        , index(index)
+        , texelBuffer(texelBuffer)
+        , dynamicOffset(dynamicOffset)
+        , size(size)
+        , offset(offset)
+    {};
+
+    CoreGraphics::BufferId buf;
+    IndexT slot;
+    IndexT index;
+
+    SizeT size;
+    SizeT offset;
+
+    bool texelBuffer;
+    bool dynamicOffset;
 };
 
 struct ResourceTableSampler

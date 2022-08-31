@@ -150,7 +150,7 @@ ShaderStateNode::OnFinishedLoading()
     this->skinningTransformsIndex = ObjectsShared::Table_DynamicOffset::JointBlock::SLOT;
 
     this->resourceTable = CoreGraphics::ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
-    CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->objectTransformsIndex, 0, false, true, sizeof(ObjectsShared::ObjectBlock), 0 });
+    CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->objectTransformsIndex, 0, sizeof(ObjectsShared::ObjectBlock), 0, false, true });
     CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
 }
 

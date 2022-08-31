@@ -304,7 +304,6 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             vegetationState.systemUniforms,
             Vegetation::Table_System::VegetationGenerateUniforms::SLOT,
             0,
-            false, false,
             Vegetation::Table_System::VegetationGenerateUniforms::SIZE,
             0
         });
@@ -314,7 +313,6 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             vegetationState.materialUniformsBuffer,
             Vegetation::Table_System::VegetationMaterialUniforms::SLOT,
             0,
-            false, false,
             Vegetation::Table_System::VegetationMaterialUniforms::SIZE,
             0
         });
@@ -325,7 +323,6 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             vegetationState.meshInfoBuffer,
             Vegetation::Table_System::MeshInfoUniforms::SLOT,
             0,
-            false, false,
             sizeof(Vegetation::MeshInfo) * Vegetation::MAX_MESH_INFOS,
             0
         });
@@ -335,7 +332,6 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             vegetationState.grassInfoBuffer,
             Vegetation::Table_System::GrassInfoUniforms::SLOT,
             0,
-            false, false,
             sizeof(Vegetation::GrassInfo) * Vegetation::MAX_GRASS_INFOS,
             0
         });
@@ -345,7 +341,6 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             vegetationState.grassDrawCallsBuffer,
             Vegetation::Table_System::IndirectGrassDrawBuffer::SLOT,
             0,
-            false, false,
             BufferGetByteSize(vegetationState.grassDrawCallsBuffer),
             0
         });
@@ -355,7 +350,6 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             vegetationState.meshDrawCallsBuffer,
             Vegetation::Table_System::IndirectMeshDrawBuffer::SLOT,
             0,
-            false, false,
             BufferGetByteSize(vegetationState.meshDrawCallsBuffer),
             0
         });
@@ -365,7 +359,6 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             vegetationState.drawCountBuffer,
             Vegetation::Table_System::DrawCount::SLOT,
             0,
-            false, false,
             BufferGetByteSize(vegetationState.drawCountBuffer),
             0
         });
@@ -378,7 +371,6 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             vegetationState.grassArgumentsBuffer,
             Vegetation::Table_Batch::InstanceGrassArguments::SLOT,
             0,
-            false, false,
             BufferGetByteSize(vegetationState.grassArgumentsBuffer),
             0
         });
@@ -388,7 +380,6 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             vegetationState.meshArgumentsBuffer,
             Vegetation::Table_Batch::InstanceMeshArguments::SLOT,
             0,
-            false, false,
             BufferGetByteSize(vegetationState.meshArgumentsBuffer),
             0
         });
@@ -405,7 +396,6 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
                 vegetationState.indirectGrassArgumentBuffer[i],
                 Vegetation::Table_Batch::InstanceGrassArguments::SLOT,
                 0,
-                false, false,
                 BufferGetByteSize(vegetationState.indirectGrassArgumentBuffer[i]),
                 0
             });
@@ -415,7 +405,6 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
                 vegetationState.indirectMeshArgumentsBuffer[i],
                 Vegetation::Table_Batch::InstanceMeshArguments::SLOT,
                 0,
-                false, false,
                 BufferGetByteSize(vegetationState.indirectMeshArgumentsBuffer[i]),
                 0
             });
