@@ -45,8 +45,8 @@ UltralightRenderer::UltralightRenderer()
             CoreGraphics::GetGraphicsConstantBuffer(),
             Staticui::Table_DynamicOffset::PerDrawState::SLOT,
             0,
+            Staticui::Table_DynamicOffset::PerDrawState::SIZE, 0,
             false, true,
-            Staticui::Table_DynamicOffset::PerDrawState::SIZE, 0
         });
     CoreGraphics::ResourceTableCommitChanges(ultralightState.resourceTable);
 
