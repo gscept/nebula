@@ -119,7 +119,7 @@ HistogramContext::Create()
     histogramState.histogramResourceTable = CoreGraphics::ShaderCreateResourceTable(histogramState.histogramShader, NEBULA_BATCH_GROUP);
     CoreGraphics::ResourceTableSetRWBuffer(histogramState.histogramResourceTable, {
         histogramState.histogramCounters,
-        CoreGraphics::ShaderGetResourceSlot(histogramState.histogramShader, "HistogramBuffer"),
+        HistogramCs::Table_Batch::HistogramBuffer::SLOT,
         0,
         false,
         false,
@@ -128,7 +128,7 @@ HistogramContext::Create()
     });
     CoreGraphics::ResourceTableSetConstantBuffer(histogramState.histogramResourceTable, {
         histogramState.histogramConstants,
-        CoreGraphics::ShaderGetResourceSlot(histogramState.histogramShader, "HistogramConstants"),
+        HistogramCs::Table_Batch::HistogramConstants::SLOT,
         0,
         false,
         false,
@@ -162,7 +162,7 @@ HistogramContext::Create()
 
     CoreGraphics::ResourceTableSetRWBuffer(histogramState.downsampleResourceTable, {
         histogramState.downsampleCounter,
-        CoreGraphics::ShaderGetResourceSlot(histogramState.downsampleShader, "AtomicCounter"),
+        DownsampleCsMin::Table_Batch::AtomicCounter::SLOT,
         0,
         false,
         false,
@@ -171,7 +171,7 @@ HistogramContext::Create()
     });
     CoreGraphics::ResourceTableSetConstantBuffer(histogramState.downsampleResourceTable, {
         histogramState.downsampleConstants,
-        CoreGraphics::ShaderGetResourceSlot(histogramState.downsampleShader, "DownsampleUniforms"),
+        DownsampleCsMin::Table_Batch::DownsampleUniforms::SLOT,
         0,
         false,
         false,
@@ -233,7 +233,7 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
             CoreGraphics::ResourceTableSetRWTexture(histogramState.downsampleResourceTable,
             {
                     histogramState.downsampledColorBufferViews[i],
-                    CoreGraphics::ShaderGetResourceSlot(histogramState.downsampleShader, "Output6"),
+                    DownsampleCsMin::Table_Batch::Output6_SLOT,
                     0,
                     CoreGraphics::InvalidSamplerId,
                     false,
@@ -245,7 +245,7 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
             CoreGraphics::ResourceTableSetRWTexture(histogramState.downsampleResourceTable,
             {
                     histogramState.downsampledColorBufferViews[i],
-                    CoreGraphics::ShaderGetResourceSlot(histogramState.downsampleShader, "Output"),
+                    DownsampleCsMin::Table_Batch::Output_SLOT,
                     i,
                     CoreGraphics::InvalidSamplerId,
                     false,
@@ -255,7 +255,7 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
     }
     CoreGraphics::ResourceTableCommitChanges(histogramState.downsampleResourceTable);
 
-    histogramState.sourceTextureBinding = CoreGraphics::ShaderGetResourceSlot(histogramState.histogramShader, "ColorSource");
+    histogramState.sourceTextureBinding = HistogramCs::Table_Batch::ColorSource_SLOT;
     histogramState.sourceTextureDimensions = dims;
     CoreGraphics::ResourceTableSetTexture(histogramState.histogramResourceTable,
     {
@@ -452,7 +452,7 @@ HistogramContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT wid
             CoreGraphics::ResourceTableSetRWTexture(histogramState.downsampleResourceTable,
             {
                 histogramState.downsampledColorBufferViews[i],
-                CoreGraphics::ShaderGetResourceSlot(histogramState.downsampleShader, "Output6"),
+                DownsampleCsMin::Table_Batch::Output6_SLOT,
                 0,
                 CoreGraphics::InvalidSamplerId,
                 false,
@@ -464,7 +464,7 @@ HistogramContext::WindowResized(const CoreGraphics::WindowId windowId, SizeT wid
             CoreGraphics::ResourceTableSetRWTexture(histogramState.downsampleResourceTable,
             {
                 histogramState.downsampledColorBufferViews[i],
-                CoreGraphics::ShaderGetResourceSlot(histogramState.downsampleShader, "Output"),
+                DownsampleCsMin::Table_Batch::Output_SLOT,
                 i,
                 CoreGraphics::InvalidSamplerId,
                 false,

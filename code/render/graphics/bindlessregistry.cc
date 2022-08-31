@@ -19,21 +19,6 @@ struct
     Util::FixedPool<uint32_t> textureCubePool;
     Util::FixedPool<uint32_t> textureCubeArrayPool;
 
-    IndexT texture2DTextureVar;
-    IndexT texture2DMSTextureVar;
-    IndexT texture2DArrayTextureVar;
-    IndexT texture3DTextureVar;
-    IndexT textureCubeTextureVar;
-
-    IndexT normalBufferTextureVar;
-    IndexT depthBufferTextureVar;
-    IndexT specularBufferTextureVar;
-    IndexT depthBufferCopyTextureVar;
-    
-    IndexT environmentMapVar;
-    IndexT irradianceMapVar;
-    IndexT numEnvMipsVar;
-
     Threading::CriticalSection bindResourceCriticalSection;
 
 } state;
@@ -58,24 +43,6 @@ CreateBindlessRegistry(const BindlessRegistryCreateInfo& info)
     state.textureCubePool.Resize(Shared::MAX_CUBE_TEXTURES);
     state.texture2DArrayPool.SetSetupFunc(func);
     state.texture2DArrayPool.Resize(Shared::MAX_2D_ARRAY_TEXTURES);
-    
-    // create shader state for textures, and fetch variables
-    CoreGraphics::ShaderId shader = CoreGraphics::ShaderGet("shd:shared.fxb"_atm);
-    
-    state.texture2DTextureVar = CoreGraphics::ShaderGetResourceSlot(shader, "Textures2D");
-    state.texture2DMSTextureVar = CoreGraphics::ShaderGetResourceSlot(shader, "Textures2DMS");
-    state.texture2DArrayTextureVar = CoreGraphics::ShaderGetResourceSlot(shader, "Textures2DArray");
-    state.textureCubeTextureVar = CoreGraphics::ShaderGetResourceSlot(shader, "TexturesCube");
-    state.texture3DTextureVar = CoreGraphics::ShaderGetResourceSlot(shader, "Textures3D");
-    
-    state.normalBufferTextureVar = CoreGraphics::ShaderGetConstantBinding(shader, "NormalBuffer");
-    state.depthBufferTextureVar = CoreGraphics::ShaderGetConstantBinding(shader, "DepthBuffer");
-    state.specularBufferTextureVar = CoreGraphics::ShaderGetConstantBinding(shader, "SpecularBuffer");
-    state.depthBufferCopyTextureVar = CoreGraphics::ShaderGetConstantBinding(shader, "DepthBufferCopy");
-    
-    state.environmentMapVar = CoreGraphics::ShaderGetConstantBinding(shader, "EnvironmentMap");
-    state.irradianceMapVar = CoreGraphics::ShaderGetConstantBinding(shader, "IrradianceMap");
-    state.numEnvMipsVar = CoreGraphics::ShaderGetConstantBinding(shader, "NumEnvMips");
 }
 
 //------------------------------------------------------------------------------
@@ -100,22 +67,22 @@ RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType ty
     case CoreGraphics::Texture2D:
         n_assert(!state.texture2DPool.IsFull());
         idx = state.texture2DPool.Alloc();
-        var = state.texture2DTextureVar;
+        var = Shared::Table_Tick::Textures2D_SLOT;
         break;
     case CoreGraphics::Texture2DArray:
         n_assert(!state.texture2DArrayPool.IsFull());
         idx = state.texture2DArrayPool.Alloc();
-        var = state.texture2DArrayTextureVar;
+        var = Shared::Table_Tick::Textures2DArray_SLOT;
         break;
     case CoreGraphics::Texture3D:
         n_assert(!state.texture3DPool.IsFull());
         idx = state.texture3DPool.Alloc();
-        var = state.texture3DTextureVar;
+        var = Shared::Table_Tick::Textures3D_SLOT;
         break;
     case CoreGraphics::TextureCube:
         n_assert(!state.textureCubePool.IsFull());
         idx = state.textureCubePool.Alloc();
-        var = state.textureCubeTextureVar;
+        var = Shared::Table_Tick::TexturesCube_SLOT;
         break;
     default:
         n_error("Should not happen");
@@ -154,16 +121,16 @@ ReregisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType 
     switch (type)
     {
     case CoreGraphics::Texture2D:
-        var = state.texture2DTextureVar;
+        var = Shared::Table_Tick::Textures2D_SLOT;
         break;
     case CoreGraphics::Texture2DArray:
-        var = state.texture2DArrayTextureVar;
+        var = Shared::Table_Tick::Textures2DArray_SLOT;
         break;
     case CoreGraphics::Texture3D:
-        var = state.texture3DTextureVar;
+        var = Shared::Table_Tick::Textures3D_SLOT;
         break;
     case CoreGraphics::TextureCube:
-        var = state.textureCubeTextureVar;
+        var = Shared::Table_Tick::TexturesCube_SLOT;
         break;
     }
 
@@ -196,19 +163,19 @@ UnregisterTexture(const BindlessIndex id, const CoreGraphics::TextureType type)
     switch (type)
     {
     case CoreGraphics::Texture2D:
-        var = state.texture2DTextureVar;
+        var = Shared::Table_Tick::Textures2D_SLOT;
         state.texture2DPool.Free(id);
         break;
     case CoreGraphics::Texture2DArray:
-        var = state.texture2DArrayTextureVar;
+        var = Shared::Table_Tick::Textures2DArray_SLOT;
         state.texture2DArrayPool.Free(id);
         break;
     case CoreGraphics::Texture3D:
-        var = state.texture3DTextureVar;
+        var = Shared::Table_Tick::Textures3D_SLOT;
         state.texture3DPool.Free(id);
         break;
     case CoreGraphics::TextureCube:
-        var = state.textureCubeTextureVar;
+        var = Shared::Table_Tick::TexturesCube_SLOT;
         state.textureCubePool.Free(id);
         break;
     }

@@ -75,12 +75,6 @@ DecalContext::Create()
     using namespace CoreGraphics;
     decalState.classificationShader = ShaderServer::Instance()->GetShader("shd:decals_cluster.fxb");
 
-    IndexT decalIndexListsSlot = ShaderGetResourceSlot(decalState.classificationShader, "DecalIndexLists");
-    IndexT decalListSlot = ShaderGetResourceSlot(decalState.classificationShader, "DecalLists");
-
-    IndexT clusterAABBSlot = ShaderGetResourceSlot(decalState.classificationShader, "ClusterAABBs");
-    decalState.uniformsSlot = ShaderGetResourceSlot(decalState.classificationShader, "DecalUniforms");
-
     decalState.cullProgram = ShaderGetProgram(decalState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("Cull"));
     decalState.renderPBRProgram = ShaderGetProgram(decalState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("RenderPBR"));
     decalState.renderEmissiveProgram = ShaderGetProgram(decalState.classificationShader, ShaderServer::Instance()->FeatureStringToMask("RenderEmissive"));
@@ -116,14 +110,14 @@ DecalContext::Create()
         CoreGraphics::ResourceTableId graphicsTable = Graphics::GetFrameResourceTableGraphics(i);
 
         // update resource table
-        ResourceTableSetRWBuffer(computeTable, { decalState.clusterDecalIndexLists, decalIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(computeTable, { decalState.clusterDecalsList, decalListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(computeTable, { CoreGraphics::GetComputeConstantBuffer(), decalState.uniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalUniforms), 0 });
+        ResourceTableSetRWBuffer(computeTable, { decalState.clusterDecalIndexLists, Shared::Table_Frame::DecalIndexLists::SLOT, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(computeTable, { decalState.clusterDecalsList, Shared::Table_Frame::DecalLists::SLOT, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(computeTable, { CoreGraphics::GetComputeConstantBuffer(), Shared::Table_Frame::DecalUniforms::SLOT, 0, false, false, Shared::Table_Frame::DecalUniforms::SIZE, 0 });
         ResourceTableCommitChanges(computeTable);
 
-        ResourceTableSetRWBuffer(graphicsTable, { decalState.clusterDecalIndexLists, decalIndexListsSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(graphicsTable, { decalState.clusterDecalsList, decalListSlot, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(graphicsTable, { CoreGraphics::GetGraphicsConstantBuffer(), decalState.uniformsSlot, 0, false, false, sizeof(DecalsCluster::DecalUniforms), 0 });
+        ResourceTableSetRWBuffer(graphicsTable, { decalState.clusterDecalIndexLists, Shared::Table_Frame::DecalIndexLists::SLOT, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(graphicsTable, { decalState.clusterDecalsList, Shared::Table_Frame::DecalLists::SLOT, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(graphicsTable, { CoreGraphics::GetGraphicsConstantBuffer(), Shared::Table_Frame::DecalUniforms::SLOT, 0, false, false, Shared::Table_Frame::DecalUniforms::SIZE, 0 });
         ResourceTableCommitChanges(graphicsTable);
     }
 

@@ -6,6 +6,8 @@
 #include "characterskinnode.h"
 #include "coregraphics/shaderserver.h"
 
+#include "objects_shared.h"
+
 namespace Models
 {
 
@@ -75,8 +77,7 @@ CharacterSkinNode::OnFinishedLoading()
     PrimitiveNode::OnFinishedLoading();
     CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
     CoreGraphics::BufferId cbo = CoreGraphics::GetGraphicsConstantBuffer();
-    IndexT index = CoreGraphics::ShaderGetResourceSlot(shader, "JointBlock");
-    CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { cbo, index, 0, false, true, (SizeT)(sizeof(Math::mat4) * this->skinFragments[0].jointPalette.Size()), 0 });
+    CoreGraphics::ResourceTableSetConstantBuffer(this->resourceTable, { cbo, ObjectsShared::Table_DynamicOffset::JointBlock::SLOT, 0, false, true, (SizeT)(sizeof(Math::mat4) * this->skinFragments[0].jointPalette.Size()), 0 });
     CoreGraphics::ResourceTableCommitChanges(this->resourceTable);
 }
 
