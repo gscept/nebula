@@ -91,6 +91,7 @@ next:
             for (IndexT i = 0; i < node->job.numWaitCounters; i++)
                 dependencyDone &= *node->job.waitCounters[i] == 0;
 
+            // If dependency is not done, update iterators and progress
             if (!dependencyDone)
             {
                 dragging = node;

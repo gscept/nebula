@@ -97,7 +97,7 @@ public:
     /// Allocate an object. 
     uint32_t Alloc()
     {
-        /// @note   This purposefully hides the default allocation method and should definetly not be virtual!
+        /// @note   This purposefully hides the default allocation method and should definitely not be virtual!
         this->Lock(Util::ArrayAllocatorAccess::Write);
         uint32_t index;
         if (this->freeIds.Size() > 0)
