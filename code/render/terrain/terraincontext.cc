@@ -295,9 +295,9 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
 
     Lighting::LightContext::SetupTerrainShadows(terrainState.terrainShadowMap, settings.worldSizeX);
 
-    ResourceTableSetConstantBuffer(terrainState.resourceTable, { terrainState.biomeBuffer, Terrain::Table_System::MaterialLayers::SLOT, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-    ResourceTableSetConstantBuffer(terrainState.resourceTable, { terrainState.systemConstants, Terrain::Table_System::TerrainSystemUniforms::SLOT, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0});
-    ResourceTableSetRWTexture(terrainState.resourceTable, { terrainState.terrainShadowMap, Terrain::Table_System::TerrainShadowMap_SLOT, 0, CoreGraphics::InvalidSamplerId, false, false });
+    ResourceTableSetConstantBuffer(terrainState.resourceTable, { terrainState.biomeBuffer, Terrain::Table_System::MaterialLayers::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+    ResourceTableSetConstantBuffer(terrainState.resourceTable, { terrainState.systemConstants, Terrain::Table_System::TerrainSystemUniforms::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0});
+    ResourceTableSetRWTexture(terrainState.resourceTable, { terrainState.terrainShadowMap, Terrain::Table_System::TerrainShadowMap_SLOT, 0, CoreGraphics::InvalidSamplerId });
     ResourceTableCommitChanges(terrainState.resourceTable);
 
     //------------------------------------------------------------------------------
@@ -516,7 +516,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             terrainState.biomeBuffer,
             Terrain::Table_System::MaterialLayers::SLOT,
             0,
-            false, false,
             NEBULA_WHOLE_BUFFER_SIZE,
             0
         });
@@ -526,7 +525,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             terrainState.systemConstants,
             Terrain::Table_System::TerrainSystemUniforms::SLOT,
             0,
-            false, false,
             NEBULA_WHOLE_BUFFER_SIZE,
             0
         });
@@ -536,7 +534,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             terrainVirtualTileState.subTextureBuffer,
             Terrain::Table_System::TerrainSubTexturesBuffer::SLOT,
             0, 
-            false, false,
             NEBULA_WHOLE_BUFFER_SIZE,
             0
         });
@@ -546,7 +543,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             terrainVirtualTileState.pageUpdateListBuffer,
             Terrain::Table_System::PageUpdateListBuffer::SLOT,
             0,
-            false, false,
             NEBULA_WHOLE_BUFFER_SIZE,
             0
         });
@@ -556,7 +552,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             terrainVirtualTileState.pageStatusBuffer,
             Terrain::Table_System::PageStatusBuffer::SLOT,
             0,
-            false, false,
             NEBULA_WHOLE_BUFFER_SIZE,
             0
         });
@@ -568,7 +563,6 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             terrainVirtualTileState.runtimeConstants,
             Terrain::Table_Batch::TerrainRuntimeUniforms::SLOT,
             0,
-            false, false,
             sizeof(Terrain::TerrainRuntimeUniforms),
             0
         });
@@ -579,9 +573,9 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
             CoreGraphics::GetGraphicsConstantBuffer(),
             Terrain::Table_DynamicOffset::TerrainTileUpdateUniforms::SLOT,
             0,
-            false, true,
             sizeof(Terrain::TerrainTileUpdateUniforms),
-            0
+            0,
+            false, true
         });
     ResourceTableCommitChanges(terrainVirtualTileState.virtualTerrainDynamicResourceTable);
 
@@ -1106,7 +1100,7 @@ TerrainContext::SetupTerrain(
 
     // setup resource tables, one for the per-chunk draw arguments, and one for the whole terrain 
     runtimeInfo.patchTable = ShaderCreateResourceTable(terrainState.terrainShader, NEBULA_DYNAMIC_OFFSET_GROUP);
-    ResourceTableSetConstantBuffer(runtimeInfo.patchTable, { CoreGraphics::GetGraphicsConstantBuffer(), Terrain::Table_DynamicOffset::PatchUniforms::SLOT, 0, false, true, sizeof(Terrain::PatchUniforms), 0 });
+    ResourceTableSetConstantBuffer(runtimeInfo.patchTable, { CoreGraphics::GetGraphicsConstantBuffer(), Terrain::Table_DynamicOffset::PatchUniforms::SLOT, 0, Terrain::Table_DynamicOffset::PatchUniforms::SIZE, 0, false, true });
     ResourceTableCommitChanges(runtimeInfo.patchTable);
 
     // allocate a tile vertex buffer

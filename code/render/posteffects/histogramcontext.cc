@@ -121,8 +121,6 @@ HistogramContext::Create()
         histogramState.histogramCounters,
         HistogramCs::Table_Batch::HistogramBuffer::SLOT,
         0,
-        false,
-        false,
         CoreGraphics::BufferGetByteSize(histogramState.histogramCounters),
         0
     });
@@ -130,8 +128,6 @@ HistogramContext::Create()
         histogramState.histogramConstants,
         HistogramCs::Table_Batch::HistogramConstants::SLOT,
         0,
-        false,
-        false,
         CoreGraphics::BufferGetByteSize(histogramState.histogramConstants),
         0
     });
@@ -164,8 +160,6 @@ HistogramContext::Create()
         histogramState.downsampleCounter,
         DownsampleCsMin::Table_Batch::AtomicCounter::SLOT,
         0,
-        false,
-        false,
         CoreGraphics::BufferGetByteSize(histogramState.downsampleCounter),
         0
     });
@@ -173,8 +167,6 @@ HistogramContext::Create()
         histogramState.downsampleConstants,
         DownsampleCsMin::Table_Batch::DownsampleUniforms::SLOT,
         0,
-        false,
-        false,
         CoreGraphics::BufferGetByteSize(histogramState.downsampleConstants),
         0
     });

@@ -94,7 +94,7 @@ ParticleSystemNode::OnFinishedLoading()
     this->skinningTransformsIndex = ::Particle::Table_DynamicOffset::JointBlock::SLOT;
     this->particleConstantsIndex = ::Particle::Table_DynamicOffset::ParticleObjectBlock::SLOT;
     this->resourceTable = ShaderCreateResourceTable(shader, NEBULA_DYNAMIC_OFFSET_GROUP, 256);
-    ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->particleConstantsIndex, 0, false, true, sizeof(::Particle::ParticleObjectBlock), 0 });
+    ResourceTableSetConstantBuffer(this->resourceTable, { cbo, this->particleConstantsIndex, 0, sizeof(::Particle::ParticleObjectBlock), 0, false, true });
     ResourceTableCommitChanges(this->resourceTable);
 }
 

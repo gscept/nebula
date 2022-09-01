@@ -196,14 +196,14 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
         CoreGraphics::ResourceTableId computeTable = Graphics::GetFrameResourceTableCompute(i);
         CoreGraphics::ResourceTableId graphicsTable = Graphics::GetFrameResourceTableGraphics(i);
 
-        ResourceTableSetRWBuffer(computeTable, { clusterState.clusterLightIndexLists, Shared::Table_Frame::LightIndexLists::SLOT, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(computeTable, { clusterState.clusterLightsList, Shared::Table_Frame::LightLists::SLOT, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(computeTable, { CoreGraphics::GetComputeConstantBuffer(), Shared::Table_Frame::LightUniforms::SLOT, 0, false, false, sizeof(LightsCluster::LightUniforms), 0 });
+        ResourceTableSetRWBuffer(computeTable, { clusterState.clusterLightIndexLists, Shared::Table_Frame::LightIndexLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(computeTable, { clusterState.clusterLightsList, Shared::Table_Frame::LightLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(computeTable, { CoreGraphics::GetComputeConstantBuffer(), Shared::Table_Frame::LightUniforms::SLOT, 0, sizeof(LightsCluster::LightUniforms), 0 });
         ResourceTableCommitChanges(computeTable);
 
-        ResourceTableSetRWBuffer(graphicsTable, { clusterState.clusterLightIndexLists, Shared::Table_Frame::LightIndexLists::SLOT, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetRWBuffer(graphicsTable, { clusterState.clusterLightsList, Shared::Table_Frame::LightLists::SLOT, 0, false, false, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(graphicsTable, { CoreGraphics::GetGraphicsConstantBuffer(), Shared::Table_Frame::LightUniforms::SLOT, 0, false, false, sizeof(LightsCluster::LightUniforms), 0 });
+        ResourceTableSetRWBuffer(graphicsTable, { clusterState.clusterLightIndexLists, Shared::Table_Frame::LightIndexLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetRWBuffer(graphicsTable, { clusterState.clusterLightsList, Shared::Table_Frame::LightLists::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
+        ResourceTableSetConstantBuffer(graphicsTable, { CoreGraphics::GetGraphicsConstantBuffer(), Shared::Table_Frame::LightUniforms::SLOT, 0, sizeof(LightsCluster::LightUniforms), 0 });
         ResourceTableCommitChanges(graphicsTable);
     }
 
@@ -1068,9 +1068,9 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     consts.NumLightClusters = Clustering::ClusterContext::GetNumClusters();
     consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(textureState.aoTexture);
     IndexT offset = SetConstants(consts);
-    ResourceTableSetConstantBuffer(computeTable, { GetComputeConstantBuffer(), Shared::Table_Frame::LightUniforms::SLOT, 0, false, false, sizeof(LightsCluster::LightUniforms), (SizeT)offset });
+    ResourceTableSetConstantBuffer(computeTable, { GetComputeConstantBuffer(), Shared::Table_Frame::LightUniforms::SLOT, 0, sizeof(LightsCluster::LightUniforms), (SizeT)offset });
     ResourceTableCommitChanges(computeTable);
-    ResourceTableSetConstantBuffer(graphicsTable, { GetGraphicsConstantBuffer(), Shared::Table_Frame::LightUniforms::SLOT, 0, false, false, sizeof(LightsCluster::LightUniforms), (SizeT)offset });
+    ResourceTableSetConstantBuffer(graphicsTable, { GetGraphicsConstantBuffer(), Shared::Table_Frame::LightUniforms::SLOT, 0, sizeof(LightsCluster::LightUniforms), (SizeT)offset });
     ResourceTableCommitChanges(graphicsTable);
 
     TextureDimensions dims = TextureGetDimensions(textureState.lightingTexture);
@@ -1078,7 +1078,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     combineConsts.LowresResolution[0] = 1.0f / dims.width;
     combineConsts.LowresResolution[1] = 1.0f / dims.height;
     offset = SetConstants(combineConsts);
-    ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetGraphicsConstantBuffer(), Combine::Table_Batch::CombineUniforms::SLOT, 0, false, false, Combine::Table_Batch::CombineUniforms::SIZE, (SizeT)offset });
+    ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetGraphicsConstantBuffer(), Combine::Table_Batch::CombineUniforms::SLOT, 0, Combine::Table_Batch::CombineUniforms::SIZE, (SizeT)offset });
     ResourceTableCommitChanges(combineState.resourceTables[bufferIndex]);
 }
 

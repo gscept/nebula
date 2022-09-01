@@ -191,7 +191,7 @@ SSRContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, const 
 
     IndexT bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
-    ResourceTableSetConstantBuffer(ssrState.ssrTraceTables[bufferIndex], { ssrState.constants, SsrCs::Table_Batch::SSRBlock::SLOT, 0, false, false, SsrCs::Table_Batch::SSRBlock::SIZE, (SizeT)ssrOffset });
+    ResourceTableSetConstantBuffer(ssrState.ssrTraceTables[bufferIndex], { ssrState.constants, SsrCs::Table_Batch::SSRBlock::SLOT, 0, SsrCs::Table_Batch::SSRBlock::SIZE, (SizeT)ssrOffset });
     ResourceTableCommitChanges(ssrState.ssrTraceTables[bufferIndex]);
 }
 
