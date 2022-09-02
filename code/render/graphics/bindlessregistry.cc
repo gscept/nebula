@@ -10,14 +10,7 @@ namespace Graphics
 
 struct
 {
-    Util::FixedPool<uint32_t> texture1DPool;
-    Util::FixedPool<uint32_t> texture1DArrayPool;
-    Util::FixedPool<uint32_t> texture2DPool;
-    Util::FixedPool<uint32_t> texture2DMSPool;
-    Util::FixedPool<uint32_t> texture2DArrayPool;
-    Util::FixedPool<uint32_t> texture3DPool;
-    Util::FixedPool<uint32_t> textureCubePool;
-    Util::FixedPool<uint32_t> textureCubeArrayPool;
+    Util::FixedPool<uint32_t> texturePool;
 
     Threading::CriticalSection bindResourceCriticalSection;
 
@@ -32,17 +25,9 @@ CreateBindlessRegistry(const BindlessRegistryCreateInfo& info)
     auto func = [](uint32_t& val, IndexT i) -> void {
         val = i;
     };
-    
-    state.texture2DPool.SetSetupFunc(func);
-    state.texture2DPool.Resize(Shared::MAX_2D_TEXTURES);
-    state.texture2DMSPool.SetSetupFunc(func);
-    state.texture2DMSPool.Resize(Shared::MAX_2D_MS_TEXTURES);
-    state.texture3DPool.SetSetupFunc(func);
-    state.texture3DPool.Resize(Shared::MAX_3D_TEXTURES);
-    state.textureCubePool.SetSetupFunc(func);
-    state.textureCubePool.Resize(Shared::MAX_CUBE_TEXTURES);
-    state.texture2DArrayPool.SetSetupFunc(func);
-    state.texture2DArrayPool.Resize(Shared::MAX_2D_ARRAY_TEXTURES);
+
+    state.texturePool.SetSetupFunc(func);
+    state.texturePool.Resize(Shared::MAX_TEXTURES);
 }
 
 //------------------------------------------------------------------------------
@@ -60,28 +45,24 @@ DestroyBindlessRegistry()
 BindlessIndex
 RegisterTexture(const CoreGraphics::TextureId& tex, CoreGraphics::TextureType type, bool depth, bool stencil)
 {
-    BindlessIndex idx;
+    BindlessIndex idx = state.texturePool.Alloc();
     IndexT var;
     switch (type)
     {
     case CoreGraphics::Texture2D:
-        n_assert(!state.texture2DPool.IsFull());
-        idx = state.texture2DPool.Alloc();
+        n_assert(!state.texturePool.IsFull());
         var = Shared::Table_Tick::Textures2D_SLOT;
         break;
     case CoreGraphics::Texture2DArray:
-        n_assert(!state.texture2DArrayPool.IsFull());
-        idx = state.texture2DArrayPool.Alloc();
+        n_assert(!state.texturePool.IsFull());
         var = Shared::Table_Tick::Textures2DArray_SLOT;
         break;
     case CoreGraphics::Texture3D:
-        n_assert(!state.texture3DPool.IsFull());
-        idx = state.texture3DPool.Alloc();
+        n_assert(!state.texturePool.IsFull());
         var = Shared::Table_Tick::Textures3D_SLOT;
         break;
     case CoreGraphics::TextureCube:
-        n_assert(!state.textureCubePool.IsFull());
-        idx = state.textureCubePool.Alloc();
+        n_assert(!state.texturePool.IsFull());
         var = Shared::Table_Tick::TexturesCube_SLOT;
         break;
     default:
@@ -164,21 +145,17 @@ UnregisterTexture(const BindlessIndex id, const CoreGraphics::TextureType type)
     {
     case CoreGraphics::Texture2D:
         var = Shared::Table_Tick::Textures2D_SLOT;
-        state.texture2DPool.Free(id);
         break;
     case CoreGraphics::Texture2DArray:
         var = Shared::Table_Tick::Textures2DArray_SLOT;
-        state.texture2DArrayPool.Free(id);
         break;
     case CoreGraphics::Texture3D:
         var = Shared::Table_Tick::Textures3D_SLOT;
-        state.texture3DPool.Free(id);
         break;
     case CoreGraphics::TextureCube:
         var = Shared::Table_Tick::TexturesCube_SLOT;
-        state.textureCubePool.Free(id);
         break;
-    }
+    }    
 
     CoreGraphics::ResourceTableTexture info;
     info.tex = (CoreGraphics::TextureId)0;
@@ -197,6 +174,9 @@ UnregisterTexture(const BindlessIndex id, const CoreGraphics::TextureType type)
         ResourceTableSetTexture(Graphics::GetTickResourceTableCompute(i), info);
     }
     state.bindResourceCriticalSection.Leave();
+
+    // Free id at the end
+    state.texturePool.Free(id);
 }
 
 } // namespace Graphics
