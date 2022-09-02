@@ -9,18 +9,14 @@
 #include <lib/std.fxh>
 #include <lib/util.fxh>
 
-const int MAX_2D_TEXTURES = 2048;
-const int MAX_2D_MS_TEXTURES = 64;
-const int MAX_2D_ARRAY_TEXTURES = 8;
-const int MAX_CUBE_TEXTURES = 128;
-const int MAX_3D_TEXTURES = 128;
+const int MAX_TEXTURES = 65535;
 
 // the texture list can be updated once per tick (frame)
-group(TICK_GROUP) texture2D			Textures2D[MAX_2D_TEXTURES];
-group(TICK_GROUP) texture2DMS		Textures2DMS[MAX_2D_MS_TEXTURES];
-group(TICK_GROUP) textureCube		TexturesCube[MAX_CUBE_TEXTURES];
-group(TICK_GROUP) texture3D			Textures3D[MAX_3D_TEXTURES];
-group(TICK_GROUP) texture2DArray	Textures2DArray[MAX_2D_ARRAY_TEXTURES];
+group(TICK_GROUP) binding(0) texture2D			Textures2D[MAX_TEXTURES];
+group(TICK_GROUP) binding(0) texture2DMS		Textures2DMS[MAX_TEXTURES];
+group(TICK_GROUP) binding(0) textureCube		TexturesCube[MAX_TEXTURES];
+group(TICK_GROUP) binding(0) texture3D			Textures3D[MAX_TEXTURES];
+group(TICK_GROUP) binding(0) texture2DArray	    Textures2DArray[MAX_TEXTURES];
 group(TICK_GROUP) sampler_state		Basic2DSampler {};
 group(TICK_GROUP) sampler_state		PosteffectSampler { Filter = Point; };
 group(TICK_GROUP) sampler_state		PosteffectUpscaleSampler { Filter = Linear; };
