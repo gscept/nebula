@@ -4,14 +4,14 @@
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "coreanimation/streamanimationcache.h"
+#include "coreanimation/animationloader.h"
 #include "coreanimation/animresource.h"
 #include "system/byteorder.h"
 #include "coreanimation/naxfileformatstructs.h"
 
 namespace CoreAnimation
 {
-__ImplementClass(CoreAnimation::StreamAnimationCache, 'SANL', Resources::ResourceStreamCache);
+__ImplementClass(CoreAnimation::AnimationLoader, 'SANL', Resources::ResourceLoader);
 
 using namespace IO;
 using namespace Util;
@@ -21,47 +21,12 @@ using namespace Math;
 //------------------------------------------------------------------------------
 /**
 */
-const Util::FixedArray<AnimClip>&
-StreamAnimationCache::GetClips(const AnimResourceId id)
+Resources::ResourceUnknownId
+AnimationLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
-    return this->Get<0>(id.resourceId);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const AnimClip&
-StreamAnimationCache::GetClip(const AnimResourceId id, const IndexT index)
-{
-    return this->Get<0>(id.resourceId)[index];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const IndexT StreamAnimationCache::GetClipIndex(const AnimResourceId id, const Util::StringAtom& name)
-{
-    return this->Get<1>(id.resourceId)[name];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Ptr<AnimKeyBuffer>&
-StreamAnimationCache::GetKeyBuffer(const AnimResourceId id)
-{
-    return this->Get<2>(id.resourceId);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Resources::ResourceCache::LoadStatus
-StreamAnimationCache::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
-{
-    Util::FixedArray<AnimClip>& clips = this->Get<0>(id.resourceId);
-    Util::HashTable<Util::StringAtom, IndexT, 32>& clipIndices = this->Get<1>(id.resourceId);
-    Ptr<AnimKeyBuffer>& keyBuffer = this->Get<2>(id.resourceId);
+    Util::FixedArray<AnimClip> clips;
+    Util::HashTable<Util::StringAtom, IndexT, 32> clipIndices;
+    Ptr<AnimKeyBuffer> keyBuffer = nullptr;
     
     // map buffer
     uchar* ptr = (uchar*)stream->Map();
@@ -155,28 +120,24 @@ StreamAnimationCache::LoadFromStream(const Resources::ResourceId id, const Util:
 
     // unmap memory
     stream->Unmap();
-    return Success;
+
+    // Create animation
+    AnimationCreateInfo info;
+    info.clips = clips;
+    info.indices = clipIndices;
+    info.keyBuffer = keyBuffer;
+    AnimResourceId anim = CreateAnimation(info);
+    return anim;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-StreamAnimationCache::Unload(const Resources::ResourceId id)
+AnimationLoader::Unload(const Resources::ResourceId id)
 {
-    Util::FixedArray<AnimClip>& clips = this->Get<0>(id.resourceId);
-    Util::HashTable<Util::StringAtom, IndexT, 32>& clipIndices = this->Get<1>(id.resourceId);
-    Ptr<AnimKeyBuffer>& keyBuffer = this->Get<2>(id.resourceId);
-
-    if (keyBuffer.isvalid())
-    {
-        keyBuffer->Discard();
-        keyBuffer = nullptr;
-    }
-    clips.Clear();
-    clipIndices.Clear();
-
-    this->states[id.poolId] = Resources::Resource::State::Unloaded;
+    AnimResourceId anim = id;
+    DestroyAnimation(anim);
 }
 
 } // namespace CoreAnimation

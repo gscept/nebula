@@ -13,7 +13,7 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    
 #include "core/refcounted.h"
-#include "streamanimationcache.h"
+#include "animresource.h"
 
 //------------------------------------------------------------------------------
 namespace CoreAnimation

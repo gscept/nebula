@@ -23,9 +23,6 @@ namespace CoreAnimation
 
 RESOURCE_ID_TYPE(AnimResourceId)
 
-class StreamAnimationCache;
-extern StreamAnimationCache* animPool;
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -62,17 +59,43 @@ extern void AnimMix(const AnimCurve* curves,
     Math::vec4* outSamplePtr,
     uchar* outSampleCounts);
 
-/// create animation resource
-const AnimResourceId CreateAnimation(const ResourceCreateInfo& info);
-/// destroy animation resource
+struct AnimationCreateInfo
+{
+    Util::FixedArray<AnimClip> clips;
+    Util::HashTable<Util::StringAtom, IndexT, 32> indices;
+    Ptr<AnimKeyBuffer> keyBuffer;
+};
+
+/// Create animation resource
+const AnimResourceId CreateAnimation(const AnimationCreateInfo& info);
+/// Destroy animation resource
 void DestroyAnimation(const AnimResourceId id);
 
-/// get clips
+/// Get clips
 const Util::FixedArray<AnimClip>& AnimGetClips(const AnimResourceId& id);
-/// get single clip
+/// Get single clip
 const AnimClip& AnimGetClip(const AnimResourceId& id, const IndexT index);
-/// compute key slice pointer and memory size
+/// Get anim buffer
+const Ptr<AnimKeyBuffer>& AnimGetBuffer(const AnimResourceId& id);
+/// Get anim clip index
+const IndexT AnimGetIndex(const AnimResourceId& id, const Util::StringAtom& name);
+/// Compute key slice pointer and memory size
 void AnimComputeSlice(const AnimResourceId& id, IndexT clipIndex, IndexT keyIndex, SizeT& outSliceByteSize, const Math::vec4*& ptr);
+
+enum
+{
+    Anim_Clips,
+    Anim_KeyIndices,
+    Anim_KeyBuffer
+};
+
+typedef Ids::IdAllocator<
+    Util::FixedArray<AnimClip>,
+    Util::HashTable<Util::StringAtom, IndexT, 32>,
+    Ptr<AnimKeyBuffer>
+> AnimAllocator;
+extern AnimAllocator animAllocator;
+
 
 } // namespace CoreAnimation
 //------------------------------------------------------------------------------

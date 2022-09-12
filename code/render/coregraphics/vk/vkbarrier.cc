@@ -77,12 +77,12 @@ CreateBarrier(const BarrierCreateInfo& info)
         if (info.fromQueue == QueueType::InvalidQueueType)
             vkInfo.imageBarriers[vkInfo.numImageBarriers].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         else
-            vkInfo.imageBarriers[vkInfo.numImageBarriers].srcQueueFamilyIndex = Vulkan::GetQueueFamily(info.fromQueue);
+            vkInfo.imageBarriers[vkInfo.numImageBarriers].srcQueueFamilyIndex = CoreGraphics::GetQueueIndex(info.fromQueue);
 
         if (info.toQueue == QueueType::InvalidQueueType)
             vkInfo.imageBarriers[vkInfo.numImageBarriers].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         else
-            vkInfo.imageBarriers[vkInfo.numImageBarriers].dstQueueFamilyIndex = Vulkan::GetQueueFamily(info.toQueue);
+            vkInfo.imageBarriers[vkInfo.numImageBarriers].dstQueueFamilyIndex = CoreGraphics::GetQueueIndex(info.toQueue);
         vkInfo.imageBarriers[vkInfo.numImageBarriers].oldLayout = VkTypes::AsVkImageLayout(info.fromStage, isDepth);
         vkInfo.imageBarriers[vkInfo.numImageBarriers].newLayout = VkTypes::AsVkImageLayout(info.toStage, isDepth);
         vkInfo.numImageBarriers++;

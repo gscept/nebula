@@ -103,9 +103,9 @@ void OpenScene()
             transform.position = Math::vec4(i * 16, 0, j * 16, 1);
 
             // load textures
-            CoreGraphics::TextureId albedo = Resources::CreateResource("tex:system/white.dds", "decal"_atm, nullptr, nullptr, true);
-            CoreGraphics::TextureId normal = Resources::CreateResource("tex:test/normalbox_normal.dds", "decal"_atm, nullptr, nullptr, true);
-            CoreGraphics::TextureId material = Resources::CreateResource("tex:system/default_material.dds", "decal"_atm, nullptr, nullptr, true);
+            Resources::ResourceId albedo = Resources::CreateResource("tex:system/white.dds", "decal"_atm, nullptr, nullptr, true);
+            Resources::ResourceId normal = Resources::CreateResource("tex:test/normalbox_normal.dds", "decal"_atm, nullptr, nullptr, true);
+            Resources::ResourceId material = Resources::CreateResource("tex:system/default_material.dds", "decal"_atm, nullptr, nullptr, true);
 
             // setup decal
             Decals::DecalContext::RegisterEntity(id);

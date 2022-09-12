@@ -14,9 +14,8 @@
 #include "ids/id.h"
 #include "core/singleton.h"
 #include "resourceid.h"
-#include "resourcestreamcache.h"
+#include "resourceloader.h"
 #include "resourceloaderthread.h"
-#include "resourcememorycache.h"
 namespace Resources
 {
 class ResourceServer : public Core::RefCounted
@@ -56,11 +55,6 @@ public:
     /// stream in a new LOD
     void SetMaxLOD(const ResourceId& id, float lod, bool immediate);
 
-    /// reserve resource (for self-managed resources)
-    Resources::ResourceId ReserveResource(const ResourceName& res, const Util::StringAtom& tag, const Core::Rtti& type);
-    /// update resource (for self-managed resources), info pointer is a struct specific to the loader
-    ResourceCache::LoadStatus LoadFromMemory(const Resources::ResourceId id, void* info);
-
     /// get type of resource pool this resource was allocated with
     Core::Rtti* GetType(const Resources::ResourceId id);
 
@@ -84,21 +78,17 @@ public:
     void RegisterStreamPool(const Util::StringAtom& ext, const Core::Rtti& loaderClass);
     /// get stream pool for later use
     template <class POOL_TYPE> POOL_TYPE* GetStreamPool() const;
-    /// register a memory pool, which maps only a resource type (RTTI)
-    void RegisterMemoryPool(const Core::Rtti& loaderClass);
-    /// get memory pool for later use
-    template <class POOL_TYPE> POOL_TYPE* GetMemoryPool() const;
 
     /// goes through all pools and sets up their default resources
     void LoadDefaultResources();
 private:
-    friend class ResourceStreamCache;
+    friend class ResourceLoader;
 
     bool open;
     Ptr<ResourceLoaderThread> loaderThread;
     Util::Dictionary<Util::StringAtom, IndexT> extensionMap;
     Util::Dictionary<const Core::Rtti*, IndexT> typeMap;
-    Util::Array<Ptr<ResourceCache>> pools;
+    Util::Array<Ptr<ResourceLoader>> pools;
 
     static int32_t UniquePoolCounter;
 };
@@ -126,7 +116,7 @@ Resources::ResourceServer::CreateResource(const ResourceName& res, const Util::S
     Util::String ext = res.AsString().GetFileExtension();
     IndexT i = this->extensionMap.FindIndex(ext);
     n_assert_fmt(i != InvalidIndex, "No resource loader is associated with file extension '%s'", ext.AsCharPtr());
-    const Ptr<ResourceStreamCache>& loader = this->pools[this->extensionMap.ValueAtIndex(i)].downcast<ResourceStreamCache>();
+    const Ptr<ResourceLoader>& loader = this->pools[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
 
     // create container and cast to actual resource type
     Resources::ResourceId id = loader->CreateResource(res, nullptr, 0, tag, success, failed, immediate);
@@ -154,7 +144,7 @@ ResourceServer::CreateResource(const ResourceName& res, const METADATA& metaData
     Util::String ext = res.AsString().GetFileExtension();
     IndexT i = this->extensionMap.FindIndex(ext);
     n_assert_fmt(i != InvalidIndex, "No resource loader is associated with file extension '%s'", ext.AsCharPtr());
-    const Ptr<ResourceStreamCache>& loader = this->pools[this->extensionMap.ValueAtIndex(i)].downcast<ResourceStreamCache>();
+    const Ptr<ResourceLoader>& loader = this->pools[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
 
     // create container and cast to actual resource type
     Resources::ResourceId id = loader->CreateResource(res, &metaData, sizeof(METADATA), tag, success, failed, immediate);
@@ -171,7 +161,7 @@ ResourceServer::ReloadResource(const ResourceName& res, std::function<void(const
     Util::String ext = res.AsString().GetFileExtension();
     IndexT i = this->extensionMap.FindIndex(ext);
     n_assert_fmt(i != InvalidIndex, "No resource loader is associated with file extension '%s'", ext.AsCharPtr());
-    const Ptr<ResourceStreamCache>& loader = this->pools[this->extensionMap.ValueAtIndex(i)].downcast<ResourceStreamCache>();
+    const Ptr<ResourceLoader>& loader = this->pools[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
 
     // create container and cast to actual resource type
     loader->ReloadResource(res, success, failed);
@@ -184,11 +174,11 @@ inline void
 ResourceServer::SetMaxLOD(const ResourceId& id, float lod, bool immediate)
 {
     // get id of loader
-    const Ids::Id8 loaderid = id.poolIndex;
+    const Ids::Id8 loaderid = id.cacheIndex;
 
     // get resource loader by extension
     n_assert(this->pools.Size() > loaderid);
-    const Ptr<ResourceStreamCache>& loader = this->pools[loaderid].downcast<ResourceStreamCache>();
+    const Ptr<ResourceLoader>& loader = this->pools[loaderid].downcast<ResourceLoader>();
 
     // update LOD
     loader->SetMaxLOD(id, lod, immediate);
@@ -202,39 +192,14 @@ inline void
 ResourceServer::DiscardResource(const Resources::ResourceId id)
 {
     // get id of loader
-    const Ids::Id8 loaderid = id.poolIndex;
+    const Ids::Id8 loaderid = id.cacheIndex;
 
     // get resource loader by extension
     n_assert(this->pools.Size() > loaderid);
-    const Ptr<ResourceStreamCache>& loader = this->pools[loaderid].downcast<ResourceStreamCache>();
+    const Ptr<ResourceLoader>& loader = this->pools[loaderid].downcast<ResourceLoader>();
 
     // discard container
     loader->DiscardResource(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-    Reserve a resource for direct updating through a memory pool.
-    The type is the RTTI of the pool to use.
-*/
-inline Resources::ResourceId
-ResourceServer::ReserveResource(const ResourceName& res, const Util::StringAtom& tag, const Core::Rtti& type)
-{
-    n_assert(type.IsDerivedFrom(ResourceMemoryCache::RTTI));
-    const Ptr<ResourceMemoryCache>& loader = this->pools[this->typeMap[&type]].downcast<ResourceMemoryCache>();
-    return loader->ReserveResource(res, tag);
-}
-
-//------------------------------------------------------------------------------
-/**
-    Update resource previously reserved.
-    The info pointer is a struct containing pool specific information.
-*/
-inline Resources::ResourceCache::LoadStatus
-ResourceServer::LoadFromMemory(const Resources::ResourceId id, void* info)
-{
-    const Ptr<ResourceMemoryCache>& loader = this->pools[id.poolIndex].downcast<ResourceMemoryCache>();
-    return loader->LoadFromMemory(id.resourceId, info);
 }
 
 //------------------------------------------------------------------------------
@@ -244,8 +209,8 @@ inline const Resources::ResourceName
 ResourceServer::GetName(const Resources::ResourceId id) const
 {
     // get resource loader by extension
-    n_assert(this->pools.Size() > id.poolIndex);
-    const Ptr<ResourceCache>& loader = this->pools[id.poolIndex];
+    n_assert(this->pools.Size() > id.cacheIndex);
+    const Ptr<ResourceLoader>& loader = this->pools[id.cacheIndex];
     return loader->GetName(id);
 }
 
@@ -256,8 +221,8 @@ inline const Util::StringAtom
 ResourceServer::GetTag(const Resources::ResourceId id) const
 {
     // get resource loader by extension
-    n_assert(this->pools.Size() > id.poolIndex);
-    const Ptr<ResourceCache>& loader = this->pools[id.poolIndex];
+    n_assert(this->pools.Size() > id.cacheIndex);
+    const Ptr<ResourceLoader>& loader = this->pools[id.cacheIndex];
     return loader->GetTag(id);
 }
 
@@ -268,8 +233,8 @@ inline const Resources::Resource::State
 ResourceServer::GetState(const Resources::ResourceId id) const
 {
     // get resource loader by extension
-    n_assert(this->pools.Size() > id.poolIndex);
-    const Ptr<ResourceCache>& loader = this->pools[id.poolIndex];
+    n_assert(this->pools.Size() > id.cacheIndex);
+    const Ptr<ResourceLoader>& loader = this->pools[id.cacheIndex];
     return loader->GetState(id);
 }
 
@@ -280,8 +245,8 @@ inline const SizeT
 ResourceServer::GetUsage(const Resources::ResourceId id) const
 {
     // get resource loader by extension
-    n_assert(this->pools.Size() > id.poolIndex);
-    const Ptr<ResourceCache>& loader = this->pools[id.poolIndex];
+    n_assert(this->pools.Size() > id.cacheIndex);
+    const Ptr<ResourceLoader>& loader = this->pools[id.cacheIndex];
     return loader->GetUsage(id);
 }
 
@@ -291,9 +256,9 @@ ResourceServer::GetUsage(const Resources::ResourceId id) const
 inline bool
 ResourceServer::HasResource(const Resources::ResourceId id) const
 {
-    if (this->pools.Size() <= id.poolIndex) return false;
+    if (this->pools.Size() <= id.cacheIndex) return false;
     {
-        const Ptr<ResourceCache>& loader = this->pools[id.poolIndex];
+        const Ptr<ResourceLoader>& loader = this->pools[id.cacheIndex];
         if (loader->HasResource(id)) return true;
         return false;		
     }
@@ -321,25 +286,7 @@ template <class POOL_TYPE>
 inline POOL_TYPE*
 ResourceServer::GetStreamPool() const
 {
-    static_assert(std::is_base_of<ResourceStreamCache, POOL_TYPE>::value, "Type requested is not a stream pool");
-    IndexT i;
-    for (i = 0; i < this->pools.Size(); i++)
-    {
-        if (this->pools[i]->GetRtti()->IsDerivedFrom(POOL_TYPE::RTTI)) return static_cast<POOL_TYPE*>(this->pools[i].get());
-    }
-
-    n_error("No loader registered for this type");
-    return nullptr;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template <class POOL_TYPE>
-inline POOL_TYPE*
-ResourceServer::GetMemoryPool() const
-{
-    static_assert(std::is_base_of<ResourceMemoryCache, POOL_TYPE>::value, "Type requested is not a memory pool");
+    static_assert(std::is_base_of<ResourceLoader, POOL_TYPE>::value, "Type requested is not a stream pool");
     IndexT i;
     for (i = 0; i < this->pools.Size(); i++)
     {
@@ -389,28 +336,6 @@ DiscardResource(const Resources::ResourceId id)
 
 //------------------------------------------------------------------------------
 /**
-    Reserve a resource for direct updating through a memory pool.
-    The type is the RTTI of the pool to use.
-*/
-inline Resources::ResourceId
-ReserveResource(const ResourceName& res, const Util::StringAtom& tag, const Core::Rtti& type)
-{
-    return ResourceServer::Instance()->ReserveResource(res, tag, type);
-}
-
-//------------------------------------------------------------------------------
-/**
-    Update resource previously reserved.
-    The info pointer is a struct containing pool specific information.
-*/
-inline ResourceCache::LoadStatus
-LoadFromMemory(const Resources::ResourceId id, void* info)
-{
-    return ResourceServer::Instance()->LoadFromMemory(id, info);
-}
-
-//------------------------------------------------------------------------------
-/**
 */
 inline void 
 ReloadResource(const ResourceName& res)
@@ -432,20 +357,9 @@ WaitForLoaderThread()
 */
 template <class POOL_TYPE>
 inline POOL_TYPE*
-GetMemoryPool()
-{
-    static_assert(std::is_base_of<ResourceCache, POOL_TYPE>::value, "Template argument is not a ResourceCache type!");
-    return ResourceServer::Instance()->GetMemoryPool<POOL_TYPE>();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template <class POOL_TYPE>
-inline POOL_TYPE*
 GetStreamPool()
 {
-    static_assert(std::is_base_of<ResourceCache, POOL_TYPE>::value, "Template argument is not a ResourceCache type!");
+    static_assert(std::is_base_of<ResourceLoader, POOL_TYPE>::value, "Template argument is not a ResourceCache type!");
     return ResourceServer::Instance()->GetStreamPool<POOL_TYPE>();
 }
 

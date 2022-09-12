@@ -4,21 +4,26 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "model.h"
-#include "streammodelcache.h"
 #include "coregraphics/config.h"
 
 namespace Models
 {
 
-StreamModelCache* modelPool;
-
+ModelAllocator modelAllocator;
 //------------------------------------------------------------------------------
 /**
 */
 const ModelId
-CreateModel(const ResourceCreateInfo& info)
+CreateModel(const ModelCreateInfo& info)
 {
-	return modelPool->CreateResource(info.resource, nullptr, 0, info.tag, info.successCallback, info.failCallback, !info.async).As<ModelId>();
+    Ids::Id32 id = modelAllocator.Alloc();
+    modelAllocator.Set<Model_BoundingBox>(id, info.boundingBox);
+    modelAllocator.Set<Model_Nodes>(id, info.nodes);
+
+    ModelId ret;
+    ret.resourceId = id;
+    ret.resourceType = CoreGraphics::ModelIdType;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -27,7 +32,8 @@ CreateModel(const ResourceCreateInfo& info)
 void
 DestroyModel(const ModelId id)
 {
-	modelPool->DiscardResource(id);
+    modelAllocator.Get<Model_Nodes>(id.resourceId).Clear();
+    modelAllocator.Dealloc(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -36,7 +42,16 @@ DestroyModel(const ModelId id)
 const Util::Array<Models::ModelNode*>&
 ModelGetNodes(const ModelId id)
 {
-    return modelPool->GetModelNodes(id);
+    return modelAllocator.Get<Model_Nodes>(id.resourceId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Math::bbox&
+ModelGetBoundingBox(const ModelId id)
+{
+    return modelAllocator.Get<Model_BoundingBox>(id.resourceId);
 }
 
 } // namespace Models

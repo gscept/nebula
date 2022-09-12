@@ -10,6 +10,7 @@
 #include "graphics/graphicscontext.h"
 #include "core/singleton.h"
 #include "resources/resourceid.h"
+#include "resources/resourceserver.h"
 #include "coregraphics/resourcetable.h"
 #include "materials/shaderconfigserver.h"
 #include "model.h"
@@ -120,10 +121,9 @@ public:
             Util::Array<uint32> nodeTransformIndex;
             Util::Array<uint64> nodeSortId;
             Util::Array<NodeInstanceFlags> nodeFlags;
-            Util::Array<Materials::MaterialResourceId> nodeMaterialResources;
             Util::Array<Materials::MaterialId> nodeMaterials;
-            Util::Array<NodeInstanceState> nodeStates;
             Util::Array<Materials::ShaderConfig*> nodeShaderConfigs;
+            Util::Array<NodeInstanceState> nodeStates;
             Util::Array<Models::ModelNode*> nodes;
             Util::Array<std::function<void(const CoreGraphics::CmdBufferId)>> nodeModelApplyCallbacks;
             Util::Array<std::function<const CoreGraphics::PrimitiveGroup()>> modelNodeGetPrimitiveGroup;
@@ -177,7 +177,7 @@ private:
         Model_Dirty
     };
     typedef Ids::IdAllocator<
-        ModelId,
+        Resources::ResourceId,
         Util::Array<uint32>,
         NodeInstanceRange,
         NodeInstanceRange,
@@ -213,11 +213,11 @@ inline void
 ModelContext::Dealloc(Graphics::ContextEntityId id)
 {
     // clean up old stuff, but don't deallocate entity
-    ModelId& rid = modelContextAllocator.Get<Model_Id>(id.id);
+    Resources::ResourceId rid = modelContextAllocator.Get<Model_Id>(id.id);
 
-    if (rid != ModelId::Invalid()) // decrement model resource
-        Models::DestroyModel(rid);
-    rid = ModelId::Invalid();
+    if (rid != Resources::InvalidResourceId) // decrement model resource
+        Resources::DiscardResource(rid);
+    rid = Resources::InvalidResourceId;
 
     modelContextAllocator.Dealloc(id.id);
 }

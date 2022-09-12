@@ -32,7 +32,7 @@ public:
     void Wait();
 
 private:
-    friend class ResourceStreamCache;
+    friend class ResourceLoader;
 
     /// perform work
     void DoWork();

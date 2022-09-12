@@ -4,14 +4,12 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "mesh.h"
-#include "memorymeshcache.h"
 #include "coregraphics/commandbuffer.h"
 
 namespace CoreGraphics
 {
 
-MemoryMeshCache* meshCache = nullptr;
-
+MeshAllocator meshAllocator;
 using namespace Ids;
 //------------------------------------------------------------------------------
 /**
@@ -19,10 +17,21 @@ using namespace Ids;
 const MeshId
 CreateMesh(const MeshCreateInfo& info)
 {
-    MeshId id = meshCache->ReserveResource(info.name, info.tag);
-    n_assert(id.resourceType == MeshIdType);
-    meshCache->LoadFromMemory(id, &info);
-    return id;
+    Ids::Id32 id = meshAllocator.Alloc();
+
+    // Thing is, we just allocated this index so we own it right now
+    meshAllocator.SetUnsafe<Mesh_Name>(id, info.name);
+    meshAllocator.SetUnsafe<Mesh_Streams>(id, info.streams);
+    meshAllocator.SetUnsafe<Mesh_IndexBufferOffset>(id, info.indexBufferOffset);
+    meshAllocator.SetUnsafe<Mesh_IndexBuffer>(id, info.indexBuffer);
+    meshAllocator.SetUnsafe<Mesh_VertexLayout>(id, info.vertexLayout);
+    meshAllocator.SetUnsafe<Mesh_Topology>(id, info.topology);
+    meshAllocator.SetUnsafe<Mesh_PrimitiveGroups>(id, info.primitiveGroups);
+
+    MeshId ret;
+    ret.resourceId = id;
+    ret.resourceType = MeshIdType;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -31,7 +40,7 @@ CreateMesh(const MeshCreateInfo& info)
 void
 DestroyMesh(const MeshId id)
 {
-    meshCache->DiscardResource(id);
+    meshAllocator.Dealloc(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -40,7 +49,7 @@ DestroyMesh(const MeshId id)
 const Util::Array<CoreGraphics::PrimitiveGroup>&
 MeshGetPrimitiveGroups(const MeshId id)
 {
-    return meshCache->GetPrimitiveGroups(id);
+    return meshAllocator.GetUnsafe<Mesh_PrimitiveGroups>(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -49,7 +58,7 @@ MeshGetPrimitiveGroups(const MeshId id)
 const BufferId
 MeshGetVertexBuffer(const MeshId id, const IndexT stream)
 {
-    return meshCache->GetVertexBuffer(id, stream);
+    return meshAllocator.GetUnsafe<Mesh_Streams>(id.resourceId)[stream].vertexBuffer;
 }
 
 //------------------------------------------------------------------------------
@@ -58,7 +67,7 @@ MeshGetVertexBuffer(const MeshId id, const IndexT stream)
 const uint
 MeshGetVertexOffset(const MeshId id, const IndexT stream)
 {
-    return meshCache->GetVertexOffset(id, stream);
+    return meshAllocator.GetUnsafe<Mesh_Streams>(id.resourceId)[stream].offset;
 }
 
 //------------------------------------------------------------------------------
@@ -67,7 +76,7 @@ MeshGetVertexOffset(const MeshId id, const IndexT stream)
 const BufferId
 MeshGetIndexBuffer(const MeshId id)
 {
-    return meshCache->GetIndexBuffer(id);
+    return meshAllocator.GetUnsafe<Mesh_IndexBuffer>(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -76,7 +85,7 @@ MeshGetIndexBuffer(const MeshId id)
 const uint
 MeshGetIndexOffset(const MeshId id)
 {
-    return meshCache->GetIndexOffset(id);
+    return meshAllocator.GetUnsafe<Mesh_IndexBufferOffset>(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -85,7 +94,7 @@ MeshGetIndexOffset(const MeshId id)
 const CoreGraphics::PrimitiveTopology::Code
 MeshGetTopology(const MeshId id)
 {
-    return meshCache->GetPrimitiveTopology(id);
+    return meshAllocator.GetUnsafe<Mesh_Topology>(id.resourceId);
 }
 
 } // Base

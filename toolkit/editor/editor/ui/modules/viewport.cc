@@ -156,7 +156,7 @@ Viewport::Render()
     id = textureId;
 
     static Dynui::ImguiTextureId textureInfo;
-    textureInfo.nebulaHandle = id.HashCode64();
+    textureInfo.nebulaHandle = id;
     textureInfo.mip = 0;
     textureInfo.layer = 0;
 

@@ -3,7 +3,7 @@
 // (C)2017-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "streammodelcache.h"
+#include "modelloader.h"
 #include "model.h"
 #include "core/refcounted.h"
 #include "io/binaryreader.h"
@@ -17,12 +17,11 @@ using namespace IO;
 namespace Models
 {
 
-Ids::Id8 StreamModelCache::NodeMappingCounter = 0;
-__ImplementClass(Models::StreamModelCache, 'SMPO', Resources::ResourceStreamCache);
+__ImplementClass(Models::ModelLoader, 'SMPO', Resources::ResourceLoader);
 //------------------------------------------------------------------------------
 /**
 */
-StreamModelCache::StreamModelCache()
+ModelLoader::ModelLoader()
 {
     // empty
 }
@@ -30,7 +29,7 @@ StreamModelCache::StreamModelCache()
 //------------------------------------------------------------------------------
 /**
 */
-StreamModelCache::~StreamModelCache()
+ModelLoader::~ModelLoader()
 {
     // empty
 }
@@ -39,61 +38,32 @@ StreamModelCache::~StreamModelCache()
 /**
 */
 void
-StreamModelCache::Setup()
+ModelLoader::Setup()
 {
     this->placeholderResourceName = "mdl:system/placeholder.n3";
     this->failResourceName = "mdl:system/error.n3";
 
-    IMPLEMENT_NODE_ALLOCATOR('TRFN', TransformNode, this->transformNodes);
-    IMPLEMENT_NODE_ALLOCATOR('SPND', PrimitiveNode, this->primitiveNodes);
-    IMPLEMENT_NODE_ALLOCATOR('SHSN', ShaderStateNode, this->shaderStateNodes);
-    IMPLEMENT_NODE_ALLOCATOR('CHSN', CharacterSkinNode, this->characterSkinNodes);
-    IMPLEMENT_NODE_ALLOCATOR('CHRN', CharacterNode, this->characterNodes);
-    IMPLEMENT_NODE_ALLOCATOR('PSND', ParticleSystemNode, this->particleSystemNodes);
+    IMPLEMENT_NODE_ALLOCATOR('TRFN', TransformNode);
+    IMPLEMENT_NODE_ALLOCATOR('SPND', PrimitiveNode);
+    IMPLEMENT_NODE_ALLOCATOR('SHSN', ShaderStateNode);
+    IMPLEMENT_NODE_ALLOCATOR('CHSN', CharacterSkinNode);
+    IMPLEMENT_NODE_ALLOCATOR('CHRN', CharacterNode);
+    IMPLEMENT_NODE_ALLOCATOR('PSND', ParticleSystemNode);
 
     // never forget to run this
-    ResourceStreamCache::Setup();
+    ResourceLoader::Setup();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-const Util::Array<Models::ModelNode*>&
-StreamModelCache::GetModelNodes(const ModelId id)
-{
-    return this->modelAllocator.Get<ModelNodes>(id.resourceId);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Math::bbox&
-StreamModelCache::GetModelBoundingBox(const ModelId id) const
-{
-    return this->modelAllocator.Get<ModelBoundingBox>(id.resourceId);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Math::bbox&
-StreamModelCache::GetModelBoundingBox(const ModelId id)
-{
-    return this->modelAllocator.Get<ModelBoundingBox>(id.resourceId);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-Resources::ResourceStreamCache::LoadStatus
-StreamModelCache::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
+Resources::ResourceUnknownId
+ModelLoader::LoadFromStream(Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
     // a model is a list of resources, a bounding box, and a dictionary of nodes
-    Math::bbox& boundingBox = this->Get<ModelBoundingBox>(id);
+    Math::bbox boundingBox;
     boundingBox.set(Math::vec3(0), Math::vec3(0));
-    Memory::ArenaAllocator<MODEL_MEMORY_CHUNK_SIZE>& allocator = this->Get<ModelNodeAllocator>(id);
-    Util::Array<Models::ModelNode*>& nodes = this->Get<ModelNodes>(id);
-    Models::ModelNode*& root = this->Get<RootNode>(id);
+    Util::Array<Models::ModelNode*> nodes;
     Ptr<BinaryReader> reader = BinaryReader::Create();
 
     // setup stack for loading nodes
@@ -151,14 +121,11 @@ StreamModelCache::LoadFromStream(const Resources::ResourceId id, const Util::Str
                 // start of a ModelNode
                 FourCC classFourCC = reader->ReadUInt();
                 String name = reader->ReadString();
-                Ids::Id8 mapping = this->nodeFourCCMapping[classFourCC];
-                ModelNode* node = this->nodeConstructors[mapping](allocator);
+                ModelNode* node = this->nodeConstructors[classFourCC]();
                 node->parent = nullptr;
                 node->boundingBox = Math::bbox();
-                node->model = id;
                 node->name = name;
                 node->tag = tag;
-                node->nodeAllocator = &allocator;
                 if (!nodeStack.IsEmpty())
                 {
                     Models::ModelNode* parent = nodeStack.Peek();
@@ -188,28 +155,32 @@ StreamModelCache::LoadFromStream(const Resources::ResourceId id, const Util::Str
         n_assert(nodeStack.IsEmpty());
         reader->Close();
     }
-    return Success;
+
+    ModelCreateInfo createInfo;
+    createInfo.boundingBox = boundingBox;
+    createInfo.nodes = nodes;
+    ModelId id = CreateModel(createInfo);
+    return id;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void
-StreamModelCache::Unload(const Resources::ResourceId id)
+ModelLoader::Unload(const Resources::ResourceId id)
 {
-    Util::Array<Models::ModelNode*>& nodes = this->Get<ModelNodes>(id);
+    ModelId model;
+    model.resourceId = id.resourceId;
+    model.resourceType = id.resourceType;
+    const Util::Array<Models::ModelNode*>& nodes = ModelGetNodes(model);
 
     // unload nodes
     for (IndexT i = 0; i < nodes.Size(); i++)
     {
         nodes[i]->Unload();
     }
-    nodes.Clear();
 
-    this->Get<ModelNodeAllocator>(id).Release();
-    this->Get<RootNode>(id) = nullptr;
-
-    this->states[id.poolId] = Resources::Resource::State::Unloaded;
+    DestroyModel(model);
 }
 
 } // namespace Models

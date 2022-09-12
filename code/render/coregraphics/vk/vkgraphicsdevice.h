@@ -11,7 +11,6 @@
 */
 //------------------------------------------------------------------------------
 #include "coregraphics/graphicsdevice.h"
-#include "util/set.h"
 #include "vkbarrier.h"
 #include "vksubcontexthandler.h"
 #include "vkcommandbufferthread.h"
@@ -51,10 +50,6 @@ void DelayedDeleteVkBuffer(const VkDevice dev, const VkBuffer buf);
 /// Get query pool
 VkQueryPool GetQueryPool(const CoreGraphics::QueryType query);
 
-/// get queue families
-const Util::Set<uint32_t>& GetQueueFamilies();
-/// get specific queue family
-const uint32_t GetQueueFamily(const CoreGraphics::QueueType type);
 /// get queue from index and family
 const VkQueue GetQueue(const CoreGraphics::QueueType type, const IndexT index);
 /// get currently active queue of type

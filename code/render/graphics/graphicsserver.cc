@@ -8,15 +8,12 @@
 #include "view.h"
 #include "stage.h"
 #include "resources/resourceserver.h"
-#include "coregraphics/vertexsignaturecache.h"
-#include "coregraphics/streamtexturecache.h"
-#include "coregraphics/memorytexturecache.h"
-#include "coregraphics/memorymeshcache.h"
-#include "coregraphics/shadercache.h"
-#include "coregraphics/streammeshcache.h"
-#include "coreanimation/streamanimationcache.h"
-#include "characters/streamskeletoncache.h"
-#include "models/streammodelcache.h"
+#include "coregraphics/textureloader.h"
+#include "coregraphics/shaderloader.h"
+#include "coregraphics/meshloader.h"
+#include "coreanimation/animationloader.h"
+#include "characters/skeletonloader.h"
+#include "models/modelloader.h"
 #include "renderutil/drawfullscreenquad.h"
 
 #include "bindlessregistry.h"
@@ -60,9 +57,9 @@ GraphicsServer::Open()
 
     CoreGraphics::GraphicsDeviceCreateInfo gfxInfo { 
         32_MB,                      // Constant buffer memory
-        32_MB,                      // Vertex memory size
-        8_MB,                       // Index memory size
-        32_MB,
+        256_MB,                      // Vertex memory size
+        64_MB,                       // Index memory size
+        64_MB,
         {
             128_MB,                 // Device local memory block size
             32_MB,                  // Host coherent memory block size
@@ -78,30 +75,14 @@ GraphicsServer::Open()
     if (this->graphicsDevice)
     {
 
-        // register graphics context pools
-        Resources::ResourceServer::Instance()->RegisterMemoryPool(CoreGraphics::VertexSignatureCache::RTTI);
-        Resources::ResourceServer::Instance()->RegisterMemoryPool(CoreGraphics::MemoryTextureCache::RTTI);
-        Resources::ResourceServer::Instance()->RegisterMemoryPool(CoreGraphics::MemoryMeshCache::RTTI);
-
-        Resources::ResourceServer::Instance()->RegisterStreamPool("dds", CoreGraphics::StreamTextureCache::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("fxb", CoreGraphics::ShaderCache::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("nax3", CoreAnimation::StreamAnimationCache::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("nsk3", Characters::StreamSkeletonCache::RTTI); 
-        Resources::ResourceServer::Instance()->RegisterStreamPool("nvx2", CoreGraphics::StreamMeshCache::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("sur", Materials::MaterialCache::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("n3", Models::StreamModelCache::RTTI);
-
-        // setup internal pool pointers for convenient access (note, will also assert if texture, shader, model or mesh pools is not registered yet!)
-        CoreGraphics::layoutPool = Resources::GetMemoryPool<CoreGraphics::VertexSignatureCache>();
-        CoreGraphics::textureCache = Resources::GetMemoryPool<CoreGraphics::MemoryTextureCache>();
-        CoreGraphics::meshCache = Resources::GetMemoryPool<CoreGraphics::MemoryMeshCache>();
-
-        CoreGraphics::shaderPool = Resources::GetStreamPool<CoreGraphics::ShaderCache>();
-        Models::modelPool = Resources::GetStreamPool<Models::StreamModelCache>();
-        Materials::materialCache = Resources::GetStreamPool<Materials::MaterialCache>();
-
-        CoreAnimation::animPool = Resources::GetStreamPool<CoreAnimation::StreamAnimationCache>();
-        Characters::skeletonPool = Resources::GetStreamPool<Characters::StreamSkeletonCache>();
+        // Register graphics resource loaders
+        Resources::ResourceServer::Instance()->RegisterStreamPool("dds", CoreGraphics::TextureLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("fxb", CoreGraphics::ShaderLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("nax3", CoreAnimation::AnimationLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("nsk3", Characters::SkeletonLoader::RTTI); 
+        Resources::ResourceServer::Instance()->RegisterStreamPool("nvx2", CoreGraphics::MeshLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("sur", Materials::MaterialLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("n3", Models::ModelLoader::RTTI);
 
         RenderUtil::DrawFullScreenQuad::Setup();
 
@@ -147,11 +128,13 @@ GraphicsServer::Open()
 
         texInfo.type = CoreGraphics::TextureType::TextureCube;
         texInfo.name = "WhiteCube";
+        texInfo.layers = 6;
         texInfo.buffer = &white;
         CoreGraphics::WhiteCube = CoreGraphics::CreateTexture(texInfo);
 
         texInfo.type = CoreGraphics::TextureType::TextureCubeArray;
         texInfo.name = "WhiteCubeArray";
+        texInfo.layers = 6;
         texInfo.buffer = &white;
         CoreGraphics::WhiteCubeArray = CoreGraphics::CreateTexture(texInfo);
 
@@ -163,6 +146,7 @@ GraphicsServer::Open()
 
         texInfo.name = "Red2D";
         texInfo.buffer = &red;
+        texInfo.layers = 1;
         CoreGraphics::Red2D = CoreGraphics::CreateTexture(texInfo);
 
         texInfo.name = "Green2D";
@@ -436,6 +420,9 @@ GraphicsServer::RunPreLogic()
     this->frameContext.ticks = this->timer->GetTicks();
     this->frameContext.bufferIndex = CoreGraphics::GetBufferedFrameIndex();
 
+    // Update pending texture views
+    this->shaderServer->UpdateResources();
+
     // update shader server
     Graphics::AllocateGlobalConstants();
     this->shaderServer->BeforeFrame();
@@ -513,9 +500,6 @@ void GraphicsServer::RunPostLogic()
         N_MARKER_END();
         this->currentView = nullptr;
     }
-
-    // Update pending texture views
-    this->shaderServer->UpdateResources();
 
     // Consider this whole block of code viable for updating resource tables
     CoreGraphics::ResourceTableBlock(true);

@@ -11,7 +11,7 @@
 #include "core/singleton.h"
 #include "resources/resourceid.h"
 #include "shaderconfig.h"
-#include "materialcache.h"
+#include "materialloader.h"
 #include "ids/id.h"
 #include "io/uri.h"
 namespace Materials
@@ -37,7 +37,7 @@ public:
     bool LoadShaderConfigs(const IO::URI& file);
 
     /// Allocate some variant memory
-    ShaderConfigVariant AllocateVariantMemory(const ShaderConfigVariant::InternalType type);
+    MaterialVariant AllocateVariantMemory(const MaterialVariant::InternalType type);
 
     /// get material
     ShaderConfig* GetShaderConfig(const Resources::ResourceName& type);
@@ -45,7 +45,7 @@ public:
     const Util::Array<ShaderConfig*>& GetShaderConfigsByBatch(CoreGraphics::BatchGroup::Code code);
 
 private:
-    friend class MaterialCache;
+    friend class MaterialLoader;
 
     Threading::CriticalSection variantAllocatorLock;
     Memory::ArenaAllocator<0x10000> shaderConfigVariantAllocator;

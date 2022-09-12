@@ -31,6 +31,12 @@
 #include "coregraphics/shaderfeature.h"
 #include "coregraphics/buffer.h"
 #include "util/variant.h"
+#include "util/dictionary.h"
+
+namespace AnyFX
+{
+class ShaderEffect;
+}
 
 namespace CoreGraphics
 {
@@ -41,14 +47,15 @@ struct ResourceTableId;
 struct ResourceTableLayoutId;
 struct ResourcePipelineId;
 
-RESOURCE_ID_TYPE(ShaderId);             // 32 bits container, 24 bits resource, 8 bits type
+RESOURCE_ID_TYPE(ShaderId);             
 ID_24_8_24_8_NAMED_TYPE(ShaderProgramId, programId, programType, shaderId, shaderType);     // 32 bits shader, 24 bits program, 8 bits type
 
 ID_32_TYPE(DerivativeStateId);          // 32 bits derivative state (already created from an ordinary state)
 
 struct ShaderCreateInfo
 {
-    const Resources::ResourceName name;
+    Resources::ResourceName name;
+    AnyFX::ShaderEffect* effect;
 };
 
 enum ShaderConstantType
@@ -71,13 +78,15 @@ enum ShaderConstantType
 };
 
 
-/// get constant type as string
+/// Get constant type as string
 const Util::String ConstantTypeToString(const ShaderConstantType& type);
 
-/// create new shader
+/// Create new shader
 const ShaderId CreateShader(const ShaderCreateInfo& info);
-/// destroy shader
+/// Destroy shader
 void DestroyShader(const ShaderId id);
+/// Reload shader
+void ReloadShader(const ShaderId id, const AnyFX::ShaderEffect* effect);
 
 /// get shader by name
 const ShaderId ShaderGet(const Resources::ResourceName& name);
@@ -89,6 +98,8 @@ const BufferId ShaderCreateConstantBuffer(const ShaderId id, const Util::StringA
 /// create constant buffer from index
 const BufferId ShaderCreateConstantBuffer(const ShaderId id, const IndexT cbIndex, BufferAccessMode mode = BufferAccessMode::HostCached);
 
+/// Get name of shader
+const Resources::ResourceName ShaderGetName(const ShaderId id);
 /// get the number of constants from shader
 const SizeT ShaderGetConstantCount(const ShaderId id);
 /// get type of variable by index
@@ -141,9 +152,6 @@ const Util::StringAtom ShaderProgramGetName(const ShaderProgramId id);
 const ShaderFeature::Mask ShaderFeatureFromString(const Util::String& str);
 
 /// get shader program id from masks, this allows us to apply a shader program directly in the future
-const CoreGraphics::ShaderProgramId ShaderGetProgram(const ShaderId id, const CoreGraphics::ShaderFeature::Mask program);
-
-class ShaderCache;
-extern ShaderCache* shaderPool;
+const CoreGraphics::ShaderProgramId ShaderGetProgram(const ShaderId id, const CoreGraphics::ShaderFeature::Mask mask);
 
 } // namespace CoreGraphics

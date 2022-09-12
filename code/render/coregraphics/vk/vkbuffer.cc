@@ -63,23 +63,23 @@ CreateBuffer(const BufferCreateInfo& info)
     if (info.queueSupport != AutomaticQueueSupport)
     {
         if (info.queueSupport & GraphicsQueueSupport)
-            queues.Add(Vulkan::GetQueueFamily(GraphicsQueueType));
+            queues.Add(CoreGraphics::GetQueueIndex(GraphicsQueueType));
         if (info.queueSupport & ComputeQueueSupport)
-            queues.Add(Vulkan::GetQueueFamily(ComputeQueueType));
+            queues.Add(CoreGraphics::GetQueueIndex(ComputeQueueType));
         if (info.queueSupport & TransferQueueSupport)
-            queues.Add(Vulkan::GetQueueFamily(TransferQueueType));
+            queues.Add(CoreGraphics::GetQueueIndex(TransferQueueType));
     }
     else
     {
         if (info.usageFlags & CoreGraphics::TransferBufferSource)
         {
-            queues.Add(Vulkan::GetQueueFamily(GraphicsQueueType));
-            queues.Add(Vulkan::GetQueueFamily(TransferQueueType));
+            queues.Add(CoreGraphics::GetQueueIndex(GraphicsQueueType));
+            queues.Add(CoreGraphics::GetQueueIndex(TransferQueueType));
         }
         if (info.usageFlags & CoreGraphics::TransferBufferDestination)
         {
-            queues.Add(Vulkan::GetQueueFamily(GraphicsQueueType));
-            queues.Add(Vulkan::GetQueueFamily(TransferQueueType));
+            queues.Add(CoreGraphics::GetQueueIndex(GraphicsQueueType));
+            queues.Add(CoreGraphics::GetQueueIndex(TransferQueueType));
         }
     }
     if (info.usageFlags & CoreGraphics::TransferBufferSource)

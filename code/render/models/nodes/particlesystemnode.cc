@@ -7,7 +7,6 @@
 #include "particlesystemnode.h"
 #include "resources/resourceserver.h"
 #include "models/model.h"
-#include "models/streammodelcache.h"
 #include "coregraphics/mesh.h"
 #include "coregraphics/shaderserver.h"
 #include "particles/particlecontext.h"
@@ -30,7 +29,7 @@ using namespace IO;
 */
 ParticleSystemNode::ParticleSystemNode() :
     primGroupIndex(InvalidIndex),
-    mesh(Ids::InvalidId64)
+    mesh(Resources::InvalidResourceId)
 {
     this->type = ParticleSystemNodeType;
     this->bits = HasTransformBit | HasStateBit;
@@ -41,7 +40,7 @@ ParticleSystemNode::ParticleSystemNode() :
 */
 ParticleSystemNode::~ParticleSystemNode()
 {
-    n_assert(this->mesh == CoreGraphics::InvalidMeshId);
+    n_assert(this->mesh == Resources::InvalidResourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -50,8 +49,8 @@ ParticleSystemNode::~ParticleSystemNode()
 void
 ParticleSystemNode::UpdateMeshResource(const Resources::ResourceName& resName)
 {
-    // discard old mesh
-    if (this->mesh != CoreGraphics::InvalidMeshId)
+    // Discard old mesh, but be careful to not discard the default emitter
+    if (this->mesh.cacheInstanceId != 0xFFFFFF && this->mesh.cacheIndex != 0xFF)
         Resources::DiscardResource(this->mesh);
     
     // load new mesh
@@ -60,7 +59,12 @@ ParticleSystemNode::UpdateMeshResource(const Resources::ResourceName& resName)
     if (this->meshResId.IsValid())
         this->mesh = Resources::CreateResource(this->meshResId, this->tag, nullptr, nullptr, false);
     else
-        this->mesh = ParticleContext::DefaultEmitterMesh;
+    {
+        this->mesh.cacheIndex = -1;
+        this->mesh.cacheInstanceId = -1;
+        this->mesh.resourceId = ParticleContext::DefaultEmitterMesh.resourceId;
+        this->mesh.resourceType = ParticleContext::DefaultEmitterMesh.resourceType;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -73,15 +77,12 @@ ParticleSystemNode::OnFinishedLoading()
     TransformNode::OnFinishedLoading();
 
     // load surface ourselves since state node does the resource table setup too, but we need it explicit
-    this->materialRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
-    this->shaderConfig = Materials::materialCache->GetType(this->materialRes);
-    this->material = Materials::materialCache->GetId(this->materialRes);
+    this->material = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
 
     float activityDist = this->emitterAttrs.GetFloat(EmitterAttrs::ActivityDistance) * 0.5f;
 
     // calculate bounding box using activity distance
-    Math::bbox& box = modelPool->GetModelBoundingBox(this->model);
-    this->boundingBox.set(box.center(), Math::vector(activityDist, activityDist, activityDist));
+    this->boundingBox.set(this->boundingBox.center(), Math::vector(activityDist, activityDist, activityDist));
 
     // setup sample buffer and emitter mesh
     this->sampleBuffer.Setup(this->emitterAttrs, ParticleSystemNumEnvelopeSamples);

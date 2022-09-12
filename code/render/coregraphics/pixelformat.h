@@ -87,6 +87,8 @@ public:
     static uint ToChannels(Code code);
     /// figure out if block compressed
     static bool ToCompressed(Code code);
+    /// calculate texel dimensions
+    static SizeT ToTexelSize(Code code);
     /// convert to IL image components
     static uint ToILComponents(Code code);
     /// convert to IL image type
@@ -98,4 +100,3 @@ public:
 } // namespace CoreGraphics
 //------------------------------------------------------------------------------
 
-    

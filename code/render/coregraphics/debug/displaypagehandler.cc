@@ -222,7 +222,7 @@ DisplayPageHandler::WriteAdapterInfo(Adapter::Code adapter, const Ptr<HtmlPageWr
 /**
 */
 HttpStatus::Code
-DisplayPageHandler::WriteScreenshot(const String& fileFormat, const Ptr<Stream>& responseContentStream)
+DisplayPageHandler::WriteScreenshot(const String& fileFormat, const Ptr<IO::Stream>& responseContentStream)
 {
     ImageFileFormat::Code fmt = ImageFileFormat::FromString(fileFormat);
     if (ImageFileFormat::InvalidImageFileFormat == fmt)

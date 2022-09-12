@@ -78,18 +78,19 @@ PrimitiveNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
         // Load directly, since the model is already loaded on a thread, this is fine
         //this->primitiveGroupIndex = 0;
         this->res = Resources::CreateResource(meshName, tag, nullptr, nullptr, true);
+        this->mesh = this->res;
 
-        this->vbo = CoreGraphics::MeshGetVertexBuffer(this->res, 0);
-        this->ibo = CoreGraphics::MeshGetIndexBuffer(this->res);
-        this->topology = CoreGraphics::MeshGetTopology(this->res);
-        this->vboOffset = CoreGraphics::MeshGetVertexOffset(this->res, 0);
-        this->iboOffset = CoreGraphics::MeshGetIndexOffset(this->res);
+        this->vbo = CoreGraphics::MeshGetVertexBuffer(this->mesh, 0);
+        this->ibo = CoreGraphics::MeshGetIndexBuffer(this->mesh);
+        this->topology = CoreGraphics::MeshGetTopology(this->mesh);
+        this->vboOffset = CoreGraphics::MeshGetVertexOffset(this->mesh, 0);
+        this->iboOffset = CoreGraphics::MeshGetIndexOffset(this->mesh);
     }
     else if (FourCC('PGRI') == fourcc)
     {
         // primitive group index
         this->primitiveGroupIndex = reader->ReadUInt();
-        this->primGroup = CoreGraphics::MeshGetPrimitiveGroups(this->res)[this->primitiveGroupIndex];
+        this->primGroup = CoreGraphics::MeshGetPrimitiveGroups(this->mesh)[this->primitiveGroupIndex];
         this->vertexLayout = this->primGroup.GetVertexLayout();
     }
     else

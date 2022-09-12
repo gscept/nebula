@@ -142,7 +142,7 @@ ParticleContext::Create()
 
     // setup single point emitter mesh
     CoreGraphics::MeshCreateInfo meshInfo;
-    CoreGraphics::MeshCreateInfo::Stream stream;
+    CoreGraphics::VertexStream stream;
     stream.vertexBuffer = vbo;
     stream.index = 0;
     meshInfo.streams.Append(stream);
@@ -150,7 +150,6 @@ ParticleContext::Create()
     meshInfo.name = "Single Point Particle Emitter Mesh";
     meshInfo.primitiveGroups.Append(group);
     meshInfo.topology = CoreGraphics::PrimitiveTopology::PointList;
-    meshInfo.tag = "system";
     meshInfo.vertexLayout = emitterLayout;
     ParticleContext::DefaultEmitterMesh = CoreGraphics::CreateMesh(meshInfo);
 
@@ -377,6 +376,9 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
             runtime.stepTime = ctx.time - StepTime;
             timeDiff = StepTime;
         }
+
+        if (graphicsEntities[i] == Graphics::InvalidGraphicsEntityId)
+            continue;
 
         const Models::NodeInstanceRange& stateRange = Models::ModelContext::GetModelRenderableRange(graphicsEntities[i]);
         const Models::NodeInstanceRange& transformRange = Models::ModelContext::GetModelTransformableRange(graphicsEntities[i]);

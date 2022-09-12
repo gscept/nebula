@@ -25,7 +25,7 @@ RenderShape::RenderShape() :
     numIndices(0),
     color(1.0f, 1.0f, 1.0f, 1.0f),
     vertexDataOffset(0),
-    vertexLayout(NULL),
+    vertexLayout(InvalidVertexLayoutId),
     groupIndex(InvalidIndex)
 {
     // empty
@@ -45,7 +45,7 @@ RenderShape::RenderShape(Type shapeType_, RenderFlag depthFlag_, const mat4& mod
     color(color_),
     lineThickness(1.0f),
     vertexDataOffset(0),
-    vertexLayout(NULL),
+    vertexLayout(InvalidVertexLayoutId),
     groupIndex(InvalidIndex)
 {
     // empty
@@ -92,7 +92,7 @@ RenderShape::SetupPrimitives(
     SizeT bufferSize = numVertices * sizeof(RenderShape::RenderShapeVertex);
     this->dataStream = MemoryStream::Create();
     this->dataStream->SetSize(bufferSize);
-    this->dataStream->SetAccessMode(Stream::WriteAccess);
+    this->dataStream->SetAccessMode(IO::Stream::WriteAccess);
     this->dataStream->Open();
     this->dataStream->Write(vertices, bufferSize);
     this->dataStream->Close();

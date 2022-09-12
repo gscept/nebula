@@ -68,7 +68,7 @@ protected:
 
     Util::StringAtom tag;
     IndexT primGroupIndex;
-    CoreGraphics::MeshId mesh;
+    Resources::ResourceId mesh;
 };
 
 //------------------------------------------------------------------------------

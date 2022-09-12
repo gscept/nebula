@@ -115,9 +115,9 @@
 
 #define ID_24_8_24_8_NAMED_TYPE(x, id24_0_name, id8_0_name, id24_1_name, id8_1_name) struct x { \
     Ids::Id32 id24_0_name : 24;\
-    Ids::Id32 id8_0_name : 8;\
+    Ids::Id8 id8_0_name : 8;\
     Ids::Id32 id24_1_name : 24;\
-    Ids::Id32 id8_1_name : 8;\
+    Ids::Id8 id8_1_name : 8;\
     constexpr x() : id24_0_name(Ids::InvalidId24), id8_0_name(Ids::InvalidId8), id24_1_name(Ids::InvalidId24), id8_1_name(Ids::InvalidId8) {};\
     constexpr x(const Ids::Id24 id24_0, const Ids::Id8 id8_0, const Ids::Id24 id24_1, const Ids::Id8 id8_1) : id24_0_name(id24_0), id8_0_name(id8_0), id24_1_name(id24_1), id8_1_name(id8_1) {} \
     constexpr x(const Ids::Id64 id) : id24_0_name(Ids::Id::GetBig(Ids::Id::GetHigh(id))), id8_0_name(Ids::Id::GetTiny(Ids::Id::GetHigh(id))), id24_1_name(Ids::Id::GetBig(Ids::Id::GetLow(id))), id8_1_name(Ids::Id::GetTiny(Ids::Id::GetLow(id))) {};\

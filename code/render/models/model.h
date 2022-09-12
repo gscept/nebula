@@ -20,8 +20,6 @@ class ModelNode;
 
 RESOURCE_ID_TYPE(ModelId);
 
-#define MODEL_MEMORY_CHUNK_SIZE 0x1000
-
 enum NodeType
 {
     CharacterNodeType,
@@ -47,14 +45,31 @@ struct NodeInstanceRange
     SizeT begin, end;
 };
 
+struct ModelCreateInfo
+{
+    Math::bbox boundingBox;
+    Util::Array<Models::ModelNode*> nodes;
+};
+
 /// create model (resource)
-const ModelId CreateModel(const ResourceCreateInfo& info);
+const ModelId CreateModel(const ModelCreateInfo& info);
 /// discard model (resource)
 void DestroyModel(const ModelId id);
 
 /// Get model nodes
 const Util::Array<Models::ModelNode*>& ModelGetNodes(const ModelId id);
+/// Get model bounding box
+const Math::bbox& ModelGetBoundingBox(const ModelId id);
 
-class StreamModelCache;
-extern StreamModelCache* modelPool;
+enum
+{
+    Model_BoundingBox,
+    Model_Nodes
+};
+
+typedef Ids::IdAllocator<
+    Math::bbox,
+    Util::Array<Models::ModelNode*>
+> ModelAllocator;
+extern ModelAllocator modelAllocator;
 } // namespace Models

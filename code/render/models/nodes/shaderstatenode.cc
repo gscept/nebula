@@ -37,7 +37,7 @@ ShaderStateNode::~ShaderStateNode()
 void 
 ShaderStateNode::SetMaxLOD(const float lod)
 {
-    Materials::materialCache->SetMaxLOD(this->materialRes, lod);
+    Materials::MaterialSetHighestLod(this->material, lod);
 }
 
 //------------------------------------------------------------------------------
@@ -141,8 +141,8 @@ ShaderStateNode::OnFinishedLoading()
 
     // load surface immediately, however it will load textures async
     this->materialRes = Resources::CreateResource(this->materialName, this->tag, nullptr, nullptr, true);
-    this->shaderConfig = Materials::materialCache->GetType(this->materialRes);
-    this->material = Materials::materialCache->GetId(this->materialRes);
+    this->material = this->materialRes;
+    this->sortCode = MaterialGetSortCode(this->material);
     CoreGraphics::ShaderId shader = CoreGraphics::ShaderServer::Instance()->GetShader("shd:objects_shared.fxb"_atm);
     CoreGraphics::BufferId cbo = CoreGraphics::GetGraphicsConstantBuffer();
     this->objectTransformsIndex = ObjectsShared::Table_DynamicOffset::ObjectBlock::SLOT;
@@ -162,7 +162,7 @@ ShaderStateNode::DrawPacket::Apply(const CoreGraphics::CmdBufferId cmdBuf, Index
 {
     // Apply per-draw surface parameters
     if (this->materialInstance != Materials::MaterialInstanceId::Invalid())
-        type->ApplyMaterialInstance(cmdBuf, batchIndex, this->materialInstance);
+        MaterialInstanceApply(this->materialInstance, cmdBuf, batchIndex);
 
     // Set per-draw resource tables
     IndexT prevOffset = 0;

@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coreanimation/animsamplebuffer.h"
-#include "animresource.h"
 namespace CoreAnimation
 {
 using namespace Math;

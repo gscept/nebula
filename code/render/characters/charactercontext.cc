@@ -5,9 +5,7 @@
 #include "render/stdneb.h"
 #include "charactercontext.h"
 #include "skeleton.h"
-#include "characters/streamskeletoncache.h"
 #include "coreanimation/animresource.h"
-#include "coreanimation/streamanimationcache.h"
 #include "graphics/graphicsserver.h"
 #include "visibility/visibilitycontext.h"
 #include "models/modelcontext.h"
@@ -95,10 +93,10 @@ CharacterContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Re
 
     characterContextAllocator.Get<SkeletonId>(cid.id) = Resources::CreateResource(skeleton, tag, [cid, id, skeleton](Resources::ResourceId rid)
         {
-            characterContextAllocator.Set<SkeletonId>(cid.id, rid.As<Characters::SkeletonId>());
+            characterContextAllocator.Set<SkeletonId>(cid.id, rid);
             characterContextAllocator.Get<Loaded>(cid.id) |= SkeletonLoaded;
 
-            const Util::FixedArray<CharacterJoint>& joints = Characters::SkeletonGetJoints(rid.As<Characters::SkeletonId>());
+            const Util::FixedArray<CharacterJoint>& joints = Characters::SkeletonGetJoints(rid);
             characterContextAllocator.Get<JobJoints>(cid.id).Resize(joints.Size());
 
             // setup joints, scaled joints and user controlled joints
@@ -119,11 +117,11 @@ CharacterContext::Setup(const Graphics::GraphicsEntityId id, const Resources::Re
 
     characterContextAllocator.Get<AnimationId>(cid.id) = Resources::CreateResource(animation, tag, [cid, id, supportBlending](Resources::ResourceId rid)
         {
-            characterContextAllocator.Get<AnimationId>(cid.id) = rid.As<CoreAnimation::AnimResourceId>();
+            characterContextAllocator.Get<AnimationId>(cid.id) = rid;
             characterContextAllocator.Get<Loaded>(cid.id) |= AnimationLoaded;
 
             // setup sample buffer when animation is done loading
-            characterContextAllocator.Get<SampleBuffer>(cid.id).Setup(rid.As<CoreAnimation::AnimResourceId>());
+            characterContextAllocator.Get<SampleBuffer>(cid.id).Setup(rid);
             characterContextAllocator.Set<SupportMix>(cid.id, supportBlending);
         }, nullptr, true);
 
@@ -143,7 +141,7 @@ IndexT
 CharacterContext::GetClipIndex(const Graphics::GraphicsEntityId id, const Util::StringAtom& name)
 {
     const ContextEntityId cid = GetContextId(id);
-    return CoreAnimation::animPool->GetClipIndex(characterContextAllocator.Get<AnimationId>(cid.id), name);
+    return CoreAnimation::AnimGetIndex(characterContextAllocator.Get<AnimationId>(cid.id), name);
 }
 
 //------------------------------------------------------------------------------
@@ -166,7 +164,7 @@ CharacterContext::PlayClip(
 {
     n_assert(track < MaxNumTracks);
     const ContextEntityId cid = GetContextId(id);
-    const CoreAnimation::AnimClip& clip = CoreAnimation::animPool->GetClip(characterContextAllocator.Get<AnimationId>(cid.id), clipIndex);
+    const CoreAnimation::AnimClip& clip = CoreAnimation::AnimGetClip(characterContextAllocator.Get<AnimationId>(cid.id), clipIndex);
 
     // the animation runtime is the context used to keep track of running animations
     AnimationRuntime runtime;
@@ -447,10 +445,10 @@ struct CharacterJobContext
 {
     const Util::Array<Timing::Time>* times;
     const Util::Array<CharacterContext::AnimationTracks>* tracks;
-    const Util::Array<CoreAnimation::AnimResourceId>* anims;
+    const Util::Array<Resources::ResourceId>* anims;
     const Util::Array<CoreAnimation::AnimSampleBuffer>* sampleBuffers;
     const Util::Array<Util::FixedArray<SkeletonJobJoint>>* jobJoints;
-    const Util::Array<Characters::SkeletonId>* skeletons;
+    const Util::Array<Resources::ResourceId>* skeletons;
     const Util::Array<Util::FixedArray<Math::mat4>>* jointPalettes;
     const Util::Array<Util::FixedArray<Math::mat4>>* scaledJointPalettes;
     const Util::Array<Util::FixedArray<Math::mat4>>* userJoints;
@@ -484,9 +482,14 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
         Timing::Time& currentTime = context->times->Get(index);
         currentTime += context->frameTime;
         CharacterContext::AnimationTracks& trackController = context->tracks->Get(index);
-        const AnimResourceId& anim = context->anims->Get(index);
+        const AnimResourceId anim = context->anims->Get(index);
+        if (anim == InvalidAnimResourceId)
+            continue;
         const Util::FixedArray<SkeletonJobJoint>& jobJoint = context->jobJoints->Get(index);
-        const Util::FixedArray<Math::mat4>& bindPose = Characters::SkeletonGetBindPose(context->skeletons->Get(index));
+        const SkeletonId skeleton = context->skeletons->Get(index);
+        if (skeleton == InvalidSkeletonId)
+            continue;
+        const Util::FixedArray<Math::mat4>& bindPose = Characters::SkeletonGetBindPose(skeleton);
         const Util::FixedArray<Math::mat4>& userJoint = context->userJoints->Get(index);
         const Util::FixedArray<Math::mat4>& jointPalette = context->jointPalettes->Get(index);
         const Util::FixedArray<Math::mat4>& scaledJointPalette = context->scaledJointPalettes->Get(index);
@@ -757,10 +760,10 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
     using namespace CoreAnimation;
     const Util::Array<Timing::Time>& times = characterContextAllocator.GetArray<AnimTime>();
     const Util::Array<AnimationTracks>& tracks = characterContextAllocator.GetArray<TrackController>();
-    const Util::Array<AnimResourceId>& anims = characterContextAllocator.GetArray<AnimationId>();
+    const Util::Array<Resources::ResourceId>& anims = characterContextAllocator.GetArray<AnimationId>();
     const Util::Array<CoreAnimation::AnimSampleBuffer>& sampleBuffers = characterContextAllocator.GetArray<SampleBuffer>();
     const Util::Array<Util::FixedArray<SkeletonJobJoint>>& jobJoints = characterContextAllocator.GetArray<JobJoints>();
-    const Util::Array<Characters::SkeletonId>& skeletons = characterContextAllocator.GetArray<SkeletonId>();
+    const Util::Array<Resources::ResourceId>& skeletons = characterContextAllocator.GetArray<SkeletonId>();
     const Util::Array<Util::FixedArray<Math::mat4>>& jointPalettes = characterContextAllocator.GetArray<JointPalette>();
     const Util::Array<Util::FixedArray<Math::mat4>>& scaledJointPalettes = characterContextAllocator.GetArray<JointPaletteScaled>();
     const Util::Array<Util::FixedArray<Math::mat4>>& userJoints = characterContextAllocator.GetArray<UserControlledJoint>();
@@ -798,6 +801,9 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
         IndexT i;
         for (i = 0; i < models.Size(); i++)
         {
+            if (models[i] == Graphics::InvalidGraphicsEntityId)
+                continue;
+
             // Allocate scratch memory for character transforms
             const Util::FixedArray<Math::mat4>& jointPalette = jointPalettes[i];
             charCtx.tmpJoints[i] = Jobs2::JobAlloc<Math::mat4>(jointPalette.Size());
@@ -836,7 +842,11 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
                 if (index >= totalJobs)
                     return;
 
-                const Models::NodeInstanceRange& range = Models::ModelContext::GetModelRenderableRange(jobCtx->entities->Get(index));
+                const Graphics::GraphicsEntityId entity = jobCtx->entities->Get(index);
+                if (entity == Graphics::InvalidGraphicsEntityId)
+                    continue;
+
+                const Models::NodeInstanceRange& range = Models::ModelContext::GetModelRenderableRange(entity);
                 const Models::ModelContext::ModelInstance::Renderable& renderables = Models::ModelContext::GetModelRenderables();
 
                 const Util::FixedArray<Math::mat4>& jointPalette = jobCtx->jointPalettes->Get(index);

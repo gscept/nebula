@@ -4,8 +4,8 @@
 //  (C) 2013-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
+#include "resources/resourceserver.h"
 #include "coregraphics/base/shaderserverbase.h"
-#include "coregraphics/shadercache.h"
 #include "coregraphics/graphicsdevice.h"
 #include "io/ioserver.h"
 #include "io/textreader.h"
@@ -196,7 +196,7 @@ ShaderServerBase::Close()
     IndexT i;
     for (i = 0; i < this->shaders.Size(); i++)
     {
-        CoreGraphics::shaderPool->DiscardResource(this->shaders.ValueAtIndex(i));
+        Resources::DiscardResource(this->shaders.ValueAtIndex(i));
     }
     this->shaders.Clear();
 
@@ -210,7 +210,7 @@ void
 ShaderServerBase::LoadShader(const Resources::ResourceName& shdName)
 {
 	n_assert(shdName.IsValid());
-	CoreGraphics::ShaderId sid = CoreGraphics::shaderPool->CreateResource(shdName, nullptr, 0, "shaders"_atm, nullptr,
+	Resources::ResourceId sid = Resources::CreateResource(shdName, "shaders"_atm, nullptr,
 		[shdName](const ResourceId id)
 	{
 		n_error("Failed to load shader '%s'!", shdName.Value());

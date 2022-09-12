@@ -23,18 +23,17 @@ struct CmdBufferId;
 
 RESOURCE_ID_TYPE(MeshId);
 
+struct VertexStream
+{
+    BufferId vertexBuffer;
+    SizeT offset;
+    IndexT index;
+};
+
 struct MeshCreateInfo
 {
-    struct Stream
-    {
-        BufferId vertexBuffer;
-        SizeT offset;
-        IndexT index;
-    };
-
     Resources::ResourceName name;
-    Util::StringAtom tag;
-    Util::ArrayStack<Stream, 16> streams;
+    Util::ArrayStack<VertexStream, 16> streams;
     SizeT indexBufferOffset;
     BufferId indexBuffer;
     VertexLayoutId vertexLayout;
@@ -60,6 +59,25 @@ const uint MeshGetIndexOffset(const MeshId id);
 /// get topology
 const CoreGraphics::PrimitiveTopology::Code MeshGetTopology(const MeshId id);
 
-class MemoryMeshCache;
-extern MemoryMeshCache* meshCache;
+enum
+{
+    Mesh_Name,
+    Mesh_Streams,
+    Mesh_IndexBufferOffset,
+    Mesh_IndexBuffer,
+    Mesh_VertexLayout,
+    Mesh_Topology,
+    Mesh_PrimitiveGroups
+};
+typedef Ids::IdAllocatorSafe<
+    Resources::ResourceName,
+    Util::ArrayStack<VertexStream, 16>,
+    SizeT,
+    BufferId,
+    VertexLayoutId,
+    CoreGraphics::PrimitiveTopology::Code,
+    Util::Array<CoreGraphics::PrimitiveGroup>
+> MeshAllocator;
+extern MeshAllocator meshAllocator;
+
 } // CoreGraphics

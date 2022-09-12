@@ -24,6 +24,7 @@
 #include "timing/timer.h"
 #include "util/stack.h"
 #include "memory.h"
+#include "util/set.h"
 
 namespace CoreGraphics
 {
@@ -228,7 +229,7 @@ void DeallocateIndices(uint offset);
 const CoreGraphics::BufferId GetIndexBuffer();
 
 /// Allocate upload memory
-uint AllocateUpload(const SizeT numBytes);
+uint AllocateUpload(const SizeT numBytes, const SizeT alignment = 1);
 /// Upload single item to GPU source buffer
 template<class TYPE> uint Upload(const TYPE& data);
 /// Upload array of items to GPU source buffer
@@ -238,7 +239,9 @@ template<class TYPE> void Upload(uint offset, const TYPE& data);
 /// Upload array of items GPU source buffer with preallocated memory
 template<class TYPE> void Upload(uint offset, const TYPE* data, SizeT elements);
 /// Upload memory to upload buffer, return offset
-uint Upload(const void* data, SizeT size);
+uint Upload(const void* data, SizeT numBytes);
+/// Upload memory to upload buffer with alignment, return offset
+uint Upload(const void* data, SizeT numBytes, SizeT alignment);
 /// Upload memory to upload buffer with given offset, return offset
 void UploadInternal(uint offset, const void* data, SizeT size);
 /// Flush upload buffer
@@ -274,6 +277,10 @@ uint AllocateQueries(const CoreGraphics::QueryType type, uint numQueries);
 /// Copy query results to buffer
 void FinishQueries(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueryType type, IndexT start, SizeT count);
 
+/// Get queue index
+IndexT GetQueueIndex(const QueueType queue);
+/// Get queue indices
+const Util::Set<uint32_t>& GetQueueIndices();
 
 /// Swap
 void Swap(IndexT i);
@@ -421,6 +428,17 @@ inline uint
 Upload(const void* data, SizeT numBytes)
 {
     uint offset = AllocateUpload(numBytes);
+    UploadInternal(offset, data, numBytes);
+    return offset;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline uint 
+Upload(const void* data, SizeT numBytes, SizeT alignment)
+{
+    uint offset = AllocateUpload(numBytes, alignment);
     UploadInternal(offset, data, numBytes);
     return offset;
 }

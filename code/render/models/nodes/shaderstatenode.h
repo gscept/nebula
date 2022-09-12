@@ -50,13 +50,15 @@ public:
     };
 
     /// get surface
-    const Materials::MaterialId GetSurface() const { return this->material; };
+    const Materials::MaterialId GetMaterial() const { return this->material; };
+    /// Get sort code
+    const uint64_t GetSortCode() const { return this->sortCode; };
     /// trigger an LOD update
     void SetMaxLOD(const float lod);
 
 protected:
     friend class ModelContext;
-    friend class StreamModelCache;
+    friend class ModelLoader;
 
     /// load shader state
     bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
@@ -65,9 +67,9 @@ protected:
     /// called when loading finished
     virtual void OnFinishedLoading();
     
-    Materials::ShaderConfig* shaderConfig;
+    Resources::ResourceId materialRes;
     Materials::MaterialId material;
-    Materials::MaterialResourceId materialRes;
+    uint64_t sortCode;
     Resources::ResourceName materialName;
 
     uint8_t objectTransformsIndex;
