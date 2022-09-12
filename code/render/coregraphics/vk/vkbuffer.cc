@@ -237,14 +237,16 @@ CreateBuffer(const BufferCreateInfo& info)
 void 
 DestroyBuffer(const BufferId id)
 {
-    VkBufferLoadInfo& loadInfo = bufferAllocator.GetUnsafe<Buffer_LoadInfo>(id.id24);
-    VkBufferRuntimeInfo& runtimeInfo = bufferAllocator.GetUnsafe<Buffer_RuntimeInfo>(id.id24);
-    VkBufferMapInfo& mapInfo = bufferAllocator.GetUnsafe<Buffer_MapInfo>(id.id24);
+    bufferAllocator.Lock(Util::ArrayAllocatorAccess::Write);
+    VkBufferLoadInfo& loadInfo = bufferAllocator.Get<Buffer_LoadInfo>(id.id24);
+    VkBufferRuntimeInfo& runtimeInfo = bufferAllocator.Get<Buffer_RuntimeInfo>(id.id24);
+    VkBufferMapInfo& mapInfo = bufferAllocator.Get<Buffer_MapInfo>(id.id24);
 
     n_assert(mapInfo.mapCount == 0);
     CoreGraphics::DelayedDeleteBuffer(id);
     CoreGraphics::DelayedFreeMemory(loadInfo.mem);
     loadInfo.mem = CoreGraphics::Alloc{};
+    bufferAllocator.Unlock(Util::ArrayAllocatorAccess::Write);
     bufferAllocator.Dealloc(id.id24);
 }
 
