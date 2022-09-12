@@ -1976,6 +1976,10 @@ ParseMarkersAndTime(CoreGraphics::FrameProfilingMarker& marker, uint64* data, co
 void
 NewFrame()
 {
+    // We need to lock here so that we don't accidentally insert a delete resource inbetween updating
+    // the current buffer index and deleting pending resources
+    Threading::CriticalScope scope(&delayedDeleteSection);
+
     // Progress to next frame and wait for that buffer
     state.currentBufferedFrameIndex = (state.currentBufferedFrameIndex + 1) % state.maxNumBufferedFrames;
 
