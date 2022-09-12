@@ -128,8 +128,8 @@ struct TextureCreateInfo
     CoreGraphics::TextureType type;
     CoreGraphics::PixelFormat::Code format;
     float width, height, depth;
-    SizeT mips, minMip, layers;
-    SizeT samples;
+    uint mips, minMip, layers;
+    uint samples;
     bool clear;
     union
     {
