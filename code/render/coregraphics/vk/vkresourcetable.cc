@@ -717,7 +717,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
     Util::Array<VkDescriptorPoolSize>& poolSizes = resourceTableLayoutAllocator.Get<ResourceTableLayout_PoolSizes>(id);
 
     dev = Vulkan::GetCurrentDevice();
-    Util::Array<VkDescriptorSetLayoutBinding> bindings;
+    Util::HashTable<uint32_t, VkDescriptorSetLayoutBinding> bindings;
 
     //------------------------------------------------------------------------------
     /**
@@ -783,7 +783,20 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
             }
         }
         binding.stageFlags = VkTypes::AsVkShaderVisibility(tex.visibility);
-        bindings.Append(binding);
+        IndexT index = bindings.FindIndex(binding.binding);
+        if (index != InvalidIndex)
+        {
+            const VkDescriptorSetLayoutBinding& prevBinding = bindings.ValueAtIndex(binding.binding, index);
+            if (prevBinding.descriptorCount != binding.descriptorCount
+                || prevBinding.descriptorType != binding.descriptorType
+                || prevBinding.pImmutableSamplers != binding.pImmutableSamplers
+                || prevBinding.stageFlags != binding.stageFlags)
+            {
+                n_error("ResourceTable: Incompatible aliasing in for binding %d", binding.binding);
+            }
+        }
+        else 
+            bindings.Add(binding.binding, binding);
     }
 
     // update pool sizes
@@ -829,7 +842,20 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
         binding.pImmutableSamplers = nullptr;
         binding.stageFlags = VkTypes::AsVkShaderVisibility(tex.visibility);
-        bindings.Append(binding);
+        IndexT index = bindings.FindIndex(binding.binding);
+        if (index != InvalidIndex)
+        {
+            const VkDescriptorSetLayoutBinding& prevBinding = bindings.ValueAtIndex(binding.binding, index);
+            if (prevBinding.descriptorCount != binding.descriptorCount
+                || prevBinding.descriptorType != binding.descriptorType
+                || prevBinding.pImmutableSamplers != binding.pImmutableSamplers
+                || prevBinding.stageFlags != binding.stageFlags)
+            {
+                n_error("ResourceTable: Incompatible aliasing in for binding %d", binding.binding);
+            }
+        }
+        else
+            bindings.Add(binding.binding, binding);
 
         // accumulate textures for same bind point
         IndexT countIndex = imageCount.FindIndex(binding.binding);
@@ -877,7 +903,20 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         binding.descriptorType = buf.dynamicOffset ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         binding.pImmutableSamplers = nullptr;
         binding.stageFlags = VkTypes::AsVkShaderVisibility(buf.visibility);
-        bindings.Append(binding);
+        IndexT index = bindings.FindIndex(binding.binding);
+        if (index != InvalidIndex)
+        {
+            const VkDescriptorSetLayoutBinding& prevBinding = bindings.ValueAtIndex(binding.binding, index);
+            if (prevBinding.descriptorCount != binding.descriptorCount
+                || prevBinding.descriptorType != binding.descriptorType
+                || prevBinding.pImmutableSamplers != binding.pImmutableSamplers
+                || prevBinding.stageFlags != binding.stageFlags)
+            {
+                n_error("ResourceTable: Incompatible aliasing in for binding %d", binding.binding);
+            }
+        }
+        else
+            bindings.Add(binding.binding, binding);
 
         if (buf.dynamicOffset)
         {
@@ -950,7 +989,20 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         binding.descriptorType = buf.dynamicOffset ? VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         binding.pImmutableSamplers = nullptr;
         binding.stageFlags = VkTypes::AsVkShaderVisibility(buf.visibility);
-        bindings.Append(binding);
+        IndexT index = bindings.FindIndex(binding.binding);
+        if (index != InvalidIndex)
+        {
+            const VkDescriptorSetLayoutBinding& prevBinding = bindings.ValueAtIndex(binding.binding, index);
+            if (prevBinding.descriptorCount != binding.descriptorCount
+                || prevBinding.descriptorType != binding.descriptorType
+                || prevBinding.pImmutableSamplers != binding.pImmutableSamplers
+                || prevBinding.stageFlags != binding.stageFlags)
+            {
+                n_error("ResourceTable: Incompatible aliasing in for binding %d", binding.binding);
+            }
+        }
+        else
+            bindings.Add(binding.binding, binding);
 
         if (buf.dynamicOffset)
         {
@@ -1020,7 +1072,20 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
         binding.pImmutableSamplers = &SamplerGetVk(samp.sampler);
         binding.stageFlags = VkTypes::AsVkShaderVisibility(samp.visibility);
-        bindings.Append(binding);
+        IndexT index = bindings.FindIndex(binding.binding);
+        if (index != InvalidIndex)
+        {
+            const VkDescriptorSetLayoutBinding& prevBinding = bindings.ValueAtIndex(binding.binding, index);
+            if (prevBinding.descriptorCount != binding.descriptorCount
+                || prevBinding.descriptorType != binding.descriptorType
+                || prevBinding.pImmutableSamplers != binding.pImmutableSamplers
+                || prevBinding.stageFlags != binding.stageFlags)
+            {
+                n_error("ResourceTable: Incompatible aliasing in for binding %d", binding.binding);
+            }
+        }
+        else
+            bindings.Add(binding.binding, binding);
 
         // add static samplers
         samplers.Append(Util::MakePair(samp.sampler, samp.slot));
@@ -1052,7 +1117,20 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
         binding.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
         binding.pImmutableSamplers = nullptr;
         binding.stageFlags = VkTypes::AsVkShaderVisibility(tex.visibility);
-        bindings.Append(binding);
+        IndexT index = bindings.FindIndex(binding.binding);
+        if (index != InvalidIndex)
+        {
+            const VkDescriptorSetLayoutBinding& prevBinding = bindings.ValueAtIndex(binding.binding, index);
+            if (prevBinding.descriptorCount != binding.descriptorCount
+                || prevBinding.descriptorType != binding.descriptorType
+                || prevBinding.pImmutableSamplers != binding.pImmutableSamplers
+                || prevBinding.stageFlags != binding.stageFlags)
+            {
+                n_error("ResourceTable: Incompatible aliasing in for binding %d", binding.binding);
+            }
+        }
+        else
+            bindings.Add(binding.binding, binding);
         inputAttachmentSize.descriptorCount += tex.num;
     }
 
@@ -1076,7 +1154,7 @@ CreateResourceTableLayout(const ResourceTableLayoutCreateInfo& info)
             &bindingFlags,
             0,                                                              // USE vkCmdPushDescriptorSetKHR IN THE FUTURE!
             (uint32_t)bindings.Size(),
-            bindings.Begin()
+            bindings.ValuesAsArray().Begin()
         };
         VkResult res = vkCreateDescriptorSetLayout(dev, &dslInfo, nullptr, &layout);
         n_assert(res == VK_SUCCESS);
