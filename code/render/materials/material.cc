@@ -218,6 +218,7 @@ void
 MaterialAddLODTexture(const MaterialId mat, const Resources::ResourceId tex)
 {
     materialAllocator.Get<Material_LODTextures>(mat.resourceId).Append(tex);
+    materialAllocator.Set<Material_MinLOD>(mat.resourceId, 1.0f);
 }
 
 //------------------------------------------------------------------------------
