@@ -93,7 +93,7 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
         Util::Array<Util::Array<CoreGraphics::FrameProfilingMarker>> markers;
         Util::Array<uint> baseOffset;
     };
-    Util::FixedArray<PendingMarkers> pendingMarkers;
+    Util::FixedArray<Util::FixedArray<PendingMarkers>> pendingMarkers;
 
     struct Queries
     {
@@ -502,8 +502,11 @@ ClearPending()
     }
     state.pendingDeletes[state.currentBufferedFrameIndex].allocs.Clear();
 
-    state.pendingMarkers[state.currentBufferedFrameIndex].markers.Clear();
-    state.pendingMarkers[state.currentBufferedFrameIndex].baseOffset.Clear();
+    for (auto& markers : state.pendingMarkers)
+    {
+        markers[state.currentBufferedFrameIndex].markers.Clear();
+        markers[state.currentBufferedFrameIndex].baseOffset.Clear();
+    }
 }
 
 } // namespace Vulkan
@@ -969,7 +972,9 @@ CreateGraphicsDevice(const GraphicsDeviceCreateInfo& info)
 
     state.pendingDeletes.Resize(info.numBufferedFrames);
     state.waitEvents.Resize(info.numBufferedFrames);
-    state.pendingMarkers.Resize(info.numBufferedFrames);
+    state.pendingMarkers.Resize(CoreGraphics::QueueType::NumQueueTypes);
+    for (auto& markers : state.pendingMarkers)
+        markers.Resize(info.numBufferedFrames);
     state.queries.Resize(info.numBufferedFrames);
 
     VkQueryPoolCreateInfo queryPoolInfo =
@@ -1384,8 +1389,8 @@ SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueTyp
     SetSubmissionEvent(type, ret);
 
     Util::Array<CoreGraphics::FrameProfilingMarker> markers = CmdCopyProfilingMarkers(cmds);
-    state.pendingMarkers[state.currentBufferedFrameIndex].markers.Append(markers);
-    state.pendingMarkers[state.currentBufferedFrameIndex].baseOffset.Append(CmdGetMarkerOffset(cmds));
+    state.pendingMarkers[type][state.currentBufferedFrameIndex].markers.Append(markers);
+    state.pendingMarkers[type][state.currentBufferedFrameIndex].baseOffset.Append(CmdGetMarkerOffset(cmds));
     return ret;
 }
 
@@ -1993,25 +1998,32 @@ NewFrame()
 
     // Go through the query timestamp results and set the time in the markers
     state.frameProfilingMarkers.Clear();
-    if (!state.pendingMarkers[state.currentBufferedFrameIndex].markers.IsEmpty())
+    for (IndexT queue = 0; queue < QueueType::NumQueueTypes; queue++)
     {
-        CoreGraphics::BufferId buf = state.queries[state.currentBufferedFrameIndex].queryBuffer[CoreGraphics::QueryType::TimestampsQueryType];
-        CoreGraphics::BufferInvalidate(buf);
-        uint64* data = (uint64*)CoreGraphics::BufferMap(buf);
-        const auto& markersPerBuffer = state.pendingMarkers[state.currentBufferedFrameIndex].markers;
-        for (IndexT i = 0; i < markersPerBuffer.Size(); i++)
+        if (!state.pendingMarkers[queue][state.currentBufferedFrameIndex].markers.IsEmpty())
         {
-            const uint64 offset = data[state.pendingMarkers[state.currentBufferedFrameIndex].baseOffset[i]];
-            const auto& markers = markersPerBuffer[i];
-            for (auto& marker : markers)
-            {
-                ParseMarkersAndTime(marker, data, offset);
+            CoreGraphics::BufferId buf = state.queries[state.currentBufferedFrameIndex].queryBuffer[CoreGraphics::QueryType::TimestampsQueryType];
+            CoreGraphics::BufferInvalidate(buf);
+            uint64* data = (uint64*)CoreGraphics::BufferMap(buf);
 
-                // Add to combined markers to graphics device for this frame
-                state.frameProfilingMarkers.Append(marker);
+            const auto& markersPerBuffer = state.pendingMarkers[queue][state.currentBufferedFrameIndex].markers;
+            uint64 offset = UINT64_MAX;
+
+            offset = Math::min(offset, data[state.pendingMarkers[queue][state.currentBufferedFrameIndex].baseOffset[0]]);
+
+            for (IndexT i = 0; i < markersPerBuffer.Size(); i++)
+            {
+                const auto& markers = markersPerBuffer[i];
+                for (auto& marker : markers)
+                {
+                    ParseMarkersAndTime(marker, data, offset);
+
+                    // Add to combined markers to graphics device for this frame
+                    state.frameProfilingMarkers.Append(marker);
+                }
             }
+            CoreGraphics::BufferUnmap(buf);
         }
-        CoreGraphics::BufferUnmap(buf);
     }
 
     // Cleanup resources
