@@ -20,12 +20,12 @@ namespace CoreGraphics
 ID_24_8_TYPE(BarrierId);
 
 struct CmdBufferId;
-struct ImageSubresourceInfo
+struct TextureSubresourceInfo
 {
     CoreGraphics::ImageAspect aspect;
     uint mip, mipCount, layer, layerCount;
 
-    ImageSubresourceInfo() :
+    TextureSubresourceInfo() :
         aspect(CoreGraphics::ImageAspect::ColorBits),
         mip(0),
         mipCount(1),
@@ -33,7 +33,7 @@ struct ImageSubresourceInfo
         layerCount(1)
     {}
 
-    ImageSubresourceInfo(CoreGraphics::ImageAspect aspect, uint mip, uint mipCount, uint layer, uint layerCount) :
+    TextureSubresourceInfo(CoreGraphics::ImageAspect aspect, uint mip, uint mipCount, uint layer, uint layerCount) :
         aspect(aspect),
         mip(mip),
         mipCount(mipCount),
@@ -41,37 +41,37 @@ struct ImageSubresourceInfo
         layerCount(layerCount)
     {}
 
-    static ImageSubresourceInfo ColorNoMipNoLayer()
+    static TextureSubresourceInfo ColorNoMipNoLayer()
     {
-        return ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, 1);
+        return TextureSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, 1);
     }
 
-    static ImageSubresourceInfo ColorNoMip(uint layerCount)
+    static TextureSubresourceInfo ColorNoMip(uint layerCount)
     {
-        return ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, layerCount);
+        return TextureSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, layerCount);
     }
 
-    static ImageSubresourceInfo ColorNoLayer(uint mipCount)
+    static TextureSubresourceInfo ColorNoLayer(uint mipCount)
     {
-        return ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, mipCount, 0, 1);
+        return TextureSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, mipCount, 0, 1);
     }
 
-    static ImageSubresourceInfo DepthStencilNoMipNoLayer()
+    static TextureSubresourceInfo DepthStencilNoMipNoLayer()
     {
-        return ImageSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, 1, 0, 1);
+        return TextureSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, 1, 0, 1);
     }
 
-    static ImageSubresourceInfo DepthStencilNoMip(uint layerCount)
+    static TextureSubresourceInfo DepthStencilNoMip(uint layerCount)
     {
-        return ImageSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, 1, 0, layerCount);
+        return TextureSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, 1, 0, layerCount);
     }
 
-    static ImageSubresourceInfo DepthStencilNoLayer(uint mipCount)
+    static TextureSubresourceInfo DepthStencilNoLayer(uint mipCount)
     {
-        return ImageSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, mipCount, 0, 1);
+        return TextureSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, mipCount, 0, 1);
     }
 
-    const bool Overlaps(const ImageSubresourceInfo& rhs) const
+    const bool Overlaps(const TextureSubresourceInfo& rhs) const
     {
         return ((this->aspect & rhs.aspect) != 0) && (this->mip <= rhs.mip && this->mip + this->mipCount >= rhs.mip) && (this->layer <= rhs.layer && this->layer + this->layerCount >= rhs.layer);
     }
@@ -83,7 +83,12 @@ struct BufferSubresourceInfo
 
     BufferSubresourceInfo() :
         offset(0),
-        size(-1)
+        size(NEBULA_WHOLE_BUFFER_SIZE)
+    {}
+
+    BufferSubresourceInfo(uint offset, uint size) :
+        offset(offset),
+        size(size)
     {}
 
     const bool Overlaps(const BufferSubresourceInfo& rhs) const
@@ -95,7 +100,7 @@ struct BufferSubresourceInfo
 struct TextureBarrier
 {
     TextureId tex;
-    ImageSubresourceInfo subres;
+    TextureSubresourceInfo subres;
     CoreGraphics::PipelineStage fromStage;
     CoreGraphics::PipelineStage toStage;
 };
@@ -112,14 +117,13 @@ struct BufferBarrier
 struct TextureBarrierInfo
 {
     TextureId tex;
-    ImageSubresourceInfo subres;
+    TextureSubresourceInfo subres;
 };
 
 struct BufferBarrierInfo
 {
     BufferId buf;
-    IndexT offset;
-    SizeT size; // set to -1 to use whole buffer
+    BufferSubresourceInfo subres;
 };
 
 struct BarrierCreateInfo

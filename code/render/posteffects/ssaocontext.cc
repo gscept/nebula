@@ -124,7 +124,7 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
     ssaoState.internalTargets[0] = CreateTexture(tinfo);
     tinfo.name = "HBAO-Internal1";
     ssaoState.internalTargets[1] = CreateTexture(tinfo);
-    ImageSubresourceInfo subres = ImageSubresourceInfo::ColorNoMipNoLayer();
+    TextureSubresourceInfo subres = TextureSubresourceInfo::ColorNoMipNoLayer();
 
     // setup shaders
     ssaoState.hbaoShader = ShaderGet("shd:hbao_cs.fxb");
@@ -200,13 +200,13 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
                          {
                             "ZBuffer"
                             , CoreGraphics::PipelineStage::ComputeShaderRead
-                            , CoreGraphics::ImageSubresourceInfo::DepthStencilNoMipNoLayer()
+                            , CoreGraphics::TextureSubresourceInfo::DepthStencilNoMipNoLayer()
                          });
     aoX->textureDeps.Add(ssaoState.internalTargets[0],
                          {
                             "SSAOBuffer0"
                             , CoreGraphics::PipelineStage::ComputeShaderWrite
-                            , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                            , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                          });
     aoX->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
@@ -226,13 +226,13 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
                          {
                             "SSAOBuffer0"
                             , CoreGraphics::PipelineStage::ComputeShaderRead
-                            , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                            , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                          });
     aoY->textureDeps.Add(ssaoState.internalTargets[1],
                          {
                             "SSAOBuffer1"
                             , CoreGraphics::PipelineStage::ComputeShaderWrite
-                            , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                            , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                          });
     aoY->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
@@ -252,13 +252,13 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
                          {
                             "SSAOBuffer1"
                             , CoreGraphics::PipelineStage::ComputeShaderRead
-                            , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                            , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                          });
     blurX->textureDeps.Add(ssaoState.internalTargets[0],
                          {
                             "SSAOBuffer0"
                             , CoreGraphics::PipelineStage::ComputeShaderWrite
-                            , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                            , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                          });
     blurX->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
@@ -278,13 +278,13 @@ SSAOContext::Setup(const Ptr<Frame::FrameScript>& script)
                          {
                             "SSAOBuffer1"
                             , CoreGraphics::PipelineStage::ComputeShaderRead
-                            , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                            , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                          });
     blurY->textureDeps.Add(ssaoState.ssaoOutput,
                          {
                             "SSAOOutput"
                             , CoreGraphics::PipelineStage::ComputeShaderWrite
-                            , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                            , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                          });
     blurY->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {

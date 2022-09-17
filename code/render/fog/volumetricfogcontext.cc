@@ -216,13 +216,13 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
                                 {
                                     "Fog Volume Texture 0"
                                     , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                    , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                    , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                                 });
     fogCompute->textureDeps.Add(fogState.zBuffer,
                                 {
                                     "ZBuffer"
                                     , CoreGraphics::PipelineStage::ComputeShaderRead
-                                    , CoreGraphics::ImageSubresourceInfo::DepthStencilNoMipNoLayer()
+                                    , CoreGraphics::TextureSubresourceInfo::DepthStencilNoMipNoLayer()
                                 });
     fogCompute->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
@@ -242,13 +242,13 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
                                 {
                                     "Fog Volume Texture 0"
                                     , CoreGraphics::PipelineStage::ComputeShaderRead
-                                    , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                    , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                                 });
     blurX->textureDeps.Add(fogState.fogVolumeTexture1,
                                 {
                                     "Fog Volume Texture 1"
                                     , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                    , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                    , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                                 });
     blurX->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
@@ -266,13 +266,13 @@ VolumetricFogContext::Create(const Ptr<Frame::FrameScript>& frameScript)
                                 {
                                     "Fog Volume Texture 1"
                                     , CoreGraphics::PipelineStage::ComputeShaderRead
-                                    , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                    , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                                 });
     blurY->textureDeps.Add(fogState.fogVolumeTexture0,
                                 {
                                     "Fog Volume Texture 0"
                                     , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                    , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                    , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                                 });
     blurY->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {

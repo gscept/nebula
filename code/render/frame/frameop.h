@@ -58,7 +58,7 @@ public:
 
     CoreGraphics::BarrierDomain domain;
     CoreGraphics::QueueType queue;
-    Util::Dictionary<CoreGraphics::TextureId, Util::Tuple<Util::StringAtom, CoreGraphics::PipelineStage, CoreGraphics::ImageSubresourceInfo>> textureDeps;
+    Util::Dictionary<CoreGraphics::TextureId, Util::Tuple<Util::StringAtom, CoreGraphics::PipelineStage, CoreGraphics::TextureSubresourceInfo>> textureDeps;
     Util::Dictionary<CoreGraphics::BufferId, Util::Tuple<Util::StringAtom, CoreGraphics::PipelineStage, CoreGraphics::BufferSubresourceInfo>> bufferDeps;
 
 protected:
@@ -92,7 +92,7 @@ protected:
     {
         CoreGraphics::PipelineStage stage;
         DependencyIntent intent;
-        CoreGraphics::ImageSubresourceInfo subres;
+        CoreGraphics::TextureSubresourceInfo subres;
         CoreGraphics::QueueType queue;
     };
 
@@ -111,7 +111,7 @@ protected:
         DependencyIntent readOrWrite,
         CoreGraphics::PipelineStage stage,
         CoreGraphics::BarrierDomain domain,
-        const CoreGraphics::ImageSubresourceInfo& subres,
+        const CoreGraphics::TextureSubresourceInfo& subres,
         CoreGraphics::QueueType fromQueue,
         Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::BarrierCreateInfo>& barriers,
         Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::EventCreateInfo>& waitEvents,

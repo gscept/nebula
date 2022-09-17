@@ -66,7 +66,7 @@ CreateBarrier(const BarrierCreateInfo& info)
         vkInfo.imageBarriers[vkInfo.numImageBarriers].srcAccessMask = VkTypes::AsVkAccessFlags(info.fromStage);
         vkInfo.imageBarriers[vkInfo.numImageBarriers].dstAccessMask = VkTypes::AsVkAccessFlags(info.toStage);
 
-        const ImageSubresourceInfo& subres = info.textures[i].subres;
+        const TextureSubresourceInfo& subres = info.textures[i].subres;
         bool isDepth = (subres.aspect & CoreGraphics::ImageAspect::DepthBits) == CoreGraphics::ImageAspect::DepthBits;
         vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.aspectMask = VkTypes::AsVkImageAspectFlags(subres.aspect);
         vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.baseMipLevel = subres.mip;
@@ -104,15 +104,15 @@ CreateBarrier(const BarrierCreateInfo& info)
         vkInfo.bufferBarriers[vkInfo.numBufferBarriers].offset = 0;
         vkInfo.bufferBarriers[vkInfo.numBufferBarriers].size = VK_WHOLE_SIZE; 
 
-        if (info.buffers[i].size == -1)
+        if (info.buffers[i].subres.size == -1)
         {
             vkInfo.bufferBarriers[vkInfo.numBufferBarriers].offset = 0;
             vkInfo.bufferBarriers[vkInfo.numBufferBarriers].size = VK_WHOLE_SIZE;
         }
         else
         {
-            vkInfo.bufferBarriers[vkInfo.numBufferBarriers].offset = info.buffers[i].offset;
-            vkInfo.bufferBarriers[vkInfo.numBufferBarriers].size = info.buffers[i].size;
+            vkInfo.bufferBarriers[vkInfo.numBufferBarriers].offset = info.buffers[i].subres.offset;
+            vkInfo.bufferBarriers[vkInfo.numBufferBarriers].size = info.buffers[i].subres.size;
         }
 
         vkInfo.numBufferBarriers++;
