@@ -15,6 +15,7 @@
 #include "coregraphics/config.h"
 #include "math/rectangle.h"
 #include "coregraphics/indextype.h"
+
 namespace CoreGraphics
 {
 
@@ -180,12 +181,44 @@ void CmdSetGraphicsPipeline(const CmdBufferId id);
 
 /// Insert pipeline barrier
 void CmdBarrier(
+            const CmdBufferId id,
+            CoreGraphics::PipelineStage fromStage,
+            CoreGraphics::PipelineStage toStage,
+            CoreGraphics::BarrierDomain domain,
+            const IndexT fromQueue = InvalidIndex,
+            const IndexT toQueue = InvalidIndex,
+            const char* name = nullptr
+);
+/// Insert pipeline barrier
+void CmdBarrier(
+            const CmdBufferId id,
+            CoreGraphics::PipelineStage fromStage,
+            CoreGraphics::PipelineStage toStage,
+            CoreGraphics::BarrierDomain domain,
+            const Util::FixedArray<TextureBarrierInfo>& textures,
+            const IndexT fromQueue = InvalidIndex,
+            const IndexT toQueue = InvalidIndex,
+            const char* name = nullptr
+);
+/// Insert pipeline barrier
+void CmdBarrier(
+            const CmdBufferId id,
+            CoreGraphics::PipelineStage fromStage,
+            CoreGraphics::PipelineStage toStage,
+            CoreGraphics::BarrierDomain domain,
+            const Util::FixedArray<BufferBarrierInfo>& buffers,
+            const IndexT fromQueue = InvalidIndex,
+            const IndexT toQueue = InvalidIndex,
+            const char* name = nullptr
+);
+/// Insert pipeline barrier
+void CmdBarrier(
             const CmdBufferId id, 
             CoreGraphics::PipelineStage fromStage,
             CoreGraphics::PipelineStage toStage,
             CoreGraphics::BarrierDomain domain,
-            const Util::FixedArray<TextureBarrierInfo>& textures = nullptr,
-            const Util::FixedArray<BufferBarrierInfo>& buffers = nullptr,
+            const Util::FixedArray<TextureBarrierInfo>& textures,
+            const Util::FixedArray<BufferBarrierInfo>& buffers,
             const IndexT fromQueue = InvalidIndex,
             const IndexT toQueue = InvalidIndex,
             const char* name = nullptr
