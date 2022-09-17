@@ -157,6 +157,7 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
         rt.window = CoreGraphics::DisplayDevice::Instance()->GetCurrentWindow();
         const CoreGraphics::DisplayMode mode = CoreGraphics::WindowGetDisplayMode(rt.window);
         rt.usage = CoreGraphics::TextureUsage::RenderTexture | CoreGraphics::TextureUsage::TransferTextureDestination;
+        rt.name = "__WINDOW__";
         rt.buffer = nullptr;
         rt.type = CoreGraphics::Texture2D;
         rt.format = mode.GetPixelFormat();
@@ -181,6 +182,7 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
         n_assert(info.width > 0 && info.height > 0 && info.depth > 0);
         if (info.type == CoreGraphics::TextureCubeArray || info.type == CoreGraphics::TextureCube)
             n_assert(info.layers == 6);
+        rt.name = info.name;
         rt.usage = info.usage;
         rt.buffer = info.buffer;
         rt.type = info.type;

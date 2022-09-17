@@ -212,6 +212,7 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
     for (IndexT i = 0; i < numMips; i++)
     {
         CoreGraphics::TextureViewCreateInfo info;
+        info.name = Util::String::Sprintf("Histogram Downsample %d", i);
         info.tex = histogramState.sourceTexture;
         info.startMip = i;
         info.numMips = 1;

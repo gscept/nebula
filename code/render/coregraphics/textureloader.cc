@@ -84,6 +84,7 @@ TextureLoader::LoadFromStream(Ids::Id32 entry, const Util::StringAtom& tag, cons
         CoreGraphics::TextureType type = ctx.is_3d() ? CoreGraphics::Texture3D : (layers == 6 ? CoreGraphics::TextureCube : CoreGraphics::Texture2D);
 
         CoreGraphics::TextureCreateInfo textureInfo;
+        textureInfo.name = stream->GetURI().LocalPath();
         textureInfo.width = width;
         textureInfo.height = height;
         textureInfo.depth = depth;
@@ -187,9 +188,7 @@ TextureLoader::LoadFromStream(Ids::Id32 entry, const Util::StringAtom& tag, cons
         CoreGraphics::CmdEndMarker(handoverCmdBuf);
         CoreGraphics::UnlockGraphicsSetupCommandBuffer();
 
-#if NEBULA_GRAPHICS_DEBUG
-        ObjectSetName(texture, stream->GetURI().LocalPath().AsCharPtr());
-#endif
+
         return texture;
     }
     stream->MemoryUnmap();

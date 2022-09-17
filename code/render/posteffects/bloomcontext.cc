@@ -107,7 +107,7 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
     // Create pass
     CoreGraphics::PassCreateInfo passInfo;
     passInfo.name = "Bloom Pass";
-    bloomState.bloomBufferView = CoreGraphics::CreateTextureView({ bloomState.bloomBuffer, 0, 1, 0, 1, TextureGetPixelFormat(bloomState.bloomBuffer) });
+    bloomState.bloomBufferView = CoreGraphics::CreateTextureView({ "Bloom Pass View", bloomState.bloomBuffer, 0, 1, 0, 1, TextureGetPixelFormat(bloomState.bloomBuffer) });
     passInfo.colorAttachments.Append(bloomState.bloomBufferView);
     passInfo.colorAttachmentFlags.Append(CoreGraphics::AttachmentFlagBits::Store);
     passInfo.colorAttachmentClears.Append(Math::vec4(1)); // dummy value

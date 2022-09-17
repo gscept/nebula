@@ -96,6 +96,11 @@ CreateTextureView(const TextureViewCreateInfo& info)
     TextureViewId ret;
     ret.id24 = id;
     ret.id8 = TextureViewIdType;
+
+#if NEBULA_GRAPHICS_DEBUG
+    ObjectSetName(ret, info.name.Value());
+#endif
+
     return ret;
 }
 

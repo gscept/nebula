@@ -463,7 +463,7 @@ SetupPass(const PassId pid)
     };
     VkResult res = vkCreateRenderPass(loadInfo.dev, &rpinfo, nullptr, &loadInfo.pass);
     n_assert(res == VK_SUCCESS);
-    CoreGraphics::ObjectSetName(loadInfo.pass, loadInfo.name.Value());
+    CoreGraphics::ObjectSetName(loadInfo.pass, Util::String::Sprintf("Pass - %s", loadInfo.name.Value()).AsCharPtr());
 
     if (loadInfo.depthStencilAttachment != CoreGraphics::InvalidTextureViewId)
     {

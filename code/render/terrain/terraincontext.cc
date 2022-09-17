@@ -582,9 +582,9 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     // create pass for updating the physical cache tiles
     CoreGraphics::PassCreateInfo tileUpdatePassCreate;
     tileUpdatePassCreate.name = "TerrainVirtualTileUpdate";
-    tileUpdatePassCreate.colorAttachments.Append(CreateTextureView({ terrainVirtualTileState.physicalAlbedoCache, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.physicalAlbedoCache) }));
-    tileUpdatePassCreate.colorAttachments.Append(CreateTextureView({ terrainVirtualTileState.physicalNormalCache, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.physicalNormalCache) }));
-    tileUpdatePassCreate.colorAttachments.Append(CreateTextureView({ terrainVirtualTileState.physicalMaterialCache, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.physicalMaterialCache) }));
+    tileUpdatePassCreate.colorAttachments.Append(CreateTextureView({ "Terrain Albedo Cache View", terrainVirtualTileState.physicalAlbedoCache, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.physicalAlbedoCache) }));
+    tileUpdatePassCreate.colorAttachments.Append(CreateTextureView({ "Terrain Normal Cache View", terrainVirtualTileState.physicalNormalCache, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.physicalNormalCache) }));
+    tileUpdatePassCreate.colorAttachments.Append(CreateTextureView({ "Terrain Material Cache View", terrainVirtualTileState.physicalMaterialCache, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.physicalMaterialCache) }));
     AttachmentFlagBits bits = AttachmentFlagBits::Load | AttachmentFlagBits::Store;
     tileUpdatePassCreate.colorAttachmentFlags.AppendArray({ bits, bits, bits });
     tileUpdatePassCreate.colorAttachmentClears.AppendArray({ Math::vec4(0,0,0,0), Math::vec4(0,0,0,0), Math::vec4(0,0,0,0) });
@@ -601,9 +601,9 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
     // create pass for updating the fallback textures
     CoreGraphics::PassCreateInfo lowresUpdatePassCreate;
     lowresUpdatePassCreate.name = "TerrainVirtualLowresUpdate";
-    lowresUpdatePassCreate.colorAttachments.Append(CreateTextureView({ terrainVirtualTileState.lowresAlbedo, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.lowresAlbedo) }));
-    lowresUpdatePassCreate.colorAttachments.Append(CreateTextureView({ terrainVirtualTileState.lowresNormal, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.lowresNormal) }));
-    lowresUpdatePassCreate.colorAttachments.Append(CreateTextureView({ terrainVirtualTileState.lowresMaterial, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.lowresMaterial) }));
+    lowresUpdatePassCreate.colorAttachments.Append(CreateTextureView({ "Terrain Lowres Albedo Cache View", terrainVirtualTileState.lowresAlbedo, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.lowresAlbedo) }));
+    lowresUpdatePassCreate.colorAttachments.Append(CreateTextureView({ "Terrain Lowres Normal Cache View", terrainVirtualTileState.lowresNormal, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.lowresNormal) }));
+    lowresUpdatePassCreate.colorAttachments.Append(CreateTextureView({ "Terrain Lowres Material Cache View", terrainVirtualTileState.lowresMaterial, 0, 1, 0, 1, TextureGetPixelFormat(terrainVirtualTileState.lowresMaterial) }));
     bits = AttachmentFlagBits::Store;
     lowresUpdatePassCreate.colorAttachmentFlags.AppendArray({ bits, bits, bits });
     lowresUpdatePassCreate.colorAttachmentClears.AppendArray({ Math::vec4(0,0,0,0), Math::vec4(0,0,0,0), Math::vec4(0,0,0,0) });

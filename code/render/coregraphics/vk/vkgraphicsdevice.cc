@@ -2173,6 +2173,27 @@ ObjectSetName(const CoreGraphics::TextureId id, const char* name)
     n_assert(res == VK_SUCCESS);    
 }
 
+
+//------------------------------------------------------------------------------
+/**
+*/
+template<>
+void
+ObjectSetName(const CoreGraphics::TextureViewId id, const char* name)
+{
+    VkDebugUtilsObjectNameInfoEXT info =
+    {
+        VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+        nullptr,
+        VK_OBJECT_TYPE_IMAGE_VIEW,
+        (uint64_t)Vulkan::TextureViewGetVk(id),
+        name
+    };
+    VkDevice dev = GetCurrentDevice();
+    VkResult res = VkDebugObjectName(dev, &info);
+    n_assert(res == VK_SUCCESS);
+}
+
 //------------------------------------------------------------------------------
 /**
 */

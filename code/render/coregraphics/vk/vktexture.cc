@@ -645,6 +645,7 @@ CreateTexture(const TextureCreateInfo& info)
     VkDevice dev = Vulkan::GetCurrentDevice();
 
     loadInfo.dev = dev;
+    loadInfo.name = adjustedInfo.name;
     loadInfo.dims.width = adjustedInfo.width;
     loadInfo.dims.height = adjustedInfo.height;
     loadInfo.dims.depth = adjustedInfo.depth;
@@ -686,6 +687,10 @@ CreateTexture(const TextureCreateInfo& info)
 
     SetupTexture(ret);
 
+#if NEBULA_GRAPHICS_DEBUG
+    ObjectSetName(ret, loadInfo.name.Value());
+#endif
+
     return ret;
 }
 
@@ -712,7 +717,7 @@ DeleteTexture(const TextureId id)
         textureStencilExtensionAllocator.Dealloc(loadInfo.stencilExtension);
     }
 
-    if (loadInfo.swapExtension)
+    if (loadInfo.swapExtension != Ids::InvalidId32)
     {
         textureSwapExtensionAllocator.Dealloc(loadInfo.swapExtension);
     }
