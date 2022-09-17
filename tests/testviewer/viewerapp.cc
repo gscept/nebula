@@ -354,23 +354,35 @@ SimpleViewerApplication::Run()
         */
 
         Jobs2::JobNewFrame();
-        
+
+#if NEBULA_ENABLE_PROFILING
+        this->profiler->Capture();
+        Profiling::ProfilingNewFrame();
+#endif
+
         N_MARKER_BEGIN(Input, App);
         this->inputServer->BeginFrame();
         CoreGraphics::WindowPollEvents();
         this->inputServer->OnFrame();
         N_MARKER_END();
-        CoreGraphics::WindowPollEvents();
         this->resMgr->Update(this->frameIndex);
+
+        if (keyboard->KeyPressed(Input::Key::Escape)) run = false;
+
+        if (keyboard->KeyPressed(Input::Key::LeftMenu) && this->cameraMode == 0
+            || this->cameraMode == 1)
+            this->UpdateCamera();
+
+        if (keyboard->KeyPressed(Input::Key::F8))
+            Terrain::TerrainContext::ClearCache();
+
+        if (keyboard->KeyDown(Input::Key::F3))
+            this->profiler->TogglePause();
 
         // Run pre-game logic render code
         this->gfxServer->RunPreLogic();
-        
-        this->RenderUI();
 
-#if NEBULA_ENABLE_PROFILING
-        Profiling::ProfilingNewFrame();
-#endif
+        this->RenderUI();
 
         if (this->renderDebug)
         {
@@ -396,17 +408,6 @@ SimpleViewerApplication::Run()
         // Begin a new frame
         this->gfxServer->NewFrame();
 
-        if (keyboard->KeyPressed(Input::Key::Escape)) run = false;
-                
-        if (keyboard->KeyPressed(Input::Key::LeftMenu) && this->cameraMode == 0
-            || this->cameraMode == 1)
-            this->UpdateCamera();
-        
-        if (keyboard->KeyPressed(Input::Key::F8))
-            Terrain::TerrainContext::ClearCache();
-
-        if (keyboard->KeyDown(Input::Key::F3))
-            this->profiler->TogglePause();
 
         frameIndex++;             
         this->inputServer->EndFrame();

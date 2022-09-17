@@ -32,6 +32,18 @@ ImguiProfiler::~ImguiProfiler()
 {
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+void
+ImguiProfiler::Capture()
+{
+    if (!this->pauseProfiling)
+    {
+        this->profilingContexts = Profiling::ProfilingGetContexts();
+        this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers();
+    }
+}
 
 //------------------------------------------------------------------------------
 /**
@@ -55,8 +67,8 @@ RecursiveDrawScope(const Profiling::ProfilingScope& scope, ImDrawList* drawList,
     uint32 colorIndex = scope.category.HashCode() % numColors;
 
     // convert to milliseconds
-    float startX = pos.x + scope.start / frameTime * canvas.x;
-    float stopX = startX + Math::max(scope.duration / frameTime * canvas.x, 1.0);
+    float startX = pos.x + (scope.start / frameTime) * canvas.x;
+    float stopX = startX + Math::max((scope.duration / frameTime) * canvas.x, 1.0);
     float startY = pos.y;
     float stopY = startY + YPad;
 
@@ -157,9 +169,6 @@ ImguiProfiler::Render(Timing::Time frameTime, IndexT frameIndex)
 {
     if (!this->pauseProfiling)
     {
-        this->profilingContexts = Profiling::ProfilingGetContexts();
-        this->frameProfilingMarkers = CoreGraphics::GetProfilingMarkers();
-
         this->currentFrameTime = frameTime;
         this->averageFrameTime += this->currentFrameTime;
         this->frametimeHistory.Append(this->currentFrameTime);
@@ -191,6 +200,8 @@ ImguiProfiler::Render(Timing::Time frameTime, IndexT frameIndex)
             ImDrawList* drawList = ImGui::GetWindowDrawList();
             ImVec2 start = ImGui::GetCursorScreenPos();
             ImVec2 fullSize = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y + ImGui::GetWindowSize().y);
+            static float timeWindow = 1.0f;
+            ImGui::SliderFloat("Time window", &timeWindow, 1.0f, 1000.0f);
             if (ImGui::CollapsingHeader("Timeline"))
             {
                 for (const Profiling::ProfilingContext& ctx : this->profilingContexts)
@@ -200,6 +211,7 @@ ImguiProfiler::Render(Timing::Time frameTime, IndexT frameIndex)
                         ImGui::PushFont(Dynui::ImguiContext::state.smallFont);
 
                         ImVec2 canvasSize = ImGui::GetContentRegionAvail();
+                        canvasSize.x *= timeWindow;
                         ImVec2 pos = ImGui::GetCursorScreenPos();
                         int levels = 0;
                         if (ctx.topLevelScopes.Size() > 0) for (IndexT i = 0; i < ctx.topLevelScopes.Size(); i++)
