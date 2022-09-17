@@ -65,15 +65,9 @@ FrameBlit::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const Index
     toRegion.right = toDims.width;
     toRegion.bottom = toDims.height;
 
-#if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, this->name.Value());
-#endif
+    N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_TRANSFER, this->name.Value());
 
     CoreGraphics::CmdBlit(cmdBuf, this->from, fromRegion, 0, 0, this->to, toRegion, 0, 0);
-
-#if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::CmdEndMarker(cmdBuf);
-#endif
 }
 
 //------------------------------------------------------------------------------

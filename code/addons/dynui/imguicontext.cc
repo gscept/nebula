@@ -49,7 +49,7 @@ ImguiContext::ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf)
     BufferId ibo = state.ibos[currentBuffer];
     const ImguiRendererParams& params = state.params;
 
-    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_GRAPHICS, "ImGUI");
+    N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_GRAPHICS, "ImGUI");
 
     // apply shader
     CoreGraphics::CmdSetShaderProgram(cmdBuf, state.prog);
@@ -211,8 +211,6 @@ ImguiContext::ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf)
 
     // reset clip settings
     CoreGraphics::CmdResetClipToPass(cmdBuf);
-
-    CoreGraphics::CmdEndMarker(cmdBuf);
 }
 
 //------------------------------------------------------------------------------

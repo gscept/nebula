@@ -81,10 +81,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
             IndexT idx = drawList->visibilityTable.FindIndex(shaderConfig);
             if (idx != InvalidIndex)
             {
-
-#if NEBULA_GRAPHICS_DEBUG
-                CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_DARK_GREEN, shaderConfig->GetName().AsCharPtr());
-#endif
+                N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_DARK_GREEN, shaderConfig->GetName().AsCharPtr());
 
                 // if BeginBatch returns true if this material type has a shader for this batch
                 IndexT batchIndex = shaderConfig->BindShader(cmdBuf, batch);
@@ -150,10 +147,6 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                         }
                     }
                 }
-
-#if NEBULA_GRAPHICS_DEBUG
-                CoreGraphics::CmdEndMarker(cmdBuf);
-#endif
             }
         }
     }
@@ -181,10 +174,7 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
             IndexT idx = drawList->visibilityTable.FindIndex(shaderConfig);
             if (idx != InvalidIndex)
             {
-
-#if NEBULA_GRAPHICS_DEBUG
-                CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_DARK_GREEN, shaderConfig->GetName().AsCharPtr());
-#endif
+                N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_DARK_GREEN, shaderConfig->GetName().AsCharPtr());
 
                 // if BeginBatch returns true if this material type has a shader for this batch
                 IndexT batchIndex = shaderConfig->BindShader(cmdBuf, batch);
@@ -243,10 +233,6 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                         CoreGraphics::CmdDraw(cmdBuf, baseNumInstances * numInstances, baseBaseInstance + baseInstance, primGroup);
                     }
                 }
-
-#if NEBULA_GRAPHICS_DEBUG
-                CoreGraphics::CmdEndMarker(cmdBuf);
-#endif
             }
         }
     }

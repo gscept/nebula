@@ -65,9 +65,7 @@ FrameCopy::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const Index
     toRegion.right = toDims.width;
     toRegion.bottom = toDims.height;
 
-#if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, this->name.Value());
-#endif
+    N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_TRANSFER, this->name.Value());
 
     CoreGraphics::TextureCopy from, to;
     from.region = fromRegion;
@@ -78,9 +76,6 @@ FrameCopy::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const Index
     to.layer = 0;
     CoreGraphics::CmdCopy(cmdBuf, this->from, { from }, this->to, { to });
 
-#if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::CmdEndMarker(cmdBuf);
-#endif
 }
 
 } // namespace Frame2

@@ -51,9 +51,7 @@ FramePass::Discard()
 void
 FramePass::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex)
 {
-#if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_GREEN, this->name.Value());
-#endif
+    N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_GREEN, this->name.Value());
 
     // begin pass
     CoreGraphics::CmdBeginPass(cmdBuf, this->pass); 
@@ -75,10 +73,6 @@ FramePass::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const Index
 
     // end pass
     CoreGraphics::CmdEndPass(cmdBuf);
-
-#if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::CmdEndMarker(cmdBuf);
-#endif
 }
 
 //------------------------------------------------------------------------------

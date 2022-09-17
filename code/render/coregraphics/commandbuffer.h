@@ -323,5 +323,29 @@ Util::Array<CoreGraphics::FrameProfilingMarker> CmdCopyProfilingMarkers(const Cm
 uint CmdGetMarkerOffset(const CmdBufferId id);
 #endif
 
+#if NEBULA_GRAPHICS_DEBUG
+struct CmdMarkerScope
+{
+    const CmdBufferId id;
+
+    CmdMarkerScope(const CmdBufferId id, const Math::vec4& color, const char* name)
+        : id(id)
+    {
+        CoreGraphics::CmdBeginMarker(id, color, name);
+    }
+    ~CmdMarkerScope()
+    {
+        CoreGraphics::CmdEndMarker(this->id);
+    }
+};
+
+#endif
+
+#if NEBULA_GRAPHICS_DEBUG
+    #define N_CMD_SCOPE(buf, color, name) CoreGraphics::CmdMarkerScope __##cmdscope(buf, color, name)
+#else
+    #define N_CMD_SCOPE(x, y, z)
+#endif
+
 } // namespace CoreGraphics
 

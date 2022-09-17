@@ -29,7 +29,7 @@ TextureId Blue2D;
 void 
 TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId id)
 {
-    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, "Mipmap");
+    N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_TRANSFER, "Mipmap");
     SizeT numMips = CoreGraphics::TextureGetNumMips(id);
 
     // insert initial barrier for texture

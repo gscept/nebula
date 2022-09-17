@@ -486,8 +486,7 @@ Im3dContext::Render(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIn
     IndexT vertexBufferOffset = 0;
     // collect draws and loop a couple of times instead
 
-
-    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_GRAPHICS, "Im3d");
+    N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_GRAPHICS, "Im3d");
 
     CollectByFilter(cmdBuf, imState.points, CoreGraphics::PrimitiveTopology::PointList, vertexBufferOffset, vertexCount,
         [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Points; });
@@ -505,7 +504,6 @@ Im3dContext::Render(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIn
     CollectByFilter(cmdBuf, imState.depthTriangles, CoreGraphics::PrimitiveTopology::TriangleList, vertexBufferOffset, vertexCount,
         [](Im3d::DrawList const& l) { return l.m_primType == Im3d::DrawPrimitive_Triangles && l.m_layerId == imState.depthLayerId; });
 
-    CoreGraphics::CmdEndMarker(cmdBuf);
     CoreGraphics::BufferFlush(imState.vbo);
 }
 

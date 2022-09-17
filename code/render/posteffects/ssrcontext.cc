@@ -62,9 +62,7 @@ SSRContext::Create()
     using namespace CoreGraphics;
     Frame::AddCallback("SSR-Trace", [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
         {
-#if NEBULA_GRAPHICS_DEBUG
-            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_BLUE, "Screen Space Reflections");
-#endif
+            N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_BLUE, "Screen Space Reflections");
             TextureDimensions dims = TextureGetDimensions(ssrState.traceBuffer);
 
             CoreGraphics::CmdSetShaderProgram(cmdBuf, ssrState.traceProgram);
@@ -77,16 +75,11 @@ SSRContext::Create()
             };
             CoreGraphics::CmdDispatch(cmdBuf, workGroups[0], workGroups[1], 1);
 
-#if NEBULA_GRAPHICS_DEBUG
-            CoreGraphics::CmdEndMarker(cmdBuf);
-#endif
         });
 
     Frame::AddCallback("SSR-Resolve", [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
         {
-#if NEBULA_GRAPHICS_DEBUG
-            CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_BLUE, "Screen Space Reflections");
-#endif
+            N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_BLUE, "Screen Space Reflections");
             TextureDimensions dims = TextureGetDimensions(ssrState.reflectionBuffer);
 
             CoreGraphics::CmdSetShaderProgram(cmdBuf, ssrState.resolveProgram);
@@ -98,10 +91,6 @@ SSRContext::Create()
                 (dims.height + (dims.height % TILE_SIZE)) / TILE_SIZE
             };
             CoreGraphics::CmdDispatch(cmdBuf, workGroups[0], workGroups[1], 1);
-
-#if NEBULA_GRAPHICS_DEBUG
-            CoreGraphics::CmdEndMarker(cmdBuf);
-#endif
         });
 }
 
