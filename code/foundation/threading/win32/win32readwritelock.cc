@@ -4,6 +4,9 @@
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
 #include "win32readwritelock.h"
+
+thread_local uint readCounter = 0;
+thread_local uint writeCounter = 0;
 namespace Win32
 {
 
@@ -28,7 +31,8 @@ Win32ReadWriteLock::~Win32ReadWriteLock()
 void
 Win32ReadWriteLock::LockRead()
 {
-    AcquireSRWLockShared(&this->lock);
+    if (readCounter++ == 0)
+        AcquireSRWLockShared(&this->lock);
 }
 
 //------------------------------------------------------------------------------
@@ -37,7 +41,8 @@ Win32ReadWriteLock::LockRead()
 void
 Win32ReadWriteLock::LockWrite()
 {
-    AcquireSRWLockExclusive(&this->lock);
+    if (writeCounter++ == 0)
+        AcquireSRWLockExclusive(&this->lock);
 }
 
 //------------------------------------------------------------------------------
@@ -46,7 +51,8 @@ Win32ReadWriteLock::LockWrite()
 void
 Win32ReadWriteLock::UnlockRead()
 {
-    ReleaseSRWLockShared(&this->lock);
+    if (--readCounter == 0)
+        ReleaseSRWLockShared(&this->lock);
 }
 
 //------------------------------------------------------------------------------
@@ -55,7 +61,8 @@ Win32ReadWriteLock::UnlockRead()
 void
 Win32ReadWriteLock::UnlockWrite()
 {
-    ReleaseSRWLockExclusive(&this->lock);
+    if (--writeCounter == 0)
+        ReleaseSRWLockExclusive(&this->lock);
 }
 
 } // namespace Win32
