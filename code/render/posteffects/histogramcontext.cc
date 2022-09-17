@@ -221,7 +221,7 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
         info.format = CoreGraphics::TextureGetPixelFormat(histogramState.sourceTexture);
         histogramState.downsampledColorBufferViews[i] = CoreGraphics::CreateTextureView(info);
 
-        if (i == 5)
+        if (i == 6)
         {
             CoreGraphics::ResourceTableSetRWTexture(histogramState.downsampleResourceTable,
             {
