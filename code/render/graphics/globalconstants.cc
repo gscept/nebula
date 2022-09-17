@@ -151,35 +151,86 @@ FlushUpdates(const CoreGraphics::CmdBufferId buf, const CoreGraphics::QueueType 
         case CoreGraphics::QueueType::GraphicsQueueType:
             if (state.tickParamsDirty.graphicsDirty)
             {
-                CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetGraphicsConstantBuffer(), state.tickCboOffset, sizeof(Shared::PerTickParams), &state.tickParams);
-                //state.tickParamsDirty.graphicsDirty = false;
+                CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetGraphicsConstantBuffer(), state.tickCboOffset, sizeof(state.tickParams), &state.tickParams);
+                CoreGraphics::CmdBarrier(buf, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::BarrierDomain::Global,
+                {
+                    {
+                        CoreGraphics::GetGraphicsConstantBuffer(),
+                        CoreGraphics::BufferSubresourceInfo(state.tickCboOffset, sizeof(state.tickParams))
+                        
+                    }
+                });
+                state.tickParamsDirty.graphicsDirty = false;
             }
             if (state.viewConstantsDirty.graphicsDirty)
             {
-                CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetGraphicsConstantBuffer(), state.viewCboOffset, sizeof(Shared::ViewConstants), &state.viewConstants);
-                //state.viewConstantsDirty.graphicsDirty = false;
+                CoreGraphics::CmdBarrier(buf, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::BarrierDomain::Global,
+                {
+                    {
+                        CoreGraphics::GetGraphicsConstantBuffer(),
+                        CoreGraphics::BufferSubresourceInfo(state.viewCboOffset, sizeof(state.viewConstants))
+                    }
+                });
+                CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetGraphicsConstantBuffer(), state.viewCboOffset, sizeof(state.viewConstants), &state.viewConstants);
+                CoreGraphics::CmdBarrier(buf, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::BarrierDomain::Global,
+                {
+                    {
+                        CoreGraphics::GetGraphicsConstantBuffer(),
+                        CoreGraphics::BufferSubresourceInfo(state.viewCboOffset, sizeof(state.viewConstants))
+                    }
+                });
+                state.viewConstantsDirty.graphicsDirty = false;
             }
             if (state.shadowViewConstantsDirty.graphicsDirty)
             {
-                CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetGraphicsConstantBuffer(), state.shadowViewCboOffset, sizeof(Shared::ShadowViewConstants), &state.shadowViewConstants);
-                //state.shadowViewConstantsDirty.graphicsDirty = false;
+                CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetGraphicsConstantBuffer(), state.shadowViewCboOffset, sizeof(state.shadowViewConstants), &state.shadowViewConstants);
+                CoreGraphics::CmdBarrier(buf, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::PipelineStage::AllShadersRead, CoreGraphics::BarrierDomain::Global,
+                {
+                    {
+                        CoreGraphics::GetGraphicsConstantBuffer(),
+                        CoreGraphics::BufferSubresourceInfo(state.shadowViewCboOffset, sizeof(state.shadowViewConstants))
+                    }
+                });
+                state.shadowViewConstantsDirty.graphicsDirty = false;
             }
             break;
         case CoreGraphics::QueueType::ComputeQueueType:
             if (state.tickParamsDirty.computeDirty)
             {
-                CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetComputeConstantBuffer(), state.tickCboOffset, sizeof(Shared::PerTickParams), &state.tickParams);
-                //state.tickParamsDirty.computeDirty = false;
+                CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetComputeConstantBuffer(), state.tickCboOffset, sizeof(state.tickParams), &state.tickParams);
+                CoreGraphics::CmdBarrier(buf, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global,
+                         {
+                             {
+                                 CoreGraphics::GetComputeConstantBuffer(),
+                                 CoreGraphics::BufferSubresourceInfo(state.tickCboOffset, sizeof(state.tickParams))
+
+                             }
+                         });
+                state.tickParamsDirty.computeDirty = false;
             }
             if (state.viewConstantsDirty.computeDirty)
             {
-                CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetComputeConstantBuffer(), state.viewCboOffset, sizeof(Shared::ViewConstants), &state.viewConstants);
-                //state.viewConstantsDirty.computeDirty = false;
+                CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetComputeConstantBuffer(), state.viewCboOffset, sizeof(state.viewConstants), &state.viewConstants);
+                CoreGraphics::CmdBarrier(buf, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global,
+                        {
+                            {
+                                CoreGraphics::GetComputeConstantBuffer(),
+                                CoreGraphics::BufferSubresourceInfo(state.viewCboOffset, sizeof(state.viewConstants))
+                            }
+                        });
+                state.viewConstantsDirty.computeDirty = false;
             }
             if (state.shadowViewConstantsDirty.computeDirty)
             {
-                CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetComputeConstantBuffer(), state.shadowViewCboOffset, sizeof(Shared::ShadowViewConstants), &state.shadowViewConstants);
-                //state.shadowViewConstantsDirty.computeDirty = false;
+                CoreGraphics::CmdUpdateBuffer(buf, CoreGraphics::GetComputeConstantBuffer(), state.shadowViewCboOffset, sizeof(state.shadowViewConstants), &state.shadowViewConstants);
+                CoreGraphics::CmdBarrier(buf, CoreGraphics::PipelineStage::TransferWrite, CoreGraphics::PipelineStage::ComputeShaderRead, CoreGraphics::BarrierDomain::Global,
+                        {
+                            {
+                                CoreGraphics::GetComputeConstantBuffer(),
+                                CoreGraphics::BufferSubresourceInfo(state.tickCboOffset, sizeof(state.shadowViewConstants))
+                            }
+                        });
+                state.shadowViewConstantsDirty.computeDirty = false;
             }
             break;
     }
