@@ -215,7 +215,7 @@ UltralightRenderer::UpdateTexture(uint32_t texture_id, ultralight::Ref<ultraligh
     CoreGraphics::UnlockGraphicsSetupCommandBuffer();
 
     // Delete temporary buffer
-    CoreGraphics::DelayedDeleteBuffer(tempBuf);
+    CoreGraphics::DestroyBuffer(tempBuf);
 }
 
 //------------------------------------------------------------------------------
