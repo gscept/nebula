@@ -393,6 +393,7 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
     VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
     VkShaderProgramRuntimeInfo& info = shaderAlloc.Get<Shader_ProgramAllocator>(pro.shaderId).Get<ShaderProgram_RuntimeInfo>(pro.programId);
 
+    IndexT buffer = CoreGraphics::GetBufferedFrameIndex();
     pipelineBundle.program = pro;
     if (info.type == ShaderPipeline::ComputePipeline)
     {
