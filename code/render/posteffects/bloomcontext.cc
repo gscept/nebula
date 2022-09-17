@@ -131,7 +131,7 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
                                {
                                    "LightBuffer"
                                    , CoreGraphics::PipelineStage::PixelShaderRead
-                                   , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                   , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                                });
 
     lowpassOp->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
@@ -178,13 +178,13 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
                     {
                         "BloomBuffer",
                         CoreGraphics::PipelineStage::TransferRead,
-                        CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                        CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                     });
     blit->textureDeps.Add(bloomState.blurredBloom,
                     {
                         "BloomBufferBlurred",
                         CoreGraphics::PipelineStage::TransferWrite,
-                        CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                        CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                     });
     blit->from = bloomState.bloomBuffer;
     blit->to = bloomState.blurredBloom;
@@ -199,14 +199,14 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
                             {
                                 "Bloom-Internal0"
                                 , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                             });
 
         blurX->textureDeps.Add(bloomState.blurredBloom,
                             {
                                 "Bloom-BlurredBloom"
                                 , CoreGraphics::PipelineStage::ComputeShaderRead
-                                , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                             });
 
         blurX->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
@@ -229,13 +229,13 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
                               {
                                   "Bloom-Internal0"
                                   , CoreGraphics::PipelineStage::ComputeShaderRead
-                                  , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                  , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                               });
         blurY->textureDeps.Add(bloomState.blurredBloom,
                               {
                                   "Bloom-Output"
                                   , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                  , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                  , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                               });
 
         blurY->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)

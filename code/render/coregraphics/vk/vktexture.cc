@@ -363,7 +363,7 @@ SetupTexture(const TextureId id)
                         TextureBarrierInfo
                         {
                             id,
-                            CoreGraphics::ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, viewRange.baseMipLevel, viewRange.levelCount, 0, viewRange.layerCount)
+                            CoreGraphics::TextureSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, viewRange.baseMipLevel, viewRange.levelCount, 0, viewRange.layerCount)
                         }
                     },
                     nullptr);
@@ -379,7 +379,7 @@ SetupTexture(const TextureId id)
                         TextureBarrierInfo
                         {
                             id,
-                            CoreGraphics::ImageSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, viewRange.baseMipLevel, viewRange.levelCount, 0, viewRange.layerCount)
+                            CoreGraphics::TextureSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, viewRange.baseMipLevel, viewRange.levelCount, 0, viewRange.layerCount)
                         }
                     },
                     nullptr);
@@ -444,7 +444,7 @@ SetupTexture(const TextureId id)
         // use setup submission
         CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
 
-        CoreGraphics::ImageSubresourceInfo subres(
+        CoreGraphics::TextureSubresourceInfo subres(
             isDepthFormat ? CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits : CoreGraphics::ImageAspect::ColorBits
             , viewRange.baseMipLevel
             , viewRange.levelCount
@@ -1434,7 +1434,7 @@ TextureSparseUpdate(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::
 /**
 */
 void
-TextureClearColor(const CoreGraphics::CmdBufferId cmd, const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres)
+TextureClearColor(const CoreGraphics::CmdBufferId cmd, const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::TextureSubresourceInfo& subres)
 {
     VkClearColorValue clear;
     VkImageSubresourceRange vksubres;
@@ -1458,7 +1458,7 @@ TextureClearColor(const CoreGraphics::CmdBufferId cmd, const CoreGraphics::Textu
 /**
 */
 void
-TextureClearDepthStencil(const CoreGraphics::CmdBufferId cmd, const CoreGraphics::TextureId id, float depth, uint stencil, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres)
+TextureClearDepthStencil(const CoreGraphics::CmdBufferId cmd, const CoreGraphics::TextureId id, float depth, uint stencil, const CoreGraphics::ImageLayout layout, const CoreGraphics::TextureSubresourceInfo& subres)
 {
     VkClearDepthStencilValue clear;
     VkImageSubresourceRange vksubres;

@@ -72,7 +72,7 @@ CreateEvent(const EventCreateInfo& info)
         vkInfo.imageBarriers[vkInfo.numImageBarriers].srcAccessMask = VkTypes::AsVkAccessFlags(info.fromStage);
         vkInfo.imageBarriers[vkInfo.numImageBarriers].dstAccessMask = VkTypes::AsVkAccessFlags(info.toStage);
 
-        const ImageSubresourceInfo& subres = info.textures[i].subres;
+        const TextureSubresourceInfo& subres = info.textures[i].subres;
         vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.aspectMask = VkTypes::AsVkImageAspectFlags(subres.aspect);
         vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.baseMipLevel = subres.mip;
         vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.levelCount = subres.mipCount;
@@ -98,15 +98,15 @@ CreateEvent(const EventCreateInfo& info)
         vkInfo.bufferBarriers[i].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         vkInfo.bufferBarriers[i].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
-        if (info.buffers[i].size == -1)
+        if (info.buffers[i].subres.size == -1)
         {
             vkInfo.bufferBarriers[vkInfo.numBufferBarriers].offset = 0;
             vkInfo.bufferBarriers[vkInfo.numBufferBarriers].size = VK_WHOLE_SIZE;
         }
         else
         {
-            vkInfo.bufferBarriers[vkInfo.numBufferBarriers].offset = info.buffers[i].offset;
-            vkInfo.bufferBarriers[vkInfo.numBufferBarriers].size = info.buffers[i].size;
+            vkInfo.bufferBarriers[vkInfo.numBufferBarriers].offset = info.buffers[i].subres.offset;
+            vkInfo.bufferBarriers[vkInfo.numBufferBarriers].size = info.buffers[i].subres.size;
         }
 
         vkInfo.numBufferBarriers++;

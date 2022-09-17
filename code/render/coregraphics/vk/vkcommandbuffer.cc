@@ -589,8 +589,8 @@ CmdBarrier(
         vkBar.srcAccessMask = VkTypes::AsVkAccessFlags(fromStage);
         vkBar.dstAccessMask = VkTypes::AsVkAccessFlags(toStage);
         vkBar.buffer = CoreGraphics::BufferGetVk(nebBar.buf);
-        vkBar.offset = nebBar.offset;
-        vkBar.size = (nebBar.size == -1) ? VK_WHOLE_SIZE : nebBar.size;
+        vkBar.offset = nebBar.subres.offset;
+        vkBar.size = (nebBar.subres.size == -1) ? VK_WHOLE_SIZE : nebBar.subres.size;
         vkBar.srcQueueFamilyIndex = fromQueue == InvalidIndex ? VK_QUEUE_FAMILY_IGNORED : fromQueue;
         vkBar.dstQueueFamilyIndex = toQueue == InvalidIndex ? VK_QUEUE_FAMILY_IGNORED : toQueue;
 
@@ -607,7 +607,7 @@ CmdBarrier(
         vkBar.srcAccessMask = VkTypes::AsVkAccessFlags(fromStage);
         vkBar.dstAccessMask = VkTypes::AsVkAccessFlags(toStage);
 
-        const ImageSubresourceInfo& subres = nebBar.subres;
+        const TextureSubresourceInfo& subres = nebBar.subres;
         bool isDepth = (subres.aspect & CoreGraphics::ImageAspect::DepthBits) == 1;
         vkBar.subresourceRange.aspectMask = VkTypes::AsVkImageAspectFlags(subres.aspect);
         vkBar.subresourceRange.baseMipLevel = subres.mip;

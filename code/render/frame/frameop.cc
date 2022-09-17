@@ -74,9 +74,9 @@ FrameOp::Build(
 */
 void
 ImageSubresourceHelper(
-    const CoreGraphics::ImageSubresourceInfo& fromSubres,
-    const CoreGraphics::ImageSubresourceInfo& toSubres,
-    Util::Array<CoreGraphics::ImageSubresourceInfo>& subresources)
+    const CoreGraphics::TextureSubresourceInfo& fromSubres,
+    const CoreGraphics::TextureSubresourceInfo& toSubres,
+    Util::Array<CoreGraphics::TextureSubresourceInfo>& subresources)
 {
 
 }
@@ -93,21 +93,21 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
     DependencyIntent readOrWrite,
     CoreGraphics::PipelineStage stage,
     CoreGraphics::BarrierDomain domain,
-    const CoreGraphics::ImageSubresourceInfo& subres,
+    const CoreGraphics::TextureSubresourceInfo& subres,
     CoreGraphics::QueueType toQueue,
     Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::BarrierCreateInfo>& barriers,
     Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, CoreGraphics::EventCreateInfo>& waitEvents,
     Util::Dictionary<Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage>, struct FrameOp::Compiled*>& signalEvents,
     Util::Array<FrameOp::TextureDependency>& textureDependencies)
 {
-    Util::Array<CoreGraphics::ImageSubresourceInfo> subresources{ subres };
+    Util::Array<CoreGraphics::TextureSubresourceInfo> subresources{ subres };
 
     // walk backwards in dependency list
     for (IndexT j = textureDependencies.Size() - 1; j >= 0 && subresources.Size() > 0; j--)
     {
         FrameOp::TextureDependency& dep = textureDependencies[j];
-        const CoreGraphics::ImageSubresourceInfo& currentSubres = subresources.Front();
-        const CoreGraphics::ImageSubresourceInfo& depSubres = dep.subres;
+        const CoreGraphics::TextureSubresourceInfo& currentSubres = subresources.Front();
+        const CoreGraphics::TextureSubresourceInfo& depSubres = dep.subres;
 
         // check if the dependency touches the same subresource (the framescript guarantees we will have at least one dependency which overlaps)
         if (currentSubres.Overlaps(depSubres))
@@ -158,7 +158,7 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
                     uint leftEnd = leftStart - depSubres.mip;
                     if (leftStart < leftEnd)
                     {
-                        CoreGraphics::ImageSubresourceInfo leftRes = currentSubres;
+                        CoreGraphics::TextureSubresourceInfo leftRes = currentSubres;
                         leftRes.mipCount = leftEnd - leftStart;
                         subresources.Append(leftRes);
                     }
@@ -167,7 +167,7 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
                     uint rightEnd = currentSubres.mip + currentSubres.mipCount;
                     if (rightStart < rightEnd)
                     {
-                        CoreGraphics::ImageSubresourceInfo rightRes = depSubres;
+                        CoreGraphics::TextureSubresourceInfo rightRes = depSubres;
                         rightRes.mip = rightStart;
                         rightRes.mipCount = rightEnd - rightStart;
                         subresources.Append(rightRes);
@@ -181,7 +181,7 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
                     uint leftEnd = leftStart - depSubres.layer;
                     if (leftStart < leftEnd)
                     {
-                        CoreGraphics::ImageSubresourceInfo leftRes = currentSubres;
+                        CoreGraphics::TextureSubresourceInfo leftRes = currentSubres;
                         leftRes.layerCount = leftEnd - leftStart;
                         subresources.Append(leftRes);
                     }
@@ -190,7 +190,7 @@ FrameOp::AnalyzeAndSetupTextureBarriers(
                     uint rightEnd = currentSubres.layer + currentSubres.layerCount;
                     if (rightStart < rightEnd)
                     {
-                        CoreGraphics::ImageSubresourceInfo rightRes = depSubres;
+                        CoreGraphics::TextureSubresourceInfo rightRes = depSubres;
                         rightRes.layer = rightStart;
                         rightRes.layerCount = rightEnd - rightStart;
                         subresources.Append(rightRes);
@@ -266,7 +266,7 @@ FrameOp::AnalyzeAndSetupBufferBarriers(
             {
                 // construct pair between ops
                 const Util::Tuple<CoreGraphics::PipelineStage, CoreGraphics::PipelineStage> tuple = Util::MakeTuple(stage, dep.stage);
-                CoreGraphics::BufferBarrierInfo barrier{ buf, (IndexT)subres.offset, (IndexT)subres.size };
+                CoreGraphics::BufferBarrierInfo barrier{ buf, { subres.offset, subres.size } };
 
                 CoreGraphics::BarrierCreateInfo& info = barriers.Emplace(tuple);
                 info.name = info.name.IsValid() ? info.name.AsString() + " + " + bufferName.AsString() : bufferName.AsString();
@@ -341,7 +341,7 @@ FrameOp::SetupSynchronization(
             // right dependency set
             const Util::StringAtom& name = Util::Get<0>(this->textureDeps.ValueAtIndex(i));
             const CoreGraphics::PipelineStage& stage = Util::Get<1>(this->textureDeps.ValueAtIndex(i));
-            const CoreGraphics::ImageSubresourceInfo& subres = Util::Get<2>(this->textureDeps.ValueAtIndex(i));
+            const CoreGraphics::TextureSubresourceInfo& subres = Util::Get<2>(this->textureDeps.ValueAtIndex(i));
 
             DependencyIntent readOrWrite = DependencyIntent::Read;
             switch (stage)

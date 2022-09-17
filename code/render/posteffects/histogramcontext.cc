@@ -283,7 +283,7 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
                                 {
                                     "Histogram Downsample"
                                     , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                    , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                    , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                                 });
 
     downsample->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
@@ -331,7 +331,7 @@ HistogramContext::Setup(const Ptr<Frame::FrameScript>& script)
             CoreGraphics::BufferBarrierInfo
             {
                 histogramState.histogramReadback[bufferIndex],
-                0, NEBULA_WHOLE_BUFFER_SIZE
+                CoreGraphics::BufferSubresourceInfo()
             },
         });
 

@@ -41,7 +41,7 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
         {
             {
                 id,
-                CoreGraphics::ImageSubresourceInfo{ ImageAspect::ColorBits, 0, (uint)numMips, 0, 1 },
+                CoreGraphics::TextureSubresourceInfo{ ImageAspect::ColorBits, 0, (uint)numMips, 0, 1 },
             },
         });
 
@@ -78,7 +78,7 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
             {
                 {
                     id,
-                    CoreGraphics::ImageSubresourceInfo{ CoreGraphics::ImageAspect::ColorBits, (uint)mip, 1, 0, 1 },
+                    CoreGraphics::TextureSubresourceInfo{ CoreGraphics::ImageAspect::ColorBits, (uint)mip, 1, 0, 1 },
                 }
             },
             nullptr);
@@ -91,7 +91,7 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
             {
                 {
                     id,
-                    CoreGraphics::ImageSubresourceInfo{ CoreGraphics::ImageAspect::ColorBits, (uint)mip + 1, 1, 0, 1 },
+                    CoreGraphics::TextureSubresourceInfo{ CoreGraphics::ImageAspect::ColorBits, (uint)mip + 1, 1, 0, 1 },
                 }
             },
             nullptr);
@@ -111,7 +111,7 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
             CoreGraphics::TextureBarrierInfo
             {
                 id,
-                CoreGraphics::ImageSubresourceInfo(ImageAspect::ColorBits, mip, 1, 0, 1),
+                CoreGraphics::TextureSubresourceInfo(ImageAspect::ColorBits, mip, 1, 0, 1),
             }
         },
         nullptr);

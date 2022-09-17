@@ -335,25 +335,25 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
                                 {
                                     "LightBuffer"
                                     , CoreGraphics::PipelineStage::ComputeShaderWrite
-                                    , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                    , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                                 });
     lightsCombine->textureDeps.Add(textureState.aoTexture,
                                {
                                    "SSAOBuffer"
                                    , CoreGraphics::PipelineStage::ComputeShaderRead
-                                   , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                   , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                                });
     lightsCombine->textureDeps.Add(textureState.fogTexture,
                                 {
                                     "VolumeFogBuffer"
                                     , CoreGraphics::PipelineStage::ComputeShaderRead
-                                    , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                    , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                                 });
     lightsCombine->textureDeps.Add(textureState.reflectionTexture,
                                 {
                                     "ReflectionBuffer"
                                     , CoreGraphics::PipelineStage::ComputeShaderRead
-                                    , CoreGraphics::ImageSubresourceInfo::ColorNoMipNoLayer()
+                                    , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                                 });
     lightsCombine->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {

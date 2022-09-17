@@ -210,7 +210,7 @@ FrameScript::Build()
         uint layers = CoreGraphics::TextureGetNumLayers(tex);
         uint mips = CoreGraphics::TextureGetNumMips(tex);
 
-        CoreGraphics::ImageSubresourceInfo subres;
+        CoreGraphics::TextureSubresourceInfo subres;
         subres.aspect = isDepth ? (CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits) : CoreGraphics::ImageAspect::ColorBits;
         subres.layer = 0;
         subres.layerCount = layers;
@@ -237,7 +237,7 @@ FrameScript::Build()
         const Util::Array<FrameOp::TextureDependency>& deps = textures.ValueAtIndex(i);
 
         const FrameOp::TextureDependency& dep = deps.Back();
-        const CoreGraphics::ImageSubresourceInfo& info = dep.subres;
+        const CoreGraphics::TextureSubresourceInfo& info = dep.subres;
 
         // The last thing we do with present is to 
         CoreGraphics::PipelineStage fromStage, toStage;

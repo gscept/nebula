@@ -498,7 +498,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
                 BufferBarrierInfo
                 {
                     vegetationState.indirectDrawCountBuffer[bufferIndex],
-                    0, NEBULA_WHOLE_BUFFER_SIZE
+                    CoreGraphics::BufferSubresourceInfo()
                 },
             });
 
@@ -516,7 +516,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
                 BufferBarrierInfo
                 {
                     vegetationState.indirectDrawCountBuffer[bufferIndex],
-                    0, NEBULA_WHOLE_BUFFER_SIZE
+                    CoreGraphics::BufferSubresourceInfo()
                 },
             });
     };

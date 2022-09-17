@@ -261,7 +261,7 @@ FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* n
     bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(fromTex));
 
     // add implicit barriers
-    ImageSubresourceInfo subres;
+    TextureSubresourceInfo subres;
     subres.aspect = isDepth ? CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits : CoreGraphics::ImageAspect::ColorBits;
     subres.layer = 0;
     subres.layerCount = 1;
@@ -306,7 +306,7 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
     bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(fromTex));
 
     // add implicit barriers
-    ImageSubresourceInfo subres;
+    TextureSubresourceInfo subres;
     subres.aspect = isDepth ? (CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits) : CoreGraphics::ImageAspect::ColorBits;
     subres.layer = 0;
     subres.layerCount = 1;
@@ -346,7 +346,7 @@ FrameScriptLoader::ParseMipmap(const Ptr<Frame::FrameScript>& script, JzonValue*
     bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(ttex));
 
     // add implicit barriers
-    ImageSubresourceInfo subres;
+    TextureSubresourceInfo subres;
     subres.aspect = isDepth ? (CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits) : CoreGraphics::ImageAspect::ColorBits;
     subres.layer = 0;
     subres.layerCount = 1;
@@ -667,7 +667,7 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
         }
     }
 
-    ImageSubresourceInfo subres;
+    TextureSubresourceInfo subres;
     subres.aspect = CoreGraphics::ImageAspect::ColorBits;
     subres.layer = 0;
     subres.layerCount = 1;
@@ -1193,7 +1193,7 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
 
         if (script->texturesByName.Contains(valstr))
         {
-            CoreGraphics::ImageSubresourceInfo subres;
+            CoreGraphics::TextureSubresourceInfo subres;
             JzonValue* nd = nullptr;
 
             TextureId tex = script->texturesByName[valstr];
