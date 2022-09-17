@@ -73,7 +73,7 @@ public:
     void SetToNextContext(const CoreGraphics::QueueType type);
 
     /// append submission to context to execute later, supports waiting for a queue
-    uint64 AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCommandBuffer cmds, bool semaphore = true);
+    uint64 AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCommandBuffer cmds);
     /// Append a wait for a submission timeline index
     void AppendWaitTimeline(uint64 index, CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, CoreGraphics::QueueType waitType);
     /// append a sparse bind timeline operation

@@ -30,6 +30,7 @@ public:
         void Discard() override;
 
         Util::Array<FrameSubmission::CompiledImpl*> waitSubmissions;
+        Util::Array<CoreGraphics::QueueType> waitQueues;
         CoreGraphics::CmdBufferPoolId commandBufferPool;
         CoreGraphics::QueueType queue;
         Util::Array<CoreGraphics::BarrierId>* resourceResetBarriers;
@@ -53,6 +54,7 @@ public:
         Util::Dictionary<CoreGraphics::TextureId, Util::Array<TextureDependency>>& textures);
 
     Util::Array<FrameSubmission*> waitSubmissions;
+    Util::Array<CoreGraphics::QueueType> waitQueues;
     CoreGraphics::CmdBufferPoolId commandBufferPool;
     CoreGraphics::QueueType queue;
     Util::Array<CoreGraphics::BarrierId>* resourceResetBarriers;

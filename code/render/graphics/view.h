@@ -137,5 +137,4 @@ View::GetFrameScript() const
     return this->script;
 }
 
-
 } // namespace Graphics

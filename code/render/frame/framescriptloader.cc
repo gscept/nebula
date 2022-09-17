@@ -518,10 +518,26 @@ FrameScriptLoader::ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, J
     {
         for (int i = 0; i < waitSubmissions->size; i++)
         {
-            Frame::FrameOp* dependence = script->GetOp(waitSubmissions->array_values[i]->string_value);
-            n_assert(dependence != nullptr);
-            submission->waitSubmissions.Append(static_cast<Frame::FrameSubmission*>(dependence));
+            Frame::FrameOp* dependency = script->GetOp(waitSubmissions->array_values[i]->string_value);
+            n_assert(dependency != nullptr);
+            submission->waitSubmissions.Append(static_cast<Frame::FrameSubmission*>(dependency));
         }
+    }
+
+    JzonValue* waitQueue = jzon_get(node, "wait_for_queue");
+    if (waitQueue != nullptr)
+    {
+        CoreGraphics::QueueType queue;
+        Util::String q(waitQueue->string_value);
+        if (q == "Graphics") queue = CoreGraphics::QueueType::GraphicsQueueType;
+        else if (q == "Compute") queue = CoreGraphics::QueueType::ComputeQueueType;
+        else if (q == "Transfer") queue = CoreGraphics::QueueType::TransferQueueType;
+        else if (q == "Sparse") queue = CoreGraphics::QueueType::SparseQueueType;
+        else
+        {
+            n_error("Unknown queue type '%s'\n", q.AsCharPtr());
+        }
+        submission->waitQueues.Append(queue);
     }
 
     JzonValue* ops = jzon_get(node, "ops");

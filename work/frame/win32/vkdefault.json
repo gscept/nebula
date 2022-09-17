@@ -177,6 +177,7 @@
         "submission": {
             "name": "Compute Prepass",
             "queue": "Compute",
+            "wait_for_queue": "Graphics",
             "_comment": "Perform clustering AABB generation and run culling for clustering systems",
             "ops": {
                 "subgraph": {

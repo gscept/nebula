@@ -71,6 +71,7 @@ struct SubmissionWaitEvent
 #if __VULKAN__
     uint64_t timelineIndex;
 #endif
+    CoreGraphics::QueueType queue;
 };
 
 struct GraphicsDeviceState
@@ -169,25 +170,8 @@ void UnlockGraphicsSetupCommandBuffer();
 SubmissionWaitEvent SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueType type);
 /// Wait for a submission
 void WaitForSubmission(SubmissionWaitEvent index, CoreGraphics::QueueType type, CoreGraphics::QueueType waitType);
-
-/// Set the resource table to be used for the NEBULA_TICK_GROUP, returns the currently used resource table
-void SetTickResourceTableGraphics(const CoreGraphics::ResourceTableId table);
-/// Get tick resoure table
-CoreGraphics::ResourceTableId GetTickResourceTableGraphics();
-/// Set the resource table to be used for the NEBULA_TICK_GROUP, returns the currently used resource table
-void SetTickResourceTableCompute(const CoreGraphics::ResourceTableId table);
-/// Get tick resoure table
-CoreGraphics::ResourceTableId GetTickResourceTableCompute();
-
-
-/// Set the resource table to be used for the NEBULA_FRAME_GROUP, returns the currently used resource table
-void SetFrameResourceTableGraphics(const CoreGraphics::ResourceTableId table);
-/// Get frame resoure table
-CoreGraphics::ResourceTableId GetFrameResourceTableGraphics();
-/// Set the resource table to be used for the NEBULA_FRAME_GROUP, returns the currently used resource table
-void SetFrameResourceTableCompute(const CoreGraphics::ResourceTableId table);
-/// Get frame resoure table
-CoreGraphics::ResourceTableId GetFrameResourceTableCompute();
+/// Have a queue wait for another queue
+void WaitForLastSubmission(CoreGraphics::QueueType type, CoreGraphics::QueueType waitType);
 
 /// Unlock constants
 void UnlockConstantUpdates();

@@ -37,7 +37,9 @@
 
 namespace Vulkan
 {
-Threading::CriticalSection delayedDeleteSection;
+static Threading::CriticalSection delayedDeleteSection;
+static Threading::CriticalSection transferLock;
+static Threading::CriticalSection setupLock;
 
 struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
 {
@@ -86,7 +88,8 @@ struct GraphicsDeviceState : CoreGraphics::GraphicsDeviceState
         Util::Array<Util::Tuple<CoreGraphics::Alloc>> allocs;
     };
     Util::FixedArray<PendingDeletes> pendingDeletes;
-    Util::FixedArray<Util::Array<Util::Pair<CoreGraphics::QueueType, CoreGraphics::SubmissionWaitEvent>>> waitEvents;
+    Util::FixedArray<Util::Array<CoreGraphics::SubmissionWaitEvent>> waitEvents;
+    CoreGraphics::SubmissionWaitEvent mostRecentEvents[CoreGraphics::QueueType::NumQueueTypes];
 
     struct PendingMarkers
     {
@@ -410,12 +413,8 @@ VkPipeline
 GetOrCreatePipeline(CoreGraphics::PassId pass, uint subpass, CoreGraphics::ShaderProgramId program, CoreGraphics::InputAssemblyKey inputAssembly, const VkGraphicsPipelineCreateInfo& info)
 {
     Threading::CriticalScope scope(&pipelineMutex);
-    N_MARKER_BEGIN(GetOrCreateGraphicsPipeline, Graphics);
-
     VkPipeline pipeline = state.database.GetCompiledPipeline(pass, subpass, program, inputAssembly, info);
     _incr_counter(state.NumPipelinesBuilt, 1);
-
-    N_MARKER_END();
     return pipeline;
 }
 
@@ -435,8 +434,6 @@ SparseTextureBind(const VkImage img, const Util::Array<VkSparseMemoryBind>& opaq
 void
 ClearPending()
 {
-    Threading::CriticalScope scope(&delayedDeleteSection);
-
     // Clear up any pending deletes
     for (const auto& tuple : state.pendingDeletes[state.currentBufferedFrameIndex].commandBuffers)
     {
@@ -1154,12 +1151,10 @@ DestroyGraphicsDevice()
 
     state.database.Discard();
 
-    // destroy pipeline
-    vkDestroyPipelineCache(state.devices[state.currentDevice], state.cache, nullptr);
-
     IndexT i;
     for (i = 0; i < state.renderingFinishedSemaphores.Size(); i++)
     {
+        FenceWait(state.presentFences[i], UINT64_MAX);
         DestroyFence(state.presentFences[i]);
         DestroySemaphore(state.renderingFinishedSemaphores[i]);
     }
@@ -1255,7 +1250,6 @@ RemoveBackBufferTexture(const CoreGraphics::TextureId tex)
     state.backBuffers.EraseIndex(i);
 }
 
-static Threading::CriticalSection transferLock;
 //------------------------------------------------------------------------------
 /**
 */
@@ -1286,14 +1280,13 @@ UnlockTransferSetupCommandBuffer()
     transferLock.Leave();
 }
 
-static Threading::CriticalSection graphicsLock;
 //------------------------------------------------------------------------------
 /**
 */
 const CoreGraphics::CmdBufferId
 LockGraphicsSetupCommandBuffer()
 {
-    graphicsLock.Enter();
+    setupLock.Enter();
     if (state.setupGraphicsCommandBuffer == CoreGraphics::InvalidCmdBufferId)
     {
         CoreGraphics::CmdBufferCreateInfo cmdCreateInfo;
@@ -1314,16 +1307,17 @@ LockGraphicsSetupCommandBuffer()
 void
 UnlockGraphicsSetupCommandBuffer()
 {
-    graphicsLock.Leave();
+    setupLock.Leave();
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-SetSubmissionEvent(const CoreGraphics::QueueType queue, const CoreGraphics::SubmissionWaitEvent& event)
+AddSubmissionEvent(const CoreGraphics::SubmissionWaitEvent& event)
 {
-    state.waitEvents[state.currentBufferedFrameIndex].Append(Util::MakePair(queue, event));
+    state.waitEvents[state.currentBufferedFrameIndex].Append(event);
+    state.mostRecentEvents[event.queue] = event;
 }
 
 //------------------------------------------------------------------------------
@@ -1339,10 +1333,11 @@ SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueTyp
     {
         CmdEndMarker(state.setupTransferCommandBuffer);
         CmdEndRecord(state.setupTransferCommandBuffer);
-        transferWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::TransferQueueType, CmdBufferGetVk(state.setupTransferCommandBuffer), true);
+        transferWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::TransferQueueType, CmdBufferGetVk(state.setupTransferCommandBuffer));
+        transferWait.queue = CoreGraphics::TransferQueueType;
 
         // Set wait events in graphics device
-        SetSubmissionEvent(CoreGraphics::TransferQueueType, transferWait);
+        AddSubmissionEvent(transferWait);
 
         // Delete command buffer
         CoreGraphics::DelayedDeleteCommandBuffer(state.setupTransferCommandBuffer);
@@ -1352,19 +1347,21 @@ SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueTyp
     }
     transferLock.Leave();
 
-    graphicsLock.Enter();
+    setupLock.Enter();
     if (state.setupGraphicsCommandBuffer != CoreGraphics::InvalidCmdBufferId)
     {
         CmdEndMarker(state.setupGraphicsCommandBuffer);
         CmdEndRecord(state.setupGraphicsCommandBuffer);
         
-        graphicsWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::GraphicsQueueType, CmdBufferGetVk(state.setupGraphicsCommandBuffer), false);
+        graphicsWait.timelineIndex = state.queueHandler.AppendSubmissionTimeline(CoreGraphics::GraphicsQueueType, CmdBufferGetVk(state.setupGraphicsCommandBuffer));
+        graphicsWait.queue = CoreGraphics::GraphicsQueueType;
 
+        // This command buffer will have handover commands, so wait for the previous transfer buffer
         if (transferWait != nullptr)
             state.queueHandler.AppendWaitTimeline(transferWait.timelineIndex, CoreGraphics::GraphicsQueueType, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, CoreGraphics::TransferQueueType);
 
-        // Set wait events in graphics device
-        SetSubmissionEvent(CoreGraphics::GraphicsQueueType, graphicsWait);
+        // Add wait event
+        AddSubmissionEvent(graphicsWait);
 
         // Delete command buffer
         CoreGraphics::DelayedDeleteCommandBuffer(state.setupGraphicsCommandBuffer);
@@ -1372,16 +1369,15 @@ SubmitCommandBuffer(const CoreGraphics::CmdBufferId cmds, CoreGraphics::QueueTyp
         // Reset command buffer id for the next frame
         state.setupGraphicsCommandBuffer = CoreGraphics::InvalidCmdBufferId;
     }
-    graphicsLock.Leave();
+    setupLock.Leave();
 
     // Append submission
     CoreGraphics::SubmissionWaitEvent ret;
     ret.timelineIndex = state.queueHandler.AppendSubmissionTimeline(type, CmdBufferGetVk(cmds));
-    //if (state.waitEvents[state.currentBufferedFrameIndex].events[CoreGraphics::GraphicsQueueType] != nullptr)
-        //state.queueHandler.AppendWaitTimeline(state.waitEvents[state.currentBufferedFrameIndex].events[CoreGraphics::GraphicsQueueType].timelineIndex, type, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, CoreGraphics::QueueType::GraphicsQueueType);
+    ret.queue = type;
 
-    // Set wait events in graphics device
-    SetSubmissionEvent(type, ret);
+    // Add wait event
+    AddSubmissionEvent(ret);
 
     Util::Array<CoreGraphics::FrameProfilingMarker> markers = CmdCopyProfilingMarkers(cmds);
     state.pendingMarkers[state.currentBufferedFrameIndex].markers.Append(markers);
@@ -1402,80 +1398,9 @@ WaitForSubmission(SubmissionWaitEvent index, CoreGraphics::QueueType type, CoreG
 /**
 */
 void
-SetTickResourceTableGraphics(const CoreGraphics::ResourceTableId table)
+WaitForLastSubmission(CoreGraphics::QueueType type, CoreGraphics::QueueType waitType)
 {
-    n_assert(table != CoreGraphics::InvalidResourceTableId);
-    CoreGraphics::ResourceTableId ret = state.tickResourceTableGraphics;
-    state.tickResourceTableGraphics = table;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-CoreGraphics::ResourceTableId
-GetTickResourceTableGraphics()
-{
-    return state.tickResourceTableGraphics;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-SetTickResourceTableCompute(const CoreGraphics::ResourceTableId table)
-{
-    n_assert(table != CoreGraphics::InvalidResourceTableId);
-    CoreGraphics::ResourceTableId ret = state.tickResourceTableCompute;
-    state.tickResourceTableCompute = table;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-CoreGraphics::ResourceTableId
-GetTickResourceTableCompute()
-{
-    return state.tickResourceTableCompute;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-SetFrameResourceTableGraphics(const CoreGraphics::ResourceTableId table)
-{
-    n_assert(table != CoreGraphics::InvalidResourceTableId);
-    CoreGraphics::ResourceTableId ret = state.frameResourceTableGraphics;
-    state.frameResourceTableGraphics = table;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-CoreGraphics::ResourceTableId
-GetFrameResourceTableGraphics()
-{
-    return state.frameResourceTableGraphics;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-SetFrameResourceTableCompute(const CoreGraphics::ResourceTableId table)
-{
-    n_assert(table != CoreGraphics::InvalidResourceTableId);
-    CoreGraphics::ResourceTableId ret = state.frameResourceTableCompute;
-    state.frameResourceTableCompute = table;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-CoreGraphics::ResourceTableId
-GetFrameResourceTableCompute()
-{
-    return state.frameResourceTableCompute;
+    state.queueHandler.AppendWaitTimeline(state.mostRecentEvents[waitType].timelineIndex, type, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, waitType);
 }
 
 //------------------------------------------------------------------------------
@@ -1977,7 +1902,9 @@ NewFrame()
 {
     // We need to lock here so that we don't accidentally insert a delete resource inbetween updating
     // the current buffer index and deleting pending resources
-    Threading::CriticalScope scope(&delayedDeleteSection);
+    Threading::CriticalScope transferScope(&transferLock);
+    Threading::CriticalScope setupScope(&setupLock);
+    Threading::CriticalScope deleteScope(&delayedDeleteSection);
 
     // Progress to next frame and wait for that buffer
     state.currentBufferedFrameIndex = (state.currentBufferedFrameIndex + 1) % state.maxNumBufferedFrames;
@@ -1987,7 +1914,7 @@ NewFrame()
     auto& waitEventsThisFrame = state.waitEvents[state.currentBufferedFrameIndex];
     for (const auto& waitEvent : waitEventsThisFrame)
     {
-        state.queueHandler.Wait(Util::Get<0>(waitEvent), Util::Get<1>(waitEvent).timelineIndex);
+        state.queueHandler.Wait(waitEvent.queue, waitEvent.timelineIndex);
     }
     waitEventsThisFrame.Clear();
 
