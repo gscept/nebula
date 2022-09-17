@@ -107,6 +107,9 @@ FrameSubmission::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const
     for (IndexT i = 0; i < this->waitSubmissions.Size(); i++)
         CoreGraphics::WaitForSubmission(this->waitSubmissions[i]->submissionId, this->queue, this->waitSubmissions[i]->queue);
 
+    for (IndexT i = 0; i < this->waitQueues.Size(); i++)
+        CoreGraphics::WaitForLastSubmission(this->queue, this->waitQueues[i]);
+
     // Delete command buffer
     CoreGraphics::DestroyCmdBuffer(submissionBuffer);
 }
@@ -133,6 +136,7 @@ FrameSubmission::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
     ret->compiled = {};
     ret->name = this->name;
     ret->queue = this->queue;
+    ret->waitQueues = this->waitQueues;
     ret->resourceResetBarriers = this->resourceResetBarriers;
     return ret;
 }

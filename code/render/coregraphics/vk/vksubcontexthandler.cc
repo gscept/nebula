@@ -139,28 +139,26 @@ VkSubContextHandler::SetToNextContext(const CoreGraphics::QueueType type)
 /**
 */
 uint64 
-VkSubContextHandler::AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCommandBuffer cmds, bool semaphore)
+VkSubContextHandler::AppendSubmissionTimeline(CoreGraphics::QueueType type, VkCommandBuffer cmds)
 {
     n_assert(cmds != VK_NULL_HANDLE);
     Util::Array<TimelineSubmission>& submissions = this->timelineSubmissions[type];
     submissions.Append(TimelineSubmission());
     TimelineSubmission& sub = submissions.Back();
 
-    // if command buffer is present, add it
+    uint64 ret = this->semaphoreSubmissionIds[type] + 1;
+    
+    // If command buffer is present, add it
     sub.buffers.Append(cmds);
 
-    if (semaphore)
-    {
-        // add signal
-        sub.signalSemaphores.Append(this->semaphores[type]);
-        if (this->semaphoreSubmissionIds[type] + 1 == UINT64_MAX)
-            this->semaphoreSubmissionIds[type] = 0;
-        else
-            this->semaphoreSubmissionIds[type]++;
-        sub.signalIndices.Append(this->semaphoreSubmissionIds[type]);
-    }
+    // Add signal
+    sub.signalSemaphores.Append(this->semaphores[type]);
+    sub.signalIndices.Append(ret);
+
+    // Progress the semaphore counter
+    this->semaphoreSubmissionIds[type] = ret;
     
-    return this->semaphoreSubmissionIds[type];
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -170,13 +168,11 @@ void
 VkSubContextHandler::AppendWaitTimeline(uint64 index, CoreGraphics::QueueType type, VkPipelineStageFlags waitFlags, CoreGraphics::QueueType waitType)
 {
     n_assert(type != CoreGraphics::InvalidQueueType);
+    n_assert(index != UINT64_MAX);
     TimelineSubmission& sub = this->timelineSubmissions[type].Back();
-    if (index != UINT64_MAX)
-    {
-        sub.waitIndices.Append(index);
-        sub.waitSemaphores.Append(this->semaphores[waitType]);
-        sub.waitFlags.Append(waitFlags);
-    }
+    sub.waitIndices.Append(index);
+    sub.waitSemaphores.Append(this->semaphores[waitType]);
+    sub.waitFlags.Append(waitFlags);
 }
 
 //------------------------------------------------------------------------------
@@ -319,7 +315,7 @@ VkSubContextHandler::Wait(CoreGraphics::QueueType type, uint64 index)
             &index
         };
         VkResult res = vkWaitSemaphores(this->device, &waitInfo, UINT64_MAX);
-        n_assert(res == VK_SUCCESS || res == VK_TIMEOUT);
+        n_assert(res == VK_SUCCESS);
     }
 }
 

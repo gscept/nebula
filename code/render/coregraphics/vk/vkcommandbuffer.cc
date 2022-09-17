@@ -16,6 +16,7 @@
 #include "vkresourcetable.h"
 #include "vkevent.h"
 #include "vkpass.h"
+#include "graphics/globalconstants.h"
 
 namespace Vulkan
 {
@@ -392,6 +393,7 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
     VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
     VkShaderProgramRuntimeInfo& info = shaderAlloc.Get<Shader_ProgramAllocator>(pro.shaderId).Get<ShaderProgram_RuntimeInfo>(pro.programId);
 
+    IndexT buffer = CoreGraphics::GetBufferedFrameIndex();
     pipelineBundle.program = pro;
     if (info.type == ShaderPipeline::ComputePipeline)
     {
@@ -403,13 +405,13 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
             QueueType queue = commandBuffers.GetUnsafe<CmdBuffer_Usage>(id.id24);
             if (queue == GraphicsQueueType)
             {
-                CoreGraphics::CmdSetResourceTable(id, CoreGraphics::GetTickResourceTableGraphics(), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
-                CoreGraphics::CmdSetResourceTable(id, CoreGraphics::GetFrameResourceTableGraphics(), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
+                CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTableGraphics(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
+                CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTableGraphics(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
             }
             else
             {
-                CoreGraphics::CmdSetResourceTable(id, CoreGraphics::GetTickResourceTableCompute(), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
-                CoreGraphics::CmdSetResourceTable(id, CoreGraphics::GetFrameResourceTableCompute(), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
+                CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTableCompute(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
+                CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTableCompute(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::ComputePipeline, nullptr);
             }
         }
     }
@@ -443,8 +445,8 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
         pipelineBundle.graphicsLayout = info.layout;
         if (bindGlobals && pipelineChange)
         {
-            CoreGraphics::CmdSetResourceTable(id, CoreGraphics::GetTickResourceTableGraphics(), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
-            CoreGraphics::CmdSetResourceTable(id, CoreGraphics::GetFrameResourceTableGraphics(), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+            CoreGraphics::CmdSetResourceTable(id, Graphics::GetTickResourceTableGraphics(buffer), NEBULA_TICK_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
+            CoreGraphics::CmdSetResourceTable(id, Graphics::GetFrameResourceTableGraphics(buffer), NEBULA_FRAME_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
             CoreGraphics::CmdSetResourceTable(id, PassGetResourceTable(pipelineBundle.pass), NEBULA_PASS_GROUP, CoreGraphics::ShaderPipeline::GraphicsPipeline, nullptr);
         }
     }

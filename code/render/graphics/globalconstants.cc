@@ -103,19 +103,11 @@ AllocateGlobalConstants()
     ResourceTableSetConstantBuffer(state.frameResourceTablesCompute[bufferedFrameIndex], { CoreGraphics::GetComputeConstantBuffer(), Shared::Table_Frame::ShadowViewConstants::SLOT, 0, Shared::Table_Frame::ShadowViewConstants::SIZE, (SizeT)state.shadowViewCboOffset });
     ResourceTableCommitChanges(state.frameResourceTablesCompute[bufferedFrameIndex]);
 
-    // Set frame tables
-    CoreGraphics::SetFrameResourceTableGraphics(state.frameResourceTablesGraphics[bufferedFrameIndex]);
-    CoreGraphics::SetFrameResourceTableCompute(state.frameResourceTablesCompute[bufferedFrameIndex]);
-
     // Update tick resource tables
     ResourceTableSetConstantBuffer(state.tickResourceTablesGraphics[bufferedFrameIndex], { CoreGraphics::GetGraphicsConstantBuffer(), Shared::Table_Tick::PerTickParams::SLOT, 0, Shared::Table_Tick::PerTickParams::SIZE, (SizeT)state.tickCboOffset });
     ResourceTableCommitChanges(state.tickResourceTablesGraphics[bufferedFrameIndex]);
     ResourceTableSetConstantBuffer(state.tickResourceTablesCompute[bufferedFrameIndex], { CoreGraphics::GetComputeConstantBuffer(), Shared::Table_Tick::PerTickParams::SLOT, 0, Shared::Table_Tick::PerTickParams::SIZE, (SizeT)state.tickCboOffset });
     ResourceTableCommitChanges(state.tickResourceTablesCompute[bufferedFrameIndex]);
-
-    // Set tick tables
-    CoreGraphics::SetTickResourceTableGraphics(state.tickResourceTablesGraphics[bufferedFrameIndex]);
-    CoreGraphics::SetTickResourceTableCompute(state.tickResourceTablesCompute[bufferedFrameIndex]);
 }
 
 //------------------------------------------------------------------------------
