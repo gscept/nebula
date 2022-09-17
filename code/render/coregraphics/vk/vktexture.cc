@@ -238,7 +238,6 @@ SetupTexture(const TextureId id)
     Vulkan::VkTextureLoadInfo& loadInfo = textureAllocator.Get<Vulkan::Texture_LoadInfo>(id.resourceId);
     Vulkan::VkTextureWindowInfo& windowInfo = textureAllocator.Get<Vulkan::Texture_WindowInfo>(id.resourceId);
 
-
     VkFormat vkformat = VkTypes::AsVkFormat(loadInfo.format);
 
     VkFormatProperties formatProps;

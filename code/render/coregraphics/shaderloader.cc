@@ -96,4 +96,4 @@ ShaderLoader::Unload(const Resources::ResourceId res)
     CoreGraphics::DestroyShader(id);
 }
 
-}
+} // namespace CoreGraphics

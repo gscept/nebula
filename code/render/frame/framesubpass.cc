@@ -61,9 +61,7 @@ FrameSubpass::OnWindowResized()
 void
 FrameSubpass::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex)
 {
-#if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_GREEN, this->name.Value());
-#endif
+    N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_GREEN, this->name.Value());
 
     // Run ops
     IndexT i;
@@ -71,10 +69,6 @@ FrameSubpass::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const In
     {
         this->ops[i]->Run(cmdBuf, frameIndex, bufferIndex);
     }
-
-#if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::CmdEndMarker(cmdBuf);
-#endif
 }
 
 //------------------------------------------------------------------------------

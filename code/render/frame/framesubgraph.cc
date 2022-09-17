@@ -40,19 +40,13 @@ FrameSubgraph::OnWindowResized()
 void
 FrameSubgraph::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex)
 {
-#if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, this->name.Value());
-#endif
+    N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_ORANGE, this->name.Value());
 
     for (Frame::FrameOp::Compiled* op : this->subgraphOps)
     {
         op->QueuePreSync(cmdBuf);
         op->Run(cmdBuf, frameIndex, bufferIndex);
     }
-
-#if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::CmdEndMarker(cmdBuf);
-#endif
 }
 
 //------------------------------------------------------------------------------

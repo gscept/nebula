@@ -47,10 +47,7 @@ FrameBarrier::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
 void
 FrameBarrier::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const IndexT frameIndex, const IndexT bufferIndex)
 {
-#if NEBULA_GRAPHICS_DEBUG
-    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_GRAY, this->name.Value());
-    CoreGraphics::CmdEndMarker(cmdBuf);
-#endif
+    N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_GRAY, this->name.Value());
 }
 
 //------------------------------------------------------------------------------

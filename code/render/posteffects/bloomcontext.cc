@@ -136,18 +136,12 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
 
     lowpassOp->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
-#if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_ORANGE, "Brightness Lowpass Filter");
-#endif
+        N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_ORANGE, "Brightness Lowpass Filter");
 
         CoreGraphics::CmdSetShaderProgram(cmdBuf, bloomState.brightPassProgram);
         RenderUtil::DrawFullScreenQuad::ApplyMesh(cmdBuf);
         CoreGraphics::CmdSetResourceTable(cmdBuf, bloomState.brightPassTable, NEBULA_BATCH_GROUP, CoreGraphics::GraphicsPipeline, nullptr);
         CoreGraphics::CmdDraw(cmdBuf, RenderUtil::DrawFullScreenQuad::GetPrimitiveGroup());
-
-#if NEBULA_GRAPHICS_DEBUG
-        CoreGraphics::CmdEndMarker(cmdBuf);
-#endif
     };
 
     // Add the code node to the subpass, this is how we actually render

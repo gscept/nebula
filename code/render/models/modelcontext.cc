@@ -630,9 +630,8 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
 void
 ModelContext::WaitForWork(const Graphics::FrameContext& ctx)
 {
-    N_MARKER_BEGIN(WaitForModels, Graphics);
+    N_SCOPE(WaitForModels, Graphics);
     ModelContext::completionEvent.Wait();
-    N_MARKER_END();
 }
 
 //------------------------------------------------------------------------------
