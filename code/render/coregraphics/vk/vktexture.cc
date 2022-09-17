@@ -940,7 +940,7 @@ TextureSwapBuffers(const CoreGraphics::TextureId id)
 void
 TextureWindowResized(const TextureId id)
 {
-    __Lock(textureAllocator, Util::ArrayAllocatorAccess::Read);
+    __Lock(textureAllocator, Util::ArrayAllocatorAccess::Write);
     VkTextureLoadInfo& loadInfo = textureAllocator.Get<Texture_LoadInfo>(id.resourceId);
     VkTextureRuntimeInfo& runtimeInfo = textureAllocator.Get<Texture_RuntimeInfo>(id.resourceId);
     VkTextureWindowInfo& windowInfo = textureAllocator.Get<Texture_WindowInfo>(id.resourceId);
