@@ -279,7 +279,11 @@ TextureLoader::StreamMaxLOD(const Resources::ResourceId& id, const float lod, bo
                 texture,
                 subres
             }
-        });
+        },
+        nullptr,
+        CoreGraphics::GetQueueIndex(CoreGraphics::TransferQueueType),
+        CoreGraphics::GetQueueIndex(CoreGraphics::GraphicsQueueType)
+    );
     CoreGraphics::UnlockTransferSetupCommandBuffer();
 
     // perform final transition on graphics queue
@@ -294,8 +298,11 @@ TextureLoader::StreamMaxLOD(const Resources::ResourceId& id, const float lod, bo
             {
                 texture,
                 subres
-            }
-        });
+            }                 
+        },
+        nullptr,
+        CoreGraphics::GetQueueIndex(CoreGraphics::TransferQueueType),
+        CoreGraphics::GetQueueIndex(CoreGraphics::GraphicsQueueType));
 
     CoreGraphics::CmdBarrier(handoverCmdBuf,
         CoreGraphics::PipelineStage::TransferWrite,

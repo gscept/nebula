@@ -125,9 +125,8 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
 void
 TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::QueueType queue, CoreGraphics::TextureId tex, const SizeT width, SizeT height, SizeT mip, SizeT layer, SizeT size, const void* data)
 {
-    CoreGraphics::PixelFormat::Code format = TextureGetPixelFormat(tex);
-    SizeT texelSize = PixelFormat::ToTexelSize(format);
-    uint offset = CoreGraphics::Upload(data, size, texelSize);
+    SizeT alignment = CoreGraphics::PixelFormat::ToTexelSize(TextureGetPixelFormat(tex));
+    uint offset = CoreGraphics::Upload(data, size, alignment);
 
     // Then run a copy on the command buffer
     CoreGraphics::BufferCopy bufCopy;

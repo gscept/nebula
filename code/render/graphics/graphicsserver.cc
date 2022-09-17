@@ -59,7 +59,7 @@ GraphicsServer::Open()
         32_MB,                      // Constant buffer memory
         256_MB,                      // Vertex memory size
         64_MB,                       // Index memory size
-        64_MB,
+        256_MB,
         {
             128_MB,                 // Device local memory block size
             32_MB,                  // Host coherent memory block size
@@ -476,6 +476,8 @@ GraphicsServer::RunPreLogic()
 
 void GraphicsServer::RunPostLogic()
 {
+    N_SCOPE(PostLogic, Graphics);
+
     N_MARKER_BEGIN(ContextPostLogic, Graphics);
     for (auto& call : this->postLogicCalls)
     {
