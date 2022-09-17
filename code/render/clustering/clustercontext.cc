@@ -113,10 +113,10 @@ ClusterContext::Create(float ZNear, float ZFar, const CoreGraphics::WindowId win
         CoreGraphics::ResourceTableId graphicsTable = Graphics::GetFrameResourceTableGraphics(i);
 
         ResourceTableSetRWBuffer(computeTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(computeTable, { state.constantBuffer, Shared::Table_Frame::ClusterUniforms::SLOT, 0, sizeof(ClusterGenerate::ClusterUniforms), 0 });
+        ResourceTableSetConstantBuffer(computeTable, { state.constantBuffer, Shared::Table_Frame::ClusterUniforms::SLOT, 0, Shared::Table_Frame::ClusterUniforms::SIZE, 0 });
 
         ResourceTableSetRWBuffer(graphicsTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-        ResourceTableSetConstantBuffer(graphicsTable, { state.constantBuffer, Shared::Table_Frame::ClusterUniforms::SLOT, 0, sizeof(ClusterGenerate::ClusterUniforms), 0 });
+        ResourceTableSetConstantBuffer(graphicsTable, { state.constantBuffer, Shared::Table_Frame::ClusterUniforms::SLOT, 0, Shared::Table_Frame::ClusterUniforms::SIZE, 0 });
     }
 
     Frame::FrameCode* op = state.frameOpAllocator.Alloc<Frame::FrameCode>();
@@ -213,7 +213,6 @@ ClusterContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, Size
         state.invYResolution = 1.0f / displayMode.GetHeight();
 
         CoreGraphics::DestroyBuffer(state.clusterBuffer);
-        CoreGraphics::DestroyBuffer(state.constantBuffer);
 
         CoreGraphics::BufferCreateInfo rwb3Info;
         rwb3Info.name = "ClusterAABBBuffer";
@@ -223,7 +222,6 @@ ClusterContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, Size
         rwb3Info.usageFlags = CoreGraphics::ReadWriteBuffer;
         rwb3Info.queueSupport = CoreGraphics::GraphicsQueueSupport | CoreGraphics::ComputeQueueSupport;
         state.clusterBuffer = CreateBuffer(rwb3Info);
-        state.constantBuffer = ShaderCreateConstantBuffer(state.clusterShader, "ClusterUniforms");
 
         for (IndexT i = 0; i < CoreGraphics::GetNumBufferedFrames(); i++)
         {
@@ -231,11 +229,9 @@ ClusterContext::WindowResized(const CoreGraphics::WindowId id, SizeT width, Size
             CoreGraphics::ResourceTableId graphicsTable = Graphics::GetFrameResourceTableGraphics(i);
 
             ResourceTableSetRWBuffer(computeTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-            ResourceTableSetConstantBuffer(computeTable, { state.constantBuffer, Shared::Table_Frame::ClusterUniforms::SLOT, 0, sizeof(ClusterGenerate::ClusterUniforms), 0 });
             ResourceTableCommitChanges(computeTable);
 
             ResourceTableSetRWBuffer(graphicsTable, { state.clusterBuffer, Shared::Table_Frame::ClusterAABBs::SLOT, 0, NEBULA_WHOLE_BUFFER_SIZE, 0 });
-            ResourceTableSetConstantBuffer(graphicsTable, { state.constantBuffer, Shared::Table_Frame::ClusterUniforms::SLOT, 0, sizeof(ClusterGenerate::ClusterUniforms), 0 });
             ResourceTableCommitChanges(graphicsTable);
         }
     }
