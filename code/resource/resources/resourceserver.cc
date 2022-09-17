@@ -41,12 +41,7 @@ void
 ResourceServer::Open()
 {
     n_assert(!this->open);
-    this->loaderThread = ResourceLoaderThread::Create();
-    this->loaderThread->SetPriority(Threading::Thread::Normal);
-    this->loaderThread->SetThreadAffinity(System::Cpu::Core3);
-    this->loaderThread->SetName("Resources::ResourceLoaderThread");
-    this->loaderThread->Start();
-    this->pools.Reserve(256); // lower 8 bits of resource id can only get to 256
+    this->loaders.Reserve(256); // lower 8 bits of resource id can only get to 256
     this->open = true;
     UniquePoolCounter = 0;
 }
@@ -58,15 +53,14 @@ void
 ResourceServer::Close()
 {
     n_assert(this->open);
-    this->loaderThread = nullptr;
 
 #if NEBULA_DEBUG
     // report any resources which have not been unloaded
     bool hasLeaks = false;
     Core::SysFunc::DebugOut("\n\n******** NEBULA RESOURCE MANAGER ********\n Beginning of resource leak report:");
-    for (IndexT i = 0; i < this->pools.Size(); i++)
+    for (IndexT i = 0; i < this->loaders.Size(); i++)
     {
-        ResourceLoader* pool = this->pools[i];
+        ResourceLoader* pool = this->loaders[i];
         for (auto & kvp : pool->ids)
         {
             const auto resource = pool->resources[kvp.Value()];
@@ -87,7 +81,7 @@ ResourceServer::Close()
     }
 
 #endif
-    this->pools.Clear();
+    this->loaders.Clear();
     this->extensionMap.Clear();
     this->open = false;
 }
@@ -104,9 +98,9 @@ ResourceServer::RegisterStreamPool(const Util::StringAtom& ext, const Core::Rtti
     Ptr<ResourceLoader> loader((ResourceLoader*)obj);
     loader->uniqueId = UniquePoolCounter++;
     loader->Setup();
-    this->pools.Append(loader);
-    this->extensionMap.Add(ext, this->pools.Size() - 1);
-    this->typeMap.Add(&loaderClass, this->pools.Size() - 1);
+    this->loaders.Append(loader);
+    this->extensionMap.Add(ext, this->loaders.Size() - 1);
+    this->typeMap.Add(&loaderClass, this->loaders.Size() - 1);
 }
 
 //------------------------------------------------------------------------------
@@ -117,9 +111,9 @@ ResourceServer::LoadDefaultResources()
 {
     n_assert(this->open);
     IndexT i;
-    for (i = 0; i < this->pools.Size(); i++)
+    for (i = 0; i < this->loaders.Size(); i++)
     {
-        this->pools[i]->LoadFallbackResources();
+        this->loaders[i]->LoadFallbackResources();
     }
 }
 
@@ -131,9 +125,9 @@ ResourceServer::Update(IndexT frameIndex)
 {
     N_SCOPE(Update, Resources);
     IndexT i;
-    for (i = 0; i < this->pools.Size(); i++)
+    for (i = 0; i < this->loaders.Size(); i++)
     {
-        const Ptr<ResourceLoader>& loader = this->pools[i];
+        const Ptr<ResourceLoader>& loader = this->loaders[i];
         loader->Update(frameIndex);
     }
 }
@@ -145,9 +139,9 @@ void
 ResourceServer::DiscardResources(const Util::StringAtom& tag)
 {
     IndexT i;
-    for (i = 0; i < this->pools.Size(); i++)
+    for (i = 0; i < this->loaders.Size(); i++)
     {
-        const Ptr<ResourceLoader>& loader = this->pools[i];
+        const Ptr<ResourceLoader>& loader = this->loaders[i];
         loader->DiscardByTag(tag);
     }
 }
@@ -159,9 +153,9 @@ bool
 ResourceServer::HasPendingResources()
 {
     IndexT i;
-    for (i = 0; i < this->pools.Size(); i++)
+    for (i = 0; i < this->loaders.Size(); i++)
     {
-        const Ptr<ResourceLoader>& loader = this->pools[i];
+        const Ptr<ResourceLoader>& loader = this->loaders[i];
         if (loader->IsA(ResourceLoader::RTTI))
         {
             const Ptr<ResourceLoader>& pool = loader.cast<ResourceLoader>();
@@ -182,8 +176,8 @@ ResourceServer::GetType(const Resources::ResourceId id)
     const Ids::Id8 loaderid = id.cacheIndex;
 
     // get resource loader by extension
-    n_assert(this->pools.Size() > loaderid);
-    const Ptr<ResourceLoader>& loader = this->pools[loaderid];
+    n_assert(this->loaders.Size() > loaderid);
+    const Ptr<ResourceLoader>& loader = this->loaders[loaderid];
     return loader->GetRtti();
 }
 
@@ -193,7 +187,10 @@ ResourceServer::GetType(const Resources::ResourceId id)
 void 
 ResourceServer::WaitForLoaderThread()
 {
-    this->loaderThread->Wait();
+    for (const Ptr<ResourceLoader>& loader : this->loaders)
+    {
+        loader->streamerThread->Wait();
+    }
 }
 
 } // namespace Resources
