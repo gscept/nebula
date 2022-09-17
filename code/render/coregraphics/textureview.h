@@ -17,6 +17,7 @@ ID_24_8_TYPE(TextureViewId);
 
 struct TextureViewCreateInfo
 {
+    Util::StringAtom name = "";
     TextureId tex = InvalidTextureId;
     IndexT startMip = 0;
     SizeT numMips = 1;

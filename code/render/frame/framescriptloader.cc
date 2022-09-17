@@ -653,7 +653,8 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
             TextureId tex = script->GetTexture(ds->string_value);
             TextureViewCreateInfo viewCreate =
             {
-                tex
+                ds->string_value
+                , tex
                 , 0, 1, 0, TextureGetNumLayers(tex)
                 , TextureGetPixelFormat(tex)
             };
@@ -705,7 +706,8 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
         TextureId tex = script->GetTexture(name->string_value);
         TextureViewCreateInfo viewCreate =
         {
-            tex
+            name->string_value
+            , tex
             , 0, 1, 0, TextureGetNumLayers(tex)
             , TextureGetPixelFormat(tex)
         };
