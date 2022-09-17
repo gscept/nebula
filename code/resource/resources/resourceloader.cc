@@ -362,7 +362,7 @@ ResourceLoader::LoadDeferred(_PendingResourceLoad& res)
     if (this->async)
     {
         res.inflight = true;
-        ResourceServer::Instance()->loaderThread->jobs.Enqueue(loadFunc);
+        this->streamerThread->jobs.Enqueue(loadFunc);
         return Threaded;
     }
     else
@@ -551,8 +551,6 @@ Resources::ResourceLoader::DiscardResource(const Resources::ResourceId id)
     n_assert(Threading::Thread::GetMyThreadId() == this->creatorThread);
     if (id != this->placeholderResourceId && id != this->failResourceId)
     {
-        ResourceLoader::DiscardResource(id);
-
         // if usage reaches 0, add it to the list of pending unloads
         if (this->usage[id.cacheInstanceId] == 0)
         {

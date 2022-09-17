@@ -58,9 +58,6 @@ public:
     /// get type of resource pool this resource was allocated with
     Core::Rtti* GetType(const Resources::ResourceId id);
 
-    /// wait for resource thread to finish the current job, and then pause the thread
-    void WaitForLoaderThread();
-
     /// get resource name
     const Resources::ResourceName GetName(const Resources::ResourceId id) const;
     /// get tag resource was first registered with
@@ -79,16 +76,18 @@ public:
     /// get stream pool for later use
     template <class POOL_TYPE> POOL_TYPE* GetStreamPool() const;
 
+    /// Wait for all loader threads
+    void WaitForLoaderThread();
+
     /// goes through all pools and sets up their default resources
     void LoadDefaultResources();
 private:
     friend class ResourceLoader;
 
     bool open;
-    Ptr<ResourceLoaderThread> loaderThread;
     Util::Dictionary<Util::StringAtom, IndexT> extensionMap;
     Util::Dictionary<const Core::Rtti*, IndexT> typeMap;
-    Util::Array<Ptr<ResourceLoader>> pools;
+    Util::Array<Ptr<ResourceLoader>> loaders;
 
     static int32_t UniquePoolCounter;
 };
@@ -116,7 +115,7 @@ Resources::ResourceServer::CreateResource(const ResourceName& res, const Util::S
     Util::String ext = res.AsString().GetFileExtension();
     IndexT i = this->extensionMap.FindIndex(ext);
     n_assert_fmt(i != InvalidIndex, "No resource loader is associated with file extension '%s'", ext.AsCharPtr());
-    const Ptr<ResourceLoader>& loader = this->pools[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
+    const Ptr<ResourceLoader>& loader = this->loaders[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
 
     // create container and cast to actual resource type
     Resources::ResourceId id = loader->CreateResource(res, nullptr, 0, tag, success, failed, immediate);
@@ -144,7 +143,7 @@ ResourceServer::CreateResource(const ResourceName& res, const METADATA& metaData
     Util::String ext = res.AsString().GetFileExtension();
     IndexT i = this->extensionMap.FindIndex(ext);
     n_assert_fmt(i != InvalidIndex, "No resource loader is associated with file extension '%s'", ext.AsCharPtr());
-    const Ptr<ResourceLoader>& loader = this->pools[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
+    const Ptr<ResourceLoader>& loader = this->loaders[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
 
     // create container and cast to actual resource type
     Resources::ResourceId id = loader->CreateResource(res, &metaData, sizeof(METADATA), tag, success, failed, immediate);
@@ -161,7 +160,7 @@ ResourceServer::ReloadResource(const ResourceName& res, std::function<void(const
     Util::String ext = res.AsString().GetFileExtension();
     IndexT i = this->extensionMap.FindIndex(ext);
     n_assert_fmt(i != InvalidIndex, "No resource loader is associated with file extension '%s'", ext.AsCharPtr());
-    const Ptr<ResourceLoader>& loader = this->pools[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
+    const Ptr<ResourceLoader>& loader = this->loaders[this->extensionMap.ValueAtIndex(i)].downcast<ResourceLoader>();
 
     // create container and cast to actual resource type
     loader->ReloadResource(res, success, failed);
@@ -177,8 +176,8 @@ ResourceServer::SetMaxLOD(const ResourceId& id, float lod, bool immediate)
     const Ids::Id8 loaderid = id.cacheIndex;
 
     // get resource loader by extension
-    n_assert(this->pools.Size() > loaderid);
-    const Ptr<ResourceLoader>& loader = this->pools[loaderid].downcast<ResourceLoader>();
+    n_assert(this->loaders.Size() > loaderid);
+    const Ptr<ResourceLoader>& loader = this->loaders[loaderid].downcast<ResourceLoader>();
 
     // update LOD
     loader->SetMaxLOD(id, lod, immediate);
@@ -195,8 +194,8 @@ ResourceServer::DiscardResource(const Resources::ResourceId id)
     const Ids::Id8 loaderid = id.cacheIndex;
 
     // get resource loader by extension
-    n_assert(this->pools.Size() > loaderid);
-    const Ptr<ResourceLoader>& loader = this->pools[loaderid].downcast<ResourceLoader>();
+    n_assert(this->loaders.Size() > loaderid);
+    const Ptr<ResourceLoader>& loader = this->loaders[loaderid].downcast<ResourceLoader>();
 
     // discard container
     loader->DiscardResource(id);
@@ -209,8 +208,8 @@ inline const Resources::ResourceName
 ResourceServer::GetName(const Resources::ResourceId id) const
 {
     // get resource loader by extension
-    n_assert(this->pools.Size() > id.cacheIndex);
-    const Ptr<ResourceLoader>& loader = this->pools[id.cacheIndex];
+    n_assert(this->loaders.Size() > id.cacheIndex);
+    const Ptr<ResourceLoader>& loader = this->loaders[id.cacheIndex];
     return loader->GetName(id);
 }
 
@@ -221,8 +220,8 @@ inline const Util::StringAtom
 ResourceServer::GetTag(const Resources::ResourceId id) const
 {
     // get resource loader by extension
-    n_assert(this->pools.Size() > id.cacheIndex);
-    const Ptr<ResourceLoader>& loader = this->pools[id.cacheIndex];
+    n_assert(this->loaders.Size() > id.cacheIndex);
+    const Ptr<ResourceLoader>& loader = this->loaders[id.cacheIndex];
     return loader->GetTag(id);
 }
 
@@ -233,8 +232,8 @@ inline const Resources::Resource::State
 ResourceServer::GetState(const Resources::ResourceId id) const
 {
     // get resource loader by extension
-    n_assert(this->pools.Size() > id.cacheIndex);
-    const Ptr<ResourceLoader>& loader = this->pools[id.cacheIndex];
+    n_assert(this->loaders.Size() > id.cacheIndex);
+    const Ptr<ResourceLoader>& loader = this->loaders[id.cacheIndex];
     return loader->GetState(id);
 }
 
@@ -245,8 +244,8 @@ inline const SizeT
 ResourceServer::GetUsage(const Resources::ResourceId id) const
 {
     // get resource loader by extension
-    n_assert(this->pools.Size() > id.cacheIndex);
-    const Ptr<ResourceLoader>& loader = this->pools[id.cacheIndex];
+    n_assert(this->loaders.Size() > id.cacheIndex);
+    const Ptr<ResourceLoader>& loader = this->loaders[id.cacheIndex];
     return loader->GetUsage(id);
 }
 
@@ -256,9 +255,9 @@ ResourceServer::GetUsage(const Resources::ResourceId id) const
 inline bool
 ResourceServer::HasResource(const Resources::ResourceId id) const
 {
-    if (this->pools.Size() <= id.cacheIndex) return false;
+    if (this->loaders.Size() <= id.cacheIndex) return false;
     {
-        const Ptr<ResourceLoader>& loader = this->pools[id.cacheIndex];
+        const Ptr<ResourceLoader>& loader = this->loaders[id.cacheIndex];
         if (loader->HasResource(id)) return true;
         return false;		
     }
@@ -271,9 +270,9 @@ inline const Resources::ResourceId
 ResourceServer::GetId(const Resources::ResourceName& name) const
 {
     IndexT i;
-    for (i = 0; i < this->pools.Size(); i++)
+    for (i = 0; i < this->loaders.Size(); i++)
     {
-        Resources::ResourceId id = this->pools[i]->GetId(name);
+        Resources::ResourceId id = this->loaders[i]->GetId(name);
         if (id != Resources::ResourceId::Invalid()) return id;
     }
     return Resources::ResourceId::Invalid();
@@ -288,9 +287,9 @@ ResourceServer::GetStreamPool() const
 {
     static_assert(std::is_base_of<ResourceLoader, POOL_TYPE>::value, "Type requested is not a stream pool");
     IndexT i;
-    for (i = 0; i < this->pools.Size(); i++)
+    for (i = 0; i < this->loaders.Size(); i++)
     {
-        if (this->pools[i]->GetRtti()->IsDerivedFrom(POOL_TYPE::RTTI)) return static_cast<POOL_TYPE*>(this->pools[i].get());
+        if (this->loaders[i]->GetRtti()->IsDerivedFrom(POOL_TYPE::RTTI)) return static_cast<POOL_TYPE*>(this->loaders[i].get());
     }
 
     n_error("No loader registered for this type");
