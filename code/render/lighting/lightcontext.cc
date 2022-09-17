@@ -53,7 +53,6 @@ struct
     Util::Array<Graphics::GraphicsEntityId> spotLightEntities;
     Util::RingBuffer<Graphics::GraphicsEntityId> shadowcastingLocalLights;
 
-    Ptr<Frame::FrameScript> shadowMappingFrameScript;
     alignas(16) Shared::ShadowViewConstants shadowMatrixUniforms;
     CoreGraphics::TextureId localLightShadows = CoreGraphics::InvalidTextureId;
     CoreGraphics::TextureId globalLightShadowMap = CoreGraphics::InvalidTextureId;
@@ -86,7 +85,7 @@ struct
     uint numThreadsThisFrame;
 
     // these are used to update the light clustering
-    LightsCluster::LightLists lightList;
+    alignas(16) LightsCluster::LightLists lightList;
 
 } clusterState;
 
@@ -152,11 +151,10 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
 #endif
 
     // create shadow mapping frame script
-    lightServerState.shadowMappingFrameScript = Frame::FrameServer::Instance()->LoadFrameScript("shadowmap_framescript", "frame:vkshadowmap.json"_uri);
     lightServerState.spotlightsBatchCode = CoreGraphics::BatchGroup::FromName("SpotLightShadow");
     lightServerState.globalLightsBatchCode = CoreGraphics::BatchGroup::FromName("GlobalShadow");
-    lightServerState.globalLightShadowMap = lightServerState.shadowMappingFrameScript->GetTexture("SunShadowDepth");
-    lightServerState.localLightShadows = lightServerState.shadowMappingFrameScript->GetTexture("LocalLightShadow");
+    lightServerState.globalLightShadowMap = frameScript->GetTexture("SunShadowDepth");
+    lightServerState.localLightShadows = frameScript->GetTexture("LocalLightShadow");
     if (lightServerState.terrainShadowMap == CoreGraphics::InvalidTextureId)
         lightServerState.terrainShadowMap = Resources::CreateResource("tex:system/white.dds", "system");
 
@@ -182,7 +180,7 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
     clusterState.clusterLightsList = CreateBuffer(rwbInfo);
 
     rwbInfo.name = "LightListsStagingBuffer";
-    rwbInfo.mode = BufferAccessMode::HostLocal;
+    rwbInfo.mode = BufferAccessMode::HostCached;
     rwbInfo.usageFlags = CoreGraphics::TransferBufferSource;
     clusterState.stagingClusterLightsList.Resize(CoreGraphics::GetNumBufferedFrames());
 
@@ -365,9 +363,6 @@ LightContext::Create(const Ptr<Frame::FrameScript>& frameScript)
         CmdDispatch(cmdBuf, Math::divandroundup(dims.width, 64), dims.height, 1);
     };
     Frame::AddSubgraph("Lights Combine", { lightsCombine });
-
-    // Build shadow frame script after we have setup all the subgraphs
-    lightServerState.shadowMappingFrameScript->Build();
 }
 
 //------------------------------------------------------------------------------
@@ -377,7 +372,6 @@ void
 LightContext::Discard()
 {
     lightServerState.frameOpAllocator.Release();
-    lightServerState.shadowMappingFrameScript->Discard();
     Graphics::GraphicsServer::Instance()->UnregisterGraphicsContext(&__bundle);
 }
 
@@ -703,11 +697,6 @@ void
 LightContext::OnPrepareView(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx)
 {
     const Graphics::ContextEntityId cid = GetContextId(lightServerState.globalLightEntity);
-
-#ifndef PUBLIC_BUILD
-    if (Core::CVarReadInt(Core::CVarGet("r_shadow_debug")) > 0)
-        Debug::FrameScriptInspector::Run(lightServerState.shadowMappingFrameScript);
-#endif
 
     // Setup global light view transform
     if (genericLightAllocator.Get<ShadowCaster>(cid.id))
@@ -1056,6 +1045,7 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     if (numPointLights > 0 || numSpotLights > 0)
     {
         CoreGraphics::BufferUpdate(clusterState.stagingClusterLightsList[bufferIndex], clusterState.lightList);
+        CoreGraphics::BufferFlush(clusterState.stagingClusterLightsList[bufferIndex]);
     }
 
     // get per-view resource tables
@@ -1068,9 +1058,9 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     consts.NumLightClusters = Clustering::ClusterContext::GetNumClusters();
     consts.SSAOBuffer = CoreGraphics::TextureGetBindlessHandle(textureState.aoTexture);
     IndexT offset = SetConstants(consts);
-    ResourceTableSetConstantBuffer(computeTable, { GetComputeConstantBuffer(), Shared::Table_Frame::LightUniforms::SLOT, 0, sizeof(LightsCluster::LightUniforms), (SizeT)offset });
+    ResourceTableSetConstantBuffer(computeTable, { GetComputeConstantBuffer(), Shared::Table_Frame::LightUniforms::SLOT, 0, Shared::Table_Frame::LightUniforms::SIZE, (SizeT)offset });
     ResourceTableCommitChanges(computeTable);
-    ResourceTableSetConstantBuffer(graphicsTable, { GetGraphicsConstantBuffer(), Shared::Table_Frame::LightUniforms::SLOT, 0, sizeof(LightsCluster::LightUniforms), (SizeT)offset });
+    ResourceTableSetConstantBuffer(graphicsTable, { GetGraphicsConstantBuffer(), Shared::Table_Frame::LightUniforms::SLOT, 0, Shared::Table_Frame::LightUniforms::SIZE, (SizeT)offset });
     ResourceTableCommitChanges(graphicsTable);
 
     TextureDimensions dims = TextureGetDimensions(textureState.lightingTexture);
@@ -1080,15 +1070,6 @@ LightContext::UpdateViewDependentResources(const Ptr<Graphics::View>& view, cons
     offset = SetConstants(combineConsts);
     ResourceTableSetConstantBuffer(combineState.resourceTables[bufferIndex], { GetGraphicsConstantBuffer(), Combine::Table_Batch::CombineUniforms::SLOT, 0, Combine::Table_Batch::CombineUniforms::SIZE, (SizeT)offset });
     ResourceTableCommitChanges(combineState.resourceTables[bufferIndex]);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-LightContext::RenderShadows(const Graphics::FrameContext& ctx)
-{
-    lightServerState.shadowMappingFrameScript->Run(ctx.frameIndex, ctx.bufferIndex);
 }
 
 //------------------------------------------------------------------------------

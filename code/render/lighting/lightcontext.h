@@ -93,8 +93,6 @@ public:
 
     /// prepare light lists
     static void UpdateViewDependentResources(const Ptr<Graphics::View>& view, const Graphics::FrameContext& ctx);
-    /// Render shadows
-    static void RenderShadows(const Graphics::FrameContext& ctx);
     /// run framescript when visibility is done
     static void RunFrameScriptJobs(const Graphics::FrameContext& ctx);
     /// React to window resize event
