@@ -277,7 +277,6 @@ SimpleViewerApplication::Open()
             Characters::CharacterContext::WaitForCharacterJobs,
             Particles::ParticleContext::WaitForParticleUpdates,
             ObserverContext::WaitForVisibility,
-            Lighting::LightContext::RenderShadows,
         };
 
         Util::FixedArray<Graphics::ViewDependentCall> postLogicViewCalls = 
