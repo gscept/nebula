@@ -27,6 +27,9 @@ public:
     /// Destructor
     ~ImguiProfiler();
 
+    /// Capture the frame
+    void Capture();
+
     /// Render, call this per-frame
     void Render(Timing::Time frameTime, IndexT frameIndex);
 
