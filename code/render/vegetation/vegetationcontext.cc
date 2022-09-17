@@ -12,7 +12,7 @@
 #include "graphics/cameracontext.h"
 #include "frame/framesubgraph.h"
 #include "memory/rangeallocator.h"
-#include "coregraphics/streammeshcache.h"
+#include "coregraphics/meshloader.h"
 #include "models/model.h"
 #include "models/nodes/modelnode.h"
 #include "models/nodes/transformnode.h"
@@ -890,7 +890,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
     normal = Resources::CreateResource(setup.normals, "Vegetation", nullptr, nullptr, true);
     material = Resources::CreateResource(setup.material, "Vegetation", nullptr, nullptr, true);
 
-    CoreGraphics::StreamMeshCache::StreamMeshLoadMetaData metaData;
+    CoreGraphics::MeshLoader::StreamMeshLoadMetaData metaData;
     metaData.copySource = true;
     mesh = CoreGraphics::InvalidMeshId;
 

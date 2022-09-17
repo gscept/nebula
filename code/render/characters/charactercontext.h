@@ -184,8 +184,8 @@ private:
     };
 
     typedef Ids::IdAllocator<
-        Characters::SkeletonId,
-        CoreAnimation::AnimResourceId,
+        Resources::ResourceId,
+        Resources::ResourceId,
         LoadState,
         AnimationTracks,
         Timing::Time,

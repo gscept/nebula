@@ -120,8 +120,8 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                                 // Bind graphics pipeline
                                 CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
 
-                                // Apply surface
-                                shaderConfig->ApplyMaterial(cmdBuf, batchIndex, visModelCmd->material);
+                                // Apply material
+                                MaterialApply(visModelCmd->material, cmdBuf, batchIndex);
                             }
 
                             // Progress to next model command
@@ -217,8 +217,8 @@ FrameSubpassBatch::DrawBatch(const CoreGraphics::CmdBufferId cmdBuf, CoreGraphic
                             // Bind graphics pipeline
                             CoreGraphics::CmdSetGraphicsPipeline(cmdBuf);
 
-                            // Apply surface
-                            shaderConfig->ApplyMaterial(cmdBuf, batchIndex, visModelCmd->material);
+                            // Apply material
+                            MaterialApply(visModelCmd->material, cmdBuf, batchIndex);
 
                             // Progress to next model command
                             visModelCmd++;

@@ -161,7 +161,7 @@ ImguiContext::ImguiDrawFunction(const CoreGraphics::CmdBufferId cmdBuf)
                 texInfo.useAlpha = 1;
 
                 // set texture in shader, we shouldn't have to put it into ImGui
-                CoreGraphics::TextureId texture = (CoreGraphics::TextureId)tex.nebulaHandle;
+                CoreGraphics::TextureId texture = tex.nebulaHandle;
                 CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(texture);
                 auto usage = CoreGraphics::TextureGetUsage(texture);
                 if (usage & CoreGraphics::TextureUsage::RenderTexture || usage & CoreGraphics::TextureUsage::ReadWriteTexture)
@@ -545,7 +545,7 @@ ImguiContext::Create()
     texInfo.width = width;
     texInfo.height = height;
 
-    state.fontTexture.nebulaHandle = CoreGraphics::CreateTexture(texInfo).HashCode64();
+    state.fontTexture.nebulaHandle = CoreGraphics::CreateTexture(texInfo);
     state.fontTexture.mip = 0;
     state.fontTexture.layer = 0;
     io.Fonts->TexID = &state.fontTexture;

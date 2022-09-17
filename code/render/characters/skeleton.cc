@@ -4,19 +4,26 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "skeleton.h"
-#include "streamskeletoncache.h"
 namespace Characters
 {
 
-StreamSkeletonCache* skeletonPool;
-
+SkeletonAllocator skeletonAllocator;
 //------------------------------------------------------------------------------
 /**
 */
 const SkeletonId 
-CreateSkeleton(const ResourceCreateInfo& info)
+CreateSkeleton(const SkeletonCreateInfo& info)
 {
-	return skeletonPool->CreateResource(info.resource, nullptr, 0, info.tag, info.successCallback, info.failCallback, !info.async).As<SkeletonId>();
+    Ids::Id32 id = skeletonAllocator.Alloc();
+    skeletonAllocator.Set<Skeleton_Joints>(id, info.joints);
+    skeletonAllocator.Set<Skeleton_BindPose>(id, info.bindPoses);
+    skeletonAllocator.Set<Skeleton_JointNameMap>(id, info.jointIndexMap);
+    skeletonAllocator.Set<Skeleton_IdleSamples>(id, info.idleSamples);
+
+    SkeletonId ret;
+    ret.resourceId = id;
+    ret.resourceType = CoreGraphics::SkeletonIdType;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -25,7 +32,7 @@ CreateSkeleton(const ResourceCreateInfo& info)
 void 
 DestroySkeleton(const SkeletonId id)
 {
-    skeletonPool->DiscardResource(id);
+    skeletonAllocator.Dealloc(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -34,7 +41,7 @@ DestroySkeleton(const SkeletonId id)
 const SizeT 
 SkeletonGetNumJoints(const SkeletonId id)
 {
-    return skeletonPool->GetNumJoints(id);
+    return skeletonAllocator.Get<Skeleton_Joints>(id.resourceId).Size();
 }
 
 //------------------------------------------------------------------------------
@@ -43,7 +50,7 @@ SkeletonGetNumJoints(const SkeletonId id)
 const Util::FixedArray<CharacterJoint>& 
 SkeletonGetJoints(const SkeletonId id)
 {
-    return skeletonPool->GetJoints(id);
+    return skeletonAllocator.Get<Skeleton_Joints>(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -52,7 +59,7 @@ SkeletonGetJoints(const SkeletonId id)
 const Util::FixedArray<Math::mat4>&
 SkeletonGetBindPose(const SkeletonId id)
 {
-    return skeletonPool->GetBindPose(id);
+    return skeletonAllocator.Get<Skeleton_BindPose>(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -61,7 +68,7 @@ SkeletonGetBindPose(const SkeletonId id)
 const IndexT 
 SkeletonGetJointIndex(const SkeletonId id, const Util::StringAtom& name)
 {
-    return skeletonPool->GetJointIndex(id, name);
+    return skeletonAllocator.Get<Skeleton_JointNameMap>(id.resourceId)[name];
 }
 
 } // namespace Characters

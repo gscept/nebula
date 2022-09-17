@@ -12,7 +12,6 @@
 #define STB_TRUETYPE_IMPLEMENTATION 
 #include "stb_truetype.h"
 #include "coregraphics/shaderserver.h"
-#include "coregraphics/memorytexturecache.h"
 #include "resources/resourceserver.h"
 
 #define FONT_SIZE 32.0f

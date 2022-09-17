@@ -25,7 +25,7 @@ public:
     void GetLODDistances(float& minDistance, float& maxDistance);
 
 protected:
-    friend class StreamModelCache;
+    friend class ModelLoader;
     friend class ModelContext;
 
     /// load transform

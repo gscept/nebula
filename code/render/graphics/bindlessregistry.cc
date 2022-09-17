@@ -158,7 +158,7 @@ UnregisterTexture(const BindlessIndex id, const CoreGraphics::TextureType type)
     }    
 
     CoreGraphics::ResourceTableTexture info;
-    info.tex = (CoreGraphics::TextureId)0;
+    info.tex = CoreGraphics::InvalidTextureId;
     info.index = id;
     info.sampler = CoreGraphics::InvalidSamplerId;
     info.isDepth = false;

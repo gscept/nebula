@@ -151,9 +151,9 @@ private:
         float maxHeight, minHeight;
         uint numTilesX, numTilesY;
         uint tileWidth, tileHeight;
-        CoreGraphics::TextureId heightMap;
-        CoreGraphics::TextureId normalMap;
-        CoreGraphics::TextureId decisionMap;
+        Resources::ResourceId heightMap;
+        Resources::ResourceId normalMap;
+        Resources::ResourceId decisionMap;
 
         CoreGraphics::ResourceTableId patchTable;
 

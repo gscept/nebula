@@ -74,7 +74,7 @@ struct BufferCreateInfo
     BufferAccessMode mode;
     BufferUsageFlags usageFlags;
     BufferQueueSupportFlags queueSupport;
-    void* data;
+    const void* data;
     uint dataSize;
 };
 

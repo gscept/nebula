@@ -1994,8 +1994,8 @@ TerrainContext::UpdateLOD(const Ptr<Graphics::View>& view, const Graphics::Frame
 
         TerrainRuntimeUniforms uniforms;
         Math::mat4().store(uniforms.Transform);
-        uniforms.DecisionMap = TextureGetBindlessHandle(rt.decisionMap);
-        uniforms.HeightMap = TextureGetBindlessHandle(rt.heightMap);
+        uniforms.DecisionMap = TextureGetBindlessHandle(CoreGraphics::TextureId(rt.decisionMap));
+        uniforms.HeightMap = TextureGetBindlessHandle(CoreGraphics::TextureId(rt.heightMap));
 
         CoreGraphics::TextureDimensions dims = CoreGraphics::TextureGetDimensions(rt.heightMap);
         uniforms.VirtualTerrainTextureSize[0] = dims.width;
@@ -2108,7 +2108,7 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
                 ImVec2 imageSize = { (float)dims.width, (float)dims.height };
 
                 static Dynui::ImguiTextureId textureInfo;
-                textureInfo.nebulaHandle = terrainVirtualTileState.physicalNormalCache.HashCode64();
+                textureInfo.nebulaHandle = terrainVirtualTileState.physicalNormalCache;
                 textureInfo.mip = 0;
                 textureInfo.layer = 0;
 
@@ -2132,7 +2132,7 @@ TerrainContext::RenderUI(const Graphics::FrameContext& ctx)
                 ImVec2 imageSize = { (float)dims.width, (float)dims.height };
 
                 static Dynui::ImguiTextureId textureInfo;
-                textureInfo.nebulaHandle = terrainState.terrainShadowMap.HashCode64();
+                textureInfo.nebulaHandle = terrainState.terrainShadowMap;
                 textureInfo.mip = mip;
                 textureInfo.layer = 0;
 

@@ -49,7 +49,7 @@ namespace Models
 {
 
 struct ModelId;
-class StreamModelCache;
+class ModelLoader;
 class ModelNode
 {
 public:
@@ -79,8 +79,11 @@ public:
     /// Get function to fetch primitive group
     virtual std::function<const CoreGraphics::PrimitiveGroup()> GetPrimitiveGroupFunction();
 
+    /// Unload data (don't call explicitly)
+    virtual void Unload();
+
 protected:
-    friend class StreamModelCache;
+    friend class ModelLoader;
     friend class ModelContext;
     friend class ModelServer;
     friend class CharacterNode;
@@ -90,8 +93,7 @@ protected:
 
     /// load data
     virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate);
-    /// unload data
-    virtual void Unload();
+
     /// call when model node data is finished loading (not accounting for secondary resources)
     virtual void OnFinishedLoading();
 
@@ -102,9 +104,7 @@ protected:
     NodeType type;
     NodeBits bits;
 
-    Memory::ArenaAllocator<MODEL_MEMORY_CHUNK_SIZE>* nodeAllocator;
     Models::ModelNode* parent;
-    ModelId model;
     Util::Array<Models::ModelNode*> children;
     Math::bbox boundingBox;
     Util::StringAtom tag;

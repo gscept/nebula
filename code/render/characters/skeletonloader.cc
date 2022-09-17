@@ -1,9 +1,9 @@
 //------------------------------------------------------------------------------
-//  streamskeletoncache.cc
+//  skeletonloader.cc
 //  (C) 2018-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
-#include "streamskeletoncache.h"
+#include "skeletonloader.h"
 #include "nskfileformatstructs.h"
 #include "util/fourcc.h"
 #include "math/vector.h"
@@ -11,18 +11,18 @@ using namespace IO;
 namespace Characters
 {
 
-__ImplementClass(Characters::StreamSkeletonCache, 'SSKP', Resources::ResourceStreamCache)
+__ImplementClass(Characters::SkeletonLoader, 'SSKP', Resources::ResourceLoader)
 
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourceCache::LoadStatus 
-StreamSkeletonCache::LoadFromStream(const Resources::ResourceId id, const Util::StringAtom & tag, const Ptr<IO::Stream>& stream, bool immediate)
+Resources::ResourceUnknownId
+SkeletonLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
-    Util::FixedArray<CharacterJoint>& joints = this->Get<Joints>(id.resourceId);
-    Util::FixedArray<Math::mat4>& bindPoses = this->Get<BindPose>(id.resourceId);
-    Util::HashTable<Util::StringAtom, IndexT>& jointIndexMap = this->Get<JointNameMap>(id.resourceId);
-    Util::FixedArray<Math::vec4>& idleSamples = this->Get<IdleSamples>(id.resourceId);
+    Util::FixedArray<CharacterJoint> joints;
+    Util::FixedArray<Math::mat4> bindPoses;
+    Util::HashTable<Util::StringAtom, IndexT> jointIndexMap;
+    Util::FixedArray<Math::vec4> idleSamples;
 
     // map buffer
     byte* ptr = (byte*)stream->Map();
@@ -82,56 +82,30 @@ StreamSkeletonCache::LoadFromStream(const Resources::ResourceId id, const Util::
             idleSamples[jointIndex * 4 + 2] = Math::vec4(joints[jointIndex].poseScale, 1);
             idleSamples[jointIndex * 4 + 3] = Math::vector::nullvec();
         }
+
+
     }
     stream->Unmap();
-    return Resources::ResourceCache::Success;
+
+    SkeletonCreateInfo info;
+    info.joints = joints;
+    info.bindPoses = bindPoses;
+    info.jointIndexMap = jointIndexMap;
+    info.idleSamples = idleSamples;
+    SkeletonId skeleton = CreateSkeleton(info);
+    return skeleton;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-StreamSkeletonCache::Unload(const Resources::ResourceId id)
+SkeletonLoader::Unload(const Resources::ResourceId id)
 {
-    this->skeletonAllocator.Dealloc(id.resourceId);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Util::FixedArray<Math::mat4>&
-StreamSkeletonCache::GetBindPose(const SkeletonId id) const
-{
-    return this->skeletonAllocator.Get<BindPose>(id.resourceId);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const IndexT 
-StreamSkeletonCache::GetJointIndex(const SkeletonId id, const Util::StringAtom& name) const
-{
-    const IndexT idx = this->skeletonAllocator.Get<JointNameMap>(id.resourceId).FindIndex(name);
-    n_assert(idx != InvalidIndex);
-    return this->skeletonAllocator.Get<JointNameMap>(id.resourceId).ValueAtIndex(name, idx);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const SizeT 
-StreamSkeletonCache::GetNumJoints(const SkeletonId id) const
-{
-    return this->skeletonAllocator.Get<Joints>(id.resourceId).Size();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Util::FixedArray<CharacterJoint>& 
-StreamSkeletonCache::GetJoints(const SkeletonId id) const
-{
-    return this->skeletonAllocator.Get<Joints>(id.resourceId);
+    SkeletonId skeleton;
+    skeleton.resourceId = id.resourceId;
+    skeleton.resourceType = id.resourceType;
+    DestroySkeleton(skeleton);
 }
 
 } // namespace Characters

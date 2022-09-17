@@ -8,7 +8,7 @@
 #include "coregraphics/mesh.h"
 #include "http/html/htmlpagewriter.h"
 #include "resources/resourceserver.h"
-#include "coregraphics/streammeshcache.h"
+#include "coregraphics/meshloader.h"
 #include "coregraphics/indextype.h"
 #include "io/ioserver.h"
 
@@ -69,8 +69,8 @@ MeshPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         htmlWriter->LineBreak();
 
         // get all stream-loaded mesh resources
-        const StreamMeshCache* meshPool = ResourceServer::Instance()->GetStreamPool<StreamMeshCache>();
-        const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>& meshes = meshPool->GetResources();
+        const MeshLoader* meshLoader = ResourceServer::Instance()->GetStreamPool<MeshLoader>();
+        const Util::Dictionary<Resources::ResourceName, Ids::Id32>& meshes = meshLoader->GetResources();
     
         // create a table of all existing meshes
         htmlWriter->AddAttr("border", "1");
@@ -88,8 +88,8 @@ MeshPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
             for (i = 0; i < meshes.Size(); i++)
             {
                 const Resources::ResourceName& name = meshes.KeyAtIndex(i);
-                const Resources::ResourceId& id = meshes.ValueAtIndex(i);
-                const SizeT usage = meshPool->GetUsage(id);
+                const Resources::ResourceId& id = meshLoader->GetId(name);
+                const SizeT usage = meshLoader->GetUsage(id);
                 htmlWriter->Begin(HtmlElement::TableRow);
                     htmlWriter->Begin(HtmlElement::TableData);
                         htmlWriter->AddAttr("href", "/mesh?meshinfo=" + Util::String::FromLongLong(id.HashCode64()));

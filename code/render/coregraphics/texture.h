@@ -61,19 +61,6 @@ enum TextureUsage
 };
 __ImplementEnumBitOperators(CoreGraphics::TextureUsage);
 
-/// access info filled by Map methods
-struct TextureMapInfo
-{
-    /// constructor
-    TextureMapInfo() : data(0), rowPitch(0), depthPitch(0) {};
-
-    void* data;
-    SizeT rowPitch;
-    SizeT depthPitch;
-    SizeT mipWidth;
-    SizeT mipHeight;
-};
-
 struct TextureDimensions
 {
     SizeT width, height, depth;
@@ -120,6 +107,7 @@ struct TextureCreateInfo
         , height(1)
         , depth(1)
         , mips(1)
+        , minMip(0)
         , layers(1)
         , samples(1)
         , clear(false)
@@ -140,8 +128,8 @@ struct TextureCreateInfo
     CoreGraphics::TextureType type;
     CoreGraphics::PixelFormat::Code format;
     float width, height, depth;
-    SizeT mips, layers;
-    SizeT samples;
+    uint mips, minMip, layers;
+    uint samples;
     bool clear;
     union
     {
@@ -159,29 +147,10 @@ struct TextureCreateInfo
     CoreGraphics::TextureSwizzle swizzle;
 };
 
-struct TextureCreateInfoAdjusted
+struct TextureCreateInfoAdjusted : TextureCreateInfo
 {
-    CoreGraphics::TextureUsage usage;
-    const void* buffer;
-    CoreGraphics::TextureType type;
-    CoreGraphics::PixelFormat::Code format;
-    SizeT width, height, depth;
     float widthScale, heightScale, depthScale;
-    SizeT mips, layers;
-    SizeT samples;
-    bool clear;
-    union
-    {
-        Math::float4 clearColor;
-        DepthStencilClear clearDepthStencil;
-    };
-    bool windowTexture : 1;                     // texture is meant to be a window back buffer
-    bool windowRelative : 1;                    // size is a window relative percentage if true, other wise size is an absolute size
-    bool bindless : 1;
-    bool sparse : 1;                            // use sparse memory
     CoreGraphics::WindowId window;
-    CoreGraphics::TextureId alias;
-    CoreGraphics::ImageLayout defaultLayout;
 };
 
 struct TextureSparsePageSize
@@ -200,10 +169,6 @@ struct TextureSparsePage
     TextureSparsePageSize extent;
     CoreGraphics::Alloc alloc;
 };
-
-
-class MemoryTextureCache;
-extern MemoryTextureCache* textureCache;
 
 /// create new vertex buffer with intended usage, access and CPU syncing parameters, together with size of buffer
 const TextureId CreateTexture(const TextureCreateInfo& info);
@@ -241,14 +206,6 @@ IndexT TextureSwapBuffers(const TextureId id);
 /// handle window resizing
 void TextureWindowResized(const TextureId id);
 
-/// map GPU memory
-TextureMapInfo TextureMap(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::MapType type);
-/// unmap GPU memory
-void TextureUnmap(const TextureId id, IndexT mip);
-/// map texture face GPU memory
-TextureMapInfo TextureMapFace(const TextureId id, IndexT mip, TextureCubeFace face, const CoreGraphics::GpuBufferTypes::MapType type);
-/// unmap texture face
-void TextureUnmapFace(const TextureId id, IndexT mip, TextureCubeFace face);
 /// generate mipmaps for texture
 void TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId id);
 
@@ -284,6 +241,10 @@ void TextureClearDepthStencil(const CoreGraphics::CmdBufferId cmd, const CoreGra
 
 /// helper function to setup RenderTextureInfo, already implemented
 TextureCreateInfoAdjusted TextureGetAdjustedInfo(const TextureCreateInfo& info);
+
+/// Set highest LOD on texture
+void TextureSetHighestLod(const CoreGraphics::TextureId id, uint lod);
+
 
 //------------------------------------------------------------------------------
 /**

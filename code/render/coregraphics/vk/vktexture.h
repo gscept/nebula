@@ -12,7 +12,6 @@
 #include "coregraphics/texture.h"
 #include "coregraphics/pixelformat.h"
 #include "coregraphics/textureview.h"
-#include "resources/resourcecache.h"
 #include "ids/idallocator.h"
 #include "vkmemory.h"
 #include "coregraphics/load/glimltypes.h"
@@ -24,32 +23,13 @@ class Stream;
 
 namespace Vulkan
 {
-struct VkTextureLoadInfo
+struct VkTextureLoadInfo : CoreGraphics::TextureCreateInfoAdjusted
 {
     VkDevice dev;
     VkImage img;
     CoreGraphics::Alloc mem;
     CoreGraphics::TextureDimensions dims;
     CoreGraphics::TextureRelativeDimensions relativeDims;
-    uint32_t mips;
-    uint32_t layers;
-    uint8_t samples;
-    bool clear;
-    union
-    {
-        Math::float4 clearColor;
-        CoreGraphics::DepthStencilClear clearDepthStencil;
-    };
-    CoreGraphics::PixelFormat::Code format;
-    CoreGraphics::TextureUsage texUsage;
-    CoreGraphics::TextureId alias;
-    CoreGraphics::ImageLayout defaultLayout;
-    CoreGraphics::TextureSwizzle swizzle;
-    bool windowTexture : 1;                     // texture is meant to be a window back buffer
-    bool windowRelative : 1;                    // size is a window relative percentage if true, other wise size is an absolute size
-    bool bindless : 1;
-    bool sparse : 1;                            // use sparse memory
-    const void* texBuffer;                      // used when intially loading a texture from memory. Do not assume ownership of this pointer, this is just an intermediate.
     Ids::Id32 swapExtension;
     Ids::Id32 stencilExtension;
     Ids::Id32 sparseExtension;
@@ -70,16 +50,6 @@ struct VkTextureMappingInfo
     uint32_t mapCount;
 };
 
-struct VkTextureStreamInfo
-{
-    uint32_t lowestLod;
-    void* mappedBuffer;
-    uint bufferSize;
-    uint32_t maxMips;
-    Ptr<IO::Stream> stream;
-    gliml::context ctx;
-};
-
 struct VkTextureWindowInfo
 {
     CoreGraphics::WindowId window;
@@ -96,8 +66,7 @@ enum
     Texture_RuntimeInfo,
     Texture_LoadInfo,
     Texture_MappingInfo,
-    Texture_WindowInfo,
-    Texture_StreamInfo
+    Texture_WindowInfo
 };
 
 /// we need a thread-safe allocator since it will be used by both the memory and stream pool
@@ -105,8 +74,7 @@ typedef Ids::IdAllocatorSafe<
     VkTextureRuntimeInfo,                   // runtime info (for binding)
     VkTextureLoadInfo,                      // loading info (mostly used during the load/unload phase)
     VkTextureMappingInfo,                   // used when image is mapped to memory
-    VkTextureWindowInfo,
-    VkTextureStreamInfo
+    VkTextureWindowInfo
 > VkTextureAllocator;
 extern VkTextureAllocator textureAllocator;
 

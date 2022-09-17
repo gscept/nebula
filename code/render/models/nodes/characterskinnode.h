@@ -57,7 +57,6 @@ protected:
     /// called when loading finished
     virtual void OnFinishedLoading();
 
-    CoreGraphics::ShaderFeature::Mask skinnedShaderFeatureBits;
     Util::Array<Fragment> skinFragments;
 };
 

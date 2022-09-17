@@ -65,7 +65,7 @@ ShaderPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
 
         // create a table of all existing shaders
         htmlWriter->Element(HtmlElement::Heading3, "Shaders");
-        const Dictionary<ResourceName, ShaderId>& shaders = shdServer->GetAllShaders();
+        const Dictionary<ResourceName, Resources::ResourceId>& shaders = shdServer->GetAllShaders();
         htmlWriter->AddAttr("border", "1");
         htmlWriter->AddAttr("rules", "cols");
         htmlWriter->Begin(HtmlElement::Table);
@@ -78,7 +78,7 @@ ShaderPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
             IndexT i;
             for (i = 0; i < shaders.Size(); i++)
             {
-                const ShaderId shd = shaders.ValueAtIndex(i);
+                const ResourceId shd = shaders.ValueAtIndex(i);
                 const ResourceName name = shaders.KeyAtIndex(i);
                 htmlWriter->Begin(HtmlElement::TableRow);
                     htmlWriter->Begin(HtmlElement::TableData);
@@ -105,11 +105,11 @@ ShaderPageHandler::HandleRequest(const Ptr<HttpRequest>& request)
 /**
 */
 HttpStatus::Code
-ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<Stream>& responseContentStream)
+ShaderPageHandler::HandleShaderInfoRequest(const Util::String& resId, const Ptr<IO::Stream>& responseContentStream)
 {
     ShaderServer* shdServer = ShaderServer::Instance();
     Resources::ResourceId id = resId.AsLongLong();
-    Resources::ResourceName name = shdServer->GetName(id);
+    Resources::ResourceName name = ShaderGetName(id);
 
     // check if shader actually exists
     if (!shdServer->HasShader(resId))

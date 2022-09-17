@@ -11,7 +11,6 @@
 #include "lowlevel/vk/vkprogram.h"
 #include "lowlevel/vk/vkrenderstate.h"
 #include "lowlevel/afxapi.h"
-#include "resources/resourcecache.h"
 #include "coregraphics/shaderfeature.h"
 #include "coregraphics/resourcetable.h"
 #include "coregraphics/shader.h"

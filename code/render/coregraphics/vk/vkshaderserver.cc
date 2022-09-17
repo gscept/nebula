@@ -5,9 +5,9 @@
 #include "render/stdneb.h"
 #include "vkshaderserver.h"
 #include "effectfactory.h"
-#include "coregraphics/shadercache.h"
 #include "vkgraphicsdevice.h"
 #include "vkshader.h"
+#include "vktexture.h"
 
 #include "graphics/bindlessregistry.h"
 
@@ -74,14 +74,25 @@ VkShaderServer::Close()
 void
 VkShaderServer::UpdateResources()
 {
-    // just allocate the memory
+    // Just allocate the memory
     IndexT bufferedFrameIndex = GetBufferedFrameIndex();
 
     VkDevice dev = GetCurrentDevice();
 
-    // setup new views for newly streamed LODs
+    // Setup new views for newly streamed LODs
     Util::Array<_PendingView> pendingViewsThisFrame(32, 32);
     pendingViews.DequeueAll(pendingViewsThisFrame);
+
+    // Delete views which have been discarded due to LOD streaming
+    for (int i = this->pendingViewDeletes.Size() - 1; i >= 0; i--)
+    {
+        // if we have cycled through all our frames, safetly delete the view
+        if (this->pendingViewDeletes[i].replaceCounter == CoreGraphics::GetNumBufferedFrames())
+        {
+            vkDestroyImageView(dev, this->pendingViewDeletes[i].view, nullptr);
+            this->pendingViewDeletes.EraseIndex(i);
+        }
+    }
 
     for (int i = 0; i < pendingViewsThisFrame.Size(); i++)
     {
@@ -96,26 +107,12 @@ VkShaderServer::UpdateResources()
 
         _PendingViewDelete pendingDelete;
         pendingDelete.view = oldView;
-        pendingDelete.replaceCounter = 0;
+        pendingDelete.replaceCounter = bufferedFrameIndex;
         pendingViewDeletes.Append(pendingDelete);
 
         // update texture entries for all tables
         Graphics::ReregisterTexture(pend.tex, info.type, info.bind);
     }
-
-    // delete views which have been discarded due to LOD streaming
-    for (int i = this->pendingViewDeletes.Size() - 1; i >= 0; i--)
-    {
-        // if we have cycled through all our frames, safetly delete the view
-        if (this->pendingViewDeletes[i].replaceCounter == CoreGraphics::GetNumBufferedFrames())
-        {
-            //vkDestroyImageView(dev, this->pendingViewDeletes[i].view, nullptr);
-            this->pendingViewDeletes.EraseIndex(i);
-            continue;
-        }
-        this->pendingViewDeletes[i].replaceCounter++;
-    }
-
 }
 
 //------------------------------------------------------------------------------

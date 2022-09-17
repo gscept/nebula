@@ -12,8 +12,7 @@
 #include "io/ioserver.h"
 #include "coregraphics/imagefileformat.h"
 
-#include "coregraphics/streamtexturecache.h"
-#include "coregraphics/memorytexturecache.h"
+#include "coregraphics/textureloader.h"
 
 namespace Debug
 {
@@ -68,8 +67,8 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         htmlWriter->LineBreak();
         htmlWriter->LineBreak();
 
-        const StreamTextureCache* streamPool = ResourceServer::Instance()->GetStreamPool<StreamTextureCache>();
-        const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>& streamResources = streamPool->GetResources();
+        const TextureLoader* textureLoader = ResourceServer::Instance()->GetStreamPool<TextureLoader>();
+        const Util::Dictionary<Resources::ResourceName, Ids::Id32>& streamResources = textureLoader->GetResources();
 
         // create a table of all existing textures
         htmlWriter->AddAttr("border", "1");
@@ -92,9 +91,9 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
         IndexT i;
         for (i = 0; i < streamResources.Size(); i++)
         {
-            const Resources::ResourceId res = streamResources.ValueAtIndex(i);
+            Resources::ResourceId res = textureLoader->GetId(streamResources.KeyAtIndex(i));
             const ResourceName& resName = streamResources.KeyAtIndex(i);
-            Resource::State state = streamPool->GetState(res);
+            Resource::State state = textureLoader->GetState(res);
             htmlWriter->Begin(HtmlElement::TableRow);
             if (state == Resource::Loaded)
             {
@@ -122,94 +121,7 @@ TexturePageHandler::HandleRequest(const Ptr<HttpRequest>& request)
             htmlWriter->Element(HtmlElement::TableData, resState);
             if (state == Resource::Loaded)
             {
-                const uint usage = streamPool->GetUsage(res);
-                htmlWriter->Element(HtmlElement::TableData, String::FromInt(usage));
-                TextureType type = TextureGetType(res);
-                switch (type)
-                {
-                case Texture1D:    htmlWriter->Element(HtmlElement::TableData, "1D"); break;
-                case Texture2D:    htmlWriter->Element(HtmlElement::TableData, "2D"); break;
-                case Texture3D:    htmlWriter->Element(HtmlElement::TableData, "3D"); break;
-                case TextureCube:  htmlWriter->Element(HtmlElement::TableData, "CUBE"); break;
-                default:           htmlWriter->Element(HtmlElement::TableData, "ERROR"); break;
-                }
-                TextureDimensions dims = TextureGetDimensions(res);
-                CoreGraphics::PixelFormat::Code fmt = TextureGetPixelFormat(res);
-                uint mips = TextureGetNumMips(res);
-                htmlWriter->Element(HtmlElement::TableData, String::FromInt(dims.width));
-                htmlWriter->Element(HtmlElement::TableData, String::FromInt(dims.height));
-                htmlWriter->Element(HtmlElement::TableData, String::FromInt(dims.depth));
-                htmlWriter->Element(HtmlElement::TableData, String::FromInt(mips));
-                htmlWriter->Element(HtmlElement::TableData, PixelFormat::ToString(fmt));
-            }
-            else
-            {
-                // texture not currently loaded
-            }
-            htmlWriter->End(HtmlElement::TableRow);
-        }
-        htmlWriter->End(HtmlElement::Table);
-
-        const MemoryTextureCache* memPool = ResourceServer::Instance()->GetMemoryPool<MemoryTextureCache>();
-        const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>& memResources = memPool->GetResources();
-
-        htmlWriter->Element(HtmlElement::Heading1, "Texture Resources (memory loaded)");
-        htmlWriter->AddAttr("href", "/index.html");
-        htmlWriter->Element(HtmlElement::Anchor, "Home");
-        htmlWriter->LineBreak();
-        htmlWriter->LineBreak();
-
-        // create a table of all existing textures
-        htmlWriter->AddAttr("border", "1");
-        htmlWriter->AddAttr("rules", "cols");
-        htmlWriter->Begin(HtmlElement::Table);
-        htmlWriter->AddAttr("bgcolor", "lightsteelblue");
-        htmlWriter->Begin(HtmlElement::TableRow);
-        htmlWriter->Element(HtmlElement::TableHeader, "ResId");
-        htmlWriter->Element(HtmlElement::TableHeader, "State");
-        htmlWriter->Element(HtmlElement::TableHeader, "UseCount");
-        htmlWriter->Element(HtmlElement::TableHeader, "Type");
-        htmlWriter->Element(HtmlElement::TableHeader, "Width");
-        htmlWriter->Element(HtmlElement::TableHeader, "Height");
-        htmlWriter->Element(HtmlElement::TableHeader, "Depth");
-        htmlWriter->Element(HtmlElement::TableHeader, "Mips");
-        htmlWriter->Element(HtmlElement::TableHeader, "Format");
-        htmlWriter->End(HtmlElement::TableRow);
-
-        // iterate over shared resources
-        for (i = 0; i < memResources.Size(); i++)
-        {
-            const Resources::ResourceId res = memResources.ValueAtIndex(i);
-            const ResourceName& resName = memResources.KeyAtIndex(i);
-            Resource::State state = memPool->GetState(res);
-            htmlWriter->Begin(HtmlElement::TableRow);
-            if (state == Resource::Loaded)
-            {
-                // only loaded texture can be inspected
-                htmlWriter->Begin(HtmlElement::TableData);
-                htmlWriter->AddAttr("href", "/texture?texinfo=" + resName.AsString());
-                htmlWriter->Element(HtmlElement::Anchor, resName.Value());
-                htmlWriter->End(HtmlElement::TableData);
-            }
-            else
-            {
-                htmlWriter->Element(HtmlElement::TableData, resName.Value());
-            }
-
-            String resState;
-
-            switch (state)
-            {
-            case Resource::Loaded:      resState = "Loaded"; break;
-            case Resource::Pending:     resState = "Pending"; break;
-            case Resource::Failed:      resState = "FAILED"; break;
-            case Resource::Unloaded:    resState = "Unloaded"; break;
-            default:                    resState = "CANT HAPPEN"; break;
-            }
-            htmlWriter->Element(HtmlElement::TableData, resState);
-            if (state == Resource::Loaded)
-            {
-                const SizeT usage = memPool->GetUsage(res);
+                const uint usage = textureLoader->GetUsage(res);
                 htmlWriter->Element(HtmlElement::TableData, String::FromInt(usage));
                 TextureType type = TextureGetType(res);
                 switch (type)

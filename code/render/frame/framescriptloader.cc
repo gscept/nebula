@@ -45,7 +45,7 @@ Ptr<Frame::FrameScript>
 FrameScriptLoader::LoadFrameScript(const IO::URI& path)
 {
     Ptr<FrameScript> script = FrameScript::Create();
-    Ptr<Stream> stream = IoServer::Instance()->CreateStream(path);
+    Ptr<IO::Stream> stream = IoServer::Instance()->CreateStream(path);
     if (stream->Open())
     {
         void* data = stream->Map();

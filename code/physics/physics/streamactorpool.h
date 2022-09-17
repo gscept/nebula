@@ -8,11 +8,12 @@
 */
 //------------------------------------------------------------------------------
 #include "core/refcounted.h"
-#include "resources/resourcestreamcache.h"
+#include "resources/resourceloader.h"
 #include "util/stack.h"
 #include "physics/actorcontext.h"
 #include "physicsinterface.h"
 #include "flat/physics/material.h"
+#include "ids/idallocator.h"
 
 namespace Physics
 {
@@ -34,7 +35,7 @@ struct ActorInfo
 };
 
     
-class StreamActorPool : public Resources::ResourceStreamCache
+class StreamActorPool : public Resources::ResourceLoader
 {
     __DeclareClass(StreamActorPool);
 public:
@@ -57,14 +58,15 @@ private:
     
 
     /// perform actual load, override in subclass
-    LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate);
+    Resources::ResourceUnknownId LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate) override;
     /// unload resource
     void Unload(const Resources::ResourceId id);
 
-
+    enum
+    {
+        Actor_Info
+    };
     Ids::IdAllocatorSafe<ActorInfo> allocator;
-    __ImplementResourceAllocatorTypedSafe(allocator, ActorIdType);
-
 };
 
 extern StreamActorPool *actorPool;

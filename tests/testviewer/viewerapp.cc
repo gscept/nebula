@@ -17,7 +17,6 @@
 
 #include "graphics/globalconstants.h"
 #include "visibility/visibilitycontext.h"
-#include "models/streammodelcache.h"
 #include "models/modelcontext.h"
 #include "input/keyboard.h"
 #include "input/mouse.h"

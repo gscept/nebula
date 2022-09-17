@@ -6,7 +6,6 @@
 #include "render/stdneb.h"
 #include "coregraphics/config.h"
 #include "coregraphics/texture.h"
-#include "coregraphics/memorytexturecache.h"
 #include "coregraphics/displaydevice.h"
 
 namespace CoreGraphics
@@ -24,292 +23,100 @@ TextureId Red2D;
 TextureId Green2D;
 TextureId Blue2D;
 
-MemoryTextureCache* textureCache = nullptr;
-
-//------------------------------------------------------------------------------
-/**
-*/
-const TextureId
-CreateTexture(const TextureCreateInfo& info)
-{
-    TextureId id = textureCache->ReserveResource(info.name, info.tag);
-    n_assert(id.resourceType == TextureIdType);
-    textureCache->LoadFromMemory(id, &info);
-    return id;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-DestroyTexture(const TextureId id)
-{
-    textureCache->DiscardResource(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-TextureDimensions
-TextureGetDimensions(const TextureId id)
-{
-    return textureCache->GetDimensions(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-TextureRelativeDimensions 
-TextureGetRelativeDimensions(const TextureId id)
-{
-    return textureCache->GetRelativeDimensions(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-CoreGraphics::PixelFormat::Code
-TextureGetPixelFormat(const TextureId id)
-{
-    return textureCache->GetPixelFormat(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-TextureType
-TextureGetType(const TextureId id)
-{
-    return textureCache->GetType(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-SizeT
-TextureGetNumMips(const TextureId id)
-{
-    return textureCache->GetNumMips(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-SizeT 
-TextureGetNumLayers(const TextureId id)
-{
-    return textureCache->GetNumLayers(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-SizeT 
-TextureGetNumSamples(const TextureId id)
-{
-    return textureCache->GetNumSamples(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const CoreGraphics::TextureId 
-TextureGetAlias(const TextureId id)
-{
-    return textureCache->GetAlias(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const CoreGraphics::TextureUsage 
-TextureGetUsage(const TextureId id)
-{
-    return textureCache->GetUsageBits(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const CoreGraphics::ImageLayout 
-TextureGetDefaultLayout(const TextureId id)
-{
-    return textureCache->GetDefaultLayout(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-uint 
-TextureGetBindlessHandle(const TextureId id)
-{
-    return textureCache->GetBindlessHandle(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-uint 
-TextureGetStencilBindlessHandle(const TextureId id)
-{
-    return textureCache->GetStencilBindlessHandle(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-IndexT 
-TextureSwapBuffers(const TextureId id)
-{
-    return textureCache->SwapBuffers(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-TextureWindowResized(const TextureId id)
-{
-    textureCache->Reload(id);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-TextureMapInfo 
-TextureMap(const TextureId id, IndexT mip, const CoreGraphics::GpuBufferTypes::MapType type)
-{
-    TextureMapInfo info;
-    n_assert(textureCache->Map(id, mip, type, info));
-    return info;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TextureUnmap(const TextureId id, IndexT mip)
-{
-    textureCache->Unmap(id, mip);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-TextureMapInfo
-TextureMapFace(const TextureId id, IndexT mip, TextureCubeFace face, const CoreGraphics::GpuBufferTypes::MapType type)
-{
-    TextureMapInfo info;
-    n_assert(textureCache->MapCubeFace(id, face, mip, type, info));
-    return info;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-TextureUnmapFace(const TextureId id, IndexT mip, TextureCubeFace face)
-{
-    textureCache->UnmapCubeFace(id, face, mip);
-}
-
 //------------------------------------------------------------------------------
 /**
 */
 void 
 TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId id)
 {
-    textureCache->GenerateMipmaps(cmdBuf, id);
-}
+    CoreGraphics::CmdBeginMarker(cmdBuf, NEBULA_MARKER_TRANSFER, "Mipmap");
+    SizeT numMips = CoreGraphics::TextureGetNumMips(id);
 
-//------------------------------------------------------------------------------
-/**
-*/
-TextureSparsePageSize 
-TextureSparseGetPageSize(const CoreGraphics::TextureId id)
-{
-    return textureCache->SparseGetPageSize(id);
-}
+    // insert initial barrier for texture
+    CoreGraphics::CmdBarrier(
+        cmdBuf,
+        CoreGraphics::PipelineStage::GraphicsShadersRead,
+        CoreGraphics::PipelineStage::TransferRead,
+        CoreGraphics::BarrierDomain::Global,
+        {
+            {
+                id,
+                CoreGraphics::ImageSubresourceInfo{ ImageAspect::ColorBits, 0, (uint)numMips, 0, 1 },
+            },
+        });
 
-//------------------------------------------------------------------------------
-/**
-*/
-IndexT 
-TextureSparseGetPageIndex(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT x, IndexT y, IndexT z)
-{
-    return textureCache->SparseGetPageIndex(id, layer, mip, x, y, z);
-}
+    // calculate number of mips
+    TextureDimensions dims = TextureGetDimensions(id);
 
-//------------------------------------------------------------------------------
-/**
-*/
-const TextureSparsePage& 
-TextureSparseGetPage(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex)
-{
-    return textureCache->SparseGetPage(id, layer, mip, pageIndex);
-}
+    CoreGraphics::ImageLayout prevLayout = CoreGraphics::ImageLayout::TransferSource;
+    CoreGraphics::PipelineStage prevStageSrc = CoreGraphics::PipelineStage::TransferRead;
+    IndexT mip;
+    for (mip = 0; mip < numMips - 1; mip++)
+    {
+        TextureDimensions biggerDims = dims;
+        dims.width = dims.width >> 1;
+        dims.height = dims.height >> 1;
 
-//------------------------------------------------------------------------------
-/**
-*/
-SizeT 
-TextureSparseGetNumPages(const CoreGraphics::TextureId id, IndexT layer, IndexT mip)
-{
-    return textureCache->SparseGetNumPages(id, layer, mip);
-}
+        Math::rectangle<SizeT> fromRegion;
+        fromRegion.left = 0;
+        fromRegion.top = 0;
+        fromRegion.right = biggerDims.width;
+        fromRegion.bottom = biggerDims.height;
 
-//------------------------------------------------------------------------------
-/**
-*/
-IndexT 
-TextureSparseGetMaxMip(const CoreGraphics::TextureId id)
-{
-    return textureCache->SparseGetMaxMip(id);
-}
+        Math::rectangle<SizeT> toRegion;
+        toRegion.left = 0;
+        toRegion.top = 0;
+        toRegion.right = dims.width;
+        toRegion.bottom = dims.height;
 
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-TextureSparseEvict(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex)
-{
-    textureCache->SparseEvict(id, layer, mip, pageIndex);
-}
+        // Transition source to source
+        CoreGraphics::CmdBarrier(
+            cmdBuf,
+            prevStageSrc,
+            CoreGraphics::PipelineStage::TransferRead,
+            CoreGraphics::BarrierDomain::Global,
+            {
+                {
+                    id,
+                    CoreGraphics::ImageSubresourceInfo{ CoreGraphics::ImageAspect::ColorBits, (uint)mip, 1, 0, 1 },
+                }
+            },
+            nullptr);
 
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-TextureSparseMakeResident(const CoreGraphics::TextureId id, IndexT layer, IndexT mip, IndexT pageIndex)
-{
-    textureCache->SparseMakeResident(id, layer, mip, pageIndex);
-}
+        CoreGraphics::CmdBarrier(
+            cmdBuf,
+            CoreGraphics::PipelineStage::TransferRead,
+            CoreGraphics::PipelineStage::TransferWrite,
+            CoreGraphics::BarrierDomain::Global,
+            {
+                {
+                    id,
+                    CoreGraphics::ImageSubresourceInfo{ CoreGraphics::ImageAspect::ColorBits, (uint)mip + 1, 1, 0, 1 },
+                }
+            },
+            nullptr);
+        CoreGraphics::CmdBlit(cmdBuf, id, fromRegion, mip, 0, id, toRegion, mip + 1, 0);
 
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-TextureSparseEvictMip(const CoreGraphics::TextureId id, IndexT layer, IndexT mip)
-{
-    textureCache->SparseEvictMip(id, layer, mip);
-}
+        // The previous textuer will be in write, so it needs to pingpong from transfer write/read, with the first being shader read
+        prevStageSrc = CoreGraphics::PipelineStage::TransferWrite;
+    }
 
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-TextureSparseMakeMipResident(const CoreGraphics::TextureId id, IndexT layer, IndexT mip)
-{
-    textureCache->SparseMakeMipResident(id, layer, mip);
-}
+    // At the end, only the last mip will be in transfer write, so lets just transition that one
+    CoreGraphics::CmdBarrier(
+        cmdBuf,
+        CoreGraphics::PipelineStage::TransferWrite,
+        CoreGraphics::PipelineStage::AllShadersRead,
+        CoreGraphics::BarrierDomain::Global,
+        {
+            CoreGraphics::TextureBarrierInfo
+            {
+                id,
+                CoreGraphics::ImageSubresourceInfo(ImageAspect::ColorBits, mip, 1, 0, 1),
+            }
+        },
+        nullptr);
 
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-TextureSparseCommitChanges(const CoreGraphics::TextureId id)
-{
-    textureCache->SparseCommitChanges(id);
+    CoreGraphics::CmdEndMarker(cmdBuf);
 }
 
 //------------------------------------------------------------------------------
@@ -318,48 +125,20 @@ TextureSparseCommitChanges(const CoreGraphics::TextureId id)
 void
 TextureUpdate(const CoreGraphics::CmdBufferId cmd, CoreGraphics::QueueType queue, CoreGraphics::TextureId tex, const SizeT width, SizeT height, SizeT mip, SizeT layer, SizeT size, const void* data)
 {
-    CoreGraphics::BufferCreateInfo bufInfo;
-    bufInfo.size = size;
-    bufInfo.mode = CoreGraphics::HostCached;
-    bufInfo.usageFlags = CoreGraphics::BufferUsageFlag::TransferBufferSource | CoreGraphics::BufferUsageFlag::TransferBufferDestination;
-    bufInfo.queueSupport = queue;
-    CoreGraphics::BufferId buf = CoreGraphics::CreateBuffer(bufInfo);
-
-    // Copy over data to buffer
-    char* mapped = (char*)CoreGraphics::BufferMap(buf);
-    memcpy(mapped, data, size);
+    CoreGraphics::PixelFormat::Code format = TextureGetPixelFormat(tex);
+    SizeT texelSize = PixelFormat::ToTexelSize(format);
+    uint offset = CoreGraphics::Upload(data, size, texelSize);
 
     // Then run a copy on the command buffer
     CoreGraphics::BufferCopy bufCopy;
-    bufCopy.offset = 0;
+    bufCopy.offset = offset;
     bufCopy.imageHeight = 0;
     bufCopy.rowLength = 0;
     CoreGraphics::TextureCopy texCopy;
     texCopy.layer = layer;
     texCopy.mip = mip;
     texCopy.region.set(0, 0, width, height);
-    CoreGraphics::CmdCopy(cmd, buf, { bufCopy }, tex, { texCopy });
-
-    CoreGraphics::BufferUnmap(buf);
-    CoreGraphics::DestroyBuffer(buf);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-TextureClearColor(const CoreGraphics::CmdBufferId cmd, const CoreGraphics::TextureId id, Math::vec4 color, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres)
-{
-    textureCache->ClearColor(cmd, id, color, layout, subres);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-TextureClearDepthStencil(const CoreGraphics::CmdBufferId cmd, const CoreGraphics::TextureId id, float depth, uint stencil, const CoreGraphics::ImageLayout layout, const CoreGraphics::ImageSubresourceInfo& subres)
-{
-    textureCache->ClearDepthStencil(cmd, id, depth, stencil, layout, subres);
+    CoreGraphics::CmdCopy(cmd, CoreGraphics::GetUploadBuffer(), { bufCopy }, tex, { texCopy });
 }
 
 //------------------------------------------------------------------------------
@@ -387,6 +166,7 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
         rt.widthScale = rt.heightScale = rt.depthScale = 1.0f;
         rt.layers = 1;
         rt.mips = 1;
+        rt.minMip = 1;
         rt.clear = false;
         rt.samples = 1;
         rt.windowTexture = true;
@@ -399,6 +179,8 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
     else
     {
         n_assert(info.width > 0 && info.height > 0 && info.depth > 0);
+        if (info.type == CoreGraphics::TextureCubeArray || info.type == CoreGraphics::TextureCube)
+            n_assert(info.layers == 6);
         rt.usage = info.usage;
         rt.buffer = info.buffer;
         rt.type = info.type;
@@ -410,9 +192,10 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
         rt.heightScale = 0;
         rt.depthScale = 0;
         rt.mips = info.mips;
-        rt.layers = (info.type == CoreGraphics::TextureCubeArray || info.type == CoreGraphics::TextureCube) ? 6 : info.layers;
+        rt.minMip = info.minMip;
+        rt.layers = info.layers;
         rt.clear = info.clear;
-        rt.clearColor = info.clearColorF4;
+        rt.clearColorF4 = info.clearColorF4;
         rt.samples = info.samples;
         rt.windowTexture = false;
         rt.windowRelative = info.windowRelative;
@@ -439,7 +222,6 @@ TextureGetAdjustedInfo(const TextureCreateInfo& info)
             rt.heightScale = info.height;
             rt.depthScale = info.depth;
         }
-
 
         // if the mip value is set to auto generate mips, generate mip chain
         if (info.mips == TextureAutoMips)

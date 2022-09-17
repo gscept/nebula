@@ -15,6 +15,7 @@
 #include "vkpass.h"
 #include "vkbarrier.h"
 #include "vkbuffer.h"
+#include "vktexture.h"
 #include "coregraphics/displaydevice.h"
 #include "app/application.h"
 #include "util/bit.h"
@@ -22,12 +23,10 @@
 #include "vkevent.h"
 #include "vkfence.h"
 #include "vktypes.h"
-#include "coregraphics/vertexsignaturecache.h"
 #include "coregraphics/glfw/glfwwindow.h"
 #include "coregraphics/displaydevice.h"
 #include "coregraphics/vk/vksemaphore.h"
 #include "coregraphics/vk/vkfence.h"
-#include "coregraphics/memorytexturecache.h"
 #include "coregraphics/vk/vktextureview.h"
 #include "resources/resourceserver.h"
 #include "coregraphics/graphicsdevice.h"
@@ -368,24 +367,6 @@ WaitForPresent(VkSemaphore sem)
 {
     n_assert(state.waitForPresentSemaphore == VK_NULL_HANDLE);
     state.waitForPresentSemaphore = sem;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const Util::Set<uint32_t>& 
-GetQueueFamilies()
-{
-    return state.usedQueueFamilies;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-const uint32_t 
-GetQueueFamily(const CoreGraphics::QueueType type)
-{
-    return state.queueFamilyMap[type];
 }
 
 //------------------------------------------------------------------------------
@@ -1680,7 +1661,6 @@ WaitAndClearPendingCommands()
     Vulkan::ClearPending();
 }
 
-
 //------------------------------------------------------------------------------
 /**
 */
@@ -1804,6 +1784,24 @@ FinishQueries(const CoreGraphics::CmdBufferId cmdBuf, const CoreGraphics::QueryT
     vkCmdResetQueryPool(vkCmd, state.queries[state.currentBufferedFrameIndex].queryPools[type], start, count);
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+IndexT
+GetQueueIndex(const QueueType queue)
+{
+    return state.queueFamilyMap[queue];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::Set<uint32_t>&
+GetQueueIndices()
+{
+    return state.usedQueueFamilies;
+}
+
 Threading::CriticalSection vertexAllocationMutex;
 
 //------------------------------------------------------------------------------
@@ -1876,15 +1874,15 @@ GetIndexBuffer()
 /**
 */
 uint
-AllocateUpload(const SizeT numBytes)
+AllocateUpload(const SizeT numBytes, const SizeT alignment)
 {
     Vulkan::GraphicsDeviceState::UploadRingBuffer& ring = state.uploadRingBuffers[state.currentBufferedFrameIndex];
 
     // Calculate aligned upper bound
     N_BUDGET_COUNTER_INCR(N_UPLOAD_MEMORY, numBytes);
 
-    // Allocate the memory range
-    int ret = Threading::Interlocked::Add(&ring.uploadEndAddress, numBytes);
+    // Allocate the memory range, overallocate based on alignment
+    int ret = Threading::Interlocked::Add(&ring.uploadEndAddress, numBytes + alignment - 1);
 
     // If we have to wrap around, or we are fingering on the range of the next frame submission buffer...
     if (ret + numBytes >= state.globalUploadBufferMaxValue * int(state.currentBufferedFrameIndex + 1))
@@ -1895,7 +1893,8 @@ AllocateUpload(const SizeT numBytes)
         return UINT_MAX;
     }
 
-    return ret;
+    // Return offset aligned up
+    return ret & ~(alignment - 1);
 }
 
 //------------------------------------------------------------------------------

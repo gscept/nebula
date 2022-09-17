@@ -7,7 +7,6 @@
 #include "coregraphics/vk/vktypes.h"
 #include "coregraphics/graphicsdevice.h"
 #include "coregraphics/mesh.h"
-#include "coregraphics/vertexsignaturecache.h"
 #include "coregraphics/vertexcomponent.h"
 #include "threading/thread.h"
 #include "coregraphics/shaderserver.h"

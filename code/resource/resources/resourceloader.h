@@ -32,7 +32,6 @@
     (C) 2017-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-#include "resourcecache.h"
 #include "ids/id.h"
 #include "util/stringatom.h"
 #include "io/stream.h"
@@ -40,6 +39,7 @@
 #include "resource.h"
 #include "threading/safequeue.h"
 #include "threading/threadid.h"
+#include "ids/idpool.h"
 #include <tuple>
 #include <functional>
 
@@ -47,23 +47,23 @@ namespace Resources
 {
 class Resource;
 class ResourceLoaderThread;
-class ResourceStreamCache : public ResourceCache
+class ResourceLoader : public Core::RefCounted
 {
-    __DeclareAbstractClass(ResourceStreamCache);
+    __DeclareAbstractClass(ResourceLoader);
 
 public:
     /// constructor
-    ResourceStreamCache();
+    ResourceLoader();
     /// destructor
-    virtual ~ResourceStreamCache();
+    virtual ~ResourceLoader();
 
     /// setup resource loader, initiates the placeholder and error resources if valid, so don't forget to run!
-    virtual void Setup() override;
+    virtual void Setup();
     /// discard resource loader
-    virtual void Discard() override;
+    virtual void Discard();
 
     /// load placeholder and error resources
-    virtual void LoadFallbackResources() override;
+    virtual void LoadFallbackResources();
 
     /// create a container with a tag associated with it, if no tag is provided, the resource will be untagged
     Resources::ResourceId CreateResource(const Resources::ResourceName& res, const void* loadInfo, SizeT loadInfoSize, const Util::StringAtom& tag, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed, bool immediate);
@@ -71,6 +71,24 @@ public:
     void DiscardResource(const Resources::ResourceId id);
     /// discard all resources associated with a tag
     void DiscardByTag(const Util::StringAtom& tag);
+
+    /// get resource name
+    const Resources::ResourceName& GetName(const Resources::ResourceId id) const;
+    /// get resource usage from resource id
+    const uint32_t GetUsage(const Resources::ResourceId id) const;
+    /// get resource tag was first registered with
+    const Util::StringAtom GetTag(const Resources::ResourceId id) const;
+    /// get resource state
+    const Resource::State GetState(const Resources::ResourceId id) const;
+    /// get resource id by name, use with care
+    const Resources::ResourceId GetId(const Resources::ResourceName& name) const;
+    /// get the dictionary of all resource-id pairs
+    const Util::Dictionary<Resources::ResourceName, Ids::Id32>& GetResources() const;
+    /// returns true if pool has resource
+    const bool HasResource(const Resources::ResourceId id) const;
+
+    /// get the global identifier for this pool
+    const int32_t& GetUniqueId() const;
 
     /// reload resource using resource name
     void ReloadResource(const Resources::ResourceName& res, std::function<void(const Resources::ResourceId)> success, std::function<void(const Resources::ResourceId)> failed);
@@ -86,12 +104,12 @@ protected:
     /// struct for pending resources which are about to be loaded
     struct _PendingResourceLoad
     {
-        Resources::ResourceId id;
+        Ids::Id32 entry;
         Util::StringAtom tag;
         bool inflight;
         bool immediate;
 
-        _PendingResourceLoad() : id(ResourceId::Invalid()) {};
+        _PendingResourceLoad() : entry(-1) {};
     };
 
     /// struct for pending stream
@@ -123,20 +141,38 @@ protected:
         SizeT size;
     };
 
-    /// perform 
+    enum LoadStatus
+    {
+        Success,        /// resource is properly loaded
+        Failed,         /// resource loading failed
+        Delay,          /// resource is loaded at some later point
+        Threaded        /// resource is loaded from a thread, which is like Delay, but is no longer pending
+    };
+
+    struct _InternalLoadResult
+    {
+        LoadStatus status;
+        ResourceId id;
+    };
+
+    static const uint32_t ResourceIndexGrow = 512;
 
     /// perform actual load, override in subclass
-    virtual LoadStatus LoadFromStream(const Resources::ResourceId id, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) = 0;
+    virtual ResourceUnknownId LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& tag, const Ptr<IO::Stream>& stream, bool immediate = false) = 0;
     /// perform a reload
     virtual LoadStatus ReloadFromStream(const Resources::ResourceId id, const Ptr<IO::Stream>& stream);
     /// perform a lod update
     virtual void StreamMaxLOD(const Resources::ResourceId& id, const float lod, bool immediate);
 
+    /// unload resource (overload to implement resource deallocation)
+    virtual void Unload(const Resources::ResourceId id) = 0;
     /// update the resource loader, this is done every frame
-    void Update(IndexT frameIndex);
+    virtual void Update(IndexT frameIndex);
 
-    /// start loading
-    LoadStatus PrepareLoad(_PendingResourceLoad& res);
+    /// Load immediately
+    _InternalLoadResult LoadImmediate(_PendingResourceLoad& res);
+    /// Load async
+    LoadStatus LoadDeferred(_PendingResourceLoad& res);
     /// run callbacks
     void RunCallbacks(LoadStatus status, const Resources::ResourceId id);
 
@@ -157,6 +193,12 @@ protected:
     Resources::ResourceId placeholderResourceId;
     Resources::ResourceId failResourceId;
 
+    struct StreamData
+    {
+        void* data;
+        Ptr<IO::Stream> stream;
+    };
+
     bool async;
 
     Ptr<ResourceLoaderThread> streamerThread;
@@ -166,14 +208,101 @@ protected:
     Util::Array<_PendingResourceUnload> pendingUnloads;
     Util::Array<_PendingStreamLod> pendingStreamLods;
     Threading::SafeQueue<_PendingStreamLod> pendingStreamQueue;
+
+    Util::Dictionary<Resources::ResourceName, uint32_t> ids;
+    Ids::IdPool resourceInstanceIndexPool;
+
+    Util::FixedArray<Resources::ResourceName> names;
+    Util::FixedArray<uint32_t> usage;
+    Util::FixedArray<Util::StringAtom> tags;
+    Util::FixedArray<Resource::State> states;
+    Util::FixedArray<ResourceId> resources;
     Util::FixedArray<Util::Array<_Callbacks>> callbacks;
     Util::FixedArray<_PendingResourceLoad> loads;
     Util::FixedArray<_LoadMetaData> metaData;
+    Util::FixedArray<StreamData> streams;
+    uint32_t uniqueResourceId;
+
+    /// id in resource manager
+    int32_t uniqueId;
 
     /// async section to sync callbacks and pending list with thread
     Threading::CriticalSection asyncSection;
     Threading::ThreadId creatorThread;
 };
 
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Resources::ResourceName&
+ResourceLoader::GetName(const Resources::ResourceId id) const
+{
+    return this->names[id.cacheInstanceId];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const uint32_t
+ResourceLoader::GetUsage(const Resources::ResourceId id) const
+{
+    return this->usage[id.cacheInstanceId];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Util::StringAtom
+ResourceLoader::GetTag(const Resources::ResourceId id) const
+{
+    return this->tags[id.cacheInstanceId];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Resources::Resource::State
+ResourceLoader::GetState(const Resources::ResourceId id) const
+{
+    return this->states[id.cacheInstanceId];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Resources::ResourceId
+ResourceLoader::GetId(const Resources::ResourceName& name) const
+{
+    IndexT i = this->ids.FindIndex(name);
+    if (i == InvalidIndex)  return Resources::ResourceId::Invalid();
+    else                    return this->resources[this->ids.ValueAtIndex(i)];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const Util::Dictionary<Resources::ResourceName, Ids::Id32>&
+ResourceLoader::GetResources() const
+{
+    return this->ids;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const bool
+ResourceLoader::HasResource(const Resources::ResourceId id) const
+{
+    return this->names.Size() > (SizeT)id.cacheInstanceId;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const int32_t&
+ResourceLoader::GetUniqueId() const
+{
+    return this->uniqueId;
+}
 
 } // namespace Resources

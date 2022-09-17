@@ -6,12 +6,13 @@
 #include "modelcontext.h"
 #include "resources/resourceserver.h"
 #include "nodes/modelnode.h"
-#include "streammodelcache.h"
+#include "models/nodes/particlesystemnode.h"
 #include "graphics/graphicsserver.h"
 #include "visibility/visibilitycontext.h"
 #include "profiling/profiling.h"
 #include "graphics/cameracontext.h"
 #include "threading/lockfreequeue.h"
+#include "materials/material.h"
 
 #include "objects_shared.h"
 
@@ -77,11 +78,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 {
     const ContextEntityId cid = GetContextId(gfxId);
     
-    ResourceCreateInfo info;
-    info.resource = name;
-    info.tag = tag;
-    info.async = true;
-    info.successCallback = [cid, gfxId, finishedCallback](Resources::ResourceId mid)
+    auto successCallback = [cid, gfxId, finishedCallback](Resources::ResourceId mid)
     {
         // Go through model nodes and setup instance data
         const Util::Array<Models::ModelNode*>& nodes = Models::ModelGetNodes(mid);
@@ -143,7 +140,7 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
         {
             Models::ShaderStateNode* sNode = reinterpret_cast<Models::ShaderStateNode*>(renderNodes[i]);
             NodeInstanceState state;
-            state.materialInstance = sNode->shaderConfig->CreateMaterialInstance(sNode->material);
+            state.materialInstance = CreateMaterialInstance(sNode->material);
             state.instancingConstantsIndex = sNode->instancingTransformsIndex;
             state.objectConstantsIndex = sNode->objectTransformsIndex;
             state.skinningConstantsIndex = sNode->skinningTransformsIndex;
@@ -179,9 +176,8 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
             nodeInstances.renderable.nodeLodDistances.Append(sNode->useLodDistances ? Util::MakeTuple(sNode->minDistance, sNode->maxDistance) : Util::MakeTuple(FLT_MAX, FLT_MAX));
             nodeInstances.renderable.nodeLods.Append(0.0f);
             nodeInstances.renderable.nodeFlags.Append(Models::NodeInstanceFlags::NodeInstance_Active);
-            nodeInstances.renderable.nodeMaterialResources.Append(sNode->materialRes);
             nodeInstances.renderable.nodeMaterials.Append(sNode->material);
-            nodeInstances.renderable.nodeShaderConfigs.Append(sNode->shaderConfig);
+            nodeInstances.renderable.nodeShaderConfigs.Append(MaterialGetShaderConfig(sNode->material));
             nodeInstances.renderable.nodes.Append(sNode);
             nodeInstances.renderable.nodeModelApplyCallbacks.Append(sNode->GetApplyFunction());
             nodeInstances.renderable.modelNodeGetPrimitiveGroup.Append(sNode->GetPrimitiveGroupFunction());
@@ -194,22 +190,21 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 #endif
 
             // The sort id is combined together with an index in the VisibilitySortJob to sort the node based on material, model and instance
-            assert(sNode->shaderConfig->HashCode() < 0xFFF0000000000000);
+            assert(sNode->GetSortCode() < 0xFFF0000000000000);
             assert(sNode->HashCode() < 0x000FFFFF00000000);
-            uint64 sortId = ((uint64)sNode->shaderConfig->HashCode() << 52) | ((uint64)sNode->HashCode() << 32);
+            uint64 sortId = ((uint64)sNode->GetSortCode() << 52) | ((uint64)sNode->HashCode() << 32);
             nodeInstances.renderable.nodeSortId.Append(sortId);
         }
 
-        modelContextAllocator.Get<Model_Id>(cid.id) = mid;
+        modelContextAllocator.Set<Model_Id>(cid.id, mid);
         const Math::mat4& pending = modelContextAllocator.Get<Model_Transform>(cid.id);
 
         // add the callbacks to a lockfree queue, and dequeue and call them when it's safe
         if (finishedCallback != nullptr)
             setupCompleteQueue.Enqueue(finishedCallback);
     };
-    info.failCallback = info.successCallback;
 
-    ModelId mid = Models::CreateModel(info);
+    Resources::CreateResource(name, tag, successCallback, successCallback, false);
 }
 
 //------------------------------------------------------------------------------
@@ -220,17 +215,12 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId gfxId, const Resource
 {
     const ContextEntityId cid = GetContextId(gfxId);
 
-    // clean up old stuff, but don't deallocate entity
-    ModelId& rid = modelContextAllocator.Get<Model_Id>(cid.id);
+    Resources::ResourceId rid = modelContextAllocator.Get<Model_Id>(cid.id);
 
-    if (rid != ModelId::Invalid()) // decrement model resource
+    if (rid != InvalidResourceId) // decrement model resource
         Models::DestroyModel(rid);
 
-    ResourceCreateInfo info;
-    info.resource = name;
-    info.tag = tag;
-    info.async = false;
-    info.successCallback = [cid, gfxId, finishedCallback](Resources::ResourceId mid)
+    auto successCallback = [cid, gfxId, finishedCallback](Resources::ResourceId mid)
     {
         modelContextAllocator.Get<Model_Id>(cid.id) = mid;
         const Math::mat4& pending = modelContextAllocator.Get<Model_Transform>(cid.id);
@@ -238,9 +228,10 @@ ModelContext::ChangeModel(const Graphics::GraphicsEntityId gfxId, const Resource
         if (finishedCallback != nullptr)
             setupCompleteQueue.Enqueue(finishedCallback);
     };
-    info.failCallback = info.successCallback;
 
-    rid = Models::CreateModel(info);
+    Resources::ResourceId model = Resources::CreateResource(name, tag, successCallback, successCallback, true);
+    modelContextAllocator.Set<Model_Id>(cid.id, model);
+
 }
 
 //------------------------------------------------------------------------------
@@ -322,13 +313,13 @@ ModelContext::SetupMaterialInstanceContext(const Graphics::GraphicsEntityId id, 
     if (index == InvalidIndex)
     {
         // Lookup the batch index once
-        Materials::BatchIndex batchIndex = nodeInstances.renderable.nodeShaderConfigs[node]->GetBatchIndex(batch);
+        Materials::BatchIndex batchIndex = MaterialGetBatchIndex(nodeInstances.renderable.nodeMaterials[node], batch);
 
         // Emplace element
         MaterialInstanceContext& ret = materialInstanceContexts.Emplace(nodeInstances.renderable.nodes[node]);
         Materials::MaterialInstanceId materialInstance = nodeInstances.renderable.nodeStates[node].materialInstance;
         ret.batch = batchIndex;
-        ret.constantBufferSize = nodeInstances.renderable.nodeShaderConfigs[node]->GetInstanceBufferSize(materialInstance, batchIndex);
+        ret.constantBufferSize = MaterialInstanceBufferSize(materialInstance, batchIndex);
         return ret;
     }
     else
@@ -355,7 +346,7 @@ ModelContext::AllocateInstanceConstants(const Graphics::GraphicsEntityId id, con
     const ContextEntityId cid = GetContextId(id);
     const Models::NodeInstanceRange& nodes = modelContextAllocator.Get<Model_NodeInstanceStates>(cid.id);
     const IndexT node = nodes.begin + nodeIndex;
-    return nodeInstances.renderable.nodeShaderConfigs[node]->AllocateInstanceConstants(nodeInstances.renderable.nodeStates[node].materialInstance, batch);
+    return MaterialInstanceAllocate(nodeInstances.renderable.nodeStates[node].materialInstance, batch);
 }
 
 //------------------------------------------------------------------------------
@@ -462,7 +453,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
     const Util::Array<NodeInstanceRange>& nodeInstanceTransformRanges = modelContextAllocator.GetArray<Model_NodeInstanceTransform>();
     const Util::Array<NodeInstanceRange>& nodeInstanceStateRanges = modelContextAllocator.GetArray<Model_NodeInstanceStates>();
     const Util::Array<Util::Array<uint32>>& nodeInstanceRoots = modelContextAllocator.GetArray<Model_NodeInstanceRoots>();
-    const Util::Array<Math::bbox>& modelBoxes = Models::modelPool->modelAllocator.GetArray<Models::StreamModelCache::ModelBoundingBox>();
+    const Util::Array<Math::bbox>& modelBoxes = Models::modelAllocator.GetArray<Model_BoundingBox>();
     Util::Array<Math::bbox>& instanceBoxes = nodeInstances.renderable.nodeBoundingBoxes;
     Util::Array<Math::mat4>& pending = modelContextAllocator.GetArray<Model_Transform>();
     Util::Array<bool>& hasPending = modelContextAllocator.GetArray<Model_Dirty>();
@@ -587,7 +578,7 @@ ModelContext::UpdateTransforms(const Graphics::FrameContext& ctx)
                 nodeInstances.renderable.nodeLods[j] = lodFactor;
 
                 // Notify materials system this LOD might be used (this is a bit shitty in comparison to actually using texture sampling feedback)
-                Materials::materialCache->SetMaxLOD(nodeInstances.renderable.nodeMaterialResources[j], textureLod);
+                Materials::MaterialSetHighestLod(nodeInstances.renderable.nodeMaterials[j], textureLod);
             }
         }
     }, nodeInstanceStateRanges.Size(), 256, renderCtx, { &TransformsUpdateCounter }, &lodUpdateCounter, nullptr);

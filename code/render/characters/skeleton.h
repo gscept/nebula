@@ -16,9 +16,6 @@ namespace Characters
 
 RESOURCE_ID_TYPE(SkeletonId);
 
-class StreamSkeletonCache;
-extern StreamSkeletonCache* skeletonPool;
-
 struct CharacterJoint
 {
     Math::vector poseTranslation;
@@ -32,8 +29,16 @@ struct CharacterJoint
 #endif
 };
 
+struct SkeletonCreateInfo
+{
+    Util::FixedArray<CharacterJoint> joints;
+    Util::FixedArray<Math::mat4> bindPoses;
+    Util::HashTable<Util::StringAtom, IndexT> jointIndexMap;
+    Util::FixedArray<Math::vec4> idleSamples;
+};
+
 /// create model (resource)
-const SkeletonId CreateSkeleton(const ResourceCreateInfo& info);
+const SkeletonId CreateSkeleton(const SkeletonCreateInfo& info);
 /// discard model (resource)
 void DestroySkeleton(const SkeletonId id);
 
@@ -46,5 +51,21 @@ const Util::FixedArray<CharacterJoint>& SkeletonGetJoints(const SkeletonId id);
 const Util::FixedArray<Math::mat4>& SkeletonGetBindPose(const SkeletonId id);
 /// get joint index
 const IndexT SkeletonGetJointIndex(const SkeletonId id, const Util::StringAtom& name);
+
+enum
+{
+    Skeleton_Joints,
+    Skeleton_BindPose,
+    Skeleton_JointNameMap,
+    Skeleton_IdleSamples
+};
+
+typedef Ids::IdAllocator<
+    Util::FixedArray<CharacterJoint>,
+    Util::FixedArray<Math::mat4>,
+    Util::HashTable<Util::StringAtom, IndexT>,
+    Util::FixedArray<Math::vec4>
+> SkeletonAllocator;
+extern SkeletonAllocator skeletonAllocator;
 
 } // namespace Characters

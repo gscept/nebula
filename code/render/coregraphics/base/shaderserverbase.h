@@ -29,7 +29,7 @@
 #include "coregraphics/shaderfeature.h"
 #include "coregraphics/shader.h"
 #include "coregraphics/shaderidentifier.h"
-#include "coregraphics/shadercache.h"
+#include "coregraphics/shaderloader.h"
 #include "threading/safequeue.h"
 
 namespace Threading
@@ -76,11 +76,9 @@ public:
     bool HasShader(const Resources::ResourceName& resId) const;
 
     /// get all loaded shaders
-    const Util::Dictionary<Resources::ResourceName, CoreGraphics::ShaderId>& GetAllShaders() const;
+    const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>& GetAllShaders() const;
     /// get shader by name
     const CoreGraphics::ShaderId GetShader(Resources::ResourceName resId) const;
-    /// get name by shader id
-    const Resources::ResourceName& GetName(const CoreGraphics::ShaderId& id) const;
 
     /// reset the current feature bits
     void ResetFeatureBits();
@@ -108,7 +106,7 @@ protected:
     CoreGraphics::ShaderIdentifier shaderIdentifierRegistry;
     CoreGraphics::ShaderFeature shaderFeature;
     CoreGraphics::ShaderFeature::Mask curShaderFeatureBits;
-    Util::Dictionary<Resources::ResourceName, CoreGraphics::ShaderId> shaders;      
+    Util::Dictionary<Resources::ResourceName, Resources::ResourceId> shaders;      
     Threading::SafeQueue<Resources::ResourceName> pendingShaderReloads;
     CoreGraphics::ShaderId sharedVariableShader;
     Ids::Id32 objectIdShaderVar;
@@ -137,7 +135,7 @@ ShaderServerBase::HasShader(const Resources::ResourceName& resId) const
 //------------------------------------------------------------------------------
 /**
 */
-inline const Util::Dictionary<Resources::ResourceName, CoreGraphics::ShaderId>&
+inline const Util::Dictionary<Resources::ResourceName, Resources::ResourceId>&
 ShaderServerBase::GetAllShaders() const
 {
     return this->shaders;
@@ -150,16 +148,11 @@ inline const CoreGraphics::ShaderId
 ShaderServerBase::GetShader(Resources::ResourceName resId) const
 {
     n_assert_fmt(this->shaders.Contains(resId), "%s not found!\n This might be a problem with your export. Check the exports folder!\n", resId.Value());
-    return this->shaders[resId];
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline const Resources::ResourceName&
-ShaderServerBase::GetName(const CoreGraphics::ShaderId& id) const
-{
-    return CoreGraphics::shaderPool->GetName(id);
+    Resources::ResourceId shader = this->shaders[resId];
+    CoreGraphics::ShaderId ret;
+    ret.resourceId = shader.resourceId;
+    ret.resourceType = shader.resourceType;
+    return ret;
 }
 
 //------------------------------------------------------------------------------

@@ -8,12 +8,10 @@
 #include "vkgraphicsdevice.h"
 #include "vkbuffer.h"
 #include "vktexture.h"
-#include "vkvertexsignaturecache.h"
+#include "vkvertexlayout.h"
+#include "vkshader.h"
 #include "vktypes.h"
-#include "coregraphics/vertexsignaturecache.h"
 #include "vkshaderprogram.h"
-#include "coregraphics/shadercache.h"
-#include "vkshadercache.h"
 #include "coregraphics/resourcetable.h"
 #include "vkresourcetable.h"
 #include "vkevent.h"
@@ -94,7 +92,7 @@ CreateCmdBufferPool(const CmdBufferPoolCreateInfo& info)
     flags |= info.resetable ? VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT : 0;
     flags |= info.shortlived ? VK_COMMAND_POOL_CREATE_TRANSIENT_BIT : 0;
 
-    uint32_t queueFamily = Vulkan::GetQueueFamily(info.queue);
+    uint32_t queueFamily = CoreGraphics::GetQueueIndex(info.queue);
 
     VkCommandPoolCreateInfo cmdPoolInfo =
     {
@@ -324,7 +322,7 @@ CmdSetVertexLayout(const CmdBufferId id, const CoreGraphics::VertexLayoutId& vl)
     bits &= ~CoreGraphics::CmdPipelineBuildBits::PipelineBuilt;
 
     VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
-    VkPipelineVertexInputStateCreateInfo* info = CoreGraphics::layoutPool->GetDerivativeLayout(vl, pipelineBundle.program);
+    VkPipelineVertexInputStateCreateInfo* info = VertexLayoutGetDerivative(vl, pipelineBundle.program);
     pipelineBundle.pipelineInfo.pVertexInputState = info;
 }
 
@@ -392,7 +390,7 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
 {
     VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
     VkPipelineBundle& pipelineBundle = commandBuffers.GetUnsafe<CmdBuffer_VkPipelineBundle>(id.id24);
-    VkShaderProgramRuntimeInfo& info = CoreGraphics::shaderPool->shaderAlloc.Get<VkShaderCache::Shader_ProgramAllocator>(pro.shaderId).Get<ShaderProgram_RuntimeInfo>(pro.programId);
+    VkShaderProgramRuntimeInfo& info = shaderAlloc.Get<Shader_ProgramAllocator>(pro.shaderId).Get<ShaderProgram_RuntimeInfo>(pro.programId);
 
     pipelineBundle.program = pro;
     if (info.type == ShaderPipeline::ComputePipeline)
@@ -1186,15 +1184,16 @@ CmdEndPipelineQueries(const CmdBufferId id)
 void
 CmdBeginMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    __Lock(commandBuffers, Util::ArrayAllocatorAccess::Write);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
 
 #if NEBULA_ENABLE_PROFILING
-    CmdBufferMarkerBundle& markers = commandBuffers.GetUnsafe<CmdBuffer_ProfilingMarkers>(id.id24);
-    QueryBundle& queryBundle = commandBuffers.GetUnsafe<CmdBuffer_Query>(id.id24);
+    CmdBufferMarkerBundle& markers = commandBuffers.Get<CmdBuffer_ProfilingMarkers>(id.id24);
+    QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id24);
     VkQueryPool pool = Vulkan::GetQueryPool(CoreGraphics::TimestampsQueryType);
     if (queryBundle.enabled[CoreGraphics::TimestampsQueryType])
     {
-        CoreGraphics::QueueType usage = commandBuffers.GetUnsafe<CmdBuffer_Usage>(id.id24);
+        CoreGraphics::QueueType usage = commandBuffers.Get<CmdBuffer_Usage>(id.id24);
         FrameProfilingMarker marker;
         marker.color = color;
         marker.name = name;
@@ -1223,14 +1222,15 @@ CmdBeginMarker(const CmdBufferId id, const Math::vec4& color, const char* name)
 void
 CmdEndMarker(const CmdBufferId id)
 {
-    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    __Lock(commandBuffers, Util::ArrayAllocatorAccess::Write);
+    VkCommandBuffer cmdBuf = commandBuffers.Get<CmdBuffer_VkCommandBuffer>(id.id24);
 
 #if NEBULA_ENABLE_PROFILING
-    QueryBundle& queryBundle = commandBuffers.GetUnsafe<CmdBuffer_Query>(id.id24);
+    QueryBundle& queryBundle = commandBuffers.Get<CmdBuffer_Query>(id.id24);
     VkQueryPool pool = Vulkan::GetQueryPool(CoreGraphics::TimestampsQueryType);
     if (queryBundle.enabled[CoreGraphics::TimestampsQueryType])
     {
-        CmdBufferMarkerBundle& markers = commandBuffers.GetUnsafe<CmdBuffer_ProfilingMarkers>(id.id24);
+        CmdBufferMarkerBundle& markers = commandBuffers.Get<CmdBuffer_ProfilingMarkers>(id.id24);
         n_assert(!markers.markerStack.IsEmpty());
         FrameProfilingMarker marker = markers.markerStack.Pop();
         marker.gpuEnd = queryBundle.offset[CoreGraphics::TimestampsQueryType] + queryBundle.queryCount[CoreGraphics::TimestampsQueryType]++;

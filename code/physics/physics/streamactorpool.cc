@@ -15,8 +15,7 @@
 #include "coregraphics/legacy/nvx2streamreader.h"
 #include "coregraphics/primitivegroup.h"
 
-
-__ImplementClass(Physics::StreamActorPool, 'PSAP', Resources::ResourceStreamCache);
+__ImplementClass(Physics::StreamActorPool, 'PSAP', Resources::ResourceLoader);
 
 using namespace physx;
 
@@ -46,7 +45,7 @@ StreamActorPool::~StreamActorPool()
 void 
 StreamActorPool::Setup()
 {
-    ResourceStreamCache::Setup();
+    ResourceLoader::Setup();
     this->placeholderResourceName = "phys:system/box.actor";
     this->failResourceName = "phys:system/box.actor";
 }
@@ -188,15 +187,13 @@ CreateMeshFromResource(MeshTopology type, Util::StringAtom resource, int primGro
 //------------------------------------------------------------------------------
 /**
 */
-Resources::ResourceCache::LoadStatus 
-StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::StringAtom & tag, const Ptr<IO::Stream>& stream, bool immediate)
+Resources::ResourceUnknownId
+StreamActorPool::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom & tag, const Ptr<IO::Stream>& stream, bool immediate)
 {
     n_assert(stream.isvalid());    
-    n_assert(this->GetState(res) == Resources::Resource::Pending);
     
     /// during the load-phase, we can safetly get the structs
-    __LockName(&this->allocator, lock, Util::ArrayAllocatorAccess::Write);
-    ActorInfo &actorInfo = this->allocator.Get<0>(res.resourceId);
+    ActorInfo actorInfo;
     actorInfo.instanceCount = 0;
     PhysicsResource::ActorT actor;
     Flat::FlatbufferInterface::DeserializeFlatbuffer<PhysicsResource::Actor>(actor, (uint8_t*)stream->Map());
@@ -259,7 +256,15 @@ StreamActorPool::LoadFromStream(const Resources::ResourceId res, const Util::Str
         actorInfo.shapes.Append(newShape);
         actorInfo.densities.Append(GetMaterial(material).density);
     }
-    return Resources::ResourceCache::Success;                                    
+
+    __Lock(allocator, Util::ArrayAllocatorAccess::Write);
+    Ids::Id32 id = allocator.Alloc();
+    allocator.Set<Actor_Info>(id, actorInfo);
+
+    ActorResourceId ret;
+    ret.resourceId = id;
+    ret.resourceType = 0;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -281,8 +286,7 @@ StreamActorPool::Unload(const Resources::ResourceId id)
     {
         s->release();        
     }    
-
-    this->states[id.poolId] = Resources::Resource::State::Unloaded;
+    allocator.Dealloc(id.resourceId);
 }
 
 }

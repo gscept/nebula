@@ -34,14 +34,15 @@ public:
     std::function<const CoreGraphics::PrimitiveGroup()> GetPrimitiveGroupFunction() override;
 
 protected:
-    friend class StreamModelCache;
+    friend class ModelLoader;
 
     /// load primitive
     virtual bool Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, const Ptr<IO::BinaryReader>& reader, bool immediate) override;
     /// unload data
     virtual void Unload() override;
 
-    CoreGraphics::MeshId res;
+    Resources::ResourceId res;
+    CoreGraphics::MeshId mesh;
     uint16_t primitiveGroupIndex;
 
     CoreGraphics::BufferId vbo, ibo;

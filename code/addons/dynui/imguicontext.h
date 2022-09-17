@@ -32,7 +32,7 @@ struct ImguiRendererParams
 
 struct ImguiTextureId
 {
-    uint64 nebulaHandle;
+    CoreGraphics::TextureId nebulaHandle;
     uint8 layer = 0;
     uint8 mip = 0;
 };

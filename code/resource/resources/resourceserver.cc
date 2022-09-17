@@ -66,13 +66,14 @@ ResourceServer::Close()
     Core::SysFunc::DebugOut("\n\n******** NEBULA RESOURCE MANAGER ********\n Beginning of resource leak report:");
     for (IndexT i = 0; i < this->pools.Size(); i++)
     {
-        ResourceCache* pool = this->pools[i];
+        ResourceLoader* pool = this->pools[i];
         for (auto & kvp : pool->ids)
         {
+            const auto resource = pool->resources[kvp.Value()];
             if (pool->GetUsage(kvp.Value()) != 0)
             {
                 const Resources::ResourceName& name = kvp.Key();
-                Util::String msg = Util::String::Sprintf("Resource <%s> (id %d) from pool %d is not unloaded, usage is '%d'\n", name.Value(), kvp.Value().resourceId, pool->uniqueId, pool->GetUsage(kvp.Value()));
+                Util::String msg = Util::String::Sprintf("Resource <%s> (id %d) from pool %d is not unloaded, usage is '%d'\n", name.Value(), resource.resourceId, pool->uniqueId, pool->GetUsage(kvp.Value()));
                 Core::SysFunc::DebugOut(msg.AsCharPtr());
                 hasLeaks = true;
             }
@@ -98,29 +99,13 @@ void
 ResourceServer::RegisterStreamPool(const Util::StringAtom& ext, const Core::Rtti& loaderClass)
 {
     n_assert(this->open);
-    n_assert(loaderClass.IsDerivedFrom(ResourceStreamCache::RTTI));
+    n_assert(loaderClass.IsDerivedFrom(ResourceLoader::RTTI));
     void* obj = loaderClass.Create();
-    Ptr<ResourceStreamCache> loader((ResourceStreamCache*)obj);
+    Ptr<ResourceLoader> loader((ResourceLoader*)obj);
     loader->uniqueId = UniquePoolCounter++;
     loader->Setup();
     this->pools.Append(loader);
     this->extensionMap.Add(ext, this->pools.Size() - 1);
-    this->typeMap.Add(&loaderClass, this->pools.Size() - 1);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-ResourceServer::RegisterMemoryPool(const Core::Rtti& loaderClass)
-{
-    n_assert(this->open);
-    n_assert(loaderClass.IsDerivedFrom(ResourceMemoryCache::RTTI));
-    void* obj = loaderClass.Create();
-    Ptr<ResourceMemoryCache> loader((ResourceMemoryCache*)obj);
-    loader->uniqueId = UniquePoolCounter++;
-    loader->Setup();
-    this->pools.Append(loader);
     this->typeMap.Add(&loaderClass, this->pools.Size() - 1);
 }
 
@@ -148,7 +133,7 @@ ResourceServer::Update(IndexT frameIndex)
     IndexT i;
     for (i = 0; i < this->pools.Size(); i++)
     {
-        const Ptr<ResourceCache>& loader = this->pools[i];
+        const Ptr<ResourceLoader>& loader = this->pools[i];
         loader->Update(frameIndex);
     }
 }
@@ -162,7 +147,7 @@ ResourceServer::DiscardResources(const Util::StringAtom& tag)
     IndexT i;
     for (i = 0; i < this->pools.Size(); i++)
     {
-        const Ptr<ResourceCache>& loader = this->pools[i];
+        const Ptr<ResourceLoader>& loader = this->pools[i];
         loader->DiscardByTag(tag);
     }
 }
@@ -176,10 +161,10 @@ ResourceServer::HasPendingResources()
     IndexT i;
     for (i = 0; i < this->pools.Size(); i++)
     {
-        const Ptr<ResourceCache>& loader = this->pools[i];
-        if (loader->IsA(ResourceStreamCache::RTTI))
+        const Ptr<ResourceLoader>& loader = this->pools[i];
+        if (loader->IsA(ResourceLoader::RTTI))
         {
-            const Ptr<ResourceStreamCache>& pool = loader.cast<ResourceStreamCache>();
+            const Ptr<ResourceLoader>& pool = loader.cast<ResourceLoader>();
             if (!pool->pendingLoads.IsEmpty())
                 return true;
         }
@@ -194,11 +179,11 @@ Core::Rtti*
 ResourceServer::GetType(const Resources::ResourceId id)
 {
     // get id of loader
-    const Ids::Id8 loaderid = id.poolIndex;
+    const Ids::Id8 loaderid = id.cacheIndex;
 
     // get resource loader by extension
     n_assert(this->pools.Size() > loaderid);
-    const Ptr<ResourceCache>& loader = this->pools[loaderid];
+    const Ptr<ResourceLoader>& loader = this->pools[loaderid];
     return loader->GetRtti();
 }
 

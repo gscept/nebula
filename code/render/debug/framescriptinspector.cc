@@ -50,7 +50,7 @@ FrameScriptInspector::Run(const Ptr<Frame::FrameScript>& script)
     ImVec2 imageSize = {(float)dims.width, (float)dims.height};
 
     static Dynui::ImguiTextureId textureInfo;
-    textureInfo.nebulaHandle = id.HashCode64();
+    textureInfo.nebulaHandle = id;
     textureInfo.mip = state.selectedMip;
     textureInfo.layer = state.selectedLayer;
 

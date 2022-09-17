@@ -5,20 +5,26 @@
 //------------------------------------------------------------------------------
 #include "render/stdneb.h"
 #include "coreanimation/animresource.h"
-#include "streamanimationcache.h"
 
 namespace CoreAnimation
 {
 
-StreamAnimationCache* animPool = nullptr;
-
+AnimAllocator animAllocator;
 //------------------------------------------------------------------------------
 /**
 */
 const AnimResourceId 
-CreateAnimation(const ResourceCreateInfo& info)
+CreateAnimation(const AnimationCreateInfo& info)
 {
-	return animPool->CreateResource(info.resource, nullptr, 0, info.tag, info.successCallback, info.failCallback, !info.async).As<AnimResourceId>();
+    Ids::Id32 id = animAllocator.Alloc();
+    animAllocator.Set<Anim_Clips>(id, info.clips);
+    animAllocator.Set<Anim_KeyIndices>(id, info.indices);
+    animAllocator.Set<Anim_KeyBuffer>(id, info.keyBuffer);
+
+    AnimResourceId ret;
+    ret.resourceId = id;
+    ret.resourceType = CoreGraphics::AnimResourceIdType;
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -26,7 +32,11 @@ CreateAnimation(const ResourceCreateInfo& info)
 */
 void DestroyAnimation(const AnimResourceId id)
 {
-    animPool->DiscardResource(id);
+    animAllocator.Get<Anim_Clips>(id.resourceId).Clear();
+    animAllocator.Get<Anim_KeyIndices>(id.resourceId).Clear();
+    animAllocator.Get<Anim_KeyBuffer>(id.resourceId)->Discard();
+    animAllocator.Set<Anim_KeyBuffer>(id.resourceId, nullptr);
+    animAllocator.Dealloc(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -35,7 +45,7 @@ void DestroyAnimation(const AnimResourceId id)
 const Util::FixedArray<AnimClip>&
 AnimGetClips(const AnimResourceId& id)
 {
-    return animPool->GetClips(id);
+    return animAllocator.Get<Anim_Clips>(id.resourceId);
 }
 
 //------------------------------------------------------------------------------
@@ -44,7 +54,25 @@ AnimGetClips(const AnimResourceId& id)
 const AnimClip& 
 AnimGetClip(const AnimResourceId& id, const IndexT index)
 {
-    return animPool->GetClip(id, index);
+    return animAllocator.Get<Anim_Clips>(id.resourceId)[index];
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const Ptr<AnimKeyBuffer>&
+AnimGetBuffer(const AnimResourceId& id)
+{
+    return animAllocator.Get<Anim_KeyBuffer>(id.resourceId);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+const IndexT
+AnimGetIndex(const AnimResourceId& id, const Util::StringAtom& name)
+{
+    return animAllocator.Get<Anim_KeyIndices>(id.resourceId)[name];
 }
 
 //------------------------------------------------------------------------------
@@ -53,7 +81,7 @@ AnimGetClip(const AnimResourceId& id, const IndexT index)
 void 
 AnimComputeSlice(const AnimResourceId& id, IndexT clipIndex, IndexT keyIndex, SizeT& outSliceByteSize, const Math::vec4*& ptr)
 {
-    const AnimClip& clip = animPool->GetClip(id, clipIndex);
+    const AnimClip& clip = AnimGetClip(id, clipIndex);
     n_assert(clip.AreKeySliceValuesValid());
     IndexT firstKeyIndex = clip.GetKeySliceFirstKeyIndex();
     if (InvalidIndex == firstKeyIndex)
@@ -64,7 +92,7 @@ AnimComputeSlice(const AnimResourceId& id, IndexT clipIndex, IndexT keyIndex, Si
     }
     else
     {
-        const Ptr<AnimKeyBuffer>& buffer = animPool->GetKeyBuffer(id);
+        const Ptr<AnimKeyBuffer>& buffer = AnimGetBuffer(id);
         outSliceByteSize = clip.GetKeySliceByteSize();
         IndexT sliceKeyIndex = firstKeyIndex + keyIndex * clip.GetKeyStride();
         ptr = buffer->GetKeyBufferPointer() + sliceKeyIndex;

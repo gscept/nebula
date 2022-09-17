@@ -29,23 +29,23 @@ public:
     static void SetupDecalPBR(
         const Graphics::GraphicsEntityId id, 
         const Math::mat4 transform,
-        const CoreGraphics::TextureId albedo, 
-        const CoreGraphics::TextureId normal, 
-        const CoreGraphics::TextureId material);
+        const Resources::ResourceId albedo, 
+        const Resources::ResourceId normal, 
+        const Resources::ResourceId material);
     /// setup as emissive decal
     static void SetupDecalEmissive(
         const Graphics::GraphicsEntityId id,
         const Math::mat4 transform,
-        const CoreGraphics::TextureId emissive);
+        const Resources::ResourceId emissive);
 
     /// set albedo texture for a PBR decal
-    static void SetAlbedoTexture(const Graphics::GraphicsEntityId id, const CoreGraphics::TextureId albedo);
+    static void SetAlbedoTexture(const Graphics::GraphicsEntityId id, const Resources::ResourceId albedo);
     /// set normal texture for a PBR decal
-    static void SetNormalTexture(const Graphics::GraphicsEntityId id, const CoreGraphics::TextureId normal);
+    static void SetNormalTexture(const Graphics::GraphicsEntityId id, const Resources::ResourceId normal);
     /// set material texture for a PBR decal
-    static void SetMaterialTexture(const Graphics::GraphicsEntityId id, const CoreGraphics::TextureId material);
+    static void SetMaterialTexture(const Graphics::GraphicsEntityId id, const Resources::ResourceId material);
     /// set emissive texture for a PBR decal
-    static void SetEmissiveTexture(const Graphics::GraphicsEntityId id, const CoreGraphics::TextureId emissive);
+    static void SetEmissiveTexture(const Graphics::GraphicsEntityId id, const Resources::ResourceId emissive);
 
     /// set transform of decal
     static void SetTransform(const Graphics::GraphicsEntityId id, const Math::mat4 transform);
@@ -87,9 +87,9 @@ private:
         DecalPBR_Material,
     };
     typedef Ids::IdAllocator<
-        CoreGraphics::TextureId,
-        CoreGraphics::TextureId,
-        CoreGraphics::TextureId
+        Resources::ResourceId,
+        Resources::ResourceId,
+        Resources::ResourceId
     > PBRDecalAllocator;
     static PBRDecalAllocator pbrDecalAllocator;
 
@@ -98,7 +98,7 @@ private:
         DecalEmissive_Emissive,
     };
     typedef Ids::IdAllocator<
-        CoreGraphics::TextureId
+        Resources::ResourceId
     > EmissiveDecalAllocator;
     static EmissiveDecalAllocator emissiveDecalAllocator;
 

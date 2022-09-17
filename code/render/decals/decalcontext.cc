@@ -223,9 +223,9 @@ void
 DecalContext::SetupDecalPBR(
     const Graphics::GraphicsEntityId id,
     const Math::mat4 transform,
-    const CoreGraphics::TextureId albedo,
-    const CoreGraphics::TextureId normal,
-    const CoreGraphics::TextureId material)
+    const Resources::ResourceId albedo,
+    const Resources::ResourceId normal,
+    const Resources::ResourceId material)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
     Ids::Id32 decal = pbrDecalAllocator.Alloc();
@@ -249,7 +249,7 @@ void
 DecalContext::SetupDecalEmissive(
     const Graphics::GraphicsEntityId id,
     const Math::mat4 transform,
-    const CoreGraphics::TextureId emissive)
+    const Resources::ResourceId emissive)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
     Ids::Id32 decal = emissiveDecalAllocator.Alloc();
@@ -264,7 +264,7 @@ DecalContext::SetupDecalEmissive(
 /**
 */
 void
-DecalContext::SetAlbedoTexture(const Graphics::GraphicsEntityId id, const CoreGraphics::TextureId albedo)
+DecalContext::SetAlbedoTexture(const Graphics::GraphicsEntityId id, const Resources::ResourceId albedo)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
     n_assert(genericDecalAllocator.Get<Decal_Type>(cid.id) == PBRDecal);
@@ -276,7 +276,7 @@ DecalContext::SetAlbedoTexture(const Graphics::GraphicsEntityId id, const CoreGr
 /**
 */
 void
-DecalContext::SetNormalTexture(const Graphics::GraphicsEntityId id, const CoreGraphics::TextureId normal)
+DecalContext::SetNormalTexture(const Graphics::GraphicsEntityId id, const Resources::ResourceId normal)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
     n_assert(genericDecalAllocator.Get<Decal_Type>(cid.id) == PBRDecal);
@@ -288,7 +288,7 @@ DecalContext::SetNormalTexture(const Graphics::GraphicsEntityId id, const CoreGr
 /**
 */
 void
-DecalContext::SetMaterialTexture(const Graphics::GraphicsEntityId id, const CoreGraphics::TextureId material)
+DecalContext::SetMaterialTexture(const Graphics::GraphicsEntityId id, const Resources::ResourceId material)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
     n_assert(genericDecalAllocator.Get<Decal_Type>(cid.id) == PBRDecal);
@@ -300,7 +300,7 @@ DecalContext::SetMaterialTexture(const Graphics::GraphicsEntityId id, const Core
 /**
 */
 void
-DecalContext::SetEmissiveTexture(const Graphics::GraphicsEntityId id, const CoreGraphics::TextureId emissive)
+DecalContext::SetEmissiveTexture(const Graphics::GraphicsEntityId id, const Resources::ResourceId emissive)
 {
     const Graphics::ContextEntityId cid = GetContextId(id);
     n_assert(genericDecalAllocator.Get<Decal_Type>(cid.id) == EmissiveDecal);
