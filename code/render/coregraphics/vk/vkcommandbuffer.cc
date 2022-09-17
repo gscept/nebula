@@ -16,6 +16,7 @@
 #include "vkresourcetable.h"
 #include "vkevent.h"
 #include "vkpass.h"
+#include "graphics/globalconstants.h"
 
 namespace Vulkan
 {
