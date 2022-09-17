@@ -311,11 +311,6 @@ const Util::Array<FrameProfilingMarker>& GetProfilingMarkers();
 SizeT GetNumDrawCalls();
 #endif
 
-/// sets whether or not the render device should tessellate
-void SetUsePatches(bool state);
-/// gets whether or not the render device should tessellate
-bool GetUsePatches();
-
 #if NEBULA_GRAPHICS_DEBUG
 /// set debug name for object
 template<typename OBJECT_ID_TYPE> void ObjectSetName(const OBJECT_ID_TYPE id, const char* name);
