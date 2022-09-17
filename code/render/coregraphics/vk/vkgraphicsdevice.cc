@@ -1812,7 +1812,8 @@ AllocateVertices(const SizeT numVertices, const SizeT vertexSize)
 {
     Threading::CriticalScope scope(&vertexAllocationMutex);
     IndexT ret;
-    state.vertexAllocator.Alloc(numVertices * vertexSize, 4, ret);
+    state.vertexAllocator.Alloc(numVertices * vertexSize, 1, ret);
+    n_assert(ret != InvalidIndex);
     N_BUDGET_COUNTER_INCR(N_VERTEX_MEMORY, numVertices * vertexSize);
     return ret;
 }
@@ -1846,6 +1847,7 @@ AllocateIndices(const SizeT numIndices, const IndexType::Code indexType)
     Threading::CriticalScope scope(&vertexAllocationMutex);
     IndexT ret;
     state.indexAllocator.Alloc(numIndices * IndexType::SizeOf(indexType), 1, ret);
+    n_assert(ret != InvalidIndex);
     N_BUDGET_COUNTER_INCR(N_INDEX_MEMORY, numIndices * IndexType::SizeOf(indexType));
     return ret;
 }
@@ -1879,13 +1881,14 @@ AllocateUpload(const SizeT numBytes, const SizeT alignment)
     Vulkan::GraphicsDeviceState::UploadRingBuffer& ring = state.uploadRingBuffers[state.currentBufferedFrameIndex];
 
     // Calculate aligned upper bound
-    N_BUDGET_COUNTER_INCR(N_UPLOAD_MEMORY, numBytes);
+    const SizeT alignedBytes = numBytes + alignment - 1;
+    N_BUDGET_COUNTER_INCR(N_UPLOAD_MEMORY, alignedBytes);
 
     // Allocate the memory range, overallocate based on alignment
-    int ret = Threading::Interlocked::Add(&ring.uploadEndAddress, numBytes + alignment - 1);
+    int ret = Threading::Interlocked::Add(&ring.uploadEndAddress, alignedBytes);
 
     // If we have to wrap around, or we are fingering on the range of the next frame submission buffer...
-    if (ret + numBytes >= state.globalUploadBufferMaxValue * int(state.currentBufferedFrameIndex + 1))
+    if (ret + alignedBytes >= state.globalUploadBufferMaxValue * int(state.currentBufferedFrameIndex + 1))
     {
         n_error("Over allocation of upload memory! Memory will be overwritten!\n");
 
@@ -1894,7 +1897,7 @@ AllocateUpload(const SizeT numBytes, const SizeT alignment)
     }
 
     // Return offset aligned up
-    return ret & ~(alignment - 1);
+    return Math::align(ret, alignment);
 }
 
 //------------------------------------------------------------------------------
