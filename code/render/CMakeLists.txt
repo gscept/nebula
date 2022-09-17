@@ -121,6 +121,7 @@ ENDIF()
                 batchgroup.h
                 buffer.h
                 gpubuffertypes.h
+                commandbuffer.cc
                 commandbuffer.h
                 config.h
                 displaydevice.cc
