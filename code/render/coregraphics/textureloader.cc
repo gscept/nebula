@@ -95,7 +95,7 @@ TextureLoader::LoadFromStream(Ids::Id32 entry, const Util::StringAtom& tag, cons
         textureInfo.format = format;
         CoreGraphics::TextureId texture = CoreGraphics::CreateTexture(textureInfo);
 
-        CoreGraphics::TextureSubresourceInfo subres(CoreGraphics::ImageAspect::ColorBits, streamData->lowestLod, mipsToLoad, 0, textureInfo.layers);
+        CoreGraphics::TextureSubresourceInfo subres(CoreGraphics::ImageBits::ColorBits, streamData->lowestLod, mipsToLoad, 0, textureInfo.layers);
 
         // use resource submission
         CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockTransferSetupCommandBuffer();
@@ -231,7 +231,7 @@ TextureLoader::StreamMaxLOD(const Resources::ResourceId& id, const float lod, bo
     texture.resourceType = id.resourceType;
 
     const gliml::context& ctx = streamData->ctx;
-    CoreGraphics::TextureSubresourceInfo subres(CoreGraphics::ImageAspect::ColorBits, adjustedLod, streamData->lowestLod, 0, ctx.num_faces());
+    CoreGraphics::TextureSubresourceInfo subres(CoreGraphics::ImageBits::ColorBits, adjustedLod, streamData->lowestLod, 0, ctx.num_faces());
 
     // use resource submission
     CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockTransferSetupCommandBuffer();

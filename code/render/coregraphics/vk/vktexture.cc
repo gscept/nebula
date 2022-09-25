@@ -362,7 +362,7 @@ SetupTexture(const TextureId id)
                         TextureBarrierInfo
                         {
                             id,
-                            CoreGraphics::TextureSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, viewRange.baseMipLevel, viewRange.levelCount, 0, viewRange.layerCount)
+                            CoreGraphics::TextureSubresourceInfo(CoreGraphics::ImageBits::ColorBits, viewRange.baseMipLevel, viewRange.levelCount, 0, viewRange.layerCount)
                         }
                     },
                     nullptr);
@@ -378,7 +378,7 @@ SetupTexture(const TextureId id)
                         TextureBarrierInfo
                         {
                             id,
-                            CoreGraphics::TextureSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, viewRange.baseMipLevel, viewRange.levelCount, 0, viewRange.layerCount)
+                            CoreGraphics::TextureSubresourceInfo(CoreGraphics::ImageBits::ColorBits, viewRange.baseMipLevel, viewRange.levelCount, 0, viewRange.layerCount)
                         }
                     },
                     nullptr);
@@ -433,6 +433,7 @@ SetupTexture(const TextureId id)
             viewCreate.startLayer = 0;
             viewCreate.startMip = viewRange.baseMipLevel;
             viewCreate.tex = id;
+            viewCreate.aspect = ImageBits::StencilBits;
             TextureViewId stencilView = CreateTextureView(viewCreate);
 
             loadInfo.stencilExtension = textureStencilExtensionAllocator.Alloc();
@@ -444,7 +445,7 @@ SetupTexture(const TextureId id)
         CoreGraphics::CmdBufferId cmdBuf = CoreGraphics::LockGraphicsSetupCommandBuffer();
 
         CoreGraphics::TextureSubresourceInfo subres(
-            isDepthFormat ? CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits : CoreGraphics::ImageAspect::ColorBits
+            isDepthFormat ? CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits : CoreGraphics::ImageBits::ColorBits
             , viewRange.baseMipLevel
             , viewRange.levelCount
             , viewRange.baseArrayLayer
@@ -537,7 +538,7 @@ SetupTexture(const TextureId id)
             {
                 __Lock(textureStencilExtensionAllocator, Util::ArrayAllocatorAccess::Write);
                 IndexT& bind = textureStencilExtensionAllocator.Get<TextureExtension_StencilBind>(loadInfo.stencilExtension);
-                bind = Graphics::RegisterTexture(id, runtimeInfo.type, true, true);
+                bind = Graphics::RegisterTexture(id, runtimeInfo.type, false, true);
             }
         }
         else

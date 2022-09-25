@@ -22,18 +22,18 @@ ID_24_8_TYPE(BarrierId);
 struct CmdBufferId;
 struct TextureSubresourceInfo
 {
-    CoreGraphics::ImageAspect aspect;
+    CoreGraphics::ImageBits aspect;
     uint mip, mipCount, layer, layerCount;
 
     TextureSubresourceInfo() :
-        aspect(CoreGraphics::ImageAspect::ColorBits),
+        aspect(CoreGraphics::ImageBits::ColorBits),
         mip(0),
         mipCount(1),
         layer(0),
         layerCount(1)
     {}
 
-    TextureSubresourceInfo(CoreGraphics::ImageAspect aspect, uint mip, uint mipCount, uint layer, uint layerCount) :
+    TextureSubresourceInfo(CoreGraphics::ImageBits aspect, uint mip, uint mipCount, uint layer, uint layerCount) :
         aspect(aspect),
         mip(mip),
         mipCount(mipCount),
@@ -43,32 +43,32 @@ struct TextureSubresourceInfo
 
     static TextureSubresourceInfo ColorNoMipNoLayer()
     {
-        return TextureSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, 1);
+        return TextureSubresourceInfo(CoreGraphics::ImageBits::ColorBits, 0, 1, 0, 1);
     }
 
     static TextureSubresourceInfo ColorNoMip(uint layerCount)
     {
-        return TextureSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, 1, 0, layerCount);
+        return TextureSubresourceInfo(CoreGraphics::ImageBits::ColorBits, 0, 1, 0, layerCount);
     }
 
     static TextureSubresourceInfo ColorNoLayer(uint mipCount)
     {
-        return TextureSubresourceInfo(CoreGraphics::ImageAspect::ColorBits, 0, mipCount, 0, 1);
+        return TextureSubresourceInfo(CoreGraphics::ImageBits::ColorBits, 0, mipCount, 0, 1);
     }
 
     static TextureSubresourceInfo DepthStencilNoMipNoLayer()
     {
-        return TextureSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, 1, 0, 1);
+        return TextureSubresourceInfo(CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits, 0, 1, 0, 1);
     }
 
     static TextureSubresourceInfo DepthStencilNoMip(uint layerCount)
     {
-        return TextureSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, 1, 0, layerCount);
+        return TextureSubresourceInfo(CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits, 0, 1, 0, layerCount);
     }
 
     static TextureSubresourceInfo DepthStencilNoLayer(uint mipCount)
     {
-        return TextureSubresourceInfo(CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits, 0, mipCount, 0, 1);
+        return TextureSubresourceInfo(CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits, 0, mipCount, 0, 1);
     }
 
     const bool Overlaps(const TextureSubresourceInfo& rhs) const
@@ -177,24 +177,24 @@ void BarrierRepeat(const CoreGraphics::CmdBufferId buf);
 //------------------------------------------------------------------------------
 /**
 */
-inline CoreGraphics::ImageAspect
+inline CoreGraphics::ImageBits
 ImageAspectFromString(const Util::String& str)
 {
     Util::Array<Util::String> comps = str.Tokenize("|");
-    CoreGraphics::ImageAspect aspect = CoreGraphics::ImageAspect(0x0);
+    CoreGraphics::ImageBits aspect = CoreGraphics::ImageBits(0x0);
     for (IndexT i = 0; i < comps.Size(); i++)
     {
-        if (comps[i] == "Color")            aspect |= CoreGraphics::ImageAspect::ColorBits;
-        else if (comps[i] == "Depth")       aspect |= CoreGraphics::ImageAspect::DepthBits;
-        else if (comps[i] == "Stencil")     aspect |= CoreGraphics::ImageAspect::StencilBits;
-        else if (comps[i] == "Metadata")    aspect |= CoreGraphics::ImageAspect::MetaBits;
-        else if (comps[i] == "Plane0")      aspect |= CoreGraphics::ImageAspect::Plane0Bits;
-        else if (comps[i] == "Plane1")      aspect |= CoreGraphics::ImageAspect::Plane1Bits;
-        else if (comps[i] == "Plane2")      aspect |= CoreGraphics::ImageAspect::Plane2Bits;
+        if (comps[i] == "Color")            aspect |= CoreGraphics::ImageBits::ColorBits;
+        else if (comps[i] == "Depth")       aspect |= CoreGraphics::ImageBits::DepthBits;
+        else if (comps[i] == "Stencil")     aspect |= CoreGraphics::ImageBits::StencilBits;
+        else if (comps[i] == "Metadata")    aspect |= CoreGraphics::ImageBits::MetaBits;
+        else if (comps[i] == "Plane0")      aspect |= CoreGraphics::ImageBits::Plane0Bits;
+        else if (comps[i] == "Plane1")      aspect |= CoreGraphics::ImageBits::Plane1Bits;
+        else if (comps[i] == "Plane2")      aspect |= CoreGraphics::ImageBits::Plane2Bits;
         else
         {
             n_error("Invalid access string '%s'\n", comps[i].AsCharPtr());
-            return CoreGraphics::ImageAspect::ColorBits;
+            return CoreGraphics::ImageBits::ColorBits;
         }
     }
     return aspect;

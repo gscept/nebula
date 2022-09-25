@@ -67,7 +67,7 @@ CreateBarrier(const BarrierCreateInfo& info)
         vkInfo.imageBarriers[vkInfo.numImageBarriers].dstAccessMask = VkTypes::AsVkAccessFlags(info.toStage);
 
         const TextureSubresourceInfo& subres = info.textures[i].subres;
-        bool isDepth = (subres.aspect & CoreGraphics::ImageAspect::DepthBits) == CoreGraphics::ImageAspect::DepthBits;
+        bool isDepth = (subres.aspect & CoreGraphics::ImageBits::DepthBits) == CoreGraphics::ImageBits::DepthBits;
         vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.aspectMask = VkTypes::AsVkImageAspectFlags(subres.aspect);
         vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.baseMipLevel = subres.mip;
         vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.levelCount = subres.mipCount;
