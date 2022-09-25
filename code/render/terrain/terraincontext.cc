@@ -629,13 +629,13 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                                 {
                                     "Indirection Texture",
                                     CoreGraphics::PipelineStage::TransferWrite,
-                                    CoreGraphics::TextureSubresourceInfo(ImageAspect::ColorBits, 0, TextureGetNumMips(terrainVirtualTileState.indirectionTexture), 0, 1)
+                                    CoreGraphics::TextureSubresourceInfo(ImageBits::ColorBits, 0, TextureGetNumMips(terrainVirtualTileState.indirectionTexture), 0, 1)
                                 });
     terrainPrepare->textureDeps.Add(terrainVirtualTileState.indirectionTextureCopy,
                                 {
                                     "Indirection Texture Copy",
                                     CoreGraphics::PipelineStage::TransferRead,
-                                    CoreGraphics::TextureSubresourceInfo(ImageAspect::ColorBits, 0, TextureGetNumMips(terrainVirtualTileState.indirectionTextureCopy), 0, 1)
+                                    CoreGraphics::TextureSubresourceInfo(ImageBits::ColorBits, 0, TextureGetNumMips(terrainVirtualTileState.indirectionTextureCopy), 0, 1)
                                 });
     terrainPrepare->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {
@@ -753,13 +753,13 @@ TerrainContext::Create(const TerrainSetupSettings& settings)
                             {
                                 "Indirection Texture",
                                 CoreGraphics::PipelineStage::TransferRead,
-                                CoreGraphics::TextureSubresourceInfo(ImageAspect::ColorBits, 0, TextureGetNumMips(terrainVirtualTileState.indirectionTexture), 0, 1)
+                                CoreGraphics::TextureSubresourceInfo(ImageBits::ColorBits, 0, TextureGetNumMips(terrainVirtualTileState.indirectionTexture), 0, 1)
                             });
     indirectionCopy->textureDeps.Add(terrainVirtualTileState.indirectionTextureCopy,
                             {
                                 "Indirection Texture Copy",
                                 CoreGraphics::PipelineStage::TransferWrite,
-                                CoreGraphics::TextureSubresourceInfo(ImageAspect::ColorBits, 0, TextureGetNumMips(terrainVirtualTileState.indirectionTextureCopy), 0, 1)
+                                CoreGraphics::TextureSubresourceInfo(ImageBits::ColorBits, 0, TextureGetNumMips(terrainVirtualTileState.indirectionTextureCopy), 0, 1)
                             });
     indirectionCopy->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {

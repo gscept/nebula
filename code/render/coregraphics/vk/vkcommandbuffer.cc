@@ -610,7 +610,7 @@ CmdBarrier(
         vkBar.dstAccessMask = VkTypes::AsVkAccessFlags(toStage);
 
         const TextureSubresourceInfo& subres = nebBar.subres;
-        bool isDepth = (subres.aspect & CoreGraphics::ImageAspect::DepthBits) == 1;
+        bool isDepth = (subres.aspect & CoreGraphics::ImageBits::DepthBits) == 1;
         vkBar.subresourceRange.aspectMask = VkTypes::AsVkImageAspectFlags(subres.aspect);
         vkBar.subresourceRange.baseMipLevel = subres.mip;
         vkBar.subresourceRange.levelCount = subres.mipCount;
@@ -848,17 +848,15 @@ CmdCopy(
     n_assert(from.Size() > 0);
     n_assert(from.Size() == to.Size());
 
-    bool isDepth = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(fromTexture));
-    VkImageAspectFlags aspect = isDepth ? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
     Util::FixedArray<VkImageCopy> copies(from.Size());
     for (IndexT i = 0; i < copies.Size(); i++)
     {
         VkImageCopy& copy = copies[i];
         copy.dstOffset = { to[i].region.left, to[i].region.top, 0 };
-        copy.dstSubresource = { aspect, (uint32_t)to[i].mip, (uint32_t)to[i].layer, 1 };
+        copy.dstSubresource = { VkTypes::AsVkImageAspectFlags(to[i].bits), (uint32_t)to[i].mip, (uint32_t)to[i].layer, 1 };
         copy.extent = { (uint32_t)to[i].region.width(), (uint32_t)to[i].region.height(), 1 };
         copy.srcOffset = { from[i].region.left, from[i].region.top, 0 };
-        copy.srcSubresource = { aspect, (uint32_t)from[i].mip, (uint32_t)from[i].layer, 1 };
+        copy.srcSubresource = { VkTypes::AsVkImageAspectFlags(from[i].bits), (uint32_t)from[i].mip, (uint32_t)from[i].layer, 1 };
     }
 
     VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);

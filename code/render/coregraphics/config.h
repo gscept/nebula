@@ -100,8 +100,9 @@ enum ShaderVisibility
 };
 __ImplementEnumBitOperators(CoreGraphics::ShaderVisibility);
 
-enum class ImageAspect
+enum class ImageBits
 {
+    Auto = 0,
     ColorBits = (1 << 0),
     DepthBits = (1 << 1),
     StencilBits = (1 << 2),
@@ -110,8 +111,8 @@ enum class ImageAspect
     Plane1Bits = (1 << 5),
     Plane2Bits = (1 << 6)
 };
-__ImplementEnumBitOperators(CoreGraphics::ImageAspect);
-__ImplementEnumComparisonOperators(CoreGraphics::ImageAspect);
+__ImplementEnumBitOperators(CoreGraphics::ImageBits);
+__ImplementEnumComparisonOperators(CoreGraphics::ImageBits);
 
 enum class ImageLayout
 {
