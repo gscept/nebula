@@ -178,7 +178,7 @@ void BarrierRepeat(const CoreGraphics::CmdBufferId buf);
 /**
 */
 inline CoreGraphics::ImageBits
-ImageAspectFromString(const Util::String& str)
+ImageBitsFromString(const Util::String& str)
 {
     Util::Array<Util::String> comps = str.Tokenize("|");
     CoreGraphics::ImageBits aspect = CoreGraphics::ImageBits(0x0);

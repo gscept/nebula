@@ -310,7 +310,7 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
 
     JzonValue* from_bits = jzon_get(from, "bits");
     if (from_bits != nullptr)
-        fromBits = ImageAspectFromString(from_bits->string_value);
+        fromBits = ImageBitsFromString(from_bits->string_value);
 
     JzonValue* to_tex = jzon_get(to, "tex");
     n_assert(to_tex != nullptr);
@@ -318,7 +318,7 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
 
     JzonValue* to_bits = jzon_get(to, "bits");
     if (to_bits != nullptr)
-        toBits = ImageAspectFromString(to_bits->string_value);
+        toBits = ImageBitsFromString(to_bits->string_value);
 
     // add implicit barriers
     TextureSubresourceInfo subresFrom, subresTo;
