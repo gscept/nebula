@@ -1236,7 +1236,7 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
             JzonValue* nd = nullptr;
 
             TextureId tex = script->texturesByName[valstr];
-            if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect = ImageAspectFromString(nd->string_value);
+            if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect = ImageBitsFromString(nd->string_value);
             else
             {
                 bool isDepth = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(tex));
