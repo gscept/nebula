@@ -262,7 +262,7 @@ FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* n
 
     // add implicit barriers
     TextureSubresourceInfo subres;
-    subres.aspect = isDepth ? CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits : CoreGraphics::ImageAspect::ColorBits;
+    subres.aspect = isDepth ? CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits : CoreGraphics::ImageBits::ColorBits;
     subres.layer = 0;
     subres.layerCount = 1;
     subres.mip = 0;
@@ -297,25 +297,46 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
 
     JzonValue* from = jzon_get(node, "from");
     n_assert(from != nullptr);
-    const CoreGraphics::TextureId& fromTex = script->GetTexture(from->string_value);
 
     JzonValue* to = jzon_get(node, "to");
     n_assert(to != nullptr);
-    const CoreGraphics::TextureId& toTex = script->GetTexture(to->string_value);
 
-    bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(fromTex));
+    CoreGraphics::TextureId fromTex, toTex;
+    CoreGraphics::ImageBits fromBits = CoreGraphics::ImageBits::Auto, toBits = CoreGraphics::ImageBits::Auto;
+
+    JzonValue* from_tex = jzon_get(from, "tex");
+    n_assert(from_tex != nullptr);
+    fromTex = script->GetTexture(from_tex->string_value);
+
+    JzonValue* from_bits = jzon_get(from, "bits");
+    if (from_bits != nullptr)
+        fromBits = ImageBitsFromString(from_bits->string_value);
+
+    JzonValue* to_tex = jzon_get(to, "tex");
+    n_assert(to_tex != nullptr);
+    toTex = script->GetTexture(to_tex->string_value);
+
+    JzonValue* to_bits = jzon_get(to, "bits");
+    if (to_bits != nullptr)
+        toBits = ImageBitsFromString(to_bits->string_value);
 
     // add implicit barriers
-    TextureSubresourceInfo subres;
-    subres.aspect = isDepth ? (CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits) : CoreGraphics::ImageAspect::ColorBits;
-    subres.layer = 0;
-    subres.layerCount = 1;
-    subres.mip = 0;
-    subres.mipCount = 1;
-    op->textureDeps.Add(fromTex, Util::MakeTuple(from->string_value, CoreGraphics::PipelineStage::TransferRead, subres));
-    op->textureDeps.Add(toTex, Util::MakeTuple(to->string_value, CoreGraphics::PipelineStage::TransferWrite, subres));
+    TextureSubresourceInfo subresFrom, subresTo;
+    subresFrom.aspect = fromBits;
+    subresFrom.layer = 0;
+    subresFrom.layerCount = 1;
+    subresFrom.mip = 0;
+    subresFrom.mipCount = 1;
+
+    subresTo = subresFrom;
+    subresTo.aspect = toBits;
+
+    op->textureDeps.Add(fromTex, Util::MakeTuple(from->string_value, CoreGraphics::PipelineStage::TransferRead, subresFrom));
+    op->textureDeps.Add(toTex, Util::MakeTuple(to->string_value, CoreGraphics::PipelineStage::TransferWrite, subresTo));
 
     // setup copy operation
+    op->fromBits = fromBits;
+    op->toBits = toBits;
     op->from = fromTex;
     op->to = toTex;
     return op;
@@ -347,7 +368,7 @@ FrameScriptLoader::ParseMipmap(const Ptr<Frame::FrameScript>& script, JzonValue*
 
     // add implicit barriers
     TextureSubresourceInfo subres;
-    subres.aspect = isDepth ? (CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits) : CoreGraphics::ImageAspect::ColorBits;
+    subres.aspect = isDepth ? (CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits) : CoreGraphics::ImageBits::ColorBits;
     subres.layer = 0;
     subres.layerCount = 1;
     subres.mip = 0;
@@ -685,7 +706,7 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
     }
 
     TextureSubresourceInfo subres;
-    subres.aspect = CoreGraphics::ImageAspect::ColorBits;
+    subres.aspect = CoreGraphics::ImageBits::ColorBits;
     subres.layer = 0;
     subres.layerCount = 1;
     subres.mip = 0;
@@ -695,7 +716,7 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
         op->textureDeps.Add(TextureViewGetTexture(info.colorAttachments[i]), Util::MakeTuple(attachmentNames[i], CoreGraphics::PipelineStage::ColorWrite, subres));
     }
 
-    subres.aspect = CoreGraphics::ImageAspect::StencilBits | CoreGraphics::ImageAspect::DepthBits;
+    subres.aspect = CoreGraphics::ImageBits::StencilBits | CoreGraphics::ImageBits::DepthBits;
     if (info.depthStencilAttachment != InvalidTextureViewId)
     {
         op->textureDeps.Add(TextureViewGetTexture(info.depthStencilAttachment), Util::MakeTuple(dsName, CoreGraphics::PipelineStage::DepthStencilWrite, subres));
@@ -1215,11 +1236,11 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
             JzonValue* nd = nullptr;
 
             TextureId tex = script->texturesByName[valstr];
-            if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect = ImageAspectFromString(nd->string_value);
+            if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect = ImageBitsFromString(nd->string_value);
             else
             {
                 bool isDepth = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(tex));
-                subres.aspect = isDepth ? (ImageAspect::DepthBits | ImageAspect::StencilBits) : ImageAspect::ColorBits;
+                subres.aspect = isDepth ? (ImageBits::DepthBits | ImageBits::StencilBits) : ImageBits::ColorBits;
             }
             if ((nd = jzon_get(dep, "mip")) != nullptr) subres.mip = nd->int_value;
             if ((nd = jzon_get(dep, "mip_count")) != nullptr) subres.mipCount = nd->int_value;

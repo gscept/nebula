@@ -211,7 +211,7 @@ FrameScript::Build()
         uint mips = CoreGraphics::TextureGetNumMips(tex);
 
         CoreGraphics::TextureSubresourceInfo subres;
-        subres.aspect = isDepth ? (CoreGraphics::ImageAspect::DepthBits | CoreGraphics::ImageAspect::StencilBits) : CoreGraphics::ImageAspect::ColorBits;
+        subres.aspect = isDepth ? (CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits) : CoreGraphics::ImageBits::ColorBits;
         subres.layer = 0;
         subres.layerCount = layers;
         subres.mip = 0;

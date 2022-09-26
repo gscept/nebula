@@ -63,7 +63,10 @@ CreateTextureView(const TextureViewCreateInfo& info)
 
     bool isDepthFormat = VkTypes::IsDepthFormat(info.format);
     VkImageSubresourceRange viewRange;
-    viewRange.aspectMask = isDepthFormat ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT; // view only supports reading depth in shader
+    if (info.aspect == ImageBits::Auto)
+        viewRange.aspectMask = isDepthFormat ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT; // view only supports reading depth in shader
+    else
+        viewRange.aspectMask = VkTypes::AsVkImageAspectFlags(info.aspect);
     viewRange.baseMipLevel = info.startMip;
     viewRange.levelCount = info.numMips;
     viewRange.baseArrayLayer = info.startLayer;

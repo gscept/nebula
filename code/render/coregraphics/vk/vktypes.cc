@@ -437,33 +437,33 @@ VkTypes::AsNebulaPixelFormat(VkFormat f)
 /**
 */
 VkImageAspectFlags
-VkTypes::AsVkImageAspectFlags(const CoreGraphics::ImageAspect aspect)
+VkTypes::AsVkImageAspectFlags(const CoreGraphics::ImageBits aspect)
 {
     VkImageAspectFlags flags = 0;
     uint32_t bit;
     for (bit = 1; aspect >= bit; bit *= 2)
     {
-        if ((aspect & bit) == bit) switch ((CoreGraphics::ImageAspect)bit)
+        if ((aspect & bit) == bit) switch ((CoreGraphics::ImageBits)bit)
         {
-        case CoreGraphics::ImageAspect::ColorBits:
+        case CoreGraphics::ImageBits::ColorBits:
             flags |= VK_IMAGE_ASPECT_COLOR_BIT;
             break;
-        case CoreGraphics::ImageAspect::DepthBits:
+        case CoreGraphics::ImageBits::DepthBits:
             flags |= VK_IMAGE_ASPECT_DEPTH_BIT;
             break;
-        case CoreGraphics::ImageAspect::StencilBits:
+        case CoreGraphics::ImageBits::StencilBits:
             flags |= VK_IMAGE_ASPECT_STENCIL_BIT;
             break;
-        case CoreGraphics::ImageAspect::MetaBits:
+        case CoreGraphics::ImageBits::MetaBits:
             flags |= VK_IMAGE_ASPECT_METADATA_BIT;
             break;
-        case CoreGraphics::ImageAspect::Plane0Bits:
+        case CoreGraphics::ImageBits::Plane0Bits:
             flags |= VK_IMAGE_ASPECT_PLANE_0_BIT;
             break;
-        case CoreGraphics::ImageAspect::Plane1Bits:
+        case CoreGraphics::ImageBits::Plane1Bits:
             flags |= VK_IMAGE_ASPECT_PLANE_1_BIT;
             break;
-        case CoreGraphics::ImageAspect::Plane2Bits:
+        case CoreGraphics::ImageBits::Plane2Bits:
             flags |= VK_IMAGE_ASPECT_PLANE_2_BIT;
             break;
         }

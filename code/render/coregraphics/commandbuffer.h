@@ -65,6 +65,7 @@ struct TextureCopy
     Math::rectangle<SizeT> region;
     uint mip;
     uint layer;
+    ImageBits bits = ImageBits::ColorBits;
 };
 
 struct BufferCopy

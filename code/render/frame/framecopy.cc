@@ -38,6 +38,8 @@ FrameCopy::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
     ret->name = this->name;
 #endif
 
+    ret->fromBits = this->fromBits;
+    ret->toBits = this->toBits;
     ret->from = this->from;
     ret->to = this->to;
     return ret;
@@ -54,16 +56,8 @@ FrameCopy::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const Index
     CoreGraphics::TextureDimensions toDims = TextureGetDimensions(this->to);
 
     // setup regions
-    Math::rectangle<SizeT> fromRegion;
-    fromRegion.left = 0;
-    fromRegion.top = 0;
-    fromRegion.right = fromDims.width;
-    fromRegion.bottom = fromDims.height;
-    Math::rectangle<SizeT> toRegion;
-    toRegion.left = 0;
-    toRegion.top = 0;
-    toRegion.right = toDims.width;
-    toRegion.bottom = toDims.height;
+    Math::rectangle<SizeT> fromRegion(0, 0, fromDims.width, fromDims.height);
+    Math::rectangle<SizeT> toRegion(0, 0, toDims.width, toDims.height);
 
     N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_TRANSFER, this->name.Value());
 
@@ -71,11 +65,12 @@ FrameCopy::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const Index
     from.region = fromRegion;
     from.mip = 0;
     from.layer = 0;
+    from.bits = this->fromBits;
     to.region = toRegion;
     to.mip = 0;
     to.layer = 0;
+    to.bits = this->toBits;
     CoreGraphics::CmdCopy(cmdBuf, this->from, { from }, this->to, { to });
-
 }
 
 } // namespace Frame2
