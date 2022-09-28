@@ -194,6 +194,11 @@ CreateCmdBuffer(const CmdBufferCreateInfo& info)
     pipelineBundle.pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineBundle.pipelineInfo.basePipelineIndex = 0;
 
+    pipelineBundle.multisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    pipelineBundle.multisampleInfo.pNext = nullptr;
+    pipelineBundle.multisampleInfo.flags = 0;
+    pipelineBundle.multisampleInfo.pSampleMask = nullptr;
+
     pipelineBundle.computeLayout = VK_NULL_HANDLE;
     pipelineBundle.graphicsLayout = VK_NULL_HANDLE;
 
@@ -427,12 +432,18 @@ CmdSetShaderProgram(const CmdBufferId id, const CoreGraphics::ShaderProgramId pr
         pipelineBundle.blendInfo.logicOp = info.colorBlendInfo.logicOp;
         pipelineBundle.blendInfo.logicOpEnable = info.colorBlendInfo.logicOpEnable;
         pipelineBundle.blendInfo.pAttachments = info.colorBlendAttachments;
-        memcpy(pipelineBundle.blendInfo.blendConstants, info.colorBlendInfo.blendConstants, sizeof(float) * 4);
+        memcpy(pipelineBundle.blendInfo.blendConstants, info.colorBlendInfo.blendConstants, sizeof(info.colorBlendInfo.blendConstants));
+
+        pipelineBundle.multisampleInfo.alphaToCoverageEnable = info.multisampleInfo.alphaToCoverageEnable;
+        pipelineBundle.multisampleInfo.alphaToOneEnable = info.multisampleInfo.alphaToOneEnable;
+        pipelineBundle.multisampleInfo.minSampleShading = info.multisampleInfo.minSampleShading;
+        pipelineBundle.multisampleInfo.sampleShadingEnable = info.multisampleInfo.sampleShadingEnable;
+        pipelineBundle.multisampleInfo.pSampleMask = info.multisampleInfo.pSampleMask;
 
         // Setup states (excluding pass)
         pipelineBundle.pipelineInfo.pDepthStencilState = &info.depthStencilInfo;
         pipelineBundle.pipelineInfo.pRasterizationState = &info.rasterizerInfo;
-        pipelineBundle.pipelineInfo.pMultisampleState = &info.multisampleInfo;
+        pipelineBundle.pipelineInfo.pMultisampleState = &pipelineBundle.multisampleInfo;
         pipelineBundle.pipelineInfo.pDynamicState = &info.dynamicInfo;
         pipelineBundle.pipelineInfo.pTessellationState = &info.tessInfo;
 
@@ -734,6 +745,7 @@ CmdBeginPass(const CmdBufferId id, const PassId pass)
     CmdSetScissors(id, scissors);
 
     pipelineBundle.pass = pass;
+    pipelineBundle.multisampleInfo.rasterizationSamples = framebufferInfo.pMultisampleState->rasterizationSamples;
     pipelineBundle.pipelineInfo.subpass = 0;
     pipelineBundle.pipelineInfo.renderPass = framebufferInfo.renderPass;
     pipelineBundle.pipelineInfo.pViewportState = framebufferInfo.pViewportState;

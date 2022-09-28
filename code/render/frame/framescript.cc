@@ -205,6 +205,7 @@ FrameScript::Build()
         CoreGraphics::TextureId tex = this->textures[i];
         bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(tex));
         CoreGraphics::ImageLayout layout = CoreGraphics::TextureGetDefaultLayout(tex);
+        CoreGraphics::TextureUsage usage = CoreGraphics::TextureGetUsage(tex);
         auto& arr = textures.Emplace(tex);
 
         uint layers = CoreGraphics::TextureGetNumLayers(tex);
@@ -219,7 +220,19 @@ FrameScript::Build()
         if (tex == window)
             arr.Append(FrameOp::TextureDependency{ CoreGraphics::PipelineStage::Present, DependencyIntent::Read, subres });
         else
-            arr.Append(FrameOp::TextureDependency{ CoreGraphics::PipelineStage::AllShadersRead, DependencyIntent::Read, subres });
+        {
+            if (AllBits(usage, CoreGraphics::RenderTexture))
+            {
+                if (isDepth)
+                    arr.Append(FrameOp::TextureDependency{ CoreGraphics::PipelineStage::DepthStencilWrite, DependencyIntent::Read, subres });
+                else
+                    arr.Append(FrameOp::TextureDependency{ CoreGraphics::PipelineStage::ColorWrite, DependencyIntent::Read, subres });
+            }
+            else
+            {
+                arr.Append(FrameOp::TextureDependency{ CoreGraphics::PipelineStage::AllShadersRead, DependencyIntent::Read, subres });
+            }
+        }
     }
 
     // build ops
@@ -233,38 +246,47 @@ FrameScript::Build()
 
     for (i = 0; i < textures.Size(); i++)
     {
-        const CoreGraphics::TextureId& res = textures.KeyAtIndex(i);
+        const CoreGraphics::TextureId& tex = textures.KeyAtIndex(i);
         const Util::Array<FrameOp::TextureDependency>& deps = textures.ValueAtIndex(i);
+        bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(tex));
+        CoreGraphics::TextureUsage usage = CoreGraphics::TextureGetUsage(tex);
 
         const FrameOp::TextureDependency& dep = deps.Back();
         const CoreGraphics::TextureSubresourceInfo& info = dep.subres;
 
         // The last thing we do with present is to 
         CoreGraphics::PipelineStage fromStage, toStage;
-        if (res == window)
-        {
-            fromStage = dep.stage;
+        fromStage = dep.stage;
+        if (tex == window)
             toStage = CoreGraphics::PipelineStage::Present;
-        }
         else
         {
-            fromStage = dep.stage;
-            toStage = CoreGraphics::PipelineStage::AllShadersRead;
-        };
+            if (AllBits(usage, CoreGraphics::RenderTexture))
+            {
+                if (isDepth)
+                    toStage = CoreGraphics::PipelineStage::DepthStencilWrite;
+                else
+                    toStage = CoreGraphics::PipelineStage::ColorWrite;
+            }
+            else
+            {
+                toStage = CoreGraphics::PipelineStage::AllShadersRead;
+            }
+        }
 
         // render textures are created as shader read
         if (fromStage != toStage)
         {
             CoreGraphics::BarrierCreateInfo inf =
             {
-                Util::String::Sprintf("End of Frame Texture Reset Transition %d", res.resourceId),
+                Util::String::Sprintf("End of Frame Texture Reset Transition %d", tex.resourceId),
                 CoreGraphics::BarrierDomain::Global,
                 fromStage,
                 toStage,
                 CoreGraphics::QueueType::InvalidQueueType,
                 CoreGraphics::QueueType::InvalidQueueType,
                 {
-                    CoreGraphics::TextureBarrierInfo{ res, info }
+                    CoreGraphics::TextureBarrierInfo{ tex, info }
                 },
                 nullptr
             };

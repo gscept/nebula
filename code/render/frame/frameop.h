@@ -81,6 +81,9 @@ protected:
         /// Discard operation
         virtual void Discard();
 
+        /// Setup constants
+        virtual void SetupConstants(const IndexT bufferIndex);
+
         /// Perform synchronization prior to execution of operation
         virtual void QueuePreSync(const CoreGraphics::CmdBufferId cmdBuf);
 

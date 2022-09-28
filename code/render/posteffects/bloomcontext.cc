@@ -100,7 +100,6 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
     // Create subpass
     CoreGraphics::Subpass subpass;
     subpass.attachments.Append(0);
-    subpass.bindDepth = false;
     subpass.numScissors = 1;
     subpass.numViewports = 1;
 
@@ -108,9 +107,10 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
     CoreGraphics::PassCreateInfo passInfo;
     passInfo.name = "Bloom Pass";
     bloomState.bloomBufferView = CoreGraphics::CreateTextureView({ "Bloom Pass View", bloomState.bloomBuffer, 0, 1, 0, 1, TextureGetPixelFormat(bloomState.bloomBuffer) });
-    passInfo.colorAttachments.Append(bloomState.bloomBufferView);
-    passInfo.colorAttachmentFlags.Append(CoreGraphics::AttachmentFlagBits::Store);
-    passInfo.colorAttachmentClears.Append(Math::vec4(1)); // dummy value
+    passInfo.attachments.Append(bloomState.bloomBufferView);
+    passInfo.attachmentFlags.Append(CoreGraphics::AttachmentFlagBits::Store);
+    passInfo.attachmentClears.Append(Math::vec4(1)); // dummy value
+    passInfo.attachmentDepthStencil.Append(false);
     passInfo.subpasses.Append(subpass);
     bloomState.bloomPass = CoreGraphics::CreatePass(passInfo);
 

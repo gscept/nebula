@@ -76,6 +76,7 @@ struct VkPipelineBundle
 {
     VkGraphicsPipelineCreateInfo pipelineInfo;
     VkPipelineColorBlendStateCreateInfo blendInfo;
+    VkPipelineMultisampleStateCreateInfo multisampleInfo;
     CoreGraphics::InputAssemblyKey inputAssembly;
     VkPipelineLayout computeLayout;
     VkPipelineLayout graphicsLayout;

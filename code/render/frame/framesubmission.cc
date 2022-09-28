@@ -68,6 +68,15 @@ FrameSubmission::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const
     CoreGraphics::CmdBeginRecord(submissionBuffer, beginInfo);
     CoreGraphics::CmdBeginMarker(submissionBuffer, NEBULA_MARKER_PURPLE, this->name.Value());
 
+    // Setup any constants required by the ops
+    for (IndexT i = 0; i < this->compiled.Size(); i++)
+    {
+        this->compiled[i]->SetupConstants(bufferIndex);
+    }
+
+    // No more constant updates from this point
+    CoreGraphics::LockConstantUpdates();
+
     // First thing, flush all constant updates
     CoreGraphics::FlushConstants(submissionBuffer, this->queue);
     CoreGraphics::FlushUpload();
@@ -112,6 +121,9 @@ FrameSubmission::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const
 
     // Delete command buffer
     CoreGraphics::DestroyCmdBuffer(submissionBuffer);
+
+    // Open up for constant updates after waiting
+    CoreGraphics::UnlockConstantUpdates();
 }
 
 //------------------------------------------------------------------------------

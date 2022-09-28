@@ -276,12 +276,11 @@ UltralightRenderer::CreateRenderBuffer(uint32_t render_buffer_id, const ultralig
 
     CoreGraphics::PassCreateInfo passInfo;
     passInfo.name = Util::String::Sprintf("Ultralight Pass %d", render_buffer_id);
-    passInfo.colorAttachments.Append(texView);
-    passInfo.colorAttachmentClears.Append(Math::vec4(0));
-    passInfo.colorAttachmentFlags.Append(CoreGraphics::AttachmentFlagBits::Clear | CoreGraphics::AttachmentFlagBits::Store);
-    passInfo.depthStencilFlags = CoreGraphics::AttachmentFlagBits::NoFlags;
+    passInfo.attachments.Append(texView);
+    passInfo.attachmentClears.Append(Math::vec4(0));
+    passInfo.attachmentFlags.Append(CoreGraphics::AttachmentFlagBits::Clear | CoreGraphics::AttachmentFlagBits::Store);
+    passInfo.attachmentDepthStencil.Append(false);
     CoreGraphics::Subpass subpass;
-    subpass.bindDepth = false;
     subpass.attachments.Append(0);
     subpass.numScissors = 1;
     subpass.numViewports = 1;

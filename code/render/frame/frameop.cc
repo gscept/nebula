@@ -469,6 +469,15 @@ FrameOp::Compiled::Discard()
 /**
 */
 void
+FrameOp::Compiled::SetupConstants(const IndexT bufferIndex)
+{
+    // Do nothing, the script is responsible for setting up constants if needed
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 FrameOp::Compiled::QueuePreSync(const CoreGraphics::CmdBufferId cmdBuf)
 {
     for (const CoreGraphics::BarrierId barrier : this->barriers)

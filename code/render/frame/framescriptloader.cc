@@ -20,6 +20,7 @@
 #include "framesubpassbatch.h"
 #include "framesubpassorderedbatch.h"
 #include "framesubpassfullscreeneffect.h"
+#include "frameresolve.h"
 #include "frameserver.h"
 #include "coregraphics/shaderserver.h"
 #include "coregraphics/config.h"
@@ -573,6 +574,7 @@ FrameScriptLoader::ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, J
             else if (name == "mipmap")                      submission->AddChild(ParseMipmap(script, op));
             else if (name == "compute")                     submission->AddChild(ParseCompute(script, op));
             else if (name == "pass")                        submission->AddChild(ParsePass(script, op));
+            else if (name == "resolve")                     submission->AddChild(ParseResolve(script, op));
             else if (name == "barrier")                     submission->AddChild(ParseBarrier(script, op));
             else if (name == "swap")                        submission->AddChild(ParseSwap(script, op));
             else if (name == "plugin" || name == "call")
@@ -633,72 +635,7 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
         Util::String name(cur->key);
         if (name == "name")                 op->SetName(cur->string_value);
         else if (name == "attachments")     ParseAttachmentList(script, info, attachmentNames, cur);
-        else if (name == "depth_stencil")
-        {
-            float clearDepth = 1;
-            uint clearStencil = 0;
-            AttachmentFlagBits depthStencilClearFlags = AttachmentFlagBits::NoFlags;
-            JzonValue* cd = jzon_get(cur, "clear");
-            if (cd != nullptr)
-            {
-                depthStencilClearFlags |= AttachmentFlagBits::Clear;
-                info.clearDepth = (float)cd->float_value;
-            }
-
-            JzonValue* cs = jzon_get(cur, "clear_stencil");
-            if (cs != nullptr)
-            {
-                depthStencilClearFlags |= AttachmentFlagBits::ClearStencil;
-                info.clearStencil = cs->int_value;
-            }
-
-            JzonValue* ld = jzon_get(cur, "load");
-            if (ld != nullptr && ld->bool_value)
-            {
-                n_assert2(cd == nullptr, "Can't load depth from previous pass AND clear.");             
-                depthStencilClearFlags |= AttachmentFlagBits::Load;
-            }
-
-            JzonValue* ls = jzon_get(cur, "load_stencil");
-            if (ls != nullptr && ls->bool_value)
-            {
-                // can't really load and store
-                n_assert2(cs == nullptr, "Can't load stenil from previous pass AND clear.");
-                depthStencilClearFlags |= AttachmentFlagBits::LoadStencil;
-            }
-
-            JzonValue* sd = jzon_get(cur, "store");
-            if (sd != nullptr && sd->bool_value)
-            {
-                depthStencilClearFlags |= AttachmentFlagBits::Store;
-            }
-
-            JzonValue* ss = jzon_get(cur, "store_stencil");
-            if (ss != nullptr && ss->bool_value)
-            {
-                depthStencilClearFlags |= AttachmentFlagBits::StoreStencil;
-            }
-
-            info.depthStencilFlags = (AttachmentFlagBits)depthStencilClearFlags;
-            info.clearStencil = clearStencil;
-            info.clearDepth = clearDepth;
-
-            // set attachment in framebuffer
-            JzonValue* ds = jzon_get(cur, "name");
-            dsName = ds->string_value;
-
-            TextureId tex = script->GetTexture(ds->string_value);
-            TextureViewCreateInfo viewCreate =
-            {
-                ds->string_value
-                , tex
-                , 0, 1, 0, TextureGetNumLayers(tex)
-                , TextureGetPixelFormat(tex)
-            };
-            info.depthStencilAttachment = CreateTextureView(viewCreate);
-        }
-        else if (name == "subpass")
-            ParseSubpass(script, info, op, attachmentNames, cur);
+        else if (name == "subpass")         ParseSubpass(script, info, op, attachmentNames, cur);
         else
         {
             n_error("Passes don't support operations, and '%s' is no exception.\n", name.AsCharPtr());
@@ -706,20 +643,22 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
     }
 
     TextureSubresourceInfo subres;
-    subres.aspect = CoreGraphics::ImageBits::ColorBits;
     subres.layer = 0;
     subres.layerCount = 1;
     subres.mip = 0;
     subres.mipCount = 1;
-    for (SizeT i = 0; i < info.colorAttachments.Size(); i++)
+    for (SizeT i = 0; i < info.attachments.Size(); i++)
     {
-        op->textureDeps.Add(TextureViewGetTexture(info.colorAttachments[i]), Util::MakeTuple(attachmentNames[i], CoreGraphics::PipelineStage::ColorWrite, subres));
-    }
-
-    subres.aspect = CoreGraphics::ImageBits::StencilBits | CoreGraphics::ImageBits::DepthBits;
-    if (info.depthStencilAttachment != InvalidTextureViewId)
-    {
-        op->textureDeps.Add(TextureViewGetTexture(info.depthStencilAttachment), Util::MakeTuple(dsName, CoreGraphics::PipelineStage::DepthStencilWrite, subres));
+        if (info.attachmentDepthStencil[i])
+        {
+            subres.aspect = CoreGraphics::ImageBits::StencilBits | CoreGraphics::ImageBits::DepthBits;
+            op->textureDeps.Add(TextureViewGetTexture(info.attachments[i]), Util::MakeTuple(dsName, CoreGraphics::PipelineStage::DepthStencilWrite, subres));
+        }
+        else
+        {
+            subres.aspect = CoreGraphics::ImageBits::ColorBits;
+            op->textureDeps.Add(TextureViewGetTexture(info.attachments[i]), Util::MakeTuple(attachmentNames[i], CoreGraphics::PipelineStage::ColorWrite, subres));
+        }
     }
 
     // setup framebuffer and bind to pass
@@ -743,13 +682,15 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
         TextureId tex = script->GetTexture(name->string_value);
         TextureViewCreateInfo viewCreate =
         {
-            name->string_value
+            Util::String::Sprintf("%s - View Attachment in %s", name->string_value, pass.name.Value())
             , tex
             , 0, 1, 0, TextureGetNumLayers(tex)
             , TextureGetPixelFormat(tex)
         };
 
-        pass.colorAttachments.Append(CreateTextureView(viewCreate));
+        bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(tex));
+
+        pass.attachments.Append(CreateTextureView(viewCreate));
         attachmentNames.Append(name->string_value);
 
         // set clear flag if present
@@ -757,6 +698,7 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
         AttachmentFlagBits flags = AttachmentFlagBits::NoFlags;
         if (clear != nullptr)
         {
+            n_assert_fmt(!isDepth, "Format is depth-stencil, use clear_depth and/or clear_stencil");
             Math::vec4 clearValue;
             n_assert(clear->size <= 4);
             uint j;
@@ -764,11 +706,29 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
             {
                 clearValue[j] = clear->array_values[j]->float_value;
             }
-            pass.colorAttachmentClears.Append(clearValue);
+            pass.attachmentClears.Append(clearValue);
             flags |= AttachmentFlagBits::Clear;
         }
         else
-            pass.colorAttachmentClears.Append(Math::vec4(1)); // we set the clear to 1, but the flag is not to clear...
+            pass.attachmentClears.Append(Math::vec4(1)); // we set the clear to 1, but the flag is not to clear...
+
+        JzonValue* clearDepth = jzon_get(cur, "clear_depth");
+        if (clearDepth != nullptr)
+        {
+            n_assert_fmt(isDepth, "Format is not depth-stencil");
+            n_assert_fmt(clear == nullptr, "Attachments with 'clear_depth' must not also have 'clear'\n");
+            pass.attachmentClears.Back().x = clearDepth->float_value;
+            flags |= AttachmentFlagBits::Clear;
+        }
+
+        JzonValue* clearStencil = jzon_get(cur, "clear_stencil");
+        if (clearStencil != nullptr)
+        {
+            n_assert_fmt(isDepth, "Format is not depth-stencil");
+            n_assert_fmt(clear == nullptr, "Attachments with 'clear_stencil' must not also have 'clear'\n");
+            pass.attachmentClears.Back().y = clearStencil->int_value;
+            flags |= AttachmentFlagBits::ClearStencil;
+        }
 
         // set if attachment should store at the end of the pass
         JzonValue* store = jzon_get(cur, "store");
@@ -777,14 +737,33 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
             flags |= AttachmentFlagBits::Store;
         }
 
+        // set if attachment should store at the end of the pass
+        JzonValue* storeStencil = jzon_get(cur, "store_stencil");
+        if (storeStencil && storeStencil->bool_value)
+        {
+            n_assert_fmt(isDepth, "Format is not depth-stencil");
+            flags |= AttachmentFlagBits::StoreStencil;
+        }
+
         JzonValue* load = jzon_get(cur, "load");
         if (load && load->bool_value)
         {
             // we can't really load and clear
-            n_assert2(clear == nullptr, "Can't load color if it's being cleared.");
+            n_assert_fmt(clear == nullptr, "Can't load color/depth if value is also being cleared.");
             flags |= AttachmentFlagBits::Load;
         }
-        pass.colorAttachmentFlags.Append((AttachmentFlagBits)flags);
+
+        JzonValue* loadStencil = jzon_get(cur, "load_stencil");
+        if (loadStencil && loadStencil->bool_value)
+        {
+            // we can't really load and clear
+            n_assert_fmt(isDepth, "Format is not depth-stencil");
+            n_assert_fmt(clear == nullptr, "Can't load stencil if value is also being cleared.");
+            flags |= AttachmentFlagBits::LoadStencil;
+        }
+
+        pass.attachmentFlags.Append((AttachmentFlagBits)flags);
+        pass.attachmentDepthStencil.Append(isDepth);
     }
 }
 
@@ -798,8 +777,7 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraph
 
     frameSubpass->domain = BarrierDomain::Pass;
     Subpass subpass;
-    subpass.resolve = false;
-    subpass.bindDepth = false;
+    subpass.depth = InvalidIndex;
     uint i;
     for (i = 0; i < node->size; i++)
     {
@@ -809,8 +787,8 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraph
         else if (name == "subpass_dependencies")        ParseSubpassDependencies(framePass, subpass, cur);
         else if (name == "attachments")                 ParseSubpassAttachments(framePass, subpass, attachmentNames, cur);
         else if (name == "inputs")                      ParseSubpassInputs(framePass, subpass, attachmentNames, cur);
-        else if (name == "depth")                       subpass.bindDepth = cur->bool_value;
-        else if (name == "resolve")                     subpass.resolve = cur->bool_value;
+        else if (name == "depth")                       ParseSubpassDepthAttachment(framePass, subpass, attachmentNames, cur);
+        else if (name == "resolves")                    ParseSubpassResolves(framePass, subpass, attachmentNames, cur);
         else if (name == "resource_dependencies")       ParseResourceDependencies(script, framePass, cur);
         else if (name == "plugin" || name == "call")    ParseSubpassPlugin(script, frameSubpass, cur);
         else if (name == "subgraph")                    ParseSubpassSubgraph(script, frameSubpass, cur);
@@ -825,13 +803,13 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraph
     }
 
     // make sure the subpass has any attacments
-    n_assert2(subpass.attachments.Size() > 0 || subpass.bindDepth, "Subpass must at least either bind color attachments or a depth-stencil attachment");
+    n_assert2(subpass.attachments.Size() > 0 || subpass.depth != InvalidIndex, "Subpass must at least either bind color attachments or a depth-stencil attachment");
 
     // correct amount of viewports and scissors if not set explicitly (both values default to 0)
     if (subpass.numViewports == 0)
-        subpass.numViewports = subpass.attachments.Size() == 0 ? 1 : subpass.attachments.Size();
+        subpass.numViewports = subpass.attachments.IsEmpty() ? (subpass.depth == InvalidIndex ? 0 : 1) : subpass.attachments.Size();
     if (subpass.numScissors == 0)
-        subpass.numScissors = subpass.attachments.Size() == 0 ? 1 : subpass.attachments.Size();
+        subpass.numScissors = subpass.attachments.IsEmpty() ? (subpass.depth == InvalidIndex ? 0 : 1) : subpass.attachments.Size();
 
     // link together frame operations
     pass.subpasses.Append(subpass);
@@ -903,6 +881,65 @@ FrameScriptLoader::ParseSubpassAttachments(Frame::FramePass* pass, CoreGraphics:
                 if (attachmentNames[j] == id)
                 {
                     subpass.attachments.Append(j);
+                    break;
+                }
+            }
+            if (j == attachmentNames.Size())
+            {
+                n_error("Could not find attachment '%s'", id.AsCharPtr());
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FrameScriptLoader::ParseSubpassDepthAttachment(Frame::FramePass* pass, CoreGraphics::Subpass& subpass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node)
+{
+    if (node->is_int)
+        subpass.depth = node->int_value;
+    else if (node->is_string)
+    {
+        Util::String id(node->string_value);
+        IndexT j;
+        for (j = 0; j < attachmentNames.Size(); j++)
+        {
+            if (attachmentNames[j] == id)
+            {
+                subpass.depth = j;
+                break;
+            }
+        }
+        if (j == attachmentNames.Size())
+        {
+            n_error("Could not find attachment '%s'", id.AsCharPtr());
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
+FrameScriptLoader::ParseSubpassResolves(Frame::FramePass* pass, CoreGraphics::Subpass& subpass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node)
+{
+    uint i;
+    for (i = 0; i < node->size; i++)
+    {
+        JzonValue* cur = node->array_values[i];
+        if (cur->is_int)
+            subpass.resolves.Append(cur->int_value);
+        else if (cur->is_string)
+        {
+            Util::String id(cur->string_value);
+            IndexT j;
+            for (j = 0; j < attachmentNames.Size(); j++)
+            {
+                if (attachmentNames[j] == id)
+                {
+                    subpass.resolves.Append(j);
                     break;
                 }
             }
@@ -1073,6 +1110,66 @@ FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& s
     // add op to subpass
     op->Setup();
     subpass->AddChild(op);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+FrameOp*
+FrameScriptLoader::ParseResolve(const Ptr<Frame::FrameScript>& script, JzonValue* node)
+{
+    FrameResolve* op = script->GetAllocator().Alloc<FrameResolve>();
+
+    // get function and name
+    JzonValue* name = jzon_get(node, "name");
+    n_assert(name != nullptr);
+    op->SetName(name->string_value);
+
+    JzonValue* from = jzon_get(node, "from");
+    n_assert(from != nullptr);
+
+    JzonValue* to = jzon_get(node, "to");
+    n_assert(to != nullptr);
+
+    CoreGraphics::TextureId fromTex, toTex;
+    CoreGraphics::ImageBits fromBits = CoreGraphics::ImageBits::Auto, toBits = CoreGraphics::ImageBits::Auto;
+
+    JzonValue* from_tex = jzon_get(from, "tex");
+    n_assert(from_tex != nullptr);
+    fromTex = script->GetTexture(from_tex->string_value);
+
+    JzonValue* from_bits = jzon_get(from, "bits");
+    if (from_bits != nullptr)
+        fromBits = ImageBitsFromString(from_bits->string_value);
+
+    JzonValue* to_tex = jzon_get(to, "tex");
+    n_assert(to_tex != nullptr);
+    toTex = script->GetTexture(to_tex->string_value);
+
+    JzonValue* to_bits = jzon_get(to, "bits");
+    if (to_bits != nullptr)
+        toBits = ImageBitsFromString(to_bits->string_value);
+
+    // add implicit barriers
+    TextureSubresourceInfo fromSubres, toSubres;
+    fromSubres.aspect = fromBits;
+    fromSubres.layer = 0;
+    fromSubres.layerCount = 1;
+    fromSubres.mip = 0;
+    fromSubres.mipCount = 1;
+
+    toSubres = fromSubres;
+    toSubres.aspect = toBits;
+
+    op->textureDeps.Add(fromTex, Util::MakeTuple(from->string_value, CoreGraphics::PipelineStage::TransferRead, fromSubres));
+    op->textureDeps.Add(toTex, Util::MakeTuple(to->string_value, CoreGraphics::PipelineStage::TransferWrite, toSubres));
+
+    // setup copy operation
+    op->fromBits = fromBits;
+    op->toBits = toBits;
+    op->from = fromTex;
+    op->to = toTex;
+    return op;
 }
 
 //------------------------------------------------------------------------------
