@@ -837,6 +837,33 @@ CmdDispatch(const CmdBufferId id, int dimX, int dimY, int dimZ)
 /**
 */
 void
+CmdResolve(const CmdBufferId id, const CoreGraphics::TextureId source, const CoreGraphics::TextureCopy sourceCopy, const CoreGraphics::TextureId dest, const CoreGraphics::TextureCopy destCopy)
+{
+    VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
+    VkImage vkSrc = TextureGetVkImage(source);
+    VkImage vkDst = TextureGetVkImage(dest);
+    VkImageResolve resolve;
+    TextureDimensions dims = TextureGetDimensions(source);
+    resolve.dstOffset = { destCopy.region.left, destCopy.region.top, 0 };
+    resolve.srcOffset = { sourceCopy.region.left, sourceCopy.region.top, 0 };
+    resolve.extent.width = sourceCopy.region.width();
+    resolve.extent.height = sourceCopy.region.height();
+    resolve.extent.depth = 1;
+    resolve.dstSubresource.aspectMask = VkTypes::AsVkImageAspectFlags(destCopy.bits);
+    resolve.dstSubresource.baseArrayLayer = 0;
+    resolve.dstSubresource.layerCount = 1;
+    resolve.dstSubresource.mipLevel = 0;
+    resolve.srcSubresource.aspectMask = VkTypes::AsVkImageAspectFlags(sourceCopy.bits);
+    resolve.srcSubresource.baseArrayLayer = 0;
+    resolve.srcSubresource.layerCount = 1;
+    resolve.srcSubresource.mipLevel = 0;
+    vkCmdResolveImage(cmdBuf, vkSrc, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vkDst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &resolve);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void
 CmdCopy(
     const CmdBufferId id
     , const CoreGraphics::TextureId fromTexture

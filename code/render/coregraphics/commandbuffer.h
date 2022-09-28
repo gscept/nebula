@@ -257,6 +257,8 @@ void CmdDrawIndirect(const CmdBufferId id, const CoreGraphics::BufferId buffer, 
 void CmdDrawIndirectIndexed(const CmdBufferId id, const CoreGraphics::BufferId buffer, IndexT bufferOffset, SizeT numDraws, SizeT stride);
 /// Perform computation
 void CmdDispatch(const CmdBufferId id, int dimX, int dimY, int dimZ);
+/// Resolve MSAA source to non-MSAA target
+void CmdResolve(const CmdBufferId id, const CoreGraphics::TextureId source, const CoreGraphics::TextureCopy sourceCopy, const CoreGraphics::TextureId dest, const CoreGraphics::TextureCopy destCopy);
 
 /// Copy between textures
 void CmdCopy(
