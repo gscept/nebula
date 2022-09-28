@@ -698,7 +698,7 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
         AttachmentFlagBits flags = AttachmentFlagBits::NoFlags;
         if (clear != nullptr)
         {
-            n_assert_fmt(!isDepth, "Format is depth-stencil, use clear_depth and/or clear_stencil");
+            n_assert_msg(!isDepth, "Format is depth-stencil, use clear_depth and/or clear_stencil");
             Math::vec4 clearValue;
             n_assert(clear->size <= 4);
             uint j;
@@ -715,8 +715,8 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
         JzonValue* clearDepth = jzon_get(cur, "clear_depth");
         if (clearDepth != nullptr)
         {
-            n_assert_fmt(isDepth, "Format is not depth-stencil");
-            n_assert_fmt(clear == nullptr, "Attachments with 'clear_depth' must not also have 'clear'\n");
+            n_assert_msg(isDepth, "Format is not depth-stencil");
+            n_assert_msg(clear == nullptr, "Attachments with 'clear_depth' must not also have 'clear'\n");
             pass.attachmentClears.Back().x = clearDepth->float_value;
             flags |= AttachmentFlagBits::Clear;
         }
@@ -724,8 +724,8 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
         JzonValue* clearStencil = jzon_get(cur, "clear_stencil");
         if (clearStencil != nullptr)
         {
-            n_assert_fmt(isDepth, "Format is not depth-stencil");
-            n_assert_fmt(clear == nullptr, "Attachments with 'clear_stencil' must not also have 'clear'\n");
+            n_assert_msg(isDepth, "Format is not depth-stencil");
+            n_assert_msg(clear == nullptr, "Attachments with 'clear_stencil' must not also have 'clear'\n");
             pass.attachmentClears.Back().y = clearStencil->int_value;
             flags |= AttachmentFlagBits::ClearStencil;
         }
@@ -741,7 +741,7 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
         JzonValue* storeStencil = jzon_get(cur, "store_stencil");
         if (storeStencil && storeStencil->bool_value)
         {
-            n_assert_fmt(isDepth, "Format is not depth-stencil");
+            n_assert_msg(isDepth, "Format is not depth-stencil");
             flags |= AttachmentFlagBits::StoreStencil;
         }
 
@@ -749,7 +749,7 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
         if (load && load->bool_value)
         {
             // we can't really load and clear
-            n_assert_fmt(clear == nullptr, "Can't load color/depth if value is also being cleared.");
+            n_assert_msg(clear == nullptr, "Can't load color/depth if value is also being cleared.");
             flags |= AttachmentFlagBits::Load;
         }
 
@@ -757,8 +757,8 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
         if (loadStencil && loadStencil->bool_value)
         {
             // we can't really load and clear
-            n_assert_fmt(isDepth, "Format is not depth-stencil");
-            n_assert_fmt(clear == nullptr, "Can't load stencil if value is also being cleared.");
+            n_assert_msg(isDepth, "Format is not depth-stencil");
+            n_assert_msg(clear == nullptr, "Can't load stencil if value is also being cleared.");
             flags |= AttachmentFlagBits::LoadStencil;
         }
 
