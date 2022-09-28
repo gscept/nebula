@@ -64,6 +64,11 @@ __ImplementEnumBitOperators(CoreGraphics::TextureUsage);
 struct TextureDimensions
 {
     SizeT width, height, depth;
+
+    bool operator==(const TextureDimensions& dims)
+    {
+        return this->width == dims.width && this->height == dims.height && this->depth == dims.depth;
+    }
 };
 
 struct TextureRelativeDimensions
