@@ -38,37 +38,29 @@ __ImplementEnumComparisonOperators(AttachmentFlagBits);
 struct Subpass
 {
     Util::Array<IndexT> attachments;
+    Util::Array<IndexT> resolves;
     Util::Array<IndexT> dependencies;
     Util::Array<IndexT> inputs;
+    IndexT depthResolve;
+    IndexT depth;
     SizeT numViewports;
     SizeT numScissors;
-    bool bindDepth : 1;
-    bool resolve : 1;
 
-    Subpass() : bindDepth(false), resolve(false), numViewports(0), numScissors(0) {};
+    Subpass() : depthResolve(InvalidIndex), depth(InvalidIndex), numViewports(0), numScissors(0) {};
 };
 
 struct PassCreateInfo
 {
     Util::StringAtom name;
 
-    Util::Array<CoreGraphics::TextureViewId> colorAttachments;
-    Util::Array<AttachmentFlagBits> colorAttachmentFlags; 
-    Util::Array<Math::vec4> colorAttachmentClears;
+    Util::Array<CoreGraphics::TextureViewId> attachments;
+    Util::Array<AttachmentFlagBits> attachmentFlags; 
+    Util::Array<Math::vec4> attachmentClears;
+    Util::Array<bool> attachmentDepthStencil;
     
-    CoreGraphics::TextureViewId depthStencilAttachment;
-    AttachmentFlagBits depthStencilFlags;
-    float clearDepth;
-    uint clearStencil;
-
     Util::Array<Subpass> subpasses;
 
-    PassCreateInfo()
-        : depthStencilAttachment(CoreGraphics::InvalidTextureViewId)
-        , clearDepth(1.0f)
-        , clearStencil(0)
-        , depthStencilFlags(AttachmentFlagBits::NoFlags)
-    {};
+    PassCreateInfo() {};
 };
 
 enum class PassRecordMode : uint8
@@ -88,8 +80,6 @@ void PassWindowResizeCallback(const PassId id);
 
 /// get number of color attachments for entire pass (attachment list)
 const Util::Array<CoreGraphics::TextureViewId>& PassGetAttachments(const CoreGraphics::PassId id);
-/// get depth stencil attachment
-const CoreGraphics::TextureViewId PassGetDepthStencilAttachment(const CoreGraphics::PassId id);
 
 /// get number of color attachments for a subpass
 const uint32_t PassGetNumSubpassAttachments(const CoreGraphics::PassId id, const IndexT subpass);

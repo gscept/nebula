@@ -223,16 +223,18 @@
             "ops": {
                 "pass": {
                     "name": "Sun Shadows Pass",
-                    "depth_stencil": {
-                        "name": "SunShadowDepth",
-                        "clear": 1,
-                        "store": true
-                    },
+                    "attachments": [
+                        {
+                            "name": "SunShadowDepth",
+                            "clear_depth": 1,
+                            "store": true
+                        }
+                    ],
 
                     "subpass": {
                         "name": "Sun Shadows",
                         "subpass_dependencies": [],
-                        "depth": true,
+                        "depth": "SunShadowDepth",
                         "subgraph": {
                             "name": "Sun Shadows"
                         }
@@ -252,7 +254,6 @@
                         "name": "Spotlight Shadows",
                         "subpass_dependencies": [],
                         "attachments": [ "LocalLightShadow" ],
-                        "depth": false,
                         "subgraph": {
                             "name": "Spotlight Shadows"
                         }
@@ -295,20 +296,19 @@
                             "name": "TerrainPosBuffer",
                             "clear": [ 0, 0, 0, 255 ],
                             "store": true
+                        },
+                        {
+                            "name": "ZBuffer",
+                            "clear_depth": 1,
+                            "store": true
                         }
                     ],
-
-                    "depth_stencil": {
-                        "name": "ZBuffer",
-                        "clear": 1,
-                        "store": true
-                    },
 
                     "subpass": {
                         "name": "TerrainPass",
                         "subpass_dependencies": [],
                         "attachments": [ "TerrainPosBuffer" ],
-                        "depth": true,
+                        "depth": "ZBuffer",
                         "subgraph": {
                             "name": "Terrain Prepass"
                         }
@@ -322,17 +322,19 @@
                 "pass": {
                     "name": "Prepass",
 
-                    "depth_stencil": {
-                        "name": "ZBuffer",
-                        "store": true,
-                        "load": true
-                    },
+                    "attachments": [
+                        {
+                            "name": "ZBuffer",
+                            "store": true,
+                            "load": true
+                        }
+                    ],
 
                     "subpass": {
                         "name": "DepthPrepass",
                         "subpass_dependencies": [],
                         "attachments": [],
-                        "depth": true,
+                        "depth": "ZBuffer",
                         "batch": "FlatGeometryDepth",
                         "subgraph": {
                             name: "Vegetation Prepass"
@@ -342,8 +344,14 @@
 
                 "copy": {
                     "name": "Copy Depth",
-                    "from": "ZBuffer",
-                    "to": "ZBufferCopy"
+                    "from": {
+                        "tex": "ZBuffer",
+                        "bits": "Depth|Stencil"
+                    },
+                    "to": {
+                        "tex": "ZBufferCopy",
+                        "bits": "Depth|Stencil"
+                    }
                 }
             }
         },
@@ -372,20 +380,19 @@
                             "name": "SpecularBuffer",
                             "store": true,
                             "clear": [ 0, 0, 0, 0 ]
+                        },
+                        {
+                            "name": "ZBuffer",
+                            "store": true,
+                            "load": true
                         }
                     ],
-
-                    "depth_stencil": {
-                        "name": "ZBuffer",
-                        "store": true,
-                        "load": true
-                    },
 
                     "subpass": {
                         "name": "OpaquePass",
                         "subpass_dependencies": [],
                         "attachments": [ "LightBuffer" ],
-                        "depth": true,
+                        "depth": "ZBuffer",
                         "subgraph": {
                             "name": "Terrain Resolve"
                         },
@@ -398,7 +405,7 @@
                         "name": "Skypass",
                         "subpass_dependencies": [ "OpaquePass" ],
                         "attachments": [ "LightBuffer" ],
-                        "depth": true,
+                        "depth": "ZBuffer",
                         "batch": "Background"
                     },
                     "subpass": {
@@ -406,7 +413,7 @@
                         "name": "AlphaPass",
                         "subpass_dependencies": [ "Skypass" ],
                         "attachments": [ "LightBuffer" ],
-                        "depth": true,
+                        "depth": "ZBuffer",
                         "batch": "FlatGeometryAlphaLit"
                     }
                 },
@@ -449,14 +456,13 @@
                             "name": "ColorBuffer",
                             "load": true,
                             "store": true
+                        },
+                        {
+                            "name": "ZBuffer",
+                            "store": false,
+                            "load": true
                         }
                     ],
-
-                    "depth_stencil": {
-                        "name": "ZBuffer",
-                        "store": false,
-                        "load": true
-                    },
 
                     "subpass": {
                         "name": "FinalizePass",
@@ -464,7 +470,7 @@
                         "attachments": [
                             "ColorBuffer"
                         ],
-                        "depth": false,
+                        "depth": "ZBuffer",
 
                         "resource_dependencies": [
                             {
@@ -517,7 +523,7 @@
                         "subpass_dependencies": [
                             "FinalizePass"
                         ],
-                        "depth": true,
+                        "depth": "ZBuffer",
                         "attachments": [
                             "ColorBuffer"
                         ],
@@ -554,18 +560,17 @@
                             "name": "ColorBuffer",
                             "load": true,
                             "store": true
+                        },
+                        {
+                            "name": "ZBuffer",
+                            "store": false,
+                            "load": true
                         }
                     ],
 
-                    "depth_stencil": {
-                        "name": "ZBuffer",
-                        "store": false,
-                        "load": true
-                    },
-
                     "subpass": {
                         "name": "DynUI",
-                        "depth": true,
+                        "depth": "ZBuffer",
                         "attachments": [
                             "ColorBuffer"
                         ],

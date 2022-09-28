@@ -25,12 +25,11 @@ struct VkPassLoadInfo
     IndexT renderTargetDimensionsVar;
 
     // we need these stored for resizing
-    Util::Array<CoreGraphics::TextureViewId> colorAttachments;
-    Util::Array<Math::vec4> colorAttachmentClears;
-    CoreGraphics::TextureViewId depthStencilAttachment;
-    Util::Array<CoreGraphics::AttachmentFlagBits> colorAttachmentFlags;
+    Util::Array<CoreGraphics::TextureViewId> attachments;
+    Util::Array<Math::vec4> attachmentClears;
+    Util::Array<CoreGraphics::AttachmentFlagBits> attachmentFlags;
+    Util::Array<bool> attachmentIsDepthStencil;
     Util::Array<CoreGraphics::Subpass> subpasses;
-    CoreGraphics::AttachmentFlagBits depthStencilFlags;
 
     // we store these so we retain the data for when we need to bind it
     VkRect2D renderArea;
@@ -44,6 +43,7 @@ struct VkPassLoadInfo
 struct VkPassRuntimeInfo
 {
     VkGraphicsPipelineCreateInfo framebufferPipelineInfo;
+    VkPipelineMultisampleStateCreateInfo multisampleInfo;
     VkPipelineViewportStateCreateInfo viewportInfo;
 
     uint32_t currentSubpassIndex;

@@ -68,7 +68,7 @@ GraphicsServer::Open()
         },
         0x10000, 0x100000, 0x100,   // Number of queries
         3,                          // Number of simultaneous frames (3 = triple buffering, 2 = ... you get the idea)
-        false                       // Validation
+        true                       // Validation
     };
     this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 
@@ -516,9 +516,6 @@ GraphicsServer::Render()
     N_SCOPE(RenderViews, Graphics);
     IndexT i;
 
-    // No more constant updates from this point
-    CoreGraphics::LockConstantUpdates();
-
     // Go through views and call before view
     for (i = 0; i < this->views.Size(); i++)
     {
@@ -551,9 +548,6 @@ GraphicsServer::NewFrame()
 {
     // Wait and get new frame
     CoreGraphics::NewFrame();
-
-    // Open up for constant updates after waiting
-    CoreGraphics::UnlockConstantUpdates();
 }
 
 } // namespace Graphics

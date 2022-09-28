@@ -35,6 +35,7 @@ void n_break();
 #if __NEBULA_NO_ASSERT__
 #define n_assert(exp) if(!(exp)){}
 #define n_assert2(exp, msg) if(!(exp)){}
+#define n_assert_msg(exp, msg) n_assert2(exp, msg)
 #define n_assert_fmt(exp, msg, ...) if(!(exp)){}
 #define n_verify(exp) (exp)
 #define n_verify2(exp,imsg) (exp)
@@ -48,6 +49,7 @@ void n_break();
 #else
 #define n_assert(exp) { if (!(exp)) n_barf(#exp, __FILE__, __LINE__); }
 #define n_assert2(exp, msg) { if (!(exp)) n_barf2(#exp, msg, __FILE__, __LINE__); }
+#define n_assert_msg(exp, msg) n_assert2(exp, msg)
 #define n_assert_fmt(exp, msg, ...) { if (!(exp)) n_barf_fmt(#exp, msg, __FILE__, __LINE__, __VA_ARGS__); }
 #define n_warn(exp) { if (!(exp)) n_cough(#exp, __FILE__, __LINE__); }
 #define n_warn2(exp, msg) { if (!(exp)) n_cough2(#exp, msg, __FILE__, __LINE__); }

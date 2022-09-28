@@ -350,6 +350,8 @@ ENDIF()
                 framecompute.h
                 frameplugin.cc
                 frameplugin.h
+                frameresolve.cc
+                frameresolve.h
                 framecopy.cc
                 framecopy.h
                 #frameevent.cc

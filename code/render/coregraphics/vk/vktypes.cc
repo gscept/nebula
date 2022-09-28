@@ -672,13 +672,19 @@ VkTypes::AsVkImageLayout(const CoreGraphics::PipelineStage stage, bool depthSten
         case CoreGraphics::PipelineStage::PixelShaderRead:
         case CoreGraphics::PipelineStage::GraphicsShadersRead:
         case CoreGraphics::PipelineStage::ComputeShaderRead:
+        case CoreGraphics::PipelineStage::ColorRead:
+        case CoreGraphics::PipelineStage::DepthStencilRead:
         case CoreGraphics::PipelineStage::AllShadersRead:
+            if (depthStencil)
+                return VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+            else
+                return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         case CoreGraphics::PipelineStage::ColorWrite:           // The image layout from a pass is read on finished
         case CoreGraphics::PipelineStage::DepthStencilWrite:    // The image layout from a pass is read on finished
             if (depthStencil)
-                return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+                return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
             else
-                return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         case CoreGraphics::PipelineStage::VertexShaderWrite:
         case CoreGraphics::PipelineStage::HullShaderWrite:
         case CoreGraphics::PipelineStage::DomainShaderWrite:
@@ -688,10 +694,6 @@ VkTypes::AsVkImageLayout(const CoreGraphics::PipelineStage stage, bool depthSten
         case CoreGraphics::PipelineStage::ComputeShaderWrite:
         case CoreGraphics::PipelineStage::AllShadersWrite:
             return VK_IMAGE_LAYOUT_GENERAL;
-        case CoreGraphics::PipelineStage::ColorRead:
-            return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        case CoreGraphics::PipelineStage::DepthStencilRead:
-            return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
         case CoreGraphics::PipelineStage::TransferRead:
             return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         case CoreGraphics::PipelineStage::TransferWrite:
