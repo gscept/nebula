@@ -254,6 +254,16 @@ struct ResourceTableBuffer
         , offset(0)
     {};
 
+    ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot, SizeT size, SizeT offset)
+        : buf(buf)
+        , slot(slot)
+        , index(0)
+        , texelBuffer(false)
+        , dynamicOffset(false)
+        , size(size)
+        , offset(offset)
+    {};
+
     ResourceTableBuffer(const CoreGraphics::BufferId buf, IndexT slot, SizeT index, SizeT size, SizeT offset, bool texelBuffer = false, bool dynamicOffset = false)
         : buf(buf)
         , slot(slot)
