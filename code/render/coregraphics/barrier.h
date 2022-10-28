@@ -22,19 +22,19 @@ ID_24_8_TYPE(BarrierId);
 struct CmdBufferId;
 struct TextureSubresourceInfo
 {
-    CoreGraphics::ImageBits aspect;
+    CoreGraphics::ImageBits bits;
     uint mip, mipCount, layer, layerCount;
 
     TextureSubresourceInfo() :
-        aspect(CoreGraphics::ImageBits::ColorBits),
+        bits(CoreGraphics::ImageBits::ColorBits),
         mip(0),
         mipCount(1),
         layer(0),
         layerCount(1)
     {}
 
-    TextureSubresourceInfo(CoreGraphics::ImageBits aspect, uint mip, uint mipCount, uint layer, uint layerCount) :
-        aspect(aspect),
+    TextureSubresourceInfo(CoreGraphics::ImageBits bits, uint mip, uint mipCount, uint layer, uint layerCount) :
+        bits(bits),
         mip(mip),
         mipCount(mipCount),
         layer(layer),
@@ -73,7 +73,7 @@ struct TextureSubresourceInfo
 
     const bool Overlaps(const TextureSubresourceInfo& rhs) const
     {
-        return ((this->aspect & rhs.aspect) != 0) && (this->mip <= rhs.mip && this->mip + this->mipCount >= rhs.mip) && (this->layer <= rhs.layer && this->layer + this->layerCount >= rhs.layer);
+        return ((this->bits & rhs.bits) != 0) && (this->mip <= rhs.mip && this->mip + this->mipCount >= rhs.mip) && (this->layer <= rhs.layer && this->layer + this->layerCount >= rhs.layer);
     }
 };
 
@@ -181,23 +181,25 @@ inline CoreGraphics::ImageBits
 ImageBitsFromString(const Util::String& str)
 {
     Util::Array<Util::String> comps = str.Tokenize("|");
-    CoreGraphics::ImageBits aspect = CoreGraphics::ImageBits(0x0);
+    CoreGraphics::ImageBits bits = CoreGraphics::ImageBits(0x0);
     for (IndexT i = 0; i < comps.Size(); i++)
     {
-        if (comps[i] == "Color")            aspect |= CoreGraphics::ImageBits::ColorBits;
-        else if (comps[i] == "Depth")       aspect |= CoreGraphics::ImageBits::DepthBits;
-        else if (comps[i] == "Stencil")     aspect |= CoreGraphics::ImageBits::StencilBits;
-        else if (comps[i] == "Metadata")    aspect |= CoreGraphics::ImageBits::MetaBits;
-        else if (comps[i] == "Plane0")      aspect |= CoreGraphics::ImageBits::Plane0Bits;
-        else if (comps[i] == "Plane1")      aspect |= CoreGraphics::ImageBits::Plane1Bits;
-        else if (comps[i] == "Plane2")      aspect |= CoreGraphics::ImageBits::Plane2Bits;
+        if (comps[i] == "Auto")             { bits = CoreGraphics::ImageBits::Auto; break; }
+        else if (comps[i] == "Color")       bits |= CoreGraphics::ImageBits::ColorBits;
+        else if (comps[i] == "Depth")       bits |= CoreGraphics::ImageBits::DepthBits;
+        else if (comps[i] == "Stencil")     bits |= CoreGraphics::ImageBits::StencilBits;
+        else if (comps[i] == "Metadata")    bits |= CoreGraphics::ImageBits::MetaBits;
+        else if (comps[i] == "Plane0")      bits |= CoreGraphics::ImageBits::Plane0Bits;
+        else if (comps[i] == "Plane1")      bits |= CoreGraphics::ImageBits::Plane1Bits;
+        else if (comps[i] == "Plane2")      bits |= CoreGraphics::ImageBits::Plane2Bits;
+        
         else
         {
             n_error("Invalid access string '%s'\n", comps[i].AsCharPtr());
             return CoreGraphics::ImageBits::ColorBits;
         }
     }
-    return aspect;
+    return bits;
 }
 
 //------------------------------------------------------------------------------

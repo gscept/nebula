@@ -69,16 +69,16 @@ FrameScriptLoader::LoadFrameScript(const IO::URI& path)
         }
 
         // assert version is compatible
-        JzonValue* node = jzon_get(json, "version");
-        n_assert(node->int_value >= 2);
-        node = jzon_get(json, "engine");
+        JzonValue* main = jzon_get(json, "framescript");
+        n_assert(main != nullptr);
+
+        JzonValue* node = jzon_get(main, "version");
+        n_assert(node->int_value >= 3);
+        node = jzon_get(main, "engine");
         n_assert(Util::String(node->string_value) == "Nebula");
-        node = jzon_get(json, "sub_script");
-        if (node) script->subScript = node->bool_value;
 
         // run parser entry point
-        json = jzon_get(json, "framescript");
-        ParseFrameScript(script, json);
+        ParseFrameScript(script, main);
 
         // clear jzon
         n_delete_array(jzon_buf);
@@ -106,8 +106,8 @@ FrameScriptLoader::ParseFrameScript(const Ptr<Frame::FrameScript>& script, JzonV
         Util::String name(cur->key);
         if (name == "textures")                         ParseTextureList(script, cur);
         else if (name == "read_write_buffers")          ParseReadWriteBufferList(script, cur);
-        else if (name == "submission")					script->AddOp(ParseFrameSubmission(script, cur));
-        else if (name == "comment" || name == "_comment") continue; // just skip comments
+        else if (name == "submissions")					ParseSubmissionList(script, cur);
+        else if (name == "comment" || name == "_comment" || name == "version" || name == "engine") continue; // Skip these
         else
         {
             n_error("Frame script operation '%s' is unrecognized.\n", name.AsCharPtr());
@@ -253,25 +253,52 @@ FrameScriptLoader::ParseBlit(const Ptr<Frame::FrameScript>& script, JzonValue* n
 
     JzonValue* from = jzon_get(node, "from");
     n_assert(from != nullptr);
-    const CoreGraphics::TextureId& fromTex = script->GetTexture(from->string_value);
 
     JzonValue* to = jzon_get(node, "to");
     n_assert(to != nullptr);
-    const CoreGraphics::TextureId& toTex = script->GetTexture(to->string_value);
 
-    bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(fromTex));
+    CoreGraphics::TextureId fromTex, toTex;
+    CoreGraphics::ImageBits fromBits = CoreGraphics::ImageBits::Auto, toBits = CoreGraphics::ImageBits::Auto;
+
+    JzonValue* from_tex = jzon_get(from, "tex");
+    n_assert(from_tex != nullptr);
+    fromTex = script->GetTexture(from_tex->string_value);
+
+    JzonValue* from_bits = jzon_get(from, "bits");
+    if (from_bits != nullptr)
+        fromBits = ImageBitsFromString(from_bits->string_value);
+
+    JzonValue* to_tex = jzon_get(to, "tex");
+    n_assert(to_tex != nullptr);
+    toTex = script->GetTexture(to_tex->string_value);
+
+    JzonValue* to_bits = jzon_get(to, "bits");
+    if (to_bits != nullptr)
+        toBits = ImageBitsFromString(to_bits->string_value);
+
+    // If bits are auto, resolve them using the format
+    if (fromBits == CoreGraphics::ImageBits::Auto)
+        fromBits = CoreGraphics::PixelFormat::ToImageBits(CoreGraphics::TextureGetPixelFormat(fromTex));
+    if (toBits == CoreGraphics::ImageBits::Auto)
+        toBits = CoreGraphics::PixelFormat::ToImageBits(CoreGraphics::TextureGetPixelFormat(toTex));
 
     // add implicit barriers
-    TextureSubresourceInfo subres;
-    subres.aspect = isDepth ? CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits : CoreGraphics::ImageBits::ColorBits;
-    subres.layer = 0;
-    subres.layerCount = 1;
-    subres.mip = 0;
-    subres.mipCount = 1;
-    op->textureDeps.Add(fromTex, Util::MakeTuple(from->string_value, CoreGraphics::PipelineStage::TransferRead, subres));
-    op->textureDeps.Add(toTex, Util::MakeTuple(to->string_value, CoreGraphics::PipelineStage::TransferWrite, subres));
+    TextureSubresourceInfo subresFrom, subresTo;
+    subresFrom.bits = fromBits;
+    subresFrom.layer = 0;
+    subresFrom.layerCount = 1;
+    subresFrom.mip = 0;
+    subresFrom.mipCount = 1;
+
+    subresTo = subresFrom;
+    subresTo.bits = toBits;
+
+    op->textureDeps.Add(fromTex, Util::MakeTuple(from->string_value, CoreGraphics::PipelineStage::TransferRead, subresFrom));
+    op->textureDeps.Add(toTex, Util::MakeTuple(to->string_value, CoreGraphics::PipelineStage::TransferWrite, subresTo));
 
     // setup blit operation
+    op->fromBits = fromBits;
+    op->toBits = toBits;
     op->from = fromTex;
     op->to = toTex;
     return op;
@@ -321,19 +348,85 @@ FrameScriptLoader::ParseCopy(const Ptr<Frame::FrameScript>& script, JzonValue* n
     if (to_bits != nullptr)
         toBits = ImageBitsFromString(to_bits->string_value);
 
+    // If bits are auto, resolve them using the format
+    if (fromBits == CoreGraphics::ImageBits::Auto)
+        fromBits = CoreGraphics::PixelFormat::ToImageBits(CoreGraphics::TextureGetPixelFormat(fromTex));
+    if (toBits == CoreGraphics::ImageBits::Auto)
+        toBits = CoreGraphics::PixelFormat::ToImageBits(CoreGraphics::TextureGetPixelFormat(toTex));
+
     // add implicit barriers
     TextureSubresourceInfo subresFrom, subresTo;
-    subresFrom.aspect = fromBits;
+    subresFrom.bits = fromBits;
     subresFrom.layer = 0;
     subresFrom.layerCount = 1;
     subresFrom.mip = 0;
     subresFrom.mipCount = 1;
 
     subresTo = subresFrom;
-    subresTo.aspect = toBits;
+    subresTo.bits = toBits;
 
     op->textureDeps.Add(fromTex, Util::MakeTuple(from->string_value, CoreGraphics::PipelineStage::TransferRead, subresFrom));
     op->textureDeps.Add(toTex, Util::MakeTuple(to->string_value, CoreGraphics::PipelineStage::TransferWrite, subresTo));
+
+    // setup copy operation
+    op->fromBits = fromBits;
+    op->toBits = toBits;
+    op->from = fromTex;
+    op->to = toTex;
+    return op;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+FrameOp*
+FrameScriptLoader::ParseResolve(const Ptr<Frame::FrameScript>& script, JzonValue* node)
+{
+    FrameResolve* op = script->GetAllocator().Alloc<FrameResolve>();
+
+    // get function and name
+    JzonValue* name = jzon_get(node, "name");
+    n_assert(name != nullptr);
+    op->SetName(name->string_value);
+
+    JzonValue* from = jzon_get(node, "from");
+    n_assert(from != nullptr);
+
+    JzonValue* to = jzon_get(node, "to");
+    n_assert(to != nullptr);
+
+    CoreGraphics::TextureId fromTex, toTex;
+    CoreGraphics::ImageBits fromBits = CoreGraphics::ImageBits::Auto, toBits = CoreGraphics::ImageBits::Auto;
+
+    JzonValue* from_tex = jzon_get(from, "tex");
+    n_assert(from_tex != nullptr);
+    fromTex = script->GetTexture(from_tex->string_value);
+
+    JzonValue* from_bits = jzon_get(from, "bits");
+    if (from_bits != nullptr)
+        fromBits = ImageBitsFromString(from_bits->string_value);
+
+    JzonValue* to_tex = jzon_get(to, "tex");
+    n_assert(to_tex != nullptr);
+    toTex = script->GetTexture(to_tex->string_value);
+
+    JzonValue* to_bits = jzon_get(to, "bits");
+    if (to_bits != nullptr)
+        toBits = ImageBitsFromString(to_bits->string_value);
+
+    // add implicit barriers
+    TextureSubresourceInfo fromSubres, toSubres;
+    fromSubres.bits = fromBits;
+    fromSubres.layer = 0;
+    fromSubres.layerCount = 1;
+    fromSubres.mip = 0;
+    fromSubres.mipCount = 1;
+
+    toSubres = fromSubres;
+    toSubres.bits = toBits;
+
+    op->textureDeps.Add(fromTex, Util::MakeTuple(from->string_value, CoreGraphics::PipelineStage::TransferRead, fromSubres));
+    op->textureDeps.Add(toTex, Util::MakeTuple(to->string_value, CoreGraphics::PipelineStage::TransferWrite, toSubres));
 
     // setup copy operation
     op->fromBits = fromBits;
@@ -369,7 +462,7 @@ FrameScriptLoader::ParseMipmap(const Ptr<Frame::FrameScript>& script, JzonValue*
 
     // add implicit barriers
     TextureSubresourceInfo subres;
-    subres.aspect = isDepth ? (CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits) : CoreGraphics::ImageBits::ColorBits;
+    subres.bits = isDepth ? (CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits) : CoreGraphics::ImageBits::ColorBits;
     subres.layer = 0;
     subres.layerCount = 1;
     subres.mip = 0;
@@ -523,90 +616,88 @@ FrameScriptLoader::ParseSwap(const Ptr<Frame::FrameScript>& script, JzonValue* n
 //------------------------------------------------------------------------------
 /**
 */
-FrameOp*
-FrameScriptLoader::ParseFrameSubmission(const Ptr<Frame::FrameScript>& script, JzonValue* node)
+void
+FrameScriptLoader::ParseSubmissionList(const Ptr<Frame::FrameScript>& script, JzonValue* node)
 {
-    FrameSubmission* submission = script->GetAllocator().Alloc<FrameSubmission>();
-
-    JzonValue* name = jzon_get(node, "name");
-    n_assert(name != nullptr);
-    submission->SetName(name->string_value);
-
-    JzonValue* queue = jzon_get(node, "queue");
-    submission->queue = CoreGraphics::QueueTypeFromString(queue->string_value);
-
-    JzonValue* waitSubmissions = jzon_get(node, "wait_for_submissions");
-    if (waitSubmissions != nullptr)
+    uint i;
+    for (i = 0; i < node->size; i++)
     {
-        for (int i = 0; i < waitSubmissions->size; i++)
-        {
-            Frame::FrameOp* dependency = script->GetOp(waitSubmissions->array_values[i]->string_value);
-            n_assert(dependency != nullptr);
-            submission->waitSubmissions.Append(static_cast<Frame::FrameSubmission*>(dependency));
-        }
-    }
+        FrameSubmission* submission = script->GetAllocator().Alloc<FrameSubmission>();
 
-    JzonValue* waitQueue = jzon_get(node, "wait_for_queue");
-    if (waitQueue != nullptr)
-    {
-        CoreGraphics::QueueType queue;
-        Util::String q(waitQueue->string_value);
-        if (q == "Graphics") queue = CoreGraphics::QueueType::GraphicsQueueType;
-        else if (q == "Compute") queue = CoreGraphics::QueueType::ComputeQueueType;
-        else if (q == "Transfer") queue = CoreGraphics::QueueType::TransferQueueType;
-        else if (q == "Sparse") queue = CoreGraphics::QueueType::SparseQueueType;
-        else
-        {
-            n_error("Unknown queue type '%s'\n", q.AsCharPtr());
-        }
-        submission->waitQueues.Append(queue);
-    }
+        JzonValue* sub = node->array_values[i];
+        JzonValue* name = jzon_get(sub, "name");
+        n_assert(name != nullptr);
+        submission->SetName(name->string_value);
 
-    JzonValue* ops = jzon_get(node, "ops");
-    if (ops != nullptr)
-    {
-        for (int i = 0; i < ops->size; i++)
+        JzonValue* queue = jzon_get(sub, "queue");
+        submission->queue = CoreGraphics::QueueTypeFromString(queue->string_value);
+
+        JzonValue* waitSubmissions = jzon_get(sub, "wait_for_submissions");
+        if (waitSubmissions != nullptr)
         {
-            JzonValue* op = ops->array_values[i];
-            Util::String name(op->key);
-            if (name == "blit")								submission->AddChild(ParseBlit(script, op));
-            else if (name == "copy")                        submission->AddChild(ParseCopy(script, op));
-            else if (name == "mipmap")                      submission->AddChild(ParseMipmap(script, op));
-            else if (name == "compute")                     submission->AddChild(ParseCompute(script, op));
-            else if (name == "pass")                        submission->AddChild(ParsePass(script, op));
-            else if (name == "resolve")                     submission->AddChild(ParseResolve(script, op));
-            else if (name == "barrier")                     submission->AddChild(ParseBarrier(script, op));
-            else if (name == "swap")                        submission->AddChild(ParseSwap(script, op));
-            else if (name == "plugin" || name == "call")
+            uint j;
+            for (j = 0; j < waitSubmissions->size; j++)
             {
-                FrameOp* plugin = ParsePlugin(script, op);
-                submission->AddChild(plugin);
+                Frame::FrameOp* dependency = script->GetOp(waitSubmissions->array_values[j]->string_value);
+                n_assert(dependency != nullptr);
+                submission->waitSubmissions.Append(static_cast<Frame::FrameSubmission*>(dependency));
             }
-            else if (name == "subgraph")
-            {
-                FrameOp* subgraph = ParseSubgraph(script, op);
-                submission->AddChild(subgraph);
-            }
-            else if (name == "comment" || name == "_comment") continue; // just skip comments
+        }
+
+        JzonValue* waitQueue = jzon_get(sub, "wait_for_queue");
+        if (waitQueue != nullptr)
+        {
+            CoreGraphics::QueueType queue;
+            Util::String q(waitQueue->string_value);
+            if (q == "Graphics") queue = CoreGraphics::QueueType::GraphicsQueueType;
+            else if (q == "Compute") queue = CoreGraphics::QueueType::ComputeQueueType;
+            else if (q == "Transfer") queue = CoreGraphics::QueueType::TransferQueueType;
+            else if (q == "Sparse") queue = CoreGraphics::QueueType::SparseQueueType;
             else
             {
-                n_error("Frame script operation '%s' is unrecognized.\n", name.AsCharPtr());
+                n_error("Unknown queue type '%s'\n", q.AsCharPtr());
+            }
+            submission->waitQueues.Append(queue);
+        }
+
+        JzonValue* ops = jzon_get(sub, "ops");
+        if (ops != nullptr)
+        {
+            uint j = 0;
+            for (j = 0; j < ops->size; j++)
+            {
+                JzonValue* op = ops->array_values[j]->array_values[0];
+                Util::String type(op->key);
+                if (type == "blit")								submission->AddChild(ParseBlit(script, op));
+                else if (type == "copy")                        submission->AddChild(ParseCopy(script, op));
+                else if (type == "resolve")                     submission->AddChild(ParseResolve(script, op));
+                else if (type == "mipmap")                      submission->AddChild(ParseMipmap(script, op));
+                else if (type == "compute")                     submission->AddChild(ParseCompute(script, op));
+                else if (type == "pass")                        submission->AddChild(ParsePass(script, op));
+                else if (type == "barrier")                     submission->AddChild(ParseBarrier(script, op));
+                else if (type == "swap")                        submission->AddChild(ParseSwap(script, op));
+                else if (type == "plugin" || type == "call")    submission->AddChild(ParsePlugin(script, op));
+                else if (type == "subgraph")                    submission->AddChild(ParseSubgraph(script, op));
+                else if (type == "comment" || type == "_comment") continue; // just skip comments
+                else
+                {
+                    n_error("Frame script operation '%s' is unrecognized.\n", type.AsCharPtr());
+                }
             }
         }
+
+        // remember the begin
+        FrameScriptLoader::LastSubmission[submission->queue] = submission;
+
+        // Create command buffer pool for submission
+        CoreGraphics::CmdBufferPoolCreateInfo cmdPoolInfo;
+        cmdPoolInfo.queue = submission->queue;
+        cmdPoolInfo.resetable = false;
+        cmdPoolInfo.shortlived = true;
+        submission->commandBufferPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
+
+        script->AddOp(submission);
     }
-
-    // remember the begin
-    FrameScriptLoader::LastSubmission[submission->queue] = submission;
-
-    // Create command buffer pool for submission
-    CoreGraphics::CmdBufferPoolCreateInfo cmdPoolInfo;
-    cmdPoolInfo.queue = submission->queue;
-    cmdPoolInfo.resetable = false;
-    cmdPoolInfo.shortlived = true;
-    submission->commandBufferPool = CoreGraphics::CreateCmdBufferPool(cmdPoolInfo);
-
-    // add operation to script
-    return submission;
 }
 
 //------------------------------------------------------------------------------
@@ -626,7 +717,6 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
     info.name = name->string_value;
 
     Util::Array<Resources::ResourceName> attachmentNames;
-    Util::String dsName;
 
     uint i;
     for (i = 0; i < node->size; i++)
@@ -635,7 +725,7 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
         Util::String name(cur->key);
         if (name == "name")                 op->SetName(cur->string_value);
         else if (name == "attachments")     ParseAttachmentList(script, info, attachmentNames, cur);
-        else if (name == "subpass")         ParseSubpass(script, info, op, attachmentNames, cur);
+        else if (name == "subpasses")       ParseSubpassList(script, info, op, attachmentNames, cur);
         else
         {
             n_error("Passes don't support operations, and '%s' is no exception.\n", name.AsCharPtr());
@@ -649,15 +739,17 @@ FrameScriptLoader::ParsePass(const Ptr<Frame::FrameScript>& script, JzonValue* n
     subres.mipCount = 1;
     for (SizeT i = 0; i < info.attachments.Size(); i++)
     {
+        const CoreGraphics::TextureId tex = TextureViewGetTexture(info.attachments[i]);
+        subres.layerCount = TextureGetNumLayers(tex);
         if (info.attachmentDepthStencil[i])
         {
-            subres.aspect = CoreGraphics::ImageBits::StencilBits | CoreGraphics::ImageBits::DepthBits;
-            op->textureDeps.Add(TextureViewGetTexture(info.attachments[i]), Util::MakeTuple(dsName, CoreGraphics::PipelineStage::DepthStencilWrite, subres));
+            subres.bits = CoreGraphics::ImageBits::StencilBits | CoreGraphics::ImageBits::DepthBits;
+            op->textureDeps.Add(tex, Util::MakeTuple(attachmentNames[i], CoreGraphics::PipelineStage::DepthStencilWrite, subres));
         }
         else
         {
-            subres.aspect = CoreGraphics::ImageBits::ColorBits;
-            op->textureDeps.Add(TextureViewGetTexture(info.attachments[i]), Util::MakeTuple(attachmentNames[i], CoreGraphics::PipelineStage::ColorWrite, subres));
+            subres.bits = CoreGraphics::ImageBits::ColorBits;
+            op->textureDeps.Add(tex, Util::MakeTuple(attachmentNames[i], CoreGraphics::PipelineStage::ColorWrite, subres));
         }
     }
 
@@ -771,49 +863,69 @@ FrameScriptLoader::ParseAttachmentList(const Ptr<Frame::FrameScript>& script, Co
 /**
 */
 void
-FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraphics::PassCreateInfo& pass, Frame::FramePass* framePass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node)
+FrameScriptLoader::ParseSubpassList(const Ptr<Frame::FrameScript>& script, CoreGraphics::PassCreateInfo& pass, Frame::FramePass* framePass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node)
 {
-    FrameSubpass* frameSubpass = script->GetAllocator().Alloc<FrameSubpass>();
-
-    frameSubpass->domain = BarrierDomain::Pass;
-    Subpass subpass;
-    subpass.depth = InvalidIndex;
     uint i;
     for (i = 0; i < node->size; i++)
     {
+        FrameSubpass* frameSubpass = script->GetAllocator().Alloc<FrameSubpass>();
+
+        frameSubpass->domain = BarrierDomain::Pass;
+        Subpass subpass;
+        subpass.depth = InvalidIndex;
+
         JzonValue* cur = node->array_values[i];
-        Util::String name(cur->key);
-        if (name == "name")                             frameSubpass->SetName(cur->string_value);
-        else if (name == "subpass_dependencies")        ParseSubpassDependencies(framePass, subpass, cur);
-        else if (name == "attachments")                 ParseSubpassAttachments(framePass, subpass, attachmentNames, cur);
-        else if (name == "inputs")                      ParseSubpassInputs(framePass, subpass, attachmentNames, cur);
-        else if (name == "depth")                       ParseSubpassDepthAttachment(framePass, subpass, attachmentNames, cur);
-        else if (name == "resolves")                    ParseSubpassResolves(framePass, subpass, attachmentNames, cur);
-        else if (name == "resource_dependencies")       ParseResourceDependencies(script, framePass, cur);
-        else if (name == "plugin" || name == "call")    ParseSubpassPlugin(script, frameSubpass, cur);
-        else if (name == "subgraph")                    ParseSubpassSubgraph(script, frameSubpass, cur);
-        else if (name == "batch")                       ParseSubpassBatch(script, frameSubpass, cur);
-        else if (name == "sorted_batch")                ParseSubpassSortedBatch(script, frameSubpass, cur);
-        else if (name == "fullscreen_effect")           ParseSubpassFullscreenEffect(script, frameSubpass, cur);
-        else if (name == "comment" || name == "_comment") continue; // just skip comments
-        else
+        uint j;
+        for (j = 0; j < cur->size; j++)
         {
-            n_error("Subpass operation '%s' is invalid.\n", name.AsCharPtr());
+            JzonValue* field = cur->array_values[j];
+            Util::String name(field->key);
+            if (name == "name")                             frameSubpass->SetName(field->string_value);
+            else if (name == "subpass_dependencies")        ParseSubpassDependencyList(framePass, subpass, field);
+            else if (name == "attachments")                 ParseSubpassAttachmentList(framePass, subpass, attachmentNames, field);
+            else if (name == "inputs")                      ParseSubpassInputList(framePass, subpass, attachmentNames, field);
+            else if (name == "depth")                       ParseSubpassDepthAttachment(framePass, subpass, attachmentNames, field);
+            else if (name == "resolves")                    ParseSubpassResolves(framePass, subpass, attachmentNames, field);
+            else if (name == "resource_dependencies")       ParseResourceDependencies(script, framePass, field);
+            else if (name == "comment" || name == "_comment") continue; // just skip comments
+            else if (name == "ops")
+            {
+                uint k;
+                for (k = 0; k < field->size; k++)
+                {
+                    JzonValue* op = field->array_values[k]->array_values[0];
+                    Util::String type(op->key);
+                    if (type == "plugin" || type == "call")         ParseSubpassPlugin(script, frameSubpass, op);
+                    else if (type == "subgraph")                    ParseSubpassSubgraph(script, frameSubpass, op);
+                    else if (type == "batch")                       ParseSubpassBatch(script, frameSubpass, op);
+                    else if (type == "sorted_batch")                ParseSubpassSortedBatch(script, frameSubpass, op);
+                    else if (type == "fullscreen_effect")           ParseSubpassFullscreenEffect(script, frameSubpass, op);
+                    else if (type == "comment" || type == "_comment") continue; // just skip comments
+                    else
+                    {
+                        n_error("Subpass operation '%s' is invalid.\n", type.AsCharPtr());
+                    }
+                }
+            }
+            else
+            {
+                n_error("Subpass field '%s' is invalid.\n", name.AsCharPtr());
+            }
         }
+
+        // make sure the subpass has any attacments
+        n_assert2(subpass.attachments.Size() > 0 || subpass.depth != InvalidIndex, "Subpass must at least either bind color attachments or a depth-stencil attachment");
+
+        // correct amount of viewports and scissors if not set explicitly (both values default to 0)
+        if (subpass.numViewports == 0)
+            subpass.numViewports = subpass.attachments.IsEmpty() ? (subpass.depth == InvalidIndex ? 0 : 1) : subpass.attachments.Size();
+        if (subpass.numScissors == 0)
+            subpass.numScissors = subpass.attachments.IsEmpty() ? (subpass.depth == InvalidIndex ? 0 : 1) : subpass.attachments.Size();
+
+        // link together frame operations
+        pass.subpasses.Append(subpass);
+        framePass->AddChild(frameSubpass);
     }
-
-    // make sure the subpass has any attacments
-    n_assert2(subpass.attachments.Size() > 0 || subpass.depth != InvalidIndex, "Subpass must at least either bind color attachments or a depth-stencil attachment");
-
-    // correct amount of viewports and scissors if not set explicitly (both values default to 0)
-    if (subpass.numViewports == 0)
-        subpass.numViewports = subpass.attachments.IsEmpty() ? (subpass.depth == InvalidIndex ? 0 : 1) : subpass.attachments.Size();
-    if (subpass.numScissors == 0)
-        subpass.numScissors = subpass.attachments.IsEmpty() ? (subpass.depth == InvalidIndex ? 0 : 1) : subpass.attachments.Size();
-
-    // link together frame operations
-    pass.subpasses.Append(subpass);
-    framePass->AddChild(frameSubpass);
 }
 
 //------------------------------------------------------------------------------
@@ -821,7 +933,7 @@ FrameScriptLoader::ParseSubpass(const Ptr<Frame::FrameScript>& script, CoreGraph
     Extend to use subpass names
 */
 void
-FrameScriptLoader::ParseSubpassDependencies(Frame::FramePass* pass, CoreGraphics::Subpass& subpass, JzonValue* node)
+FrameScriptLoader::ParseSubpassDependencyList(Frame::FramePass* pass, CoreGraphics::Subpass& subpass, JzonValue* node)
 {
     uint i;
     for (i = 0; i < node->size; i++)
@@ -864,7 +976,7 @@ FrameScriptLoader::ParseSubpassDependencies(Frame::FramePass* pass, CoreGraphics
     Extend to use attachment names
 */
 void
-FrameScriptLoader::ParseSubpassAttachments(Frame::FramePass* pass, CoreGraphics::Subpass& subpass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node)
+FrameScriptLoader::ParseSubpassAttachmentList(Frame::FramePass* pass, CoreGraphics::Subpass& subpass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node)
 {
     uint i;
     for (i = 0; i < node->size; i++)
@@ -955,7 +1067,7 @@ FrameScriptLoader::ParseSubpassResolves(Frame::FramePass* pass, CoreGraphics::Su
 /**
 */
 void
-FrameScriptLoader::ParseSubpassInputs(Frame::FramePass* pass, CoreGraphics::Subpass& subpass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node)
+FrameScriptLoader::ParseSubpassInputList(Frame::FramePass* pass, CoreGraphics::Subpass& subpass, Util::Array<Resources::ResourceName>& attachmentNames, JzonValue* node)
 {
     uint i;
     for (i = 0; i < node->size; i++)
@@ -1045,13 +1157,16 @@ FrameScriptLoader::ParseSubpassBatch(const Ptr<Frame::FrameScript>& script, Fram
     op->domain = BarrierDomain::Pass;
     op->queue = CoreGraphics::QueueType::GraphicsQueueType;
 
+    JzonValue* name = jzon_get(node, "name");
+    n_assert(name != nullptr);
+
     JzonValue* inputs = jzon_get(node, "resource_dependencies");
     if (inputs != nullptr)
     {
         ParseResourceDependencies(script, op, inputs);
     }
 
-    op->batch = CoreGraphics::BatchGroup::FromName(node->string_value);
+    op->batch = CoreGraphics::BatchGroup::FromName(name->string_value);
     subpass->AddChild(op);
 }
 
@@ -1065,13 +1180,16 @@ FrameScriptLoader::ParseSubpassSortedBatch(const Ptr<Frame::FrameScript>& script
     op->domain = BarrierDomain::Pass;
     op->queue = CoreGraphics::QueueType::GraphicsQueueType;
 
+    JzonValue* name = jzon_get(node, "name");
+    n_assert(name != nullptr);
+
     JzonValue* inputs = jzon_get(node, "resource_dependencies");
     if (inputs != nullptr)
     {
         ParseResourceDependencies(script, op, inputs);
     }
 
-    op->batch = CoreGraphics::BatchGroup::FromName(node->string_value);
+    op->batch = CoreGraphics::BatchGroup::FromName(name->string_value);
     subpass->AddChild(op);
 }
 
@@ -1112,65 +1230,6 @@ FrameScriptLoader::ParseSubpassFullscreenEffect(const Ptr<Frame::FrameScript>& s
     subpass->AddChild(op);
 }
 
-//------------------------------------------------------------------------------
-/**
-*/
-FrameOp*
-FrameScriptLoader::ParseResolve(const Ptr<Frame::FrameScript>& script, JzonValue* node)
-{
-    FrameResolve* op = script->GetAllocator().Alloc<FrameResolve>();
-
-    // get function and name
-    JzonValue* name = jzon_get(node, "name");
-    n_assert(name != nullptr);
-    op->SetName(name->string_value);
-
-    JzonValue* from = jzon_get(node, "from");
-    n_assert(from != nullptr);
-
-    JzonValue* to = jzon_get(node, "to");
-    n_assert(to != nullptr);
-
-    CoreGraphics::TextureId fromTex, toTex;
-    CoreGraphics::ImageBits fromBits = CoreGraphics::ImageBits::Auto, toBits = CoreGraphics::ImageBits::Auto;
-
-    JzonValue* from_tex = jzon_get(from, "tex");
-    n_assert(from_tex != nullptr);
-    fromTex = script->GetTexture(from_tex->string_value);
-
-    JzonValue* from_bits = jzon_get(from, "bits");
-    if (from_bits != nullptr)
-        fromBits = ImageBitsFromString(from_bits->string_value);
-
-    JzonValue* to_tex = jzon_get(to, "tex");
-    n_assert(to_tex != nullptr);
-    toTex = script->GetTexture(to_tex->string_value);
-
-    JzonValue* to_bits = jzon_get(to, "bits");
-    if (to_bits != nullptr)
-        toBits = ImageBitsFromString(to_bits->string_value);
-
-    // add implicit barriers
-    TextureSubresourceInfo fromSubres, toSubres;
-    fromSubres.aspect = fromBits;
-    fromSubres.layer = 0;
-    fromSubres.layerCount = 1;
-    fromSubres.mip = 0;
-    fromSubres.mipCount = 1;
-
-    toSubres = fromSubres;
-    toSubres.aspect = toBits;
-
-    op->textureDeps.Add(fromTex, Util::MakeTuple(from->string_value, CoreGraphics::PipelineStage::TransferRead, fromSubres));
-    op->textureDeps.Add(toTex, Util::MakeTuple(to->string_value, CoreGraphics::PipelineStage::TransferWrite, toSubres));
-
-    // setup copy operation
-    op->fromBits = fromBits;
-    op->toBits = toBits;
-    op->from = fromTex;
-    op->to = toTex;
-    return op;
-}
 
 //------------------------------------------------------------------------------
 /**
@@ -1333,16 +1392,21 @@ FrameScriptLoader::ParseResourceDependencies(const Ptr<Frame::FrameScript>& scri
             JzonValue* nd = nullptr;
 
             TextureId tex = script->texturesByName[valstr];
-            if ((nd = jzon_get(dep, "aspect")) != nullptr) subres.aspect = ImageBitsFromString(nd->string_value);
+            if ((nd = jzon_get(dep, "bits")) != nullptr) subres.bits = ImageBitsFromString(nd->string_value);
             else
             {
                 bool isDepth = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(tex));
-                subres.aspect = isDepth ? (ImageBits::DepthBits | ImageBits::StencilBits) : ImageBits::ColorBits;
+                subres.bits = isDepth ? (ImageBits::DepthBits | ImageBits::StencilBits) : ImageBits::ColorBits;
             }
             if ((nd = jzon_get(dep, "mip")) != nullptr) subres.mip = nd->int_value;
+            else                                        subres.mip = 0;
             if ((nd = jzon_get(dep, "mip_count")) != nullptr) subres.mipCount = nd->int_value;
+            else                                              subres.mipCount = CoreGraphics::TextureGetNumMips(tex) - subres.mip;
+
             if ((nd = jzon_get(dep, "layer")) != nullptr) subres.layer = nd->int_value;
+            else                                          subres.layer = 0;
             if ((nd = jzon_get(dep, "layer_count")) != nullptr) subres.layerCount = nd->int_value;
+            else                                                subres.layerCount = CoreGraphics::TextureGetNumLayers(tex) - subres.layer;
 
             op->textureDeps.Add(tex, Util::MakeTuple(valstr, stage, subres));
         }

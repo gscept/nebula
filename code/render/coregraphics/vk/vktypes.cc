@@ -437,13 +437,13 @@ VkTypes::AsNebulaPixelFormat(VkFormat f)
 /**
 */
 VkImageAspectFlags
-VkTypes::AsVkImageAspectFlags(const CoreGraphics::ImageBits aspect)
+VkTypes::AsVkImageAspectFlags(const CoreGraphics::ImageBits bits)
 {
     VkImageAspectFlags flags = 0;
     uint32_t bit;
-    for (bit = 1; aspect >= bit; bit *= 2)
+    for (bit = 1; bits >= bit; bit *= 2)
     {
-        if ((aspect & bit) == bit) switch ((CoreGraphics::ImageBits)bit)
+        if ((bits & bit) == bit) switch ((CoreGraphics::ImageBits)bit)
         {
         case CoreGraphics::ImageBits::ColorBits:
             flags |= VK_IMAGE_ASPECT_COLOR_BIT;

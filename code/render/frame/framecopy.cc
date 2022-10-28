@@ -14,6 +14,8 @@ namespace Frame
 /**
 */
 FrameCopy::FrameCopy()
+    : fromBits(CoreGraphics::ImageBits::ColorBits)
+    , toBits(CoreGraphics::ImageBits::ColorBits)
 {
     // empty
 }

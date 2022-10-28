@@ -95,7 +95,7 @@ TextureGenerateMipmaps(const CoreGraphics::CmdBufferId cmdBuf, const TextureId i
                 }
             },
             nullptr);
-        CoreGraphics::CmdBlit(cmdBuf, id, fromRegion, mip, 0, id, toRegion, mip + 1, 0);
+        CoreGraphics::CmdBlit(cmdBuf, id, fromRegion, CoreGraphics::ImageBits::ColorBits, mip, 0, id, toRegion, CoreGraphics::ImageBits::ColorBits, mip + 1, 0);
 
         // The previous textuer will be in write, so it needs to pingpong from transfer write/read, with the first being shader read
         prevStageSrc = CoreGraphics::PipelineStage::TransferWrite;

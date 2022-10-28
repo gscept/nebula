@@ -298,10 +298,12 @@ void CmdBlit(
     const CmdBufferId id
     , const CoreGraphics::TextureId from
     , const Math::rectangle<SizeT>& fromRegion
+    , const CoreGraphics::ImageBits fromBits
     , IndexT fromMip
     , IndexT fromLayer
     , const CoreGraphics::TextureId to
     , const Math::rectangle<SizeT>& toRegion
+    , const CoreGraphics::ImageBits toBits
     , IndexT toMip
     , IndexT toLayer
 );

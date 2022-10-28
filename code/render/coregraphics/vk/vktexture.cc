@@ -433,7 +433,7 @@ SetupTexture(const TextureId id)
             viewCreate.startLayer = 0;
             viewCreate.startMip = viewRange.baseMipLevel;
             viewCreate.tex = id;
-            viewCreate.aspect = ImageBits::StencilBits;
+            viewCreate.bits = ImageBits::StencilBits;
             TextureViewId stencilView = CreateTextureView(viewCreate);
 
             loadInfo.stencilExtension = textureStencilExtensionAllocator.Alloc();

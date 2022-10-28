@@ -1,12 +1,14 @@
 {
-    "version": 2,
-    "engine": "Nebula",
+    "$schema": "../../../code/schemas/framescript-schema.json",
     "framescript": {
+        "version": 3,
+        "engine": "Nebula",
         "textures": [
             {
                 "name": "__WINDOW__"
             },
             {
+
                 "name": "ScreenBuffer",
                 "format": "R11G11B10F",
                 "relative": true,
@@ -80,7 +82,7 @@
             },
             {
                 "name": "LightBuffer",
-                "format": "R16G16B16A16F",
+                "format": "R11G11B10F",
                 "relative": true,
                 "usage": "Render|ReadWrite|TransferSource",
                 "width": 1.0,
@@ -125,11 +127,19 @@
                 "type": "Texture2D"
             },
             {
-                "name": "ZBufferCopy",
+                "name": "Depth",
                 "format": "D32S8",
                 "relative": true,
-                "usage": "Render|TransferDestination",
-                "mips": "auto",
+                "usage": "TransferDestination|Sample",
+                "width": 1.0,
+                "height": 1.0,
+                "type": "Texture2D"
+            },
+            {
+                "name": "Stencil",
+                "format": "R8",
+                "relative": true,
+                "usage": "TransferDestination|Sample",
                 "width": 1.0,
                 "height": 1.0,
                 "type": "Texture2D"
@@ -191,417 +201,566 @@
             }
         ],
 
-        "_comment": "------------ COMPUTE PREPASS ------------",
-        "submission": {
-            "name": "Compute Prepass",
-            "queue": "Compute",
-            "wait_for_queue": "Graphics",
-            "_comment": "Perform clustering AABB generation and run culling for clustering systems",
-            "ops": {
-                "subgraph": {
-                    "name": "Cluster AABB Generation"
-                },
-                "subgraph": {
-                    "name": "Lights Cull"
-                },
-                "subgraph": {
-                    "name": "Decal Cull"
-                },
-                "subgraph": {
-                    "name": "Fog Cull"
-                },
-                "subgraph": {
-                    "name": "Sun Terrain Shadows"
-                }
-            }
-        },
-
-        "submission": {
-            "name": "Shadows",
-            "queue": "Graphics",
-            "_comment": "Render and blur shadow maps",
-            "ops": {
-                "pass": {
-                    "name": "Sun Shadows Pass",
-                    "attachments": [
-                        {
-                            "name": "SunShadowDepth",
-                            "clear_depth": 1,
-                            "store": true
-                        }
-                    ],
-
-                    "subpass": {
-                        "name": "Sun Shadows",
-                        "subpass_dependencies": [],
-                        "depth": "SunShadowDepth",
+        "submissions": [
+            {
+                "name": "Compute Prepass",
+                "queue": "Compute",
+                "wait_for_queue": "Graphics",
+                "_comment": "Perform clustering AABB generation and run culling for clustering systems",
+                "ops": [
+                    {
                         "subgraph": {
-                            "name": "Sun Shadows"
+                            "name": "Cluster AABB Generation"
                         }
                     },
-                },
-
-                "pass": {
-                    "name": "Local Shadows Pass",
-                    "attachments": [
-                        {
-                            "name": "LocalLightShadow",
-                            "clear": [ 1000, 1000, 0, 0 ],
-                            "store": true
-                        }
-                    ],
-                    "subpass": {
-                        "name": "Spotlight Shadows",
-                        "subpass_dependencies": [],
-                        "attachments": [ "LocalLightShadow" ],
+                    {
                         "subgraph": {
-                            "name": "Spotlight Shadows"
+                            "name": "Lights Cull"
                         }
-                    }
-                },
-
-                "subgraph": {
-                    "name": "Spotlight Blur"
-                },
-                "subgraph": {
-                    "name": "Sun Blur"
-                }
-            }
-        },
-
-        "submission": {
-            "name": "Prepass",
-            "queue": "Graphics",
-            "_comment": "Calculate shadow maps and depth prepass",
-            "ops": {
-
-                "_comment": "------------ UI ------------",
-                "subgraph": {
-                    "name": "StaticUI"
-                },
-
-                "_comment": "------------ VEGETATION ------------",
-                "subgraph": {
-                    "name": "Vegetation Generate Draws"
-                },
-
-                "_comment": "------------ TERRAIN ------------",
-                "subgraph": {
-                    "name": "Terrain Prepare"
-                },
-                "pass": {
-                    "name": "Terrain GBuffer",
-                    "attachments": [
-                        {
-                            "name": "TerrainPosBuffer",
-                            "clear": [ 0, 0, 0, 255 ],
-                            "store": true
-                        },
-                        {
-                            "name": "ZBuffer",
-                            "clear_depth": 1,
-                            "store": true
-                        }
-                    ],
-
-                    "subpass": {
-                        "name": "TerrainPass",
-                        "subpass_dependencies": [],
-                        "attachments": [ "TerrainPosBuffer" ],
-                        "depth": "ZBuffer",
-                        "subgraph": {
-                            "name": "Terrain Prepass"
-                        }
-                    }
-                },
-                "subgraph": {
-                    "name": "Terrain Update Caches"
-                },
-
-                "_comment": "------------ PREPASS ------------",
-                "pass": {
-                    "name": "Prepass",
-
-                    "attachments": [
-                        {
-                            "name": "ZBuffer",
-                            "store": true,
-                            "load": true
-                        }
-                    ],
-
-                    "subpass": {
-                        "name": "DepthPrepass",
-                        "subpass_dependencies": [],
-                        "attachments": [],
-                        "depth": "ZBuffer",
-                        "batch": "FlatGeometryDepth",
-                        "subgraph": {
-                            name: "Vegetation Prepass"
-                        }
-                    }
-                },
-
-                "copy": {
-                    "name": "Copy Depth",
-                    "from": {
-                        "tex": "ZBuffer",
-                        "bits": "Depth|Stencil"
                     },
-                    "to": {
-                        "tex": "ZBufferCopy",
-                        "bits": "Depth|Stencil"
-                    }
-                }
-            }
-        },
-
-        "submission": {
-            "name": "Forward shading and post effects",
-            "wait_for_submissions": [ "Compute Prepass", "Prepass" ],
-            "queue": "Graphics",
-            "_comment": "Main graphics submission",
-            "ops": {
-                "_comment": "------------ FORWARD PASS ------------",
-                "pass": {
-                    "name": "ForwardRendering",
-                    "attachments": [
-                        {
-                            "name": "LightBuffer",
-                            "store": true,
-                            "clear": [ 0, 0, 0, 0 ]
-                        },
-                        {
-                            "name": "NormalBuffer",
-                            "store": true,
-                            "clear": [ 0, 0, 0, 0 ]
-                        },
-                        {
-                            "name": "SpecularBuffer",
-                            "store": true,
-                            "clear": [ 0, 0, 0, 0 ]
-                        },
-                        {
-                            "name": "ZBuffer",
-                            "store": true,
-                            "load": true
-                        }
-                    ],
-
-                    "subpass": {
-                        "name": "OpaquePass",
-                        "subpass_dependencies": [],
-                        "attachments": [ "LightBuffer" ],
-                        "depth": "ZBuffer",
+                    {
                         "subgraph": {
-                            "name": "Terrain Resolve"
-                        },
-                        "subgraph": {
-                            "name": "Vegetation Render"
-                        },
-                        "batch": "FlatGeometryLit"
-                    },
-                    "subpass": {
-                        "name": "Skypass",
-                        "subpass_dependencies": [ "OpaquePass" ],
-                        "attachments": [ "LightBuffer" ],
-                        "depth": "ZBuffer",
-                        "batch": "Background"
-                    },
-                    "subpass": {
-                        "_comment": "TODO: Move this to a separate pass later on",
-                        "name": "AlphaPass",
-                        "subpass_dependencies": [ "Skypass" ],
-                        "attachments": [ "LightBuffer" ],
-                        "depth": "ZBuffer",
-                        "batch": "FlatGeometryAlphaLit"
-                    }
-                },
-
-                "_comment": "------------ VEGETATION COPY ------------",
-                "subgraph": {
-                    "name": "Vegetation Copy Indirect"
-                },
-
-                "_comment": "------------ SSAO ------------",
-                "subgraph": {
-                    "name": "HBAO"
-                },
-
-                "_comment": "------------ VOLUMETRIC FOG ------------",
-                "subgraph": {
-                    "name": "Fog Compute"
-                },
-
-                "_comment": "------------ LIGHTS COMBINE ------------",
-                "subgraph": {
-                    "name": "Lights Combine"
-                },
-
-                "_comment": "------------ HISTOGRAM ------------",
-                "subgraph": {
-                    "name": "Histogram"
-                },
-
-                "_comment": "------------ BLOOM ------------",
-                "subgraph": {
-                    "name": "Bloom"
-                },
-
-                "_comment": "------------ POST EFFECTS ------------",
-                "pass": {
-                    "name": "PostEffects",
-                    "attachments": [
-                        {
-                            "name": "ColorBuffer",
-                            "load": true,
-                            "store": true
-                        },
-                        {
-                            "name": "ZBuffer",
-                            "store": false,
-                            "load": true
+                            "name": "Decal Cull"
                         }
-                    ],
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Fog Cull"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Sun Terrain Shadows"
+                        }
+                    }
+                ]
+            },
 
-                    "subpass": {
-                        "name": "FinalizePass",
-                        "subpass_dependencies": [],
-                        "attachments": [
-                            "ColorBuffer"
-                        ],
-                        "depth": "ZBuffer",
+            {
+                "name": "Shadows",
+                "queue": "Graphics",
+                "_comment": "Render and blur shadow maps",
+                "ops": [
+                    {
+                        "pass": {
+                            "name": "Sun Shadows Pass",
+                            "attachments": [
+                                {
+                                    "name": "SunShadowDepth",
+                                    "clear_depth": 1,
+                                    "store": true
+                                }
+                            ],
 
-                        "resource_dependencies": [
-                            {
-                                "name": "BloomBufferBlurred",
-                                "stage": "PixelShaderRead"
+                            "subpasses": [
+                                {
+                                    "name": "Sun Shadows",
+                                    "subpass_dependencies": [],
+                                    "depth": "SunShadowDepth",
+                                    "ops": [
+                                        {
+                                            "subgraph": {
+                                                "name": "Sun Shadows"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+
+                    },
+
+                    {
+                        "pass": {
+                            "name": "Local Shadows Pass",
+                            "attachments": [
+                                {
+                                    "name": "LocalLightShadow",
+                                    "clear": [ 1000, 1000, 0, 0 ],
+                                    "store": true
+                                }
+                            ],
+                            
+                            "subpasses": [
+                                {
+                                    "name": "Spotlight Shadows",
+                                    "subpass_dependencies": [],
+                                    "attachments": [ "LocalLightShadow" ],
+                                    "ops": [
+                                        {
+                                            "subgraph": {
+                                                "name": "Spotlight Shadows"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+
+                    {
+                        "subgraph": {
+                            "name": "Spotlight Blur"
+
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Sun Blur"
+                        }
+                    }
+                ]
+            },
+
+            {
+                "name": "Prepass",
+                "queue": "Graphics",
+                "_comment": "Calculate shadow maps and depth prepass",
+                "ops": [
+
+                    {
+                        "subgraph": {
+                            "name": "StaticUI"
+                        }
+                    },
+
+                    {
+                        "subgraph": {
+                            "name": "Vegetation Generate Draws"
+                        }
+                    },
+
+                    {
+                        "subgraph": {
+                            "name": "Terrain Prepare"
+                        }
+                    },
+                    {
+                        "pass": {
+                            "name": "Terrain GBuffer",
+                            "attachments": [
+                                {
+                                    "name": "TerrainPosBuffer",
+                                    "clear": [ 0, 0, 0, 255 ],
+                                    "store": true
+                                },
+                                {
+                                    "name": "ZBuffer",
+                                    "clear_depth": 1,
+                                    "store": true
+                                }
+                            ],
+
+                            "subpasses": [
+                                {
+                                    "name": "TerrainPass",
+                                    "subpass_dependencies": [],
+                                    "attachments": [ "TerrainPosBuffer" ],
+                                    "depth": "ZBuffer",
+                                    "ops": [
+                                        {
+                                            "subgraph": {
+                                                "name": "Terrain Prepass"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Terrain Update Caches"
+
+                        }
+                    },
+
+                    {
+                        "pass": {
+                            "name": "Prepass",
+                            "attachments": [
+                                {
+                                    "name": "ZBuffer",
+                                    "clear_depth": 1,
+                                    "clear_stencil": 0,
+                                    "store": true,
+                                    "store_stencil": true
+                                }
+                            ],
+
+                            "subpasses": [
+                                {
+                                    "name": "DepthPrepass",
+                                    "subpass_dependencies": [],
+                                    "attachments": [],
+                                    "depth": "ZBuffer",
+                                    "ops": [
+                                        {
+                                            "batch": {
+                                                "name": "FlatGeometryDepth"
+                                            }
+                                        },
+                                        {
+                                            "batch": {
+                                                "name": "Vegetation Prepass"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+
+                    {
+                        "copy": {
+                            "name": "Copy ZBuffer",
+                            "from": {
+                                "tex": "ZBuffer",
+                                "bits": "Depth|Stencil"
                             },
-                            {
-                                "name": "AverageLumBuffer",
-                                "stage": "PixelShaderRead"
-                            },
-                            {
-                                "name": "LightBuffer",
-                                "stage": "PixelShaderRead"
-                            },
-                            {
-                                "name": "ZBufferCopy",
-                                "stage": "PixelShaderRead"
+                            "to": {
+                                "tex": "Depth",
+                                "bits": "Depth|Stencil"
                             }
-                        ],
+                        }
+                    }
+                ]
+            },
 
-                        "fullscreen_effect": {
-                            "name": "Finalize",
-                            "shader_state": {
-                                "shader": "finalize",
-                                "variables": [
-                                    {
-                                        "semantic": "LuminanceTexture",
-                                        "value": "AverageLumBuffer"
-                                    },
-                                    {
-                                        "semantic": "DepthTexture",
-                                        "value": "ZBufferCopy"
-                                    },
-                                    {
-                                        "semantic": "ColorTexture",
-                                        "value": "LightBuffer"
-                                    },
-                                    {
-                                        "semantic": "BloomTexture",
-                                        "value": "BloomBufferBlurred"
-                                    }
-                                ]
-                            },
-                            "size_from_texture": "ColorBuffer"
+            {
+                "name": "Forward shading and post effects",
+                "wait_for_submissions": [ "Compute Prepass", "Prepass" ],
+                "queue": "Graphics",
+                "_comment": "Main graphics submission",
+                "ops": [
+                    {
+                        "pass": {
+                            "name": "ForwardRendering",
+                            "attachments": [
+                                {
+                                    "name": "ZBuffer",
+                                    "store": false,
+                                    "load": true,
+                                    "load_stencil": true
+                                },
+                                {
+                                    "name": "LightBuffer",
+                                    "clear": [ 0, 0, 0, 0 ],
+                                    "store": true
+                                },
+                                {
+                                    "name": "NormalBuffer",
+                                    "store": true,
+                                    "clear": [ 0, 0, 0, 0 ]
+                                },
+                                {
+                                    "name": "SpecularBuffer",
+                                    "store": true,
+                                    "clear": [ 0, 0, 0, 0 ]
+                                }
+
+                            ],
+
+                            "subpasses": [
+                                {
+                                    "name": "OpaquePass",
+                                    "subpass_dependencies": [],
+                                    "attachments": [ "LightBuffer" ],
+
+                                    "resource_dependencies": [
+                                        {
+                                            "name": "SunShadowDepth",
+                                            "stage": "PixelShaderRead"
+                                        }
+                                    ],
+
+                                    "depth": "ZBuffer",
+                                    "ops": [
+                                        {
+                                            "subgraph": {
+                                                "name": "Terrain Resolve"
+                                            }
+                                        },
+                                        {
+                                            "subgraph": {
+                                                "name": "Vegetation Render"
+                                            }
+                                        },
+                                        {
+                                            "batch": {
+                                                "name": "FlatGeometryLit"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Skypass",
+                                    "subpass_dependencies": [ "OpaquePass" ],
+                                    "attachments": [ "LightBuffer" ],
+                                    "depth": "ZBuffer",
+                                    "ops": [
+                                        {
+                                            "batch": {
+                                                "name": "Background"
+                                            }
+                                        }
+                                    ]
+
+                                },
+                                {
+                                    "name": "AlphaPass",
+                                    "_comment": "TODO: Move this to a separate pass later on",
+                                    "subpass_dependencies": [ "Skypass" ],
+                                    "attachments": [ "LightBuffer" ],
+                                    "depth": "ZBuffer",
+                                    "ops": [
+                                        {
+                                            "batch": {
+                                                "name": "FlatGeometryAlphaLit"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }                       
+                    },
+
+                    {
+                        "subgraph": {
+                            "name": "Vegetation Copy Indirect"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "HBAO"
+                        }
+                    },
+                    {
+                        "subgraph": {
+                            "name": "Fog Compute"
                         }
                     },
 
-                    "subpass": {
-                        "name": "Direct",
-                        "subpass_dependencies": [
-                            "FinalizePass"
-                        ],
-                        "depth": "ZBuffer",
-                        "attachments": [
-                            "ColorBuffer"
-                        ],
+                    {
+                        "subgraph": {
+                            "name": "Lights Combine"
+                        }
+                    },
 
-                        "resource_dependencies": [
-                            {
-                                "name": "ZBufferCopy",
-                                "stage": "PixelShaderRead"
+                    {
+                        "subgraph": {
+                            "name": "Histogram"
+                        }
+                    },
+
+                    {
+                        "subgraph": {
+                            "name": "Bloom"
+                        }
+                    },
+
+                    {
+                        "pass": {
+                            "name": "PostEffects",
+                            "attachments": [
+                                {
+                                    "name": "ColorBuffer",
+                                    "load": true,
+                                    "store": true
+                                },
+                                {
+                                    "name": "ZBuffer",
+                                    "load": true,
+                                    "store": false
+                                }
+                            ],
+
+                            "subpasses": [
+                                {
+                                    "name": "FinalizePass",
+                                    "subpass_dependencies": [],
+                                    "attachments": [
+                                        "ColorBuffer"
+                                    ],
+
+                                    "resource_dependencies": [
+                                        {
+                                            "name": "BloomBufferBlurred",
+                                            "stage": "PixelShaderRead"
+                                        },
+                                        {
+                                            "name": "AverageLumBuffer",
+                                            "stage": "PixelShaderRead"
+                                        },
+                                        {
+                                            "name": "LightBuffer",
+                                            "stage": "PixelShaderRead"
+                                        },
+                                        {
+                                            "name": "Depth",
+                                            "stage": "PixelShaderRead"
+                                        }
+                                    ],
+
+                                    "ops": [
+                                        {
+                                            "fullscreen_effect": {
+                                                "name": "Finalize",
+                                                "shader_state": {
+                                                    "shader": "finalize",
+                                                    "variables": [
+                                                        {
+                                                            "semantic": "LuminanceTexture",
+                                                            "value": "AverageLumBuffer"
+                                                        },
+                                                        {
+                                                            "semantic": "DepthTexture",
+                                                            "value": "Depth"
+                                                        },
+                                                        {
+                                                            "semantic": "ColorTexture",
+                                                            "value": "LightBuffer"
+                                                        },
+                                                        {
+                                                            "semantic": "BloomTexture",
+                                                            "value": "BloomBufferBlurred"
+                                                        }
+                                                    ]
+                                                },
+                                                "size_from_texture": "ColorBuffer"
+                                            }
+                                        }
+                                    ]
+                                },
+
+                                {
+                                    "name": "Direct",
+                                    "subpass_dependencies": [
+                                        "FinalizePass"
+                                    ],
+                                    "depth": "ZBuffer",
+                                    "attachments": [
+                                        "ColorBuffer"
+                                    ],
+
+                                    "resource_dependencies": [
+                                        {
+                                            "name": "Depth",
+                                            "stage": "PixelShaderRead"
+                                        }
+                                    ],
+
+                                    "ops": [
+                                        {
+                                            "batch": {
+                                                "name": "DirectToColor"
+                                            }
+                                        },
+                                        {
+                                            "batch": {
+                                                "name": "ParticleUnlit"
+                                            }
+                                        },
+                                        {
+                                            "batch": {
+                                                "name": "ParticleLit"
+                                            }
+                                        },
+                                        {
+                                            "batch": {
+                                                "name": "Debug Shapes"
+                                            }
+                                        },
+                                        {
+                                            "batch": {
+                                                "name": "Im3D"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+
+                    {
+                        "blit": {
+                            "name": "ColorBuffer Copy",
+                            "from": {
+                                "tex": "ColorBuffer"
+                            },
+                            "to": {
+                                "tex": "ColorBufferNoGUI"
                             }
-                        ],
+                        }
+                    },
 
-                        "batch": "DirectToColor",
-                        "batch": "ParticleUnlit",
-                        "batch": "ParticleLit",
-                        "subgraph": {
-                            "name": "Debug Shapes"
-                        },
-                        "subgraph": {
-                            "name": "Im3D"
+                    {
+                        "pass": {
+                            "name": "GUI",
+                            "attachments": [
+                                {
+                                    "name": "ColorBuffer",
+                                    "load": true,
+                                    "store": true
+                                },
+                                {
+                                    "name": "ZBuffer",
+                                    "store": false,
+                                    "load": true
+                                }
+                            ],
+
+                            "subpasses": [
+                                {
+                                    "name": "DynUI",
+                                    "depth": "ZBuffer",
+                                    "attachments": [
+                                        "ColorBuffer"
+                                    ],
+
+                                    "resource_dependencies": [
+                                        {
+                                            "name": "Depth",
+                                            "stage": "PixelShaderRead"
+                                        }
+                                    ],
+
+                                    "ops": [
+                                        {
+                                            "subgraph": {
+                                                "name": "ImGUI"
+                                            }
+                                        },
+                                        {
+                                            "subgraph": {
+                                                "name": "StaticUI To Backbuffer"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    },
+
+                    {
+                        "swap": {
+                            "name": "Swap"
+                        }
+                    },
+
+                    {
+                        "blit": {
+                            "name": "Copy To Backbuffer",
+                            "from": {
+                                "tex": "ColorBuffer"
+                            },
+                            "to": {
+                                "tex": "__WINDOW__"
+                            }
                         }
                     }
-                },
-
-                "blit": {
-                    "name": "ColorBuffer Copy",
-                    "from": "ColorBuffer",
-                    "to": "ColorBufferNoGUI"
-                },
-
-                "pass": {
-                    "name": "GUI",
-                    "attachments": [
-                        {
-                            "name": "ColorBuffer",
-                            "load": true,
-                            "store": true
-                        },
-                        {
-                            "name": "ZBuffer",
-                            "store": false,
-                            "load": true
-                        }
-                    ],
-
-                    "subpass": {
-                        "name": "DynUI",
-                        "depth": "ZBuffer",
-                        "attachments": [
-                            "ColorBuffer"
-                        ],
-
-                        "resource_dependencies": [
-                            {
-                                "name": "ZBufferCopy",
-                                "stage": "PixelShaderRead"
-                            }
-                        ],
-                        "subgraph": {
-                            "name": "ImGUI"
-                        },
-                        "subgraph": {
-                            "name": "StaticUI To Backbuffer"
-                        },
-                    }
-                },
-
-                "_comment": "Swap just before we need the backbuffer",
-                "swap": {
-                    "name": "Swap"
-                },
-
-                "_comment": "------------ COPY TO BACKBUFFER ------------",
-                "blit": {
-                    "name": "Copy To Backbuffer",
-                    "from": "ColorBuffer",
-                    "to": "__WINDOW__"
-                }
+                ]
             }
-        }
+        ]
     }
 }

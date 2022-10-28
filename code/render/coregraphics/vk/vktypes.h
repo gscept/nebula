@@ -69,7 +69,7 @@ public:
     /// convert vulkan format back to nebula format
     static CoreGraphics::PixelFormat::Code AsNebulaPixelFormat(VkFormat f);
     /// convert image aspects to Vulkan
-    static VkImageAspectFlags AsVkImageAspectFlags(const CoreGraphics::ImageBits aspect);
+    static VkImageAspectFlags AsVkImageAspectFlags(const CoreGraphics::ImageBits bits);
     /// convert shader visibility to vulkan
     static VkShaderStageFlags AsVkShaderVisibility(const CoreGraphics::ShaderVisibility vis);
     /// convert image layout to vulkan

@@ -283,7 +283,7 @@ SetupBufferConstants(const Ptr<Frame::FrameScript>& frameScript)
     state.tickParams.NormalBuffer = TextureGetBindlessHandle(frameScript->GetTexture("NormalBuffer"));
     state.tickParams.SpecularBuffer = TextureGetBindlessHandle(frameScript->GetTexture("SpecularBuffer"));
     state.tickParams.DepthBuffer = TextureGetBindlessHandle(frameScript->GetTexture("ZBuffer"));
-    state.tickParams.DepthBufferCopy = TextureGetBindlessHandle(frameScript->GetTexture("ZBufferCopy"));
+    state.tickParams.DepthBufferCopy = TextureGetBindlessHandle(frameScript->GetTexture("Depth"));
 }
 
 //------------------------------------------------------------------------------

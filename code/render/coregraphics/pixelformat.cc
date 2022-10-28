@@ -439,4 +439,37 @@ PixelFormat::IsDepthFormat(Code code)
     }
     return false;
 }
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+bool
+PixelFormat::IsStencilFormat(Code code)
+{
+    switch (code)
+    {
+        case PixelFormat::D24S8:
+        case PixelFormat::D32S8:            return true;
+    }
+    return false;
+}
+
+
+//------------------------------------------------------------------------------
+/**
+*/
+CoreGraphics::ImageBits
+PixelFormat::ToImageBits(Code code)
+{
+    bool isDepth = CoreGraphics::PixelFormat::IsDepthFormat(code);
+    bool isStencil = CoreGraphics::PixelFormat::IsStencilFormat(code);
+
+    CoreGraphics::ImageBits ret = CoreGraphics::ImageBits::Auto;
+    ret |= isDepth ? CoreGraphics::ImageBits::DepthBits : CoreGraphics::ImageBits::Auto;
+    ret |= isStencil ? CoreGraphics::ImageBits::StencilBits : CoreGraphics::ImageBits::Auto;
+    if (ret == CoreGraphics::ImageBits::Auto)
+        ret = CoreGraphics::ImageBits::ColorBits;
+    return ret;
+}
 } // namespace CoreGraphics

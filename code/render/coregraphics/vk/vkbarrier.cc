@@ -67,8 +67,9 @@ CreateBarrier(const BarrierCreateInfo& info)
         vkInfo.imageBarriers[vkInfo.numImageBarriers].dstAccessMask = VkTypes::AsVkAccessFlags(info.toStage);
 
         const TextureSubresourceInfo& subres = info.textures[i].subres;
-        bool isDepth = (subres.aspect & CoreGraphics::ImageBits::DepthBits) == CoreGraphics::ImageBits::DepthBits;
-        vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.aspectMask = VkTypes::AsVkImageAspectFlags(subres.aspect);
+        n_assert(subres.bits != ImageBits::Auto);
+        bool isDepthStencil = AnyBits(subres.bits, CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits);
+        vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.aspectMask = VkTypes::AsVkImageAspectFlags(subres.bits);
         vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.baseMipLevel = subres.mip;
         vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.levelCount = subres.mipCount;
         vkInfo.imageBarriers[vkInfo.numImageBarriers].subresourceRange.baseArrayLayer = subres.layer;
@@ -83,8 +84,8 @@ CreateBarrier(const BarrierCreateInfo& info)
             vkInfo.imageBarriers[vkInfo.numImageBarriers].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         else
             vkInfo.imageBarriers[vkInfo.numImageBarriers].dstQueueFamilyIndex = CoreGraphics::GetQueueIndex(info.toQueue);
-        vkInfo.imageBarriers[vkInfo.numImageBarriers].oldLayout = VkTypes::AsVkImageLayout(info.fromStage, isDepth);
-        vkInfo.imageBarriers[vkInfo.numImageBarriers].newLayout = VkTypes::AsVkImageLayout(info.toStage, isDepth);
+        vkInfo.imageBarriers[vkInfo.numImageBarriers].oldLayout = VkTypes::AsVkImageLayout(info.fromStage, isDepthStencil);
+        vkInfo.imageBarriers[vkInfo.numImageBarriers].newLayout = VkTypes::AsVkImageLayout(info.toStage, isDepthStencil);
         vkInfo.numImageBarriers++;
 
         rts.Append(info.textures[i].tex);

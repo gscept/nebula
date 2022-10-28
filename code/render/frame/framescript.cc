@@ -212,7 +212,7 @@ FrameScript::Build()
         uint mips = CoreGraphics::TextureGetNumMips(tex);
 
         CoreGraphics::TextureSubresourceInfo subres;
-        subres.aspect = isDepth ? (CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits) : CoreGraphics::ImageBits::ColorBits;
+        subres.bits = isDepth ? (CoreGraphics::ImageBits::DepthBits | CoreGraphics::ImageBits::StencilBits) : CoreGraphics::ImageBits::ColorBits;
         subres.layer = 0;
         subres.layerCount = layers;
         subres.mip = 0;
@@ -224,9 +224,9 @@ FrameScript::Build()
             if (AllBits(usage, CoreGraphics::RenderTexture))
             {
                 if (isDepth)
-                    arr.Append(FrameOp::TextureDependency{ CoreGraphics::PipelineStage::DepthStencilWrite, DependencyIntent::Read, subres });
+                    arr.Append(FrameOp::TextureDependency{ CoreGraphics::PipelineStage::DepthStencilRead, DependencyIntent::Read, subres });
                 else
-                    arr.Append(FrameOp::TextureDependency{ CoreGraphics::PipelineStage::ColorWrite, DependencyIntent::Read, subres });
+                    arr.Append(FrameOp::TextureDependency{ CoreGraphics::PipelineStage::ColorRead, DependencyIntent::Read, subres });
             }
             else
             {
@@ -241,9 +241,6 @@ FrameScript::Build()
         this->ops[i]->Build(this->buildAllocator, this->compiled, this->events, this->barriers, buffers, textures);
     }
 
-    // setup a post-frame barrier to reset the resource state of all resources back to their created original (ShaderRead for RenderTexture, General for RWTexture
-    Util::Array<CoreGraphics::TextureBarrier> texturesBarr;
-
     for (i = 0; i < textures.Size(); i++)
     {
         const CoreGraphics::TextureId& tex = textures.KeyAtIndex(i);
@@ -252,9 +249,9 @@ FrameScript::Build()
         CoreGraphics::TextureUsage usage = CoreGraphics::TextureGetUsage(tex);
 
         const FrameOp::TextureDependency& dep = deps.Back();
-        const CoreGraphics::TextureSubresourceInfo& info = dep.subres;
+        CoreGraphics::TextureSubresourceInfo info = dep.subres;
 
-        // The last thing we do with present is to 
+        // The last thing we do with present is to transition to present
         CoreGraphics::PipelineStage fromStage, toStage;
         fromStage = dep.stage;
         if (tex == window)
@@ -264,9 +261,9 @@ FrameScript::Build()
             if (AllBits(usage, CoreGraphics::RenderTexture))
             {
                 if (isDepth)
-                    toStage = CoreGraphics::PipelineStage::DepthStencilWrite;
+                    toStage = CoreGraphics::PipelineStage::DepthStencilRead;
                 else
-                    toStage = CoreGraphics::PipelineStage::ColorWrite;
+                    toStage = CoreGraphics::PipelineStage::ColorRead;
             }
             else
             {

@@ -1,0 +1,562 @@
+{
+    "title": "framescript",
+    "type": "object",
+    "properties": {
+
+
+        "framescript": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "version": {
+                    "type": "number"
+                },
+                "engine": {
+                    "type": "string"
+                },
+                "textures": {
+                    "type": "array",
+                    "items": {
+                        "anyOf": [
+                            {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "pattern": "^(__WINDOW__)$"
+                                    },
+                                    "_comment": {
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "format": {
+                                        "type": "string"
+                                    },
+                                    "relative": {
+                                        "type": "boolean"
+                                    },
+                                    "usage": {
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "pattern": "^(Texture1D|Texture2D|Texture3D|TextureCube)(Array)?$"
+                                    },
+                                    "width": {
+                                        "type": "number",
+                                        "minimum": 0.1
+                                    },
+                                    "height": {
+                                        "type": "number",
+                                        "minimum": 0.1
+                                    },
+                                    "layers": {
+                                        "type": "number",
+                                        "minimum": 1,
+                                        "maximum": 1000
+                                    },
+                                    "samples": {
+                                        "type": "number",
+                                        "minimum": 1,
+                                        "maximum": 16
+                                    },
+                                    "mips": {
+                                        "oneOf": [
+                                            {
+                                                "type": "number",
+                                                "minimum": 1,
+                                                "maximum": 1000
+                                            },
+                                            {
+                                                "type": "string",
+                                                "pattern": "^(auto)$"
+                                            }
+                                        ]
+                                    },
+                                    "_comment": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "name",
+                                    "format",
+                                    "usage"
+                                ]
+                            }
+                        ]
+                    }
+                },
+                "_comment": {
+                    "type": "string"
+                },
+                "submissions": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "_comment": {
+                                "type": "string"
+                            },
+                            "queue": {
+                                "type": "string",
+                                "pattern": "^(Graphics|Compute)$"
+                            },
+                            "wait_for_queue": {
+                                "type": "string",
+                                "pattern": "^(Graphics|Compute)$"
+                            },
+                            "wait_for_submissions": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "ops": {
+                                "type": "array",
+                                "items": {
+                                    "anyOf": [
+                                        {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "pass": {
+                                                    "type": "object",
+                                                    "required": [ "name", "subpasses" ],
+
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "_comment": {
+                                                            "type": "string"
+                                                        },
+                                                        "attachments": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "name": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "store": {
+                                                                        "type": "boolean"
+                                                                    },
+                                                                    "store_stencil": {
+                                                                        "type": "boolean"
+                                                                    },
+                                                                    "load": {
+                                                                        "type": "boolean"
+                                                                    },
+                                                                    "load_stencil": {
+                                                                        "type": "boolean"
+                                                                    },
+                                                                    "clear": {
+                                                                        "type": "array",
+                                                                        "items": {
+                                                                            "type": "number",
+                                                                            "length": 4
+                                                                        }
+                                                                    },
+                                                                    "clear_depth": {
+                                                                        "type": "number",
+                                                                        "minimum": 0,
+                                                                        "maximum": 1
+                                                                    },
+                                                                    "clear_stencil": {
+                                                                        "type": "number",
+                                                                        "minimum": 0,
+                                                                        "maximum": 1
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        "subpasses": {
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "object",
+                                                                "additionalProperties": false,
+                                                                "properties": {
+                                                                    "name": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "_comment": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "subpass_dependencies": {
+                                                                        "type": "array",
+                                                                        "items": {
+                                                                            "type": "string"
+                                                                        }
+                                                                    },
+                                                                    "attachments": {
+                                                                        "type": "array",
+                                                                        "items": {
+                                                                            "type": "string"
+                                                                        }
+                                                                    },
+
+                                                                    "resource_dependencies": {
+                                                                        "type": "array",
+                                                                        "items": {
+                                                                            "type": "object",
+                                                                            "properties": {
+                                                                                "name": {
+                                                                                    "type": "string"
+                                                                                },
+                                                                                "stage": {
+                                                                                    "enum": [
+                                                                                        "Top",
+                                                                                        "Bottom",
+                                                                                        "IndirectRead",
+                                                                                        "IndexRead",
+                                                                                        "VertexRead",
+                                                                                        "UniformGraphicsRead",
+                                                                                        "UniformComputeRead",
+                                                                                        "InputAttachmentRead",
+                                                                                        "VertexShaderRead",
+                                                                                        "VertexShaderWrite",
+                                                                                        "HullShaderRead",
+                                                                                        "HullShaderWrite",
+                                                                                        "DomainShaderRead",
+                                                                                        "DomainShaderWrite",
+                                                                                        "GeometryShaderRead",
+                                                                                        "GeometryShaderWrite",
+                                                                                        "PixelShaderRead",
+                                                                                        "PixelShaderWrite",
+                                                                                        "ComputeShaderRead",
+                                                                                        "ComputeShaderWrite",
+                                                                                        "ColorAttachmentRead",
+                                                                                        "ColorAttachmentWrite",
+                                                                                        "DepthAttachmentRead",
+                                                                                        "DepthAttachmentWrite",
+                                                                                        "TransferAttachmentRead",
+                                                                                        "TransferAttachmentWrite",
+                                                                                        "HostAttachmentRead",
+                                                                                        "HostAttachmentWrite",
+                                                                                        "MemoryAttachmentRead",
+                                                                                        "MemoryAttachmentWrite",
+                                                                                        "Present"
+                                                                                    ]
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    "resolves": {
+                                                                        "type": "array",
+                                                                        "items": {
+                                                                            "type": "string"
+                                                                        }
+                                                                    },
+                                                                    "depth": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "ops": {
+                                                                        "type": "array",
+                                                                        "items": {
+                                                                            "anyOf": [
+                                                                                {
+                                                                                    "type": "object",
+                                                                                    "additionalProperties": false,
+                                                                                    "properties": {
+                                                                                        "batch": {
+                                                                                            "type": "object",
+                                                                                            "additionalProperties": false,
+                                                                                            "properties": {
+                                                                                                "name": {
+                                                                                                    "type": "string"
+                                                                                                },
+                                                                                                "_comment": {
+                                                                                                    "type": "string"
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "type": "object",
+                                                                                    "additionalProperties": false,
+                                                                                    "properties": {
+                                                                                        "subgraph": {
+                                                                                            "type": "object",
+                                                                                            "additionalProperties": false,
+                                                                                            "properties": {
+                                                                                                "name": {
+                                                                                                    "type": "string"
+                                                                                                },
+                                                                                                "_comment": {
+                                                                                                    "type": "string"
+                                                                                                }
+                                                                                            },
+                                                                                            "required": [ "name" ]
+                                                                                        }
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "type": "object",
+                                                                                    "additionalProperties": false,
+                                                                                    "properties": {
+                                                                                        "fullscreen_effect": {
+                                                                                            "type": "object",
+                                                                                            "additionalProperties": false,
+                                                                                            "properties": {
+                                                                                                "name": {
+                                                                                                    "type": "string"
+                                                                                                },
+                                                                                                "_comment": {
+                                                                                                    "type": "string"
+                                                                                                },
+                                                                                                "size_from_texture": {
+                                                                                                    "type": "string"
+                                                                                                },
+                                                                                                "shader_state": {
+                                                                                                    "type": "object",
+                                                                                                    "properties": {
+                                                                                                        "shader": {
+                                                                                                            "type": "string"
+                                                                                                        },
+                                                                                                        "variables": {
+                                                                                                            "type": "array",
+                                                                                                            "items": {
+                                                                                                                "type": "object",
+                                                                                                                "properties": {
+                                                                                                                    "semantic": {
+                                                                                                                        "type": "string"
+                                                                                                                    },
+                                                                                                                    "value": {
+                                                                                                                        "type": "string"
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            ]
+                                                                        }
+
+                                                                    }
+                                                                },
+                                                                "required": [ "name", "ops" ]
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "subgraph": {
+
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "_comment": {
+                                                            "type": "string"
+                                                        }
+                                                    },
+                                                    "required": [ "name" ]
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "resolve": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "_comment": {
+                                                            "type": "string"
+                                                        },
+                                                        "from": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "bits": {
+                                                                    "type": "string",
+                                                                    "pattern": "^((Depth|Stencil|Color)(\\|(Depth|Stencil|Color))*)|(Auto)$"
+                                                                },
+                                                                "tex": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "required": [ "tex" ]
+                                                        },
+                                                        "to": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "bits": {
+                                                                    "type": "string",
+                                                                    "pattern": "^((Depth|Stencil|Color)(\\|(Depth|Stencil|Color))*)|(Auto)$"
+                                                                },
+                                                                "tex": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "required": [ "tex" ]
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+
+                                        {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "copy": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "_comment": {
+                                                            "type": "string"
+                                                        },
+                                                        "from": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "bits": {
+                                                                    "type": "string",
+                                                                    "pattern": "^((Depth|Stencil|Color)(\\|(Depth|Stencil|Color))*)|(Auto)$"
+                                                                },
+                                                                "tex": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "required": [ "tex" ]
+                                                        },
+                                                        "to": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "bits": {
+                                                                    "type": "string",
+                                                                    "pattern": "^((Depth|Stencil|Color)(\\|(Depth|Stencil|Color))*)|(Auto)$"
+                                                                },
+                                                                "tex": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "required": [ "tex" ]
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+
+                                        {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "blit": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "_comment": {
+                                                            "type": "string"
+                                                        },
+                                                        "from": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "bits": {
+                                                                    "type": "string",
+                                                                    "pattern": "^((Depth|Stencil|Color)(\\|(Depth|Stencil|Color))*)|(Auto)$"
+                                                                },
+                                                                "tex": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "required": [ "tex" ]
+                                                        },
+                                                        "to": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "bits": {
+                                                                    "type": "string",
+                                                                    "pattern": "^((Depth|Stencil|Color)(\\|(Depth|Stencil|Color))*)|(Auto)$"
+                                                                },
+                                                                "tex": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "required": [ "tex" ]
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+
+                                        {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "mipmap": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "_comment": {
+                                                            "type": "string"
+                                                        },
+                                                        "texture": {
+                                                            "type": "string"
+                                                        },
+                                                        "queue": {
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                                "swap": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "name": {
+                                                            "type": "string"
+                                                        },
+                                                        "_comment": {
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
