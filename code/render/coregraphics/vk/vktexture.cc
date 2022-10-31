@@ -1443,7 +1443,7 @@ TextureClearColor(const CoreGraphics::CmdBufferId cmd, const CoreGraphics::Textu
 {
     VkClearColorValue clear;
     VkImageSubresourceRange vksubres;
-    vksubres.aspectMask = VkTypes::AsVkImageAspectFlags(subres.aspect);
+    vksubres.aspectMask = VkTypes::AsVkImageAspectFlags(subres.bits);
     vksubres.baseArrayLayer = subres.layer;
     vksubres.layerCount = subres.layerCount;
     vksubres.baseMipLevel = subres.mip;
@@ -1467,7 +1467,7 @@ TextureClearDepthStencil(const CoreGraphics::CmdBufferId cmd, const CoreGraphics
 {
     VkClearDepthStencilValue clear;
     VkImageSubresourceRange vksubres;
-    vksubres.aspectMask = VkTypes::AsVkImageAspectFlags(subres.aspect);
+    vksubres.aspectMask = VkTypes::AsVkImageAspectFlags(subres.bits);
     vksubres.baseArrayLayer = subres.layer;
     vksubres.layerCount = subres.layerCount;
     vksubres.baseMipLevel = subres.mip;
