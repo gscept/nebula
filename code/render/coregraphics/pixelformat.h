@@ -14,6 +14,7 @@
 //------------------------------------------------------------------------------
 #include "core/types.h"
 #include "util/string.h"
+#include "coregraphics/config.h"
 
 namespace CoreGraphics
 {
@@ -95,6 +96,11 @@ public:
     static uint ToILType(Code code);
     /// return true if depth format
     static bool IsDepthFormat(Code code);
+    /// return true if depth format
+    static bool IsStencilFormat(Code code);
+
+    /// Return Image bits from format
+    static CoreGraphics::ImageBits ToImageBits(Code code);
 };
 
 } // namespace CoreGraphics

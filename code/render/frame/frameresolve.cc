@@ -16,6 +16,8 @@ namespace Frame
 /**
 */
 FrameResolve::FrameResolve()
+    : fromBits(CoreGraphics::ImageBits::ColorBits)
+    , toBits(CoreGraphics::ImageBits::ColorBits)
 {
 }
 

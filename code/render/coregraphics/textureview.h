@@ -24,7 +24,7 @@ struct TextureViewCreateInfo
     IndexT startLayer = 0;
     SizeT numLayers = 1;
     PixelFormat::Code format = PixelFormat::InvalidPixelFormat;
-    ImageBits aspect = ImageBits::Auto;
+    ImageBits bits = ImageBits::ColorBits;
     CoreGraphics::TextureSwizzle swizzle = { TextureChannelMapping::None, TextureChannelMapping::None, TextureChannelMapping::None, TextureChannelMapping::None };
 };
 

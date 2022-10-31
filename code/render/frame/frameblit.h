@@ -27,11 +27,13 @@ public:
         Util::StringAtom name;
 #endif
 
+        CoreGraphics::ImageBits fromBits, toBits;
         CoreGraphics::TextureId from, to;
     };
 
     FrameOp::Compiled* AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator);
 
+    CoreGraphics::ImageBits fromBits, toBits;
     CoreGraphics::TextureId from, to;
 };
 

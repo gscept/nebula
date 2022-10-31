@@ -14,6 +14,8 @@ namespace Frame
 /**
 */
 FrameBlit::FrameBlit()
+    : fromBits(CoreGraphics::ImageBits::ColorBits)
+    , toBits(CoreGraphics::ImageBits::ColorBits)
 {
     // empty
 }
@@ -38,6 +40,8 @@ FrameBlit::AllocCompiled(Memory::ArenaAllocator<BIG_CHUNK>& allocator)
     ret->name = this->name;
 #endif
 
+    ret->fromBits = this->fromBits;
+    ret->toBits = this->toBits;
     ret->from = this->from;
     ret->to = this->to;
     return ret;
@@ -67,7 +71,7 @@ FrameBlit::CompiledImpl::Run(const CoreGraphics::CmdBufferId cmdBuf, const Index
 
     N_CMD_SCOPE(cmdBuf, NEBULA_MARKER_TRANSFER, this->name.Value());
 
-    CoreGraphics::CmdBlit(cmdBuf, this->from, fromRegion, 0, 0, this->to, toRegion, 0, 0);
+    CoreGraphics::CmdBlit(cmdBuf, this->from, fromRegion, this->fromBits, 0, 0, this->to, toRegion, this->toBits, 0, 0);
 }
 
 //------------------------------------------------------------------------------

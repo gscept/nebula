@@ -621,8 +621,8 @@ CmdBarrier(
         vkBar.dstAccessMask = VkTypes::AsVkAccessFlags(toStage);
 
         const TextureSubresourceInfo& subres = nebBar.subres;
-        bool isDepth = (subres.aspect & CoreGraphics::ImageBits::DepthBits) == 1;
-        vkBar.subresourceRange.aspectMask = VkTypes::AsVkImageAspectFlags(subres.aspect);
+        bool isDepth = (subres.bits & CoreGraphics::ImageBits::DepthBits) == 1;
+        vkBar.subresourceRange.aspectMask = VkTypes::AsVkImageAspectFlags(subres.bits);
         vkBar.subresourceRange.baseMipLevel = subres.mip;
         vkBar.subresourceRange.levelCount = subres.mipCount;
         vkBar.subresourceRange.baseArrayLayer = subres.layer;
@@ -854,6 +854,7 @@ CmdResolve(const CmdBufferId id, const CoreGraphics::TextureId source, const Cor
     VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
     VkImage vkSrc = TextureGetVkImage(source);
     VkImage vkDst = TextureGetVkImage(dest);
+
     VkImageResolve resolve;
     TextureDimensions dims = TextureGetDimensions(source);
     resolve.dstOffset = { destCopy.region.left, destCopy.region.top, 0 };
@@ -861,14 +862,17 @@ CmdResolve(const CmdBufferId id, const CoreGraphics::TextureId source, const Cor
     resolve.extent.width = sourceCopy.region.width();
     resolve.extent.height = sourceCopy.region.height();
     resolve.extent.depth = 1;
-    resolve.dstSubresource.aspectMask = VkTypes::AsVkImageAspectFlags(destCopy.bits);
-    resolve.dstSubresource.baseArrayLayer = 0;
-    resolve.dstSubresource.layerCount = 1;
-    resolve.dstSubresource.mipLevel = 0;
+    n_assert(destCopy.bits != CoreGraphics::ImageBits::Auto && sourceCopy.bits != CoreGraphics::ImageBits::Auto);
     resolve.srcSubresource.aspectMask = VkTypes::AsVkImageAspectFlags(sourceCopy.bits);
     resolve.srcSubresource.baseArrayLayer = 0;
     resolve.srcSubresource.layerCount = 1;
     resolve.srcSubresource.mipLevel = 0;
+
+    resolve.dstSubresource.aspectMask = VkTypes::AsVkImageAspectFlags(destCopy.bits);
+    resolve.dstSubresource.baseArrayLayer = 0;
+    resolve.dstSubresource.layerCount = 1;
+    resolve.dstSubresource.mipLevel = 0;
+    
     vkCmdResolveImage(cmdBuf, vkSrc, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vkDst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &resolve);
 }
 
@@ -890,12 +894,13 @@ CmdCopy(
     Util::FixedArray<VkImageCopy> copies(from.Size());
     for (IndexT i = 0; i < copies.Size(); i++)
     {
+        n_assert(from[i].bits != ImageBits::Auto && to[i].bits != ImageBits::Auto);
         VkImageCopy& copy = copies[i];
-        copy.dstOffset = { to[i].region.left, to[i].region.top, 0 };
-        copy.dstSubresource = { VkTypes::AsVkImageAspectFlags(to[i].bits), (uint32_t)to[i].mip, (uint32_t)to[i].layer, 1 };
-        copy.extent = { (uint32_t)to[i].region.width(), (uint32_t)to[i].region.height(), 1 };
-        copy.srcOffset = { from[i].region.left, from[i].region.top, 0 };
         copy.srcSubresource = { VkTypes::AsVkImageAspectFlags(from[i].bits), (uint32_t)from[i].mip, (uint32_t)from[i].layer, 1 };
+        copy.srcOffset = { from[i].region.left, from[i].region.top, 0 };
+        copy.dstSubresource = { VkTypes::AsVkImageAspectFlags(to[i].bits), (uint32_t)to[i].mip, (uint32_t)to[i].layer, 1 };
+        copy.dstOffset = { to[i].region.left, to[i].region.top, 0 };
+        copy.extent = { (uint32_t)to[i].region.width(), (uint32_t)to[i].region.height(), 1 };
     }
 
     VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
@@ -1013,24 +1018,26 @@ CmdBlit(
     const CmdBufferId id
     , const CoreGraphics::TextureId from
     , const Math::rectangle<SizeT>& fromRegion
+    , const CoreGraphics::ImageBits fromBits
     , IndexT fromMip
     , IndexT fromLayer
     , const CoreGraphics::TextureId to
     , const Math::rectangle<SizeT>& toRegion
+    , const CoreGraphics::ImageBits toBits
     , IndexT toMip
     , IndexT toLayer
 )
 {
     n_assert(from != CoreGraphics::InvalidTextureId && to != CoreGraphics::InvalidTextureId);
-    bool isDepth = PixelFormat::IsDepthFormat(CoreGraphics::TextureGetPixelFormat(from));
-    VkImageAspectFlags aspect = isDepth ? (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) : VK_IMAGE_ASPECT_COLOR_BIT;
+    n_assert(fromBits != CoreGraphics::ImageBits::Auto && toBits != CoreGraphics::ImageBits::Auto);
+
     VkImageBlit blit;
     blit.srcOffsets[0] = { fromRegion.left, fromRegion.top, 0 };
     blit.srcOffsets[1] = { fromRegion.right, fromRegion.bottom, 1 };
-    blit.srcSubresource = { aspect, (uint32_t)fromMip, (uint32_t)fromLayer, 1 };
+    blit.srcSubresource = { VkTypes::AsVkImageAspectFlags(fromBits), (uint32_t)fromMip, (uint32_t)fromLayer, 1 };
     blit.dstOffsets[0] = { toRegion.left, toRegion.top, 0 };
     blit.dstOffsets[1] = { toRegion.right, toRegion.bottom, 1 };
-    blit.dstSubresource = { aspect, (uint32_t)toMip, (uint32_t)toLayer, 1 };
+    blit.dstSubresource = { VkTypes::AsVkImageAspectFlags(toBits), (uint32_t)toMip, (uint32_t)toLayer, 1 };
 
     VkCommandBuffer cmdBuf = commandBuffers.GetUnsafe<CmdBuffer_VkCommandBuffer>(id.id24);
     vkCmdBlitImage(

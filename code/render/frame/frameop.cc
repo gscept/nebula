@@ -352,6 +352,7 @@ FrameOp::SetupSynchronization(
                 case CoreGraphics::PipelineStage::GeometryShaderWrite:
                 case CoreGraphics::PipelineStage::PixelShaderWrite:
                 case CoreGraphics::PipelineStage::ComputeShaderWrite:
+                case CoreGraphics::PipelineStage::AllShadersWrite:
                 case CoreGraphics::PipelineStage::ColorWrite:
                 case CoreGraphics::PipelineStage::DepthStencilWrite:
                 case CoreGraphics::PipelineStage::HostWrite:

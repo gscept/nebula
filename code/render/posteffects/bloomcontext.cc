@@ -133,6 +133,12 @@ BloomContext::Setup(const Ptr<Frame::FrameScript>& script)
                                    , CoreGraphics::PipelineStage::PixelShaderRead
                                    , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
                                });
+    lowpassOp->textureDeps.Add(bloomState.bloomBuffer,
+                               {
+                                   "BloomBuffer"
+                                   , CoreGraphics::PipelineStage::ColorWrite
+                                   , CoreGraphics::TextureSubresourceInfo::ColorNoMipNoLayer()
+                               });
 
     lowpassOp->func = [](const CoreGraphics::CmdBufferId cmdBuf, const IndexT frame, const IndexT bufferIndex)
     {

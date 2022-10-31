@@ -102,7 +102,7 @@ __ImplementEnumBitOperators(CoreGraphics::ShaderVisibility);
 
 enum class ImageBits
 {
-    Auto = 0,
+    Auto = 0, // Special value to be used only by framescript
     ColorBits = (1 << 0),
     DepthBits = (1 << 1),
     StencilBits = (1 << 2),
