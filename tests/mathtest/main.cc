@@ -9,6 +9,7 @@
 
 // tests
 #include "scalartest.h"
+#include "halftest.h"
 #include "vec3test.h"
 #include "vec4test.h"
 #include "mat4test.h"
@@ -43,6 +44,7 @@ NebulaMain(const Util::CommandLineArgs& args)
     // setup and run test runner
     Ptr<TestRunner> testRunner = TestRunner::Create();  
     testRunner->AttachTestCase(ScalarTest::Create());
+    testRunner->AttachTestCase(HalfTest::Create());
     testRunner->AttachTestCase(Vec3Test::Create());
     testRunner->AttachTestCase(Vec4Test::Create());
     testRunner->AttachTestCase(Mat4Test::Create());
