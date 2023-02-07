@@ -753,7 +753,7 @@ template<class TYPE>
 TYPE& 
 Array<TYPE>::Emplace()
 {
-// grow allocated space if exhausted
+    // grow allocated space if exhausted
     if (this->count == this->capacity)
     {
         this->Grow();
