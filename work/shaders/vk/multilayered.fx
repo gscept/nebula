@@ -43,8 +43,8 @@ void
 vsColored(
     [slot=0] in vec3 position,
     [slot=2] in vec2 uv,
-    [slot=1] in vec4 normal,
-    [slot=3] in vec3 tangent,
+    [slot=1] in vec3 normal,
+    [slot=3] in vec4 tangent,
     [slot=5] in vec4 color,
     out vec3 Tangent,
     out vec3 Normal,
@@ -59,8 +59,8 @@ vsColored(
     UV = vec2(uv.x * NumXTiles, uv.y * NumYTiles);
     Color = color;
     
-    Tangent = (Model * vec4(tangent, 0)).xyz;
-    Normal  = (Model * vec4(normal.xyz, 0)).xyz;
+    Tangent = (Model * vec4(tangent.xyz, 0)).xyz;
+    Normal  = (Model * vec4(normal, 0)).xyz;
     Sign    = tangent.w;
     WorldSpacePos = modelSpace.xyz;
 	ViewSpacePos  = View * modelSpace;
