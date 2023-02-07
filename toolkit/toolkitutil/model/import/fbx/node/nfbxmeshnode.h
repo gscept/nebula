@@ -26,7 +26,10 @@ public:
     typedef uint MeshMask;
 
     /// Setup node from FBX node
-    static void Setup(
+    static void Setup(SceneNode* node, fbxsdk::FbxNode* fbxNode);
+
+    /// Extract mesh
+    static void ExtractMesh(
         SceneNode* node
         , Util::Array<MeshBuilder>& meshes
         , const Util::Dictionary<fbxsdk::FbxNode*, SceneNode*>& nodeLookup

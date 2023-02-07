@@ -24,24 +24,33 @@ uint MeshCounter = 0;
 void 
 NFbxMeshNode::Setup(
     SceneNode* node
+    , fbxsdk::FbxNode* fbxNode
+)
+{
+    NFbxNode::Setup(node, fbxNode);
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+void 
+NFbxMeshNode::ExtractMesh(
+    SceneNode* node
     , Util::Array<MeshBuilder>& meshes
     , const Util::Dictionary<fbxsdk::FbxNode*, SceneNode*>& nodeLookup
     , fbxsdk::FbxNode* fbxNode
     , const ToolkitUtil::ExportFlags flags
 )
 {
-    NFbxNode::Setup(node, fbxNode);
-    FbxMesh* fbxMesh = fbxNode->GetMesh();
-
     node->mesh.meshIndex = meshes.Size();
-    
 
-    // Add a single mesh primitive for FBX nodes
+   // Add a single mesh primitive for FBX nodes
     MeshBuilder& mesh = meshes.Emplace();
 
     if (fbxNode->GetMaterialCount())
         node->mesh.material = fbxNode->GetMaterial(0)->GetName();
 
+    FbxMesh* fbxMesh = fbxNode->GetMesh();
     if (!fbxMesh->IsTriangleMesh())
         n_error("Node '%s' -> Mesh '%s' is not a triangle mesh. Make sure your exported meshes are triangulated!\n", fbxNode->GetName(), fbxMesh->GetName());
 
@@ -320,30 +329,28 @@ NFbxMeshNode::ExtractSkin(SceneNode* node, MeshBuilder& mesh, const Util::Dictio
             FbxNode* joint = cluster->GetLink();
             SceneNode* jointNode = nodeLookup[joint];
             n_assert(jointNode != nullptr);
-            if (jointNode->type == SceneNode::NodeType::Joint)
+
+            int clusterVertexIndexCount = cluster->GetControlPointIndicesCount();
+            for (int vertexIndex = 0; vertexIndex < clusterVertexIndexCount; vertexIndex++)
             {
-                int clusterVertexIndexCount = cluster->GetControlPointIndicesCount();
-                for (int vertexIndex = 0; vertexIndex < clusterVertexIndexCount; vertexIndex++)
-                {
-                    int vertex = cluster->GetControlPointIndices()[vertexIndex];
-                    double weight = cluster->GetControlPointWeights()[vertexIndex];
-                    int stride = slotArray[vertex];
+                int vertex = cluster->GetControlPointIndices()[vertexIndex];
+                double weight = cluster->GetControlPointWeights()[vertexIndex];
+                int stride = slotArray[vertex];
 
-                    // this is just a fail safe for smooth operators
-                    if (vertex >= vertexCount)
-                        continue;
+                // this is just a fail safe for smooth operators
+                if (vertex >= vertexCount)
+                    continue;
 
-                    int* jointData = jointArray + (vertex*4);
-                    double* weightData = weightArray + (vertex*4);
+                int* jointData = jointArray + (vertex*4);
+                double* weightData = weightArray + (vertex*4);
 
-                    // ignore weights and indices over 4 (optimal vertex-to-joint ratio for games is 4)
-                    if (stride > 3) continue;
+                // ignore weights and indices over 4 (optimal vertex-to-joint ratio for games is 4)
+                if (stride > 3) continue;
 
-                    jointData[stride] = jointNode->skeleton.jointIndex;
-                    weightData[stride] = weight;
-                    maxIndex = Math::max(jointData[stride], maxIndex);
-                    slotArray[vertex]++;
-                }
+                jointData[stride] = jointNode->skeleton.jointIndex;
+                weightData[stride] = weight;
+                maxIndex = Math::max(jointData[stride], maxIndex);
+                slotArray[vertex]++;
             }
         }
     }

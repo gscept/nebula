@@ -131,7 +131,7 @@ NFbxScene::Setup(
             case FbxNodeAttribute::EType::eMesh:
             {
                 node.Setup(SceneNode::NodeType::Mesh);
-                NFbxMeshNode::Setup(&node, this->meshes, nodeLookup, fbxNode, exportFlags);
+                NFbxMeshNode::Setup(&node, fbxNode);
                 break;
             }
             case FbxNodeAttribute::EType::eLODGroup:
@@ -152,6 +152,19 @@ NFbxScene::Setup(
                 NFbxNode::Setup(&node, fbxNode);
                 break;
             }
+        }
+    }
+
+    // Extract data from nodes
+    for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++)
+    {
+        FbxNode* fbxNode = scene->GetSrcObject<FbxNode>(nodeIndex);
+        SceneNode& node = this->nodes[nodeIndex];
+        switch (node.type)
+        {
+            case SceneNode::NodeType::Mesh:
+                NFbxMeshNode::ExtractMesh(&node, this->meshes, nodeLookup, fbxNode, flags);
+                break;
         }
     }
 
