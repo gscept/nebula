@@ -48,14 +48,8 @@ public:
     bool IsEmpty() const;
     /// reserve space (useful if number of elements is known beforehand)
     void Reserve(SizeT numElements);
-    /// begin a bulk insert (array will be sorted at End)
-    void BeginBulkAdd();
-    /// add a value while in bulk, wont check for duplicates
-    void BulkAdd(const KEYTYPE& value);
     /// add a unique value to set, won't get added twice
     void Add(const KEYTYPE& value);
-    /// end a bulk insert (this will sort the internal array)
-    void EndBulkAdd();
     /// erase a key and its associated value
     void Erase(const KEYTYPE& key);
     /// erase a key at index
@@ -152,47 +146,6 @@ template<class KEYTYPE> void
 Set<KEYTYPE>::Reserve(SizeT numElements)
 {
     this->values.Reserve(numElements);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class KEYTYPE> void
-Set<KEYTYPE>::BeginBulkAdd()
-{
-#if NEBULA_BOUNDSCHECKS
-    n_assert(!this->inBulkInsert);
-#endif
-    this->inBulkInsert = true;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class KEYTYPE> void
-Set<KEYTYPE>::EndBulkAdd()
-{
-#if NEBULA_BOUNDSCHECKS
-    n_assert(this->inBulkInsert);
-#endif
-    this->values.Sort();    
-    this->inBulkInsert = false;
-#if NEBULA_BOUNDSCHECKS
-    n_assert(this->values.IsSorted());
-#endif
-}
-
-
-//------------------------------------------------------------------------------
-/**
-*/
-template<class KEYTYPE> void
-Set<KEYTYPE>::BulkAdd(const KEYTYPE& key)
-{
-#if NEBULA_BOUNDSCHECKS
-    n_assert(this->inBulkInsert);
-#endif
-    this->values.Append(key);    
 }
 
 //------------------------------------------------------------------------------
