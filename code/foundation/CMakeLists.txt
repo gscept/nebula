@@ -263,6 +263,7 @@ nebula_begin_module(foundation)
             clipstatus.h
             extrapolator.h
             frustum.h
+            half.h
             line.cc
             line.h
             mat4.cc
