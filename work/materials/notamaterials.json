@@ -50,9 +50,9 @@
             "defaultValue": "tex:system/black"
           },
           {
-            "name": "RoughnessMap",
+            "name": "ParameterMap",
             "type": "textureHandle",
-            "defaultValue": "tex:system/white"
+            "defaultValue": "tex:system/default_material"
           },
           {
             "name": "TeamColor",
@@ -109,9 +109,9 @@
             "defaultValue": "tex:system/black"
           },
           {
-            "name": "RoughnessMap",
+            "name": "ParameterMap",
             "type": "textureHandle",
-            "defaultValue": "tex:system/white"
+            "defaultValue": "tex:system/default_material"
           },
           {
             "name": "TeamColor",
