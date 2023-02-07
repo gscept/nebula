@@ -63,6 +63,7 @@ private:
     void DrawIndexedPrimitives(const Math::mat4& modelTransform, CoreGraphics::PrimitiveTopology::Code topology, SizeT numVertices, const void* vertices, SizeT numIndices, const void* indices, CoreGraphics::IndexType::Code indexType, const float lineThickness);
 
     Util::FixedArray<Resources::ResourceId> shapeMeshResources;
+    Util::FixedArray<CoreGraphics::MeshId> meshes;
 
     Util::Array<CoreGraphics::VertexComponent> comps;
     static const SizeT MaxVertexIndexBuffers = 2;

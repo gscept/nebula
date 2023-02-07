@@ -42,14 +42,13 @@ shader
 void
 vsColored(
     [slot=0] in vec3 position,
-    [slot=1] in vec3 normal,
     [slot=2] in vec2 uv,
+    [slot=1] in vec4 normal,
     [slot=3] in vec3 tangent,
-    [slot=4] in vec3 binormal,
     [slot=5] in vec4 color,
     out vec3 Tangent,
     out vec3 Normal,
-    out vec3 Binormal,
+    out flat float Sign,
     out vec2 UV,
     out vec4 Color,
     out vec3 WorldSpacePos,
@@ -61,8 +60,8 @@ vsColored(
     Color = color;
     
     Tangent = (Model * vec4(tangent, 0)).xyz;
-    Normal = (Model * vec4(normal, 0)).xyz;
-    Binormal = (Model * vec4(binormal, 0)).xyz;
+    Normal  = (Model * vec4(normal.xyz, 0)).xyz;
+    Sign    = tangent.w;
     WorldSpacePos = modelSpace.xyz;
 	ViewSpacePos  = View * modelSpace;
 }
@@ -75,10 +74,9 @@ shader
 void
 vsColoredShadow(
     [slot=0] in vec3 position,
-    [slot=1] in vec3 normal,
     [slot=2] in vec2 uv,
+    [slot=1] in vec3 normal,
     [slot=3] in vec3 tangent,
-    [slot=4] in vec3 binormal,
     [slot=5] in vec4 color,
     out vec2 UV,
     out vec4 ProjPos) 
@@ -97,10 +95,9 @@ shader
 void
 vsColoredCSM(
     [slot=0] in vec3 position,
-    [slot=1] in vec3 normal,
     [slot=2] in vec2 uv,
+    [slot=1] in vec3 normal,
     [slot=3] in vec3 tangent,
-    [slot=4] in vec3 binormal,
     [slot=5] in vec4 color,
     out vec2 UV,
     out vec4 ProjPos,
@@ -119,15 +116,14 @@ shader
 void
 vsColoredTessellated(
     [slot=0] in vec3 position,
-    [slot=1] in vec3 normal,
     [slot=2] in vec2 uv,
+    [slot=1] in vec3 normal,
     [slot=3] in vec3 tangent,
-    [slot=4] in vec3 binormal,
     [slot=5] in vec4 color,
     out vec3 Tangent,
     out vec3 Normal,
+    out flat float Sign,
     out vec4 Position,
-    out vec3 Binormal,
     out vec2 UV,
     out vec4 Color,
     out float Distance) 
@@ -138,8 +134,8 @@ vsColoredTessellated(
     
     Tangent  = (Model * vec4(tangent, 0)).xyz;
     Normal   = (Model * vec4(normal, 0)).xyz;
-    Binormal = (Model * vec4(binormal, 0)).xyz;
-    
+    Sign     = tangent;
+
     float vertexDistance = distance( Position.xyz, EyePos.xyz );
     Distance = 1.0 - clamp( ( (vertexDistance - MinDistance) / (MaxDistance - MinDistance) ), 0.0, 1.0 - 1.0/TessellationFactor);
 }
@@ -152,10 +148,9 @@ shader
 void
 vsColoredShadowTessellated(
     [slot=0] in vec3 position,
-    [slot=1] in vec3 normal,
     [slot=2] in vec2 uv,
+    [slot=1] in vec3 normal,
     [slot=3] in vec3 tangent,
-    [slot=4] in vec3 binormal,
     [slot=5] in vec4 color,
     out vec3 Normal,
     out vec4 Position,
@@ -182,10 +177,9 @@ shader
 void
 vsColoredCSMTessellated(
     [slot=0] in vec3 position,
-    [slot=1] in vec3 normal,
     [slot=2] in vec2 uv,
+    [slot=1] in vec3 normal,
     [slot=3] in vec3 tangent,
-    [slot=4] in vec3 binormal,
     [slot=5] in vec4 color,
     out vec3 Normal,
     out vec4 Position,
@@ -213,7 +207,7 @@ void
 psMultilayered(
     in vec3 Tangent,
     in vec3 Normal,
-    in vec3 Binormal,
+    in flat float Sign,
     in vec2 UV,
     in vec4 Color,
     in vec3 WorldSpacePos,
@@ -241,7 +235,7 @@ psMultilayered(
     vec4 normals2 = sample2D(NormalMap2, Basic2DSampler, UV);
     vec4 normals3 = sample2D(NormalMap3, Basic2DSampler, UV);
     vec4 normals = normals1 * blend.r + normals2 * blend.g + normals3 * blend.b;
-    vec3 bumpNormal = normalize(calcBump(Tangent, Binormal, Normal, normals));
+    vec3 bumpNormal = normalize(calcBump(Tangent, Normal, Sign, normals));
     bumpNormal += vec3(0,1,0) * remainSum;
 
     vec4 material = calcMaterial(matColor);
@@ -275,14 +269,12 @@ void
 hsDefault(in vec3 tangent[],
           in vec3 normal[],
           in vec4 position[],
-          in vec3 binormal[],
           in vec2 uv[],
           in vec4 color[],
           in float distance[],
           out vec3 Tangent[],
           out vec3 Normal[],
           out vec4 Position[],
-          out vec3 Binormal[],
           out vec2 UV[],
           out vec4 Color[]
 #if PN_TRIANGLES
@@ -300,7 +292,6 @@ hsDefault(in vec3 tangent[],
     Tangent[gl_InvocationID]    = tangent[gl_InvocationID];
     Normal[gl_InvocationID]     = normal[gl_InvocationID];
     Position[gl_InvocationID]   = position[gl_InvocationID];
-    Binormal[gl_InvocationID]   = binormal[gl_InvocationID];
     UV[gl_InvocationID]         = uv[gl_InvocationID];
     Color[gl_InvocationID]      = color[gl_InvocationID];   
     
@@ -413,13 +404,11 @@ dsDefault(
     in vec3 tangent[],
     in vec3 normal[],
     in vec4 position[],
-    in vec3 binormal[],
     in vec2 uv[],
     in vec4 color[],
     out vec3 ViewSpacePos, 
     out vec3 Tangent, 
     out vec3 Normal, 
-    out vec3 Binormal, 
     out vec2 UV,
     out vec4 Color
 #if PN_TRIANGLES
@@ -474,8 +463,6 @@ dsDefault(
     gl_Position = ViewProjection * gl_Position;
     
     Normal = (View * vec4(Normal, 0)).xyz;
-    Binormal = gl_TessCoord.x * binormal[0] + gl_TessCoord.y * binormal[1] + gl_TessCoord.z * binormal[2];
-    Binormal = (View * vec4(Binormal, 0)).xyz;
     Tangent = gl_TessCoord.x * tangent[0] + gl_TessCoord.y * tangent[1] + gl_TessCoord.z * tangent[2];
     Tangent = (View * vec4(Tangent, 0)).xyz;
 }

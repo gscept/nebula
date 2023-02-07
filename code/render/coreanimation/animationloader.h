@@ -10,8 +10,7 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 //------------------------------------------------------------------------------
-
-#include "animresource.h"
+#include "util/stringatom.h"
 #include "resources/resourceloader.h"
 #include "coreanimation/animclip.h"
 #include "coreanimation/animkeybuffer.h"

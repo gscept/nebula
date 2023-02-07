@@ -26,18 +26,9 @@ fips_begin_lib(toolkitutil)
             assetupdater.h
             audioexporter.cc
             audioexporter.h
-            binarymodelwriter.cc
-            binarymodelwriter.h
-            modelwriter.cc
-            modelwriter.h
+
             #resourcedictionarybuilder.cc
             #resourcedictionarybuilder.h
-            scenenode.cc
-            scenenode.h
-            scenenodetree.cc
-            scenenodetree.h
-            xmlmodelwriter.cc
-            xmlmodelwriter.h
         )
 
         fips_dir(asset)
@@ -45,7 +36,7 @@ fips_begin_lib(toolkitutil)
                 assetexporter.cc
                 assetexporter.h
             )
-        fips_dir(animutil)
+        fips_dir(model/animutil)
             fips_files(
                 animbuilder.cc
                 animbuilder.h
@@ -60,7 +51,7 @@ fips_begin_lib(toolkitutil)
                 animconverter.cc
                 animconverter.h
             )
-        fips_dir(meshutil)
+        fips_dir(model/meshutil)
             fips_files(
                 meshbuilder.cc
                 meshbuilder.h
@@ -73,19 +64,11 @@ fips_begin_lib(toolkitutil)
                 meshbuildervertex.cc
                 meshbuildervertex.h
             )
-        fips_dir(n3util)
+        fips_dir(model/n3util)
             fips_files(
                 n3modeldata.h
-                n3writer.cc
-                n3writer.h
-                n3xmlexporter.cc
-                n3xmlexporter.h
-                n3xmlextractor.cc
-                n3xmlextractor.h
-                n3xmlmodifier.cc
-                n3xmlmodifier.h
             )
-        fips_dir(skeletonutil)
+        fips_dir(model/skeletonutil)
             fips_files(
                 skeletonbuilder.h
                 skeletonbuildersaver.cc
@@ -129,24 +112,23 @@ fips_begin_lib(toolkitutil)
                 ${SRCSX_PL}
             )
     ENDIF()     
-        fips_dir(fbx)
+        fips_dir(model/import/base)
+            fips_files(
+                modelexporter.cc
+                modelexporter.h 
+                scene.cc
+                scene.h
+                scenenode.cc
+                scenenode.h
+            )
+
+        fips_dir(model/import/fbx)
             fips_files(
                 nfbxexporter.cc 
                 nfbxexporter.h
-                nfbxscenewriter.cc
-                nfbxscenewriter.h
             )
 
-            fips_dir(fbx/helpers)
-                fips_files(
-                    animsplitterhelper.cc
-                    animsplitterhelper.h
-                    batchattributes.cc
-                    batchattributes.h
-                    skinhelper.cc
-                    skinhelper.h
-                )
-            fips_dir(fbx/node)
+            fips_dir(model/import/fbx/node)
                 fips_files(
                     nfbxjointnode.cc
                     nfbxjointnode.h
@@ -158,26 +140,16 @@ fips_begin_lib(toolkitutil)
                     nfbxnode.h
                     nfbxscene.cc
                     nfbxscene.h
-                    nfbxtransformnode.cc
-                    nfbxtransformnode.h
                 )
-            fips_dir(fbx/character)
-                fips_files(
-                    skinfragment.cc
-                    skinfragment.h
-                    skinpartitioner.cc
-                    skinpartitioner.h
-                )
-        fips_dir(gltf)
+
+        fips_dir(model/import/gltf)
             fips_files(
                 ngltfexporter.cc
                 ngltfexporter.h
                 ngltfmaterialexporter.cc
                 ngltfmaterialexporter.h
-                ngltfscenewriter.cc
-                ngltfscenewriter.h
             )
-            fips_dir(gltf/node)
+            fips_dir(model/import/gltf/node)
                 fips_files(
                     ngltfmesh.cc
                     ngltfmesh.h
@@ -205,7 +177,7 @@ IF(NOT N_MINIMAL_TOOLKIT)
         #       guiexporter.h
         #   )
 ENDIF()         
-        fips_dir(modelutil)
+        fips_dir(model/modelutil)
             fips_files(
                 clip.cc
                 clip.h
@@ -223,6 +195,23 @@ ENDIF()
                 modelphysics.h
                 take.cc
                 take.h
+            )
+        fips_dir(model)
+            fips_files(
+                animsplitterhelper.cc
+                animsplitterhelper.h
+                batchattributes.cc
+                batchattributes.h
+                binarymodelwriter.cc
+                binarymodelwriter.h
+                modelwriter.cc
+                modelwriter.h
+                scenewriter.cc
+                scenewriter.h
+                skinhelper.cc
+                skinhelper.h
+                xmlmodelwriter.cc
+                xmlmodelwriter.h
             )
         fips_dir(surface)
             fips_files(

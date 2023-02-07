@@ -186,8 +186,8 @@ ExporterBase::CountExports( const Util::String& dir, const Util::String& ext)
 //------------------------------------------------------------------------------
 /**
 */
-bool 
-ExporterBase::NeedsConversion( const Util::String& src, const Util::String& dst )
+bool
+ExporterBase::NeedsConversion(const Util::String& src, const Util::String& dst)
 {
     if (this->force)
     {

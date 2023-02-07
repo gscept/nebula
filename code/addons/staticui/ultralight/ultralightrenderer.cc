@@ -607,7 +607,7 @@ UltralightRenderer::Render(const CoreGraphics::CmdBufferId& cmds, IndexT bufferI
 
             if (currentIbo != geo.ibo)
             {
-                CoreGraphics::CmdSetIndexBuffer(cmds, geo.ibo, 0);
+                CoreGraphics::CmdSetIndexBuffer(cmds, CoreGraphics::IndexType::Index16, geo.ibo, 0);
                 currentIbo = geo.ibo;
             }
 

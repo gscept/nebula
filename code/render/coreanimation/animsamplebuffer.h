@@ -13,7 +13,7 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */    
 #include "core/refcounted.h"
-#include "animresource.h"
+#include "animation.h"
 
 //------------------------------------------------------------------------------
 namespace CoreAnimation
@@ -36,7 +36,7 @@ public:
     void operator=(const AnimSampleBuffer& rhs);
     
     /// setup the object from an animation resource
-    void Setup(const AnimResourceId& animResource);
+    void Setup(const AnimationId& animResource);
     /// discard the object
     void Discard();
     /// return true if the object has been setup
@@ -51,7 +51,7 @@ public:
     uchar* GetSampleCountsPointer() const;
 
 private:
-    AnimResourceId animResource;
+    AnimationId animResource;
     SizeT numSamples;
     Math::vec4* samples;
     uchar* sampleCounts;
@@ -63,7 +63,7 @@ private:
 inline bool
 AnimSampleBuffer::IsValid() const
 {
-    return this->animResource != AnimResourceId::Invalid();
+    return this->animResource != InvalidAnimationId;
 }
 
 //------------------------------------------------------------------------------

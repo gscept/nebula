@@ -10,40 +10,55 @@
 */
 #include "core/types.h"
 #include "coregraphics/gpubuffertypes.h"
+#include "coregraphics/vertexlayout.h"
 
 namespace CoreGraphics
 {
 
-#pragma pack(push, 1)
+#define NEBULA_NVX_MAGICNUMBER 'NVX3'
 
-#define NEBULA_NVX3_MAGICNUMBER 'NVX3'
+#pragma pack(push, 1)
 
 //------------------------------------------------------------------------------
 /** 
     NVX3 file format structs.
-
-    NOTE: keep all header-structs 4-byte aligned!
 */
 struct Nvx3Header
 {
     uint magic;
+    uint numMeshes;         // The number of Nvx3Mesh structs
     uint numGroups;
-    uint numVertices;
-    uint vertexWidth;
-    uint numIndices;
-    uint vertexComponentMask;
-    CoreGraphics::GpuBufferTypes::Usage usage;
-    CoreGraphics::GpuBufferTypes::Access access;
+    uint numMeshlets;
+    uint indexDataSize;     // The total byte size of the index data for all meshes
+    uint vertexDataSize;
+};
+
+struct Nvx3VertexRange
+{
+    uint indexByteOffset;
+    uint baseVertexByteOffset;
+    uint attributesVertexByteOffset;
+    CoreGraphics::IndexType::Code indexType;
+    CoreGraphics::VertexLayoutType layout;
 };
 
 struct Nvx3Group
 {
     uint primType;
-    uint firstVertex;
-    uint numVertices;
-    uint firstTriangle;
-    uint numTriangles;
+    uint firstIndex;
+    uint numIndices;
+
+    uint firstMeshlet;              // Offset to first meshlet (optional)
+    uint numMeshlets;               // Number of meshlets for this primitive group
+};
+
+struct Nvx3Meshlet
+{
+    uint indexOffset;
+    uint firstIndex;
+    uint numIndices;
 };
 
 #pragma pack(pop)
+
 } // namespace CoreGraphics   

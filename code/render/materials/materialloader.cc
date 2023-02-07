@@ -57,21 +57,21 @@ MaterialLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& ta
         {
             n_error("Material '%s', referenced in '%s' could not be found!", shaderConfig.AsString().AsCharPtr(), stream->GetURI().AsString().AsCharPtr());
         }
-        ShaderConfig* type = server->shaderConfigsByName[shaderConfig];
+        ShaderConfig* config = server->shaderConfigsByName[shaderConfig];
 
         // Create material, copying the defaults from the material table
-        MaterialId id = CreateMaterial({ type });
+        MaterialId id = CreateMaterial({ config });
 
         if (reader->SetToFirstChild("Param")) do
         {
             Util::StringAtom paramName = reader->GetString("name");
 
             // set variant value which we will use in the surface constants
-            IndexT binding = type->GetConstantIndex(paramName);
-            IndexT slot = type->GetTextureIndex(paramName);
+            IndexT binding = config->GetConstantIndex(paramName);
+            IndexT slot = config->GetTextureIndex(paramName);
             if (binding != InvalidIndex)
             {
-                MaterialVariant defaultVal = type->GetConstantDefault(binding);
+                MaterialVariant defaultVal = config->GetConstantDefault(binding);
                 if (defaultVal.GetType() != MaterialVariant::Type::Invalid)
                 {
                     MaterialVariant materialVal = ShaderConfigServer::Instance()->AllocateVariantMemory(defaultVal.type);
@@ -103,12 +103,15 @@ MaterialLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& ta
                             break;
                         case MaterialVariant::Type::TextureHandle: // texture handle
                         {
-                            const Util::String path = reader->GetOptString("value", "");
+                            Util::String path = reader->GetOptString("value", "");
+                            /*if (paramName == "DiffuseMap" || paramName == "AlbedoMap")
+                                path = "tex:system/error.dds";
+                                */
                             Resources::ResourceId tex;
                             if (!path.IsEmpty())
                             {
                                 tex = Resources::CreateResource(path + NEBULA_TEXTURE_EXTENSION, tag,
-                                    [type, id, binding, &minLod, materialVal, this](Resources::ResourceId rid)
+                                    [config, id, binding, &minLod, materialVal, this](Resources::ResourceId rid)
                                     {
                                         MaterialVariant::TextureHandleTuple tuple{ rid.HashCode64(), CoreGraphics::TextureGetBindlessHandle(rid) };
                                         MaterialVariant tmp = materialVal;
@@ -116,7 +119,7 @@ MaterialLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& ta
                                         MaterialSetConstant(id, binding, materialVal);
                                         MaterialAddLODTexture(id, rid);
                                     },
-                                    [type, id, binding, materialVal](Resources::ResourceId rid)
+                                    [config, id, binding, materialVal](Resources::ResourceId rid)
                                     {
                                         MaterialVariant::TextureHandleTuple tuple{ rid.HashCode64(), CoreGraphics::TextureGetBindlessHandle(rid) };
                                         MaterialVariant tmp = materialVal;
@@ -141,12 +144,12 @@ MaterialLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& ta
             else if (slot != InvalidIndex)
             {
                 Resources::ResourceId tex = Resources::CreateResource(reader->GetString("value") + NEBULA_TEXTURE_EXTENSION, tag, 
-                    [type, id, slot, &minLod, this](Resources::ResourceId rid)
+                    [config, id, slot, &minLod, this](Resources::ResourceId rid)
                     {
                         MaterialSetTexture(id, slot, rid);
                         MaterialAddLODTexture(id, rid);
                     }, 
-                    [type, id, slot](Resources::ResourceId rid)
+                    [config, id, slot](Resources::ResourceId rid)
                     {
                         MaterialSetTexture(id, slot, rid);
                     });

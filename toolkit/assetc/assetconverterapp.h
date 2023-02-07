@@ -8,9 +8,12 @@
     (C) 2019-2020 Individual contributors, see AUTHORS file
 */
 #include "toolkit-common/toolkitapp.h"
-#include "modelutil/modeldatabase.h"
 
 //------------------------------------------------------------------------------
+namespace ToolkitUtil
+{
+class ModelDatabase;
+}
 namespace Toolkit
 {
 class AssetConverterApp : public ToolkitUtil::ToolkitApp

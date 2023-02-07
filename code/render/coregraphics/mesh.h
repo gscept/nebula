@@ -21,7 +21,7 @@ namespace CoreGraphics
 
 struct CmdBufferId;
 
-RESOURCE_ID_TYPE(MeshId);
+ID_24_8_TYPE(MeshId);
 
 struct VertexStream
 {
@@ -36,6 +36,7 @@ struct MeshCreateInfo
     Util::ArrayStack<VertexStream, 16> streams;
     SizeT indexBufferOffset;
     BufferId indexBuffer;
+    IndexType::Code indexType;
     VertexLayoutId vertexLayout;
     CoreGraphics::PrimitiveTopology::Code topology;
     Util::Array<CoreGraphics::PrimitiveGroup> primitiveGroups;
@@ -56,8 +57,12 @@ const uint MeshGetVertexOffset(const MeshId id, const IndexT stream);
 const BufferId MeshGetIndexBuffer(const MeshId id);
 /// Get index buffer base offset
 const uint MeshGetIndexOffset(const MeshId id);
-/// get topology
+/// Get index type
+const IndexType::Code MeshGetIndexType(const MeshId id);
+/// Get topology
 const CoreGraphics::PrimitiveTopology::Code MeshGetTopology(const MeshId id);
+/// Get vertex layout
+const CoreGraphics::VertexLayoutId MeshGetVertexLayout(const MeshId id);
 
 enum
 {
@@ -65,6 +70,7 @@ enum
     Mesh_Streams,
     Mesh_IndexBufferOffset,
     Mesh_IndexBuffer,
+    Mesh_IndexType,
     Mesh_VertexLayout,
     Mesh_Topology,
     Mesh_PrimitiveGroups
@@ -74,6 +80,7 @@ typedef Ids::IdAllocatorSafe<
     Util::ArrayStack<VertexStream, 16>,
     SizeT,
     BufferId,
+    IndexType::Code,
     VertexLayoutId,
     CoreGraphics::PrimitiveTopology::Code,
     Util::Array<CoreGraphics::PrimitiveGroup>

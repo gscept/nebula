@@ -135,6 +135,23 @@ struct uint4
     };
 };
 
+struct byte4u
+{
+    union
+    {
+        struct { ubyte x, y, z, w; };
+        unsigned int v;
+    };
+};
+
+struct byte4
+{
+    union
+    {
+        struct { byte x, y, z, w; };
+        unsigned int v;
+    };
+};
 
 //------------------------------------------------------------------------------
 /**

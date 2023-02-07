@@ -58,6 +58,8 @@ ENDIF()
                 skeletonjoint.h
                 skeletonloader.cc
                 skeletonloader.h
+                skeletonresource.cc
+                skeletonresource.h
             )
 
         fips_dir(clustering)
@@ -69,6 +71,12 @@ ENDIF()
 
         fips_dir(coreanimation)
             fips_files(
+                animation.cc
+                animation.h
+                animationloader.cc
+                animationloader.h
+                animationresource.cc
+                animationresource.h
                 animclip.cc
                 animclip.h
                 animcurve.h
@@ -77,8 +85,6 @@ ENDIF()
                 animeventemitter.h
                 animkeybuffer.cc
                 animkeybuffer.h
-                animresource.cc
-                animresource.h
                 animsamplebuffer.cc
                 animsamplebuffer.h
                 animsamplejob.cc
@@ -93,8 +99,6 @@ ENDIF()
                 naxfileformatstructs.h
                 sampletype.cc
                 sampletype.h
-                animationloader.cc
-                animationloader.h
             )
         fips_dir(coregraphics/base GROUP "coregraphics/base")
             fips_files(
@@ -108,7 +112,6 @@ ENDIF()
                 shaperendererbase.h
                 textrendererbase.cc
                 textrendererbase.h
-                vertexcomponentbase.h
             )
         fips_dir(coregraphics)
             fips_files(
@@ -147,6 +150,8 @@ ENDIF()
                 mesh.h
                 meshloader.cc
                 meshloader.h
+                meshresource.cc
+                meshresource.h
                 pass.h
                 pixelformat.cc
                 pixelformat.h

@@ -8,6 +8,7 @@
 #include "resources/resourceserver.h"
 #include "models/model.h"
 #include "coregraphics/mesh.h"
+#include "coregraphics/meshresource.h"
 #include "coregraphics/shaderserver.h"
 #include "particles/particlecontext.h"
 #include "clustering/clustercontext.h"
@@ -28,8 +29,9 @@ using namespace IO;
 /**
 */
 ParticleSystemNode::ParticleSystemNode() :
-    primGroupIndex(InvalidIndex),
-    mesh(Resources::InvalidResourceId)
+    primGroupIndex(InvalidIndex)
+    , mesh(InvalidMeshId)
+    , meshResource(InvalidResourceId)
 {
     this->type = ParticleSystemNodeType;
     this->bits = HasTransformBit | HasStateBit;
@@ -40,7 +42,7 @@ ParticleSystemNode::ParticleSystemNode() :
 */
 ParticleSystemNode::~ParticleSystemNode()
 {
-    n_assert(this->mesh == Resources::InvalidResourceId);
+    n_assert(this->mesh == InvalidMeshId);
 }
 
 //------------------------------------------------------------------------------
@@ -50,20 +52,24 @@ void
 ParticleSystemNode::UpdateMeshResource(const Resources::ResourceName& resName)
 {
     // Discard old mesh, but be careful to not discard the default emitter
-    if (this->mesh.cacheInstanceId != 0xFFFFFF && this->mesh.cacheIndex != 0xFF)
-        Resources::DiscardResource(this->mesh);
+    if (this->meshResource != InvalidResourceId)
+        Resources::DiscardResource(this->meshResource);
     
     // load new mesh
     this->meshResId = resName;
 
     if (this->meshResId.IsValid())
-        this->mesh = Resources::CreateResource(this->meshResId, this->tag, nullptr, nullptr, false);
+    {
+        this->meshResource = Resources::CreateResource(this->meshResId, this->tag, [this](Resources::ResourceId id)
+        {
+            this->meshResource = id;
+            this->mesh = MeshResourceGetMesh(id, 0);
+        }, nullptr, false);
+    }
     else
     {
-        this->mesh.cacheIndex = -1;
-        this->mesh.cacheInstanceId = -1;
-        this->mesh.resourceId = ParticleContext::DefaultEmitterMesh.resourceId;
-        this->mesh.resourceType = ParticleContext::DefaultEmitterMesh.resourceType;
+        this->meshResource = InvalidResourceId;
+        this->mesh = ParticleContext::DefaultEmitterMesh;
     }
 }
 

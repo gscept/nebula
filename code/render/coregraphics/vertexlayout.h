@@ -10,6 +10,7 @@
 #include "ids/id.h"
 #include "coregraphics/vertexcomponent.h"
 #include "coregraphics/shader.h"
+#include "math/half.h"
 namespace CoreGraphics
 {
 
@@ -40,5 +41,57 @@ void DestroyVertexLayout(const VertexLayoutId id);
 const SizeT VertexLayoutGetSize(const VertexLayoutId id);
 /// get components
 const Util::Array<VertexComponent>& VertexLayoutGetComponents(const VertexLayoutId id);
+
+
+enum class VertexLayoutType
+{
+    Invalid,
+    Normal,     // Normal vertices for static geometry
+    Colors,     // Geometry with per-vertex colors
+    SecondUV,   // Secondary UV set geometry 
+    Skin,       // Skinned geometry with weight and joint indices
+    NumTypes
+};
+
+#pragma pack(push, 1)
+struct BaseVertex
+{
+    float position[3];
+    ushort uv[2];
+};
+
+struct NormalVertex
+{
+    Math::byte4 normal;
+    Math::byte4 tangent;
+};
+
+struct SecondUVVertex : NormalVertex
+{
+    ushort uv2[2];
+};
+
+struct ColorVertex : NormalVertex
+{
+    /*
+        normal
+        tangent
+        color
+    */
+    Math::byte4u color;
+};
+
+struct SkinVertex : NormalVertex
+{
+    /*
+        normal
+        tangent
+        indices
+        weights
+    */
+    Math::byte4u skinWeights;
+    Math::byte4u skinIndices;
+};
+#pragma pack(pop)
 
 } // CoreGraphics

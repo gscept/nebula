@@ -50,7 +50,7 @@ AnimSampleBuffer::AnimSampleBuffer(AnimSampleBuffer&& rhs) :
     rhs.numSamples = 0;
     rhs.samples = nullptr;
     rhs.sampleCounts = nullptr;
-    rhs.animResource = AnimResourceId::Invalid();
+    rhs.animResource = InvalidAnimationId;
 }
 
 //------------------------------------------------------------------------------
@@ -96,7 +96,7 @@ AnimSampleBuffer::operator=(AnimSampleBuffer&& rhs)
     rhs.numSamples = 0;
     rhs.samples = nullptr;
     rhs.sampleCounts = nullptr;
-    rhs.animResource = AnimResourceId::Invalid();
+    rhs.animResource = InvalidAnimationId;
 }
 
 //------------------------------------------------------------------------------
@@ -126,7 +126,7 @@ AnimSampleBuffer::operator=(const AnimSampleBuffer& rhs)
 /**
 */
 void
-AnimSampleBuffer::Setup(const AnimResourceId& animRes)
+AnimSampleBuffer::Setup(const AnimationId& animRes)
 {
     n_assert(!this->IsValid());
     n_assert(0 == this->samples);
@@ -152,7 +152,7 @@ AnimSampleBuffer::Discard()
     n_assert(0 != this->samples);
     n_assert(0 != this->sampleCounts);
 
-    this->animResource = AnimResourceId::Invalid();
+    this->animResource = InvalidAnimationId;
     Memory::Free(Memory::ResourceHeap, this->samples);
     Memory::Free(Memory::ResourceHeap, this->sampleCounts);
     this->samples = nullptr;

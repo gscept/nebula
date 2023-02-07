@@ -3,7 +3,8 @@
 //  (C) 2019-2020 Individual contributors, see AUTHORS file
 //------------------------------------------------------------------------------
 #include "foundation/stdneb.h"
-#include "toolkitutil/fbx/nfbxexporter.h"
+#include "toolkitutil/model/import/fbx/nfbxexporter.h"
+#include "toolkitutil/model/modelutil/modeldatabase.h"
 #include "assetconverterapp.h"
 #include "io/assignregistry.h"
 #include "core/coreserver.h"

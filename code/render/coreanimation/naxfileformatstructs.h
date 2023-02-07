@@ -26,8 +26,15 @@ namespace CoreAnimation
 struct Nax3Header
 {
     uint magic;
+    uint numAnimations;
+};
+
+struct Nax3Anim
+{
     uint numClips;
     uint numKeys;
+    uint firstClip;
+    uint firstKey;
 };
 
 struct Nax3Clip

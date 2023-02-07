@@ -740,36 +740,6 @@ VkTypes::AsVkPrimitiveType(CoreGraphics::PrimitiveTopology::Code t)
 /**
 */
 uint32_t
-VkTypes::AsByteSize(uint32_t semantic)
-{
-    switch (semantic)
-    {
-    case VertexComponent::Position:
-        return sizeof(uint32_t) * 4;
-    case VertexComponent::Normal:
-        return sizeof(uint32_t) * 3;
-    case VertexComponent::Tangent:
-        return sizeof(uint32_t) * 3;
-    case VertexComponent::Binormal:
-        return sizeof(uint32_t) * 3;
-    case VertexComponent::TexCoord1:
-        return sizeof(uint32_t) * 2;
-    case VertexComponent::Color:
-        return sizeof(uint32_t);
-    case VertexComponent::SkinWeights:
-        return sizeof(uint32_t) * 4;
-    case VertexComponent::SkinJIndices:
-        return sizeof(uint32_t) * 4;
-    default:
-        n_error("Unknown vertex input semantic!");
-        return 0;
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-uint32_t
 VkTypes::AsVkSize(CoreGraphics::VertexComponent::Format f)
 {
     switch (f)
@@ -859,6 +829,10 @@ VkTypes::AsVkVertexType(CoreGraphics::VertexComponent::Format f)
     case VertexComponent::Float2:   return VK_FORMAT_R32G32_SFLOAT;
     case VertexComponent::Float3:   return VK_FORMAT_R32G32B32_SFLOAT;
     case VertexComponent::Float4:   return VK_FORMAT_R32G32B32A32_SFLOAT;
+    case VertexComponent::Half:     return VK_FORMAT_R16_SFLOAT;
+    case VertexComponent::Half2:    return VK_FORMAT_R16G16_SFLOAT;
+    case VertexComponent::Half3:    return VK_FORMAT_R16G16B16_SFLOAT;
+    case VertexComponent::Half4:    return VK_FORMAT_R16G16B16A16_SFLOAT;
     case VertexComponent::UInt:     return VK_FORMAT_R32_UINT;
     case VertexComponent::UInt2:    return VK_FORMAT_R32G32_UINT;
     case VertexComponent::UInt3:    return VK_FORMAT_R32G32B32_UINT;

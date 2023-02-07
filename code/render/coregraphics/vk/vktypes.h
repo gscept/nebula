@@ -85,8 +85,6 @@ public:
 
     /// convert primitive topology to vulkan
     static VkPrimitiveTopology AsVkPrimitiveType(CoreGraphics::PrimitiveTopology::Code t);
-    /// convert the format to it's size
-    static uint32_t AsByteSize(uint32_t semantic);
     /// convert vertex format to size
     static uint32_t AsVkSize(CoreGraphics::VertexComponent::Format f);
     /// convert vertex format to number of components

@@ -141,8 +141,8 @@ Im3dContext::Create()
     imState.depthLayerId = Im3d::MakeId("depthEnabled");
     // create vertex buffer
     Util::Array<CoreGraphics::VertexComponent> components;
-    components.Append(VertexComponent((VertexComponent::SemanticName)0, 0, VertexComponentBase::Float4, 0));
-    components.Append(VertexComponent((VertexComponent::SemanticName)1, 0, VertexComponentBase::UByte4N, 0));
+    components.Append(VertexComponent(0, VertexComponent::Float4, 0));
+    components.Append(VertexComponent(1, VertexComponent::UByte4N, 0));
     imState.vlo = CreateVertexLayout({ components });
 
     CoreGraphics::BufferCreateInfo vboInfo;

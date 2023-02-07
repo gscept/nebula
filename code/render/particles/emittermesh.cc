@@ -88,7 +88,8 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
     this->points = n_new_array(EmitterPoint, this->numPoints);
 
     // make sure the emitter mesh actually has the components we need
-    const VertexLayoutId& vertexLayout = MeshGetPrimitiveGroups(mesh)[primGroupIndex].GetVertexLayout();
+    
+    const VertexLayoutId& vertexLayout = MeshGetVertexLayout(mesh);
 
     const Util::Array<VertexComponent>& comps = VertexLayoutGetComponents(vertexLayout);
     bool posValid = false, normValid = false, tanValid = false;
@@ -96,7 +97,7 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
     for (i = 0; i < comps.Size(); i++)
     {
         const VertexComponent& comp = comps[i];
-        const VertexComponent::SemanticName name = comp.GetSemanticName();
+        const IndexT name = comp.GetIndex();
         const VertexComponent::Format fmt = comp.GetFormat();
         if (name == VertexComponent::Position && fmt == VertexComponent::Float3)
             posValid = true, posByteOffset = comp.GetByteOffset();
@@ -116,9 +117,11 @@ EmitterMesh::Setup(const CoreGraphics::MeshId mesh, IndexT primGroupIndex)
         const uchar* src = verts + vertexByteSize * emitterIndices[i];
         EmitterPoint &dst = this->points[i];
         dst.position.load_float3(src + posByteOffset, 1.0f);
-        dst.normal.load_byte4n(src + normByteOffset, 0.0f);
+        dst.normal.load_byte4n(src + normByteOffset);
+        dst.normal.w = 0.0f;
         dst.normal = Math::normalize(dst.normal);
-        dst.tangent.load_byte4n(src + tanByteOffset, 0.0f);
+        dst.tangent.load_byte4n(src + tanByteOffset);
+        dst.tangent.w = 0.0f;
         dst.tangent = Math::normalize(dst.tangent);
     }
     BufferUnmap(vertexBuffer);

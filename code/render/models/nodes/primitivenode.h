@@ -26,7 +26,7 @@ public:
     /// get the nodes primitive group index
     uint32_t GetPrimitiveGroupIndex() const { return this->primitiveGroupIndex; }
     /// get primitives mesh id
-    CoreGraphics::MeshId GetMeshId() const { return this->res; }
+    CoreGraphics::MeshId GetMeshId() const { return this->mesh; }
 
     /// Get function to apply node 
     std::function<void(const CoreGraphics::CmdBufferId)> GetApplyFunction() override;
@@ -46,7 +46,8 @@ protected:
     uint16_t primitiveGroupIndex;
 
     CoreGraphics::BufferId vbo, ibo;
-    IndexT vboOffset, iboOffset;
+    IndexT baseVboOffset, attributesVboOffset, iboOffset;
+    CoreGraphics::IndexType::Code indexType;
     CoreGraphics::PrimitiveTopology::Code topology;
     CoreGraphics::PrimitiveGroup primGroup;
     CoreGraphics::VertexLayoutId vertexLayout;

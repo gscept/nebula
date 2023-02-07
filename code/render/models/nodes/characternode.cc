@@ -53,22 +53,6 @@ CharacterNode::Discard()
 
 //------------------------------------------------------------------------------
 /**
-    Called when all resources of this Model are loaded. We need to setup
-    the animation and variation libraries once this has happened.
-*/
-void
-CharacterNode::OnFinishedLoading()
-{
-    // setup all skinlist -> model node bindings
-    IndexT skinIndex;
-    for (skinIndex = 0; skinIndex < this->children.Size(); skinIndex++)
-    {
-        this->skinNodes.Add(this->children[skinIndex]->name, skinIndex);
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
 */
 void
 CharacterNode::OnResourcesLoaded()
@@ -99,9 +83,17 @@ CharacterNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
         // Animation
         this->animResId = reader->ReadString();
     }
+    else if (FourCC('ANID') == fourcc)
+    {
+        this->animIndex = reader->ReadInt();
+    }
     else if (FourCC('SKEL') == fourcc)
     {
         this->skeletonResId = reader->ReadString();
+    }
+    else if (FourCC('SKID') == fourcc)
+    {
+        this->skeletonIndex = reader->ReadInt();
     }
     else if (FourCC('NJMS') == fourcc)
     {
@@ -140,24 +132,6 @@ CharacterNode::Load(const Util::FourCC& fourcc, const Util::StringAtom& tag, con
 
         // send to loader
         // loader->pendingResources.Append(reader->ReadString());
-    }
-    else if (FourCC('NSKL') == fourcc)
-    {
-        this->skinLists.Resize(reader->ReadInt());
-        this->skinListIndex = 0;
-    }
-    else if (FourCC('SKNL') == fourcc)
-    {
-        const Util::StringAtom skinListName = reader->ReadString();
-        SizeT num = reader->ReadInt();
-        this->skinLists[this->skinListIndex].name = skinListName;
-        this->skinLists[this->skinListIndex].skinNames.Resize(num);
-        this->skinLists[this->skinListIndex].skinNodes.Resize(num);
-
-        // add skins to list
-        IndexT i;
-        for (i = 0; i < num; i++)
-            this->skinLists[this->skinListIndex].skinNames[i] = reader->ReadString();
     }
     else
     {

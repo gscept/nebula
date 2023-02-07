@@ -2,7 +2,7 @@
 <Nebula version="4">
     <Model name="system/skydome" bboxcenter="0.000000,0.000000,0.000000,1.000000" bboxextents="516.660156,448.529083,508.811005,0.000000">
         <ShapeNodes>
-            <ShapeNode name="pSphere1" type="static" path="root/pSphere1" useLOD="false" primitive="0" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" mesh="msh:system/skydome.nvx2" bboxcenter="0.000000,0.000000,0.000000,1.000000" bboxextents="516.660156,448.529083,508.811005,0.000000" />
+            <ShapeNode name="pSphere1" path="root/pSphere1" useLOD="false" position="0.000000,0.000000,0.000000,1.000000" rotation="0.000000,0.000000,0.000000,1.000000" scale="1.000000,1.000000,1.000000,0.000000" bboxcenter="0.000000,0.000000,0.000000,1.000000" bboxextents="516.660156,448.529083,508.811005,0.000000" mesh="msh:system/skydome.nvx" mid="0" primitive="0" />
         </ShapeNodes>
     </Model>
 </Nebula>

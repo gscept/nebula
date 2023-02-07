@@ -14,7 +14,7 @@
 namespace Characters
 {
 
-RESOURCE_ID_TYPE(SkeletonId);
+ID_24_8_TYPE(SkeletonId);
 
 struct CharacterJoint
 {

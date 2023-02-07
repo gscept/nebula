@@ -190,8 +190,8 @@ ModelContext::Setup(const Graphics::GraphicsEntityId gfxId, const Resources::Res
 #endif
 
             // The sort id is combined together with an index in the VisibilitySortJob to sort the node based on material, model and instance
-            assert(sNode->GetSortCode() < 0xFFF0000000000000);
-            assert(sNode->HashCode() < 0x000FFFFF00000000);
+            assert(sNode->GetSortCode() <   0xFFF0000000000000);
+            assert(sNode->HashCode() <      0x000FFFFF00000000);
             uint64 sortId = ((uint64)sNode->GetSortCode() << 52) | ((uint64)sNode->HashCode() << 32);
             nodeInstances.renderable.nodeSortId.Append(sortId);
         }

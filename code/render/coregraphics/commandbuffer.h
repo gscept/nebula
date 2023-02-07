@@ -159,9 +159,7 @@ void CmdSetVertexBuffer(const CmdBufferId id, IndexT streamIndex, const CoreGrap
 /// Set vertex layout
 void CmdSetVertexLayout(const CmdBufferId id, const CoreGraphics::VertexLayoutId& vl);
 /// Set index buffer
-void CmdSetIndexBuffer(const CmdBufferId id, const CoreGraphics::BufferId& buffer, SizeT bufferOffset);
-/// Set index buffer with explicit index size
-void CmdSetIndexBuffer(const CmdBufferId id, const CoreGraphics::BufferId& buffer, CoreGraphics::IndexType::Code indexSize, SizeT bufferOffset);
+void CmdSetIndexBuffer(const CmdBufferId id, const IndexType::Code indexType, const CoreGraphics::BufferId& buffer, SizeT bufferOffset);
 /// Set the type of topology used
 void CmdSetPrimitiveTopology(const CmdBufferId id, const CoreGraphics::PrimitiveTopology::Code topo);
 

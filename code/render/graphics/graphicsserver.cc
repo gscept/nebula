@@ -56,9 +56,9 @@ GraphicsServer::Open()
     this->displayDevice->Open();
 
     CoreGraphics::GraphicsDeviceCreateInfo gfxInfo { 
-        32_MB,                      // Constant buffer memory
-        256_MB,                      // Vertex memory size
-        64_MB,                       // Index memory size
+        32_MB,
+        256_MB,
+        64_MB,
         256_MB,
         {
             128_MB,                 // Device local memory block size
@@ -66,9 +66,11 @@ GraphicsServer::Open()
             128_MB,                 // Host cached memory block size
             8_MB,                   // Device <-> host mirrored memory block size
         },
-        0x10000, 0x100000, 0x100,   // Number of queries
-        3,                          // Number of simultaneous frames (3 = triple buffering, 2 = ... you get the idea)
-        true                       // Validation
+        0x10000,
+        0x100000,
+        0x100,
+        3,
+        true
     };
     this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 
@@ -78,9 +80,9 @@ GraphicsServer::Open()
         // Register graphics resource loaders
         Resources::ResourceServer::Instance()->RegisterStreamPool("dds", CoreGraphics::TextureLoader::RTTI);
         Resources::ResourceServer::Instance()->RegisterStreamPool("fxb", CoreGraphics::ShaderLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("nax3", CoreAnimation::AnimationLoader::RTTI);
-        Resources::ResourceServer::Instance()->RegisterStreamPool("nsk3", Characters::SkeletonLoader::RTTI); 
-        Resources::ResourceServer::Instance()->RegisterStreamPool("nvx2", CoreGraphics::MeshLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("nax", CoreAnimation::AnimationLoader::RTTI);
+        Resources::ResourceServer::Instance()->RegisterStreamPool("nsk", Characters::SkeletonLoader::RTTI); 
+        Resources::ResourceServer::Instance()->RegisterStreamPool("nvx", CoreGraphics::MeshLoader::RTTI);
         Resources::ResourceServer::Instance()->RegisterStreamPool("sur", Materials::MaterialLoader::RTTI);
         Resources::ResourceServer::Instance()->RegisterStreamPool("n3", Models::ModelLoader::RTTI);
 

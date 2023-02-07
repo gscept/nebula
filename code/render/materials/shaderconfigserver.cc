@@ -230,7 +230,8 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
                         ShaderConfigConstant constant;
                         constant.def.SetType(MaterialVariant::Type::TextureHandle);
                         constant.def = this->AllocateVariantMemory(constant.def.type);
-                        auto res = Resources::CreateResource(reader->GetString("defaultValue") + NEBULA_TEXTURE_EXTENSION, "material types", nullptr, nullptr, true);
+                        auto resourceName = reader->GetString("defaultValue") + NEBULA_TEXTURE_EXTENSION;
+                        auto res = Resources::CreateResource(resourceName, "material types", nullptr, nullptr, true);
                         constant.def.Set(res.HashCode64());
 
                         constant.system = system;
@@ -252,7 +253,8 @@ ShaderConfigServer::LoadShaderConfigs(const IO::URI& file)
                         {
                             n_error("Invalid texture type %s\n", ptype.AsCharPtr());
                         }
-                        auto res = Resources::CreateResource(reader->GetString("defaultValue") + NEBULA_TEXTURE_EXTENSION, "material types", nullptr, nullptr, true);
+                        auto resourceName = reader->GetString("defaultValue") + NEBULA_TEXTURE_EXTENSION;
+                        auto res = Resources::CreateResource(resourceName, "material types", nullptr, nullptr, true);
                         texture.defaultValue = res;
                         texture.system = system;
                         texture.name = name;

@@ -146,7 +146,6 @@ vsLit(
     out vec4 ViewSpacePos, 
     out vec3 Normal,
     out vec3 Tangent,
-    out vec3 Binormal,
     out vec3 WorldEyeVec,
     out vec4 Color,
     out vec2 UV) 
@@ -161,7 +160,6 @@ vsLit(
                                         
     Normal = cornerVert.worldNormal;
     Tangent = cornerVert.worldTangent;
-    Binormal = cornerVert.worldBinormal;
     UV = cornerVert.UV;
     WorldEyeVec = normalize(EyePos - cornerVert.worldPos).xyz;
     ViewSpacePos = View * cornerVert.worldPos;
@@ -273,7 +271,6 @@ void
 psLit(in vec4 ViewSpacePosition,
     in vec3 Normal,
     in vec3 Tangent,
-    in vec3 Binormal,
     in vec3 WorldEyeVec,
     in vec4 Color,
     in vec2 UV,
@@ -293,16 +290,17 @@ psLit(in vec4 ViewSpacePosition,
 
     tNormal.xy = (sample2D(NormalMap, ParticleSampler, UV).ag * 2.0) - 1.0;
     tNormal.z = saturate(sqrt(1.0 - dot(tNormal.xy, tNormal.xy)));
-    
+    vec3 binormal = cross(Normal.xyz, Tangent.xyz);
+
     if (!gl_FrontFacing)
     {
         // flip tangent space if backface, and transform normal
-        tNormal = mat3(Tangent.xyz, Binormal.xyz, -Normal.xyz) * tNormal;
+        tNormal = mat3(Tangent.xyz, binormal.xyz, -Normal.xyz) * tNormal;
     }
     else
     {
         // transform normal to tangent space
-        tNormal = mat3(Tangent.xyz, Binormal.xyz, Normal.xyz) * tNormal; 
+        tNormal = mat3(Tangent.xyz, binormal.xyz, Normal.xyz) * tNormal;
     }
 
     // calculate cluster index

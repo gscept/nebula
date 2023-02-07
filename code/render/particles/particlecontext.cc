@@ -107,9 +107,9 @@ ParticleContext::Create()
     memcpy(&vertex[4], &tangent, 4);
 
     Util::Array<CoreGraphics::VertexComponent> emitterComponents;
-    emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Position, 0, CoreGraphics::VertexComponent::Float3, 0));
-    emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Normal, 0, CoreGraphics::VertexComponent::Byte4N, 0));
-    emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Tangent, 0, CoreGraphics::VertexComponent::Byte4N, 0));
+    emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Position, CoreGraphics::VertexComponent::Float3, 0));
+    emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Normal, CoreGraphics::VertexComponent::Byte4N, 0));
+    emitterComponents.Append(CoreGraphics::VertexComponent(CoreGraphics::VertexComponent::Tangent, CoreGraphics::VertexComponent::Byte4N, 0));
     CoreGraphics::VertexLayoutId emitterLayout = CoreGraphics::CreateVertexLayout({ emitterComponents });
 
     CoreGraphics::BufferCreateInfo vboInfo;
@@ -138,7 +138,6 @@ ParticleContext::Create()
     group.SetBaseVertex(0);
     group.SetNumIndices(1);
     group.SetNumVertices(1);
-    group.SetVertexLayout(emitterLayout);
 
     // setup single point emitter mesh
     CoreGraphics::MeshCreateInfo meshInfo;
@@ -155,7 +154,7 @@ ParticleContext::Create()
 
     // setup particle geometry buffer
     Util::Array<CoreGraphics::VertexComponent> cornerComponents;
-    cornerComponents.Append(CoreGraphics::VertexComponent((CoreGraphics::VertexComponent::SemanticName)0, 0, CoreGraphics::VertexComponent::Float2, 0));
+    cornerComponents.Append(CoreGraphics::VertexComponent(0, CoreGraphics::VertexComponent::Float2, 0));
     float cornerVertexData[] = { 0, 0,  1, 0,  1, 1,  0, 1 };
     CoreGraphics::VertexLayoutId cornerLayout = CoreGraphics::CreateVertexLayout({ cornerComponents });
 
@@ -180,11 +179,11 @@ ParticleContext::Create()
     state.geometryIbo = CoreGraphics::CreateBuffer(iboInfo);
 
     // save vertex components so we can allocate a buffer later
-    state.particleComponents.Append(CoreGraphics::VertexComponent((CoreGraphics::VertexComponent::SemanticName)1, 0, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::position
-    state.particleComponents.Append(CoreGraphics::VertexComponent((CoreGraphics::VertexComponent::SemanticName)2, 0, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::stretchPosition
-    state.particleComponents.Append(CoreGraphics::VertexComponent((CoreGraphics::VertexComponent::SemanticName)3, 0, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::color
-    state.particleComponents.Append(CoreGraphics::VertexComponent((CoreGraphics::VertexComponent::SemanticName)4, 0, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::uvMinMax
-    state.particleComponents.Append(CoreGraphics::VertexComponent((CoreGraphics::VertexComponent::SemanticName)5, 0, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // x: Particle::rotation, y: Particle::size
+    state.particleComponents.Append(CoreGraphics::VertexComponent(0, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::position
+    state.particleComponents.Append(CoreGraphics::VertexComponent(1, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::stretchPosition
+    state.particleComponents.Append(CoreGraphics::VertexComponent(2, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::color
+    state.particleComponents.Append(CoreGraphics::VertexComponent(3, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // Particle::uvMinMax
+    state.particleComponents.Append(CoreGraphics::VertexComponent(4, CoreGraphics::VertexComponent::Float4, 1, CoreGraphics::VertexComponent::PerInstance, 1));   // x: Particle::rotation, y: Particle::size
 
     SizeT numFrames = CoreGraphics::GetNumBufferedFrames();
     state.vbos.Resize(numFrames);
@@ -260,7 +259,7 @@ ParticleContext::Setup(const Graphics::GraphicsEntityId id)
             renderables.nodeModelApplyCallbacks[i] = [](const CoreGraphics::CmdBufferId id)
             {
                 CoreGraphics::CmdSetVertexLayout(id, ParticleContext::GetParticleVertexLayout());
-                CoreGraphics::CmdSetIndexBuffer(id, ParticleContext::GetParticleIndexBuffer(), 0);
+                CoreGraphics::CmdSetIndexBuffer(id, CoreGraphics::IndexType::Index16, ParticleContext::GetParticleIndexBuffer(), 0);
                 CoreGraphics::CmdSetVertexBuffer(id, 0, ParticleContext::GetParticleVertexBuffer(), 0);
                 CoreGraphics::CmdSetVertexBuffer(id, 1, state.vbos[CoreGraphics::GetBufferedFrameIndex()], 0);
             };
@@ -383,7 +382,7 @@ ParticleContext::UpdateParticles(const Graphics::FrameContext& ctx)
         const Models::NodeInstanceRange& stateRange = Models::ModelContext::GetModelRenderableRange(graphicsEntities[i]);
         const Models::NodeInstanceRange& transformRange = Models::ModelContext::GetModelTransformableRange(graphicsEntities[i]);
 
-        if (runtime.playing)
+        if (runtime.playing && !systems.IsEmpty())
         {
             Jobs2::JobBeginSequence(nullptr, &allSystemsCompleteCounter);
 

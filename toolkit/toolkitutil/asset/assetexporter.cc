@@ -75,7 +75,6 @@ AssetExporter::UpdateSource()
 void
 AssetExporter::ExportDir(const Util::String& category)
 {
-
     String assetPath = String::Sprintf("src:assets/%s/", category.AsCharPtr());
     this->ExportFolder(assetPath, category);
 }

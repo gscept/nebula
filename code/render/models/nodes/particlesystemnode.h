@@ -14,6 +14,7 @@
 #include "particles/envelopesamplebuffer.h"
 #include "particles/emittermesh.h"
 #include "coregraphics/buffer.h"
+#include "coregraphics/meshresource.h"
 #include "coregraphics/resourcetable.h"
 
 //------------------------------------------------------------------------------
@@ -68,7 +69,8 @@ protected:
 
     Util::StringAtom tag;
     IndexT primGroupIndex;
-    Resources::ResourceId mesh;
+    Resources::ResourceId meshResource;
+    CoreGraphics::MeshId mesh;
 };
 
 //------------------------------------------------------------------------------

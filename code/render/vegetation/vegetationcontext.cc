@@ -558,7 +558,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
             CmdSetVertexLayout(cmdBuf, vegetationState.grassLayout);
             CmdSetVertexBuffer(cmdBuf, 0, vegetationState.grassVbo, 0);
-            CmdSetIndexBuffer(cmdBuf, vegetationState.grassIbo, 0);
+            CmdSetIndexBuffer(cmdBuf, IndexType::Index16, vegetationState.grassIbo, 0);
 
             // set graphics pipeline
             CmdSetGraphicsPipeline(cmdBuf);
@@ -581,7 +581,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
                 CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
                 CmdSetVertexLayout(cmdBuf, vegetationState.layouts[i]);
                 CmdSetVertexBuffer(cmdBuf, 0, CoreGraphics::GetVertexBuffer(), vegetationState.meshVertexOffsets[i]);
-                CmdSetIndexBuffer(cmdBuf, CoreGraphics::GetIndexBuffer(), vegetationState.meshIndexOffsets[i]);
+                CmdSetIndexBuffer(cmdBuf, IndexType::Index16, CoreGraphics::GetIndexBuffer(), vegetationState.meshIndexOffsets[i]);
 
                 // set graphics pipeline
                 CmdSetGraphicsPipeline(cmdBuf);
@@ -633,7 +633,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
             CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
             CmdSetVertexLayout(cmdBuf, vegetationState.grassLayout);
             CmdSetVertexBuffer(cmdBuf, 0, vegetationState.grassVbo, 0);
-            CmdSetIndexBuffer(cmdBuf, vegetationState.grassIbo, 0);
+            CmdSetIndexBuffer(cmdBuf, IndexType::Index16, vegetationState.grassIbo, 0);
 
             // set graphics pipeline
             CmdSetGraphicsPipeline(cmdBuf);
@@ -656,7 +656,7 @@ VegetationContext::Create(const VegetationSetupSettings& settings)
                 CmdSetPrimitiveTopology(cmdBuf, CoreGraphics::PrimitiveTopology::TriangleList);
                 CmdSetVertexLayout(cmdBuf, vegetationState.layouts[i]);
                 CmdSetVertexBuffer(cmdBuf, 0, CoreGraphics::GetVertexBuffer(), vegetationState.meshVertexOffsets[i]);
-                CmdSetIndexBuffer(cmdBuf, CoreGraphics::GetIndexBuffer(), vegetationState.meshIndexOffsets[i]);
+                CmdSetIndexBuffer(cmdBuf, IndexType::Index16, CoreGraphics::GetIndexBuffer(), vegetationState.meshIndexOffsets[i]);
 
                 // set graphics pipeline
                 CmdSetGraphicsPipeline(cmdBuf);
@@ -768,9 +768,9 @@ VegetationContext::Setup(Resources::ResourceName heightMap, SizeT numGrassPlanes
     vloInfo.comps =
     {
         // per vertex geometry data
-        VertexComponent(VertexComponent::Position, 0, VertexComponent::Float3),
-        VertexComponent(VertexComponent::Normal, 0, VertexComponent::Float3),
-        VertexComponent(VertexComponent::TexCoord1, 0, VertexComponent::Float2),
+        VertexComponent(0, VertexComponent::Float3),
+        VertexComponent(1, VertexComponent::Float3),
+        VertexComponent(2, VertexComponent::Float2),
     };
     vegetationState.grassLayout = CoreGraphics::CreateVertexLayout(vloInfo);
 
@@ -797,23 +797,23 @@ VegetationContext::Setup(Resources::ResourceName heightMap, SizeT numGrassPlanes
     vloInfo.comps =
     {
         // per vertex geometry data
-        VertexComponent(VertexComponent::Position, 0, VertexComponent::Float3),
-        VertexComponent(VertexComponent::Normal, 0, VertexComponent::Byte4N),
-        VertexComponent(VertexComponent::TexCoord1, 0, VertexComponent::Float2),
-        VertexComponent(VertexComponent::Binormal, 0, VertexComponent::Byte4N),
-        VertexComponent(VertexComponent::Tangent, 0, VertexComponent::Byte4N),
-        VertexComponent(VertexComponent::Color, 0, VertexComponent::UByte4N),
+        VertexComponent(VertexComponent::IndexName::Position, VertexComponent::Float3),
+        VertexComponent(VertexComponent::IndexName::Normal, VertexComponent::Byte4N),
+        VertexComponent(VertexComponent::IndexName::TexCoord1, VertexComponent::Float2),
+        VertexComponent(VertexComponent::IndexName::Tangent, VertexComponent::Byte4N),
+        VertexComponent(VertexComponent::IndexName::Binormal, VertexComponent::Byte4N),
+        VertexComponent(VertexComponent::IndexName::Color, VertexComponent::UByte4N),
     };
     vegetationState.combinedMeshLayoutWithColor = CoreGraphics::CreateVertexLayout(vloInfo);
 
     vloInfo.comps =
     {
         // per vertex geometry data
-        VertexComponent(VertexComponent::Position, 0, VertexComponent::Float3),
-        VertexComponent(VertexComponent::Normal, 0, VertexComponent::Byte4N),
-        VertexComponent(VertexComponent::TexCoord1, 0, VertexComponent::Float2),
-        VertexComponent(VertexComponent::Binormal, 0, VertexComponent::Byte4N),
-        VertexComponent(VertexComponent::Tangent, 0, VertexComponent::Byte4N),
+        VertexComponent(VertexComponent::IndexName::Position, VertexComponent::Float3),
+        VertexComponent(VertexComponent::IndexName::Normal, VertexComponent::Byte4N),
+        VertexComponent(VertexComponent::IndexName::TexCoord1, VertexComponent::Float2),
+        VertexComponent(VertexComponent::IndexName::Tangent, VertexComponent::Byte4N),
+        VertexComponent(VertexComponent::IndexName::Binormal, VertexComponent::Byte4N),
     };
     vegetationState.combinedMeshLayout = CoreGraphics::CreateVertexLayout(vloInfo);
 }
@@ -922,7 +922,7 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
     uint baseIndexOffset = CoreGraphics::MeshGetIndexOffset(mesh);
 
     // make sure the mesh is valid for vegetation rendering
-    const Util::Array<CoreGraphics::VertexComponent>& components = CoreGraphics::VertexLayoutGetComponents(groups[0].GetVertexLayout());
+    const Util::Array<CoreGraphics::VertexComponent>& components = CoreGraphics::VertexLayoutGetComponents(MeshGetVertexLayout(mesh));
     n_assert(components.Size() >= 5);
     if (components.Size() == 6) // with vertex colors
     {
@@ -964,9 +964,9 @@ VegetationContext::SetupMesh(const Graphics::GraphicsEntityId id, const Vegetati
         500,
         1000
     };
+    SizeT size = CoreGraphics::VertexLayoutGetSize(MeshGetVertexLayout(mesh));
     for (IndexT i = 0; i < groups.Size(); i++)
     {
-        SizeT size = CoreGraphics::VertexLayoutGetSize(groups[i].GetVertexLayout());
         if (lodDistances[i] == FLT_MAX)
             info.lodDistances[i] = distances[i] * distances[i];
         else

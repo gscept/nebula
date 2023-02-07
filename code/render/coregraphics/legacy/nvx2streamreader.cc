@@ -177,7 +177,6 @@ Nvx2StreamReader::ReadPrimitiveGroups()
         primGroup.SetNumVertices(group->numVertices);
         primGroup.SetBaseIndex(group->firstTriangle * 3);
         primGroup.SetNumIndices(group->numTriangles * 3);
-        primGroup.SetVertexLayout(this->layout);
         this->primGroups.Append(primGroup);
 
         // set top next group
@@ -196,41 +195,40 @@ Nvx2StreamReader::SetupVertexComponents()
     IndexT i;
     for (i = 0; i < N2NumVertexComponents; i++)
     {
-        VertexComponent::SemanticName sem;
         VertexComponent::Format fmt;
         IndexT index = 0;
         if (this->vertexComponentMask & (1<<i))
         {
             switch (1<<i)
             {
-                case N2Coord:        sem = VertexComponent::Position;     fmt = VertexComponent::Float3; break;
-                case N2Normal:       sem = VertexComponent::Normal;       fmt = VertexComponent::Float3; break;
-                case N2NormalB4N:    sem = VertexComponent::Normal;       fmt = VertexComponent::Byte4N; break;
-                case N2Uv0:          sem = VertexComponent::TexCoord1;    fmt = VertexComponent::Float2; index = 0; break;
-                case N2Uv0S2:        sem = VertexComponent::TexCoord1;    fmt = VertexComponent::Short2; index = 0; break;
-                case N2Uv1:          sem = VertexComponent::TexCoord2;    fmt = VertexComponent::Float2; index = 1; break;
-                case N2Uv1S2:        sem = VertexComponent::TexCoord2;    fmt = VertexComponent::Short2; index = 1; break;
-                case N2Uv2:          sem = VertexComponent::TexCoord3;    fmt = VertexComponent::Float2; index = 2; break;
-                case N2Uv2S2:        sem = VertexComponent::TexCoord3;    fmt = VertexComponent::Short2; index = 2; break;
-                case N2Uv3:          sem = VertexComponent::TexCoord4;    fmt = VertexComponent::Float2; index = 3; break;
-                case N2Uv3S2:        sem = VertexComponent::TexCoord4;    fmt = VertexComponent::Short2; index = 3; break;
-                case N2Tangent:      sem = VertexComponent::Tangent;      fmt = VertexComponent::Float3; break;
-                case N2TangentB4N:   sem = VertexComponent::Tangent;      fmt = VertexComponent::Byte4N; break;
-                case N2Binormal:     sem = VertexComponent::Binormal;     fmt = VertexComponent::Float3; break;
-                case N2BinormalB4N:  sem = VertexComponent::Binormal;     fmt = VertexComponent::Byte4N; break;
-                case N2Color:        sem = VertexComponent::Color;        fmt = VertexComponent::Float4; break;
-                case N2ColorUB4N:    sem = VertexComponent::Color;        fmt = VertexComponent::UByte4N; break;
-                case N2Weights:      sem = VertexComponent::SkinWeights;  fmt = VertexComponent::Float4; break;
-                case N2WeightsUB4N:  sem = VertexComponent::SkinWeights;  fmt = VertexComponent::UByte4N; break;
-                case N2JIndices:     sem = VertexComponent::SkinJIndices; fmt = VertexComponent::Float4; break;
-                case N2JIndicesUB4:  sem = VertexComponent::SkinJIndices; fmt = VertexComponent::UByte4; break;
+                case N2Coord:        index = VertexComponent::Position;     fmt = VertexComponent::Float3; break;
+                case N2Normal:       index = VertexComponent::Normal;       fmt = VertexComponent::Float3; break;
+                case N2NormalB4N:    index = VertexComponent::Normal;       fmt = VertexComponent::Byte4N; break;
+                case N2Uv0:          index = VertexComponent::TexCoord1;    fmt = VertexComponent::Float2; break;
+                case N2Uv0S2:        index = VertexComponent::TexCoord1;    fmt = VertexComponent::Short2; break;
+                case N2Uv1:          index = VertexComponent::TexCoord2;    fmt = VertexComponent::Float2; break;
+                case N2Uv1S2:        index = VertexComponent::TexCoord2;    fmt = VertexComponent::Short2; break;
+                case N2Uv2:          index = VertexComponent::TexCoord3;    fmt = VertexComponent::Float2; break;
+                case N2Uv2S2:        index = VertexComponent::TexCoord3;    fmt = VertexComponent::Short2; break;
+                case N2Uv3:          index = VertexComponent::TexCoord4;    fmt = VertexComponent::Float2; break;
+                case N2Uv3S2:        index = VertexComponent::TexCoord4;    fmt = VertexComponent::Short2; break;
+                case N2Tangent:      index = VertexComponent::Tangent;      fmt = VertexComponent::Float3; break;
+                case N2TangentB4N:   index = VertexComponent::Tangent;      fmt = VertexComponent::Byte4N; break;
+                case N2Binormal:     index = VertexComponent::Binormal;     fmt = VertexComponent::Float3; break;
+                case N2BinormalB4N:  index = VertexComponent::Binormal;     fmt = VertexComponent::Byte4N; break;
+                case N2Color:        index = VertexComponent::Color;        fmt = VertexComponent::Float4; break;
+                case N2ColorUB4N:    index = VertexComponent::Color;        fmt = VertexComponent::UByte4N; break;
+                case N2Weights:      index = VertexComponent::SkinWeights;  fmt = VertexComponent::Float4; break;
+                case N2WeightsUB4N:  index = VertexComponent::SkinWeights;  fmt = VertexComponent::UByte4N; break;
+                case N2JIndices:     index = VertexComponent::SkinJIndices; fmt = VertexComponent::Float4; break;
+                case N2JIndicesUB4:  index = VertexComponent::SkinJIndices; fmt = VertexComponent::UByte4; break;
                 default:
                     n_error("Invalid Nebula VertexComponent in Nvx2StreamReader::SetupVertexComponents");
-                    sem = VertexComponent::Position;
+                    index = VertexComponent::Position;
                     fmt = VertexComponent::Float3;
                     break;
             }
-            this->vertexComponents.Append(VertexComponent(sem, index, fmt));
+            this->vertexComponents.Append(VertexComponent(index, fmt));
         }
     }
 
