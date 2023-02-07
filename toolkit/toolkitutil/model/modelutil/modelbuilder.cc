@@ -460,13 +460,16 @@ ModelBuilder::WriteShapes(const Ptr<ModelWriter>& writer)
             WriteTransform(writer, shape.transform);
             WriteState(writer, shape.meshResource, shape.meshIndex, shape.boundingBox, shape.primitiveGroupIndex, state);
 
-            writer->BeginTag("LODMinDistance", 'SMID');
-            writer->WriteFloat(shape.LODMin);
-            writer->EndTag();
+            if (shape.useLOD)
+            {
+                writer->BeginTag("LODMinDistance", 'SMID');
+                writer->WriteFloat(shape.LODMin);
+                writer->EndTag();
 
-            writer->BeginTag("LODMaxDistance", 'SMAD');
-            writer->WriteFloat(shape.LODMax);
-            writer->EndTag();
+                writer->BeginTag("LODMaxDistance", 'SMAD');
+                writer->WriteFloat(shape.LODMax);
+                writer->EndTag();
+            }
 
         writer->EndModelNode();
     }
