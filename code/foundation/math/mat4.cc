@@ -113,11 +113,10 @@ decompose(const mat4& mat, vec3& outScale, quat& outRotation, vec3& outTranslati
 /**
 */
 mat4
-affinetransformation(scalar scale, const vec3& rotationCenter, const quat& rotation, const vec3& translation)
+affine(const vec3& scale, const vec3& rotationCenter, const quat& rotation, const vec3& translation)
 {
     // M = MScaling * Inverse(MRotationOrigin) * MRotation * MRotationOrigin * MTranslation;
-    vec3 scalev(scale);
-    mat4 scalem = scaling(scalev);
+    mat4 scalem = scaling(scale);
     mat4 rot = rotationquat(rotation);
     vec4 rotc = vec4(rotationCenter, 0.0f);
     vec4 trans = vec4(translation, 0.0f);
@@ -127,6 +126,47 @@ affinetransformation(scalar scale, const vec3& rotationCenter, const quat& rotat
     m = rot * m;
     m.r[3] = _mm_add_ps(_mm_add_ps(m.r[3].vec, rotc.vec), trans.vec);
     return m;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+mat4
+affine(const vec3& scale, const quat& rotation, const vec3& translation)
+{
+    // M = MScaling * Inverse(MRotationOrigin) * MRotation * MRotationOrigin * MTranslation;
+    mat4 m = rotationquat(rotation);
+    m.row0.vec = _mm_mul_ps(m.row0.vec, scale.vec);
+    m.row1.vec = _mm_mul_ps(m.row1.vec, scale.vec);
+    m.row2.vec = _mm_mul_ps(m.row2.vec, scale.vec);
+    m.position = vec4(translation, 1);
+    return m;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+mat4
+affine(const vec3& scale, const vec3& rotation, const vec3& translation)
+{
+    // M = MScaling * Inverse(MRotationOrigin) * MRotation * MRotationOrigin * MTranslation;
+    mat4 m = rotationyawpitchroll(rotation.y, rotation.x, rotation.z);
+    m.row0.vec = _mm_mul_ps(m.row0.vec, scale.vec);
+    m.row1.vec = _mm_mul_ps(m.row1.vec, scale.vec);
+    m.row2.vec = _mm_mul_ps(m.row2.vec, scale.vec);
+    m.position = vec4(translation, 1);
+    return m;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+mat4
+affinetransformation(scalar scale, const vec3& rotationCenter, const quat& rotation, const vec3& translation)
+{
+    // M = MScaling * Inverse(MRotationOrigin) * MRotation * MRotationOrigin * MTranslation;
+    vec3 scalev(scale);
+    return affine(scalev, rotationCenter, rotation, translation);
 }
 
 //------------------------------------------------------------------------------
@@ -174,6 +214,54 @@ transformation(const vec3& scalingCenter, const quat& scalingRotation, const vec
     m = mrotate * m;
     m.r[3] = m.r[3] + rotc + translate;
     return m;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+mat4
+euler(const vec3& pitchYawRoll)
+{
+    __m128 cosmm;
+    __m128 sinmm = _mm_sincos_ps(&cosmm, pitchYawRoll.vec);
+
+    vec4 cos(cosmm);
+    vec4 sin(sinmm);
+    vec4 p0 = permute(sin, cos, PERMUTE_1X, PERMUTE_0Z, PERMUTE_1Z, PERMUTE_1X);
+    vec4 y0 = permute(sin, cos, PERMUTE_0Y, PERMUTE_1X, PERMUTE_1X, PERMUTE_1Y);
+    vec4 p1 = permute(sin, cos, PERMUTE_1Z, PERMUTE_0Z, PERMUTE_1Z, PERMUTE_0Z);
+    vec4 y1 = permute(sin, cos, PERMUTE_1Y, PERMUTE_1Y, PERMUTE_0Y, PERMUTE_0Y);
+    vec4 p2 = permute(sin, cos, PERMUTE_0Z, PERMUTE_1Z, PERMUTE_0Z, PERMUTE_1Z);
+    vec4 p3 = permute(sin, cos, PERMUTE_0Y, PERMUTE_0Y, PERMUTE_1Y, PERMUTE_1Y);
+    vec4 y2 = splat_x(sin);
+    vec4 ns = -sin;
+
+    static const vec4 sign(1, -1, -1, 1);
+
+    vec4 q0 = p0 * y0;
+    vec4 q1 = p1 * sign;
+    q1 = q1 * y1;
+    vec4 q2 = p2 * y2;
+    q2 = multiplyadd(q2, p3, q1);
+
+    vec4 v0 = permute(q0, q2, PERMUTE_1X, PERMUTE_0Y, PERMUTE_1Z, PERMUTE_0W);
+    vec4 v1 = permute(q0, q2, PERMUTE_1Y, PERMUTE_0Z, PERMUTE_1W, PERMUTE_0W);
+    vec4 v2 = permute(q0, q2, PERMUTE_0X, PERMUTE_1X, PERMUTE_0W, PERMUTE_0W);
+
+    v0 = select(vec4(0), v0, vec4(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0));
+    v1 = select(vec4(0), v1, vec4(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0));
+    v2 = select(vec4(0), v2, vec4(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0));
+
+    return mat4(v0, v1, v2, vec4(0, 0, 0, 1));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+mat4
+euler(const scalar yaw, const scalar pitch, const scalar roll)
+{
+    return euler(vec3(pitch, yaw, roll));
 }
 
 //------------------------------------------------------------------------------
