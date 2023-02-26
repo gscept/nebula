@@ -20,7 +20,8 @@ struct quat;
 quat slerp(const quat& q1, const quat& q2, scalar t);
 
 quat rotationmatrix(const mat4& m);
-void to_euler(const quat& q, vec4& outangles);
+vec3 to_euler(const quat& q);
+quat eulerquat(float x, float y, float z);
 
 struct NEBULA_ALIGN16 quat
 {

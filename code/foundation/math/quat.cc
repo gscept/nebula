@@ -59,8 +59,29 @@ rotationmatrix(const mat4& m)
 //------------------------------------------------------------------------------
 /**
 */
-void
-to_euler(const quat& q, vec4& outangles)
+quat
+eulerquat(float x, float y, float z)
+{
+    float cx = cos(x * 0.5f);
+    float sx = sin(x * 0.5f);
+    float cy = cos(y * 0.5f);
+    float sy = sin(y * 0.5f);
+    float cz = cos(z * 0.5f);
+    float sz = sin(z * 0.5f);
+    
+    return normalize(quat(
+        sx * cy * cz - cx * sy * sz
+        , cx * sy * cz + sx * cy * sz
+        , cx * cy * sz - sx * sy * cz
+        , cx * cy * cz + sx * sy * sz
+    ));
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+vec3
+to_euler(const quat& q)
 {
     float q0 = q.x;
     float q1 = q.y;
@@ -69,7 +90,7 @@ to_euler(const quat& q, vec4& outangles)
     float x = atan2f(2.0f * (q0 * q1 + q2 * q3), 1.0f - 2.0f * (q1 * q1 + q2 * q2));
     float y = asinf(2.0f * (q0 * q2 - q3 * q1));
     float z = atanf((2.0f * (q0 * q3 + q1 * q2)) / (1.0f - 2.0f * (q2 * q2 + q3 * q3)));
-    outangles.set(x, y, z, 0.0f);
+    return vec3(x, y, z);
 }
 
 } // namespace Math
