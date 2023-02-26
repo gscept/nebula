@@ -238,15 +238,15 @@ MeshBuilderSaver::WriteVertices(const Ptr<Stream>& stream, const Util::Array<Mes
                     CoreGraphics::SkinVertex& outVtx = attrBuffer[vertexIndex];
                     normalLambda(outVtx, vtx);
 
-                    outVtx.skinWeights.x = vtx.attributes.skin.weights.x * 255.0f;
-                    outVtx.skinWeights.y = vtx.attributes.skin.weights.y * 255.0f;
-                    outVtx.skinWeights.z = vtx.attributes.skin.weights.z * 255.0f;
-                    outVtx.skinWeights.w = vtx.attributes.skin.weights.w * 255.0f;
+                    outVtx.skinWeights[0] = vtx.attributes.skin.weights.x;
+                    outVtx.skinWeights[1] = vtx.attributes.skin.weights.y;
+                    outVtx.skinWeights[2] = vtx.attributes.skin.weights.z;
+                    outVtx.skinWeights[3] = vtx.attributes.skin.weights.w;
 
-                    outVtx.skinIndices.x = vtx.attributes.skin.indices.x;
-                    outVtx.skinIndices.y = vtx.attributes.skin.indices.y;
-                    outVtx.skinIndices.z = vtx.attributes.skin.indices.z;
-                    outVtx.skinIndices.w = vtx.attributes.skin.indices.w;
+                    outVtx.skinIndices.x = vtx.attributes.skin.remapIndices.x;
+                    outVtx.skinIndices.y = vtx.attributes.skin.remapIndices.y;
+                    outVtx.skinIndices.z = vtx.attributes.skin.remapIndices.z;
+                    outVtx.skinIndices.w = vtx.attributes.skin.remapIndices.w;
                 }
                 break;
             }

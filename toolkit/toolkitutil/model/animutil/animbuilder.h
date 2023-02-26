@@ -38,30 +38,16 @@ public:
     /// count the number of actual keys in all clips
     SizeT CountKeys() const;
 
-    /// generate velocity curves from translation curves
-    void BuildVelocityCurves();
-    /// fix first-key-indices in anim curves
-    void FixAnimCurveFirstKeyIndices();
-    /// fix the static key values for inactive curves
-    void FixInactiveCurveStaticKeyValues();
-    /// fix keys which might have had invalid values
-    void FixInvalidKeyValues();
-    /// cut keys from end of tracks
-    void TrimEnd(SizeT numKeys);
+    /// Generate velocity curves from translation curves
+    void BuildVelocityCurves(float keysPerMS);
 
-    /// downsample all anim curves once
-    //void Downsample();
-    /// downsample a specific clip
-    //void DownsampleClip(IndexT i);
-    /// optimize the animation data
-    //void Optimize();
-    /// fix key offsets (call after optimizing)
-    //void FixKeyOffsets() const;
-    /// build additional data for anim driven motion
-    //void BuildAnimDrivenMotionData();
-    
+    Util::Array<float> keys;
+    Util::Array<Timing::Tick> keyTimes;
+    Util::Array<AnimBuilderCurve> curves;
+    Util::Array<CoreAnimation::AnimEvent> events;
+    Util::Array<AnimBuilderClip> clips;
+
 private:
-    Util::Array<AnimBuilderClip> clipArray;
 };
 
 //------------------------------------------------------------------------------
@@ -70,7 +56,7 @@ private:
 inline SizeT
 AnimBuilder::GetNumClips() const
 {
-    return this->clipArray.Size();
+    return this->clips.Size();
 }
 
 //------------------------------------------------------------------------------
@@ -79,7 +65,7 @@ AnimBuilder::GetNumClips() const
 inline AnimBuilderClip&
 AnimBuilder::GetClipAtIndex(IndexT i) const
 {
-    return this->clipArray[i];
+    return this->clips[i];
 }
 
 } // namespace ToolkitUtil

@@ -17,7 +17,7 @@ MeshBuilderVertex::MeshBuilderVertex() :
     componentMask(Position)
     , flagMask(0)
 {
-    // Do nothing
+    this->attributes.skin.indices = { 0, 0, 0, 0 };
 }
 
 //------------------------------------------------------------------------------

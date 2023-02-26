@@ -251,13 +251,13 @@ SceneWriter::CreateModel(
                     skinNode.LODMax = mesh->mesh.maxLodDistance;
                     skinNode.LODMin = mesh->mesh.minLodDistance;
                 }
-                skinNode.transform.position = mesh->base.position;
+                skinNode.transform.position = mesh->base.translation;
                 skinNode.transform.rotation = mesh->base.rotation;
                 skinNode.transform.scale = mesh->base.scale;
                 skinNode.boundingBox = mesh->base.boundingBox;
                 skinNode.name = mesh->base.name;
                 skinNode.primitiveGroupIndex = mesh->skin.skinFragments[j];
-                skinNode.fragmentJoints = mesh->skin.jointLookup[j];
+                skinNode.fragmentJoints = mesh->skin.jointLookup[j].KeysAsArray();
 
                 skinSetNode.skinFragments.Append(skinNode);
 
@@ -278,7 +278,7 @@ SceneWriter::CreateModel(
                 shapeNode.LODMax = mesh->mesh.maxLodDistance;
                 shapeNode.LODMin = mesh->mesh.minLodDistance;
             }
-            shapeNode.transform.position = mesh->base.position;
+            shapeNode.transform.position = mesh->base.translation;
             shapeNode.transform.rotation = mesh->base.rotation;
             shapeNode.transform.scale = mesh->base.scale;
             shapeNode.boundingBox = mesh->base.boundingBox;
@@ -319,7 +319,7 @@ SceneWriter::CreateModel(
         ModelConstants::PhysicsNode node;
         node.mesh = physicsMeshRes;
         node.path = nodePath;
-        node.transform.position = mesh->base.position;
+        node.transform.position = mesh->base.translation;
         node.transform.rotation = mesh->base.rotation;
         node.transform.scale = mesh->base.scale;
         node.primitiveGroupIndex = mesh->mesh.groupId;

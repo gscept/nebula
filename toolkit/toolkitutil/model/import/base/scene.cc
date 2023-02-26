@@ -19,6 +19,7 @@ namespace ToolkitUtil
 
 float SceneScale = 1.0f;
 float AdjustedScale = 1.0f;
+float AnimationFrameRate = 24.0f;
 int KeysPerMS = 40;
 
 //------------------------------------------------------------------------------
@@ -137,7 +138,7 @@ Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<Scene
                 const MeshBuilderVertex& vtx0 = mesh->VertexAt(tri.GetVertexIndex(0));
                 const MeshBuilderVertex& vtx1 = mesh->VertexAt(tri.GetVertexIndex(1));
                 const MeshBuilderVertex& vtx2 = mesh->VertexAt(tri.GetVertexIndex(2));
-
+                
                 // Create set of unique joint
                 Util::Set<IndexT> uniqueJoints;
                 for (IndexT k = 0; k < 4; k++)
@@ -156,7 +157,7 @@ Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<Scene
                 {
                     // Create new group and joint lookup whenever we hit the max allowed
                     node->skin.skinFragments.Append(outGroups.Size());
-                    node->skin.jointLookup.Append(joints.KeysAsArray());
+                    node->skin.jointLookup.Append(joints);
 
                     group.SetFirstTriangleIndex(baseTriangle);
                     group.SetNumTriangles(numTriangles);
@@ -177,10 +178,43 @@ Scene::OptimizeGraphics(Util::Array<SceneNode*>& outMeshNodes, Util::Array<Scene
 
             // Add the last group
             node->skin.skinFragments.Append(outGroups.Size());
-            node->skin.jointLookup.Append(joints.KeysAsArray());
+            node->skin.jointLookup.Append(joints);
             group.SetFirstTriangleIndex(baseTriangle);
             group.SetNumTriangles(numTriangles);
             outGroups.Append(group);
+
+            // Fixup joint indices, by moving the range of joints per fragment to 0-255
+            int jointOffset = 0;
+            for (IndexT i = 0; i < node->skin.skinFragments.Size(); i++)
+            {
+                // The first joint is going to be the lowest value in our range
+                const Util::Set<IndexT>& lookup = node->skin.jointLookup[i];
+                const MeshBuilderGroup& group = outGroups[node->skin.skinFragments[i]];
+                for (IndexT i = 0; i < group.GetNumTriangles(); i++)
+                {
+                    const MeshBuilderTriangle& tri = mesh->TriangleAt(group.GetFirstTriangleIndex() + i);
+                    MeshBuilderVertex& vtx0 = mesh->VertexAt(tri.GetVertexIndex(0));
+                    MeshBuilderVertex& vtx1 = mesh->VertexAt(tri.GetVertexIndex(1));
+                    MeshBuilderVertex& vtx2 = mesh->VertexAt(tri.GetVertexIndex(2));
+
+                    // Using the joint lookup table, remap the vertex joint indices
+                    for (IndexT k = 0; k < 4; k++)
+                    {
+                        IndexT idx0, idx1, idx2;
+                        idx0 = lookup.FindIndex(vtx0.attributes.skin.indices.v[k]);
+                        n_assert(idx0 != InvalidIndex);
+                        vtx0.attributes.skin.remapIndices.v[k] = idx0;
+
+                        idx1 = lookup.FindIndex(vtx1.attributes.skin.indices.v[k]);
+                        n_assert(idx1 != InvalidIndex);
+                        vtx1.attributes.skin.remapIndices.v[k] = idx1;
+
+                        idx2 = lookup.FindIndex(vtx2.attributes.skin.indices.v[k]);
+                        n_assert(idx2 != InvalidIndex);
+                        vtx2.attributes.skin.remapIndices.v[k] = idx2;
+                    }
+                }
+            }
         }
     }
 }
@@ -204,137 +238,43 @@ Scene::OptimizePhysics(Util::Array<SceneNode*>& outNodes, MeshBuilder*& outMesh)
 //------------------------------------------------------------------------------
 /**
 */
-bool 
-Scene::SplitAnimationCurves(SceneNode* node, const Util::Array<AnimBuilderCurve>& curves, ToolkitUtil::AnimBuilder& anim, const Ptr<ToolkitUtil::ModelAttributes>& attributes)
+void 
+Scene::GenerateClip(SceneNode* node, AnimBuilder& animBuilder, const Util::String& name)
 {
-    // split if we have attributes for this stack and resource
-    if (attributes.isvalid() && attributes->HasTake(node->anim.take))
+    Util::Array<AnimBuilderCurve> curves;
+
+    std::function<void(Util::Array<AnimBuilderCurve>&, SceneNode*)> collectCurves = [&](Util::Array<AnimBuilderCurve>& curves, SceneNode* node)
     {
-        const Ptr<Take>& take = attributes->GetTake(node->anim.take);
+        curves.Append(node->anim.translationCurve);
+        curves.Append(node->anim.rotationCurve);
+        curves.Append(node->anim.scaleCurve);
 
-        // we might have an empty take, in this case, just return false
-        if (take->GetClips().Size() == 0)
-        {
-            return false;
-        }
+        for (auto child : node->base.children)
+            collectCurves(curves, child);
+    };
+    collectCurves(curves, node);
 
-        const Util::Array<Ptr<Clip>>& clips = take->GetClips();
-        for (int splitIndex = 0; splitIndex < clips.Size(); splitIndex++)
-        {
-            const Ptr<Clip>& split = clips[splitIndex];
-            AnimBuilderClip clip;
-            clip.SetName(split->GetName());
-            clip.SetKeyDuration(KeysPerMS);
-            int clipKeyCount = split->GetEnd() - split->GetStart();
-            if (clipKeyCount == 0) continue; // ignore empty clips
-            clip.SetNumKeys(clipKeyCount);
-            clip.SetPreInfinityType(split->GetPreInfinity() == Clip::Constant ? CoreAnimation::InfinityType::Constant : CoreAnimation::InfinityType::Cycle);
-            clip.SetPostInfinityType(split->GetPostInfinity() == Clip::Constant ? CoreAnimation::InfinityType::Constant : CoreAnimation::InfinityType::Cycle);
-            clip.SetStartKeyIndex(0);
+    // If split fails, just add the whole animation
+    AnimBuilderClip clip;
+    clip.firstCurveOffset = 0;
+    clip.numCurves = curves.Size();
+    clip.firstEventOffset = 0;
+    clip.numEvents = 0;
+    clip.firstVelocityCurveOffset = 0;
+    clip.numVelocityCurves = 0;
 
-            for (int curveIndex = 0; curveIndex < curves.Size(); curveIndex += 3)
-            {
-                const AnimBuilderCurve& curveX = curves[curveIndex];
-                const AnimBuilderCurve& curveY = curves[curveIndex + 1];
-                const AnimBuilderCurve& curveZ = curves[curveIndex + 2];
+    // Transfer ownership of curves to the builder
+    animBuilder.curves = std::move(curves);
 
-                AnimBuilderCurve splitX;
-                AnimBuilderCurve splitY;
-                AnimBuilderCurve splitZ;
+    int numCurves = animBuilder.curves.Size();
+    clip.duration = 0;
 
-                splitX.SetCurveType(curveX.GetCurveType());
-                splitY.SetCurveType(curveY.GetCurveType());
-                splitZ.SetCurveType(curveZ.GetCurveType());
+    for (const auto& curve : animBuilder.curves)
+        if (curve.numKeys > 0)
+            clip.duration = Math::max(clip.duration, animBuilder.keyTimes[curve.firstTimeOffset + curve.numKeys - 1]);
 
-                if (curveX.IsStatic())
-                {
-                    splitX.SetStaticKey(curveX.GetStaticKey());
-                    splitX.SetStatic(true);
-                    splitX.SetActive(true);
-                }
-                else
-                {
-                    splitX.ResizeKeyArray(clipKeyCount);
-                    splitX.SetActive(true);
-                    splitX.SetStatic(false);
-                }
-                if (curveY.IsStatic())
-                {
-                    splitY.SetStaticKey(curveY.GetStaticKey());
-                    splitY.SetStatic(true);
-                    splitX.SetActive(true);
-                }
-                else
-                {
-                    splitY.ResizeKeyArray(clipKeyCount);
-                    splitY.SetActive(true);
-                    splitY.SetStatic(false);
-                }
-                if (curveZ.IsStatic())
-                {
-                    splitZ.SetStaticKey(curveZ.GetStaticKey());
-                    splitZ.SetStatic(true);
-                    splitX.SetActive(true);
-                }
-                else
-                {
-                    splitZ.ResizeKeyArray(clipKeyCount);
-                    splitZ.SetActive(true);
-                    splitZ.SetStatic(false);
-                }
-
-                int splitIndex = 0;
-                for (int keyIndex = split->GetStart(); (keyIndex < split->GetEnd()) && (keyIndex < node->anim.span); keyIndex++)
-                {
-                    if (!splitX.IsStatic())
-                    {
-                        splitX.SetKey(splitIndex, curveX.GetKey(keyIndex));
-                    }
-                    if (!splitY.IsStatic())
-                    {
-                        splitY.SetKey(splitIndex, curveY.GetKey(keyIndex));
-                    }
-                    if (!splitZ.IsStatic())
-                    {
-                        splitZ.SetKey(splitIndex, curveZ.GetKey(keyIndex));
-                    }
-                    splitIndex++;
-                }
-
-                clip.AddCurve(splitX);
-                clip.AddCurve(splitY);
-                clip.AddCurve(splitZ);
-            }
-
-            const Util::Array<Ptr<ClipEvent>>& events = split->GetEvents();
-            for (int eventIndex = 0; eventIndex < events.Size(); eventIndex++)
-            {
-                const Ptr<ClipEvent>& ev = events[eventIndex];
-
-                CoreAnimation::AnimEvent animEvent;
-                animEvent.SetCategory(ev->GetCategory());
-                animEvent.SetName(ev->GetName());
-
-                // solve the marker, in one case we have the exact number of ticks, in the other we have frames
-                int marker = ev->GetMarker();
-                ClipEvent::MarkerType type = ev->GetMarkerType();
-                switch (type)
-                {
-                    case ClipEvent::Ticks:
-                        animEvent.SetTime(Math::max(marker - 1, 0) / clip.GetKeyDuration());
-                        break;
-                    case ClipEvent::Frames:
-                        animEvent.SetTime(Math::max(marker - 1, 0));
-                        break;
-                }
-                clip.AddEvent(animEvent);
-            }
-
-            anim.AddClip(clip);
-        }
-        return true;
-    }
-    return false;
+    clip.SetName(name);
+    animBuilder.AddClip(clip);
 }
 
 } // namespace ToolkitUtil

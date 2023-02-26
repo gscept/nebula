@@ -20,12 +20,12 @@ namespace CoreAnimation
 class CurveType
 {
 public:
-    /// animation curve types
+    /// animation curve types, keep this order!
     enum Code
     {
         Translation,    //> keys in curve describe a translation
-        Scale,          //> keys in curve describe a scale
         Rotation,       //> keys in curve describe a rotation quaternion
+        Scale,          //> keys in curve describe a scale
         Color,          //> keys in curve describe a color
         Velocity,       //> keys describe a linear velocition
         Float4,         //> generic 4D key

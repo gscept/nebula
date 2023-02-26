@@ -58,7 +58,7 @@ public:
     /// copy triangle with its vertices, do not generate redundant vertices
     void CopyTriangle(const MeshBuilder& srcMesh, IndexT triIndex, Util::FixedArray<IndexT>& indexMap);
     /// compute overall bounding box
-    Math::bbox ComputeBoundingBox() const;
+    Math::bbox ComputeBoundingBox(float scale) const;
 
     /// sort triangles by group id
     void SortTriangles();

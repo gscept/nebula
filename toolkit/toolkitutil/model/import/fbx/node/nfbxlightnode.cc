@@ -14,9 +14,9 @@ namespace ToolkitUtil
 /**
 */
 void 
-NFbxLightNode::Setup(SceneNode* node, FbxNode* fbxNode)
+NFbxLightNode::Setup(SceneNode* node, SceneNode* parent, FbxNode* fbxNode)
 {
-    NFbxNode::Setup(node, fbxNode);
+    NFbxNode::Setup(node, parent, fbxNode);
     FbxLight* light = fbxNode->GetLight();
     switch (light->LightType)
     {

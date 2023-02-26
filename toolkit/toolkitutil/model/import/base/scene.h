@@ -16,6 +16,7 @@ namespace ToolkitUtil
 extern int KeysPerMS;
 extern float SceneScale;
 extern float AdjustedScale;
+extern float AnimationFrameRate;
 class ModelAttributes;
 struct SkeletonBuilder;
 class MeshBuilder;
@@ -48,9 +49,8 @@ public:
 protected:
     friend class ModelExporter;
 
-    /// Splits animation curves, returns true if splitter has any rules for this take
-    /// Operates on the root node of an animated node hierarchy
-    static bool SplitAnimationCurves(SceneNode* node, const Util::Array<AnimBuilderCurve>& curves, ToolkitUtil::AnimBuilder& anim, const Ptr<ToolkitUtil::ModelAttributes>& attributes);
+    /// Generate animation clips
+    static void GenerateClip(SceneNode* node, AnimBuilder& animBuilder, const Util::String& name);
 
     Util::Array<MeshBuilder> meshes;
     Util::Array<SkeletonBuilder> skeletons;
@@ -60,7 +60,6 @@ protected:
     Util::String name;
     Util::String category;
     ToolkitUtil::ExportFlags flags;
-    float scale;
 };
 
 

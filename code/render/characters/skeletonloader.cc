@@ -51,7 +51,7 @@ SkeletonLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& ta
 
             joints.SetSize(nsk3Skeleton->numJoints);
             bindPoses.SetSize(nsk3Skeleton->numJoints);
-            idleSamples.SetSize(nsk3Skeleton->numJoints * 4);
+            idleSamples.SetSize(nsk3Skeleton->numJoints * 3);
             Nsk3Joint* nskJoints = (Nsk3Joint*)(nsk3Skeleton + 1);
             uint jointIndex;
             for (jointIndex = 0; jointIndex < nsk3Skeleton->numJoints; jointIndex++)
@@ -60,9 +60,6 @@ SkeletonLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& ta
                 ptr += sizeof(Nsk3Joint);
 
                 // setup base components
-                joints[jointIndex].poseTranslation = joint->translation;
-                joints[jointIndex].poseRotation = joint->rotation;
-                joints[jointIndex].poseScale = joint->scale;
                 joints[jointIndex].parentJointIndex = joint->parent;
                 if (joint->parent != InvalidIndex)
                     joints[jointIndex].parentJoint = &joints[joint->parent];
@@ -73,23 +70,15 @@ SkeletonLoader::LoadFromStream(const Ids::Id32 entry, const Util::StringAtom& ta
                 joints[jointIndex].name = joint->name;
 #endif
 
-            // construct pose matrix
-                joints[jointIndex].poseMatrix = Math::mat4();
-                joints[jointIndex].poseMatrix.scale(joints[jointIndex].poseScale);
-                joints[jointIndex].poseMatrix = Math::rotationquat(joints[jointIndex].poseRotation) * joints[jointIndex].poseMatrix;
-                joints[jointIndex].poseMatrix.translate(joints[jointIndex].poseTranslation);
-                if (joints[jointIndex].parentJoint != nullptr)
-                    joints[jointIndex].poseMatrix = joints[jointIndex].parentJoint->poseMatrix * joints[jointIndex].poseMatrix;
-
                 // setup bind pose and mapping
-                bindPoses[jointIndex] = Math::inverse(joints[jointIndex].poseMatrix);
+                bindPoses[jointIndex].loadu(joint->bind);
                 jointIndexMap.Add(joint->name, jointIndex);
 
-                // setup idle samples, which are used when no animation is playing
-                idleSamples[jointIndex * 4 + 0] = Math::vec4(joints[jointIndex].poseTranslation, 1);
-                idleSamples[jointIndex * 4 + 1].load((const float*)&joints[jointIndex].poseRotation);
-                idleSamples[jointIndex * 4 + 2] = Math::vec4(joints[jointIndex].poseScale, 1);
-                idleSamples[jointIndex * 4 + 3] = Math::vector::nullvec();
+                idleSamples[jointIndex * 3 + 0].loadu(joint->translation);
+                idleSamples[jointIndex * 3 + 0].w = 0.0f;
+                idleSamples[jointIndex * 3 + 1].loadu(joint->rotation);
+                idleSamples[jointIndex * 3 + 2].loadu(joint->scale);
+                idleSamples[jointIndex * 3 + 2].w = 0.0f;
             }
 
             SkeletonCreateInfo info;

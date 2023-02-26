@@ -227,7 +227,7 @@ SetupPrimitiveGroupJobFunc(Jobs::JobFuncContext const& context)
         meshBuilder->SetComponents(components);
 
         // Compute bounding box
-        meshBuilder->ComputeBoundingBox();
+        meshBuilder->ComputeBoundingBox(1.0f);
 
         // Setup triangles
         Gltf::Accessor const& indexBufferAccessor = scene->accessors[primitive->indices];

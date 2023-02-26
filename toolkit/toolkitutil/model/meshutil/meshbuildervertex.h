@@ -131,6 +131,7 @@ private:
         {
             Math::vec4 weights;
             Math::uint4 indices;
+            Math::uint4 remapIndices;
         } skin;
     } attributes;
 };

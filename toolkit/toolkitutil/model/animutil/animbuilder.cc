@@ -26,7 +26,7 @@ AnimBuilder::AnimBuilder()
 void
 AnimBuilder::Clear()
 {
-    this->clipArray.Clear();
+    this->clips.Clear();
 }
 
 //------------------------------------------------------------------------------
@@ -35,7 +35,7 @@ AnimBuilder::Clear()
 void
 AnimBuilder::Reserve(SizeT numClips)
 {
-    this->clipArray.Reserve(numClips);
+    this->clips.Reserve(numClips);
 }
 
 //------------------------------------------------------------------------------
@@ -44,7 +44,7 @@ AnimBuilder::Reserve(SizeT numClips)
 void
 AnimBuilder::AddClip(const AnimBuilderClip& clip)
 {
-    this->clipArray.Append(clip);
+    this->clips.Append(clip);
 }
 
 //------------------------------------------------------------------------------
@@ -53,13 +53,7 @@ AnimBuilder::AddClip(const AnimBuilderClip& clip)
 SizeT
 AnimBuilder::CountCurves() const
 {
-    SizeT numCurves = 0;
-    IndexT clipIndex;
-    for (clipIndex = 0; clipIndex < this->clipArray.Size(); clipIndex++)
-    {
-        numCurves += this->clipArray[clipIndex].GetNumCurves();
-    }
-    return numCurves;
+    return this->curves.Size();
 }
 
 //------------------------------------------------------------------------------
@@ -68,13 +62,7 @@ AnimBuilder::CountCurves() const
 SizeT
 AnimBuilder::CountEvents() const
 {
-    SizeT numEvents = 0;
-    IndexT clipIndex;
-    for (clipIndex = 0; clipIndex < this->clipArray.Size(); clipIndex++)
-    {
-        numEvents += this->clipArray[clipIndex].GetNumAnimEvents();
-    }
-    return numEvents;
+    return this->events.Size();
 }
 
 //------------------------------------------------------------------------------
@@ -83,22 +71,7 @@ AnimBuilder::CountEvents() const
 SizeT
 AnimBuilder::CountKeys() const
 {
-    SizeT numKeys = 0;
-    IndexT clipIndex;
-    for (clipIndex = 0; clipIndex < this->clipArray.Size(); clipIndex++)
-    {
-        AnimBuilderClip& clip = this->clipArray[clipIndex];
-        IndexT curveIndex;
-        for (curveIndex = 0; curveIndex < clip.GetNumCurves(); curveIndex++)
-        {
-            AnimBuilderCurve& curve = clip.GetCurveAtIndex(curveIndex);
-            if (!curve.IsStatic())
-            {
-                numKeys += curve.GetNumKeys();
-            }
-        }
-    }
-    return numKeys;
+    return this->keys.Size();
 }
 
 //------------------------------------------------------------------------------
@@ -111,182 +84,74 @@ AnimBuilder::CountKeys() const
     this is only really useful for AnimDrivenMotion on the root index!
 */
 void
-AnimBuilder::BuildVelocityCurves()
+AnimBuilder::BuildVelocityCurves(float keysPerMS)
 {    
-    IndexT clipIndex;
-    for (clipIndex = 0; clipIndex < this->clipArray.Size(); clipIndex++)
+    IndexT velocityCurveOffset = 0;
+    for (auto& clip : this->clips)
     {
         // first build an array of velocity curves
         Array<AnimBuilderCurve> velocityCurves;
-        AnimBuilderClip& clip = this->clipArray[clipIndex];
         IndexT curveIndex;
-        for (curveIndex = 0; curveIndex < clip.GetNumCurves(); curveIndex++)
+        for (curveIndex = 0; curveIndex < clip.numCurves; curveIndex++)
         {
-            AnimBuilderCurve& srcCurve = clip.GetCurveAtIndex(curveIndex);
-            if (srcCurve.GetCurveType() == CurveType::Translation)
+            AnimBuilderCurve& srcCurve = this->curves[curveIndex + clip.firstCurveOffset];
+            if (srcCurve.curveType == CurveType::Translation)
             {
                 AnimBuilderCurve dstCurve;
-                dstCurve.SetActive(srcCurve.IsActive());
-                dstCurve.SetCurveType(CurveType::Velocity);
-                if (srcCurve.IsStatic())
-                {
-                    // if translation is static, velocity is 0
-                    dstCurve.SetStatic(true);
-                    dstCurve.SetStaticKey(vec4(0.0f, 0.0f, 0.0f, 0.0f));
-                }
-                else
-                {
-                    float scale = float(1.0 / Timing::TicksToSeconds(clip.GetKeyDuration()));
-                    dstCurve.ResizeKeyArray(clip.GetNumKeys());
+                dstCurve.curveType = CurveType::Velocity;
+                dstCurve.preInfinityType = srcCurve.preInfinityType;
+                dstCurve.postInfinityType = srcCurve.postInfinityType;
+                this->keys.Reserve(srcCurve.numKeys * 3);
+                this->keyTimes.Reserve(srcCurve.numKeys);
+                float scale = float(1.0 / Timing::TicksToSeconds(keysPerMS));
 
-                    // compute velocity keys and add to curve
-                    // (velocity is in meter/sec)
-                    vec4 velocity(0.0f, 0.0f, 0.0f, 0.0f);
-                    IndexT keyIndex;
-                    for (keyIndex = 0; keyIndex < srcCurve.GetNumKeys() - 1; keyIndex++)
+                auto velocityFunc = [&](Util::Array<float>& keys, Util::Array<Timing::Tick>& keyTimes, const AnimBuilderCurve& src, AnimBuilderCurve& dst)
+                {
+                    if (src.numKeys == 0)
                     {
-                        vec4 key0 = srcCurve.GetKey(keyIndex);
-                        vec4 key1 = srcCurve.GetKey(keyIndex + 1);
-                        velocity = (key1 - key0) * scale;
-                        dstCurve.SetKey(keyIndex, velocity);
+                        dst.firstKeyOffset = 0;
+                        dst.firstTimeOffset = 0;
+                        dst.numKeys = 0;
+                        return;
                     }
 
-                    // clips for anim-driven-motion have one extra key at the
-                    // end which is identical with the first key, this we can just duplicate
-                    // the last valid key
-                    dstCurve.SetKey(keyIndex, velocity);
-                }
+                    dst.firstKeyOffset = keys.Size();
+                    dst.firstTimeOffset = keyTimes.Size();
+                    dst.numKeys = src.numKeys - 1;
+                    for (IndexT keyIndex = 0, timeIndex = 0; keyIndex < dst.numKeys; keyIndex++)
+                    {
+                        float key0X = this->keys[src.firstKeyOffset + keyIndex * 3];
+                        float key0Y = this->keys[src.firstKeyOffset + keyIndex * 3 + 1];
+                        float key0Z = this->keys[src.firstKeyOffset + keyIndex * 3 + 2];
+                        float key1X = this->keys[src.firstKeyOffset + keyIndex * 3 + 3];
+                        float key1Y = this->keys[src.firstKeyOffset + keyIndex * 3 + 4];
+                        float key1Z = this->keys[src.firstKeyOffset + keyIndex * 3 + 5];
+
+                        float velocity[] =
+                        {
+                            (key1X - key0X) * scale,
+                            (key1Y - key0Y) * scale,
+                            (key1Z - key0Z) * scale,
+                        };
+                        keys.Append(velocity[0]);
+                        keys.Append(velocity[1]);
+                        keys.Append(velocity[2]);
+                        keyTimes.Append(this->keyTimes[src.firstTimeOffset + keyIndex]);
+                    }
+                };
+                velocityFunc(this->keys, this->keyTimes, srcCurve, dstCurve);
                 velocityCurves.Append(dstCurve);
             }
         }
 
         // then insert the velocity curves into the clip's curve array
-        n_assert(velocityCurves.Size() == (clip.GetNumCurves() / 3));
-        for (curveIndex = 0; curveIndex < velocityCurves.Size(); curveIndex++)
-        {
-            clip.InsertCurve((curveIndex * 3) + 3 + curveIndex, velocityCurves[curveIndex]);            
-        }
-    }
+        n_assert(velocityCurves.Size() == (clip.numCurves / 3));
+        this->curves.AppendArray(velocityCurves);
+        clip.firstVelocityCurveOffset = velocityCurveOffset;
+        clip.numVelocityCurves = velocityCurves.Size();
 
-    // when everything is done we need to fix the first-key-indices in the animation curves,
-    // also make sure that good static key values are set for inactive curves
-    this->FixAnimCurveFirstKeyIndices();
-    this->FixInactiveCurveStaticKeyValues();
-}
-
-//------------------------------------------------------------------------------
-/**
-    This re-computes the FirstKeyIndices in the AnimBuilderCurves.
-*/
-void
-AnimBuilder::FixAnimCurveFirstKeyIndices()
-{
-    IndexT clipFirstKeyIndex = 0;
-    IndexT clipIndex;
-    for (clipIndex = 0; clipIndex < this->clipArray.Size(); clipIndex++)
-    {
-        AnimBuilderClip& clip = this->clipArray[clipIndex];
-        SizeT numNonStaticCurvesInClip = 0;
-        IndexT curveIndex;
-        for (curveIndex = 0; curveIndex < clip.GetNumCurves(); curveIndex++)
-        {
-            AnimBuilderCurve& curve = clip.GetCurveAtIndex(curveIndex);
-            if (!curve.IsStatic())
-            {
-                curve.SetFirstKeyIndex(clipFirstKeyIndex + numNonStaticCurvesInClip);
-                numNonStaticCurvesInClip++;
-            }
-        }
-
-        // the key stride in each clip is identical with the number of non-static curves
-        clip.SetKeyStride(numNonStaticCurvesInClip);
-
-        // update the first key index for next clip
-        clipFirstKeyIndex += (numNonStaticCurvesInClip * clip.GetNumKeys());
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-    Fixes the static keys in inactive animation curves, those must have
-    suitable values for the curve type (e.g. (1,1,1,0) for a scaling curve).
-*/
-void
-AnimBuilder::FixInactiveCurveStaticKeyValues()
-{
-    IndexT clipIndex;
-    for (clipIndex = 0; clipIndex < this->clipArray.Size(); clipIndex++)
-    {
-        AnimBuilderClip& clip = this->clipArray[clipIndex];
-        IndexT curveIndex;
-        for (curveIndex = 0; curveIndex < clip.GetNumCurves(); curveIndex++)
-        {
-            AnimBuilderCurve& curve = clip.GetCurveAtIndex(curveIndex);
-            if (!curve.IsActive())
-            {
-                switch (curve.GetCurveType())
-                {
-                    case CurveType::Translation:    curve.SetStaticKey(vec4(0.0f, 0.0f, 0.0f, 0.0f)); break;
-                    case CurveType::Rotation:       curve.SetStaticKey(vec4(0.0f, 0.0f, 0.0f, 1.0f)); break;
-                    case CurveType::Scale:          curve.SetStaticKey(vec4(1.0f, 1.0f, 1.0f, 0.0f)); break;
-                    case CurveType::Velocity:       curve.SetStaticKey(vec4(0.0f, 0.0f, 0.0f, 0.0f)); break;
-                    default:                        curve.SetStaticKey(vec4(0.0f, 0.0f, 0.0f, 0.0f)); break;
-                }
-            }
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-/**
-    Trim a number of keys from the end of each animation curve.
-*/
-void
-AnimBuilder::TrimEnd(SizeT numTrimKeys)
-{
-    IndexT clipIndex;
-    for (clipIndex = 0; clipIndex < this->clipArray.Size(); clipIndex++)
-    {
-        AnimBuilderClip& clip = this->clipArray[clipIndex];
-        
-        // trim number of keys in clip
-        SizeT newNumKeys = clip.GetNumKeys() - numTrimKeys;
-        n_assert(newNumKeys > 0);
-        clip.SetNumKeys(newNumKeys);
-
-        // also need to trim curves
-        IndexT curveIndex;
-        for (curveIndex = 0; curveIndex < clip.GetNumCurves(); curveIndex++)
-        {
-            AnimBuilderCurve& curve = clip.GetCurveAtIndex(curveIndex);
-            if (!curve.IsStatic())
-            {
-                curve.ResizeKeyArray(newNumKeys);
-            }
-        }
-    }
-
-    // need to re-compute first-key-indices after trimming!
-    this->FixAnimCurveFirstKeyIndices();
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void 
-AnimBuilder::FixInvalidKeyValues()
-{
-    IndexT clipIndex;
-    for (clipIndex = 0; clipIndex < this->clipArray.Size(); clipIndex++)
-    {
-        AnimBuilderClip& clip = this->clipArray[clipIndex];
-        IndexT curveIndex;
-        for (curveIndex = 0; curveIndex < clip.GetNumCurves(); curveIndex++)
-        {
-            AnimBuilderCurve& curve = clip.GetCurveAtIndex(curveIndex);
-            curve.FixInvalidKeys();
-        }
-    }
+        velocityCurveOffset += velocityCurves.Size();
+    }    
 }
 
 } // namespace ToolkitUtil

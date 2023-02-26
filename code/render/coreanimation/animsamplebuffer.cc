@@ -67,8 +67,8 @@ AnimSampleBuffer::AnimSampleBuffer(const AnimSampleBuffer& rhs) :
 
     if (this->numSamples > 0)
     {
-        this->samples = (vec4*)Memory::Alloc(Memory::ResourceHeap, this->numSamples * sizeof(vec4));
-        memcpy(this->samples, rhs.samples, this->numSamples * sizeof(vec4));
+        this->samples = (float*)Memory::Alloc(Memory::ResourceHeap, this->numSamples * sizeof(float));
+        memcpy(this->samples, rhs.samples, this->numSamples * sizeof(float));
 
         this->sampleCounts = (uchar*)Memory::Alloc(Memory::ResourceHeap, (this->numSamples * sizeof(uchar)) + 16);
         memcpy(this->sampleCounts, rhs.sampleCounts, (this->numSamples * sizeof(uchar)) + 16);
@@ -114,8 +114,8 @@ AnimSampleBuffer::operator=(const AnimSampleBuffer& rhs)
 
     if (this->numSamples > 0)
     {
-        this->samples = (vec4*)Memory::Alloc(Memory::ResourceHeap, this->numSamples * sizeof(vec4));
-        memcpy(this->samples, rhs.samples, this->numSamples * sizeof(vec4));
+        this->samples = (float*)Memory::Alloc(Memory::ResourceHeap, this->numSamples * sizeof(float));
+        memcpy(this->samples, rhs.samples, this->numSamples * sizeof(float));
 
         this->sampleCounts = (uchar*)Memory::Alloc(Memory::ResourceHeap, (this->numSamples * sizeof(uchar)) + 16);
         memcpy(this->sampleCounts, rhs.sampleCounts, (this->numSamples * sizeof(uchar)) + 16);
@@ -134,12 +134,16 @@ AnimSampleBuffer::Setup(const AnimationId& animRes)
 
     this->animResource = animRes;
     const Util::FixedArray<AnimClip>& clips = AnimGetClips(this->animResource);
-    if (clips.Size() > 0) 
-        this->numSamples = clips[0].GetNumCurves();
-    this->samples      = (vec4*) Memory::Alloc(Memory::ResourceHeap, this->numSamples * sizeof(vec4));
+    SizeT maxCurveCount = 0;
+    for (const auto& clip : clips)
+        maxCurveCount = Math::max(maxCurveCount, clip.numCurves);
+
+    // The amount of samples we need is going to be the amount of curves, which is pos/rot/scale / 3 * 10
+    this->numSamples = (maxCurveCount / 3) * 10;
+    this->samples      = (float*) Memory::Alloc(Memory::ResourceHeap, this->numSamples * sizeof(float));
 
     // NOTE: sample count size must be aligned to 16 bytes, this allocate some more bytes in the buffer
-    this->sampleCounts = (uchar*)  Memory::Alloc(Memory::ResourceHeap, (this->numSamples * sizeof(uchar)) + 16);
+    this->sampleCounts = (uchar*)  Memory::Alloc(Memory::ResourceHeap, (maxCurveCount * sizeof(uchar)) + 16);
 }
 
 //------------------------------------------------------------------------------

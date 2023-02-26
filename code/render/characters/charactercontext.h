@@ -153,6 +153,7 @@ private:
         Timing::Tick evalTime, prevEvalTime;
         Timing::Tick sampleTime, prevSampleTime;
         Timing::Tick timeOffset;
+        Util::Array<uint> curveSampleIndices;
         const CoreAnimation::AnimSampleMask* mask;
         float timeFactor;
         float blend;

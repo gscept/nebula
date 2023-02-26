@@ -13,33 +13,25 @@ using namespace Math;
 namespace ToolkitUtil
 {
 
-uint childCounter = 0;
+int JointCounter = 0;
 //------------------------------------------------------------------------------
 /**
 */
 void 
-NFbxJointNode::Setup(SceneNode* node, FbxNode* fbxNode, FbxPose* bindpose)
+NFbxJointNode::Setup(SceneNode* node, SceneNode* parent, FbxNode* fbxNode)
 {
-    NFbxNode::Setup(node, fbxNode);
+    NFbxNode::Setup(node, parent, fbxNode);
     FbxSkeleton* joint = fbxNode->GetSkeleton();
     node->skeleton.isSkeletonRoot = joint->IsSkeletonRoot();
-
-    if (node->base.parent != nullptr && node->base.parent->type == SceneNode::NodeType::Joint)
+    if (node->skeleton.isSkeletonRoot)
     {
-        node->skeleton.parentIndex = node->base.parent->skeleton.jointIndex;
-        node->skeleton.jointIndex = ++childCounter;
+        JointCounter = 0;
+        node->skeleton.jointIndex = JointCounter++;
     }
     else
     {
-        node->skeleton.jointIndex = 0;
-        childCounter = 0;
-    }
-
-    if (bindpose)
-    {
-        IndexT idx = bindpose->Find(fbxNode->GetName());
-        node->skeleton.globalMatrix = FbxToMath(bindpose->GetMatrix(idx));
-        node->skeleton.matrixIsGlobal = true;
+        node->skeleton.jointIndex = JointCounter++;
+        node->skeleton.parentIndex = parent->skeleton.jointIndex;
     }
 }
 

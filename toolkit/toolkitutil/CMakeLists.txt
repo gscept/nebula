@@ -44,12 +44,8 @@ fips_begin_lib(toolkitutil)
                 animbuilderclip.h
                 animbuildercurve.cc
                 animbuildercurve.h
-                animbuilderloader.cc
-                animbuilderloader.h
                 animbuildersaver.cc
                 animbuildersaver.h
-                animconverter.cc
-                animconverter.h
             )
         fips_dir(model/meshutil)
             fips_files(

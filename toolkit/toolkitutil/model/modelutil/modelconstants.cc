@@ -224,11 +224,7 @@ WriteTransform(const Ptr<XmlWriter>& writer, const ModelConstants::TransformNode
     writer->SetVec4("position", node->transform.position);
 
     // set rotation
-    writer->SetVec4("rotation", Math::vec4(
-        node->transform.rotation.x,
-        node->transform.rotation.y,
-        node->transform.rotation.z,
-        node->transform.rotation.w));
+    writer->SetVec4("rotation", node->transform.rotation.vec);
 
     // set scale
     writer->SetVec4("scale", node->transform.scale);
@@ -262,7 +258,7 @@ ReadTransform(const Ptr<XmlReader>& reader, ModelConstants::TransformNode* node,
     node->transform.position = reader->GetVec4("position");
 
     // get rotation
-    node->transform.rotation = reader->GetVec4("rotation");
+    node->transform.rotation = reader->GetVec4("rotation").vec;
 
     // get scale
     node->transform.scale = reader->GetVec4("scale").vec;
@@ -385,11 +381,7 @@ ModelConstants::Save(const Ptr<Stream>& stream)
                 writer->SetVec4("position", node.transform.position);
 
                 // set rotation
-                writer->SetVec4("rotation", Math::vec4(
-                    node.transform.rotation.x, 
-                    node.transform.rotation.y, 
-                    node.transform.rotation.z, 
-                    node.transform.rotation.w));
+                writer->SetVec4("rotation", node.transform.rotation.vec);
 
                 // set scale
                 writer->SetVec4("scale", node.transform.scale);
@@ -651,7 +643,7 @@ ModelConstants::Load(const Ptr<Stream>& stream)
                 node.transform.position = reader->GetVec4("position");
 
                 // get rotation
-                node.transform.rotation = reader->GetVec4("rotation");
+                node.transform.rotation = reader->GetVec4("rotation").vec;
 
                 // get scale
                 node.transform.scale = reader->GetVec4("scale").vec;

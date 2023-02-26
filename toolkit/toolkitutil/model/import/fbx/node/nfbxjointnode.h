@@ -17,7 +17,7 @@ class NFbxJointNode
 {
 public:
     /// Setup node from FBX node
-    static void Setup(SceneNode* node, FbxNode* fbxNode, FbxPose* bindpose);
+    static void Setup(SceneNode* node, SceneNode* parent, FbxNode* fbxNode);
 }; 
 
 } // namespace ToolkitUtil

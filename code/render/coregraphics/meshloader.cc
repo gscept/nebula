@@ -62,7 +62,7 @@ MeshLoader::MeshLoader()
         , VertexComponent{ VertexComponent::IndexName::TexCoord1, VertexComponent::UShort2N, 0 }
         , VertexComponent{ VertexComponent::IndexName::Normal, VertexComponent::Byte4N, 1 }
         , VertexComponent{ VertexComponent::IndexName::Tangent, VertexComponent::Byte4N, 1 }
-        , VertexComponent{ VertexComponent::IndexName::SkinWeights, VertexComponent::UByte4N, 1 }
+        , VertexComponent{ VertexComponent::IndexName::SkinWeights, VertexComponent::Float4, 1 }
         , VertexComponent{ VertexComponent::IndexName::SkinJIndices, VertexComponent::UByte4, 1 }
     };
     layouts[(uint)CoreGraphics::VertexLayoutType::Skin] = CreateVertexLayout(vlCreateInfo);

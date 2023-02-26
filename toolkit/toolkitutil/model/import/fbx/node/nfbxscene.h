@@ -22,6 +22,7 @@ namespace fbxsdk
 
 namespace ToolkitUtil
 {
+extern int JointCounter;
 class NFbxScene : public Scene
 {
 public:
@@ -40,11 +41,16 @@ public:
 
     /// Extract skeleton roots
     void ExtractSkeletons();
-    /// Extract animations
-    void ExtractAnimations(const Ptr<ToolkitUtil::ModelAttributes>& attributes);
 
 private:
 
+    /// Parse FBX node hierarchy
+    void ParseNodeHierarchy(
+        FbxNode* fbxNode
+        , SceneNode* parent
+        , Util::Dictionary<FbxNode*, SceneNode*>& lookup
+        , Util::Array<SceneNode>& nodes
+    );
     /// converts FBX time mode to FPS
     float TimeModeToFPS(const fbxsdk::FbxTime::EMode& timeMode);
 };

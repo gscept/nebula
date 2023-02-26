@@ -15,6 +15,8 @@
 #include "math/bbox.h"
 #include "model/meshutil/meshbuilder.h"
 #include "jobs/jobs.h"
+#include "util/set.h"
+#include <fbxsdk.h>
 namespace ToolkitUtil
 {
 
@@ -75,9 +77,8 @@ private:
         Util::String                    name;
 
         Math::quat                      rotation;
-        Math::vec3                      position;
+        Math::vec3                      translation;
         Math::vec3                      scale;
-        Math::mat4                      transform;
         Math::point                     pivot;
         Math::bbox                      boundingBox;
 
@@ -89,36 +90,30 @@ private:
         ToolkitUtil::ExportFlags        exportFlags;
 
         Util::Array<SceneNode*>         children;
-        SceneNode*                      parent;
+        SceneNode*                      parent = nullptr;
     } base;
 
     
     struct
     {
-        Util::String take;
-        int span;
         ToolkitUtil::AnimBuilderCurve translationCurve, rotationCurve, scaleCurve;
-        CoreAnimation::InfinityType::Code preInfinity, postInfinity;
         IndexT animIndex = InvalidIndex;
     } anim;
 
 
     struct
     {
-        Math::mat4                  globalMatrix;
-        bool                        matrixIsGlobal = false;
+        Math::mat4                  bindMatrix;
         bool                        isSkeletonRoot = false;
         IndexT                      parentIndex = InvalidIndex;
         IndexT                      jointIndex = InvalidIndex;
         IndexT                      skeletonIndex = InvalidIndex;
-
-        IndexT                      childSetupCounter = 0;
     } skeleton;
 
     struct
     {
         Util::Array<IndexT> skinFragments;
-        Util::Array<Util::Array<IndexT>> jointLookup;
+        Util::Array<Util::Set<IndexT>> jointLookup;
     } skin;
 
     struct
@@ -138,5 +133,11 @@ private:
         //ToolkitUtil::MeshBuilderVertex::ComponentMask   components;
         //ToolkitUtil::MeshBuilder                        mesh;
     } mesh;
+
+    struct
+    {
+        FbxNode* node;
+        Util::Set<FbxTime> translationKeyTimes, rotationKeyTimes, scaleKeyTimes;
+    } fbx;
 };
 } // namespace ToolkitUtil

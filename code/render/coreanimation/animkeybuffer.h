@@ -10,6 +10,7 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "core/refcounted.h"
+#include "timing/time.h"
 
 //------------------------------------------------------------------------------
 namespace CoreAnimation
@@ -18,12 +19,18 @@ class AnimKeyBuffer : public Core::RefCounted
 {
     __DeclareClass(AnimKeyBuffer);
 public:
+    struct Interval
+    {
+        Timing::Tick start, end;
+        uint key0, key1;
+    };
+
     /// constructor
     AnimKeyBuffer();
     /// destructor
     virtual ~AnimKeyBuffer();
     /// setup the buffer
-    void Setup(SizeT numKeys);
+    void Setup(SizeT numIntervals, SizeT numKeys, void* intervalPtr, void* keyPtr);
     /// discard the buffer
     void Discard();
     /// return true if the object has been setup
@@ -32,19 +39,17 @@ public:
     SizeT GetNumKeys() const;
     /// get buffer size in bytes
     SizeT GetByteSize() const;
-    /// (obsolete) map key buffer for CPU access
-    void* Map();
-    /// (obsolete) unmap the resource
-    void Unmap();
-    /// return true if the key buffer is currently mapped
-    bool IsMapped() const;
-    /// get direct pointer to key buffer
-    Math::vec4* GetKeyBufferPointer() const;
+    /// Get direct pointer to keys
+    const float* GetKeyBufferPointer() const;
+    /// get direct pointer to interval buffer
+    const AnimKeyBuffer::Interval* GetIntervalBufferPointer() const;
 
 private:
     SizeT numKeys;
+    SizeT numIntervals;
     uint mapCount;
-    void* keyBuffer;
+    float* keyBuffer;
+    AnimKeyBuffer::Interval* intervalBuffer;
 };
 
 //------------------------------------------------------------------------------
@@ -53,16 +58,7 @@ private:
 inline bool
 AnimKeyBuffer::IsValid() const
 {
-    return (0 != this->keyBuffer);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-inline bool
-AnimKeyBuffer::IsMapped() const
-{
-    return (0 != this->mapCount);
+    return (0 != this->intervalBuffer);
 }
 
 //------------------------------------------------------------------------------
@@ -80,19 +76,27 @@ AnimKeyBuffer::GetNumKeys() const
 inline SizeT
 AnimKeyBuffer::GetByteSize() const
 {
-    return this->numKeys * sizeof(Math::vec4);
+    return this->numKeys * sizeof(float);
 }
 
 //------------------------------------------------------------------------------
 /**
 */
-inline Math::vec4*
+inline const float*
 AnimKeyBuffer::GetKeyBufferPointer() const
 {
-    return (Math::vec4*) this->keyBuffer;
+    return this->keyBuffer;
+}
+
+//------------------------------------------------------------------------------
+/**
+*/
+inline const AnimKeyBuffer::Interval*
+AnimKeyBuffer::GetIntervalBufferPointer() const
+{
+    return this->intervalBuffer;
 }
 
 } // namespace CoreAnimation
 //------------------------------------------------------------------------------
 
-    

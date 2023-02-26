@@ -89,7 +89,7 @@ struct SkinVertex : NormalVertex
         indices
         weights
     */
-    Math::byte4u skinWeights;
+    float skinWeights[4];
     Math::byte4u skinIndices;
 };
 #pragma pack(pop)

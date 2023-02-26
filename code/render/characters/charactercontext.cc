@@ -188,6 +188,8 @@ CharacterContext::PlayClip(
     runtime.timeFactor = timeFactor;
     runtime.timeOffset = timeOffset;
     runtime.startTime = startTime;
+    runtime.curveSampleIndices.Resize(clip.numCurves);
+    runtime.curveSampleIndices.Fill(0, clip.numCurves, 0x0);
     runtime.mask = mask;
 
     runtime.baseTime = 0;
@@ -195,20 +197,20 @@ CharacterContext::PlayClip(
     runtime.evalTime = runtime.prevEvalTime = 0;
     runtime.sampleTime = runtime.prevSampleTime = 0;
     runtime.paused = false;
-    runtime.duration = Timing::Tick(clip.GetClipDuration() * loopCount * (1 / timeFactor));
+    runtime.duration = Timing::Tick(clip.duration * loopCount * (1 / timeFactor));
 
     // append to pending animations
     if (mode == Replace)
-        characterContextAllocator.Get<TrackController>(cid.id).playingAnimations[track] = runtime;
+        characterContextAllocator.Get<TrackController>(cid.id).playingAnimations[track] = std::move(runtime);
     else if (mode == Append)
-        characterContextAllocator.Get<TrackController>(cid.id).pendingAnimations[track].Append(runtime);
+        characterContextAllocator.Get<TrackController>(cid.id).pendingAnimations[track].Append(std::move(runtime));
     else if (mode == IgnoreIfSame)
     {
         const AnimationRuntime& current = characterContextAllocator.Get<TrackController>(cid.id).playingAnimations[track];
 
         // if clip index doesn't match, append animation
         if (current.clip != clipIndex)
-            characterContextAllocator.Get<TrackController>(cid.id).pendingAnimations[track].Append(runtime);
+            characterContextAllocator.Get<TrackController>(cid.id).pendingAnimations[track].Append(std::move(runtime));
     }
 
     return false;
@@ -346,84 +348,6 @@ CharacterContext::QueryClips(const Graphics::GraphicsEntityId id, Util::FixedArr
 
 //------------------------------------------------------------------------------
 /**
-    Clamp key indices into the valid range, take pre-infinity and
-    post-infinity type into account.
-*/
-IndexT
-ClampKeyIndex(IndexT keyIndex, const CoreAnimation::AnimClip& clip)
-{
-    SizeT clipNumKeys = clip.GetNumKeys();
-    if (keyIndex < 0)
-    {
-        if (clip.GetPreInfinityType() == CoreAnimation::InfinityType::Cycle)
-        {
-            keyIndex %= clipNumKeys;
-            if (keyIndex < 0)
-            {
-                keyIndex += clipNumKeys;
-            }
-        }
-        else
-        {
-            keyIndex = 0;
-        }
-    }
-    else if (keyIndex >= clipNumKeys)
-    {
-        if (clip.GetPostInfinityType() == CoreAnimation::InfinityType::Cycle)
-        {
-            keyIndex %= clipNumKeys;
-        }
-        else
-        {
-            keyIndex = clipNumKeys - 1;
-        }
-    }
-    return keyIndex;
-}
-
-//------------------------------------------------------------------------------
-/**
-    Compute the inbetween-ticks between two frames for a given sample time.
-*/
-Timing::Tick
-InbetweenTicks(Timing::Tick sampleTime, const CoreAnimation::AnimClip& clip)
-{
-    // normalize sample time into valid time range
-    Timing::Tick clipDuration = clip.GetClipDuration();
-    if (sampleTime < 0)
-    {
-        if (clip.GetPreInfinityType() == CoreAnimation::InfinityType::Cycle)
-        {
-            sampleTime %= clipDuration;
-            if (sampleTime < 0)
-            {
-                sampleTime += clipDuration;
-            }
-        }
-        else
-        {
-            sampleTime = 0;
-        }
-    }
-    else if (sampleTime >= clipDuration)
-    {
-        if (clip.GetPostInfinityType() == CoreAnimation::InfinityType::Cycle)
-        {
-            sampleTime %= clipDuration;
-        }
-        else
-        {
-            sampleTime = clipDuration;
-        }
-    }
-
-    Timing::Tick inbetweenTicks = sampleTime % clip.GetKeyDuration();
-    return inbetweenTicks;
-}
-
-//------------------------------------------------------------------------------
-/**
 */
 const bool
 IsExpired(const CharacterContext::AnimationRuntime& runtime, const Timing::Time time)
@@ -464,7 +388,8 @@ struct CharacterJobContext
     const Util::Array<Util::FixedArray<Math::mat4>>* jointPalettes;
     const Util::Array<Util::FixedArray<Math::mat4>>* scaledJointPalettes;
     const Util::Array<Util::FixedArray<Math::mat4>>* userJoints;
-    Math::vec4** tmpSamples;
+    float** tmpSamples;
+    uint** tmpSampleIndices;
     Math::mat4** tmpJoints;
     
     const Util::Array<Graphics::GraphicsEntityId>* entities;
@@ -505,10 +430,12 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
         const Util::FixedArray<Math::mat4>& userJoint = context->userJoints->Get(index);
         const Util::FixedArray<Math::mat4>& jointPalette = context->jointPalettes->Get(index);
         const Util::FixedArray<Math::mat4>& scaledJointPalette = context->scaledJointPalettes->Get(index);
+        const Util::FixedArray<Math::vec4>& idleSamples = Characters::SkeletonGetIdleSamples(skeleton);
         const CoreAnimation::AnimSampleBuffer& sampleBuffer = context->sampleBuffers->Get(index);
         const Graphics::GraphicsEntityId& model = context->entities->Get(index);
         Math::mat4* tmpMatrices = context->tmpJoints[index];
-        Math::vec4* tmpSamples = context->tmpSamples[index];
+        float* tmpSamples = context->tmpSamples[index];
+        uint* tmpSampleIndices = context->tmpSampleIndices[index];
         auto sampleMixInfo = context->animMixInfos + index;
         bool runSkeletonThisFrame = false;
 
@@ -612,40 +539,37 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
 
                 // Need to compute the sample weight and pointers to "before" and "after" keys
                 const CoreAnimation::AnimClip& clip = CoreAnimation::AnimGetClip(anim, playing.clip);
-                Timing::Tick keyDuration = clip.GetKeyDuration();
-                IndexT keyIndex0 = ClampKeyIndex((playing.sampleTime / keyDuration), clip);
-                IndexT keyIndex1 = ClampKeyIndex(keyIndex0 + 1, clip);
-                Timing::Tick inbetweenTicks = InbetweenTicks(playing.sampleTime, clip);
+                const Ptr<AnimKeyBuffer>& buffer = AnimGetBuffer(anim);
 
                 // Create scratch memory
                 Memory::Clear(sampleMixInfo, sizeof(AnimSampleMixInfo));
                 sampleMixInfo->sampleType = SampleType::Linear;
-                sampleMixInfo->sampleWeight = float(inbetweenTicks) / float(keyDuration);
                 sampleMixInfo->velocityScale.set(playing.timeFactor, playing.timeFactor, playing.timeFactor, 0);
 
                 // Get pointers to memory and size
-                SizeT src0Size, src1Size;
-                const Math::vec4* src0Ptr = nullptr, * src1Ptr = nullptr;
-                AnimComputeSlice(anim, playing.clip, keyIndex0, src0Size, src0Ptr);
-                AnimComputeSlice(anim, playing.clip, keyIndex1, src1Size, src1Ptr);
+                const float* srcPtr = buffer->GetKeyBufferPointer();
+                const AnimKeyBuffer::Interval* srcTimePtr = buffer->GetIntervalBufferPointer();
+
+                const Util::FixedArray<AnimCurve>& curves = CoreAnimation::AnimGetCurves(anim);
+                Timing::Tick evalTime = playing.sampleTime % clip.duration;
 
                 if (firstAnimTrack
                     || playing.blend != 1.0f)
                 {
                     if (sampleMixInfo->sampleType == SampleType::Step)
-                        AnimSampleStep(&clip.CurveByIndex(0), clip.GetNumCurves(), sampleMixInfo->velocityScale, src0Ptr, sampleBuffer.GetSamplesPointer(), sampleBuffer.GetSampleCountsPointer());
+                        AnimSampleStep(clip, curves, evalTime, sampleMixInfo->velocityScale, idleSamples, srcPtr, srcTimePtr, playing.curveSampleIndices.Begin(), sampleBuffer.GetSamplesPointer(), sampleBuffer.GetSampleCountsPointer());
                     else
-                        AnimSampleLinear(&clip.CurveByIndex(0), clip.GetNumCurves(), sampleMixInfo->sampleWeight, sampleMixInfo->velocityScale, src0Ptr, src1Ptr, sampleBuffer.GetSamplesPointer(), sampleBuffer.GetSampleCountsPointer());
+                        AnimSampleLinear(clip, curves, evalTime, sampleMixInfo->velocityScale, idleSamples, srcPtr, srcTimePtr, playing.curveSampleIndices.Begin(), sampleBuffer.GetSamplesPointer(), sampleBuffer.GetSampleCountsPointer());
                 }
                 else // Playing with mix
                 {
                     uchar tmpSampleCounts = 0;
                     if (sampleMixInfo->sampleType == SampleType::Step)
-                        AnimSampleStep(&clip.CurveByIndex(0), clip.GetNumCurves(), sampleMixInfo->velocityScale, src0Ptr, tmpSamples, &tmpSampleCounts);
+                        AnimSampleStep(clip, curves, evalTime, sampleMixInfo->velocityScale, idleSamples, srcPtr, srcTimePtr, tmpSampleIndices, tmpSamples, &tmpSampleCounts);
                     else
-                        AnimSampleLinear(&clip.CurveByIndex(0), clip.GetNumCurves(), sampleMixInfo->sampleWeight, sampleMixInfo->velocityScale, src0Ptr, src1Ptr, tmpSamples, &tmpSampleCounts);
+                        AnimSampleLinear(clip, curves, evalTime, sampleMixInfo->velocityScale, idleSamples, srcPtr, srcTimePtr, tmpSampleIndices, tmpSamples, &tmpSampleCounts);
 
-                    AnimMix(&clip.CurveByIndex(0), clip.GetNumCurves(), playing.mask, sampleMixInfo->mixWeight, sampleBuffer.GetSamplesPointer(), tmpSamples, sampleBuffer.GetSampleCountsPointer(), &tmpSampleCounts, sampleBuffer.GetSamplesPointer(), sampleBuffer.GetSampleCountsPointer());
+                    AnimMix(clip, curves.Size(), playing.mask, sampleMixInfo->mixWeight, sampleBuffer.GetSamplesPointer(), tmpSamples, sampleBuffer.GetSampleCountsPointer(), &tmpSampleCounts, sampleBuffer.GetSamplesPointer(), sampleBuffer.GetSampleCountsPointer());
                 }
 
                 // Run skeleton as soon as we have a single anim job queued
@@ -666,13 +590,14 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
         const Math::mat4* mixPoseMatrixBase = userJoint.Begin();
         Math::mat4* unscaledMatrixBase = tmpMatrices;
 
-        Math::vec4 finalScale, parentFinalScale, variationTranslation;
-        Math::vec4 translate(0.0f, 0.0f, 0.0f, 1.0f);
-        Math::vec4 scale(1.0f, 1.0f, 1.0f, 0.0f);
-        Math::vec4 parentScale(1.0f, 1.0f, 1.0f, 0.0f);
-        Math::vec4 parentTranslate(0.0f, 0.0f, 0.0f, 1.0f);
+        Math::vec3 finalScale, parentFinalScale;
+        Math::vec3 variationTranslation;
+        Math::vec3 translate(0.0f, 0.0f, 0.0f);
+        Math::vec3 scale(1.0f, 1.0f, 1.0f);
+        Math::vec3 parentScale(1.0f, 1.0f, 1.0f);
+        Math::vec3 parentTranslate(0.0f, 0.0f, 0.0f);
         Math::quat rotate;
-        Math::vec4 vec1111(1.0f, 1.0f, 1.0f, 1.0f);
+        Math::vec3 vec1111(1.0f, 1.0f, 1.0f);
 
         // load pointers from context
         // NOTE: the samplesBase pointer may be NULL if no valid animation
@@ -680,8 +605,11 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
         // to its jesus pose
         const SkeletonJobJoint* compsBase = jobJoint.Begin();
         n_assert(0 != compsBase);
-        const Math::vec4* samplesBase = sampleBuffer.GetSamplesPointer();
-        const Math::vec4* samplesPtr = samplesBase;
+        const float* samplesBase = sampleBuffer.GetSamplesPointer();
+        const float* samplesPtr = samplesBase;
+
+        const uchar* sampleCountBase = sampleBuffer.GetSampleCountsPointer();
+        const uchar* sampleCountPtr = sampleCountBase;
 
         Math::mat4* scaledMatrixBase = scaledJointPalette.Begin();
         Math::mat4* skinMatrixBase = jointPalette.Begin();
@@ -693,70 +621,38 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
         int jointIndex;
         for (jointIndex = 0; jointIndex < jointPalette.Size(); jointIndex++)
         {
-            // load joint translate/rotate/scale
-            if (sampleBuffer.GetSampleCountsPointer() != 0)
-            {
-                translate.load((Math::scalar*)&(samplesPtr[0]));
-                rotate.load((Math::scalar*)&(samplesPtr[1]));
-                scale.load((Math::scalar*)&(samplesPtr[2]));
-                samplesPtr += sampleWidth;
-            }
+            static const size_t TRANSLATION_OFFSET = 0;
+            static const size_t ROTATION_OFFSET = 3;
+            static const size_t SCALE_OFFSET = 7;
+
+            translate.load(samplesPtr + TRANSLATION_OFFSET);
+            rotate.load(samplesPtr + ROTATION_OFFSET);
+            scale.load(samplesPtr + SCALE_OFFSET);
+
+            sampleCountPtr += 3;
+            samplesPtr += sampleWidth;
 
             const SkeletonJobJoint& comps = compsBase[jointIndex];
 
             // load variation scale
             finalScale.load(&comps.varScaleX);
             finalScale = scale * finalScale;
-            finalScale = permute(finalScale, vec1111, 0, 1, 2, 7);
+            finalScale = permute(finalScale, vec1111, 0, 1, 2);
 
             Math::mat4& unscaledMatrix = unscaledMatrixBase[jointIndex];
             Math::mat4& scaledMatrix = scaledMatrixBase[jointIndex];
 
             // update unscaled matrix
             // animation rotation
-            unscaledMatrix = rotationquat(rotate);
-
-            // load variation translation
-            variationTranslation.load(&comps.varTranslationX);
-            unscaledMatrix.translate(xyz(translate + variationTranslation));
-
-            // add mix pose if the pointer is set
-            if (mixPoseMatrixBase)
-                unscaledMatrix = mixPoseMatrixBase[jointIndex] * unscaledMatrix;
-
-            // update scaled matrix
-            // scale after rotation
-            scaledMatrix.x_axis = unscaledMatrix.x_axis * splat_x(finalScale);
-            scaledMatrix.y_axis = unscaledMatrix.y_axis * splat_y(finalScale);
-            scaledMatrix.z_axis = unscaledMatrix.z_axis * splat_z(finalScale);
-
-            if (InvalidIndex == comps.parentJointIndex)
+            scaledMatrix = Math::affine(scale, rotate, translate);
+            unscaledMatrix = Math::affine(Math::vec3(1), rotate, translate);
+            if (InvalidIndex != comps.parentJointIndex)
             {
-                // no parent directly set translation
-                scaledMatrix.position = unscaledMatrix.position;
-            }
-            else
-            {
-                // load parent animation scale
-                parentScale.load((Math::scalar*)(samplesBase + sampleWidth * jointIndex + 2));
-                const SkeletonJobJoint& parentComps = compsBase[comps.parentJointIndex];
-
-                // load parent variation scale
-                parentFinalScale.load(&parentComps.varScaleX);
-
-                // combine both scaling types
-                parentFinalScale = parentScale * parentFinalScale;
-                parentFinalScale = permute(parentFinalScale, vec1111, 0, 1, 2, 7);
-
-                // transform our unscaled position with parent scaling
-                unscaledMatrix.position = unscaledMatrix.position * parentFinalScale;
-                scaledMatrix.position = unscaledMatrix.position;
-
-                // apply rotation and relative animation translation of parent 
                 const Math::mat4& parentUnscaledMatrix = unscaledMatrixBase[comps.parentJointIndex];
-                unscaledMatrix = parentUnscaledMatrix * unscaledMatrix;
                 scaledMatrix = parentUnscaledMatrix * scaledMatrix;
+                unscaledMatrix = parentUnscaledMatrix * unscaledMatrix;
             }
+
             skinMatrixBase[jointIndex] = scaledMatrix * invPoseMatrixBase[jointIndex];
         }
     }
@@ -808,7 +704,8 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
         charCtx.animMixInfos = Jobs2::JobAlloc<AnimSampleMixInfo>(models.Size());
 
         charCtx.tmpJoints = Jobs2::JobAlloc<Math::mat4*>(models.Size());
-        charCtx.tmpSamples = Jobs2::JobAlloc<Math::vec4*>(models.Size());
+        charCtx.tmpSampleIndices = Jobs2::JobAlloc<uint*>(models.Size());
+        charCtx.tmpSamples = Jobs2::JobAlloc<float*>(models.Size());
 
         IndexT i;
         for (i = 0; i < models.Size(); i++)
@@ -823,8 +720,10 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
             // Allocate scratch memory for animation mixing
             const CoreAnimation::AnimSampleBuffer& sampleBuffer = sampleBuffers[i];
             if (supportsBlending[i])
-                charCtx.tmpSamples[i] = Jobs2::JobAlloc<Math::vec4>(sampleBuffer.GetNumSamples());
-
+            {
+                charCtx.tmpSampleIndices[i] = Jobs2::JobAlloc<uint>(sampleBuffer.GetNumSamples());
+                charCtx.tmpSamples[i] = Jobs2::JobAlloc<float>(sampleBuffer.GetNumSamples());
+            }
         }
 
         // Run job
@@ -875,16 +774,8 @@ CharacterContext::UpdateAnimations(const Graphics::FrameContext& ctx)
                     IndexT j;
                     for (j = 0; j < usedIndices.Size(); j++)
                     {
-                        usedMatrices[j] = jointPalette[usedIndices[j]];
-                    }
-                }
-                else
-                {
-                    // copy active matrix palette, or set identity
-                    IndexT j;
-                    for (j = 0; j < usedIndices.Size(); j++)
-                    {
-                        usedMatrices[j] = Math::mat4();
+                        const IndexT lookup = usedIndices[j];
+                        usedMatrices[j] = jointPalette[lookup];
                     }
                 }
 
@@ -949,9 +840,17 @@ CharacterContext::OnRenderDebug(uint32 flags)
         IndexT j;
         for (j = 0; j < jointsPalette.Size(); j++)
         {
-            Math::mat4 joint = transform * jointsPalette[j] * scale;
+            Math::mat4 joint = transform * jointsPalette[j];
+            Math::mat4 mat;
+            mat.row0 = normalize3(joint.row0);
+            mat.row1 = normalize3(joint.row1);
+            mat.row2 = normalize3(joint.row2);
+            mat.row3 = normalize3(joint.row3);
+            mat.row3.w = 1.0f;
+            mat.position = joint.position;
+            mat = mat * scale;
             CoreGraphics::RenderShape shape;
-            shape.SetupSimpleShape(CoreGraphics::RenderShape::Sphere, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::CheckDepth | CoreGraphics::RenderShape::Wireframe), Math::vec4(1, 0, 0, 0.5f), joint);
+            shape.SetupSimpleShape(CoreGraphics::RenderShape::Sphere, CoreGraphics::RenderShape::RenderFlag(CoreGraphics::RenderShape::AlwaysOnTop), Math::vec4(1, 0, 0, 0.5f), mat);
             CoreGraphics::ShapeRenderer::Instance()->AddShape(shape);
             //Im3d::Im3dContext::DrawSphere(joint, Math::vec4(1,0,0,0.5f));
         }

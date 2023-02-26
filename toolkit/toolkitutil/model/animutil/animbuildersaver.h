@@ -28,15 +28,6 @@ private:
     static void WriteHeader(const Ptr<IO::Stream>& stream, const Util::Array<AnimBuilder>& animBuilders, const System::ByteOrder& byteOrder);
     /// Write anim header to stream
     static void WriteAnimations(const Ptr<IO::Stream>& stream, const Util::Array<AnimBuilder>& animBuilders, const System::ByteOrder& byteOrder);
-    /// Write clip headers to stream
-    static void WriteClips(const Ptr<IO::Stream>& stream, const Util::Array<AnimBuilder>& animBuilders, const System::ByteOrder& byteOrder);
-    /// Write clip anim events to stream
-    static void WriteClipAnimEvents(const Ptr<IO::Stream>& stream, AnimBuilderClip& clip, const System::ByteOrder& byteOrder);
-    /// Write clip anim curves to stream
-    static void WriteClipCurves(const Ptr<IO::Stream>& stream, AnimBuilderClip& clip, const System::ByteOrder& byteOrder);
-
-    /// Write keys to stream
-    static void WriteKeys(const Ptr<IO::Stream>& stream, const Util::Array<AnimBuilder>& animBuilders, const System::ByteOrder& byteOrder);
 };
 
 } // namespace ToolkitUtil

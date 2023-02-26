@@ -90,9 +90,10 @@ SkeletonBuilderSaver::WriteJoints(const Ptr<IO::Stream>& stream, const Util::Arr
             joint.name.CopyToBuffer(&(nsk3Joint.name[0]), sizeof(nsk3Joint.name));
             nsk3Joint.index = joint.index;
             nsk3Joint.parent = joint.parent;
-            nsk3Joint.translation = joint.translation;
-            nsk3Joint.rotation = joint.rotation;
-            nsk3Joint.scale = joint.scale;
+            joint.bind.store(nsk3Joint.bind);
+            joint.rotation.store(nsk3Joint.rotation);
+            joint.translation.store(nsk3Joint.translation);
+            joint.scale.store(nsk3Joint.scale);
 
             // write clip
             stream->Write(&nsk3Joint, sizeof(nsk3Joint));

@@ -17,7 +17,7 @@ class NFbxLightNode
 {
 public:
     /// Setup node from FBX node
-    static void Setup(SceneNode* node, FbxNode* fbxNode);
+    static void Setup(SceneNode* node, SceneNode* parent, FbxNode* fbxNode);
 
     enum LightType
     {

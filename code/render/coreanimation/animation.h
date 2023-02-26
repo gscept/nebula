@@ -13,6 +13,7 @@
     (C) 2013-2020 Individual contributors, see AUTHORS file
 */
 #include "resources/resource.h"
+#include "ids/idallocator.h"
 #include "coreanimation/animclip.h"
 #include "coreanimation/animkeybuffer.h"
 #include "coreanimation/animsamplemask.h"
@@ -26,42 +27,68 @@ ID_24_8_TYPE(AnimationId);
 //------------------------------------------------------------------------------
 /**
 */
-extern void AnimSampleStep(const AnimCurve* curves,
-    int numCurves,
-    const Math::vec4& velocityScale,
-    const Math::vec4* src0SamplePtr,
-    Math::vec4* outSamplePtr,
-    uchar* outSampleCounts);
+extern void
+FindNextKey(
+    const AnimCurve& curve
+    , const Timing::Tick time
+    , uint& key
+    , uint* sampleIndices
+    , const AnimKeyBuffer::Interval* sampleTimes
+);
 
 //------------------------------------------------------------------------------
 /**
 */
-extern void AnimSampleLinear(const AnimCurve* curves,
-    int numCurves,
-    float sampleWeight,
+extern void AnimSampleStep(
+    const AnimClip& clip,
+    const Util::FixedArray<AnimCurve>& curves,
+    const Timing::Tick time,
     const Math::vec4& velocityScale,
-    const Math::vec4* src0SamplePtr,
-    const Math::vec4* src1SamplePtr,
-    Math::vec4* outSamplePtr,
-    uchar* outSampleCounts);
+    const Util::FixedArray<Math::vec4>& idleSamples,
+    const float* srcSamplePtr,
+    const AnimKeyBuffer::Interval* timeSamplePtr,
+    uint* outSampleKeyPtr,
+    float* outSamplePtr,
+    uchar* outSampleCounts
+);
 
 //------------------------------------------------------------------------------
 /**
 */
-extern void AnimMix(const AnimCurve* curves,
-    int numCurves,
+extern void AnimSampleLinear(
+    const AnimClip& clip,
+    const Util::FixedArray<AnimCurve>& curves,
+    const Timing::Tick time,
+    const Math::vec4& velocityScale,
+    const Util::FixedArray<Math::vec4>& idleSamples,
+    const float* srcSamplePtr,
+    const AnimKeyBuffer::Interval* timeSamplePtr,
+    uint* outSampleKeyPtr,
+    float* outSamplePtr,
+    uchar* outSampleCounts
+);
+
+//------------------------------------------------------------------------------
+/**
+*/
+extern void AnimMix(
+    const AnimClip& clip,
+    const SizeT numSamples,
     const AnimSampleMask* mask,
     float mixWeight,
-    const Math::vec4* src0SamplePtr,
-    const Math::vec4* src1SamplePtr,
+    const float* src0SamplePtr,
+    const float* src1SamplePtr,
     const uchar* src0SampleCounts,
     const uchar* src1SampleCounts,
-    Math::vec4* outSamplePtr,
-    uchar* outSampleCounts);
+    float* outSamplePtr,
+    uchar* outSampleCounts
+);
 
 struct AnimationCreateInfo
 {
     Util::FixedArray<AnimClip> clips;
+    Util::FixedArray<AnimCurve> curves;
+    Util::FixedArray<AnimEvent> events;
     Util::HashTable<Util::StringAtom, IndexT, 32> indices;
     Ptr<AnimKeyBuffer> keyBuffer;
 };
@@ -77,20 +104,24 @@ const Util::FixedArray<AnimClip>& AnimGetClips(const AnimationId& id);
 const AnimClip& AnimGetClip(const AnimationId& id, const IndexT index);
 /// Get anim buffer
 const Ptr<AnimKeyBuffer>& AnimGetBuffer(const AnimationId& id);
+/// Get curves
+const Util::FixedArray<AnimCurve>& AnimGetCurves(const AnimationId& id);
 /// Get anim clip index
 const IndexT AnimGetIndex(const AnimationId& id, const Util::StringAtom& name);
-/// Compute key slice pointer and memory size
-void AnimComputeSlice(const AnimationId& id, IndexT clipIndex, IndexT keyIndex, SizeT& outSliceByteSize, const Math::vec4*& ptr);
 
 enum
 {
     Anim_Clips,
-    Anim_KeyIndices,
+    Anim_Curves,
+    Anim_Events,
+    Anim_ClipIndices,
     Anim_KeyBuffer
 };
 
 typedef Ids::IdAllocator<
     Util::FixedArray<AnimClip>,
+    Util::FixedArray<AnimCurve>,
+    Util::FixedArray<AnimEvent>,
     Util::HashTable<Util::StringAtom, IndexT, 32>,
     Ptr<AnimKeyBuffer>
 > AnimAllocator;

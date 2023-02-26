@@ -24,10 +24,11 @@ uint MeshCounter = 0;
 void 
 NFbxMeshNode::Setup(
     SceneNode* node
+    , SceneNode* parent
     , fbxsdk::FbxNode* fbxNode
 )
 {
-    NFbxNode::Setup(node, fbxNode);
+    NFbxNode::Setup(node, parent, fbxNode);
 }
 
 //------------------------------------------------------------------------------
@@ -38,7 +39,6 @@ NFbxMeshNode::ExtractMesh(
     SceneNode* node
     , Util::Array<MeshBuilder>& meshes
     , const Util::Dictionary<fbxsdk::FbxNode*, SceneNode*>& nodeLookup
-    , fbxsdk::FbxNode* fbxNode
     , const ToolkitUtil::ExportFlags flags
 )
 {
@@ -47,12 +47,12 @@ NFbxMeshNode::ExtractMesh(
    // Add a single mesh primitive for FBX nodes
     MeshBuilder& mesh = meshes.Emplace();
 
-    if (fbxNode->GetMaterialCount())
-        node->mesh.material = fbxNode->GetMaterial(0)->GetName();
+    if (node->fbx.node->GetMaterialCount())
+        node->mesh.material = node->fbx.node->GetMaterial(0)->GetName();
 
-    FbxMesh* fbxMesh = fbxNode->GetMesh();
+    FbxMesh* fbxMesh = node->fbx.node->GetMesh();
     if (!fbxMesh->IsTriangleMesh())
-        n_error("Node '%s' -> Mesh '%s' is not a triangle mesh. Make sure your exported meshes are triangulated!\n", fbxNode->GetName(), fbxMesh->GetName());
+        n_error("Node '%s' -> Mesh '%s' is not a triangle mesh. Make sure your exported meshes are triangulated!\n", node->fbx.node->GetName(), fbxMesh->GetName());
 
     // create mask
     uint meshMask = ToolkitUtil::NoMeshFlags;
@@ -82,9 +82,9 @@ NFbxMeshNode::ExtractMesh(
 
     // Provoke generation of LOD groups
     FbxLODGroup* lodGroup = nullptr;
-    if (fbxNode->GetParent() != nullptr)
+    if (node->fbx.node->GetParent() != nullptr)
     {
-        lodGroup = fbxNode->GetParent()->GetLodGroup();
+        lodGroup = node->fbx.node->GetParent()->GetLodGroup();
         if (lodGroup != nullptr)
         {
             // DO NOT REMOVE THIS. IF YOU DO, YOU DON'T GET THE LODS PROPERLY.
@@ -120,54 +120,40 @@ NFbxMeshNode::ExtractMesh(
     }
 
     // get scale
-    float scaleFactor = AdjustedScale;
     uint groupId = MeshCounter++;
     node->mesh.groupId = groupId;
 
     MeshBuilderVertex::ComponentMask componentMask = 0x0;
-
-    // setup vertices with basic per-vertex data
-    for (int vertex = 0; vertex < vertexCount; vertex++)
+    Util::FixedArray<Math::vec4> controlPoints;
+    controlPoints.Resize(fbxMesh->GetControlPointsCount());
+    for (IndexT i = 0; i < controlPoints.Size(); i++)
     {
-        FbxVector4 v = fbxMesh->GetControlPointAt(vertex);
-        MeshBuilderVertex meshVertex;
-        vec4 position = vec4((float)v[0], (float)v[1], (float)v[2], 1.0f) * vec4(scaleFactor, scaleFactor, scaleFactor, 1.0f);
+        FbxVector4 v = fbxMesh->GetControlPointAt(i);
+        v.FixIncorrectValue();
+        controlPoints[i] = FbxToMath(v) * AdjustedScale;
         componentMask |= MeshBuilderVertex::Position;
-        meshVertex.SetPosition(position);
-        mesh.AddVertex(meshVertex);
     }
 
-    // setup triangles
-    for (int polygonIndex = 0; polygonIndex < polyCount; polygonIndex++)
-    {
-        int polygonSize = fbxMesh->GetPolygonSize(polygonIndex);
-        n_assert2(polygonSize == 3, "Some polygons seem to not be triangulated, this is not accepted");
-        MeshBuilderTriangle meshTriangle;
-        for (int polygonVertexIndex = 0; polygonVertexIndex < polygonSize; polygonVertexIndex++)
-        {
-            // we want to offset the vertex index with the current size of the mesh
-            int polygonVertex = fbxMesh->GetPolygonVertex(polygonIndex, polygonVertexIndex);
-            meshTriangle.SetVertexIndex(polygonVertexIndex, polygonVertex);
-        }
-        mesh.AddTriangle(meshTriangle);
-    }
-
+    Util::FixedArray<Math::vec4> skinWeights;
+    Util::FixedArray<Math::uint4> skinIndices;
 
     // if we export using a skeletal model, we always need a skin, so if the mesh isn't skinned, we do it manually
     if (node->mesh.meshFlags & HasSkin)
     {
         // extract skin
-        ExtractSkin(node, mesh, nodeLookup, fbxMesh);
+        skinWeights.Resize(controlPoints.Size());
+        skinIndices.Resize(controlPoints.Size());
+        ExtractSkin(node, skinIndices, skinWeights, nodeLookup, fbxMesh);
         componentMask |= MeshBuilderVertex::SkinWeights | MeshBuilderVertex::SkinIndices;
     }
     else if (flags & ToolkitUtil::CalcRigidSkin)
-    {
+    { 
         // generate rigid skin if necessary
-        GenerateRigidSkin(node, mesh, (uint&)node->mesh.meshFlags);
+        skinWeights.Resize(controlPoints.Size());
+        skinIndices.Resize(controlPoints.Size());
+        GenerateRigidSkin(node, skinIndices, skinWeights, (uint&)node->mesh.meshFlags);
         componentMask |= MeshBuilderVertex::SkinWeights | MeshBuilderVertex::SkinIndices;
     }
-
-    mesh.Inflate();
 
     typedef fbxsdk::FbxLayerElementTemplate<fbxsdk::FbxVector4>* FbxVec4Array;
     typedef fbxsdk::FbxLayerElementTemplate<fbxsdk::FbxVector2>* FbxVec2Array;
@@ -190,20 +176,30 @@ NFbxMeshNode::ExtractMesh(
     if (tangentCount > 0)
         tangentElements = fbxMesh->GetElementTangent(0);
 
+    // setup triangles
     int vertexId = 0;
-    for (int triangleIndex = 0; triangleIndex < polyCount; triangleIndex++)
+    for (int polygonIndex = 0; polygonIndex < polyCount; polygonIndex++)
     {
-        MeshBuilderTriangle& triangle = mesh.TriangleAt(triangleIndex);
-        for (int polygonVertexIndex = 0; polygonVertexIndex < 3; polygonVertexIndex++)
+        int polygonSize = fbxMesh->GetPolygonSize(polygonIndex);
+        n_assert2(polygonSize == 3, "Some polygons seem to not be triangulated, this is not accepted");
+        MeshBuilderTriangle meshTriangle;
+        for (int polygonVertexIndex = 0; polygonVertexIndex < polygonSize; polygonVertexIndex++)
         {
-            int polygonVertex = fbxMesh->GetPolygonVertex(triangleIndex, polygonVertexIndex);
-            int vertexIndex = triangle.GetVertexIndex(polygonVertexIndex);
-            MeshBuilderVertex& vertexRef = mesh.VertexAt(vertexIndex);
+            // we want to offset the vertex index with the current size of the mesh
+            int polygonVertex = fbxMesh->GetPolygonVertex(polygonIndex, polygonVertexIndex);
+            MeshBuilderVertex meshVertex;
+            meshVertex.SetPosition(controlPoints[polygonVertex]);
 
             // extract uvs from the 0th channel
             Math::vec2 uv = Extract(uv0Elements, polygonVertex, vertexId);
-            vertexRef.SetUv(uv);
+            meshVertex.SetUv(uv);
             componentMask |= MeshBuilderVertex::Uvs;
+
+            if (AllBits(componentMask, MeshBuilderVertex::SkinWeights | MeshBuilderVertex::SkinIndices))
+            {
+                meshVertex.SetSkinWeights(skinWeights[polygonVertex]);
+                meshVertex.SetSkinIndices(skinIndices[polygonVertex]);
+            }
 
             // extract multilayered uvs, or ordinary uvs if we're not importing as multilayered
             if (AllBits(flags, ToolkitUtil::ImportSecondaryUVs))
@@ -212,12 +208,12 @@ NFbxMeshNode::ExtractMesh(
                 {
                     // simply extract two uvs
                     Math::vec2 uv2 = Extract(uv1Elements, polygonVertex, vertexId);
-                    vertexRef.SetSecondaryUv(uv2);
+                    meshVertex.SetSecondaryUv(uv2);
                 }
                 else
                 {
                     // if mesh has none, flood to 0
-                    vertexRef.SetSecondaryUv(Math::vec2(0, 0));
+                    meshVertex.SetSecondaryUv(Math::vec2(0, 0));
                 }
                 componentMask |= MeshBuilderVertex::SecondUv;
             }
@@ -229,36 +225,41 @@ NFbxMeshNode::ExtractMesh(
                 {
                     // extract colors
                     Math::vec4 color = Extract(colorElements, polygonVertex, vertexId);
-                    vertexRef.SetColor(color);
+                    meshVertex.SetColor(color);
                 }
                 else
                 {
                     // set vertex color to be white if no vertex colors can be extracted from FBX
-                    vertexRef.SetColor(Math::vec4(1));
+                    meshVertex.SetColor(Math::vec4(1));
                 }
                 componentMask |= MeshBuilderVertex::Color;
             }
 
             Math::vec4 normal = Extract(normalElements, polygonVertex, vertexId);
-            vertexRef.SetNormal(xyz(normal));
+            meshVertex.SetNormal(xyz(normal));
             componentMask |= MeshBuilderVertex::Normals;
 
             if (AllBits(node->mesh.meshFlags, HasTangents))
             {
                 Math::vec4 tangent = Extract(tangentElements, polygonVertex, vertexId);
-                vertexRef.SetTangent(xyz(tangent));
-                vertexRef.SetSign(-tangent.w);
+                meshVertex.SetTangent(xyz(tangent));
+                meshVertex.SetSign(-tangent.w);
                 componentMask |= MeshBuilderVertex::Tangents;
             }
             else
             {
-                vertexRef.SetTangent({ 0, 0, 0 });
-                vertexRef.SetSign(0);
+                meshVertex.SetTangent({ 0, 0, 0 });
+                meshVertex.SetSign(0);
             }
+
+            mesh.AddVertex(meshVertex);
+            meshTriangle.SetVertexIndex(polygonVertexIndex, vertexId);
 
             vertexId++;
         }
+        mesh.AddTriangle(meshTriangle);
     }
+
 
     // flip uvs if checked
     if (AllBits(flags, ToolkitUtil::FlipUVs))
@@ -267,18 +268,11 @@ NFbxMeshNode::ExtractMesh(
     }
 
     // compute boundingbox
-    node->base.boundingBox = mesh.ComputeBoundingBox();
+    node->base.boundingBox = mesh.ComputeBoundingBox(AdjustedScale);
     mesh.SetComponents(componentMask);
 
-    Util::FixedArray<Util::Array<int>> collapseMap;
-    mesh.Deflate(&collapseMap);
-
-    // deflate to remove redundant vertices if flag is set
-    if (AllBits(flags, ToolkitUtil::RemoveRedundant))
-    {
-        // remove redundant vertices
-        mesh.Cleanup(nullptr);
-    }
+    // remove redundant vertices
+    mesh.Cleanup(nullptr);
 
     // Calculate lods
     if (lodGroup != nullptr)
@@ -302,55 +296,68 @@ NFbxMeshNode::ExtractMesh(
 
 //------------------------------------------------------------------------------
 /**
+*/
+FbxAMatrix 
+GetGeometryTransformation(FbxNode* inNode)
+{
+    if (!inNode)
+    {
+        throw std::exception("Null for mesh geometry");
+    }
+
+    const FbxVector4 lT = inNode->GetGeometricTranslation(FbxNode::eSourcePivot);
+    const FbxVector4 lR = inNode->GetGeometricRotation(FbxNode::eSourcePivot);
+    const FbxVector4 lS = inNode->GetGeometricScaling(FbxNode::eSourcePivot);
+
+    return FbxAMatrix(lT, lR, lS);
+}
+
+//------------------------------------------------------------------------------
+/**
     Hmm, maybe a way to check if we have more than 255 indices, then we should switch to using Joint indices as complete uints?
 */
 void 
-NFbxMeshNode::ExtractSkin(SceneNode* node, MeshBuilder& mesh, const Util::Dictionary<fbxsdk::FbxNode*, SceneNode*>& nodeLookup, fbxsdk::FbxMesh* fbxMesh)
+NFbxMeshNode::ExtractSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indices, Util::FixedArray<Math::vec4>& weights, const Util::Dictionary<fbxsdk::FbxNode*, SceneNode*>& nodeLookup, fbxsdk::FbxMesh* fbxMesh)
 {
     int vertexCount = fbxMesh->GetControlPointsCount();
     int skinCount = fbxMesh->GetDeformerCount(FbxDeformer::eSkin);
-    int* jointArray = new int[vertexCount*4];
-    double* weightArray = new double[vertexCount*4];
-    int* slotArray = new int[vertexCount];
-    memset(jointArray, 0, sizeof(int)*vertexCount*4);
-    memset(weightArray, 0, sizeof(double)*vertexCount*4);
-    memset(slotArray, 0, sizeof(int)*vertexCount);
-    int maxIndex = 0;
-
+    
+    Util::FixedArray<Util::Array<std::tuple<int, float>>> keyWeightPairs(vertexCount);
+    FbxAMatrix geometricTransform = GetGeometryTransformation(node->fbx.node);
     for (int skinIndex = 0; skinIndex < skinCount; skinIndex++)
     {
         FbxSkin* skin = static_cast<FbxSkin*>(fbxMesh->GetDeformer(skinIndex, FbxDeformer::eSkin));
         int clusterCount = skin->GetClusterCount();
         node->base.isSkin = true;
 
+        FbxAMatrix rootNodeMatrix;
+        skin->GetCluster(0)->GetTransformMatrix(rootNodeMatrix);
+
         for (int clusterIndex = 0; clusterIndex < clusterCount; clusterIndex++)
         {
             FbxCluster* cluster = skin->GetCluster(clusterIndex);
             FbxNode* joint = cluster->GetLink();
             SceneNode* jointNode = nodeLookup[joint];
+            n_assert(jointNode->skeleton.bindMatrix == Math::mat4());
+            n_assert(jointNode->type == SceneNode::NodeType::Joint);
+
+            // Calculate inverse transform for skinned vertices
+            FbxAMatrix linkMatrix, transformMatrix;
+            cluster->GetTransformLinkMatrix(linkMatrix);
+            cluster->GetTransformMatrix(transformMatrix);
+            FbxAMatrix inversedPose = linkMatrix.Inverse() * transformMatrix * geometricTransform;
+            jointNode->skeleton.bindMatrix = FbxToMath(inversedPose);
+            jointNode->skeleton.bindMatrix.position *= AdjustedScale;
+
             n_assert(jointNode != nullptr);
 
             int clusterVertexIndexCount = cluster->GetControlPointIndicesCount();
             for (int vertexIndex = 0; vertexIndex < clusterVertexIndexCount; vertexIndex++)
             {
                 int vertex = cluster->GetControlPointIndices()[vertexIndex];
-                double weight = cluster->GetControlPointWeights()[vertexIndex];
-                int stride = slotArray[vertex];
-
-                // this is just a fail safe for smooth operators
-                if (vertex >= vertexCount)
-                    continue;
-
-                int* jointData = jointArray + (vertex*4);
-                double* weightData = weightArray + (vertex*4);
-
-                // ignore weights and indices over 4 (optimal vertex-to-joint ratio for games is 4)
-                if (stride > 3) continue;
-
-                jointData[stride] = jointNode->skeleton.jointIndex;
-                weightData[stride] = weight;
-                maxIndex = Math::max(jointData[stride], maxIndex);
-                slotArray[vertex]++;
+                float weight = TruncDouble(cluster->GetControlPointWeights()[vertexIndex]);
+                if (weight > 0)
+                    keyWeightPairs[vertex].Append(std::make_tuple(jointNode->skeleton.jointIndex, weight));
             }
         }
     }
@@ -358,25 +365,32 @@ NFbxMeshNode::ExtractSkin(SceneNode* node, MeshBuilder& mesh, const Util::Dictio
     // finally, traverse through every vertex and set their joint indices and weighs
     for (int vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++)
     {
-        MeshBuilderVertex& vertex = mesh.VertexAt(vertexIndex);
-        int* indices = jointArray + (vertexIndex*4);
-        double* weights = weightArray + (vertexIndex*4);
+        Util::Array<std::tuple<int, float>>& weightPairs = keyWeightPairs[vertexIndex];
+        weightPairs.SortWithFunc([](const std::tuple<int, float>& lhs, const std::tuple<int, float>& rhs)->bool
+        {
+            const auto& [i0, w0] = lhs;
+            const auto& [i1, w1] = rhs;
+            return w0 > w1;
+        });
+
+        const auto& [i0, w0] = weightPairs.Size() > 0 ? weightPairs[0] : std::make_tuple(0, 0.0f);
+        const auto& [i1, w1] = weightPairs.Size() > 1 ? weightPairs[1] : std::make_tuple(0, 0.0f);
+        const auto& [i2, w2] = weightPairs.Size() > 2 ? weightPairs[2] : std::make_tuple(0, 0.0f);
+        const auto& [i3, w3] = weightPairs.Size() > 3 ? weightPairs[3] : std::make_tuple(0, 0.0f);
+
+        float normalizeFactor = 1.0f / (w0 + w1 + w2 + w3);
 
         // set weights
-        vertex.SetSkinWeights(vec4(weights[0], weights[1], weights[2], weights[3]));
-        vertex.SetSkinIndices(uint4{ (uint)indices[0], (uint)indices[1], (uint)indices[2], (uint)indices[3] });
+        weights[vertexIndex] = vec4(w0 * normalizeFactor, w1 * normalizeFactor, w2 * normalizeFactor, w3 * normalizeFactor);
+        indices[vertexIndex] = uint4{ (uint)i0, (uint)i1, (uint)i2, (uint)i3 };
     }
-
-    delete [] slotArray;
-    delete [] jointArray;
-    delete [] weightArray;
 }
 
 //------------------------------------------------------------------------------
 /**
 */
 void 
-NFbxMeshNode::GenerateRigidSkin(SceneNode* node, MeshBuilder& mesh, uint& meshFlags)
+NFbxMeshNode::GenerateRigidSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indices, Util::FixedArray<Math::vec4>& weights, uint& meshFlags)
 {
     if (!AllBits(meshFlags, ToolkitUtil::HasSkin))
     {
@@ -386,26 +400,24 @@ NFbxMeshNode::GenerateRigidSkin(SceneNode* node, MeshBuilder& mesh, uint& meshFl
         {
             IndexT parentJointIndex = parent->skeleton.jointIndex;
 
-            int vertCount = mesh.GetNumVertices();
+            int vertCount = indices.Size();
             IndexT vertIndex;
             for (vertIndex = 0; vertIndex < vertCount; vertIndex++)
             {
                 // for each vertex, set a rigid skin by using a weight of 1 and the index of the parent node
-                MeshBuilderVertex& vertex = mesh.VertexAt(vertIndex);
-                vertex.SetSkinWeights(vec4(1, 0, 0, 0));
-                vertex.SetSkinIndices(uint4{ (uint)parentJointIndex, 0, 0, 0 });
+                indices[vertIndex] = uint4{ (uint)parentJointIndex, 0, 0, 0 };
+                weights[vertIndex] = vec4(1, 0, 0, 0);
             }
         }
         else
         {
-            int vertCount = mesh.GetNumVertices();
+            int vertCount = indices.Size();
             IndexT vertIndex;
             for (vertIndex = 0; vertIndex < vertCount; vertIndex++)
             {
                 // for each vertex, set a rigid skin by using a weight of 1 and the index of the parent node
-                MeshBuilderVertex& vertex = mesh.VertexAt(vertIndex);
-                vertex.SetSkinWeights(vec4(1, 0, 0, 0));
-                vertex.SetSkinIndices(uint4{ 0, 0, 0, 0 });
+                indices[vertIndex] = uint4{ 0, 0, 0, 0 };
+                weights[vertIndex] = vec4(1, 0, 0, 0);
             }
         }
         

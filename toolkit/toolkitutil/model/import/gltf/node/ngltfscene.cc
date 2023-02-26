@@ -43,7 +43,8 @@ NglTFScene::Setup(Gltf::Document* scene
     this->flags = flags;
 
     // set scale
-    this->scale = scale;
+    SceneScale = scale;
+    AdjustedScale = 1.0f / scale;
 
     Util::Dictionary<int, IndexT> jointNodeToIndex;
 
@@ -66,27 +67,21 @@ NglTFScene::Setup(Gltf::Document* scene
                 // Create joint map
                 jointNodeToIndex.Add(jointNode, index);
 
-                Math::vec3 translation;
-                Math::quat rotation;
-                Math::vec3 scale;
+                Math::mat4 bind;
 
                 if (node.hasTRS)
                 {
-                    translation = node.translation;
-                    rotation = node.rotation;
-                    scale = node.scale;
+                    bind = Math::affine(node.scale, Math::vec3(0), node.rotation, node.translation);
                 }
                 else
                 {
-                    decompose(node.matrix, scale, rotation, translation);
+                    bind = node.matrix;
                 }
 
                 ToolkitUtil::Joint& joint = skel.joints[index];
                 joint.index = index;
                 joint.name = node.name;
-                joint.translation = translation.vec;
-                joint.rotation = rotation.vec;
-                joint.scale = scale.vec;
+                joint.bind = bind;
                 
                 index++;
             }

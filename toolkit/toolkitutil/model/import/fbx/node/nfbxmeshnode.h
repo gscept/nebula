@@ -9,6 +9,7 @@
 */
 //------------------------------------------------------------------------------
 #include "toolkit-common/base/exporttypes.h"
+#include "nfbxnode.h"
 #include "model/import/base/scenenode.h"
 #include "math/vec2.h"
 #include "math/vec4.h"
@@ -26,14 +27,13 @@ public:
     typedef uint MeshMask;
 
     /// Setup node from FBX node
-    static void Setup(SceneNode* node, fbxsdk::FbxNode* fbxNode);
+    static void Setup(SceneNode* node, SceneNode* parent, fbxsdk::FbxNode* fbxNode);
 
     /// Extract mesh
     static void ExtractMesh(
         SceneNode* node
         , Util::Array<MeshBuilder>& meshes
         , const Util::Dictionary<fbxsdk::FbxNode*, SceneNode*>& nodeLookup
-        , fbxsdk::FbxNode* fbxNode
         , const ToolkitUtil::ExportFlags flags
     );
 
@@ -48,9 +48,9 @@ protected:
     /// Helper to extract generic 4 float vector data
     static Math::vec4 Extract(const fbxsdk::FbxLayerElementTemplate<fbxsdk::FbxVector4>* data, int polygonVertex, int vertexIndex);
     /// extracts skin data
-    static void ExtractSkin(SceneNode* node, MeshBuilder& mesh, const Util::Dictionary<fbxsdk::FbxNode*, SceneNode*>& nodeLookup, fbxsdk::FbxMesh* fbxMesh);
+    static void ExtractSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indices, Util::FixedArray<Math::vec4>& weights, const Util::Dictionary<fbxsdk::FbxNode*, SceneNode*>& nodeLookup, fbxsdk::FbxMesh* fbxMesh);
     /// generates rigid weights for parented joints
-    static void GenerateRigidSkin(SceneNode* node, MeshBuilder& mesh, uint& meshFlags);
+    static void GenerateRigidSkin(SceneNode* node, Util::FixedArray<Math::uint4>& indices, Util::FixedArray<Math::vec4>& weights, uint& meshFlags);
 }; 
 
 
@@ -86,7 +86,8 @@ NFbxMeshNode::Extract(const fbxsdk::FbxLayerElementTemplate<fbxsdk::FbxVector2>*
             }
             break;
     }
-    return Math::vec2(n[0], n[1]);
+    n.FixIncorrectValue();
+    return FbxToMath(n);
 }
 
 //------------------------------------------------------------------------------
@@ -156,7 +157,8 @@ NFbxMeshNode::Extract(const fbxsdk::FbxLayerElementTemplate<fbxsdk::FbxVector4>*
             }
             break;
     }
-    return Math::vec4(n[0], n[1], n[2], n[3]);
+    n.FixIncorrectValue();
+    return FbxToMath(n);
 }
 
 } // namespace ToolkitUtil

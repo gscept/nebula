@@ -16,10 +16,12 @@ using namespace Math;
 //------------------------------------------------------------------------------
 /**
 */
-AnimKeyBuffer::AnimKeyBuffer() :
-    numKeys(0),
-    mapCount(0),
-    keyBuffer(0)
+AnimKeyBuffer::AnimKeyBuffer()
+    : numKeys(0)
+    , numIntervals(0)
+    , mapCount(0)
+    , keyBuffer(nullptr)
+    , intervalBuffer(nullptr)
 {
     // empty
 }
@@ -39,13 +41,16 @@ AnimKeyBuffer::~AnimKeyBuffer()
 /**
 */
 void
-AnimKeyBuffer::Setup(SizeT numKeys_)
+AnimKeyBuffer::Setup(SizeT numIntervals, SizeT numKeys, void* intervalPtr, void* keyPtr)
 {
     n_assert(!this->IsValid());
-    n_assert(!this->IsMapped());
-    this->numKeys = numKeys_;
+    this->numIntervals = numIntervals;
+    this->numKeys = numKeys;
     this->mapCount = 0;
-    this->keyBuffer = Memory::Alloc(Memory::ResourceHeap, this->GetByteSize());
+    this->keyBuffer = (float*)Memory::Alloc(Memory::ResourceHeap, sizeof(float) * this->numKeys);
+    Memory::Copy(keyPtr, this->keyBuffer, this->GetByteSize());
+    this->intervalBuffer = (AnimKeyBuffer::Interval*)Memory::Alloc(Memory::ResourceHeap, sizeof(AnimKeyBuffer::Interval) * this->numIntervals);
+    Memory::Copy(intervalPtr, this->intervalBuffer, sizeof(AnimKeyBuffer::Interval) * this->numIntervals);
 }
 
 //------------------------------------------------------------------------------
@@ -55,32 +60,11 @@ void
 AnimKeyBuffer::Discard()
 {
     n_assert(this->IsValid());
-    n_assert(!this->IsMapped());
     Memory::Free(Memory::ResourceHeap, this->keyBuffer);
     this->keyBuffer = 0;
+    Memory::Free(Memory::ResourceHeap, this->intervalBuffer);
+    this->intervalBuffer = 0;
     this->numKeys = 0;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void*
-AnimKeyBuffer::Map()
-{
-    n_assert(this->IsValid());
-    this->mapCount++;
-    return this->keyBuffer;
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-AnimKeyBuffer::Unmap()
-{
-    n_assert(this->IsValid());
-    n_assert(this->IsMapped());
-    this->mapCount--;
 }
 
 } // namespace CoreAnimation

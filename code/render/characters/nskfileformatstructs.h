@@ -40,9 +40,10 @@ struct Nsk3Skeleton
 struct Nsk3Joint
 {
     Util::String name;
-    Math::vec3 translation;
-    Math::quat rotation;
-    Math::vec3 scale;
+    float bind[16];
+    float rotation[3];
+    float translation[3];
+    float scale[3];
     int parent;
     int index;
 };

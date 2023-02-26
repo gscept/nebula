@@ -71,4 +71,13 @@ SkeletonGetJointIndex(const SkeletonId id, const Util::StringAtom& name)
     return skeletonAllocator.Get<Skeleton_JointNameMap>(id.id24)[name];
 }
 
+//------------------------------------------------------------------------------
+/**
+*/
+const Util::FixedArray<Math::vec4>&
+SkeletonGetIdleSamples(const SkeletonId id)
+{
+    return skeletonAllocator.Get<Skeleton_IdleSamples>(id.id24);
+}
+
 } // namespace Characters

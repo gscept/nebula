@@ -18,10 +18,6 @@ ID_24_8_TYPE(SkeletonId);
 
 struct CharacterJoint
 {
-    Math::vector poseTranslation;
-    Math::quat poseRotation;
-    Math::vector poseScale;
-    Math::mat4 poseMatrix;
     IndexT parentJointIndex;
     const CharacterJoint* parentJoint;
 #if NEBULA_DEBUG
@@ -51,6 +47,8 @@ const Util::FixedArray<CharacterJoint>& SkeletonGetJoints(const SkeletonId id);
 const Util::FixedArray<Math::mat4>& SkeletonGetBindPose(const SkeletonId id);
 /// get joint index
 const IndexT SkeletonGetJointIndex(const SkeletonId id, const Util::StringAtom& name);
+/// Get idle samples
+const Util::FixedArray<Math::vec4>& SkeletonGetIdleSamples(const SkeletonId id);
 
 enum
 {

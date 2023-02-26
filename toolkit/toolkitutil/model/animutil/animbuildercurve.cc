@@ -14,23 +14,15 @@ using namespace CoreAnimation;
 //------------------------------------------------------------------------------
 /**
 */
-AnimBuilderCurve::AnimBuilderCurve() :
-    staticKey(0.0f, 0.0, 0.0f, 0.0f),
-    firstKeyIndex(InvalidIndex),
-    curveType(CurveType::InvalidCurveType),
-    isActive(false),
-    isStatic(false)
+AnimBuilderCurve::AnimBuilderCurve() 
+    : firstKeyOffset(0)
+    , numKeys(0)
+    , preInfinityType(InfinityType::Code::InvalidInfinityType)
+    , postInfinityType(InfinityType::Code::InvalidInfinityType)
+    , curveType(CurveType::Code::InvalidCurveType)
 {
     // empty
 }
-    
-//------------------------------------------------------------------------------
-/**
-*/
-void
-AnimBuilderCurve::ResizeKeyArray(SizeT numKeys)
-{
-    this->keyArray.Resize(numKeys);
-}
+ 
 
 } // namespace ToolkitUtil

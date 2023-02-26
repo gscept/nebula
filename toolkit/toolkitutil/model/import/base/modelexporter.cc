@@ -152,10 +152,7 @@ ModelExporter::ExportFile(const IO::URI& file)
         // Cleanup animations
         for (auto& anim : this->scene->animations)
         {
-            anim.FixInvalidKeyValues();
-            anim.FixInactiveCurveStaticKeyValues();
-            anim.FixAnimCurveFirstKeyIndices();
-            anim.BuildVelocityCurves();
+            anim.BuildVelocityCurves(AnimationFrameRate);
         }
 
         // now save actual animation

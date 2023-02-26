@@ -13,51 +13,17 @@ using namespace CoreAnimation;
 //------------------------------------------------------------------------------
 /**
 */
-AnimBuilderClip::AnimBuilderClip() :
-    startKeyIndex(InvalidIndex),
-    numKeys(0),
-    keyStride(0),
-    keyDuration(0),
-    preInfinityType(InfinityType::InvalidInfinityType),
-    postInfinityType(InfinityType::InvalidInfinityType)
+AnimBuilderClip::AnimBuilderClip()
+    : duration(0)
+    , firstCurveOffset(0)
+    , numCurves(0)
+    , firstEventOffset(0)
+    , numEvents(0)
+    , firstVelocityCurveOffset(0)
+    , numVelocityCurves(0)
+
 {
     // empty
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-AnimBuilderClip::ReserveCurves(SizeT numCurves)
-{
-    this->curveArray.Reserve(numCurves);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-AnimBuilderClip::AddCurve(const AnimBuilderCurve& curve)
-{
-    this->curveArray.Append(curve);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-AnimBuilderClip::InsertCurve(IndexT index, const AnimBuilderCurve& curve)
-{
-    this->curveArray.Insert(index, curve);
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-void
-AnimBuilderClip::AddEvent(const AnimEvent& event)
-{
-    this->eventArray.Append(event);
 }
 
 } // namespace ToolkitUtil
