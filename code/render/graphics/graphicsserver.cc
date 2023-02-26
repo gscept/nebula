@@ -70,7 +70,7 @@ GraphicsServer::Open()
         0x100000,
         0x100,
         3,
-        true
+        false
     };
     this->graphicsDevice = CoreGraphics::CreateGraphicsDevice(gfxInfo);
 

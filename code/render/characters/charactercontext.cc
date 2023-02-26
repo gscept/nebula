@@ -590,14 +590,9 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
         const Math::mat4* mixPoseMatrixBase = userJoint.Begin();
         Math::mat4* unscaledMatrixBase = tmpMatrices;
 
-        Math::vec3 finalScale, parentFinalScale;
-        Math::vec3 variationTranslation;
         Math::vec3 translate(0.0f, 0.0f, 0.0f);
         Math::vec3 scale(1.0f, 1.0f, 1.0f);
-        Math::vec3 parentScale(1.0f, 1.0f, 1.0f);
-        Math::vec3 parentTranslate(0.0f, 0.0f, 0.0f);
         Math::quat rotate;
-        Math::vec3 vec1111(1.0f, 1.0f, 1.0f);
 
         // load pointers from context
         // NOTE: the samplesBase pointer may be NULL if no valid animation
@@ -633,11 +628,6 @@ EvalCharacter(SizeT totalJobs, SizeT groupSize, IndexT groupIndex, SizeT invocat
             samplesPtr += sampleWidth;
 
             const SkeletonJobJoint& comps = compsBase[jointIndex];
-
-            // load variation scale
-            finalScale.load(&comps.varScaleX);
-            finalScale = scale * finalScale;
-            finalScale = permute(finalScale, vec1111, 0, 1, 2);
 
             Math::mat4& unscaledMatrix = unscaledMatrixBase[jointIndex];
             Math::mat4& scaledMatrix = scaledMatrixBase[jointIndex];

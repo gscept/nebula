@@ -252,8 +252,6 @@ AnimMix(
     float* outSamplePtr,
     uchar* outSampleCounts)
 {
-    vec4 f0, f1, fDst;
-    quat q0, q1, qDst;
     int i;
     for (i = 0; i < numSamples; i++)
     {
@@ -269,6 +267,7 @@ AnimMix(
 
             // we have 4 curves per joint
             if (mask != 0) maskWeight = mask->weights[i / 4];
+
             *outSamplePtr = lerp(*src0SamplePtr, *src1SamplePtr, mixWeight * maskWeight);
         }
         else if (src0Count > 0)
