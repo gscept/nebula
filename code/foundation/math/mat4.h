@@ -108,6 +108,14 @@ public:
     /// we use aliasing to represent the matrix in may different ways
     union
     {
+        struct /// as a cube
+        {
+            vec4 x_axis;
+            vec4 y_axis;
+            vec4 z_axis;
+            vec4 position;
+        };
+
         /// float accessors
         struct /// individual values
         {
@@ -120,13 +128,6 @@ public:
 
         /// SIMD accessors
         vec4 r[4]; /// array accessible rows 
-        struct /// as a cube
-        {
-            vec4 x_axis;
-            vec4 y_axis;
-            vec4 z_axis;
-            vec4 position;
-        };
         struct /// as numbered rows
         {
             vec4 row0;
@@ -1049,7 +1050,7 @@ rotationz(scalar angle)
 __forceinline mat4
 rotationyawpitchroll(scalar yaw, scalar pitch, scalar roll)
 {
-    quat q = rotationquatyawpitchroll(yaw,pitch,roll);
+    quat q = eulerquat(pitch, yaw, roll);
     return rotationquat(q);
 }
 
@@ -1141,12 +1142,12 @@ transpose(const mat4& m)
 __forceinline mat4
 skewsymmetric(const vec3& v)
 {
-	return {
-		0,   -v.z,   v.y,   0,
-		v.z,  0,    -v.x,   0,
-	   -v.y,  v.x,   0,     0,
-		0,    0,     0,     0,
-	};
+    return {
+        0,   -v.z,   v.y,   0,
+        v.z,  0,    -v.x,   0,
+       -v.y,  v.x,   0,     0,
+        0,    0,     0,     0,
+    };
 }
 
 } // namespace Math
