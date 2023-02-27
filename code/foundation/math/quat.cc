@@ -60,7 +60,7 @@ rotationmatrix(const mat4& m)
 /**
 */
 quat
-eulerquat(float x, float y, float z)
+quatyawpitchroll(scalar y, scalar x, scalar z)
 {
     float cx = cos(x * 0.5f);
     float sx = sin(x * 0.5f);
@@ -69,12 +69,12 @@ eulerquat(float x, float y, float z)
     float cz = cos(z * 0.5f);
     float sz = sin(z * 0.5f);
     
-    return normalize(quat(
+    return quat(
         sx * cy * cz - cx * sy * sz
         , cx * sy * cz + sx * cy * sz
         , cx * cy * sz - sx * sy * cz
         , cx * cy * cz + sx * sy * sz
-    ));
+    );
 }
 
 //------------------------------------------------------------------------------

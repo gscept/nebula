@@ -151,7 +151,7 @@ ModelBuilder::WritePhysics()
                     newShape->collider = std::make_unique<PhysicsResource::ColliderT>();
                     Math::transform44 t;
                     t.setposition(iter->transform.position);
-                    t.setrotate(Math::eulerquat(iter->transform.rotation.x, iter->transform.rotation.y, iter->transform.rotation.z));
+                    t.setrotate(Math::rotationyawpitchroll(iter->transform.rotation.y, iter->transform.rotation.x, iter->transform.rotation.z));
                     t.setscale(iter->transform.scale);
                     t.setrotatepivot(iter->transform.rotatePivot.vec);
                     t.setscalepivot(iter->transform.scalePivot.vec);
@@ -211,7 +211,7 @@ ModelBuilder::WritePhysics()
                     newShape->material = this->physics->GetMaterial();
                     Math::transform44 t;
                     t.setposition(iter->transform.position);
-                    t.setrotate(Math::eulerquat(iter->transform.rotation.x, iter->transform.rotation.y, iter->transform.rotation.z));
+                    t.setrotate(Math::rotationyawpitchroll(iter->transform.rotation.y, iter->transform.rotation.x, iter->transform.rotation.z));
                     // particles have fairly bogus values, ignore scale if zero
                     if(lengthsq(iter->transform.scale)<0.001f)
                     {
@@ -249,7 +249,7 @@ ModelBuilder::WritePhysics()
                     newShape->material = this->physics->GetMaterial();
                     Math::transform44 t;
                     t.setposition(iter->transform.position);
-                    t.setrotate(Math::eulerquat(iter->transform.rotation.x, iter->transform.rotation.y, iter->transform.rotation.z));
+                    t.setrotate(Math::rotationyawpitchroll(iter->transform.rotation.y, iter->transform.rotation.x, iter->transform.rotation.z));
                     t.setscale(iter->transform.scale);
                     t.setrotatepivot(iter->transform.rotatePivot.vec);
                     t.setscalepivot(iter->transform.scalePivot.vec);
@@ -290,7 +290,7 @@ ModelBuilder::WritePhysics()
 
                     Math::transform44 t;
                     t.setposition(shapes[i].transform.position);
-                    t.setrotate(Math::eulerquat(shapes[i].transform.rotation.x, shapes[i].transform.rotation.y, shapes[i].transform.rotation.z));
+                    t.setrotate(Math::rotationyawpitchroll(shapes[i].transform.rotation.y, shapes[i].transform.rotation.x, shapes[i].transform.rotation.z));
                     t.setscale(shapes[i].transform.scale);
                     t.setrotatepivot(shapes[i].transform.rotatePivot.vec);
                     t.setscalepivot(shapes[i].transform.scalePivot.vec);
@@ -322,7 +322,7 @@ ModelBuilder::WritePhysics()
 
                         Math::transform44 t;
                         t.setposition(shapes[i].transform.position);
-                        t.setrotate(Math::eulerquat(shapes[i].transform.rotation.x, shapes[i].transform.rotation.y, shapes[i].transform.rotation.z));
+                        t.setrotate(Math::rotationyawpitchroll(shapes[i].transform.rotation.y, shapes[i].transform.rotation.x, shapes[i].transform.rotation.z));
                         t.setscale(shapes[i].transform.scale);
                         t.setrotatepivot(shapes[i].transform.rotatePivot.vec);
                         t.setscalepivot(shapes[i].transform.scalePivot.vec);
