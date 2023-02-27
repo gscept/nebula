@@ -36,7 +36,7 @@ WrapTime(
 //------------------------------------------------------------------------------
 /**
 */
-inline AnimKeyBuffer::Interval
+AnimKeyBuffer::Interval
 FindNextInterval(
     const AnimCurve& curve
     , const Timing::Tick time

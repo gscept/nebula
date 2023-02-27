@@ -24,15 +24,11 @@ namespace CoreAnimation
 
 ID_24_8_TYPE(AnimationId);
 
-//------------------------------------------------------------------------------
-/**
-*/
-extern void
-FindNextKey(
+extern AnimKeyBuffer::Interval
+FindNextInterval(
     const AnimCurve& curve
     , const Timing::Tick time
     , uint& key
-    , uint* sampleIndices
     , const AnimKeyBuffer::Interval* sampleTimes
 );
 
@@ -46,7 +42,7 @@ extern void AnimSampleStep(
     const Math::vec4& velocityScale,
     const Util::FixedArray<Math::vec4>& idleSamples,
     const float* srcSamplePtr,
-    const AnimKeyBuffer::Interval* timeSamplePtr,
+    const AnimKeyBuffer::Interval* intervalPtr,
     uint* outSampleKeyPtr,
     float* outSamplePtr,
     uchar* outSampleCounts
@@ -62,7 +58,7 @@ extern void AnimSampleLinear(
     const Math::vec4& velocityScale,
     const Util::FixedArray<Math::vec4>& idleSamples,
     const float* srcSamplePtr,
-    const AnimKeyBuffer::Interval* timeSamplePtr,
+    const AnimKeyBuffer::Interval* intervalPtr,
     uint* outSampleKeyPtr,
     float* outSamplePtr,
     uchar* outSampleCounts
