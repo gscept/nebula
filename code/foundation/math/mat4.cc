@@ -219,54 +219,6 @@ transformation(const vec3& scalingCenter, const quat& scalingRotation, const vec
 //------------------------------------------------------------------------------
 /**
 */
-mat4
-euler(const vec3& pitchYawRoll)
-{
-    __m128 cosmm;
-    __m128 sinmm = _mm_sincos_ps(&cosmm, pitchYawRoll.vec);
-
-    vec4 cos(cosmm);
-    vec4 sin(sinmm);
-    vec4 p0 = permute(sin, cos, PERMUTE_1X, PERMUTE_0Z, PERMUTE_1Z, PERMUTE_1X);
-    vec4 y0 = permute(sin, cos, PERMUTE_0Y, PERMUTE_1X, PERMUTE_1X, PERMUTE_1Y);
-    vec4 p1 = permute(sin, cos, PERMUTE_1Z, PERMUTE_0Z, PERMUTE_1Z, PERMUTE_0Z);
-    vec4 y1 = permute(sin, cos, PERMUTE_1Y, PERMUTE_1Y, PERMUTE_0Y, PERMUTE_0Y);
-    vec4 p2 = permute(sin, cos, PERMUTE_0Z, PERMUTE_1Z, PERMUTE_0Z, PERMUTE_1Z);
-    vec4 p3 = permute(sin, cos, PERMUTE_0Y, PERMUTE_0Y, PERMUTE_1Y, PERMUTE_1Y);
-    vec4 y2 = splat_x(sin);
-    vec4 ns = -sin;
-
-    static const vec4 sign(1, -1, -1, 1);
-
-    vec4 q0 = p0 * y0;
-    vec4 q1 = p1 * sign;
-    q1 = q1 * y1;
-    vec4 q2 = p2 * y2;
-    q2 = multiplyadd(q2, p3, q1);
-
-    vec4 v0 = permute(q0, q2, PERMUTE_1X, PERMUTE_0Y, PERMUTE_1Z, PERMUTE_0W);
-    vec4 v1 = permute(q0, q2, PERMUTE_1Y, PERMUTE_0Z, PERMUTE_1W, PERMUTE_0W);
-    vec4 v2 = permute(q0, q2, PERMUTE_0X, PERMUTE_1X, PERMUTE_0W, PERMUTE_0W);
-
-    v0 = select(vec4(0), v0, vec4(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0));
-    v1 = select(vec4(0), v1, vec4(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0));
-    v2 = select(vec4(0), v2, vec4(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0));
-
-    return mat4(v0, v1, v2, vec4(0, 0, 0, 1));
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
-mat4
-euler(const scalar yaw, const scalar pitch, const scalar roll)
-{
-    return euler(vec3(pitch, yaw, roll));
-}
-
-//------------------------------------------------------------------------------
-/**
-*/
 bool
 ispointinside(const vec4& p, const mat4& m)
 {

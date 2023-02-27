@@ -42,8 +42,6 @@ mat4 affinetransformation(scalar scale, const vec3& rotationCenter, const quat& 
 mat4 transformation(const vec3& scalingCenter, const quat& scalingRotation, const vec3& scale, const vec3& rotationCenter, const quat& rotation, const vec3& trans);
 bool ispointinside(const vec4& p, const mat4& m);
 mat4 skewsymmetric(const vec3& v);
-mat4 euler(const vec3& v);
-mat4 euler(const scalar yaw, const scalar pitch, const scalar roll);
 
 struct NEBULA_ALIGN16 mat4
 {
