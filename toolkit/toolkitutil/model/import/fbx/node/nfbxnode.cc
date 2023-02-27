@@ -136,7 +136,7 @@ NFbxNode::Setup(SceneNode* node, SceneNode* parent, FbxNode* fbxNode)
     translation.FixIncorrectValue();
     rotation.FixIncorrectValue();
     scale.FixIncorrectValue();
-    node->base.rotation = Math::rotationyawpitchroll(rotation[1], rotation[0], rotation[2]);
+    node->base.rotation = Math::quatyawpitchroll(rotation[1], rotation[0], rotation[2]);
     node->base.translation = xyz(FbxToMath(translation)) * AdjustedScale;
     node->base.scale = xyz(FbxToMath(scale)) * AdjustedScale;
 
@@ -409,7 +409,7 @@ NFbxNode::ExtractAnimationCurves(SceneNode* node, FbxNode* fbxNode, Util::Array<
                 values[2] = euler.z;
             
 
-            Math::quat quat = rotationyawpitchroll(Math::deg2rad(values[1]), Math::deg2rad(values[0]), Math::deg2rad(values[2]));
+            Math::quat quat = quatyawpitchroll(Math::deg2rad(values[1]), Math::deg2rad(values[0]), Math::deg2rad(values[2]));
             keys.Append(quat.x);
             keys.Append(quat.y);
             keys.Append(quat.z);

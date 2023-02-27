@@ -117,7 +117,7 @@ MeshBuilder::CopyTriangle(const MeshBuilder& srcMesh, IndexT triIndex, Util::Fix
 /**
 */
 bbox
-MeshBuilder::ComputeBoundingBox(float scale) const
+MeshBuilder::ComputeBoundingBox() const
 {
     bbox box;
     box.begin_extend();
@@ -126,7 +126,7 @@ MeshBuilder::ComputeBoundingBox(float scale) const
     for (vertexIndex = 0; vertexIndex < numVertices; vertexIndex++)
     {
         const MeshBuilderVertex& vtx = this->VertexAt(vertexIndex);
-        box.extend(xyz(vtx.base.position * scale));
+        box.extend(xyz(vtx.base.position));
     }
     box.end_extend();
     return box;

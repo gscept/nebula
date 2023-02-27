@@ -268,7 +268,7 @@ NFbxMeshNode::ExtractMesh(
     }
 
     // compute boundingbox
-    node->base.boundingBox = mesh.ComputeBoundingBox(AdjustedScale);
+    node->base.boundingBox = mesh.ComputeBoundingBox();
     mesh.SetComponents(componentMask);
 
     // remove redundant vertices
