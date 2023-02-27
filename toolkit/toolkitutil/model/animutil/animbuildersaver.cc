@@ -88,7 +88,7 @@ AnimBuilderSaver::WriteAnimations(const Ptr<IO::Stream>& stream, const Util::Arr
             // write curve attributes
             Nax3Curve nax3Curve;
             nax3Curve.firstIntervalOffset = intervals.Size();
-            nax3Curve.numIntervals = curve.numKeys - 1;
+            nax3Curve.numIntervals = curve.numKeys == 0 ? 0 : curve.numKeys - 1;
             nax3Curve.preInfinityType = curve.preInfinityType;
             nax3Curve.postInfinityType = curve.postInfinityType;
             nax3Curve.curveType = curve.curveType;
@@ -102,7 +102,7 @@ AnimBuilderSaver::WriteAnimations(const Ptr<IO::Stream>& stream, const Util::Arr
             int stride = curve.curveType == CurveType::Rotation ? 4 : 3;
 
             // Create intervals for the keys
-            for (IndexT i = 0; i < curve.numKeys - 1; i++)
+            for (IndexT i = 0; i < nax3Curve.numIntervals; i++)
             {
                 Timing::Tick start = anim.keyTimes[curve.firstTimeOffset + i];
                 Timing::Tick end = anim.keyTimes[curve.firstTimeOffset + i + 1];
