@@ -112,6 +112,7 @@ AnimBuilderSaver::WriteAnimations(const Ptr<IO::Stream>& stream, const Util::Arr
                 interval.end = byteOrder.Convert(end);
                 interval.key0 = byteOrder.Convert(curve.firstKeyOffset + i * stride);
                 interval.key1 = byteOrder.Convert(curve.firstKeyOffset + (i + 1) * stride);
+                interval.duration = 1 / float(interval.end - interval.start);
 
                 intervals.Append(interval);
             }

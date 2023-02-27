@@ -23,6 +23,7 @@ public:
     {
         Timing::Tick start, end;
         uint key0, key1;
+        float duration;
     };
 
     /// constructor

@@ -42,6 +42,7 @@ struct Nax3Interval
 {
     uint start, end;
     uint key0, key1;
+    float duration;
 };
 
 struct Nax3Clip

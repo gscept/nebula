@@ -176,7 +176,7 @@ AnimSampleLinear(
             if (wrappedTime >= currentTime.end)
                 sampleWeight = 1.0f;
             else
-                sampleWeight = (wrappedTime - currentTime.start) / float(currentTime.end - currentTime.start);
+                sampleWeight = (wrappedTime - currentTime.start) * currentTime.duration;
         }
 
         switch (curve.curveType)
